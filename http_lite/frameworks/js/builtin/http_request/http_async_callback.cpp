@@ -23,10 +23,7 @@
 namespace OHOS {
 namespace ACELite {
 
-HttpAsyncCallback::HttpAsyncCallback(JSIValue thisVal)
-{
-    this->thisVal = thisVal;
-}
+HttpAsyncCallback::HttpAsyncCallback(JSIValue thisValue) : thisVal(thisValue) {}
 
 void HttpAsyncCallback::AsyncExecHttpRequest(void *data)
 {

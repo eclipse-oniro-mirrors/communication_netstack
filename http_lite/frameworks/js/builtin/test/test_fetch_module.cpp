@@ -44,7 +44,8 @@ private:
     JSIValue exports;
 
 public:
-    JerryInitializer()
+    JerryInitializer() : temp(nullptr), exports(nullptr) {}
+    void Init()
     {
         temp = new int;
         jerry_init(JERRY_INIT_EMPTY);
@@ -163,6 +164,7 @@ void TestHttpModuleMethodAndHeaderByDefault()
 int main()
 {
     OHOS::ACELite::JerryInitializer jerryInitializer;
+    jerryInitializer.Init();
 
     OHOS::ACELite::TestHttpModuleMethodAndHeaderByDefault();
 
