@@ -46,6 +46,11 @@ private:
 public:
     JerryInitializer()
     {
+        temp = nullptr;
+        exports = nullptr;
+    }
+    void Init()
+    {
         temp = new int;
         jerry_init(JERRY_INIT_EMPTY);
         JsAsyncWork::SetAppQueueHandler(temp);
@@ -163,6 +168,7 @@ void TestHttpModuleMethodAndHeaderByDefault()
 int main()
 {
     OHOS::ACELite::JerryInitializer jerryInitializer;
+    jerryInitializer.Init();
 
     OHOS::ACELite::TestHttpModuleMethodAndHeaderByDefault();
 

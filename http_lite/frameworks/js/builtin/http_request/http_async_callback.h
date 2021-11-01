@@ -29,7 +29,7 @@ class HttpAsyncCallback : public MemoryHeap {
 public:
     ACE_DISALLOW_COPY_AND_MOVE(HttpAsyncCallback);
 
-    explicit HttpAsyncCallback(JSIValue thisVal);
+    explicit HttpAsyncCallback(JSIValue thisValue);
 
 public:
     static void AsyncExecHttpRequest(void *data);
