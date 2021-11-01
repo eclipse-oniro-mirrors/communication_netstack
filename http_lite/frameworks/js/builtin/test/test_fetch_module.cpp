@@ -44,11 +44,7 @@ private:
     JSIValue exports;
 
 public:
-    JerryInitializer()
-    {
-        temp = nullptr;
-        exports = nullptr;
-    }
+    JerryInitializer() : temp(nullptr), exports(nullptr) {}
     void Init()
     {
         temp = new int;
