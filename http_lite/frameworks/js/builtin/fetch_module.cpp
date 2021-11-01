@@ -38,44 +38,17 @@ JSIValue FetchModule::Fetch(const JSIValue thisVal, const JSIValue *args, uint8_
         return JSI::CreateUndefined();
     }
 
-    auto requestData = new RequestData();
-    if (JsObjectToRequestData(args[0], requestData)) {
-        auto asyncCallback =
-            new HttpAsyncCallback(const_cast<const RequestData *&>(requestData), MakeCallback(args[0]), thisVal);
+    auto asyncCallback = new HttpAsyncCallback(thisVal);
+    if (JsObjectToRequestData(args[0], &asyncCallback->requestData)) {
+        asyncCallback->responseCallback[CB_SUCCESS] = JSI::GetNamedProperty(args[0], CB_SUCCESS);
+        asyncCallback->responseCallback[CB_FAIL] = JSI::GetNamedProperty(args[0], CB_FAIL);
+        asyncCallback->responseCallback[CB_COMPLETE] = JSI::GetNamedProperty(args[0], CB_COMPLETE);
         JsAsyncWork::DispatchAsyncWork(HttpAsyncCallback::AsyncExecHttpRequest, static_cast<void *>(asyncCallback));
     } else {
-        delete requestData;
+        delete asyncCallback;
     }
 
     return JSI::CreateUndefined();
-}
-
-JSIValue FetchModule::MakeCallback(JSIValue options)
-{
-    JSIValue obj = JSI::CreateObject();
-    if (obj == nullptr) {
-        return nullptr;
-    }
-
-    std::unique_ptr<JSIVal, decltype(&JSI::ReleaseValue)> successCallback(JSI::GetNamedProperty(options, CB_SUCCESS),
-                                                                          JSI::ReleaseValue);
-    std::unique_ptr<JSIVal, decltype(&JSI::ReleaseValue)> failCallback(JSI::GetNamedProperty(options, CB_FAIL),
-                                                                       JSI::ReleaseValue);
-    std::unique_ptr<JSIVal, decltype(&JSI::ReleaseValue)> completeCallback(JSI::GetNamedProperty(options, CB_COMPLETE),
-                                                                           JSI::ReleaseValue);
-    if ((successCallback == nullptr || JSI::ValueIsUndefined(successCallback.get()) ||
-         !JSI::ValueIsFunction(successCallback.get())) &&
-        (failCallback == nullptr || JSI::ValueIsUndefined(failCallback.get()) ||
-         !JSI::ValueIsFunction(failCallback.get())) &&
-        (completeCallback == nullptr || JSI::ValueIsUndefined(completeCallback.get()) ||
-         !JSI::ValueIsFunction(completeCallback.get()))) {
-        return nullptr;
-    }
-
-    JSI::SetNamedProperty(obj, CB_SUCCESS, successCallback.get());
-    JSI::SetNamedProperty(obj, CB_FAIL, failCallback.get());
-    JSI::SetNamedProperty(obj, CB_COMPLETE, completeCallback.get());
-    return obj;
 }
 
 bool FetchModule::JsObjectToRequestData(JSIValue options, RequestData *req)

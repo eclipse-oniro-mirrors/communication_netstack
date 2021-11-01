@@ -36,6 +36,9 @@ http_lite_include_dirs = [
 
     "//foundation/ace/ace_engine_lite/frameworks/common/utils",
     "//foundation/ace/ace_engine_lite/frameworks/common/log",
+
+    "//base/hiviewdfx/hilog_lite/interfaces/native/kits",
+    "//foundation/ace/ace_engine_lite/frameworks/targets/liteos_a",
 ]
 
 config("http_lite_config") {
@@ -51,6 +54,7 @@ lite_library("http_lite_shared") {
     deps = [
         "//third_party/curl:libcurl_shared",
         "//third_party/bounds_checking_function:libsec_shared",
+        "//foundation/ace/ace_engine_lite/frameworks/common:ace_common_lite",
     ]
 }
 
