@@ -16,39 +16,20 @@
 #ifndef OHOS_ACELITE_HTTP_REQUEST_UTILS_H
 #define OHOS_ACELITE_HTTP_REQUEST_UTILS_H
 
+#include "ace_log.h"
 #include "curl/curl.h"
 #include "securec.h"
 #include <string>
 #include <vector>
 
-#define HTTP_PRINT_TIME()                                                              \
-    do {                                                                               \
-        struct timeval now = {0};                                                      \
-        gettimeofday(&now, NULL);                                                      \
-        struct tm *tmp_time = localtime(&now.tv_sec);                                  \
-        char timeString[100] = {0};                                                    \
-        strftime(timeString, sizeof(timeString), "%04Y/%02m/%02d %H:%M:%S", tmp_time); \
-        long double uSec = now.tv_usec;                                                \
-        printf("[%s%.3Lf] ", timeString, uSec / 1000.0L / 1000.0L);                    \
-        fflush(stdout);                                                                \
+#define HTTP_REQUEST_INFO(...)                                     \
+    do {                                                           \
+        HILOG_INFO(HILOG_MODULE_ACE, "[HTTP][INFO] " __VA_ARGS__); \
     } while (0)
 
-#define HTTP_REQUEST_INFO(...)               \
-    do {                                     \
-        HTTP_PRINT_TIME();                   \
-        printf("[HTTP][INFO] " __VA_ARGS__); \
-        fflush(stdout);                      \
-        puts("");                            \
-        fflush(stdout);                      \
-    } while (0)
-
-#define HTTP_REQUEST_ERROR(...)               \
-    do {                                      \
-        HTTP_PRINT_TIME();                    \
-        printf("[HTTP][ERROR] " __VA_ARGS__); \
-        fflush(stdout);                       \
-        puts("");                             \
-        fflush(stdout);                       \
+#define HTTP_REQUEST_ERROR(...)                                      \
+    do {                                                             \
+        HILOG_ERROR(HILOG_MODULE_ACE, "[HTTP][ERROR] " __VA_ARGS__); \
     } while (0)
 
 namespace OHOS {

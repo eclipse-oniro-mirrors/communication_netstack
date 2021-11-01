@@ -20,16 +20,30 @@
 
 #define __LITEOS__
 
-#define HILOG_ERROR(...) \
-    do {                 \
+#define HILOG_ERROR(mod, ...) \
+    do {                      \
+        printf(__VA_ARGS__);  \
+        fflush(stdout);       \
+        puts("");             \
+        fflush(stdout);       \
     } while (0)
 
-#define HILOG_WARN(num, s, ...)                                         \
-    do {                                                                \
-        if (strcmp(s, "todo call linux putmsg interface here!") == 0) { \
-            OHOS::ACELite::TestPutMessage(const_cast<void *>(msgPtr));  \
-            return MSGQ_OK;                                             \
-        }                                                               \
+#define HILOG_INFO(mod, ...) \
+    do {                     \
+        printf(__VA_ARGS__); \
+        fflush(stdout);      \
+        puts("");            \
+        fflush(stdout);      \
+    } while (0)
+
+typedef enum { HILOG_MODULE_ACE = 1 } HiLogModuleType;
+
+#define HILOG_WARN(mod, format, ...)                                         \
+    do {                                                                     \
+        if (strcmp(format, "todo call linux putmsg interface here!") == 0) { \
+            OHOS::ACELite::TestPutMessage(const_cast<void *>(msgPtr));       \
+            return MSGQ_OK;                                                  \
+        }                                                                    \
     } while (0)
 
 static void *msgPtr;
