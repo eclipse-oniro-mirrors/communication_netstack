@@ -16,7 +16,7 @@ project(ohos_acelite)
 
 set(CMAKE_CXX_STANDARD 14)
 
-include_directories(test_headers)
+include_directories(test/include)
 
 include_directories(../../../../../../ace/ace_engine_lite/interfaces/innerkits/builtin/jsi)
 include_directories(../../../../../../ace/ace_engine_lite/interfaces/innerkits/builtin/async)
@@ -59,6 +59,4 @@ target_link_libraries(test_fetch_module securec)
 
 add_compile_definitions(NO_SSL_CERTIFICATION=1)
 
-add_executable(test_fetch_module_exec test_fetch_module.cpp)
-
-target_link_libraries(test_fetch_module_exec test_fetch_module)
+add_subdirectory(test)

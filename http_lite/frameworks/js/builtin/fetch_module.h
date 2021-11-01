@@ -41,7 +41,6 @@ public:
     static const char *const HTTP_API_KEY_STRING_TO_ARRAY_BUFFER;
 
 private:
-    static JSIValue MakeCallback(JSIValue options);
     static bool JsObjectToRequestData(JSIValue options, RequestData *req);
     static void GetNameValue(JSIValue nv, std::map<std::string, std::string> &map);
     static void GetRequestBody(JSIValue options, RequestData *requestData);

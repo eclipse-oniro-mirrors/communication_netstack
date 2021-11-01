@@ -1,0 +1,3 @@
+add_executable(test_fetch_module_exec test_fetch_module.cpp)
+
+target_link_libraries(test_fetch_module_exec test_fetch_module)

@@ -16,6 +16,7 @@
 #ifndef OHOS_ACELITE_HTTP_ASYNC_CALLBACK_H
 #define OHOS_ACELITE_HTTP_ASYNC_CALLBACK_H
 
+#include "../fetch_module.h"
 #include "jsi.h"
 #include "non_copyable.h"
 #include "request_data.h"
@@ -28,17 +29,20 @@ class HttpAsyncCallback : public MemoryHeap {
 public:
     ACE_DISALLOW_COPY_AND_MOVE(HttpAsyncCallback);
 
-    HttpAsyncCallback(const RequestData *&requestData, JSIValue responseCallback, JSIValue thisVal);
+    explicit HttpAsyncCallback(JSIValue thisVal);
 
 public:
     static void AsyncExecHttpRequest(void *data);
+    friend JSIValue FetchModule::Fetch(const JSIValue thisVal, const JSIValue *args, uint8_t argsNum);
 
 private:
-    RequestData *requestData;
-    JSIValue responseCallback;
+    RequestData requestData;
+    std::map<std::string, JSIValue> responseCallback;
     JSIValue thisVal;
 
 private:
+    static void AsyncCallbackDeleter(HttpAsyncCallback *asyncCallback);
+
     JSIValue ResponseDataToJsValue(const ResponseData &responseData);
     void OnSuccess(const ResponseData &responseData);
     void OnFail(const char *errData, int32_t errCode);

@@ -20,53 +20,45 @@
 #include <algorithm>
 #include <memory>
 
-template <typename T> void DefaultDelete(T *ptr)
-{
-    HTTP_REQUEST_INFO("delete %s", typeid(ptr).name());
-    delete ptr;
-}
-
 namespace OHOS {
 namespace ACELite {
 
-HttpAsyncCallback::HttpAsyncCallback(const RequestData *&requestData, JSIValue responseCallback, JSIValue thisVal)
+HttpAsyncCallback::HttpAsyncCallback(JSIValue thisVal)
 {
-    this->requestData = const_cast<RequestData *>(requestData);
-    this->responseCallback = responseCallback;
     this->thisVal = thisVal;
 }
 
 void HttpAsyncCallback::AsyncExecHttpRequest(void *data)
 {
-    std::unique_ptr<HttpAsyncCallback, decltype(&DefaultDelete<HttpAsyncCallback>)> asyncCallback(
-        static_cast<HttpAsyncCallback *>(data), DefaultDelete<HttpAsyncCallback>);
+    std::unique_ptr<HttpAsyncCallback, decltype(&HttpAsyncCallback::AsyncCallbackDeleter)> asyncCallback(
+        static_cast<HttpAsyncCallback *>(data), HttpAsyncCallback::AsyncCallbackDeleter);
     if (asyncCallback == nullptr) {
-        return;
-    }
-    std::unique_ptr<RequestData, decltype(&DefaultDelete<RequestData>)> requestData(asyncCallback->requestData,
-                                                                                    DefaultDelete<RequestData>);
-    if (requestData == nullptr) {
         return;
     }
 
     ResponseData responseData;
-    bool success = HttpRequest::Request(requestData.get(), &responseData);
-    std::unique_ptr<JSIVal, decltype(&JSI::ReleaseValue)> responseCallback(asyncCallback->responseCallback,
-                                                                           JSI::ReleaseValue);
-    if (responseCallback == nullptr || JSI::ValueIsUndefined(responseCallback.get()) ||
-        !JSI::ValueIsObject(responseCallback.get())) {
-        if (success) {
-            HTTP_REQUEST_INFO("http status line: %s", responseData.GetStatusLine().c_str());
-        }
-        return;
-    }
-
+    bool success = HttpRequest::Request(&asyncCallback->requestData, &responseData);
     if (success) {
+        HTTP_REQUEST_INFO("http status line: %s", responseData.GetStatusLine().c_str());
         asyncCallback->OnSuccess(responseData);
     } else {
         asyncCallback->OnFail(responseData.GetErrString().c_str(), responseData.GetCode());
     }
     asyncCallback->OnComplete();
+}
+
+void HttpAsyncCallback::AsyncCallbackDeleter(HttpAsyncCallback *asyncCallback)
+{
+    if (asyncCallback->responseCallback[CB_SUCCESS]) {
+        JSI::ReleaseValue(asyncCallback->responseCallback[CB_SUCCESS]);
+    }
+    if (asyncCallback->responseCallback[CB_FAIL]) {
+        JSI::ReleaseValue(asyncCallback->responseCallback[CB_FAIL]);
+    }
+    if (asyncCallback->responseCallback[CB_COMPLETE]) {
+        JSI::ReleaseValue(asyncCallback->responseCallback[CB_COMPLETE]);
+    }
+    delete asyncCallback;
 }
 
 JSIValue HttpAsyncCallback::ResponseDataToJsValue(const ResponseData &responseData)
@@ -79,7 +71,7 @@ JSIValue HttpAsyncCallback::ResponseDataToJsValue(const ResponseData &responseDa
     JSI::SetNumberProperty(object, HttpConstant::KEY_HTTP_RESPONSE_CODE, responseData.GetCode());
 
     HTTP_REQUEST_INFO("response body size = %zu", responseData.GetData().size());
-    std::string responseType = requestData->GetResponseType();
+    std::string responseType = requestData.GetResponseType();
     std::transform(responseType.begin(), responseType.end(), responseType.begin(), tolower);
 
     if (responseType == HttpConstant::HTTP_RESPONSE_TYPE_JSON) {
@@ -107,9 +99,8 @@ JSIValue HttpAsyncCallback::ResponseDataToJsValue(const ResponseData &responseDa
 
 void HttpAsyncCallback::OnSuccess(const ResponseData &responseData)
 {
-    std::unique_ptr<JSIVal, decltype(&JSI::ReleaseValue)> success(JSI::GetNamedProperty(responseCallback, CB_SUCCESS),
-                                                                  JSI::ReleaseValue);
-    if (success == nullptr || JSI::ValueIsUndefined(success.get()) || !JSI::ValueIsFunction(success.get())) {
+    JSIValue success = responseCallback[CB_SUCCESS];
+    if (success == nullptr || JSI::ValueIsUndefined(success) || !JSI::ValueIsFunction(success)) {
         return;
     }
 
@@ -119,31 +110,29 @@ void HttpAsyncCallback::OnSuccess(const ResponseData &responseData)
     }
 
     JSIValue arg[ARGC_ONE] = {obj.get()};
-    JSI::CallFunction(success.get(), thisVal, arg, ARGC_ONE);
+    JSI::CallFunction(success, thisVal, arg, ARGC_ONE);
 }
 
 void HttpAsyncCallback::OnFail(const char *errData, int32_t errCode)
 {
-    std::unique_ptr<JSIVal, decltype(&JSI::ReleaseValue)> fail(JSI::GetNamedProperty(responseCallback, CB_FAIL),
-                                                               JSI::ReleaseValue);
-    if (fail == nullptr || JSI::ValueIsUndefined(fail.get()) || !JSI::ValueIsFunction(fail.get())) {
+    JSIValue fail = responseCallback[CB_FAIL];
+    if (fail == nullptr || JSI::ValueIsUndefined(fail) || !JSI::ValueIsFunction(fail)) {
         return;
     }
     std::unique_ptr<JSIVal, decltype(&JSI::ReleaseValue)> errInfo(JSI::CreateString(errData), JSI::ReleaseValue);
     std::unique_ptr<JSIVal, decltype(&JSI::ReleaseValue)> retCode(JSI::CreateNumber(errCode), JSI::ReleaseValue);
 
     JSIValue argv[ARGC_TWO] = {errInfo.get(), retCode.get()};
-    JSI::CallFunction(fail.get(), thisVal, argv, ARGC_TWO);
+    JSI::CallFunction(fail, thisVal, argv, ARGC_TWO);
 }
 
 void HttpAsyncCallback::OnComplete()
 {
-    std::unique_ptr<JSIVal, decltype(&JSI::ReleaseValue)> complete(JSI::GetNamedProperty(responseCallback, CB_COMPLETE),
-                                                                   JSI::ReleaseValue);
-    if (complete == nullptr || JSI::ValueIsUndefined(complete.get()) || !JSI::ValueIsFunction(complete.get())) {
+    JSIValue complete = responseCallback[CB_COMPLETE];
+    if (complete == nullptr || JSI::ValueIsUndefined(complete) || !JSI::ValueIsFunction(complete)) {
         return;
     }
-    JSI::CallFunction(complete.get(), thisVal, nullptr, 0);
+    JSI::CallFunction(complete, thisVal, nullptr, 0);
 }
 
 } // namespace ACELite
