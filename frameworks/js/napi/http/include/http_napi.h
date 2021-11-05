@@ -16,17 +16,11 @@
 #ifndef HTTP_NAPI_H
 #define HTTP_NAPI_H
 
+#include <list>
+
 #include "http_event_list.h"
 #include "http_request.h"
 #include "napi_util.h"
-
-#include <list>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <unordered_map>
-#include <vector>
 
 namespace OHOS {
 namespace NetManagerStandard {

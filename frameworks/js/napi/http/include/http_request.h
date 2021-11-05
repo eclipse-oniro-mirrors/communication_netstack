@@ -16,6 +16,7 @@
 #ifndef HTTP_REQUEST_H
 #define HTTP_REQUEST_H
 
+#include "base/security/deviceauth/deps_adapter/os_adapter/interfaces/linux/hc_log.h"
 #include "http_request_options_context.h"
 #include "netmgr_log_wrapper.h"
 
