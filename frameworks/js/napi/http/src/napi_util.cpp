@@ -198,7 +198,7 @@ bool NapiUtil::MatchHttpOnDataParameters(napi_env env, const napi_value paramete
     switch (parameterCount) {
         case SWITCH_PARAM_ZERO:
             return true;
-        case :
+        case SWITCH_PARAM_ONE:
             return false;
         case SWITCH_PARAM_TWO:
             return MatchParameters(env, parameters, {napi_string, napi_function});
