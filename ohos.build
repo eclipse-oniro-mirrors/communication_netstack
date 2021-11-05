@@ -1,0 +1,17 @@
+{
+  "subsystem": "communication",
+  "parts": {
+    "netstack": {
+      "variants": [
+         "phone",
+         "wearable",
+         "ivi"
+      ],
+      "module_list": [
+        "//foundation/communication/netstack/frameworks/js/napi:http",
+        "//foundation/communication/netstack/frameworks/js/napi:socket",
+        "//foundation/communication/netstack/frameworks/js/napi:websocket"
+      ]
+    }
+  }
+}
