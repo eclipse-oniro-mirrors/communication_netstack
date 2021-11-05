@@ -21,7 +21,7 @@ ohos_shared_library("http") {
     "//third_party/node/src",
     "//foundation/ace/napi/interfaces/kits",
     "$NETMANAGER_NAPI_ROOT/http/include",
-    "//foundation/communication/netstack/utils/log/include",
+    "$SUBSYSTEM_DIR/netstack/utils/log/include",
     "//third_party/curl/include"
   ]
 
@@ -53,7 +53,7 @@ ohos_shared_library("socket") {
     "//foundation/ace/napi/interfaces/kits",
     "$NETMANAGER_NAPI_ROOT/http/include",
     "$NETMANAGER_NAPI_ROOT/socket/include",
-    "//foundation/communication/netstack/utils/log/include",
+    "$SUBSYSTEM_DIR/netstack/utils/log/include",
     "//third_party"
   ]
 
@@ -85,7 +85,7 @@ ohos_shared_library("websocket") {
     "//foundation/ace/napi/interfaces/kits",
     "$NETMANAGER_NAPI_ROOT/http/include",
     "$NETMANAGER_NAPI_ROOT/websocket/include",
-    "//foundation/communication/netstack/utils/log/include",
+    "$SUBSYSTEM_DIR/netstack/utils/log/include",
   ]
 
   sources = [

@@ -56,11 +56,6 @@ ohos_shared_library("net_manager_common") {
     external_deps = [ "hilog:libhilog" ]
   }
 
-  external_deps += [
-    "native_appdatamgr:native_preferences",
-    "appexecfwk_standard:libeventhandler"
-  ]
-
   part_name = "netstack"
   subsystem_name = "communication"
 }

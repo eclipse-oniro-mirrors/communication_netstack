@@ -442,8 +442,8 @@ napi_value HttpRequestConstructor(napi_env env, napi_callback_info info)
         NETMGR_LOGE("HTTP object count max 100");
         return thisVar;
     }
-    napi_wrap(
-        env, thisVar, objectInfo,
+
+    napi_wrap(env, thisVar, objectInfo,
         [](napi_env env, void *data, void *hint) {
             HttpRequest *objectInfo = (HttpRequest *)data;
             if (objectInfo) {

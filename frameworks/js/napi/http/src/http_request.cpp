@@ -14,9 +14,9 @@
  */
 
 #include "http_request.h"
+#include "http_event_list.h"
 #include "http_napi.h"
 #include "napi_util.h"
-#include "http_event_list.h"
 
 #include <unistd.h>
 
