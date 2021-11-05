@@ -1993,8 +1993,8 @@ napi_value TcpOn(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-   char eventTypeChars[OHOS::NetManagerStandard::EVENT_ARRAY_LENGTH] = { 0 };
-   size_t strLen = 0;
+    char eventTypeChars[OHOS::NetManagerStandard::EVENT_ARRAY_LENGTH] = { 0 };
+    size_t strLen = 0;
 
     NAPI_CALL(env,
         napi_get_value_string_utf8(

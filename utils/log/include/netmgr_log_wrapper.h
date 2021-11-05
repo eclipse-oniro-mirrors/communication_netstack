@@ -17,6 +17,7 @@
 #define NETMGR_LOG_WRAPPER_H
 
 #include <string>
+
 #include "hilog/log.h"
 
 namespace OHOS {
