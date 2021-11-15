@@ -7,7 +7,7 @@
 
 ## 简介<a name="section11660541593"></a>
 
-**电话子系统网络协议栈组件**，是OpenHarmony为开发者提供的一套开发OpenHarmony应用的Http协议栈的API的适配层框架。目前主要由以下两部分组成:
+**电话子系统网络协议栈组件**，是OpenHarmony为开发者提供的一套开发OpenHarmony应用的Http、Socket、WebSocket等网络协议栈的API的适配层框架。目前主要由以下两部分组成:
 
 1、L2上基于NAPI的JS适配层。
 
@@ -23,6 +23,7 @@
 │   ├── js             # JS适配层
 │       ├── builtin    # L0、L1上基于JSI的JS适配层
 │       └── napi       # L2上基于NAPI的JS适配层
+├── interfaces         # 对外暴露的API
 │   └── kits           # Huawei SDK API, 包括Java、Js、Native, 目前只有JS
 │       └── js         # JS API
 ├── utils              # 公共工具
