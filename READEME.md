@@ -7,7 +7,7 @@
 
 ## Introduction<a name="section11660541593"></a>
 
-The **network stack component** is an adaptation layer framework for developers to develop the HTTP protocol stack API of openharmony applications. At present, it mainly consists of the following two parts:
+The **network stack component** is an adaptation layer framework for developers to develop network protocol stacks such as HTTP, socket and websocket for OpenHarmony applications. At present, it mainly consists of the following two parts:
 
 1. NAPI based JS adaptation layer on L2.
 
@@ -24,6 +24,7 @@ The source code of the network stack component is stored in **/foundation/commun
 │   ├── js             # JS adaptation
 │       ├── builtin    # JSI based JS adaptation layer on L0 and L1
 │       └── napi       # NAPI based JS adaptation layer on L2.
+├── interfaces         # APIs exposed externally
 │   └── kits           # Huawei SDK API, including Java, JS and native. At present, there is only JS
 │       └── js         # JS API
 ├── utils              # Common tools
