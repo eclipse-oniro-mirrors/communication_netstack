@@ -9,10 +9,10 @@
 
 The **network stack component** is an adaptation layer framework for developers to develop network protocol stacks such as HTTP, socket and websocket for OpenHarmony applications. At present, it mainly consists of the following two parts:
 
-1. NAPI based JS adaptation layer on small system.
+1. NAPI based JS adaptation layer on mini system and small system.
 
 
-2. JSI based JS adaptation layer on mini system
+2. JSI based JS adaptation layer on standard system.
 
 ## Directory Structure<a name="section1464106163817"></a>
 
@@ -22,8 +22,8 @@ The source code of the network stack component is stored in **/foundation/commun
 /foundation/communication/netstack
 ├── frameworks         # Framework code
 │   ├── js             # JS adaptation
-│       ├── builtin    # JSI based JS adaptation layer on mini system
-│       └── napi       # NAPI based JS adaptation layer on small system
+│       ├── builtin    # JSI based JS adaptation layer on mini system and small system
+│       └── napi       # NAPI based JS adaptation layer on standard system
 ├── interfaces         # APIs exposed externally
 │   └── kits           # OpenHarmony SDK API, including Java, JS and native. At present, there is only JS
 │       └── js         # JS API

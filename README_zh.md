@@ -9,9 +9,9 @@
 
 **电话子系统网络协议栈组件**，是OpenHarmony为开发者提供的一套开发OpenHarmony应用的Http、Socket、WebSocket等网络协议栈的API的适配层框架。目前主要由以下两部分组成:
 
-1、小型系统上基于NAPI的JS适配层。
+1、标准系统上基于NAPI的JS适配层。
 
-2、轻量级系统上基于JSI的JS适配层。
+2、轻量级系统和小型系统上基于JSI的JS适配层。
 
 ## 目录<a name="section1464106163817"></a>
 
@@ -21,8 +21,8 @@
 /foundation/communication/netstack
 ├── frameworks         # 框架代码目录
 │   ├── js             # JS适配层
-│       ├── builtin    # 轻量级系统上基于JSI的JS适配层
-│       └── napi       # 小型系统上基于NAPI的JS适配层
+│       ├── builtin    # 轻量级系统和小型系统上基于JSI的JS适配层
+│       └── napi       # 标准系统上基于NAPI的JS适配层
 ├── interfaces         # 对外暴露的API
 │   └── kits           # OpenHarmony SDK API, 包括Java、Js、Native, 目前只有JS
 │       └── js         # JS API
