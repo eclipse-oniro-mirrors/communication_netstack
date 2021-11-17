@@ -9,22 +9,22 @@
 
 **电话子系统网络协议栈组件**，是OpenHarmony为开发者提供的一套开发OpenHarmony应用的Http、Socket、WebSocket等网络协议栈的API的适配层框架。目前主要由以下两部分组成:
 
-1、L2上基于NAPI的JS适配层。
+1、标准系统上基于NAPI的JS适配层。
 
-2、L0、L1上基于JSI的JS适配层。
+2、轻量级系统和小型系统上基于JSI的JS适配层。
 
 ## 目录<a name="section1464106163817"></a>
 
-电话子系统网络协议栈组件源代码在 **/foundation/communication/netstack**，目录结构如下图所示：
+电话子系统网络协议栈组件源代码在 **/foundation/communication/netstack**，目录结构如下所示：
 
 ```
 /foundation/communication/netstack
 ├── frameworks         # 框架代码目录
 │   ├── js             # JS适配层
-│       ├── builtin    # L0、L1上基于JSI的JS适配层
-│       └── napi       # L2上基于NAPI的JS适配层
+│       ├── builtin    # 轻量级系统和小型系统上基于JSI的JS适配层
+│       └── napi       # 标准系统上基于NAPI的JS适配层
 ├── interfaces         # 对外暴露的API
-│   └── kits           # Huawei SDK API, 包括Java、Js、Native, 目前只有JS
+│   └── kits           # OpenHarmony SDK API, 包括Java、Js、Native, 目前只有JS
 │       └── js         # JS API
 ├── utils              # 公共工具
 │   └── log            # 日志工具
@@ -32,7 +32,86 @@
 
 ## 接口<a name="section1096322014288"></a>
 
-API介绍请参考[《OpenHarmony Device开发API参考》](https://device.harmonyos.com/cn/docs/develop/apiref/js-framework-file-0000000000611396)
+```
+export interface FetchResponse {
+  /**
+   * Server status code.
+   * @since 3
+   */
+  code: number;
+
+  /**
+   * Data returned by the success function.
+   * @since 3
+   */
+  data: string | object;
+
+  /**
+   * All headers in the response from the server.
+   * @since 3
+   */
+  headers: Object;
+}
+
+/**
+ * @Syscap SysCap.ACE.UIEngine
+ */
+export default class Fetch {
+  /**
+   * Obtains data through the network.
+   * @param options
+   */
+  static fetch(options: {
+    /**
+     * Resource URL.
+     * @since 3
+     */
+    url: string;
+
+    /**
+     * Request parameter, which can be of the string type or a JSON object.
+     * @since 3
+     */
+    data?: string | object;
+
+    /**
+     * Request header, which accommodates all attributes of the request.
+     * @since 3
+     */
+    header?: Object;
+
+    /**
+     * Request methods available: OPTIONS, GET, HEAD, POST, PUT, DELETE and TRACE. The default value is GET.
+     * @since 3
+     */
+    method?: string;
+
+    /**
+     * The return type can be text, or JSON. By default, the return type is determined based on Content-Type in the header returned by the server.
+     * @since 3
+     */
+    responseType?: string;
+
+    /**
+     * Called when the network data is obtained successfully.
+     * @since 3
+     */
+    success?: (data: FetchResponse) => void;
+
+    /**
+     * Called when the network data fails to be obtained.
+     * @since 3
+     */
+    fail?: (data: any, code: number) => void;
+
+    /**
+     * Called when the execution is completed.
+     * @since 3
+     */
+    complete?: () => void;
+  }): void;
+}
+```
 
 ## 相关仓<a name="section11683135113011"></a>
 
