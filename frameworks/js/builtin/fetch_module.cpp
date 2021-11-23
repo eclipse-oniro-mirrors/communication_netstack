@@ -43,7 +43,11 @@ JSIValue FetchModule::Fetch(const JSIValue thisVal, const JSIValue *args, uint8_
         asyncCallback->responseCallback[CB_SUCCESS] = JSI::GetNamedProperty(args[0], CB_SUCCESS);
         asyncCallback->responseCallback[CB_FAIL] = JSI::GetNamedProperty(args[0], CB_FAIL);
         asyncCallback->responseCallback[CB_COMPLETE] = JSI::GetNamedProperty(args[0], CB_COMPLETE);
-        JsAsyncWork::DispatchAsyncWork(HttpAsyncCallback::AsyncExecHttpRequest, static_cast<void *>(asyncCallback));
+        if (JsAsyncWork::DispatchAsyncWork(HttpAsyncCallback::AsyncExecHttpRequest,
+                                           static_cast<void *>(asyncCallback))) {
+            delete asyncCallback;
+            return JSI::CreateUndefined();
+        }
     } else {
         delete asyncCallback;
     }
