@@ -78,8 +78,8 @@ JSIValue HttpAsyncCallback::ResponseDataToJsValue(const ResponseData &responseDa
             JSI::SetNamedProperty(object, HttpConstant::KEY_HTTP_RESPONSE_DATA, jsonObj.get());
         }
     } else {
-        JSI::SetStringProperty(object, HttpConstant::KEY_HTTP_RESPONSE_DATA, responseData.GetData().c_str(),
-                               responseData.GetData().size());
+        JSI::SetStringPropertyWithBufferSize(object, HttpConstant::KEY_HTTP_RESPONSE_DATA,
+                                             responseData.GetData().c_str(), responseData.GetData().size());
     }
 
     std::unique_ptr<JSIVal, decltype(&JSI::ReleaseValue)> headers(JSI::CreateObject(), JSI::ReleaseValue);

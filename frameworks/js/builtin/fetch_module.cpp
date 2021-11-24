@@ -132,7 +132,8 @@ void FetchModule::GetRequestBody(JSIValue options, RequestData *requestData)
 
     if (JSI::ValueIsString(body.get())) {
         size_t size = 0;
-        std::unique_ptr<char, decltype(&FreeString)> bodyStr(JSI::ValueToString(body.get(), size), FreeString);
+        std::unique_ptr<char, decltype(&FreeString)> bodyStr(JSI::ValueToStringWithBufferSize(body.get(), size),
+                                                             FreeString);
         if (bodyStr == nullptr) {
             HTTP_REQUEST_ERROR("get body str failed");
             return;
@@ -229,7 +230,7 @@ JSIValue FetchModule::StringToArrayBuffer(const JSIValue thisVal, const JSIValue
     }
 
     size_t size = 0;
-    std::unique_ptr<char, decltype(&FreeString)> str(JSI::ValueToString(args[0], size), FreeString);
+    std::unique_ptr<char, decltype(&FreeString)> str(JSI::ValueToStringWithBufferSize(args[0], size), FreeString);
     if (str == nullptr || size == 0) {
         return JSI::CreateUndefined();
     }
