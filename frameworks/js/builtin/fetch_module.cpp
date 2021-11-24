@@ -26,7 +26,11 @@ namespace ACELite {
 void InitFetchModule(JSIValue exports)
 {
     JSI::SetModuleAPI(exports, FetchModule::HTTP_API_KEY_FETCH, FetchModule::Fetch);
-    JSI::SetModuleAPI(exports, FetchModule::HTTP_API_KEY_STRING_TO_ARRAY_BUFFER, FetchModule::StringToArrayBuffer);
+}
+
+static void FreeString(char *s)
+{
+    JSI::ReleaseString(s);
 }
 
 const char *const FetchModule::HTTP_API_KEY_FETCH = "fetch";
@@ -61,8 +65,8 @@ bool FetchModule::JsObjectToRequestData(JSIValue options, RequestData *req)
         return false;
     }
 
-    std::unique_ptr<char, decltype(&JSI::ReleaseString)> urlString(
-        JSI::GetStringProperty(options, HttpConstant::KEY_HTTP_REQUEST_URL), JSI::ReleaseString);
+    std::unique_ptr<char, decltype(&FreeString)> urlString(
+        JSI::GetStringProperty(options, HttpConstant::KEY_HTTP_REQUEST_URL), FreeString);
     if (urlString == nullptr) {
         return false;
     }
@@ -101,14 +105,13 @@ void FetchModule::GetNameValue(JSIValue nv, std::map<std::string, std::string> &
             continue;
         }
 
-        std::unique_ptr<char, decltype(&JSI::ReleaseString)> keyStr(JSI::ValueToString(key.get()), JSI::ReleaseString);
+        std::unique_ptr<char, decltype(&FreeString)> keyStr(JSI::ValueToString(key.get()), FreeString);
         if (keyStr == nullptr) {
             HTTP_REQUEST_ERROR("key to string failed");
             continue;
         }
 
-        std::unique_ptr<char, decltype(&JSI::ReleaseString)> valStr(JSI::GetStringProperty(nv, keyStr.get()),
-                                                                    JSI::ReleaseString);
+        std::unique_ptr<char, decltype(&FreeString)> valStr(JSI::GetStringProperty(nv, keyStr.get()), FreeString);
         if (valStr == nullptr) {
             HTTP_REQUEST_ERROR("get val failed");
             continue;
@@ -129,8 +132,7 @@ void FetchModule::GetRequestBody(JSIValue options, RequestData *requestData)
 
     if (JSI::ValueIsString(body.get())) {
         size_t size = 0;
-        std::unique_ptr<char, decltype(&JSI::ReleaseString)> bodyStr(JSI::ValueToString(body.get(), size),
-                                                                     JSI::ReleaseString);
+        std::unique_ptr<char, decltype(&FreeString)> bodyStr(JSI::ValueToString(body.get(), size), FreeString);
         if (bodyStr == nullptr) {
             HTTP_REQUEST_ERROR("get body str failed");
             return;
@@ -142,8 +144,7 @@ void FetchModule::GetRequestBody(JSIValue options, RequestData *requestData)
     }
 
     if (JSI::ValueIsObject(body.get())) {
-        std::unique_ptr<char, decltype(&JSI::ReleaseString)> jsonString(JSI::JsonStringify(body.get()),
-                                                                        JSI::ReleaseString);
+        std::unique_ptr<char, decltype(&FreeString)> jsonString(JSI::JsonStringify(body.get()), FreeString);
         if (jsonString == nullptr) {
             return;
         }
@@ -174,8 +175,7 @@ void FetchModule::ParseExtraData(JSIValue options, RequestData *requestData)
         }
 
         if (JSI::ValueIsString(extraData.get())) {
-            std::unique_ptr<char, decltype(&JSI::ReleaseString)> dataStr(JSI::ValueToString(extraData.get()),
-                                                                         JSI::ReleaseString);
+            std::unique_ptr<char, decltype(&FreeString)> dataStr(JSI::ValueToString(extraData.get()), FreeString);
             if (dataStr == nullptr) {
                 return;
             }
@@ -216,7 +216,7 @@ std::string FetchModule::GetMethodFromOptions(JSIValue options)
         return HttpConstant::HTTP_METHOD_GET;
     }
 
-    std::unique_ptr<char, decltype(&JSI::ReleaseString)> methodStr(JSI::ValueToString(value.get()), JSI::ReleaseString);
+    std::unique_ptr<char, decltype(&FreeString)> methodStr(JSI::ValueToString(value.get()), FreeString);
     return methodStr == nullptr ? HttpConstant::HTTP_METHOD_GET : methodStr.get();
 }
 
@@ -229,7 +229,7 @@ JSIValue FetchModule::StringToArrayBuffer(const JSIValue thisVal, const JSIValue
     }
 
     size_t size = 0;
-    std::unique_ptr<char, decltype(&JSI::ReleaseString)> str(JSI::ValueToString(args[0], size), JSI::ReleaseString);
+    std::unique_ptr<char, decltype(&FreeString)> str(JSI::ValueToString(args[0], size), FreeString);
     if (str == nullptr || size == 0) {
         return JSI::CreateUndefined();
     }
@@ -252,8 +252,7 @@ std::string FetchModule::GetResponseTypeFromOptions(JSIValue options)
         return "";
     }
 
-    std::unique_ptr<char, decltype(&JSI::ReleaseString)> responseType(JSI::ValueToString(value.get()),
-                                                                      JSI::ReleaseString);
+    std::unique_ptr<char, decltype(&FreeString)> responseType(JSI::ValueToString(value.get()), FreeString);
     return responseType == nullptr ? "" : responseType.get();
 }
 
