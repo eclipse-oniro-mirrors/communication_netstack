@@ -16,14 +16,14 @@
 #ifndef HTTP_REQUEST_H
 #define HTTP_REQUEST_H
 
+#include <map>
+#include <mutex>
+
 #include "base/security/deviceauth/deps_adapter/os_adapter/interfaces/linux/hc_log.h"
 #include "http_request_options_context.h"
 #include "netmgr_log_wrapper.h"
 
 #include <curl/curl.h>
-
-#include <map>
-#include <mutex>
 
 #define HTTP_CURL_EASY_SET_OPTION(handle, opt, data)                           \
     do {                                                                       \

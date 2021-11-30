@@ -24,6 +24,7 @@ namespace OHOS {
 namespace NetManagerStandard {
 std::string URL_SEPARATOR = "?";
 std::string URL_DELIMITER = "&";
+constexpr int32_t HEADER_OFFSET = 2;
 
 HttpRequest::HttpRequest()
 {
@@ -71,7 +72,8 @@ void HttpRequest::SetHeaders(std::string headersStr)
         if (std::string::npos == posColon) {
             headers_["null"] = "[\"" + header + "\"]";
         } else {
-            headers_["\"" + header.substr(0, posColon) + "\""] = "[\"" + header.substr(posColon + 2) + "\"]";
+            headers_["\"" + header.substr(0, posColon) + "\""] = "[\"" + header.substr(posColon
+                + HEADER_OFFSET) + "\"]";
         }
         headersStr = headersStr.substr(posSeparator + 1);
         posSeparator = headersStr.find(separator);
@@ -288,7 +290,8 @@ void HttpRequest::EmitHeader(HttpRequest *obj, const std::string &header)
 
             callbackValues[1] = object;
             napi_value callbackResult = nullptr;
-            napi_call_function(env, undefine, callbackFunc, 2, callbackValues, &callbackResult);
+            napi_call_function(env, undefine, callbackFunc, std::size(callbackValues), callbackValues,
+                &callbackResult);
             napi_close_handle_scope(env, scope);
             napi_delete_reference(env, listenerIterator->callbackRef_);
             break;

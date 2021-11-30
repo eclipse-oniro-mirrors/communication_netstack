@@ -16,10 +16,7 @@
 #include "napi_util.h"
 
 #include <codecvt>
-#include <cstdio>
 #include <locale>
-#include <vector>
-#include <memory>
 
 #include "netmgr_log_wrapper.h"
 
@@ -158,7 +155,6 @@ std::string NapiUtil::GetStringFromValue(napi_env env, napi_value value)
     char msgChars[MAX_TEXT_LENGTH] = {0};
     size_t msgLength = 0;
     NAPI_CALL_BASE(env, napi_get_value_string_utf8(env, value, msgChars, MAX_TEXT_LENGTH, &msgLength), "");
-    NETMGR_LOGD("NapiUtil GetStringFromValue msgLength = %{public}d", msgLength);
     if (msgLength > 0) {
         return std::string(msgChars, 0, msgLength);
     } else {
