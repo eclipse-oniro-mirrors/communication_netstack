@@ -21,7 +21,6 @@
 
 namespace OHOS {
 namespace NetManagerStandard {
-
 } // namespace NetManagerStandard
 } // namespace OHOS
 #endif // WEBSOCKET_NAPI_H

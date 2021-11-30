@@ -18,7 +18,5 @@
 
 namespace OHOS {
 namespace NetManagerStandard {
-//DEFINE_NETMANAGER_NAPI_LOG_LABEL("WebSocketNapi");
-
 } // namespace NetManagerStandard
 } // namespace OHOS

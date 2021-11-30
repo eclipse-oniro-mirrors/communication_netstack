@@ -149,7 +149,7 @@ private:
     int32_t ifModifiedSince_ = 0;
     bool usingCache_ = true;
     int32_t fixedLengthStreamingMode_ = -1;
-    std::string url_ = ""; 
+    std::string url_ = "";
     HttpResponse responseData_;
     std::string cafile_;
 };
