@@ -16,11 +16,11 @@
 #ifndef OHOS_ACELITE_HTTP_REQUEST_UTILS_H
 #define OHOS_ACELITE_HTTP_REQUEST_UTILS_H
 
-#include "ace_log.h"
-#include "curl/curl.h"
-#include "securec.h"
 #include <string>
 #include <vector>
+
+#include "ace_log.h"
+#include "curl/curl.h"
 
 #define HTTP_REQUEST_INFO(...)                                     \
     do {                                                           \

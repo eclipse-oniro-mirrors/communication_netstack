@@ -13,4 +13,9 @@
  * limitations under the License.
  */
 
+#ifndef TEST_OHOS_ACELITE_MEMORY_HEAP_H
+#define TEST_OHOS_ACELITE_MEMORY_HEAP_H
+
 #include "../../../../../../../ace/ace_engine_lite/interfaces/innerkits/builtin/base/memory_heap.h"
+
+#endif

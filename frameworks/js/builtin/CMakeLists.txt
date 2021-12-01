@@ -58,5 +58,6 @@ target_link_libraries(test_fetch_module curl-d)
 target_link_libraries(test_fetch_module securec)
 
 add_compile_definitions(NO_SSL_CERTIFICATION=1)
+add_compile_definitions(__LITEOS__=1)
 
 add_subdirectory(test)

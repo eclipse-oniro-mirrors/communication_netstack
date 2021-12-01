@@ -14,10 +14,10 @@
  */
 
 #include "http_request_utils.h"
-#include "http_constant.h"
-#include <cstring>
+
 #include <memory>
-#include <vector>
+
+#include "http_constant.h"
 
 namespace OHOS {
 namespace ACELite {

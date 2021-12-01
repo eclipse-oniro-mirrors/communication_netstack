@@ -19,7 +19,6 @@
 #include "../fetch_module.h"
 #include "jsi.h"
 #include "non_copyable.h"
-#include "request_data.h"
 #include "response_data.h"
 
 namespace OHOS {

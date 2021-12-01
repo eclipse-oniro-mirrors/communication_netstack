@@ -16,10 +16,8 @@
 #ifndef OHOS_ACELITE_RESPONSE_DATA_H
 #define OHOS_ACELITE_RESPONSE_DATA_H
 
-#include "http_constant.h"
 #include <map>
 #include <string>
-#include <vector>
 
 namespace OHOS {
 namespace ACELite {
@@ -27,13 +25,13 @@ class ResponseData {
 public:
     ResponseData();
 
-    void SetCode(int32_t code);
+    void SetCode(int32_t codePara);
 
     void SetErrString(const std::string &err);
 
     void ParseHeaders(const std::string &headersStr);
 
-    void AppendData(const char *data, size_t size);
+    void AppendData(const char *dataPara, size_t size);
 
     [[nodiscard]] int32_t GetCode() const;
 

@@ -14,6 +14,8 @@
  */
 
 #include "response_data.h"
+
+#include "http_constant.h"
 #include "http_request_utils.h"
 
 namespace OHOS {
