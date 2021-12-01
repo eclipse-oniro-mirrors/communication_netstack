@@ -16,43 +16,46 @@
 #ifndef OHOS_ACELITE_HTTP_CONSTANT_H
 #define OHOS_ACELITE_HTTP_CONSTANT_H
 
+#include "non_copyable.h"
+
 namespace OHOS {
 namespace ACELite {
-namespace HttpConstant {
+class HttpConstant final {
+public:
+    ACE_DISALLOW_COPY_AND_MOVE(HttpConstant);
+    static const int HTTP_RESPONSE_CODE_INVALID;
 
-extern const int HTTP_RESPONSE_CODE_INVALID;
+    static const char *const HTTP_RESPONSE_TYPE_JSON;
 
-extern const char *const HTTP_RESPONSE_TYPE_JSON;
+    static const char *const HTTP_HEADER_SEPARATOR;
 
-extern const char *const HTTP_HEADER_SEPARATOR;
+    static const char *const HTTP_DEFAULT_USER_AGENT;
 
-extern const char *const HTTP_DEFAULT_USER_AGENT;
+    static const char *const HTTP_DEFAULT_CONTENT_TYPE;
+    static const char *const HTTP_HEADER_KEY_CONTENT_TYPE;
+    static const char *const HTTP_CONTENT_TYPE_URL_ENCODE;
+    static const char *const HTTP_CONTENT_TYPE_JSON;
 
-extern const char *const HTTP_DEFAULT_CONTENT_TYPE;
-extern const char *const HTTP_HEADER_KEY_CONTENT_TYPE;
-extern const char *const HTTP_CONTENT_TYPE_URL_ENCODE;
-extern const char *const HTTP_CONTENT_TYPE_JSON;
+    static const char *const HTTP_URL_PARAM_SEPARATOR;
+    static const char *const HTTP_URL_PARAM_DELIMITER;
 
-extern const char *const HTTP_URL_PARAM_SEPARATOR;
-extern const char *const HTTP_URL_PARAM_DELIMITER;
+    static const char *const HTTP_METHOD_GET;
+    static const char *const HTTP_METHOD_HEAD;
+    static const char *const HTTP_METHOD_OPTIONS;
+    static const char *const HTTP_METHOD_TRACE;
+    static const char *const HTTP_METHOD_DELETE;
+    static const char *const HTTP_METHOD_POST;
+    static const char *const HTTP_METHOD_PUT;
 
-extern const char *const HTTP_METHOD_GET;
-extern const char *const HTTP_METHOD_HEAD;
-extern const char *const HTTP_METHOD_OPTIONS;
-extern const char *const HTTP_METHOD_TRACE;
-extern const char *const HTTP_METHOD_DELETE;
-extern const char *const HTTP_METHOD_POST;
-extern const char *const HTTP_METHOD_PUT;
+    static const char *const KEY_HTTP_RESPONSE_CODE;
+    static const char *const KEY_HTTP_RESPONSE_DATA;
+    static const char *const KEY_HTTP_RESPONSE_HEADERS;
 
-extern const char *const KEY_HTTP_RESPONSE_CODE;
-extern const char *const KEY_HTTP_RESPONSE_DATA;
-extern const char *const KEY_HTTP_RESPONSE_HEADERS;
-
-extern const char *const KEY_HTTP_REQUEST_URL;
-extern const char *const KEY_HTTP_REQUEST_DATA;
-extern const char *const KEY_HTTP_REQUEST_HEADER;
-extern const char *const KEY_HTTP_REQUEST_METHOD;
-extern const char *const KEY_HTTP_REQUEST_RESPONSE_TYPE;
+    static const char *const KEY_HTTP_REQUEST_URL;
+    static const char *const KEY_HTTP_REQUEST_DATA;
+    static const char *const KEY_HTTP_REQUEST_HEADER;
+    static const char *const KEY_HTTP_REQUEST_METHOD;
+    static const char *const KEY_HTTP_REQUEST_RESPONSE_TYPE;
 
 } // namespace HttpConstant
 } // namespace ACELite

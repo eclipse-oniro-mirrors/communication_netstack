@@ -16,15 +16,13 @@
 #ifndef OHOS_ACELITE_HTTP_REQUEST_H
 #define OHOS_ACELITE_HTTP_REQUEST_H
 
+#include <mutex>
+#include <vector>
+
 #include "curl/curl.h"
-#include "http_constant.h"
 #include "non_copyable.h"
 #include "request_data.h"
 #include "response_data.h"
-#include "securec.h"
-#include <memory>
-#include <mutex>
-#include <string>
 
 namespace OHOS {
 namespace ACELite {

@@ -14,8 +14,11 @@
  */
 
 #include "fetch_module.h"
+
+#include <memory>
+
 #include "http_request/http_async_callback.h"
-#include "http_request/http_request.h"
+#include "http_request/http_constant.h"
 #include "http_request/http_request_utils.h"
 #include "js_async_work.h"
 #include "securec.h"

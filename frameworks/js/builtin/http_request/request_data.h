@@ -16,7 +16,6 @@
 #ifndef OHOS_ACELITE_REQUEST_DATA_H
 #define OHOS_ACELITE_REQUEST_DATA_H
 
-#include <array>
 #include <map>
 #include <string>
 
@@ -26,13 +25,13 @@ class RequestData {
 public:
     RequestData();
 
-    void SetUrl(const std::string &url);
+    void SetUrl(const std::string &urlPara);
 
-    void SetMethod(const std::string &method);
+    void SetMethod(const std::string &methodPara);
 
     void SetHeader(const std::string &key, const std::string &val);
 
-    void SetBody(const std::string &body);
+    void SetBody(const std::string &bodyPara);
 
     void SetResponseType(const std::string &respType);
 

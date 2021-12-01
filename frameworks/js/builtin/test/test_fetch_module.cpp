@@ -14,7 +14,7 @@
  */
 
 #include "../fetch_module.h"
-#include "../http_request/http_async_callback.h"
+#include "../http_request/http_constant.h"
 #include "../http_request/http_request_utils.h"
 #include "jerryscript-core.h"
 #include "js_async_work.h"
@@ -80,7 +80,7 @@ JSIValue TestCallbackOnSuccess(const JSIValue thisVal, const JSIValue *args, uin
                       static_cast<int>(JSI::GetNumberProperty(para, HttpConstant::KEY_HTTP_RESPONSE_CODE)));
 
     size_t size = 0;
-    char *data = JSI::GetStringProperty(para, HttpConstant::KEY_HTTP_RESPONSE_DATA, size);
+    char *data = JSI::GetStringPropertyWithBufferSize(para, HttpConstant::KEY_HTTP_RESPONSE_DATA, size);
     std::string body;
     for (uint32_t index = 0; index < size; ++index) {
         if (data[index] != 0) {

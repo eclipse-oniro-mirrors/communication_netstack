@@ -18,8 +18,6 @@
 
 #include <cstring>
 
-#define __LITEOS__
-
 #define HILOG_ERROR(mod, ...) \
     do {                      \
         printf(__VA_ARGS__);  \

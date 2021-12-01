@@ -19,7 +19,6 @@
 #include "http_request/http_request.h"
 #include "jsi.h"
 #include "non_copyable.h"
-#include <map>
 
 namespace OHOS {
 namespace ACELite {

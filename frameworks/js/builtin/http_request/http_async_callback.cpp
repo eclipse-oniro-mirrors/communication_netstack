@@ -14,11 +14,13 @@
  */
 
 #include "http_async_callback.h"
-#include "http_request.h"
-#include "http_request_utils.h"
-#include "securec.h"
+
 #include <algorithm>
 #include <memory>
+
+#include "http_constant.h"
+#include "http_request.h"
+#include "http_request_utils.h"
 
 namespace OHOS {
 namespace ACELite {

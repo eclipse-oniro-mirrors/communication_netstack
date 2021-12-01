@@ -14,8 +14,11 @@
  */
 
 #include "http_request.h"
+
+#include <memory>
+
+#include "http_constant.h"
 #include "http_request_utils.h"
-#include <cstring>
 
 #define ACE_CURL_EASY_SET_OPTION(handle, opt, data, respData)              \
     do {                                                                   \
@@ -23,22 +26,22 @@
         if (result != CURLE_OK) {                                          \
             const char *err = curl_easy_strerror(result);                  \
             HTTP_REQUEST_ERROR("Failed to set option: %s, %s", #opt, err); \
-            respData->SetErrString(err);                                   \
-            respData->SetCode(result);                                     \
+            (respData)->SetErrString(err);                                 \
+            (respData)->SetCode(result);                                   \
             return false;                                                  \
         }                                                                  \
     } while (0)
 
-#define ACE_CURL_EASY_PERFORM(handle, reqData, respData)                                       \
-    do {                                                                                       \
-        CURLcode result = curl_easy_perform(handle);                                           \
-        if (result != CURLE_OK) {                                                              \
-            const char *err = curl_easy_strerror(result);                                      \
-            HTTP_REQUEST_ERROR("Failed to fetch, url:%s, %s", reqData->GetUrl().c_str(), err); \
-            respData->SetErrString(err);                                                       \
-            respData->SetCode(result);                                                         \
-            return false;                                                                      \
-        }                                                                                      \
+#define ACE_CURL_EASY_PERFORM(handle, reqData, respData)                                         \
+    do {                                                                                         \
+        CURLcode result = curl_easy_perform(handle);                                             \
+        if (result != CURLE_OK) {                                                                \
+            const char *err = curl_easy_strerror(result);                                        \
+            HTTP_REQUEST_ERROR("Failed to fetch, url:%s, %s", (reqData)->GetUrl().c_str(), err); \
+            (respData)->SetErrString(err);                                                       \
+            (respData)->SetCode(result);                                                         \
+            return false;                                                                        \
+        }                                                                                        \
     } while (0)
 
 #define ACE_CURL_EASY_GET_INFO(handle, opt, data, respData)              \
@@ -47,8 +50,8 @@
         if (result != CURLE_OK) {                                        \
             const char *err = curl_easy_strerror(result);                \
             HTTP_REQUEST_ERROR("Failed to get info: %s, %s", #opt, err); \
-            respData->SetErrString(err);                                 \
-            respData->SetCode(result);                                   \
+            (respData)->SetErrString(err);                               \
+            (respData)->SetCode(result);                                 \
             return false;                                                \
         }                                                                \
     } while (0)
