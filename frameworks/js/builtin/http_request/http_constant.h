@@ -57,7 +57,7 @@ public:
     static const char *const KEY_HTTP_REQUEST_METHOD;
     static const char *const KEY_HTTP_REQUEST_RESPONSE_TYPE;
 
-} // namespace HttpConstant
+};
 } // namespace ACELite
 } // namespace OHOS
 

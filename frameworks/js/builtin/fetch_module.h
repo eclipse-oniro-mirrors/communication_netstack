@@ -16,7 +16,7 @@
 #ifndef OHOS_ACELITE_FETCH_MODULE_H
 #define OHOS_ACELITE_FETCH_MODULE_H
 
-#include "http_request/http_request.h"
+#include "http_request/request_data.h"
 #include "jsi.h"
 #include "non_copyable.h"
 
