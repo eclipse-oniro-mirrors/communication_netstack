@@ -28,7 +28,6 @@ UDPSocket::UDPSocket(Baseinfo remInfo)
 UDPSocket::~UDPSocket()
 {
     UdpClose(this->remInfo.socketfd);
-    NETMGR_LOGD("~UDPSocket");
 }
 
 void UDPSocket::GetJSParameter(napi_env &env, napi_value *parameters, Baseinfo*&asyncContext)

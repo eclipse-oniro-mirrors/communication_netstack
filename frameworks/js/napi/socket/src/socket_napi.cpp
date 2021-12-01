@@ -60,7 +60,6 @@ bool MatchSocketEventType(const std::string &type, const std::string &goalTypeSt
 
 int32_t GetSocketEventType(const std::string &type)
 {
-    NETMGR_LOGD("GetSocketEventType %{public}s", type.c_str());
     if (MatchSocketEventType(type, MESSAGE_RECEIVE)) {
         return MESSAGE_SOCKET_STATE;
     } else if (MatchSocketEventType(type, LISTENING_RECEIVE)) {
@@ -78,10 +77,8 @@ int32_t GetSocketEventType(const std::string &type)
 static void EmitUdpEvent(UDPSocket *obj, const std::string &type, const std::string &message)
 {
     int32_t eventType = GetSocketEventType(type);
-    NETMGR_LOGD("EmitUdpEvent UDP count = %{public}d", (int32_t)g_udpEventListenerList.size());
     for (std::list<UdpEventListener>::iterator listenerIterator = g_udpEventListenerList.begin();
         listenerIterator != g_udpEventListenerList.end(); ++listenerIterator) {
-        NETMGR_LOGD("EmitUdpEvent  obj %{public}p, %{public}p", obj, listenerIterator->udpSocket_);
         if (listenerIterator->udpSocket_ == obj && listenerIterator->eventType_ == eventType) {
             napi_env env = listenerIterator->env_;
             napi_handle_scope scope = nullptr;
@@ -131,7 +128,6 @@ static void NativeUdpBind(napi_env env, void *data)
         std::string error("error");
         EmitUdpEvent(asyncContext->udpRequestInfo_, "error",  error);
     }
-    NETMGR_LOGD("NativeUdpBind errorCode:%{public}d", asyncContext->errorCode);
 }
 
 static void UdpBindCallback(napi_env env, napi_status status, void *data)
@@ -245,7 +241,6 @@ static void NativeUdpSend(napi_env env, void *data)
 
     struct sockaddr_in addr;
     asyncContext->udpRequestInfo_->GetSocketInfo(addr, asyncContext);
-    NETMGR_LOGD("send data:%{public}s", asyncContext->data.c_str());
     
     if (!asyncContext->isClose) {
         asyncContext->errorCode = asyncContext->udpRequestInfo_->UdpSend(asyncContext->socketfd,
@@ -259,7 +254,6 @@ static void NativeUdpSend(napi_env env, void *data)
         std::string error("error");
         EmitUdpEvent(asyncContext->udpRequestInfo_, "error",  error);
     }
-    NETMGR_LOGD("NativeUdpSend errorCode:%{public}d", asyncContext->errorCode);
 }
 
 static void UdpSendCallback(napi_env env, napi_status status, void *data)
@@ -318,7 +312,6 @@ static void NativeUdpClose(napi_env env, void *data)
         std::string error("error");
         EmitUdpEvent(asyncContext->udpRequestInfo_, "error",  error);
     }
-    NETMGR_LOGD("NativeUdpClose errorCode:%{public}d", asyncContext->errorCode);
 }
 
 static void UdpCloseCallback(napi_env env, napi_status status, void *data)
@@ -529,9 +522,6 @@ napi_value UdpBind(napi_env env, napi_callback_info info)
         g_onInfoList[flag] = *asyncContext;
         objectInfo->remInfo = *asyncContext;
     }
-
-    NETMGR_LOGD("GetSubscribeInfo parameterCount = %{public}d objectInfo = %{public}p, asyncContext = %{public}p",
-        (int32_t)parameterCount, objectInfo, asyncContext);
 
     if (parameterCount == PARAMS_COUNT) {
         if (NapiUtil::MatchValueType(env, parameters[1], napi_function)) {
@@ -766,7 +756,6 @@ napi_value UdpClose(napi_env env, napi_callback_info info)
 
 napi_value UdpGetState(napi_env env, napi_callback_info info)
 {
-    NETMGR_LOGD("udpGetState start");
     std::size_t parameterCount = 1;
     napi_value parameters[1] = {0};
     napi_value thisVar = nullptr;
@@ -978,7 +967,6 @@ napi_value UdpOn(napi_env env, napi_callback_info info)
     if (eventType != NONE_EVENT_TYPE) {
         g_udpEventListenerList.push_back(listener);
         result = thisVar;
-        NETMGR_LOGD("ON Finish = %{public}d", (int32_t)g_udpEventListenerList.size());
     }
 
     return thisVar;
@@ -1031,7 +1019,6 @@ napi_value UdpOff(napi_env env, napi_callback_info info)
             return (listener.udpSocket_ == objectInfo && listener.eventType_ == eventType);
         });
         result = thisVar;
-        NETMGR_LOGD("Off Finish");
     }
 
     return thisVar;
@@ -1040,10 +1027,8 @@ napi_value UdpOff(napi_env env, napi_callback_info info)
 static void EmitTcpEvent(TCPSocket *obj, const std::string &type, const std::string &message)
 {
     int32_t eventType = GetSocketEventType(type);
-    NETMGR_LOGD("EmitTcpEvent count = %{public}d", (int32_t)g_tcpEventListenerList.size());
     for (std::list<TcpEventListener>::iterator listenerIterator = g_tcpEventListenerList.begin();
         listenerIterator != g_tcpEventListenerList.end(); ++listenerIterator) {
-        NETMGR_LOGD("EmitTcpEvent obj %{public}p, %{public}p", obj, listenerIterator->tcpSocket_);
         if (listenerIterator->tcpSocket_ == obj && listenerIterator->eventType_ == eventType) {
             napi_env env = listenerIterator->env_;
             napi_handle_scope scope = nullptr;
@@ -1105,8 +1090,6 @@ static void NativeTcpBind(napi_env env, void *data)
         std::string error = asyncContext->errorString_;
         EmitTcpEvent(asyncContext->tcpSocket_, "error",  error);
     }
-
-    NETMGR_LOGD("NativeTcpBind errorCode:%{public}d", asyncContext->errorCode_);
 }
 
 static void TcpBindCallback(napi_env env, napi_status status, void *data)
@@ -1185,8 +1168,6 @@ static void NativeTcpConnect(napi_env env, void *data)
         std::string error = asyncContext->errorString_;
         EmitTcpEvent(asyncContext->tcpSocket_, "error",  error);
     }
-
-    NETMGR_LOGD("NativeTcpConnect errorCode:%{public}d", asyncContext->errorCode_);
 }
 
 static void TcpConnectCallback(napi_env env, napi_status status, void *data)
@@ -1239,7 +1220,6 @@ static void NativeTcpSend(napi_env env, void *data)
 
     struct sockaddr_in addr;
     asyncContext->tcpSocket_->GetSocketInfo(addr, asyncContext);
-    NETMGR_LOGD("send data:%{public}s", asyncContext->data.c_str());
     
     if (!asyncContext->isClose) {
         asyncContext->errorCode_ = asyncContext->tcpSocket_->TcpSend(asyncContext->socketfd_,
@@ -1251,8 +1231,6 @@ static void NativeTcpSend(napi_env env, void *data)
         std::string error = asyncContext->errorString_;
         EmitTcpEvent(asyncContext->tcpSocket_, "error",  error);
     }
-
-    NETMGR_LOGD("NativeTcpSend errorCode:%{public}d", asyncContext->errorCode_);
 }
 
 static void TcpSendCallback(napi_env env, napi_status status, void *data)
@@ -1314,8 +1292,6 @@ static void NativeTcpClose(napi_env env, void *data)
         std::string error("error");
         EmitTcpEvent(asyncContext->tcpSocket_, "error",  error);
     }
-
-    NETMGR_LOGD("NativeTcpClose errorCode:%{public}d", asyncContext->errorCode_);
 }
 
 static void TcpCloseCallback(napi_env env, napi_status status, void *data)
@@ -1491,21 +1467,18 @@ static void NativeTcpSetExtraOptions(napi_env env, void *data)
         asyncContext->errorCode_ = asyncContext->tcpSocket_->TcpSetSockopt(asyncContext->socketfd_,
             SOL_SOCKET, SO_KEEPALIVE, (void *) &keepAlive, sizeof (keepAlive));
     }
-    NETMGR_LOGD("NativeSetExtraOptionsSend keepAlive errorCode:%{public}d", asyncContext->errorCode_);
 
     bool OOBInline = asyncContext->tcpExtraOptions_.GetOOBInline();
     if (OOBInline) {
         asyncContext->errorCode_ = asyncContext->tcpSocket_->TcpSetSockopt(asyncContext->socketfd_,
             SOL_SOCKET, SO_OOBINLINE, (void *) &OOBInline, sizeof (OOBInline));
     }
-    NETMGR_LOGD("NativeSetExtraOptionsSend OOBInline errorCode:%{public}d", asyncContext->errorCode_);
 
     bool TCPNoDelay = asyncContext->tcpExtraOptions_.GetTCPNoDelay();
     if (TCPNoDelay) {
         asyncContext->errorCode_ = asyncContext->tcpSocket_->TcpSetSockopt(asyncContext->socketfd_,
             IPPROTO_TCP, TCP_NODELAY, (void *) &TCPNoDelay, sizeof (TCPNoDelay));
     }
-    NETMGR_LOGD("NativeSetExtraOptionsSend TCPNoDelay errorCode:%{public}d", asyncContext->errorCode_);
 
     bool on = asyncContext->tcpExtraOptions_.GetSocketLingerOn();
     int32_t intLinger = asyncContext->tcpExtraOptions_.GetSocketLingerLinger();
@@ -1516,7 +1489,6 @@ static void NativeTcpSetExtraOptions(napi_env env, void *data)
         asyncContext->errorCode_ = asyncContext->tcpSocket_->TcpSetSockopt(asyncContext->socketfd_,
             SOL_SOCKET, SO_LINGER, (void *) &linger, sizeof (linger));
     }
-    NETMGR_LOGD("NativeSetExtraOptionsSend errorCode:%{public}d", asyncContext->errorCode_);
 
     if (asyncContext->errorCode_ < 0) {
         std::string error = strerror(errno);
@@ -2012,7 +1984,6 @@ napi_value TcpOn(napi_env env, napi_callback_info info)
     if (eventType != NONE_EVENT_TYPE) {
         g_tcpEventListenerList.push_back(listener);
         result = thisVar;
-        NETMGR_LOGD("ON Finish = %{public}d", (int32_t)g_tcpEventListenerList.size());
     }
 
     return thisVar;
@@ -2063,7 +2034,6 @@ napi_value TcpOff(napi_env env, napi_callback_info info)
             return (listener.tcpSocket_ == objectInfo && listener.eventType_ == eventType);
         });
         result = thisVar;
-        NETMGR_LOGD("Off Finish");
     }
 
     return thisVar;

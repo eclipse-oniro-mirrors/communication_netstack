@@ -29,7 +29,6 @@ TCPSocket::TCPSocket(TcpBaseContext remInfo)
 TCPSocket::~TCPSocket()
 {
     TcpClose(this->tcpbaseContext_.socketfd_);
-    NETMGR_LOGD("~TCPSocket");
 }
 
 void TCPSocket::GetJSParameter(napi_env &env, napi_value *parameters, TcpBaseContext*&asyncContext)

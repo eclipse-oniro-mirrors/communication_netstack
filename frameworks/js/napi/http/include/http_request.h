@@ -54,22 +54,17 @@ public:
     void EmitHeader(HttpRequest *obj, const std::string &header);
 
     bool NativeRequest(HttpRequestOptionsContext *asyncContext);
-    void NativeDestroy();
-    void NativeOn();
-    void NativeOff();
 
 private:
     static size_t OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData)
     {
         ((std::string *)userData)->append((char *)data, 0, size * memBytes);
-        NETMGR_LOGD("OnWritingMemoryBody");
         return size * memBytes;
     }
 
     static size_t OnWritingMemoryHeader(const void *data, size_t size, size_t memBytes, void *userData)
     {
         ((std::string *)userData)->append((char *)data, 0, size * memBytes);
-        NETMGR_LOGD("OnWritingMemoryHeader");
         return size * memBytes;
     }
 
