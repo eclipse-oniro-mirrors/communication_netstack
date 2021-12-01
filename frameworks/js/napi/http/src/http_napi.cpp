@@ -144,7 +144,6 @@ static void RequestCallback(napi_env env, napi_status status, void *data)
         NapiUtil::SetPropertyArray(env, callbackValue, "cookie", cookie);
     } else {
         callbackValue = NapiUtil::CreateErrorMessage(env, "Request failed");
-        NETMGR_LOGE("Request failed");
     }
     if (asyncContext->callbackRef_ != nullptr) {
         napi_value callbackFunc = nullptr;
@@ -162,10 +161,8 @@ static void RequestCallback(napi_env env, napi_status status, void *data)
         NAPI_CALL_RETURN_VOID(env, napi_delete_reference(env, asyncContext->callbackRef_));
     } else if (asyncContext->deferred_ != nullptr) {
         if (asyncContext->resolved_) {
-            NETMGR_LOGD("Resolves  deferred");
             napi_resolve_deferred(env, asyncContext->deferred_, callbackValue);
         } else {
-            NETMGR_LOGD("Rejects  deferred");
             napi_reject_deferred(env, asyncContext->deferred_, callbackValue);
         }
     }
@@ -206,7 +203,6 @@ napi_value Request(napi_env env, napi_callback_info info)
         NETMGR_LOGE("Http Request address is null");
         return nullptr;
     }
-    NETMGR_LOGD("Http address is %{public}p", objectInfo);
 
     char url[OHOS::NetManagerStandard::URL_ARRAY_LENGTH] = {0};
     size_t strLen = 0;
@@ -353,7 +349,7 @@ napi_value On(napi_env env, napi_callback_info info)
     NAPI_CALL(env,
         napi_get_value_string_utf8(
             env, parameters[0], eventTypeChars, OHOS::NetManagerStandard::URL_ARRAY_LENGTH - 1, &strLen));
-    NETMGR_LOGD("On Start napi_get_cb_info %{public}s, %{public}d", eventTypeChars, (int32_t)strLen);
+
     napi_ref callbackRef = nullptr;
 
     if (paraCount == 2) {

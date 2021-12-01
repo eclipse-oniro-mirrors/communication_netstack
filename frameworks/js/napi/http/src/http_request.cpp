@@ -35,7 +35,6 @@ HttpRequest::HttpRequest()
 HttpRequest::~HttpRequest()
 {
     curl_global_cleanup();
-    NETMGR_LOGD("~HttpRequest");
 }
 /*
  * Init curl all thread only
@@ -48,7 +47,7 @@ bool HttpRequest::Initialize()
     }
 
     if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
-        NETMGR_LOGD("curl_global_init function initialize failed");
+        NETMGR_LOGD("curl initialize failed");
         return false;
     }
     return true;
@@ -95,11 +94,11 @@ void HttpRequest::SetHeader(CURL *curl)
 void HttpRequest::SetOptionURL(CURL *curl, HttpRequestOptionsContext *asyncContext)
 {
     if (curl == nullptr || asyncContext == nullptr) {
-        NETMGR_LOGE("set curl url option, pointer address in null");
+        NETMGR_LOGE("curl or asyncContext pointer address is empty");
         return;
     }
     std::string url(asyncContext->GetUrl());
-    NETMGR_LOGD("SetOptionURL : %{public}s", url.c_str());
+
     std::size_t index = url.find(URL_SEPARATOR);
     std::string caFile(asyncContext->GetCaFile());
     bool isCaFile = IsCaFile(caFile);
@@ -107,7 +106,7 @@ void HttpRequest::SetOptionURL(CURL *curl, HttpRequestOptionsContext *asyncConte
         int32_t offset = url.rfind(URL_SEPARATOR);
         std::string uri = url.substr(0, offset);
         std::string param = url.substr(offset + 1);
-        NETMGR_LOGD("final url : %{public}s, (%{public}s)", uri.c_str(), param.c_str());
+
         curl_easy_setopt(curl, CURLOPT_URL, uri.c_str());
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, param.c_str());
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true);
@@ -115,10 +114,8 @@ void HttpRequest::SetOptionURL(CURL *curl, HttpRequestOptionsContext *asyncConte
         if (url.substr(0, URL_PREFIX_LENGTH) == std::string("https://")) {
             if (!isCaFile) {
                 curl_easy_setopt(curl, CURLOPT_CAINFO, "/etc/ssl/cacert.pem");
-                NETMGR_LOGD("Default CA filepath : /data/cacert.pem");
             } else {
                 curl_easy_setopt(curl, CURLOPT_CAINFO, caFile.c_str());
-                NETMGR_LOGD("Input CA filepath : %{public}s", caFile.c_str());
             }
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -179,8 +176,7 @@ bool HttpRequest::SetOptionForGet(CURL *curl, HttpRequestOptionsContext *asyncCo
         NETMGR_LOGE("set curl url option, pointer address in null");
         return false;
     }
-    NETMGR_LOGD("begin to set option for get and encode final url %{public}s, extraData %{public}s",
-        asyncContext->GetUrl().c_str(), asyncContext->GetExtraData().c_str());
+
     std::string url(asyncContext->GetUrl());
     if (!asyncContext->GetExtraData().empty()) {
         std::size_t index = url.find(URL_SEPARATOR);
@@ -206,28 +202,25 @@ bool HttpRequest::SetOptionForGet(CURL *curl, HttpRequestOptionsContext *asyncCo
             int32_t offset = url.rfind(URL_SEPARATOR);
             std::string uri = url.substr(0, offset);
             std::string param = url.substr(offset + 1);
-            NETMGR_LOGD("final url : %{public}s, (%{public}s)", uri.c_str(), param.c_str());
             curl_easy_setopt(curl, CURLOPT_URL, uri.c_str());
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, param.c_str());
             curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true);
             curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
         }
     }
-    NETMGR_LOGD("final url : %{public}s, (%{public}d)", url.c_str(), (int32_t)url.length());
 
     return true;
 }
 
 bool HttpRequest::GetCurlWriteData(HttpRequestOptionsContext *asyncContext)
 {
-    NETMGR_LOGD("GetCurlWriteData Begin");
     if (asyncContext == nullptr) {
         return false;
     }
 
     CURL *curl = curl_easy_init();
     if (curl == nullptr) {
-        NETMGR_LOGD("GetCurlWriteData curl handle is null pointer");
+        NETMGR_LOGD("curl pointer is null");
         return false;
     }
     SetOptionURL(curl, asyncContext);
@@ -246,7 +239,7 @@ bool HttpRequest::GetCurlWriteData(HttpRequestOptionsContext *asyncContext)
 
     CURLcode res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
-        NETMGR_LOGE("GetCurlWriteData, error : %{public}s, num: %{public}d", curl_easy_strerror(res), res);
+        NETMGR_LOGE("curl easy perform error : %{public}s, num: %{public}d", curl_easy_strerror(res), res);
         curl_easy_cleanup(curl);
         return false;
     }
@@ -264,12 +257,9 @@ bool HttpRequest::GetCurlWriteData(HttpRequestOptionsContext *asyncContext)
 
 void HttpRequest::EmitHeader(HttpRequest *obj, const std::string &header)
 {
-    NETMGR_LOGD("EmitHeader --------------- count = %{public}d", (int32_t)g_eventListenerList.size());
     struct EventListener *eventListener = nullptr;
     for (std::list<EventListener>::iterator listenerIterator = g_eventListenerList.begin();
          listenerIterator != g_eventListenerList.end(); ++listenerIterator) {
-        NETMGR_LOGD(
-            "EmitHeader --------------- obj %{public}p, %{public}p", obj, listenerIterator->httpRequestInfo_);
         if (listenerIterator->httpRequestInfo_ == obj) {
             struct EventListener eventListtmp = *listenerIterator;
             eventListener = &eventListtmp;
@@ -306,21 +296,6 @@ void HttpRequest::EmitHeader(HttpRequest *obj, const std::string &header)
 bool HttpRequest::NativeRequest(HttpRequestOptionsContext *asyncContext)
 {
     return GetCurlWriteData(asyncContext);
-}
-
-void HttpRequest::NativeDestroy()
-{
-    NETMGR_LOGD("destroy start");
-}
-
-void HttpRequest::NativeOn()
-{
-    NETMGR_LOGD("on start");
-}
-
-void HttpRequest::NativeOff()
-{
-    NETMGR_LOGD("off start");
 }
 
 bool HttpRequest::IsCaFile(const std::string &caFile)
