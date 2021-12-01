@@ -47,7 +47,7 @@ bool HttpRequest::Initialize()
     }
 
     if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
-        NETMGR_LOGD("curl initialize failed");
+        NETMGR_LOGD("curl global init failed");
         return false;
     }
     return true;
@@ -220,7 +220,7 @@ bool HttpRequest::GetCurlWriteData(HttpRequestOptionsContext *asyncContext)
 
     CURL *curl = curl_easy_init();
     if (curl == nullptr) {
-        NETMGR_LOGD("curl pointer is null");
+        NETMGR_LOGD("curl easy init failed");
         return false;
     }
     SetOptionURL(curl, asyncContext);
