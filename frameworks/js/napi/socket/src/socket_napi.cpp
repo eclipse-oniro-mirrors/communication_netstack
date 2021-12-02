@@ -760,8 +760,6 @@ napi_value UdpGetState(napi_env env, napi_callback_info info)
     napi_value parameters[1] = {0};
     napi_value thisVar = nullptr;
     void *data = nullptr;
-    uint32_t flag = 0;
-    bool isFdExist = false;
 
     NAPI_CALL(env, napi_get_cb_info(env, info, &parameterCount, parameters, &thisVar, &data));
 
@@ -779,17 +777,6 @@ napi_value UdpGetState(napi_env env, napi_callback_info info)
         asyncContext = requestKey->second;
     } else {
         NETMGR_LOGE("UdpGetState not find socket pointer");
-        return nullptr;
-    }
-
-    for (int i = 0; i < g_onInfoList.size(); i++) {
-        if (objectInfo->remInfo.socketfd == g_onInfoList.at(i).socketfd) {
-            flag = i;
-            isFdExist = true;
-            break;
-        }
-    }
-    if (!isFdExist) {
         return nullptr;
     }
 
