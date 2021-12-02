@@ -21,7 +21,6 @@
 
 namespace OHOS {
 namespace NetManagerStandard {
-
 static int32_t FindMethodIndex(const std::string &key)
 {
     std::vector<std::string> methodVector = {
@@ -250,7 +249,7 @@ napi_value Request(napi_env env, napi_callback_info info)
             &(asyncContext->work_)));
     napi_status resultStatus = napi_queue_async_work(env, asyncContext->work_);
     if (resultStatus == napi_ok) {
-        NETMGR_LOGD("Queue Async Work Successful");
+        NETMGR_LOGI("Queue Async Work Successful");
     }
     return result;
 }
@@ -361,7 +360,6 @@ napi_value On(napi_env env, napi_callback_info info)
     if (eventType != NONE_EVENT_TYPE) {
         g_eventListenerList.push_back(listener);
         result = thisVar;
-        NETMGR_LOGD("ON Finish = %{public}d", (int32_t)g_eventListenerList.size());
     }
 
     return thisVar;
@@ -575,7 +573,7 @@ napi_value HttpPropertyInit(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_PROPERTY("VERSION", version)};
 
     NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
-    NETMGR_LOGD("HttpPropertyInit End");
+
     return exports;
 }
 

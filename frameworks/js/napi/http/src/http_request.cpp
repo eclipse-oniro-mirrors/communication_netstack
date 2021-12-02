@@ -94,7 +94,7 @@ void HttpRequest::SetHeader(CURL *curl)
 void HttpRequest::SetOptionURL(CURL *curl, HttpRequestOptionsContext *asyncContext)
 {
     if (curl == nullptr || asyncContext == nullptr) {
-        NETMGR_LOGE("curl or asyncContext pointer address is empty");
+        NETMGR_LOGE("The parameter of curl or asyncContext is nullptr");
         return;
     }
     std::string url(asyncContext->GetUrl());
@@ -145,7 +145,7 @@ void HttpRequest::SetOptionURL(CURL *curl, HttpRequestOptionsContext *asyncConte
 void HttpRequest::SetMethod(CURL *curl, HttpRequestOptionsContext *asyncContext)
 {
     if (curl == nullptr || asyncContext == nullptr) {
-        NETMGR_LOGE("SetMethod failed");
+        NETMGR_LOGE("The parameter of curl or asyncContext is nullptr");
         return;
     }
     RequestMethod method = asyncContext->GetRequestMethod();
@@ -162,7 +162,7 @@ void HttpRequest::SetMethod(CURL *curl, HttpRequestOptionsContext *asyncContext)
 bool HttpRequest::SetOptionForPost(CURL *curl, HttpRequestOptionsContext *asyncContext)
 {
     if (curl == nullptr || asyncContext == nullptr) {
-        NETMGR_LOGE("set curl url option, pointer address in null");
+        NETMGR_LOGE("The parameter of curl or asyncContext is nullptr");
         return false;
     }
     HTTP_CURL_EASY_SET_OPTION(curl, CURLOPT_URL, asyncContext->GetUrl().c_str());
@@ -173,7 +173,7 @@ bool HttpRequest::SetOptionForPost(CURL *curl, HttpRequestOptionsContext *asyncC
 bool HttpRequest::SetOptionForGet(CURL *curl, HttpRequestOptionsContext *asyncContext)
 {
     if (curl == nullptr || asyncContext == nullptr) {
-        NETMGR_LOGE("set curl url option, pointer address in null");
+        NETMGR_LOGE("The parameter of curl or asyncContext is nullptr");
         return false;
     }
 
@@ -220,7 +220,7 @@ bool HttpRequest::GetCurlWriteData(HttpRequestOptionsContext *asyncContext)
 
     CURL *curl = curl_easy_init();
     if (curl == nullptr) {
-        NETMGR_LOGE("curl easy init failed");
+        NETMGR_LOGE("The parameter of curl is nullptr");
         return false;
     }
     SetOptionURL(curl, asyncContext);

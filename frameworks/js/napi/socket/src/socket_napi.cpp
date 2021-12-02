@@ -544,7 +544,7 @@ napi_value UdpBind(napi_env env, napi_callback_info info)
             &(asyncContext->work_)));
     napi_status resultStatus = napi_queue_async_work(env, asyncContext->work_);
     if (resultStatus == napi_ok) {
-        NETMGR_LOGD("Udp bind Async Work Successful");
+        NETMGR_LOGI("Udp bind Async Work Successful");
     }
     return result;
 }
@@ -612,7 +612,7 @@ napi_value UdpConnect(napi_env env, napi_callback_info info)
             &(asyncContext->work_)));
     napi_status resultStatus = napi_queue_async_work(env, asyncContext->work_);
     if (resultStatus == napi_ok) {
-        NETMGR_LOGD("Udp connect Async Work Successful");
+        NETMGR_LOGI("Udp connect Async Work Successful");
     }
     return result;
 }
@@ -682,7 +682,7 @@ napi_value UdpSend(napi_env env, napi_callback_info info)
             &(asyncContext->work_)));
     napi_status resultStatus = napi_queue_async_work(env, asyncContext->work_);
     if (resultStatus == napi_ok) {
-        NETMGR_LOGD("Udp send Async Work Successful");
+        NETMGR_LOGI("Udp send Async Work Successful");
     }
     return result;
 }
@@ -749,7 +749,7 @@ napi_value UdpClose(napi_env env, napi_callback_info info)
             &(asyncContext->work_)));
     napi_status resultStatus = napi_queue_async_work(env, asyncContext->work_);
     if (resultStatus == napi_ok) {
-        NETMGR_LOGD("Udp send Async Work Successful");
+        NETMGR_LOGI("Udp send Async Work Successful");
     }
     return result;
 }
@@ -760,8 +760,6 @@ napi_value UdpGetState(napi_env env, napi_callback_info info)
     napi_value parameters[1] = {0};
     napi_value thisVar = nullptr;
     void *data = nullptr;
-    uint32_t flag = 0;
-    bool isFdExist = false;
 
     NAPI_CALL(env, napi_get_cb_info(env, info, &parameterCount, parameters, &thisVar, &data));
 
@@ -782,22 +780,10 @@ napi_value UdpGetState(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    for (int i = 0; i < g_onInfoList.size(); i++) {
-        if (objectInfo->remInfo.socketfd == g_onInfoList.at(i).socketfd) {
-            flag = i;
-            isFdExist = true;
-            break;
-        }
-    }
-    if (!isFdExist) {
-        return nullptr;
-    }
-
     if (parameterCount == 1) {
         napi_valuetype valuetype1;
         NAPI_CALL(env, napi_typeof(env, parameters[0], &valuetype1));
         if (NapiUtil::MatchValueType(env, parameters[0], napi_function)) {
-            NETMGR_LOGD("MatchValueType is true");
             NAPI_CALL(env, napi_create_reference(env, parameters[0], 1, &(asyncContext->callbackRef_)));
         }
     }
@@ -817,7 +803,7 @@ napi_value UdpGetState(napi_env env, napi_callback_info info)
             &(asyncContext->work_)));
     napi_status resultStatus = napi_queue_async_work(env, asyncContext->work_);
     if (resultStatus == napi_ok) {
-        NETMGR_LOGD("Udp GetState Async Work Successful");
+        NETMGR_LOGI("Udp GetState Async Work Successful");
     }
 
     return result;
@@ -886,7 +872,7 @@ napi_value UdpSetExtraOptions(napi_env env, napi_callback_info info)
         (void *)asyncContext, &(asyncContext->work_)));
     napi_status resultStatus = napi_queue_async_work(env, asyncContext->work_);
     if (resultStatus == napi_ok) {
-        NETMGR_LOGD("Udp SetExtraOptions Async Work Successful");
+        NETMGR_LOGI("Udp SetExtraOptions Async Work Successful");
     }
     return result;
 }
@@ -1160,7 +1146,7 @@ static void NativeTcpConnect(napi_env env, void *data)
     }
     if (asyncContext->errorCode_ >= 0) {
         asyncContext->isConnected = true;
-        asyncContext->isClose = false; // Once Connect Success ,the close state must false
+        asyncContext->isClose = false;
         std::string connect("connect");
         EmitTcpEvent(asyncContext->tcpSocket_, "connect",  connect);
     } else {
@@ -1603,7 +1589,7 @@ napi_value TcpBind(napi_env env, napi_callback_info info)
             &(asyncContext->work_)));
     napi_status resultStatus = napi_queue_async_work(env, asyncContext->work_);
     if (resultStatus == napi_ok) {
-        NETMGR_LOGD("Tcp bind Async Work Successful");
+        NETMGR_LOGI("Tcp bind Async Work Successful");
     }
 
     return result;
@@ -1657,7 +1643,7 @@ napi_value TcpConnect(napi_env env, napi_callback_info info)
             &(asyncContext->work_)));
     napi_status resultStatus = napi_queue_async_work(env, asyncContext->work_);
     if (resultStatus == napi_ok) {
-        NETMGR_LOGD("Tcp connect Async Work Successful");
+        NETMGR_LOGI("Tcp connect Async Work Successful");
     }
 
     return result;
@@ -1711,7 +1697,7 @@ napi_value TcpSend(napi_env env, napi_callback_info info)
             &(asyncContext->work_)));
     napi_status resultStatus = napi_queue_async_work(env, asyncContext->work_);
     if (resultStatus == napi_ok) {
-        NETMGR_LOGD("Udp bind Async Work Successful");
+        NETMGR_LOGI("Udp bind Async Work Successful");
     }
 
     return result;
@@ -1768,7 +1754,7 @@ napi_value TcpClose(napi_env env, napi_callback_info info)
             &(asyncContext->work_)));
     napi_status resultStatus = napi_queue_async_work(env, asyncContext->work_);
     if (resultStatus == napi_ok) {
-        NETMGR_LOGD("Udp close Async Work Successful");
+        NETMGR_LOGI("Udp close Async Work Successful");
     }
 
     return result;
@@ -1822,7 +1808,7 @@ napi_value TcpGetRemoteAddress(napi_env env, napi_callback_info info)
             (void *)asyncContext, &(asyncContext->work_)));
     napi_status resultStatus = napi_queue_async_work(env, asyncContext->work_);
     if (resultStatus == napi_ok) {
-        NETMGR_LOGD("GetRemoteAddress Async Work Successful");
+        NETMGR_LOGI("GetRemoteAddress Async Work Successful");
     }
 
     return result;
@@ -1876,7 +1862,7 @@ napi_value TcpGetState(napi_env env, napi_callback_info info)
             &(asyncContext->work_)));
     napi_status resultStatus = napi_queue_async_work(env, asyncContext->work_);
     if (resultStatus == napi_ok) {
-        NETMGR_LOGD("tcpGetState Async Work Successful");
+        NETMGR_LOGI("tcpGetState Async Work Successful");
     }
 
     return result;
@@ -1935,7 +1921,7 @@ napi_value TcpSetExtraOptions(napi_env env, napi_callback_info info)
             (void *)asyncContext, &(asyncContext->work_)));
     napi_status resultStatus = napi_queue_async_work(env, asyncContext->work_);
     if (resultStatus == napi_ok) {
-        NETMGR_LOGD("tcpSetExtraOptions Async Work Successful");
+        NETMGR_LOGI("tcpSetExtraOptions Async Work Successful");
     }
     return result;
 }
