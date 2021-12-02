@@ -22,7 +22,6 @@
 
 namespace OHOS {
 namespace NetManagerStandard {
-
 std::string NapiUtil::ToUtf8(std::u16string str16)
 {
     return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(str16);
