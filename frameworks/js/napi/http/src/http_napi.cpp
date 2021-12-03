@@ -36,9 +36,19 @@ static int32_t FindMethodIndex(const std::string &key)
     return result;
 }
 
+static void GetCaFilePathInfo(napi_env env, napi_value objValue, HttpRequestOptionsContext *asyncContext)
+{
+    std::string caFile = std::string("/etc/ssl/cacert.pem");
+    bool result = NapiUtil::HasNamedTypeProperty(env, objValue, napi_string, "caFile");
+    if (result) {
+        caFile = NapiUtil::GetStringProperty(env, objValue, "caFile");
+    }
+    asyncContext->SetCaFile(caFile);
+}
+
 static void GetRequestInfo(napi_env env, napi_value objValue, HttpRequestOptionsContext *asyncContext)
 {
-    enum RequestMethod method = GET;
+    RequestMethod method = RequestMethod::GET;
     bool result = NapiUtil::HasNamedTypeProperty(env, objValue, napi_string, "method");
     if (result) {
         method = static_cast<RequestMethod>(FindMethodIndex(NapiUtil::GetStringProperty(env, objValue, "method")));
@@ -94,12 +104,7 @@ static void GetRequestInfo(napi_env env, napi_value objValue, HttpRequestOptions
     }
     asyncContext->SetFixedLengthStreamingMode(fixedLengthStreamingMode);
 
-    std::string caFile = std::string("/etc/ssl/cacert.pem");
-    result = NapiUtil::HasNamedTypeProperty(env, objValue, napi_string, "caFile");
-    if (result) {
-        caFile = NapiUtil::GetStringProperty(env, objValue, "caFile");
-    }
-    asyncContext->SetCaFile(caFile);
+    GetCaFilePathInfo(env, objValue, asyncContext);
 }
 
 /*

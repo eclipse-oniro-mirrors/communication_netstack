@@ -18,7 +18,7 @@
 
 namespace OHOS {
 namespace NetManagerStandard {
-enum RequestMethod { OPTIONS = 0, GET, HEAD, POST, PUT, DELETE, TRACE, CONNECT };
+enum class RequestMethod { OPTIONS = 0, GET, HEAD, POST, PUT, DELETE, TRACE, CONNECT };
 
 enum ResponseCode {
     OK = 200,
