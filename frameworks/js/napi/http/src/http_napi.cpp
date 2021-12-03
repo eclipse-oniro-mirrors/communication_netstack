@@ -21,6 +21,12 @@
 
 namespace OHOS {
 namespace NetManagerStandard {
+constexpr int32_t PARAMS_TWO_COUNT = 2;
+constexpr int32_t PARAMS_THREE_COUNT = 3;
+constexpr int32_t ARRAY_FIRST_INDEX = 1;
+constexpr int32_t ARRAY_SECOND_INDEX = 2;
+constexpr int32_t ARRAY_COUNT = 1;
+
 static int32_t FindMethodIndex(const std::string &key)
 {
     std::vector<std::string> methodVector = {
@@ -228,15 +234,15 @@ napi_value Request(napi_env env, napi_callback_info info)
 
     asyncContext->SetUrl(std::string(url, strLen));
 
-    if (paraCount == 2) {
-        if (NapiUtil::MatchValueType(env, parameters[1], napi_function)) {
-            NAPI_CALL(env, napi_create_reference(env, parameters[1], 1, &(asyncContext->callbackRef_)));
-        } else if (NapiUtil::MatchValueType(env, parameters[1], napi_object)) {
-            GetRequestInfo(env, parameters[1], asyncContext);
+    if (paraCount == PARAMS_TWO_COUNT) {
+        if (NapiUtil::MatchValueType(env, parameters[ARRAY_FIRST_INDEX], napi_function)) {
+            NAPI_CALL(env, napi_create_reference(env, parameters[ARRAY_FIRST_INDEX], ARRAY_COUNT, &(asyncContext->callbackRef_)));
+        } else if (NapiUtil::MatchValueType(env, parameters[ARRAY_FIRST_INDEX], napi_object)) {
+            GetRequestInfo(env, parameters[ARRAY_FIRST_INDEX], asyncContext);
         }
-    } else if (paraCount == 3 && NapiUtil::MatchValueType(env, parameters[1], napi_object)) {
-        GetRequestInfo(env, parameters[2], asyncContext);
-        NAPI_CALL(env, napi_create_reference(env, parameters[2], 1, &(asyncContext->callbackRef_)));
+    } else if (paraCount == PARAMS_THREE_COUNT && NapiUtil::MatchValueType(env, parameters[ARRAY_FIRST_INDEX], napi_object)) {
+        GetRequestInfo(env, parameters[ARRAY_SECOND_INDEX], asyncContext);
+        NAPI_CALL(env, napi_create_reference(env, parameters[ARRAY_SECOND_INDEX], ARRAY_COUNT, &(asyncContext->callbackRef_)));
     }
 
     napi_value result = nullptr;
@@ -356,8 +362,8 @@ napi_value On(napi_env env, napi_callback_info info)
 
     napi_ref callbackRef = nullptr;
 
-    if (paraCount == 2) {
-        napi_create_reference(env, parameters[1], 1, &callbackRef);
+    if (paraCount == PARAMS_TWO_COUNT) {
+        napi_create_reference(env, parameters[ARRAY_FIRST_INDEX], ARRAY_COUNT, &callbackRef);
     }
     napi_value result = nullptr;
     uint32_t eventType = GetEventType(eventTypeChars);
@@ -409,8 +415,8 @@ napi_value Off(napi_env env, napi_callback_info info)
             env, parameters[0], eventTypeChars, OHOS::NetManagerStandard::URL_ARRAY_LENGTH - 1, &strLen));
 
     napi_ref callbackRef = nullptr;
-    if (paraCount == 2) {
-        napi_create_reference(env, parameters[1], 1, &callbackRef);
+    if (paraCount == PARAMS_TWO_COUNT) {
+        napi_create_reference(env, parameters[ARRAY_FIRST_INDEX], ARRAY_COUNT, &callbackRef);
     }
     napi_value result = nullptr;
     uint32_t eventType = GetEventType(eventTypeChars);
