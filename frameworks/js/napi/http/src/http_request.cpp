@@ -149,10 +149,10 @@ void HttpRequest::SetMethod(CURL *curl, HttpRequestOptionsContext *asyncContext)
         return;
     }
     RequestMethod method = asyncContext->GetRequestMethod();
-    if (method == OPTIONS || method == GET || method == HEAD || method == DELETE || method == TRACE ||
-        method == CONNECT) {
+    if (method == RequestMethod::OPTIONS || method == RequestMethod::GET || method == RequestMethod::HEAD
+        || method == RequestMethod::DELETE || method == RequestMethod::TRACE || method == RequestMethod::CONNECT) {
         SetOptionForGet(curl, asyncContext);
-    } else if (method == POST || method == PUT) {
+    } else if (method == RequestMethod::POST || method == RequestMethod::PUT) {
         SetOptionForPost(curl, asyncContext);
     } else {
         NETMGR_LOGE("SetMethod ErrorCode : COMMON_ERROR_CODE");

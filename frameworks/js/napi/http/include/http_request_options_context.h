@@ -141,7 +141,7 @@ public:
         return this->cafile_;
     }
 private:
-    enum RequestMethod method_ = GET;
+    RequestMethod method_ = RequestMethod::GET;
     std::string extraData_ = "";
     std::string header_ = "";
     int32_t readTimeout_ = 60;
