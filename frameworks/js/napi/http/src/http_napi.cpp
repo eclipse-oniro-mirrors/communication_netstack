@@ -236,13 +236,16 @@ napi_value Request(napi_env env, napi_callback_info info)
 
     if (paraCount == PARAMS_TWO_COUNT) {
         if (NapiUtil::MatchValueType(env, parameters[ARRAY_FIRST_INDEX], napi_function)) {
-            NAPI_CALL(env, napi_create_reference(env, parameters[ARRAY_FIRST_INDEX], ARRAY_COUNT, &(asyncContext->callbackRef_)));
+            NAPI_CALL(env, napi_create_reference(env, parameters[ARRAY_FIRST_INDEX],
+                ARRAY_COUNT, &(asyncContext->callbackRef_)));
         } else if (NapiUtil::MatchValueType(env, parameters[ARRAY_FIRST_INDEX], napi_object)) {
             GetRequestInfo(env, parameters[ARRAY_FIRST_INDEX], asyncContext);
         }
-    } else if (paraCount == PARAMS_THREE_COUNT && NapiUtil::MatchValueType(env, parameters[ARRAY_FIRST_INDEX], napi_object)) {
+    } else if (paraCount == PARAMS_THREE_COUNT &&
+        NapiUtil::MatchValueType(env, parameters[ARRAY_FIRST_INDEX], napi_object)) {
         GetRequestInfo(env, parameters[ARRAY_SECOND_INDEX], asyncContext);
-        NAPI_CALL(env, napi_create_reference(env, parameters[ARRAY_SECOND_INDEX], ARRAY_COUNT, &(asyncContext->callbackRef_)));
+        NAPI_CALL(env, napi_create_reference(env, parameters[ARRAY_SECOND_INDEX], ARRAY_COUNT,
+            &(asyncContext->callbackRef_)));
     }
 
     napi_value result = nullptr;
