@@ -191,7 +191,8 @@ napi_value CreateHttp(napi_env env, napi_callback_info info)
     return result;
 }
 
-static napi_value GetRequestParams(napi_env env, size_t paraCount, napi_value *parameters, size_t paramNumber, HttpRequestOptionsContext *asyncContext)
+static napi_value GetRequestParams(napi_env env, size_t paraCount, napi_value *parameters, size_t paramNumber,
+    HttpRequestOptionsContext *asyncContext)
 {
     char url[OHOS::NetManagerStandard::URL_ARRAY_LENGTH] = {0};
     size_t strLen = 0;
