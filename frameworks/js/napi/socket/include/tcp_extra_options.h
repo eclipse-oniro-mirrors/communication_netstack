@@ -28,7 +28,7 @@ public:
     ~TCPExtraOptions() {}
 
     class SocketLinger {
-        public:
+    public:
         bool on_ = true;
         int32_t linger_ = 0;
     } socketLinger_;

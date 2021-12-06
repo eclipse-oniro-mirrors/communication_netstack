@@ -51,7 +51,6 @@ napi_value On(napi_env env, napi_callback_info info);
 napi_value Off(napi_env env, napi_callback_info info);
 napi_value HttpRequestConstructor(napi_env env, napi_callback_info info);
 napi_value CreateHttp(napi_env env, napi_callback_info info);
-
 } // namespace NetManagerStandard
 } // namespace OHOS
 #endif // HTTP_NAPI_H
