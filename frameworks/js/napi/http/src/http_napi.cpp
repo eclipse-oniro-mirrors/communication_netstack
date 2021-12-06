@@ -191,6 +191,33 @@ napi_value CreateHttp(napi_env env, napi_callback_info info)
     return result;
 }
 
+static napi_value GetRequestParams(napi_env env, size_t paraCount, napi_value *parameters, size_t paramNumber, HttpRequestOptionsContext *asyncContext)
+{
+    char url[OHOS::NetManagerStandard::URL_ARRAY_LENGTH] = {0};
+    size_t strLen = 0;
+
+    NAPI_CALL(env,
+        napi_get_value_string_utf8(
+            env, parameters[0], url, OHOS::NetManagerStandard::URL_ARRAY_LENGTH - 1, &strLen));
+    asyncContext->SetUrl(std::string(url, strLen));
+
+    if (paraCount == PARAMS_TWO_COUNT) {
+        if (NapiUtil::MatchValueType(env, parameters[ARRAY_FIRST_INDEX], napi_function)) {
+            NAPI_CALL(env, napi_create_reference(env, parameters[ARRAY_FIRST_INDEX],
+                ARRAY_COUNT, &(asyncContext->callbackRef_)));
+        } else if (NapiUtil::MatchValueType(env, parameters[ARRAY_FIRST_INDEX], napi_object)) {
+            GetRequestInfo(env, parameters[ARRAY_FIRST_INDEX], asyncContext);
+        }
+    } else if (paraCount == PARAMS_THREE_COUNT &&
+        NapiUtil::MatchValueType(env, parameters[ARRAY_FIRST_INDEX], napi_object)) {
+        GetRequestInfo(env, parameters[ARRAY_SECOND_INDEX], asyncContext);
+        NAPI_CALL(env, napi_create_reference(env, parameters[ARRAY_SECOND_INDEX], ARRAY_COUNT,
+            &(asyncContext->callbackRef_)));
+    }
+
+    return nullptr;
+}
+
 /*
  * http Request interface
  */
@@ -214,13 +241,6 @@ napi_value Request(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    char url[OHOS::NetManagerStandard::URL_ARRAY_LENGTH] = {0};
-    size_t strLen = 0;
-
-    NAPI_CALL(env,
-        napi_get_value_string_utf8(
-            env, parameters[0], url, OHOS::NetManagerStandard::URL_ARRAY_LENGTH - 1, &strLen));
-
     HttpRequestOptionsContext *asyncContext = nullptr;
     auto requestKey = httpRequestInstances.find(objectInfo);
     if (requestKey != httpRequestInstances.end()) {
@@ -230,21 +250,7 @@ napi_value Request(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    asyncContext->SetUrl(std::string(url, strLen));
-
-    if (paraCount == PARAMS_TWO_COUNT) {
-        if (NapiUtil::MatchValueType(env, parameters[ARRAY_FIRST_INDEX], napi_function)) {
-            NAPI_CALL(env, napi_create_reference(env, parameters[ARRAY_FIRST_INDEX],
-                ARRAY_COUNT, &(asyncContext->callbackRef_)));
-        } else if (NapiUtil::MatchValueType(env, parameters[ARRAY_FIRST_INDEX], napi_object)) {
-            GetRequestInfo(env, parameters[ARRAY_FIRST_INDEX], asyncContext);
-        }
-    } else if (paraCount == PARAMS_THREE_COUNT &&
-        NapiUtil::MatchValueType(env, parameters[ARRAY_FIRST_INDEX], napi_object)) {
-        GetRequestInfo(env, parameters[ARRAY_SECOND_INDEX], asyncContext);
-        NAPI_CALL(env, napi_create_reference(env, parameters[ARRAY_SECOND_INDEX], ARRAY_COUNT,
-            &(asyncContext->callbackRef_)));
-    }
+    GetRequestParams(env, paraCount, parameters, std::size(parameters), asyncContext);
 
     napi_value result = nullptr;
 
