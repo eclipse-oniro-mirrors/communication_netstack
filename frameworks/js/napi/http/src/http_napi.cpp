@@ -222,14 +222,12 @@ napi_value Request(napi_env env, napi_callback_info info)
             env, parameters[0], url, OHOS::NetManagerStandard::URL_ARRAY_LENGTH - 1, &strLen));
 
     HttpRequestOptionsContext *asyncContext = nullptr;
-    {
-        auto requestKey = httpRequestInstances.find(objectInfo);
-        if (requestKey != httpRequestInstances.end()) {
-            asyncContext = requestKey->second;
-        } else {
-            NETMGR_LOGE("httpRequestInstances add HttpRequest pointer");
-            return nullptr;
-        }
+    auto requestKey = httpRequestInstances.find(objectInfo);
+    if (requestKey != httpRequestInstances.end()) {
+        asyncContext = requestKey->second;
+    } else {
+        NETMGR_LOGE("httpRequestInstances add HttpRequest pointer");
+        return nullptr;
     }
 
     asyncContext->SetUrl(std::string(url, strLen));

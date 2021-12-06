@@ -29,8 +29,8 @@ public:
 
     class SocketLinger {
         public:
-        bool on_ = true;
-        int32_t linger_ = 0;
+            bool on_ = true;
+            int32_t linger_ = 0;
     } socketLinger_;
 
     bool GetKeepAlive()

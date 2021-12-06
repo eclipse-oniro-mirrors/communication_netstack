@@ -474,8 +474,6 @@ napi_value UdpBind(napi_env env, napi_callback_info info)
     napi_value parameters[2] = {0};
     napi_value thisVar = nullptr;
     void *data = nullptr;
-    uint32_t flag = 0;
-    bool isFdExist = false;
 
     NAPI_CALL(env, napi_get_cb_info(env, info, &parameterCount, parameters, &thisVar, &data));
 
@@ -497,30 +495,14 @@ napi_value UdpBind(napi_env env, napi_callback_info info)
     }
 
     objectInfo->GetJSParameter(env, parameters, asyncContext);
-    for (int i = 0; i < g_onInfoList.size(); i++) {
-        if (objectInfo->remInfo.socketfd == g_onInfoList.at(i).socketfd) {
-            flag = i;
-            isFdExist = true;
-            break;
-        }
-    }
-    if (!isFdExist) {
-        if (asyncContext->family == IPV6) {
-            asyncContext->socketfd = objectInfo->UdpSocket(AF_INET6, SOCK_DGRAM, 0);
-        } else {
-            asyncContext->socketfd = objectInfo->UdpSocket(AF_INET, SOCK_DGRAM, 0);
-        }
-        if (asyncContext->socketfd < 0) {
-            return nullptr;
-        }
-    }
 
-    if (!isFdExist) {
-        objectInfo->remInfo = *asyncContext;
-        g_onInfoList.push_back(objectInfo->remInfo);
+    if (asyncContext->family == IPV6) {
+        asyncContext->socketfd = objectInfo->UdpSocket(AF_INET6, SOCK_DGRAM, 0);
     } else {
-        g_onInfoList[flag] = *asyncContext;
-        objectInfo->remInfo = *asyncContext;
+        asyncContext->socketfd = objectInfo->UdpSocket(AF_INET, SOCK_DGRAM, 0);
+    }
+    if (asyncContext->socketfd < 0) {
+        return nullptr;
     }
 
     if (parameterCount == PARAMS_COUNT) {
@@ -555,8 +537,6 @@ napi_value UdpConnect(napi_env env, napi_callback_info info)
     napi_value parameters[2] = {0};
     napi_value thisVar = nullptr;
     void *data = nullptr;
-    uint32_t flag = 0;
-    bool isFdExist = false;
 
     NAPI_CALL(env, napi_get_cb_info(env, info, &parameterCount, parameters, &thisVar, &data));
 
@@ -577,19 +557,6 @@ napi_value UdpConnect(napi_env env, napi_callback_info info)
     }
 
     objectInfo->GetJSParameter(env, parameters, asyncContext);
-    for (int i = 0; i < g_onInfoList.size(); i++) {
-        if (objectInfo->remInfo.socketfd == g_onInfoList.at(i).socketfd) {
-            flag = i;
-            isFdExist = true;
-            break;
-        }
-    }
-    if (!isFdExist) {
-        return nullptr;
-    }
-
-    g_onInfoList[flag] = *asyncContext;
-    objectInfo->remInfo = *asyncContext;
 
     if (parameterCount == PARAMS_COUNT) {
         if (NapiUtil::MatchValueType(env, parameters[1], napi_function)) {
@@ -623,8 +590,6 @@ napi_value UdpSend(napi_env env, napi_callback_info info)
     napi_value parameters[2] = {0};
     napi_value thisVar = nullptr;
     void *data = nullptr;
-    uint32_t flag = 0;
-    bool isFdExist = false;
 
     NAPI_CALL(env, napi_get_cb_info(env, info, &parameterCount, parameters, &thisVar, &data));
 
@@ -644,23 +609,9 @@ napi_value UdpSend(napi_env env, napi_callback_info info)
         NETMGR_LOGE("UdpSend not find socket pointer");
         return nullptr;
     }
-    
-    for (int i = 0; i < g_onInfoList.size(); i++) {
-        if (objectInfo->remInfo.socketfd == g_onInfoList.at(i).socketfd) {
-            flag = i;
-            isFdExist = true;
-            break;
-        }
-    }
-    if (!isFdExist) {
-        return nullptr;
-    }
 
     objectInfo->GetJSParameter(env, parameters, asyncContext);
     
-    g_onInfoList.at(flag) = *asyncContext;
-    objectInfo->remInfo = *asyncContext;
-
     if (parameterCount == PARAMS_COUNT) {
         if (NapiUtil::MatchValueType(env, parameters[1], napi_function)) {
             NAPI_CALL(env, napi_create_reference(env, parameters[1], 1, &(asyncContext->callbackRef_)));

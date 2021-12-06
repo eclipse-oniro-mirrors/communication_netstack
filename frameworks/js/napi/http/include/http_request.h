@@ -25,15 +25,6 @@
 
 #include <curl/curl.h>
 
-#define HTTP_CURL_EASY_SET_OPTION(handle, opt, data)                           \
-    do {                                                                       \
-        CURLcode result = curl_easy_setopt(handle, opt, data);                 \
-        if (result != CURLE_OK) {                                              \
-            NETMGR_LOGE("curl set option failed! error code %{public}d", result); \
-            return false;                                                      \
-        }                                                                      \
-    } while (0)
-
 namespace OHOS {
 namespace NetManagerStandard {
 constexpr int32_t URL_PREFIX_LENGTH = 8;

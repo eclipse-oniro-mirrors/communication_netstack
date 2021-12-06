@@ -165,8 +165,8 @@ bool HttpRequest::SetOptionForPost(CURL *curl, HttpRequestOptionsContext *asyncC
         NETMGR_LOGE("The parameter of curl or asyncContext is nullptr");
         return false;
     }
-    HTTP_CURL_EASY_SET_OPTION(curl, CURLOPT_URL, asyncContext->GetUrl().c_str());
-    HTTP_CURL_EASY_SET_OPTION(curl, CURLOPT_POST, 1L);
+    curl_easy_setopt(curl, CURLOPT_URL, asyncContext->GetUrl().c_str());
+    curl_easy_setopt(curl, CURLOPT_POST, 1L);
     return true;
 }
 
@@ -195,7 +195,7 @@ bool HttpRequest::SetOptionForGet(CURL *curl, HttpRequestOptionsContext *asyncCo
                 curl_free(encodeOut);
             }
         }
-        HTTP_CURL_EASY_SET_OPTION(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     } else {
         std::size_t index = url.find(URL_SEPARATOR);
         if (index != std::string::npos) {
