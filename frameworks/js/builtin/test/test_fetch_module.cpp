@@ -145,7 +145,7 @@ void TestHttpModuleMethodAndHeaderByDefault()
     JSI::SetStringProperty(header, "no-use", "test value");
     JSI::SetNamedProperty(object, HttpConstant::KEY_HTTP_REQUEST_HEADER, header);
 
-    JSIValue url = JSI::CreateString("https://www.zhihu.com");
+    JSIValue url = JSI::CreateString("https://www.example.com");
     JSI::SetNamedProperty(object, HttpConstant::KEY_HTTP_REQUEST_URL, url);
 
     JSI::SetNamedProperty(object, CB_SUCCESS, JSI::CreateFunction(TestCallbackOnSuccess));
