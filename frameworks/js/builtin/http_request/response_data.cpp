@@ -44,13 +44,12 @@ void ResponseData::ParseHeaders(const std::string &headersStr)
         if (header.empty()) {
             continue;
         }
-        size_t posColon = header.find(HttpConstant::HTTP_HEADER_SEPARATOR);
-        if (posColon == std::string::npos) {
+        size_t index = header.find(HttpConstant::HTTP_HEADER_SEPARATOR);
+        if (index == std::string::npos) {
             statusLine = Strip(header);
             continue;
         }
-        std::vector<std::string> temp = Split(header, HttpConstant::HTTP_HEADER_SEPARATOR);
-        headers[Strip(temp[0])] = Strip(temp[1]);
+        headers[Strip(header.substr(0, index))] = Strip(header.substr(index + 1));
     }
 }
 
