@@ -15,9 +15,9 @@
 #ifndef TCP_SOCKET_H
 #define TCP_SOCKET_H
 
-#include "musl/include/sys/socket.h"
-#include "musl/porting/liteos_m/kernel/include/unistd.h"
-#include "musl/porting/liteos_m/kernel/include/sys/socket.h"
+#include "sys/socket.h"
+#include "unistd.h"
+#include "sys/socket.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "netaddress.h"

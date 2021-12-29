@@ -16,9 +16,9 @@
 #ifndef SOCKET_NAPI_H
 #define SOCKET_NAPI_H
 
-#include "musl/include/sys/socket.h"
-#include "musl/porting/liteos_m/kernel/include/unistd.h"
-#include "musl/porting/liteos_m/kernel/include/sys/socket.h"
+#include "sys/socket.h"
+#include "unistd.h"
+#include "sys/socket.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "tcp_event_list.h"
