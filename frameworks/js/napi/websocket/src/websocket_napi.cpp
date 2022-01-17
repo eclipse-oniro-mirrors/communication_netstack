@@ -14,9 +14,9 @@
  */
 
 #include "websocket_napi.h"
-#include "netmgr_log_wrapper.h"
+#include "netstack_log.h"
 
 namespace OHOS {
-namespace NetManagerStandard {
-} // namespace NetManagerStandard
+namespace NetStack {
+} // namespace NetStack
 } // namespace OHOS

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,14 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef WEBSOCKET_NAPI_H
-#define WEBSOCKET_NAPI_H
+#include "udp_extra_options.h"
 
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
+namespace OHOS::NetStack {
 
-namespace OHOS {
-namespace NetStack {
-} // namespace NetStack
-} // namespace OHOS
-#endif // WEBSOCKET_NAPI_H
+UDPExtraOptions::UDPExtraOptions() : broadcast_(false) {}
+
+void UDPExtraOptions::SetBroadcast(bool broadcast)
+{
+    broadcast_ = broadcast;
+}
+
+bool UDPExtraOptions::IsBroadcast() const
+{
+    return broadcast_;
+}
+
+} // namespace OHOS::NetStack

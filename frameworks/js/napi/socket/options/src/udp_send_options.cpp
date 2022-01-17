@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,14 +13,23 @@
  * limitations under the License.
  */
 
-#ifndef WEBSOCKET_NAPI_H
-#define WEBSOCKET_NAPI_H
+#include "udp_send_options.h"
 
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
+namespace OHOS::NetStack {
 
-namespace OHOS {
-namespace NetStack {
-} // namespace NetStack
-} // namespace OHOS
-#endif // WEBSOCKET_NAPI_H
+void UDPSendOptions::SetData(const std::string &data)
+{
+    data_ = data;
+}
+
+void UDPSendOptions::SetData(void *data, size_t size)
+{
+    data_.append(static_cast<char *>(data), size);
+}
+
+const std::string &UDPSendOptions::GetData() const
+{
+    return data_;
+}
+
+} // namespace OHOS::NetStack
