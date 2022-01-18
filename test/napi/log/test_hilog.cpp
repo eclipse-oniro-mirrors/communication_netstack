@@ -53,7 +53,7 @@ int HiLog::Debug(const HiLogLabel &label, const char *fmt, ...)
     if (label.domain != NETSTACK_LOG_DOMAIN) {
         return 0;
     }
-    PRINT_LOG(Debug);
+    (void)PRINT_LOG(Debug);
     return 0;
 }
 int HiLog::Info(const HiLogLabel &label, const char *fmt, ...)
@@ -61,7 +61,7 @@ int HiLog::Info(const HiLogLabel &label, const char *fmt, ...)
     if (label.domain != NETSTACK_LOG_DOMAIN) {
         return 0;
     }
-    PRINT_LOG(Info);
+    (void)PRINT_LOG(Info);
     return 0;
 }
 int HiLog::Warn(const HiLogLabel &label, const char *fmt, ...)
@@ -69,7 +69,7 @@ int HiLog::Warn(const HiLogLabel &label, const char *fmt, ...)
     if (label.domain != NETSTACK_LOG_DOMAIN) {
         return 0;
     }
-    PRINT_LOG(Warn);
+    (void)PRINT_LOG(Warn);
     return 0;
 }
 int HiLog::Error(const HiLogLabel &label, const char *fmt, ...)
@@ -77,7 +77,7 @@ int HiLog::Error(const HiLogLabel &label, const char *fmt, ...)
     if (label.domain != NETSTACK_LOG_DOMAIN) {
         return 0;
     }
-    PRINT_LOG(Error);
+    (void)PRINT_LOG(Error);
     return 0;
 }
 int HiLog::Fatal(const HiLogLabel &label, const char *fmt, ...)
@@ -85,7 +85,7 @@ int HiLog::Fatal(const HiLogLabel &label, const char *fmt, ...)
     if (label.domain != NETSTACK_LOG_DOMAIN) {
         return 0;
     }
-    PRINT_LOG(Fatal);
+    (void)PRINT_LOG(Fatal);
     return 0;
 }
 } // namespace OHOS::HiviewDFX

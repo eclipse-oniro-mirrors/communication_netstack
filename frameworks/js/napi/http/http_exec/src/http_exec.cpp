@@ -328,7 +328,7 @@ void HttpExec::OnHeaderReceive(RequestContext *context, napi_value header)
 
 bool HttpExec::IsUnReserved(unsigned char in)
 {
-    if (('0' <= in && in <= '9') || ('a' <= in && in <= 'z') || ('A' <= in && in <= 'Z')) {
+    if ((in >= '0' && in <= '9') || (in >= 'a' && in <= 'z') || (in >= 'A' && in <= 'Z')) {
         return true;
     }
     switch (in) {

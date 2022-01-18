@@ -56,7 +56,7 @@ link_directories(../../../third_party/libuv/cmake-build-debug)
 
 link_directories(cmake-build-debug/utils)
 
-#add_subdirectory(frameworks/js/builtin)
+add_subdirectory(frameworks/js/builtin)
 add_subdirectory(utils)
 add_subdirectory(test/napi/http)
 add_subdirectory(test/napi/socket)
