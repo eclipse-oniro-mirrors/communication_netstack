@@ -20,7 +20,6 @@
 #include "netstack_napi_utils.h"
 #include <arpa/inet.h>
 namespace OHOS::NetStack {
-
 ConnectContext::ConnectContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -79,5 +78,4 @@ bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
     }
     return false;
 }
-
 } // namespace OHOS::NetStack

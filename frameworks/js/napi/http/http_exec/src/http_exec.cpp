@@ -60,7 +60,6 @@
     } while (0)
 
 namespace OHOS::NetStack {
-
 std::mutex HttpExec::mutex_;
 
 bool HttpExec::initialized_ = false;
@@ -343,5 +342,4 @@ bool HttpExec::IsUnReserved(unsigned char in)
     }
     return false;
 }
-
 } // namespace OHOS::NetStack

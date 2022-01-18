@@ -21,7 +21,6 @@
 #include <string>
 
 namespace OHOS::NetStack {
-
 class HttpResponse final {
 public:
     HttpResponse();
@@ -55,7 +54,6 @@ private:
 
     std::string cookies_;
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_HTTP_RESPONSE_H */

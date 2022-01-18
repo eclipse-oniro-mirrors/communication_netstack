@@ -21,7 +21,6 @@
 #include <string>
 
 namespace OHOS::NetStack {
-
 class EventListener {
 public:
     EventListener() = delete;
@@ -53,7 +52,6 @@ private:
 
     bool asyncCallback_;
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_EVENT_LISTENER_H */

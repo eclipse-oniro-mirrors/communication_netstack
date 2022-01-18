@@ -18,6 +18,9 @@
 #include <algorithm>
 
 namespace OHOS::NetStack {
+constexpr const int CALLBACK_PARAM_NUM = 1;
+
+constexpr const int ASYNC_CALLBACK_PARAM_NUM = 2;
 
 EventManager::EventManager() : data_(nullptr) {}
 
@@ -47,12 +50,12 @@ void EventManager::Emit(const std::string &type, const std::pair<napi_value, nap
     std::for_each(listeners_.begin(), listeners_.end(), [type, argv](const EventListener &listener) {
         if (listener.IsAsyncCallback()) {
             /* AsyncCallback(BusinessError error, T data) */
-            napi_value arg[2] = {argv.first, argv.second};
-            listener.Emit(type, 2, arg);
+            napi_value arg[ASYNC_CALLBACK_PARAM_NUM] = {argv.first, argv.second};
+            listener.Emit(type, ASYNC_CALLBACK_PARAM_NUM, arg);
         } else {
             /* Callback(T data)*/
-            napi_value arg[1] = {argv.second};
-            listener.Emit(type, 1, arg);
+            napi_value arg[CALLBACK_PARAM_NUM] = {argv.second};
+            listener.Emit(type, CALLBACK_PARAM_NUM, arg);
         }
     });
 
@@ -72,5 +75,4 @@ void *EventManager::GetData()
     std::lock_guard<std::mutex> lock(mutex_);
     return data_;
 }
-
 } // namespace OHOS::NetStack

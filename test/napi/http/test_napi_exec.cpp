@@ -208,7 +208,6 @@
     }
 
 namespace OHOS::NetStack {
-
 void CallOn(napi_env env, napi_value thisVal, napi_value callback)
 {
     napi_value func = NapiUtils::GetNamedProperty(env, thisVal, HttpModuleExports::HttpRequest::FUNCTION_ON);
@@ -613,7 +612,6 @@ DEFINE_TEST_BEGIN(TestHttpModuleMethodGetOnHeaderReceiveOff, true)
     CallPromiseThenCatch(env, retValue, callbackOneParam);
 }
 DEFINE_TEST_END
-
 } // namespace OHOS::NetStack
 
 int main(int argc, char **argv)

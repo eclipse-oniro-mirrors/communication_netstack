@@ -20,7 +20,6 @@
 #include "netstack_napi_utils.h"
 
 namespace OHOS::NetStack {
-
 BindContext::BindContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void BindContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -68,5 +67,4 @@ bool BindContext::CheckParamsType(napi_value *params, size_t paramsCount)
     }
     return false;
 }
-
 } // namespace OHOS::NetStack

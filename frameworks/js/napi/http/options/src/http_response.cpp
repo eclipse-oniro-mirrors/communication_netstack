@@ -20,7 +20,6 @@
 #include <cstring>
 
 namespace OHOS::NetStack {
-
 HttpResponse::HttpResponse() : responseCode_(0) {}
 
 void HttpResponse::AppendResult(const void *data, size_t length)
@@ -79,5 +78,4 @@ const std::string &HttpResponse::GetCookies() const
 {
     return cookies_;
 }
-
 } // namespace OHOS::NetStack

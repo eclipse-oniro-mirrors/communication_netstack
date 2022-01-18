@@ -21,7 +21,6 @@
 #include <algorithm>
 
 namespace OHOS::NetStack {
-
 void HttpAsyncWork::ExecRequest(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<RequestContext, HttpExec::ExecRequest>(env, data);
@@ -31,5 +30,4 @@ void HttpAsyncWork::RequestCallback(napi_env env, napi_status status, void *data
 {
     BaseAsyncWork::AsyncWorkCallback<RequestContext, HttpExec::RequestCallback>(env, status, data);
 }
-
 } // namespace OHOS::NetStack

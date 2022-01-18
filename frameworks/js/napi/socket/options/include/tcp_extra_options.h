@@ -19,7 +19,6 @@
 #include "extra_options_base.h"
 
 namespace OHOS::NetStack {
-
 class TCPExtraOptions final : public ExtraOptionsBase {
 
 private:
@@ -68,7 +67,6 @@ private:
 
     bool TCPNoDelay_;
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_TCP_EXTRA_OPTIONS_H */

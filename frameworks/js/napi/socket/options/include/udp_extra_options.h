@@ -19,7 +19,6 @@
 #include "extra_options_base.h"
 
 namespace OHOS::NetStack {
-
 class UDPExtraOptions final : public ExtraOptionsBase {
 
 public:
@@ -34,7 +33,6 @@ public:
 private:
     bool broadcast_;
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_UDP_EXTRA_OPTIONS_H */

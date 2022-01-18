@@ -22,7 +22,6 @@
 #include "noncopyable.h"
 
 namespace OHOS::NetStack {
-
 class BindContext final : public BaseContext {
 public:
     ACE_DISALLOW_COPY_AND_MOVE(BindContext);
@@ -40,7 +39,6 @@ public:
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_BIND_CONTEXT_H */

@@ -28,7 +28,6 @@
 #define BUSINESS_ERROR_KEY "code"
 
 namespace OHOS::NetStack {
-
 class BaseAsyncWork final {
 public:
     ACE_DISALLOW_COPY_AND_MOVE(BaseAsyncWork);

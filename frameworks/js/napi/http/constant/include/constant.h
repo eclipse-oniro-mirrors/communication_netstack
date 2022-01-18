@@ -20,7 +20,6 @@
 #include <cstdint>
 
 namespace OHOS::NetStack {
-
 class HttpConstant final {
 public:
     ACE_DISALLOW_COPY_AND_MOVE(HttpConstant);
@@ -69,7 +68,6 @@ public:
     static const char *const HTTP_CONTENT_TYPE_URL_ENCODE;
     static const char *const HTTP_CONTENT_TYPE_JSON;
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_CONSTANT_H */

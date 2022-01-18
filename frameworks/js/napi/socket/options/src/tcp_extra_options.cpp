@@ -16,7 +16,6 @@
 #include "tcp_extra_options.h"
 
 namespace OHOS::NetStack {
-
 TCPExtraOptions::SocketLinger::SocketLinger() : on_(false), linger_(0) {}
 
 void TCPExtraOptions::SocketLinger::SetOn(bool on)
@@ -70,5 +69,4 @@ bool TCPExtraOptions::IsTCPNoDelay() const
 {
     return TCPNoDelay_;
 }
-
 } // namespace OHOS::NetStack

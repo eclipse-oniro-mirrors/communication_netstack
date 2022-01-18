@@ -21,7 +21,6 @@
 #include "udp_extra_options.h"
 
 namespace OHOS::NetStack {
-
 class UdpSetExtraOptionsContext final : public BaseContext {
 public:
     ACE_DISALLOW_COPY_AND_MOVE(UdpSetExtraOptionsContext);
@@ -39,7 +38,6 @@ public:
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_UDP_EXTRA_CONTEXT_H */

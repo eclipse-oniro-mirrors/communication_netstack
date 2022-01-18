@@ -16,7 +16,6 @@
 #include "socket_state_base.h"
 
 namespace OHOS::NetStack {
-
 SocketStateBase::SocketStateBase() : isBound_(false), isClose_(false), isConnected_(false) {}
 
 void SocketStateBase::SetIsBound(bool isBound)
@@ -48,5 +47,4 @@ bool SocketStateBase::IsConnected() const
 {
     return isConnected_;
 }
-
 } // namespace OHOS::NetStack

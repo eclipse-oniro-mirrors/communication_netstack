@@ -869,5 +869,4 @@ napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
 }
-
 } // namespace OHOS::NetStack::SocketExec

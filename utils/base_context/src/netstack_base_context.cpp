@@ -18,7 +18,6 @@
 #include "netstack_napi_utils.h"
 
 namespace OHOS::NetStack {
-
 BaseContext::BaseContext(napi_env env, EventManager *manager)
     : manager_(manager),
       env_(env),
@@ -141,5 +140,4 @@ void BaseContext::Emit(const std::string &type, const std::pair<napi_value, napi
         manager_->Emit(type, argv);
     }
 }
-
 } // namespace OHOS::NetStack

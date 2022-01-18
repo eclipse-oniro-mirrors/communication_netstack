@@ -20,7 +20,6 @@
 #include <string>
 
 namespace OHOS::NetStack {
-
 class NetAddress final {
 public:
     enum class Family : uint32_t {

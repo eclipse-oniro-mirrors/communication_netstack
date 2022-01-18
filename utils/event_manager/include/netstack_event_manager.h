@@ -21,7 +21,6 @@
 #include <mutex>
 
 namespace OHOS::NetStack {
-
 class EventManager {
 public:
     EventManager();
@@ -43,6 +42,5 @@ private:
 
     void *data_;
 };
-
 } // namespace OHOS::NetStack
 #endif /* COMMUNICATIONNETSTACK_EVENT_MANAGER_H */

@@ -20,7 +20,6 @@
 #define FAMILY(family) #family
 
 namespace OHOS::NetStack {
-
 SocketRemoteInfo::SocketRemoteInfo() : port_(0), size_(0) {}
 
 void SocketRemoteInfo::SetAddress(const std::string &address)
@@ -68,5 +67,4 @@ uint32_t SocketRemoteInfo::GetSize() const
 {
     return size_;
 }
-
 } // namespace OHOS::NetStack

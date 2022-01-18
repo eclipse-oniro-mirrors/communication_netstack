@@ -96,7 +96,6 @@ void SetBooleanProperty(napi_env env, napi_value object, const std::string &name
 void DefineProperties(napi_env env,
                       napi_value object,
                       const std::initializer_list<napi_property_descriptor> &properties);
-
 } // namespace OHOS::NetStack::NapiUtils
 
 #endif /* COMMUNICATIONNETSTACK_NETSTACK_NAPI_UTILS_H */

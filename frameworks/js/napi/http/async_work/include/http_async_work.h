@@ -22,7 +22,6 @@
 #include "request_context.h"
 
 namespace OHOS::NetStack {
-
 class HttpAsyncWork final {
 public:
     ACE_DISALLOW_COPY_AND_MOVE(HttpAsyncWork);
@@ -31,7 +30,6 @@ public:
 
     static void RequestCallback(napi_env env, napi_status status, void *data);
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_ASYNC_WORK_H */

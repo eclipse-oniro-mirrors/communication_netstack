@@ -26,7 +26,6 @@ std::vector<std::string> Split(const std::string &str, const std::string &sep);
 std::string Strip(const std::string &str, char ch = ' ');
 
 std::string ToLower(const std::string &s);
-
 } // namespace OHOS::NetStack::CommonUtils
 
 #endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */

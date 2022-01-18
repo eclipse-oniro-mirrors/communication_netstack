@@ -31,20 +31,19 @@
         env, info,                                                    \
         PushTask<Context, SocketAsyncWork::executor, SocketAsyncWork::callback, work, Task::TaskPriority::priority>)
 
-#define FINALIZER(protocol)                                    \
-    [](napi_env, void *data, void *) {                         \
-        NETSTACK_LOGI(#protocol "socket handle is finalized"); \
-        auto manager = static_cast<EventManager *>(data);      \
-        if (manager != nullptr) {                              \
-            int sock = (int)(uint64_t)manager->GetData();      \
-            if (sock != 0) {                                   \
-                close(sock);                                   \
-            }                                                  \
-        }                                                      \
-        delete manager;                                        \
-    }
-
 namespace OHOS::NetStack {
+void Finalize(napi_env, void *data, void *)
+{
+    NETSTACK_LOGI("socket handle is finalized");
+    auto manager = static_cast<EventManager *>(data);
+    if (manager != nullptr) {
+        int sock = (int)(uint64_t)manager->GetData();
+        if (sock != 0) {
+            close(sock);
+        }
+    }
+    delete manager;
+}
 
 template <class Context,
           AsyncWorkExecutor executor,
@@ -114,7 +113,7 @@ napi_value SocketModuleExports::InitSocketModule(napi_env env, napi_value export
 
 napi_value SocketModuleExports::ConstructUDPSocketInstance(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::NewInstance(env, info, INTERFACE_UDP_SOCKET, FINALIZER(Udp));
+    return ModuleTemplate::NewInstance(env, info, INTERFACE_UDP_SOCKET, Finalize);
 }
 
 void SocketModuleExports::DefineUDPSocketClass(napi_env env, napi_value exports)
@@ -133,7 +132,7 @@ void SocketModuleExports::DefineUDPSocketClass(napi_env env, napi_value exports)
 
 napi_value SocketModuleExports::ConstructTCPSocketInstance(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::NewInstance(env, info, INTERFACE_TCP_SOCKET, FINALIZER(Tcp));
+    return ModuleTemplate::NewInstance(env, info, INTERFACE_TCP_SOCKET, Finalize);
 }
 
 void SocketModuleExports::DefineTCPSocketClass(napi_env env, napi_value exports)
@@ -291,5 +290,4 @@ extern "C" __attribute__((constructor)) void RegisterSocketModule(void)
 {
     napi_module_register(&g_socketModule);
 }
-
 } // namespace OHOS::NetStack

@@ -18,7 +18,6 @@
 #include "constant.h"
 
 namespace OHOS::NetStack {
-
 HttpRequestOptions::HttpRequestOptions()
     : method_(HttpConstant::HTTP_METHOD_GET),
       readTimeout_(HttpConstant::DEFAULT_READ_TIMEOUT),
@@ -108,5 +107,4 @@ int32_t HttpRequestOptions::GetFixedLengthStreamingMode() const
 {
     return fixedLengthStreamingMode_;
 }
-
 } // namespace OHOS::NetStack

@@ -32,7 +32,6 @@
 #define HTTP_MODULE_NAME "net.http"
 
 namespace OHOS::NetStack {
-
 napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
 {
     DefineHttpRequestClass(env, exports);

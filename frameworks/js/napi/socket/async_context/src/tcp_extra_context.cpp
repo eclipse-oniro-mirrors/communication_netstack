@@ -19,7 +19,6 @@
 #include "netstack_napi_utils.h"
 
 namespace OHOS::NetStack {
-
 TcpSetExtraOptionsContext::TcpSetExtraOptionsContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void TcpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -94,5 +93,4 @@ bool TcpSetExtraOptionsContext::CheckParamsType(napi_value *params, size_t param
     }
     return false;
 }
-
 } // namespace OHOS::NetStack

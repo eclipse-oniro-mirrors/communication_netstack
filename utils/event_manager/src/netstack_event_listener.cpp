@@ -18,7 +18,6 @@
 #include "netstack_napi_utils.h"
 
 namespace OHOS::NetStack {
-
 EventListener::EventListener(napi_env env, std::string type, napi_value callback, bool once, bool asyncCallback)
     : env_(env),
       type_(std::move(type)),
@@ -106,5 +105,4 @@ bool EventListener::IsAsyncCallback() const
 {
     return asyncCallback_;
 }
-
 } // namespace OHOS::NetStack

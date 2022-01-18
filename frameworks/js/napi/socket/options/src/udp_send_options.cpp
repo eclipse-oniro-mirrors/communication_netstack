@@ -16,7 +16,6 @@
 #include "udp_send_options.h"
 
 namespace OHOS::NetStack {
-
 void UDPSendOptions::SetData(const std::string &data)
 {
     data_ = data;
@@ -31,5 +30,4 @@ const std::string &UDPSendOptions::GetData() const
 {
     return data_;
 }
-
 } // namespace OHOS::NetStack

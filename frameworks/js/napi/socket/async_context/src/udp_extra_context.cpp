@@ -19,7 +19,6 @@
 #include "netstack_napi_utils.h"
 
 namespace OHOS::NetStack {
-
 UdpSetExtraOptionsContext::UdpSetExtraOptionsContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void UdpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -73,5 +72,4 @@ bool UdpSetExtraOptionsContext::CheckParamsType(napi_value *params, size_t param
     }
     return false;
 }
-
 } // namespace OHOS::NetStack

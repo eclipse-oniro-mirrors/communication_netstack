@@ -16,7 +16,6 @@
 #include "constant.h"
 
 namespace OHOS::NetStack {
-
 const char *const HttpConstant::HTTP_METHOD_GET = "GET";
 const char *const HttpConstant::HTTP_METHOD_HEAD = "HEAD";
 const char *const HttpConstant::HTTP_METHOD_OPTIONS = "OPTIONS";
@@ -57,5 +56,4 @@ const char *const HttpConstant::HTTP_CONTENT_TYPE = "content-type";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_TEXT = "text/plain";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE = "application/x-www-form-urlencoded";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_JSON = "application/json";
-
 } // namespace OHOS::NetStack

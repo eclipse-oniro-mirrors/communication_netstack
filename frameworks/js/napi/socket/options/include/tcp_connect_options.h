@@ -21,7 +21,6 @@
 #define DEFAULT_CONNECT_TIMEOUT 5 // 5 Seconds
 
 namespace OHOS::NetStack {
-
 class TcpConnectOptions final {
 
 public:
@@ -38,7 +37,6 @@ public:
 private:
     uint32_t timeout_;
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_TCP_CONNECT_OPTIONS_H */

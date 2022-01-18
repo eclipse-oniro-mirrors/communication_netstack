@@ -296,5 +296,4 @@ void DefineProperties(napi_env env,
 
     (void)napi_define_properties(env, object, properties.size(), descriptors);
 }
-
 } // namespace OHOS::NetStack::NapiUtils

@@ -19,7 +19,6 @@
 #include "net_address.h"
 
 namespace OHOS::NetStack {
-
 class UDPSendOptions final {
 
 public:
@@ -38,7 +37,6 @@ public:
 private:
     std::string data_;
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_UDP_SEND_OPTIONS_H */

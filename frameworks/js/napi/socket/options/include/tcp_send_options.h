@@ -19,7 +19,6 @@
 #include <string>
 
 namespace OHOS::NetStack {
-
 class TCPSendOptions final {
 
 public:
@@ -42,7 +41,6 @@ private:
 
     std::string encoding_;
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_TCP_SEND_OPTIONS_H */

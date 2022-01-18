@@ -57,5 +57,4 @@ std::string ToLower(const std::string &s)
     std::transform(res.begin(), res.end(), res.begin(), tolower);
     return res;
 }
-
 } // namespace OHOS::NetStack::CommonUtils

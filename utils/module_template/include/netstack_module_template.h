@@ -101,6 +101,5 @@ void DefineClass(napi_env env,
                  const std::string &className);
 
 napi_value NewInstance(napi_env env, napi_callback_info info, const std::string &className, Finalizer finalizer);
-
 } // namespace OHOS::NetStack::ModuleTemplate
 #endif /* COMMUNICATIONNETSTACK_NETSTACK_MODULE_TEMPLATE_H */

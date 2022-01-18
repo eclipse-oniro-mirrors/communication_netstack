@@ -19,7 +19,6 @@
 #include "napi/native_api.h"
 
 namespace OHOS::NetStack {
-
 class HttpModuleExports {
 public:
     class HttpRequest {
@@ -93,6 +92,5 @@ private:
 
     static void InitResponseCode(napi_env env, napi_value exports);
 };
-
 } // namespace OHOS::NetStack
 #endif // COMMUNICATIONNETSTACK_HTTP_MODULE_H

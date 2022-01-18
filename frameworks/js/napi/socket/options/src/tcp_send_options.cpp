@@ -16,7 +16,6 @@
 #include "tcp_send_options.h"
 
 namespace OHOS::NetStack {
-
 void TCPSendOptions::SetData(const std::string &data)
 {
     data_ = data;
@@ -41,5 +40,4 @@ const std::string &TCPSendOptions::GetEncoding() const
 {
     return encoding_;
 }
-
 } // namespace OHOS::NetStack

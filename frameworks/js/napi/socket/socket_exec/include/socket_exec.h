@@ -67,7 +67,6 @@ napi_value GetRemoteAddressCallback(GetRemoteAddressContext *context);
 napi_value TcpSetExtraOptionsCallback(TcpSetExtraOptionsContext *context);
 
 napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context);
-
 } // namespace OHOS::NetStack::SocketExec
 
 #endif /* COMMUNICATIONNETSTACK_SOCKET_EXEC_H */

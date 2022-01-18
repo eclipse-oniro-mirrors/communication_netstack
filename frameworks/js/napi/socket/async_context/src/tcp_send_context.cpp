@@ -21,7 +21,6 @@
 #include <arpa/inet.h>
 
 namespace OHOS::NetStack {
-
 TcpSendContext::TcpSendContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void TcpSendContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -89,5 +88,4 @@ bool TcpSendContext::GetData(napi_value udpSendOptions)
     }
     return false;
 }
-
 } // namespace OHOS::NetStack

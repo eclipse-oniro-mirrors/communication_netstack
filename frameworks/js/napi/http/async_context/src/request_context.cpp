@@ -29,7 +29,6 @@
 #define PARAM_URL_AND_OPTIONS_AND_CALLBACK 3
 
 namespace OHOS::NetStack {
-
 RequestContext::RequestContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void RequestContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -237,5 +236,4 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
 
     SetParseOK(ParseExtraData(optionsValue));
 }
-
 } // namespace OHOS::NetStack

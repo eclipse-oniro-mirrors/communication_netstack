@@ -19,7 +19,7 @@
 #include <cstring>
 #include <string>
 
-#define __FILENAME__ strrchr(__FILE__, '/') + 1
+#define MAKE_FILE_NAME (strrchr(__FILE__, '/') + 1)
 
 #if !defined(_WIN32) && !defined(__APPLE__)
 
@@ -31,8 +31,8 @@
 
 static constexpr OHOS::HiviewDFX::HiLogLabel NETSTACK_LOG_LABEL = {LOG_CORE, NETSTACK_LOG_DOMAIN, NETSTACK_LOG_TAG};
 
-#define NETSTACK_HILOG_PRINT(Level, fmt, ...)                                                                      \
-    (void)OHOS::HiviewDFX::HiLog::Level(NETSTACK_LOG_LABEL, "NETSTACK [%{public}s %{public}d] " fmt, __FILENAME__, \
+#define NETSTACK_HILOG_PRINT(Level, fmt, ...)                                                                        \
+    (void)OHOS::HiviewDFX::HiLog::Level(NETSTACK_LOG_LABEL, "NETSTACK [%{public}s %{public}d] " fmt, MAKE_FILE_NAME, \
                                         __LINE__, ##__VA_ARGS__)
 
 #else
@@ -70,18 +70,12 @@ static void NetStackPrintLog(const char *fmt, ...)
 }
 
 #define NETSTACK_HILOG_PRINT(Level, fmt, ...) \
-    NetStackPrintLog("NETSTACK %s [%s %d] " fmt, #Level, __FILENAME__, __LINE__, ##__VA_ARGS__)
+    NetStackPrintLog("NETSTACK %s [%s %d] " fmt, #Level, MAKE_FILE_NAME, __LINE__, ##__VA_ARGS__)
 
 #endif /* !defined(_WIN32) && !defined(__APPLE__) */
 
-/* #define NETSTACK_LOGF(fmt, ...) NETSTACK_HILOG_PRINT(Debug, fmt, ##__VA_ARGS__) */
-
 #define NETSTACK_LOGE(fmt, ...) NETSTACK_HILOG_PRINT(Error, fmt, ##__VA_ARGS__)
 
-/* #define NETSTACK_LOGW(fmt, ...) NETSTACK_HILOG_PRINT(Warn, fmt, ##__VA_ARGS__) */
-
 #define NETSTACK_LOGI(fmt, ...) NETSTACK_HILOG_PRINT(Info, fmt, ##__VA_ARGS__)
-
-/* #define NETSTACK_LOGD(fmt, ...) NETSTACK_HILOG_PRINT(Fatal, fmt, ##__VA_ARGS__) */
 
 #endif /* COMMUNICATIONNETSTACK_NETSTACK_LOG */

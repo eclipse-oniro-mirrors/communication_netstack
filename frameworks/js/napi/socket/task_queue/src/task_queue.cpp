@@ -99,5 +99,4 @@ void PushTask(TaskPriority priority, AsyncWorkExecutor executor, AsyncWorkCallba
 
     g_taskExecutorQueue.push(Task(priority, executor, callback, data));
 }
-
 } // namespace OHOS::NetStack::Task

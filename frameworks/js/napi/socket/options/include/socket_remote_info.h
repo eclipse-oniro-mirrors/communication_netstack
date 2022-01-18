@@ -20,7 +20,6 @@
 #include <string>
 
 namespace OHOS::NetStack {
-
 class SocketRemoteInfo final {
 
 public:
@@ -53,7 +52,6 @@ private:
 
     uint32_t size_;
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_SOCKET_REMOTE_INFO_H */

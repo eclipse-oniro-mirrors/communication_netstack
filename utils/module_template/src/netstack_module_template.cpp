@@ -19,16 +19,18 @@
 
 namespace OHOS::NetStack::ModuleTemplate {
 
+constexpr const int EVENT_PARAM_NUM = 2;
+
 napi_value
     On(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events, bool asyncCallback)
 {
     napi_value thisVal = nullptr;
-    size_t paramsCount = 2;
-    napi_value params[2] = {nullptr};
+    size_t paramsCount = EVENT_PARAM_NUM;
+    napi_value params[EVENT_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
 
     std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    if (paramsCount != 2 || std::find(events.begin(), events.end(), event) == events.end()) {
+    if (paramsCount != EVENT_PARAM_NUM || std::find(events.begin(), events.end(), event) == events.end()) {
         return NapiUtils::GetUndefined(env);
     }
 
@@ -45,12 +47,12 @@ napi_value
     Once(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events, bool asyncCallback)
 {
     napi_value thisVal = nullptr;
-    size_t paramsCount = 2;
-    napi_value params[2] = {nullptr};
+    size_t paramsCount = EVENT_PARAM_NUM;
+    napi_value params[EVENT_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
 
     std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    if (paramsCount != 2 || std::find(events.begin(), events.end(), event) == events.end()) {
+    if (paramsCount != EVENT_PARAM_NUM || std::find(events.begin(), events.end(), event) == events.end()) {
         return NapiUtils::GetUndefined(env);
     }
 
@@ -66,12 +68,12 @@ napi_value
 napi_value Off(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events)
 {
     napi_value thisVal = nullptr;
-    size_t paramsCount = 2;
-    napi_value params[2] = {nullptr};
+    size_t paramsCount = EVENT_PARAM_NUM;
+    napi_value params[EVENT_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
 
     std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    if (paramsCount != 2 || std::find(events.begin(), events.end(), event) == events.end()) {
+    if (paramsCount != EVENT_PARAM_NUM || std::find(events.begin(), events.end(), event) == events.end()) {
         return NapiUtils::GetUndefined(env);
     }
 
@@ -125,5 +127,4 @@ napi_value NewInstance(napi_env env, napi_callback_info info, const std::string 
 
     return result;
 }
-
 } // namespace OHOS::NetStack::ModuleTemplate

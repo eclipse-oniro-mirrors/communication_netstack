@@ -22,7 +22,6 @@
 #include "noncopyable.h"
 
 namespace OHOS::NetStack {
-
 class RequestContext final : public BaseContext {
 public:
     ACE_DISALLOW_COPY_AND_MOVE(RequestContext);
@@ -50,7 +49,6 @@ private:
 
     void UrlAndOptions(napi_value urlValue, napi_value optionsValue);
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_REQUEST_CONTEXT_H */

@@ -21,7 +21,6 @@
 #include "tcp_extra_options.h"
 
 namespace OHOS::NetStack {
-
 class TcpSetExtraOptionsContext : public BaseContext {
 public:
     ACE_DISALLOW_COPY_AND_MOVE(TcpSetExtraOptionsContext);
@@ -39,7 +38,6 @@ public:
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_TCP_EXTRA_CONTEXT_H */

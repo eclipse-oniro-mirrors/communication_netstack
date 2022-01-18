@@ -16,7 +16,6 @@
 #include "net_address.h"
 
 namespace OHOS::NetStack {
-
 NetAddress::NetAddress() : family_(Family::IPv4), port_(0) {}
 
 void NetAddress::SetAddress(const std::string &address)
@@ -65,5 +64,4 @@ uint16_t NetAddress::GetPort() const
 {
     return port_;
 }
-
 } // namespace OHOS::NetStack

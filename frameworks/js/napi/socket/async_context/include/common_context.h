@@ -23,7 +23,6 @@
 #include "socket_state_base.h"
 
 namespace OHOS::NetStack {
-
 class CommonContext : public BaseContext {
 public:
     ACE_DISALLOW_COPY_AND_MOVE(CommonContext);
@@ -58,7 +57,6 @@ public:
 
     void SetSocketFd(int sock);
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_COMMON_CONTEXT_H */

@@ -19,7 +19,6 @@
 #include "netstack_napi_utils.h"
 
 namespace OHOS::NetStack {
-
 CommonContext::CommonContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void CommonContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -59,5 +58,4 @@ void CloseContext::SetSocketFd(int sock)
 {
     manager_->SetData(reinterpret_cast<void *>(sock));
 }
-
 } // namespace OHOS::NetStack

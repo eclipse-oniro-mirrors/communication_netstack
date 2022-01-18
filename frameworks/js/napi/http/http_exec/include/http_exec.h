@@ -24,7 +24,6 @@
 #include <vector>
 
 namespace OHOS::NetStack {
-
 class HttpExec final {
 public:
     ACE_DISALLOW_COPY_AND_MOVE(HttpExec);
@@ -67,7 +66,6 @@ private:
 
     static bool initialized_;
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_HTTP_REQUEST_EXEC_H */

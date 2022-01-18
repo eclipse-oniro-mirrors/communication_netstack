@@ -33,7 +33,6 @@ void Executor(napi_env env, void *data);
 void Callback(napi_env env, napi_status status, void *data);
 
 void PushTask(TaskPriority priority, AsyncWorkExecutor executor, AsyncWorkCallback callback, void *data);
-
 } // namespace OHOS::NetStack::Task
 
 #endif /* COMMUNICATIONNETSTACK_TASK_QUEUE_H */

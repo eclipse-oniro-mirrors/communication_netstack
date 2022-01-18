@@ -20,7 +20,6 @@
 #include "noncopyable.h"
 
 namespace OHOS::NetStack {
-
 class SocketAsyncWork final {
 public:
     ACE_DISALLOW_COPY_AND_MOVE(SocketAsyncWork);
@@ -63,7 +62,6 @@ public:
 
     static void UdpSetExtraOptionsCallback(napi_env env, napi_status status, void *data);
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_SOCKET_ASYNC_WORK_H */

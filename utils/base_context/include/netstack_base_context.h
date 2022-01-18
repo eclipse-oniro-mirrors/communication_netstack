@@ -23,7 +23,6 @@
 #include <list>
 
 namespace OHOS::NetStack {
-
 typedef void (*AsyncWorkExecutor)(napi_env env, void *data);
 
 typedef void (*AsyncWorkCallback)(napi_env env, napi_status status, void *data);
@@ -90,7 +89,6 @@ private:
 
     std::string asyncWorkName_;
 };
-
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_BASE_CONTEXT_H */
