@@ -22,11 +22,11 @@
 #include "netstack_napi_utils.h"
 #include <algorithm>
 
-#define PARAM_JUST_URL 1
+static constexpr const int PARAM_JUST_URL = 1;
 
-#define PARAM_URL_AND_OPTIONS_OR_CALLBACK 2
+static constexpr const int PARAM_URL_AND_OPTIONS_OR_CALLBACK = 2;
 
-#define PARAM_URL_AND_OPTIONS_AND_CALLBACK 3
+static constexpr const int PARAM_URL_AND_OPTIONS_AND_CALLBACK = 3;
 
 namespace OHOS::NetStack {
 RequestContext::RequestContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
@@ -59,7 +59,7 @@ void RequestContext::ParseParams(napi_value *params, size_t paramsCount)
     }
 
     if (paramsCount == PARAM_URL_AND_OPTIONS_AND_CALLBACK) {
-        if (SetCallback(params[2]) != napi_ok) {
+        if (SetCallback(params[PARAM_URL_AND_OPTIONS_AND_CALLBACK - 1]) != napi_ok) {
             return;
         }
         UrlAndOptions(params[0], params[1]);
@@ -82,7 +82,7 @@ bool RequestContext::CheckParamsType(napi_value *params, size_t paramsCount)
         // should be url options and callback
         return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string &&
                NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object &&
-               NapiUtils::GetValueType(GetEnv(), params[2]) == napi_function;
+               NapiUtils::GetValueType(GetEnv(), params[PARAM_URL_AND_OPTIONS_AND_CALLBACK - 1]) == napi_function;
     }
     return false;
 }

@@ -23,9 +23,9 @@
 #include "noncopyable.h"
 #include <memory>
 
-#define PARSE_PARAM_FAILED -1
+static constexpr const int PARSE_PARAM_FAILED = -1;
 
-#define BUSINESS_ERROR_KEY "code"
+static constexpr const char *BUSINESS_ERROR_KEY = "code";
 
 namespace OHOS::NetStack {
 class BaseAsyncWork final {

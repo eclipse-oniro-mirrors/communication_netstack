@@ -19,7 +19,7 @@
 
 namespace OHOS::NetStack::ModuleTemplate {
 
-constexpr const int EVENT_PARAM_NUM = 2;
+static constexpr const int EVENT_PARAM_NUM = 2;
 
 napi_value
     On(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events, bool asyncCallback)

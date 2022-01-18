@@ -29,11 +29,11 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define DEFAULT_BUFFER_SIZE 8192
+static constexpr const int DEFAULT_BUFFER_SIZE = 8192;
 
-#define DEFAULT_POLL_TIMEOUT 500 // 0.5 Seconds
+static constexpr const int DEFAULT_POLL_TIMEOUT = 500; // 0.5 Seconds
 
-#define ADDRESS_INVALID -1
+static constexpr const int ADDRESS_INVALID = -1;
 
 namespace OHOS::NetStack::SocketExec {
 
@@ -47,14 +47,14 @@ static void EmitError(BaseContext *context, int32_t errorNum)
 static std::string MakeAddressString(sockaddr *addr)
 {
     if (addr->sa_family == AF_INET) {
-        auto *addr4 = (sockaddr_in *)addr;
+        auto *addr4 = reinterpret_cast<sockaddr_in *>(addr);
         const char *str = inet_ntoa(addr4->sin_addr);
         if (str == nullptr || strlen(str) == 0) {
             return {};
         }
         return str;
     } else if (addr->sa_family == AF_INET6) {
-        auto *addr6 = (sockaddr_in6 *)addr;
+        auto *addr6 = reinterpret_cast<sockaddr_in6 *>(addr);
         char str[INET6_ADDRSTRLEN] = {0};
         if (inet_ntop(AF_INET6, &addr6->sin6_addr, str, INET6_ADDRSTRLEN) == nullptr || strlen(str) == 0) {
             return {};
@@ -104,10 +104,10 @@ static void OnRecvMessage(BaseContext *context, void *data, size_t len, sockaddr
         remoteInfo.SetAddress(address);
         remoteInfo.SetFamily(addr->sa_family);
         if (addr->sa_family == AF_INET) {
-            auto *addr4 = (sockaddr_in *)addr;
+            auto *addr4 = reinterpret_cast<sockaddr_in *>(addr);
             remoteInfo.SetPort(ntohs(addr4->sin_port));
         } else if (addr->sa_family == AF_INET6) {
-            auto *addr6 = (sockaddr_in6 *)addr;
+            auto *addr6 = reinterpret_cast<sockaddr_in6 *>(addr);
             remoteInfo.SetPort(ntohs(addr6->sin6_port));
         }
         remoteInfo.SetSize(len);
@@ -150,7 +150,7 @@ public:
 
         sa_family_t family;
         socklen_t len = sizeof(family);
-        int ret = getsockname(sock, (sockaddr *)&family, &len);
+        int ret = getsockname(sock, reinterpret_cast<sockaddr *>(&family), &len);
         if (ret < 0) {
             return;
         }
@@ -159,21 +159,21 @@ public:
             sockaddr_in addr4 = {0};
             socklen_t len4 = sizeof(sockaddr_in);
 
-            ret = getpeername(sock, (sockaddr *)&addr4, &len4);
+            ret = getpeername(sock, reinterpret_cast<sockaddr *>(&addr4), &len4);
             if (ret < 0) {
                 return;
             }
-            OnRecvMessage(context_, data, dataLen, (sockaddr *)&addr4);
+            OnRecvMessage(context_, data, dataLen, reinterpret_cast<sockaddr *>(&addr4));
             return;
         } else if (family == AF_INET6) {
             sockaddr_in6 addr6 = {0};
             socklen_t len6 = sizeof(sockaddr_in6);
 
-            ret = getpeername(sock, (sockaddr *)&addr6, &len6);
+            ret = getpeername(sock, reinterpret_cast<sockaddr *>(&addr6), &len6);
             if (ret < 0) {
                 return;
             }
-            OnRecvMessage(context_, data, dataLen, (sockaddr *)&addr6);
+            OnRecvMessage(context_, data, dataLen, reinterpret_cast<sockaddr *>(&addr6));
             return;
         }
     }
@@ -219,12 +219,12 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     int bufferSize = DEFAULT_BUFFER_SIZE;
     int opt = 0;
     socklen_t optLen = sizeof(opt);
-    if (getsockopt(sock, SOL_SOCKET, SO_SNDBUF, (void *)&opt, &optLen) >= 0 && opt > 0) {
+    if (getsockopt(sock, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<void *>(&opt), &optLen) >= 0 && opt > 0) {
         bufferSize = opt;
     }
     int sockType = 0;
     optLen = sizeof(sockType);
-    if (getsockopt(sock, SOL_SOCKET, SO_TYPE, (void *)&sockType, &optLen) < 0) {
+    if (getsockopt(sock, SOL_SOCKET, SO_TYPE, reinterpret_cast<void *>(&sockType), &optLen) < 0) {
         NETSTACK_LOGI("get sock opt sock type failed = %{public}s", strerror(errno));
         return false;
     }
@@ -279,12 +279,12 @@ static bool PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     int bufferSize = DEFAULT_BUFFER_SIZE;
     int opt = 0;
     socklen_t optLen = sizeof(opt);
-    if (getsockopt(sock, SOL_SOCKET, SO_RCVBUF, (void *)&opt, &optLen) >= 0 && opt > 0) {
+    if (getsockopt(sock, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<void *>(&opt), &optLen) >= 0 && opt > 0) {
         bufferSize = opt;
     }
 
-    auto deleter = [](const char *s) { free((void *)s); };
-    std::unique_ptr<char, decltype(deleter)> buf((char *)malloc(bufferSize), deleter);
+    auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
+    std::unique_ptr<char, decltype(deleter)> buf(reinterpret_cast<char *>(malloc(bufferSize)), deleter);
 
     nfds_t num = 1;
     pollfd fds[1] = {{0}};
@@ -352,7 +352,7 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
 
     int err = 0;
     socklen_t optLen = sizeof(err);
-    ret = getsockopt(sock, SOL_SOCKET, SO_ERROR, (void *)&err, &optLen);
+    ret = getsockopt(sock, SOL_SOCKET, SO_ERROR, reinterpret_cast<void *>(&err), &optLen);
     if (ret < 0) {
         return false;
     }
@@ -369,13 +369,13 @@ static void GetAddr(NetAddress *address, sockaddr_in *addr4, sockaddr_in6 *addr6
         addr4->sin_family = AF_INET;
         addr4->sin_port = htons(address->GetPort());
         addr4->sin_addr.s_addr = inet_addr(address->GetAddress().c_str());
-        *addr = (sockaddr *)addr4;
+        *addr = reinterpret_cast<sockaddr *>(addr4);
         *len = sizeof(sockaddr_in);
     } else if (family == AF_INET6) {
         addr6->sin6_family = AF_INET6;
         addr6->sin6_port = htons(address->GetPort());
         inet_pton(AF_INET6, address->GetAddress().c_str(), &addr6->sin6_addr);
-        *addr = (sockaddr *)addr6;
+        *addr = reinterpret_cast<sockaddr *>(addr6);
         *len = sizeof(sockaddr_in6);
     }
 }
@@ -384,31 +384,31 @@ static bool SetBaseOptions(int sock, ExtraOptionsBase *option)
 {
     if (option->GetReceiveBufferSize() != 0) {
         int size = (int)option->GetReceiveBufferSize();
-        if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (void *)&size, sizeof(size)) < 0) {
+        if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<void *>(&size), sizeof(size)) < 0) {
             return false;
         }
     }
 
     if (option->GetSendBufferSize() != 0) {
         int size = (int)option->GetSendBufferSize();
-        if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (void *)&size, sizeof(size)) < 0) {
+        if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<void *>(&size), sizeof(size)) < 0) {
             return false;
         }
     }
 
     if (option->IsReuseAddress()) {
         int reuse = 1;
-        if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *)&reuse, sizeof(reuse)) < 0) {
+        if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<void *>(&reuse), sizeof(reuse)) < 0) {
             return false;
         }
     }
 
     if (option->GetSocketTimeout() != 0) {
         timeval timeout = {(int)option->GetSocketTimeout(), 0};
-        if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (void *)&timeout, sizeof(timeout)) < 0) {
+        if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
             return false;
         }
-        if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (void *)&timeout, sizeof(timeout)) < 0) {
+        if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
             return false;
         }
     }
@@ -461,7 +461,7 @@ bool ExecBind(BindContext *context)
         return false;
     }
 
-    if (bind(context->GetSocketFd(), (const sockaddr *)addr, len) < 0) {
+    if (bind(context->GetSocketFd(), addr, len) < 0) {
         if (errno != EADDRINUSE) {
             NETSTACK_LOGE("bind error is %{public}s %{public}d", strerror(errno), errno);
             context->SetErrorCode(errno);
@@ -474,7 +474,7 @@ bool ExecBind(BindContext *context)
             NETSTACK_LOGI("distribute a random port");
             addr6.sin6_port = 0; /* distribute a random port */
         }
-        if (bind(context->GetSocketFd(), (const sockaddr *)addr, len) < 0) {
+        if (bind(context->GetSocketFd(), addr, len) < 0) {
             NETSTACK_LOGE("rebind error is %{public}s %{public}d", strerror(errno), errno);
             context->SetErrorCode(errno);
             return false;
@@ -538,7 +538,7 @@ bool ExecTcpSend(TcpSendContext *context)
 
     sa_family_t family;
     socklen_t len = sizeof(sa_family_t);
-    if (getsockname(context->GetSocketFd(), (sockaddr *)&family, &len) < 0) {
+    if (getsockname(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&family), &len) < 0) {
         NETSTACK_LOGE("get sock name failed");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
@@ -547,14 +547,14 @@ bool ExecTcpSend(TcpSendContext *context)
     if (family == AF_INET) {
         sockaddr_in addr4 = {0};
         socklen_t len4 = sizeof(addr4);
-        int ret = getpeername(context->GetSocketFd(), (sockaddr *)&addr4, &len4);
+        int ret = getpeername(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr4), &len4);
         if (ret >= 0 && addr4.sin_port != 0) {
             connected = true;
         }
     } else if (family == AF_INET6) {
         sockaddr_in6 addr6 = {0};
         socklen_t len6 = sizeof(addr6);
-        int ret = getpeername(context->GetSocketFd(), (sockaddr *)&addr6, &len6);
+        int ret = getpeername(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr6), &len6);
         if (ret >= 0 && addr6.sin6_port != 0) {
             connected = true;
         }
@@ -594,7 +594,7 @@ bool ExecGetState(GetStateContext *context)
 
     sa_family_t family;
     socklen_t len = sizeof(family);
-    int ret = getsockname(context->GetSocketFd(), (sockaddr *)&family, &len);
+    int ret = getsockname(context->GetSocketFd(), &family, &len);
     if (ret < 0) {
         context->SetErrorCode(errno);
         return false;
@@ -605,10 +605,10 @@ bool ExecGetState(GetStateContext *context)
     sockaddr *addr = nullptr;
     socklen_t addrLen;
     if (family == AF_INET) {
-        addr = (sockaddr *)&addr4;
+        addr = reinterpret_cast<sockaddr *>(&addr4);
         addrLen = sizeof(addr4);
     } else if (family == AF_INET6) {
-        addr = (sockaddr *)&addr6;
+        addr = reinterpret_cast<sockaddr *>(&addr6);
         addrLen = sizeof(addr6);
     }
 
@@ -664,7 +664,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 {
     sa_family_t family;
     socklen_t len = sizeof(family);
-    int ret = getsockname(context->GetSocketFd(), (sockaddr *)&family, &len);
+    int ret = getsockname(context->GetSocketFd(), reinterpret_cast<void *>(&family), &len);
     if (ret < 0) {
         context->SetErrorCode(errno);
         return false;
@@ -674,13 +674,13 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
         sockaddr_in addr4 = {0};
         socklen_t len4 = sizeof(sockaddr_in);
 
-        ret = getpeername(context->GetSocketFd(), (sockaddr *)&addr4, &len4);
+        ret = getpeername(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr4), &len4);
         if (ret < 0) {
             context->SetErrorCode(errno);
             return false;
         }
 
-        std::string address = MakeAddressString((sockaddr *)&addr4);
+        std::string address = MakeAddressString(reinterpret_cast<sockaddr *>(&addr4));
         if (address.empty()) {
             context->SetErrorCode(ADDRESS_INVALID);
             return false;
@@ -693,13 +693,13 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
         sockaddr_in6 addr6 = {0};
         socklen_t len6 = sizeof(sockaddr_in6);
 
-        ret = getpeername(context->GetSocketFd(), (sockaddr *)&addr6, &len6);
+        ret = getpeername(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr6), &len6);
         if (ret < 0) {
             context->SetErrorCode(errno);
             return false;
         }
 
-        std::string address = MakeAddressString((sockaddr *)&addr6);
+        std::string address = MakeAddressString(reinterpret_cast<sockaddr *>(&addr6));
         if (address.empty()) {
             context->SetErrorCode(ADDRESS_INVALID);
             return false;
@@ -722,7 +722,7 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
 
     if (context->options.IsKeepAlive()) {
         int keepalive = 1;
-        if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_KEEPALIVE, (void *)&keepalive, sizeof(keepalive)) < 0) {
+        if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_KEEPALIVE, &keepalive, sizeof(keepalive)) < 0) {
             context->SetErrorCode(errno);
             return false;
         }
@@ -730,7 +730,7 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
 
     if (context->options.IsOOBInline()) {
         int oobInline = 1;
-        if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_OOBINLINE, (void *)&oobInline, sizeof(oobInline)) < 0) {
+        if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_OOBINLINE, &oobInline, sizeof(oobInline)) < 0) {
             context->SetErrorCode(errno);
             return false;
         }
@@ -738,7 +738,7 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
 
     if (context->options.IsTCPNoDelay()) {
         int tcpNoDelay = 1;
-        if (setsockopt(context->GetSocketFd(), IPPROTO_TCP, TCP_NODELAY, (void *)&tcpNoDelay, sizeof(tcpNoDelay)) < 0) {
+        if (setsockopt(context->GetSocketFd(), IPPROTO_TCP, TCP_NODELAY, &tcpNoDelay, sizeof(tcpNoDelay)) < 0) {
             context->SetErrorCode(errno);
             return false;
         }
@@ -782,19 +782,21 @@ napi_value UdpSendCallback(UdpSendContext *context)
 {
     sa_family_t family;
     socklen_t len = sizeof(family);
-    int ret = getsockname(context->GetSocketFd(), (sockaddr *)&family, &len);
+    int ret = getsockname(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&family), &len);
     if (ret < 0) {
         return NapiUtils::GetUndefined(context->GetEnv());
     }
     if (family == AF_INET) {
         sockaddr_in addr4 = {0};
-        if (!PollRecvData(context->GetSocketFd(), (sockaddr *)&addr4, sizeof(addr4), UdpMessageCallback(context))) {
+        if (!PollRecvData(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr4), sizeof(addr4),
+                          UdpMessageCallback(context))) {
             EmitError(context, errno);
         }
         return NapiUtils::GetUndefined(context->GetEnv());
     } else if (family == AF_INET6) {
         sockaddr_in6 addr6 = {0};
-        if (!PollRecvData(context->GetSocketFd(), (sockaddr *)&addr6, sizeof(addr6), UdpMessageCallback(context))) {
+        if (!PollRecvData(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr6), sizeof(addr6),
+                          UdpMessageCallback(context))) {
             EmitError(context, errno);
         }
         return NapiUtils::GetUndefined(context->GetEnv());

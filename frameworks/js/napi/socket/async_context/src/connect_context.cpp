@@ -18,7 +18,7 @@
 #include "context_key.h"
 #include "netstack_log.h"
 #include "netstack_napi_utils.h"
-#include <arpa/inet.h>
+
 namespace OHOS::NetStack {
 ConnectContext::ConnectContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 

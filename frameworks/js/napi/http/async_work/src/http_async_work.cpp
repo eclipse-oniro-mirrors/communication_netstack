@@ -18,7 +18,6 @@
 #include "http_exec.h"
 #include "netstack_base_async_work.h"
 #include "netstack_napi_utils.h"
-#include <algorithm>
 
 namespace OHOS::NetStack {
 void HttpAsyncWork::ExecRequest(napi_env env, void *data)

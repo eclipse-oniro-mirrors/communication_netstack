@@ -16,6 +16,7 @@
 #include "test_common.h"
 
 #include "constant.h"
+#include "event_list.h"
 #include "http_module.h"
 #include "securec.h"
 
@@ -46,8 +47,6 @@
         NapiUtils::GetNamedProperty(env, httpRequestValue, HttpModuleExports::HttpRequest::FUNCTION_REQUEST); \
     ASSERT_CHECK_VALUE_TYPE(env, requestFunc, napi_function);
 
-#define ON_HEADER_RECEIVE "headerReceive"
-
 #define DEFINE_TEST_BEGIN(name, ASSERT_CODE_OK)                                                                     \
     [[maybe_unused]] HWTEST_F(NativeEngineTest, /* NOLINT */                                                        \
                               name, testing::ext::TestSize.Level0)                                                  \
@@ -76,7 +75,7 @@
                 uint32_t code =                                                                                     \
                     NapiUtils::GetUint32Property(env, params[0], HttpConstant::RESPONSE_KEY_RESPONSE_CODE);         \
                                                                                                                     \
-                assert((code == (uint32_t)HttpModuleExports::ResponseCode::OK) == ASSERT_CODE_OK);                  \
+                assert((code == (uint32_t)HttpModuleExports::ResponseCode::OK) == (ASSERT_CODE_OK));                \
             }                                                                                                       \
                                                                                                                     \
             if (NapiUtils::HasNamedProperty(env, params[0], HttpConstant::RESPONSE_KEY_COOKIES)) {                  \
@@ -149,7 +148,7 @@
                 uint32_t code =                                                                                     \
                     NapiUtils::GetUint32Property(env, params[1], HttpConstant::RESPONSE_KEY_RESPONSE_CODE);         \
                                                                                                                     \
-                assert((code == (uint32_t)HttpModuleExports::ResponseCode::OK) == ASSERT_CODE_OK);                  \
+                assert((code == (uint32_t)HttpModuleExports::ResponseCode::OK) == (ASSERT_CODE_OK));                \
             }                                                                                                       \
                                                                                                                     \
             if (NapiUtils::HasNamedProperty(env, params[1], HttpConstant::RESPONSE_KEY_COOKIES)) {                  \
@@ -208,31 +207,33 @@
     }
 
 namespace OHOS::NetStack {
+static constexpr const int PARAM_TWO = 2;
+
 void CallOn(napi_env env, napi_value thisVal, napi_value callback)
 {
     napi_value func = NapiUtils::GetNamedProperty(env, thisVal, HttpModuleExports::HttpRequest::FUNCTION_ON);
 
-    napi_value argv[2] = {NapiUtils::CreateStringUtf8(env, ON_HEADER_RECEIVE), callback};
+    napi_value argv[PARAM_TWO] = {NapiUtils::CreateStringUtf8(env, ON_HEADER_RECEIVE), callback};
 
-    NapiUtils::CallFunction(env, thisVal, func, 2, argv);
+    NapiUtils::CallFunction(env, thisVal, func, PARAM_TWO, argv);
 }
 
 void CallOnce(napi_env env, napi_value thisVal, napi_value callback)
 {
     napi_value func = NapiUtils::GetNamedProperty(env, thisVal, HttpModuleExports::HttpRequest::FUNCTION_ONCE);
 
-    napi_value argv[2] = {NapiUtils::CreateStringUtf8(env, ON_HEADER_RECEIVE), callback};
+    napi_value argv[PARAM_TWO] = {NapiUtils::CreateStringUtf8(env, ON_HEADER_RECEIVE), callback};
 
-    NapiUtils::CallFunction(env, thisVal, func, 2, argv);
+    NapiUtils::CallFunction(env, thisVal, func, PARAM_TWO, argv);
 }
 
 void CallOff(napi_env env, napi_value thisVal, napi_value callback)
 {
     napi_value func = NapiUtils::GetNamedProperty(env, thisVal, HttpModuleExports::HttpRequest::FUNCTION_OFF);
 
-    napi_value argv[2] = {NapiUtils::CreateStringUtf8(env, ON_HEADER_RECEIVE), callback};
+    napi_value argv[PARAM_TWO] = {NapiUtils::CreateStringUtf8(env, ON_HEADER_RECEIVE), callback};
 
-    NapiUtils::CallFunction(env, thisVal, func, 2, argv);
+    NapiUtils::CallFunction(env, thisVal, func, PARAM_TWO, argv);
 }
 
 void CallPromiseThenCatch(napi_env env, napi_value promise, napi_value callback)
@@ -638,10 +639,6 @@ int main(int argc, char **argv)
     (void)ret;
 
     g_nativeEngine->Loop(LOOP_DEFAULT);
-    /* NETSTACK_LOGI("test all number %u", g_testNum);
-    for (int i = 0; i < g_testNum; ++i) {
-        g_nativeEngine->Loop(LOOP_ONCE);
-    } */
 
     return 0;
 }

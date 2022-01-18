@@ -27,9 +27,9 @@
 #define DECLARE_REQUEST_METHOD(method) \
     DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::method, NapiUtils::CreateStringUtf8(env, HttpConstant::method))
 
-#define REQUEST_ASYNC_WORK_NAME "ExecRequest"
+static constexpr const char *REQUEST_ASYNC_WORK_NAME = "ExecRequest";
 
-#define HTTP_MODULE_NAME "net.http"
+static constexpr const char *HTTP_MODULE_NAME = "net.http";
 
 namespace OHOS::NetStack {
 napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)

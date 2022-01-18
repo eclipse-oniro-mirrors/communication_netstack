@@ -20,7 +20,7 @@
 
 namespace OHOS::HiviewDFX {
 
-constexpr uint32_t MAX_BUFFER_SIZE = 4096;
+static constexpr uint32_t MAX_BUFFER_SIZE = 4096;
 
 static void StripFormatString(const std::string &prefix, std::string &str)
 {

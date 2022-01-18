@@ -18,9 +18,9 @@
 #include <algorithm>
 
 namespace OHOS::NetStack {
-constexpr const int CALLBACK_PARAM_NUM = 1;
+static constexpr const int CALLBACK_PARAM_NUM = 1;
 
-constexpr const int ASYNC_CALLBACK_PARAM_NUM = 2;
+static constexpr const int ASYNC_CALLBACK_PARAM_NUM = 2;
 
 EventManager::EventManager() : data_(nullptr) {}
 

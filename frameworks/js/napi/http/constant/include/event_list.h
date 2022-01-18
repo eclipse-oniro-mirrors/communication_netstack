@@ -16,6 +16,6 @@
 #ifndef COMMUNICATIONNETSTACK_EVENT_LIST_H
 #define COMMUNICATIONNETSTACK_EVENT_LIST_H
 
-#define ON_HEADER_RECEIVE "headerReceive"
+static constexpr const char *ON_HEADER_RECEIVE = "headerReceive";
 
 #endif /* COMMUNICATIONNETSTACK_EVENT_LIST_H */

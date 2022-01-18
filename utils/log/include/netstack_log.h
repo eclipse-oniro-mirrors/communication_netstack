@@ -40,7 +40,7 @@ static constexpr OHOS::HiviewDFX::HiLogLabel NETSTACK_LOG_LABEL = {LOG_CORE, NET
 #include <stdarg.h>
 #include <stdio.h>
 
-constexpr uint32_t NETSTACK_MAX_BUFFER_SIZE = 4096;
+static constexpr uint32_t NETSTACK_MAX_BUFFER_SIZE = 4096;
 
 static void NetStackStripFormatString(const std::string &prefix, std::string &str)
 {

@@ -149,7 +149,7 @@
                                                                                                                 \
         const char *sendStr = nullptr;                                                                          \
         size_t len = 0;                                                                                         \
-        if (!PNG) {                                                                                             \
+        if (!(PNG)) {                                                                                           \
             sendStr = "Hello This is Tcp Test" #TEST_NAME;                                                      \
             len = strlen(sendStr);                                                                              \
         } else {                                                                                                \
@@ -202,7 +202,7 @@
                                                                                                              \
         const char *sendStr = nullptr;                                                                       \
         size_t len = 0;                                                                                      \
-        if (!PNG) {                                                                                          \
+        if (!(PNG)) {                                                                                        \
             sendStr = "Hello UDP UDP Test" #TEST_NAME;                                                       \
             len = strlen(sendStr);                                                                           \
         } else {                                                                                             \
@@ -336,10 +336,6 @@ int main(int argc, char **argv)
     (void)ret;
 
     g_nativeEngine->Loop(LOOP_DEFAULT);
-    /* NETSTACK_LOGI("test all number %u", g_testNum);
-    for (int i = 0; i < g_testNum; ++i) {
-        g_nativeEngine->Loop(LOOP_ONCE);
-    } */
 
     return 0;
 }

@@ -17,7 +17,6 @@
 
 #include "constant.h"
 #include "netstack_common_utils.h"
-#include <cstring>
 
 namespace OHOS::NetStack {
 HttpResponse::HttpResponse() : responseCode_(0) {}

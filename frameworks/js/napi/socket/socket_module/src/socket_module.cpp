@@ -24,7 +24,7 @@
 #include "task_queue.h"
 #include <unistd.h>
 
-#define SOCKET_MODULE_NAME "net.socket"
+static constexpr const char *SOCKET_MODULE_NAME = "net.socket";
 
 #define SOCKET_INTERFACE(Context, executor, callback, work, priority) \
     ModuleTemplate::InterfaceWithOutAsyncWork<Context>(               \
