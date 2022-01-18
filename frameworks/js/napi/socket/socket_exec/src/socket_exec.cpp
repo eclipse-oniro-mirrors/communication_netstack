@@ -37,7 +37,6 @@ static constexpr const int DEFAULT_POLL_TIMEOUT = 500; // 0.5 Seconds
 static constexpr const int ADDRESS_INVALID = -1;
 
 namespace OHOS::NetStack::SocketExec {
-
 static void
     SetIsBound(sa_family_t family, GetStateContext *context, const sockaddr_in *addr4, const sockaddr_in6 *addr6)
 {
@@ -133,12 +132,12 @@ static void OnRecvMessage(BaseContext *context, void *data, size_t len, sockaddr
         }
         remoteInfo.SetSize(len);
 
-        napi_value undefined = NapiUtils::GetUndefined(context->GetEnv());
         napi_value obj = MakeJsMessageParam(context->GetEnv(), msgBuffer, &remoteInfo);
-
         if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
             return;
         }
+
+        napi_value undefined = NapiUtils::GetUndefined(context->GetEnv());
         context->Emit(EVENT_MESSAGE, std::make_pair(undefined, obj));
     }
 }
@@ -666,7 +665,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 {
     sa_family_t family;
     socklen_t len = sizeof(family);
-    int ret = getsockname(context->GetSocketFd(), reinterpret_cast<void *>(&family), &len);
+    int ret = getsockname(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&family), &len);
     if (ret < 0) {
         context->SetErrorCode(errno);
         return false;

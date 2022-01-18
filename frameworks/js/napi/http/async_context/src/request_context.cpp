@@ -149,14 +149,12 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
         }
 
         napi_valuetype type = NapiUtils::GetValueType(GetEnv(), extraData);
-
         if (type == napi_string) {
             std::string extraParam = NapiUtils::GetStringFromValueUtf8(GetEnv(), extraData);
 
             options.SetUrl(HttpExec::MakeUrl(url, param, extraParam));
             return true;
         }
-
         if (type != napi_object) {
             return false;
         }
@@ -195,7 +193,6 @@ bool RequestContext::GetRequestBody(napi_value extraData)
     /* if body is empty, return false, or curl will wait for body */
 
     napi_valuetype type = NapiUtils::GetValueType(GetEnv(), extraData);
-
     if (type == napi_string) {
         auto body = NapiUtils::GetStringFromValueUtf8(GetEnv(), extraData);
         if (body.empty()) {

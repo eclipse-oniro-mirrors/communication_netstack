@@ -37,16 +37,15 @@
         }                                                                                                \
     } while (0)
 
-#define NETSTACK_CURL_EASY_PERFORM(handle, asyncContext)                            \
-    do {                                                                            \
-        CURLcode result = curl_easy_perform(handle);                                \
-        if (result != CURLE_OK) {                                                   \
-            const char *err = curl_easy_strerror(result);                           \
-            NETSTACK_LOGE("Failed to fetch, url:%{public}s, %{public}s %{public}d", \
-                          (asyncContext)->options.GetUrl().c_str(), err, result);   \
-            (asyncContext)->SetErrorCode(result);                                   \
-            return false;                                                           \
-        }                                                                           \
+#define NETSTACK_CURL_EASY_PERFORM(handle, asyncContext)                                                 \
+    do {                                                                                                 \
+        CURLcode result = curl_easy_perform(handle);                                                     \
+        if (result != CURLE_OK) {                                                                        \
+            NETSTACK_LOGE("request fail, url:%{public}s, %{public}s %{public}d",                         \
+                          (asyncContext)->options.GetUrl().c_str(), curl_easy_strerror(result), result); \
+            (asyncContext)->SetErrorCode(result);                                                        \
+            return false;                                                                                \
+        }                                                                                                \
     } while (0)
 
 #define NETSTACK_CURL_EASY_GET_INFO(handle, opt, data, asyncContext)                                   \

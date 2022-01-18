@@ -28,24 +28,24 @@ static void StripFormatString(const std::string &prefix, std::string &str)
     }
 }
 
-#define PRINT_LOG(LEVEL)                                                 \
-    do {                                                                 \
-        std::string newFmt(fmt);                                         \
-        StripFormatString("{public}", newFmt);                           \
-        StripFormatString("{private}", newFmt);                          \
-                                                                         \
-        va_list args;                                                    \
-        va_start(args, fmt);                                             \
-                                                                         \
-        char buf[MAX_BUFFER_SIZE] = {"\0"};                              \
-        int ret = vsnprintf(buf, sizeof(buf) - 1, newFmt.c_str(), args); \
-        if (ret < 0) {                                                   \
-            return -1;                                                   \
-        }                                                                \
-        va_end(args);                                                    \
-                                                                         \
-        printf("%s %s\r\n", #LEVEL, buf);                                \
-        fflush(stdout);                                                  \
+#define PRINT_LOG(LEVEL)                                                                \
+    do {                                                                                \
+        std::string newFmt(fmt);                                                        \
+        StripFormatString("{public}", newFmt);                                          \
+        StripFormatString("{private}", newFmt);                                         \
+                                                                                        \
+        va_list args;                                                                   \
+        va_start(args, fmt);                                                            \
+                                                                                        \
+        char buf[MAX_BUFFER_SIZE] = {"\0"};                                             \
+        int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, newFmt.c_str(), args); \
+        if (ret < 0) {                                                                  \
+            return -1;                                                                  \
+        }                                                                               \
+        va_end(args);                                                                   \
+                                                                                        \
+        printf("%s %s\r\n", #LEVEL, buf);                                               \
+        fflush(stdout);                                                                 \
     } while (0)
 
 int HiLog::Debug(const HiLogLabel &label, const char *fmt, ...)
