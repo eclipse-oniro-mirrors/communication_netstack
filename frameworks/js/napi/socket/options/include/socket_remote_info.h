@@ -16,12 +16,12 @@
 #ifndef COMMUNICATIONNETSTACK_SOCKET_REMOTE_INFO_H
 #define COMMUNICATIONNETSTACK_SOCKET_REMOTE_INFO_H
 
-#include "net_address.h"
 #include <string>
+
+#include "net_address.h"
 
 namespace OHOS::NetStack {
 class SocketRemoteInfo final {
-
 public:
     SocketRemoteInfo();
 

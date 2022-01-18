@@ -19,7 +19,6 @@
 #include <string>
 
 namespace OHOS::HiviewDFX {
-
 static constexpr uint32_t MAX_BUFFER_SIZE = 4096;
 
 static void StripFormatString(const std::string &prefix, std::string &str)
@@ -89,5 +88,4 @@ int HiLog::Fatal(const HiLogLabel &label, const char *fmt, ...)
     PRINT_LOG(Fatal);
     return 0;
 }
-
 } // namespace OHOS::HiviewDFX

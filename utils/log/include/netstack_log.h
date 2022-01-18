@@ -40,6 +40,8 @@ static constexpr OHOS::HiviewDFX::HiLogLabel NETSTACK_LOG_LABEL = {LOG_CORE, NET
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "securec.h"
+
 static constexpr uint32_t NETSTACK_MAX_BUFFER_SIZE = 4096;
 
 static void NetStackStripFormatString(const std::string &prefix, std::string &str)
@@ -58,8 +60,8 @@ static void NetStackPrintLog(const char *fmt, ...)
     va_list args;
     va_start(args, fmt);
 
-    char buf[NETSTACK_MAX_BUFFER_SIZE] = {"\0"};
-    int ret = vsnprintf(buf, sizeof(buf) - 1, newFmt.c_str(), args);
+    char buf[NETSTACK_MAX_BUFFER_SIZE] = {0};
+    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, newFmt.c_str(), args);
     if (ret < 0) {
         return;
     }

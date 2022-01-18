@@ -25,7 +25,6 @@
 #include "udp_send_context.h"
 
 namespace OHOS::NetStack::SocketExec {
-
 int MakeTcpSocket(sa_family_t family);
 
 int MakeUdpSocket(sa_family_t family);

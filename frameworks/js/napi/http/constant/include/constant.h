@@ -16,8 +16,9 @@
 #ifndef COMMUNICATIONNETSTACK_CONSTANT_H
 #define COMMUNICATIONNETSTACK_CONSTANT_H
 
-#include "noncopyable.h"
 #include <cstdint>
+
+#include "noncopyable.h"
 
 namespace OHOS::NetStack {
 class HttpConstant final {

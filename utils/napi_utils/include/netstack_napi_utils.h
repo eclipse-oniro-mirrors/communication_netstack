@@ -16,14 +16,12 @@
 #ifndef COMMUNICATIONNETSTACK_NETSTACK_NAPI_UTILS_H
 #define COMMUNICATIONNETSTACK_NETSTACK_NAPI_UTILS_H
 
-#include "napi/native_api.h"
 #include <string>
 #include <vector>
 
-#define MAX_STRING_LENGTH 4096
+#include "napi/native_api.h"
 
 namespace OHOS::NetStack::NapiUtils {
-
 napi_valuetype GetValueType(napi_env env, napi_value value);
 
 /* named property */

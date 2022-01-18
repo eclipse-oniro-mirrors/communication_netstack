@@ -20,7 +20,6 @@
 
 namespace OHOS::NetStack {
 class TCPSendOptions final {
-
 public:
     TCPSendOptions() = default;
 

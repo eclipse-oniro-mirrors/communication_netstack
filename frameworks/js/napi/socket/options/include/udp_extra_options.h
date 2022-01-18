@@ -20,7 +20,6 @@
 
 namespace OHOS::NetStack {
 class UDPExtraOptions final : public ExtraOptionsBase {
-
 public:
     UDPExtraOptions();
 

@@ -16,12 +16,13 @@
 #ifndef COMMUNICATIONNETSTACK_HTTP_REQUEST_EXEC_H
 #define COMMUNICATIONNETSTACK_HTTP_REQUEST_EXEC_H
 
+#include <mutex>
+#include <vector>
+
 #include "curl/curl.h"
 #include "napi/native_api.h"
 #include "noncopyable.h"
 #include "request_context.h"
-#include <mutex>
-#include <vector>
 
 namespace OHOS::NetStack {
 class HttpExec final {

@@ -53,7 +53,7 @@ void EventManager::Emit(const std::string &type, const std::pair<napi_value, nap
             napi_value arg[ASYNC_CALLBACK_PARAM_NUM] = {argv.first, argv.second};
             listener.Emit(type, ASYNC_CALLBACK_PARAM_NUM, arg);
         } else {
-            /* Callback(T data)*/
+            /* Callback(T data) */
             napi_value arg[CALLBACK_PARAM_NUM] = {argv.second};
             listener.Emit(type, CALLBACK_PARAM_NUM, arg);
         }

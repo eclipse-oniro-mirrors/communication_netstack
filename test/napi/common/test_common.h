@@ -16,13 +16,15 @@
 #ifndef COMMUNICATIONNETSTACK_TEST_COMMON_H
 #define COMMUNICATIONNETSTACK_TEST_COMMON_H
 
+#include <cstring>
+
+#include "gtest/gtest.h"
+
 #include "native_engine/native_engine.h"
 #include "native_value/quickjs_native_value.h"
 #include "netstack_log.h"
 #include "netstack_napi_utils.h"
 #include "quickjs_native_engine.h"
-#include "gtest/gtest.h"
-#include <cstring>
 
 static uint32_t g_testNum = 0;
 

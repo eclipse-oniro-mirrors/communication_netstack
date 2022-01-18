@@ -18,7 +18,6 @@
 #include <algorithm>
 
 namespace OHOS::NetStack::ModuleTemplate {
-
 static constexpr const int EVENT_PARAM_NUM = 2;
 
 napi_value

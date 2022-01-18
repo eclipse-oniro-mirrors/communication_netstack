@@ -22,7 +22,6 @@
 
 namespace OHOS::NetStack {
 class TcpConnectOptions final {
-
 public:
     TcpConnectOptions();
 

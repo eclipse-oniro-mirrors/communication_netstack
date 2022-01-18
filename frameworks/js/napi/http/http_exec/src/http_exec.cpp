@@ -15,15 +15,16 @@
 
 #include "http_exec.h"
 
+#include <algorithm>
+#include <cstring>
+#include <memory>
+
 #include "constant.h"
 #include "event_list.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "netstack_napi_utils.h"
 #include "securec.h"
-#include <algorithm>
-#include <cstring>
-#include <memory>
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \

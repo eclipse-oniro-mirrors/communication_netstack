@@ -15,6 +15,8 @@
 
 #include "socket_module.h"
 
+#include <unistd.h>
+
 #include "context_key.h"
 #include "event_list.h"
 #include "netstack_log.h"
@@ -22,7 +24,6 @@
 #include "socket_async_work.h"
 #include "socket_exec.h"
 #include "task_queue.h"
-#include <unistd.h>
 
 static constexpr const char *SOCKET_MODULE_NAME = "net.socket";
 

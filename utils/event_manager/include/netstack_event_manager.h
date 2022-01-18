@@ -16,9 +16,10 @@
 #ifndef COMMUNICATIONNETSTACK_EVENT_MANAGER_H
 #define COMMUNICATIONNETSTACK_EVENT_MANAGER_H
 
-#include "netstack_event_listener.h"
 #include <list>
 #include <mutex>
+
+#include "netstack_event_listener.h"
 
 namespace OHOS::NetStack {
 class EventManager {

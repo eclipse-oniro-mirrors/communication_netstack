@@ -19,7 +19,6 @@
 #include "netstack_base_context.h"
 
 namespace OHOS::NetStack::Task {
-
 enum class TaskPriority {
     CLOSE,
     SEND,

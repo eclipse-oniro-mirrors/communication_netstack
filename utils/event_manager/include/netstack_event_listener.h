@@ -16,9 +16,10 @@
 #ifndef COMMUNICATIONNETSTACK_EVENT_LISTENER_H
 #define COMMUNICATIONNETSTACK_EVENT_LISTENER_H
 
+#include <string>
+
 #include "napi/native_api.h"
 #include "noncopyable.h"
-#include <string>
 
 namespace OHOS::NetStack {
 class EventListener {

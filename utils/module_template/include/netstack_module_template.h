@@ -16,14 +16,14 @@
 #ifndef COMMUNICATIONNETSTACK_NETSTACK_MODULE_TEMPLATE_H
 #define COMMUNICATIONNETSTACK_NETSTACK_MODULE_TEMPLATE_H
 
+#include <initializer_list>
+
 #include "netstack_base_async_work.h"
 #include "netstack_base_context.h"
-#include <initializer_list>
 
 #define MAX_PARAM_NUM 64
 
 namespace OHOS::NetStack::ModuleTemplate {
-
 typedef void (*Finalizer)(napi_env, void *data, void *);
 
 template <class Context>

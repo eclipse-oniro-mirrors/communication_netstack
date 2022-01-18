@@ -16,11 +16,12 @@
 #ifndef COMMUNICATIONNETSTACK_BASE_CONTEXT_H
 #define COMMUNICATIONNETSTACK_BASE_CONTEXT_H
 
+#include <list>
+
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "netstack_event_manager.h"
 #include "noncopyable.h"
-#include <list>
 
 namespace OHOS::NetStack {
 typedef void (*AsyncWorkExecutor)(napi_env env, void *data);

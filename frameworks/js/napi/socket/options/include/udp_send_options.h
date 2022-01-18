@@ -20,7 +20,6 @@
 
 namespace OHOS::NetStack {
 class UDPSendOptions final {
-
 public:
     UDPSendOptions() = default;
 

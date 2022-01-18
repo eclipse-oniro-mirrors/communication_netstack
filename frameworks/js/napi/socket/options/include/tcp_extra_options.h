@@ -20,7 +20,6 @@
 
 namespace OHOS::NetStack {
 class TCPExtraOptions final : public ExtraOptionsBase {
-
 private:
     class SocketLinger {
     public:

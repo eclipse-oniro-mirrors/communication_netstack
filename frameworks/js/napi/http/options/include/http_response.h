@@ -16,9 +16,10 @@
 #ifndef COMMUNICATIONNETSTACK_HTTP_RESPONSE_H
 #define COMMUNICATIONNETSTACK_HTTP_RESPONSE_H
 
-#include "napi/native_api.h"
 #include <map>
 #include <string>
+
+#include "napi/native_api.h"
 
 namespace OHOS::NetStack {
 class HttpResponse final {

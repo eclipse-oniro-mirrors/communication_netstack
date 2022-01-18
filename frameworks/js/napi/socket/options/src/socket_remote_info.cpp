@@ -17,8 +17,6 @@
 
 #include <arpa/inet.h>
 
-#define FAMILY(family) #family
-
 namespace OHOS::NetStack {
 SocketRemoteInfo::SocketRemoteInfo() : port_(0), size_(0) {}
 
@@ -30,11 +28,11 @@ void SocketRemoteInfo::SetAddress(const std::string &address)
 void SocketRemoteInfo::SetFamily(sa_family_t family)
 {
     if (family == AF_INET) {
-        family_ = FAMILY(IPv4);
+        family_ = "IPv4";
     } else if (family == AF_INET6) {
-        family_ = FAMILY(IPv6);
+        family_ = "IPv6";
     } else {
-        family_ = FAMILY(Others);
+        family_ = "Others";
     }
 }
 

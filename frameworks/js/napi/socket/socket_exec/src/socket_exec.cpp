@@ -15,11 +15,6 @@
 
 #include "socket_exec.h"
 
-#include "context_key.h"
-#include "event_list.h"
-#include "netstack_log.h"
-#include "netstack_napi_utils.h"
-#include "securec.h"
 #include <arpa/inet.h>
 #include <cerrno>
 #include <fcntl.h>
@@ -29,6 +24,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "context_key.h"
+#include "event_list.h"
+#include "netstack_log.h"
+#include "netstack_napi_utils.h"
+#include "securec.h"
+
 static constexpr const int DEFAULT_BUFFER_SIZE = 8192;
 
 static constexpr const int DEFAULT_POLL_TIMEOUT = 500; // 0.5 Seconds
@@ -36,6 +37,26 @@ static constexpr const int DEFAULT_POLL_TIMEOUT = 500; // 0.5 Seconds
 static constexpr const int ADDRESS_INVALID = -1;
 
 namespace OHOS::NetStack::SocketExec {
+
+static void
+    SetIsBound(sa_family_t family, GetStateContext *context, const sockaddr_in *addr4, const sockaddr_in6 *addr6)
+{
+    if (family == AF_INET) {
+        context->state.SetIsBound(ntohs(addr4->sin_port) != 0);
+    } else if (family == AF_INET6) {
+        context->state.SetIsBound(ntohs(addr6->sin6_port) != 0);
+    }
+}
+
+static void
+    SetIsConnected(sa_family_t family, GetStateContext *context, const sockaddr_in *addr4, const sockaddr_in6 *addr6)
+{
+    if (family == AF_INET) {
+        context->state.SetIsConnected(ntohs(addr4->sin_port) != 0);
+    } else if (family == AF_INET6) {
+        context->state.SetIsConnected(ntohs(addr6->sin6_port) != 0);
+    }
+}
 
 static void EmitError(BaseContext *context, int32_t errorNum)
 {
@@ -248,10 +269,7 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
             return false;
         }
 
-        size_t sendSize = leftSize;
-        if (sockType != SOCK_STREAM) {
-            sendSize = std::min<size_t>(leftSize, bufferSize);
-        }
+        size_t sendSize = (sockType == SOCK_STREAM ? leftSize : std::min<size_t>(leftSize, bufferSize));
         auto sendLen = sendto(sock, curPos, sendSize, 0, addr, addrLen);
         if (sendLen < 0) {
             if (errno == EAGAIN) {
@@ -594,7 +612,7 @@ bool ExecGetState(GetStateContext *context)
 
     sa_family_t family;
     socklen_t len = sizeof(family);
-    int ret = getsockname(context->GetSocketFd(), &family, &len);
+    int ret = getsockname(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&family), &len);
     if (ret < 0) {
         context->SetErrorCode(errno);
         return false;
@@ -625,15 +643,7 @@ bool ExecGetState(GetStateContext *context)
         return false;
     }
 
-    if (family == AF_INET) {
-        if (ntohs(addr4.sin_port) != 0) {
-            context->state.SetIsBound(true);
-        }
-    } else if (family == AF_INET6) {
-        if (ntohs(addr6.sin6_port) != 0) {
-            context->state.SetIsBound(true);
-        }
-    }
+    SetIsBound(family, context, &addr4, &addr6);
 
     if (opt != SOCK_STREAM) {
         return true;
@@ -647,15 +657,7 @@ bool ExecGetState(GetStateContext *context)
         return false;
     }
 
-    if (family == AF_INET) {
-        if (ntohs(addr4.sin_port) != 0) {
-            context->state.SetIsConnected(true);
-        }
-    } else if (family == AF_INET6) {
-        if (ntohs(addr6.sin6_port) != 0) {
-            context->state.SetIsConnected(true);
-        }
-    }
+    SetIsConnected(family, context, &addr4, &addr6);
 
     return true;
 }

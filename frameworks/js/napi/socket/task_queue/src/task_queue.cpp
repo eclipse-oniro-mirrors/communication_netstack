@@ -14,13 +14,14 @@
  */
 
 #include "task_queue.h"
-#include "netstack_log.h"
+
 #include <memory>
 #include <mutex>
 #include <queue>
 
-namespace OHOS::NetStack::Task {
+#include "netstack_log.h"
 
+namespace OHOS::NetStack::Task {
 class Task {
 public:
     Task() = delete;

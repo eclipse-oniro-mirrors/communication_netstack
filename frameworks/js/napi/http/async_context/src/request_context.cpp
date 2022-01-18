@@ -15,12 +15,13 @@
 
 #include "request_context.h"
 
+#include <algorithm>
+
 #include "constant.h"
 #include "http_exec.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "netstack_napi_utils.h"
-#include <algorithm>
 
 static constexpr const int PARAM_JUST_URL = 1;
 
@@ -139,7 +140,6 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
     napi_value extraData = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_EXTRA_DATA);
 
     if (HttpExec::MethodForGet(options.GetMethod())) {
-
         std::string url = options.GetUrl();
         std::string param;
         std::size_t index = url.find(HttpConstant::HTTP_URL_PARAM_START);
