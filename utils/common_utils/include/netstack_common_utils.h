@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,14 +13,18 @@
  * limitations under the License.
  */
 
-#ifndef WEBSOCKET_NAPI_H
-#define WEBSOCKET_NAPI_H
+#ifndef COMMUNICATIONNETSTACK_COMMON_UTILS_H
+#define COMMUNICATIONNETSTACK_COMMON_UTILS_H
 
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
+#include <string>
+#include <vector>
 
-namespace OHOS {
-namespace NetStack {
-} // namespace NetStack
-} // namespace OHOS
-#endif // WEBSOCKET_NAPI_H
+namespace OHOS::NetStack::CommonUtils {
+std::vector<std::string> Split(const std::string &str, const std::string &sep);
+
+std::string Strip(const std::string &str, char ch = ' ');
+
+std::string ToLower(const std::string &s);
+} // namespace OHOS::NetStack::CommonUtils
+
+#endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */

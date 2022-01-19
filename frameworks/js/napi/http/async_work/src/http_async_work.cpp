@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,14 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef WEBSOCKET_NAPI_H
-#define WEBSOCKET_NAPI_H
+#include "http_async_work.h"
 
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
+#include "http_exec.h"
+#include "netstack_base_async_work.h"
+#include "netstack_napi_utils.h"
 
-namespace OHOS {
-namespace NetStack {
-} // namespace NetStack
-} // namespace OHOS
-#endif // WEBSOCKET_NAPI_H
+namespace OHOS::NetStack {
+void HttpAsyncWork::ExecRequest(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<RequestContext, HttpExec::ExecRequest>(env, data);
+}
+
+void HttpAsyncWork::RequestCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<RequestContext, HttpExec::RequestCallback>(env, status, data);
+}
+} // namespace OHOS::NetStack

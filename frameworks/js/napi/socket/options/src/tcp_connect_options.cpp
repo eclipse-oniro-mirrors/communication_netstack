@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,14 +13,18 @@
  * limitations under the License.
  */
 
-#ifndef WEBSOCKET_NAPI_H
-#define WEBSOCKET_NAPI_H
+#include "tcp_connect_options.h"
 
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
+namespace OHOS::NetStack {
+TcpConnectOptions::TcpConnectOptions() : timeout_(DEFAULT_CONNECT_TIMEOUT) {}
 
-namespace OHOS {
-namespace NetStack {
-} // namespace NetStack
-} // namespace OHOS
-#endif // WEBSOCKET_NAPI_H
+void TcpConnectOptions::SetTimeout(uint32_t timeout)
+{
+    timeout_ = timeout;
+}
+
+uint32_t TcpConnectOptions::GetTimeout() const
+{
+    return timeout_;
+}
+} // namespace OHOS::NetStack
