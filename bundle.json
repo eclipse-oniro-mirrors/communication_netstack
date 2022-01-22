@@ -1,0 +1,53 @@
+{
+    "name": "@ohos/netstack",
+    "version": "3.1.0",
+    "description": "net stack service",
+    "publishAs": "code-segment",
+    "homePage": "https://gitee.com/openharmony",
+    "repository": "https://gitee.com/openharmony/communication_netstack",
+    "license": "Apache License 2.0",
+    "language": "",
+    "private": false,
+    "scripts": {},
+    "envs": [],
+    "dirs": [],
+    "author": {},
+    "contributors": [],
+    "segment": {
+        "destPath": "//foundation/communication/netstack"
+    },
+    "component": {
+        "name": "netstack",
+        "subsystem": "communication",
+        "syscap": [
+            "SystemCapability.Communication.Netstack"
+        ],
+        "features": [],
+        "adapted_system_type": [
+            "standard"
+        ],
+        "rom": "",
+        "ram": "",
+        "deps": {
+            "components": [
+                "hiviewdfx_hilog_native",
+                "ipc",
+                "napi",
+                "utils_base"
+            ],
+            "third_party": [
+                "curl",
+                "node"
+            ]
+        },
+        "build": {
+            "sub_component": [
+                "//foundation/communication/netstack/frameworks/js/napi:http",
+                "//foundation/communication/netstack/frameworks/js/napi:socket",
+                "//foundation/communication/netstack/frameworks/js/napi:websocket"
+            ],
+            "inner_kits": [],
+            "test": []
+        }
+    }
+}
