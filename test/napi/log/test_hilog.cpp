@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
-#include "hilog/log.h"
-#include "netstack_log.h"
-
 #include <string>
+
+#include "netstack_log.h"
 
 namespace OHOS::HiviewDFX {
 static constexpr uint32_t MAX_BUFFER_SIZE = 4096;
@@ -28,24 +27,21 @@ static void StripFormatString(const std::string &prefix, std::string &str)
     }
 }
 
-#define PRINT_LOG(LEVEL)                                                                \
-    do {                                                                                \
-        std::string newFmt(fmt);                                                        \
-        StripFormatString("{public}", newFmt);                                          \
-        StripFormatString("{private}", newFmt);                                         \
-                                                                                        \
-        va_list args;                                                                   \
-        va_start(args, fmt);                                                            \
-                                                                                        \
-        char buf[MAX_BUFFER_SIZE] = {"\0"};                                             \
-        int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, newFmt.c_str(), args); \
-        if (ret < 0) {                                                                  \
-            return -1;                                                                  \
-        }                                                                               \
-        va_end(args);                                                                   \
-                                                                                        \
-        printf("%s %s\r\n", #LEVEL, buf);                                               \
-        fflush(stdout);                                                                 \
+#define PRINT_LOG(LEVEL)                        \
+    do {                                        \
+        std::string newFmt(fmt);                \
+        StripFormatString("{public}", newFmt);  \
+        StripFormatString("{private}", newFmt); \
+                                                \
+        va_list args;                           \
+        va_start(args, fmt);                    \
+        printf(#LEVEL " ");                     \
+        fflush(stdout);                         \
+        vfprintf(stdout, newFmt.c_str(), args); \
+        fflush(stdout);                         \
+        printf("\n");                           \
+        fflush(stdout);                         \
+        va_end(args);                           \
     } while (0)
 
 int HiLog::Debug(const HiLogLabel &label, const char *fmt, ...)
@@ -53,7 +49,7 @@ int HiLog::Debug(const HiLogLabel &label, const char *fmt, ...)
     if (label.domain != NETSTACK_LOG_DOMAIN) {
         return 0;
     }
-    (void)PRINT_LOG(Debug);
+    PRINT_LOG(Debug);
     return 0;
 }
 int HiLog::Info(const HiLogLabel &label, const char *fmt, ...)
@@ -61,7 +57,7 @@ int HiLog::Info(const HiLogLabel &label, const char *fmt, ...)
     if (label.domain != NETSTACK_LOG_DOMAIN) {
         return 0;
     }
-    (void)PRINT_LOG(Info);
+    PRINT_LOG(Info);
     return 0;
 }
 int HiLog::Warn(const HiLogLabel &label, const char *fmt, ...)
@@ -69,7 +65,7 @@ int HiLog::Warn(const HiLogLabel &label, const char *fmt, ...)
     if (label.domain != NETSTACK_LOG_DOMAIN) {
         return 0;
     }
-    (void)PRINT_LOG(Warn);
+    PRINT_LOG(Warn);
     return 0;
 }
 int HiLog::Error(const HiLogLabel &label, const char *fmt, ...)
@@ -77,7 +73,7 @@ int HiLog::Error(const HiLogLabel &label, const char *fmt, ...)
     if (label.domain != NETSTACK_LOG_DOMAIN) {
         return 0;
     }
-    (void)PRINT_LOG(Error);
+    PRINT_LOG(Error);
     return 0;
 }
 int HiLog::Fatal(const HiLogLabel &label, const char *fmt, ...)
@@ -85,7 +81,7 @@ int HiLog::Fatal(const HiLogLabel &label, const char *fmt, ...)
     if (label.domain != NETSTACK_LOG_DOMAIN) {
         return 0;
     }
-    (void)PRINT_LOG(Fatal);
+    PRINT_LOG(Fatal);
     return 0;
 }
 } // namespace OHOS::HiviewDFX
