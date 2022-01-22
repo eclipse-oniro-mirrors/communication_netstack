@@ -287,7 +287,7 @@ DEFINE_TEST_END
 
 DEFINE_TEST_BEGIN(TestHttpModuleMethodGetExtraDataNameValueUrlHasPara, true)
 {
-    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=Mao");
+    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=test");
 
     napi_value options = NapiUtils::CreateObject(env);
 
@@ -315,7 +315,7 @@ DEFINE_TEST_END
 
 DEFINE_TEST_BEGIN(TestHttpModuleMethodGetExtraDataNameValueUrlHasParaNoEncode, true)
 {
-    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=Mao");
+    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=test");
 
     napi_value options = NapiUtils::CreateObject(env);
 
@@ -343,7 +343,7 @@ DEFINE_TEST_END
 
 DEFINE_TEST_BEGIN(TestHttpModuleMethodGetExtraDataString, true)
 {
-    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=Mao");
+    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=test");
 
     napi_value options = NapiUtils::CreateObject(env);
 
@@ -351,7 +351,7 @@ DEFINE_TEST_BEGIN(TestHttpModuleMethodGetExtraDataString, true)
     NapiUtils::SetStringPropertyUtf8(env, header, "no-use", "no use header");
     NapiUtils::SetStringPropertyUtf8(env, header, "just-test", "just test header");
 
-    napi_value extraData = NapiUtils::CreateStringUtf8(env, "this-is-my-get-string=mao&this-test=age");
+    napi_value extraData = NapiUtils::CreateStringUtf8(env, "this-is-my-get-string=test&this-test=age");
 
     NapiUtils::SetNamedProperty(env, options, std::string(HttpConstant::PARAM_KEY_HEADER), header);
     NapiUtils::SetNamedProperty(env, options, std::string(HttpConstant::PARAM_KEY_EXTRA_DATA), extraData);
@@ -369,7 +369,7 @@ DEFINE_TEST_END
 
 DEFINE_TEST_BEGIN(TestHttpModuleMethodGetNoExtraData, true)
 {
-    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=Mao");
+    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=test");
 
     napi_value options = NapiUtils::CreateObject(env);
 
@@ -392,7 +392,7 @@ DEFINE_TEST_END
 
 DEFINE_TEST_BEGIN(TestHttpModuleMethodGetExtraDataNullString, true)
 {
-    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=Mao");
+    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=test");
 
     napi_value options = NapiUtils::CreateObject(env);
 
@@ -418,7 +418,7 @@ DEFINE_TEST_END
 
 DEFINE_TEST_BEGIN(TestHttpModuleMethodAndHeaderByDefaultHasPara, true)
 {
-    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=Mao");
+    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=test");
 
     napi_value options = NapiUtils::CreateObject(env);
 
@@ -441,7 +441,7 @@ DEFINE_TEST_END
 
 DEFINE_TEST_BEGIN(TestHttpModuleMethodAndHeaderByDefault, true)
 {
-    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=Mao");
+    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=test");
 
     napi_value args[2] = {urlValue, callbackTwoParam};
 
@@ -456,7 +456,7 @@ DEFINE_TEST_END
 
 DEFINE_TEST_BEGIN(TestHttpModuleMethodPostExtraDataString, true)
 {
-    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=Mao");
+    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=test");
 
     napi_value options = NapiUtils::CreateObject(env);
 
@@ -486,7 +486,7 @@ DEFINE_TEST_BEGIN(TestHttpModuleMethodAndHeaderFail, true)
 {
     napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP
                                                            ":7878"
-                                                           "?name=Mao");
+                                                           "?name=test");
 
     napi_value args[2] = {urlValue, callbackTwoParam};
 
@@ -501,7 +501,7 @@ DEFINE_TEST_END
 
 DEFINE_TEST_BEGIN(TestHttpModuleMethodPostExtraDataArrayBuffer, true)
 {
-    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=Mao");
+    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=test");
 
     napi_value options = NapiUtils::CreateObject(env);
 
@@ -540,7 +540,7 @@ DEFINE_TEST_END
 
 DEFINE_TEST_BEGIN(TestHttpModuleMethodGetExtraDataNameValueHeaderKeyMultiCase, true)
 {
-    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=Mao");
+    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=test");
 
     napi_value options = NapiUtils::CreateObject(env);
 
@@ -564,7 +564,7 @@ DEFINE_TEST_END
 
 DEFINE_TEST_BEGIN(TestHttpModuleMethodGetOnHeaderReceiveOnce, true)
 {
-    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=Mao");
+    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=test");
 
     napi_value args[2] = {urlValue, callbackTwoParam};
 
@@ -581,7 +581,7 @@ DEFINE_TEST_END
 
 DEFINE_TEST_BEGIN(TestHttpModuleMethodGetOnHeaderReceiveOnOn, true)
 {
-    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=Mao");
+    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=test");
 
     napi_value args[2] = {urlValue, callbackTwoParam};
 
@@ -598,7 +598,7 @@ DEFINE_TEST_END
 
 DEFINE_TEST_BEGIN(TestHttpModuleMethodGetOnHeaderReceiveOff, true)
 {
-    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=Mao");
+    napi_value urlValue = NapiUtils::CreateStringUtf8(env, "https://" SERVER_IP "?name=test");
 
     napi_value args[2] = {urlValue, callbackTwoParam};
 
