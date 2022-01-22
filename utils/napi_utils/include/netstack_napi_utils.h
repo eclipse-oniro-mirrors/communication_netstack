@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "napi/native_api.h"
+#include "napi/native_common.h"
 
 namespace OHOS::NetStack::NapiUtils {
 napi_valuetype GetValueType(napi_env env, napi_value value);

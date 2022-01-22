@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 
-#include "napi/native_node_api.h"
+#include "napi/native_api.h"
+#include "napi/native_common.h"
 #include "netstack_napi_utils.h"
 #include "securec.h"
 #include "test_common.h"

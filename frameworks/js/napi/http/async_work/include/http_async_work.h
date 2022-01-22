@@ -17,7 +17,7 @@
 #define COMMUNICATIONNETSTACK_ASYNC_WORK_H
 
 #include "napi/native_api.h"
-#include "napi/native_node_api.h"
+#include "napi/native_common.h"
 #include "noncopyable.h"
 #include "request_context.h"
 

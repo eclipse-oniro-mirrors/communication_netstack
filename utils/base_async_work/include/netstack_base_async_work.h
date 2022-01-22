@@ -19,7 +19,7 @@
 #include <memory>
 
 #include "napi/native_api.h"
-#include "napi/native_node_api.h"
+#include "napi/native_common.h"
 #include "netstack_base_context.h"
 #include "netstack_napi_utils.h"
 #include "noncopyable.h"

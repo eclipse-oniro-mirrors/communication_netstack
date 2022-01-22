@@ -17,7 +17,7 @@
 #define WEBSOCKET_NAPI_H
 
 #include "napi/native_api.h"
-#include "napi/native_node_api.h"
+#include "napi/native_common.h"
 
 namespace OHOS {
 namespace NetStack {

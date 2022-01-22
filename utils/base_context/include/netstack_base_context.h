@@ -19,7 +19,7 @@
 #include <list>
 
 #include "napi/native_api.h"
-#include "napi/native_node_api.h"
+#include "napi/native_common.h"
 #include "netstack_event_manager.h"
 #include "noncopyable.h"
 
