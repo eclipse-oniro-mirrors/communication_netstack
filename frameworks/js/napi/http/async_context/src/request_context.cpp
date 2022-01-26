@@ -156,7 +156,7 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
             return true;
         }
         if (type != napi_object) {
-            return false;
+            return true;
         }
 
         std::string extraParam;
