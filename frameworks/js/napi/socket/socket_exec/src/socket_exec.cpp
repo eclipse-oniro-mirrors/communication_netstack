@@ -440,6 +440,7 @@ int MakeTcpSocket(sa_family_t family)
     }
     int sock = socket(family, SOCK_STREAM, IPPROTO_TCP);
     if (sock < 0) {
+        NETSTACK_LOGE("make tcp socket failed errno is %{public}d %{public}s", errno, strerror(errno));
         return -1;
     }
     if (!MakeNonBlock(sock)) {
@@ -456,6 +457,7 @@ int MakeUdpSocket(sa_family_t family)
     }
     int sock = socket(family, SOCK_DGRAM, IPPROTO_UDP);
     if (sock < 0) {
+        NETSTACK_LOGE("make udp socket failed errno is %{public}d %{public}s", errno, strerror(errno));
         return -1;
     }
     if (!MakeNonBlock(sock)) {
