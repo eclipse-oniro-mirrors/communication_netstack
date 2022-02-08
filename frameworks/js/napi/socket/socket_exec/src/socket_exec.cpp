@@ -778,6 +778,8 @@ bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
 
 napi_value BindCallback(BindContext *context)
 {
+    context->Emit(EVENT_LISTENING, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                                  NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
@@ -810,6 +812,8 @@ napi_value UdpSendCallback(UdpSendContext *context)
 
 napi_value ConnectCallback(ConnectContext *context)
 {
+    context->Emit(EVENT_CONNECT, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                                NapiUtils::GetUndefined(context->GetEnv())));
     if (!PollRecvData(context->GetSocketFd(), nullptr, 0, TcpMessageCallback(context))) {
         EmitError(context, errno);
     }
@@ -834,6 +838,8 @@ napi_value CloseCallback(CloseContext *context)
         NETSTACK_LOGI("sock %{public}d closed success", context->GetSocketFd());
     }
     context->SetSocketFd(0);
+    context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                              NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 

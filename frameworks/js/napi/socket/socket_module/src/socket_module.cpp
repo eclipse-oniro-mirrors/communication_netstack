@@ -206,12 +206,12 @@ napi_value SocketModuleExports::UDPSocket::SetExtraOptions(napi_env env, napi_ca
 
 napi_value SocketModuleExports::UDPSocket::On(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_LISTENING, EVENT_ERROR}, false);
+    return ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_LISTENING, EVENT_ERROR, EVENT_CLOSE}, false);
 }
 
 napi_value SocketModuleExports::UDPSocket::Off(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_LISTENING, EVENT_ERROR});
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_LISTENING, EVENT_ERROR, EVENT_CLOSE});
 }
 
 /* tcp async works */
@@ -256,12 +256,12 @@ napi_value SocketModuleExports::TCPSocket::SetExtraOptions(napi_env env, napi_ca
 
 napi_value SocketModuleExports::TCPSocket::On(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR}, false);
+    return ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
 }
 
 napi_value SocketModuleExports::TCPSocket::Off(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR});
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
 }
 
 static napi_module g_socketModule = {
