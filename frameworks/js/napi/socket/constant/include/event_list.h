@@ -16,12 +16,14 @@
 #ifndef COMMUNICATIONNETSTACK_EVENT_LIST_H
 #define COMMUNICATIONNETSTACK_EVENT_LIST_H
 
-#define EVENT_MESSAGE "message"
+constexpr const char *EVENT_MESSAGE = "message";
 
-#define EVENT_LISTENING "listening"
+constexpr const char *EVENT_LISTENING = "listening";
 
-#define EVENT_ERROR "error"
+constexpr const char *EVENT_ERROR = "error";
 
-#define EVENT_CONNECT "connect"
+constexpr const char *EVENT_CONNECT = "connect";
+
+constexpr const char *EVENT_CLOSE = "close";
 
 #endif /* COMMUNICATIONNETSTACK_EVENT_LIST_H */
