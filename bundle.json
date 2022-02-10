@@ -26,8 +26,8 @@
         "adapted_system_type": [
             "standard"
         ],
-        "rom": "",
-        "ram": "",
+        "rom": "3MB",
+        "ram": "5MB",
         "deps": {
             "components": [
                 "hiviewdfx_hilog_native",
