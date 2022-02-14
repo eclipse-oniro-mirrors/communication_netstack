@@ -83,6 +83,8 @@ ohos_shared_library("http") {
   deps = common_deps
   deps += [ "//third_party/curl:curl" ]
 
+  defines = [ "NO_SSL_CERTIFICATION=1" ]
+
   external_deps = common_external_deps
 
   relative_install_dir = common_relative_install_dir
