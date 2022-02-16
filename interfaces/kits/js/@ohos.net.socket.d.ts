@@ -20,8 +20,7 @@ import connection from "./@ohos.net.connection";
  * Provides TCP and UDP Socket APIs.
  *
  * @since 7
- * @sysCap SystemCapability.Communication.NetManager
- * @devices phone, tablet, tv, wearable, car
+ * @sysCap SystemCapability.Communication.NetStack
  */
 declare namespace socket {
   export import NetAddress = connection.NetAddress;
