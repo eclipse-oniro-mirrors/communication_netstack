@@ -19,8 +19,7 @@ import {AsyncCallback, ErrorCallback} from "./basic";
  * Provides WebSocket APIs.
  *
  * @since 6
- * @sysCap SystemCapability.Communication.NetManager
- * @devices phone, tablet, tv, wearable, car
+ * @sysCap SystemCapability.Communication.NetStack
  */
 declare namespace webSocket {
   function createWebSocket(): WebSocket;

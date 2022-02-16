@@ -19,8 +19,7 @@ import {AsyncCallback, Callback} from "./basic";
  * Provides http related APIs.
  *
  * @since 6
- * @sysCap SystemCapability.Communication.NetManager
- * @devices phone, tablet, tv, wearable, car
+ * @sysCap SystemCapability.Communication.NetStack
  */
 declare namespace http {
   function createHttp(): HttpRequest;
