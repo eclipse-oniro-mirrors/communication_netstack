@@ -134,21 +134,20 @@ napi_value HttpExec::RequestCallback(RequestContext *context)
 
     auto contentType = CommonUtils::ToLower(const_cast<std::map<std::string, std::string> &>(
         context->response.GetHeader())[HttpConstant::HTTP_CONTENT_TYPE]);
-    if (contentType.find(HttpConstant::HTTP_CONTENT_TYPE_TEXT) != std::string::npos ||
-        contentType.find(HttpConstant::HTTP_CONTENT_TYPE_JSON) != std::string::npos) {
-        /* now just support utf8 */
-        NapiUtils::SetStringPropertyUtf8(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT,
-                                         context->response.GetResult());
+    if (contentType.find(HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM) != std::string::npos) {
+        void *data = nullptr;
+        auto body = context->response.GetResult();
+        napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);
+        if (data != nullptr && arrayBuffer != nullptr) {
+            (void)memcpy_s(data, body.size(), body.c_str(), body.size());
+            NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT, arrayBuffer);
+        }
         return object;
     }
 
-    void *data = nullptr;
-    auto body = context->response.GetResult();
-    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);
-    if (data != nullptr && arrayBuffer != nullptr) {
-        (void)memcpy_s(data, body.size(), body.c_str(), body.size());
-        NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT, arrayBuffer);
-    }
+    /* now just support utf8 */
+    NapiUtils::SetStringPropertyUtf8(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT,
+                                     context->response.GetResult());
     return object;
 }
 
@@ -267,8 +266,8 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 #if HTTP_CURL_PRINT_VERBOSE
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_VERBOSE, 1L, context);
 #endif
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_TIMEOUT, context->options.GetReadTimeout(), context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT, context->options.GetConnectTimeout(), context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_TIMEOUT_MS, context->options.GetReadTimeout(), context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
 
     if (MethodForPost(method)) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POST, 1L, context);
@@ -324,6 +323,7 @@ void HttpExec::OnHeaderReceive(RequestContext *context, napi_value header)
 {
     napi_value undefined = NapiUtils::GetUndefined(context->GetEnv());
     context->Emit(ON_HEADER_RECEIVE, std::make_pair(undefined, header));
+    context->Emit(ON_HEADERS_RECEIVE, std::make_pair(undefined, header));
 }
 
 bool HttpExec::IsUnReserved(unsigned char in)

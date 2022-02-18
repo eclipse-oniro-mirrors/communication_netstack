@@ -149,16 +149,18 @@ napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_i
 
 napi_value HttpModuleExports::HttpRequest::On(napi_env env, napi_callback_info info)
 {
+    ModuleTemplate::On(env, info, {ON_HEADERS_RECEIVE}, false);
     return ModuleTemplate::On(env, info, {ON_HEADER_RECEIVE}, true);
 }
 
 napi_value HttpModuleExports::HttpRequest::Once(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Once(env, info, {ON_HEADER_RECEIVE}, false);
+    return ModuleTemplate::Once(env, info, {ON_HEADER_RECEIVE, ON_HEADERS_RECEIVE}, false);
 }
 
 napi_value HttpModuleExports::HttpRequest::Off(napi_env env, napi_callback_info info)
 {
+    ModuleTemplate::Off(env, info, {ON_HEADERS_RECEIVE});
     return ModuleTemplate::Off(env, info, {ON_HEADER_RECEIVE});
 }
 

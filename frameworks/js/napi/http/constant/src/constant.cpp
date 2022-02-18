@@ -25,8 +25,8 @@ const char *const HttpConstant::HTTP_METHOD_POST = "POST";
 const char *const HttpConstant::HTTP_METHOD_PUT = "PUT";
 const char *const HttpConstant::HTTP_METHOD_CONNECT = "CONNECT";
 
-const uint32_t HttpConstant::DEFAULT_READ_TIMEOUT = 60;
-const uint32_t HttpConstant::DEFAULT_CONNECT_TIMEOUT = 60;
+const uint32_t HttpConstant::DEFAULT_READ_TIMEOUT = 60000;
+const uint32_t HttpConstant::DEFAULT_CONNECT_TIMEOUT = 60000;
 const uint32_t HttpConstant::DEFAULT_IF_MODIFIED_SINCE = 0;
 const int32_t HttpConstant::DEFAULT_FIXED_LENGTH_STREAMING_MODE = -1;
 
@@ -53,7 +53,7 @@ const char *const HttpConstant::HTTP_DEFAULT_USER_AGENT = "libcurl-agent/1.0";
 const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/cacert.pem";
 
 const char *const HttpConstant::HTTP_CONTENT_TYPE = "content-type";
-const char *const HttpConstant::HTTP_CONTENT_TYPE_TEXT = "text/plain";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE = "application/x-www-form-urlencoded";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_JSON = "application/json";
+const char *const HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM = "application/octet-stream";
 } // namespace OHOS::NetStack

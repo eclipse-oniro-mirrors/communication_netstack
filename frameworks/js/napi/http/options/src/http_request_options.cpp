@@ -25,7 +25,7 @@ HttpRequestOptions::HttpRequestOptions()
       ifModifiedSince_(HttpConstant::DEFAULT_IF_MODIFIED_SINCE),
       fixedLengthStreamingMode_(HttpConstant::DEFAULT_FIXED_LENGTH_STREAMING_MODE)
 {
-    header_[HttpConstant::HTTP_CONTENT_TYPE] = HttpConstant::HTTP_CONTENT_TYPE_TEXT; // default
+    header_[HttpConstant::HTTP_CONTENT_TYPE] = HttpConstant::HTTP_CONTENT_TYPE_JSON; // default
 }
 
 void HttpRequestOptions::SetUrl(const std::string &url)
