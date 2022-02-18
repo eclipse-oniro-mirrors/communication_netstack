@@ -65,9 +65,9 @@ public:
     static const char *const HTTP_DEFAULT_CA_PATH;
 
     static const char *const HTTP_CONTENT_TYPE;
-    static const char *const HTTP_CONTENT_TYPE_TEXT;
     static const char *const HTTP_CONTENT_TYPE_URL_ENCODE;
     static const char *const HTTP_CONTENT_TYPE_JSON;
+    static const char *const HTTP_CONTENT_TYPE_OCTET_STREAM;
 };
 } // namespace OHOS::NetStack
 

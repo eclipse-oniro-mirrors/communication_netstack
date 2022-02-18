@@ -18,4 +18,6 @@
 
 static constexpr const char *ON_HEADER_RECEIVE = "headerReceive";
 
+static constexpr const char *ON_HEADERS_RECEIVE = "headersReceive";
+
 #endif /* COMMUNICATIONNETSTACK_EVENT_LIST_H */
