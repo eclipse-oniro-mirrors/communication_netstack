@@ -14,6 +14,7 @@
  */
 
 #include "netstack_module_template.h"
+#include "netstack_log.h"
 
 #include <algorithm>
 
@@ -24,12 +25,18 @@ napi_value
     On(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events, bool asyncCallback)
 {
     napi_value thisVal = nullptr;
-    size_t paramsCount = EVENT_PARAM_NUM;
-    napi_value params[EVENT_PARAM_NUM] = {nullptr};
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
 
+    if (paramsCount != EVENT_PARAM_NUM || NapiUtils::GetValueType(env, params[0]) != napi_string ||
+        NapiUtils::GetValueType(env, params[1]) != napi_function) {
+        NETSTACK_LOGE("on off once interface para: [string, function]");
+        return NapiUtils::GetUndefined(env);
+    }
+
     std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    if (paramsCount != EVENT_PARAM_NUM || std::find(events.begin(), events.end(), event) == events.end()) {
+    if (std::find(events.begin(), events.end(), event) == events.end()) {
         return NapiUtils::GetUndefined(env);
     }
 
@@ -46,12 +53,18 @@ napi_value
     Once(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events, bool asyncCallback)
 {
     napi_value thisVal = nullptr;
-    size_t paramsCount = EVENT_PARAM_NUM;
-    napi_value params[EVENT_PARAM_NUM] = {nullptr};
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
 
+    if (paramsCount != EVENT_PARAM_NUM || NapiUtils::GetValueType(env, params[0]) != napi_string ||
+        NapiUtils::GetValueType(env, params[1]) != napi_function) {
+        NETSTACK_LOGE("on off once interface para: [string, function]");
+        return NapiUtils::GetUndefined(env);
+    }
+
     std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    if (paramsCount != EVENT_PARAM_NUM || std::find(events.begin(), events.end(), event) == events.end()) {
+    if (std::find(events.begin(), events.end(), event) == events.end()) {
         return NapiUtils::GetUndefined(env);
     }
 
@@ -67,12 +80,18 @@ napi_value
 napi_value Off(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events)
 {
     napi_value thisVal = nullptr;
-    size_t paramsCount = EVENT_PARAM_NUM;
-    napi_value params[EVENT_PARAM_NUM] = {nullptr};
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
 
+    if (paramsCount != EVENT_PARAM_NUM || NapiUtils::GetValueType(env, params[0]) != napi_string ||
+        NapiUtils::GetValueType(env, params[1]) != napi_function) {
+        NETSTACK_LOGE("on off once interface para: [string, function]");
+        return NapiUtils::GetUndefined(env);
+    }
+
     std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    if (paramsCount != EVENT_PARAM_NUM || std::find(events.begin(), events.end(), event) == events.end()) {
+    if (std::find(events.begin(), events.end(), event) == events.end()) {
         return NapiUtils::GetUndefined(env);
     }
 
