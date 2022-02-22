@@ -50,7 +50,7 @@ const char *const HttpConstant::HTTP_HEADER_SEPARATOR = ":";
 const char *const HttpConstant::HTTP_LINE_SEPARATOR = "\r\n";
 
 const char *const HttpConstant::HTTP_DEFAULT_USER_AGENT = "libcurl-agent/1.0";
-const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/cacert.pem";
+const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/certs/cacert.pem";
 
 const char *const HttpConstant::HTTP_CONTENT_TYPE = "content-type";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE = "application/x-www-form-urlencoded";
