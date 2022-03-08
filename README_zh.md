@@ -37,16 +37,16 @@
 
 | 类型 | 接口 | 功能说明 |
 | ---- | ---- | ---- |
-| ohos.net.socket | function createHttp(): HttpRequest; | 返回一个HttpRequest对象 |
-| ohos.net.http.HttpRequest | on(type: "headerReceive", callback: AsyncCallback\<Object>): void; | 监听收到Http头的事件 |
-| ohos.net.http.HttpRequest | once(type: "headerReceive", callback: Callback\<Object>): void; | 监听收到Http头的事件，只监听一次 |
-| ohos.net.http.HttpRequest | off(type: "headerReceive", callback: AsyncCallback\<Object>): void; | 取消监听收到Http头的事件 |
-| ohos.net.http.HttpRequest | on(type: "headerReceive", callback: Callback\<Object>): void; | 监听收到Http头的事件 |
-| ohos.net.http.HttpRequest | once(type: "headerReceive", callback: Callback\<Object>): void; | 监听收到Http头的事件，只监听一次 |
-| ohos.net.http.HttpRequest | off(type: "headerReceive", callback: Callback\<Object>): void; | 取消监听收到Http头的事件 |
-| ohos.net.http.HttpRequest | request(url: string, callback: AsyncCallback\<[HttpResponse](#httpresponse)>): void; | 用**GET**方法请求一个域名，调用callback |
-| ohos.net.http.HttpRequest | request(url: string, options: [HttpRequestOptions](#httprequestoptions), callback: AsyncCallback\<[HttpResponse](#httpresponse)>): void; | 请求一个域名，options中携带请求参数，调用callback |
-| ohos.net.http.HttpRequest | request(url: string, options?: [HttpRequestOptions](#httprequestoptions): Promise\<[HttpResponse](#httpresponse)>; | 请求一个域名，options中携带请求参数(可选)，返回Promise |
+| ohos.net.socket | function createHttp(): HttpRequest | 返回一个HttpRequest对象 |
+| ohos.net.http.HttpRequest | on(type: "headerReceive", callback: AsyncCallback\<Object>): void | 监听收到Http头的事件 |
+| ohos.net.http.HttpRequest | once(type: "headerReceive", callback: Callback\<Object>): void | 监听收到Http头的事件，只监听一次 |
+| ohos.net.http.HttpRequest | off(type: "headerReceive", callback: AsyncCallback\<Object>): void | 取消监听收到Http头的事件 |
+| ohos.net.http.HttpRequest | on(type: "headerReceive", callback: Callback\<Object>): void | 监听收到Http头的事件 |
+| ohos.net.http.HttpRequest | once(type: "headerReceive", callback: Callback\<Object>): void | 监听收到Http头的事件，只监听一次 |
+| ohos.net.http.HttpRequest | off(type: "headerReceive", callback: Callback\<Object>): void | 取消监听收到Http头的事件 |
+| ohos.net.http.HttpRequest | request(url: string, callback: AsyncCallback\<[HttpResponse](#httpresponse)>): void | 用**GET**方法请求一个域名，调用callback |
+| ohos.net.http.HttpRequest | request(url: string, options: [HttpRequestOptions](#httprequestoptions), callback: AsyncCallback\<[HttpResponse](#httpresponse)>): void | 请求一个域名，options中携带请求参数，调用callback |
+| ohos.net.http.HttpRequest | request(url: string, options?: [HttpRequestOptions](#httprequestoptions): Promise\<[HttpResponse](#httpresponse)> | 请求一个域名，options中携带请求参数(可选)，返回Promise |
 
 #### HttpRequestOptions
 
@@ -181,25 +181,130 @@ httpRequest.request("www.example.com", function (err, data) {
 
 | 类型 | 接口 | 功能说明 |
 | ---- | ---- | ---- |
-| ohos.net.socket | function constructUDPSocketInstance(): UDPSocket; | 返回一个UDPSocket对象 |
-| ohos.net.socket | function constructUDPSocketInstance(): TCPSocket; | 返回一个TCPSocket对象 |
-| ohos.net.socket.UDPSocket | bind(address: [NetAddress](#netaddress), callback: AsyncCallback\<void>): void; | 绑定IP地址和端口，端口可以指定或由系统随机分配。使用callback方式作为异步方法。 |
-| ohos.net.socket.UDPSocket | bind(address: [NetAddress](#netaddress)): Promise<void>; | 绑定IP地址和端口，端口可以指定或由系统随机分配。使用Promise方式作为异步方法。 |
-| ohos.net.socket.UDPSocket | send(options: [UDPSendOptions](#udpsendoptions), callback: AsyncCallback<void>): void; | 通过UDPSocket连接发送数据。使用callback方式作为异步方法。 |
-| ohos.net.socket.UDPSocket | send(options: [UDPSendOptions](#udpsendoptions)): Promise<void>; | 通过UDPSocket连接发送数据。使用Promise方式作为异步方法。 |
-| ohos.net.socket.UDPSocket | close(callback: AsyncCallback<void>): void; | 关闭UDPSocket连接。使用callback方式作为异步方法。 |
-| ohos.net.socket.UDPSocket | close(): Promise<void>; | 关闭UDPSocket连接。使用Promise方式作为异步方法。 |
-| ohos.net.socket.UDPSocket | getState(callback: AsyncCallback<[SocketStateBase](#socketstatebase)>): void; | 获取UDPSocket状态。使用callback方式作为异步方法。 |
-| ohos.net.socket.UDPSocket | getState(): Promise<[SocketStateBase](#socketstatebase)>; | 获取UDPSocket状态。使用Promise方式作为异步方法。 |
-| ohos.net.socket.UDPSocket | setExtraOptions(options: [UDPExtraOptions](#udpextraoptions), callback: AsyncCallback<void>): void; | 设置UDPSocket连接的其他属性。使用callback方式作为异步方法。 |
-| ohos.net.socket.UDPSocket | setExtraOptions(options: [UDPExtraOptions](#udpextraoptions)): Promise<void>; | 设置UDPSocket连接的其他属性。使用Promise方式作为异步方法。 |
-| ohos.net.socket.UDPSocket | on(type: 'message', callback: Callback<{message: ArrayBuffer, remoteInfo: SocketRemoteInfo}>): void | 订阅UDPSocket连接的接收消息事件。使用callback方式作为异步方法。 |
-| ohos.net.socket.UDPSocket | off(type: 'message', callback?: Callback<{message: ArrayBuffer, remoteInfo: SocketRemoteInfo}>): void | 取消订阅UDPSocket连接的接收消息事件。使用callback方式作为异步方法。 |
-| ohos.net.socket.UDPSocket | on(type: 'listening' &#124; 'close', callback: Callback<void>): void | 订阅UDPSocket连接的数据包消息事件或关闭事件。使用callback方式作为异步方法。 |
-| ohos.net.socket.UDPSocket | off(type: 'listening' &#124; 'close', callback?: Callback<void>): void | 取消订阅UDPSocket连接的数据包消息事件或关闭事件。使用callback方式作为异步方法。 |
+| ohos.net.socket | function constructUDPSocketInstance(): UDPSocket | 返回一个UDPSocket对象 |
+| ohos.net.socket | function constructUDPSocketInstance(): TCPSocket | 返回一个TCPSocket对象 |
+| ohos.net.socket.UDPSocket | bind(address: [NetAddress](#netaddress), callback: AsyncCallback\<void>): void | 绑定IP地址和端口，端口可以指定或由系统随机分配。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | bind(address: [NetAddress](#netaddress)): Promise\<void> | 绑定IP地址和端口，端口可以指定或由系统随机分配。使用Promise方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | send(options: [UDPSendOptions](#udpsendoptions), callback: AsyncCallback\<void>): void | 通过UDPSocket连接发送数据。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | send(options: [UDPSendOptions](#udpsendoptions)): Promise\<void> | 通过UDPSocket连接发送数据。使用Promise方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | close(callback: AsyncCallback\<void>): void | 关闭UDPSocket连接。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | close(): Promise\<void> | 关闭UDPSocket连接。使用Promise方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | getState(callback: AsyncCallback\<[SocketStateBase](#socketstatebase)>): void | 获取UDPSocket状态。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | getState(): Promise\<[SocketStateBase](#socketstatebase)> | 获取UDPSocket状态。使用Promise方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | setExtraOptions(options: [UDPExtraOptions](#udpextraoptions), callback: AsyncCallback\<void>): void | 设置UDPSocket连接的其他属性。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | setExtraOptions(options: [UDPExtraOptions](#udpextraoptions)): Promise\<void> | 设置UDPSocket连接的其他属性。使用Promise方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | on(type: 'message', callback: Callback\<{message: ArrayBuffer, remoteInfo: [SocketRemoteInfo](#socketremoteinfo)}>): void | 订阅UDPSocket连接的接收消息事件。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | off(type: 'message', callback?: Callback\<{message: ArrayBuffer, remoteInfo: [SocketRemoteInfo](#socketremoteinfo)}>): void | 取消订阅UDPSocket连接的接收消息事件。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | on(type: 'listening' &#124; 'close', callback: Callback\<void>): void | 订阅UDPSocket连接的数据包消息事件或关闭事件。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | off(type: 'listening' &#124; 'close', callback?: Callback\<void>): void | 取消订阅UDPSocket连接的数据包消息事件或关闭事件。使用callback方式作为异步方法。 |
 | ohos.net.socket.UDPSocket | on(type: 'error', callback?: ErrorCallback): void | 订阅UDPSocket连接的error事件。使用callback方式作为异步方法。 |
 | ohos.net.socket.UDPSocket | off(type: 'error', callback?: ErrorCallback): void | 取消订阅UDPSocket连接的error事件。使用callback方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | bind(address: [NetAddress](#netaddress), callback: AsyncCallback\<void>): void | 绑定IP地址和端口，端口可以指定或由系统随机分配。使用callback方法作为异步方法。 |
+| ohos.net.socket.TCPSocket | bind(address [NetAddress](#netaddress)): Promise\<void> | 绑定IP地址和端口，端口可以指定或由系统随机分配。使用Promise方法作为异步方法。 |
+| ohos.net.socket.TCPSocket | connect(options: [TCPConnectOptions](#tcpconnectoptions), callback: AsyncCallback\<void>): void | 连接到指定的IP地址和端口。使用callback方法作为异步方法。 |
+| ohos.net.socket.TCPSocket | connect(options: [TCPConnectOptions](#tcpconnectoptions)): Promise\<void> | 连接到指定的IP地址和端口。使用Promise方法作为异步方法。 |
+| ohos.net.socket.TCPSocket | send(options: [TCPSendOptions](#tcpsendoptions), callback: AsyncCallback\<void>): void | 通过TCPSocket连接发送数据。使用callback方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | send(options: [TCPSendOptions](#tcpsendoptions)): Promise\<void> | 通过TCPSocket连接发送数据。使用Promise方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | close(callback: AsyncCallback\<void>): void | 关闭TCPSocket连接。使用Promise方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | close(): Promise\<void> | 关闭TCPSocket连接。使用Promise方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | getRemoteAddress(callback: AsyncCallback\<[NetAddress](#netaddress)>): void | 获取对端Socket地址。使用callback方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | getRemoteAddress(): Promise\<[NetAddress](#netaddress)> | 获取对端Socket地址。使用Promise方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | getState(callback: AsyncCallback\<[SocketStateBase](#socketstatebase)>): void | 获取TCPSocket状态。使用callback方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | getState(): Promise\<[SocketStateBase](#socketstatebase)> | 获取TCPSocket状态。使用Promise方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | setExtraOptions(options: [TCPExtraOptions](#tcpextraoptions), callback: AsyncCallback<void>): void | 设置TCPSocket连接的其他属性。使用callback方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | setExtraOptions(options: [TCPExtraOptions](#tcpextraoptions)): Promise<void> | 设置TCPSocket连接的其他属性。使用Promise方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | on(type: 'message', callback: Callback<{message: ArrayBuffer, remoteInfo: [SocketRemoteInfo](#socketremoteinfo)}>): void | 订阅TCPSocket连接的接收消息事件。使用callback方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | off(type: 'message', callback: Callback<{message: ArrayBuffer, remoteInfo: [SocketRemoteInfo](#socketremoteinfo)}>): void | 取消订阅TCPSocket连接的接收消息事件。使用callback方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | on(type: 'connect' &#124; 'close', callback: Callback<void>): void | 订阅TCPSocket的连接事件或关闭事件。使用callback方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | off(type: 'connect' &#124; 'close', callback: Callback<void>): void | 取消订阅TCPSocket的连接事件或关闭事件。使用callback方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | on(type: 'error', callback?: ErrorCallback): void | 订阅TCPSocket连接的error事件。使用callback方式作为异步方法。 |
+| ohos.net.socket.TCPSocket | off(type: 'error', callback?: ErrorCallback): void | 取消订阅TCPSocket连接的error事件。使用callback方式作为异步方法。 |
 
+
+#### NetAddress
+
+目标地址信息。
+
+| 参数名  | 类型   | 必填 | 说明                                                         |
+| ------- | ------ | ---- | ------------------------------------------------------------ |
+| address | string | 是   | 本地绑定的ip地址。                                           |
+| port    | number | 否   | 端口号 ，范围0~65535。如果不指定系统随机分配端口。           |
+| family  | number | 否   | 网络协议类型，可选类型：<br />- 1：IPv4<br />- 2：IPv6<br />默认为1。 |
+
+#### UDPSendOptions
+
+UDPSocket发送参数。
+
+| 参数名  | 类型                               | 必填 | 说明           |
+| ------- | ---------------------------------- | ---- | -------------- |
+| data    | string                             | 是   | 发送的数据。   |
+| address | [NetAddress](#netaddress) | 是   | 目标地址信息。 |
+
+#### UDPExtraOptions
+
+UDPSocket连接的其他属性。
+
+| 参数名            | 类型    | 必填 | 说明                             |
+| ----------------- | ------- | ---- | -------------------------------- |
+| broadcast         | boolean | 否   | 是否可以发送广播。默认为false。  |
+| receiveBufferSize | number  | 否   | 接收缓冲区大小（单位：Byte）。   |
+| sendBufferSize    | number  | 否   | 发送缓冲区大小（单位：Byte）。   |
+| reuseAddress      | boolean | 否   | 是否重用地址。默认为false。      |
+| socketTimeout     | number  | 否   | 套接字超时时间，单位毫秒（ms）。 |
+
+#### SocketStateBase
+
+Socket的状态信息。
+
+| 参数名      | 类型    | 必填 | 说明       |
+| ----------- | ------- | ---- | ---------- |
+| isBound     | boolean | 是   | 是否绑定。 |
+| isClose     | boolean | 是   | 是否关闭。 |
+| isConnected | boolean | 是   | 是否连接。 |
+
+#### SocketRemoteInfo
+
+Socket的连接信息。
+
+| 参数名  | 类型   | 必填 | 说明                                                         |
+| ------- | ------ | ---- | ------------------------------------------------------------ |
+| address | string | 是   | 本地绑定的ip地址。                                           |
+| family  | string | 是   | 网络协议类型，可选类型：<br />- IPv4<br />- IPv6<br />默认为IPv4。 |
+| port    | number | 是   | 端口号，范围0~65535。                                        |
+| size    | number | 是   | 服务器响应信息的字节长度。                                   |
+
+#### TCPConnectOptions
+
+TCPSocket连接的参数。
+
+| 参数名  | 类型                               | 必填 | 说明                       |
+| ------- | ---------------------------------- | ---- | -------------------------- |
+| address | [NetAddress](#netaddress) | 是   | 绑定的地址以及端口。       |
+| timeout | number                             | 否   | 超时时间，单位毫秒（ms）。 |
+
+#### TCPSendOptions
+
+TCPSocket发送请求的参数。
+
+| 参数名   | 类型   | 必填 | 说明                                                         |
+| -------- | ------ | ---- | ------------------------------------------------------------ |
+| data     | string | 是   | 发送的数据。                                                 |
+| encoding | string | 否   | 字符编码(UTF-8，UTF-16BE，UTF-16LE，UTF-16，US-AECII，ISO-8859-1)，默认为UTF-8。 |
+
+#### TCPExtraOptions
+
+TCPSocket连接的其他属性。
+
+| 参数名            | 类型    | 必填 | 说明                                                         |
+| ----------------- | ------- | ---- | ------------------------------------------------------------ |
+| keepAlive         | boolean | 否   | 是否保持连接。默认为false。                                  |
+| OOBInline         | boolean | 否   | 是否为OOB内联。默认为false。                                 |
+| TCPNoDelay        | boolean | 否   | TCPSocket连接是否无时延。默认为false。                       |
+| socketLinger      | Object  | 是   | socket是否继续逗留。<br />- on：是否逗留（true：逗留；false：不逗留）。<br />- linger：逗留时长，单位毫秒（ms），取值范围为0~65535。<br />当入参on设置为true时，才需要设置。 |
+| receiveBufferSize | number  | 否   | 接收缓冲区大小（单位：Byte）。                               |
+| sendBufferSize    | number  | 否   | 发送缓冲区大小（单位：Byte）。                               |
+| reuseAddress      | boolean | 否   | 是否重用地址。默认为false。                                  |
+| socketTimeout     | number  | 否   | 套接字超时时间，单位毫秒（ms）。                             |
 
 ## 相关仓
 
