@@ -1,122 +1,212 @@
-# 电话子系统网络协议栈组件<a name="ZH-CN_TOPIC_0000001125689015"></a>
+# Net Manager
 
--   [简介](#section11660541593)
--   [目录](#section1464106163817)
--   [接口](#section1096322014288)
--   [相关仓](#section11683135113011)
+## 简介
 
-## 简介<a name="section11660541593"></a>
+网络协议栈介绍：
 
-**电话子系统网络协议栈组件**，是OpenHarmony为开发者提供的一套开发OpenHarmony应用的Http、Socket、WebSocket等网络协议栈的API的适配层框架。目前主要由以下两部分组成:
+    网络协议栈模块作为电话子系统可裁剪部件，主要分为HTTP和socket模块；如图1：Http接口架构图；如图2：socket接口架构图；
 
-1、标准系统上基于NAPI的JS适配层。
+**图 1**  Http接口架构图
 
-2、轻量级系统和小型系统上基于JSI的JS适配层。
+![net_conn_manager_arch_zh](figures/netstack_http_arch.png)
 
-## 目录<a name="section1464106163817"></a>
+**图 2**  socket接口架构图
 
-电话子系统网络协议栈组件源代码在 **/foundation/communication/netstack**，目录结构如下所示：
+![net_conn_manager_arch_zh](figures/netstack_socket_arch.png)
+
+## 目录
 
 ```
 /foundation/communication/netstack
-├── frameworks         # 框架代码目录
-│   ├── js             # JS适配层
-│       ├── builtin    # 轻量级系统和小型系统上基于JSI的JS适配层
-│       └── napi       # 标准系统上基于NAPI的JS适配层
-├── interfaces         # 对外暴露的API
-│   └── kits           # OpenHarmony SDK API, 包括Java、Js、Native, 目前只有JS
-│       └── js         # JS API
-├── utils              # 公共工具
-│   └── log            # 日志工具
+├─figures                            # 架构图
+├─frameworks                         # API实现
+│  └─js                              # JS API实现
+│      ├─builtin                     # 小型系统JS API实现
+│      └─napi                        # 标准系统JS API实现
+│          ├─http                    # http API
+│          ├─socket                  # socket API
+│          └─websocket               # websocket API
+├─interfaces                         # JS 接口定义
+├─test                               # 测试
+└─utils                              # 工具
 ```
 
-## 接口<a name="section1096322014288"></a>
+## 接口说明
 
-```
-export interface FetchResponse {
-  /**
-   * Server status code.
-   * @since 3
-   */
-  code: number;
+### Http接口说明
 
-  /**
-   * Data returned by the success function.
-   * @since 3
-   */
-  data: string | object;
+| 类型 | 接口 | 功能说明 |
+| ---- | ---- | ---- |
+| ohos.net.socket | function createHttp(): HttpRequest; | 返回一个HttpRequest对象 |
+| ohos.net.http.HttpRequest | on(type: "headerReceive", callback: AsyncCallback\<Object>): void; | 监听收到Http头的事件 |
+| ohos.net.http.HttpRequest | once(type: "headerReceive", callback: Callback\<Object>): void; | 监听收到Http头的事件，只监听一次 |
+| ohos.net.http.HttpRequest | off(type: "headerReceive", callback: AsyncCallback\<Object>): void; | 取消监听收到Http头的事件 |
+| ohos.net.http.HttpRequest | on(type: "headerReceive", callback: Callback\<Object>): void; | 监听收到Http头的事件 |
+| ohos.net.http.HttpRequest | once(type: "headerReceive", callback: Callback\<Object>): void; | 监听收到Http头的事件，只监听一次 |
+| ohos.net.http.HttpRequest | off(type: "headerReceive", callback: Callback\<Object>): void; | 取消监听收到Http头的事件 |
+| ohos.net.http.HttpRequest | request(url: string, callback: AsyncCallback\<[HttpResponse](#httpresponse)>): void; | 用**GET**方法请求一个域名，调用callback |
+| ohos.net.http.HttpRequest | request(url: string, options: [HttpRequestOptions](#httprequestoptions), callback: AsyncCallback\<[HttpResponse](#httpresponse)>): void; | 请求一个域名，options中携带请求参数，调用callback |
+| ohos.net.http.HttpRequest | request(url: string, options?: [HttpRequestOptions](#httprequestoptions): Promise\<[HttpResponse](#httpresponse)>; | 请求一个域名，options中携带请求参数(可选)，返回Promise |
 
-  /**
-   * All headers in the response from the server.
-   * @since 3
-   */
-  headers: Object;
-}
+#### HttpRequestOptions
 
-/**
- * @Syscap SysCap.ACE.UIEngine
- */
-export default class Fetch {
-  /**
-   * Obtains data through the network.
-   * @param options
-   */
-  static fetch(options: {
-    /**
-     * Resource URL.
-     * @since 3
-     */
-    url: string;
+##### method
 
-    /**
-     * Request parameter, which can be of the string type or a JSON object.
-     * @since 3
-     */
-    data?: string | object;
+- string类型，支持的方法
+    - **OPTIONS**
+    - **GET**
+    - **HEAD**
+    - **POST**
+    - **PUT**
+    - **DELETE**
+    - **TRACE**
+    - **CONNECT**
 
-    /**
-     * Request header, which accommodates all attributes of the request.
-     * @since 3
-     */
-    header?: Object;
+##### extraData
 
-    /**
-     * Request methods available: OPTIONS, GET, HEAD, POST, PUT, DELETE and TRACE. The default value is GET.
-     * @since 3
-     */
-    method?: string;
+- 请求方法是 **OPTIONS** ,  **GET** ,  **HEAD** ,  **DELETE**, **TRACE**或者**CONNECT**
+    - extraData类型是string
+        - extraData字段会直接与url进行拼接，也就是将extraData当作url的参数，不会进行URL编码，URL编码由开发者自行完成
+    - extraData类型是Object
+        - Object会被解析成"name1=value1&name2=value2"这样的url参数，仅对类型是string的字段进行解析
+    - 举例：
+        - url = "https://www.example.com"<br>extraData = "name=Tony&age=20"
+          <br>那么最终的请求发出去时的url就是: "https://www.example.com?name=Tony&age=20"
+        - url = "https://www.example.com?type=animal"<br>extraData = "name=Tony&age=20"
+          <br>那么最终的请求发出去时的url就是: "https://www.example.com?type=animal&name=Tony&age=20"
+        - url = "https://www.example.com?type=animal"<br>extraData = {"name": "Tony", "age": "20"}
+          <br>那么最终的请求发出去时的url就是: "https://www.example.com?type=animal&name=Tony&age=20"
+        - url = "https://www.example.com?type=animal"
+          <br>extraData = {"name": "Tony", "age": "20", "any": {"country": "China"}}
+          <br>那么最终的请求发出去时的url就是: "https://www.example.com?type=animal&name=Tony&age=20"
+          <br>忽略"any"字段，因为其类型不是string
+- 请求方法是 **POST** 或者 **PUT**
+    - 直接当作Http报文的body部分
 
-    /**
-     * The return type can be text, or JSON. By default, the return type is determined based on Content-Type in the header returned by the server.
-     * @since 3
-     */
-    responseType?: string;
+##### header
 
-    /**
-     * Called when the network data is obtained successfully.
-     * @since 3
-     */
-    success?: (data: FetchResponse) => void;
+- 如下形式的Object
 
-    /**
-     * Called when the network data fails to be obtained.
-     * @since 3
-     */
-    fail?: (data: any, code: number) => void;
-
-    /**
-     * Called when the execution is completed.
-     * @since 3
-     */
-    complete?: () => void;
-  }): void;
+```json
+{
+  "name1": "value1",
+  "name2": "value2",
+  "name3": "value3"
 }
 ```
 
-## 相关仓<a name="section11683135113011"></a>
+##### readTimeout
 
-[ ace_engine_lite ](https://gitee.com/openharmony/ace_engine_lite)
+number类型，总超时时间，单位毫秒，默认60000ms
 
-[ third_party_curl ](https://gitee.com/openharmony/third_party_curl)
+##### connectTimeout
 
-[ third_party_mbedtls ](https://gitee.com/openharmony/third_party_mbedtls)
+number类型，连接超时时间，单位毫秒，默认60000ms
+
+#### HttpResponse
+
+##### result
+
+- result字段是Http的响应体，目前只支持string和ArrayBuffer类型有响应头中的content-type决定。
+    - 如果content-type是**application/octet-stream**，类型为ArrayBuffer
+    - 其他情况下为string
+
+##### responseCode
+
+- responseCode为ResponseCode类型，有以下值
+    - OK = 200
+    - CREATED = 201
+    - ACCEPTED = 202
+    - NOT_AUTHORITATIVE = 203
+    - NO_CONTENT = 204
+    - RESET = 205
+    - PARTIAL = 206
+    - MULT_CHOICE = 300
+    - MOVED_PERM = 301
+    - MOVED_TEMP = 302
+    - SEE_OTHER = 303
+    - NOT_MODIFIED = 304
+    - USE_PROXY = 305
+    - BAD_REQUEST = 400
+    - UNAUTHORIZED = 401
+    - PAYMENT_REQUIRED = 402
+    - FORBIDDEN = 403
+    - NOT_FOUND = 404
+    - BAD_METHOD = 405
+    - NOT_ACCEPTABLE = 406
+    - PROXY_AUTH = 407
+    - CLIENT_TIMEOUT = 408
+    - CONFLICT = 409
+    - GONE = 410
+    - LENGTH_REQUIRED = 411
+    - PRECON_FAILED = 412
+    - ENTITY_TOO_LARGE = 413
+    - REQ_TOO_LONG = 414
+    - UNSUPPORTED_TYPE = 415
+    - INTERNAL_ERROR = 500
+    - NOT_IMPLEMENTED = 501
+    - BAD_GATEWAY = 502
+    - UNAVAILABLE = 503
+    - GATEWAY_TIMEOUT = 504
+    - VERSION = 505
+
+##### header
+
+- 如下形式的Object
+
+```json
+{
+  "name1": "value1",
+  "name2": "value2",
+  "name3": "value3"
+}
+```
+
+##### cookies
+
+- string类型的字段，需要开发者自行解析
+
+#### 示例
+
+```javascript
+import http from "@ohos.net.http"
+let httpRequest = http.createHttp()
+httpRequest.request("www.example.com", function (err, data) {
+    console.log(JSON.stringify(err))
+    console.log(JSON.stringify(data))
+})
+```
+
+### socket接口说明
+
+| 类型 | 接口 | 功能说明 |
+| ---- | ---- | ---- |
+| ohos.net.socket | function constructUDPSocketInstance(): UDPSocket; | 返回一个UDPSocket对象 |
+| ohos.net.socket | function constructUDPSocketInstance(): TCPSocket; | 返回一个TCPSocket对象 |
+| ohos.net.socket.UDPSocket | bind(address: [NetAddress](#netaddress), callback: AsyncCallback\<void>): void; | 绑定IP地址和端口，端口可以指定或由系统随机分配。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | bind(address: [NetAddress](#netaddress)): Promise<void>; | 绑定IP地址和端口，端口可以指定或由系统随机分配。使用Promise方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | send(options: [UDPSendOptions](#udpsendoptions), callback: AsyncCallback<void>): void; | 通过UDPSocket连接发送数据。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | send(options: [UDPSendOptions](#udpsendoptions)): Promise<void>; | 通过UDPSocket连接发送数据。使用Promise方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | close(callback: AsyncCallback<void>): void; | 关闭UDPSocket连接。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | close(): Promise<void>; | 关闭UDPSocket连接。使用Promise方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | getState(callback: AsyncCallback<[SocketStateBase](#socketstatebase)>): void; | 获取UDPSocket状态。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | getState(): Promise<[SocketStateBase](#socketstatebase)>; | 获取UDPSocket状态。使用Promise方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | setExtraOptions(options: [UDPExtraOptions](#udpextraoptions), callback: AsyncCallback<void>): void; | 设置UDPSocket连接的其他属性。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | setExtraOptions(options: [UDPExtraOptions](#udpextraoptions)): Promise<void>; | 设置UDPSocket连接的其他属性。使用Promise方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | on(type: 'message', callback: Callback<{message: ArrayBuffer, remoteInfo: SocketRemoteInfo}>): void | 订阅UDPSocket连接的接收消息事件。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | off(type: 'message', callback?: Callback<{message: ArrayBuffer, remoteInfo: SocketRemoteInfo}>): void | 取消订阅UDPSocket连接的接收消息事件。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | on(type: 'listening' &#124; 'close', callback: Callback<void>): void | 订阅UDPSocket连接的数据包消息事件或关闭事件。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | off(type: 'listening' &#124; 'close', callback?: Callback<void>): void | 取消订阅UDPSocket连接的数据包消息事件或关闭事件。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | on(type: 'error', callback?: ErrorCallback): void | 订阅UDPSocket连接的error事件。使用callback方式作为异步方法。 |
+| ohos.net.socket.UDPSocket | off(type: 'error', callback?: ErrorCallback): void | 取消订阅UDPSocket连接的error事件。使用callback方式作为异步方法。 |
+
+
+## 相关仓
+
+[网络管理子系统](https://gitee.com/openharmony/docs/blob/master/zh-cn/readme/%E7%BD%91%E7%BB%9C%E7%AE%A1%E7%90%86%E5%AD%90%E7%B3%BB%E7%BB%9F.md)
+
+**communication_netstack**
+
+[communication_netmanager_base](https://gitee.com/openharmony/communication_netmanager_base)
+
+[communication_netmanager_ext](https://gitee.com/openharmony/communication_netmanager_ext)
