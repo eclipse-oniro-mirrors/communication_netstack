@@ -50,121 +50,83 @@
 
 #### HttpRequestOptions
 
-##### method
+发起请求可选参数的类型和取值范围。
 
-- string类型，支持的方法
-    - **OPTIONS**
-    - **GET**
-    - **HEAD**
-    - **POST**
-    - **PUT**
-    - **DELETE**
-    - **TRACE**
-    - **CONNECT**
+| 参数           | 类型                                 | 必填 | 说明                                                       |
+| -------------- | ------------------------------------ | ---- | ---------------------------------------------------------- |
+| method         | [RequestMethod](#requestmethod) | 否   | 请求方式。                                                 |
+| extraData      | string &#124; Object &#124; ArrayBuffer<sup>8+</sup> | 否   | 发送请求的额外数据。<br />- 当HTTP请求为POST、PUT等方法时，此字段为HTTP请求的content，支持类型为string和ArrayBuffer<sup>8+</sup>。<br />- 当HTTP请求为GET、OPTIONS、DELETE、TRACE、CONNECT等方法时，此字段为HTTP请求的参数补充，参数内容会拼接到URL中进行发送，支持类型为string和Object。<br />- 开发者传入string对象，开发者需要自行编码，将编码后的string传入。<sup>8+</sup> |
+| header         | Object                               | 否   | HTTP请求头字段。默认{'Content-Type': 'application/json'}。 |
+| readTimeout    | number                               | 否   | 读取超时时间。单位为毫秒（ms），默认为60000ms。            |
+| connectTimeout | number                               | 否   | 连接超时时间。单位为毫秒（ms），默认为60000ms。            |
 
-##### extraData
+#### RequestMethod
 
-- 请求方法是 **OPTIONS** ,  **GET** ,  **HEAD** ,  **DELETE**, **TRACE**或者**CONNECT**
-    - extraData类型是string
-        - extraData字段会直接与url进行拼接，也就是将extraData当作url的参数，不会进行URL编码，URL编码由开发者自行完成
-    - extraData类型是Object
-        - Object会被解析成"name1=value1&name2=value2"这样的url参数，仅对类型是string的字段进行解析
-    - 举例：
-        - url = "https://www.example.com"<br>extraData = "name=Tony&age=20"
-          <br>那么最终的请求发出去时的url就是: "https://www.example.com?name=Tony&age=20"
-        - url = "https://www.example.com?type=animal"<br>extraData = "name=Tony&age=20"
-          <br>那么最终的请求发出去时的url就是: "https://www.example.com?type=animal&name=Tony&age=20"
-        - url = "https://www.example.com?type=animal"<br>extraData = {"name": "Tony", "age": "20"}
-          <br>那么最终的请求发出去时的url就是: "https://www.example.com?type=animal&name=Tony&age=20"
-        - url = "https://www.example.com?type=animal"
-          <br>extraData = {"name": "Tony", "age": "20", "any": {"country": "China"}}
-          <br>那么最终的请求发出去时的url就是: "https://www.example.com?type=animal&name=Tony&age=20"
-          <br>忽略"any"字段，因为其类型不是string
-- 请求方法是 **POST** 或者 **PUT**
-    - 直接当作Http报文的body部分
+HTTP 请求方法。
 
-##### header
+| **method 的合法值** | 说明                |
+| :------------------ | :------------------ |
+| OPTIONS             | HTTP 请求 OPTIONS。 |
+| GET                 | HTTP 请求 GET。     |
+| HEAD                | HTTP 请求 HEAD。    |
+| POST                | HTTP 请求 POST。    |
+| PUT                 | HTTP 请求 PUT。     |
+| DELETE              | HTTP 请求 DELETE。  |
+| TRACE               | HTTP 请求 TRACE。   |
+| CONNECT             | HTTP 请求 CONNECT。 |
 
-- 如下形式的Object
+#### ResponseCode
 
-```json
-{
-  "name1": "value1",
-  "name2": "value2",
-  "name3": "value3"
-}
-```
+发起请求返回的响应码。
 
-##### readTimeout
-
-number类型，总超时时间，单位毫秒，默认60000ms
-
-##### connectTimeout
-
-number类型，连接超时时间，单位毫秒，默认60000ms
+| 变量              | 值   | 说明                                                         |
+| ----------------- | ---- | ------------------------------------------------------------ |
+| OK                | 200  | 请求成功。一般用于GET与POST请求。                            |
+| CREATED           | 201  | 已创建。成功请求并创建了新的资源。                           |
+| ACCEPTED          | 202  | 已接受。已经接受请求，但未处理完成。                         |
+| NOT_AUTHORITATIVE | 203  | 非授权信息。请求成功。                                       |
+| NO_CONTENT        | 204  | 无内容。服务器成功处理，但未返回内容。                       |
+| RESET             | 205  | 重置内容。                                                   |
+| PARTIAL           | 206  | 部分内容。服务器成功处理了部分GET请求。                      |
+| MULT_CHOICE       | 300  | 多种选择。                                                   |
+| MOVED_PERM        | 301  | 永久移动。请求的资源已被永久的移动到新URI，返回信息会包括新的URI，浏览器会自动定向到新URI。 |
+| MOVED_TEMP        | 302  | 临时移动。                                                   |
+| SEE_OTHER         | 303  | 查看其它地址。                                               |
+| NOT_MODIFIED      | 304  | 未修改。                                                     |
+| USE_PROXY         | 305  | 使用代理。                                                   |
+| BAD_REQUEST       | 400  | 客户端请求的语法错误，服务器无法理解。                       |
+| UNAUTHORIZED      | 401  | 请求要求用户的身份认证。                                     |
+| PAYMENT_REQUIRED  | 402  | 保留，将来使用。                                             |
+| FORBIDDEN         | 403  | 服务器理解请求客户端的请求，但是拒绝执行此请求。             |
+| NOT_FOUND         | 404  | 服务器无法根据客户端的请求找到资源（网页）。                 |
+| BAD_METHOD        | 405  | 客户端请求中的方法被禁止。                                   |
+| NOT_ACCEPTABLE    | 406  | 服务器无法根据客户端请求的内容特性完成请求。                 |
+| PROXY_AUTH        | 407  | 请求要求代理的身份认证。                                     |
+| CLIENT_TIMEOUT    | 408  | 请求时间过长，超时。                                         |
+| CONFLICT          | 409  | 服务器完成客户端的PUT请求是可能返回此代码，服务器处理请求时发生了冲突。 |
+| GONE              | 410  | 客户端请求的资源已经不存在。                                 |
+| LENGTH_REQUIRED   | 411  | 服务器无法处理客户端发送的不带Content-Length的请求信息。     |
+| PRECON_FAILED     | 412  | 客户端请求信息的先决条件错误。                               |
+| ENTITY_TOO_LARGE  | 413  | 由于请求的实体过大，服务器无法处理，因此拒绝请求。           |
+| REQ_TOO_LONG      | 414  | 请求的URI过长（URI通常为网址），服务器无法处理。             |
+| UNSUPPORTED_TYPE  | 415  | 服务器无法处理请求的格式。                                   |
+| INTERNAL_ERROR    | 500  | 服务器内部错误，无法完成请求。                               |
+| NOT_IMPLEMENTED   | 501  | 服务器不支持请求的功能，无法完成请求。                       |
+| BAD_GATEWAY       | 502  | 充当网关或代理的服务器，从远端服务器接收到了一个无效的请求。 |
+| UNAVAILABLE       | 503  | 由于超载或系统维护，服务器暂时的无法处理客户端的请求。       |
+| GATEWAY_TIMEOUT   | 504  | 充当网关或代理的服务器，未及时从远端服务器获取请求。         |
+| VERSION           | 505  | 服务器请求的HTTP协议的版本。                                 |
 
 #### HttpResponse
 
-##### result
+request方法回调函数的返回值类型。
 
-- result字段是Http的响应体，目前只支持string和ArrayBuffer类型有响应头中的content-type决定。
-    - 如果content-type是**application/octet-stream**，类型为ArrayBuffer
-    - 其他情况下为string
-
-##### responseCode
-
-- responseCode为ResponseCode类型，有以下值
-    - OK = 200
-    - CREATED = 201
-    - ACCEPTED = 202
-    - NOT_AUTHORITATIVE = 203
-    - NO_CONTENT = 204
-    - RESET = 205
-    - PARTIAL = 206
-    - MULT_CHOICE = 300
-    - MOVED_PERM = 301
-    - MOVED_TEMP = 302
-    - SEE_OTHER = 303
-    - NOT_MODIFIED = 304
-    - USE_PROXY = 305
-    - BAD_REQUEST = 400
-    - UNAUTHORIZED = 401
-    - PAYMENT_REQUIRED = 402
-    - FORBIDDEN = 403
-    - NOT_FOUND = 404
-    - BAD_METHOD = 405
-    - NOT_ACCEPTABLE = 406
-    - PROXY_AUTH = 407
-    - CLIENT_TIMEOUT = 408
-    - CONFLICT = 409
-    - GONE = 410
-    - LENGTH_REQUIRED = 411
-    - PRECON_FAILED = 412
-    - ENTITY_TOO_LARGE = 413
-    - REQ_TOO_LONG = 414
-    - UNSUPPORTED_TYPE = 415
-    - INTERNAL_ERROR = 500
-    - NOT_IMPLEMENTED = 501
-    - BAD_GATEWAY = 502
-    - UNAVAILABLE = 503
-    - GATEWAY_TIMEOUT = 504
-    - VERSION = 505
-
-##### header
-
-- 如下形式的Object
-
-```json
-{
-  "name1": "value1",
-  "name2": "value2",
-  "name3": "value3"
-}
-```
-
-##### cookies
-
-- string类型的字段，需要开发者自行解析
+| 参数名               | 类型                                         | 必填 | 说明                                                         |
+| -------------------- | -------------------------------------------- | ---- | ------------------------------------------------------------ |
+| result               | string &#124; Object &#124;ArrayBuffer<sup>8+</sup> | 是   | Http请求根据响应头中Content-type类型返回对应的响应格式内容：<br />- application/json：返回JSON格式的字符串，如需Http响应具体内容，需开发者自行解析<br />- application/octet-stream：ArrayBuffer<br />- 其他：string |
+| responseCode         | [ResponseCode](#responsecode) &#124; number      | 是   | 回调函数执行成功时，此字段为[ResponseCode](#responsecode)。若执行失败，错误码将会从AsyncCallback中的err字段返回。错误码如下：<br />- 200：通用错误<br />- 202：参数错误<br />- 300：I/O错误 |
+| header               | Object                                       | 是   | 发起http请求返回来的响应头。当前返回的是JSON格式字符串，如需具体字段内容，需开发者自行解析。常见字段及解析方式如下：<br/>- Content-Type：header['Content-Type']；<br />- Status-Line：header['Status-Line']；<br />- Date：header.Date/header['Date']；<br />- Server：header.Server/header['Server']； |
+| cookies<sup>8+</sup> | string                                       | 是   | 服务器返回的 cookies。                                       |
 
 #### 示例
 
@@ -305,6 +267,46 @@ TCPSocket连接的其他属性。
 | sendBufferSize    | number  | 否   | 发送缓冲区大小（单位：Byte）。                               |
 | reuseAddress      | boolean | 否   | 是否重用地址。默认为false。                                  |
 | socketTimeout     | number  | 否   | 套接字超时时间，单位毫秒（ms）。                             |
+
+#### 示例
+
+```javascript
+import socket from "@ohos.net.socket"
+let tcp = socket.constructTCPSocketInstance()
+tcp.on("message", function (data) {
+  console.log(JSON.stringify(data))
+})
+tcp.bind({
+  address: "127.0.0.1",
+  family: 1,
+  port: 0
+})
+tcp.connect({
+  address: {
+    address: "127.0.0.1",
+    family: 1,
+    port: 8888
+  }
+})
+tcp.send({
+  data: "Hello World"
+})
+
+let udp = socket.constructUDPSocketInstance()
+udp.bind({
+  address: "127.0.0.1",
+  family: 1,
+  port: 0
+})
+udp.send({
+  address: {
+    address: "127.0.0.1",
+    family: 1,
+    port: 9999
+  },
+  data: "Hello World"
+})
+```
 
 ## 相关仓
 
