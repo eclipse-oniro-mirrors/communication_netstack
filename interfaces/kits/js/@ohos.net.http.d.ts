@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,49 +19,90 @@ import {AsyncCallback, Callback} from "./basic";
  * Provides http related APIs.
  *
  * @since 6
- * @sysCap SystemCapability.Communication.NetStack
+ * @syscap SystemCapability.Communication.NetStack
  */
 declare namespace http {
+  /**
+   * Creates an HTTP request task.
+   */
   function createHttp(): HttpRequest;
 
   export interface HttpRequestOptions {
+    /**
+     * Request method.
+     */
     method?: RequestMethod; // default is GET
     /**
+     * Additional data of the request.
      * extraData can be a string or an Object (API 6) or an ArrayBuffer(API 8).
      */
     extraData?: string | Object | ArrayBuffer;
+    /**
+     * HTTP request header.
+     */
     header?: Object; // default is 'content-type': 'application/json'
+    /**
+     * Read timeout period. The default value is 60,000, in ms.
+     */
     readTimeout?: number; // default is 60s
+    /**
+     * Connection timeout interval. The default value is 60,000, in ms.
+     */
     connectTimeout?: number; // default is 60s.
-    /**
-     * @since 8
-     */
-    ifModifiedSince?: number; // "If-Modified-Since", default is 0.
-    /**
-     * @since 8
-     */
-    fixedLengthStreamingMode?: number; // default is -1 means disabled.
   }
 
   export interface HttpRequest {
+    /**
+     * Initiates an HTTP request to a given URL.
+     *
+     * @param url URL for initiating an HTTP request.
+     * @param options Optional parameters {@link HttpRequestOptions}.
+     * @param callback Returns {@link HttpResponse}.
+     * @permission ohos.permission.INTERNET
+     */
     request(url: string, callback: AsyncCallback<HttpResponse>): void;
     request(url: string, options: HttpRequestOptions, callback: AsyncCallback<HttpResponse>): void;
     request(url: string, options?: HttpRequestOptions): Promise<HttpResponse>;
 
+    /**
+     * Destroys an HTTP request.
+     */
     destroy(): void;
 
     /**
-     * @deprecated use once() instead since 8.
+     * Registers an observer for HTTP Response Header events.
+     *
+     * @deprecated use on_headersReceive instead since 8.
      */
     on(type: "headerReceive", callback: AsyncCallback<Object>): void;
+
     /**
-     * @since 8
-     */
-    once(type: "headerReceive", callback: Callback<Object>): void;
-    /**
-     * @deprecated use once() instead since 8.
+     * Unregisters the observer for HTTP Response Header events.
+     *
+     * @deprecated use off_headersReceive instead since 8.
      */
     off(type: "headerReceive", callback?: AsyncCallback<Object>): void;
+
+    /**
+     * Registers an observer for HTTP Response Header events.
+     *
+     * @since 8
+     */
+    on(type: "headersReceive", callback: Callback<Object>): void;
+
+    /**
+     * Unregisters the observer for HTTP Response Header events.
+     *
+     * @since 8
+     */
+    off(type: "headersReceive", callback?: Callback<Object>): void;
+
+    /**
+     * Registers a one-time observer for HTTP Response Header events.
+     *
+     * @since 8
+     */
+    once(type: "headersReceive", callback: Callback<Object>): void;
   }
 
   export enum RequestMethod {
@@ -115,75 +156,21 @@ declare namespace http {
 
   export interface HttpResponse {
     /**
-     * result can be a string or an Object (API 6) or an ArrayBuffer(API 8).
+     * result can be a string (API 6) or an ArrayBuffer(API 8). Object is deprecated from API 8.
      */
     result: string | Object | ArrayBuffer;
+    /**
+     * Server status code.
+     */
     responseCode: ResponseCode | number;
+    /**
+     * All headers in the response from the server.
+     */
     header: Object;
     /**
      * @since 8
      */
     cookies: string;
-  }
-
-  /**
-   * Creates a default {@code HttpResponseCache} object to store the responses of HTTP access requests.
-   *
-   * @param options {@code HttpResponseCacheOptions}
-   * @param callback the newly-installed cache
-   * @since 8
-   */
-  function createHttpResponseCache(options: HttpResponseCacheOptions, callback: AsyncCallback<HttpResponseCache>): void;
-  function createHttpResponseCache(options: HttpResponseCacheOptions): Promise<HttpResponseCache>;
-
-  /**
-   * Obtains the {@code HttpResponseCache} object.
-   *
-   * @param callback Returns the {@code HttpResponseCache} object.
-   * @since 8
-   */
-  function getInstalledHttpResponseCache(callback: AsyncCallback<HttpResponseCache>): void;
-  function getInstalledHttpResponseCache(): Promise<HttpResponseCache>;
-
-  /**
-   * @since 8
-   */
-  export interface HttpResponseCacheOptions {
-    /**
-     * Indicates the full directory for storing the cached data.
-     */
-    filePath: string;
-    /**
-     * Indicates the child directory for storing the cached data. It is an optional parameter.
-     */
-    fileChildPath?: string;
-    /**
-     * Indicates the maximum size of the cached data.
-     */
-    cacheSize: number;
-  }
-
-  /**
-   * @since 8
-   */
-  export interface HttpResponseCache {
-    /**
-     * Writes data in the cache to the file system so that all the cached data can be accessed in the next HTTP request.
-     */
-    flush(callback: AsyncCallback<void>): void;
-    flush(): Promise<void>;
-
-    /**
-     * Disables a cache without changing the data in it.
-     */
-    close(callback: AsyncCallback<void>): void;
-    close(): Promise<void>;
-
-    /**
-     * Disables a cache and deletes the data in it.
-     */
-    delete(callback: AsyncCallback<void>): void;
-    delete(): Promise<void>;
   }
 }
 
