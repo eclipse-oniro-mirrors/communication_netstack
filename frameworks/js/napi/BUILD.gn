@@ -151,3 +151,22 @@ ohos_shared_library("websocket") {
   part_name = common_part_name
   subsystem_name = common_subsystem_name
 }
+
+ohos_shared_library("fetch") {
+  include_dirs = [ "$NETSTACK_NAPI_ROOT/fetch/fetch_module/include" ]
+  include_dirs += utils_include
+  include_dirs += common_include
+  include_dirs += [ "//third_party/curl/include" ]
+
+  sources = [ "fetch/fetch_module/src/fetch_module.cpp" ]
+  sources += utils_source
+
+  deps = common_deps
+  deps += [ "//third_party/curl:curl" ]
+
+  external_deps = common_external_deps
+
+  relative_install_dir = "module"
+  part_name = common_part_name
+  subsystem_name = common_subsystem_name
+}
