@@ -44,7 +44,8 @@
             "sub_component": [
                 "//foundation/communication/netstack/frameworks/js/napi:http",
                 "//foundation/communication/netstack/frameworks/js/napi:socket",
-                "//foundation/communication/netstack/frameworks/js/napi:websocket"
+                "//foundation/communication/netstack/frameworks/js/napi:websocket",
+                "//foundation/communication/netstack/frameworks/js/napi:fetch"
             ],
             "inner_kits": [],
             "test": []
