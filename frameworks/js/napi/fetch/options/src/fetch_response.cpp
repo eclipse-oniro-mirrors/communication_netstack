@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,38 +13,40 @@
  * limitations under the License.
  */
 
-#include "http_response.h"
+#include "fetch_response.h"
+
+#include <vector>
 
 #include "constant.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 
 namespace OHOS::NetStack {
-HttpResponse::HttpResponse() : responseCode_(0) {}
+FetchResponse::FetchResponse() : responseCode_(0) {}
 
-void HttpResponse::AppendResult(const void *data, size_t length)
+void FetchResponse::AppendData(const void *data, size_t length)
 {
-    result_.append(static_cast<const char *>(data), length);
+    data_.append(static_cast<const char *>(data), length);
 }
 
-void HttpResponse::AppendRawHeader(const void *data, size_t length)
+void FetchResponse::AppendRawHeader(const void *data, size_t length)
 {
     rawHeader_.append(static_cast<const char *>(data), length);
 }
 
-void HttpResponse::SetResponseCode(uint32_t responseCode)
+void FetchResponse::SetResponseCode(uint32_t responseCode)
 {
     responseCode_ = responseCode;
 }
 
-void HttpResponse::ParseHeaders()
+void FetchResponse::ParseHeaders()
 {
-    std::vector<std::string> vec = CommonUtils::Split(rawHeader_, HttpConstant::HTTP_LINE_SEPARATOR);
+    std::vector<std::string> vec = CommonUtils::Split(rawHeader_, FetchConstant::HTTP_LINE_SEPARATOR);
     for (const auto &header : vec) {
         if (CommonUtils::Strip(header).empty()) {
             continue;
         }
-        size_t index = header.find(HttpConstant::HTTP_HEADER_SEPARATOR);
+        size_t index = header.find(FetchConstant::HTTP_HEADER_SEPARATOR);
         if (index == std::string::npos) {
             header_[CommonUtils::Strip(header)] = "";
             NETSTACK_LOGI("HEAD: %{public}s", CommonUtils::Strip(header).c_str());
@@ -55,28 +57,18 @@ void HttpResponse::ParseHeaders()
     }
 }
 
-void HttpResponse::AppendCookies(const void *data, size_t length)
+const std::string &FetchResponse::GetData() const
 {
-    cookies_.append(static_cast<const char *>(data), length);
+    return data_;
 }
 
-const std::string &HttpResponse::GetResult() const
-{
-    return result_;
-}
-
-uint32_t HttpResponse::GetResponseCode() const
+uint32_t FetchResponse::GetResponseCode() const
 {
     return responseCode_;
 }
 
-const std::map<std::string, std::string> &HttpResponse::GetHeader() const
+const std::map<std::string, std::string> &FetchResponse::GetHeader() const
 {
     return header_;
-}
-
-const std::string &HttpResponse::GetCookies() const
-{
-    return cookies_;
 }
 } // namespace OHOS::NetStack

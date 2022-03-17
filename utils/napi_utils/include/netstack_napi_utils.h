@@ -95,6 +95,11 @@ void SetBooleanProperty(napi_env env, napi_value object, const std::string &name
 void DefineProperties(napi_env env,
                       napi_value object,
                       const std::initializer_list<napi_property_descriptor> &properties);
+
+/* JSON */
+napi_value JsonStringify(napi_env env, napi_value object);
+
+napi_value JsonParse(napi_env env, napi_value str);
 } // namespace OHOS::NetStack::NapiUtils
 
 #endif /* COMMUNICATIONNETSTACK_NETSTACK_NAPI_UTILS_H */
