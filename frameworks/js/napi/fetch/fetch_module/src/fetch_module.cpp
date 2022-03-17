@@ -20,8 +20,6 @@
 #include "netstack_log.h"
 #include "netstack_module_template.h"
 
-static constexpr const char *FETCH_MODULE_NAME = "fetch";
-
 namespace OHOS::NetStack {
 napi_value FetchModule::InitFetchModule(napi_env env, napi_value exports)
 {
