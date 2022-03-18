@@ -58,6 +58,8 @@
         }                                                                                              \
     } while (0)
 
+static constexpr const int FAIL_CALLBACK_PARAM = 2;
+
 namespace OHOS::NetStack {
 std::mutex FetchExec::mutex_;
 
@@ -118,8 +120,8 @@ napi_value FetchExec::FetchCallback(FetchContext *context)
             napi_value errData = NapiUtils::GetUndefined(context->GetEnv());
             napi_value errCode = NapiUtils::CreateUint32(context->GetEnv(), context->GetErrorCode());
             napi_value undefined = NapiUtils::GetUndefined(context->GetEnv());
-            napi_value argv[2] = {errData, errCode};
-            (void)NapiUtils::CallFunction(context->GetEnv(), undefined, fail, 2, argv);
+            napi_value argv[FAIL_CALLBACK_PARAM] = {errData, errCode};
+            (void)NapiUtils::CallFunction(context->GetEnv(), undefined, fail, FAIL_CALLBACK_PARAM, argv);
         }
     }
 

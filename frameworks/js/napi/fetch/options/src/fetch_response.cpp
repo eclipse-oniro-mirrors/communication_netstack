@@ -15,8 +15,6 @@
 
 #include "fetch_response.h"
 
-#include <vector>
-
 #include "constant.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
