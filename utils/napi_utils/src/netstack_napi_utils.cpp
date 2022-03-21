@@ -24,6 +24,12 @@
 namespace OHOS::NetStack::NapiUtils {
 static constexpr const int MAX_STRING_LENGTH = 65536;
 
+static constexpr const char *GLOBAL_JSON = "JSON";
+
+static constexpr const char *GLOBAL_JSON_STRINGIFY = "stringify";
+
+static constexpr const char *GLOBAL_JSON_PARSE = "parse";
+
 napi_valuetype GetValueType(napi_env env, napi_value value)
 {
     if (value == nullptr) {
@@ -301,5 +307,54 @@ void DefineProperties(napi_env env,
     std::copy(properties.begin(), properties.end(), descriptors);
 
     (void)napi_define_properties(env, object, properties.size(), descriptors);
+}
+
+/* JSON */
+napi_value JsonStringify(napi_env env, napi_value object)
+{
+    napi_value undefined = GetUndefined(env);
+
+    if (GetValueType(env, object) != napi_object) {
+        return undefined;
+    }
+
+    napi_value global = nullptr;
+    NAPI_CALL_BASE(env, napi_get_global(env, &global), undefined);
+    napi_value json = nullptr;
+    NAPI_CALL_BASE(env, napi_get_named_property(env, global, GLOBAL_JSON, &json), undefined);
+    napi_value stringify = nullptr;
+    NAPI_CALL_BASE(env, napi_get_named_property(env, json, GLOBAL_JSON_STRINGIFY, &stringify), undefined);
+    if (GetValueType(env, stringify) != napi_function) {
+        return undefined;
+    }
+
+    napi_value res = nullptr;
+    napi_value argv[1] = {object};
+    NAPI_CALL_BASE(env, napi_call_function(env, json, stringify, 1, argv, &res), undefined);
+    return res;
+}
+
+napi_value JsonParse(napi_env env, napi_value str)
+{
+    napi_value undefined = GetUndefined(env);
+
+    if (GetValueType(env, str) != napi_string) {
+        return undefined;
+    }
+
+    napi_value global = nullptr;
+    NAPI_CALL_BASE(env, napi_get_global(env, &global), undefined);
+    napi_value json = nullptr;
+    NAPI_CALL_BASE(env, napi_get_named_property(env, global, GLOBAL_JSON, &json), undefined);
+    napi_value parse = nullptr;
+    NAPI_CALL_BASE(env, napi_get_named_property(env, json, GLOBAL_JSON_PARSE, &parse), undefined);
+    if (GetValueType(env, parse) != napi_function) {
+        return undefined;
+    }
+
+    napi_value res = nullptr;
+    napi_value argv[1] = {str};
+    NAPI_CALL_BASE(env, napi_call_function(env, json, parse, 1, argv, &res), undefined);
+    return res;
 }
 } // namespace OHOS::NetStack::NapiUtils

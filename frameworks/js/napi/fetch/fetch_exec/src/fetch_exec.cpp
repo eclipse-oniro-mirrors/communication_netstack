@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,14 +13,13 @@
  * limitations under the License.
  */
 
-#include "http_exec.h"
+#include "fetch_exec.h"
 
 #include <algorithm>
 #include <cstring>
 #include <memory>
 
 #include "constant.h"
-#include "event_list.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "netstack_napi_utils.h"
@@ -42,7 +41,7 @@
         CURLcode result = curl_easy_perform(handle);                                                     \
         if (result != CURLE_OK) {                                                                        \
             NETSTACK_LOGE("request fail, url:%{public}s, %{public}s %{public}d",                         \
-                          (asyncContext)->options.GetUrl().c_str(), curl_easy_strerror(result), result); \
+                          (asyncContext)->request.GetUrl().c_str(), curl_easy_strerror(result), result); \
             (asyncContext)->SetErrorCode(result);                                                        \
             return false;                                                                                \
         }                                                                                                \
@@ -59,12 +58,14 @@
         }                                                                                              \
     } while (0)
 
+static constexpr const int FAIL_CALLBACK_PARAM = 2;
+
 namespace OHOS::NetStack {
-std::mutex HttpExec::mutex_;
+std::mutex FetchExec::mutex_;
 
-bool HttpExec::initialized_ = false;
+bool FetchExec::initialized_ = false;
 
-bool HttpExec::ExecRequest(RequestContext *context)
+bool FetchExec::ExecFetch(FetchContext *context)
 {
     if (!initialized_) {
         NETSTACK_LOGE("curl not init");
@@ -78,12 +79,12 @@ bool HttpExec::ExecRequest(RequestContext *context)
         return false;
     }
 
-    NETSTACK_LOGI("final url: %{public}s", context->options.GetUrl().c_str());
+    NETSTACK_LOGI("final url: %{public}s", context->request.GetUrl().c_str());
 
     std::vector<std::string> vec;
-    std::for_each(context->options.GetHeader().begin(), context->options.GetHeader().end(),
+    std::for_each(context->request.GetHeader().begin(), context->request.GetHeader().end(),
                   [&vec](const std::pair<std::string, std::string> &p) {
-                      vec.emplace_back(p.first + HttpConstant::HTTP_HEADER_SEPARATOR + p.second);
+                      vec.emplace_back(p.first + FetchConstant::HTTP_HEADER_SEPARATOR + p.second);
                   });
     std::unique_ptr<struct curl_slist, decltype(&curl_slist_free_all)> header(MakeHeaders(vec), curl_slist_free_all);
 
@@ -97,67 +98,76 @@ bool HttpExec::ExecRequest(RequestContext *context)
     int32_t responseCode;
     NETSTACK_CURL_EASY_GET_INFO(handle.get(), CURLINFO_RESPONSE_CODE, &responseCode, context);
 
-    struct curl_slist *cookies = nullptr;
-    NETSTACK_CURL_EASY_GET_INFO(handle.get(), CURLINFO_COOKIELIST, &cookies, context);
-    std::unique_ptr<struct curl_slist, decltype(&curl_slist_free_all)> cookiesHandle(cookies, curl_slist_free_all);
-    while (cookies) {
-        context->response.AppendCookies(cookies->data, strlen(cookies->data));
-        if (cookies->next != nullptr) {
-            context->response.AppendCookies(HttpConstant::HTTP_LINE_SEPARATOR,
-                                            strlen(HttpConstant::HTTP_LINE_SEPARATOR));
-        }
-        cookies = cookies->next;
-    }
-
     context->response.SetResponseCode(responseCode);
     context->response.ParseHeaders();
 
     return true;
 }
 
-napi_value HttpExec::RequestCallback(RequestContext *context)
+napi_value FetchExec::FetchCallback(FetchContext *context)
+{
+    if (context->IsExecOK()) {
+        napi_value success = context->GetSuccessCallback();
+        if (NapiUtils::GetValueType(context->GetEnv(), success) == napi_function) {
+            napi_value response = MakeResponse(context);
+            napi_value undefined = NapiUtils::GetUndefined(context->GetEnv());
+            napi_value argv[1] = {response};
+            (void)NapiUtils::CallFunction(context->GetEnv(), undefined, success, 1, argv);
+        }
+    } else {
+        napi_value fail = context->GetFailCallback();
+        if (NapiUtils::GetValueType(context->GetEnv(), fail) == napi_function) {
+            napi_value errData = NapiUtils::GetUndefined(context->GetEnv());
+            napi_value errCode = NapiUtils::CreateUint32(context->GetEnv(), context->GetErrorCode());
+            napi_value undefined = NapiUtils::GetUndefined(context->GetEnv());
+            napi_value argv[FAIL_CALLBACK_PARAM] = {errData, errCode};
+            (void)NapiUtils::CallFunction(context->GetEnv(), undefined, fail, FAIL_CALLBACK_PARAM, argv);
+        }
+    }
+
+    napi_value complete = context->GetCompleteCallback();
+    if (NapiUtils::GetValueType(context->GetEnv(), complete) == napi_function) {
+        napi_value undefined = NapiUtils::GetUndefined(context->GetEnv());
+        (void)NapiUtils::CallFunction(context->GetEnv(), undefined, complete, 0, nullptr);
+    }
+
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value FetchExec::MakeResponse(FetchContext *context)
 {
     napi_value object = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), object) != napi_object) {
         return nullptr;
     }
 
-    NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESPONSE_CODE,
+    NapiUtils::SetUint32Property(context->GetEnv(), object, FetchConstant::RESPONSE_KEY_CODE,
                                  context->response.GetResponseCode());
-    NapiUtils::SetStringPropertyUtf8(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_COOKIES,
-                                     context->response.GetCookies());
 
     napi_value header = MakeResponseHeader(context);
     if (NapiUtils::GetValueType(context->GetEnv(), header) == napi_object) {
-        OnHeaderReceive(context, header);
-        NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_HEADER, header);
+        NapiUtils::SetNamedProperty(context->GetEnv(), object, FetchConstant::RESPONSE_KEY_HEADERS, header);
     }
 
-    auto contentType = CommonUtils::ToLower(const_cast<std::map<std::string, std::string> &>(
-        context->response.GetHeader())[HttpConstant::HTTP_CONTENT_TYPE]);
-    if (contentType.find(HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM) != std::string::npos) {
-        void *data = nullptr;
-        auto body = context->response.GetResult();
-        napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);
-        if (data != nullptr && arrayBuffer != nullptr) {
-            (void)memcpy_s(data, body.size(), body.c_str(), body.size());
-            NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT, arrayBuffer);
-        }
+    if (CommonUtils::ToLower(context->GetResponseType()) == FetchConstant::HTTP_RESPONSE_TYPE_JSON) {
+        napi_value data = NapiUtils::JsonParse(
+            context->GetEnv(), NapiUtils::CreateStringUtf8(context->GetEnv(), context->response.GetData()));
+        NapiUtils::SetNamedProperty(context->GetEnv(), object, FetchConstant::RESPONSE_KEY_DATA, data);
         return object;
     }
 
     /* now just support utf8 */
-    NapiUtils::SetStringPropertyUtf8(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT,
-                                     context->response.GetResult());
+    NapiUtils::SetStringPropertyUtf8(context->GetEnv(), object, FetchConstant::RESPONSE_KEY_DATA,
+                                     context->response.GetData());
     return object;
 }
 
-std::string HttpExec::MakeUrl(const std::string &url, std::string param, const std::string &extraParam)
+std::string FetchExec::MakeUrl(const std::string &url, std::string param, const std::string &extraParam)
 {
     if (param.empty()) {
         param += extraParam;
     } else {
-        param += HttpConstant::HTTP_URL_PARAM_SEPARATOR;
+        param += FetchConstant::HTTP_URL_PARAM_SEPARATOR;
         param += extraParam;
     }
 
@@ -165,22 +175,22 @@ std::string HttpExec::MakeUrl(const std::string &url, std::string param, const s
         return url;
     }
 
-    return url + HttpConstant::HTTP_URL_PARAM_START + param;
+    return url + FetchConstant::HTTP_URL_PARAM_START + param;
 }
 
-bool HttpExec::MethodForGet(const std::string &method)
+bool FetchExec::MethodForGet(const std::string &method)
 {
-    return (method == HttpConstant::HTTP_METHOD_HEAD || method == HttpConstant::HTTP_METHOD_OPTIONS ||
-            method == HttpConstant::HTTP_METHOD_DELETE || method == HttpConstant::HTTP_METHOD_TRACE ||
-            method == HttpConstant::HTTP_METHOD_GET || method == HttpConstant::HTTP_METHOD_CONNECT);
+    return (method == FetchConstant::HTTP_METHOD_HEAD || method == FetchConstant::HTTP_METHOD_OPTIONS ||
+            method == FetchConstant::HTTP_METHOD_DELETE || method == FetchConstant::HTTP_METHOD_TRACE ||
+            method == FetchConstant::HTTP_METHOD_GET || method == FetchConstant::HTTP_METHOD_CONNECT);
 }
 
-bool HttpExec::MethodForPost(const std::string &method)
+bool FetchExec::MethodForPost(const std::string &method)
 {
-    return (method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT);
+    return (method == FetchConstant::HTTP_METHOD_POST || method == FetchConstant::HTTP_METHOD_PUT);
 }
 
-bool HttpExec::EncodeUrlParam(std::string &str)
+bool FetchExec::EncodeUrlParam(std::string &str)
 {
     char encoded[4];
     std::string encodeOut;
@@ -203,7 +213,7 @@ bool HttpExec::EncodeUrlParam(std::string &str)
     return true;
 }
 
-bool HttpExec::Initialize()
+bool FetchExec::Initialize()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if (initialized_) {
@@ -218,15 +228,15 @@ bool HttpExec::Initialize()
     return initialized_;
 }
 
-bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader)
+bool FetchExec::SetOption(CURL *curl, FetchContext *context, struct curl_slist *requestHeader)
 {
-    const std::string &method = context->options.GetMethod();
+    const std::string &method = context->request.GetMethod();
     if (!MethodForGet(method) && !MethodForPost(method)) {
         NETSTACK_LOGE("method %{public}s not supported", method.c_str());
         return false;
     }
 
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_URL, context->options.GetUrl().c_str(), context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_URL, context->request.GetUrl().c_str(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CUSTOMREQUEST, method.c_str(), context);
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_WRITEFUNCTION, OnWritingMemoryBody, context);
@@ -238,7 +248,7 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTPHEADER, requestHeader, context);
 
     // Some servers don't like requests that are made without a user-agent field, so we provide one
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_USERAGENT, HttpConstant::HTTP_DEFAULT_USER_AGENT, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_USERAGENT, FetchConstant::HTTP_DEFAULT_USER_AGENT, context);
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FOLLOWLOCATION, 1L, context);
 
@@ -259,7 +269,7 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
 #else
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, HttpConstant::HTTP_DEFAULT_CA_PATH, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, FetchConstant::HTTP_DEFAULT_CA_PATH, context);
 #endif // NO_SSL_CERTIFICATION
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOPROGRESS, 1L, context);
@@ -267,35 +277,33 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 #if HTTP_CURL_PRINT_VERBOSE
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_VERBOSE, 1L, context);
 #endif
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_TIMEOUT_MS, context->options.GetReadTimeout(), context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
 
     if (MethodForPost(method)) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POST, 1L, context);
-        if (!context->options.GetBody().empty()) {
-            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->options.GetBody().c_str(), context);
-            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->options.GetBody().size(), context);
+        if (!context->request.GetBody().empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->request.GetBody().c_str(), context);
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->request.GetBody().size(), context);
         }
     }
 
     return true;
 }
 
-size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData)
+size_t FetchExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData)
 {
-    auto context = static_cast<RequestContext *>(userData);
-    context->response.AppendResult(data, size * memBytes);
+    auto context = static_cast<FetchContext *>(userData);
+    context->response.AppendData(data, size * memBytes);
     return size * memBytes;
 }
 
-size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t memBytes, void *userData)
+size_t FetchExec::OnWritingMemoryHeader(const void *data, size_t size, size_t memBytes, void *userData)
 {
-    auto context = static_cast<RequestContext *>(userData);
+    auto context = static_cast<FetchContext *>(userData);
     context->response.AppendRawHeader(data, size * memBytes);
     return size * memBytes;
 }
 
-struct curl_slist *HttpExec::MakeHeaders(const std::vector<std::string> &vec)
+struct curl_slist *FetchExec::MakeHeaders(const std::vector<std::string> &vec)
 {
     struct curl_slist *header = nullptr;
     std::for_each(vec.begin(), vec.end(), [&header](const std::string &s) {
@@ -306,7 +314,7 @@ struct curl_slist *HttpExec::MakeHeaders(const std::vector<std::string> &vec)
     return header;
 }
 
-napi_value HttpExec::MakeResponseHeader(RequestContext *context)
+napi_value FetchExec::MakeResponseHeader(FetchContext *context)
 {
     napi_value header = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), header) == napi_object) {
@@ -320,14 +328,7 @@ napi_value HttpExec::MakeResponseHeader(RequestContext *context)
     return header;
 }
 
-void HttpExec::OnHeaderReceive(RequestContext *context, napi_value header)
-{
-    napi_value undefined = NapiUtils::GetUndefined(context->GetEnv());
-    context->Emit(ON_HEADER_RECEIVE, std::make_pair(undefined, header));
-    context->Emit(ON_HEADERS_RECEIVE, std::make_pair(undefined, header));
-}
-
-bool HttpExec::IsUnReserved(unsigned char in)
+bool FetchExec::IsUnReserved(unsigned char in)
 {
     if ((in >= '0' && in <= '9') || (in >= 'a' && in <= 'z') || (in >= 'A' && in <= 'Z')) {
         return true;

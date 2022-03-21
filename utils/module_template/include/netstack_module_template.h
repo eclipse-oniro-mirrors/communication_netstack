@@ -82,7 +82,7 @@ napi_value
         }
     }
 
-    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function) {
+    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
         return context->CreatePromise();
     }
     return NapiUtils::GetUndefined(env);

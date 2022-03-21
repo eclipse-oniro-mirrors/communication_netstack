@@ -18,6 +18,7 @@
 #include "constant.h"
 #include "event_list.h"
 #include "http_async_work.h"
+#include "http_exec.h"
 #include "netstack_log.h"
 #include "netstack_module_template.h"
 
@@ -135,8 +136,10 @@ void HttpModuleExports::InitResponseCode(napi_env env, napi_value exports)
 
 napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<RequestContext>(env, info, REQUEST_ASYNC_WORK_NAME, nullptr,
-                                                     HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
+    return ModuleTemplate::Interface<RequestContext>(
+        env, info, REQUEST_ASYNC_WORK_NAME,
+        [](napi_env, napi_value, RequestContext *) -> bool { return HttpExec::Initialize(); },
+        HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
 }
 
 napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_info info)

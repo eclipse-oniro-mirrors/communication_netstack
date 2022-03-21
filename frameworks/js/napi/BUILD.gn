@@ -153,12 +153,27 @@ ohos_shared_library("websocket") {
 }
 
 ohos_shared_library("fetch") {
-  include_dirs = [ "$NETSTACK_NAPI_ROOT/fetch/fetch_module/include" ]
+  include_dirs = [
+    "$NETSTACK_NAPI_ROOT/fetch/async_context/include",
+    "$NETSTACK_NAPI_ROOT/fetch/async_work/include",
+    "$NETSTACK_NAPI_ROOT/fetch/constant/include",
+    "$NETSTACK_NAPI_ROOT/fetch/fetch_exec/include",
+    "$NETSTACK_NAPI_ROOT/fetch/fetch_module/include",
+    "$NETSTACK_NAPI_ROOT/fetch/options/include",
+  ]
   include_dirs += utils_include
   include_dirs += common_include
   include_dirs += [ "//third_party/curl/include" ]
 
-  sources = [ "fetch/fetch_module/src/fetch_module.cpp" ]
+  sources = [
+    "fetch/async_context/src/fetch_context.cpp",
+    "fetch/async_work/src/fetch_async_work.cpp",
+    "fetch/constant/src/constant.cpp",
+    "fetch/fetch_exec/src/fetch_exec.cpp",
+    "fetch/fetch_module/src/fetch_module.cpp",
+    "fetch/options/src/fetch_request.cpp",
+    "fetch/options/src/fetch_response.cpp",
+  ]
   sources += utils_source
 
   deps = common_deps
