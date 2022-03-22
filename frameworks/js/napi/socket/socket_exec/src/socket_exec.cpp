@@ -146,7 +146,7 @@ class MessageCallback {
 public:
     MessageCallback() = delete;
 
-    ~MessageCallback() = default;
+    virtual ~MessageCallback() = default;
 
     explicit MessageCallback(BaseContext *context) : context_(context) {}
 
