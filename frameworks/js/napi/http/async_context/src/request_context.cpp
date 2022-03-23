@@ -163,7 +163,7 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
         auto names = NapiUtils::GetPropertyNames(GetEnv(), extraData);
         std::for_each(names.begin(), names.end(), [this, extraData, &extraParam](std::string name) {
             auto value = NapiUtils::GetStringPropertyUtf8(GetEnv(), extraData, name);
-            NETSTACK_LOGI("url param name = %{public}s, value = %{public}s", name.c_str(), value.c_str());
+            NETSTACK_LOGI("url param name = ..., value = ...");
             if (!name.empty() && !value.empty()) {
                 bool encodeName = HttpExec::EncodeUrlParam(name);
                 bool encodeValue = HttpExec::EncodeUrlParam(value);

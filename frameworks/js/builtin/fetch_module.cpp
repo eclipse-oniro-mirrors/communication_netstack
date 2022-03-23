@@ -73,7 +73,7 @@ bool FetchModule::JsObjectToRequestData(JSIValue options, RequestData *req)
     if (urlString == nullptr) {
         return false;
     }
-    HTTP_REQUEST_INFO("request url is %s", urlString.get());
+    HTTP_REQUEST_INFO("request url is ...");
     req->SetUrl(urlString.get());
 
     req->SetMethod(GetMethodFromOptions(options));
