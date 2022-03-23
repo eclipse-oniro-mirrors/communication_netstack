@@ -78,7 +78,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
         return false;
     }
 
-    NETSTACK_LOGI("final url: %{public}s", context->options.GetUrl().c_str());
+    NETSTACK_LOGI("final url: ...");
 
     std::vector<std::string> vec;
     std::for_each(context->options.GetHeader().begin(), context->options.GetHeader().end(),
@@ -184,7 +184,8 @@ bool HttpExec::EncodeUrlParam(std::string &str)
 {
     char encoded[4];
     std::string encodeOut;
-    for (size_t i = 0; i < strlen(str.c_str()); ++i) {
+    size_t length = strlen(str.c_str());
+    for (size_t i = 0; i < length; ++i) {
         auto c = static_cast<uint8_t>(str.c_str()[i]);
         if (IsUnReserved(c)) {
             encodeOut += static_cast<char>(c);

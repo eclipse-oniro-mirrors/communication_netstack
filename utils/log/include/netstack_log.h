@@ -63,6 +63,7 @@ static void NetStackPrintLog(const char *fmt, ...)
     char buf[NETSTACK_MAX_BUFFER_SIZE] = {0};
     int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, newFmt.c_str(), args);
     if (ret < 0) {
+        va_end(args);
         return;
     }
     va_end(args);

@@ -87,6 +87,7 @@ JSIValue HttpAsyncCallback::ResponseDataToJsValue(const ResponseData &responseDa
     std::unique_ptr<JSIVal, decltype(&JSI::ReleaseValue)> headers(JSI::CreateObject(), JSI::ReleaseValue);
     if (headers == nullptr) {
         JSI::ReleaseValue(object);
+        return JSI::CreateUndefined();
     }
     for (const auto &p : responseData.GetHeaders()) {
         JSI::SetStringProperty(headers.get(), p.first.c_str(), p.second.c_str());
