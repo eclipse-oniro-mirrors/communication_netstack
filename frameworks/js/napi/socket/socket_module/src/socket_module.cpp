@@ -55,7 +55,6 @@ void Finalize(napi_env, void *data, void *)
             close(sock);
         }
     }
-    delete manager;
 }
 
 template <class Context,
