@@ -45,8 +45,7 @@ napi_value HttpModuleExports::CreateHttp(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::NewInstance(env, info, INTERFACE_HTTP_REQUEST, [](napi_env, void *data, void *) {
         NETSTACK_LOGI("http request handle is finalized");
-        auto manager = static_cast<EventManager *>(data);
-        delete manager;
+        (void)data;
     });
 }
 
