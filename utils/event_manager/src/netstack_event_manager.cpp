@@ -15,8 +15,6 @@
 
 #include "netstack_event_manager.h"
 
-#include <algorithm>
-
 namespace OHOS::NetStack {
 static constexpr const int CALLBACK_PARAM_NUM = 1;
 
@@ -30,6 +28,10 @@ void EventManager::AddListener(napi_env env,
                                bool once,
                                bool asyncCallback)
 {
+    auto it = std::remove_if(listeners_.begin(), listeners_.end(),
+                             [type](const EventListener &listener) -> bool { return listener.MatchType(type); });
+    listeners_.erase(it, listeners_.end());
+
     listeners_.emplace_back(EventListener(env, type, callback, once, asyncCallback));
 }
 
@@ -74,5 +76,27 @@ void *EventManager::GetData()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     return data_;
+}
+
+void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status))
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    std::for_each(listeners_.begin(), listeners_.end(), [type, data, Handler](const EventListener &listener) {
+        auto workWrapper = new UvWorkWrapper(data, listener.GetEnv(), listener.GetCallbackRef());
+        listener.EmitByUv(type, workWrapper, Handler);
+    });
+
+    auto it = std::remove_if(listeners_.begin(), listeners_.end(),
+                             [type](const EventListener &listener) -> bool { return listener.MatchOnce(type); });
+    listeners_.erase(it, listeners_.end());
+}
+
+bool EventManager::HasEventListener(const std::string &type)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    return std::any_of(listeners_.begin(), listeners_.end(),
+                       [&type](const EventListener &listener) -> bool { return listener.MatchType(type); });
 }
 } // namespace OHOS::NetStack

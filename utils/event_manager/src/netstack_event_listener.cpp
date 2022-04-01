@@ -101,8 +101,41 @@ bool EventListener::MatchOnce(const std::string &type) const
     return once_;
 }
 
+bool EventListener::MatchType(const std::string &type) const
+{
+    return type_ == type;
+}
+
 bool EventListener::IsAsyncCallback() const
 {
     return asyncCallback_;
+}
+
+void EventListener::EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status)) const
+{
+    if (type_ != type) {
+        return;
+    }
+
+    if (callbackRef_ == nullptr) {
+        return;
+    }
+
+    NapiUtils::CreateUvQueueWork(env_, data, Handler);
+}
+
+napi_env EventListener::GetEnv() const
+{
+    return env_;
+}
+
+napi_ref EventListener::GetCallbackRef() const
+{
+    return callbackRef_;
+}
+
+UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, napi_ref theCallbackRef)
+    : data(theData), env(theEnv), callbackRef(theCallbackRef)
+{
 }
 } // namespace OHOS::NetStack

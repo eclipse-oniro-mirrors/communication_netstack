@@ -36,6 +36,10 @@ public:
 
     [[nodiscard]] void *GetData();
 
+    void EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
+
+    bool HasEventListener(const std::string &type);
+
 private:
     std::mutex mutex_;
 

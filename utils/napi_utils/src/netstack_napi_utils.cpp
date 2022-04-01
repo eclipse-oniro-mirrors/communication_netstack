@@ -298,6 +298,13 @@ void SetBooleanProperty(napi_env env, napi_value object, const std::string &name
     napi_set_named_property(env, object, name.c_str(), jsValue);
 }
 
+napi_value GetBoolean(napi_env env, bool value)
+{
+    napi_value jsValue = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, value, &jsValue));
+    return jsValue;
+}
+
 /* define properties */
 void DefineProperties(napi_env env,
                       napi_value object,
@@ -356,5 +363,31 @@ napi_value JsonParse(napi_env env, napi_value str)
     napi_value argv[1] = {str};
     NAPI_CALL_BASE(env, napi_call_function(env, json, parse, 1, argv, &res), undefined);
     return res;
+}
+
+/* libuv */
+void CreateUvQueueWork(napi_env env, void *data, void(Handler)(uv_work_t *, int status))
+{
+    uv_loop_s *loop = nullptr;
+    NAPI_CALL_RETURN_VOID(env, napi_get_uv_event_loop(env, &loop));
+
+    auto work = new uv_work_t;
+    work->data = data;
+
+    (void)uv_queue_work(
+        loop, work, [](uv_work_t *) {}, Handler);
+}
+
+/* scope */
+napi_handle_scope OpenScope(napi_env env)
+{
+    napi_handle_scope scope = nullptr;
+    NAPI_CALL(env, napi_open_handle_scope(env, &scope));
+    return scope;
+}
+
+void CloseScope(napi_env env, napi_handle_scope scope)
+{
+    (void)napi_close_handle_scope(env, scope);
 }
 } // namespace OHOS::NetStack::NapiUtils
