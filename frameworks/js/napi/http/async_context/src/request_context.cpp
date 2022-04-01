@@ -212,7 +212,16 @@ bool RequestContext::GetRequestBody(napi_value extraData)
         return true;
     }
 
-    NETSTACK_LOGE("Body do not support Object, because napi do not support json stringify for now");
+    if (type == napi_object) {
+        std::string body = NapiUtils::GetStringFromValueUtf8(GetEnv(), NapiUtils::JsonStringify(GetEnv(), extraData));
+        if (body.empty()) {
+            return false;
+        }
+        options.SetBody(body.c_str(), body.length());
+        return true;
+    }
+
+    NETSTACK_LOGE("only support string arraybuffer and object");
     return false;
 }
 
