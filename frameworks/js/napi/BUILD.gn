@@ -136,45 +136,63 @@ ohos_shared_library("socket") {
   subsystem_name = common_subsystem_name
 }
 
-ohos_shared_library("websocket") {
-  include_dirs = [
-    "websocket/async_context/include",
-    "websocket/async_work/include",
-    "websocket/constant/include",
-    "websocket/websocket_exec/include",
-    "websocket/websocket_module/include",
-  ]
-  include_dirs += utils_include
-  include_dirs += common_include
-  include_dirs += [
-    "//third_party/libwebsockets/include",
-    "//third_party/openssl/include",
-  ]
+if ("${product_name}" == "m40") {
+  ohos_shared_library("websocket") {
+    include_dirs = [
+      "websocket/async_context/include",
+      "websocket/async_work/include",
+      "websocket/constant/include",
+      "websocket/websocket_exec/include",
+      "websocket/websocket_module/include",
+    ]
+    include_dirs += utils_include
+    include_dirs += common_include
+    include_dirs += [
+      "//third_party/libwebsockets/include",
+      "//third_party/openssl/include",
+    ]
 
-  sources = [
-    "websocket/async_context/src/close_context.cpp",
-    "websocket/async_context/src/connect_context.cpp",
-    "websocket/async_context/src/send_context.cpp",
-    "websocket/async_work/src/websocket_async_work.cpp",
-    "websocket/constant/src/constant.cpp",
-    "websocket/websocket_exec/src/websocket_exec.cpp",
-    "websocket/websocket_module/src/websocket_module.cpp",
-  ]
-  sources += utils_source
+    sources = [
+      "websocket/async_context/src/close_context.cpp",
+      "websocket/async_context/src/connect_context.cpp",
+      "websocket/async_context/src/send_context.cpp",
+      "websocket/async_work/src/websocket_async_work.cpp",
+      "websocket/constant/src/constant.cpp",
+      "websocket/websocket_exec/src/websocket_exec.cpp",
+      "websocket/websocket_module/src/websocket_module.cpp",
+    ]
+    sources += utils_source
 
-  deps = common_deps
-  deps += [
-    "//third_party/libwebsockets:websockets",
-    "//third_party/openssl:libcrypto_static",
-    "//third_party/openssl:ssl_source",
-    "//third_party/zlib:libz",
-  ]
+    deps = common_deps
+    deps += [
+      "//third_party/libwebsockets:websockets",
+      "//third_party/openssl:libcrypto_static",
+      "//third_party/openssl:ssl_source",
+      "//third_party/zlib:libz",
+    ]
 
-  external_deps = common_external_deps
+    external_deps = common_external_deps
 
-  relative_install_dir = common_relative_install_dir
-  part_name = common_part_name
-  subsystem_name = common_subsystem_name
+    relative_install_dir = common_relative_install_dir
+    part_name = common_part_name
+    subsystem_name = common_subsystem_name
+  }
+} else {
+  ohos_shared_library("websocket") {
+    include_dirs = [ "websocket/include" ]
+    include_dirs += utils_include
+    include_dirs += common_include
+
+    sources = [ "websocket/src/websocket_napi.cpp" ]
+
+    deps = common_deps
+
+    external_deps = common_external_deps
+
+    relative_install_dir = common_relative_install_dir
+    part_name = common_part_name
+    subsystem_name = common_subsystem_name
+  }
 }
 
 ohos_shared_library("fetch") {
