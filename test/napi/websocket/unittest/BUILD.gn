@@ -100,6 +100,7 @@ if ("${product_name}" == "m40") {
     ]
     include_dirs += [
       "//foundation/ace/napi/interfaces/innerkits",
+      "//third_party/libuv/include",
       "//third_party/libwebsockets/include",
       "//third_party/openssl/include",
     ]
