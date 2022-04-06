@@ -1,0 +1,142 @@
+# Copyright (c) 2022 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//build/test.gni")
+
+if ("${product_name}" == "m40") {
+  SUBSYSTEM_DIR = "//foundation/communication"
+  NETSTACK_NAPI_ROOT = "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/"
+
+  utils_source = [
+    "$SUBSYSTEM_DIR/netstack/utils/base_context/src/netstack_base_context.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/event_manager/src/netstack_event_listener.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/event_manager/src/netstack_event_manager.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/module_template/src/netstack_module_template.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/napi_utils/src/netstack_napi_utils.cpp",
+  ]
+
+  utils_include = [
+    "$SUBSYSTEM_DIR/netstack/utils/base_async_work/include",
+    "$SUBSYSTEM_DIR/netstack/utils/base_context/include",
+    "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
+    "$SUBSYSTEM_DIR/netstack/utils/event_manager/include",
+    "$SUBSYSTEM_DIR/netstack/utils/log/include",
+    "$SUBSYSTEM_DIR/netstack/utils/module_template/include",
+    "$SUBSYSTEM_DIR/netstack/utils/napi_utils/include",
+  ]
+
+  common_include = [
+    "//foundation/ace/ace_engine/frameworks/base/utils",
+    "//foundation/ace/napi/interfaces/kits",
+    "//foundation/ace/napi",
+    "//third_party/node/src",
+  ]
+
+  common_deps = [
+    "//foundation/ace/napi/:ace_napi",
+    "//utils/native/base:utils",
+  ]
+
+  common_external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+
+  ohos_static_library("websocket_static") {
+    include_dirs = [
+      "$NETSTACK_NAPI_ROOT/websocket/async_context/include",
+      "$NETSTACK_NAPI_ROOT/websocket/async_work/include",
+      "$NETSTACK_NAPI_ROOT/websocket/constant/include",
+      "$NETSTACK_NAPI_ROOT/websocket/websocket_exec/include",
+      "$NETSTACK_NAPI_ROOT/websocket/websocket_module/include",
+    ]
+    include_dirs += utils_include
+    include_dirs += common_include
+    include_dirs += [
+      "//third_party/libwebsockets/include",
+      "//third_party/openssl/include",
+    ]
+
+    sources = [
+      "$NETSTACK_NAPI_ROOT/websocket/async_context/src/close_context.cpp",
+      "$NETSTACK_NAPI_ROOT/websocket/async_context/src/connect_context.cpp",
+      "$NETSTACK_NAPI_ROOT/websocket/async_context/src/send_context.cpp",
+      "$NETSTACK_NAPI_ROOT/websocket/async_work/src/websocket_async_work.cpp",
+      "$NETSTACK_NAPI_ROOT/websocket/constant/src/constant.cpp",
+      "$NETSTACK_NAPI_ROOT/websocket/websocket_exec/src/websocket_exec.cpp",
+      "$NETSTACK_NAPI_ROOT/websocket/websocket_module/src/websocket_module.cpp",
+    ]
+    sources += utils_source
+
+    deps = common_deps
+    deps += [
+      "//third_party/libwebsockets:websockets",
+      "//third_party/openssl:libcrypto_static",
+      "//third_party/openssl:ssl_source",
+      "//third_party/zlib:libz",
+    ]
+
+    external_deps = common_external_deps
+  }
+
+  ohos_unittest("websocket_test") {
+    module_out_path = "netstack/websocket_test"
+
+    include_dirs = [
+      "$NETSTACK_NAPI_ROOT/websocket/async_context/include",
+      "$NETSTACK_NAPI_ROOT/websocket/async_work/include",
+      "$NETSTACK_NAPI_ROOT/websocket/constant/include",
+      "$NETSTACK_NAPI_ROOT/websocket/websocket_exec/include",
+      "$NETSTACK_NAPI_ROOT/websocket/websocket_module/include",
+    ]
+    include_dirs += [
+      "//foundation/ace/napi/interfaces/innerkits",
+      "//third_party/libuv/include",
+      "//third_party/libwebsockets/include",
+      "//third_party/openssl/include",
+    ]
+    include_dirs += utils_include
+    include_dirs += common_include
+
+    sources = [ "websocket_test.cpp" ]
+
+    deps = [ ":websocket_static" ]
+    deps += [
+      "//third_party/libwebsockets:websockets",
+      "//third_party/openssl:libcrypto_static",
+      "//third_party/openssl:ssl_source",
+      "//third_party/zlib:libz",
+    ]
+
+    part_name = "netstack"
+    subsystem_name = "communication"
+  }
+
+  group("unittest") {
+    testonly = true
+    deps = [ ":websocket_test" ]
+  }
+} else {
+  ohos_unittest("websocket_test") {
+    module_out_path = "netstack/websocket_test"
+
+    sources = [ "websocket_unittest.cpp" ]
+
+    part_name = "netstack"
+    subsystem_name = "communication"
+  }
+
+  group("unittest") {
+    testonly = true
+    deps = [ ":websocket_test" ]
+  }
+}

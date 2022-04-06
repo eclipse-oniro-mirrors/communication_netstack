@@ -30,6 +30,8 @@ include_directories(utils/base_context/include)
 include_directories(utils/base_async_work/include)
 include_directories(utils/module_template/include)
 
+include_directories(../../../for_linux)
+
 include_directories(../../../utils/native/base/include/)
 
 include_directories(utils/log/include)
@@ -63,4 +65,6 @@ add_subdirectory(utils)
 add_subdirectory(test/napi/http)
 add_subdirectory(test/napi/socket)
 add_subdirectory(test/napi/fetch)
+add_subdirectory(test/napi/websocket)
+add_subdirectory(test/napi/websocket/unittest)
 add_subdirectory(test/utils/napi_utils/unittest)

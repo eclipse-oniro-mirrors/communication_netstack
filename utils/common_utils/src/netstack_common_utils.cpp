@@ -34,6 +34,27 @@ std::vector<std::string> Split(const std::string &str, const std::string &sep)
     return res;
 }
 
+std::vector<std::string> Split(const std::string &str, const std::string &sep, size_t size)
+{
+    std::string s = str;
+    std::vector<std::string> res;
+    while (!s.empty()) {
+        if (res.size() + 1 == size) {
+            res.emplace_back(s);
+            break;
+        }
+
+        size_t pos = s.find(sep);
+        if (pos == std::string::npos) {
+            res.emplace_back(s);
+            break;
+        }
+        res.emplace_back(s.substr(0, pos));
+        s = s.substr(pos + sep.size());
+    }
+    return res;
+}
+
 std::string Strip(const std::string &str, char ch)
 {
     int64_t i = 0;

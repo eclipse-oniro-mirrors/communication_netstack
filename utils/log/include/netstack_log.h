@@ -37,8 +37,13 @@ static constexpr OHOS::HiviewDFX::HiLogLabel NETSTACK_LOG_LABEL = {LOG_CORE, NET
 
 #else
 
-#include <stdarg.h>
-#include <stdio.h>
+#ifdef _WIN32
+#undef MAKE_FILE_NAME
+#define MAKE_FILE_NAME (strrchr(__FILE__, '\\') + 1)
+#endif /* _WIN32 */
+
+#include <cstdarg>
+#include <cstdio>
 
 #include "securec.h"
 

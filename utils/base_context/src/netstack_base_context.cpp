@@ -151,4 +151,9 @@ bool BaseContext::IsNeedPromise() const
 {
     return needPromise_;
 }
+
+EventManager *BaseContext::GetManager() const
+{
+    return manager_;
+}
 } // namespace OHOS::NetStack

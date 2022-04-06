@@ -22,6 +22,8 @@
 namespace OHOS::NetStack::CommonUtils {
 std::vector<std::string> Split(const std::string &str, const std::string &sep);
 
+std::vector<std::string> Split(const std::string &str, const std::string &sep, size_t size);
+
 std::string Strip(const std::string &str, char ch = ' ');
 
 std::string ToLower(const std::string &s);
