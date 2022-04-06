@@ -55,7 +55,7 @@ napi_value Interface(napi_env env,
     }
 
     context->CreateAsyncWork(asyncWorkName, executor, callback);
-    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function) {
+    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
         NETSTACK_LOGI("context->CreatePromise()");
         return context->CreatePromise();
     }

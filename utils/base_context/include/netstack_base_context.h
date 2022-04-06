@@ -74,7 +74,7 @@ public:
 
     [[nodiscard]] bool IsNeedPromise() const;
 
-    EventManager *GetManager() const;
+    [[nodiscard]] EventManager *GetManager() const;
 
 protected:
     EventManager *manager_;

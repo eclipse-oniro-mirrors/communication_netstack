@@ -86,10 +86,6 @@ void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(u
         auto workWrapper = new UvWorkWrapper(data, listener.GetEnv(), listener.GetCallbackRef());
         listener.EmitByUv(type, workWrapper, Handler);
     });
-
-    auto it = std::remove_if(listeners_.begin(), listeners_.end(),
-                             [type](const EventListener &listener) -> bool { return listener.MatchOnce(type); });
-    listeners_.erase(it, listeners_.end());
 }
 
 bool EventManager::HasEventListener(const std::string &type)
