@@ -68,6 +68,7 @@ public:
     static const char *const HTTP_CONTENT_TYPE_URL_ENCODE;
     static const char *const HTTP_CONTENT_TYPE_JSON;
     static const char *const HTTP_CONTENT_TYPE_OCTET_STREAM;
+    static const char *const HTTP_CONTENT_TYPE_JPEG_STREAM;
 };
 } // namespace OHOS::NetStack
 
