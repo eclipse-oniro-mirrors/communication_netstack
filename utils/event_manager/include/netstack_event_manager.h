@@ -47,5 +47,16 @@ private:
 
     void *data_;
 };
+
+struct UvWorkWrapper {
+    UvWorkWrapper() = delete;
+
+    explicit UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager);
+
+    void *data;
+    napi_env env;
+    std::string type;
+    EventManager *manager;
+};
 } // namespace OHOS::NetStack
 #endif /* COMMUNICATIONNETSTACK_EVENT_MANAGER_H */

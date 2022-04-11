@@ -62,16 +62,6 @@ private:
 
     bool asyncCallback_;
 };
-
-struct UvWorkWrapper {
-    UvWorkWrapper() = delete;
-
-    explicit UvWorkWrapper(void *theData, napi_env theEnv, napi_ref theCallbackRef);
-
-    void *data;
-    napi_env env;
-    napi_ref callbackRef;
-};
 } // namespace OHOS::NetStack
 
 #endif /* COMMUNICATIONNETSTACK_EVENT_LISTENER_H */

@@ -133,9 +133,4 @@ napi_ref EventListener::GetCallbackRef() const
 {
     return callbackRef_;
 }
-
-UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, napi_ref theCallbackRef)
-    : data(theData), env(theEnv), callbackRef(theCallbackRef)
-{
-}
 } // namespace OHOS::NetStack
