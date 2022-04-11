@@ -183,11 +183,8 @@ template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTempl
 
     napi_value obj = MakeJsValue(env, workWrapper->data);
 
-    napi_value callback = NapiUtils::GetReference(env, workWrapper->callbackRef);
-    napi_value argv[1] = {obj};
-    if (NapiUtils::GetValueType(env, callback) == napi_function) {
-        (void)NapiUtils::CallFunction(env, NapiUtils::GetUndefined(env), callback, 1, argv);
-    }
+    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
+    workWrapper->manager->Emit(workWrapper->type, arg);
 
     delete workWrapper;
     delete work;

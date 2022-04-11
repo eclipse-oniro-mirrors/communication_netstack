@@ -82,8 +82,8 @@ void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(u
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    std::for_each(listeners_.begin(), listeners_.end(), [type, data, Handler](const EventListener &listener) {
-        auto workWrapper = new UvWorkWrapper(data, listener.GetEnv(), listener.GetCallbackRef());
+    std::for_each(listeners_.begin(), listeners_.end(), [type, data, Handler, this](const EventListener &listener) {
+        auto workWrapper = new UvWorkWrapper(data, listener.GetEnv(), type, this);
         listener.EmitByUv(type, workWrapper, Handler);
     });
 }
@@ -94,5 +94,10 @@ bool EventManager::HasEventListener(const std::string &type)
 
     return std::any_of(listeners_.begin(), listeners_.end(),
                        [&type](const EventListener &listener) -> bool { return listener.MatchType(type); });
+}
+
+UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)
+    : data(theData), env(theEnv), type(std::move(eventType)), manager(eventManager)
+{
 }
 } // namespace OHOS::NetStack
