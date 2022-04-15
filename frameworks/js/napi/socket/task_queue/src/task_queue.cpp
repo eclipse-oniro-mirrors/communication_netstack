@@ -24,7 +24,7 @@
 namespace OHOS::NetStack::Task {
 class Task {
 public:
-    Task() = delete;
+    Task() : executor(nullptr), callback(nullptr), data(nullptr), priority_(TaskPriority::CLOSE) {}
 
     Task(TaskPriority priority, AsyncWorkExecutor exec, AsyncWorkCallback call, void *d)
         : executor(exec), callback(call), data(d), priority_(priority)
@@ -54,26 +54,27 @@ std::mutex g_mutex;
 
 void Executor(napi_env env, void *data)
 {
-    std::lock_guard<std::mutex> lock(g_mutex);
+    Task task;
+    do {
+        std::lock_guard<std::mutex> lock(g_mutex);
 
-    if (g_taskExecutorQueue.empty()) {
-        NETSTACK_LOGI("queue is empty");
-        return;
-    }
+        if (g_taskExecutorQueue.empty()) {
+            NETSTACK_LOGI("queue is empty");
+            return;
+        }
+        task = g_taskExecutorQueue.top();
+        g_taskExecutorQueue.pop();
+    } while (false);
 
     auto context = static_cast<BaseContext *>(data);
     context->SetExecOK(true);
-
-    Task task = g_taskExecutorQueue.top();
-    g_taskExecutorQueue.pop();
-    task.executor(env, task.data);
-    g_taskCallbackQueue.push(task);
+    if (task.executor && task.data) {
+        task.executor(env, task.data);
+    }
 }
 
 void Callback(napi_env env, napi_status status, void *data)
 {
-    std::lock_guard<std::mutex> lock(g_mutex);
-
     (void)status;
 
     auto deleter = [](BaseContext *context) { delete context; };
@@ -85,13 +86,21 @@ void Callback(napi_env env, napi_status status, void *data)
         again->CreateAsyncWork(context->GetAsyncWorkName(), Executor, Callback);
     }
 
-    if (g_taskCallbackQueue.empty()) {
-        return;
-    }
+    Task task;
+    do {
+        std::lock_guard<std::mutex> lock(g_mutex);
 
-    Task task = g_taskCallbackQueue.top();
-    g_taskCallbackQueue.pop();
-    task.callback(env, napi_ok, task.data);
+        if (g_taskExecutorQueue.empty()) {
+            NETSTACK_LOGI("queue is empty");
+            return;
+        }
+        task = g_taskExecutorQueue.top();
+        g_taskExecutorQueue.pop();
+    } while (false);
+
+    if (task.callback && task.data) {
+        task.callback(env, napi_ok, task.data);
+    }
 }
 
 void PushTask(TaskPriority priority, AsyncWorkExecutor executor, AsyncWorkCallback callback, void *data)

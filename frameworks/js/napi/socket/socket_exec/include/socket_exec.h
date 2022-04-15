@@ -30,9 +30,11 @@ int MakeTcpSocket(sa_family_t family);
 int MakeUdpSocket(sa_family_t family);
 
 /* async work execute */
-bool ExecBind(BindContext *context);
+bool ExecUdpBind(BindContext *context);
 
 bool ExecUdpSend(UdpSendContext *context);
+
+bool ExecTcpBind(BindContext *context);
 
 bool ExecConnect(ConnectContext *context);
 

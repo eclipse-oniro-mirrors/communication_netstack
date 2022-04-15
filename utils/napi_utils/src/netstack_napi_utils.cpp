@@ -198,6 +198,9 @@ void SetStringPropertyUtf8(napi_env env, napi_value object, const std::string &n
 /* array buffer */
 bool ValueIsArrayBuffer(napi_env env, napi_value value)
 {
+    if (value == nullptr) {
+        return false;
+    }
     bool isArrayBuffer = false;
     NAPI_CALL_BASE(env, napi_is_arraybuffer(env, value, &isArrayBuffer), false);
     return isArrayBuffer;

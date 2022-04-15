@@ -25,9 +25,11 @@ public:
     ACE_DISALLOW_COPY_AND_MOVE(SocketAsyncWork);
 
     /* executor */
-    static void ExecBind(napi_env env, void *data);
+    static void ExecUdpBind(napi_env env, void *data);
 
     static void ExecUdpSend(napi_env env, void *data);
+
+    static void ExecTcpBind(napi_env env, void *data);
 
     static void ExecConnect(napi_env env, void *data);
 
