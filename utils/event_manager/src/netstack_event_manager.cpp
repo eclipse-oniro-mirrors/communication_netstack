@@ -28,6 +28,7 @@ void EventManager::AddListener(napi_env env,
                                bool once,
                                bool asyncCallback)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     auto it = std::remove_if(listeners_.begin(), listeners_.end(),
                              [type](const EventListener &listener) -> bool { return listener.MatchType(type); });
     listeners_.erase(it, listeners_.end());
