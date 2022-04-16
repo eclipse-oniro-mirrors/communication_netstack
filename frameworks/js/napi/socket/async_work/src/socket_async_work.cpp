@@ -19,14 +19,19 @@
 #include "socket_exec.h"
 
 namespace OHOS::NetStack {
-void SocketAsyncWork::ExecBind(napi_env env, void *data)
+void SocketAsyncWork::ExecUdpBind(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<BindContext, SocketExec::ExecBind>(env, data);
+    BaseAsyncWork::ExecAsyncWork<BindContext, SocketExec::ExecUdpBind>(env, data);
 }
 
 void SocketAsyncWork::ExecUdpSend(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<UdpSendContext, SocketExec::ExecUdpSend>(env, data);
+}
+
+void SocketAsyncWork::ExecTcpBind(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<BindContext, SocketExec::ExecTcpBind>(env, data);
 }
 
 void SocketAsyncWork::ExecConnect(napi_env env, void *data)

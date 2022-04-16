@@ -181,7 +181,7 @@ void SocketModuleExports::InitSocketProperties(napi_env env, napi_value exports)
 /* udp async works */
 napi_value SocketModuleExports::UDPSocket::Bind(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(BindContext, ExecBind, BindCallback, MakeUdpSocket, BIND, UDP_BIND_NAME);
+    return SOCKET_INTERFACE(BindContext, ExecUdpBind, BindCallback, MakeUdpSocket, BIND, UDP_BIND_NAME);
 }
 
 napi_value SocketModuleExports::UDPSocket::Send(napi_env env, napi_callback_info info)
@@ -219,7 +219,7 @@ napi_value SocketModuleExports::UDPSocket::Off(napi_env env, napi_callback_info 
 /* tcp async works */
 napi_value SocketModuleExports::TCPSocket::Bind(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(BindContext, ExecBind, BindCallback, MakeTcpSocket, BIND, TCP_BIND_NAME);
+    return SOCKET_INTERFACE(BindContext, ExecTcpBind, BindCallback, MakeTcpSocket, BIND, TCP_BIND_NAME);
 }
 
 napi_value SocketModuleExports::TCPSocket::Connect(napi_env env, napi_callback_info info)
