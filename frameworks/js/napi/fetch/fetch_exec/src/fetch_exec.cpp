@@ -278,12 +278,10 @@ bool FetchExec::SetOption(CURL *curl, FetchContext *context, struct curl_slist *
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_VERBOSE, 1L, context);
 #endif
 
-    if (MethodForPost(method)) {
+    if (MethodForPost(method) && !context->request.GetBody().empty()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POST, 1L, context);
-        if (!context->request.GetBody().empty()) {
-            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->request.GetBody().c_str(), context);
-            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->request.GetBody().size(), context);
-        }
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->request.GetBody().c_str(), context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->request.GetBody().size(), context);
     }
 
     return true;

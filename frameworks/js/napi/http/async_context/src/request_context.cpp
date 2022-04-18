@@ -135,7 +135,8 @@ void RequestContext::ParseHeader(napi_value optionsValue)
 bool RequestContext::ParseExtraData(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_EXTRA_DATA)) {
-        return HttpExec::MethodForGet(options.GetMethod());
+        NETSTACK_LOGI("no extraData");
+        return true;
     }
     napi_value extraData = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_EXTRA_DATA);
 
