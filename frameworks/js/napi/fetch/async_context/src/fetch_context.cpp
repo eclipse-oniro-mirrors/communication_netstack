@@ -102,7 +102,8 @@ void FetchContext::ParseHeader(napi_value optionsValue)
 bool FetchContext::ParseData(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, FetchConstant::PARAM_KEY_DATA)) {
-        return FetchExec::MethodForGet(request.GetMethod());
+        NETSTACK_LOGI("no extraData");
+        return true;
     }
     napi_value data = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, FetchConstant::PARAM_KEY_DATA);
 
