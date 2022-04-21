@@ -396,6 +396,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
                 continue;
             }
             NETSTACK_LOGE("recv failed %{public}s", strerror(errno));
+            callback.OnError(errno);
             return;
         }
         if (recvLen == 0) {
