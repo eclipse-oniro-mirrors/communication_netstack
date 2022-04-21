@@ -18,12 +18,12 @@ set(CMAKE_CXX_STANDARD 14)
 
 include_directories(test/include)
 
-include_directories(../../../../../ace/ace_engine_lite/interfaces/innerkits/builtin/jsi)
-include_directories(../../../../../ace/ace_engine_lite/interfaces/innerkits/builtin/async)
+include_directories(../../../../../arkui/ace_engine_lite/interfaces/innerkits/builtin/jsi)
+include_directories(../../../../../arkui/ace_engine_lite/interfaces/innerkits/builtin/async)
 
-include_directories(../../../../../ace/ace_engine_lite/frameworks/common/utils)
-include_directories(../../../../../ace/ace_engine_lite/frameworks/src/core/context)
-include_directories(../../../../../ace/ace_engine_lite/frameworks/targets/simulator)
+include_directories(../../../../../arkui/ace_engine_lite/frameworks/common/utils)
+include_directories(../../../../../arkui/ace_engine_lite/frameworks/src/core/context)
+include_directories(../../../../../arkui/ace_engine_lite/frameworks/targets/simulator)
 
 include_directories(../../../../../../third_party/jerryscript/jerry-core/include)
 include_directories(../../../../../../third_party/jerryscript/jerry-ext/include/jerryscript-ext)
@@ -44,10 +44,10 @@ add_library(test_fetch_module
     http_request/request_data.cpp
     http_request/http_request_utils.cpp
 
-    ../../../../../ace/ace_engine_lite/frameworks/native_engine/jsi/jsi.cpp
-    ../../../../../ace/ace_engine_lite/frameworks/native_engine/async/js_async_work.cpp
-    ../../../../../ace/ace_engine_lite/frameworks/native_engine/async/message_queue_utils.cpp
-    ../../../../../ace/ace_engine_lite/frameworks/common/memory/memory_heap.cpp
+    ../../../../../arkui/ace_engine_lite/frameworks/native_engine/jsi/jsi.cpp
+    ../../../../../arkui/ace_engine_lite/frameworks/native_engine/async/js_async_work.cpp
+    ../../../../../arkui/ace_engine_lite/frameworks/native_engine/async/message_queue_utils.cpp
+    ../../../../../arkui/ace_engine_lite/frameworks/common/memory/memory_heap.cpp
     )
 
 target_link_libraries(test_fetch_module jerry-core)

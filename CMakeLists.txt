@@ -17,9 +17,9 @@ project(CommunicationNetStack)
 set(CMAKE_CXX_STANDARD 23)
 
 include_directories(
-    ../../ace/napi/interfaces/kits
-    ../../ace/napi/native_engine/impl/quickjs
-    ../../ace/napi/
+    ../../arkui/napi/interfaces/kits
+    ../../arkui/napi/native_engine/impl/quickjs
+    ../../arkui/napi/
     ../../../third_party/node/src
 )
 
@@ -39,8 +39,8 @@ include_directories(../../../base/hiviewdfx/hilog/interfaces/native/innerkits/in
 
 include_directories(test/napi/common)
 
-include_directories(../../../foundation/ace/ace_engine/frameworks/base/utils)
-include_directories(../../../foundation/ace/napi/interfaces/innerkits)
+include_directories(../../../foundation/arkui/ace_engine/frameworks/base/utils)
+include_directories(../../../foundation/arkui/napi/interfaces/inner_api)
 include_directories(../../../for_linux)
 
 include_directories(../../../third_party/quickjs)
@@ -50,7 +50,7 @@ include_directories(../../../third_party/libuv/include)
 
 link_directories(../../../utils/native/base/cmake-build-debug/src/securec)
 
-link_directories(../../../foundation/ace/napi/cmake-build-debug)
+link_directories(../../../foundation/arkui/napi/cmake-build-debug)
 
 link_directories(../../../third_party/quickjs)
 
