@@ -165,7 +165,11 @@ static napi_value MakeMessage(napi_env env, void *para)
         return MakeJsMessageParam(env, NapiUtils::GetUndefined(env), &messageData->remoteInfo);
     }
 
-    NETSTACK_LOGI("copy ret %{public}d", memcpy_s(dataHandle, messageData->len, messageData->data, messageData->len));
+    int result = memcpy_s(dataHandle, messageData->len, messageData->data, messageData->len);
+    if (result != EOK) {
+        NETSTACK_LOGI("copy ret %{public}d", result);
+        return NapiUtils::GetUndefined(env);
+    }
 
     return MakeJsMessageParam(env, msgBuffer, &messageData->remoteInfo);
 }
