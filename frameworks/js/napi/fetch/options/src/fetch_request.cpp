@@ -16,11 +16,12 @@
 #include "fetch_request.h"
 
 #include "constant.h"
+#include "netstack_common_utils.h"
 
 namespace OHOS::NetStack {
 FetchRequest::FetchRequest() : method_(FetchConstant::HTTP_METHOD_GET)
 {
-    header_[FetchConstant::HTTP_CONTENT_TYPE] = FetchConstant::HTTP_CONTENT_TYPE_JSON; // default
+    header_[CommonUtils::ToLower(FetchConstant::HTTP_CONTENT_TYPE)] = FetchConstant::HTTP_CONTENT_TYPE_JSON; // default
 }
 
 void FetchRequest::SetUrl(const std::string &url)
