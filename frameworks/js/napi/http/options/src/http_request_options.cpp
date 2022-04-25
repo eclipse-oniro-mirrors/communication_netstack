@@ -16,6 +16,7 @@
 #include "http_request_options.h"
 
 #include "constant.h"
+#include "netstack_common_utils.h"
 
 namespace OHOS::NetStack {
 HttpRequestOptions::HttpRequestOptions()
@@ -25,7 +26,7 @@ HttpRequestOptions::HttpRequestOptions()
       ifModifiedSince_(HttpConstant::DEFAULT_IF_MODIFIED_SINCE),
       fixedLengthStreamingMode_(HttpConstant::DEFAULT_FIXED_LENGTH_STREAMING_MODE)
 {
-    header_[HttpConstant::HTTP_CONTENT_TYPE] = HttpConstant::HTTP_CONTENT_TYPE_JSON; // default
+    header_[CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE)] = HttpConstant::HTTP_CONTENT_TYPE_JSON; // default
 }
 
 void HttpRequestOptions::SetUrl(const std::string &url)
