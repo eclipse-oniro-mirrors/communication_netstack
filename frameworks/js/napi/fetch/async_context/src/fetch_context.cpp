@@ -181,7 +181,8 @@ bool FetchContext::GetUrlParam(napi_value data)
             bool encodeName = FetchExec::EncodeUrlParam(name);
             bool encodeValue = FetchExec::EncodeUrlParam(value);
             if (encodeName || encodeValue) {
-                request.SetHeader(FetchConstant::HTTP_CONTENT_TYPE, FetchConstant::HTTP_CONTENT_TYPE_URL_ENCODE);
+                request.SetHeader(CommonUtils::ToLower(FetchConstant::HTTP_CONTENT_TYPE),
+                                  FetchConstant::HTTP_CONTENT_TYPE_URL_ENCODE);
             }
             extraParam +=
                 name + FetchConstant::HTTP_URL_NAME_VALUE_SEPARATOR + value + FetchConstant::HTTP_URL_PARAM_SEPARATOR;
