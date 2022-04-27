@@ -36,14 +36,14 @@ utils_include = [
 ]
 
 common_include = [
-  "//foundation/ace/ace_engine/frameworks/base/utils",
-  "//foundation/ace/napi/interfaces/kits",
-  "//foundation/ace/napi",
+  "//foundation/arkui/ace_engine/frameworks/base/utils",
+  "//foundation/arkui/napi/interfaces/kits",
+  "//foundation/arkui/napi",
   "//third_party/node/src",
 ]
 
 common_deps = [
-  "//foundation/ace/napi/:ace_napi",
+  "//foundation/arkui/napi/:ace_napi",
   "//utils/native/base:utils",
 ]
 

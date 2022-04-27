@@ -38,14 +38,14 @@ if ("${product_name}" == "m40") {
   ]
 
   common_include = [
-    "//foundation/ace/ace_engine/frameworks/base/utils",
-    "//foundation/ace/napi/interfaces/kits",
-    "//foundation/ace/napi",
+    "//foundation/arkui/ace_engine/frameworks/base/utils",
+    "//foundation/arkui/napi/interfaces/kits",
+    "//foundation/arkui/napi",
     "//third_party/node/src",
   ]
 
   common_deps = [
-    "//foundation/ace/napi/:ace_napi",
+    "//foundation/arkui/napi/:ace_napi",
     "//utils/native/base:utils",
   ]
 
@@ -99,7 +99,7 @@ if ("${product_name}" == "m40") {
       "$NETSTACK_NAPI_ROOT/websocket/websocket_module/include",
     ]
     include_dirs += [
-      "//foundation/ace/napi/interfaces/innerkits",
+      "//foundation/arkui/napi/interfaces/inner_api",
       "//third_party/libuv/include",
       "//third_party/libwebsockets/include",
       "//third_party/openssl/include",
