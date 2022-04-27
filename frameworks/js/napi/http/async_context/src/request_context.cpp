@@ -169,7 +169,8 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
                 bool encodeName = HttpExec::EncodeUrlParam(name);
                 bool encodeValue = HttpExec::EncodeUrlParam(value);
                 if (encodeName || encodeValue) {
-                    options.SetHeader(HttpConstant::HTTP_CONTENT_TYPE, HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE);
+                    options.SetHeader(CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE),
+                                      HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE);
                 }
                 extraParam +=
                     name + HttpConstant::HTTP_URL_NAME_VALUE_SEPARATOR + value + HttpConstant::HTTP_URL_PARAM_SEPARATOR;
