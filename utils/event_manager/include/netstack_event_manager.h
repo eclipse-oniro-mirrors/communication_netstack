@@ -40,6 +40,8 @@ public:
 
     bool HasEventListener(const std::string &type);
 
+    void DeleteListener(const std::string &type);
+
 private:
     std::mutex mutex_;
 

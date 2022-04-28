@@ -97,6 +97,14 @@ bool EventManager::HasEventListener(const std::string &type)
                        [&type](const EventListener &listener) -> bool { return listener.MatchType(type); });
 }
 
+void EventManager::DeleteListener(const std::string &type)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto it = std::remove_if(listeners_.begin(), listeners_.end(),
+                             [type](const EventListener &listener) -> bool { return listener.MatchType(type); });
+    listeners_.erase(it, listeners_.end());
+}
+
 UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)
     : data(theData), env(theEnv), type(std::move(eventType)), manager(eventManager)
 {
