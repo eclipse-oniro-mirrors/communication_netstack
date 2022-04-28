@@ -48,9 +48,7 @@
                 "//foundation/communication/netstack/frameworks/js/napi:fetch"
             ],
             "inner_kits": [],
-            "test": [
-                "//foundation/communication/netstack/test/napi/websocket/unittest:unittest"
-            ]
+            "test": []
         }
     }
 }
