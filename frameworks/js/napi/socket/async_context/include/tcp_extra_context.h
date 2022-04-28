@@ -17,13 +17,13 @@
 #define COMMUNICATIONNETSTACK_TCP_EXTRA_CONTEXT_H
 
 #include "netstack_base_context.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 #include "tcp_extra_options.h"
 
 namespace OHOS::NetStack {
 class TcpSetExtraOptionsContext : public BaseContext {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(TcpSetExtraOptionsContext);
+    DISALLOW_COPY_AND_MOVE(TcpSetExtraOptionsContext);
 
     TcpSetExtraOptionsContext() = delete;
 

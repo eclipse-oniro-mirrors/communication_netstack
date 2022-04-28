@@ -18,14 +18,14 @@
 
 #include "netstack_base_context.h"
 #include "netstack_event_manager.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 #include "socket_remote_info.h"
 #include "socket_state_base.h"
 
 namespace OHOS::NetStack {
 class CommonContext : public BaseContext {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(CommonContext);
+    DISALLOW_COPY_AND_MOVE(CommonContext);
 
     CommonContext() = delete;
 
@@ -49,7 +49,7 @@ typedef CommonContext GetRemoteAddressContext;
 
 class CloseContext final : public CommonContext {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(CloseContext);
+    DISALLOW_COPY_AND_MOVE(CloseContext);
 
     CloseContext() = delete;
 

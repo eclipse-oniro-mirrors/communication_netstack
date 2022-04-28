@@ -17,13 +17,13 @@
 #define COMMUNICATIONNETSTACK_UDP_EXTRA_CONTEXT_H
 
 #include "netstack_base_context.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 #include "udp_extra_options.h"
 
 namespace OHOS::NetStack {
 class UdpSetExtraOptionsContext final : public BaseContext {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(UdpSetExtraOptionsContext);
+    DISALLOW_COPY_AND_MOVE(UdpSetExtraOptionsContext);
 
     UdpSetExtraOptionsContext() = delete;
 

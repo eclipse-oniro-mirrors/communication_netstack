@@ -19,12 +19,12 @@
 #include <string>
 
 #include "netstack_base_context.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 
 namespace OHOS::NetStack {
 class CloseContext final : public BaseContext {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(CloseContext);
+    DISALLOW_COPY_AND_MOVE(CloseContext);
 
     CloseContext() = delete;
 

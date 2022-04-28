@@ -20,12 +20,12 @@
 
 #include "libwebsockets.h"
 #include "netstack_base_context.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 
 namespace OHOS::NetStack {
 class SendContext final : public BaseContext {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(SendContext);
+    DISALLOW_COPY_AND_MOVE(SendContext);
 
     SendContext() = delete;
 

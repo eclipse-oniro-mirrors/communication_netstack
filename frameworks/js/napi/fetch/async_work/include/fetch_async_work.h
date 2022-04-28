@@ -18,13 +18,13 @@
 
 #include "napi/native_api.h"
 #include "napi/native_common.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 #include "fetch_context.h"
 
 namespace OHOS::NetStack {
 class FetchAsyncWork final {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(FetchAsyncWork);
+    DISALLOW_COPY_AND_MOVE(FetchAsyncWork);
 
     static void ExecFetch(napi_env env, void *data);
 
