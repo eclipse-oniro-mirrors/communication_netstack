@@ -47,10 +47,7 @@ common_deps = [
   "//utils/native/base:utils",
 ]
 
-common_external_deps = [
-  "hiviewdfx_hilog_native:libhilog",
-  "ipc:ipc_core",
-]
+common_external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
 
 common_relative_install_dir = "module/net"
 common_part_name = "netstack"

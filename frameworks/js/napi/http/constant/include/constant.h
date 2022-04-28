@@ -18,12 +18,12 @@
 
 #include <cstdint>
 
-#include "noncopyable.h"
+#include "nocopyable.h"
 
 namespace OHOS::NetStack {
 class HttpConstant final {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(HttpConstant);
+    DISALLOW_COPY_AND_MOVE(HttpConstant);
 
     /* Http Method */
     static const char *const HTTP_METHOD_GET;
@@ -68,7 +68,9 @@ public:
     static const char *const HTTP_CONTENT_TYPE_URL_ENCODE;
     static const char *const HTTP_CONTENT_TYPE_JSON;
     static const char *const HTTP_CONTENT_TYPE_OCTET_STREAM;
+
     static const char *const HTTP_CONTENT_TYPE_JPEG_STREAM;
+    static const char *const HTTP_CONTENT_ENCODING_GZIP;
 };
 } // namespace OHOS::NetStack
 

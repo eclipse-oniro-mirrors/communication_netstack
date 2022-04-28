@@ -17,13 +17,13 @@
 #define COMMUNICATIONNETSTACK_TCP_SEND_CONTEXT_H
 
 #include "netstack_base_context.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 #include "tcp_send_options.h"
 
 namespace OHOS::NetStack {
 class TcpSendContext final : public BaseContext {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(TcpSendContext);
+    DISALLOW_COPY_AND_MOVE(TcpSendContext);
 
     TcpSendContext() = delete;
 

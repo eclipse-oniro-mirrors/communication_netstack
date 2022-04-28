@@ -22,12 +22,12 @@
 #include "curl/curl.h"
 #include "fetch_context.h"
 #include "napi/native_api.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 
 namespace OHOS::NetStack {
 class FetchExec final {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(FetchExec);
+    DISALLOW_COPY_AND_MOVE(FetchExec);
 
     FetchExec() = default;
 

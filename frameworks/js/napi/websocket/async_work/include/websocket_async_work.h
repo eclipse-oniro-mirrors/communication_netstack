@@ -21,7 +21,7 @@
 namespace OHOS::NetStack {
 class WebSocketAsyncWork final {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(WebSocketAsyncWork);
+    DISALLOW_COPY_AND_MOVE(WebSocketAsyncWork);
 
     /* executor */
     static void ExecConnect(napi_env env, void *data);

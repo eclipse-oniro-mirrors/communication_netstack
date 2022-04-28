@@ -18,12 +18,12 @@
 
 #include <cstdint>
 
-#include "noncopyable.h"
+#include "nocopyable.h"
 
 namespace OHOS::NetStack {
 class FetchConstant final {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(FetchConstant);
+    DISALLOW_COPY_AND_MOVE(FetchConstant);
 
     /* Http Method */
     static const char *const HTTP_METHOD_GET;

@@ -20,13 +20,13 @@
 #include <string>
 
 #include "netstack_base_context.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 #include "libwebsockets.h"
 
 namespace OHOS::NetStack {
 class ConnectContext final : public BaseContext {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(ConnectContext);
+    DISALLOW_COPY_AND_MOVE(ConnectContext);
 
     ConnectContext() = delete;
 

@@ -19,7 +19,7 @@
 #include <string>
 
 #include "napi/native_api.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 #include "uv.h"
 
 namespace OHOS::NetStack {
