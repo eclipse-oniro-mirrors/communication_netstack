@@ -30,8 +30,6 @@ static constexpr const char *GLOBAL_JSON_STRINGIFY = "stringify";
 
 static constexpr const char *GLOBAL_JSON_PARSE = "parse";
 
-static napi_value NAPI_UNDEFINED = nullptr;
-
 napi_valuetype GetValueType(napi_env env, napi_value value)
 {
     if (value == nullptr) {
@@ -240,10 +238,9 @@ napi_value CreateObject(napi_env env)
 /* undefined */
 napi_value GetUndefined(napi_env env)
 {
-    if (!NAPI_UNDEFINED) {
-        NAPI_CALL(env, napi_get_undefined(env, &NAPI_UNDEFINED));
-    }
-    return NAPI_UNDEFINED;
+    napi_value undefined = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &undefined));
+    return undefined;
 }
 
 /* function */
