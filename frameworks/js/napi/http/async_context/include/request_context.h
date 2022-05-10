@@ -19,12 +19,12 @@
 #include "http_request_options.h"
 #include "http_response.h"
 #include "netstack_base_context.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 
 namespace OHOS::NetStack {
 class RequestContext final : public BaseContext {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(RequestContext);
+    DISALLOW_COPY_AND_MOVE(RequestContext);
 
     RequestContext() = delete;
 

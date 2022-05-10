@@ -20,7 +20,7 @@
         "name": "netstack",
         "subsystem": "communication",
         "syscap": [
-            "SystemCapability.Communication.Netstack"
+            "SystemCapability.Communication.NetStack"
         ],
         "features": [],
         "adapted_system_type": [

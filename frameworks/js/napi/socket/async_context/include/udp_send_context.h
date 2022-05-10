@@ -17,13 +17,13 @@
 #define COMMUNICATIONNETSTACK_UDP_SEND_CONTEXT_H
 
 #include "netstack_base_context.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 #include "udp_send_options.h"
 
 namespace OHOS::NetStack {
 class UdpSendContext final : public BaseContext {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(UdpSendContext);
+    DISALLOW_COPY_AND_MOVE(UdpSendContext);
 
     UdpSendContext() = delete;
 

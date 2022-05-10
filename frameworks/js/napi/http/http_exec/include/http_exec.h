@@ -21,13 +21,13 @@
 
 #include "curl/curl.h"
 #include "napi/native_api.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 #include "request_context.h"
 
 namespace OHOS::NetStack {
 class HttpExec final {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(HttpExec);
+    DISALLOW_COPY_AND_MOVE(HttpExec);
 
     HttpExec() = default;
 
@@ -45,9 +45,9 @@ public:
 
     static bool EncodeUrlParam(std::string &str);
 
-private:
     static bool Initialize();
 
+private:
     static bool SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader);
 
     static size_t OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData);

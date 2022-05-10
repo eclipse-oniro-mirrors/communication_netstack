@@ -21,7 +21,7 @@
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 #include "netstack_event_manager.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 
 namespace OHOS::NetStack {
 typedef void (*AsyncWorkExecutor)(napi_env env, void *data);
@@ -30,7 +30,7 @@ typedef void (*AsyncWorkCallback)(napi_env env, napi_status status, void *data);
 
 class BaseContext {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(BaseContext);
+    DISALLOW_COPY_AND_MOVE(BaseContext);
 
     BaseContext() = delete;
 
@@ -70,6 +70,12 @@ public:
 
     void Emit(const std::string &type, const std::pair<napi_value, napi_value> &argv);
 
+    void SetNeedPromise(bool needPromise);
+
+    [[nodiscard]] bool IsNeedPromise() const;
+
+    [[nodiscard]] EventManager *GetManager() const;
+
 protected:
     EventManager *manager_;
 
@@ -89,6 +95,8 @@ private:
     napi_deferred deferred_;
 
     std::string asyncWorkName_;
+
+    bool needPromise_;
 };
 } // namespace OHOS::NetStack
 

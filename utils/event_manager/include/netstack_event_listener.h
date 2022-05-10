@@ -19,7 +19,8 @@
 #include <string>
 
 #include "napi/native_api.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
+#include "uv.h"
 
 namespace OHOS::NetStack {
 class EventListener {
@@ -40,7 +41,15 @@ public:
 
     [[nodiscard]] bool MatchOnce(const std::string &type) const;
 
+    [[nodiscard]] bool MatchType(const std::string &type) const;
+
     [[nodiscard]] bool IsAsyncCallback() const;
+
+    void EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status)) const;
+
+    [[nodiscard]] napi_env GetEnv() const;
+
+    [[nodiscard]] napi_ref GetCallbackRef() const;
 
 private:
     napi_env env_;

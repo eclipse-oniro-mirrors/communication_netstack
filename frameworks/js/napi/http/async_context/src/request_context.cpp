@@ -135,7 +135,8 @@ void RequestContext::ParseHeader(napi_value optionsValue)
 bool RequestContext::ParseExtraData(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_EXTRA_DATA)) {
-        return HttpExec::MethodForGet(options.GetMethod());
+        NETSTACK_LOGI("no extraData");
+        return true;
     }
     napi_value extraData = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_EXTRA_DATA);
 
@@ -163,12 +164,13 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
         auto names = NapiUtils::GetPropertyNames(GetEnv(), extraData);
         std::for_each(names.begin(), names.end(), [this, extraData, &extraParam](std::string name) {
             auto value = NapiUtils::GetStringPropertyUtf8(GetEnv(), extraData, name);
-            NETSTACK_LOGI("url param name = %{public}s, value = %{public}s", name.c_str(), value.c_str());
+            NETSTACK_LOGI("url param name = ..., value = ...");
             if (!name.empty() && !value.empty()) {
                 bool encodeName = HttpExec::EncodeUrlParam(name);
                 bool encodeValue = HttpExec::EncodeUrlParam(value);
                 if (encodeName || encodeValue) {
-                    options.SetHeader(HttpConstant::HTTP_CONTENT_TYPE, HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE);
+                    options.SetHeader(CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE),
+                                      HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE);
                 }
                 extraParam +=
                     name + HttpConstant::HTTP_URL_NAME_VALUE_SEPARATOR + value + HttpConstant::HTTP_URL_PARAM_SEPARATOR;
@@ -212,7 +214,16 @@ bool RequestContext::GetRequestBody(napi_value extraData)
         return true;
     }
 
-    NETSTACK_LOGE("Body do not support Object, because napi do not support json stringify for now");
+    if (type == napi_object) {
+        std::string body = NapiUtils::GetStringFromValueUtf8(GetEnv(), NapiUtils::JsonStringify(GetEnv(), extraData));
+        if (body.empty()) {
+            return false;
+        }
+        options.SetBody(body.c_str(), body.length());
+        return true;
+    }
+
+    NETSTACK_LOGE("only support string arraybuffer and object");
     return false;
 }
 

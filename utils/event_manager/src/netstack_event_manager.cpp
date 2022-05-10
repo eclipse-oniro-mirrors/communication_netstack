@@ -15,8 +15,6 @@
 
 #include "netstack_event_manager.h"
 
-#include <algorithm>
-
 namespace OHOS::NetStack {
 static constexpr const int CALLBACK_PARAM_NUM = 1;
 
@@ -30,6 +28,13 @@ void EventManager::AddListener(napi_env env,
                                bool once,
                                bool asyncCallback)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto it = std::remove_if(listeners_.begin(), listeners_.end(),
+                             [type](const EventListener &listener) -> bool { return listener.MatchType(type); });
+    if (it != listeners_.end()) {
+        listeners_.erase(it, listeners_.end());
+    }
+
     listeners_.emplace_back(EventListener(env, type, callback, once, asyncCallback));
 }
 
@@ -45,8 +50,6 @@ void EventManager::DeleteListener(const std::string &type, napi_value callback)
 
 void EventManager::Emit(const std::string &type, const std::pair<napi_value, napi_value> &argv)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-
     std::for_each(listeners_.begin(), listeners_.end(), [type, argv](const EventListener &listener) {
         if (listener.IsAsyncCallback()) {
             /* AsyncCallback(BusinessError error, T data) */
@@ -74,5 +77,36 @@ void *EventManager::GetData()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     return data_;
+}
+
+void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status))
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    std::for_each(listeners_.begin(), listeners_.end(), [type, data, Handler, this](const EventListener &listener) {
+        auto workWrapper = new UvWorkWrapper(data, listener.GetEnv(), type, this);
+        listener.EmitByUv(type, workWrapper, Handler);
+    });
+}
+
+bool EventManager::HasEventListener(const std::string &type)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    return std::any_of(listeners_.begin(), listeners_.end(),
+                       [&type](const EventListener &listener) -> bool { return listener.MatchType(type); });
+}
+
+void EventManager::DeleteListener(const std::string &type)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto it = std::remove_if(listeners_.begin(), listeners_.end(),
+                             [type](const EventListener &listener) -> bool { return listener.MatchType(type); });
+    listeners_.erase(it, listeners_.end());
+}
+
+UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)
+    : data(theData), env(theEnv), type(std::move(eventType)), manager(eventManager)
+{
 }
 } // namespace OHOS::NetStack

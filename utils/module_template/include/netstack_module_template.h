@@ -20,6 +20,7 @@
 
 #include "netstack_base_async_work.h"
 #include "netstack_base_context.h"
+#include "netstack_log.h"
 
 #define MAX_PARAM_NUM 64
 
@@ -46,7 +47,7 @@ napi_value Interface(napi_env env,
 
     auto context = new Context(env, manager);
     context->ParseParams(params, paramsCount);
-    NETSTACK_LOGE("js params parse OK ? %{public}d", context->IsParseOK());
+    NETSTACK_LOGI("js params parse OK ? %{public}d", context->IsParseOK());
     if (Work != nullptr) {
         if (!Work(env, thisVal, context)) {
             NETSTACK_LOGE("work failed error code = %{public}d", context->GetErrorCode());
@@ -54,7 +55,8 @@ napi_value Interface(napi_env env,
     }
 
     context->CreateAsyncWork(asyncWorkName, executor, callback);
-    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function) {
+    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
+        NETSTACK_LOGI("context->CreatePromise()");
         return context->CreatePromise();
     }
     return NapiUtils::GetUndefined(env);
@@ -82,7 +84,7 @@ napi_value
         }
     }
 
-    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function) {
+    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
         return context->CreatePromise();
     }
     return NapiUtils::GetUndefined(env);

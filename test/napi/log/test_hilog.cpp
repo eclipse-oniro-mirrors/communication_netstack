@@ -14,6 +14,8 @@
  */
 
 #include <string>
+#include <thread>
+#include <unistd.h>
 
 #include "netstack_log.h"
 
@@ -27,21 +29,21 @@ static void StripFormatString(const std::string &prefix, std::string &str)
     }
 }
 
-#define PRINT_LOG(LEVEL)                        \
-    do {                                        \
-        std::string newFmt(fmt);                \
-        StripFormatString("{public}", newFmt);  \
-        StripFormatString("{private}", newFmt); \
-                                                \
-        va_list args;                           \
-        va_start(args, fmt);                    \
-        printf(#LEVEL " ");                     \
-        fflush(stdout);                         \
-        vfprintf(stdout, newFmt.c_str(), args); \
-        fflush(stdout);                         \
-        printf("\n");                           \
-        fflush(stdout);                         \
-        va_end(args);                           \
+#define PRINT_LOG(LEVEL)                                                \
+    do {                                                                \
+        std::string newFmt(fmt);                                        \
+        StripFormatString("{public}", newFmt);                          \
+        StripFormatString("{private}", newFmt);                         \
+                                                                        \
+        va_list args;                                                   \
+        va_start(args, fmt);                                            \
+        printf(#LEVEL " %d %u ", getpid(), std::this_thread::get_id()); \
+        fflush(stdout);                                                 \
+        vfprintf(stdout, newFmt.c_str(), args);                         \
+        fflush(stdout);                                                 \
+        printf("\n");                                                   \
+        fflush(stdout);                                                 \
+        va_end(args);                                                   \
     } while (0)
 
 int HiLog::Debug(const HiLogLabel &label, const char *fmt, ...)

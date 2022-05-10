@@ -15,9 +15,10 @@
 
 #include "fetch_module.h"
 
+#include "fetch_async_work.h"
+#include "fetch_exec.h"
 #include "netstack_log.h"
-
-static constexpr const char *FETCH_MODULE_NAME = "fetch";
+#include "netstack_module_template.h"
 
 namespace OHOS::NetStack {
 napi_value FetchModule::InitFetchModule(napi_env env, napi_value exports)
@@ -33,23 +34,10 @@ napi_value FetchModule::InitFetchModule(napi_env env, napi_value exports)
 napi_value FetchModule::Fetch(napi_env env, napi_callback_info info)
 {
     NETSTACK_LOGI("FetchModule::Fetch is called");
-    (void)info;
-
-    return NapiUtils::GetUndefined(env);
+    return ModuleTemplate::Interface<FetchContext>(
+        env, info, FUNCTION_FETCH, [](napi_env, napi_value, FetchContext *) -> bool { return FetchExec::Initialize(); },
+        FetchAsyncWork::ExecFetch, FetchAsyncWork::FetchCallback);
 }
 
-static napi_module g_fetchModule = {
-    .nm_version = 1,
-    .nm_flags = 0,
-    .nm_filename = nullptr,
-    .nm_register_func = FetchModule::InitFetchModule,
-    .nm_modname = FETCH_MODULE_NAME,
-    .nm_priv = nullptr,
-    .reserved = {nullptr},
-};
-
-extern "C" __attribute__((constructor)) void RegisterFetchModule(void)
-{
-    napi_module_register(&g_fetchModule);
-}
+NAPI_MODULE(fetch, FetchModule::InitFetchModule)
 } // namespace OHOS::NetStack

@@ -24,6 +24,12 @@
 namespace OHOS::NetStack::NapiUtils {
 static constexpr const int MAX_STRING_LENGTH = 65536;
 
+static constexpr const char *GLOBAL_JSON = "JSON";
+
+static constexpr const char *GLOBAL_JSON_STRINGIFY = "stringify";
+
+static constexpr const char *GLOBAL_JSON_PARSE = "parse";
+
 napi_valuetype GetValueType(napi_env env, napi_value value)
 {
     if (value == nullptr) {
@@ -192,6 +198,9 @@ void SetStringPropertyUtf8(napi_env env, napi_value object, const std::string &n
 /* array buffer */
 bool ValueIsArrayBuffer(napi_env env, napi_value value)
 {
+    if (value == nullptr) {
+        return false;
+    }
     bool isArrayBuffer = false;
     NAPI_CALL_BASE(env, napi_is_arraybuffer(env, value, &isArrayBuffer), false);
     return isArrayBuffer;
@@ -292,6 +301,13 @@ void SetBooleanProperty(napi_env env, napi_value object, const std::string &name
     napi_set_named_property(env, object, name.c_str(), jsValue);
 }
 
+napi_value GetBoolean(napi_env env, bool value)
+{
+    napi_value jsValue = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, value, &jsValue));
+    return jsValue;
+}
+
 /* define properties */
 void DefineProperties(napi_env env,
                       napi_value object,
@@ -301,5 +317,80 @@ void DefineProperties(napi_env env,
     std::copy(properties.begin(), properties.end(), descriptors);
 
     (void)napi_define_properties(env, object, properties.size(), descriptors);
+}
+
+/* JSON */
+napi_value JsonStringify(napi_env env, napi_value object)
+{
+    napi_value undefined = GetUndefined(env);
+
+    if (GetValueType(env, object) != napi_object) {
+        return undefined;
+    }
+
+    napi_value global = nullptr;
+    NAPI_CALL_BASE(env, napi_get_global(env, &global), undefined);
+    napi_value json = nullptr;
+    NAPI_CALL_BASE(env, napi_get_named_property(env, global, GLOBAL_JSON, &json), undefined);
+    napi_value stringify = nullptr;
+    NAPI_CALL_BASE(env, napi_get_named_property(env, json, GLOBAL_JSON_STRINGIFY, &stringify), undefined);
+    if (GetValueType(env, stringify) != napi_function) {
+        return undefined;
+    }
+
+    napi_value res = nullptr;
+    napi_value argv[1] = {object};
+    NAPI_CALL_BASE(env, napi_call_function(env, json, stringify, 1, argv, &res), undefined);
+    return res;
+}
+
+napi_value JsonParse(napi_env env, napi_value str)
+{
+    napi_value undefined = GetUndefined(env);
+
+    if (GetValueType(env, str) != napi_string) {
+        return undefined;
+    }
+
+    napi_value global = nullptr;
+    NAPI_CALL_BASE(env, napi_get_global(env, &global), undefined);
+    napi_value json = nullptr;
+    NAPI_CALL_BASE(env, napi_get_named_property(env, global, GLOBAL_JSON, &json), undefined);
+    napi_value parse = nullptr;
+    NAPI_CALL_BASE(env, napi_get_named_property(env, json, GLOBAL_JSON_PARSE, &parse), undefined);
+    if (GetValueType(env, parse) != napi_function) {
+        return undefined;
+    }
+
+    napi_value res = nullptr;
+    napi_value argv[1] = {str};
+    NAPI_CALL_BASE(env, napi_call_function(env, json, parse, 1, argv, &res), undefined);
+    return res;
+}
+
+/* libuv */
+void CreateUvQueueWork(napi_env env, void *data, void(Handler)(uv_work_t *, int status))
+{
+    uv_loop_s *loop = nullptr;
+    NAPI_CALL_RETURN_VOID(env, napi_get_uv_event_loop(env, &loop));
+
+    auto work = new uv_work_t;
+    work->data = data;
+
+    (void)uv_queue_work(
+        loop, work, [](uv_work_t *) {}, Handler);
+}
+
+/* scope */
+napi_handle_scope OpenScope(napi_env env)
+{
+    napi_handle_scope scope = nullptr;
+    NAPI_CALL(env, napi_open_handle_scope(env, &scope));
+    return scope;
+}
+
+void CloseScope(napi_env env, napi_handle_scope scope)
+{
+    (void)napi_close_handle_scope(env, scope);
 }
 } // namespace OHOS::NetStack::NapiUtils
