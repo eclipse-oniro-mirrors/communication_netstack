@@ -50,7 +50,8 @@ void HttpResponse::ParseHeaders()
             NETSTACK_LOGI("HEAD: %{public}s", CommonUtils::Strip(header).c_str());
             continue;
         }
-        header_[CommonUtils::Strip(header.substr(0, index))] = CommonUtils::Strip(header.substr(index + 1));
+        header_[CommonUtils::ToLower(CommonUtils::Strip(header.substr(0, index)))] =
+            CommonUtils::Strip(header.substr(index + 1));
     }
 }
 
