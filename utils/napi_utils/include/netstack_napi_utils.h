@@ -21,6 +21,7 @@
 
 #include "napi/native_api.h"
 #include "napi/native_common.h"
+#include "uv.h"
 
 namespace OHOS::NetStack::NapiUtils {
 napi_valuetype GetValueType(napi_env env, napi_value value);
@@ -91,10 +92,25 @@ bool GetBooleanProperty(napi_env env, napi_value object, const std::string &prop
 
 void SetBooleanProperty(napi_env env, napi_value object, const std::string &name, bool value);
 
+napi_value GetBoolean(napi_env env, bool value);
+
 /* define properties */
 void DefineProperties(napi_env env,
                       napi_value object,
                       const std::initializer_list<napi_property_descriptor> &properties);
+
+/* JSON */
+napi_value JsonStringify(napi_env env, napi_value object);
+
+napi_value JsonParse(napi_env env, napi_value str);
+
+/* libuv */
+void CreateUvQueueWork(napi_env env, void *data, void(Handler)(uv_work_t *, int status));
+
+/* scope */
+napi_handle_scope OpenScope(napi_env env);
+
+void CloseScope(napi_env env, napi_handle_scope scope);
 } // namespace OHOS::NetStack::NapiUtils
 
 #endif /* COMMUNICATIONNETSTACK_NETSTACK_NAPI_UTILS_H */

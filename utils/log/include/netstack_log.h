@@ -37,8 +37,13 @@ static constexpr OHOS::HiviewDFX::HiLogLabel NETSTACK_LOG_LABEL = {LOG_CORE, NET
 
 #else
 
-#include <stdarg.h>
-#include <stdio.h>
+#ifdef _WIN32
+#undef MAKE_FILE_NAME
+#define MAKE_FILE_NAME (strrchr(__FILE__, '\\') + 1)
+#endif /* _WIN32 */
+
+#include <cstdarg>
+#include <cstdio>
 
 #include "securec.h"
 
@@ -63,6 +68,7 @@ static void NetStackPrintLog(const char *fmt, ...)
     char buf[NETSTACK_MAX_BUFFER_SIZE] = {0};
     int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, newFmt.c_str(), args);
     if (ret < 0) {
+        va_end(args);
         return;
     }
     va_end(args);

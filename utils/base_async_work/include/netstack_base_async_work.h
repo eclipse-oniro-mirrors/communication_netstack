@@ -22,7 +22,7 @@
 #include "napi/native_common.h"
 #include "netstack_base_context.h"
 #include "netstack_napi_utils.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 
 static constexpr const int PARSE_PARAM_FAILED = -1;
 
@@ -31,7 +31,7 @@ static constexpr const char *BUSINESS_ERROR_KEY = "code";
 namespace OHOS::NetStack {
 class BaseAsyncWork final {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(BaseAsyncWork);
+    DISALLOW_COPY_AND_MOVE(BaseAsyncWork);
 
     BaseAsyncWork() = delete;
 
@@ -96,8 +96,25 @@ public:
         }
 
         napi_value func = context->GetCallback();
-        napi_value undefined = NapiUtils::GetUndefined(env);
-        (void)NapiUtils::CallFunction(env, undefined, func, argc, argv);
+        if (NapiUtils::GetValueType(env, func) == napi_function) {
+            napi_value undefined = NapiUtils::GetUndefined(env);
+            (void)NapiUtils::CallFunction(env, undefined, func, argc, argv);
+        }
+    }
+
+    template <class Context, napi_value (*Callback)(Context *)>
+    static void AsyncWorkCallbackForSystem(napi_env env, napi_status status, void *data)
+    {
+        static_assert(std::is_base_of<BaseContext, Context>::value);
+
+        if (status != napi_ok) {
+            return;
+        }
+        auto deleter = [](Context *context) { delete context; };
+        std::unique_ptr<Context, decltype(deleter)> context(static_cast<Context *>(data), deleter);
+        if (Callback != nullptr) {
+            (void)Callback(context.get());
+        }
     }
 };
 } // namespace OHOS::NetStack

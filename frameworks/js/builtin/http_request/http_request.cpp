@@ -150,7 +150,7 @@ bool HttpRequest::SetOption(RequestData *requestData, CURL *curl, ResponseData *
         requestData->SetHeader(HttpConstant::HTTP_HEADER_KEY_CONTENT_TYPE, HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE);
     }
 
-    HTTP_REQUEST_INFO("final url: %s", requestData->GetUrl().c_str());
+    HTTP_REQUEST_INFO("final url: ...");
     ACE_CURL_EASY_SET_OPTION(curl, CURLOPT_URL, requestData->GetUrl().c_str(), responseData);
     return true;
 }

@@ -38,6 +38,8 @@ static const char TCP_SEND_NAME[] = "TcpSend";
 static const char TCP_CLOSE_NAME[] = "TcpClose";
 static const char TCP_SET_EXTRA_OPTIONS_NAME[] = "TcpSetExtraOptions";
 
+static constexpr const char *KEY_SOCKET_FD = "socketFd";
+
 #define SOCKET_INTERFACE(Context, executor, callback, work, priority, name)                                         \
     ModuleTemplate::InterfaceWithOutAsyncWork<Context>(                                                             \
         env, info,                                                                                                  \
@@ -94,6 +96,7 @@ static bool SetSocket(napi_env env, napi_value thisVal, BindContext *context, in
     }
 
     manager->SetData(reinterpret_cast<void *>(sock));
+    NapiUtils::SetInt32Property(env, thisVal, KEY_SOCKET_FD, sock);
     return true;
 }
 
@@ -178,7 +181,7 @@ void SocketModuleExports::InitSocketProperties(napi_env env, napi_value exports)
 /* udp async works */
 napi_value SocketModuleExports::UDPSocket::Bind(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(BindContext, ExecBind, BindCallback, MakeUdpSocket, BIND, UDP_BIND_NAME);
+    return SOCKET_INTERFACE(BindContext, ExecUdpBind, BindCallback, MakeUdpSocket, BIND, UDP_BIND_NAME);
 }
 
 napi_value SocketModuleExports::UDPSocket::Send(napi_env env, napi_callback_info info)
@@ -216,7 +219,7 @@ napi_value SocketModuleExports::UDPSocket::Off(napi_env env, napi_callback_info 
 /* tcp async works */
 napi_value SocketModuleExports::TCPSocket::Bind(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(BindContext, ExecBind, BindCallback, MakeTcpSocket, BIND, TCP_BIND_NAME);
+    return SOCKET_INTERFACE(BindContext, ExecTcpBind, BindCallback, MakeTcpSocket, BIND, TCP_BIND_NAME);
 }
 
 napi_value SocketModuleExports::TCPSocket::Connect(napi_env env, napi_callback_info info)

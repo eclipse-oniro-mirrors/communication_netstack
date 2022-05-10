@@ -17,13 +17,13 @@
 #define COMMUNICATIONNETSTACK_CONNECT_CONTEXT_H
 
 #include "netstack_base_context.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 #include "tcp_connect_options.h"
 
 namespace OHOS::NetStack {
 class ConnectContext final : public BaseContext {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(ConnectContext);
+    DISALLOW_COPY_AND_MOVE(ConnectContext);
 
     ConnectContext() = delete;
 

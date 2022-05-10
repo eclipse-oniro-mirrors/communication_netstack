@@ -18,13 +18,13 @@
 
 #include "napi/native_api.h"
 #include "napi/native_common.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 #include "request_context.h"
 
 namespace OHOS::NetStack {
 class HttpAsyncWork final {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(HttpAsyncWork);
+    DISALLOW_COPY_AND_MOVE(HttpAsyncWork);
 
     static void ExecRequest(napi_env env, void *data);
 

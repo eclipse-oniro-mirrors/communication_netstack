@@ -66,7 +66,8 @@ bool HttpExec::initialized_ = false;
 
 bool HttpExec::ExecRequest(RequestContext *context)
 {
-    if (!Initialize()) {
+    if (!initialized_) {
+        NETSTACK_LOGE("curl not init");
         return false;
     }
 
@@ -77,7 +78,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
         return false;
     }
 
-    NETSTACK_LOGI("final url: %{public}s", context->options.GetUrl().c_str());
+    NETSTACK_LOGI("final url: ...");
 
     std::vector<std::string> vec;
     std::for_each(context->options.GetHeader().begin(), context->options.GetHeader().end(),
@@ -134,7 +135,8 @@ napi_value HttpExec::RequestCallback(RequestContext *context)
 
     auto contentType = CommonUtils::ToLower(const_cast<std::map<std::string, std::string> &>(
         context->response.GetHeader())[HttpConstant::HTTP_CONTENT_TYPE]);
-    if (contentType.find(HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM) != std::string::npos) {
+    if (contentType.find(HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM) != std::string::npos ||
+        contentType.find(HttpConstant::HTTP_CONTENT_TYPE_JPEG_STREAM) != std::string::npos) {
         void *data = nullptr;
         auto body = context->response.GetResult();
         napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);
@@ -183,7 +185,8 @@ bool HttpExec::EncodeUrlParam(std::string &str)
 {
     char encoded[4];
     std::string encodeOut;
-    for (size_t i = 0; i < strlen(str.c_str()); ++i) {
+    size_t length = strlen(str.c_str());
+    for (size_t i = 0; i < length; ++i) {
         auto c = static_cast<uint8_t>(str.c_str()[i]);
         if (IsUnReserved(c)) {
             encodeOut += static_cast<char>(c);
@@ -268,13 +271,12 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 #endif
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_TIMEOUT_MS, context->options.GetReadTimeout(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_ACCEPT_ENCODING, HttpConstant::HTTP_CONTENT_ENCODING_GZIP, context);
 
-    if (MethodForPost(method)) {
+    if (MethodForPost(method) && !context->options.GetBody().empty()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POST, 1L, context);
-        if (!context->options.GetBody().empty()) {
-            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->options.GetBody().c_str(), context);
-            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->options.GetBody().size(), context);
-        }
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->options.GetBody().c_str(), context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->options.GetBody().size(), context);
     }
 
     return true;

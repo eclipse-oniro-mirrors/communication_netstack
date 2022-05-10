@@ -84,8 +84,13 @@ napi_value Off(napi_env env, napi_callback_info info, const std::initializer_lis
     napi_value params[MAX_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
 
-    if (paramsCount != EVENT_PARAM_NUM || NapiUtils::GetValueType(env, params[0]) != napi_string ||
-        NapiUtils::GetValueType(env, params[1]) != napi_function) {
+    if ((paramsCount != 1 && paramsCount != EVENT_PARAM_NUM) ||
+        NapiUtils::GetValueType(env, params[0]) != napi_string) {
+        NETSTACK_LOGE("on off once interface para: [string, function?]");
+        return NapiUtils::GetUndefined(env);
+    }
+
+    if (paramsCount == EVENT_PARAM_NUM && NapiUtils::GetValueType(env, params[1]) != napi_function) {
         NETSTACK_LOGE("on off once interface para: [string, function]");
         return NapiUtils::GetUndefined(env);
     }
@@ -98,7 +103,11 @@ napi_value Off(napi_env env, napi_callback_info info, const std::initializer_lis
     EventManager *manager = nullptr;
     napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager));
     if (manager != nullptr) {
-        manager->DeleteListener(event, params[1]);
+        if (paramsCount == EVENT_PARAM_NUM) {
+            manager->DeleteListener(event, params[1]);
+        } else {
+            manager->DeleteListener(event);
+        }
     }
 
     return NapiUtils::GetUndefined(env);

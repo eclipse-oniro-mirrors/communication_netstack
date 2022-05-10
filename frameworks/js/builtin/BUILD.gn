@@ -15,53 +15,52 @@ import("//build/lite/config/component/lite_component.gni")
 import("//build/lite/ndk/ndk.gni")
 
 http_lite_sources = [
-    "fetch_module.cpp",
-    "http_request/http_request.cpp",
-    "http_request/http_constant.cpp",
-    "http_request/http_async_callback.cpp",
-    "http_request/response_data.cpp",
-    "http_request/request_data.cpp",
-    "http_request/http_request_utils.cpp",
+  "fetch_module.cpp",
+  "http_request/http_async_callback.cpp",
+  "http_request/http_constant.cpp",
+  "http_request/http_request.cpp",
+  "http_request/http_request_utils.cpp",
+  "http_request/request_data.cpp",
+  "http_request/response_data.cpp",
 ]
 
 http_lite_include_dirs = [
-    "//foundation/communication/netstack/http_lite/frameworks/js/builtin",
+  "//foundation/communication/netstack/http_lite/frameworks/js/builtin",
 
-    "//third_party/curl/include",
-    "//third_party/bounds_checking_function/include",
+  "//third_party/curl/include",
+  "//third_party/bounds_checking_function/include",
 
-    "//foundation/ace/ace_engine_lite/interfaces/innerkits/builtin/async",
-    "//foundation/ace/ace_engine_lite/interfaces/innerkits/builtin/jsi",
-    "//foundation/ace/ace_engine_lite/interfaces/innerkits/builtin/base",
+  "//foundation/ace/ace_engine_lite/interfaces/inner_api/builtin/async",
+  "//foundation/ace/ace_engine_lite/interfaces/inner_api/builtin/jsi",
+  "//foundation/ace/ace_engine_lite/interfaces/inner_api/builtin/base",
 
-    "//foundation/ace/ace_engine_lite/frameworks/common/utils",
-    "//foundation/ace/ace_engine_lite/frameworks/common/log",
+  "//foundation/ace/ace_engine_lite/frameworks/common/utils",
+  "//foundation/ace/ace_engine_lite/frameworks/common/log",
 
-    "//base/hiviewdfx/hilog_lite/interfaces/native/kits",
-    "//foundation/ace/ace_engine_lite/frameworks/targets/liteos_a",
+  "//base/hiviewdfx/hilog_lite/interfaces/native/kits",
+  "//foundation/ace/ace_engine_lite/frameworks/targets/liteos_a",
 ]
 
 config("http_lite_config") {
-    include_dirs = http_lite_include_dirs
-    defines = ["NO_SSL_CERTIFICATION=1"]
+  include_dirs = http_lite_include_dirs
+  defines = [ "NO_SSL_CERTIFICATION=1" ]
 }
 
 lite_library("http_lite_shared") {
-    target_type = "shared_library"
-    sources = http_lite_sources
-    public_configs = [":http_lite_config"]
-    output_name = "http_lite"
-    deps = [
-        "//third_party/curl:libcurl_shared",
-        "//third_party/bounds_checking_function:libsec_shared",
-        "//foundation/ace/ace_engine_lite/frameworks/common:ace_common_lite",
-    ]
+  target_type = "shared_library"
+  sources = http_lite_sources
+  public_configs = [ ":http_lite_config" ]
+  output_name = "http_lite"
+  deps = [
+    "//foundation/ace/ace_engine_lite/frameworks/common:ace_common_lite",
+    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/curl:libcurl_shared",
+  ]
 }
 
 ndk_lib("http_lite_ndk") {
-    lib_extension = ".so"
-    deps = [":http_lite_shared"]
-    head_files = [
-        "//foundation/communication/netstack/http_lite/frameworks/js/builtin",
-    ]
+  lib_extension = ".so"
+  deps = [ ":http_lite_shared" ]
+  head_files =
+      [ "//foundation/communication/netstack/http_lite/frameworks/js/builtin" ]
 }

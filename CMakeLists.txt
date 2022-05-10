@@ -30,6 +30,8 @@ include_directories(utils/base_context/include)
 include_directories(utils/base_async_work/include)
 include_directories(utils/module_template/include)
 
+include_directories(../../../for_linux)
+
 include_directories(../../../utils/native/base/include/)
 
 include_directories(utils/log/include)
@@ -38,6 +40,8 @@ include_directories(../../../base/hiviewdfx/hilog/interfaces/native/innerkits/in
 include_directories(test/napi/common)
 
 include_directories(../../../foundation/ace/ace_engine/frameworks/base/utils)
+include_directories(../../../foundation/ace/napi/interfaces/inner_api)
+include_directories(../../../for_linux)
 
 include_directories(../../../third_party/quickjs)
 
@@ -60,4 +64,6 @@ link_directories(cmake-build-debug/utils)
 add_subdirectory(utils)
 add_subdirectory(test/napi/http)
 add_subdirectory(test/napi/socket)
+add_subdirectory(test/napi/fetch)
+add_subdirectory(test/napi/websocket)
 add_subdirectory(test/utils/napi_utils/unittest)

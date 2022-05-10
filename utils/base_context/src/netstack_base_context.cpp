@@ -26,7 +26,8 @@ BaseContext::BaseContext(napi_env env, EventManager *manager)
       errorCode_(0),
       callback_(nullptr),
       asyncWork_(nullptr),
-      deferred_(nullptr)
+      deferred_(nullptr),
+      needPromise_(true)
 {
 }
 
@@ -139,5 +140,20 @@ void BaseContext::Emit(const std::string &type, const std::pair<napi_value, napi
     if (manager_ != nullptr) {
         manager_->Emit(type, argv);
     }
+}
+
+void BaseContext::SetNeedPromise(bool needPromise)
+{
+    needPromise_ = needPromise;
+}
+
+bool BaseContext::IsNeedPromise() const
+{
+    return needPromise_;
+}
+
+EventManager *BaseContext::GetManager() const
+{
+    return manager_;
 }
 } // namespace OHOS::NetStack

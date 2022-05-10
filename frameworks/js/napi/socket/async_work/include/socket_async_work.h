@@ -17,17 +17,19 @@
 #define COMMUNICATIONNETSTACK_SOCKET_ASYNC_WORK_H
 
 #include "napi/native_api.h"
-#include "noncopyable.h"
+#include "nocopyable.h"
 
 namespace OHOS::NetStack {
 class SocketAsyncWork final {
 public:
-    ACE_DISALLOW_COPY_AND_MOVE(SocketAsyncWork);
+    DISALLOW_COPY_AND_MOVE(SocketAsyncWork);
 
     /* executor */
-    static void ExecBind(napi_env env, void *data);
+    static void ExecUdpBind(napi_env env, void *data);
 
     static void ExecUdpSend(napi_env env, void *data);
+
+    static void ExecTcpBind(napi_env env, void *data);
 
     static void ExecConnect(napi_env env, void *data);
 
