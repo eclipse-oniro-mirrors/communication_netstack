@@ -30,9 +30,9 @@ http_lite_include_dirs = [
   "//third_party/curl/include",
   "//third_party/bounds_checking_function/include",
 
-  "//foundation/ace/ace_engine_lite/interfaces/inner_api/builtin/async",
-  "//foundation/ace/ace_engine_lite/interfaces/inner_api/builtin/jsi",
-  "//foundation/ace/ace_engine_lite/interfaces/inner_api/builtin/base",
+  "//foundation/ace/ace_engine_lite/interfaces/innerkits/builtin/async",
+  "//foundation/ace/ace_engine_lite/interfaces/innerkits/builtin/jsi",
+  "//foundation/ace/ace_engine_lite/interfaces/innerkits/builtin/base",
 
   "//foundation/ace/ace_engine_lite/frameworks/common/utils",
   "//foundation/ace/ace_engine_lite/frameworks/common/log",
