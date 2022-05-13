@@ -18,8 +18,8 @@ set(CMAKE_CXX_STANDARD 14)
 
 include_directories(test/include)
 
-include_directories(../../../../../arkui/ace_engine_lite/interfaces/innerkits/builtin/jsi)
-include_directories(../../../../../arkui/ace_engine_lite/interfaces/innerkits/builtin/async)
+include_directories(../../../../../arkui/ace_engine_lite/interfaces/inner_api/builtin/jsi)
+include_directories(../../../../../arkui/ace_engine_lite/interfaces/inner_api/builtin/async)
 
 include_directories(../../../../../arkui/ace_engine_lite/frameworks/common/utils)
 include_directories(../../../../../arkui/ace_engine_lite/frameworks/src/core/context)
