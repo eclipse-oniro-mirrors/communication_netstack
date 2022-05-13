@@ -16,6 +16,6 @@
 #ifndef TEST_OHOS_ACELITE_MEMORY_HEAP_H
 #define TEST_OHOS_ACELITE_MEMORY_HEAP_H
 
-#include "../../../../../../../arkui/ace_engine_lite/interfaces/innerkits/builtin/base/memory_heap.h"
+#include "../../../../../../../arkui/ace_engine_lite/interfaces/inner_api/builtin/base/memory_heap.h"
 
 #endif
