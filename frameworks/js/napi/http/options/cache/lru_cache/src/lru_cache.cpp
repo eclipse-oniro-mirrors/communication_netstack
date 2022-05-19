@@ -1,0 +1,200 @@
+/*
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <algorithm>
+#include <mutex>
+
+#include "lru_cache.h"
+#include "netstack_log.h"
+
+static constexpr const char *LRU_INDEX = "LRUIndex";
+static constexpr const int DECIMAL_BASE = 10;
+static constexpr const int MAX_SIZE = 1024 * 1024;
+static constexpr const size_t INVALID_SIZE = SIZE_MAX;
+
+namespace OHOS::NetStack {
+static size_t GetMapValueSize(const std::unordered_map<std::string, std::string> &m)
+{
+    size_t size = 0;
+    for (const auto &p : m) {
+        if (p.second.size() > MAX_SIZE) {
+            return INVALID_SIZE;
+        }
+        if (size + p.second.size() > MAX_SIZE) {
+            return INVALID_SIZE;
+        }
+        size += p.second.size();
+    }
+    if (size > MAX_SIZE || size == 0) {
+        return INVALID_SIZE;
+    }
+    return size;
+}
+
+LRUCache::Node::Node(std::string key, std::unordered_map<std::string, std::string> value)
+    : key(std::move(key)), value(std::move(value))
+{
+}
+
+LRUCache::LRUCache() : capacity_(MAX_SIZE), size_(0) {}
+
+LRUCache::LRUCache(size_t capacity) : capacity_(std::min<size_t>(MAX_SIZE, capacity)), size_(0) {}
+
+void LRUCache::AddNode(const Node &node)
+{
+    // 添加至双向链表的头部
+    // 添加进哈希表
+    // size_递增
+    nodeList_.emplace_front(node);
+    cache_[node.key] = nodeList_.begin();
+    size_ += GetMapValueSize(node.value);
+}
+
+void LRUCache::MoveNodeToHead(const std::list<Node>::iterator &it)
+{
+    std::string key = it->key;
+    std::unordered_map<std::string, std::string> value = it->value;
+    nodeList_.erase(it);
+    nodeList_.emplace_front(key, value);
+    cache_[key] = nodeList_.begin();
+}
+
+void LRUCache::EraseTailNode()
+{
+    if (nodeList_.empty()) {
+        return;
+    }
+    Node node = nodeList_.back();
+    nodeList_.pop_back();
+    cache_.erase(node.key);
+    size_ -= GetMapValueSize(node.value);
+}
+
+std::unordered_map<std::string, std::string> LRUCache::Get(const std::string &key)
+{
+    if (cache_.find(key) == cache_.end()) {
+        return {};
+    }
+    // 如果 key 存在，先通过哈希表定位，再移到头部
+    auto it = cache_[key];
+    auto value = it->value;
+    MoveNodeToHead(it);
+    return value;
+}
+
+void LRUCache::Put(const std::string &key, const std::unordered_map<std::string, std::string> &value)
+{
+    if (GetMapValueSize(value) == INVALID_SIZE) {
+        NETSTACK_LOGE("value is too long can not insert to cache");
+        return;
+    }
+
+    if (cache_.find(key) == cache_.end()) {
+        AddNode(Node(key, value));
+        while (size_ > capacity_) {
+            // 如果超出容量，删除双向链表的尾部节点
+            // 删除哈希表中对应的项
+            EraseTailNode();
+        }
+        return;
+    }
+
+    // 如果 key 存在，先通过哈希表定位，再修改 value，并移到头部
+    // 如果 key 存在，先通过哈希表定位，再移到头部
+    auto it = cache_[key];
+
+    size_ -= GetMapValueSize(it->value);
+    it->value = value;
+    size_ += GetMapValueSize(it->value);
+
+    MoveNodeToHead(it);
+    while (size_ > capacity_) {
+        // 如果超出容量，删除双向链表的尾部节点
+        // 删除哈希表中对应的项
+        EraseTailNode();
+    }
+}
+
+void LRUCache::MergeOtherCache(const LRUCache &other)
+{
+    if (other.nodeList_.empty()) {
+        return;
+    }
+    // 倒序插入，后插入的新鲜度最高
+    auto reverseList = other.nodeList_;
+    reverseList.reverse();
+    for (const auto &node : reverseList) {
+        Put(node.key, node.value);
+    }
+}
+
+Json::Value LRUCache::WriteCacheToJsonValue()
+{
+    Json::Value root;
+
+    int index = 0;
+    for (const auto &node : nodeList_) {
+        root[node.key] = Json::Value();
+        for (const auto &p : node.value) {
+            root[node.key][p.first] = p.second;
+        }
+        root[node.key][LRU_INDEX] = std::to_string(index);
+        ++index;
+    }
+    return root;
+}
+
+void LRUCache::ReadCacheFromJsonValue(const Json::Value &root)
+{
+    std::vector<Node> nodeVec;
+    for (auto it = root.begin(); it != root.end(); ++it) {
+        if (!it.key().isString()) {
+            continue;
+        }
+        Json::Value value = root[it.key().asString()];
+        if (!value.isObject()) {
+            continue;
+        }
+
+        std::unordered_map<std::string, std::string> m;
+        for (auto innerIt = value.begin(); innerIt != value.end(); ++innerIt) {
+            if (!innerIt.key().isString()) {
+                continue;
+            }
+            Json::Value innerValue = root[it.key().asString()][innerIt.key().asString()];
+            if (!innerValue.isString()) {
+                continue;
+            }
+
+            m[innerIt.key().asString()] = innerValue.asString();
+        }
+
+        if (m.find(LRU_INDEX) != m.end()) {
+            nodeVec.emplace_back(it.key().asString(), m);
+        }
+    }
+    std::sort(nodeVec.begin(), nodeVec.end(), [](Node &a, Node &b) {
+        // 倒序排列，调用Put变回正序
+        return std::strtol(a.value[LRU_INDEX].c_str(), nullptr, DECIMAL_BASE) >
+               std::strtol(b.value[LRU_INDEX].c_str(), nullptr, DECIMAL_BASE);
+    });
+    for (auto &node : nodeVec) {
+        node.value.erase(LRU_INDEX);
+        if (!node.value.empty()) {
+            Put(node.key, node.value);
+        }
+    }
+}
+} // namespace OHOS::NetStack

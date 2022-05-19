@@ -17,8 +17,14 @@ include_directories(../../../frameworks/js/napi/http/http_exec/include)
 include_directories(../../../frameworks/js/napi/http/constant/include)
 include_directories(../../../frameworks/js/napi/http/async_context/include)
 include_directories(../../../frameworks/js/napi/http/options/include)
+include_directories(../../../frameworks/js/napi/http/options/cache/lru_cache/include)
+include_directories(../../../frameworks/js/napi/http/options/cache/md5/include)
+include_directories(../../../frameworks/js/napi/http/options/cache/base64/include)
+include_directories(../../../frameworks/js/napi/http/options/cache/cache_proxy/include)
 
 include_directories(../../../../../../third_party/curl/include)
+include_directories(../../../../../../third_party/glib/glib/)
+include_directories(../../../../../../third_party/glib/)
 
 link_directories(../../../../../../third_party/curl/cmake-build-debug/lib)
 
@@ -33,7 +39,12 @@ add_executable(
     ../../../frameworks/js/napi/http/async_work/src/http_async_work.cpp
     ../../../frameworks/js/napi/http/options/src/http_response.cpp
     ../../../frameworks/js/napi/http/options/src/http_request_options.cpp
+    ../../../frameworks/js/napi/http/options/cache/lru_cache/src/lru_cache.cpp
     ../../../frameworks/js/napi/http/http_exec/src/http_exec.cpp
+    ../../../frameworks/js/napi/http/options/cache/lru_cache/src/lru_cache_disk_handler.cpp
+    ../../../frameworks/js/napi/http/options/cache/lru_cache/src/disk_handler.cpp
+    ../../../frameworks/js/napi/http/options/cache/md5/src/calculate_md5.cpp
+    ../../../frameworks/js/napi/http/options/cache/base64/src/base64_utils.cpp
 )
 
 target_link_libraries(test_napi_http_exec curl-d)
