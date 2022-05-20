@@ -15,9 +15,10 @@
 
 #include <memory>
 
-#include "base64_utils.h"
 #include "glib.h"
 #include "netstack_log.h"
+
+#include "base64_utils.h"
 
 namespace OHOS::NetStack::Base64 {
 std::string Encode(const std::string &source)

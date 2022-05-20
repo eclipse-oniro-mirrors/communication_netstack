@@ -24,15 +24,6 @@ static constexpr const int MAX_DISK_CACHE_SIZE = 1024 * 1024 * 5;
 
 namespace OHOS::NetStack {
 class LRUCacheDiskHandler {
-private:
-    LRUCache cache_;
-    DiskHandler diskHandler_;
-    size_t capacity_;
-
-    Json::Value ReadJsonValueFromFile();
-
-    void WriteJsonValueToFile(const Json::Value &root);
-
 public:
     LRUCacheDiskHandler() = delete;
 
@@ -45,6 +36,15 @@ public:
     std::unordered_map<std::string, std::string> Get(const std::string &key);
 
     void Put(const std::string &key, const std::unordered_map<std::string, std::string> &value);
+
+private:
+    LRUCache cache_;
+    DiskHandler diskHandler_;
+    size_t capacity_;
+
+    Json::Value ReadJsonValueFromFile();
+
+    void WriteJsonValueToFile(const Json::Value &root);
 };
 } // namespace OHOS::NetStack
 #endif /* COMMUNICATIONNETSTACK_LRU_CACHE_DISK_HANDLER_H */

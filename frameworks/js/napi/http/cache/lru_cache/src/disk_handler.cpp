@@ -28,15 +28,6 @@ DiskHandler::DiskHandler(std::string fileName) : fileName_(std::move(fileName)) 
 
 void DiskHandler::Write(const std::string &str)
 {
-    char buffer[500] = {0};
-    getcwd(buffer, sizeof(buffer));
-    if (strlen(buffer)) {
-        NETSTACK_LOGI("pwd: %{public}s", buffer);
-    } else {
-        NETSTACK_LOGI("pwd: can not get pwd");
-    }
-
-
     int fd = open(fileName_.c_str(), O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
     if (fd < 0) {
         NETSTACK_LOGE("errmsg: Write open [%{public}d] %{public}s|\n", errno, strerror(errno));
@@ -80,7 +71,7 @@ std::string DiskHandler::Read()
         return {};
     }
 
-    std::unique_ptr<char> mem = std::unique_ptr<char>(new char[buf.st_size]);
+    auto mem = std::make_unique<char>(buf.st_size);
     if (read(fd, mem.get(), buf.st_size) < 0) {
         NETSTACK_LOGE("errmsg: Read read [%{public}d] %{public}s|\n", errno, strerror(errno));
     }

@@ -13,12 +13,11 @@
  * limitations under the License.
  */
 
-#include <chrono>
-#include <fstream>
 #include <thread>
 
-#include "lru_cache_disk_handler.h"
 #include "netstack_log.h"
+
+#include "lru_cache_disk_handler.h"
 
 static constexpr const int WRITE_INTERVAL = 5 * 1000;
 

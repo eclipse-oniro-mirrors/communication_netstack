@@ -22,11 +22,6 @@
 
 namespace OHOS::NetStack {
 class DiskHandler final {
-private:
-    DISALLOW_COPY_AND_MOVE(DiskHandler);
-
-    std::string fileName_;
-
 public:
     DiskHandler() = delete;
 
@@ -35,6 +30,11 @@ public:
     void Write(const std::string &str);
 
     [[nodiscard]] std::string Read();
+
+private:
+    DISALLOW_COPY_AND_MOVE(DiskHandler);
+
+    std::string fileName_;
 };
 } // namespace OHOS::NetStack
 #endif /* COMMUNICATIONNETSTACK_DISK_HANDLER_H */

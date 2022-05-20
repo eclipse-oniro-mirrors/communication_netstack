@@ -39,7 +39,5 @@ public:
 
     void WriteResponseToCache(const HttpResponse &response);
 };
-
 } // namespace OHOS::NetStack
-
 #endif // COMMUNICATIONNETSTACK_CACHE_PROXY_H

@@ -25,9 +25,26 @@
 
 namespace OHOS::NetStack {
 class LRUCache {
-    DISALLOW_COPY_AND_MOVE(LRUCache);
+public:
+    LRUCache();
+
+    explicit LRUCache(size_t capacity);
+
+    std::unordered_map<std::string, std::string> Get(const std::string &key);
+
+    void Put(const std::string &key, const std::unordered_map<std::string, std::string> &value);
+
+    void MergeOtherCache(const LRUCache &other);
+
+    Json::Value WriteCacheToJsonValue();
+
+    void ReadCacheFromJsonValue(const Json::Value &root);
+
+    void Clear();
 
 private:
+    DISALLOW_COPY_AND_MOVE(LRUCache);
+
     struct Node {
         std::string key;
         std::unordered_map<std::string, std::string> value;
@@ -48,23 +65,6 @@ private:
     std::list<Node> nodeList_;
     size_t capacity_;
     size_t size_;
-
-public:
-    LRUCache();
-
-    explicit LRUCache(size_t capacity);
-
-    std::unordered_map<std::string, std::string> Get(const std::string &key);
-
-    void Put(const std::string &key, const std::unordered_map<std::string, std::string> &value);
-
-    void MergeOtherCache(const LRUCache &other);
-
-    Json::Value WriteCacheToJsonValue();
-
-    void ReadCacheFromJsonValue(const Json::Value &root);
-
-    void Clear();
 };
 } // namespace OHOS::NetStack
 #endif /* COMMUNICATIONNETSTACK_LRU_CACHE_H */
