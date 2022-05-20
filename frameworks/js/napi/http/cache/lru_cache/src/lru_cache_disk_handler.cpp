@@ -30,13 +30,10 @@ LRUCacheDiskHandler::LRUCacheDiskHandler(std::string fileName, size_t capacity)
     ReadCacheFromJsonFile();
     // 起线程每一分钟讲内存缓存持久化
     std::thread([this]() {
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "EndlessLoop"
         while (true) {
             std::this_thread::sleep_for(std::chrono::milliseconds(WRITE_INTERVAL));
             WriteCacheToJsonFile();
         }
-#pragma clang diagnostic pop
     }).detach();
 }
 
