@@ -16,7 +16,7 @@
 #include "disk_handler.h"
 #include "netstack_log.h"
 
-#include <errno.h>
+#include <cerrno>
 #include <fcntl.h>
 #include <memory>
 #include <sys/file.h>
@@ -28,7 +28,7 @@ DiskHandler::DiskHandler(std::string fileName) : fileName_(std::move(fileName)) 
 
 void DiskHandler::Write(const std::string &str)
 {
-    int fd = open(fileName_.c_str(), O_CREAT | O_WRONLY);
+    int fd = open(fileName_.c_str(), O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
     if (fd < 0) {
         NETSTACK_LOGE("errmsg: Write open [%{public}d] %{public}s|\n", errno, strerror(errno));
         return;
