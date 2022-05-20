@@ -26,7 +26,7 @@
 #include "request_context.h"
 
 static constexpr const char *KEY_RANGE = "range";
-static constexpr const char *CACHE_FILE = "./cache.json";
+static constexpr const char *CACHE_FILE = "/data/storage/el2/base/cache.json";
 
 namespace OHOS::NetStack {
 static LRUCacheDiskHandler DISK_LRU_CACHE(CACHE_FILE, MAX_DISK_CACHE_SIZE); // NOLINT(cert-err58-cpp)
