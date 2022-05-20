@@ -13,30 +13,25 @@
  * limitations under the License.
  */
 
-#ifndef COMMUNICATIONNETSTACK_LRU_CACHE_DISK_HANDLER_H
-#define COMMUNICATIONNETSTACK_LRU_CACHE_DISK_HANDLER_H
+#ifndef COMMUNICATIONNETSTACK_CACHE_STRATEGY_H
+#define COMMUNICATIONNETSTACK_CACHE_STRATEGY_H
 
-#include "disk_handler.h"
-#include "lru_cache.h"
-#include "nocopyable.h"
+#include "http_request_options.h"
+#include "http_response.h"
 
 namespace OHOS::NetStack {
-class LRUCacheDiskHandler {
-private:
-    LRUCache &cache_;
-    DiskHandler diskHandler_;
-    size_t capacity_;
+enum class CacheStatus {
+    FRESH,
+    STATE,
+    TRANSPARENT [[maybe_unused]],
+};
 
-    Json::Value GetJsonValueFromFile();
-
+class CacheStrategy final {
 public:
-    LRUCacheDiskHandler() = delete;
+    static CacheStatus GetCacheStatus(const HttpRequestOptions &request, const HttpResponse &response);
 
-    LRUCacheDiskHandler(std::string fileName, LRUCache &cache, size_t capacity);
-
-    void WriteCacheToJsonFile();
-
-    void ReadCacheFromJsonFile();
+    static void SetHeaderForValidation(HttpRequestOptions &request, HttpResponse &response);
 };
 } // namespace OHOS::NetStack
-#endif /* COMMUNICATIONNETSTACK_LRU_CACHE_DISK_HANDLER_H */
+
+#endif /* COMMUNICATIONNETSTACK_CACHE_STRATEGY_H */

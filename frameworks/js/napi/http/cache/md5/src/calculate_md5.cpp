@@ -13,12 +13,25 @@
  * limitations under the License.
  */
 
-#ifndef COMMUNICATIONNETSTACK_CALCULATE_MD5_H
-#define COMMUNICATIONNETSTACK_CALCULATE_MD5_H
+#include "calculate_md5.h"
+#include "openssl/md5.h"
+#include "securec.h"
 
-#include <string>
+static constexpr const int HEX_LENGTH = 2;
 
 namespace OHOS::NetStack {
-std::string Calculate(const std::string &source);
+std::string CalculateMD5(const std::string &source)
+{
+    unsigned char md5[MD5_DIGEST_LENGTH] = {0};
+    (void)MD5(reinterpret_cast<const unsigned char *>(source.c_str()), source.size(), md5);
+    std::string str;
+    for (unsigned char i : md5) {
+        char s[HEX_LENGTH + 1] = {0};
+        if (sprintf_s(s, HEX_LENGTH + 1, "%02x", i) < 0) {
+            return {};
+        }
+        str += s;
+    }
+    return str;
+}
 } // namespace OHOS::NetStack
-#endif /* COMMUNICATIONNETSTACK_CALCULATE_MD5_H */

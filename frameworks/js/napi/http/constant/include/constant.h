@@ -71,6 +71,9 @@ public:
 
     static const char *const HTTP_CONTENT_TYPE_JPEG_STREAM;
     static const char *const HTTP_CONTENT_ENCODING_GZIP;
+
+    static const char *const REQUEST_TIME;
+    static const char *const RESPONSE_TIME;
 };
 } // namespace OHOS::NetStack
 

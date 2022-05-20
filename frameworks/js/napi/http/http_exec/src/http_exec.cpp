@@ -19,6 +19,7 @@
 #include <cstring>
 #include <memory>
 
+#include "cache_proxy.h"
 #include "constant.h"
 #include "event_list.h"
 #include "netstack_common_utils.h"
@@ -66,6 +67,11 @@ bool HttpExec::initialized_ = false;
 
 bool HttpExec::ExecRequest(RequestContext *context)
 {
+    CacheProxy proxy(context->options);
+    if (proxy.ReadResponseFromCache(context->response)) {
+        return true;
+    }
+
     if (!initialized_) {
         NETSTACK_LOGE("curl not init");
         return false;
@@ -111,6 +117,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
 
     context->response.SetResponseCode(responseCode);
     context->response.ParseHeaders();
+    proxy.WriteResponseToCache(context->response);
 
     return true;
 }

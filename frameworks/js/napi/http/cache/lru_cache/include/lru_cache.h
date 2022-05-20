@@ -43,6 +43,7 @@ private:
 
     void EraseTailNode();
 
+    std::mutex mutex_;
     std::unordered_map<std::string, std::list<Node>::iterator> cache_;
     std::list<Node> nodeList_;
     size_t capacity_;
@@ -62,6 +63,8 @@ public:
     Json::Value WriteCacheToJsonValue();
 
     void ReadCacheFromJsonValue(const Json::Value &root);
+
+    void Clear();
 };
 } // namespace OHOS::NetStack
 #endif /* COMMUNICATIONNETSTACK_LRU_CACHE_H */

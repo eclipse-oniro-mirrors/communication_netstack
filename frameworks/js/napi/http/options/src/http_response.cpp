@@ -79,4 +79,44 @@ const std::string &HttpResponse::GetCookies() const
 {
     return cookies_;
 }
+
+void HttpResponse::SetRawHeader(const std::string &header)
+{
+    rawHeader_ = header;
+}
+
+const std::string &HttpResponse::GetRawHeader() const
+{
+    return rawHeader_;
+}
+
+void HttpResponse::SetResult(const std::string &res)
+{
+    result_ = res;
+}
+
+void HttpResponse::SetCookies(const std::string &cookies)
+{
+    cookies_ = cookies;
+}
+
+void HttpResponse::SetRequestTime(const std::string &time)
+{
+    requestTime_ = time;
+}
+
+const std::string &HttpResponse::GetRequestTime() const
+{
+    return requestTime_;
+}
+
+void HttpResponse::SetResponseTime(const std::string &time)
+{
+    responseTime_ = time;
+}
+
+const std::string &HttpResponse::GetResponseTime() const
+{
+    return responseTime_;
+}
 } // namespace OHOS::NetStack

@@ -84,6 +84,8 @@ void LRUCache::EraseTailNode()
 
 std::unordered_map<std::string, std::string> LRUCache::Get(const std::string &key)
 {
+    std::lock_guard<std::mutex> guard(mutex_);
+
     if (cache_.find(key) == cache_.end()) {
         return {};
     }
@@ -96,8 +98,10 @@ std::unordered_map<std::string, std::string> LRUCache::Get(const std::string &ke
 
 void LRUCache::Put(const std::string &key, const std::unordered_map<std::string, std::string> &value)
 {
+    std::lock_guard<std::mutex> guard(mutex_);
+
     if (GetMapValueSize(value) == INVALID_SIZE) {
-        NETSTACK_LOGE("value is too long can not insert to cache");
+        NETSTACK_LOGE("value is invalid(0 or too long) can not insert to cache");
         return;
     }
 
@@ -129,11 +133,16 @@ void LRUCache::Put(const std::string &key, const std::unordered_map<std::string,
 
 void LRUCache::MergeOtherCache(const LRUCache &other)
 {
-    if (other.nodeList_.empty()) {
-        return;
+    std::list<Node> reverseList;
+    {
+        // set mutex in min scope
+        std::lock_guard<std::mutex> guard(mutex_);
+        if (other.nodeList_.empty()) {
+            return;
+        }
+        // 倒序插入，后插入的新鲜度最高
+        reverseList = other.nodeList_;
     }
-    // 倒序插入，后插入的新鲜度最高
-    auto reverseList = other.nodeList_;
     reverseList.reverse();
     for (const auto &node : reverseList) {
         Put(node.key, node.value);
@@ -145,13 +154,17 @@ Json::Value LRUCache::WriteCacheToJsonValue()
     Json::Value root;
 
     int index = 0;
-    for (const auto &node : nodeList_) {
-        root[node.key] = Json::Value();
-        for (const auto &p : node.value) {
-            root[node.key][p.first] = p.second;
+    {
+        // set mutex in min scope
+        std::lock_guard<std::mutex> guard(mutex_);
+        for (const auto &node : nodeList_) {
+            root[node.key] = Json::Value();
+            for (const auto &p : node.value) {
+                root[node.key][p.first] = p.second;
+            }
+            root[node.key][LRU_INDEX] = std::to_string(index);
+            ++index;
         }
-        root[node.key][LRU_INDEX] = std::to_string(index);
-        ++index;
     }
     return root;
 }
@@ -196,5 +209,12 @@ void LRUCache::ReadCacheFromJsonValue(const Json::Value &root)
             Put(node.key, node.value);
         }
     }
+}
+
+void LRUCache::Clear()
+{
+    std::lock_guard<std::mutex> guard(mutex_);
+    cache_.clear();
+    nodeList_.clear();
 }
 } // namespace OHOS::NetStack

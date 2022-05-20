@@ -59,4 +59,7 @@ const char *const HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM = "application/oc
 const char *const HttpConstant::HTTP_CONTENT_TYPE_JPEG_STREAM = "image/jpeg";
 
 const char *const HttpConstant::HTTP_CONTENT_ENCODING_GZIP = "gzip";
+
+const char *const HttpConstant::REQUEST_TIME = "requestTime";
+const char *const HttpConstant::RESPONSE_TIME = "responseTime";
 } // namespace OHOS::NetStack
