@@ -29,19 +29,19 @@ void DiskHandler::Write(const std::string &str)
 {
     int fd = open(fileName_.c_str(), O_CREAT | O_WRONLY);
     if (fd < 0) {
-        NETSTACK_LOGE("errmsg: [%{public}d] %{public}s|\n", errno, strerror(errno));
+        NETSTACK_LOGE("errmsg: Write open [%{public}d] %{public}s|\n", errno, strerror(errno));
         return;
     }
 
     int ret = flock(fd, LOCK_NB | LOCK_EX);
     if (ret < 0) {
-        NETSTACK_LOGE("errmsg: [%{public}d] %{public}s|\n", errno, strerror(errno));
+        NETSTACK_LOGE("errmsg: Write open [%{public}d] %{public}s|\n", errno, strerror(errno));
         close(fd);
         return;
     }
 
     if (write(fd, str.c_str(), str.size()) < 0) {
-        NETSTACK_LOGE("errmsg: [%{public}d] %{public}s|\n", errno, strerror(errno));
+        NETSTACK_LOGE("errmsg: Write open [%{public}d] %{public}s|\n", errno, strerror(errno));
     }
 
     flock(fd, LOCK_UN);
@@ -52,13 +52,13 @@ std::string DiskHandler::Read()
 {
     int fd = open(fileName_.c_str(), O_RDONLY);
     if (fd < 0) {
-        NETSTACK_LOGE("errmsg: [%{public}d] %{public}s|\n", errno, strerror(errno));
+        NETSTACK_LOGE("errmsg: Read open [%{public}d] %{public}s|\n", errno, strerror(errno));
         return {};
     }
 
     int ret = flock(fd, LOCK_NB | LOCK_EX);
     if (ret < 0) {
-        NETSTACK_LOGE("errmsg: [%{public}d] %{public}s|\n", errno, strerror(errno));
+        NETSTACK_LOGE("errmsg: Read flock [%{public}d] %{public}s|\n", errno, strerror(errno));
         close(fd);
         return {};
     }
@@ -72,7 +72,7 @@ std::string DiskHandler::Read()
 
     std::unique_ptr<char> mem = std::unique_ptr<char>(new char[buf.st_size]);
     if (read(fd, mem.get(), buf.st_size) < 0) {
-        NETSTACK_LOGE("errmsg: [%{public}d] %{public}s|\n", errno, strerror(errno));
+        NETSTACK_LOGE("errmsg: Read read [%{public}d] %{public}s|\n", errno, strerror(errno));
     }
 
     flock(fd, LOCK_UN);

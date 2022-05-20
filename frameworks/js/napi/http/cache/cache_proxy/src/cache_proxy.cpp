@@ -95,6 +95,6 @@ void CacheProxy::WriteResponseToCache(const HttpResponse &response)
     cacheResponse[HttpConstant::REQUEST_TIME] = Base64::Encode(response.GetRequestTime());
     cacheResponse[HttpConstant::RESPONSE_TIME] = Base64::Encode(response.GetResponseTime());
 
-    DISK_LRU_CACHE.Put(CalculateMD5(MakeKey()), cacheResponse);
+    DISK_LRU_CACHE.Put(MakeKey(), cacheResponse);
 }
 } // namespace OHOS::NetStack

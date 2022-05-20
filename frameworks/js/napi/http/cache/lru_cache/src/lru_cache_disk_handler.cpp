@@ -20,7 +20,7 @@
 #include "lru_cache_disk_handler.h"
 #include "netstack_log.h"
 
-static constexpr const int WRITE_INTERVAL = 60 * 1000;
+static constexpr const int WRITE_INTERVAL = 5 * 1000;
 
 namespace OHOS::NetStack {
 LRUCacheDiskHandler::LRUCacheDiskHandler(std::string fileName, size_t capacity)
