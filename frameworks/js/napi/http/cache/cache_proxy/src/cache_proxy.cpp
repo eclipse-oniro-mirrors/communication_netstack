@@ -57,6 +57,9 @@ bool CacheProxy::ReadResponseFromCache(HttpResponse &response)
     }
 
     auto responseFromCache = DISK_LRU_CACHE.Get(MakeKey());
+    if (responseFromCache.empty()) {
+        return false;
+    }
     HttpResponse cachedResponse;
     cachedResponse.SetRawHeader(Base64::Decode(responseFromCache[HttpConstant::RESPONSE_KEY_HEADER]));
     cachedResponse.SetResult(Base64::Decode(responseFromCache[HttpConstant::RESPONSE_KEY_RESULT]));
