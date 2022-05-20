@@ -19,10 +19,6 @@
 #include "glib.h"
 #include "netstack_log.h"
 
-static constexpr const size_t MAX_SOURCE_SIZE = 1024 * 1024;
-static constexpr const size_t MAX_ENCODED_SIZE = 1024 * 1024 * 2;
-static constexpr const size_t DOUBLE_LENGTH = 2;
-
 namespace OHOS::NetStack::Base64 {
 std::string Encode(const std::string &source)
 {
