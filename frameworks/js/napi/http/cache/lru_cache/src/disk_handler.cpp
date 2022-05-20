@@ -16,6 +16,7 @@
 #include "disk_handler.h"
 #include "netstack_log.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <memory>
 #include <sys/file.h>
