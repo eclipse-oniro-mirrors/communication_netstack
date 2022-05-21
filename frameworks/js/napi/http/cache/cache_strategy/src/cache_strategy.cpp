@@ -30,7 +30,7 @@ void CacheStrategy::SetHeaderForValidation(HttpRequestOptions &request, const Ht
 std::string CacheStrategy::GetNowTimeGMT()
 {
     auto now = std::chrono::system_clock::now();
-    auto timeSeconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+    time_t timeSeconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
     tm timeInfo = *gmtime(&timeSeconds);
     char s[MAX_TIME_LEN] = {0};
     if (strftime(s, sizeof(s), "%a, %d %b %Y %H:%M:%S GMT", &timeInfo) == 0) {
