@@ -40,6 +40,7 @@ public:
     static constexpr const char *INTERFACE_REQUEST_METHOD = "RequestMethod";
     static constexpr const char *INTERFACE_RESPONSE_CODE = "ResponseCode";
     static constexpr const char *INTERFACE_HTTP_REQUEST = "HttpRequest";
+    static constexpr const char *INTERFACE_HTTP_PROTOCOL = "HttpProtocol";
 
     static napi_value InitHttpModule(napi_env env, napi_value exports);
 
@@ -53,6 +54,8 @@ private:
     static void InitRequestMethod(napi_env env, napi_value exports);
 
     static void InitResponseCode(napi_env env, napi_value exports);
+
+    static void InitHttpProtocol(napi_env env, napi_value exports);
 };
 } // namespace OHOS::NetStack
 #endif // COMMUNICATIONNETSTACK_HTTP_MODULE_H
