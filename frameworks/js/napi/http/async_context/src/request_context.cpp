@@ -101,16 +101,15 @@ void RequestContext::ParseNumberOptions(napi_value optionsValue)
         options.SetConnectTimeout(HttpConstant::DEFAULT_CONNECT_TIMEOUT);
     }
 
-    options.SetIfModifiedSince(
-        NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_IF_MODIFIED_SINCE));
-    if (options.GetIfModifiedSince() == 0) {
-        options.SetIfModifiedSince(HttpConstant::DEFAULT_IF_MODIFIED_SINCE);
-    }
-
-    options.SetFixedLengthStreamingMode(
-        NapiUtils::GetInt32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_FIXED_LENGTH_STREAMING_MODE));
-    if (options.GetFixedLengthStreamingMode() == 0) {
-        options.SetFixedLengthStreamingMode(HttpConstant::DEFAULT_FIXED_LENGTH_STREAMING_MODE);
+    if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_PROTOCOL)) {
+        napi_value value = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_PROTOCOL);
+        if (NapiUtils::GetValueType(GetEnv(), value) == napi_number) {
+            uint32_t number = NapiUtils::GetUint32FromValue(GetEnv(), value);
+            if (number == static_cast<uint32_t>(HttpProtocol::HTTP1_1) ||
+                number == static_cast<uint32_t>(HttpProtocol::HTTP2)) {
+                options.SetUsingProtocol(static_cast<HttpProtocol>(number));
+            }
+        }
     }
 }
 

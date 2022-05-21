@@ -98,7 +98,9 @@ bool HttpExec::ExecRequest(RequestContext *context)
         return false;
     }
 
+    CacheProxy::SetRequestTimeForResponse(context->response);
     NETSTACK_CURL_EASY_PERFORM(handle.get(), context);
+    CacheProxy::SetResponseTimeForResponse(context->response);
 
     int32_t responseCode;
     NETSTACK_CURL_EASY_GET_INFO(handle.get(), CURLINFO_RESPONSE_CODE, &responseCode, context);
@@ -285,6 +287,8 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->options.GetBody().c_str(), context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->options.GetBody().size(), context);
     }
+
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTP_VERSION, context->options.GetHttpVersion(), context);
 
     return true;
 }

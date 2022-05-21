@@ -20,6 +20,50 @@
 #include <string>
 
 namespace OHOS::NetStack {
+enum class HttpProtocol {
+    HTTP1_1,
+    HTTP2,
+    HTTP_NONE, // default choose by curl
+};
+
+enum class ResponseCode {
+    OK = 200,
+    CREATED,
+    ACCEPTED,
+    NOT_AUTHORITATIVE,
+    NO_CONTENT,
+    RESET,
+    PARTIAL,
+    MULT_CHOICE = 300,
+    MOVED_PERM,
+    MOVED_TEMP,
+    SEE_OTHER,
+    NOT_MODIFIED,
+    USE_PROXY,
+    BAD_REQUEST = 400,
+    UNAUTHORIZED,
+    PAYMENT_REQUIRED,
+    FORBIDDEN,
+    NOT_FOUND,
+    BAD_METHOD,
+    NOT_ACCEPTABLE,
+    PROXY_AUTH,
+    CLIENT_TIMEOUT,
+    CONFLICT,
+    GONE,
+    LENGTH_REQUIRED,
+    PRECON_FAILED,
+    ENTITY_TOO_LARGE,
+    REQ_TOO_LONG,
+    UNSUPPORTED_TYPE,
+    INTERNAL_ERROR = 500,
+    NOT_IMPLEMENTED,
+    BAD_GATEWAY,
+    UNAVAILABLE,
+    GATEWAY_TIMEOUT,
+    VERSION,
+};
+
 class HttpRequestOptions final {
 public:
     HttpRequestOptions();
@@ -36,9 +80,7 @@ public:
 
     void SetConnectTimeout(uint32_t connectTimeout);
 
-    void SetIfModifiedSince(uint32_t ifModifiedSince);
-
-    void SetFixedLengthStreamingMode(int32_t fixedLengthStreamingMode);
+    void SetUsingProtocol(HttpProtocol httpProtocol);
 
     [[nodiscard]] const std::string &GetUrl() const;
 
@@ -52,9 +94,7 @@ public:
 
     [[nodiscard]] uint32_t GetConnectTimeout() const;
 
-    [[nodiscard]] uint32_t GetIfModifiedSince() const;
-
-    [[nodiscard]] int32_t GetFixedLengthStreamingMode() const;
+    [[nodiscard]] uint32_t GetHttpVersion() const;
 
 private:
     std::string url_;
@@ -69,9 +109,7 @@ private:
 
     uint32_t connectTimeout_;
 
-    uint32_t ifModifiedSince_;
-
-    int32_t fixedLengthStreamingMode_;
+    HttpProtocol usingProtocol_;
 };
 } // namespace OHOS::NetStack
 

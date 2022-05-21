@@ -13,7 +13,11 @@
  * limitations under the License.
  */
 
+#include <chrono>
+
 #include "cache_strategy.h"
+
+static constexpr const int MAX_TIME_LEN = 128;
 
 namespace OHOS::NetStack {
 CacheStatus CacheStrategy::GetCacheStatus(const HttpRequestOptions &request, const HttpResponse &response)
@@ -21,5 +25,17 @@ CacheStatus CacheStrategy::GetCacheStatus(const HttpRequestOptions &request, con
     return CacheStatus::FRESH;
 }
 
-void CacheStrategy::SetHeaderForValidation(HttpRequestOptions &request, HttpResponse &response) {}
+void CacheStrategy::SetHeaderForValidation(HttpRequestOptions &request, const HttpResponse &response) {}
+
+std::string CacheStrategy::GetNowTimeGMT()
+{
+    auto now = std::chrono::system_clock::now();
+    auto timeSeconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+    tm timeInfo = *gmtime(&timeSeconds);
+    char s[MAX_TIME_LEN] = {0};
+    if (strftime(s, sizeof(s), "%a, %d %b %Y %H:%M:%S GMT", &timeInfo) == 0) {
+        return {};
+    }
+    return s;
+}
 } // namespace OHOS::NetStack

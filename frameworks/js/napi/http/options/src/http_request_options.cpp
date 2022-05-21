@@ -13,18 +13,18 @@
  * limitations under the License.
  */
 
-#include "http_request_options.h"
-
 #include "constant.h"
+#include "curl/curl.h"
 #include "netstack_common_utils.h"
+
+#include "http_request_options.h"
 
 namespace OHOS::NetStack {
 HttpRequestOptions::HttpRequestOptions()
     : method_(HttpConstant::HTTP_METHOD_GET),
       readTimeout_(HttpConstant::DEFAULT_READ_TIMEOUT),
       connectTimeout_(HttpConstant::DEFAULT_CONNECT_TIMEOUT),
-      ifModifiedSince_(HttpConstant::DEFAULT_IF_MODIFIED_SINCE),
-      fixedLengthStreamingMode_(HttpConstant::DEFAULT_FIXED_LENGTH_STREAMING_MODE)
+      usingProtocol_(HttpProtocol::HTTP_NONE)
 {
     header_[CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE)] = HttpConstant::HTTP_CONTENT_TYPE_JSON; // default
 }
@@ -59,16 +59,6 @@ void HttpRequestOptions::SetConnectTimeout(uint32_t connectTimeout)
     connectTimeout_ = connectTimeout;
 }
 
-void HttpRequestOptions::SetIfModifiedSince(uint32_t ifModifiedSince)
-{
-    ifModifiedSince_ = ifModifiedSince;
-}
-
-void HttpRequestOptions::SetFixedLengthStreamingMode(int32_t fixedLengthStreamingMode)
-{
-    fixedLengthStreamingMode_ = fixedLengthStreamingMode;
-}
-
 const std::string &HttpRequestOptions::GetUrl() const
 {
     return url_;
@@ -99,13 +89,19 @@ uint32_t HttpRequestOptions::GetConnectTimeout() const
     return connectTimeout_;
 }
 
-uint32_t HttpRequestOptions::GetIfModifiedSince() const
+void HttpRequestOptions::SetUsingProtocol(HttpProtocol httpProtocol)
 {
-    return ifModifiedSince_;
+    usingProtocol_ = httpProtocol;
 }
 
-int32_t HttpRequestOptions::GetFixedLengthStreamingMode() const
+uint32_t HttpRequestOptions::GetHttpVersion() const
 {
-    return fixedLengthStreamingMode_;
+    if (usingProtocol_ == HttpProtocol::HTTP2) {
+        return CURL_HTTP_VERSION_2_0;
+    }
+    if (usingProtocol_ == HttpProtocol::HTTP1_1) {
+        return CURL_HTTP_VERSION_1_1;
+    }
+    return CURL_HTTP_VERSION_NONE;
 }
 } // namespace OHOS::NetStack

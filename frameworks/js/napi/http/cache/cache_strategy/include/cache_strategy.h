@@ -30,7 +30,9 @@ class CacheStrategy final {
 public:
     static CacheStatus GetCacheStatus(const HttpRequestOptions &request, const HttpResponse &response);
 
-    static void SetHeaderForValidation(HttpRequestOptions &request, HttpResponse &response);
+    static void SetHeaderForValidation(HttpRequestOptions &request, const HttpResponse &response);
+
+    static std::string GetNowTimeGMT();
 };
 } // namespace OHOS::NetStack
 

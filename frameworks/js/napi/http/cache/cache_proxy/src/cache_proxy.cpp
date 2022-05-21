@@ -20,7 +20,6 @@
 #include "constant.h"
 #include "curl/curl.h"
 #include "http_exec.h"
-#include "http_module.h"
 #include "lru_cache_disk_handler.h"
 #include "netstack_common_utils.h"
 #include "request_context.h"
@@ -77,8 +76,7 @@ bool CacheProxy::ReadResponseFromCache(HttpResponse &response)
         CacheStrategy::SetHeaderForValidation(requestOptions_, cachedResponse);
         RequestContext context(nullptr, nullptr);
         HttpExec::ExecRequest(&context);
-        if (context.response.GetResponseCode() ==
-            static_cast<uint32_t>(HttpModuleExports::ResponseCode::NOT_MODIFIED)) {
+        if (context.response.GetResponseCode() == static_cast<uint32_t>(ResponseCode::NOT_MODIFIED)) {
             response = cachedResponse;
         } else {
             response = context.response;
@@ -99,5 +97,15 @@ void CacheProxy::WriteResponseToCache(const HttpResponse &response)
     cacheResponse[HttpConstant::RESPONSE_TIME] = Base64::Encode(response.GetResponseTime());
 
     DISK_LRU_CACHE.Put(MakeKey(), cacheResponse);
+}
+
+void CacheProxy::SetRequestTimeForResponse(HttpResponse &response)
+{
+    response.SetRequestTime(CacheStrategy::GetNowTimeGMT());
+}
+
+void CacheProxy::SetResponseTimeForResponse(HttpResponse &response)
+{
+    response.SetResponseTime(CacheStrategy::GetNowTimeGMT());
 }
 } // namespace OHOS::NetStack

@@ -38,6 +38,10 @@ public:
     bool ReadResponseFromCache(HttpResponse &response);
 
     void WriteResponseToCache(const HttpResponse &response);
+
+    static void SetRequestTimeForResponse(HttpResponse &response);
+
+    static void SetResponseTimeForResponse(HttpResponse &response);
 };
 } // namespace OHOS::NetStack
 #endif // COMMUNICATIONNETSTACK_CACHE_PROXY_H
