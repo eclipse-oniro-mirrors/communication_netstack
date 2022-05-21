@@ -31,7 +31,10 @@ std::string CacheStrategy::GetNowTimeGMT()
 {
     auto now = std::chrono::system_clock::now();
     time_t timeSeconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
-    tm timeInfo = *gmtime(&timeSeconds);
+    tm timeInfo = {0};
+    if (gmtime_r(&timeSeconds, &timeInfo) == nullptr) {
+        return {};
+    }
     char s[MAX_TIME_LEN] = {0};
     if (strftime(s, sizeof(s), "%a, %d %b %Y %H:%M:%S GMT", &timeInfo) == 0) {
         return {};
