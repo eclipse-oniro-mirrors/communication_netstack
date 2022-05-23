@@ -73,6 +73,7 @@ void HttpModuleExports::InitHttpProperties(napi_env env, napi_value exports)
 
     InitRequestMethod(env, exports);
     InitResponseCode(env, exports);
+    InitHttpProtocol(env, exports);
 }
 
 void HttpModuleExports::InitRequestMethod(napi_env env, napi_value exports)

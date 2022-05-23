@@ -16,6 +16,7 @@
 #include "constant.h"
 #include "curl/curl.h"
 #include "netstack_common_utils.h"
+#include "netstack_log.h"
 
 #include "http_request_options.h"
 
@@ -97,11 +98,14 @@ void HttpRequestOptions::SetUsingProtocol(HttpProtocol httpProtocol)
 uint32_t HttpRequestOptions::GetHttpVersion() const
 {
     if (usingProtocol_ == HttpProtocol::HTTP2) {
+        NETSTACK_LOGI("CURL_HTTP_VERSION_2_0");
         return CURL_HTTP_VERSION_2_0;
     }
     if (usingProtocol_ == HttpProtocol::HTTP1_1) {
+        NETSTACK_LOGI("CURL_HTTP_VERSION_1_1");
         return CURL_HTTP_VERSION_1_1;
     }
+    NETSTACK_LOGI("CURL_HTTP_VERSION_NONE");
     return CURL_HTTP_VERSION_NONE;
 }
 } // namespace OHOS::NetStack

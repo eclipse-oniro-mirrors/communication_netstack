@@ -104,6 +104,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
 
     int32_t responseCode;
     NETSTACK_CURL_EASY_GET_INFO(handle.get(), CURLINFO_RESPONSE_CODE, &responseCode, context);
+    NETSTACK_LOGI("responseCode is %{public}d", responseCode);
 
     struct curl_slist *cookies = nullptr;
     NETSTACK_CURL_EASY_GET_INFO(handle.get(), CURLINFO_COOKIELIST, &cookies, context);
@@ -119,7 +120,10 @@ bool HttpExec::ExecRequest(RequestContext *context)
 
     context->response.SetResponseCode(responseCode);
     context->response.ParseHeaders();
-    proxy.WriteResponseToCache(context->response);
+    if (context->response.GetResponseCode() == static_cast<uint32_t>(ResponseCode::OK)) {
+        NETSTACK_LOGI("response code is 200, we write it to cache");
+        proxy.WriteResponseToCache(context->response);
+    }
 
     return true;
 }

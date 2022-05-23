@@ -15,17 +15,34 @@
 
 #include <chrono>
 
+#include "constant.h"
+
 #include "cache_strategy.h"
 
 static constexpr const int MAX_TIME_LEN = 128;
+static constexpr const char *KEY_RANGE = "range";
 
 namespace OHOS::NetStack {
-CacheStatus CacheStrategy::GetCacheStatus(const HttpRequestOptions &request, const HttpResponse &response)
+CacheStrategy::CacheStrategy(HttpRequestOptions &requestOptions) : requestOptions_(requestOptions) {}
+
+CacheStatus CacheStrategy::GetCacheStatus(const HttpResponse &response)
 {
     return CacheStatus::FRESH;
 }
 
-void CacheStrategy::SetHeaderForValidation(HttpRequestOptions &request, const HttpResponse &response) {}
+void CacheStrategy::SetHeaderForValidation(const HttpResponse &response) {}
+
+bool CacheStrategy::CouldUseCache()
+{
+    return requestOptions_.GetMethod() == HttpConstant::HTTP_METHOD_GET ||
+           requestOptions_.GetMethod() == HttpConstant::HTTP_METHOD_HEAD ||
+           requestOptions_.GetHeader().find(KEY_RANGE) != requestOptions_.GetHeader().end();
+}
+
+bool CacheStrategy::CouldCache(const HttpResponse &response)
+{
+    return true;
+}
 
 std::string CacheStrategy::GetNowTimeGMT()
 {

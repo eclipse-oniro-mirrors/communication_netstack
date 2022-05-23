@@ -26,14 +26,14 @@ class CacheProxy final {
 
     HttpRequestOptions &requestOptions_;
 
-    bool CouldUseCache();
+    CacheStrategy strategy_;
 
     std::string MakeKey();
 
 public:
     CacheProxy() = delete;
 
-    CacheProxy(HttpRequestOptions &requestOptions);
+    explicit CacheProxy(HttpRequestOptions &requestOptions);
 
     bool ReadResponseFromCache(HttpResponse &response);
 

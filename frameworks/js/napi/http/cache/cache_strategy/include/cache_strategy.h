@@ -27,10 +27,20 @@ enum class CacheStatus {
 };
 
 class CacheStrategy final {
-public:
-    static CacheStatus GetCacheStatus(const HttpRequestOptions &request, const HttpResponse &response);
+    HttpRequestOptions &requestOptions_;
 
-    static void SetHeaderForValidation(HttpRequestOptions &request, const HttpResponse &response);
+public:
+    CacheStrategy() = delete;
+
+    explicit CacheStrategy(HttpRequestOptions &requestOptions);
+
+    CacheStatus GetCacheStatus(const HttpResponse &response);
+
+    void SetHeaderForValidation(const HttpResponse &response);
+
+    bool CouldCache(const HttpResponse &response);
+
+    bool CouldUseCache();
 
     static std::string GetNowTimeGMT();
 };
