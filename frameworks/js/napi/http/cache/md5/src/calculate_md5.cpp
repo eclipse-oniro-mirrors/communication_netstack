@@ -27,7 +27,8 @@ std::string CalculateMD5(const std::string &source)
     std::string str;
     for (unsigned char i : md5) {
         char s[HEX_LENGTH + 1] = {0};
-        if (sprintf_s(s, HEX_LENGTH + 1, "%hhx", i) < 0) {
+        int d = i;
+        if (sprintf_s(s, HEX_LENGTH + 1, "%02x", d) < 0) {
             return {};
         }
         str += s;
