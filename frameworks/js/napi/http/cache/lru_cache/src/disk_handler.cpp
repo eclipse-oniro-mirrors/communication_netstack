@@ -71,7 +71,7 @@ std::string DiskHandler::Read()
         return {};
     }
 
-    auto mem = std::make_unique<char>(buf.st_size);
+    std::unique_ptr<char> mem(new char[buf.st_size]);
     if (read(fd, mem.get(), buf.st_size) < 0) {
         NETSTACK_LOGE("errmsg: Read read [%{public}d] %{public}s|\n", errno, strerror(errno));
     }
