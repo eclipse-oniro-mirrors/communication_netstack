@@ -67,13 +67,6 @@ bool HttpExec::initialized_ = false;
 
 bool HttpExec::ExecRequest(RequestContext *context)
 {
-#if HTTP_CAHCE_ENABLE
-    CacheProxy proxy(context->options);
-    if (proxy.ReadResponseFromCache(context->response)) {
-        return true;
-    }
-#endif
-
     if (!initialized_) {
         NETSTACK_LOGE("curl not init");
         return false;
@@ -122,12 +115,6 @@ bool HttpExec::ExecRequest(RequestContext *context)
 
     context->response.SetResponseCode(responseCode);
     context->response.ParseHeaders();
-#if HTTP_CAHCE_ENABLE
-    if (context->response.GetResponseCode() == static_cast<uint32_t>(ResponseCode::OK)) {
-        NETSTACK_LOGI("response code is 200, we write it to cache");
-        proxy.WriteResponseToCache(context->response);
-    }
-#endif
 
     return true;
 }
