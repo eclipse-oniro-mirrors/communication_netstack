@@ -30,9 +30,15 @@ public:
 
     void AppendRawHeader(const void *data, size_t length);
 
+    void SetRawHeader(const std::string &header);
+
     void SetResponseCode(uint32_t responseCode);
 
     void ParseHeaders();
+
+    void SetResult(const std::string &res);
+
+    void SetCookies(const std::string &cookies);
 
     void AppendCookies(const void *data, size_t length);
 
@@ -44,6 +50,16 @@ public:
 
     [[nodiscard]] const std::string &GetCookies() const;
 
+    [[nodiscard]] const std::string &GetRawHeader() const;
+
+    void SetRequestTime(const std::string &time);
+
+    [[nodiscard]] const std::string &GetRequestTime() const;
+
+    void SetResponseTime(const std::string &time);
+
+    [[nodiscard]] const std::string &GetResponseTime() const;
+
 private:
     std::string result_;
 
@@ -54,6 +70,10 @@ private:
     std::map<std::string, std::string> header_;
 
     std::string cookies_;
+
+    std::string requestTime_;
+
+    std::string responseTime_;
 };
 } // namespace OHOS::NetStack
 

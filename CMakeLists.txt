@@ -44,9 +44,11 @@ include_directories(../../../foundation/arkui/napi/interfaces/inner_api)
 include_directories(../../../for_linux)
 
 include_directories(../../../third_party/quickjs)
+include_directories(../../../third_party/openssl/include)
 
 include_directories(../../../third_party/googletest/googletest/include)
 include_directories(../../../third_party/libuv/include)
+include_directories(../../../third_party/jsoncpp/include)
 
 link_directories(../../../utils/native/base/cmake-build-debug/src/securec)
 

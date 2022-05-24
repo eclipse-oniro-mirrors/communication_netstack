@@ -27,16 +27,13 @@ const char *const HttpConstant::HTTP_METHOD_CONNECT = "CONNECT";
 
 const uint32_t HttpConstant::DEFAULT_READ_TIMEOUT = 60000;
 const uint32_t HttpConstant::DEFAULT_CONNECT_TIMEOUT = 60000;
-const uint32_t HttpConstant::DEFAULT_IF_MODIFIED_SINCE = 0;
-const int32_t HttpConstant::DEFAULT_FIXED_LENGTH_STREAMING_MODE = -1;
 
 const char *const HttpConstant::PARAM_KEY_METHOD = "method";
 const char *const HttpConstant::PARAM_KEY_EXTRA_DATA = "extraData";
 const char *const HttpConstant::PARAM_KEY_HEADER = "header";
 const char *const HttpConstant::PARAM_KEY_READ_TIMEOUT = "readTimeout";
 const char *const HttpConstant::PARAM_KEY_CONNECT_TIMEOUT = "connectTimeout";
-const char *const HttpConstant::PARAM_KEY_IF_MODIFIED_SINCE = "ifModifiedSince";
-const char *const HttpConstant::PARAM_KEY_FIXED_LENGTH_STREAMING_MODE = "fixedLengthStreamingMode";
+const char *const HttpConstant::PARAM_KEY_USING_PROTOCOL = "usingProtocol";
 
 const char *const HttpConstant::RESPONSE_KEY_RESULT = "result";
 const char *const HttpConstant::RESPONSE_KEY_RESPONSE_CODE = "responseCode";
@@ -59,4 +56,7 @@ const char *const HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM = "application/oc
 const char *const HttpConstant::HTTP_CONTENT_TYPE_JPEG_STREAM = "image/jpeg";
 
 const char *const HttpConstant::HTTP_CONTENT_ENCODING_GZIP = "gzip";
+
+const char *const HttpConstant::REQUEST_TIME = "requestTime";
+const char *const HttpConstant::RESPONSE_TIME = "responseTime";
 } // namespace OHOS::NetStack

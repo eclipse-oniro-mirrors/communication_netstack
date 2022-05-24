@@ -28,6 +28,9 @@
 #define DECLARE_REQUEST_METHOD(method) \
     DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::method, NapiUtils::CreateStringUtf8(env, HttpConstant::method))
 
+#define DECLARE_HTTP_PROTOCOL(protocol) \
+    DECLARE_NAPI_STATIC_PROPERTY(#protocol, NapiUtils::CreateUint32(env, static_cast<uint32_t>(HttpProtocol::protocol)))
+
 static constexpr const char *REQUEST_ASYNC_WORK_NAME = "ExecRequest";
 
 static constexpr const char *HTTP_MODULE_NAME = "net.http";
@@ -70,6 +73,7 @@ void HttpModuleExports::InitHttpProperties(napi_env env, napi_value exports)
 
     InitRequestMethod(env, exports);
     InitResponseCode(env, exports);
+    InitHttpProtocol(env, exports);
 }
 
 void HttpModuleExports::InitRequestMethod(napi_env env, napi_value exports)
@@ -131,6 +135,19 @@ void HttpModuleExports::InitResponseCode(napi_env env, napi_value exports)
     NapiUtils::DefineProperties(env, responseCode, properties);
 
     NapiUtils::SetNamedProperty(env, exports, INTERFACE_RESPONSE_CODE, responseCode);
+}
+
+void HttpModuleExports::InitHttpProtocol(napi_env env, napi_value exports)
+{
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_HTTP_PROTOCOL(HTTP1_1),
+        DECLARE_HTTP_PROTOCOL(HTTP2),
+    };
+
+    napi_value httpProtocol = NapiUtils::CreateObject(env);
+    NapiUtils::DefineProperties(env, httpProtocol, properties);
+
+    NapiUtils::SetNamedProperty(env, exports, INTERFACE_HTTP_PROTOCOL, httpProtocol);
 }
 
 napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_info info)

@@ -19,6 +19,7 @@
 #include <cstring>
 #include <memory>
 
+#include "cache_proxy.h"
 #include "constant.h"
 #include "event_list.h"
 #include "netstack_common_utils.h"
@@ -66,6 +67,11 @@ bool HttpExec::initialized_ = false;
 
 bool HttpExec::ExecRequest(RequestContext *context)
 {
+    CacheProxy proxy(context->options);
+    if (proxy.ReadResponseFromCache(context->response)) {
+        return true;
+    }
+
     if (!initialized_) {
         NETSTACK_LOGE("curl not init");
         return false;
@@ -92,10 +98,13 @@ bool HttpExec::ExecRequest(RequestContext *context)
         return false;
     }
 
+    CacheProxy::SetRequestTimeForResponse(context->response);
     NETSTACK_CURL_EASY_PERFORM(handle.get(), context);
+    CacheProxy::SetResponseTimeForResponse(context->response);
 
     int32_t responseCode;
     NETSTACK_CURL_EASY_GET_INFO(handle.get(), CURLINFO_RESPONSE_CODE, &responseCode, context);
+    NETSTACK_LOGI("responseCode is %{public}d", responseCode);
 
     struct curl_slist *cookies = nullptr;
     NETSTACK_CURL_EASY_GET_INFO(handle.get(), CURLINFO_COOKIELIST, &cookies, context);
@@ -111,6 +120,10 @@ bool HttpExec::ExecRequest(RequestContext *context)
 
     context->response.SetResponseCode(responseCode);
     context->response.ParseHeaders();
+    if (context->response.GetResponseCode() == static_cast<uint32_t>(ResponseCode::OK)) {
+        NETSTACK_LOGI("response code is 200, we write it to cache");
+        proxy.WriteResponseToCache(context->response);
+    }
 
     return true;
 }
@@ -278,6 +291,8 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->options.GetBody().c_str(), context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->options.GetBody().size(), context);
     }
+
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTP_VERSION, context->options.GetHttpVersion(), context);
 
     return true;
 }

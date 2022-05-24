@@ -22,9 +22,9 @@
 
 namespace OHOS::NetStack {
 class HttpConstant final {
-public:
     DISALLOW_COPY_AND_MOVE(HttpConstant);
 
+public:
     /* Http Method */
     static const char *const HTTP_METHOD_GET;
     static const char *const HTTP_METHOD_HEAD;
@@ -38,8 +38,6 @@ public:
     /* default options */
     static const uint32_t DEFAULT_READ_TIMEOUT;
     static const uint32_t DEFAULT_CONNECT_TIMEOUT;
-    static const uint32_t DEFAULT_IF_MODIFIED_SINCE;
-    static const int32_t DEFAULT_FIXED_LENGTH_STREAMING_MODE;
 
     /* options key */
     static const char *const PARAM_KEY_METHOD;
@@ -47,8 +45,7 @@ public:
     static const char *const PARAM_KEY_HEADER;
     static const char *const PARAM_KEY_READ_TIMEOUT;
     static const char *const PARAM_KEY_CONNECT_TIMEOUT;
-    static const char *const PARAM_KEY_IF_MODIFIED_SINCE;
-    static const char *const PARAM_KEY_FIXED_LENGTH_STREAMING_MODE;
+    static const char *const PARAM_KEY_USING_PROTOCOL;
 
     static const char *const RESPONSE_KEY_RESULT;
     static const char *const RESPONSE_KEY_RESPONSE_CODE;
@@ -71,6 +68,9 @@ public:
 
     static const char *const HTTP_CONTENT_TYPE_JPEG_STREAM;
     static const char *const HTTP_CONTENT_ENCODING_GZIP;
+
+    static const char *const REQUEST_TIME;
+    static const char *const RESPONSE_TIME;
 };
 } // namespace OHOS::NetStack
 
