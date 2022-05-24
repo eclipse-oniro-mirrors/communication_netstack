@@ -16,6 +16,7 @@
 #ifndef COMMUNICATIONNETSTACK_CACHE_PROXY_H
 #define COMMUNICATIONNETSTACK_CACHE_PROXY_H
 
+#include "cache_strategy.h"
 #include "http_request_options.h"
 #include "http_response.h"
 #include "nocopyable.h"

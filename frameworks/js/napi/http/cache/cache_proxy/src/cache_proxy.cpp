@@ -14,7 +14,6 @@
  */
 
 #include "base64_utils.h"
-#include "cache_strategy.h"
 #include "calculate_md5.h"
 #include "constant.h"
 #include "http_exec.h"
