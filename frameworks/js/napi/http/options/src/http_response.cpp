@@ -100,16 +100,6 @@ void HttpResponse::SetCookies(const std::string &cookies)
     cookies_ = cookies;
 }
 
-void HttpResponse::SetRequestTime(const std::string &time)
-{
-    requestTime_ = time;
-}
-
-const std::string &HttpResponse::GetRequestTime() const
-{
-    return requestTime_;
-}
-
 void HttpResponse::SetResponseTime(const std::string &time)
 {
     responseTime_ = time;
@@ -118,5 +108,10 @@ void HttpResponse::SetResponseTime(const std::string &time)
 const std::string &HttpResponse::GetResponseTime() const
 {
     return responseTime_;
+}
+
+void HttpResponse::SetWarning(const std::string &val)
+{
+    header_[WARNING] = val;
 }
 } // namespace OHOS::NetStack

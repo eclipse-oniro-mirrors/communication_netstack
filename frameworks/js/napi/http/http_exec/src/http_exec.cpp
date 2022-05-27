@@ -22,6 +22,7 @@
 #include "cache_proxy.h"
 #include "constant.h"
 #include "event_list.h"
+#include "http_time.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "netstack_napi_utils.h"
@@ -67,6 +68,12 @@ bool HttpExec::initialized_ = false;
 
 bool HttpExec::ExecRequest(RequestContext *context)
 {
+    context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
+    CacheProxy proxy(context->options);
+    if (proxy.ReadResponseFromCache(context->response)) {
+        return true;
+    }
+
     if (!initialized_) {
         NETSTACK_LOGE("curl not init");
         return false;
@@ -93,9 +100,8 @@ bool HttpExec::ExecRequest(RequestContext *context)
         return false;
     }
 
-    CacheProxy::SetRequestTimeForResponse(context->response);
     NETSTACK_CURL_EASY_PERFORM(handle.get(), context);
-    CacheProxy::SetResponseTimeForResponse(context->response);
+    context->response.SetResponseTime(HttpTime::GetNowTimeGMT());
 
     int32_t responseCode;
     NETSTACK_CURL_EASY_GET_INFO(handle.get(), CURLINFO_RESPONSE_CODE, &responseCode, context);
@@ -115,6 +121,10 @@ bool HttpExec::ExecRequest(RequestContext *context)
 
     context->response.SetResponseCode(responseCode);
     context->response.ParseHeaders();
+    if (context->response.GetResponseCode() == static_cast<uint32_t>(ResponseCode::OK)) {
+        NETSTACK_LOGI("response code is 200, we write it to cache");
+        proxy.WriteResponseToCache(context->response);
+    }
 
     return true;
 }

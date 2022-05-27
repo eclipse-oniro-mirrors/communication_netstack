@@ -60,21 +60,20 @@ bool CacheProxy::ReadResponseFromCache(HttpResponse &response)
     cachedResponse.SetRawHeader(Base64::Decode(responseFromCache[HttpConstant::RESPONSE_KEY_HEADER]));
     cachedResponse.SetResult(Base64::Decode(responseFromCache[HttpConstant::RESPONSE_KEY_RESULT]));
     cachedResponse.SetCookies(Base64::Decode(responseFromCache[HttpConstant::RESPONSE_KEY_COOKIES]));
-    cachedResponse.SetRequestTime(Base64::Decode(responseFromCache[HttpConstant::REQUEST_TIME]));
     cachedResponse.SetResponseTime(Base64::Decode(responseFromCache[HttpConstant::RESPONSE_TIME]));
     cachedResponse.SetResponseCode(static_cast<uint32_t>(ResponseCode::OK));
     cachedResponse.ParseHeaders();
 
-    CacheStatus status = strategy_.GetCacheStatus(cachedResponse);
+    CacheStatus status = strategy_.RunStrategy(cachedResponse);
     if (status == CacheStatus::FRESH) {
         response = cachedResponse;
         NETSTACK_LOGI("cache is FRESH");
         return true;
     }
-    if (status == CacheStatus::STATE) {
+    if (status == CacheStatus::STALE) {
         NETSTACK_LOGI("cache is STATE, we try to talk to the server");
-        strategy_.SetHeaderForValidation(cachedResponse);
         RequestContext context(nullptr, nullptr);
+        context.options = requestOptions_;
         HttpExec::ExecRequest(&context);
         if (context.response.GetResponseCode() == static_cast<uint32_t>(ResponseCode::NOT_MODIFIED)) {
             NETSTACK_LOGI("cache is NOT_MODIFIED, we use the cache");
@@ -92,7 +91,7 @@ bool CacheProxy::ReadResponseFromCache(HttpResponse &response)
 
 void CacheProxy::WriteResponseToCache(const HttpResponse &response)
 {
-    if (!strategy_.CouldCache(response)) {
+    if (!strategy_.IsCacheable(response)) {
         NETSTACK_LOGI("do not cache this response");
         return;
     }
@@ -100,19 +99,8 @@ void CacheProxy::WriteResponseToCache(const HttpResponse &response)
     cacheResponse[HttpConstant::RESPONSE_KEY_HEADER] = Base64::Encode(response.GetRawHeader());
     cacheResponse[HttpConstant::RESPONSE_KEY_RESULT] = Base64::Encode(response.GetResult());
     cacheResponse[HttpConstant::RESPONSE_KEY_COOKIES] = Base64::Encode(response.GetCookies());
-    cacheResponse[HttpConstant::REQUEST_TIME] = Base64::Encode(response.GetRequestTime());
     cacheResponse[HttpConstant::RESPONSE_TIME] = Base64::Encode(response.GetResponseTime());
 
     DISK_LRU_CACHE.Put(MakeKey(), cacheResponse);
-}
-
-void CacheProxy::SetRequestTimeForResponse(HttpResponse &response)
-{
-    response.SetRequestTime(CacheStrategy::GetNowTimeGMT());
-}
-
-void CacheProxy::SetResponseTimeForResponse(HttpResponse &response)
-{
-    response.SetResponseTime(CacheStrategy::GetNowTimeGMT());
 }
 } // namespace OHOS::NetStack

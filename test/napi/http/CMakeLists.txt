@@ -47,7 +47,11 @@ add_executable(
     ../../../frameworks/js/napi/http/cache/md5/src/calculate_md5.cpp
     ../../../frameworks/js/napi/http/cache/base64/src/base64_utils.cpp
     ../../../frameworks/js/napi/http/cache/cache_proxy/src/cache_proxy.cpp
-    ../../../frameworks/js/napi/http/cache/cache_strategy/src/cache_strategy.cpp)
+    ../../../frameworks/js/napi/http/cache/cache_strategy/src/http_cache_strategy.cpp
+    ../../../frameworks/js/napi/http/cache/cache_strategy/src/http_time.cpp
+    ../../../frameworks/js/napi/http/cache/cache_strategy/src/http_cache_request.cpp
+    ../../../frameworks/js/napi/http/cache/cache_strategy/src/http_cache_response.cpp
+)
 
 target_link_libraries(test_napi_http_exec curl-d)
 target_link_libraries(test_napi_http_exec ace_napi_quickjs)

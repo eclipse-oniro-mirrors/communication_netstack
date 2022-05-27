@@ -96,6 +96,10 @@ public:
 
     [[nodiscard]] uint32_t GetHttpVersion() const;
 
+    void SetRequestTime(const std::string &time);
+
+    [[nodiscard]] const std::string &GetRequestTime() const;
+
 private:
     std::string url_;
 
@@ -110,6 +114,8 @@ private:
     uint32_t connectTimeout_;
 
     HttpProtocol usingProtocol_;
+
+    std::string requestTime_;
 };
 } // namespace OHOS::NetStack
 
