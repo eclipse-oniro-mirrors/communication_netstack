@@ -58,14 +58,15 @@ std::vector<std::string> Split(const std::string &str, const std::string &sep, s
 std::string Strip(const std::string &str, char ch)
 {
     int64_t i = 0;
-    while (i < str.size() && str[i] == ch) {
+    while (static_cast<size_t>(i) < str.size() && str[i] == ch) {
         ++i;
     }
     int64_t j = static_cast<int64_t>(str.size()) - 1;
     while (j > 0 && str[j] == ch) {
         --j;
     }
-    if (i >= 0 && i < str.size() && j >= 0 && j < str.size() && j - i + 1 > 0) {
+    if (i >= 0 && static_cast<size_t>(i) < str.size() && j >= 0 && static_cast<size_t>(j) < str.size() &&
+        j - i + 1 > 0) {
         return str.substr(i, j - i + 1);
     }
     return "";

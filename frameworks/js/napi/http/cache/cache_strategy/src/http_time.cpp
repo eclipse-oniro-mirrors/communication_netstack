@@ -14,6 +14,7 @@
  */
 #include <chrono>
 #include <iomanip>
+#include <sstream>
 
 #include "http_time.h"
 
