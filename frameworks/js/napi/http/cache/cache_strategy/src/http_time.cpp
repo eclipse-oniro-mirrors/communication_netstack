@@ -15,11 +15,7 @@
 #include <chrono>
 #include <iomanip>
 
-#include "netstack_log.h"
-
 #include "http_time.h"
-
-static constexpr const int TIME_STR_LENGTH = 256;
 
 static constexpr const char *GMT_TIME = "%a, %d %b %Y %H:%M:%S GMT";
 
@@ -48,7 +44,7 @@ std::string HttpTime::GetNowTimeGMT()
     auto now = std::chrono::system_clock::now();
     time_t timeSeconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
     tm timeInfo = {0};
-    if (gmtime_r(&timeSeconds, &timeInfo) == 0) {
+    if (gmtime_r(&timeSeconds, &timeInfo) == nullptr) {
         return {};
     }
     char s[MAX_TIME_LEN] = {0};

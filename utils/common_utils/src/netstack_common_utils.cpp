@@ -23,7 +23,7 @@ std::vector<std::string> Split(const std::string &str, const std::string &sep)
     std::string s = str;
     std::vector<std::string> res;
     while (!s.empty()) {
-        size_t pos = s.find(sep);
+        auto pos = s.find(sep);
         if (pos == std::string::npos) {
             res.emplace_back(s);
             break;
@@ -44,7 +44,7 @@ std::vector<std::string> Split(const std::string &str, const std::string &sep, s
             break;
         }
 
-        size_t pos = s.find(sep);
+        auto pos = s.find(sep);
         if (pos == std::string::npos) {
             res.emplace_back(s);
             break;

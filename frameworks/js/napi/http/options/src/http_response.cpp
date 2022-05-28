@@ -44,7 +44,7 @@ void HttpResponse::ParseHeaders()
         if (CommonUtils::Strip(header).empty()) {
             continue;
         }
-        size_t index = header.find(HttpConstant::HTTP_HEADER_SEPARATOR);
+        auto index = header.find(HttpConstant::HTTP_HEADER_SEPARATOR);
         if (index == std::string::npos) {
             header_[CommonUtils::Strip(header)] = "";
             NETSTACK_LOGI("HEAD: %{public}s", CommonUtils::Strip(header).c_str());

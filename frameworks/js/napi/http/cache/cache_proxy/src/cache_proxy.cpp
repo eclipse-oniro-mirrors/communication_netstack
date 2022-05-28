@@ -16,11 +16,15 @@
 #include "base64_utils.h"
 #include "calculate_md5.h"
 #include "constant.h"
+#if USE_CACHE
 #include "http_exec.h"
+#endif
 #include "lru_cache_disk_handler.h"
 #include "netstack_common_utils.h"
+#if USE_CACHE
 #include "netstack_log.h"
 #include "request_context.h"
+#endif
 
 #include "cache_proxy.h"
 
@@ -46,6 +50,7 @@ std::string CacheProxy::MakeKey()
 
 bool CacheProxy::ReadResponseFromCache(HttpResponse &response)
 {
+#if USE_CACHE
     if (!strategy_.CouldUseCache()) {
         NETSTACK_LOGI("only GET/HEAD method or header has [Range] can use cache");
         return false;
@@ -87,10 +92,14 @@ bool CacheProxy::ReadResponseFromCache(HttpResponse &response)
     }
     NETSTACK_LOGI("cache should not be used");
     return false;
+#else
+    return false;
+#endif
 }
 
 void CacheProxy::WriteResponseToCache(const HttpResponse &response)
 {
+#if USE_CACHE
     if (!strategy_.IsCacheable(response)) {
         NETSTACK_LOGI("do not cache this response");
         return;
@@ -102,5 +111,6 @@ void CacheProxy::WriteResponseToCache(const HttpResponse &response)
     cacheResponse[HttpConstant::RESPONSE_TIME] = Base64::Encode(response.GetResponseTime());
 
     DISK_LRU_CACHE.Put(MakeKey(), cacheResponse);
+#endif
 }
 } // namespace OHOS::NetStack

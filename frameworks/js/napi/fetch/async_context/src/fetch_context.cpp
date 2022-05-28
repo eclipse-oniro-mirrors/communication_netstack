@@ -155,7 +155,7 @@ bool FetchContext::GetUrlParam(napi_value data)
     }
 
     std::string param;
-    std::size_t index = url.find(FetchConstant::HTTP_URL_PARAM_START);
+    auto index = url.find(FetchConstant::HTTP_URL_PARAM_START);
     if (index != std::string::npos) {
         param = url.substr(index + 1);
         url = url.substr(0, index);

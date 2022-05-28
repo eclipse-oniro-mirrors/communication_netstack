@@ -44,7 +44,7 @@ void ResponseData::ParseHeaders(const std::string &headersStr)
         if (header.empty()) {
             continue;
         }
-        size_t index = header.find(HttpConstant::HTTP_HEADER_SEPARATOR);
+        auto index = header.find(HttpConstant::HTTP_HEADER_SEPARATOR);
         if (index == std::string::npos) {
             statusLine = Strip(header);
             continue;

@@ -111,7 +111,7 @@ int64_t HttpCacheStrategy::ComputeFreshnessLifetime()
         NETSTACK_LOGI("delta=%{public}ld", delta);
 
         NETSTACK_LOGI("--- ComputeFreshnessLifetime end ---");
-        return delta > 0 ? delta : 0;
+        return std::max<int64_t>(delta, 0);
     } else if (cacheResponse_.GetLastModified() != INVALID_TIME) {
         int64_t servedMillis;
         if (cacheResponse_.GetDate() != INVALID_TIME) {
@@ -123,7 +123,7 @@ int64_t HttpCacheStrategy::ComputeFreshnessLifetime()
         NETSTACK_LOGI("delta=%{public}ld", delta);
 
         NETSTACK_LOGI("--- ComputeFreshnessLifetime end ---");
-        return delta > 0 ? (delta / 10) : 0;
+        return std::max<int64_t>(delta / 10, 0);
     }
 
     NETSTACK_LOGI("--- ComputeFreshnessLifetime end ---");
@@ -150,20 +150,20 @@ void HttpCacheStrategy::UpdateRequestHeader(const std::string &etag,
 bool HttpCacheStrategy::IsCacheable(const HttpCacheResponse &cacheResponse)
 {
     switch (cacheResponse.GetRespCode()) {
-        case OK:
-        case NOT_AUTHORITATIVE:
-        case NO_CONTENT:
-        case MULT_CHOICE:
-        case MOVED_PERM:
-        case NOT_FOUND:
-        case BAD_METHOD:
-        case GONE:
-        case REQ_TOO_LONG:
-        case NOT_IMPLEMENTED:
+        case ResponseCode::OK:
+        case ResponseCode::NOT_AUTHORITATIVE:
+        case ResponseCode::NO_CONTENT:
+        case ResponseCode::MULT_CHOICE:
+        case ResponseCode::MOVED_PERM:
+        case ResponseCode::NOT_FOUND:
+        case ResponseCode::BAD_METHOD:
+        case ResponseCode::GONE:
+        case ResponseCode::REQ_TOO_LONG:
+        case ResponseCode::NOT_IMPLEMENTED:
             // These codes can be cached unless headers forbid it.
             break;
 
-        case MOVED_TEMP:
+        case ResponseCode::MOVED_TEMP:
             if (cacheResponse.GetExpires() != INVALID_TIME || cacheResponse.GetMaxAgeSeconds() != INVALID_TIME ||
                 cacheResponse.IsPublicCache() || cacheResponse.IsPrivateCache()) {
                 break;
@@ -221,8 +221,8 @@ CacheStatus HttpCacheStrategy::RunStrategyInternal(HttpResponse &response)
     NETSTACK_LOGI("request nocache = %{public}d", cacheRequest_.IsNoCache());
 
     if (cacheRequest_.IsNoCache()) {
-        NETSTACK_LOGI("return TRANSPARENT");
-        return TRANSPARENT;
+        NETSTACK_LOGI("return DENY");
+        return DENY;
     }
 
     NETSTACK_LOGI("response nocache = %{public}d", cacheResponse_.IsNoCache());
@@ -239,13 +239,13 @@ CacheStatus HttpCacheStrategy::RunStrategyInternal(HttpResponse &response)
 
     // T.B.D https and TLS handshake
     if (!IsCacheable(cacheResponse_)) {
-        NETSTACK_LOGI("return TRANSPARENT");
-        return TRANSPARENT;
+        NETSTACK_LOGI("return DENY");
+        return DENY;
     }
 
     if (cacheRequest_.GetIfModifiedSince() != INVALID_TIME || !cacheRequest_.GetIfNoneMatch().empty()) {
-        NETSTACK_LOGI("return TRANSPARENT");
-        return TRANSPARENT;
+        NETSTACK_LOGI("return DENY");
+        return DENY;
     }
 
     auto [ageMillis, minFreshMillis, freshMillis, maxStaleMillis, maxAge] = GetFreshness();

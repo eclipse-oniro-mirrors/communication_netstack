@@ -26,7 +26,7 @@ void HttpCacheRequest::ParseCacheControl(const std::string &cacheControl)
 
     auto vec = CommonUtils::Split(cacheControl, SPLIT);
     for (const auto &str : vec) {
-        if (str == NO_CACHE) {
+        if (str == DENY) {
             noCache_ = true;
         } else if (str == NO_STORE) {
             noStore_ = true;
@@ -35,7 +35,7 @@ void HttpCacheRequest::ParseCacheControl(const std::string &cacheControl)
         } else if (str == ONLY_IF_CACHED) {
             onlyIfCached_ = true;
         }
-        size_t pos = str.find(EQUAL);
+        auto pos = str.find(EQUAL);
         if (pos != std::string::npos) {
             std::string key = str.substr(0, pos);
             std::string value = str.substr(pos + 1);
@@ -54,7 +54,6 @@ void HttpCacheRequest::ParseCacheControl(const std::string &cacheControl)
 
 void HttpCacheRequest::ParseRequestHeader(const std::map<std::string, std::string> &requestHeader)
 {
-
     NETSTACK_LOGI("--- HttpCacheRequest start ---");
 
     if (requestHeader.empty()) {
@@ -102,7 +101,6 @@ time_t HttpCacheRequest::GetMaxAgeSeconds() const
 {
     if (maxAge_.empty()) {
         return INVALID_TIME;
-        return std::strtol(maxAge_.c_str(), nullptr, DECIMAL);
     }
 
     return std::strtol(maxAge_.c_str(), nullptr, DECIMAL);

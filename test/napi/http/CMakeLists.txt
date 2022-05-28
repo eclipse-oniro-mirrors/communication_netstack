@@ -22,6 +22,7 @@ include_directories(../../../frameworks/js/napi/http/cache/md5/include)
 include_directories(../../../frameworks/js/napi/http/cache/base64/include)
 include_directories(../../../frameworks/js/napi/http/cache/cache_proxy/include)
 include_directories(../../../frameworks/js/napi/http/cache/cache_strategy/include)
+include_directories(../../../frameworks/js/napi/http/cache/cache_constant/include)
 
 include_directories(../../../../../../third_party/curl/include)
 include_directories(../../../../../../third_party/glib/glib/)

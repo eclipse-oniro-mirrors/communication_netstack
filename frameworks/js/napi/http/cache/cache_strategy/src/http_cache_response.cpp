@@ -27,7 +27,7 @@ void HttpCacheResponse::ParseCacheControl(const std::string &cacheControl)
     auto vec = CommonUtils::Split(cacheControl, SPLIT);
 
     for (const auto &str : vec) {
-        if (str == NO_CACHE) {
+        if (str == DENY) {
             noCache_ = true;
         } else if (str == NO_STORE) {
             noStore_ = true;
@@ -42,7 +42,7 @@ void HttpCacheResponse::ParseCacheControl(const std::string &cacheControl)
         } else if (str == PROXY_REVALIDATE) {
             proxyRevalidate_ = true;
         }
-        size_t pos = str.find('=');
+        auto pos = str.find('=');
         if (pos != std::string::npos) {
             std::string key = str.substr(0, pos);
             std::string value = str.substr(pos + 1);

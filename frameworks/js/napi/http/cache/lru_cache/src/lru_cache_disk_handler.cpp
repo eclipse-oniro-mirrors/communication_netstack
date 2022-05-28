@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 
+#if USE_CACHE
 #include <thread>
+#endif
 
 #include "netstack_log.h"
 
@@ -25,6 +27,7 @@ namespace OHOS::NetStack {
 LRUCacheDiskHandler::LRUCacheDiskHandler(std::string fileName, size_t capacity)
     : diskHandler_(std::move(fileName)), capacity_(std::min<size_t>(MAX_DISK_CACHE_SIZE, capacity))
 {
+#if USE_CACHE
     // 从磁盘中读取缓存到内存里
     ReadCacheFromJsonFile();
     // 起线程每一分钟讲内存缓存持久化
@@ -34,6 +37,7 @@ LRUCacheDiskHandler::LRUCacheDiskHandler(std::string fileName, size_t capacity)
             WriteCacheToJsonFile();
         }
     }).detach();
+#endif
 }
 
 Json::Value LRUCacheDiskHandler::ReadJsonValueFromFile()
