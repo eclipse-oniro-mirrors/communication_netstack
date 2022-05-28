@@ -21,7 +21,9 @@
 
 #include "lru_cache_disk_handler.h"
 
+#if USE_CACHE
 static constexpr const int WRITE_INTERVAL = 60 * 1000;
+#endif
 
 namespace OHOS::NetStack {
 LRUCacheDiskHandler::LRUCacheDiskHandler(std::string fileName, size_t capacity)
