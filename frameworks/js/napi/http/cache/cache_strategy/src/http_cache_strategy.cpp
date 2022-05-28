@@ -29,6 +29,8 @@ static constexpr const int64_t ONE_DAY_MILLISECONDS = 24 * 60 * 60 * 1000L;
 static constexpr const int64_t CONVERT_TO_MILLISECONDS = 1000;
 static constexpr const char *KEY_RANGE = "range";
 
+// RFC 7234
+
 namespace OHOS::NetStack {
 HttpCacheStrategy::HttpCacheStrategy(HttpRequestOptions &requestOptions) : requestOptions_(requestOptions)
 {
@@ -123,7 +125,7 @@ int64_t HttpCacheStrategy::ComputeFreshnessLifetime()
         NETSTACK_LOGI("delta=%{public}lld", static_cast<long long>(delta));
 
         NETSTACK_LOGI("--- ComputeFreshnessLifetime end ---");
-        return std::max<int64_t>(delta / 10, 0);
+        return std::max<int64_t>(delta / DECIMAL, 0);
     }
 
     NETSTACK_LOGI("--- ComputeFreshnessLifetime end ---");

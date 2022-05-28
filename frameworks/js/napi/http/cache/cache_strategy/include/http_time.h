@@ -17,7 +17,6 @@
 #define HTTP_TIME_H
 
 #include <cstring>
-#include <ctime>
 #include <iostream>
 
 namespace OHOS::NetStack {
