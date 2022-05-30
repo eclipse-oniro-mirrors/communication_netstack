@@ -142,11 +142,11 @@ void HttpCacheStrategy::UpdateRequestHeader(const std::string &etag,
     NETSTACK_LOGI("--- UpdateRequestHeader start ---");
 
     if (!etag.empty()) {
-        requestOptions_.SetHeader("If-None-Match", etag);
+        requestOptions_.SetHeader(IF_NONE_MATCH, etag);
     } else if (!lastModified.empty()) {
-        requestOptions_.SetHeader("If-Modified-Since", lastModified);
+        requestOptions_.SetHeader(IF_MODIFIED_SINCE, lastModified);
     } else if (!date.empty()) {
-        requestOptions_.SetHeader("If-Modified-Since", date);
+        requestOptions_.SetHeader(IF_MODIFIED_SINCE, date);
     }
 
     NETSTACK_LOGI("--- UpdateRequestHeader end ---");

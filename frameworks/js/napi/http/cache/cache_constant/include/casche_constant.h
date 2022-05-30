@@ -20,7 +20,7 @@ static constexpr const int DECIMAL = 10;
 static constexpr const char *SPLIT = ", ";
 static constexpr const char EQUAL = '=';
 
-static constexpr const char *DENY = "no-cache";
+static constexpr const char *NO_CACHE = "no-cache";
 static constexpr const char *NO_STORE = "no-store";
 static constexpr const char *NO_TRANSFORM = "no-transform";
 static constexpr const char *ONLY_IF_CACHED = "only-if-cached";
