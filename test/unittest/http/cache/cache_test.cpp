@@ -16,12 +16,12 @@
 #include <algorithm>
 #include <cstring>
 
+#include "gtest/gtest.h"
+
 #include "http_cache_request.h"
 #include "http_cache_response.h"
-#include "netstack_log.h"
-
 #include "http_cache_strategy.h"
-#include "gtest/gtest.h"
+#include "netstack_log.h"
 
 using namespace OHOS::NetStack;
 
@@ -36,6 +36,7 @@ public:
     virtual void TearDown() {}
 };
 
+namespace {
 HWTEST_F(HttpCacheStrategyTest, cacheRequestNoCache, testing::ext::TestSize.Level1)
 {
     HttpRequestOptions requestOptions;
@@ -794,3 +795,4 @@ HWTEST_F(HttpCacheStrategyTest, CompareNumber_6_2, testing::ext::TestSize.Level1
 
     EXPECT_EQ(status, STALE);
 }
+} // namespace
