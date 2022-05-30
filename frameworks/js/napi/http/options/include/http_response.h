@@ -19,8 +19,6 @@
 #include <map>
 #include <string>
 
-#include "napi/native_api.h"
-
 static constexpr const char *WARNING = "Warning";
 
 namespace OHOS::NetStack {

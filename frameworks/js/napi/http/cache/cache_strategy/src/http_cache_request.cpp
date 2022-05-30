@@ -26,7 +26,7 @@ void HttpCacheRequest::ParseCacheControl(const std::string &cacheControl)
 
     auto vec = CommonUtils::Split(cacheControl, SPLIT);
     for (const auto &str : vec) {
-        if (str == DENY) {
+        if (str == NO_CACHE) {
             noCache_ = true;
         } else if (str == NO_STORE) {
             noStore_ = true;
@@ -61,7 +61,7 @@ void HttpCacheRequest::ParseRequestHeader(const std::map<std::string, std::strin
     }
 
     for (const auto &iterRequest : requestHeader) {
-        std::string key = iterRequest.first;
+        std::string key = CommonUtils::ToLower(iterRequest.first);
         std::string value = iterRequest.second;
 
         if (key == CACHE_CONTROL) {
