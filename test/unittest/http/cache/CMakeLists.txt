@@ -8,7 +8,7 @@ include_directories(../../../../../../../third_party/curl/include)
 
 add_executable(
     cache_test
-    cache_test.cpp
+    HttpCacheStrategyTest.cpp
     ../../../../frameworks/js/napi/http/options/src/http_response.cpp
     ../../../../frameworks/js/napi/http/options/src/http_request_options.cpp
     ../../../../frameworks/js/napi/http/constant/src/constant.cpp

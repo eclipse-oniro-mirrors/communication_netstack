@@ -39,7 +39,7 @@ ohos_unittest("http_cache_unittest") {
   external_deps = common_external_deps
 
   sources = [
-    "cache_test.cpp",
+    "HttpCacheStrategyTest.cpp",
     "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_cache_request.cpp",
     "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_cache_response.cpp",
     "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_cache_strategy.cpp",
