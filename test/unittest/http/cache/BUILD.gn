@@ -38,6 +38,8 @@ ohos_unittest("http_cache_unittest") {
   ]
   include_dirs += utils_include
 
+  deps = common_deps
+
   sources = [
     "cache_test.cpp",
     "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_cache_request.cpp",
