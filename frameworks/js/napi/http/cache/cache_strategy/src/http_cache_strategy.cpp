@@ -64,75 +64,89 @@ bool HttpCacheStrategy::IsCacheable(const HttpResponse &response)
     return IsCacheable(tempCacheResponse);
 }
 
-int64_t HttpCacheStrategy::CacheResponseAge(int64_t sReqTime,
-                                            int64_t sRespTime,
-                                            int64_t nowTime,
-                                            int64_t sRespDate,
-                                            int64_t responseAge)
+int64_t HttpCacheStrategy::CacheResponseAgeMillis(int64_t sReqTime,
+                                                  int64_t sRespTime,
+                                                  int64_t nowTime,
+                                                  int64_t sRespDate,
+                                                  int64_t responseAge)
 {
-    NETSTACK_LOGI("--- CacheResponseAge start ---");
-
     int64_t apparentReceivedAge = 0;
 
     if (sRespDate != INVALID_TIME) {
-        apparentReceivedAge = std::max((int64_t)0, sRespTime - sRespDate * CONVERT_TO_MILLISECONDS);
+        apparentReceivedAge = std::max<int64_t>(0, sRespTime - sRespDate);
     }
 
     int64_t receivedAge = apparentReceivedAge;
     if (responseAge != INVALID_TIME) {
-        receivedAge = std::max(apparentReceivedAge, responseAge * CONVERT_TO_MILLISECONDS);
+        receivedAge = std::max(apparentReceivedAge, responseAge);
     }
 
     int64_t responseDuration = sRespTime - sReqTime;
 
     int64_t residentDuration = nowTime - sRespTime;
 
-    NETSTACK_LOGI("--- CacheResponseAge end ---");
-    return (receivedAge + responseDuration + residentDuration);
+    return (receivedAge + responseDuration + residentDuration) * CONVERT_TO_MILLISECONDS;
 }
 
-int64_t HttpCacheStrategy::ComputeFreshnessLifetime()
+int64_t HttpCacheStrategy::ComputeFreshnessLifetimeMillis()
 {
-    NETSTACK_LOGI("--- ComputeFreshnessLifetime start ---");
+    NETSTACK_LOGI("--- ComputeFreshnessLifetimeMillis start ---");
 
     int64_t maxAge = cacheResponse_.GetMaxAgeSeconds();
+    int64_t sMaxAge = cacheResponse_.GetSMaxAgeSeconds();
 
     NETSTACK_LOGI("maxAge=%{public}lld", static_cast<long long>(maxAge));
-    if (maxAge != INVALID_TIME) {
-        NETSTACK_LOGI("--- ComputeFreshnessLifetime end ---");
-        return maxAge * CONVERT_TO_MILLISECONDS;
+
+    int64_t lifeTime = 0;
+
+    if (sMaxAge != INVALID_TIME) {
+        // If the cache is shared and the s-maxage response directive (Section 5.2.2.9) is present, use its value
+        lifeTime = sMaxAge;
+    } else if (maxAge != INVALID_TIME) {
+        // If the max-age response directive (Section 5.2.2.8) is present, use its value
+        NETSTACK_LOGI("--- ComputeFreshnessLifetimeMillis end ---");
+        lifeTime = maxAge;
     } else if (cacheResponse_.GetExpires() != INVALID_TIME) {
+        // If the Expires response header field (Section 5.3) is present, use its value minus the value of the Date
+        // response header field
         int64_t servedMillis;
         if (cacheResponse_.GetDate() != INVALID_TIME) {
-            servedMillis = cacheResponse_.GetDate() * CONVERT_TO_MILLISECONDS;
-            NETSTACK_LOGI("servedMillis=%{public}lld", static_cast<long long>(servedMillis));
+            servedMillis = cacheResponse_.GetDate();
         } else {
             servedMillis = cacheResponse_.GetResponseTime();
             NETSTACK_LOGI("servedMillis=%{public}lld", static_cast<long long>(servedMillis));
         }
         NETSTACK_LOGI("getExpiresSeconds=%{public}lld", static_cast<long long>(cacheResponse_.GetExpires()));
-        int64_t delta = cacheResponse_.GetExpires() * CONVERT_TO_MILLISECONDS - servedMillis;
+        int64_t delta = cacheResponse_.GetExpires() - servedMillis;
 
         NETSTACK_LOGI("delta=%{public}lld", static_cast<long long>(delta));
 
-        NETSTACK_LOGI("--- ComputeFreshnessLifetime end ---");
-        return std::max<int64_t>(delta, 0);
+        NETSTACK_LOGI("--- ComputeFreshnessLifetimeMillis end ---");
+        lifeTime = std::max<int64_t>(delta, 0);
     } else if (cacheResponse_.GetLastModified() != INVALID_TIME) {
+        // 4.2.2. Calculating Heuristic Freshness
         int64_t servedMillis;
         if (cacheResponse_.GetDate() != INVALID_TIME) {
-            servedMillis = cacheResponse_.GetDate() * CONVERT_TO_MILLISECONDS;
+            servedMillis = cacheResponse_.GetDate();
         } else {
             servedMillis = cacheRequest_.GetRequestTime();
         }
-        int64_t delta = servedMillis - cacheResponse_.GetLastModified() * CONVERT_TO_MILLISECONDS;
+        int64_t delta = servedMillis - cacheResponse_.GetLastModified();
+
         NETSTACK_LOGI("delta=%{public}lld", static_cast<long long>(delta));
 
-        NETSTACK_LOGI("--- ComputeFreshnessLifetime end ---");
-        return std::max<int64_t>(delta / DECIMAL, 0);
+        NETSTACK_LOGI("--- ComputeFreshnessLifetimeMillis end ---");
+        lifeTime = std::max<int64_t>(delta / DECIMAL, 0);
     }
 
-    NETSTACK_LOGI("--- ComputeFreshnessLifetime end ---");
-    return 0;
+    int64_t reqMaxAge = cacheRequest_.GetMaxAgeSeconds();
+    if (reqMaxAge != INVALID_TIME) {
+        lifeTime = std::min(lifeTime, reqMaxAge);
+    }
+    NETSTACK_LOGI("lifeTime=%{public}lld", static_cast<long long>(lifeTime));
+
+    NETSTACK_LOGI("--- ComputeFreshnessLifetimeMillis end ---");
+    return lifeTime * CONVERT_TO_MILLISECONDS;
 }
 
 void HttpCacheStrategy::UpdateRequestHeader(const std::string &etag,
@@ -182,44 +196,31 @@ bool HttpCacheStrategy::IsCacheable(const HttpCacheResponse &cacheResponse)
     return !cacheResponse.IsNoStore() && !cacheRequest_.IsNoStore();
 }
 
-std::tuple<int64_t, int64_t, int64_t, int64_t, int64_t> HttpCacheStrategy::GetFreshness()
+std::tuple<int64_t, int64_t, int64_t, int64_t> HttpCacheStrategy::GetFreshness()
 {
     int64_t ageMillis =
-        CacheResponseAge(cacheRequest_.GetRequestTime(), cacheResponse_.GetResponseTime(),
-                         HttpTime::GetNowTimeSeconds(), cacheResponse_.GetDate(), cacheResponse_.GetAgeSeconds());
+        CacheResponseAgeMillis(cacheRequest_.GetRequestTime(), cacheResponse_.GetResponseTime(),
+                               HttpTime::GetNowTimeSeconds(), cacheResponse_.GetDate(), cacheResponse_.GetAgeSeconds());
 
-    NETSTACK_LOGI("ageMillis=%{public}lld", static_cast<long long>(ageMillis));
-
-    int64_t freshMillis = ComputeFreshnessLifetime();
-    freshMillis *= CONVERT_TO_MILLISECONDS;
-
-    NETSTACK_LOGI("freshMillis=%{public}lld", static_cast<long long>(freshMillis));
-
-    int64_t maxAge = INVALID_TIME;
-    if (cacheRequest_.GetMaxAgeSeconds() != INVALID_TIME) {
-        maxAge = cacheRequest_.GetMaxAgeSeconds();
-        maxAge *= CONVERT_TO_MILLISECONDS;
-        freshMillis = std::min(freshMillis, maxAge);
-    }
-    NETSTACK_LOGI("freshMillis=%{public}lld", static_cast<long long>(freshMillis));
+    int64_t lifeTime = ComputeFreshnessLifetimeMillis();
 
     int64_t minFreshMillis = 0;
     minFreshMillis = cacheRequest_.GetMinFreshSeconds();
-    if (minFreshMillis != -1) {
+    if (minFreshMillis != INVALID_TIME) {
         minFreshMillis *= CONVERT_TO_MILLISECONDS;
     }
-    NETSTACK_LOGI("minFreshMillis=%{public}lld", static_cast<long long>(minFreshMillis));
-
     int64_t maxStaleMillis = 0;
     if (!cacheResponse_.IsMustRevalidate()) {
         maxStaleMillis = cacheRequest_.GetMaxStaleSeconds();
     }
-    if (maxStaleMillis != -1) {
+    if (maxStaleMillis != INVALID_TIME) {
         maxStaleMillis *= CONVERT_TO_MILLISECONDS;
     }
-    NETSTACK_LOGI("maxStaleMillis=%{public}lld", static_cast<long long>(maxStaleMillis));
+    NETSTACK_LOGI("%{public}lld, %{public}lld, %{public}lld, %{public}lld", static_cast<long long>(ageMillis),
+                  static_cast<long long>(minFreshMillis), static_cast<long long>(lifeTime),
+                  static_cast<long long>(maxStaleMillis));
 
-    return {ageMillis, minFreshMillis, freshMillis, maxStaleMillis, maxAge};
+    return {ageMillis, minFreshMillis, lifeTime, maxStaleMillis};
 }
 
 CacheStatus HttpCacheStrategy::RunStrategyInternal(HttpResponse &response)
@@ -254,16 +255,17 @@ CacheStatus HttpCacheStrategy::RunStrategyInternal(HttpResponse &response)
         return DENY;
     }
 
-    auto [ageMillis, minFreshMillis, freshMillis, maxStaleMillis, maxAge] = GetFreshness();
+    auto [ageMillis, minFreshMillis, lifeTime, maxStaleMillis] = GetFreshness();
 
     NETSTACK_LOGI("nocache:%{public}d", cacheResponse_.IsNoCache());
-    if (ageMillis + minFreshMillis < freshMillis + maxStaleMillis) {
-        if (ageMillis + minFreshMillis >= freshMillis) {
+    if (ageMillis + minFreshMillis < lifeTime + maxStaleMillis) {
+        if (ageMillis + minFreshMillis >= lifeTime) {
             NETSTACK_LOGI("110 HttpURLConnection");
             response.SetWarning("110 \"Response is STALE\"");
         }
 
-        if (ageMillis > ONE_DAY_MILLISECONDS && maxAge == INVALID_TIME && cacheResponse_.GetExpires() == INVALID_TIME) {
+        if (ageMillis > ONE_DAY_MILLISECONDS && cacheRequest_.GetMaxAgeSeconds() == INVALID_TIME &&
+            cacheResponse_.GetExpires() == INVALID_TIME) {
             NETSTACK_LOGI("113 HttpURLConnection");
             response.SetWarning("113 \"Heuristic expiration\"");
         }
