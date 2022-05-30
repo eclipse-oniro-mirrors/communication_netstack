@@ -12,39 +12,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include <chrono>
+#include <iomanip>
+#include <sstream>
 
-#include "constant.h"
+#include "http_time.h"
 
-#include "cache_strategy.h"
+static constexpr const char *GMT_TIME = "%a, %d %b %Y %H:%M:%S GMT";
 
 static constexpr const int MAX_TIME_LEN = 128;
-static constexpr const char *KEY_RANGE = "range";
 
 namespace OHOS::NetStack {
-CacheStrategy::CacheStrategy(HttpRequestOptions &requestOptions) : requestOptions_(requestOptions) {}
-
-CacheStatus CacheStrategy::GetCacheStatus(const HttpResponse &response)
+time_t HttpTime::StrTimeToTimestamp(const std::string &time_str)
 {
-    return CacheStatus::FRESH;
+    std::tm tm = {};
+    std::stringstream ss(time_str);
+    ss >> std::get_time(&tm, GMT_TIME);
+    auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+
+    auto tmp = std::chrono::duration_cast<std::chrono::seconds>(tp.time_since_epoch());
+    return tmp.count();
 }
 
-void CacheStrategy::SetHeaderForValidation(const HttpResponse &response) {}
-
-bool CacheStrategy::CouldUseCache()
+time_t HttpTime::GetNowTimeSeconds()
 {
-    return requestOptions_.GetMethod() == HttpConstant::HTTP_METHOD_GET ||
-           requestOptions_.GetMethod() == HttpConstant::HTTP_METHOD_HEAD ||
-           requestOptions_.GetHeader().find(KEY_RANGE) != requestOptions_.GetHeader().end();
+    auto now = std::chrono::system_clock::now();
+    return std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
 }
 
-bool CacheStrategy::CouldCache(const HttpResponse &response)
-{
-    return true;
-}
-
-std::string CacheStrategy::GetNowTimeGMT()
+std::string HttpTime::GetNowTimeGMT()
 {
     auto now = std::chrono::system_clock::now();
     time_t timeSeconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
@@ -53,7 +49,7 @@ std::string CacheStrategy::GetNowTimeGMT()
         return {};
     }
     char s[MAX_TIME_LEN] = {0};
-    if (strftime(s, sizeof(s), "%a, %d %b %Y %H:%M:%S GMT", &timeInfo) == 0) {
+    if (strftime(s, sizeof(s), GMT_TIME, &timeInfo) == 0) {
         return {};
     }
     return s;

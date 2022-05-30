@@ -26,44 +26,6 @@ enum class HttpProtocol {
     HTTP_NONE, // default choose by curl
 };
 
-enum class ResponseCode {
-    OK = 200,
-    CREATED,
-    ACCEPTED,
-    NOT_AUTHORITATIVE,
-    NO_CONTENT,
-    RESET,
-    PARTIAL,
-    MULT_CHOICE = 300,
-    MOVED_PERM,
-    MOVED_TEMP,
-    SEE_OTHER,
-    NOT_MODIFIED,
-    USE_PROXY,
-    BAD_REQUEST = 400,
-    UNAUTHORIZED,
-    PAYMENT_REQUIRED,
-    FORBIDDEN,
-    NOT_FOUND,
-    BAD_METHOD,
-    NOT_ACCEPTABLE,
-    PROXY_AUTH,
-    CLIENT_TIMEOUT,
-    CONFLICT,
-    GONE,
-    LENGTH_REQUIRED,
-    PRECON_FAILED,
-    ENTITY_TOO_LARGE,
-    REQ_TOO_LONG,
-    UNSUPPORTED_TYPE,
-    INTERNAL_ERROR = 500,
-    NOT_IMPLEMENTED,
-    BAD_GATEWAY,
-    UNAVAILABLE,
-    GATEWAY_TIMEOUT,
-    VERSION,
-};
-
 class HttpRequestOptions final {
 public:
     HttpRequestOptions();
@@ -96,6 +58,10 @@ public:
 
     [[nodiscard]] uint32_t GetHttpVersion() const;
 
+    void SetRequestTime(const std::string &time);
+
+    [[nodiscard]] const std::string &GetRequestTime() const;
+
 private:
     std::string url_;
 
@@ -110,6 +76,8 @@ private:
     uint32_t connectTimeout_;
 
     HttpProtocol usingProtocol_;
+
+    std::string requestTime_;
 };
 } // namespace OHOS::NetStack
 

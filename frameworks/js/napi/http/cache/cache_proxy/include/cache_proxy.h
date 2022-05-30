@@ -16,7 +16,7 @@
 #ifndef COMMUNICATIONNETSTACK_CACHE_PROXY_H
 #define COMMUNICATIONNETSTACK_CACHE_PROXY_H
 
-#include "cache_strategy.h"
+#include "http_cache_strategy.h"
 #include "http_request_options.h"
 #include "http_response.h"
 #include "nocopyable.h"
@@ -27,7 +27,7 @@ class CacheProxy final {
 
     HttpRequestOptions &requestOptions_;
 
-    CacheStrategy strategy_;
+    HttpCacheStrategy strategy_;
 
     std::string MakeKey();
 
@@ -39,10 +39,6 @@ public:
     bool ReadResponseFromCache(HttpResponse &response);
 
     void WriteResponseToCache(const HttpResponse &response);
-
-    static void SetRequestTimeForResponse(HttpResponse &response);
-
-    static void SetResponseTimeForResponse(HttpResponse &response);
 };
 } // namespace OHOS::NetStack
 #endif // COMMUNICATIONNETSTACK_CACHE_PROXY_H

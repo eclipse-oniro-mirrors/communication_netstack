@@ -142,7 +142,7 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
     if (HttpExec::MethodForGet(options.GetMethod())) {
         std::string url = options.GetUrl();
         std::string param;
-        std::size_t index = url.find(HttpConstant::HTTP_URL_PARAM_START);
+        auto index = url.find(HttpConstant::HTTP_URL_PARAM_START);
         if (index != std::string::npos) {
             param = url.substr(index + 1);
             url = url.substr(0, index);

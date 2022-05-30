@@ -44,7 +44,7 @@ void HttpResponse::ParseHeaders()
         if (CommonUtils::Strip(header).empty()) {
             continue;
         }
-        size_t index = header.find(HttpConstant::HTTP_HEADER_SEPARATOR);
+        auto index = header.find(HttpConstant::HTTP_HEADER_SEPARATOR);
         if (index == std::string::npos) {
             header_[CommonUtils::Strip(header)] = "";
             NETSTACK_LOGI("HEAD: %{public}s", CommonUtils::Strip(header).c_str());
@@ -100,16 +100,6 @@ void HttpResponse::SetCookies(const std::string &cookies)
     cookies_ = cookies;
 }
 
-void HttpResponse::SetRequestTime(const std::string &time)
-{
-    requestTime_ = time;
-}
-
-const std::string &HttpResponse::GetRequestTime() const
-{
-    return requestTime_;
-}
-
 void HttpResponse::SetResponseTime(const std::string &time)
 {
     responseTime_ = time;
@@ -118,5 +108,10 @@ void HttpResponse::SetResponseTime(const std::string &time)
 const std::string &HttpResponse::GetResponseTime() const
 {
     return responseTime_;
+}
+
+void HttpResponse::SetWarning(const std::string &val)
+{
+    header_[WARNING] = val;
 }
 } // namespace OHOS::NetStack

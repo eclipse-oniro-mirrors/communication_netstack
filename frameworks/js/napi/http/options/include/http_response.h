@@ -21,6 +21,8 @@
 
 #include "napi/native_api.h"
 
+static constexpr const char *WARNING = "Warning";
+
 namespace OHOS::NetStack {
 class HttpResponse final {
 public:
@@ -52,13 +54,11 @@ public:
 
     [[nodiscard]] const std::string &GetRawHeader() const;
 
-    void SetRequestTime(const std::string &time);
-
-    [[nodiscard]] const std::string &GetRequestTime() const;
-
     void SetResponseTime(const std::string &time);
 
     [[nodiscard]] const std::string &GetResponseTime() const;
+
+    void SetWarning(const std::string &val);
 
 private:
     std::string result_;
@@ -70,8 +70,6 @@ private:
     std::map<std::string, std::string> header_;
 
     std::string cookies_;
-
-    std::string requestTime_;
 
     std::string responseTime_;
 };

@@ -13,37 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef COMMUNICATIONNETSTACK_CACHE_STRATEGY_H
-#define COMMUNICATIONNETSTACK_CACHE_STRATEGY_H
+#ifndef HTTP_TIME_H
+#define HTTP_TIME_H
 
-#include "http_request_options.h"
-#include "http_response.h"
+#include <cstring>
+#include <iostream>
 
 namespace OHOS::NetStack {
-enum class CacheStatus {
-    FRESH,
-    STATE,
-    TRANSPARENT [[maybe_unused]],
-};
-
-class CacheStrategy final {
-    HttpRequestOptions &requestOptions_;
-
+class HttpTime {
 public:
-    CacheStrategy() = delete;
+    static time_t StrTimeToTimestamp(const std::string &time_str);
 
-    explicit CacheStrategy(HttpRequestOptions &requestOptions);
-
-    CacheStatus GetCacheStatus(const HttpResponse &response);
-
-    void SetHeaderForValidation(const HttpResponse &response);
-
-    bool CouldCache(const HttpResponse &response);
-
-    bool CouldUseCache();
+    static time_t GetNowTimeSeconds();
 
     static std::string GetNowTimeGMT();
 };
 } // namespace OHOS::NetStack
-
-#endif /* COMMUNICATIONNETSTACK_CACHE_STRATEGY_H */
+#endif // HTTP_TIME_H

@@ -172,7 +172,7 @@ void FetchModule::ParseExtraData(JSIValue options, RequestData *requestData)
 
         std::string url = requestData->GetUrl();
         std::string param;
-        std::size_t index = url.find(HttpConstant::HTTP_URL_PARAM_SEPARATOR);
+        auto index = url.find(HttpConstant::HTTP_URL_PARAM_SEPARATOR);
         if (index != std::string::npos) {
             param = url.substr(index + 1);
             url = url.substr(0, index);

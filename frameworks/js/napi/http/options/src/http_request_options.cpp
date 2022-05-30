@@ -108,4 +108,14 @@ uint32_t HttpRequestOptions::GetHttpVersion() const
     NETSTACK_LOGI("CURL_HTTP_VERSION_NONE");
     return CURL_HTTP_VERSION_NONE;
 }
+
+void HttpRequestOptions::SetRequestTime(const std::string &time)
+{
+    requestTime_ = time;
+}
+
+const std::string &HttpRequestOptions::GetRequestTime() const
+{
+    return requestTime_;
+}
 } // namespace OHOS::NetStack
