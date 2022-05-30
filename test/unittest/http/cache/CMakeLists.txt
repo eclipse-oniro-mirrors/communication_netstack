@@ -4,7 +4,7 @@ include_directories(../../../../frameworks/js/napi/http/options/include)
 include_directories(../../../../frameworks/js/napi/http/constant/include)
 include_directories(../../../../utils/common_utils/include)
 include_directories(../../../../utils/log/include)
-include_directories(../../../../../../../third_party/curl)
+include_directories(../../../../../../../third_party/curl/include)
 
 add_executable(
     cache_test
