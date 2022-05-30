@@ -606,8 +606,6 @@ HWTEST_F(HttpCacheStrategyTest, headerNull, testing::ext::TestSize.Level1)
     response.SetResponseCode(200);
     response.SetResponseTime("Thur,  19 May 2022 08:21:59 GMT");
 
-    auto &responseHeader = const_cast<std::map<std::string, std::string> &>(response.GetHeader());
-
     HttpCacheStrategy cacheStrategy(requestOptions);
     CacheStatus status = cacheStrategy.RunStrategy(response);
     NETSTACK_LOGI("status = %{public}d", status);
@@ -622,8 +620,6 @@ HWTEST_F(HttpCacheStrategyTest, requestTimeEmpty, testing::ext::TestSize.Level1)
     HttpResponse response;
     response.SetResponseCode(200);
     response.SetResponseTime("Thur,  19 May 2022 08:21:59 GMT");
-
-    auto &responseHeader = const_cast<std::map<std::string, std::string> &>(response.GetHeader());
 
     HttpCacheStrategy cacheStrategy(requestOptions);
     CacheStatus status = cacheStrategy.RunStrategy(response);
@@ -640,8 +636,6 @@ HWTEST_F(HttpCacheStrategyTest, computeFreshnessLifetimeEnd, testing::ext::TestS
     HttpResponse response;
     response.SetResponseCode(200);
     response.SetResponseTime("Thur,  19 May 2022 08:21:59 GMT");
-
-    auto &responseHeader = const_cast<std::map<std::string, std::string> &>(response.GetHeader());
 
     HttpCacheStrategy cacheStrategy(requestOptions);
     CacheStatus status = cacheStrategy.RunStrategy(response);
