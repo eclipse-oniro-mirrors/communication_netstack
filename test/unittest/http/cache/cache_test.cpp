@@ -227,8 +227,7 @@ HWTEST_F(HttpCacheStrategyTest, strategyMaxAgeBranch, testing::ext::TestSize.Lev
     CacheStatus status = cacheStrategy.RunStrategy(response);
     NETSTACK_LOGI("status = %{public}d", status);
 
-    //    EXPECT_EQ(status, 0);
-    EXPECT_EQ(status, 1);
+    EXPECT_EQ(status, STALE);
 }
 
 HWTEST_F(HttpCacheStrategyTest, CompareNumber_1, testing::ext::TestSize.Level1)
