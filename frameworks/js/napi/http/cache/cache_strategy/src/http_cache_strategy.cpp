@@ -162,8 +162,6 @@ void HttpCacheStrategy::UpdateRequestHeader(const std::string &etag,
     } else if (!date.empty()) {
         requestOptions_.SetHeader(IF_MODIFIED_SINCE, date);
     }
-
-    NETSTACK_LOGI("--- UpdateRequestHeader end ---");
 }
 
 bool HttpCacheStrategy::IsCacheable(const HttpCacheResponse &cacheResponse)

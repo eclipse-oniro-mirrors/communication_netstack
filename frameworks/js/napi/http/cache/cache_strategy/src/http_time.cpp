@@ -25,7 +25,7 @@ static constexpr const int MAX_TIME_LEN = 128;
 namespace OHOS::NetStack {
 time_t HttpTime::StrTimeToTimestamp(const std::string &time_str)
 {
-    std::tm tm = {};
+    std::tm tm = {0};
     std::stringstream ss(time_str);
     ss >> std::get_time(&tm, GMT_TIME);
     auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
