@@ -729,7 +729,7 @@ HWTEST_F(HttpCacheStrategyTest, isCacheableMovedTempIfCondition2, testing::ext::
     CacheStatus status = cacheStrategy.RunStrategy(response);
     NETSTACK_LOGI("status = %{public}d", status);
 
-    EXPECT_EQ(status, TRANSPARENT);
+    EXPECT_EQ(status, DENY);
 }
 
 HWTEST_F(HttpCacheStrategyTest, isCacheableMovedTempIfCondition3, testing::ext::TestSize.Level1)
@@ -750,7 +750,7 @@ HWTEST_F(HttpCacheStrategyTest, isCacheableMovedTempIfCondition3, testing::ext::
     CacheStatus status = cacheStrategy.RunStrategy(response);
     NETSTACK_LOGI("status = %{public}d", status);
 
-    EXPECT_EQ(status, TRANSPARENT);
+    EXPECT_EQ(status, DENY);
 }
 
 HWTEST_F(HttpCacheStrategyTest, isCacheableMovedTempIfCondition4, testing::ext::TestSize.Level1)
