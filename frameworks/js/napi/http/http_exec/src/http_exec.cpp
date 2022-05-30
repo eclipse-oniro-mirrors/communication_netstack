@@ -121,10 +121,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
 
     context->response.SetResponseCode(responseCode);
     context->response.ParseHeaders();
-    if (context->response.GetResponseCode() == static_cast<uint32_t>(ResponseCode::OK)) {
-        NETSTACK_LOGI("response code is 200, we write it to cache");
-        proxy.WriteResponseToCache(context->response);
-    }
+    proxy.WriteResponseToCache(context->response);
 
     return true;
 }

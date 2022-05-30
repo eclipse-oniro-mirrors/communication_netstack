@@ -55,6 +55,9 @@ CacheStatus HttpCacheStrategy::RunStrategy(HttpResponse &response)
 
 bool HttpCacheStrategy::IsCacheable(const HttpResponse &response)
 {
+    if (!CouldUseCache()) {
+        return false;
+    }
     HttpCacheResponse tempCacheResponse;
     tempCacheResponse.ParseCacheResponseHeader(response.GetHeader());
     tempCacheResponse.SetRespCode(static_cast<ResponseCode>(response.GetResponseCode()));
