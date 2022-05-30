@@ -708,7 +708,7 @@ HWTEST_F(HttpCacheStrategyTest, isCacheUsefulMaxStaleMillis, testing::ext::TestS
     CacheStatus status = cacheStrategy.RunStrategy(response);
     NETSTACK_LOGI("status = %{public}d", status);
 
-    EXPECT_EQ(status, FRESH);
+    EXPECT_EQ(status, STALE);
 }
 
 HWTEST_F(HttpCacheStrategyTest, isCacheableMovedTempIfCondition2, testing::ext::TestSize.Level1)
