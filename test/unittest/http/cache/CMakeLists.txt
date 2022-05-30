@@ -1,4 +1,5 @@
 include_directories(../../../../frameworks/js/napi/http/cache/cache_strategy/include)
+include_directories(../../../../frameworks/js/napi/http/cache/cache_constant/include)
 include_directories(../../../../frameworks/js/napi/http/options/include)
 include_directories(../../../../frameworks/js/napi/http/constant/include)
 include_directories(../../../../utils/common_utils/include)

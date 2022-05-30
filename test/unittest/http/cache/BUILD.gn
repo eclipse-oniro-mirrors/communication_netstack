@@ -30,9 +30,10 @@ ohos_unittest("http_cache_unittest") {
   module_out_path = "netstack/http_cache_unittest"
 
   include_dirs = [
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_constant/include",
     "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/include",
-    "$NETSTACK_NAPI_ROOT/http/options/include",
     "$NETSTACK_NAPI_ROOT/http/constant/include",
+    "$NETSTACK_NAPI_ROOT/http/options/include",
   ]
   include_dirs += utils_include
 
