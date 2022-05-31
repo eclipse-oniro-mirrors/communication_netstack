@@ -49,12 +49,15 @@ private:
 
     bool IsCacheable(const HttpCacheResponse &cacheResponse);
 
-    int64_t
-        CacheResponseAge(int64_t sReqTime, int64_t sRespTime, int64_t nowTime, int64_t sRespDate, int64_t responseAge);
+    int64_t CacheResponseAgeMillis(int64_t sReqTime,
+                                   int64_t sRespTime,
+                                   int64_t nowTime,
+                                   int64_t sRespDate,
+                                   int64_t responseAge);
 
-    std::tuple<int64_t, int64_t, int64_t, int64_t, int64_t> GetFreshness();
+    std::tuple<int64_t, int64_t, int64_t, int64_t> GetFreshness();
 
-    int64_t ComputeFreshnessLifetime();
+    int64_t ComputeFreshnessLifetimeMillis();
 
     void UpdateRequestHeader(const std::string &etag, const std::string &lastModified, const std::string &date);
 

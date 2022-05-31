@@ -74,7 +74,7 @@ HWTEST_F(HttpCacheStrategyTest, computeFreshnessLifetimeLastModifiedBranch, test
     CacheStatus status = cacheStrategy.RunStrategy(response);
     NETSTACK_LOGI("status = %{public}d", status);
 
-    EXPECT_EQ(status, 0);
+    EXPECT_EQ(status, STALE);
 }
 
 HWTEST_F(HttpCacheStrategyTest, cacheResponseNoCache, testing::ext::TestSize.Level1)
@@ -150,7 +150,7 @@ HWTEST_F(HttpCacheStrategyTest, isCacheable_OK, testing::ext::TestSize.Level1)
     CacheStatus status = cacheStrategy.RunStrategy(response);
     NETSTACK_LOGI("status = %{public}d", status);
 
-    EXPECT_EQ(status, 1);
+    EXPECT_EQ(status, STALE);
 }
 
 HWTEST_F(HttpCacheStrategyTest, requestIfModifiedSinceStr, testing::ext::TestSize.Level1)
@@ -330,12 +330,12 @@ HWTEST_F(HttpCacheStrategyTest, CompareNumber_4, testing::ext::TestSize.Level1)
 HWTEST_F(HttpCacheStrategyTest, CompareNumber_5, testing::ext::TestSize.Level1)
 {
     HttpRequestOptions requestOptions;
-    requestOptions.SetRequestTime("Thur, 19 May 2022 08:19:59 GMT");
+    requestOptions.SetRequestTime("Thu, 19 May 2022 08:19:59 GMT");
     requestOptions.SetHeader("cache-control", "min-fresh=20");
 
     HttpResponse response;
     response.SetResponseCode(200);
-    response.SetResponseTime("Thur, 19 May 2022 08:21:59 GMT");
+    response.SetResponseTime("Thu, 19 May 2022 08:21:59 GMT");
     auto &responseHeader = const_cast<std::map<std::string, std::string> &>(response.GetHeader());
     responseHeader["expires"] = "Thu, 19 May 2022 08:22:26 GMT";
 
@@ -343,18 +343,18 @@ HWTEST_F(HttpCacheStrategyTest, CompareNumber_5, testing::ext::TestSize.Level1)
     CacheStatus status = cacheStrategy.RunStrategy(response);
     NETSTACK_LOGI("status = %{public}d", status);
 
-    EXPECT_EQ(status, 0);
+    EXPECT_EQ(status, STALE);
 }
 
 HWTEST_F(HttpCacheStrategyTest, CompareNumber_6, testing::ext::TestSize.Level1)
 {
     HttpRequestOptions requestOptions;
-    requestOptions.SetRequestTime("Thur, 20 May 2022 09:35:59 GMT");
+    requestOptions.SetRequestTime("Thu, 20 May 2022 09:35:59 GMT");
     requestOptions.SetHeader("cache-control", "min-fresh=20");
 
     HttpResponse response;
     response.SetResponseCode(200);
-    response.SetResponseTime("Thur, 20 May 2022 09:36:30 GMT");
+    response.SetResponseTime("Thu, 20 May 2022 09:36:30 GMT");
     auto &responseHeader = const_cast<std::map<std::string, std::string> &>(response.GetHeader());
     responseHeader["expires"] = "Sat, 04 Jun 2022 09:56:21 GMT";
     responseHeader["date"] = "Fri, 20 May 2022 09:37:29 GMT";
@@ -369,12 +369,12 @@ HWTEST_F(HttpCacheStrategyTest, CompareNumber_6, testing::ext::TestSize.Level1)
 HWTEST_F(HttpCacheStrategyTest, CompareNumber_7, testing::ext::TestSize.Level1)
 {
     HttpRequestOptions requestOptions;
-    requestOptions.SetRequestTime("Thur, 20 May 2022 09:35:59 GMT");
+    requestOptions.SetRequestTime("Thu, 20 May 2022 09:35:59 GMT");
     requestOptions.SetHeader("cache-control", "min-fresh=20");
 
     HttpResponse response;
     response.SetResponseCode(200);
-    response.SetResponseTime("Thur, 20 May 2022 09:36:30 GMT");
+    response.SetResponseTime("Thu, 20 May 2022 09:36:30 GMT");
     auto &responseHeader = const_cast<std::map<std::string, std::string> &>(response.GetHeader());
     responseHeader["expires"] = "Sat, 04 Jun 2022 09:56:21 GMT";
     responseHeader["last-modified"] = "Thu, 10 Feb 2022 10:55:14 GMT";
@@ -470,7 +470,7 @@ HWTEST_F(HttpCacheStrategyTest, cache110WarningBranch, testing::ext::TestSize.Le
     CacheStatus status = cacheStrategy.RunStrategy(response);
     NETSTACK_LOGI("status = %{public}d", status);
 
-    EXPECT_EQ(status, 0);
+    EXPECT_EQ(status, STALE);
 }
 
 CacheStatus switchTest(ResponseCode code)
@@ -508,7 +508,7 @@ HWTEST_F(HttpCacheStrategyTest, cacheSwitchBranch, testing::ext::TestSize.Level1
 
     for (const auto &iterRespCode : respCode) {
         result = switchTest(iterRespCode);
-        EXPECT_EQ(result, FRESH);
+        EXPECT_EQ(result, STALE);
     }
 }
 
@@ -537,12 +537,12 @@ HWTEST_F(HttpCacheStrategyTest, cache113WarningBranch, testing::ext::TestSize.Le
 HWTEST_F(HttpCacheStrategyTest, reqHeaderEtagBranch, testing::ext::TestSize.Level1)
 {
     HttpRequestOptions requestOptions;
-    requestOptions.SetRequestTime("Thur, 19 May 2022 08:19:59 GMT");
+    requestOptions.SetRequestTime("Thu, 19 May 2022 08:19:59 GMT");
     requestOptions.SetHeader("cache-control", "min-fresh=20");
 
     HttpResponse response;
     response.SetResponseCode(200);
-    response.SetResponseTime("Thur,  19 May 2022 08:21:59 GMT");
+    response.SetResponseTime("Thu,  19 May 2022 08:21:59 GMT");
 
     auto &responseHeader = const_cast<std::map<std::string, std::string> &>(response.GetHeader());
     responseHeader["expires"] = "Thu, 19 May 2022 08:22:26 GMT";
@@ -552,18 +552,18 @@ HWTEST_F(HttpCacheStrategyTest, reqHeaderEtagBranch, testing::ext::TestSize.Leve
     CacheStatus status = cacheStrategy.RunStrategy(response);
     NETSTACK_LOGI("status = %{public}d", status);
 
-    EXPECT_EQ(status, FRESH);
+    EXPECT_EQ(status, STALE);
 }
 
 HWTEST_F(HttpCacheStrategyTest, reqHeaderLastModifiedBranch, testing::ext::TestSize.Level1)
 {
     HttpRequestOptions requestOptions;
-    requestOptions.SetRequestTime("Thur, 19 May 2022 08:19:59 GMT");
+    requestOptions.SetRequestTime("Thu, 19 May 2022 08:19:59 GMT");
     requestOptions.SetHeader("cache-control", "min-fresh=20");
 
     HttpResponse response;
     response.SetResponseCode(200);
-    response.SetResponseTime("Thur,  19 May 2022 08:21:59 GMT");
+    response.SetResponseTime("Thu,  19 May 2022 08:21:59 GMT");
 
     auto &responseHeader = const_cast<std::map<std::string, std::string> &>(response.GetHeader());
     responseHeader["expires"] = "Thu, 19 May 2022 08:22:26 GMT";
@@ -573,18 +573,18 @@ HWTEST_F(HttpCacheStrategyTest, reqHeaderLastModifiedBranch, testing::ext::TestS
     CacheStatus status = cacheStrategy.RunStrategy(response);
     NETSTACK_LOGI("status = %{public}d", status);
 
-    EXPECT_EQ(status, FRESH);
+    EXPECT_EQ(status, STALE);
 }
 
 HWTEST_F(HttpCacheStrategyTest, reqHeaderDateBranch, testing::ext::TestSize.Level1)
 {
     HttpRequestOptions requestOptions;
-    requestOptions.SetRequestTime("Thur, 19 May 2022 08:19:59 GMT");
+    requestOptions.SetRequestTime("Thu, 19 May 2022 08:19:59 GMT");
     requestOptions.SetHeader("cache-control", "min-fresh=20");
 
     HttpResponse response;
     response.SetResponseCode(200);
-    response.SetResponseTime("Thur,  19 May 2022 08:21:59 GMT");
+    response.SetResponseTime("Thu,  19 May 2022 08:21:59 GMT");
 
     auto &responseHeader = const_cast<std::map<std::string, std::string> &>(response.GetHeader());
     responseHeader["expires"] = "Thu, 19 May 2022 08:22:26 GMT";
@@ -600,11 +600,11 @@ HWTEST_F(HttpCacheStrategyTest, reqHeaderDateBranch, testing::ext::TestSize.Leve
 HWTEST_F(HttpCacheStrategyTest, headerNull, testing::ext::TestSize.Level1)
 {
     HttpRequestOptions requestOptions;
-    requestOptions.SetRequestTime("Thur, 19 May 2022 08:19:59 GMT");
+    requestOptions.SetRequestTime("Thu, 19 May 2022 08:19:59 GMT");
 
     HttpResponse response;
     response.SetResponseCode(200);
-    response.SetResponseTime("Thur,  19 May 2022 08:21:59 GMT");
+    response.SetResponseTime("Thu,  19 May 2022 08:21:59 GMT");
 
     HttpCacheStrategy cacheStrategy(requestOptions);
     CacheStatus status = cacheStrategy.RunStrategy(response);
@@ -619,7 +619,7 @@ HWTEST_F(HttpCacheStrategyTest, requestTimeEmpty, testing::ext::TestSize.Level1)
 
     HttpResponse response;
     response.SetResponseCode(200);
-    response.SetResponseTime("Thur,  19 May 2022 08:21:59 GMT");
+    response.SetResponseTime("Thu,  19 May 2022 08:21:59 GMT");
 
     HttpCacheStrategy cacheStrategy(requestOptions);
     CacheStatus status = cacheStrategy.RunStrategy(response);
@@ -631,11 +631,11 @@ HWTEST_F(HttpCacheStrategyTest, requestTimeEmpty, testing::ext::TestSize.Level1)
 HWTEST_F(HttpCacheStrategyTest, computeFreshnessLifetimeEnd, testing::ext::TestSize.Level1)
 {
     HttpRequestOptions requestOptions;
-    requestOptions.SetRequestTime("Thur, 19 May 2022 08:19:59 GMT");
+    requestOptions.SetRequestTime("Thu, 19 May 2022 08:19:59 GMT");
 
     HttpResponse response;
     response.SetResponseCode(200);
-    response.SetResponseTime("Thur,  19 May 2022 08:21:59 GMT");
+    response.SetResponseTime("Thu,  19 May 2022 08:21:59 GMT");
 
     HttpCacheStrategy cacheStrategy(requestOptions);
     CacheStatus status = cacheStrategy.RunStrategy(response);
