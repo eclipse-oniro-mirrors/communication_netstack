@@ -13,73 +13,45 @@
  * limitations under the License.
  */
 
-#include "disk_handler.h"
+#include <fstream>
+#include <sstream>
+
 #include "netstack_log.h"
 
-#include <cerrno>
-#include <fcntl.h>
-#include <memory>
-#include <sys/file.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include "disk_handler.h"
 
 namespace OHOS::NetStack {
 DiskHandler::DiskHandler(std::string fileName) : fileName_(std::move(fileName)) {}
 
 void DiskHandler::Write(const std::string &str)
 {
-    int fd = open(fileName_.c_str(), O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
-    if (fd < 0) {
-        NETSTACK_LOGE("errmsg: Write open [%{public}d] %{public}s|\n", errno, strerror(errno));
+    std::lock_guard<std::mutex> guard(mutex_);
+    std::ofstream w(fileName_);
+    if (!w.is_open()) {
         return;
     }
-
-    int ret = flock(fd, LOCK_NB | LOCK_EX);
-    if (ret < 0) {
-        NETSTACK_LOGE("errmsg: Write open [%{public}d] %{public}s|\n", errno, strerror(errno));
-        close(fd);
-        return;
-    }
-
-    if (write(fd, str.c_str(), str.size()) < 0) {
-        NETSTACK_LOGE("errmsg: Write open [%{public}d] %{public}s|\n", errno, strerror(errno));
-    }
-
-    flock(fd, LOCK_UN);
-    close(fd);
+    w << str;
+    w.close();
 }
 
 std::string DiskHandler::Read()
 {
-    int fd = open(fileName_.c_str(), O_RDONLY);
-    if (fd < 0) {
-        NETSTACK_LOGE("errmsg: Read open [%{public}d] %{public}s|\n", errno, strerror(errno));
+    std::lock_guard<std::mutex> guard(mutex_);
+    std::ifstream r(fileName_);
+    if (!r.is_open()) {
         return {};
     }
+    std::stringstream b;
+    b << r.rdbuf();
+    r.close();
+    return b.str();
+}
 
-    int ret = flock(fd, LOCK_NB | LOCK_EX);
-    if (ret < 0) {
-        NETSTACK_LOGE("errmsg: Read flock [%{public}d] %{public}s|\n", errno, strerror(errno));
-        close(fd);
-        return {};
+void DiskHandler::Delete()
+{
+    std::lock_guard<std::mutex> guard(mutex_);
+    if (remove(fileName_.c_str()) < 0) {
+        NETSTACK_LOGI("remove file error %{public}d", errno);
     }
-
-    struct stat buf = {0};
-    if (fstat(fd, &buf) < 0 || buf.st_size <= 0) {
-        flock(fd, LOCK_UN);
-        close(fd);
-        return {};
-    }
-
-    std::unique_ptr<char> mem(new char[buf.st_size]);
-    if (read(fd, mem.get(), buf.st_size) < 0) {
-        NETSTACK_LOGE("errmsg: Read read [%{public}d] %{public}s|\n", errno, strerror(errno));
-    }
-
-    flock(fd, LOCK_UN);
-    close(fd);
-    std::string str;
-    str.append(mem.get(), buf.st_size);
-    return str;
 }
 } // namespace OHOS::NetStack

@@ -29,9 +29,9 @@ class CacheProxy final {
 
     HttpCacheStrategy strategy_;
 
-    std::string MakeKey();
-
 public:
+    std::string key_;
+
     CacheProxy() = delete;
 
     explicit CacheProxy(HttpRequestOptions &requestOptions);
@@ -39,6 +39,14 @@ public:
     bool ReadResponseFromCache(HttpResponse &response);
 
     void WriteResponseToCache(const HttpResponse &response);
+
+    static void RunCacheWithSize(size_t capacity);
+
+    static void RunCache();
+
+    static void FlushCache();
+
+    static void StopCacheAndDelete();
 };
 } // namespace OHOS::NetStack
 #endif // COMMUNICATIONNETSTACK_CACHE_PROXY_H

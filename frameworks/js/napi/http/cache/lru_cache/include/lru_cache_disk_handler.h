@@ -16,11 +16,14 @@
 #ifndef COMMUNICATIONNETSTACK_LRU_CACHE_DISK_HANDLER_H
 #define COMMUNICATIONNETSTACK_LRU_CACHE_DISK_HANDLER_H
 
+#include <atomic>
+
 #include "disk_handler.h"
 #include "lru_cache.h"
 #include "nocopyable.h"
 
-static constexpr const int MAX_DISK_CACHE_SIZE = 1024 * 1024 * 5;
+static constexpr const int MAX_DISK_CACHE_SIZE = 1024 * 1024 * 10;
+static constexpr const int MIN_DISK_CACHE_SIZE = 1024 * 1024;
 
 namespace OHOS::NetStack {
 class LRUCacheDiskHandler {
@@ -33,6 +36,10 @@ public:
 
     void ReadCacheFromJsonFile();
 
+    void Delete();
+
+    void SetCapacity(size_t capacity);
+
     std::unordered_map<std::string, std::string> Get(const std::string &key);
 
     void Put(const std::string &key, const std::unordered_map<std::string, std::string> &value);
@@ -40,7 +47,7 @@ public:
 private:
     LRUCache cache_;
     DiskHandler diskHandler_;
-    size_t capacity_;
+    std::atomic<size_t> capacity_;
 
     Json::Value ReadJsonValueFromFile();
 

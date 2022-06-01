@@ -84,6 +84,7 @@ public:
     static const char *const PARAM_KEY_READ_TIMEOUT;
     static const char *const PARAM_KEY_CONNECT_TIMEOUT;
     static const char *const PARAM_KEY_USING_PROTOCOL;
+    static const char *const PARAM_KEY_USING_CACHE;
 
     static const char *const RESPONSE_KEY_RESULT;
     static const char *const RESPONSE_KEY_RESPONSE_CODE;

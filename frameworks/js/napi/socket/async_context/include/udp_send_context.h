@@ -29,7 +29,7 @@ public:
 
     explicit UdpSendContext(napi_env env, EventManager *manager);
 
-    void ParseParams(napi_value *params, size_t paramsCount);
+    void ParseParams(napi_value *params, size_t paramsCount) override;
 
     [[nodiscard]] int GetSocketFd() const;
 

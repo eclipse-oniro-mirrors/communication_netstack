@@ -13,33 +13,29 @@
  * limitations under the License.
  */
 
-#if USE_CACHE
 #include <thread>
-#endif
 
 #include "netstack_log.h"
 
 #include "lru_cache_disk_handler.h"
 
-#if USE_CACHE
-static constexpr const int WRITE_INTERVAL = 60 * 1000;
-#endif
-
 namespace OHOS::NetStack {
 LRUCacheDiskHandler::LRUCacheDiskHandler(std::string fileName, size_t capacity)
-    : diskHandler_(std::move(fileName)), capacity_(std::min<size_t>(MAX_DISK_CACHE_SIZE, capacity))
+    : diskHandler_(std::move(fileName)),
+      capacity_(std::max<size_t>(std::min<size_t>(MAX_DISK_CACHE_SIZE, capacity), MIN_DISK_CACHE_SIZE))
 {
-#if USE_CACHE
-    // 从磁盘中读取缓存到内存里
-    ReadCacheFromJsonFile();
-    // 起线程每一分钟讲内存缓存持久化
-    std::thread([this]() {
-        while (true) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(WRITE_INTERVAL));
-            WriteCacheToJsonFile();
-        }
-    }).detach();
-#endif
+}
+
+void LRUCacheDiskHandler::SetCapacity(size_t capacity)
+{
+    capacity_ = std::max<size_t>(std::min<size_t>(MAX_DISK_CACHE_SIZE, capacity), MIN_DISK_CACHE_SIZE);
+    WriteCacheToJsonFile();
+}
+
+void LRUCacheDiskHandler::Delete()
+{
+    cache_.Clear();
+    diskHandler_.Delete();
 }
 
 Json::Value LRUCacheDiskHandler::ReadJsonValueFromFile()

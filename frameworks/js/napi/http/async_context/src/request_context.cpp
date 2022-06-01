@@ -30,7 +30,7 @@ static constexpr const int PARAM_URL_AND_OPTIONS_OR_CALLBACK = 2;
 static constexpr const int PARAM_URL_AND_OPTIONS_AND_CALLBACK = 3;
 
 namespace OHOS::NetStack {
-RequestContext::RequestContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
+RequestContext::RequestContext(napi_env env, EventManager *manager) : BaseContext(env, manager), usingCache_(true) {}
 
 void RequestContext::ParseParams(napi_value *params, size_t paramsCount)
 {
@@ -99,6 +99,13 @@ void RequestContext::ParseNumberOptions(napi_value optionsValue)
         NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CONNECT_TIMEOUT));
     if (options.GetConnectTimeout() == 0) {
         options.SetConnectTimeout(HttpConstant::DEFAULT_CONNECT_TIMEOUT);
+    }
+
+    if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_CACHE)) {
+        napi_value value = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_CACHE);
+        if (NapiUtils::GetValueType(GetEnv(), value) == napi_boolean) {
+            usingCache_ = NapiUtils::GetBooleanFromValue(GetEnv(), value);
+        }
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_PROTOCOL)) {
@@ -242,5 +249,10 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     /* parse extra data here to recover header */
 
     SetParseOK(ParseExtraData(optionsValue));
+}
+
+bool RequestContext::IsUsingCache() const
+{
+    return usingCache_;
 }
 } // namespace OHOS::NetStack

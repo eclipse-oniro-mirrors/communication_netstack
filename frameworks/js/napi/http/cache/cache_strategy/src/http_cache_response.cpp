@@ -22,8 +22,6 @@
 namespace OHOS::NetStack {
 void HttpCacheResponse::ParseCacheControl(const std::string &cacheControl)
 {
-    NETSTACK_LOGI("--- ParseCacheControl start ---");
-
     auto vec = CommonUtils::Split(cacheControl, SPLIT);
 
     for (const auto &str : vec) {
@@ -53,14 +51,10 @@ void HttpCacheResponse::ParseCacheControl(const std::string &cacheControl)
             }
         }
     }
-
-    NETSTACK_LOGI("--- ParseCacheControl end ---");
 }
 
 void HttpCacheResponse::ParseCacheResponseHeader(const std::map<std::string, std::string> &cacheResponseHeader)
 {
-    NETSTACK_LOGI("--- HttpCacheResponse start ---");
-
     if (cacheResponseHeader.empty()) {
         return;
     }
@@ -82,8 +76,6 @@ void HttpCacheResponse::ParseCacheResponseHeader(const std::map<std::string, std
             date_ = value;
         }
     }
-
-    NETSTACK_LOGI("--- HttpCacheResponse end ---");
 }
 
 time_t HttpCacheResponse::GetDate() const
@@ -213,6 +205,19 @@ void HttpCacheResponse::SetResponseTime(const std::string &responseTime)
 void HttpCacheResponse::SetRespCode(ResponseCode respCode)
 {
     respCode_ = respCode;
+}
+
+void HttpCacheResponse::SetRequestTime(const std::string &requestTime)
+{
+    requestTime_ = requestTime;
+}
+
+time_t HttpCacheResponse::GetRequestTime() const
+{
+    if (requestTime_.empty()) {
+        return INVALID_TIME;
+    }
+    return HttpTime::StrTimeToTimestamp(requestTime_);
 }
 
 HttpCacheResponse::HttpCacheResponse()

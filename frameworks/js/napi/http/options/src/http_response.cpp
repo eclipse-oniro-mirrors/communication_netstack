@@ -110,6 +110,16 @@ const std::string &HttpResponse::GetResponseTime() const
     return responseTime_;
 }
 
+void HttpResponse::SetRequestTime(const std::string &time)
+{
+    requestTime_ = time;
+}
+
+const std::string &HttpResponse::GetRequestTime() const
+{
+    return requestTime_;
+}
+
 void HttpResponse::SetWarning(const std::string &val)
 {
     header_[WARNING] = val;

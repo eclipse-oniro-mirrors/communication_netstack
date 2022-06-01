@@ -21,6 +21,15 @@
 namespace OHOS::NetStack {
 class HttpModuleExports {
 public:
+    class HttpResponseCache {
+    public:
+        static constexpr const char *FUNCTION_FLUSH = "flush";
+        static constexpr const char *FUNCTION_DELETE = "delete";
+
+        static napi_value Flush(napi_env env, napi_callback_info info);
+        static napi_value Delete(napi_env env, napi_callback_info info);
+    };
+
     class HttpRequest {
     public:
         static constexpr const char *FUNCTION_REQUEST = "request";
@@ -37,17 +46,23 @@ public:
     };
 
     static constexpr const char *FUNCTION_CREATE_HTTP = "createHttp";
+    static constexpr const char *FUNCTION_CREATE_HTTP_RESPONSE_CACHE = "createHttpResponseCache";
     static constexpr const char *INTERFACE_REQUEST_METHOD = "RequestMethod";
     static constexpr const char *INTERFACE_RESPONSE_CODE = "ResponseCode";
     static constexpr const char *INTERFACE_HTTP_REQUEST = "HttpRequest";
     static constexpr const char *INTERFACE_HTTP_PROTOCOL = "HttpProtocol";
+    static constexpr const char *INTERFACE_HTTP_RESPONSE_CACHE = "HttpResponseCache";
 
     static napi_value InitHttpModule(napi_env env, napi_value exports);
 
 private:
     static napi_value CreateHttp(napi_env env, napi_callback_info info);
 
+    static napi_value CreateHttpResponseCache(napi_env env, napi_callback_info info);
+
     static void DefineHttpRequestClass(napi_env env, napi_value exports);
+
+    static void DefineHttpResponseCacheClass(napi_env env, napi_value exports);
 
     static void InitHttpProperties(napi_env env, napi_value exports);
 

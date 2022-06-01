@@ -22,8 +22,6 @@
 namespace OHOS::NetStack {
 void HttpCacheRequest::ParseCacheControl(const std::string &cacheControl)
 {
-    NETSTACK_LOGI("--- ParseCacheControl start ---");
-
     auto vec = CommonUtils::Split(cacheControl, SPLIT);
     for (const auto &str : vec) {
         if (str == NO_CACHE) {
@@ -48,14 +46,10 @@ void HttpCacheRequest::ParseCacheControl(const std::string &cacheControl)
             }
         }
     }
-
-    NETSTACK_LOGI("--- ParseCacheControl end ---");
 }
 
 void HttpCacheRequest::ParseRequestHeader(const std::map<std::string, std::string> &requestHeader)
 {
-    NETSTACK_LOGI("--- HttpCacheRequest start ---");
-
     if (requestHeader.empty()) {
         return;
     }
@@ -72,8 +66,6 @@ void HttpCacheRequest::ParseRequestHeader(const std::map<std::string, std::strin
             ifNoneMatch_ = value;
         }
     }
-
-    NETSTACK_LOGI("--- HttpCacheRequest end ---");
 }
 
 void HttpCacheRequest::SetRequestTime(const std::string &requestTime)

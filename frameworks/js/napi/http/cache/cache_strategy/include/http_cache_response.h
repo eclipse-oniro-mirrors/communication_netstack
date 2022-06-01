@@ -74,6 +74,10 @@ public:
 
     void SetResponseTime(const std::string &responseTime);
 
+    void SetRequestTime(const std::string &requestTime);
+
+    [[nodiscard]] time_t GetRequestTime() const;
+
 private:
     void ParseCacheControl(const std::string &cacheControl);
 
@@ -83,6 +87,7 @@ private:
     std::string etag_;
     std::string age_;
     std::string responseTime_;
+    std::string requestTime_;
 
     bool mustRevalidate_;
     bool noCache_;

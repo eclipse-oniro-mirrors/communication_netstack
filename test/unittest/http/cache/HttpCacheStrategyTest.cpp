@@ -363,7 +363,7 @@ HWTEST_F(HttpCacheStrategyTest, CompareNumber_6, testing::ext::TestSize.Level1)
     CacheStatus status = cacheStrategy.RunStrategy(response);
     NETSTACK_LOGI("status = %{public}d", status);
 
-    EXPECT_EQ(status, 0);
+    EXPECT_EQ(status, STALE);
 }
 
 HWTEST_F(HttpCacheStrategyTest, CompareNumber_7, testing::ext::TestSize.Level1)
@@ -384,7 +384,7 @@ HWTEST_F(HttpCacheStrategyTest, CompareNumber_7, testing::ext::TestSize.Level1)
     CacheStatus status = cacheStrategy.RunStrategy(response);
     NETSTACK_LOGI("status = %{public}d", status);
 
-    EXPECT_EQ(status, 0);
+    EXPECT_EQ(status, STALE);
 }
 
 HWTEST_F(HttpCacheStrategyTest, CompareNumber_8, testing::ext::TestSize.Level1)
@@ -407,7 +407,7 @@ HWTEST_F(HttpCacheStrategyTest, CompareNumber_8, testing::ext::TestSize.Level1)
     CacheStatus status = cacheStrategy.RunStrategy(response);
     NETSTACK_LOGI("status = %{public}d", status);
 
-    EXPECT_EQ(status, 0);
+    EXPECT_EQ(status, STALE);
 }
 
 HWTEST_F(HttpCacheStrategyTest, CompareNumber_9, testing::ext::TestSize.Level1)
