@@ -16,6 +16,7 @@
 #ifndef COMMUNICATIONNETSTACK_DISK_HANDLER_H
 #define COMMUNICATIONNETSTACK_DISK_HANDLER_H
 
+#include <mutex>
 #include <string>
 
 #include "nocopyable.h"
@@ -25,14 +26,18 @@ class DiskHandler final {
 public:
     DiskHandler() = delete;
 
-    DiskHandler(std::string fileName);
+    explicit DiskHandler(std::string fileName);
 
     void Write(const std::string &str);
+
+    void Delete();
 
     [[nodiscard]] std::string Read();
 
 private:
     DISALLOW_COPY_AND_MOVE(DiskHandler);
+
+    std::mutex mutex_;
 
     std::string fileName_;
 };

@@ -31,7 +31,7 @@ public:
 
     explicit SendContext(napi_env env, EventManager *manager);
 
-    void ParseParams(napi_value *params, size_t paramsCount);
+    void ParseParams(napi_value *params, size_t paramsCount) override;
 
     void *data;
 

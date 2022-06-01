@@ -50,6 +50,7 @@ CacheStatus HttpCacheStrategy::RunStrategy(HttpResponse &response)
     cacheResponse_.ParseCacheResponseHeader(response.GetHeader());
     cacheResponse_.SetRespCode(static_cast<ResponseCode>(response.GetResponseCode()));
     cacheResponse_.SetResponseTime(response.GetResponseTime());
+    cacheResponse_.SetRequestTime(response.GetRequestTime());
     return RunStrategyInternal(response);
 }
 
@@ -64,88 +65,120 @@ bool HttpCacheStrategy::IsCacheable(const HttpResponse &response)
     return IsCacheable(tempCacheResponse);
 }
 
-int64_t HttpCacheStrategy::CacheResponseAgeMillis(int64_t sReqTime,
-                                                  int64_t sRespTime,
-                                                  int64_t nowTime,
-                                                  int64_t sRespDate,
-                                                  int64_t responseAge)
+int64_t HttpCacheStrategy::CacheResponseAgeMillis()
 {
-    int64_t apparentReceivedAge = 0;
+    // 4.2.3. Calculating Age
 
-    if (sRespDate != INVALID_TIME) {
-        apparentReceivedAge = std::max<int64_t>(0, sRespTime - sRespDate);
+    /* The following data is used for the age calculation:
+
+    age_value
+    The term "age_value" denotes the value of the Age header field (Section 5.1), in a form appropriate for arithmetic
+    operation; or 0, if not available.
+
+    date_value
+    The term "date_value" denotes the value of the Date header field, in a form appropriate for arithmetic operations.
+    See Section 7.1.1.2 of [RFC7231] for the definition of the Date header field, and for requirements regarding
+    responses without it.
+
+    now
+    The term "now" means "the current value of the clock at the host performing the calculation". A host ought to use
+    NTP ([RFC5905]) or some similar protocol to synchronize its clocks to Coordinated Universal Time.
+
+    request_time
+    The current value of the clock at the host at the time the request resulting in the stored response was made.
+
+    response_time
+    The current value of the clock at the host at the time the response was received.
+    A response's age can be calculated in two entirely independent ways:
+
+    the "apparent_age": response_time minus date_value, if the local clock is reasonably well synchronized to the origin
+    server's clock. If the result is negative, the result is replaced by zero. the "corrected_age_value", if all of the
+    caches along the response path implement HTTP/1.1. A cache MUST interpret this value relative to the time the
+    request was initiated, not the time that the response was received. apparent_age = max(0, response_time -
+    date_value);
+
+    response_delay = response_time - request_time;
+    corrected_age_value = age_value + response_delay;
+    These are combined as
+
+    corrected_initial_age = max(apparent_age, corrected_age_value);
+    unless the cache is confident in the value of the Age header field (e.g., because there are no HTTP/1.0 hops in the
+    Via header field), in which case the corrected_age_value MAY be used as the corrected_initial_age.
+
+    The current_age of a stored response can then be calculated by adding the amount of time (in seconds) since the
+    stored response was last validated by the origin server to the corrected_initial_age.
+
+    resident_time = now - response_time;
+    current_age = corrected_initial_age + resident_time; */
+
+    int64_t age = std::max<int64_t>(0, cacheResponse_.GetAgeSeconds());
+    int64_t dateTime = std::max<int64_t>(0, cacheResponse_.GetDate());
+    int64_t nowTime = std::max<int64_t>(0, HttpTime::GetNowTimeSeconds());
+    int64_t requestTime = std::max<int64_t>(0, cacheResponse_.GetRequestTime());
+    int64_t responseTime = std::max<int64_t>(0, cacheResponse_.GetResponseTime());
+
+    NETSTACK_LOGI("CacheResponseAgeMillis: %{public}lld, %{public}lld, %{public}lld, %{public}lld, %{public}lld",
+                  static_cast<long long>(age), static_cast<long long>(dateTime), static_cast<long long>(nowTime),
+                  static_cast<long long>(requestTime), static_cast<long long>(responseTime));
+
+    int64_t apparentAge = std::max<int64_t>(0, responseTime - dateTime);
+    int64_t responseDelay = std::max<int64_t>(0, responseTime - requestTime);
+    int64_t correctedAgeValue = age + responseDelay;
+    int64_t correctedInitialAge = std::max<int64_t>(apparentAge, correctedAgeValue);
+
+    int64_t residentTime = std::max<int64_t>(0, nowTime - responseTime);
+
+    return (correctedInitialAge + residentTime) * CONVERT_TO_MILLISECONDS;
+}
+
+int64_t HttpCacheStrategy::ComputeFreshnessLifetimeSecondsInternal()
+{
+    int64_t sMaxAge = cacheResponse_.GetSMaxAgeSeconds();
+    if (sMaxAge != INVALID_TIME) {
+        // If the cache is shared and the s-maxage response directive (Section 5.2.2.9) is present, use its value
+        return sMaxAge;
     }
 
-    int64_t receivedAge = apparentReceivedAge;
-    if (responseAge != INVALID_TIME) {
-        receivedAge = std::max(apparentReceivedAge, responseAge);
+    int64_t maxAge = cacheResponse_.GetMaxAgeSeconds();
+    if (maxAge != INVALID_TIME) {
+        // If the max-age response directive (Section 5.2.2.8) is present, use its value
+        return maxAge;
     }
 
-    int64_t responseDuration = sRespTime - sReqTime;
+    if (cacheResponse_.GetExpires() != INVALID_TIME) {
+        // If the Expires response header field (Section 5.3) is present, use its value minus the value of the Date
+        // response header field
+        int64_t responseTime = cacheResponse_.GetResponseTime();
+        if (cacheResponse_.GetDate() != INVALID_TIME) {
+            responseTime = cacheResponse_.GetDate();
+        }
+        int64_t delta = cacheResponse_.GetExpires() - responseTime;
+        return std::max<int64_t>(delta, 0);
+    }
 
-    int64_t residentDuration = nowTime - sRespTime;
+    if (cacheResponse_.GetLastModified() != INVALID_TIME) {
+        // 4.2.2. Calculating Heuristic Freshness
+        int64_t requestTime = cacheRequest_.GetRequestTime();
+        if (cacheResponse_.GetDate() != INVALID_TIME) {
+            requestTime = cacheResponse_.GetDate();
+        }
+        int64_t delta = requestTime - cacheResponse_.GetLastModified();
+        return std::max<int64_t>(delta / DECIMAL, 0);
+    }
 
-    return (receivedAge + responseDuration + residentDuration) * CONVERT_TO_MILLISECONDS;
+    return 0;
 }
 
 int64_t HttpCacheStrategy::ComputeFreshnessLifetimeMillis()
 {
-    NETSTACK_LOGI("--- ComputeFreshnessLifetimeMillis start ---");
-
-    int64_t maxAge = cacheResponse_.GetMaxAgeSeconds();
-    int64_t sMaxAge = cacheResponse_.GetSMaxAgeSeconds();
-
-    NETSTACK_LOGI("maxAge=%{public}lld", static_cast<long long>(maxAge));
-
-    int64_t lifeTime = 0;
-
-    if (sMaxAge != INVALID_TIME) {
-        // If the cache is shared and the s-maxage response directive (Section 5.2.2.9) is present, use its value
-        lifeTime = sMaxAge;
-    } else if (maxAge != INVALID_TIME) {
-        // If the max-age response directive (Section 5.2.2.8) is present, use its value
-        NETSTACK_LOGI("--- ComputeFreshnessLifetimeMillis end ---");
-        lifeTime = maxAge;
-    } else if (cacheResponse_.GetExpires() != INVALID_TIME) {
-        // If the Expires response header field (Section 5.3) is present, use its value minus the value of the Date
-        // response header field
-        int64_t servedMillis;
-        if (cacheResponse_.GetDate() != INVALID_TIME) {
-            servedMillis = cacheResponse_.GetDate();
-        } else {
-            servedMillis = cacheResponse_.GetResponseTime();
-            NETSTACK_LOGI("servedMillis=%{public}lld", static_cast<long long>(servedMillis));
-        }
-        NETSTACK_LOGI("getExpiresSeconds=%{public}lld", static_cast<long long>(cacheResponse_.GetExpires()));
-        int64_t delta = cacheResponse_.GetExpires() - servedMillis;
-
-        NETSTACK_LOGI("delta=%{public}lld", static_cast<long long>(delta));
-
-        NETSTACK_LOGI("--- ComputeFreshnessLifetimeMillis end ---");
-        lifeTime = std::max<int64_t>(delta, 0);
-    } else if (cacheResponse_.GetLastModified() != INVALID_TIME) {
-        // 4.2.2. Calculating Heuristic Freshness
-        int64_t servedMillis;
-        if (cacheResponse_.GetDate() != INVALID_TIME) {
-            servedMillis = cacheResponse_.GetDate();
-        } else {
-            servedMillis = cacheRequest_.GetRequestTime();
-        }
-        int64_t delta = servedMillis - cacheResponse_.GetLastModified();
-
-        NETSTACK_LOGI("delta=%{public}lld", static_cast<long long>(delta));
-
-        NETSTACK_LOGI("--- ComputeFreshnessLifetimeMillis end ---");
-        lifeTime = std::max<int64_t>(delta / DECIMAL, 0);
-    }
+    int64_t lifeTime = ComputeFreshnessLifetimeSecondsInternal();
 
     int64_t reqMaxAge = cacheRequest_.GetMaxAgeSeconds();
     if (reqMaxAge != INVALID_TIME) {
         lifeTime = std::min(lifeTime, reqMaxAge);
     }
-    NETSTACK_LOGI("lifeTime=%{public}lld", static_cast<long long>(lifeTime));
 
-    NETSTACK_LOGI("--- ComputeFreshnessLifetimeMillis end ---");
+    NETSTACK_LOGI("lifeTime=%{public}lld", static_cast<long long>(lifeTime));
     return lifeTime * CONVERT_TO_MILLISECONDS;
 }
 
@@ -153,8 +186,6 @@ void HttpCacheStrategy::UpdateRequestHeader(const std::string &etag,
                                             const std::string &lastModified,
                                             const std::string &date)
 {
-    NETSTACK_LOGI("--- UpdateRequestHeader start ---");
-
     if (!etag.empty()) {
         requestOptions_.SetHeader(IF_NONE_MATCH, etag);
     } else if (!lastModified.empty()) {
@@ -196,41 +227,29 @@ bool HttpCacheStrategy::IsCacheable(const HttpCacheResponse &cacheResponse)
 
 std::tuple<int64_t, int64_t, int64_t, int64_t> HttpCacheStrategy::GetFreshness()
 {
-    int64_t ageMillis =
-        CacheResponseAgeMillis(cacheRequest_.GetRequestTime(), cacheResponse_.GetResponseTime(),
-                               HttpTime::GetNowTimeSeconds(), cacheResponse_.GetDate(), cacheResponse_.GetAgeSeconds());
+    int64_t ageMillis = CacheResponseAgeMillis();
 
     int64_t lifeTime = ComputeFreshnessLifetimeMillis();
 
-    int64_t minFreshMillis = 0;
-    minFreshMillis = cacheRequest_.GetMinFreshSeconds();
-    if (minFreshMillis != INVALID_TIME) {
-        minFreshMillis *= CONVERT_TO_MILLISECONDS;
-    }
+    int64_t minFreshMillis = std::max<int64_t>(0, cacheRequest_.GetMinFreshSeconds() * CONVERT_TO_MILLISECONDS);
+
     int64_t maxStaleMillis = 0;
     if (!cacheResponse_.IsMustRevalidate()) {
-        maxStaleMillis = cacheRequest_.GetMaxStaleSeconds();
+        maxStaleMillis = std::max<int64_t>(0, cacheRequest_.GetMaxStaleSeconds() * CONVERT_TO_MILLISECONDS);
     }
-    if (maxStaleMillis != INVALID_TIME) {
-        maxStaleMillis *= CONVERT_TO_MILLISECONDS;
-    }
-    NETSTACK_LOGI("%{public}lld, %{public}lld, %{public}lld, %{public}lld", static_cast<long long>(ageMillis),
-                  static_cast<long long>(minFreshMillis), static_cast<long long>(lifeTime),
-                  static_cast<long long>(maxStaleMillis));
 
+    NETSTACK_LOGI("GetFreshness: %{public}lld, %{public}lld, %{public}lld, %{public}lld",
+                  static_cast<long long>(ageMillis), static_cast<long long>(minFreshMillis),
+                  static_cast<long long>(lifeTime), static_cast<long long>(maxStaleMillis));
     return {ageMillis, minFreshMillis, lifeTime, maxStaleMillis};
 }
 
 CacheStatus HttpCacheStrategy::RunStrategyInternal(HttpResponse &response)
 {
-    NETSTACK_LOGI("request nocache = %{public}d", cacheRequest_.IsNoCache());
-
     if (cacheRequest_.IsNoCache()) {
         NETSTACK_LOGI("return DENY");
         return DENY;
     }
-
-    NETSTACK_LOGI("response nocache = %{public}d", cacheResponse_.IsNoCache());
 
     if (cacheResponse_.IsNoCache()) {
         NETSTACK_LOGI("return STALE");
@@ -255,18 +274,16 @@ CacheStatus HttpCacheStrategy::RunStrategyInternal(HttpResponse &response)
 
     auto [ageMillis, minFreshMillis, lifeTime, maxStaleMillis] = GetFreshness();
 
-    NETSTACK_LOGI("nocache:%{public}d", cacheResponse_.IsNoCache());
     if (ageMillis + minFreshMillis < lifeTime + maxStaleMillis) {
         if (ageMillis + minFreshMillis >= lifeTime) {
-            NETSTACK_LOGI("110 HttpURLConnection");
             response.SetWarning("110 \"Response is STALE\"");
         }
 
         if (ageMillis > ONE_DAY_MILLISECONDS && cacheRequest_.GetMaxAgeSeconds() == INVALID_TIME &&
             cacheResponse_.GetExpires() == INVALID_TIME) {
-            NETSTACK_LOGI("113 HttpURLConnection");
             response.SetWarning("113 \"Heuristic expiration\"");
         }
+
         NETSTACK_LOGI("return FRESH");
         return FRESH;
     }
@@ -274,7 +291,7 @@ CacheStatus HttpCacheStrategy::RunStrategyInternal(HttpResponse &response)
     // The cache has expired and the request needs to be re-initialized
     UpdateRequestHeader(cacheResponse_.GetEtag(), cacheResponse_.GetLastModifiedStr(), cacheResponse_.GetDateStr());
 
-    NETSTACK_LOGI("---IsCacheUseful end---");
+    NETSTACK_LOGI("return STALE");
     return STALE;
 }
 } // namespace OHOS::NetStack

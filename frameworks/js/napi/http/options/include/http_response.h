@@ -56,6 +56,10 @@ public:
 
     [[nodiscard]] const std::string &GetResponseTime() const;
 
+    void SetRequestTime(const std::string &time);
+
+    [[nodiscard]] const std::string &GetRequestTime() const;
+
     void SetWarning(const std::string &val);
 
 private:
@@ -70,6 +74,8 @@ private:
     std::string cookies_;
 
     std::string responseTime_;
+
+    std::string requestTime_;
 };
 } // namespace OHOS::NetStack
 

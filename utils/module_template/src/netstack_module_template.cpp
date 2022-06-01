@@ -154,4 +154,20 @@ napi_value NewInstance(napi_env env, napi_callback_info info, const std::string 
 
     return result;
 }
+
+napi_value NewInstanceNoManager(napi_env env, napi_callback_info info, const std::string &name, Finalizer finalizer)
+{
+    napi_value thisVal = nullptr;
+    NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr));
+
+    napi_value jsConstructor = NapiUtils::GetNamedProperty(env, thisVal, name);
+    if (NapiUtils::GetValueType(env, jsConstructor) == napi_undefined) {
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_new_instance(env, jsConstructor, 0, nullptr, &result));
+
+    return result;
+}
 } // namespace OHOS::NetStack::ModuleTemplate

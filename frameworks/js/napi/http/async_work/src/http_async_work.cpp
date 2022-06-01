@@ -29,4 +29,24 @@ void HttpAsyncWork::RequestCallback(napi_env env, napi_status status, void *data
 {
     BaseAsyncWork::AsyncWorkCallback<RequestContext, HttpExec::RequestCallback>(env, status, data);
 }
+
+void HttpAsyncWork::ExecFlush(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<BaseContext, HttpResponseCacheExec::ExecFlush>(env, data);
+}
+
+void HttpAsyncWork::FlushCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<BaseContext, HttpResponseCacheExec::FlushCallback>(env, status, data);
+}
+
+void HttpAsyncWork::ExecDelete(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<BaseContext, HttpResponseCacheExec::ExecDelete>(env, data);
+}
+
+void HttpAsyncWork::DeleteCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<BaseContext, HttpResponseCacheExec::DeleteCallback>(env, status, data);
+}
 } // namespace OHOS::NetStack

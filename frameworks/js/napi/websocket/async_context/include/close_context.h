@@ -30,7 +30,7 @@ public:
 
     explicit CloseContext(napi_env env, EventManager *manager);
 
-    void ParseParams(napi_value *params, size_t paramsCount);
+    void ParseParams(napi_value *params, size_t paramsCount) override;
 
     uint32_t code;
 

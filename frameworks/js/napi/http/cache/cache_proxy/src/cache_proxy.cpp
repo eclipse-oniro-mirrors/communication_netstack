@@ -13,50 +13,57 @@
  * limitations under the License.
  */
 
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+
 #include "base64_utils.h"
 #include "calculate_md5.h"
 #include "constant.h"
-#if USE_CACHE
 #include "http_exec.h"
-#endif
 #include "lru_cache_disk_handler.h"
 #include "netstack_common_utils.h"
-#if USE_CACHE
 #include "netstack_log.h"
 #include "request_context.h"
-#endif
 
 #include "cache_proxy.h"
 
-static constexpr const char *CACHE_FILE = "/data/storage/el2/base/cache.json";
+static constexpr const char *CACHE_FILE = "/data/storage/el2/base/cache/cache.json";
+static constexpr const int WRITE_INTERVAL = 60;
 
 namespace OHOS::NetStack {
-static LRUCacheDiskHandler DISK_LRU_CACHE(CACHE_FILE, MAX_DISK_CACHE_SIZE); // NOLINT(cert-err58-cpp)
+std::mutex DISK_CACHE_MUTEX;
+std::mutex CACHE_NEED_RUN_MUTEX;
+std::atomic_bool CACHE_NEED_RUN(false);
+std::atomic_bool CACHE_IS_RUNNING(false);
+std::condition_variable CACHE_THREAD_CONDITION;
+std::condition_variable CACHE_NEED_RUN_CONDITION;
+static LRUCacheDiskHandler DISK_LRU_CACHE(CACHE_FILE, 0); // NOLINT(cert-err58-cpp)
 
 CacheProxy::CacheProxy(HttpRequestOptions &requestOptions) : requestOptions_(requestOptions), strategy_(requestOptions)
 {
-}
-
-std::string CacheProxy::MakeKey()
-{
-    std::string str = requestOptions_.GetUrl() + HttpConstant::HTTP_LINE_SEPARATOR +
-                      CommonUtils::ToLower(requestOptions_.GetMethod()) + HttpConstant::HTTP_LINE_SEPARATOR;
-    for (const auto &p : requestOptions_.GetHeader()) {
+    std::string str = requestOptions.GetUrl() + HttpConstant::HTTP_LINE_SEPARATOR +
+                      CommonUtils::ToLower(requestOptions.GetMethod()) + HttpConstant::HTTP_LINE_SEPARATOR;
+    for (const auto &p : requestOptions.GetHeader()) {
         str += p.first + HttpConstant::HTTP_HEADER_SEPARATOR + p.second + HttpConstant::HTTP_LINE_SEPARATOR;
     }
-    str += std::to_string(requestOptions_.GetHttpVersion());
-    return CalculateMD5(str);
+    str += std::to_string(requestOptions.GetHttpVersion());
+    key_ = CalculateMD5(str);
 }
 
 bool CacheProxy::ReadResponseFromCache(HttpResponse &response)
 {
-#if USE_CACHE
+    if (!CACHE_IS_RUNNING.load()) {
+        return false;
+    }
+
     if (!strategy_.CouldUseCache()) {
         NETSTACK_LOGI("only GET/HEAD method or header has [Range] can use cache");
         return false;
     }
 
-    auto responseFromCache = DISK_LRU_CACHE.Get(MakeKey());
+    auto responseFromCache = DISK_LRU_CACHE.Get(key_);
     if (responseFromCache.empty()) {
         NETSTACK_LOGI("no cache with this request");
         return false;
@@ -66,6 +73,7 @@ bool CacheProxy::ReadResponseFromCache(HttpResponse &response)
     cachedResponse.SetResult(Base64::Decode(responseFromCache[HttpConstant::RESPONSE_KEY_RESULT]));
     cachedResponse.SetCookies(Base64::Decode(responseFromCache[HttpConstant::RESPONSE_KEY_COOKIES]));
     cachedResponse.SetResponseTime(Base64::Decode(responseFromCache[HttpConstant::RESPONSE_TIME]));
+    cachedResponse.SetRequestTime(Base64::Decode(responseFromCache[HttpConstant::REQUEST_TIME]));
     cachedResponse.SetResponseCode(static_cast<uint32_t>(ResponseCode::OK));
     cachedResponse.ParseHeaders();
 
@@ -79,7 +87,7 @@ bool CacheProxy::ReadResponseFromCache(HttpResponse &response)
         NETSTACK_LOGI("cache is STATE, we try to talk to the server");
         RequestContext context(nullptr, nullptr);
         context.options = requestOptions_;
-        HttpExec::ExecRequest(&context);
+        HttpExec::RequestWithoutCache(&context);
         if (context.response.GetResponseCode() == static_cast<uint32_t>(ResponseCode::NOT_MODIFIED)) {
             NETSTACK_LOGI("cache is NOT_MODIFIED, we use the cache");
             response = cachedResponse;
@@ -92,14 +100,14 @@ bool CacheProxy::ReadResponseFromCache(HttpResponse &response)
     }
     NETSTACK_LOGI("cache should not be used");
     return false;
-#else
-    return false;
-#endif
 }
 
 void CacheProxy::WriteResponseToCache(const HttpResponse &response)
 {
-#if USE_CACHE
+    if (!CACHE_IS_RUNNING.load()) {
+        return;
+    }
+
     if (!strategy_.IsCacheable(response)) {
         NETSTACK_LOGI("do not cache this response");
         return;
@@ -109,8 +117,60 @@ void CacheProxy::WriteResponseToCache(const HttpResponse &response)
     cacheResponse[HttpConstant::RESPONSE_KEY_RESULT] = Base64::Encode(response.GetResult());
     cacheResponse[HttpConstant::RESPONSE_KEY_COOKIES] = Base64::Encode(response.GetCookies());
     cacheResponse[HttpConstant::RESPONSE_TIME] = Base64::Encode(response.GetResponseTime());
+    cacheResponse[HttpConstant::REQUEST_TIME] = Base64::Encode(response.GetRequestTime());
 
-    DISK_LRU_CACHE.Put(MakeKey(), cacheResponse);
-#endif
+    DISK_LRU_CACHE.Put(key_, cacheResponse);
+}
+
+void CacheProxy::RunCache()
+{
+    RunCacheWithSize(MAX_DISK_CACHE_SIZE);
+}
+
+void CacheProxy::RunCacheWithSize(size_t capacity)
+{
+    if (CACHE_IS_RUNNING.load()) {
+        return;
+    }
+    DISK_LRU_CACHE.SetCapacity(capacity);
+
+    CACHE_NEED_RUN.store(true);
+    // 从磁盘中读取缓存到内存里
+    DISK_LRU_CACHE.ReadCacheFromJsonFile();
+    // 起线程每一分钟将内存缓存持久化
+    std::thread([]() {
+        CACHE_IS_RUNNING.store(true);
+        while (CACHE_NEED_RUN.load()) {
+            std::unique_lock<std::mutex> lock(CACHE_NEED_RUN_MUTEX);
+            CACHE_NEED_RUN_CONDITION.wait_for(lock, std::chrono::seconds(WRITE_INTERVAL),
+                                              [] { return !CACHE_NEED_RUN.load(); });
+
+            DISK_LRU_CACHE.WriteCacheToJsonFile();
+        }
+
+        CACHE_IS_RUNNING.store(false);
+        CACHE_THREAD_CONDITION.notify_all();
+    }).detach();
+}
+
+void CacheProxy::FlushCache()
+{
+    if (!CACHE_IS_RUNNING.load()) {
+        return;
+    }
+    DISK_LRU_CACHE.WriteCacheToJsonFile();
+}
+
+void CacheProxy::StopCacheAndDelete()
+{
+    if (!CACHE_IS_RUNNING.load()) {
+        return;
+    }
+    CACHE_NEED_RUN.store(false);
+    CACHE_NEED_RUN_CONDITION.notify_all();
+
+    std::unique_lock<std::mutex> lock(DISK_CACHE_MUTEX);
+    CACHE_THREAD_CONDITION.wait(lock, [] { return !CACHE_IS_RUNNING.load(); });
+    DISK_LRU_CACHE.Delete();
 }
 } // namespace OHOS::NetStack

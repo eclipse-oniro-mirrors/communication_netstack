@@ -76,6 +76,8 @@ public:
 
     [[nodiscard]] EventManager *GetManager() const;
 
+    virtual void ParseParams(napi_value *params, size_t paramsCount);
+
 protected:
     EventManager *manager_;
 

@@ -25,6 +25,23 @@
 #include "request_context.h"
 
 namespace OHOS::NetStack {
+class HttpResponseCacheExec final {
+public:
+    DISALLOW_COPY_AND_MOVE(HttpResponseCacheExec);
+
+    HttpResponseCacheExec() = default;
+
+    ~HttpResponseCacheExec() = default;
+
+    static bool ExecFlush(BaseContext *context);
+
+    static napi_value FlushCallback(BaseContext *context);
+
+    static bool ExecDelete(BaseContext *context);
+
+    static napi_value DeleteCallback(BaseContext *context);
+};
+
 class HttpExec final {
 public:
     DISALLOW_COPY_AND_MOVE(HttpExec);
@@ -32,6 +49,8 @@ public:
     HttpExec() = default;
 
     ~HttpExec() = default;
+
+    static bool RequestWithoutCache(RequestContext *context);
 
     static bool ExecRequest(RequestContext *context);
 

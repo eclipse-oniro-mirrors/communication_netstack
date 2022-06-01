@@ -66,14 +66,8 @@ std::mutex HttpExec::mutex_;
 
 bool HttpExec::initialized_ = false;
 
-bool HttpExec::ExecRequest(RequestContext *context)
+bool HttpExec::RequestWithoutCache(RequestContext *context)
 {
-    context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
-    CacheProxy proxy(context->options);
-    if (proxy.ReadResponseFromCache(context->response)) {
-        return true;
-    }
-
     if (!initialized_) {
         NETSTACK_LOGE("curl not init");
         return false;
@@ -100,6 +94,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
         return false;
     }
 
+    context->response.SetRequestTime(HttpTime::GetNowTimeGMT());
     NETSTACK_CURL_EASY_PERFORM(handle.get(), context);
     context->response.SetResponseTime(HttpTime::GetNowTimeGMT());
 
@@ -121,6 +116,22 @@ bool HttpExec::ExecRequest(RequestContext *context)
 
     context->response.SetResponseCode(responseCode);
     context->response.ParseHeaders();
+
+    return true;
+}
+
+bool HttpExec::ExecRequest(RequestContext *context)
+{
+    context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
+    CacheProxy proxy(context->options);
+    if (context->IsUsingCache() && proxy.ReadResponseFromCache(context->response)) {
+        return true;
+    }
+
+    if (!RequestWithoutCache(context)) {
+        return false;
+    }
+
     proxy.WriteResponseToCache(context->response);
 
     return true;
@@ -356,5 +367,29 @@ bool HttpExec::IsUnReserved(unsigned char in)
             break;
     }
     return false;
+}
+
+bool HttpResponseCacheExec::ExecFlush(BaseContext *context)
+{
+    (void)context;
+    CacheProxy::FlushCache();
+    return true;
+}
+
+napi_value HttpResponseCacheExec::FlushCallback(BaseContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+bool HttpResponseCacheExec::ExecDelete(BaseContext *context)
+{
+    (void)context;
+    CacheProxy::StopCacheAndDelete();
+    return true;
+}
+
+napi_value HttpResponseCacheExec::DeleteCallback(BaseContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
 }
 } // namespace OHOS::NetStack

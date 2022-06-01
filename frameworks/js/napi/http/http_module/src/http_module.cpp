@@ -15,6 +15,7 @@
 
 #include "http_module.h"
 
+#include "cache_proxy.h"
 #include "constant.h"
 #include "event_list.h"
 #include "http_async_work.h"
@@ -33,12 +34,17 @@
 
 static constexpr const char *REQUEST_ASYNC_WORK_NAME = "ExecRequest";
 
+static constexpr const char *FLUSH_ASYNC_WORK_NAME = "ExecFlush";
+
+static constexpr const char *DELETE_ASYNC_WORK_NAME = "ExecDelete";
+
 static constexpr const char *HTTP_MODULE_NAME = "net.http";
 
 namespace OHOS::NetStack {
 napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
 {
     DefineHttpRequestClass(env, exports);
+    DefineHttpResponseCacheClass(env, exports);
     InitHttpProperties(env, exports);
 
     return exports;
@@ -49,6 +55,24 @@ napi_value HttpModuleExports::CreateHttp(napi_env env, napi_callback_info info)
     return ModuleTemplate::NewInstance(env, info, INTERFACE_HTTP_REQUEST, [](napi_env, void *data, void *) {
         NETSTACK_LOGI("http request handle is finalized");
         (void)data;
+    });
+}
+
+napi_value HttpModuleExports::CreateHttpResponseCache(napi_env env, napi_callback_info info)
+{
+    napi_value thisVal = nullptr;
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
+    if (paramsCount != 1 || NapiUtils::GetValueType(env, params[0]) != napi_number) {
+        CacheProxy::RunCache();
+    } else {
+        size_t size = NapiUtils::GetUint32FromValue(env, params[0]);
+        CacheProxy::RunCacheWithSize(size);
+    }
+
+    return ModuleTemplate::NewInstanceNoManager(env, info, INTERFACE_HTTP_RESPONSE_CACHE, [](napi_env, void *, void *) {
+        NETSTACK_LOGI("http response cache handle is finalized");
     });
 }
 
@@ -64,10 +88,20 @@ void HttpModuleExports::DefineHttpRequestClass(napi_env env, napi_value exports)
     ModuleTemplate::DefineClass(env, exports, properties, INTERFACE_HTTP_REQUEST);
 }
 
+void HttpModuleExports::DefineHttpResponseCacheClass(napi_env env, napi_value exports)
+{
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_FUNCTION(HttpResponseCache::FUNCTION_FLUSH, HttpResponseCache::Flush),
+        DECLARE_NAPI_FUNCTION(HttpResponseCache::FUNCTION_DELETE, HttpResponseCache::Delete),
+    };
+    ModuleTemplate::DefineClass(env, exports, properties, INTERFACE_HTTP_RESPONSE_CACHE);
+}
+
 void HttpModuleExports::InitHttpProperties(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
         DECLARE_NAPI_FUNCTION(FUNCTION_CREATE_HTTP, CreateHttp),
+        DECLARE_NAPI_FUNCTION(FUNCTION_CREATE_HTTP_RESPONSE_CACHE, CreateHttpResponseCache),
     };
     NapiUtils::DefineProperties(env, exports, properties);
 
@@ -181,6 +215,18 @@ napi_value HttpModuleExports::HttpRequest::Off(napi_env env, napi_callback_info 
 {
     ModuleTemplate::Off(env, info, {ON_HEADERS_RECEIVE});
     return ModuleTemplate::Off(env, info, {ON_HEADER_RECEIVE});
+}
+
+napi_value HttpModuleExports::HttpResponseCache::Flush(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::Interface<BaseContext>(env, info, FLUSH_ASYNC_WORK_NAME, nullptr, HttpAsyncWork::ExecFlush,
+                                                  HttpAsyncWork::FlushCallback);
+}
+
+napi_value HttpModuleExports::HttpResponseCache::Delete(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::Interface<BaseContext>(env, info, DELETE_ASYNC_WORK_NAME, nullptr, HttpAsyncWork::ExecDelete,
+                                                  HttpAsyncWork::DeleteCallback);
 }
 
 static napi_module g_httpModule = {

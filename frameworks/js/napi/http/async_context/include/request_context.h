@@ -28,15 +28,19 @@ public:
 
     RequestContext() = delete;
 
-    explicit RequestContext(napi_env env, EventManager *manager);
+    RequestContext(napi_env env, EventManager *manager);
 
-    void ParseParams(napi_value *params, size_t paramsCount);
+    void ParseParams(napi_value *params, size_t paramsCount) override;
 
     HttpRequestOptions options;
 
     HttpResponse response;
 
+    [[nodiscard]] bool IsUsingCache() const;
+
 private:
+    bool usingCache_;
+
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 
     void ParseNumberOptions(napi_value optionsValue);

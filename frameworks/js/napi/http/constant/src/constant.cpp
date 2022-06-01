@@ -34,6 +34,7 @@ const char *const HttpConstant::PARAM_KEY_HEADER = "header";
 const char *const HttpConstant::PARAM_KEY_READ_TIMEOUT = "readTimeout";
 const char *const HttpConstant::PARAM_KEY_CONNECT_TIMEOUT = "connectTimeout";
 const char *const HttpConstant::PARAM_KEY_USING_PROTOCOL = "usingProtocol";
+const char *const HttpConstant::PARAM_KEY_USING_CACHE = "usingCache";
 
 const char *const HttpConstant::RESPONSE_KEY_RESULT = "result";
 const char *const HttpConstant::RESPONSE_KEY_RESPONSE_CODE = "responseCode";

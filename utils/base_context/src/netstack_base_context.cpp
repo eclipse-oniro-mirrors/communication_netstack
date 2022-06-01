@@ -156,4 +156,21 @@ EventManager *BaseContext::GetManager() const
 {
     return manager_;
 }
+
+void BaseContext::ParseParams(napi_value *params, size_t paramsCount)
+{
+    if (paramsCount != 0 && paramsCount != 1) {
+        return;
+    }
+
+    if (paramsCount == 1 && NapiUtils::GetValueType(env_, params[0]) != napi_function) {
+        return;
+    }
+
+    if (paramsCount == 1) {
+        SetParseOK(SetCallback(params[0]) == napi_ok);
+        return;
+    }
+    SetParseOK(true);
+}
 } // namespace OHOS::NetStack

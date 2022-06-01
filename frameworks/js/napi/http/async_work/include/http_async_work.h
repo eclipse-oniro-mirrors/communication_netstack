@@ -29,6 +29,14 @@ public:
     static void ExecRequest(napi_env env, void *data);
 
     static void RequestCallback(napi_env env, napi_status status, void *data);
+
+    static void ExecFlush(napi_env env, void *data);
+
+    static void FlushCallback(napi_env env, napi_status status, void *data);
+
+    static void ExecDelete(napi_env env, void *data);
+
+    static void DeleteCallback(napi_env env, napi_status status, void *data);
 };
 } // namespace OHOS::NetStack
 

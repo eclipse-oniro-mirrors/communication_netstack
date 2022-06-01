@@ -308,6 +308,13 @@ napi_value GetBoolean(napi_env env, bool value)
     return jsValue;
 }
 
+bool GetBooleanFromValue(napi_env env, napi_value value)
+{
+    bool ret = false;
+    NAPI_CALL_BASE(env, napi_get_value_bool(env, value, &ret), false);
+    return ret;
+}
+
 /* define properties */
 void DefineProperties(napi_env env,
                       napi_value object,

@@ -34,7 +34,7 @@ public:
 
     ~ConnectContext() override;
 
-    void ParseParams(napi_value *params, size_t paramsCount);
+    void ParseParams(napi_value *params, size_t paramsCount) override;
 
     std::string url;
 
