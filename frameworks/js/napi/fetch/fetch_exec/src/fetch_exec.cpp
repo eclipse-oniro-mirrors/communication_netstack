@@ -236,6 +236,10 @@ bool FetchExec::SetOption(CURL *curl, FetchContext *context, struct curl_slist *
         return false;
     }
 
+    if (context->request.GetMethod() == FetchConstant::HTTP_METHOD_HEAD) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOBODY, 1L, context);
+    }
+
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_URL, context->request.GetUrl().c_str(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CUSTOMREQUEST, method.c_str(), context);
 
