@@ -23,28 +23,27 @@
 #include "netstack_module_template.h"
 #include "socket_async_work.h"
 #include "socket_exec.h"
-#include "task_queue.h"
 
 static constexpr const char *SOCKET_MODULE_NAME = "net.socket";
 
-static const char UDP_BIND_NAME[] = "UdpBind";
-static const char UDP_SEND_NAME[] = "UdpSend";
-static const char UDP_CLOSE_NAME[] = "UdpClose";
-static const char UDP_SET_EXTRA_OPTIONS_NAME[] = "UdpSetExtraOptions";
+static const char *UDP_BIND_NAME = "UdpBind";
+static const char *UDP_SEND_NAME = "UdpSend";
+static const char *UDP_CLOSE_NAME = "UdpClose";
+static const char *UDP_GET_STATE = "UdpGetState";
+static const char *UDP_SET_EXTRA_OPTIONS_NAME = "UdpSetExtraOptions";
 
-static const char TCP_BIND_NAME[] = "TcpBind";
-static const char TCP_CONNECT_NAME[] = "TcpConnect";
-static const char TCP_SEND_NAME[] = "TcpSend";
-static const char TCP_CLOSE_NAME[] = "TcpClose";
-static const char TCP_SET_EXTRA_OPTIONS_NAME[] = "TcpSetExtraOptions";
+static const char *TCP_BIND_NAME = "TcpBind";
+static const char *TCP_CONNECT_NAME = "TcpConnect";
+static const char *TCP_SEND_NAME = "TcpSend";
+static const char *TCP_CLOSE_NAME = "TcpClose";
+static const char *TCP_GET_STATE = "TcpGetState";
+static const char *TCP_GET_REMOTE_ADDRESS = "TcpGetRemoteAddress";
+static const char *TCP_SET_EXTRA_OPTIONS_NAME = "TcpSetExtraOptions";
 
 static constexpr const char *KEY_SOCKET_FD = "socketFd";
 
-#define SOCKET_INTERFACE(Context, executor, callback, work, priority, name)                                         \
-    ModuleTemplate::InterfaceWithOutAsyncWork<Context>(                                                             \
-        env, info,                                                                                                  \
-        PushTask<Context, SocketAsyncWork::executor, SocketAsyncWork::callback, work, Task::TaskPriority::priority, \
-                 name>)
+#define SOCKET_INTERFACE(Context, executor, callback, work, name) \
+    ModuleTemplate::Interface<Context>(env, info, name, work, SocketAsyncWork::executor, SocketAsyncWork::callback)
 
 namespace OHOS::NetStack {
 void Finalize(napi_env, void *data, void *)
@@ -57,25 +56,6 @@ void Finalize(napi_env, void *data, void *)
             close(sock);
         }
     }
-}
-
-template <class Context,
-          AsyncWorkExecutor executor,
-          AsyncWorkCallback callback,
-          bool (*Work)(napi_env, napi_value, Context *),
-          Task::TaskPriority priority,
-          const char *name>
-bool PushTask(napi_env env, napi_value thisVal, Context *context)
-{
-    static_assert(std::is_base_of<BaseContext, Context>::value);
-
-    if (Work != nullptr && !Work(env, thisVal, context)) {
-        return false;
-    }
-    Task::PushTask(priority, executor, callback, context);
-    auto baseContext = new BaseContext(env, nullptr);
-    baseContext->CreateAsyncWork(name, Task::Executor, Task::Callback);
-    return true;
 }
 
 static bool SetSocket(napi_env env, napi_value thisVal, BindContext *context, int sock)
@@ -181,29 +161,28 @@ void SocketModuleExports::InitSocketProperties(napi_env env, napi_value exports)
 /* udp async works */
 napi_value SocketModuleExports::UDPSocket::Bind(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(BindContext, ExecUdpBind, BindCallback, MakeUdpSocket, BIND, UDP_BIND_NAME);
+    return SOCKET_INTERFACE(BindContext, ExecUdpBind, BindCallback, MakeUdpSocket, UDP_BIND_NAME);
 }
 
 napi_value SocketModuleExports::UDPSocket::Send(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(UdpSendContext, ExecUdpSend, UdpSendCallback, nullptr, SEND, UDP_SEND_NAME);
+    return SOCKET_INTERFACE(UdpSendContext, ExecUdpSend, UdpSendCallback, nullptr, UDP_SEND_NAME);
 }
 
 napi_value SocketModuleExports::UDPSocket::Close(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(CloseContext, ExecClose, CloseCallback, nullptr, CLOSE, UDP_CLOSE_NAME);
+    return SOCKET_INTERFACE(CloseContext, ExecClose, CloseCallback, nullptr, UDP_CLOSE_NAME);
 }
 
 napi_value SocketModuleExports::UDPSocket::GetState(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<GetStateContext>(env, info, "UdpGetState", nullptr, SocketAsyncWork::ExecGetState,
-                                                      SocketAsyncWork::GetStateCallback);
+    return SOCKET_INTERFACE(GetStateContext, ExecGetState, GetStateCallback, nullptr, UDP_GET_STATE);
 }
 
 napi_value SocketModuleExports::UDPSocket::SetExtraOptions(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(UdpSetExtraOptionsContext, ExecUdpSetExtraOptions, UdpSetExtraOptionsCallback, nullptr,
-                            SET_OPTIONS, UDP_SET_EXTRA_OPTIONS_NAME);
+                            UDP_SET_EXTRA_OPTIONS_NAME);
 }
 
 napi_value SocketModuleExports::UDPSocket::On(napi_env env, napi_callback_info info)
@@ -219,41 +198,39 @@ napi_value SocketModuleExports::UDPSocket::Off(napi_env env, napi_callback_info 
 /* tcp async works */
 napi_value SocketModuleExports::TCPSocket::Bind(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(BindContext, ExecTcpBind, BindCallback, MakeTcpSocket, BIND, TCP_BIND_NAME);
+    return SOCKET_INTERFACE(BindContext, ExecTcpBind, BindCallback, MakeTcpSocket, TCP_BIND_NAME);
 }
 
 napi_value SocketModuleExports::TCPSocket::Connect(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(ConnectContext, ExecConnect, ConnectCallback, nullptr, CONNECT, TCP_CONNECT_NAME);
+    return SOCKET_INTERFACE(ConnectContext, ExecConnect, ConnectCallback, nullptr, TCP_CONNECT_NAME);
 }
 
 napi_value SocketModuleExports::TCPSocket::Send(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(TcpSendContext, ExecTcpSend, TcpSendCallback, nullptr, SEND, TCP_SEND_NAME);
+    return SOCKET_INTERFACE(TcpSendContext, ExecTcpSend, TcpSendCallback, nullptr, TCP_SEND_NAME);
 }
 
 napi_value SocketModuleExports::TCPSocket::Close(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(CloseContext, ExecClose, CloseCallback, nullptr, CLOSE, TCP_CLOSE_NAME);
+    return SOCKET_INTERFACE(CloseContext, ExecClose, CloseCallback, nullptr, TCP_CLOSE_NAME);
 }
 
 napi_value SocketModuleExports::TCPSocket::GetRemoteAddress(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<GetRemoteAddressContext>(env, info, "UdpGetRemoteAddress", nullptr,
-                                                              SocketAsyncWork::ExecGetRemoteAddress,
-                                                              SocketAsyncWork::GetRemoteAddressCallback);
+    return SOCKET_INTERFACE(GetRemoteAddressContext, ExecGetRemoteAddress, GetRemoteAddressCallback, nullptr,
+                            TCP_GET_REMOTE_ADDRESS);
 }
 
 napi_value SocketModuleExports::TCPSocket::GetState(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<GetStateContext>(env, info, "TcpGetState", nullptr, SocketAsyncWork::ExecGetState,
-                                                      SocketAsyncWork::GetStateCallback);
+    return SOCKET_INTERFACE(GetStateContext, ExecGetState, GetStateCallback, nullptr, TCP_GET_STATE);
 }
 
 napi_value SocketModuleExports::TCPSocket::SetExtraOptions(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(TcpSetExtraOptionsContext, ExecTcpSetExtraOptions, TcpSetExtraOptionsCallback, nullptr,
-                            SET_OPTIONS, TCP_SET_EXTRA_OPTIONS_NAME);
+                            TCP_SET_EXTRA_OPTIONS_NAME);
 }
 
 napi_value SocketModuleExports::TCPSocket::On(napi_env env, napi_callback_info info)

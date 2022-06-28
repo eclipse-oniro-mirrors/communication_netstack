@@ -147,7 +147,6 @@ ohos_shared_library("socket") {
     "socket/options/src/udp_send_options.cpp",
     "socket/socket_exec/src/socket_exec.cpp",
     "socket/socket_module/src/socket_module.cpp",
-    "socket/task_queue/src/task_queue.cpp",
   ]
   sources += utils_source
 
