@@ -89,9 +89,6 @@ ohos_fuzztest("SocketExecFuzzTest") {
     "$NETSTACK_NAPI_ROOT/socket/options/src/udp_extra_options.cpp",
     "$NETSTACK_NAPI_ROOT/socket/options/src/udp_send_options.cpp",
     "$NETSTACK_NAPI_ROOT/socket/socket_exec/src/socket_exec.cpp",
-
-    # "$NETSTACK_NAPI_ROOT/socket/socket_module/src/socket_module.cpp",
-    # "$NETSTACK_NAPI_ROOT/socket/task_queue/src/task_queue.cpp",
   ]
   sources += [ "socket_exec_fuzzer.cpp" ]
   sources += utils_source
