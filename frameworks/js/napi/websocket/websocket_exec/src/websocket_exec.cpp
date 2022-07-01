@@ -425,7 +425,6 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
 int WebSocketExec::LwsCallbackWsiDestroy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     NETSTACK_LOGI("LwsCallbackWsiDestroy");
-    lws_context_destroy(lws_get_context(wsi));
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -505,10 +504,12 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     lws *wsi = nullptr;
     connectInfo.pwsi = &wsi;
     connectInfo.retry_and_idle_policy = &RETRY;
-    auto userData = new UserData(lwsContext);
-    userData->header = context->header;
     auto manager = context->GetManager();
-    manager->SetData(userData);
+    if (manager != nullptr && manager->GetData() == nullptr) {
+        auto userData = new UserData(lwsContext);
+        userData->header = context->header;
+        manager->SetData(userData);
+    }
     connectInfo.userdata = reinterpret_cast<void *>(manager);
     if (lws_client_connect_via_info(&connectInfo) == nullptr) {
         NETSTACK_LOGI("ExecConnect websocket connect failed");
