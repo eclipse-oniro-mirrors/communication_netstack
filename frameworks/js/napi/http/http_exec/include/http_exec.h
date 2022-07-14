@@ -81,6 +81,8 @@ private:
 
     static bool IsUnReserved(unsigned char in);
 
+    static bool ProcByExpectDataType(napi_value object, RequestContext *context);
+
 private:
     static std::mutex mutex_;
 

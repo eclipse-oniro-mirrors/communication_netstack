@@ -28,6 +28,8 @@ const char *const HttpConstant::HTTP_METHOD_CONNECT = "CONNECT";
 const uint32_t HttpConstant::DEFAULT_READ_TIMEOUT = 60000;
 const uint32_t HttpConstant::DEFAULT_CONNECT_TIMEOUT = 60000;
 
+const size_t HttpConstant::MAX_JSON_PARSE_SIZE = 65536;
+
 const char *const HttpConstant::PARAM_KEY_METHOD = "method";
 const char *const HttpConstant::PARAM_KEY_EXTRA_DATA = "extraData";
 const char *const HttpConstant::PARAM_KEY_HEADER = "header";
@@ -35,11 +37,13 @@ const char *const HttpConstant::PARAM_KEY_READ_TIMEOUT = "readTimeout";
 const char *const HttpConstant::PARAM_KEY_CONNECT_TIMEOUT = "connectTimeout";
 const char *const HttpConstant::PARAM_KEY_USING_PROTOCOL = "usingProtocol";
 const char *const HttpConstant::PARAM_KEY_USING_CACHE = "usingCache";
+const char *const HttpConstant::PARAM_KEY_EXPECT_DATA_TYPE = "expectDataType";
 
 const char *const HttpConstant::RESPONSE_KEY_RESULT = "result";
 const char *const HttpConstant::RESPONSE_KEY_RESPONSE_CODE = "responseCode";
 const char *const HttpConstant::RESPONSE_KEY_HEADER = "header";
 const char *const HttpConstant::RESPONSE_KEY_COOKIES = "cookies";
+const char *const HttpConstant::RESPONSE_KEY_RESULT_TYPE = "resultType";
 
 const char *const HttpConstant::HTTP_URL_PARAM_START = "?";
 const char *const HttpConstant::HTTP_URL_PARAM_SEPARATOR = "&";
@@ -54,7 +58,7 @@ const char *const HttpConstant::HTTP_CONTENT_TYPE = "content-type";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE = "application/x-www-form-urlencoded";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_JSON = "application/json";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM = "application/octet-stream";
-const char *const HttpConstant::HTTP_CONTENT_TYPE_JPEG_STREAM = "image/jpeg";
+const char *const HttpConstant::HTTP_CONTENT_TYPE_IMAGE = "image";
 
 const char *const HttpConstant::HTTP_CONTENT_ENCODING_GZIP = "gzip";
 

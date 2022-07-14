@@ -19,6 +19,8 @@
 #include <map>
 #include <string>
 
+#include "constant.h"
+
 namespace OHOS::NetStack {
 enum class HttpProtocol {
     HTTP1_1,
@@ -44,6 +46,8 @@ public:
 
     void SetUsingProtocol(HttpProtocol httpProtocol);
 
+    void SetHttpDataType(HttpDataType dataType);
+
     [[nodiscard]] const std::string &GetUrl() const;
 
     [[nodiscard]] const std::string &GetMethod() const;
@@ -62,6 +66,8 @@ public:
 
     [[nodiscard]] const std::string &GetRequestTime() const;
 
+    [[nodiscard]] HttpDataType GetHttpDataType() const;
+
 private:
     std::string url_;
 
@@ -78,6 +84,8 @@ private:
     HttpProtocol usingProtocol_;
 
     std::string requestTime_;
+
+    HttpDataType dataType_;
 };
 } // namespace OHOS::NetStack
 
