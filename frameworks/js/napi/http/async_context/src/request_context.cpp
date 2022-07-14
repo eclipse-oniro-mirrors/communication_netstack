@@ -118,6 +118,9 @@ void RequestContext::ParseNumberOptions(napi_value optionsValue)
             }
         }
     }
+
+    options.SetHttpDataType(static_cast<HttpDataType>(
+        NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_EXPECT_DATA_TYPE)));
 }
 
 void RequestContext::ParseHeader(napi_value optionsValue)

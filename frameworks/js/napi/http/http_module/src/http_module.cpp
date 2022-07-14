@@ -32,6 +32,7 @@
 #define DECLARE_HTTP_PROTOCOL(protocol) \
     DECLARE_NAPI_STATIC_PROPERTY(#protocol, NapiUtils::CreateUint32(env, static_cast<uint32_t>(HttpProtocol::protocol)))
 
+namespace OHOS::NetStack {
 static constexpr const char *REQUEST_ASYNC_WORK_NAME = "ExecRequest";
 
 static constexpr const char *FLUSH_ASYNC_WORK_NAME = "ExecFlush";
@@ -40,7 +41,6 @@ static constexpr const char *DELETE_ASYNC_WORK_NAME = "ExecDelete";
 
 static constexpr const char *HTTP_MODULE_NAME = "net.http";
 
-namespace OHOS::NetStack {
 napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
 {
     DefineHttpRequestClass(env, exports);
@@ -108,6 +108,7 @@ void HttpModuleExports::InitHttpProperties(napi_env env, napi_value exports)
     InitRequestMethod(env, exports);
     InitResponseCode(env, exports);
     InitHttpProtocol(env, exports);
+    InitHttpDataType(env, exports);
 }
 
 void HttpModuleExports::InitRequestMethod(napi_env env, napi_value exports)
@@ -182,6 +183,21 @@ void HttpModuleExports::InitHttpProtocol(napi_env env, napi_value exports)
     NapiUtils::DefineProperties(env, httpProtocol, properties);
 
     NapiUtils::SetNamedProperty(env, exports, INTERFACE_HTTP_PROTOCOL, httpProtocol);
+}
+
+void HttpModuleExports::InitHttpDataType(napi_env env, napi_value exports)
+{
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_STATIC_PROPERTY("STRING",
+                                     NapiUtils::CreateUint32(env, static_cast<uint32_t>(HttpDataType::STRING))),
+        DECLARE_NAPI_STATIC_PROPERTY("OBJECT",
+                                     NapiUtils::CreateUint32(env, static_cast<uint32_t>(HttpDataType::OBJECT))),
+        DECLARE_NAPI_STATIC_PROPERTY("ARRAY_BUFFER",
+                                     NapiUtils::CreateUint32(env, static_cast<uint32_t>(HttpDataType::ARRAY_BUFFER))),
+    };
+    napi_value httpDataType = NapiUtils::CreateObject(env);
+    NapiUtils::DefineProperties(env, httpDataType, properties);
+    NapiUtils::SetNamedProperty(env, exports, INTERFACE_HTTP_DATA_TYPE, httpDataType);
 }
 
 napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_info info)

@@ -25,7 +25,8 @@ HttpRequestOptions::HttpRequestOptions()
     : method_(HttpConstant::HTTP_METHOD_GET),
       readTimeout_(HttpConstant::DEFAULT_READ_TIMEOUT),
       connectTimeout_(HttpConstant::DEFAULT_CONNECT_TIMEOUT),
-      usingProtocol_(HttpProtocol::HTTP_NONE)
+      usingProtocol_(HttpProtocol::HTTP_NONE),
+      dataType_(HttpDataType::NO_DATA_TYPE)
 {
     header_[CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE)] = HttpConstant::HTTP_CONTENT_TYPE_JSON; // default
 }
@@ -117,5 +118,18 @@ void HttpRequestOptions::SetRequestTime(const std::string &time)
 const std::string &HttpRequestOptions::GetRequestTime() const
 {
     return requestTime_;
+}
+
+void HttpRequestOptions::SetHttpDataType(HttpDataType dataType)
+{
+    if (dataType != HttpDataType::STRING && dataType != HttpDataType::ARRAY_BUFFER &&
+        dataType != HttpDataType::OBJECT) {
+        return;
+    }
+    dataType_ = dataType;
+}
+HttpDataType HttpRequestOptions::GetHttpDataType() const
+{
+    return dataType_;
 }
 } // namespace OHOS::NetStack

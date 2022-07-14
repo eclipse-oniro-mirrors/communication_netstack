@@ -19,9 +19,9 @@
 #include <map>
 #include <string>
 
+namespace OHOS::NetStack {
 static constexpr const char *WARNING = "Warning";
 
-namespace OHOS::NetStack {
 class HttpResponse final {
 public:
     HttpResponse();

@@ -16,6 +16,7 @@
 #ifndef COMMUNICATIONNETSTACK_CONSTANT_H
 #define COMMUNICATIONNETSTACK_CONSTANT_H
 
+#include <cstddef>
 #include <cstdint>
 
 #include "nocopyable.h"
@@ -59,6 +60,25 @@ enum class ResponseCode {
     VERSION,
 };
 
+enum class HttpDataType {
+    /**
+     * The returned type is string.
+     */
+    STRING,
+    /**
+     * The returned type is Object.
+     */
+    OBJECT = 1,
+    /**
+     * The returned type is ArrayBuffer.
+     */
+    ARRAY_BUFFER = 2,
+    /**
+     * The returned type is not set.
+     */
+    NO_DATA_TYPE = 3,
+};
+
 class HttpConstant final {
     DISALLOW_COPY_AND_MOVE(HttpConstant);
 
@@ -77,6 +97,8 @@ public:
     static const uint32_t DEFAULT_READ_TIMEOUT;
     static const uint32_t DEFAULT_CONNECT_TIMEOUT;
 
+    static const size_t MAX_JSON_PARSE_SIZE;
+
     /* options key */
     static const char *const PARAM_KEY_METHOD;
     static const char *const PARAM_KEY_EXTRA_DATA;
@@ -85,11 +107,13 @@ public:
     static const char *const PARAM_KEY_CONNECT_TIMEOUT;
     static const char *const PARAM_KEY_USING_PROTOCOL;
     static const char *const PARAM_KEY_USING_CACHE;
+    static const char *const PARAM_KEY_EXPECT_DATA_TYPE;
 
     static const char *const RESPONSE_KEY_RESULT;
     static const char *const RESPONSE_KEY_RESPONSE_CODE;
     static const char *const RESPONSE_KEY_HEADER;
     static const char *const RESPONSE_KEY_COOKIES;
+    static const char *const RESPONSE_KEY_RESULT_TYPE;
 
     static const char *const HTTP_URL_PARAM_START;
     static const char *const HTTP_URL_PARAM_SEPARATOR;
@@ -104,8 +128,8 @@ public:
     static const char *const HTTP_CONTENT_TYPE_URL_ENCODE;
     static const char *const HTTP_CONTENT_TYPE_JSON;
     static const char *const HTTP_CONTENT_TYPE_OCTET_STREAM;
+    static const char *const HTTP_CONTENT_TYPE_IMAGE;
 
-    static const char *const HTTP_CONTENT_TYPE_JPEG_STREAM;
     static const char *const HTTP_CONTENT_ENCODING_GZIP;
 
     static const char *const REQUEST_TIME;

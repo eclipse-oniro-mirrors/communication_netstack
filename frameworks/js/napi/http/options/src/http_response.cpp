@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-#include "http_response.h"
-
 #include "constant.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
+
+#include "http_response.h"
 
 namespace OHOS::NetStack {
 HttpResponse::HttpResponse() : responseCode_(0) {}

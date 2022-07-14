@@ -155,10 +155,14 @@ napi_value HttpExec::RequestCallback(RequestContext *context)
         NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_HEADER, header);
     }
 
+    if (context->options.GetHttpDataType() != HttpDataType::NO_DATA_TYPE && ProcByExpectDataType(object, context)) {
+        return object;
+    }
+
     auto contentType = CommonUtils::ToLower(const_cast<std::map<std::string, std::string> &>(
         context->response.GetHeader())[HttpConstant::HTTP_CONTENT_TYPE]);
     if (contentType.find(HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM) != std::string::npos ||
-        contentType.find(HttpConstant::HTTP_CONTENT_TYPE_JPEG_STREAM) != std::string::npos) {
+        contentType.find(HttpConstant::HTTP_CONTENT_TYPE_IMAGE) != std::string::npos) {
         void *data = nullptr;
         auto body = context->response.GetResult();
         napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);
@@ -166,12 +170,16 @@ napi_value HttpExec::RequestCallback(RequestContext *context)
             (void)memcpy_s(data, body.size(), body.c_str(), body.size());
             NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT, arrayBuffer);
         }
+        NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
+                                     static_cast<uint32_t>(HttpDataType::ARRAY_BUFFER));
         return object;
     }
 
     /* now just support utf8 */
     NapiUtils::SetStringPropertyUtf8(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT,
                                      context->response.GetResult());
+    NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
+                                 static_cast<uint32_t>(HttpDataType::STRING));
     return object;
 }
 
@@ -367,6 +375,54 @@ bool HttpExec::IsUnReserved(unsigned char in)
         case '_':
         case '~':
             return true;
+        default:
+            break;
+    }
+    return false;
+}
+
+bool HttpExec::ProcByExpectDataType(napi_value object, RequestContext *context)
+{
+    switch (context->options.GetHttpDataType()) {
+        case HttpDataType::STRING: {
+            NapiUtils::SetStringPropertyUtf8(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT,
+                                             context->response.GetResult());
+            NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
+                                         static_cast<uint32_t>(HttpDataType::STRING));
+            return true;
+        }
+        case HttpDataType::OBJECT: {
+            if (context->response.GetResult().size() > HttpConstant::MAX_JSON_PARSE_SIZE) {
+                return false;
+            }
+
+            napi_value obj = NapiUtils::JsonParse(
+                context->GetEnv(), NapiUtils::CreateStringUtf8(context->GetEnv(), context->response.GetResult()));
+            if (obj) {
+                NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT, obj);
+                NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
+                                             static_cast<uint32_t>(HttpDataType::OBJECT));
+                return true;
+            }
+
+            // parse maybe failed
+            return false;
+        }
+        case HttpDataType::ARRAY_BUFFER: {
+            void *data = nullptr;
+            auto body = context->response.GetResult();
+            napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);
+            if (data != nullptr && arrayBuffer != nullptr) {
+                if (memcpy_s(data, body.size(), body.c_str(), body.size()) < 0) {
+                    NETSTACK_LOGE("[ProcByExpectDataType] memory copy failed");
+                    return true;
+                }
+                NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT, arrayBuffer);
+                NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
+                                             static_cast<uint32_t>(HttpDataType::ARRAY_BUFFER));
+            }
+            return true;
+        }
         default:
             break;
     }
