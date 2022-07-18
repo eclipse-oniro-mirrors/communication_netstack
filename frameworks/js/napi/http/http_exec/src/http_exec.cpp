@@ -64,7 +64,7 @@
 
 namespace OHOS::NetStack {
 std::mutex HttpExec::mutex_;
-ThreadPool<HttpExec::Task, DEFAULT_THREAD_NUM> HttpExec::threadPool_(DEFAULT_TIMEOUT);
+ThreadPool<HttpExec::Task, DEFAULT_THREAD_NUM, MAX_THREAD_NUM> HttpExec::threadPool_(DEFAULT_TIMEOUT);
 
 HttpExec::Task::Task(RequestContext *context) : context_(context) {}
 

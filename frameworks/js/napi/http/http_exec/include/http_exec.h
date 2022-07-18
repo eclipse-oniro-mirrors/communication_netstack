@@ -27,6 +27,7 @@
 
 namespace OHOS::NetStack {
 static constexpr const size_t DEFAULT_THREAD_NUM = 5;
+static constexpr const size_t MAX_THREAD_NUM = 5;
 static constexpr const uint32_t DEFAULT_TIMEOUT = 5;
 
 class HttpResponseCacheExec final {
@@ -106,7 +107,7 @@ private:
 
     static std::mutex mutex_;
 
-    static ThreadPool<Task, DEFAULT_THREAD_NUM> threadPool_;
+    static ThreadPool<Task, DEFAULT_THREAD_NUM, MAX_THREAD_NUM> threadPool_;
 
     static std::atomic_bool initialized_;
 };

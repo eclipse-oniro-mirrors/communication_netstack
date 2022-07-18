@@ -23,7 +23,7 @@
 #include <vector>
 
 namespace OHOS::NetStack {
-template <typename Task, const size_t DEFAULT_THREAD_NUM> class ThreadPool {
+template <typename Task, const size_t DEFAULT_THREAD_NUM, const size_t MAX_THREAD_NUM> class ThreadPool {
 public:
     /**
      * disallow default constructor
@@ -59,9 +59,6 @@ public:
         for (int i = 0; i < DEFAULT_THREAD_NUM; ++i) {
             std::thread([this] { RunTask(); }).detach();
         }
-        while (idleThreadNum_ < DEFAULT_THREAD_NUM) {
-            std::this_thread::yield();
-        }
     }
 
     /**
@@ -82,17 +79,13 @@ public:
      */
     void Push(const Task &task)
     {
-        if (idleThreadNum_ == 0) {
+        PushTask(task);
+
+        if (runningNum_ < MAX_THREAD_NUM && idleThreadNum_ == 0) {
             std::thread([this] { RunTask(); }).detach();
-            while (idleThreadNum_ == 0) {
-                std::this_thread::yield();
-            }
         }
 
-        PushTask(task);
-        while (!IsQueueEmpty()) {
-            needRunCondition_.notify_all();
-        }
+        needRunCondition_.notify_all();
     }
 
 private:
@@ -166,13 +159,18 @@ private:
         (void)runningWrapper;
 
         while (needRun_) {
+            Task task;
+            if (GetTask(task)) {
+                task.Execute();
+                continue;
+            }
+
             Sleep();
 
             if (!needRun_) {
                 return;
             }
 
-            Task task;
             if (GetTask(task)) {
                 task.Execute();
                 continue;
