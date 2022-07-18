@@ -439,9 +439,9 @@ void CreateUvQueueWorkEnhanced(napi_env env, void *data, void (*handler)(napi_en
             return;
         }
 
-        auto closeScope = [workData](napi_handle_scope scope) { NapiUtils::CloseScope(workData->env_, scope); };
-        std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(workData->env_),
-                                                                         closeScope);
+        napi_env env = workData->env_;
+        auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+        std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
 
         workData->handler_(workData->env_, static_cast<napi_status>(status), workData->data_);
 
