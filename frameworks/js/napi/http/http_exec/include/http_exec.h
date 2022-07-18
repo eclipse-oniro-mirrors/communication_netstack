@@ -23,8 +23,12 @@
 #include "napi/native_api.h"
 #include "nocopyable.h"
 #include "request_context.h"
+#include "thread_pool.h"
 
 namespace OHOS::NetStack {
+static constexpr const size_t DEFAULT_THREAD_NUM = 5;
+static constexpr const uint32_t DEFAULT_TIMEOUT = 5;
+
 class HttpResponseCacheExec final {
 public:
     DISALLOW_COPY_AND_MOVE(HttpResponseCacheExec);
@@ -66,6 +70,8 @@ public:
 
     static bool Initialize();
 
+    static void AsyncRunRequest(RequestContext *context);
+
 private:
     static bool SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader);
 
@@ -84,9 +90,25 @@ private:
     static bool ProcByExpectDataType(napi_value object, RequestContext *context);
 
 private:
+    class Task {
+    public:
+        Task() = default;
+
+        explicit Task(RequestContext *context);
+
+        bool operator<(const Task &e) const;
+
+        void Execute();
+
+    private:
+        RequestContext *context_;
+    };
+
     static std::mutex mutex_;
 
-    static bool initialized_;
+    static ThreadPool<Task, DEFAULT_THREAD_NUM> threadPool_;
+
+    static std::atomic_bool initialized_;
 };
 } // namespace OHOS::NetStack
 

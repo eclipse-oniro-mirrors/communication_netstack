@@ -202,10 +202,15 @@ void HttpModuleExports::InitHttpDataType(napi_env env, napi_value exports)
 
 napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<RequestContext>(
-        env, info, REQUEST_ASYNC_WORK_NAME,
-        [](napi_env, napi_value, RequestContext *) -> bool { return HttpExec::Initialize(); },
-        HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
+    return ModuleTemplate::InterfaceWithOutAsyncWork<RequestContext>(
+        env, info, [](napi_env, napi_value, RequestContext *context) -> bool {
+            if (!HttpExec::Initialize()) {
+                return false;
+            }
+
+            HttpExec::AsyncRunRequest(context);
+            return true;
+        });
 }
 
 napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_info info)

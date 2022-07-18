@@ -109,6 +109,8 @@ napi_value JsonParse(napi_env env, napi_value str);
 /* libuv */
 void CreateUvQueueWork(napi_env env, void *data, void(Handler)(uv_work_t *, int status));
 
+void CreateUvQueueWorkEnhanced(napi_env env, void *data, void (*handler)(napi_env env, napi_status status, void *data));
+
 /* scope */
 napi_handle_scope OpenScope(napi_env env);
 

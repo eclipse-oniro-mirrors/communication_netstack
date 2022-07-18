@@ -20,4 +20,4 @@ add_library(
     event_manager/src/netstack_event_manager.cpp
     base_context/src/netstack_base_context.cpp
     module_template/src/netstack_module_template.cpp
-    )
+        common_utils/include/thread_pool.h)

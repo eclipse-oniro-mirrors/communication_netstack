@@ -68,6 +68,10 @@ public:
 
     [[nodiscard]] HttpDataType GetHttpDataType() const;
 
+    void SetPriority(uint32_t priority);
+
+    [[nodiscard]] uint32_t GetPriority() const;
+
 private:
     std::string url_;
 
@@ -86,6 +90,8 @@ private:
     std::string requestTime_;
 
     HttpDataType dataType_;
+
+    uint32_t priority_;
 };
 } // namespace OHOS::NetStack
 
