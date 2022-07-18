@@ -33,8 +33,6 @@
     DECLARE_NAPI_STATIC_PROPERTY(#protocol, NapiUtils::CreateUint32(env, static_cast<uint32_t>(HttpProtocol::protocol)))
 
 namespace OHOS::NetStack {
-static constexpr const char *REQUEST_ASYNC_WORK_NAME = "ExecRequest";
-
 static constexpr const char *FLUSH_ASYNC_WORK_NAME = "ExecFlush";
 
 static constexpr const char *DELETE_ASYNC_WORK_NAME = "ExecDelete";
