@@ -19,6 +19,7 @@
 #include <initializer_list>
 #include <memory>
 
+#include "netstack_base_context.h"
 #include "securec.h"
 
 namespace OHOS::NetStack::NapiUtils {
@@ -399,5 +400,56 @@ napi_handle_scope OpenScope(napi_env env)
 void CloseScope(napi_env env, napi_handle_scope scope)
 {
     (void)napi_close_handle_scope(env, scope);
+}
+
+void CreateUvQueueWorkEnhanced(napi_env env, void *data, void (*handler)(napi_env env, napi_status status, void *data))
+{
+    uv_loop_s *loop = nullptr;
+    NAPI_CALL_RETURN_VOID(env, napi_get_uv_event_loop(env, &loop));
+
+    class WorkData {
+    public:
+        WorkData() = delete;
+
+        WorkData(napi_env env, void *data, void (*handler)(napi_env env, napi_status status, void *data))
+            : env_(env), data_(data), handler_(handler)
+        {
+        }
+
+        napi_env env_;
+        void *data_;
+        void (*handler_)(napi_env env, napi_status status, void *data);
+    };
+
+    auto workData = new WorkData(env, data, handler);
+
+    auto work = new uv_work_t;
+    work->data = reinterpret_cast<void *>(workData);
+
+    auto callback = [](uv_work_t *work, int status) {
+        auto workData = static_cast<WorkData *>(work->data);
+        if (!workData) {
+            delete work;
+            return;
+        }
+
+        if (!workData->env_ || !workData->data_ || !workData->handler_) {
+            delete workData;
+            delete work;
+            return;
+        }
+
+        napi_env env = workData->env_;
+        auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+        std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
+
+        workData->handler_(workData->env_, static_cast<napi_status>(status), workData->data_);
+
+        delete workData;
+        delete work;
+    };
+
+    (void)uv_queue_work(
+        loop, work, [](uv_work_t *) {}, callback);
 }
 } // namespace OHOS::NetStack::NapiUtils

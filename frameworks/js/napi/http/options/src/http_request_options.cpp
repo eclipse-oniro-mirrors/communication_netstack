@@ -21,12 +21,16 @@
 #include "http_request_options.h"
 
 namespace OHOS::NetStack {
+static constexpr const uint32_t MIN_PRIORITY = 0;
+static constexpr const uint32_t MAX_PRIORITY = 1000;
+
 HttpRequestOptions::HttpRequestOptions()
     : method_(HttpConstant::HTTP_METHOD_GET),
       readTimeout_(HttpConstant::DEFAULT_READ_TIMEOUT),
       connectTimeout_(HttpConstant::DEFAULT_CONNECT_TIMEOUT),
       usingProtocol_(HttpProtocol::HTTP_NONE),
-      dataType_(HttpDataType::NO_DATA_TYPE)
+      dataType_(HttpDataType::NO_DATA_TYPE),
+      priority_(0)
 {
     header_[CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE)] = HttpConstant::HTTP_CONTENT_TYPE_JSON; // default
 }
@@ -131,5 +135,18 @@ void HttpRequestOptions::SetHttpDataType(HttpDataType dataType)
 HttpDataType HttpRequestOptions::GetHttpDataType() const
 {
     return dataType_;
+}
+
+void HttpRequestOptions::SetPriority(uint32_t priority)
+{
+    if (priority < MIN_PRIORITY || priority > MAX_PRIORITY) {
+        return;
+    }
+    priority_ = priority;
+}
+
+uint32_t HttpRequestOptions::GetPriority() const
+{
+    return priority_;
 }
 } // namespace OHOS::NetStack

@@ -108,6 +108,7 @@ public:
     static const char *const PARAM_KEY_USING_PROTOCOL;
     static const char *const PARAM_KEY_USING_CACHE;
     static const char *const PARAM_KEY_EXPECT_DATA_TYPE;
+    static const char *const PARAM_KEY_PRIORITY;
 
     static const char *const RESPONSE_KEY_RESULT;
     static const char *const RESPONSE_KEY_RESPONSE_CODE;

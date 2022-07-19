@@ -78,16 +78,16 @@ napi_value
 
     auto context = new Context(env, manager);
     context->ParseParams(params, paramsCount);
+    napi_value ret = NapiUtils::GetUndefined(env);
+    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
+        ret = context->CreatePromise();
+    }
     if (Work != nullptr) {
         if (!Work(env, thisVal, context)) {
             NETSTACK_LOGE("work failed error code = %{public}d", context->GetErrorCode());
         }
     }
-
-    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
-        return context->CreatePromise();
-    }
-    return NapiUtils::GetUndefined(env);
+    return ret;
 }
 
 napi_value

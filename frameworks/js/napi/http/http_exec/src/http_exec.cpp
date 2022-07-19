@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-#include "http_exec.h"
-
 #include <algorithm>
 #include <cstring>
 #include <memory>
@@ -22,11 +20,14 @@
 #include "cache_proxy.h"
 #include "constant.h"
 #include "event_list.h"
+#include "http_async_work.h"
 #include "http_time.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "netstack_napi_utils.h"
 #include "securec.h"
+
+#include "http_exec.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
@@ -63,8 +64,22 @@
 
 namespace OHOS::NetStack {
 std::mutex HttpExec::mutex_;
+ThreadPool<HttpExec::Task, DEFAULT_THREAD_NUM, MAX_THREAD_NUM> HttpExec::threadPool_(DEFAULT_TIMEOUT);
 
-bool HttpExec::initialized_ = false;
+HttpExec::Task::Task(RequestContext *context) : context_(context) {}
+
+void HttpExec::Task::Execute()
+{
+    HttpAsyncWork::ExecRequest(context_->GetEnv(), context_);
+    NapiUtils::CreateUvQueueWorkEnhanced(context_->GetEnv(), context_, HttpAsyncWork::RequestCallback);
+}
+
+bool HttpExec::Task::operator<(const Task &e) const
+{
+    return context_->options.GetPriority() < e.context_->options.GetPriority();
+}
+
+std::atomic_bool HttpExec::initialized_(false);
 
 bool HttpExec::RequestWithoutCache(RequestContext *context)
 {
@@ -427,6 +442,11 @@ bool HttpExec::ProcByExpectDataType(napi_value object, RequestContext *context)
             break;
     }
     return false;
+}
+
+void HttpExec::AsyncRunRequest(RequestContext *context)
+{
+    threadPool_.Push(Task(context));
 }
 
 bool HttpResponseCacheExec::ExecFlush(BaseContext *context)
