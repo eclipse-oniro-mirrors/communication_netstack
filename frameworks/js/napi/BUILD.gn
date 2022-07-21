@@ -42,12 +42,12 @@ common_include = [
   "//third_party/node/src",
 ]
 
-common_deps = [
-  "//foundation/arkui/napi/:ace_napi",
-  "//utils/native/base:utils",
-]
+common_deps = [ "//foundation/arkui/napi/:ace_napi" ]
 
-common_external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+common_external_deps = [
+  "c_utils:utils",
+  "hiviewdfx_hilog_native:libhilog",
+]
 
 common_relative_install_dir = "module/net"
 common_part_name = "netstack"
