@@ -16,6 +16,8 @@
 #ifndef COMMUNICATIONNETSTACK_BIND_CONTEXT_H
 #define COMMUNICATIONNETSTACK_BIND_CONTEXT_H
 
+#include <cstddef>
+
 #include "napi/native_api.h"
 #include "net_address.h"
 #include "netstack_base_context.h"

@@ -15,12 +15,20 @@
 
 #include "netstack_napi_utils.h"
 
+#include <cstdlib>
 #include <cstring>
 #include <initializer_list>
 #include <memory>
+#include <algorithm>
+#include <new>
+#include <securec.h>
+#include <string>
+#include <vector>
 
+#include "napi/native_api.h"
+#include "napi/native_common.h"
+#include "node_api.h"
 #include "netstack_base_context.h"
-#include "securec.h"
 
 namespace OHOS::NetStack::NapiUtils {
 static constexpr const int MAX_STRING_LENGTH = 65536;

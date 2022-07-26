@@ -16,8 +16,8 @@
 #ifndef COMMUNICATIONNETSTACK_COMMON_UTILS_H
 #define COMMUNICATIONNETSTACK_COMMON_UTILS_H
 
-#include <string>
 #include <vector>
+#include <iosfwd>
 
 namespace OHOS::NetStack::CommonUtils {
 std::vector<std::string> Split(const std::string &str, const std::string &sep);

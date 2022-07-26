@@ -16,6 +16,10 @@
 #ifndef COMMUNICATIONNETSTACK_UDP_SEND_OPTIONS_H
 #define COMMUNICATIONNETSTACK_UDP_SEND_OPTIONS_H
 
+#include <cstddef>
+#include <iosfwd>
+#include <string>
+
 #include "net_address.h"
 
 namespace OHOS::NetStack {

@@ -16,6 +16,9 @@
 #ifndef COMMUNICATIONNETSTACK_TCP_EXTRA_CONTEXT_H
 #define COMMUNICATIONNETSTACK_TCP_EXTRA_CONTEXT_H
 
+#include <cstddef>
+
+#include "napi/native_api.h"
 #include "netstack_base_context.h"
 #include "nocopyable.h"
 #include "tcp_extra_options.h"

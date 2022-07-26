@@ -16,7 +16,10 @@
 #ifndef COMMUNICATIONNETSTACK_SOCKET_REMOTE_INFO_H
 #define COMMUNICATIONNETSTACK_SOCKET_REMOTE_INFO_H
 
+#include <cstdint>
 #include <string>
+#include <iosfwd>
+#include "bits/alltypes.h"
 
 #include "net_address.h"
 

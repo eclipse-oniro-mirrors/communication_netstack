@@ -14,9 +14,14 @@
  */
 
 #include "netstack_module_template.h"
-#include "netstack_log.h"
 
 #include <algorithm>
+#include <initializer_list>
+#include <new>
+#include <string>
+
+#include "netstack_event_manager.h"
+#include "netstack_log.h"
 
 namespace OHOS::NetStack::ModuleTemplate {
 static constexpr const int EVENT_PARAM_NUM = 2;

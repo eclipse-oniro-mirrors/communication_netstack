@@ -15,8 +15,15 @@
 
 #include "socket_async_work.h"
 
+#include "bind_context.h"
+#include "common_context.h"
+#include "connect_context.h"
 #include "netstack_base_async_work.h"
 #include "socket_exec.h"
+#include "tcp_extra_context.h"
+#include "tcp_send_context.h"
+#include "udp_extra_context.h"
+#include "udp_send_context.h"
 
 namespace OHOS::NetStack {
 void SocketAsyncWork::ExecUdpBind(napi_env env, void *data)

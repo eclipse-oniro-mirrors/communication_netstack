@@ -15,6 +15,8 @@
 
 #include "netstack_event_listener.h"
 
+#include "napi/native_api.h"
+#include "napi/native_common.h"
 #include "netstack_napi_utils.h"
 
 namespace OHOS::NetStack {

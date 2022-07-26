@@ -16,10 +16,11 @@
 #ifndef COMMUNICATIONNETSTACK_EVENT_LISTENER_H
 #define COMMUNICATIONNETSTACK_EVENT_LISTENER_H
 
+#include <cstddef>
 #include <string>
+#include <iosfwd>
 
 #include "napi/native_api.h"
-#include "nocopyable.h"
 #include "uv.h"
 
 namespace OHOS::NetStack {

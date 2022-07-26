@@ -16,6 +16,7 @@
 #include "common_context.h"
 
 #include "context_key.h"
+#include "netstack_event_manager.h"
 #include "netstack_napi_utils.h"
 
 namespace OHOS::NetStack {

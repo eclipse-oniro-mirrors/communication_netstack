@@ -17,6 +17,7 @@
 #define COMMUNICATIONNETSTACK_TCP_SEND_OPTIONS_H
 
 #include <string>
+#include <iosfwd>
 
 namespace OHOS::NetStack {
 class TCPSendOptions final {

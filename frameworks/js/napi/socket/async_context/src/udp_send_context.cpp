@@ -16,6 +16,8 @@
 #include "udp_send_context.h"
 
 #include "context_key.h"
+#include "net_address.h"
+#include "netstack_event_manager.h"
 #include "netstack_log.h"
 #include "netstack_napi_utils.h"
 
