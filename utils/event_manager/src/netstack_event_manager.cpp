@@ -15,6 +15,8 @@
 
 #include "netstack_event_manager.h"
 
+#include <algorithm>
+
 namespace OHOS::NetStack {
 static constexpr const int CALLBACK_PARAM_NUM = 1;
 

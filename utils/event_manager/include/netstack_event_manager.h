@@ -16,10 +16,15 @@
 #ifndef COMMUNICATIONNETSTACK_EVENT_MANAGER_H
 #define COMMUNICATIONNETSTACK_EVENT_MANAGER_H
 
+#include <iosfwd>
 #include <list>
 #include <mutex>
+#include <string>
+#include <utility>
 
+#include "napi/native_api.h"
 #include "netstack_event_listener.h"
+#include "uv.h"
 
 namespace OHOS::NetStack {
 class EventManager {

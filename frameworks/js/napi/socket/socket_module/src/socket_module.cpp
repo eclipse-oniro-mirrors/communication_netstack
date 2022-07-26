@@ -15,14 +15,31 @@
 
 #include "socket_module.h"
 
+#include <cstdint>
 #include <unistd.h>
+#include <initializer_list>
+#include <new>
+#include <utility>
 
+#include "bind_context.h"
+#include "common_context.h"
+#include "connect_context.h"
 #include "context_key.h"
 #include "event_list.h"
+#include "napi/native_api.h"
+#include "napi/native_common.h"
+#include "net_address.h"
+#include "netstack_event_manager.h"
 #include "netstack_log.h"
 #include "netstack_module_template.h"
+#include "netstack_napi_utils.h"
+#include "node_api.h"
 #include "socket_async_work.h"
 #include "socket_exec.h"
+#include "tcp_extra_context.h"
+#include "tcp_send_context.h"
+#include "udp_extra_context.h"
+#include "udp_send_context.h"
 
 static constexpr const char *SOCKET_MODULE_NAME = "net.socket";
 

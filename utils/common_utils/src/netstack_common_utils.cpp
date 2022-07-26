@@ -16,6 +16,8 @@
 #include "netstack_common_utils.h"
 
 #include <algorithm>
+#include <string>
+#include <vector>
 
 namespace OHOS::NetStack::CommonUtils {
 std::vector<std::string> Split(const std::string &str, const std::string &sep)

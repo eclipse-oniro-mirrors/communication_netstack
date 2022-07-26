@@ -16,6 +16,8 @@
 #ifndef COMMUNICATIONNETSTACK_TCP_EXTRA_OPTIONS_H
 #define COMMUNICATIONNETSTACK_TCP_EXTRA_OPTIONS_H
 
+#include <cstdint>
+
 #include "extra_options_base.h"
 
 namespace OHOS::NetStack {

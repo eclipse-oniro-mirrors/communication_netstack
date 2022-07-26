@@ -16,11 +16,19 @@
 #ifndef COMMUNICATIONNETSTACK_NETSTACK_MODULE_TEMPLATE_H
 #define COMMUNICATIONNETSTACK_NETSTACK_MODULE_TEMPLATE_H
 
+#include <cstddef>
 #include <initializer_list>
+#include <iosfwd>
+#include <type_traits>
 
-#include "netstack_base_async_work.h"
+#include "napi/native_api.h"
+#include "napi/native_api.h"
+#include "napi/native_common.h"
 #include "netstack_base_context.h"
 #include "netstack_log.h"
+#include "netstack_napi_utils.h"
+
+namespace OHOS::NetStack { class EventManager; }
 
 #define MAX_PARAM_NUM 64
 

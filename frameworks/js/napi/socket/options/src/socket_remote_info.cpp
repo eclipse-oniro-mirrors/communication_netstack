@@ -15,7 +15,8 @@
 
 #include "socket_remote_info.h"
 
-#include <arpa/inet.h>
+#include <string>
+#include "sys/socket.h"
 
 namespace OHOS::NetStack {
 SocketRemoteInfo::SocketRemoteInfo() : port_(0), size_(0) {}

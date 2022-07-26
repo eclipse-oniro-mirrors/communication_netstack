@@ -16,11 +16,13 @@
 #ifndef COMMUNICATIONNETSTACK_NETSTACK_NAPI_UTILS_H
 #define COMMUNICATIONNETSTACK_NETSTACK_NAPI_UTILS_H
 
-#include <string>
+#include <cstddef>
+#include <cstdint>
+#include <iosfwd>
 #include <vector>
 
+#include "initializer_list"
 #include "napi/native_api.h"
-#include "napi/native_common.h"
 #include "uv.h"
 
 namespace OHOS::NetStack::NapiUtils {
