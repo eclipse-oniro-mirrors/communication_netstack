@@ -93,12 +93,12 @@ ohos_fuzztest("SocketExecFuzzTest") {
   sources += [ "socket_exec_fuzzer.cpp" ]
   sources += utils_source
 
-  deps = [
-    "//foundation/arkui/napi/:ace_napi",
-    "//utils/native/base:utils",
-  ]
+  deps = [ "//foundation/arkui/napi/:ace_napi" ]
 
-  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  external_deps = [
+    "c_utils:utils",
+    "hiviewdfx_hilog_native:libhilog",
+  ]
 
   defines = [
     "NETMGR_LOG_TAG = \"NapiSocket\"",

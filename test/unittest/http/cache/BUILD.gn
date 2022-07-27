@@ -23,9 +23,10 @@ utils_include = [
   "//third_party/curl/include",
 ]
 
-common_deps = [ "//utils/native/base:utils" ]
-
-common_external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+common_external_deps = [
+  "c_utils:utils",
+  "hiviewdfx_hilog_native:libhilog",
+]
 
 ohos_unittest("http_cache_unittest") {
   module_out_path = "netstack/http_cache_unittest"
@@ -37,8 +38,6 @@ ohos_unittest("http_cache_unittest") {
     "$NETSTACK_NAPI_ROOT/http/options/include",
   ]
   include_dirs += utils_include
-
-  deps = common_deps
 
   external_deps = common_external_deps
 

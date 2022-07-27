@@ -33,7 +33,7 @@
                 "hiviewdfx_hilog_native",
                 "ipc",
                 "napi",
-                "utils_base"
+                "c_utils"
             ],
             "third_party": [
                 "curl",
