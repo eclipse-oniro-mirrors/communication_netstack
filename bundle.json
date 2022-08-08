@@ -41,12 +41,18 @@
             ]
         },
         "build": {
-            "sub_component": [
-                "//foundation/communication/netstack/frameworks/js/napi:http",
-                "//foundation/communication/netstack/frameworks/js/napi:socket",
-                "//foundation/communication/netstack/frameworks/js/napi:websocket",
-                "//foundation/communication/netstack/frameworks/js/napi:fetch"
-            ],
+            "group_type": {
+                "base_group": [
+                    "//foundation/communication/netstack/frameworks/js/napi:http",
+                    "//foundation/communication/netstack/frameworks/js/napi:socket",
+                    "//foundation/communication/netstack/frameworks/js/napi:websocket",
+                    "//foundation/communication/netstack/frameworks/js/napi:fetch"
+                ],
+                "fwk_group": [
+                ],
+                "service_group": [
+                ]
+            },
             "inner_kits": [],
             "test": [
                 "//foundation/communication/netstack/test/napi/socket:fuzztest",
