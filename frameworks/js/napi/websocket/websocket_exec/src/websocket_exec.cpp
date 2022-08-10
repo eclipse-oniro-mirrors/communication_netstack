@@ -709,6 +709,7 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
         return;
     }
     auto para = new OnMessagePara;
+    // para->data will free on OnMessagePara destructor, so there is no memory leak problem.
     para->data = malloc(length);
     if (para->data == nullptr) {
         delete para;
@@ -716,7 +717,6 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
         return;
     }
     if (memcpy_s(para->data, length, data, length) < 0) {
-        free(para->data);
         delete para;
         NETSTACK_LOGE("mem copy failed");
         return;
