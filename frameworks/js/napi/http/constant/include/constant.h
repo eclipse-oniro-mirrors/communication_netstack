@@ -19,8 +19,6 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "nocopyable.h"
-
 namespace OHOS::NetStack {
 enum class ResponseCode {
     OK = 200,
@@ -80,8 +78,6 @@ enum class HttpDataType {
 };
 
 class HttpConstant final {
-    DISALLOW_COPY_AND_MOVE(HttpConstant);
-
 public:
     /* Http Method */
     static const char *const HTTP_METHOD_GET;

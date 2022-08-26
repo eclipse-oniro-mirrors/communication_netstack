@@ -19,8 +19,6 @@
 #include <list>
 #include <string>
 #include <unordered_map>
-
-#include "nocopyable.h"
 #include "json/json.h"
 
 namespace OHOS::NetStack {
@@ -43,8 +41,6 @@ public:
     void Clear();
 
 private:
-    DISALLOW_COPY_AND_MOVE(LRUCache);
-
     struct Node {
         std::string key;
         std::unordered_map<std::string, std::string> value;

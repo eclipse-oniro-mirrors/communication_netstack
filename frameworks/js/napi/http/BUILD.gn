@@ -1,0 +1,128 @@
+# Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+
+SUBSYSTEM_DIR = "//foundation/communication"
+
+utils_source = [
+  "$SUBSYSTEM_DIR/netstack/utils/base_context/src/netstack_base_context.cpp",
+  "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
+  "$SUBSYSTEM_DIR/netstack/utils/event_manager/src/netstack_event_listener.cpp",
+  "$SUBSYSTEM_DIR/netstack/utils/event_manager/src/netstack_event_manager.cpp",
+  "$SUBSYSTEM_DIR/netstack/utils/module_template/src/netstack_module_template.cpp",
+  "$SUBSYSTEM_DIR/netstack/utils/napi_utils/src/netstack_napi_utils.cpp",
+]
+
+utils_include = [
+  "$SUBSYSTEM_DIR/netstack/utils/base_async_work/include",
+  "$SUBSYSTEM_DIR/netstack/utils/base_context/include",
+  "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
+  "$SUBSYSTEM_DIR/netstack/utils/event_manager/include",
+  "$SUBSYSTEM_DIR/netstack/utils/log/include",
+  "$SUBSYSTEM_DIR/netstack/utils/module_template/include",
+  "$SUBSYSTEM_DIR/netstack/utils/napi_utils/include",
+]
+
+config("http_config") {
+  include_dirs = [
+    "async_context/include",
+    "async_work/include",
+    "cache/base64/include",
+    "cache/cache_constant/include",
+    "cache/cache_proxy/include",
+    "cache/cache_strategy/include",
+    "cache/lru_cache/include",
+    "cache/md5/include",
+    "constant/include",
+    "http_exec/include",
+    "http_module/include",
+    "options/include",
+    "//third_party/curl/include",
+    "//third_party/glib/glib",
+    "//third_party/glib",
+  ]
+  include_dirs += utils_include
+  cflags = [ "-std=c++17" ]
+
+  if (current_os != "ohos") {
+    defines = [ "__STDC_WANT_LIB_EXT1__=1" ]
+  }
+}
+
+ohos_shared_library("http") {
+  sources = [
+    "async_context/src/request_context.cpp",
+    "async_work/src/http_async_work.cpp",
+    "cache/base64/src/base64_utils.cpp",
+    "cache/cache_proxy/src/cache_proxy.cpp",
+    "cache/cache_strategy/src/http_cache_request.cpp",
+    "cache/cache_strategy/src/http_cache_response.cpp",
+    "cache/cache_strategy/src/http_cache_strategy.cpp",
+    "cache/cache_strategy/src/http_time.cpp",
+    "cache/lru_cache/src/disk_handler.cpp",
+    "cache/lru_cache/src/lru_cache.cpp",
+    "cache/lru_cache/src/lru_cache_disk_handler.cpp",
+    "cache/md5/src/calculate_md5.cpp",
+    "constant/src/constant.cpp",
+    "http_exec/src/http_exec.cpp",
+    "http_module/src/http_module.cpp",
+    "options/src/http_request_options.cpp",
+    "options/src/http_response.cpp",
+  ]
+  sources += utils_source
+  configs = [ ":http_config" ]
+  deps = [
+    "//foundation/arkui/napi/:ace_napi",
+    "//third_party/curl:curl",
+  ]
+
+  if (current_os == "ohos") {
+    deps += [
+      "//third_party/glib:glib_packages",
+      "//third_party/jsoncpp:jsoncpp",
+      "//third_party/openssl:libcrypto_shared",
+    ]
+    external_deps = [
+      "c_utils:utils",
+      "hiviewdfx_hilog_native:libhilog",
+    ]
+    relative_install_dir = "module/net"
+  } else {
+    deps += [
+      "//third_party/jsoncpp:jsoncpp_static",
+      "//third_party/openssl:libcrypto_static",
+    ]
+  }
+
+  part_name = "netstack"
+  subsystem_name = "communication"
+}
+
+if (current_os != "ohos") {
+  ohos_copy("copy_http_napi") {
+    if (host_os == "mac") {
+      suffix = ".dylib"
+    } else {
+      suffix = ".dll"
+    }
+
+    out_path = get_label_info(":http", "root_out_dir")
+    deps = [ ":http" ]
+    sources = [ "${out_path}/communication/netstack/libhttp${suffix}" ]
+    outputs = [ target_out_dir +
+                "/previewer/common/bin/module/libhttp_napi${suffix}" ]
+    module_source_dir = target_out_dir + "/previewer/common/bin/module/"
+    module_install_name = ""
+  }
+}

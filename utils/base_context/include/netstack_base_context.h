@@ -25,7 +25,6 @@
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 #include "netstack_event_manager.h"
-#include "nocopyable.h"
 #include "node_api_types.h"
 
 namespace OHOS::NetStack {
@@ -35,8 +34,6 @@ typedef void (*AsyncWorkCallback)(napi_env env, napi_status status, void *data);
 
 class BaseContext {
 public:
-    DISALLOW_COPY_AND_MOVE(BaseContext);
-
     BaseContext() = delete;
 
     explicit BaseContext(napi_env env, EventManager *manager);
