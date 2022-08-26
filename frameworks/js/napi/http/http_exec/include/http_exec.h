@@ -21,7 +21,6 @@
 
 #include "curl/curl.h"
 #include "napi/native_api.h"
-#include "nocopyable.h"
 #include "request_context.h"
 #include "thread_pool.h"
 
@@ -32,8 +31,6 @@ static constexpr const uint32_t DEFAULT_TIMEOUT = 5;
 
 class HttpResponseCacheExec final {
 public:
-    DISALLOW_COPY_AND_MOVE(HttpResponseCacheExec);
-
     HttpResponseCacheExec() = default;
 
     ~HttpResponseCacheExec() = default;
@@ -49,8 +46,6 @@ public:
 
 class HttpExec final {
 public:
-    DISALLOW_COPY_AND_MOVE(HttpExec);
-
     HttpExec() = default;
 
     ~HttpExec() = default;
