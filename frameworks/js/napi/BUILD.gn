@@ -53,6 +53,67 @@ common_relative_install_dir = "module/net"
 common_part_name = "netstack"
 common_subsystem_name = "communication"
 
+ohos_shared_library("http") {
+  include_dirs = [
+    "$NETSTACK_NAPI_ROOT/http/async_context/include",
+    "$NETSTACK_NAPI_ROOT/http/async_work/include",
+    "$NETSTACK_NAPI_ROOT/http/cache/base64/include",
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_constant/include",
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_proxy/include",
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/include",
+    "$NETSTACK_NAPI_ROOT/http/cache/lru_cache/include",
+    "$NETSTACK_NAPI_ROOT/http/cache/md5/include",
+    "$NETSTACK_NAPI_ROOT/http/constant/include",
+    "$NETSTACK_NAPI_ROOT/http/http_exec/include",
+    "$NETSTACK_NAPI_ROOT/http/http_module/include",
+    "$NETSTACK_NAPI_ROOT/http/options/include",
+  ]
+  include_dirs += utils_include
+  include_dirs += common_include
+  include_dirs += [
+    "//third_party/curl/include",
+    "//third_party/glib/glib",
+    "//third_party/glib",
+    "//third_party/jsoncpp/include",
+    "//third_party/openssl/include",
+  ]
+
+  sources = [
+    "http/async_context/src/request_context.cpp",
+    "http/async_work/src/http_async_work.cpp",
+    "http/cache/base64/src/base64_utils.cpp",
+    "http/cache/cache_proxy/src/cache_proxy.cpp",
+    "http/cache/cache_strategy/src/http_cache_request.cpp",
+    "http/cache/cache_strategy/src/http_cache_response.cpp",
+    "http/cache/cache_strategy/src/http_cache_strategy.cpp",
+    "http/cache/cache_strategy/src/http_time.cpp",
+    "http/cache/lru_cache/src/disk_handler.cpp",
+    "http/cache/lru_cache/src/lru_cache.cpp",
+    "http/cache/lru_cache/src/lru_cache_disk_handler.cpp",
+    "http/cache/md5/src/calculate_md5.cpp",
+    "http/constant/src/constant.cpp",
+    "http/http_exec/src/http_exec.cpp",
+    "http/http_module/src/http_module.cpp",
+    "http/options/src/http_request_options.cpp",
+    "http/options/src/http_response.cpp",
+  ]
+  sources += utils_source
+
+  deps = common_deps
+  deps += [
+    "//third_party/curl:curl",
+    "//third_party/glib:glib_packages",
+    "//third_party/jsoncpp:jsoncpp",
+    "//third_party/openssl:libcrypto_shared",
+  ]
+
+  external_deps = common_external_deps
+
+  relative_install_dir = common_relative_install_dir
+  part_name = common_part_name
+  subsystem_name = common_subsystem_name
+}
+
 ohos_shared_library("socket") {
   include_dirs = [
     "$NETSTACK_NAPI_ROOT/socket/async_context/include",

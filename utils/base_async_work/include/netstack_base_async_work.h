@@ -22,6 +22,7 @@
 #include "napi/native_common.h"
 #include "netstack_base_context.h"
 #include "netstack_napi_utils.h"
+#include "nocopyable.h"
 
 static constexpr const int PARSE_PARAM_FAILED = -1;
 
@@ -30,6 +31,8 @@ static constexpr const char *BUSINESS_ERROR_KEY = "code";
 namespace OHOS::NetStack {
 class BaseAsyncWork final {
 public:
+    DISALLOW_COPY_AND_MOVE(BaseAsyncWork);
+
     BaseAsyncWork() = delete;
 
     template <class Context, bool (*Executor)(Context *)> static void ExecAsyncWork(napi_env env, void *data)
