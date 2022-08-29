@@ -20,6 +20,7 @@
 
 #include "disk_handler.h"
 #include "lru_cache.h"
+#include "nocopyable.h"
 
 static constexpr const int MAX_DISK_CACHE_SIZE = 1024 * 1024 * 10;
 static constexpr const int MIN_DISK_CACHE_SIZE = 1024 * 1024;

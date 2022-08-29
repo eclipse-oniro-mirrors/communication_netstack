@@ -12,9 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include <chrono>
-#include <ctime>
 #include <iomanip>
 #include <sstream>
 
@@ -47,15 +45,7 @@ std::string HttpTime::GetNowTimeGMT()
     auto now = std::chrono::system_clock::now();
     time_t timeSeconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
     tm timeInfo = {0};
-#ifdef _WIN32
-#ifdef __STDC_LIB_EXT1__
-    if (gmtime_s(&timeInfo, &timeSeconds) == errno_t) {
-#else
-    if (gmtime(&timeSeconds) == nullptr) {
-#endif
-#else
     if (gmtime_r(&timeSeconds, &timeInfo) == nullptr) {
-#endif
         return {};
     }
     char s[MAX_TIME_LEN] = {0};

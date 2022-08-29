@@ -15,6 +15,7 @@
 
 #include "casche_constant.h"
 #include "netstack_common_utils.h"
+#include "netstack_log.h"
 
 #include "http_cache_response.h"
 

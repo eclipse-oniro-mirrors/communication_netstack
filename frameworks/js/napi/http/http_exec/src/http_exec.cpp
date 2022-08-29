@@ -14,7 +14,6 @@
  */
 
 #include <algorithm>
-#include <cstddef>
 #include <cstring>
 #include <memory>
 
@@ -26,9 +25,7 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "netstack_napi_utils.h"
-#ifdef __linux__
 #include "securec.h"
-#endif
 
 #include "http_exec.h"
 
@@ -66,10 +63,6 @@
     } while (0)
 
 namespace OHOS::NetStack {
-namespace {
-constexpr size_t MAX_LIMIT = 65536;
-} // namespace
-
 std::mutex HttpExec::mutex_;
 ThreadPool<HttpExec::Task, DEFAULT_THREAD_NUM, MAX_THREAD_NUM> HttpExec::threadPool_(DEFAULT_TIMEOUT);
 
@@ -189,11 +182,7 @@ napi_value HttpExec::RequestCallback(RequestContext *context)
         auto body = context->response.GetResult();
         napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);
         if (data != nullptr && arrayBuffer != nullptr) {
-#ifdef __STDC_LIB_EXT1__
             (void)memcpy_s(data, body.size(), body.c_str(), body.size());
-#else
-            (void)memcpy(data, body.c_str(), body.size());
-#endif
             NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT, arrayBuffer);
         }
         NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
@@ -247,11 +236,7 @@ bool HttpExec::EncodeUrlParam(std::string &str)
         if (IsUnReserved(c)) {
             encodeOut += static_cast<char>(c);
         } else {
-#ifdef __APPLE__
-            if (snprintf(encoded, sizeof(encoded), "%%%02X", c) < 0) {
-#else
             if (sprintf_s(encoded, sizeof(encoded), "%%%02X", c) < 0) {
-#endif
                 return false;
             }
             encodeOut += encoded;
@@ -351,9 +336,6 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData)
 {
     auto context = static_cast<RequestContext *>(userData);
-    if (context->response.GetResult().size() > MAX_LIMIT) {
-        return 0;
-    }
     context->response.AppendResult(data, size * memBytes);
     return size * memBytes;
 }
@@ -446,11 +428,7 @@ bool HttpExec::ProcByExpectDataType(napi_value object, RequestContext *context)
             auto body = context->response.GetResult();
             napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);
             if (data != nullptr && arrayBuffer != nullptr) {
-#ifdef __STDC_LIB_EXT1__
                 if (memcpy_s(data, body.size(), body.c_str(), body.size()) < 0) {
-#else
-                if (memcpy(data, body.c_str(), body.size()) == nullptr) {
-#endif
                     NETSTACK_LOGE("[ProcByExpectDataType] memory copy failed");
                     return true;
                 }

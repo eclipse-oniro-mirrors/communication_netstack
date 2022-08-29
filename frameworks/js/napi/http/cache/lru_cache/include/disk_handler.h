@@ -19,6 +19,8 @@
 #include <mutex>
 #include <string>
 
+#include "nocopyable.h"
+
 namespace OHOS::NetStack {
 class DiskHandler final {
 public:
@@ -33,6 +35,8 @@ public:
     [[nodiscard]] std::string Read();
 
 private:
+    DISALLOW_COPY_AND_MOVE(DiskHandler);
+
     std::mutex mutex_;
 
     std::string fileName_;
