@@ -14,6 +14,7 @@
  */
 
 #include <algorithm>
+#include <cstddef>
 #include <cstring>
 #include <memory>
 
@@ -63,6 +64,10 @@
     } while (0)
 
 namespace OHOS::NetStack {
+namespace {
+constexpr size_t MAX_LIMIT = 65536;
+} // namespace
+
 std::mutex HttpExec::mutex_;
 ThreadPool<HttpExec::Task, DEFAULT_THREAD_NUM, MAX_THREAD_NUM> HttpExec::threadPool_(DEFAULT_TIMEOUT);
 
@@ -343,6 +348,9 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
 size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t memBytes, void *userData)
 {
     auto context = static_cast<RequestContext *>(userData);
+    if (context->response.GetResult().size() > MAX_LIMIT) {
+        return 0;
+    }
     context->response.AppendRawHeader(data, size * memBytes);
     return size * memBytes;
 }
