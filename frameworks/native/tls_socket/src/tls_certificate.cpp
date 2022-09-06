@@ -118,7 +118,7 @@ bool TLSCertificate::CertificateFromPem(const std::string &data, CertType certTy
 {
     BIO *bio = BIO_new_file((data.c_str()), BIO_FILE_FLAG);
     if (!bio) {
-        NETSTACK_LOGE("bio new file fail errno = %{public}d reason = %{public}s \n", errno, strerror(errno));
+        NETSTACK_LOGE("bio new file fail errno");
         return false;
     }
     X509 *x509 = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
