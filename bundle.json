@@ -50,6 +50,7 @@
                     "//foundation/communication/netstack/utils:common_utils"
                 ],
                 "fwk_group": [
+                  "//foundation/communication/netstack/frameworks/native/tls_socket:tls_socket"
                 ],
                 "service_group": [
                 ]
@@ -57,7 +58,8 @@
             "inner_kits": [],
             "test": [
                 "//foundation/communication/netstack/test/napi/socket:fuzztest",
-                "//foundation/communication/netstack/test/unittest/http/cache:unittest"
+                "//foundation/communication/netstack/test/unittest/http/cache:unittest",
+                "//foundation/communication/netstack/test/unittest/tlssocket:unittest"
             ]
         }
     }
