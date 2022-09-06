@@ -19,7 +19,7 @@
 #include <unistd.h>
 #include <utility>
 #include <arpa/inet.h>
-#include <bits/socket.h>
+#include <sys/socket.h>
 #include <fcntl.h>
 #include <map>
 #include <netinet/in.h>
