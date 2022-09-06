@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#include "netstack_base_context.h"
+#include "base_context.h"
 
 #include "napi/native_api.h"
 #include "napi/native_common.h"
-#include "netstack_event_manager.h"
-#include "netstack_napi_utils.h"
+#include "event_manager.h"
+#include "napi_utils.h"
 #include "node_api.h"
 
 namespace OHOS::NetStack {

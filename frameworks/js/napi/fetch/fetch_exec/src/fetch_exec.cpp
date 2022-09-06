@@ -22,7 +22,7 @@
 #include "constant.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
-#include "netstack_napi_utils.h"
+#include "napi_utils.h"
 #include "securec.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \

@@ -18,7 +18,7 @@
 
 #include "fetch_request.h"
 #include "fetch_response.h"
-#include "netstack_base_context.h"
+#include "base_context.h"
 #include "nocopyable.h"
 
 namespace OHOS::NetStack {

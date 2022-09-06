@@ -28,7 +28,7 @@
 #include "context_key.h"
 #include "event_list.h"
 #include "netstack_log.h"
-#include "netstack_napi_utils.h"
+#include "napi_utils.h"
 #include "securec.h"
 
 static constexpr const int DEFAULT_BUFFER_SIZE = 8192;

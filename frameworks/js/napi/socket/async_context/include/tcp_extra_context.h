@@ -19,7 +19,7 @@
 #include <cstddef>
 
 #include "napi/native_api.h"
-#include "netstack_base_context.h"
+#include "base_context.h"
 #include "nocopyable.h"
 #include "tcp_extra_options.h"
 

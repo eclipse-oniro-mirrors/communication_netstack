@@ -23,7 +23,7 @@
 #include <utility>
 
 #include "napi/native_api.h"
-#include "netstack_event_listener.h"
+#include "event_listener.h"
 #include "uv.h"
 
 namespace OHOS::NetStack {

@@ -15,7 +15,7 @@
 
 #include "websocket_async_work.h"
 
-#include "netstack_base_async_work.h"
+#include "base_async_work.h"
 
 namespace OHOS::NetStack {
 void WebSocketAsyncWork::ExecConnect(napi_env env, void *data)

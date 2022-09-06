@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-#include "netstack_event_listener.h"
+#include "event_listener.h"
 
 #include "napi/native_api.h"
 #include "napi/native_common.h"
-#include "netstack_napi_utils.h"
+#include "napi_utils.h"
 
 namespace OHOS::NetStack {
 EventListener::EventListener(napi_env env, std::string type, napi_value callback, bool once, bool asyncCallback)

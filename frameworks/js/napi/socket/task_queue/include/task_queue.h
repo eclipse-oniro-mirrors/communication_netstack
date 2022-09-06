@@ -16,7 +16,7 @@
 #ifndef COMMUNICATIONNETSTACK_TASK_QUEUE_H
 #define COMMUNICATIONNETSTACK_TASK_QUEUE_H
 
-#include "netstack_base_context.h"
+#include "base_context.h"
 
 namespace OHOS::NetStack::Task {
 enum class TaskPriority {

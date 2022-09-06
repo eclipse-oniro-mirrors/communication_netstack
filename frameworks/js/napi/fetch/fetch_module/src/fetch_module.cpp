@@ -18,7 +18,7 @@
 #include "fetch_async_work.h"
 #include "fetch_exec.h"
 #include "netstack_log.h"
-#include "netstack_module_template.h"
+#include "module_template.h"
 
 namespace OHOS::NetStack {
 napi_value FetchModule::InitFetchModule(napi_env env, napi_value exports)

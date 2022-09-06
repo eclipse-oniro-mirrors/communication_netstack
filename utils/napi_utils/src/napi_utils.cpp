@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "netstack_napi_utils.h"
+#include "napi_utils.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -28,7 +28,7 @@
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 #include "node_api.h"
-#include "netstack_base_context.h"
+#include "base_context.h"
 
 namespace OHOS::NetStack::NapiUtils {
 static constexpr const int MAX_STRING_LENGTH = 65536;
@@ -334,6 +334,46 @@ void DefineProperties(napi_env env,
 
     (void)napi_define_properties(env, object, properties.size(), descriptors);
 }
+
+/* array */
+napi_value CreateArray(napi_env env, size_t length)
+{
+    if (length == 0) {
+        napi_value res = nullptr;
+        NAPI_CALL(env, napi_create_array(env, &res));
+        return res;
+    }
+    napi_value res = nullptr;
+    NAPI_CALL(env, napi_create_array_with_length(env, length, &res));
+    return res;
+}
+
+void SetArrayElement(napi_env env, napi_value array, uint32_t index, napi_value value)
+{
+    (void)napi_set_element(env, array, index, value);
+}
+
+bool IsArray(napi_env env, napi_value value)
+{
+    bool result = false;
+    NAPI_CALL_BASE(env, napi_is_array(env, value, &result), false);
+    return result;
+}
+
+uint32_t GetArrayLength(napi_env env, napi_value arr)
+{
+    uint32_t arrayLength = 0;
+    NAPI_CALL_BASE(env, napi_get_array_length(env, arr, &arrayLength), 0);
+    return arrayLength;
+}
+
+napi_value GetArrayElement(napi_env env, napi_value arr, uint32_t index)
+{
+    napi_value elementValue = nullptr;
+    NAPI_CALL(env, napi_get_element(env, arr, index, &elementValue));
+    return elementValue;
+}
+
 
 /* JSON */
 napi_value JsonStringify(napi_env env, napi_value object)

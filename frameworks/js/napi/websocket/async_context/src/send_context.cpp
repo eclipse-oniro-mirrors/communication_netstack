@@ -17,7 +17,7 @@
 
 #include "constant.h"
 #include "netstack_log.h"
-#include "netstack_napi_utils.h"
+#include "napi_utils.h"
 #include "securec.h"
 
 namespace OHOS::NetStack {
