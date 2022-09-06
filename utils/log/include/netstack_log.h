@@ -86,4 +86,6 @@ static void NetStackPrintLog(const char *fmt, ...)
 
 #define NETSTACK_LOGI(fmt, ...) NETSTACK_HILOG_PRINT(Info, fmt, ##__VA_ARGS__)
 
+#define NETSTACK_LOGD(fmt, ...) NETSTACK_HILOG_PRINT(Debug, fmt, ##__VA_ARGS__)
+
 #endif /* COMMUNICATIONNETSTACK_NETSTACK_LOG */

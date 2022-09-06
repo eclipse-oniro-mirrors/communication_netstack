@@ -24,7 +24,7 @@
 
 #include "napi/native_api.h"
 #include "napi/native_common.h"
-#include "netstack_event_manager.h"
+#include "event_manager.h"
 #include "nocopyable.h"
 #include "node_api_types.h"
 

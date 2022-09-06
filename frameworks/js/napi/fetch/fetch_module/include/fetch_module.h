@@ -16,7 +16,7 @@
 #ifndef COMMUNICATIONNETSTACK_FETCH_MODULE_H
 #define COMMUNICATIONNETSTACK_FETCH_MODULE_H
 
-#include "netstack_napi_utils.h"
+#include "napi_utils.h"
 #include "nocopyable.h"
 
 namespace OHOS::NetStack {

@@ -18,7 +18,7 @@
 
 #include "http_request_options.h"
 #include "http_response.h"
-#include "netstack_base_context.h"
+#include "base_context.h"
 #include "nocopyable.h"
 
 namespace OHOS::NetStack {

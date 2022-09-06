@@ -17,7 +17,7 @@
 
 #include "constant.h"
 #include "netstack_log.h"
-#include "netstack_module_template.h"
+#include "module_template.h"
 #include "websocket_async_work.h"
 
 namespace OHOS::NetStack {

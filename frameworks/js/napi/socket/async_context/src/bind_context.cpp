@@ -16,9 +16,9 @@
 #include "bind_context.h"
 
 #include "context_key.h"
-#include "netstack_event_manager.h"
+#include "event_manager.h"
 #include "netstack_log.h"
-#include "netstack_napi_utils.h"
+#include "napi_utils.h"
 
 namespace OHOS::NetStack {
 BindContext::BindContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}

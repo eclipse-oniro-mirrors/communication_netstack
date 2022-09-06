@@ -15,37 +15,11 @@
 import("//build/config/features.gni")
 import("//build/ohos.gni")
 import("//build/test.gni")
+import("//foundation/communication/netstack/netstack_config.gni")
 
 ##############################fuzztest##########################################
 
-SUBSYSTEM_DIR = "//foundation/communication"
 NETSTACK_NAPI_ROOT = "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/"
-
-utils_include = [
-  "$SUBSYSTEM_DIR/netstack/utils/base_async_work/include",
-  "$SUBSYSTEM_DIR/netstack/utils/base_context/include",
-  "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
-  "$SUBSYSTEM_DIR/netstack/utils/event_manager/include",
-  "$SUBSYSTEM_DIR/netstack/utils/log/include",
-  "$SUBSYSTEM_DIR/netstack/utils/module_template/include",
-  "$SUBSYSTEM_DIR/netstack/utils/napi_utils/include",
-]
-
-utils_source = [
-  "$SUBSYSTEM_DIR/netstack/utils/base_context/src/netstack_base_context.cpp",
-  "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
-  "$SUBSYSTEM_DIR/netstack/utils/event_manager/src/netstack_event_listener.cpp",
-  "$SUBSYSTEM_DIR/netstack/utils/event_manager/src/netstack_event_manager.cpp",
-  "$SUBSYSTEM_DIR/netstack/utils/module_template/src/netstack_module_template.cpp",
-  "$SUBSYSTEM_DIR/netstack/utils/napi_utils/src/netstack_napi_utils.cpp",
-]
-
-common_include = [
-  "//foundation/arkui/ace_engine/frameworks/base/utils",
-  "//foundation/arkui/napi/interfaces/kits",
-  "//foundation/arkui/napi",
-  "//third_party/node/src",
-]
 
 ohos_fuzztest("SocketExecFuzzTest") {
   module_out_path = "communication/netstack"
@@ -60,8 +34,6 @@ ohos_fuzztest("SocketExecFuzzTest") {
     "$NETSTACK_NAPI_ROOT/socket/options/include",
     "$NETSTACK_NAPI_ROOT/socket/task_queue/include",
   ]
-  include_dirs += utils_include
-  include_dirs += common_include
 
   cflags = [
     "-g",
@@ -91,13 +63,13 @@ ohos_fuzztest("SocketExecFuzzTest") {
     "$NETSTACK_NAPI_ROOT/socket/socket_exec/src/socket_exec.cpp",
   ]
   sources += [ "socket_exec_fuzzer.cpp" ]
-  sources += utils_source
 
-  deps = [ "//foundation/arkui/napi/:ace_napi" ]
+  deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
 
   external_deps = [
     "c_utils:utils",
     "hiviewdfx_hilog_native:libhilog",
+    "napi:ace_napi",
   ]
 
   defines = [

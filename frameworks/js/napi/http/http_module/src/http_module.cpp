@@ -21,7 +21,7 @@
 #include "http_async_work.h"
 #include "http_exec.h"
 #include "netstack_log.h"
-#include "netstack_module_template.h"
+#include "module_template.h"
 
 #define DECLARE_RESPONSE_CODE(code) \
     DECLARE_NAPI_STATIC_PROPERTY(#code, NapiUtils::CreateUint32(env, static_cast<uint32_t>(ResponseCode::code)))

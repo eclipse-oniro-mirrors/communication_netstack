@@ -25,7 +25,7 @@
 #include "http_time.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
-#include "netstack_napi_utils.h"
+#include "napi_utils.h"
 #include "securec.h"
 
 #include "http_exec.h"

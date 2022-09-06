@@ -16,8 +16,8 @@
 #include "tcp_extra_context.h"
 
 #include "context_key.h"
-#include "netstack_event_manager.h"
-#include "netstack_napi_utils.h"
+#include "event_manager.h"
+#include "napi_utils.h"
 
 namespace OHOS::NetStack {
 TcpSetExtraOptionsContext::TcpSetExtraOptionsContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}

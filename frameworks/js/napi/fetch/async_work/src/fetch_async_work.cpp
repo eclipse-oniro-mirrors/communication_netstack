@@ -16,7 +16,7 @@
 #include "fetch_async_work.h"
 
 #include "fetch_exec.h"
-#include "netstack_base_async_work.h"
+#include "base_async_work.h"
 
 namespace OHOS::NetStack {
 void FetchAsyncWork::ExecFetch(napi_env env, void *data)

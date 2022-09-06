@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#include "netstack_module_template.h"
+#include "module_template.h"
 
 #include <algorithm>
 #include <initializer_list>
 #include <new>
 #include <string>
 
-#include "netstack_event_manager.h"
+#include "event_manager.h"
 #include "netstack_log.h"
 
 namespace OHOS::NetStack::ModuleTemplate {

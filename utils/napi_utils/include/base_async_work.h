@@ -20,8 +20,8 @@
 
 #include "napi/native_api.h"
 #include "napi/native_common.h"
-#include "netstack_base_context.h"
-#include "netstack_napi_utils.h"
+#include "base_context.h"
+#include "napi_utils.h"
 #include "nocopyable.h"
 
 static constexpr const int PARSE_PARAM_FAILED = -1;

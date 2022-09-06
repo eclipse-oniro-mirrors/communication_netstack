@@ -20,7 +20,7 @@
 
 #include "napi/native_api.h"
 #include "net_address.h"
-#include "netstack_base_context.h"
+#include "base_context.h"
 #include "nocopyable.h"
 #include "socket_remote_info.h"
 #include "socket_state_base.h"
