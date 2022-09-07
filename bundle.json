@@ -50,6 +50,7 @@
                     "//foundation/communication/netstack/utils:common_utils"
                 ],
                 "fwk_group": [
+                  "//foundation/communication/netstack/frameworks/js/napi/tls:tlssocket",
                   "//foundation/communication/netstack/frameworks/native/tls_socket:tls_socket"
                 ],
                 "service_group": [
