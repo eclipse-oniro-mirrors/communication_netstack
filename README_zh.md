@@ -19,16 +19,29 @@
 ```
 /foundation/communication/netstack
 ├─figures                            # 架构图
-├─frameworks                         # API实现
-│  └─js                              # JS API实现
-│      ├─builtin                     # 小型系统JS API实现
-│      └─napi                        # 标准系统JS API实现
-│          ├─http                    # http API
-│          ├─socket                  # socket API
-│          └─websocket               # websocket API
-├─interfaces                         # JS 接口定义
-├─test                               # 测试
-└─utils                              # 工具
+├─frameworks                         # 接口实现
+│  ├─js                              # JS API实现
+│  │   ├─builtin                     # 小型系统JS API实现
+│  │   │   ├── http_request          # http请求实现目录
+│  │   │   └── test                  # 测试代码
+│  │   └─napi                        # 标准系统JS API实现
+│  │       ├─fetch                   # fetch API
+│  │       ├─http                    # http API
+│  │       ├─socket                  # socket API
+│  │       ├─tls                     # tls socket API
+│  │       └─websocket               # websocket API
+│  └─native                          # native接口
+│    └─tls_socket                    # tls socket native实现
+├─interfaces                         # 接口定义
+│  ├─innerkits                       # native接口
+│  │  └─tls_socket                   # tls socket native接口
+│  └─kits                            # JS接口
+│     └─js                           # 本地.d.ts文件
+├─test                               # 测试代码目录
+└─utils                              # 公共功能
+   ├─common_utils                    # 共通库目录
+   ├─log                             # 日志实现目录
+   └─napi_utils                      # 公用NAPI代码目录
 ```
 
 ## 接口说明
