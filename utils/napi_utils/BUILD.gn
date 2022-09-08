@@ -21,7 +21,7 @@ config("napi_utils_public_config") {
   ]
 }
 
-ohos_shared_library("napi_utils") {
+ohos_static_library("napi_utils") {
   sources = [
     "src/base_context.cpp",
     "src/event_listener.cpp",
@@ -38,7 +38,4 @@ ohos_shared_library("napi_utils") {
     "hiviewdfx_hilog_native:libhilog",
     "napi:ace_napi",
   ]
-
-  part_name = "netstack"
-  subsystem_name = "communication"
 }
