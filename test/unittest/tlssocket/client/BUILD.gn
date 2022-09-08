@@ -15,13 +15,20 @@ import("//build/test.gni")
 import("//foundation/communication/netstack/netstack_config.gni")
 
 ohos_unittest("tls_socket_unittest") {
-  sources = [
-    "TlsSocketTest.cpp",
-    #"TlsSocketCertChainTest.cpp"
-  ]
+  sources = [ "TlsSocketTest.cpp" ]
 
   deps = [ "$NETSTACK_DIR/frameworks/native/tls_socket:tls_socket" ]
+  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
 
+  module_out_path = "netstack/tls_socket_unittest"
+  part_name = "netstack"
+  subsystem_name = "communication"
+}
+
+ohos_unittest("tls_socket_certchain_unittest") {
+  sources = [ "TlsSocketCertChainTest.cpp" ]
+
+  deps = [ "$NETSTACK_DIR/frameworks/native/tls_socket:tls_socket" ]
   external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
 
   module_out_path = "netstack/tls_socket_unittest"
