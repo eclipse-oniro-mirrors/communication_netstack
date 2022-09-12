@@ -39,3 +39,26 @@ ohos_static_library("napi_utils") {
     "napi:ace_napi",
   ]
 }
+
+ohos_static_library("napi_utils_static") {
+  sources = [
+    "src/base_context.cpp",
+    "src/event_listener.cpp",
+    "src/event_manager.cpp",
+    "src/module_template.cpp",
+    "src/napi_utils.cpp",
+  ]
+
+  public_configs = [ ":napi_utils_public_config" ]
+
+  if (current_os == "ohos") {
+    public_deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
+    external_deps = [
+      "c_utils:utils",
+      "hiviewdfx_hilog_native:libhilog",
+      "napi:ace_napi",
+    ]
+  } else {
+    external_deps = [ "napi:ace_napi" ]
+  }
+}

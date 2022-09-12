@@ -14,15 +14,17 @@
  */
 
 #include <memory>
-
+#ifdef __linux__
 #include "glib.h"
 #include "netstack_log.h"
+#endif
 
 #include "base64_utils.h"
 
 namespace OHOS::NetStack::Base64 {
 std::string Encode(const std::string &source)
 {
+#ifdef __linux__
     gchar *encodeData = g_base64_encode(reinterpret_cast<const guchar *>(source.c_str()), source.size());
     if (encodeData == nullptr) {
         NETSTACK_LOGE("base64 encode failed");
@@ -32,10 +34,14 @@ std::string Encode(const std::string &source)
     std::string dest(encodeData, out_len);
     g_free(encodeData);
     return dest;
+#else
+    return {};
+#endif
 }
 
 std::string Decode(const std::string &encoded)
 {
+#ifdef __linux__
     gsize out_len = 0;
     guchar *decodeData = g_base64_decode(encoded.c_str(), &out_len);
     if (decodeData == nullptr) {
@@ -45,5 +51,8 @@ std::string Decode(const std::string &encoded)
     std::string dest(reinterpret_cast<char *>(decodeData), out_len);
     g_free(decodeData);
     return dest;
+#else
+    return {};
+#endif
 }
 } // namespace OHOS::NetStack::Base64
