@@ -16,16 +16,13 @@
 #ifndef COMMUNICATIONNETSTACK_REQUEST_CONTEXT_H
 #define COMMUNICATIONNETSTACK_REQUEST_CONTEXT_H
 
+#include "base_context.h"
 #include "http_request_options.h"
 #include "http_response.h"
-#include "base_context.h"
-#include "nocopyable.h"
 
 namespace OHOS::NetStack {
 class RequestContext final : public BaseContext {
 public:
-    DISALLOW_COPY_AND_MOVE(RequestContext);
-
     RequestContext() = delete;
 
     RequestContext(napi_env env, EventManager *manager);

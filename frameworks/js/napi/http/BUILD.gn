@@ -14,7 +14,7 @@
 import("//build/ohos.gni")
 import("//foundation/communication/netstack/netstack_config.gni")
 
-ohos_shared_library("http") {
+config("http_config") {
   include_dirs = [
     "async_context/include",
     "async_work/include",
@@ -34,6 +34,13 @@ ohos_shared_library("http") {
     "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
   ]
 
+  if (current_os != "ohos") {
+    defines = [ "__STDC_WANT_LIB_EXT1__=1" ]
+    cflags = [ "-std=c++17" ]
+  }
+}
+
+ohos_shared_library("http") {
   sources = [
     "async_context/src/request_context.cpp",
     "async_work/src/http_async_work.cpp",
@@ -54,21 +61,49 @@ ohos_shared_library("http") {
     "options/src/http_response.cpp",
   ]
 
-  deps = [
-    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "//third_party/curl:curl",
-    "//third_party/glib:glib_packages",
-    "//third_party/jsoncpp:jsoncpp",
-    "//third_party/openssl:libcrypto_shared",
-  ]
+  configs = [ ":http_config" ]
 
-  external_deps = [
-    "c_utils:utils",
-    "hiviewdfx_hilog_native:libhilog",
-    "napi:ace_napi",
-  ]
+  deps = [ "//third_party/curl:curl" ]
+  external_deps = [ "napi:ace_napi" ]
+
+  if (current_os == "ohos") {
+    deps += [
+      "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+      "//third_party/glib:glib_packages",
+      "//third_party/jsoncpp:jsoncpp",
+      "//third_party/openssl:libcrypto_shared",
+    ]
+    external_deps += [
+      "c_utils:utils",
+      "hiviewdfx_hilog_native:libhilog",
+    ]
+  } else {
+    deps += [
+      "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
+      "//third_party/jsoncpp:jsoncpp_static",
+      "//third_party/openssl:libcrypto_static",
+    ]
+  }
 
   relative_install_dir = "module/net"
   part_name = "netstack"
   subsystem_name = "communication"
+}
+
+if (current_os != "ohos") {
+  ohos_copy("copy_http_napi") {
+    if (host_os == "mac") {
+      suffix = ".dylib"
+    } else {
+      suffix = ".dll"
+    }
+
+    out_path = get_label_info(":http", "root_out_dir")
+    deps = [ ":http" ]
+    sources = [ "${out_path}/communication/netstack/libhttp${suffix}" ]
+    outputs =
+        [ target_out_dir + "/previewer/common/bin/module/net/libhttp${suffix}" ]
+    module_source_dir = target_out_dir + "/previewer/common/bin/module/net/"
+    module_install_name = ""
+  }
 }

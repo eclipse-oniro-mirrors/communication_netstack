@@ -19,12 +19,9 @@
 #include "http_cache_strategy.h"
 #include "http_request_options.h"
 #include "http_response.h"
-#include "nocopyable.h"
 
 namespace OHOS::NetStack {
 class CacheProxy final {
-    DISALLOW_COPY_AND_MOVE(CacheProxy);
-
     HttpRequestOptions &requestOptions_;
 
     HttpCacheStrategy strategy_;
