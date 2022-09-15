@@ -45,6 +45,10 @@ napi_valuetype GetValueType(napi_env env, napi_value value)
 /* named property */
 bool HasNamedProperty(napi_env env, napi_value object, const std::string &propertyName)
 {
+    if (GetValueType(env, object) != napi_object) {
+        return false;
+    }
+
     bool hasProperty = false;
     NAPI_CALL_BASE(env, napi_has_named_property(env, object, propertyName.c_str(), &hasProperty), false);
     return hasProperty;
@@ -52,6 +56,10 @@ bool HasNamedProperty(napi_env env, napi_value object, const std::string &proper
 
 napi_value GetNamedProperty(napi_env env, napi_value object, const std::string &propertyName)
 {
+    if (GetValueType(env, object) != napi_object) {
+        return GetUndefined(env);
+    }
+
     napi_value value = nullptr;
     NAPI_CALL(env, napi_get_named_property(env, object, propertyName.c_str(), &value));
     return value;
@@ -59,11 +67,19 @@ napi_value GetNamedProperty(napi_env env, napi_value object, const std::string &
 
 void SetNamedProperty(napi_env env, napi_value object, const std::string &name, napi_value value)
 {
-    (void)napi_set_named_property(env, object, name.c_str(), value);
+    if (GetValueType(env, object) != napi_object) {
+        return;
+    }
+
+    napi_set_named_property(env, object, name.c_str(), value);
 }
 
 std::vector<std::string> GetPropertyNames(napi_env env, napi_value object)
 {
+    if (GetValueType(env, object) != napi_object) {
+        return {};
+    }
+
     std::vector<std::string> ret;
     napi_value names = nullptr;
     NAPI_CALL_BASE(env, napi_get_property_names(env, object, &names), ret);
@@ -94,6 +110,10 @@ napi_value CreateUint32(napi_env env, uint32_t code)
 
 uint32_t GetUint32FromValue(napi_env env, napi_value value)
 {
+    if (GetValueType(env, value) != napi_number) {
+        return 0;
+    }
+
     uint32_t ret = 0;
     NAPI_CALL_BASE(env, napi_get_value_uint32(env, value, &ret), 0);
     return ret;
@@ -130,6 +150,10 @@ napi_value CreateInt32(napi_env env, int32_t code)
 
 int32_t GetInt32FromValue(napi_env env, napi_value value)
 {
+    if (GetValueType(env, value) != napi_number) {
+        return 0;
+    }
+
     int32_t ret = 0;
     NAPI_CALL_BASE(env, napi_get_value_int32(env, value, &ret), 0);
     return ret;
@@ -166,6 +190,10 @@ napi_value CreateStringUtf8(napi_env env, const std::string &str)
 
 std::string GetStringFromValueUtf8(napi_env env, napi_value value)
 {
+    if (GetValueType(env, value) != napi_string) {
+        return {};
+    }
+
     std::string result;
     auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
     std::unique_ptr<char, decltype(deleter)> str(static_cast<char *>(malloc(MAX_STRING_LENGTH)), deleter);
@@ -311,6 +339,10 @@ napi_value GetBoolean(napi_env env, bool value)
 
 bool GetBooleanFromValue(napi_env env, napi_value value)
 {
+    if (GetValueType(env, value) != napi_boolean) {
+        return GetUndefined(env);
+    }
+
     bool ret = false;
     NAPI_CALL_BASE(env, napi_get_value_bool(env, value, &ret), false);
     return ret;
