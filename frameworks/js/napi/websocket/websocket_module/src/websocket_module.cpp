@@ -89,5 +89,18 @@ napi_value WebSocketModule::WebSocket::Off(napi_env env, napi_callback_info info
         env, info, {EventName::EVENT_OPEN, EventName::EVENT_MESSAGE, EventName::EVENT_CLOSE, EventName::EVENT_ERROR});
 }
 
-NAPI_MODULE(webSocket, WebSocketModule::InitWebSocketModule)
+static napi_module g_websocketModule = {
+    .nm_version = 1,
+    .nm_flags = 0,
+    .nm_filename = nullptr,
+    .nm_register_func = WebSocketModule::InitWebSocketModule,
+    .nm_modname = "net.webSocket",
+    .nm_priv = nullptr,
+    .reserved = {nullptr},
+};
+
+extern "C" attribute((constructor)) void RegisterWebSocketModule(void)
+{
+    napi_module_register(&g_websocketModule);
+}
 } // namespace OHOS::NetStack
