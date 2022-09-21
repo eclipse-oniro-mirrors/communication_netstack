@@ -99,7 +99,7 @@ static napi_module g_websocketModule = {
     .reserved = {nullptr},
 };
 
-extern "C" attribute((constructor)) void RegisterWebSocketModule(void)
+extern "C" __attribute__((constructor)) void RegisterWebSocketModule(void)
 {
     napi_module_register(&g_websocketModule);
 }
