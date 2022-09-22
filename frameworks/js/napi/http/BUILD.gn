@@ -31,7 +31,7 @@ config("http_config") {
     "//third_party/curl/include",
     "//third_party/glib/glib",
     "//third_party/glib",
-    "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
+    "$NETSTACK_DIR/utils/common_utils/include",
   ]
 
   if (current_os != "ohos") {
@@ -64,22 +64,25 @@ ohos_shared_library("http") {
   configs = [ ":http_config" ]
 
   deps = [ "//third_party/curl:curl" ]
-  external_deps = [ "napi:ace_napi" ]
-
   if (current_os == "ohos") {
     deps += [
+      "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
       "//third_party/glib:glib_packages",
       "//third_party/jsoncpp:jsoncpp",
       "//third_party/openssl:libcrypto_shared",
     ]
-    external_deps += [
+    external_deps = [
       "c_utils:utils",
       "hiviewdfx_hilog_native:libhilog",
+      "napi:ace_napi",
     ]
   } else {
+    sources +=
+        [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
     deps += [
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
+      "//foundation/arkui/napi:ace_napi",
       "//third_party/jsoncpp:jsoncpp_static",
       "//third_party/openssl:libcrypto_static",
     ]

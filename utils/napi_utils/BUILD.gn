@@ -18,7 +18,12 @@ config("napi_utils_public_config") {
   include_dirs = [
     "include",
     "//third_party/node/src",
+    "$NETSTACK_DIR/utils/log/include",
   ]
+  if (current_os != "ohos") {
+    defines = [ "__STDC_WANT_LIB_EXT1__=1" ]
+    cflags = [ "-std=c++17" ]
+  }
 }
 
 ohos_static_library("napi_utils") {
@@ -59,6 +64,6 @@ ohos_static_library("napi_utils_static") {
       "napi:ace_napi",
     ]
   } else {
-    external_deps = [ "napi:ace_napi" ]
+    public_deps = [ "//foundation/arkui/napi:ace_napi" ]
   }
 }

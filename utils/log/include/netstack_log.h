@@ -19,12 +19,11 @@
 #include <cstring>
 #include <string>
 
-#define MAKE_FILE_NAME (strrchr(__FILE__, '/') + 1)
+#define MAKE_FILE_NAME strrchr(__FILE__, '/') + 1
 
 #if !defined(_WIN32) && !defined(__APPLE__)
 
 #include "hilog/log.h"
-#include "securec.h"
 
 #define NETSTACK_LOG_TAG "NetMgrSubsystem"
 
@@ -37,11 +36,6 @@ static constexpr OHOS::HiviewDFX::HiLogLabel NETSTACK_LOG_LABEL = {LOG_CORE, NET
                                         __LINE__, ##__VA_ARGS__)
 
 #else
-
-#ifdef _WIN32
-#undef MAKE_FILE_NAME
-#define MAKE_FILE_NAME (strrchr(__FILE__, '\\') + 1)
-#endif /* _WIN32 */
 
 #include <cstdarg>
 #include <cstdio>
