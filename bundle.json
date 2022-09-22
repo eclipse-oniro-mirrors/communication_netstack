@@ -14,7 +14,7 @@
     "author": {},
     "contributors": [],
     "segment": {
-        "destPath": "//foundation/communication/netstack"
+        "destPath": "foundation/communication/netstack"
     },
     "component": {
         "name": "netstack",
