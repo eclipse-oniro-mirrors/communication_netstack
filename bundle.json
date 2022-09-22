@@ -30,10 +30,13 @@
         "ram": "5MB",
         "deps": {
             "components": [
+                "huks",
                 "hiviewdfx_hilog_native",
-                "ipc",
-                "napi",
-                "c_utils"
+                "zlib",
+                "c_utils",
+                "jsoncpp",
+                "common",
+                "napi"
             ],
             "third_party": [
                 "curl",
