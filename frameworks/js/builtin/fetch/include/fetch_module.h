@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,9 +16,10 @@
 #ifndef OHOS_ACELITE_FETCH_MODULE_H
 #define OHOS_ACELITE_FETCH_MODULE_H
 
-#include "http_request/request_data.h"
 #include "jsi.h"
+#include "memory_heap.h"
 #include "non_copyable.h"
+#include "request_data.h"
 
 namespace OHOS {
 namespace ACELite {

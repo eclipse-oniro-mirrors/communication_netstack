@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,17 +19,17 @@
 #include <string>
 #include <vector>
 
-#include "ace_log.h"
 #include "curl/curl.h"
+#include "hilog/log.h"
 
-#define HTTP_REQUEST_INFO(...)                                     \
-    do {                                                           \
-        HILOG_INFO(HILOG_MODULE_ACE, "[HTTP][INFO] " __VA_ARGS__); \
+#define HTTP_REQUEST_INFO(...)                            \
+    do {                                                  \
+        HILOG_INFO(LOG_APP, "[HTTP][INFO] " __VA_ARGS__); \
     } while (0)
 
-#define HTTP_REQUEST_ERROR(...)                                      \
-    do {                                                             \
-        HILOG_ERROR(HILOG_MODULE_ACE, "[HTTP][ERROR] " __VA_ARGS__); \
+#define HTTP_REQUEST_ERROR(...)                             \
+    do {                                                    \
+        HILOG_ERROR(LOG_APP, "[HTTP][ERROR] " __VA_ARGS__); \
     } while (0)
 
 namespace OHOS {
