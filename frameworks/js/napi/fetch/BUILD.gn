@@ -37,7 +37,7 @@ ohos_shared_library("fetch") {
 
   deps = [
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "//third_party/curl:curl",
+    "//third_party/curl:curl_shared",
   ]
 
   external_deps = [
