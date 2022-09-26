@@ -63,7 +63,7 @@ ohos_shared_library("http") {
 
   configs = [ ":http_config" ]
 
-  deps = [ "//third_party/curl:curl" ]
+  deps = [ "//third_party/curl:curl_shared" ]
   if (current_os == "ohos") {
     deps += [
       "$NETSTACK_DIR/utils:stack_utils_common",
