@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "tlssocket_exec.h"
 
 #include <string>
@@ -23,19 +23,6 @@
 
 namespace OHOS {
 namespace NetStack {
-namespace {
-void SendCustomData(TLSSocket *tlsSocket)
-{
-    TCPSendOptions tcpSendOptions;
-    tcpSendOptions.SetData("custom data");
-    tlsSocket->Send(tcpSendOptions, [](bool ok) {
-        if (!ok) {
-            NETSTACK_LOGE("send custom data is failed");
-        }
-    });
-}
-} // namespace
-
 bool TlsSocketExec::ExecGetCertificate(GetCertificateContext *context)
 {
     auto manager = context->GetManager();
@@ -43,7 +30,7 @@ bool TlsSocketExec::ExecGetCertificate(GetCertificateContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    auto tlsSocket = reinterpret_cast<TLSSocket*>(manager->GetData());
+    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("TlsSocketExec::ExecGetCipherSuites tlsSocket is null");
         return false;
@@ -67,16 +54,13 @@ bool TlsSocketExec::ExecConnect(ConnectContext *context)
         return false;
     }
     auto tlsSocket = new TLSSocket();
-    tlsSocket->Connect(context->connectOptions_, [&context](bool ok) {
-        context->ok_ = ok;
-    });
+    tlsSocket->Connect(context->connectOptions_, [&context](bool ok) { context->ok_ = ok; });
     if (!context->ok_) {
         NETSTACK_LOGE("TlsSocketExec::ExecConnect result is false");
         delete tlsSocket;
         tlsSocket = nullptr;
         return false;
     }
-    SendCustomData(tlsSocket);
     manager->SetData(tlsSocket);
     return true;
 }
@@ -88,7 +72,7 @@ bool TlsSocketExec::ExecGetCipherSuites(GetCipherSuitesContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    auto tlsSocket = reinterpret_cast<TLSSocket*>(manager->GetData());
+    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("TlsSocketExec::ExecGetCipherSuites tlsSocket is null");
         return false;
@@ -107,7 +91,7 @@ bool TlsSocketExec::ExecGetRemoteCertificate(GetRemoteCertificateContext *contex
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    auto tlsSocket = reinterpret_cast<TLSSocket*>(manager->GetData());
+    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("TlsSocketExec::ExecGetRemoteCertificate tlsSocket is null");
         return false;
@@ -115,7 +99,6 @@ bool TlsSocketExec::ExecGetRemoteCertificate(GetRemoteCertificateContext *contex
     tlsSocket->GetRemoteCertificate([&context](bool ok, const std::string &cert) {
         context->ok_ = ok;
         context->remoteCert_ = cert;
-
     });
     return context->ok_;
 }
@@ -127,7 +110,7 @@ bool TlsSocketExec::ExecGetProtocol(GetProtocolContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    auto tlsSocket = reinterpret_cast<TLSSocket*>(manager->GetData());
+    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("TlsSocketExec::ExecGetProtocol tlsSocket is null");
         return false;
@@ -146,7 +129,7 @@ bool TlsSocketExec::ExecGetSignatureAlgorithms(GetSignatureAlgorithmsContext *co
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    auto tlsSocket = reinterpret_cast<TLSSocket*>(manager->GetData());
+    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("TlsSocketExec::ExecGetSignatureAlgorithms tlsSocket is null");
         return false;
@@ -158,8 +141,9 @@ bool TlsSocketExec::ExecGetSignatureAlgorithms(GetSignatureAlgorithmsContext *co
     return context->ok_;
 }
 
-bool TlsSocketExec::ExecClose(CloseContext *context)
+bool TlsSocketExec::ExecSend(SendContext *context)
 {
+    NETSTACK_LOGI("TlsSocketExec::ExecSend is start");
     auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
@@ -170,9 +154,30 @@ bool TlsSocketExec::ExecClose(CloseContext *context)
         NETSTACK_LOGE("TlsSocketExec::ExecClose tlsSocket is null");
         return false;
     }
-    tlsSocket->Close([&context](bool ok) {
-        context->ok_ = ok;
+    TCPSendOptions tcpSendOptions;
+    tcpSendOptions.SetData(context->data_);
+    tlsSocket->Send(tcpSendOptions, [](bool ok) {
+        if (!ok) {
+            NETSTACK_LOGE("send data is failed");
+        }
     });
+    NETSTACK_LOGI("TlsSocketExec::ExecSend is end");
+    return context->ok_;
+}
+
+bool TlsSocketExec::ExecClose(CloseContext *context)
+{
+    auto manager = context->GetManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
+    if (tlsSocket == nullptr) {
+        NETSTACK_LOGE("TlsSocketExec::ExecClose tlsSocket is null");
+        return false;
+    }
+    tlsSocket->Close([&context](bool ok) { context->ok_ = ok; });
     delete tlsSocket;
     manager->SetData(nullptr);
     return context->ok_;
@@ -218,6 +223,11 @@ napi_value TlsSocketExec::GetSignatureAlgorithmsCallback(GetSignatureAlgorithmsC
         NapiUtils::SetArrayElement(context->GetEnv(), signatureAlgorithms, index++, signatureAlgorithm);
     }
     return signatureAlgorithms;
+}
+
+napi_value TlsSocketExec::SendCallback(SendContext *context)
+{
+    return NapiUtils::GetBoolean(context->GetEnv(), true);
 }
 
 napi_value TlsSocketExec::CloseCallback(CloseContext *context)

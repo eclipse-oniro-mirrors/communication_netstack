@@ -32,6 +32,7 @@ ohos_shared_library("tlssocket") {
     "src/context/get_protocol_context.cpp",
     "src/context/get_remote_certificate_context.cpp",
     "src/context/get_signature_algorithms_context.cpp",
+    "src/context/send_context.cpp",
     "src/tlssocket_async_work.cpp",
     "src/tlssocket_exec.cpp",
     "src/tlssocket_module.cpp",

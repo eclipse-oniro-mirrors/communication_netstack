@@ -612,10 +612,10 @@ void TLSSocket::Send(const OHOS::NetStack::TCPSendOptions &tcpSendOptions, const
     auto res = openSslContext_.tlsSocketInternal_.Send(tcpSendOptions.GetData());
     if (!res) {
         CallOnErrorCallback(errno, MakeErrnoString());
-        CallSendCallback(false, callback);
+        callback(false);
         return;
     }
-    CallSendCallback(true, callback);
+    callback(true);
 }
 
 bool WaitConditionWithTimeout(bool *flag, int32_t timeoutMs)
