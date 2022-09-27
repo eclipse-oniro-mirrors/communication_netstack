@@ -130,7 +130,6 @@ bool TLSContext::SetCaAndVerify(TLSContext *tlsContext, const TLSConfiguration &
 
 bool TLSContext::SetLocalCertificate(TLSContext *tlsContext, const TLSConfiguration &configuration)
 {
-    X509_print_fp(stdout, (X509*)configuration.GetLocalCertificate().handle());
     if (!SSL_CTX_use_certificate(tlsContext->ctx_, (X509 *)configuration.GetLocalCertificate().handle())) {
         NETSTACK_LOGE("Error loading local certificate");
         return false;

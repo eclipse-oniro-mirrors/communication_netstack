@@ -83,18 +83,6 @@ void TLSConfiguration::SetCaCertificate(const std::vector<std::string> &certific
     caCertificateChain_ = certificate;
 }
 
-void TLSConfiguration::SetProtocol(const std::string &Protocol)
-{
-    if (Protocol == TLS_1_3) {
-        minProtocol_ = TLS_V1_3;
-        maxProtocol_ = TLS_V1_3;
-    }
-    if (Protocol == TLS_1_2) {
-        minProtocol_ = TLS_V1_2;
-        maxProtocol_ = TLS_V1_2;
-    }
-}
-
 void TLSConfiguration::SetProtocol(const std::vector<std::string> &Protocol)
 {
     bool isTls1_3 = false;

@@ -19,6 +19,7 @@
 #include <openssl/ssl.h>
 #include <sstream>
 #include <string>
+#include <unistd.h>
 
 #include "gtest/gtest.h"
 #include "netstack_log.h"
@@ -34,14 +35,20 @@
 namespace OHOS {
 namespace NetStack {
 static constexpr const char *IP_ADDRESS = "10.14.0.7";
-std::string PRIVATE_KEY_PEM = "ClientCert/client_rsa_private.pem.unsecure";
-std::string CA_DER = "ClientCert/ca.crt";
-std::string CLIENT_CRT = "ClientCert/client.crt";
+constexpr int PORT = 7838;
+std::string PRIVATE_KEY_PEM = "/data/ClientCert/client_rsa_private.pem.unsecure";
+std::string CA_DER = "/data/ClientCert/ca.crt";
+std::string CLIENT_CRT = "/data/ClientCert/client.crt";
+std::string Large_Amounts_Data = "/data/ClientCert/sendTest.txt";
 
-// static constexpr const char *PRIVATE_KEY_PEM = "ClientCertChain/privekey.pem.unsecure";
-// static constexpr const char *CA_PATH = "ClientCertChain/cacert.crt";
-// static constexpr const char *MID_CA_PATH = "ClientCertChain/caMidcert.crt";
-// static constexpr const char *CLIENT_CRT = "ClientCertChain/secondServer.crt";
+inline bool CheckCaFileExistence(const char* function)
+{
+    if (access(CA_DER.c_str(), 0)) {
+        std::cout << "CA file doesnot exist! (" << function << ")";
+        return false;
+    }
+    return true;
+}
 
 class TlsSocketTest : public testing::Test {
 public:
@@ -65,6 +72,240 @@ std::string ChangeToFile(std::string &fileName)
     return infos;
 }
 
+HWTEST_F(TlsSocketTest, tlsSocketProtocol, testing::ext::TestSize.Level2)
+{
+    if (!CheckCaFileExistence("tlsSocketProtocol")) {
+        return;
+    }
+    TLSConnectOptions options;
+    TLSSocket server;
+
+    std::vector<std::string> caVec= {ChangeToFile(CA_DER)};
+
+    std::vector<std::string> protocolVec = {"TlsV1_3"};
+    std::string signatureAlgorithmVec = {"RSA-SHA256"};
+    std::vector<std::string> alpnProtocols = {"spdy/1", "http/1.1"};
+
+    TLSSecureOptions secureOption;
+    NetAddress address;
+
+    address.SetAddress(IP_ADDRESS);
+    address.SetPort(PORT);
+    address.SetFamilyBySaFamily(AF_INET);
+
+    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetCaChain(caVec);
+    secureOption.SetCert(ChangeToFile(CLIENT_CRT));
+    secureOption.SetProtocolChain(protocolVec);
+
+    options.SetNetAddress(address);
+    options.SetTlsSecureOptions(secureOption);
+    options.SetAlpnProtocols(alpnProtocols);
+    server.Connect(options, [](bool ok){ EXPECT_TRUE(ok); });
+    (void)server.GetCertificate([](bool ok, const std::string cert) {});
+    const std::string data = "how do you do?";
+    TCPSendOptions tcpSendOptions;
+    tcpSendOptions.SetData(data);
+    server.Send(tcpSendOptions, [](bool ok) {if (ok) {EXPECT_TRUE(ok);}});
+    server.GetProtocol([](bool ok, const std::string &protocol) {if (ok) { EXPECT_EQ("TLSv1.3", protocol);}});
+    sleep(2);
+    (void)server.Close([](bool ok) {if (ok) {;}});
+}
+
+HWTEST_F(TlsSocketTest, tlsSocketCipherSuite, testing::ext::TestSize.Level2)
+{
+    if (!CheckCaFileExistence("tlsSocketCipherSuite")) {
+        return;
+    }
+    TLSConnectOptions options;
+    TLSSocket server;
+    std::vector<std::string> caVec= {ChangeToFile(CA_DER)};
+    std::vector<std::string> protocolVec = {"TlsV1_2"};
+    std::string signatureAlgorithmVec = {"RSA-SHA256"};
+    std::vector<std::string> alpnProtocols = {"spdy/1", "http/1.1"};
+
+    TLSSecureOptions secureOption;
+    NetAddress address;
+
+    address.SetAddress(IP_ADDRESS);
+    address.SetPort(PORT);
+    address.SetFamilyBySaFamily(AF_INET);
+
+    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetCaChain(caVec);
+    secureOption.SetCert(ChangeToFile(CLIENT_CRT));
+    secureOption.SetCipherSuite("AES256-SHA256");
+    secureOption.SetProtocolChain(protocolVec);
+    secureOption.SetUseRemoteCipherPrefer(true);
+    secureOption.SetSignatureAlgorithms(signatureAlgorithmVec);
+    secureOption.SetPassWd("123456");
+
+    options.SetNetAddress(address);
+    options.SetTlsSecureOptions(secureOption);
+    options.SetAlpnProtocols(alpnProtocols);
+    server.Connect(options, [](bool ok){ EXPECT_TRUE(ok); });
+
+    const std::string data = "how do you do?";
+    TCPSendOptions tcpSendOptions;
+    tcpSendOptions.SetData(data);
+    server.Send(tcpSendOptions, [](bool ok) {if (ok) {EXPECT_TRUE(ok);}});
+    std::vector<std::string> cipherSuite;
+    server.GetCipherSuite([&cipherSuite](bool ok, const std::vector<std::string> &suite) {if (ok) {cipherSuite = suite;}});
+    bool flag = false;
+    for (auto const &iter: cipherSuite) {
+        std::cout << "cipherSuite: " << iter << std::endl;
+        if (iter == "AES256-SHA256") {
+            flag = true;
+        }
+    }
+    EXPECT_TRUE(flag);
+    sleep(2);
+    (void)server.Close([](bool ok) {if (ok) {;}});
+}
+
+HWTEST_F(TlsSocketTest, tlsSocketSignatureAlgorithms, testing::ext::TestSize.Level2)
+{
+    if (!CheckCaFileExistence("tlsSocketSignatureAlgorithms")) {
+        return;
+    }
+    TLSConnectOptions options;
+    TLSSocket server;
+    std::vector<std::string> caVec= {ChangeToFile(CA_DER)};
+    std::vector<std::string> protocolVec = {"TlsV1_2"};
+    std::string signatureAlgorithmVec = {"RSA+SHA256"};
+    std::vector<std::string> alpnProtocols = {"spdy/1", "http/1.1"};
+
+    TLSSecureOptions secureOption;
+    NetAddress address;
+
+    address.SetAddress(IP_ADDRESS);
+    address.SetPort(PORT);
+    address.SetFamilyBySaFamily(AF_INET);
+
+    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetCaChain(caVec);
+    secureOption.SetCert(ChangeToFile(CLIENT_CRT));
+    secureOption.SetCipherSuite("AES256-SHA256");
+    secureOption.SetProtocolChain(protocolVec);
+    secureOption.SetUseRemoteCipherPrefer(true);
+    secureOption.SetSignatureAlgorithms(signatureAlgorithmVec);
+    secureOption.SetPassWd("123456");
+
+    options.SetNetAddress(address);
+    options.SetTlsSecureOptions(secureOption);
+    options.SetAlpnProtocols(alpnProtocols);
+    server.Connect(options, [](bool ok){ EXPECT_TRUE(ok); });
+
+    const std::string data = "how do you do?";
+    TCPSendOptions tcpSendOptions;
+    tcpSendOptions.SetData(data);
+    server.Send(tcpSendOptions, [](bool ok) {if (ok) {EXPECT_TRUE(ok);}});
+    std::vector<std::string> signatureAlgorithms;
+    server.GetSignatureAlgorithms([&signatureAlgorithms](bool ok, const std::vector<std::string> &algorithms) {if (ok) {signatureAlgorithms = algorithms;}});
+    bool flag = false;
+    for (auto const &iter: signatureAlgorithms) {
+        std::cout << "signatureAlgorithm: " << iter << std::endl;
+        if (iter == "RSA+SHA256") {
+            flag = true;
+        }
+    }
+    EXPECT_TRUE(flag);
+    sleep(2);
+    (void)server.Close([](bool ok) {if (ok) {;}});
+}
+
+HWTEST_F(TlsSocketTest, tlsSocketLargeAmountsOfData, testing::ext::TestSize.Level2)
+{
+    if (!CheckCaFileExistence("tlsSocketLargeAmountsOfData")) {
+        return;
+    }
+    TLSConnectOptions options;
+    TLSSocket server;
+    std::vector<std::string> caVec= {ChangeToFile(CA_DER)};
+    std::vector<std::string> protocolVec = {"TlsV1_2"};
+    std::string signatureAlgorithmVec = {"RSA-SHA256"};
+    std::vector<std::string> alpnProtocols = {"spdy/1", "http/1.1"};
+
+    TLSSecureOptions secureOption;
+    NetAddress address;
+
+    address.SetAddress(IP_ADDRESS);
+    address.SetPort(PORT);
+    address.SetFamilyBySaFamily(AF_INET);
+
+    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetCaChain(caVec);
+    secureOption.SetCert(ChangeToFile(CLIENT_CRT));
+    secureOption.SetCipherSuite("AES256-SHA256");
+    secureOption.SetProtocolChain(protocolVec);
+    secureOption.SetUseRemoteCipherPrefer(true);
+    secureOption.SetSignatureAlgorithms(signatureAlgorithmVec);
+    secureOption.SetPassWd("123456");
+
+    options.SetNetAddress(address);
+    options.SetTlsSecureOptions(secureOption);
+    options.SetAlpnProtocols(alpnProtocols);
+    server.Connect(options, [](bool ok){ EXPECT_TRUE(ok); });
+    std::vector<std::string> cipherSuite;
+    server.GetCipherSuite([&cipherSuite](bool ok, const std::vector<std::string> &suite) {if (ok) {cipherSuite = suite;}});
+    (void)server.GetCertificate([](bool ok, const std::string cert) {});
+    const std::string data = ChangeToFile(Large_Amounts_Data);
+    TCPSendOptions tcpSendOptions;
+    tcpSendOptions.SetData(data);
+    server.Send(tcpSendOptions, [](bool ok) {if (ok) {EXPECT_TRUE(ok);}});
+    sleep(2);
+    (void)server.Close([](bool ok) {if (ok) {;}});
+}
+
+HWTEST_F(TlsSocketTest, tlsConnetOptionsSendMultipleTimes, testing::ext::TestSize.Level2)
+{
+    if (!CheckCaFileExistence("tlsConnetOptionsSendMultipleTimes")) {
+        return;
+    }
+    TLSConnectOptions options;
+    TLSSocket server;
+
+    std::vector<std::string> caVec= {ChangeToFile(CA_DER)};
+    std::vector<std::string> protocolVec = {"TlsV1_2"};
+    std::string signatureAlgorithmVec = {"RSA-SHA256"};
+    std::vector<std::string> alpnProtocols = {"spdy/1", "http/1.1"};
+
+    TLSSecureOptions secureOption;
+    NetAddress address;
+
+    address.SetAddress(IP_ADDRESS);
+    address.SetPort(PORT);
+    address.SetFamilyBySaFamily(AF_INET);
+
+    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetCaChain(caVec);
+    secureOption.SetCert(ChangeToFile(CLIENT_CRT));
+    secureOption.SetCipherSuite("AES256-SHA256");
+    secureOption.SetProtocolChain(protocolVec);
+    secureOption.SetUseRemoteCipherPrefer(true);
+    secureOption.SetSignatureAlgorithms(signatureAlgorithmVec);
+    secureOption.SetPassWd("123456");
+
+    options.SetNetAddress(address);
+    options.SetTlsSecureOptions(secureOption);
+    options.SetAlpnProtocols(alpnProtocols);
+    server.Connect(options, [](bool ok){ EXPECT_TRUE(ok); });
+    std::vector<std::string> cipherSuite;
+    server.GetCipherSuite([&cipherSuite](bool ok, const std::vector<std::string> &suite) {if (ok) {cipherSuite = suite;}});
+    (void)server.GetCertificate([](bool ok, const std::string cert) {});
+    const std::string data = "how do you do?";
+    TCPSendOptions tcpSendOptions;
+    tcpSendOptions.SetData(data);
+    server.Send(tcpSendOptions, [](bool ok) {if (ok) {EXPECT_TRUE(ok);}});
+    sleep(2);
+
+    const std::string data2 = "I'm fine, thank you. And you?";
+    tcpSendOptions.SetData(data2);
+    server.Send(tcpSendOptions, [](bool ok) {if (ok) {EXPECT_TRUE(ok);}});
+    sleep(2);
+    (void)server.Close([](bool ok) {if (ok) {;}});
+}
+
 void TlsSocketConnect(TLSConnectOptions &options)
 {
     std::vector<std::string> caVec= {ChangeToFile(CA_DER)};
@@ -77,7 +318,7 @@ void TlsSocketConnect(TLSConnectOptions &options)
     NetAddress address;
 
     address.SetAddress(IP_ADDRESS);
-    address.SetPort(7838);
+    address.SetPort(PORT);
     address.SetFamilyBySaFamily(AF_INET);
 
     secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
@@ -96,6 +337,9 @@ void TlsSocketConnect(TLSConnectOptions &options)
 
 HWTEST_F(TlsSocketTest, tlsConnetOptionsSend, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsConnetOptionsSend")) {
+        return;
+    }
     TLSConnectOptions options;
     TLSSocket server;
 
@@ -114,6 +358,9 @@ HWTEST_F(TlsSocketTest, tlsConnetOptionsSend, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, tlsSocketCertChainConnect, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsSocketCertChainConnect")) {
+        return;
+    }
     TLSConnectOptions options;
     TLSSocket server;
 
@@ -130,6 +377,9 @@ HWTEST_F(TlsSocketTest, tlsSocketCertChainConnect, testing::ext::TestSize.Level2
 
 HWTEST_F(TlsSocketTest, tlsSocketCertChainConnectOther, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsSocketCertChainConnectOther")) {
+        return;
+    }
     TLSConnectOptions options;
     TLSSocket server;
 
@@ -148,6 +398,9 @@ HWTEST_F(TlsSocketTest, tlsSocketCertChainConnectOther, testing::ext::TestSize.L
 
 HWTEST_F(TlsSocketTest, tlsConnetOptionsSend2, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsConnetOptionsSend2")) {
+        return;
+    }
     TLSConnectOptions options;
     TLSSocket server;
 
@@ -168,6 +421,9 @@ HWTEST_F(TlsSocketTest, tlsConnetOptionsSend2, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, tlsOptionGet, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsOptionGet")) {
+        return;
+    }
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
     NetAddress address;
@@ -179,19 +435,19 @@ HWTEST_F(TlsSocketTest, tlsOptionGet, testing::ext::TestSize.Level2)
     std::vector<std::string> alpnProtocols = {"spdy/1", "http/1.1"};
 
     address.SetAddress("10.14.0.91");
-    address.SetPort(7838);
+    address.SetPort(PORT);
     address.SetFamilyBySaFamily(AF_INET);
-    secureOption.SetKey(PRIVATE_KEY_PEM);//
+    secureOption.SetKey(PRIVATE_KEY_PEM);
     (void)secureOption.GetKey();
     (void)options.GetTlsSecureOptions().GetKey();
 
-    secureOption.SetCaChain(caVec);//
-    secureOption.SetCert(CLIENT_CRT);//
-    secureOption.SetCipherSuite("AES256-SHA256");//
-    secureOption.SetProtocolChain(protocolVec);//
-    secureOption.SetUseRemoteCipherPrefer(true);//
-    secureOption.SetSignatureAlgorithms(signatureAlgorithmVec);//
-    secureOption.SetPassWd("123456");//
+    secureOption.SetCaChain(caVec);
+    secureOption.SetCert(CLIENT_CRT);
+    secureOption.SetCipherSuite("AES256-SHA256");
+    secureOption.SetProtocolChain(protocolVec);
+    secureOption.SetUseRemoteCipherPrefer(true);
+    secureOption.SetSignatureAlgorithms(signatureAlgorithmVec);
+    secureOption.SetPassWd("123456");
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
     options.SetAlpnProtocols(alpnProtocols);
@@ -235,6 +491,9 @@ HWTEST_F(TlsSocketTest, tlsOptionGet, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, tlsSocketGcertInternal, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsSocketGcertInternal")) {
+        return;
+    }
     std::cout << "TlsSocketTest, tlsSocketGetState begin " << std::endl;
     TLSSocket server;
     TLSConnectOptions options;
@@ -269,6 +528,9 @@ HWTEST_F(TlsSocketTest, tlsSocketGcertInternal, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, tlsSocketGetRemoteCertificate, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsSocketGetRemoteCertificate")) {
+        return;
+    }
     std::cout << "TlsSocketTest, tlsSocketGetRemoteCertificate begin " << std::endl;
     TLSSocket server;
     TLSConnectOptions options;
@@ -303,6 +565,9 @@ HWTEST_F(TlsSocketTest, tlsSocketGetRemoteCertificate, testing::ext::TestSize.Le
 
 HWTEST_F(TlsSocketTest, tlsSocketGetProtocol, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsSocketGetProtocol")) {
+        return;
+    }
     std::cout << "TlsSocketTest, tlsSocketGetProtocol begin " << std::endl;
     TLSSocket server;
     TLSConnectOptions options;
@@ -338,6 +603,9 @@ HWTEST_F(TlsSocketTest, tlsSocketGetProtocol, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, tlsSocketGetSignatureAlgorithms, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsSocketGetSignatureAlgorithms")) {
+        return;
+    }
     std::cout << "TlsSocketTest, tlsSocketGetSignatureAlgorithms begin " << std::endl;
     TLSSocket server;
     TLSConnectOptions options;
@@ -375,6 +643,9 @@ HWTEST_F(TlsSocketTest, tlsSocketGetSignatureAlgorithms, testing::ext::TestSize.
 
 HWTEST_F(TlsSocketTest, tlsSocketOnMessageData, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsSocketOnMessageData")) {
+        return;
+    }
     std::cout << "TlsSocketTest, tlsSocketOnMessageData begin " << std::endl;
     TLSSocket server;
     TLSConnectOptions options;
@@ -412,4 +683,24 @@ HWTEST_F(TlsSocketTest, tlsSocketOnMessageData, testing::ext::TestSize.Level2)
     std::cout << "TlsSocketTest, tlsSocketOnMessageData end " << std::endl;
 }
 
+HWTEST_F(TlsSocketTest, tlsSocketLargeAmountsOfData2, testing::ext::TestSize.Level2)
+{
+    if (!CheckCaFileExistence("tlsSocketLargeAmountsOfData2")) {
+        return;
+    }
+    TLSConnectOptions options;
+    TLSSocket server;
+
+    TlsSocketConnect(options);
+    server.Connect(options, [](bool ok){ EXPECT_TRUE(ok); });
+    std::vector<std::string> cipherSuite;
+    server.GetCipherSuite([&cipherSuite](bool ok, const std::vector<std::string> &suite) {if (ok) {cipherSuite = suite;}});
+    (void)server.GetCertificate([](bool ok, const std::string cert) {});
+    const std::string data = ChangeToFile(Large_Amounts_Data);
+    TCPSendOptions tcpSendOptions;
+    tcpSendOptions.SetData(data);
+    server.Send(tcpSendOptions, [](bool ok) {if (ok) {EXPECT_TRUE(ok);}});
+    sleep(2);
+    (void)server.Close([](bool ok) {if (ok) {;}});
+}
 } } // namespace OHOS::NetStack

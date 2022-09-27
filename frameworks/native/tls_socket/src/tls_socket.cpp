@@ -341,6 +341,7 @@ void TLSSocket::CallOnErrorCallback(int32_t err, const std::string &errString)
 
 void TLSSocket::CallBindCallback(bool ok, const BindCallback &callback)
 {
+    bindCallback_ = callback;
     BindCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -356,6 +357,7 @@ void TLSSocket::CallBindCallback(bool ok, const BindCallback &callback)
 
 void TLSSocket::CallConnectCallback(bool ok, const ConnectCallback &callback)
 {
+    connectCallback_ = callback;
     ConnectCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -371,6 +373,7 @@ void TLSSocket::CallConnectCallback(bool ok, const ConnectCallback &callback)
 
 void TLSSocket::CallSendCallback(bool ok, const SendCallback &callback)
 {
+    sendCallback_ = callback;
     SendCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -386,6 +389,7 @@ void TLSSocket::CallSendCallback(bool ok, const SendCallback &callback)
 
 void TLSSocket::CallCloseCallback(bool ok, const CloseCallback &callback)
 {
+    closeCallback_ = callback;
     CloseCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -402,6 +406,7 @@ void TLSSocket::CallCloseCallback(bool ok, const CloseCallback &callback)
 void TLSSocket::CallGetRemoteAddressCallback(bool ok, const NetAddress &address,
                                              const GetRemoteAddressCallback &callback)
 {
+    getRemoteAddressCallback_ = callback;
     GetRemoteAddressCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -418,6 +423,7 @@ void TLSSocket::CallGetRemoteAddressCallback(bool ok, const NetAddress &address,
 void TLSSocket::CallGetStateCallback(bool ok, const SocketStateBase &state,
                                      const GetStateCallback &callback)
 {
+    getStateCallback_ = callback;
     GetStateCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -433,6 +439,7 @@ void TLSSocket::CallGetStateCallback(bool ok, const SocketStateBase &state,
 
 void TLSSocket::CallSetExtraOptionsCallback(bool ok, const SetExtraOptionsCallback &callback)
 {
+    setExtraOptionsCallback_ = callback;
     SetExtraOptionsCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -636,10 +643,12 @@ void TLSSocket::Close(const OHOS::NetStack::CloseCallback &callback)
 {
     if (!WaitConditionWithTimeout(&isRunning_, TIMEOUT_MS)) {
         callback(false);
+        return;
     }
     isRunning_ = false;
     if (!WaitConditionWithTimeout(&isRunOver_, TIMEOUT_MS)) {
         callback(false);
+        return;
     }
     auto res = openSslContext_.tlsSocketInternal_.Close();
     if (!res) {
@@ -837,7 +846,7 @@ void TLSSocket::SetExtraOptions(const OHOS::NetStack::TCPExtraOptions &tcpExtraO
 
 void TLSSocket::GetCertificate(const GetCertificateCallback &callback)
 {
-    std::string cert = openSslContext_.tlsSocketInternal_.GetCertificate();
+    const auto &cert = openSslContext_.tlsSocketInternal_.GetCertificate();
     if (cert.empty()) {
         NETSTACK_LOGE("GetCertificate errno %{public}d, %{public}s", errno, strerror(errno));
         CallOnErrorCallback(errno, MakeErrnoString());
@@ -849,7 +858,7 @@ void TLSSocket::GetCertificate(const GetCertificateCallback &callback)
 
 void TLSSocket::GetRemoteCertificate(const GetRemoteCertificateCallback &callback)
 {
-    std::string remoteCert = openSslContext_.tlsSocketInternal_.GetRemoteCertificate();
+    const auto &remoteCert = openSslContext_.tlsSocketInternal_.GetRemoteCertificate();
     if (remoteCert.empty()) {
         NETSTACK_LOGE("GetRemoteCertificate errno %{public}d", errno);
         CallOnErrorCallback(errno, MakeErrnoString());
@@ -861,7 +870,7 @@ void TLSSocket::GetRemoteCertificate(const GetRemoteCertificateCallback &callbac
 
 void TLSSocket::GetProtocol(const GetProtocolCallback &callback)
 {
-    std::string protocal = openSslContext_.tlsSocketInternal_.GetProtocol();
+    const auto &protocal = openSslContext_.tlsSocketInternal_.GetProtocol();
     if (protocal.empty()) {
         NETSTACK_LOGE("GetProtocol errno %{public}d", errno);
         CallOnErrorCallback(errno, MakeErrnoString());
@@ -873,7 +882,7 @@ void TLSSocket::GetProtocol(const GetProtocolCallback &callback)
 
 void TLSSocket::GetCipherSuite(const GetCipherSuiteCallback &callback)
 {
-    std::vector<std::string> cipherSuite = openSslContext_.tlsSocketInternal_.GetCipherSuite();
+    const auto &cipherSuite = openSslContext_.tlsSocketInternal_.GetCipherSuite();
     if (cipherSuite.empty()) {
         NETSTACK_LOGE("GetCipherSuite errno %{public}d", errno);
         CallOnErrorCallback(errno, MakeErrnoString());
@@ -885,7 +894,7 @@ void TLSSocket::GetCipherSuite(const GetCipherSuiteCallback &callback)
 
 void TLSSocket::GetSignatureAlgorithms(const GetSignatureAlgorithmsCallback &callback)
 {
-    std::vector signatureAlgorithms = openSslContext_.tlsSocketInternal_.GetSignatureAlgorithms();
+    const auto &signatureAlgorithms = openSslContext_.tlsSocketInternal_.GetSignatureAlgorithms();
     if (signatureAlgorithms.empty()) {
         NETSTACK_LOGE("GetSignatureAlgorithms errno %{public}d", errno);
         CallOnErrorCallback(errno, MakeErrnoString());
