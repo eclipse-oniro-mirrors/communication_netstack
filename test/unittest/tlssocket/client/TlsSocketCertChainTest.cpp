@@ -31,12 +31,21 @@
 
 namespace OHOS {
 namespace NetStack {
-
 static constexpr const char *IP_ADDRESS = "10.14.0.7";
-std::string PRIVATE_KEY_PEM_CHAIN = "ClientCertChain/privekey.pem.unsecure";
-std::string CA_PATH_CHAIN = "ClientCertChain/cacert.crt";
-std::string MID_CA_PATH_CHAIN = "ClientCertChain/caMidcert.crt";
-std::string CLIENT_CRT_CHAIN = "ClientCertChain/secondServer.crt";
+constexpr int PORT = 7838;
+std::string PRIVATE_KEY_PEM_CHAIN = "/data/ClientCertChain/privekey.pem.unsecure";
+std::string CA_PATH_CHAIN = "/data/ClientCertChain/cacert.crt";
+std::string MID_CA_PATH_CHAIN = "/data/ClientCertChain/caMidcert.crt";
+std::string CLIENT_CRT_CHAIN = "/data/ClientCertChain/secondServer.crt";
+
+inline bool CheckCaFileExistence(const char* function)
+{
+    if (access(CA_PATH_CHAIN.c_str(), 0)) {
+        std::cout << "CA file doesnot exist! (" << function << ")";
+        return false;
+    }
+    return true;
+}
 
 class TlsSocketTest : public testing::Test {
 public:
@@ -72,7 +81,7 @@ void TlsSocketConnect(TLSConnectOptions &options)
     NetAddress address;
 
     address.SetAddress(IP_ADDRESS);
-    address.SetPort(7838);
+    address.SetPort(PORT);
     address.SetFamilyBySaFamily(AF_INET);
 
     secureOption.SetKey(ChangeToFileChain(PRIVATE_KEY_PEM_CHAIN));
@@ -91,6 +100,9 @@ void TlsSocketConnect(TLSConnectOptions &options)
 
 HWTEST_F(TlsSocketTest, tlsSocketCertChainConnect, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsSocketCertChainConnect")) {
+        return;
+    }
     TLSConnectOptions options;
     TLSSocket server;
 
@@ -107,6 +119,9 @@ HWTEST_F(TlsSocketTest, tlsSocketCertChainConnect, testing::ext::TestSize.Level2
 
 HWTEST_F(TlsSocketTest, tlsSocketCertChainConnectOther, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsSocketCertChainConnectOther")) {
+        return;
+    }
     TLSConnectOptions options;
     TLSSocket server;
 
@@ -125,6 +140,9 @@ HWTEST_F(TlsSocketTest, tlsSocketCertChainConnectOther, testing::ext::TestSize.L
 
 HWTEST_F(TlsSocketTest, tlsConnetOptionsSend, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsConnetOptionsSend")) {
+        return;
+    }
     TLSConnectOptions options;
     TLSSocket server;
 
@@ -145,6 +163,9 @@ HWTEST_F(TlsSocketTest, tlsConnetOptionsSend, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, tlsOptionGet, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsOptionGet")) {
+        return;
+    }
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
     NetAddress address;
@@ -156,7 +177,7 @@ HWTEST_F(TlsSocketTest, tlsOptionGet, testing::ext::TestSize.Level2)
     std::vector<std::string> alpnProtocols = {"spdy/1", "http/1.1"};
 
     address.SetAddress("10.14.0.91");
-    address.SetPort(7838);
+    address.SetPort(PORT);
     address.SetFamilyBySaFamily(AF_INET);
     secureOption.SetKey(ChangeToFileChain(PRIVATE_KEY_PEM_CHAIN));
     (void)secureOption.GetKey();
@@ -212,6 +233,9 @@ HWTEST_F(TlsSocketTest, tlsOptionGet, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, tlsSocketGcertInternal, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsSocketGcertInternal")) {
+        return;
+    }
     std::cout << "TlsSocketTest, tlsSocketGetState begin " << std::endl;
     TLSSocket server;
     TLSConnectOptions options;
@@ -246,6 +270,9 @@ HWTEST_F(TlsSocketTest, tlsSocketGcertInternal, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, tlsSocketGetRemoteCertificate, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsSocketGetRemoteCertificate")) {
+        return;
+    }
     std::cout << "TlsSocketTest, tlsSocketGetRemoteCertificate begin " << std::endl;
     TLSSocket server;
     TLSConnectOptions options;
@@ -280,6 +307,9 @@ HWTEST_F(TlsSocketTest, tlsSocketGetRemoteCertificate, testing::ext::TestSize.Le
 
 HWTEST_F(TlsSocketTest, tlsSocketGetProtocol, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsSocketGetProtocol")) {
+        return;
+    }
     std::cout << "TlsSocketTest, tlsSocketGetProtocol begin " << std::endl;
     TLSSocket server;
     TLSConnectOptions options;
@@ -315,6 +345,9 @@ HWTEST_F(TlsSocketTest, tlsSocketGetProtocol, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, tlsSocketGetSignatureAlgorithms, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsSocketGetSignatureAlgorithms")) {
+        return;
+    }
     std::cout << "TlsSocketTest, tlsSocketGetSignatureAlgorithms begin " << std::endl;
     TLSSocket server;
     TLSConnectOptions options;
@@ -352,6 +385,9 @@ HWTEST_F(TlsSocketTest, tlsSocketGetSignatureAlgorithms, testing::ext::TestSize.
 
 HWTEST_F(TlsSocketTest, tlsSocketOnMessageData, testing::ext::TestSize.Level2)
 {
+    if (!CheckCaFileExistence("tlsSocketOnMessageData")) {
+        return;
+    }
     std::cout << "TlsSocketTest, tlsSocketOnMessageData begin " << std::endl;
     TLSSocket server;
     TLSConnectOptions options;

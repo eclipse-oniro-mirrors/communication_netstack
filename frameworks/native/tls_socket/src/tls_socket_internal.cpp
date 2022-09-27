@@ -187,10 +187,15 @@ bool TLSSocketInternal::TlsConnectToHost(TlsConnectOptions options)
     configuration_.SetPrivateKey(options.GetTlsSecureOptions().GetKey(), options.GetTlsSecureOptions().GetPasswd());
     configuration_.SetCaCertificate(options.GetTlsSecureOptions().GetCa());
     configuration_.SetLocalCertificate(options.GetTlsSecureOptions().GetCert());
-    configuration_.SetCipherSuite(options.GetTlsSecureOptions().GetCipherSuite());
-    X509_print_fp(stdout, (X509*)configuration_.GetLocalCertificate().handle());
-    int result = 0;
-    result = MakeIpSocket(address_.GetSaFamily());
+    std::string cipherSuite = options.GetTlsSecureOptions().GetCipherSuite();
+    if (!cipherSuite.empty()) {
+        configuration_.SetCipherSuite(cipherSuite);
+    }
+    const auto &protocolVec = options.GetTlsSecureOptions().GetProtocol();
+    if (!protocolVec.empty()) {
+        configuration_.SetProtocol(protocolVec);
+    }
+    int result = MakeIpSocket(address_.GetSaFamily());
     if (!result) {
         return false;
     }
@@ -240,10 +245,10 @@ bool TLSSocketInternal::StartShakingHands()
         }
         ERR_print_errors_fp(stderr);
         int errorStatus = SSL_get_error(ssl_, result);
-        NETSTACK_LOGE("%{public}s", GetErrorString(errorStatus).c_str());
+        NETSTACK_LOGE("SSL connect is error, error info is %{public}s", GetErrorString(errorStatus).c_str());
         return false;
     }
-    configuration_.SetProtocol(SSL_get_version(ssl_));
+
     std::string list = SSL_get_cipher_list(ssl_, 0);
     NETSTACK_LOGI("SSL_get_cipher_list: %{public}s", list.c_str());
     configuration_.SetCipherSuite(list);
@@ -271,9 +276,9 @@ bool TLSSocketInternal::IsRootsOnDemandAllowed() const
 
 void TLSSocketInternal::SetTlsConfiguration(const TLSConfiguration &config)
 {
-    configuration_.GetPrivateKey() = config.PrivateKey();
-    configuration_.GetLocalCertificate() = config.GetLocalCertificate();
-    configuration_.GetCaCertificate() = config.GetCaCertificate();
+    configuration_.SetPrivateKey(config.PrivateKey());
+    configuration_.SetLocalCertificate(config.GetLocalCertificate());
+    configuration_.SetCaCertificate(config.GetCaCertificate());
 }
 
 bool TLSSocketInternal::SetAlpnProtocols(const std::vector<std::string> &alpnProtocols)
@@ -581,7 +586,6 @@ bool TLSSocketInternal::ExtraOptions(const TCPExtraOptions &options) const
 bool TLSSocketInternal::GetPeerCertificate()
 {
     peerX509_ = SSL_get_peer_certificate(ssl_);
-    X509_print_fp(stdout, peerX509_);
     BIO *bio = BIO_new(BIO_s_mem());
     X509_print(bio, peerX509_);
     char data[REMOTE_CERT_LEN];
