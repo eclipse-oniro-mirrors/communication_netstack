@@ -321,6 +321,101 @@ udp.send({
 })
 ```
 
+### TLSSocket接口说明
+
+| 类型 | 接口 | 功能说明 |
+| ---- | ---- | ---- |
+| ohos.net.tlssocket | function constructTLSSocketInstance(): TLSSocket | 返回一个TLSSocket对象 |
+| ohos.net.tlssocket.TLSSocket | connect(options: [TLSConnectOptions](#tlsconnectoptions), callback: AsyncCallback\<void>): void | 在TLSSocket上进行通信连接，并创建和初始化TLS会话，实现建立连接过程，启动与服务器的TLS/SSL握手，实现数据传输功能，使用callback方式作为异步方法。 |
+| ohos.net.tlssocket.TLSSocket | connect(options: [TLSConnectOptions](#tlsconnectoptions)): Promise\<void> | 在TLSSocket上进行通信连接，并创建和初始化TLS会话，实现建立连接过程，启动与服务器的TLS/SSL握手，实现数据传输功能，使用Promise方式作为异步方法。 |
+| ohos.net.tlssocket.TLSSocket | getCertificate(callback: AsyncCallback\<string>): void | 在TLSSocket通信连接之后，获取本地的数字证书，使用callback方式作为异步方法。 |
+| ohos.net.tlssocket.TLSSocket | getCertificate():Promise\<string> | 在TLSSocket通信连接之后，获取本地的数字证书，使用Promise方式作为异步方法。 |
+| ohos.net.tlssocket.TLSSocket | getRemoteCertificate(callback: AsyncCallback\<string>): void | 在TLSSocket通信连接之后，获取对等方的数字证书，使用callback方式作为异步方法。 |
+| ohos.net.tlssocket.TLSSocket | getRemoteCertificate(): Promise\<string> | 在TLSSocket通信连接之后，获取对等方的数字证书，使用Promise方式作为异步方法。 |
+| ohos.net.tlssocket.TLSSocket | getProtocol(callback: AsyncCallback\<string>): void | 在TLSSocket通信连接之后，获取通信的协议，使用callback方式作为异步方法。 |
+| ohos.net.tlssocket.TLSSocket | getProtocol(): Promise\<string> | 在TLSSocket通信连接之后，获取通信的协议，使用Promise方式作为异步方法。 |
+| ohos.net.tlssocket.TLSSocket | getCipherSuites(callback: AsyncCallback\<Array\<string>>): void | 在TLSSocket通信连接之后，获取通信双方支持的加密套件，使用callback方式作为异步方法。 |
+| ohos.net.tlssocket.TLSSocket | getCipherSuites(): Promise\<Array\<string>> | 在TLSSocket通信连接之后，获取通信双方支持的加密套件，使用Promise方式作为异步方法。 |
+| ohos.net.tlssocket.TLSSocket | getSignatureAlgorithms(callback: AsyncCallback\<Array\<string>>): void | 在TLSSocket通信连接之后，获取通信双方支持的签名算法，使用callback方式作为异步方法。 |
+| ohos.net.tlssocket.TLSSocket | getSignatureAlgorithms(): Promise\<Array\<string>> | 在TLSSocket通信连接之后，获取通信双方支持的签名算法，使用Promise方式作为异步方法。 |
+| ohos.net.tlssocket.TLSSocket | close(callback: AsyncCallback\<void>): void | 在TLSSocket通信连接之后，断开连接，使用callback方式作为异步方法。 |
+| ohos.net.tlssocket.TLSSocket | close(): Promise\<void> | 在TLSSocket通信连接之后，断开连接，使用Promise方式作为异步方法。 |
+
+#### TLSConnectOptions
+
+TLS连接的操作。
+
+| 参数名          | 类型                                   | 说明            |
+| -------------- | ------------------------------------- | -------------- |
+| address        | [NetAddress](#netaddress)             | 网关地址。       |
+| secureOptions  | [TLSSecureOptions](#tlssecureoptions) | TLS安全相关操作。|
+| ALPNProtocols  | Array\<string>                         | ALPN协议。      |
+
+#### TLSSecureOptions
+
+TLS安全相关操作。
+
+| 参数名                 | 类型                    | 说明                   |
+| --------------------- | ---------------------- | ---------------------- |
+| ca                    | string \| Array\<string>   | ca证书。            |
+| cert                  | string                 | 本地数字证书。           |
+| key                   | string                 | 本地数字证书私钥。        |
+| passwd                | string                 | 密码。                  |
+| protocols             | [Protocol](#protocol) \| Array\<[Protocol](#protocol)>;| 协议名。 |
+| useRemoteCipherPrefer | boolean                | 优先使用对等方的密码套件。 |
+| signatureAlgorithms   | string                 | 设置签名算法。           |
+| cipherSuites          | string                 | 加密套件。              |
+
+#### Protocol
+
+TLS通信的协议。
+
+| **protocol 的合法值** | 说明                |
+| :------------------ | :------------------ |
+| TLSv12              |  使用TlsV1_2协议通信。 |
+| TLSv13              |  使用TlsV1_3协议通信。 |
+
+#### 示例
+```javascript
+import tlssocket from "@ohos.net.tlssocket";
+let tls = tlssocket.constructTLSSocketInstance();
+let Protocol = tlssocket.Protocol;
+let options = {
+            ALPNProtocols: ["spdy/1", "http/1.1"],
+            address: {
+                address: "xxxx",
+                port: "xxxx",
+                family: 1,
+            },
+            secureOptions: {
+                key: "xxxx",
+                cert: "xxxx",
+                ca: ["xxxx"],
+                passwd: "123456",
+                protocols: [Protocol.TLSv12],
+                useRemoteCipherPrefer: true,
+                signatureAlgorithms: SHA256,
+                cipherSuites: AES256-SHA256,
+            },
+};
+tls.connect(options).then(data => {
+  console.info(data);
+}).catch(err => {
+  console.error(err);
+});
+tls.getCertificate((err, data) => {
+  if (err) {
+    console.log("getCertificate callback error = " + err);
+  } else {
+    console.log("getCertificate callback = " + data);
+  }
+});
+tls.close().then(() =>
+  console.log("close success");
+}).catch(err => {
+  console.error(err);
+});
+```
 ## 相关仓
 
 [网络管理子系统](https://gitee.com/openharmony/docs/blob/master/zh-cn/readme/%E7%BD%91%E7%BB%9C%E7%AE%A1%E7%90%86%E5%AD%90%E7%B3%BB%E7%BB%9F.md)

@@ -25,6 +25,7 @@
 #include "get_protocol_context.h"
 #include "get_remote_certificate_context.h"
 #include "get_signature_algorithms_context.h"
+#include "send_context.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -41,6 +42,7 @@ public:
     static bool ExecGetRemoteCertificate(GetRemoteCertificateContext *context);
     static bool ExecGetProtocol(GetProtocolContext *context);
     static bool ExecGetSignatureAlgorithms(GetSignatureAlgorithmsContext *context);
+    static bool ExecSend(SendContext *context);
     static bool ExecClose(CloseContext *context);
 
     static napi_value GetCertificateCallback(GetCertificateContext *context);
@@ -49,6 +51,7 @@ public:
     static napi_value GetRemoteCertificateCallback(GetRemoteCertificateContext *context);
     static napi_value GetProtocolCallback(GetProtocolContext *context);
     static napi_value GetSignatureAlgorithmsCallback(GetSignatureAlgorithmsContext *context);
+    static napi_value SendCallback(SendContext *context);
     static napi_value CloseCallback(CloseContext *context);
 };
 } // namespace NetStack

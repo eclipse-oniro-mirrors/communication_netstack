@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,12 +16,11 @@
 #include "tlssocket_module.h"
 
 #include <initializer_list>
-
 #include <napi/native_api.h>
 #include <napi/native_common.h>
 
-#include "connect_context.h"
 #include "close_context.h"
+#include "connect_context.h"
 #include "event_manager.h"
 #include "get_certificate_context.h"
 #include "get_remote_certificate_context.h"
@@ -30,6 +29,7 @@
 #include "module_template.h"
 #include "napi_utils.h"
 #include "netstack_log.h"
+#include "send_context.h"
 #include "tlssocket_async_work.h"
 
 namespace OHOS {
@@ -43,53 +43,58 @@ void Finalize(napi_env, void *data, void *)
     NETSTACK_LOGI("socket handle is finalized");
 }
 
-napi_value TLSSocketModuleExports::TLSSocket::GetCertificate(napi_env env , napi_callback_info info)
+napi_value TLSSocketModuleExports::TLSSocket::GetCertificate(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::Interface<GetCertificateContext>(env, info, FUNCTION_GET_CERTIFICATE, nullptr,
                                                             TlsSocketAsyncWork::ExecGetCertificate,
                                                             TlsSocketAsyncWork::GetCertificateCallback);
 }
 
-napi_value TLSSocketModuleExports::TLSSocket::GetProtocol(napi_env env , napi_callback_info info)
+napi_value TLSSocketModuleExports::TLSSocket::GetProtocol(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::Interface<GetCipherSuitesContext>(env, info, FUNCTION_GET_PROTOCOL, nullptr,
-                                                            TlsSocketAsyncWork::ExecGetProtocol,
-                                                            TlsSocketAsyncWork::GetProtocolCallback);
+                                                             TlsSocketAsyncWork::ExecGetProtocol,
+                                                             TlsSocketAsyncWork::GetProtocolCallback);
 }
 
-napi_value TLSSocketModuleExports::TLSSocket::Connect(napi_env env , napi_callback_info info)
+napi_value TLSSocketModuleExports::TLSSocket::Connect(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<ConnectContext>(env, info, FUNCTION_CONNECT, nullptr,
-                                                            TlsSocketAsyncWork::ExecConnect,
-                                                            TlsSocketAsyncWork::ConnectCallback);
+    return ModuleTemplate::Interface<ConnectContext>(
+        env, info, FUNCTION_CONNECT, nullptr, TlsSocketAsyncWork::ExecConnect, TlsSocketAsyncWork::ConnectCallback);
 }
 
-napi_value TLSSocketModuleExports::TLSSocket::GetCipherSuites(napi_env env , napi_callback_info info)
+napi_value TLSSocketModuleExports::TLSSocket::GetCipherSuites(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::Interface<GetCipherSuitesContext>(env, info, FUNCTION_GET_CIPHER_SUITES, nullptr,
-                                                            TlsSocketAsyncWork::ExecGetCipherSuites,
-                                                            TlsSocketAsyncWork::GetCipherSuitesCallback);
+                                                             TlsSocketAsyncWork::ExecGetCipherSuites,
+                                                             TlsSocketAsyncWork::GetCipherSuitesCallback);
 }
 
-napi_value TLSSocketModuleExports::TLSSocket::GetRemoteCertificate(napi_env env , napi_callback_info info)
+napi_value TLSSocketModuleExports::TLSSocket::GetRemoteCertificate(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::Interface<GetRemoteCertificateContext>(env, info, FUNCTION_GET_REMOTE_CERTIFICATE, nullptr,
-                                                            TlsSocketAsyncWork::ExecGetRemoteCertificate,
-                                                            TlsSocketAsyncWork::GetRemoteCertificateCallback);
+                                                                  TlsSocketAsyncWork::ExecGetRemoteCertificate,
+                                                                  TlsSocketAsyncWork::GetRemoteCertificateCallback);
 }
 
-napi_value TLSSocketModuleExports::TLSSocket::GetSignatureAlgorithms(napi_env env , napi_callback_info info)
+napi_value TLSSocketModuleExports::TLSSocket::GetSignatureAlgorithms(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<GetSignatureAlgorithmsContext>(env, info, FUNCTION_GET_SIGNATURE_ALGORITHMS, nullptr,
-                                                            TlsSocketAsyncWork::ExecGetSignatureAlgorithms,
-                                                            TlsSocketAsyncWork::GetSignatureAlgorithmsCallback);
+    return ModuleTemplate::Interface<GetSignatureAlgorithmsContext>(
+        env, info, FUNCTION_GET_SIGNATURE_ALGORITHMS, nullptr, TlsSocketAsyncWork::ExecGetSignatureAlgorithms,
+        TlsSocketAsyncWork::GetSignatureAlgorithmsCallback);
 }
 
-napi_value TLSSocketModuleExports::TLSSocket::Close(napi_env env , napi_callback_info info)
+napi_value TLSSocketModuleExports::TLSSocket::Send(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<CloseContext>(env, info, FUNCTION_CLOSE, nullptr,
-                                                            TlsSocketAsyncWork::ExecClose,
-                                                            TlsSocketAsyncWork::CloseCallback);
+    return ModuleTemplate::Interface<SendContext>(env, info, FUNCTION_SEND, nullptr,
+                                                            TlsSocketAsyncWork::ExecSend,
+                                                            TlsSocketAsyncWork::SendCallback);
+}
+
+napi_value TLSSocketModuleExports::TLSSocket::Close(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::Interface<CloseContext>(env, info, FUNCTION_CLOSE, nullptr, TlsSocketAsyncWork::ExecClose,
+                                                   TlsSocketAsyncWork::CloseCallback);
 }
 
 void TLSSocketModuleExports::DefineTLSSocketClass(napi_env env, napi_value exports)
@@ -101,9 +106,22 @@ void TLSSocketModuleExports::DefineTLSSocketClass(napi_env env, napi_value expor
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_GET_PROTOCOL, TLSSocket::GetProtocol),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_CONNECT, TLSSocket::Connect),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_GET_CIPHER_SUITES, TLSSocket::GetCipherSuites),
+        DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_SEND, TLSSocket::Send),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_CLOSE, TLSSocket::Close),
     };
     ModuleTemplate::DefineClass(env, exports, functions, INTERFACE_TLS_SOCKET);
+}
+
+void TLSSocketModuleExports::InitProtocol(napi_env env, napi_value exports)
+{
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_STATIC_PROPERTY("TLSv12", NapiUtils::CreateStringUtf8(env, "TlsV1_2")),
+        DECLARE_NAPI_STATIC_PROPERTY("TLSv13", NapiUtils::CreateStringUtf8(env, "TlsV1_3")),
+    };
+
+    napi_value protocol = NapiUtils::CreateObject(env);
+    NapiUtils::DefineProperties(env, protocol, properties);
+    NapiUtils::SetNamedProperty(env, exports, INTERFACE_PROTOCOL, protocol);
 }
 
 napi_value TLSSocketModuleExports::ConstructTLSSocketInstance(napi_env env, napi_callback_info info)
@@ -123,6 +141,7 @@ napi_value TLSSocketModuleExports::InitTLSSocketModule(napi_env env, napi_value 
 {
     DefineTLSSocketClass(env, exports);
     InitTLSSocketProperties(env, exports);
+    InitProtocol(env, exports);
     return exports;
 }
 

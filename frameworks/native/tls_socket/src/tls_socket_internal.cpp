@@ -315,11 +315,11 @@ bool TLSSocketInternal::Send(const std::string &data)
         if (errorCallback_) {
             errorCallback_(errno, strerror(errno));
         }
-        NETSTACK_LOGE("data '%{public}s' send failed！The error code is %{public}d, The error message is'%{public}s'",
+        NETSTACK_LOGE("data '%{public}s' send failed!The error code is %{public}d, The error message is'%{public}s'",
                       data.c_str(), errno, strerror(errno));
         return false;
     } else {
-        NETSTACK_LOGI("data '%{public}s' Sent successfully，sent in total %{public}d bytes！", data.c_str(), len);
+        NETSTACK_LOGI("data '%{public}s' Sent successfully,sent in total %{public}d bytes!", data.c_str(), len);
     }
     return true;
 }

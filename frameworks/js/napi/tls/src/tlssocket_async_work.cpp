@@ -21,6 +21,7 @@
 #include "get_certificate_context.h"
 #include "get_cipher_suites_context.h"
 #include "get_remote_certificate_context.h"
+#include "send_context.h"
 #include "tlssocket_exec.h"
 
 namespace OHOS {
@@ -55,6 +56,11 @@ void TlsSocketAsyncWork::ExecGetSignatureAlgorithms(napi_env env, void *data)
     BaseAsyncWork::ExecAsyncWork<GetSignatureAlgorithmsContext, TlsSocketExec::ExecGetSignatureAlgorithms>(env, data);
 }
 
+void TlsSocketAsyncWork::ExecSend(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<SendContext, TlsSocketExec::ExecSend>(env, data);
+}
+
 void TlsSocketAsyncWork::ExecClose(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<CloseContext, TlsSocketExec::ExecClose>(env, data);
@@ -77,7 +83,8 @@ void TlsSocketAsyncWork::GetCipherSuitesCallback(napi_env env, napi_status statu
 
 void TlsSocketAsyncWork::GetRemoteCertificateCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<GetRemoteCertificateContext, TlsSocketExec::GetRemoteCertificateCallback>(env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<GetRemoteCertificateContext, TlsSocketExec::GetRemoteCertificateCallback>(
+        env, status, data);
 }
 
 void TlsSocketAsyncWork::GetProtocolCallback(napi_env env, napi_status status, void *data)
@@ -87,7 +94,13 @@ void TlsSocketAsyncWork::GetProtocolCallback(napi_env env, napi_status status, v
 
 void TlsSocketAsyncWork::GetSignatureAlgorithmsCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<GetSignatureAlgorithmsContext, TlsSocketExec::GetSignatureAlgorithmsCallback>(env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<GetSignatureAlgorithmsContext, TlsSocketExec::GetSignatureAlgorithmsCallback>(
+        env, status, data);
+}
+
+void TlsSocketAsyncWork::SendCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<SendContext, TlsSocketExec::SendCallback>(env, status, data);
 }
 
 void TlsSocketAsyncWork::CloseCallback(napi_env env, napi_status status, void *data)

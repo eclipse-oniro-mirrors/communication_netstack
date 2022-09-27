@@ -34,6 +34,7 @@ public:
     static void ExecGetRemoteCertificate(napi_env env, void *data);
     static void ExecGetProtocol(napi_env env, void *data);
     static void ExecGetSignatureAlgorithms(napi_env env, void *data);
+    static void ExecSend(napi_env env, void *data);
     static void ExecClose(napi_env env, void *data);
 
     static void GetCertificateCallback(napi_env env, napi_status status, void *data);
@@ -42,6 +43,7 @@ public:
     static void GetRemoteCertificateCallback(napi_env env, napi_status status, void *data);
     static void GetProtocolCallback(napi_env env, napi_status status, void *data);
     static void GetSignatureAlgorithmsCallback(napi_env env, napi_status status, void *data);
+    static void SendCallback(napi_env env, napi_status status, void *data);
     static void CloseCallback(napi_env env, napi_status status, void *data);
 };
 } // namespace NetStack

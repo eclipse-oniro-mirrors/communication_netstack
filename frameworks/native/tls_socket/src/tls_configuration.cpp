@@ -66,14 +66,12 @@ void TLSConfiguration::SetPrivateKey(const TLSKey &key)
 
 void TLSConfiguration::SetPrivateKey(const std::string &key, const std::string &passwd)
 {
-//     TLSKey pkey(key, ALGORITHM_RSA, PEM, PRIVATE_KEY, passwd);
     TLSKey pkey(key, ALGORITHM_RSA, passwd);
     privateKey_ = pkey;
 }
 
 void TLSConfiguration::SetLocalCertificate(const std::string &certificate)
 {
-//     TLSCertificate local(certificate, PEM, LOCAL_CERT);
     TLSCertificate local(certificate, LOCAL_CERT);
     localCertificate_ = local;
 }

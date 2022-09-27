@@ -53,7 +53,7 @@ bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
 
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
         if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_0]) != napi_object) {
-            NETSTACK_LOGE("tls ConnectContext first param is not number");
+            NETSTACK_LOGE("tls ConnectContext first param is not object");
             return false;
         }
         if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_1]) != napi_function) {
@@ -72,9 +72,9 @@ TLSConnectOptions ConnectContext::ReadTlsConnectOptions(napi_env env, napi_value
     TLSSecureOptions secureOption = ReadTlsSecureOptions(GetEnv(), params);
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
-    //alpnProtocols
+
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], "ALPNProtocols")) {
-        napi_value alpnProtocols =  NapiUtils::GetNamedProperty(GetEnv(), params[0], "ALPNProtocols");
+        napi_value alpnProtocols = NapiUtils::GetNamedProperty(GetEnv(), params[0], "ALPNProtocols");
         uint32_t arrayLength = NapiUtils::GetArrayLength(GetEnv(), alpnProtocols);
         napi_value elementValue = nullptr;
         std::vector<std::string> alpnProtocolVec;
@@ -92,42 +92,70 @@ TLSConnectOptions ConnectContext::ReadTlsConnectOptions(napi_env env, napi_value
 TLSSecureOptions ConnectContext::ReadTlsSecureOptions(napi_env env, napi_value *params)
 {
     TLSSecureOptions secureOption;
-    //caVector
-    napi_value secureOptions = NapiUtils::GetNamedProperty(GetEnv(), params[ARG_INDEX_0], "secureOptions");
-    if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, "ca")) {
-        napi_value caVector = NapiUtils::GetNamedProperty(GetEnv(), secureOptions, "ca");
-        uint32_t arrayLong = NapiUtils::GetArrayLength(GetEnv(), caVector);
-        napi_value element = nullptr;
-        std::vector<std::string> caVec;
-        for (uint32_t i = 0; i < arrayLong; i++) {
-                element = NapiUtils::GetArrayElement(GetEnv(), caVector, i);
-                std::string ca = NapiUtils::GetStringFromValueUtf8(GetEnv(), element);
-                caVec.push_back(ca);
-            }
-        secureOption.SetCaChain(caVec);
+
+    if (!NapiUtils::HasNamedProperty(GetEnv(), params[ARG_INDEX_0], "secureOptions")) {
+        return secureOption;
     }
-    //key
+    napi_value secureOptions = NapiUtils::GetNamedProperty(GetEnv(), params[ARG_INDEX_0], "secureOptions");
+
+    if (!NapiUtils::HasNamedProperty(GetEnv(), secureOptions, "ca")) {
+        return secureOption;
+    }
+    napi_value caVector = NapiUtils::GetNamedProperty(GetEnv(), secureOptions, "ca");
+    uint32_t arrayLong = NapiUtils::GetArrayLength(GetEnv(), caVector);
+    napi_value element = nullptr;
+    std::vector<std::string> caVec;
+    for (uint32_t i = 0; i < arrayLong; i++) {
+        element = NapiUtils::GetArrayElement(GetEnv(), caVector, i);
+        std::string ca = NapiUtils::GetStringFromValueUtf8(GetEnv(), element);
+        caVec.push_back(ca);
+    }
+    secureOption.SetCaChain(caVec);
+
+    if (!NapiUtils::HasNamedProperty(GetEnv(), secureOptions, "key")) {
+        return secureOption;
+    }
     std::string key = NapiUtils::GetStringPropertyUtf8(env, secureOptions, "key");
     secureOption.SetKey(key);
-    //cert
+
+    if (!NapiUtils::HasNamedProperty(GetEnv(), secureOptions, "cert")) {
+        return secureOption;
+    }
     std::string cert = NapiUtils::GetStringPropertyUtf8(env, secureOptions, "cert");
     secureOption.SetCert(cert);
-    //passwd
-    std::string passwd = NapiUtils::GetStringPropertyUtf8(env, secureOptions, "passwd");
-    secureOption.SetPassWd(passwd);
-    //protocol
-    std::string protocol = NapiUtils::GetStringPropertyUtf8(env, secureOptions, "protocols");
-    std::vector<std::string> protocolVec = {protocol};
-    secureOption.SetProtocolChain(protocolVec);
-    //signatureAlgorithms
-    std::string signatureAlgorithms = NapiUtils::GetStringPropertyUtf8(env, secureOptions, "signatureAlgorithms");
-    secureOption.SetSignatureAlgorithms(signatureAlgorithms);
-    //useRemoteCipherPrefer
-    bool useRemoteCipherPrefer = NapiUtils::GetBooleanProperty(env, secureOptions, "useRemoteCipherPrefer");
-    secureOption.SetUseRemoteCipherPrefer(useRemoteCipherPrefer);
-    //cipherSuites
-    std::string cipherSuites = NapiUtils::GetStringPropertyUtf8(env, secureOptions, "cipherSuites");
-    secureOption.SetCipherSuite(cipherSuites);
+
+    if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, "passwd")) {
+        secureOption.SetPassWd(NapiUtils::GetStringPropertyUtf8(env, secureOptions, "passwd"));
+    }
+
+    if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, "protocols")) {
+        napi_value protocolVector = NapiUtils::GetNamedProperty(env, secureOptions, "protocols");
+        uint32_t num = NapiUtils::GetArrayLength(GetEnv(), protocolVector);
+        napi_value element = nullptr;
+        std::vector<std::string> protocolVec;
+        for (uint32_t i = 0; i < num; i++) {
+            element = NapiUtils::GetArrayElement(GetEnv(), protocolVector, i);
+            std::string protocol = NapiUtils::GetStringFromValueUtf8(GetEnv(), element);
+            NETSTACK_LOGI("protocol is %{public}s", protocol.c_str());
+            protocolVec.push_back(protocol);
+        }
+        secureOption.SetProtocolChain(protocolVec);
+    }
+
+    if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, "signatureAlgorithms")) {
+        std::string signatureAlgorithms = NapiUtils::GetStringPropertyUtf8(env, secureOptions, "signatureAlgorithms");
+        secureOption.SetSignatureAlgorithms(signatureAlgorithms);
+    }
+
+    if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, "useRemoteCipherPrefer")) {
+        bool useRemoteCipherPrefer = NapiUtils::GetBooleanProperty(env, secureOptions, "useRemoteCipherPrefer");
+        secureOption.SetUseRemoteCipherPrefer(useRemoteCipherPrefer);
+    }
+
+    if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, "cipherSuites")) {
+        std::string cipherSuites = NapiUtils::GetStringPropertyUtf8(env, secureOptions, "cipherSuites");
+        secureOption.SetCipherSuite(cipherSuites);
+    }
     return secureOption;
 }
 
