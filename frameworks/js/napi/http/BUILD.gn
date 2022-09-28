@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
+import("//build/ohos/ace/ace.gni")
 import("//foundation/communication/netstack/netstack_config.gni")
 
 config("http_config") {
@@ -34,9 +35,16 @@ config("http_config") {
     "$NETSTACK_DIR/utils/common_utils/include",
   ]
 
-  if (current_os != "ohos") {
-    defines = [ "__STDC_WANT_LIB_EXT1__=1" ]
-    cflags = [ "-std=c++17" ]
+  if (is_mingw || is_mac) {
+    cflags = [
+      "-std=c++17",
+      "-stdlib=libc++",
+    ]
+  }
+  if (is_mingw) {
+    defines = [ "WINDOWS_PLATFORM" ]
+  } else if (is_mac) {
+    defines = [ "MAC_PLATFORM" ]
   }
 }
 
@@ -64,7 +72,17 @@ ohos_shared_library("http") {
   configs = [ ":http_config" ]
 
   deps = [ "//third_party/curl:curl_shared" ]
-  if (current_os == "ohos") {
+  if (is_mingw || is_mac) {
+    sources +=
+        [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
+    deps += [
+      "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
+      "//foundation/arkui/napi:ace_napi",
+      "//third_party/bounds_checking_function:libsec_static",
+      "//third_party/jsoncpp:jsoncpp_static",
+      "//third_party/openssl:libcrypto_static",
+    ]
+  } else {
     deps += [
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
@@ -77,36 +95,9 @@ ohos_shared_library("http") {
       "hiviewdfx_hilog_native:libhilog",
       "napi:ace_napi",
     ]
-  } else {
-    sources +=
-        [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
-    deps += [
-      "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
-      "//foundation/arkui/napi:ace_napi",
-      "//third_party/jsoncpp:jsoncpp_static",
-      "//third_party/openssl:libcrypto_static",
-    ]
   }
 
   relative_install_dir = "module/net"
   part_name = "netstack"
   subsystem_name = "communication"
-}
-
-if (current_os != "ohos") {
-  ohos_copy("copy_http_napi") {
-    if (host_os == "mac") {
-      suffix = ".dylib"
-    } else {
-      suffix = ".dll"
-    }
-
-    out_path = get_label_info(":http", "root_out_dir")
-    deps = [ ":http" ]
-    sources = [ "${out_path}/communication/netstack/libhttp${suffix}" ]
-    outputs =
-        [ target_out_dir + "/previewer/common/bin/module/net/libhttp${suffix}" ]
-    module_source_dir = target_out_dir + "/previewer/common/bin/module/net/"
-    module_install_name = ""
-  }
 }
