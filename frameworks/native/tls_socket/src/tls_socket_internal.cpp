@@ -283,7 +283,7 @@ bool TLSSocketInternal::SetAlpnProtocols(const std::vector<std::string> &alpnPro
     }
 
     auto result = std::make_unique<unsigned char[]>(alpnProtocols[0].size());
-    if (memcpy_s(reinterpret_cast<void *>(result), alpnProtocols[0].size(),
+    if (memcpy_s(reinterpret_cast<void *>(result.get()), alpnProtocols[0].size(),
                  reinterpret_cast<void *>(alpnProtocols[0].c_str()), alpnProtocols[0].size()) != EOK) {
         return false;
     }
