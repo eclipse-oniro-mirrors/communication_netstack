@@ -278,20 +278,24 @@ void TLSSocketInternal::SetTlsConfiguration(const TLSConfiguration &config)
 
 bool TLSSocketInternal::SetAlpnProtocols(const std::vector<std::string> &alpnProtocols)
 {
-    int len = 0, i = 0;
+    size_t len = 0;
+    size_t pos = 0;
     for (const auto &str : alpnProtocols) {
         len += str.length();
     }
     auto result = std::make_unique<unsigned char[]>(alpnProtocols.size() + len);
     for (const auto &str : alpnProtocols) {
         len = str.length();
-        result[i++] = len;
-        strcpy(reinterpret_cast<char *>(&result[i]), (const char *) str.c_str());
-        i = i + len;
+        result[pos++] = len;
+        if (!strcpy_s(reinterpret_cast<char *>(&result[pos]), len, str.c_str())) {
+            NETSTACK_LOGE("strcpy_s failed");
+            return false;
+        }
+        pos += len;
     }
 
     NETSTACK_LOGI("%{public}s", result.get());
-    if (SSL_set_alpn_protos(ssl_, result.get(), i)) {
+    if (SSL_set_alpn_protos(ssl_, result.get(), pos)) {
         if (errorCallback_) {
             errorCallback_(errno, strerror(errno));
         }
