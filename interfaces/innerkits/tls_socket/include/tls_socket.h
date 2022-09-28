@@ -71,9 +71,6 @@ static constexpr const char *PROTOCOL_TLS_V13 = "TLSv1.3";
 static constexpr const char *ALPN_PROTOCOLS_HTTP_1_1 = "http1.1";
 static constexpr const char *ALPN_PROTOCOLS_HTTP_2 = "h2";
 
-/**
-* TODO:
-*/
 class TLSSecureOptions {
 public:
     TLSSecureOptions() = default;
