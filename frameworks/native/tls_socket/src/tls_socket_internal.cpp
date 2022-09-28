@@ -286,7 +286,9 @@ bool TLSSocketInternal::SetAlpnProtocols(const std::vector<std::string> &alpnPro
     for (const auto &str : alpnProtocols) {
         len = str.length();
         result[i++] = len;
-        strcpy(reinterpret_cast<char *>(&result[i]), (const char *) str.c_str());
+        if (strcpy_s(reinterpret_cast<char *>(&result[i]), alpnProtocols.size() + len, (const char *)str.c_str()) < 0) {
+            return false;
+        }
         i = i + len;
     }
 
