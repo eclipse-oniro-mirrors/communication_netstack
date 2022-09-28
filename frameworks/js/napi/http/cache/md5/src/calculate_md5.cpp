@@ -33,11 +33,7 @@ std::string CalculateMD5(const std::string &source)
     for (unsigned char i : md5) {
         char s[HEX_LENGTH + 1] = {0};
         int d = i;
-#ifdef __APPLE__
-        if (snprintf(s, HEX_LENGTH + 1, "%02x", d) < 0) {
-#else
         if (sprintf_s(s, HEX_LENGTH + 1, "%02x", d) < 0) {
-#endif
             return {};
         }
         str += s;
