@@ -65,7 +65,11 @@ static void NetStackPrintLog(const char *fmt, ...)
     va_start(args, fmt);
 
     char buf[NETSTACK_MAX_BUFFER_SIZE] = {0};
+#ifdef __APPLE__
+    int ret = vsnprintf(buf, sizeof(buf), newFmt.c_str(), args);
+#else
     int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, newFmt.c_str(), args);
+#endif
     if (ret < 0) {
         va_end(args);
         return;
