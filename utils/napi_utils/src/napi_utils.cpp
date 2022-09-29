@@ -179,7 +179,11 @@ std::string GetStringFromValueUtf8(napi_env env, napi_value value)
     std::string result;
     auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
     std::unique_ptr<char, decltype(deleter)> str(static_cast<char *>(malloc(MAX_STRING_LENGTH)), deleter);
+#ifdef __STDC_LIB_EXT1__
     (void)memset_s(str.get(), MAX_STRING_LENGTH, 0, MAX_STRING_LENGTH);
+#else
+    (void)memset(str.get(), 0, MAX_STRING_LENGTH);
+#endif
     size_t length = 0;
     NAPI_CALL_BASE(env, napi_get_value_string_utf8(env, value, str.get(), MAX_STRING_LENGTH, &length), result);
     if (length > 0) {

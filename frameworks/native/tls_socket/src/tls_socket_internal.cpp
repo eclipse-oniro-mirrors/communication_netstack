@@ -283,18 +283,20 @@ void TLSSocketInternal::SetTlsConfiguration(const TLSConfiguration &config)
 
 bool TLSSocketInternal::SetAlpnProtocols(const std::vector<std::string> &alpnProtocols)
 {
-    if (alpnProtocols.empty()) {
-        return false;
+    int len = 0, i = 0;
+    for (const auto &str : alpnProtocols) {
+        len += str.length();
+    }
+    auto result = std::make_unique<unsigned char[]>(alpnProtocols.size() + len);
+    for (const auto &str : alpnProtocols) {
+        len = str.length();
+        result[i++] = len;
+        strcpy(reinterpret_cast<char *>(&result[i]), (const char *) str.c_str());
+        i = i + len;
     }
 
-    auto result = std::make_unique<unsigned char[]>(alpnProtocols[0].size());
-    if (memcpy_s(reinterpret_cast<void *>(result.get()), alpnProtocols[0].size(),
-                 reinterpret_cast<void *>(const_cast<char *>(alpnProtocols[0].c_str())),
-                 alpnProtocols[0].size()) != EOK) {
-        return false;
-    }
-
-    if (SSL_set_alpn_protos(ssl_, result.get(), alpnProtocols[0].size())) {
+    NETSTACK_LOGI("%{public}s", result.get());
+    if (SSL_set_alpn_protos(ssl_, result.get(), i)) {
         if (errorCallback_) {
             errorCallback_(errno, strerror(errno));
         }
