@@ -23,7 +23,7 @@ NETSTACK_NAPI_ROOT = "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/"
 
 ohos_fuzztest("SocketExecFuzzTest") {
   module_out_path = "communication/netstack"
-  fuzz_config_file = "//foundation/communication/netstack/test/napi/socket/fuzztest/socketexec_fuzzer"
+  fuzz_config_file = "//foundation/communication/netstack/test/fuzztest/socket/fuzztest/socketexec_fuzzer"
 
   include_dirs = [
     "$NETSTACK_NAPI_ROOT/socket/async_context/include",
