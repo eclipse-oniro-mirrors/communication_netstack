@@ -27,9 +27,9 @@
 
 namespace OHOS::NetStack {
 enum CacheStatus {
-    FRESH, // 可用
-    STALE, // 协商
-    DENY   // 不可用
+    FRESH,
+    STALE,
+    DENY
 };
 
 class HttpCacheStrategy {

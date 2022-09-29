@@ -55,9 +55,6 @@ LRUCache::LRUCache(size_t capacity) : capacity_(std::min<size_t>(MAX_SIZE, capac
 
 void LRUCache::AddNode(const Node &node)
 {
-    // 添加至双向链表的头部
-    // 添加进哈希表
-    // size_递增
     nodeList_.emplace_front(node);
     cache_[node.key] = nodeList_.begin();
     size_ += GetMapValueSize(node.value);
@@ -90,7 +87,6 @@ std::unordered_map<std::string, std::string> LRUCache::Get(const std::string &ke
     if (cache_.find(key) == cache_.end()) {
         return {};
     }
-    // 如果 key 存在，先通过哈希表定位，再移到头部
     auto it = cache_[key];
     auto value = it->value;
     MoveNodeToHead(it);
@@ -109,15 +105,11 @@ void LRUCache::Put(const std::string &key, const std::unordered_map<std::string,
     if (cache_.find(key) == cache_.end()) {
         AddNode(Node(key, value));
         while (size_ > capacity_) {
-            // 如果超出容量，删除双向链表的尾部节点
-            // 删除哈希表中对应的项
             EraseTailNode();
         }
         return;
     }
 
-    // 如果 key 存在，先通过哈希表定位，再修改 value，并移到头部
-    // 如果 key 存在，先通过哈希表定位，再移到头部
     auto it = cache_[key];
 
     size_ -= GetMapValueSize(it->value);
@@ -126,8 +118,6 @@ void LRUCache::Put(const std::string &key, const std::unordered_map<std::string,
 
     MoveNodeToHead(it);
     while (size_ > capacity_) {
-        // 如果超出容量，删除双向链表的尾部节点
-        // 删除哈希表中对应的项
         EraseTailNode();
     }
 }
@@ -141,7 +131,6 @@ void LRUCache::MergeOtherCache(const LRUCache &other)
         if (other.nodeList_.empty()) {
             return;
         }
-        // 倒序插入，后插入的新鲜度最高
         reverseList = other.nodeList_;
     }
     reverseList.reverse();
@@ -200,7 +189,6 @@ void LRUCache::ReadCacheFromJsonValue(const Json::Value &root)
         }
     }
     std::sort(nodeVec.begin(), nodeVec.end(), [](Node &a, Node &b) {
-        // 倒序排列，调用Put变回正序
         return std::strtol(a.value[LRU_INDEX].c_str(), nullptr, DECIMAL_BASE) >
                std::strtol(b.value[LRU_INDEX].c_str(), nullptr, DECIMAL_BASE);
     });
