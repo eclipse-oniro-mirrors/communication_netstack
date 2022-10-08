@@ -118,9 +118,14 @@ void RequestContext::ParseNumberOptions(napi_value optionsValue)
             }
         }
     }
-
-    options.SetHttpDataType(static_cast<HttpDataType>(
-        NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_EXPECT_DATA_TYPE)));
+    if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_EXPECT_DATA_TYPE)) {
+        napi_value value =
+            NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_EXPECT_DATA_TYPE);
+        if (NapiUtils::GetValueType(GetEnv(), value) == napi_number) {
+            uint32_t type = NapiUtils::GetUint32FromValue(GetEnv(), value);
+            options.SetHttpDataType(static_cast<HttpDataType>(type));
+        }
+    }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_PRIORITY)) {
         napi_value value = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_PRIORITY);
