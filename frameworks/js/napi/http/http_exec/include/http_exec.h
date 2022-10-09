@@ -22,12 +22,16 @@
 #include "curl/curl.h"
 #include "napi/native_api.h"
 #include "request_context.h"
+#ifndef MAC_PLATFORM
 #include "thread_pool.h"
+#endif
 
 namespace OHOS::NetStack {
+#ifndef MAC_PLATFORM
 static constexpr const size_t DEFAULT_THREAD_NUM = 5;
 static constexpr const size_t MAX_THREAD_NUM = 100;
 static constexpr const uint32_t DEFAULT_TIMEOUT = 5;
+#endif
 
 class HttpResponseCacheExec final {
 public:
@@ -66,7 +70,9 @@ public:
 
     static bool Initialize();
 
+#ifndef MAC_PLATFORM
     static void AsyncRunRequest(RequestContext *context);
+#endif
 
 private:
     static bool SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader);
@@ -85,6 +91,7 @@ private:
 
     static bool ProcByExpectDataType(napi_value object, RequestContext *context);
 
+#ifndef MAC_PLATFORM
 private:
     class Task {
     public:
@@ -99,12 +106,17 @@ private:
     private:
         RequestContext *context_;
     };
+#endif
 
     static std::mutex mutex_;
 
+#ifndef MAC_PLATFORM
     static ThreadPool<Task, DEFAULT_THREAD_NUM, MAX_THREAD_NUM> threadPool_;
 
     static std::atomic_bool initialized_;
+#else
+    static bool initialized_;
+#endif
 };
 } // namespace OHOS::NetStack
 
