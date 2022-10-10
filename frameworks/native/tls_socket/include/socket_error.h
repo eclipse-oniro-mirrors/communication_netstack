@@ -13,37 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef TLS_CONTEXT_SEND_CONTEXT_H
-#define TLS_CONTEXT_SEND_CONTEXT_H
-
-#include <cstddef>
-
-#include <napi/native_api.h>
-#include <string>
-
-#include "base_context.h"
-#include "event_manager.h"
-#include "nocopyable.h"
-#include "tls.h"
-#include "tls_socket.h"
+#ifndef LOCAL_SOCKET_ERROR_H
+#define LOCAL_SOCKET_ERROR_H
 
 namespace OHOS {
 namespace NetStack {
-class SendContext final : public BaseContext {
-public:
-    DISALLOW_COPY_AND_MOVE(SendContext);
-
-    SendContext() = delete;
-    explicit SendContext(napi_env env, EventManager *manager);
-
-    std::string data_;
-    bool isOk_ = false;
-
-    void ParseParams(napi_value *params, size_t paramsCount);
-
-private:
-    bool CheckParamsType(napi_value *params, size_t paramsCount);
+enum TlsSocketError {
+    SOCKET_ERROR_ERRNO_BASE = 2300000,
+    SOCKET_ERROR_SSL_BASE = 2301000,
+    SOCKET_ERROR_PARAM_INVALID = 2300401
 };
 } // namespace NetStack
 } // namespace OHOS
-#endif // TLS_CONTEXT_SEND_CONTEXT_H
+#endif // LOCAL_SOCKET_ERROR_H

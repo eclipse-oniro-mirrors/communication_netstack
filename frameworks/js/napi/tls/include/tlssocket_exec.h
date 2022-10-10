@@ -18,41 +18,52 @@
 
 #include <napi/native_api.h>
 
-#include "connect_context.h"
-#include "close_context.h"
+#include "bind_context.h"
+#include "common_context.h"
 #include "get_certificate_context.h"
 #include "get_cipher_suites_context.h"
 #include "get_protocol_context.h"
 #include "get_remote_certificate_context.h"
 #include "get_signature_algorithms_context.h"
 #include "send_context.h"
+#include "tcp_extra_context.h"
+#include "tls_close_context.h"
+#include "tls_connect_context.h"
 
 namespace OHOS {
 namespace NetStack {
-class TlsSocketExec final {
+class TLSSocketExec final {
 public:
-    DISALLOW_COPY_AND_MOVE(TlsSocketExec);
+    DISALLOW_COPY_AND_MOVE(TLSSocketExec);
 
-    TlsSocketExec() = delete;
-    ~TlsSocketExec() = delete;
+    TLSSocketExec() = delete;
+    ~TLSSocketExec() = delete;
 
     static bool ExecGetCertificate(GetCertificateContext *context);
-    static bool ExecConnect(ConnectContext *context);
+    static bool ExecConnect(TLSConnectContext *context);
     static bool ExecGetCipherSuites(GetCipherSuitesContext *context);
     static bool ExecGetRemoteCertificate(GetRemoteCertificateContext *context);
     static bool ExecGetProtocol(GetProtocolContext *context);
     static bool ExecGetSignatureAlgorithms(GetSignatureAlgorithmsContext *context);
     static bool ExecSend(SendContext *context);
-    static bool ExecClose(CloseContext *context);
+    static bool ExecClose(TLSCloseContext *context);
+    static bool ExecBind(BindContext *context);
+    static bool ExecGetState(GetStateContext *context);
+    static bool ExecGetRemoteAddress(GetRemoteAddressContext *context);
+    static bool ExecSetExtraOptions(TcpSetExtraOptionsContext *context);
 
     static napi_value GetCertificateCallback(GetCertificateContext *context);
-    static napi_value ConnectCallback(ConnectContext *context);
+    static napi_value ConnectCallback(TLSConnectContext *context);
     static napi_value GetCipherSuitesCallback(GetCipherSuitesContext *context);
     static napi_value GetRemoteCertificateCallback(GetRemoteCertificateContext *context);
     static napi_value GetProtocolCallback(GetProtocolContext *context);
     static napi_value GetSignatureAlgorithmsCallback(GetSignatureAlgorithmsContext *context);
     static napi_value SendCallback(SendContext *context);
-    static napi_value CloseCallback(CloseContext *context);
+    static napi_value CloseCallback(TLSCloseContext *context);
+    static napi_value BindCallback(BindContext *context);
+    static napi_value GetStateCallback(GetStateContext *context);
+    static napi_value GetRemoteAddressCallback(GetRemoteAddressContext *context);
+    static napi_value SetExtraOptionsCallback(TcpSetExtraOptionsContext *context);
 };
 } // namespace NetStack
 } // namespace OHOS

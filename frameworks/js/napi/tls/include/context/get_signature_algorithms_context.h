@@ -36,7 +36,7 @@ public:
     explicit GetSignatureAlgorithmsContext(napi_env env, EventManager *manager);
 
     std::vector<std::string> signatureAlgorithms_;
-    bool ok_ = false;
+    bool isOk_ = false;
 
     void ParseParams(napi_value *params, size_t paramsCount);
 

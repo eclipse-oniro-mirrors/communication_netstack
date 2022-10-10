@@ -16,7 +16,7 @@
 #ifndef TLS_TLSSOCKET_MODULE_H
 #define TLS_TLSSOCKET_MODULE_H
 
-#include "napi/native_api.h"
+#include <napi/native_api.h>
 
 namespace OHOS {
 namespace NetStack {
@@ -32,6 +32,12 @@ public:
         static constexpr const char *FUNCTION_GET_CIPHER_SUITES = "getCipherSuites";
         static constexpr const char *FUNCTION_SEND = "send";
         static constexpr const char *FUNCTION_CLOSE = "close";
+        static constexpr const char *FUNCTION_BIND = "bind";
+        static constexpr const char *FUNCTION_GET_REMOTE_ADDRESS = "getRemoteAddress";
+        static constexpr const char *FUNCTION_GET_STATE = "getState";
+        static constexpr const char *FUNCTION_SET_EXTRA_OPTIONS = "setExtraOptions";
+        static constexpr const char *FUNCTION_ON = "on";
+        static constexpr const char *FUNCTION_OFF = "off";
 
         static napi_value GetCertificate(napi_env env, napi_callback_info info);
         static napi_value GetProtocol(napi_env env, napi_callback_info info);
@@ -41,6 +47,12 @@ public:
         static napi_value GetSignatureAlgorithms(napi_env env, napi_callback_info info);
         static napi_value Send(napi_env env, napi_callback_info info);
         static napi_value Close(napi_env env, napi_callback_info info);
+        static napi_value Bind(napi_env env, napi_callback_info info);
+        static napi_value GetRemoteAddress(napi_env env, napi_callback_info info);
+        static napi_value GetState(napi_env env, napi_callback_info info);
+        static napi_value SetExtraOptions(napi_env env, napi_callback_info info);
+        static napi_value On(napi_env env, napi_callback_info info);
+        static napi_value Off(napi_env env, napi_callback_info info);
     };
 
 public:

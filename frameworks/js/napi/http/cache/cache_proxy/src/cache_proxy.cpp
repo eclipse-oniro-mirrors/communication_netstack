@@ -135,9 +135,9 @@ void CacheProxy::RunCacheWithSize(size_t capacity)
     DISK_LRU_CACHE.SetCapacity(capacity);
 
     CACHE_NEED_RUN.store(true);
-    // 从磁盘中读取缓存到内存里
+
     DISK_LRU_CACHE.ReadCacheFromJsonFile();
-    // 起线程每一分钟将内存缓存持久化
+
     std::thread([]() {
         CACHE_IS_RUNNING.store(true);
         while (CACHE_NEED_RUN.load()) {

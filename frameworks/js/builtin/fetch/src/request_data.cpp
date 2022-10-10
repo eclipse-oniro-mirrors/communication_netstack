@@ -22,8 +22,8 @@ namespace ACELite {
 
 RequestData::RequestData()
 {
-    method = HttpConstant::HTTP_METHOD_GET;                                                       // default
-    header[HttpConstant::HTTP_HEADER_KEY_CONTENT_TYPE] = HttpConstant::HTTP_DEFAULT_CONTENT_TYPE; // default
+    method = HttpConstant::HTTP_METHOD_GET;
+    header[HttpConstant::HTTP_HEADER_KEY_CONTENT_TYPE] = HttpConstant::HTTP_DEFAULT_CONTENT_TYPE;
 }
 
 void RequestData::SetUrl(const std::string &urlPara)

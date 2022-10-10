@@ -22,7 +22,9 @@
 namespace OHOS {
 namespace NetStack {
 GetSignatureAlgorithmsContext::GetSignatureAlgorithmsContext(napi_env env, EventManager *manager)
-    : BaseContext(env, manager) {}
+    : BaseContext(env, manager)
+{
+}
 
 void GetSignatureAlgorithmsContext::ParseParams(napi_value *params, size_t paramsCount)
 {

@@ -22,11 +22,11 @@
 
 namespace OHOS {
 namespace NetStack {
-class TlsSocketAsyncWork final {
+class TLSSocketAsyncWork final {
 public:
-    DISALLOW_COPY_AND_MOVE(TlsSocketAsyncWork);
-    TlsSocketAsyncWork() = delete;
-    ~TlsSocketAsyncWork() = delete;
+    DISALLOW_COPY_AND_MOVE(TLSSocketAsyncWork);
+    TLSSocketAsyncWork() = delete;
+    ~TLSSocketAsyncWork() = delete;
 
     static void ExecGetCertificate(napi_env env, void *data);
     static void ExecConnect(napi_env env, void *data);
@@ -36,6 +36,10 @@ public:
     static void ExecGetSignatureAlgorithms(napi_env env, void *data);
     static void ExecSend(napi_env env, void *data);
     static void ExecClose(napi_env env, void *data);
+    static void ExecBind(napi_env env, void *data);
+    static void ExecGetState(napi_env env, void *data);
+    static void ExecGetRemoteAddress(napi_env env, void *data);
+    static void ExecSetExtraOptions(napi_env env, void *data);
 
     static void GetCertificateCallback(napi_env env, napi_status status, void *data);
     static void ConnectCallback(napi_env env, napi_status status, void *data);
@@ -45,7 +49,11 @@ public:
     static void GetSignatureAlgorithmsCallback(napi_env env, napi_status status, void *data);
     static void SendCallback(napi_env env, napi_status status, void *data);
     static void CloseCallback(napi_env env, napi_status status, void *data);
+    static void BindCallback(napi_env env, napi_status status, void *data);
+    static void GetStateCallback(napi_env env, napi_status status, void *data);
+    static void GetRemoteAddressCallback(napi_env env, napi_status status, void *data);
+    static void SetExtraOptionsCallback(napi_env env, napi_status status, void *data);
 };
 } // namespace NetStack
 } // namespace OHOS
-#endif  // TLS_TLSSOCKET_ASYNC_WORK_H
+#endif // TLS_TLSSOCKET_ASYNC_WORK_H

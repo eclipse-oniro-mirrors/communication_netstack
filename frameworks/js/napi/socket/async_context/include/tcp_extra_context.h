@@ -37,6 +37,7 @@ public:
     [[nodiscard]] int GetSocketFd() const;
 
     TCPExtraOptions options;
+    bool isOk_ = false;
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);

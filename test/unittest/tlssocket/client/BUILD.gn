@@ -14,11 +14,90 @@
 import("//build/test.gni")
 import("//foundation/communication/netstack/netstack_config.gni")
 
+TLS = "$NETSTACK_NATIVE_ROOT/tls_socket"
+TLS_NAPI = "$NETSTACK_DIR/frameworks/js/napi/tls"
+SOCKET = "$NETSTACK_DIR/frameworks/js/napi/socket"
+
+tls_sources = [
+  "$TLS/src/tls_certificate.cpp",
+  "$TLS/src/tls_configuration.cpp",
+  "$TLS/src/tls_context.cpp",
+  "$TLS/src/tls_key.cpp",
+  "$TLS/src/tls_socket.cpp",
+]
+
+tls_napi_sources = [
+  "$TLS_NAPI/src/context/get_certificate_context.cpp",
+  "$TLS_NAPI/src/context/get_cipher_suites_context.cpp",
+  "$TLS_NAPI/src/context/get_protocol_context.cpp",
+  "$TLS_NAPI/src/context/get_remote_certificate_context.cpp",
+  "$TLS_NAPI/src/context/get_signature_algorithms_context.cpp",
+  "$TLS_NAPI/src/context/send_context.cpp",
+  "$TLS_NAPI/src/context/tls_close_context.cpp",
+  "$TLS_NAPI/src/context/tls_connect_context.cpp",
+  "$TLS_NAPI/src/monitor.cpp",
+  "$TLS_NAPI/src/tlssocket_async_work.cpp",
+  "$TLS_NAPI/src/tlssocket_exec.cpp",
+  "$TLS_NAPI/src/tlssocket_module.cpp",
+]
+
+socket_sources = [
+  "$SOCKET/async_context/src/bind_context.cpp",
+  "$SOCKET/async_context/src/common_context.cpp",
+  "$SOCKET/async_context/src/connect_context.cpp",
+  "$SOCKET/async_context/src/tcp_extra_context.cpp",
+  "$SOCKET/async_context/src/tcp_send_context.cpp",
+  "$SOCKET/async_context/src/udp_extra_context.cpp",
+  "$SOCKET/async_context/src/udp_send_context.cpp",
+  "$SOCKET/async_work/src/socket_async_work.cpp",
+  "$SOCKET/options/src/extra_options_base.cpp",
+  "$SOCKET/options/src/net_address.cpp",
+  "$SOCKET/options/src/socket_remote_info.cpp",
+  "$SOCKET/options/src/socket_state_base.cpp",
+  "$SOCKET/options/src/tcp_connect_options.cpp",
+  "$SOCKET/options/src/tcp_extra_options.cpp",
+  "$SOCKET/options/src/tcp_send_options.cpp",
+  "$SOCKET/options/src/udp_extra_options.cpp",
+  "$SOCKET/options/src/udp_send_options.cpp",
+  "$SOCKET/socket_exec/src/socket_exec.cpp",
+  "$SOCKET/socket_module/src/socket_module.cpp",
+]
+
+config("tls_test_config") {
+  include_dirs = [
+    "$TLS/include",
+    "$TLS_NAPI/include",
+    "$TLS_NAPI/include/context",
+    "$NETSTACK_INNERKITS_DIR/tls_socket/include",
+    "$SOCKET/async_context/include",
+    "$SOCKET/async_work/include",
+    "$SOCKET/constant/include",
+    "$SOCKET/socket_exec/include",
+    "$SOCKET/socket_module/include",
+    "$SOCKET/options/include",
+    "$SOCKET/task_queue/include",
+  ]
+}
+
 ohos_unittest("tls_socket_unittest") {
   sources = [ "TlsSocketTest.cpp" ]
+  sources += tls_sources
+  sources += tls_napi_sources
+  sources += socket_sources
 
-  deps = [ "$NETSTACK_DIR/frameworks/native/tls_socket:tls_socket" ]
-  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  configs = [ ":tls_test_config" ]
+
+  deps = [
+    "$NETSTACK_DIR/utils:stack_utils_common",
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "//third_party/openssl:libcrypto_shared",
+    "//third_party/openssl:libssl_shared",
+  ]
+  external_deps = [
+    "c_utils:utils",
+    "hiviewdfx_hilog_native:libhilog",
+    "napi:ace_napi",
+  ]
 
   module_out_path = "netstack/tls_socket_unittest"
   part_name = "netstack"
@@ -27,9 +106,23 @@ ohos_unittest("tls_socket_unittest") {
 
 ohos_unittest("tls_socket_certchain_unittest") {
   sources = [ "TlsSocketCertChainTest.cpp" ]
+  sources += tls_sources
+  sources += tls_napi_sources
+  sources += socket_sources
 
-  deps = [ "$NETSTACK_DIR/frameworks/native/tls_socket:tls_socket" ]
-  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  configs = [ ":tls_test_config" ]
+
+  deps = [
+    "$NETSTACK_DIR/utils:stack_utils_common",
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "//third_party/openssl:libcrypto_shared",
+    "//third_party/openssl:libssl_shared",
+  ]
+  external_deps = [
+    "c_utils:utils",
+    "hiviewdfx_hilog_native:libhilog",
+    "napi:ace_napi",
+  ]
 
   module_out_path = "netstack/tls_socket_unittest"
   part_name = "netstack"

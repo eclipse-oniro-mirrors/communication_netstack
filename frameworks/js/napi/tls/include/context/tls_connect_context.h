@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef TLS_CONTEXT_CLOSE_CONTEXT_H
-#define TLS_CONTEXT_CLOSE_CONTEXT_H
+#ifndef TLS_CONTEXT_CONNECT_CONTEXT_H
+#define TLS_CONTEXT_CONNECT_CONTEXT_H
 
 #include <cstddef>
 
@@ -23,24 +23,32 @@
 #include "base_context.h"
 #include "event_manager.h"
 #include "nocopyable.h"
+#include "tls.h"
+#include "tls_socket.h"
 
 namespace OHOS {
 namespace NetStack {
-class CloseContext final : public BaseContext {
+class TLSConnectContext final : public BaseContext {
 public:
-    DISALLOW_COPY_AND_MOVE(CloseContext);
+    DISALLOW_COPY_AND_MOVE(TLSConnectContext);
 
-    CloseContext() = delete;
-    explicit CloseContext(napi_env env, EventManager *manager);
+    TLSConnectContext() = delete;
+    explicit TLSConnectContext(napi_env env, EventManager *manager);
 
-    bool ok_ = false;
+    TLSConnectOptions connectOptions_;
+    bool isOk_ = false;
+    napi_ref checkCallback_;
+    std::string hostName_;
+    std::vector<std::string> x509Certificates_;
 
     void ParseParams(napi_value *params, size_t paramsCount);
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
-
+    TLSConnectOptions ReadTLSConnectOptions(napi_env env, napi_value *params);
+    TLSSecureOptions ReadTLSSecureOptions(napi_env env, napi_value *params);
+    NetAddress ReadNetAddress(napi_env env, napi_value *params);
 };
 } // namespace NetStack
 } // namespace OHOS
-#endif // TLS_CONTEXT_CLOSE_CONTEXT_H
+#endif // TLS_CONTEXT_CONNECT_CONTEXT_H

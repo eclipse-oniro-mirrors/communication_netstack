@@ -1,17 +1,17 @@
 /*
-* Copyright (c) 2022 Huawei Device Co., Ltd.
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "tls_key.h"
 
@@ -19,16 +19,12 @@
 
 namespace OHOS {
 namespace NetStack {
-
 namespace {
 constexpr int FILE_READ_Key_LEN = 4096;
 constexpr const char *FILE_OPEN_FLAG = "rb";
 } // namespace
 
-TLSKey::TLSKey(const std::string &fileName,
-               KeyAlgorithm algorithm,
-               EncodingFormat encoding,
-               KeyType type,
+TLSKey::TLSKey(const std::string &fileName, KeyAlgorithm algorithm, EncodingFormat encoding, KeyType type,
                const std::string &passPhrase)
 {
     if (encoding == DER) {
@@ -47,7 +43,7 @@ TLSKey::TLSKey(const std::string &data, KeyAlgorithm algorithm, const std::strin
     DecodeData(data, algorithm, passPhrase);
 }
 
-TLSKey &TLSKey::operator= (const TLSKey &other)
+TLSKey &TLSKey::operator=(const TLSKey &other)
 {
     if (other.rsa_ != nullptr) {
         rsa_ = RSA_new();
@@ -68,25 +64,23 @@ TLSKey &TLSKey::operator= (const TLSKey &other)
     keyIsNull_ = other.keyIsNull_;
     keyType_ = other.keyType_;
     keyAlgorithm_ = other.keyAlgorithm_;
-    passwd_ = other.passwd_;
+    keyPass_ = other.keyPass_;
     return *this;
 }
 
 void TLSKey::DecodeData(const std::string &data, KeyAlgorithm algorithm, const std::string &passPhrase)
 {
     if (data.empty()) {
-        NETSTACK_LOGE("TlsKey::DecodeData data is empty");
+        NETSTACK_LOGE("The parameter data is empty");
         return;
     }
     keyAlgorithm_ = algorithm;
-    passwd_ = passPhrase;
+    keyPass_ = passPhrase;
     BIO *bio = BIO_new_mem_buf(data.c_str(), -1);
     if (!bio) {
-        NETSTACK_LOGE("TlsKey::DecodeData bio is null");
+        NETSTACK_LOGE("Failed to create bio buffer");
         return;
     }
-    NETSTACK_LOGI("--- TlsKey::DecodeData rsa");
-    RSA_print_fp(stdout,rsa_,11);
     rsa_ = PEM_read_bio_RSAPrivateKey(bio, nullptr, nullptr, nullptr);
 
     if (rsa_) {
@@ -94,33 +88,33 @@ void TLSKey::DecodeData(const std::string &data, KeyAlgorithm algorithm, const s
     }
 }
 
-void TLSKey::DecodeDer(KeyType type,
-                       KeyAlgorithm algorithm,
-                       const std::string &fileName,
-                       const std::string &passPhrase)
+void TLSKey::DecodeDer(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const std::string &passPhrase)
 {
     if (fileName.empty()) {
-        NETSTACK_LOGI("TlsKey::DecodeDer filename is empty");
+        NETSTACK_LOGI("The parameter filename is empty");
         return;
     }
     keyType_ = type;
     keyAlgorithm_ = algorithm;
-    passwd_ = passPhrase;
-    FILE *fp = nullptr;
-    fp = fopen(static_cast<const char*>(fileName.c_str()), FILE_OPEN_FLAG);
+    keyPass_ = passPhrase;
+    FILE *fp = fopen(static_cast<const char *>(fileName.c_str()), FILE_OPEN_FLAG);
     if (!fp) {
-        NETSTACK_LOGE("TlsKey::DecodeDer: Couldn't open %{public}s file for reading", fileName.c_str());
+        NETSTACK_LOGE("TlsKey::DecodeDer: Couldn't open file for reading");
         return;
     }
     char keyDer[FILE_READ_Key_LEN] = {};
-    long keyLen = fread(keyDer, 1, FILE_READ_Key_LEN, fp);
+    size_t keyLen = fread(keyDer, 1, FILE_READ_Key_LEN, fp);
     (void)fclose(fp);
+    if (!keyLen) {
+        NETSTACK_LOGE("Insufficient size bytes were read");
+        return;
+    }
 
-    const unsigned char *key_data = reinterpret_cast<const unsigned char*>(keyDer);
+    const auto *key_data = reinterpret_cast<const unsigned char *>(keyDer);
     if (type == PUBLIC_KEY) {
-        rsa_ = d2i_RSA_PUBKEY(nullptr, &key_data, keyLen);
+        rsa_ = d2i_RSA_PUBKEY(nullptr, &key_data, static_cast<long>(keyLen));
     } else {
-        rsa_ = d2i_RSAPrivateKey(nullptr, &key_data, keyLen);
+        rsa_ = d2i_RSAPrivateKey(nullptr, &key_data, static_cast<long>(keyLen));
     }
     if (!rsa_) {
         NETSTACK_LOGE("TlsKey::DecodeDer rsa_ is null");
@@ -129,10 +123,7 @@ void TLSKey::DecodeDer(KeyType type,
     keyIsNull_ = false;
 }
 
-void TLSKey::DecodePem(KeyType type,
-                       KeyAlgorithm algorithm,
-                       const std::string &fileName,
-                       const std::string &passPhrase)
+void TLSKey::DecodePem(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const std::string &passPhrase)
 {
     if (fileName.empty()) {
         NETSTACK_LOGE("TlsKey::DecodePem filename is empty");
@@ -140,11 +131,10 @@ void TLSKey::DecodePem(KeyType type,
     }
     keyType_ = type;
     keyAlgorithm_ = algorithm;
-    FILE *fp = nullptr;
-    fp = fopen(static_cast<const char*>(fileName.c_str()), FILE_OPEN_FLAG);
+    FILE *fp = fopen(static_cast<const char *>(fileName.c_str()), FILE_OPEN_FLAG);
 
     if (!fp) {
-        NETSTACK_LOGE("TlsKey::DecodePem: Couldn't open %{public}s file for reading", fileName.c_str());
+        NETSTACK_LOGE("TlsKey::DecodePem: Couldn't open file for reading");
         return;
     }
     char privateKey[FILE_READ_Key_LEN] = {};
@@ -152,34 +142,31 @@ void TLSKey::DecodePem(KeyType type,
         NETSTACK_LOGE("TlsKey::DecodePem file read false");
     }
     (void)fclose(fp);
-    const char *privateKeyData = static_cast<const char*>(privateKey);
+    const char *privateKeyData = static_cast<const char *>(privateKey);
     BIO *bio = BIO_new_mem_buf(privateKeyData, -1);
     if (!bio) {
         NETSTACK_LOGE("TlsKey::DecodePem: bio is null");
         return;
     }
-    passwd_ = passPhrase;
+    keyPass_ = passPhrase;
     switch (algorithm) {
         case ALGORITHM_RSA:
-            rsa_ = (type == PUBLIC_KEY)
-                ? PEM_read_bio_RSA_PUBKEY(bio, nullptr, nullptr, nullptr)
-                : PEM_read_bio_RSAPrivateKey(bio, nullptr, nullptr, nullptr);
+            rsa_ = (type == PUBLIC_KEY) ? PEM_read_bio_RSA_PUBKEY(bio, nullptr, nullptr, nullptr)
+                                        : PEM_read_bio_RSAPrivateKey(bio, nullptr, nullptr, nullptr);
             if (rsa_) {
                 keyIsNull_ = false;
             }
             break;
         case ALGORITHM_DSA:
-            dsa_ = (type == PUBLIC_KEY)
-                ? PEM_read_bio_DSA_PUBKEY(bio, nullptr, nullptr, nullptr)
-                : PEM_read_bio_DSAPrivateKey(bio, nullptr, nullptr, nullptr);
+            dsa_ = (type == PUBLIC_KEY) ? PEM_read_bio_DSA_PUBKEY(bio, nullptr, nullptr, nullptr)
+                                        : PEM_read_bio_DSAPrivateKey(bio, nullptr, nullptr, nullptr);
             if (dsa_) {
                 keyIsNull_ = false;
             }
             break;
         case ALGORITHM_DH: {
-            EVP_PKEY *result = (type == PUBLIC_KEY)
-                ? PEM_read_bio_PUBKEY(bio, nullptr, nullptr, nullptr)
-                : PEM_read_bio_PrivateKey(bio, nullptr, nullptr, nullptr);
+            EVP_PKEY *result = (type == PUBLIC_KEY) ? PEM_read_bio_PUBKEY(bio, nullptr, nullptr, nullptr)
+                                                    : PEM_read_bio_PrivateKey(bio, nullptr, nullptr, nullptr);
             if (result) {
                 dh_ = EVP_PKEY_get1_DH(result);
             }
@@ -190,9 +177,8 @@ void TLSKey::DecodePem(KeyType type,
             break;
         }
         case ALGORITHM_EC:
-            ec_ = (type == PUBLIC_KEY)
-                ? PEM_read_bio_EC_PUBKEY(bio, nullptr, nullptr, nullptr)
-                : PEM_read_bio_ECPrivateKey(bio, nullptr, nullptr, nullptr);
+            ec_ = (type == PUBLIC_KEY) ? PEM_read_bio_EC_PUBKEY(bio, nullptr, nullptr, nullptr)
+                                       : PEM_read_bio_ECPrivateKey(bio, nullptr, nullptr, nullptr);
             if (ec_) {
                 keyIsNull_ = false;
             }
@@ -262,8 +248,9 @@ Handle TLSKey::handle() const
     }
 }
 
-const std::string &TLSKey::GetPasswd() const
+const std::string &TLSKey::GetKeyPass() const
 {
-    return passwd_;
+    return keyPass_;
 }
-} } // namespace OHOS::NetStack
+} // namespace NetStack
+} // namespace OHOS

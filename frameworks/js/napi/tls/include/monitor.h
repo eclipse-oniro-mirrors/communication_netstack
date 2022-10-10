@@ -13,37 +13,40 @@
  * limitations under the License.
  */
 
-#ifndef TLS_CONTEXT_GETCIPHERSUITES_CONTEXT_H
-#define TLS_CONTEXT_GETCIPHERSUITES_CONTEXT_H
+#ifndef TLS_MONITOR_H
+#define TLS_MONITOR_H
 
-#include <cstddef>
+#include <cstdint>
+#include <set>
 #include <string>
-#include <vector>
+#include <string_view>
 
 #include <napi/native_api.h>
 
-#include "base_context.h"
 #include "event_manager.h"
-#include "nocopyable.h"
+#include "singleton.h"
+#include "socket_remote_info.h"
 #include "tls.h"
 
 namespace OHOS {
 namespace NetStack {
-class GetCipherSuitesContext final : public BaseContext {
+class Monitor final {
+    DECLARE_DELAYED_SINGLETON(Monitor);
+
 public:
-    DISALLOW_COPY_AND_MOVE(GetCipherSuitesContext);
+    napi_value On(napi_env env, napi_callback_info info);
+    napi_value Off(napi_env env, napi_callback_info info);
 
-    GetCipherSuitesContext() = delete;
-    explicit GetCipherSuitesContext(napi_env env, EventManager *manager);
-
-    std::vector<std::string> cipherSuites_;
-    bool isOk_ = false;
-
-    void ParseParams(napi_value *params, size_t paramsCount);
+public:
+    std::string data_;
+    SocketRemoteInfo remoteInfo_;
+    int32_t errorNumber_ = 0;
+    std::string errorString_;
 
 private:
-    bool CheckParamsType(napi_value *params, size_t paramsCount);
+    EventManager *manager_ = nullptr;
+    std::set<std::string_view> monitors_;
 };
 } // namespace NetStack
 } // namespace OHOS
-#endif // TLS_CONTEXT_GETCIPHERSUITES_CONTEXT_H
+#endif // TLS_CONTEXT_MONITOR_CONTEXT_H
