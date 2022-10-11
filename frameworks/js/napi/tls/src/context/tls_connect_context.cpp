@@ -122,9 +122,6 @@ TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_va
 
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], CHECK_SERVER_IDENTITY)) {
         napi_value checkServerIdentity = NapiUtils::GetNamedProperty(GetEnv(), params[0], CHECK_SERVER_IDENTITY);
-        if (checkCallback_ != nullptr) {
-            (void)napi_delete_reference(GetEnv(), checkCallback_);
-        }
         napi_create_reference(GetEnv(), checkServerIdentity, 1, &checkCallback_);
     }
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], ALPN_PROTOCOLS)) {

@@ -214,7 +214,6 @@ bool TLSCertificate::CaCertToString(X509 *x509)
         return false;
     }
     BIO *bio = BIO_new(BIO_s_mem());
-    X509_print(bio, x509);
     char data[FILE_READ_CERT_LEN] = {};
     if (!BIO_read(bio, data, FILE_READ_CERT_LEN)) {
         NETSTACK_LOGI("CaCertToString is BIO_read false");
@@ -235,7 +234,6 @@ bool TLSCertificate::LocalCertToString(X509 *x509)
         NETSTACK_LOGE("TlsCertificate::LocalCertToString: bio is null");
         return false;
     }
-    X509_print(bio, x509);
     char data[FILE_READ_CERT_LEN] = {};
     if (!BIO_read(bio, data, FILE_READ_CERT_LEN)) {
         NETSTACK_LOGE("LocalCertToString BIO_read is false");

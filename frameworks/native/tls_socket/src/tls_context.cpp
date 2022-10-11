@@ -229,7 +229,6 @@ bool TLSContext::InitTlsContext(TLSContext *tlsContext, TlsMode mode, const TLSC
     tlsContext->tlsConfiguration_ = configuration;
     tlsContext->ctx_ = SSL_CTX_new(TLS_client_method());
     if (tlsContext->ctx_ == nullptr) {
-        ERR_print_errors_fp(stdout);
         NETSTACK_LOGE("tlsContext->ctx_ is nullptr");
         return false;
     }
