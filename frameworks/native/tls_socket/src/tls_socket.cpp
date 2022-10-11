@@ -35,6 +35,7 @@ constexpr int TIMEOUT_MS = 10000;
 constexpr int REMOTE_CERT_LEN = 8192;
 constexpr int COMMON_NAME_BUF_SIZE = 256;
 constexpr int BUF_SIZE = 2048;
+constexpr int SSL_RET_CODE = 0;
 constexpr const char *SPLIT_ALT_NAMES = ",";
 constexpr const char *SPLIT_HOST_NAME = ".";
 
@@ -43,25 +44,23 @@ int ConvertErrno()
     return TlsSocketError::SOCKET_ERROR_ERRNO_BASE + errno;
 }
 
-std::string MakeErrnoString(int error)
+std::string MakeErrnoString()
 {
-    char err[MAX_ERR_LEN] = {0};
-    if (strerror_r(errno, err, sizeof(err)) == -1) {
-        return "unknown error";
-    }
-    return err;
+    return strerror(errno);
 }
 
-int ConvertSSLError(ssl_st *ssl_)
+int ConvertSSLError(ssl_st *ssl)
 {
-    int ret = 0;
-    return TlsSocketError::SOCKET_ERROR_SSL_BASE + SSL_get_error(ssl_, ret);
+    if (!ssl) {
+        return -1;
+    }
+    return TlsSocketError::SOCKET_ERROR_SSL_BASE + SSL_get_error(ssl, SSL_RET_CODE);
 }
 
 std::string MakeSSLErrorString(int error)
 {
     char err[MAX_ERR_LEN] = {0};
-    ERR_error_string_n(error, err, sizeof(err));
+    ERR_error_string_n(error - TlsSocketError::SOCKET_ERROR_SSL_BASE, err, sizeof(err));
     return err;
 }
 } // namespace
@@ -259,9 +258,9 @@ void TLSSocket::MakeIpSocket(sa_family_t family)
     int sock = socket(family, SOCK_STREAM, IPPROTO_IP);
     if (sock < 0) {
         int resErr = ConvertErrno();
-        NETSTACK_LOGE("make ip socket is error, error is %{public}s %{public}d", MakeErrnoString(resErr).c_str(),
+        NETSTACK_LOGE("make ip socket is error, error is %{public}s %{public}d", MakeErrnoString().c_str(),
                       errno);
-        CallOnErrorCallback(resErr, MakeErrnoString(resErr));
+        CallOnErrorCallback(resErr, MakeErrnoString());
         return;
     }
     sockFd_ = sock;
@@ -281,8 +280,8 @@ void TLSSocket::StartReadMessage()
             }
             if (len < 0) {
                 int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
-                NETSTACK_LOGE("SSL_read function read error, errno is %{public}d, errno info is %{public}s", errno,
-                              MakeErrnoString(errno).c_str());
+                NETSTACK_LOGE("SSL_read function read error, errno is %{public}d, errno info is %{public}s", resErr,
+                              MakeSSLErrorString(resErr).c_str());
                 CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
                 break;
             }
@@ -561,8 +560,8 @@ void TLSSocket::Bind(const OHOS::NetStack::NetAddress &address, const OHOS::NetS
     MakeIpSocket(address.GetSaFamily());
     if (sockFd_ < 0) {
         int resErr = ConvertErrno();
-        NETSTACK_LOGE("make tcp socket failed errno is %{public}d %{public}s", errno, MakeErrnoString(resErr).c_str());
-        CallOnErrorCallback(errno, MakeErrnoString(resErr));
+        NETSTACK_LOGE("make tcp socket failed errno is %{public}d %{public}s", errno, MakeErrnoString().c_str());
+        CallOnErrorCallback(resErr, MakeErrnoString());
         CallBindCallback(false, callback);
         return;
     }
@@ -586,8 +585,8 @@ void TLSSocket::Connect(OHOS::NetStack::TLSConnectOptions &tlsConnectOptions,
 {
     if (sockFd_ < 0) {
         int resErr = ConvertErrno();
-        NETSTACK_LOGE("connect error is %{public}s %{public}d", MakeErrnoString(resErr).c_str(), errno);
-        CallOnErrorCallback(resErr, MakeErrnoString(resErr));
+        NETSTACK_LOGE("connect error is %{public}s %{public}d", MakeErrnoString().c_str(), errno);
+        CallOnErrorCallback(resErr, MakeErrnoString());
         callback(false);
         return;
     }
@@ -612,7 +611,7 @@ void TLSSocket::Send(const OHOS::NetStack::TCPSendOptions &tcpSendOptions, const
     auto res = tlsSocketInternal_.Send(tcpSendOptions.GetData());
     if (!res) {
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
-        CallOnErrorCallback(errno, MakeErrnoString(resErr));
+        CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         CallSendCallback(false, callback);
         return;
     }
@@ -646,9 +645,9 @@ void TLSSocket::Close(const OHOS::NetStack::CloseCallback &callback)
     }
     auto res = tlsSocketInternal_.Close();
     if (!res) {
-        int resErr = ConvertErrno();
-        NETSTACK_LOGE("close error is %{public}s %{public}d", MakeErrnoString(resErr).c_str(), errno);
-        CallOnErrorCallback(resErr, MakeErrnoString(resErr));
+        int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
+        NETSTACK_LOGE("close error is %{public}s %{public}d", MakeSSLErrorString(resErr).c_str(), resErr);
+        CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(false);
         return;
     }
@@ -662,9 +661,9 @@ void TLSSocket::GetRemoteAddress(const OHOS::NetStack::GetRemoteAddressCallback 
     socklen_t len = sizeof(family);
     int ret = getsockname(sockFd_, reinterpret_cast<sockaddr *>(&family), &len);
     if (ret < 0) {
-        NETSTACK_LOGE("getsockname failed errno %{public}d", errno);
-        int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
-        CallOnErrorCallback(errno, MakeErrnoString(resErr));
+        int resErr = ConvertErrno();
+        NETSTACK_LOGE("getsockname failed errno %{public}d", resErr);
+        CallOnErrorCallback(resErr, MakeErrnoString());
         CallGetRemoteAddressCallback(false, {}, callback);
         return;
     }
@@ -683,9 +682,9 @@ void TLSSocket::GetIp4RemoteAddress(const OHOS::NetStack::GetRemoteAddressCallba
 
     int ret = getpeername(sockFd_, reinterpret_cast<sockaddr *>(&addr4), &len4);
     if (ret < 0) {
-        NETSTACK_LOGE("GetIp4RemoteAddress failed errno %{public}d", errno);
-        int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
-        CallOnErrorCallback(errno, MakeErrnoString(resErr));
+        int resErr = ConvertErrno();
+        NETSTACK_LOGE("GetIp4RemoteAddress failed errno %{public}d", resErr);
+        CallOnErrorCallback(resErr, MakeErrnoString());
         CallGetRemoteAddressCallback(false, {}, callback);
         return;
     }
@@ -711,9 +710,9 @@ void TLSSocket::GetIp6RemoteAddress(const OHOS::NetStack::GetRemoteAddressCallba
 
     int ret = getpeername(sockFd_, reinterpret_cast<sockaddr *>(&addr6), &len6);
     if (ret < 0) {
-        NETSTACK_LOGE("GetIp6RemoteAddress failed errno %{public}d", errno);
-        int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
-        CallOnErrorCallback(errno, MakeErrnoString(resErr));
+        int resErr = ConvertErrno();
+        NETSTACK_LOGE("GetIp6RemoteAddress failed errno %{public}d", resErr);
+        CallOnErrorCallback(resErr, MakeErrnoString());
         CallGetRemoteAddressCallback(false, {}, callback);
         return;
     }
@@ -827,16 +826,14 @@ void TLSSocket::SetExtraOptions(const OHOS::NetStack::TCPExtraOptions &tcpExtraO
 {
     if (!SetBaseOptions(tcpExtraOptions)) {
         NETSTACK_LOGE("SetExtraOptions errno %{public}d", errno);
-        int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
-        CallOnErrorCallback(errno, MakeErrnoString(resErr));
+        CallOnErrorCallback(errno, MakeErrnoString());
         CallSetExtraOptionsCallback(false, callback);
         return;
     }
 
     if (!SetExtraOptions(tcpExtraOptions)) {
         NETSTACK_LOGE("SetExtraOptions errno %{public}d", errno);
-        int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
-        CallOnErrorCallback(errno, MakeErrnoString(resErr));
+        CallOnErrorCallback(errno, MakeErrnoString());
         CallSetExtraOptionsCallback(false, callback);
         return;
     }
@@ -849,8 +846,8 @@ void TLSSocket::GetCertificate(const GetCertificateCallback &callback)
     const auto &cert = tlsSocketInternal_.GetCertificate();
     if (cert.empty()) {
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
-        NETSTACK_LOGE("GetCertificate errno %{public}d, %{public}s", errno, MakeErrnoString(resErr).c_str());
-        CallOnErrorCallback(errno, MakeErrnoString(resErr));
+        NETSTACK_LOGE("GetCertificate errno %{public}d, %{public}s", resErr, MakeSSLErrorString(resErr).c_str());
+        CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(false, "");
         return;
     }
@@ -861,9 +858,9 @@ void TLSSocket::GetRemoteCertificate(const GetRemoteCertificateCallback &callbac
 {
     const auto &remoteCert = tlsSocketInternal_.GetRemoteCertificate();
     if (remoteCert.empty()) {
-        NETSTACK_LOGE("GetRemoteCertificate errno %{public}d", errno);
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
-        CallOnErrorCallback(errno, MakeErrnoString(resErr));
+        NETSTACK_LOGE("GetRemoteCertificate errno %{public}d, %{public}s", resErr, MakeSSLErrorString(resErr).c_str());
+        CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(false, "");
         return;
     }
@@ -876,7 +873,7 @@ void TLSSocket::GetProtocol(const GetProtocolCallback &callback)
     if (protocol.empty()) {
         NETSTACK_LOGE("GetProtocol errno %{public}d", errno);
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
-        CallOnErrorCallback(errno, MakeErrnoString(resErr));
+        CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(false, "");
         return;
     }
@@ -889,7 +886,7 @@ void TLSSocket::GetCipherSuite(const GetCipherSuiteCallback &callback)
     if (cipherSuite.empty()) {
         NETSTACK_LOGE("GetCipherSuite errno %{public}d", errno);
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
-        CallOnErrorCallback(errno, MakeErrnoString(resErr));
+        CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(false, cipherSuite);
         return;
     }
@@ -902,7 +899,7 @@ void TLSSocket::GetSignatureAlgorithms(const GetSignatureAlgorithmsCallback &cal
     if (signatureAlgorithms.empty()) {
         NETSTACK_LOGE("GetSignatureAlgorithms errno %{public}d", errno);
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
-        CallOnErrorCallback(errno, MakeErrnoString(resErr));
+        CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(false, {});
         return;
     }
@@ -1023,8 +1020,15 @@ void TLSSocket::TLSSocketInternal::SetTlsConfiguration(const TLSConnectOptions &
 bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
 {
     NETSTACK_LOGD("data to send :%{public}s", data.c_str());
-    int len = 0;
-    len = SSL_write(ssl_, data.c_str(), data.length());
+    if (data.empty()) {
+        NETSTACK_LOGE("data is empty");
+        return false;
+    }
+    if (!ssl_) {
+        NETSTACK_LOGE("ssl is null");
+        return false;
+    }
+    int len = SSL_write(ssl_, data.c_str(), data.length());
     if (len < 0) {
         int resErr = ConvertSSLError(GetSSL());
         NETSTACK_LOGE("data '%{public}s' send failed!The error code is %{public}d, The error message is'%{public}s'",
@@ -1037,6 +1041,7 @@ bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
 int TLSSocket::TLSSocketInternal::Recv(char *buffer, int MAX_BUFFER_SIZE)
 {
     if (!ssl_) {
+        NETSTACK_LOGE("ssl is null");
         return -1;
     }
     return SSL_read(ssl_, buffer, MAX_BUFFER_SIZE);
@@ -1045,7 +1050,7 @@ int TLSSocket::TLSSocketInternal::Recv(char *buffer, int MAX_BUFFER_SIZE)
 bool TLSSocket::TLSSocketInternal::Close()
 {
     if (!ssl_) {
-        NETSTACK_LOGE("ssl in NULL");
+        NETSTACK_LOGE("ssl is null");
         return false;
     }
     int result = SSL_shutdown(ssl_);
@@ -1063,6 +1068,10 @@ bool TLSSocket::TLSSocketInternal::Close()
 
 bool TLSSocket::TLSSocketInternal::SetAlpnProtocols(const std::vector<std::string> &alpnProtocols)
 {
+    if (!ssl_) {
+        NETSTACK_LOGE("ssl is null");
+        return false;
+    }
     size_t len = 0;
     size_t pos = 0;
     for (const auto &str : alpnProtocols) {
@@ -1156,7 +1165,7 @@ std::string TLSSocket::TLSSocketInternal::GetProtocol() const
 bool TLSSocket::TLSSocketInternal::SetSharedSigals()
 {
     if (!ssl_) {
-        NETSTACK_LOGE("ssl_ is null");
+        NETSTACK_LOGE("ssl is null");
         return false;
     }
     int number = SSL_get_shared_sigalgs(ssl_, 0, nullptr, nullptr, nullptr, nullptr, nullptr);
@@ -1402,6 +1411,10 @@ std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::st
 
 bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &options)
 {
+    if (!ssl_) {
+        NETSTACK_LOGE("ssl is null");
+        return false;
+    }
     int result = SSL_connect(ssl_);
     if (result == -1) {
         int errorStatus = ConvertSSLError(ssl_);
@@ -1444,6 +1457,7 @@ bool TLSSocket::TLSSocketInternal::GetRemoteCertificateFromPeer()
         return false;
     }
     BIO *bio = BIO_new(BIO_s_mem());
+    X509_print(bio, peerX509_);
     if (!bio) {
         NETSTACK_LOGE("TlsSocket::SetRemoteCertificate bio is null");
         return false;
