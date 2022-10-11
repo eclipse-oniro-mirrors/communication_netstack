@@ -1394,8 +1394,6 @@ std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::st
         }
     }
     auto [ret, reason] = CheckIpAndDnsName(hostName, dnsNames, ips, x509Certificates);
-    ASN1_OCTET_STRING_free(data);
-    X509_EXTENSION_free(ext);
     if (!ret) {
         return "Hostname/IP does not match certificate's altnames: " + reason;
     }
@@ -1446,7 +1444,6 @@ bool TLSSocket::TLSSocketInternal::GetRemoteCertificateFromPeer()
         return false;
     }
     BIO *bio = BIO_new(BIO_s_mem());
-    X509_print(bio, peerX509_);
     if (!bio) {
         NETSTACK_LOGE("TlsSocket::SetRemoteCertificate bio is null");
         return false;
