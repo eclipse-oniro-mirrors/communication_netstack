@@ -10,15 +10,4 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import("//build/test.gni")
-
-group("fuzztest") {
-  testonly = true
-  deps = []
-
-  deps += [
-    "fuzztest/socketexec_fuzzer:fuzztest",
-    "fuzztest/tls_sockket_fuzzer:fuzztest",
-  ]
-}
+FUZZ
