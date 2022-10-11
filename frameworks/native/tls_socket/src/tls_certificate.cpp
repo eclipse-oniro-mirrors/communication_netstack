@@ -1,32 +1,31 @@
 /*
-* Copyright (c) 2022 Huawei Device Co., Ltd.
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "tls_certificate.h"
 
+#include <cerrno>
 #include <map>
 
 #include <openssl/asn1.h>
 #include <openssl/bn.h>
 #include <openssl/pem.h>
-#include <openssl/x509.h>
 
 #include "netstack_log.h"
 
 namespace OHOS {
 namespace NetStack {
-
 namespace {
 constexpr const char *BIO_FILE_FLAG = "r";
 constexpr const char *FILE_OPEN_FLAG = "rb";
@@ -34,12 +33,10 @@ constexpr const char *CERT_VERSION_FLAG = "V";
 constexpr int FILE_READ_CERT_LEN = 4096;
 } // namespace
 
-TLSCertificate::TLSCertificate(const TLSCertificate &certificate) = default;
-
 TLSCertificate::TLSCertificate(const std::string &data, EncodingFormat format, CertType certType)
 {
     if (data.empty()) {
-        NETSTACK_LOGE("TlsCertificate::TlsCertificate data is empty");
+        NETSTACK_LOGE("The parameter data is empty");
         return;
     }
     switch (format) {
@@ -69,7 +66,7 @@ TLSCertificate::TLSCertificate(const std::string &data, CertType certType)
     }
 }
 
-TLSCertificate &TLSCertificate::operator= (const TLSCertificate &other)
+TLSCertificate &TLSCertificate::operator=(const TLSCertificate &other)
 {
     if (other.x509_ != nullptr) {
         x509_ = X509_new();
@@ -88,19 +85,19 @@ TLSCertificate &TLSCertificate::operator= (const TLSCertificate &other)
 bool TLSCertificate::CertificateFromData(const std::string &data, CertType certType)
 {
     if (data.empty()) {
-        NETSTACK_LOGE("TlsCertificate::CertificateFromData: data is empty");
+        NETSTACK_LOGE("The parameter data is empty");
         return false;
     }
     BIO *bio = BIO_new_mem_buf(data.c_str(), -1);
     if (!bio) {
-        NETSTACK_LOGE("TlsCertificate(const std::string &data, CertType certType) ---");
+        NETSTACK_LOGE("create BIO mem buf failed!");
         return false;
     }
     X509 *x509 = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
     BIO_free(bio);
 
     if (!x509) {
-        NETSTACK_LOGE("--- TlsCertificate::CertificateFromData: x509 is null ---");
+        NETSTACK_LOGE("TlsCertificate::CertificateFromData: x509 is null");
         return false;
     }
 
@@ -141,17 +138,24 @@ bool TLSCertificate::CertificateFromPem(const std::string &data, CertType certTy
 
 bool TLSCertificate::CertificateFromDer(const std::string &data, CertType certType)
 {
-    FILE *fp = nullptr;
-    fp = fopen(data.c_str(), FILE_OPEN_FLAG);
+    if (data.empty()) {
+        NETSTACK_LOGE("The certificate file to be converted is empty");
+        return false;
+    }
+    FILE *fp = fopen(data.c_str(), FILE_OPEN_FLAG);
     if (!fp) {
-        NETSTACK_LOGE("TlsCertificate::CertificateFromDer: Couldn't open %{public}s file for reading", data.c_str());
+        NETSTACK_LOGE("TlsCertificate::CertificateFromDer: Couldn't open file for reading");
         return false;
     }
     unsigned char cert[FILE_READ_CERT_LEN] = {};
-    long certLen = fread(cert, 1, FILE_READ_CERT_LEN, fp);
+    size_t certLen = fread(cert, 1, FILE_READ_CERT_LEN, fp);
     fclose(fp);
-    const auto *cert_data = reinterpret_cast<const unsigned char*>(cert);
-    X509 *x509 = d2i_X509(nullptr, &cert_data, certLen);
+    if (!certLen) {
+        NETSTACK_LOGE("Insufficient size bytes were read");
+        return false;
+    }
+    const auto *cert_data = reinterpret_cast<const unsigned char *>(cert);
+    X509 *x509 = d2i_X509(nullptr, &cert_data, static_cast<long>(certLen));
     if (!x509) {
         NETSTACK_LOGE("TlsCertificate::CertificateFromDer: x509 is null");
         return false;
@@ -168,9 +172,13 @@ bool TLSCertificate::CertificateFromDer(const std::string &data, CertType certTy
 
 bool TLSCertificate::AnalysisCertificate(CertType certType, X509 *x509)
 {
+    if (!x509) {
+        NETSTACK_LOGE("TlsCertificate::AnalysisCertificate: x509 is null");
+        return false;
+    }
     if (certType == CA_CERT) {
         if (!CaCertToString(x509)) {
-            NETSTACK_LOGE("TlsCertificate::AnalysisCertificate: CaCertToString is false");
+            NETSTACK_LOGE("Get CA cert as string failed");
             return false;
         }
     }
@@ -223,13 +231,16 @@ bool TLSCertificate::LocalCertToString(X509 *x509)
         return false;
     }
     BIO *bio = BIO_new(BIO_s_mem());
+    if (!bio) {
+        NETSTACK_LOGE("TlsCertificate::LocalCertToString: bio is null");
+        return false;
+    }
     X509_print(bio, x509);
     char data[FILE_READ_CERT_LEN] = {};
     if (!BIO_read(bio, data, FILE_READ_CERT_LEN)) {
         NETSTACK_LOGE("LocalCertToString BIO_read is false");
     }
     localCertString_ = std::string(data);
-    NETSTACK_LOGI("TlsCertificate::LocalCertToString cert is %{public}s", localCertString_.c_str());
     BIO_free(bio);
     return true;
 }
@@ -253,46 +264,50 @@ bool TLSCertificate::SetSerialNumber(X509 *x509)
         return false;
     }
     ASN1_INTEGER *serial = X509_get_serialNumber(x509);
+    if (!serial) {
+        NETSTACK_LOGE("X509_get_serialNumber is null");
+        return false;
+    }
     if (!serial->length) {
         NETSTACK_LOGE("X509_get_serialNumber length error");
         return false;
     }
-	BIGNUM *bn = ASN1_INTEGER_to_BN(serial, nullptr);
+    BIGNUM *bn = ASN1_INTEGER_to_BN(serial, nullptr);
     if (!bn) {
-	    NETSTACK_LOGE("TlsCertificate::SetSerialNumber: unable to convert ASN1INTEGER to BN");
-	    return false;
+        NETSTACK_LOGE("unable to convert ASN1INTEGER to BN");
+        return false;
     }
-	serialNumber_ = BN_bn2hex(bn);
-	BN_free(bn);
-	return true;
+    serialNumber_ = BN_bn2hex(bn);
+    BN_free(bn);
+    return true;
 }
 
 bool TLSCertificate::SetNotValidTime(X509 *x509)
 {
     if (!x509) {
-        NETSTACK_LOGE("TlsCertificate::SetNotValidTime: x509 is null");
+        NETSTACK_LOGE("x509 is null");
         return false;
     }
     ASN1_TIME *before = X509_get_notBefore(x509);
     if (!before) {
-        NETSTACK_LOGE("TlsCertificate::SetNotValidTime: before is null");
+        NETSTACK_LOGE("before is null");
         return false;
     }
     tm tmBefore = {0};
     if (!ASN1_TIME_to_tm(before, &tmBefore)) {
-        NETSTACK_LOGE("TlsCertificate::SetNotValidTime: ASN1_TIME_to_tm before is false");
+        NETSTACK_LOGE("ASN1_TIME_to_tm before is false");
         return false;
     }
     notValidBefore_ = asctime(&tmBefore);
 
     ASN1_TIME *after = X509_get_notAfter(x509);
     if (!after) {
-        NETSTACK_LOGE("TlsCertificate::SetNotValidTime: after is null");
+        NETSTACK_LOGE("after is null");
         return false;
     }
     tm tmAfter;
     if (!ASN1_TIME_to_tm(after, &tmAfter)) {
-        NETSTACK_LOGE("TlsCertificate::SetNotValidTime: ASN1_TIME_to_tm before is false");
+        NETSTACK_LOGE("ASN1_TIME_to_tm before is false");
         return false;
     }
     notValidAfter_ = asctime(&tmAfter);
@@ -301,10 +316,17 @@ bool TLSCertificate::SetNotValidTime(X509 *x509)
 
 bool TLSCertificate::SetSignatureAlgorithm(X509 *x509)
 {
+    if (!x509) {
+        NETSTACK_LOGE("TLSCertificate::SetSignatureAlgorithm: x509 is null");
+        return false;
+    }
     int signNid = X509_get_signature_nid(x509);
-    const char* sign = OBJ_nid2sn(signNid);
+    const char *sign = OBJ_nid2sn(signNid);
+    if (!sign) {
+        NETSTACK_LOGE("OBJ_nid2sn is null");
+        return false;
+    }
     signatureAlgorithm_ = sign;
-    NETSTACK_LOGD("TlsCertificate::SetSignatureAlgorithm OBJ_nid2sn = %{public}s", signatureAlgorithm_.c_str());
     return true;
 }
 
@@ -314,7 +336,6 @@ std::string TLSCertificate::GetSignatureAlgorithm() const
 }
 std::string TLSCertificate::GetLocalCertString() const
 {
-    NETSTACK_LOGD("TlsCertificate::GetLocalCertString cert is %{public}s", localCertString_.c_str());
     return localCertString_;
 }
 
@@ -322,4 +343,5 @@ Handle TLSCertificate::handle() const
 {
     return Handle(x509_);
 }
-} } // namespace OHOS::NetStack
+} // namespace NetStack
+} // namespace OHOS

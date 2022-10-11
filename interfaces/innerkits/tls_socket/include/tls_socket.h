@@ -34,11 +34,11 @@
 #include "tcp_extra_options.h"
 #include "tcp_send_options.h"
 
-#include "tls_key.h"
+#include "socket_error.h"
 #include "tls_certificate.h"
 #include "tls_configuration.h"
 #include "tls_context.h"
-#include "tls_socket_internal.h"
+#include "tls_key.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -61,9 +61,8 @@ using OnConnectCallback = std::function<void(void)>;
 using OnCloseCallback = std::function<void(void)>;
 using OnErrorCallback = std::function<void(int32_t errorNumber, const std::string &errorString)>;
 
-using CheckServerIdentity =
-        std::function<std::tuple<int32_t, std::string>(const std::string &hostName,
-                                                       const std::vector<std::string> &x509Certificates)>;
+using CheckServerIdentity = std::function<void(
+    const std::string &hostName, const std::vector<std::string> &x509Certificates)>;
 
 static constexpr const char *PROTOCOL_TLS_V12 = "TLSv1.2";
 static constexpr const char *PROTOCOL_TLS_V13 = "TLSv1.3";
@@ -71,128 +70,130 @@ static constexpr const char *PROTOCOL_TLS_V13 = "TLSv1.3";
 static constexpr const char *ALPN_PROTOCOLS_HTTP_1_1 = "http1.1";
 static constexpr const char *ALPN_PROTOCOLS_HTTP_2 = "h2";
 
+static constexpr const size_t MAX_ERR_LEN = 1024;
+
 /**
-* TODO:
-*/
+ * Parameters required during communication
+ */
 class TLSSecureOptions {
 public:
     TLSSecureOptions() = default;
     ~TLSSecureOptions() = default;
 
-    TLSSecureOptions& operator=(const TLSSecureOptions &tlsSecureOptions);
+    TLSSecureOptions &operator=(const TLSSecureOptions &tlsSecureOptions);
     /**
-     * set root CA Chain to verify the server cert
-     * @param caChain root certificate chain to verify the server
+     * Set root CA Chain to verify the server cert
+     * @param caChain root certificate chain used to validate server certificates
      */
     void SetCaChain(const std::vector<std::string> &caChain);
 
     /**
-     * set cert chain to send to server/client for check
-     * @param certChain cert chain to send to server/client for check
+     * Set digital certificate for server verification
+     * @param cert digital certificate sent to the server to verify validity
      */
     void SetCert(const std::string &cert);
 
     /**
-     * set key chain to decrypt server data
-     * @param keyChain key chain to decrypt server data
+     * Set key to decrypt server data
+     * @param keyChain key used to decrypt server data
      */
     void SetKey(const std::string &key);
 
     /**
-     * set cert password
-     * @param passwd creating cert used password
+     * Set the password to read the private key
+     * @param keyPass read the password of the private key
      */
-    void SetPassWd(const std::string &passwd);
+    void SetKeyPass(const std::string &keyPass);
 
     /**
-     * set protocol Chain to encryption data
-     * @param protocolChain protocol Chain to encryption data
+     * Set the protocol used in communication
+     * @param protocolChain protocol version number used
      */
     void SetProtocolChain(const std::vector<std::string> &protocolChain);
 
     /**
-     * set flag use Remote Cipher Prefer
-     * @param useRemoteCipherPrefer is use Remote Cipher Prefer
+     * Whether the peer cipher suite is preferred for communication
+     * @param useRemoteCipherPrefer whether the peer cipher suite is preferred
      */
     void SetUseRemoteCipherPrefer(bool useRemoteCipherPrefer);
 
     /**
-     * set signature Algorithms for encryption/decrypt data
-     * @param signatureAlgorithms signature Algorithms e.g: rsa
+     * Encryption algorithm used in communication
+     * @param signatureAlgorithms encryption algorithm e.g: rsa
      */
     void SetSignatureAlgorithms(const std::string &signatureAlgorithms);
 
     /**
-     * set cipher Suite
-     * @param cipherSuite cipher Suite
+     * Crypto suite used in communication
+     * @param cipherSuite cipher suite e.g:AES256-SHA256
      */
     void SetCipherSuite(const std::string &cipherSuite);
 
     /**
-     * set crl chain for to creat cert chain
-     * @param crlChain crl chain for to creat cert chain TODO::
+     * Set a revoked certificate
+     * @param crlChain certificate Revocation List
      */
     void SetCrlChain(const std::vector<std::string> &crlChain);
 
     /**
-     * get root CA Chain to verify the server cert
-     * @return root CA Chain to verify the server cert
+     * Get root CA Chain to verify the server cert
+     * @return root CA chain
      */
-    [[nodiscard]] const std::vector<std::string>& GetCaChain() const;
+    [[nodiscard]] const std::vector<std::string> &GetCaChain() const;
 
     /**
-     * get cert chain to send to server/client for check
-     * @return cert chain to send to server/client for check
+     * Obtain a certificate to send to the server for checking
+     * @return digital certificate obtained
      */
-    [[nodiscard]] const std::string& GetCert() const;
+    [[nodiscard]] const std::string &GetCert() const;
 
     /**
-     * get key chain to decrypt server data
-     * @return key chain to decrypt server data
+     * Obtain the private key in the communication process
+     * @return private key during communication
      */
-    [[nodiscard]] const std::string& GetKey() const;
+    [[nodiscard]] const std::string &GetKey() const;
 
     /**
-     * get cert creat used password
-     * @return password
+     * Get the password to read the private key
+     * @return read the password of the private key
      */
-    [[nodiscard]] const std::string& GetPasswd() const;
+    [[nodiscard]] const std::string &GetKeyPass() const;
 
     /**
-     * get protocol Chain to encryption data
-     * @return protocol Chain to encryption data
+     * Get the protocol of the communication process
+     * @return protocol of communication process
      */
-    [[nodiscard]] const std::vector<std::string>& GetProtocolChain() const;
+    [[nodiscard]] const std::vector<std::string> &GetProtocolChain() const;
 
     /**
-     * get flag use Remote Cipher Prefer
+     * Is the remote cipher suite being used for communication
      * @return is use Remote Cipher Prefer
      */
     [[nodiscard]] bool UseRemoteCipherPrefer() const;
 
     /**
-     * get signature Algorithms for encryption/decrypt data
-     * @return signature Algorithms for encryption/decrypt data
+     * Obtain the encryption algorithm used in the communication process
+     * @return encryption algorithm used in communication
      */
-    [[nodiscard]] const std::string& GetSignatureAlgorithms() const;
+    [[nodiscard]] const std::string &GetSignatureAlgorithms() const;
 
     /**
-     * get cipher suite
-     * @return cipher suite
+     * Obtain the cipher suite used in communication
+     * @return crypto suite used in communication
      */
-    [[nodiscard]] const std::string& GetCipherSuite() const;
+    [[nodiscard]] const std::string &GetCipherSuite() const;
 
     /**
-     * get crl chain for to creat cert chain
-     * @return crl chain for to creat cert chain
+     * Get revoked certificate chain
+     * @return revoked certificate chain
      */
-    [[nodiscard]] const std::vector<std::string>& GetCrlChain() const;
+    [[nodiscard]] const std::vector<std::string> &GetCrlChain() const;
 
 private:
     std::vector<std::string> caChain_;
     std::string cert_;
     std::string key_;
-    std::string passwd_;
+    std::string keyPass_;
     std::vector<std::string> protocolChain_;
     bool useRemoteCipherPrefer_ = false;
     std::string signatureAlgorithms_;
@@ -201,57 +202,57 @@ private:
 };
 
 /**
- * tls connect options
+ * Some options required during tls connection
  */
 class TLSConnectOptions {
 public:
     /**
-     * Set Net Socket Address
-     * @param address socket address
+     * Communication parameters required for connection establishment
+     * @param address communication parameters during connection
      */
     void SetNetAddress(const NetAddress &address);
 
     /**
-     * Set Tls Secure Options
-     * @param tlsSecureOptions class TLSSecureOptions
+     * Parameters required during communication
+     * @param tlsSecureOptions certificate and other relevant parameters
      */
     void SetTlsSecureOptions(TLSSecureOptions &tlsSecureOptions);
 
     /**
-     * Check Server Identity
-     * @param checkServerIdentity TODO::
+     * Set the callback function to check the validity of the server
+     * @param checkServerIdentity callback function passed in by API caller
      */
     void SetCheckServerIdentity(const CheckServerIdentity &checkServerIdentity);
 
     /**
-     * Set Alpn Protocols
-     * @param alpnProtocols alpn Protocols
+     * Set application layer protocol negotiation
+     * @param alpnProtocols application layer protocol negotiation
      */
     void SetAlpnProtocols(const std::vector<std::string> &alpnProtocols);
 
     /**
-     * Get Net Socket Address
-     * @return net socket address
+     * Obtain the network address of the communication process
+     * @return network address
      */
     [[nodiscard]] NetAddress GetNetAddress() const;
 
     /**
-     * Get TLS Secure Options
-     * @return tls secure options
+     * Obtain the parameters required in the communication process
+     * @return certificate and other relevant parameters
      */
     [[nodiscard]] TLSSecureOptions GetTlsSecureOptions() const;
 
     /**
-     * Check Server Indentity
-     * @return Server Indentity
+     * Get the check server ID callback function passed in by the API caller
+     * @return check the server identity callback function
      */
     [[nodiscard]] CheckServerIdentity GetCheckServerIdentity() const;
 
     /**
-     * Get Alpn Protocols
-     * @return alpn protocols
+     * Obtain the application layer protocol negotiation in the communication process
+     * @return application layer protocol negotiation
      */
-    [[nodiscard]] const std::vector<std::string>& GetAlpnProtocols() const;
+    [[nodiscard]] const std::vector<std::string> &GetAlpnProtocols() const;
 
 private:
     NetAddress address_;
@@ -272,112 +273,111 @@ public:
     TLSSocket &operator=(TLSSocket &&) = delete;
 
     TLSSocket() = default;
-    ~TLSSocket();
+    ~TLSSocket() = default;
 
     /**
-     * Establish Bind Monitor
-     * @param address Ip address
-     * @param callback callback
+     * Create a socket and bind to the address specified by address
+     * @param address ip address
+     * @param callback callback to the caller if bind ok or not
      */
     void Bind(const NetAddress &address, const BindCallback &callback);
 
     /**
-     * Establish connection
-     * @param tlsConnectOptions tls connect options
-     * @param callback callback
+     * Establish a secure connection based on the created socket
+     * @param tlsConnectOptions some options required during tls connection
+     * @param callback callback to the caller if connect ok or not
      */
     void Connect(TLSConnectOptions &tlsConnectOptions, const ConnectCallback &callback);
 
     /**
-     * Send Data
-     * @param tcpSendOptions tcp send options
-     * @param callback callback
+     * Send data based on the created socket
+     * @param tcpSendOptions  some options required during tcp data transmission
+     * @param callback callback to the caller if send ok or not
      */
     void Send(const TCPSendOptions &tcpSendOptions, const SendCallback &callback);
 
     /**
-     * Close
-     * @param callback callback
+     * Disconnect by releasing the socket when communicating
+     * @param callback callback to the caller
      */
     void Close(const CloseCallback &callback);
 
     /**
-     * Get Remote Address
-     * @param callback callback
+     * Get the peer network address
+     * @param callback callback to the caller
      */
     void GetRemoteAddress(const GetRemoteAddressCallback &callback);
 
     /**
-     * Get Tls State
-     * @param callback callback state data
+     * Get the status of the current socket
+     * @param callback callback to the caller
      */
     void GetState(const GetStateCallback &callback);
 
     /**
-     * Set Extra Options
-     * @param tcpExtraOptions tcp extra options
-     * @param callback callback extra options
+     * Gets or sets the options associated with the current socket
+     * @param tcpExtraOptions options associated with the current socket
+     * @param callback callback to the caller
      */
     void SetExtraOptions(const TCPExtraOptions &tcpExtraOptions, const SetExtraOptionsCallback &callback);
 
     /**
-     * Get Certificate
-     * @param callback callback certificate
+     *  Get a local digital certificate
+     * @param callback callback to the caller
      */
     void GetCertificate(const GetCertificateCallback &callback);
 
     /**
-     * Get Remote Certificate
+     * Get the peer digital certificate
      * @param needChain need chain
-     * @param callback callback get remote certificate
+     * @param callback callback to the caller
      */
     void GetRemoteCertificate(const GetRemoteCertificateCallback &callback);
 
     /**
-     * Get Protocol
-     * @param callback callback protocol
+     * Obtain the protocol used in communication
+     * @param callback callback to the caller
      */
     void GetProtocol(const GetProtocolCallback &callback);
 
     /**
-     * Get Cipher Suite
-     * @param callback callback cipher suite
+     * Obtain the cipher suite used in communication
+     * @param callback callback to the caller
      */
     void GetCipherSuite(const GetCipherSuiteCallback &callback);
 
     /**
-     * Get Signature Algorithms
-     * @param callback callback signature algorithms
+     * Obtain the encryption algorithm used in the communication process
+     * @param callback callback to the caller
      */
     void GetSignatureAlgorithms(const GetSignatureAlgorithmsCallback &callback);
 
     /**
-     * On Message
-     * @param onMessageCallback callback on message
+     * Register a callback which is called when message is received
+     * @param onMessageCallback callback which is called when message is received
      */
     void OnMessage(const OnMessageCallback &onMessageCallback);
 
     /**
-     * On Connect
-     * @param onConnectCallback callback on connect
+     * Register the callback that is called when the connection is established
+     * @param onConnectCallback callback invoked when connection is established
      */
     void OnConnect(const OnConnectCallback &onConnectCallback);
 
     /**
-     * On Close
-     * @param onCloseCallback callback on close
+     * Register the callback that is called when the connection is disconnected
+     * @param onCloseCallback callback invoked when disconnected
      */
     void OnClose(const OnCloseCallback &onCloseCallback);
 
     /**
-     * On Error
-     * @param onErrorCallback callback on error
+     * Register the callback that is called when an error occurs
+     * @param onErrorCallback callback invoked when an error occurs
      */
     void OnError(const OnErrorCallback &onErrorCallback);
 
     /**
-     * On Error
-     * @param onErrorCallback callback on error
+     * Unregister the callback which is called when message is received
      */
     void OffMessage();
 
@@ -397,39 +397,161 @@ public:
     void OffError();
 
 private:
-    class OpenSSLContext {
+    class TLSSocketInternal final {
     public:
+        TLSSocketInternal() = default;
+        ~TLSSocketInternal() = default;
+
+        /**
+         * Establish an encrypted connection on the specified socket
+         * @param sock socket for establishing encrypted connection
+         * @param options some options required during tls connection
+         * @return whether the encrypted connection is successfully established
+         */
+        bool TlsConnectToHost(int sock, const TLSConnectOptions &options);
+
+        /**
+         * Set the configuration items for establishing encrypted connections
+         * @param config configuration item when establishing encrypted connection
+         */
+        void SetTlsConfiguration(const TLSConnectOptions &config);
+
+        /**
+         * Send data through an established encrypted connection
+         * @param data data sent over an established encrypted connection
+         * @return whether the data is successfully sent to the server
+         */
+        bool Send(const std::string &data);
+
+        /**
+         * Receive the data sent by the server through the established encrypted connection
+         * @param buffer receive the data sent by the server
+         * @param MAX_BUFFER_SIZE the size of the data received from the server
+         * @return whether the data sent by the server is successfully received
+         */
+        int Recv(char *buffer, int MAX_BUFFER_SIZE);
+
+        /**
+         * Disconnect encrypted connection
+         * @return whether the encrypted connection was successfully disconnected
+         */
+        bool Close();
+
+        /**
+         * Set the application layer negotiation protocol in the encrypted communication process
+         * @param alpnProtocols application layer negotiation protocol
+         * @return set whether the application layer negotiation protocol is successful during encrypted communication
+         */
+        bool SetAlpnProtocols(const std::vector<std::string> &alpnProtocols);
+
+        /**
+         * Storage of server communication related network information
+         * @param remoteInfo communication related network information
+         */
+        void MakeRemoteInfo(SocketRemoteInfo &remoteInfo);
+
+        /**
+         * Get configuration options for encrypted communication process
+         * @return configuration options for encrypted communication processes
+         */
+        [[nodiscard]] TLSConfiguration GetTlsConfiguration() const;
+
+        /**
+         * Obtain the cipher suite during encrypted communication
+         * @return crypto suite used in encrypted communication
+         */
+        [[nodiscard]] std::vector<std::string> GetCipherSuite() const;
+
+        /**
+         * Obtain the peer certificate used in encrypted communication
+         * @return peer certificate used in encrypted communication
+         */
+        [[nodiscard]] std::string GetRemoteCertificate() const;
+
+        /**
+         * Obtain the certificate used in encrypted communication
+         * @return certificates used in encrypted communication
+         */
+        [[nodiscard]] std::string GetCertificate() const;
+
+        /**
+         * Get the encryption algorithm used in encrypted communication
+         * @return encryption algorithm used in encrypted communication
+         */
+        [[nodiscard]] std::vector<std::string> GetSignatureAlgorithms() const;
+
+        /**
+         * Obtain the communication protocol used in encrypted communication
+         * @return communication protocol used in encrypted communication
+         */
+        [[nodiscard]] std::string GetProtocol() const;
+
+        /**
+         * Set the information about the shared signature algorithm supported by peers during encrypted communication
+         * @return information about peer supported shared signature algorithms
+         */
+        [[nodiscard]] bool SetSharedSigals();
+
+        /**
+         * Obtain the ssl used in encrypted communication
+         * @return SSL used in encrypted communication
+         */
+        [[nodiscard]] ssl_st *GetSSL() const;
+
+    private:
+        bool StartTlsConnected(const TLSConnectOptions &options);
+        bool CreatTlsContext();
+        bool StartShakingHands(const TLSConnectOptions &options);
+        bool GetRemoteCertificateFromPeer();
+        std::string CheckServerIdentityLegal(const std::string &hostName, const X509 *x509Certificates);
+
+    private:
+        ssl_st *ssl_ = nullptr;
+        X509 *peerX509_ = nullptr;
+        uint16_t port_ = 0;
+        sa_family_t family_ = 0;
+        int32_t socketDescriptor_ = 0;
+
         TLSContext tlsContext_;
-        TLSConfiguration tlsConfiguration_;
-        TLSCertificate tlsCertificate_;
-        TLSKey tlsKey_;
-        TLSSocketInternal tlsSocketInternal_;
+        TLSConfiguration configuration_;
+        NetAddress address_;
+
+        std::string hostName_;
+        std::string remoteCert_;
+        std::string keyPass_;
+
+        std::vector<std::string> signatureAlgorithms_;
+        std::unique_ptr<TLSContext> tlsContextPointer_ = nullptr;
     };
-    OpenSSLContext openSslContext_;
-    static std::string MakeErrnoString();
+
+private:
+    TLSSocketInternal tlsSocketInternal_;
 
     static std::string MakeAddressString(sockaddr *addr);
 
-    static void
-        GetAddr(const NetAddress &address, sockaddr_in *addr4, sockaddr_in6 *addr6, sockaddr **addr, socklen_t *len);
+    static void GetAddr(const NetAddress &address, sockaddr_in *addr4, sockaddr_in6 *addr6, sockaddr **addr,
+                        socklen_t *len);
 
     void CallOnMessageCallback(const std::string &data, const SocketRemoteInfo &remoteInfo);
     void CallOnConnectCallback();
     void CallOnCloseCallback();
     void CallOnErrorCallback(int32_t err, const std::string &errString);
 
-    void CallBindCallback(bool ok, const BindCallback &callback);
-    void CallConnectCallback(bool ok, const ConnectCallback &callback);
-    void CallSendCallback(bool ok, const SendCallback &callback);
-    void CallCloseCallback(bool ok, const CloseCallback &callback);
-    void CallGetRemoteAddressCallback(bool ok, const NetAddress &address, const GetRemoteAddressCallback &callback);
-    void CallGetStateCallback(bool ok, const SocketStateBase &state, const GetStateCallback &callback);
-    void CallSetExtraOptionsCallback(bool ok, const SetExtraOptionsCallback &callback);
-    void CallGetCertificateCallback(bool ok, const std::string &cert);
-    void CallGetRemoteCertificateCallback(bool ok, const std::string &cert);
-    void CallGetProtocolCallback(bool ok, const std::string &protocol);
-    void CallGetCipherSuiteCallback(bool ok, const std::vector<std::string> &suite);
-    void CallGetSignatureAlgorithmsCallback(bool ok, const std::vector<std::string>& algorithms);
+    void CallBindCallback(bool ok, BindCallback callback);
+    void CallConnectCallback(bool ok, ConnectCallback callback);
+    void CallSendCallback(bool ok, SendCallback callback);
+    void CallCloseCallback(bool ok, CloseCallback callback);
+    void CallGetRemoteAddressCallback(bool ok, const NetAddress &address, GetRemoteAddressCallback callback);
+    void CallGetStateCallback(bool ok, const SocketStateBase &state, GetStateCallback callback);
+    void CallSetExtraOptionsCallback(bool ok, SetExtraOptionsCallback callback);
+    void CallGetCertificateCallback(bool ok, const std::string &cert, GetCertificateCallback callback);
+    void CallGetRemoteCertificateCallback(bool ok, const std::string &cert,
+                                          GetRemoteCertificateCallback callback);
+    void CallGetProtocolCallback(bool ok, const std::string &protocol, GetProtocolCallback callback);
+    void CallGetCipherSuiteCallback(bool ok, const std::vector<std::string> &suite,
+                                    GetCipherSuiteCallback callback);
+    void CallGetSignatureAlgorithmsCallback(bool ok, const std::vector<std::string> &algorithms,
+                                            GetSignatureAlgorithmsCallback callback);
 
     void StartReadMessage();
 
@@ -439,7 +561,7 @@ private:
     [[nodiscard]] bool SetBaseOptions(const ExtraOptionsBase &option) const;
     [[nodiscard]] bool SetExtraOptions(const TCPExtraOptions &option) const;
 
-    void MakeTcpSocket(sa_family_t family);
+    void MakeIpSocket(sa_family_t family);
 
     static constexpr const size_t MAX_ERROR_LEN = 128;
     static constexpr const size_t MAX_BUFFER_SIZE = 8192;
@@ -468,6 +590,7 @@ private:
 
     int sockFd_ = -1;
 };
-} } // namespace OHOS::NetStack
+} // namespace NetStack
+} // namespace OHOS
 
 #endif // COMMUNICATIONNETSTACK_TLS_SOCEKT_H

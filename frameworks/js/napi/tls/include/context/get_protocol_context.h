@@ -27,7 +27,7 @@
 
 namespace OHOS {
 namespace NetStack {
-class GetProtocolContext final :public BaseContext {
+class GetProtocolContext final : public BaseContext {
 public:
     DISALLOW_COPY_AND_MOVE(GetProtocolContext);
 
@@ -35,7 +35,7 @@ public:
     explicit GetProtocolContext(napi_env env, EventManager *manager);
 
     std::string protocol_;
-    bool ok_ = false;
+    bool isOk_ = false;
 
     void ParseParams(napi_value *params, size_t paramsCount);
 

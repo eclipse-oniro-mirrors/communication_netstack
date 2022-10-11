@@ -35,13 +35,12 @@ public:
     explicit GetCertificateContext(napi_env env, EventManager *manager);
 
     std::string cert_;
-    bool ok_ = false;
+    bool isOk_ = false;
 
     void ParseParams(napi_value *params, size_t paramsCount);
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
-
 };
 } // namespace NetStack
 } // namespace OHOS

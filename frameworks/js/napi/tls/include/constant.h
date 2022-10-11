@@ -40,5 +40,5 @@ enum {
     ARG_INDEX_3,
 };
 } // namespace NetStack
-} //namespace OHOS
+} // namespace OHOS
 #endif // TLS_CONSTANT_H

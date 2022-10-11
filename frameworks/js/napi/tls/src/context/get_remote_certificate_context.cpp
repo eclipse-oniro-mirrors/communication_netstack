@@ -22,7 +22,9 @@
 namespace OHOS {
 namespace NetStack {
 GetRemoteCertificateContext::GetRemoteCertificateContext(napi_env env, EventManager *manager)
-    : BaseContext(env, manager) {}
+    : BaseContext(env, manager)
+{
+}
 
 void GetRemoteCertificateContext::ParseParams(napi_value *params, size_t paramsCount)
 {

@@ -1,31 +1,30 @@
 /*
-* Copyright (c) 2022 Huawei Device Co., Ltd.
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "tls_configuration.h"
 
 #include <openssl/x509.h>
+
 #include "tls.h"
 #include "tls_key.h"
-#include "netstack_log.h"
 
 namespace OHOS {
 namespace NetStack {
-
 namespace {
-constexpr const char *TLS_1_3 = "TlsV1_3";
-constexpr const char *TLS_1_2 = "TlsV1_2";
+constexpr const char *TLS_1_3 = "TLSv1.3";
+constexpr const char *TLS_1_2 = "TLSv1.2";
 } // namespace
 
 TLSConfiguration::TLSConfiguration(const TLSConfiguration &other)
@@ -33,14 +32,14 @@ TLSConfiguration::TLSConfiguration(const TLSConfiguration &other)
     privateKey_ = other.privateKey_;
 }
 
-const TLSKey& TLSConfiguration::PrivateKey() const
+const TLSKey &TLSConfiguration::PrivateKey() const
 {
     return privateKey_;
 }
 
 TLSConfiguration &TLSConfiguration::operator=(const TLSConfiguration &other)
 {
-    privateKey_= other.privateKey_;
+    privateKey_ = other.privateKey_;
     localCertificate_ = other.localCertificate_;
     caCertificate_ = other.caCertificate_;
     minProtocol_ = other.minProtocol_;
@@ -64,9 +63,9 @@ void TLSConfiguration::SetPrivateKey(const TLSKey &key)
     privateKey_ = key;
 }
 
-void TLSConfiguration::SetPrivateKey(const std::string &key, const std::string &passwd)
+void TLSConfiguration::SetPrivateKey(const std::string &key, const std::string &keyPass)
 {
-    TLSKey pkey(key, ALGORITHM_RSA, passwd);
+    TLSKey pkey(key, ALGORITHM_RSA, keyPass);
     privateKey_ = pkey;
 }
 
@@ -101,6 +100,7 @@ void TLSConfiguration::SetProtocol(const std::vector<std::string> &Protocol)
     if (!isTls1_2) {
         minProtocol_ = TLS_V1_3;
     }
+    protocol_ = maxProtocol_;
 }
 
 TLSProtocol TLSConfiguration::GetMinProtocol() const
@@ -143,6 +143,11 @@ void TLSConfiguration::SetSignatureAlgorithms(const std::string &signatureAlgori
     signatureAlgorithms_ = signatureAlgorithms;
 }
 
+std::string TLSConfiguration::GetSignatureAlgorithms() const
+{
+    return signatureAlgorithms_;
+}
+
 void TLSConfiguration::SetUseRemoteCipherPrefer(bool useRemoteCipherPrefer)
 {
     useRemoteCipherPrefer_ = useRemoteCipherPrefer;
@@ -167,6 +172,5 @@ TLSKey TLSConfiguration::GetPrivateKey() const
 {
     return privateKey_;
 }
-
-TLSConfiguration::TLSConfiguration() = default;
-} } // namespace OHOS::NetStack
+} // namespace NetStack
+} // namespace OHOS

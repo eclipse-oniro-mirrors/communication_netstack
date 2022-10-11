@@ -62,5 +62,5 @@ bool SendContext::CheckParamsType(napi_value *params, size_t paramsCount)
     }
     return false;
 }
-}
-}
+} // namespace NetStack
+} // namespace OHOS

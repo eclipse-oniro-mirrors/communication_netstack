@@ -28,14 +28,14 @@
 namespace OHOS {
 namespace NetStack {
 class GetRemoteCertificateContext final : public BaseContext {
-public: 
+public:
     DISALLOW_COPY_AND_MOVE(GetRemoteCertificateContext);
 
     GetRemoteCertificateContext() = delete;
     explicit GetRemoteCertificateContext(napi_env env, EventManager *manager);
 
     bool needChain_ = false;
-    bool ok_ = false;
+    bool isOk_ = false;
     std::string remoteCert_;
 
     void ParseParams(napi_value *params, size_t paramsCount);

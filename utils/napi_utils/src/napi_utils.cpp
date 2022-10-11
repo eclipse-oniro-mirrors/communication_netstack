@@ -30,7 +30,7 @@
 #include "base_context.h"
 
 namespace OHOS::NetStack::NapiUtils {
-static constexpr const int MAX_STRING_LENGTH = 5 * 1024 * 1024;
+static constexpr const int MAX_STRING_LENGTH = 65536;
 
 static constexpr const char *GLOBAL_JSON = "JSON";
 
@@ -402,7 +402,6 @@ napi_value GetArrayElement(napi_env env, napi_value arr, uint32_t index)
     NAPI_CALL(env, napi_get_element(env, arr, index, &elementValue));
     return elementValue;
 }
-
 
 /* JSON */
 napi_value JsonStringify(napi_env env, napi_value object)

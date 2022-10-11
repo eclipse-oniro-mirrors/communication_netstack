@@ -14,8 +14,38 @@
 import("//build/ohos.gni")
 import("//foundation/communication/netstack/netstack_config.gni")
 
+TLS = "$NETSTACK_NATIVE_ROOT/tls_socket"
+TLS_NAPI = "$NETSTACK_DIR/frameworks/js/napi/tls"
+
+tls_sources = [
+  "$TLS/src/tls_certificate.cpp",
+  "$TLS/src/tls_configuration.cpp",
+  "$TLS/src/tls_context.cpp",
+  "$TLS/src/tls_key.cpp",
+  "$TLS/src/tls_socket.cpp",
+]
+
+tls_napi_sources = [
+  "$TLS_NAPI/src/context/get_certificate_context.cpp",
+  "$TLS_NAPI/src/context/get_cipher_suites_context.cpp",
+  "$TLS_NAPI/src/context/get_protocol_context.cpp",
+  "$TLS_NAPI/src/context/get_remote_certificate_context.cpp",
+  "$TLS_NAPI/src/context/get_signature_algorithms_context.cpp",
+  "$TLS_NAPI/src/context/send_context.cpp",
+  "$TLS_NAPI/src/context/tls_close_context.cpp",
+  "$TLS_NAPI/src/context/tls_connect_context.cpp",
+  "$TLS_NAPI/src/monitor.cpp",
+  "$TLS_NAPI/src/tlssocket_async_work.cpp",
+  "$TLS_NAPI/src/tlssocket_exec.cpp",
+  "$TLS_NAPI/src/tlssocket_module.cpp",
+]
+
 ohos_shared_library("socket") {
   include_dirs = [
+    "$TLS/include",
+    "$TLS_NAPI/include",
+    "$TLS_NAPI/include/context",
+    "$NETSTACK_INNERKITS_DIR/tls_socket/include",
     "async_context/include",
     "async_work/include",
     "constant/include",
@@ -46,8 +76,15 @@ ohos_shared_library("socket") {
     "socket_exec/src/socket_exec.cpp",
     "socket_module/src/socket_module.cpp",
   ]
+  sources += tls_sources
+  sources += tls_napi_sources
 
-  deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
+  deps = [
+    "$NETSTACK_DIR/utils:stack_utils_common",
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "//third_party/openssl:libcrypto_shared",
+    "//third_party/openssl:libssl_shared",
+  ]
 
   external_deps = [
     "c_utils:utils",

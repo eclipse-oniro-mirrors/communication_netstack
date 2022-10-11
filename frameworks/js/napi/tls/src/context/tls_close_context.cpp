@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "close_context.h"
+#include "tls_close_context.h"
 
 #include "constant.h"
 #include "napi_utils.h"
@@ -21,9 +21,9 @@
 
 namespace OHOS {
 namespace NetStack {
-CloseContext::CloseContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
+TLSCloseContext::TLSCloseContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
-void CloseContext::ParseParams(napi_value *params, size_t paramsCount)
+void TLSCloseContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     if (!CheckParamsType(params, paramsCount)) {
         return;
@@ -35,7 +35,7 @@ void CloseContext::ParseParams(napi_value *params, size_t paramsCount)
     SetParseOK(true);
 }
 
-bool CloseContext::CheckParamsType(napi_value *params, size_t paramsCount)
+bool TLSCloseContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
     if (paramsCount == PARAM_NONE) {
         return true;

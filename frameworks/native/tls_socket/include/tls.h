@@ -1,104 +1,28 @@
 /*
-* Copyright (c) 2022 Huawei Device Co., Ltd.
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-#ifndef COMMUNICATIONNETSTACK_TLS_H
-#define COMMUNICATIONNETSTACK_TLS_H
+#ifndef COMMUNICATION_NETSTACK_TLS_H
+#define COMMUNICATION_NETSTACK_TLS_H
 
-#include <vector>
+#include <string>
+
 #include "net_address.h"
 
 namespace OHOS {
 namespace NetStack {
-
 using Handle = void *;
-constexpr int MAX_BUF_LEN = 1024;
-
-class TlsSecureOptions {
-public:
-
-    TlsSecureOptions();
-
-    ~TlsSecureOptions() = default;
-
-    void SetCa(const std::vector<std::string> &ca);
-
-    void SetCert(const std::string &cert);
-
-    void SetKey(const std::string &key);
-
-    void SetPasswd(const std::string &passwd);
-
-    void SetProtocol(const std::vector<std::string> &Protocol);
-
-    void SetUseRemoteCipherPrefer(bool useRemoteCipherPrefer);
-
-    void SetSignatureAlgorithms(const std::string &signatureAlgorithms);
-
-    void SetCipherSuite(const std::string &cipherSuite);
-
-    void SetCrl(const std::vector<std::string> &crl);
-
-    [[nodiscard]] std::vector<std::string> GetCa() const;
-
-    [[nodiscard]] std::string GetCert() const;
-
-    [[nodiscard]] std::string GetKey() const;
-
-    [[nodiscard]] std::vector<std::string> GetProtocol() const;
-
-    [[nodiscard]] std::vector<std::string> GetCrl() const;
-
-    [[nodiscard]] std::string GetPasswd() const;
-
-    [[nodiscard]] std::string GetSignatureAlgorithms() const;
-
-    [[nodiscard]] std::string GetCipherSuite() const;
-
-    [[nodiscard]] bool GetUseRemoteCipherPrefer() const;
-
-private:
-    std::vector<std::string> caChain_;
-    std::string cert_;
-    std::string key_;
-    std::string passwd_;
-    std::vector<std::string> protocolChain_;
-    bool useRemoteCipherPrefer_ = false;
-    std::string signatureAlgorithms_;
-    std::string cipherSuite_;
-    std::vector<std::string> crlChain_;
-};
-
-class TlsConnectOptions {
-public:
-    void SetAddress(const NetAddress &address);
-
-    void SetSecureOptions(const TlsSecureOptions &secureOptions);
-
-    void SetAlpnProtocols(const std::vector<std::string> &alpnProtocols);
-
-    NetAddress GetAddress();
-
-    TlsSecureOptions GetTlsSecureOptions();
-
-    std::vector<std::string> GetAlpnProtocols();
-
-private:
-    NetAddress address_;
-    TlsSecureOptions secureOptions_;
-    std::vector<std::string> alpnProtocols_;
-};
 
 struct CipherSuite {
     unsigned long cipherId_;
@@ -210,5 +134,6 @@ enum class Cipher {
     AES_192_CBC,
     AES_256_CBC
 };
-} } // namespace OHOS::NetStack
-#endif // COMMUNICATIONNETSTACK_TLS_H
+} // namespace NetStack
+} // namespace OHOS
+#endif // COMMUNICATION_NETSTACK_TLS_H
