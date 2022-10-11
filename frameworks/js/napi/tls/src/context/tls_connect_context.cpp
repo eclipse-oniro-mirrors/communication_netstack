@@ -26,7 +26,6 @@
 namespace OHOS {
 namespace NetStack {
 namespace {
-static constexpr const char *CHECK_SERVER_IDENTITY = "checkServerIdentity";
 static constexpr const char *ALPN_PROTOCOLS = "ALPNProtocols";
 static constexpr const char *SECURE_OPTIONS = "secureOptions";
 static constexpr const char *CA_NAME = "ca";
@@ -47,14 +46,20 @@ bool ReadNecessaryOptions(napi_env env, napi_value *params, napi_value secureOpt
     if (!NapiUtils::HasNamedProperty(env, secureOptions, CA_NAME)) {
         return false;
     }
-    napi_value caVector = NapiUtils::GetNamedProperty(env, secureOptions, CA_NAME);
-    uint32_t arrayLong = NapiUtils::GetArrayLength(env, caVector);
-    napi_value element = nullptr;
+    napi_value caCert = NapiUtils::GetNamedProperty(env, secureOptions, CA_NAME);
     std::vector<std::string> caVec;
-    for (uint32_t i = 0; i < arrayLong; i++) {
-        element = NapiUtils::GetArrayElement(env, caVector, i);
-        std::string ca = NapiUtils::GetStringFromValueUtf8(env, element);
+    if (NapiUtils::GetValueType(env, caCert) == napi_string) {
+        std::string ca = NapiUtils::GetStringPropertyUtf8(env, secureOptions, CA_NAME);
         caVec.push_back(ca);
+    }
+    if (NapiUtils::GetValueType(env, caCert) == napi_object) {
+        uint32_t arrayLong = NapiUtils::GetArrayLength(env, caCert);
+        napi_value element = nullptr;
+        for (uint32_t i = 0; i < arrayLong; i++) {
+            element = NapiUtils::GetArrayElement(env, caCert, i);
+            std::string ca = NapiUtils::GetStringFromValueUtf8(env, element);
+            caVec.push_back(ca);
+        }
     }
     secureOption.SetCaChain(caVec);
 
@@ -119,11 +124,6 @@ TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_va
     TLSSecureOptions secureOption = ReadTLSSecureOptions(GetEnv(), params);
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
-
-    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], CHECK_SERVER_IDENTITY)) {
-        napi_value checkServerIdentity = NapiUtils::GetNamedProperty(GetEnv(), params[0], CHECK_SERVER_IDENTITY);
-        napi_create_reference(GetEnv(), checkServerIdentity, 1, &checkCallback_);
-    }
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], ALPN_PROTOCOLS)) {
         napi_value alpnProtocols = NapiUtils::GetNamedProperty(GetEnv(), params[0], ALPN_PROTOCOLS);
         uint32_t arrayLength = NapiUtils::GetArrayLength(GetEnv(), alpnProtocols);

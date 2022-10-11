@@ -19,7 +19,6 @@
 #include <vector>
 
 #include <napi/native_api.h>
-#include <uv.h>
 
 #include "context_key.h"
 #include "event_list.h"
@@ -29,41 +28,6 @@
 
 namespace OHOS {
 namespace NetStack {
-namespace {
-constexpr int ARGN_LEN = 2;
-constexpr int CALL_FUNCTION_NUM = 2;
-
-void CheckServerIdentityCallback(uv_work_t *work, int status)
-{
-    NETSTACK_LOGD("checkServerIdentity callback");
-    (void)status;
-    if (work == nullptr) {
-        NETSTACK_LOGE("work is nullptr");
-        return;
-    }
-    auto context = reinterpret_cast<TLSConnectContext *>(work->data);
-    if (context == nullptr) {
-        NETSTACK_LOGE("context is nullptr");
-        delete work;
-        return;
-    }
-    napi_handle_scope scope = NapiUtils::OpenScope(context->GetEnv());
-    napi_value hostName = NapiUtils::CreateStringUtf8(context->GetEnv(), context->hostName_);
-    napi_value x509Certificate = NapiUtils::CreateArray(context->GetEnv(), context->x509Certificates_.size());
-    uint32_t index = 0;
-    for (const auto &cert : context->x509Certificates_) {
-        napi_value x509Cert = NapiUtils::CreateStringUtf8(context->GetEnv(), cert);
-        NapiUtils::SetArrayElement(context->GetEnv(), x509Certificate, index++, x509Cert);
-    }
-    napi_value argv[ARGN_LEN] = {hostName, x509Certificate};
-    napi_value func = NapiUtils::GetReference(context->GetEnv(), context->checkCallback_);
-    NapiUtils::CallFunction(context->GetEnv(), NapiUtils::GetUndefined(context->GetEnv()), func, CALL_FUNCTION_NUM,
-                            argv);
-    NapiUtils::CloseScope(context->GetEnv(), scope);
-    delete work;
-}
-} // namespace
-
 bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
 {
     auto manager = context->GetManager();
@@ -94,15 +58,6 @@ bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecConnect tlsSocket is null");
         return false;
-    }
-    if (context->checkCallback_ != nullptr) {
-        context->connectOptions_.SetCheckServerIdentity(
-            [&context](const std::string &hostName, const std::vector<std::string> &x509Certificates) {
-                context->hostName_ = hostName;
-                context->x509Certificates_ = x509Certificates;
-                NapiUtils::CreateUvQueueWork(context->GetEnv(), reinterpret_cast<void *>(context),
-                                             CheckServerIdentityCallback);
-            });
     }
     tlsSocket->Connect(context->connectOptions_, [&context](bool isOk) { context->isOk_ = isOk; });
     if (!context->isOk_) {
@@ -202,10 +157,11 @@ bool TLSSocketExec::ExecSend(SendContext *context)
     }
     TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(context->data_);
-    tlsSocket->Send(tcpSendOptions, [](bool isOk) {
+    tlsSocket->Send(tcpSendOptions, [&context](bool isOk) {
         if (!isOk) {
             NETSTACK_LOGE("send data is failed");
         }
+        context->isOk_ = isOk;
     });
     return context->isOk_;
 }
@@ -353,12 +309,12 @@ napi_value TLSSocketExec::GetSignatureAlgorithmsCallback(GetSignatureAlgorithmsC
 
 napi_value TLSSocketExec::SendCallback(SendContext *context)
 {
-    return NapiUtils::GetBoolean(context->GetEnv(), true);
+    return NapiUtils::GetUndefined(context->GetEnv());
 }
 
 napi_value TLSSocketExec::CloseCallback(TLSCloseContext *context)
 {
-    return NapiUtils::GetBoolean(context->GetEnv(), true);
+    return NapiUtils::GetUndefined(context->GetEnv());
 }
 
 napi_value TLSSocketExec::BindCallback(BindContext *context)

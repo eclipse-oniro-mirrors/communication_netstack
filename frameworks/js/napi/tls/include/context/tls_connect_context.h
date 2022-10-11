@@ -37,7 +37,6 @@ public:
 
     TLSConnectOptions connectOptions_;
     bool isOk_ = false;
-    napi_ref checkCallback_;
     std::string hostName_;
     std::vector<std::string> x509Certificates_;
 
