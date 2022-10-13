@@ -24,13 +24,14 @@
 #include <string>
 #include <vector>
 
+#include "securec.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 #include "node_api.h"
 #include "base_context.h"
 
 namespace OHOS::NetStack::NapiUtils {
-static constexpr const int MAX_STRING_LENGTH = 65536;
+static constexpr const int MAX_STRING_LENGTH = 5 * 1024 * 1024;
 
 static constexpr const char *GLOBAL_JSON = "JSON";
 
@@ -202,11 +203,13 @@ std::string GetStringFromValueUtf8(napi_env env, napi_value value)
     }
 
     std::string result;
-    char str[MAX_STRING_LENGTH] = {0};
+    auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
+    std::unique_ptr<char, decltype(deleter)> str(static_cast<char *>(malloc(MAX_STRING_LENGTH)), deleter);
+    (void)memset_s(str.get(), MAX_STRING_LENGTH, 0, MAX_STRING_LENGTH);
     size_t length = 0;
-    NAPI_CALL_BASE(env, napi_get_value_string_utf8(env, value, str, MAX_STRING_LENGTH, &length), result);
+    NAPI_CALL_BASE(env, napi_get_value_string_utf8(env, value, str.get(), MAX_STRING_LENGTH, &length), result);
     if (length > 0) {
-        return result.append(str, length);
+        return result.append(str.get(), length);
     }
     return result;
 }
