@@ -71,7 +71,7 @@ napi_value TLSSocketModuleExports::TLSSocket::Connect(napi_env env, napi_callbac
 
 napi_value TLSSocketModuleExports::TLSSocket::GetCipherSuites(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<GetCipherSuitesContext>(env, info, FUNCTION_GET_CIPHER_SUITES, nullptr,
+    return ModuleTemplate::Interface<GetCipherSuitesContext>(env, info, FUNCTION_GET_CIPHER_SUITE, nullptr,
                                                              TLSSocketAsyncWork::ExecGetCipherSuites,
                                                              TLSSocketAsyncWork::GetCipherSuitesCallback);
 }
@@ -147,7 +147,7 @@ void TLSSocketModuleExports::DefineTLSSocketClass(napi_env env, napi_value expor
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_GET_SIGNATURE_ALGORITHMS, TLSSocket::GetSignatureAlgorithms),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_GET_PROTOCOL, TLSSocket::GetProtocol),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_CONNECT, TLSSocket::Connect),
-        DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_GET_CIPHER_SUITES, TLSSocket::GetCipherSuites),
+        DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_GET_CIPHER_SUITE, TLSSocket::GetCipherSuites),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_SEND, TLSSocket::Send),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_CLOSE, TLSSocket::Close),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_BIND, TLSSocket::Bind),

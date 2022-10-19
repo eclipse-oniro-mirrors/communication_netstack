@@ -29,7 +29,7 @@ public:
         static constexpr const char *FUNCTION_GET_SIGNATURE_ALGORITHMS = "getSignatureAlgorithms";
         static constexpr const char *FUNCTION_GET_PROTOCOL = "getProtocol";
         static constexpr const char *FUNCTION_CONNECT = "connect";
-        static constexpr const char *FUNCTION_GET_CIPHER_SUITES = "getCipherSuites";
+        static constexpr const char *FUNCTION_GET_CIPHER_SUITE = "getCipherSuite";
         static constexpr const char *FUNCTION_SEND = "send";
         static constexpr const char *FUNCTION_CLOSE = "close";
         static constexpr const char *FUNCTION_BIND = "bind";
