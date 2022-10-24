@@ -35,7 +35,7 @@ static constexpr const char *PASSWD_NAME = "passwd";
 static constexpr const char *PROTOCOLS_NAME = "protocols";
 static constexpr const char *SIGNATURE_ALGORITHMS = "signatureAlgorithms";
 static constexpr const char *USE_REMOTE_CIPHER_PREFER = "useRemoteCipherPrefer";
-static constexpr const char *CIPHER_SUITES = "cipherSuites";
+static constexpr const char *CIPHER_SUITE = "cipherSuite";
 static constexpr const char *CRL_NAME = "crl";
 static constexpr const char *ADDRESS_NAME = "address";
 static constexpr const char *FAMILY_NAME = "family";
@@ -66,8 +66,7 @@ bool ReadNecessaryOptions(napi_env env, napi_value *params, napi_value secureOpt
     if (!NapiUtils::HasNamedProperty(env, secureOptions, KEY_NAME)) {
         return false;
     }
-    std::string key = NapiUtils::GetStringPropertyUtf8(env, secureOptions, KEY_NAME);
-    secureOption.SetKey(key);
+    secureOption.SetKey(SecureData(NapiUtils::GetStringPropertyUtf8(env, secureOptions, KEY_NAME)));
 
     if (!NapiUtils::HasNamedProperty(env, secureOptions, CERT_NAME)) {
         return false;
@@ -136,7 +135,6 @@ TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_va
         }
         options.SetAlpnProtocols(alpnProtocolVec);
     }
-    NETSTACK_LOGI("ConnectContext::ReadTLSConnectOptions(napi_env env, napi_value *params) end");
     return options;
 }
 
@@ -153,7 +151,7 @@ TLSSecureOptions TLSConnectContext::ReadTLSSecureOptions(napi_env env, napi_valu
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, PASSWD_NAME)) {
-        secureOption.SetKeyPass(NapiUtils::GetStringPropertyUtf8(env, secureOptions, PASSWD_NAME));
+        secureOption.SetKeyPass(SecureData(NapiUtils::GetStringPropertyUtf8(env, secureOptions, PASSWD_NAME)));
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, PROTOCOLS_NAME)) {
@@ -179,9 +177,9 @@ TLSSecureOptions TLSConnectContext::ReadTLSSecureOptions(napi_env env, napi_valu
         secureOption.SetUseRemoteCipherPrefer(useRemoteCipherPrefer);
     }
 
-    if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, CIPHER_SUITES)) {
-        std::string cipherSuites = NapiUtils::GetStringPropertyUtf8(env, secureOptions, CIPHER_SUITES);
-        secureOption.SetCipherSuite(cipherSuites);
+    if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, CIPHER_SUITE)) {
+        std::string cipherSuite = NapiUtils::GetStringPropertyUtf8(env, secureOptions, CIPHER_SUITE);
+        secureOption.SetCipherSuite(cipherSuite);
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, CRL_NAME)) {

@@ -43,7 +43,7 @@ public:
 
     [[nodiscard]] const TLSKey &PrivateKey() const;
     void SetPrivateKey(const TLSKey &key);
-    void SetPrivateKey(const std::string &key, const std::string &keyPass);
+    void SetPrivateKey(const SecureData &key, const SecureData &keyPass);
     [[nodiscard]] TLSKey GetPrivateKey() const;
 
     void SetProtocol(const std::string &Protocol);

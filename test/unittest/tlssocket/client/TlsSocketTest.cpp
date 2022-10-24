@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "net_address.h"
+#include "secure_data.h"
 #include "socket_state_base.h"
 #include "tls.h"
 #include "tls_certificate.h"
@@ -35,11 +36,11 @@
 namespace OHOS {
 namespace NetStack {
 namespace {
-constexpr char IP_ADDRESS[] = "10.14.0.7";
-constexpr int PORT = 7838;
 constexpr std::string_view PRIVATE_KEY_PEM = "/data/ClientCert/client_rsa_private.pem.unsecure";
 constexpr std::string_view CA_DER = "/data/ClientCert/ca.crt";
 constexpr std::string_view CLIENT_CRT = "/data/ClientCert/client.crt";
+constexpr std::string_view IP_ADDRESS = "/data/Ip/address.txt";
+constexpr std::string_view PORT = "/data/Ip/port.txt";
 
 inline bool CheckCaFileExistence(const char *function)
 {
@@ -59,6 +60,11 @@ std::string ChangeToFile(std::string_view fileName)
     std::string infos = ss.str();
     file.close();
     return infos;
+}
+
+std::string GetIp(std::string ip)
+{
+    return ip.substr(0, ip.length() - 1);
 }
 } // namespace
 
@@ -82,8 +88,8 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
     TLSSocket server;
     NetAddress address;
 
-    address.SetAddress(IP_ADDRESS);
-    address.SetPort(PORT);
+    address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
     bool isBind = false;
@@ -103,11 +109,11 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
     TLSSecureOptions secureOption;
     NetAddress address;
 
-    address.SetAddress(IP_ADDRESS);
-    address.SetPort(PORT);
+    address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
@@ -153,11 +159,11 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
     TLSSecureOptions secureOption;
     NetAddress address;
 
-    address.SetAddress(IP_ADDRESS);
-    address.SetPort(PORT);
+    address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
@@ -202,11 +208,11 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
     TLSSecureOptions secureOption;
     NetAddress address;
 
-    address.SetAddress(IP_ADDRESS);
-    address.SetPort(PORT);
+    address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
@@ -251,11 +257,11 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     TLSSecureOptions secureOption;
     NetAddress address;
 
-    address.SetAddress(IP_ADDRESS);
-    address.SetPort(PORT);
+    address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
@@ -284,8 +290,8 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     });
 
     EXPECT_TRUE(isOk);
-    EXPECT_STREQ(netAddress.GetAddress().c_str(), IP_ADDRESS);
-    EXPECT_EQ(address.GetPort(), 7838);
+    EXPECT_STREQ(netAddress.GetAddress().c_str(), GetIp(ChangeToFile(IP_ADDRESS)).c_str());
+    EXPECT_EQ(address.GetPort(), std::atoi(ChangeToFile(PORT).c_str()));
     EXPECT_EQ(netAddress.GetSaFamily(), AF_INET);
 
     const std::string data = "how do you do? this is getRemoteAddressInterface";
@@ -315,11 +321,11 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     TLSSecureOptions secureOption;
     NetAddress address;
 
-    address.SetAddress(IP_ADDRESS);
-    address.SetPort(PORT);
+    address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
@@ -376,11 +382,11 @@ HWTEST_F(TlsSocketTest, getCertificateInterface, testing::ext::TestSize.Level2)
     NetAddress address;
     const std::string data = "how do you do? This is UT test getCertificateInterface";
 
-    address.SetAddress(IP_ADDRESS);
-    address.SetPort(PORT);
+    address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
@@ -417,11 +423,11 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
     NetAddress address;
     const std::string data = "how do you do? This is UT test getRemoteCertificateInterface";
 
-    address.SetAddress(IP_ADDRESS);
-    address.SetPort(PORT);
+    address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
@@ -458,11 +464,11 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
     TLSSecureOptions secureOption;
     NetAddress address;
 
-    address.SetAddress(IP_ADDRESS);
-    address.SetPort(PORT);
+    address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
@@ -530,11 +536,11 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
     TLSSecureOptions secureOption;
     NetAddress address;
 
-    address.SetAddress(IP_ADDRESS);
-    address.SetPort(PORT);
+    address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
@@ -595,13 +601,13 @@ HWTEST_F(TlsSocketTest, getSignatureAlgorithmsInterface, testing::ext::TestSize.
     TLSSecureOptions secureOption;
     NetAddress address;
 
-    address.SetAddress(IP_ADDRESS);
-    address.SetPort(PORT);
+    address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
     std::string signatureAlgorithmVec = {"rsa_pss_rsae_sha256:ECDSA+SHA25"};
     secureOption.SetSignatureAlgorithms(signatureAlgorithmVec);
-    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
@@ -655,11 +661,11 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
     TLSSecureOptions secureOption;
     NetAddress address;
 
-    address.SetAddress(IP_ADDRESS);
-    address.SetPort(PORT);
+    address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    secureOption.SetKey(ChangeToFile(PRIVATE_KEY_PEM));
+    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
