@@ -19,6 +19,7 @@ TLS_NAPI = "$NETSTACK_DIR/frameworks/js/napi/tls"
 SOCKET = "$NETSTACK_DIR/frameworks/js/napi/socket"
 
 tls_sources = [
+  "$TLS/src/secure_data.cpp",
   "$TLS/src/tls_certificate.cpp",
   "$TLS/src/tls_configuration.cpp",
   "$TLS/src/tls_context.cpp",
@@ -122,6 +123,25 @@ ohos_unittest("tls_socket_certchain_unittest") {
     "c_utils:utils",
     "hiviewdfx_hilog_native:libhilog",
     "napi:ace_napi",
+  ]
+
+  module_out_path = "netstack/tls_socket_unittest"
+  part_name = "netstack"
+  subsystem_name = "communication"
+}
+
+ohos_unittest("secure_data_unittest") {
+  sources = [
+    "$TLS/src/secure_data.cpp",
+    "SecureDataTest.cpp",
+  ]
+
+  configs = [ ":tls_test_config" ]
+
+  deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
+  external_deps = [
+    "c_utils:utils",
+    "hiviewdfx_hilog_native:libhilog",
   ]
 
   module_out_path = "netstack/tls_socket_unittest"

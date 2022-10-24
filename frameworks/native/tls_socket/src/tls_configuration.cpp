@@ -17,6 +17,7 @@
 
 #include <openssl/x509.h>
 
+#include "secure_data.h"
 #include "tls.h"
 #include "tls_key.h"
 
@@ -63,7 +64,7 @@ void TLSConfiguration::SetPrivateKey(const TLSKey &key)
     privateKey_ = key;
 }
 
-void TLSConfiguration::SetPrivateKey(const std::string &key, const std::string &keyPass)
+void TLSConfiguration::SetPrivateKey(const SecureData &key, const SecureData &keyPass)
 {
     TLSKey pkey(key, ALGORITHM_RSA, keyPass);
     privateKey_ = pkey;

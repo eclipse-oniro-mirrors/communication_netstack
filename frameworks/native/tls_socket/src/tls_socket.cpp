@@ -89,12 +89,12 @@ void TLSSecureOptions::SetCert(const std::string &cert)
     cert_ = cert;
 }
 
-void TLSSecureOptions::SetKey(const std::string &key)
+void TLSSecureOptions::SetKey(const SecureData &key)
 {
     key_ = key;
 }
 
-void TLSSecureOptions::SetKeyPass(const std::string &keyPass)
+void TLSSecureOptions::SetKeyPass(const SecureData &keyPass)
 {
     keyPass_ = keyPass;
 }
@@ -134,12 +134,12 @@ const std::string &TLSSecureOptions::GetCert() const
     return cert_;
 }
 
-const std::string &TLSSecureOptions::GetKey() const
+const SecureData &TLSSecureOptions::GetKey() const
 {
     return key_;
 }
 
-const std::string &TLSSecureOptions::GetKeyPass() const
+const SecureData &TLSSecureOptions::GetKeyPass() const
 {
     return keyPass_;
 }
@@ -1470,7 +1470,6 @@ bool TLSSocket::TLSSocketInternal::GetRemoteCertificateFromPeer()
     }
     BIO_free(bio);
     remoteCert_ = std::string(data);
-    NETSTACK_LOGI("Remote certificate content is %{public}s", remoteCert_.c_str());
     return true;
 }
 

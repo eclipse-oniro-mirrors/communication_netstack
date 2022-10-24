@@ -27,6 +27,7 @@
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
 
+#include "secure_data.h"
 #include "tls.h"
 
 namespace OHOS {
@@ -36,19 +37,19 @@ public:
     TLSKey() = default;
     ~TLSKey() = default;
 
-    TLSKey(const std::string &data, KeyAlgorithm algorithm, const std::string &passPhrase);
-    TLSKey(const std::string &fileName, KeyAlgorithm algorithm, EncodingFormat format = PEM, KeyType type = PRIVATE_KEY,
-           const std::string &passPhrase = std::string());
+    TLSKey(const SecureData &data, KeyAlgorithm algorithm, const SecureData &passPhrase);
+    TLSKey(const std::string &fileName, KeyAlgorithm algorithm, const SecureData &passPhrase,
+           EncodingFormat format = PEM, KeyType type = PRIVATE_KEY);
     TLSKey &operator=(const TLSKey &other);
 
     [[nodiscard]] KeyAlgorithm Algorithm() const;
     [[nodiscard]] Handle handle() const;
-    const std::string &GetKeyPass() const;
+    const SecureData &GetKeyPass() const;
 
 private:
-    void DecodeData(const std::string &data, KeyAlgorithm algorithm, const std::string &passPhrase);
-    void DecodeDer(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const std::string &passPhrase);
-    void DecodePem(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const std::string &passPhrase);
+    void DecodeData(const SecureData &data, KeyAlgorithm algorithm, const SecureData &passPhrase);
+    void DecodeDer(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const SecureData &passPhrase);
+    void DecodePem(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const SecureData &passPhrase);
     void Clear(bool deep);
 
 private:
@@ -58,7 +59,7 @@ private:
     DH *dh_ = nullptr;
     EC_KEY *ec_ = nullptr;
     EVP_PKEY *genericKey_ = nullptr;
-    std::string keyPass_;
+    SecureData keyPass_;
     bool keyIsNull_ = true;
     KeyType keyType_ = PUBLIC_KEY;
     KeyAlgorithm keyAlgorithm_ = OPAQUE;

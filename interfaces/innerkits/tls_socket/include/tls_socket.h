@@ -97,13 +97,13 @@ public:
      * Set key to decrypt server data
      * @param keyChain key used to decrypt server data
      */
-    void SetKey(const std::string &key);
+    void SetKey(const SecureData &key);
 
     /**
      * Set the password to read the private key
      * @param keyPass read the password of the private key
      */
-    void SetKeyPass(const std::string &keyPass);
+    void SetKeyPass(const SecureData &keyPass);
 
     /**
      * Set the protocol used in communication
@@ -151,13 +151,13 @@ public:
      * Obtain the private key in the communication process
      * @return private key during communication
      */
-    [[nodiscard]] const std::string &GetKey() const;
+    [[nodiscard]] const SecureData &GetKey() const;
 
     /**
      * Get the password to read the private key
      * @return read the password of the private key
      */
-    [[nodiscard]] const std::string &GetKeyPass() const;
+    [[nodiscard]] const SecureData &GetKeyPass() const;
 
     /**
      * Get the protocol of the communication process
@@ -192,8 +192,8 @@ public:
 private:
     std::vector<std::string> caChain_;
     std::string cert_;
-    std::string key_;
-    std::string keyPass_;
+    SecureData key_;
+    SecureData keyPass_;
     std::vector<std::string> protocolChain_;
     bool useRemoteCipherPrefer_ = false;
     std::string signatureAlgorithms_;

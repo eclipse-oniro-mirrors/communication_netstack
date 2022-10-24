@@ -24,8 +24,8 @@ constexpr int FILE_READ_Key_LEN = 4096;
 constexpr const char *FILE_OPEN_FLAG = "rb";
 } // namespace
 
-TLSKey::TLSKey(const std::string &fileName, KeyAlgorithm algorithm, EncodingFormat encoding, KeyType type,
-               const std::string &passPhrase)
+TLSKey::TLSKey(const std::string &fileName, KeyAlgorithm algorithm, const SecureData &passPhrase,
+               EncodingFormat encoding, KeyType type)
 {
     if (encoding == DER) {
         DecodeDer(type, algorithm, fileName, passPhrase);
@@ -34,10 +34,10 @@ TLSKey::TLSKey(const std::string &fileName, KeyAlgorithm algorithm, EncodingForm
     }
 }
 
-TLSKey::TLSKey(const std::string &data, KeyAlgorithm algorithm, const std::string &passPhrase)
+TLSKey::TLSKey(const SecureData &data, KeyAlgorithm algorithm, const SecureData &passPhrase)
 {
-    if (data.empty()) {
-        NETSTACK_LOGE("TlsKey::TlsKey(const std::string &data, const std::string &passPhrase) data is empty");
+    if (data.Length() == 0) {
+        NETSTACK_LOGE("TlsKey::TlsKey(const SecureData data, const std::string &passPhrase) data is empty");
         return;
     }
     DecodeData(data, algorithm, passPhrase);
@@ -68,15 +68,15 @@ TLSKey &TLSKey::operator=(const TLSKey &other)
     return *this;
 }
 
-void TLSKey::DecodeData(const std::string &data, KeyAlgorithm algorithm, const std::string &passPhrase)
+void TLSKey::DecodeData(const SecureData &data, KeyAlgorithm algorithm, const SecureData &passPhrase)
 {
-    if (data.empty()) {
+    if (data.Length() == 0) {
         NETSTACK_LOGE("The parameter data is empty");
         return;
     }
     keyAlgorithm_ = algorithm;
     keyPass_ = passPhrase;
-    BIO *bio = BIO_new_mem_buf(data.c_str(), -1);
+    BIO *bio = BIO_new_mem_buf(data.Data(), -1);
     if (!bio) {
         NETSTACK_LOGE("Failed to create bio buffer");
         return;
@@ -88,7 +88,7 @@ void TLSKey::DecodeData(const std::string &data, KeyAlgorithm algorithm, const s
     }
 }
 
-void TLSKey::DecodeDer(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const std::string &passPhrase)
+void TLSKey::DecodeDer(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const SecureData &passPhrase)
 {
     if (fileName.empty()) {
         NETSTACK_LOGI("The parameter filename is empty");
@@ -123,7 +123,7 @@ void TLSKey::DecodeDer(KeyType type, KeyAlgorithm algorithm, const std::string &
     keyIsNull_ = false;
 }
 
-void TLSKey::DecodePem(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const std::string &passPhrase)
+void TLSKey::DecodePem(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const SecureData &passPhrase)
 {
     if (fileName.empty()) {
         NETSTACK_LOGE("TlsKey::DecodePem filename is empty");
@@ -248,7 +248,7 @@ Handle TLSKey::handle() const
     }
 }
 
-const std::string &TLSKey::GetKeyPass() const
+const SecureData &TLSKey::GetKeyPass() const
 {
     return keyPass_;
 }

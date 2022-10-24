@@ -197,9 +197,8 @@ bool TLSContext::SetKeyAndCheck(TLSContext *tlsContext, const TLSConfiguration &
         return false;
     }
 
-    if (!configuration.GetPrivateKey().GetKeyPass().empty()) {
-        std::string password = tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyPass();
-        const char *pass = password.c_str();
+    if (configuration.GetPrivateKey().GetKeyPass().Data()) {
+        const char *pass = tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyPass().Data();
         SSL_CTX_set_default_passwd_cb_userdata(tlsContext->ctx_, reinterpret_cast<void *>(const_cast<char *>(pass)));
     }
     // Check if the certificate matches the private key.
