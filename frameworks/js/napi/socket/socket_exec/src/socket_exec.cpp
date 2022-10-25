@@ -417,7 +417,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     }
 }
 
-static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeoutSec)
+static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeoutUSec)
 {
     int ret = connect(sock, addr, addrLen);
     if (ret >= 0) {
@@ -430,12 +430,12 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
     fd_set set = {0};
     FD_ZERO(&set);
     FD_SET(sock, &set);
-    if (timeoutSec == 0) {
-        timeoutSec = DEFAULT_CONNECT_TIMEOUT;
+    if (timeoutUSec == 0) {
+        timeoutUSec = DEFAULT_CONNECT_TIMEOUT;
     }
     timeval timeout = {
-        .tv_sec = timeoutSec,
-        .tv_usec = 0,
+        .tv_sec = 0,
+        .tv_usec = timeoutUSec,
     };
 
     ret = select(sock + 1, nullptr, &set, nullptr, &timeout);
