@@ -36,12 +36,12 @@
 namespace OHOS {
 namespace NetStack {
 namespace {
-constexpr std::string_view PRIVATE_KEY_PEM_CHAIN = "/data/ClientCertChain/privekey.pem.unsecure";
-constexpr std::string_view CA_PATH_CHAIN = "/data/ClientCertChain/cacert.crt";
-constexpr std::string_view MID_CA_PATH_CHAIN = "/data/ClientCertChain/caMidcert.crt";
-constexpr std::string_view CLIENT_CRT_CHAIN = "/data/ClientCertChain/secondServer.crt";
-constexpr std::string_view IP_ADDRESS = "/data/Ip/address.txt";
-constexpr std::string_view PORT = "/data/Ip/port.txt";
+const std::string_view PRIVATE_KEY_PEM_CHAIN = "/data/ClientCertChain/privekey.pem.unsecure";
+const std::string_view CA_PATH_CHAIN = "/data/ClientCertChain/cacert.crt";
+const std::string_view MID_CA_PATH_CHAIN = "/data/ClientCertChain/caMidcert.crt";
+const std::string_view CLIENT_CRT_CHAIN = "/data/ClientCertChain/secondServer.crt";
+const std::string_view IP_ADDRESS = "/data/Ip/address.txt";
+const std::string_view PORT = "/data/Ip/port.txt";
 
 inline bool CheckCaFileExistence(const char *function)
 {

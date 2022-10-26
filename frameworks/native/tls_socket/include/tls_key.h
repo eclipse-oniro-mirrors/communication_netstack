@@ -40,6 +40,8 @@ public:
     TLSKey(const SecureData &data, KeyAlgorithm algorithm, const SecureData &passPhrase);
     TLSKey(const std::string &fileName, KeyAlgorithm algorithm, const SecureData &passPhrase,
            EncodingFormat format = PEM, KeyType type = PRIVATE_KEY);
+
+    TLSKey(const TLSKey &other);
     TLSKey &operator=(const TLSKey &other);
 
     [[nodiscard]] KeyAlgorithm Algorithm() const;
@@ -51,6 +53,7 @@ private:
     void DecodeDer(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const SecureData &passPhrase);
     void DecodePem(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const SecureData &passPhrase);
     void Clear(bool deep);
+    void SwitchAlgorithm(KeyType type, KeyAlgorithm algorithm, BIO *bio);
 
 private:
     EVP_PKEY *opaque_ = nullptr;

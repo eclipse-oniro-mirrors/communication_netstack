@@ -35,6 +35,7 @@
 #include "tcp_send_options.h"
 
 #include "socket_error.h"
+#include "tls.h"
 #include "tls_certificate.h"
 #include "tls_configuration.h"
 #include "tls_context.h"
@@ -64,13 +65,10 @@ using OnErrorCallback = std::function<void(int32_t errorNumber, const std::strin
 using CheckServerIdentity = std::function<void(
     const std::string &hostName, const std::vector<std::string> &x509Certificates)>;
 
-static constexpr const char *PROTOCOL_TLS_V12 = "TLSv1.2";
-static constexpr const char *PROTOCOL_TLS_V13 = "TLSv1.3";
+constexpr const char *ALPN_PROTOCOLS_HTTP_1_1 = "http1.1";
+constexpr const char *ALPN_PROTOCOLS_HTTP_2 = "h2";
 
-static constexpr const char *ALPN_PROTOCOLS_HTTP_1_1 = "http1.1";
-static constexpr const char *ALPN_PROTOCOLS_HTTP_2 = "h2";
-
-static constexpr const size_t MAX_ERR_LEN = 1024;
+constexpr size_t MAX_ERR_LEN = 1024;
 
 /**
  * Parameters required during communication
@@ -80,6 +78,7 @@ public:
     TLSSecureOptions() = default;
     ~TLSSecureOptions() = default;
 
+    TLSSecureOptions(const TLSSecureOptions &tlsSecureOptions);
     TLSSecureOptions &operator=(const TLSSecureOptions &tlsSecureOptions);
     /**
      * Set root CA Chain to verify the server cert

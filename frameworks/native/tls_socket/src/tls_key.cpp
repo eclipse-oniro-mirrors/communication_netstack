@@ -16,11 +16,12 @@
 #include "tls_key.h"
 
 #include "netstack_log.h"
+#include "tls_utils.h"
 
 namespace OHOS {
 namespace NetStack {
 namespace {
-constexpr int FILE_READ_Key_LEN = 4096;
+constexpr int FILE_READ_KEY_LEN = 4096;
 constexpr const char *FILE_OPEN_FLAG = "rb";
 } // namespace
 
@@ -37,10 +38,15 @@ TLSKey::TLSKey(const std::string &fileName, KeyAlgorithm algorithm, const Secure
 TLSKey::TLSKey(const SecureData &data, KeyAlgorithm algorithm, const SecureData &passPhrase)
 {
     if (data.Length() == 0) {
-        NETSTACK_LOGE("TlsKey::TlsKey(const SecureData data, const std::string &passPhrase) data is empty");
+        NETSTACK_LOGE("data is empty");
         return;
     }
     DecodeData(data, algorithm, passPhrase);
+}
+
+TLSKey::TLSKey(const TLSKey &other)
+{
+    *this = other;
 }
 
 TLSKey &TLSKey::operator=(const TLSKey &other)
@@ -97,13 +103,19 @@ void TLSKey::DecodeDer(KeyType type, KeyAlgorithm algorithm, const std::string &
     keyType_ = type;
     keyAlgorithm_ = algorithm;
     keyPass_ = passPhrase;
-    FILE *fp = fopen(static_cast<const char *>(fileName.c_str()), FILE_OPEN_FLAG);
-    if (!fp) {
-        NETSTACK_LOGE("TlsKey::DecodeDer: Couldn't open file for reading");
+    std::string realPath;
+    if (!CheckFilePath(fileName, realPath)) {
+        NETSTACK_LOGE("file name is error");
         return;
     }
-    char keyDer[FILE_READ_Key_LEN] = {};
-    size_t keyLen = fread(keyDer, 1, FILE_READ_Key_LEN, fp);
+
+    FILE *fp = fopen(realPath.c_str(), FILE_OPEN_FLAG);
+    if (!fp) {
+        NETSTACK_LOGE("open file false");
+        return;
+    }
+    char keyDer[FILE_READ_KEY_LEN] = {0};
+    size_t keyLen = fread(keyDer, 1, FILE_READ_KEY_LEN, fp);
     (void)fclose(fp);
     if (!keyLen) {
         NETSTACK_LOGE("Insufficient size bytes were read");
@@ -117,38 +129,14 @@ void TLSKey::DecodeDer(KeyType type, KeyAlgorithm algorithm, const std::string &
         rsa_ = d2i_RSAPrivateKey(nullptr, &key_data, static_cast<long>(keyLen));
     }
     if (!rsa_) {
-        NETSTACK_LOGE("TlsKey::DecodeDer rsa_ is null");
+        NETSTACK_LOGE("rsa_ is null");
         return;
     }
     keyIsNull_ = false;
 }
 
-void TLSKey::DecodePem(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const SecureData &passPhrase)
+void TLSKey::SwitchAlgorithm(KeyType type, KeyAlgorithm algorithm, BIO *bio)
 {
-    if (fileName.empty()) {
-        NETSTACK_LOGE("TlsKey::DecodePem filename is empty");
-        return;
-    }
-    keyType_ = type;
-    keyAlgorithm_ = algorithm;
-    FILE *fp = fopen(static_cast<const char *>(fileName.c_str()), FILE_OPEN_FLAG);
-
-    if (!fp) {
-        NETSTACK_LOGE("TlsKey::DecodePem: Couldn't open file for reading");
-        return;
-    }
-    char privateKey[FILE_READ_Key_LEN] = {};
-    if (!fread(privateKey, 1, FILE_READ_Key_LEN, fp)) {
-        NETSTACK_LOGE("TlsKey::DecodePem file read false");
-    }
-    (void)fclose(fp);
-    const char *privateKeyData = static_cast<const char *>(privateKey);
-    BIO *bio = BIO_new_mem_buf(privateKeyData, -1);
-    if (!bio) {
-        NETSTACK_LOGE("TlsKey::DecodePem: bio is null");
-        return;
-    }
-    keyPass_ = passPhrase;
     switch (algorithm) {
         case ALGORITHM_RSA:
             rsa_ = (type == PUBLIC_KEY) ? PEM_read_bio_RSA_PUBKEY(bio, nullptr, nullptr, nullptr)
@@ -184,8 +172,44 @@ void TLSKey::DecodePem(KeyType type, KeyAlgorithm algorithm, const std::string &
             }
             break;
         default:
-            NETSTACK_LOGE("TlsKey::DecodePem algorithm = %{public}d", algorithm);
+            NETSTACK_LOGE("algorithm = %{public}d is error", algorithm);
     }
+}
+
+void TLSKey::DecodePem(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const SecureData &passPhrase)
+{
+    if (fileName.empty()) {
+        NETSTACK_LOGE("filename is empty");
+        return;
+    }
+    keyType_ = type;
+    keyAlgorithm_ = algorithm;
+    std::string realPath;
+    if (!CheckFilePath(fileName, realPath)) {
+        NETSTACK_LOGE("file name is error");
+        return;
+    }
+
+    FILE *fp = fopen(realPath.c_str(), FILE_OPEN_FLAG);
+    if (!fp) {
+        NETSTACK_LOGE("open file failed, error string %{public}s", strerror(errno));
+        return;
+    }
+    char privateKey[FILE_READ_KEY_LEN] = {0};
+    if (!fread(privateKey, 1, FILE_READ_KEY_LEN, fp)) {
+        NETSTACK_LOGE("read file failed");
+        (void)fclose(fp);
+        return;
+    }
+    (void)fclose(fp);
+    const char *privateKeyData = static_cast<const char *>(privateKey);
+    BIO *bio = BIO_new_mem_buf(privateKeyData, -1);
+    if (!bio) {
+        NETSTACK_LOGE("bio is null");
+        return;
+    }
+    keyPass_ = passPhrase;
+    SwitchAlgorithm(type, algorithm, bio);
     BIO_free(bio);
 }
 

@@ -13,35 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef TLS_CONTEXT_GETCERTIFICATE_CONTEXT_H
-#define TLS_CONTEXT_GETCERTIFICATE_CONTEXT_H
+#ifndef COMMUNICATION_NETSTACK_TLS_UTILS_H
+#define COMMUNICATION_NETSTACK_TLS_UTILS_H
 
-#include <cstddef>
 #include <string>
-
-#include <napi/native_api.h>
-
-#include "base_context.h"
-#include "event_manager.h"
-#include "nocopyable.h"
 
 namespace OHOS {
 namespace NetStack {
-class GetCertificateContext final : public BaseContext {
-public:
-    DISALLOW_COPY_AND_MOVE(GetCertificateContext);
-
-    GetCertificateContext() = delete;
-    explicit GetCertificateContext(napi_env env, EventManager *manager);
-
-    std::string cert_;
-    bool isOk_ = false;
-
-    void ParseParams(napi_value *params, size_t paramsCount);
-
-private:
-    bool CheckParamsType(napi_value *params, size_t paramsCount);
-};
+bool CheckFilePath(std::string fileName, std::string &realPath);
 } // namespace NetStack
 } // namespace OHOS
-#endif // TLS_CONTEXT_GETCERTIFICATE_CONTEXT_H
+#endif // COMMUNICATION_NETSTACK_TLS_UTILS_H

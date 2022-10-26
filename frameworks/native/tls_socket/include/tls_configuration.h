@@ -60,7 +60,7 @@ public:
 
     [[nodiscard]] std::string GetCertificate() const;
     void SetSignatureAlgorithms(const std::string &signatureAlgorithms);
-    [[nodiscard]] std::string GetSignatureAlgorithms() const;
+    [[nodiscard]] const std::string &GetSignatureAlgorithms() const;
     [[nodiscard]] std::vector<CipherSuite> GetCipherSuiteVec() const;
 
 private:

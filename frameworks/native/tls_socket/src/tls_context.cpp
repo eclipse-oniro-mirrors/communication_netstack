@@ -16,12 +16,12 @@
 #include "tls_context.h"
 
 #include <cerrno>
-#include <openssl/err.h>
-#include <openssl/ssl.h>
 #include <string>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/ssl.h>
 
 #include "netstack_log.h"
-#include "openssl/evp.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -66,17 +66,18 @@ void TLSContext::GetCiphers(TLSContext *tlsContext)
     }
     CipherSuite cipherSuite;
     for (int i = 0; i < sk_SSL_CIPHER_num(sk); i++) {
-        const SSL_CIPHER *c = sk_SSL_CIPHER_value(sk, i);
-        cipherSuite.cipherId_ = SSL_CIPHER_get_id(c);
-        cipherSuite.cipherName_ = SSL_CIPHER_get_name(c);
+        const SSL_CIPHER *cipher = sk_SSL_CIPHER_value(sk, i);
+        cipherSuite.cipherId_ = SSL_CIPHER_get_id(cipher);
+        cipherSuite.cipherName_ = SSL_CIPHER_get_name(cipher);
         cipherSuiteVec.push_back(cipherSuite);
-        NETSTACK_LOGD("SSL_CIPHER_get_id = %{public}lu, SSL_CIPHER_get_name = %{public}s", cipherSuite.cipherId_,
-                      cipherSuite.cipherName_.c_str());
     }
 }
 
 void TLSContext::SetSignatureAlgorithms(TLSContext *tlsContext, const TLSConfiguration &configuration)
 {
+    if (!tlsContext) {
+        return;
+    }
     if (configuration.GetSignatureAlgorithms().empty()) {
         return;
     }
@@ -197,9 +198,10 @@ bool TLSContext::SetKeyAndCheck(TLSContext *tlsContext, const TLSConfiguration &
         return false;
     }
 
-    if (configuration.GetPrivateKey().GetKeyPass().Data()) {
-        const char *pass = tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyPass().Data();
-        SSL_CTX_set_default_passwd_cb_userdata(tlsContext->ctx_, reinterpret_cast<void *>(const_cast<char *>(pass)));
+    if (!configuration.GetPrivateKey().GetKeyPass().Length()) {
+        SSL_CTX_set_default_passwd_cb_userdata(tlsContext->ctx_,
+                                               reinterpret_cast<void *>(const_cast<char *>(
+                                               tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyPass().Data())));
     }
     // Check if the certificate matches the private key.
     if (!SSL_CTX_check_private_key(tlsContext->ctx_)) {
