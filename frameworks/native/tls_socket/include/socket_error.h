@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef LOCAL_SOCKET_ERROR_H
-#define LOCAL_SOCKET_ERROR_H
+#ifndef COMMUNICATION_NETSTACK_SOCKET_ERROR_H
+#define COMMUNICATION_NETSTACK_SOCKET_ERROR_H
 
 namespace OHOS {
 namespace NetStack {
@@ -25,4 +25,4 @@ enum TlsSocketError {
 };
 } // namespace NetStack
 } // namespace OHOS
-#endif // LOCAL_SOCKET_ERROR_H
+#endif // COMMUNICATION_NETSTACK_SOCKET_ERROR_H

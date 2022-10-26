@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #include "calculate_md5.h"
 #include "openssl/md5.h"
 #include "securec.h"

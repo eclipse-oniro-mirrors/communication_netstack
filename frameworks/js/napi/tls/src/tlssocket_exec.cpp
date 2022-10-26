@@ -166,7 +166,7 @@ bool TLSSocketExec::ExecSend(SendContext *context)
     return context->isOk_;
 }
 
-bool TLSSocketExec::ExecClose(TLSCloseContext *context)
+bool TLSSocketExec::ExecClose(TLSNapiContext *context)
 {
     auto manager = context->GetManager();
     if (manager == nullptr) {
@@ -312,7 +312,7 @@ napi_value TLSSocketExec::SendCallback(SendContext *context)
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
-napi_value TLSSocketExec::CloseCallback(TLSCloseContext *context)
+napi_value TLSSocketExec::CloseCallback(TLSNapiContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
 }

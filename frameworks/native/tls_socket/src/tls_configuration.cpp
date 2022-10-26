@@ -23,11 +23,6 @@
 
 namespace OHOS {
 namespace NetStack {
-namespace {
-constexpr const char *TLS_1_3 = "TLSv1.3";
-constexpr const char *TLS_1_2 = "TLSv1.2";
-} // namespace
-
 TLSConfiguration::TLSConfiguration(const TLSConfiguration &other)
 {
     privateKey_ = other.privateKey_;
@@ -86,11 +81,11 @@ void TLSConfiguration::SetProtocol(const std::vector<std::string> &Protocol)
     bool isTls1_3 = false;
     bool isTls1_2 = false;
     for (const auto &p : Protocol) {
-        if (p == TLS_1_3) {
+        if (p == PROTOCOL_TLS_V13) {
             maxProtocol_ = TLS_V1_3;
             isTls1_3 = true;
         }
-        if (p == TLS_1_2) {
+        if (p == PROTOCOL_TLS_V12) {
             minProtocol_ = TLS_V1_2;
             isTls1_2 = true;
         }
@@ -144,7 +139,7 @@ void TLSConfiguration::SetSignatureAlgorithms(const std::string &signatureAlgori
     signatureAlgorithms_ = signatureAlgorithms;
 }
 
-std::string TLSConfiguration::GetSignatureAlgorithms() const
+const std::string &TLSConfiguration::GetSignatureAlgorithms() const
 {
     return signatureAlgorithms_;
 }

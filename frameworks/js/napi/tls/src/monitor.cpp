@@ -36,9 +36,15 @@ constexpr std::string_view EVENT_CONNECT = "connect";
 constexpr std::string_view EVENT_CLOSE = "close";
 constexpr std::string_view EVENT_ERROR = "error";
 
+constexpr const char *PROPERTY_ADDRESS = "address";
+constexpr const char *PROPERTY_FAMILY = "family";
+constexpr const char *PROPERTY_PORT = "port";
+constexpr const char *PROPERTY_SIZE = "size";
+
 void ExternalAarrayBufferFinalize(napi_env env, void *data, void *hint)
 {
-    NETSTACK_LOGI("ExternalAarrayBufferCalblack");
+    (void)data;
+    (void)hint;
 }
 
 void EventMessageCallback(uv_work_t *work, int status)
@@ -70,10 +76,10 @@ void EventMessageCallback(uv_work_t *work, int status)
     napi_value family = NapiUtils::CreateStringUtf8(workWrapper->env, monitor->remoteInfo_.GetFamily());
     napi_value port = NapiUtils::CreateInt32(workWrapper->env, monitor->remoteInfo_.GetPort());
     napi_value size = NapiUtils::CreateInt32(workWrapper->env, monitor->remoteInfo_.GetSize());
-    NapiUtils::SetNamedProperty(workWrapper->env, obj, "address", address);
-    NapiUtils::SetNamedProperty(workWrapper->env, obj, "family", family);
-    NapiUtils::SetNamedProperty(workWrapper->env, obj, "port", port);
-    NapiUtils::SetNamedProperty(workWrapper->env, obj, "size", size);
+    NapiUtils::SetNamedProperty(workWrapper->env, obj, PROPERTY_ADDRESS, address);
+    NapiUtils::SetNamedProperty(workWrapper->env, obj, PROPERTY_FAMILY, family);
+    NapiUtils::SetNamedProperty(workWrapper->env, obj, PROPERTY_PORT, port);
+    NapiUtils::SetNamedProperty(workWrapper->env, obj, PROPERTY_SIZE, size);
     std::pair<napi_value, napi_value> arg = {message, obj};
     if (workWrapper->manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");

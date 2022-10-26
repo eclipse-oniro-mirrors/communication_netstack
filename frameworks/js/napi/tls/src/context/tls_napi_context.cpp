@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "get_remote_certificate_context.h"
+#include "tls_napi_context.h"
 
 #include "constant.h"
 #include "napi_utils.h"
@@ -21,12 +21,9 @@
 
 namespace OHOS {
 namespace NetStack {
-GetRemoteCertificateContext::GetRemoteCertificateContext(napi_env env, EventManager *manager)
-    : BaseContext(env, manager)
-{
-}
+TLSNapiContext::TLSNapiContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
-void GetRemoteCertificateContext::ParseParams(napi_value *params, size_t paramsCount)
+void TLSNapiContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     if (!CheckParamsType(params, paramsCount)) {
         return;
@@ -38,14 +35,15 @@ void GetRemoteCertificateContext::ParseParams(napi_value *params, size_t paramsC
     SetParseOK(true);
 }
 
-bool GetRemoteCertificateContext::CheckParamsType(napi_value *params, size_t paramsCount)
+bool TLSNapiContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
     if (paramsCount == PARAM_NONE) {
         return true;
     }
+
     if (paramsCount == PARAM_JUST_CALLBACK) {
         if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_0]) != napi_function) {
-            NETSTACK_LOGE("GetRemoteCertificateContext first param is not function");
+            NETSTACK_LOGE("CloseContext first param is not function");
             return false;
         }
         return true;

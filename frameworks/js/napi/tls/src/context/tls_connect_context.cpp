@@ -26,20 +26,20 @@
 namespace OHOS {
 namespace NetStack {
 namespace {
-static constexpr const char *ALPN_PROTOCOLS = "ALPNProtocols";
-static constexpr const char *SECURE_OPTIONS = "secureOptions";
-static constexpr const char *CA_NAME = "ca";
-static constexpr const char *CERT_NAME = "cert";
-static constexpr const char *KEY_NAME = "key";
-static constexpr const char *PASSWD_NAME = "passwd";
-static constexpr const char *PROTOCOLS_NAME = "protocols";
-static constexpr const char *SIGNATURE_ALGORITHMS = "signatureAlgorithms";
-static constexpr const char *USE_REMOTE_CIPHER_PREFER = "useRemoteCipherPrefer";
-static constexpr const char *CIPHER_SUITE = "cipherSuite";
-static constexpr const char *CRL_NAME = "crl";
-static constexpr const char *ADDRESS_NAME = "address";
-static constexpr const char *FAMILY_NAME = "family";
-static constexpr const char *PORT_NAME = "port";
+constexpr const char *ALPN_PROTOCOLS = "ALPNProtocols";
+constexpr const char *SECURE_OPTIONS = "secureOptions";
+constexpr const char *CA_NAME = "ca";
+constexpr const char *CERT_NAME = "cert";
+constexpr const char *KEY_NAME = "key";
+constexpr const char *PASSWD_NAME = "passwd";
+constexpr const char *PROTOCOLS_NAME = "protocols";
+constexpr const char *SIGNATURE_ALGORITHMS = "signatureAlgorithms";
+constexpr const char *USE_REMOTE_CIPHER_PREFER = "useRemoteCipherPrefer";
+constexpr const char *CIPHER_SUITE = "cipherSuite";
+constexpr const char *ADDRESS_NAME = "address";
+constexpr const char *FAMILY_NAME = "family";
+constexpr const char *PORT_NAME = "port";
+constexpr int CA_CHAIN_LENGTH = 10;
 
 bool ReadNecessaryOptions(napi_env env, napi_value *params, napi_value secureOptions, TLSSecureOptions &secureOption)
 {
@@ -54,6 +54,9 @@ bool ReadNecessaryOptions(napi_env env, napi_value *params, napi_value secureOpt
     }
     if (NapiUtils::GetValueType(env, caCert) == napi_object) {
         uint32_t arrayLong = NapiUtils::GetArrayLength(env, caCert);
+        if (arrayLong > CA_CHAIN_LENGTH) {
+            return false;
+        }
         napi_value element = nullptr;
         for (uint32_t i = 0; i < arrayLong; i++) {
             element = NapiUtils::GetArrayElement(env, caCert, i);
@@ -182,18 +185,6 @@ TLSSecureOptions TLSConnectContext::ReadTLSSecureOptions(napi_env env, napi_valu
         secureOption.SetCipherSuite(cipherSuite);
     }
 
-    if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, CRL_NAME)) {
-        napi_value crlVector = NapiUtils::GetNamedProperty(env, secureOptions, CRL_NAME);
-        uint32_t num = NapiUtils::GetArrayLength(GetEnv(), crlVector);
-        napi_value element = nullptr;
-        std::vector<std::string> crlVec;
-        for (uint32_t i = 0; i < num; i++) {
-            element = NapiUtils::GetArrayElement(GetEnv(), crlVector, i);
-            std::string crl = NapiUtils::GetStringFromValueUtf8(GetEnv(), element);
-            crlVec.push_back(crl);
-        }
-        secureOption.SetCrlChain(crlVec);
-    }
     return secureOption;
 }
 
