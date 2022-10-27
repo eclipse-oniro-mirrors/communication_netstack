@@ -192,7 +192,7 @@ void TLSKey::DecodePem(KeyType type, KeyAlgorithm algorithm, const std::string &
 
     FILE *fp = fopen(realPath.c_str(), FILE_OPEN_FLAG);
     if (!fp) {
-        NETSTACK_LOGE("open file failed, error string %{public}s", strerror(errno));
+        NETSTACK_LOGE("open file failed");
         return;
     }
     char privateKey[FILE_READ_KEY_LEN] = {0};
