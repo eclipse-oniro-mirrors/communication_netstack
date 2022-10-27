@@ -13,14 +13,14 @@
 
 import("//build/ohos.gni")
 import("//build/test.gni")
+import("//foundation/communication/netstack/netstack_config.gni")
 
-SUBSYSTEM_DIR = "//foundation/communication"
 NETSTACK_NAPI_ROOT = "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/"
 
 utils_include = [
   "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
   "$SUBSYSTEM_DIR/netstack/utils/log/include",
-  "//third_party/curl/include",
+  "$THIRD_PARTY_ROOT/curl/include",
 ]
 
 common_external_deps = [

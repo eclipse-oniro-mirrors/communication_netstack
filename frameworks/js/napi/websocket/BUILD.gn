@@ -21,7 +21,7 @@ ohos_shared_library("websocket") {
     "constant/include",
     "websocket_exec/include",
     "websocket_module/include",
-    "//third_party/libwebsockets/include",
+    "$THIRD_PARTY_ROOT/libwebsockets/include",
   ]
 
   sources = [
@@ -36,10 +36,10 @@ ohos_shared_library("websocket") {
 
   deps = [
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "//third_party/libwebsockets:websockets",
-    "//third_party/openssl:libcrypto_static",
-    "//third_party/openssl:ssl_source",
-    "//third_party/zlib:libz",
+    "$THIRD_PARTY_ROOT/libwebsockets:websockets",
+    "$THIRD_PARTY_ROOT/openssl:libcrypto_static",
+    "$THIRD_PARTY_ROOT/openssl:ssl_source",
+    "$THIRD_PARTY_ROOT/zlib:libz",
   ]
 
   external_deps = [

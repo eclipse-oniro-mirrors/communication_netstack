@@ -68,8 +68,8 @@ ohos_fuzztest("TlsSockketFuzzerTest") {
   deps = [
     "$NETSTACK_DIR/frameworks/js/napi/socket:socket",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "//third_party/openssl:libcrypto_shared",
-    "//third_party/openssl:libssl_shared",
+    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
+    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
 
   external_deps = [

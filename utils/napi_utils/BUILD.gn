@@ -17,7 +17,7 @@ import("//foundation/communication/netstack/netstack_config.gni")
 config("napi_utils_public_config") {
   include_dirs = [
     "include",
-    "//third_party/node/src",
+    "$THIRD_PARTY_ROOT/node/src",
     "$NETSTACK_DIR/utils/log/include",
   ]
   if (current_os != "ohos") {
@@ -64,8 +64,8 @@ ohos_static_library("napi_utils_static") {
     ]
   } else {
     public_deps = [
-      "//foundation/arkui/napi:ace_napi",
-      "//third_party/bounds_checking_function:libsec_static",
+      "$ARKUI_ROOT/napi:ace_napi",
+      "$THIRD_PARTY_ROOT/bounds_checking_function:libsec_static",
     ]
   }
 }
