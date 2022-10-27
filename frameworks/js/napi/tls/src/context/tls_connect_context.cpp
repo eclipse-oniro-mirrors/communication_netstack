@@ -39,7 +39,8 @@ constexpr const char *CIPHER_SUITE = "cipherSuite";
 constexpr const char *ADDRESS_NAME = "address";
 constexpr const char *FAMILY_NAME = "family";
 constexpr const char *PORT_NAME = "port";
-constexpr int CA_CHAIN_LENGTH = 10;
+constexpr uint32_t CA_CHAIN_LENGTH = 10;
+constexpr uint32_t PROTOCOLS_SIZE = 10;
 
 bool ReadNecessaryOptions(napi_env env, napi_value *params, napi_value secureOptions, TLSSecureOptions &secureOption)
 {
@@ -129,6 +130,7 @@ TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_va
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], ALPN_PROTOCOLS)) {
         napi_value alpnProtocols = NapiUtils::GetNamedProperty(GetEnv(), params[0], ALPN_PROTOCOLS);
         uint32_t arrayLength = NapiUtils::GetArrayLength(GetEnv(), alpnProtocols);
+        arrayLength = arrayLength > PROTOCOLS_SIZE ? PROTOCOLS_SIZE : arrayLength;
         napi_value elementValue = nullptr;
         std::vector<std::string> alpnProtocolVec;
         for (uint32_t i = 0; i < arrayLength; i++) {
@@ -160,6 +162,7 @@ TLSSecureOptions TLSConnectContext::ReadTLSSecureOptions(napi_env env, napi_valu
     if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, PROTOCOLS_NAME)) {
         napi_value protocolVector = NapiUtils::GetNamedProperty(env, secureOptions, PROTOCOLS_NAME);
         uint32_t num = NapiUtils::GetArrayLength(GetEnv(), protocolVector);
+        num = num > PROTOCOLS_SIZE ? PROTOCOLS_SIZE : num;
         napi_value element = nullptr;
         std::vector<std::string> protocolVec;
         for (uint32_t i = 0; i < num; i++) {
