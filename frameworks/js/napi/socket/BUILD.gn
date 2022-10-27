@@ -79,8 +79,8 @@ ohos_shared_library("socket") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "//third_party/openssl:libcrypto_shared",
-    "//third_party/openssl:libssl_shared",
+    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
+    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
 
   external_deps = [

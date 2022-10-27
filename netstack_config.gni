@@ -11,7 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# args of this module
 SUBSYSTEM_DIR = "//foundation/communication"
 NETSTACK_DIR = "$SUBSYSTEM_DIR/netstack"
 NETSTACK_NATIVE_ROOT = "$NETSTACK_DIR/frameworks/native"
 NETSTACK_INNERKITS_DIR = "$NETSTACK_DIR/interfaces/innerkits"
+
+# args of other module
+ARKUI_ROOT = "//foundation/arkui"
+THIRD_PARTY_ROOT = "//third_party"
+HILOG_ROOT = "//base/hiviewdfx/hilog"
+HILOG_LITE_ROOT = "//base/hiviewdfx/hilog_lite"
