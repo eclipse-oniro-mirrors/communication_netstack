@@ -62,29 +62,16 @@ const std::regex PATTERN{
 
 int ConvertErrno()
 {
-    return TlsSocketError::SOCKET_ERROR_ERRNO_BASE + errno;
-}
-
-std::string MakeErrnoString()
-{
-    return strerror(errno);
+    return TlsSocketError::TLSSOCKET_ERROR_ERRNO_BASE + errno;
 }
 
 int ConvertSSLError(ssl_st *ssl)
 {
     if (!ssl) {
-        return -1;
+        return TLSSOCKET_ERROR_SSL_NULL;
     }
-    return TlsSocketError::SOCKET_ERROR_SSL_BASE + SSL_get_error(ssl, SSL_RET_CODE);
+    return TlsSocketError::TLSSOCKET_ERROR_SSL_BASE + SSL_get_error(ssl, SSL_RET_CODE);
 }
-
-std::string MakeSSLErrorString(int error)
-{
-    char err[MAX_ERR_LEN] = {0};
-    ERR_error_string_n(error - TlsSocketError::SOCKET_ERROR_SSL_BASE, err, sizeof(err));
-    return err;
-}
-
 std::vector<std::string> SplitEscapedAltNames(std::string &altNames)
 {
     std::vector<std::string> result;
@@ -142,7 +129,7 @@ bool SeekIntersection(std::vector<std::string> &vecA, std::vector<std::string> &
 
 TLSSecureOptions::TLSSecureOptions(const TLSSecureOptions &tlsSecureOptions)
 {
-     *this = tlsSecureOptions;
+    *this = tlsSecureOptions;
 }
 
 TLSSecureOptions &TLSSecureOptions::operator=(const TLSSecureOptions &tlsSecureOptions)
@@ -344,8 +331,7 @@ void TLSSocket::MakeIpSocket(sa_family_t family)
     int sock = socket(family, SOCK_STREAM, IPPROTO_IP);
     if (sock < 0) {
         int resErr = ConvertErrno();
-        NETSTACK_LOGE("make ip socket is error, error is %{public}s %{public}d", MakeErrnoString().c_str(),
-                      errno);
+        NETSTACK_LOGE("Create socket failed (%{public}d:%{public}s)", errno, MakeErrnoString().c_str());
         CallOnErrorCallback(resErr, MakeErrnoString());
         return;
     }
@@ -446,7 +432,7 @@ void TLSSocket::CallOnErrorCallback(int32_t err, const std::string &errString)
     }
 }
 
-void TLSSocket::CallBindCallback(bool ok, BindCallback callback)
+void TLSSocket::CallBindCallback(int32_t err, BindCallback callback)
 {
     BindCallback func = nullptr;
     {
@@ -457,11 +443,11 @@ void TLSSocket::CallBindCallback(bool ok, BindCallback callback)
     }
 
     if (func) {
-        func(ok);
+        func(err);
     }
 }
 
-void TLSSocket::CallConnectCallback(bool ok, ConnectCallback callback)
+void TLSSocket::CallConnectCallback(int32_t err, ConnectCallback callback)
 {
     ConnectCallback func = nullptr;
     {
@@ -472,11 +458,11 @@ void TLSSocket::CallConnectCallback(bool ok, ConnectCallback callback)
     }
 
     if (func) {
-        func(ok);
+        func(err);
     }
 }
 
-void TLSSocket::CallSendCallback(bool ok, SendCallback callback)
+void TLSSocket::CallSendCallback(int32_t err, SendCallback callback)
 {
     SendCallback func = nullptr;
     {
@@ -487,11 +473,11 @@ void TLSSocket::CallSendCallback(bool ok, SendCallback callback)
     }
 
     if (func) {
-        func(ok);
+        func(err);
     }
 }
 
-void TLSSocket::CallCloseCallback(bool ok, CloseCallback callback)
+void TLSSocket::CallCloseCallback(int32_t err, CloseCallback callback)
 {
     CloseCallback func = nullptr;
     {
@@ -502,11 +488,11 @@ void TLSSocket::CallCloseCallback(bool ok, CloseCallback callback)
     }
 
     if (func) {
-        func(ok);
+        func(err);
     }
 }
 
-void TLSSocket::CallGetRemoteAddressCallback(bool ok, const NetAddress &address, GetRemoteAddressCallback callback)
+void TLSSocket::CallGetRemoteAddressCallback(int32_t err, const NetAddress &address, GetRemoteAddressCallback callback)
 {
     GetRemoteAddressCallback func = nullptr;
     {
@@ -517,11 +503,11 @@ void TLSSocket::CallGetRemoteAddressCallback(bool ok, const NetAddress &address,
     }
 
     if (func) {
-        func(ok, address);
+        func(err, address);
     }
 }
 
-void TLSSocket::CallGetStateCallback(bool ok, const SocketStateBase &state, GetStateCallback callback)
+void TLSSocket::CallGetStateCallback(int32_t err, const SocketStateBase &state, GetStateCallback callback)
 {
     GetStateCallback func = nullptr;
     {
@@ -532,11 +518,11 @@ void TLSSocket::CallGetStateCallback(bool ok, const SocketStateBase &state, GetS
     }
 
     if (func) {
-        func(ok, state);
+        func(err, state);
     }
 }
 
-void TLSSocket::CallSetExtraOptionsCallback(bool ok, SetExtraOptionsCallback callback)
+void TLSSocket::CallSetExtraOptionsCallback(int32_t err, SetExtraOptionsCallback callback)
 {
     SetExtraOptionsCallback func = nullptr;
     {
@@ -547,11 +533,11 @@ void TLSSocket::CallSetExtraOptionsCallback(bool ok, SetExtraOptionsCallback cal
     }
 
     if (func) {
-        func(ok);
+        func(err);
     }
 }
 
-void TLSSocket::CallGetCertificateCallback(bool ok, const std::string &cert, GetCertificateCallback callback)
+void TLSSocket::CallGetCertificateCallback(int32_t err, const std::string &cert, GetCertificateCallback callback)
 {
     GetCertificateCallback func = nullptr;
     {
@@ -562,11 +548,11 @@ void TLSSocket::CallGetCertificateCallback(bool ok, const std::string &cert, Get
     }
 
     if (func) {
-        func(ok, cert);
+        func(err, cert);
     }
 }
 
-void TLSSocket::CallGetRemoteCertificateCallback(bool ok, const std::string &cert,
+void TLSSocket::CallGetRemoteCertificateCallback(int32_t err, const std::string &cert,
                                                  GetRemoteCertificateCallback callback)
 {
     GetRemoteCertificateCallback func = nullptr;
@@ -578,11 +564,11 @@ void TLSSocket::CallGetRemoteCertificateCallback(bool ok, const std::string &cer
     }
 
     if (func) {
-        func(ok, cert);
+        func(err, cert);
     }
 }
 
-void TLSSocket::CallGetProtocolCallback(bool ok, const std::string &protocol, GetProtocolCallback callback)
+void TLSSocket::CallGetProtocolCallback(int32_t err, const std::string &protocol, GetProtocolCallback callback)
 {
     GetProtocolCallback func = nullptr;
     {
@@ -593,11 +579,11 @@ void TLSSocket::CallGetProtocolCallback(bool ok, const std::string &protocol, Ge
     }
 
     if (func) {
-        func(ok, protocol);
+        func(err, protocol);
     }
 }
 
-void TLSSocket::CallGetCipherSuiteCallback(bool ok, const std::vector<std::string> &suite,
+void TLSSocket::CallGetCipherSuiteCallback(int32_t err, const std::vector<std::string> &suite,
                                            GetCipherSuiteCallback callback)
 {
     GetCipherSuiteCallback func = nullptr;
@@ -609,11 +595,11 @@ void TLSSocket::CallGetCipherSuiteCallback(bool ok, const std::vector<std::strin
     }
 
     if (func) {
-        func(ok, suite);
+        func(err, suite);
     }
 }
 
-void TLSSocket::CallGetSignatureAlgorithmsCallback(bool ok, const std::vector<std::string> &algorithms,
+void TLSSocket::CallGetSignatureAlgorithmsCallback(int32_t err, const std::vector<std::string> &algorithms,
                                                    GetSignatureAlgorithmsCallback callback)
 {
     GetSignatureAlgorithmsCallback func = nullptr;
@@ -625,14 +611,14 @@ void TLSSocket::CallGetSignatureAlgorithmsCallback(bool ok, const std::vector<st
     }
 
     if (func) {
-        func(ok, algorithms);
+        func(err, algorithms);
     }
 }
 
 void TLSSocket::Bind(const OHOS::NetStack::NetAddress &address, const OHOS::NetStack::BindCallback &callback)
 {
     if (sockFd_ >= 0) {
-        CallBindCallback(true, callback);
+        CallBindCallback(TLSSOCKET_SUCCESS, callback);
         return;
     }
 
@@ -641,7 +627,7 @@ void TLSSocket::Bind(const OHOS::NetStack::NetAddress &address, const OHOS::NetS
         int resErr = ConvertErrno();
         NETSTACK_LOGE("make tcp socket failed errno is %{public}d %{public}s", errno, MakeErrnoString().c_str());
         CallOnErrorCallback(resErr, MakeErrnoString());
-        CallBindCallback(false, callback);
+        CallBindCallback(resErr, callback);
         return;
     }
 
@@ -653,10 +639,10 @@ void TLSSocket::Bind(const OHOS::NetStack::NetAddress &address, const OHOS::NetS
     if (addr == nullptr) {
         NETSTACK_LOGE("TLSSocket::Bind Address Is Invalid");
         CallOnErrorCallback(-1, "Address Is Invalid");
-        CallBindCallback(false, callback);
+        CallBindCallback(ConvertErrno(), callback);
         return;
     }
-    CallBindCallback(true, callback);
+    CallBindCallback(TLSSOCKET_SUCCESS, callback);
 }
 
 void TLSSocket::Connect(OHOS::NetStack::TLSConnectOptions &tlsConnectOptions,
@@ -666,7 +652,7 @@ void TLSSocket::Connect(OHOS::NetStack::TLSConnectOptions &tlsConnectOptions,
         int resErr = ConvertErrno();
         NETSTACK_LOGE("connect error is %{public}s %{public}d", MakeErrnoString().c_str(), errno);
         CallOnErrorCallback(resErr, MakeErrnoString());
-        callback(false);
+        callback(resErr);
         return;
     }
 
@@ -674,13 +660,13 @@ void TLSSocket::Connect(OHOS::NetStack::TLSConnectOptions &tlsConnectOptions,
     if (!res) {
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        callback(false);
+        callback(resErr);
         return;
     }
 
     StartReadMessage();
     CallOnConnectCallback();
-    callback(true);
+    callback(TLSSOCKET_SUCCESS);
 }
 
 void TLSSocket::Send(const OHOS::NetStack::TCPSendOptions &tcpSendOptions, const OHOS::NetStack::SendCallback &callback)
@@ -691,10 +677,10 @@ void TLSSocket::Send(const OHOS::NetStack::TCPSendOptions &tcpSendOptions, const
     if (!res) {
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        CallSendCallback(false, callback);
+        CallSendCallback(resErr, callback);
         return;
     }
-    CallSendCallback(true, callback);
+    CallSendCallback(TLSSOCKET_SUCCESS, callback);
 }
 
 bool WaitConditionWithTimeout(bool *flag, const int32_t timeoutMs)
@@ -714,12 +700,12 @@ bool WaitConditionWithTimeout(bool *flag, const int32_t timeoutMs)
 void TLSSocket::Close(const OHOS::NetStack::CloseCallback &callback)
 {
     if (!WaitConditionWithTimeout(&isRunning_, TIMEOUT_MS)) {
-        callback(false);
+        callback(ConvertErrno());
         return;
     }
     isRunning_ = false;
     if (!WaitConditionWithTimeout(&isRunOver_, TIMEOUT_MS)) {
-        callback(false);
+        callback(ConvertErrno());
         return;
     }
     auto res = tlsSocketInternal_.Close();
@@ -727,11 +713,11 @@ void TLSSocket::Close(const OHOS::NetStack::CloseCallback &callback)
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         NETSTACK_LOGE("close error is %{public}s %{public}d", MakeSSLErrorString(resErr).c_str(), resErr);
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        callback(false);
+        callback(resErr);
         return;
     }
     CallOnCloseCallback();
-    callback(true);
+    callback(TLSSOCKET_SUCCESS);
 }
 
 void TLSSocket::GetRemoteAddress(const OHOS::NetStack::GetRemoteAddressCallback &callback)
@@ -743,7 +729,7 @@ void TLSSocket::GetRemoteAddress(const OHOS::NetStack::GetRemoteAddressCallback 
         int resErr = ConvertErrno();
         NETSTACK_LOGE("getsockname failed errno %{public}d", resErr);
         CallOnErrorCallback(resErr, MakeErrnoString());
-        CallGetRemoteAddressCallback(false, {}, callback);
+        CallGetRemoteAddressCallback(resErr, {}, callback);
         return;
     }
 
@@ -764,7 +750,7 @@ void TLSSocket::GetIp4RemoteAddress(const OHOS::NetStack::GetRemoteAddressCallba
         int resErr = ConvertErrno();
         NETSTACK_LOGE("GetIp4RemoteAddress failed errno %{public}d", resErr);
         CallOnErrorCallback(resErr, MakeErrnoString());
-        CallGetRemoteAddressCallback(false, {}, callback);
+        CallGetRemoteAddressCallback(resErr, {}, callback);
         return;
     }
 
@@ -772,14 +758,14 @@ void TLSSocket::GetIp4RemoteAddress(const OHOS::NetStack::GetRemoteAddressCallba
     if (address.empty()) {
         NETSTACK_LOGE("GetIp4RemoteAddress failed errno %{public}d", errno);
         CallOnErrorCallback(-1, "Address is invalid");
-        CallGetRemoteAddressCallback(false, {}, callback);
+        CallGetRemoteAddressCallback(ConvertErrno(), {}, callback);
         return;
     }
     NetAddress netAddress;
     netAddress.SetAddress(address);
     netAddress.SetFamilyBySaFamily(AF_INET);
     netAddress.SetPort(ntohs(addr4.sin_port));
-    CallGetRemoteAddressCallback(true, netAddress, callback);
+    CallGetRemoteAddressCallback(TLSSOCKET_SUCCESS, netAddress, callback);
 }
 
 void TLSSocket::GetIp6RemoteAddress(const OHOS::NetStack::GetRemoteAddressCallback &callback)
@@ -792,7 +778,7 @@ void TLSSocket::GetIp6RemoteAddress(const OHOS::NetStack::GetRemoteAddressCallba
         int resErr = ConvertErrno();
         NETSTACK_LOGE("GetIp6RemoteAddress failed errno %{public}d", resErr);
         CallOnErrorCallback(resErr, MakeErrnoString());
-        CallGetRemoteAddressCallback(false, {}, callback);
+        CallGetRemoteAddressCallback(resErr, {}, callback);
         return;
     }
 
@@ -800,14 +786,14 @@ void TLSSocket::GetIp6RemoteAddress(const OHOS::NetStack::GetRemoteAddressCallba
     if (address.empty()) {
         NETSTACK_LOGE("GetIp6RemoteAddress failed errno %{public}d", errno);
         CallOnErrorCallback(-1, "Address is invalid");
-        CallGetRemoteAddressCallback(false, {}, callback);
+        CallGetRemoteAddressCallback(ConvertErrno(), {}, callback);
         return;
     }
     NetAddress netAddress;
     netAddress.SetAddress(address);
     netAddress.SetFamilyBySaFamily(AF_INET6);
     netAddress.SetPort(ntohs(addr6.sin6_port));
-    CallGetRemoteAddressCallback(true, netAddress, callback);
+    CallGetRemoteAddressCallback(TLSSOCKET_SUCCESS, netAddress, callback);
 }
 
 void TLSSocket::GetState(const OHOS::NetStack::GetStateCallback &callback)
@@ -818,7 +804,7 @@ void TLSSocket::GetState(const OHOS::NetStack::GetStateCallback &callback)
     if (r < 0) {
         SocketStateBase state;
         state.SetIsClose(true);
-        CallGetStateCallback(false, state, callback);
+        CallGetStateCallback(ConvertErrno(), state, callback);
         return;
     }
     sa_family_t family;
@@ -828,7 +814,7 @@ void TLSSocket::GetState(const OHOS::NetStack::GetStateCallback &callback)
     state.SetIsBound(ret == 0);
     ret = getpeername(sockFd_, reinterpret_cast<sockaddr *>(&family), &len);
     state.SetIsConnected(ret == 0);
-    CallGetStateCallback(true, state, callback);
+    CallGetStateCallback(TLSSOCKET_SUCCESS, state, callback);
 }
 
 bool TLSSocket::SetBaseOptions(const ExtraOptionsBase &option) const
@@ -906,18 +892,18 @@ void TLSSocket::SetExtraOptions(const OHOS::NetStack::TCPExtraOptions &tcpExtraO
     if (!SetBaseOptions(tcpExtraOptions)) {
         NETSTACK_LOGE("SetExtraOptions errno %{public}d", errno);
         CallOnErrorCallback(errno, MakeErrnoString());
-        CallSetExtraOptionsCallback(false, callback);
+        CallSetExtraOptionsCallback(ConvertErrno(), callback);
         return;
     }
 
     if (!SetExtraOptions(tcpExtraOptions)) {
         NETSTACK_LOGE("SetExtraOptions errno %{public}d", errno);
         CallOnErrorCallback(errno, MakeErrnoString());
-        CallSetExtraOptionsCallback(false, callback);
+        CallSetExtraOptionsCallback(ConvertErrno(), callback);
         return;
     }
 
-    CallSetExtraOptionsCallback(true, callback);
+    CallSetExtraOptionsCallback(TLSSOCKET_SUCCESS, callback);
 }
 
 void TLSSocket::GetCertificate(const GetCertificateCallback &callback)
@@ -927,10 +913,10 @@ void TLSSocket::GetCertificate(const GetCertificateCallback &callback)
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         NETSTACK_LOGE("GetCertificate errno %{public}d, %{public}s", resErr, MakeSSLErrorString(resErr).c_str());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        callback(false, "");
+        callback(resErr, "");
         return;
     }
-    callback(true, cert);
+    callback(TLSSOCKET_SUCCESS, cert);
 }
 
 void TLSSocket::GetRemoteCertificate(const GetRemoteCertificateCallback &callback)
@@ -940,10 +926,10 @@ void TLSSocket::GetRemoteCertificate(const GetRemoteCertificateCallback &callbac
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         NETSTACK_LOGE("GetRemoteCertificate errno %{public}d, %{public}s", resErr, MakeSSLErrorString(resErr).c_str());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        callback(false, "");
+        callback(resErr, "");
         return;
     }
-    callback(true, remoteCert);
+    callback(TLSSOCKET_SUCCESS, remoteCert);
 }
 
 void TLSSocket::GetProtocol(const GetProtocolCallback &callback)
@@ -953,10 +939,10 @@ void TLSSocket::GetProtocol(const GetProtocolCallback &callback)
         NETSTACK_LOGE("GetProtocol errno %{public}d", errno);
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        callback(false, "");
+        callback(resErr, "");
         return;
     }
-    callback(true, protocol);
+    callback(TLSSOCKET_SUCCESS, protocol);
 }
 
 void TLSSocket::GetCipherSuite(const GetCipherSuiteCallback &callback)
@@ -966,10 +952,10 @@ void TLSSocket::GetCipherSuite(const GetCipherSuiteCallback &callback)
         NETSTACK_LOGE("GetCipherSuite errno %{public}d", errno);
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        callback(false, cipherSuite);
+        callback(resErr, cipherSuite);
         return;
     }
-    callback(true, cipherSuite);
+    callback(TLSSOCKET_SUCCESS, cipherSuite);
 }
 
 void TLSSocket::GetSignatureAlgorithms(const GetSignatureAlgorithmsCallback &callback)
@@ -979,10 +965,10 @@ void TLSSocket::GetSignatureAlgorithms(const GetSignatureAlgorithmsCallback &cal
         NETSTACK_LOGE("GetSignatureAlgorithms errno %{public}d", errno);
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        callback(false, {});
+        callback(resErr, {});
         return;
     }
-    callback(true, signatureAlgorithms);
+    callback(TLSSOCKET_SUCCESS, signatureAlgorithms);
 }
 
 void TLSSocket::OnMessage(const OHOS::NetStack::OnMessageCallback &onMessageCallback)
@@ -1318,9 +1304,8 @@ static bool StartsWith(const std::string &s, const std::string &prefix)
     return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
 }
 
-void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> dnsNames,
-                       std::vector<std::string> ips, const X509 *x509Certificates,
-                       std::tuple<bool, std::string> &result)
+void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> dnsNames, std::vector<std::string> ips,
+                       const X509 *x509Certificates, std::tuple<bool, std::string> &result)
 {
     bool valid = false;
     std::string reason = UNKNOW_REASON;

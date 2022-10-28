@@ -37,7 +37,7 @@ public:
     explicit SendContext(napi_env env, EventManager *manager);
 
     std::string data_;
-    bool isOk_ = false;
+    int32_t errorNumber_ = 0;
 
     void ParseParams(napi_value *params, size_t paramsCount);
 

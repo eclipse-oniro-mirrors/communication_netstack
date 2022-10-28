@@ -35,12 +35,12 @@ public:
     TLSNapiContext() = delete;
     explicit TLSNapiContext(napi_env env, EventManager *manager);
 
-    bool isOk_ = false;
     std::string protocol_;
     std::vector<std::string> cipherSuites_;
     std::string cert_;
     std::string remoteCert_;
     std::vector<std::string> signatureAlgorithms_;
+    int32_t errorNumber_ = 0;
 
     void ParseParams(napi_value *params, size_t paramsCount);
 

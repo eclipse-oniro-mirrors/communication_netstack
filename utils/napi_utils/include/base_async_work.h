@@ -22,8 +22,7 @@
 #include "napi/native_common.h"
 #include "base_context.h"
 #include "napi_utils.h"
-
-static constexpr const int PARSE_PARAM_FAILED = -1;
+#include "netstack_log.h"
 
 static constexpr const char *BUSINESS_ERROR_KEY = "code";
 
@@ -39,14 +38,10 @@ public:
         (void)env;
 
         auto context = static_cast<Context *>(data);
-        if (!context->IsParseOK()) {
-            context->SetErrorCode(PARSE_PARAM_FAILED);
+        if (context == nullptr || Executor == nullptr) {
             return;
         }
-
-        if (Executor != nullptr) {
-            context->SetExecOK(Executor(context));
-        }
+        context->SetExecOK(Executor(context));
         /* do not have async executor, execOK should be set in sync work */
     }
 
@@ -74,11 +69,11 @@ public:
                 return;
             }
         } else {
-            argv[0] = NapiUtils::CreateObject(env);
+            argv[0] = NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
             if (argv[0] == nullptr) {
+                NETSTACK_LOGE("AsyncWorkName %{public}s createErrorMessage fail", context->GetAsyncWorkName().c_str());
                 return;
             }
-            NapiUtils::SetInt32Property(env, argv[0], BUSINESS_ERROR_KEY, context->GetErrorCode());
 
             argv[1] = NapiUtils::GetUndefined(env);
         }

@@ -36,7 +36,7 @@ public:
     explicit TLSConnectContext(napi_env env, EventManager *manager);
 
     TLSConnectOptions connectOptions_;
-    bool isOk_ = false;
+    int32_t errorNumber_ = 0;
     std::string hostName_;
     std::vector<std::string> x509Certificates_;
 

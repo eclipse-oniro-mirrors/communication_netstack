@@ -100,7 +100,7 @@ static bool SetSocket(napi_env env, napi_value thisVal, BindContext *context, in
 
 static bool MakeTcpSocket(napi_env env, napi_value thisVal, BindContext *context)
 {
-    int sock = SocketExec::MakeTcpSocket(context->address.GetSaFamily());
+    int sock = SocketExec::MakeTcpSocket(context->address_.GetSaFamily());
     if (!SetSocket(env, thisVal, context, sock)) {
         return false;
     }
@@ -110,7 +110,7 @@ static bool MakeTcpSocket(napi_env env, napi_value thisVal, BindContext *context
 
 static bool MakeUdpSocket(napi_env env, napi_value thisVal, BindContext *context)
 {
-    int sock = SocketExec::MakeUdpSocket(context->address.GetSaFamily());
+    int sock = SocketExec::MakeUdpSocket(context->address_.GetSaFamily());
     if (!SetSocket(env, thisVal, context, sock)) {
         return false;
     }
