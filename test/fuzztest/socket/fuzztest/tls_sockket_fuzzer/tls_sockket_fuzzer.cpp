@@ -24,7 +24,7 @@ void BindFuzzTest(const uint8_t* data, size_t size)
 {
     if ((data == nullptr) || (size <= 0)) {
         return;
-    }                          
+    }
     TLSSocket tlsSocket;
     NetAddress netAddress;
     std::string str(reinterpret_cast<const char*>(data), size);
@@ -41,7 +41,7 @@ void ConnectFuzzTest(const uint8_t* data, size_t size)
 {
     if ((data == nullptr) || (size <= 0)) {
         return;
-    }                          
+    }
     TLSSocket tlsSocket;
     NetAddress netAddress;
     std::string str(reinterpret_cast<const char*>(data), size);
@@ -65,7 +65,7 @@ void SendTest(const uint8_t* data, size_t size)
 {
     if ((data == nullptr) || (size <= 0)) {
         return;
-    }                          
+    }
     TLSSocket tlsSocket;
     TCPSendOptions options;
     std::string str(reinterpret_cast<const char*>(data), size);
@@ -80,7 +80,7 @@ void SetExtraOptionsTest(const uint8_t* data, size_t size)
 {
     if ((data == nullptr) || (size <= 0)) {
         return;
-    }                          
+    }
     TLSSocket tlsSocket;
     TCPExtraOptions options;
     options.SetKeepAlive(*(reinterpret_cast<const bool*>(data)));
