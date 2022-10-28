@@ -26,6 +26,11 @@ namespace NetStack {
 TLSConfiguration::TLSConfiguration(const TLSConfiguration &other)
 {
     privateKey_ = other.privateKey_;
+    localCertificate_ = other.localCertificate_;
+    caCertificate_ = other.caCertificate_;
+    minProtocol_ = other.minProtocol_;
+    maxProtocol_ = other.maxProtocol_;
+    cipherSuite_ = other.cipherSuite_;
 }
 
 const TLSKey &TLSConfiguration::PrivateKey() const

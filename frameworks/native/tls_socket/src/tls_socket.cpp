@@ -16,12 +16,13 @@
 #include "tls_socket.h"
 
 #include <chrono>
-#include <netinet/tcp.h>
-#include <openssl/err.h>
-#include <openssl/ssl.h>
 #include <regex>
 #include <securec.h>
 #include <thread>
+
+#include <netinet/tcp.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
@@ -36,6 +37,7 @@ constexpr int REMOTE_CERT_LEN = 8192;
 constexpr int COMMON_NAME_BUF_SIZE = 256;
 constexpr int BUF_SIZE = 2048;
 constexpr int SSL_RET_CODE = 0;
+constexpr int SSL_ERROR_RETURN = -1;
 constexpr const char *SPLIT_ALT_NAMES = ",";
 constexpr const char *SPLIT_HOST_NAME = ".";
 constexpr const char *PROTOCOL_UNKNOW = "UNKNOW_PROTOCOL";
@@ -291,6 +293,9 @@ const std::vector<std::string> &TLSConnectOptions::GetAlpnProtocols() const
 
 std::string TLSSocket::MakeAddressString(sockaddr *addr)
 {
+    if (!addr) {
+        return {};
+    }
     if (addr->sa_family == AF_INET) {
         auto *addr4 = reinterpret_cast<sockaddr_in *>(addr);
         const char *str = inet_ntoa(addr4->sin_addr);
@@ -312,6 +317,9 @@ std::string TLSSocket::MakeAddressString(sockaddr *addr)
 void TLSSocket::GetAddr(const NetAddress &address, sockaddr_in *addr4, sockaddr_in6 *addr6, sockaddr **addr,
                         socklen_t *len)
 {
+    if (!addr6 || !addr4 || !len) {
+        return;
+    }
     sa_family_t family = address.GetSaFamily();
     if (family == AF_INET) {
         addr4->sin_family = AF_INET;
@@ -440,12 +448,11 @@ void TLSSocket::CallOnErrorCallback(int32_t err, const std::string &errString)
 
 void TLSSocket::CallBindCallback(bool ok, BindCallback callback)
 {
-    bindCallback_ = callback;
     BindCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (bindCallback_) {
-            func = bindCallback_;
+        if (callback) {
+            func = callback;
         }
     }
 
@@ -456,12 +463,11 @@ void TLSSocket::CallBindCallback(bool ok, BindCallback callback)
 
 void TLSSocket::CallConnectCallback(bool ok, ConnectCallback callback)
 {
-    connectCallback_ = callback;
     ConnectCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (connectCallback_) {
-            func = connectCallback_;
+        if (callback) {
+            func = callback;
         }
     }
 
@@ -472,12 +478,11 @@ void TLSSocket::CallConnectCallback(bool ok, ConnectCallback callback)
 
 void TLSSocket::CallSendCallback(bool ok, SendCallback callback)
 {
-    sendCallback_ = callback;
     SendCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (sendCallback_) {
-            func = sendCallback_;
+        if (callback) {
+            func = callback;
         }
     }
 
@@ -488,12 +493,11 @@ void TLSSocket::CallSendCallback(bool ok, SendCallback callback)
 
 void TLSSocket::CallCloseCallback(bool ok, CloseCallback callback)
 {
-    closeCallback_ = callback;
     CloseCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (closeCallback_) {
-            func = closeCallback_;
+        if (callback) {
+            func = callback;
         }
     }
 
@@ -504,12 +508,11 @@ void TLSSocket::CallCloseCallback(bool ok, CloseCallback callback)
 
 void TLSSocket::CallGetRemoteAddressCallback(bool ok, const NetAddress &address, GetRemoteAddressCallback callback)
 {
-    getRemoteAddressCallback_ = callback;
     GetRemoteAddressCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (getRemoteAddressCallback_) {
-            func = getRemoteAddressCallback_;
+        if (callback) {
+            func = callback;
         }
     }
 
@@ -520,12 +523,11 @@ void TLSSocket::CallGetRemoteAddressCallback(bool ok, const NetAddress &address,
 
 void TLSSocket::CallGetStateCallback(bool ok, const SocketStateBase &state, GetStateCallback callback)
 {
-    getStateCallback_ = callback;
     GetStateCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (getStateCallback_) {
-            func = getStateCallback_;
+        if (callback) {
+            func = callback;
         }
     }
 
@@ -536,12 +538,11 @@ void TLSSocket::CallGetStateCallback(bool ok, const SocketStateBase &state, GetS
 
 void TLSSocket::CallSetExtraOptionsCallback(bool ok, SetExtraOptionsCallback callback)
 {
-    setExtraOptionsCallback_ = callback;
     SetExtraOptionsCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (setExtraOptionsCallback_) {
-            func = setExtraOptionsCallback_;
+        if (callback) {
+            func = callback;
         }
     }
 
@@ -555,8 +556,8 @@ void TLSSocket::CallGetCertificateCallback(bool ok, const std::string &cert, Get
     GetCertificateCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (getCertificateCallback_) {
-            func = getCertificateCallback_;
+        if (callback) {
+            func = callback;
         }
     }
 
@@ -571,8 +572,8 @@ void TLSSocket::CallGetRemoteCertificateCallback(bool ok, const std::string &cer
     GetRemoteCertificateCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (getRemoteCertificateCallback_) {
-            func = getRemoteCertificateCallback_;
+        if (callback) {
+            func = callback;
         }
     }
 
@@ -586,8 +587,8 @@ void TLSSocket::CallGetProtocolCallback(bool ok, const std::string &protocol, Ge
     GetProtocolCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (getProtocolCallback_) {
-            func = getProtocolCallback_;
+        if (callback) {
+            func = callback;
         }
     }
 
@@ -602,8 +603,8 @@ void TLSSocket::CallGetCipherSuiteCallback(bool ok, const std::vector<std::strin
     GetCipherSuiteCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (getCipherSuiteCallback_) {
-            func = getCipherSuiteCallback_;
+        if (callback) {
+            func = callback;
         }
     }
 
@@ -618,8 +619,8 @@ void TLSSocket::CallGetSignatureAlgorithmsCallback(bool ok, const std::vector<st
     GetSignatureAlgorithmsCallback func = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (getSignatureAlgorithmsCallback_) {
-            func = getSignatureAlgorithmsCallback_;
+        if (callback) {
+            func = callback;
         }
     }
 
@@ -696,7 +697,7 @@ void TLSSocket::Send(const OHOS::NetStack::TCPSendOptions &tcpSendOptions, const
     CallSendCallback(true, callback);
 }
 
-bool WaitConditionWithTimeout(bool *flag, int32_t timeoutMs)
+bool WaitConditionWithTimeout(bool *flag, const int32_t timeoutMs)
 {
     int maxWaitCnt = timeoutMs / WAIT_MS;
     int cnt = 0;
@@ -1043,7 +1044,6 @@ void TLSSocket::OffError()
 bool ExecSocketConnect(const std::string &hostName, int port, sa_family_t family, int socketDescriptor)
 {
     struct sockaddr_in dest = {0};
-    bzero(&dest, sizeof(dest));
     dest.sin_family = family;
     dest.sin_port = htons(port);
     if (!inet_aton(hostName.c_str(), reinterpret_cast<in_addr *>(&dest.sin_addr.s_addr))) {
@@ -1061,9 +1061,7 @@ bool ExecSocketConnect(const std::string &hostName, int port, sa_family_t family
 
 bool TLSSocket::TLSSocketInternal::TlsConnectToHost(int sock, const TLSConnectOptions &options)
 {
-    configuration_.SetPrivateKey(options.GetTlsSecureOptions().GetKey(), options.GetTlsSecureOptions().GetKeyPass());
-    configuration_.SetCaCertificate(options.GetTlsSecureOptions().GetCaChain());
-    configuration_.SetLocalCertificate(options.GetTlsSecureOptions().GetCert());
+    SetTlsConfiguration(options);
     std::string cipherSuite = options.GetTlsSecureOptions().GetCipherSuite();
     if (!cipherSuite.empty()) {
         configuration_.SetCipherSuite(cipherSuite);
@@ -1116,13 +1114,13 @@ bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
     NETSTACK_LOGD("data '%{public}s' Sent successfully,sent in total %{public}d bytes!", data.c_str(), len);
     return true;
 }
-int TLSSocket::TLSSocketInternal::Recv(char *buffer, int MAX_BUFFER_SIZE)
+int TLSSocket::TLSSocketInternal::Recv(char *buffer, int maxBufferSize)
 {
     if (!ssl_) {
         NETSTACK_LOGE("ssl is null");
-        return -1;
+        return SSL_ERROR_RETURN;
     }
-    return SSL_read(ssl_, buffer, MAX_BUFFER_SIZE);
+    return SSL_read(ssl_, buffer, maxBufferSize);
 }
 
 bool TLSSocket::TLSSocketInternal::Close()
@@ -1142,6 +1140,10 @@ bool TLSSocket::TLSSocketInternal::Close()
     ssl_ = nullptr;
     close(socketDescriptor_);
     socketDescriptor_ = -1;
+    if (!tlsContextPointer_) {
+        NETSTACK_LOGE("Tls context pointer is null");
+        return false;
+    }
     tlsContextPointer_->CloseCtx();
     return true;
 }
@@ -1206,7 +1208,6 @@ std::vector<std::string> TLSSocket::TLSSocketInternal::GetCipherSuite() const
     std::vector<std::string> cipherSuiteVec;
     for (int i = 0; i < sk_SSL_CIPHER_num(sk); i++) {
         const SSL_CIPHER *c = sk_SSL_CIPHER_value(sk, i);
-        cipherSuite.cipherId_ = SSL_CIPHER_get_id(c);
         cipherSuite.cipherName_ = SSL_CIPHER_get_name(c);
         cipherSuiteVec.push_back(cipherSuite.cipherName_);
     }
@@ -1299,12 +1300,12 @@ bool TLSSocket::TLSSocketInternal::StartTlsConnected(const TLSConnectOptions &op
 
 bool TLSSocket::TLSSocketInternal::CreatTlsContext()
 {
-    tlsContextPointer_ = TLSContext::CreateConfiguration(SSL_CLIENT_MODE, configuration_);
+    tlsContextPointer_ = TLSContext::CreateConfiguration(configuration_);
     if (!tlsContextPointer_) {
         return false;
     }
     if (!(ssl_ = tlsContextPointer_->CreateSsl())) {
-        NETSTACK_LOGD("Error creating SSL session");
+        NETSTACK_LOGE("Create ssl session failed");
         return false;
     }
     SSL_set_fd(ssl_, socketDescriptor_);

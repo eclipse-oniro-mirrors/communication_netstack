@@ -17,9 +17,9 @@
 #define TLS_CONTEXT_SEND_CONTEXT_H
 
 #include <cstddef>
+#include <string>
 
 #include <napi/native_api.h>
-#include <string>
 
 #include "base_context.h"
 #include "event_manager.h"

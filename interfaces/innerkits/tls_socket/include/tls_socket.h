@@ -33,7 +33,6 @@
 #include "tcp_connect_options.h"
 #include "tcp_extra_options.h"
 #include "tcp_send_options.h"
-
 #include "socket_error.h"
 #include "tls.h"
 #include "tls_certificate.h"
@@ -425,10 +424,10 @@ private:
         /**
          * Receive the data sent by the server through the established encrypted connection
          * @param buffer receive the data sent by the server
-         * @param MAX_BUFFER_SIZE the size of the data received from the server
+         * @param maxBufferSize the size of the data received from the server
          * @return whether the data sent by the server is successfully received
          */
-        int Recv(char *buffer, int MAX_BUFFER_SIZE);
+        int Recv(char *buffer, int maxBufferSize);
 
         /**
          * Disconnect encrypted connection
@@ -562,6 +561,7 @@ private:
 
     void MakeIpSocket(sa_family_t family);
 
+private:
     static constexpr const size_t MAX_ERROR_LEN = 128;
     static constexpr const size_t MAX_BUFFER_SIZE = 8192;
 
@@ -569,19 +569,6 @@ private:
     OnConnectCallback onConnectCallback_;
     OnCloseCallback onCloseCallback_;
     OnErrorCallback onErrorCallback_;
-
-    BindCallback bindCallback_;
-    ConnectCallback connectCallback_;
-    SendCallback sendCallback_;
-    CloseCallback closeCallback_;
-    GetRemoteAddressCallback getRemoteAddressCallback_;
-    GetStateCallback getStateCallback_;
-    SetExtraOptionsCallback setExtraOptionsCallback_;
-    GetCertificateCallback getCertificateCallback_;
-    GetRemoteCertificateCallback getRemoteCertificateCallback_;
-    GetProtocolCallback getProtocolCallback_;
-    GetCipherSuiteCallback getCipherSuiteCallback_;
-    GetSignatureAlgorithmsCallback getSignatureAlgorithmsCallback_;
 
     std::mutex mutex_;
     bool isRunning_ = false;
