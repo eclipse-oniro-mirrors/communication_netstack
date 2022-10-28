@@ -13,24 +13,35 @@
  * limitations under the License.
  */
 
-#ifndef COMMUNICATION_NETSTACK_SOCKET_ERROR_H
-#define COMMUNICATION_NETSTACK_SOCKET_ERROR_H
+#include "socket_error.h"
 
-#include <string>
+#include <cstring>
 #include <map>
+
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 
 namespace OHOS {
 namespace NetStack {
-enum TlsSocketError {
-    TLSSOCKET_SUCCESS = 0,
-    TLSSOCKET_ERROR_ERRNO_BASE = 2303100,
-    TLSSOCKET_ERROR_SSL_BASE = 2303500,
-    TLSSOCKET_ERROR_SSL_NULL = 2303501,
-    TLSSOCKET_ERROR_PARAM_INVALID = 2300401
-};
+static constexpr const size_t MAX_ERR_LEN = 1024;
 
-std::string MakeErrnoString();
-std::string MakeSSLErrorString(int error);
+std::string MakeErrnoString()
+{
+    return strerror(errno);
+}
+
+std::string MakeSSLErrorString(int error)
+{
+    static const std::map<int32_t, std::string> ERROR_MAP = {
+        {TLSSOCKET_ERROR_SSL_NULL, "ssl is null"},
+    };
+    auto search = ERROR_MAP.find(error);
+    if (search != ERROR_MAP.end()) {
+        return search->second;
+    }
+    char err[MAX_ERR_LEN] = {0};
+    ERR_error_string_n(error - TLSSOCKET_ERROR_SSL_BASE, err, sizeof(err));
+    return err;
+}
 } // namespace NetStack
 } // namespace OHOS
-#endif // COMMUNICATION_NETSTACK_SOCKET_ERROR_H

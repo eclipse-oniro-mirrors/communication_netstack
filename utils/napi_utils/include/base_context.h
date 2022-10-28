@@ -46,6 +46,8 @@ public:
 
     void SetErrorCode(int32_t errorCode);
 
+    void SetError(int32_t errorCode, const std::string &errorMessage);
+
     napi_status SetCallback(napi_value callback);
 
     void DeleteCallback();
@@ -63,6 +65,8 @@ public:
     [[nodiscard]] napi_env GetEnv() const;
 
     [[nodiscard]] int32_t GetErrorCode() const;
+
+    [[nodiscard]] const std::string &GetErrorMessage() const;
 
     [[nodiscard]] napi_value GetCallback() const;
 
@@ -91,6 +95,8 @@ private:
     bool requestOK_;
 
     int32_t errorCode_;
+
+    std::string errorMessage_;
 
     napi_ref callback_;
 

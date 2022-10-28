@@ -39,6 +39,10 @@ static constexpr const char *GLOBAL_JSON_STRINGIFY = "stringify";
 
 static constexpr const char *GLOBAL_JSON_PARSE = "parse";
 
+static constexpr const char *CODE = "code";
+
+static constexpr const char *MSG = "message";
+
 napi_valuetype GetValueType(napi_env env, napi_value value)
 {
     if (value == nullptr) {
@@ -530,5 +534,15 @@ void CreateUvQueueWorkEnhanced(napi_env env, void *data, void (*handler)(napi_en
 
     (void)uv_queue_work(
         loop, work, [](uv_work_t *) {}, callback);
+}
+
+/* error */
+napi_value CreateErrorMessage(napi_env env, int32_t errorCode, const std::string &errorMessage)
+{
+    napi_value result = nullptr;
+    result = CreateObject(env);
+    SetNamedProperty(env, result, CODE, CreateInt32(env, errorCode));
+    SetNamedProperty(env, result, MSG, CreateStringUtf8(env, errorMessage));
+    return result;
 }
 } // namespace OHOS::NetStack::NapiUtils

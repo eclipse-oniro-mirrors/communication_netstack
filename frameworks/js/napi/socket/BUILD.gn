@@ -19,6 +19,7 @@ TLS_NAPI = "$NETSTACK_DIR/frameworks/js/napi/tls"
 
 tls_sources = [
   "$TLS/src/secure_data.cpp",
+  "$TLS/src/socket_error.cpp",
   "$TLS/src/tls_certificate.cpp",
   "$TLS/src/tls_configuration.cpp",
   "$TLS/src/tls_context.cpp",

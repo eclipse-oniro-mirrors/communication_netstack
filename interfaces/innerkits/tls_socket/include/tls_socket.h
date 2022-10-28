@@ -43,26 +43,27 @@
 namespace OHOS {
 namespace NetStack {
 
-using BindCallback = std::function<void(bool ok)>;
-using ConnectCallback = std::function<void(bool ok)>;
-using SendCallback = std::function<void(bool ok)>;
-using CloseCallback = std::function<void(bool ok)>;
-using GetRemoteAddressCallback = std::function<void(bool ok, const NetAddress &address)>;
-using GetStateCallback = std::function<void(bool ok, const SocketStateBase &state)>;
-using SetExtraOptionsCallback = std::function<void(bool ok)>;
-using GetCertificateCallback = std::function<void(bool ok, const std::string &cert)>;
-using GetRemoteCertificateCallback = std::function<void(bool ok, const std::string &cert)>;
-using GetProtocolCallback = std::function<void(bool ok, const std::string &protocol)>;
-using GetCipherSuiteCallback = std::function<void(bool ok, const std::vector<std::string> &suite)>;
-using GetSignatureAlgorithmsCallback = std::function<void(bool ok, const std::vector<std::string> &algorithms)>;
+using BindCallback = std::function<void(int32_t errorNumber)>;
+using ConnectCallback = std::function<void(int32_t errorNumber)>;
+using SendCallback = std::function<void(int32_t errorNumber)>;
+using CloseCallback = std::function<void(int32_t errorNumber)>;
+using GetRemoteAddressCallback = std::function<void(int32_t errorNumber, const NetAddress &address)>;
+using GetStateCallback = std::function<void(int32_t errorNumber, const SocketStateBase &state)>;
+using SetExtraOptionsCallback = std::function<void(int32_t errorNumber)>;
+using GetCertificateCallback = std::function<void(int32_t errorNumber, const std::string &cert)>;
+using GetRemoteCertificateCallback = std::function<void(int32_t errorNumber, const std::string &cert)>;
+using GetProtocolCallback = std::function<void(int32_t errorNumber, const std::string &protocol)>;
+using GetCipherSuiteCallback = std::function<void(int32_t errorNumber, const std::vector<std::string> &suite)>;
+using GetSignatureAlgorithmsCallback =
+    std::function<void(int32_t errorNumber, const std::vector<std::string> &algorithms)>;
 
 using OnMessageCallback = std::function<void(const std::string &data, const SocketRemoteInfo &remoteInfo)>;
 using OnConnectCallback = std::function<void(void)>;
 using OnCloseCallback = std::function<void(void)>;
 using OnErrorCallback = std::function<void(int32_t errorNumber, const std::string &errorString)>;
 
-using CheckServerIdentity = std::function<void(
-    const std::string &hostName, const std::vector<std::string> &x509Certificates)>;
+using CheckServerIdentity =
+    std::function<void(const std::string &hostName, const std::vector<std::string> &x509Certificates)>;
 
 constexpr const char *ALPN_PROTOCOLS_HTTP_1_1 = "http1.1";
 constexpr const char *ALPN_PROTOCOLS_HTTP_2 = "h2";
@@ -535,20 +536,19 @@ private:
     void CallOnCloseCallback();
     void CallOnErrorCallback(int32_t err, const std::string &errString);
 
-    void CallBindCallback(bool ok, BindCallback callback);
-    void CallConnectCallback(bool ok, ConnectCallback callback);
-    void CallSendCallback(bool ok, SendCallback callback);
-    void CallCloseCallback(bool ok, CloseCallback callback);
-    void CallGetRemoteAddressCallback(bool ok, const NetAddress &address, GetRemoteAddressCallback callback);
-    void CallGetStateCallback(bool ok, const SocketStateBase &state, GetStateCallback callback);
-    void CallSetExtraOptionsCallback(bool ok, SetExtraOptionsCallback callback);
-    void CallGetCertificateCallback(bool ok, const std::string &cert, GetCertificateCallback callback);
-    void CallGetRemoteCertificateCallback(bool ok, const std::string &cert,
-                                          GetRemoteCertificateCallback callback);
-    void CallGetProtocolCallback(bool ok, const std::string &protocol, GetProtocolCallback callback);
-    void CallGetCipherSuiteCallback(bool ok, const std::vector<std::string> &suite,
+    void CallBindCallback(int32_t err, BindCallback callback);
+    void CallConnectCallback(int32_t err, ConnectCallback callback);
+    void CallSendCallback(int32_t err, SendCallback callback);
+    void CallCloseCallback(int32_t err, CloseCallback callback);
+    void CallGetRemoteAddressCallback(int32_t err, const NetAddress &address, GetRemoteAddressCallback callback);
+    void CallGetStateCallback(int32_t err, const SocketStateBase &state, GetStateCallback callback);
+    void CallSetExtraOptionsCallback(int32_t err, SetExtraOptionsCallback callback);
+    void CallGetCertificateCallback(int32_t err, const std::string &cert, GetCertificateCallback callback);
+    void CallGetRemoteCertificateCallback(int32_t err, const std::string &cert, GetRemoteCertificateCallback callback);
+    void CallGetProtocolCallback(int32_t err, const std::string &protocol, GetProtocolCallback callback);
+    void CallGetCipherSuiteCallback(int32_t err, const std::vector<std::string> &suite,
                                     GetCipherSuiteCallback callback);
-    void CallGetSignatureAlgorithmsCallback(bool ok, const std::vector<std::string> &algorithms,
+    void CallGetSignatureAlgorithmsCallback(int32_t err, const std::vector<std::string> &algorithms,
                                             GetSignatureAlgorithmsCallback callback);
 
     void StartReadMessage();
