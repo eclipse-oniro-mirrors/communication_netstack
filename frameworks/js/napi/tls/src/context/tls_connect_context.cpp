@@ -42,7 +42,7 @@ constexpr const char *PORT_NAME = "port";
 constexpr uint32_t CA_CHAIN_LENGTH = 10;
 constexpr uint32_t PROTOCOLS_SIZE = 10;
 
-bool ReadNecessaryOptions(napi_env env, napi_value *params, napi_value secureOptions, TLSSecureOptions &secureOption)
+bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptions &secureOption)
 {
     if (!NapiUtils::HasNamedProperty(env, secureOptions, CA_NAME)) {
         return false;
@@ -151,7 +151,7 @@ TLSSecureOptions TLSConnectContext::ReadTLSSecureOptions(napi_env env, napi_valu
         return secureOption;
     }
     napi_value secureOptions = NapiUtils::GetNamedProperty(GetEnv(), params[ARG_INDEX_0], SECURE_OPTIONS);
-    if (!ReadNecessaryOptions(env, params, secureOptions, secureOption)) {
+    if (!ReadNecessaryOptions(env, secureOptions, secureOption)) {
         return secureOption;
     }
 

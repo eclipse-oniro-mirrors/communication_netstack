@@ -16,8 +16,9 @@
 #ifndef COMMUNICATION_NETSTACK_TLS_H
 #define COMMUNICATION_NETSTACK_TLS_H
 
-#include "net_address.h"
 #include <string>
+
+#include "net_address.h"
 
 namespace OHOS {
 namespace NetStack {

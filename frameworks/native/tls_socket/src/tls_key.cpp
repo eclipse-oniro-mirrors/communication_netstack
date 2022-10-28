@@ -129,7 +129,7 @@ void TLSKey::DecodeDer(KeyType type, KeyAlgorithm algorithm, const std::string &
         rsa_ = d2i_RSAPrivateKey(nullptr, &key_data, static_cast<long>(keyLen));
     }
     if (!rsa_) {
-        NETSTACK_LOGE("rsa_ is null");
+        NETSTACK_LOGE("rsa is null");
         return;
     }
     keyIsNull_ = false;

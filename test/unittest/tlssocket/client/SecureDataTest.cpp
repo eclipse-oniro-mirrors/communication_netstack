@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
-#include <string>
-
-#include <gtest/gtest.h>
 #include <iostream>
+#include <gtest/gtest.h>
+#include <string>
 
 #include "secure_data.h"
 

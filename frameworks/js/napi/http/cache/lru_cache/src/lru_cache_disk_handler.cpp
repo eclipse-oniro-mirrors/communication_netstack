@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
+#include "lru_cache_disk_handler.h"
+
 #include <thread>
 
 #include "netstack_log.h"
-
-#include "lru_cache_disk_handler.h"
 
 namespace OHOS::NetStack {
 LRUCacheDiskHandler::LRUCacheDiskHandler(std::string fileName, size_t capacity)
@@ -46,7 +46,7 @@ Json::Value LRUCacheDiskHandler::ReadJsonValueFromFile()
     Json::CharReaderBuilder builder;
     std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
     if (!reader->parse(jsonStr.c_str(), jsonStr.c_str() + jsonStr.size(), &root, &err)) {
-        NETSTACK_LOGI("parse json not success, maybe file is broken: %{public}s", err.c_str());
+        NETSTACK_LOGE("parse json not success, maybe file is broken: %{public}s", err.c_str());
         return {};
     }
     return root;

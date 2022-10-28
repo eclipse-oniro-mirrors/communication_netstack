@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include "http_cache_strategy.h"
+
 #include <algorithm>
 #include <cstring>
 
@@ -23,10 +25,8 @@
 #include "http_time.h"
 #include "netstack_log.h"
 
-#include "http_cache_strategy.h"
-
-static constexpr const int64_t ONE_DAY_MILLISECONDS = 24 * 60 * 60 * 1000L;
-static constexpr const int64_t CONVERT_TO_MILLISECONDS = 1000;
+static constexpr int64_t ONE_DAY_MILLISECONDS = 24 * 60 * 60 * 1000L;
+static constexpr int64_t CONVERT_TO_MILLISECONDS = 1000;
 static constexpr const char *KEY_RANGE = "range";
 
 // RFC 7234

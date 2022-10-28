@@ -35,12 +35,12 @@
 namespace OHOS {
 namespace NetStack {
 namespace {
-static constexpr const char *ENUM_PROTOCOL_TLSV13 = "TLSv13";
-static constexpr const char *ENUM_PROTOCOL_TLSV12 = "TLSv12";
+static constexpr const char *PROTOCOL_TLSV13 = "TLSv13";
+static constexpr const char *PROTOCOL_TLSV12 = "TLSv12";
 
 void Finalize(napi_env, void *data, void *)
 {
-    NETSTACK_LOGI("socket handle is finalized");
+    (void)data;
 }
 } // namespace
 
@@ -157,8 +157,8 @@ void TLSSocketModuleExports::DefineTLSSocketClass(napi_env env, napi_value expor
 void TLSSocketModuleExports::InitProtocol(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
-        DECLARE_NAPI_STATIC_PROPERTY(ENUM_PROTOCOL_TLSV12, NapiUtils::CreateStringUtf8(env, PROTOCOL_TLS_V12)),
-        DECLARE_NAPI_STATIC_PROPERTY(ENUM_PROTOCOL_TLSV13, NapiUtils::CreateStringUtf8(env, PROTOCOL_TLS_V13)),
+        DECLARE_NAPI_STATIC_PROPERTY(PROTOCOL_TLSV12, NapiUtils::CreateStringUtf8(env, PROTOCOL_TLS_V12)),
+        DECLARE_NAPI_STATIC_PROPERTY(PROTOCOL_TLSV13, NapiUtils::CreateStringUtf8(env, PROTOCOL_TLS_V13)),
     };
 
     napi_value protocol = NapiUtils::CreateObject(env);

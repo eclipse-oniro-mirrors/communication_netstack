@@ -202,7 +202,7 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
     auto itor = monitors_.find(event);
     if (itor != monitors_.end()) {
-        NETSTACK_LOGI("monitor is exits %{public}s", event.c_str());
+        NETSTACK_LOGE("monitor is exits %{public}s", event.c_str());
         return NapiUtils::GetUndefined(env);
     }
     manager_->AddListener(env, event, params[1], false, false);
@@ -264,7 +264,7 @@ napi_value Monitor::Off(napi_env env, napi_callback_info info)
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
     auto itor = monitors_.find(event);
     if (itor == monitors_.end()) {
-        NETSTACK_LOGI("monitor is off %{public}s", event.c_str());
+        NETSTACK_LOGE("monitor is off %{public}s", event.c_str());
         return NapiUtils::GetUndefined(env);
     }
     manager_->DeleteListener(event);
