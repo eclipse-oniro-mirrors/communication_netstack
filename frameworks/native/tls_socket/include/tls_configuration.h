@@ -43,7 +43,7 @@ public:
 
     [[nodiscard]] const TLSKey &PrivateKey() const;
     void SetPrivateKey(const TLSKey &key);
-    void SetPrivateKey(const std::string &key, const std::string &keyPass);
+    void SetPrivateKey(const SecureData &key, const SecureData &keyPass);
     [[nodiscard]] TLSKey GetPrivateKey() const;
 
     void SetProtocol(const std::string &Protocol);
@@ -60,7 +60,7 @@ public:
 
     [[nodiscard]] std::string GetCertificate() const;
     void SetSignatureAlgorithms(const std::string &signatureAlgorithms);
-    [[nodiscard]] std::string GetSignatureAlgorithms() const;
+    [[nodiscard]] const std::string &GetSignatureAlgorithms() const;
     [[nodiscard]] std::vector<CipherSuite> GetCipherSuiteVec() const;
 
 private:

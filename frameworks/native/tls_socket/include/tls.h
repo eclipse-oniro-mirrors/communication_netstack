@@ -23,9 +23,13 @@
 namespace OHOS {
 namespace NetStack {
 using Handle = void *;
+constexpr const char *PROTOCOL_TLS_V12 = "TLSv1.2";
+constexpr const char *PROTOCOL_TLS_V13 = "TLSv1.3";
+constexpr const char *CERT_PATH = "/system/lib";
+constexpr int CERT_PATH_LEN = 11;
 
 struct CipherSuite {
-    unsigned long cipherId_;
+    uint64_t cipherId_;
     std::string cipherName_;
 };
 

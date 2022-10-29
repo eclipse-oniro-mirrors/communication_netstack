@@ -26,22 +26,23 @@
 namespace OHOS {
 namespace NetStack {
 namespace {
-static constexpr const char *ALPN_PROTOCOLS = "ALPNProtocols";
-static constexpr const char *SECURE_OPTIONS = "secureOptions";
-static constexpr const char *CA_NAME = "ca";
-static constexpr const char *CERT_NAME = "cert";
-static constexpr const char *KEY_NAME = "key";
-static constexpr const char *PASSWD_NAME = "passwd";
-static constexpr const char *PROTOCOLS_NAME = "protocols";
-static constexpr const char *SIGNATURE_ALGORITHMS = "signatureAlgorithms";
-static constexpr const char *USE_REMOTE_CIPHER_PREFER = "useRemoteCipherPrefer";
-static constexpr const char *CIPHER_SUITES = "cipherSuites";
-static constexpr const char *CRL_NAME = "crl";
-static constexpr const char *ADDRESS_NAME = "address";
-static constexpr const char *FAMILY_NAME = "family";
-static constexpr const char *PORT_NAME = "port";
+constexpr const char *ALPN_PROTOCOLS = "ALPNProtocols";
+constexpr const char *SECURE_OPTIONS = "secureOptions";
+constexpr const char *CA_NAME = "ca";
+constexpr const char *CERT_NAME = "cert";
+constexpr const char *KEY_NAME = "key";
+constexpr const char *PASSWD_NAME = "passwd";
+constexpr const char *PROTOCOLS_NAME = "protocols";
+constexpr const char *SIGNATURE_ALGORITHMS = "signatureAlgorithms";
+constexpr const char *USE_REMOTE_CIPHER_PREFER = "useRemoteCipherPrefer";
+constexpr const char *CIPHER_SUITE = "cipherSuite";
+constexpr const char *ADDRESS_NAME = "address";
+constexpr const char *FAMILY_NAME = "family";
+constexpr const char *PORT_NAME = "port";
+constexpr uint32_t CA_CHAIN_LENGTH = 10;
+constexpr uint32_t PROTOCOLS_SIZE = 10;
 
-bool ReadNecessaryOptions(napi_env env, napi_value *params, napi_value secureOptions, TLSSecureOptions &secureOption)
+bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptions &secureOption)
 {
     if (!NapiUtils::HasNamedProperty(env, secureOptions, CA_NAME)) {
         return false;
@@ -54,6 +55,9 @@ bool ReadNecessaryOptions(napi_env env, napi_value *params, napi_value secureOpt
     }
     if (NapiUtils::GetValueType(env, caCert) == napi_object) {
         uint32_t arrayLong = NapiUtils::GetArrayLength(env, caCert);
+        if (arrayLong > CA_CHAIN_LENGTH) {
+            return false;
+        }
         napi_value element = nullptr;
         for (uint32_t i = 0; i < arrayLong; i++) {
             element = NapiUtils::GetArrayElement(env, caCert, i);
@@ -66,8 +70,7 @@ bool ReadNecessaryOptions(napi_env env, napi_value *params, napi_value secureOpt
     if (!NapiUtils::HasNamedProperty(env, secureOptions, KEY_NAME)) {
         return false;
     }
-    std::string key = NapiUtils::GetStringPropertyUtf8(env, secureOptions, KEY_NAME);
-    secureOption.SetKey(key);
+    secureOption.SetKey(SecureData(NapiUtils::GetStringPropertyUtf8(env, secureOptions, KEY_NAME)));
 
     if (!NapiUtils::HasNamedProperty(env, secureOptions, CERT_NAME)) {
         return false;
@@ -127,6 +130,7 @@ TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_va
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], ALPN_PROTOCOLS)) {
         napi_value alpnProtocols = NapiUtils::GetNamedProperty(GetEnv(), params[0], ALPN_PROTOCOLS);
         uint32_t arrayLength = NapiUtils::GetArrayLength(GetEnv(), alpnProtocols);
+        arrayLength = arrayLength > PROTOCOLS_SIZE ? PROTOCOLS_SIZE : arrayLength;
         napi_value elementValue = nullptr;
         std::vector<std::string> alpnProtocolVec;
         for (uint32_t i = 0; i < arrayLength; i++) {
@@ -136,7 +140,6 @@ TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_va
         }
         options.SetAlpnProtocols(alpnProtocolVec);
     }
-    NETSTACK_LOGI("ConnectContext::ReadTLSConnectOptions(napi_env env, napi_value *params) end");
     return options;
 }
 
@@ -148,17 +151,18 @@ TLSSecureOptions TLSConnectContext::ReadTLSSecureOptions(napi_env env, napi_valu
         return secureOption;
     }
     napi_value secureOptions = NapiUtils::GetNamedProperty(GetEnv(), params[ARG_INDEX_0], SECURE_OPTIONS);
-    if (!ReadNecessaryOptions(env, params, secureOptions, secureOption)) {
+    if (!ReadNecessaryOptions(env, secureOptions, secureOption)) {
         return secureOption;
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, PASSWD_NAME)) {
-        secureOption.SetKeyPass(NapiUtils::GetStringPropertyUtf8(env, secureOptions, PASSWD_NAME));
+        secureOption.SetKeyPass(SecureData(NapiUtils::GetStringPropertyUtf8(env, secureOptions, PASSWD_NAME)));
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, PROTOCOLS_NAME)) {
         napi_value protocolVector = NapiUtils::GetNamedProperty(env, secureOptions, PROTOCOLS_NAME);
         uint32_t num = NapiUtils::GetArrayLength(GetEnv(), protocolVector);
+        num = num > PROTOCOLS_SIZE ? PROTOCOLS_SIZE : num;
         napi_value element = nullptr;
         std::vector<std::string> protocolVec;
         for (uint32_t i = 0; i < num; i++) {
@@ -179,23 +183,11 @@ TLSSecureOptions TLSConnectContext::ReadTLSSecureOptions(napi_env env, napi_valu
         secureOption.SetUseRemoteCipherPrefer(useRemoteCipherPrefer);
     }
 
-    if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, CIPHER_SUITES)) {
-        std::string cipherSuites = NapiUtils::GetStringPropertyUtf8(env, secureOptions, CIPHER_SUITES);
-        secureOption.SetCipherSuite(cipherSuites);
+    if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, CIPHER_SUITE)) {
+        std::string cipherSuite = NapiUtils::GetStringPropertyUtf8(env, secureOptions, CIPHER_SUITE);
+        secureOption.SetCipherSuite(cipherSuite);
     }
 
-    if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, CRL_NAME)) {
-        napi_value crlVector = NapiUtils::GetNamedProperty(env, secureOptions, CRL_NAME);
-        uint32_t num = NapiUtils::GetArrayLength(GetEnv(), crlVector);
-        napi_value element = nullptr;
-        std::vector<std::string> crlVec;
-        for (uint32_t i = 0; i < num; i++) {
-            element = NapiUtils::GetArrayElement(GetEnv(), crlVector, i);
-            std::string crl = NapiUtils::GetStringFromValueUtf8(GetEnv(), element);
-            crlVec.push_back(crl);
-        }
-        secureOption.SetCrlChain(crlVec);
-    }
     return secureOption;
 }
 

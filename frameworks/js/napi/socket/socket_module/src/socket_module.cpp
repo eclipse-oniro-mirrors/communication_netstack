@@ -69,7 +69,7 @@ void Finalize(napi_env, void *data, void *)
     NETSTACK_LOGI("socket handle is finalized");
     auto manager = static_cast<EventManager *>(data);
     if (manager != nullptr) {
-        int sock = (int)(uint64_t)manager->GetData();
+        int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
         if (sock != 0) {
             close(sock);
         }
@@ -100,7 +100,7 @@ static bool SetSocket(napi_env env, napi_value thisVal, BindContext *context, in
 
 static bool MakeTcpSocket(napi_env env, napi_value thisVal, BindContext *context)
 {
-    int sock = SocketExec::MakeTcpSocket(context->address.GetSaFamily());
+    int sock = SocketExec::MakeTcpSocket(context->address_.GetSaFamily());
     if (!SetSocket(env, thisVal, context, sock)) {
         return false;
     }
@@ -110,7 +110,7 @@ static bool MakeTcpSocket(napi_env env, napi_value thisVal, BindContext *context
 
 static bool MakeUdpSocket(napi_env env, napi_value thisVal, BindContext *context)
 {
-    int sock = SocketExec::MakeUdpSocket(context->address.GetSaFamily());
+    int sock = SocketExec::MakeUdpSocket(context->address_.GetSaFamily());
     if (!SetSocket(env, thisVal, context, sock)) {
         return false;
     }

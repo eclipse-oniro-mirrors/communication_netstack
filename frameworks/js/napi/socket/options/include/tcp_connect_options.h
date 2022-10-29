@@ -18,7 +18,7 @@
 
 #include "net_address.h"
 
-#define DEFAULT_CONNECT_TIMEOUT 5 // 5 Seconds
+static constexpr const uint32_t DEFAULT_CONNECT_TIMEOUT = 5000; // 5 Seconds
 
 namespace OHOS::NetStack {
 class TcpConnectOptions final {

@@ -56,6 +56,12 @@ napi_value Interface(napi_env env,
     auto context = new Context(env, manager);
     context->ParseParams(params, paramsCount);
     NETSTACK_LOGI("js params parse OK ? %{public}d", context->IsParseOK());
+    if (!context->IsParseOK()) {
+        napi_throw_error(env, "-1", "parse param failed");
+        delete context;
+        context = nullptr;
+        return NapiUtils::GetUndefined(env);
+    }
     if (Work != nullptr) {
         if (!Work(env, thisVal, context)) {
             NETSTACK_LOGE("work failed error code = %{public}d", context->GetErrorCode());

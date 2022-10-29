@@ -33,8 +33,8 @@
 #include "tcp_connect_options.h"
 #include "tcp_extra_options.h"
 #include "tcp_send_options.h"
-
 #include "socket_error.h"
+#include "tls.h"
 #include "tls_certificate.h"
 #include "tls_configuration.h"
 #include "tls_context.h"
@@ -43,34 +43,32 @@
 namespace OHOS {
 namespace NetStack {
 
-using BindCallback = std::function<void(bool ok)>;
-using ConnectCallback = std::function<void(bool ok)>;
-using SendCallback = std::function<void(bool ok)>;
-using CloseCallback = std::function<void(bool ok)>;
-using GetRemoteAddressCallback = std::function<void(bool ok, const NetAddress &address)>;
-using GetStateCallback = std::function<void(bool ok, const SocketStateBase &state)>;
-using SetExtraOptionsCallback = std::function<void(bool ok)>;
-using GetCertificateCallback = std::function<void(bool ok, const std::string &cert)>;
-using GetRemoteCertificateCallback = std::function<void(bool ok, const std::string &cert)>;
-using GetProtocolCallback = std::function<void(bool ok, const std::string &protocol)>;
-using GetCipherSuiteCallback = std::function<void(bool ok, const std::vector<std::string> &suite)>;
-using GetSignatureAlgorithmsCallback = std::function<void(bool ok, const std::vector<std::string> &algorithms)>;
+using BindCallback = std::function<void(int32_t errorNumber)>;
+using ConnectCallback = std::function<void(int32_t errorNumber)>;
+using SendCallback = std::function<void(int32_t errorNumber)>;
+using CloseCallback = std::function<void(int32_t errorNumber)>;
+using GetRemoteAddressCallback = std::function<void(int32_t errorNumber, const NetAddress &address)>;
+using GetStateCallback = std::function<void(int32_t errorNumber, const SocketStateBase &state)>;
+using SetExtraOptionsCallback = std::function<void(int32_t errorNumber)>;
+using GetCertificateCallback = std::function<void(int32_t errorNumber, const std::string &cert)>;
+using GetRemoteCertificateCallback = std::function<void(int32_t errorNumber, const std::string &cert)>;
+using GetProtocolCallback = std::function<void(int32_t errorNumber, const std::string &protocol)>;
+using GetCipherSuiteCallback = std::function<void(int32_t errorNumber, const std::vector<std::string> &suite)>;
+using GetSignatureAlgorithmsCallback =
+    std::function<void(int32_t errorNumber, const std::vector<std::string> &algorithms)>;
 
 using OnMessageCallback = std::function<void(const std::string &data, const SocketRemoteInfo &remoteInfo)>;
 using OnConnectCallback = std::function<void(void)>;
 using OnCloseCallback = std::function<void(void)>;
 using OnErrorCallback = std::function<void(int32_t errorNumber, const std::string &errorString)>;
 
-using CheckServerIdentity = std::function<void(
-    const std::string &hostName, const std::vector<std::string> &x509Certificates)>;
+using CheckServerIdentity =
+    std::function<void(const std::string &hostName, const std::vector<std::string> &x509Certificates)>;
 
-static constexpr const char *PROTOCOL_TLS_V12 = "TLSv1.2";
-static constexpr const char *PROTOCOL_TLS_V13 = "TLSv1.3";
+constexpr const char *ALPN_PROTOCOLS_HTTP_1_1 = "http1.1";
+constexpr const char *ALPN_PROTOCOLS_HTTP_2 = "h2";
 
-static constexpr const char *ALPN_PROTOCOLS_HTTP_1_1 = "http1.1";
-static constexpr const char *ALPN_PROTOCOLS_HTTP_2 = "h2";
-
-static constexpr const size_t MAX_ERR_LEN = 1024;
+constexpr size_t MAX_ERR_LEN = 1024;
 
 /**
  * Parameters required during communication
@@ -80,6 +78,7 @@ public:
     TLSSecureOptions() = default;
     ~TLSSecureOptions() = default;
 
+    TLSSecureOptions(const TLSSecureOptions &tlsSecureOptions);
     TLSSecureOptions &operator=(const TLSSecureOptions &tlsSecureOptions);
     /**
      * Set root CA Chain to verify the server cert
@@ -97,13 +96,13 @@ public:
      * Set key to decrypt server data
      * @param keyChain key used to decrypt server data
      */
-    void SetKey(const std::string &key);
+    void SetKey(const SecureData &key);
 
     /**
      * Set the password to read the private key
      * @param keyPass read the password of the private key
      */
-    void SetKeyPass(const std::string &keyPass);
+    void SetKeyPass(const SecureData &keyPass);
 
     /**
      * Set the protocol used in communication
@@ -151,13 +150,13 @@ public:
      * Obtain the private key in the communication process
      * @return private key during communication
      */
-    [[nodiscard]] const std::string &GetKey() const;
+    [[nodiscard]] const SecureData &GetKey() const;
 
     /**
      * Get the password to read the private key
      * @return read the password of the private key
      */
-    [[nodiscard]] const std::string &GetKeyPass() const;
+    [[nodiscard]] const SecureData &GetKeyPass() const;
 
     /**
      * Get the protocol of the communication process
@@ -192,8 +191,8 @@ public:
 private:
     std::vector<std::string> caChain_;
     std::string cert_;
-    std::string key_;
-    std::string keyPass_;
+    SecureData key_;
+    SecureData keyPass_;
     std::vector<std::string> protocolChain_;
     bool useRemoteCipherPrefer_ = false;
     std::string signatureAlgorithms_;
@@ -426,10 +425,10 @@ private:
         /**
          * Receive the data sent by the server through the established encrypted connection
          * @param buffer receive the data sent by the server
-         * @param MAX_BUFFER_SIZE the size of the data received from the server
+         * @param maxBufferSize the size of the data received from the server
          * @return whether the data sent by the server is successfully received
          */
-        int Recv(char *buffer, int MAX_BUFFER_SIZE);
+        int Recv(char *buffer, int maxBufferSize);
 
         /**
          * Disconnect encrypted connection
@@ -537,20 +536,19 @@ private:
     void CallOnCloseCallback();
     void CallOnErrorCallback(int32_t err, const std::string &errString);
 
-    void CallBindCallback(bool ok, BindCallback callback);
-    void CallConnectCallback(bool ok, ConnectCallback callback);
-    void CallSendCallback(bool ok, SendCallback callback);
-    void CallCloseCallback(bool ok, CloseCallback callback);
-    void CallGetRemoteAddressCallback(bool ok, const NetAddress &address, GetRemoteAddressCallback callback);
-    void CallGetStateCallback(bool ok, const SocketStateBase &state, GetStateCallback callback);
-    void CallSetExtraOptionsCallback(bool ok, SetExtraOptionsCallback callback);
-    void CallGetCertificateCallback(bool ok, const std::string &cert, GetCertificateCallback callback);
-    void CallGetRemoteCertificateCallback(bool ok, const std::string &cert,
-                                          GetRemoteCertificateCallback callback);
-    void CallGetProtocolCallback(bool ok, const std::string &protocol, GetProtocolCallback callback);
-    void CallGetCipherSuiteCallback(bool ok, const std::vector<std::string> &suite,
+    void CallBindCallback(int32_t err, BindCallback callback);
+    void CallConnectCallback(int32_t err, ConnectCallback callback);
+    void CallSendCallback(int32_t err, SendCallback callback);
+    void CallCloseCallback(int32_t err, CloseCallback callback);
+    void CallGetRemoteAddressCallback(int32_t err, const NetAddress &address, GetRemoteAddressCallback callback);
+    void CallGetStateCallback(int32_t err, const SocketStateBase &state, GetStateCallback callback);
+    void CallSetExtraOptionsCallback(int32_t err, SetExtraOptionsCallback callback);
+    void CallGetCertificateCallback(int32_t err, const std::string &cert, GetCertificateCallback callback);
+    void CallGetRemoteCertificateCallback(int32_t err, const std::string &cert, GetRemoteCertificateCallback callback);
+    void CallGetProtocolCallback(int32_t err, const std::string &protocol, GetProtocolCallback callback);
+    void CallGetCipherSuiteCallback(int32_t err, const std::vector<std::string> &suite,
                                     GetCipherSuiteCallback callback);
-    void CallGetSignatureAlgorithmsCallback(bool ok, const std::vector<std::string> &algorithms,
+    void CallGetSignatureAlgorithmsCallback(int32_t err, const std::vector<std::string> &algorithms,
                                             GetSignatureAlgorithmsCallback callback);
 
     void StartReadMessage();
@@ -563,6 +561,7 @@ private:
 
     void MakeIpSocket(sa_family_t family);
 
+private:
     static constexpr const size_t MAX_ERROR_LEN = 128;
     static constexpr const size_t MAX_BUFFER_SIZE = 8192;
 
@@ -570,19 +569,6 @@ private:
     OnConnectCallback onConnectCallback_;
     OnCloseCallback onCloseCallback_;
     OnErrorCallback onErrorCallback_;
-
-    BindCallback bindCallback_;
-    ConnectCallback connectCallback_;
-    SendCallback sendCallback_;
-    CloseCallback closeCallback_;
-    GetRemoteAddressCallback getRemoteAddressCallback_;
-    GetStateCallback getStateCallback_;
-    SetExtraOptionsCallback setExtraOptionsCallback_;
-    GetCertificateCallback getCertificateCallback_;
-    GetRemoteCertificateCallback getRemoteCertificateCallback_;
-    GetProtocolCallback getProtocolCallback_;
-    GetCipherSuiteCallback getCipherSuiteCallback_;
-    GetSignatureAlgorithmsCallback getSignatureAlgorithmsCallback_;
 
     std::mutex mutex_;
     bool isRunning_ = false;

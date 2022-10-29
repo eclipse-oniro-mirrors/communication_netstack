@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
+#include "http_time.h"
+
 #include <chrono>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
-
-#include "http_time.h"
 
 static constexpr const char *GMT_TIME = "%a, %d %b %Y %H:%M:%S GMT";
 

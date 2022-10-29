@@ -13,37 +13,35 @@
  * limitations under the License.
  */
 
-#ifndef TLS_CONTEXT_SEND_CONTEXT_H
-#define TLS_CONTEXT_SEND_CONTEXT_H
+#include "tls_utils.h"
 
-#include <cstddef>
-#include <string>
+#include <climits>
+#include <cstdlib>
 
-#include <napi/native_api.h>
-
-#include "base_context.h"
-#include "event_manager.h"
-#include "nocopyable.h"
 #include "tls.h"
-#include "tls_socket.h"
+#include "netstack_log.h"
 
 namespace OHOS {
 namespace NetStack {
-class SendContext final : public BaseContext {
-public:
-    DISALLOW_COPY_AND_MOVE(SendContext);
+bool IsValidPath(const std::string &filePath)
+{
+    std::string path = filePath.substr(0, CERT_PATH_LEN);
+    return strcmp(path.c_str(), CERT_PATH) == 0;
+}
 
-    SendContext() = delete;
-    explicit SendContext(napi_env env, EventManager *manager);
-
-    std::string data_;
-    int32_t errorNumber_ = 0;
-
-    void ParseParams(napi_value *params, size_t paramsCount);
-
-private:
-    bool CheckParamsType(napi_value *params, size_t paramsCount);
-};
+bool CheckFilePath(std::string fileName, std::string &realPath)
+{
+    char tmpPath[PATH_MAX] = {0};
+    if (!realpath(static_cast<const char *>(fileName.c_str()), tmpPath)) {
+        NETSTACK_LOGE("file name is error");
+        return false;
+    }
+    if (!IsValidPath(tmpPath)) {
+        NETSTACK_LOGE("file path is error");
+        return false;
+    }
+    realPath = tmpPath;
+    return true;
+}
 } // namespace NetStack
 } // namespace OHOS
-#endif // TLS_CONTEXT_SEND_CONTEXT_H

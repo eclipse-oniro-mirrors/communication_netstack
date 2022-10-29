@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
+#include "lru_cache.h"
+
 #include <algorithm>
 #include <mutex>
 
 #include "netstack_log.h"
-
-#include "lru_cache.h"
 
 static constexpr const char *LRU_INDEX = "LRUIndex";
 static constexpr const int DECIMAL_BASE = 10;

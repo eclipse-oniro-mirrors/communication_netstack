@@ -13,33 +13,35 @@
  * limitations under the License.
  */
 
-#ifndef TLS_CONTEXT_CLOSE_CONTEXT_H
-#define TLS_CONTEXT_CLOSE_CONTEXT_H
+#include "socket_error.h"
 
-#include <cstddef>
+#include <cstring>
+#include <map>
 
-#include <napi/native_api.h>
-
-#include "base_context.h"
-#include "event_manager.h"
-#include "nocopyable.h"
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 
 namespace OHOS {
 namespace NetStack {
-class TLSCloseContext final : public BaseContext {
-public:
-    DISALLOW_COPY_AND_MOVE(TLSCloseContext);
+static constexpr const size_t MAX_ERR_LEN = 1024;
 
-    TLSCloseContext() = delete;
-    explicit TLSCloseContext(napi_env env, EventManager *manager);
+std::string MakeErrnoString()
+{
+    return strerror(errno);
+}
 
-    bool isOk_ = false;
-
-    void ParseParams(napi_value *params, size_t paramsCount);
-
-private:
-    bool CheckParamsType(napi_value *params, size_t paramsCount);
-};
+std::string MakeSSLErrorString(int error)
+{
+    static const std::map<int32_t, std::string> ERROR_MAP = {
+        {TLSSOCKET_ERROR_SSL_NULL, "ssl is null"},
+    };
+    auto search = ERROR_MAP.find(error);
+    if (search != ERROR_MAP.end()) {
+        return search->second;
+    }
+    char err[MAX_ERR_LEN] = {0};
+    ERR_error_string_n(error - TLSSOCKET_ERROR_SSL_BASE, err, sizeof(err));
+    return err;
+}
 } // namespace NetStack
 } // namespace OHOS
-#endif // TLS_CONTEXT_CLOSE_CONTEXT_H

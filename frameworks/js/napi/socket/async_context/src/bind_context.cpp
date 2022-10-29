@@ -34,14 +34,14 @@ void BindContext::ParseParams(napi_value *params, size_t paramsCount)
     if (addr.empty()) {
         NETSTACK_LOGE("address is empty");
     }
-    address.SetAddress(addr);
+    address_.SetAddress(addr);
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_FAMILY)) {
         uint32_t family = NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_FAMILY);
-        address.SetFamilyByJsValue(family);
+        address_.SetFamilyByJsValue(family);
     }
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_PORT)) {
         uint16_t port = static_cast<uint16_t>(NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_PORT));
-        address.SetPort(port);
+        address_.SetPort(port);
     }
 
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {

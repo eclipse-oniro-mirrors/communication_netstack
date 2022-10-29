@@ -21,31 +21,26 @@
 #include "bind_context.h"
 #include "common_context.h"
 #include "event_manager.h"
-#include "get_certificate_context.h"
-#include "get_cipher_suites_context.h"
-#include "get_remote_certificate_context.h"
-#include "get_signature_algorithms_context.h"
 #include "module_template.h"
 #include "monitor.h"
 #include "napi_utils.h"
 #include "netstack_log.h"
 #include "send_context.h"
 #include "tcp_extra_context.h"
-#include "tls_close_context.h"
+#include "tls.h"
+#include "tls_napi_context.h"
 #include "tls_connect_context.h"
 #include "tlssocket_async_work.h"
 
 namespace OHOS {
 namespace NetStack {
 namespace {
-static constexpr const char *ENUM_PROTOCOL_TLSV13 = "TLSv13";
-static constexpr const char *ENUM_PROTOCOL_TLSV12 = "TLSv12";
-static constexpr const char *PROTOCOL_TLSV13 = "TLSv1.3";
-static constexpr const char *PROTOCOL_TLSV12 = "TLSv1.2";
+static constexpr const char *PROTOCOL_TLSV13 = "TLSv13";
+static constexpr const char *PROTOCOL_TLSV12 = "TLSv12";
 
 void Finalize(napi_env, void *data, void *)
 {
-    NETSTACK_LOGI("socket handle is finalized");
+    (void)data;
 }
 } // namespace
 
@@ -71,7 +66,7 @@ napi_value TLSSocketModuleExports::TLSSocket::Connect(napi_env env, napi_callbac
 
 napi_value TLSSocketModuleExports::TLSSocket::GetCipherSuites(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<GetCipherSuitesContext>(env, info, FUNCTION_GET_CIPHER_SUITES, nullptr,
+    return ModuleTemplate::Interface<GetCipherSuitesContext>(env, info, FUNCTION_GET_CIPHER_SUITE, nullptr,
                                                              TLSSocketAsyncWork::ExecGetCipherSuites,
                                                              TLSSocketAsyncWork::GetCipherSuitesCallback);
 }
@@ -98,8 +93,8 @@ napi_value TLSSocketModuleExports::TLSSocket::Send(napi_env env, napi_callback_i
 
 napi_value TLSSocketModuleExports::TLSSocket::Close(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<TLSCloseContext>(env, info, FUNCTION_CLOSE, nullptr, TLSSocketAsyncWork::ExecClose,
-                                                      TLSSocketAsyncWork::CloseCallback);
+    return ModuleTemplate::Interface<TLSNapiContext>(env, info, FUNCTION_CLOSE, nullptr, TLSSocketAsyncWork::ExecClose,
+                                                     TLSSocketAsyncWork::CloseCallback);
 }
 
 napi_value TLSSocketModuleExports::TLSSocket::Bind(napi_env env, napi_callback_info info)
@@ -116,7 +111,6 @@ napi_value TLSSocketModuleExports::TLSSocket::GetState(napi_env env, napi_callba
 
 napi_value TLSSocketModuleExports::TLSSocket::GetRemoteAddress(napi_env env, napi_callback_info info)
 {
-    NETSTACK_LOGI("TLSSocket::GetRemoteAddress");
     return ModuleTemplate::Interface<GetRemoteAddressContext>(env, info, FUNCTION_GET_REMOTE_ADDRESS, nullptr,
                                                               TLSSocketAsyncWork::ExecGetRemoteAddress,
                                                               TLSSocketAsyncWork::GetRemoteAddressCallback);
@@ -147,7 +141,7 @@ void TLSSocketModuleExports::DefineTLSSocketClass(napi_env env, napi_value expor
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_GET_SIGNATURE_ALGORITHMS, TLSSocket::GetSignatureAlgorithms),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_GET_PROTOCOL, TLSSocket::GetProtocol),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_CONNECT, TLSSocket::Connect),
-        DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_GET_CIPHER_SUITES, TLSSocket::GetCipherSuites),
+        DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_GET_CIPHER_SUITE, TLSSocket::GetCipherSuites),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_SEND, TLSSocket::Send),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_CLOSE, TLSSocket::Close),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_BIND, TLSSocket::Bind),
@@ -163,8 +157,8 @@ void TLSSocketModuleExports::DefineTLSSocketClass(napi_env env, napi_value expor
 void TLSSocketModuleExports::InitProtocol(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
-        DECLARE_NAPI_STATIC_PROPERTY(ENUM_PROTOCOL_TLSV12, NapiUtils::CreateStringUtf8(env, PROTOCOL_TLSV12)),
-        DECLARE_NAPI_STATIC_PROPERTY(ENUM_PROTOCOL_TLSV13, NapiUtils::CreateStringUtf8(env, PROTOCOL_TLSV13)),
+        DECLARE_NAPI_STATIC_PROPERTY(PROTOCOL_TLSV12, NapiUtils::CreateStringUtf8(env, PROTOCOL_TLS_V12)),
+        DECLARE_NAPI_STATIC_PROPERTY(PROTOCOL_TLSV13, NapiUtils::CreateStringUtf8(env, PROTOCOL_TLS_V13)),
     };
 
     napi_value protocol = NapiUtils::CreateObject(env);

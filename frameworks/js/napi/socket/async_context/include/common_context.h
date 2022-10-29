@@ -38,10 +38,10 @@ public:
 
     [[nodiscard]] int GetSocketFd() const;
 
-    SocketStateBase state;
+    SocketStateBase state_;
 
-    NetAddress address;
-    bool isOk_ = false;
+    NetAddress address_;
+    int32_t errorNumber_ = 0;
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);

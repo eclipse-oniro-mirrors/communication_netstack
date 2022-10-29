@@ -53,7 +53,13 @@ const char *const HttpConstant::HTTP_HEADER_SEPARATOR = ":";
 const char *const HttpConstant::HTTP_LINE_SEPARATOR = "\r\n";
 
 const char *const HttpConstant::HTTP_DEFAULT_USER_AGENT = "libcurl-agent/1.0";
+#ifndef WINDOWS_PLATFORM
+#ifdef MAC_PLATFORM
+const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/cert.pem";
+#else
 const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/certs/cacert.pem";
+#endif // MAC_PLATFORM
+#endif // WINDOWS_PLATFORM
 
 const char *const HttpConstant::HTTP_CONTENT_TYPE = "content-type";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE = "application/x-www-form-urlencoded";

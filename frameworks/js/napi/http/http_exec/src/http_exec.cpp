@@ -41,17 +41,6 @@
         }                                                                                                \
     } while (0)
 
-#define NETSTACK_CURL_EASY_PERFORM(handle, asyncContext)                                                 \
-    do {                                                                                                 \
-        CURLcode result = curl_easy_perform(handle);                                                     \
-        if (result != CURLE_OK) {                                                                        \
-            NETSTACK_LOGE("request fail, url:%{public}s, %{public}s %{public}d",                         \
-                          (asyncContext)->options.GetUrl().c_str(), curl_easy_strerror(result), result); \
-            (asyncContext)->SetErrorCode(result);                                                        \
-            return false;                                                                                \
-        }                                                                                                \
-    } while (0)
-
 #define NETSTACK_CURL_EASY_GET_INFO(handle, opt, data, asyncContext)                                   \
     do {                                                                                               \
         CURLcode result = curl_easy_getinfo(handle, opt, data);                                        \
@@ -66,6 +55,23 @@
 namespace OHOS::NetStack {
 namespace {
 constexpr size_t MAX_LIMIT = 65536;
+
+bool NetstackCurlEasyPerform(CURL *handle, RequestContext *asyncContext)
+{
+    if (handle == nullptr || asyncContext == nullptr) {
+        NETSTACK_LOGE("handle or asyncContext is nullptr");
+        return false;
+    }
+
+    CURLcode result = curl_easy_perform(handle);
+    if (result != CURLE_OK) {
+        NETSTACK_LOGE("request fail, errorMessage: %{public}s, errorCode: %{public}d",
+            curl_easy_strerror(result), result);
+        asyncContext->SetErrorCode(result);
+        return false;
+    }
+    return true;
+}
 } // namespace
 
 std::mutex HttpExec::mutex_;
@@ -88,7 +94,7 @@ bool HttpExec::Task::operator<(const Task &e) const
 std::atomic_bool HttpExec::initialized_(false);
 #else
 bool HttpExec::initialized_ = false;
-#endif
+#endif // MAC_PLATFORM
 
 bool HttpExec::RequestWithoutCache(RequestContext *context)
 {
@@ -119,7 +125,10 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
     }
 
     context->response.SetRequestTime(HttpTime::GetNowTimeGMT());
-    NETSTACK_CURL_EASY_PERFORM(handle.get(), context);
+    if (!NetstackCurlEasyPerform(handle.get(), context)) {
+        NETSTACK_LOGE("request failed");
+        return false;
+    }
     context->response.SetResponseTime(HttpTime::GetNowTimeGMT());
 
     int32_t responseCode;
@@ -319,7 +328,9 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
 #else
+#ifndef WINDOWS_PLATFORM
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, HttpConstant::HTTP_DEFAULT_CA_PATH, context);
+#endif // WINDOWS_PLATFORM
 #endif // NO_SSL_CERTIFICATION
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOPROGRESS, 1L, context);
@@ -329,7 +340,9 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 #endif
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_TIMEOUT_MS, context->options.GetReadTimeout(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
+#ifndef WINDOWS_PLATFORM
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_ACCEPT_ENCODING, HttpConstant::HTTP_CONTENT_ENCODING_GZIP, context);
+#endif
 
     if (MethodForPost(method) && !context->options.GetBody().empty()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POST, 1L, context);

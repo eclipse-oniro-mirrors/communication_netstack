@@ -27,12 +27,12 @@ class TLSContext {
 public:
     TLSContext() = default;
     ~TLSContext() = default;
-    static std::unique_ptr<TLSContext> CreateConfiguration(TlsMode mode, const TLSConfiguration &configuration);
+    static std::unique_ptr<TLSContext> CreateConfiguration(const TLSConfiguration &configuration);
     SSL *CreateSsl();
     void CloseCtx();
 
 private:
-    static bool InitTlsContext(TLSContext *sslContext, TlsMode mode, const TLSConfiguration &configuration);
+    static bool InitTlsContext(TLSContext *sslContext, const TLSConfiguration &configuration);
     static void SetCipherList(TLSContext *tlsContext, const TLSConfiguration &configuration);
     static void SetSignatureAlgorithms(TLSContext *tlsContext, const TLSConfiguration &configuration);
     static void GetCiphers(TLSContext *tlsContext);
