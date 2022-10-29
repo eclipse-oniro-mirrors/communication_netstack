@@ -20,14 +20,9 @@
 
 #include "bind_context.h"
 #include "common_context.h"
-#include "get_certificate_context.h"
-#include "get_cipher_suites_context.h"
-#include "get_protocol_context.h"
-#include "get_remote_certificate_context.h"
-#include "get_signature_algorithms_context.h"
 #include "send_context.h"
 #include "tcp_extra_context.h"
-#include "tls_close_context.h"
+#include "tls_napi_context.h"
 #include "tls_connect_context.h"
 
 namespace OHOS {
@@ -46,7 +41,7 @@ public:
     static bool ExecGetProtocol(GetProtocolContext *context);
     static bool ExecGetSignatureAlgorithms(GetSignatureAlgorithmsContext *context);
     static bool ExecSend(SendContext *context);
-    static bool ExecClose(TLSCloseContext *context);
+    static bool ExecClose(TLSNapiContext *context);
     static bool ExecBind(BindContext *context);
     static bool ExecGetState(GetStateContext *context);
     static bool ExecGetRemoteAddress(GetRemoteAddressContext *context);
@@ -59,7 +54,7 @@ public:
     static napi_value GetProtocolCallback(GetProtocolContext *context);
     static napi_value GetSignatureAlgorithmsCallback(GetSignatureAlgorithmsContext *context);
     static napi_value SendCallback(SendContext *context);
-    static napi_value CloseCallback(TLSCloseContext *context);
+    static napi_value CloseCallback(TLSNapiContext *context);
     static napi_value BindCallback(BindContext *context);
     static napi_value GetStateCallback(GetStateContext *context);
     static napi_value GetRemoteAddressCallback(GetRemoteAddressContext *context);

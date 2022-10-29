@@ -54,8 +54,9 @@ public:
     [[nodiscard]] std::string GetIfNoneMatch() const;
 
 private:
-    void ParseCacheControl(const std::string &cacheControl_);
+    void ParseCacheControl(const std::string &cacheControl);
 
+private:
     std::string requestTime_;
     std::string ifModifiedSince_;
     std::string ifNoneMatch_;
@@ -64,10 +65,10 @@ private:
     std::string maxStale_;
     std::string minFresh_;
 
-    bool noCache_;
-    bool noStore_;
-    bool noTransform_;
-    bool onlyIfCached_;
+    bool noCache_ = false;
+    bool noStore_ = false;
+    bool noTransform_ = false;
+    bool onlyIfCached_ = false;
 };
 } // namespace OHOS::NetStack
 #endif // HTTP_CACHE_REQUEST_H

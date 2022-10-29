@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
+#include "http_cache_request.h"
+
 #include "casche_constant.h"
 #include "netstack_common_utils.h"
-
-#include "http_cache_request.h"
 
 namespace OHOS::NetStack {
 void HttpCacheRequest::ParseCacheControl(const std::string &cacheControl)

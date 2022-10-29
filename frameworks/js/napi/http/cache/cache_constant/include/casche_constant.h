@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef TESTFILE_CASCHE_CONSTANT_H
-#define TESTFILE_CASCHE_CONSTANT_H
+#ifndef HTTP_CACHE_CONSTANT_H
+#define HTTP_CACHE_CONSTANT_H
 
 static constexpr const int DECIMAL = 10;
 static constexpr const char *SPLIT = ", ";
@@ -44,4 +44,4 @@ static constexpr const char *DATE = "date";
 
 static constexpr const int INVALID_TIME = -1;
 
-#endif /* TESTFILE_CASCHE_CONSTANT_H */
+#endif /* HTTP_CACHE_CONSTANT_H */

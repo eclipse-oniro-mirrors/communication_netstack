@@ -16,19 +16,20 @@
 #include "tls_context.h"
 
 #include <cerrno>
-#include <openssl/err.h>
-#include <openssl/ssl.h>
 #include <string>
 
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/ssl.h>
+
 #include "netstack_log.h"
-#include "openssl/evp.h"
 
 namespace OHOS {
 namespace NetStack {
-std::unique_ptr<TLSContext> TLSContext::CreateConfiguration(TlsMode mode, const TLSConfiguration &configuration)
+std::unique_ptr<TLSContext> TLSContext::CreateConfiguration(const TLSConfiguration &configuration)
 {
     auto tlsContext = std::make_unique<TLSContext>();
-    if (!InitTlsContext(tlsContext.get(), mode, configuration)) {
+    if (!InitTlsContext(tlsContext.get(), configuration)) {
         return nullptr;
     }
     return tlsContext;
@@ -43,8 +44,13 @@ void InitEnv()
 
 void TLSContext::SetCipherList(TLSContext *tlsContext, const TLSConfiguration &configuration)
 {
+    if (!tlsContext) {
+        NETSTACK_LOGE("tlsContext is null");
+        return;
+    }
     NETSTACK_LOGD("GetCipherSuite = %{public}s", configuration.GetCipherSuite().c_str());
     if (configuration.GetCipherSuite().empty()) {
+        NETSTACK_LOGE("Get Cipher Suite is failed");
         return;
     }
     if (SSL_CTX_set_cipher_list(tlsContext->ctx_, configuration.GetCipherSuite().c_str()) <= 0) {
@@ -55,28 +61,30 @@ void TLSContext::SetCipherList(TLSContext *tlsContext, const TLSConfiguration &c
 void TLSContext::GetCiphers(TLSContext *tlsContext)
 {
     if (!tlsContext) {
-        NETSTACK_LOGE("TLSContext::GetCiphers: tlsContext is null");
+        NETSTACK_LOGE("tlsContext is null");
         return;
     }
     std::vector<CipherSuite> cipherSuiteVec;
     STACK_OF(SSL_CIPHER) *sk = SSL_CTX_get_ciphers(tlsContext->ctx_);
     if (!sk) {
-        NETSTACK_LOGE("TLSContext::GetCiphers: sk is null");
+        NETSTACK_LOGE("sk is null");
         return;
     }
     CipherSuite cipherSuite;
     for (int i = 0; i < sk_SSL_CIPHER_num(sk); i++) {
-        const SSL_CIPHER *c = sk_SSL_CIPHER_value(sk, i);
-        cipherSuite.cipherId_ = SSL_CIPHER_get_id(c);
-        cipherSuite.cipherName_ = SSL_CIPHER_get_name(c);
+        const SSL_CIPHER *cipher = sk_SSL_CIPHER_value(sk, i);
+        cipherSuite.cipherId_ = SSL_CIPHER_get_id(cipher);
+        cipherSuite.cipherName_ = SSL_CIPHER_get_name(cipher);
         cipherSuiteVec.push_back(cipherSuite);
-        NETSTACK_LOGD("SSL_CIPHER_get_id = %{public}lu, SSL_CIPHER_get_name = %{public}s", cipherSuite.cipherId_,
-                      cipherSuite.cipherName_.c_str());
     }
 }
 
 void TLSContext::SetSignatureAlgorithms(TLSContext *tlsContext, const TLSConfiguration &configuration)
 {
+    if (!tlsContext) {
+        NETSTACK_LOGE("tlsContext is null");
+        return;
+    }
     if (configuration.GetSignatureAlgorithms().empty()) {
         return;
     }
@@ -116,6 +124,8 @@ void TLSContext::SetMinAndMaxProtocol(TLSContext *tlsContext)
             break;
         case UNKNOW_PROTOCOL:
             break;
+        default:
+            break;
     }
 
     switch (tlsContext->tlsConfiguration_.GetMaxProtocol()) {
@@ -126,6 +136,8 @@ void TLSContext::SetMinAndMaxProtocol(TLSContext *tlsContext)
             maxVersion = TLS1_3_VERSION;
             break;
         case UNKNOW_PROTOCOL:
+            break;
+        default:
             break;
     }
 
@@ -197,10 +209,10 @@ bool TLSContext::SetKeyAndCheck(TLSContext *tlsContext, const TLSConfiguration &
         return false;
     }
 
-    if (!configuration.GetPrivateKey().GetKeyPass().empty()) {
-        std::string password = tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyPass();
-        const char *pass = password.c_str();
-        SSL_CTX_set_default_passwd_cb_userdata(tlsContext->ctx_, reinterpret_cast<void *>(const_cast<char *>(pass)));
+    if (!configuration.GetPrivateKey().GetKeyPass().Length()) {
+        SSL_CTX_set_default_passwd_cb_userdata(tlsContext->ctx_,
+                                               reinterpret_cast<void *>(const_cast<char *>(
+                                               tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyPass().Data())));
     }
     // Check if the certificate matches the private key.
     if (!SSL_CTX_check_private_key(tlsContext->ctx_)) {
@@ -219,17 +231,16 @@ void TLSContext::SetVerify(TLSContext *tlsContext)
     SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, nullptr);
 }
 
-bool TLSContext::InitTlsContext(TLSContext *tlsContext, TlsMode mode, const TLSConfiguration &configuration)
+bool TLSContext::InitTlsContext(TLSContext *tlsContext, const TLSConfiguration &configuration)
 {
     if (!tlsContext) {
-        NETSTACK_LOGE("TLSContext::InitTlsContext: tlsContext is null");
+        NETSTACK_LOGE("tlsContext is null");
         return false;
     }
     InitEnv();
     tlsContext->tlsConfiguration_ = configuration;
     tlsContext->ctx_ = SSL_CTX_new(TLS_client_method());
     if (tlsContext->ctx_ == nullptr) {
-        ERR_print_errors_fp(stdout);
         NETSTACK_LOGE("tlsContext->ctx_ is nullptr");
         return false;
     }

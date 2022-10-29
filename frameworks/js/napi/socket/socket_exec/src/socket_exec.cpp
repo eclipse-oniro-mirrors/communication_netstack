@@ -59,9 +59,9 @@ static void
     SetIsBound(sa_family_t family, GetStateContext *context, const sockaddr_in *addr4, const sockaddr_in6 *addr6)
 {
     if (family == AF_INET) {
-        context->state.SetIsBound(ntohs(addr4->sin_port) != 0);
+        context->state_.SetIsBound(ntohs(addr4->sin_port) != 0);
     } else if (family == AF_INET6) {
-        context->state.SetIsBound(ntohs(addr6->sin6_port) != 0);
+        context->state_.SetIsBound(ntohs(addr6->sin6_port) != 0);
     }
 }
 
@@ -69,9 +69,9 @@ static void
     SetIsConnected(sa_family_t family, GetStateContext *context, const sockaddr_in *addr4, const sockaddr_in6 *addr6)
 {
     if (family == AF_INET) {
-        context->state.SetIsConnected(ntohs(addr4->sin_port) != 0);
+        context->state_.SetIsConnected(ntohs(addr4->sin_port) != 0);
     } else if (family == AF_INET6) {
-        context->state.SetIsConnected(ntohs(addr6->sin6_port) != 0);
+        context->state_.SetIsConnected(ntohs(addr6->sin6_port) != 0);
     }
 }
 
@@ -417,7 +417,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     }
 }
 
-static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeoutSec)
+static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeoutUSec)
 {
     int ret = connect(sock, addr, addrLen);
     if (ret >= 0) {
@@ -430,12 +430,12 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
     fd_set set = {0};
     FD_ZERO(&set);
     FD_SET(sock, &set);
-    if (timeoutSec == 0) {
-        timeoutSec = DEFAULT_CONNECT_TIMEOUT;
+    if (timeoutUSec == 0) {
+        timeoutUSec = DEFAULT_CONNECT_TIMEOUT;
     }
     timeval timeout = {
-        .tv_sec = timeoutSec,
-        .tv_usec = 0,
+        .tv_sec = 0,
+        .tv_usec = timeoutUSec,
     };
 
     ret = select(sock + 1, nullptr, &set, nullptr, &timeout);
@@ -553,7 +553,7 @@ bool ExecBind(BindContext *context)
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
     socklen_t len;
-    GetAddr(&context->address, &addr4, &addr6, &addr, &len);
+    GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
         NETSTACK_LOGE("addr family error");
         context->SetErrorCode(ADDRESS_INVALID);
@@ -595,7 +595,7 @@ bool ExecUdpBind(BindContext *context)
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
     socklen_t len;
-    GetAddr(&context->address, &addr4, &addr6, &addr, &len);
+    GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
         NETSTACK_LOGE("addr family error");
         context->SetErrorCode(ADDRESS_INVALID);
@@ -729,7 +729,7 @@ bool ExecGetState(GetStateContext *context)
     socklen_t optLen = sizeof(int);
     int r = getsockopt(context->GetSocketFd(), SOL_SOCKET, SO_TYPE, &opt, &optLen);
     if (r < 0) {
-        context->state.SetIsClose(true);
+        context->state_.SetIsClose(true);
         return true;
     }
 
@@ -810,9 +810,9 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
             context->SetErrorCode(ADDRESS_INVALID);
             return false;
         }
-        context->address.SetAddress(address);
-        context->address.SetFamilyBySaFamily(family);
-        context->address.SetPort(ntohs(addr4.sin_port));
+        context->address_.SetAddress(address);
+        context->address_.SetFamilyBySaFamily(family);
+        context->address_.SetPort(ntohs(addr4.sin_port));
         return true;
     } else if (family == AF_INET6) {
         sockaddr_in6 addr6 = {0};
@@ -829,9 +829,9 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
             context->SetErrorCode(ADDRESS_INVALID);
             return false;
         }
-        context->address.SetAddress(address);
-        context->address.SetFamilyBySaFamily(family);
-        context->address.SetPort(ntohs(addr6.sin6_port));
+        context->address_.SetAddress(address);
+        context->address_.SetFamilyBySaFamily(family);
+        context->address_.SetPort(ntohs(addr6.sin6_port));
         return true;
     }
 
@@ -840,12 +840,12 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 
 bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
 {
-    if (!SetBaseOptions(context->GetSocketFd(), &context->options)) {
+    if (!SetBaseOptions(context->GetSocketFd(), &context->options_)) {
         context->SetErrorCode(errno);
         return false;
     }
 
-    if (context->options.IsKeepAlive()) {
+    if (context->options_.IsKeepAlive()) {
         int keepalive = 1;
         if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_KEEPALIVE, &keepalive, sizeof(keepalive)) < 0) {
             context->SetErrorCode(errno);
@@ -853,7 +853,7 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
         }
     }
 
-    if (context->options.IsOOBInline()) {
+    if (context->options_.IsOOBInline()) {
         int oobInline = 1;
         if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_OOBINLINE, &oobInline, sizeof(oobInline)) < 0) {
             context->SetErrorCode(errno);
@@ -861,7 +861,7 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
         }
     }
 
-    if (context->options.IsTCPNoDelay()) {
+    if (context->options_.IsTCPNoDelay()) {
         int tcpNoDelay = 1;
         if (setsockopt(context->GetSocketFd(), IPPROTO_TCP, TCP_NODELAY, &tcpNoDelay, sizeof(tcpNoDelay)) < 0) {
             context->SetErrorCode(errno);
@@ -870,8 +870,8 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
     }
 
     linger soLinger = {0};
-    soLinger.l_onoff = context->options.socketLinger.IsOn();
-    soLinger.l_linger = (int)context->options.socketLinger.GetLinger();
+    soLinger.l_onoff = context->options_.socketLinger.IsOn();
+    soLinger.l_linger = (int)context->options_.socketLinger.GetLinger();
     if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_LINGER, &soLinger, sizeof(soLinger)) < 0) {
         context->SetErrorCode(errno);
         return false;
@@ -944,9 +944,9 @@ napi_value GetStateCallback(GetStateContext *context)
         return NapiUtils::GetUndefined(context->GetEnv());
     }
 
-    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_BOUND, context->state.IsBound());
-    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_CLOSE, context->state.IsClose());
-    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_CONNECTED, context->state.IsConnected());
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_BOUND, context->state_.IsBound());
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_CLOSE, context->state_.IsClose());
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_CONNECTED, context->state_.IsConnected());
 
     return obj;
 }
@@ -958,9 +958,9 @@ napi_value GetRemoteAddressCallback(GetRemoteAddressContext *context)
         return NapiUtils::GetUndefined(context->GetEnv());
     }
 
-    NapiUtils::SetStringPropertyUtf8(context->GetEnv(), obj, KEY_ADDRESS, context->address.GetAddress());
-    NapiUtils::SetUint32Property(context->GetEnv(), obj, KEY_FAMILY, context->address.GetJsValueFamily());
-    NapiUtils::SetUint32Property(context->GetEnv(), obj, KEY_PORT, context->address.GetPort());
+    NapiUtils::SetStringPropertyUtf8(context->GetEnv(), obj, KEY_ADDRESS, context->address_.GetAddress());
+    NapiUtils::SetUint32Property(context->GetEnv(), obj, KEY_FAMILY, context->address_.GetJsValueFamily());
+    NapiUtils::SetUint32Property(context->GetEnv(), obj, KEY_PORT, context->address_.GetPort());
 
     return obj;
 }

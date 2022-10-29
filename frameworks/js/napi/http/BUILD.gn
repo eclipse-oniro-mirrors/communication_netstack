@@ -12,7 +12,6 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//build/ohos/ace/ace.gni")
 import("//foundation/communication/netstack/netstack_config.gni")
 
 config("http_config") {
@@ -29,9 +28,9 @@ config("http_config") {
     "http_exec/include",
     "http_module/include",
     "options/include",
-    "//third_party/curl/include",
-    "//third_party/glib/glib",
-    "//third_party/glib",
+    "$THIRD_PARTY_ROOT/curl/include",
+    "$THIRD_PARTY_ROOT/glib/glib",
+    "$THIRD_PARTY_ROOT/glib",
     "$NETSTACK_DIR/utils/common_utils/include",
   ]
 
@@ -71,24 +70,24 @@ ohos_shared_library("http") {
 
   configs = [ ":http_config" ]
 
-  deps = [ "//third_party/curl:curl_shared" ]
+  deps = [ "$THIRD_PARTY_ROOT/curl:curl_shared" ]
   if (is_mingw || is_mac) {
     sources +=
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
     deps += [
+      "$ARKUI_ROOT/napi:ace_napi",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
-      "//foundation/arkui/napi:ace_napi",
-      "//third_party/bounds_checking_function:libsec_static",
-      "//third_party/jsoncpp:jsoncpp_static",
-      "//third_party/openssl:libcrypto_static",
+      "$THIRD_PARTY_ROOT/bounds_checking_function:libsec_static",
+      "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
+      "$THIRD_PARTY_ROOT/openssl:libcrypto_static",
     ]
   } else {
     deps += [
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-      "//third_party/glib:glib_packages",
-      "//third_party/jsoncpp:jsoncpp",
-      "//third_party/openssl:libcrypto_shared",
+      "$THIRD_PARTY_ROOT/glib:glib_packages",
+      "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
+      "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
     ]
     external_deps = [
       "c_utils:utils",

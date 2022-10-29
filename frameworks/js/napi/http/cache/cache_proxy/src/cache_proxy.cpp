@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include "cache_proxy.h"
+
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
@@ -27,10 +29,8 @@
 #include "netstack_log.h"
 #include "request_context.h"
 
-#include "cache_proxy.h"
-
 static constexpr const char *CACHE_FILE = "/data/storage/el2/base/cache/cache.json";
-static constexpr const int WRITE_INTERVAL = 60;
+static constexpr int32_t WRITE_INTERVAL = 60;
 
 namespace OHOS::NetStack {
 std::mutex DISK_CACHE_MUTEX;
@@ -98,7 +98,7 @@ bool CacheProxy::ReadResponseFromCache(HttpResponse &response)
         WriteResponseToCache(response);
         return true;
     }
-    NETSTACK_LOGI("cache should not be used");
+    NETSTACK_LOGE("cache should not be used");
     return false;
 }
 
@@ -109,7 +109,7 @@ void CacheProxy::WriteResponseToCache(const HttpResponse &response)
     }
 
     if (!strategy_.IsCacheable(response)) {
-        NETSTACK_LOGI("do not cache this response");
+        NETSTACK_LOGE("do not cache this response");
         return;
     }
     std::unordered_map<std::string, std::string> cacheResponse;

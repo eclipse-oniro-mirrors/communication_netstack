@@ -33,6 +33,7 @@ ohos_fuzztest("SocketExecFuzzTest") {
     "$NETSTACK_NAPI_ROOT/socket/socket_module/include",
     "$NETSTACK_NAPI_ROOT/socket/options/include",
     "$NETSTACK_NAPI_ROOT/socket/task_queue/include",
+    "$NETSTACK_DIR/utils/log/include",
   ]
 
   cflags = [

@@ -13,37 +13,32 @@
  * limitations under the License.
  */
 
-#ifndef TLS_CONTEXT_GETCIPHERSUITES_CONTEXT_H
-#define TLS_CONTEXT_GETCIPHERSUITES_CONTEXT_H
+#ifndef COMMUNICATION_NETSTACK_SECURE_DATA_H
+#define COMMUNICATION_NETSTACK_SECURE_DATA_H
 
 #include <cstddef>
+#include <memory>
 #include <string>
-#include <vector>
-
-#include <napi/native_api.h>
-
-#include "base_context.h"
-#include "event_manager.h"
-#include "nocopyable.h"
-#include "tls.h"
 
 namespace OHOS {
 namespace NetStack {
-class GetCipherSuitesContext final : public BaseContext {
+class SecureData {
 public:
-    DISALLOW_COPY_AND_MOVE(GetCipherSuitesContext);
+    SecureData();
+    ~SecureData();
+    explicit SecureData(const std::string &secureData);
 
-    GetCipherSuitesContext() = delete;
-    explicit GetCipherSuitesContext(napi_env env, EventManager *manager);
+    SecureData(const SecureData &secureData);
+    SecureData &operator=(const SecureData &secureData);
 
-    std::vector<std::string> cipherSuites_;
-    bool isOk_ = false;
-
-    void ParseParams(napi_value *params, size_t paramsCount);
+public:
+    const char *Data() const;
+    size_t Length() const;
 
 private:
-    bool CheckParamsType(napi_value *params, size_t paramsCount);
+    size_t length_ = 0;
+    std::unique_ptr<char[]> data_ = nullptr;
 };
 } // namespace NetStack
 } // namespace OHOS
-#endif // TLS_CONTEXT_GETCIPHERSUITES_CONTEXT_H
+#endif // COMMUNICATION_NETSTACK_SECURE_DATA_H

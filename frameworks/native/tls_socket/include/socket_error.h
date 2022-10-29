@@ -13,16 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef LOCAL_SOCKET_ERROR_H
-#define LOCAL_SOCKET_ERROR_H
+#ifndef COMMUNICATION_NETSTACK_SOCKET_ERROR_H
+#define COMMUNICATION_NETSTACK_SOCKET_ERROR_H
+
+#include <string>
+#include <map>
 
 namespace OHOS {
 namespace NetStack {
 enum TlsSocketError {
-    SOCKET_ERROR_ERRNO_BASE = 2300000,
-    SOCKET_ERROR_SSL_BASE = 2301000,
-    SOCKET_ERROR_PARAM_INVALID = 2300401
+    TLSSOCKET_SUCCESS = 0,
+    TLSSOCKET_ERROR_ERRNO_BASE = 2303100,
+    TLSSOCKET_ERROR_SSL_BASE = 2303500,
+    TLSSOCKET_ERROR_SSL_NULL = 2303501,
+    TLSSOCKET_ERROR_PARAM_INVALID = 2300401
 };
+
+std::string MakeErrnoString();
+std::string MakeSSLErrorString(int error);
 } // namespace NetStack
 } // namespace OHOS
-#endif // LOCAL_SOCKET_ERROR_H
+#endif // COMMUNICATION_NETSTACK_SOCKET_ERROR_H

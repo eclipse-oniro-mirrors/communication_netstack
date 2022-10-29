@@ -18,13 +18,10 @@
 #include "base_async_work.h"
 #include "bind_context.h"
 #include "common_context.h"
-#include "get_certificate_context.h"
-#include "get_cipher_suites_context.h"
-#include "get_remote_certificate_context.h"
 #include "netstack_log.h"
 #include "send_context.h"
 #include "tcp_extra_context.h"
-#include "tls_close_context.h"
+#include "tls_napi_context.h"
 #include "tls_connect_context.h"
 #include "tlssocket_exec.h"
 
@@ -67,7 +64,7 @@ void TLSSocketAsyncWork::ExecSend(napi_env env, void *data)
 
 void TLSSocketAsyncWork::ExecClose(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<TLSCloseContext, TLSSocketExec::ExecClose>(env, data);
+    BaseAsyncWork::ExecAsyncWork<TLSNapiContext, TLSSocketExec::ExecClose>(env, data);
 }
 
 void TLSSocketAsyncWork::ExecBind(napi_env env, void *data)
@@ -129,7 +126,7 @@ void TLSSocketAsyncWork::SendCallback(napi_env env, napi_status status, void *da
 
 void TLSSocketAsyncWork::CloseCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<TLSCloseContext, TLSSocketExec::CloseCallback>(env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<TLSNapiContext, TLSSocketExec::CloseCallback>(env, status, data);
 }
 
 void TLSSocketAsyncWork::BindCallback(napi_env env, napi_status status, void *data)

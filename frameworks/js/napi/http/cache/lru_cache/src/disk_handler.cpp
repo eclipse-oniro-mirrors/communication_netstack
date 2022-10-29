@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
+#include "disk_handler.h"
+
 #include <fstream>
 #include <sstream>
 
 #include "netstack_log.h"
-
-#include "disk_handler.h"
 
 namespace OHOS::NetStack {
 DiskHandler::DiskHandler(std::string fileName) : fileName_(std::move(fileName)) {}

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef TLS_CONTEXT_GET_SIGNATURE_ALGORITHMS_CONTEXT_H
-#define TLS_CONTEXT_GET_SIGNATURE_ALGORITHMS_CONTEXT_H
+#ifndef TLS_CONTEXT_CLOSE_CONTEXT_H
+#define TLS_CONTEXT_CLOSE_CONTEXT_H
 
 #include <cstddef>
 #include <string>
@@ -28,21 +28,31 @@
 
 namespace OHOS {
 namespace NetStack {
-class GetSignatureAlgorithmsContext final : public BaseContext {
+class TLSNapiContext final : public BaseContext {
 public:
-    DISALLOW_COPY_AND_MOVE(GetSignatureAlgorithmsContext);
+    DISALLOW_COPY_AND_MOVE(TLSNapiContext);
 
-    GetSignatureAlgorithmsContext() = delete;
-    explicit GetSignatureAlgorithmsContext(napi_env env, EventManager *manager);
+    TLSNapiContext() = delete;
+    explicit TLSNapiContext(napi_env env, EventManager *manager);
 
+    std::string protocol_;
+    std::vector<std::string> cipherSuites_;
+    std::string cert_;
+    std::string remoteCert_;
     std::vector<std::string> signatureAlgorithms_;
-    bool isOk_ = false;
+    int32_t errorNumber_ = 0;
 
     void ParseParams(napi_value *params, size_t paramsCount);
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
+
+using GetCipherSuitesContext = TLSNapiContext;
+using GetProtocolContext = TLSNapiContext;
+using GetSignatureAlgorithmsContext = TLSNapiContext;
+using GetRemoteCertificateContext = TLSNapiContext;
+using GetCertificateContext = TLSNapiContext;
 } // namespace NetStack
 } // namespace OHOS
-#endif // TLS_CONTEXT_GET_SIGNATURE_ALGORITHMS_CONTEXT_H
+#endif // TLS_CONTEXT_CLOSE_CONTEXT_H

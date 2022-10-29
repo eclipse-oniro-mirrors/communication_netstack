@@ -24,10 +24,15 @@
 #include "event_list.h"
 #include "napi_utils.h"
 #include "netstack_log.h"
+#include "socket_error.h"
 #include "tls_socket.h"
 
 namespace OHOS {
 namespace NetStack {
+namespace {
+constexpr int ERROR_DIVISOR = 1000;
+constexpr int ERROR_RANGE = 500;
+}
 bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
 {
     auto manager = context->GetManager();
@@ -40,11 +45,14 @@ bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
         NETSTACK_LOGE("ExecGetCertificate tlsSocket is null");
         return false;
     }
-    tlsSocket->GetCertificate([&context](bool isOk, const std::string &cert) {
-        context->isOk_ = isOk;
+    tlsSocket->GetCertificate([&context](int32_t errorNumber, const std::string &cert) {
         context->cert_ = cert;
+        context->errorNumber_ = errorNumber;
+        if (errorNumber != TLSSOCKET_SUCCESS) {
+            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+        }
     });
-    return context->isOk_;
+    return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
 bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
@@ -59,12 +67,17 @@ bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
         NETSTACK_LOGE("ExecConnect tlsSocket is null");
         return false;
     }
-    tlsSocket->Connect(context->connectOptions_, [&context](bool isOk) { context->isOk_ = isOk; });
-    if (!context->isOk_) {
-        NETSTACK_LOGE("ExecConnect result is false");
-        return false;
-    }
-    return true;
+    tlsSocket->Connect(context->connectOptions_, [&context](int32_t errorNumber) {
+        context->errorNumber_ = errorNumber;
+        if (errorNumber != TLSSOCKET_SUCCESS) {
+            if ((errorNumber % ERROR_DIVISOR) < ERROR_RANGE) {
+                context->SetError(errorNumber, MakeErrnoString());
+                return;
+            }
+            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+        }
+    });
+    return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
 bool TLSSocketExec::ExecGetCipherSuites(GetCipherSuitesContext *context)
@@ -79,11 +92,14 @@ bool TLSSocketExec::ExecGetCipherSuites(GetCipherSuitesContext *context)
         NETSTACK_LOGE("ExecGetCipherSuites tlsSocket is null");
         return false;
     }
-    tlsSocket->GetCipherSuite([&context](bool isOk, const std::vector<std::string> &suite) {
-        context->isOk_ = isOk;
+    tlsSocket->GetCipherSuite([&context](int32_t errorNumber, const std::vector<std::string> &suite) {
         context->cipherSuites_ = suite;
+        context->errorNumber_ = errorNumber;
+        if (errorNumber != TLSSOCKET_SUCCESS) {
+            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+        }
     });
-    return context->isOk_;
+    return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
 bool TLSSocketExec::ExecGetRemoteCertificate(GetRemoteCertificateContext *context)
@@ -98,11 +114,14 @@ bool TLSSocketExec::ExecGetRemoteCertificate(GetRemoteCertificateContext *contex
         NETSTACK_LOGE("ExecGetRemoteCertificate tlsSocket is null");
         return false;
     }
-    tlsSocket->GetRemoteCertificate([&context](bool isOk, const std::string &cert) {
-        context->isOk_ = isOk;
+    tlsSocket->GetRemoteCertificate([&context](int32_t errorNumber, const std::string &cert) {
         context->remoteCert_ = cert;
+        context->errorNumber_ = errorNumber;
+        if (errorNumber != TLSSOCKET_SUCCESS) {
+            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+        }
     });
-    return context->isOk_;
+    return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
 bool TLSSocketExec::ExecGetProtocol(GetProtocolContext *context)
@@ -117,11 +136,14 @@ bool TLSSocketExec::ExecGetProtocol(GetProtocolContext *context)
         NETSTACK_LOGE("ExecGetProtocol tlsSocket is null");
         return false;
     }
-    tlsSocket->GetProtocol([&context](bool isOk, const std::string &protocol) {
-        context->isOk_ = isOk;
+    tlsSocket->GetProtocol([&context](int32_t errorNumber, const std::string &protocol) {
         context->protocol_ = protocol;
+        context->errorNumber_ = errorNumber;
+        if (errorNumber != TLSSOCKET_SUCCESS) {
+            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+        }
     });
-    return context->isOk_;
+    return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
 bool TLSSocketExec::ExecGetSignatureAlgorithms(GetSignatureAlgorithmsContext *context)
@@ -136,11 +158,14 @@ bool TLSSocketExec::ExecGetSignatureAlgorithms(GetSignatureAlgorithmsContext *co
         NETSTACK_LOGE("ExecGetSignatureAlgorithms tlsSocket is null");
         return false;
     }
-    tlsSocket->GetSignatureAlgorithms([&context](bool isOk, const std::vector<std::string> &algorithms) {
-        context->isOk_ = isOk;
+    tlsSocket->GetSignatureAlgorithms([&context](int32_t errorNumber, const std::vector<std::string> &algorithms) {
         context->signatureAlgorithms_ = algorithms;
+        context->errorNumber_ = errorNumber;
+        if (errorNumber != TLSSOCKET_SUCCESS) {
+            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+        }
     });
-    return context->isOk_;
+    return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
 bool TLSSocketExec::ExecSend(SendContext *context)
@@ -157,16 +182,16 @@ bool TLSSocketExec::ExecSend(SendContext *context)
     }
     TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(context->data_);
-    tlsSocket->Send(tcpSendOptions, [&context](bool isOk) {
-        if (!isOk) {
-            NETSTACK_LOGE("send data is failed");
+    tlsSocket->Send(tcpSendOptions, [&context](int32_t errorNumber) {
+        context->errorNumber_ = errorNumber;
+        if (errorNumber != TLSSOCKET_SUCCESS) {
+            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
         }
-        context->isOk_ = isOk;
     });
-    return context->isOk_;
+    return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
-bool TLSSocketExec::ExecClose(TLSCloseContext *context)
+bool TLSSocketExec::ExecClose(TLSNapiContext *context)
 {
     auto manager = context->GetManager();
     if (manager == nullptr) {
@@ -178,10 +203,15 @@ bool TLSSocketExec::ExecClose(TLSCloseContext *context)
         NETSTACK_LOGE("ExecClose tlsSocket is null");
         return false;
     }
-    tlsSocket->Close([&context](bool isOk) { context->isOk_ = isOk; });
+    tlsSocket->Close([&context](int32_t errorNumber) {
+        context->errorNumber_ = errorNumber;
+        if (errorNumber != TLSSOCKET_SUCCESS) {
+            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+        }
+    });
     delete tlsSocket;
     manager->SetData(nullptr);
-    return context->isOk_;
+    return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
 bool TLSSocketExec::ExecBind(BindContext *context)
@@ -192,9 +222,15 @@ bool TLSSocketExec::ExecBind(BindContext *context)
         return false;
     }
     auto tlsSocket = new TLSSocket();
-    tlsSocket->Bind(context->address, [&context](bool isOk) { context->isOk_ = isOk; });
+    tlsSocket->Bind(context->address_, [&context](int32_t errorNumber) {
+        context->errorNumber_ = errorNumber;
+        if (errorNumber != TLSSOCKET_SUCCESS) {
+            std::string errorString = MakeErrnoString();
+            context->SetError(errorNumber, errorString);
+        }
+    });
     manager->SetData(tlsSocket);
-    return context->isOk_;
+    return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
 bool TLSSocketExec::ExecGetRemoteAddress(GetRemoteAddressContext *context)
@@ -209,11 +245,14 @@ bool TLSSocketExec::ExecGetRemoteAddress(GetRemoteAddressContext *context)
         NETSTACK_LOGE("ExecGetRemoteAddress tlsSocket is null");
         return false;
     }
-    tlsSocket->GetRemoteAddress([&context](bool isOk, const NetAddress address) {
-        context->isOk_ = isOk;
-        context->address = address;
+    tlsSocket->GetRemoteAddress([&context](int32_t errorNumber, const NetAddress address) {
+        context->address_ = address;
+        context->errorNumber_ = errorNumber;
+        if (errorNumber != TLSSOCKET_SUCCESS) {
+            context->SetError(errorNumber, MakeErrnoString());
+        }
     });
-    return context->isOk_;
+    return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
 bool TLSSocketExec::ExecGetState(GetStateContext *context)
@@ -228,11 +267,14 @@ bool TLSSocketExec::ExecGetState(GetStateContext *context)
         NETSTACK_LOGE("ExecGetState tlsSocket is null");
         return false;
     }
-    tlsSocket->GetState([&context](bool isOk, const SocketStateBase state) {
-        context->isOk_ = isOk;
-        context->state = state;
+    tlsSocket->GetState([&context](int32_t errorNumber, const SocketStateBase state) {
+        context->state_ = state;
+        context->errorNumber_ = errorNumber;
+        if (errorNumber != TLSSOCKET_SUCCESS) {
+            context->SetError(errorNumber, MakeErrnoString());
+        }
     });
-    return context->isOk_;
+    return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
 bool TLSSocketExec::ExecSetExtraOptions(TcpSetExtraOptionsContext *context)
@@ -247,8 +289,13 @@ bool TLSSocketExec::ExecSetExtraOptions(TcpSetExtraOptionsContext *context)
         NETSTACK_LOGE("ExecSetExtraOptions tlsSocket is null");
         return false;
     }
-    tlsSocket->SetExtraOptions(context->options, [&context](bool isOk) { context->isOk_ = isOk; });
-    return context->isOk_;
+    tlsSocket->SetExtraOptions(context->options_, [&context](int32_t errorNumber) {
+        context->errorNumber_ = errorNumber;
+        if (errorNumber != TLSSOCKET_SUCCESS) {
+            context->SetError(errorNumber, MakeErrnoString());
+        }
+    });
+    return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
 napi_value TLSSocketExec::GetCertificateCallback(GetCertificateContext *context)
@@ -312,7 +359,7 @@ napi_value TLSSocketExec::SendCallback(SendContext *context)
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
-napi_value TLSSocketExec::CloseCallback(TLSCloseContext *context)
+napi_value TLSSocketExec::CloseCallback(TLSNapiContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
 }
@@ -330,9 +377,9 @@ napi_value TLSSocketExec::GetStateCallback(GetStateContext *context)
     if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
         return NapiUtils::GetUndefined(context->GetEnv());
     }
-    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_BOUND, context->state.IsBound());
-    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_CLOSE, context->state.IsClose());
-    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_CONNECTED, context->state.IsConnected());
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_BOUND, context->state_.IsBound());
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_CLOSE, context->state_.IsClose());
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_CONNECTED, context->state_.IsConnected());
     return obj;
 }
 
@@ -342,9 +389,9 @@ napi_value TLSSocketExec::GetRemoteAddressCallback(GetRemoteAddressContext *cont
     if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
         return NapiUtils::GetUndefined(context->GetEnv());
     }
-    NapiUtils::SetStringPropertyUtf8(context->GetEnv(), obj, KEY_ADDRESS, context->address.GetAddress());
-    NapiUtils::SetUint32Property(context->GetEnv(), obj, KEY_FAMILY, context->address.GetJsValueFamily());
-    NapiUtils::SetUint32Property(context->GetEnv(), obj, KEY_PORT, context->address.GetPort());
+    NapiUtils::SetStringPropertyUtf8(context->GetEnv(), obj, KEY_ADDRESS, context->address_.GetAddress());
+    NapiUtils::SetUint32Property(context->GetEnv(), obj, KEY_FAMILY, context->address_.GetJsValueFamily());
+    NapiUtils::SetUint32Property(context->GetEnv(), obj, KEY_PORT, context->address_.GetPort());
     return obj;
 }
 
