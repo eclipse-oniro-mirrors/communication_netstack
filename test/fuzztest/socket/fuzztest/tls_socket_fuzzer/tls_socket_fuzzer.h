@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef TLS_SOCKKET_FUZZER_H
-#define TLS_SOCKKET_FUZZER_H
+#ifndef TLS_SOCKET_FUZZER_H
+#define TLS_SOCKET_FUZZER_H
 
-#define FUZZ_PROJECT_NAME "tls_sockket_fuzzer"
+#define FUZZ_PROJECT_NAME "tls_socket_fuzzer"
 
-#endif // TLS_SOCKKET_FUZZER_H
+#endif // TLS_SOCKET_FUZZER_H
