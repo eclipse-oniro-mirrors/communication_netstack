@@ -17,6 +17,6 @@ group("fuzztest") {
   testonly = true
   deps = [
     "fuzztest/socketexec_fuzzer:fuzztest",
-    "fuzztest/tls_sockket_fuzzer:fuzztest",
+    "fuzztest/tls_socket_fuzzer:fuzztest",
   ]
 }
