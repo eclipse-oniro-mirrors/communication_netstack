@@ -20,8 +20,9 @@
 #include <initializer_list>
 #include <iosfwd>
 #include <type_traits>
+#include <vector>
 
-#include "napi/native_api.h"
+#include "base_async_work.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 #include "base_context.h"
@@ -34,6 +35,34 @@ namespace OHOS::NetStack { class EventManager; }
 
 namespace OHOS::NetStack::ModuleTemplate {
 typedef void (*Finalizer)(napi_env, void *data, void *);
+namespace {
+const std::vector<std::string> g_interfaceWithException = { // throw error for api9 or later
+    "getCertificate",
+    "getRemoteCertificate",
+    "getSignatureAlgorithms",
+    "getProtocol",
+    "getCipherSuite",
+    "connect",
+    "send",
+    "close",
+    "bind",
+    "getRemoteAddress",
+    "getState",
+    "setExtraOptions",
+    "on",
+    "off",
+};
+
+bool IsNeedParseThrow(const std::string &asyncWorkName)
+{
+    for (const auto &name : g_interfaceWithException) {
+        if (name == asyncWorkName) {
+            return true;
+        }
+    }
+    return false;
+}
+} // namespace
 
 template <class Context>
 napi_value Interface(napi_env env,
@@ -56,8 +85,8 @@ napi_value Interface(napi_env env,
     auto context = new Context(env, manager);
     context->ParseParams(params, paramsCount);
     NETSTACK_LOGI("js params parse OK ? %{public}d", context->IsParseOK());
-    if (!context->IsParseOK()) {
-        napi_throw_error(env, "-1", "parse param failed");
+    if (!context->IsParseOK() && IsNeedParseThrow(asyncWorkName)) {
+        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
         delete context;
         context = nullptr;
         return NapiUtils::GetUndefined(env);

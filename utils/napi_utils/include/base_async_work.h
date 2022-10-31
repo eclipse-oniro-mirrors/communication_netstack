@@ -24,9 +24,10 @@
 #include "napi_utils.h"
 #include "netstack_log.h"
 
-static constexpr const char *BUSINESS_ERROR_KEY = "code";
-
 namespace OHOS::NetStack {
+constexpr size_t PARSE_ERROR_CODE = 401;
+constexpr const char *PARSE_ERROR_MSG = "Parameter error";
+
 class BaseAsyncWork final {
 public:
     BaseAsyncWork() = delete;
@@ -37,8 +38,14 @@ public:
 
         (void)env;
 
-        auto context = static_cast<Context *>(data);
+        auto context = reinterpret_cast<Context *>(data);
         if (context == nullptr || Executor == nullptr) {
+            NETSTACK_LOGE("context or Executor is nullptr");
+            return;
+        }
+        if (!context->IsParseOK()) {
+            context->SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG); // error code is 401, if parse failed.
+            NETSTACK_LOGE("parameter error");
             return;
         }
         context->SetExecOK(Executor(context));
