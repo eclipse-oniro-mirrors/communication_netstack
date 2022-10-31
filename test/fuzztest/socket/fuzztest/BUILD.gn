@@ -16,6 +16,6 @@ group("fuzztest") {
 
   deps = [
     "socketexec_fuzzer:fuzztest",
-    "tls_sockket_fuzzer:fuzztest",
+    "tls_socket_fuzzer:fuzztest",
   ]
 }
