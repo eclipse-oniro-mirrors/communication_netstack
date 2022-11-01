@@ -16,18 +16,17 @@
 #ifndef COMMUNICATIONNETSTACK_NETSTACK_BASE_ASYNC_WORK_H
 #define COMMUNICATIONNETSTACK_NETSTACK_BASE_ASYNC_WORK_H
 
+#include <limits>
 #include <memory>
 
-#include "napi/native_api.h"
-#include "napi/native_common.h"
+#include <napi/native_api.h>
+#include <napi/native_common.h>
+
 #include "base_context.h"
 #include "napi_utils.h"
 #include "netstack_log.h"
 
 namespace OHOS::NetStack {
-constexpr size_t PARSE_ERROR_CODE = 401;
-constexpr const char *PARSE_ERROR_MSG = "Parameter error";
-
 class BaseAsyncWork final {
 public:
     BaseAsyncWork() = delete;
@@ -44,7 +43,10 @@ public:
             return;
         }
         if (!context->IsParseOK()) {
-            context->SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG); // error code is 401, if parse failed.
+            if (context->GetErrorCode() ==
+                std::numeric_limits<int32_t>::max()) {                // api9 or before not set error in context.
+                context->SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG); // if developer not set error, there will set.
+            }
             NETSTACK_LOGE("parameter error");
             return;
         }

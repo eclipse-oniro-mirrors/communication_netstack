@@ -361,8 +361,7 @@ bool GetBooleanFromValue(napi_env env, napi_value value)
 }
 
 /* define properties */
-void DefineProperties(napi_env env,
-                      napi_value object,
+void DefineProperties(napi_env env, napi_value object,
                       const std::initializer_list<napi_property_descriptor> &properties)
 {
     napi_property_descriptor descriptors[properties.size()];

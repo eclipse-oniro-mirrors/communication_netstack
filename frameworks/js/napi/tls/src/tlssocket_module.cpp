@@ -18,15 +18,15 @@
 #include <initializer_list>
 #include <napi/native_common.h>
 
-#include "bind_context.h"
 #include "common_context.h"
 #include "event_manager.h"
 #include "module_template.h"
 #include "monitor.h"
 #include "napi_utils.h"
 #include "netstack_log.h"
-#include "send_context.h"
-#include "tcp_extra_context.h"
+#include "tls_send_context.h"
+#include "tls_bind_context.h"
+#include "tls_extra_context.h"
 #include "tls.h"
 #include "tls_napi_context.h"
 #include "tls_connect_context.h"
@@ -87,8 +87,8 @@ napi_value TLSSocketModuleExports::TLSSocket::GetSignatureAlgorithms(napi_env en
 
 napi_value TLSSocketModuleExports::TLSSocket::Send(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<SendContext>(env, info, FUNCTION_SEND, nullptr, TLSSocketAsyncWork::ExecSend,
-                                                  TLSSocketAsyncWork::SendCallback);
+    return ModuleTemplate::Interface<TLSSendContext>(env, info, FUNCTION_SEND, nullptr, TLSSocketAsyncWork::ExecSend,
+                                                     TLSSocketAsyncWork::SendCallback);
 }
 
 napi_value TLSSocketModuleExports::TLSSocket::Close(napi_env env, napi_callback_info info)
@@ -99,13 +99,13 @@ napi_value TLSSocketModuleExports::TLSSocket::Close(napi_env env, napi_callback_
 
 napi_value TLSSocketModuleExports::TLSSocket::Bind(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<BindContext>(env, info, FUNCTION_BIND, nullptr, TLSSocketAsyncWork::ExecBind,
-                                                  TLSSocketAsyncWork::BindCallback);
+    return ModuleTemplate::Interface<TLSBindContext>(env, info, FUNCTION_BIND, nullptr, TLSSocketAsyncWork::ExecBind,
+                                                     TLSSocketAsyncWork::BindCallback);
 }
 
 napi_value TLSSocketModuleExports::TLSSocket::GetState(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<GetStateContext>(
+    return ModuleTemplate::Interface<TLSGetStateContext>(
         env, info, FUNCTION_GET_STATE, nullptr, TLSSocketAsyncWork::ExecGetState, TLSSocketAsyncWork::GetStateCallback);
 }
 
@@ -118,7 +118,7 @@ napi_value TLSSocketModuleExports::TLSSocket::GetRemoteAddress(napi_env env, nap
 
 napi_value TLSSocketModuleExports::TLSSocket::SetExtraOptions(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<TcpSetExtraOptionsContext>(env, info, FUNCTION_BIND, nullptr,
+    return ModuleTemplate::Interface<TLSSetExtraOptionsContext>(env, info, FUNCTION_BIND, nullptr,
                                                                 TLSSocketAsyncWork::ExecSetExtraOptions,
                                                                 TLSSocketAsyncWork::SetExtraOptionsCallback);
 }

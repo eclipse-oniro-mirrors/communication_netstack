@@ -16,11 +16,11 @@
 #include "tlssocket_async_work.h"
 
 #include "base_async_work.h"
-#include "bind_context.h"
+#include "tls_bind_context.h"
 #include "common_context.h"
 #include "netstack_log.h"
-#include "send_context.h"
-#include "tcp_extra_context.h"
+#include "tls_send_context.h"
+#include "tls_extra_context.h"
 #include "tls_napi_context.h"
 #include "tls_connect_context.h"
 #include "tlssocket_exec.h"
@@ -59,7 +59,7 @@ void TLSSocketAsyncWork::ExecGetSignatureAlgorithms(napi_env env, void *data)
 
 void TLSSocketAsyncWork::ExecSend(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<SendContext, TLSSocketExec::ExecSend>(env, data);
+    BaseAsyncWork::ExecAsyncWork<TLSSendContext, TLSSocketExec::ExecSend>(env, data);
 }
 
 void TLSSocketAsyncWork::ExecClose(napi_env env, void *data)
@@ -69,22 +69,22 @@ void TLSSocketAsyncWork::ExecClose(napi_env env, void *data)
 
 void TLSSocketAsyncWork::ExecBind(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<BindContext, TLSSocketExec::ExecBind>(env, data);
+    BaseAsyncWork::ExecAsyncWork<TLSBindContext, TLSSocketExec::ExecBind>(env, data);
 }
 
 void TLSSocketAsyncWork::ExecGetState(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<GetStateContext, TLSSocketExec::ExecGetState>(env, data);
+    BaseAsyncWork::ExecAsyncWork<TLSGetStateContext, TLSSocketExec::ExecGetState>(env, data);
 }
 
 void TLSSocketAsyncWork::ExecGetRemoteAddress(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<GetRemoteAddressContext, TLSSocketExec::ExecGetRemoteAddress>(env, data);
+    BaseAsyncWork::ExecAsyncWork<TLSGetRemoteAddressContext, TLSSocketExec::ExecGetRemoteAddress>(env, data);
 }
 
 void TLSSocketAsyncWork::ExecSetExtraOptions(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<TcpSetExtraOptionsContext, TLSSocketExec::ExecSetExtraOptions>(env, data);
+    BaseAsyncWork::ExecAsyncWork<TLSSetExtraOptionsContext, TLSSocketExec::ExecSetExtraOptions>(env, data);
 }
 
 void TLSSocketAsyncWork::GetCertificateCallback(napi_env env, napi_status status, void *data)
@@ -121,7 +121,7 @@ void TLSSocketAsyncWork::GetSignatureAlgorithmsCallback(napi_env env, napi_statu
 
 void TLSSocketAsyncWork::SendCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<SendContext, TLSSocketExec::SendCallback>(env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<TLSSendContext, TLSSocketExec::SendCallback>(env, status, data);
 }
 
 void TLSSocketAsyncWork::CloseCallback(napi_env env, napi_status status, void *data)
@@ -131,23 +131,23 @@ void TLSSocketAsyncWork::CloseCallback(napi_env env, napi_status status, void *d
 
 void TLSSocketAsyncWork::BindCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<BindContext, TLSSocketExec::BindCallback>(env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<TLSBindContext, TLSSocketExec::BindCallback>(env, status, data);
 }
 
 void TLSSocketAsyncWork::GetStateCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<GetStateContext, TLSSocketExec::GetStateCallback>(env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<TLSGetStateContext, TLSSocketExec::GetStateCallback>(env, status, data);
 }
 
 void TLSSocketAsyncWork::GetRemoteAddressCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<GetRemoteAddressContext, TLSSocketExec::GetRemoteAddressCallback>(env, status,
-                                                                                                       data);
+    BaseAsyncWork::AsyncWorkCallback<TLSGetRemoteAddressContext, TLSSocketExec::GetRemoteAddressCallback>(env, status,
+                                                                                                          data);
 }
 
 void TLSSocketAsyncWork::SetExtraOptionsCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<TcpSetExtraOptionsContext, TLSSocketExec::SetExtraOptionsCallback>(env, status,
+    BaseAsyncWork::AsyncWorkCallback<TLSSetExtraOptionsContext, TLSSocketExec::SetExtraOptionsCallback>(env, status,
                                                                                                         data);
 }
 } // namespace NetStack

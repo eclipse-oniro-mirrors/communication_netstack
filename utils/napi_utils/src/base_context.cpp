@@ -31,7 +31,8 @@ BaseContext::BaseContext(napi_env env, EventManager *manager)
       callback_(nullptr),
       asyncWork_(nullptr),
       deferred_(nullptr),
-      needPromise_(true)
+      needPromise_(true),
+      needThrowException_(false)
 {
 }
 
@@ -187,5 +188,15 @@ void BaseContext::ParseParams(napi_value *params, size_t paramsCount)
         return;
     }
     SetParseOK(true);
+}
+
+void BaseContext::SetNeedThrowException(bool needThrowException)
+{
+    needThrowException_ = needThrowException;
+}
+
+bool BaseContext::IsNeedThrowException() const
+{
+    return needThrowException_;
 }
 } // namespace OHOS::NetStack
