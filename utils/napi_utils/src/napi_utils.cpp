@@ -15,20 +15,20 @@
 
 #include "napi_utils.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <initializer_list>
 #include <memory>
-#include <algorithm>
 #include <new>
 #include <string>
 #include <vector>
 
-#include "securec.h"
+#include "base_context.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 #include "node_api.h"
-#include "base_context.h"
+#include "securec.h"
 
 namespace OHOS::NetStack::NapiUtils {
 static constexpr const int MAX_STRING_LENGTH = 5 * 1024 * 1024;
@@ -361,8 +361,7 @@ bool GetBooleanFromValue(napi_env env, napi_value value)
 }
 
 /* define properties */
-void DefineProperties(napi_env env,
-                      napi_value object,
+void DefineProperties(napi_env env, napi_value object,
                       const std::initializer_list<napi_property_descriptor> &properties)
 {
     napi_property_descriptor descriptors[properties.size()];

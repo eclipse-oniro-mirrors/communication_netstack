@@ -18,13 +18,12 @@
 
 #include <memory>
 
-#include "napi/native_api.h"
-#include "napi/native_common.h"
+#include <napi/native_api.h>
+#include <napi/native_common.h>
+
 #include "base_context.h"
 #include "napi_utils.h"
 #include "netstack_log.h"
-
-static constexpr const char *BUSINESS_ERROR_KEY = "code";
 
 namespace OHOS::NetStack {
 class BaseAsyncWork final {
@@ -40,6 +39,12 @@ public:
         auto context = static_cast<Context *>(data);
         if (context == nullptr || Executor == nullptr) {
             return;
+        }
+        if (!context->IsParseOK()) {
+            if (context->GetErrorCode() ==
+                std::numeric_limits<int32_t>::max()) {                // api9 or before not set error in context.
+                context->SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG); // if developer not set error, there will set.
+            }
         }
         context->SetExecOK(Executor(context));
         /* do not have async executor, execOK should be set in sync work */

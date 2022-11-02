@@ -18,13 +18,10 @@
 
 #include <napi/native_api.h>
 
-#include "nocopyable.h"
-
 namespace OHOS {
 namespace NetStack {
 class TLSSocketAsyncWork final {
 public:
-    DISALLOW_COPY_AND_MOVE(TLSSocketAsyncWork);
     TLSSocketAsyncWork() = delete;
     ~TLSSocketAsyncWork() = delete;
 

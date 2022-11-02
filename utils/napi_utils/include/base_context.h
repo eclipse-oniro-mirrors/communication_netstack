@@ -16,21 +16,23 @@
 #ifndef COMMUNICATIONNETSTACK_BASE_CONTEXT_H
 #define COMMUNICATIONNETSTACK_BASE_CONTEXT_H
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 #include <iosfwd>
 #include <string>
 #include <utility>
 
-#include "napi/native_api.h"
-#include "napi/native_common.h"
+#include <napi/native_api.h>
+#include <napi/native_common.h>
+
 #include "event_manager.h"
 #include "node_api_types.h"
 
 namespace OHOS::NetStack {
 typedef void (*AsyncWorkExecutor)(napi_env env, void *data);
-
 typedef void (*AsyncWorkCallback)(napi_env env, napi_status status, void *data);
+constexpr size_t PARSE_ERROR_CODE = 401;
+constexpr const char *PARSE_ERROR_MSG = "Parameter error";
 
 class BaseContext {
 public:
@@ -80,6 +82,10 @@ public:
 
     [[nodiscard]] bool IsNeedPromise() const;
 
+    void SetNeedThrowException(bool needThrowException);
+
+    [[nodiscard]] bool IsNeedThrowException() const;
+
     [[nodiscard]] EventManager *GetManager() const;
 
     virtual void ParseParams(napi_value *params, size_t paramsCount);
@@ -107,6 +113,8 @@ private:
     std::string asyncWorkName_;
 
     bool needPromise_;
+
+    bool needThrowException_;
 };
 } // namespace OHOS::NetStack
 
