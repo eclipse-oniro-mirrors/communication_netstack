@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-#ifndef TLS_CONTEXT_CONNECT_CONTEXT_H
-#define TLS_CONTEXT_CONNECT_CONTEXT_H
+#ifndef TLS_CONTEXT_SEND_CONTEXT_H
+#define TLS_CONTEXT_SEND_CONTEXT_H
 
 #include <cstddef>
-#include <cstdint>
+#include <string>
 
 #include <napi/native_api.h>
 
@@ -28,26 +28,21 @@
 
 namespace OHOS {
 namespace NetStack {
-class TLSConnectContext final : public BaseContext {
+class TLSSendContext final : public BaseContext {
 public:
-    TLSConnectContext() = delete;
-    explicit TLSConnectContext(napi_env env, EventManager *manager);
+    TLSSendContext() = delete;
+    explicit TLSSendContext(napi_env env, EventManager *manager);
 
 public:
-    TLSConnectOptions connectOptions_;
+    std::string data_;
     int32_t errorNumber_ = 0;
-    std::string hostName_;
-    std::vector<std::string> x509Certificates_;
 
 public:
     void ParseParams(napi_value *params, size_t paramsCount);
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
-    TLSConnectOptions ReadTLSConnectOptions(napi_env env, napi_value *params);
-    TLSSecureOptions ReadTLSSecureOptions(napi_env env, napi_value *params);
-    NetAddress ReadNetAddress(napi_env env, napi_value *params);
 };
 } // namespace NetStack
 } // namespace OHOS
-#endif // TLS_CONTEXT_CONNECT_CONTEXT_H
+#endif // TLS_CONTEXT_SEND_CONTEXT_H

@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <utility>
 
+#include <napi/native_api.h>
 #include <napi/native_common.h>
 #include <uv.h>
 
@@ -183,9 +184,13 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
 
-    if (paramsCount != PARAM_OPTION_CALLBACK || NapiUtils::GetValueType(env, params[0]) != napi_string ||
-        NapiUtils::GetValueType(env, params[1]) != napi_function) {
-        return NapiUtils::GetUndefined(env);
+    if (paramsCount != PARAM_OPTION_CALLBACK) {
+        if (NapiUtils::GetValueType(env, params[0]) != napi_string) {
+            napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
+        }
+        if (NapiUtils::GetValueType(env, params[1]) != napi_function) {
+            return NapiUtils::GetUndefined(env);
+        }
     }
 
     napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager_));
@@ -245,9 +250,13 @@ napi_value Monitor::Off(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
 
-    if (paramsCount != PARAM_OPTION_CALLBACK || NapiUtils::GetValueType(env, params[0]) != napi_string ||
-        NapiUtils::GetValueType(env, params[1]) != napi_function) {
-        return NapiUtils::GetUndefined(env);
+    if (paramsCount != PARAM_OPTION_CALLBACK) {
+        if (NapiUtils::GetValueType(env, params[0]) != napi_string) {
+            napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
+        }
+        if (NapiUtils::GetValueType(env, params[1]) != napi_function) {
+            return NapiUtils::GetUndefined(env);
+        }
     }
 
     napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager_));

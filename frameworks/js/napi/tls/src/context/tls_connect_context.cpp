@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "constant.h"
@@ -41,6 +42,7 @@ constexpr const char *FAMILY_NAME = "family";
 constexpr const char *PORT_NAME = "port";
 constexpr uint32_t CA_CHAIN_LENGTH = 10;
 constexpr uint32_t PROTOCOLS_SIZE = 10;
+constexpr std::string_view PARSE_ERROR = "options is not type of TLSConnectOptions";
 
 bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptions &secureOption)
 {
@@ -80,6 +82,7 @@ bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptio
     return true;
 }
 } // namespace
+
 TLSConnectContext::TLSConnectContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void TLSConnectContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -101,6 +104,8 @@ bool TLSConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
     if (paramsCount == PARAM_JUST_OPTIONS) {
         if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_0]) != napi_object) {
             NETSTACK_LOGE("tlsConnectContext first param is not object");
+            SetNeedThrowException(true);
+            SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
             return false;
         }
         return true;
@@ -109,6 +114,8 @@ bool TLSConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
         if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_0]) != napi_object) {
             NETSTACK_LOGE("tls ConnectContext first param is not object");
+            SetNeedThrowException(true);
+            SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
             return false;
         }
         if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_1]) != napi_function) {

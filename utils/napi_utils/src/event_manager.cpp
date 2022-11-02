@@ -24,10 +24,7 @@ static constexpr const int ASYNC_CALLBACK_PARAM_NUM = 2;
 
 EventManager::EventManager() : data_(nullptr) {}
 
-void EventManager::AddListener(napi_env env,
-                               const std::string &type,
-                               napi_value callback,
-                               bool once,
+void EventManager::AddListener(napi_env env, const std::string &type, napi_value callback, bool once,
                                bool asyncCallback)
 {
     std::lock_guard<std::mutex> lock(mutex_);

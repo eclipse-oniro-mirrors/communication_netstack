@@ -21,14 +21,15 @@
 #include <iosfwd>
 #include <type_traits>
 
-#include "napi/native_api.h"
+#include "base_context.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
-#include "base_context.h"
-#include "netstack_log.h"
 #include "napi_utils.h"
+#include "netstack_log.h"
 
-namespace OHOS::NetStack { class EventManager; }
+namespace OHOS::NetStack {
+class EventManager;
+}
 
 #define MAX_PARAM_NUM 64
 
@@ -36,11 +37,8 @@ namespace OHOS::NetStack::ModuleTemplate {
 typedef void (*Finalizer)(napi_env, void *data, void *);
 
 template <class Context>
-napi_value Interface(napi_env env,
-                     napi_callback_info info,
-                     const std::string &asyncWorkName,
-                     bool (*Work)(napi_env, napi_value, Context *),
-                     AsyncWorkExecutor executor,
+napi_value Interface(napi_env env, napi_callback_info info, const std::string &asyncWorkName,
+                     bool (*Work)(napi_env, napi_value, Context *), AsyncWorkExecutor executor,
                      AsyncWorkCallback callback)
 {
     static_assert(std::is_base_of<BaseContext, Context>::value);
@@ -56,8 +54,8 @@ napi_value Interface(napi_env env,
     auto context = new Context(env, manager);
     context->ParseParams(params, paramsCount);
     NETSTACK_LOGI("js params parse OK ? %{public}d", context->IsParseOK());
-    if (!context->IsParseOK()) {
-        napi_throw_error(env, "-1", "parse param failed");
+    if (context->IsNeedThrowException()) { // only api9 or later need throw exception.
+        napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
         delete context;
         context = nullptr;
         return NapiUtils::GetUndefined(env);
@@ -77,8 +75,8 @@ napi_value Interface(napi_env env,
 }
 
 template <class Context>
-napi_value
-    InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info, bool (*Work)(napi_env, napi_value, Context *))
+napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
+                                     bool (*Work)(napi_env, napi_value, Context *))
 {
     static_assert(std::is_base_of<BaseContext, Context>::value);
 
@@ -104,17 +102,15 @@ napi_value
     return ret;
 }
 
-napi_value
-    On(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events, bool asyncCallback);
+napi_value On(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
+              bool asyncCallback);
 
-napi_value
-    Once(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events, bool asyncCallback);
+napi_value Once(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
+                bool asyncCallback);
 
 napi_value Off(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events);
 
-void DefineClass(napi_env env,
-                 napi_value exports,
-                 const std::initializer_list<napi_property_descriptor> &properties,
+void DefineClass(napi_env env, napi_value exports, const std::initializer_list<napi_property_descriptor> &properties,
                  const std::string &className);
 
 napi_value NewInstance(napi_env env, napi_callback_info info, const std::string &className, Finalizer finalizer);

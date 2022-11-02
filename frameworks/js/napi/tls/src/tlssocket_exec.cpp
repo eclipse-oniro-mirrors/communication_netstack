@@ -32,7 +32,7 @@ namespace NetStack {
 namespace {
 constexpr int ERROR_DIVISOR = 1000;
 constexpr int ERROR_RANGE = 500;
-}
+} // namespace
 bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
 {
     auto manager = context->GetManager();
@@ -168,7 +168,7 @@ bool TLSSocketExec::ExecGetSignatureAlgorithms(GetSignatureAlgorithmsContext *co
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
-bool TLSSocketExec::ExecSend(SendContext *context)
+bool TLSSocketExec::ExecSend(TLSSendContext *context)
 {
     auto manager = context->GetManager();
     if (manager == nullptr) {
@@ -214,7 +214,7 @@ bool TLSSocketExec::ExecClose(TLSNapiContext *context)
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
-bool TLSSocketExec::ExecBind(BindContext *context)
+bool TLSSocketExec::ExecBind(TLSBindContext *context)
 {
     auto manager = context->GetManager();
     if (manager == nullptr) {
@@ -233,7 +233,7 @@ bool TLSSocketExec::ExecBind(BindContext *context)
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
-bool TLSSocketExec::ExecGetRemoteAddress(GetRemoteAddressContext *context)
+bool TLSSocketExec::ExecGetRemoteAddress(TLSGetRemoteAddressContext *context)
 {
     auto manager = context->GetManager();
     if (manager == nullptr) {
@@ -255,7 +255,7 @@ bool TLSSocketExec::ExecGetRemoteAddress(GetRemoteAddressContext *context)
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
-bool TLSSocketExec::ExecGetState(GetStateContext *context)
+bool TLSSocketExec::ExecGetState(TLSGetStateContext *context)
 {
     auto manager = context->GetManager();
     if (manager == nullptr) {
@@ -277,7 +277,7 @@ bool TLSSocketExec::ExecGetState(GetStateContext *context)
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
-bool TLSSocketExec::ExecSetExtraOptions(TcpSetExtraOptionsContext *context)
+bool TLSSocketExec::ExecSetExtraOptions(TLSSetExtraOptionsContext *context)
 {
     auto manager = context->GetManager();
     if (manager == nullptr) {
@@ -354,7 +354,7 @@ napi_value TLSSocketExec::GetSignatureAlgorithmsCallback(GetSignatureAlgorithmsC
     return signatureAlgorithms;
 }
 
-napi_value TLSSocketExec::SendCallback(SendContext *context)
+napi_value TLSSocketExec::SendCallback(TLSSendContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
 }
@@ -364,14 +364,14 @@ napi_value TLSSocketExec::CloseCallback(TLSNapiContext *context)
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
-napi_value TLSSocketExec::BindCallback(BindContext *context)
+napi_value TLSSocketExec::BindCallback(TLSBindContext *context)
 {
     context->Emit(EVENT_LISTENING, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
                                                   NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
-napi_value TLSSocketExec::GetStateCallback(GetStateContext *context)
+napi_value TLSSocketExec::GetStateCallback(TLSGetStateContext *context)
 {
     napi_value obj = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
@@ -383,7 +383,7 @@ napi_value TLSSocketExec::GetStateCallback(GetStateContext *context)
     return obj;
 }
 
-napi_value TLSSocketExec::GetRemoteAddressCallback(GetRemoteAddressContext *context)
+napi_value TLSSocketExec::GetRemoteAddressCallback(TLSGetRemoteAddressContext *context)
 {
     napi_value obj = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
@@ -395,7 +395,7 @@ napi_value TLSSocketExec::GetRemoteAddressCallback(GetRemoteAddressContext *cont
     return obj;
 }
 
-napi_value TLSSocketExec::SetExtraOptionsCallback(TcpSetExtraOptionsContext *context)
+napi_value TLSSocketExec::SetExtraOptionsCallback(TLSSetExtraOptionsContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
 }

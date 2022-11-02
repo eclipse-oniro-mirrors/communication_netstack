@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef TLS_CONTEXT_CLOSE_CONTEXT_H
-#define TLS_CONTEXT_CLOSE_CONTEXT_H
+#ifndef TLS_NAPI_CONTEXT_H
+#define TLS_NAPI_CONTEXT_H
 
 #include <cstddef>
 #include <string>
@@ -24,24 +24,27 @@
 
 #include "base_context.h"
 #include "event_manager.h"
-#include "nocopyable.h"
+#include "net_address.h"
+#include "socket_state_base.h"
 
 namespace OHOS {
 namespace NetStack {
 class TLSNapiContext final : public BaseContext {
 public:
-    DISALLOW_COPY_AND_MOVE(TLSNapiContext);
-
     TLSNapiContext() = delete;
     explicit TLSNapiContext(napi_env env, EventManager *manager);
 
+public:
     std::string protocol_;
     std::vector<std::string> cipherSuites_;
     std::string cert_;
     std::string remoteCert_;
     std::vector<std::string> signatureAlgorithms_;
     int32_t errorNumber_ = 0;
+    SocketStateBase state_;
+    NetAddress address_;
 
+public:
     void ParseParams(napi_value *params, size_t paramsCount);
 
 private:
@@ -53,6 +56,8 @@ using GetProtocolContext = TLSNapiContext;
 using GetSignatureAlgorithmsContext = TLSNapiContext;
 using GetRemoteCertificateContext = TLSNapiContext;
 using GetCertificateContext = TLSNapiContext;
+using TLSGetStateContext = TLSNapiContext;
+using TLSGetRemoteAddressContext = TLSNapiContext;
 } // namespace NetStack
 } // namespace OHOS
-#endif // TLS_CONTEXT_CLOSE_CONTEXT_H
+#endif // TLS_NAPI_CONTEXT_H
