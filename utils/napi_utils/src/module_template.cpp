@@ -26,8 +26,8 @@
 namespace OHOS::NetStack::ModuleTemplate {
 static constexpr const int EVENT_PARAM_NUM = 2;
 
-napi_value
-    On(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events, bool asyncCallback)
+napi_value On(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
+              bool asyncCallback)
 {
     napi_value thisVal = nullptr;
     size_t paramsCount = MAX_PARAM_NUM;
@@ -54,8 +54,8 @@ napi_value
     return NapiUtils::GetUndefined(env);
 }
 
-napi_value
-    Once(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events, bool asyncCallback)
+napi_value Once(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
+                bool asyncCallback)
 {
     napi_value thisVal = nullptr;
     size_t paramsCount = MAX_PARAM_NUM;
@@ -118,9 +118,7 @@ napi_value Off(napi_env env, napi_callback_info info, const std::initializer_lis
     return NapiUtils::GetUndefined(env);
 }
 
-void DefineClass(napi_env env,
-                 napi_value exports,
-                 const std::initializer_list<napi_property_descriptor> &properties,
+void DefineClass(napi_env env, napi_value exports, const std::initializer_list<napi_property_descriptor> &properties,
                  const std::string &className)
 {
     auto constructor = [](napi_env env, napi_callback_info info) -> napi_value {

@@ -18,10 +18,10 @@
 
 #include <napi/native_api.h>
 
-#include "bind_context.h"
 #include "common_context.h"
-#include "send_context.h"
-#include "tcp_extra_context.h"
+#include "tls_send_context.h"
+#include "tls_bind_context.h"
+#include "tls_extra_context.h"
 #include "tls_napi_context.h"
 #include "tls_connect_context.h"
 
@@ -29,8 +29,6 @@ namespace OHOS {
 namespace NetStack {
 class TLSSocketExec final {
 public:
-    DISALLOW_COPY_AND_MOVE(TLSSocketExec);
-
     TLSSocketExec() = delete;
     ~TLSSocketExec() = delete;
 
@@ -40,12 +38,12 @@ public:
     static bool ExecGetRemoteCertificate(GetRemoteCertificateContext *context);
     static bool ExecGetProtocol(GetProtocolContext *context);
     static bool ExecGetSignatureAlgorithms(GetSignatureAlgorithmsContext *context);
-    static bool ExecSend(SendContext *context);
+    static bool ExecSend(TLSSendContext *context);
     static bool ExecClose(TLSNapiContext *context);
-    static bool ExecBind(BindContext *context);
-    static bool ExecGetState(GetStateContext *context);
-    static bool ExecGetRemoteAddress(GetRemoteAddressContext *context);
-    static bool ExecSetExtraOptions(TcpSetExtraOptionsContext *context);
+    static bool ExecBind(TLSBindContext *context);
+    static bool ExecGetState(TLSGetStateContext *context);
+    static bool ExecGetRemoteAddress(TLSGetRemoteAddressContext *context);
+    static bool ExecSetExtraOptions(TLSSetExtraOptionsContext *context);
 
     static napi_value GetCertificateCallback(GetCertificateContext *context);
     static napi_value ConnectCallback(TLSConnectContext *context);
@@ -53,12 +51,12 @@ public:
     static napi_value GetRemoteCertificateCallback(GetRemoteCertificateContext *context);
     static napi_value GetProtocolCallback(GetProtocolContext *context);
     static napi_value GetSignatureAlgorithmsCallback(GetSignatureAlgorithmsContext *context);
-    static napi_value SendCallback(SendContext *context);
+    static napi_value SendCallback(TLSSendContext *context);
     static napi_value CloseCallback(TLSNapiContext *context);
-    static napi_value BindCallback(BindContext *context);
-    static napi_value GetStateCallback(GetStateContext *context);
-    static napi_value GetRemoteAddressCallback(GetRemoteAddressContext *context);
-    static napi_value SetExtraOptionsCallback(TcpSetExtraOptionsContext *context);
+    static napi_value BindCallback(TLSBindContext *context);
+    static napi_value GetStateCallback(TLSGetStateContext *context);
+    static napi_value GetRemoteAddressCallback(TLSGetRemoteAddressContext *context);
+    static napi_value SetExtraOptionsCallback(TLSSetExtraOptionsContext *context);
 };
 } // namespace NetStack
 } // namespace OHOS

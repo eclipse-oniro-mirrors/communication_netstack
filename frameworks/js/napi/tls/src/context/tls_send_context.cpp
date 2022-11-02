@@ -13,9 +13,10 @@
  * limitations under the License.
  */
 
-#include "send_context.h"
+#include "tls_send_context.h"
 
 #include <cstdint>
+#include <string_view>
 
 #include "constant.h"
 #include "napi_utils.h"
@@ -23,9 +24,11 @@
 
 namespace OHOS {
 namespace NetStack {
-SendContext::SendContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
+static constexpr std::string_view PARSE_ERROR = "data is not string";
 
-void SendContext::ParseParams(napi_value *params, size_t paramsCount)
+TLSSendContext::TLSSendContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
+
+void TLSSendContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     if (!CheckParamsType(params, paramsCount)) {
         return;
@@ -39,11 +42,13 @@ void SendContext::ParseParams(napi_value *params, size_t paramsCount)
     SetParseOK(true);
 }
 
-bool SendContext::CheckParamsType(napi_value *params, size_t paramsCount)
+bool TLSSendContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
     if (paramsCount == PARAM_JUST_OPTIONS) {
         if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_0]) != napi_string) {
-            NETSTACK_LOGE("SendContext first param is not string");
+            NETSTACK_LOGE("first param is not string");
+            SetNeedThrowException(true);
+            SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
             return false;
         }
         return true;
@@ -51,11 +56,13 @@ bool SendContext::CheckParamsType(napi_value *params, size_t paramsCount)
 
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
         if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_0]) != napi_string) {
-            NETSTACK_LOGE("SendContext first param is not string");
+            NETSTACK_LOGE("first param is not string");
+            SetNeedThrowException(true);
+            SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
             return false;
         }
         if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_1]) != napi_function) {
-            NETSTACK_LOGE("SendContext second param is not function");
+            NETSTACK_LOGE("second param is not function");
             return false;
         }
         return true;

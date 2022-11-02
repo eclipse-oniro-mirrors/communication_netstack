@@ -13,37 +13,34 @@
  * limitations under the License.
  */
 
-#ifndef TLS_CONTEXT_SEND_CONTEXT_H
-#define TLS_CONTEXT_SEND_CONTEXT_H
+#ifndef TLS_BIND_CONTEXT_H
+#define TLS_BIND_CONTEXT_H
 
 #include <cstddef>
-#include <string>
+#include <cstdint>
 
 #include <napi/native_api.h>
 
+#include "net_address.h"
 #include "base_context.h"
 #include "event_manager.h"
-#include "nocopyable.h"
-#include "tls.h"
-#include "tls_socket.h"
 
-namespace OHOS {
-namespace NetStack {
-class SendContext final : public BaseContext {
+namespace OHOS::NetStack {
+class TLSBindContext final : public BaseContext {
 public:
-    DISALLOW_COPY_AND_MOVE(SendContext);
+    TLSBindContext() = delete;
+    explicit TLSBindContext(napi_env env, EventManager *manager);
 
-    SendContext() = delete;
-    explicit SendContext(napi_env env, EventManager *manager);
+public:
+    void ParseParams(napi_value *params, size_t paramsCount) override;
+    [[nodiscard]] int GetSocketFd() const;
 
-    std::string data_;
+public:
+    NetAddress address_;
     int32_t errorNumber_ = 0;
-
-    void ParseParams(napi_value *params, size_t paramsCount);
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
-} // namespace NetStack
-} // namespace OHOS
-#endif // TLS_CONTEXT_SEND_CONTEXT_H
+} // namespace OHOS::NetStack
+#endif // TLS_BIND_CONTEXT_H
