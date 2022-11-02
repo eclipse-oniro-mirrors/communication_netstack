@@ -189,7 +189,7 @@ bool FetchContext::GetUrlParam(napi_value data)
         }
     });
     if (!extraParam.empty()) {
-        extraParam = extraParam.substr(0, extraParam.size() - 1); // remove the last &
+        extraParam.pop_back(); // remove the last &
     }
 
     request.SetUrl(FetchExec::MakeUrl(url, param, extraParam));
