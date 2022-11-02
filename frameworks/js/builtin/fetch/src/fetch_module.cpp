@@ -175,7 +175,7 @@ void FetchModule::ParseExtraData(JSIValue options, RequestData *requestData)
         auto index = url.find(HttpConstant::HTTP_URL_PARAM_SEPARATOR);
         if (index != std::string::npos) {
             param = url.substr(index + 1);
-            url = url.substr(0, index);
+            url.resize(index);
         }
 
         if (JSI::ValueIsString(extraData.get())) {
@@ -200,7 +200,7 @@ void FetchModule::ParseExtraData(JSIValue options, RequestData *requestData)
             extraParam += p.first + "=" + p.second + HttpConstant::HTTP_URL_PARAM_DELIMITER;
         }
         if (!extraParam.empty()) {
-            extraParam = extraParam.substr(0, extraParam.size() - 1); // delete the last &
+            extraParam.pop_back(); // delete the last &
         }
 
         requestData->SetUrl(MakeUrl(url, param, extraParam));

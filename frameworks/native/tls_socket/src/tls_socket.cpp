@@ -16,6 +16,7 @@
 #include "tls_socket.h"
 
 #include <chrono>
+#include <numeric>
 #include <regex>
 #include <securec.h>
 #include <thread>
@@ -76,7 +77,7 @@ std::vector<std::string> SplitEscapedAltNames(std::string &altNames)
 {
     std::vector<std::string> result;
     std::string currentToken;
-    int offset = 0;
+    size_t offset = 0;
     constexpr int OFFSET = 2;
     while (offset != altNames.length()) {
         int nextSep = altNames.find_first_of(", ");
@@ -84,9 +85,9 @@ std::vector<std::string> SplitEscapedAltNames(std::string &altNames)
         if (nextQuote != -1 && (nextSep != -1 || nextQuote < nextSep)) {
             currentToken += altNames.substr(offset, nextQuote);
             std::regex jsonStringPattern(JSON_STRING_PATTERN);
-            std::smatch result;
+            std::smatch match;
             std::string altNameSubStr = altNames.substr(nextQuote);
-            bool ret = regex_match(altNameSubStr, result, jsonStringPattern);
+            bool ret = regex_match(altNameSubStr, match, jsonStringPattern);
             if (!ret) {
                 return {""};
             }
@@ -683,7 +684,7 @@ void TLSSocket::Send(const OHOS::NetStack::TCPSendOptions &tcpSendOptions, const
     CallSendCallback(TLSSOCKET_SUCCESS, callback);
 }
 
-bool WaitConditionWithTimeout(bool *flag, const int32_t timeoutMs)
+bool WaitConditionWithTimeout(const bool *flag, const int32_t timeoutMs)
 {
     int maxWaitCnt = timeoutMs / WAIT_MS;
     int cnt = 0;
@@ -1140,11 +1141,9 @@ bool TLSSocket::TLSSocketInternal::SetAlpnProtocols(const std::vector<std::strin
         NETSTACK_LOGE("ssl is null");
         return false;
     }
-    size_t len = 0;
     size_t pos = 0;
-    for (const auto &str : alpnProtocols) {
-        len += str.length();
-    }
+    size_t len = std::accumulate(alpnProtocols.begin(), alpnProtocols.end(), 0,
+                                 [](size_t init, const std::string &alpnProt) { return init + alpnProt.length(); });
     auto result = std::make_unique<unsigned char[]>(alpnProtocols.size() + len);
     for (const auto &str : alpnProtocols) {
         len = str.length();
@@ -1356,7 +1355,7 @@ std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::st
         return "subject name is null";
     }
     char subNameBuf[BUF_SIZE] = {0};
-    std::string subName = X509_NAME_oneline(subjectName, subNameBuf, BUF_SIZE);
+    X509_NAME_oneline(subjectName, subNameBuf, BUF_SIZE);
 
     int index = X509_get_ext_by_NID(x509Certificates, NID_subject_alt_name, -1);
     if (index < 0) {
@@ -1381,14 +1380,13 @@ std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::st
     }
     BIO_set_fp(bio, stdout, BIO_NOCLOSE);
     ASN1_STRING_print(bio, extData);
-
     std::vector<std::string> dnsNames = {};
     std::vector<std::string> ips = {};
-    std::vector<std::string> splitAltNames;
     constexpr int DNS_NAME_IDX = 4;
     constexpr int IP_NAME_IDX = 11;
     hostname = "" + hostname;
     if (!altNames.empty()) {
+        std::vector<std::string> splitAltNames;
         if (altNames.find('\"') != std::string::npos) {
             splitAltNames = SplitEscapedAltNames(altNames);
         } else {

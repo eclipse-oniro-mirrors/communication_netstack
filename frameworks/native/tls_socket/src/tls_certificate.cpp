@@ -80,8 +80,6 @@ TLSCertificate &TLSCertificate::operator=(const TLSCertificate &other)
     }
     version_ = other.version_;
     serialNumber_ = other.serialNumber_;
-    notValidBefore_ = other.notValidBefore_;
-    notValidAfter_ = other.notValidBefore_;
     signatureAlgorithm_ = other.signatureAlgorithm_;
     localCertString_ = other.localCertString_;
     caCertString_ = other.caCertString_;
@@ -314,7 +312,6 @@ bool TLSCertificate::SetNotValidTime(X509 *x509)
         NETSTACK_LOGE("ASN1_TIME_to_tm before is false");
         return false;
     }
-    notValidBefore_ = asctime(&tmBefore);
 
     ASN1_TIME *after = X509_get_notAfter(x509);
     if (!after) {
@@ -326,7 +323,6 @@ bool TLSCertificate::SetNotValidTime(X509 *x509)
         NETSTACK_LOGE("ASN1_TIME_to_tm before is false");
         return false;
     }
-    notValidAfter_ = asctime(&tmAfter);
     return true;
 }
 

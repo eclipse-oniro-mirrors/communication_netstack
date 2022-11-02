@@ -99,7 +99,8 @@ bool EncodeUrlParam(CURL *curl, std::string &url)
     if (encodeOut == nullptr || strlen(encodeOut.get()) == 0) {
         return false;
     }
-    url = url.substr(0, index) + HttpConstant::HTTP_URL_PARAM_SEPARATOR + encodeOut.get();
+    url.resize(index);
+    url.append(HttpConstant::HTTP_URL_PARAM_SEPARATOR).append(encodeOut.get());
     return true;
 }
 } // namespace ACELite
