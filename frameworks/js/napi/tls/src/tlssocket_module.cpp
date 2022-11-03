@@ -111,7 +111,7 @@ napi_value TLSSocketModuleExports::TLSSocket::GetState(napi_env env, napi_callba
 
 napi_value TLSSocketModuleExports::TLSSocket::GetRemoteAddress(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<GetRemoteAddressContext>(env, info, FUNCTION_GET_REMOTE_ADDRESS, nullptr,
+    return ModuleTemplate::Interface<TLSGetRemoteAddressContext>(env, info, FUNCTION_GET_REMOTE_ADDRESS, nullptr,
                                                               TLSSocketAsyncWork::ExecGetRemoteAddress,
                                                               TLSSocketAsyncWork::GetRemoteAddressCallback);
 }
