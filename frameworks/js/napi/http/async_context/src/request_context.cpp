@@ -19,9 +19,9 @@
 
 #include "constant.h"
 #include "http_exec.h"
+#include "napi_utils.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
-#include "napi_utils.h"
 
 static constexpr const int PARAM_JUST_URL = 1;
 
@@ -30,7 +30,16 @@ static constexpr const int PARAM_URL_AND_OPTIONS_OR_CALLBACK = 2;
 static constexpr const int PARAM_URL_AND_OPTIONS_AND_CALLBACK = 3;
 
 namespace OHOS::NetStack {
-RequestContext::RequestContext(napi_env env, EventManager *manager) : BaseContext(env, manager), usingCache_(true) {}
+static std::map<RequestContext *, napi_env> ENV_MAP;
+RequestContext::RequestContext(napi_env env, EventManager *manager) : BaseContext(env, manager), usingCache_(true)
+{
+    ENV_MAP[this] = env;
+}
+
+napi_env RequestContext::GetEnv()
+{
+    return ENV_MAP[this];
+}
 
 void RequestContext::ParseParams(napi_value *params, size_t paramsCount)
 {
