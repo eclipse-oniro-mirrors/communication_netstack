@@ -17,8 +17,8 @@
 #define COMMUNICATIONNETSTACK_EVENT_LISTENER_H
 
 #include <cstddef>
-#include <iosfwd>
 #include <string>
+#include <iosfwd>
 
 #include "napi/native_api.h"
 #include "uv.h"

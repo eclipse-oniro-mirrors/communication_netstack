@@ -51,7 +51,7 @@ inline void setClobalFuzzData(const uint8_t* data, size_t size)
 
 void MakeUdpSocketFuzzTest(const uint8_t* data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     setClobalFuzzData(data, size);
@@ -61,7 +61,7 @@ void MakeUdpSocketFuzzTest(const uint8_t* data, size_t size)
 
 void MakeTcpSocketFuzzTest(const uint8_t* data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     setClobalFuzzData(data, size);
@@ -71,7 +71,7 @@ void MakeTcpSocketFuzzTest(const uint8_t* data, size_t size)
 
 void ExecUdpBindFuzzTest(const uint8_t* data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     setClobalFuzzData(data, size);
@@ -84,7 +84,7 @@ void ExecUdpBindFuzzTest(const uint8_t* data, size_t size)
 
 void ExecTcpBindFuzzTest(const uint8_t* data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     setClobalFuzzData(data, size);
@@ -97,7 +97,7 @@ void ExecTcpBindFuzzTest(const uint8_t* data, size_t size)
 
 void ExecUdpSendFuzzTest(const uint8_t* data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     setClobalFuzzData(data, size);
@@ -110,7 +110,7 @@ void ExecUdpSendFuzzTest(const uint8_t* data, size_t size)
 
 void ExecTcpSendFuzzTest(const uint8_t* data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     setClobalFuzzData(data, size);
@@ -123,7 +123,7 @@ void ExecTcpSendFuzzTest(const uint8_t* data, size_t size)
 
 void ExecConnectFuzzTest(const uint8_t* data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     setClobalFuzzData(data, size);
@@ -136,7 +136,7 @@ void ExecConnectFuzzTest(const uint8_t* data, size_t size)
 
 void ExecCloseFuzzTest(const uint8_t* data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     setClobalFuzzData(data, size);
@@ -149,7 +149,7 @@ void ExecCloseFuzzTest(const uint8_t* data, size_t size)
 
 void ExecGetStateFuzzTest(const uint8_t* data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     setClobalFuzzData(data, size);
@@ -162,7 +162,7 @@ void ExecGetStateFuzzTest(const uint8_t* data, size_t size)
 
 void ExecGetRemoteAddressFuzzTest(const uint8_t* data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     setClobalFuzzData(data, size);
@@ -175,7 +175,7 @@ void ExecGetRemoteAddressFuzzTest(const uint8_t* data, size_t size)
 
 void ExecTcpSetExtraOptionsFuzzTest(const uint8_t* data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     setClobalFuzzData(data, size);
@@ -188,7 +188,7 @@ void ExecTcpSetExtraOptionsFuzzTest(const uint8_t* data, size_t size)
 
 void ExecUdpSetExtraOptionsFuzzTest(const uint8_t* data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     setClobalFuzzData(data, size);

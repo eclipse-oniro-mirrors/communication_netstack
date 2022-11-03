@@ -168,7 +168,7 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
         auto index = url.find(HttpConstant::HTTP_URL_PARAM_START);
         if (index != std::string::npos) {
             param = url.substr(index + 1);
-            url = url.substr(0, index);
+            url.resize(index);
         }
 
         napi_valuetype type = NapiUtils::GetValueType(GetEnv(), extraData);
@@ -199,7 +199,7 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
             }
         });
         if (!extraParam.empty()) {
-            extraParam = extraParam.substr(0, extraParam.size() - 1); // remove the last &
+            extraParam.pop_back(); // remove the last &
         }
 
         options.SetUrl(HttpExec::MakeUrl(url, param, extraParam));

@@ -131,9 +131,9 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
     }
     context->response.SetResponseTime(HttpTime::GetNowTimeGMT());
 
-    int32_t responseCode;
+    int64_t responseCode;
     NETSTACK_CURL_EASY_GET_INFO(handle.get(), CURLINFO_RESPONSE_CODE, &responseCode, context);
-    NETSTACK_LOGI("responseCode is %{public}d", responseCode);
+    NETSTACK_LOGI("responseCode is %{public}s", std::to_string(responseCode).c_str());
 
     struct curl_slist *cookies = nullptr;
     NETSTACK_CURL_EASY_GET_INFO(handle.get(), CURLINFO_COOKIELIST, &cookies, context);

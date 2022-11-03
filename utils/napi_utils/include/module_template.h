@@ -20,12 +20,14 @@
 #include <initializer_list>
 #include <iosfwd>
 #include <type_traits>
+#include <vector>
 
-#include "base_context.h"
+#include "base_async_work.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
-#include "napi_utils.h"
+#include "base_context.h"
 #include "netstack_log.h"
+#include "napi_utils.h"
 
 namespace OHOS::NetStack {
 class EventManager;
