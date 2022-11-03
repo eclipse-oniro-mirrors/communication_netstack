@@ -57,8 +57,6 @@ private:
     X509 *x509_ = nullptr;
     std::string version_;
     std::string serialNumber_;
-    std::string notValidBefore_;
-    std::string notValidAfter_;
     std::string signatureAlgorithm_;
     std::string localCertString_;
     std::string caCertString_;

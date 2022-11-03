@@ -15,9 +15,9 @@
 
 #include "base_context.h"
 
-#include "event_manager.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
+#include "event_manager.h"
 #include "napi_utils.h"
 #include "node_api.h"
 

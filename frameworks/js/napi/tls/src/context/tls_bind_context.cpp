@@ -19,8 +19,8 @@
 
 #include "context_key.h"
 #include "event_manager.h"
-#include "napi_utils.h"
 #include "netstack_log.h"
+#include "napi_utils.h"
 
 namespace OHOS::NetStack {
 static constexpr std::string_view PARSE_ERROR = "address is not type of NetAddress";
@@ -63,7 +63,7 @@ int TLSBindContext::GetSocketFd() const
 bool TLSBindContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
     if (paramsCount == PARAM_JUST_OPTIONS) {
-        if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_object) {
+        if (NapiUtils::GetValueType(GetEnv(), params[0]) != napi_object) {
             NETSTACK_LOGE("first param is not NetAddress");
             SetNeedThrowException(true);
             SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
@@ -73,13 +73,13 @@ bool TLSBindContext::CheckParamsType(napi_value *params, size_t paramsCount)
     }
 
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
-        if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_object) {
+        if (NapiUtils::GetValueType(GetEnv(), params[0]) != napi_object) {
             NETSTACK_LOGE("first param is not NetAddress");
             SetNeedThrowException(true);
             SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
             return false;
         }
-        if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
+        if (NapiUtils::GetValueType(GetEnv(), params[1]) != napi_function) {
             NETSTACK_LOGE("SendContext second param is not function");
             return false;
         }

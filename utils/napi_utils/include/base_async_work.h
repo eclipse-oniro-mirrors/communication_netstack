@@ -16,6 +16,7 @@
 #ifndef COMMUNICATIONNETSTACK_NETSTACK_BASE_ASYNC_WORK_H
 #define COMMUNICATIONNETSTACK_NETSTACK_BASE_ASYNC_WORK_H
 
+#include <limits>
 #include <memory>
 
 #include <napi/native_api.h>
@@ -36,8 +37,9 @@ public:
 
         (void)env;
 
-        auto context = static_cast<Context *>(data);
+        auto context = reinterpret_cast<Context *>(data);
         if (context == nullptr || Executor == nullptr) {
+            NETSTACK_LOGE("context or Executor is nullptr");
             return;
         }
         if (!context->IsParseOK()) {
@@ -45,6 +47,8 @@ public:
                 std::numeric_limits<int32_t>::max()) {                // api9 or before not set error in context.
                 context->SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG); // if developer not set error, there will set.
             }
+            NETSTACK_LOGE("parameter error");
+            return;
         }
         context->SetExecOK(Executor(context));
         /* do not have async executor, execOK should be set in sync work */

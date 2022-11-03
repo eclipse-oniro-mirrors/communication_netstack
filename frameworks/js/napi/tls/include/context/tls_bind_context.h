@@ -21,9 +21,9 @@
 
 #include <napi/native_api.h>
 
+#include "net_address.h"
 #include "base_context.h"
 #include "event_manager.h"
-#include "net_address.h"
 
 namespace OHOS::NetStack {
 class TLSBindContext final : public BaseContext {

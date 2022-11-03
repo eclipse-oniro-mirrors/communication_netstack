@@ -19,11 +19,11 @@
 #include <napi/native_api.h>
 
 #include "common_context.h"
+#include "tls_send_context.h"
 #include "tls_bind_context.h"
-#include "tls_connect_context.h"
 #include "tls_extra_context.h"
 #include "tls_napi_context.h"
-#include "tls_send_context.h"
+#include "tls_connect_context.h"
 
 namespace OHOS {
 namespace NetStack {

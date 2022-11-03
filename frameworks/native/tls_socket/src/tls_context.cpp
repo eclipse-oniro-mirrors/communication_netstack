@@ -163,7 +163,7 @@ bool TLSContext::SetCaAndVerify(TLSContext *tlsContext, const TLSConfiguration &
     }
     for (const auto &cert : configuration.GetCaCertificate()) {
         TLSCertificate ca(cert, CA_CERT);
-        if (!X509_STORE_add_cert(SSL_CTX_get_cert_store(tlsContext->ctx_), (X509 *)ca.handle())) {
+        if (!X509_STORE_add_cert(SSL_CTX_get_cert_store(tlsContext->ctx_), static_cast<X509 *>(ca.handle()))) {
             return false;
         }
     }
@@ -176,7 +176,7 @@ bool TLSContext::SetLocalCertificate(TLSContext *tlsContext, const TLSConfigurat
         NETSTACK_LOGE("TLSContext::SetLocalCertificate: tlsContext is null");
         return false;
     }
-    if (!SSL_CTX_use_certificate(tlsContext->ctx_, (X509 *)configuration.GetLocalCertificate().handle())) {
+    if (!SSL_CTX_use_certificate(tlsContext->ctx_, static_cast<X509 *>(configuration.GetLocalCertificate().handle()))) {
         NETSTACK_LOGE("Error loading local certificate");
         return false;
     }
