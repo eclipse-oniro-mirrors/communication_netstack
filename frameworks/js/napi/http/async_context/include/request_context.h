@@ -35,6 +35,8 @@ public:
 
     [[nodiscard]] bool IsUsingCache() const;
 
+    napi_env GetEnv();
+
 private:
     bool usingCache_;
 
