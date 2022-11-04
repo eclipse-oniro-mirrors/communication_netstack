@@ -16,6 +16,6 @@
 #ifndef TLS_SOCKET_FUZZER_H
 #define TLS_SOCKET_FUZZER_H
 
-#define FUZZ_PROJECT_NAME "tls_socket_fuzzer"
+#define FUZZ_PROJECT_NAME "tlssocket_fuzzer"
 
 #endif // TLS_SOCKET_FUZZER_H
