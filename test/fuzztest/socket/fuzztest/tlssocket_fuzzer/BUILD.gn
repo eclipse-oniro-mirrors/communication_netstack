@@ -24,7 +24,7 @@ TLS = "$NETSTACK_NATIVE_ROOT/tls_socket"
 TLS_NAPI = "$NETSTACK_DIR/frameworks/js/napi/tls"
 ohos_fuzztest("TlsSocketFuzzTest") {
   module_out_path = "communication/netstack"
-  fuzz_config_file = "//foundation/communication/netstack/test/fuzztest/socket/fuzztest/tls_socket_fuzzer"
+  fuzz_config_file = "//foundation/communication/netstack/test/fuzztest/socket/fuzztest/tlssocket_fuzzer"
   include_dirs = [
     "$NETSTACK_NAPI_ROOT/async_context/include",
     "$NETSTACK_NAPI_ROOT/async_work/include",
