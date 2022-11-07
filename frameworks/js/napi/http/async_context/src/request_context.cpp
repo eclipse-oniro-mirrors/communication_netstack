@@ -31,7 +31,8 @@ static constexpr const int PARAM_URL_AND_OPTIONS_AND_CALLBACK = 3;
 
 namespace OHOS::NetStack {
 static std::map<RequestContext *, napi_env> ENV_MAP;
-RequestContext::RequestContext(napi_env env, EventManager *manager) : BaseContext(env, manager), usingCache_(true)
+RequestContext::RequestContext(napi_env env, EventManager *manager)
+    : BaseContext(env, manager), usingCache_(true), curlHeaderList_(nullptr)
 {
     ENV_MAP[this] = env;
 }
@@ -279,5 +280,25 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
 bool RequestContext::IsUsingCache() const
 {
     return usingCache_;
+}
+
+void RequestContext::SetCurlHeaderList(struct curl_slist *curlHeaderList)
+{
+    curlHeaderList_ = curlHeaderList;
+}
+
+struct curl_slist *RequestContext::GetCurlHeaderList()
+{
+    return curlHeaderList_;
+}
+RequestContext::~RequestContext()
+{
+    if (curlHeaderList_ != nullptr) {
+        curl_slist_free_all(curlHeaderList_);
+    }
+    auto it = ENV_MAP.find(this);
+    if (it != ENV_MAP.end()) {
+        ENV_MAP.erase(it);
+    }
 }
 } // namespace OHOS::NetStack

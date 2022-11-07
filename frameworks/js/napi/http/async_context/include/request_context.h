@@ -16,6 +16,7 @@
 #ifndef COMMUNICATIONNETSTACK_REQUEST_CONTEXT_H
 #define COMMUNICATIONNETSTACK_REQUEST_CONTEXT_H
 
+#include "curl/curl.h"
 #include "base_context.h"
 #include "http_request_options.h"
 #include "http_response.h"
@@ -27,6 +28,8 @@ public:
 
     RequestContext(napi_env env, EventManager *manager);
 
+    ~RequestContext() override;
+
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
     HttpRequestOptions options;
@@ -35,10 +38,16 @@ public:
 
     [[nodiscard]] bool IsUsingCache() const;
 
+    void SetCurlHeaderList(struct curl_slist *curlHeaderList);
+
+    struct curl_slist *GetCurlHeaderList();
+
     napi_env GetEnv();
 
 private:
     bool usingCache_;
+
+    struct curl_slist *curlHeaderList_;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 

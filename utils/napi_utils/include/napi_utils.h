@@ -26,6 +26,8 @@
 #include "uv.h"
 
 namespace OHOS::NetStack::NapiUtils {
+static constexpr int NETSTACK_NAPI_INTERNAL_ERROR = 2300002;
+
 napi_valuetype GetValueType(napi_env env, napi_value value);
 
 /* named property */

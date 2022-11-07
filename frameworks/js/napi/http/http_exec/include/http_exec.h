@@ -18,21 +18,14 @@
 
 #include <mutex>
 #include <vector>
+#include <atomic>
+#include <condition_variable>
 
 #include "curl/curl.h"
 #include "napi/native_api.h"
 #include "request_context.h"
-#ifndef MAC_PLATFORM
-#include "thread_pool.h"
-#endif
 
 namespace OHOS::NetStack {
-#ifndef MAC_PLATFORM
-static constexpr const size_t DEFAULT_THREAD_NUM = 5;
-static constexpr const size_t MAX_THREAD_NUM = 10;
-static constexpr const uint32_t DEFAULT_TIMEOUT = 5;
-#endif
-
 class HttpResponseCacheExec final {
 public:
     HttpResponseCacheExec() = default;
@@ -91,28 +84,18 @@ private:
 
     static bool ProcByExpectDataType(napi_value object, RequestContext *context);
 
-#ifndef MAC_PLATFORM
-private:
-    class Task {
-    public:
-        Task() = default;
+    static bool AddCurlHandle(CURL *handle, RequestContext *context);
 
-        explicit Task(RequestContext *context);
+    static void HandleCurlData(CURLMsg *msg);
 
-        bool operator<(const Task &e) const;
-
-        void Execute();
-
-    private:
-        RequestContext *context_;
-    };
-#endif
+    static bool GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURLMSG curlMsg, CURLcode result);
 
     static std::mutex mutex_;
+    static std::mutex curlMultiMutex_;
+    static CURLM *curlMulti_;
+    static std::map<CURL *, RequestContext *> contextMap_;
 
 #ifndef MAC_PLATFORM
-    static ThreadPool<Task, DEFAULT_THREAD_NUM, MAX_THREAD_NUM> threadPool_;
-
     static std::atomic_bool initialized_;
 #else
     static bool initialized_;
