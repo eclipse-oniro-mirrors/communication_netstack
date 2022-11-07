@@ -15,7 +15,6 @@
 
 #include "constant.h"
 #include "netstack_common_utils.h"
-#include "netstack_log.h"
 
 #include "http_response.h"
 
@@ -47,7 +46,6 @@ void HttpResponse::ParseHeaders()
         auto index = header.find(HttpConstant::HTTP_HEADER_SEPARATOR);
         if (index == std::string::npos) {
             header_[CommonUtils::Strip(header)] = "";
-            NETSTACK_LOGI("HEAD: %{public}s", CommonUtils::Strip(header).c_str());
             continue;
         }
         header_[CommonUtils::ToLower(CommonUtils::Strip(header.substr(0, index)))] =
