@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstring>
 #include <memory>
+#include <thread>
 
 #include "cache_proxy.h"
 #include "constant.h"
@@ -41,56 +42,30 @@
         }                                                                                                \
     } while (0)
 
-#define NETSTACK_CURL_EASY_GET_INFO(handle, opt, data, asyncContext)                                   \
-    do {                                                                                               \
-        CURLcode result = curl_easy_getinfo(handle, opt, data);                                        \
-        if (result != CURLE_OK) {                                                                      \
-            const char *err = curl_easy_strerror(result);                                              \
-            NETSTACK_LOGE("Failed to get info: %{public}s, %{public}s %{public}d", #opt, err, result); \
-            (asyncContext)->SetErrorCode(result);                                                      \
-            return false;                                                                              \
-        }                                                                                              \
-    } while (0)
-
 namespace OHOS::NetStack {
-namespace {
-constexpr size_t MAX_LIMIT = 65536;
-
-bool NetstackCurlEasyPerform(CURL *handle, RequestContext *asyncContext)
+static constexpr size_t MAX_LIMIT = 5 * 1024 * 1024;
+static constexpr int CURL_TIMEOUT_MS = 100;
+bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 {
-    if (handle == nullptr || asyncContext == nullptr) {
-        NETSTACK_LOGE("handle or asyncContext is nullptr");
+    if (handle == nullptr || curlMulti_ == nullptr) {
+        NETSTACK_LOGE("handle nullptr");
         return false;
     }
 
-    CURLcode result = curl_easy_perform(handle);
-    if (result != CURLE_OK) {
-        NETSTACK_LOGE("request fail, errorMessage: %{public}s, errorCode: %{public}d",
-            curl_easy_strerror(result), result);
-        asyncContext->SetErrorCode(result);
+    std::lock_guard guard(curlMultiMutex_);
+    if (curl_multi_add_handle(curlMulti_, handle) != CURLM_OK) {
         return false;
     }
+
+    contextMap_[handle] = context;
     return true;
 }
-} // namespace
 
 std::mutex HttpExec::mutex_;
+std::mutex HttpExec::curlMultiMutex_;
+CURLM *HttpExec::curlMulti_ = nullptr;
+std::map<CURL *, RequestContext *> HttpExec::contextMap_;
 #ifndef MAC_PLATFORM
-ThreadPool<HttpExec::Task, DEFAULT_THREAD_NUM, MAX_THREAD_NUM> HttpExec::threadPool_(DEFAULT_TIMEOUT);
-
-HttpExec::Task::Task(RequestContext *context) : context_(context) {}
-
-void HttpExec::Task::Execute()
-{
-    HttpAsyncWork::ExecRequest(context_->GetEnv(), context_);
-    NapiUtils::CreateUvQueueWorkEnhanced(context_->GetEnv(), context_, HttpAsyncWork::RequestCallback);
-}
-
-bool HttpExec::Task::operator<(const Task &e) const
-{
-    return context_->options.GetPriority() < e.context_->options.GetPriority();
-}
-
 std::atomic_bool HttpExec::initialized_(false);
 #else
 bool HttpExec::initialized_ = false;
@@ -103,40 +78,65 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
         return false;
     }
 
-    std::unique_ptr<CURL, decltype(&curl_easy_cleanup)> handle(curl_easy_init(), curl_easy_cleanup);
-
+    auto handle = curl_easy_init();
     if (!handle) {
         NETSTACK_LOGE("Failed to create fetch task");
         return false;
     }
-
-    NETSTACK_LOGI("final url: ...");
 
     std::vector<std::string> vec;
     std::for_each(context->options.GetHeader().begin(), context->options.GetHeader().end(),
                   [&vec](const std::pair<std::string, std::string> &p) {
                       vec.emplace_back(p.first + HttpConstant::HTTP_HEADER_SEPARATOR + p.second);
                   });
-    std::unique_ptr<struct curl_slist, decltype(&curl_slist_free_all)> header(MakeHeaders(vec), curl_slist_free_all);
+    context->SetCurlHeaderList(MakeHeaders(vec));
 
-    if (!SetOption(handle.get(), context, header.get())) {
+    if (!SetOption(handle, context, context->GetCurlHeaderList())) {
         NETSTACK_LOGE("set option failed");
         return false;
     }
 
     context->response.SetRequestTime(HttpTime::GetNowTimeGMT());
-    if (!NetstackCurlEasyPerform(handle.get(), context)) {
-        NETSTACK_LOGE("request failed");
+
+    if (!AddCurlHandle(handle, context)) {
+        NETSTACK_LOGE("add handle failed");
         return false;
     }
+
+    return true;
+}
+
+bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURLMSG curlMsg, CURLcode result)
+{
+    if (curlMsg != CURLMSG_DONE) {
+        NETSTACK_LOGE("CURLMSG %{public}s", std::to_string(curlMsg).c_str());
+        context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
+        return false;
+    }
+
+    if (result != CURLE_OK) {
+        context->SetErrorCode(result);
+        NETSTACK_LOGE("CURLcode result %{public}s", std::to_string(result).c_str());
+        return false;
+    }
+
     context->response.SetResponseTime(HttpTime::GetNowTimeGMT());
 
     int64_t responseCode;
-    NETSTACK_CURL_EASY_GET_INFO(handle.get(), CURLINFO_RESPONSE_CODE, &responseCode, context);
-    NETSTACK_LOGI("responseCode is %{public}s", std::to_string(responseCode).c_str());
+    CURLcode code = curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responseCode);
+    if (code != CURLE_OK) {
+        context->SetErrorCode(code);
+        return false;
+    }
+    NETSTACK_LOGD("responseCode is %{public}s", std::to_string(responseCode).c_str());
 
     struct curl_slist *cookies = nullptr;
-    NETSTACK_CURL_EASY_GET_INFO(handle.get(), CURLINFO_COOKIELIST, &cookies, context);
+    code = curl_easy_getinfo(handle, CURLINFO_COOKIELIST, &cookies);
+    if (code != CURLE_OK) {
+        context->SetErrorCode(code);
+        return false;
+    }
+
     std::unique_ptr<struct curl_slist, decltype(&curl_slist_free_all)> cookiesHandle(cookies, curl_slist_free_all);
     while (cookies) {
         context->response.AppendCookies(cookies->data, strlen(cookies->data));
@@ -153,6 +153,38 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
     return true;
 }
 
+void HttpExec::HandleCurlData(CURLMsg *msg)
+{
+    if (msg == nullptr) {
+        return;
+    }
+
+    auto handle = msg->easy_handle;
+    if (handle == nullptr) {
+        return;
+    }
+
+    auto it = contextMap_.find(handle);
+    if (it == contextMap_.end()) {
+        NETSTACK_LOGE("can not find context");
+        return;
+    }
+
+    auto context = it->second;
+    contextMap_.erase(it);
+    if (context == nullptr) {
+        NETSTACK_LOGE("can not find context");
+        return;
+    }
+    context->SetExecOK(GetCurlDataFromHandle(handle, context, msg->msg, msg->data.result));
+    if (context->IsExecOK()) {
+        CacheProxy proxy(context->options);
+        proxy.WriteResponseToCache(context->response);
+    }
+
+    NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
+}
+
 bool HttpExec::ExecRequest(RequestContext *context)
 {
     context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
@@ -162,10 +194,10 @@ bool HttpExec::ExecRequest(RequestContext *context)
     }
 
     if (!RequestWithoutCache(context)) {
+        context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
         return false;
     }
-
-    proxy.WriteResponseToCache(context->response);
 
     return true;
 }
@@ -279,6 +311,44 @@ bool HttpExec::Initialize()
         NETSTACK_LOGE("Failed to initialize 'curl'");
         return false;
     }
+
+    curlMulti_ = curl_multi_init();
+    if (curlMulti_ == nullptr) {
+        NETSTACK_LOGE("Failed to initialize 'curl_multi'");
+        return false;
+    }
+
+    std::thread([] {
+        while (true) {
+            {
+                std::lock_guard guard(curlMultiMutex_);
+                if (curlMulti_ == nullptr) {
+                    curlMulti_ = curl_multi_init();
+                    if (curlMulti_ == nullptr) {
+                        NETSTACK_LOGE("Failed to initialize 'curl_multi'");
+                        return;
+                    }
+                }
+
+                int runningHandle;
+                auto code = curl_multi_perform(curlMulti_, &runningHandle);
+                if (code == CURLM_OK) {
+                    int leftMsg;
+                    CURLMsg *msg = curl_multi_info_read(curlMulti_, &leftMsg);
+                    if (msg != nullptr) {
+                        HttpExec::HandleCurlData(msg);
+                        if (msg->easy_handle != nullptr) {
+                            (void)curl_multi_remove_handle(curlMulti_, msg->easy_handle);
+                            (void)curl_easy_cleanup(msg->easy_handle);
+                        }
+                    }
+                }
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(CURL_TIMEOUT_MS));
+        }
+    }).detach();
+
     initialized_ = true;
     return initialized_;
 }
@@ -472,7 +542,7 @@ bool HttpExec::ProcByExpectDataType(napi_value object, RequestContext *context)
 #ifndef MAC_PLATFORM
 void HttpExec::AsyncRunRequest(RequestContext *context)
 {
-    threadPool_.Push(Task(context));
+    HttpAsyncWork::ExecRequest(context->GetEnv(), context);
 }
 #endif
 

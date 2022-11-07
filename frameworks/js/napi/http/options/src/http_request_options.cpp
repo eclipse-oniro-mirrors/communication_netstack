@@ -110,7 +110,6 @@ uint32_t HttpRequestOptions::GetHttpVersion() const
         NETSTACK_LOGI("CURL_HTTP_VERSION_1_1");
         return CURL_HTTP_VERSION_1_1;
     }
-    NETSTACK_LOGI("CURL_HTTP_VERSION_NONE");
     return CURL_HTTP_VERSION_NONE;
 }
 
