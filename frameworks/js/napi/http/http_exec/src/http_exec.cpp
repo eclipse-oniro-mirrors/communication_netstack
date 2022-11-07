@@ -322,14 +322,6 @@ bool HttpExec::Initialize()
         while (true) {
             {
                 std::lock_guard guard(curlMultiMutex_);
-                if (curlMulti_ == nullptr) {
-                    curlMulti_ = curl_multi_init();
-                    if (curlMulti_ == nullptr) {
-                        NETSTACK_LOGE("Failed to initialize 'curl_multi'");
-                        return;
-                    }
-                }
-
                 int runningHandle;
                 auto code = curl_multi_perform(curlMulti_, &runningHandle);
                 if (code == CURLM_OK) {
