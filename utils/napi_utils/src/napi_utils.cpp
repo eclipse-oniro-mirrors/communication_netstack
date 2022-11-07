@@ -31,8 +31,6 @@
 #include "base_context.h"
 
 namespace OHOS::NetStack::NapiUtils {
-static constexpr const int MAX_STRING_LENGTH = 5 * 1024 * 1024;
-
 static constexpr const char *GLOBAL_JSON = "JSON";
 
 static constexpr const char *GLOBAL_JSON_STRINGIFY = "stringify";
@@ -207,13 +205,21 @@ std::string GetStringFromValueUtf8(napi_env env, napi_value value)
     }
 
     std::string result;
+    size_t stringLength = 0;
+    NAPI_CALL_BASE(env, napi_get_value_string_utf8(env, value, nullptr, 0, &stringLength), result);
+    if (stringLength == 0) {
+        return result;
+    }
+
     auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
-    std::unique_ptr<char, decltype(deleter)> str(static_cast<char *>(malloc(MAX_STRING_LENGTH)), deleter);
-    (void)memset_s(str.get(), MAX_STRING_LENGTH, 0, MAX_STRING_LENGTH);
+    std::unique_ptr<char, decltype(deleter)> str(static_cast<char *>(malloc(stringLength + 1)), deleter);
+    if (memset_s(str.get(), stringLength + 1, 0, stringLength + 1) != EOK) {
+        return result;
+    }
     size_t length = 0;
-    NAPI_CALL_BASE(env, napi_get_value_string_utf8(env, value, str.get(), MAX_STRING_LENGTH, &length), result);
+    NAPI_CALL_BASE(env, napi_get_value_string_utf8(env, value, str.get(), stringLength + 1, &length), result);
     if (length > 0) {
-        return result.append(str.get(), length);
+        result.append(str.get(), length);
     }
     return result;
 }
