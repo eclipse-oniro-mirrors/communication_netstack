@@ -26,7 +26,7 @@
 
 namespace OHOS::NetStack {
 static constexpr const size_t DEFAULT_THREAD_NUM = 5;
-static constexpr const size_t MAX_THREAD_NUM = 100;
+static constexpr const size_t MAX_THREAD_NUM = 10;
 static constexpr const uint32_t DEFAULT_TIMEOUT = 5;
 
 class HttpResponseCacheExec final {
