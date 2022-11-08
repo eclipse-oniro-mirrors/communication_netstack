@@ -41,7 +41,7 @@ std::condition_variable CACHE_THREAD_CONDITION;
 std::condition_variable CACHE_NEED_RUN_CONDITION;
 static LRUCacheDiskHandler DISK_LRU_CACHE(CACHE_FILE, 0); // NOLINT(cert-err58-cpp)
 
-CacheProxy::CacheProxy(HttpRequestOptions &requestOptions) : requestOptions_(requestOptions), strategy_(requestOptions)
+CacheProxy::CacheProxy(HttpRequestOptions &requestOptions) : strategy_(requestOptions)
 {
     std::string str = requestOptions.GetUrl() + HttpConstant::HTTP_LINE_SEPARATOR +
                       CommonUtils::ToLower(requestOptions.GetMethod()) + HttpConstant::HTTP_LINE_SEPARATOR;
@@ -52,7 +52,7 @@ CacheProxy::CacheProxy(HttpRequestOptions &requestOptions) : requestOptions_(req
     key_ = CalculateMD5(str);
 }
 
-bool CacheProxy::ReadResponseFromCache(HttpResponse &response)
+bool CacheProxy::ReadResponseFromCache(RequestContext *context)
 {
     if (!CACHE_IS_RUNNING.load()) {
         return false;
@@ -79,26 +79,16 @@ bool CacheProxy::ReadResponseFromCache(HttpResponse &response)
 
     CacheStatus status = strategy_.RunStrategy(cachedResponse);
     if (status == CacheStatus::FRESH) {
-        response = cachedResponse;
+        context->response = cachedResponse;
         NETSTACK_LOGI("cache is FRESH");
         return true;
     }
     if (status == CacheStatus::STALE) {
         NETSTACK_LOGI("cache is STATE, we try to talk to the server");
-        RequestContext context(nullptr, nullptr);
-        context.options = requestOptions_;
-        HttpExec::RequestWithoutCache(&context);
-        if (context.response.GetResponseCode() == static_cast<uint32_t>(ResponseCode::NOT_MODIFIED)) {
-            NETSTACK_LOGI("cache is NOT_MODIFIED, we use the cache");
-            response = cachedResponse;
-        } else {
-            NETSTACK_LOGI("cache is MODIFIED, server return the newer one");
-            response = context.response;
-        }
-        WriteResponseToCache(response);
-        return true;
+        context->SetCacheResponse(cachedResponse);
+        return false;
     }
-    NETSTACK_LOGE("cache should not be used");
+    NETSTACK_LOGD("cache should not be used");
     return false;
 }
 

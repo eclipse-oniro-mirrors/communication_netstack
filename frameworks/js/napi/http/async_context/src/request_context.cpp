@@ -301,4 +301,13 @@ RequestContext::~RequestContext()
         ENV_MAP.erase(it);
     }
 }
+
+void RequestContext::SetCacheResponse(const HttpResponse &cacheResponse)
+{
+    cacheResponse_ = cacheResponse;
+}
+void RequestContext::SetResponseByCache()
+{
+    response = cacheResponse_;
+}
 } // namespace OHOS::NetStack
