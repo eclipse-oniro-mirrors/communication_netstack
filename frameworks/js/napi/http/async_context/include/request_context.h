@@ -44,10 +44,16 @@ public:
 
     napi_env GetEnv();
 
+    void SetCacheResponse(const HttpResponse &cacheResponse);
+
+    void SetResponseByCache();
+
 private:
     bool usingCache_;
 
     struct curl_slist *curlHeaderList_;
+
+    HttpResponse cacheResponse_;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 

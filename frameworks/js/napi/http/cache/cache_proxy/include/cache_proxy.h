@@ -19,6 +19,7 @@
 #include "http_cache_strategy.h"
 #include "http_request_options.h"
 #include "http_response.h"
+#include "request_context.h"
 
 namespace OHOS::NetStack {
 class CacheProxy final {
@@ -29,7 +30,7 @@ public:
 
     explicit CacheProxy(HttpRequestOptions &requestOptions);
 
-    bool ReadResponseFromCache(HttpResponse &response);
+    bool ReadResponseFromCache(RequestContext *context);
 
     void WriteResponseToCache(const HttpResponse &response);
 
@@ -42,8 +43,6 @@ public:
     static void StopCacheAndDelete();
 
 private:
-    HttpRequestOptions &requestOptions_;
-
     HttpCacheStrategy strategy_;
 };
 } // namespace OHOS::NetStack
