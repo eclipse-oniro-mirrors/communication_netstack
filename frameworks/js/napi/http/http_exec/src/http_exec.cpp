@@ -128,6 +128,12 @@ bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURL
         context->SetErrorCode(code);
         return false;
     }
+    context->response.SetResponseCode(responseCode);
+    if (context->response.GetResponseCode() == static_cast<uint32_t>(ResponseCode::NOT_MODIFIED)) {
+        NETSTACK_LOGI("cache is NOT_MODIFIED, we use the cache");
+        context->SetResponseByCache();
+        return true;
+    }
     NETSTACK_LOGD("responseCode is %{public}s", std::to_string(responseCode).c_str());
 
     struct curl_slist *cookies = nullptr;
@@ -146,8 +152,6 @@ bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURL
         }
         cookies = cookies->next;
     }
-
-    context->response.SetResponseCode(responseCode);
     context->response.ParseHeaders();
 
     return true;
@@ -189,7 +193,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
 {
     context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
     CacheProxy proxy(context->options);
-    if (context->IsUsingCache() && proxy.ReadResponseFromCache(context->response)) {
+    if (context->IsUsingCache() && proxy.ReadResponseFromCache(context)) {
         return true;
     }
 
