@@ -80,9 +80,9 @@ std::vector<std::string> SplitEscapedAltNames(std::string &altNames)
     size_t offset = 0;
     constexpr int OFFSET = 2;
     while (offset != altNames.length()) {
-        int nextSep = altNames.find_first_of(", ");
-        int nextQuote = altNames.find_first_of('\"');
-        if (nextQuote != -1 && (nextSep != -1 || nextQuote < nextSep)) {
+        auto nextSep = altNames.find_first_of(", ");
+        auto nextQuote = altNames.find_first_of('\"');
+        if (nextQuote != std::string::npos && (nextSep != std::string::npos || nextQuote < nextSep)) {
             currentToken += altNames.substr(offset, nextQuote);
             std::regex jsonStringPattern(JSON_STRING_PATTERN);
             std::smatch match;
@@ -93,7 +93,7 @@ std::vector<std::string> SplitEscapedAltNames(std::string &altNames)
             }
             currentToken += result[0];
             offset = nextQuote + result[0].length();
-        } else if (nextSep != -1) {
+        } else if (nextSep != std::string::npos) {
             currentToken += altNames.substr(offset, nextSep);
             result.push_back(currentToken);
             currentToken = "";
@@ -1142,7 +1142,7 @@ bool TLSSocket::TLSSocketInternal::SetAlpnProtocols(const std::vector<std::strin
         return false;
     }
     size_t pos = 0;
-    size_t len = std::accumulate(alpnProtocols.begin(), alpnProtocols.end(), 0,
+    size_t len = std::accumulate(alpnProtocols.begin(), alpnProtocols.end(), static_cast<size_t>(0),
                                  [](size_t init, const std::string &alpnProt) { return init + alpnProt.length(); });
     auto result = std::make_unique<unsigned char[]>(alpnProtocols.size() + len);
     for (const auto &str : alpnProtocols) {
