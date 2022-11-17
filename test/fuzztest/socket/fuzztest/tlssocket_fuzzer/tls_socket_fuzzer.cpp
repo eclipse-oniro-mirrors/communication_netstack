@@ -74,9 +74,9 @@ void BindFuzzTest(const uint8_t* data, size_t size)
     });
     tlsSocket.GetRemoteAddress([](int32_t errorNumber, const NetAddress &address) {
     });
-    tlsSocket.GetCertificate([](int32_t errorNumber, const std::string &cert) {
+    tlsSocket.GetCertificate([](int32_t errorNumber, const X509CertRawData &cert) {
     });
-    tlsSocket.GetRemoteCertificate([](int32_t errorNumber, const std::string &cert) {
+    tlsSocket.GetRemoteCertificate([](int32_t errorNumber, const X509CertRawData &cert) {
     });
     tlsSocket.GetProtocol([](int32_t errorNumber, const std::string &protocol) {
     });

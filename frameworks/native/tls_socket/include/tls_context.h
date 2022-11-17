@@ -33,8 +33,8 @@ public:
 
 private:
     static bool InitTlsContext(TLSContext *sslContext, const TLSConfiguration &configuration);
-    static void SetCipherList(TLSContext *tlsContext, const TLSConfiguration &configuration);
-    static void SetSignatureAlgorithms(TLSContext *tlsContext, const TLSConfiguration &configuration);
+    static bool SetCipherList(TLSContext *tlsContext, const TLSConfiguration &configuration);
+    static bool SetSignatureAlgorithms(TLSContext *tlsContext, const TLSConfiguration &configuration);
     static void GetCiphers(TLSContext *tlsContext);
     static void UseRemoteCipher(TLSContext *tlsContext);
     static void SetMinAndMaxProtocol(TLSContext *tlsContext);
