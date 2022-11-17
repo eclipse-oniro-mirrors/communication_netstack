@@ -63,16 +63,29 @@ const std::regex PATTERN{
 
 int ConvertErrno()
 {
-    return TlsSocketError::TLSSOCKET_ERROR_ERRNO_BASE + errno;
+    return TlsSocketError::TLS_ERR_SYS_BASE + errno;
 }
 
 int ConvertSSLError(ssl_st *ssl)
 {
     if (!ssl) {
-        return TLSSOCKET_ERROR_SSL_NULL;
+        return TLS_ERR_SSL_NULL;
     }
-    return TlsSocketError::TLSSOCKET_ERROR_SSL_BASE + SSL_get_error(ssl, SSL_RET_CODE);
+    return TlsSocketError::TLS_ERR_SYS_BASE + SSL_get_error(ssl, SSL_RET_CODE);
 }
+
+std::string MakeErrnoString()
+{
+    return strerror(errno);
+}
+
+std::string MakeSSLErrorString(int error)
+{
+    char err[MAX_ERR_LEN] = {0};
+    ERR_error_string_n(error - TlsSocketError::TLS_ERR_SYS_BASE, err, sizeof(err));
+    return err;
+}
+
 std::vector<std::string> SplitEscapedAltNames(std::string &altNames)
 {
     std::vector<std::string> result;
