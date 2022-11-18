@@ -42,20 +42,18 @@ void InitEnv()
     SSL_load_error_strings();
 }
 
-void TLSContext::SetCipherList(TLSContext *tlsContext, const TLSConfiguration &configuration)
+bool TLSContext::SetCipherList(TLSContext *tlsContext, const TLSConfiguration &configuration)
 {
     if (!tlsContext) {
         NETSTACK_LOGE("tlsContext is null");
-        return;
+        return false;
     }
     NETSTACK_LOGD("GetCipherSuite = %{public}s", configuration.GetCipherSuite().c_str());
-    if (configuration.GetCipherSuite().empty()) {
-        NETSTACK_LOGE("Get Cipher Suite is failed");
-        return;
-    }
     if (SSL_CTX_set_cipher_list(tlsContext->ctx_, configuration.GetCipherSuite().c_str()) <= 0) {
         NETSTACK_LOGE("Error setting the cipher list");
+        return false;
     }
+    return true;
 }
 
 void TLSContext::GetCiphers(TLSContext *tlsContext)
@@ -79,18 +77,18 @@ void TLSContext::GetCiphers(TLSContext *tlsContext)
     }
 }
 
-void TLSContext::SetSignatureAlgorithms(TLSContext *tlsContext, const TLSConfiguration &configuration)
+bool TLSContext::SetSignatureAlgorithms(TLSContext *tlsContext, const TLSConfiguration &configuration)
 {
     if (!tlsContext) {
         NETSTACK_LOGE("tlsContext is null");
-        return;
+        return false;
     }
-    if (configuration.GetSignatureAlgorithms().empty()) {
-        return;
-    }
+
     if (!SSL_CTX_set1_sigalgs_list(tlsContext->ctx_, configuration.GetSignatureAlgorithms().c_str())) {
         NETSTACK_LOGE("Error setting the Signature Algorithms");
+        return false;
     }
+    return true;
 }
 
 void TLSContext::UseRemoteCipher(TLSContext *tlsContext)
@@ -244,10 +242,19 @@ bool TLSContext::InitTlsContext(TLSContext *tlsContext, const TLSConfiguration &
         NETSTACK_LOGE("tlsContext->ctx_ is nullptr");
         return false;
     }
-
-    SetCipherList(tlsContext, configuration);
+    if (!configuration.GetCipherSuite().empty()) {
+        if (!SetCipherList(tlsContext, configuration)) {
+            NETSTACK_LOGE("Failed to set cipher suite");
+            return false;
+        }
+    }
+    if (!configuration.GetSignatureAlgorithms().empty()) {
+        if (!SetSignatureAlgorithms(tlsContext, configuration)) {
+            NETSTACK_LOGE("Failed to set signature algorithms");
+            return false;
+        }
+    }
     GetCiphers(tlsContext);
-    SetSignatureAlgorithms(tlsContext, configuration);
     UseRemoteCipher(tlsContext);
     SetMinAndMaxProtocol(tlsContext);
     SetVerify(tlsContext);

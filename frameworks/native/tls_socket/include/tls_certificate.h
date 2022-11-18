@@ -43,6 +43,7 @@ public:
     bool LocalCertToString(X509 *x509);
     std::string GetLocalCertString() const;
     std::string GetSignatureAlgorithm() const;
+    const X509CertRawData &GetLocalCertRawData() const;
 
     Handle handle() const;
 
@@ -52,6 +53,7 @@ private:
     bool SetNotValidTime(X509 *x509);
     bool SetSignatureAlgorithm(X509 *x509);
     bool AnalysisCertificate(CertType certType, X509 *x509);
+    bool SetLocalCertRawData(X509 *x509);
 
 private:
     X509 *x509_ = nullptr;
@@ -60,6 +62,7 @@ private:
     std::string signatureAlgorithm_;
     std::string localCertString_;
     std::string caCertString_;
+    X509CertRawData rawData_;
 };
 } // namespace NetStack
 } // namespace OHOS

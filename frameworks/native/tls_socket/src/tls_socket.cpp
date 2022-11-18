@@ -20,6 +20,7 @@
 #include <regex>
 #include <securec.h>
 #include <thread>
+#include <memory>
 
 #include <netinet/tcp.h>
 #include <openssl/err.h>
@@ -551,7 +552,7 @@ void TLSSocket::CallSetExtraOptionsCallback(int32_t err, SetExtraOptionsCallback
     }
 }
 
-void TLSSocket::CallGetCertificateCallback(int32_t err, const std::string &cert, GetCertificateCallback callback)
+void TLSSocket::CallGetCertificateCallback(int32_t err, const X509CertRawData &cert, GetCertificateCallback callback)
 {
     GetCertificateCallback func = nullptr;
     {
@@ -566,7 +567,7 @@ void TLSSocket::CallGetCertificateCallback(int32_t err, const std::string &cert,
     }
 }
 
-void TLSSocket::CallGetRemoteCertificateCallback(int32_t err, const std::string &cert,
+void TLSSocket::CallGetRemoteCertificateCallback(int32_t err, const X509CertRawData &cert,
                                                  GetRemoteCertificateCallback callback)
 {
     GetRemoteCertificateCallback func = nullptr;
@@ -923,11 +924,13 @@ void TLSSocket::SetExtraOptions(const OHOS::NetStack::TCPExtraOptions &tcpExtraO
 void TLSSocket::GetCertificate(const GetCertificateCallback &callback)
 {
     const auto &cert = tlsSocketInternal_.GetCertificate();
-    if (cert.empty()) {
+    NETSTACK_LOGI("cert der is %{public}d", cert.encodingFormat);
+
+    if (!cert.data.Length()) {
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         NETSTACK_LOGE("GetCertificate errno %{public}d, %{public}s", resErr, MakeSSLErrorString(resErr).c_str());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        callback(resErr, "");
+        callback(resErr, {});
         return;
     }
     callback(TLSSOCKET_SUCCESS, cert);
@@ -935,12 +938,12 @@ void TLSSocket::GetCertificate(const GetCertificateCallback &callback)
 
 void TLSSocket::GetRemoteCertificate(const GetRemoteCertificateCallback &callback)
 {
-    const auto &remoteCert = tlsSocketInternal_.GetRemoteCertificate();
-    if (remoteCert.empty()) {
+    const auto &remoteCert = tlsSocketInternal_.GetRemoteCertRawData();
+    if (!remoteCert.data.Length()) {
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         NETSTACK_LOGE("GetRemoteCertificate errno %{public}d, %{public}s", resErr, MakeSSLErrorString(resErr).c_str());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        callback(resErr, "");
+        callback(resErr, {});
         return;
     }
     callback(TLSSOCKET_SUCCESS, remoteCert);
@@ -1217,7 +1220,7 @@ std::string TLSSocket::TLSSocketInternal::GetRemoteCertificate() const
     return remoteCert_;
 }
 
-std::string TLSSocket::TLSSocketInternal::GetCertificate() const
+const X509CertRawData &TLSSocket::TLSSocketInternal::GetCertificate() const
 {
     return configuration_.GetCertificate();
 }
@@ -1439,14 +1442,17 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
     NETSTACK_LOGI("SSL_get_cipher_list: %{public}s", list.c_str());
     configuration_.SetCipherSuite(list);
     if (!SetSharedSigals()) {
-        NETSTACK_LOGE("set sharedSigalgs is false");
+        NETSTACK_LOGE("Failed to set sharedSigalgs");
     }
     if (!GetRemoteCertificateFromPeer()) {
-        NETSTACK_LOGE("get remote certificate is false");
+        NETSTACK_LOGE("Failed to get remote certificate");
     }
     if (!peerX509_) {
         NETSTACK_LOGE("peer x509Certificates is null");
         return false;
+    }
+    if (!SetRemoteCertRawData()) {
+        NETSTACK_LOGE("Failed to set remote x509 certificata Serialization data");
     }
     CheckServerIdentity checkServerIdentity = options.GetCheckServerIdentity();
     if (!checkServerIdentity) {
@@ -1483,6 +1489,31 @@ bool TLSSocket::TLSSocketInternal::GetRemoteCertificateFromPeer()
     BIO_free(bio);
     remoteCert_ = std::string(data);
     return true;
+}
+
+bool TLSSocket::TLSSocketInternal::SetRemoteCertRawData()
+{
+    if (peerX509_ == nullptr) {
+        NETSTACK_LOGE("peerX509 is null");
+        return false;
+    }
+    int32_t length = i2d_X509(peerX509_, nullptr);
+    if (length <= 0) {
+        NETSTACK_LOGE("Failed to convert peerX509 to der format");
+        return false;
+    }
+    unsigned char *der = nullptr;
+    (void)i2d_X509(peerX509_, &der);
+    SecureData data(der, length);
+    remoteRawData_.data = data;
+    OPENSSL_free(der);
+    remoteRawData_.encodingFormat = DER;
+    return true;
+}
+
+const X509CertRawData &TLSSocket::TLSSocketInternal::GetRemoteCertRawData() const
+{
+    return remoteRawData_;
 }
 
 ssl_st *TLSSocket::TLSSocketInternal::GetSSL() const

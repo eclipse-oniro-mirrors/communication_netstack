@@ -333,7 +333,8 @@ HWTEST_F(TlsSocketTest, getCertificateInterface, testing::ext::TestSize.Level2)
     tcpSendOptions.SetData(data);
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    server.GetCertificate([](int32_t errCode, const std::string &cert) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    server.GetCertificate(
+        [](int32_t errCode, const X509CertRawData &cert) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     sleep(2);
     (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -372,7 +373,7 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     server.GetRemoteCertificate(
-        [](int32_t errCode, const std::string &cert) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+        [](int32_t errCode, const X509CertRawData &cert) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     sleep(2);
     (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -504,7 +505,7 @@ HWTEST_F(TlsSocketTest, getSignatureAlgorithmsInterface, testing::ext::TestSize.
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    std::string signatureAlgorithmVec = {"rsa_pss_rsae_sha256:ECDSA+SHA25"};
+    std::string signatureAlgorithmVec = {"rsa_pss_rsae_sha256:ECDSA+SHA256"};
     secureOption.SetSignatureAlgorithms(signatureAlgorithmVec);
     secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
@@ -534,7 +535,7 @@ HWTEST_F(TlsSocketTest, getSignatureAlgorithmsInterface, testing::ext::TestSize.
         }
     });
     for (auto const &iter : signatureAlgorithms) {
-        if (iter == "RSA+SHA256") {
+        if (iter == "ECDSA+SHA256") {
             flag = true;
         }
     }

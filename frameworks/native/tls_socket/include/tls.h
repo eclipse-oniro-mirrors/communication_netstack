@@ -19,6 +19,7 @@
 #include <string>
 
 #include "net_address.h"
+#include "secure_data.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -31,6 +32,16 @@ constexpr int CERT_PATH_LEN = 11;
 struct CipherSuite {
     uint64_t cipherId_;
     std::string cipherName_;
+};
+
+enum EncodingFormat {
+    DER,
+    PEM
+};
+
+struct X509CertRawData {
+    SecureData data;
+    EncodingFormat encodingFormat;
 };
 
 enum TlsMode {
@@ -54,11 +65,6 @@ enum KeyType {
 enum CertType {
     CA_CERT,
     LOCAL_CERT
-};
-
-enum EncodingFormat {
-    PEM,
-    DER
 };
 
 enum KeyAlgorithm {

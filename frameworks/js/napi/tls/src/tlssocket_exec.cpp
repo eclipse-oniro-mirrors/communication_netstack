@@ -19,6 +19,7 @@
 #include <vector>
 
 #include <napi/native_api.h>
+#include <securec.h>
 
 #include "context_key.h"
 #include "event_list.h"
@@ -29,6 +30,10 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace {
+constexpr const char *CERTIFICATA_DATA = "data";
+constexpr const char *CERTIFICATA_ENCODING_FORMAT = "encodingFormat";
+} // namespace
 bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
 {
     auto manager = context->GetManager();
@@ -42,8 +47,8 @@ bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
-    tlsSocket->GetCertificate([&context](int32_t errorNumber, const std::string &cert) {
-        context->cert_ = cert;
+    tlsSocket->GetCertificate([&context](int32_t errorNumber, const X509CertRawData &cert) {
+        context->localCert_ = cert;
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
             context->SetError(errorNumber, MakeErrorMessage(errorNumber));
@@ -110,7 +115,7 @@ bool TLSSocketExec::ExecGetRemoteCertificate(GetRemoteCertificateContext *contex
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
-    tlsSocket->GetRemoteCertificate([&context](int32_t errorNumber, const std::string &cert) {
+    tlsSocket->GetRemoteCertificate([&context](int32_t errorNumber, const X509CertRawData &cert) {
         context->remoteCert_ = cert;
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
@@ -303,13 +308,27 @@ bool TLSSocketExec::ExecSetExtraOptions(TLSSetExtraOptionsContext *context)
 
 napi_value TLSSocketExec::GetCertificateCallback(GetCertificateContext *context)
 {
+    void *data = nullptr;
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(),
+                                                          context->localCert_.data.Length(), &data);
+    if (data != nullptr && arrayBuffer != nullptr) {
+        if (memcpy_s(data, context->localCert_.data.Length(),
+                     reinterpret_cast<const uint8_t *>(context->localCert_.data.Data()),
+                     context->localCert_.data.Length()) != EOK) {
+            NETSTACK_LOGE("memcpy_s failed!");
+            return NapiUtils::GetUndefined(context->GetEnv());
+        }
+    }
+    napi_value outData = nullptr;
+    napi_create_typedarray(context->GetEnv(), napi_uint8_array, context->localCert_.data.Length(), arrayBuffer, 0,
+                           &outData);
     napi_value obj = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
         return NapiUtils::GetUndefined(context->GetEnv());
     }
-    napi_value x509CertRawData = NapiUtils::CreateArray(context->GetEnv(), context->cert_.size());
-    NapiUtils::SetNamedProperty(context->GetEnv(), obj, "data", x509CertRawData);
-    NapiUtils::SetInt32Property(context->GetEnv(), obj, "encodingFormat", 1);
+    NapiUtils::SetNamedProperty(context->GetEnv(), obj, CERTIFICATA_DATA, outData);
+    NapiUtils::SetInt32Property(context->GetEnv(), obj, CERTIFICATA_ENCODING_FORMAT,
+                                context->localCert_.encodingFormat);
     return obj;
 }
 
@@ -331,13 +350,27 @@ napi_value TLSSocketExec::GetCipherSuitesCallback(GetCipherSuitesContext *contex
 
 napi_value TLSSocketExec::GetRemoteCertificateCallback(GetRemoteCertificateContext *context)
 {
+    void *data = nullptr;
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(),
+                                                          context->remoteCert_.data.Length(), &data);
+    if (data != nullptr && arrayBuffer != nullptr) {
+        if (memcpy_s(data, context->remoteCert_.data.Length(),
+                     reinterpret_cast<const uint8_t *>(context->remoteCert_.data.Data()),
+                     context->remoteCert_.data.Length()) != EOK) {
+            NETSTACK_LOGE("memcpy_s failed!");
+            return NapiUtils::GetUndefined(context->GetEnv());
+        }
+    }
+    napi_value outData = nullptr;
+    napi_create_typedarray(context->GetEnv(), napi_uint8_array, context->remoteCert_.data.Length(), arrayBuffer, 0,
+                           &outData);
     napi_value obj = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
         return NapiUtils::GetUndefined(context->GetEnv());
     }
-    napi_value x509CertRawData = NapiUtils::CreateArray(context->GetEnv(), context->remoteCert_.size());
-    NapiUtils::SetNamedProperty(context->GetEnv(), obj, "data", x509CertRawData);
-    NapiUtils::SetInt32Property(context->GetEnv(), obj, "encodingFormat", 1);
+    NapiUtils::SetNamedProperty(context->GetEnv(), obj, CERTIFICATA_DATA, outData);
+    NapiUtils::SetInt32Property(context->GetEnv(), obj, CERTIFICATA_ENCODING_FORMAT,
+                                context->remoteCert_.encodingFormat);
     return obj;
 }
 

@@ -35,6 +35,13 @@ SecureData::SecureData(const std::string &secureData)
     data_[length_] = '\0';
 }
 
+SecureData::SecureData(const uint8_t *secureData, size_t length)
+{
+    data_ = std::make_unique<char[]>(length);
+    length_ = length;
+    (void)memcpy_s(data_.get(), length_, secureData, length_);
+}
+
 SecureData::SecureData(const SecureData &secureData)
 {
     *this = secureData;

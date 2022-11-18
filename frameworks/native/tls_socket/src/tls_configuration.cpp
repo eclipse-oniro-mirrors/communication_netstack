@@ -129,9 +129,9 @@ std::vector<CipherSuite> TLSConfiguration::GetCipherSuiteVec() const
     return cipherSuiteVec_;
 }
 
-std::string TLSConfiguration::GetCertificate() const
+const X509CertRawData &TLSConfiguration::GetCertificate() const
 {
-    return localCertificate_.GetLocalCertString();
+    return localCertificate_.GetLocalCertRawData();
 }
 
 void TLSConfiguration::SetCipherSuite(const std::string &cipherSuite)

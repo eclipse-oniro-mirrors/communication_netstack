@@ -28,12 +28,12 @@
 
 #include "extra_options_base.h"
 #include "net_address.h"
+#include "socket_error.h"
 #include "socket_remote_info.h"
 #include "socket_state_base.h"
 #include "tcp_connect_options.h"
 #include "tcp_extra_options.h"
 #include "tcp_send_options.h"
-#include "socket_error.h"
 #include "tls.h"
 #include "tls_certificate.h"
 #include "tls_configuration.h"
@@ -50,8 +50,8 @@ using CloseCallback = std::function<void(int32_t errorNumber)>;
 using GetRemoteAddressCallback = std::function<void(int32_t errorNumber, const NetAddress &address)>;
 using GetStateCallback = std::function<void(int32_t errorNumber, const SocketStateBase &state)>;
 using SetExtraOptionsCallback = std::function<void(int32_t errorNumber)>;
-using GetCertificateCallback = std::function<void(int32_t errorNumber, const std::string &cert)>;
-using GetRemoteCertificateCallback = std::function<void(int32_t errorNumber, const std::string &cert)>;
+using GetCertificateCallback = std::function<void(int32_t errorNumber, const X509CertRawData &cert)>;
+using GetRemoteCertificateCallback = std::function<void(int32_t errorNumber, const X509CertRawData &cert)>;
 using GetProtocolCallback = std::function<void(int32_t errorNumber, const std::string &protocol)>;
 using GetCipherSuiteCallback = std::function<void(int32_t errorNumber, const std::vector<std::string> &suite)>;
 using GetSignatureAlgorithmsCallback =
@@ -468,10 +468,16 @@ private:
         [[nodiscard]] std::string GetRemoteCertificate() const;
 
         /**
-         * Obtain the certificate used in encrypted communication
-         * @return certificates used in encrypted communication
+         * Obtain the peer certificate used in encrypted communication
+         * @return peer certificate serialization data used in encrypted communication
          */
-        [[nodiscard]] std::string GetCertificate() const;
+        [[nodiscard]] const X509CertRawData &GetRemoteCertRawData() const;
+
+        /**
+         * Obtain the certificate used in encrypted communication
+         * @return certificate serialization data used in encrypted communication
+         */
+        [[nodiscard]] const X509CertRawData &GetCertificate() const;
 
         /**
          * Get the encryption algorithm used in encrypted communication
@@ -502,6 +508,7 @@ private:
         bool CreatTlsContext();
         bool StartShakingHands(const TLSConnectOptions &options);
         bool GetRemoteCertificateFromPeer();
+        bool SetRemoteCertRawData();
         std::string CheckServerIdentityLegal(const std::string &hostName, const X509 *x509Certificates);
 
     private:
@@ -514,6 +521,7 @@ private:
         TLSContext tlsContext_;
         TLSConfiguration configuration_;
         NetAddress address_;
+        X509CertRawData remoteRawData_;
 
         std::string hostName_;
         std::string remoteCert_;
@@ -543,8 +551,9 @@ private:
     void CallGetRemoteAddressCallback(int32_t err, const NetAddress &address, GetRemoteAddressCallback callback);
     void CallGetStateCallback(int32_t err, const SocketStateBase &state, GetStateCallback callback);
     void CallSetExtraOptionsCallback(int32_t err, SetExtraOptionsCallback callback);
-    void CallGetCertificateCallback(int32_t err, const std::string &cert, GetCertificateCallback callback);
-    void CallGetRemoteCertificateCallback(int32_t err, const std::string &cert, GetRemoteCertificateCallback callback);
+    void CallGetCertificateCallback(int32_t err, const X509CertRawData &cert, GetCertificateCallback callback);
+    void CallGetRemoteCertificateCallback(int32_t err, const X509CertRawData &cert,
+                                          GetRemoteCertificateCallback callback);
     void CallGetProtocolCallback(int32_t err, const std::string &protocol, GetProtocolCallback callback);
     void CallGetCipherSuiteCallback(int32_t err, const std::vector<std::string> &suite,
                                     GetCipherSuiteCallback callback);
