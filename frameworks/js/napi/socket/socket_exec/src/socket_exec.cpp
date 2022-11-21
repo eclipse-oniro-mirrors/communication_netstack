@@ -433,9 +433,9 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
     if (timeoutMSec == 0) {
         timeoutMSec = DEFAULT_CONNECT_TIMEOUT;
     }
-    uint32_t uSec_to_mSec = 1000;
-    if (timeoutMSec > UINT32_MAX / uSec_to_mSec) {
-        timeoutMSec = UINT32_MAX / uSec_to_mSec;
+    uint32_t uSecToMSec = 1000;
+    if (timeoutMSec > UINT32_MAX / uSecToMSec) {
+        timeoutMSec = UINT32_MAX / uSecToMSec;
     }
     
     timeval timeout = {
