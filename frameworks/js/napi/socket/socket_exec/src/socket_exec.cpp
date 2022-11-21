@@ -433,6 +433,10 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
     if (timeoutMSec == 0) {
         timeoutMSec = DEFAULT_CONNECT_TIMEOUT;
     }
+    if (timeoutMSec > UINT32_MAX / 1000) {
+        timeoutMSec = UINT32_MAX / 1000;
+    }
+    
     timeval timeout = {
         .tv_sec = 0,
         .tv_usec = timeoutMSec * 1000,
