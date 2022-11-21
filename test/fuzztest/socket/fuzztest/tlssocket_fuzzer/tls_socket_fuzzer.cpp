@@ -28,11 +28,10 @@ size_t g_baseFuzzSize = 0;
 size_t g_baseFuzzPos;
 constexpr size_t STR_LEN = 10;
 }
-
-template<class T>
+template <class T>
 T GetData()
 {
-    T object {};
+    T object{};
     size_t objectSize = sizeof(object);
     if (g_baseFuzzData == nullptr || objectSize > g_baseFuzzSize - g_baseFuzzPos) {
         return object;
@@ -55,106 +54,100 @@ std::string GetStringFromData(int strlen)
     return str;
 }
 
-void BindFuzzTest(const uint8_t* data, size_t size)
+void BindFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("BindFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     TLSSocket tlsSocket;
     NetAddress netAddress;
-    std::string str(reinterpret_cast<const char*>(data), size);
+    std::string str(reinterpret_cast<const char *>(data), size);
     netAddress.SetAddress(str);
-    netAddress.SetFamilyByJsValue(*(reinterpret_cast<const uint32_t*>(data)));
-    netAddress.SetFamilyBySaFamily(*(reinterpret_cast<const sa_family_t*>(data)));
-    netAddress.SetPort(*(reinterpret_cast<const uint16_t*>(data)));
+    netAddress.SetFamilyByJsValue(*(reinterpret_cast<const uint32_t *>(data)));
+    netAddress.SetFamilyBySaFamily(*(reinterpret_cast<const sa_family_t *>(data)));
+    netAddress.SetPort(*(reinterpret_cast<const uint16_t *>(data)));
     tlsSocket.Bind(netAddress, [](bool ok) {
-        NETSTACK_LOGE("Calback received");
+        NETSTACK_LOGD("Calback received");
     });
-    tlsSocket.Close([](int32_t errorNumber) {
-    });
-    tlsSocket.GetRemoteAddress([](int32_t errorNumber, const NetAddress &address) {
-    });
-    tlsSocket.GetCertificate([](int32_t errorNumber, const X509CertRawData &cert) {
-    });
-    tlsSocket.GetRemoteCertificate([](int32_t errorNumber, const X509CertRawData &cert) {
-    });
-    tlsSocket.GetProtocol([](int32_t errorNumber, const std::string &protocol) {
-    });
-    tlsSocket.GetCipherSuite([](int32_t errorNumber, const std::vector<std::string> &suite) {
-    });
-    tlsSocket.GetSignatureAlgorithms([](int32_t errorNumber, const std::vector<std::string> &algorithms) {
-    });
-    tlsSocket.OnMessage([](const std::string &data, const SocketRemoteInfo &remoteInfo) {
-    });
-    tlsSocket.OnConnect([]() {
-    });
-    tlsSocket.OnClose([]() {
-    });
-    tlsSocket.OnError([](int32_t errorNumber, const std::string &errorString) {
-    });
+    tlsSocket.Close([](int32_t errorNumber) {});
+    tlsSocket.GetRemoteAddress([](int32_t errorNumber, const NetAddress &address) {});
+    tlsSocket.GetCertificate([](int32_t errorNumber, const X509CertRawData &cert) {});
+    tlsSocket.GetRemoteCertificate([](int32_t errorNumber, const X509CertRawData &cert) {});
+    tlsSocket.GetProtocol([](int32_t errorNumber, const std::string &protocol) {});
+    tlsSocket.GetCipherSuite([](int32_t errorNumber, const std::vector<std::string> &suite) {});
+    tlsSocket.GetSignatureAlgorithms([](int32_t errorNumber, const std::vector<std::string> &algorithms) {});
+    tlsSocket.OnMessage([](const std::string &data, const SocketRemoteInfo &remoteInfo) {});
+    tlsSocket.OnConnect([]() {});
+    tlsSocket.OnClose([]() {});
+    tlsSocket.OnError([](int32_t errorNumber, const std::string &errorString) {});
     tlsSocket.OffMessage();
     tlsSocket.OffConnect();
     tlsSocket.OffClose();
     tlsSocket.OffError();
 }
 
-void ConnectFuzzTest(const uint8_t* data, size_t size)
+void ConnectFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("ConnectFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     TLSSocket tlsSocket;
     NetAddress netAddress;
-    std::string str(reinterpret_cast<const char*>(data), size);
+    std::string str(reinterpret_cast<const char *>(data), size);
     netAddress.SetAddress(str);
-    netAddress.SetFamilyByJsValue(*(reinterpret_cast<const uint32_t*>(data)));
-    netAddress.SetFamilyBySaFamily(*(reinterpret_cast<const sa_family_t*>(data)));
-    netAddress.SetPort(*(reinterpret_cast<const uint16_t*>(data)));
+    netAddress.SetFamilyByJsValue(*(reinterpret_cast<const uint32_t *>(data)));
+    netAddress.SetFamilyBySaFamily(*(reinterpret_cast<const sa_family_t *>(data)));
+    netAddress.SetPort(*(reinterpret_cast<const uint16_t *>(data)));
     TLSConnectOptions options;
     options.SetNetAddress(netAddress);
     options.SetCheckServerIdentity([](const std::string &hostName, const std::vector<std::string> &x509Certificates) {
-            NETSTACK_LOGE("Calback received");
+            NETSTACK_LOGD("Calback received");
         });
     std::vector<std::string> alpnProtocols(STR_LEN, str);
     options.SetAlpnProtocols(alpnProtocols);
     tlsSocket.Connect(options, [](bool ok) {
-        NETSTACK_LOGE("Calback received");
+        NETSTACK_LOGD("Calback received");
     });
 }
 
-void SendFuzzTest(const uint8_t* data, size_t size)
+void SendFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("SendFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     TLSSocket tlsSocket;
     TCPSendOptions options;
-    std::string str(reinterpret_cast<const char*>(data), size);
+    std::string str(reinterpret_cast<const char *>(data), size);
     options.SetData(str);
     options.SetEncoding(str);
     tlsSocket.Send(options, [](bool ok) {
-        NETSTACK_LOGE("Calback received");
+        NETSTACK_LOGD("Calback received");
     });
 }
 
-void SetExtraOptionsFuzzTest(const uint8_t* data, size_t size)
+void SetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("SetExtraOptionsFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     TLSSocket tlsSocket;
     TCPExtraOptions options;
-    options.SetKeepAlive(*(reinterpret_cast<const bool*>(data)));
-    options.SetOOBInline(*(reinterpret_cast<const bool*>(data)));
-    options.SetTCPNoDelay(*(reinterpret_cast<const bool*>(data)));
+    options.SetKeepAlive(*(reinterpret_cast<const bool *>(data)));
+    options.SetOOBInline(*(reinterpret_cast<const bool *>(data)));
+    options.SetTCPNoDelay(*(reinterpret_cast<const bool *>(data)));
     tlsSocket.SetExtraOptions(options, [](bool ok) {
-        NETSTACK_LOGE("Calback received");
+        NETSTACK_LOGD("Calback received");
     });
 }
 
-void SetCaChainFuzzTest(const uint8_t* data, size_t size)
+void SetCaChainFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("SetCaChainFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     g_baseFuzzData = data;
@@ -172,9 +165,10 @@ void SetCaChainFuzzTest(const uint8_t* data, size_t size)
     auto ret = option.GetCaChain();
 }
 
-void SetCertFuzzTest(const uint8_t* data, size_t size)
+void SetCertFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("SetCertFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     g_baseFuzzData = data;
@@ -186,9 +180,10 @@ void SetCertFuzzTest(const uint8_t* data, size_t size)
     auto ret = option.GetCert();
 }
 
-void SetKeyFuzzTest(const uint8_t* data, size_t size)
+void SetKeyFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("SetKeyFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     g_baseFuzzData = data;
@@ -201,9 +196,10 @@ void SetKeyFuzzTest(const uint8_t* data, size_t size)
     auto ret = option.GetKey();
 }
 
-void SetKeyPassFuzzTest(const uint8_t* data, size_t size)
+void SetKeyPassFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("SetKeyPassFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     g_baseFuzzData = data;
@@ -216,16 +212,17 @@ void SetKeyPassFuzzTest(const uint8_t* data, size_t size)
     auto ret = option.GetKeyPass();
 }
 
-void SetProtocolChainFuzzTest(const uint8_t* data, size_t size)
+void SetProtocolChainFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("SetProtocolChainFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     g_baseFuzzData = data;
     g_baseFuzzSize = size;
     g_baseFuzzPos = 0;
     std::string str = GetStringFromData(STR_LEN);
-    uint32_t count = GetData<int32_t>() % 10;
+    uint32_t count = GetData<uint32_t>() % 10;
     std::vector<std::string> caChain;
     caChain.reserve(count);
     for (size_t i = 0; i < count; i++) {
@@ -236,9 +233,10 @@ void SetProtocolChainFuzzTest(const uint8_t* data, size_t size)
     auto ret = option.GetProtocolChain();
 }
 
-void SetUseRemoteCipherPreferFuzzTest(const uint8_t* data, size_t size)
+void SetUseRemoteCipherPreferFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("SetUseRemoteCipherPreferFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     g_baseFuzzData = data;
@@ -248,12 +246,13 @@ void SetUseRemoteCipherPreferFuzzTest(const uint8_t* data, size_t size)
     TLSSecureOptions option;
     option.SetUseRemoteCipherPrefer(useRemoteCipherPrefer);
     bool ret = option.UseRemoteCipherPrefer();
-    NETSTACK_LOGE("ret:%{public}s", ret ? "true" : "false");
+    NETSTACK_LOGD("ret:%{public}s", ret ? "true" : "false");
 }
 
-void SetSignatureAlgorithmsFuzzTest(const uint8_t* data, size_t size)
+void SetSignatureAlgorithmsFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("SetSignatureAlgorithmsFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     g_baseFuzzData = data;
@@ -265,9 +264,10 @@ void SetSignatureAlgorithmsFuzzTest(const uint8_t* data, size_t size)
     auto ret = option.GetSignatureAlgorithms();
 }
 
-void SetCipherSuiteFuzzTest(const uint8_t* data, size_t size)
+void SetCipherSuiteFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("SetCipherSuiteFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     g_baseFuzzData = data;
@@ -279,16 +279,17 @@ void SetCipherSuiteFuzzTest(const uint8_t* data, size_t size)
     auto ret = option.GetCipherSuite();
 }
 
-void SetCrlChainFuzzTest(const uint8_t* data, size_t size)
+void SetCrlChainFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("SetCrlChainFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     g_baseFuzzData = data;
     g_baseFuzzSize = size;
     g_baseFuzzPos = 0;
     std::string str = GetStringFromData(STR_LEN);
-    uint32_t count = GetData<int32_t>() % 10;
+    uint32_t count = GetData<uint32_t>() % 10;
     std::vector<std::string> caChain;
     caChain.reserve(count);
     for (size_t i = 0; i < count; i++) {
@@ -299,9 +300,10 @@ void SetCrlChainFuzzTest(const uint8_t* data, size_t size)
     auto ret = option.GetCrlChain();
 }
 
-void SetNetAddressFuzzTest(const uint8_t* data, size_t size)
+void SetNetAddressFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("SetNetAddressFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     g_baseFuzzData = data;
@@ -319,9 +321,10 @@ void SetNetAddressFuzzTest(const uint8_t* data, size_t size)
     auto ret = option.GetNetAddress();
 }
 
-void SetTlsSecureOptionsFuzzTest(const uint8_t* data, size_t size)
+void SetTlsSecureOptionsFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("SetTlsSecureOptionsFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     g_baseFuzzData = data;
@@ -335,13 +338,13 @@ void SetTlsSecureOptionsFuzzTest(const uint8_t* data, size_t size)
     TLSConnectOptions option;
     option.SetTlsSecureOptions(tls);
     auto ret = option.GetTlsSecureOptions();
-    option.SetCheckServerIdentity([](const std::string, const std::vector<std::string>) {
-    });
+    option.SetCheckServerIdentity([](const std::string, const std::vector<std::string>) {});
 }
 
-void SetAlpnProtocolsFuzzTest(const uint8_t* data, size_t size)
+void SetAlpnProtocolsFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size <= 0)) {
+    NETSTACK_LOGD("SetAlpnProtocolsFuzzTest:enter");
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
     g_baseFuzzData = data;
@@ -362,7 +365,7 @@ void SetAlpnProtocolsFuzzTest(const uint8_t* data, size_t size)
 } // OHOS
 
 /* Fuzzer entry point */
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     OHOS::NetStack::BindFuzzTest(data, size);
