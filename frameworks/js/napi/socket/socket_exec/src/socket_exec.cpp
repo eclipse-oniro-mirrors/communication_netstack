@@ -39,6 +39,8 @@ static constexpr const int ADDRESS_INVALID = -1;
 
 static constexpr const int NO_MEMORY = -2;
 
+static constexpr const int MSEC_TO_USEC = 1000;
+
 namespace OHOS::NetStack::SocketExec {
 struct MessageData {
     MessageData() = delete;
@@ -433,14 +435,13 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
     if (timeoutMSec == 0) {
         timeoutMSec = DEFAULT_CONNECT_TIMEOUT;
     }
-    uint32_t uSecToMSec = 1000;
-    if (timeoutMSec > UINT32_MAX / uSecToMSec) {
-        timeoutMSec = UINT32_MAX / uSecToMSec;
+    if (timeoutMSec > UINT32_MAX / MSEC_TO_USEC) {
+        timeoutMSec = UINT32_MAX / MSEC_TO_USEC;
     }
-    
+
     timeval timeout = {
         .tv_sec = 0,
-        .tv_usec = timeoutMSec * 1000,
+        .tv_usec = timeoutMSec * MSEC_TO_USEC,
     };
 
     ret = select(sock + 1, nullptr, &set, nullptr, &timeout);
