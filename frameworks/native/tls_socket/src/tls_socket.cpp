@@ -155,6 +155,7 @@ TLSSecureOptions &TLSSecureOptions::operator=(const TLSSecureOptions &tlsSecureO
     protocolChain_ = tlsSecureOptions.GetProtocolChain();
     crlChain_ = tlsSecureOptions.GetCrlChain();
     keyPass_ = tlsSecureOptions.GetKeyPass();
+    key_ = tlsSecureOptions.GetKey();
     signatureAlgorithms_ = tlsSecureOptions.GetSignatureAlgorithms();
     cipherSuite_ = tlsSecureOptions.GetCipherSuite();
     useRemoteCipherPrefer_ = tlsSecureOptions.UseRemoteCipherPrefer();
@@ -716,11 +717,13 @@ void TLSSocket::Close(const OHOS::NetStack::CloseCallback &callback)
 {
     if (!WaitConditionWithTimeout(&isRunning_, TIMEOUT_MS)) {
         callback(ConvertErrno());
+        NETSTACK_LOGE("The error cause is that the runtime wait time is insufficient");
         return;
     }
     isRunning_ = false;
     if (!WaitConditionWithTimeout(&isRunOver_, TIMEOUT_MS)) {
         callback(ConvertErrno());
+        NETSTACK_LOGE("The error is due to insufficient delay time");
         return;
     }
     auto res = tlsSocketInternal_.Close();
@@ -1291,9 +1294,11 @@ bool TLSSocket::TLSSocketInternal::SetSharedSigals()
 bool TLSSocket::TLSSocketInternal::StartTlsConnected(const TLSConnectOptions &options)
 {
     if (!CreatTlsContext()) {
+        NETSTACK_LOGE("failed to create tls context");
         return false;
     }
     if (!StartShakingHands(options)) {
+        NETSTACK_LOGE("failed to shaking hands");
         return false;
     }
     return true;
@@ -1303,10 +1308,11 @@ bool TLSSocket::TLSSocketInternal::CreatTlsContext()
 {
     tlsContextPointer_ = TLSContext::CreateConfiguration(configuration_);
     if (!tlsContextPointer_) {
+        NETSTACK_LOGE("failed to create tls context pointer");
         return false;
     }
     if (!(ssl_ = tlsContextPointer_->CreateSsl())) {
-        NETSTACK_LOGE("Create ssl session failed");
+        NETSTACK_LOGE("failed to create ssl session");
         return false;
     }
     SSL_set_fd(ssl_, socketDescriptor_);
@@ -1385,7 +1391,7 @@ std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::st
     obj = X509_EXTENSION_get_object(ext);
     char subAltNameBuf[BUF_SIZE] = {0};
     OBJ_obj2txt(subAltNameBuf, BUF_SIZE, obj, 0);
-    NETSTACK_LOGD("extions obj : %s\n", subAltNameBuf);
+    NETSTACK_LOGD("extions obj : %{public}s\n", subAltNameBuf);
 
     ASN1_OCTET_STRING *extData = X509_EXTENSION_get_data(ext);
     std::string altNames = reinterpret_cast<char *>(extData->data);

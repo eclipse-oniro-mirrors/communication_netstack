@@ -62,7 +62,7 @@ TLSCertificate::TLSCertificate(const std::string &data, EncodingFormat format, C
 TLSCertificate::TLSCertificate(const std::string &data, CertType certType)
 {
     if (data.empty()) {
-        NETSTACK_LOGE("TlsCertificate::TlsCertificate(const std::string &data, CertType certType) data is empty");
+        NETSTACK_LOGE("data is null in the TLSCertificate constructor");
         return;
     }
     if (!CertificateFromData(data, certType)) {

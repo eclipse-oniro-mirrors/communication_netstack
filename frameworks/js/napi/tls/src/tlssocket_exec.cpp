@@ -266,13 +266,14 @@ bool TLSSocketExec::ExecGetState(TLSGetStateContext *context)
     auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
-        return false;
+        context->state_.SetIsClose(true);
+        return true;
     }
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecGetState tlsSocket is null");
-        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
-        return false;
+        context->state_.SetIsClose(true);
+        return true;
     }
     tlsSocket->GetState([&context](int32_t errorNumber, const SocketStateBase state) {
         context->state_ = state;

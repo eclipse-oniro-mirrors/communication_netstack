@@ -78,7 +78,7 @@ config("tls_test_config") {
   ]
 }
 
-ohos_unittest("tls_socket_unittest") {
+ohos_unittest("two_way_tls_socket_unittest") {
   sources = [ "TlsSocketTest.cpp" ]
   sources += tls_sources
   sources += tls_napi_sources
@@ -103,8 +103,83 @@ ohos_unittest("tls_socket_unittest") {
   subsystem_name = "communication"
 }
 
-ohos_unittest("tls_socket_certchain_unittest") {
+ohos_unittest("one_way_tls_socket_unittest") {
+  sources = [ "TlsSocketOneWayTest.cpp" ]
+  sources += tls_sources
+  sources += tls_napi_sources
+  sources += socket_sources
+
+  configs = [ ":tls_test_config" ]
+
+  deps = [
+    "$NETSTACK_DIR/utils:stack_utils_common",
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
+    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
+  ]
+  external_deps = [
+    "c_utils:utils",
+    "hiviewdfx_hilog_native:libhilog",
+    "napi:ace_napi",
+  ]
+
+  module_out_path = "netstack/tls_socket_unittest"
+  part_name = "netstack"
+  subsystem_name = "communication"
+}
+
+ohos_unittest("two_way_tls_socket_certchain_unittest") {
   sources = [ "TlsSocketCertChainTest.cpp" ]
+  sources += tls_sources
+  sources += tls_napi_sources
+  sources += socket_sources
+
+  configs = [ ":tls_test_config" ]
+
+  deps = [
+    "$NETSTACK_DIR/utils:stack_utils_common",
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
+    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
+  ]
+  external_deps = [
+    "c_utils:utils",
+    "hiviewdfx_hilog_native:libhilog",
+    "napi:ace_napi",
+  ]
+
+  module_out_path = "netstack/tls_socket_unittest"
+  part_name = "netstack"
+  subsystem_name = "communication"
+}
+
+ohos_unittest("one_way_tls_socket_certchain_unittest") {
+  sources = [ "TlsSocketCertChainOneWayTest.cpp" ]
+  sources += tls_sources
+  sources += tls_napi_sources
+  sources += socket_sources
+
+  configs = [ ":tls_test_config" ]
+
+  deps = [
+    "$NETSTACK_DIR/utils:stack_utils_common",
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
+    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
+  ]
+  external_deps = [
+    "c_utils:utils",
+    "hiviewdfx_hilog_native:libhilog",
+    "napi:ace_napi",
+  ]
+
+  module_out_path = "netstack/tls_socket_unittest"
+  part_name = "netstack"
+  subsystem_name = "communication"
+}
+
+ohos_unittest("tls_socket_unilateral_connection") {
+  sources = [ "TlsSocketUnilateralConnection.cpp" ]
   sources += tls_sources
   sources += tls_napi_sources
   sources += socket_sources

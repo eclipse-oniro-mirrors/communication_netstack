@@ -47,7 +47,7 @@ const std::string_view PORT = "/data/Ip/port.txt";
 inline bool CheckCaFileExistence(const char *function)
 {
     if (access(CA_PATH_CHAIN.data(), 0)) {
-        std::cout << "CA file doesnot exist! (" << function << ")";
+        std::cout << "CA file does not exist! (" << function << ")";
         return false;
     }
     return true;
