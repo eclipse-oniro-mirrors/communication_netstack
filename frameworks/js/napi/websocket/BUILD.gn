@@ -34,6 +34,8 @@ ohos_shared_library("websocket") {
     "websocket_module/src/websocket_module.cpp",
   ]
 
+  defines = [ "OHOS_LIBWEBSOCKETS=1" ]
+
   deps = [
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/libwebsockets:websockets",
