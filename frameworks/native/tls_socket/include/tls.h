@@ -144,6 +144,11 @@ enum class Cipher {
     AES_192_CBC,
     AES_256_CBC
 };
+
+enum VerifyMode {
+    ONE_WAY_MODE = 0,
+    TWO_WAY_MODE
+};
 } // namespace NetStack
 } // namespace OHOS
 #endif // COMMUNICATION_NETSTACK_TLS_H

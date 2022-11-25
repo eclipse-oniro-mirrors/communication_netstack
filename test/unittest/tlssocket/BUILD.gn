@@ -16,8 +16,11 @@ import("//build/test.gni")
 group("unittest") {
   testonly = true
   deps = [
+    "client:one_way_tls_socket_certchain_unittest",
+    "client:one_way_tls_socket_unittest",
     "client:secure_data_unittest",
-    "client:tls_socket_certchain_unittest",
-    "client:tls_socket_unittest",
+    "client:tls_socket_unilateral_connection",
+    "client:two_way_tls_socket_certchain_unittest",
+    "client:two_way_tls_socket_unittest",
   ]
 }

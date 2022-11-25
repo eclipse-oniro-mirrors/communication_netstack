@@ -48,6 +48,7 @@ private:
     EVP_PKEY *pkey_ = nullptr;
     SSL *ctxSsl_ = nullptr;
     TLSConfiguration tlsConfiguration_;
+    static VerifyMode verifyMode_;
 };
 } // namespace NetStack
 } // namespace OHOS

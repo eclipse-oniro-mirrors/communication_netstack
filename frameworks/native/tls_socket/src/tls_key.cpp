@@ -38,10 +38,10 @@ TLSKey::TLSKey(const std::string &fileName, KeyAlgorithm algorithm, const Secure
 TLSKey::TLSKey(const SecureData &data, KeyAlgorithm algorithm, const SecureData &passPhrase)
 {
     if (data.Length() == 0) {
-        NETSTACK_LOGE("data is empty");
-        return;
+        NETSTACK_LOGD("data is empty");
+    } else {
+        DecodeData(data, algorithm, passPhrase);
     }
-    DecodeData(data, algorithm, passPhrase);
 }
 
 TLSKey::TLSKey(const TLSKey &other)
@@ -71,6 +71,7 @@ TLSKey &TLSKey::operator=(const TLSKey &other)
     keyType_ = other.keyType_;
     keyAlgorithm_ = other.keyAlgorithm_;
     keyPass_ = other.keyPass_;
+    keyData_ = other.keyData_;
     return *this;
 }
 
@@ -81,6 +82,7 @@ void TLSKey::DecodeData(const SecureData &data, KeyAlgorithm algorithm, const Se
         return;
     }
     keyAlgorithm_ = algorithm;
+    keyData_ = data;
     keyPass_ = passPhrase;
     BIO *bio = BIO_new_mem_buf(data.Data(), -1);
     if (!bio) {
@@ -275,6 +277,11 @@ Handle TLSKey::handle() const
 const SecureData &TLSKey::GetKeyPass() const
 {
     return keyPass_;
+}
+
+const SecureData &TLSKey::GetKeyData() const
+{
+    return keyData_;
 }
 } // namespace NetStack
 } // namespace OHOS
