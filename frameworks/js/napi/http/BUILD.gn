@@ -23,14 +23,11 @@ config("http_config") {
     "cache/cache_proxy/include",
     "cache/cache_strategy/include",
     "cache/lru_cache/include",
-    "cache/md5/include",
     "constant/include",
     "http_exec/include",
     "http_module/include",
     "options/include",
     "//third_party/curl/include",
-    "//third_party/glib/glib",
-    "//third_party/glib",
     "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
   ]
 
@@ -53,7 +50,6 @@ ohos_shared_library("http") {
     "cache/lru_cache/src/disk_handler.cpp",
     "cache/lru_cache/src/lru_cache.cpp",
     "cache/lru_cache/src/lru_cache_disk_handler.cpp",
-    "cache/md5/src/calculate_md5.cpp",
     "constant/src/constant.cpp",
     "http_exec/src/http_exec.cpp",
     "http_module/src/http_module.cpp",
@@ -69,9 +65,7 @@ ohos_shared_library("http") {
   if (current_os == "ohos") {
     deps += [
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-      "//third_party/glib:glib_packages",
       "//third_party/jsoncpp:jsoncpp",
-      "//third_party/openssl:libcrypto_shared",
     ]
     external_deps += [
       "c_utils:utils",
