@@ -20,6 +20,7 @@
 
 #include "base64_utils.h"
 #include "constant.h"
+#include "http_exec.h"
 #include "lru_cache_disk_handler.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
