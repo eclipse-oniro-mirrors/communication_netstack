@@ -154,12 +154,12 @@ std::string Decode(const std::string &encoded)
         if (index != CHAR_ARRAY_LENGTH_FOUR) {
             continue;
         }
-        for (index = 0; index < CHAR_ARRAY_LENGTH_FOUR; index++) {
+        for (index = 0; index < CHAR_ARRAY_LENGTH_FOUR; ++index) {
             charArrayFour[index] = BASE64_CHARS.find(static_cast<char>(charArrayFour[index]));
         }
         MakeCharTree(charArrayFour, charArrayThree);
-        for (index = 0; (index < 3); index++) {
-            ret += static_cast<char>(charArrayThree[index]);
+        for (auto idx : charArrayThree) {
+            ret += static_cast<char>(idx);
         }
         index = 0;
     }
@@ -167,7 +167,7 @@ std::string Decode(const std::string &encoded)
         return ret;
     }
 
-    for (auto i = index; i < CHAR_ARRAY_LENGTH_FOUR; i++) {
+    for (auto i = index; i < CHAR_ARRAY_LENGTH_FOUR; ++i) {
         charArrayFour[i] = 0;
     }
     for (unsigned char &i : charArrayFour) {
