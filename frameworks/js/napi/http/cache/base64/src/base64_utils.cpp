@@ -13,27 +13,126 @@
  * limitations under the License.
  */
 
-#include <memory>
-#ifdef __linux__
-#include "glib.h"
-#include "netstack_log.h"
-#endif
-
 #include "base64_utils.h"
 
 namespace OHOS::NetStack::Base64 {
+#ifdef __linux__
+static std::string BASE64_CHARS = /* NOLINT */
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "0123456789+/";
+
+static constexpr const int CHAR_ARRAY_LENGTH_THREE = 3;
+static constexpr const int CHAR_ARRAY_LENGTH_FOUR = 4;
+
+enum BASE64_ENCODE_CONSTANT : uint8_t {
+    BASE64_ENCODE_MASK1 = 0xfc,
+    BASE64_ENCODE_MASK2 = 0x03,
+    BASE64_ENCODE_MASK3 = 0x0f,
+    BASE64_ENCODE_MASK4 = 0x3f,
+    BASE64_ENCODE_MASK5 = 0xf0,
+    BASE64_ENCODE_MASK6 = 0xc0,
+    BASE64_ENCODE_OFFSET2 = 2,
+    BASE64_ENCODE_OFFSET4 = 4,
+    BASE64_ENCODE_OFFSET6 = 6,
+    BASE64_ENCODE_INDEX0 = 0,
+    BASE64_ENCODE_INDEX1 = 1,
+    BASE64_ENCODE_INDEX2 = 2,
+};
+
+enum BASE64_DECODE_CONSTANT : uint8_t {
+    BASE64_DECODE_MASK1 = 0x30,
+    BASE64_DECODE_MASK2 = 0xf,
+    BASE64_DECODE_MASK3 = 0x3c,
+    BASE64_DECODE_MASK4 = 0x3,
+    BASE64_DECODE_OFFSET2 = 2,
+    BASE64_DECODE_OFFSET4 = 4,
+    BASE64_DECODE_OFFSET6 = 6,
+    BASE64_DECODE_INDEX0 = 0,
+    BASE64_DECODE_INDEX1 = 1,
+    BASE64_DECODE_INDEX2 = 2,
+    BASE64_DECODE_INDEX3 = 3,
+};
+
+static inline bool IsBase64Char(const char c)
+{
+    return (isalnum(c) || (c == '+') || (c == '/'));
+}
+
+static inline void MakeCharFour(const uint8_t charArrayThree[CHAR_ARRAY_LENGTH_THREE],
+                                uint8_t charArrayFour[CHAR_ARRAY_LENGTH_FOUR])
+{
+    uint8_t table[CHAR_ARRAY_LENGTH_FOUR] = {
+        static_cast<uint8_t>((charArrayThree[BASE64_ENCODE_INDEX0] & BASE64_ENCODE_MASK1) >> BASE64_ENCODE_OFFSET2),
+        static_cast<uint8_t>(((charArrayThree[BASE64_ENCODE_INDEX0] & BASE64_ENCODE_MASK2) << BASE64_ENCODE_OFFSET4) +
+                             ((charArrayThree[BASE64_ENCODE_INDEX1] & BASE64_ENCODE_MASK5) >> BASE64_ENCODE_OFFSET4)),
+        static_cast<uint8_t>(((charArrayThree[BASE64_ENCODE_INDEX1] & BASE64_ENCODE_MASK3) << BASE64_ENCODE_OFFSET2) +
+                             ((charArrayThree[BASE64_ENCODE_INDEX2] & BASE64_ENCODE_MASK6) >> BASE64_ENCODE_OFFSET6)),
+        static_cast<uint8_t>(charArrayThree[BASE64_ENCODE_INDEX2] & BASE64_ENCODE_MASK4),
+    };
+    for (size_t index = 0; index < CHAR_ARRAY_LENGTH_FOUR; ++index) {
+        charArrayFour[index] = table[index];
+    }
+}
+
+static inline void MakeCharTree(const uint8_t charArrayFour[CHAR_ARRAY_LENGTH_FOUR],
+                                uint8_t charArrayThree[CHAR_ARRAY_LENGTH_THREE])
+{
+    uint8_t table[CHAR_ARRAY_LENGTH_THREE] = {
+        static_cast<uint8_t>((charArrayFour[BASE64_DECODE_INDEX0] << BASE64_DECODE_OFFSET2) +
+                             ((charArrayFour[BASE64_DECODE_INDEX1] & BASE64_DECODE_MASK1) >> BASE64_DECODE_OFFSET4)),
+        static_cast<uint8_t>(((charArrayFour[BASE64_DECODE_INDEX1] & BASE64_DECODE_MASK2) << BASE64_DECODE_OFFSET4) +
+                             ((charArrayFour[BASE64_DECODE_INDEX2] & BASE64_DECODE_MASK3) >> BASE64_DECODE_OFFSET2)),
+        static_cast<uint8_t>(((charArrayFour[BASE64_DECODE_INDEX2] & BASE64_DECODE_MASK4) << BASE64_DECODE_OFFSET6) +
+                             charArrayFour[BASE64_DECODE_INDEX3]),
+    };
+    for (size_t index = 0; index < CHAR_ARRAY_LENGTH_THREE; ++index) {
+        charArrayThree[index] = table[index];
+    }
+}
+
+#endif
+
 std::string Encode(const std::string &source)
 {
 #ifdef __linux__
-    gchar *encodeData = g_base64_encode(reinterpret_cast<const guchar *>(source.c_str()), source.size());
-    if (encodeData == nullptr) {
-        NETSTACK_LOGE("base64 encode failed");
-        return {};
+    auto it = source.begin();
+    std::string ret;
+    size_t index = 0;
+    uint8_t charArrayThree[CHAR_ARRAY_LENGTH_THREE] = {0};
+    uint8_t charArrayFour[CHAR_ARRAY_LENGTH_FOUR] = {0};
+
+    while (it != source.end()) {
+        charArrayThree[index] = *it;
+        ++index;
+        ++it;
+        if (index != CHAR_ARRAY_LENGTH_THREE) {
+            continue;
+        }
+        MakeCharFour(charArrayThree, charArrayFour);
+        for (auto idx : charArrayFour) {
+            ret += BASE64_CHARS[idx];
+        }
+        index = 0;
     }
-    gsize out_len = strlen(encodeData);
-    std::string dest(encodeData, out_len);
-    g_free(encodeData);
-    return dest;
+    if (index == 0) {
+        return ret;
+    }
+
+    for (auto i = index; i < CHAR_ARRAY_LENGTH_THREE; ++i) {
+        charArrayThree[i] = 0;
+    }
+    MakeCharFour(charArrayThree, charArrayFour);
+
+    for (auto i = 0; i < index + 1; ++i) {
+        ret += BASE64_CHARS[charArrayFour[i]];
+    }
+
+    while (index < CHAR_ARRAY_LENGTH_THREE) {
+        ret += '=';
+        ++index;
+    }
+    return ret;
 #else
     return {};
 #endif
@@ -42,15 +141,44 @@ std::string Encode(const std::string &source)
 std::string Decode(const std::string &encoded)
 {
 #ifdef __linux__
-    gsize out_len = 0;
-    guchar *decodeData = g_base64_decode(encoded.c_str(), &out_len);
-    if (decodeData == nullptr) {
-        NETSTACK_LOGE("base64 decode failed");
-        return {};
+    auto it = encoded.begin();
+    size_t index = 0;
+    uint8_t charArrayFour[CHAR_ARRAY_LENGTH_FOUR] = {0};
+    uint8_t charArrayThree[CHAR_ARRAY_LENGTH_THREE] = {0};
+    std::string ret;
+
+    while (it != encoded.end() && IsBase64Char(*it)) {
+        charArrayFour[index] = *it;
+        ++index;
+        ++it;
+        if (index != CHAR_ARRAY_LENGTH_FOUR) {
+            continue;
+        }
+        for (index = 0; index < CHAR_ARRAY_LENGTH_FOUR; index++) {
+            charArrayFour[index] = BASE64_CHARS.find(static_cast<char>(charArrayFour[index]));
+        }
+        MakeCharTree(charArrayFour, charArrayThree);
+        for (index = 0; (index < 3); index++) {
+            ret += static_cast<char>(charArrayThree[index]);
+        }
+        index = 0;
     }
-    std::string dest(reinterpret_cast<char *>(decodeData), out_len);
-    g_free(decodeData);
-    return dest;
+    if (index == 0) {
+        return ret;
+    }
+
+    for (auto i = index; i < CHAR_ARRAY_LENGTH_FOUR; i++) {
+        charArrayFour[i] = 0;
+    }
+    for (unsigned char &i : charArrayFour) {
+        i = BASE64_CHARS.find(static_cast<char>(i));
+    }
+    MakeCharTree(charArrayFour, charArrayThree);
+
+    for (size_t i = 0; i < index - 1; i++) {
+        ret += static_cast<char>(charArrayThree[i]);
+    }
+    return ret;
 #else
     return {};
 #endif
