@@ -14,10 +14,8 @@
  */
 
 #include <gtest/gtest.h>
-#include <iostream>
-#include <string>
 
-#include "secure_data.h"
+#include "socket_error.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -25,7 +23,7 @@ namespace {
 using namespace testing::ext;
 } // namespace
 
-class SecureDataTest : public testing::Test {
+class SocketErrorTest : public testing::Test {
 public:
     static void SetUpTestCase() {}
 
@@ -36,21 +34,10 @@ public:
     virtual void TearDown() {}
 };
 
-HWTEST_F(SecureDataTest, stringData, TestSize.Level2)
+HWTEST_F(SocketErrorTest, SocketError, TestSize.Level2)
 {
-    std::string testString = "Secure Data string Test";
-    SecureData structureData(testString);
-    EXPECT_STREQ(structureData.Data(), "Secure Data string Test");
-
-    SecureData copyData = structureData;
-    EXPECT_STREQ(copyData.Data(), "Secure Data string Test");
-
-    SecureData equalData;
-    equalData = structureData;
-    EXPECT_STREQ(equalData.Data(), "Secure Data string Test");
-
-    SecureData defaultData;
-    EXPECT_EQ(defaultData.Length(), 0);
+    std::string errorMsg = MakeErrorMessage(TLS_ERR_SYS_EINTR);
+    EXPECT_STREQ(errorMsg.data(), "Interrupted system call");
 }
 } // namespace NetStack
 } // namespace OHOS
