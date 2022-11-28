@@ -24,8 +24,6 @@
 namespace OHOS::NetStack {
 class CacheProxy final {
 public:
-    std::string key_;
-
     CacheProxy() = delete;
 
     explicit CacheProxy(HttpRequestOptions &requestOptions);
@@ -43,6 +41,7 @@ public:
     static void StopCacheAndDelete();
 
 private:
+    std::string key_;
     HttpCacheStrategy strategy_;
 };
 } // namespace OHOS::NetStack

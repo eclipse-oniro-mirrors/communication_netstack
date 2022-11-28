@@ -23,14 +23,11 @@ config("http_config") {
     "cache/cache_proxy/include",
     "cache/cache_strategy/include",
     "cache/lru_cache/include",
-    "cache/md5/include",
     "constant/include",
     "http_exec/include",
     "http_module/include",
     "options/include",
     "$THIRD_PARTY_ROOT/curl/include",
-    "$THIRD_PARTY_ROOT/glib/glib",
-    "$THIRD_PARTY_ROOT/glib",
     "$NETSTACK_DIR/utils/common_utils/include",
   ]
 
@@ -60,7 +57,6 @@ ohos_shared_library("http") {
     "cache/lru_cache/src/disk_handler.cpp",
     "cache/lru_cache/src/lru_cache.cpp",
     "cache/lru_cache/src/lru_cache_disk_handler.cpp",
-    "cache/md5/src/calculate_md5.cpp",
     "constant/src/constant.cpp",
     "http_exec/src/http_exec.cpp",
     "http_module/src/http_module.cpp",
@@ -79,15 +75,12 @@ ohos_shared_library("http") {
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
       "$THIRD_PARTY_ROOT/bounds_checking_function:libsec_static",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
-      "$THIRD_PARTY_ROOT/openssl:libcrypto_static",
     ]
   } else {
     deps += [
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-      "$THIRD_PARTY_ROOT/glib:glib_packages",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
-      "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
     ]
     external_deps = [
       "c_utils:utils",
