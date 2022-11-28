@@ -19,7 +19,6 @@
 #include <thread>
 
 #include "base64_utils.h"
-#include "calculate_md5.h"
 #include "constant.h"
 #include "http_exec.h"
 #include "lru_cache_disk_handler.h"
@@ -49,7 +48,7 @@ CacheProxy::CacheProxy(HttpRequestOptions &requestOptions) : requestOptions_(req
         str += p.first + HttpConstant::HTTP_HEADER_SEPARATOR + p.second + HttpConstant::HTTP_LINE_SEPARATOR;
     }
     str += std::to_string(requestOptions.GetHttpVersion());
-    key_ = CalculateMD5(str);
+    key_ = Base64::Encode(str);
 }
 
 bool CacheProxy::ReadResponseFromCache(HttpResponse &response)
