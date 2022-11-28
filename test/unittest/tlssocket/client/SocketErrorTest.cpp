@@ -14,10 +14,8 @@
  */
 
 #include <gtest/gtest.h>
-#include <iostream>
-#include <string>
 
-#include "secure_data.h"
+#include "socket_error.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -25,7 +23,7 @@ namespace {
 using namespace testing::ext;
 } // namespace
 
-class SecureDataTest : public testing::Test {
+class SocketErrorTest : public testing::Test {
 public:
     static void SetUpTestCase() {}
 
@@ -36,21 +34,22 @@ public:
     virtual void TearDown() {}
 };
 
-HWTEST_F(SecureDataTest, stringData, TestSize.Level2)
+HWTEST_F(SocketErrorTest, MakeErrorStringTest, TestSize.Level2)
 {
-    std::string testString = "Secure Data string Test";
-    SecureData structureData(testString);
-    EXPECT_STREQ(structureData.Data(), "Secure Data string Test");
+    std::string errorMsg = MakeErrnoString();
+    ASSERT_FALSE(errorMsg.empty());
+}
 
-    SecureData copyData = structureData;
-    EXPECT_STREQ(copyData.Data(), "Secure Data string Test");
+HWTEST_F(SocketErrorTest, MakeSSLErrorStringTest001, TestSize.Level2)
+{
+    std::string errorMsg = MakeSSLErrorString(TLSSOCKET_ERROR_SSL_NULL);
+    EXPECT_STREQ(errorMsg.data(), "ssl is null");
+}
 
-    SecureData equalData;
-    equalData = structureData;
-    EXPECT_STREQ(equalData.Data(), "Secure Data string Test");
-
-    SecureData defaultData;
-    EXPECT_EQ(defaultData.Length(), 0);
+HWTEST_F(SocketErrorTest, MakeSSLErrorStringTest002, TestSize.Level2)
+{
+    std::string errorMsg = MakeSSLErrorString(TLSSOCKET_ERROR_PARAM_INVALID);
+    EXPECT_FALSE(errorMsg.empty());
 }
 } // namespace NetStack
 } // namespace OHOS
