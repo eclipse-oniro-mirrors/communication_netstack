@@ -19,6 +19,7 @@
 #include <initializer_list>
 #include <new>
 #include <string>
+#include <functional>
 
 #include "event_manager.h"
 #include "netstack_log.h"
@@ -152,7 +153,7 @@ napi_value NewInstance(napi_env env, napi_callback_info info, const std::string 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, jsConstructor, 0, nullptr, &result));
 
-    auto manager = new EventManager();
+    auto manager = new EventManager(result);
     napi_wrap(env, result, reinterpret_cast<void *>(manager), finalizer, nullptr, nullptr);
 
     return result;
