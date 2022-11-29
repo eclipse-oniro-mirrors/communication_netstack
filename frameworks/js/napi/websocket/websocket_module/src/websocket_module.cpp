@@ -57,6 +57,10 @@ void WebSocketModule::InitWebSocketProperties(napi_env env, napi_value exports)
 void WebSocketModule::FinalizeWebSocketInstance(napi_env env, void *data, void *hint)
 {
     NETSTACK_LOGI("websocket handle is finalized");
+    auto manager = reinterpret_cast<EventManager *>(data);
+    if (manager != nullptr) {
+        EventManager::DeleteThisValFromSet(manager->GetThisVal());
+    }
 }
 
 napi_value WebSocketModule::WebSocket::Connect(napi_env env, napi_callback_info info)
