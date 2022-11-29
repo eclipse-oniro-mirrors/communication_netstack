@@ -40,7 +40,10 @@ static constexpr const char *PROTOCOL_TLSV12 = "TLSv12";
 
 void Finalize(napi_env, void *data, void *)
 {
-    (void)data;
+    auto manager = reinterpret_cast<EventManager *>(data);
+    if (manager != nullptr) {
+        EventManager::DeleteThisValFromSet(manager->GetThisVal());
+    }
 }
 } // namespace
 
