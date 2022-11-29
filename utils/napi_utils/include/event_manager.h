@@ -21,6 +21,7 @@
 #include <mutex>
 #include <string>
 #include <utility>
+#include <set>
 
 #include "napi/native_api.h"
 #include "event_listener.h"
@@ -29,7 +30,9 @@
 namespace OHOS::NetStack {
 class EventManager {
 public:
-    EventManager();
+    EventManager() = delete;
+
+    explicit EventManager(napi_value thisVal);
 
     void AddListener(napi_env env, const std::string &type, napi_value callback, bool once, bool asyncCallback);
 
@@ -47,12 +50,19 @@ public:
 
     void DeleteListener(const std::string &type);
 
+    [[nodiscard]] napi_value GetThisVal() const;
+
+    static void DeleteThisValFromSet(napi_value thisVal);
+
+    [[nodiscard]] bool IsManagerValid() const;
+
 private:
     std::mutex mutex_;
-
     std::list<EventListener> listeners_;
-
     void *data_;
+    napi_value thisVal_;
+    static std::mutex thisValSetMutex_;
+    static std::set<napi_value> thisValSet_;
 };
 
 struct UvWorkWrapper {

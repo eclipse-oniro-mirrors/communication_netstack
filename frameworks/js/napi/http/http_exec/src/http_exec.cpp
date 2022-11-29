@@ -186,7 +186,9 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         proxy.WriteResponseToCache(context->response);
     }
 
-    NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
+    if (context->GetManager()->IsManagerValid()) {
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
+    }
 }
 
 bool HttpExec::ExecRequest(RequestContext *context)
@@ -199,7 +201,9 @@ bool HttpExec::ExecRequest(RequestContext *context)
 
     if (!RequestWithoutCache(context)) {
         context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
-        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
+        if (context->GetManager()->IsManagerValid()) {
+            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
+        }
         return false;
     }
 

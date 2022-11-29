@@ -76,7 +76,7 @@ void ExecUdpBindFuzzTest(const uint8_t* data, size_t size)
     }
     setClobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    EventManager eventManager;
+    EventManager eventManager(nullptr);
     BindContext context(env, &eventManager);
 
     SocketExec::ExecUdpBind(&context);
@@ -89,7 +89,7 @@ void ExecTcpBindFuzzTest(const uint8_t* data, size_t size)
     }
     setClobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    EventManager eventManager;
+    EventManager eventManager(nullptr);
     BindContext context(env, &eventManager);
 
     SocketExec::ExecTcpBind(&context);
@@ -102,7 +102,7 @@ void ExecUdpSendFuzzTest(const uint8_t* data, size_t size)
     }
     setClobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    EventManager eventManager;
+    EventManager eventManager(nullptr);
     UdpSendContext context(env, &eventManager);
 
     SocketExec::ExecUdpSend(&context);
@@ -115,7 +115,7 @@ void ExecTcpSendFuzzTest(const uint8_t* data, size_t size)
     }
     setClobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    EventManager eventManager;
+    EventManager eventManager(nullptr);
     TcpSendContext context(env, &eventManager);
 
     SocketExec::ExecTcpSend(&context);
@@ -128,7 +128,7 @@ void ExecConnectFuzzTest(const uint8_t* data, size_t size)
     }
     setClobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    EventManager eventManager;
+    EventManager eventManager(nullptr);
     ConnectContext context(env, &eventManager);
 
     SocketExec::ExecConnect(&context);
@@ -141,7 +141,7 @@ void ExecCloseFuzzTest(const uint8_t* data, size_t size)
     }
     setClobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    EventManager eventManager;
+    EventManager eventManager(nullptr);
     CloseContext context(env, &eventManager);
 
     SocketExec::ExecClose(&context);
@@ -154,7 +154,7 @@ void ExecGetStateFuzzTest(const uint8_t* data, size_t size)
     }
     setClobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    EventManager eventManager;
+    EventManager eventManager(nullptr);
     GetStateContext context(env, &eventManager);
 
     SocketExec::ExecGetState(&context);
@@ -167,7 +167,7 @@ void ExecGetRemoteAddressFuzzTest(const uint8_t* data, size_t size)
     }
     setClobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    EventManager eventManager;
+    EventManager eventManager(nullptr);
     GetRemoteAddressContext context(env, &eventManager);
 
     SocketExec::ExecGetRemoteAddress(&context);
@@ -180,7 +180,7 @@ void ExecTcpSetExtraOptionsFuzzTest(const uint8_t* data, size_t size)
     }
     setClobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    EventManager eventManager;
+    EventManager eventManager(nullptr);
     TcpSetExtraOptionsContext context(env, &eventManager);
 
     SocketExec::ExecTcpSetExtraOptions(&context);
@@ -193,7 +193,7 @@ void ExecUdpSetExtraOptionsFuzzTest(const uint8_t* data, size_t size)
     }
     setClobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    EventManager eventManager;
+    EventManager eventManager(nullptr);
     UdpSetExtraOptionsContext context(env, &eventManager);
 
     SocketExec::ExecUdpSetExtraOptions(&context);
