@@ -50,15 +50,15 @@ std::priority_queue<Task> g_taskExecutorQueue; /* NOLINT */
 
 std::priority_queue<Task> g_taskCallbackQueue; /* NOLINT */
 
-std::mutex EXEC_MUTEX;
+std::mutex g_execMutex;
 
-std::mutex CALLBACK_MUTEX;
+std::mutex g_callbackMutex;
 
 void Executor(napi_env env, void *data)
 {
     Task task;
     do {
-        std::lock_guard<std::mutex> lock(EXEC_MUTEX);
+        std::lock_guard<std::mutex> lock(g_execMutex);
 
         if (g_taskExecutorQueue.empty()) {
             NETSTACK_LOGI("g_taskExecutorQueue is empty");
@@ -74,7 +74,7 @@ void Executor(napi_env env, void *data)
         task.executor(env, task.data);
     }
 
-    std::lock_guard<std::mutex> lock(CALLBACK_MUTEX);
+    std::lock_guard<std::mutex> lock(g_callbackMutex);
     g_taskCallbackQueue.push(task);
 }
 
@@ -93,7 +93,7 @@ void Callback(napi_env env, napi_status status, void *data)
 
     Task task;
     do {
-        std::lock_guard<std::mutex> lock(CALLBACK_MUTEX);
+        std::lock_guard<std::mutex> lock(g_callbackMutex);
 
         if (g_taskCallbackQueue.empty()) {
             NETSTACK_LOGI("g_taskCallbackQueue is empty");
@@ -110,7 +110,7 @@ void Callback(napi_env env, napi_status status, void *data)
 
 void PushTask(TaskPriority priority, AsyncWorkExecutor executor, AsyncWorkCallback callback, void *data)
 {
-    std::lock_guard<std::mutex> lock(EXEC_MUTEX);
+    std::lock_guard<std::mutex> lock(g_execMutex);
 
     g_taskExecutorQueue.push(Task(priority, executor, callback, data));
 }

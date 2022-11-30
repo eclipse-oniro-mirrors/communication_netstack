@@ -31,12 +31,12 @@ static constexpr const char *CACHE_FILE = "/data/storage/el2/base/cache/cache.js
 static constexpr int32_t WRITE_INTERVAL = 60;
 
 namespace OHOS::NetStack {
-std::mutex DISK_CACHE_MUTEX;
-std::mutex CACHE_NEED_RUN_MUTEX;
-std::atomic_bool CACHE_NEED_RUN(false);
-std::atomic_bool CACHE_IS_RUNNING(false);
-std::condition_variable CACHE_THREAD_CONDITION;
-std::condition_variable CACHE_NEED_RUN_CONDITION;
+std::mutex g_diskCacheMutex;
+std::mutex g_cacheNeedRunMutex;
+std::atomic_bool g_cacheNeedRun(false);
+std::atomic_bool g_cacheIsRunning(false);
+std::condition_variable g_cacheThreadCondition;
+std::condition_variable g_cacheNeedRunCondition;
 static LRUCacheDiskHandler DISK_LRU_CACHE(CACHE_FILE, 0); // NOLINT(cert-err58-cpp)
 
 CacheProxy::CacheProxy(HttpRequestOptions &requestOptions) : strategy_(requestOptions)
@@ -52,7 +52,7 @@ CacheProxy::CacheProxy(HttpRequestOptions &requestOptions) : strategy_(requestOp
 
 bool CacheProxy::ReadResponseFromCache(RequestContext *context)
 {
-    if (!CACHE_IS_RUNNING.load()) {
+    if (!g_cacheIsRunning.load()) {
         return false;
     }
 
@@ -92,7 +92,7 @@ bool CacheProxy::ReadResponseFromCache(RequestContext *context)
 
 void CacheProxy::WriteResponseToCache(const HttpResponse &response)
 {
-    if (!CACHE_IS_RUNNING.load()) {
+    if (!g_cacheIsRunning.load()) {
         return;
     }
 
@@ -117,33 +117,33 @@ void CacheProxy::RunCache()
 
 void CacheProxy::RunCacheWithSize(size_t capacity)
 {
-    if (CACHE_IS_RUNNING.load()) {
+    if (g_cacheIsRunning.load()) {
         return;
     }
     DISK_LRU_CACHE.SetCapacity(capacity);
 
-    CACHE_NEED_RUN.store(true);
+    g_cacheNeedRun.store(true);
 
     DISK_LRU_CACHE.ReadCacheFromJsonFile();
 
     std::thread([]() {
-        CACHE_IS_RUNNING.store(true);
-        while (CACHE_NEED_RUN.load()) {
-            std::unique_lock<std::mutex> lock(CACHE_NEED_RUN_MUTEX);
-            CACHE_NEED_RUN_CONDITION.wait_for(lock, std::chrono::seconds(WRITE_INTERVAL),
-                                              [] { return !CACHE_NEED_RUN.load(); });
+        g_cacheIsRunning.store(true);
+        while (g_cacheNeedRun.load()) {
+            std::unique_lock<std::mutex> lock(g_cacheNeedRunMutex);
+            g_cacheNeedRunCondition.wait_for(lock, std::chrono::seconds(WRITE_INTERVAL),
+                                             [] { return !g_cacheNeedRun.load(); });
 
             DISK_LRU_CACHE.WriteCacheToJsonFile();
         }
 
-        CACHE_IS_RUNNING.store(false);
-        CACHE_THREAD_CONDITION.notify_all();
+        g_cacheIsRunning.store(false);
+        g_cacheThreadCondition.notify_all();
     }).detach();
 }
 
 void CacheProxy::FlushCache()
 {
-    if (!CACHE_IS_RUNNING.load()) {
+    if (!g_cacheIsRunning.load()) {
         return;
     }
     DISK_LRU_CACHE.WriteCacheToJsonFile();
@@ -151,14 +151,14 @@ void CacheProxy::FlushCache()
 
 void CacheProxy::StopCacheAndDelete()
 {
-    if (!CACHE_IS_RUNNING.load()) {
+    if (!g_cacheIsRunning.load()) {
         return;
     }
-    CACHE_NEED_RUN.store(false);
-    CACHE_NEED_RUN_CONDITION.notify_all();
+    g_cacheNeedRun.store(false);
+    g_cacheNeedRunCondition.notify_all();
 
-    std::unique_lock<std::mutex> lock(DISK_CACHE_MUTEX);
-    CACHE_THREAD_CONDITION.wait(lock, [] { return !CACHE_IS_RUNNING.load(); });
+    std::unique_lock<std::mutex> lock(g_diskCacheMutex);
+    g_cacheThreadCondition.wait(lock, [] { return !g_cacheIsRunning.load(); });
     DISK_LRU_CACHE.Delete();
 }
 } // namespace OHOS::NetStack

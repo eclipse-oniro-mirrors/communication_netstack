@@ -90,7 +90,6 @@ void TLSKey::DecodeData(const SecureData &data, KeyAlgorithm algorithm, const Se
         return;
     }
     rsa_ = PEM_read_bio_RSAPrivateKey(bio, nullptr, nullptr, nullptr);
-
     if (rsa_) {
         keyIsNull_ = false;
     }
