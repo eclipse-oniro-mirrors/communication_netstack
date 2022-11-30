@@ -57,8 +57,8 @@ struct MessageData {
     SocketRemoteInfo remoteInfo;
 };
 
-static void
-    SetIsBound(sa_family_t family, GetStateContext *context, const sockaddr_in *addr4, const sockaddr_in6 *addr6)
+static void SetIsBound(sa_family_t family, GetStateContext *context, const sockaddr_in *addr4,
+                       const sockaddr_in6 *addr6)
 {
     if (family == AF_INET) {
         context->state_.SetIsBound(ntohs(addr4->sin_port) != 0);
@@ -67,8 +67,8 @@ static void
     }
 }
 
-static void
-    SetIsConnected(sa_family_t family, GetStateContext *context, const sockaddr_in *addr4, const sockaddr_in6 *addr6)
+static void SetIsConnected(sa_family_t family, GetStateContext *context, const sockaddr_in *addr4,
+                           const sockaddr_in6 *addr6)
 {
     if (family == AF_INET) {
         context->state_.SetIsConnected(ntohs(addr4->sin_port) != 0);
@@ -212,7 +212,7 @@ public:
 
     virtual void OnError(int err) const = 0;
 
-    virtual void OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const = 0;
+    virtual bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const = 0;
 
 protected:
     EventManager *manager_;
@@ -231,7 +231,7 @@ public:
         manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
     }
 
-    void OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const override
+    bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const override
     {
         (void)addr;
 
@@ -239,7 +239,7 @@ public:
         socklen_t len = sizeof(family);
         int ret = getsockname(sock, reinterpret_cast<sockaddr *>(&family), &len);
         if (ret < 0) {
-            return;
+            return false;
         }
 
         if (family == AF_INET) {
@@ -248,21 +248,22 @@ public:
 
             ret = getpeername(sock, reinterpret_cast<sockaddr *>(&addr4), &len4);
             if (ret < 0) {
-                return;
+                return false;
             }
             OnRecvMessage(manager_, data, dataLen, reinterpret_cast<sockaddr *>(&addr4));
-            return;
+            return true;
         } else if (family == AF_INET6) {
             sockaddr_in6 addr6 = {0};
             socklen_t len6 = sizeof(sockaddr_in6);
 
             ret = getpeername(sock, reinterpret_cast<sockaddr *>(&addr6), &len6);
             if (ret < 0) {
-                return;
+                return false;
             }
             OnRecvMessage(manager_, data, dataLen, reinterpret_cast<sockaddr *>(&addr6));
-            return;
+            return true;
         }
+        return false;
     }
 };
 
@@ -279,9 +280,10 @@ public:
         manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
     }
 
-    void OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const override
+    bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const override
     {
         OnRecvMessage(manager_, data, dataLen, addr);
+        return true;
     }
 };
 
@@ -414,8 +416,9 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             callback.OnError(NO_MEMORY);
             return;
         }
-        NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(data, recvLen, buf.get(), recvLen));
-        callback.OnMessage(sock, data, recvLen, addr);
+        if (memcpy_s(data, recvLen, buf.get(), recvLen) != EOK || !callback.OnMessage(sock, data, recvLen, addr)) {
+            free(data);
+        }
     }
 }
 
