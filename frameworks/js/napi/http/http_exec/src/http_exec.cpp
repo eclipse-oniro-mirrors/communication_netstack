@@ -240,7 +240,10 @@ napi_value HttpExec::RequestCallback(RequestContext *context)
         auto body = context->response.GetResult();
         napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);
         if (data != nullptr && arrayBuffer != nullptr) {
-            (void)memcpy_s(data, body.size(), body.c_str(), body.size());
+            if (memcpy_s(data, body.size(), body.c_str(), body.size()) != EOK) {
+                NETSTACK_LOGE("memcpy_s failed!");
+                return object;
+            }
             NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT, arrayBuffer);
         }
         NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
