@@ -25,13 +25,18 @@ SecureData::SecureData() : data_(std::make_unique<char[]>(0)) {}
 
 SecureData::~SecureData()
 {
-    (void)memset_s(data_.get(), length_, 0, length_);
+    if (memset_s(data_.get(), length_, 0, length_) != EOK) {
+        NETSTACK_LOGE("memcpy_s failed!");
+    }
 }
 
 SecureData::SecureData(const std::string &secureData)
     : length_(secureData.length()), data_(std::make_unique<char[]>(length_ + 1))
 {
-    (void)memcpy_s(data_.get(), length_, secureData.c_str(), length_);
+    if (memcpy_s(data_.get(), length_, secureData.c_str(), length_) != EOK) {
+        NETSTACK_LOGE("memcpy_s failed!");
+        return;
+    }
     data_[length_] = '\0';
 }
 
@@ -45,8 +50,11 @@ SecureData &SecureData::operator=(const SecureData &secureData)
     if (this != &secureData) {
         length_ = secureData.Length();
         data_ = std::make_unique<char[]>(length_ + 1);
-        (void)memcpy_s(data_.get(), length_, secureData.Data(), length_);
-        data_[length_] = '\0';
+        if (memcpy_s(data_.get(), length_, secureData.Data(), length_) != EOK) {
+            NETSTACK_LOGE("memcpy_s failed!");
+        } else {
+            data_[length_] = '\0';
+        }
     }
     return *this;
 }

@@ -39,6 +39,7 @@ constexpr int COMMON_NAME_BUF_SIZE = 256;
 constexpr int BUF_SIZE = 2048;
 constexpr int SSL_RET_CODE = 0;
 constexpr int SSL_ERROR_RETURN = -1;
+constexpr int OFFSET = 2;
 constexpr const char *SPLIT_ALT_NAMES = ",";
 constexpr const char *SPLIT_HOST_NAME = ".";
 constexpr const char *PROTOCOL_UNKNOW = "UNKNOW_PROTOCOL";
@@ -78,7 +79,6 @@ std::vector<std::string> SplitEscapedAltNames(std::string &altNames)
     std::vector<std::string> result;
     std::string currentToken;
     size_t offset = 0;
-    constexpr int OFFSET = 2;
     while (offset != altNames.length()) {
         auto nextSep = altNames.find_first_of(", ");
         auto nextQuote = altNames.find_first_of('\"');
