@@ -17,11 +17,12 @@ group("unittest") {
   testonly = true
   deps = [
     "client:secure_data_unittest",
-    "client:tls_socket_certchain_unittest",
-    "client:tls_socket_unittest",
     "client:socket_error_unittest",
     "client:tls_cert_test",
     "client:tls_configuration_test",
     "client:tls_key_test",
+    "client:tls_socket_branch_test",
+    "client:tls_socket_certchain_unittest",
+    "client:tls_socket_unittest",
   ]
 }
