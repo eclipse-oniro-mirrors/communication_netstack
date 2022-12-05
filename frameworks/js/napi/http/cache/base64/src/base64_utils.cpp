@@ -22,8 +22,8 @@ static std::string BASE64_CHARS = /* NOLINT */
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789+/";
 
-static constexpr const int CHAR_ARRAY_LENGTH_THREE = 3;
-static constexpr const int CHAR_ARRAY_LENGTH_FOUR = 4;
+static constexpr const uint32_t CHAR_ARRAY_LENGTH_THREE = 3;
+static constexpr const uint32_t CHAR_ARRAY_LENGTH_FOUR = 4;
 
 enum BASE64_ENCODE_CONSTANT : uint8_t {
     BASE64_ENCODE_MASK1 = 0xfc,
