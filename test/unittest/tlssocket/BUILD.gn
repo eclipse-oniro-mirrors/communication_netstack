@@ -24,6 +24,7 @@ group("unittest") {
     "client:tls_configuration_test",
     "client:tls_context_test",
     "client:tls_key_test",
+    "client:tls_socket_branch_test",
     "client:tls_socket_unilateral_connection",
     "client:two_way_tls_socket_certchain_unittest",
     "client:two_way_tls_socket_unittest",
