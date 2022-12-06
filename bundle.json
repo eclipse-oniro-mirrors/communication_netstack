@@ -61,7 +61,8 @@
             "test": [
                 "//foundation/communication/netstack/test/fuzztest/socket:fuzztest",
                 "//foundation/communication/netstack/test/unittest/http/cache:unittest",
-                "//foundation/communication/netstack/test/unittest/tlssocket:unittest"
+                "//foundation/communication/netstack/test/unittest/tlssocket:unittest",
+                "//foundation/communication/netstack/test/unittest/utils/common_utils:unittest"
             ]
         }
     }
