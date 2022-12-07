@@ -30,17 +30,20 @@ static constexpr const int PARAM_URL_AND_OPTIONS_OR_CALLBACK = 2;
 static constexpr const int PARAM_URL_AND_OPTIONS_AND_CALLBACK = 3;
 
 namespace OHOS::NetStack {
-static std::map<RequestContext *, napi_env> ENV_MAP;
+std::map<RequestContext *, napi_env> RequestContext::envMap_;
+std::mutex RequestContext::envMutex_;
 
 RequestContext::RequestContext(napi_env env, EventManager *manager)
     : BaseContext(env, manager), usingCache_(true), curlHeaderList_(nullptr)
 {
-    ENV_MAP[this] = env;
+    std::lock_guard guard(envMutex_);
+    envMap_[this] = env;
 }
 
 napi_env RequestContext::GetEnv()
 {
-    return ENV_MAP[this];
+    std::lock_guard guard(envMutex_);
+    return envMap_[this];
 }
 
 void RequestContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -297,9 +300,10 @@ RequestContext::~RequestContext()
     if (curlHeaderList_ != nullptr) {
         curl_slist_free_all(curlHeaderList_);
     }
-    auto it = ENV_MAP.find(this);
-    if (it != ENV_MAP.end()) {
-        ENV_MAP.erase(it);
+    std::lock_guard guard(envMutex_);
+    auto it = envMap_.find(this);
+    if (it != envMap_.end()) {
+        envMap_.erase(it);
     }
 }
 
