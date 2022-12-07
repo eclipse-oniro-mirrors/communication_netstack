@@ -66,6 +66,9 @@ private:
     bool GetRequestBody(napi_value extraData);
 
     void UrlAndOptions(napi_value urlValue, napi_value optionsValue);
+
+    static std::map<RequestContext *, napi_env> envMap_;
+    static std::mutex envMutex_;
 };
 } // namespace OHOS::NetStack
 
