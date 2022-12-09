@@ -24,7 +24,7 @@ namespace {
 const std::string TEST_TEXT[] = {
     "We are supporting a community where more than 28 million* people learn, share, and work together "
     "to build software. ",
-    "这是一段用来测试的文本，现在说的都是废话，其实你不用看内容到底是什么，如果你看完了，那么恭喜你浪费了十秒钟时间。",
+    "这是一段用来测试的文本，测试加密内容。",
     "\\C6y\\83u\\F9C\\8As\\C8\\D1j.\\CFi\\83\\E2#Z:\\FB \\A7m\\8B\\D9\\E5ܫ\\E4\\D7PMY\\D6\\CF\\F0"
     "É",
 };
