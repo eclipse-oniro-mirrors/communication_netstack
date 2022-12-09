@@ -36,12 +36,14 @@ ohos_unittest("http_cache_unittest") {
     "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/include",
     "$NETSTACK_NAPI_ROOT/http/constant/include",
     "$NETSTACK_NAPI_ROOT/http/options/include",
+    "$NETSTACK_NAPI_ROOT/http/cache/base64/include",
   ]
   include_dirs += utils_include
 
   external_deps = common_external_deps
 
   sources = [
+    "$NETSTACK_NAPI_ROOT/http/cache/base64/src/base64_utils.cpp",
     "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_cache_request.cpp",
     "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_cache_response.cpp",
     "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_cache_strategy.cpp",
@@ -50,6 +52,7 @@ ohos_unittest("http_cache_unittest") {
     "$NETSTACK_NAPI_ROOT/http/options/src/http_request_options.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_response.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
+    "Base64Test.cpp",
     "HttpCacheStrategyTest.cpp",
   ]
 
