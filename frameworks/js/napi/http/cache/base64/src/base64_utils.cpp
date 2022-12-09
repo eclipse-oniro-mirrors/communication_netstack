@@ -15,6 +15,8 @@
 
 #include "base64_utils.h"
 
+#include <array>
+
 namespace OHOS::NetStack::Base64 {
 #ifdef __linux__
 static std::string BASE64_CHARS = /* NOLINT */
@@ -59,8 +61,8 @@ static inline bool IsBase64Char(const char c)
     return (isalnum(c) || (c == '+') || (c == '/'));
 }
 
-static inline void MakeCharFour(const uint8_t charArrayThree[CHAR_ARRAY_LENGTH_THREE],
-                                uint8_t charArrayFour[CHAR_ARRAY_LENGTH_FOUR])
+static inline void MakeCharFour(const std::array<uint8_t, CHAR_ARRAY_LENGTH_THREE> &charArrayThree,
+                                std::array<uint8_t, CHAR_ARRAY_LENGTH_FOUR> &charArrayFour)
 {
     uint8_t table[CHAR_ARRAY_LENGTH_FOUR] = {
         static_cast<uint8_t>((charArrayThree[BASE64_ENCODE_INDEX0] & BASE64_ENCODE_MASK1) >> BASE64_ENCODE_OFFSET2),
@@ -75,8 +77,8 @@ static inline void MakeCharFour(const uint8_t charArrayThree[CHAR_ARRAY_LENGTH_T
     }
 }
 
-static inline void MakeCharTree(const uint8_t charArrayFour[CHAR_ARRAY_LENGTH_FOUR],
-                                uint8_t charArrayThree[CHAR_ARRAY_LENGTH_THREE])
+static inline void MakeCharTree(const std::array<uint8_t, CHAR_ARRAY_LENGTH_FOUR> &charArrayFour,
+                                std::array<uint8_t, CHAR_ARRAY_LENGTH_THREE> &charArrayThree)
 {
     uint8_t table[CHAR_ARRAY_LENGTH_THREE] = {
         static_cast<uint8_t>((charArrayFour[BASE64_DECODE_INDEX0] << BASE64_DECODE_OFFSET2) +
@@ -99,8 +101,8 @@ std::string Encode(const std::string &source)
     auto it = source.begin();
     std::string ret;
     size_t index = 0;
-    uint8_t charArrayThree[CHAR_ARRAY_LENGTH_THREE] = {0};
-    uint8_t charArrayFour[CHAR_ARRAY_LENGTH_FOUR] = {0};
+    std::array<uint8_t, CHAR_ARRAY_LENGTH_THREE> charArrayThree = {0};
+    std::array<uint8_t, CHAR_ARRAY_LENGTH_FOUR> charArrayFour = {0};
 
     while (it != source.end()) {
         charArrayThree[index] = *it;
@@ -124,7 +126,7 @@ std::string Encode(const std::string &source)
     }
     MakeCharFour(charArrayThree, charArrayFour);
 
-    for (auto i = 0; i < index + 1; ++i) {
+    for (size_t i = 0; i < index + 1; ++i) {
         ret += BASE64_CHARS[charArrayFour[i]];
     }
 
@@ -143,8 +145,8 @@ std::string Decode(const std::string &encoded)
 #ifdef __linux__
     auto it = encoded.begin();
     size_t index = 0;
-    uint8_t charArrayFour[CHAR_ARRAY_LENGTH_FOUR] = {0};
-    uint8_t charArrayThree[CHAR_ARRAY_LENGTH_THREE] = {0};
+    std::array<uint8_t, CHAR_ARRAY_LENGTH_THREE> charArrayThree = {0};
+    std::array<uint8_t, CHAR_ARRAY_LENGTH_FOUR> charArrayFour = {0};
     std::string ret;
 
     while (it != encoded.end() && IsBase64Char(*it)) {

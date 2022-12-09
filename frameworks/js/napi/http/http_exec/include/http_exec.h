@@ -88,6 +88,8 @@ private:
 
     static void HandleCurlData(CURLMsg *msg);
 
+    static void HandleData();
+
     static bool GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURLMSG curlMsg, CURLcode result);
 
     static std::mutex mutex_;
