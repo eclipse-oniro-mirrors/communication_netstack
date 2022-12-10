@@ -15,9 +15,9 @@
 
 #include "base_context.h"
 
+#include "event_manager.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
-#include "event_manager.h"
 #include "napi_utils.h"
 #include "node_api.h"
 
@@ -25,6 +25,7 @@ namespace OHOS::NetStack {
 BaseContext::BaseContext(napi_env env, EventManager *manager)
     : manager_(manager),
       env_(env),
+      ref_(nullptr),
       parseOK_(false),
       requestOK_(false),
       errorCode_(0),
@@ -198,5 +199,19 @@ void BaseContext::SetNeedThrowException(bool needThrowException)
 bool BaseContext::IsNeedThrowException() const
 {
     return needThrowException_;
+}
+
+void BaseContext::CreateReference(napi_value value)
+{
+    if (env_ != nullptr && value != nullptr) {
+        ref_ = NapiUtils::CreateReference(env_, value);
+    }
+}
+
+void BaseContext::DeleteReference()
+{
+    if (env_ != nullptr && ref_ != nullptr) {
+        NapiUtils::DeleteReference(env_, ref_);
+    }
 }
 } // namespace OHOS::NetStack
