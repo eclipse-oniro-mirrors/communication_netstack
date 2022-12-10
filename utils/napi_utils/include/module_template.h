@@ -68,6 +68,7 @@ napi_value Interface(napi_env env, napi_callback_info info, const std::string &a
         }
     }
 
+    context->CreateReference(thisVal);
     context->CreateAsyncWork(asyncWorkName, executor, callback);
     if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
         NETSTACK_LOGI("context->CreatePromise()");
@@ -101,6 +102,7 @@ napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
             NETSTACK_LOGE("work failed error code = %{public}d", context->GetErrorCode());
         }
     }
+    context->CreateReference(thisVal);
     return ret;
 }
 

@@ -88,6 +88,10 @@ public:
 
     [[nodiscard]] EventManager *GetManager() const;
 
+    void CreateReference(napi_value value);
+
+    void DeleteReference();
+
     virtual void ParseParams(napi_value *params, size_t paramsCount);
 
 protected:
@@ -95,6 +99,8 @@ protected:
 
 private:
     napi_env env_;
+
+    napi_ref ref_;
 
     bool parseOK_;
 
