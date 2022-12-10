@@ -99,6 +99,10 @@ private:
 
     static void RunThread();
 
+    static void SendRequest();
+
+    static void ReadRespond();
+
     struct StaticVariable {
         StaticVariable() : curlMulti(nullptr), initialized(false), runThread(true) {}
 

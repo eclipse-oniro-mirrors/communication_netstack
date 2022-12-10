@@ -307,39 +307,43 @@ bool HttpExec::EncodeUrlParam(std::string &str)
 void HttpExec::RunThread()
 {
     while (staticVariable_.runThread && staticVariable_.curlMulti != nullptr) {
-        {
-            std::lock_guard guard(staticVariable_.curlMultiMutex);
-            for (int i = 0; i < CURL_HANDLE_NUM; ++i) {
-                if (!staticVariable_.runThread || staticVariable_.curlMulti == nullptr) {
-                    break;
-                }
-                int runningHandle;
-                (void)curl_multi_perform(staticVariable_.curlMulti, &runningHandle);
-                if (runningHandle <= 0) {
-                    break;
-                }
-            }
-        }
-
-        {
-            std::lock_guard guard(staticVariable_.curlMultiMutex);
-            for (int i = 0; i < CURL_HANDLE_NUM; ++i) {
-                if (!staticVariable_.runThread || staticVariable_.curlMulti == nullptr) {
-                    break;
-                }
-                int leftMsg;
-                CURLMsg *msg = curl_multi_info_read(staticVariable_.curlMulti, &leftMsg);
-                if (msg != nullptr) {
-                    HttpExec::HandleCurlData(msg);
-                    if (msg->easy_handle != nullptr) {
-                        (void)curl_multi_remove_handle(staticVariable_.curlMulti, msg->easy_handle);
-                        (void)curl_easy_cleanup(msg->easy_handle);
-                    }
-                }
-            }
-        }
-
+        HttpExec::SendRequest();
+        HttpExec::ReadRespond();
         std::this_thread::sleep_for(std::chrono::milliseconds(CURL_TIMEOUT_MS));
+    }
+}
+
+void HttpExec::SendRequest()
+{
+    std::lock_guard guard(staticVariable_.curlMultiMutex);
+    for (int i = 0; i < CURL_HANDLE_NUM; ++i) {
+        if (!staticVariable_.runThread || staticVariable_.curlMulti == nullptr) {
+            break;
+        }
+        int runningHandle;
+        (void)curl_multi_perform(staticVariable_.curlMulti, &runningHandle);
+        if (runningHandle <= 0) {
+            break;
+        }
+    }
+}
+
+void HttpExec::ReadRespond()
+{
+    std::lock_guard guard(staticVariable_.curlMultiMutex);
+    for (int i = 0; i < CURL_HANDLE_NUM; ++i) {
+        if (!staticVariable_.runThread || staticVariable_.curlMulti == nullptr) {
+            break;
+        }
+        int leftMsg;
+        CURLMsg *msg = curl_multi_info_read(staticVariable_.curlMulti, &leftMsg);
+        if (msg != nullptr) {
+            HttpExec::HandleCurlData(msg);
+            if (msg->easy_handle != nullptr) {
+                (void)curl_multi_remove_handle(staticVariable_.curlMulti, msg->easy_handle);
+                (void)curl_easy_cleanup(msg->easy_handle);
+            }
+        }
     }
 }
 
