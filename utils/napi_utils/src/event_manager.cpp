@@ -22,34 +22,16 @@ static constexpr const int CALLBACK_PARAM_NUM = 1;
 
 static constexpr const int ASYNC_CALLBACK_PARAM_NUM = 2;
 
-std::mutex EventManager::thisValSetMutex_;
-std::set<napi_value> EventManager::thisValSet_;
-
-EventManager::EventManager(napi_value thisVal) : data_(nullptr), thisVal_(thisVal)
-{
-    std::lock_guard guard(thisValSetMutex_);
-    thisValSet_.insert(thisVal);
-}
+EventManager::EventManager() : data_(nullptr), isValid_(true) {}
 
 bool EventManager::IsManagerValid() const
 {
-    std::lock_guard guard(thisValSetMutex_);
-    auto it = thisValSet_.find(thisVal_);
-    return it != thisValSet_.end();
+    return isValid_;
 }
 
-void EventManager::DeleteThisValFromSet(napi_value thisVal)
+void EventManager::SetInvalid()
 {
-    std::lock_guard guard(thisValSetMutex_);
-    auto it = thisValSet_.find(thisVal);
-    if (it != thisValSet_.end()) {
-        thisValSet_.erase(it);
-    }
-}
-
-napi_value EventManager::GetThisVal() const
-{
-    return thisVal_;
+    isValid_ = false;
 }
 
 void EventManager::AddListener(napi_env env, const std::string &type, napi_value callback, bool once,
