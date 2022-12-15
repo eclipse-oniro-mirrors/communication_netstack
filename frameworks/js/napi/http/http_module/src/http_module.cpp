@@ -20,8 +20,9 @@
 #include "event_list.h"
 #include "http_async_work.h"
 #include "http_exec.h"
-#include "netstack_log.h"
+
 #include "module_template.h"
+#include "netstack_log.h"
 
 #define DECLARE_RESPONSE_CODE(code) \
     DECLARE_NAPI_STATIC_PROPERTY(#code, NapiUtils::CreateUint32(env, static_cast<uint32_t>(ResponseCode::code)))
@@ -58,7 +59,7 @@ napi_value HttpModuleExports::CreateHttp(napi_env env, napi_callback_info info)
         NETSTACK_LOGI("http request handle is finalized");
         auto manager = reinterpret_cast<EventManager *>(data);
         if (manager != nullptr) {
-            EventManager::DeleteThisValFromSet(manager->GetThisVal());
+            manager->SetInvalid();
         }
     });
 }

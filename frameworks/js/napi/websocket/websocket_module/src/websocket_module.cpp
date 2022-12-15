@@ -59,7 +59,7 @@ void WebSocketModule::FinalizeWebSocketInstance(napi_env env, void *data, void *
     NETSTACK_LOGI("websocket handle is finalized");
     auto manager = reinterpret_cast<EventManager *>(data);
     if (manager != nullptr) {
-        EventManager::DeleteThisValFromSet(manager->GetThisVal());
+        manager->SetInvalid();
     }
 }
 
