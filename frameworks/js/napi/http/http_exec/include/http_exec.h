@@ -16,10 +16,11 @@
 #ifndef COMMUNICATIONNETSTACK_HTTP_REQUEST_EXEC_H
 #define COMMUNICATIONNETSTACK_HTTP_REQUEST_EXEC_H
 
-#include <mutex>
-#include <vector>
 #include <atomic>
 #include <condition_variable>
+#include <mutex>
+#include <thread>
+#include <vector>
 
 #include "curl/curl.h"
 #include "napi/native_api.h"
@@ -63,6 +64,10 @@ public:
 
     static bool Initialize();
 
+    static bool IsInitialized();
+
+    static void DeInitialize();
+
 #ifndef MAC_PLATFORM
     static void AsyncRunRequest(RequestContext *context);
 #endif
@@ -92,16 +97,37 @@ private:
 
     static bool GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURLMSG curlMsg, CURLcode result);
 
-    static std::mutex mutex_;
-    static std::mutex curlMultiMutex_;
-    static CURLM *curlMulti_;
-    static std::map<CURL *, RequestContext *> contextMap_;
+    static void RunThread();
+
+    static void SendRequest();
+
+    static void ReadRespond();
+
+    struct StaticVariable {
+        StaticVariable() : curlMulti(nullptr), initialized(false), runThread(true) {}
+
+        ~StaticVariable()
+        {
+            if (HttpExec::IsInitialized()) {
+                HttpExec::DeInitialize();
+            }
+        }
+
+        std::mutex mutex;
+        std::mutex curlMultiMutex;
+        CURLM *curlMulti;
+        std::map<CURL *, RequestContext *> contextMap;
+        std::thread workThread;
 
 #ifndef MAC_PLATFORM
-    static std::atomic_bool initialized_;
+        std::atomic_bool initialized;
+        std::atomic_bool runThread;
 #else
-    static bool initialized_;
+        bool initialized;
+        bool runThread;
 #endif
+    };
+    static StaticVariable staticVariable_;
 };
 } // namespace OHOS::NetStack
 

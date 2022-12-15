@@ -62,7 +62,10 @@ public:
         if (status != napi_ok) {
             return;
         }
-        auto deleter = [](Context *context) { delete context; };
+        auto deleter = [](Context *context) {
+            context->DeleteReference();
+            delete context;
+        };
         std::unique_ptr<Context, decltype(deleter)> context(static_cast<Context *>(data), deleter);
         size_t argc = 2;
         napi_value argv[2] = {nullptr};
