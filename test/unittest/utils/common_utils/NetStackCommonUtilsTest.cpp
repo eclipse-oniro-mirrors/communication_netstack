@@ -14,7 +14,6 @@
  */
 
 #include <gtest/gtest.h>
-#include <iostream>
 
 #include "netstack_common_utils.h"
 
@@ -31,17 +30,17 @@ static constexpr const char *TEST_STR = "HOWDOYOUDO";
 static constexpr const char *TEST_LOWER_STR = "howdoyoudo";
 static constexpr const char *TEST_STR_SPLIT = "The,weather,is,fine,today";
 static constexpr const char *TEST_STR_THE = "The";
-static constexpr const char *TEST_STR_WEATHER = "The,weather,is,fine,today";
-static constexpr const char *TEST_STR_IS = "The,weather,is,fine,today";
-static constexpr const char *TEST_STR_FINE = "The,weather,is,fine,today";
-static constexpr const char *TEST_STR_TODAY = "The,weather,is,fine,today";
-static constexpr const int32_t SUB_STR_SIZE = 5;
+static constexpr const char *TEST_STR_WEATHER = "weather";
+static constexpr const char *TEST_STR_IS = "is";
+static constexpr const char *TEST_STR_FINE = "fine";
+static constexpr const char *TEST_STR_TODAY = "today";
+static constexpr const uint32_t SUB_STR_SIZE = 5;
 static constexpr const char *TEST_STR_STRIP = " The weather is fine today";
 static constexpr const char *STR_STRIP = "The weather is fine today";
 static constexpr const char *SPLIT_WITH_SIZE = "fine today";
-static constexpr const char *SPLIT_WITH_SIZE_FINE = "fine today";
-static constexpr const char *SPLIT_WITH_SIZE_TODAY = "fine today";
-static constexpr const int32_t SPLIT_SIZE = 2;
+static constexpr const char *SPLIT_WITH_SIZE_FINE = "fine";
+static constexpr const char *SPLIT_WITH_SIZE_TODAY = "today";
+static constexpr const uint32_t SPLIT_SIZE = 2;
 } // namespace
 
 class NetStackCommonUtilsTest : public testing::Test {
@@ -81,7 +80,7 @@ HWTEST_F(NetStackCommonUtilsTest, CommonUtils2, TestSize.Level2)
 
 HWTEST_F(NetStackCommonUtilsTest, CommonUtils3, TestSize.Level2)
 {
-    std::vector<std::string> strList = Split(SPLIT_WITH_SIZE, STATUS_LINE_SEP, STATUS_LINE_ELEM_NUM);;
+    std::vector<std::string> strList = Split(SPLIT_WITH_SIZE, STATUS_LINE_SEP, STATUS_LINE_ELEM_NUM);
 
     EXPECT_STREQ(strList[0].data(), SPLIT_WITH_SIZE_FINE);
     EXPECT_STREQ(strList[1].data(), SPLIT_WITH_SIZE_TODAY);
