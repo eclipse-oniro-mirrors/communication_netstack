@@ -17,8 +17,8 @@
 
 #include <securec.h>
 
-#include "tls_socket.h"
 #include "netstack_log.h"
+#include "tls_socket.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -60,13 +60,18 @@ void BindFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
+
+    g_baseFuzzData = data;
+    g_baseFuzzSize = size;
+    g_baseFuzzPos = 0;
+
     TLSSocket tlsSocket;
     NetAddress netAddress;
-    std::string str(reinterpret_cast<const char *>(data), size);
+    std::string str = GetStringFromData(STR_LEN);
     netAddress.SetAddress(str);
-    netAddress.SetFamilyByJsValue(*(reinterpret_cast<const uint32_t *>(data)));
-    netAddress.SetFamilyBySaFamily(*(reinterpret_cast<const sa_family_t *>(data)));
-    netAddress.SetPort(*(reinterpret_cast<const uint16_t *>(data)));
+    netAddress.SetFamilyByJsValue(GetData<uint32_t>());
+    netAddress.SetFamilyBySaFamily(GetData<sa_family_t>());
+    netAddress.SetPort(GetData<uint16_t>());
     tlsSocket.Bind(netAddress, [](bool ok) {
         NETSTACK_LOGD("Calback received");
     });
@@ -93,13 +98,18 @@ void ConnectFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
+
+    g_baseFuzzData = data;
+    g_baseFuzzSize = size;
+    g_baseFuzzPos = 0;
+
     TLSSocket tlsSocket;
     NetAddress netAddress;
-    std::string str(reinterpret_cast<const char *>(data), size);
+    std::string str = GetStringFromData(STR_LEN);
     netAddress.SetAddress(str);
-    netAddress.SetFamilyByJsValue(*(reinterpret_cast<const uint32_t *>(data)));
-    netAddress.SetFamilyBySaFamily(*(reinterpret_cast<const sa_family_t *>(data)));
-    netAddress.SetPort(*(reinterpret_cast<const uint16_t *>(data)));
+    netAddress.SetFamilyByJsValue(GetData<uint32_t>());
+    netAddress.SetFamilyBySaFamily(GetData<sa_family_t>());
+    netAddress.SetPort(GetData<uint16_t>());
     TLSConnectOptions options;
     options.SetNetAddress(netAddress);
     options.SetCheckServerIdentity([](const std::string &hostName, const std::vector<std::string> &x509Certificates) {
@@ -114,13 +124,12 @@ void ConnectFuzzTest(const uint8_t *data, size_t size)
 
 void SendFuzzTest(const uint8_t *data, size_t size)
 {
-    NETSTACK_LOGD("SendFuzzTest:enter");
     if ((data == nullptr) || (size == 0)) {
         return;
     }
     TLSSocket tlsSocket;
     TCPSendOptions options;
-    std::string str(reinterpret_cast<const char *>(data), size);
+    std::string str = GetStringFromData(STR_LEN);
     options.SetData(str);
     options.SetEncoding(str);
     tlsSocket.Send(options, [](bool ok) {
@@ -130,7 +139,6 @@ void SendFuzzTest(const uint8_t *data, size_t size)
 
 void SetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
 {
-    NETSTACK_LOGD("SetExtraOptionsFuzzTest:enter");
     if ((data == nullptr) || (size == 0)) {
         return;
     }
