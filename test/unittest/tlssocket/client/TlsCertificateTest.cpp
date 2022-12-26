@@ -16,7 +16,9 @@
 #include <gtest/gtest.h>
 #include <iostream>
 #include <string>
+#include <openssl/pem.h>
 
+#define private public
 #include "tls.h"
 #include "tls_certificate.h"
 
@@ -53,11 +55,11 @@ static char g_caCrtFile[] =
 "        Version: 3 (0x2)\r\n"
 "        Serial Number: 1 (0x1)\r\n"
 "        Signature Algorithm: sha256WithRSAEncryption\r\n"
-"        Issuer: C=CN, ST=beijing, O=Global Google CA Inc, OU=Root CA, CN=Global Google Root CA\r\n"
+"        Issuer: C=CN, ST=beijing, O=ahaha Inc, OU=Root CA, CN=ahaha CA\r\n"
 "        Validity\r\n"
 "            Not Before: Aug 23 07:33:55 2022 GMT\r\n"
 "            Not After : Aug 23 07:33:55 2023 GMT\r\n"
-"        Subject: C=CN, ST=beijing, O=Global Google CA Inc, OU=Root CA, CN=Global Google Root CA\r\n"
+"        Subject: C=CN, ST=beijing, O=ahaha Inc, OU=Root CA, CN=ahaha CA\r\n"
 "        Subject Public Key Info:\r\n"
 "            Public Key Algorithm: rsaEncryption\r\n"
 "                RSA Public-Key: (2048 bit)\r\n"
@@ -169,6 +171,32 @@ HWTEST_F(TlsCertificateTest, CaFromData, TestSize.Level2)
 {
     TLSCertificate tlsCertificate = TLSCertificate(g_caCrtFile, CA_CERT);
     bool isFilePath = tlsCertificate.CertificateFromData(g_caCrtFile, CA_CERT);
+
+    BIO *bio = BIO_new_mem_buf(g_caCrtFile, -1);
+    X509 *x509Ca = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    BIO_free(bio);
+    bool setLocalCertRawData = tlsCertificate.SetLocalCertRawData(x509Ca);
+    EXPECT_TRUE(setLocalCertRawData);
+    bool setX509Version = tlsCertificate.SetX509Version(x509Ca);
+    EXPECT_TRUE(setX509Version);
+    bool setSerialNumber = tlsCertificate.SetSerialNumber(x509Ca);
+    EXPECT_TRUE(setSerialNumber);
+    bool setNotValidTime = tlsCertificate.SetNotValidTime(x509Ca);
+    EXPECT_TRUE(setNotValidTime);
+    bool setSignatureAlgorithm = tlsCertificate.SetSignatureAlgorithm(x509Ca);
+    EXPECT_TRUE(setSignatureAlgorithm);
+    bool caCertToString = tlsCertificate.CaCertToString(x509Ca);
+    EXPECT_TRUE(caCertToString);
+    bool localCertToString = tlsCertificate.LocalCertToString(x509Ca);
+    EXPECT_TRUE(localCertToString);
+
+    BIO *bioCrt = BIO_new_mem_buf(g_clientFile, -1);
+    X509 *x509Crt = PEM_read_bio_X509(bioCrt, nullptr, nullptr, nullptr);
+    BIO_free(bioCrt);
+    bool analysisCert = tlsCertificate.AnalysisCertificate(CertType::LOCAL_CERT, x509Crt);
+    EXPECT_TRUE(analysisCert);
+    bool analysisCa = tlsCertificate.AnalysisCertificate(CertType::CA_CERT, x509Ca);
+    EXPECT_TRUE(analysisCa);
     EXPECT_EQ(isFilePath, true);
 }
 } // namespace NetStack
