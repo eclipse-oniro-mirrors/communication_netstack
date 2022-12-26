@@ -679,7 +679,6 @@ void TLSSocket::Connect(OHOS::NetStack::TLSConnectOptions &tlsConnectOptions,
         callback(resErr);
         return;
     }
-
     StartReadMessage();
     CallOnConnectCallback();
     callback(TLSSOCKET_SUCCESS);
