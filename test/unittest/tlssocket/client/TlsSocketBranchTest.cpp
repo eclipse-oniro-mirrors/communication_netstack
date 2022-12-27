@@ -16,20 +16,29 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
+#include <openssl/ssl.h>
+
+#define private public
 #include "tls_socket.h"
+#include "socket_remote_info.h"
 
 namespace OHOS {
 namespace NetStack {
 namespace {
 using namespace testing::ext;
 static constexpr const char *KEY_PASS = "";
-static constexpr const char *PROTOCOL_V_1_2 = "TLSv1.2";
-static constexpr const char *PROTOCOL_V_1_3 = "TLSv1.3";
+static constexpr const char *PROTOCOL12 = "TLSv1.2";
+static constexpr const char *PROTOCOL13 = "TLSv1.3";
 static constexpr const char *IP_ADDRESS = "127.0.0.1";
 static constexpr const char *ALPN_PROTOCOL = "http/1.1";
 static constexpr const char *SIGNATURE_ALGORITHM = "rsa_pss_rsae_sha256:ECDSA+SHA256";
 static constexpr const char *CIPHER_SUITE = "AES256-SHA256";
+static constexpr const char *SEND_DATA = "How do you do";
+static constexpr const char *SEND_DATA_EMPTY = "";
+static constexpr const size_t MAX_BUFFER_SIZE = 8192;
 const int PORT = 7838;
+const int SOCKET_FD = 5;
+const int SSL_ERROR_RETURN = -1;
 static char g_clientFile[] =
 "-----BEGIN CERTIFICATE-----\r\n"
 "MIIDezCCAmMCFD6h5R4QvySV9q9mC6s31qQFLX14MA0GCSqGSIb3DQEBCwUAMHgx\r\n"
@@ -59,11 +68,11 @@ static char g_caCrtFile[] =
 "        Version: 3 (0x2)\r\n"
 "        Serial Number: 1 (0x1)\r\n"
 "        Signature Algorithm: sha256WithRSAEncryption\r\n"
-"        Issuer: C=CN, ST=beijing, O=Global Google CA Inc, OU=Root CA, CN=Global Google Root CA\r\n"
+"        Issuer: C=CN, ST=beijing, O=ahaha Inc, OU=Root CA, CN=ahaha CA\r\n"
 "        Validity\r\n"
 "            Not Before: Aug 23 07:33:55 2022 GMT\r\n"
 "            Not After : Aug 23 07:33:55 2023 GMT\r\n"
-"        Subject: C=CN, ST=beijing, O=Global Google CA Inc, OU=Root CA, CN=Global Google Root CA\r\n"
+"        Subject: C=CN, ST=beijing, O=ahaha Inc, OU=Root CA, CN=ahaha CA\r\n"
 "        Subject Public Key Info:\r\n"
 "            Public Key Algorithm: rsaEncryption\r\n"
 "                RSA Public-Key: (2048 bit)\r\n"
@@ -166,16 +175,22 @@ TLSConnectOptions BaseOption()
     caChain.push_back(g_caCrtFile);
     secureOption.SetCaChain(caChain);
     secureOption.SetCert(g_clientFile);
+    secureOption.SetCipherSuite(CIPHER_SUITE);
+    secureOption.SetSignatureAlgorithms(SIGNATURE_ALGORITHM);
+    std::vector<std::string> protocol;
+    protocol.push_back(PROTOCOL13);
+    secureOption.SetProtocolChain(protocol);
 
     TLSConnectOptions connectOptions;
     connectOptions.SetTlsSecureOptions(secureOption);
-
     NetAddress netAddress;
     netAddress.SetAddress(IP_ADDRESS);
     netAddress.SetPort(0);
     netAddress.SetFamilyBySaFamily(AF_INET);
     connectOptions.SetNetAddress(netAddress);
-
+    std::vector<std::string> alpnProtocols;
+    alpnProtocols.push_back(ALPN_PROTOCOL);
+    connectOptions.SetAlpnProtocols(alpnProtocols);
     return connectOptions;
 }
 } // namespace
@@ -211,7 +226,7 @@ HWTEST_F(TlsSocketBranchTest, BranchTest1, TestSize.Level2)
     std::string getCert = secureOption.GetCert();
     EXPECT_NE(getCert.data(), nullptr);
 
-    std::vector<std::string> protocolVec = {PROTOCOL_V_1_2, PROTOCOL_V_1_3};
+    std::vector<std::string> protocolVec = {PROTOCOL12, PROTOCOL13};
     secureOption.SetProtocolChain(protocolVec);
     std::vector<std::string> getProtocol;
     getProtocol = secureOption.GetProtocolChain();
@@ -331,6 +346,83 @@ HWTEST_F(TlsSocketBranchTest, BranchTest5, TestSize.Level2)
         EXPECT_EQ(errCode, TLS_ERR_SSL_NULL);
     });
     (void)tlsSocket.Close([](int32_t errCode) { EXPECT_FALSE(errCode == TLSSOCKET_SUCCESS); });
+}
+
+HWTEST_F(TlsSocketBranchTest, BranchTest6, TestSize.Level2)
+{
+    TLSConnectOptions connectOptions = BaseOption();
+
+    TLSSocket tlsSocket;
+    TLSSocket::TLSSocketInternal *tlsSocketInternal = new TLSSocket::TLSSocketInternal();
+    bool isConnectToHost = tlsSocketInternal->TlsConnectToHost(SOCKET_FD, connectOptions);
+    EXPECT_FALSE(isConnectToHost);
+    tlsSocketInternal->SetTlsConfiguration(connectOptions);
+
+    bool sendSslNull = tlsSocketInternal->Send(SEND_DATA);
+    EXPECT_FALSE(sendSslNull);
+    char buffer[MAX_BUFFER_SIZE];
+    bzero(buffer, MAX_BUFFER_SIZE);
+    int recvSslNull = tlsSocketInternal->Recv(buffer, MAX_BUFFER_SIZE);
+    EXPECT_EQ(recvSslNull, SSL_ERROR_RETURN);
+    bool closeSslNull = tlsSocketInternal->Close();
+    EXPECT_FALSE(closeSslNull);
+    tlsSocketInternal->ssl_ = SSL_new(SSL_CTX_new(TLS_client_method()));
+    bool send = tlsSocketInternal->Send(SEND_DATA);
+    EXPECT_FALSE(send);
+    bool sendEmpty = tlsSocketInternal->Send(SEND_DATA_EMPTY);
+    EXPECT_FALSE(sendEmpty);
+    int recv = tlsSocketInternal->Recv(buffer, MAX_BUFFER_SIZE);
+    EXPECT_EQ(recv, SSL_ERROR_RETURN);
+    bool close = tlsSocketInternal->Close();
+    EXPECT_FALSE(close);
+    delete tlsSocketInternal;
+}
+
+HWTEST_F(TlsSocketBranchTest, BranchTest7, TestSize.Level2)
+{
+    TLSSocket tlsSocket;
+    TLSSocket::TLSSocketInternal *tlsSocketInternal = new TLSSocket::TLSSocketInternal();
+
+    std::vector<std::string> alpnProtocols;
+    alpnProtocols.push_back(ALPN_PROTOCOL);
+    bool alpnProSslNull = tlsSocketInternal->SetAlpnProtocols(alpnProtocols);
+    EXPECT_FALSE(alpnProSslNull);
+    std::vector<std::string> getCipherSuite = tlsSocketInternal->GetCipherSuite();
+    EXPECT_EQ(getCipherSuite.size(), 0);
+    bool setSharedSigals = tlsSocketInternal->SetSharedSigals();
+    EXPECT_FALSE(setSharedSigals);
+    tlsSocketInternal->ssl_ = SSL_new(SSL_CTX_new(TLS_client_method()));
+    getCipherSuite = tlsSocketInternal->GetCipherSuite();
+    EXPECT_NE(getCipherSuite.size(), 0);
+    setSharedSigals = tlsSocketInternal->SetSharedSigals();
+    EXPECT_FALSE(setSharedSigals);
+    TLSConnectOptions connectOptions = BaseOption();
+    bool alpnPro = tlsSocketInternal->SetAlpnProtocols(alpnProtocols);
+    EXPECT_TRUE(alpnPro);
+
+    SocketRemoteInfo remoteInfo;
+    tlsSocketInternal->hostName_ = IP_ADDRESS;
+    tlsSocketInternal->port_ = PORT;
+    tlsSocketInternal->family_ = AF_INET;
+    tlsSocketInternal->MakeRemoteInfo(remoteInfo);
+    getCipherSuite = tlsSocketInternal->GetCipherSuite();
+    EXPECT_NE(getCipherSuite.size(), 0);
+
+    std::string getRemoteCert = tlsSocketInternal->GetRemoteCertificate();
+    EXPECT_EQ(getRemoteCert, "");
+
+    std::vector<std::string> getSignatureAlgorithms = tlsSocketInternal->GetSignatureAlgorithms();
+    EXPECT_EQ(getSignatureAlgorithms.size(), 0);
+
+    std::string getProtocol = tlsSocketInternal->GetProtocol();
+    EXPECT_NE(getProtocol, "");
+
+    setSharedSigals = tlsSocketInternal->SetSharedSigals();
+    EXPECT_FALSE(setSharedSigals);
+
+    ssl_st *ssl = tlsSocketInternal->GetSSL();
+    EXPECT_NE(ssl, nullptr);
+    delete tlsSocketInternal;
 }
 } // namespace NetStack
 } // namespace OHOS
