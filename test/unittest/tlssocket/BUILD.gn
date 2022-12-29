@@ -20,6 +20,7 @@ group("unittest") {
     "client:socket_error_unittest",
     "client:tls_cert_test",
     "client:tls_configuration_test",
+    "client:tls_context_test",
     "client:tls_key_test",
     "client:tls_socket_branch_test",
     "client:tls_socket_certchain_unittest",

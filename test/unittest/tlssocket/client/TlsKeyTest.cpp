@@ -17,6 +17,7 @@
 #include <iostream>
 #include <string>
 
+#define private public
 #include "tls_key.h"
 #include "tls.h"
 
@@ -24,6 +25,7 @@ namespace OHOS {
 namespace NetStack {
 namespace {
 using namespace testing::ext;
+constexpr int32_t FILE_READ_KEY_LEN = 4096;
 static char g_keyFile[] =
 "-----BEGIN RSA PRIVATE KEY-----\r\n"
 "MIIEowIBAAKCAQEAqVzrf6PkLu0uhp5yl2HPNm0vLyI1KLqgsdz5s+JvVdbPXNxD\r\n"
@@ -105,6 +107,25 @@ HWTEST_F(TlsKeyTest, HandleTest, TestSize.Level2)
     TLSKey tlsKey = TLSKey(structureData, ALGORITHM_RSA, keyPass);
     Handle handle = tlsKey.handle();
     EXPECT_NE(handle, nullptr);
+    tlsKey.Clear(true);
+    TLSKey tlsKeyDsa = TLSKey(structureData, ALGORITHM_DSA, keyPass);
+    Handle handleDsa = tlsKeyDsa.handle();
+    EXPECT_EQ(handleDsa, nullptr);
+    tlsKeyDsa.Clear(true);
+    TLSKey tlsKeyEc = TLSKey(structureData, ALGORITHM_EC, keyPass);
+    Handle handleEc = tlsKeyEc.handle();
+    EXPECT_EQ(handleEc, nullptr);
+    tlsKeyEc.Clear(true);
+    TLSKey tlsKeyDh = TLSKey(structureData, ALGORITHM_DH, keyPass);
+    Handle handleDh = tlsKeyDh.handle();
+    EXPECT_EQ(handleDh, nullptr);
+    tlsKeyDh.Clear(true);
+    TLSKey tlsKeyOpaque = TLSKey(structureData, OPAQUE, keyPass);
+    Handle handleOpaque = tlsKeyOpaque.handle();
+    EXPECT_EQ(handleOpaque, nullptr);
+    tlsKeyOpaque.Clear(true);
+    TLSKey keyOpaque = tlsKeyOpaque;
+    EXPECT_NE(handle, nullptr);
 }
 
 HWTEST_F(TlsKeyTest, GetKeyPassTest, TestSize.Level2)
@@ -124,7 +145,54 @@ HWTEST_F(TlsKeyTest, GetKeyDataTest, TestSize.Level2)
     SecureData keyPass(keyPassStr);
     TLSKey tlsKey = TLSKey(structureData, ALGORITHM_RSA, keyPass);
     SecureData getKeyData= tlsKey.GetKeyPass();
-    EXPECT_NE(static_cast<uint32_t>(0), structureData.Length());
+    EXPECT_NE(getKeyData.Length(), structureData.Length());
+}
+
+HWTEST_F(TlsKeyTest, AlgorithmTest2, TestSize.Level2)
+{
+    SecureData structureData(g_keyFile);
+    std::string keyPassStr = "";
+    SecureData keyPass(keyPassStr);
+    TLSKey tlsKeyDsa = TLSKey(structureData, ALGORITHM_DSA, keyPass);
+    TLSKey keyDsa = tlsKeyDsa;
+    TLSKey tlsKeyEc = TLSKey(structureData, ALGORITHM_EC, keyPass);
+    TLSKey keyEc = tlsKeyEc;
+    TLSKey tlsKeyDh = TLSKey(structureData, ALGORITHM_DH, keyPass);
+    TLSKey keyDh = tlsKeyDh;
+    TLSKey tlsKeyOpaque = TLSKey(structureData, OPAQUE, keyPass);
+    TLSKey keyOpaque = tlsKeyOpaque;
+    SecureData getKeyData= tlsKeyDsa.GetKeyPass();
+    EXPECT_NE(getKeyData.Length(), structureData.Length());
+}
+
+HWTEST_F(TlsKeyTest, SwitchAlgorithmTest, TestSize.Level2)
+{
+    SecureData structureData(g_keyFile);
+    std::string keyPassStr = "";
+
+    KeyType typePublic = KeyType::PUBLIC_KEY;
+    SecureData keyPass(keyPassStr);
+    KeyType typePrivate = KeyType::PRIVATE_KEY;
+    char privateKey[FILE_READ_KEY_LEN] = {0};
+    const char *privateKeyData = static_cast<const char *>(privateKey);
+    BIO *bio = BIO_new_mem_buf(privateKeyData, -1);
+    TLSKey tlsKeyRsa = TLSKey(structureData, ALGORITHM_RSA, keyPass);
+    tlsKeyRsa.SwitchAlgorithm(typePrivate, ALGORITHM_RSA, bio);
+    tlsKeyRsa.SwitchAlgorithm(typePublic, ALGORITHM_RSA, bio);
+    TLSKey tlsKeyDsa = TLSKey(structureData, ALGORITHM_DSA, keyPass);
+    tlsKeyDsa.SwitchAlgorithm(typePrivate, ALGORITHM_DSA, bio);
+    tlsKeyDsa.SwitchAlgorithm(typePublic, ALGORITHM_DSA, bio);
+    TLSKey tlsKeyEc = TLSKey(structureData, ALGORITHM_EC, keyPass);
+    tlsKeyEc.SwitchAlgorithm(typePrivate, ALGORITHM_EC, bio);
+    tlsKeyEc.SwitchAlgorithm(typePublic, ALGORITHM_EC, bio);
+    TLSKey tlsKeyDh = TLSKey(structureData, ALGORITHM_DH, keyPass);
+    tlsKeyDh.SwitchAlgorithm(typePrivate, ALGORITHM_DH, bio);
+    tlsKeyDh.SwitchAlgorithm(typePublic, ALGORITHM_DH, bio);
+    TLSKey tlsKeyOpaque = TLSKey(structureData, OPAQUE, keyPass);
+    tlsKeyOpaque.SwitchAlgorithm(typePrivate, OPAQUE, bio);
+    tlsKeyOpaque.SwitchAlgorithm(typePublic, OPAQUE, bio);
+    SecureData getKeyData= tlsKeyDsa.GetKeyPass();
+    EXPECT_NE(getKeyData.Length(), structureData.Length());
 }
 } // namespace NetStack
 } // namespace OHOS
