@@ -44,7 +44,7 @@
 
 namespace OHOS::NetStack {
 static constexpr size_t MAX_LIMIT = 5 * 1024 * 1024;
-static constexpr int CURL_TIMEOUT_MS = 50;
+static constexpr int CURL_TIMEOUT_MS = 100;
 static constexpr int CURL_HANDLE_NUM = 10;
 bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 {
