@@ -19,7 +19,10 @@
 
 #include "base64_utils.h"
 
-using namespace OHOS::NetStack::Base64;
+namespace OHOS {
+namespace NetStack {
+using namespace Base64;
+using namespace testing::ext;
 namespace {
 const std::string TEST_TEXT[] = {
     "We are supporting a community where more than 28 million* people learn, share, and work together "
@@ -42,12 +45,12 @@ public:
 
     static void TearDownTestCase() {}
 
-    virtual void SetUp() {}
+    void SetUp() {}
 
-    virtual void TearDown() {}
+    void TearDown() {}
 };
 
-HWTEST_F(Base64Test, EncodeAndDecodeTest, testing::ext::TestSize.Level1)
+HWTEST_F(Base64Test, EncodeAndDecodeTest, TestSize.Level1)
 {
     for (const auto &str : TEST_TEXT) {
         EXPECT_EQ(Decode(Encode(str)), str);
@@ -58,3 +61,5 @@ HWTEST_F(Base64Test, EncodeAndDecodeTest, testing::ext::TestSize.Level1)
         EXPECT_EQ(Decode(test.second), test.first);
     }
 }
+} // namespace NetStack
+} // namespace OHOS
