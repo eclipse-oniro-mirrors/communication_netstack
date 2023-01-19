@@ -178,7 +178,7 @@ static napi_value MakeMessage(napi_env env, void *para)
 
 static void OnRecvMessage(EventManager *manager, void *data, size_t len, sockaddr *addr)
 {
-    if (data == nullptr || len <= 0) {
+    if (data == nullptr || len == 0) {
         return;
     }
 
