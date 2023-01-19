@@ -97,4 +97,5 @@ ohos_shared_library("socket") {
   relative_install_dir = "module/net"
   part_name = "netstack"
   subsystem_name = "communication"
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
 }

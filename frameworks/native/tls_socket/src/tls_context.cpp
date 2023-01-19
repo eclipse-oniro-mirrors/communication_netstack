@@ -16,6 +16,7 @@
 #include "tls_context.h"
 
 #include <cerrno>
+#include <cinttypes>
 #include <string>
 
 #include <openssl/err.h>
@@ -106,7 +107,8 @@ void TLSContext::UseRemoteCipher(TLSContext *tlsContext)
     if (tlsContext->tlsConfiguration_.GetUseRemoteCipherPrefer()) {
         SSL_CTX_set_options(tlsContext->ctx_, SSL_OP_CIPHER_SERVER_PREFERENCE);
     }
-    NETSTACK_LOGI("SSL_CTX_get_options = %{public}lx", SSL_CTX_get_options(tlsContext->ctx_));
+    NETSTACK_LOGI("SSL_CTX_get_options = %{public}" PRIx64,
+        static_cast<uint64_t>(SSL_CTX_get_options(tlsContext->ctx_)));
 }
 
 void TLSContext::SetMinAndMaxProtocol(TLSContext *tlsContext)
