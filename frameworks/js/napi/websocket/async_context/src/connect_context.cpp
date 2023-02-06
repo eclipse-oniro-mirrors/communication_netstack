@@ -93,4 +93,27 @@ bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
 
     return false;
 }
+
+int32_t ConnectContext::GetErrorCode() const
+{
+    auto err = BaseContext::GetErrorCode();
+    if (WEBSOCKET_ERR_MAP.find(err) != WEBSOCKET_ERR_MAP.end()) {
+        return err;
+    }
+    return WEBSOCKET_UNKNOWN_OTHER_ERROR;
+}
+
+std::string ConnectContext::GetErrorMessage() const
+{
+    auto err = BaseContext::GetErrorCode();
+    auto it = WEBSOCKET_ERR_MAP.find(err);
+    if (it != WEBSOCKET_ERR_MAP.end()) {
+        return it->second;
+    }
+    it = WEBSOCKET_ERR_MAP.find(WEBSOCKET_UNKNOWN_OTHER_ERROR);
+    if (it != WEBSOCKET_ERR_MAP.end()) {
+        return it->second;
+    }
+    return {};
+}
 } // namespace OHOS::NetStack

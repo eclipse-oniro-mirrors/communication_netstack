@@ -32,6 +32,37 @@ static constexpr const int PARAM_URL_AND_OPTIONS_AND_CALLBACK = 3;
 namespace OHOS::NetStack {
 std::map<RequestContext *, napi_env> RequestContext::envMap_;
 std::mutex RequestContext::envMutex_;
+static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
+    {HTTP_UNSUPPORTED_PROTOCOL, "Unsupported protocol"},
+    {HTTP_URL_MALFORMAT, "URL using bad/illegal format or missing URL"},
+    {HTTP_COULDNT_RESOLVE_PROXY, "Couldn't resolve proxy name"},
+    {HTTP_COULDNT_RESOLVE_HOST, "Couldn't resolve host name"},
+    {HTTP_COULDNT_CONNECT, "Couldn't connect to server"},
+    {HTTP_WEIRD_SERVER_REPLY, "Weird server reply"},
+    {HTTP_REMOTE_ACCESS_DENIED, "Access denied to remote resource"},
+    {HTTP_HTTP2_ERROR, "Error in the HTTP2 framing layer"},
+    {HTTP_PARTIAL_FILE,  "Transferred a partial file"},
+    {HTTP_WRITE_ERROR, "Failed writing received data to disk/application"},
+    {HTTP_UPLOAD_FAILED, "Upload failed"},
+    {HTTP_READ_ERROR, "Failed to open/read local data from file/application"},
+    {HTTP_OUT_OF_MEMORY, "Out of memory"},
+    {HTTP_OPERATION_TIMEDOUT, "Timeout was reached"},
+    {HTTP_TOO_MANY_REDIRECTS, "Number of redirects hit maximum amount"},
+    {HTTP_GOT_NOTHING, "Server returned nothing (no headers, no data)"},
+    {HTTP_SEND_ERROR, "Failed sending data to the peer"},
+    {HTTP_RECV_ERROR, "Failure when receiving data from the peer"},
+    {HTTP_SSL_CERTPROBLEM, "Problem with the local SSL certificate"},
+    {HTTP_SSL_CIPHER, "Couldn't use specified SSL cipher"},
+    {HTTP_PEER_FAILED_VERIFICATION, "SSL peer certificate or SSH remote key was not OK"},
+    {HTTP_BAD_CONTENT_ENCODING, "Unrecognized or bad HTTP Content or Transfer-Encoding"},
+    {HTTP_FILESIZE_EXCEEDED, "Maximum file size exceeded"},
+    {HTTP_REMOTE_DISK_FULL, "Disk full or allocation exceeded"},
+    {HTTP_REMOTE_FILE_EXISTS, "Remote file already exists"},
+    {HTTP_SSL_CACERT_BADFILE, "Problem with the SSL CA cert (path? access rights?)"},
+    {HTTP_REMOTE_FILE_NOT_FOUND, "Remote file not found"},
+    {HTTP_AUTH_ERROR, "An authentication function returned an error"},
+    {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
+};
 RequestContext::RequestContext(napi_env env, EventManager *manager)
     : BaseContext(env, manager), usingCache_(true), curlHeaderList_(nullptr)
 {
@@ -352,5 +383,28 @@ void RequestContext::SetCacheResponse(const HttpResponse &cacheResponse)
 void RequestContext::SetResponseByCache()
 {
     response = cacheResponse_;
+}
+
+int32_t RequestContext::GetErrorCode() const
+{
+    auto err = BaseContext::GetErrorCode();
+    if (HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE) != HTTP_ERR_MAP.end()) {
+        return err + HTTP_ERROR_CODE_BASE;
+    }
+    return HTTP_UNKNOWN_OTHER_ERROR;
+}
+
+std::string RequestContext::GetErrorMessage() const
+{
+    auto err = BaseContext::GetErrorCode();
+    auto it = HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE);
+    if (it != HTTP_ERR_MAP.end()) {
+        return it->second;
+    }
+    it = HTTP_ERR_MAP.find(HTTP_UNKNOWN_OTHER_ERROR);
+    if (it != HTTP_ERR_MAP.end()) {
+        return it->second;
+    }
+    return {};
 }
 } // namespace OHOS::NetStack

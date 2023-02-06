@@ -16,8 +16,10 @@
 #include "tcp_extra_context.h"
 
 #include "context_key.h"
+#include "socket_constant.h"
 #include "event_manager.h"
 #include "napi_utils.h"
+#include "netstack_log.h"
 
 namespace OHOS::NetStack {
 TcpSetExtraOptionsContext::TcpSetExtraOptionsContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
@@ -94,5 +96,18 @@ bool TcpSetExtraOptionsContext::CheckParamsType(napi_value *params, size_t param
                NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function;
     }
     return false;
+}
+
+int32_t TcpSetExtraOptionsContext::GetErrorCode() const
+{
+    auto err = BaseContext::GetErrorCode();
+    return err + SOCKET_ERROR_CODE_BASE;
+}
+
+std::string TcpSetExtraOptionsContext::GetErrorMessage() const
+{
+    char err[MAX_ERR_NUM] = {0};
+    (void)strerror_r(errno, err, MAX_ERR_NUM);
+    return err;
 }
 } // namespace OHOS::NetStack

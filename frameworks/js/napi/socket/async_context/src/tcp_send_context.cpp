@@ -16,6 +16,7 @@
 #include "tcp_send_context.h"
 
 #include "context_key.h"
+#include "socket_constant.h"
 #include "event_manager.h"
 #include "netstack_log.h"
 #include "napi_utils.h"
@@ -87,5 +88,18 @@ bool TcpSendContext::GetData(napi_value udpSendOptions)
         return true;
     }
     return false;
+}
+
+int32_t TcpSendContext::GetErrorCode() const
+{
+    auto err = BaseContext::GetErrorCode();
+    return err + SOCKET_ERROR_CODE_BASE;
+}
+
+std::string TcpSendContext::GetErrorMessage() const
+{
+    char err[MAX_ERR_NUM] = {0};
+    (void)strerror_r(errno, err, MAX_ERR_NUM);
+    return err;
 }
 } // namespace OHOS::NetStack
