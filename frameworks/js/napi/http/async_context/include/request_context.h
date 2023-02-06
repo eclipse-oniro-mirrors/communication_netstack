@@ -63,6 +63,8 @@ private:
 
     bool ParseExtraData(napi_value optionsValue);
 
+    void ParseUsingHttpProxy(napi_value optionsValue);
+
     bool GetRequestBody(napi_value extraData);
 
     void UrlAndOptions(napi_value urlValue, napi_value optionsValue);

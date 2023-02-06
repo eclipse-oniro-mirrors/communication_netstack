@@ -30,7 +30,9 @@ HttpRequestOptions::HttpRequestOptions()
       connectTimeout_(HttpConstant::DEFAULT_CONNECT_TIMEOUT),
       usingProtocol_(HttpProtocol::HTTP_NONE),
       dataType_(HttpDataType::NO_DATA_TYPE),
-      priority_(0)
+      priority_(0),
+      usingHttpProxyType_(UsingHttpProxyType::NOT_USE),
+      httpProxyPort_(0)
 {
     header_[CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE)] = HttpConstant::HTTP_CONTENT_TYPE_JSON; // default
 }
@@ -147,5 +149,29 @@ void HttpRequestOptions::SetPriority(uint32_t priority)
 uint32_t HttpRequestOptions::GetPriority() const
 {
     return priority_;
+}
+
+void HttpRequestOptions::SetUsingHttpProxyType(UsingHttpProxyType type)
+{
+    usingHttpProxyType_ = type;
+}
+
+UsingHttpProxyType HttpRequestOptions::GetUsingHttpProxyType() const
+{
+    return usingHttpProxyType_;
+}
+
+void HttpRequestOptions::SetSpecifiedHttpProxy(const std::string &host, int32_t port, const std::string &exclusionList)
+{
+    httpProxyHost_ = host;
+    httpProxyPort_ = port;
+    httpProxyExclusions_ = exclusionList;
+}
+
+void HttpRequestOptions::GetSpecifiedHttpProxy(std::string &host, int32_t &port, std::string &exclusionList)
+{
+    host = httpProxyHost_;
+    port = httpProxyPort_;
+    exclusionList = httpProxyExclusions_;
 }
 } // namespace OHOS::NetStack

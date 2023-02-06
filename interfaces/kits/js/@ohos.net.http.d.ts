@@ -14,6 +14,7 @@
  */
 
 import {AsyncCallback, Callback} from "./basic";
+import connection from "./@ohos.net.connection";
 
 /**
  * Provides http related APIs.
@@ -22,6 +23,7 @@ import {AsyncCallback, Callback} from "./basic";
  * @syscap SystemCapability.Communication.NetStack
  */
 declare namespace http {
+  type HttpProxy = connection.HttpProxy;
   /**
    * Creates an HTTP request task.
    */
@@ -75,6 +77,13 @@ declare namespace http {
      * @since 9
      */
     usingProtocol?: HttpProtocol; // default is automatically specified by the system.
+    /**
+     * If this parameter is set as type of boolean, the system will use default proxy or not use proxy.
+     * If this parameter is set as type of HttpProxy, the system will use the specified HttpProxy.
+     *
+     * @since 10
+     */
+     usingProxy?: boolean | HttpProxy; // default is false.
   }
 
   export interface HttpRequest {

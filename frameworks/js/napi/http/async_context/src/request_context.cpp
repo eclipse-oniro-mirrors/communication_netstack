@@ -225,6 +225,44 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
     return false;
 }
 
+void RequestContext::ParseUsingHttpProxy(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_HTTP_PROXY)) {
+        NETSTACK_LOGI("Do not use http proxy");
+        return;
+    }
+    napi_value httpProxyValue =
+        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_HTTP_PROXY);
+    napi_valuetype type = NapiUtils::GetValueType(GetEnv(), httpProxyValue);
+    if (type == napi_boolean) {
+        bool usingProxy = NapiUtils::GetBooleanFromValue(GetEnv(), httpProxyValue);
+        UsingHttpProxyType usingType = usingProxy ? UsingHttpProxyType::USE_DEFAULT : UsingHttpProxyType::NOT_USE;
+        options.SetUsingHttpProxyType(usingType);
+        return;
+    }
+    if (type != napi_object) {
+        return;
+    }
+    std::string host = NapiUtils::GetStringPropertyUtf8(GetEnv(), httpProxyValue, HttpConstant::HTTP_PROXY_KEY_HOST);
+    int32_t port = NapiUtils::GetInt32Property(GetEnv(), httpProxyValue, HttpConstant::HTTP_PROXY_KEY_PORT);
+    std::string exclusionList;
+    if (NapiUtils::HasNamedProperty(GetEnv(), httpProxyValue, HttpConstant::HTTP_PROXY_KEY_EXCLUSION_LIST)) {
+        napi_value exclusionListValue =
+            NapiUtils::GetNamedProperty(GetEnv(), httpProxyValue, HttpConstant::HTTP_PROXY_KEY_EXCLUSION_LIST);
+        uint32_t listLength = NapiUtils::GetArrayLength(GetEnv(), exclusionListValue);
+        for (uint32_t index = 0; index < listLength; ++index) {
+            napi_value exclusionValue = NapiUtils::GetArrayElement(GetEnv(), exclusionListValue, index);
+            std::string exclusion = NapiUtils::GetStringFromValueUtf8(GetEnv(), exclusionValue);
+            if (index != 0) {
+                exclusionList = exclusionList + HttpConstant::HTTP_PROXY_EXCLUSIONS_SEPARATOR;
+            }
+            exclusionList += exclusion;
+        }
+    }
+    options.SetSpecifiedHttpProxy(host, port, exclusionList);
+    options.SetUsingHttpProxyType(UsingHttpProxyType::USE_SPECIFIED);
+}
+
 bool RequestContext::GetRequestBody(napi_value extraData)
 {
     /* if body is empty, return false, or curl will wait for body */
@@ -274,6 +312,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
 
     ParseHeader(optionsValue);
     ParseNumberOptions(optionsValue);
+    ParseUsingHttpProxy(optionsValue);
 
     /* parse extra data here to recover header */
 
