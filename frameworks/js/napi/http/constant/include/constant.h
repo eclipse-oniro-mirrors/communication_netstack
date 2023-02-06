@@ -20,7 +20,6 @@
 #include <cstdint>
 
 #include "curl/curl.h"
-#include "base_context.h"
 
 namespace OHOS::NetStack {
 enum class ResponseCode {
@@ -63,7 +62,7 @@ enum class ResponseCode {
 
 enum HttpErrorCode {
     HTTP_ERROR_CODE_BASE = 2300000,
-    HTTP_PARAM_ERROR = HTTP_ERROR_CODE_BASE + PARSE_ERROR_CODE,
+    HTTP_PARAM_ERROR = 2300401,
     HTTP_UNSUPPORTED_PROTOCOL = HTTP_ERROR_CODE_BASE + CURLE_UNSUPPORTED_PROTOCOL,
     HTTP_URL_MALFORMAT = HTTP_ERROR_CODE_BASE + CURLE_URL_MALFORMAT,
     HTTP_COULDNT_RESOLVE_PROXY = HTTP_ERROR_CODE_BASE + CURLE_COULDNT_RESOLVE_PROXY,
