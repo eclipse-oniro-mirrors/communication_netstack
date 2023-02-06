@@ -127,7 +127,7 @@ int32_t BaseContext::GetErrorCode() const
     return errorCode_;
 }
 
-const std::string &BaseContext::GetErrorMessage() const
+std::string BaseContext::GetErrorMessage() const
 {
     return errorMessage_;
 }

@@ -16,6 +16,7 @@
 #include "common_context.h"
 
 #include "context_key.h"
+#include "socket_constant.h"
 #include "event_manager.h"
 #include "napi_utils.h"
 
@@ -58,5 +59,18 @@ CloseContext::CloseContext(napi_env env, EventManager *manager) : CommonContext(
 void CloseContext::SetSocketFd(int sock)
 {
     manager_->SetData(reinterpret_cast<void *>(sock));
+}
+
+int32_t CommonContext::GetErrorCode() const
+{
+    auto err = BaseContext::GetErrorCode();
+    return err + SOCKET_ERROR_CODE_BASE;
+}
+
+std::string CommonContext::GetErrorMessage() const
+{
+    char err[MAX_ERR_NUM] = {0};
+    (void)strerror_r(errno, err, MAX_ERR_NUM);
+    return err;
 }
 } // namespace OHOS::NetStack

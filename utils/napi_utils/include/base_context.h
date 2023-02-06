@@ -31,8 +31,8 @@
 namespace OHOS::NetStack {
 typedef void (*AsyncWorkExecutor)(napi_env env, void *data);
 typedef void (*AsyncWorkCallback)(napi_env env, napi_status status, void *data);
-constexpr size_t PARSE_ERROR_CODE = 401;
-constexpr const char *PARSE_ERROR_MSG = "Parameter error";
+static constexpr size_t PARSE_ERROR_CODE = 401;
+static constexpr const char *PARSE_ERROR_MSG = "Parameter parse error";
 
 class BaseContext {
 public:
@@ -66,9 +66,9 @@ public:
 
     [[nodiscard]] napi_env GetEnv() const;
 
-    [[nodiscard]] int32_t GetErrorCode() const;
+    [[nodiscard]] virtual int32_t GetErrorCode() const;
 
-    [[nodiscard]] const std::string &GetErrorMessage() const;
+    [[nodiscard]] virtual std::string GetErrorMessage() const;
 
     [[nodiscard]] napi_value GetCallback() const;
 

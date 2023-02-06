@@ -48,6 +48,10 @@ public:
 
     void SetResponseByCache();
 
+    [[nodiscard]] int32_t GetErrorCode() const override;
+
+    [[nodiscard]] std::string GetErrorMessage() const override;
+
 private:
     bool usingCache_;
 
