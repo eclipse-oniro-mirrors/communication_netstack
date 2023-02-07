@@ -41,6 +41,8 @@ static constexpr const int NO_MEMORY = -2;
 
 static constexpr const int MSEC_TO_USEC = 1000;
 
+static constexpr const int MAX_SEC = 999999999;
+
 namespace OHOS::NetStack::SocketExec {
 struct MessageData {
     MessageData() = delete;
@@ -435,13 +437,10 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
     if (timeoutMSec == 0) {
         timeoutMSec = DEFAULT_CONNECT_TIMEOUT;
     }
-    if (timeoutMSec > UINT32_MAX / MSEC_TO_USEC) {
-        timeoutMSec = UINT32_MAX / MSEC_TO_USEC;
-    }
 
     timeval timeout = {
-        .tv_sec = 0,
-        .tv_usec = timeoutMSec * MSEC_TO_USEC,
+        .tv_sec = (timeoutMSec / MSEC_TO_USEC) % MAX_SEC,
+        .tv_usec = (timeoutMSec % MSEC_TO_USEC) * MSEC_TO_USEC,
     };
 
     ret = select(sock + 1, nullptr, &set, nullptr, &timeout);
