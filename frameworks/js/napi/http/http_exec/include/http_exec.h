@@ -103,6 +103,8 @@ private:
 
     static void ReadRespond();
 
+    static void GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions);
+
     struct StaticVariable {
         StaticVariable() : curlMulti(nullptr), initialized(false), runThread(true) {}
 
