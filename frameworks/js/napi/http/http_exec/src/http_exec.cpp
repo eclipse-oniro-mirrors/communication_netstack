@@ -19,6 +19,11 @@
 #include <memory>
 #include <thread>
 
+#ifdef HTTP_PROXY_ENABLE
+#include "parameter.h"
+#endif
+
+#include "base64_utils.h"
 #include "cache_proxy.h"
 #include "constant.h"
 #include "event_list.h"
@@ -46,6 +51,13 @@ namespace OHOS::NetStack {
 static constexpr size_t MAX_LIMIT = 5 * 1024 * 1024;
 static constexpr int CURL_TIMEOUT_MS = 100;
 static constexpr int CURL_HANDLE_NUM = 10;
+static constexpr int32_t SYSPARA_MAX_SIZE = 128;
+static constexpr const char *DEFAULT_HTTP_PROXY_HOST = "NONE";
+static constexpr const char *DEFAULT_HTTP_PROXY_PORT = "0";
+static constexpr const char *DEFAULT_HTTP_PROXY_EXCLUSION_LIST = "NONE";
+static constexpr const char *HTTP_PROXY_HOST_KEY = "persist.netmanager_base.http_proxy.host";
+static constexpr const char *HTTP_PROXY_PORT_KEY = "persist.netmanager_base.http_proxy.port";
+static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_base.http_proxy.exclusion_list";
 bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 {
     if (handle == nullptr || staticVariable_.curlMulti == nullptr) {
@@ -347,6 +359,31 @@ void HttpExec::ReadRespond()
     }
 }
 
+void HttpExec::GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions)
+{
+#ifdef HTTP_PROXY_ENABLE
+    char httpProxyHost[SYSPARA_MAX_SIZE] = {0};
+    char httpProxyPort[SYSPARA_MAX_SIZE] = {0};
+    char httpProxyExclusions[SYSPARA_MAX_SIZE] = {0};
+    GetParameter(HTTP_PROXY_HOST_KEY, DEFAULT_HTTP_PROXY_HOST, httpProxyHost, sizeof(httpProxyHost));
+    GetParameter(HTTP_PROXY_PORT_KEY, DEFAULT_HTTP_PROXY_PORT, httpProxyPort, sizeof(httpProxyPort));
+    GetParameter(HTTP_PROXY_EXCLUSIONS_KEY, DEFAULT_HTTP_PROXY_EXCLUSION_LIST, httpProxyExclusions,
+                 sizeof(httpProxyExclusions));
+
+    host = Base64::Decode(httpProxyHost);
+    if (host == DEFAULT_HTTP_PROXY_HOST) {
+        host = std::string();
+    }
+
+    exclusions = httpProxyExclusions;
+    if (exclusions == DEFAULT_HTTP_PROXY_EXCLUSION_LIST) {
+        exclusions = std::string();
+    }
+
+    port = std::atoi(httpProxyPort);
+#endif
+}
+
 bool HttpExec::Initialize()
 {
     std::lock_guard<std::mutex> lock(staticVariable_.mutex);
@@ -402,14 +439,25 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     /* first #undef CURL_DISABLE_COOKIES in curl config */
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_COOKIEFILE, "", context);
 
-#if NETSTACK_USE_PROXY
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXY, NETSTACK_PROXY_URL_PORT, context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYTYPE, NETSTACK_PROXY_TYPE, context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTPPROXYTUNNEL, 1L, context);
+    std::string host, exclusions;
+    int32_t port = 0;
+    if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_DEFAULT) {
+        GetGlobalHttpProxyInfo(host, port, exclusions);
+    } else if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_SPECIFIED) {
+        context->options.GetSpecifiedHttpProxy(host, port, exclusions);
+    }
+    if (!host.empty()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXY, host.c_str(), context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYPORT, port, context);
+        if (!exclusions.empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOPROXY, exclusions.c_str(), context);
+        }
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTPPROXYTUNNEL, 1L, context);
+    }
 #ifdef NETSTACK_PROXY_PASS
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYUSERPWD, NETSTACK_PROXY_PASS, context);
 #endif // NETSTACK_PROXY_PASS
-#endif // NETSTACK_USE_PROXY
 
 #if NO_SSL_CERTIFICATION
     // in real life, you should buy a ssl certification and rename it to /etc/ssl/cert.pem
