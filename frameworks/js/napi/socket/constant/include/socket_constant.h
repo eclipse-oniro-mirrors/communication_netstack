@@ -22,7 +22,7 @@ namespace OHOS::NetStack {
 static constexpr const size_t MAX_ERR_NUM = 256;
 
 enum SocketErrorCode {
-    SOCKET_ERROR_CODE_BASE = 2300000
+    SOCKET_ERROR_CODE_BASE = 2301000
 };
 } // namespace OHOS::NetStack
 
