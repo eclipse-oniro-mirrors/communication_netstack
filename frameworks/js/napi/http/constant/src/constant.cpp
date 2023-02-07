@@ -40,13 +40,6 @@ const char *const HttpConstant::PARAM_KEY_USING_CACHE = "usingCache";
 const char *const HttpConstant::PARAM_KEY_EXPECT_DATA_TYPE = "expectDataType";
 const char *const HttpConstant::PARAM_KEY_PRIORITY = "priority";
 
-const char *const HttpConstant::PARAM_KEY_USING_HTTP_PROXY = "usingProxy";
-
-const char *const HttpConstant::HTTP_PROXY_KEY_HOST = "host";
-const char *const HttpConstant::HTTP_PROXY_KEY_PORT = "port";
-const char *const HttpConstant::HTTP_PROXY_KEY_EXCLUSION_LIST = "parsedExclusionList";
-const char *const HttpConstant::HTTP_PROXY_EXCLUSIONS_SEPARATOR = ",";
-
 const char *const HttpConstant::RESPONSE_KEY_RESULT = "result";
 const char *const HttpConstant::RESPONSE_KEY_RESPONSE_CODE = "responseCode";
 const char *const HttpConstant::RESPONSE_KEY_HEADER = "header";
