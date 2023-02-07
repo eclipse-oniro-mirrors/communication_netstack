@@ -142,13 +142,6 @@ public:
     static const char *const PARAM_KEY_EXPECT_DATA_TYPE;
     static const char *const PARAM_KEY_PRIORITY;
 
-    static const char *const PARAM_KEY_USING_HTTP_PROXY;
-
-    static const char *const HTTP_PROXY_KEY_HOST;
-    static const char *const HTTP_PROXY_KEY_PORT;
-    static const char *const HTTP_PROXY_KEY_EXCLUSION_LIST;
-    static const char *const HTTP_PROXY_EXCLUSIONS_SEPARATOR;
-
     static const char *const RESPONSE_KEY_RESULT;
     static const char *const RESPONSE_KEY_RESPONSE_CODE;
     static const char *const RESPONSE_KEY_HEADER;

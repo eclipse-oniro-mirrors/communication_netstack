@@ -28,12 +28,6 @@ enum class HttpProtocol {
     HTTP_NONE, // default choose by curl
 };
 
-enum class UsingHttpProxyType {
-    NOT_USE,
-    USE_DEFAULT,
-    USE_SPECIFIED,
-};
-
 class HttpRequestOptions final {
 public:
     HttpRequestOptions();
@@ -53,10 +47,6 @@ public:
     void SetUsingProtocol(HttpProtocol httpProtocol);
 
     void SetHttpDataType(HttpDataType dataType);
-
-    void SetUsingHttpProxyType(UsingHttpProxyType type);
-
-    void SetSpecifiedHttpProxy(const std::string &host, int32_t port, const std::string &exclusionList);
 
     [[nodiscard]] const std::string &GetUrl() const;
 
@@ -82,10 +72,6 @@ public:
 
     [[nodiscard]] uint32_t GetPriority() const;
 
-    [[nodiscard]] UsingHttpProxyType GetUsingHttpProxyType() const;
-
-    void GetSpecifiedHttpProxy(std::string &host, int32_t &port, std::string &exclusionList);
-
 private:
     std::string url_;
 
@@ -106,14 +92,6 @@ private:
     HttpDataType dataType_;
 
     uint32_t priority_;
-
-    UsingHttpProxyType usingHttpProxyType_;
-
-    std::string httpProxyHost_;
-
-    int32_t httpProxyPort_;
-
-    std::string httpProxyExclusions_;
 };
 } // namespace OHOS::NetStack
 
