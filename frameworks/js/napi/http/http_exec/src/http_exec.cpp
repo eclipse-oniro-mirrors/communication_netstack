@@ -51,8 +51,8 @@ namespace OHOS::NetStack {
 static constexpr size_t MAX_LIMIT = 5 * 1024 * 1024;
 static constexpr int CURL_TIMEOUT_MS = 100;
 static constexpr int CURL_HANDLE_NUM = 10;
-static constexpr int32_t SYSPARA_MAX_SIZE = 128;
 #ifdef HTTP_PROXY_ENABLE
+static constexpr int32_t SYSPARA_MAX_SIZE = 128;
 static constexpr const char *DEFAULT_HTTP_PROXY_HOST = "NONE";
 static constexpr const char *DEFAULT_HTTP_PROXY_PORT = "0";
 static constexpr const char *DEFAULT_HTTP_PROXY_EXCLUSION_LIST = "NONE";
