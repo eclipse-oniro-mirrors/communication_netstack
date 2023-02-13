@@ -29,6 +29,18 @@ void UdpSendContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     bool valid = CheckParamsType(params, paramsCount);
     if (!valid) {
+        if (paramsCount == PARAM_JUST_CALLBACK) {
+            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
+                SetCallback(params[0]);
+            }
+            return;
+        }
+        if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
+            if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
+                SetCallback(params[1]);
+            }
+            return;
+        }
         return;
     }
 
@@ -109,13 +121,20 @@ bool UdpSendContext::GetData(napi_value udpSendOptions)
 int32_t UdpSendContext::GetErrorCode() const
 {
     auto err = BaseContext::GetErrorCode();
+    if (err == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_CODE;
+    }
     return err + SOCKET_ERROR_CODE_BASE;
 }
 
 std::string UdpSendContext::GetErrorMessage() const
 {
+    auto errCode = BaseContext::GetErrorCode();
+    if (errCode == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_MSG;
+    }
     char err[MAX_ERR_NUM] = {0};
-    (void)strerror_r(errno, err, MAX_ERR_NUM);
+    (void)strerror_r(errCode, err, MAX_ERR_NUM);
     return err;
 }
 } // namespace OHOS::NetStack
