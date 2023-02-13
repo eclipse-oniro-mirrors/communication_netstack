@@ -217,7 +217,8 @@ napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_i
 
             HttpExec::AsyncRunRequest(context);
             return true;
-        });
+        },
+        "Request", HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
 #else
     return ModuleTemplate::Interface<RequestContext>(
         env, info, REQUEST_ASYNC_WORK_NAME,

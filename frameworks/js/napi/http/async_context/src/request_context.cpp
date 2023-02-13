@@ -25,6 +25,8 @@
 
 static constexpr const int PARAM_JUST_URL = 1;
 
+static constexpr const int PARAM_JUST_URL_OR_CALLBACK = 1;
+
 static constexpr const int PARAM_URL_AND_OPTIONS_OR_CALLBACK = 2;
 
 static constexpr const int PARAM_URL_AND_OPTIONS_AND_CALLBACK = 3;
@@ -80,6 +82,24 @@ void RequestContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     bool valid = CheckParamsType(params, paramsCount);
     if (!valid) {
+        if (paramsCount == PARAM_JUST_URL_OR_CALLBACK) {
+            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
+                SetCallback(params[0]);
+            }
+            return;
+        }
+        if (paramsCount == PARAM_URL_AND_OPTIONS_OR_CALLBACK) {
+            if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
+                SetCallback(params[1]);
+            }
+            return;
+        }
+        if (paramsCount == PARAM_URL_AND_OPTIONS_AND_CALLBACK) {
+            if (NapiUtils::GetValueType(GetEnv(), params[PARAM_URL_AND_OPTIONS_AND_CALLBACK - 1]) == napi_function) {
+                SetCallback(params[PARAM_URL_AND_OPTIONS_AND_CALLBACK - 1]);
+            }
+            return;
+        }
         return;
     }
 
@@ -388,6 +408,9 @@ void RequestContext::SetResponseByCache()
 int32_t RequestContext::GetErrorCode() const
 {
     auto err = BaseContext::GetErrorCode();
+    if (err == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_CODE;
+    }
     if (HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE) != HTTP_ERR_MAP.end()) {
         return err + HTTP_ERROR_CODE_BASE;
     }
@@ -397,6 +420,9 @@ int32_t RequestContext::GetErrorCode() const
 std::string RequestContext::GetErrorMessage() const
 {
     auto err = BaseContext::GetErrorCode();
+    if (err == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_MSG;
+    }
     auto it = HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE);
     if (it != HTTP_ERR_MAP.end()) {
         return it->second;

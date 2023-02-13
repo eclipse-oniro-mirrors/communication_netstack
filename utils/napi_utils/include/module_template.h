@@ -82,7 +82,8 @@ napi_value Interface(napi_env env, napi_callback_info info, const std::string &a
 
 template <class Context>
 napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
-                                     bool (*Work)(napi_env, napi_value, Context *))
+                                     bool (*Work)(napi_env, napi_value, Context *), const std::string &asyncWorkName,
+                                     AsyncWorkExecutor executor, AsyncWorkCallback callback)
 {
     static_assert(std::is_base_of<BaseContext, Context>::value);
 
@@ -109,6 +110,9 @@ napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
         }
     }
     context->CreateReference(thisVal);
+    if (!context->IsParseOK()) {
+        context->CreateAsyncWork(asyncWorkName, executor, callback);
+    }
     return ret;
 }
 

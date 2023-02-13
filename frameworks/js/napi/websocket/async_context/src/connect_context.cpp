@@ -30,6 +30,26 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     if (!CheckParamsType(params, paramsCount)) {
         NETSTACK_LOGE("ConnectContext Parse Failed");
+        if (paramsCount == FUNCTION_PARAM_ONE) {
+            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
+                SetCallback(params[0]);
+            }
+            return;
+        }
+
+        if (paramsCount == FUNCTION_PARAM_TWO) {
+            if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
+                SetCallback(params[1]);
+            }
+            return;
+        }
+
+        if (paramsCount == FUNCTION_PARAM_THREE) {
+            if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_TWO]) == napi_function) {
+                SetCallback(params[FUNCTION_PARAM_TWO]);
+            }
+            return;
+        }
         return;
     }
 
@@ -97,6 +117,9 @@ bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
 int32_t ConnectContext::GetErrorCode() const
 {
     auto err = BaseContext::GetErrorCode();
+    if (err == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_CODE;
+    }
     if (WEBSOCKET_ERR_MAP.find(err) != WEBSOCKET_ERR_MAP.end()) {
         return err;
     }
@@ -106,6 +129,9 @@ int32_t ConnectContext::GetErrorCode() const
 std::string ConnectContext::GetErrorMessage() const
 {
     auto err = BaseContext::GetErrorCode();
+    if (err == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_MSG;
+    }
     auto it = WEBSOCKET_ERR_MAP.find(err);
     if (it != WEBSOCKET_ERR_MAP.end()) {
         return it->second;
