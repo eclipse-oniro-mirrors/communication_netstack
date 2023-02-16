@@ -73,7 +73,7 @@ int ConvertSSLError(ssl_st *ssl)
     if (!ssl) {
         return TLS_ERR_SSL_NULL;
     }
-    return TlsSocketError::TLS_ERR_SYS_BASE + SSL_get_error(ssl, SSL_RET_CODE);
+    return TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl, SSL_RET_CODE);
 }
 
 std::string MakeErrnoString()
