@@ -43,7 +43,7 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_WEIRD_SERVER_REPLY, "Weird server reply"},
     {HTTP_REMOTE_ACCESS_DENIED, "Access denied to remote resource"},
     {HTTP_HTTP2_ERROR, "Error in the HTTP2 framing layer"},
-    {HTTP_PARTIAL_FILE,  "Transferred a partial file"},
+    {HTTP_PARTIAL_FILE, "Transferred a partial file"},
     {HTTP_WRITE_ERROR, "Failed writing received data to disk/application"},
     {HTTP_UPLOAD_FAILED, "Upload failed"},
     {HTTP_READ_ERROR, "Failed to open/read local data from file/application"},
@@ -66,7 +66,7 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
 };
 RequestContext::RequestContext(napi_env env, EventManager *manager)
-    : BaseContext(env, manager), usingCache_(true), curlHeaderList_(nullptr)
+    : BaseContext(env, manager), usingCache_(true), request2_(false), curlHeaderList_(nullptr)
 {
     std::lock_guard guard(envMutex_);
     envMap_[this] = env;
@@ -432,5 +432,46 @@ std::string RequestContext::GetErrorMessage() const
         return it->second;
     }
     return {};
+}
+
+void RequestContext::EnableRequest2()
+{
+    request2_ = true;
+}
+
+bool RequestContext::IsRequest2()
+{
+    return request2_;
+}
+
+void RequestContext::SetTotalLen(curl_off_t totalLen)
+{
+    totalLen_ = totalLen;
+}
+
+curl_off_t RequestContext::GetTotalLen()
+{
+    return totalLen_;
+}
+
+void RequestContext::SetNowLen(curl_off_t nowLen)
+{
+    nowLen_ = nowLen;
+}
+
+curl_off_t RequestContext::GetNowLen()
+{
+    return nowLen_;
+}
+
+void RequestContext::SetTempData(const void *data, size_t size)
+{
+    tempData_.clear();
+    tempData_.append(reinterpret_cast<const char *>(data), size);
+}
+
+std::string &RequestContext::GetTempData()
+{
+    return tempData_;
 }
 } // namespace OHOS::NetStack

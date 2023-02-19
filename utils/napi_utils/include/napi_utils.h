@@ -42,11 +42,15 @@ std::vector<std::string> GetPropertyNames(napi_env env, napi_value object);
 /* UINT32 */
 napi_value CreateUint32(napi_env env, uint32_t code);
 
+napi_value CreateUint64(napi_env env, uint64_t code);
+
 uint32_t GetUint32FromValue(napi_env env, napi_value value);
 
 uint32_t GetUint32Property(napi_env env, napi_value object, const std::string &propertyName);
 
 void SetUint32Property(napi_env env, napi_value object, const std::string &name, uint32_t value);
+
+void SetUint64Property(napi_env env, napi_value object, const std::string &name, uint64_t value);
 
 /* INT32 */
 napi_value CreateInt32(napi_env env, int32_t code);

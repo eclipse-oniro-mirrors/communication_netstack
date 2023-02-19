@@ -54,6 +54,8 @@ public:
 
     static napi_value RequestCallback(RequestContext *context);
 
+    static napi_value Request2Callback(RequestContext *context);
+
     static std::string MakeUrl(const std::string &url, std::string param, const std::string &extraParam);
 
     static bool MethodForGet(const std::string &method);
@@ -104,6 +106,15 @@ private:
     static void ReadRespond();
 
     static void GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions);
+
+    static void OnDataReceive(napi_env env, napi_status status, void *data);
+
+    static void OnDataProgress(napi_env env, napi_status status, void *data);
+
+    static void OnDataEnd(napi_env env, napi_status status, void *data);
+
+    static int ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
+                                curl_off_t ulnow);
 
     struct StaticVariable {
         StaticVariable() : curlMulti(nullptr), initialized(false), runThread(true) {}
