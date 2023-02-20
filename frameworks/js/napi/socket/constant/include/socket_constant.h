@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,14 +13,18 @@
  * limitations under the License.
  */
 
-#ifndef COMMUNICATIONNETSTACK_EVENT_LIST_H
-#define COMMUNICATIONNETSTACK_EVENT_LIST_H
+#ifndef COMMUNICATIONNETSTACK_CONSTANT_H
+#define COMMUNICATIONNETSTACK_CONSTANT_H
 
-static constexpr const char *ON_HEADER_RECEIVE = "headerReceive";
-static constexpr const char *ON_DATA_RECEIVE = "dataReceive";
-static constexpr const char *ON_DATA_END = "dataEnd";
-static constexpr const char *ON_DATA_PROGRESS = "dataProgress";
+#include <map>
 
-static constexpr const char *ON_HEADERS_RECEIVE = "headersReceive";
+namespace OHOS::NetStack {
+static constexpr const size_t MAX_ERR_NUM = 256;
 
-#endif /* COMMUNICATIONNETSTACK_EVENT_LIST_H */
+enum SocketErrorCode {
+    SOCKET_ERROR_CODE_BASE = 2301000
+};
+} // namespace OHOS::NetStack
+
+#endif /* COMMUNICATIONNETSTACK_CONSTANT_H */
+

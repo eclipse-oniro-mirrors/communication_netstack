@@ -86,6 +86,7 @@ void HttpModuleExports::DefineHttpRequestClass(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
         DECLARE_NAPI_FUNCTION(HttpRequest::FUNCTION_REQUEST, HttpRequest::Request),
+        DECLARE_NAPI_FUNCTION(HttpRequest::FUNCTION_REQUEST2, HttpRequest::Request2),
         DECLARE_NAPI_FUNCTION(HttpRequest::FUNCTION_DESTROY, HttpRequest::Destroy),
         DECLARE_NAPI_FUNCTION(HttpRequest::FUNCTION_ON, HttpRequest::On),
         DECLARE_NAPI_FUNCTION(HttpRequest::FUNCTION_ONCE, HttpRequest::Once),
@@ -210,14 +211,39 @@ napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_i
 {
 #ifndef MAC_PLATFORM
     return ModuleTemplate::InterfaceWithOutAsyncWork<RequestContext>(
-        env, info, [](napi_env, napi_value, RequestContext *context) -> bool {
+        env, info,
+        [](napi_env, napi_value, RequestContext *context) -> bool {
             if (!HttpExec::Initialize()) {
                 return false;
             }
 
             HttpExec::AsyncRunRequest(context);
             return true;
-        });
+        },
+        "Request", HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
+#else
+    return ModuleTemplate::Interface<RequestContext>(
+        env, info, REQUEST_ASYNC_WORK_NAME,
+        [](napi_env, napi_value, RequestContext *) -> bool { return HttpExec::Initialize(); },
+        HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
+#endif
+}
+
+napi_value HttpModuleExports::HttpRequest::Request2(napi_env env, napi_callback_info info)
+{
+#ifndef MAC_PLATFORM
+    return ModuleTemplate::InterfaceWithOutAsyncWork<RequestContext>(
+        env, info,
+        [](napi_env, napi_value, RequestContext *context) -> bool {
+            if (!HttpExec::Initialize()) {
+                return false;
+            }
+
+            context->EnableRequest2();
+            HttpExec::AsyncRunRequest(context);
+            return true;
+        },
+        "Request2", HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
 #else
     return ModuleTemplate::Interface<RequestContext>(
         env, info, REQUEST_ASYNC_WORK_NAME,
@@ -236,7 +262,7 @@ napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_i
 
 napi_value HttpModuleExports::HttpRequest::On(napi_env env, napi_callback_info info)
 {
-    ModuleTemplate::On(env, info, {ON_HEADERS_RECEIVE}, false);
+    ModuleTemplate::On(env, info, {ON_HEADERS_RECEIVE, ON_DATA_RECEIVE, ON_DATA_END, ON_DATA_PROGRESS}, false);
     return ModuleTemplate::On(env, info, {ON_HEADER_RECEIVE}, true);
 }
 
@@ -247,7 +273,7 @@ napi_value HttpModuleExports::HttpRequest::Once(napi_env env, napi_callback_info
 
 napi_value HttpModuleExports::HttpRequest::Off(napi_env env, napi_callback_info info)
 {
-    ModuleTemplate::Off(env, info, {ON_HEADERS_RECEIVE});
+    ModuleTemplate::Off(env, info, {ON_HEADERS_RECEIVE, ON_DATA_RECEIVE, ON_DATA_END, ON_DATA_PROGRESS});
     return ModuleTemplate::Off(env, info, {ON_HEADER_RECEIVE});
 }
 

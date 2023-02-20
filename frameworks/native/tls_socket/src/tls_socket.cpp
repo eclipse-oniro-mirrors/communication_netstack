@@ -20,6 +20,7 @@
 #include <regex>
 #include <securec.h>
 #include <thread>
+#include <memory>
 
 #include <netinet/tcp.h>
 #include <openssl/err.h>
@@ -64,16 +65,29 @@ const std::regex PATTERN{
 
 int ConvertErrno()
 {
-    return TlsSocketError::TLSSOCKET_ERROR_ERRNO_BASE + errno;
+    return TlsSocketError::TLS_ERR_SYS_BASE + errno;
 }
 
 int ConvertSSLError(ssl_st *ssl)
 {
     if (!ssl) {
-        return TLSSOCKET_ERROR_SSL_NULL;
+        return TLS_ERR_SSL_NULL;
     }
-    return TlsSocketError::TLSSOCKET_ERROR_SSL_BASE + SSL_get_error(ssl, SSL_RET_CODE);
+    return TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl, SSL_RET_CODE);
 }
+
+std::string MakeErrnoString()
+{
+    return strerror(errno);
+}
+
+std::string MakeSSLErrorString(int error)
+{
+    char err[MAX_ERR_LEN] = {0};
+    ERR_error_string_n(error - TlsSocketError::TLS_ERR_SYS_BASE, err, sizeof(err));
+    return err;
+}
+
 std::vector<std::string> SplitEscapedAltNames(std::string &altNames)
 {
     std::vector<std::string> result;
@@ -141,6 +155,7 @@ TLSSecureOptions &TLSSecureOptions::operator=(const TLSSecureOptions &tlsSecureO
     protocolChain_ = tlsSecureOptions.GetProtocolChain();
     crlChain_ = tlsSecureOptions.GetCrlChain();
     keyPass_ = tlsSecureOptions.GetKeyPass();
+    key_ = tlsSecureOptions.GetKey();
     signatureAlgorithms_ = tlsSecureOptions.GetSignatureAlgorithms();
     cipherSuite_ = tlsSecureOptions.GetCipherSuite();
     useRemoteCipherPrefer_ = tlsSecureOptions.UseRemoteCipherPrefer();
@@ -538,7 +553,7 @@ void TLSSocket::CallSetExtraOptionsCallback(int32_t err, SetExtraOptionsCallback
     }
 }
 
-void TLSSocket::CallGetCertificateCallback(int32_t err, const std::string &cert, GetCertificateCallback callback)
+void TLSSocket::CallGetCertificateCallback(int32_t err, const X509CertRawData &cert, GetCertificateCallback callback)
 {
     GetCertificateCallback func = nullptr;
     {
@@ -553,7 +568,7 @@ void TLSSocket::CallGetCertificateCallback(int32_t err, const std::string &cert,
     }
 }
 
-void TLSSocket::CallGetRemoteCertificateCallback(int32_t err, const std::string &cert,
+void TLSSocket::CallGetRemoteCertificateCallback(int32_t err, const X509CertRawData &cert,
                                                  GetRemoteCertificateCallback callback)
 {
     GetRemoteCertificateCallback func = nullptr;
@@ -664,7 +679,6 @@ void TLSSocket::Connect(OHOS::NetStack::TLSConnectOptions &tlsConnectOptions,
         callback(resErr);
         return;
     }
-
     StartReadMessage();
     CallOnConnectCallback();
     callback(TLSSOCKET_SUCCESS);
@@ -702,11 +716,13 @@ void TLSSocket::Close(const OHOS::NetStack::CloseCallback &callback)
 {
     if (!WaitConditionWithTimeout(&isRunning_, TIMEOUT_MS)) {
         callback(ConvertErrno());
+        NETSTACK_LOGE("The error cause is that the runtime wait time is insufficient");
         return;
     }
     isRunning_ = false;
     if (!WaitConditionWithTimeout(&isRunOver_, TIMEOUT_MS)) {
         callback(ConvertErrno());
+        NETSTACK_LOGE("The error is due to insufficient delay time");
         return;
     }
     auto res = tlsSocketInternal_.Close();
@@ -910,11 +926,13 @@ void TLSSocket::SetExtraOptions(const OHOS::NetStack::TCPExtraOptions &tcpExtraO
 void TLSSocket::GetCertificate(const GetCertificateCallback &callback)
 {
     const auto &cert = tlsSocketInternal_.GetCertificate();
-    if (cert.empty()) {
+    NETSTACK_LOGI("cert der is %{public}d", cert.encodingFormat);
+
+    if (!cert.data.Length()) {
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         NETSTACK_LOGE("GetCertificate errno %{public}d, %{public}s", resErr, MakeSSLErrorString(resErr).c_str());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        callback(resErr, "");
+        callback(resErr, {});
         return;
     }
     callback(TLSSOCKET_SUCCESS, cert);
@@ -922,12 +940,12 @@ void TLSSocket::GetCertificate(const GetCertificateCallback &callback)
 
 void TLSSocket::GetRemoteCertificate(const GetRemoteCertificateCallback &callback)
 {
-    const auto &remoteCert = tlsSocketInternal_.GetRemoteCertificate();
-    if (remoteCert.empty()) {
+    const auto &remoteCert = tlsSocketInternal_.GetRemoteCertRawData();
+    if (!remoteCert.data.Length()) {
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         NETSTACK_LOGE("GetRemoteCertificate errno %{public}d, %{public}s", resErr, MakeSSLErrorString(resErr).c_str());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        callback(resErr, "");
+        callback(resErr, {});
         return;
     }
     callback(TLSSOCKET_SUCCESS, remoteCert);
@@ -1204,7 +1222,7 @@ std::string TLSSocket::TLSSocketInternal::GetRemoteCertificate() const
     return remoteCert_;
 }
 
-std::string TLSSocket::TLSSocketInternal::GetCertificate() const
+const X509CertRawData &TLSSocket::TLSSocketInternal::GetCertificate() const
 {
     return configuration_.GetCertificate();
 }
@@ -1275,9 +1293,11 @@ bool TLSSocket::TLSSocketInternal::SetSharedSigals()
 bool TLSSocket::TLSSocketInternal::StartTlsConnected(const TLSConnectOptions &options)
 {
     if (!CreatTlsContext()) {
+        NETSTACK_LOGE("failed to create tls context");
         return false;
     }
     if (!StartShakingHands(options)) {
+        NETSTACK_LOGE("failed to shaking hands");
         return false;
     }
     return true;
@@ -1287,10 +1307,11 @@ bool TLSSocket::TLSSocketInternal::CreatTlsContext()
 {
     tlsContextPointer_ = TLSContext::CreateConfiguration(configuration_);
     if (!tlsContextPointer_) {
+        NETSTACK_LOGE("failed to create tls context pointer");
         return false;
     }
     if (!(ssl_ = tlsContextPointer_->CreateSsl())) {
-        NETSTACK_LOGE("Create ssl session failed");
+        NETSTACK_LOGE("failed to create ssl session");
         return false;
     }
     SSL_set_fd(ssl_, socketDescriptor_);
@@ -1369,7 +1390,7 @@ std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::st
     obj = X509_EXTENSION_get_object(ext);
     char subAltNameBuf[BUF_SIZE] = {0};
     OBJ_obj2txt(subAltNameBuf, BUF_SIZE, obj, 0);
-    NETSTACK_LOGD("extions obj : %s\n", subAltNameBuf);
+    NETSTACK_LOGD("extions obj : %{public}s\n", subAltNameBuf);
 
     ASN1_OCTET_STRING *extData = X509_EXTENSION_get_data(ext);
     std::string altNames = reinterpret_cast<char *>(extData->data);
@@ -1426,14 +1447,17 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
     NETSTACK_LOGI("SSL_get_cipher_list: %{public}s", list.c_str());
     configuration_.SetCipherSuite(list);
     if (!SetSharedSigals()) {
-        NETSTACK_LOGE("set sharedSigalgs is false");
+        NETSTACK_LOGE("Failed to set sharedSigalgs");
     }
     if (!GetRemoteCertificateFromPeer()) {
-        NETSTACK_LOGE("get remote certificate is false");
+        NETSTACK_LOGE("Failed to get remote certificate");
     }
     if (!peerX509_) {
         NETSTACK_LOGE("peer x509Certificates is null");
         return false;
+    }
+    if (!SetRemoteCertRawData()) {
+        NETSTACK_LOGE("Failed to set remote x509 certificata Serialization data");
     }
     CheckServerIdentity checkServerIdentity = options.GetCheckServerIdentity();
     if (!checkServerIdentity) {
@@ -1470,6 +1494,31 @@ bool TLSSocket::TLSSocketInternal::GetRemoteCertificateFromPeer()
     BIO_free(bio);
     remoteCert_ = std::string(data);
     return true;
+}
+
+bool TLSSocket::TLSSocketInternal::SetRemoteCertRawData()
+{
+    if (peerX509_ == nullptr) {
+        NETSTACK_LOGE("peerX509 is null");
+        return false;
+    }
+    int32_t length = i2d_X509(peerX509_, nullptr);
+    if (length <= 0) {
+        NETSTACK_LOGE("Failed to convert peerX509 to der format");
+        return false;
+    }
+    unsigned char *der = nullptr;
+    (void)i2d_X509(peerX509_, &der);
+    SecureData data(der, length);
+    remoteRawData_.data = data;
+    OPENSSL_free(der);
+    remoteRawData_.encodingFormat = DER;
+    return true;
+}
+
+const X509CertRawData &TLSSocket::TLSSocketInternal::GetRemoteCertRawData() const
+{
+    return remoteRawData_;
 }
 
 ssl_st *TLSSocket::TLSSocketInternal::GetSSL() const

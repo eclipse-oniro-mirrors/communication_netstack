@@ -23,7 +23,7 @@
 #include "netstack_log.h"
 
 namespace OHOS::NetStack {
-static constexpr std::string_view PARSE_ERROR = "First param is not TCPExtraOptions";
+static constexpr std::string_view PARSE_ERROR = "first param is not type of TCPExtraOptions";
 
 TLSSetExtraOptionsContext::TLSSetExtraOptionsContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
@@ -102,7 +102,7 @@ bool TLSSetExtraOptionsContext::CheckParamsType(napi_value *params, size_t param
 
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
         if (NapiUtils::GetValueType(GetEnv(), params[0]) != napi_object) {
-            NETSTACK_LOGE("first param is not NetAddress");
+            NETSTACK_LOGE("first param is not TCPExtraOptions");
             SetNeedThrowException(true);
             SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
             return false;

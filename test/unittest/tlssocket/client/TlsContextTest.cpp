@@ -66,7 +66,7 @@ static char g_caCrtFile[] =
 "        Validity\r\n"
 "            Not Before: Aug 23 07:33:55 2022 GMT\r\n"
 "            Not After : Aug 23 07:33:55 2023 GMT\r\n"
-"        Subject: C=CN, ST=beijing, O=ahaha Inc, OU=Root CA, CN=ahaha CA\r\n"
+"        Subject: C=CN, ST=beijing, O=ahaha CA Inc, OU=Root CA, CN=ahaha CA\r\n"
 "        Subject Public Key Info:\r\n"
 "            Public Key Algorithm: rsaEncryption\r\n"
 "                RSA Public-Key: (2048 bit)\r\n"
@@ -145,6 +145,17 @@ public:
 
 HWTEST_F(TlsContextTest, ContextTest1, TestSize.Level2)
 {
+    TLSConfiguration configuration;
+    configuration.SetCipherSuite(CIPHER_SUITE);
+    configuration.SetSignatureAlgorithms(SIGNATURE_ALGORITHMS);
+    std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
+
+    EXPECT_NE(tlsContext, nullptr);
+    tlsContext->CloseCtx();
+}
+
+HWTEST_F(TlsContextTest, ContextTest2, TestSize.Level2)
+{
     std::vector<std::string> protocol;
     protocol.push_back(PROTOCOL13);
     protocol.push_back(PROTOCOL12);
@@ -157,21 +168,28 @@ HWTEST_F(TlsContextTest, ContextTest1, TestSize.Level2)
     configuration.SetSignatureAlgorithms(SIGNATURE_ALGORITHMS);
     configuration.SetLocalCertificate(g_clientFile);
     std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
-    EXPECT_EQ(tlsContext, nullptr);
+    EXPECT_NE(tlsContext, nullptr);
     TLSContext::SetMinAndMaxProtocol(tlsContext.get());
     bool isInitTlsContext = TLSContext::InitTlsContext(tlsContext.get(), configuration);
-    EXPECT_FALSE(isInitTlsContext);
-    TLSContext::SetCipherList(tlsContext.get(), configuration);
-    TLSContext::SetSignatureAlgorithms(tlsContext.get(), configuration);
+    EXPECT_TRUE(isInitTlsContext);
+    bool isSetCipherList = TLSContext::SetCipherList(tlsContext.get(), configuration);
+    EXPECT_TRUE(isSetCipherList);
+    bool isSetSignatureAlgorithms = TLSContext::SetSignatureAlgorithms(tlsContext.get(), configuration);
+    EXPECT_TRUE(isSetSignatureAlgorithms);
     TLSContext::GetCiphers(tlsContext.get());
     TLSContext::UseRemoteCipher(tlsContext.get());
     bool setCaAndVerify = TLSContext::SetCaAndVerify(tlsContext.get(), configuration);
-    EXPECT_FALSE(setCaAndVerify);
+    EXPECT_TRUE(setCaAndVerify);
     bool setLocalCert = TLSContext::SetLocalCertificate(tlsContext.get(), configuration);
-    EXPECT_FALSE(setLocalCert);
+    EXPECT_TRUE(setLocalCert);
     bool setKeyAndCheck = TLSContext::SetKeyAndCheck(tlsContext.get(), configuration);
     EXPECT_FALSE(setKeyAndCheck);
     TLSContext::SetVerify(tlsContext.get());
+    SSL *ssl = tlsContext->CreateSsl();
+    EXPECT_NE(ssl, nullptr);
+    SSL_free(ssl);
+    ssl = nullptr;
+    tlsContext->CloseCtx();
 }
 
 HWTEST_F(TlsContextTest, ContextNullTest, TestSize.Level2)
@@ -192,8 +210,10 @@ HWTEST_F(TlsContextTest, ContextNullTest, TestSize.Level2)
     TLSContext::SetMinAndMaxProtocol(tlsContext.get());
     bool isInitTlsContext = TLSContext::InitTlsContext(tlsContext.get(), configuration);
     EXPECT_FALSE(isInitTlsContext);
-    TLSContext::SetCipherList(tlsContext.get(), configuration);
-    TLSContext::SetSignatureAlgorithms(tlsContext.get(), configuration);
+    bool isSetCipherList = TLSContext::SetCipherList(tlsContext.get(), configuration);
+    EXPECT_FALSE(isSetCipherList);
+    bool isSetSignatureAlgorithms = TLSContext::SetSignatureAlgorithms(tlsContext.get(), configuration);
+    EXPECT_FALSE(isSetSignatureAlgorithms);
     TLSContext::GetCiphers(tlsContext.get());
     TLSContext::UseRemoteCipher(tlsContext.get());
     bool setCaAndVerify = TLSContext::SetCaAndVerify(tlsContext.get(), configuration);

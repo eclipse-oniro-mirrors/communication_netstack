@@ -16,7 +16,10 @@
 #include "tls_certificate.h"
 
 #include <cerrno>
+#include <cstdlib>
+#include <memory>
 #include <map>
+#include <securec.h>
 
 #include <openssl/asn1.h>
 #include <openssl/bn.h>
@@ -59,7 +62,7 @@ TLSCertificate::TLSCertificate(const std::string &data, EncodingFormat format, C
 TLSCertificate::TLSCertificate(const std::string &data, CertType certType)
 {
     if (data.empty()) {
-        NETSTACK_LOGE("TlsCertificate::TlsCertificate(const std::string &data, CertType certType) data is empty");
+        NETSTACK_LOGE("data is null in the TLSCertificate constructor");
         return;
     }
     if (!CertificateFromData(data, certType)) {
@@ -83,6 +86,8 @@ TLSCertificate &TLSCertificate::operator=(const TLSCertificate &other)
     signatureAlgorithm_ = other.signatureAlgorithm_;
     localCertString_ = other.localCertString_;
     caCertString_ = other.caCertString_;
+    rawData_.data = other.rawData_.data;
+    rawData_.encodingFormat = other.rawData_.encodingFormat;
     return *this;
 }
 
@@ -194,24 +199,28 @@ bool TLSCertificate::AnalysisCertificate(CertType certType, X509 *x509)
     }
     if (certType == LOCAL_CERT) {
         if (!LocalCertToString(x509)) {
-            NETSTACK_LOGE("Local certificate to string is false");
+            NETSTACK_LOGE("Failed to convert certificate to string");
             return false;
         }
     }
+    if (!SetLocalCertRawData(x509)) {
+        NETSTACK_LOGE("Failed to set x509 certificata Serialization data");
+        return false;
+    }
     if (!SetX509Version(x509)) {
-        NETSTACK_LOGE("Set x509 version is false");
+        NETSTACK_LOGE("Failed to set x509 version");
         return false;
     }
     if (!SetSerialNumber(x509)) {
-        NETSTACK_LOGE("Set serial number is false");
+        NETSTACK_LOGE("Failed to set serial number");
         return false;
     }
     if (!SetNotValidTime(x509)) {
-        NETSTACK_LOGE("Set not valid time is false");
+        NETSTACK_LOGE("Failed to set not valid time");
         return false;
     }
     if (!SetSignatureAlgorithm(x509)) {
-        NETSTACK_LOGE("Set signature algorithm is false");
+        NETSTACK_LOGE("Failed to set signature algorithm");
         return false;
     }
     return true;
@@ -279,7 +288,7 @@ bool TLSCertificate::SetSerialNumber(X509 *x509)
     }
     ASN1_INTEGER *serial = X509_get_serialNumber(x509);
     if (!serial) {
-        NETSTACK_LOGE("Get serialNumber failed!");
+        NETSTACK_LOGE("Failed to get serial number");
         return false;
     }
     if (!serial->length) {
@@ -342,6 +351,26 @@ bool TLSCertificate::SetSignatureAlgorithm(X509 *x509)
     return true;
 }
 
+bool TLSCertificate::SetLocalCertRawData(X509 *x509)
+{
+    if (!x509) {
+        NETSTACK_LOGE("x509 is null");
+        return false;
+    }
+    int32_t length = i2d_X509(x509, nullptr);
+    if (length <= 0) {
+        NETSTACK_LOGE("Failed to convert x509 to der format, length is %{public}d", length);
+        return false;
+    }
+    unsigned char *der = nullptr;
+    (void)i2d_X509(x509, &der);
+    SecureData data(der, length);
+    rawData_.data = data;
+    OPENSSL_free(der);
+    rawData_.encodingFormat = DER;
+    return true;
+}
+
 std::string TLSCertificate::GetSignatureAlgorithm() const
 {
     return signatureAlgorithm_;
@@ -354,6 +383,11 @@ std::string TLSCertificate::GetLocalCertString() const
 Handle TLSCertificate::handle() const
 {
     return Handle(x509_);
+}
+
+const X509CertRawData &TLSCertificate::GetLocalCertRawData() const
+{
+    return rawData_;
 }
 } // namespace NetStack
 } // namespace OHOS

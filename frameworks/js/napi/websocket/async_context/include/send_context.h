@@ -33,6 +33,10 @@ public:
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
+    [[nodiscard]] int32_t GetErrorCode() const override;
+
+    [[nodiscard]] std::string GetErrorMessage() const override;
+
     void *data;
 
     size_t length;

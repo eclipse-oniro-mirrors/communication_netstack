@@ -175,6 +175,8 @@ HWTEST_F(TlsCertificateTest, CaFromData, TestSize.Level2)
     BIO *bio = BIO_new_mem_buf(g_caCrtFile, -1);
     X509 *x509Ca = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
     BIO_free(bio);
+    bool setLocalCertRawData = tlsCertificate.SetLocalCertRawData(x509Ca);
+    EXPECT_TRUE(setLocalCertRawData);
     bool setX509Version = tlsCertificate.SetX509Version(x509Ca);
     EXPECT_TRUE(setX509Version);
     bool setSerialNumber = tlsCertificate.SetSerialNumber(x509Ca);

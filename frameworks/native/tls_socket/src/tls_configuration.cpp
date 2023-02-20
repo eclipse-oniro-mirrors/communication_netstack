@@ -46,6 +46,9 @@ TLSConfiguration &TLSConfiguration::operator=(const TLSConfiguration &other)
     minProtocol_ = other.minProtocol_;
     maxProtocol_ = other.maxProtocol_;
     cipherSuite_ = other.cipherSuite_;
+    caCertificateChain_ = other.caCertificateChain_;
+    signatureAlgorithms_ = other.signatureAlgorithms_;
+    privateKey_ = other.privateKey_;
     return *this;
 }
 
@@ -129,9 +132,9 @@ std::vector<CipherSuite> TLSConfiguration::GetCipherSuiteVec() const
     return cipherSuiteVec_;
 }
 
-std::string TLSConfiguration::GetCertificate() const
+const X509CertRawData &TLSConfiguration::GetCertificate() const
 {
-    return localCertificate_.GetLocalCertString();
+    return localCertificate_.GetLocalCertRawData();
 }
 
 void TLSConfiguration::SetCipherSuite(const std::string &cipherSuite)

@@ -20,6 +20,7 @@
 
 #include <napi/native_api.h>
 #include <napi/native_common.h>
+#include <securec.h>
 #include <uv.h>
 
 #include "module_template.h"
@@ -41,12 +42,8 @@ constexpr const char *PROPERTY_ADDRESS = "address";
 constexpr const char *PROPERTY_FAMILY = "family";
 constexpr const char *PROPERTY_PORT = "port";
 constexpr const char *PROPERTY_SIZE = "size";
-
-void ExternalAarrayBufferFinalize(napi_env env, void *data, void *hint)
-{
-    (void)data;
-    (void)hint;
-}
+constexpr const char *ON_MESSAGE = "message";
+constexpr const char *ON_REMOTE_INFO = "remoteInfo";
 
 void EventMessageCallback(uv_work_t *work, int status)
 {
@@ -70,25 +67,36 @@ void EventMessageCallback(uv_work_t *work, int status)
     }
     napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
     napi_value obj = NapiUtils::CreateObject(workWrapper->env);
+    napi_value remoteInfo = NapiUtils::CreateObject(workWrapper->env);
+    void *data = nullptr;
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(workWrapper->env, monitor->data_.size(), &data);
+    if (data != nullptr && arrayBuffer != nullptr) {
+        if (memcpy_s(data, monitor->data_.size(), monitor->data_.c_str(), monitor->data_.size()) != EOK) {
+            NETSTACK_LOGE("memcpy_s failed!");
+            delete workWrapper;
+            delete work;
+            return;
+        }
+    }
     napi_value message = nullptr;
-    napi_create_external_arraybuffer(workWrapper->env, static_cast<void *>(const_cast<char *>(monitor->data_.c_str())),
-                                     monitor->data_.size(), ExternalAarrayBufferFinalize, nullptr, &message);
+    napi_create_typedarray(workWrapper->env, napi_uint8_array, monitor->data_.size(), arrayBuffer, 0, &message);
     napi_value address = NapiUtils::CreateStringUtf8(workWrapper->env, monitor->remoteInfo_.GetAddress());
     napi_value family = NapiUtils::CreateStringUtf8(workWrapper->env, monitor->remoteInfo_.GetFamily());
     napi_value port = NapiUtils::CreateInt32(workWrapper->env, monitor->remoteInfo_.GetPort());
     napi_value size = NapiUtils::CreateInt32(workWrapper->env, monitor->remoteInfo_.GetSize());
-    NapiUtils::SetNamedProperty(workWrapper->env, obj, PROPERTY_ADDRESS, address);
-    NapiUtils::SetNamedProperty(workWrapper->env, obj, PROPERTY_FAMILY, family);
-    NapiUtils::SetNamedProperty(workWrapper->env, obj, PROPERTY_PORT, port);
-    NapiUtils::SetNamedProperty(workWrapper->env, obj, PROPERTY_SIZE, size);
-    std::pair<napi_value, napi_value> arg = {message, obj};
+    NapiUtils::SetNamedProperty(workWrapper->env, remoteInfo, PROPERTY_ADDRESS, address);
+    NapiUtils::SetNamedProperty(workWrapper->env, remoteInfo, PROPERTY_FAMILY, family);
+    NapiUtils::SetNamedProperty(workWrapper->env, remoteInfo, PROPERTY_PORT, port);
+    NapiUtils::SetNamedProperty(workWrapper->env, remoteInfo, PROPERTY_SIZE, size);
+    NapiUtils::SetNamedProperty(workWrapper->env, obj, ON_MESSAGE, message);
+    NapiUtils::SetNamedProperty(workWrapper->env, obj, ON_REMOTE_INFO, remoteInfo);
     if (workWrapper->manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         delete workWrapper;
         delete work;
         return;
     }
-    workWrapper->manager->Emit(workWrapper->type, arg);
+    workWrapper->manager->Emit(workWrapper->type, std::make_pair(NapiUtils::GetUndefined(workWrapper->env), obj));
     NapiUtils::CloseScope(workWrapper->env, scope);
     delete workWrapper;
     delete work;
@@ -180,7 +188,6 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
     if (paramsCount == PARAM_OPTION) {
         return NapiUtils::GetUndefined(env);
     }
-
     if (paramsCount != PARAM_OPTION_CALLBACK) {
         if (NapiUtils::GetValueType(env, params[0]) != napi_string) {
             napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
@@ -189,7 +196,6 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
             return NapiUtils::GetUndefined(env);
         }
     }
-
     napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager_));
     if (manager_ == nullptr) {
         NETSTACK_LOGE("manager is nullptr");

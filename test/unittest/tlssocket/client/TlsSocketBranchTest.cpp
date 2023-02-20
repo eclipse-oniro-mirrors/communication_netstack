@@ -37,7 +37,6 @@ static constexpr const char *SEND_DATA = "How do you do";
 static constexpr const char *SEND_DATA_EMPTY = "";
 static constexpr const size_t MAX_BUFFER_SIZE = 8192;
 const int PORT = 7838;
-const int TLSSOCKET_SSL_NULL = 2303501;
 const int SOCKET_FD = 5;
 const int SSL_ERROR_RETURN = -1;
 static char g_clientFile[] =
@@ -320,9 +319,9 @@ HWTEST_F(TlsSocketBranchTest, BranchTest5, TestSize.Level2)
     TLSSocket tlsSocket;
     tlsSocket.Bind(tlsConnectOptions.GetNetAddress(), [](int32_t errCode) { EXPECT_EQ(errCode, TLSSOCKET_SUCCESS); });
     tlsSocket.OnError([](int32_t errorNumber, const std::string &errorString) {
-        EXPECT_EQ(TLSSOCKET_SSL_NULL, errorNumber);
+        EXPECT_EQ(TLS_ERR_SSL_NULL, errorNumber);
     });
-    tlsSocket.Connect(tlsConnectOptions, [](int32_t errCode) { EXPECT_EQ(TLSSOCKET_SSL_NULL, errCode); });
+    tlsSocket.Connect(tlsConnectOptions, [](int32_t errCode) { EXPECT_EQ(TLS_ERR_SSL_NULL, errCode); });
     std::string getData;
     tlsSocket.OnMessage([&getData](const std::string &data, const SocketRemoteInfo &remoteInfo) {
         EXPECT_STREQ(getData.data(), nullptr);
@@ -330,15 +329,21 @@ HWTEST_F(TlsSocketBranchTest, BranchTest5, TestSize.Level2)
     const std::string data = "how do you do?";
     TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
-    tlsSocket.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_EQ(errCode, TLSSOCKET_SSL_NULL); });
+    tlsSocket.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_EQ(errCode, TLS_ERR_SSL_NULL); });
     tlsSocket.GetSignatureAlgorithms([](int32_t errCode, const std::vector<std::string> &algorithms) {
-        EXPECT_EQ(errCode, TLSSOCKET_SSL_NULL);
+        EXPECT_EQ(errCode, TLS_ERR_SSL_NULL);
+    });
+    tlsSocket.GetCertificate([](int32_t errCode, const X509CertRawData &cert) {
+        EXPECT_EQ(errCode, TLSSOCKET_SUCCESS);
     });
     tlsSocket.GetCipherSuite([](int32_t errCode, const std::vector<std::string> &suite) {
-        EXPECT_EQ(errCode, TLSSOCKET_SSL_NULL);
+        EXPECT_EQ(errCode, TLS_ERR_SSL_NULL);
     });
     tlsSocket.GetProtocol([](int32_t errCode, const std::string &protocol) {
         EXPECT_EQ(errCode, TLSSOCKET_SUCCESS);
+    });
+    tlsSocket.GetRemoteCertificate([](int32_t errCode, const X509CertRawData &cert) {
+        EXPECT_EQ(errCode, TLS_ERR_SSL_NULL);
     });
     (void)tlsSocket.Close([](int32_t errCode) { EXPECT_FALSE(errCode == TLSSOCKET_SUCCESS); });
 }
@@ -357,7 +362,7 @@ HWTEST_F(TlsSocketBranchTest, BranchTest6, TestSize.Level2)
     EXPECT_FALSE(sendSslNull);
     char buffer[MAX_BUFFER_SIZE];
     bzero(buffer, MAX_BUFFER_SIZE);
-    int32_t recvSslNull = tlsSocketInternal->Recv(buffer, MAX_BUFFER_SIZE);
+    int recvSslNull = tlsSocketInternal->Recv(buffer, MAX_BUFFER_SIZE);
     EXPECT_EQ(recvSslNull, SSL_ERROR_RETURN);
     bool closeSslNull = tlsSocketInternal->Close();
     EXPECT_FALSE(closeSslNull);
@@ -366,7 +371,7 @@ HWTEST_F(TlsSocketBranchTest, BranchTest6, TestSize.Level2)
     EXPECT_FALSE(send);
     bool sendEmpty = tlsSocketInternal->Send(SEND_DATA_EMPTY);
     EXPECT_FALSE(sendEmpty);
-    int32_t recv = tlsSocketInternal->Recv(buffer, MAX_BUFFER_SIZE);
+    int recv = tlsSocketInternal->Recv(buffer, MAX_BUFFER_SIZE);
     EXPECT_EQ(recv, SSL_ERROR_RETURN);
     bool close = tlsSocketInternal->Close();
     EXPECT_FALSE(close);

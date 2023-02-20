@@ -47,6 +47,7 @@ public:
     [[nodiscard]] KeyAlgorithm Algorithm() const;
     [[nodiscard]] Handle handle() const;
     const SecureData &GetKeyPass() const;
+    const SecureData &GetKeyData() const;
 
 private:
     void DecodeData(const SecureData &data, KeyAlgorithm algorithm, const SecureData &passPhrase);
@@ -63,6 +64,7 @@ private:
     EC_KEY *ec_ = nullptr;
     EVP_PKEY *genericKey_ = nullptr;
     SecureData keyPass_;
+    SecureData keyData_;
     bool keyIsNull_ = true;
     KeyType keyType_ = PUBLIC_KEY;
     KeyAlgorithm keyAlgorithm_ = OPAQUE;

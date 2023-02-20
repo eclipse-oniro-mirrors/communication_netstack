@@ -26,6 +26,7 @@
 #include "event_manager.h"
 #include "net_address.h"
 #include "socket_state_base.h"
+#include "tls.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -37,8 +38,8 @@ public:
 public:
     std::string protocol_;
     std::vector<std::string> cipherSuites_;
-    std::string cert_;
-    std::string remoteCert_;
+    X509CertRawData localCert_;
+    X509CertRawData remoteCert_;
     std::vector<std::string> signatureAlgorithms_;
     int32_t errorNumber_ = 0;
     SocketStateBase state_;

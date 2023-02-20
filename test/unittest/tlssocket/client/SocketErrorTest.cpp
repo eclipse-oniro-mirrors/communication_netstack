@@ -21,6 +21,7 @@ namespace OHOS {
 namespace NetStack {
 namespace {
 using namespace testing::ext;
+const int32_t ERROR_NOT_EXIT = 2303800;
 } // namespace
 
 class SocketErrorTest : public testing::Test {
@@ -34,22 +35,16 @@ public:
     virtual void TearDown() {}
 };
 
-HWTEST_F(SocketErrorTest, MakeErrorStringTest, TestSize.Level2)
+HWTEST_F(SocketErrorTest, SocketError, TestSize.Level2)
 {
-    std::string errorMsg = MakeErrnoString();
-    ASSERT_FALSE(errorMsg.empty());
+    std::string errorMsg = MakeErrorMessage(TLS_ERR_SYS_EINTR);
+    EXPECT_STREQ(errorMsg.data(), "Interrupted system call");
 }
 
-HWTEST_F(SocketErrorTest, MakeSSLErrorStringTest001, TestSize.Level2)
+HWTEST_F(SocketErrorTest, SocketError2, TestSize.Level2)
 {
-    std::string errorMsg = MakeSSLErrorString(TLSSOCKET_ERROR_SSL_NULL);
-    EXPECT_STREQ(errorMsg.data(), "ssl is null");
-}
-
-HWTEST_F(SocketErrorTest, MakeSSLErrorStringTest002, TestSize.Level2)
-{
-    std::string errorMsg = MakeSSLErrorString(TLSSOCKET_ERROR_PARAM_INVALID);
-    EXPECT_FALSE(errorMsg.empty());
+    std::string errorMsg = MakeErrorMessage(ERROR_NOT_EXIT);
+    EXPECT_STREQ(errorMsg.data(), "error:000002BC:lib(0):func(0):reason(700)");
 }
 } // namespace NetStack
 } // namespace OHOS

@@ -14,6 +14,7 @@
  */
 
 import {AsyncCallback, Callback} from "./basic";
+import connection from "./@ohos.net.connection";
 
 /**
  * Provides http related APIs.
@@ -22,6 +23,7 @@ import {AsyncCallback, Callback} from "./basic";
  * @syscap SystemCapability.Communication.NetStack
  */
 declare namespace http {
+  type HttpProxy = connection.HttpProxy;
   /**
    * Creates an HTTP request task.
    */
@@ -32,41 +34,56 @@ declare namespace http {
      * Request method.
      */
     method?: RequestMethod; // default is GET
+
     /**
      * Additional data of the request.
      * extraData can be a string or an Object (API 6) or an ArrayBuffer(API 8).
      */
     extraData?: string | Object | ArrayBuffer;
+
     /**
      * Data type to be returned. If this parameter is set, the system preferentially returns the specified type.
      *
      * @since 9
      */
     expectDataType?: HttpDataType;
+
     /**
      * @since 9
      */
     usingCache?: boolean; // default is true
+
     /**
      * @since 9
      */
     priority?: number; // [1, 1000], default is 1.
+
     /**
      * HTTP request header.
      */
     header?: Object; // default is 'content-type': 'application/json'
+
     /**
      * Read timeout period. The default value is 60,000, in ms.
      */
     readTimeout?: number; // default is 60s
+
     /**
      * Connection timeout interval. The default value is 60,000, in ms.
      */
     connectTimeout?: number; // default is 60s.
+
     /**
      * @since 9
      */
     usingProtocol?: HttpProtocol; // default is automatically specified by the system.
+    /**
+     * If this parameter is set as type of boolean, the system will use default proxy or not use proxy.
+     * If this parameter is set as type of HttpProxy, the system will use the specified HttpProxy.
+     *
+     * @since 10
+     */
+     usingProxy?: boolean | HttpProxy; // default is false.
   }
 
   export interface HttpRequest {
@@ -90,14 +107,16 @@ declare namespace http {
     /**
      * Registers an observer for HTTP Response Header events.
      *
-     * @deprecated use on_headersReceive instead since 8.
+     * @deprecated since 8
+     * @useinstead on_headersReceive
      */
     on(type: "headerReceive", callback: AsyncCallback<Object>): void;
 
     /**
      * Unregisters the observer for HTTP Response Header events.
      *
-     * @deprecated use off_headersReceive instead since 8.
+     * @deprecated since 8
+     * @useinstead off_headersReceive
      */
     off(type: "headerReceive", callback?: AsyncCallback<Object>): void;
 
@@ -208,6 +227,7 @@ declare namespace http {
      * If {@link HttpRequestOptions#expectDataType} is set, the system preferentially returns this parameter.
      */
     result: string | Object | ArrayBuffer;
+
     /**
      * If the resultType is string, you can get result directly.
      * If the resultType is Object, you can get result such as this: result['key'].
@@ -216,14 +236,17 @@ declare namespace http {
      * @since 9
      */
     resultType: HttpDataType;
+
     /**
      * Server status code.
      */
     responseCode: ResponseCode | number;
+
     /**
      * All headers in the response from the server.
      */
     header: Object;
+
     /**
      * @since 8
      */
