@@ -194,7 +194,11 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
     }
 
     if (context->GetManager()->IsManagerValid()) {
-        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
+        if (context->IsRequest2()) {
+            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::Request2Callback);
+        } else {
+            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
+        }
     }
 }
 
@@ -209,7 +213,11 @@ bool HttpExec::ExecRequest(RequestContext *context)
     if (!RequestWithoutCache(context)) {
         context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
         if (context->GetManager()->IsManagerValid()) {
-            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
+            if (context->IsRequest2()) {
+                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::Request2Callback);
+            } else {
+                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
+            }
         }
         return false;
     }
@@ -264,6 +272,11 @@ napi_value HttpExec::RequestCallback(RequestContext *context)
     NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
                                  static_cast<uint32_t>(HttpDataType::STRING));
     return object;
+}
+
+napi_value HttpExec::Request2Callback(OHOS::NetStack::RequestContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
 }
 
 std::string HttpExec::MakeUrl(const std::string &url, std::string param, const std::string &extraParam)
@@ -425,6 +438,10 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_URL, context->options.GetUrl().c_str(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CUSTOMREQUEST, method.c_str(), context);
 
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_XFERINFOFUNCTION, ProgressCallback, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_XFERINFODATA, context, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOPROGRESS, 0L, context);
+
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_WRITEFUNCTION, OnWritingMemoryBody, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_WRITEDATA, context, context);
 
@@ -471,7 +488,6 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 #endif // WINDOWS_PLATFORM
 #endif // NO_SSL_CERTIFICATION
 
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOPROGRESS, 1L, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOSIGNAL, 1L, context);
 #if HTTP_CURL_PRINT_VERBOSE
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_VERBOSE, 1L, context);
@@ -496,6 +512,17 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData)
 {
     auto context = static_cast<RequestContext *>(userData);
+    if (context == nullptr) {
+        return 0;
+    }
+    if (context->IsRequest2()) {
+        context->SetTempData(data, size * memBytes);
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataReceive);
+        return size * memBytes;
+    }
+    if (context->response.GetResult().size() > MAX_LIMIT) {
+        return 0;
+    }
     context->response.AppendResult(data, size * memBytes);
     return size * memBytes;
 }
@@ -503,11 +530,81 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
 size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t memBytes, void *userData)
 {
     auto context = static_cast<RequestContext *>(userData);
+    if (context == nullptr) {
+        return 0;
+    }
     if (context->response.GetResult().size() > MAX_LIMIT) {
         return 0;
     }
     context->response.AppendRawHeader(data, size * memBytes);
     return size * memBytes;
+}
+
+void HttpExec::OnDataReceive(napi_env env, napi_status status, void *data)
+{
+    auto context = static_cast<RequestContext *>(data);
+    if (context == nullptr) {
+        return;
+    }
+
+    void *buffer = nullptr;
+    auto &tempData = context->GetTempData();
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), tempData.size(), &buffer);
+    if (buffer == nullptr || arrayBuffer == nullptr) {
+        return;
+    }
+    if (memcpy_s(buffer, tempData.size(), tempData.data(), tempData.size()) != EOK) {
+        NETSTACK_LOGE("[CreateArrayBuffer] memory copy failed");
+        return;
+    }
+    context->Emit(ON_DATA_RECEIVE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), arrayBuffer));
+}
+
+void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
+{
+    NETSTACK_LOGI("OnDataProgress is in");
+    auto context = static_cast<RequestContext *>(data);
+    if (context == nullptr) {
+        return;
+    }
+    auto progress = NapiUtils::CreateObject(context->GetEnv());
+    if (NapiUtils::GetValueType(context->GetEnv(), progress) == napi_undefined) {
+        return;
+    }
+    NapiUtils::SetUint32Property(context->GetEnv(), progress, "receiveSize", static_cast<uint32_t>(context->GetNowLen()));
+    NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize", static_cast<uint32_t>(context->GetNowLen()));
+    context->Emit(ON_DATA_PROGRESS, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
+    NETSTACK_LOGI("OnDataProgress is out");
+}
+
+void HttpExec::OnDataEnd(napi_env env, napi_status status, void *data)
+{
+    auto context = static_cast<RequestContext *>(data);
+    if (context == nullptr) {
+        return;
+    }
+    auto undefined = NapiUtils::GetUndefined(context->GetEnv());
+    context->Emit(ON_DATA_END, std::make_pair(undefined, undefined));
+}
+
+int HttpExec::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
+                               curl_off_t ulnow)
+{
+    NETSTACK_LOGI("ProgressCallback is in");
+    (void)ultotal;
+    (void)ulnow;
+    auto context = static_cast<RequestContext *>(userData);
+    if (context == nullptr || !context->IsRequest2()) {
+        return 0;
+    }
+    context->SetTotalLen(dltotal);
+    context->SetNowLen(dlnow);
+    NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataProgress);
+    if (dltotal == dlnow) {
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd);
+    }
+    NETSTACK_LOGI("ProgressCallback is out");
+    return 0;
 }
 
 struct curl_slist *HttpExec::MakeHeaders(const std::vector<std::string> &vec)
