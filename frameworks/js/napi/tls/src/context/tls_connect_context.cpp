@@ -69,16 +69,12 @@ bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptio
     }
     secureOption.SetCaChain(caVec);
 
-    if (!NapiUtils::HasNamedProperty(env, secureOptions, KEY_NAME)) {
-        return false;
+    if (NapiUtils::HasNamedProperty(env, secureOptions, KEY_NAME)) {
+        secureOption.SetKey(SecureData(NapiUtils::GetStringPropertyUtf8(env, secureOptions, KEY_NAME)));
     }
-    secureOption.SetKey(SecureData(NapiUtils::GetStringPropertyUtf8(env, secureOptions, KEY_NAME)));
-
-    if (!NapiUtils::HasNamedProperty(env, secureOptions, CERT_NAME)) {
-        return false;
+    if (NapiUtils::HasNamedProperty(env, secureOptions, CERT_NAME)) {
+        secureOption.SetCert(NapiUtils::GetStringPropertyUtf8(env, secureOptions, CERT_NAME));
     }
-    std::string cert = NapiUtils::GetStringPropertyUtf8(env, secureOptions, CERT_NAME);
-    secureOption.SetCert(cert);
     return true;
 }
 } // namespace

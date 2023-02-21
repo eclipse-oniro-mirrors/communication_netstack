@@ -36,6 +36,10 @@ public:
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
+    [[nodiscard]] int32_t GetErrorCode() const override;
+
+    [[nodiscard]] std::string GetErrorMessage() const override;
+
     std::string url;
 
     std::map<std::string, std::string> header;

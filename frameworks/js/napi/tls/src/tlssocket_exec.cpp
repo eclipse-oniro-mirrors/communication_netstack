@@ -19,6 +19,7 @@
 #include <vector>
 
 #include <napi/native_api.h>
+#include <securec.h>
 
 #include "context_key.h"
 #include "event_list.h"
@@ -30,8 +31,8 @@
 namespace OHOS {
 namespace NetStack {
 namespace {
-constexpr int ERROR_DIVISOR = 1000;
-constexpr int ERROR_RANGE = 500;
+constexpr const char *CERTIFICATA_DATA = "data";
+constexpr const char *CERTIFICATA_ENCODING_FORMAT = "encodingFormat";
 } // namespace
 bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
 {
@@ -43,13 +44,14 @@ bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecGetCertificate tlsSocket is null");
+        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
-    tlsSocket->GetCertificate([&context](int32_t errorNumber, const std::string &cert) {
-        context->cert_ = cert;
+    tlsSocket->GetCertificate([&context](int32_t errorNumber, const X509CertRawData &cert) {
+        context->localCert_ = cert;
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
-            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+            context->SetError(errorNumber, MakeErrorMessage(errorNumber));
         }
     });
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
@@ -65,16 +67,13 @@ bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecConnect tlsSocket is null");
+        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
     tlsSocket->Connect(context->connectOptions_, [&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
-            if ((errorNumber % ERROR_DIVISOR) < ERROR_RANGE) {
-                context->SetError(errorNumber, MakeErrnoString());
-                return;
-            }
-            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+            context->SetError(errorNumber, MakeErrorMessage(errorNumber));
         }
     });
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
@@ -90,13 +89,14 @@ bool TLSSocketExec::ExecGetCipherSuites(GetCipherSuitesContext *context)
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecGetCipherSuites tlsSocket is null");
+        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
     tlsSocket->GetCipherSuite([&context](int32_t errorNumber, const std::vector<std::string> &suite) {
         context->cipherSuites_ = suite;
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
-            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+            context->SetError(errorNumber, MakeErrorMessage(errorNumber));
         }
     });
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
@@ -112,13 +112,14 @@ bool TLSSocketExec::ExecGetRemoteCertificate(GetRemoteCertificateContext *contex
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecGetRemoteCertificate tlsSocket is null");
+        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
-    tlsSocket->GetRemoteCertificate([&context](int32_t errorNumber, const std::string &cert) {
+    tlsSocket->GetRemoteCertificate([&context](int32_t errorNumber, const X509CertRawData &cert) {
         context->remoteCert_ = cert;
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
-            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+            context->SetError(errorNumber, MakeErrorMessage(errorNumber));
         }
     });
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
@@ -134,13 +135,14 @@ bool TLSSocketExec::ExecGetProtocol(GetProtocolContext *context)
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecGetProtocol tlsSocket is null");
+        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
     tlsSocket->GetProtocol([&context](int32_t errorNumber, const std::string &protocol) {
         context->protocol_ = protocol;
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
-            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+            context->SetError(errorNumber, MakeErrorMessage(errorNumber));
         }
     });
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
@@ -156,13 +158,14 @@ bool TLSSocketExec::ExecGetSignatureAlgorithms(GetSignatureAlgorithmsContext *co
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecGetSignatureAlgorithms tlsSocket is null");
+        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
     tlsSocket->GetSignatureAlgorithms([&context](int32_t errorNumber, const std::vector<std::string> &algorithms) {
         context->signatureAlgorithms_ = algorithms;
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
-            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+            context->SetError(errorNumber, MakeErrorMessage(errorNumber));
         }
     });
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
@@ -178,6 +181,7 @@ bool TLSSocketExec::ExecSend(TLSSendContext *context)
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecSend tlsSocket is null");
+        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
     TCPSendOptions tcpSendOptions;
@@ -185,7 +189,7 @@ bool TLSSocketExec::ExecSend(TLSSendContext *context)
     tlsSocket->Send(tcpSendOptions, [&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
-            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+            context->SetError(errorNumber, MakeErrorMessage(errorNumber));
         }
     });
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
@@ -201,12 +205,13 @@ bool TLSSocketExec::ExecClose(TLSNapiContext *context)
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecClose tlsSocket is null");
+        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
     tlsSocket->Close([&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
-            context->SetError(errorNumber, MakeSSLErrorString(errorNumber));
+            context->SetError(errorNumber, MakeErrorMessage(errorNumber));
         }
     });
     delete tlsSocket;
@@ -225,7 +230,7 @@ bool TLSSocketExec::ExecBind(TLSBindContext *context)
     tlsSocket->Bind(context->address_, [&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
-            std::string errorString = MakeErrnoString();
+            std::string errorString = MakeErrorMessage(errorNumber);
             context->SetError(errorNumber, errorString);
         }
     });
@@ -243,13 +248,14 @@ bool TLSSocketExec::ExecGetRemoteAddress(TLSGetRemoteAddressContext *context)
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecGetRemoteAddress tlsSocket is null");
+        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
     tlsSocket->GetRemoteAddress([&context](int32_t errorNumber, const NetAddress address) {
         context->address_ = address;
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
-            context->SetError(errorNumber, MakeErrnoString());
+            context->SetError(errorNumber, MakeErrorMessage(errorNumber));
         }
     });
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
@@ -260,18 +266,20 @@ bool TLSSocketExec::ExecGetState(TLSGetStateContext *context)
     auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
-        return false;
+        context->state_.SetIsClose(true);
+        return true;
     }
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecGetState tlsSocket is null");
-        return false;
+        context->state_.SetIsClose(true);
+        return true;
     }
     tlsSocket->GetState([&context](int32_t errorNumber, const SocketStateBase state) {
         context->state_ = state;
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
-            context->SetError(errorNumber, MakeErrnoString());
+            context->SetError(errorNumber, MakeErrorMessage(errorNumber));
         }
     });
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
@@ -287,12 +295,13 @@ bool TLSSocketExec::ExecSetExtraOptions(TLSSetExtraOptionsContext *context)
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecSetExtraOptions tlsSocket is null");
+        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
     tlsSocket->SetExtraOptions(context->options_, [&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
-            context->SetError(errorNumber, MakeErrnoString());
+            context->SetError(errorNumber, MakeErrorMessage(errorNumber));
         }
     });
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
@@ -300,13 +309,27 @@ bool TLSSocketExec::ExecSetExtraOptions(TLSSetExtraOptionsContext *context)
 
 napi_value TLSSocketExec::GetCertificateCallback(GetCertificateContext *context)
 {
+    void *data = nullptr;
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(),
+                                                          context->localCert_.data.Length(), &data);
+    if (data != nullptr && arrayBuffer != nullptr) {
+        if (memcpy_s(data, context->localCert_.data.Length(),
+                     reinterpret_cast<const uint8_t *>(context->localCert_.data.Data()),
+                     context->localCert_.data.Length()) != EOK) {
+            NETSTACK_LOGE("memcpy_s failed!");
+            return NapiUtils::GetUndefined(context->GetEnv());
+        }
+    }
+    napi_value outData = nullptr;
+    napi_create_typedarray(context->GetEnv(), napi_uint8_array, context->localCert_.data.Length(), arrayBuffer, 0,
+                           &outData);
     napi_value obj = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
         return NapiUtils::GetUndefined(context->GetEnv());
     }
-    napi_value x509CertRawData = NapiUtils::CreateArray(context->GetEnv(), context->cert_.size());
-    NapiUtils::SetNamedProperty(context->GetEnv(), obj, "data", x509CertRawData);
-    NapiUtils::SetInt32Property(context->GetEnv(), obj, "encodingFormat", 1);
+    NapiUtils::SetNamedProperty(context->GetEnv(), obj, CERTIFICATA_DATA, outData);
+    NapiUtils::SetInt32Property(context->GetEnv(), obj, CERTIFICATA_ENCODING_FORMAT,
+                                context->localCert_.encodingFormat);
     return obj;
 }
 
@@ -328,13 +351,27 @@ napi_value TLSSocketExec::GetCipherSuitesCallback(GetCipherSuitesContext *contex
 
 napi_value TLSSocketExec::GetRemoteCertificateCallback(GetRemoteCertificateContext *context)
 {
+    void *data = nullptr;
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(),
+                                                          context->remoteCert_.data.Length(), &data);
+    if (data != nullptr && arrayBuffer != nullptr) {
+        if (memcpy_s(data, context->remoteCert_.data.Length(),
+                     reinterpret_cast<const uint8_t *>(context->remoteCert_.data.Data()),
+                     context->remoteCert_.data.Length()) != EOK) {
+            NETSTACK_LOGE("memcpy_s failed!");
+            return NapiUtils::GetUndefined(context->GetEnv());
+        }
+    }
+    napi_value outData = nullptr;
+    napi_create_typedarray(context->GetEnv(), napi_uint8_array, context->remoteCert_.data.Length(), arrayBuffer, 0,
+                           &outData);
     napi_value obj = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
         return NapiUtils::GetUndefined(context->GetEnv());
     }
-    napi_value x509CertRawData = NapiUtils::CreateArray(context->GetEnv(), context->remoteCert_.size());
-    NapiUtils::SetNamedProperty(context->GetEnv(), obj, "data", x509CertRawData);
-    NapiUtils::SetInt32Property(context->GetEnv(), obj, "encodingFormat", 1);
+    NapiUtils::SetNamedProperty(context->GetEnv(), obj, CERTIFICATA_DATA, outData);
+    NapiUtils::SetInt32Property(context->GetEnv(), obj, CERTIFICATA_ENCODING_FORMAT,
+                                context->remoteCert_.encodingFormat);
     return obj;
 }
 

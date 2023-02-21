@@ -26,10 +26,12 @@
 
 namespace OHOS {
 namespace NetStack {
+VerifyMode TLSContext::verifyMode_ = TWO_WAY_MODE;
 std::unique_ptr<TLSContext> TLSContext::CreateConfiguration(const TLSConfiguration &configuration)
 {
     auto tlsContext = std::make_unique<TLSContext>();
     if (!InitTlsContext(tlsContext.get(), configuration)) {
+        NETSTACK_LOGE("Failed to init tls context");
         return nullptr;
     }
     return tlsContext;
@@ -42,20 +44,18 @@ void InitEnv()
     SSL_load_error_strings();
 }
 
-void TLSContext::SetCipherList(TLSContext *tlsContext, const TLSConfiguration &configuration)
+bool TLSContext::SetCipherList(TLSContext *tlsContext, const TLSConfiguration &configuration)
 {
     if (!tlsContext) {
         NETSTACK_LOGE("tlsContext is null");
-        return;
+        return false;
     }
     NETSTACK_LOGD("GetCipherSuite = %{public}s", configuration.GetCipherSuite().c_str());
-    if (configuration.GetCipherSuite().empty()) {
-        NETSTACK_LOGE("Get Cipher Suite is failed");
-        return;
-    }
     if (SSL_CTX_set_cipher_list(tlsContext->ctx_, configuration.GetCipherSuite().c_str()) <= 0) {
         NETSTACK_LOGE("Error setting the cipher list");
+        return false;
     }
+    return true;
 }
 
 void TLSContext::GetCiphers(TLSContext *tlsContext)
@@ -79,18 +79,22 @@ void TLSContext::GetCiphers(TLSContext *tlsContext)
     }
 }
 
-void TLSContext::SetSignatureAlgorithms(TLSContext *tlsContext, const TLSConfiguration &configuration)
+bool TLSContext::SetSignatureAlgorithms(TLSContext *tlsContext, const TLSConfiguration &configuration)
 {
     if (!tlsContext) {
         NETSTACK_LOGE("tlsContext is null");
-        return;
+        return false;
     }
     if (configuration.GetSignatureAlgorithms().empty()) {
-        return;
+        NETSTACK_LOGE("configuration get signature algorithms is empty");
+        return false;
     }
+
     if (!SSL_CTX_set1_sigalgs_list(tlsContext->ctx_, configuration.GetSignatureAlgorithms().c_str())) {
         NETSTACK_LOGE("Error setting the Signature Algorithms");
+        return false;
     }
+    return true;
 }
 
 void TLSContext::UseRemoteCipher(TLSContext *tlsContext)
@@ -158,12 +162,13 @@ void TLSContext::SetMinAndMaxProtocol(TLSContext *tlsContext)
 bool TLSContext::SetCaAndVerify(TLSContext *tlsContext, const TLSConfiguration &configuration)
 {
     if (!tlsContext) {
-        NETSTACK_LOGE("TLSContext::SetCaAndVerify: tlsContext is null");
+        NETSTACK_LOGE("tlsContext is null");
         return false;
     }
     for (const auto &cert : configuration.GetCaCertificate()) {
         TLSCertificate ca(cert, CA_CERT);
         if (!X509_STORE_add_cert(SSL_CTX_get_cert_store(tlsContext->ctx_), static_cast<X509 *>(ca.handle()))) {
+            NETSTACK_LOGE("Failed to add x509 cert");
             return false;
         }
     }
@@ -173,11 +178,11 @@ bool TLSContext::SetCaAndVerify(TLSContext *tlsContext, const TLSConfiguration &
 bool TLSContext::SetLocalCertificate(TLSContext *tlsContext, const TLSConfiguration &configuration)
 {
     if (!tlsContext) {
-        NETSTACK_LOGE("TLSContext::SetLocalCertificate: tlsContext is null");
+        NETSTACK_LOGE("tlsContext is null");
         return false;
     }
     if (!SSL_CTX_use_certificate(tlsContext->ctx_, static_cast<X509 *>(configuration.GetLocalCertificate().handle()))) {
-        NETSTACK_LOGE("Error loading local certificate");
+        NETSTACK_LOGD("The local certificate is unavailable");
         return false;
     }
     return true;
@@ -225,10 +230,20 @@ bool TLSContext::SetKeyAndCheck(TLSContext *tlsContext, const TLSConfiguration &
 void TLSContext::SetVerify(TLSContext *tlsContext)
 {
     if (!tlsContext) {
-        NETSTACK_LOGE("TLSContext::SetVerify: tlsContext is null");
+        NETSTACK_LOGE("tlsContext is null");
         return;
     }
-    SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, nullptr);
+
+    if (tlsContext->tlsConfiguration_.GetCaCertificate().empty() ||
+        !tlsContext->tlsConfiguration_.GetCertificate().data.Length() ||
+        !tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyData().Length()) {
+        verifyMode_ = ONE_WAY_MODE;
+        SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_PEER, nullptr);
+    } else {
+        verifyMode_ = TWO_WAY_MODE;
+        SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_FAIL_IF_NO_PEER_CERT, nullptr);
+    }
+    NETSTACK_LOGD("Authentication mode is %{public}s", verifyMode_ ? "two-way authentication" : "one-way authentication");
 }
 
 bool TLSContext::InitTlsContext(TLSContext *tlsContext, const TLSConfiguration &configuration)
@@ -241,18 +256,31 @@ bool TLSContext::InitTlsContext(TLSContext *tlsContext, const TLSConfiguration &
     tlsContext->tlsConfiguration_ = configuration;
     tlsContext->ctx_ = SSL_CTX_new(TLS_client_method());
     if (tlsContext->ctx_ == nullptr) {
-        NETSTACK_LOGE("tlsContext->ctx_ is nullptr");
+        NETSTACK_LOGE("ctx is nullptr");
         return false;
     }
-
-    SetCipherList(tlsContext, configuration);
+    if (!configuration.GetCipherSuite().empty()) {
+        if (!SetCipherList(tlsContext, configuration)) {
+            NETSTACK_LOGE("Failed to set cipher suite");
+            return false;
+        }
+    }
+    if (!configuration.GetSignatureAlgorithms().empty()) {
+        if (!SetSignatureAlgorithms(tlsContext, configuration)) {
+            NETSTACK_LOGE("Failed to set signature algorithms");
+            return false;
+        }
+    }
     GetCiphers(tlsContext);
-    SetSignatureAlgorithms(tlsContext, configuration);
     UseRemoteCipher(tlsContext);
     SetMinAndMaxProtocol(tlsContext);
     SetVerify(tlsContext);
     if (!SetCaAndVerify(tlsContext, configuration)) {
         return false;
+    }
+    if (!verifyMode_) {
+        NETSTACK_LOGD("one way authentication");
+        return true;
     }
     if (!SetLocalCertificate(tlsContext, configuration)) {
         return false;

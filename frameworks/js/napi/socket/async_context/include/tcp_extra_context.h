@@ -36,6 +36,10 @@ public:
 
     [[nodiscard]] int GetSocketFd() const;
 
+    [[nodiscard]] int32_t GetErrorCode() const override;
+
+    [[nodiscard]] std::string GetErrorMessage() const override;
+
     TCPExtraOptions options_;
     int32_t errorNumber_ = 0;
 

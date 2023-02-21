@@ -43,10 +43,7 @@ public:
             return;
         }
         if (!context->IsParseOK()) {
-            if (context->GetErrorCode() ==
-                std::numeric_limits<int32_t>::max()) {                // api9 or before not set error in context.
-                context->SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG); // if developer not set error, there will set.
-            }
+            context->SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG); // if developer not set error, there will set.
             NETSTACK_LOGE("parameter error");
             return;
         }
@@ -69,7 +66,7 @@ public:
         std::unique_ptr<Context, decltype(deleter)> context(static_cast<Context *>(data), deleter);
         size_t argc = 2;
         napi_value argv[2] = {nullptr};
-        if (context->IsExecOK()) {
+        if (context->IsParseOK() && context->IsExecOK()) {
             argv[0] = NapiUtils::GetUndefined(env);
 
             if (Callback != nullptr) {

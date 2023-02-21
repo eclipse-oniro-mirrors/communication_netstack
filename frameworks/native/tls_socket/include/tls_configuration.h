@@ -58,7 +58,7 @@ public:
     void SetCipherSuite(const std::string &cipherSuite);
     [[nodiscard]] std::string GetCipherSuite() const;
 
-    [[nodiscard]] std::string GetCertificate() const;
+    [[nodiscard]] const X509CertRawData &GetCertificate() const;
     void SetSignatureAlgorithms(const std::string &signatureAlgorithms);
     [[nodiscard]] const std::string &GetSignatureAlgorithms() const;
     [[nodiscard]] std::vector<CipherSuite> GetCipherSuiteVec() const;

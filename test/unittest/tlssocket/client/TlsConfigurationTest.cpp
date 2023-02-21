@@ -170,8 +170,8 @@ HWTEST_F(TlsConfigurationTest, AssignmentConstruction, TestSize.Level2)
     configuration.SetLocalCertificate(g_clientFile);
     TLSCertificate tlsCertificate = configuration.GetLocalCertificate();
     EXPECT_NE(tlsCertificate.handle(), nullptr);
-    std::string x509CertRawData = configuration.GetCertificate();
-    EXPECT_FALSE(x509CertRawData.empty());
+    X509CertRawData x509CertRawData = configuration.GetCertificate();
+    EXPECT_NE(x509CertRawData.data.Length(), 0);
 }
 
 HWTEST_F(TlsConfigurationTest, CopyConstruction, TestSize.Level2)
@@ -192,7 +192,7 @@ HWTEST_F(TlsConfigurationTest, SetAndGetCa, TestSize.Level2)
     tlsConfiguration.SetCaCertificate(certificate);
     std::vector<std::string> getCaCertificate;
     getCaCertificate = tlsConfiguration.GetCaCertificate();
-    EXPECT_NE(getCaCertificate.size(), static_cast<uint32_t>(0));
+    EXPECT_NE(getCaCertificate.size(), 0);
 }
 
 HWTEST_F(TlsConfigurationTest, SetPrivateKey, TestSize.Level2)
@@ -204,8 +204,8 @@ HWTEST_F(TlsConfigurationTest, SetPrivateKey, TestSize.Level2)
     SecureData keyPass(keyPassStr);
     tlsConfiguration.SetPrivateKey(structureData, keyPass);
     TLSKey tlsKey = tlsConfiguration.GetPrivateKey();
-    SecureData tlsKeyData = tlsKey.GetKeyPass();
-    EXPECT_NE(static_cast<uint32_t>(0), strlen(g_priKeyFile));
+    SecureData tlsKeyData = tlsKey.GetKeyData();
+    EXPECT_EQ(tlsKeyData.Length(), strlen(g_priKeyFile));
 }
 
 HWTEST_F(TlsConfigurationTest, SetProtocol, TestSize.Level2)
@@ -250,7 +250,7 @@ HWTEST_F(TlsConfigurationTest, CipherSuite, TestSize.Level2)
     std::string getCipherSuite;
     getCipherSuite = tlsConfiguration.GetCipherSuite();
     std::cout << "getCipherSuite:" << getCipherSuite << std::endl;
-    auto idx = getCipherSuite.find(cipherSuite);
+    int idx = getCipherSuite.find(cipherSuite);
     EXPECT_NE(idx, std::string::npos);
 }
 
@@ -263,7 +263,7 @@ HWTEST_F(TlsConfigurationTest, SignatureAlgorithms, TestSize.Level2)
     getSignatureAlgorithms = tlsConfiguration.GetSignatureAlgorithms();
     std::cout << "getSignatureAlgorithms:" << getSignatureAlgorithms << std::endl;
     std::string subStr = "ECDSA+SHA256";
-    auto idx = getSignatureAlgorithms.find(subStr);
+    int idx = getSignatureAlgorithms.find(subStr);
     EXPECT_NE(idx, std::string::npos);
 }
 } // namespace NetStack

@@ -48,8 +48,32 @@ public:
 
     void SetResponseByCache();
 
+    [[nodiscard]] int32_t GetErrorCode() const override;
+
+    [[nodiscard]] std::string GetErrorMessage() const override;
+
+    void EnableRequest2();
+
+    [[nodiscard]] bool IsRequest2();
+
+    void SetTotalLen(curl_off_t totalLen);
+
+    curl_off_t GetTotalLen();
+
+    void SetNowLen(curl_off_t nowLen);
+
+    curl_off_t GetNowLen();
+
+    void SetTempData(const void *data, size_t size);
+
+    std::string &GetTempData();
+
 private:
     bool usingCache_;
+    bool request2_;
+    curl_off_t totalLen_;
+    curl_off_t nowLen_;
+    std::string tempData_;
 
     struct curl_slist *curlHeaderList_;
 
@@ -62,6 +86,8 @@ private:
     void ParseHeader(napi_value optionsValue);
 
     bool ParseExtraData(napi_value optionsValue);
+
+    void ParseUsingHttpProxy(napi_value optionsValue);
 
     bool GetRequestBody(napi_value extraData);
 

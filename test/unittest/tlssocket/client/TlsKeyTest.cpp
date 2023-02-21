@@ -25,7 +25,7 @@ namespace OHOS {
 namespace NetStack {
 namespace {
 using namespace testing::ext;
-constexpr int32_t FILE_READ_KEY_LEN = 4096;
+constexpr int FILE_READ_KEY_LEN = 4096;
 static char g_keyFile[] =
 "-----BEGIN RSA PRIVATE KEY-----\r\n"
 "MIIEowIBAAKCAQEAqVzrf6PkLu0uhp5yl2HPNm0vLyI1KLqgsdz5s+JvVdbPXNxD\r\n"
@@ -144,8 +144,8 @@ HWTEST_F(TlsKeyTest, GetKeyDataTest, TestSize.Level2)
     std::string keyPassStr = "";
     SecureData keyPass(keyPassStr);
     TLSKey tlsKey = TLSKey(structureData, ALGORITHM_RSA, keyPass);
-    SecureData getKeyData= tlsKey.GetKeyPass();
-    EXPECT_NE(getKeyData.Length(), structureData.Length());
+    SecureData getKeyData= tlsKey.GetKeyData();
+    EXPECT_EQ(getKeyData.Length(), structureData.Length());
 }
 
 HWTEST_F(TlsKeyTest, AlgorithmTest2, TestSize.Level2)
@@ -161,8 +161,8 @@ HWTEST_F(TlsKeyTest, AlgorithmTest2, TestSize.Level2)
     TLSKey keyDh = tlsKeyDh;
     TLSKey tlsKeyOpaque = TLSKey(structureData, OPAQUE, keyPass);
     TLSKey keyOpaque = tlsKeyOpaque;
-    SecureData getKeyData= tlsKeyDsa.GetKeyPass();
-    EXPECT_NE(getKeyData.Length(), structureData.Length());
+    SecureData getKeyData= tlsKeyDsa.GetKeyData();
+    EXPECT_EQ(getKeyData.Length(), structureData.Length());
 }
 
 HWTEST_F(TlsKeyTest, SwitchAlgorithmTest, TestSize.Level2)
@@ -191,8 +191,8 @@ HWTEST_F(TlsKeyTest, SwitchAlgorithmTest, TestSize.Level2)
     TLSKey tlsKeyOpaque = TLSKey(structureData, OPAQUE, keyPass);
     tlsKeyOpaque.SwitchAlgorithm(typePrivate, OPAQUE, bio);
     tlsKeyOpaque.SwitchAlgorithm(typePublic, OPAQUE, bio);
-    SecureData getKeyData= tlsKeyDsa.GetKeyPass();
-    EXPECT_NE(getKeyData.Length(), structureData.Length());
+    SecureData getKeyData= tlsKeyDsa.GetKeyData();
+    EXPECT_EQ(getKeyData.Length(), structureData.Length());
 }
 } // namespace NetStack
 } // namespace OHOS

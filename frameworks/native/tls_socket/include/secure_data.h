@@ -27,6 +27,7 @@ public:
     SecureData();
     ~SecureData();
     explicit SecureData(const std::string &secureData);
+    SecureData(const uint8_t *SecureData, size_t length);
 
     SecureData(const SecureData &secureData);
     SecureData &operator=(const SecureData &secureData);

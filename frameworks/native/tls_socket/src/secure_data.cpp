@@ -40,6 +40,15 @@ SecureData::SecureData(const std::string &secureData)
     data_[length_] = '\0';
 }
 
+SecureData::SecureData(const uint8_t *secureData, size_t length)
+{
+    data_ = std::make_unique<char[]>(length);
+    length_ = length;
+    if (memcpy_s(data_.get(), length_, secureData, length_) != EOK) {
+        NETSTACK_LOGE("memcpy_s failed!");
+    }
+}
+
 SecureData::SecureData(const SecureData &secureData)
 {
     *this = secureData;

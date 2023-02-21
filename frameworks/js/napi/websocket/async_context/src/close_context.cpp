@@ -30,6 +30,19 @@ void CloseContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     if (!CheckParamsType(params, paramsCount)) {
         NETSTACK_LOGE("CloseContext Parse Failed");
+        if (paramsCount == FUNCTION_PARAM_ONE) {
+            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
+                SetCallback(params[0]);
+            }
+            return;
+        }
+
+        if (paramsCount == FUNCTION_PARAM_TWO) {
+            if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
+                SetCallback(params[1]);
+            }
+            return;
+        }
         return;
     }
 
@@ -74,5 +87,34 @@ bool CloseContext::CheckParamsType(napi_value *params, size_t paramsCount)
     }
 
     return false;
+}
+
+int32_t CloseContext::GetErrorCode() const
+{
+    auto err = BaseContext::GetErrorCode();
+    if (err == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_CODE;
+    }
+    if (WEBSOCKET_ERR_MAP.find(err) != WEBSOCKET_ERR_MAP.end()) {
+        return err;
+    }
+    return WEBSOCKET_UNKNOWN_OTHER_ERROR;
+}
+
+std::string CloseContext::GetErrorMessage() const
+{
+    auto err = BaseContext::GetErrorCode();
+    if (err == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_MSG;
+    }
+    auto it = WEBSOCKET_ERR_MAP.find(err);
+    if (it != WEBSOCKET_ERR_MAP.end()) {
+        return it->second;
+    }
+    it = WEBSOCKET_ERR_MAP.find(WEBSOCKET_UNKNOWN_OTHER_ERROR);
+    if (it != WEBSOCKET_ERR_MAP.end()) {
+        return it->second;
+    }
+    return {};
 }
 } // namespace OHOS::NetStack

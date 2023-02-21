@@ -16,8 +16,10 @@
 #include "udp_extra_context.h"
 
 #include "context_key.h"
+#include "socket_constant.h"
 #include "event_manager.h"
 #include "napi_utils.h"
+#include "netstack_log.h"
 
 namespace OHOS::NetStack {
 UdpSetExtraOptionsContext::UdpSetExtraOptionsContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
@@ -26,6 +28,18 @@ void UdpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCou
 {
     bool valid = CheckParamsType(params, paramsCount);
     if (!valid) {
+        if (paramsCount == PARAM_JUST_CALLBACK) {
+            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
+                SetCallback(params[0]);
+            }
+            return;
+        }
+        if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
+            if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
+                SetCallback(params[1]);
+            }
+            return;
+        }
         return;
     }
 
@@ -72,5 +86,25 @@ bool UdpSetExtraOptionsContext::CheckParamsType(napi_value *params, size_t param
                NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function;
     }
     return false;
+}
+
+int32_t UdpSetExtraOptionsContext::GetErrorCode() const
+{
+    auto err = BaseContext::GetErrorCode();
+    if (err == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_CODE;
+    }
+    return err + SOCKET_ERROR_CODE_BASE;
+}
+
+std::string UdpSetExtraOptionsContext::GetErrorMessage() const
+{
+    auto errCode = BaseContext::GetErrorCode();
+    if (errCode == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_MSG;
+    }
+    char err[MAX_ERR_NUM] = {0};
+    (void)strerror_r(errCode, err, MAX_ERR_NUM);
+    return err;
 }
 } // namespace OHOS::NetStack

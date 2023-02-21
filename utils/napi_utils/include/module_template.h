@@ -55,6 +55,9 @@ napi_value Interface(napi_env env, napi_callback_info info, const std::string &a
 
     auto context = new Context(env, manager);
     context->ParseParams(params, paramsCount);
+    if (!context->IsParseOK()) {
+        context->SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG);
+    }
     NETSTACK_LOGI("js params parse OK ? %{public}d", context->IsParseOK());
     if (context->IsNeedThrowException()) { // only api9 or later need throw exception.
         napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
@@ -79,7 +82,8 @@ napi_value Interface(napi_env env, napi_callback_info info, const std::string &a
 
 template <class Context>
 napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
-                                     bool (*Work)(napi_env, napi_value, Context *))
+                                     bool (*Work)(napi_env, napi_value, Context *), const std::string &asyncWorkName,
+                                     AsyncWorkExecutor executor, AsyncWorkCallback callback)
 {
     static_assert(std::is_base_of<BaseContext, Context>::value);
 
@@ -93,6 +97,9 @@ napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
 
     auto context = new Context(env, manager);
     context->ParseParams(params, paramsCount);
+    if (!context->IsParseOK()) {
+        context->SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG);
+    }
     napi_value ret = NapiUtils::GetUndefined(env);
     if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
         ret = context->CreatePromise();
@@ -103,6 +110,9 @@ napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
         }
     }
     context->CreateReference(thisVal);
+    if (!context->IsParseOK()) {
+        context->CreateAsyncWork(asyncWorkName, executor, callback);
+    }
     return ret;
 }
 

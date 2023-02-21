@@ -25,6 +25,8 @@
 
 static constexpr const int PARAM_JUST_URL = 1;
 
+static constexpr const int PARAM_JUST_URL_OR_CALLBACK = 1;
+
 static constexpr const int PARAM_URL_AND_OPTIONS_OR_CALLBACK = 2;
 
 static constexpr const int PARAM_URL_AND_OPTIONS_AND_CALLBACK = 3;
@@ -32,9 +34,39 @@ static constexpr const int PARAM_URL_AND_OPTIONS_AND_CALLBACK = 3;
 namespace OHOS::NetStack {
 std::map<RequestContext *, napi_env> RequestContext::envMap_;
 std::mutex RequestContext::envMutex_;
-
+static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
+    {HTTP_UNSUPPORTED_PROTOCOL, "Unsupported protocol"},
+    {HTTP_URL_MALFORMAT, "URL using bad/illegal format or missing URL"},
+    {HTTP_COULDNT_RESOLVE_PROXY, "Couldn't resolve proxy name"},
+    {HTTP_COULDNT_RESOLVE_HOST, "Couldn't resolve host name"},
+    {HTTP_COULDNT_CONNECT, "Couldn't connect to server"},
+    {HTTP_WEIRD_SERVER_REPLY, "Weird server reply"},
+    {HTTP_REMOTE_ACCESS_DENIED, "Access denied to remote resource"},
+    {HTTP_HTTP2_ERROR, "Error in the HTTP2 framing layer"},
+    {HTTP_PARTIAL_FILE, "Transferred a partial file"},
+    {HTTP_WRITE_ERROR, "Failed writing received data to disk/application"},
+    {HTTP_UPLOAD_FAILED, "Upload failed"},
+    {HTTP_READ_ERROR, "Failed to open/read local data from file/application"},
+    {HTTP_OUT_OF_MEMORY, "Out of memory"},
+    {HTTP_OPERATION_TIMEDOUT, "Timeout was reached"},
+    {HTTP_TOO_MANY_REDIRECTS, "Number of redirects hit maximum amount"},
+    {HTTP_GOT_NOTHING, "Server returned nothing (no headers, no data)"},
+    {HTTP_SEND_ERROR, "Failed sending data to the peer"},
+    {HTTP_RECV_ERROR, "Failure when receiving data from the peer"},
+    {HTTP_SSL_CERTPROBLEM, "Problem with the local SSL certificate"},
+    {HTTP_SSL_CIPHER, "Couldn't use specified SSL cipher"},
+    {HTTP_PEER_FAILED_VERIFICATION, "SSL peer certificate or SSH remote key was not OK"},
+    {HTTP_BAD_CONTENT_ENCODING, "Unrecognized or bad HTTP Content or Transfer-Encoding"},
+    {HTTP_FILESIZE_EXCEEDED, "Maximum file size exceeded"},
+    {HTTP_REMOTE_DISK_FULL, "Disk full or allocation exceeded"},
+    {HTTP_REMOTE_FILE_EXISTS, "Remote file already exists"},
+    {HTTP_SSL_CACERT_BADFILE, "Problem with the SSL CA cert (path? access rights?)"},
+    {HTTP_REMOTE_FILE_NOT_FOUND, "Remote file not found"},
+    {HTTP_AUTH_ERROR, "An authentication function returned an error"},
+    {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
+};
 RequestContext::RequestContext(napi_env env, EventManager *manager)
-    : BaseContext(env, manager), usingCache_(true), curlHeaderList_(nullptr)
+    : BaseContext(env, manager), usingCache_(true), request2_(false), curlHeaderList_(nullptr)
 {
     std::lock_guard guard(envMutex_);
     envMap_[this] = env;
@@ -50,6 +82,24 @@ void RequestContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     bool valid = CheckParamsType(params, paramsCount);
     if (!valid) {
+        if (paramsCount == PARAM_JUST_URL_OR_CALLBACK) {
+            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
+                SetCallback(params[0]);
+            }
+            return;
+        }
+        if (paramsCount == PARAM_URL_AND_OPTIONS_OR_CALLBACK) {
+            if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
+                SetCallback(params[1]);
+            }
+            return;
+        }
+        if (paramsCount == PARAM_URL_AND_OPTIONS_AND_CALLBACK) {
+            if (NapiUtils::GetValueType(GetEnv(), params[PARAM_URL_AND_OPTIONS_AND_CALLBACK - 1]) == napi_function) {
+                SetCallback(params[PARAM_URL_AND_OPTIONS_AND_CALLBACK - 1]);
+            }
+            return;
+        }
         return;
     }
 
@@ -226,6 +276,44 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
     return false;
 }
 
+void RequestContext::ParseUsingHttpProxy(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_HTTP_PROXY)) {
+        NETSTACK_LOGI("Do not use http proxy");
+        return;
+    }
+    napi_value httpProxyValue =
+        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_HTTP_PROXY);
+    napi_valuetype type = NapiUtils::GetValueType(GetEnv(), httpProxyValue);
+    if (type == napi_boolean) {
+        bool usingProxy = NapiUtils::GetBooleanFromValue(GetEnv(), httpProxyValue);
+        UsingHttpProxyType usingType = usingProxy ? UsingHttpProxyType::USE_DEFAULT : UsingHttpProxyType::NOT_USE;
+        options.SetUsingHttpProxyType(usingType);
+        return;
+    }
+    if (type != napi_object) {
+        return;
+    }
+    std::string host = NapiUtils::GetStringPropertyUtf8(GetEnv(), httpProxyValue, HttpConstant::HTTP_PROXY_KEY_HOST);
+    int32_t port = NapiUtils::GetInt32Property(GetEnv(), httpProxyValue, HttpConstant::HTTP_PROXY_KEY_PORT);
+    std::string exclusionList;
+    if (NapiUtils::HasNamedProperty(GetEnv(), httpProxyValue, HttpConstant::HTTP_PROXY_KEY_EXCLUSION_LIST)) {
+        napi_value exclusionListValue =
+            NapiUtils::GetNamedProperty(GetEnv(), httpProxyValue, HttpConstant::HTTP_PROXY_KEY_EXCLUSION_LIST);
+        uint32_t listLength = NapiUtils::GetArrayLength(GetEnv(), exclusionListValue);
+        for (uint32_t index = 0; index < listLength; ++index) {
+            napi_value exclusionValue = NapiUtils::GetArrayElement(GetEnv(), exclusionListValue, index);
+            std::string exclusion = NapiUtils::GetStringFromValueUtf8(GetEnv(), exclusionValue);
+            if (index != 0) {
+                exclusionList = exclusionList + HttpConstant::HTTP_PROXY_EXCLUSIONS_SEPARATOR;
+            }
+            exclusionList += exclusion;
+        }
+    }
+    options.SetSpecifiedHttpProxy(host, port, exclusionList);
+    options.SetUsingHttpProxyType(UsingHttpProxyType::USE_SPECIFIED);
+}
+
 bool RequestContext::GetRequestBody(napi_value extraData)
 {
     /* if body is empty, return false, or curl will wait for body */
@@ -275,6 +363,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
 
     ParseHeader(optionsValue);
     ParseNumberOptions(optionsValue);
+    ParseUsingHttpProxy(optionsValue);
 
     /* parse extra data here to recover header */
 
@@ -314,5 +403,75 @@ void RequestContext::SetCacheResponse(const HttpResponse &cacheResponse)
 void RequestContext::SetResponseByCache()
 {
     response = cacheResponse_;
+}
+
+int32_t RequestContext::GetErrorCode() const
+{
+    auto err = BaseContext::GetErrorCode();
+    if (err == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_CODE;
+    }
+    if (HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE) != HTTP_ERR_MAP.end()) {
+        return err + HTTP_ERROR_CODE_BASE;
+    }
+    return HTTP_UNKNOWN_OTHER_ERROR;
+}
+
+std::string RequestContext::GetErrorMessage() const
+{
+    auto err = BaseContext::GetErrorCode();
+    if (err == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_MSG;
+    }
+    auto it = HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE);
+    if (it != HTTP_ERR_MAP.end()) {
+        return it->second;
+    }
+    it = HTTP_ERR_MAP.find(HTTP_UNKNOWN_OTHER_ERROR);
+    if (it != HTTP_ERR_MAP.end()) {
+        return it->second;
+    }
+    return {};
+}
+
+void RequestContext::EnableRequest2()
+{
+    request2_ = true;
+}
+
+bool RequestContext::IsRequest2()
+{
+    return request2_;
+}
+
+void RequestContext::SetTotalLen(curl_off_t totalLen)
+{
+    totalLen_ = totalLen;
+}
+
+curl_off_t RequestContext::GetTotalLen()
+{
+    return totalLen_;
+}
+
+void RequestContext::SetNowLen(curl_off_t nowLen)
+{
+    nowLen_ = nowLen;
+}
+
+curl_off_t RequestContext::GetNowLen()
+{
+    return nowLen_;
+}
+
+void RequestContext::SetTempData(const void *data, size_t size)
+{
+    tempData_.clear();
+    tempData_.append(reinterpret_cast<const char *>(data), size);
+}
+
+std::string &RequestContext::GetTempData()
+{
+    return tempData_;
 }
 } // namespace OHOS::NetStack

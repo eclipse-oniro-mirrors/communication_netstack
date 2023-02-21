@@ -16,12 +16,26 @@
 #ifndef COMMUNICATIONNETSTACK_CONSTANT_H
 #define COMMUNICATIONNETSTACK_CONSTANT_H
 
+#include <map>
+#include <string>
+
 namespace OHOS::NetStack {
 enum {
     FUNCTION_PARAM_ZERO = 0,
     FUNCTION_PARAM_ONE = 1,
     FUNCTION_PARAM_TWO = 2,
     FUNCTION_PARAM_THREE = 3,
+};
+
+enum WebsocketErrorCode {
+    WEBSOCKET_CONNECT_FAILED = -1,
+    WEBSOCKET_ERROR_CODE_BASE = 2302000,
+    WEBSOCKET_UNKNOWN_OTHER_ERROR = 2302999
+};
+
+static const std::map<int32_t, std::string> WEBSOCKET_ERR_MAP = {
+    {WEBSOCKET_CONNECT_FAILED, "Websocket connect failed"},
+    {WEBSOCKET_UNKNOWN_OTHER_ERROR, "Websocket Unknown Other Error"}
 };
 
 enum {

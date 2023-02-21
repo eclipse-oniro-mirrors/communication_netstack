@@ -38,6 +38,10 @@ public:
 
     [[nodiscard]] int GetSocketFd() const;
 
+    [[nodiscard]] int32_t GetErrorCode() const override;
+
+    [[nodiscard]] std::string GetErrorMessage() const override;
+
     SocketStateBase state_;
 
     NetAddress address_;

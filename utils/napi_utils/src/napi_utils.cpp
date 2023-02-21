@@ -118,6 +118,16 @@ napi_value CreateUint32(napi_env env, uint32_t code)
     return value;
 }
 
+/* UINT64 */
+napi_value CreateUint64(napi_env env, uint64_t code)
+{
+    napi_value value = nullptr;
+    if (napi_create_bigint_uint64(env, code, &value) != napi_ok) {
+        return nullptr;
+    }
+    return value;
+}
+
 uint32_t GetUint32FromValue(napi_env env, napi_value value)
 {
     if (GetValueType(env, value) != napi_number) {
@@ -142,6 +152,16 @@ void SetUint32Property(napi_env env, napi_value object, const std::string &name,
 {
     napi_value jsValue = CreateUint32(env, value);
     if (GetValueType(env, jsValue) != napi_number) {
+        return;
+    }
+
+    napi_set_named_property(env, object, name.c_str(), jsValue);
+}
+
+void SetUint64Property(napi_env env, napi_value object, const std::string &name, uint64_t value)
+{
+    napi_value jsValue = CreateUint64(env, value);
+    if (GetValueType(env, jsValue) != napi_bigint) {
         return;
     }
 
