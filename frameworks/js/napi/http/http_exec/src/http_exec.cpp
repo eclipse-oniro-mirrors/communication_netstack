@@ -562,7 +562,6 @@ void HttpExec::OnDataReceive(napi_env env, napi_status status, void *data)
 
 void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
 {
-    NETSTACK_LOGI("OnDataProgress is in");
     auto context = static_cast<RequestContext *>(data);
     if (context == nullptr) {
         return;
@@ -574,8 +573,6 @@ void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
     NapiUtils::SetUint32Property(context->GetEnv(), progress, "receiveSize", static_cast<uint32_t>(context->GetNowLen()));
     NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize", static_cast<uint32_t>(context->GetNowLen()));
     context->Emit(ON_DATA_PROGRESS, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
-    NETSTACK_LOGI("OnDataProgress is out");
-
 }
 
 void HttpExec::OnDataEnd(napi_env env, napi_status status, void *data)
