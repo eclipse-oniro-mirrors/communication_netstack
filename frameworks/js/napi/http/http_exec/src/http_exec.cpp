@@ -588,7 +588,6 @@ void HttpExec::OnDataEnd(napi_env env, napi_status status, void *data)
 int HttpExec::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
                                curl_off_t ulnow)
 {
-    NETSTACK_LOGI("ProgressCallback is in");
     (void)ultotal;
     (void)ulnow;
     auto context = static_cast<RequestContext *>(userData);
@@ -601,7 +600,6 @@ int HttpExec::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dl
     if (dltotal == dlnow) {
         NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd);
     }
-    NETSTACK_LOGI("ProgressCallback is out");
     return 0;
 }
 
