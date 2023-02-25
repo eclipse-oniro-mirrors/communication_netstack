@@ -39,6 +39,7 @@ constexpr int FILE_READ_CERT_LEN = 4096;
 
 TLSCertificate::TLSCertificate(const std::string &data, EncodingFormat format, CertType certType)
 {
+    rawData_.encodingFormat = PEM;
     if (data.empty()) {
         NETSTACK_LOGE("The parameter data is empty");
         return;
@@ -61,6 +62,7 @@ TLSCertificate::TLSCertificate(const std::string &data, EncodingFormat format, C
 
 TLSCertificate::TLSCertificate(const std::string &data, CertType certType)
 {
+    rawData_.encodingFormat = PEM;
     if (data.empty()) {
         NETSTACK_LOGE("data is null in the TLSCertificate constructor");
         return;

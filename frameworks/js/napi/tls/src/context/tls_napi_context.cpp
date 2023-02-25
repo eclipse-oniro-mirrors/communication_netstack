@@ -21,7 +21,11 @@
 
 namespace OHOS {
 namespace NetStack {
-TLSNapiContext::TLSNapiContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
+TLSNapiContext::TLSNapiContext(napi_env env, EventManager *manager) : BaseContext(env, manager)
+{
+    localCert_.encodingFormat = PEM;
+    remoteCert_.encodingFormat = PEM;
+}
 
 void TLSNapiContext::ParseParams(napi_value *params, size_t paramsCount)
 {
