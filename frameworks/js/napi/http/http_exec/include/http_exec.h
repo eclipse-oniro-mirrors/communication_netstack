@@ -131,7 +131,6 @@ private:
         CURLM *curlMulti;
         std::map<CURL *, RequestContext *> contextMap;
         std::thread workThread;
-        std::condition_variable conditionVariable;
 
 #ifndef MAC_PLATFORM
         std::atomic_bool initialized;
