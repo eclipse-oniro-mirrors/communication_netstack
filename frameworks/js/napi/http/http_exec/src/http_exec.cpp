@@ -49,8 +49,7 @@
 
 namespace OHOS::NetStack {
 static constexpr size_t MAX_LIMIT = 5 * 1024 * 1024;
-static constexpr int CURL_TIMEOUT_MS = 50;
-static constexpr int CONDITION_TIMEOUT_S = 3600;
+static constexpr int CURL_TIMEOUT_MS = 100;
 static constexpr int CURL_HANDLE_NUM = 10;
 #ifdef HTTP_PROXY_ENABLE
 static constexpr int32_t SYSPARA_MAX_SIZE = 128;
@@ -74,7 +73,6 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     }
 
     staticVariable_.contextMap[handle] = context;
-    staticVariable_.conditionVariable.notify_one();
     return true;
 }
 
@@ -342,12 +340,6 @@ void HttpExec::RunThread()
         HttpExec::SendRequest();
         HttpExec::ReadRespond();
         std::this_thread::sleep_for(std::chrono::milliseconds(CURL_TIMEOUT_MS));
-
-        std::mutex m;
-        std::unique_lock l(m);
-        auto &contextMap = staticVariable_.contextMap;
-        staticVariable_.conditionVariable.wait_for(l, std::chrono::seconds(CONDITION_TIMEOUT_S),
-                                                   [contextMap] { return !contextMap.empty(); });
     }
 }
 
