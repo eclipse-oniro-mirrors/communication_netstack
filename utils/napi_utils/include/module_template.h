@@ -110,7 +110,7 @@ napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
         }
     }
     context->CreateReference(thisVal);
-    if (!context->IsParseOK()) {
+    if (context->IsPermissionDenied() || !context->IsParseOK()) {
         context->CreateAsyncWork(asyncWorkName, executor, callback);
     }
     return ret;

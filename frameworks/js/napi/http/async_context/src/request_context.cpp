@@ -361,13 +361,16 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     }
     options.SetMethod(method);
 
-    ParseHeader(optionsValue);
     ParseNumberOptions(optionsValue);
     ParseUsingHttpProxy(optionsValue);
 
     /* parse extra data here to recover header */
+    if (!ParseExtraData(optionsValue)) {
+        return;
+    }
 
-    SetParseOK(ParseExtraData(optionsValue));
+    ParseHeader(optionsValue);
+    SetParseOK(true);
 }
 
 bool RequestContext::IsUsingCache() const
@@ -407,6 +410,10 @@ void RequestContext::SetResponseByCache()
 
 int32_t RequestContext::GetErrorCode() const
 {
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_CODE;
+    }
+
     auto err = BaseContext::GetErrorCode();
     if (err == PARSE_ERROR_CODE) {
         return PARSE_ERROR_CODE;
@@ -419,6 +426,10 @@ int32_t RequestContext::GetErrorCode() const
 
 std::string RequestContext::GetErrorMessage() const
 {
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_MSG;
+    }
+
     auto err = BaseContext::GetErrorCode();
     if (err == PARSE_ERROR_CODE) {
         return PARSE_ERROR_MSG;

@@ -69,6 +69,10 @@ void CloseContext::SetSocketFd(int sock)
 
 int32_t CommonContext::GetErrorCode() const
 {
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_CODE;
+    }
+
     auto err = BaseContext::GetErrorCode();
     if (err == PARSE_ERROR_CODE) {
         return PARSE_ERROR_CODE;
@@ -78,6 +82,10 @@ int32_t CommonContext::GetErrorCode() const
 
 std::string CommonContext::GetErrorMessage() const
 {
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_MSG;
+    }
+
     auto errCode = BaseContext::GetErrorCode();
     if (errCode == PARSE_ERROR_CODE) {
         return PARSE_ERROR_MSG;

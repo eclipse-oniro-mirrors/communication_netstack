@@ -45,6 +45,7 @@ ohos_shared_library("socket") {
     "$TLS/include",
     "$TLS_NAPI/include",
     "$TLS_NAPI/include/context",
+    "$NETMANAGER_BASE_ROOT/utils/common_utils/include",
     "$NETSTACK_INNERKITS_DIR/tls_socket/include",
     "async_context/include",
     "async_work/include",
@@ -80,6 +81,7 @@ ohos_shared_library("socket") {
   sources += tls_napi_sources
 
   deps = [
+    "$NETMANAGER_BASE_ROOT/utils:net_manager_common",
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",

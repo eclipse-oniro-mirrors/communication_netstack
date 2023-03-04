@@ -31,8 +31,10 @@
 namespace OHOS::NetStack {
 typedef void (*AsyncWorkExecutor)(napi_env env, void *data);
 typedef void (*AsyncWorkCallback)(napi_env env, napi_status status, void *data);
+static constexpr size_t PERMISSION_DENIED_CODE = 201;
+static constexpr const char *PERMISSION_DENIED_MSG = "Permission denied";
 static constexpr size_t PARSE_ERROR_CODE = 401;
-static constexpr const char *PARSE_ERROR_MSG = "Parameter parse error";
+static constexpr const char *PARSE_ERROR_MSG = "Parameter error";
 
 class BaseContext {
 public:
@@ -86,6 +88,10 @@ public:
 
     [[nodiscard]] bool IsNeedThrowException() const;
 
+    void SetPermissionDenied(bool needThrowException);
+
+    [[nodiscard]] bool IsPermissionDenied() const;
+
     [[nodiscard]] EventManager *GetManager() const;
 
     void CreateReference(napi_value value);
@@ -121,6 +127,8 @@ private:
     bool needPromise_;
 
     bool needThrowException_;
+
+    bool permissionDenied_;
 };
 } // namespace OHOS::NetStack
 

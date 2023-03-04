@@ -120,6 +120,10 @@ bool UdpSendContext::GetData(napi_value udpSendOptions)
 
 int32_t UdpSendContext::GetErrorCode() const
 {
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_CODE;
+    }
+
     auto err = BaseContext::GetErrorCode();
     if (err == PARSE_ERROR_CODE) {
         return PARSE_ERROR_CODE;
@@ -129,6 +133,10 @@ int32_t UdpSendContext::GetErrorCode() const
 
 std::string UdpSendContext::GetErrorMessage() const
 {
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_MSG;
+    }
+
     auto errCode = BaseContext::GetErrorCode();
     if (errCode == PARSE_ERROR_CODE) {
         return PARSE_ERROR_MSG;

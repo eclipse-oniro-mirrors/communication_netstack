@@ -105,6 +105,10 @@ static bool MakeTcpSocket(napi_env env, napi_value thisVal, BindContext *context
         return false;
     }
     int sock = SocketExec::MakeTcpSocket(context->address_.GetSaFamily());
+    if (errno == EPERM) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
     if (!SetSocket(env, thisVal, context, sock)) {
         return false;
     }
@@ -118,6 +122,10 @@ static bool MakeUdpSocket(napi_env env, napi_value thisVal, BindContext *context
         return false;
     }
     int sock = SocketExec::MakeUdpSocket(context->address_.GetSaFamily());
+    if (errno == EPERM) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
     if (!SetSocket(env, thisVal, context, sock)) {
         return false;
     }

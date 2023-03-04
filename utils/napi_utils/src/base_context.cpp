@@ -33,7 +33,8 @@ BaseContext::BaseContext(napi_env env, EventManager *manager)
       asyncWork_(nullptr),
       deferred_(nullptr),
       needPromise_(true),
-      needThrowException_(false)
+      needThrowException_(false),
+      permissionDenied_(false)
 {
 }
 
@@ -199,6 +200,16 @@ void BaseContext::SetNeedThrowException(bool needThrowException)
 bool BaseContext::IsNeedThrowException() const
 {
     return needThrowException_;
+}
+
+void BaseContext::SetPermissionDenied(bool permissionDenied)
+{
+    permissionDenied_ = permissionDenied;
+}
+
+bool BaseContext::IsPermissionDenied() const
+{
+    return permissionDenied_;
 }
 
 void BaseContext::CreateReference(napi_value value)
