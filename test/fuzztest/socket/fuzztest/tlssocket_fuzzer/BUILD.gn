@@ -26,6 +26,7 @@ ohos_fuzztest("TlsSocketFuzzTest") {
   module_out_path = "communication/netstack"
   fuzz_config_file = "//foundation/communication/netstack/test/fuzztest/socket/fuzztest/tlssocket_fuzzer"
   include_dirs = [
+    "$NETMANAGER_BASE_ROOT/utils/common_utils/include",
     "$NETSTACK_NAPI_ROOT/async_context/include",
     "$NETSTACK_NAPI_ROOT/async_work/include",
     "$NETSTACK_NAPI_ROOT/constant/include",
@@ -89,6 +90,7 @@ ohos_fuzztest("TlsSocketFuzzTest") {
   sources += [ "tls_socket_fuzzer.cpp" ]
 
   deps = [
+    "$NETMANAGER_BASE_ROOT/utils:net_manager_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
     "$THIRD_PARTY_ROOT/openssl:libssl_shared",

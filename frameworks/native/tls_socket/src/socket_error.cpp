@@ -30,6 +30,7 @@ static constexpr const size_t MAX_ERR_LEN = 1024;
 std::string MakeErrorMessage(int error)
 {
     static const std::map<int32_t, std::string> ERROR_MAP = {
+        {TLS_ERR_PERMISSION_DENIED, "Permission denied"},
         {TLS_ERR_SYS_EINTR, "Interrupted system call"},
         {TLS_ERR_SYS_EIO, "I/O error"},
         {TLS_ERR_SYS_EBADF, "Bad file number"},

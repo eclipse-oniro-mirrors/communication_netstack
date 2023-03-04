@@ -468,6 +468,13 @@ static inline void FillContextInfo(lws_context_creation_info &info)
 
 bool WebSocketExec::ExecConnect(ConnectContext *context)
 {
+    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (testSock < 0 && errno == EPERM) {
+        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+        context->SetPermissionDenied(true);
+        return false;
+    }
+
     NETSTACK_LOGI("begin connect, parse url");
     if (context == nullptr || context->GetManager() == nullptr) {
         return false;
@@ -536,6 +543,13 @@ napi_value WebSocketExec::ConnectCallback(ConnectContext *context)
 
 bool WebSocketExec::ExecSend(SendContext *context)
 {
+    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (testSock < 0 && errno == EPERM) {
+        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+        context->SetPermissionDenied(true);
+        return false;
+    }
+
     if (context == nullptr || context->GetManager() == nullptr) {
         NETSTACK_LOGE("context is null");
         return false;
@@ -561,6 +575,13 @@ napi_value WebSocketExec::SendCallback(SendContext *context)
 
 bool WebSocketExec::ExecClose(CloseContext *context)
 {
+    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (testSock < 0 && errno == EPERM) {
+        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+        context->SetPermissionDenied(true);
+        return false;
+    }
+
     if (context == nullptr || context->GetManager() == nullptr) {
         NETSTACK_LOGE("context is null");
         return false;

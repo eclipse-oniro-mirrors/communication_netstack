@@ -26,6 +26,7 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
+#include "netmanager_base_permission.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "tls.h"
@@ -633,6 +634,12 @@ void TLSSocket::CallGetSignatureAlgorithmsCallback(int32_t err, const std::vecto
 
 void TLSSocket::Bind(const OHOS::NetStack::NetAddress &address, const OHOS::NetStack::BindCallback &callback)
 {
+    if (!NetManagerStandard::NetManagerPermission::CheckPermission(NetManagerStandard::Permission::INTERNET)) {
+        NETSTACK_LOGE("Bind permission check fail.");
+        CallBindCallback(TLS_ERR_PERMISSION_DENIED, callback);
+        return;
+    }
+
     if (sockFd_ >= 0) {
         CallBindCallback(TLSSOCKET_SUCCESS, callback);
         return;
