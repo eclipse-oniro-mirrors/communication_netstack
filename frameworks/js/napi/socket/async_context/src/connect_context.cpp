@@ -96,6 +96,10 @@ bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
 
 int32_t ConnectContext::GetErrorCode() const
 {
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_CODE;
+    }
+
     auto err = BaseContext::GetErrorCode();
     if (err == PARSE_ERROR_CODE) {
         return PARSE_ERROR_CODE;
@@ -105,6 +109,10 @@ int32_t ConnectContext::GetErrorCode() const
 
 std::string ConnectContext::GetErrorMessage() const
 {
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_MSG;
+    }
+
     auto errCode = BaseContext::GetErrorCode();
     if (errCode == PARSE_ERROR_CODE) {
         return PARSE_ERROR_MSG;
