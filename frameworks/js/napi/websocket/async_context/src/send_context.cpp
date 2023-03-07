@@ -20,6 +20,8 @@
 #include "napi_utils.h"
 #include "securec.h"
 
+static constexpr size_t MAX_LIMIT = 5 * 1024 * 1024;
+
 namespace OHOS::NetStack {
 SendContext::SendContext(napi_env env, EventManager *manager)
     : BaseContext(env, manager), data(nullptr), length(0), protocol(LWS_WRITE_TEXT)
@@ -50,7 +52,12 @@ void SendContext::ParseParams(napi_value *params, size_t paramsCount)
         NETSTACK_LOGI("SendContext NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string");
         std::string str = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
         // must have PRE and POST
-        data = malloc(LWS_SEND_BUFFER_PRE_PADDING + str.length() + LWS_SEND_BUFFER_POST_PADDING);
+        size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + str.length() + LWS_SEND_BUFFER_POST_PADDING;
+        if (dataLen > MAX_LIMIT) {
+            NETSTACK_LOGE("SendContext data is exceeded the limit");
+            return;
+        }
+        data = malloc(dataLen);
         if (data == nullptr) {
             NETSTACK_LOGE("no memory");
             return;
@@ -71,7 +78,12 @@ void SendContext::ParseParams(napi_value *params, size_t paramsCount)
             return;
         }
         // must have PRE and POST
-        data = malloc(LWS_SEND_BUFFER_PRE_PADDING + len + LWS_SEND_BUFFER_POST_PADDING);
+        size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + len + LWS_SEND_BUFFER_POST_PADDING;
+        if (dataLen > MAX_LIMIT) {
+            NETSTACK_LOGE("SendContext data is exceeded the limit");
+            return;
+        }
+        data = malloc(dataLen);
         if (data == nullptr) {
             NETSTACK_LOGE("no memory");
             return;
