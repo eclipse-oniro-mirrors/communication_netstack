@@ -207,6 +207,13 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
 
 bool HttpExec::ExecRequest(RequestContext *context)
 {
+    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (testSock < 0 && errno == EPERM) {
+        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+        context->SetPermissionDenied(true);
+        return false;
+    }
+
     context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
     CacheProxy proxy(context->options);
     if (context->IsUsingCache() && proxy.ReadResponseFromCache(context)) {

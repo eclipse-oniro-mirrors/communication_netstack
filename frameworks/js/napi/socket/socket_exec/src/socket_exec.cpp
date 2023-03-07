@@ -626,6 +626,13 @@ bool ExecUdpBind(BindContext *context)
 
 bool ExecUdpSend(UdpSendContext *context)
 {
+    int testSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (testSock < 0 && errno == EPERM) {
+        NETSTACK_LOGE("make udp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+        context->SetPermissionDenied(true);
+        return false;
+    }
+
     sockaddr_in addr4 = {0};
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
@@ -652,6 +659,13 @@ bool ExecTcpBind(BindContext *context)
 
 bool ExecConnect(ConnectContext *context)
 {
+    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (testSock < 0 && errno == EPERM) {
+        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+        context->SetPermissionDenied(true);
+        return false;
+    }
+
     sockaddr_in addr4 = {0};
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
@@ -678,6 +692,13 @@ bool ExecConnect(ConnectContext *context)
 
 bool ExecTcpSend(TcpSendContext *context)
 {
+    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (testSock < 0 && errno == EPERM) {
+        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+        context->SetPermissionDenied(true);
+        return false;
+    }
+
     std::string encoding = context->options.GetEncoding();
     (void)encoding;
     /* no use for now */
@@ -723,6 +744,13 @@ bool ExecTcpSend(TcpSendContext *context)
 
 bool ExecClose(CloseContext *context)
 {
+    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (testSock < 0 && errno == EPERM) {
+        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+        context->SetPermissionDenied(true);
+        return false;
+    }
+
     (void)context;
 
     return true;
@@ -730,6 +758,13 @@ bool ExecClose(CloseContext *context)
 
 bool ExecGetState(GetStateContext *context)
 {
+    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (testSock < 0 && errno == EPERM) {
+        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+        context->SetPermissionDenied(true);
+        return false;
+    }
+
     int opt;
     socklen_t optLen = sizeof(int);
     int r = getsockopt(context->GetSocketFd(), SOL_SOCKET, SO_TYPE, &opt, &optLen);
@@ -792,6 +827,13 @@ bool ExecGetState(GetStateContext *context)
 
 bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 {
+    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (testSock < 0 && errno == EPERM) {
+        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+        context->SetPermissionDenied(true);
+        return false;
+    }
+
     sa_family_t family;
     socklen_t len = sizeof(family);
     int ret = getsockname(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&family), &len);
@@ -845,6 +887,13 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 
 bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
 {
+    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (testSock < 0 && errno == EPERM) {
+        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+        context->SetPermissionDenied(true);
+        return false;
+    }
+
     if (!SetBaseOptions(context->GetSocketFd(), &context->options_)) {
         context->SetErrorCode(errno);
         return false;
@@ -887,6 +936,13 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
 
 bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
 {
+    int testSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (testSock < 0 && errno == EPERM) {
+        NETSTACK_LOGE("make udp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+        context->SetPermissionDenied(true);
+        return false;
+    }
+
     if (!SetBaseOptions(context->GetSocketFd(), &context->options)) {
         context->SetErrorCode(errno);
         return false;
