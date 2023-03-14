@@ -365,7 +365,7 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     return true;
 }
 
-static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
+static int ConfirmBufferSize(int sock)
 {
     int bufferSize = DEFAULT_BUFFER_SIZE;
     int opt = 0;
@@ -373,9 +373,19 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     if (getsockopt(sock, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<void *>(&opt), &optLen) >= 0 && opt > 0) {
         bufferSize = opt;
     }
+    return bufferSize;
+}
+
+static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
+{
+    int bufferSize = ConfirmBufferSize(sock);
 
     auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
     std::unique_ptr<char, decltype(deleter)> buf(reinterpret_cast<char *>(malloc(bufferSize)), deleter);
+    if (buf == nullptr) {
+        callback.OnError(NO_MEMORY);
+        return;
+    }
 
     auto addrDeleter = [](sockaddr *a) { free(reinterpret_cast<void *>(a)); };
     std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
@@ -609,12 +619,20 @@ bool ExecUdpBind(BindContext *context)
 
     if (addr->sa_family == AF_INET) {
         auto pAddr4 = reinterpret_cast<sockaddr *>(malloc(sizeof(addr4)));
+        if (pAddr4 == nullptr) {
+            NETSTACK_LOGE("no memory!");
+            return false;
+        }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetManager()));
         serviceThread.detach();
     } else if (addr->sa_family == AF_INET6) {
         auto pAddr6 = reinterpret_cast<sockaddr *>(malloc(sizeof(addr6)));
+        if (pAddr6 == nullptr) {
+            NETSTACK_LOGE("no memory!");
+            return false;
+        }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetManager()));
