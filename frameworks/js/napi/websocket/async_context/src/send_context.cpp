@@ -53,7 +53,7 @@ void SendContext::ParseParams(napi_value *params, size_t paramsCount)
         std::string str = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
         // must have PRE and POST
         size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + str.length() + LWS_SEND_BUFFER_POST_PADDING;
-        if (dataLen > MAX_LIMIT) {
+        if (dataLen == 0 || dataLen > MAX_LIMIT) {
             NETSTACK_LOGE("SendContext data is exceeded the limit");
             return;
         }
@@ -79,7 +79,7 @@ void SendContext::ParseParams(napi_value *params, size_t paramsCount)
         }
         // must have PRE and POST
         size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + len + LWS_SEND_BUFFER_POST_PADDING;
-        if (dataLen > MAX_LIMIT) {
+        if (dataLen == 0 || dataLen > MAX_LIMIT) {
             NETSTACK_LOGE("SendContext data is exceeded the limit");
             return;
         }
