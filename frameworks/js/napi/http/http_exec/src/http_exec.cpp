@@ -559,6 +559,10 @@ void HttpExec::OnDataReceive(napi_env env, napi_status status, void *data)
 
     void *buffer = nullptr;
     auto &tempData = context->GetTempData();
+    if (tempData.size() == 0) {
+        NETSTACK_LOGE("[GetTempData] The size of tempData is 0");
+        return;
+    }
     napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), tempData.size(), &buffer);
     if (buffer == nullptr || arrayBuffer == nullptr) {
         return;
