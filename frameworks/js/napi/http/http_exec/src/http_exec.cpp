@@ -18,6 +18,7 @@
 #include <cstring>
 #include <memory>
 #include <thread>
+#include <unistd.h>
 
 #ifdef HTTP_PROXY_ENABLE
 #include "parameter.h"
@@ -215,6 +216,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+    close(testSock);
 
     context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
     CacheProxy proxy(context->options);

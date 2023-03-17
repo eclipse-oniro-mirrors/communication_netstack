@@ -19,13 +19,17 @@
 #include <openssl/ssl.h>
 
 #define private public
+#include "accesstoken_kit.h"
 #include "tls_socket.h"
 #include "socket_remote_info.h"
+#include "token_setproc.h"
 
 namespace OHOS {
 namespace NetStack {
 namespace {
 using namespace testing::ext;
+using namespace Security::AccessToken;
+using Security::AccessToken::AccessTokenID;
 static constexpr const char *KEY_PASS = "";
 static constexpr const char *PROTOCOL12 = "TLSv1.2";
 static constexpr const char *PROTOCOL13 = "TLSv1.3";
@@ -193,7 +197,58 @@ TLSConnectOptions BaseOption()
     connectOptions.SetAlpnProtocols(alpnProtocols);
     return connectOptions;
 }
+
+HapInfoParams testInfoParms = {.bundleName = "TlsSocketBranchTest",
+                               .userID = 1,
+                               .instIndex = 0,
+                               .appIDDesc = "test",
+                               .isSystemApp = true};
+
+PermissionDef testPermDef = {
+    .permissionName = "ohos.permission.INTERNET",
+    .bundleName = "TlsSocketBranchTest",
+    .grantMode = 1,
+    .label = "label",
+    .labelId = 1,
+    .description = "Test Tls Socket Branch",
+    .descriptionId = 1,
+    .availableLevel = APL_SYSTEM_BASIC,
+};
+
+PermissionStateFull testState = {
+    .grantFlags = {2},
+    .grantStatus = {PermissionState::PERMISSION_GRANTED},
+    .isGeneral = true,
+    .permissionName = "ohos.permission.INTERNET",
+    .resDeviceID = {"local"},
+};
+
+HapPolicyParams testPolicyPrams = {
+    .apl = APL_SYSTEM_BASIC,
+    .domain = "test.domain",
+    .permList = {testPermDef},
+    .permStateList = {testState},
+};
 } // namespace
+
+class AccessToken {
+public:
+    AccessToken() : currentID_(GetSelfTokenID())
+    {
+        AccessTokenIDEx tokenIdEx = AccessTokenKit::AllocHapToken(testInfoParms, testPolicyPrams);
+        accessID_ = tokenIdEx.tokenIdExStruct.tokenID;
+        SetSelfTokenID(tokenIdEx.tokenIDEx);
+    }
+    ~AccessToken()
+    {
+        AccessTokenKit::DeleteToken(accessID_);
+        SetSelfTokenID(currentID_);
+    }
+
+private:
+    AccessTokenID currentID_;
+    AccessTokenID accessID_ = 0;
+};
 
 class TlsSocketBranchTest : public testing::Test {
 public:
@@ -302,6 +357,7 @@ HWTEST_F(TlsSocketBranchTest, BranchTest4, TestSize.Level2)
     netAddress.SetPort(0);
     netAddress.SetFamilyBySaFamily(AF_INET);
 
+    AccessToken token;
     TLSSocket tlsSocket;
     tlsSocket.Bind(netAddress, [](int32_t errCode) { EXPECT_EQ(errCode, TLSSOCKET_SUCCESS); });
     SocketStateBase TlsSocketstate;
@@ -316,6 +372,7 @@ HWTEST_F(TlsSocketBranchTest, BranchTest5, TestSize.Level2)
 {
     TLSConnectOptions tlsConnectOptions = BaseOption();
 
+    AccessToken token;
     TLSSocket tlsSocket;
     tlsSocket.Bind(tlsConnectOptions.GetNetAddress(), [](int32_t errCode) { EXPECT_EQ(errCode, TLSSOCKET_SUCCESS); });
     tlsSocket.OnError([](int32_t errorNumber, const std::string &errorString) {

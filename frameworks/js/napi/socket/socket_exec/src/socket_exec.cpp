@@ -653,6 +653,7 @@ bool ExecUdpSend(UdpSendContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+    close(testSock);
 
     sockaddr_in addr4 = {0};
     sockaddr_in6 addr6 = {0};
@@ -686,6 +687,7 @@ bool ExecConnect(ConnectContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+    close(testSock);
 
     sockaddr_in addr4 = {0};
     sockaddr_in6 addr6 = {0};
@@ -719,6 +721,7 @@ bool ExecTcpSend(TcpSendContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+    close(testSock);
 
     std::string encoding = context->options.GetEncoding();
     (void)encoding;
@@ -771,6 +774,7 @@ bool ExecClose(CloseContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+    close(testSock);
 
     (void)context;
 
@@ -785,6 +789,7 @@ bool ExecGetState(GetStateContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+    close(testSock);
 
     int opt;
     socklen_t optLen = sizeof(int);
@@ -854,6 +859,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+    close(testSock);
 
     sa_family_t family;
     socklen_t len = sizeof(family);
@@ -914,6 +920,7 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+    close(testSock);
 
     if (!SetBaseOptions(context->GetSocketFd(), &context->options_)) {
         context->SetErrorCode(errno);
@@ -963,6 +970,7 @@ bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+    close(testSock);
 
     if (!SetBaseOptions(context->GetSocketFd(), &context->options)) {
         context->SetErrorCode(errno);
