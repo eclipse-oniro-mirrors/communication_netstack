@@ -478,7 +478,6 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    close(testSock);
 
     NETSTACK_LOGI("begin connect, parse url");
     if (context->GetManager() == nullptr) {
@@ -558,7 +557,6 @@ bool WebSocketExec::ExecSend(SendContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    close(testSock);
 
     if (context->GetManager() == nullptr) {
         NETSTACK_LOGE("context is null");
@@ -595,7 +593,6 @@ bool WebSocketExec::ExecClose(CloseContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    close(testSock);
 
     if (context->GetManager() == nullptr) {
         NETSTACK_LOGE("context is null");
