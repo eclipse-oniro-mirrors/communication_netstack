@@ -468,6 +468,10 @@ static inline void FillContextInfo(lws_context_creation_info &info)
 
 bool WebSocketExec::ExecConnect(ConnectContext *context)
 {
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
     int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (testSock < 0 && errno == EPERM) {
         NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
@@ -476,7 +480,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     }
 
     NETSTACK_LOGI("begin connect, parse url");
-    if (context == nullptr || context->GetManager() == nullptr) {
+    if (context->GetManager() == nullptr) {
         return false;
     }
     char prefix[MAX_URI_LENGTH] = {0};
@@ -543,6 +547,10 @@ napi_value WebSocketExec::ConnectCallback(ConnectContext *context)
 
 bool WebSocketExec::ExecSend(SendContext *context)
 {
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
     int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (testSock < 0 && errno == EPERM) {
         NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
@@ -550,7 +558,7 @@ bool WebSocketExec::ExecSend(SendContext *context)
         return false;
     }
 
-    if (context == nullptr || context->GetManager() == nullptr) {
+    if (context->GetManager() == nullptr) {
         NETSTACK_LOGE("context is null");
         return false;
     }
@@ -575,6 +583,10 @@ napi_value WebSocketExec::SendCallback(SendContext *context)
 
 bool WebSocketExec::ExecClose(CloseContext *context)
 {
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
     int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (testSock < 0 && errno == EPERM) {
         NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
@@ -582,7 +594,7 @@ bool WebSocketExec::ExecClose(CloseContext *context)
         return false;
     }
 
-    if (context == nullptr || context->GetManager() == nullptr) {
+    if (context->GetManager() == nullptr) {
         NETSTACK_LOGE("context is null");
         return false;
     }
