@@ -18,6 +18,7 @@
 #include <cstring>
 #include <memory>
 #include <thread>
+#include <unistd.h>
 
 #ifdef HTTP_PROXY_ENABLE
 #include "parameter.h"
