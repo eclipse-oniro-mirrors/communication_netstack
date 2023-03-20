@@ -105,7 +105,7 @@ static bool MakeTcpSocket(napi_env env, napi_value thisVal, BindContext *context
     if (!context->IsParseOK()) {
         return false;
     }
-    if (CommonUtils::HasInternetPermission()) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -122,7 +122,7 @@ static bool MakeUdpSocket(napi_env env, napi_value thisVal, BindContext *context
     if (!context->IsParseOK()) {
         return false;
     }
-    if (CommonUtils::HasInternetPermission()) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }

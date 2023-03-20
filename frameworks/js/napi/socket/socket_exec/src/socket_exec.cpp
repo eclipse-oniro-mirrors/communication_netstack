@@ -648,7 +648,7 @@ bool ExecUdpBind(BindContext *context)
 
 bool ExecUdpSend(UdpSendContext *context)
 {
-    if (CommonUtils::HasInternetPermission()) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -679,7 +679,7 @@ bool ExecTcpBind(BindContext *context)
 
 bool ExecConnect(ConnectContext *context)
 {
-    if (CommonUtils::HasInternetPermission()) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -710,7 +710,7 @@ bool ExecConnect(ConnectContext *context)
 
 bool ExecTcpSend(TcpSendContext *context)
 {
-    if (CommonUtils::HasInternetPermission()) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -760,7 +760,7 @@ bool ExecTcpSend(TcpSendContext *context)
 
 bool ExecClose(CloseContext *context)
 {
-    if (CommonUtils::HasInternetPermission()) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -772,7 +772,7 @@ bool ExecClose(CloseContext *context)
 
 bool ExecGetState(GetStateContext *context)
 {
-    if (CommonUtils::HasInternetPermission()) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -839,7 +839,7 @@ bool ExecGetState(GetStateContext *context)
 
 bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 {
-    if (CommonUtils::HasInternetPermission()) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -897,7 +897,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 
 bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
 {
-    if (CommonUtils::HasInternetPermission()) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -944,7 +944,7 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
 
 bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
 {
-    if (CommonUtils::HasInternetPermission()) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }

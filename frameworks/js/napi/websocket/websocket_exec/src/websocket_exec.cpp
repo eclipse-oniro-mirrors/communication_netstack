@@ -472,7 +472,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         NETSTACK_LOGE("context is nullptr");
         return false;
     }
-    if (CommonUtils::HasInternetPermission()) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -549,7 +549,7 @@ bool WebSocketExec::ExecSend(SendContext *context)
         NETSTACK_LOGE("context is nullptr");
         return false;
     }
-    if (CommonUtils::HasInternetPermission()) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -583,7 +583,7 @@ bool WebSocketExec::ExecClose(CloseContext *context)
         NETSTACK_LOGE("context is nullptr");
         return false;
     }
-    if (CommonUtils::HasInternetPermission()) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }

@@ -210,7 +210,7 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
 
 bool HttpExec::ExecRequest(RequestContext *context)
 {
-    if (CommonUtils::HasInternetPermission()) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
