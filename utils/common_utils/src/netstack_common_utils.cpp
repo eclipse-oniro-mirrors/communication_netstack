@@ -99,7 +99,7 @@ bool HasInternetPermission()
     }
     return true;
 #else
-    constexpr int inetGroup = 40002003;
+    constexpr int inetGroup = 40002003; // 3003 in gateway shell.
     int groupNum = getgroups(0, nullptr);
     if (groupNum <= 0) {
         NETSTACK_LOGE("no group of INTERNET permission");
