@@ -201,8 +201,7 @@ TLSConnectOptions BaseOption()
 HapInfoParams testInfoParms = {.bundleName = "TlsSocketBranchTest",
                                .userID = 1,
                                .instIndex = 0,
-                               .appIDDesc = "test",
-                               .isSystemApp = true};
+                               .appIDDesc = "test"};
 
 PermissionDef testPermDef = {
     .permissionName = "ohos.permission.INTERNET",
