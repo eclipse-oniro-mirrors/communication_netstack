@@ -210,9 +210,7 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
 
 bool HttpExec::ExecRequest(RequestContext *context)
 {
-    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (testSock < 0 && errno == EPERM) {
-        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }

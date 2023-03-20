@@ -30,6 +30,7 @@
 #include "napi/native_common.h"
 #include "net_address.h"
 #include "event_manager.h"
+#include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "module_template.h"
 #include "napi_utils.h"
@@ -104,11 +105,11 @@ static bool MakeTcpSocket(napi_env env, napi_value thisVal, BindContext *context
     if (!context->IsParseOK()) {
         return false;
     }
-    int sock = SocketExec::MakeTcpSocket(context->address_.GetSaFamily());
-    if (errno == EPERM) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
+    int sock = SocketExec::MakeTcpSocket(context->address_.GetSaFamily());
     if (!SetSocket(env, thisVal, context, sock)) {
         return false;
     }
@@ -121,11 +122,11 @@ static bool MakeUdpSocket(napi_env env, napi_value thisVal, BindContext *context
     if (!context->IsParseOK()) {
         return false;
     }
-    int sock = SocketExec::MakeUdpSocket(context->address_.GetSaFamily());
-    if (errno == EPERM) {
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
+    int sock = SocketExec::MakeUdpSocket(context->address_.GetSaFamily());
     if (!SetSocket(env, thisVal, context, sock)) {
         return false;
     }
