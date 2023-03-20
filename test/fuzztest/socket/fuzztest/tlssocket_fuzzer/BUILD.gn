@@ -105,6 +105,7 @@ ohos_fuzztest("TlsSocketFuzzTest") {
   defines = [
     "NETMGR_LOG_TAG = \"NapiSocket\"",
     "LOG_DOMAIN = 0xD0015B0",
+    "OPENSSL_SUPPRESS_DEPRECATED",
   ]
 }
 
