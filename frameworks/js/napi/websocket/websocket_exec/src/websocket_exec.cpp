@@ -472,9 +472,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         NETSTACK_LOGE("context is nullptr");
         return false;
     }
-    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (testSock < 0 && errno == EPERM) {
-        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -551,9 +549,7 @@ bool WebSocketExec::ExecSend(SendContext *context)
         NETSTACK_LOGE("context is nullptr");
         return false;
     }
-    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (testSock < 0 && errno == EPERM) {
-        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -587,9 +583,7 @@ bool WebSocketExec::ExecClose(CloseContext *context)
         NETSTACK_LOGE("context is nullptr");
         return false;
     }
-    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (testSock < 0 && errno == EPERM) {
-        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
