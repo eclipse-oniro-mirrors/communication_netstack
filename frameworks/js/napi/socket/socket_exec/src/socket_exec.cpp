@@ -27,6 +27,7 @@
 
 #include "context_key.h"
 #include "event_list.h"
+#include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "napi_utils.h"
 #include "securec.h"
@@ -644,9 +645,7 @@ bool ExecUdpBind(BindContext *context)
 
 bool ExecUdpSend(UdpSendContext *context)
 {
-    int testSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (testSock < 0 && errno == EPERM) {
-        NETSTACK_LOGE("make udp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -677,9 +676,7 @@ bool ExecTcpBind(BindContext *context)
 
 bool ExecConnect(ConnectContext *context)
 {
-    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (testSock < 0 && errno == EPERM) {
-        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -710,9 +707,7 @@ bool ExecConnect(ConnectContext *context)
 
 bool ExecTcpSend(TcpSendContext *context)
 {
-    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (testSock < 0 && errno == EPERM) {
-        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -762,9 +757,7 @@ bool ExecTcpSend(TcpSendContext *context)
 
 bool ExecClose(CloseContext *context)
 {
-    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (testSock < 0 && errno == EPERM) {
-        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -776,9 +769,7 @@ bool ExecClose(CloseContext *context)
 
 bool ExecGetState(GetStateContext *context)
 {
-    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (testSock < 0 && errno == EPERM) {
-        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -845,9 +836,7 @@ bool ExecGetState(GetStateContext *context)
 
 bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 {
-    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (testSock < 0 && errno == EPERM) {
-        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -905,9 +894,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 
 bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
 {
-    int testSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (testSock < 0 && errno == EPERM) {
-        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
@@ -954,9 +941,7 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
 
 bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
 {
-    int testSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (testSock < 0 && errno == EPERM) {
-        NETSTACK_LOGE("make udp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+    if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }

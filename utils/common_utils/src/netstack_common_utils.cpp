@@ -16,8 +16,13 @@
 #include "netstack_common_utils.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <string>
+#include <unistd.h>
 #include <vector>
+
+#include "curl/curl.h"
+#include "netstack_log.h"
 
 namespace OHOS::NetStack::CommonUtils {
 std::vector<std::string> Split(const std::string &str, const std::string &sep)
@@ -79,5 +84,38 @@ std::string ToLower(const std::string &s)
     std::string res = s;
     std::transform(res.begin(), res.end(), res.begin(), tolower);
     return res;
+}
+
+bool HasInternetPermission()
+{
+#ifndef OH_CORE_NETSTACK_PERMISSION_CHECK
+    int testSock = socket(AF_INET, SOCK_STREAM, 0);
+    if (testSock < 0 && errno == EPERM) {
+        NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
+        return false;
+    }
+    if (testSock > 0) {
+        close(testSock);
+    }
+    return true;
+#else
+    constexpr int inetGroup = 40002003; // 3003 in gateway shell.
+    int groupNum = getgroups(0, nullptr);
+    if (groupNum <= 0) {
+        NETSTACK_LOGE("no group of INTERNET permission");
+        return false;
+    }
+    auto groups = (gid_t*) malloc(groupNum * sizeof(gid_t));
+    groupNum = getgroups(groupNum, groups);
+    for (int i = 0; i < groupNum; i++) {
+        if (groups[i] == inetGroup) {
+            free(groups);
+            return true;
+        }
+    }
+    free(groups);
+    NETSTACK_LOGE("INTERNET permission denied by group");
+    return false;
+#endif
 }
 } // namespace OHOS::NetStack::CommonUtils
