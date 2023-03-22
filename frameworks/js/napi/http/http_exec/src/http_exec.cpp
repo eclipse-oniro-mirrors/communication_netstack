@@ -285,7 +285,11 @@ napi_value HttpExec::RequestCallback(RequestContext *context)
 
 napi_value HttpExec::Request2Callback(OHOS::NetStack::RequestContext *context)
 {
-    return NapiUtils::GetUndefined(context->GetEnv());
+    napi_value number = NapiUtils::CreateUint32(context->GetEnv(), context->response.GetResponseCode());
+    if (NapiUtils::GetValueType(context->GetEnv(), number) != napi_number) {
+        return nullptr;
+    }
+    return number;
 }
 
 std::string HttpExec::MakeUrl(const std::string &url, std::string param, const std::string &extraParam)
