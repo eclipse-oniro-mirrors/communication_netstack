@@ -66,7 +66,7 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
 };
 RequestContext::RequestContext(napi_env env, EventManager *manager)
-    : BaseContext(env, manager), usingCache_(true), request2_(false), curlHeaderList_(nullptr)
+    : BaseContext(env, manager), usingCache_(true), request2_(false), totalLen_(0), nowLen_(0), curlHeaderList_(nullptr)
 {
     std::lock_guard guard(envMutex_);
     envMap_[this] = env;
