@@ -427,7 +427,9 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             callback.OnError(NO_MEMORY);
             return;
         }
-        NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(data, recvLen, buf.get(), recvLen));
+        if (memcpy_s(data, recvLen, buf.get(), recvLen) != EOK) {
+            free(data);
+        }
         callback.OnMessage(sock, data, recvLen, addr);
     }
 }
