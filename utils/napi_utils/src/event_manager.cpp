@@ -15,6 +15,7 @@
 
 #include "event_manager.h"
 
+#include "netstack_log.h"
 #include <algorithm>
 
 namespace OHOS::NetStack {
@@ -23,6 +24,11 @@ static constexpr const int CALLBACK_PARAM_NUM = 1;
 static constexpr const int ASYNC_CALLBACK_PARAM_NUM = 2;
 
 EventManager::EventManager() : data_(nullptr), isValid_(true) {}
+
+EventManager::~EventManager()
+{
+    NETSTACK_LOGI("EventManager is destructed by the destructor");
+}
 
 bool EventManager::IsManagerValid() const
 {
