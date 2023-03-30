@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include <algorithm>
 #include <cstddef>
 #include <cstring>
 #include <memory>
@@ -50,7 +49,9 @@
 
 namespace OHOS::NetStack {
 static constexpr size_t MAX_LIMIT = 5 * 1024 * 1024;
-static constexpr int CURL_TIMEOUT_MS = 100;
+static constexpr int CURL_TIMEOUT_MS = 50;
+static constexpr int CONDITION_TIMEOUT_S = 3600;
+static constexpr int CURL_MAX_WAIT_MSECS = 10;
 static constexpr int CURL_HANDLE_NUM = 10;
 #ifdef HTTP_PROXY_ENABLE
 static constexpr int32_t SYSPARA_MAX_SIZE = 128;
@@ -69,11 +70,8 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     }
 
     std::lock_guard guard(staticVariable_.curlMultiMutex);
-    if (curl_multi_add_handle(staticVariable_.curlMulti, handle) != CURLM_OK) {
-        return false;
-    }
-
-    staticVariable_.contextMap[handle] = context;
+    staticVariable_.infoQueue.emplace(context, handle);
+    staticVariable_.conditionVariable.notify_one();
     return true;
 }
 
@@ -188,6 +186,8 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         NETSTACK_LOGE("can not find context");
         return;
     }
+
+    NETSTACK_LOGI("priority = %{public}d", context->options.GetPriority());
     context->SetExecOK(GetCurlDataFromHandle(handle, context, msg->msg, msg->data.result));
     if (context->IsExecOK()) {
         CacheProxy proxy(context->options);
@@ -349,47 +349,95 @@ bool HttpExec::EncodeUrlParam(std::string &str)
     return true;
 }
 
+void HttpExec::AddRequestInfo()
+{
+    std::lock_guard guard(staticVariable_.curlMultiMutex);
+    int num = 0;
+    while (!staticVariable_.infoQueue.empty()) {
+        if (!staticVariable_.runThread || staticVariable_.curlMulti == nullptr) {
+            break;
+        }
+
+        auto info = staticVariable_.infoQueue.top();
+        staticVariable_.infoQueue.pop();
+        auto ret = curl_multi_add_handle(staticVariable_.curlMulti, info.handle);
+        if (ret == CURLM_OK) {
+            staticVariable_.contextMap[info.handle] = info.context;
+        }
+
+        ++num;
+        if (num >= CURL_HANDLE_NUM) {
+            break;
+        }
+    }
+}
+
 void HttpExec::RunThread()
 {
     while (staticVariable_.runThread && staticVariable_.curlMulti != nullptr) {
-        HttpExec::SendRequest();
-        HttpExec::ReadRespond();
+        AddRequestInfo();
+        SendRequest();
+        ReadResponse();
         std::this_thread::sleep_for(std::chrono::milliseconds(CURL_TIMEOUT_MS));
+
+        std::mutex m;
+        std::unique_lock l(m);
+        auto &infoQueue = staticVariable_.infoQueue;
+        auto &contextMap = staticVariable_.contextMap;
+        staticVariable_.conditionVariable.wait_for(
+            l, std::chrono::seconds(CONDITION_TIMEOUT_S),
+            [infoQueue, contextMap] { return !infoQueue.empty() || !contextMap.empty(); });
     }
 }
 
 void HttpExec::SendRequest()
 {
     std::lock_guard guard(staticVariable_.curlMultiMutex);
-    for (int i = 0; i < CURL_HANDLE_NUM; ++i) {
+
+    int runningHandle = 0;
+    int num = 0;
+    do {
         if (!staticVariable_.runThread || staticVariable_.curlMulti == nullptr) {
             break;
         }
-        int runningHandle;
-        (void)curl_multi_perform(staticVariable_.curlMulti, &runningHandle);
-        if (runningHandle <= 0) {
+
+        auto ret = curl_multi_perform(staticVariable_.curlMulti, &runningHandle);
+
+        if (runningHandle > 0) {
+            ret = curl_multi_poll(staticVariable_.curlMulti, nullptr, 0, CURL_MAX_WAIT_MSECS, nullptr);
+        }
+
+        if (ret != CURLM_OK) {
+            return;
+        }
+
+        ++num;
+        if (num >= CURL_HANDLE_NUM) {
             break;
         }
-    }
+    } while (runningHandle > 0);
 }
 
-void HttpExec::ReadRespond()
+void HttpExec::ReadResponse()
 {
-    std::lock_guard guard(staticVariable_.curlMultiMutex);
-    for (int i = 0; i < CURL_HANDLE_NUM; ++i) {
+    CURLMsg *msg = nullptr; /* NOLINT */
+    do {
         if (!staticVariable_.runThread || staticVariable_.curlMulti == nullptr) {
             break;
         }
+
         int leftMsg;
-        CURLMsg *msg = curl_multi_info_read(staticVariable_.curlMulti, &leftMsg);
-        if (msg != nullptr) {
-            HttpExec::HandleCurlData(msg);
-            if (msg->easy_handle != nullptr) {
+        msg = curl_multi_info_read(staticVariable_.curlMulti, &leftMsg);
+        if (msg) {
+            if (msg->msg == CURLMSG_DONE) {
+                HandleCurlData(msg);
+            }
+            if (msg->easy_handle) {
                 (void)curl_multi_remove_handle(staticVariable_.curlMulti, msg->easy_handle);
                 (void)curl_easy_cleanup(msg->easy_handle);
             }
         }
-    }
+    } while (msg);
 }
 
 void HttpExec::GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions)
@@ -592,8 +640,10 @@ void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
     if (NapiUtils::GetValueType(context->GetEnv(), progress) == napi_undefined) {
         return;
     }
-    NapiUtils::SetUint32Property(context->GetEnv(), progress, "receiveSize", static_cast<uint32_t>(context->GetNowLen()));
-    NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize", static_cast<uint32_t>(context->GetTotalLen()));
+    NapiUtils::SetUint32Property(context->GetEnv(), progress, "receiveSize",
+                                 static_cast<uint32_t>(context->GetNowLen()));
+    NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize",
+                                 static_cast<uint32_t>(context->GetTotalLen()));
     context->Emit(ON_DATA_PROGRESS, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
 }
 
