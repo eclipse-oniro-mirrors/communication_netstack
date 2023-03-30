@@ -194,6 +194,11 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         proxy.WriteResponseToCache(context->response);
     }
 
+    if (context->GetManager() == nullptr) {
+        NETSTACK_LOGE("can not find context manager");
+        return;
+    }
+
     if (context->GetManager()->IsManagerValid()) {
         if (context->IsRequest2()) {
             if (context->IsExecOK()) {
