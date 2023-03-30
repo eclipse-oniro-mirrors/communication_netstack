@@ -397,6 +397,7 @@ RequestContext::~RequestContext()
     if (it != envMap_.end()) {
         envMap_.erase(it);
     }
+    NETSTACK_LOGI("RequestContext is destructed by the destructor");
 }
 
 void RequestContext::SetCacheResponse(const HttpResponse &cacheResponse)
