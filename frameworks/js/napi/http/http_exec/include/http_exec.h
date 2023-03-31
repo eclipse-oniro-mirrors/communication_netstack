@@ -20,7 +20,10 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <utility>
 #include <vector>
+#include <queue>
+#include <functional>
 
 #include "curl/curl.h"
 #include "napi/native_api.h"
@@ -95,15 +98,13 @@ private:
 
     static void HandleCurlData(CURLMsg *msg);
 
-    static void HandleData();
-
     static bool GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURLMSG curlMsg, CURLcode result);
 
     static void RunThread();
 
     static void SendRequest();
 
-    static void ReadRespond();
+    static void ReadResponse();
 
     static void GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions);
 
@@ -115,6 +116,32 @@ private:
 
     static int ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
                                 curl_off_t ulnow);
+
+    static void AddRequestInfo();
+
+    struct RequestInfo {
+        RequestInfo() = delete;
+        ~RequestInfo() = default;
+
+        RequestInfo(RequestContext *c, CURL *h)
+        {
+            context = c;
+            handle = h;
+        }
+
+        RequestContext *context;
+        CURL *handle;
+
+        bool operator<(const RequestInfo &info) const
+        {
+            return context->options.GetPriority() < info.context->options.GetPriority();
+        }
+
+        bool operator>(const RequestInfo &info) const
+        {
+            return context->options.GetPriority() > info.context->options.GetPriority();
+        }
+    };
 
     struct StaticVariable {
         StaticVariable() : curlMulti(nullptr), initialized(false), runThread(true) {}
@@ -132,6 +159,7 @@ private:
         std::map<CURL *, RequestContext *> contextMap;
         std::thread workThread;
         std::condition_variable conditionVariable;
+        std::priority_queue<RequestInfo> infoQueue;
 
 #ifndef MAC_PLATFORM
         std::atomic_bool initialized;
