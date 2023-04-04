@@ -1,0 +1,15 @@
+[package]
+name = "ylong_http_client"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["reqwest_impl"]
+reqwest_impl = ["tokio", "tokio-util", "reqwest"]
+
+[dependencies]
+tokio = { version = "=1.20.1", features = ["default", "macros", "rt-multi-thread"], optional = true }
+tokio-util = { version = "=0.7.1", features = ["default"], optional = true }
+reqwest = { version = "=0.11.13", features = ["default", "stream"], optional = true }
