@@ -192,6 +192,29 @@ HWTEST_F(TlsContextTest, ContextTest2, TestSize.Level2)
     tlsContext->CloseCtx();
 }
 
+HWTEST_F(TlsContextTest, InitTlsContext3, TestSize.Level2)
+{
+    TLSConfiguration configuration;
+    std::string cipherSuite = "" ;
+    configuration.SetCipherSuite(cipherSuite);
+    std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
+
+    EXPECT_NE(tlsContext, nullptr);
+    tlsContext->CloseCtx();
+}
+
+HWTEST_F(TlsContextTest, InitTlsContext4, TestSize.Level2)
+{
+    TLSConfiguration configuration;
+    std::string signatureAlgorithms = "";
+    configuration.SetCipherSuite(CIPHER_SUITE);
+    configuration.SetSignatureAlgorithms(signatureAlgorithms);
+    std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
+
+    EXPECT_NE(tlsContext, nullptr);
+    tlsContext->CloseCtx();
+}
+
 HWTEST_F(TlsContextTest, ContextNullTest, TestSize.Level2)
 {
     std::vector<std::string> protocol;
@@ -223,6 +246,25 @@ HWTEST_F(TlsContextTest, ContextNullTest, TestSize.Level2)
     bool setKeyAndCheck = TLSContext::SetKeyAndCheck(tlsContext.get(), configuration);
     EXPECT_FALSE(setKeyAndCheck);
     TLSContext::SetVerify(tlsContext.get());
+}
+
+HWTEST_F(TlsContextTest, ContextFailTest1, TestSize.Level2)
+{
+    std::vector<std::string> protocol;
+    protocol.push_back("1.3");
+    protocol.push_back("1.2");
+    TLSConfiguration configuration;
+    std::vector<std::string> caVec = {g_caCrtFile};
+    configuration.SetCaCertificate(caVec);
+    configuration.SetProtocol(protocol);
+    configuration.SetCipherSuite(CIPHER_SUITE);
+    configuration.SetSignatureAlgorithms(SIGNATURE_ALGORITHMS);
+    configuration.SetLocalCertificate("certificate");
+    SecureData key("key");
+    SecureData keyPass("123456");
+    configuration.SetPrivateKey(key, keyPass);
+    std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
+    EXPECT_NE(tlsContext, nullptr);
 }
 } // namespace NetStack
 } // namespace OHOS
