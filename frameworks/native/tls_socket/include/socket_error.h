@@ -23,7 +23,6 @@ namespace OHOS {
 namespace NetStack {
 enum TlsSocketError {
     TLSSOCKET_SUCCESS = 0,
-    TLS_ERR_PERMISSION_DENIED = 201,
     TLS_ERR_SYS_BASE = 2303100,
     TLS_ERR_SYS_EINTR = 2303104,
     TLS_ERR_SYS_EIO = 2303105,
