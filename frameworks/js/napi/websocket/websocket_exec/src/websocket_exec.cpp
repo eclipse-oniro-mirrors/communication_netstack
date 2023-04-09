@@ -468,15 +468,14 @@ static inline void FillContextInfo(lws_context_creation_info &info)
 
 bool WebSocketExec::ExecConnect(ConnectContext *context)
 {
-    if (context == nullptr) {
-        NETSTACK_LOGE("context is nullptr");
-        return false;
-    }
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
-
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
     NETSTACK_LOGI("begin connect, parse url");
     if (context->GetManager() == nullptr) {
         return false;
@@ -545,15 +544,14 @@ napi_value WebSocketExec::ConnectCallback(ConnectContext *context)
 
 bool WebSocketExec::ExecSend(SendContext *context)
 {
-    if (context == nullptr) {
-        NETSTACK_LOGE("context is nullptr");
-        return false;
-    }
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
-
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
     if (context->GetManager() == nullptr) {
         NETSTACK_LOGE("context is null");
         return false;
@@ -579,12 +577,12 @@ napi_value WebSocketExec::SendCallback(SendContext *context)
 
 bool WebSocketExec::ExecClose(CloseContext *context)
 {
-    if (context == nullptr) {
-        NETSTACK_LOGE("context is nullptr");
-        return false;
-    }
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
+        return false;
+    }
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
         return false;
     }
 
