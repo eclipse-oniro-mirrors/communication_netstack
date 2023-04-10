@@ -68,8 +68,8 @@ config("tls_test_config") {
     "$TLS/include",
     "$TLS_NAPI/include",
     "$TLS_NAPI/include/context",
-    "$NETMANAGER_BASE_ROOT/utils/common_utils/include",
     "$NETSTACK_INNERKITS_DIR/tls_socket/include",
+    "$NETSTACK_DIR/utils/napi_utils/include",
     "$SOCKET/async_context/include",
     "$SOCKET/async_work/include",
     "$SOCKET/constant/include",
@@ -90,7 +90,6 @@ ohos_unittest("two_way_tls_socket_unittest") {
   configs = [ ":tls_test_config" ]
 
   deps = [
-    "$NETMANAGER_BASE_ROOT/utils:net_manager_common",
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
@@ -116,7 +115,6 @@ ohos_unittest("one_way_tls_socket_unittest") {
   configs = [ ":tls_test_config" ]
 
   deps = [
-    "$NETMANAGER_BASE_ROOT/utils:net_manager_common",
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
@@ -142,7 +140,6 @@ ohos_unittest("two_way_tls_socket_certchain_unittest") {
   configs = [ ":tls_test_config" ]
 
   deps = [
-    "$NETMANAGER_BASE_ROOT/utils:net_manager_common",
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
@@ -168,7 +165,6 @@ ohos_unittest("one_way_tls_socket_certchain_unittest") {
   configs = [ ":tls_test_config" ]
 
   deps = [
-    "$NETMANAGER_BASE_ROOT/utils:net_manager_common",
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
@@ -194,7 +190,6 @@ ohos_unittest("tls_socket_unilateral_connection") {
   configs = [ ":tls_test_config" ]
 
   deps = [
-    "$NETMANAGER_BASE_ROOT/utils:net_manager_common",
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
@@ -239,7 +234,6 @@ ohos_unittest("tls_key_test") {
   configs = [ ":tls_test_config" ]
 
   deps = [
-    "$NETMANAGER_BASE_ROOT/utils:net_manager_common",
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
@@ -265,7 +259,6 @@ ohos_unittest("tls_cert_test") {
   configs = [ ":tls_test_config" ]
 
   deps = [
-    "$NETMANAGER_BASE_ROOT/utils:net_manager_common",
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
@@ -291,7 +284,6 @@ ohos_unittest("tls_configuration_test") {
   configs = [ ":tls_test_config" ]
 
   deps = [
-    "$NETMANAGER_BASE_ROOT/utils:net_manager_common",
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
@@ -317,7 +309,6 @@ ohos_unittest("tls_context_test") {
   configs = [ ":tls_test_config" ]
 
   deps = [
-    "$NETMANAGER_BASE_ROOT/utils:net_manager_common",
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
@@ -343,7 +334,6 @@ ohos_unittest("socket_error_unittest") {
   configs = [ ":tls_test_config" ]
 
   deps = [
-    "$NETMANAGER_BASE_ROOT/utils:net_manager_common",
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
@@ -369,7 +359,6 @@ ohos_unittest("tls_socket_branch_test") {
   configs = [ ":tls_test_config" ]
 
   deps = [
-    "$NETMANAGER_BASE_ROOT/utils:net_manager_common",
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",

@@ -786,6 +786,7 @@ bool HttpExec::IsInitialized()
 void HttpExec::DeInitialize()
 {
     staticVariable_.runThread = false;
+    staticVariable_.conditionVariable.notify_all();
     if (staticVariable_.workThread.joinable()) {
         staticVariable_.workThread.join();
     }
