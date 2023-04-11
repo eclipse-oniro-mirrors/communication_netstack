@@ -34,6 +34,7 @@ ohos_fuzztest("SocketExecFuzzTest") {
     "$NETSTACK_NAPI_ROOT/socket/options/include",
     "$NETSTACK_NAPI_ROOT/socket/task_queue/include",
     "$NETSTACK_DIR/utils/log/include",
+    "$NETSTACK_DIR/utils/common_utils/include",
   ]
 
   cflags = [
@@ -62,6 +63,7 @@ ohos_fuzztest("SocketExecFuzzTest") {
     "$NETSTACK_NAPI_ROOT/socket/options/src/udp_extra_options.cpp",
     "$NETSTACK_NAPI_ROOT/socket/options/src/udp_send_options.cpp",
     "$NETSTACK_NAPI_ROOT/socket/socket_exec/src/socket_exec.cpp",
+    "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
   ]
   sources += [ "socket_exec_fuzzer.cpp" ]
 
@@ -76,6 +78,7 @@ ohos_fuzztest("SocketExecFuzzTest") {
   defines = [
     "NETMGR_LOG_TAG = \"NapiSocket\"",
     "LOG_DOMAIN = 0xD0015B0",
+    "FUZZ_TEST",
   ]
 }
 
