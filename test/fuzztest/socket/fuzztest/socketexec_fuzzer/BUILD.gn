@@ -45,6 +45,7 @@ ohos_fuzztest("SocketExecFuzzTest") {
   ]
 
   sources = [
+    "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
     "$NETSTACK_NAPI_ROOT/socket/async_context/src/bind_context.cpp",
     "$NETSTACK_NAPI_ROOT/socket/async_context/src/common_context.cpp",
     "$NETSTACK_NAPI_ROOT/socket/async_context/src/connect_context.cpp",
@@ -63,7 +64,6 @@ ohos_fuzztest("SocketExecFuzzTest") {
     "$NETSTACK_NAPI_ROOT/socket/options/src/udp_extra_options.cpp",
     "$NETSTACK_NAPI_ROOT/socket/options/src/udp_send_options.cpp",
     "$NETSTACK_NAPI_ROOT/socket/socket_exec/src/socket_exec.cpp",
-    "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
   ]
   sources += [ "socket_exec_fuzzer.cpp" ]
 
