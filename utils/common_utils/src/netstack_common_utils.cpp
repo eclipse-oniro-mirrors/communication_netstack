@@ -89,6 +89,9 @@ std::string ToLower(const std::string &s)
 bool HasInternetPermission()
 {
 #ifndef OH_CORE_NETSTACK_PERMISSION_CHECK
+#ifdef FUZZ_TEST
+    return true;
+#endif
     int testSock = socket(AF_INET, SOCK_STREAM, 0);
     if (testSock < 0 && errno == EPERM) {
         NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
