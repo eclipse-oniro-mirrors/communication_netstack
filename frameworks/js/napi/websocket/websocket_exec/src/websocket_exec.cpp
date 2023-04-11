@@ -348,6 +348,33 @@ int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reas
     return HttpDummy(wsi, reason, user, in, len);
 }
 
+static napi_value CreateConnectError(napi_env env, void *callbackPara)
+{
+    auto code = reinterpret_cast<int32_t *>(callbackPara);
+    auto deleter = [](const int32_t *p) { delete p; };
+    std::unique_ptr<int32_t, decltype(deleter)> handler(code, deleter);
+    napi_value err = NapiUtils::CreateObject(env);
+    if (NapiUtils::GetValueType(env, err) != napi_object) {
+        return NapiUtils::GetUndefined(env);
+    }
+    NapiUtils::SetInt32Property(env, err, EVENT_KEY_CODE, *code);
+    return err;
+}
+
+void OnConnectError(EventManager *manager, int32_t code)
+{
+    NETSTACK_LOGI("OnError %{public}d", code);
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is null");
+        return;
+    }
+    if (!manager->HasEventListener(EventName::EVENT_ERROR)) {
+        NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_ERROR);
+        return;
+    }
+    manager->EmitByUv(EventName::EVENT_ERROR, new int32_t(code), CallbackTemplate<CreateConnectError>);
+}
+
 int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi,
                                                     lws_callback_reasons reason,
                                                     void *user,
@@ -356,6 +383,8 @@ int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi,
 {
     NETSTACK_LOGI("LwsCallbackClientConnectionError %{public}s",
                   (in == nullptr) ? "null" : reinterpret_cast<char *>(in));
+    // 200 means connect failed
+    OnConnectError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -523,9 +552,8 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     if (lws_client_connect_via_info(&connectInfo) == nullptr) {
         NETSTACK_LOGI("ExecConnect websocket connect failed");
         context->SetErrorCode(-1);
-        // here return true, means that connection failed but no error happened during exec
         lws_context_destroy(lwsContext);
-        return true;
+        return false;
     }
 
     std::thread serviceThread(RunService, manager);
