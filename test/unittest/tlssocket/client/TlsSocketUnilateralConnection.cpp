@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <vector>
 
+#include "accesstoken_kit.h"
 #include "net_address.h"
 #include "secure_data.h"
 #include "socket_error.h"
@@ -33,10 +34,13 @@
 #include "tls_configuration.h"
 #include "tls_key.h"
 #include "tls_socket.h"
+#include "token_setproc.h"
 
 namespace OHOS {
 namespace NetStack {
 namespace {
+using namespace testing::ext;
+using namespace Security::AccessToken;
 const std::string_view PRIVATE_KEY_PEM_CHAIN = "/data/ClientCertChain/privekey.pem.unsecure";
 const std::string_view CA_PATH_CHAIN = "/data/ClientCertChain/RootCa.pem";
 const std::string_view MID_CA_PATH_CHAIN = "/data/ClientCertChain/MidCa.pem";
@@ -81,6 +85,68 @@ public:
     virtual void TearDown() {}
 };
 
+HapInfoParams testInfoParms = {.bundleName = "TlsSocketBranchTest",
+                               .userID = 1,
+                               .instIndex = 0,
+                               .appIDDesc = "test",
+                               .isSystemApp = true};
+
+PermissionDef testPermDef = {
+    .permissionName = "ohos.permission.INTERNET",
+    .bundleName = "TlsSocketBranchTest",
+    .grantMode = 1,
+    .label = "label",
+    .labelId = 1,
+    .description = "Test Tls Socket Branch",
+    .descriptionId = 1,
+    .availableLevel = APL_SYSTEM_BASIC,
+};
+
+PermissionStateFull testState = {
+    .grantFlags = {2},
+    .grantStatus = {PermissionState::PERMISSION_GRANTED},
+    .isGeneral = true,
+    .permissionName = "ohos.permission.INTERNET",
+    .resDeviceID = {"local"},
+};
+
+HapPolicyParams testPolicyPrams = {
+    .apl = APL_SYSTEM_BASIC,
+    .domain = "test.domain",
+    .permList = {testPermDef},
+    .permStateList = {testState},
+};
+
+class AccessToken {
+public:
+    AccessToken() : currentID_(GetSelfTokenID())
+    {
+        AccessTokenIDEx tokenIdEx = AccessTokenKit::AllocHapToken(testInfoParms, testPolicyPrams);
+        accessID_ = tokenIdEx.tokenIdExStruct.tokenID;
+        SetSelfTokenID(tokenIdEx.tokenIDEx);
+    }
+    ~AccessToken()
+    {
+        AccessTokenKit::DeleteToken(accessID_);
+        SetSelfTokenID(currentID_);
+    }
+
+private:
+    AccessTokenID currentID_;
+    AccessTokenID accessID_ = 0;
+};
+
+class TlsSocketBranchTest : public testing::Test {
+public:
+    static void SetUpTestCase() {}
+
+    static void TearDownTestCase() {}
+
+    virtual void SetUp() {}
+
+    virtual void TearDown() {}
+};
+
 HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
 {
     if (!CheckCaFileExistence("bindInterface")) {
@@ -94,6 +160,7 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
+    AccessToken token;
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
@@ -120,15 +187,15 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
 
+    AccessToken token;
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    const std::string data = "how do you do? this is connectInterface";
+    const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
     TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-    sleep(60);
 
     (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
@@ -157,16 +224,16 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
 
+    AccessToken token;
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    const std::string data = "how do you do? this is closeInterface";
+    const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";;
     TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-    sleep(60);
 
     (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
@@ -194,16 +261,16 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
 
+    AccessToken token;
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    const std::string data = "how do you do? this is sendInterface";
+    const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
     TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-    sleep(60);
 
     (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
@@ -231,6 +298,7 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
 
+    AccessToken token;
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -246,12 +314,11 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     EXPECT_EQ(address.GetPort(), std::atoi(ReadFileContent(PORT).c_str()));
     EXPECT_EQ(netAddress.GetSaFamily(), AF_INET);
 
-    const std::string data = "how do you do? this is getRemoteAddressInterface";
+    const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
     TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-    sleep(60);
 
     (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
@@ -279,6 +346,7 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
 
+    AccessToken token;
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
@@ -292,12 +360,10 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     EXPECT_TRUE(!TlsSocketstate.IsClose());
     EXPECT_TRUE(TlsSocketstate.IsConnected());
 
-    const std::string data = "how do you do? this is getStateInterface";
+    const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
     TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-
-    sleep(60);
 
     (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
@@ -312,7 +378,7 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
     TCPSendOptions tcpSendOptions;
     TLSSecureOptions secureOption;
     NetAddress address;
-    const std::string data = "how do you do? This is UT test getRemoteCertificateInterface";
+    const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
@@ -326,6 +392,7 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
 
+    AccessToken token;
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -337,7 +404,6 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
     server.GetRemoteCertificate(
             [](int32_t errCode, const X509CertRawData &cert) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    sleep(60);
     (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
@@ -366,11 +432,12 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
 
+    AccessToken token;
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    const std::string data = "how do you do? this is protocolInterface";
+    const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
     TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
@@ -381,7 +448,6 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
         getProtocolVal = protocol;
     });
     EXPECT_STREQ(getProtocolVal.c_str(), "TLSv1.2");
-    sleep(60);
 
     (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
@@ -411,10 +477,11 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
     options.SetTlsSecureOptions(secureOption);
 
     bool flag = false;
+    AccessToken token;
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    const std::string data = "how do you do? This is getCipherSuiteInterface";
+    const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
     TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -432,7 +499,6 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
     }
 
     EXPECT_TRUE(flag);
-    sleep(60);
 
     (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
