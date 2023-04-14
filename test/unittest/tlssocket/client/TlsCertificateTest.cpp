@@ -156,11 +156,26 @@ public:
     virtual void TearDown() {}
 };
 
-HWTEST_F(TlsCertificateTest, CertificateTest, TestSize.Level2)
+HWTEST_F(TlsCertificateTest, CertificateTest001, TestSize.Level2)
 {
     TLSCertificate tlsCertificate = TLSCertificate(g_clientFile, LOCAL_CERT);
     bool isCertFromData = tlsCertificate.CertificateFromData(g_clientFile, LOCAL_CERT);
     EXPECT_EQ(isCertFromData, true);
+}
+
+HWTEST_F(TlsCertificateTest, CertificateTest002, TestSize.Level2)
+{
+    std::string data = "";
+    TLSCertificate tlsCertificate = TLSCertificate(data, EncodingFormat::DER, LOCAL_CERT);
+    bool ret = tlsCertificate.CertificateFromDer(g_clientFile, LOCAL_CERT);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(TlsCertificateTest, CertificateTest003, TestSize.Level2)
+{
+    TLSCertificate tlsCertificate = TLSCertificate(g_clientFile, EncodingFormat::PEM, LOCAL_CERT);
+    bool ret = tlsCertificate.CertificateFromPem(g_caCrtFile, LOCAL_CERT);
+    EXPECT_FALSE(ret);
 }
 
 HWTEST_F(TlsCertificateTest, CopyConstruction, TestSize.Level2)
@@ -247,6 +262,70 @@ HWTEST_F(TlsCertificateTest, CaFromData, TestSize.Level2)
     bool analysisCa = tlsCertificate.AnalysisCertificate(CertType::CA_CERT, x509Ca);
     EXPECT_TRUE(analysisCa);
     EXPECT_EQ(isFilePath, true);
+}
+
+HWTEST_F(TlsCertificateTest, AnalysisCertificateTest, TestSize.Level2)
+{
+    TLSCertificate tlsCertificate = TLSCertificate(g_clientFile, LOCAL_CERT);
+    X509 *x509 = nullptr;
+    bool ret = tlsCertificate.AnalysisCertificate(CertType::LOCAL_CERT, x509);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(TlsCertificateTest, CaCertToStringTest, TestSize.Level2)
+{
+    TLSCertificate tlsCertificate = TLSCertificate(g_clientFile, LOCAL_CERT);
+    X509 *x509 = nullptr;
+    bool ret = tlsCertificate.CaCertToString(x509);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(TlsCertificateTest, LocalCertToStringTest, TestSize.Level2)
+{
+    TLSCertificate tlsCertificate = TLSCertificate(g_clientFile, LOCAL_CERT);
+    X509 *x509 = nullptr;
+    bool ret = tlsCertificate.LocalCertToString(x509);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(TlsCertificateTest, SetX509VersionTest, TestSize.Level2)
+{
+    TLSCertificate tlsCertificate = TLSCertificate(g_clientFile, LOCAL_CERT);
+    X509 *x509 = nullptr;
+    bool ret = tlsCertificate.SetX509Version(x509);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(TlsCertificateTest, SetSerialNumberTest, TestSize.Level2)
+{
+    TLSCertificate tlsCertificate = TLSCertificate(g_clientFile, LOCAL_CERT);
+    X509 *x509 = nullptr;
+    bool ret = tlsCertificate.SetSerialNumber(x509);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(TlsCertificateTest, SetNotValidTimeTest, TestSize.Level2)
+{
+    TLSCertificate tlsCertificate = TLSCertificate(g_clientFile, LOCAL_CERT);
+    X509 *x509 = nullptr;
+    bool ret = tlsCertificate.SetNotValidTime(x509);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(TlsCertificateTest, SetSignatureAlgorithmTest, TestSize.Level2)
+{
+    TLSCertificate tlsCertificate = TLSCertificate(g_clientFile, LOCAL_CERT);
+    X509 *x509 = nullptr;
+    bool ret = tlsCertificate.SetSignatureAlgorithm(x509);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(TlsCertificateTest, SetLocalCertRawDataTest, TestSize.Level2)
+{
+    TLSCertificate tlsCertificate = TLSCertificate(g_clientFile, LOCAL_CERT);
+    X509 *x509 = nullptr;
+    bool ret = tlsCertificate.SetLocalCertRawData(x509);
+    EXPECT_FALSE(ret);
 }
 } // namespace NetStack
 } // namespace OHOS
