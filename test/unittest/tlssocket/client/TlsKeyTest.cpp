@@ -208,5 +208,33 @@ HWTEST_F(TlsKeyTest, SwitchAlgorithmTest, TestSize.Level2)
     SecureData getKeyData = tlsKeyDsa.GetKeyData();
     EXPECT_EQ(getKeyData.Length(), structureData.Length());
 }
+
+HWTEST_F(TlsKeyTest, ClearTest, TestSize.Level2)
+{
+    SecureData structureData(g_keyFile);
+    std::string keyPassStr = "";
+    SecureData keyPass(keyPassStr);
+    TLSKey tlsKeyDsa = TLSKey(structureData, ALGORITHM_DSA, keyPass);
+    tlsKeyDsa.dsa_ = DSA_new();
+    tlsKeyDsa.Clear(true);
+    TLSKey tlsKeyDh = TLSKey(structureData, ALGORITHM_DH, keyPass);
+    tlsKeyDh.dh_ = DH_new();
+    tlsKeyDh.Clear(true);
+    TLSKey tlsKeyEc = TLSKey(structureData, ALGORITHM_EC, keyPass);
+    tlsKeyEc.ec_ = EC_KEY_new();
+    tlsKeyEc.Clear(true);
+    TLSKey tlsKeyOpaque = TLSKey(structureData, OPAQUE, keyPass);
+    tlsKeyOpaque.genericKey_ = EVP_PKEY_new();
+    tlsKeyOpaque.Clear(true);
+}
+
+HWTEST_F(TlsKeyTest, DecodeDataTest, TestSize.Level2)
+{
+    SecureData data;
+    std::string keyPassStr = "";
+    SecureData keyPass(keyPassStr);
+    TLSKey tlsKey = TLSKey(data, ALGORITHM_DSA, keyPass);
+    tlsKey.DecodeData(data, ALGORITHM_DSA, keyPass);
+}
 } // namespace NetStack
 } // namespace OHOS
