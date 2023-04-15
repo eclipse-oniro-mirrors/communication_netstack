@@ -455,7 +455,7 @@ void HttpExec::GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::str
     if (host == DEFAULT_HTTP_PROXY_HOST) {
         host = std::string();
     }
-
+    NETSTACK_LOGI("YYS Decode(httpProxyHost) is %{public}s", host.c_str());
     exclusions = httpProxyExclusions;
     if (exclusions == DEFAULT_HTTP_PROXY_EXCLUSION_LIST) {
         exclusions = std::string();
@@ -614,11 +614,8 @@ void HttpExec::OnDataReceive(napi_env env, napi_status status, void *data)
     }
 
     void *buffer = nullptr;
-    auto &tempData = context->GetTempData();
-    if (tempData.size() == 0) {
-        NETSTACK_LOGE("[GetTempData] The size of tempData is 0");
-        return;
-    }
+    auto tempData = context->GetTempData();
+    context->PopTempData();
     napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), tempData.size(), &buffer);
     if (buffer == nullptr || arrayBuffer == nullptr) {
         return;
@@ -642,8 +639,10 @@ void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
     }
     NapiUtils::SetUint32Property(context->GetEnv(), progress, "receiveSize",
                                  static_cast<uint32_t>(context->GetNowLen()));
+    context->PopNowLen();
     NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize",
                                  static_cast<uint32_t>(context->GetTotalLen()));
+    context->PopTotalLen();
     context->Emit(ON_DATA_PROGRESS, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
 }
 

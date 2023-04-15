@@ -16,6 +16,8 @@
 #ifndef COMMUNICATIONNETSTACK_REQUEST_CONTEXT_H
 #define COMMUNICATIONNETSTACK_REQUEST_CONTEXT_H
 
+#include <queue>
+#include <mutex>
 #include "curl/curl.h"
 #include "base_context.h"
 #include "http_request_options.h"
@@ -60,20 +62,29 @@ public:
 
     curl_off_t GetTotalLen();
 
+    void PopTotalLen();
+
     void SetNowLen(curl_off_t nowLen);
 
     curl_off_t GetNowLen();
 
+    void PopNowLen();
+
     void SetTempData(const void *data, size_t size);
 
-    std::string &GetTempData();
+    std::string GetTempData();
+
+    void PopTempData();
 
 private:
     bool usingCache_;
     bool request2_;
-    curl_off_t totalLen_;
-    curl_off_t nowLen_;
-    std::string tempData_;
+    std::mutex totalLenLock_;
+    std::mutex nowLenLock_;
+    std::mutex tempDataLock_;
+    std::queue<curl_off_t> totalLen_;
+    std::queue<curl_off_t> nowLen_;
+    std::queue<std::string> tempData_;
 
     struct curl_slist *curlHeaderList_;
 
