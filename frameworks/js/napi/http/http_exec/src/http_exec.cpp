@@ -455,7 +455,6 @@ void HttpExec::GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::str
     if (host == DEFAULT_HTTP_PROXY_HOST) {
         host = std::string();
     }
-    NETSTACK_LOGI("YYS Decode(httpProxyHost) is %{public}s", host.c_str());
     exclusions = httpProxyExclusions;
     if (exclusions == DEFAULT_HTTP_PROXY_EXCLUSION_LIST) {
         exclusions = std::string();
