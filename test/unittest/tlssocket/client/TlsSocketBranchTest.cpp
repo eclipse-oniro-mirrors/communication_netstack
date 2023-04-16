@@ -357,7 +357,6 @@ HWTEST_F(TlsSocketBranchTest, BranchTest4, TestSize.Level2)
     netAddress.SetPort(0);
     netAddress.SetFamilyBySaFamily(AF_INET);
     EXPECT_EQ(netAddress.GetSaFamily(), AF_INET);
-
 }
 
 HWTEST_F(TlsSocketBranchTest, BranchTest5, TestSize.Level2)
