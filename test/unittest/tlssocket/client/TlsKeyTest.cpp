@@ -226,6 +226,7 @@ HWTEST_F(TlsKeyTest, ClearTest, TestSize.Level2)
     TLSKey tlsKeyOpaque = TLSKey(structureData, OPAQUE, keyPass);
     tlsKeyOpaque.genericKey_ = EVP_PKEY_new();
     tlsKeyOpaque.Clear(true);
+    EXPECT_EQ(tlsKeyOpaque.keyIsNull_, true);
 }
 
 HWTEST_F(TlsKeyTest, DecodeDataTest, TestSize.Level2)
