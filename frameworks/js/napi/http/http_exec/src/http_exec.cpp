@@ -615,7 +615,7 @@ void HttpExec::OnDataReceive(napi_env env, napi_status status, void *data)
     void *buffer = nullptr;
     auto tempData = context->GetTempData();
     context->PopTempData();
-    if(tempData.empty()) {
+    if (tempData.empty()) {
         NETSTACK_LOGD("[GetTempData] tempDate is empty!");
         return;
     }

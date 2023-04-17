@@ -1,0 +1,413 @@
+cmake_minimum_required(VERSION 3.16.3)
+project(communication_netstack)
+
+set(CMAKE_CXX_STANDARD 14)
+
+set(MODULE_FLAG 0)
+
+if (MODULE_FLAG EQUAL 0)
+
+include_directories(frameworks/js/napi/http/async_context/include)
+include_directories(frameworks/js/napi/http/async_work/include)
+include_directories(frameworks/js/napi/http/cache/base64/include)
+include_directories(frameworks/js/napi/http/cache/cache_constant)
+include_directories(frameworks/js/napi/http/cache/cache_constant/include)
+include_directories(frameworks/js/napi/http/cache/cache_proxy/include)
+include_directories(frameworks/js/napi/http/cache/cache_strategy/include)
+include_directories(frameworks/js/napi/http/cache/lru_cache/include)
+include_directories(frameworks/js/napi/http/constant/include)
+include_directories(frameworks/js/napi/http/http_exec/include)
+include_directories(frameworks/js/napi/http/http_module/include)
+include_directories(frameworks/js/napi/http/options/include)
+include_directories(frameworks/native)
+include_directories(frameworks/native/http)
+include_directories(frameworks/native/http/http_curl)
+include_directories(frameworks/native/http/http_curl/include)
+include_directories(frameworks/native/http/http_rust)
+include_directories(frameworks/native/http/http_rust/include)
+include_directories(interfaces/innerkits)
+include_directories(interfaces/innerkits/tls_socket)
+include_directories(interfaces/innerkits/tls_socket/include)
+include_directories(utils/common_utils/include)
+include_directories(utils/log)
+include_directories(utils/log/include)
+include_directories(utils/napi_utils/include)
+
+add_executable(communication_netstack
+        frameworks/js/napi/http/async_context/include/request_context.h
+        frameworks/js/napi/http/async_context/src/request_context.cpp
+        frameworks/js/napi/http/async_work/include/http_async_work.h
+        frameworks/js/napi/http/async_work/src/http_async_work.cpp
+        frameworks/js/napi/http/cache/base64/include/base64_utils.h
+        frameworks/js/napi/http/cache/base64/src/base64_utils.cpp
+        frameworks/js/napi/http/cache/cache_constant/include/casche_constant.h
+        frameworks/js/napi/http/cache/cache_proxy/include/cache_proxy.h
+        frameworks/js/napi/http/cache/cache_proxy/src/cache_proxy.cpp
+        frameworks/js/napi/http/cache/cache_strategy/include/http_cache_request.h
+        frameworks/js/napi/http/cache/cache_strategy/include/http_cache_response.h
+        frameworks/js/napi/http/cache/cache_strategy/include/http_cache_strategy.h
+        frameworks/js/napi/http/cache/cache_strategy/include/http_time.h
+        frameworks/js/napi/http/cache/cache_strategy/src/http_cache_request.cpp
+        frameworks/js/napi/http/cache/cache_strategy/src/http_cache_response.cpp
+        frameworks/js/napi/http/cache/cache_strategy/src/http_cache_strategy.cpp
+        frameworks/js/napi/http/cache/cache_strategy/src/http_time.cpp
+        frameworks/js/napi/http/cache/lru_cache/include/disk_handler.h
+        frameworks/js/napi/http/cache/lru_cache/include/lru_cache.h
+        frameworks/js/napi/http/cache/lru_cache/include/lru_cache_disk_handler.h
+        frameworks/js/napi/http/cache/lru_cache/src/disk_handler.cpp
+        frameworks/js/napi/http/cache/lru_cache/src/lru_cache.cpp
+        frameworks/js/napi/http/cache/lru_cache/src/lru_cache_disk_handler.cpp
+        frameworks/js/napi/http/constant/include/constant.h
+        frameworks/js/napi/http/constant/include/event_list.h
+        frameworks/js/napi/http/constant/src/constant.cpp
+        frameworks/js/napi/http/http_exec/include/http_exec.h
+        frameworks/js/napi/http/http_exec/src/http_exec.cpp
+        frameworks/js/napi/http/http_module/include/http_module.h
+        frameworks/js/napi/http/http_module/src/http_module.cpp
+        frameworks/js/napi/http/options/include/http_request_options.h
+        frameworks/js/napi/http/options/include/http_response.h
+        frameworks/js/napi/http/options/src/http_request_options.cpp
+        frameworks/js/napi/http/options/src/http_response.cpp
+        frameworks/js/napi/http/BUILD.gn
+        frameworks/native/http/http_curl/include/http_curl.h
+        frameworks/native/http/http_rust/include/http_rust.h
+        interfaces/innerkits/tls_socket/include/tls_socket.h
+        interfaces/kits/js/@ohos.net.http.d.ts
+        interfaces/kits/js/@ohos.net.socket.d.ts
+        interfaces/kits/js/@ohos.net.webSocket.d.ts
+        interfaces/kits/js/@system.fetch.d.ts
+        utils/common_utils/include/netstack_common_utils.h
+        utils/common_utils/include/thread_pool.h
+        utils/common_utils/src/netstack_common_utils.cpp
+        utils/log/include/netstack_log.h
+        utils/napi_utils/include/base_async_work.h
+        utils/napi_utils/include/base_context.h
+        utils/napi_utils/include/event_listener.h
+        utils/napi_utils/include/event_manager.h
+        utils/napi_utils/include/module_template.h
+        utils/napi_utils/include/napi_utils.h
+        utils/napi_utils/src/base_context.cpp
+        utils/napi_utils/src/event_listener.cpp
+        utils/napi_utils/src/event_manager.cpp
+        utils/napi_utils/src/module_template.cpp
+        utils/napi_utils/src/napi_utils.cpp
+        utils/napi_utils/BUILD.gn
+        utils/BUILD.gn
+        netstack_config.gni)
+
+elseif (MODULE_FLAG EQUAL 1)
+
+include_directories(frameworks/js/napi/socket/async_context/include)
+include_directories(frameworks/js/napi/socket/async_work/include)
+include_directories(frameworks/js/napi/socket/constant)
+include_directories(frameworks/js/napi/socket/constant/include)
+include_directories(frameworks/js/napi/socket/options/include)
+include_directories(frameworks/js/napi/socket/socket_exec/include)
+include_directories(frameworks/js/napi/socket/socket_module/include)
+include_directories(frameworks/js/napi/socket/task_queue/include)
+include_directories(interfaces/innerkits)
+include_directories(interfaces/innerkits/tls_socket)
+include_directories(interfaces/innerkits/tls_socket/include)
+include_directories(utils/common_utils/include)
+include_directories(utils/log)
+include_directories(utils/log/include)
+include_directories(utils/napi_utils/include)
+
+add_executable(communication_netstack
+        frameworks/js/napi/socket/async_context/include/bind_context.h
+        frameworks/js/napi/socket/async_context/include/common_context.h
+        frameworks/js/napi/socket/async_context/include/connect_context.h
+        frameworks/js/napi/socket/async_context/include/tcp_extra_context.h
+        frameworks/js/napi/socket/async_context/include/tcp_send_context.h
+        frameworks/js/napi/socket/async_context/include/udp_extra_context.h
+        frameworks/js/napi/socket/async_context/include/udp_send_context.h
+        frameworks/js/napi/socket/async_context/src/bind_context.cpp
+        frameworks/js/napi/socket/async_context/src/common_context.cpp
+        frameworks/js/napi/socket/async_context/src/connect_context.cpp
+        frameworks/js/napi/socket/async_context/src/tcp_extra_context.cpp
+        frameworks/js/napi/socket/async_context/src/tcp_send_context.cpp
+        frameworks/js/napi/socket/async_context/src/udp_extra_context.cpp
+        frameworks/js/napi/socket/async_context/src/udp_send_context.cpp
+        frameworks/js/napi/socket/async_work/include/socket_async_work.h
+        frameworks/js/napi/socket/async_work/src/socket_async_work.cpp
+        frameworks/js/napi/socket/constant/include/context_key.h
+        frameworks/js/napi/socket/constant/include/event_list.h
+        frameworks/js/napi/socket/constant/include/socket_constant.h
+        frameworks/js/napi/socket/options/include/extra_options_base.h
+        frameworks/js/napi/socket/options/include/net_address.h
+        frameworks/js/napi/socket/options/include/socket_remote_info.h
+        frameworks/js/napi/socket/options/include/socket_state_base.h
+        frameworks/js/napi/socket/options/include/tcp_connect_options.h
+        frameworks/js/napi/socket/options/include/tcp_extra_options.h
+        frameworks/js/napi/socket/options/include/tcp_send_options.h
+        frameworks/js/napi/socket/options/include/udp_extra_options.h
+        frameworks/js/napi/socket/options/include/udp_send_options.h
+        frameworks/js/napi/socket/options/src/extra_options_base.cpp
+        frameworks/js/napi/socket/options/src/net_address.cpp
+        frameworks/js/napi/socket/options/src/socket_remote_info.cpp
+        frameworks/js/napi/socket/options/src/socket_state_base.cpp
+        frameworks/js/napi/socket/options/src/tcp_connect_options.cpp
+        frameworks/js/napi/socket/options/src/tcp_extra_options.cpp
+        frameworks/js/napi/socket/options/src/tcp_send_options.cpp
+        frameworks/js/napi/socket/options/src/udp_extra_options.cpp
+        frameworks/js/napi/socket/options/src/udp_send_options.cpp
+        frameworks/js/napi/socket/socket_exec/include/socket_exec.h
+        frameworks/js/napi/socket/socket_exec/src/socket_exec.cpp
+        frameworks/js/napi/socket/socket_module/include/socket_module.h
+        frameworks/js/napi/socket/socket_module/src/socket_module.cpp
+        frameworks/js/napi/socket/task_queue/include/task_queue.h
+        frameworks/js/napi/socket/task_queue/src/task_queue.cpp
+        frameworks/js/napi/socket/BUILD.gn
+        interfaces/innerkits/tls_socket/include/tls_socket.h
+        interfaces/kits/js/@ohos.net.http.d.ts
+        interfaces/kits/js/@ohos.net.socket.d.ts
+        interfaces/kits/js/@ohos.net.webSocket.d.ts
+        interfaces/kits/js/@system.fetch.d.ts
+        utils/common_utils/include/netstack_common_utils.h
+        utils/common_utils/include/thread_pool.h
+        utils/common_utils/src/netstack_common_utils.cpp
+        utils/log/include/netstack_log.h
+        utils/napi_utils/include/base_async_work.h
+        utils/napi_utils/include/base_context.h
+        utils/napi_utils/include/event_listener.h
+        utils/napi_utils/include/event_manager.h
+        utils/napi_utils/include/module_template.h
+        utils/napi_utils/include/napi_utils.h
+        utils/napi_utils/src/base_context.cpp
+        utils/napi_utils/src/event_listener.cpp
+        utils/napi_utils/src/event_manager.cpp
+        utils/napi_utils/src/module_template.cpp
+        utils/napi_utils/src/napi_utils.cpp
+        utils/napi_utils/BUILD.gn
+        utils/BUILD.gn
+        netstack_config.gni)
+
+elseif (MODULE_FLAG EQUAL 2)
+
+include_directories(frameworks/js/napi/socket/async_context/include)
+include_directories(frameworks/js/napi/socket/async_work/include)
+include_directories(frameworks/js/napi/socket/constant)
+include_directories(frameworks/js/napi/socket/constant/include)
+include_directories(frameworks/js/napi/socket/options/include)
+include_directories(frameworks/js/napi/socket/socket_exec/include)
+include_directories(frameworks/js/napi/socket/socket_module/include)
+include_directories(frameworks/js/napi/socket/task_queue/include)
+include_directories(frameworks/js/napi/tls/include)
+include_directories(frameworks/js/napi/tls/include/context)
+include_directories(frameworks/native/tls_socket/include)
+include_directories(interfaces/innerkits)
+include_directories(interfaces/innerkits/tls_socket)
+include_directories(interfaces/innerkits/tls_socket/include)
+include_directories(utils/common_utils/include)
+include_directories(utils/log)
+include_directories(utils/log/include)
+include_directories(utils/napi_utils/include)
+
+add_executable(communication_netstack
+        frameworks/js/napi/socket/async_context/include/bind_context.h
+        frameworks/js/napi/socket/async_context/include/common_context.h
+        frameworks/js/napi/socket/async_context/include/connect_context.h
+        frameworks/js/napi/socket/async_context/include/tcp_extra_context.h
+        frameworks/js/napi/socket/async_context/include/tcp_send_context.h
+        frameworks/js/napi/socket/async_context/include/udp_extra_context.h
+        frameworks/js/napi/socket/async_context/include/udp_send_context.h
+        frameworks/js/napi/socket/async_context/src/bind_context.cpp
+        frameworks/js/napi/socket/async_context/src/common_context.cpp
+        frameworks/js/napi/socket/async_context/src/connect_context.cpp
+        frameworks/js/napi/socket/async_context/src/tcp_extra_context.cpp
+        frameworks/js/napi/socket/async_context/src/tcp_send_context.cpp
+        frameworks/js/napi/socket/async_context/src/udp_extra_context.cpp
+        frameworks/js/napi/socket/async_context/src/udp_send_context.cpp
+        frameworks/js/napi/socket/async_work/include/socket_async_work.h
+        frameworks/js/napi/socket/async_work/src/socket_async_work.cpp
+        frameworks/js/napi/socket/constant/include/context_key.h
+        frameworks/js/napi/socket/constant/include/event_list.h
+        frameworks/js/napi/socket/constant/include/socket_constant.h
+        frameworks/js/napi/socket/options/include/extra_options_base.h
+        frameworks/js/napi/socket/options/include/net_address.h
+        frameworks/js/napi/socket/options/include/socket_remote_info.h
+        frameworks/js/napi/socket/options/include/socket_state_base.h
+        frameworks/js/napi/socket/options/include/tcp_connect_options.h
+        frameworks/js/napi/socket/options/include/tcp_extra_options.h
+        frameworks/js/napi/socket/options/include/tcp_send_options.h
+        frameworks/js/napi/socket/options/include/udp_extra_options.h
+        frameworks/js/napi/socket/options/include/udp_send_options.h
+        frameworks/js/napi/socket/options/src/extra_options_base.cpp
+        frameworks/js/napi/socket/options/src/net_address.cpp
+        frameworks/js/napi/socket/options/src/socket_remote_info.cpp
+        frameworks/js/napi/socket/options/src/socket_state_base.cpp
+        frameworks/js/napi/socket/options/src/tcp_connect_options.cpp
+        frameworks/js/napi/socket/options/src/tcp_extra_options.cpp
+        frameworks/js/napi/socket/options/src/tcp_send_options.cpp
+        frameworks/js/napi/socket/options/src/udp_extra_options.cpp
+        frameworks/js/napi/socket/options/src/udp_send_options.cpp
+        frameworks/js/napi/socket/socket_exec/include/socket_exec.h
+        frameworks/js/napi/socket/socket_exec/src/socket_exec.cpp
+        frameworks/js/napi/socket/socket_module/include/socket_module.h
+        frameworks/js/napi/socket/socket_module/src/socket_module.cpp
+        frameworks/js/napi/socket/task_queue/include/task_queue.h
+        frameworks/js/napi/socket/task_queue/src/task_queue.cpp
+        frameworks/js/napi/socket/BUILD.gn
+        frameworks/js/napi/tls/include/context/tls_bind_context.h
+        frameworks/js/napi/tls/include/context/tls_connect_context.h
+        frameworks/js/napi/tls/include/context/tls_extra_context.h
+        frameworks/js/napi/tls/include/context/tls_napi_context.h
+        frameworks/js/napi/tls/include/context/tls_send_context.h
+        frameworks/js/napi/tls/include/constant.h
+        frameworks/js/napi/tls/include/monitor.h
+        frameworks/js/napi/tls/include/tlssocket_async_work.h
+        frameworks/js/napi/tls/include/tlssocket_exec.h
+        frameworks/js/napi/tls/include/tlssocket_module.h
+        frameworks/js/napi/tls/src/context/tls_bind_context.cpp
+        frameworks/js/napi/tls/src/context/tls_connect_context.cpp
+        frameworks/js/napi/tls/src/context/tls_extra_context.cpp
+        frameworks/js/napi/tls/src/context/tls_napi_context.cpp
+        frameworks/js/napi/tls/src/context/tls_send_context.cpp
+        frameworks/js/napi/tls/src/monitor.cpp
+        frameworks/js/napi/tls/src/tlssocket_async_work.cpp
+        frameworks/js/napi/tls/src/tlssocket_exec.cpp
+        frameworks/js/napi/tls/src/tlssocket_module.cpp
+        frameworks/native/tls_socket/include/secure_data.h
+        frameworks/native/tls_socket/include/socket_error.h
+        frameworks/native/tls_socket/include/tls.h
+        frameworks/native/tls_socket/include/tls_certificate.h
+        frameworks/native/tls_socket/include/tls_configuration.h
+        frameworks/native/tls_socket/include/tls_context.h
+        frameworks/native/tls_socket/include/tls_key.h
+        frameworks/native/tls_socket/include/tls_utils.h
+        frameworks/native/tls_socket/src/secure_data.cpp
+        frameworks/native/tls_socket/src/socket_error.cpp
+        frameworks/native/tls_socket/src/tls_certificate.cpp
+        frameworks/native/tls_socket/src/tls_configuration.cpp
+        frameworks/native/tls_socket/src/tls_context.cpp
+        frameworks/native/tls_socket/src/tls_key.cpp
+        frameworks/native/tls_socket/src/tls_socket.cpp
+        frameworks/native/tls_socket/src/tls_utils.cpp
+        interfaces/innerkits/tls_socket/include/tls_socket.h
+        interfaces/kits/js/@ohos.net.http.d.ts
+        interfaces/kits/js/@ohos.net.socket.d.ts
+        interfaces/kits/js/@ohos.net.webSocket.d.ts
+        interfaces/kits/js/@system.fetch.d.ts
+        utils/common_utils/include/netstack_common_utils.h
+        utils/common_utils/include/thread_pool.h
+        utils/common_utils/src/netstack_common_utils.cpp
+        utils/log/include/netstack_log.h
+        utils/napi_utils/include/base_async_work.h
+        utils/napi_utils/include/base_context.h
+        utils/napi_utils/include/event_listener.h
+        utils/napi_utils/include/event_manager.h
+        utils/napi_utils/include/module_template.h
+        utils/napi_utils/include/napi_utils.h
+        utils/napi_utils/src/base_context.cpp
+        utils/napi_utils/src/event_listener.cpp
+        utils/napi_utils/src/event_manager.cpp
+        utils/napi_utils/src/module_template.cpp
+        utils/napi_utils/src/napi_utils.cpp
+        utils/napi_utils/BUILD.gn
+        utils/BUILD.gn
+        netstack_config.gni)
+
+
+elseif (MODULE_FLAG EQUAL 3)
+
+include_directories(frameworks/js/napi/websocket/async_context/include)
+include_directories(frameworks/js/napi/websocket/async_work/include)
+include_directories(frameworks/js/napi/websocket/constant/include)
+include_directories(frameworks/js/napi/websocket/websocket_exec/include)
+include_directories(frameworks/js/napi/websocket/websocket_module/include)
+include_directories(interfaces/innerkits)
+include_directories(interfaces/innerkits/tls_socket)
+include_directories(interfaces/innerkits/tls_socket/include)
+include_directories(utils/common_utils/include)
+include_directories(utils/log)
+include_directories(utils/log/include)
+include_directories(utils/napi_utils/include)
+
+add_executable(communication_netstack
+        frameworks/js/napi/websocket/async_context/include/close_context.h
+        frameworks/js/napi/websocket/async_context/include/connect_context.h
+        frameworks/js/napi/websocket/async_context/include/send_context.h
+        frameworks/js/napi/websocket/async_context/src/close_context.cpp
+        frameworks/js/napi/websocket/async_context/src/connect_context.cpp
+        frameworks/js/napi/websocket/async_context/src/send_context.cpp
+        frameworks/js/napi/websocket/async_work/include/websocket_async_work.h
+        frameworks/js/napi/websocket/async_work/src/websocket_async_work.cpp
+        frameworks/js/napi/websocket/constant/include/constant.h
+        frameworks/js/napi/websocket/constant/src/constant.cpp
+        frameworks/js/napi/websocket/websocket_exec/include/websocket_exec.h
+        frameworks/js/napi/websocket/websocket_exec/src/websocket_exec.cpp
+        frameworks/js/napi/websocket/websocket_module/include/websocket_module.h
+        frameworks/js/napi/websocket/websocket_module/src/websocket_module.cpp
+        frameworks/js/napi/websocket/BUILD.gn
+        interfaces/innerkits/tls_socket/include/tls_socket.h
+        interfaces/kits/js/@ohos.net.http.d.ts
+        interfaces/kits/js/@ohos.net.socket.d.ts
+        interfaces/kits/js/@ohos.net.webSocket.d.ts
+        interfaces/kits/js/@system.fetch.d.ts
+        utils/common_utils/include/netstack_common_utils.h
+        utils/common_utils/include/thread_pool.h
+        utils/common_utils/src/netstack_common_utils.cpp
+        utils/log/include/netstack_log.h
+        utils/napi_utils/include/base_async_work.h
+        utils/napi_utils/include/base_context.h
+        utils/napi_utils/include/event_listener.h
+        utils/napi_utils/include/event_manager.h
+        utils/napi_utils/include/module_template.h
+        utils/napi_utils/include/napi_utils.h
+        utils/napi_utils/src/base_context.cpp
+        utils/napi_utils/src/event_listener.cpp
+        utils/napi_utils/src/event_manager.cpp
+        utils/napi_utils/src/module_template.cpp
+        utils/napi_utils/src/napi_utils.cpp
+        utils/napi_utils/BUILD.gn
+        utils/BUILD.gn
+        netstack_config.gni)
+endif()
+
+include_directories(../../arkui/napi/interfaces/kits)
+include_directories(../../arkui/napi/native_engine/impl/quickjs)
+include_directories(../../arkui/napi/)
+include_directories(../../arkui/ace_engine/frameworks/base/utils)
+include_directories(../../arkui/napi/interfaces/inner_api)
+
+include_directories(utils/napi_utils/include)
+include_directories(utils/common_utils/include)
+include_directories(utils/event_manager/include)
+include_directories(utils/base_context/include)
+include_directories(utils/base_async_work/include)
+include_directories(utils/module_template/include)
+include_directories(utils/log/include)
+
+include_directories(../../../utils/native/base/include/)
+
+include_directories(../../../base/hiviewdfx/hilog/interfaces/native/innerkits/include)
+
+include_directories(../../../third_party/quickjs)
+include_directories(../../../third_party/openssl/include)
+include_directories(../../../third_party/googletest/googletest/include)
+include_directories(../../../third_party/libuv/include)
+include_directories(../../../third_party/jsoncpp/include)
+include_directories(../../../third_party/curl/include)
+include_directories(../../../third_party/glib/glib/)
+include_directories(../../../third_party/glib/)
+include_directories(../../../third_party/node/src)
+include_directories(../../../third_party/libwebsockets/include)
+include_directories(../../../third_party/openssl/include)
+
+include_directories(../../../commonlibrary/c_utils/base/include/)
+
+include_directories(../../arkui/ace_engine_lite/interfaces/inner_api/builtin/jsi)
+include_directories(../../arkui/ace_engine_lite/interfaces/inner_api/builtin/async)
+include_directories(../../arkui/ace_engine_lite/interfaces/inner_api/builtin/base)
+include_directories(../../arkui/ace_engine_lite/frameworks/common/utils)
+include_directories(../../arkui/ace_engine_lite/frameworks/src/core/context)
+include_directories(../../arkui/ace_engine_lite/frameworks/targets/simulator)
+
+include_directories(../../../third_party/jerryscript/jerry-core/include)
+include_directories(../../../third_party/jerryscript/jerry-ext/include/jerryscript-ext)
+include_directories(../../../third_party/jerryscript/jerry-port/default/include)
+include_directories(../../../third_party/curl/include)
+include_directories(../../../third_party/bounds_checking_function/include)
+
+
+
