@@ -66,7 +66,7 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
 };
 RequestContext::RequestContext(napi_env env, EventManager *manager)
-    : BaseContext(env, manager), usingCache_(true), request2_(false), totalLen_(0), nowLen_(0), curlHeaderList_(nullptr)
+    : BaseContext(env, manager), usingCache_(true), request2_(false), curlHeaderList_(nullptr)
 {
     std::lock_guard guard(envMutex_);
     envMap_[this] = env;
@@ -411,14 +411,15 @@ void RequestContext::SetResponseByCache()
 
 int32_t RequestContext::GetErrorCode() const
 {
-    if (BaseContext::IsPermissionDenied()) {
-        return PERMISSION_DENIED_CODE;
-    }
-
     auto err = BaseContext::GetErrorCode();
     if (err == PARSE_ERROR_CODE) {
         return PARSE_ERROR_CODE;
     }
+
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_CODE;
+    }
+
     if (HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE) != HTTP_ERR_MAP.end()) {
         return err + HTTP_ERROR_CODE_BASE;
     }
@@ -427,23 +428,16 @@ int32_t RequestContext::GetErrorCode() const
 
 std::string RequestContext::GetErrorMessage() const
 {
-    if (BaseContext::IsPermissionDenied()) {
-        return PERMISSION_DENIED_MSG;
-    }
-
     auto err = BaseContext::GetErrorCode();
     if (err == PARSE_ERROR_CODE) {
         return PARSE_ERROR_MSG;
     }
-    auto it = HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE);
-    if (it != HTTP_ERR_MAP.end()) {
-        return it->second;
+
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_MSG;
     }
-    it = HTTP_ERR_MAP.find(HTTP_UNKNOWN_OTHER_ERROR);
-    if (it != HTTP_ERR_MAP.end()) {
-        return it->second;
-    }
-    return {};
+
+    return HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE)->second;
 }
 
 void RequestContext::EnableRequest2()
@@ -458,32 +452,72 @@ bool RequestContext::IsRequest2()
 
 void RequestContext::SetTotalLen(curl_off_t totalLen)
 {
-    totalLen_ = totalLen;
+    std::lock_guard<std::mutex> lock(totalLenLock_);
+    totalLen_.push(totalLen);
 }
 
 curl_off_t RequestContext::GetTotalLen()
 {
-    return totalLen_;
+    std::lock_guard<std::mutex> lock(totalLenLock_);
+    if (!totalLen_.empty()) {
+        return totalLen_.front();
+    }
+    return 0;
+}
+
+void RequestContext::PopTotalLen()
+{
+    std::lock_guard<std::mutex> lock(totalLenLock_);
+    if (!totalLen_.empty()) {
+        totalLen_.pop();
+    }
 }
 
 void RequestContext::SetNowLen(curl_off_t nowLen)
 {
-    nowLen_ = nowLen;
+    std::lock_guard<std::mutex> lock(nowLenLock_);
+    nowLen_.push(nowLen);
 }
 
 curl_off_t RequestContext::GetNowLen()
 {
-    return nowLen_;
+    std::lock_guard<std::mutex> lock(nowLenLock_);
+    if (!nowLen_.empty()) {
+        return nowLen_.front();
+    }
+    return 0;
+}
+
+void RequestContext::PopNowLen()
+{
+    std::lock_guard<std::mutex> lock(nowLenLock_);
+    if (!nowLen_.empty()) {
+        nowLen_.pop();
+    }
 }
 
 void RequestContext::SetTempData(const void *data, size_t size)
 {
-    tempData_.clear();
-    tempData_.append(reinterpret_cast<const char *>(data), size);
+    std::lock_guard<std::mutex> lock(tempDataLock_);
+    std::string tempString;
+    tempString.append(reinterpret_cast<const char *>(data), size);
+    tempData_.push(tempString);
 }
 
-std::string &RequestContext::GetTempData()
+std::string RequestContext::GetTempData()
 {
-    return tempData_;
+    std::lock_guard<std::mutex> lock(tempDataLock_);
+    if (!tempData_.empty()) {
+        return tempData_.front();
+    }
+    return {};
+}
+
+void RequestContext::PopTempData()
+{
+    std::lock_guard<std::mutex> lock(tempDataLock_);
+    if (!tempData_.empty()) {
+        tempData_.pop();
+    }
 }
 } // namespace OHOS::NetStack
