@@ -400,7 +400,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     while (true) {
         int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT);
         if (ret < 0) {
-            NETSTACK_LOGE("poll to recv failed %{public}s", strerror(errno));
+            NETSTACK_LOGE("poll to recv failed errno is: %{public}d %{public}s", errno, strerror(errno));
             callback.OnError(errno);
             return;
         }
@@ -414,7 +414,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             if (errno == EAGAIN) {
                 continue;
             }
-            NETSTACK_LOGE("recv failed %{public}s", strerror(errno));
+            NETSTACK_LOGE("recv failed errno is: %{public}d %{public}s", errno, strerror(errno));
             callback.OnError(errno);
             return;
         }
