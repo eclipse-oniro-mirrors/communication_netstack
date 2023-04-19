@@ -504,6 +504,8 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_URL, context->options.GetUrl().c_str(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CUSTOMREQUEST, method.c_str(), context);
 
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FORBID_REUSE, 1L, context);
+
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_XFERINFOFUNCTION, ProgressCallback, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_XFERINFODATA, context, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOPROGRESS, 0L, context);
@@ -785,11 +787,16 @@ bool HttpExec::IsInitialized()
 
 void HttpExec::DeInitialize()
 {
+    std::lock_guard<std::mutex> lock(staticVariable_.mutex);
     staticVariable_.runThread = false;
     staticVariable_.conditionVariable.notify_all();
     if (staticVariable_.workThread.joinable()) {
         staticVariable_.workThread.join();
     }
+    if (staticVariable_.curlMulti) {
+        curl_multi_cleanup(staticVariable_.curlMulti);
+    }
+    staticVariable_.initialized = false;
 }
 
 bool HttpResponseCacheExec::ExecFlush(BaseContext *context)
