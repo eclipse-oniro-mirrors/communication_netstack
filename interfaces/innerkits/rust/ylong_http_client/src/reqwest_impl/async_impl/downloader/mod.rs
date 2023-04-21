@@ -14,15 +14,17 @@
  */
 
 mod builder;
+mod error;
 mod operator;
 
-pub use builder::DownloaderBuilder;
-pub use operator::{DownloadFuture, DownloadOperator, ProgressFuture};
-
-use crate::reqwest_impl::consts::DOWNLOADER_PROGRESS_DURATION;
-use crate::{HttpClientError, SpeedLimit, Timeout};
 use builder::WantsBody;
 use operator::Console;
+
+pub use builder::DownloaderBuilder;
+pub use error::DownloadError;
+pub use operator::{DownloadFuture, DownloadOperator, ProgressFuture};
+
+use crate::{SpeedLimit, Timeout};
 use reqwest::Response;
 use std::time::Duration;
 use tokio::time::Instant;
@@ -62,8 +64,7 @@ use tokio::time::Instant;
 /// # async fn download_and_show_progress_on_console(response: Response) {
 /// // Creates a default `Downloader` that show progress on console.
 /// let mut downloader = Downloader::console(response);
-/// // Starts download and show progress on console.
-/// let result = downloader.download().await;
+/// let _ = downloader.download().await;
 /// # }
 /// ```
 ///
@@ -71,8 +72,8 @@ use tokio::time::Instant;
 /// ```no_run
 /// # use std::pin::Pin;
 /// # use std::task::{Context, Poll};
-/// # use ylong_http_client::async_impl::{Downloader, DownloadOperator};
-/// # use ylong_http_client::{HttpClientError, Response, SpeedLimit, Timeout};
+/// # use ylong_http_client::async_impl::{Downloader, DownloadError, DownloadOperator};
+/// # use ylong_http_client::{Response, SpeedLimit, Timeout};
 ///
 /// # async fn download_and_show_progress(response: Response) {
 /// // Customizes your own `DownloadOperator`.
@@ -83,8 +84,7 @@ use tokio::time::Instant;
 ///         self: Pin<&mut Self>,
 ///         cx: &mut Context<'_>,
 ///         data: &[u8],
-///     ) -> Poll<Result<usize, HttpClientError>> {
-///         // Defines your customize method.
+///     ) -> Poll<Result<usize, DownloadError>> {
 ///         todo!()
 ///     }
 ///
@@ -93,8 +93,8 @@ use tokio::time::Instant;
 ///         cx: &mut Context<'_>,
 ///         downloaded: u64,
 ///         total: Option<u64>
-///     ) -> Poll<Result<(), HttpClientError>> {
-///         // Defines your customize method.
+///     ) -> Poll<Result<(), DownloadError>> {
+///         // Writes your customize method.
 ///         todo!()
 ///     }
 /// }
@@ -107,8 +107,7 @@ use tokio::time::Instant;
 ///     .timeout(Timeout::none())
 ///     .speed_limit(SpeedLimit::none())
 ///     .build();
-/// // Starts download and show progress.
-/// let result = downloader.download().await;
+/// let _ = downloader.download().await;
 /// # }
 /// ```
 pub struct Downloader<T> {
@@ -128,9 +127,10 @@ impl Downloader<()> {
     /// # use ylong_http_client::async_impl::Downloader;
     /// # use ylong_http_client::Response;
     ///
-    /// # async fn create_a_console_downloader(response: Response) {
+    /// # async fn download_and_show_progress_on_console(response: Response) {
     /// // Creates a default `Downloader` that show progress on console.
-    /// let downloader = Downloader::console(response);
+    /// let mut downloader = Downloader::console(response);
+    /// let _ = downloader.download().await;
     /// # }
     /// ```
     pub fn console(response: Response) -> Downloader<Console> {
@@ -168,7 +168,7 @@ impl<T: DownloadOperator + Unpin> Downloader<T> {
     /// let _result = downloader.download().await;
     /// # }
     /// ```
-    pub async fn download(&mut self) -> Result<(), HttpClientError> {
+    pub async fn download(&mut self) -> Result<(), DownloadError> {
         // Construct new download info, or reuse previous info.
         if self.info.is_none() {
             self.info = Some(DownloadInfo::new(self.body.content_length()));
@@ -178,7 +178,9 @@ impl<T: DownloadOperator + Unpin> Downloader<T> {
 
     // Downloads response body with speed limitation.
     // TODO: Speed Limit.
-    async fn limited_download(&mut self) -> Result<(), HttpClientError> {
+    async fn limited_download(&mut self) -> Result<(), DownloadError> {
+        const DOWNLOADER_PROGRESS_DURATION: Duration = Duration::from_secs(1);
+
         loop {
             self.check_timeout()?;
             self.show_progress_with_duration(DOWNLOADER_PROGRESS_DURATION)
@@ -189,14 +191,14 @@ impl<T: DownloadOperator + Unpin> Downloader<T> {
         }
     }
 
-    async fn transfer_data(&mut self) -> Result<bool, HttpClientError> {
+    async fn transfer_data(&mut self) -> Result<bool, DownloadError> {
         let data = match self.body.chunk().await {
             Ok(None) => {
                 self.show_progress_now().await?;
                 return Ok(true);
             }
             Ok(Some(data)) => data,
-            Err(e) => return Err(HttpClientError::from(e)),
+            Err(e) => return Err(DownloadError::io(e)),
         };
 
         let mut size = 0;
@@ -207,24 +209,24 @@ impl<T: DownloadOperator + Unpin> Downloader<T> {
         Ok(false)
     }
 
-    fn check_timeout(&mut self) -> Result<(), HttpClientError> {
+    fn check_timeout(&mut self) -> Result<(), DownloadError> {
         if let Some(timeout) = self.config.timeout.inner() {
             let now = Instant::now();
             if now.duration_since(self.info.as_mut().unwrap().start_time) >= timeout {
-                return Err(HttpClientError::timeout());
+                return Err(DownloadError::timeout());
             }
         }
         Ok(())
     }
 
-    async fn show_progress_now(&mut self) -> Result<(), HttpClientError> {
+    async fn show_progress_now(&mut self) -> Result<(), DownloadError> {
         self.show_progress_with_duration(Duration::default()).await
     }
 
     async fn show_progress_with_duration(
         &mut self,
         duration: Duration,
-    ) -> Result<(), HttpClientError> {
+    ) -> Result<(), DownloadError> {
         let info = self.info.as_mut().unwrap();
         let now = Instant::now();
         if now.duration_since(info.last_progress_time) >= duration {

@@ -13,10 +13,11 @@
  * limitations under the License.
  */
 
-use crate::HttpClientError;
+use super::UploadError;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+
 use tokio::io::{AsyncRead, ReadBuf};
 
 /// A `UploadOperator` represents structures that can read local data to socket.
@@ -31,8 +32,7 @@ use tokio::io::{AsyncRead, ReadBuf};
 /// # use std::pin::Pin;
 /// # use std::task::{Context, Poll};
 /// # use tokio::io::ReadBuf;
-/// # use ylong_http_client::async_impl::UploadOperator;
-/// # use ylong_http_client::HttpClientError;
+/// # use ylong_http_client::async_impl::{UploadError, UploadOperator};
 ///
 /// // Creates your own operator.
 /// struct MyUploadOperator;
@@ -43,7 +43,7 @@ use tokio::io::{AsyncRead, ReadBuf};
 ///         self: Pin<&mut Self>,
 ///         cx: &mut Context<'_>,
 ///         buf: &mut ReadBuf<'_>
-///     ) -> Poll<Result<(), HttpClientError>> {
+///     ) -> Poll<Result<(), UploadError>> {
 ///         todo!()
 ///     }
 ///
@@ -52,7 +52,7 @@ use tokio::io::{AsyncRead, ReadBuf};
 ///         cx: &mut Context<'_>,
 ///         uploaded: u64,
 ///         total: Option<u64>
-///     ) -> Poll<Result<(), HttpClientError>> {
+///     ) -> Poll<Result<(), UploadError>> {
 ///         todo!()
 ///     }
 /// }
@@ -64,7 +64,7 @@ pub trait UploadOperator {
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &mut ReadBuf<'_>,
-    ) -> Poll<Result<(), HttpClientError>>;
+    ) -> Poll<Result<(), UploadError>>;
 
     /// The progress method that you need to implement. You need to perform some
     /// operations in this method based on the number of bytes uploaded and
@@ -74,9 +74,9 @@ pub trait UploadOperator {
         cx: &mut Context<'_>,
         uploaded: u64,
         total: Option<u64>,
-    ) -> Poll<Result<(), HttpClientError>>;
+    ) -> Poll<Result<(), UploadError>>;
 
-    /// Creates a `UploadFuture`.
+    /// Creates a `Upload` Future.
     fn upload<'a, 'b>(&'a mut self, buf: &'b mut [u8]) -> UploadFuture<'a, 'b, Self>
     where
         Self: Unpin + Sized + 'a + 'b,
@@ -87,7 +87,7 @@ pub trait UploadOperator {
         }
     }
 
-    /// Creates a `Progress`Future`.
+    /// Creates a `Progress` Future.
     fn progress<'a>(&'a mut self, uploaded: u64, total: Option<u64>) -> ProgressFuture<'a, Self>
     where
         Self: Unpin + Sized + 'a,
@@ -108,7 +108,7 @@ where
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &mut ReadBuf<'_>,
-    ) -> Poll<Result<(), HttpClientError>> {
+    ) -> Poll<Result<(), UploadError>> {
         Pin::new(&mut **self).poll_upload(cx, buf)
     }
 
@@ -117,7 +117,7 @@ where
         cx: &mut Context<'_>,
         uploaded: u64,
         total: Option<u64>,
-    ) -> Poll<Result<(), HttpClientError>> {
+    ) -> Poll<Result<(), UploadError>> {
         Pin::new(&mut **self).poll_progress(cx, uploaded, total)
     }
 }
@@ -132,7 +132,7 @@ impl<'a, 'b, T> Future for UploadFuture<'a, 'b, T>
 where
     T: UploadOperator + Unpin + 'a,
 {
-    type Output = Result<(), HttpClientError>;
+    type Output = Result<(), UploadError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let fut = self.get_mut();
@@ -151,7 +151,7 @@ impl<'a, T> Future for ProgressFuture<'a, T>
 where
     T: UploadOperator + Unpin + 'a,
 {
-    type Output = Result<(), HttpClientError>;
+    type Output = Result<(), UploadError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let fut = self.get_mut();
@@ -165,7 +165,7 @@ pub struct Console<T> {
 }
 
 impl<T: AsyncRead + Unpin> Console<T> {
-    pub(crate) fn from_reader(reader: T) -> Self {
+    pub fn from_reader(reader: T) -> Self {
         Self { reader }
     }
 }
@@ -175,7 +175,7 @@ impl<T: AsyncRead + Unpin> UploadOperator for Console<T> {
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &mut ReadBuf<'_>,
-    ) -> Poll<Result<(), HttpClientError>> {
+    ) -> Poll<Result<(), UploadError>> {
         match Pin::new(&mut self.reader).poll_read(cx, buf) {
             Poll::Ready(Ok(())) => {
                 if !buf.filled().is_empty() {
@@ -183,7 +183,7 @@ impl<T: AsyncRead + Unpin> UploadOperator for Console<T> {
                 }
                 Poll::Ready(Ok(()))
             }
-            Poll::Ready(Err(e)) => Poll::Ready(Err(HttpClientError::other(Some(e)))),
+            Poll::Ready(Err(e)) => Poll::Ready(Err(UploadError::io(e))),
             Poll::Pending => Poll::Pending,
         }
     }
@@ -193,7 +193,7 @@ impl<T: AsyncRead + Unpin> UploadOperator for Console<T> {
         _cx: &mut Context<'_>,
         uploaded: u64,
         _total: Option<u64>,
-    ) -> Poll<Result<(), HttpClientError>> {
+    ) -> Poll<Result<(), UploadError>> {
         println!("progress: upload-{} bytes", uploaded);
         Poll::Ready(Ok(()))
     }

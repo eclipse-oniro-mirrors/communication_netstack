@@ -25,7 +25,7 @@ use tokio::io::AsyncRead;
 /// ```
 /// # use ylong_http_client::async_impl::{UploaderBuilder, Uploader};
 ///
-/// let uploader = UploaderBuilder::new().console("Hello World".as_bytes()).build();
+/// let uploader = UploaderBuilder::new().console("HelloWorld".as_bytes()).build();
 /// ```
 pub struct UploaderBuilder<S> {
     state: S,
@@ -60,8 +60,8 @@ impl UploaderBuilder<WantsOperator> {
     /// # use std::pin::Pin;
     /// # use std::task::{Context, Poll};
     /// use tokio::io::ReadBuf;
-    /// # use ylong_http_client::async_impl::{UploaderBuilder, Uploader, UploadOperator};
-    /// # use ylong_http_client::{HttpClientError, Response};
+    /// # use ylong_http_client::async_impl::{UploadError, UploaderBuilder, Uploader, UploadOperator};
+    /// # use ylong_http_client::Response;
     ///
     /// struct MyOperator;
     ///
@@ -70,7 +70,7 @@ impl UploaderBuilder<WantsOperator> {
     ///         self: Pin<&mut Self>,
     ///         cx: &mut Context<'_>,
     ///         buf: &mut ReadBuf<'_>
-    ///     ) -> Poll<Result<(), HttpClientError>> {
+    ///     ) -> Poll<Result<(), UploadError>> {
     ///         todo!()
     ///     }
     ///
@@ -79,7 +79,7 @@ impl UploaderBuilder<WantsOperator> {
     ///         cx: &mut Context<'_>,
     ///         uploaded: u64,
     ///         total: Option<u64>
-    ///     ) -> Poll<Result<(), HttpClientError>> {
+    ///     ) -> Poll<Result<(), UploadError>> {
     ///         todo!()
     ///     }
     /// }
@@ -106,7 +106,7 @@ impl UploaderBuilder<WantsOperator> {
     /// # use ylong_http_client::async_impl::{UploaderBuilder, Uploader};
     /// # use ylong_http_client::Response;
     ///
-    /// let builder = UploaderBuilder::new().console("Hello World".as_bytes());
+    /// let builder = UploaderBuilder::new().console("HelloWorld".as_bytes());
     /// ```
     pub fn console<R: AsyncRead + Unpin>(
         self,
@@ -144,8 +144,8 @@ impl<T> UploaderBuilder<WantsConfig<T>> {
     /// # use ylong_http_client::async_impl::{UploaderBuilder, Uploader};
     ///
     /// let builder = UploaderBuilder::new()
-    ///     .console("Hello World".as_bytes())
-    ///     .total_bytes(Some(11));
+    ///     .console("HelloWorld".as_bytes())
+    ///     .total_bytes(Some(10));
     /// ```
     pub fn total_bytes(mut self, total_bytes: Option<u64>) -> Self {
         self.state.config.total_bytes = total_bytes;
@@ -161,7 +161,7 @@ impl<T> UploaderBuilder<WantsConfig<T>> {
     /// # use ylong_http_client::Response;
     ///
     /// let downloader = UploaderBuilder::new()
-    ///     .console("Hello World".as_bytes())
+    ///     .console("HelloWorld".as_bytes())
     ///     .build();
     /// ```
     pub fn build(self) -> Uploader<T> {

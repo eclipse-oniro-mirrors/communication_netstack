@@ -93,8 +93,8 @@ impl DownloaderBuilder<WantsOperator> {
     /// ```
     /// # use std::pin::Pin;
     /// # use std::task::{Context, Poll};
-    /// # use ylong_http_client::async_impl::{DownloaderBuilder, Downloader, DownloadOperator};
-    /// # use ylong_http_client::{HttpClientError, Response};
+    /// # use ylong_http_client::async_impl::{DownloaderBuilder, Downloader, DownloadOperator, DownloadError};
+    /// # use ylong_http_client::Response;
     ///
     /// # async fn set_downloader_operator(body: Response) {
     /// struct MyOperator;
@@ -104,7 +104,7 @@ impl DownloaderBuilder<WantsOperator> {
     ///         self: Pin<&mut Self>,
     ///         cx: &mut Context<'_>,
     ///         data: &[u8]
-    ///     ) -> Poll<Result<usize, HttpClientError>> {
+    ///     ) -> Poll<Result<usize, DownloadError>> {
     ///         todo!()
     ///     }
     ///
@@ -113,7 +113,7 @@ impl DownloaderBuilder<WantsOperator> {
     ///         cx: &mut Context<'_>,
     ///         downloaded: u64,
     ///         total: Option<u64>
-    ///     ) -> Poll<Result<(), HttpClientError>> {
+    ///     ) -> Poll<Result<(), DownloadError>> {
     ///         todo!()
     ///     }
     /// }

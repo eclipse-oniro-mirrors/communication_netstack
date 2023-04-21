@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-use crate::HttpClientError;
 use std::cmp;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
@@ -77,6 +76,19 @@ pub struct SpeedLimit {
 }
 
 impl SpeedLimit {
+    /// Creates a `SpeedLimit` without limiting the speed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use ylong_http_client::SpeedLimit;
+    ///
+    /// let limit = SpeedLimit::none();
+    /// ```
+    pub fn new() -> Self {
+        Self::none()
+    }
+
     /// Sets the minimum speed and the seconds for which the current speed is
     /// allowed to be less than this minimum speed.
     ///
@@ -92,7 +104,7 @@ impl SpeedLimit {
     /// # use ylong_http_client::SpeedLimit;
     ///
     /// // Sets minimum speed is 1024B/s, the duration is 10s.
-    /// let limit = SpeedLimit::none().min_speed(1024, 10);
+    /// let limit = SpeedLimit::new().min_speed(1024, 10);
     /// ```
     pub fn min_speed(mut self, min: u64, duration: u64) -> Self {
         self.min = (cmp::min(self.max, min), Duration::from_secs(duration));
@@ -112,7 +124,7 @@ impl SpeedLimit {
     /// ```
     /// # use ylong_http_client::SpeedLimit;
     ///
-    /// let limit = SpeedLimit::none().max_speed(1024);
+    /// let limit = SpeedLimit::new().max_speed(1024);
     /// ```
     pub fn max_speed(mut self, max: u64) -> Self {
         self.max = cmp::max(self.min.0, max);
@@ -133,6 +145,12 @@ impl SpeedLimit {
             min: (0, Duration::MAX),
             max: u64::MAX,
         }
+    }
+}
+
+impl Default for SpeedLimit {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -216,9 +234,7 @@ impl Proxy {
     /// let proxy = Proxy::http("http://proxy.example.com");
     /// ```
     pub fn http(url: &str) -> ProxyBuilder {
-        ProxyBuilder(
-            reqwest::Proxy::http(url).map_err(|_| HttpClientError::build(Some(InvalidProxy))),
-        )
+        ProxyBuilder(reqwest::Proxy::http(url).map_err(|_| InvalidProxy))
     }
 
     /// Creates a `ProxyBuilder`. This builder can help you construct a proxy
@@ -232,9 +248,7 @@ impl Proxy {
     /// let proxy = Proxy::https("https://proxy.example.com");
     /// ```
     pub fn https(url: &str) -> ProxyBuilder {
-        ProxyBuilder(
-            reqwest::Proxy::https(url).map_err(|_| HttpClientError::build(Some(InvalidProxy))),
-        )
+        ProxyBuilder(reqwest::Proxy::https(url).map_err(|_| InvalidProxy))
     }
 
     /// Creates a `ProxyBuilder`. This builder can help you construct a proxy
@@ -248,9 +262,7 @@ impl Proxy {
     /// let proxy = Proxy::all("http://proxy.example.com");
     /// ```
     pub fn all(url: &str) -> ProxyBuilder {
-        ProxyBuilder(
-            reqwest::Proxy::all(url).map_err(|_| HttpClientError::build(Some(InvalidProxy))),
-        )
+        ProxyBuilder(reqwest::Proxy::all(url).map_err(|_| InvalidProxy))
     }
 
     pub(crate) fn inner(self) -> Option<reqwest::Proxy> {
@@ -269,7 +281,7 @@ impl Proxy {
 ///     .basic_auth("Aladdin", "open sesame")
 ///     .build();
 /// ```
-pub struct ProxyBuilder(Result<reqwest::Proxy, HttpClientError>);
+pub struct ProxyBuilder(Result<reqwest::Proxy, InvalidProxy>);
 
 impl ProxyBuilder {
     /// Sets the `Proxy-Authorization` header using Basic auth.
@@ -299,12 +311,13 @@ impl ProxyBuilder {
     ///
     /// let proxy = Proxy::all("http://proxy.example.com").build();
     /// ```
-    pub fn build(self) -> Result<Proxy, HttpClientError> {
+    pub fn build(self) -> Result<Proxy, InvalidProxy> {
         Ok(Proxy(Some(self.0?)))
     }
 }
 
-struct InvalidProxy;
+/// Error that occurs when an illegal `Proxy` is constructed.
+pub struct InvalidProxy;
 
 impl Debug for InvalidProxy {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -319,3 +332,83 @@ impl Display for InvalidProxy {
 }
 
 impl Error for InvalidProxy {}
+
+/// Represents a server X509 certificates.
+///
+/// You can use `from_pem` to parse a `&[u8]` into a list of certificates.
+///
+/// # Examples
+///
+/// ```
+/// use ylong_http_client::Certificate;
+///
+/// fn from_pem(pem: &[u8]) {
+///     let certs = Certificate::from_pem(pem);
+/// }
+/// ```
+pub struct Certificate {
+    inner: Vec<reqwest::Certificate>,
+}
+
+impl Certificate {
+    /// Creates a `Certificate` from a PEM encoded certificate.
+    ///
+    /// Return `InvalidCertificate` if we cannot parse the given slice.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use ylong_http_client::Certificate;
+    ///
+    /// # fn cert() {
+    /// let file = std::fs::read("./cert.pem").unwrap();
+    /// let cert = reqwest::Certificate::from_pem(&buf);
+    /// # }
+    /// ```
+    pub fn from_pem(pem: &[u8]) -> Result<Certificate, InvalidCertificate> {
+        const CERT_BEGIN: &str = "-----BEGIN CERTIFICATE-----";
+        const CERT_END: &str = "-----END CERTIFICATE-----";
+
+        let mut inner = Vec::new();
+        let str = std::str::from_utf8(pem).map_err(|_| InvalidCertificate)?;
+        let mut pos = 0;
+        while pos < str.len() {
+            let st = match str[pos..].find(CERT_BEGIN) {
+                Some(size) => size,
+                None => break,
+            };
+
+            let ed = match str[pos + st..].find(CERT_END) {
+                Some(size) => size,
+                None => break,
+            };
+
+            let slice = str[pos + st..pos + st + ed + CERT_END.len()].as_bytes();
+            let cert = reqwest::Certificate::from_pem(slice).map_err(|_| InvalidCertificate)?;
+            inner.push(cert);
+            pos += st + ed + CERT_END.len();
+        }
+        Ok(Self { inner })
+    }
+
+    pub(crate) fn into_inner(self) -> Vec<reqwest::Certificate> {
+        self.inner
+    }
+}
+
+/// Error that occurs when an illegal `Certificate` is constructed.
+pub struct InvalidCertificate;
+
+impl Debug for InvalidCertificate {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InvalidCertificate").finish()
+    }
+}
+
+impl Display for InvalidCertificate {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("InvalidCertificate")
+    }
+}
+
+impl Error for InvalidCertificate {}

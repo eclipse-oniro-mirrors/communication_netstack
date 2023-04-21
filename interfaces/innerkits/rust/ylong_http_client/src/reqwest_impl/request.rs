@@ -15,10 +15,9 @@
 
 use crate::{Method, Version};
 use reqwest::header::{HeaderMap, HeaderName};
-use reqwest::Url;
+use reqwest::{Body, Url};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
-use tokio::io::AsyncRead;
 
 /// HTTP request implementation.
 ///
@@ -27,7 +26,7 @@ use tokio::io::AsyncRead;
 /// # Examples
 ///
 /// ```
-/// # use ylong_http_client::{Method, Request};
+/// use ylong_http_client::{Method, Request};
 ///
 /// let request = Request::builder()
 ///     .method(Method::GET)
@@ -45,7 +44,7 @@ impl Request<()> {
     /// # Examples
     ///
     /// ```
-    /// # use ylong_http_client::Request;
+    /// use ylong_http_client::Request;
     ///
     /// let builder = Request::builder();
     /// ```
@@ -59,7 +58,7 @@ impl Request<()> {
 /// # Examples
 ///
 /// ```
-/// # use ylong_http_client::RequestBuilder;
+/// use ylong_http_client::RequestBuilder;
 ///
 /// let builder = RequestBuilder::new();
 /// ```
@@ -73,7 +72,7 @@ impl RequestBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use ylong_http_client::RequestBuilder;
+    /// use ylong_http_client::RequestBuilder;
     ///
     /// let builder = RequestBuilder::new();
     /// ```
@@ -88,7 +87,7 @@ impl RequestBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use ylong_http_client::{Method, RequestBuilder};
+    /// use ylong_http_client::{Method, RequestBuilder};
     ///
     /// let builder = RequestBuilder::new().method(Method::GET);
     /// ```
@@ -105,7 +104,7 @@ impl RequestBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use ylong_http_client::{Method, RequestBuilder};
+    /// use ylong_http_client::{Method, RequestBuilder};
     ///
     /// let builder = RequestBuilder::new().url("www.example.com");
     /// ```
@@ -122,7 +121,7 @@ impl RequestBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use ylong_http_client::RequestBuilder;
+    /// use ylong_http_client::RequestBuilder;
     ///
     /// let builder = RequestBuilder::new().header("Content-Length", "100");
     /// ```
@@ -142,7 +141,7 @@ impl RequestBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use ylong_http_client::{RequestBuilder, Version};
+    /// use ylong_http_client::{RequestBuilder, Version};
     ///
     /// let builder = RequestBuilder::new().version(Version::HTTP_11);
     /// ```
@@ -164,11 +163,11 @@ impl RequestBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use ylong_http_client::RequestBuilder;
+    /// use ylong_http_client::RequestBuilder;
     ///
     /// let request = RequestBuilder::new().build("HelloWorld".as_bytes()).unwrap();
     /// ```
-    pub fn build<T: AsyncRead>(self, body: T) -> Result<Request<T>, InvalidRequest> {
+    pub fn build<T: Into<Body>>(self, body: T) -> Result<Request<T>, InvalidRequest> {
         Ok(Request {
             inner: self.inner?,
             body,

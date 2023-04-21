@@ -13,16 +13,14 @@
  * limitations under the License.
  */
 
+use crate::{Certificate, HttpClientError, Proxy, Redirect, Request, Timeout, TlsVersion};
+use reqwest::{Body, Response};
+
 mod downloader;
 mod uploader;
 
-pub use downloader::{DownloadOperator, Downloader, DownloaderBuilder};
-pub use uploader::{UploadOperator, Uploader, UploaderBuilder};
-
-use crate::{Certificate, HttpClientError, Proxy, Redirect, Request, Timeout, TlsVersion};
-use reqwest::{Body, Response};
-use tokio::io::AsyncRead;
-use tokio_util::io::ReaderStream;
+pub use downloader::{DownloadError, DownloadOperator, Downloader, DownloaderBuilder};
+pub use uploader::{UploadError, UploadOperator, Uploader, UploaderBuilder};
 
 /// An asynchronous `Client` to make requests with.
 ///
@@ -101,7 +99,7 @@ impl Client {
     /// let _response = client.request(request).await;
     /// # }
     /// ```
-    pub async fn request<T: AsyncRead + Unpin + Send + Sync + 'static>(
+    pub async fn request<T: Into<Body>>(
         &self,
         request: Request<T>,
     ) -> Result<Response, HttpClientError> {
@@ -109,7 +107,7 @@ impl Client {
             .request(request.inner.method, request.inner.url)
             .headers(request.inner.headers)
             .version(request.inner.version)
-            .body(Body::wrap_stream(ReaderStream::new(request.body)))
+            .body(request.body.into())
             .send()
             .await
             .map_err(HttpClientError::from)
@@ -238,9 +236,9 @@ impl ClientBuilder {
     ///
     /// ```
     /// # use ylong_http_client::async_impl::ClientBuilder;
-    /// # use ylong_http_client::Redirect;
+    /// # use ylong_http_client::Proxy;
     ///
-    /// let builder = ClientBuilder::new().redirect(Redirect::none());
+    /// let builder = ClientBuilder::new().proxy(Proxy::none());
     /// ```
     pub fn proxy(self, proxy: Proxy) -> Self {
         match proxy.inner() {
@@ -261,7 +259,7 @@ impl ClientBuilder {
     ///
     /// ```
     /// # use ylong_http_client::async_impl::ClientBuilder;
-    /// # use ylong_http_client::{Redirect, TlsVersion};
+    /// # use ylong_http_client::TlsVersion;
     ///
     /// let builder = ClientBuilder::new().max_tls_version(TlsVersion::TLS_1_2);
     /// ```
@@ -285,7 +283,7 @@ impl ClientBuilder {
     ///
     /// ```
     /// # use ylong_http_client::async_impl::ClientBuilder;
-    /// # use ylong_http_client::{Redirect, TlsVersion};
+    /// # use ylong_http_client::TlsVersion;
     ///
     /// let builder = ClientBuilder::new().min_tls_version(TlsVersion::TLS_1_2);
     /// ```
@@ -302,16 +300,86 @@ impl ClientBuilder {
     /// This can be used to connect to a server that has a self-signed
     /// certificate for example.
     ///
+    /// # Examples
+    ///
     /// ```
     /// # use ylong_http_client::async_impl::ClientBuilder;
-    /// # use ylong_http_client::{Redirect, TlsVersion, Certificate};
+    /// # use ylong_http_client::Certificate;
     ///
     /// # fn set_cert(cert: Certificate) {
     /// let builder = ClientBuilder::new().add_root_certificate(cert);
     /// # }
     /// ```
-    pub fn add_root_certificate(self, cert: Certificate) -> Self {
-        Self(self.0.add_root_certificate(cert))
+    pub fn add_root_certificate(mut self, cert: Certificate) -> Self {
+        for cert in cert.into_inner() {
+            self = Self(self.0.add_root_certificate(cert));
+        }
+        self
+    }
+
+    /// Controls the use of built-in/preloaded certificates during certificate validation.
+    ///
+    /// Defaults to `true` -- built-in system certs will be used.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use ylong_http_client::async_impl::ClientBuilder;
+    ///
+    /// let builder = ClientBuilder::new().tls_built_in_root_certs(true);
+    /// ```
+    pub fn tls_built_in_root_certs(self, tls_built_in_root_certs: bool) -> ClientBuilder {
+        Self(self.0.tls_built_in_root_certs(tls_built_in_root_certs))
+    }
+
+    /// Controls the use of certificate validation.
+    ///
+    /// Defaults to `false`.
+    ///
+    /// # Warning
+    ///
+    /// You should think very carefully before using this method. If
+    /// invalid certificates are trusted, *any* certificate for *any* site
+    /// will be trusted for use. This includes expired certificates. This
+    /// introduces significant vulnerabilities, and should only be used
+    /// as a last resort.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use ylong_http_client::async_impl::ClientBuilder;
+    ///
+    /// let builder = ClientBuilder::new().danger_accept_invalid_certs(true);
+    /// ```
+    pub fn danger_accept_invalid_certs(self, accept_invalid_certs: bool) -> ClientBuilder {
+        Self(self.0.danger_accept_invalid_certs(accept_invalid_certs))
+    }
+
+    /// Controls the use of hostname verification.
+    ///
+    /// Defaults to `false`.
+    ///
+    /// # Warning
+    ///
+    /// You should think very carefully before you use this method. If
+    /// hostname verification is not used, any valid certificate for any
+    /// site will be trusted for use from any other. This introduces a
+    /// significant vulnerability to man-in-the-middle attacks.
+    ///
+    /// # Examples
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use ylong_http_client::async_impl::ClientBuilder;
+    ///
+    /// let builder = ClientBuilder::new().danger_accept_invalid_hostnames(true);
+    /// ```
+    pub fn danger_accept_invalid_hostnames(self, accept_invalid_hostname: bool) -> ClientBuilder {
+        Self(
+            self.0
+                .danger_accept_invalid_hostnames(accept_invalid_hostname),
+        )
     }
 
     /// Returns a `Client` that uses this `ClientBuilder` configuration.

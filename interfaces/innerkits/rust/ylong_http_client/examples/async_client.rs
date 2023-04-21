@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+//! Asynchronous HTTP client example.
+
 use ylong_http_client::async_impl::{Client, Downloader, Uploader};
 use ylong_http_client::{Method, Proxy, Redirect, Request, Timeout, TlsVersion};
 
@@ -30,12 +32,15 @@ async fn main() {
         .build()
         .unwrap();
 
+    // Uses `Uploader` to upload the request body.
+    let uploader = Uploader::console("HelloWorld".as_bytes());
+
     // Customizes your HTTP request.
     let request = Request::builder()
         .method(Method::GET)
-        .url("http://127.0.0.1:34732")
+        .url("http://www.example.com")
         .header("transfer-encoding", "chunked")
-        .build(Uploader::console("HelloWorld".as_bytes()))
+        .build(uploader)
         .unwrap();
 
     // Sends your HTTP request through the client.

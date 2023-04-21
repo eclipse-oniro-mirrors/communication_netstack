@@ -15,15 +15,17 @@
 
 //! HTTP Client implementation based on `Reqwest`.
 
+/// Asynchronous implementation of HTTP client.
 pub mod async_impl;
 
 mod config;
-mod consts;
 mod error;
 mod request;
 
-pub use config::{Proxy, Redirect, SpeedLimit, Timeout};
-pub use error::{ErrorKind, HttpClientError};
+pub use config::{
+    Certificate, InvalidCertificate, InvalidProxy, Proxy, Redirect, SpeedLimit, Timeout,
+};
+pub use error::HttpClientError;
 pub use request::{InvalidRequest, Request, RequestBuilder};
 
-pub use reqwest::{tls::Version as TlsVersion, Certificate, Method, Response, Version};
+pub use reqwest::{tls::Version as TlsVersion, Method, Response, Version};
