@@ -510,7 +510,8 @@ void TLSSocket::CallCloseCallback(int32_t err, CloseCallback callback)
     }
 }
 
-void TLSSocket::CallGetRemoteAddressCallback(int32_t err, const Socket::NetAddress &address, GetRemoteAddressCallback callback)
+void TLSSocket::CallGetRemoteAddressCallback(int32_t err, const Socket::NetAddress &address,
+                                             GetRemoteAddressCallback callback)
 {
     GetRemoteAddressCallback func = nullptr;
     {

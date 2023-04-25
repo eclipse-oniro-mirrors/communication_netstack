@@ -219,7 +219,7 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
@@ -237,8 +237,8 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
 
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    NetAddress netAddress;
-    server.GetRemoteAddress([&netAddress](int32_t errCode, const NetAddress &address) {
+    Socket::NetAddress netAddress;
+    server.GetRemoteAddress([&netAddress](int32_t errCode, const Socket::NetAddress &address) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         netAddress.SetAddress(address.GetAddress());
         netAddress.SetPort(address.GetPort());
@@ -267,7 +267,7 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
@@ -313,7 +313,7 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
     TLSConnectOptions options;
     Socket::TCPSendOptions tcpSendOptions;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
     const std::string data = "how do you do? This is UT test getRemoteCertificateInterface";
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
@@ -351,7 +351,7 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
@@ -398,7 +398,7 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
@@ -452,7 +452,7 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));

@@ -542,7 +542,7 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));

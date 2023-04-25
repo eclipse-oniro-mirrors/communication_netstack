@@ -484,8 +484,9 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-    server.OnMessage(
-        [&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) { EXPECT_TRUE(data == getData); });
+    server.OnMessage([&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {
+        EXPECT_TRUE(data == getData);
+    });
 
     const std::string data = "how do you do? this is tlsSocketOnMessageData";
     Socket::TCPSendOptions tcpSendOptions;

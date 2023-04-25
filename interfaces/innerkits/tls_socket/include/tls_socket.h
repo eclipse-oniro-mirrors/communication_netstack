@@ -549,7 +549,8 @@ private:
     void CallConnectCallback(int32_t err, ConnectCallback callback);
     void CallSendCallback(int32_t err, SendCallback callback);
     void CallCloseCallback(int32_t err, CloseCallback callback);
-    void CallGetRemoteAddressCallback(int32_t err, const Socket::NetAddress &address, GetRemoteAddressCallback callback);
+    void CallGetRemoteAddressCallback(int32_t err, const Socket::NetAddress &address,
+                                      GetRemoteAddressCallback callback);
     void CallGetStateCallback(int32_t err, const Socket::SocketStateBase &state, GetStateCallback callback);
     void CallSetExtraOptionsCallback(int32_t err, SetExtraOptionsCallback callback);
     void CallGetCertificateCallback(int32_t err, const X509CertRawData &cert, GetCertificateCallback callback);
