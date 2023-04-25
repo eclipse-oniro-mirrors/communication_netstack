@@ -20,7 +20,7 @@
 
 #include "netstack_log.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 DiskHandler::DiskHandler(std::string fileName) : fileName_(std::move(fileName)) {}
 
 void DiskHandler::Write(const std::string &str)
@@ -54,4 +54,4 @@ void DiskHandler::Delete()
         NETSTACK_LOGI("remove file error %{public}d", errno);
     }
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http

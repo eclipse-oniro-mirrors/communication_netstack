@@ -34,6 +34,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 namespace {
 static constexpr const char *PROTOCOL_TLSV13 = "TLSv13";
 static constexpr const char *PROTOCOL_TLSV12 = "TLSv12";
@@ -115,8 +116,8 @@ napi_value TLSSocketModuleExports::TLSSocket::GetState(napi_env env, napi_callba
 napi_value TLSSocketModuleExports::TLSSocket::GetRemoteAddress(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::Interface<TLSGetRemoteAddressContext>(env, info, FUNCTION_GET_REMOTE_ADDRESS, nullptr,
-                                                              TLSSocketAsyncWork::ExecGetRemoteAddress,
-                                                              TLSSocketAsyncWork::GetRemoteAddressCallback);
+                                                                 TLSSocketAsyncWork::ExecGetRemoteAddress,
+                                                                 TLSSocketAsyncWork::GetRemoteAddressCallback);
 }
 
 napi_value TLSSocketModuleExports::TLSSocket::SetExtraOptions(napi_env env, napi_callback_info info)
@@ -189,5 +190,6 @@ napi_value TLSSocketModuleExports::InitTLSSocketModule(napi_env env, napi_value 
     InitProtocol(env, exports);
     return exports;
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

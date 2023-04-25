@@ -31,7 +31,7 @@ static constexpr const char *KEY_RANGE = "range";
 
 // RFC 7234
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 HttpCacheStrategy::HttpCacheStrategy(HttpRequestOptions &requestOptions) : requestOptions_(requestOptions)
 {
     cacheRequest_.ParseRequestHeader(requestOptions_.GetHeader());
@@ -294,4 +294,4 @@ CacheStatus HttpCacheStrategy::RunStrategyInternal(HttpResponse &response)
     NETSTACK_LOGI("return STALE");
     return STALE;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http

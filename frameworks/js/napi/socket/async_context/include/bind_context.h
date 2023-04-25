@@ -23,7 +23,7 @@
 #include "base_context.h"
 #include "nocopyable.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class BindContext final : public BaseContext {
 public:
     DISALLOW_COPY_AND_MOVE(BindContext);
@@ -46,6 +46,6 @@ public:
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_BIND_CONTEXT_H */

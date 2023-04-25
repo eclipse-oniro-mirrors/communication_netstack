@@ -26,6 +26,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 class TLSCertificate {
 public:
     TLSCertificate() = default;
@@ -64,6 +65,7 @@ private:
     std::string caCertString_;
     X509CertRawData rawData_;
 };
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // COMMUNICATION_NETSTACK_TLS_CERTIFICATE_H

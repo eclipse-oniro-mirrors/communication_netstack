@@ -33,6 +33,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 namespace {
 constexpr int WAIT_MS = 10;
 constexpr int TIMEOUT_MS = 10000;
@@ -253,7 +254,7 @@ const std::vector<std::string> &TLSSecureOptions::GetCrlChain() const
     return crlChain_;
 }
 
-void TLSConnectOptions::SetNetAddress(const NetAddress &address)
+void TLSConnectOptions::SetNetAddress(const Socket::NetAddress &address)
 {
     address_.SetAddress(address.GetAddress());
     address_.SetPort(address.GetPort());
@@ -275,7 +276,7 @@ void TLSConnectOptions::SetAlpnProtocols(const std::vector<std::string> &alpnPro
     alpnProtocols_ = alpnProtocols;
 }
 
-NetAddress TLSConnectOptions::GetNetAddress() const
+Socket::NetAddress TLSConnectOptions::GetNetAddress() const
 {
     return address_;
 }
@@ -318,7 +319,7 @@ std::string TLSSocket::MakeAddressString(sockaddr *addr)
     return {};
 }
 
-void TLSSocket::GetAddr(const NetAddress &address, sockaddr_in *addr4, sockaddr_in6 *addr6, sockaddr **addr,
+void TLSSocket::GetAddr(const Socket::NetAddress &address, sockaddr_in *addr4, sockaddr_in6 *addr6, sockaddr **addr,
                         socklen_t *len)
 {
     if (!addr6 || !addr4 || !len) {
@@ -379,7 +380,7 @@ void TLSSocket::StartReadMessage()
                 continue;
             }
 
-            SocketRemoteInfo remoteInfo;
+            Socket::SocketRemoteInfo remoteInfo;
             remoteInfo.SetSize(len);
             tlsSocketInternal_.MakeRemoteInfo(remoteInfo);
             CallOnMessageCallback(buffer, remoteInfo);
@@ -389,7 +390,7 @@ void TLSSocket::StartReadMessage()
     thread.detach();
 }
 
-void TLSSocket::CallOnMessageCallback(const std::string &data, const OHOS::NetStack::SocketRemoteInfo &remoteInfo)
+void TLSSocket::CallOnMessageCallback(const std::string &data, const Socket::SocketRemoteInfo &remoteInfo)
 {
     OnMessageCallback func = nullptr;
     {
@@ -509,7 +510,7 @@ void TLSSocket::CallCloseCallback(int32_t err, CloseCallback callback)
     }
 }
 
-void TLSSocket::CallGetRemoteAddressCallback(int32_t err, const NetAddress &address, GetRemoteAddressCallback callback)
+void TLSSocket::CallGetRemoteAddressCallback(int32_t err, const Socket::NetAddress &address, GetRemoteAddressCallback callback)
 {
     GetRemoteAddressCallback func = nullptr;
     {
@@ -524,7 +525,7 @@ void TLSSocket::CallGetRemoteAddressCallback(int32_t err, const NetAddress &addr
     }
 }
 
-void TLSSocket::CallGetStateCallback(int32_t err, const SocketStateBase &state, GetStateCallback callback)
+void TLSSocket::CallGetStateCallback(int32_t err, const Socket::SocketStateBase &state, GetStateCallback callback)
 {
     GetStateCallback func = nullptr;
     {
@@ -632,7 +633,7 @@ void TLSSocket::CallGetSignatureAlgorithmsCallback(int32_t err, const std::vecto
     }
 }
 
-void TLSSocket::Bind(const OHOS::NetStack::NetAddress &address, const OHOS::NetStack::BindCallback &callback)
+void TLSSocket::Bind(const Socket::NetAddress &address, const BindCallback &callback)
 {
     if (!CommonUtils::HasInternetPermission()) {
         CallBindCallback(PERMISSION_DENIED_CODE, callback);
@@ -666,8 +667,8 @@ void TLSSocket::Bind(const OHOS::NetStack::NetAddress &address, const OHOS::NetS
     CallBindCallback(TLSSOCKET_SUCCESS, callback);
 }
 
-void TLSSocket::Connect(OHOS::NetStack::TLSConnectOptions &tlsConnectOptions,
-                        const OHOS::NetStack::ConnectCallback &callback)
+void TLSSocket::Connect(OHOS::NetStack::TlsSocket::TLSConnectOptions &tlsConnectOptions,
+                        const OHOS::NetStack::TlsSocket::ConnectCallback &callback)
 {
     if (sockFd_ < 0) {
         int resErr = ConvertErrno();
@@ -689,7 +690,7 @@ void TLSSocket::Connect(OHOS::NetStack::TLSConnectOptions &tlsConnectOptions,
     callback(TLSSOCKET_SUCCESS);
 }
 
-void TLSSocket::Send(const OHOS::NetStack::TCPSendOptions &tcpSendOptions, const OHOS::NetStack::SendCallback &callback)
+void TLSSocket::Send(const OHOS::NetStack::Socket::TCPSendOptions &tcpSendOptions, const SendCallback &callback)
 {
     (void)tcpSendOptions;
 
@@ -717,7 +718,7 @@ bool WaitConditionWithTimeout(const bool *flag, const int32_t timeoutMs)
     return true;
 }
 
-void TLSSocket::Close(const OHOS::NetStack::CloseCallback &callback)
+void TLSSocket::Close(const CloseCallback &callback)
 {
     if (!WaitConditionWithTimeout(&isRunning_, TIMEOUT_MS)) {
         callback(ConvertErrno());
@@ -742,7 +743,7 @@ void TLSSocket::Close(const OHOS::NetStack::CloseCallback &callback)
     callback(TLSSOCKET_SUCCESS);
 }
 
-void TLSSocket::GetRemoteAddress(const OHOS::NetStack::GetRemoteAddressCallback &callback)
+void TLSSocket::GetRemoteAddress(const GetRemoteAddressCallback &callback)
 {
     sa_family_t family;
     socklen_t len = sizeof(family);
@@ -762,7 +763,7 @@ void TLSSocket::GetRemoteAddress(const OHOS::NetStack::GetRemoteAddressCallback 
     }
 }
 
-void TLSSocket::GetIp4RemoteAddress(const OHOS::NetStack::GetRemoteAddressCallback &callback)
+void TLSSocket::GetIp4RemoteAddress(const GetRemoteAddressCallback &callback)
 {
     sockaddr_in addr4 = {0};
     socklen_t len4 = sizeof(sockaddr_in);
@@ -783,14 +784,14 @@ void TLSSocket::GetIp4RemoteAddress(const OHOS::NetStack::GetRemoteAddressCallba
         CallGetRemoteAddressCallback(ConvertErrno(), {}, callback);
         return;
     }
-    NetAddress netAddress;
+    Socket::NetAddress netAddress;
     netAddress.SetAddress(address);
     netAddress.SetFamilyBySaFamily(AF_INET);
     netAddress.SetPort(ntohs(addr4.sin_port));
     CallGetRemoteAddressCallback(TLSSOCKET_SUCCESS, netAddress, callback);
 }
 
-void TLSSocket::GetIp6RemoteAddress(const OHOS::NetStack::GetRemoteAddressCallback &callback)
+void TLSSocket::GetIp6RemoteAddress(const GetRemoteAddressCallback &callback)
 {
     sockaddr_in6 addr6 = {0};
     socklen_t len6 = sizeof(sockaddr_in6);
@@ -811,27 +812,27 @@ void TLSSocket::GetIp6RemoteAddress(const OHOS::NetStack::GetRemoteAddressCallba
         CallGetRemoteAddressCallback(ConvertErrno(), {}, callback);
         return;
     }
-    NetAddress netAddress;
+    Socket::NetAddress netAddress;
     netAddress.SetAddress(address);
     netAddress.SetFamilyBySaFamily(AF_INET6);
     netAddress.SetPort(ntohs(addr6.sin6_port));
     CallGetRemoteAddressCallback(TLSSOCKET_SUCCESS, netAddress, callback);
 }
 
-void TLSSocket::GetState(const OHOS::NetStack::GetStateCallback &callback)
+void TLSSocket::GetState(const GetStateCallback &callback)
 {
     int opt;
     socklen_t optLen = sizeof(int);
     int r = getsockopt(sockFd_, SOL_SOCKET, SO_TYPE, &opt, &optLen);
     if (r < 0) {
-        SocketStateBase state;
+        Socket::SocketStateBase state;
         state.SetIsClose(true);
         CallGetStateCallback(ConvertErrno(), state, callback);
         return;
     }
     sa_family_t family;
     socklen_t len = sizeof(family);
-    SocketStateBase state;
+    Socket::SocketStateBase state;
     int ret = getsockname(sockFd_, reinterpret_cast<sockaddr *>(&family), &len);
     state.SetIsBound(ret == 0);
     ret = getpeername(sockFd_, reinterpret_cast<sockaddr *>(&family), &len);
@@ -839,7 +840,7 @@ void TLSSocket::GetState(const OHOS::NetStack::GetStateCallback &callback)
     CallGetStateCallback(TLSSOCKET_SUCCESS, state, callback);
 }
 
-bool TLSSocket::SetBaseOptions(const ExtraOptionsBase &option) const
+bool TLSSocket::SetBaseOptions(const Socket::ExtraOptionsBase &option) const
 {
     if (option.GetReceiveBufferSize() != 0) {
         int size = (int)option.GetReceiveBufferSize();
@@ -875,7 +876,7 @@ bool TLSSocket::SetBaseOptions(const ExtraOptionsBase &option) const
     return true;
 }
 
-bool TLSSocket::SetExtraOptions(const TCPExtraOptions &option) const
+bool TLSSocket::SetExtraOptions(const Socket::TCPExtraOptions &option) const
 {
     if (option.IsKeepAlive()) {
         int keepalive = 1;
@@ -908,8 +909,8 @@ bool TLSSocket::SetExtraOptions(const TCPExtraOptions &option) const
     return true;
 }
 
-void TLSSocket::SetExtraOptions(const OHOS::NetStack::TCPExtraOptions &tcpExtraOptions,
-                                const OHOS::NetStack::SetExtraOptionsCallback &callback)
+void TLSSocket::SetExtraOptions(const OHOS::NetStack::Socket::TCPExtraOptions &tcpExtraOptions,
+                                const SetExtraOptionsCallback &callback)
 {
     if (!SetBaseOptions(tcpExtraOptions)) {
         NETSTACK_LOGE("SetExtraOptions errno %{public}d", errno);
@@ -995,7 +996,7 @@ void TLSSocket::GetSignatureAlgorithms(const GetSignatureAlgorithmsCallback &cal
     callback(TLSSOCKET_SUCCESS, signatureAlgorithms);
 }
 
-void TLSSocket::OnMessage(const OHOS::NetStack::OnMessageCallback &onMessageCallback)
+void TLSSocket::OnMessage(const OnMessageCallback &onMessageCallback)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     onMessageCallback_ = onMessageCallback;
@@ -1189,7 +1190,7 @@ bool TLSSocket::TLSSocketInternal::SetAlpnProtocols(const std::vector<std::strin
     return true;
 }
 
-void TLSSocket::TLSSocketInternal::MakeRemoteInfo(SocketRemoteInfo &remoteInfo)
+void TLSSocket::TLSSocketInternal::MakeRemoteInfo(Socket::SocketRemoteInfo &remoteInfo)
 {
     remoteInfo.SetAddress(hostName_);
     remoteInfo.SetPort(port_);
@@ -1530,5 +1531,6 @@ ssl_st *TLSSocket::TLSSocketInternal::GetSSL() const
 {
     return ssl_;
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

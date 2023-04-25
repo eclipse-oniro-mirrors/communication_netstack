@@ -22,14 +22,14 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 namespace {
 const uint8_t *g_baseFuzzData = nullptr;
 size_t g_baseFuzzSize = 0;
 size_t g_baseFuzzPos;
 constexpr size_t STR_LEN = 10;
 }
-template <class T>
-T GetData()
+template <class T> T GetData()
 {
     T object{};
     size_t objectSize = sizeof(object);
@@ -66,23 +66,21 @@ void BindFuzzTest(const uint8_t *data, size_t size)
     g_baseFuzzPos = 0;
 
     TLSSocket tlsSocket;
-    NetAddress netAddress;
+    Socket::NetAddress netAddress;
     std::string str = GetStringFromData(STR_LEN);
     netAddress.SetAddress(str);
     netAddress.SetFamilyByJsValue(GetData<uint32_t>());
     netAddress.SetFamilyBySaFamily(GetData<sa_family_t>());
     netAddress.SetPort(GetData<uint16_t>());
-    tlsSocket.Bind(netAddress, [](bool ok) {
-        NETSTACK_LOGD("Calback received");
-    });
+    tlsSocket.Bind(netAddress, [](bool ok) { NETSTACK_LOGD("Calback received"); });
     tlsSocket.Close([](int32_t errorNumber) {});
-    tlsSocket.GetRemoteAddress([](int32_t errorNumber, const NetAddress &address) {});
+    tlsSocket.GetRemoteAddress([](int32_t errorNumber, const Socket::NetAddress &address) {});
     tlsSocket.GetCertificate([](int32_t errorNumber, const X509CertRawData &cert) {});
     tlsSocket.GetRemoteCertificate([](int32_t errorNumber, const X509CertRawData &cert) {});
     tlsSocket.GetProtocol([](int32_t errorNumber, const std::string &protocol) {});
     tlsSocket.GetCipherSuite([](int32_t errorNumber, const std::vector<std::string> &suite) {});
     tlsSocket.GetSignatureAlgorithms([](int32_t errorNumber, const std::vector<std::string> &algorithms) {});
-    tlsSocket.OnMessage([](const std::string &data, const SocketRemoteInfo &remoteInfo) {});
+    tlsSocket.OnMessage([](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {});
     tlsSocket.OnConnect([]() {});
     tlsSocket.OnClose([]() {});
     tlsSocket.OnError([](int32_t errorNumber, const std::string &errorString) {});
@@ -104,7 +102,7 @@ void ConnectFuzzTest(const uint8_t *data, size_t size)
     g_baseFuzzPos = 0;
 
     TLSSocket tlsSocket;
-    NetAddress netAddress;
+    Socket::NetAddress netAddress;
     std::string str = GetStringFromData(STR_LEN);
     netAddress.SetAddress(str);
     netAddress.SetFamilyByJsValue(GetData<uint32_t>());
@@ -113,13 +111,11 @@ void ConnectFuzzTest(const uint8_t *data, size_t size)
     TLSConnectOptions options;
     options.SetNetAddress(netAddress);
     options.SetCheckServerIdentity([](const std::string &hostName, const std::vector<std::string> &x509Certificates) {
-            NETSTACK_LOGD("Calback received");
-        });
-    std::vector<std::string> alpnProtocols(STR_LEN, str);
-    options.SetAlpnProtocols(alpnProtocols);
-    tlsSocket.Connect(options, [](bool ok) {
         NETSTACK_LOGD("Calback received");
     });
+    std::vector<std::string> alpnProtocols(STR_LEN, str);
+    options.SetAlpnProtocols(alpnProtocols);
+    tlsSocket.Connect(options, [](bool ok) { NETSTACK_LOGD("Calback received"); });
 }
 
 void SendFuzzTest(const uint8_t *data, size_t size)
@@ -128,13 +124,11 @@ void SendFuzzTest(const uint8_t *data, size_t size)
         return;
     }
     TLSSocket tlsSocket;
-    TCPSendOptions options;
+    Socket::TCPSendOptions options;
     std::string str = GetStringFromData(STR_LEN);
     options.SetData(str);
     options.SetEncoding(str);
-    tlsSocket.Send(options, [](bool ok) {
-        NETSTACK_LOGD("Calback received");
-    });
+    tlsSocket.Send(options, [](bool ok) { NETSTACK_LOGD("Calback received"); });
 }
 
 void SetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
@@ -143,13 +137,11 @@ void SetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
         return;
     }
     TLSSocket tlsSocket;
-    TCPExtraOptions options;
+    Socket::TCPExtraOptions options;
     options.SetKeepAlive(*(reinterpret_cast<const bool *>(data)));
     options.SetOOBInline(*(reinterpret_cast<const bool *>(data)));
     options.SetTCPNoDelay(*(reinterpret_cast<const bool *>(data)));
-    tlsSocket.SetExtraOptions(options, [](bool ok) {
-        NETSTACK_LOGD("Calback received");
-    });
+    tlsSocket.SetExtraOptions(options, [](bool ok) { NETSTACK_LOGD("Calback received"); });
 }
 
 void SetCaChainFuzzTest(const uint8_t *data, size_t size)
@@ -317,7 +309,7 @@ void SetNetAddressFuzzTest(const uint8_t *data, size_t size)
     g_baseFuzzData = data;
     g_baseFuzzSize = size;
     g_baseFuzzPos = 0;
-    NetAddress address;
+    Socket::NetAddress address;
     std::string str = GetStringFromData(STR_LEN);
     uint32_t num = GetData<uint32_t>();
     uint16_t port = GetData<uint16_t>();
@@ -369,6 +361,7 @@ void SetAlpnProtocolsFuzzTest(const uint8_t *data, size_t size)
     option.SetAlpnProtocols(strs);
     auto ret = option.GetCheckServerIdentity();
 }
+} // TlsSocket
 } // NetStack
 } // OHOS
 
@@ -376,21 +369,21 @@ void SetAlpnProtocolsFuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::NetStack::BindFuzzTest(data, size);
-    OHOS::NetStack::ConnectFuzzTest(data, size);
-    OHOS::NetStack::SendFuzzTest(data, size);
-    OHOS::NetStack::SetExtraOptionsFuzzTest(data, size);
-    OHOS::NetStack::SetCaChainFuzzTest(data, size);
-    OHOS::NetStack::SetCertFuzzTest(data, size);
-    OHOS::NetStack::SetKeyFuzzTest(data, size);
-    OHOS::NetStack::SetKeyPassFuzzTest(data, size);
-    OHOS::NetStack::SetProtocolChainFuzzTest(data, size);
-    OHOS::NetStack::SetUseRemoteCipherPreferFuzzTest(data, size);
-    OHOS::NetStack::SetSignatureAlgorithmsFuzzTest(data, size);
-    OHOS::NetStack::SetCipherSuiteFuzzTest(data, size);
-    OHOS::NetStack::SetCrlChainFuzzTest(data, size);
-    OHOS::NetStack::SetNetAddressFuzzTest(data, size);
-    OHOS::NetStack::SetTlsSecureOptionsFuzzTest(data, size);
-    OHOS::NetStack::SetAlpnProtocolsFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::BindFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::ConnectFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::SendFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::SetExtraOptionsFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::SetCaChainFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::SetCertFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::SetKeyFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::SetKeyPassFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::SetProtocolChainFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::SetUseRemoteCipherPreferFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::SetSignatureAlgorithmsFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::SetCipherSuiteFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::SetCrlChainFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::SetNetAddressFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::SetTlsSecureOptionsFuzzTest(data, size);
+    OHOS::NetStack::TlsSocket::SetAlpnProtocolsFuzzTest(data, size);
     return 0;
 }

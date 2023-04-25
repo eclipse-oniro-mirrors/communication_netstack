@@ -27,6 +27,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 void TLSSocketAsyncWork::ExecGetCertificate(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<GetCertificateContext, TLSSocketExec::ExecGetCertificate>(env, data);
@@ -150,5 +151,6 @@ void TLSSocketAsyncWork::SetExtraOptionsCallback(napi_env env, napi_status statu
     BaseAsyncWork::AsyncWorkCallback<TLSSetExtraOptionsContext, TLSSocketExec::SetExtraOptionsCallback>(env, status,
                                                                                                         data);
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

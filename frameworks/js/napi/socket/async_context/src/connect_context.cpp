@@ -22,7 +22,7 @@
 #include "netstack_log.h"
 #include "napi_utils.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 ConnectContext::ConnectContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -121,4 +121,4 @@ std::string ConnectContext::GetErrorMessage() const
     (void)strerror_r(errCode, err, MAX_ERR_NUM);
     return err;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket

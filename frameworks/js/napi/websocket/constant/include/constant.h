@@ -19,7 +19,7 @@
 #include <map>
 #include <string>
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Websocket {
 enum {
     FUNCTION_PARAM_ZERO = 0,
     FUNCTION_PARAM_ONE = 1,
@@ -76,5 +76,5 @@ public:
 
     static const char *EVENT_ERROR;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_CONSTANT_H */

@@ -21,7 +21,7 @@
 #include "base_context.h"
 #include "nocopyable.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Websocket {
 class CloseContext final : public BaseContext {
 public:
     DISALLOW_COPY_AND_MOVE(CloseContext);
@@ -43,6 +43,6 @@ public:
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Websocket
 
 #endif /* COMMUNICATIONNETSTACK_CLOSE_CONTEXT_H */

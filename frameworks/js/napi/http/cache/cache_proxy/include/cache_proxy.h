@@ -21,7 +21,7 @@
 #include "http_response.h"
 #include "request_context.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 class CacheProxy final {
 public:
     CacheProxy() = delete;
@@ -44,5 +44,5 @@ private:
     std::string key_;
     HttpCacheStrategy strategy_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 #endif // COMMUNICATIONNETSTACK_CACHE_PROXY_H

@@ -22,7 +22,7 @@
 
 #include "http_time.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 class HttpCacheRequest {
 public:
     HttpCacheRequest();
@@ -70,5 +70,5 @@ private:
     bool noTransform_ = false;
     bool onlyIfCached_ = false;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 #endif // HTTP_CACHE_REQUEST_H

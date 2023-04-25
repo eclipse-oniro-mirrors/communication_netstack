@@ -47,7 +47,7 @@
         }                                                                                                \
     } while (0)
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 static constexpr size_t MAX_LIMIT = 5 * 1024 * 1024;
 static constexpr int CURL_TIMEOUT_MS = 50;
 static constexpr int CONDITION_TIMEOUT_S = 3600;
@@ -288,7 +288,7 @@ napi_value HttpExec::RequestCallback(RequestContext *context)
     return object;
 }
 
-napi_value HttpExec::Request2Callback(OHOS::NetStack::RequestContext *context)
+napi_value HttpExec::Request2Callback(OHOS::NetStack::Http::RequestContext *context)
 {
     napi_value number = NapiUtils::CreateUint32(context->GetEnv(), context->response.GetResponseCode());
     if (NapiUtils::GetValueType(context->GetEnv(), number) != napi_number) {
@@ -824,4 +824,4 @@ napi_value HttpResponseCacheExec::DeleteCallback(BaseContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http

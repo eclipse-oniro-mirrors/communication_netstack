@@ -23,6 +23,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 TLSConfiguration::TLSConfiguration(const TLSConfiguration &other)
 {
     privateKey_ = other.privateKey_;
@@ -176,5 +177,6 @@ TLSKey TLSConfiguration::GetPrivateKey() const
 {
     return privateKey_;
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

@@ -18,7 +18,7 @@
 
 #include <cstdint>
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class ExtraOptionsBase {
 public:
     ExtraOptionsBase();
@@ -50,6 +50,6 @@ private:
 
     uint32_t socketTimeout_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_EXTRA_OPTIONS_BASE_H */

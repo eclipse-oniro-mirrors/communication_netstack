@@ -18,7 +18,7 @@
 
 #include "napi/native_api.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 class HttpModuleExports {
 public:
     class HttpResponseCache {
@@ -77,5 +77,5 @@ private:
 
     static void InitHttpDataType(napi_env env, napi_value exports);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 #endif // COMMUNICATIONNETSTACK_HTTP_MODULE_H

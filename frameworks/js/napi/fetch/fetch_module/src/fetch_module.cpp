@@ -20,7 +20,7 @@
 #include "netstack_log.h"
 #include "module_template.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Fetch {
 napi_value FetchModule::InitFetchModule(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
@@ -40,4 +40,4 @@ napi_value FetchModule::Fetch(napi_env env, napi_callback_info info)
 }
 
 NAPI_MODULE(fetch, FetchModule::InitFetchModule)
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Fetch

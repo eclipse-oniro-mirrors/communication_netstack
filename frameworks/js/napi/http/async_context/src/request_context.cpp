@@ -31,7 +31,7 @@ static constexpr const int PARAM_URL_AND_OPTIONS_OR_CALLBACK = 2;
 
 static constexpr const int PARAM_URL_AND_OPTIONS_AND_CALLBACK = 3;
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 std::map<RequestContext *, napi_env> RequestContext::envMap_;
 std::mutex RequestContext::envMutex_;
 static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
@@ -520,4 +520,4 @@ void RequestContext::PopTempData()
         tempData_.pop();
     }
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http

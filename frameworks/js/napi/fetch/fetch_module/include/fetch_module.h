@@ -19,7 +19,7 @@
 #include "napi_utils.h"
 #include "nocopyable.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Fetch {
 class FetchModule {
 public:
     static constexpr const char *FUNCTION_FETCH = "fetch";
@@ -29,5 +29,5 @@ public:
 private:
     static napi_value Fetch(napi_env env, napi_callback_info info);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Fetch
 #endif /* COMMUNICATIONNETSTACK_FETCH_MODULE_H */

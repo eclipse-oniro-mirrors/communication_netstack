@@ -23,7 +23,7 @@
 #include "constant.h"
 #include "http_time.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 class HttpCacheResponse {
 public:
     HttpCacheResponse();
@@ -102,5 +102,5 @@ private:
 
     ResponseCode respCode_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 #endif /* HTTP_CACHE_RESPONSE_H */

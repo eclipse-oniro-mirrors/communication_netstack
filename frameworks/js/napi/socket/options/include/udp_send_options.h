@@ -22,7 +22,7 @@
 
 #include "net_address.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class UDPSendOptions final {
 public:
     UDPSendOptions() = default;
@@ -40,6 +40,6 @@ public:
 private:
     std::string data_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_UDP_SEND_OPTIONS_H */

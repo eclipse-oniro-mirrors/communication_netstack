@@ -19,7 +19,7 @@
 #include <map>
 #include <string>
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 static constexpr const char *WARNING = "Warning";
 
 class HttpResponse final {
@@ -77,6 +77,6 @@ private:
 
     std::string requestTime_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 
 #endif /* COMMUNICATIONNETSTACK_HTTP_RESPONSE_H */

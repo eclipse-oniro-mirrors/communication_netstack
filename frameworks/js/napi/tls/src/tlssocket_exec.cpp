@@ -30,6 +30,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 namespace {
 constexpr const char *CERTIFICATA_DATA = "data";
 constexpr const char *CERTIFICATA_ENCODING_FORMAT = "encodingFormat";
@@ -184,7 +185,7 @@ bool TLSSocketExec::ExecSend(TLSSendContext *context)
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(context->data_);
     tlsSocket->Send(tcpSendOptions, [&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
@@ -251,7 +252,7 @@ bool TLSSocketExec::ExecGetRemoteAddress(TLSGetRemoteAddressContext *context)
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
-    tlsSocket->GetRemoteAddress([&context](int32_t errorNumber, const NetAddress address) {
+    tlsSocket->GetRemoteAddress([&context](int32_t errorNumber, const Socket::NetAddress address) {
         context->address_ = address;
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
@@ -275,7 +276,7 @@ bool TLSSocketExec::ExecGetState(TLSGetStateContext *context)
         context->state_.SetIsClose(true);
         return true;
     }
-    tlsSocket->GetState([&context](int32_t errorNumber, const SocketStateBase state) {
+    tlsSocket->GetState([&context](int32_t errorNumber, const Socket::SocketStateBase state) {
         context->state_ = state;
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
@@ -310,8 +311,7 @@ bool TLSSocketExec::ExecSetExtraOptions(TLSSetExtraOptionsContext *context)
 napi_value TLSSocketExec::GetCertificateCallback(GetCertificateContext *context)
 {
     void *data = nullptr;
-    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(),
-                                                          context->localCert_.data.Length(), &data);
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), context->localCert_.data.Length(), &data);
     if (data != nullptr && arrayBuffer != nullptr) {
         if (memcpy_s(data, context->localCert_.data.Length(),
                      reinterpret_cast<const uint8_t *>(context->localCert_.data.Data()),
@@ -352,8 +352,7 @@ napi_value TLSSocketExec::GetCipherSuitesCallback(GetCipherSuitesContext *contex
 napi_value TLSSocketExec::GetRemoteCertificateCallback(GetRemoteCertificateContext *context)
 {
     void *data = nullptr;
-    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(),
-                                                          context->remoteCert_.data.Length(), &data);
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), context->remoteCert_.data.Length(), &data);
     if (data != nullptr && arrayBuffer != nullptr) {
         if (memcpy_s(data, context->remoteCert_.data.Length(),
                      reinterpret_cast<const uint8_t *>(context->remoteCert_.data.Data()),
@@ -437,5 +436,6 @@ napi_value TLSSocketExec::SetExtraOptionsCallback(TLSSetExtraOptionsContext *con
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

@@ -24,7 +24,7 @@
 #include "napi/native_api.h"
 #include "nocopyable.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Fetch {
 class FetchExec final {
 public:
     DISALLOW_COPY_AND_MOVE(FetchExec);
@@ -67,6 +67,6 @@ private:
 
     static bool initialized_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Fetch
 
 #endif /* COMMUNICATIONNETSTACK_FETCH_EXEC_H */

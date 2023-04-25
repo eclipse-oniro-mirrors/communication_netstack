@@ -21,6 +21,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 SecureData::SecureData() : data_(std::make_unique<char[]>(0)) {}
 
 SecureData::~SecureData()
@@ -77,5 +78,6 @@ size_t SecureData::Length() const
 {
     return length_;
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

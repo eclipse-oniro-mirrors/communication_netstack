@@ -20,7 +20,7 @@
 #include "module_template.h"
 #include "websocket_async_work.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Websocket {
 napi_value WebSocketModule::InitWebSocketModule(napi_env env, napi_value exports)
 {
     DefineWebSocketClass(env, exports);
@@ -107,4 +107,4 @@ extern "C" __attribute__((constructor)) void RegisterWebSocketModule(void)
 {
     napi_module_register(&g_websocketModule);
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Websocket

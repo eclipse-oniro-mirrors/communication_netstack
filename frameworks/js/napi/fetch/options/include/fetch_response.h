@@ -21,7 +21,7 @@
 
 #include "napi/native_api.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Fetch {
 class FetchResponse final {
 public:
     FetchResponse();
@@ -49,6 +49,6 @@ private:
 
     std::map<std::string, std::string> header_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Fetch
 
 #endif /* COMMUNICATIONNETSTACK_FETCH_RESPONSE_H */

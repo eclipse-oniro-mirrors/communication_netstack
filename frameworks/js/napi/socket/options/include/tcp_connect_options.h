@@ -20,7 +20,7 @@
 
 static constexpr const uint32_t DEFAULT_CONNECT_TIMEOUT = 5000; // 5 Seconds
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class TcpConnectOptions final {
 public:
     TcpConnectOptions();
@@ -36,6 +36,6 @@ public:
 private:
     uint32_t timeout_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_TCP_CONNECT_OPTIONS_H */

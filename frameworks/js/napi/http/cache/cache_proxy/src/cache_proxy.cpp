@@ -30,7 +30,7 @@
 static constexpr const char *CACHE_FILE = "/data/storage/el2/base/cache/cache.json";
 static constexpr int32_t WRITE_INTERVAL = 60;
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 std::mutex g_diskCacheMutex;
 std::mutex g_cacheNeedRunMutex;
 std::atomic_bool g_cacheNeedRun(false);
@@ -161,4 +161,4 @@ void CacheProxy::StopCacheAndDelete()
     g_cacheThreadCondition.wait(lock, [] { return !g_cacheIsRunning.load(); });
     DISK_LRU_CACHE.Delete();
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http

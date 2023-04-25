@@ -19,7 +19,7 @@
 #include "base_async_work.h"
 #include "napi_utils.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 void HttpAsyncWork::ExecRequest(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<RequestContext, HttpExec::ExecRequest>(env, data);
@@ -54,4 +54,4 @@ void HttpAsyncWork::DeleteCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<BaseContext, HttpResponseCacheExec::DeleteCallback>(env, status, data);
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http

@@ -18,7 +18,7 @@
 
 #include "napi/native_api.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Websocket {
 class WebSocketModule final {
 public:
     class WebSocket {
@@ -54,5 +54,5 @@ private:
 
     static void InitWebSocketProperties(napi_env env, napi_value exports);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_WEBSOCKET_MODULE_H */

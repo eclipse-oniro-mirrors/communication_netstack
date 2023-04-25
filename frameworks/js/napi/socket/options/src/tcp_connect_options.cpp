@@ -15,7 +15,7 @@
 
 #include "tcp_connect_options.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 TcpConnectOptions::TcpConnectOptions() : timeout_(DEFAULT_CONNECT_TIMEOUT) {}
 
 void TcpConnectOptions::SetTimeout(uint32_t timeout)
@@ -27,4 +27,4 @@ uint32_t TcpConnectOptions::GetTimeout() const
 {
     return timeout_;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket

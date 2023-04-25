@@ -22,8 +22,8 @@
 #include "netstack_log.h"
 #include "napi_utils.h"
 
-namespace OHOS::NetStack {
-static constexpr std::string_view PARSE_ERROR = "address is not type of NetAddress";
+namespace OHOS::NetStack::TlsSocket {
+static constexpr std::string_view PARSE_ERROR = "address is not type of Socket::NetAddress";
 
 TLSBindContext::TLSBindContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
@@ -87,4 +87,4 @@ bool TLSBindContext::CheckParamsType(napi_value *params, size_t paramsCount)
     }
     return false;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::TlsSocket

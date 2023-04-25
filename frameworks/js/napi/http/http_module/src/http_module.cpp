@@ -33,7 +33,7 @@
 #define DECLARE_HTTP_PROTOCOL(protocol) \
     DECLARE_NAPI_STATIC_PROPERTY(#protocol, NapiUtils::CreateUint32(env, static_cast<uint32_t>(HttpProtocol::protocol)))
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 static constexpr const char *FLUSH_ASYNC_WORK_NAME = "ExecFlush";
 
 #ifdef MAC_PLATFORM
@@ -303,4 +303,4 @@ extern "C" __attribute__((constructor)) void RegisterHttpModule(void)
 {
     napi_module_register(&g_httpModule);
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http

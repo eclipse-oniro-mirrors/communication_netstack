@@ -20,7 +20,7 @@
 #include "connect_context.h"
 #include "send_context.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Websocket {
 class WebSocketExec final {
 public:
     /* async work execute */
@@ -86,5 +86,5 @@ private:
 
     static void OnClose(EventManager *manager, lws_close_status closeStatus, const std::string &closeReason);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_WEBSOCKET_EXEC_H */

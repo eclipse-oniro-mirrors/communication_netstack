@@ -21,6 +21,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 enum TlsSocketError {
     TLSSOCKET_SUCCESS = 0,
     TLS_ERR_SYS_BASE = 2303100,
@@ -53,6 +54,7 @@ enum TlsSocketError {
 };
 
 std::string MakeErrorMessage(int error);
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // COMMUNICATION_NETSTACK_SOCKET_ERROR_H

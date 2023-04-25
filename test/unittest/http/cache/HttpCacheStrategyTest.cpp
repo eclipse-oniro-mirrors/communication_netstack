@@ -23,7 +23,7 @@
 #include "http_cache_strategy.h"
 #include "netstack_log.h"
 
-using namespace OHOS::NetStack;
+using namespace OHOS::NetStack::Http;
 
 class HttpCacheStrategyTest : public testing::Test {
 public:

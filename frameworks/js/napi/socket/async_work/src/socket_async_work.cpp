@@ -25,7 +25,7 @@
 #include "udp_extra_context.h"
 #include "udp_send_context.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 void SocketAsyncWork::ExecUdpBind(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<BindContext, SocketExec::ExecUdpBind>(env, data);
@@ -122,4 +122,4 @@ void SocketAsyncWork::UdpSetExtraOptionsCallback(napi_env env, napi_status statu
     BaseAsyncWork::AsyncWorkCallback<UdpSetExtraOptionsContext, SocketExec::UdpSetExtraOptionsCallback>(env, status,
                                                                                                         data);
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket

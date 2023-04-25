@@ -18,7 +18,7 @@
 
 #include "napi/native_api.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class SocketModuleExports {
 public:
     class UDPSocket {
@@ -81,5 +81,5 @@ private:
 
     static void InitSocketProperties(napi_env env, napi_value exports);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 #endif // COMMUNICATIONNETSTACK_SOCKET_MODULE_H

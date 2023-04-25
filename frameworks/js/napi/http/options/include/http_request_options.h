@@ -21,7 +21,7 @@
 
 #include "constant.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 enum class HttpProtocol {
     HTTP1_1,
     HTTP2,
@@ -115,6 +115,6 @@ private:
 
     std::string httpProxyExclusions_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 
 #endif /* COMMUNICATIONNETSTACK_HTTP_REQUEST_OPTIONS_H */

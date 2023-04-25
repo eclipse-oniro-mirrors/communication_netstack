@@ -21,6 +21,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 TLSNapiContext::TLSNapiContext(napi_env env, EventManager *manager) : BaseContext(env, manager)
 {
     localCert_.encodingFormat = PEM;
@@ -54,5 +55,6 @@ bool TLSNapiContext::CheckParamsType(napi_value *params, size_t paramsCount)
     }
     return false;
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

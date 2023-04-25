@@ -24,7 +24,7 @@ static constexpr const char *GMT_TIME = "%a, %d %b %Y %H:%M:%S GMT";
 
 static constexpr const int MAX_TIME_LEN = 128;
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 time_t HttpTime::StrTimeToTimestamp(const std::string &time_str)
 {
     std::tm tm = {0};
@@ -60,4 +60,4 @@ std::string HttpTime::GetNowTimeGMT()
     }
     return s;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http

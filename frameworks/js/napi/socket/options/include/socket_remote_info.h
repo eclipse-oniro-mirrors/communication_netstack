@@ -22,7 +22,7 @@
 
 #include "net_address.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class SocketRemoteInfo final {
 public:
     SocketRemoteInfo();
@@ -54,6 +54,6 @@ private:
 
     uint32_t size_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_SOCKET_REMOTE_INFO_H */

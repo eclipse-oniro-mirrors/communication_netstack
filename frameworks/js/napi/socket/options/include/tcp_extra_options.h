@@ -20,7 +20,7 @@
 
 #include "extra_options_base.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class TCPExtraOptions final : public ExtraOptionsBase {
 private:
     class SocketLinger {
@@ -68,6 +68,6 @@ private:
 
     bool TCPNoDelay_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_TCP_EXTRA_OPTIONS_H */

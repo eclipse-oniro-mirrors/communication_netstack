@@ -60,7 +60,7 @@
 
 static constexpr const int FAIL_CALLBACK_PARAM = 2;
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Fetch {
 std::mutex FetchExec::mutex_;
 
 bool FetchExec::initialized_ = false;
@@ -346,4 +346,4 @@ bool FetchExec::IsUnReserved(unsigned char in)
     }
     return false;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Fetch

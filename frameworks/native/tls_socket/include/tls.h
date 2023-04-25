@@ -23,6 +23,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 using Handle = void *;
 constexpr const char *PROTOCOL_TLS_V12 = "TLSv1.2";
 constexpr const char *PROTOCOL_TLS_V13 = "TLSv1.3";
@@ -34,52 +35,24 @@ struct CipherSuite {
     std::string cipherName_;
 };
 
-enum EncodingFormat {
-    DER,
-    PEM
-};
+enum EncodingFormat { DER, PEM };
 
 struct X509CertRawData {
     SecureData data;
     EncodingFormat encodingFormat;
 };
 
-enum TlsMode {
-    UNENCRYPTED_MODE,
-    SSL_CLIENT_MODE,
-    SSL_SERVER_MODE
-};
+enum TlsMode { UNENCRYPTED_MODE, SSL_CLIENT_MODE, SSL_SERVER_MODE };
 
-enum PeerVerifyMode {
-    VERIFY_NONE,
-    QUERY_PEER,
-    VERIFY_PEER,
-    AUTO_VERIFY_PEER
-};
+enum PeerVerifyMode { VERIFY_NONE, QUERY_PEER, VERIFY_PEER, AUTO_VERIFY_PEER };
 
-enum KeyType {
-    PRIVATE_KEY,
-    PUBLIC_KEY
-};
+enum KeyType { PRIVATE_KEY, PUBLIC_KEY };
 
-enum CertType {
-    CA_CERT,
-    LOCAL_CERT
-};
+enum CertType { CA_CERT, LOCAL_CERT };
 
-enum KeyAlgorithm {
-    OPAQUE,
-    ALGORITHM_RSA,
-    ALGORITHM_DSA,
-    ALGORITHM_EC,
-    ALGORITHM_DH
-};
+enum KeyAlgorithm { OPAQUE, ALGORITHM_RSA, ALGORITHM_DSA, ALGORITHM_EC, ALGORITHM_DH };
 
-enum AlternativeNameEntryType {
-    EMAIL_ENTRY,
-    DNS_ENTRY,
-    IPADDRESS_ENTRY
-};
+enum AlternativeNameEntryType { EMAIL_ENTRY, DNS_ENTRY, IPADDRESS_ENTRY };
 
 enum OpenMode {
     NOT_OPEN,
@@ -94,20 +67,9 @@ enum OpenMode {
     EXISTION_ONLY
 };
 
-enum NetworkLayerProtocol {
-    IPV4_PROTOCOL,
-    IPV6_PROTOCOL,
-    ANY_IP_PROTOCOL,
-    UNKNOW_NETWORK_LAYER_PROTOCOL = -1
-};
+enum NetworkLayerProtocol { IPV4_PROTOCOL, IPV6_PROTOCOL, ANY_IP_PROTOCOL, UNKNOW_NETWORK_LAYER_PROTOCOL = -1 };
 
-enum class ImplementedClass {
-    KEY,
-    CERTIFICATE,
-    SOCKET,
-    DIFFIE_HELLMAN,
-    ELLIPTIC_CURVE
-};
+enum class ImplementedClass { KEY, CERTIFICATE, SOCKET, DIFFIE_HELLMAN, ELLIPTIC_CURVE };
 
 enum class SupportedFeature {
     CERTIFICATE_VERIFICATION,
@@ -130,25 +92,12 @@ enum TlsOptions {
     SSL_OPTION_DISABLE_SERVER_CIPHER_PREFERENCE = 0x80
 };
 
-enum TLSProtocol {
-    TLS_V1_2,
-    TLS_V1_3,
-    UNKNOW_PROTOCOL
-};
+enum TLSProtocol { TLS_V1_2, TLS_V1_3, UNKNOW_PROTOCOL };
 
-enum class Cipher {
-    DES_CBC,
-    DES_EDE3_CBC,
-    RC2_CBC,
-    AES_128_CBC,
-    AES_192_CBC,
-    AES_256_CBC
-};
+enum class Cipher { DES_CBC, DES_EDE3_CBC, RC2_CBC, AES_128_CBC, AES_192_CBC, AES_256_CBC };
 
-enum VerifyMode {
-    ONE_WAY_MODE = 0,
-    TWO_WAY_MODE
-};
+enum VerifyMode { ONE_WAY_MODE = 0, TWO_WAY_MODE };
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // COMMUNICATION_NETSTACK_TLS_H

@@ -23,7 +23,7 @@
 #include "nocopyable.h"
 #include "udp_send_options.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class UdpSendContext final : public BaseContext {
 public:
     DISALLOW_COPY_AND_MOVE(UdpSendContext);
@@ -47,6 +47,6 @@ private:
 
     bool GetData(napi_value udpSendOptions);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_UDP_SEND_CONTEXT_H */

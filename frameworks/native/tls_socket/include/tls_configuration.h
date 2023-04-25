@@ -25,6 +25,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 class TLSConfiguration {
 public:
     TLSConfiguration() = default;
@@ -81,6 +82,7 @@ private:
     TLSCertificate caCertificate_;
     std::vector<std::string> caCertificateChain_;
 };
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // COMMUNICATION_NETSTACK_TLS_CONFIGURATION_H

@@ -19,7 +19,7 @@
 #include <map>
 #include <string>
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Fetch {
 class FetchRequest final {
 public:
     FetchRequest();
@@ -49,6 +49,6 @@ private:
 
     std::map<std::string, std::string> header_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Fetch
 
 #endif /* COMMUNICATIONNETSTACK_FETCH_REQUEST_H */

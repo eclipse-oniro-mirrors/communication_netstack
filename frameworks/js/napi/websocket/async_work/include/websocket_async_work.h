@@ -18,7 +18,7 @@
 
 #include "websocket_exec.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Websocket {
 class WebSocketAsyncWork final {
 public:
     DISALLOW_COPY_AND_MOVE(WebSocketAsyncWork);
@@ -37,5 +37,5 @@ public:
 
     static void CloseCallback(napi_env env, napi_status status, void *data);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_WEBSOCKET_ASYNC_WORK_H */

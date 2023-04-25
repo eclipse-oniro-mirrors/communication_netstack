@@ -24,7 +24,7 @@
 #include "udp_extra_context.h"
 #include "udp_send_context.h"
 
-namespace OHOS::NetStack::SocketExec {
+namespace OHOS::NetStack::Socket::SocketExec {
 int MakeTcpSocket(sa_family_t family);
 
 int MakeUdpSocket(sa_family_t family);
@@ -68,6 +68,6 @@ napi_value GetRemoteAddressCallback(GetRemoteAddressContext *context);
 napi_value TcpSetExtraOptionsCallback(TcpSetExtraOptionsContext *context);
 
 napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context);
-} // namespace OHOS::NetStack::SocketExec
+} // namespace OHOS::NetStack::Socket::SocketExec
 
 #endif /* COMMUNICATIONNETSTACK_SOCKET_EXEC_H */

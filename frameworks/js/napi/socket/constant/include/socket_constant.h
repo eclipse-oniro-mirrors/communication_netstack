@@ -18,13 +18,13 @@
 
 #include <map>
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 static constexpr const size_t MAX_ERR_NUM = 256;
 
 enum SocketErrorCode {
     SOCKET_ERROR_CODE_BASE = 2301000
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_CONSTANT_H */
 

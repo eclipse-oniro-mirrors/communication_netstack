@@ -18,7 +18,7 @@
 #include "fetch_exec.h"
 #include "base_async_work.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Fetch {
 void FetchAsyncWork::ExecFetch(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<FetchContext, FetchExec::ExecFetch>(env, data);
@@ -28,4 +28,4 @@ void FetchAsyncWork::FetchCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallbackForSystem<FetchContext, FetchExec::FetchCallback>(env, status, data);
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Fetch

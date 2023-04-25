@@ -23,7 +23,7 @@
 #include "nocopyable.h"
 #include "tcp_extra_options.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class TcpSetExtraOptionsContext : public BaseContext {
 public:
     DISALLOW_COPY_AND_MOVE(TcpSetExtraOptionsContext);
@@ -46,6 +46,6 @@ public:
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_TCP_EXTRA_CONTEXT_H */

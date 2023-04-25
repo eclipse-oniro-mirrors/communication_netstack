@@ -15,7 +15,7 @@
 
 #include "udp_extra_options.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 UDPExtraOptions::UDPExtraOptions() : broadcast_(false) {}
 
 void UDPExtraOptions::SetBroadcast(bool broadcast)
@@ -27,4 +27,4 @@ bool UDPExtraOptions::IsBroadcast() const
 {
     return broadcast_;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket

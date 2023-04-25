@@ -20,7 +20,7 @@
 
 #include "nocopyable.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Fetch {
 class FetchConstant final {
 public:
     DISALLOW_COPY_AND_MOVE(FetchConstant);
@@ -65,6 +65,6 @@ public:
     static const char *const HTTP_RESPONSE_TYPE_TEXT;
     static const char *const HTTP_RESPONSE_TYPE_JSON;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Fetch
 
 #endif /* COMMUNICATIONNETSTACK_CONSTANT_H */

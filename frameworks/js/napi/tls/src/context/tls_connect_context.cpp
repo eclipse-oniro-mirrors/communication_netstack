@@ -26,6 +26,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 namespace {
 constexpr const char *ALPN_PROTOCOLS = "ALPNProtocols";
 constexpr const char *SECURE_OPTIONS = "secureOptions";
@@ -126,7 +127,7 @@ bool TLSConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
 TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_value *params)
 {
     TLSConnectOptions options;
-    NetAddress address = ReadNetAddress(GetEnv(), params);
+    Socket::NetAddress address = ReadNetAddress(GetEnv(), params);
     TLSSecureOptions secureOption = ReadTLSSecureOptions(GetEnv(), params);
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
@@ -194,9 +195,9 @@ TLSSecureOptions TLSConnectContext::ReadTLSSecureOptions(napi_env env, napi_valu
     return secureOption;
 }
 
-NetAddress TLSConnectContext::ReadNetAddress(napi_env env, napi_value *params)
+Socket::NetAddress TLSConnectContext::ReadNetAddress(napi_env env, napi_value *params)
 {
-    NetAddress address;
+    Socket::NetAddress address;
     napi_value netAddress = NapiUtils::GetNamedProperty(GetEnv(), params[0], ADDRESS_NAME);
 
     std::string addr = NapiUtils::GetStringPropertyUtf8(GetEnv(), netAddress, ADDRESS_NAME);
@@ -213,5 +214,6 @@ NetAddress TLSConnectContext::ReadNetAddress(napi_env env, napi_value *params)
     }
     return address;
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

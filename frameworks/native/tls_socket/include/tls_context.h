@@ -23,6 +23,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 class TLSContext {
 public:
     TLSContext() = default;
@@ -50,6 +51,7 @@ private:
     TLSConfiguration tlsConfiguration_;
     static VerifyMode verifyMode_;
 };
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // COMMUNICATION_NETSTACK_TLS_CONTEXT_H

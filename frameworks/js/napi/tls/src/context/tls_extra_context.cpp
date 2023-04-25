@@ -22,7 +22,7 @@
 #include "napi_utils.h"
 #include "netstack_log.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::TlsSocket {
 static constexpr std::string_view PARSE_ERROR = "first param is not type of TCPExtraOptions";
 
 TLSSetExtraOptionsContext::TLSSetExtraOptionsContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
@@ -115,4 +115,4 @@ bool TLSSetExtraOptionsContext::CheckParamsType(napi_value *params, size_t param
     }
     return false;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::TlsSocket

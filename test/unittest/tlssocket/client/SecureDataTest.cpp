@@ -21,6 +21,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 namespace {
 using namespace testing::ext;
 } // namespace
@@ -52,5 +53,6 @@ HWTEST_F(SecureDataTest, stringData, TestSize.Level2)
     SecureData defaultData;
     EXPECT_EQ(defaultData.Length(), 0);
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

@@ -22,6 +22,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 class SecureData {
 public:
     SecureData();
@@ -40,6 +41,7 @@ private:
     size_t length_ = 0;
     std::unique_ptr<char[]> data_ = nullptr;
 };
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // COMMUNICATION_NETSTACK_SECURE_DATA_H

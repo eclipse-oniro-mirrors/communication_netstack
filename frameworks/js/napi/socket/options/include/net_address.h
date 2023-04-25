@@ -19,7 +19,7 @@
 #include <arpa/inet.h>
 #include <string>
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class NetAddress final {
 public:
     enum class Family : uint32_t {
@@ -54,6 +54,6 @@ private:
 
     uint16_t port_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_NET_ADDRESS_H */

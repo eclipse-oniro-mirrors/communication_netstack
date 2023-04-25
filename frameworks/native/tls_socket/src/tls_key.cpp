@@ -20,6 +20,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 namespace {
 constexpr int FILE_READ_KEY_LEN = 4096;
 constexpr const char *FILE_OPEN_FLAG = "rb";
@@ -282,5 +283,6 @@ const SecureData &TLSKey::GetKeyData() const
 {
     return keyData_;
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

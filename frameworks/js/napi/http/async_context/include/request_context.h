@@ -23,7 +23,7 @@
 #include "http_request_options.h"
 #include "http_response.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 class RequestContext final : public BaseContext {
 public:
     RequestContext() = delete;
@@ -107,6 +107,6 @@ private:
     static std::map<RequestContext *, napi_env> envMap_;
     static std::mutex envMutex_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 
 #endif /* COMMUNICATIONNETSTACK_REQUEST_CONTEXT_H */

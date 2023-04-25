@@ -18,7 +18,7 @@
 #include <string>
 #include "sys/socket.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 SocketRemoteInfo::SocketRemoteInfo() : port_(0), size_(0) {}
 
 void SocketRemoteInfo::SetAddress(const std::string &address)
@@ -66,4 +66,4 @@ uint32_t SocketRemoteInfo::GetSize() const
 {
     return size_;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
