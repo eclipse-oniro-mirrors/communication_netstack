@@ -20,7 +20,7 @@
 #include "netstack_log.h"
 #include "napi_utils.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Websocket {
 CloseContext::CloseContext(napi_env env, EventManager *manager)
     : BaseContext(env, manager), code(CLOSE_REASON_NORMAL_CLOSE)
 {
@@ -125,4 +125,4 @@ std::string CloseContext::GetErrorMessage() const
     }
     return {};
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Websocket

@@ -18,7 +18,7 @@
 #include "casche_constant.h"
 #include "netstack_common_utils.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 void HttpCacheResponse::ParseCacheControl(const std::string &cacheControl)
 {
     auto vec = CommonUtils::Split(cacheControl, SPLIT);
@@ -232,4 +232,4 @@ HttpCacheResponse::HttpCacheResponse()
 }
 
 HttpCacheResponse::~HttpCacheResponse() = default;
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http

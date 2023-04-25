@@ -18,7 +18,7 @@
 #include "netstack_log.h"
 #include "http_response.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 HttpResponse::HttpResponse() : responseCode_(0) {}
 
 void HttpResponse::AppendResult(const void *data, size_t length)
@@ -123,4 +123,4 @@ void HttpResponse::SetWarning(const std::string &val)
 {
     header_[WARNING] = val;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http

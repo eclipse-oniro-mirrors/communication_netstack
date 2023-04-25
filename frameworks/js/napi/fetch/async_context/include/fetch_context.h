@@ -21,7 +21,7 @@
 #include "base_context.h"
 #include "nocopyable.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Fetch {
 class FetchContext final : public BaseContext {
 public:
     DISALLOW_COPY_AND_MOVE(FetchContext);
@@ -69,6 +69,6 @@ private:
 
     napi_ref completeCallback_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Fetch
 
 #endif /* COMMUNICATIONNETSTACK_FETCH_CONTEXT_H */

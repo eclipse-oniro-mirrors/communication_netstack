@@ -32,6 +32,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 class TLSKey {
 public:
     TLSKey() = default;
@@ -69,6 +70,7 @@ private:
     KeyType keyType_ = PUBLIC_KEY;
     KeyAlgorithm keyAlgorithm_ = OPAQUE;
 };
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // COMMUNICATION_NETSTACK_TLS_KEY_H

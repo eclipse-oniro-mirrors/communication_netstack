@@ -30,6 +30,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 namespace {
 constexpr const char *BIO_FILE_FLAG = "r";
 constexpr const char *FILE_OPEN_FLAG = "rb";
@@ -391,5 +392,6 @@ const X509CertRawData &TLSCertificate::GetLocalCertRawData() const
 {
     return rawData_;
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

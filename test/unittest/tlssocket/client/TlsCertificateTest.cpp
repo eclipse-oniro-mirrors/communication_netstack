@@ -24,6 +24,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 namespace {
 using namespace testing::ext;
 static char g_clientFile[] =
@@ -327,5 +328,6 @@ HWTEST_F(TlsCertificateTest, SetLocalCertRawDataTest, TestSize.Level2)
     bool ret = tlsCertificate.SetLocalCertRawData(x509);
     EXPECT_FALSE(ret);
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

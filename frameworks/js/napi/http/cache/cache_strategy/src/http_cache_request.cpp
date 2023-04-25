@@ -18,7 +18,7 @@
 #include "casche_constant.h"
 #include "netstack_common_utils.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 void HttpCacheRequest::ParseCacheControl(const std::string &cacheControl)
 {
     auto vec = CommonUtils::Split(cacheControl, SPLIT);
@@ -142,4 +142,4 @@ std::string HttpCacheRequest::GetIfNoneMatch() const
 HttpCacheRequest::HttpCacheRequest() : noCache_(false), noStore_(false), noTransform_(false), onlyIfCached_(false) {}
 
 HttpCacheRequest::~HttpCacheRequest() = default;
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http

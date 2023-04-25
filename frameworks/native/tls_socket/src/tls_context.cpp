@@ -27,6 +27,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 VerifyMode TLSContext::verifyMode_ = TWO_WAY_MODE;
 std::unique_ptr<TLSContext> TLSContext::CreateConfiguration(const TLSConfiguration &configuration)
 {
@@ -108,7 +109,7 @@ void TLSContext::UseRemoteCipher(TLSContext *tlsContext)
         SSL_CTX_set_options(tlsContext->ctx_, SSL_OP_CIPHER_SERVER_PREFERENCE);
     }
     NETSTACK_LOGI("SSL_CTX_get_options = %{public}" PRIx64,
-        static_cast<uint64_t>(SSL_CTX_get_options(tlsContext->ctx_)));
+                  static_cast<uint64_t>(SSL_CTX_get_options(tlsContext->ctx_)));
 }
 
 void TLSContext::SetMinAndMaxProtocol(TLSContext *tlsContext)
@@ -219,7 +220,7 @@ bool TLSContext::SetKeyAndCheck(TLSContext *tlsContext, const TLSConfiguration &
     if (!configuration.GetPrivateKey().GetKeyPass().Length()) {
         SSL_CTX_set_default_passwd_cb_userdata(tlsContext->ctx_,
                                                reinterpret_cast<void *>(const_cast<char *>(
-                                               tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyPass().Data())));
+                                                   tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyPass().Data())));
     }
     // Check if the certificate matches the private key.
     if (!SSL_CTX_check_private_key(tlsContext->ctx_)) {
@@ -245,7 +246,8 @@ void TLSContext::SetVerify(TLSContext *tlsContext)
         verifyMode_ = TWO_WAY_MODE;
         SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_FAIL_IF_NO_PEER_CERT, nullptr);
     }
-    NETSTACK_LOGD("Authentication mode is %{public}s", verifyMode_ ? "two-way authentication" : "one-way authentication");
+    NETSTACK_LOGD("Authentication mode is %{public}s",
+                  verifyMode_ ? "two-way authentication" : "one-way authentication");
 }
 
 bool TLSContext::InitTlsContext(TLSContext *tlsContext, const TLSConfiguration &configuration)
@@ -302,5 +304,6 @@ void TLSContext::CloseCtx()
 {
     SSL_CTX_free(ctx_);
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

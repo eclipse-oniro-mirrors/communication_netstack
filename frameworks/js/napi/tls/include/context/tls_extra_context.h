@@ -24,7 +24,7 @@
 #include "base_context.h"
 #include "tcp_extra_options.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::TlsSocket {
 class TLSSetExtraOptionsContext : public BaseContext {
 public:
     TLSSetExtraOptionsContext() = delete;
@@ -35,11 +35,11 @@ public:
     [[nodiscard]] int GetSocketFd() const;
 
 public:
-    TCPExtraOptions options_;
+    Socket::TCPExtraOptions options_;
     int32_t errorNumber_ = 0;
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::TlsSocket
 #endif // TLS_EXTRA_CONTEXT_H

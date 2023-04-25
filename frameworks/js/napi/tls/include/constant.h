@@ -18,6 +18,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 constexpr int PARAM_NONE = 0;
 constexpr int PARAM_JUST_OPTIONS = 1;
 constexpr int PARAM_JUST_CALLBACK = 1;
@@ -39,6 +40,7 @@ enum {
     ARG_INDEX_2,
     ARG_INDEX_3,
 };
+} //namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // TLS_CONSTANT_H

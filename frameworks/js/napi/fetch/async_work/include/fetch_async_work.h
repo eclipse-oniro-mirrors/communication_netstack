@@ -21,7 +21,7 @@
 #include "nocopyable.h"
 #include "fetch_context.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Fetch {
 class FetchAsyncWork final {
 public:
     DISALLOW_COPY_AND_MOVE(FetchAsyncWork);
@@ -30,6 +30,6 @@ public:
 
     static void FetchCallback(napi_env env, napi_status status, void *data);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Fetch
 
 #endif /* COMMUNICATIONNETSTACK_FETCH_ASYNC_WORK_H */

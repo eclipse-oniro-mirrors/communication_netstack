@@ -28,6 +28,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 class TLSConnectContext final : public BaseContext {
 public:
     TLSConnectContext() = delete;
@@ -46,8 +47,9 @@ private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
     TLSConnectOptions ReadTLSConnectOptions(napi_env env, napi_value *params);
     TLSSecureOptions ReadTLSSecureOptions(napi_env env, napi_value *params);
-    NetAddress ReadNetAddress(napi_env env, napi_value *params);
+    Socket::NetAddress ReadNetAddress(napi_env env, napi_value *params);
 };
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // TLS_CONTEXT_CONNECT_CONTEXT_H

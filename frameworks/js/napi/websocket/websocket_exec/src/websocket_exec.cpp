@@ -53,7 +53,7 @@ static constexpr const char *EVENT_KEY_REASON = "reason";
 
 static constexpr const char *EVENT_KEY_MESSAGE = "message";
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Websocket {
 static const lws_protocols LWS_PROTOCOLS[] = {
     {"lws-minimal-client", WebSocketExec::LwsCallback, 0, 0},
     {nullptr, nullptr, 0, 0}, // this line is needed
@@ -778,4 +778,4 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
     para->isBinary = isBinary;
     manager->EmitByUv(EventName::EVENT_MESSAGE, para, CallbackTemplate<CreateMessagePara>);
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Websocket

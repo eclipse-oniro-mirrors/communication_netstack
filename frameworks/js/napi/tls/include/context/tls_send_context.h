@@ -28,6 +28,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 class TLSSendContext final : public BaseContext {
 public:
     TLSSendContext() = delete;
@@ -43,6 +44,7 @@ public:
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // TLS_CONTEXT_SEND_CONTEXT_H

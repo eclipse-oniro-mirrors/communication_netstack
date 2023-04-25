@@ -22,7 +22,7 @@
 
 static constexpr size_t MAX_LIMIT = 5 * 1024 * 1024;
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Websocket {
 SendContext::SendContext(napi_env env, EventManager *manager)
     : BaseContext(env, manager), data(nullptr), length(0), protocol(LWS_WRITE_TEXT)
 {
@@ -158,4 +158,4 @@ std::string SendContext::GetErrorMessage() const
     }
     return {};
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Websocket

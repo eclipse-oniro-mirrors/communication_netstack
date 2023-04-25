@@ -20,7 +20,7 @@
 #include "napi/native_common.h"
 #include "request_context.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 class HttpAsyncWork final {
 public:
     static void ExecRequest(napi_env env, void *data);
@@ -37,6 +37,6 @@ public:
 
     static void DeleteCallback(napi_env env, napi_status status, void *data);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 
 #endif /* COMMUNICATIONNETSTACK_ASYNC_WORK_H */

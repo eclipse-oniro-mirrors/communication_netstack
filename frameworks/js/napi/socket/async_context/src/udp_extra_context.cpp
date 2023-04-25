@@ -21,7 +21,7 @@
 #include "napi_utils.h"
 #include "netstack_log.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 UdpSetExtraOptionsContext::UdpSetExtraOptionsContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void UdpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -115,4 +115,4 @@ std::string UdpSetExtraOptionsContext::GetErrorMessage() const
     (void)strerror_r(errCode, err, MAX_ERR_NUM);
     return err;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket

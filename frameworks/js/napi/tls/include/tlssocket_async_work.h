@@ -20,6 +20,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 class TLSSocketAsyncWork final {
 public:
     TLSSocketAsyncWork() = delete;
@@ -51,6 +52,7 @@ public:
     static void GetRemoteAddressCallback(napi_env env, napi_status status, void *data);
     static void SetExtraOptionsCallback(napi_env env, napi_status status, void *data);
 };
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // TLS_TLSSOCKET_ASYNC_WORK_H

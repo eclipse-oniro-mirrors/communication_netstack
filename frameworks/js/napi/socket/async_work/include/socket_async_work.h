@@ -19,7 +19,7 @@
 #include "napi/native_api.h"
 #include "nocopyable.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class SocketAsyncWork final {
 public:
     DISALLOW_COPY_AND_MOVE(SocketAsyncWork);
@@ -64,6 +64,6 @@ public:
 
     static void UdpSetExtraOptionsCallback(napi_env env, napi_status status, void *data);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_SOCKET_ASYNC_WORK_H */

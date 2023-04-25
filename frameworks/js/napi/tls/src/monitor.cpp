@@ -30,6 +30,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 namespace {
 constexpr int PARAM_OPTION = 1;
 constexpr int PARAM_OPTION_CALLBACK = 2;
@@ -298,5 +299,6 @@ napi_value Monitor::Off(napi_env env, napi_callback_info info)
     }
     return NapiUtils::GetUndefined(env);
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

@@ -30,6 +30,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 class TLSNapiContext final : public BaseContext {
 public:
     TLSNapiContext() = delete;
@@ -42,8 +43,8 @@ public:
     X509CertRawData remoteCert_;
     std::vector<std::string> signatureAlgorithms_;
     int32_t errorNumber_ = 0;
-    SocketStateBase state_;
-    NetAddress address_;
+    Socket::SocketStateBase state_;
+    Socket::NetAddress address_;
 
 public:
     void ParseParams(napi_value *params, size_t paramsCount);
@@ -59,6 +60,7 @@ using GetRemoteCertificateContext = TLSNapiContext;
 using GetCertificateContext = TLSNapiContext;
 using TLSGetStateContext = TLSNapiContext;
 using TLSGetRemoteAddressContext = TLSNapiContext;
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // TLS_NAPI_CONTEXT_H

@@ -21,7 +21,7 @@
 #include "netstack_log.h"
 #include "napi_utils.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Fetch {
 FetchContext::FetchContext(napi_env env, EventManager *manager)
     : BaseContext(env, manager), successCallback_(nullptr), failCallback_(nullptr), completeCallback_(nullptr)
 {
@@ -254,4 +254,4 @@ std::string FetchContext::GetResponseType() const
 {
     return responseType_;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Fetch

@@ -20,7 +20,7 @@
 
 #include "http_request_options.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 static constexpr const uint32_t MIN_PRIORITY = 0;
 static constexpr const uint32_t MAX_PRIORITY = 1000;
 
@@ -174,4 +174,4 @@ void HttpRequestOptions::GetSpecifiedHttpProxy(std::string &host, int32_t &port,
     port = httpProxyPort_;
     exclusionList = httpProxyExclusions_;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http

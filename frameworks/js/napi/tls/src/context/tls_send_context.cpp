@@ -24,6 +24,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 static constexpr std::string_view PARSE_ERROR = "data is not string";
 
 TLSSendContext::TLSSendContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
@@ -69,5 +70,6 @@ bool TLSSendContext::CheckParamsType(napi_value *params, size_t paramsCount)
     }
     return false;
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

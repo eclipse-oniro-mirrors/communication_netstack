@@ -21,7 +21,7 @@
 
 #include "curl/curl.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 enum class ResponseCode {
     OK = 200,
     CREATED,
@@ -174,6 +174,6 @@ public:
     static const char *const REQUEST_TIME;
     static const char *const RESPONSE_TIME;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 
 #endif /* COMMUNICATIONNETSTACK_CONSTANT_H */

@@ -27,6 +27,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 class TLSSocketExec final {
 public:
     TLSSocketExec() = delete;
@@ -58,6 +59,7 @@ public:
     static napi_value GetRemoteAddressCallback(TLSGetRemoteAddressContext *context);
     static napi_value SetExtraOptionsCallback(TLSSetExtraOptionsContext *context);
 };
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // TLS_TLSSOCKET_EXEC_H

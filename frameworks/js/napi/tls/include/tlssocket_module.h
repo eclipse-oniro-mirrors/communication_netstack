@@ -20,6 +20,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 class TLSSocketModuleExports {
 public:
     class TLSSocket {
@@ -68,6 +69,7 @@ private:
     static void InitTLSSocketProperties(napi_env env, napi_value exports);
     static void InitProtocol(napi_env env, napi_value exports);
 };
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // TLS_TLSSOCKET_MODULE_H

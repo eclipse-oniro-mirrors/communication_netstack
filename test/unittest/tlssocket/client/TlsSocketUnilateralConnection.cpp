@@ -38,6 +38,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 namespace {
 using namespace testing::ext;
 using namespace Security::AccessToken;
@@ -154,7 +155,7 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
     }
 
     TLSSocket server;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
@@ -173,7 +174,7 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
     TLSSocket server;
 
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
@@ -193,7 +194,7 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
@@ -210,7 +211,7 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
     TLSSocket server;
 
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
@@ -229,8 +230,9 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
 
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";;
-    TCPSendOptions tcpSendOptions;
+    const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
+    ;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -247,7 +249,7 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
     TLSSocket server;
 
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
@@ -267,7 +269,7 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -284,7 +286,7 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
@@ -303,8 +305,8 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
 
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    NetAddress netAddress;
-    server.GetRemoteAddress([&netAddress](int32_t errCode, const NetAddress &address) {
+    Socket::NetAddress netAddress;
+    server.GetRemoteAddress([&netAddress](int32_t errCode, const Socket::NetAddress &address) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         netAddress.SetAddress(address.GetAddress());
         netAddress.SetPort(address.GetPort());
@@ -315,7 +317,7 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     EXPECT_EQ(netAddress.GetSaFamily(), AF_INET);
 
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -332,7 +334,7 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
@@ -350,8 +352,8 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    SocketStateBase TlsSocketstate;
-    server.GetState([&TlsSocketstate](int32_t errCode, const SocketStateBase &state) {
+    Socket::SocketStateBase TlsSocketstate;
+    server.GetState([&TlsSocketstate](int32_t errCode, const Socket::SocketStateBase &state) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         TlsSocketstate = state;
     });
@@ -361,7 +363,7 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     EXPECT_TRUE(TlsSocketstate.IsConnected());
 
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
@@ -375,9 +377,9 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
     }
     TLSSocket server;
     TLSConnectOptions options;
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
@@ -402,7 +404,7 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     server.GetRemoteCertificate(
-            [](int32_t errCode, const X509CertRawData &cert) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+        [](int32_t errCode, const X509CertRawData &cert) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
@@ -415,7 +417,7 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
@@ -438,7 +440,7 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -461,7 +463,7 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
@@ -482,7 +484,7 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
@@ -502,6 +504,7 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
 
     (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 

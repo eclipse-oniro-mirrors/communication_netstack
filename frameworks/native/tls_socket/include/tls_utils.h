@@ -20,7 +20,9 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 bool CheckFilePath(std::string fileName, std::string &realPath);
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // COMMUNICATION_NETSTACK_TLS_UTILS_H

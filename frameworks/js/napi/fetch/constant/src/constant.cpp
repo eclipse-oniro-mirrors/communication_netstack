@@ -15,7 +15,7 @@
 
 #include "constant.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Fetch {
 const char *const FetchConstant::HTTP_METHOD_GET = "GET";
 const char *const FetchConstant::HTTP_METHOD_HEAD = "HEAD";
 const char *const FetchConstant::HTTP_METHOD_OPTIONS = "OPTIONS";
@@ -53,4 +53,4 @@ const char *const FetchConstant::HTTP_CONTENT_TYPE_JSON = "application/json";
 
 const char *const FetchConstant::HTTP_RESPONSE_TYPE_TEXT = "text";
 const char *const FetchConstant::HTTP_RESPONSE_TYPE_JSON = "json";
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Fetch

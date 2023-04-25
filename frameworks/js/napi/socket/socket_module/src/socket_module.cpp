@@ -64,7 +64,7 @@ static constexpr const char *KEY_SOCKET_FD = "socketFd";
 #define SOCKET_INTERFACE(Context, executor, callback, work, name) \
     ModuleTemplate::Interface<Context>(env, info, name, work, SocketAsyncWork::executor, SocketAsyncWork::callback)
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 void Finalize(napi_env, void *data, void *)
 {
     NETSTACK_LOGI("socket handle is finalized");
@@ -136,7 +136,7 @@ static bool MakeUdpSocket(napi_env env, napi_value thisVal, BindContext *context
 
 napi_value SocketModuleExports::InitSocketModule(napi_env env, napi_value exports)
 {
-    TLSSocketModuleExports::InitTLSSocketModule(env, exports);
+    TlsSocket::TLSSocketModuleExports::InitTLSSocketModule(env, exports);
     DefineUDPSocketClass(env, exports);
     DefineTCPSocketClass(env, exports);
     InitSocketProperties(env, exports);
@@ -294,4 +294,4 @@ extern "C" __attribute__((constructor)) void RegisterSocketModule(void)
 {
     napi_module_register(&g_socketModule);
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket

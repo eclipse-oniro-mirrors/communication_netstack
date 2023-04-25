@@ -23,7 +23,7 @@
 #include "nocopyable.h"
 #include "libwebsockets.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Websocket {
 class ConnectContext final : public BaseContext {
 public:
     DISALLOW_COPY_AND_MOVE(ConnectContext);
@@ -49,6 +49,6 @@ private:
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Websocket
 
 #endif /* COMMUNICATIONNETSTACK_CONNECT_CONTEXT_H */

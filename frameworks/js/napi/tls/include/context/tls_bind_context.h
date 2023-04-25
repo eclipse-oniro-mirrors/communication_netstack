@@ -25,7 +25,7 @@
 #include "base_context.h"
 #include "event_manager.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::TlsSocket {
 class TLSBindContext final : public BaseContext {
 public:
     TLSBindContext() = delete;
@@ -36,11 +36,11 @@ public:
     [[nodiscard]] int GetSocketFd() const;
 
 public:
-    NetAddress address_;
+    Socket::NetAddress address_;
     int32_t errorNumber_ = 0;
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::TlsSocket
 #endif // TLS_BIND_CONTEXT_H

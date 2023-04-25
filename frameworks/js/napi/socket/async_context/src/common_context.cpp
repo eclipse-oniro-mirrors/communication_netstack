@@ -20,7 +20,7 @@
 #include "event_manager.h"
 #include "napi_utils.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 CommonContext::CommonContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void CommonContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -94,4 +94,4 @@ std::string CommonContext::GetErrorMessage() const
     (void)strerror_r(errCode, err, MAX_ERR_NUM);
     return err;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket

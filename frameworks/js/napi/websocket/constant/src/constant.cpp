@@ -15,7 +15,7 @@
 
 #include "constant.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Websocket {
 const char *ContextKey::HEADER = "header";
 
 const char *ContextKey::CODE = "code";
@@ -29,4 +29,4 @@ const char *EventName::EVENT_MESSAGE = "message";
 const char *EventName::EVENT_CLOSE = "close";
 
 const char *EventName::EVENT_ERROR = "error";
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Websocket

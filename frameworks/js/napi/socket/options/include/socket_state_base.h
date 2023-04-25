@@ -16,7 +16,7 @@
 #ifndef COMMUNICATIONNETSTACK_SOCKET_STATE_BASE_H
 #define COMMUNICATIONNETSTACK_SOCKET_STATE_BASE_H
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class SocketStateBase final {
 public:
     SocketStateBase();
@@ -42,6 +42,6 @@ private:
 
     bool isConnected_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_SOCKET_STATE_BASE_H */

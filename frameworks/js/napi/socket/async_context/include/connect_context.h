@@ -23,7 +23,7 @@
 #include "nocopyable.h"
 #include "tcp_connect_options.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class ConnectContext final : public BaseContext {
 public:
     DISALLOW_COPY_AND_MOVE(ConnectContext);
@@ -45,6 +45,6 @@ public:
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_CONNECT_CONTEXT_H */

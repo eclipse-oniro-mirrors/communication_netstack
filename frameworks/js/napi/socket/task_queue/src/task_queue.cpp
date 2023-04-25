@@ -21,7 +21,7 @@
 
 #include "netstack_log.h"
 
-namespace OHOS::NetStack::Task {
+namespace OHOS::NetStack::Socket::Task {
 class Task {
 public:
     Task() : executor(nullptr), callback(nullptr), data(nullptr), priority_(TaskPriority::CLOSE) {}
@@ -114,4 +114,4 @@ void PushTask(TaskPriority priority, AsyncWorkExecutor executor, AsyncWorkCallba
 
     g_taskExecutorQueue.push(Task(priority, executor, callback, data));
 }
-} // namespace OHOS::NetStack::Task
+} // namespace OHOS::NetStack::Socket::Task

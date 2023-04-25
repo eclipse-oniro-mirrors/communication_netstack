@@ -21,14 +21,14 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace Socket {
 namespace {
 const uint8_t *g_netstackFuzzData = nullptr;
 size_t g_netstackFuzzSize = 0;
 size_t g_netstackFuzzPos = 0;
-template<class T>
-T GetData()
+template <class T> T GetData()
 {
-    T object {};
+    T object{};
     size_t objectSize = sizeof(object);
     if (g_netstackFuzzData == nullptr || objectSize > g_netstackFuzzSize - g_netstackFuzzPos) {
         return object;
@@ -41,7 +41,7 @@ T GetData()
     return object;
 }
 
-inline void setGlobalFuzzData(const uint8_t* data, size_t size)
+inline void setGlobalFuzzData(const uint8_t *data, size_t size)
 {
     g_netstackFuzzData = data;
     g_netstackFuzzSize = size;
@@ -49,7 +49,7 @@ inline void setGlobalFuzzData(const uint8_t* data, size_t size)
 }
 } // namespace
 
-void MakeUdpSocketFuzzTest(const uint8_t* data, size_t size)
+void MakeUdpSocketFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
         return;
@@ -62,7 +62,7 @@ void MakeUdpSocketFuzzTest(const uint8_t* data, size_t size)
     SocketExec::MakeUdpSocket(family);
 }
 
-void MakeTcpSocketFuzzTest(const uint8_t* data, size_t size)
+void MakeTcpSocketFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
         return;
@@ -75,7 +75,7 @@ void MakeTcpSocketFuzzTest(const uint8_t* data, size_t size)
     SocketExec::MakeTcpSocket(family);
 }
 
-void ExecUdpBindFuzzTest(const uint8_t* data, size_t size)
+void ExecUdpBindFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
         return;
@@ -87,7 +87,7 @@ void ExecUdpBindFuzzTest(const uint8_t* data, size_t size)
     SocketExec::ExecUdpBind(&context);
 }
 
-void ExecTcpBindFuzzTest(const uint8_t* data, size_t size)
+void ExecTcpBindFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
         return;
@@ -99,7 +99,7 @@ void ExecTcpBindFuzzTest(const uint8_t* data, size_t size)
     SocketExec::ExecTcpBind(&context);
 }
 
-void ExecUdpSendFuzzTest(const uint8_t* data, size_t size)
+void ExecUdpSendFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
         return;
@@ -111,7 +111,7 @@ void ExecUdpSendFuzzTest(const uint8_t* data, size_t size)
     SocketExec::ExecUdpSend(&context);
 }
 
-void ExecTcpSendFuzzTest(const uint8_t* data, size_t size)
+void ExecTcpSendFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
         return;
@@ -123,7 +123,7 @@ void ExecTcpSendFuzzTest(const uint8_t* data, size_t size)
     SocketExec::ExecTcpSend(&context);
 }
 
-void ExecConnectFuzzTest(const uint8_t* data, size_t size)
+void ExecConnectFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
         return;
@@ -135,7 +135,7 @@ void ExecConnectFuzzTest(const uint8_t* data, size_t size)
     SocketExec::ExecConnect(&context);
 }
 
-void ExecCloseFuzzTest(const uint8_t* data, size_t size)
+void ExecCloseFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
         return;
@@ -147,7 +147,7 @@ void ExecCloseFuzzTest(const uint8_t* data, size_t size)
     SocketExec::ExecClose(&context);
 }
 
-void ExecGetStateFuzzTest(const uint8_t* data, size_t size)
+void ExecGetStateFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
         return;
@@ -159,7 +159,7 @@ void ExecGetStateFuzzTest(const uint8_t* data, size_t size)
     SocketExec::ExecGetState(&context);
 }
 
-void ExecGetRemoteAddressFuzzTest(const uint8_t* data, size_t size)
+void ExecGetRemoteAddressFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
         return;
@@ -171,7 +171,7 @@ void ExecGetRemoteAddressFuzzTest(const uint8_t* data, size_t size)
     SocketExec::ExecGetRemoteAddress(&context);
 }
 
-void ExecTcpSetExtraOptionsFuzzTest(const uint8_t* data, size_t size)
+void ExecTcpSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
         return;
@@ -183,7 +183,7 @@ void ExecTcpSetExtraOptionsFuzzTest(const uint8_t* data, size_t size)
     SocketExec::ExecTcpSetExtraOptions(&context);
 }
 
-void ExecUdpSetExtraOptionsFuzzTest(const uint8_t* data, size_t size)
+void ExecUdpSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
         return;
@@ -194,6 +194,7 @@ void ExecUdpSetExtraOptionsFuzzTest(const uint8_t* data, size_t size)
 
     SocketExec::ExecUdpSetExtraOptions(&context);
 }
+} //Socket
 } // NetStack
 } // OHOS
 
@@ -201,17 +202,17 @@ void ExecUdpSetExtraOptionsFuzzTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     /* Run your code on data */
-    OHOS::NetStack::MakeUdpSocketFuzzTest(data, size);
-    OHOS::NetStack::MakeTcpSocketFuzzTest(data, size);
-    OHOS::NetStack::ExecUdpBindFuzzTest(data, size);
-    OHOS::NetStack::ExecTcpBindFuzzTest(data, size);
-    OHOS::NetStack::ExecUdpSendFuzzTest(data, size);
-    OHOS::NetStack::ExecTcpSendFuzzTest(data, size);
-    OHOS::NetStack::ExecConnectFuzzTest(data, size);
-    OHOS::NetStack::ExecCloseFuzzTest(data, size);
-    OHOS::NetStack::ExecGetStateFuzzTest(data, size);
-    OHOS::NetStack::ExecGetRemoteAddressFuzzTest(data, size);
-    OHOS::NetStack::ExecTcpSetExtraOptionsFuzzTest(data, size);
-    OHOS::NetStack::ExecUdpSetExtraOptionsFuzzTest(data, size);
+    OHOS::NetStack::Socket::MakeUdpSocketFuzzTest(data, size);
+    OHOS::NetStack::Socket::MakeTcpSocketFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecUdpBindFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpBindFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecUdpSendFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpSendFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecConnectFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecCloseFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecGetStateFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecGetRemoteAddressFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpSetExtraOptionsFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecUdpSetExtraOptionsFuzzTest(data, size);
     return 0;
 }

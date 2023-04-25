@@ -21,7 +21,7 @@
 #include "napi_utils.h"
 #include "securec.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Websocket {
 ConnectContext::ConnectContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 ConnectContext::~ConnectContext() = default;
@@ -150,4 +150,4 @@ std::string ConnectContext::GetErrorMessage() const
     }
     return {};
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Websocket

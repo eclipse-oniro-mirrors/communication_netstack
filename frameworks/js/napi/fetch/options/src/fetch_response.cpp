@@ -19,7 +19,7 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Fetch {
 FetchResponse::FetchResponse() : responseCode_(0) {}
 
 void FetchResponse::AppendData(const void *data, size_t length)
@@ -69,4 +69,4 @@ const std::map<std::string, std::string> &FetchResponse::GetHeader() const
 {
     return header_;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Fetch

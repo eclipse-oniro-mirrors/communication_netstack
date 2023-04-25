@@ -17,7 +17,7 @@
 
 #include "base_async_work.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Websocket {
 void WebSocketAsyncWork::ExecConnect(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<ConnectContext, WebSocketExec::ExecConnect>(env, data);
@@ -47,4 +47,4 @@ void WebSocketAsyncWork::CloseCallback(napi_env env, napi_status status, void *d
 {
     BaseAsyncWork::AsyncWorkCallback<CloseContext, WebSocketExec::CloseCallback>(env, status, data);
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Websocket

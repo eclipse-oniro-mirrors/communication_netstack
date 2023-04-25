@@ -19,7 +19,7 @@
 #include <cstring>
 #include <iostream>
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 class HttpTime {
 public:
     static time_t StrTimeToTimestamp(const std::string &time_str);
@@ -28,5 +28,5 @@ public:
 
     static std::string GetNowTimeGMT();
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 #endif // HTTP_TIME_H

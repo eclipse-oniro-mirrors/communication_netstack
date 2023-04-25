@@ -15,7 +15,7 @@
 #ifndef NETSTACK_HTTP_CURL_H
 #define NETSTACK_HTTP_CURL_H
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 using RequestCallback = std::function<void(int32_t errorNumber, const Response &response)>;
 
 class HttpCurl final {
@@ -31,5 +31,5 @@ public:
 private:
     static std::atomic_bool initialized_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 #endif /* NETSTACK_HTTP_CURL_H */

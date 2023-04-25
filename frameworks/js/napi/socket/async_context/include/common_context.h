@@ -25,7 +25,7 @@
 #include "socket_remote_info.h"
 #include "socket_state_base.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class CommonContext : public BaseContext {
 public:
     DISALLOW_COPY_AND_MOVE(CommonContext);
@@ -65,6 +65,6 @@ public:
 
     void SetSocketFd(int sock);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_COMMON_CONTEXT_H */

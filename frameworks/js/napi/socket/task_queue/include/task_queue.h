@@ -18,7 +18,7 @@
 
 #include "base_context.h"
 
-namespace OHOS::NetStack::Task {
+namespace OHOS::NetStack::Socket::Task {
 enum class TaskPriority {
     CLOSE,
     SEND,
@@ -32,6 +32,6 @@ void Executor(napi_env env, void *data);
 void Callback(napi_env env, napi_status status, void *data);
 
 void PushTask(TaskPriority priority, AsyncWorkExecutor executor, AsyncWorkCallback callback, void *data);
-} // namespace OHOS::NetStack::Task
+} // namespace OHOS::NetStack::Socket::Task
 
 #endif /* COMMUNICATIONNETSTACK_TASK_QUEUE_H */

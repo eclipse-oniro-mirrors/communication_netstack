@@ -42,13 +42,14 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 
 using BindCallback = std::function<void(int32_t errorNumber)>;
 using ConnectCallback = std::function<void(int32_t errorNumber)>;
 using SendCallback = std::function<void(int32_t errorNumber)>;
 using CloseCallback = std::function<void(int32_t errorNumber)>;
-using GetRemoteAddressCallback = std::function<void(int32_t errorNumber, const NetAddress &address)>;
-using GetStateCallback = std::function<void(int32_t errorNumber, const SocketStateBase &state)>;
+using GetRemoteAddressCallback = std::function<void(int32_t errorNumber, const Socket::NetAddress &address)>;
+using GetStateCallback = std::function<void(int32_t errorNumber, const Socket::SocketStateBase &state)>;
 using SetExtraOptionsCallback = std::function<void(int32_t errorNumber)>;
 using GetCertificateCallback = std::function<void(int32_t errorNumber, const X509CertRawData &cert)>;
 using GetRemoteCertificateCallback = std::function<void(int32_t errorNumber, const X509CertRawData &cert)>;
@@ -57,7 +58,7 @@ using GetCipherSuiteCallback = std::function<void(int32_t errorNumber, const std
 using GetSignatureAlgorithmsCallback =
     std::function<void(int32_t errorNumber, const std::vector<std::string> &algorithms)>;
 
-using OnMessageCallback = std::function<void(const std::string &data, const SocketRemoteInfo &remoteInfo)>;
+using OnMessageCallback = std::function<void(const std::string &data, const Socket::SocketRemoteInfo &remoteInfo)>;
 using OnConnectCallback = std::function<void(void)>;
 using OnCloseCallback = std::function<void(void)>;
 using OnErrorCallback = std::function<void(int32_t errorNumber, const std::string &errorString)>;
@@ -209,7 +210,7 @@ public:
      * Communication parameters required for connection establishment
      * @param address communication parameters during connection
      */
-    void SetNetAddress(const NetAddress &address);
+    void SetNetAddress(const Socket::NetAddress &address);
 
     /**
      * Parameters required during communication
@@ -233,7 +234,7 @@ public:
      * Obtain the network address of the communication process
      * @return network address
      */
-    [[nodiscard]] NetAddress GetNetAddress() const;
+    [[nodiscard]] Socket::NetAddress GetNetAddress() const;
 
     /**
      * Obtain the parameters required in the communication process
@@ -254,7 +255,7 @@ public:
     [[nodiscard]] const std::vector<std::string> &GetAlpnProtocols() const;
 
 private:
-    NetAddress address_;
+    Socket::NetAddress address_;
     TLSSecureOptions tlsSecureOptions_;
     CheckServerIdentity checkServerIdentity_;
     std::vector<std::string> alpnProtocols_;
@@ -279,7 +280,7 @@ public:
      * @param address ip address
      * @param callback callback to the caller if bind ok or not
      */
-    void Bind(const NetAddress &address, const BindCallback &callback);
+    void Bind(const Socket::NetAddress &address, const BindCallback &callback);
 
     /**
      * Establish a secure connection based on the created socket
@@ -293,7 +294,7 @@ public:
      * @param tcpSendOptions  some options required during tcp data transmission
      * @param callback callback to the caller if send ok or not
      */
-    void Send(const TCPSendOptions &tcpSendOptions, const SendCallback &callback);
+    void Send(const Socket::TCPSendOptions &tcpSendOptions, const SendCallback &callback);
 
     /**
      * Disconnect by releasing the socket when communicating
@@ -318,7 +319,7 @@ public:
      * @param tcpExtraOptions options associated with the current socket
      * @param callback callback to the caller
      */
-    void SetExtraOptions(const TCPExtraOptions &tcpExtraOptions, const SetExtraOptionsCallback &callback);
+    void SetExtraOptions(const Socket::TCPExtraOptions &tcpExtraOptions, const SetExtraOptionsCallback &callback);
 
     /**
      *  Get a local digital certificate
@@ -447,7 +448,7 @@ private:
          * Storage of server communication related network information
          * @param remoteInfo communication related network information
          */
-        void MakeRemoteInfo(SocketRemoteInfo &remoteInfo);
+        void MakeRemoteInfo(Socket::SocketRemoteInfo &remoteInfo);
 
         /**
          * Get configuration options for encrypted communication process
@@ -520,7 +521,7 @@ private:
 
         TLSContext tlsContext_;
         TLSConfiguration configuration_;
-        NetAddress address_;
+        Socket::NetAddress address_;
         X509CertRawData remoteRawData_;
 
         std::string hostName_;
@@ -536,10 +537,10 @@ private:
 
     static std::string MakeAddressString(sockaddr *addr);
 
-    static void GetAddr(const NetAddress &address, sockaddr_in *addr4, sockaddr_in6 *addr6, sockaddr **addr,
+    static void GetAddr(const Socket::NetAddress &address, sockaddr_in *addr4, sockaddr_in6 *addr6, sockaddr **addr,
                         socklen_t *len);
 
-    void CallOnMessageCallback(const std::string &data, const SocketRemoteInfo &remoteInfo);
+    void CallOnMessageCallback(const std::string &data, const Socket::SocketRemoteInfo &remoteInfo);
     void CallOnConnectCallback();
     void CallOnCloseCallback();
     void CallOnErrorCallback(int32_t err, const std::string &errString);
@@ -548,8 +549,9 @@ private:
     void CallConnectCallback(int32_t err, ConnectCallback callback);
     void CallSendCallback(int32_t err, SendCallback callback);
     void CallCloseCallback(int32_t err, CloseCallback callback);
-    void CallGetRemoteAddressCallback(int32_t err, const NetAddress &address, GetRemoteAddressCallback callback);
-    void CallGetStateCallback(int32_t err, const SocketStateBase &state, GetStateCallback callback);
+    void CallGetRemoteAddressCallback(int32_t err, const Socket::NetAddress &address,
+                                      GetRemoteAddressCallback callback);
+    void CallGetStateCallback(int32_t err, const Socket::SocketStateBase &state, GetStateCallback callback);
     void CallSetExtraOptionsCallback(int32_t err, SetExtraOptionsCallback callback);
     void CallGetCertificateCallback(int32_t err, const X509CertRawData &cert, GetCertificateCallback callback);
     void CallGetRemoteCertificateCallback(int32_t err, const X509CertRawData &cert,
@@ -565,8 +567,8 @@ private:
     void GetIp4RemoteAddress(const GetRemoteAddressCallback &callback);
     void GetIp6RemoteAddress(const GetRemoteAddressCallback &callback);
 
-    [[nodiscard]] bool SetBaseOptions(const ExtraOptionsBase &option) const;
-    [[nodiscard]] bool SetExtraOptions(const TCPExtraOptions &option) const;
+    [[nodiscard]] bool SetBaseOptions(const Socket::ExtraOptionsBase &option) const;
+    [[nodiscard]] bool SetExtraOptions(const Socket::TCPExtraOptions &option) const;
 
     void MakeIpSocket(sa_family_t family);
 
@@ -585,6 +587,7 @@ private:
 
     int sockFd_ = -1;
 };
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 

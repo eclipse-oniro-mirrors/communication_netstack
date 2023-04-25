@@ -19,7 +19,7 @@
 #include <string>
 #include <iosfwd>
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 class TCPSendOptions final {
 public:
     TCPSendOptions() = default;
@@ -41,6 +41,6 @@ private:
 
     std::string encoding_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_TCP_SEND_OPTIONS_H */

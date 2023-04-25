@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include "json/json.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 class LRUCache {
 public:
     LRUCache();
@@ -62,5 +62,5 @@ private:
     size_t capacity_;
     size_t size_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 #endif /* COMMUNICATIONNETSTACK_LRU_CACHE_H */

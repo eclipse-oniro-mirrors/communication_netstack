@@ -36,6 +36,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 namespace {
 const std::string_view PRIVATE_KEY_PEM = "/data/ClientCert/client_rsa_private.pem.unsecure";
 const std::string_view CA_DER = "/data/ClientCert/ca.crt";
@@ -87,7 +88,7 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
     }
 
     TLSSocket server;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
@@ -106,7 +107,7 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
     TLSSocket server;
 
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
@@ -125,7 +126,7 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     const std::string data = "how do you do? this is connectInterface";
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     sleep(2);
@@ -144,7 +145,7 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
     TLSSocket server;
 
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
@@ -163,7 +164,7 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     const std::string data = "how do you do? this is closeInterface";
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -181,7 +182,7 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
     TLSSocket server;
 
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
@@ -200,7 +201,7 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     const std::string data = "how do you do? this is sendInterface";
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -218,7 +219,7 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
@@ -236,8 +237,8 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
 
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    NetAddress netAddress;
-    server.GetRemoteAddress([&netAddress](int32_t errCode, const NetAddress &address) {
+    Socket::NetAddress netAddress;
+    server.GetRemoteAddress([&netAddress](int32_t errCode, const Socket::NetAddress &address) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         netAddress.SetAddress(address.GetAddress());
         netAddress.SetPort(address.GetPort());
@@ -248,7 +249,7 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     EXPECT_EQ(netAddress.GetSaFamily(), AF_INET);
 
     const std::string data = "how do you do? this is getRemoteAddressInterface";
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -265,7 +266,7 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
@@ -282,8 +283,8 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    SocketStateBase TlsSocketstate;
-    server.GetState([&TlsSocketstate](int32_t errCode, const SocketStateBase &state) {
+    Socket::SocketStateBase TlsSocketstate;
+    server.GetState([&TlsSocketstate](int32_t errCode, const Socket::SocketStateBase &state) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         TlsSocketstate = state;
     });
@@ -293,7 +294,7 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     EXPECT_TRUE(TlsSocketstate.IsConnected());
 
     const std::string data = "how do you do? this is getStateInterface";
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
@@ -309,9 +310,9 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
     }
     TLSSocket server;
     TLSConnectOptions options;
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
     const std::string data = "how do you do? This is UT test getRemoteCertificateInterface";
 
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
@@ -335,7 +336,7 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     server.GetRemoteCertificate(
-    [](int32_t errCode, const X509CertRawData &cert) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+        [](int32_t errCode, const X509CertRawData &cert) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     sleep(2);
     (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -349,7 +350,7 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
@@ -372,7 +373,7 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     const std::string data = "how do you do? this is protocolInterface";
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -383,8 +384,8 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
     });
     EXPECT_STREQ(getProtocolVal.c_str(), "TLSv1.3");
 
-    SocketStateBase stateBase;
-    server.GetState([&stateBase](int32_t errCode, SocketStateBase state) {
+    Socket::SocketStateBase stateBase;
+    server.GetState([&stateBase](int32_t errCode, Socket::SocketStateBase state) {
         if (errCode == TLSSOCKET_SUCCESS) {
             EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
             stateBase.SetIsBound(state.IsBound());
@@ -407,7 +408,7 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
@@ -430,7 +431,7 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     const std::string data = "how do you do? This is getCipherSuiteInterface";
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
@@ -462,7 +463,7 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
     TLSConnectOptions options;
     TLSSocket server;
     TLSSecureOptions secureOption;
-    NetAddress address;
+    Socket::NetAddress address;
 
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
@@ -483,17 +484,18 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-    server.OnMessage([&getData](const std::string &data, const SocketRemoteInfo &remoteInfo) {
+    server.OnMessage([&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {
         EXPECT_TRUE(data == getData);
     });
 
     const std::string data = "how do you do? this is tlsSocketOnMessageData";
-    TCPSendOptions tcpSendOptions;
+    Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     sleep(2);
     (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

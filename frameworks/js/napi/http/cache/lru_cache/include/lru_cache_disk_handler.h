@@ -24,7 +24,7 @@
 static constexpr const int MAX_DISK_CACHE_SIZE = 1024 * 1024 * 10;
 static constexpr const int MIN_DISK_CACHE_SIZE = 1024 * 1024;
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 class LRUCacheDiskHandler {
 public:
     LRUCacheDiskHandler() = delete;
@@ -52,5 +52,5 @@ private:
 
     void WriteJsonValueToFile(const Json::Value &root);
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 #endif /* COMMUNICATIONNETSTACK_LRU_CACHE_DISK_HANDLER_H */

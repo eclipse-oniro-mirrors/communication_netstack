@@ -15,7 +15,7 @@
 
 #include "extra_options_base.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Socket {
 ExtraOptionsBase::ExtraOptionsBase()
     : receiveBufferSize_(0), sendBufferSize_(0), reuseAddress_(false), socketTimeout_(0)
 {
@@ -60,4 +60,4 @@ uint32_t ExtraOptionsBase::GetSocketTimeout() const
 {
     return socketTimeout_;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Socket

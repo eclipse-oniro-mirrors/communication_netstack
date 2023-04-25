@@ -44,7 +44,7 @@ static constexpr const int MSEC_TO_USEC = 1000;
 
 static constexpr const int MAX_SEC = 999999999;
 
-namespace OHOS::NetStack::SocketExec {
+namespace OHOS::NetStack::Socket::SocketExec {
 struct MessageData {
     MessageData() = delete;
     MessageData(void *d, size_t l, const SocketRemoteInfo &info) : data(d), len(l), remoteInfo(info) {}
@@ -1041,4 +1041,4 @@ napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
 }
-} // namespace OHOS::NetStack::SocketExec
+} // namespace OHOS::NetStack::Socket::SocketExec

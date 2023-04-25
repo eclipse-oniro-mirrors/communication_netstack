@@ -23,6 +23,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 bool IsValidPath(const std::string &filePath)
 {
     std::string path = filePath.substr(0, CERT_PATH_LEN);
@@ -43,5 +44,6 @@ bool CheckFilePath(std::string fileName, std::string &realPath)
     realPath = tmpPath;
     return true;
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

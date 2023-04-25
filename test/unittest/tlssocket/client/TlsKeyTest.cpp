@@ -23,6 +23,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 namespace {
 using namespace testing::ext;
 constexpr int FILE_READ_KEY_LEN = 4096;
@@ -237,5 +238,6 @@ HWTEST_F(TlsKeyTest, DecodeDataTest, TestSize.Level2)
     TLSKey tlsKey = TLSKey(data, ALGORITHM_DSA, keyPass);
     tlsKey.DecodeData(data, ALGORITHM_DSA, keyPass);
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

@@ -30,6 +30,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 class Monitor final {
     DECLARE_DELAYED_SINGLETON(Monitor);
 
@@ -39,7 +40,7 @@ public:
 
 public:
     std::string data_;
-    SocketRemoteInfo remoteInfo_;
+    Socket::SocketRemoteInfo remoteInfo_;
     int32_t errorNumber_ = 0;
     std::string errorString_;
 
@@ -47,6 +48,7 @@ private:
     EventManager *manager_ = nullptr;
     std::set<std::string_view> monitors_;
 };
+} //namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // TLS_CONTEXT_MONITOR_CONTEXT_H

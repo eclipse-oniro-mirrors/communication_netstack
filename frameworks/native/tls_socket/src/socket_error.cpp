@@ -24,6 +24,7 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace TlsSocket {
 static constexpr int32_t ERROR_DIVISOR = 1000;
 static constexpr int32_t ERROR_RANGE = 500;
 static constexpr const size_t MAX_ERR_LEN = 1024;
@@ -69,5 +70,6 @@ std::string MakeErrorMessage(int error)
     ERR_error_string_n(error - TLS_ERR_SYS_BASE, err, sizeof(err));
     return err;
 }
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

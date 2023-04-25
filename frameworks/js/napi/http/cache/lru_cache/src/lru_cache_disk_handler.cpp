@@ -19,7 +19,7 @@
 
 #include "netstack_log.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 LRUCacheDiskHandler::LRUCacheDiskHandler(std::string fileName, size_t capacity)
     : diskHandler_(std::move(fileName)),
       capacity_(std::max<size_t>(std::min<size_t>(MAX_DISK_CACHE_SIZE, capacity), MIN_DISK_CACHE_SIZE))
@@ -98,4 +98,4 @@ void LRUCacheDiskHandler::Put(const std::string &key, const std::unordered_map<s
 {
     cache_.Put(key, value);
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http

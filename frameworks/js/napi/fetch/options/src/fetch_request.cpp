@@ -18,7 +18,7 @@
 #include "constant.h"
 #include "netstack_common_utils.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Fetch {
 FetchRequest::FetchRequest() : method_(FetchConstant::HTTP_METHOD_GET)
 {
     header_[CommonUtils::ToLower(FetchConstant::HTTP_CONTENT_TYPE)] = FetchConstant::HTTP_CONTENT_TYPE_JSON; // default
@@ -63,4 +63,4 @@ const std::map<std::string, std::string> &FetchRequest::GetHeader() const
 {
     return header_;
 }
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Fetch

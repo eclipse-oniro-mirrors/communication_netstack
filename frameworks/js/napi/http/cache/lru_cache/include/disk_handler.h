@@ -19,7 +19,7 @@
 #include <mutex>
 #include <string>
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 class DiskHandler final {
 public:
     DiskHandler() = delete;
@@ -37,5 +37,5 @@ private:
 
     std::string fileName_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 #endif /* COMMUNICATIONNETSTACK_DISK_HANDLER_H */

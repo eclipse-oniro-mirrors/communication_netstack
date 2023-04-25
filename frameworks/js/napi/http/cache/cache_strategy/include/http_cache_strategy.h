@@ -25,7 +25,7 @@
 #include "http_request_options.h"
 #include "http_response.h"
 
-namespace OHOS::NetStack {
+namespace OHOS::NetStack::Http {
 enum CacheStatus {
     FRESH,
     STALE,
@@ -65,5 +65,5 @@ private:
 
     HttpCacheRequest cacheRequest_;
 };
-} // namespace OHOS::NetStack
+} // namespace OHOS::NetStack::Http
 #endif /* HTTP_CACHE_STRATEGY_H */
