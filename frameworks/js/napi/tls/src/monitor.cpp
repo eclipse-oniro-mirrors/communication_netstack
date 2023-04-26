@@ -70,6 +70,16 @@ void EventMessageCallback(uv_work_t *work, int status)
     napi_value obj = NapiUtils::CreateObject(workWrapper->env);
     napi_value remoteInfo = NapiUtils::CreateObject(workWrapper->env);
     void *data = nullptr;
+    if (monitor->messagerQueue_.dataQueue.empty() || monitor->messagerQueue_.remoteInfoQueue.empty()) {
+        NETSTACK_LOGE("dataQueue or remoteInfoQueue is empty");
+        delete workWrapper;
+        delete work;
+        return;
+    }
+    monitor->data_ = monitor->messagerQueue_.dataQueue.front();
+    monitor->messagerQueue_.dataQueue.pop();
+    monitor->remoteInfo_ = monitor->messagerQueue_.remoteInfoQueue.front();
+    monitor->messagerQueue_.remoteInfoQueue.pop();
     napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(workWrapper->env, monitor->data_.size(), &data);
     if (data != nullptr && arrayBuffer != nullptr) {
         if (memcpy_s(data, monitor->data_.size(), monitor->data_.c_str(), monitor->data_.size()) != EOK) {
@@ -218,8 +228,8 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
     if (event == EVENT_MESSAGE) {
         monitors_.insert(EVENT_MESSAGE);
         tlsSocket->OnMessage([this](auto data, auto remoteInfo) {
-            this->data_ = data;
-            this->remoteInfo_ = remoteInfo;
+            messagerQueue_.dataQueue.push(data);
+            messagerQueue_.remoteInfoQueue.push(remoteInfo);
             manager_->EmitByUv(std::string(EVENT_MESSAGE), static_cast<void *>(this), EventMessageCallback);
         });
     }
@@ -236,8 +246,8 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
     if (event == EVENT_ERROR) {
         monitors_.insert(EVENT_ERROR);
         tlsSocket->OnError([this](auto errorNumber, auto errorString) {
-            this->errorNumber_ = errorNumber;
-            this->errorString_ = errorString;
+            errorNumber_ = errorNumber;
+            errorString_ = errorString;
             manager_->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(this), EventErrorCallback);
         });
     }

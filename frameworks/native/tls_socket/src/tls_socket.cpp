@@ -361,9 +361,12 @@ void TLSSocket::StartReadMessage()
     std::thread thread([this]() {
         isRunning_ = true;
         isRunOver_ = false;
-        char buffer[MAX_BUFFER_SIZE];
-        bzero(buffer, MAX_BUFFER_SIZE);
         while (isRunning_) {
+            char buffer[MAX_BUFFER_SIZE];
+            if (memset_s(buffer, MAX_BUFFER_SIZE, 0, MAX_BUFFER_SIZE) != EOK) {
+                NETSTACK_LOGE("memcpy_s failed!");
+                break;
+            }
             int len = tlsSocketInternal_.Recv(buffer, MAX_BUFFER_SIZE);
             if (!isRunning_) {
                 break;
@@ -381,7 +384,7 @@ void TLSSocket::StartReadMessage()
             }
 
             Socket::SocketRemoteInfo remoteInfo;
-            remoteInfo.SetSize(len);
+            remoteInfo.SetSize(strlen(buffer));
             tlsSocketInternal_.MakeRemoteInfo(remoteInfo);
             CallOnMessageCallback(buffer, remoteInfo);
         }
