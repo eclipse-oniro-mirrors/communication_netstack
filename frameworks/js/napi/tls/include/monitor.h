@@ -33,7 +33,7 @@ namespace NetStack {
 namespace TlsSocket {
 struct MessagerQueue {
     std::queue<std::string> dataQueue;
-    std::queue<SocketRemoteInfo> remoteInfoQueue;
+    std::queue<Socket::SocketRemoteInfo> remoteInfoQueue;
 };
 class Monitor final {
     DECLARE_DELAYED_SINGLETON(Monitor);
