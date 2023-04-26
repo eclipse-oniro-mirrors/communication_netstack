@@ -826,14 +826,8 @@ bool ExecGetState(GetStateContext *context)
 
     (void)memset_s(addr, addrLen, 0, addrLen);
     len = addrLen;
-    ret = getpeername(context->GetSocketFd(), addr, &len);
-    if (ret < 0) {
-        context->SetErrorCode(errno);
-        return false;
-    }
-
+    (void)getpeername(context->GetSocketFd(), addr, &len);
     SetIsConnected(family, context, &addr4, &addr6);
-
     return true;
 }
 
