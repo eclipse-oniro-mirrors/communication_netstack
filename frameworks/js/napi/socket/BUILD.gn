@@ -81,14 +81,12 @@ ohos_shared_library("socket") {
   sources += tls_napi_sources
 
   deps = [
-    "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
     "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
 
   external_deps = [
-    "c_utils:utils",
     "hiviewdfx_hilog_native:libhilog",
     "napi:ace_napi",
   ]

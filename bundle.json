@@ -1,6 +1,6 @@
 {
     "name": "@ohos/netstack",
-    "version": "3.1.0",
+    "version": "4.0",
     "description": "net stack service",
     "publishAs": "code-segment",
     "homePage": "https://gitee.com/openharmony",
@@ -26,7 +26,7 @@
         "adapted_system_type": [
             "standard"
         ],
-        "rom": "3MB",
+        "rom": "2MB",
         "ram": "5MB",
         "deps": {
             "components": [

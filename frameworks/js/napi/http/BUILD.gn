@@ -85,7 +85,6 @@ ohos_shared_library("http") {
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
     ]
     external_deps = [
-      "c_utils:utils",
       "hiviewdfx_hilog_native:libhilog",
       "napi:ace_napi",
     ]

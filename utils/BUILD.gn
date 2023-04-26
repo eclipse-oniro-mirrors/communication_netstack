@@ -37,12 +37,7 @@ ohos_shared_library("stack_utils_common") {
 
   public_configs = [ ":stack_utils_common_public_config" ]
 
-  deps = [ "$THIRD_PARTY_ROOT/curl:curl_shared" ]
-  external_deps = [
-    "c_utils:utils",
-    "hiviewdfx_hilog_native:libhilog",
-    "napi:ace_napi",
-  ]
+  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
 
   part_name = "netstack"
   subsystem_name = "communication"
