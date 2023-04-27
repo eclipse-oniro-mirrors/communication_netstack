@@ -1,6 +1,6 @@
 {
     "name": "@ohos/netstack",
-    "version": "4.0",
+    "version": "4.0.0",
     "description": "net stack service",
     "publishAs": "code-segment",
     "homePage": "https://gitee.com/openharmony",
