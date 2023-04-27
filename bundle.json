@@ -26,7 +26,7 @@
         "adapted_system_type": [
             "standard"
         ],
-        "rom": "2MB",
+        "rom": "3MB",
         "ram": "5MB",
         "deps": {
             "components": [
