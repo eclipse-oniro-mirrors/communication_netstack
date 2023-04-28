@@ -238,14 +238,14 @@ public:
     {
         (void)addr;
 
-        sa_family_t family;
-        socklen_t len = sizeof(family);
-        int ret = getsockname(sock, reinterpret_cast<sockaddr *>(&family), &len);
+        sockaddr sockAddr;
+        socklen_t len = sizeof(sockaddr);
+        int ret = getsockname(sock, &sockAddr, &len);
         if (ret < 0) {
             return;
         }
 
-        if (family == AF_INET) {
+        if (sockAddr.sa_family == AF_INET) {
             sockaddr_in addr4 = {0};
             socklen_t len4 = sizeof(sockaddr_in);
 
@@ -255,7 +255,7 @@ public:
             }
             OnRecvMessage(manager_, data, dataLen, reinterpret_cast<sockaddr *>(&addr4));
             return;
-        } else if (family == AF_INET6) {
+        } else if (sockAddr.sa_family == AF_INET6) {
             sockaddr_in6 addr6 = {0};
             socklen_t len6 = sizeof(sockaddr_in6);
 
@@ -718,22 +718,22 @@ bool ExecTcpSend(TcpSendContext *context)
     (void)encoding;
     /* no use for now */
 
-    sa_family_t family;
-    socklen_t len = sizeof(sa_family_t);
-    if (getsockname(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&family), &len) < 0) {
+    sockaddr sockAddr;
+    socklen_t len = sizeof(sockaddr);
+    if (getsockname(context->GetSocketFd(), &sockAddr, &len) < 0) {
         NETSTACK_LOGE("get sock name failed");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
     bool connected = false;
-    if (family == AF_INET) {
+    if (sockAddr.sa_family == AF_INET) {
         sockaddr_in addr4 = {0};
         socklen_t len4 = sizeof(addr4);
         int ret = getpeername(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr4), &len4);
         if (ret >= 0 && addr4.sin_port != 0) {
             connected = true;
         }
-    } else if (family == AF_INET6) {
+    } else if (sockAddr.sa_family == AF_INET6) {
         sockaddr_in6 addr6 = {0};
         socklen_t len6 = sizeof(addr6);
         int ret = getpeername(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr6), &len6);
@@ -784,9 +784,9 @@ bool ExecGetState(GetStateContext *context)
         return true;
     }
 
-    sa_family_t family;
-    socklen_t len = sizeof(family);
-    int ret = getsockname(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&family), &len);
+    sockaddr sockAddr;
+    socklen_t len = sizeof(sockaddr);
+    int ret = getsockname(context->GetSocketFd(), &sockAddr, &len);
     if (ret < 0) {
         context->SetErrorCode(errno);
         return false;
@@ -796,10 +796,10 @@ bool ExecGetState(GetStateContext *context)
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
     socklen_t addrLen;
-    if (family == AF_INET) {
+    if (sockAddr.sa_family == AF_INET) {
         addr = reinterpret_cast<sockaddr *>(&addr4);
         addrLen = sizeof(addr4);
-    } else if (family == AF_INET6) {
+    } else if (sockAddr.sa_family == AF_INET6) {
         addr = reinterpret_cast<sockaddr *>(&addr6);
         addrLen = sizeof(addr6);
     }
@@ -817,7 +817,7 @@ bool ExecGetState(GetStateContext *context)
         return false;
     }
 
-    SetIsBound(family, context, &addr4, &addr6);
+    SetIsBound(sockAddr.sa_family, context, &addr4, &addr6);
 
     if (opt != SOCK_STREAM) {
         return true;
@@ -825,14 +825,8 @@ bool ExecGetState(GetStateContext *context)
 
     (void)memset_s(addr, addrLen, 0, addrLen);
     len = addrLen;
-    ret = getpeername(context->GetSocketFd(), addr, &len);
-    if (ret < 0) {
-        context->SetErrorCode(errno);
-        return false;
-    }
-
-    SetIsConnected(family, context, &addr4, &addr6);
-
+    (void)getpeername(context->GetSocketFd(), addr, &len);
+    SetIsConnected(sockAddr.sa_family, context, &addr4, &addr6);
     return true;
 }
 
@@ -843,15 +837,15 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
         return false;
     }
 
-    sa_family_t family;
-    socklen_t len = sizeof(family);
-    int ret = getsockname(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&family), &len);
+    sockaddr sockAddr;
+    socklen_t len = sizeof(sockaddr);
+    int ret = getsockname(context->GetSocketFd(), &sockAddr, &len);
     if (ret < 0) {
         context->SetErrorCode(errno);
         return false;
     }
 
-    if (family == AF_INET) {
+    if (sockAddr.sa_family == AF_INET) {
         sockaddr_in addr4 = {0};
         socklen_t len4 = sizeof(sockaddr_in);
 
@@ -867,10 +861,10 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
             return false;
         }
         context->address_.SetAddress(address);
-        context->address_.SetFamilyBySaFamily(family);
+        context->address_.SetFamilyBySaFamily(sockAddr.sa_family);
         context->address_.SetPort(ntohs(addr4.sin_port));
         return true;
-    } else if (family == AF_INET6) {
+    } else if (sockAddr.sa_family == AF_INET6) {
         sockaddr_in6 addr6 = {0};
         socklen_t len6 = sizeof(sockaddr_in6);
 
@@ -886,7 +880,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
             return false;
         }
         context->address_.SetAddress(address);
-        context->address_.SetFamilyBySaFamily(family);
+        context->address_.SetFamilyBySaFamily(sockAddr.sa_family);
         context->address_.SetPort(ntohs(addr6.sin6_port));
         return true;
     }

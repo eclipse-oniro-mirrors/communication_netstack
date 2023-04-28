@@ -744,9 +744,9 @@ void TLSSocket::Close(const OHOS::NetStack::CloseCallback &callback)
 
 void TLSSocket::GetRemoteAddress(const OHOS::NetStack::GetRemoteAddressCallback &callback)
 {
-    sa_family_t family;
-    socklen_t len = sizeof(family);
-    int ret = getsockname(sockFd_, reinterpret_cast<sockaddr *>(&family), &len);
+    sockaddr sockAddr;
+    socklen_t len = sizeof(sockaddr);
+    int ret = getsockname(sockFd_, &sockAddr, &len);
     if (ret < 0) {
         int resErr = ConvertErrno();
         NETSTACK_LOGE("getsockname failed errno %{public}d", resErr);
@@ -755,9 +755,9 @@ void TLSSocket::GetRemoteAddress(const OHOS::NetStack::GetRemoteAddressCallback 
         return;
     }
 
-    if (family == AF_INET) {
+    if (sockAddr.sa_family == AF_INET) {
         GetIp4RemoteAddress(callback);
-    } else if (family == AF_INET6) {
+    } else if (sockAddr.sa_family == AF_INET6) {
         GetIp6RemoteAddress(callback);
     }
 }
@@ -829,12 +829,12 @@ void TLSSocket::GetState(const OHOS::NetStack::GetStateCallback &callback)
         CallGetStateCallback(ConvertErrno(), state, callback);
         return;
     }
-    sa_family_t family;
-    socklen_t len = sizeof(family);
+    sockaddr sockAddr;
+    socklen_t len = sizeof(sockaddr);
     SocketStateBase state;
-    int ret = getsockname(sockFd_, reinterpret_cast<sockaddr *>(&family), &len);
+    int ret = getsockname(sockFd_, &sockAddr, &len);
     state.SetIsBound(ret == 0);
-    ret = getpeername(sockFd_, reinterpret_cast<sockaddr *>(&family), &len);
+    ret = getpeername(sockFd_, &sockAddr, &len);
     state.SetIsConnected(ret == 0);
     CallGetStateCallback(TLSSOCKET_SUCCESS, state, callback);
 }
