@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -58,6 +58,8 @@ public:
 
     void SetSpecifiedHttpProxy(const std::string &host, int32_t port, const std::string &exclusionList);
 
+    void SetCaPath(const std::string &SetCaPath);
+
     [[nodiscard]] const std::string &GetUrl() const;
 
     [[nodiscard]] const std::string &GetMethod() const;
@@ -85,6 +87,8 @@ public:
     [[nodiscard]] UsingHttpProxyType GetUsingHttpProxyType() const;
 
     void GetSpecifiedHttpProxy(std::string &host, int32_t &port, std::string &exclusionList);
+
+    [[nodiscard]] const std::string &GetCaPath() const;
 
 private:
     std::string url_;
@@ -114,6 +118,8 @@ private:
     int32_t httpProxyPort_;
 
     std::string httpProxyExclusions_;
+
+    std::string caPath_;
 };
 } // namespace OHOS::NetStack::Http
 

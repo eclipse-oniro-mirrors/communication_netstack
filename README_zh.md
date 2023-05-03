@@ -66,12 +66,18 @@
 发起请求可选参数的类型和取值范围。
 
 | 参数           | 类型                                 | 必填 | 说明                                                       |
-| -------------- | ------------------------------------ | ---- | ---------------------------------------------------------- |
-| method         | [RequestMethod](#requestmethod) | 否   | 请求方式。                                                 |
-| extraData      | string &#124; Object &#124; ArrayBuffer<sup>8+</sup> | 否   | 发送请求的额外数据。<br />- 当HTTP请求为POST、PUT等方法时，此字段为HTTP请求的content，支持类型为string和ArrayBuffer<sup>8+</sup>。<br />- 当HTTP请求为GET、OPTIONS、DELETE、TRACE、CONNECT等方法时，此字段为HTTP请求的参数补充，参数内容会拼接到URL中进行发送，支持类型为string和Object。<br />- 开发者传入string对象，开发者需要自行编码，将编码后的string传入。<sup>8+</sup> |
-| header         | Object                               | 否   | HTTP请求头字段。默认{'Content-Type': 'application/json'}。 |
-| readTimeout    | number                               | 否   | 读取超时时间。单位为毫秒（ms），默认为60000ms。            |
-| connectTimeout | number                               | 否   | 连接超时时间。单位为毫秒（ms），默认为60000ms。            |
+| -------------- | --------------------------------------------- | ---- | ------------------------------------------------------------ |
+| method         | [RequestMethod](#requestmethod)               | 否   | 请求方式，默认为GET。                                                   |
+| extraData      | string<sup>6+</sup> \| Object<sup>6+</sup> \| ArrayBuffer<sup>8+</sup> | 否   | 发送请求的额外数据，默认无此字段。<br />- 当HTTP请求为POST、PUT等方法时，此字段为HTTP请求的content，以UTF-8编码形式作为请求体。<sup>6+</sup><br />- 当HTTP请求为GET、OPTIONS、DELETE、TRACE、CONNECT等方法时，此字段为HTTP请求参数的补充。开发者需传入Encode编码后的string类型参数，Object类型的参数无需预编码，参数内容会拼接到URL中进行发送；ArrayBuffer类型的参数不会做拼接处理。<sup>6+</sup> |
+| expectDataType<sup>9+</sup>  | [HttpDataType](#httpdatatype)  | 否   | 指定返回数据的类型，默认无此字段。如果设置了此参数，系统将优先返回指定的类型。 |
+| usingCache<sup>9+</sup>      | boolean                         | 否   | 是否使用缓存，默认为true。   |
+| priority<sup>9+</sup>        | number                          | 否   | 优先级，范围[1,1000]，默认是1。                           |
+| header                       | Object                          | 否   | HTTP请求头字段。默认{'Content-Type': 'application/json'}。   |
+| readTimeout                  | number                          | 否   | 读取超时时间。单位为毫秒（ms），默认为60000ms。<br />设置为0表示不会出现超时情况。 |
+| connectTimeout               | number                          | 否   | 连接超时时间。单位为毫秒（ms），默认为60000ms。              |
+| usingProtocol<sup>9+</sup>   | [HttpProtocol](#httpprotocol)  | 否   | 使用协议。默认值由系统自动指定。                             |
+| usingProxy<sup>10+</sup>     | boolean \| Object               | 否   | 是否使用HTTP代理，默认为false，不使用代理。<br />- 当usingProxy为布尔类型true时，使用默认网络代理。<br />- 当usingProxy为object类型时，使用指定网络代理。                                |
+| caPath<sup>10+</sup>         | string                          | 否   | 如果设置了此参数，系统将使用用户指定路径的CA证书，否则将使用系统预设CA证书。      |
 
 #### RequestMethod
 
@@ -140,7 +146,23 @@ request方法回调函数的返回值类型。
 | responseCode         | [ResponseCode](#responsecode) &#124; number      | 是   | 回调函数执行成功时，此字段为[ResponseCode](#responsecode)。若执行失败，错误码将会从AsyncCallback中的err字段返回。错误码如下：<br />- 200：通用错误<br />- 202：参数错误<br />- 300：I/O错误 |
 | header               | Object                                       | 是   | 发起http请求返回来的响应头。当前返回的是JSON格式字符串，如需具体字段内容，需开发者自行解析。常见字段及解析方式如下：<br/>- Content-Type：header['Content-Type']；<br />- Status-Line：header['Status-Line']；<br />- Date：header.Date/header['Date']；<br />- Server：header.Server/header['Server']； |
 | cookies<sup>8+</sup> | string                                       | 是   | 服务器返回的 cookies。                                       |
+#### HttpDataType
 
+http的数据类型。
+
+| 名称 | 值 | 说明     |
+| ------------------  | -- | ----------- |
+| STRING              | 0 | 字符串类型。 |
+| OBJECT              | 1 | 对象类型。    |
+| ARRAY_BUFFER        | 2 | 二进制数组类型。|
+
+#### HttpProtocol
+http协议版本。
+
+| 名称  | 说明     |
+| :-------- | :----------- |
+| HTTP1_1   |  协议http1.1  |
+| HTTP2     |  协议http2    |
 #### 示例
 
 ```javascript

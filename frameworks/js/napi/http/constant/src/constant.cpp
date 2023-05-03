@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -41,6 +41,7 @@ const char *const HttpConstant::PARAM_KEY_EXPECT_DATA_TYPE = "expectDataType";
 const char *const HttpConstant::PARAM_KEY_PRIORITY = "priority";
 
 const char *const HttpConstant::PARAM_KEY_USING_HTTP_PROXY = "usingProxy";
+const char *const HttpConstant::PARAM_KEY_CA_PATH = "caPath";
 
 const char *const HttpConstant::HTTP_PROXY_KEY_HOST = "host";
 const char *const HttpConstant::HTTP_PROXY_KEY_PORT = "port";
