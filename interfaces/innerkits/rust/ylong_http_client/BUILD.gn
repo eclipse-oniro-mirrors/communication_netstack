@@ -22,9 +22,9 @@ ohos_rust_shared_library("lib") {
     edition = "2021"
     clippy_lints = "none"
     deps = [
-        "//third_party/rust/crates/reqwest:lib",
-        "//third_party/rust/crates/tokio/tokio-util:lib",
-        "//third_party/rust/crates/tokio/tokio:lib",
+        "//third_party/rust/reqwest:lib",
+        "//third_party/rust/tokio-util:lib",
+        "//third_party/rust/tokio:lib",
     ]
     features = [
         "default",

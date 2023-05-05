@@ -14,13 +14,14 @@
  */
 
 mod builder;
-mod error;
+mod multipart;
 mod operator;
 
-pub use builder::{UploaderBuilder, WantsOperator};
-pub use error::UploadError;
+pub use builder::{UploaderBuilder, WantsReader};
+pub use multipart::{MultiPart, Part};
 pub use operator::{Console, UploadOperator};
-use reqwest::Body;
+
+use crate::HttpClientError;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::Duration;
@@ -34,13 +35,8 @@ use tokio_util::io::ReaderStream;
 /// needs to use a structure that implements [`UploadOperator`] trait to read
 /// the file or the slice and convert it into request body.
 ///
-/// The `UploadOperator` trait provides two kinds of methods - [`upload`]
-/// and [`progress`], where:
-///
-/// - `upload` methods are responsible for reading the file or slice and
-/// converting it into a request body.
-///
-/// - `progress` methods are responsible for progress display.
+/// The `UploadOperator` trait provides a [`progress`] method which is
+/// responsible for progress display.
 ///
 /// You only need to provide a structure that implements the `UploadOperator`
 /// trait to complete the upload process.
@@ -50,7 +46,6 @@ use tokio_util::io::ReaderStream;
 /// `Uploader::console` to build a `Uploader` which based on it.
 ///
 /// [`UploadOperator`]: UploadOperator
-/// [`upload`]: UploadOperator::download
 /// [`progress`]: UploadOperator::progress
 ///
 /// # Examples
@@ -69,47 +64,39 @@ use tokio_util::io::ReaderStream;
 /// # use std::pin::Pin;
 /// # use std::task::{Context, Poll};
 /// # use tokio::io::ReadBuf;
-/// # use ylong_http_client::async_impl::{Uploader, UploadError, UploadOperator};
+/// # use ylong_http_client::async_impl::{Uploader, UploadOperator};
 /// # use ylong_http_client::{Response, SpeedLimit, Timeout};
+/// # use ylong_http_client::HttpClientError;
 ///
 /// # async fn upload_and_show_progress(response: Response) {
 /// // Customizes your own `UploadOperator`.
 /// struct MyUploadOperator;
 ///
 /// impl UploadOperator for MyUploadOperator {
-///     fn poll_upload(
-///         self: Pin<&mut Self>,
-///         cx: &mut Context<'_>,
-///         buf: &mut ReadBuf<'_>
-///     ) -> Poll<Result<(), UploadError>> {
-///         todo!()
-///     }
-///
 ///     fn poll_progress(
 ///         self: Pin<&mut Self>,
 ///         cx: &mut Context<'_>,
 ///         uploaded: u64,
 ///         total: Option<u64>
-///     ) -> Poll<Result<(), UploadError>> {
+///     ) -> Poll<Result<(), HttpClientError>> {
 ///         todo!()
 ///     }
 /// }
 ///
 /// // Creates a default `Uploader` based on `MyUploadOperator`.
 /// // Configures your uploader by using `UploaderBuilder`.
-/// let uploader = Uploader::builder().operator(MyUploadOperator).build();
+/// let uploader = Uploader::builder().reader("HelloWorld".as_bytes()).operator(MyUploadOperator).build();
 /// # }
 /// ```
-pub struct Uploader<T> {
+pub struct Uploader<R, T> {
+    reader: R,
     operator: T,
     config: UploadConfig,
     info: Option<UploadInfo>,
 }
 
-impl Uploader<()> {
+impl<R: AsyncRead + Unpin> Uploader<R, Console> {
     /// Creates an `Uploader` with a `Console` operator which displays process on console.
-    ///
-    /// The `Console` operator needs a body which implements `AsyncRead` trait.
     ///
     /// # Examples
     ///
@@ -118,10 +105,12 @@ impl Uploader<()> {
     ///
     /// let uploader = Uploader::console("HelloWorld".as_bytes());
     /// ```
-    pub fn console<R: AsyncRead + Unpin>(reader: R) -> Uploader<Console<R>> {
-        UploaderBuilder::new().console(reader).build()
+    pub fn console(reader: R) -> Uploader<R, Console> {
+        UploaderBuilder::new().reader(reader).console().build()
     }
+}
 
+impl Uploader<(), ()> {
     /// Creates an `UploaderBuilder` and configures uploader step by step.
     ///
     /// # Examples
@@ -131,13 +120,16 @@ impl Uploader<()> {
     ///
     /// let builder = Uploader::builder();
     /// ```
-    pub fn builder() -> UploaderBuilder<WantsOperator> {
+    pub fn builder() -> UploaderBuilder<WantsReader> {
         UploaderBuilder::new()
     }
 }
 
-impl<U: UploadOperator + Unpin> Uploader<U> {
-    fn show_progress_now(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), UploadError>> {
+impl<R, T> Uploader<R, T>
+where
+    T: UploadOperator + Unpin,
+{
+    fn show_progress_now(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), HttpClientError>> {
         self.show_progress_with_duration(cx, Duration::default())
     }
 
@@ -145,7 +137,7 @@ impl<U: UploadOperator + Unpin> Uploader<U> {
         &mut self,
         cx: &mut Context<'_>,
         duration: Duration,
-    ) -> Poll<Result<(), UploadError>> {
+    ) -> Poll<Result<(), HttpClientError>> {
         let info = self.info.as_mut().unwrap();
         let now = Instant::now();
         if info.last_progress.duration_since(now) >= duration {
@@ -165,7 +157,11 @@ impl<U: UploadOperator + Unpin> Uploader<U> {
     }
 }
 
-impl<U: UploadOperator + Unpin> AsyncRead for Uploader<U> {
+impl<R, T> AsyncRead for Uploader<R, T>
+where
+    R: AsyncRead + Unpin,
+    T: UploadOperator + Unpin,
+{
     fn poll_read(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
@@ -178,18 +174,24 @@ impl<U: UploadOperator + Unpin> AsyncRead for Uploader<U> {
         }
 
         let filled = buf.filled().len();
-        match Pin::new(&mut self.operator).poll_upload(cx, buf) {
+        match Pin::new(&mut self.reader).poll_read(cx, buf) {
             Poll::Ready(Ok(_)) => {}
-            Poll::Ready(Err(_)) => return Poll::Ready(Err(std::io::ErrorKind::Other.into())),
-            Poll::Pending => return Poll::Pending,
+            x => return x,
         }
 
         let new_filled = buf.filled().len();
+
+        let mut progress = false;
         self.info.as_mut().unwrap().uploaded_bytes += (new_filled - filled) as u64;
-        match if filled != new_filled {
-            self.show_progress_with_duration(cx, UPLOADER_PROGRESS_DURATION)
-        } else {
+
+        if let Some(total_size) = self.config.total_bytes {
+            progress = total_size == self.info.as_ref().unwrap().uploaded_bytes;
+        }
+
+        match if progress {
             self.show_progress_now(cx)
+        } else {
+            self.show_progress_with_duration(cx, UPLOADER_PROGRESS_DURATION)
         } {
             Poll::Ready(Ok(())) => Poll::Ready(Ok(())),
             Poll::Ready(Err(_)) => Poll::Ready(Err(std::io::ErrorKind::Other.into())),
@@ -198,9 +200,19 @@ impl<U: UploadOperator + Unpin> AsyncRead for Uploader<U> {
     }
 }
 
-impl<U: UploadOperator + Unpin + Send + Sync + 'static> From<Uploader<U>> for Body {
-    fn from(value: Uploader<U>) -> Self {
-        Body::wrap_stream(ReaderStream::new(value))
+impl<R, U> From<Uploader<R, U>> for reqwest::Body
+where
+    R: AsyncRead + Send + Sync + Unpin + 'static,
+    U: UploadOperator + Unpin + Send + Sync + 'static,
+{
+    fn from(value: Uploader<R, U>) -> Self {
+        reqwest::Body::wrap_stream(ReaderStream::new(value))
+    }
+}
+
+impl<R, T> AsRef<R> for Uploader<R, T> {
+    fn as_ref(&self) -> &R {
+        &self.reader
     }
 }
 

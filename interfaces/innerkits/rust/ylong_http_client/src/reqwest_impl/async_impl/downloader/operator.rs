@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-use super::DownloadError;
+use crate::HttpClientError;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -30,7 +30,7 @@ use std::task::{Context, Poll};
 /// ```
 /// # use std::pin::Pin;
 /// # use std::task::{Context, Poll};
-/// # use ylong_http_client::async_impl::{DownloadError, DownloadOperator};
+/// # use ylong_http_client::async_impl::DownloadOperator;
 /// # use ylong_http_client::HttpClientError;
 ///
 /// // Creates your own operator.
@@ -42,7 +42,7 @@ use std::task::{Context, Poll};
 ///         self: Pin<&mut Self>,
 ///         cx: &mut Context<'_>,
 ///         data: &[u8],
-///     ) -> Poll<Result<usize, DownloadError>> {
+///     ) -> Poll<Result<usize, HttpClientError>> {
 ///         todo!()
 ///     }
 ///
@@ -51,7 +51,7 @@ use std::task::{Context, Poll};
 ///         cx: &mut Context<'_>,
 ///         downloaded: u64,
 ///         total: Option<u64>
-///     ) -> Poll<Result<(), DownloadError>> {
+///     ) -> Poll<Result<(), HttpClientError>> {
 ///         // Writes your customize method.
 ///         todo!()
 ///     }
@@ -64,17 +64,19 @@ pub trait DownloadOperator {
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         data: &[u8],
-    ) -> Poll<Result<usize, DownloadError>>;
+    ) -> Poll<Result<usize, HttpClientError>>;
 
     /// The progress method that you need to implement. You need to perform some
     /// operations in this method based on the number of bytes downloaded and
     /// the total file size.
     fn poll_progress(
         self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        downloaded: u64,
-        total: Option<u64>,
-    ) -> Poll<Result<(), DownloadError>>;
+        _cx: &mut Context<'_>,
+        _downloaded: u64,
+        _total: Option<u64>,
+    ) -> Poll<Result<(), HttpClientError>> {
+        Poll::Ready(Ok(()))
+    }
 
     /// Creates a `DownloadFuture`.
     fn download<'a, 'b>(&'a mut self, data: &'b [u8]) -> DownloadFuture<'a, 'b, Self>
@@ -108,7 +110,7 @@ where
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         data: &[u8],
-    ) -> Poll<Result<usize, DownloadError>> {
+    ) -> Poll<Result<usize, HttpClientError>> {
         Pin::new(&mut **self).poll_download(cx, data)
     }
 
@@ -117,7 +119,7 @@ where
         cx: &mut Context<'_>,
         downloaded: u64,
         total: Option<u64>,
-    ) -> Poll<Result<(), DownloadError>> {
+    ) -> Poll<Result<(), HttpClientError>> {
         Pin::new(&mut **self).poll_progress(cx, downloaded, total)
     }
 }
@@ -132,7 +134,7 @@ impl<'a, 'b, T> Future for DownloadFuture<'a, 'b, T>
 where
     T: DownloadOperator + Unpin + 'a,
 {
-    type Output = Result<usize, DownloadError>;
+    type Output = Result<usize, HttpClientError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let fut = self.get_mut();
@@ -151,7 +153,7 @@ impl<'a, T> Future for ProgressFuture<'a, T>
 where
     T: DownloadOperator + Unpin + 'a,
 {
-    type Output = Result<(), DownloadError>;
+    type Output = Result<(), HttpClientError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let fut = self.get_mut();
@@ -167,7 +169,7 @@ impl DownloadOperator for Console {
         self: Pin<&mut Self>,
         _cx: &mut Context<'_>,
         data: &[u8],
-    ) -> Poll<Result<usize, DownloadError>> {
+    ) -> Poll<Result<usize, HttpClientError>> {
         println!("{:?}", data);
         Poll::Ready(Ok(data.len()))
     }
@@ -177,7 +179,7 @@ impl DownloadOperator for Console {
         _cx: &mut Context<'_>,
         downloaded: u64,
         _total: Option<u64>,
-    ) -> Poll<Result<(), DownloadError>> {
+    ) -> Poll<Result<(), HttpClientError>> {
         println!("progress: download-{} bytes", downloaded);
         Poll::Ready(Ok(()))
     }

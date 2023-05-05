@@ -13,39 +13,35 @@
  * limitations under the License.
  */
 
-//! Asynchronous HTTP client example.
+//! Uses an Asynchronous HTTP client to send a `POST` request with multipart body.
 
-use ylong_http_client::async_impl::{Client, Downloader, Uploader};
-use ylong_http_client::{Method, Proxy, Redirect, Request, Timeout, TlsVersion};
+use ylong_http_client::async_impl::{Client, Downloader, MultiPart, Part, Uploader};
+use ylong_http_client::{Method, Proxy, Redirect, Request, TlsVersion};
 
 #[tokio::main]
 async fn main() {
     // Customizes your HTTP client.
-    let client = Client::builder()
-        .http1_only()
-        .request_timeout(Timeout::from_secs(9))
-        .connect_timeout(Timeout::from_secs(9))
-        .max_tls_version(TlsVersion::TLS_1_2)
-        .min_tls_version(TlsVersion::TLS_1_2)
-        .redirect(Redirect::none())
-        .proxy(Proxy::none())
-        .build()
-        .unwrap();
+    let client = Client::builder().build().unwrap();
 
-    // Uses `Uploader` to upload the request body.
-    let uploader = Uploader::console("HelloWorld".as_bytes());
+    // Customize your `Multipart` messages.
+    let multipart = MultiPart::new()
+        .part(Part::new().name("name").body("xiaoming"))    // Adds your parts.
+        .part(Part::new().name("password").body("123456789"))
+        .part(Part::new().name("123").length(Some(10)).stream("HelloWorld".as_bytes()));
+
+    // Uses `Uploader` to upload the `Multipart` with progress message displayed on console.
+    let uploader = Uploader::builder().multipart(multipart).console().build();
 
     // Customizes your HTTP request.
     let request = Request::builder()
-        .method(Method::GET)
+        .method(Method::POST)
         .url("http://www.example.com")
-        .header("transfer-encoding", "chunked")
-        .build(uploader)
+        .multipart(uploader)    // Sets the multipart body.
         .unwrap();
 
     // Sends your HTTP request through the client.
     let response = client.request(request).await.unwrap();
 
-    // Uses `Downloader` to download the response body.
+    // Uses `Downloader` to download the response body and display message on console.
     let _ = Downloader::console(response).download().await;
 }

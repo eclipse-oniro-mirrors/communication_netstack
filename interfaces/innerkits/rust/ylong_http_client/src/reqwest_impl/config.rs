@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+use crate::{ErrorKind, HttpClientError};
 use std::cmp;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
@@ -234,7 +235,10 @@ impl Proxy {
     /// let proxy = Proxy::http("http://proxy.example.com");
     /// ```
     pub fn http(url: &str) -> ProxyBuilder {
-        ProxyBuilder(reqwest::Proxy::http(url).map_err(|_| InvalidProxy))
+        ProxyBuilder(
+            reqwest::Proxy::http(url)
+                .map_err(|e| HttpClientError::new_with_cause(ErrorKind::Build, Some(e))),
+        )
     }
 
     /// Creates a `ProxyBuilder`. This builder can help you construct a proxy
@@ -248,7 +252,10 @@ impl Proxy {
     /// let proxy = Proxy::https("https://proxy.example.com");
     /// ```
     pub fn https(url: &str) -> ProxyBuilder {
-        ProxyBuilder(reqwest::Proxy::https(url).map_err(|_| InvalidProxy))
+        ProxyBuilder(
+            reqwest::Proxy::https(url)
+                .map_err(|e| HttpClientError::new_with_cause(ErrorKind::Build, Some(e))),
+        )
     }
 
     /// Creates a `ProxyBuilder`. This builder can help you construct a proxy
@@ -262,7 +269,10 @@ impl Proxy {
     /// let proxy = Proxy::all("http://proxy.example.com");
     /// ```
     pub fn all(url: &str) -> ProxyBuilder {
-        ProxyBuilder(reqwest::Proxy::all(url).map_err(|_| InvalidProxy))
+        ProxyBuilder(
+            reqwest::Proxy::all(url)
+                .map_err(|e| HttpClientError::new_with_cause(ErrorKind::Build, Some(e))),
+        )
     }
 
     pub(crate) fn inner(self) -> Option<reqwest::Proxy> {
@@ -281,7 +291,7 @@ impl Proxy {
 ///     .basic_auth("Aladdin", "open sesame")
 ///     .build();
 /// ```
-pub struct ProxyBuilder(Result<reqwest::Proxy, InvalidProxy>);
+pub struct ProxyBuilder(Result<reqwest::Proxy, HttpClientError>);
 
 impl ProxyBuilder {
     /// Sets the `Proxy-Authorization` header using Basic auth.
@@ -311,27 +321,10 @@ impl ProxyBuilder {
     ///
     /// let proxy = Proxy::all("http://proxy.example.com").build();
     /// ```
-    pub fn build(self) -> Result<Proxy, InvalidProxy> {
+    pub fn build(self) -> Result<Proxy, HttpClientError> {
         Ok(Proxy(Some(self.0?)))
     }
 }
-
-/// Error that occurs when an illegal `Proxy` is constructed.
-pub struct InvalidProxy;
-
-impl Debug for InvalidProxy {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("InvalidProxy").finish()
-    }
-}
-
-impl Display for InvalidProxy {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("Invalid Request")
-    }
-}
-
-impl Error for InvalidProxy {}
 
 /// Represents a server X509 certificates.
 ///
@@ -362,15 +355,17 @@ impl Certificate {
     ///
     /// # fn cert() {
     /// let file = std::fs::read("./cert.pem").unwrap();
-    /// let cert = reqwest::Certificate::from_pem(&buf);
+    /// let cert = reqwest::Certificate::from_pem(&file);
     /// # }
     /// ```
-    pub fn from_pem(pem: &[u8]) -> Result<Certificate, InvalidCertificate> {
+    pub fn from_pem(pem: &[u8]) -> Result<Certificate, HttpClientError> {
         const CERT_BEGIN: &str = "-----BEGIN CERTIFICATE-----";
         const CERT_END: &str = "-----END CERTIFICATE-----";
 
         let mut inner = Vec::new();
-        let str = std::str::from_utf8(pem).map_err(|_| InvalidCertificate)?;
+        let str = std::str::from_utf8(pem).map_err(|_| {
+            HttpClientError::new_with_cause(ErrorKind::Build, Some(InvalidCertificate))
+        })?;
         let mut pos = 0;
         while pos < str.len() {
             let st = match str[pos..].find(CERT_BEGIN) {
@@ -384,10 +379,19 @@ impl Certificate {
             };
 
             let slice = str[pos + st..pos + st + ed + CERT_END.len()].as_bytes();
-            let cert = reqwest::Certificate::from_pem(slice).map_err(|_| InvalidCertificate)?;
+            let cert = reqwest::Certificate::from_pem(slice)
+                .map_err(|e| HttpClientError::new_with_cause(ErrorKind::Build, Some(e)))?;
             inner.push(cert);
             pos += st + ed + CERT_END.len();
         }
+
+        if inner.is_empty() {
+            return Err(HttpClientError::new_with_cause(
+                ErrorKind::Build,
+                Some(InvalidCertificate),
+            ));
+        }
+
         Ok(Self { inner })
     }
 
@@ -396,8 +400,7 @@ impl Certificate {
     }
 }
 
-/// Error that occurs when an illegal `Certificate` is constructed.
-pub struct InvalidCertificate;
+struct InvalidCertificate;
 
 impl Debug for InvalidCertificate {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

@@ -13,18 +13,16 @@
  * limitations under the License.
  */
 
-use super::UploadError;
+use crate::HttpClientError;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use tokio::io::{AsyncRead, ReadBuf};
-
 /// A `UploadOperator` represents structures that can read local data to socket.
 ///
 /// You can implement `UploadOperator` for your structures and pass it to a
-/// `Uploader`. Then the `Uploader` can use the `upload` and `progress`
-/// methods to help you upload the local data.
+/// `Uploader`. Then the `Uploader` can use the `progress` methods to help you
+/// upload the local data.
 ///
 /// # Examples
 ///
@@ -32,59 +30,35 @@ use tokio::io::{AsyncRead, ReadBuf};
 /// # use std::pin::Pin;
 /// # use std::task::{Context, Poll};
 /// # use tokio::io::ReadBuf;
-/// # use ylong_http_client::async_impl::{UploadError, UploadOperator};
+/// # use ylong_http_client::async_impl::UploadOperator;
+/// # use ylong_http_client::HttpClientError;
 ///
 /// // Creates your own operator.
 /// struct MyUploadOperator;
 ///
 /// // Implements `DownloaderOperator` for your structures.
 /// impl UploadOperator for MyUploadOperator {
-///     fn poll_upload(
-///         self: Pin<&mut Self>,
-///         cx: &mut Context<'_>,
-///         buf: &mut ReadBuf<'_>
-///     ) -> Poll<Result<(), UploadError>> {
-///         todo!()
-///     }
-///
 ///     fn poll_progress(
 ///         self: Pin<&mut Self>,
 ///         cx: &mut Context<'_>,
 ///         uploaded: u64,
 ///         total: Option<u64>
-///     ) -> Poll<Result<(), UploadError>> {
+///     ) -> Poll<Result<(), HttpClientError>> {
 ///         todo!()
 ///     }
 /// }
 /// ```
 pub trait UploadOperator {
-    /// The upload method that you need to implement. You need to read the local
-    /// data to the specified buf in this method.
-    fn poll_upload(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<Result<(), UploadError>>;
-
     /// The progress method that you need to implement. You need to perform some
     /// operations in this method based on the number of bytes uploaded and
     /// the total size.
     fn poll_progress(
         self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        uploaded: u64,
-        total: Option<u64>,
-    ) -> Poll<Result<(), UploadError>>;
-
-    /// Creates a `Upload` Future.
-    fn upload<'a, 'b>(&'a mut self, buf: &'b mut [u8]) -> UploadFuture<'a, 'b, Self>
-    where
-        Self: Unpin + Sized + 'a + 'b,
-    {
-        UploadFuture {
-            operator: self,
-            buf: ReadBuf::new(buf),
-        }
+        _cx: &mut Context<'_>,
+        _uploaded: u64,
+        _total: Option<u64>,
+    ) -> Poll<Result<(), HttpClientError>> {
+        Poll::Ready(Ok(()))
     }
 
     /// Creates a `Progress` Future.
@@ -104,39 +78,13 @@ impl<T> UploadOperator for &mut T
 where
     T: UploadOperator + Unpin,
 {
-    fn poll_upload(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<Result<(), UploadError>> {
-        Pin::new(&mut **self).poll_upload(cx, buf)
-    }
-
     fn poll_progress(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         uploaded: u64,
         total: Option<u64>,
-    ) -> Poll<Result<(), UploadError>> {
+    ) -> Poll<Result<(), HttpClientError>> {
         Pin::new(&mut **self).poll_progress(cx, uploaded, total)
-    }
-}
-
-/// A future that execute `poll_upload` method.
-pub struct UploadFuture<'a, 'b, T> {
-    operator: &'a mut T,
-    buf: ReadBuf<'b>,
-}
-
-impl<'a, 'b, T> Future for UploadFuture<'a, 'b, T>
-where
-    T: UploadOperator + Unpin + 'a,
-{
-    type Output = Result<(), UploadError>;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let fut = self.get_mut();
-        Pin::new(&mut fut.operator).poll_upload(cx, &mut fut.buf)
     }
 }
 
@@ -151,7 +99,7 @@ impl<'a, T> Future for ProgressFuture<'a, T>
 where
     T: UploadOperator + Unpin + 'a,
 {
-    type Output = Result<(), UploadError>;
+    type Output = Result<(), HttpClientError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let fut = self.get_mut();
@@ -160,41 +108,16 @@ where
 }
 
 /// A default download operator that display messages on console.
-pub struct Console<T> {
-    reader: T,
-}
+pub struct Console;
 
-impl<T: AsyncRead + Unpin> Console<T> {
-    pub fn from_reader(reader: T) -> Self {
-        Self { reader }
-    }
-}
-
-impl<T: AsyncRead + Unpin> UploadOperator for Console<T> {
-    fn poll_upload(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<Result<(), UploadError>> {
-        match Pin::new(&mut self.reader).poll_read(cx, buf) {
-            Poll::Ready(Ok(())) => {
-                if !buf.filled().is_empty() {
-                    println!("{:?}", buf.filled());
-                }
-                Poll::Ready(Ok(()))
-            }
-            Poll::Ready(Err(e)) => Poll::Ready(Err(UploadError::io(e))),
-            Poll::Pending => Poll::Pending,
-        }
-    }
-
+impl UploadOperator for Console {
     fn poll_progress(
         self: Pin<&mut Self>,
         _cx: &mut Context<'_>,
         uploaded: u64,
         _total: Option<u64>,
-    ) -> Poll<Result<(), UploadError>> {
-        println!("progress: upload-{} bytes", uploaded);
+    ) -> Poll<Result<(), HttpClientError>> {
+        println!("\nprogress: upload-{} bytes", uploaded);
         Poll::Ready(Ok(()))
     }
 }

@@ -19,8 +19,8 @@ use reqwest::{Body, Response};
 mod downloader;
 mod uploader;
 
-pub use downloader::{DownloadError, DownloadOperator, Downloader, DownloaderBuilder};
-pub use uploader::{UploadError, UploadOperator, Uploader, UploaderBuilder};
+pub use downloader::{DownloadOperator, Downloader, DownloaderBuilder};
+pub use uploader::{MultiPart, Part, UploadOperator, Uploader, UploaderBuilder};
 
 /// An asynchronous `Client` to make requests with.
 ///
@@ -47,7 +47,7 @@ pub use uploader::{UploadError, UploadOperator, Uploader, UploaderBuilder};
 /// let client = Client::builder().build().unwrap();
 ///
 /// // Constructs your `Request`.
-/// let request = Request::builder().build("".as_bytes()).unwrap();
+/// let request = Request::builder().body("".as_bytes()).unwrap();
 ///
 /// // Sends your request through `Client` and gets the response.
 /// let _response = client.request(request).await;
@@ -93,7 +93,7 @@ impl Client {
     /// let client = Client::builder().build().unwrap();
     ///
     /// // Constructs your `Request`.
-    /// let request = Request::builder().build("".as_bytes()).unwrap();
+    /// let request = Request::builder().body("".as_bytes()).unwrap();
     ///
     /// // Sends your request through `Client` and gets the response.
     /// let _response = client.request(request).await;

@@ -14,17 +14,15 @@
  */
 
 mod builder;
-mod error;
 mod operator;
 
 use builder::WantsBody;
 use operator::Console;
 
 pub use builder::DownloaderBuilder;
-pub use error::DownloadError;
 pub use operator::{DownloadFuture, DownloadOperator, ProgressFuture};
 
-use crate::{SpeedLimit, Timeout};
+use crate::{ErrorKind, HttpClientError, SpeedLimit, Timeout};
 use reqwest::Response;
 use std::time::Duration;
 use tokio::time::Instant;
@@ -72,8 +70,8 @@ use tokio::time::Instant;
 /// ```no_run
 /// # use std::pin::Pin;
 /// # use std::task::{Context, Poll};
-/// # use ylong_http_client::async_impl::{Downloader, DownloadError, DownloadOperator};
-/// # use ylong_http_client::{Response, SpeedLimit, Timeout};
+/// # use ylong_http_client::async_impl::{Downloader, DownloadOperator};
+/// # use ylong_http_client::{HttpClientError, Response, SpeedLimit, Timeout};
 ///
 /// # async fn download_and_show_progress(response: Response) {
 /// // Customizes your own `DownloadOperator`.
@@ -84,7 +82,7 @@ use tokio::time::Instant;
 ///         self: Pin<&mut Self>,
 ///         cx: &mut Context<'_>,
 ///         data: &[u8],
-///     ) -> Poll<Result<usize, DownloadError>> {
+///     ) -> Poll<Result<usize, HttpClientError>> {
 ///         todo!()
 ///     }
 ///
@@ -93,7 +91,7 @@ use tokio::time::Instant;
 ///         cx: &mut Context<'_>,
 ///         downloaded: u64,
 ///         total: Option<u64>
-///     ) -> Poll<Result<(), DownloadError>> {
+///     ) -> Poll<Result<(), HttpClientError>> {
 ///         // Writes your customize method.
 ///         todo!()
 ///     }
@@ -168,7 +166,7 @@ impl<T: DownloadOperator + Unpin> Downloader<T> {
     /// let _result = downloader.download().await;
     /// # }
     /// ```
-    pub async fn download(&mut self) -> Result<(), DownloadError> {
+    pub async fn download(&mut self) -> Result<(), HttpClientError> {
         // Construct new download info, or reuse previous info.
         if self.info.is_none() {
             self.info = Some(DownloadInfo::new(self.body.content_length()));
@@ -178,7 +176,7 @@ impl<T: DownloadOperator + Unpin> Downloader<T> {
 
     // Downloads response body with speed limitation.
     // TODO: Speed Limit.
-    async fn limited_download(&mut self) -> Result<(), DownloadError> {
+    async fn limited_download(&mut self) -> Result<(), HttpClientError> {
         const DOWNLOADER_PROGRESS_DURATION: Duration = Duration::from_secs(1);
 
         loop {
@@ -191,14 +189,19 @@ impl<T: DownloadOperator + Unpin> Downloader<T> {
         }
     }
 
-    async fn transfer_data(&mut self) -> Result<bool, DownloadError> {
+    async fn transfer_data(&mut self) -> Result<bool, HttpClientError> {
         let data = match self.body.chunk().await {
             Ok(None) => {
                 self.show_progress_now().await?;
                 return Ok(true);
             }
             Ok(Some(data)) => data,
-            Err(e) => return Err(DownloadError::io(e)),
+            Err(e) => {
+                return Err(HttpClientError::new_with_cause(
+                    ErrorKind::BodyTransfer,
+                    Some(e),
+                ))
+            }
         };
 
         let mut size = 0;
@@ -209,24 +212,24 @@ impl<T: DownloadOperator + Unpin> Downloader<T> {
         Ok(false)
     }
 
-    fn check_timeout(&mut self) -> Result<(), DownloadError> {
+    fn check_timeout(&mut self) -> Result<(), HttpClientError> {
         if let Some(timeout) = self.config.timeout.inner() {
             let now = Instant::now();
             if now.duration_since(self.info.as_mut().unwrap().start_time) >= timeout {
-                return Err(DownloadError::timeout());
+                return Err(HttpClientError::new(ErrorKind::Timeout));
             }
         }
         Ok(())
     }
 
-    async fn show_progress_now(&mut self) -> Result<(), DownloadError> {
+    async fn show_progress_now(&mut self) -> Result<(), HttpClientError> {
         self.show_progress_with_duration(Duration::default()).await
     }
 
     async fn show_progress_with_duration(
         &mut self,
         duration: Duration,
-    ) -> Result<(), DownloadError> {
+    ) -> Result<(), HttpClientError> {
         let info = self.info.as_mut().unwrap();
         let now = Instant::now();
         if now.duration_since(info.last_progress_time) >= duration {

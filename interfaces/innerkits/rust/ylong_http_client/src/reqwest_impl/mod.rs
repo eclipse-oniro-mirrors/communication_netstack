@@ -21,11 +21,10 @@ pub mod async_impl;
 mod config;
 mod error;
 mod request;
+mod util;
 
-pub use config::{
-    Certificate, InvalidCertificate, InvalidProxy, Proxy, Redirect, SpeedLimit, Timeout,
-};
-pub use error::HttpClientError;
-pub use request::{InvalidRequest, Request, RequestBuilder};
+pub use config::{Certificate, Proxy, Redirect, SpeedLimit, Timeout};
+pub use error::{ErrorKind, HttpClientError};
+pub use request::{Request, RequestBuilder};
 
 pub use reqwest::{tls::Version as TlsVersion, Method, Response, Version};

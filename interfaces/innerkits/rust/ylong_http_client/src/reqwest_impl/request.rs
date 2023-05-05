@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-use crate::{Method, Version};
-use reqwest::header::{HeaderMap, HeaderName};
+use crate::reqwest_impl::async_impl::MultiPart;
+use crate::reqwest_impl::{Method, Version};
+use crate::{ErrorKind, HttpClientError};
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::{Body, Url};
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
 
 /// HTTP request implementation.
 ///
@@ -31,7 +31,7 @@ use std::fmt::{Debug, Display, Formatter};
 /// let request = Request::builder()
 ///     .method(Method::GET)
 ///     .url("www.example.com")
-///     .build("Hello World".as_bytes());
+///     .body("Hello World".as_bytes());
 /// ```
 pub struct Request<T> {
     pub(crate) inner: RequestInner,
@@ -63,7 +63,7 @@ impl Request<()> {
 /// let builder = RequestBuilder::new();
 /// ```
 pub struct RequestBuilder {
-    inner: Result<RequestInner, InvalidRequest>,
+    inner: Result<RequestInner, HttpClientError>,
 }
 
 impl RequestBuilder {
@@ -110,7 +110,8 @@ impl RequestBuilder {
     /// ```
     pub fn url(mut self, url: &str) -> Self {
         self.inner = self.inner.and_then(|mut r| {
-            r.url = Url::parse(url).map_err(|_| InvalidRequest)?;
+            r.url = Url::parse(url)
+                .map_err(|e| HttpClientError::new_with_cause(ErrorKind::Build, Some(e)))?;
             Ok(r)
         });
         self
@@ -128,8 +129,11 @@ impl RequestBuilder {
     pub fn header(mut self, name: &str, value: &str) -> Self {
         self.inner = self.inner.and_then(|mut r| {
             r.headers.insert(
-                HeaderName::from_bytes(name.as_bytes()).map_err(|_| InvalidRequest)?,
-                value.parse().map_err(|_| InvalidRequest)?,
+                HeaderName::from_bytes(name.as_bytes())
+                    .map_err(|e| HttpClientError::new_with_cause(ErrorKind::Build, Some(e)))?,
+                value
+                    .parse()
+                    .map_err(|e| HttpClientError::new_with_cause(ErrorKind::Build, Some(e)))?,
             );
             Ok(r)
         });
@@ -165,13 +169,58 @@ impl RequestBuilder {
     /// ```
     /// use ylong_http_client::RequestBuilder;
     ///
-    /// let request = RequestBuilder::new().build("HelloWorld".as_bytes()).unwrap();
+    /// let request = RequestBuilder::new().body("HelloWorld".as_bytes()).unwrap();
     /// ```
-    pub fn build<T: Into<Body>>(self, body: T) -> Result<Request<T>, InvalidRequest> {
+    pub fn body<T: Into<Body>>(self, body: T) -> Result<Request<T>, HttpClientError> {
         Ok(Request {
             inner: self.inner?,
             body,
         })
+    }
+
+    /// Creates a `Request` that uses this `RequestBuilder` configuration and
+    /// the provided `Multipart`. You can also provide a `Uploader<Multipart>`
+    /// as the body.
+    ///
+    /// # Error
+    ///
+    /// This method fails if some configurations are wrong.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use ylong_http_client::async_impl::{MultiPart, Part};
+    /// # use ylong_http_client::RequestBuilder;
+    ///
+    /// # fn create_request_with_multipart(multipart: MultiPart) {
+    /// let request = RequestBuilder::new().multipart(multipart).unwrap();
+    /// # }
+    /// ```
+    pub fn multipart<T>(self, body: T) -> Result<Request<T>, HttpClientError>
+    where
+        T: Into<Body> + AsRef<MultiPart>,
+    {
+        let value = format!(
+            "multipart/form-data; boundary={}",
+            body.as_ref().boundary()
+        );
+
+        let mut inner = self.inner?;
+        inner.headers.insert(
+            "Content-Type",
+            HeaderValue::from_str(value.as_str())
+                .map_err(|e| HttpClientError::new_with_cause(ErrorKind::Build, Some(e)))?,
+        );
+
+        if let Some(size) = body.as_ref().total_bytes() {
+            inner.headers.insert(
+                "Content-Length",
+                HeaderValue::from_str(format!("{}", size).as_str())
+                    .map_err(|e| HttpClientError::new_with_cause(ErrorKind::Build, Some(e)))?,
+            );
+        }
+
+        Ok(Request { inner, body })
     }
 }
 
@@ -198,20 +247,3 @@ impl Default for RequestInner {
         }
     }
 }
-
-/// Error that occurs when an illegal `Request` is constructed.
-pub struct InvalidRequest;
-
-impl Debug for InvalidRequest {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("InvalidRequest").finish()
-    }
-}
-
-impl Display for InvalidRequest {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("Invalid Request")
-    }
-}
-
-impl Error for InvalidRequest {}
