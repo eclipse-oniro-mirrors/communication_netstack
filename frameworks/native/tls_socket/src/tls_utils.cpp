@@ -30,7 +30,7 @@ bool IsValidPath(const std::string &filePath)
     return strcmp(path.c_str(), CERT_PATH) == 0;
 }
 
-bool CheckFilePath(const std::string &fileName, std::string &realPath)
+bool CheckFilePath(std::string &fileName, std::string &realPath)
 {
     char tmpPath[PATH_MAX] = {0};
     if (!realpath(static_cast<const char *>(fileName.c_str()), tmpPath)) {
