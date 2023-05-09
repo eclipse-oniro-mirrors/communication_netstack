@@ -21,7 +21,7 @@
 #include "http_request_options.h"
 
 namespace OHOS::NetStack::Http {
-static constexpr const uint32_t MIN_PRIORITY = 0;
+static constexpr const uint32_t MIN_PRIORITY = 1;
 static constexpr const uint32_t MAX_PRIORITY = 1000;
 
 HttpRequestOptions::HttpRequestOptions()
@@ -30,7 +30,7 @@ HttpRequestOptions::HttpRequestOptions()
       connectTimeout_(HttpConstant::DEFAULT_CONNECT_TIMEOUT),
       usingProtocol_(HttpProtocol::HTTP_NONE),
       dataType_(HttpDataType::NO_DATA_TYPE),
-      priority_(0),
+      priority_(MIN_PRIORITY),
       usingHttpProxyType_(UsingHttpProxyType::NOT_USE),
       httpProxyPort_(0)
 {
