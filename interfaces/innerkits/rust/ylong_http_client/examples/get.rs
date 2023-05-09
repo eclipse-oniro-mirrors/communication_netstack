@@ -15,8 +15,8 @@
 
 //! Uses an asynchronous HTTP client to send a GET request.
 
-use ylong_http_client::async_impl::{Client, Downloader, Uploader};
-use ylong_http_client::{Method, Proxy, Redirect, Request, Timeout, TlsVersion};
+use ylong_http_client::async_impl::{Client, Downloader};
+use ylong_http_client::{Method, Request};
 
 #[tokio::main]
 async fn main() {
@@ -27,7 +27,7 @@ async fn main() {
     let request = Request::builder()
         .method(Method::GET)
         .url("http://www.example.com")
-        .body("".as_bytes())    // EmptyBody
+        .body("".as_bytes()) // EmptyBody
         .unwrap();
 
     // Sends your HTTP request through the client.

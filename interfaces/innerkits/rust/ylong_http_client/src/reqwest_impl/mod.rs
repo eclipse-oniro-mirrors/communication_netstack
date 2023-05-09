@@ -25,6 +25,6 @@ mod util;
 
 pub use config::{Certificate, Proxy, Redirect, SpeedLimit, Timeout};
 pub use error::{ErrorKind, HttpClientError};
-pub use request::{Request, RequestBuilder};
+pub use request::{Body, Request, RequestBuilder};
 
 pub use reqwest::{tls::Version as TlsVersion, Method, Response, Version};

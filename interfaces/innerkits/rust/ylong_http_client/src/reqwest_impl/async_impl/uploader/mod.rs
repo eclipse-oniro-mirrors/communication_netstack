@@ -21,12 +21,10 @@ pub use builder::{UploaderBuilder, WantsReader};
 pub use multipart::{MultiPart, Part};
 pub use operator::{Console, UploadOperator};
 
-use crate::HttpClientError;
+use crate::ErrorKind;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use std::time::Duration;
 use tokio::io::{AsyncRead, ReadBuf};
-use tokio::time::Instant;
 use tokio_util::io::ReaderStream;
 
 /// An uploader that can help you upload the request body.
@@ -125,78 +123,47 @@ impl Uploader<(), ()> {
     }
 }
 
-impl<R, T> Uploader<R, T>
-where
-    T: UploadOperator + Unpin,
-{
-    fn show_progress_now(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), HttpClientError>> {
-        self.show_progress_with_duration(cx, Duration::default())
-    }
-
-    fn show_progress_with_duration(
-        &mut self,
-        cx: &mut Context<'_>,
-        duration: Duration,
-    ) -> Poll<Result<(), HttpClientError>> {
-        let info = self.info.as_mut().unwrap();
-        let now = Instant::now();
-        if info.last_progress.duration_since(now) >= duration {
-            return match Pin::new(&mut self.operator).poll_progress(
-                cx,
-                info.uploaded_bytes,
-                self.config.total_bytes,
-            ) {
-                Poll::Ready(Ok(())) => {
-                    info.last_progress = Instant::now();
-                    Poll::Ready(Ok(()))
-                }
-                x => x,
-            };
-        }
-        Poll::Ready(Ok(()))
-    }
-}
-
 impl<R, T> AsyncRead for Uploader<R, T>
 where
     R: AsyncRead + Unpin,
     T: UploadOperator + Unpin,
 {
     fn poll_read(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &mut ReadBuf<'_>,
     ) -> Poll<std::io::Result<()>> {
-        const UPLOADER_PROGRESS_DURATION: Duration = Duration::from_secs(1);
+        let this = self.get_mut();
 
-        if self.info.is_none() {
-            self.info = Some(UploadInfo::new());
+        if this.info.is_none() {
+            this.info = Some(UploadInfo::new());
+        }
+
+        let info = this.info.as_mut().unwrap();
+
+        match Pin::new(&mut this.operator).poll_progress(
+            cx,
+            info.uploaded_bytes,
+            this.config.total_bytes,
+        ) {
+            Poll::Ready(Ok(())) => {}
+            Poll::Ready(Err(e)) if e.error_kind() == ErrorKind::UserAborted => {
+                return Poll::Ready(Ok(()));
+            }
+            Poll::Ready(Err(_)) => return Poll::Ready(Err(std::io::ErrorKind::Other.into())),
+            Poll::Pending => return Poll::Pending,
         }
 
         let filled = buf.filled().len();
-        match Pin::new(&mut self.reader).poll_read(cx, buf) {
+        match Pin::new(&mut this.reader).poll_read(cx, buf) {
             Poll::Ready(Ok(_)) => {}
-            x => return x,
+            Poll::Ready(Err(_)) => return Poll::Ready(Err(std::io::ErrorKind::Other.into())),
+            Poll::Pending => return Poll::Pending,
         }
 
         let new_filled = buf.filled().len();
-
-        let mut progress = false;
-        self.info.as_mut().unwrap().uploaded_bytes += (new_filled - filled) as u64;
-
-        if let Some(total_size) = self.config.total_bytes {
-            progress = total_size == self.info.as_ref().unwrap().uploaded_bytes;
-        }
-
-        match if progress {
-            self.show_progress_now(cx)
-        } else {
-            self.show_progress_with_duration(cx, UPLOADER_PROGRESS_DURATION)
-        } {
-            Poll::Ready(Ok(())) => Poll::Ready(Ok(())),
-            Poll::Ready(Err(_)) => Poll::Ready(Err(std::io::ErrorKind::Other.into())),
-            Poll::Pending => Poll::Pending,
-        }
+        info.uploaded_bytes += (new_filled - filled) as u64;
+        Poll::Ready(Ok(()))
     }
 }
 
@@ -222,15 +189,11 @@ struct UploadConfig {
 }
 
 struct UploadInfo {
-    last_progress: Instant,
     uploaded_bytes: u64,
 }
 
 impl UploadInfo {
     fn new() -> Self {
-        Self {
-            last_progress: Instant::now(),
-            uploaded_bytes: 0,
-        }
+        Self { uploaded_bytes: 0 }
     }
 }

@@ -24,7 +24,6 @@ pub use operator::{DownloadFuture, DownloadOperator, ProgressFuture};
 
 use crate::{ErrorKind, HttpClientError, SpeedLimit, Timeout};
 use reqwest::Response;
-use std::time::Duration;
 use tokio::time::Instant;
 
 /// A downloader that can help you download the response body.
@@ -177,39 +176,32 @@ impl<T: DownloadOperator + Unpin> Downloader<T> {
     // Downloads response body with speed limitation.
     // TODO: Speed Limit.
     async fn limited_download(&mut self) -> Result<(), HttpClientError> {
-        const DOWNLOADER_PROGRESS_DURATION: Duration = Duration::from_secs(1);
+        self.show_progress().await?;
+        self.check_timeout()?;
 
         loop {
-            self.check_timeout()?;
-            self.show_progress_with_duration(DOWNLOADER_PROGRESS_DURATION)
-                .await?;
-            if self.transfer_data().await? {
-                return Ok(());
+            let data = match self.body.chunk().await {
+                Ok(Some(data)) => data,
+                Ok(None) => {
+                    self.show_progress().await?;
+                    return Ok(());
+                }
+                Err(e) => {
+                    return Err(HttpClientError::new_with_cause(
+                        ErrorKind::BodyTransfer,
+                        Some(e),
+                    ))
+                }
+            };
+
+            let mut size = 0;
+            while size != data.len() {
+                self.check_timeout()?;
+                size += self.operator.download(&data.as_ref()[size..]).await?;
+                self.info.as_mut().unwrap().downloaded_bytes += data.len() as u64;
+                self.show_progress().await?;
             }
         }
-    }
-
-    async fn transfer_data(&mut self) -> Result<bool, HttpClientError> {
-        let data = match self.body.chunk().await {
-            Ok(None) => {
-                self.show_progress_now().await?;
-                return Ok(true);
-            }
-            Ok(Some(data)) => data,
-            Err(e) => {
-                return Err(HttpClientError::new_with_cause(
-                    ErrorKind::BodyTransfer,
-                    Some(e),
-                ))
-            }
-        };
-
-        let mut size = 0;
-        while size != data.len() {
-            size += self.operator.download(&data.as_ref()[size..]).await?;
-        }
-        self.info.as_mut().unwrap().downloaded_bytes += data.len() as u64;
-        Ok(false)
     }
 
     fn check_timeout(&mut self) -> Result<(), HttpClientError> {
@@ -222,29 +214,16 @@ impl<T: DownloadOperator + Unpin> Downloader<T> {
         Ok(())
     }
 
-    async fn show_progress_now(&mut self) -> Result<(), HttpClientError> {
-        self.show_progress_with_duration(Duration::default()).await
-    }
-
-    async fn show_progress_with_duration(
-        &mut self,
-        duration: Duration,
-    ) -> Result<(), HttpClientError> {
+    async fn show_progress(&mut self) -> Result<(), HttpClientError> {
         let info = self.info.as_mut().unwrap();
-        let now = Instant::now();
-        if now.duration_since(info.last_progress_time) >= duration {
-            self.operator
-                .progress(info.downloaded_bytes, info.total_bytes)
-                .await?;
-            info.last_progress_time = Instant::now();
-        }
-        Ok(())
+        self.operator
+            .progress(info.downloaded_bytes, info.total_bytes)
+            .await
     }
 }
 
 struct DownloadInfo {
     pub(crate) start_time: Instant,
-    pub(crate) last_progress_time: Instant,
     pub(crate) downloaded_bytes: u64,
     pub(crate) total_bytes: Option<u64>,
 }
@@ -253,7 +232,6 @@ impl DownloadInfo {
     fn new(total_bytes: Option<u64>) -> Self {
         Self {
             start_time: Instant::now(),
-            last_progress_time: Instant::now(),
             downloaded_bytes: 0,
             total_bytes,
         }

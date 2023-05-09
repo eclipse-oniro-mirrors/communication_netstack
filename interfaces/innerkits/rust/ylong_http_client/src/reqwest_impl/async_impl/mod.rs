@@ -14,7 +14,7 @@
  */
 
 use crate::{Certificate, HttpClientError, Proxy, Redirect, Request, Timeout, TlsVersion};
-use reqwest::{Body, Response};
+use reqwest::Response;
 
 mod downloader;
 mod uploader;
@@ -99,7 +99,7 @@ impl Client {
     /// let _response = client.request(request).await;
     /// # }
     /// ```
-    pub async fn request<T: Into<Body>>(
+    pub async fn request<T: Into<reqwest::Body>>(
         &self,
         request: Request<T>,
     ) -> Result<Response, HttpClientError> {
@@ -264,11 +264,7 @@ impl ClientBuilder {
     /// let builder = ClientBuilder::new().max_tls_version(TlsVersion::TLS_1_2);
     /// ```
     pub fn max_tls_version(self, version: TlsVersion) -> Self {
-        if version != TlsVersion::TLS_1_3 {
-            Self(self.0.max_tls_version(version))
-        } else {
-            self
-        }
+        Self(self.0.max_tls_version(version))
     }
 
     /// Sets the minimum required TLS version for connections.
@@ -288,11 +284,7 @@ impl ClientBuilder {
     /// let builder = ClientBuilder::new().min_tls_version(TlsVersion::TLS_1_2);
     /// ```
     pub fn min_tls_version(self, version: TlsVersion) -> Self {
-        if version != TlsVersion::TLS_1_3 {
-            Self(self.0.min_tls_version(version))
-        } else {
-            self
-        }
+        Self(self.0.min_tls_version(version))
     }
 
     /// Adds a custom root certificate.

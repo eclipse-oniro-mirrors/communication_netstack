@@ -17,7 +17,7 @@ use crate::reqwest_impl::async_impl::MultiPart;
 use crate::reqwest_impl::{Method, Version};
 use crate::{ErrorKind, HttpClientError};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
-use reqwest::{Body, Url};
+use reqwest::Url;
 
 /// HTTP request implementation.
 ///
@@ -171,7 +171,7 @@ impl RequestBuilder {
     ///
     /// let request = RequestBuilder::new().body("HelloWorld".as_bytes()).unwrap();
     /// ```
-    pub fn body<T: Into<Body>>(self, body: T) -> Result<Request<T>, HttpClientError> {
+    pub fn body<T: Into<reqwest::Body>>(self, body: T) -> Result<Request<T>, HttpClientError> {
         Ok(Request {
             inner: self.inner?,
             body,
@@ -198,12 +198,9 @@ impl RequestBuilder {
     /// ```
     pub fn multipart<T>(self, body: T) -> Result<Request<T>, HttpClientError>
     where
-        T: Into<Body> + AsRef<MultiPart>,
+        T: Into<reqwest::Body> + AsRef<MultiPart>,
     {
-        let value = format!(
-            "multipart/form-data; boundary={}",
-            body.as_ref().boundary()
-        );
+        let value = format!("multipart/form-data; boundary={}", body.as_ref().boundary());
 
         let mut inner = self.inner?;
         inner.headers.insert(
@@ -247,3 +244,8 @@ impl Default for RequestInner {
         }
     }
 }
+
+/// Body trait implementation.
+pub trait Body: Into<reqwest::Body> {}
+
+impl<T: Into<reqwest::Body>> Body for T {}

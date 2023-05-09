@@ -204,7 +204,7 @@ impl AsyncRead for MultiPart {
                         Poll::Ready(Ok(()))
                     } else {
                         Poll::Pending
-                    }
+                    };
                 }
                 x => x,
             };
@@ -465,5 +465,11 @@ impl AsyncRead for MultiPartStates {
 fn gen_boundary() -> String {
     use crate::reqwest_impl::util::xor_shift as rand;
 
-    format!("{:016x}-{:016x}-{:016x}-{:016x}", rand(), rand(), rand(), rand())
+    format!(
+        "{:016x}-{:016x}-{:016x}-{:016x}",
+        rand(),
+        rand(),
+        rand(),
+        rand()
+    )
 }

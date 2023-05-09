@@ -16,7 +16,7 @@
 //! Uses an Asynchronous HTTP client to send a `POST` request with multipart body.
 
 use ylong_http_client::async_impl::{Client, Downloader, MultiPart, Part, Uploader};
-use ylong_http_client::{Method, Proxy, Redirect, Request, TlsVersion};
+use ylong_http_client::{Method, Request};
 
 #[tokio::main]
 async fn main() {
@@ -25,9 +25,14 @@ async fn main() {
 
     // Customize your `Multipart` messages.
     let multipart = MultiPart::new()
-        .part(Part::new().name("name").body("xiaoming"))    // Adds your parts.
+        .part(Part::new().name("name").body("xiaoming")) // Adds your parts.
         .part(Part::new().name("password").body("123456789"))
-        .part(Part::new().name("123").length(Some(10)).stream("HelloWorld".as_bytes()));
+        .part(
+            Part::new()
+                .name("123")
+                .length(Some(10))
+                .stream("HelloWorld".as_bytes()),
+        );
 
     // Uses `Uploader` to upload the `Multipart` with progress message displayed on console.
     let uploader = Uploader::builder().multipart(multipart).console().build();
@@ -36,7 +41,7 @@ async fn main() {
     let request = Request::builder()
         .method(Method::POST)
         .url("http://www.example.com")
-        .multipart(uploader)    // Sets the multipart body.
+        .multipart(uploader) // Sets the multipart body.
         .unwrap();
 
     // Sends your HTTP request through the client.

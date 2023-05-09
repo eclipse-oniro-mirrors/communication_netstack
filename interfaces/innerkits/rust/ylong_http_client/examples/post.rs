@@ -15,8 +15,8 @@
 
 //! Uses an Asynchronous HTTP client to send a `POST` request.
 
-use ylong_http_client::async_impl::{Client, Downloader, MultiPart, Part, Uploader};
-use ylong_http_client::{Method, Proxy, Redirect, Request, TlsVersion};
+use ylong_http_client::async_impl::{Client, Downloader, Uploader};
+use ylong_http_client::{Method, Request};
 
 #[tokio::main]
 async fn main() {
@@ -24,12 +24,15 @@ async fn main() {
     let client = Client::builder().build().unwrap();
 
     // Uses `Uploader` to upload the body and use `Console` to display messages on console.
-    let uploader = Uploader::builder().reader("HelloWorld").console().build();
+    let uploader = Uploader::builder()
+        .reader("HelloWorld".as_bytes())
+        .console()
+        .build();
 
     // Customizes your HTTP request.
     let request = Request::builder()
         .method(Method::POST)
-        .url("http://www.example.com")
+        .url("https://www.example.com")
         .body(uploader)
         .unwrap();
 

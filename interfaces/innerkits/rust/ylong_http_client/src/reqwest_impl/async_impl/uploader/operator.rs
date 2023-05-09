@@ -117,7 +117,7 @@ impl UploadOperator for Console {
         uploaded: u64,
         _total: Option<u64>,
     ) -> Poll<Result<(), HttpClientError>> {
-        println!("\nprogress: upload-{} bytes", uploaded);
+        println!("progress: upload-{} bytes", uploaded);
         Poll::Ready(Ok(()))
     }
 }
