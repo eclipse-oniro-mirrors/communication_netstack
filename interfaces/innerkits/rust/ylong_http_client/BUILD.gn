@@ -14,24 +14,20 @@
 import("//build/ohos.gni")
 
 ohos_rust_shared_library("lib") {
-    crate_name = "ylong_http_client"
-    crate_type = "dylib"
-    crate_root = "src/lib.rs"
+  crate_name = "ylong_http_client"
+  crate_type = "dylib"
+  crate_root = "src/lib.rs"
 
-    sources = ["src/lib.rs"]
-    edition = "2021"
-    clippy_lints = "none"
-    deps = [
-        "//third_party/rust/crates/reqwest:lib",
-        "//third_party/rust/crates/tokio/tokio-util:lib",
-        "//third_party/rust/crates/tokio/tokio:lib",
-    ]
-    features = [
-        "default",
-        "reqwest_impl"
-    ]
-    rustflags = [
-        "-Copt-level=3",
-        "-Cprefer-dynamic"
-    ]
+  sources = [ "src/lib.rs" ]
+  edition = "2021"
+  clippy_lints = "none"
+  deps = [
+    "//third_party/rust/crates/reqwest:lib",
+    "//third_party/rust/crates/tokio/tokio:lib",
+    "//third_party/rust/crates/tokio/tokio-util:lib",
+  ]
+  features = [
+    "default",
+    "reqwest_impl",
+  ]
 }

@@ -1,6 +1,6 @@
 {
   "component": {
-    "name": "ylong_http_client",
+    "name": "ylong_http",
     "description": "common component set",
     "subsystem": "commonlibrary",
     "features": [],
