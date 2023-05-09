@@ -20,7 +20,7 @@
 #include <set>
 #include <string>
 #include <string_view>
-
+#include <queue>
 #include <napi/native_api.h>
 
 #include "event_manager.h"
@@ -31,6 +31,10 @@
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
+struct MessagerQueue {
+    std::queue<std::string> dataQueue;
+    std::queue<Socket::SocketRemoteInfo> remoteInfoQueue;
+};
 class Monitor final {
     DECLARE_DELAYED_SINGLETON(Monitor);
 
@@ -41,6 +45,7 @@ public:
 public:
     std::string data_;
     Socket::SocketRemoteInfo remoteInfo_;
+    MessagerQueue messagerQueue_;
     int32_t errorNumber_ = 0;
     std::string errorString_;
 
