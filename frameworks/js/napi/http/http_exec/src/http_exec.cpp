@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -643,11 +643,10 @@ void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
         return;
     }
     NapiUtils::SetUint32Property(context->GetEnv(), progress, "receiveSize",
-                                 static_cast<uint32_t>(context->GetNowLen()));
-    context->PopNowLen();
+                                 static_cast<uint32_t>(context->GetDlLen().nLen));
     NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize",
-                                 static_cast<uint32_t>(context->GetTotalLen()));
-    context->PopTotalLen();
+                                 static_cast<uint32_t>(context->GetDlLen().tLen));
+    context->PopDlLen();
     context->Emit(ON_DATA_PROGRESS, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
 }
 
@@ -670,9 +669,8 @@ int HttpExec::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dl
     if (context == nullptr || !context->IsRequest2()) {
         return 0;
     }
-    context->SetTotalLen(dltotal);
-    context->SetNowLen(dlnow);
-    if (dlnow != 0) {
+    if (dltotal != 0) {
+        context->SetDlLen(dlnow, dltotal);
         NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataProgress);
     }
     return 0;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,6 +24,18 @@
 #include "http_response.h"
 
 namespace OHOS::NetStack::Http {
+struct DlBytes {
+    DlBytes() : nLen(0), tLen(0) {};
+    DlBytes(curl_off_t nowLen, curl_off_t totalLen)
+    {
+        nLen = nowLen;
+        tLen = totalLen;
+    };
+    ~DlBytes() = default;
+    curl_off_t nLen;
+    curl_off_t tLen;
+};
+
 class RequestContext final : public BaseContext {
 public:
     RequestContext() = delete;
@@ -58,17 +70,11 @@ public:
 
     [[nodiscard]] bool IsRequest2();
 
-    void SetTotalLen(curl_off_t totalLen);
+    void SetDlLen(curl_off_t nowLen, curl_off_t totalLen);
 
-    curl_off_t GetTotalLen();
+    DlBytes GetDlLen();
 
-    void PopTotalLen();
-
-    void SetNowLen(curl_off_t nowLen);
-
-    curl_off_t GetNowLen();
-
-    void PopNowLen();
+    void PopDlLen();
 
     void SetTempData(const void *data, size_t size);
 
@@ -79,16 +85,12 @@ public:
 private:
     bool usingCache_;
     bool request2_;
-    std::mutex totalLenLock_;
-    std::mutex nowLenLock_;
+    std::mutex dlLenLock_;
     std::mutex tempDataLock_;
-    std::queue<curl_off_t> totalLen_;
-    std::queue<curl_off_t> nowLen_;
     std::queue<std::string> tempData_;
-
-    struct curl_slist *curlHeaderList_;
-
     HttpResponse cacheResponse_;
+    std::queue<DlBytes> dlBytes_;
+    struct curl_slist *curlHeaderList_;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 

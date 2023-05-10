@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,7 +21,7 @@
 #include "http_request_options.h"
 
 namespace OHOS::NetStack::Http {
-static constexpr const uint32_t MIN_PRIORITY = 0;
+static constexpr const uint32_t MIN_PRIORITY = 1;
 static constexpr const uint32_t MAX_PRIORITY = 1000;
 
 HttpRequestOptions::HttpRequestOptions()
@@ -30,7 +30,7 @@ HttpRequestOptions::HttpRequestOptions()
       connectTimeout_(HttpConstant::DEFAULT_CONNECT_TIMEOUT),
       usingProtocol_(HttpProtocol::HTTP_NONE),
       dataType_(HttpDataType::NO_DATA_TYPE),
-      priority_(0),
+      priority_(MIN_PRIORITY),
       usingHttpProxyType_(UsingHttpProxyType::NOT_USE),
       httpProxyPort_(0)
 {

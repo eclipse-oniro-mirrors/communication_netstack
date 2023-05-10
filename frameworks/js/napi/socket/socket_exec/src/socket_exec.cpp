@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -179,17 +179,17 @@ static napi_value MakeMessage(napi_env env, void *para)
     return MakeJsMessageParam(env, msgBuffer, &messageData->remoteInfo);
 }
 
-static void OnRecvMessage(EventManager *manager, void *data, size_t len, sockaddr *addr)
+static bool OnRecvMessage(EventManager *manager, void *data, size_t len, sockaddr *addr)
 {
     if (data == nullptr || len == 0) {
-        return;
+        return false;
     }
 
     SocketRemoteInfo remoteInfo;
     std::string address = MakeAddressString(addr);
     if (address.empty()) {
         manager->EmitByUv(EVENT_ERROR, new int32_t(ADDRESS_INVALID), CallbackTemplate<MakeError>);
-        return;
+        return false;
     }
     remoteInfo.SetAddress(address);
     remoteInfo.SetFamily(addr->sa_family);
@@ -203,6 +203,7 @@ static void OnRecvMessage(EventManager *manager, void *data, size_t len, sockadd
     remoteInfo.SetSize(len);
 
     manager->EmitByUv(EVENT_MESSAGE, new MessageData(data, len, remoteInfo), CallbackTemplate<MakeMessage>);
+    return true;
 }
 
 class MessageCallback {
@@ -253,8 +254,7 @@ public:
             if (ret < 0) {
                 return false;
             }
-            OnRecvMessage(manager_, data, dataLen, reinterpret_cast<sockaddr *>(&addr4));
-            return true;
+            return OnRecvMessage(manager_, data, dataLen, reinterpret_cast<sockaddr *>(&addr4));
         } else if (sockAddr.sa_family == AF_INET6) {
             sockaddr_in6 addr6 = {0};
             socklen_t len6 = sizeof(sockaddr_in6);
@@ -263,8 +263,7 @@ public:
             if (ret < 0) {
                 return false;
             }
-            OnRecvMessage(manager_, data, dataLen, reinterpret_cast<sockaddr *>(&addr6));
-            return true;
+            return OnRecvMessage(manager_, data, dataLen, reinterpret_cast<sockaddr *>(&addr6));
         }
         return false;
     }
@@ -285,8 +284,7 @@ public:
 
     bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const override
     {
-        OnRecvMessage(manager_, data, dataLen, addr);
-        return true;
+        return OnRecvMessage(manager_, data, dataLen, addr);
     }
 };
 
