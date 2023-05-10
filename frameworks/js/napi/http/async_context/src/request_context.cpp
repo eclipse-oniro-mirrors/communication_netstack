@@ -450,49 +450,25 @@ bool RequestContext::IsRequest2()
     return request2_;
 }
 
-void RequestContext::SetTotalLen(curl_off_t totalLen)
+void RequestContext::SetDlLen(curl_off_t nowLen, curl_off_t totalLen)
 {
-    std::lock_guard<std::mutex> lock(totalLenLock_);
-    totalLen_.push(totalLen);
+    std::lock_guard<std::mutex> lock(dlLenLock_);
+    DlBytes dlBytes{nowLen, totalLen};
+    dlBytes_.push(dlBytes);
 }
 
-curl_off_t RequestContext::GetTotalLen()
+DlBytes RequestContext::GetDlLen()
 {
-    std::lock_guard<std::mutex> lock(totalLenLock_);
-    if (!totalLen_.empty()) {
-        return totalLen_.front();
-    }
-    return 0;
+    std::lock_guard<std::mutex> lock(dlLenLock_);
+    DlBytes dlBytes{dlBytes_.front().nLen, dlBytes_.front().tLen};
+    return dlBytes;
 }
 
-void RequestContext::PopTotalLen()
+void RequestContext::PopDlLen()
 {
-    std::lock_guard<std::mutex> lock(totalLenLock_);
-    if (!totalLen_.empty()) {
-        totalLen_.pop();
-    }
-}
-
-void RequestContext::SetNowLen(curl_off_t nowLen)
-{
-    std::lock_guard<std::mutex> lock(nowLenLock_);
-    nowLen_.push(nowLen);
-}
-
-curl_off_t RequestContext::GetNowLen()
-{
-    std::lock_guard<std::mutex> lock(nowLenLock_);
-    if (!nowLen_.empty()) {
-        return nowLen_.front();
-    }
-    return 0;
-}
-
-void RequestContext::PopNowLen()
-{
-    std::lock_guard<std::mutex> lock(nowLenLock_);
-    if (!nowLen_.empty()) {
-        nowLen_.pop();
+    std::lock_guard<std::mutex> lock(dlLenLock_);
+    if (!dlBytes_.empty()) {
+        dlBytes_.pop();
     }
 }
 
