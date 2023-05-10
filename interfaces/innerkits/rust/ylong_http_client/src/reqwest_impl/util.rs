@@ -30,13 +30,18 @@ pub(crate) fn xor_shift() -> u64 {
     fn seed() -> u64 {
         let seed = RandomState::new();
 
-        let mut out = 0;
-        let mut cnt = 0;
-        while out == 0 {
-            cnt += 1;
-            let mut hasher = seed.build_hasher();
+        let mut out;
+        let mut cnt = 1;
+        let mut hasher = seed.build_hasher();
+
+        loop {
             hasher.write_usize(cnt);
             out = hasher.finish();
+            if out != 0 {
+                break;
+            }
+            cnt += 1;
+            hasher = seed.build_hasher();
         }
         out
     }
