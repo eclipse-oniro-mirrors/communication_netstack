@@ -58,7 +58,9 @@
                 ]
             },
             "inner_kits": [
-                "//foundation/communication/netstack/interfaces/innerkits/rust/ylong_http_client:lib"
+                {
+                     "name": "//foundation/communication/netstack/interfaces/innerkits/rust/ylong_http_client:lib"
+                }
             ],
             "test": [
                 "//foundation/communication/netstack/test/fuzztest/socket:fuzztest",
