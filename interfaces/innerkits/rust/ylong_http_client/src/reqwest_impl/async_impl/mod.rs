@@ -347,33 +347,6 @@ impl ClientBuilder {
         Self(self.0.danger_accept_invalid_certs(accept_invalid_certs))
     }
 
-    /// Controls the use of hostname verification.
-    ///
-    /// Defaults to `false`.
-    ///
-    /// # Warning
-    ///
-    /// You should think very carefully before you use this method. If
-    /// hostname verification is not used, any valid certificate for any
-    /// site will be trusted for use from any other. This introduces a
-    /// significant vulnerability to man-in-the-middle attacks.
-    ///
-    /// # Examples
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use ylong_http_client::async_impl::ClientBuilder;
-    ///
-    /// let builder = ClientBuilder::new().danger_accept_invalid_hostnames(true);
-    /// ```
-    pub fn danger_accept_invalid_hostnames(self, accept_invalid_hostname: bool) -> ClientBuilder {
-        Self(
-            self.0
-                .danger_accept_invalid_hostnames(accept_invalid_hostname),
-        )
-    }
-
     /// Returns a `Client` that uses this `ClientBuilder` configuration.
     ///
     /// # Errors
