@@ -57,11 +57,10 @@
                 "service_group": [
                 ]
             },
-            "inner_kits": [
-                {
-                     "name": "//foundation/communication/netstack/interfaces/innerkits/rust/ylong_http_client:lib"
-                }
+            "sub_component": [
+                "//foundation/communication/netstack/interfaces/innerkits/rust/ylong_http_client:lib"
             ],
+            "inner_kits": [],
             "test": [
                 "//foundation/communication/netstack/test/fuzztest/socket:fuzztest",
                 "//foundation/communication/netstack/test/unittest/http/cache:unittest",
