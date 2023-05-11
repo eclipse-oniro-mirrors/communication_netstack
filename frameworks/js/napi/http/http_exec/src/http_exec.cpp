@@ -379,7 +379,7 @@ void HttpExec::RunThread()
         SendRequest();
         ReadResponse();
         std::this_thread::sleep_for(std::chrono::milliseconds(CURL_TIMEOUT_MS));
-        static std::mutex m;
+        std::mutex m;
         std::unique_lock l(m);
         auto &infoQueue = staticVariable_.infoQueue;
         auto &contextMap = staticVariable_.contextMap;
