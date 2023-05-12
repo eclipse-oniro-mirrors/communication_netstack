@@ -27,4 +27,4 @@ reqwest_impl = ["tokio", "tokio-util", "reqwest"]
 [dependencies]
 tokio = { version = "=1.20.1", features = ["default", "macros", "rt-multi-thread"], optional = true }
 tokio-util = { version = "=0.7.1", features = ["default"], optional = true }
-reqwest = { version = "=0.11.13", features = ["default", "stream", "native-tls"], optional = true }
+reqwest = { version = "=0.11.13", features = ["default", "stream"], optional = true }
