@@ -45,7 +45,7 @@ HWTEST_F(SocketErrorTest, SocketError, TestSize.Level2)
 HWTEST_F(SocketErrorTest, SocketError2, TestSize.Level2)
 {
     std::string errorMsg = MakeErrorMessage(ERROR_NOT_EXIT);
-    EXPECT_STREQ(errorMsg.data(), "error:000002BC:lib(0):func(0):reason(700)");
+    EXPECT_STREQ(errorMsg.data(), "error:000002BC:lib(0)::reason(700)");
 }
 } // namespace TlsSocket
 } // namespace NetStack
