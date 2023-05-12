@@ -550,7 +550,7 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
 #else
 #ifndef WINDOWS_PLATFORM
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, HttpConstant::HTTP_DEFAULT_CA_PATH, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, context->options.GetCaPath().c_str(), context);
 #endif // WINDOWS_PLATFORM
 #endif // NO_SSL_CERTIFICATION
 

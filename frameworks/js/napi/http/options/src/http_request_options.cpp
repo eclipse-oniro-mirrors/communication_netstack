@@ -35,6 +35,9 @@ HttpRequestOptions::HttpRequestOptions()
       httpProxyPort_(0)
 {
     header_[CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE)] = HttpConstant::HTTP_CONTENT_TYPE_JSON; // default
+#ifndef WINDOWS_PLATFORM
+    caPath_ = HttpConstant::HTTP_DEFAULT_CA_PATH;
+#endif // WINDOWS_PLATFORM
 }
 
 void HttpRequestOptions::SetUrl(const std::string &url)
@@ -173,5 +176,19 @@ void HttpRequestOptions::GetSpecifiedHttpProxy(std::string &host, int32_t &port,
     host = httpProxyHost_;
     port = httpProxyPort_;
     exclusionList = httpProxyExclusions_;
+}
+
+void HttpRequestOptions::SetCaPath(const std::string &path)
+{
+    if (path.empty()) {
+        return;
+    }
+
+    caPath_ = path;
+}
+
+const std::string &HttpRequestOptions::GetCaPath() const
+{
+    return caPath_;
 }
 } // namespace OHOS::NetStack::Http

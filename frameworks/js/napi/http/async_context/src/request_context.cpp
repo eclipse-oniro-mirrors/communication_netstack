@@ -351,6 +351,14 @@ bool RequestContext::GetRequestBody(napi_value extraData)
     return false;
 }
 
+void RequestContext::ParseCaPath(napi_value optionsValue)
+{
+    std::string caPath = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CA_PATH);
+    if (!caPath.empty()) {
+        options.SetCaPath(caPath);
+    }
+}
+
 void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
 {
     options.SetUrl(NapiUtils::GetStringFromValueUtf8(GetEnv(), urlValue));
@@ -370,6 +378,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     }
 
     ParseHeader(optionsValue);
+    ParseCaPath(optionsValue);
     SetParseOK(true);
 }
 

@@ -102,6 +102,8 @@ private:
 
     void ParseUsingHttpProxy(napi_value optionsValue);
 
+    void ParseCaPath(napi_value optionsValue);
+
     bool GetRequestBody(napi_value extraData);
 
     void UrlAndOptions(napi_value urlValue, napi_value optionsValue);
