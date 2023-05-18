@@ -57,9 +57,6 @@
                 "service_group": [
                 ]
             },
-            "sub_component": [
-                "//foundation/communication/netstack/interfaces/innerkits/rust/ylong_http_client:ylong_http_client"
-            ],
             "inner_kits": [],
             "test": [
                 "//foundation/communication/netstack/test/fuzztest/socket:fuzztest",
