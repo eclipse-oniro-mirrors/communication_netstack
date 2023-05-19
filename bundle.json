@@ -50,7 +50,8 @@
                     "//foundation/communication/netstack/frameworks/js/napi/socket:socket",
                     "//foundation/communication/netstack/frameworks/js/napi/websocket:websocket",
                     "//foundation/communication/netstack/frameworks/js/napi/fetch:fetch",
-                    "//foundation/communication/netstack/utils:common_utils"
+                    "//foundation/communication/netstack/utils:common_utils",
+                    "//foundation/communication/netstack/interfaces/innerkits/rust/ylong_http_client:ylong_http_client"
                 ],
                 "fwk_group": [
                 ],
