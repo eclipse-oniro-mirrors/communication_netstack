@@ -22,7 +22,7 @@
 
 namespace OHOS::NetStack::Websocket {
 CloseContext::CloseContext(napi_env env, EventManager *manager)
-    : BaseContext(env, manager), code(CLOSE_REASON_NORMAL_CLOSE)
+    : BaseContext(env, manager), code(CLOSE_REASON_NORMAL_CLOSE), reason("CLOSE_NORMAL")
 {
 }
 
@@ -60,7 +60,10 @@ void CloseContext::ParseParams(napi_value *params, size_t paramsCount)
     if (closeCode >= CLOSE_REASON_NORMAL_CLOSE && closeCode <= CLOSE_REASON_RESERVED12) {
         code = closeCode;
     }
-    reason = NapiUtils::GetStringPropertyUtf8(GetEnv(), params[0], ContextKey::REASON);
+    std::string tempReason = NapiUtils::GetStringPropertyUtf8(GetEnv(), params[0], ContextKey::REASON);
+    if (!tempReason.empty()) {
+        reason = tempReason;
+    }
 
     if (paramsCount == FUNCTION_PARAM_TWO) {
         NETSTACK_LOGI("CloseContext Parse OK3");
