@@ -18,6 +18,7 @@
 #include <memory>
 #include <queue>
 #include <thread>
+#include <atomic>
 
 #include "constant.h"
 #include "netstack_common_utils.h"
@@ -107,7 +108,7 @@ public:
     };
 
     explicit UserData(lws_context *context)
-        : closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), closed_(false), context_(context)
+        : closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), closed_(false), threadStop_(false), context_(context)
     {
     }
 
@@ -115,6 +116,16 @@ public:
     {
         std::lock_guard<std::mutex> lock(mutex_);
         return closed_;
+    }
+
+    bool IsThreadStop()
+    {
+        return threadStop_.load();
+    }
+
+    void SetThreadStop(bool threadStop)
+    {
+        threadStop_.store(threadStop);
     }
 
     void Close(lws_close_status status, const std::string &reason)
@@ -165,6 +176,8 @@ public:
 private:
     volatile bool closed_;
 
+    std::atomic_bool threadStop_;
+
     std::mutex mutex_;
 
     lws_context *context_;
@@ -190,14 +203,8 @@ template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTempl
     delete work;
 }
 
-bool WebSocketExec::ParseUrl(ConnectContext *context,
-                             char *prefix,
-                             size_t prefixLen,
-                             char *address,
-                             size_t addressLen,
-                             char *path,
-                             size_t pathLen,
-                             int *port)
+bool WebSocketExec::ParseUrl(ConnectContext *context, char *prefix, size_t prefixLen, char *address, size_t addressLen,
+                             char *path, size_t pathLen, int *port)
 {
     char uri[MAX_URI_LENGTH] = {0};
     if (strcpy_s(uri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
@@ -225,7 +232,7 @@ bool WebSocketExec::ParseUrl(ConnectContext *context,
 
 void WebSocketExec::RunService(EventManager *manager)
 {
-    NETSTACK_LOGI("start service");
+    NETSTACK_LOGI("websocket run service start");
     if (manager == nullptr || manager->GetData() == nullptr) {
         NETSTACK_LOGE("RunService para error");
         return;
@@ -236,13 +243,14 @@ void WebSocketExec::RunService(EventManager *manager)
         NETSTACK_LOGE("context is null");
         return;
     }
-    while (lws_service(context, 0) >= 0) {
+    while (!userData->IsThreadStop()) {
+        lws_service(context, 0);
     }
     lws_context_destroy(context);
     userData->SetContext(nullptr);
     delete userData;
     manager->SetData(nullptr);
-    NETSTACK_LOGI("websocket end run service");
+    NETSTACK_LOGI("websocket run service end");
 }
 
 int WebSocketExec::RaiseError(EventManager *manager)
@@ -260,10 +268,7 @@ int WebSocketExec::HttpDummy(lws *wsi, lws_callback_reasons reason, void *user, 
     return ret;
 }
 
-int WebSocketExec::LwsCallbackClientAppendHandshakeHeader(lws *wsi,
-                                                          lws_callback_reasons reason,
-                                                          void *user,
-                                                          void *in,
+int WebSocketExec::LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                           size_t len)
 {
     NETSTACK_LOGI("LwsCallbackClientAppendHandshakeHeader");
@@ -293,10 +298,7 @@ int WebSocketExec::LwsCallbackClientAppendHandshakeHeader(lws *wsi,
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-int WebSocketExec::LwsCallbackWsPeerInitiatedClose(lws *wsi,
-                                                   lws_callback_reasons reason,
-                                                   void *user,
-                                                   void *in,
+int WebSocketExec::LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                    size_t len)
 {
     NETSTACK_LOGI("LwsCallbackWsPeerInitiatedClose");
@@ -375,10 +377,7 @@ void OnConnectError(EventManager *manager, int32_t code)
     manager->EmitByUv(EventName::EVENT_ERROR, new int32_t(code), CallbackTemplate<CreateConnectError>);
 }
 
-int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi,
-                                                    lws_callback_reasons reason,
-                                                    void *user,
-                                                    void *in,
+int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                     size_t len)
 {
     NETSTACK_LOGI("LwsCallbackClientConnectionError %{public}s",
@@ -395,10 +394,7 @@ int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reaso
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi,
-                                                       lws_callback_reasons reason,
-                                                       void *user,
-                                                       void *in,
+int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                        size_t len)
 {
     NETSTACK_LOGI("LwsCallbackClientFilterPreEstablish");
@@ -411,7 +407,7 @@ int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi,
 
     userData->openStatus = lws_http_client_http_response(wsi);
     char statusLine[MAX_HDR_LENGTH] = {0};
-    if (lws_hdr_copy(wsi, statusLine, MAX_HDR_LENGTH, WSI_TOKEN_HTTP) || strlen(statusLine) == 0) {
+    if (lws_hdr_copy(wsi, statusLine, MAX_HDR_LENGTH, WSI_TOKEN_HTTP) < 0 || strlen(statusLine) == 0) {
         return HttpDummy(wsi, reason, user, in, len);
     }
 
@@ -446,7 +442,7 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
         return RaiseError(manager);
     }
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
-
+    userData->SetThreadStop(true);
     OnClose(reinterpret_cast<EventManager *>(user), userData->closeStatus, userData->closeReason);
     return HttpDummy(wsi, reason, user, in, len);
 }
@@ -497,12 +493,12 @@ static inline void FillContextInfo(lws_context_creation_info &info)
 
 bool WebSocketExec::ExecConnect(ConnectContext *context)
 {
-    if (!CommonUtils::HasInternetPermission()) {
-        context->SetPermissionDenied(true);
-        return false;
-    }
     if (context == nullptr) {
         NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
         return false;
     }
     NETSTACK_LOGI("begin connect, parse url");
@@ -572,12 +568,12 @@ napi_value WebSocketExec::ConnectCallback(ConnectContext *context)
 
 bool WebSocketExec::ExecSend(SendContext *context)
 {
-    if (!CommonUtils::HasInternetPermission()) {
-        context->SetPermissionDenied(true);
-        return false;
-    }
     if (context == nullptr) {
         NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
         return false;
     }
     if (context->GetManager() == nullptr) {
@@ -605,15 +601,14 @@ napi_value WebSocketExec::SendCallback(SendContext *context)
 
 bool WebSocketExec::ExecClose(CloseContext *context)
 {
-    if (!CommonUtils::HasInternetPermission()) {
-        context->SetPermissionDenied(true);
-        return false;
-    }
     if (context == nullptr) {
         NETSTACK_LOGE("context is nullptr");
         return false;
     }
-
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
     if (context->GetManager() == nullptr) {
         NETSTACK_LOGE("context is null");
         return false;
