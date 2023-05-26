@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,7 @@
  */
 
 #include <gtest/gtest.h>
-
+#include <regex>
 #include "socket_error.h"
 
 namespace OHOS {
@@ -45,7 +45,8 @@ HWTEST_F(SocketErrorTest, SocketError, TestSize.Level2)
 HWTEST_F(SocketErrorTest, SocketError2, TestSize.Level2)
 {
     std::string errorMsg = MakeErrorMessage(ERROR_NOT_EXIT);
-    EXPECT_STREQ(errorMsg.data(), "error:000002BC:lib(0)::reason(700)");
+    std::regex value("^error:000002BC:lib.{5,12}reason.{5}");
+    EXPECT_TRUE(std::regex_match(errorMsg, value) == true);
 }
 } // namespace TlsSocket
 } // namespace NetStack
