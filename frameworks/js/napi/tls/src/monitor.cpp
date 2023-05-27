@@ -56,7 +56,7 @@ void ParserNullBranch(std::string errMessage, uv_work_t *work, UvWorkWrapper *wo
 
     if (work != nullptr) {
         delete work;
-        workWrapper = nullptr;
+        work = nullptr;
     }
 }
 
