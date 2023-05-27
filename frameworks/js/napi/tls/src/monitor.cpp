@@ -46,7 +46,8 @@ constexpr const char *PROPERTY_SIZE = "size";
 constexpr const char *ON_MESSAGE = "message";
 constexpr const char *ON_REMOTE_INFO = "remoteInfo";
 
-void ParserNullBranch(std::string errMessage, uv_work_t *work, UvWorkWrapper *workWrapper) {
+void ParserNullBranch(std::string errMessage, uv_work_t *work, UvWorkWrapper *workWrapper)
+{
     NETSTACK_LOGE("%{public}s", errMessage.c_str());
     if (workWrapper != nullptr) {
         delete workWrapper;
@@ -57,8 +58,9 @@ void ParserNullBranch(std::string errMessage, uv_work_t *work, UvWorkWrapper *wo
     }
 }
 
-void SetPropertyForWorkWrapper(UvWorkWrapper *workWrapper, Monitor *monitor, napi_value arrayBuffer, 
-                               napi_value remoteInfo, napi_value obj) {
+void SetPropertyForWorkWrapper(UvWorkWrapper *workWrapper, Monitor *monitor, napi_value arrayBuffer,
+                               napi_value remoteInfo, napi_value obj)
+{
     napi_value message = nullptr;
     napi_create_typedarray(workWrapper->env, napi_uint8_array, monitor->data_.size(), arrayBuffer, 0, &message);
     napi_value address = NapiUtils::CreateStringUtf8(workWrapper->env, monitor->remoteInfo_.GetAddress());
@@ -197,7 +199,8 @@ Monitor::~Monitor()
     }
 }
 
-void Monitor::ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket) {
+void Monitor::ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket)
+{
     if (event == EVENT_MESSAGE) {
         monitors_.insert(EVENT_MESSAGE);
         tlsSocket->OnMessage([this](auto data, auto remoteInfo) {
@@ -265,7 +268,8 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
     return NapiUtils::GetUndefined(env);
 }
 
-void Monitor::ParserEventForOff(const std::string event, TLSSocket *tlsSocket) {
+void Monitor::ParserEventForOff(const std::string event, TLSSocket *tlsSocket)
+{
     if (event == EVENT_MESSAGE) {
         monitors_.erase(EVENT_MESSAGE);
         tlsSocket->OffMessage();
