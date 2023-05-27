@@ -25,9 +25,9 @@
 
 #include "event_manager.h"
 #include "singleton.h"
-#include "tls_socket.h"
 #include "socket_remote_info.h"
 #include "tls.h"
+#include "tls_socket.h"
 
 namespace OHOS {
 namespace NetStack {
