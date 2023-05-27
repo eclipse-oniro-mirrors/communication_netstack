@@ -25,6 +25,7 @@
 
 #include "event_manager.h"
 #include "singleton.h"
+#include "tls_socket.h"
 #include "socket_remote_info.h"
 #include "tls.h"
 
@@ -41,6 +42,10 @@ class Monitor final {
 public:
     napi_value On(napi_env env, napi_callback_info info);
     napi_value Off(napi_env env, napi_callback_info info);
+
+private:
+    void ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket);
+    void ParserEventForOff(const std::string event, TlsSocket::TLSSocket *tlsSocket);
 
 public:
     std::string data_;

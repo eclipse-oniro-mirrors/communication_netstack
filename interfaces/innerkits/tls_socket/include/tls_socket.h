@@ -511,6 +511,8 @@ private:
         bool GetRemoteCertificateFromPeer();
         bool SetRemoteCertRawData();
         std::string CheckServerIdentityLegal(const std::string &hostName, const X509 *x509Certificates);
+        std::string CheckServerIdentityLegal(const std::string &hostName, X509_EXTENSION *ext,
+                                             const X509 *x509Certificates);
 
     private:
         ssl_st *ssl_ = nullptr;
