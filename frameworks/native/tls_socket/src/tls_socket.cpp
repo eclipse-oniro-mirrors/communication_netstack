@@ -1379,7 +1379,6 @@ void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> dns
 std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::string &hostName,
                                                                    const X509 *x509Certificates)
 {
-
     X509_NAME *subjectName = X509_get_subject_name(x509Certificates);
     if (!subjectName) {
         return "subject name is null";
