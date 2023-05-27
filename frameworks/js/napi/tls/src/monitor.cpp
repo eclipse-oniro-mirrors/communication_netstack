@@ -51,10 +51,12 @@ void ParserNullBranch(std::string errMessage, uv_work_t *work, UvWorkWrapper *wo
     NETSTACK_LOGE("%{public}s", errMessage.c_str());
     if (workWrapper != nullptr) {
         delete workWrapper;
+        workWrapper = nullptr;
     }
 
     if (work != nullptr) {
         delete work;
+        workWrapper = nullptr;
     }
 }
 
@@ -118,8 +120,7 @@ void EventMessageCallback(uv_work_t *work, int status)
     }
     workWrapper->manager->Emit(workWrapper->type, std::make_pair(NapiUtils::GetUndefined(workWrapper->env), obj));
     NapiUtils::CloseScope(workWrapper->env, scope);
-    delete workWrapper;
-    delete work;
+    ParserNullBranch("event message callback success", work, workWrapper);
 }
 
 void EventConnectCloseCallback(uv_work_t *work, int status)
