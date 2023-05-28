@@ -487,6 +487,49 @@ bool HttpExec::Initialize()
     return staticVariable_.initialized;
 }
 
+bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context)
+{
+    std::string host, exclusions;
+    int32_t port = 0;
+    if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_DEFAULT) {
+        GetGlobalHttpProxyInfo(host, port, exclusions);
+    } else if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_SPECIFIED) {
+        context->options.GetSpecifiedHttpProxy(host, port, exclusions);
+    }
+    if (!host.empty()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXY, host.c_str(), context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYPORT, port, context);
+        if (!exclusions.empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOPROXY, exclusions.c_str(), context);
+        }
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTPPROXYTUNNEL, 1L, context);
+    }
+
+#ifdef NETSTACK_PROXY_PASS
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYUSERPWD, NETSTACK_PROXY_PASS, context);
+#endif // NETSTACK_PROXY_PASS
+
+#if NO_SSL_CERTIFICATION
+    // in real life, you should buy a ssl certification and rename it to /etc/ssl/cert.pem
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
+#else
+#ifndef WINDOWS_PLATFORM
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, context->options.GetCaPath().c_str(), context);
+#endif // WINDOWS_PLATFORM
+#endif // NO_SSL_CERTIFICATION
+
+#if HTTP_CURL_PRINT_VERBOSE
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_VERBOSE, 1L, context);
+#endif
+
+#ifndef WINDOWS_PLATFORM
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_ACCEPT_ENCODING, HttpConstant::HTTP_CONTENT_ENCODING_GZIP, context);
+#endif
+    return true;
+}
+
 bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader)
 {
     const std::string &method = context->options.GetMethod();
@@ -501,6 +544,12 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_URL, context->options.GetUrl().c_str(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CUSTOMREQUEST, method.c_str(), context);
+
+    if (MethodForPost(method) && !context->options.GetBody().empty()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POST, 1L, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->options.GetBody().c_str(), context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->options.GetBody().size(), context);
+    }
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FORBID_REUSE, 1L, context);
 
@@ -524,53 +573,15 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     /* first #undef CURL_DISABLE_COOKIES in curl config */
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_COOKIEFILE, "", context);
 
-    std::string host, exclusions;
-    int32_t port = 0;
-    if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_DEFAULT) {
-        GetGlobalHttpProxyInfo(host, port, exclusions);
-    } else if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_SPECIFIED) {
-        context->options.GetSpecifiedHttpProxy(host, port, exclusions);
-    }
-    if (!host.empty()) {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXY, host.c_str(), context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYPORT, port, context);
-        if (!exclusions.empty()) {
-            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOPROXY, exclusions.c_str(), context);
-        }
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP, context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTPPROXYTUNNEL, 1L, context);
-    }
-#ifdef NETSTACK_PROXY_PASS
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYUSERPWD, NETSTACK_PROXY_PASS, context);
-#endif // NETSTACK_PROXY_PASS
-
-#if NO_SSL_CERTIFICATION
-    // in real life, you should buy a ssl certification and rename it to /etc/ssl/cert.pem
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
-#else
-#ifndef WINDOWS_PLATFORM
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, context->options.GetCaPath().c_str(), context);
-#endif // WINDOWS_PLATFORM
-#endif // NO_SSL_CERTIFICATION
-
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOSIGNAL, 1L, context);
-#if HTTP_CURL_PRINT_VERBOSE
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_VERBOSE, 1L, context);
-#endif
+
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_TIMEOUT_MS, context->options.GetReadTimeout(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
-#ifndef WINDOWS_PLATFORM
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_ACCEPT_ENCODING, HttpConstant::HTTP_CONTENT_ENCODING_GZIP, context);
-#endif
-
-    if (MethodForPost(method) && !context->options.GetBody().empty()) {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POST, 1L, context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->options.GetBody().c_str(), context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->options.GetBody().size(), context);
-    }
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTP_VERSION, context->options.GetHttpVersion(), context);
+    if (!SetOtherOption(curl, context)) {
+        return false;
+    }
 
     return true;
 }

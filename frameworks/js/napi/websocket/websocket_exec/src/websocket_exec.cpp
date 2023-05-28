@@ -491,6 +491,40 @@ static inline void FillContextInfo(lws_context_creation_info &info)
     info.fd_limit_per_thread = FD_LIMIT_PER_THREAD;
 }
 
+bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsContext,
+                                     lws_client_connect_info &connectInfo, EventManager *manager)
+{
+    char prefix[MAX_URI_LENGTH] = {0};
+    char address[MAX_URI_LENGTH] = {0};
+    char pathWithoutStart[MAX_URI_LENGTH] = {0};
+    int port = 0;
+    if (!ParseUrl(context, prefix, MAX_URI_LENGTH, address, MAX_URI_LENGTH, pathWithoutStart, MAX_URI_LENGTH, &port)) {
+        NETSTACK_LOGE("ParseUrl failed");
+        return false;
+    }
+    std::string path = PATH_START + std::string(pathWithoutStart);
+
+    if (lwsContext == nullptr) {
+        NETSTACK_LOGE("no memory");
+        return false;
+    }
+    connectInfo.context = lwsContext;
+    connectInfo.port = port;
+    connectInfo.address = address;
+    connectInfo.path = path.c_str();
+    connectInfo.host = address;
+    connectInfo.origin = address;
+    if (strcmp(prefix, PREFIX_HTTPS) == 0 || strcmp(prefix, PREFIX_WSS) == 0) {
+        connectInfo.ssl_connection =
+            LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_INSECURE | LCCSCF_ALLOW_SELFSIGNED;
+    }
+    lws *wsi = nullptr;
+    connectInfo.pwsi = &wsi;
+    connectInfo.retry_and_idle_policy = &RETRY;
+    connectInfo.userdata = reinterpret_cast<void *>(manager);
+    return true;
+}
+
 bool WebSocketExec::ExecConnect(ConnectContext *context)
 {
     if (context == nullptr) {
@@ -505,45 +539,19 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     if (context->GetManager() == nullptr) {
         return false;
     }
-    char prefix[MAX_URI_LENGTH] = {0};
-    char address[MAX_URI_LENGTH] = {0};
-    char pathWithoutStart[MAX_URI_LENGTH] = {0};
-    int port = 0;
-    if (!ParseUrl(context, prefix, MAX_URI_LENGTH, address, MAX_URI_LENGTH, pathWithoutStart, MAX_URI_LENGTH, &port)) {
-        NETSTACK_LOGE("ParseUrl failed");
-        return false;
-    }
-    std::string path = PATH_START + std::string(pathWithoutStart);
-
     lws_context_creation_info info = {0};
     FillContextInfo(info);
     lws_context *lwsContext = lws_create_context(&info);
-    if (lwsContext == nullptr) {
-        NETSTACK_LOGE("no memory");
-        return false;
-    }
-
     lws_client_connect_info connectInfo = {nullptr};
-    connectInfo.context = lwsContext;
-    connectInfo.port = port;
-    connectInfo.address = address;
-    connectInfo.path = path.c_str();
-    connectInfo.host = address;
-    connectInfo.origin = address;
-    if (strcmp(prefix, PREFIX_HTTPS) == 0 || strcmp(prefix, PREFIX_WSS) == 0) {
-        connectInfo.ssl_connection =
-            LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_INSECURE | LCCSCF_ALLOW_SELFSIGNED;
-    }
-    lws *wsi = nullptr;
-    connectInfo.pwsi = &wsi;
-    connectInfo.retry_and_idle_policy = &RETRY;
-    auto manager = context->GetManager();
+    EventManager *manager = context->GetManager();
     if (manager != nullptr && manager->GetData() == nullptr) {
         auto userData = new UserData(lwsContext);
         userData->header = context->header;
         manager->SetData(userData);
     }
-    connectInfo.userdata = reinterpret_cast<void *>(manager);
+    if (!CreatConnectInfo(context, lwsContext, connectInfo, manager)) {
+        return false;
+    }
     if (lws_client_connect_via_info(&connectInfo) == nullptr) {
         NETSTACK_LOGI("ExecConnect websocket connect failed");
         context->SetErrorCode(-1);

@@ -24,25 +24,8 @@
 namespace OHOS::NetStack::Socket {
 TcpSetExtraOptionsContext::TcpSetExtraOptionsContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
-void TcpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCount)
+void TcpSetExtraOptionsContext::ParseContextKey(napi_value *params)
 {
-    bool valid = CheckParamsType(params, paramsCount);
-    if (!valid) {
-        if (paramsCount == PARAM_JUST_CALLBACK) {
-            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
-                SetCallback(params[0]);
-            }
-            return;
-        }
-        if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
-            if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
-                SetCallback(params[1]);
-            }
-            return;
-        }
-        return;
-    }
-
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_RECEIVE_BUFFER_SIZE)) {
         options_.SetReceiveBufferSize(NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_RECEIVE_BUFFER_SIZE));
     }
@@ -84,6 +67,28 @@ void TcpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCou
             }
         }
     }
+}
+
+void TcpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCount)
+{
+    bool valid = CheckParamsType(params, paramsCount);
+    if (!valid) {
+        if (paramsCount == PARAM_JUST_CALLBACK) {
+            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
+                SetCallback(params[0]);
+            }
+            return;
+        }
+        if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
+            if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
+                SetCallback(params[1]);
+            }
+            return;
+        }
+        return;
+    }
+
+    ParseContextKey(params);
 
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
         SetParseOK(SetCallback(params[1]) == napi_ok);

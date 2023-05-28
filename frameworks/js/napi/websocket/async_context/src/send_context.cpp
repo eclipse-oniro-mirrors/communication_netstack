@@ -28,6 +28,61 @@ SendContext::SendContext(napi_env env, EventManager *manager)
 {
 }
 
+bool SendContext::HandleParseString(napi_value *params)
+{
+    NETSTACK_LOGI("SendContext data is String");
+    std::string str = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
+    // must have PRE and POST
+    size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + str.length() + LWS_SEND_BUFFER_POST_PADDING;
+    if (dataLen == 0 || dataLen > MAX_LIMIT) {
+        NETSTACK_LOGE("SendContext data is exceeded the limit");
+        return false;
+    }
+    data = malloc(dataLen);
+    if (data == nullptr) {
+        NETSTACK_LOGE("no memory");
+        return false;
+    }
+    if (memcpy_s(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(data) + LWS_SEND_BUFFER_PRE_PADDING),
+                 str.length(), str.c_str(), str.length()) < 0) {
+        NETSTACK_LOGE("copy failed");
+        return false;
+    }
+    length = str.length();
+    protocol = LWS_WRITE_TEXT;
+    return true;
+}
+
+bool SendContext::HandleParseArrayBuffer(napi_value *params)
+{
+    NETSTACK_LOGI("SendContext data is ArrayBuffer");
+    size_t len = 0;
+    void *mem = NapiUtils::GetInfoFromArrayBufferValue(GetEnv(), params[0], &len);
+    if (mem == nullptr || len == 0) {
+        NETSTACK_LOGE("no memory");
+        return false;
+    }
+    // must have PRE and POST
+    size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + len + LWS_SEND_BUFFER_POST_PADDING;
+    if (dataLen == 0 || dataLen > MAX_LIMIT) {
+        NETSTACK_LOGE("SendContext data is exceeded the limit");
+        return false;
+    }
+    data = malloc(dataLen);
+    if (data == nullptr) {
+        NETSTACK_LOGE("no memory");
+        return false;
+    }
+    if (memcpy_s(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(data) + LWS_SEND_BUFFER_PRE_PADDING), len, mem,
+                 len) < 0) {
+        NETSTACK_LOGE("copy failed");
+        return false;
+    }
+    length = len;
+    protocol = LWS_WRITE_BINARY;
+    return true;
+}
+
 void SendContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     if (!CheckParamsType(params, paramsCount)) {
@@ -49,52 +104,13 @@ void SendContext::ParseParams(napi_value *params, size_t paramsCount)
     }
 
     if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string) {
-        NETSTACK_LOGI("SendContext NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string");
-        std::string str = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
-        // must have PRE and POST
-        size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + str.length() + LWS_SEND_BUFFER_POST_PADDING;
-        if (dataLen == 0 || dataLen > MAX_LIMIT) {
-            NETSTACK_LOGE("SendContext data is exceeded the limit");
+        if (!HandleParseString(params)) {
             return;
         }
-        data = malloc(dataLen);
-        if (data == nullptr) {
-            NETSTACK_LOGE("no memory");
-            return;
-        }
-        if (memcpy_s(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(data) + LWS_SEND_BUFFER_PRE_PADDING),
-                     str.length(), str.c_str(), str.length()) < 0) {
-            NETSTACK_LOGE("copy failed");
-            return;
-        }
-        length = str.length();
-        protocol = LWS_WRITE_TEXT;
     } else {
-        NETSTACK_LOGI("SendContext data is ArrayBuffer");
-        size_t len = 0;
-        void *mem = NapiUtils::GetInfoFromArrayBufferValue(GetEnv(), params[0], &len);
-        if (mem == nullptr || len == 0) {
-            NETSTACK_LOGE("no memory");
+        if (!HandleParseArrayBuffer(params)) {
             return;
         }
-        // must have PRE and POST
-        size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + len + LWS_SEND_BUFFER_POST_PADDING;
-        if (dataLen == 0 || dataLen > MAX_LIMIT) {
-            NETSTACK_LOGE("SendContext data is exceeded the limit");
-            return;
-        }
-        data = malloc(dataLen);
-        if (data == nullptr) {
-            NETSTACK_LOGE("no memory");
-            return;
-        }
-        if (memcpy_s(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(data) + LWS_SEND_BUFFER_PRE_PADDING), len,
-                     mem, len) < 0) {
-            NETSTACK_LOGE("copy failed");
-            return;
-        }
-        length = len;
-        protocol = LWS_WRITE_BINARY;
     }
 
     if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {

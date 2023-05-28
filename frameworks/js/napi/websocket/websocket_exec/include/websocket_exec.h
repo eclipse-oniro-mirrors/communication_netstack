@@ -23,6 +23,8 @@
 namespace OHOS::NetStack::Websocket {
 class WebSocketExec final {
 public:
+    static bool CreatConnectInfo(ConnectContext *context, lws_context *lwsContext, lws_client_connect_info &connectInfo,
+                          EventManager *manager);
     /* async work execute */
     static bool ExecConnect(ConnectContext *context);
 
@@ -40,14 +42,8 @@ public:
     static int LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
 
 private:
-    static bool ParseUrl(ConnectContext *context,
-                         char *prefix,
-                         size_t prefixLen,
-                         char *address,
-                         size_t addressLen,
-                         char *path,
-                         size_t pathLen,
-                         int *port);
+    static bool ParseUrl(ConnectContext *context, char *prefix, size_t prefixLen, char *address, size_t addressLen,
+                         char *path, size_t pathLen, int *port);
 
     static void RunService(EventManager *manager);
 
@@ -55,20 +51,20 @@ private:
 
     static int HttpDummy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
 
-    static int
-        LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
+    static int LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback_reasons reason, void *user, void *in,
+                                                      size_t len);
 
     static int LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
 
     static int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
 
-    static int
-        LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
+    static int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in,
+                                                size_t len);
 
     static int LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
 
-    static int
-        LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
+    static int LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_reasons reason, void *user, void *in,
+                                                   size_t len);
 
     static int LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
 
