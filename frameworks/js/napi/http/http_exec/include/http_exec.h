@@ -80,6 +80,8 @@ public:
 private:
     static bool SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader);
 
+    static bool SetOtherOption(CURL *curl, RequestContext *context);
+
     static size_t OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData);
 
     static size_t OnWritingMemoryHeader(const void *data, size_t size, size_t memBytes, void *userData);

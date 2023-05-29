@@ -309,6 +309,20 @@ static bool MakeNonBlock(int sock)
     return true;
 }
 
+static bool PollFd(pollfd *fds, nfds_t num, int timeout)
+{
+    int ret = poll(fds, num, timeout);
+    if (ret == -1) {
+        NETSTACK_LOGE("poll to send failed %{public}s", strerror(errno));
+        return false;
+    }
+    if (ret == 0) {
+        NETSTACK_LOGE("poll to send timeout");
+        return false;
+    }
+    return true;
+}
+
 static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr, socklen_t addrLen)
 {
     int bufferSize = DEFAULT_BUFFER_SIZE;
@@ -333,16 +347,9 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     fds[0].events |= POLLOUT;
 
     while (leftSize > 0) {
-        int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT);
-        if (ret == -1) {
-            NETSTACK_LOGE("poll to send failed %{public}s", strerror(errno));
+        if (!PollFd(fds, num, DEFAULT_BUFFER_SIZE)) {
             return false;
         }
-        if (ret == 0) {
-            NETSTACK_LOGE("poll to send timeout");
-            return false;
-        }
-
         size_t sendSize = (sockType == SOCK_STREAM ? leftSize : std::min<size_t>(leftSize, bufferSize));
         auto sendLen = sendto(sock, curPos, sendSize, 0, addr, addrLen);
         if (sendLen < 0) {
@@ -768,6 +775,28 @@ bool ExecClose(CloseContext *context)
     return true;
 }
 
+static bool CheckClosed(GetStateContext *context, int &opt)
+{
+    socklen_t optLen = sizeof(int);
+    int r = getsockopt(context->GetSocketFd(), SOL_SOCKET, SO_TYPE, &opt, &optLen);
+    if (r < 0) {
+        context->state_.SetIsClose(true);
+        return true;
+    }
+    return false;
+}
+
+static bool CheckSocketFd(GetStateContext *context, sockaddr &sockAddr)
+{
+    socklen_t len = sizeof(sockaddr);
+    int ret = getsockname(context->GetSocketFd(), &sockAddr, &len);
+    if (ret < 0) {
+        context->SetErrorCode(errno);
+        return false;
+    }
+    return true;
+}
+
 bool ExecGetState(GetStateContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
@@ -776,18 +805,12 @@ bool ExecGetState(GetStateContext *context)
     }
 
     int opt;
-    socklen_t optLen = sizeof(int);
-    int r = getsockopt(context->GetSocketFd(), SOL_SOCKET, SO_TYPE, &opt, &optLen);
-    if (r < 0) {
-        context->state_.SetIsClose(true);
+    if (CheckClosed(context, opt)) {
         return true;
     }
 
     sockaddr sockAddr = {0};
-    socklen_t len = sizeof(sockaddr);
-    int ret = getsockname(context->GetSocketFd(), &sockAddr, &len);
-    if (ret < 0) {
-        context->SetErrorCode(errno);
+    if (!CheckSocketFd(context, sockAddr)) {
         return false;
     }
 
@@ -809,8 +832,8 @@ bool ExecGetState(GetStateContext *context)
     }
 
     (void)memset_s(addr, addrLen, 0, addrLen);
-    len = addrLen;
-    ret = getsockname(context->GetSocketFd(), addr, &len);
+    socklen_t len = addrLen;
+    int ret = getsockname(context->GetSocketFd(), addr, &len);
     if (ret < 0) {
         context->SetErrorCode(errno);
         return false;

@@ -34,6 +34,8 @@ public:
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
+    void ParseContextKey(napi_value *params);
+
     [[nodiscard]] int GetSocketFd() const;
 
     [[nodiscard]] int32_t GetErrorCode() const override;
