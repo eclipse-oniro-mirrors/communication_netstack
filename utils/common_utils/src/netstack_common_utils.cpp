@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -84,6 +84,20 @@ std::string ToLower(const std::string &s)
     std::string res = s;
     std::transform(res.begin(), res.end(), res.begin(), tolower);
     return res;
+}
+
+std::string ToString(const std::set<std::string> &list, char tab)
+{
+    std::string str;
+    int32_t index = 0;
+    for (auto s : list) {
+        if (index > 0) {
+            str = str + tab;
+        }
+        str = str + s;
+        index++;
+    }
+    return str;
 }
 
 bool HasInternetPermission()

@@ -13,15 +13,13 @@
  * limitations under the License.
  */
 
+#include "http_exec.h"
+
 #include <cstddef>
 #include <cstring>
 #include <memory>
 #include <thread>
 #include <unistd.h>
-
-#ifdef HTTP_PROXY_ENABLE
-#include "parameter.h"
-#endif
 
 #include "base64_utils.h"
 #include "cache_proxy.h"
@@ -34,7 +32,10 @@
 #include "netstack_log.h"
 #include "securec.h"
 
-#include "http_exec.h"
+#ifdef HTTP_PROXY_ENABLE
+#include "http_proxy.h"
+#include "net_conn_client.h"
+#endif
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
@@ -53,15 +54,7 @@ static constexpr int CURL_TIMEOUT_MS = 50;
 static constexpr int CONDITION_TIMEOUT_S = 3600;
 static constexpr int CURL_MAX_WAIT_MSECS = 10;
 static constexpr int CURL_HANDLE_NUM = 10;
-#ifdef HTTP_PROXY_ENABLE
-static constexpr int32_t SYSPARA_MAX_SIZE = 128;
-static constexpr const char *DEFAULT_HTTP_PROXY_HOST = "NONE";
-static constexpr const char *DEFAULT_HTTP_PROXY_PORT = "0";
-static constexpr const char *DEFAULT_HTTP_PROXY_EXCLUSION_LIST = "NONE";
-static constexpr const char *HTTP_PROXY_HOST_KEY = "persist.netmanager_base.http_proxy.host";
-static constexpr const char *HTTP_PROXY_PORT_KEY = "persist.netmanager_base.http_proxy.port";
-static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_base.http_proxy.exclusion_list";
-#endif
+
 bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 {
     if (handle == nullptr || staticVariable_.curlMulti == nullptr) {
@@ -439,28 +432,21 @@ void HttpExec::ReadResponse()
     } while (msg);
 }
 
-void HttpExec::GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions)
+void HttpExec::GetDefaultHttpProxyInfo(RequestContext *context, std::string &host, int32_t &port,
+                                       std::string &exclusions)
 {
+    if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_DEFAULT) {
 #ifdef HTTP_PROXY_ENABLE
-    char httpProxyHost[SYSPARA_MAX_SIZE] = {0};
-    char httpProxyPort[SYSPARA_MAX_SIZE] = {0};
-    char httpProxyExclusions[SYSPARA_MAX_SIZE] = {0};
-    GetParameter(HTTP_PROXY_HOST_KEY, DEFAULT_HTTP_PROXY_HOST, httpProxyHost, sizeof(httpProxyHost));
-    GetParameter(HTTP_PROXY_PORT_KEY, DEFAULT_HTTP_PROXY_PORT, httpProxyPort, sizeof(httpProxyPort));
-    GetParameter(HTTP_PROXY_EXCLUSIONS_KEY, DEFAULT_HTTP_PROXY_EXCLUSION_LIST, httpProxyExclusions,
-                 sizeof(httpProxyExclusions));
-
-    host = Base64::Decode(httpProxyHost);
-    if (host == DEFAULT_HTTP_PROXY_HOST) {
-        host = std::string();
-    }
-    exclusions = httpProxyExclusions;
-    if (exclusions == DEFAULT_HTTP_PROXY_EXCLUSION_LIST) {
-        exclusions = std::string();
-    }
-
-    port = std::atoi(httpProxyPort);
+        using namespace NetManagerStandard;
+        HttpProxy httpProxy;
+        DelayedSingleton<NetConnClient>::GetInstance()->GetDefaultHttpProxy(httpProxy);
+        host = httpProxy.GetHost();
+        port = httpProxy.GetPort();
+        exclusions = CommonUtils::ToString(httpProxy.GetExclusionList());
 #endif
+    } else if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_SPECIFIED) {
+        context->options.GetSpecifiedHttpProxy(host, port, exclusions);
+    }
 }
 
 bool HttpExec::Initialize()
@@ -491,11 +477,7 @@ bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *
 {
     std::string host, exclusions;
     int32_t port = 0;
-    if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_DEFAULT) {
-        GetGlobalHttpProxyInfo(host, port, exclusions);
-    } else if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_SPECIFIED) {
-        context->options.GetSpecifiedHttpProxy(host, port, exclusions);
-    }
+    GetDefaultHttpProxyInfo(context, host, port, exclusions);
     if (!host.empty()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXY, host.c_str(), context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYPORT, port, context);
