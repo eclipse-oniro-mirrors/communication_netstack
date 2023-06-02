@@ -61,7 +61,7 @@ SecureData &SecureData::operator=(const SecureData &secureData)
 {
     if (this != &secureData) {
         if (secureData.Length() == 0) {
-            return;
+            return *this;
         }
         length_ = secureData.Length();
         data_ = std::make_unique<char[]>(length_);
