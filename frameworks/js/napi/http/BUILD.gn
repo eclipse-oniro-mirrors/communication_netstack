@@ -28,10 +28,16 @@ config("http_config") {
     "http_module/include",
     "options/include",
     "$THIRD_PARTY_ROOT/curl/include",
-    "$NETMANAGER_BASE_INNERKITS_DIR/include",
-    "$NETMANAGER_BASE_INNERKITS_DIR/netconnclient/include",
     "$NETSTACK_DIR/utils/common_utils/include",
   ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    include_dirs += [
+      "$NETMANAGER_BASE_INNERKITS_DIR/include",
+      "$NETMANAGER_BASE_INNERKITS_DIR/netconnclient/include",
+    ]
+  }
 
   if (is_mingw || is_mac) {
     cflags = [
