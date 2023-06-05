@@ -43,8 +43,6 @@ config("http_config") {
     defines = [ "WINDOWS_PLATFORM" ]
   } else if (is_mac) {
     defines = [ "MAC_PLATFORM" ]
-  } else if (product_name != "ohos-sdk") {
-    defines = [ "HTTP_PROXY_ENABLE" ]
   }
 }
 
@@ -82,11 +80,19 @@ ohos_shared_library("http") {
     ]
   } else {
     deps += [
-      "$NETMANAGER_BASE_INNERKITS_DIR/netconnclient:net_conn_manager_if",
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
     ]
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.communication_netmanager_base) &&
+        global_parts_info.communication_netmanager_base) {
+      deps +=
+          [ "$NETMANAGER_BASE_INNERKITS_DIR/netconnclient:net_conn_manager_if" ]
+      defines = [ "HAS_NETMANAGER_BASE=1" ]
+    } else {
+      defines = [ "HAS_NETMANAGER_BASE=0" ]
+    }
     external_deps = [
       "hiviewdfx_hilog_native:libhilog",
       "napi:ace_napi",

@@ -32,7 +32,7 @@
 #include "netstack_log.h"
 #include "securec.h"
 
-#ifdef HTTP_PROXY_ENABLE
+#ifdef HAS_NETMANAGER_BASE
 #include "http_proxy.h"
 #include "net_conn_client.h"
 #endif
@@ -436,7 +436,7 @@ void HttpExec::GetDefaultHttpProxyInfo(RequestContext *context, std::string &hos
                                        std::string &exclusions)
 {
     if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_DEFAULT) {
-#ifdef HTTP_PROXY_ENABLE
+#ifdef HAS_NETMANAGER_BASE
         using namespace NetManagerStandard;
         HttpProxy httpProxy;
         DelayedSingleton<NetConnClient>::GetInstance()->GetDefaultHttpProxy(httpProxy);
