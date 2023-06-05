@@ -49,6 +49,8 @@ config("http_config") {
     defines = [ "WINDOWS_PLATFORM" ]
   } else if (is_mac) {
     defines = [ "MAC_PLATFORM" ]
+  } else if (product_name != "ohos-sdk") {
+    defines = [ "HTTP_PROXY_ENABLE" ]
   }
 }
 
@@ -103,6 +105,9 @@ ohos_shared_library("http") {
       "hiviewdfx_hilog_native:libhilog",
       "napi:ace_napi",
     ]
+    if (product_name != "ohos-sdk") {
+      external_deps += [ "init:libbegetutil" ]
+    }
   }
 
   relative_install_dir = "module/net"
