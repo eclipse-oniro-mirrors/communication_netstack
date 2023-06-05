@@ -467,8 +467,7 @@ void HttpExec::GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::str
 #endif
 }
 
-void HttpExec::GetDefaultHttpProxyInfo(RequestContext *context, std::string &host, int32_t &port,
-                                       std::string &exclusions)
+void HttpExec::GetHttpProxyInfo(RequestContext *context, std::string &host, int32_t &port, std::string &exclusions)
 {
     if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_DEFAULT) {
 #ifdef HAS_NETMANAGER_BASE
@@ -514,7 +513,7 @@ bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *
 {
     std::string host, exclusions;
     int32_t port = 0;
-    GetDefaultHttpProxyInfo(context, host, port, exclusions);
+    GetHttpProxyInfo(context, host, port, exclusions);
     if (!host.empty()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXY, host.c_str(), context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYPORT, port, context);
