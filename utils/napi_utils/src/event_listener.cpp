@@ -59,13 +59,14 @@ EventListener &EventListener::operator=(const EventListener &listener)
     once_ = listener.once_;
     asyncCallback_ = listener.asyncCallback_;
 
+    if (callbackRef_ != nullptr) {
+        NapiUtils::DeleteReference(env_, callbackRef_);
+    }
     if (listener.callbackRef_ == nullptr) {
         callbackRef_ = nullptr;
         return *this;
     }
-    if (callbackRef_ != nullptr) {
-        NapiUtils::DeleteReference(env_, callbackRef_);
-    }
+
     napi_value callback = NapiUtils::GetReference(listener.env_, listener.callbackRef_);
     callbackRef_ = NapiUtils::CreateReference(env_, callback);
     return *this;
