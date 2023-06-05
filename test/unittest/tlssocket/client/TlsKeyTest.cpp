@@ -90,6 +90,7 @@ HWTEST_F(TlsKeyTest, DecodePemTest, TestSize.Level2)
     TLSKey tlsKey4 = TLSKey(fileName2, ALGORITHM_RSA, keyPass, EncodingFormat::DER);
     SecureData structureData("");
     TLSKey tlsKey = TLSKey(structureData, ALGORITHM_RSA, keyPass);
+    EXPECT_EQ(tlsKey.keyIsNull_, false);
 }
 
 HWTEST_F(TlsKeyTest, CopyConstruction, TestSize.Level2)
@@ -237,6 +238,8 @@ HWTEST_F(TlsKeyTest, DecodeDataTest, TestSize.Level2)
     SecureData keyPass(keyPassStr);
     TLSKey tlsKey = TLSKey(data, ALGORITHM_DSA, keyPass);
     tlsKey.DecodeData(data, ALGORITHM_DSA, keyPass);
+    SecureData getKeyData = tlsKey.GetKeyData();
+    EXPECT_EQ(getKeyData.Length(), data.Length());
 }
 } // namespace TlsSocket
 } // namespace NetStack
