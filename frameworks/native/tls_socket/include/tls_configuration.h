@@ -65,9 +65,9 @@ public:
     [[nodiscard]] std::vector<CipherSuite> GetCipherSuiteVec() const;
 
 private:
-    TLSProtocol minProtocol_ = TLS_V1_2;
-    TLSProtocol maxProtocol_ = TLS_V1_2;
-    TLSProtocol protocol_ = TLS_V1_2;
+    TLSProtocol minProtocol_ = TLS_V1_3;
+    TLSProtocol maxProtocol_ = TLS_V1_3;
+    TLSProtocol protocol_ = TLS_V1_3;
 
     std::string cipherSuite_;
     std::string signatureAlgorithms_;
