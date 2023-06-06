@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2023 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -30,6 +30,14 @@ config("http_config") {
     "$THIRD_PARTY_ROOT/curl/include",
     "$NETSTACK_DIR/utils/common_utils/include",
   ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    include_dirs += [
+      "$NETMANAGER_BASE_INNERKITS_DIR/include",
+      "$NETMANAGER_BASE_INNERKITS_DIR/netconnclient/include",
+    ]
+  }
 
   if (is_mingw || is_mac) {
     cflags = [
@@ -84,6 +92,15 @@ ohos_shared_library("http") {
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
     ]
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.communication_netmanager_base) &&
+        global_parts_info.communication_netmanager_base) {
+      deps +=
+          [ "$NETMANAGER_BASE_INNERKITS_DIR/netconnclient:net_conn_manager_if" ]
+      defines = [ "HAS_NETMANAGER_BASE=1" ]
+    } else {
+      defines = [ "HAS_NETMANAGER_BASE=0" ]
+    }
     external_deps = [
       "hiviewdfx_hilog_native:libhilog",
       "napi:ace_napi",

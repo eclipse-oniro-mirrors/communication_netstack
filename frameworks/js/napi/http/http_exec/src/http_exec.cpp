@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include "http_exec.h"
+
 #include <cstddef>
 #include <cstring>
 #include <memory>
@@ -22,7 +24,10 @@
 #ifdef HTTP_PROXY_ENABLE
 #include "parameter.h"
 #endif
-
+#ifdef HAS_NETMANAGER_BASE
+#include "http_proxy.h"
+#include "net_conn_client.h"
+#endif
 #include "base64_utils.h"
 #include "cache_proxy.h"
 #include "constant.h"
@@ -33,8 +38,6 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "securec.h"
-
-#include "http_exec.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
@@ -62,6 +65,7 @@ static constexpr const char *HTTP_PROXY_HOST_KEY = "persist.netmanager_base.http
 static constexpr const char *HTTP_PROXY_PORT_KEY = "persist.netmanager_base.http_proxy.port";
 static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_base.http_proxy.exclusion_list";
 #endif
+
 bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 {
     if (handle == nullptr || staticVariable_.curlMulti == nullptr) {
@@ -463,6 +467,24 @@ void HttpExec::GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::str
 #endif
 }
 
+void HttpExec::GetHttpProxyInfo(RequestContext *context, std::string &host, int32_t &port, std::string &exclusions)
+{
+    if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_DEFAULT) {
+#ifdef HAS_NETMANAGER_BASE
+        using namespace NetManagerStandard;
+        HttpProxy httpProxy;
+        DelayedSingleton<NetConnClient>::GetInstance()->GetDefaultHttpProxy(httpProxy);
+        host = httpProxy.GetHost();
+        port = httpProxy.GetPort();
+        exclusions = CommonUtils::ToString(httpProxy.GetExclusionList());
+#else
+        GetGlobalHttpProxyInfo(host, port, exclusions);
+#endif
+    } else if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_SPECIFIED) {
+        context->options.GetSpecifiedHttpProxy(host, port, exclusions);
+    }
+}
+
 bool HttpExec::Initialize()
 {
     std::lock_guard<std::mutex> lock(staticVariable_.mutex);
@@ -491,11 +513,7 @@ bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *
 {
     std::string host, exclusions;
     int32_t port = 0;
-    if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_DEFAULT) {
-        GetGlobalHttpProxyInfo(host, port, exclusions);
-    } else if (context->options.GetUsingHttpProxyType() == UsingHttpProxyType::USE_SPECIFIED) {
-        context->options.GetSpecifiedHttpProxy(host, port, exclusions);
-    }
+    GetHttpProxyInfo(context, host, port, exclusions);
     if (!host.empty()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXY, host.c_str(), context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYPORT, port, context);

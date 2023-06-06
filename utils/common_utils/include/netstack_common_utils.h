@@ -16,6 +16,7 @@
 #ifndef COMMUNICATIONNETSTACK_COMMON_UTILS_H
 #define COMMUNICATIONNETSTACK_COMMON_UTILS_H
 
+#include <set>
 #include <vector>
 #include <iosfwd>
 
@@ -27,6 +28,8 @@ std::vector<std::string> Split(const std::string &str, const std::string &sep, s
 std::string Strip(const std::string &str, char ch = ' ');
 
 std::string ToLower(const std::string &s);
+
+std::string ToString(const std::set<std::string> &list, char tab = ',');
 
 bool HasInternetPermission();
 } // namespace OHOS::NetStack::CommonUtils
