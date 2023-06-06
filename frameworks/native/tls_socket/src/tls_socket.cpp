@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1379,8 +1379,6 @@ void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> dns
 std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::string &hostName,
                                                                    const X509 *x509Certificates)
 {
-    std::string hostname = hostName;
-
     X509_NAME *subjectName = X509_get_subject_name(x509Certificates);
     if (!subjectName) {
         return "subject name is null";
@@ -1402,9 +1400,15 @@ std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::st
     OBJ_obj2txt(subAltNameBuf, BUF_SIZE, obj, 0);
     NETSTACK_LOGD("extions obj : %{public}s\n", subAltNameBuf);
 
+    return CheckServerIdentityLegal(hostName, ext, x509Certificates);
+}
+
+std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::string &hostName, X509_EXTENSION *ext,
+                                                                   const X509 *x509Certificates)
+{
     ASN1_OCTET_STRING *extData = X509_EXTENSION_get_data(ext);
     std::string altNames = reinterpret_cast<char *>(extData->data);
-
+    std::string hostname = " " + hostName;
     BIO *bio = BIO_new(BIO_s_file());
     if (!bio) {
         return "bio is null";
@@ -1415,7 +1419,6 @@ std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::st
     std::vector<std::string> ips = {};
     constexpr int DNS_NAME_IDX = 4;
     constexpr int IP_NAME_IDX = 11;
-    hostname = "" + hostname;
     if (!altNames.empty()) {
         std::vector<std::string> splitAltNames;
         if (altNames.find('\"') != std::string::npos) {

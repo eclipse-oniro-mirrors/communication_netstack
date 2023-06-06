@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -46,49 +46,23 @@ constexpr const char *PROPERTY_SIZE = "size";
 constexpr const char *ON_MESSAGE = "message";
 constexpr const char *ON_REMOTE_INFO = "remoteInfo";
 
-void EventMessageCallback(uv_work_t *work, int status)
+void ParserNullBranch(std::string errMessage, uv_work_t *work, UvWorkWrapper *workWrapper)
 {
-    (void)status;
-    if (work == nullptr) {
-        NETSTACK_LOGE("work is nullptr");
-        return;
-    }
-    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
-    if (workWrapper == nullptr) {
-        NETSTACK_LOGE("workWrapper is nullptr");
-        delete work;
-        return;
-    }
-    auto monitor = static_cast<Monitor *>(workWrapper->data);
-    if (monitor == nullptr) {
-        NETSTACK_LOGE("monitor is nullptr");
+    NETSTACK_LOGE("%{public}s", errMessage.c_str());
+    if (workWrapper != nullptr) {
         delete workWrapper;
+        workWrapper = nullptr;
+    }
+
+    if (work != nullptr) {
         delete work;
-        return;
+        work = nullptr;
     }
-    napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
-    napi_value obj = NapiUtils::CreateObject(workWrapper->env);
-    napi_value remoteInfo = NapiUtils::CreateObject(workWrapper->env);
-    void *data = nullptr;
-    if (monitor->messagerQueue_.dataQueue.empty() || monitor->messagerQueue_.remoteInfoQueue.empty()) {
-        NETSTACK_LOGE("dataQueue or remoteInfoQueue is empty");
-        delete workWrapper;
-        delete work;
-        return;
-    }
-    monitor->data_ = monitor->messagerQueue_.dataQueue.front();
-    monitor->messagerQueue_.dataQueue.pop();
-    monitor->remoteInfo_ = monitor->messagerQueue_.remoteInfoQueue.front();
-    monitor->messagerQueue_.remoteInfoQueue.pop();
-    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(workWrapper->env, monitor->data_.size(), &data);
-    if (data != nullptr && arrayBuffer != nullptr) {
-        if (memcpy_s(data, monitor->data_.size(), monitor->data_.c_str(), monitor->data_.size()) != EOK) {
-            NETSTACK_LOGE("memcpy_s failed!");
-            delete workWrapper;
-            delete work;
-            return;
-        }
-    }
+}
+
+void SetPropertyForWorkWrapper(UvWorkWrapper *workWrapper, Monitor *monitor, napi_value arrayBuffer,
+                               napi_value remoteInfo, napi_value obj)
+{
     napi_value message = nullptr;
     napi_create_typedarray(workWrapper->env, napi_uint8_array, monitor->data_.size(), arrayBuffer, 0, &message);
     napi_value address = NapiUtils::CreateStringUtf8(workWrapper->env, monitor->remoteInfo_.GetAddress());
@@ -101,16 +75,52 @@ void EventMessageCallback(uv_work_t *work, int status)
     NapiUtils::SetNamedProperty(workWrapper->env, remoteInfo, PROPERTY_SIZE, size);
     NapiUtils::SetNamedProperty(workWrapper->env, obj, ON_MESSAGE, message);
     NapiUtils::SetNamedProperty(workWrapper->env, obj, ON_REMOTE_INFO, remoteInfo);
+}
+
+void EventMessageCallback(uv_work_t *work, int status)
+{
+    (void)status;
+    if (work == nullptr) {
+        NETSTACK_LOGE("work is nullptr");
+        return;
+    }
+    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
+    if (workWrapper == nullptr) {
+        ParserNullBranch("workWrapper is nullptr", work, nullptr);
+        return;
+    }
+    auto monitor = static_cast<Monitor *>(workWrapper->data);
+    if (monitor == nullptr) {
+        ParserNullBranch("monitor is nullptr", work, workWrapper);
+        return;
+    }
+    napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
+    napi_value obj = NapiUtils::CreateObject(workWrapper->env);
+    napi_value remoteInfo = NapiUtils::CreateObject(workWrapper->env);
+    void *data = nullptr;
+    if (monitor->messagerQueue_.dataQueue.empty() || monitor->messagerQueue_.remoteInfoQueue.empty()) {
+        ParserNullBranch("dataQueue or remoteInfoQueue is empty", work, workWrapper);
+        return;
+    }
+    monitor->data_ = monitor->messagerQueue_.dataQueue.front();
+    monitor->messagerQueue_.dataQueue.pop();
+    monitor->remoteInfo_ = monitor->messagerQueue_.remoteInfoQueue.front();
+    monitor->messagerQueue_.remoteInfoQueue.pop();
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(workWrapper->env, monitor->data_.size(), &data);
+    if (data != nullptr && arrayBuffer != nullptr) {
+        if (memcpy_s(data, monitor->data_.size(), monitor->data_.c_str(), monitor->data_.size()) != EOK) {
+            ParserNullBranch("memcpy_s failed!", work, workWrapper);
+            return;
+        }
+    }
+    SetPropertyForWorkWrapper(workWrapper, monitor, arrayBuffer, remoteInfo, obj);
     if (workWrapper->manager == nullptr) {
-        NETSTACK_LOGE("manager is nullptr");
-        delete workWrapper;
-        delete work;
+        ParserNullBranch("manager is nullptr", work, workWrapper);
         return;
     }
     workWrapper->manager->Emit(workWrapper->type, std::make_pair(NapiUtils::GetUndefined(workWrapper->env), obj));
     NapiUtils::CloseScope(workWrapper->env, scope);
-    delete workWrapper;
-    delete work;
+    ParserNullBranch("event message callback success", work, workWrapper);
 }
 
 void EventConnectCloseCallback(uv_work_t *work, int status)
@@ -190,6 +200,36 @@ Monitor::~Monitor()
     }
 }
 
+void Monitor::ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket)
+{
+    if (event == EVENT_MESSAGE) {
+        monitors_.insert(EVENT_MESSAGE);
+        tlsSocket->OnMessage([this](auto data, auto remoteInfo) {
+            messagerQueue_.dataQueue.push(data);
+            messagerQueue_.remoteInfoQueue.push(remoteInfo);
+            manager_->EmitByUv(std::string(EVENT_MESSAGE), static_cast<void *>(this), EventMessageCallback);
+        });
+    }
+    if (event == EVENT_CLOSE) {
+        monitors_.insert(EVENT_CLOSE);
+        tlsSocket->OnClose(
+            [this]() { manager_->EmitByUv(std::string(EVENT_CLOSE), nullptr, EventConnectCloseCallback); });
+    }
+    if (event == EVENT_CONNECT) {
+        monitors_.insert(EVENT_CONNECT);
+        tlsSocket->OnConnect(
+            [this]() { manager_->EmitByUv(std::string(EVENT_CONNECT), nullptr, EventConnectCloseCallback); });
+    }
+    if (event == EVENT_ERROR) {
+        monitors_.insert(EVENT_ERROR);
+        tlsSocket->OnError([this](auto errorNumber, auto errorString) {
+            errorNumber_ = errorNumber;
+            errorString_ = errorString;
+            manager_->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(this), EventErrorCallback);
+        });
+    }
+}
+
 napi_value Monitor::On(napi_env env, napi_callback_info info)
 {
     napi_value thisVal = nullptr;
@@ -225,33 +265,28 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
     manager_->AddListener(env, event, params[1], false, false);
+    ParserEventForOn(event, tlsSocket);
+    return NapiUtils::GetUndefined(env);
+}
+
+void Monitor::ParserEventForOff(const std::string event, TLSSocket *tlsSocket)
+{
     if (event == EVENT_MESSAGE) {
-        monitors_.insert(EVENT_MESSAGE);
-        tlsSocket->OnMessage([this](auto data, auto remoteInfo) {
-            messagerQueue_.dataQueue.push(data);
-            messagerQueue_.remoteInfoQueue.push(remoteInfo);
-            manager_->EmitByUv(std::string(EVENT_MESSAGE), static_cast<void *>(this), EventMessageCallback);
-        });
+        monitors_.erase(EVENT_MESSAGE);
+        tlsSocket->OffMessage();
     }
     if (event == EVENT_CLOSE) {
-        monitors_.insert(EVENT_CLOSE);
-        tlsSocket->OnClose(
-            [this]() { manager_->EmitByUv(std::string(EVENT_CLOSE), nullptr, EventConnectCloseCallback); });
+        monitors_.erase(EVENT_CLOSE);
+        tlsSocket->OffClose();
     }
     if (event == EVENT_CONNECT) {
-        monitors_.insert(EVENT_CONNECT);
-        tlsSocket->OnConnect(
-            [this]() { manager_->EmitByUv(std::string(EVENT_CONNECT), nullptr, EventConnectCloseCallback); });
+        monitors_.erase(EVENT_CONNECT);
+        tlsSocket->OffConnect();
     }
     if (event == EVENT_ERROR) {
-        monitors_.insert(EVENT_ERROR);
-        tlsSocket->OnError([this](auto errorNumber, auto errorString) {
-            errorNumber_ = errorNumber;
-            errorString_ = errorString;
-            manager_->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(this), EventErrorCallback);
-        });
+        monitors_.erase(EVENT_ERROR);
+        tlsSocket->OffError();
     }
-    return NapiUtils::GetUndefined(env);
 }
 
 napi_value Monitor::Off(napi_env env, napi_callback_info info)
@@ -291,22 +326,7 @@ napi_value Monitor::Off(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
     manager_->DeleteListener(event);
-    if (event == EVENT_MESSAGE) {
-        monitors_.erase(EVENT_MESSAGE);
-        tlsSocket->OffMessage();
-    }
-    if (event == EVENT_CLOSE) {
-        monitors_.erase(EVENT_CLOSE);
-        tlsSocket->OffClose();
-    }
-    if (event == EVENT_CONNECT) {
-        monitors_.erase(EVENT_CONNECT);
-        tlsSocket->OffConnect();
-    }
-    if (event == EVENT_ERROR) {
-        monitors_.erase(EVENT_ERROR);
-        tlsSocket->OffError();
-    }
+    ParserEventForOff(event, tlsSocket);
     return NapiUtils::GetUndefined(env);
 }
 } // namespace TlsSocket

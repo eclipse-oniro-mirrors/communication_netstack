@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,6 +27,7 @@
 #include "singleton.h"
 #include "socket_remote_info.h"
 #include "tls.h"
+#include "tls_socket.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -41,6 +42,10 @@ class Monitor final {
 public:
     napi_value On(napi_env env, napi_callback_info info);
     napi_value Off(napi_env env, napi_callback_info info);
+
+private:
+    void ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket);
+    void ParserEventForOff(const std::string event, TlsSocket::TLSSocket *tlsSocket);
 
 public:
     std::string data_;
