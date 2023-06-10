@@ -569,8 +569,6 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->options.GetBody().size(), context);
     }
 
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FORBID_REUSE, 1L, context);
-
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_XFERINFOFUNCTION, ProgressCallback, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_XFERINFODATA, context, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOPROGRESS, 0L, context);
