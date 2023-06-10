@@ -150,8 +150,7 @@ napi_value FetchExec::MakeResponse(FetchContext *context)
     }
 
     if (CommonUtils::ToLower(context->GetResponseType()) == FetchConstant::HTTP_RESPONSE_TYPE_JSON) {
-        napi_value data = NapiUtils::JsonParse(
-            context->GetEnv(), NapiUtils::CreateStringUtf8(context->GetEnv(), context->response.GetData()));
+        napi_value data = NapiUtils::JsonParse(context->GetEnv(), context->response.GetData());
         NapiUtils::SetNamedProperty(context->GetEnv(), object, FetchConstant::RESPONSE_KEY_DATA, data);
         return object;
     }

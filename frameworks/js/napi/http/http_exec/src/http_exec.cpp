@@ -383,13 +383,10 @@ void HttpExec::RunThread()
         SendRequest();
         ReadResponse();
         std::this_thread::sleep_for(std::chrono::milliseconds(CURL_TIMEOUT_MS));
-        std::mutex m;
-        std::unique_lock l(m);
-        auto &infoQueue = staticVariable_.infoQueue;
-        auto &contextMap = staticVariable_.contextMap;
-        staticVariable_.conditionVariable.wait_for(
-            l, std::chrono::seconds(CONDITION_TIMEOUT_S),
-            [infoQueue, contextMap] { return !infoQueue.empty() || !contextMap.empty(); });
+        std::unique_lock l(staticVariable_.curlMultiMutex);
+        staticVariable_.conditionVariable.wait_for(l, std::chrono::seconds(CONDITION_TIMEOUT_S), [] {
+            return !staticVariable_.infoQueue.empty() || !staticVariable_.contextMap.empty();
+        });
     }
 }
 
@@ -487,7 +484,7 @@ void HttpExec::GetHttpProxyInfo(RequestContext *context, std::string &host, int3
 
 bool HttpExec::Initialize()
 {
-    std::lock_guard<std::mutex> lock(staticVariable_.mutex);
+    std::lock_guard<std::mutex> lock(staticVariable_.curlMultiMutex);
     if (staticVariable_.initialized) {
         return true;
     }
@@ -766,8 +763,7 @@ bool HttpExec::ProcByExpectDataType(napi_value object, RequestContext *context)
                 return false;
             }
 
-            napi_value obj = NapiUtils::JsonParse(
-                context->GetEnv(), NapiUtils::CreateStringUtf8(context->GetEnv(), context->response.GetResult()));
+            napi_value obj = NapiUtils::JsonParse(context->GetEnv(), context->response.GetResult());
             if (obj) {
                 NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT, obj);
                 NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
@@ -813,7 +809,7 @@ bool HttpExec::IsInitialized()
 
 void HttpExec::DeInitialize()
 {
-    std::lock_guard<std::mutex> lock(staticVariable_.mutex);
+    std::lock_guard<std::mutex> lock(staticVariable_.curlMultiMutex);
     staticVariable_.runThread = false;
     staticVariable_.conditionVariable.notify_all();
     if (staticVariable_.workThread.joinable()) {
