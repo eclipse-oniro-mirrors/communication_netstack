@@ -313,6 +313,24 @@ declare namespace socket {
     setExtraOptions(options: TCPExtraOptions): Promise<void>;
 
     /**
+     * Gets the file description block of the socket.
+     * @permission ohos.permission.INTERNET
+     * @param { AsyncCallback<number> } callback - the callback of getSocketFd.
+     * @systemapi Hide this for inner system use.
+     * @since 10
+     */
+    getSocketFd(callback: AsyncCallback<number>): void;
+
+    /**
+     * Gets the file description block of the socket.
+     * @permission ohos.permission.INTERNET
+     * @returns { Promise<number> } The promise returned by the function.
+     * @systemapi Hide this for inner system use.
+     * @since 10
+     */
+    getSocketFd():Promise<number>;
+
+    /**
      * Listens for message receiving events of the TCPSocket connection.
      */
     on(type: 'message', callback: Callback<{message: ArrayBuffer, remoteInfo: SocketRemoteInfo}>): void;

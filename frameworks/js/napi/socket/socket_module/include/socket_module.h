@@ -28,6 +28,7 @@ public:
         static constexpr const char *FUNCTION_CLOSE = "close";
         static constexpr const char *FUNCTION_GET_STATE = "getState";
         static constexpr const char *FUNCTION_SET_EXTRA_OPTIONS = "setExtraOptions";
+        static constexpr const char *FUNCTION_GET_SOCKET_FD = "getSocketFd";
         static constexpr const char *FUNCTION_ON = "on";
         static constexpr const char *FUNCTION_OFF = "off";
 
@@ -36,6 +37,7 @@ public:
         static napi_value Close(napi_env env, napi_callback_info info);
         static napi_value GetState(napi_env env, napi_callback_info info);
         static napi_value SetExtraOptions(napi_env env, napi_callback_info info);
+        static napi_value GetSocketFd(napi_env env, napi_callback_info info);
         static napi_value On(napi_env env, napi_callback_info info);
         static napi_value Off(napi_env env, napi_callback_info info);
     };
@@ -49,6 +51,7 @@ public:
         static constexpr const char *FUNCTION_GET_REMOTE_ADDRESS = "getRemoteAddress";
         static constexpr const char *FUNCTION_GET_STATE = "getState";
         static constexpr const char *FUNCTION_SET_EXTRA_OPTIONS = "setExtraOptions";
+        static constexpr const char *FUNCTION_GET_SOCKET_FD = "getSocketFd";
         static constexpr const char *FUNCTION_ON = "on";
         static constexpr const char *FUNCTION_OFF = "off";
 
@@ -59,6 +62,7 @@ public:
         static napi_value GetRemoteAddress(napi_env env, napi_callback_info info);
         static napi_value GetState(napi_env env, napi_callback_info info);
         static napi_value SetExtraOptions(napi_env env, napi_callback_info info);
+        static napi_value GetSocketFd(napi_env env, napi_callback_info info);
         static napi_value On(napi_env env, napi_callback_info info);
         static napi_value Off(napi_env env, napi_callback_info info);
     };
