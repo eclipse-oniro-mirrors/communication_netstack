@@ -51,7 +51,7 @@ static const char *UDP_SEND_NAME = "UdpSend";
 static const char *UDP_CLOSE_NAME = "UdpClose";
 static const char *UDP_GET_STATE = "UdpGetState";
 static const char *UDP_SET_EXTRA_OPTIONS_NAME = "UdpSetExtraOptions";
-static const char *UDP_GET_SOCKET_FD = "UdpGetSocketFd";
+static constexpr const char *UDP_GET_SOCKET_FD = "UdpGetSocketFd";
 
 static const char *TCP_BIND_NAME = "TcpBind";
 static const char *TCP_CONNECT_NAME = "TcpConnect";
@@ -60,7 +60,7 @@ static const char *TCP_CLOSE_NAME = "TcpClose";
 static const char *TCP_GET_STATE = "TcpGetState";
 static const char *TCP_GET_REMOTE_ADDRESS = "TcpGetRemoteAddress";
 static const char *TCP_SET_EXTRA_OPTIONS_NAME = "TcpSetExtraOptions";
-static const char *TCP_GET_SOCKET_FD = "TcpGetSocketFd";
+static constexpr const char *TCP_GET_SOCKET_FD = "TcpGetSocketFd";
 
 static constexpr const char *KEY_SOCKET_FD = "socketFd";
 

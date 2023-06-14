@@ -313,22 +313,24 @@ declare namespace socket {
     setExtraOptions(options: TCPExtraOptions): Promise<void>;
 
     /**
-     * Gets the file description block of the socket.
+     * Obtains the file descriptor of the TCPSocket connection.
      * @permission ohos.permission.INTERNET
-     * @param { AsyncCallback<number> } callback - the callback of getSocketFd.
-     * @systemapi Hide this for inner system use.
+     * @param { AsyncCallback<number> } callback - The callback returns the file descriptor of the TCPSocket connection.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
     getSocketFd(callback: AsyncCallback<number>): void;
 
     /**
-     * Gets the file description block of the socket.
+     * Obtains the file descriptor of the TCPSocket connection.
      * @permission ohos.permission.INTERNET
-     * @returns { Promise<number> } The promise returned by the function.
-     * @systemapi Hide this for inner system use.
+     * @returns { Promise<number> } The promise returns the file descriptor of the TCPSocket connection.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    getSocketFd():Promise<number>;
+    getSocketFd(): Promise<number>;
 
     /**
      * Listens for message receiving events of the TCPSocket connection.
