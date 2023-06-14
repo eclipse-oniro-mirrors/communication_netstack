@@ -86,11 +86,11 @@ std::string ToLower(const std::string &s)
     return res;
 }
 
-std::string ToString(const std::set<std::string> &list, char tab)
+std::string ToString(const std::list<std::string> &lists, char tab)
 {
     std::string str;
     int32_t index = 0;
-    for (auto s : list) {
+    for (const auto &s : lists) {
         if (index > 0) {
             str = str + tab;
         }
