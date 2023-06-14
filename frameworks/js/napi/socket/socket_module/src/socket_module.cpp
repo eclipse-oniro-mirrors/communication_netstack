@@ -16,9 +16,9 @@
 #include "socket_module.h"
 
 #include <cstdint>
-#include <unistd.h>
 #include <initializer_list>
 #include <new>
+#include <unistd.h>
 #include <utility>
 
 #include "bind_context.h"
@@ -26,17 +26,18 @@
 #include "connect_context.h"
 #include "context_key.h"
 #include "event_list.h"
+#include "event_manager.h"
+#include "module_template.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
+#include "napi_utils.h"
 #include "net_address.h"
-#include "event_manager.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
-#include "module_template.h"
-#include "napi_utils.h"
 #include "node_api.h"
 #include "socket_async_work.h"
 #include "socket_exec.h"
+#include "socket_fd_context.h"
 #include "tcp_extra_context.h"
 #include "tcp_send_context.h"
 #include "tlssocket_module.h"
@@ -50,6 +51,7 @@ static const char *UDP_SEND_NAME = "UdpSend";
 static const char *UDP_CLOSE_NAME = "UdpClose";
 static const char *UDP_GET_STATE = "UdpGetState";
 static const char *UDP_SET_EXTRA_OPTIONS_NAME = "UdpSetExtraOptions";
+static constexpr const char *UDP_GET_SOCKET_FD = "UdpGetSocketFd";
 
 static const char *TCP_BIND_NAME = "TcpBind";
 static const char *TCP_CONNECT_NAME = "TcpConnect";
@@ -58,6 +60,7 @@ static const char *TCP_CLOSE_NAME = "TcpClose";
 static const char *TCP_GET_STATE = "TcpGetState";
 static const char *TCP_GET_REMOTE_ADDRESS = "TcpGetRemoteAddress";
 static const char *TCP_SET_EXTRA_OPTIONS_NAME = "TcpSetExtraOptions";
+static constexpr const char *TCP_GET_SOCKET_FD = "TcpGetSocketFd";
 
 static constexpr const char *KEY_SOCKET_FD = "socketFd";
 
@@ -157,6 +160,7 @@ void SocketModuleExports::DefineUDPSocketClass(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_CLOSE, UDPSocket::Close),
         DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_GET_STATE, UDPSocket::GetState),
         DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_SET_EXTRA_OPTIONS, UDPSocket::SetExtraOptions),
+        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_GET_SOCKET_FD, UDPSocket::GetSocketFd),
         DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_ON, UDPSocket::On),
         DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_OFF, UDPSocket::Off),
     };
@@ -178,6 +182,7 @@ void SocketModuleExports::DefineTCPSocketClass(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION(TCPSocket::FUNCTION_GET_REMOTE_ADDRESS, TCPSocket::GetRemoteAddress),
         DECLARE_NAPI_FUNCTION(TCPSocket::FUNCTION_GET_STATE, TCPSocket::GetState),
         DECLARE_NAPI_FUNCTION(TCPSocket::FUNCTION_SET_EXTRA_OPTIONS, TCPSocket::SetExtraOptions),
+        DECLARE_NAPI_FUNCTION(TCPSocket::FUNCTION_GET_SOCKET_FD, TCPSocket::GetSocketFd),
         DECLARE_NAPI_FUNCTION(TCPSocket::FUNCTION_ON, TCPSocket::On),
         DECLARE_NAPI_FUNCTION(TCPSocket::FUNCTION_OFF, TCPSocket::Off),
     };
@@ -218,6 +223,11 @@ napi_value SocketModuleExports::UDPSocket::SetExtraOptions(napi_env env, napi_ca
 {
     return SOCKET_INTERFACE(UdpSetExtraOptionsContext, ExecUdpSetExtraOptions, UdpSetExtraOptionsCallback, nullptr,
                             UDP_SET_EXTRA_OPTIONS_NAME);
+}
+
+napi_value SocketModuleExports::UDPSocket::GetSocketFd(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(SocketFdContext, ExecUdpGetSocketFd, UdpGetSocketFdCallback, nullptr, UDP_GET_SOCKET_FD);
 }
 
 napi_value SocketModuleExports::UDPSocket::On(napi_env env, napi_callback_info info)
@@ -266,6 +276,11 @@ napi_value SocketModuleExports::TCPSocket::SetExtraOptions(napi_env env, napi_ca
 {
     return SOCKET_INTERFACE(TcpSetExtraOptionsContext, ExecTcpSetExtraOptions, TcpSetExtraOptionsCallback, nullptr,
                             TCP_SET_EXTRA_OPTIONS_NAME);
+}
+
+napi_value SocketModuleExports::TCPSocket::GetSocketFd(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(SocketFdContext, ExecTcpGetSocketFd, TcpGetSocketFdCallback, nullptr, TCP_GET_SOCKET_FD);
 }
 
 napi_value SocketModuleExports::TCPSocket::On(napi_env env, napi_callback_info info)
