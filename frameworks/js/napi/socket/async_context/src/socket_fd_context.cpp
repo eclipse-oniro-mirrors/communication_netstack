@@ -31,7 +31,7 @@ void SocketFdContext::ParseParams(napi_value *params, size_t paramsCount)
 
 uint32_t SocketFdContext::GetSocketFd() const
 {
-    return reinterpret_cast<uint32_t>(manager_->GetData());
+    return (uint32_t)(uint64_t)(manager_->GetData());
 }
 } // namespace NetStack
 } // namespace OHOS
