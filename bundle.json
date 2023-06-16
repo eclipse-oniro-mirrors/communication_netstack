@@ -34,12 +34,15 @@
                 "hiviewdfx_hilog_native",
                 "zlib",
                 "c_utils",
-                "jsoncpp",
+                "init",
                 "common",
                 "napi"
             ],
             "third_party": [
                 "curl",
+                "libwebsockets",
+                "jsoncpp",
+                "openssl",
                 "node"
             ]
         },
