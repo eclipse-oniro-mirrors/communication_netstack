@@ -45,6 +45,10 @@ public:
 
     static void ExecUdpSetExtraOptions(napi_env env, void *data);
 
+    static void ExecTcpGetSocketFd(napi_env env, void *data);
+
+    static void ExecUdpGetSocketFd(napi_env env, void *data);
+
     /* callback */
     static void BindCallback(napi_env env, napi_status status, void *data);
 
@@ -63,6 +67,10 @@ public:
     static void TcpSetExtraOptionsCallback(napi_env env, napi_status status, void *data);
 
     static void UdpSetExtraOptionsCallback(napi_env env, napi_status status, void *data);
+
+    static void TcpGetSocketFdCallback(napi_env env, napi_status status, void *data);
+
+    static void UdpGetSocketFdCallback(napi_env env, napi_status status, void *data);
 };
 } // namespace OHOS::NetStack::Socket
 

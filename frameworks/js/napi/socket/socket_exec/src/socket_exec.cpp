@@ -27,9 +27,9 @@
 
 #include "context_key.h"
 #include "event_list.h"
+#include "napi_utils.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
-#include "napi_utils.h"
 #include "securec.h"
 
 static constexpr const int DEFAULT_BUFFER_SIZE = 8192;
@@ -982,6 +982,16 @@ bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
     return true;
 }
 
+bool ExecTcpGetSocketFd(SocketFdContext *context)
+{
+    return true;
+}
+
+bool ExecUdpGetSocketFd(SocketFdContext *context)
+{
+    return true;
+}
+
 napi_value BindCallback(BindContext *context)
 {
     context->Emit(EVENT_LISTENING, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
@@ -1057,5 +1067,15 @@ napi_value TcpSetExtraOptionsCallback(TcpSetExtraOptionsContext *context)
 napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value TcpGetSocketFdCallback(SocketFdContext *context)
+{
+    return NapiUtils::CreateUint32(context->GetEnv(), context->GetSocketFd());
+}
+
+napi_value UdpGetSocketFdCallback(SocketFdContext *context)
+{
+    return NapiUtils::CreateUint32(context->GetEnv(), context->GetSocketFd());
 }
 } // namespace OHOS::NetStack::Socket::SocketExec
