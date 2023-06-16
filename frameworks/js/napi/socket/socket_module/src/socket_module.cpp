@@ -37,7 +37,6 @@
 #include "node_api.h"
 #include "socket_async_work.h"
 #include "socket_exec.h"
-#include "socket_fd_context.h"
 #include "tcp_extra_context.h"
 #include "tcp_send_context.h"
 #include "tlssocket_module.h"
@@ -227,7 +226,7 @@ napi_value SocketModuleExports::UDPSocket::SetExtraOptions(napi_env env, napi_ca
 
 napi_value SocketModuleExports::UDPSocket::GetSocketFd(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(SocketFdContext, ExecUdpGetSocketFd, UdpGetSocketFdCallback, nullptr, UDP_GET_SOCKET_FD);
+    return SOCKET_INTERFACE(GetSocketFdContext, ExecUdpGetSocketFd, UdpGetSocketFdCallback, nullptr, UDP_GET_SOCKET_FD);
 }
 
 napi_value SocketModuleExports::UDPSocket::On(napi_env env, napi_callback_info info)
@@ -280,7 +279,7 @@ napi_value SocketModuleExports::TCPSocket::SetExtraOptions(napi_env env, napi_ca
 
 napi_value SocketModuleExports::TCPSocket::GetSocketFd(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(SocketFdContext, ExecTcpGetSocketFd, TcpGetSocketFdCallback, nullptr, TCP_GET_SOCKET_FD);
+    return SOCKET_INTERFACE(GetSocketFdContext, ExecTcpGetSocketFd, TcpGetSocketFdCallback, nullptr, TCP_GET_SOCKET_FD);
 }
 
 napi_value SocketModuleExports::TCPSocket::On(napi_env env, napi_callback_info info)

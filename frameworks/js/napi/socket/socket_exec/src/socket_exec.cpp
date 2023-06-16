@@ -982,13 +982,21 @@ bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
     return true;
 }
 
-bool ExecTcpGetSocketFd(SocketFdContext *context)
+bool ExecTcpGetSocketFd(GetSocketFdContext *context)
 {
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
     return true;
 }
 
-bool ExecUdpGetSocketFd(SocketFdContext *context)
+bool ExecUdpGetSocketFd(GetSocketFdContext *context)
 {
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
     return true;
 }
 
@@ -1069,12 +1077,12 @@ napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context)
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
-napi_value TcpGetSocketFdCallback(SocketFdContext *context)
+napi_value TcpGetSocketFdCallback(GetSocketFdContext *context)
 {
     return NapiUtils::CreateUint32(context->GetEnv(), context->GetSocketFd());
 }
 
-napi_value UdpGetSocketFdCallback(SocketFdContext *context)
+napi_value UdpGetSocketFdCallback(GetSocketFdContext *context)
 {
     return NapiUtils::CreateUint32(context->GetEnv(), context->GetSocketFd());
 }
