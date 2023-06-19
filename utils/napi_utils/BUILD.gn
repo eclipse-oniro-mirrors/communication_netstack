@@ -36,6 +36,8 @@ ohos_static_library("napi_utils") {
 
   public_configs = [ ":napi_utils_public_config" ]
 
+  deps = [ "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp" ]
+
   public_deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
   external_deps = [
     "c_utils:utils",
@@ -54,6 +56,8 @@ ohos_static_library("napi_utils_static") {
   ]
 
   public_configs = [ ":napi_utils_public_config" ]
+
+  deps = [ "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp" ]
 
   if (current_os == "ohos") {
     public_deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
