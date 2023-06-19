@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -55,6 +55,18 @@ bool ExecTcpGetSocketFd(SocketFdContext *context);
 
 bool ExecUdpGetSocketFd(SocketFdContext *context);
 
+bool ExecTcpConnectionSend(TcpSendContext *context);
+
+bool ExecTcpConnectionGetRemoteAddress(TcpConnectionGetRemoteAddressContext *context);
+
+bool ExecTcpConnectionClose(CloseContext *context);
+
+bool ExecTcpServerListen(BindContext *context);
+
+bool ExecTcpServerSetExtraOptions(TcpSetExtraOptionsContext *context);
+
+bool ExecTcpServerGetState(GetStateContext *context);
+
 /* async work callback */
 napi_value BindCallback(BindContext *context);
 
@@ -77,5 +89,13 @@ napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context);
 napi_value TcpGetSocketFdCallback(SocketFdContext *context);
 
 napi_value UdpGetSocketFdCallback(SocketFdContext *context);
+
+napi_value TcpConnectionSendCallback(TcpSendContext *context);
+
+napi_value TcpConnectionCloseCallback(CloseContext *context);
+
+napi_value TcpConnectionGetRemoteAddressCallback(TcpConnectionGetRemoteAddressContext *context);
+
+napi_value ListenCallback(BindContext *context);
 } // namespace OHOS::NetStack::Socket::SocketExec
 #endif /* COMMUNICATIONNETSTACK_SOCKET_EXEC_H */

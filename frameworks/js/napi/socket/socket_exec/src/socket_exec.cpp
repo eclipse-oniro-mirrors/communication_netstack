@@ -992,6 +992,42 @@ bool ExecUdpGetSocketFd(SocketFdContext *context)
     return true;
 }
 
+bool ExecTcpConnectionGetRemoteAddress(TcpConnectionGetRemoteAddressContext *context)
+{
+    (void *)context;
+    return true;
+}
+
+bool ExecTcpConnectionSend(TcpSendContext *context)
+{
+    (void *)context;
+    return true;
+}
+
+bool ExecTcpConnectionClose(CloseContext *context)
+{
+    (void *)context;
+    return true;
+}
+
+bool ExecTcpServerListen(BindContext *context)
+{
+    (void *)context;
+    return true;
+}
+
+bool ExecTcpServerSetExtraOptions(TcpSetExtraOptionsContext *context)
+{
+    (void *)context;
+    return true;
+}
+
+bool ExecTcpServerGetState(GetStateContext *context)
+{
+    (void *)context;
+    return true;
+}
+
 napi_value BindCallback(BindContext *context)
 {
     context->Emit(EVENT_LISTENING, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
@@ -1077,5 +1113,25 @@ napi_value TcpGetSocketFdCallback(SocketFdContext *context)
 napi_value UdpGetSocketFdCallback(SocketFdContext *context)
 {
     return NapiUtils::CreateUint32(context->GetEnv(), context->GetSocketFd());
+}
+
+napi_value TcpConnectionSendCallback(TcpSendContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value TcpConnectionCloseCallback(CloseContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value TcpConnectionGetRemoteAddressCallback(TcpConnectionGetRemoteAddressContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value ListenCallback(BindContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
 }
 } // namespace OHOS::NetStack::Socket::SocketExec

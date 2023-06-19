@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -49,6 +49,18 @@ public:
 
     static void ExecUdpGetSocketFd(napi_env env, void *data);
 
+    static void ExecTcpConnectionSend(napi_env env, void *data);
+
+    static void ExecTcpConnectionGetRemoteAddress(napi_env env, void *data);
+
+    static void ExecTcpConnectionClose(napi_env env, void *data);
+
+    static void ExecTcpServerListen(napi_env env, void *data);
+
+    static void ExecTcpServerSetExtraOptions(napi_env env, void *data);
+
+    static void ExecTcpServerGetState(napi_env env, void *data);
+
     /* callback */
     static void BindCallback(napi_env env, napi_status status, void *data);
 
@@ -71,6 +83,14 @@ public:
     static void TcpGetSocketFdCallback(napi_env env, napi_status status, void *data);
 
     static void UdpGetSocketFdCallback(napi_env env, napi_status status, void *data);
+
+    static void TcpConnectionSendCallback(napi_env env, napi_status status, void *data);
+
+    static void TcpConnectionCloseCallback(napi_env env, napi_status status, void *data);
+
+    static void TcpConnectionGetRemoteAddressCallback(napi_env env, napi_status status, void *data);
+
+    static void ListenCallback(napi_env env, napi_status status, void *data);
 };
 } // namespace OHOS::NetStack::Socket
 

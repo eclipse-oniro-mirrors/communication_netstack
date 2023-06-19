@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -87,6 +87,37 @@ void SocketAsyncWork::ExecUdpGetSocketFd(napi_env env, void *data)
     BaseAsyncWork::ExecAsyncWork<SocketFdContext, SocketExec::ExecUdpGetSocketFd>(env, data);
 }
 
+void SocketAsyncWork::ExecTcpConnectionSend(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<TcpSendContext, SocketExec::ExecTcpConnectionSend>(env, data);
+}
+
+void SocketAsyncWork::ExecTcpConnectionGetRemoteAddress(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<TcpConnectionGetRemoteAddressContext, SocketExec::ExecTcpConnectionGetRemoteAddress>(
+        env, data);
+}
+
+void SocketAsyncWork::ExecTcpConnectionClose(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<CloseContext, SocketExec::ExecTcpConnectionClose>(env, data);
+}
+
+void SocketAsyncWork::ExecTcpServerListen(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<BindContext, SocketExec::ExecTcpServerListen>(env, data);
+}
+
+void SocketAsyncWork::ExecTcpServerSetExtraOptions(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<TcpSetExtraOptionsContext, SocketExec::ExecTcpServerSetExtraOptions>(env, data);
+}
+
+void SocketAsyncWork::ExecTcpServerGetState(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<GetStateContext, SocketExec::ExecTcpServerGetState>(env, data);
+}
+
 void SocketAsyncWork::BindCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<BindContext, SocketExec::BindCallback>(env, status, data);
@@ -142,5 +173,26 @@ void SocketAsyncWork::TcpGetSocketFdCallback(napi_env env, napi_status status, v
 void SocketAsyncWork::UdpGetSocketFdCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<SocketFdContext, SocketExec::UdpGetSocketFdCallback>(env, status, data);
+}
+
+void SocketAsyncWork::TcpConnectionSendCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<TcpSendContext, SocketExec::TcpConnectionSendCallback>(env, status, data);
+}
+
+void SocketAsyncWork::TcpConnectionCloseCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<CloseContext, SocketExec::TcpConnectionCloseCallback>(env, status, data);
+}
+
+void SocketAsyncWork::TcpConnectionGetRemoteAddressCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<TcpConnectionGetRemoteAddressContext,
+                                     SocketExec::TcpConnectionGetRemoteAddressCallback>(env, status, data);
+}
+
+void SocketAsyncWork::ListenCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<BindContext, SocketExec::ListenCallback>(env, status, data);
 }
 } // namespace OHOS::NetStack::Socket

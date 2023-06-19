@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -61,6 +61,14 @@ static const char *TCP_GET_STATE = "TcpGetState";
 static const char *TCP_GET_REMOTE_ADDRESS = "TcpGetRemoteAddress";
 static const char *TCP_SET_EXTRA_OPTIONS_NAME = "TcpSetExtraOptions";
 static constexpr const char *TCP_GET_SOCKET_FD = "TcpGetSocketFd";
+
+static const char *TCP_SERVER_LISTEN_NAME = "TcpServerListen";
+static const char *TCP_SERVER_GET_STATE = "TcpServerGetState";
+static const char *TCP_SERVER_SET_EXTRA_OPTIONS_NAME = "TcpServerSetExtraOptions";
+
+static const char *TCP_CONNECTION_SEND_NAME = "TcpConnectionSend";
+static const char *TCP_CONNECTION_CLOSE_NAME = "TcpConnectionClose";
+static const char *TCP_CONNECTION_GET_REMOTE_ADDRESS = "TcpConnectionGetRemoteAddress";
 
 static constexpr const char *KEY_SOCKET_FD = "socketFd";
 
@@ -141,6 +149,7 @@ napi_value SocketModuleExports::InitSocketModule(napi_env env, napi_value export
 {
     TlsSocket::TLSSocketModuleExports::InitTLSSocketModule(env, exports);
     DefineUDPSocketClass(env, exports);
+    DefineTCPServerSocketClass(env, exports);
     DefineTCPSocketClass(env, exports);
     InitSocketProperties(env, exports);
 
@@ -189,10 +198,28 @@ void SocketModuleExports::DefineTCPSocketClass(napi_env env, napi_value exports)
     ModuleTemplate::DefineClass(env, exports, properties, INTERFACE_TCP_SOCKET);
 }
 
+napi_value SocketModuleExports::ConstructTCPSocketServerInstance(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::NewInstance(env, info, INTERFACE_TCP_SOCKET_SERVER, Finalize);
+}
+
+void SocketModuleExports::DefineTCPServerSocketClass(napi_env env, napi_value exports)
+{
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_LISTEN, TCPServerSocket::Listen),
+        DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_GET_STATE, TCPServerSocket::GetState),
+        DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_SET_EXTRA_OPTIONS, TCPServerSocket::SetExtraOptions),
+        DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_ON, TCPServerSocket::On),
+        DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_OFF, TCPServerSocket::Off),
+    };
+    ModuleTemplate::DefineClass(env, exports, properties, INTERFACE_TCP_SOCKET_SERVER);
+}
+
 void SocketModuleExports::InitSocketProperties(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
         DECLARE_NAPI_FUNCTION(FUNCTION_CONSTRUCTOR_UDP_SOCKET_INSTANCE, ConstructUDPSocketInstance),
+        DECLARE_NAPI_FUNCTION(FUNCTION_CONSTRUCTOR_TCP_SOCKET_SERVER_INSTANCE, ConstructTCPSocketServerInstance),
         DECLARE_NAPI_FUNCTION(FUNCTION_CONSTRUCTOR_TCP_SOCKET_INSTANCE, ConstructTCPSocketInstance),
     };
     NapiUtils::DefineProperties(env, exports, properties);
@@ -289,6 +316,77 @@ napi_value SocketModuleExports::TCPSocket::On(napi_env env, napi_callback_info i
 }
 
 napi_value SocketModuleExports::TCPSocket::Off(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
+}
+
+/* tcp connection async works */
+napi_value SocketModuleExports::TCPConnection::Send(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(
+        TcpSendContext, ExecTcpConnectionSend, TcpConnectionSendCallback,
+        [](napi_env theEnv, napi_value thisVal, TcpSendContext *context) -> bool {
+            context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
+            return true;
+        },
+        TCP_CONNECTION_SEND_NAME);
+}
+
+napi_value SocketModuleExports::TCPConnection::Close(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(
+        CloseContext, ExecTcpConnectionClose, TcpConnectionCloseCallback,
+        [](napi_env theEnv, napi_value thisVal, CloseContext *context) -> bool {
+            context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
+            return true;
+        },
+        TCP_CONNECTION_CLOSE_NAME);
+}
+
+napi_value SocketModuleExports::TCPConnection::GetRemoteAddress(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(
+        TcpConnectionGetRemoteAddressContext, ExecTcpConnectionGetRemoteAddress, TcpConnectionGetRemoteAddressCallback,
+        [](napi_env theEnv, napi_value thisVal, TcpConnectionGetRemoteAddressContext *context) -> bool {
+            context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
+            return true;
+        },
+        TCP_CONNECTION_GET_REMOTE_ADDRESS);
+}
+
+napi_value SocketModuleExports::TCPConnection::On(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
+}
+
+napi_value SocketModuleExports::TCPConnection::Off(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
+}
+
+/* tcp server async works */
+napi_value SocketModuleExports::TCPServerSocket::Listen(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(BindContext, ExecTcpServerListen, ListenCallback, MakeTcpSocket, TCP_SERVER_LISTEN_NAME);
+}
+
+napi_value SocketModuleExports::TCPServerSocket::GetState(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(GetStateContext, ExecTcpServerGetState, GetStateCallback, nullptr, TCP_SERVER_GET_STATE);
+}
+
+napi_value SocketModuleExports::TCPServerSocket::SetExtraOptions(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(TcpSetExtraOptionsContext, ExecTcpServerSetExtraOptions, TcpSetExtraOptionsCallback,
+                            nullptr, TCP_SERVER_SET_EXTRA_OPTIONS_NAME);
+}
+
+napi_value SocketModuleExports::TCPServerSocket::On(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
+}
+
+napi_value SocketModuleExports::TCPServerSocket::Off(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
 }
