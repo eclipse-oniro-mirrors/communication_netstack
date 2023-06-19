@@ -984,19 +984,11 @@ bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
 
 bool ExecTcpGetSocketFd(GetSocketFdContext *context)
 {
-    if (!CommonUtils::HasInternetPermission()) {
-        context->SetPermissionDenied(true);
-        return false;
-    }
     return true;
 }
 
 bool ExecUdpGetSocketFd(GetSocketFdContext *context)
 {
-    if (!CommonUtils::HasInternetPermission()) {
-        context->SetPermissionDenied(true);
-        return false;
-    }
     return true;
 }
 
