@@ -464,9 +464,12 @@ napi_value JsonStringify(napi_env env, napi_value object)
 napi_value JsonParse(napi_env env, const std::string &inStr)
 {
     napi_value undefined = GetUndefined(env);
-    Json::CharReader readerJson;
+    JSONCPP_STRING err;
     Json::Value valueJson;
-    if (!readerJson.parse(inStr, valueJson)) {
+    Json::CharReaderBuilder readerBuilder;
+    std::unique_ptr<Json::CharReader> const jsonReader(readerBuilder.newCharReader());
+    bool res = jsonReader->parse(inStr.c_str(), inStr.c_str() + inStr.length(), &valueJson, &err);
+    if (!res || !err.empty()) {
         return undefined;
     }
 
