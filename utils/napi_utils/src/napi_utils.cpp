@@ -468,8 +468,8 @@ napi_value JsonParse(napi_env env, const std::string &inStr)
     Json::Value valueJson;
     Json::CharReaderBuilder readerBuilder;
     std::unique_ptr<Json::CharReader> const jsonReader(readerBuilder.newCharReader());
-    bool res = jsonReader->parse(inStr.c_str(), inStr.c_str() + inStr.length(), &valueJson, &err);
-    if (!res || !err.empty()) {
+    bool ret = jsonReader->parse(inStr.c_str(), inStr.c_str() + inStr.length(), &valueJson, &err);
+    if (!ret || !err.empty()) {
         return undefined;
     }
 
