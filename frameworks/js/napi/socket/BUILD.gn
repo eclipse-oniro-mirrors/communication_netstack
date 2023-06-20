@@ -60,7 +60,6 @@ ohos_shared_library("socket") {
     "async_context/src/bind_context.cpp",
     "async_context/src/common_context.cpp",
     "async_context/src/connect_context.cpp",
-    "async_context/src/socket_fd_context.cpp",
     "async_context/src/tcp_extra_context.cpp",
     "async_context/src/tcp_send_context.cpp",
     "async_context/src/udp_extra_context.cpp",

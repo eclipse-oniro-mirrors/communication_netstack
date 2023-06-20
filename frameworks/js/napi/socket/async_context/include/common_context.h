@@ -58,6 +58,8 @@ typedef CommonContext GetRemoteAddressContext;
 
 typedef CommonContext TcpConnectionGetRemoteAddressContext;
 
+typedef CommonContext GetSocketFdContext;
+
 class CloseContext final : public CommonContext {
 public:
     DISALLOW_COPY_AND_MOVE(CloseContext);
