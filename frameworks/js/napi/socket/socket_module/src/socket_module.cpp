@@ -61,13 +61,13 @@ static const char *TCP_GET_REMOTE_ADDRESS = "TcpGetRemoteAddress";
 static const char *TCP_SET_EXTRA_OPTIONS_NAME = "TcpSetExtraOptions";
 static constexpr const char *TCP_GET_SOCKET_FD = "TcpGetSocketFd";
 
-static const char *TCP_SERVER_LISTEN_NAME = "TcpServerListen";
-static const char *TCP_SERVER_GET_STATE = "TcpServerGetState";
-static const char *TCP_SERVER_SET_EXTRA_OPTIONS_NAME = "TcpServerSetExtraOptions";
+static constexpr const char *TCP_SERVER_LISTEN_NAME = "TcpServerListen";
+static constexpr const char *TCP_SERVER_GET_STATE = "TcpServerGetState";
+static constexpr const char *TCP_SERVER_SET_EXTRA_OPTIONS_NAME = "TcpServerSetExtraOptions";
 
-static const char *TCP_CONNECTION_SEND_NAME = "TcpConnectionSend";
-static const char *TCP_CONNECTION_CLOSE_NAME = "TcpConnectionClose";
-static const char *TCP_CONNECTION_GET_REMOTE_ADDRESS = "TcpConnectionGetRemoteAddress";
+static constexpr const char *TCP_CONNECTION_SEND_NAME = "TcpConnectionSend";
+static constexpr const char *TCP_CONNECTION_CLOSE_NAME = "TcpConnectionClose";
+static constexpr const char *TCP_CONNECTION_GET_REMOTE_ADDRESS = "TcpConnectionGetRemoteAddress";
 
 static constexpr const char *KEY_SOCKET_FD = "socketFd";
 

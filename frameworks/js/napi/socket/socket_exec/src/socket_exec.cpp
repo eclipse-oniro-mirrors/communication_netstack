@@ -65,10 +65,10 @@ struct MessageData {
 
 struct TcpConnection {
     TcpConnection() = delete;
-    TcpConnection(int32_t clientId) : clientId_(clientId) {}
+    explicit TcpConnection(int32_t clientid) : clientId(clientid) {}
     ~TcpConnection() = default;
 
-    int32_t clientId_;
+    int32_t clientId;
 };
 
 static void SetIsBound(sa_family_t family, GetStateContext *context, const sockaddr_in *addr4,

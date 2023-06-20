@@ -87,8 +87,6 @@ napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context);
 
 napi_value TcpGetSocketFdCallback(GetSocketFdContext *context);
 
-napi_value UdpGetSocketFdCallback(SocketFdContext *context);
-
 napi_value TcpConnectionSendCallback(TcpSendContext *context);
 
 napi_value TcpConnectionCloseCallback(CloseContext *context);
