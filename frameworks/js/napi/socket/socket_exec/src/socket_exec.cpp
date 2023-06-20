@@ -982,12 +982,12 @@ bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
     return true;
 }
 
-bool ExecTcpGetSocketFd(GetSocketFdContext *context)
+bool ExecTcpGetSocketFd(SocketFdContext *context)
 {
     return true;
 }
 
-bool ExecUdpGetSocketFd(GetSocketFdContext *context)
+bool ExecUdpGetSocketFd(SocketFdContext *context)
 {
     return true;
 }
@@ -1069,12 +1069,12 @@ napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context)
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
-napi_value TcpGetSocketFdCallback(GetSocketFdContext *context)
+napi_value TcpGetSocketFdCallback(SocketFdContext *context)
 {
     return NapiUtils::CreateUint32(context->GetEnv(), context->GetSocketFd());
 }
 
-napi_value UdpGetSocketFdCallback(GetSocketFdContext *context)
+napi_value UdpGetSocketFdCallback(SocketFdContext *context)
 {
     return NapiUtils::CreateUint32(context->GetEnv(), context->GetSocketFd());
 }
