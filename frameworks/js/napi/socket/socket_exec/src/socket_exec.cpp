@@ -47,7 +47,16 @@ static constexpr const int MSEC_TO_USEC = 1000;
 
 static constexpr const int MAX_SEC = 999999999;
 
+static constexpr const int USER_LIMIT = 511;
+
+static constexpr const int ERR_SYS_BASE = 2303100;
 namespace OHOS::NetStack::Socket::SocketExec {
+const std::string TCP_SOCKET_CONNECTION = "TCPSocketConnection";
+std::map<int32_t, int32_t> g_clientFDs;
+std::map<int32_t, std::shared_ptr<EventManager>> g_clientEventManagers;
+std::mutex g_mutex;
+int g_userCounter = 0;
+int g_bufferSize = 0;
 struct MessageData {
     MessageData() = delete;
     MessageData(void *d, size_t l, const SocketRemoteInfo &info) : data(d), len(l), remoteInfo(info) {}
@@ -121,6 +130,83 @@ static napi_value MakeError(napi_env env, void *errCode)
     }
     NapiUtils::SetInt32Property(env, err, KEY_ERROR_CODE, *code);
     return err;
+}
+
+napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, napi_value jsConstructor, int32_t counter)
+{
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_new_instance(env, jsConstructor, 0, nullptr, &result));
+
+    std::shared_ptr<EventManager> manager = std::make_shared<EventManager>();
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        g_clientEventManagers.insert(std::pair<int32_t, std::shared_ptr<EventManager>>(counter, manager));
+    }
+
+    napi_wrap(
+        env, result, reinterpret_cast<void *>(manager.get()),
+        [](napi_env, void *data, void *) {
+            NETSTACK_LOGI("socket handle is finalized");
+            auto manager = static_cast<EventManager *>(data);
+            if (manager != nullptr) {
+                manager->SetInvalid();
+                int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
+                if (sock != 0) {
+                    close(sock);
+                }
+            }
+        },
+        nullptr, nullptr);
+
+    return result;
+}
+
+napi_value ConstructTCPSocketConnection(napi_env env, napi_callback_info info, int32_t counter)
+{
+    napi_value jsConstructor = nullptr;
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_FUNCTION(SocketModuleExports::TCPConnection::FUNCTION_SEND,
+                              SocketModuleExports::TCPConnection::Send),
+        DECLARE_NAPI_FUNCTION(SocketModuleExports::TCPConnection::FUNCTION_CLOSE,
+                              SocketModuleExports::TCPConnection::Close),
+        DECLARE_NAPI_FUNCTION(SocketModuleExports::TCPConnection::FUNCTION_GET_REMOTE_ADDRESS,
+                              SocketModuleExports::TCPConnection::GetRemoteAddress),
+        DECLARE_NAPI_FUNCTION(SocketModuleExports::TCPConnection::FUNCTION_ON, SocketModuleExports::TCPConnection::On),
+        DECLARE_NAPI_FUNCTION(SocketModuleExports::TCPConnection::FUNCTION_OFF,
+                              SocketModuleExports::TCPConnection::Off),
+    };
+
+    auto constructor = [](napi_env env, napi_callback_info info) -> napi_value {
+        napi_value thisVal = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr));
+
+        return thisVal;
+    };
+
+    napi_property_descriptor descriptors[properties.size()];
+    std::copy(properties.begin(), properties.end(), descriptors);
+
+    NAPI_CALL_BASE(env,
+                   napi_define_class(env, TCP_SOCKET_CONNECTION.c_str(), NAPI_AUTO_LENGTH, constructor, nullptr,
+                                     properties.size(), descriptors, &jsConstructor),
+                   NapiUtils::GetUndefined(env));
+
+    if (jsConstructor != nullptr) {
+        napi_value result = NewInstanceWithConstructor(env, info, jsConstructor, counter);
+        NapiUtils::SetInt32Property(env, result, SocketModuleExports::TCPConnection::PROPERTY_CLIENT_ID, counter);
+        return result;
+    }
+    return NapiUtils::GetUndefined(env);
+}
+
+static napi_value MakeTcpConnectionMessage(napi_env env, void *para)
+{
+    auto netConnection = reinterpret_cast<TcpConnection *>(para);
+    auto deleter = [](const TcpConnection *p) { delete p; };
+    std::unique_ptr<TcpConnection, decltype(deleter)> handler(netConnection, deleter);
+
+    napi_callback_info info = nullptr;
+    return ConstructTCPSocketConnection(env, info, netConnection->clientId_);
 }
 
 static std::string MakeAddressString(sockaddr *addr)
@@ -229,6 +315,11 @@ public:
 
     virtual bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const = 0;
 
+    virtual bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr,
+                           std::shared_ptr<EventManager> manager) const = 0;
+
+    virtual void OnTcpConnectionMessage(int32_t id) const = 0;
+
 protected:
     EventManager *manager_;
 };
@@ -278,6 +369,44 @@ public:
         }
         return false;
     }
+
+    bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr,
+                   std::shared_ptr<EventManager> manager) const override
+    {
+        (void)addr;
+        sockaddr sockAddr = {0};
+        socklen_t len = sizeof(sockaddr);
+        int ret = getsockname(sock, &sockAddr, &len);
+        if (ret < 0) {
+            return false;
+        }
+
+        if (sockAddr.sa_family == AF_INET) {
+            sockaddr_in addr4 = {0};
+            socklen_t len4 = sizeof(sockaddr_in);
+
+            ret = getpeername(sock, reinterpret_cast<sockaddr *>(&addr4), &len4);
+            if (ret < 0) {
+                return false;
+            }
+            return OnRecvMessage(manager.get(), data, dataLen, reinterpret_cast<sockaddr *>(&addr4));
+        } else if (sockAddr.sa_family == AF_INET6) {
+            sockaddr_in6 addr6 = {0};
+            socklen_t len6 = sizeof(sockaddr_in6);
+
+            ret = getpeername(sock, reinterpret_cast<sockaddr *>(&addr6), &len6);
+            if (ret < 0) {
+                return false;
+            }
+            return OnRecvMessage(manager.get(), data, dataLen, reinterpret_cast<sockaddr *>(&addr6));
+        }
+        return false;
+    }
+
+    void OnTcpConnectionMessage(int32_t id) const override
+    {
+        manager_->EmitByUv(EVENT_CONNECT, new TcpConnection(id), CallbackTemplate<MakeTcpConnectionMessage>);
+    }
 };
 
 class UdpMessageCallback final : public MessageCallback {
@@ -297,6 +426,14 @@ public:
     {
         return OnRecvMessage(manager_, data, dataLen, addr);
     }
+
+    bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr,
+                   std::shared_ptr<EventManager> manager) const override
+    {
+        return true;
+    }
+
+    void OnTcpConnectionMessage(int32_t id) const override {}
 };
 
 static bool MakeNonBlock(int sock)
@@ -1017,13 +1154,263 @@ bool ExecTcpConnectionSend(TcpSendContext *context)
 
 bool ExecTcpConnectionClose(CloseContext *context)
 {
-    (void)context;
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    bool fdValid = false;
+
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        for (auto it = g_clientFDs.begin(); it != g_clientFDs.end(); ++it) {
+            if (it->first == context->clientId_) {
+                fdValid = true;
+                break;
+            }
+        }
+    }
+
+    if (!fdValid) {
+        NETSTACK_LOGE("client fd is invalid");
+        context->SetErrorCode(ERR_SYS_BASE + errno);
+        return false;
+    }
+
+    return true;
+}
+
+static void SetNonBlocking(int fd)
+{
+    int old_option = fcntl(fd, F_GETFL);
+    int new_option = old_option | O_NONBLOCK;
+    fcntl(fd, F_SETFL, new_option);
+}
+
+static void RemoveClientConnection()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    for (auto it = g_clientFDs.begin(); it != g_clientFDs.end(); ++it) {
+        if (it->first == g_userCounter) {
+            g_clientFDs.erase(g_userCounter);
+            break;
+        }
+    }
+    for (auto it = g_clientEventManagers.begin(); it != g_clientEventManagers.end(); ++it) {
+        if (it->first == g_userCounter) {
+            g_clientEventManagers.erase(g_userCounter);
+            break;
+        }
+    }
+}
+
+static void HandleClientData(sockaddr *addr, struct pollfd *fds, char *buf, int i, const MessageCallback &callback)
+{
+    int ret;
+    int _connectFD = fds[i].fd;
+    std::shared_ptr<EventManager> manager = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        auto iter = g_clientEventManagers.find(i);
+        if (iter != g_clientEventManagers.end()) {
+            manager = iter->second;
+        } else {
+            NETSTACK_LOGE("find event manager error");
+            return;
+        }
+    }
+    (void)memset_s(buf, g_bufferSize, 0, g_bufferSize);
+    ret = recv(_connectFD, buf, g_bufferSize, 0);
+    NETSTACK_LOGI("ClientRecv: fd is %{public}d, buf is %{public}s, size is %{public}d bytes", _connectFD, buf, ret);
+    if (ret <= 0) {
+        if (errno != EAGAIN) {
+            close(_connectFD);
+            manager->Emit(EVENT_CLOSE, std::make_pair(nullptr, nullptr));
+            RemoveClientConnection();
+            fds[i] = fds[g_userCounter];
+            fds[g_userCounter].fd = -1;
+            fds[g_userCounter].events = 0;
+            i--;
+            g_userCounter--;
+        }
+    } else {
+        void *data = malloc(ret);
+        if (data == nullptr) {
+            callback.OnError(NO_MEMORY);
+            return;
+        }
+
+        if (memcpy_s(data, ret, buf, ret) != EOK || !callback.OnMessage(_connectFD, data, ret, addr, manager)) {
+            free(data);
+        }
+        for (int j = 1; j <= g_userCounter; ++j) {
+            if (fds[j].fd == _connectFD)
+                continue;
+            fds[j].events |= ~POLLIN;
+            fds[j].events |= POLLOUT;
+        }
+    }
+}
+
+static void UnlinkClient(struct pollfd *fds, int i)
+{
+    close(fds[i].fd);
+    std::shared_ptr<EventManager> manager = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        auto iter = g_clientEventManagers.find(i);
+        if (iter != g_clientEventManagers.end()) {
+            manager = iter->second;
+        } else {
+            NETSTACK_LOGE("find event manager error");
+            return;
+        }
+    }
+    manager->Emit(EVENT_CLOSE, std::make_pair(nullptr, nullptr));
+    RemoveClientConnection();
+    fds[i] = fds[g_userCounter];
+    fds[g_userCounter].fd = -1;
+    fds[g_userCounter].events = 0;
+    i--;
+    g_userCounter--;
+    NETSTACK_LOGI("A client left");
+}
+
+static void GetClientLink(int32_t sock, struct pollfd *fds, const MessageCallback &callback)
+{
+    struct sockaddr_in clientAddress;
+    socklen_t clientAddrLength = sizeof(clientAddress);
+    int32_t _connectFD = accept(sock, (struct sockaddr *)&clientAddress, &clientAddrLength);
+    if (_connectFD < 0) {
+        NETSTACK_LOGE("Server accept new client ERROR");
+        return;
+    }
+    NETSTACK_LOGI("Server accept new client SUCCESS");
+
+    if (g_userCounter >= USER_LIMIT) {
+        const char *info = "Too many users!";
+        NETSTACK_LOGE("Too many users");
+        send(_connectFD, info, strlen(info), 0);
+        close(_connectFD);
+        return;
+    }
+
+    g_userCounter++;
+    SetNonBlocking(_connectFD);
+    fds[g_userCounter].fd = _connectFD;
+    fds[g_userCounter].events = POLLIN | POLLRDHUP | POLLERR;
+    fds[g_userCounter].revents = 0;
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        g_clientFDs[g_userCounter] = _connectFD;
+    }
+
+    NETSTACK_LOGI("New client come in, fd = %{public}d", _connectFD);
+    callback.OnTcpConnectionMessage(g_userCounter);
+}
+
+static void HandleRecvData(int32_t sock, sockaddr *addr, struct pollfd *fds, char *buf, const MessageCallback &callback)
+{
+    for (int i = 0; i < g_userCounter + 1; ++i) {
+        if ((fds[i].fd == sock) && (fds[i].revents & POLLIN)) {
+            GetClientLink(sock, fds, callback);
+        } else if (fds[i].revents & POLLRDHUP) {
+            UnlinkClient(fds, i);
+        } else if (fds[i].revents & POLLERR) {
+            NETSTACK_LOGE("Get an ERROR from %u", fds[i].fd);
+            continue;
+        } else if (fds[i].revents & POLLIN) {
+            HandleClientData(addr, fds, buf, i, callback);
+        }
+    }
+}
+
+static void AcceptPollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
+{
+    g_bufferSize = ConfirmBufferSize(sock);
+
+    auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
+    std::unique_ptr<char, decltype(deleter)> buf(reinterpret_cast<char *>(malloc(g_bufferSize)), deleter);
+    if (buf == nullptr) {
+        callback.OnError(NO_MEMORY);
+        return;
+    }
+
+    int ret = 0;
+    pollfd fds[USER_LIMIT + 1];
+    for (int i = 1; i <= USER_LIMIT; ++i) {
+        fds[i].fd = -1;
+        fds[i].events = 0;
+    }
+    fds[0].fd = sock;
+    fds[0].events = POLLIN | POLLERR;
+    fds[0].revents = 0;
+
+    while (true) {
+        ret = poll(fds, g_userCounter + 1, -1);
+        if (ret < 0) {
+            NETSTACK_LOGE("Poll ERROR");
+            callback.OnError(errno);
+            break;
+        }
+        HandleRecvData(sock, addr, fds, buf.get(), callback);
+    }
+}
+
+static bool ServerBind(BindContext *context)
+{
+    sockaddr_in addr4 = {0};
+    sockaddr_in6 addr6 = {0};
+    sockaddr *addr = nullptr;
+    socklen_t len;
+    GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
+    if (addr == nullptr) {
+        NETSTACK_LOGE("addr family error");
+        context->SetErrorCode(ADDRESS_INVALID);
+        return false;
+    }
+
+    if (bind(context->GetSocketFd(), addr, len) < 0) {
+        if (errno != EADDRINUSE) {
+            NETSTACK_LOGE("bind error is %{public}s %{public}d", strerror(errno), errno);
+            context->SetErrorCode(ERR_SYS_BASE + errno);
+            return false;
+        }
+        if (addr->sa_family == AF_INET) {
+            NETSTACK_LOGI("distribute a random port");
+            addr4.sin_port = 0; /* distribute a random port */
+        } else if (addr->sa_family == AF_INET6) {
+            NETSTACK_LOGI("distribute a random port");
+            addr6.sin6_port = 0; /* distribute a random port */
+        }
+        if (bind(context->GetSocketFd(), addr, len) < 0) {
+            NETSTACK_LOGE("rebind error is %{public}s %{public}d", strerror(errno), errno);
+            context->SetErrorCode(ERR_SYS_BASE + errno);
+            return false;
+        }
+        NETSTACK_LOGI("rebind success");
+    }
+    NETSTACK_LOGI("bind success");
+
     return true;
 }
 
 bool ExecTcpServerListen(BindContext *context)
 {
-    (void)context;
+    int ret = 0;
+    if (!ServerBind(context)) {
+        return false;
+    }
+
+    ret = listen(context->GetSocketFd(), USER_LIMIT);
+    if (ret < 0) {
+        NETSTACK_LOGE("tcp server listen error");
+        return false;
+    }
+
+    NETSTACK_LOGI("listen success");
+    std::thread serviceThread(AcceptPollRecvData, context->GetSocketFd(), nullptr, 0,
+                              TcpMessageCallback(context->GetManager()));
+    serviceThread.detach();
     return true;
 }
 
@@ -1133,6 +1520,37 @@ napi_value TcpConnectionSendCallback(TcpSendContext *context)
 
 napi_value TcpConnectionCloseCallback(CloseContext *context)
 {
+    int32_t clientFd = -1;
+
+    {
+        for (auto it = g_clientFDs.begin(); it != g_clientFDs.end(); ++it) {
+            if (it->first == context->clientId_) {
+                clientFd = it->second;
+                break;
+            }
+        }
+    }
+
+    int ret = close(clientFd);
+    if (ret < 0) {
+        NETSTACK_LOGE("sock closed error %{public}s sock = %{public}d, ret = %{public}d", strerror(errno),
+                      context->GetSocketFd(), ret);
+    } else {
+        NETSTACK_LOGI("sock %{public}d closed success", clientFd);
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        g_clientFDs.erase(context->clientId_);
+        for (auto it = g_clientEventManagers.begin(); it != g_clientEventManagers.end(); ++it) {
+            if (it->first == context->clientId_) {
+                g_clientEventManagers.erase(context->clientId_);
+                break;
+            }
+        }
+    }
+    context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                              NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
