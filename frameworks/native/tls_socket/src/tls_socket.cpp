@@ -43,6 +43,7 @@ constexpr int BUF_SIZE = 2048;
 constexpr int SSL_RET_CODE = 0;
 constexpr int SSL_ERROR_RETURN = -1;
 constexpr int OFFSET = 2;
+constexpr int QUIT_RESPONSE_CODE_LEN = 3;
 constexpr const char *SPLIT_ALT_NAMES = ",";
 constexpr const char *SPLIT_HOST_NAME = ".";
 constexpr const char *PROTOCOL_UNKNOW = "UNKNOW_PROTOCOL";
@@ -60,6 +61,7 @@ constexpr const char *SIGN_NID_ED_FOUR_FOUR_EIGHT = "Ed448+";
 constexpr const char *SIGN_NID_UNDEF_ADD = "UNDEF+";
 constexpr const char *SIGN_NID_UNDEF = "UNDEF";
 constexpr const char *OPERATOR_PLUS_SIGN = "+";
+constexpr const char *QUIT_RESPONSE_CODE = "221";
 const std::regex JSON_STRING_PATTERN{R"(/^"(?:[^"\\\u0000-\u001f]|\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4}))*"/)"};
 const std::regex PATTERN{
     "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|"
@@ -387,6 +389,9 @@ void TLSSocket::StartReadMessage()
             remoteInfo.SetSize(strlen(buffer));
             tlsSocketInternal_.MakeRemoteInfo(remoteInfo);
             CallOnMessageCallback(buffer, remoteInfo);
+            if (strncmp(buffer, QUIT_RESPONSE_CODE, QUIT_RESPONSE_CODE_LEN) == 0) {
+                break;
+            }
         }
         isRunOver_ = true;
     });
