@@ -86,7 +86,7 @@ void EventMessageCallback(uv_work_t *work, int status)
     }
     auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
     if (workWrapper == nullptr) {
-        ParserNullBranch("workWrapper is nullptr", work, nullptr);
+        ParserNullBranch("workWrapper is nullptr", work, workWrapper);
         return;
     }
     auto monitor = static_cast<Monitor *>(workWrapper->data);
