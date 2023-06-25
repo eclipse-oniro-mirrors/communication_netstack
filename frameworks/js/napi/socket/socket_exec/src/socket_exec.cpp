@@ -55,6 +55,9 @@ static constexpr const int ERR_SYS_BASE = 2303100;
 
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
+static constexpr const char *TCP_SERVER_ACCEPT_GET_RECV_DATA = "TCPServerAcceptGetRecvData";
+
+static constexpr const char *TCP_SERVER_HANDLE_CLIENT = "TCPServerHandleClient";
 namespace OHOS::NetStack::Socket::SocketExec {
 std::map<int32_t, int32_t> g_clientFDs;
 std::map<int32_t, std::shared_ptr<EventManager>> g_clientEventManagers;
@@ -1406,8 +1409,11 @@ static void ClientHandler(int32_t connectFD, sockaddr *addr, socklen_t addrLen, 
         });
     }
     while (true) {
-        (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
-        int recvSize = recv(connectFD, buffer, sizeof(buffer), 0);
+        if (memset_s(buffer, sizeof(buffer, 0, sizeof(buffer) != EOK))) {
+            NETSTACK_LOGE("memcpy_s failed!");
+            break;
+        }
+        int32_t recvSize = recv(connectFD, buffer, sizeof(buffer), 0);
         NETSTACK_LOGI("ClientRecv: fd is %{public}d, buf is %{public}s, size is %{public}d bytes", connectFD, buffer,
                       recvSize);
         if (recvSize <= 0) {
@@ -1449,6 +1455,7 @@ static void AcceptPollRecvData(int sock, sockaddr *addr, socklen_t addrLen, cons
         }
         callback.OnTcpConnectionMessage(g_userCounter);
         std::thread handlerThread(ClientHandler, connectFD, nullptr, 0, callback);
+        pthread_setname_np(handlerThread.native_handle(), TCP_SERVER_HANDLE_CLIENT);
         handlerThread.detach();
     }
 }
@@ -1469,6 +1476,7 @@ bool ExecTcpServerListen(BindContext *context)
     NETSTACK_LOGI("listen success");
     std::thread serviceThread(AcceptPollRecvData, context->GetSocketFd(), nullptr, 0,
                               TcpMessageCallback(context->GetManager()));
+    pthread_setname_np(serviceThread.native_handle(), TCP_SERVER_ACCEPT_GET_RECV_DATA);
     serviceThread.detach();
     return true;
 }
@@ -1520,6 +1528,16 @@ bool ExecTcpServerSetExtraOptions(TcpSetExtraOptionsContext *context)
     return true;
 }
 
+static void SetIsConnected(GetStateContext *context)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    if (g_clientFDs.empty()) {
+        context->state_.SetIsConnected(false);
+    } else {
+        context->state_.SetIsConnected(true);
+    }
+}
+
 bool ExecTcpServerGetState(GetStateContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
@@ -1558,7 +1576,10 @@ bool ExecTcpServerGetState(GetStateContext *context)
         return false;
     }
 
-    (void)memset_s(addr, addrLen, 0, addrLen);
+    if (memset_s(addr, addrLen, 0, addrLen) != EOK) {
+        NETSTACK_LOGE("memcpy_s failed!");
+        return false;
+    }
     len = addrLen;
     if (getsockname(context->GetSocketFd(), addr, &len) < 0) {
         context->SetErrorCode(ERR_SYS_BASE + errno);
@@ -1570,15 +1591,7 @@ bool ExecTcpServerGetState(GetStateContext *context)
     if (opt != SOCK_STREAM) {
         return true;
     }
-
-    {
-        std::lock_guard<std::mutex> lock(g_mutex);
-        if (g_clientFDs.empty()) {
-            context->state_.SetIsConnected(false);
-        } else {
-            context->state_.SetIsConnected(true);
-        }
-    }
+    SetIsConnected(context);
     return true;
 }
 
