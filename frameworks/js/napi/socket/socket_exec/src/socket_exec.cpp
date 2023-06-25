@@ -53,7 +53,8 @@ static constexpr const int USER_LIMIT = 511;
 
 static constexpr const int ERR_SYS_BASE = 2303100;
 
-static constexpr const std::string TCP_SOCKET_CONNECTION = "TCPSocketConnection";
+static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
+
 namespace OHOS::NetStack::Socket::SocketExec {
 std::map<int32_t, int32_t> g_clientFDs;
 std::map<int32_t, std::shared_ptr<EventManager>> g_clientEventManagers;
@@ -192,7 +193,7 @@ napi_value ConstructTCPSocketConnection(napi_env env, napi_callback_info info, i
     std::copy(properties.begin(), properties.end(), descriptors);
 
     NAPI_CALL_BASE(env,
-                   napi_define_class(env, TCP_SOCKET_CONNECTION.c_str(), NAPI_AUTO_LENGTH, constructor, nullptr,
+                   napi_define_class(env, TCP_SOCKET_CONNECTION, NAPI_AUTO_LENGTH, constructor, nullptr,
                                      properties.size(), descriptors, &jsConstructor),
                    NapiUtils::GetUndefined(env));
 
