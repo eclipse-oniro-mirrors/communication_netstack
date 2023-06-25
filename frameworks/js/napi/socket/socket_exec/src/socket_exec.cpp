@@ -1405,7 +1405,7 @@ static void ClientHandler(int32_t connectFD, sockaddr *addr, socklen_t addrLen, 
         });
     }
     while (true) {
-        memset(buffer, 0, sizeof(buffer));
+        (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
         int recvSize = recv(connectFD, buffer, sizeof(buffer), 0);
         NETSTACK_LOGI("ClientRecv: fd is %{public}d, buf is %{public}s, size is %{public}d bytes", connectFD, buffer,
                       recvSize);
@@ -1436,20 +1436,18 @@ static void AcceptPollRecvData(int sock, sockaddr *addr, socklen_t addrLen, cons
     while (true) {
         struct sockaddr_in clientAddress;
         socklen_t clientAddrLength = sizeof(clientAddress);
-        int32_t _connectFD = accept(sock, (struct sockaddr *)&clientAddress, &clientAddrLength);
-
-        if (_connectFD < 0) {
+        int32_t connectFD = accept(sock, static_cast<struct sockaddr *>(&clientAddress), &clientAddrLength);
+        if (connectFD < 0) {
             continue;
         }
-        NETSTACK_LOGI("Server accept new client SUCCESS, fd = %{public}d", _connectFD);
-
+        NETSTACK_LOGI("Server accept new client SUCCESS, fd = %{public}d", connectFD);
         {
             std::lock_guard<std::mutex> lock(g_mutex);
             g_userCounter++;
-            g_clientFDs[g_userCounter] = _connectFD;
+            g_clientFDs[g_userCounter] = connectFD;
         }
         callback.OnTcpConnectionMessage(g_userCounter);
-        std::thread handlerThread(ClientHandler, _connectFD, nullptr, 0, callback);
+        std::thread handlerThread(ClientHandler, connectFD, nullptr, 0, callback);
         handlerThread.detach();
     }
 }
@@ -1695,11 +1693,12 @@ napi_value TcpConnectionCloseCallback(CloseContext *context)
                       context->GetSocketFd(), ret);
     } else {
         NETSTACK_LOGI("sock %{public}d closed success", clientFd);
+        RemoveClientConnection(clientFd);
+        clientFd = -1;
+        context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                                  NapiUtils::GetUndefined(context->GetEnv())));
     }
 
-    RemoveClientConnection(clientFd);
-    context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
-                                              NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
