@@ -46,7 +46,7 @@ constexpr const char *PROPERTY_SIZE = "size";
 constexpr const char *ON_MESSAGE = "message";
 constexpr const char *ON_REMOTE_INFO = "remoteInfo";
 
-void ParserNullBranch(std::string const &errMessage, uv_work_t *&work, UvWorkWrapper *&workWrapper)
+void ParserNullBranch(const std::string &errMessage, uv_work_t *&work, UvWorkWrapper *&workWrapper)
 {
     NETSTACK_LOGE("%{public}s", errMessage.c_str());
     if (workWrapper != nullptr) {
