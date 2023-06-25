@@ -55,7 +55,7 @@ static constexpr const int ERR_SYS_BASE = 2303100;
 
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
-static constexpr const char *TCP_SERVER_ACCEPT_GET_RECV_DATA = "TCPServerAcceptGetRecvData";
+static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "TCPServerAcceptRecvData";
 
 static constexpr const char *TCP_SERVER_HANDLE_CLIENT = "TCPServerHandleClient";
 namespace OHOS::NetStack::Socket::SocketExec {
@@ -1438,7 +1438,7 @@ static void ClientHandler(int32_t connectFD, sockaddr *addr, socklen_t addrLen, 
     }
 }
 
-static void AcceptPollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const TcpMessageCallback &callback)
+static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const TcpMessageCallback &callback)
 {
     while (true) {
         sockaddr_in clientAddress;
@@ -1474,9 +1474,9 @@ bool ExecTcpServerListen(BindContext *context)
     }
 
     NETSTACK_LOGI("listen success");
-    std::thread serviceThread(AcceptPollRecvData, context->GetSocketFd(), nullptr, 0,
+    std::thread serviceThread(AcceptRecvData, context->GetSocketFd(), nullptr, 0,
                               TcpMessageCallback(context->GetManager()));
-    pthread_setname_np(serviceThread.native_handle(), TCP_SERVER_ACCEPT_GET_RECV_DATA);
+    pthread_setname_np(serviceThread.native_handle(), TCP_SERVER_ACCEPT_RECV_DATA);
     serviceThread.detach();
     return true;
 }
