@@ -15,6 +15,15 @@ import("//build/ohos.gni")
 import("//foundation/communication/netstack/netstack_config.gni")
 
 ohos_shared_library("fetch") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    integer_overflow = true
+    boundary_sanitize = true
+    all_ubsan = true
+    debug = true
+  }
+
   include_dirs = [
     "async_context/include",
     "async_work/include",

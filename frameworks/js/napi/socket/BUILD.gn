@@ -41,6 +41,15 @@ tls_napi_sources = [
 ]
 
 ohos_shared_library("socket") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    integer_overflow = true
+    boundary_sanitize = true
+    all_ubsan = true
+    debug = true
+  }
+
   include_dirs = [
     "$TLS/include",
     "$TLS_NAPI/include",
