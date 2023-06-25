@@ -537,7 +537,7 @@ int MakeTcpSocket(sa_family_t family)
         return -1;
     }
     int sock = socket(family, SOCK_STREAM, IPPROTO_TCP);
-    NETSTACK_LOGI("new tcp socket is %{public}d", sock);
+    NETSTACK_LOGD("new tcp socket is %{public}d", sock);
     if (sock < 0) {
         NETSTACK_LOGE("make tcp socket failed errno is %{public}d %{public}s", errno, strerror(errno));
         return -1;
@@ -555,7 +555,7 @@ int MakeUdpSocket(sa_family_t family)
         return -1;
     }
     int sock = socket(family, SOCK_DGRAM, IPPROTO_UDP);
-    NETSTACK_LOGI("new udp socket is %{public}d", sock);
+    NETSTACK_LOGD("new udp socket is %{public}d", sock);
     if (sock < 0) {
         NETSTACK_LOGE("make udp socket failed errno is %{public}d %{public}s", errno, strerror(errno));
         return -1;
