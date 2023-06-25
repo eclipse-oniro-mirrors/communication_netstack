@@ -1435,9 +1435,9 @@ static void ClientHandler(int32_t connectFD, sockaddr *addr, socklen_t addrLen, 
 static void AcceptPollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const TcpMessageCallback &callback)
 {
     while (true) {
-        struct sockaddr_in clientAddress;
+        sockaddr_in clientAddress;
         socklen_t clientAddrLength = sizeof(clientAddress);
-        int32_t connectFD = accept(sock, static_cast<struct sockaddr *>(&clientAddress), &clientAddrLength);
+        int32_t connectFD = accept(sock, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddrLength);
         if (connectFD < 0) {
             continue;
         }
