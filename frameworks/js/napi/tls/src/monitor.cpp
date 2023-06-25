@@ -38,6 +38,7 @@ constexpr std::string_view EVENT_MESSAGE = "message";
 constexpr std::string_view EVENT_CONNECT = "connect";
 constexpr std::string_view EVENT_CLOSE = "close";
 constexpr std::string_view EVENT_ERROR = "error";
+constexpr std::initializer_list<std::string_view> EVENTS = {EVENT_MESSAGE, EVENT_CONNECT, EVENT_CLOSE, EVENT_ERROR};
 
 constexpr const char *PROPERTY_ADDRESS = "address";
 constexpr const char *PROPERTY_FAMILY = "family";
@@ -259,9 +260,8 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
     }
 
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    auto itor = monitors_.find(event);
-    if (itor != monitors_.end()) {
-        NETSTACK_LOGE("monitor is exits %{public}s", event.c_str());
+    if (std::find(EVENTS.begin(), EVENTS.end(), event) == EVENTS.end()) {
+        NETSTACK_LOGE("Incorrect listening event %{public}s", event.c_str());
         return NapiUtils::GetUndefined(env);
     }
     manager_->AddListener(env, event, params[1], false, false);

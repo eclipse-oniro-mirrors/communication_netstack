@@ -74,10 +74,10 @@ struct MessageData {
 
 struct TcpConnection {
     TcpConnection() = delete;
-    TcpConnection(int32_t clientId) : clientId_(clientId) {}
+    explicit TcpConnection(int32_t clientid) : clientId(clientid) {}
     ~TcpConnection() = default;
 
-    int32_t clientId_;
+    int32_t clientId;
 };
 
 static void SetIsBound(sa_family_t family, GetStateContext *context, const sockaddr_in *addr4,
@@ -1130,12 +1130,12 @@ bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
     return true;
 }
 
-bool ExecTcpGetSocketFd(SocketFdContext *context)
+bool ExecTcpGetSocketFd(GetSocketFdContext *context)
 {
     return true;
 }
 
-bool ExecUdpGetSocketFd(SocketFdContext *context)
+bool ExecUdpGetSocketFd(GetSocketFdContext *context)
 {
     return true;
 }
@@ -1503,12 +1503,12 @@ napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context)
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
-napi_value TcpGetSocketFdCallback(SocketFdContext *context)
+napi_value TcpGetSocketFdCallback(GetSocketFdContext *context)
 {
     return NapiUtils::CreateUint32(context->GetEnv(), context->GetSocketFd());
 }
 
-napi_value UdpGetSocketFdCallback(SocketFdContext *context)
+napi_value UdpGetSocketFdCallback(GetSocketFdContext *context)
 {
     return NapiUtils::CreateUint32(context->GetEnv(), context->GetSocketFd());
 }

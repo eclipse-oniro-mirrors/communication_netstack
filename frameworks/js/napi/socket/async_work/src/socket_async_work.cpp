@@ -20,7 +20,6 @@
 #include "common_context.h"
 #include "connect_context.h"
 #include "socket_exec.h"
-#include "socket_fd_context.h"
 #include "tcp_extra_context.h"
 #include "tcp_send_context.h"
 #include "udp_extra_context.h"
@@ -79,12 +78,12 @@ void SocketAsyncWork::ExecUdpSetExtraOptions(napi_env env, void *data)
 
 void SocketAsyncWork::ExecTcpGetSocketFd(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<SocketFdContext, SocketExec::ExecTcpGetSocketFd>(env, data);
+    BaseAsyncWork::ExecAsyncWork<GetSocketFdContext, SocketExec::ExecTcpGetSocketFd>(env, data);
 }
 
 void SocketAsyncWork::ExecUdpGetSocketFd(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<SocketFdContext, SocketExec::ExecUdpGetSocketFd>(env, data);
+    BaseAsyncWork::ExecAsyncWork<GetSocketFdContext, SocketExec::ExecUdpGetSocketFd>(env, data);
 }
 
 void SocketAsyncWork::ExecTcpConnectionSend(napi_env env, void *data)
@@ -167,12 +166,12 @@ void SocketAsyncWork::UdpSetExtraOptionsCallback(napi_env env, napi_status statu
 
 void SocketAsyncWork::TcpGetSocketFdCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<SocketFdContext, SocketExec::TcpGetSocketFdCallback>(env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<GetSocketFdContext, SocketExec::TcpGetSocketFdCallback>(env, status, data);
 }
 
 void SocketAsyncWork::UdpGetSocketFdCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<SocketFdContext, SocketExec::UdpGetSocketFdCallback>(env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<GetSocketFdContext, SocketExec::UdpGetSocketFdCallback>(env, status, data);
 }
 
 void SocketAsyncWork::TcpConnectionSendCallback(napi_env env, napi_status status, void *data)

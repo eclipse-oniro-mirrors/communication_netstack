@@ -19,7 +19,6 @@
 #include "bind_context.h"
 #include "common_context.h"
 #include "connect_context.h"
-#include "socket_fd_context.h"
 #include "tcp_extra_context.h"
 #include "tcp_send_context.h"
 #include "udp_extra_context.h"
@@ -51,9 +50,9 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context);
 
 bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context);
 
-bool ExecTcpGetSocketFd(SocketFdContext *context);
+bool ExecTcpGetSocketFd(GetSocketFdContext *context);
 
-bool ExecUdpGetSocketFd(SocketFdContext *context);
+bool ExecUdpGetSocketFd(GetSocketFdContext *context);
 
 bool ExecTcpConnectionSend(TcpSendContext *context);
 
@@ -86,9 +85,7 @@ napi_value TcpSetExtraOptionsCallback(TcpSetExtraOptionsContext *context);
 
 napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context);
 
-napi_value TcpGetSocketFdCallback(SocketFdContext *context);
-
-napi_value UdpGetSocketFdCallback(SocketFdContext *context);
+napi_value TcpGetSocketFdCallback(GetSocketFdContext *context);
 
 napi_value TcpConnectionSendCallback(TcpSendContext *context);
 
@@ -97,5 +94,7 @@ napi_value TcpConnectionCloseCallback(CloseContext *context);
 napi_value TcpConnectionGetRemoteAddressCallback(TcpConnectionGetRemoteAddressContext *context);
 
 napi_value ListenCallback(BindContext *context);
+
+napi_value UdpGetSocketFdCallback(GetSocketFdContext *context);
 } // namespace OHOS::NetStack::Socket::SocketExec
 #endif /* COMMUNICATIONNETSTACK_SOCKET_EXEC_H */

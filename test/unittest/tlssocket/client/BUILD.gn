@@ -45,7 +45,6 @@ socket_sources = [
   "$SOCKET/async_context/src/bind_context.cpp",
   "$SOCKET/async_context/src/common_context.cpp",
   "$SOCKET/async_context/src/connect_context.cpp",
-  "$SOCKET/async_context/src/socket_fd_context.cpp",
   "$SOCKET/async_context/src/tcp_extra_context.cpp",
   "$SOCKET/async_context/src/tcp_send_context.cpp",
   "$SOCKET/async_context/src/udp_extra_context.cpp",
