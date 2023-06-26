@@ -1409,8 +1409,8 @@ static void ClientHandler(int32_t connectFD, sockaddr *addr, socklen_t addrLen, 
         });
     }
     while (true) {
-        if (memset_s(buffer, sizeof(buffer, 0, sizeof(buffer) != EOK))) {
-            NETSTACK_LOGE("memcpy_s failed!");
+        if (memset_s(buffer, sizeof(buffer), 0, sizeof(buffer)) != EOK) {
+            NETSTACK_LOGE("memset_s failed!");
             break;
         }
         int32_t recvSize = recv(connectFD, buffer, sizeof(buffer), 0);
@@ -1577,7 +1577,7 @@ bool ExecTcpServerGetState(GetStateContext *context)
     }
 
     if (memset_s(addr, addrLen, 0, addrLen) != EOK) {
-        NETSTACK_LOGE("memcpy_s failed!");
+        NETSTACK_LOGE("memset_s failed!");
         return false;
     }
     len = addrLen;
