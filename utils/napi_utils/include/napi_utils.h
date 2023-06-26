@@ -118,7 +118,7 @@ napi_value GetArrayElement(napi_env env, napi_value arr, uint32_t index);
 /* JSON */
 napi_value JsonStringify(napi_env env, napi_value object);
 
-napi_value JsonParse(napi_env env, napi_value str);
+napi_value JsonParse(napi_env env, const std::string &inStr);
 
 /* libuv */
 void CreateUvQueueWork(napi_env env, void *data, void(handler)(uv_work_t *, int status));

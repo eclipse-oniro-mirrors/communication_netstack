@@ -29,6 +29,7 @@
 #include "napi/native_common.h"
 #include "node_api.h"
 #include "base_context.h"
+#include "json/json.h"
 
 namespace OHOS::NetStack::NapiUtils {
 static constexpr const char *GLOBAL_JSON = "JSON";
@@ -460,10 +461,19 @@ napi_value JsonStringify(napi_env env, napi_value object)
     return res;
 }
 
-napi_value JsonParse(napi_env env, napi_value str)
+napi_value JsonParse(napi_env env, const std::string &inStr)
 {
     napi_value undefined = GetUndefined(env);
+    JSONCPP_STRING err;
+    Json::Value valueJson;
+    Json::CharReaderBuilder readerBuilder;
+    std::unique_ptr<Json::CharReader> const jsonReader(readerBuilder.newCharReader());
+    bool ret = jsonReader->parse(inStr.c_str(), inStr.c_str() + inStr.length(), &valueJson, &err);
+    if (!ret || !err.empty()) {
+        return undefined;
+    }
 
+    auto str = NapiUtils::CreateStringUtf8(env, inStr);
     if (GetValueType(env, str) != napi_string) {
         return undefined;
     }
