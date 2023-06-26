@@ -47,7 +47,7 @@ constexpr const char *PROPERTY_SIZE = "size";
 constexpr const char *ON_MESSAGE = "message";
 constexpr const char *ON_REMOTE_INFO = "remoteInfo";
 
-void ParserNullBranch(std::string errMessage, uv_work_t *work, UvWorkWrapper *workWrapper)
+void ParserNullBranch(const std::string &errMessage, uv_work_t *&work, UvWorkWrapper *&workWrapper)
 {
     NETSTACK_LOGE("%{public}s", errMessage.c_str());
     if (workWrapper != nullptr) {
@@ -87,7 +87,7 @@ void EventMessageCallback(uv_work_t *work, int status)
     }
     auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
     if (workWrapper == nullptr) {
-        ParserNullBranch("workWrapper is nullptr", work, nullptr);
+        ParserNullBranch("workWrapper is nullptr", work, workWrapper);
         return;
     }
     auto monitor = static_cast<Monitor *>(workWrapper->data);
