@@ -16,7 +16,6 @@
 #include "event_manager.h"
 
 #include "netstack_log.h"
-#include <algorithm>
 
 namespace OHOS::NetStack {
 static constexpr const int CALLBACK_PARAM_NUM = 1;
@@ -43,78 +42,90 @@ void EventManager::SetInvalid()
 void EventManager::AddListener(napi_env env, const std::string &type, napi_value callback, bool once,
                                bool asyncCallback)
 {
-    auto it = std::remove_if(listeners_.begin(), listeners_.end(),
-                             [type](const EventListener &listener) -> bool { return listener.MatchType(type); });
+    std::lock_guard<std::mutex> lock(mutexForListenersAndEmitByUv_);
+    auto it = listeners_.find(type);
     if (it != listeners_.end()) {
-        listeners_.erase(it, listeners_.end());
+        listeners_.erase(it);
     }
 
-    listeners_.emplace_back(EventListener(env, type, callback, once, asyncCallback));
+    listeners_.insert(std::make_pair(type, EventListener(env, type, callback, once, asyncCallback)));
 }
 
 void EventManager::DeleteListener(const std::string &type, napi_value callback)
 {
-    auto it =
-        std::remove_if(listeners_.begin(), listeners_.end(), [type, callback](const EventListener &listener) -> bool {
-            return listener.Match(type, callback);
-        });
-    listeners_.erase(it, listeners_.end());
+    std::lock_guard<std::mutex> lock(mutexForListenersAndEmitByUv_);
+    auto it = listeners_.find(type);
+    if (it != listeners_.end() && it->second.Match(type, callback)) {
+        listeners_.erase(it);
+    }
 }
 
 void EventManager::Emit(const std::string &type, const std::pair<napi_value, napi_value> &argv)
-{
-    std::for_each(listeners_.begin(), listeners_.end(), [type, argv](const EventListener &listener) {
-        if (listener.IsAsyncCallback()) {
-            /* AsyncCallback(BusinessError error, T data) */
-            napi_value arg[ASYNC_CALLBACK_PARAM_NUM] = {argv.first, argv.second};
-            listener.Emit(type, ASYNC_CALLBACK_PARAM_NUM, arg);
-        } else {
-            /* Callback(T data) */
-            napi_value arg[CALLBACK_PARAM_NUM] = {argv.second};
-            listener.Emit(type, CALLBACK_PARAM_NUM, arg);
-        }
-    });
-
-    auto it = std::remove_if(listeners_.begin(), listeners_.end(),
-                             [type](const EventListener &listener) -> bool { return listener.MatchOnce(type); });
-    listeners_.erase(it, listeners_.end());
-}
-
-void EventManager::SetData(void *data)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    data_ = data;
-}
-
-void *EventManager::GetData()
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    return data_;
-}
-
-void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status))
 {
     if (!IsManagerValid()) {
         return;
     }
 
-    std::for_each(listeners_.begin(), listeners_.end(), [type, data, Handler, this](const EventListener &listener) {
-        auto workWrapper = new UvWorkWrapper(data, listener.GetEnv(), type, this);
-        listener.EmitByUv(type, workWrapper, Handler);
-    });
+    std::lock_guard<std::mutex> lock(mutexForEmitAndEmitByUv_);
+    auto it = listeners_.find(type);
+    if (it != listeners_.end() && it->second.MatchType(type)) {
+        if (it->second.IsAsyncCallback()) {
+            /* AsyncCallback(BusinessError error, T data) */
+            napi_value arg[ASYNC_CALLBACK_PARAM_NUM] = {argv.first, argv.second};
+            it->second.Emit(type, ASYNC_CALLBACK_PARAM_NUM, arg);
+        } else {
+            /* Callback(T data) */
+            napi_value arg[CALLBACK_PARAM_NUM] = {argv.second};
+            it->second.Emit(type, CALLBACK_PARAM_NUM, arg);
+        }
+
+        if (it->second.MatchOnce(type)) {
+            listeners_.erase(it);
+        }
+    }
+}
+
+void EventManager::SetData(void *data)
+{
+    std::lock_guard<std::mutex> lock(mutexForData_);
+    data_ = data;
+}
+
+void *EventManager::GetData()
+{
+    std::lock_guard<std::mutex> lock(mutexForData_);
+    return data_;
+}
+
+void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int))
+{
+    if (!IsManagerValid()) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock1(mutexForListenersAndEmitByUv_);
+    std::lock_guard<std::mutex> lock2(mutexForEmitAndEmitByUv_);
+    auto it = listeners_.find(type);
+    if (it != listeners_.end() && it->second.MatchType(type)) {
+        auto workWrapper = new UvWorkWrapper(data, it->second.GetEnv(), type, this);
+        it->second.EmitByUv(type, workWrapper, Handler);
+    }
 }
 
 bool EventManager::HasEventListener(const std::string &type)
 {
-    return std::any_of(listeners_.begin(), listeners_.end(),
-                       [&type](const EventListener &listener) -> bool { return listener.MatchType(type); });
+    std::lock_guard<std::mutex> lock(mutexForListenersAndEmitByUv_);
+    auto it = listeners_.find(type);
+    return it != listeners_.end() && it->second.MatchType(type);
 }
 
 void EventManager::DeleteListener(const std::string &type)
 {
-    auto it = std::remove_if(listeners_.begin(), listeners_.end(),
-                             [type](const EventListener &listener) -> bool { return listener.MatchType(type); });
-    listeners_.erase(it, listeners_.end());
+    std::lock_guard<std::mutex> lock(mutexForListenersAndEmitByUv_);
+    auto it = listeners_.find(type);
+    if (it != listeners_.end() && it->second.MatchType(type)) {
+        listeners_.erase(it);
+    }
 }
 
 UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)
