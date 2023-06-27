@@ -36,9 +36,6 @@ EventListener::EventListener(const EventListener &listener)
     once_ = listener.once_;
     asyncCallback_ = listener.asyncCallback_;
 
-    if (callbackRef_ != nullptr) {
-        NapiUtils::DeleteReference(env_, callbackRef_);
-    }
     if (listener.callbackRef_ == nullptr) {
         callbackRef_ = nullptr;
         return;
