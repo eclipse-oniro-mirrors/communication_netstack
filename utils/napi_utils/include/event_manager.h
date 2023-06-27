@@ -23,7 +23,6 @@
 #include <set>
 #include <string>
 #include <utility>
-#include <map>
 
 #include "event_listener.h"
 #include "napi/native_api.h"
@@ -46,7 +45,7 @@ public:
 
     [[nodiscard]] void *GetData();
 
-    void EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int));
+    void EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
 
     bool HasEventListener(const std::string &type);
 
@@ -57,10 +56,8 @@ public:
     [[nodiscard]] bool IsManagerValid() const;
 
 private:
-    std::mutex mutexForListenersAndEmitByUv_;
-    std::mutex mutexForEmitAndEmitByUv_;
-    std::mutex mutexForData_;
-    std::map<std::string, EventListener> listeners_;
+    std::mutex mutex_;
+    std::list<EventListener> listeners_;
     void *data_;
     std::atomic_bool isValid_;
 };
