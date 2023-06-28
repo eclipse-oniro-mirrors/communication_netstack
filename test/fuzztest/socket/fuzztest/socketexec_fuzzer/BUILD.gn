@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Huawei Device Co., Ltd.
+# Copyright (c) 2022-2023 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -35,6 +35,10 @@ ohos_fuzztest("SocketExecFuzzTest") {
     "$NETSTACK_NAPI_ROOT/socket/task_queue/include",
     "$NETSTACK_DIR/utils/log/include",
     "$NETSTACK_DIR/utils/common_utils/include",
+    "$NETSTACK_NAPI_ROOT/tls/include",
+    "$NETSTACK_NAPI_ROOT/tls/include/context",
+    "$NETSTACK_NATIVE_ROOT/tls_socket/include",
+    "$NETSTACK_INNERKITS_DIR/tls_socket/include",
   ]
 
   cflags = [
@@ -64,10 +68,32 @@ ohos_fuzztest("SocketExecFuzzTest") {
     "$NETSTACK_NAPI_ROOT/socket/options/src/udp_extra_options.cpp",
     "$NETSTACK_NAPI_ROOT/socket/options/src/udp_send_options.cpp",
     "$NETSTACK_NAPI_ROOT/socket/socket_exec/src/socket_exec.cpp",
+    "$NETSTACK_NAPI_ROOT/socket/socket_module/src/socket_module.cpp",
+    "$NETSTACK_NAPI_ROOT/tls/src/context/tls_bind_context.cpp",
+    "$NETSTACK_NAPI_ROOT/tls/src/context/tls_connect_context.cpp",
+    "$NETSTACK_NAPI_ROOT/tls/src/context/tls_extra_context.cpp",
+    "$NETSTACK_NAPI_ROOT/tls/src/context/tls_napi_context.cpp",
+    "$NETSTACK_NAPI_ROOT/tls/src/context/tls_send_context.cpp",
+    "$NETSTACK_NAPI_ROOT/tls/src/monitor.cpp",
+    "$NETSTACK_NAPI_ROOT/tls/src/tlssocket_async_work.cpp",
+    "$NETSTACK_NAPI_ROOT/tls/src/tlssocket_exec.cpp",
+    "$NETSTACK_NAPI_ROOT/tls/src/tlssocket_module.cpp",
+    "$NETSTACK_NATIVE_ROOT/tls_socket/src/secure_data.cpp",
+    "$NETSTACK_NATIVE_ROOT/tls_socket/src/socket_error.cpp",
+    "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_certificate.cpp",
+    "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_configuration.cpp",
+    "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_context.cpp",
+    "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_key.cpp",
+    "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_socket.cpp",
+    "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_utils.cpp",
   ]
   sources += [ "socket_exec_fuzzer.cpp" ]
 
-  deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
+  deps = [
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
+    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
+  ]
 
   external_deps = [
     "c_utils:utils",
@@ -79,6 +105,7 @@ ohos_fuzztest("SocketExecFuzzTest") {
     "NETMGR_LOG_TAG = \"NapiSocket\"",
     "LOG_DOMAIN = 0xD0015B0",
     "FUZZ_TEST",
+    "OPENSSL_SUPPRESS_DEPRECATED",
   ]
 }
 
