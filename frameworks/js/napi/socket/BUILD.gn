@@ -47,7 +47,6 @@ ohos_shared_library("socket") {
     integer_overflow = true
     boundary_sanitize = true
     all_ubsan = true
-    debug = true
   }
 
   include_dirs = [

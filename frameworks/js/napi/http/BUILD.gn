@@ -61,7 +61,6 @@ ohos_shared_library("http") {
     integer_overflow = true
     boundary_sanitize = true
     all_ubsan = true
-    debug = true
   }
 
   sources = [

@@ -39,7 +39,6 @@ ohos_shared_library("stack_utils_common") {
     integer_overflow = true
     boundary_sanitize = true
     all_ubsan = true
-    debug = true
   }
 
   sources = [ "common_utils/src/netstack_common_utils.cpp" ]
