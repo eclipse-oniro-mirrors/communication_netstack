@@ -21,11 +21,12 @@
 
 namespace OHOS::NetStack {
 EventListener::EventListener(napi_env env, std::string type, napi_value callback, bool once, bool asyncCallback)
-    : env_(env), type_(std::move(type)), once_(once), callbackRef_(nullptr), asyncCallback_(asyncCallback)
+    : env_(env),
+      type_(std::move(type)),
+      once_(once),
+      callbackRef_(NapiUtils::CreateReference(env, callback)),
+      asyncCallback_(asyncCallback)
 {
-    if (env && callback) {
-        NapiUtils::CreateReference(env, callback);
-    }
 }
 
 EventListener::EventListener(const EventListener &listener)
@@ -45,24 +46,22 @@ EventListener::EventListener(const EventListener &listener)
 
 EventListener::~EventListener()
 {
-    if (env_ != nullptr && callbackRef_ != nullptr) {
+    if (callbackRef_ != nullptr) {
         NapiUtils::DeleteReference(env_, callbackRef_);
     }
-    env_ = nullptr;
     callbackRef_ = nullptr;
 }
 
 EventListener &EventListener::operator=(const EventListener &listener)
 {
-    if (env_ != nullptr && callbackRef_ != nullptr) {
-        NapiUtils::DeleteReference(env_, callbackRef_);
-    }
-
     env_ = listener.env_;
     type_ = listener.type_;
     once_ = listener.once_;
     asyncCallback_ = listener.asyncCallback_;
 
+    if (callbackRef_ != nullptr) {
+        NapiUtils::DeleteReference(env_, callbackRef_);
+    }
     if (listener.callbackRef_ == nullptr) {
         callbackRef_ = nullptr;
         return *this;
