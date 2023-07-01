@@ -21,7 +21,7 @@ utils_include = [ "$NETSTACK_UTILS_ROOT/log/include" ]
 
 common_external_deps = [
   "c_utils:utils",
-  "hiviewdfx_hilog_native:libhilog",
+  "hilog_native:libhilog",
 ]
 
 ohos_unittest("netstack_common_utils_test") {
