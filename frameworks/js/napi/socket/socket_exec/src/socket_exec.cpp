@@ -1391,7 +1391,7 @@ static void RemoveClientConnection(int32_t clientFd)
     }
 }
 
-static bool isClientFdClosed(int32_t clientFd)
+static bool IsClientFdClosed(int32_t clientFd)
 {
     return (fcntl(clientFd, F_GETFL) == -1 && errno == EBADF);
 }
@@ -1423,11 +1423,11 @@ static void ClientHandler(int32_t connectFD, sockaddr *addr, socklen_t addrLen, 
                       recvSize);
         if (recvSize <= 0) {
             NETSTACK_LOGI("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
+            if (IsClientFdClosed(connectFD)) {
+                NETSTACK_LOGI("connectFD has been closed");
+                break;
+            }
             if (errno != EAGAIN) {
-                if (isClientFdClosed(connectFD)) {
-                    NETSTACK_LOGI("connectFD has been closed");
-                    break;
-                }
                 close(connectFD);
                 manager->Emit(EVENT_CLOSE, std::make_pair(nullptr, nullptr));
                 RemoveClientConnection(connectFD);
