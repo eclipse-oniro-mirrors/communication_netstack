@@ -102,7 +102,7 @@ ohos_shared_library("http") {
       defines = [ "HAS_NETMANAGER_BASE=0" ]
     }
     external_deps = [
-      "hilog_native:libhilog",
+      "hilog:libhilog",
       "napi:ace_napi",
     ]
     if (product_name != "ohos-sdk") {

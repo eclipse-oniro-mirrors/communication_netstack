@@ -97,7 +97,7 @@ ohos_fuzztest("TlsSocketFuzzTest") {
 
   external_deps = [
     "c_utils:utils",
-    "hilog_native:libhilog",
+    "hilog:libhilog",
     "napi:ace_napi",
   ]
 
