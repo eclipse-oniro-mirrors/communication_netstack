@@ -87,6 +87,13 @@ ohos_shared_library("http") {
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
     ]
   } else {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      integer_overflow = true
+      boundary_sanitize = true
+      all_ubsan = true
+    }
     deps += [
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
