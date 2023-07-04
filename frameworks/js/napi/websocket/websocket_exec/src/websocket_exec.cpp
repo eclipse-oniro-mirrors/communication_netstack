@@ -54,6 +54,8 @@ static constexpr const char *EVENT_KEY_REASON = "reason";
 
 static constexpr const char *EVENT_KEY_MESSAGE = "message";
 
+static constexpr const char *LINK_DOWN = "The link is down";
+
 namespace OHOS::NetStack::Websocket {
 static const lws_protocols LWS_PROTOCOLS[] = {
     {"lws-minimal-client", WebSocketExec::LwsCallback, 0, 0},
@@ -443,6 +445,9 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
     }
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
     userData->SetThreadStop(true);
+    if ((userData->closeReason).empty()) {
+        userData->Close(userData->closeStatus, LINK_DOWN);
+    }
     OnClose(reinterpret_cast<EventManager *>(user), userData->closeStatus, userData->closeReason);
     return HttpDummy(wsi, reason, user, in, len);
 }

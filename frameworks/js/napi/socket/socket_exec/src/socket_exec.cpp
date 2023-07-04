@@ -41,7 +41,7 @@ static constexpr const int DEFAULT_BUFFER_SIZE = 8192;
 
 static constexpr const int DEFAULT_POLL_TIMEOUT = 500; // 0.5 Seconds
 
-static constexpr const int ADDRESS_INVALID = -1;
+static constexpr const int ADDRESS_INVALID = 99;
 
 static constexpr const int NO_MEMORY = -2;
 
@@ -738,7 +738,7 @@ bool ExecBind(BindContext *context)
     socklen_t len;
     GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
-        NETSTACK_LOGE("addr family error");
+        NETSTACK_LOGE("YYS addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -780,7 +780,7 @@ bool ExecUdpBind(BindContext *context)
     socklen_t len;
     GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
-        NETSTACK_LOGE("addr family error");
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -823,7 +823,7 @@ bool ExecUdpSend(UdpSendContext *context)
     socklen_t len;
     GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
-        NETSTACK_LOGE("addr family error");
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -854,7 +854,7 @@ bool ExecConnect(ConnectContext *context)
     socklen_t len;
     GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
-        NETSTACK_LOGE("addr family error");
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -886,7 +886,7 @@ bool ExecTcpSend(TcpSendContext *context)
     sockaddr sockAddr = {0};
     socklen_t len = sizeof(sockaddr);
     if (getsockname(context->GetSocketFd(), &sockAddr, &len) < 0) {
-        NETSTACK_LOGE("get sock name failed");
+        NETSTACK_LOGE("get sock name failed, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -986,6 +986,7 @@ bool ExecGetState(GetStateContext *context)
     }
 
     if (addr == nullptr) {
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -1038,6 +1039,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 
         std::string address = MakeAddressString(reinterpret_cast<sockaddr *>(&addr4));
         if (address.empty()) {
+            NETSTACK_LOGE("addr family error, address invalid");
             context->SetErrorCode(ADDRESS_INVALID);
             return false;
         }
@@ -1057,6 +1059,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 
         std::string address = MakeAddressString(reinterpret_cast<sockaddr *>(&addr6));
         if (address.empty()) {
+            NETSTACK_LOGE("addr family error, address invalid");
             context->SetErrorCode(ADDRESS_INVALID);
             return false;
         }
@@ -1162,6 +1165,7 @@ static bool GetIPv4Address(TcpConnectionGetRemoteAddressContext *context, int32_
 
     std::string address = MakeAddressString(reinterpret_cast<sockaddr *>(&addr4));
     if (address.empty()) {
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -1184,6 +1188,7 @@ static bool GetIPv6Address(TcpConnectionGetRemoteAddressContext *context, int32_
 
     std::string address = MakeAddressString(reinterpret_cast<sockaddr *>(&addr6));
     if (address.empty()) {
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -1242,7 +1247,7 @@ static bool IsRemoteConnect(TcpSendContext *context, int32_t clientFd)
     sockaddr sockAddr = {0};
     socklen_t len = sizeof(sockaddr);
     if (getsockname(clientFd, &sockAddr, &len) < 0) {
-        NETSTACK_LOGE("get sock name failed");
+        NETSTACK_LOGE("get sock name failed, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -1349,7 +1354,7 @@ static bool ServerBind(BindContext *context)
     socklen_t len;
     GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
-        NETSTACK_LOGE("addr family error");
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -1581,6 +1586,7 @@ bool ExecTcpServerGetState(GetStateContext *context)
     }
 
     if (addr == nullptr) {
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
