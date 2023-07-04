@@ -1422,9 +1422,9 @@ static void ClientHandler(int32_t connectFD, sockaddr *addr, socklen_t addrLen, 
         NETSTACK_LOGI("ClientRecv: fd is %{public}d, buf is %{public}s, size is %{public}d bytes", connectFD, buffer,
                       recvSize);
         if (recvSize <= 0) {
-            NETSTACK_LOGI("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
+            NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
             if (IsClientFdClosed(connectFD)) {
-                NETSTACK_LOGI("connectFD has been closed");
+                NETSTACK_LOGE("connectFD has been closed");
                 break;
             }
             if (errno != EAGAIN) {
