@@ -1717,7 +1717,6 @@ napi_value TcpConnectionCloseCallback(CloseContext *context)
     } else {
         NETSTACK_LOGI("sock %{public}d closed success", clientFd);
         RemoveClientConnection(clientFd);
-        clientFd = -1;
         context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
                                                   NapiUtils::GetUndefined(context->GetEnv())));
     }
