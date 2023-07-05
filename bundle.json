@@ -31,7 +31,7 @@
         "deps": {
             "components": [
                 "huks",
-                "hiviewdfx_hilog_native",
+                "hilog",
                 "zlib",
                 "c_utils",
                 "init",
