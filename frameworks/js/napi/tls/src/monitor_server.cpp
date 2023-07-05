@@ -55,27 +55,25 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
 
     std::shared_ptr<EventManager> manager = eventManager;
 
-    napi_wrap(
-        env, result, reinterpret_cast<void *>(manager.get()),
-        [](napi_env, void *data, void *) {
-            NETSTACK_LOGI("socket handle is finalized");
-            auto manager = static_cast<EventManager *>(data);
-            if (manager != nullptr) {
-                manager->SetInvalid();
-                int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
-                if (sock != 0) {
-                    close(sock);
-                }
-            }
-        },
-        nullptr, nullptr);
+    napi_wrap(env, result, reinterpret_cast<void *>(manager.get()),
+              [](napi_env, void *data, void *) {
+                  NETSTACK_LOGI("socket handle is finalized");
+                  auto manager = static_cast<EventManager *>(data);
+                  if (manager != nullptr) {
+                      manager->SetInvalid();
+                      int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
+                      if (sock != 0) {
+                          close(sock);
+                      }
+                  }
+              },
+              nullptr, nullptr);
 
     return result;
 }
 napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, int32_t counter,
                                         std::shared_ptr<EventManager> eventManager)
 {
-
     napi_value jsConstructor = nullptr;
     std::initializer_list<napi_property_descriptor> properties = {
         DECLARE_NAPI_FUNCTION(TLSSocketServerModuleExports::TLSSocketConnection::FUNCTION_GET_CERTIFICATE,
@@ -126,81 +124,36 @@ napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, i
 void EventMessageCallback(uv_work_t *work, int status)
 {
     (void)status;
-   
 }
-
 void EventConnectCallback(uv_work_t *work, int status)
 {
     (void)status;
-  
 }
-
 void EventCloseCallback(uv_work_t *work, int status)
 {
     (void)status;
-   
 }
-
 void EventErrorCallback(uv_work_t *work, int status)
 {
     (void)status;
-   
 }
 } // namespace
 
 MonitorServer::MonitorServer() : manager_(nullptr) {}
-
 MonitorServer::~MonitorServer()
 {
     if (manager_ != nullptr) {
         delete manager_;
     }
 }
-napi_value MonitorServer::On(napi_env env, napi_callback_info info)
+void MonitorServer::TLSServerRegEvent(std::string event, TLSSocketServer *tlsSocketServer )
 {
-    napi_value thisVal = nullptr;
-    size_t paramsCount = MAX_PARAM_NUM;
-    napi_value params[MAX_PARAM_NUM] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
-
-    if (paramsCount == PARAM_OPTION) {
-        return NapiUtils::GetUndefined(env);
-    }
-    if (paramsCount != PARAM_OPTION_CALLBACK) {
-        if (NapiUtils::GetValueType(env, params[0]) != napi_string) {
-            napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
-        }
-        if (NapiUtils::GetValueType(env, params[1]) != napi_function) {
-            return NapiUtils::GetUndefined(env);
-        }
-    }
-    napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager_));
-    if (manager_ == nullptr) {
-        NETSTACK_LOGE("manager is nullptr");
-        return NapiUtils::GetUndefined(env);
-    }
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager_->GetData());
-    if (tlsSocketServer == nullptr) {
-        NETSTACK_LOGE("tlsSocketServer is null");
-        return NapiUtils::GetUndefined(env);
-    }
-
-    const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    auto itor = monitors_.find(event);
-    if (itor != monitors_.end()) {
-        NETSTACK_LOGE("monitor is exits %{public}s", event.c_str());
-        return NapiUtils::GetUndefined(env);
-    }
-    manager_->AddListener(env, event, params[1], false, false);
-
     if (event == EVENT_CONNECT) {
         monitors_.insert(EVENT_CONNECT);
         tlsSocketServer->OnConnect([this](auto clientFd, std::shared_ptr<EventManager> eventManager) {
-
             auto messageParma = new MonitorServer::MessageParma();
             messageParma->clientID = clientFd;
             messageParma->eventManager = eventManager;
-
             manager_->EmitByUv(std::string(EVENT_CONNECT), messageParma, EventConnectCallback);
         });
     }
@@ -209,53 +162,12 @@ napi_value MonitorServer::On(napi_env env, napi_callback_info info)
         tlsSocketServer->OnError([this](auto errorNumber, auto errorString) {
             errorNumber_ = errorNumber;
             errorString_ = errorString;
-
             manager_->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(this), EventErrorCallback);
         });
     }
-    return NapiUtils::GetUndefined(env);
 }
-
-napi_value MonitorServer::ConnectionOn(napi_env env, napi_callback_info info)
+void MonitorServer::TLSConnectionRegEvent(std::string event, TLSSocketServer *tlsSocketServer)
 {
-
-    napi_value thisVal = nullptr;
-    size_t paramsCount = MAX_PARAM_NUM;
-    napi_value params[MAX_PARAM_NUM] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
-    int clientid = NapiUtils::GetInt32Property(env, thisVal,
-                                               TLSSocketServerModuleExports::TLSSocketConnection::PROPERTY_CLIENT_ID);
-
-    if (paramsCount == PARAM_OPTION) {
-        return NapiUtils::GetUndefined(env);
-    }
-    if (paramsCount != PARAM_OPTION_CALLBACK) {
-        if (NapiUtils::GetValueType(env, params[0]) != napi_string) {
-            napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
-        }
-        if (NapiUtils::GetValueType(env, params[1]) != napi_function) {
-            return NapiUtils::GetUndefined(env);
-        }
-    }
-    napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager_));
-    if (manager_ == nullptr) {
-        NETSTACK_LOGE("manager is nullptr");
-        return NapiUtils::GetUndefined(env);
-    }
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager_->GetData());
-    if (tlsSocketServer == nullptr) {
-        NETSTACK_LOGE("tlsSocketServer is null");
-        return NapiUtils::GetUndefined(env);
-    }
-
-    const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    auto itor = monitors_.find(event);
-    if (itor != monitors_.end()) {
-        NETSTACK_LOGE("monitor is exits %{public}s", event.c_str());
-        return NapiUtils::GetUndefined(env);
-    }
-    manager_->AddListener(env, event, params[1], false, false);
-
     if (event == EVENT_MESSAGE) {
         monitors_.insert(EVENT_MESSAGE);
 
@@ -270,16 +182,13 @@ napi_value MonitorServer::ConnectionOn(napi_env env, napi_callback_info info)
                 messageRecvParma->remoteInfo_.SetAddress(remoteInfo.GetAddress());
                 messageRecvParma->remoteInfo_.SetFamilyByStr(remoteInfo.GetFamily());
                 messageRecvParma->remoteInfo_.SetPort(remoteInfo.GetPort());
-
                 manager_->EmitByUv(std::string(EVENT_MESSAGE), messageRecvParma, EventMessageCallback);
             });
         }
     }
     if (event == EVENT_CLOSE) {
-
         monitors_.insert(EVENT_CLOSE);
         auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
-
         if (ptrConnection != nullptr) {
             ptrConnection->OnClose([this](auto clientFd) {
                 manager_->EmitByUv(std::string(EVENT_CLOSE), static_cast<void *>(this), EventCloseCallback);
@@ -287,17 +196,121 @@ napi_value MonitorServer::ConnectionOn(napi_env env, napi_callback_info info)
         }
     }
     if (event == EVENT_ERROR) {
-
         monitors_.insert(EVENT_ERROR);
-
         auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
-
         if (ptrConnection != nullptr) {
             ptrConnection->OnError([this](auto errorNumber, auto errorString) {
                 manager_->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(this), EventErrorCallback);
             });
         }
     }
+}
+
+void MonitorServer::TLSConnectionUnRegEvent(std::string event, TLSSocketServer *tlsSocketServer)
+{
+    if (event == EVENT_MESSAGE) {
+        monitors_.erase(EVENT_MESSAGE);
+        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
+        if (ptrConnection != nullptr) {
+            ptrConnection->OffMessage();
+        }
+    }
+    if (event == EVENT_CLOSE) {
+        monitors_.erase(EVENT_CLOSE);
+        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
+        if (ptrConnection != nullptr) {
+            ptrConnection->OffClose();
+        }
+    }
+    if (event == EVENT_ERROR) {
+        monitors_.erase(EVENT_ERROR);
+        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
+        if (ptrConnection != nullptr) {
+            ptrConnection->OffError();
+        }
+    }
+}
+    napi_value MonitorServer::On(napi_env env, napi_callback_info info)
+{
+    napi_value thisVal = nullptr;
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
+
+    if (paramsCount == PARAM_OPTION) {
+        return NapiUtils::GetUndefined(env);
+    }
+    if (paramsCount != PARAM_OPTION_CALLBACK) {
+        if (NapiUtils::GetValueType(env, params[0]) != napi_string) {
+            napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
+        }
+        if (NapiUtils::GetValueType(env, params[1]) != napi_function) {
+            return NapiUtils::GetUndefined(env);
+        }
+    }
+    napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager_));
+    if (manager_ == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return NapiUtils::GetUndefined(env);
+    }
+    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager_->GetData());
+    if (tlsSocketServer == nullptr) {
+        NETSTACK_LOGE("tlsSocketServer is null");
+        return NapiUtils::GetUndefined(env);
+    }
+
+    const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
+    auto itor = monitors_.find(event);
+    if (itor != monitors_.end()) {
+        NETSTACK_LOGE("monitor is exits %{public}s", event.c_str());
+        return NapiUtils::GetUndefined(env);
+    }
+    manager_->AddListener(env, event, params[1], false, false);
+    RegEvent(event, tlsSocketServer);
+    return NapiUtils::GetUndefined(env);
+}
+
+napi_value MonitorServer::ConnectionOn(napi_env env, napi_callback_info info)
+{
+
+    napi_value thisVal = nullptr;
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
+    int clientid = NapiUtils::GetInt32Property(env, thisVal,
+                                               TLSSocketServerModuleExports::TLSSocketConnection::PROPERTY_CLIENT_ID);
+    if (paramsCount == PARAM_OPTION) {
+        return NapiUtils::GetUndefined(env);
+    }
+    if (paramsCount != PARAM_OPTION_CALLBACK) {
+        if (NapiUtils::GetValueType(env, params[0]) != napi_string) {
+            napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
+        }
+        if (NapiUtils::GetValueType(env, params[1]) != napi_function) {
+            return NapiUtils::GetUndefined(env);
+        }
+    }
+    napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager_));
+    if (manager_ == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return NapiUtils::GetUndefined(env);
+    }
+    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager_->GetData());
+    if (tlsSocketServer == nullptr) {
+        NETSTACK_LOGE("tlsSocketServer is null");
+        return NapiUtils::GetUndefined(env);
+    }
+
+    const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
+    auto itor = monitors_.find(event);
+    if (itor != monitors_.end()) {
+        NETSTACK_LOGE("monitor is exits %{public}s", event.c_str());
+        return NapiUtils::GetUndefined(env);
+    }
+    manager_->AddListener(env, event, params[1], false, false);
+
+    TLSConnectionRegEvent(event, tlsSocketServer);
+   
     return NapiUtils::GetUndefined(env);
 }
 
@@ -387,33 +400,7 @@ napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
     manager_->DeleteListener(event);
-    if (event == EVENT_MESSAGE) {
-        monitors_.erase(EVENT_MESSAGE);
-
-        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
-
-        if (ptrConnection != nullptr) {
-            ptrConnection->OffMessage();
-        }
-    }
-    if (event == EVENT_CLOSE) {
-        monitors_.erase(EVENT_CLOSE);
-        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
-
-        if (ptrConnection != nullptr) {
-            ptrConnection->OffClose();
-        }
-    }
-
-    if (event == EVENT_ERROR) {
-        monitors_.erase(EVENT_ERROR);
-
-        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
-
-        if (ptrConnection != nullptr) {
-            ptrConnection->OffError();
-        }
-    }
+    TLSConnectionUnRegEvent(event, tlsSocketServer);
     return NapiUtils::GetUndefined(env);
 }
 } // namespace TlsSocketServer
