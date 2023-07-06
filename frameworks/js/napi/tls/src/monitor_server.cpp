@@ -55,19 +55,20 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
 
     std::shared_ptr<EventManager> manager = eventManager;
 
-    napi_wrap(env, result, reinterpret_cast<void *>(manager.get()),
-              [](napi_env, void *data, void *) {
-                  NETSTACK_LOGI("socket handle is finalized");
-                  auto manager = static_cast<EventManager *>(data);
-                  if (manager != nullptr) {
-                      manager->SetInvalid();
-                      int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
-                      if (sock != 0) {
-                          close(sock);
-                      }
-                  }
-              },
-              nullptr, nullptr);
+    napi_wrap(
+        env, result, reinterpret_cast<void *>(manager.get()),
+        [](napi_env, void *data, void *) {
+            NETSTACK_LOGI("socket handle is finalized");
+            auto manager = static_cast<EventManager *>(data);
+            if (manager != nullptr) {
+                manager->SetInvalid();
+                int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
+                if (sock != 0) {
+                    close(sock);
+                }
+            }
+        },
+        nullptr, nullptr);
 
     return result;
 }
