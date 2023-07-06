@@ -26,7 +26,7 @@
 #include "module_template.h"
 #include "napi_utils.h"
 #include "netstack_log.h"
-#include "tls_socket_server.h"
+
 #include "tlssocketserver_module.h"
 
 namespace OHOS {
@@ -146,90 +146,7 @@ MonitorServer::~MonitorServer()
         delete manager_;
     }
 }
-void MonitorServer::TLSServerRegEvent(std::string event, TLSSocketServer *tlsSocketServer )
-{
-    if (event == EVENT_CONNECT) {
-        monitors_.insert(EVENT_CONNECT);
-        tlsSocketServer->OnConnect([this](auto clientFd, std::shared_ptr<EventManager> eventManager) {
-            auto messageParma = new MonitorServer::MessageParma();
-            messageParma->clientID = clientFd;
-            messageParma->eventManager = eventManager;
-            manager_->EmitByUv(std::string(EVENT_CONNECT), messageParma, EventConnectCallback);
-        });
-    }
-    if (event == EVENT_ERROR) {
-        monitors_.insert(EVENT_ERROR);
-        tlsSocketServer->OnError([this](auto errorNumber, auto errorString) {
-            errorNumber_ = errorNumber;
-            errorString_ = errorString;
-            manager_->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(this), EventErrorCallback);
-        });
-    }
-}
-void MonitorServer::TLSConnectionRegEvent(std::string event, TLSSocketServer *tlsSocketServer)
-{
-    if (event == EVENT_MESSAGE) {
-        monitors_.insert(EVENT_MESSAGE);
 
-        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
-
-        if (ptrConnection != nullptr) {
-            ptrConnection->OnMessage([this](auto clientFd, auto data, auto remoteInfo) {
-                auto messageRecvParma = new MessageRecvParma();
-
-                messageRecvParma->clientID = clientFd;
-                messageRecvParma->data = data;
-                messageRecvParma->remoteInfo_.SetAddress(remoteInfo.GetAddress());
-                messageRecvParma->remoteInfo_.SetFamilyByStr(remoteInfo.GetFamily());
-                messageRecvParma->remoteInfo_.SetPort(remoteInfo.GetPort());
-                manager_->EmitByUv(std::string(EVENT_MESSAGE), messageRecvParma, EventMessageCallback);
-            });
-        }
-    }
-    if (event == EVENT_CLOSE) {
-        monitors_.insert(EVENT_CLOSE);
-        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
-        if (ptrConnection != nullptr) {
-            ptrConnection->OnClose([this](auto clientFd) {
-                manager_->EmitByUv(std::string(EVENT_CLOSE), static_cast<void *>(this), EventCloseCallback);
-            });
-        }
-    }
-    if (event == EVENT_ERROR) {
-        monitors_.insert(EVENT_ERROR);
-        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
-        if (ptrConnection != nullptr) {
-            ptrConnection->OnError([this](auto errorNumber, auto errorString) {
-                manager_->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(this), EventErrorCallback);
-            });
-        }
-    }
-}
-
-void MonitorServer::TLSConnectionUnRegEvent(std::string event, TLSSocketServer *tlsSocketServer)
-{
-    if (event == EVENT_MESSAGE) {
-        monitors_.erase(EVENT_MESSAGE);
-        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
-        if (ptrConnection != nullptr) {
-            ptrConnection->OffMessage();
-        }
-    }
-    if (event == EVENT_CLOSE) {
-        monitors_.erase(EVENT_CLOSE);
-        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
-        if (ptrConnection != nullptr) {
-            ptrConnection->OffClose();
-        }
-    }
-    if (event == EVENT_ERROR) {
-        monitors_.erase(EVENT_ERROR);
-        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
-        if (ptrConnection != nullptr) {
-            ptrConnection->OffError();
-        }
-    }
-}
     napi_value MonitorServer::On(napi_env env, napi_callback_info info)
 {
     napi_value thisVal = nullptr;
@@ -272,7 +189,6 @@ void MonitorServer::TLSConnectionUnRegEvent(std::string event, TLSSocketServer *
 
 napi_value MonitorServer::ConnectionOn(napi_env env, napi_callback_info info)
 {
-
     napi_value thisVal = nullptr;
     size_t paramsCount = MAX_PARAM_NUM;
     napi_value params[MAX_PARAM_NUM] = {nullptr};
@@ -308,9 +224,7 @@ napi_value MonitorServer::ConnectionOn(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
     manager_->AddListener(env, event, params[1], false, false);
-
     TLSConnectionRegEvent(event, tlsSocketServer);
-   
     return NapiUtils::GetUndefined(env);
 }
 
@@ -402,6 +316,87 @@ napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
     manager_->DeleteListener(event);
     TLSConnectionUnRegEvent(event, tlsSocketServer);
     return NapiUtils::GetUndefined(env);
+}
+void MonitorServer::TLSServerRegEvent(std::string event, TLSSocketServer *tlsSocketServer)
+{
+    if (event == EVENT_CONNECT) {
+        monitors_.insert(EVENT_CONNECT);
+        tlsSocketServer->OnConnect([this](auto clientFd, std::shared_ptr<EventManager> eventManager) {
+            auto messageParma = new MonitorServer::MessageParma();
+            messageParma->clientID = clientFd;
+            messageParma->eventManager = eventManager;
+            manager_->EmitByUv(std::string(EVENT_CONNECT), messageParma, EventConnectCallback);
+        });
+    }
+    if (event == EVENT_ERROR) {
+        monitors_.insert(EVENT_ERROR);
+        tlsSocketServer->OnError([this](auto errorNumber, auto errorString) {
+            errorNumber_ = errorNumber;
+            errorString_ = errorString;
+            manager_->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(this), EventErrorCallback);
+        });
+    }
+}
+void MonitorServer::TLSConnectionRegEvent(std::string event, TLSSocketServer *tlsSocketServer)
+{
+    if (event == EVENT_MESSAGE) {
+        monitors_.insert(EVENT_MESSAGE);
+        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
+        if (ptrConnection != nullptr) {
+            ptrConnection->OnMessage([this](auto clientFd, auto data, auto remoteInfo) {
+                auto messageRecvParma = new MessageRecvParma();
+                messageRecvParma->clientID = clientFd;
+                messageRecvParma->data = data;
+                messageRecvParma->remoteInfo_.SetAddress(remoteInfo.GetAddress());
+                messageRecvParma->remoteInfo_.SetFamilyByStr(remoteInfo.GetFamily());
+                messageRecvParma->remoteInfo_.SetPort(remoteInfo.GetPort());
+                manager_->EmitByUv(std::string(EVENT_MESSAGE), messageRecvParma, EventMessageCallback);
+            });
+        }
+    }
+    if (event == EVENT_CLOSE) {
+        monitors_.insert(EVENT_CLOSE);
+        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
+        if (ptrConnection != nullptr) {
+            ptrConnection->OnClose([this](auto clientFd) {
+                manager_->EmitByUv(std::string(EVENT_CLOSE), static_cast<void *>(this), EventCloseCallback);
+            });
+        }
+    }
+    if (event == EVENT_ERROR) {
+        monitors_.insert(EVENT_ERROR);
+        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
+        if (ptrConnection != nullptr) {
+            ptrConnection->OnError([this](auto errorNumber, auto errorString) {
+                manager_->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(this), EventErrorCallback);
+            });
+        }
+    }
+}
+
+void MonitorServer::TLSConnectionUnRegEvent(std::string event, TLSSocketServer *tlsSocketServer)
+{
+    if (event == EVENT_MESSAGE) {
+        monitors_.erase(EVENT_MESSAGE);
+        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
+        if (ptrConnection != nullptr) {
+            ptrConnection->OffMessage();
+        }
+    }
+    if (event == EVENT_CLOSE) {
+        monitors_.erase(EVENT_CLOSE);
+        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
+        if (ptrConnection != nullptr) {
+            ptrConnection->OffClose();
+        }
+    }
+    if (event == EVENT_ERROR) {
+        monitors_.erase(EVENT_ERROR);
+        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientid);
+        if (ptrConnection != nullptr) {
+            ptrConnection->OffError();
+        }
+    }
 }
 } // namespace TlsSocketServer
 } // namespace NetStack
