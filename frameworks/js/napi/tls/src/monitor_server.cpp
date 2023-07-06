@@ -124,22 +124,20 @@ napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, i
 void EventMessageCallback(uv_work_t *work, int status)
 {
     (void)status;
+    std::shared_ptr<uv_work_t> work(work);
     if (work == nullptr) {
         NETSTACK_LOGE("work is nullptr");
         return;
     }
-    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
+    std::shared_ptr<UvWorkWrapper> workWrapper(static_cast<UvWorkWrapper *>(work->data));
     if (workWrapper == nullptr) {
         NETSTACK_LOGE("workWrapper is nullptr");
-        delete work;
         return;
     }
     std::shared_ptr<MonitorServer::MessageRecvParma> ptrMessageRecvParma(
         static_cast<MonitorServer::MessageRecvParma *>(workWrapper->data));
     if (ptrMessageRecvParma == nullptr) {
         NETSTACK_LOGE("messageRecvParma is nullptr");
-        delete workWrapper;
-        delete work;
         return;
     }
     napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
@@ -151,8 +149,6 @@ void EventMessageCallback(uv_work_t *work, int status)
         if (memcpy_s(data, ptrMessageRecvParma->data.size(), ptrMessageRecvParma->data.c_str(),
                      ptrMessageRecvParma->data.size()) != EOK) {
             NETSTACK_LOGE("memcpy_s failed!");
-            delete workWrapper;
-            delete work;
             return;
         }
     }
@@ -171,14 +167,10 @@ void EventMessageCallback(uv_work_t *work, int status)
     NapiUtils::SetNamedProperty(workWrapper->env, obj, ON_REMOTE_INFO, remoteInfo);
     if (workWrapper->manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
-        delete workWrapper;
-        delete work;
         return;
     }
     workWrapper->manager->Emit(workWrapper->type, std::make_pair(NapiUtils::GetUndefined(workWrapper->env), obj));
     NapiUtils::CloseScope(workWrapper->env, scope);
-    delete workWrapper;
-    delete work;
 }
 void EventConnectCallback(uv_work_t *work, int status)
 {
@@ -200,13 +192,12 @@ void EventConnectCallback(uv_work_t *work, int status)
         delete workWrapper;
         delete work;
         return;
-    } 
+    }
     auto clientid = messageParma->clientID;
     auto eventManager = messageParma->eventManager;
     napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
     napi_callback_info info = nullptr;
-    napi_value obj = ConstructTLSSocketConnection(workWrapper->env, info, clientid,
-                                                  eventManager);
+    napi_value obj = ConstructTLSSocketConnection(workWrapper->env, info, clientid, eventManager);
     workWrapper->manager->Emit(workWrapper->type, std::make_pair(NapiUtils::GetUndefined(workWrapper->env), obj));
     NapiUtils::CloseScope(workWrapper->env, scope);
     delete workWrapper;
@@ -292,7 +283,7 @@ MonitorServer::~MonitorServer()
     }
 }
 
-    napi_value MonitorServer::On(napi_env env, napi_callback_info info)
+napi_value MonitorServer::On(napi_env env, napi_callback_info info)
 {
     napi_value thisVal = nullptr;
     size_t paramsCount = MAX_PARAM_NUM;
