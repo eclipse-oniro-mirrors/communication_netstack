@@ -331,7 +331,7 @@ void TLSSocket::GetAddr(const Socket::NetAddress &address, sockaddr_in *addr4, s
     if (family == AF_INET) {
         addr4->sin_family = AF_INET;
         addr4->sin_port = htons(address.GetPort());
-        addr4->sin_addr.s_addr = inet_addr(address.GetAddress().c_str());
+        inet_pton(AF_INET, address.GetAddress().c_str(), &addr4->sin_addr.s_addr);
         *addr = reinterpret_cast<sockaddr *>(addr4);
         *len = sizeof(sockaddr_in);
     } else if (family == AF_INET6) {
