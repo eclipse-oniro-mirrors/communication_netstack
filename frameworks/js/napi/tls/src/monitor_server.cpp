@@ -124,12 +124,12 @@ napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, i
 void EventMessageCallback(uv_work_t *work, int status)
 {
     (void)status;
-    std::shared_ptr<uv_work_t> work(work);
-    if (work == nullptr) {
+    std::shared_ptr<uv_work_t> ptrWork(work);
+    if (ptrWork == nullptr) {
         NETSTACK_LOGE("work is nullptr");
         return;
     }
-    std::shared_ptr<UvWorkWrapper> workWrapper(static_cast<UvWorkWrapper *>(work->data));
+    std::shared_ptr<UvWorkWrapper> workWrapper(static_cast<UvWorkWrapper *>(ptrWork->data));
     if (workWrapper == nullptr) {
         NETSTACK_LOGE("workWrapper is nullptr");
         return;
