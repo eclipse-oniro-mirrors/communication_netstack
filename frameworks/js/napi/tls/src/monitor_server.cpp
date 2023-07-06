@@ -149,7 +149,7 @@ void EventMessageCallback(uv_work_t *work, int status)
     if (data != nullptr && arrayBuffer != nullptr) {
         if (memcpy_s(data, ptrMessageRecvParma->data.size(), ptrMessageRecvParma->data.c_str(),
                      ptrMessageRecvParma->data.size()) != EOK) {
-            NETSTACK_LOGE("memcpy_s failed!");
+            NETSTACK_LOGE("memcpy_s failed!!");
             return;
         }
     }
