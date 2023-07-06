@@ -27,7 +27,7 @@
 #include "singleton.h"
 #include "socket_remote_info.h"
 #include "tls.h"
-
+#include "tls_socket_server.h"
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocketServer {
@@ -46,6 +46,9 @@ public:
 
     napi_value ConnectionOn(napi_env env, napi_callback_info info);
     napi_value ConnectionOff(napi_env env, napi_callback_info info);
+    void TLSServerRegEvent(std::string event, TLSSocketServer *tlsSocketServer);
+    void TLSConnectionRegEvent(std::string event, TLSSocketServer *tlsSocketServer, int clientId);
+    void TLSConnectionUnRegEvent(std::string event, TLSSocketServer *tlsSocketServer, int clientId);
     class MessageParma {
     public:
         int clientID;
