@@ -738,7 +738,7 @@ bool ExecBind(BindContext *context)
     socklen_t len;
     GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
-        NETSTACK_LOGE("YYS addr family error, address invalid");
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
