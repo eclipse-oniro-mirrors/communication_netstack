@@ -35,7 +35,6 @@ public:
     explicit TLSServerSendContext(napi_env env, EventManager *manager);
 
 public:
-    // TLSServerSendOptions sendOptions_;
     std::string m_sendData = "";
     int32_t errorNumber_ = 0;
     int32_t clientId_ = 0;
@@ -45,7 +44,6 @@ public:
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
-    // TLSServerSendOptions ReadTLSServerSendOptions(napi_env env, napi_value *params);
 };
 
 } // namespace TlsSocketServer

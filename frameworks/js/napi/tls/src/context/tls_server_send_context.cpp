@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "tls_server_send_contex.h"
+#include "tls_server_send_context.h"
 
 #include <cstdint>
 #include <string>
@@ -76,17 +76,6 @@ bool TLSServerSendContext::CheckParamsType(napi_value *params, size_t paramsCoun
     }
     return false;
 }
-
-// TLSServerSendOptions TLSServerSendContext::ReadTLSServerSendOptions(napi_env env, napi_value *params)
-//{
-//    TLSServerSendOptions options;
-//    int clientFd = NapiUtils::GetInt32FromValue(GetEnv(), params[0]);
-//    std::string data = NapiUtils::GetStringPropertyUtf8(GetEnv(), params[0], DATA);
-//    options.SetSocket(clientFd);
-//    options.SetSendData(data);
-//    return options;
-//}
-
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS
