@@ -34,7 +34,6 @@ void TLSServerNapiContext::ParseParams(napi_value *params, size_t paramsCount)
     if (!CheckParamsType(params, paramsCount)) {
         return;
     }
-    ////clientFd_ = NapiUtils::GetInt32FromValue(GetEnv(), params[0]);
 
     if (paramsCount == TlsSocket::PARAM_JUST_CALLBACK) {
         SetParseOK(SetCallback(params[TlsSocket::ARG_INDEX_0]) == napi_ok);
