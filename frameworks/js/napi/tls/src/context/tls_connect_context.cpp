@@ -77,9 +77,9 @@ bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptio
     if (NapiUtils::HasNamedProperty(env, secureOptions, CERT_NAME)) {
         secureOption.SetCert(NapiUtils::GetStringPropertyUtf8(env, secureOptions, CERT_NAME));
     }
-	if (NapiUtils::HasNamedProperty(env, secureOptions, VERIFY_MODE_NAME)) {
-		secureOption.SetVerifyMode((VerifyMode)NapiUtils::GetUint32Property(env, secureOptions, VERIFY_MODE_NAME));
-	}
+    if (NapiUtils::HasNamedProperty(env, secureOptions, VERIFY_MODE_NAME)) {
+        secureOption.SetVerifyMode((VerifyMode)NapiUtils::GetUint32Property(env, secureOptions, VERIFY_MODE_NAME));
+    }
     return true;
 }
 } // namespace

@@ -42,7 +42,7 @@ void TLSServerNapiContext::ParseParams(napi_value *params, size_t paramsCount)
     }
     SetParseOK(true);
 
-	return ;
+    return;
 }
 
 bool TLSServerNapiContext::CheckParamsType(napi_value *params, size_t paramsCount)

@@ -28,57 +28,56 @@ namespace OHOS {
 namespace NetStack {
 namespace TlsSocketServer {
 namespace {
-//constexpr const char *DATA = "data";
+// constexpr const char *DATA = "data";
 constexpr std::string_view PARSE_ERROR = "options is not type of TLSServerSendOptions";
-}
+} // namespace
 
 TLSServerSendContext::TLSServerSendContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void TLSServerSendContext::ParseParams(napi_value *params, size_t paramsCount)
 {
-	if (!CheckParamsType(params, paramsCount)) {
-		return;
-	}
+    if (!CheckParamsType(params, paramsCount)) {
+        return;
+    }
 
+    m_sendData = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
 
-	m_sendData = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
-
-	if (paramsCount == TlsSocket::PARAM_OPTIONS_AND_CALLBACK) {
-		SetParseOK(SetCallback(params[TlsSocket::ARG_INDEX_1]) == napi_ok);
-		return;
-	}
-	SetParseOK(true);
+    if (paramsCount == TlsSocket::PARAM_OPTIONS_AND_CALLBACK) {
+        SetParseOK(SetCallback(params[TlsSocket::ARG_INDEX_1]) == napi_ok);
+        return;
+    }
+    SetParseOK(true);
 }
 
 bool TLSServerSendContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
-	if (paramsCount == TlsSocket::PARAM_JUST_OPTIONS) {
-		if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_0]) != napi_string) {
-			NETSTACK_LOGE("first param is not string");
-			SetNeedThrowException(true);
-			SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
-			return false;
-		}
-		return true;
-	}
+    if (paramsCount == TlsSocket::PARAM_JUST_OPTIONS) {
+        if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_0]) != napi_string) {
+            NETSTACK_LOGE("first param is not string");
+            SetNeedThrowException(true);
+            SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
+            return false;
+        }
+        return true;
+    }
 
-	if (paramsCount == TlsSocket::PARAM_OPTIONS_AND_CALLBACK) {
-		if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_0]) != napi_string) {
-			NETSTACK_LOGE("first param is not string");
-			SetNeedThrowException(true);
-			SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
-			return false;
-		}
-		if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_1]) != napi_function) {
-			NETSTACK_LOGE("second param is not function");
-			return false;
-		}
-		return true;
-	}
-	return false;
+    if (paramsCount == TlsSocket::PARAM_OPTIONS_AND_CALLBACK) {
+        if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_0]) != napi_string) {
+            NETSTACK_LOGE("first param is not string");
+            SetNeedThrowException(true);
+            SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
+            return false;
+        }
+        if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_1]) != napi_function) {
+            NETSTACK_LOGE("second param is not function");
+            return false;
+        }
+        return true;
+    }
+    return false;
 }
 
-//TLSServerSendOptions TLSServerSendContext::ReadTLSServerSendOptions(napi_env env, napi_value *params)
+// TLSServerSendOptions TLSServerSendContext::ReadTLSServerSendOptions(napi_env env, napi_value *params)
 //{
 //    TLSServerSendOptions options;
 //    int clientFd = NapiUtils::GetInt32FromValue(GetEnv(), params[0]);
