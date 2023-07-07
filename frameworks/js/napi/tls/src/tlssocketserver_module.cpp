@@ -41,13 +41,6 @@ namespace {
 static constexpr const char *PROTOCOL_TLSV13 = "TLSv13";
 static constexpr const char *PROTOCOL_TLSV12 = "TLSv12";
 
-void Finalize(napi_env, void *data, void *)
-{
-    auto manager = reinterpret_cast<EventManager *>(data);
-    if (manager != nullptr) {
-        manager->SetInvalid();
-    }
-}
 } // namespace
 
 napi_value TLSSocketServerModuleExports::TLSSocketServer::GetCertificate(napi_env env, napi_callback_info info)
@@ -86,7 +79,7 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::Close(napi_env env
 {
     return ModuleTemplate::Interface<TLSServerCloseContext>(
         env, info, FUNCTION_CLOSE,
-        [](napi_env theEnv, napi_value thisVal, ServerTLSGetRemoteAddressContext *context) -> bool {
+        [](napi_env theEnv, napi_value thisVal, TLSServerCloseContext *context) -> bool {
             context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
             return true;
         },
@@ -151,9 +144,6 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::Off(napi_env env, 
 
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetCertificate(napi_env env, napi_callback_info info)
 {
-    NETSTACK_LOGE(
-        " TLSSocketServerModuleExports::TLSSocketConnection::GetCertificate "
-        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     return ModuleTemplate::Interface<TlsSocket::GetCertificateContext>(
         env, info, FUNCTION_GET_CERTIFICATE, nullptr, TLSSocketServerAsyncWork::ExecGetCertificate,
         TLSSocketServerAsyncWork::GetCertificateCallback);
@@ -229,7 +219,7 @@ void TlsSocketServer::TLSSocketServerModuleExports::DefineTLSSocketConnectionCla
 
 napi_value TLSSocketServerModuleExports::ConstructTLSSocketServerInstance(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::NewInstance(env, info, INTERFACE_TLS_SOCKET_SERVER, Finalize);
+    return nullptr;
 }
 
 void TLSSocketServerModuleExports::InitTLSSocketServerProperties(napi_env env, napi_value exports)
