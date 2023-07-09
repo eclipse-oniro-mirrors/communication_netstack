@@ -16,11 +16,11 @@
 #include "tls_socket.h"
 
 #include <chrono>
+#include <memory>
 #include <numeric>
 #include <regex>
 #include <securec.h>
 #include <thread>
-#include <memory>
 
 #include <netinet/tcp.h>
 #include <openssl/err.h>
