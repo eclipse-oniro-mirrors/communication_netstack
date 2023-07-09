@@ -256,9 +256,9 @@ const std::vector<std::string> &TLSSecureOptions::GetCrlChain() const
     return crlChain_;
 }
 
-void TLSSecureOptions::SetVerifyMode(VerifyMode verifyMode) const
+void TLSSecureOptions::SetVerifyMode(VerifyMode verifyMode)
 {
-    return TLSVerifyMode_ = verifyMode;
+    TLSVerifyMode_ = verifyMode;
 }
 
 const VerifyMode LSSecureOptions::GetVerifyMode() const
