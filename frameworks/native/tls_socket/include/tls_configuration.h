@@ -65,7 +65,7 @@ public:
     [[nodiscard]] std::vector<CipherSuite> GetCipherSuiteVec() const;
 
     void SetVerifyMode(VerifyMode verifyMode);
-    [[nodiscard]] const VerifyMode GetVerifyMode() const;
+    [[nodiscard]] VerifyMode GetVerifyMode() const;
 
 private:
     TLSProtocol minProtocol_ = TLS_V1_3;

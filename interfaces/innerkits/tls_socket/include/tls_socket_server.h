@@ -383,9 +383,6 @@ private:
 
     private:
         ssl_st *ssl_ = nullptr;
-        X509 *peerX509_ = nullptr;
-        // uint16_t port_ = 0;
-        // sa_family_t family_ = 0;
         int32_t socketFd_ = 0;
 
         TlsSocket::TLSContextServer tlsContext_;
@@ -414,7 +411,6 @@ private:
     void CallOnErrorCallback(int32_t err, const std::string &errString);
 
     void CallGetStateCallback(int32_t err, const Socket::SocketStateBase &state, TlsSocket::GetStateCallback callback);
-    /*  void CallOnCloseCallback(const int32_t socketFd);*/
     void CallOnConnectCallback(const int32_t socketFd, std::shared_ptr<EventManager> eventManager);
     void CallSendCallback(int32_t err, TlsSocket::SendCallback callback);
     bool ExecBind(const Socket::NetAddress &address, const ListenCallback &callback);
@@ -428,7 +424,6 @@ private:
 private:
     std::mutex mutex_;
     std::mutex connectMutex_;
-    int listenSocketFd_ = -1;
     Socket::NetAddress address_;
     std::map<int, std::shared_ptr<Connection>> clientIdConnections_;
     std::map<int, std::shared_ptr<Connection>> connections_;
