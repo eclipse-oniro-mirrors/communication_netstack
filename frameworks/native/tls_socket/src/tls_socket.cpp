@@ -256,6 +256,16 @@ const std::vector<std::string> &TLSSecureOptions::GetCrlChain() const
     return crlChain_;
 }
 
+void TLSSecureOptions::SetVerifyMode(VerifyMode verifyMode) const
+{
+    return TLSVerifyMode_ = verifyMode;
+}
+
+const VerifyMode LSSecureOptions::GetVerifyMode() const
+{
+    return TLSVerifyMode_;
+}
+
 void TLSConnectOptions::SetNetAddress(const Socket::NetAddress &address)
 {
     address_.SetAddress(address.GetAddress());
