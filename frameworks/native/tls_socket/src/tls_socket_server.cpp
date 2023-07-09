@@ -64,13 +64,11 @@ const std::string &TLSServerSendOptions::GetSendData() const
     return data_;
 }
 
-void TLSSocketServer::Listen(const TlsSocket::TLSConnectOptions &tlsListenOptions, const ListenCallback &callback)
-{
-}
+void TLSSocketServer::Listen(const TlsSocket::TLSConnectOptions &tlsListenOptions, const ListenCallback &callback) {}
 
 bool TLSSocketServer::ExecBind(const Socket::NetAddress &address, const ListenCallback &callback)
 {
-        return true;
+    return true;
 }
 
 void TLSSocketServer::ExecAccept(const TlsSocket::TLSConnectOptions &tlsAcceptOptions, const ListenCallback &callback)
@@ -82,25 +80,15 @@ bool TLSSocketServer::Send(const TLSServerSendOptions &data, const TlsSocket::Se
     return true;
 }
 
-void TLSSocketServer::CallSendCallback(int32_t err, TlsSocket::SendCallback callback)
-{
-}
+void TLSSocketServer::CallSendCallback(int32_t err, TlsSocket::SendCallback callback) {}
 
-void TLSSocketServer::Close(const int socketFd, const TlsSocket::CloseCallback &callback)
-{
-}
+void TLSSocketServer::Close(const int socketFd, const TlsSocket::CloseCallback &callback) {}
 
-void TLSSocketServer::Stop(const TlsSocket::CloseCallback &callback)
-{
-}
+void TLSSocketServer::Stop(const TlsSocket::CloseCallback &callback) {}
 
-void TLSSocketServer::GetRemoteAddress(const int socketFd, const TlsSocket::GetRemoteAddressCallback &callback)
-{
-}
+void TLSSocketServer::GetRemoteAddress(const int socketFd, const TlsSocket::GetRemoteAddressCallback &callback) {}
 
-void TLSSocketServer::GetState(const TlsSocket::GetStateCallback &callback)
-{
-}
+void TLSSocketServer::GetState(const TlsSocket::GetStateCallback &callback) {}
 
 void TLSSocketServer::CallGetStateCallback(int32_t err, const Socket::SocketStateBase &state,
                                            TlsSocket::GetStateCallback callback)
@@ -113,13 +101,9 @@ bool TLSSocketServer::SetExtraOptions(const Socket::TCPExtraOptions &tcpExtraOpt
     return true;
 }
 
-void TLSSocketServer::SetLocalTlsConfiguration(const TlsSocket::TLSConnectOptions &config)
-{
-}
+void TLSSocketServer::SetLocalTlsConfiguration(const TlsSocket::TLSConnectOptions &config) {}
 
-void TLSSocketServer::GetCertificate(const TlsSocket::GetCertificateCallback &callback)
-{
-}
+void TLSSocketServer::GetCertificate(const TlsSocket::GetCertificateCallback &callback) {}
 
 void TLSSocketServer::GetRemoteCertificate(const int socketFd, const TlsSocket::GetRemoteCertificateCallback &callback)
 {
@@ -133,9 +117,7 @@ void TLSSocketServer::GetProtocol(const TlsSocket::GetProtocolCallback &callback
     callback(TlsSocket::TLSSOCKET_SUCCESS, TlsSocket::PROTOCOL_TLS_V12);
 }
 
-void TLSSocketServer::GetCipherSuite(const int socketFd, const TlsSocket::GetCipherSuiteCallback &callback)
-{
-}
+void TLSSocketServer::GetCipherSuite(const int socketFd, const TlsSocket::GetCipherSuiteCallback &callback) {}
 
 void TLSSocketServer::GetSignatureAlgorithms(const int socketFd,
                                              const TlsSocket::GetSignatureAlgorithmsCallback &callback)
@@ -196,21 +178,13 @@ void TLSSocketServer::Connection::OffError()
     onErrorCallback_ = nullptr;
 }
 
-void TLSSocketServer::Connection::CallOnErrorCallback(int32_t err, const std::string &errString)
-{
-}
+void TLSSocketServer::Connection::CallOnErrorCallback(int32_t err, const std::string &errString) {}
 
-void TLSSocketServer::OffError()
-{
-}
+void TLSSocketServer::OffError() {}
 
-void TLSSocketServer::MakeIpSocket(sa_family_t family)
-{
-}
+void TLSSocketServer::MakeIpSocket(sa_family_t family) {}
 
-void TLSSocketServer::CallOnErrorCallback(int32_t err, const std::string &errString)
-{
-}
+void TLSSocketServer::CallOnErrorCallback(int32_t err, const std::string &errString) {}
 
 void TLSSocketServer::GetAddr(const Socket::NetAddress &address, sockaddr_in *addr4, sockaddr_in6 *addr6,
                               sockaddr **addr, socklen_t *len)
@@ -219,12 +193,11 @@ void TLSSocketServer::GetAddr(const Socket::NetAddress &address, sockaddr_in *ad
 
 std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionByClientID(int clientid)
 {
-    return nullptr;;
+    return nullptr;
+    ;
 }
 
-void TLSSocketServer::CallListenCallback(int32_t err, ListenCallback callback)
-{
-}
+void TLSSocketServer::CallListenCallback(int32_t err, ListenCallback callback) {}
 
 void TLSSocketServer::Connection::SetAddress(const Socket::NetAddress address)
 {
@@ -238,12 +211,10 @@ const TlsSocket::X509CertRawData &TLSSocketServer::Connection::GetRemoteCertRawD
 
 bool TLSSocketServer::Connection::TlsAcceptToHost(int sock, const TlsSocket::TLSConnectOptions &options)
 {
-     return StartTlsAccept(options);
+    return StartTlsAccept(options);
 }
 
-void TLSSocketServer::Connection::SetTlsConfiguration(const TlsSocket::TLSConnectOptions &config)
-{
-}
+void TLSSocketServer::Connection::SetTlsConfiguration(const TlsSocket::TLSConnectOptions &config) {}
 
 bool TLSSocketServer::Connection::Send(const std::string &data)
 {
@@ -269,9 +240,7 @@ bool TLSSocketServer::Connection::SetAlpnProtocols(const std::vector<std::string
     return true;
 }
 
-void TLSSocketServer::Connection::MakeRemoteInfo(Socket::SocketRemoteInfo &remoteInfo)
-{
-}
+void TLSSocketServer::Connection::MakeRemoteInfo(Socket::SocketRemoteInfo &remoteInfo) {}
 
 TlsSocket::TLSConfiguration TLSSocketServer::Connection::GetTlsConfiguration() const
 {
@@ -361,7 +330,7 @@ int TLSSocketServer::Connection::GetClientID()
 
 bool TLSSocketServer::Connection::StartTlsAccept(const TlsSocket::TLSConnectOptions &options)
 {
-     return true;
+    return true;
 }
 
 bool TLSSocketServer::Connection::CreatTlsContext()
@@ -381,7 +350,7 @@ bool TLSSocketServer::Connection::GetRemoteCertificateFromPeer()
 
 bool TLSSocketServer::Connection::SetRemoteCertRawData()
 {
-   return true;
+    return true;
 }
 
 void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> dnsNames, std::vector<std::string> ips,
@@ -393,29 +362,21 @@ std::string TLSSocketServer::Connection::CheckServerIdentityLegal(const std::str
                                                                   const X509 *x509Certificates)
 {
     std::string hostname = hostName;
-    
+
     return HOST_NAME + hostname + ". is cert's CN";
 }
-void TLSSocketServer::RemoveConnect(int socketFd)
-{
-}
+void TLSSocketServer::RemoveConnect(int socketFd) {}
 int TLSSocketServer::RecvRemoteInfo(int socketFd)
 {
-   return -1;
+    return -1;
 }
 void TLSSocketServer::Connection::CallOnMessageCallback(int32_t socketFd, const std::string &data,
                                                         const Socket::SocketRemoteInfo &remoteInfo)
 {
 }
-void TLSSocketServer::AddConnect(int socketFd, std::shared_ptr<Connection> connection)
-{
-}
-void TLSSocketServer::Connection::CallOnCloseCallback(const int32_t socketFd)
-{
-}
-void TLSSocketServer::CallOnConnectCallback(const int32_t socketFd, std::shared_ptr<EventManager> eventManager)
-{
-}
+void TLSSocketServer::AddConnect(int socketFd, std::shared_ptr<Connection> connection) {}
+void TLSSocketServer::Connection::CallOnCloseCallback(const int32_t socketFd) {}
+void TLSSocketServer::CallOnConnectCallback(const int32_t socketFd, std::shared_ptr<EventManager> eventManager) {}
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS
