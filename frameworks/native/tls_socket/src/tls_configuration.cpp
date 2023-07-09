@@ -183,7 +183,7 @@ void TLSConfiguration::SetVerifyMode(VerifyMode verifyMode)
 {
     tlsVerifyMode_ = verifyMode;
 }
-VerifyMode TLSConfiguration::GetVerifyMode() const
+const VerifyMode TLSConfiguration::GetVerifyMode() const
 {
     return tlsVerifyMode_;
 }
