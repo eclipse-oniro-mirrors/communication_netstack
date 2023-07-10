@@ -41,7 +41,7 @@ ohos_static_library("napi_utils") {
   public_deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
   external_deps = [
     "c_utils:utils",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "napi:ace_napi",
   ]
 }
@@ -63,7 +63,7 @@ ohos_static_library("napi_utils_static") {
     public_deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
     external_deps = [
       "c_utils:utils",
-      "hiviewdfx_hilog_native:libhilog",
+      "hilog:libhilog",
       "napi:ace_napi",
     ]
   } else {
