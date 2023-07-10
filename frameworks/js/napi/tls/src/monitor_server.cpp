@@ -297,6 +297,7 @@ napi_value MonitorServer::On(napi_env env, napi_callback_info info)
     if (paramsCount != PARAM_OPTION_CALLBACK || NapiUtils::GetValueType(env, params[0]) != napi_string ||
         NapiUtils::GetValueType(env, params[1]) != napi_function) {
         NETSTACK_LOGE("on off once interface para: [string, function]");
+        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
         return NapiUtils::GetUndefined(env);
     }
 
@@ -334,6 +335,7 @@ napi_value MonitorServer::ConnectionOn(napi_env env, napi_callback_info info)
     if (paramsCount != PARAM_OPTION_CALLBACK || NapiUtils::GetValueType(env, params[0]) != napi_string ||
         NapiUtils::GetValueType(env, params[1]) != napi_function) {
         NETSTACK_LOGE("on off once interface para: [string, function]");
+        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
         return NapiUtils::GetUndefined(env);
     }
 
@@ -369,11 +371,13 @@ napi_value MonitorServer::Off(napi_env env, napi_callback_info info)
     if ((paramsCount != PARAM_OPTION && paramsCount != PARAM_OPTION_CALLBACK) ||
         NapiUtils::GetValueType(env, params[0]) != napi_string) {
         NETSTACK_LOGE("on off once interface para: [string, function?]");
+        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
         return NapiUtils::GetUndefined(env);
     }
 
     if (paramsCount == PARAM_OPTION && NapiUtils::GetValueType(env, params[1]) != napi_function) {
         NETSTACK_LOGE("on off once interface para: [string, function]");
+        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
         return NapiUtils::GetUndefined(env);
     }
 
@@ -426,11 +430,13 @@ napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
     if ((paramsCount != PARAM_OPTION && paramsCount != PARAM_OPTION_CALLBACK) ||
         NapiUtils::GetValueType(env, params[0]) != napi_string) {
         NETSTACK_LOGE("on off once interface para: [string, function?]");
+        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
         return NapiUtils::GetUndefined(env);
     }
 
     if (paramsCount == PARAM_OPTION && NapiUtils::GetValueType(env, params[1]) != napi_function) {
         NETSTACK_LOGE("on off once interface para: [string, function]");
+        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
         return NapiUtils::GetUndefined(env);
     }
 
