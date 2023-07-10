@@ -201,7 +201,7 @@ public:
      */
     void OffError();
 
-private:
+public:
     class Connection : public std::enable_shared_from_this<Connection> {
     public:
         /**
@@ -377,7 +377,6 @@ private:
 
     private:
         ssl_st *ssl_ = nullptr;
-        X509 *peerX509_ = nullptr;
         int32_t socketFd_ = 0;
 
         TlsSocket::TLSContextServer tlsContext_;
