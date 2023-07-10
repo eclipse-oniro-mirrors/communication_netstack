@@ -33,14 +33,6 @@ config("stack_utils_common_public_config") {
 }
 
 ohos_shared_library("stack_utils_common") {
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    integer_overflow = true
-    boundary_sanitize = true
-    all_ubsan = true
-  }
-
   sources = [ "common_utils/src/netstack_common_utils.cpp" ]
 
   public_configs = [ ":stack_utils_common_public_config" ]
