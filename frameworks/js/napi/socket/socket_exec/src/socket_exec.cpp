@@ -1465,10 +1465,7 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
                 close(connectFD);
                 continue;
             }
-        }
-        NETSTACK_LOGI("Server accept new client SUCCESS, fd = %{public}d", connectFD);
-        {
-            std::lock_guard<std::mutex> lock(g_mutex);
+            NETSTACK_LOGI("Server accept new client SUCCESS, fd = %{public}d", connectFD);
             g_userCounter++;
             g_clientFDs[g_userCounter] = connectFD;
         }
