@@ -27,6 +27,7 @@
 #include "napi_utils.h"
 #include "netstack_log.h"
 
+#include "tls_socket_server.h"
 #include "tlssocketserver_module.h"
 
 namespace OHOS {
@@ -62,9 +63,9 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
             auto manager = static_cast<EventManager *>(data);
             if (manager != nullptr) {
                 manager->SetInvalid();
-                int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
-                if (sock != 0) {
-                    close(sock);
+                auto tlsConnection = static_cast<TLSSocketServer::Connection *>(manager->GetData());
+                if (tlsConnection != nullptr) {
+                    tlsConnection->Close();
                 }
             }
         },
@@ -118,6 +119,8 @@ napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, i
         NapiUtils::SetInt32Property(env, result, TLSSocketServerModuleExports::TLSSocketConnection::PROPERTY_CLIENT_ID,
                                     counter);
         return result;
+    } else {
+        NETSTACK_LOGE("jsConstructor == nullptrr");
     }
     return NapiUtils::GetUndefined(env);
 }
@@ -149,7 +152,7 @@ void EventMessageCallback(uv_work_t *work, int status)
     if (data != nullptr && arrayBuffer != nullptr) {
         if (memcpy_s(data, ptrMessageRecvParma->data.size(), ptrMessageRecvParma->data.c_str(),
                      ptrMessageRecvParma->data.size()) != EOK) {
-            NETSTACK_LOGE("memcpy_s failed!!");
+            NETSTACK_LOGE("memcpy_s failed!");
             return;
         }
     }
@@ -291,17 +294,12 @@ napi_value MonitorServer::On(napi_env env, napi_callback_info info)
     napi_value params[MAX_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
 
-    if (paramsCount == PARAM_OPTION) {
+    if (paramsCount != PARAM_OPTION_CALLBACK || NapiUtils::GetValueType(env, params[0]) != napi_string ||
+        NapiUtils::GetValueType(env, params[1]) != napi_function) {
+        NETSTACK_LOGE("on off once interface para: [string, function]");
         return NapiUtils::GetUndefined(env);
     }
-    if (paramsCount != PARAM_OPTION_CALLBACK) {
-        if (NapiUtils::GetValueType(env, params[0]) != napi_string) {
-            napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
-        }
-        if (NapiUtils::GetValueType(env, params[1]) != napi_function) {
-            return NapiUtils::GetUndefined(env);
-        }
-    }
+
     napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager_));
     if (manager_ == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
@@ -332,17 +330,13 @@ napi_value MonitorServer::ConnectionOn(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
     int clientid = NapiUtils::GetInt32Property(env, thisVal,
                                                TLSSocketServerModuleExports::TLSSocketConnection::PROPERTY_CLIENT_ID);
-    if (paramsCount == PARAM_OPTION) {
+
+    if (paramsCount != PARAM_OPTION_CALLBACK || NapiUtils::GetValueType(env, params[0]) != napi_string ||
+        NapiUtils::GetValueType(env, params[1]) != napi_function) {
+        NETSTACK_LOGE("on off once interface para: [string, function]");
         return NapiUtils::GetUndefined(env);
     }
-    if (paramsCount != PARAM_OPTION_CALLBACK) {
-        if (NapiUtils::GetValueType(env, params[0]) != napi_string) {
-            napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
-        }
-        if (NapiUtils::GetValueType(env, params[1]) != napi_function) {
-            return NapiUtils::GetUndefined(env);
-        }
-    }
+
     napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager_));
     if (manager_ == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
@@ -371,17 +365,16 @@ napi_value MonitorServer::Off(napi_env env, napi_callback_info info)
     size_t paramsCount = MAX_PARAM_NUM;
     napi_value params[MAX_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
-    if (paramsCount == PARAM_OPTION) {
+
+    if ((paramsCount != PARAM_OPTION && paramsCount != PARAM_OPTION_CALLBACK) ||
+        NapiUtils::GetValueType(env, params[0]) != napi_string) {
+        NETSTACK_LOGE("on off once interface para: [string, function?]");
         return NapiUtils::GetUndefined(env);
     }
 
-    if (paramsCount != PARAM_OPTION_CALLBACK) {
-        if (NapiUtils::GetValueType(env, params[0]) != napi_string) {
-            napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
-        }
-        if (NapiUtils::GetValueType(env, params[1]) != napi_function) {
-            return NapiUtils::GetUndefined(env);
-        }
+    if (paramsCount == PARAM_OPTION && NapiUtils::GetValueType(env, params[1]) != napi_function) {
+        NETSTACK_LOGE("on off once interface para: [string, function]");
+        return NapiUtils::GetUndefined(env);
     }
 
     napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager_));
@@ -401,7 +394,14 @@ napi_value MonitorServer::Off(napi_env env, napi_callback_info info)
         NETSTACK_LOGE("monitor is off %{public}s", event.c_str());
         return NapiUtils::GetUndefined(env);
     }
-    manager_->DeleteListener(event);
+    if (manager_ != nullptr) {
+        if (paramsCount == PARAM_OPTION_CALLBACK) {
+            manager_->DeleteListener(event, params[1]);
+        } else {
+            manager_->DeleteListener(event);
+        }
+    }
+
     if (event == EVENT_CONNECT) {
         monitors_.erase(EVENT_CONNECT);
         tlsSocketServer->OffConnect();
@@ -419,20 +419,21 @@ napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
     size_t paramsCount = MAX_PARAM_NUM;
     napi_value params[MAX_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
-    if (paramsCount == PARAM_OPTION) {
+
+    int clientid = NapiUtils::GetInt32Property(env, thisVal,
+                                               TLSSocketServerModuleExports::TLSSocketConnection::PROPERTY_CLIENT_ID);
+
+    if ((paramsCount != PARAM_OPTION && paramsCount != PARAM_OPTION_CALLBACK) ||
+        NapiUtils::GetValueType(env, params[0]) != napi_string) {
+        NETSTACK_LOGE("on off once interface para: [string, function?]");
         return NapiUtils::GetUndefined(env);
     }
 
-    if (paramsCount != PARAM_OPTION_CALLBACK) {
-        if (NapiUtils::GetValueType(env, params[0]) != napi_string) {
-            napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
-        }
-        if (NapiUtils::GetValueType(env, params[1]) != napi_function) {
-            return NapiUtils::GetUndefined(env);
-        }
+    if (paramsCount == PARAM_OPTION && NapiUtils::GetValueType(env, params[1]) != napi_function) {
+        NETSTACK_LOGE("on off once interface para: [string, function]");
+        return NapiUtils::GetUndefined(env);
     }
-    int clientid = NapiUtils::GetInt32Property(env, thisVal,
-                                               TLSSocketServerModuleExports::TLSSocketConnection::PROPERTY_CLIENT_ID);
+
     napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager_));
     if (manager_ == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
@@ -450,7 +451,13 @@ napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
         NETSTACK_LOGE("monitor is off %{public}s", event.c_str());
         return NapiUtils::GetUndefined(env);
     }
-    manager_->DeleteListener(event);
+    if (manager_ != nullptr) {
+        if (paramsCount == PARAM_OPTION_CALLBACK) {
+            manager_->DeleteListener(event, params[1]);
+        } else {
+            manager_->DeleteListener(event);
+        }
+    }
     TLSConnectionUnRegEvent(event, tlsSocketServer, clientid);
     return NapiUtils::GetUndefined(env);
 }
