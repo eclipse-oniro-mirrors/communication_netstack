@@ -175,6 +175,12 @@ public:
      */
     void GetSignatureAlgorithms(const int socketFd, const TlsSocket::GetSignatureAlgorithmsCallback &callback);
 
+    ///**
+    // * Register a callback which is called when message is received
+    // * @param onMessageCallback callback which is called when message is received
+    // */
+    // void OnMessage(const OnMessageCallback &onMessageCallback);
+
     /**
      * Register the callback that is called when the connection is disconnected
      * @param onCloseCallback callback invoked when disconnected
@@ -202,7 +208,7 @@ public:
      */
     void OffError();
 
-public:
+private:
     class Connection : public std::enable_shared_from_this<Connection> {
     public:
         /**
@@ -402,7 +408,7 @@ public:
 
 private:
     void SetLocalTlsConfiguration(const TlsSocket::TLSConnectOptions &config);
-    int RecvRemoteInfo(int socketFd);
+    int RecvRemoteInfo(int socketFd, int index);
     void RemoveConnect(int socketFd);
     void AddConnect(int socketFd, std::shared_ptr<Connection> connection);
     void CallListenCallback(int32_t err, ListenCallback callback);
