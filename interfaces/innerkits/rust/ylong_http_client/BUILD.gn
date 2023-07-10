@@ -25,13 +25,9 @@ ohos_rust_shared_library("ylong_http_client") {
   sources = [ "src/lib.rs" ]
   edition = "2021"
   clippy_lints = "none"
-  deps = [
-    "//third_party/rust/crates/reqwest:lib",
-    "//third_party/rust/crates/tokio/tokio:lib",
-    "//third_party/rust/crates/tokio/tokio-util:lib",
-  ]
+  external_deps = [ "ylong_http:ylong_http_client_inner" ]
   features = [
     "default",
-    "reqwest_impl",
+    "ylong_impl",
   ]
 }
