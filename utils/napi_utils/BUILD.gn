@@ -34,6 +34,8 @@ ohos_static_library("napi_utils") {
     "src/napi_utils.cpp",
   ]
 
+  part_name = "netstack"
+  subsystem_name = "communication"
   public_configs = [ ":napi_utils_public_config" ]
 
   deps = [ "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp" ]
