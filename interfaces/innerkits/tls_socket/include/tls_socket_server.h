@@ -174,12 +174,6 @@ public:
      */
     void GetSignatureAlgorithms(const int socketFd, const TlsSocket::GetSignatureAlgorithmsCallback &callback);
 
-    ///**
-    // * Register a callback which is called when message is received
-    // * @param onMessageCallback callback which is called when message is received
-    // */
-    // void OnMessage(const OnMessageCallback &onMessageCallback);
-
     /**
      * Register the callback that is called when the connection is disconnected
      * @param onCloseCallback callback invoked when disconnected
@@ -383,6 +377,7 @@ private:
 
     private:
         ssl_st *ssl_ = nullptr;
+        X509 *peerX509_ = nullptr;
         int32_t socketFd_ = 0;
 
         TlsSocket::TLSContextServer tlsContext_;
