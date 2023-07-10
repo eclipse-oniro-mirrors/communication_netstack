@@ -408,7 +408,7 @@ private:
 
 private:
     void SetLocalTlsConfiguration(const TlsSocket::TLSConnectOptions &config);
-    int RecvRemoteInfo(int socketFd);
+    int RecvRemoteInfo(int socketFd, int index);
     void RemoveConnect(int socketFd);
     void AddConnect(int socketFd, std::shared_ptr<Connection> connection);
     void CallListenCallback(int32_t err, ListenCallback callback);

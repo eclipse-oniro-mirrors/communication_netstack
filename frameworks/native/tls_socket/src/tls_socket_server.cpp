@@ -1081,13 +1081,12 @@ void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> dns
         return;
     }
     std::string tempHostName = "" + hostName;
+    std::string tempMsg = "";
     if (!dnsNames.empty() || index > 0) {
         std::vector<std::string> hostParts = SplitHostName(tempHostName);
         if (!dnsNames.empty()) {
             valid = SeekIntersection(hostParts, dnsNames);
-            if (!valid) {
-                reason = HOST_NAME + tempHostName + ". is not in the cert's altnames";
-            }
+            tempMsg = ". is not in the cert's altnames";
         } else {
             char commonNameBuf[COMMON_NAME_BUF_SIZE] = {0};
             X509_NAME *pSubName = nullptr;
@@ -1096,11 +1095,13 @@ void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> dns
                 std::vector<std::string> commonNameVec;
                 commonNameVec.emplace_back(commonNameBuf);
                 valid = SeekIntersection(hostParts, commonNameVec);
-                if (!valid) {
-                    reason = HOST_NAME + tempHostName + ". is not cert's CN";
-                }
+                tempMsg = ". is not cert's CN";
             }
         }
+        if (!valid) {
+            reason = HOST_NAME + tempHostName + tempMsg;
+        }
+
         result = {valid, reason};
         return;
     }
@@ -1190,7 +1191,6 @@ void TLSSocketServer::RemoveConnect(int socketFd)
 
     for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end();) {
         if (it->second->GetSocketFd() == socketFd) {
-
             it = clientIdConnections_.erase(it);
             break;
         } else {
@@ -1198,29 +1198,34 @@ void TLSSocketServer::RemoveConnect(int socketFd)
         }
     }
 }
-int TLSSocketServer::RecvRemoteInfo(int socketFd)
+int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
 {
-    std::lock_guard<std::mutex> its_lock(connectMutex_);
-    for (auto it = connections_.begin(); it != connections_.end();) {
-        if (it->first == socketFd) {
-            char buffer[MAX_BUFFER_SIZE];
-            if (memset_s(buffer, MAX_BUFFER_SIZE, 0, MAX_BUFFER_SIZE) != EOK) {
-                NETSTACK_LOGE("memcpy_s failed!");
+    {
+        std::lock_guard<std::mutex> its_lock(connectMutex_);
+        for (auto it = connections_.begin(); it != connections_.end();) {
+            if (it->first == socketFd) {
+                char buffer[MAX_BUFFER_SIZE];
+                if (memset_s(buffer, MAX_BUFFER_SIZE, 0, MAX_BUFFER_SIZE) != EOK) {
+                    NETSTACK_LOGE("memcpy_s failed!");
+                    break;
+                }
+                int len = it->second->Recv(buffer, MAX_BUFFER_SIZE);
+                NETSTACK_LOGE("revc message is size is  %{public}d  buffer is   %{public}s ", len, buffer);
+                if (len > 0) {
+                    Socket::SocketRemoteInfo remoteInfo;
+                    remoteInfo.SetSize(strlen(buffer));
+                    it->second->MakeRemoteInfo(remoteInfo);
+                    it->second->CallOnMessageCallback(socketFd, buffer, remoteInfo);
+                    return len;
+                }
                 break;
+            } else {
+                ++it;
             }
-            int len = it->second->Recv(buffer, MAX_BUFFER_SIZE);
-            NETSTACK_LOGE("revc message is size is  %{public}d  buffer is   %{public}s ", len, buffer);
-            if (len > 0) {
-                Socket::SocketRemoteInfo remoteInfo;
-                remoteInfo.SetSize(strlen(buffer));
-                it->second->MakeRemoteInfo(remoteInfo);
-                it->second->CallOnMessageCallback(socketFd, buffer, remoteInfo);
-            }
-            return len;
-        } else {
-            ++it;
         }
     }
+    RemoveConnect(socketFd);
+    DropFdFromPollList(index);
     return -1;
 }
 void TLSSocketServer::Connection::CallOnMessageCallback(int32_t socketFd, const std::string &data,
@@ -1333,11 +1338,8 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
                     DropFdFromPollList(i);
                     NETSTACK_LOGI("A client left");
                 } else if (fds_[i].revents & POLLIN) {
-                    auto res = RecvRemoteInfo(fds_[i].fd);
-                    if (res <= 0) {
-                        RemoveConnect(fds_[i].fd);
-                        DropFdFromPollList(i);
-                    }
+                    auto res = RecvRemoteInfo(fds_[i].fd, i);
+                    
                 }
             }
         }
