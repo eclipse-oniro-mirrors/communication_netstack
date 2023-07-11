@@ -124,7 +124,6 @@ napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, i
 }
 napi_value MakeMessageObj(napi_env env, std::shared_ptr<MonitorServer::MessageRecvParma> MessagePara)
 {
-
     void *data = nullptr;
     napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(env, ptrMessageRecvParma->data.size(), &data);
     if (data != nullptr && arrayBuffer != nullptr) {
@@ -175,9 +174,7 @@ void EventMessageCallback(uv_work_t *work, int status)
         return;
     }
     napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
-
     auto obj = MakeMessageObj(workWrapper->env, ptrMessageRecvParma);
-
     if (obj == nullptr) {
         return;
     }
