@@ -153,6 +153,9 @@ void EventMessageCallback(uv_work_t *work, int status)
             NETSTACK_LOGE("memcpy_s failed!");
             return;
         }
+    } else {
+        NETSTACK_LOGE("data is nullptr  or arrayBuffer  is nullptr");
+        return;
     }
     napi_value message = nullptr;
     napi_create_typedarray(workWrapper->env, napi_uint8_array, ptrMessageRecvParma->data.size(), arrayBuffer, 0,
