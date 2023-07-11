@@ -122,7 +122,39 @@ napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, i
     }
     return NapiUtils::GetUndefined(env);
 }
+void MakeMessageObj(napi_env env, std::shared_ptr<MonitorServer::MessageRecvParma> MessagePara)
+{
 
+    void *data = nullptr;
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(env, ptrMessageRecvParma->data.size(), &data);
+    if (data != nullptr && arrayBuffer != nullptr) {
+        if (memcpy_s(data, ptrMessageRecvParma->data.size(), ptrMessageRecvParma->data.c_str(),
+                     ptrMessageRecvParma->data.size()) != EOK) {
+            NETSTACK_LOGE("memcpy_s failed!");
+            return nullptr;
+        }
+    } else {
+        return nullptr
+    }
+
+    napi_value obj = NapiUtils::CreateObject(env);
+    napi_value remoteInfo = NapiUtils::CreateObject(env);
+
+    napi_value message = nullptr;
+    napi_create_typedarray(workWrapper->env, napi_uint8_array, MessagePara->data.size(), arrayBuffer, 0, &message);
+    napi_value address = NapiUtils::CreateStringUtf8(env, MessagePara->remoteInfo_.GetAddress());
+    napi_value family = NapiUtils::CreateStringUtf8(env, MessagePara->remoteInfo_.GetFamily());
+    napi_value port = NapiUtils::CreateInt32(env, MessagePara->remoteInfo_.GetPort());
+    napi_value size = NapiUtils::CreateInt32(env, MessagePara->remoteInfo_.GetSize());
+    NapiUtils::SetNamedProperty(env, remoteInfo, PROPERTY_ADDRESS, address);
+    NapiUtils::SetNamedProperty(env, remoteInfo, PROPERTY_FAMILY, family);
+    NapiUtils::SetNamedProperty(env, remoteInfo, PROPERTY_PORT, port);
+    NapiUtils::SetNamedProperty(env, remoteInfo, PROPERTY_SIZE, size);
+    NapiUtils::SetNamedProperty(env, obj, ON_MESSAGE, message);
+    NapiUtils::SetNamedProperty(env, obj, ON_REMOTE_INFO, remoteInfo);
+
+    return obj;
+}
 void EventMessageCallback(uv_work_t *work, int status)
 {
     (void)status;
@@ -143,33 +175,13 @@ void EventMessageCallback(uv_work_t *work, int status)
         return;
     }
     napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
-    napi_value obj = NapiUtils::CreateObject(workWrapper->env);
-    napi_value remoteInfo = NapiUtils::CreateObject(workWrapper->env);
-    void *data = nullptr;
-    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(workWrapper->env, ptrMessageRecvParma->data.size(), &data);
-    if (data != nullptr && arrayBuffer != nullptr) {
-        if (memcpy_s(data, ptrMessageRecvParma->data.size(), ptrMessageRecvParma->data.c_str(),
-                     ptrMessageRecvParma->data.size()) != EOK) {
-            NETSTACK_LOGE("memcpy_s failed!");
-            return;
-        }
-    } else {
-        NETSTACK_LOGE("data is nullptr or arrayBuffer is nullptr");
+
+    auto obj = MakeMessageObj(workWrapper->env, ptrMessageRecvParma);
+
+    if (obj == nullptr) {
         return;
     }
-    napi_value message = nullptr;
-    napi_create_typedarray(workWrapper->env, napi_uint8_array, ptrMessageRecvParma->data.size(), arrayBuffer, 0,
-                           &message);
-    napi_value address = NapiUtils::CreateStringUtf8(workWrapper->env, ptrMessageRecvParma->remoteInfo_.GetAddress());
-    napi_value family = NapiUtils::CreateStringUtf8(workWrapper->env, ptrMessageRecvParma->remoteInfo_.GetFamily());
-    napi_value port = NapiUtils::CreateInt32(workWrapper->env, ptrMessageRecvParma->remoteInfo_.GetPort());
-    napi_value size = NapiUtils::CreateInt32(workWrapper->env, ptrMessageRecvParma->remoteInfo_.GetSize());
-    NapiUtils::SetNamedProperty(workWrapper->env, remoteInfo, PROPERTY_ADDRESS, address);
-    NapiUtils::SetNamedProperty(workWrapper->env, remoteInfo, PROPERTY_FAMILY, family);
-    NapiUtils::SetNamedProperty(workWrapper->env, remoteInfo, PROPERTY_PORT, port);
-    NapiUtils::SetNamedProperty(workWrapper->env, remoteInfo, PROPERTY_SIZE, size);
-    NapiUtils::SetNamedProperty(workWrapper->env, obj, ON_MESSAGE, message);
-    NapiUtils::SetNamedProperty(workWrapper->env, obj, ON_REMOTE_INFO, remoteInfo);
+
     if (workWrapper->manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return;
