@@ -154,7 +154,7 @@ void EventMessageCallback(uv_work_t *work, int status)
             return;
         }
     } else {
-        NETSTACK_LOGE("data is nullptr  or arrayBuffer  is nullptr");
+        NETSTACK_LOGE("data is nullptr or arrayBuffer is nullptr");
         return;
     }
     napi_value message = nullptr;
