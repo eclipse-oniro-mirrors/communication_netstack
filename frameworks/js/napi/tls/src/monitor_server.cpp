@@ -122,7 +122,7 @@ napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, i
     }
     return NapiUtils::GetUndefined(env);
 }
-void MakeMessageObj(napi_env env, std::shared_ptr<MonitorServer::MessageRecvParma> MessagePara)
+napi_value MakeMessageObj(napi_env env, std::shared_ptr<MonitorServer::MessageRecvParma> MessagePara)
 {
 
     void *data = nullptr;
