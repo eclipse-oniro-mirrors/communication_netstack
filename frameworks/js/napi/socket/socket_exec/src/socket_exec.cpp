@@ -1476,7 +1476,11 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
         }
         callback.OnTcpConnectionMessage(g_userCounter);
         std::thread handlerThread(ClientHandler, connectFD, nullptr, 0, callback);
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+        pthread_setname_np(TCP_SERVER_HANDLE_CLIENT);
+#else
         pthread_setname_np(handlerThread.native_handle(), TCP_SERVER_HANDLE_CLIENT);
+#endif
         handlerThread.detach();
     }
 }
@@ -1497,7 +1501,11 @@ bool ExecTcpServerListen(BindContext *context)
     NETSTACK_LOGI("listen success");
     std::thread serviceThread(AcceptRecvData, context->GetSocketFd(), nullptr, 0,
                               TcpMessageCallback(context->GetManager()));
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(TCP_SERVER_ACCEPT_RECV_DATA);
+#else
     pthread_setname_np(serviceThread.native_handle(), TCP_SERVER_ACCEPT_RECV_DATA);
+#endif
     serviceThread.detach();
     return true;
 }
