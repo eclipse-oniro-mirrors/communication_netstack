@@ -126,18 +126,154 @@ napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, i
 void EventMessageCallback(uv_work_t *work, int status)
 {
     (void)status;
+    std::shared_ptr<uv_work_t> ptrWork(work);
+    if (ptrWork == nullptr) {
+        NETSTACK_LOGE("work is nullptr");
+        return;
+    }
+    std::shared_ptr<UvWorkWrapper> workWrapper(static_cast<UvWorkWrapper *>(ptrWork->data));
+    if (workWrapper == nullptr) {
+        NETSTACK_LOGE("workWrapper is nullptr");
+        return;
+    }
+    std::shared_ptr<MonitorServer::MessageRecvParma> ptrMessageRecvParma(
+        static_cast<MonitorServer::MessageRecvParma *>(workWrapper->data));
+    if (ptrMessageRecvParma == nullptr) {
+        NETSTACK_LOGE("messageRecvParma is nullptr");
+        return;
+    }
+    napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
+    napi_value obj = NapiUtils::CreateObject(workWrapper->env);
+    napi_value remoteInfo = NapiUtils::CreateObject(workWrapper->env);
+    void *data = nullptr;
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(workWrapper->env, ptrMessageRecvParma->data.size(), &data);
+    if (data != nullptr && arrayBuffer != nullptr) {
+        if (memcpy_s(data, ptrMessageRecvParma->data.size(), ptrMessageRecvParma->data.c_str(),
+                     ptrMessageRecvParma->data.size()) != EOK) {
+            NETSTACK_LOGE("memcpy_s failed!");
+            return;
+        }
+    }
+    napi_value message = nullptr;
+    napi_create_typedarray(workWrapper->env, napi_uint8_array, ptrMessageRecvParma->data.size(), arrayBuffer, 0,
+                           &message);
+    napi_value address = NapiUtils::CreateStringUtf8(workWrapper->env, ptrMessageRecvParma->remoteInfo_.GetAddress());
+    napi_value family = NapiUtils::CreateStringUtf8(workWrapper->env, ptrMessageRecvParma->remoteInfo_.GetFamily());
+    napi_value port = NapiUtils::CreateInt32(workWrapper->env, ptrMessageRecvParma->remoteInfo_.GetPort());
+    napi_value size = NapiUtils::CreateInt32(workWrapper->env, ptrMessageRecvParma->remoteInfo_.GetSize());
+    NapiUtils::SetNamedProperty(workWrapper->env, remoteInfo, PROPERTY_ADDRESS, address);
+    NapiUtils::SetNamedProperty(workWrapper->env, remoteInfo, PROPERTY_FAMILY, family);
+    NapiUtils::SetNamedProperty(workWrapper->env, remoteInfo, PROPERTY_PORT, port);
+    NapiUtils::SetNamedProperty(workWrapper->env, remoteInfo, PROPERTY_SIZE, size);
+    NapiUtils::SetNamedProperty(workWrapper->env, obj, ON_MESSAGE, message);
+    NapiUtils::SetNamedProperty(workWrapper->env, obj, ON_REMOTE_INFO, remoteInfo);
+    if (workWrapper->manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return;
+    }
+    workWrapper->manager->Emit(workWrapper->type, std::make_pair(NapiUtils::GetUndefined(workWrapper->env), obj));
+    NapiUtils::CloseScope(workWrapper->env, scope);
 }
 void EventConnectCallback(uv_work_t *work, int status)
 {
     (void)status;
+    if (work == nullptr) {
+        NETSTACK_LOGE("work is nullptr");
+        return;
+    }
+    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
+    if (workWrapper == nullptr) {
+        NETSTACK_LOGE("workWrapper is nullptr");
+        delete work;
+        return;
+    }
+    std::shared_ptr<MonitorServer::MessageParma> messageParma(
+        static_cast<MonitorServer::MessageParma *>(workWrapper->data));
+    if (messageParma == nullptr) {
+        NETSTACK_LOGE("messageParma is nullptr");
+        delete workWrapper;
+        delete work;
+        return;
+    }
+    auto clientid = messageParma->clientID;
+    auto eventManager = messageParma->eventManager;
+    napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
+    napi_callback_info info = nullptr;
+    napi_value obj = ConstructTLSSocketConnection(workWrapper->env, info, clientid, eventManager);
+    workWrapper->manager->Emit(workWrapper->type, std::make_pair(NapiUtils::GetUndefined(workWrapper->env), obj));
+    NapiUtils::CloseScope(workWrapper->env, scope);
+    delete workWrapper;
+    delete work;
 }
 void EventCloseCallback(uv_work_t *work, int status)
 {
     (void)status;
+    if (work == nullptr) {
+        NETSTACK_LOGE("work is nullptr");
+        return;
+    }
+    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
+    if (workWrapper == nullptr) {
+        NETSTACK_LOGE("workWrapper is nullptr");
+        delete work;
+        return;
+    }
+    std::shared_ptr<int> ptrClientID(static_cast<int *>(workWrapper->data));
+    if (ptrClientID == nullptr) {
+        delete workWrapper;
+        delete work;
+        return;
+    }
+    napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
+    napi_value obj = nullptr;
+    if (workWrapper->manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        delete workWrapper;
+        delete work;
+        return;
+    }
+    workWrapper->manager->Emit(workWrapper->type, std::make_pair(NapiUtils::GetUndefined(workWrapper->env), obj));
+    NapiUtils::CloseScope(workWrapper->env, scope);
+    delete workWrapper;
+    delete work;
 }
 void EventErrorCallback(uv_work_t *work, int status)
 {
     (void)status;
+    if (work == nullptr) {
+        NETSTACK_LOGE("work is nullptr");
+        return;
+    }
+    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
+    if (workWrapper == nullptr) {
+        NETSTACK_LOGE("workWrapper is nullptr");
+        delete work;
+        return;
+    }
+    auto monitor = static_cast<MonitorServer *>(workWrapper->data);
+    if (monitor == nullptr) {
+        NETSTACK_LOGE("monitor is nullptr");
+        delete workWrapper;
+        delete work;
+        return;
+    }
+    napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
+    napi_value obj = NapiUtils::CreateObject(workWrapper->env);
+    napi_value errorNumber = NapiUtils::CreateInt32(workWrapper->env, monitor->errorNumber_);
+    napi_value errorString = NapiUtils::CreateStringUtf8(workWrapper->env, monitor->errorString_);
+    NapiUtils::SetNamedProperty(workWrapper->env, obj, "errorNumber", errorNumber);
+    NapiUtils::SetNamedProperty(workWrapper->env, obj, "errorString", errorString);
+    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
+    if (workWrapper->manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        delete workWrapper;
+        delete work;
+        return;
+    }
+    workWrapper->manager->Emit(workWrapper->type, arg);
+    NapiUtils::CloseScope(workWrapper->env, scope);
+    delete workWrapper;
+    delete work;
 }
 } // namespace
 
