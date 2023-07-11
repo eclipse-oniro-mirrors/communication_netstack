@@ -53,6 +53,8 @@ static constexpr const int USER_LIMIT = 511;
 
 static constexpr const int ERR_SYS_BASE = 2303100;
 
+static constexpr const int MAX_CLIENTS = 1024;
+
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
 static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "TCPServerAcceptRecvData";
@@ -1461,9 +1463,14 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
         if (connectFD < 0) {
             continue;
         }
-        NETSTACK_LOGI("Server accept new client SUCCESS, fd = %{public}d", connectFD);
         {
             std::lock_guard<std::mutex> lock(g_mutex);
+            if (g_clientFDs.size() >= MAX_CLIENTS) {
+                NETSTACK_LOGE("Maximum number of clients reached, connection rejected");
+                close(connectFD);
+                continue;
+            }
+            NETSTACK_LOGI("Server accept new client SUCCESS, fd = %{public}d", connectFD);
             g_userCounter++;
             g_clientFDs[g_userCounter] = connectFD;
         }
