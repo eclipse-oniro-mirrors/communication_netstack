@@ -17,8 +17,8 @@
 #define COMMUNICATIONNETSTACK_SOCKET_REMOTE_INFO_H
 
 #include <cstdint>
-#include <string>
 #include <iosfwd>
+#include <string>
 
 #include "net_address.h"
 
@@ -37,6 +37,7 @@ public:
 
     void SetSize(uint32_t size);
 
+    void SetFamilyByStr(const std::string family);
     [[nodiscard]] const std::string &GetAddress() const;
 
     [[nodiscard]] const std::string &GetFamily() const;
