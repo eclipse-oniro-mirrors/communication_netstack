@@ -470,7 +470,7 @@ void HttpExec::GetHttpProxyInfo(RequestContext *context, std::string &host, int3
 #ifdef HAS_NETMANAGER_BASE
         using namespace NetManagerStandard;
         HttpProxy httpProxy;
-        DelayedSingleton<NetConnClient>::GetInstance()->GetDefaultHttpProxy(httpProxy);
+        NetConnClient::GetInstance().GetDefaultHttpProxy(httpProxy);
         host = httpProxy.GetHost();
         port = httpProxy.GetPort();
         exclusions = CommonUtils::ToString(httpProxy.GetExclusionList());
