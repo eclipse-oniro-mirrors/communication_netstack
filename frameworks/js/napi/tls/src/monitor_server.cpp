@@ -73,6 +73,7 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
 
     return result;
 }
+
 napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, int32_t counter,
                                         std::shared_ptr<EventManager> eventManager)
 {
@@ -122,6 +123,7 @@ napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, i
     }
     return NapiUtils::GetUndefined(env);
 }
+
 napi_value MakeMessageObj(napi_env env, std::shared_ptr<MonitorServer::MessageRecvParma> MessagePara)
 {
     void *data = nullptr;
@@ -154,6 +156,7 @@ napi_value MakeMessageObj(napi_env env, std::shared_ptr<MonitorServer::MessageRe
 
     return obj;
 }
+
 void EventMessageCallback(uv_work_t *work, int status)
 {
     (void)status;
@@ -186,6 +189,7 @@ void EventMessageCallback(uv_work_t *work, int status)
     workWrapper->manager->Emit(workWrapper->type, std::make_pair(NapiUtils::GetUndefined(workWrapper->env), obj));
     NapiUtils::CloseScope(workWrapper->env, scope);
 }
+
 void EventConnectCallback(uv_work_t *work, int status)
 {
     (void)status;
@@ -217,6 +221,7 @@ void EventConnectCallback(uv_work_t *work, int status)
     delete workWrapper;
     delete work;
 }
+
 void EventCloseCallback(uv_work_t *work, int status)
 {
     (void)status;
@@ -249,6 +254,7 @@ void EventCloseCallback(uv_work_t *work, int status)
     delete workWrapper;
     delete work;
 }
+
 void EventErrorCallback(uv_work_t *work, int status)
 {
     (void)status;
@@ -290,6 +296,7 @@ void EventErrorCallback(uv_work_t *work, int status)
 } // namespace
 
 MonitorServer::MonitorServer() : manager_(nullptr) {}
+
 MonitorServer::~MonitorServer()
 {
     if (manager_ != nullptr) {
@@ -477,6 +484,7 @@ napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
     TLSConnectionUnRegEvent(event, tlsSocketServer, clientid);
     return NapiUtils::GetUndefined(env);
 }
+
 void MonitorServer::TLSServerRegEvent(std::string event, TLSSocketServer *tlsSocketServer)
 {
     if (event == EVENT_CONNECT) {
@@ -497,6 +505,7 @@ void MonitorServer::TLSServerRegEvent(std::string event, TLSSocketServer *tlsSoc
         });
     }
 }
+
 void MonitorServer::TLSConnectionRegEvent(std::string event, TLSSocketServer *tlsSocketServer, int clientId)
 {
     if (event == EVENT_MESSAGE) {
@@ -533,6 +542,7 @@ void MonitorServer::TLSConnectionRegEvent(std::string event, TLSSocketServer *tl
         }
     }
 }
+
 void MonitorServer::TLSConnectionUnRegEvent(std::string event, TLSSocketServer *tlsSocketServer, int clientId)
 {
     if (event == EVENT_MESSAGE) {
