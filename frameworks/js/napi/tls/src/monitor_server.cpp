@@ -73,6 +73,7 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
 
     return result;
 }
+
 napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, int32_t counter,
                                         std::shared_ptr<EventManager> eventManager)
 {
@@ -122,25 +123,25 @@ napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, i
     }
     return NapiUtils::GetUndefined(env);
 }
+
 napi_value MakeMessageObj(napi_env env, std::shared_ptr<MonitorServer::MessageRecvParma> MessagePara)
 {
     void *data = nullptr;
-    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(env, ptrMessageRecvParma->data.size(), &data);
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(env, MessagePara->data.size(), &data);
     if (data != nullptr && arrayBuffer != nullptr) {
-        if (memcpy_s(data, ptrMessageRecvParma->data.size(), ptrMessageRecvParma->data.c_str(),
-                     ptrMessageRecvParma->data.size()) != EOK) {
+        if (memcpy_s(data, MessagePara->data.size(), MessagePara->data.c_str(), MessagePara->data.size()) != EOK) {
             NETSTACK_LOGE("memcpy_s failed!");
             return nullptr;
         }
     } else {
-        return nullptr
+        return nullptr;
     }
 
     napi_value obj = NapiUtils::CreateObject(env);
     napi_value remoteInfo = NapiUtils::CreateObject(env);
 
     napi_value message = nullptr;
-    napi_create_typedarray(workWrapper->env, napi_uint8_array, MessagePara->data.size(), arrayBuffer, 0, &message);
+    napi_create_typedarray(env, napi_uint8_array, MessagePara->data.size(), arrayBuffer, 0, &message);
     napi_value address = NapiUtils::CreateStringUtf8(env, MessagePara->remoteInfo_.GetAddress());
     napi_value family = NapiUtils::CreateStringUtf8(env, MessagePara->remoteInfo_.GetFamily());
     napi_value port = NapiUtils::CreateInt32(env, MessagePara->remoteInfo_.GetPort());
@@ -154,6 +155,7 @@ napi_value MakeMessageObj(napi_env env, std::shared_ptr<MonitorServer::MessageRe
 
     return obj;
 }
+
 void EventMessageCallback(uv_work_t *work, int status)
 {
     (void)status;
@@ -186,6 +188,7 @@ void EventMessageCallback(uv_work_t *work, int status)
     workWrapper->manager->Emit(workWrapper->type, std::make_pair(NapiUtils::GetUndefined(workWrapper->env), obj));
     NapiUtils::CloseScope(workWrapper->env, scope);
 }
+
 void EventConnectCallback(uv_work_t *work, int status)
 {
     (void)status;
@@ -217,6 +220,7 @@ void EventConnectCallback(uv_work_t *work, int status)
     delete workWrapper;
     delete work;
 }
+
 void EventCloseCallback(uv_work_t *work, int status)
 {
     (void)status;
@@ -249,6 +253,7 @@ void EventCloseCallback(uv_work_t *work, int status)
     delete workWrapper;
     delete work;
 }
+
 void EventErrorCallback(uv_work_t *work, int status)
 {
     (void)status;
@@ -290,6 +295,7 @@ void EventErrorCallback(uv_work_t *work, int status)
 } // namespace
 
 MonitorServer::MonitorServer() : manager_(nullptr) {}
+
 MonitorServer::~MonitorServer()
 {
     if (manager_ != nullptr) {
@@ -477,6 +483,7 @@ napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
     TLSConnectionUnRegEvent(event, tlsSocketServer, clientid);
     return NapiUtils::GetUndefined(env);
 }
+
 void MonitorServer::TLSServerRegEvent(std::string event, TLSSocketServer *tlsSocketServer)
 {
     if (event == EVENT_CONNECT) {
@@ -497,6 +504,7 @@ void MonitorServer::TLSServerRegEvent(std::string event, TLSSocketServer *tlsSoc
         });
     }
 }
+
 void MonitorServer::TLSConnectionRegEvent(std::string event, TLSSocketServer *tlsSocketServer, int clientId)
 {
     if (event == EVENT_MESSAGE) {
@@ -533,6 +541,7 @@ void MonitorServer::TLSConnectionRegEvent(std::string event, TLSSocketServer *tl
         }
     }
 }
+
 void MonitorServer::TLSConnectionUnRegEvent(std::string event, TLSSocketServer *tlsSocketServer, int clientId)
 {
     if (event == EVENT_MESSAGE) {
