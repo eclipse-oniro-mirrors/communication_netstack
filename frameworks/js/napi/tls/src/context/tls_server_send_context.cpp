@@ -28,7 +28,6 @@ namespace OHOS {
 namespace NetStack {
 namespace TlsSocketServer {
 namespace {
-// constexpr const char *DATA = "data";
 constexpr std::string_view PARSE_ERROR = "options is not type of TLSServerSendOptions";
 } // namespace
 

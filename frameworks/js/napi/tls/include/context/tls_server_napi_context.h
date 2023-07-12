@@ -37,7 +37,7 @@ public:
     explicit TLSServerNapiContext(napi_env env, EventManager *manager);
 
 public:
-    int32_t clientId_;
+    int32_t clientId_ = 0;
     int32_t errorNumber_ = 0;
     Socket::NetAddress address_;
     TlsSocket::X509CertRawData remoteCert_;
@@ -55,7 +55,6 @@ using ServerTLSGetRemoteAddressContext = TLSServerNapiContext;
 using ServerGetRemoteCertificateContext = TLSServerNapiContext;
 using ServerGetCipherSuitesContext = TLSServerNapiContext;
 using ServerGetSignatureAlgorithmsContext = TLSServerNapiContext;
-
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS
