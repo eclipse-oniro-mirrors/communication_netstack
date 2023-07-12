@@ -45,7 +45,6 @@ public:
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
-
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS
