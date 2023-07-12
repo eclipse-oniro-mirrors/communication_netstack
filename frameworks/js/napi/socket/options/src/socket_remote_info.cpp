@@ -15,8 +15,8 @@
 
 #include "socket_remote_info.h"
 
-#include <string>
 #include "sys/socket.h"
+#include <string>
 
 namespace OHOS::NetStack::Socket {
 SocketRemoteInfo::SocketRemoteInfo() : port_(0), size_(0) {}
@@ -57,6 +57,10 @@ const std::string &SocketRemoteInfo::GetFamily() const
     return family_;
 }
 
+void SocketRemoteInfo::SetFamilyByStr(const std::string family)
+{
+    family_ = family;
+}
 uint16_t SocketRemoteInfo::GetPort() const
 {
     return port_;
