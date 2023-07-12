@@ -159,34 +159,43 @@ napi_value MakeMessageObj(napi_env env, std::shared_ptr<MonitorServer::MessageRe
 void EventMessageCallback(uv_work_t *work, int status)
 {
     (void)status;
-    std::shared_ptr<uv_work_t> ptrWork(work);
-    if (ptrWork == nullptr) {
+    if (work == nullptr) {
         NETSTACK_LOGE("work is nullptr");
         return;
     }
-    std::shared_ptr<UvWorkWrapper> workWrapper(static_cast<UvWorkWrapper *>(ptrWork->data));
+    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
     if (workWrapper == nullptr) {
         NETSTACK_LOGE("workWrapper is nullptr");
+        delete work;
         return;
     }
     std::shared_ptr<MonitorServer::MessageRecvParma> ptrMessageRecvParma(
         static_cast<MonitorServer::MessageRecvParma *>(workWrapper->data));
     if (ptrMessageRecvParma == nullptr) {
         NETSTACK_LOGE("messageRecvParma is nullptr");
+        delete workWrapper;
+        delete work;
         return;
     }
     napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
     auto obj = MakeMessageObj(workWrapper->env, ptrMessageRecvParma);
     if (obj == nullptr) {
+        delete workWrapper;
+        delete work;
         return;
     }
 
     if (workWrapper->manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
+        delete workWrapper;
+        delete work;
         return;
     }
     workWrapper->manager->Emit(workWrapper->type, std::make_pair(NapiUtils::GetUndefined(workWrapper->env), obj));
     NapiUtils::CloseScope(workWrapper->env, scope);
+
+    delete workWrapper;
+    delete work;
 }
 
 void EventConnectCallback(uv_work_t *work, int status)
