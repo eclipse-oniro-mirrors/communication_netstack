@@ -164,17 +164,14 @@ const std::string &TLSServerSendOptions::GetSendData() const
     return data_;
 }
 
-TLSSocketServer::~TLSSocketServer() {
-
+TLSSocketServer::~TLSSocketServer()
+{
     isRunning_ = false;
-
 
     connections_.clear();
     clientIdConnections_.clear();
 
-
-    if (listenSocketFd_ != -1)
-    {
+    if (listenSocketFd_ != -1) {
         shutdown(listenSocketFd_, 2);
         close(listenSocketFd_);
         listenSocketFd_ = -1;
@@ -699,7 +696,7 @@ const TlsSocket::X509CertRawData &TLSSocketServer::Connection::GetRemoteCertRawD
     return remoteRawData_;
 }
 
-TLSSocketServer::Connection::~Connection() 
+TLSSocketServer::Connection::~Connection()
 {
     Close();
 }
@@ -778,11 +775,10 @@ bool TLSSocketServer::Connection::Close()
     }
     SSL_free(ssl_);
     ssl_ = nullptr;
-    if (socketFd_ != -1)
-    {
-    shutdown(socketFd_, 2);
-    close(socketFd_);
-    socketFd_ = -1;
+    if (socketFd_ != -1) {
+        shutdown(socketFd_, 2);
+        close(socketFd_);
+        socketFd_ = -1;
     }
     if (!tlsContextServerPointer_) {
         NETSTACK_LOGE("Tls context pointer is null");
@@ -1267,7 +1263,8 @@ void TLSSocketServer::AddConnect(int socketFd, std::shared_ptr<Connection> conne
     connections_[socketFd] = connection;
     clientIdConnections_[connection->GetClientID()] = connection;
 }
-void TLSSocketServer::Connection::CallOnCloseCallback(const int32_t socketFd) {
+void TLSSocketServer::Connection::CallOnCloseCallback(const int32_t socketFd)
+{
     OnCloseCallback func = nullptr;
     {
         if (onCloseCallback_) {
