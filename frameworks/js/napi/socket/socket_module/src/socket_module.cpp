@@ -40,6 +40,7 @@
 #include "tcp_extra_context.h"
 #include "tcp_send_context.h"
 #include "tlssocket_module.h"
+#include "tlssocketserver_module.h"
 #include "udp_extra_context.h"
 #include "udp_send_context.h"
 

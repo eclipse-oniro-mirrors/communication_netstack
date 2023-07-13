@@ -222,7 +222,7 @@ bool TLSSocketServerExec::ExecClose(TLSServerCloseContext *context)
                           TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
         return false;
     }
-    tlsSocketServer->Close(context->clientFd_, [&context](int32_t errorNumber) {
+    tlsSocketServer->Close(context->clientId_, [&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
         if (errorNumber != TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS) {
             context->SetError(errorNumber, TlsSocket::MakeErrorMessage(errorNumber));

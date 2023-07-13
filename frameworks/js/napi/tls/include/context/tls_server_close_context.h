@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,44 +13,38 @@
  * limitations under the License.
  */
 
-#ifndef TLS_CONTEXT_CONNECT_CONTEXT_H
-#define TLS_CONTEXT_CONNECT_CONTEXT_H
+#ifndef TLS_CONTEXT_SEREVR_CLOSE_CONTEXT_H
+#define TLS_CONTEXT_SEREVR_CLOSE_CONTEXT_H
 
 #include <cstddef>
-#include <cstdint>
+#include <string>
 
 #include <napi/native_api.h>
 
 #include "base_context.h"
 #include "event_manager.h"
 #include "tls.h"
-#include "tls_socket.h"
+#include "tls_socket_server.h"
 
 namespace OHOS {
 namespace NetStack {
-namespace TlsSocket {
-class TLSConnectContext final : public BaseContext {
+namespace TlsSocketServer {
+class TLSServerCloseContext final : public BaseContext {
 public:
-    TLSConnectContext() = delete;
-    explicit TLSConnectContext(napi_env env, EventManager *manager);
+    TLSServerCloseContext() = delete;
+    explicit TLSServerCloseContext(napi_env env, EventManager *manager);
 
 public:
-    TLSConnectOptions connectOptions_;
+    int32_t clientId_ = 0;
     int32_t errorNumber_ = 0;
-    std::string hostName_;
-    std::vector<std::string> x509Certificates_;
 
 public:
     void ParseParams(napi_value *params, size_t paramsCount);
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
-    TLSConnectOptions ReadTLSConnectOptions(napi_env env, napi_value *params);
-    TLSSecureOptions ReadTLSSecureOptions(napi_env env, napi_value *params);
-    Socket::NetAddress ReadNetAddress(napi_env env, napi_value *params);
 };
-using TLSListenContext = TLSConnectContext;
-} // namespace TlsSocket
+} // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS
-#endif // TLS_CONTEXT_CONNECT_CONTEXT_H
+#endif // TLS_CONTEXT_SEREVR_CLOSE_CONTEXT_H

@@ -16,11 +16,11 @@
 #include "tls_socket.h"
 
 #include <chrono>
+#include <memory>
 #include <numeric>
 #include <regex>
 #include <securec.h>
 #include <thread>
-#include <memory>
 
 #include <netinet/tcp.h>
 #include <openssl/err.h>
@@ -163,6 +163,7 @@ TLSSecureOptions &TLSSecureOptions::operator=(const TLSSecureOptions &tlsSecureO
     signatureAlgorithms_ = tlsSecureOptions.GetSignatureAlgorithms();
     cipherSuite_ = tlsSecureOptions.GetCipherSuite();
     useRemoteCipherPrefer_ = tlsSecureOptions.UseRemoteCipherPrefer();
+    TLSVerifyMode_ = tlsSecureOptions.GetVerifyMode();
     return *this;
 }
 
@@ -254,6 +255,16 @@ const std::string &TLSSecureOptions::GetCipherSuite() const
 const std::vector<std::string> &TLSSecureOptions::GetCrlChain() const
 {
     return crlChain_;
+}
+
+void TLSSecureOptions::SetVerifyMode(VerifyMode verifyMode)
+{
+    TLSVerifyMode_ = verifyMode;
+}
+
+VerifyMode TLSSecureOptions::GetVerifyMode() const
+{
+    return TLSVerifyMode_;
 }
 
 void TLSConnectOptions::SetNetAddress(const Socket::NetAddress &address)
