@@ -222,7 +222,7 @@ bool TLSSocketServer::Connection::Send(const std::string &data)
 
 int TLSSocketServer::Connection::Recv(std::string buffer, int maxBufferSize)
 {
-   return 0;
+    return 0;
 }
 
 bool TLSSocketServer::Connection::Close()
