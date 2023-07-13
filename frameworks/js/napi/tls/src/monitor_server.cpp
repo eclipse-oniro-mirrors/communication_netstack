@@ -120,8 +120,6 @@ napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, i
         NapiUtils::SetInt32Property(env, result, TLSSocketServerModuleExports::TLSSocketConnection::PROPERTY_CLIENT_ID,
                                     counter);
         return result;
-    } else {
-        NETSTACK_LOGE("jsConstructor == nullptrr");
     }
     return NapiUtils::GetUndefined(env);
 }
