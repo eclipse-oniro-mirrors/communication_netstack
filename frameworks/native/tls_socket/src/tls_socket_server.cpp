@@ -438,7 +438,7 @@ bool TLSSocketServer::Connection::Send(const std::string &data)
     return true;
 }
 
-int TLSSocketServer::Connection::Recv(char *buffer, int maxBufferSize)
+int TLSSocketServer::Connection::Recv(std::string buffer, int maxBufferSize)
 {
     return 0;
 }
@@ -625,13 +625,7 @@ bool TLSSocketServer::Connection::SetRemoteCertRawData()
         NETSTACK_LOGE("Failed to convert peerX509 to der format");
         return false;
     }
-    unsigned char *der = nullptr;
-    (void)i2d_X509(peerX509_, &der);
-    TlsSocket::SecureData data(der, length);
-    remoteRawData_.data = data;
-    OPENSSL_free(der);
-    remoteRawData_.encodingFormat = TlsSocket::EncodingFormat::DER;
-    return true;
+       return true;
 }
 
 static bool StartsWith(const std::string &s, const std::string &prefix)
@@ -712,7 +706,7 @@ std::string TLSSocketServer::Connection::CheckServerIdentityLegal(const std::str
                                                                   const X509 *x509Certificates)
 {
     ASN1_OCTET_STRING *extData = X509_EXTENSION_get_data(ext);
-    std::string altNames = reinterpret_cast<char *>(extData->data);
+    std::string altNames = ""
     std::string hostname = "" + hostName;
     BIO *bio = BIO_new(BIO_s_file());
     if (!bio) {
