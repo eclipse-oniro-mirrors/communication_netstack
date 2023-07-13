@@ -220,13 +220,9 @@ bool TLSSocketServer::Connection::Send(const std::string &data)
     return true;
 }
 
-int TLSSocketServer::Connection::Recv(char *buffer, int maxBufferSize)
+int TLSSocketServer::Connection::Recv(std::string buffer, int maxBufferSize)
 {
-    if (!ssl_) {
-        NETSTACK_LOGE("ssl is null");
-        return SSL_ERROR_RETURN;
-    }
-    return SSL_read(ssl_, buffer, maxBufferSize);
+   return 0;
 }
 
 bool TLSSocketServer::Connection::Close()
