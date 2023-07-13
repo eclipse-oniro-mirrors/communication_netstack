@@ -383,8 +383,6 @@ void TLSSocketServer::GetState(const TlsSocket::GetStateCallback &callback)
     int ret = getsockname(listenSocketFd_, &sockAddr, &len);
     state.SetIsBound(ret == 0);
     ret = getpeername(listenSocketFd_, &sockAddr, &len);
-    // state.SetIsListening(ret == 0);
-    // state.SetIsAccept(ret == 0);
     CallGetStateCallback(TlsSocket::TLSSOCKET_SUCCESS, state, callback);
 }
 
@@ -589,7 +587,6 @@ void TLSSocketServer::Connection::CallOnErrorCallback(int32_t err, const std::st
 {
     TlsSocket::OnErrorCallback CallBackfunc = nullptr;
     {
-
         if (onErrorCallback_) {
             CallBackfunc = onErrorCallback_;
         }
@@ -1033,7 +1030,6 @@ bool TLSSocketServer::Connection::GetRemoteCertificateFromPeer()
     peerX509_ = SSL_get_peer_certificate(ssl_);
 
     if (SSL_get_verify_result(ssl_) == X509_V_OK) {
-
         NETSTACK_LOGE(" SSL_get_verify_result ==X509_V_OK ");
     }
 
@@ -1099,13 +1095,12 @@ void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> dns
         return;
     }
     std::string tempHostName = "" + hostName;
+    std::string tmpStr = "";
     if (!dnsNames.empty() || index > 0) {
         std::vector<std::string> hostParts = SplitHostName(tempHostName);
         if (!dnsNames.empty()) {
             valid = SeekIntersection(hostParts, dnsNames);
-            if (!valid) {
-                reason = HOST_NAME + tempHostName + ". is not in the cert's altnames";
-            }
+            tmpStr = ". is not in the cert's altnames";
         } else {
             char commonNameBuf[COMMON_NAME_BUF_SIZE] = {0};
             X509_NAME *pSubName = nullptr;
@@ -1114,11 +1109,13 @@ void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> dns
                 std::vector<std::string> commonNameVec;
                 commonNameVec.emplace_back(commonNameBuf);
                 valid = SeekIntersection(hostParts, commonNameVec);
-                if (!valid) {
-                    reason = HOST_NAME + tempHostName + ". is not cert's CN";
-                }
+                tmpStr = ". is not cert's CN";
             }
         }
+        if (!valid) {
+            reason = HOST_NAME + tempHostName + tmpStr;
+        }
+
         result = {valid, reason};
         return;
     }
@@ -1208,7 +1205,6 @@ void TLSSocketServer::RemoveConnect(int socketFd)
 
     for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end();) {
         if (it->second->GetSocketFd() == socketFd) {
-
             it = clientIdConnections_.erase(it);
             break;
         } else {

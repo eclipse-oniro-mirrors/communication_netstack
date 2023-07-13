@@ -80,13 +80,11 @@ bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptio
     if (NapiUtils::HasNamedProperty(env, secureOptions, VERIFY_MODE_NAME)) {
         VerifyMode tempVerifyMode = VerifyMode::ONE_WAY_MODE;
         NapiUtils::GetBooleanProperty(env, secureOptions, VERIFY_MODE_NAME) == false
-            ? tempVerifyMode  = VerifyMode::ONE_WAY_MODE :tempVerifyMode  =  VerifyMode::TWO_WAY_MODE;
-
+            ? tempVerifyMode = VerifyMode::ONE_WAY_MODE
+            : tempVerifyMode = VerifyMode::TWO_WAY_MODE;
         secureOption.SetVerifyMode(tempVerifyMode);
-    }
-    else
-    {
-         secureOption.SetVerifyMode(VerifyMode::ONE_WAY_MODE);
+    } else {
+        secureOption.SetVerifyMode(VerifyMode::ONE_WAY_MODE);
     }
     return true;
 }
