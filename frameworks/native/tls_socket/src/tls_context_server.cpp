@@ -222,9 +222,9 @@ bool TLSContextServer::SetKeyAndCheck(TLSContextServer *tlsContext, const TLSCon
     }
 
     if (!configuration.GetPrivateKey().GetKeyPass().Length()) {
+        char *tmpData = const_cast<char*>(tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyPass().Data());
         SSL_CTX_set_default_passwd_cb_userdata(tlsContext->ctx_,
-                                               reinterpret_cast<void *>(const_cast<char *>(
-                                                   tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyPass().Data())));
+                                               reinterpret_cast<void *>(tmpData));
     }
     // Check if the certificate matches the private key.
     if (!SSL_CTX_check_private_key(tlsContext->ctx_)) {
