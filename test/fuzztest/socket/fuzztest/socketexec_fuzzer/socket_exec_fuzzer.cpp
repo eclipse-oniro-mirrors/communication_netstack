@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-#include <cstdint>
+#include "socket_exec_fuzzer.h"
 #include "netstack_log.h"
 #include "securec.h"
-#include "socket_exec_fuzzer.h"
 #include "socket_exec.h"
+#include <cstdint>
 
 namespace OHOS {
 namespace NetStack {
@@ -266,12 +266,12 @@ void ExecTcpConnectionCloseFuzzTest(const uint8_t *data, size_t size)
 
     SocketExec::ExecTcpConnectionClose(&context);
 }
-} //Socket
-} // NetStack
-} // OHOS
+} // namespace Socket
+} // namespace NetStack
+} // namespace OHOS
 
 /* Fuzzer entry point */
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     OHOS::NetStack::Socket::MakeUdpSocketFuzzTest(data, size);
