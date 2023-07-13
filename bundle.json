@@ -30,10 +30,12 @@
         "ram": "5MB",
         "deps": {
             "components": [
+                "huks",
                 "hilog",
                 "zlib",
                 "c_utils",
                 "init",
+                "common",
                 "napi"
             ],
             "third_party": [

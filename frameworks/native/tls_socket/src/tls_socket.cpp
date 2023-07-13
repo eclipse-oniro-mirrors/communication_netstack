@@ -163,6 +163,7 @@ TLSSecureOptions &TLSSecureOptions::operator=(const TLSSecureOptions &tlsSecureO
     signatureAlgorithms_ = tlsSecureOptions.GetSignatureAlgorithms();
     cipherSuite_ = tlsSecureOptions.GetCipherSuite();
     useRemoteCipherPrefer_ = tlsSecureOptions.UseRemoteCipherPrefer();
+    TLSVerifyMode_ = tlsSecureOptions.GetVerifyMode();
     return *this;
 }
 

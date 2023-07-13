@@ -20,9 +20,9 @@
 #include <string>
 #include <vector>
 
+#include "tls.h"
 #include "tls_certificate.h"
 #include "tls_key.h"
-
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
@@ -64,6 +64,9 @@ public:
     [[nodiscard]] const std::string &GetSignatureAlgorithms() const;
     [[nodiscard]] std::vector<CipherSuite> GetCipherSuiteVec() const;
 
+    void SetVerifyMode(VerifyMode verifyMode);
+    [[nodiscard]] VerifyMode GetVerifyMode() const;
+
 private:
     TLSProtocol minProtocol_ = TLS_V1_3;
     TLSProtocol maxProtocol_ = TLS_V1_3;
@@ -81,6 +84,7 @@ private:
     TLSCertificate localCertificate_;
     TLSCertificate caCertificate_;
     std::vector<std::string> caCertificateChain_;
+    VerifyMode tlsVerifyMode_;
 };
 } // namespace TlsSocket
 } // namespace NetStack

@@ -45,7 +45,7 @@ bool TLSServerCloseContext::CheckParamsType(napi_value *params, size_t paramsCou
 {
     if (paramsCount == TlsSocket::PARAM_JUST_OPTIONS) {
         if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_0]) != napi_function) {
-            NETSTACK_LOGE("first param is not string");
+            NETSTACK_LOGE("first param is not string!");
             SetNeedThrowException(true);
             SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
             return false;
