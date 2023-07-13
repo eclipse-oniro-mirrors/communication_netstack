@@ -164,13 +164,13 @@ const std::string &TLSServerSendOptions::GetSendData() const
     return data_;
 }
 
-TLSSocketServer::~TLSSocketServer()
-{
+TLSSocketServer::~TLSSocketServer() {
     isRunning_ = false;
     connections_.clear();
     clientIdConnections_.clear();
 
-    if (listenSocketFd_ != -1) {
+    if (listenSocketFd_ != -1)
+    {
         shutdown(listenSocketFd_, SHUT_RDWR);
         close(listenSocketFd_);
         listenSocketFd_ = -1;
@@ -695,7 +695,7 @@ const TlsSocket::X509CertRawData &TLSSocketServer::Connection::GetRemoteCertRawD
     return remoteRawData_;
 }
 
-TLSSocketServer::Connection::~Connection()
+TLSSocketServer::Connection::~Connection() 
 {
     Close();
 }
@@ -774,17 +774,17 @@ bool TLSSocketServer::Connection::Close()
     }
     SSL_free(ssl_);
     ssl_ = nullptr;
-    if (socketFd_ != -1) {
-        shutdown(socketFd_, 2);
-        close(socketFd_);
-        socketFd_ = -1;
+    if (socketFd_ != -1)
+    {
+    shutdown(socketFd_, SHUT_RDWR);
+    close(socketFd_);
+    socketFd_ = -1;
     }
     if (!tlsContextServerPointer_) {
         NETSTACK_LOGE("Tls context pointer is null");
         return false;
     }
     tlsContextServerPointer_->CloseCtx();
-
     CallOnCloseCallback(clientID_);
     return true;
 }
@@ -1267,8 +1267,7 @@ void TLSSocketServer::AddConnect(int socketFd, std::shared_ptr<Connection> conne
     connections_[socketFd] = connection;
     clientIdConnections_[connection->GetClientID()] = connection;
 }
-void TLSSocketServer::Connection::CallOnCloseCallback(const int32_t socketFd)
-{
+void TLSSocketServer::Connection::CallOnCloseCallback(const int32_t socketFd) {
     OnCloseCallback CallBackfunc = nullptr;
     {
         if (onCloseCallback_) {
@@ -1398,12 +1397,14 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
                     NETSTACK_LOGI("A client left");
                 } else if (fds_[i].revents & POLLIN) {
                     RecvRemoteInfo(fds_[i].fd);
+                   
                 }
             }
         }
     });
     thread_.detach();
 }
+
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS
