@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -194,6 +194,78 @@ void ExecUdpSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
 
     SocketExec::ExecUdpSetExtraOptions(&context);
 }
+
+void ExecTcpServerListenFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    napi_env env = nullptr;
+    EventManager eventManager;
+    BindContext context(env, &eventManager);
+
+    SocketExec::ExecTcpServerListen(&context);
+}
+
+void ExecTcpServerSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    napi_env env = nullptr;
+    EventManager eventManager;
+    TcpSetExtraOptionsContext context(env, &eventManager);
+
+    SocketExec::ExecTcpServerSetExtraOptions(&context);
+}
+
+void ExecTcpServerGetStateFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    napi_env env = nullptr;
+    EventManager eventManager;
+    GetStateContext context(env, &eventManager);
+
+    SocketExec::ExecTcpServerGetState(&context);
+}
+
+void ExecTcpConnectionSendFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    napi_env env = nullptr;
+    EventManager eventManager;
+    TcpSendContext context(env, &eventManager);
+
+    SocketExec::ExecTcpConnectionSend(&context);
+}
+
+void ExecTcpConnectionGetRemoteAddressFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    napi_env env = nullptr;
+    EventManager eventManager;
+    TcpConnectionGetRemoteAddressContext context(env, &eventManager);
+
+    SocketExec::ExecTcpConnectionGetRemoteAddress(&context);
+}
+
+void ExecTcpConnectionCloseFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    napi_env env = nullptr;
+    EventManager eventManager;
+    CloseContext context(env, &eventManager);
+
+    SocketExec::ExecTcpConnectionClose(&context);
+}
 } //Socket
 } // NetStack
 } // OHOS
@@ -214,5 +286,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     OHOS::NetStack::Socket::ExecGetRemoteAddressFuzzTest(data, size);
     OHOS::NetStack::Socket::ExecTcpSetExtraOptionsFuzzTest(data, size);
     OHOS::NetStack::Socket::ExecUdpSetExtraOptionsFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpServerListenFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpServerSetExtraOptionsFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpServerGetStateFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpConnectionSendFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpConnectionGetRemoteAddressFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpConnectionCloseFuzzTest(data, size);
     return 0;
 }
