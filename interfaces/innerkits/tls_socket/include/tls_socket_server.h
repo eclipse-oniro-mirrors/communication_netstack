@@ -236,7 +236,7 @@ public:
          * @param maxBufferSize the size of the data received from the server
          * @return whether the data sent by the server is successfully received
          */
-        int Recv(char *buffer, int maxBufferSize);
+        int Recv(std::string buffer, int maxBufferSize);
 
         /**
          * Disconnect encrypted connection
@@ -377,6 +377,10 @@ public:
 
     private:
         ssl_st *ssl_ = nullptr;
+<<<<<<< HEAD
+=======
+        X509 *peerX509_ = nullptr;
+>>>>>>> feature_tlsserver_part9
         int32_t socketFd_ = 0;
 
         TlsSocket::TLSContextServer tlsContext_;
@@ -418,6 +422,10 @@ private:
 private:
     std::mutex mutex_;
     std::mutex connectMutex_;
+<<<<<<< HEAD
+=======
+    int listenSocketFd_ = -1;
+>>>>>>> feature_tlsserver_part9
     Socket::NetAddress address_;
     std::map<int, std::shared_ptr<Connection>> clientIdConnections_;
     std::map<int, std::shared_ptr<Connection>> connections_;
