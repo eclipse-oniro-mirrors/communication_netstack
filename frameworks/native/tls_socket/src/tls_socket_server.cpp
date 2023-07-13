@@ -167,7 +167,7 @@ void TLSSocketServer::Listen(const TlsSocket::TLSConnectOptions &tlsListenOption
         NETSTACK_LOGE("Listen 3 %{public}d", listenSocketFd_);
         ExecAccept(tlsListenOptions, callback);
     } else {
-        shutdown(listenSocketFd_, 2);
+        shutdown(listenSocketFd_, SHUT_RDWR);
         close(listenSocketFd_);
         listenSocketFd_ = -1;
     }
@@ -887,7 +887,7 @@ void TLSSocketServer::DropFdFromPollList(int &fd_index)
 void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOptions)
 {
     int on = 1;
-    ioctl(listenSocketFd_, FIONBIO, (char *)&on);
+    ioctl(listenSocketFd_, FIONBIO, (void *)&on);
     std::thread thread_([this, &tlsListenOptions]() {
         InitPollList(listenSocketFd_);
         int clientId = 0;
@@ -917,7 +917,6 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
     });
     thread_.detach();
 }
-
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS
