@@ -189,6 +189,9 @@ public:
      */
     [[nodiscard]] const std::vector<std::string> &GetCrlChain() const;
 
+    void SetVerifyMode(VerifyMode verifyMode);
+    [[nodiscard]] VerifyMode GetVerifyMode() const;
+
 private:
     std::vector<std::string> caChain_;
     std::string cert_;
@@ -199,6 +202,7 @@ private:
     std::string signatureAlgorithms_;
     std::string cipherSuite_;
     std::vector<std::string> crlChain_;
+    VerifyMode TLSVerifyMode_ = VerifyMode::ONE_WAY_MODE;
 };
 
 /**
