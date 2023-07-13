@@ -164,14 +164,17 @@ const std::string &TLSServerSendOptions::GetSendData() const
     return data_;
 }
 
-TLSSocketServer::~TLSSocketServer()
-{
+TLSSocketServer::~TLSSocketServer() {
+
     isRunning_ = false;
+
 
     connections_.clear();
     clientIdConnections_.clear();
 
-    if (listenSocketFd_ != -1) {
+
+    if (listenSocketFd_ != -1)
+    {
         shutdown(listenSocketFd_, 2);
         close(listenSocketFd_);
         listenSocketFd_ = -1;
@@ -301,16 +304,16 @@ bool TLSSocketServer::Send(const TLSServerSendOptions &data, const TlsSocket::Se
 
 void TLSSocketServer::CallSendCallback(int32_t err, TlsSocket::SendCallback callback)
 {
-    TlsSocket::SendCallback func = nullptr;
+    TlsSocket::SendCallback CallBackfunc = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (callback) {
-            func = callback;
+            CallBackfunc = callback;
         }
     }
 
-    if (func) {
-        func(err);
+    if (CallBackfunc) {
+        CallBackfunc(err);
     }
 }
 
@@ -392,16 +395,16 @@ void TLSSocketServer::GetState(const TlsSocket::GetStateCallback &callback)
 void TLSSocketServer::CallGetStateCallback(int32_t err, const Socket::SocketStateBase &state,
                                            TlsSocket::GetStateCallback callback)
 {
-    TlsSocket::GetStateCallback func = nullptr;
+    TlsSocket::GetStateCallback CallBackfunc = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (callback) {
-            func = callback;
+            CallBackfunc = callback;
         }
     }
 
-    if (func) {
-        func(err, state);
+    if (CallBackfunc) {
+        CallBackfunc(err, state);
     }
 }
 bool TLSSocketServer::SetExtraOptions(const Socket::TCPExtraOptions &tcpExtraOptions,
@@ -588,16 +591,16 @@ void TLSSocketServer::Connection::OffError()
 
 void TLSSocketServer::Connection::CallOnErrorCallback(int32_t err, const std::string &errString)
 {
-    TlsSocket::OnErrorCallback func = nullptr;
+    TlsSocket::OnErrorCallback CallBackfunc = nullptr;
     {
 
         if (onErrorCallback_) {
-            func = onErrorCallback_;
+            CallBackfunc = onErrorCallback_;
         }
     }
 
-    if (func) {
-        func(err, errString);
+    if (CallBackfunc) {
+        CallBackfunc(err, errString);
     }
 }
 void TLSSocketServer::OffError()
@@ -625,16 +628,16 @@ void TLSSocketServer::MakeIpSocket(sa_family_t family)
 
 void TLSSocketServer::CallOnErrorCallback(int32_t err, const std::string &errString)
 {
-    TlsSocket::OnErrorCallback func = nullptr;
+    TlsSocket::OnErrorCallback CallBackfunc = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (onErrorCallback_) {
-            func = onErrorCallback_;
+            CallBackfunc = onErrorCallback_;
         }
     }
 
-    if (func) {
-        func(err, errString);
+    if (CallBackfunc) {
+        CallBackfunc(err, errString);
     }
 }
 void TLSSocketServer::GetAddr(const Socket::NetAddress &address, sockaddr_in *addr4, sockaddr_in6 *addr6,
@@ -673,16 +676,16 @@ std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionByCli
 
 void TLSSocketServer::CallListenCallback(int32_t err, ListenCallback callback)
 {
-    ListenCallback func = nullptr;
+    ListenCallback CallBackfunc = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (callback) {
-            func = callback;
+            CallBackfunc = callback;
         }
     }
 
-    if (func) {
-        func(err);
+    if (CallBackfunc) {
+        CallBackfunc(err);
     }
 }
 
@@ -696,7 +699,7 @@ const TlsSocket::X509CertRawData &TLSSocketServer::Connection::GetRemoteCertRawD
     return remoteRawData_;
 }
 
-TLSSocketServer::Connection::~Connection()
+TLSSocketServer::Connection::~Connection() 
 {
     Close();
 }
@@ -775,10 +778,11 @@ bool TLSSocketServer::Connection::Close()
     }
     SSL_free(ssl_);
     ssl_ = nullptr;
-    if (socketFd_ != -1) {
-        shutdown(socketFd_, 2);
-        close(socketFd_);
-        socketFd_ = -1;
+    if (socketFd_ != -1)
+    {
+    shutdown(socketFd_, 2);
+    close(socketFd_);
+    socketFd_ = -1;
     }
     if (!tlsContextServerPointer_) {
         NETSTACK_LOGE("Tls context pointer is null");
@@ -1246,15 +1250,15 @@ int TLSSocketServer::RecvRemoteInfo(int socketFd)
 void TLSSocketServer::Connection::CallOnMessageCallback(int32_t socketFd, const std::string &data,
                                                         const Socket::SocketRemoteInfo &remoteInfo)
 {
-    OnMessageCallback func = nullptr;
+    OnMessageCallback CallBackfunc = nullptr;
     {
         if (onMessageCallback_) {
-            func = onMessageCallback_;
+            CallBackfunc = onMessageCallback_;
         }
     }
 
-    if (func) {
-        func(socketFd, data, remoteInfo);
+    if (CallBackfunc) {
+        CallBackfunc(socketFd, data, remoteInfo);
     }
 }
 void TLSSocketServer::AddConnect(int socketFd, std::shared_ptr<Connection> connection)
@@ -1263,32 +1267,31 @@ void TLSSocketServer::AddConnect(int socketFd, std::shared_ptr<Connection> conne
     connections_[socketFd] = connection;
     clientIdConnections_[connection->GetClientID()] = connection;
 }
-void TLSSocketServer::Connection::CallOnCloseCallback(const int32_t socketFd)
-{
-    OnCloseCallback func = nullptr;
+void TLSSocketServer::Connection::CallOnCloseCallback(const int32_t socketFd) {
+    OnCloseCallback CallBackfunc = nullptr;
     {
         if (onCloseCallback_) {
-            func = onCloseCallback_;
+            CallBackfunc = onCloseCallback_;
         }
     }
 
-    if (func) {
-        func(socketFd);
+    if (CallBackfunc) {
+        CallBackfunc(socketFd);
     }
 }
 
 void TLSSocketServer::CallOnConnectCallback(const int32_t socketFd, std::shared_ptr<EventManager> eventManager)
 {
-    OnConnectCallback func = nullptr;
+    OnConnectCallback CallBackfunc = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (onConnectCallback_) {
-            func = onConnectCallback_;
+            CallBackfunc = onConnectCallback_;
         }
     }
 
-    if (func) {
-        func(socketFd, eventManager);
+    if (CallBackfunc) {
+        CallBackfunc(socketFd, eventManager);
     } else {
         NETSTACK_LOGE("CallOnConnectCallback  fun === null");
     }
