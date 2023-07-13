@@ -625,7 +625,7 @@ bool TLSSocketServer::Connection::SetRemoteCertRawData()
         NETSTACK_LOGE("Failed to convert peerX509 to der format");
         return false;
     }
-       return true;
+    return true;
 }
 
 static bool StartsWith(const std::string &s, const std::string &prefix)
@@ -706,7 +706,7 @@ std::string TLSSocketServer::Connection::CheckServerIdentityLegal(const std::str
                                                                   const X509 *x509Certificates)
 {
     ASN1_OCTET_STRING *extData = X509_EXTENSION_get_data(ext);
-    std::string altNames = ""
+    std::string altNames = "";
     std::string hostname = "" + hostName;
     BIO *bio = BIO_new(BIO_s_file());
     if (!bio) {
