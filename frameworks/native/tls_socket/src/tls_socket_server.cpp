@@ -40,7 +40,10 @@ constexpr int SSL_RET_CODE = 0;
 constexpr int BUF_SIZE = 2048;
 constexpr int OFFSET = 2;
 constexpr int SSL_ERROR_RETURN = -1;
+<<<<<<< HEAD
 constexpr int REMOTE_CERT_LEN = 8192;
+=======
+>>>>>>> feature_tlsserver_part11
 constexpr int COMMON_NAME_BUF_SIZE = 256;
 constexpr int LISETEN_COUNT = 516;
 constexpr const char *SPLIT_HOST_NAME = ".";
@@ -48,6 +51,7 @@ constexpr const char *SPLIT_ALT_NAMES = ",";
 constexpr const char *DNS = "DNS:";
 constexpr const char *HOST_NAME = "hostname: ";
 constexpr const char *IP_ADDRESS = "IP Address:";
+<<<<<<< HEAD
 constexpr const char *SIGN_NID_RSA = "RSA+";
 constexpr const char *SIGN_NID_RSA_PSS = "RSA-PSS+";
 constexpr const char *SIGN_NID_DSA = "DSA+";
@@ -58,6 +62,8 @@ constexpr const char *SIGN_NID_UNDEF_ADD = "UNDEF+";
 constexpr const char *PROTOCOL_UNKNOW = "UNKNOW_PROTOCOL";
 constexpr const char *SIGN_NID_UNDEF = "UNDEF";
 constexpr const char *OPERATOR_PLUS_SIGN = "+";
+=======
+>>>>>>> feature_tlsserver_part11
 constexpr const char *UNKNOW_REASON = "Unknown reason";
 constexpr const char *IP = "IP: ";
 const std::regex JSON_STRING_PATTERN{R"(/^"(?:[^"\\\u0000-\u001f]|\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4}))*"/)"};
@@ -65,7 +71,10 @@ const std::regex PATTERN{
     "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|"
     "2[0-4][0-9]|[01]?[0-9][0-9]?)"};
 int g_userCounter = 0;
+<<<<<<< HEAD
 
+=======
+>>>>>>> feature_tlsserver_part11
 bool IsIP(const std::string &ip)
 {
     std::regex pattern(PATTERN);
@@ -85,7 +94,10 @@ bool SeekIntersection(std::vector<std::string> &vecA, std::vector<std::string> &
     set_intersection(vecA.begin(), vecA.end(), vecB.begin(), vecB.end(), inserter(result, result.begin()));
     return !result.empty();
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> feature_tlsserver_part11
 int ConvertErrno()
 {
     return TlsSocket::TlsSocketError::TLS_ERR_SYS_BASE + errno;
@@ -164,6 +176,7 @@ const std::string &TLSServerSendOptions::GetSendData() const
     return data_;
 }
 
+<<<<<<< HEAD
 TLSSocketServer::~TLSSocketServer()
 {
     isRunning_ = false;
@@ -177,6 +190,8 @@ TLSSocketServer::~TLSSocketServer()
     }
 }
 
+=======
+>>>>>>> feature_tlsserver_part11
 void TLSSocketServer::Listen(const TlsSocket::TLSConnectOptions &tlsListenOptions, const ListenCallback &callback)
 {
     if (!CommonUtils::HasInternetPermission()) {
@@ -298,6 +313,7 @@ bool TLSSocketServer::Send(const TLSServerSendOptions &data, const TlsSocket::Se
     return res;
 }
 
+<<<<<<< HEAD
 void TLSSocketServer::CallSendCallback(int32_t err, TlsSocket::SendCallback callback)
 {
     TlsSocket::SendCallback CallBackfunc = nullptr;
@@ -387,10 +403,22 @@ void TLSSocketServer::GetState(const TlsSocket::GetStateCallback &callback)
     // state.SetIsAccept(ret == 0);
     CallGetStateCallback(TlsSocket::TLSSOCKET_SUCCESS, state, callback);
 }
+=======
+void TLSSocketServer::CallSendCallback(int32_t err, TlsSocket::SendCallback callback) {}
+
+void TLSSocketServer::Close(const int socketFd, const TlsSocket::CloseCallback &callback) {}
+
+void TLSSocketServer::Stop(const TlsSocket::CloseCallback &callback) {}
+
+void TLSSocketServer::GetRemoteAddress(const int socketFd, const TlsSocket::GetRemoteAddressCallback &callback) {}
+
+void TLSSocketServer::GetState(const TlsSocket::GetStateCallback &callback) {}
+>>>>>>> feature_tlsserver_part11
 
 void TLSSocketServer::CallGetStateCallback(int32_t err, const Socket::SocketStateBase &state,
                                            TlsSocket::GetStateCallback callback)
 {
+<<<<<<< HEAD
     TlsSocket::GetStateCallback CallBackfunc = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -434,6 +462,13 @@ bool TLSSocketServer::SetExtraOptions(const Socket::TCPExtraOptions &tcpExtraOpt
         return false;
     }
 
+=======
+}
+
+bool TLSSocketServer::SetExtraOptions(const Socket::TCPExtraOptions &tcpExtraOptions,
+                                      const TlsSocket::SetExtraOptionsCallback &callback)
+{
+>>>>>>> feature_tlsserver_part11
     return true;
 }
 
@@ -447,6 +482,7 @@ void TLSSocketServer::SetLocalTlsConfiguration(const TlsSocket::TLSConnectOption
     TLSServerConfiguration_.SetVerifyMode(config.GetTlsSecureOptions().GetVerifyMode());
 }
 
+<<<<<<< HEAD
 void TLSSocketServer::GetCertificate(const TlsSocket::GetCertificateCallback &callback)
 {
     const auto &cert = TLSServerConfiguration_.GetCertificate();
@@ -478,6 +514,12 @@ void TLSSocketServer::GetRemoteCertificate(const int socketFd, const TlsSocket::
         return;
     }
     callback(TlsSocket::TLSSOCKET_SUCCESS, remoteCert);
+=======
+void TLSSocketServer::GetCertificate(const TlsSocket::GetCertificateCallback &callback) {}
+
+void TLSSocketServer::GetRemoteCertificate(const int socketFd, const TlsSocket::GetRemoteCertificateCallback &callback)
+{
+>>>>>>> feature_tlsserver_part11
 }
 
 void TLSSocketServer::GetProtocol(const TlsSocket::GetProtocolCallback &callback)
@@ -488,6 +530,7 @@ void TLSSocketServer::GetProtocol(const TlsSocket::GetProtocolCallback &callback
     callback(TlsSocket::TLSSOCKET_SUCCESS, TlsSocket::PROTOCOL_TLS_V12);
 }
 
+<<<<<<< HEAD
 void TLSSocketServer::GetCipherSuite(const int socketFd, const TlsSocket::GetCipherSuiteCallback &callback)
 {
     auto connect_iterator = clientIdConnections_.find(socketFd);
@@ -508,10 +551,14 @@ void TLSSocketServer::GetCipherSuite(const int socketFd, const TlsSocket::GetCip
     }
     callback(TlsSocket::TLSSOCKET_SUCCESS, cipherSuite);
 }
+=======
+void TLSSocketServer::GetCipherSuite(const int socketFd, const TlsSocket::GetCipherSuiteCallback &callback) {}
+>>>>>>> feature_tlsserver_part11
 
 void TLSSocketServer::GetSignatureAlgorithms(const int socketFd,
                                              const TlsSocket::GetSignatureAlgorithmsCallback &callback)
 {
+<<<<<<< HEAD
     auto connect_iterator = clientIdConnections_.find(socketFd);
     if (connect_iterator == clientIdConnections_.end()) {
         NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", socketFd);
@@ -529,6 +576,8 @@ void TLSSocketServer::GetSignatureAlgorithms(const int socketFd,
         return;
     }
     callback(TlsSocket::TLSSOCKET_SUCCESS, signatureAlgorithms);
+=======
+>>>>>>> feature_tlsserver_part11
 }
 
 void TLSSocketServer::Connection::OnMessage(const OnMessageCallback &onMessageCallback)
@@ -585,6 +634,7 @@ void TLSSocketServer::Connection::OffError()
     onErrorCallback_ = nullptr;
 }
 
+<<<<<<< HEAD
 void TLSSocketServer::Connection::CallOnErrorCallback(int32_t err, const std::string &errString)
 {
     TlsSocket::OnErrorCallback CallBackfunc = nullptr;
@@ -656,10 +706,24 @@ void TLSSocketServer::GetAddr(const Socket::NetAddress &address, sockaddr_in *ad
         *addr = reinterpret_cast<sockaddr *>(addr6);
         *len = sizeof(sockaddr_in6);
     }
+=======
+void TLSSocketServer::Connection::CallOnErrorCallback(int32_t err, const std::string &errString) {}
+
+void TLSSocketServer::OffError() {}
+
+void TLSSocketServer::MakeIpSocket(sa_family_t family) {}
+
+void TLSSocketServer::CallOnErrorCallback(int32_t err, const std::string &errString) {}
+
+void TLSSocketServer::GetAddr(const Socket::NetAddress &address, sockaddr_in *addr4, sockaddr_in6 *addr6,
+                              sockaddr **addr, socklen_t *len)
+{
+>>>>>>> feature_tlsserver_part11
 }
 
 std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionByClientID(int clientid)
 {
+<<<<<<< HEAD
     std::shared_ptr<Connection> ptrConnection = nullptr;
 
     auto it = clientIdConnections_.find(clientid);
@@ -684,6 +748,12 @@ void TLSSocketServer::CallListenCallback(int32_t err, ListenCallback callback)
         CallBackfunc(err);
     }
 }
+=======
+    return nullptr;
+}
+
+void TLSSocketServer::CallListenCallback(int32_t err, ListenCallback callback) {}
+>>>>>>> feature_tlsserver_part11
 
 void TLSSocketServer::Connection::SetAddress(const Socket::NetAddress address)
 {
@@ -695,11 +765,14 @@ const TlsSocket::X509CertRawData &TLSSocketServer::Connection::GetRemoteCertRawD
     return remoteRawData_;
 }
 
+<<<<<<< HEAD
 TLSSocketServer::Connection::~Connection()
 {
     Close();
 }
 
+=======
+>>>>>>> feature_tlsserver_part11
 bool TLSSocketServer::Connection::TlsAcceptToHost(int sock, const TlsSocket::TLSConnectOptions &options)
 {
     SetTlsConfiguration(options);
@@ -715,11 +788,19 @@ bool TLSSocketServer::Connection::TlsAcceptToHost(int sock, const TlsSocket::TLS
     if (!protocolVec.empty()) {
         connectionConfiguration_.SetProtocol(protocolVec);
     }
+<<<<<<< HEAD
     connectionConfiguration_.SetVerifyMode(options.GetTlsSecureOptions().GetVerifyMode());
+=======
+
+    connectionConfiguration_.SetVerifyMode(options.GetTlsSecureOptions().GetVerifyMode());
+    NETSTACK_LOGI("TLSSocketServer::Connection::TlsAcceptToHost  connectionConfiguration_GetVerifyMode() :%{public}d",
+                  connectionConfiguration_.GetVerifyMode());
+>>>>>>> feature_tlsserver_part11
     socketFd_ = sock;
     return StartTlsAccept(options);
 }
 
+<<<<<<< HEAD
 void TLSSocketServer::Connection::SetTlsConfiguration(const TlsSocket::TLSConnectOptions &config)
 {
     connectionConfiguration_.SetPrivateKey(config.GetTlsSecureOptions().GetKey(),
@@ -757,10 +838,23 @@ int TLSSocketServer::Connection::Recv(char *buffer, int maxBufferSize)
         return SSL_ERROR_RETURN;
     }
     return SSL_read(ssl_, buffer, maxBufferSize);
+=======
+void TLSSocketServer::Connection::SetTlsConfiguration(const TlsSocket::TLSConnectOptions &config) {}
+
+bool TLSSocketServer::Connection::Send(const std::string &data)
+{
+    return true;
+}
+
+int TLSSocketServer::Connection::Recv(std::string buffer, int maxBufferSize)
+{
+    return 0;
+>>>>>>> feature_tlsserver_part11
 }
 
 bool TLSSocketServer::Connection::Close()
 {
+<<<<<<< HEAD
     if (!ssl_) {
         NETSTACK_LOGE("ssl is null");
         return false;
@@ -785,11 +879,14 @@ bool TLSSocketServer::Connection::Close()
     }
     tlsContextServerPointer_->CloseCtx();
     CallOnCloseCallback(clientID_);
+=======
+>>>>>>> feature_tlsserver_part11
     return true;
 }
 
 bool TLSSocketServer::Connection::SetAlpnProtocols(const std::vector<std::string> &alpnProtocols)
 {
+<<<<<<< HEAD
     if (!ssl_) {
         NETSTACK_LOGE("ssl is null");
         return false;
@@ -825,6 +922,12 @@ void TLSSocketServer::Connection::MakeRemoteInfo(Socket::SocketRemoteInfo &remot
     remoteInfo.SetPort(address_.GetPort());
     remoteInfo.SetFamily(address_.GetSaFamily());
 }
+=======
+    return true;
+}
+
+void TLSSocketServer::Connection::MakeRemoteInfo(Socket::SocketRemoteInfo &remoteInfo) {}
+>>>>>>> feature_tlsserver_part11
 
 TlsSocket::TLSConfiguration TLSSocketServer::Connection::GetTlsConfiguration() const
 {
@@ -869,6 +972,7 @@ std::vector<std::string> TLSSocketServer::Connection::GetSignatureAlgorithms() c
 
 std::string TLSSocketServer::Connection::GetProtocol() const
 {
+<<<<<<< HEAD
     if (!ssl_) {
         NETSTACK_LOGE("ssl in null");
         return PROTOCOL_UNKNOW;
@@ -876,11 +980,14 @@ std::string TLSSocketServer::Connection::GetProtocol() const
     if (connectionConfiguration_.GetProtocol() == TlsSocket::TLS_V1_3) {
         return TlsSocket::PROTOCOL_TLS_V13;
     }
+=======
+>>>>>>> feature_tlsserver_part11
     return TlsSocket::PROTOCOL_TLS_V12;
 }
 
 bool TLSSocketServer::Connection::SetSharedSigals()
 {
+<<<<<<< HEAD
     if (!ssl_) {
         NETSTACK_LOGE("ssl is null");
         return false;
@@ -922,6 +1029,8 @@ bool TLSSocketServer::Connection::SetSharedSigals()
         sig_with_md += (sn_hash != nullptr) ? std::string(sn_hash) : SIGN_NID_UNDEF;
         signatureAlgorithms_.push_back(sig_with_md);
     }
+=======
+>>>>>>> feature_tlsserver_part11
     return true;
 }
 
@@ -1030,6 +1139,7 @@ bool TLSSocketServer::Connection::StartShakingHands(const TlsSocket::TLSConnectO
 
 bool TLSSocketServer::Connection::GetRemoteCertificateFromPeer()
 {
+<<<<<<< HEAD
     peerX509_ = SSL_get_peer_certificate(ssl_);
 
     if (SSL_get_verify_result(ssl_) == X509_V_OK) {
@@ -1057,6 +1167,8 @@ bool TLSSocketServer::Connection::GetRemoteCertificateFromPeer()
     }
     BIO_free(bio);
     remoteCert_ = std::string(data);
+=======
+>>>>>>> feature_tlsserver_part11
     return true;
 }
 
@@ -1071,12 +1183,15 @@ bool TLSSocketServer::Connection::SetRemoteCertRawData()
         NETSTACK_LOGE("Failed to convert peerX509 to der format");
         return false;
     }
+<<<<<<< HEAD
     unsigned char *der = nullptr;
     (void)i2d_X509(peerX509_, &der);
     TlsSocket::SecureData data(der, length);
     remoteRawData_.data = data;
     OPENSSL_free(der);
     remoteRawData_.encodingFormat = TlsSocket::EncodingFormat::DER;
+=======
+>>>>>>> feature_tlsserver_part11
     return true;
 }
 
@@ -1099,13 +1214,21 @@ void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> dns
         return;
     }
     std::string tempHostName = "" + hostName;
+<<<<<<< HEAD
+=======
+    std::string tempMsg = "";
+>>>>>>> feature_tlsserver_part11
     if (!dnsNames.empty() || index > 0) {
         std::vector<std::string> hostParts = SplitHostName(tempHostName);
         if (!dnsNames.empty()) {
             valid = SeekIntersection(hostParts, dnsNames);
+<<<<<<< HEAD
             if (!valid) {
                 reason = HOST_NAME + tempHostName + ". is not in the cert's altnames";
             }
+=======
+            tempMsg = ". is not in the cert's altnames";
+>>>>>>> feature_tlsserver_part11
         } else {
             char commonNameBuf[COMMON_NAME_BUF_SIZE] = {0};
             X509_NAME *pSubName = nullptr;
@@ -1114,11 +1237,21 @@ void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> dns
                 std::vector<std::string> commonNameVec;
                 commonNameVec.emplace_back(commonNameBuf);
                 valid = SeekIntersection(hostParts, commonNameVec);
+<<<<<<< HEAD
                 if (!valid) {
                     reason = HOST_NAME + tempHostName + ". is not cert's CN";
                 }
             }
         }
+=======
+                tempMsg = ". is not cert's CN";
+            }
+        }
+        if (!valid) {
+            reason = HOST_NAME + tempHostName + tempMsg;
+        }
+
+>>>>>>> feature_tlsserver_part11
         result = {valid, reason};
         return;
     }
@@ -1157,7 +1290,11 @@ std::string TLSSocketServer::Connection::CheckServerIdentityLegal(const std::str
                                                                   const X509 *x509Certificates)
 {
     ASN1_OCTET_STRING *extData = X509_EXTENSION_get_data(ext);
+<<<<<<< HEAD
     std::string altNames = reinterpret_cast<char *>(extData->data);
+=======
+    std::string altNames = "";
+>>>>>>> feature_tlsserver_part11
     std::string hostname = "" + hostName;
     BIO *bio = BIO_new(BIO_s_file());
     if (!bio) {
@@ -1208,7 +1345,10 @@ void TLSSocketServer::RemoveConnect(int socketFd)
 
     for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end();) {
         if (it->second->GetSocketFd() == socketFd) {
+<<<<<<< HEAD
 
+=======
+>>>>>>> feature_tlsserver_part11
             it = clientIdConnections_.erase(it);
             break;
         } else {
@@ -1249,6 +1389,7 @@ int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
 void TLSSocketServer::Connection::CallOnMessageCallback(int32_t socketFd, const std::string &data,
                                                         const Socket::SocketRemoteInfo &remoteInfo)
 {
+<<<<<<< HEAD
     OnMessageCallback CallBackfunc = nullptr;
     {
         if (onMessageCallback_) {
@@ -1259,6 +1400,8 @@ void TLSSocketServer::Connection::CallOnMessageCallback(int32_t socketFd, const 
     if (CallBackfunc) {
         CallBackfunc(socketFd, data, remoteInfo);
     }
+=======
+>>>>>>> feature_tlsserver_part11
 }
 void TLSSocketServer::AddConnect(int socketFd, std::shared_ptr<Connection> connection)
 {
@@ -1266,6 +1409,7 @@ void TLSSocketServer::AddConnect(int socketFd, std::shared_ptr<Connection> conne
     connections_[socketFd] = connection;
     clientIdConnections_[connection->GetClientID()] = connection;
 }
+<<<<<<< HEAD
 void TLSSocketServer::Connection::CallOnCloseCallback(const int32_t socketFd)
 {
     OnCloseCallback CallBackfunc = nullptr;
@@ -1296,6 +1440,10 @@ void TLSSocketServer::CallOnConnectCallback(const int32_t socketFd, std::shared_
         NETSTACK_LOGE("CallOnConnectCallback  fun === null");
     }
 }
+=======
+void TLSSocketServer::Connection::CallOnCloseCallback(const int32_t socketFd) {}
+void TLSSocketServer::CallOnConnectCallback(const int32_t socketFd, std::shared_ptr<EventManager> eventManager) {}
+>>>>>>> feature_tlsserver_part11
 void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsListenOptions, int clientID)
 {
     struct sockaddr_in clientAddress;
@@ -1318,6 +1466,10 @@ void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsLi
     netAddress.SetFamilyBySaFamily(address_.GetSaFamily());
     connection->SetAddress(netAddress);
     connection->SetClientID(clientID);
+<<<<<<< HEAD
+=======
+
+>>>>>>> feature_tlsserver_part11
     auto res = connection->TlsAcceptToHost(connectFD, tlsListenOptions);
     if (!res) {
         int resErr = ConvertSSLError(connection->GetSSL());
@@ -1370,6 +1522,7 @@ void TLSSocketServer::DropFdFromPollList(int &fd_index)
 void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOptions)
 {
     int on = 1;
+<<<<<<< HEAD
     isRunning_ = true;
     ioctl(listenSocketFd_, FIONBIO, (char *)&on);
     NETSTACK_LOGE("PollThread  start working %{public}d", isRunning_);
@@ -1378,6 +1531,13 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
         InitPollList(listenSocketFd_);
         int clientId = 0;
         while (isRunning_) {
+=======
+    ioctl(listenSocketFd_, FIONBIO, (void *)&on);
+    std::thread thread_([this, &tlsListenOptions]() {
+        InitPollList(listenSocketFd_);
+        int clientId = 0;
+        while (1) {
+>>>>>>> feature_tlsserver_part11
             int ret = poll(fds_, g_userCounter + 1, 2000);
             if (ret < 0) {
                 int resErr = ConvertErrno();
@@ -1390,20 +1550,31 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
             }
             for (int i = 0; i < g_userCounter + 1; ++i) {
                 if ((fds_[i].fd == listenSocketFd_) && (fds_[i].revents & POLLIN)) {
+<<<<<<< HEAD
                     ProcessTcpAccept(tlsOption, ++clientId);
+=======
+                    ProcessTcpAccept(tlsListenOptions, ++clientId);
+>>>>>>> feature_tlsserver_part11
                 } else if ((fds_[i].revents & POLLRDHUP) || (fds_[i].revents & POLLERR)) {
                     RemoveConnect(fds_[i].fd);
                     DropFdFromPollList(i);
                     NETSTACK_LOGI("A client left");
                 } else if (fds_[i].revents & POLLIN) {
+<<<<<<< HEAD
                     RecvRemoteInfo(fds_[i].fd, i);
+=======
+                    auto res = RecvRemoteInfo(fds_[i].fd, i);
+>>>>>>> feature_tlsserver_part11
                 }
             }
         }
     });
     thread_.detach();
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> feature_tlsserver_part11
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS
