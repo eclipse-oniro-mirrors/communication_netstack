@@ -32,6 +32,7 @@ TLSConfiguration::TLSConfiguration(const TLSConfiguration &other)
     minProtocol_ = other.minProtocol_;
     maxProtocol_ = other.maxProtocol_;
     cipherSuite_ = other.cipherSuite_;
+    tlsVerifyMode_ = other.tlsVerifyMode_;
 }
 
 const TLSKey &TLSConfiguration::PrivateKey() const
@@ -50,6 +51,7 @@ TLSConfiguration &TLSConfiguration::operator=(const TLSConfiguration &other)
     caCertificateChain_ = other.caCertificateChain_;
     signatureAlgorithms_ = other.signatureAlgorithms_;
     privateKey_ = other.privateKey_;
+    tlsVerifyMode_ = other.tlsVerifyMode_;
     return *this;
 }
 
@@ -176,6 +178,14 @@ TLSCertificate TLSConfiguration::GetLocalCertificate() const
 TLSKey TLSConfiguration::GetPrivateKey() const
 {
     return privateKey_;
+}
+void TLSConfiguration::SetVerifyMode(VerifyMode verifyMode)
+{
+    tlsVerifyMode_ = verifyMode;
+}
+VerifyMode TLSConfiguration::GetVerifyMode() const
+{
+    return tlsVerifyMode_;
 }
 } // namespace TlsSocket
 } // namespace NetStack
