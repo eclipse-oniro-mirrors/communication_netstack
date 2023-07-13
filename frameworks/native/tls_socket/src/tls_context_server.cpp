@@ -220,7 +220,6 @@ bool TLSContextServer::SetKeyAndCheck(TLSContextServer *tlsContext, const TLSCon
         NETSTACK_LOGE("SSL_CTX_use_PrivateKey is error");
         return false;
     }
-
     return true;
 }
 
