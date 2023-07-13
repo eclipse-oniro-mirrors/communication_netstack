@@ -91,7 +91,7 @@ public:
     TLSSocketServer &operator=(TLSSocketServer &&) = delete;
 
     TLSSocketServer() = default;
-    ~TLSSocketServer() ;
+    ~TLSSocketServer() = default;
 
     /**
      * Create sockets, bind and listen waiting for clients to connect
@@ -202,11 +202,9 @@ public:
      */
     void OffError();
 
-public:
+private:
     class Connection : public std::enable_shared_from_this<Connection> {
     public:
-
-        ~Connection();
         /**
          * Establish an encrypted accept on the specified socket
          * @param sock socket for establishing encrypted connection
@@ -440,8 +438,7 @@ private:
     void InitPollList(int &listendFd);
 
     struct pollfd fds_[USER_LIMIT + 1];
-     
-    bool isRunning_;
+
 public:
     std::shared_ptr<Connection> GetConnectionByClientID(int clientid);
 };
