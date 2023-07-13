@@ -41,7 +41,7 @@ template <class T> T GetData()
     return object;
 }
 
-inline void setGlobalFuzzData(const uint8_t *data, size_t size)
+inline void SetGlobalFuzzData(const uint8_t *data, size_t size)
 {
     g_netstackFuzzData = data;
     g_netstackFuzzSize = size;
@@ -54,7 +54,7 @@ void MakeUdpSocketFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    setGlobalFuzzData(data, size);
+    SetGlobalFuzzData(data, size);
     sa_family_t family(GetData<sa_family_t>());
     if (family == AF_INET || family == AF_INET6) {
         return;
@@ -67,7 +67,7 @@ void MakeTcpSocketFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    setGlobalFuzzData(data, size);
+    SetGlobalFuzzData(data, size);
     sa_family_t family(GetData<sa_family_t>());
     if (family == AF_INET || family == AF_INET6) {
         return;
@@ -80,7 +80,8 @@ void ExecUdpBindFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     BindContext context(env, &eventManager);
 
@@ -92,7 +93,8 @@ void ExecTcpBindFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     BindContext context(env, &eventManager);
 
@@ -104,7 +106,8 @@ void ExecUdpSendFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     UdpSendContext context(env, &eventManager);
 
@@ -116,7 +119,8 @@ void ExecTcpSendFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     TcpSendContext context(env, &eventManager);
 
@@ -128,7 +132,8 @@ void ExecConnectFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     ConnectContext context(env, &eventManager);
 
@@ -140,7 +145,8 @@ void ExecCloseFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     CloseContext context(env, &eventManager);
 
@@ -152,7 +158,8 @@ void ExecGetStateFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     GetStateContext context(env, &eventManager);
 
@@ -164,7 +171,8 @@ void ExecGetRemoteAddressFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     GetRemoteAddressContext context(env, &eventManager);
 
@@ -176,7 +184,8 @@ void ExecTcpSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     TcpSetExtraOptionsContext context(env, &eventManager);
 
@@ -188,7 +197,8 @@ void ExecUdpSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     UdpSetExtraOptionsContext context(env, &eventManager);
 
@@ -200,7 +210,8 @@ void ExecTcpServerListenFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     BindContext context(env, &eventManager);
 
@@ -212,7 +223,8 @@ void ExecTcpServerSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     TcpSetExtraOptionsContext context(env, &eventManager);
 
@@ -224,7 +236,8 @@ void ExecTcpServerGetStateFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     GetStateContext context(env, &eventManager);
 
@@ -236,7 +249,8 @@ void ExecTcpConnectionSendFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     TcpSendContext context(env, &eventManager);
 
@@ -248,7 +262,8 @@ void ExecTcpConnectionGetRemoteAddressFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     TcpConnectionGetRemoteAddressContext context(env, &eventManager);
 
@@ -260,7 +275,8 @@ void ExecTcpConnectionCloseFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     CloseContext context(env, &eventManager);
 
