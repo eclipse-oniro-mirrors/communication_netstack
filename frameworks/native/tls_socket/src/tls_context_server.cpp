@@ -221,19 +221,6 @@ bool TLSContextServer::SetKeyAndCheck(TLSContextServer *tlsContext, const TLSCon
         return false;
     }
 
-<<<<<<< HEAD
-    if (!configuration.GetPrivateKey().GetKeyPass().Length()) {
-        SSL_CTX_set_default_passwd_cb_userdata(tlsContext->ctx_,
-                                               reinterpret_cast<void *>(const_cast<char *>(
-                                                   tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyPass().Data())));
-    }
-    // Check if the certificate matches the private key.
-    if (!SSL_CTX_check_private_key(tlsContext->ctx_)) {
-        NETSTACK_LOGE("Check if the certificate matches the private key is error");
-        return false;
-    }
-=======
->>>>>>> feature_tlsserver_part9
     return true;
 }
 
