@@ -190,6 +190,7 @@ public:
     [[nodiscard]] const std::vector<std::string> &GetCrlChain() const;
 
     void SetVerifyMode(VerifyMode verifyMode);
+
     [[nodiscard]] VerifyMode GetVerifyMode() const;
 
 private:
