@@ -41,7 +41,7 @@ static constexpr const int DEFAULT_BUFFER_SIZE = 8192;
 
 static constexpr const int DEFAULT_POLL_TIMEOUT = 500; // 0.5 Seconds
 
-static constexpr const int ADDRESS_INVALID = -1;
+static constexpr const int ADDRESS_INVALID = 99;
 
 static constexpr const int NO_MEMORY = -2;
 
@@ -52,6 +52,8 @@ static constexpr const int MAX_SEC = 999999999;
 static constexpr const int USER_LIMIT = 511;
 
 static constexpr const int ERR_SYS_BASE = 2303100;
+
+static constexpr const int MAX_CLIENTS = 1024;
 
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
@@ -738,7 +740,7 @@ bool ExecBind(BindContext *context)
     socklen_t len;
     GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
-        NETSTACK_LOGE("addr family error");
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -780,7 +782,7 @@ bool ExecUdpBind(BindContext *context)
     socklen_t len;
     GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
-        NETSTACK_LOGE("addr family error");
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -823,7 +825,7 @@ bool ExecUdpSend(UdpSendContext *context)
     socklen_t len;
     GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
-        NETSTACK_LOGE("addr family error");
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -854,7 +856,7 @@ bool ExecConnect(ConnectContext *context)
     socklen_t len;
     GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
-        NETSTACK_LOGE("addr family error");
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -886,7 +888,7 @@ bool ExecTcpSend(TcpSendContext *context)
     sockaddr sockAddr = {0};
     socklen_t len = sizeof(sockaddr);
     if (getsockname(context->GetSocketFd(), &sockAddr, &len) < 0) {
-        NETSTACK_LOGE("get sock name failed");
+        NETSTACK_LOGE("get sock name failed, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -986,6 +988,7 @@ bool ExecGetState(GetStateContext *context)
     }
 
     if (addr == nullptr) {
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -1038,6 +1041,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 
         std::string address = MakeAddressString(reinterpret_cast<sockaddr *>(&addr4));
         if (address.empty()) {
+            NETSTACK_LOGE("addr family error, address invalid");
             context->SetErrorCode(ADDRESS_INVALID);
             return false;
         }
@@ -1057,6 +1061,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 
         std::string address = MakeAddressString(reinterpret_cast<sockaddr *>(&addr6));
         if (address.empty()) {
+            NETSTACK_LOGE("addr family error, address invalid");
             context->SetErrorCode(ADDRESS_INVALID);
             return false;
         }
@@ -1162,6 +1167,7 @@ static bool GetIPv4Address(TcpConnectionGetRemoteAddressContext *context, int32_
 
     std::string address = MakeAddressString(reinterpret_cast<sockaddr *>(&addr4));
     if (address.empty()) {
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -1184,6 +1190,7 @@ static bool GetIPv6Address(TcpConnectionGetRemoteAddressContext *context, int32_
 
     std::string address = MakeAddressString(reinterpret_cast<sockaddr *>(&addr6));
     if (address.empty()) {
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -1242,7 +1249,7 @@ static bool IsRemoteConnect(TcpSendContext *context, int32_t clientFd)
     sockaddr sockAddr = {0};
     socklen_t len = sizeof(sockaddr);
     if (getsockname(clientFd, &sockAddr, &len) < 0) {
-        NETSTACK_LOGE("get sock name failed");
+        NETSTACK_LOGE("get sock name failed, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -1349,7 +1356,7 @@ static bool ServerBind(BindContext *context)
     socklen_t len;
     GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
-        NETSTACK_LOGE("addr family error");
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -1456,15 +1463,24 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
         if (connectFD < 0) {
             continue;
         }
-        NETSTACK_LOGI("Server accept new client SUCCESS, fd = %{public}d", connectFD);
         {
             std::lock_guard<std::mutex> lock(g_mutex);
+            if (g_clientFDs.size() >= MAX_CLIENTS) {
+                NETSTACK_LOGE("Maximum number of clients reached, connection rejected");
+                close(connectFD);
+                continue;
+            }
+            NETSTACK_LOGI("Server accept new client SUCCESS, fd = %{public}d", connectFD);
             g_userCounter++;
             g_clientFDs[g_userCounter] = connectFD;
         }
         callback.OnTcpConnectionMessage(g_userCounter);
         std::thread handlerThread(ClientHandler, connectFD, nullptr, 0, callback);
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+        pthread_setname_np(TCP_SERVER_HANDLE_CLIENT);
+#else
         pthread_setname_np(handlerThread.native_handle(), TCP_SERVER_HANDLE_CLIENT);
+#endif
         handlerThread.detach();
     }
 }
@@ -1485,7 +1501,11 @@ bool ExecTcpServerListen(BindContext *context)
     NETSTACK_LOGI("listen success");
     std::thread serviceThread(AcceptRecvData, context->GetSocketFd(), nullptr, 0,
                               TcpMessageCallback(context->GetManager()));
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(TCP_SERVER_ACCEPT_RECV_DATA);
+#else
     pthread_setname_np(serviceThread.native_handle(), TCP_SERVER_ACCEPT_RECV_DATA);
+#endif
     serviceThread.detach();
     return true;
 }
@@ -1581,6 +1601,7 @@ bool ExecTcpServerGetState(GetStateContext *context)
     }
 
     if (addr == nullptr) {
+        NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }

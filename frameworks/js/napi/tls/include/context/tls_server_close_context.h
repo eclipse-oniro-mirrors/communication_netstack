@@ -35,7 +35,7 @@ public:
     explicit TLSServerCloseContext(napi_env env, EventManager *manager);
 
 public:
-    int32_t clientId_;
+    int32_t clientId_ = 0;
     int32_t errorNumber_ = 0;
 
 public:

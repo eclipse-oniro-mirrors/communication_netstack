@@ -56,6 +56,8 @@ public:
     [[nodiscard]] bool IsManagerValid() const;
 
 private:
+    std::mutex mutexForListenersAndEmitByUv_;
+    std::mutex mutexForEmitAndEmitByUv_;
     std::mutex mutex_;
     std::list<EventListener> listeners_;
     void *data_;
