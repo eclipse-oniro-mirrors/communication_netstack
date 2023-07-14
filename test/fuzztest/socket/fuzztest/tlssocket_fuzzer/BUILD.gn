@@ -76,6 +76,7 @@ ohos_fuzztest("TlsSocketFuzzTest") {
     "$TLS/src/tls_context.cpp",
     "$TLS/src/tls_key.cpp",
     "$TLS/src/tls_socket.cpp",
+    "$TLS/src/tls_socket_server.cpp",
     "$TLS/src/tls_utils.cpp",
     "$TLS_NAPI/src/context/tls_bind_context.cpp",
     "$TLS_NAPI/src/context/tls_connect_context.cpp",
