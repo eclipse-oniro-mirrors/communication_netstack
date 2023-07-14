@@ -27,6 +27,8 @@ tls_sources = [
   "$TLS/src/tls_key.cpp",
   "$TLS/src/tls_socket.cpp",
   "$TLS/src/tls_utils.cpp",
+  
+ 
 ]
 
 tls_napi_sources = [
@@ -36,9 +38,16 @@ tls_napi_sources = [
   "$TLS_NAPI/src/context/tls_napi_context.cpp",
   "$TLS_NAPI/src/context/tls_send_context.cpp",
   "$TLS_NAPI/src/monitor.cpp",
+  "$TLS_NAPI/src/monitor_server.cpp",
   "$TLS_NAPI/src/tlssocket_async_work.cpp",
   "$TLS_NAPI/src/tlssocket_exec.cpp",
-  "$TLS_NAPI/src/tlssocket_module.cpp",
+  "$TLS_NAPI/src/tlssocket_module.cpp", 
+  "$TLS_NAPI/src/tlssocketserver_async_work.cpp",
+  "$TLS_NAPI/src/tlssocketserver_exec.cpp",
+  "$TLS_NAPI/src/tlssocketserver_module.cpp",
+  "$TLS_NAPI/src/context/tls_server_close_context.cpp",
+  "$TLS_NAPI/src/context/tls_server_napi_context.cpp",
+  "$TLS_NAPI/src/context/tls_server_send_context.cpp",
 ]
 
 socket_sources = [
