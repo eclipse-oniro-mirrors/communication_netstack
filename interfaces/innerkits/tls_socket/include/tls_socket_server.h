@@ -239,7 +239,7 @@ public:
          * @param maxBufferSize the size of the data received from the server
          * @return whether the data sent by the server is successfully received
          */
-        int Recv(std::string buffer, int maxBufferSize);
+        int Recv(char *buffer, int maxBufferSize);
 
         /**
          * Disconnect encrypted connection
