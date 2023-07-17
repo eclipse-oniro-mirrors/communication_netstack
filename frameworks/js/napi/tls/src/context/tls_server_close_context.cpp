@@ -34,8 +34,12 @@ void TLSServerCloseContext::ParseParams(napi_value *params, size_t paramsCount)
     if (!CheckParamsType(params, paramsCount)) {
         return;
     }
-    if (paramsCount == TlsSocket::PARAM_OPTIONS_AND_CALLBACK) {
+    if (paramsCount == TlsSocket::PARAM_JUST_OPTIONS) {
         SetParseOK(SetCallback(params[TlsSocket::ARG_INDEX_0]) == napi_ok);
+        return;
+    }
+    if (paramsCount == TlsSocket::PARAM_OPTIONS_AND_CALLBACK) {
+        SetParseOK(SetCallback(params[TlsSocket::ARG_INDEX_1]) == napi_ok);
         return;
     }
     SetParseOK(true);

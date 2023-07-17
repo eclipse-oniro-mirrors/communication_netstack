@@ -63,9 +63,10 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
             auto manager = static_cast<EventManager *>(data);
             if (manager != nullptr) {
                 manager->SetInvalid();
-                auto tlsConnection = static_cast<TLSSocketServer::Connection *>(manager->GetData());
-                if (tlsConnection != nullptr) {
-                    tlsConnection->Close();
+                auto tlsServer = static_cast<TLSSocketServer *>(manager->GetData());
+                if (tlsServer != nullptr) {
+                    tlsServer->CloseConnectionByEventManager(manager);
+                    tlsServer->DeleteConnectionByEventManager(manager);
                 }
             }
         },
@@ -245,6 +246,7 @@ void EventCloseCallback(uv_work_t *work, int status)
     }
     std::shared_ptr<int> ptrClientID(static_cast<int *>(workWrapper->data));
     if (ptrClientID == nullptr) {
+        NETSTACK_LOGE("ptrClientID == nullptr");
         delete workWrapper;
         delete work;
         return;
