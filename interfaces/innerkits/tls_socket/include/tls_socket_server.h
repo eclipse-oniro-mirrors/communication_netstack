@@ -430,6 +430,8 @@ private:
     Socket::NetAddress address_;
     std::map<int, std::shared_ptr<Connection>> clientIdConnections_;
     std::map<int, std::shared_ptr<Connection>> connections_;
+
+    std::list<std::shared_ptr<Connection>> waitDeleteConnections_;
     TlsSocket::TLSConfiguration TLSServerConfiguration_;
 
     OnConnectCallback onConnectCallback_;
@@ -444,6 +446,11 @@ private:
     bool isRunning_;
 public:
     std::shared_ptr<Connection> GetConnectionByClientID(int clientid);
+    int GetConnectionClientCount();
+
+    std::shared_ptr<Connection> GetConnectionByClientEventManager(const EventManager *eventManager);
+    void CloseConnectionByEventManager(EventManager *eventManager);
+    void DeleteConnectionByEventManager(EventManager *eventManager);
 };
 
 } // namespace TlsSocketServer

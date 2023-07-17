@@ -418,11 +418,15 @@ napi_value TLSSocketServerExec::GetSignatureAlgorithmsCallback(ServerGetSignatur
 
 napi_value TLSSocketServerExec::SendCallback(TLSServerSendContext *context)
 {
+    context->Emit(EVENT_LISTENING, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                                  NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
 napi_value TLSSocketServerExec::CloseCallback(TLSServerCloseContext *context)
 {
+    context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                                  NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
