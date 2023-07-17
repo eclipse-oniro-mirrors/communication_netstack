@@ -447,7 +447,6 @@ void TLSSocketServer::SetLocalTlsConfiguration(const TlsSocket::TLSConnectOption
 
     const auto protocolVec = config.GetTlsSecureOptions().GetProtocolChain();
     if (!protocolVec.empty()) {
-
         TLSServerConfiguration_.SetProtocol(protocolVec);
     }
 }
@@ -1468,7 +1467,6 @@ void TLSSocketServer::CloseConnectionByEventManager(EventManager *eventManager)
 
 void TLSSocketServer::DeleteConnectionByEventManager(EventManager *eventManager)
 {
-
     std::lock_guard<std::mutex> its_lock(connectMutex_);
     for (auto it = connections_.begin(); it != connections_.end(); ++it) {
         if (it->second->GetEventManager().get() == eventManager) {
