@@ -67,14 +67,14 @@ void TLSContextServer::GetCiphers(TLSContextServer *tlsContext)
         return;
     }
     std::vector<CipherSuite> cipherSuiteVec;
-    STACK_OF(SSL_CIPHER) *sslCipters = SSL_CTX_get_ciphers(tlsContext->ctx_);
-    if (!sslCipters) {
-        NETSTACK_LOGE("sslCipters is null");
+    STACK_OF(SSL_CIPHER) *sk = SSL_CTX_get_ciphers(tlsContext->ctx_);
+    if (!sk) {
+        NETSTACK_LOGE("sk is null");
         return;
     }
     CipherSuite cipherSuite;
-    for (int i = 0; i < sk_SSL_CIPHER_num(sslCipters); i++) {
-        const SSL_CIPHER *cipher = sk_SSL_CIPHER_value(sslCipters, i);
+    for (int i = 0; i < sk_SSL_CIPHER_num(sk); i++) {
+        const SSL_CIPHER *cipher = sk_SSL_CIPHER_value(sk, i);
         cipherSuite.cipherId_ = SSL_CIPHER_get_id(cipher);
         cipherSuite.cipherName_ = SSL_CIPHER_get_name(cipher);
         cipherSuiteVec.push_back(cipherSuite);
@@ -218,6 +218,17 @@ bool TLSContextServer::SetKeyAndCheck(TLSContextServer *tlsContext, const TLSCon
     auto pkey_ = tlsContext->pkey_;
     if (!SSL_CTX_use_PrivateKey(tlsContext->ctx_, pkey_)) {
         NETSTACK_LOGE("SSL_CTX_use_PrivateKey is error");
+        return false;
+    }
+
+    if (!configuration.GetPrivateKey().GetKeyPass().Length()) {
+        SSL_CTX_set_default_passwd_cb_userdata(tlsContext->ctx_,
+                                               reinterpret_cast<void *>(const_cast<char *>(
+                                                   tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyPass().Data())));
+    }
+    // Check if the certificate matches the private key.
+    if (!SSL_CTX_check_private_key(tlsContext->ctx_)) {
+        NETSTACK_LOGE("Check if the certificate matches the private key is error");
         return false;
     }
     return true;

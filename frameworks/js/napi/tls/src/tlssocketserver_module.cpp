@@ -41,6 +41,13 @@ namespace {
 static constexpr const char *PROTOCOL_TLSV13 = "TLSv13";
 static constexpr const char *PROTOCOL_TLSV12 = "TLSv12";
 
+void Finalize(napi_env, void *data, void *)
+{
+    auto manager = reinterpret_cast<EventManager *>(data);
+    if (manager != nullptr) {
+        manager->SetInvalid();
+    }
+}
 } // namespace
 
 napi_value TLSSocketServerModuleExports::TLSSocketServer::GetCertificate(napi_env env, napi_callback_info info)
@@ -219,7 +226,7 @@ void TlsSocketServer::TLSSocketServerModuleExports::DefineTLSSocketConnectionCla
 
 napi_value TLSSocketServerModuleExports::ConstructTLSSocketServerInstance(napi_env env, napi_callback_info info)
 {
-    return nullptr;
+    return ModuleTemplate::NewInstance(env, info, INTERFACE_TLS_SOCKET_SERVER, Finalize);
 }
 
 void TLSSocketServerModuleExports::InitTLSSocketServerProperties(napi_env env, napi_value exports)

@@ -18,8 +18,8 @@
 #include <climits>
 #include <cstdlib>
 
-#include "tls.h"
 #include "netstack_log.h"
+#include "tls.h"
 
 namespace OHOS {
 namespace NetStack {
