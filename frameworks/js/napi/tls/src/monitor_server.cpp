@@ -63,10 +63,10 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
             auto manager = static_cast<EventManager *>(data);
             if (manager != nullptr) {
                 manager->SetInvalid();
-               auto tlsServer = static_cast<TLSSocketServer *>(manager->GetData());
+                auto tlsServer = static_cast<TLSSocketServer *>(manager->GetData());
                 if (tlsServer != nullptr) {
-                   tlsServer->CloseConnectionByEventManager(manager);
-                   tlsServer->DeleteConnectionByEventManager(manager);
+                    tlsServer->CloseConnectionByEventManager(manager);
+                    tlsServer->DeleteConnectionByEventManager(manager);
                 }
             }
         },

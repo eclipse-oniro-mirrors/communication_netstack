@@ -317,23 +317,23 @@ void TLSSocketServer::Close(const int socketFd, const TlsSocket::CloseCallback &
 {
     {
         std::lock_guard<std::mutex> its_lock(connectMutex_);
-    for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end();) {
-        if (it->first == socketFd) {
-            auto res = it->second->Close();
-            if (!res) {
-                int resErr = ConvertSSLError(it->second->GetSSL());
-                NETSTACK_LOGE("close error is %{public}s %{public}d", MakeSSLErrorString(resErr).c_str(), resErr);
-                CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-                callback(resErr);
+        for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end();) {
+            if (it->first == socketFd) {
+                auto res = it->second->Close();
+                if (!res) {
+                    int resErr = ConvertSSLError(it->second->GetSSL());
+                    NETSTACK_LOGE("close error is %{public}s %{public}d", MakeSSLErrorString(resErr).c_str(), resErr);
+                    CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
+                    callback(resErr);
+                    return;
+                }
+                callback(TlsSocket::TLSSOCKET_SUCCESS);
+                it = clientIdConnections_.erase(it);
                 return;
+            } else {
+                ++it;
             }
-            callback(TlsSocket::TLSSOCKET_SUCCESS);
-            it = clientIdConnections_.erase(it);
-            return;
-        } else {
-            ++it;
         }
-    }
     }
     NETSTACK_LOGE("socket = %{public}d There is no corresponding socketFd", socketFd);
     CallOnErrorCallback(-1, "The send failed with no corresponding socketFd");
@@ -445,10 +445,10 @@ void TLSSocketServer::SetLocalTlsConfiguration(const TlsSocket::TLSConnectOption
 
     TLSServerConfiguration_.SetVerifyMode(config.GetTlsSecureOptions().GetVerifyMode());
 
-     const auto protocolVec = config.GetTlsSecureOptions().GetProtocolChain();
+    const auto protocolVec = config.GetTlsSecureOptions().GetProtocolChain();
     if (!protocolVec.empty()) {
-       
-         TLSServerConfiguration_.SetProtocol(protocolVec);
+
+        TLSServerConfiguration_.SetProtocol(protocolVec);
     }
 }
 
@@ -792,7 +792,7 @@ bool TLSSocketServer::Connection::Close()
         NETSTACK_LOGE("Tls context pointer is null");
         return false;
     }
-    tlsContextServerPointer_->CloseCtx(); 
+    tlsContextServerPointer_->CloseCtx();
     return true;
 }
 
@@ -1010,12 +1010,13 @@ bool TLSSocketServer::Connection::StartShakingHands(const TlsSocket::TLSConnectO
                       MakeSSLErrorString(errorStatus).c_str());
         return false;
     }
-     
-     std::vector<std::string> SslProtocolVer({SSL_get_version(ssl_)});      
 
-       connectionConfiguration_.SetProtocol({SslProtocolVer});
+    std::vector<std::string> SslProtocolVer({SSL_get_version(ssl_)});
 
-        NETSTACK_LOGI("2 connectionConfiguration_.GetProtocol().c_str()] %{public}d,", connectionConfiguration_.GetProtocol());
+    connectionConfiguration_.SetProtocol({SslProtocolVer});
+
+    NETSTACK_LOGI("2 connectionConfiguration_.GetProtocol().c_str()] %{public}d,",
+                  connectionConfiguration_.GetProtocol());
 
     std::string list = SSL_get_cipher_list(ssl_, 0);
     NETSTACK_LOGI("SSL_get_cipher_list: %{public}s", list.c_str());
@@ -1230,15 +1231,12 @@ void TLSSocketServer::RemoveConnect(int socketFd)
             }
         }
     }
-    if (ptrConnection != nullptr)
-    {
+    if (ptrConnection != nullptr) {
         NETSTACK_LOGE("   revc message is size is ptrConnection != nullptr  push_back(ptrConnection)");
         ptrConnection->CallOnCloseCallback(static_cast<unsigned int>(socketFd));
         ptrConnection->Close();
         waitDeleteConnections_.push_back(ptrConnection);
-    }
-    else
-    {
+    } else {
         NETSTACK_LOGE("   revc message is size is ptrConnection == nullptr ");
     }
 }
@@ -1392,7 +1390,6 @@ void TLSSocketServer::DropFdFromPollList(int &fd_index)
     fd_index--;
     g_userCounter--;
     NETSTACK_LOGE("CallOnConnectCallback  g_userCounter  = %{public}d", g_userCounter);
-
 }
 
 void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOptions)
@@ -1431,70 +1428,67 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
     });
     thread_.detach();
 }
- 
+
 std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionByClientEventManager(
-       const EventManager *eventManager)
+    const EventManager *eventManager)
 {
     std::shared_ptr<TLSSocketServer::Connection> ptrConnection = nullptr;
 
-    for (const auto &it : clientIdConnections_)
-    {
-        if (it.second->GetEventManager().get() == eventManager)
-        {
+    for (const auto &it : clientIdConnections_) {
+        if (it.second->GetEventManager().get() == eventManager) {
             ptrConnection = it.second;
             return ptrConnection;
-            
         }
     }
 
-      for (const auto &it : connections_) {
+    for (const auto &it : connections_) {
         if (it.second->GetEventManager().get() == eventManager) {
-              ptrConnection = it.second;
+            ptrConnection = it.second;
             return ptrConnection;
         }
-        }
+    }
 
-        for (const auto &it : waitDeleteConnections_) {
-            if (it->GetEventManager().get() == eventManager) {
-                ptrConnection = it;
+    for (const auto &it : waitDeleteConnections_) {
+        if (it->GetEventManager().get() == eventManager) {
+            ptrConnection = it;
             return ptrConnection;
         }
-     }
-        return ptrConnection;
+    }
+    return ptrConnection;
 }
 
-void TLSSocketServer::CloseConnectionByEventManager(EventManager *eventManager) 
+void TLSSocketServer::CloseConnectionByEventManager(EventManager *eventManager)
 {
     std::shared_ptr<Connection> ptrConnection = GetConnectionByClientEventManager(eventManager);
 
-    if (ptrConnection!=nullptr)
-    {
-       ptrConnection->Close();
+    if (ptrConnection != nullptr) {
+        ptrConnection->Close();
     }
 }
 
-void TLSSocketServer::DeleteConnectionByEventManager(EventManager *eventManager) {
+void TLSSocketServer::DeleteConnectionByEventManager(EventManager *eventManager)
+{
 
-      std::lock_guard<std::mutex> its_lock(connectMutex_);
-    for (auto it = connections_.begin(); it != connections_.end();++it) {
-          if (it->second->GetEventManager().get() == eventManager) {
+    std::lock_guard<std::mutex> its_lock(connectMutex_);
+    for (auto it = connections_.begin(); it != connections_.end(); ++it) {
+        if (it->second->GetEventManager().get() == eventManager) {
             it = connections_.erase(it);
             break;
-        } 
+        }
     }
 
-    for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end();++it) {
+    for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end(); ++it) {
         if (it->second->GetEventManager().get() == eventManager) {
             it = clientIdConnections_.erase(it);
             break;
-        } 
+        }
     }
-    for (auto it = waitDeleteConnections_.begin(); it != waitDeleteConnections_.end();++it) {
+    for (auto it = waitDeleteConnections_.begin(); it != waitDeleteConnections_.end(); ++it) {
         if ((*it)->GetEventManager().get() == eventManager) {
             it = waitDeleteConnections_.erase(it);
             break;
         }
-        }
+    }
 }
 } // namespace TlsSocketServer
 } // namespace NetStack
