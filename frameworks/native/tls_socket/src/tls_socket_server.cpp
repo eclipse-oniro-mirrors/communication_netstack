@@ -1011,11 +1011,7 @@ bool TLSSocketServer::Connection::StartShakingHands(const TlsSocket::TLSConnectO
     }
 
     std::vector<std::string> SslProtocolVer({SSL_get_version(ssl_)});
-
     connectionConfiguration_.SetProtocol({SslProtocolVer});
-
-    NETSTACK_LOGI("2 connectionConfiguration_.GetProtocol().c_str()] %{public}d,",
-                  connectionConfiguration_.GetProtocol());
 
     std::string list = SSL_get_cipher_list(ssl_, 0);
     NETSTACK_LOGI("SSL_get_cipher_list: %{public}s", list.c_str());
@@ -1048,7 +1044,7 @@ bool TLSSocketServer::Connection::GetRemoteCertificateFromPeer()
     peerX509_ = SSL_get_peer_certificate(ssl_);
 
     if (SSL_get_verify_result(ssl_) == X509_V_OK) {
-        NETSTACK_LOGE(" SSL_get_verify_result ==X509_V_OK ");
+        NETSTACK_LOGE("SSL_get_verify_result ==X509_V_OK");
     }
 
     if (peerX509_ == nullptr) {
@@ -1231,12 +1227,11 @@ void TLSSocketServer::RemoveConnect(int socketFd)
         }
     }
     if (ptrConnection != nullptr) {
-        NETSTACK_LOGE("   revc message is size is ptrConnection != nullptr  push_back(ptrConnection)");
         ptrConnection->CallOnCloseCallback(static_cast<unsigned int>(socketFd));
         ptrConnection->Close();
         waitDeleteConnections_.push_back(ptrConnection);
-    } else {
-        NETSTACK_LOGE("   revc message is size is ptrConnection == nullptr ");
+    }
+        NETSTACK_LOGE("revc message is size is ptrConnection == nullptr ");
     }
 }
 int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
