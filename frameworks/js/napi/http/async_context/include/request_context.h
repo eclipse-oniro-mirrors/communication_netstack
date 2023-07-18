@@ -56,8 +56,6 @@ public:
 
     struct curl_slist *GetCurlHeaderList();
 
-    napi_env GetEnv();
-
     void SetCacheResponse(const HttpResponse &cacheResponse);
 
     void SetResponseByCache();
@@ -107,9 +105,6 @@ private:
     bool GetRequestBody(napi_value extraData);
 
     void UrlAndOptions(napi_value urlValue, napi_value optionsValue);
-
-    static std::map<RequestContext *, napi_env> envMap_;
-    static std::mutex envMutex_;
 };
 } // namespace OHOS::NetStack::Http
 
