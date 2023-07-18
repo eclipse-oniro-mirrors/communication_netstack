@@ -61,7 +61,7 @@ private:
     std::mutex mutex_;
     std::list<EventListener> listeners_;
     void *data_;
-    std::atomic_bool isValid_;
+    bool isValid_;
 };
 
 struct UvWorkWrapper {

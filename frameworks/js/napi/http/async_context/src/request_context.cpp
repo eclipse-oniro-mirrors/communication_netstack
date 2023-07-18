@@ -32,8 +32,6 @@ static constexpr const int PARAM_URL_AND_OPTIONS_OR_CALLBACK = 2;
 static constexpr const int PARAM_URL_AND_OPTIONS_AND_CALLBACK = 3;
 
 namespace OHOS::NetStack::Http {
-std::map<RequestContext *, napi_env> RequestContext::envMap_;
-std::mutex RequestContext::envMutex_;
 static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_UNSUPPORTED_PROTOCOL, "Unsupported protocol"},
     {HTTP_URL_MALFORMAT, "URL using bad/illegal format or missing URL"},
@@ -68,14 +66,6 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
 RequestContext::RequestContext(napi_env env, EventManager *manager)
     : BaseContext(env, manager), usingCache_(true), request2_(false), curlHeaderList_(nullptr)
 {
-    std::lock_guard guard(envMutex_);
-    envMap_[this] = env;
-}
-
-napi_env RequestContext::GetEnv()
-{
-    std::lock_guard guard(envMutex_);
-    return envMap_[this];
 }
 
 void RequestContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -400,11 +390,6 @@ RequestContext::~RequestContext()
 {
     if (curlHeaderList_ != nullptr) {
         curl_slist_free_all(curlHeaderList_);
-    }
-    std::lock_guard guard(envMutex_);
-    auto it = envMap_.find(this);
-    if (it != envMap_.end()) {
-        envMap_.erase(it);
     }
     NETSTACK_LOGI("RequestContext is destructed by the destructor");
 }
