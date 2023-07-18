@@ -92,19 +92,18 @@ ohos_shared_library("http") {
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
     ]
-    if (defined(global_parts_info) &&
-        defined(global_parts_info.communication_netmanager_base) &&
-        global_parts_info.communication_netmanager_base) {
-      deps +=
-          [ "$NETMANAGER_BASE_INNERKITS_DIR/netconnclient:net_conn_manager_if" ]
-      defines = [ "HAS_NETMANAGER_BASE=1" ]
-    } else {
-      defines = [ "HAS_NETMANAGER_BASE=0" ]
-    }
     external_deps = [
       "hilog:libhilog",
       "napi:ace_napi",
     ]
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.communication_netmanager_base) &&
+        global_parts_info.communication_netmanager_base) {
+      external_deps += [ "netmanager_base:net_conn_manager_if" ]
+      defines = [ "HAS_NETMANAGER_BASE=1" ]
+    } else {
+      defines = [ "HAS_NETMANAGER_BASE=0" ]
+    }
     if (product_name != "ohos-sdk") {
       external_deps += [ "init:libbegetutil" ]
     }
