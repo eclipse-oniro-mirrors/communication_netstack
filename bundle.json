@@ -34,7 +34,8 @@
                 "zlib",
                 "c_utils",
                 "init",
-                "napi"
+                "napi",
+                "ylong_http"
             ],
             "third_party": [
                 "curl",

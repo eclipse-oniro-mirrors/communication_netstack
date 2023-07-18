@@ -21,3 +21,6 @@ mod reqwest_impl;
 
 #[cfg(feature = "reqwest_impl")]
 pub use reqwest_impl::*;
+
+#[cfg(feature = "ylong_impl")]
+pub use ylong_http_client_inner::*;

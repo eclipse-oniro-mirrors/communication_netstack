@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-#include <cstdint>
+#include "socket_exec_fuzzer.h"
 #include "netstack_log.h"
 #include "securec.h"
-#include "socket_exec_fuzzer.h"
 #include "socket_exec.h"
+#include <cstdint>
 
 namespace OHOS {
 namespace NetStack {
@@ -41,7 +41,7 @@ template <class T> T GetData()
     return object;
 }
 
-inline void setGlobalFuzzData(const uint8_t *data, size_t size)
+inline void SetGlobalFuzzData(const uint8_t *data, size_t size)
 {
     g_netstackFuzzData = data;
     g_netstackFuzzSize = size;
@@ -54,7 +54,7 @@ void MakeUdpSocketFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    setGlobalFuzzData(data, size);
+    SetGlobalFuzzData(data, size);
     sa_family_t family(GetData<sa_family_t>());
     if (family == AF_INET || family == AF_INET6) {
         return;
@@ -67,7 +67,7 @@ void MakeTcpSocketFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    setGlobalFuzzData(data, size);
+    SetGlobalFuzzData(data, size);
     sa_family_t family(GetData<sa_family_t>());
     if (family == AF_INET || family == AF_INET6) {
         return;
@@ -80,7 +80,8 @@ void ExecUdpBindFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     BindContext context(env, &eventManager);
 
@@ -92,7 +93,8 @@ void ExecTcpBindFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     BindContext context(env, &eventManager);
 
@@ -104,7 +106,8 @@ void ExecUdpSendFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     UdpSendContext context(env, &eventManager);
 
@@ -116,7 +119,8 @@ void ExecTcpSendFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     TcpSendContext context(env, &eventManager);
 
@@ -128,7 +132,8 @@ void ExecConnectFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     ConnectContext context(env, &eventManager);
 
@@ -140,7 +145,8 @@ void ExecCloseFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     CloseContext context(env, &eventManager);
 
@@ -152,7 +158,8 @@ void ExecGetStateFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     GetStateContext context(env, &eventManager);
 
@@ -164,7 +171,8 @@ void ExecGetRemoteAddressFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     GetRemoteAddressContext context(env, &eventManager);
 
@@ -176,7 +184,8 @@ void ExecTcpSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     TcpSetExtraOptionsContext context(env, &eventManager);
 
@@ -188,18 +197,97 @@ void ExecUdpSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    napi_env env = nullptr;
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
     EventManager eventManager;
     UdpSetExtraOptionsContext context(env, &eventManager);
 
     SocketExec::ExecUdpSetExtraOptions(&context);
 }
-} //Socket
-} // NetStack
-} // OHOS
+
+void ExecTcpServerListenFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    BindContext context(env, &eventManager);
+
+    SocketExec::ExecTcpServerListen(&context);
+}
+
+void ExecTcpServerSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    TcpSetExtraOptionsContext context(env, &eventManager);
+
+    SocketExec::ExecTcpServerSetExtraOptions(&context);
+}
+
+void ExecTcpServerGetStateFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    GetStateContext context(env, &eventManager);
+
+    SocketExec::ExecTcpServerGetState(&context);
+}
+
+void ExecTcpConnectionSendFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    TcpSendContext context(env, &eventManager);
+
+    SocketExec::ExecTcpConnectionSend(&context);
+}
+
+void ExecTcpConnectionGetRemoteAddressFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    TcpConnectionGetRemoteAddressContext context(env, &eventManager);
+
+    SocketExec::ExecTcpConnectionGetRemoteAddress(&context);
+}
+
+void ExecTcpConnectionCloseFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    CloseContext context(env, &eventManager);
+
+    SocketExec::ExecTcpConnectionClose(&context);
+}
+} // namespace Socket
+} // namespace NetStack
+} // namespace OHOS
 
 /* Fuzzer entry point */
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     OHOS::NetStack::Socket::MakeUdpSocketFuzzTest(data, size);
@@ -214,5 +302,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     OHOS::NetStack::Socket::ExecGetRemoteAddressFuzzTest(data, size);
     OHOS::NetStack::Socket::ExecTcpSetExtraOptionsFuzzTest(data, size);
     OHOS::NetStack::Socket::ExecUdpSetExtraOptionsFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpServerListenFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpServerSetExtraOptionsFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpServerGetStateFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpConnectionSendFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpConnectionGetRemoteAddressFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpConnectionCloseFuzzTest(data, size);
     return 0;
 }

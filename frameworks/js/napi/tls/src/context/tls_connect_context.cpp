@@ -41,6 +41,7 @@ constexpr const char *CIPHER_SUITE = "cipherSuite";
 constexpr const char *ADDRESS_NAME = "address";
 constexpr const char *FAMILY_NAME = "family";
 constexpr const char *PORT_NAME = "port";
+constexpr const char *VERIFY_MODE_NAME = "bidirectionAuthentication";
 constexpr uint32_t CA_CHAIN_LENGTH = 10;
 constexpr uint32_t PROTOCOLS_SIZE = 10;
 constexpr std::string_view PARSE_ERROR = "options is not type of TLSConnectOptions";
@@ -75,6 +76,15 @@ bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptio
     }
     if (NapiUtils::HasNamedProperty(env, secureOptions, CERT_NAME)) {
         secureOption.SetCert(NapiUtils::GetStringPropertyUtf8(env, secureOptions, CERT_NAME));
+    }
+    if (NapiUtils::HasNamedProperty(env, secureOptions, VERIFY_MODE_NAME)) {
+        VerifyMode tempVerifyMode = VerifyMode::ONE_WAY_MODE;
+        NapiUtils::GetBooleanProperty(env, secureOptions, VERIFY_MODE_NAME) == false
+            ? tempVerifyMode = VerifyMode::ONE_WAY_MODE
+            : tempVerifyMode = VerifyMode::TWO_WAY_MODE;
+        secureOption.SetVerifyMode(tempVerifyMode);
+    } else {
+        secureOption.SetVerifyMode(VerifyMode::ONE_WAY_MODE);
     }
     return true;
 }
