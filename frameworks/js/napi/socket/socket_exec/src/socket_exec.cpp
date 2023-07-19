@@ -798,7 +798,7 @@ bool ExecUdpBind(BindContext *context)
                                   UdpMessageCallback(context->GetManager()));
         serviceThread.detach();
     } else if (addr->sa_family == AF_INET6) {
-        auto pAddr6 = reinterpret_cast<sockaddr *>(malloc(sizeof(addr6)));
+        auto pAddr6 = reinterpret_cast<sockaddr_in6 *>(malloc(sizeof(addr6)));
         if (pAddr6 == nullptr) {
             NETSTACK_LOGE("no memory!");
             return false;

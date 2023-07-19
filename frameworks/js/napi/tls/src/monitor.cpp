@@ -95,14 +95,14 @@ void EventMessageCallback(uv_work_t *work, int status)
         ParserNullBranch("monitor is nullptr", work, workWrapper);
         return;
     }
-    napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
-    napi_value obj = NapiUtils::CreateObject(workWrapper->env);
-    napi_value remoteInfo = NapiUtils::CreateObject(workWrapper->env);
-    void *data = nullptr;
     if (monitor->messagerQueue_.dataQueue.empty() || monitor->messagerQueue_.remoteInfoQueue.empty()) {
         ParserNullBranch("dataQueue or remoteInfoQueue is empty", work, workWrapper);
         return;
     }
+    napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
+    napi_value obj = NapiUtils::CreateObject(workWrapper->env);
+    napi_value remoteInfo = NapiUtils::CreateObject(workWrapper->env);
+    void *data = nullptr;
     monitor->data_ = monitor->messagerQueue_.dataQueue.front();
     monitor->messagerQueue_.dataQueue.pop();
     monitor->remoteInfo_ = monitor->messagerQueue_.remoteInfoQueue.front();
@@ -111,12 +111,14 @@ void EventMessageCallback(uv_work_t *work, int status)
     if (data != nullptr && arrayBuffer != nullptr) {
         if (memcpy_s(data, monitor->data_.size(), monitor->data_.c_str(), monitor->data_.size()) != EOK) {
             ParserNullBranch("memcpy_s failed!", work, workWrapper);
+            NapiUtils::CloseScope(workWrapper->env, scope);
             return;
         }
     }
     SetPropertyForWorkWrapper(workWrapper, monitor, arrayBuffer, remoteInfo, obj);
     if (workWrapper->manager == nullptr) {
         ParserNullBranch("manager is nullptr", work, workWrapper);
+        NapiUtils::CloseScope(workWrapper->env, scope);
         return;
     }
     workWrapper->manager->Emit(workWrapper->type, std::make_pair(NapiUtils::GetUndefined(workWrapper->env), obj));
@@ -137,15 +139,15 @@ void EventConnectCloseCallback(uv_work_t *work, int status)
         delete work;
         return;
     }
-    napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
-    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env),
-                                             NapiUtils::GetUndefined(workWrapper->env)};
     if (workWrapper->manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         delete workWrapper;
         delete work;
         return;
     }
+    napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
+    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env),
+                                             NapiUtils::GetUndefined(workWrapper->env)};
     workWrapper->manager->Emit(workWrapper->type, arg);
     NapiUtils::CloseScope(workWrapper->env, scope);
     delete workWrapper;
@@ -172,6 +174,12 @@ void EventErrorCallback(uv_work_t *work, int status)
         delete work;
         return;
     }
+    if (workWrapper->manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        delete workWrapper;
+        delete work;
+        return;
+    }
     napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
     napi_value obj = NapiUtils::CreateObject(workWrapper->env);
     napi_value errorNumber = NapiUtils::CreateInt32(workWrapper->env, monitor->errorNumber_);
@@ -179,12 +187,6 @@ void EventErrorCallback(uv_work_t *work, int status)
     NapiUtils::SetNamedProperty(workWrapper->env, obj, "errorNumber", errorNumber);
     NapiUtils::SetNamedProperty(workWrapper->env, obj, "errorString", errorString);
     std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
-    if (workWrapper->manager == nullptr) {
-        NETSTACK_LOGE("manager is nullptr");
-        delete workWrapper;
-        delete work;
-        return;
-    }
     workWrapper->manager->Emit(workWrapper->type, arg);
     NapiUtils::CloseScope(workWrapper->env, scope);
     delete workWrapper;
