@@ -452,7 +452,6 @@ public:
     void CloseConnectionByEventManager(EventManager *eventManager);
     void DeleteConnectionByEventManager(EventManager *eventManager);
 };
-
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS

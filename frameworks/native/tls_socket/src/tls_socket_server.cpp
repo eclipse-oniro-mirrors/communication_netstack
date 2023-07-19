@@ -1231,9 +1231,8 @@ void TLSSocketServer::RemoveConnect(int socketFd)
         ptrConnection->Close();
         waitDeleteConnections_.push_back(ptrConnection);
     }
-        NETSTACK_LOGE("revc message is size is ptrConnection == nullptr ");
-    }
 }
+
 int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
 {
     {
@@ -1242,7 +1241,7 @@ int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
             if (it->first == socketFd) {
                 char buffer[MAX_BUFFER_SIZE];
                 if (memset_s(buffer, MAX_BUFFER_SIZE, 0, MAX_BUFFER_SIZE) != EOK) {
-                    NETSTACK_LOGE("memcpy_s failed!");
+                    NETSTACK_LOGE("memcpy_s failed");
                     break;
                 }
                 int len = it->second->Recv(buffer, MAX_BUFFER_SIZE);
@@ -1264,6 +1263,7 @@ int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
     DropFdFromPollList(index);
     return -1;
 }
+
 void TLSSocketServer::Connection::CallOnMessageCallback(int32_t socketFd, const std::string &data,
                                                         const Socket::SocketRemoteInfo &remoteInfo)
 {
@@ -1278,12 +1278,14 @@ void TLSSocketServer::Connection::CallOnMessageCallback(int32_t socketFd, const 
         CallBackfunc(socketFd, data, remoteInfo);
     }
 }
+
 void TLSSocketServer::AddConnect(int socketFd, std::shared_ptr<Connection> connection)
 {
     std::lock_guard<std::mutex> its_lock(connectMutex_);
     connections_[socketFd] = connection;
     clientIdConnections_[connection->GetClientID()] = connection;
 }
+
 void TLSSocketServer::Connection::CallOnCloseCallback(const int32_t socketFd)
 {
     OnCloseCallback CallBackfunc = nullptr;
@@ -1314,6 +1316,7 @@ void TLSSocketServer::CallOnConnectCallback(const int32_t socketFd, std::shared_
         NETSTACK_LOGE("CallOnConnectCallback  fun === null");
     }
 }
+
 void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsListenOptions, int clientID)
 {
     struct sockaddr_in clientAddress;
