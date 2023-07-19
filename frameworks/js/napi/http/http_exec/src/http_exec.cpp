@@ -627,7 +627,24 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
         return 0;
     }
     context->response.AppendRawHeader(data, size * memBytes);
+    if (context->IsRequest2() &&
+        context->response.GetRawHeader().rfind(HttpConstant::HTTP_RESPONSE_HEADER_SEPARATOR) != std::string::npos) {
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnRequest2HeaderReceive);
+    }
     return size * memBytes;
+}
+
+void HttpExec::OnRequest2HeaderReceive(napi_env env, napi_status status, void *data)
+{
+    auto context = static_cast<RequestContext *>(data);
+    if (context == nullptr) {
+        return;
+    }
+    context->response.ParseHeaders();
+    napi_value header = MakeResponseHeader(context);
+    if (NapiUtils::GetValueType(context->GetEnv(), header) == napi_object) {
+        OnHeaderReceive(context, header);
+    }
 }
 
 void HttpExec::OnDataReceive(napi_env env, napi_status status, void *data)

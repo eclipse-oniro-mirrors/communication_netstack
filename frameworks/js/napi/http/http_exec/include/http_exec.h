@@ -112,6 +112,8 @@ private:
 
     static void GetHttpProxyInfo(RequestContext *context, std::string &host, int32_t &port, std::string &exclusions);
 
+    static void OnRequest2HeaderReceive(napi_env env, napi_status status, void *data);
+
     static void OnDataReceive(napi_env env, napi_status status, void *data);
 
     static void OnDataProgress(napi_env env, napi_status status, void *data);

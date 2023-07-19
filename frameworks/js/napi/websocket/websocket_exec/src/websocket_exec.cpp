@@ -15,15 +15,15 @@
 
 #include "websocket_exec.h"
 
+#include <atomic>
 #include <memory>
 #include <queue>
 #include <thread>
-#include <atomic>
 
 #include "constant.h"
+#include "napi_utils.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
-#include "napi_utils.h"
 #include "securec.h"
 
 static constexpr const char *PATH_START = "/";
@@ -496,9 +496,9 @@ static inline void FillContextInfo(lws_context_creation_info &info)
     info.fd_limit_per_thread = FD_LIMIT_PER_THREAD;
 }
 
-bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsContext,
-                                     lws_client_connect_info &connectInfo, EventManager *manager)
+bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsContext, EventManager *manager)
 {
+    lws_client_connect_info connectInfo = {};
     char prefix[MAX_URI_LENGTH] = {0};
     char address[MAX_URI_LENGTH] = {0};
     char pathWithoutStart[MAX_URI_LENGTH] = {0};
@@ -527,6 +527,12 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     connectInfo.pwsi = &wsi;
     connectInfo.retry_and_idle_policy = &RETRY;
     connectInfo.userdata = reinterpret_cast<void *>(manager);
+    if (lws_client_connect_via_info(&connectInfo) == nullptr) {
+        NETSTACK_LOGI("ExecConnect websocket connect failed");
+        context->SetErrorCode(-1);
+        lws_context_destroy(lwsContext);
+        return false;
+    }
     return true;
 }
 
@@ -544,23 +550,16 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     if (context->GetManager() == nullptr) {
         return false;
     }
-    lws_context_creation_info info = {0};
+    lws_context_creation_info info = {};
     FillContextInfo(info);
     lws_context *lwsContext = lws_create_context(&info);
-    lws_client_connect_info connectInfo = {nullptr};
     EventManager *manager = context->GetManager();
     if (manager != nullptr && manager->GetData() == nullptr) {
         auto userData = new UserData(lwsContext);
         userData->header = context->header;
         manager->SetData(userData);
     }
-    if (!CreatConnectInfo(context, lwsContext, connectInfo, manager)) {
-        return false;
-    }
-    if (lws_client_connect_via_info(&connectInfo) == nullptr) {
-        NETSTACK_LOGI("ExecConnect websocket connect failed");
-        context->SetErrorCode(-1);
-        lws_context_destroy(lwsContext);
+    if (!CreatConnectInfo(context, lwsContext, manager)) {
         return false;
     }
 
