@@ -97,6 +97,7 @@ bool FetchExec::ExecFetch(FetchContext *context)
 
     int32_t responseCode;
     NETSTACK_CURL_EASY_GET_INFO(handle.get(), CURLINFO_RESPONSE_CODE, &responseCode, context);
+    NETSTACK_LOGI("Fetch responseCode is %{public}d", responseCode);
 
     context->response.SetResponseCode(responseCode);
     context->response.ParseHeaders();
@@ -107,6 +108,7 @@ bool FetchExec::ExecFetch(FetchContext *context)
 napi_value FetchExec::FetchCallback(FetchContext *context)
 {
     if (context->IsExecOK()) {
+        NETSTACK_LOGI("Fetch execute success");
         napi_value success = context->GetSuccessCallback();
         if (NapiUtils::GetValueType(context->GetEnv(), success) == napi_function) {
             napi_value response = MakeResponse(context);
@@ -115,6 +117,7 @@ napi_value FetchExec::FetchCallback(FetchContext *context)
             (void)NapiUtils::CallFunction(context->GetEnv(), undefined, success, 1, argv);
         }
     } else {
+        NETSTACK_LOGI("Fetch execute failed");
         napi_value fail = context->GetFailCallback();
         if (NapiUtils::GetValueType(context->GetEnv(), fail) == napi_function) {
             napi_value errData = NapiUtils::GetUndefined(context->GetEnv());
@@ -125,6 +128,7 @@ napi_value FetchExec::FetchCallback(FetchContext *context)
         }
     }
 
+    NETSTACK_LOGI("Fetch Call complete");
     napi_value complete = context->GetCompleteCallback();
     if (NapiUtils::GetValueType(context->GetEnv(), complete) == napi_function) {
         napi_value undefined = NapiUtils::GetUndefined(context->GetEnv());

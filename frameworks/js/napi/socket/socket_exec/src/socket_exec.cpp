@@ -931,7 +931,15 @@ bool ExecClose(CloseContext *context)
         return false;
     }
 
-    (void)context;
+    int ret = close(context->GetSocketFd());
+    if (ret < 0) {
+        NETSTACK_LOGE("sock closed error %{public}s sock = %{public}d, ret = %{public}d", strerror(errno),
+                      context->GetSocketFd(), ret);
+        return false;
+    }
+    NETSTACK_LOGI("sock %{public}d closed success", context->GetSocketFd());
+
+    context->SetSocketFd(0);
 
     return true;
 }
@@ -1651,14 +1659,6 @@ napi_value TcpSendCallback(TcpSendContext *context)
 
 napi_value CloseCallback(CloseContext *context)
 {
-    int ret = close(context->GetSocketFd());
-    if (ret < 0) {
-        NETSTACK_LOGE("sock closed error %{public}s sock = %{public}d, ret = %{public}d", strerror(errno),
-                      context->GetSocketFd(), ret);
-    } else {
-        NETSTACK_LOGI("sock %{public}d closed success", context->GetSocketFd());
-    }
-    context->SetSocketFd(0);
     context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
                                               NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
