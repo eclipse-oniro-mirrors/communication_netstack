@@ -428,9 +428,6 @@ private:
     int listenSocketFd_ = -1;
     Socket::NetAddress address_;
     std::map<int, std::shared_ptr<Connection>> clientIdConnections_;
-    std::map<int, std::shared_ptr<Connection>> connections_;
-
-    std::list<std::shared_ptr<Connection>> waitDeleteConnections_;
     TlsSocket::TLSConfiguration TLSServerConfiguration_;
 
     OnConnectCallback onConnectCallback_;
