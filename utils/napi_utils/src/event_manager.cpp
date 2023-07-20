@@ -32,12 +32,12 @@ EventManager::~EventManager()
 
 bool EventManager::IsManagerValid() const
 {
-    return isValid_;
+    return isValid_.load();
 }
 
 void EventManager::SetInvalid()
 {
-    isValid_ = false;
+    isValid_.store(false);
 }
 
 void EventManager::AddListener(napi_env env, const std::string &type, napi_value callback, bool once,
