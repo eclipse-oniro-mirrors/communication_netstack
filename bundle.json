@@ -35,6 +35,7 @@
                 "c_utils",
                 "init",
                 "napi",
+                "netmanager_base",
                 "ylong_http"
             ],
             "third_party": [
