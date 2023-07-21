@@ -241,7 +241,7 @@ void TLSContextServer::SetVerify(TLSContextServer *tlsContext)
         return;
     }
 
-    NETSTACK_LOGE("  TLSContextServer::SetVerify tlsContext  %{public}d",
+    NETSTACK_LOGE("TLSContextServer::SetVerify tlsContext  %{public}d",
                   tlsContext->tlsConfiguration_.GetVerifyMode());
     if (tlsContext->tlsConfiguration_.GetVerifyMode() == ONE_WAY_MODE) {
         SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_PEER, nullptr);

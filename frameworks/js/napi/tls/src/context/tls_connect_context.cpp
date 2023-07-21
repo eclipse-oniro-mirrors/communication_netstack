@@ -126,7 +126,7 @@ bool TLSConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
             return false;
         }
         if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_1]) != napi_function) {
-            NETSTACK_LOGE(" tls ConnectContext second param is not function");
+            NETSTACK_LOGE("tls ConnectContext second param is not function");
             return false;
         }
         return true;
