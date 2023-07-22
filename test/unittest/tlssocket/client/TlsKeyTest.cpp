@@ -88,9 +88,10 @@ HWTEST_F(TlsKeyTest, DecodePemTest, TestSize.Level2)
     std::string fileName2 = "/system/lib";
     TLSKey tlsKey3 = TLSKey(fileName2, ALGORITHM_RSA, keyPass);
     TLSKey tlsKey4 = TLSKey(fileName2, ALGORITHM_RSA, keyPass, EncodingFormat::DER);
-    SecureData structureData("");
+    SecureData structureData(g_keyFile);
+    structureData.length_ = sizeof(g_keyFile);
     TLSKey tlsKey = TLSKey(structureData, ALGORITHM_RSA, keyPass);
-    EXPECT_EQ(tlsKey.keyIsNull_, true);
+    EXPECT_EQ(tlsKey.keyIsNull_, false);
 }
 
 HWTEST_F(TlsKeyTest, CopyConstruction, TestSize.Level2)
