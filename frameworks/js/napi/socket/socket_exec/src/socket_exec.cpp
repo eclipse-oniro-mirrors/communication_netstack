@@ -637,6 +637,7 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
         return false;
     }
     if (err != 0) {
+        NETSTACK_LOGE("NonBlockConnect err number: %{public}d, message: %{public}s", err, strerror(err));
         return false;
     }
     return true;
@@ -1444,6 +1445,7 @@ static void ClientHandler(int32_t connectFD, sockaddr *addr, socklen_t addrLen, 
                 break;
             }
             if (errno != EAGAIN) {
+                shutdown(connectFD, SHUT_RDWR);
                 close(connectFD);
                 manager->Emit(EVENT_CLOSE, std::make_pair(nullptr, nullptr));
                 RemoveClientConnection(connectFD);
@@ -1732,6 +1734,9 @@ napi_value TcpConnectionCloseCallback(CloseContext *context)
         }
     }
 
+    if (shutdown(clientFd, SHUT_RDWR) != 0) {
+        NETSTACK_LOGE("socket shutdown error %{public}s", strerror(errno));
+    }
     int ret = close(clientFd);
     if (ret < 0) {
         NETSTACK_LOGE("sock closed error %{public}s sock = %{public}d, ret = %{public}d", strerror(errno),
