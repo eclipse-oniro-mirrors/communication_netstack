@@ -1707,12 +1707,20 @@ napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context)
 
 napi_value TcpGetSocketFdCallback(GetSocketFdContext *context)
 {
-    return NapiUtils::CreateUint32(context->GetEnv(), context->GetSocketFd());
+    int sockFd = context->GetSocketFd();
+    if (sockFd == -1) {
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+    return NapiUtils::CreateUint32(context->GetEnv(), sockFd);
 }
 
 napi_value UdpGetSocketFdCallback(GetSocketFdContext *context)
 {
-    return NapiUtils::CreateUint32(context->GetEnv(), context->GetSocketFd());
+    int sockFd = context->GetSocketFd();
+    if (sockFd == -1) {
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+    return NapiUtils::CreateUint32(context->GetEnv(), sockFd);
 }
 
 napi_value TcpConnectionSendCallback(TcpSendContext *context)
