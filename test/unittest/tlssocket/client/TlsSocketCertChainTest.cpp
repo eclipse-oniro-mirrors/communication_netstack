@@ -206,7 +206,24 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
         return;
     }
     TLSSocket server;
-    socketCertChainTestSplitCode_X(server);
+    TLSConnectOptions options;
+    TLSSecureOptions secureOption;
+    Socket::NetAddress address;
+
+    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
+    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
+    address.SetFamilyBySaFamily(AF_INET);
+
+    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
+    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
+    secureOption.SetCaChain(caVec);
+    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
+
+    options.SetNetAddress(address);
+    options.SetTlsSecureOptions(secureOption);
+
+    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     Socket::NetAddress netAddress;
     server.GetRemoteAddress([&netAddress](int32_t errCode, const Socket::NetAddress &address) {
