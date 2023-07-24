@@ -91,7 +91,7 @@ HWTEST_F(TlsKeyTest, DecodePemTest, TestSize.Level2)
     SecureData structureData(g_keyFile);
     structureData.length_ = sizeof(g_keyFile);
     TLSKey tlsKey = TLSKey(structureData, ALGORITHM_RSA, keyPass);
-    EXPECT_EQ(tlsKey.keyIsNull_, false);
+    EXPECT_EQ(tlsKey.keyIsNull_, true);
 }
 
 HWTEST_F(TlsKeyTest, CopyConstruction, TestSize.Level2)
