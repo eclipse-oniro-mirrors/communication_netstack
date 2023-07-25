@@ -86,7 +86,7 @@ public:
     virtual void TearDown() {}
 };
 
-void socketUnilateralTestSplitCode_X(TLSSocket &server)
+void TestSocketUnilateralSplitCode_X(TLSSocket &server)
 {
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
@@ -193,7 +193,7 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
         return;
     }
     TLSSocket server;
-    socketUnilateralTestSplitCode_X(server);
+    TestSocketUnilateralSplitCode_X(server);
 
     AccessToken token;
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
@@ -210,7 +210,7 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
         return;
     }
     TLSSocket server;
-    socketUnilateralTestSplitCode_X(server);
+    TestSocketUnilateralSplitCode_X(server);
 
     AccessToken token;
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
@@ -229,7 +229,7 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
         return;
     }
     TLSSocket server;
-    socketUnilateralTestSplitCode_X(server);
+    TestSocketUnilateralSplitCode_X(server);
 
     AccessToken token;
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
@@ -294,7 +294,7 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     }
 
     TLSSocket server;
-    socketUnilateralTestSplitCode_X(server);
+    TestSocketUnilateralSplitCode_X(server);
 
     AccessToken token;
     Socket::SocketStateBase TlsSocketstate;
@@ -321,7 +321,7 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
         return;
     }
     TLSSocket server;
-    socketUnilateralTestSplitCode_X(server);
+    TestSocketUnilateralSplitCode_X(server);
     Socket::TCPSendOptions tcpSendOptions;
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
 
