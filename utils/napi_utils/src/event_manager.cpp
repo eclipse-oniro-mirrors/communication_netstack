@@ -122,7 +122,7 @@ void EventManager::SetInvalid(EventManager *manager)
     std::lock_guard lock(mutexForManager_);
     auto pos = validManager_.find(manager);
     if (pos == validManager_.end()) {
-        NETSTACK_LOGE("The manager is not in the unorder_set");
+        NETSTACK_LOGE("The manager is not in the unordered_set");
         return;
     }
     validManager_.erase(pos);
