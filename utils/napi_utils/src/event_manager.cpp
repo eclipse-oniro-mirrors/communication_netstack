@@ -132,6 +132,7 @@ void EventManager::SetInvalid(EventManager *manager)
 
 bool EventManager::IsManagerValid(EventManager *manager)
 {
+    std::lock_guard lock(mutexForManager_);
     return validManager_.find(manager) != validManager_.end();
 }
 
