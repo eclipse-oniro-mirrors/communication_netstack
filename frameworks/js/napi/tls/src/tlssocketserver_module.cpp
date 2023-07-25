@@ -45,7 +45,7 @@ void Finalize(napi_env, void *data, void *)
 {
     auto manager = reinterpret_cast<EventManager *>(data);
     if (manager != nullptr) {
-        EventManager::SetInvalid(manager)
+        EventManager::SetInvalid(manager);
     }
 }
 } // namespace
