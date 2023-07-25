@@ -104,7 +104,7 @@ void TestSocketCertChainOneWayTestSplitCode_X(TLSSocket &server)
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
-void TestTestSocketCertChainOneWayTestSplitCode_Y(TLSSocket &server)
+void TestSocketCertChainOneWayTestSplitCode_Y(TLSSocket &server)
 {
     TLSConnectOptions options;
     TLSSecureOptions secureOption;

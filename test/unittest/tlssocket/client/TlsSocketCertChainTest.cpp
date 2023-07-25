@@ -106,7 +106,7 @@ void TestSocketCertChainSplitCode_X(TLSSocket &server)
 
 void TestSocketCertChainSplitCode_Y(TLSSocket &server)
 {
-	TLSConnectOptions options;
+    TLSConnectOptions options;
     TLSSecureOptions secureOption;
     Socket::NetAddress address;
 
