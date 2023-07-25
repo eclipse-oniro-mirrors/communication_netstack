@@ -63,7 +63,7 @@ private:
     std::mutex mutex_;
     std::list<EventListener> listeners_;
     void *data_;
-    static std::mutex mutexForHttpManager_;
+    static std::mutex mutexForManager_;
     static std::unordered_set<EventManager *> validManager_;
 };
 
