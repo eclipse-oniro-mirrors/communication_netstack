@@ -23,21 +23,11 @@ static constexpr const int CALLBACK_PARAM_NUM = 1;
 
 static constexpr const int ASYNC_CALLBACK_PARAM_NUM = 2;
 
-EventManager::EventManager() : data_(nullptr), isValid_(true) {}
+EventManager::EventManager() : data_(nullptr) {}
 
 EventManager::~EventManager()
 {
     NETSTACK_LOGI("EventManager is destructed by the destructor");
-}
-
-bool EventManager::IsManagerValid() const
-{
-    return isValid_.load();
-}
-
-void EventManager::SetInvalid()
-{
-    isValid_.store(false);
 }
 
 void EventManager::AddListener(napi_env env, const std::string &type, napi_value callback, bool once,
@@ -99,7 +89,7 @@ void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(u
 {
     std::lock_guard lock1(mutexForEmitAndEmitByUv_);
     std::lock_guard lock2(mutexForListenersAndEmitByUv_);
-    if (!IsManagerValid()) {
+    if (!EventManager::IsManagerValid(this)) {
         return;
     }
 
@@ -122,6 +112,42 @@ void EventManager::DeleteListener(const std::string &type)
     auto it = std::remove_if(listeners_.begin(), listeners_.end(),
                              [type](const EventListener &listener) -> bool { return listener.MatchType(type); });
     listeners_.erase(it, listeners_.end());
+}
+
+std::unordered_set<EventManager *> EventManager::validManager_;
+std::mutex EventManager::mutexForHttpManager_;
+
+void EventManager::SetInvalid(EventManager *manager)
+{
+    std::lock_guard lock(mutexForHttpManager_);
+    auto pos = validManager_.find(manager);
+    if (pos == validManager_.end()) {
+        NETSTACK_LOGE("The manager is not in the unorder_set");
+        return;
+    }
+    validManager_.erase(manager);
+    delete manager;
+    manager = nullptr;
+}
+
+bool EventManager::IsManagerValid(EventManager *manager)
+{
+    std::lock_guard lock(mutexForHttpManager_);
+    if (validManager_.empty()) {
+        NETSTACK_LOGE("The manager unorder_set is empty");
+        return false;
+    }
+    auto pos = validManager_.find(manager);
+    if (pos == validManager_.end()) {
+        return false;
+    }
+    return true;
+}
+
+void EventManager::SetValid(EventManager *manager)
+{
+    std::lock_guard lock(mutexForHttpManager_);
+    validManager_.emplace(manager);
 }
 
 UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)
