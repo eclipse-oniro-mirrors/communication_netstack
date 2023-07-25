@@ -115,38 +115,29 @@ void EventManager::DeleteListener(const std::string &type)
 }
 
 std::unordered_set<EventManager *> EventManager::validManager_;
-std::mutex EventManager::mutexForHttpManager_;
+std::mutex EventManager::mutexForManager_;
 
 void EventManager::SetInvalid(EventManager *manager)
 {
-    std::lock_guard lock(mutexForHttpManager_);
+    std::lock_guard lock(mutexForManager_);
     auto pos = validManager_.find(manager);
     if (pos == validManager_.end()) {
         NETSTACK_LOGE("The manager is not in the unorder_set");
         return;
     }
-    validManager_.erase(manager);
+    validManager_.erase(pos);
     delete manager;
     manager = nullptr;
 }
 
 bool EventManager::IsManagerValid(EventManager *manager)
 {
-    std::lock_guard lock(mutexForHttpManager_);
-    if (validManager_.empty()) {
-        NETSTACK_LOGE("The manager unorder_set is empty");
-        return false;
-    }
-    auto pos = validManager_.find(manager);
-    if (pos == validManager_.end()) {
-        return false;
-    }
-    return true;
+    return validManager_.find(manager) != validManager_.end();
 }
 
 void EventManager::SetValid(EventManager *manager)
 {
-    std::lock_guard lock(mutexForHttpManager_);
+    std::lock_guard lock(mutexForManager_);
     validManager_.emplace(manager);
 }
 
