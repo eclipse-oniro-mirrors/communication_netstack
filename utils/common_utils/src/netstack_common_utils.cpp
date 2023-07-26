@@ -122,7 +122,7 @@ bool HasInternetPermission()
         NETSTACK_LOGE("no group of INTERNET permission");
         return false;
     }
-    auto groups = (gid_t*) malloc(groupNum * sizeof(gid_t));
+    auto groups = (gid_t *)malloc(groupNum * sizeof(gid_t));
     groupNum = getgroups(groupNum, groups);
     for (int i = 0; i < groupNum; i++) {
         if (groups[i] == inetGroup) {
@@ -134,5 +134,13 @@ bool HasInternetPermission()
     NETSTACK_LOGE("INTERNET permission denied by group");
     return false;
 #endif
+}
+
+bool EndsWith(const std::string &str, const std::string &suffix)
+{
+    if (str.length() < suffix.length()) {
+        return false;
+    }
+    return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
 }
 } // namespace OHOS::NetStack::CommonUtils

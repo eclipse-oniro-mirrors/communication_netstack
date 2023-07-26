@@ -20,7 +20,7 @@
 #include <iosfwd>
 #include <list>
 #include <mutex>
-#include <set>
+#include <unordered_set>
 #include <string>
 #include <utility>
 
@@ -51,9 +51,11 @@ public:
 
     void DeleteListener(const std::string &type);
 
-    void SetInvalid();
+    static void SetInvalid(EventManager *manager);
 
-    [[nodiscard]] bool IsManagerValid() const;
+    static bool IsManagerValid(EventManager *manager);
+
+    static void SetValid(EventManager *manager);
 
 private:
     std::mutex mutexForListenersAndEmitByUv_;
@@ -61,7 +63,8 @@ private:
     std::mutex mutex_;
     std::list<EventListener> listeners_;
     void *data_;
-    std::atomic_bool isValid_;
+    static std::mutex mutexForManager_;
+    static std::unordered_set<EventManager *> validManager_;
 };
 
 struct UvWorkWrapper {
