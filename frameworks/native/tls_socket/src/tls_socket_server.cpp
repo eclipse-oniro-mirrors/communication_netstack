@@ -38,6 +38,7 @@ namespace {
 constexpr int SSL_RET_CODE = 0;
 
 constexpr int BUF_SIZE = 2048;
+constexpr int POLL_WAIT_TIME = 2048;
 constexpr int OFFSET = 2;
 constexpr int SSL_ERROR_RETURN = -1;
 constexpr int REMOTE_CERT_LEN = 8192;
@@ -1387,7 +1388,7 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
         InitPollList(listenSocketFd_);
         int clientId = 0;
         while (isRunning_) {
-            int ret = poll(fds_, g_userCounter + 1, 2000);
+            int ret = poll(fds_, g_userCounter + 1, POLL_WAIT_TIME);
             if (ret < 0) {
                 int resErr = ConvertErrno();
                 NETSTACK_LOGE("Poll ERROR");
