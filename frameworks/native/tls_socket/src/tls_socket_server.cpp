@@ -1092,7 +1092,7 @@ static bool StartsWith(const std::string &s, const std::string &prefix)
 {
     return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
 }
-void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> dnsNames, std::vector<std::string> ips,
+void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> &dnsNames, std::vector<std::string> &ips,
                        const X509 *x509Certificates, std::tuple<bool, std::string> &result)
 {
     bool valid = false;
