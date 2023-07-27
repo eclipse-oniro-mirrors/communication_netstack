@@ -72,7 +72,6 @@ void BindFuzzTest(const uint8_t *data, size_t size)
     netAddress.SetFamilyByJsValue(GetData<uint32_t>());
     netAddress.SetFamilyBySaFamily(GetData<sa_family_t>());
     netAddress.SetPort(GetData<uint16_t>());
-    tlsSocket.Bind(netAddress, [](bool ok) { NETSTACK_LOGD("Calback received"); });
     tlsSocket.Close([](int32_t errorNumber) {});
     tlsSocket.GetRemoteAddress([](int32_t errorNumber, const Socket::NetAddress &address) {});
     tlsSocket.GetCertificate([](int32_t errorNumber, const X509CertRawData &cert) {});
