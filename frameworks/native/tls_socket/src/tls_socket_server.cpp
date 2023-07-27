@@ -38,7 +38,7 @@ namespace {
 constexpr int SSL_RET_CODE = 0;
 
 constexpr int BUF_SIZE = 2048;
-constexpr int POLL_WAIT_TIME = 2048;
+constexpr int POLL_WAIT_TIME = 2000;
 constexpr int OFFSET = 2;
 constexpr int SSL_ERROR_RETURN = -1;
 constexpr int REMOTE_CERT_LEN = 8192;
