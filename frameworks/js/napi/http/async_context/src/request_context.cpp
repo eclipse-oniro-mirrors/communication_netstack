@@ -430,9 +430,6 @@ std::string RequestContext::GetErrorMessage() const
     if (BaseContext::IsPermissionDenied()) {
         return PERMISSION_DENIED_MSG;
     }
-    if (err == HTTP_UNKNOWN_OTHER_ERROR) {
-        err -= HTTP_ERROR_CODE_BASE;
-    }
 
     auto pos = HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE);
     if (pos != HTTP_ERR_MAP.end()) {
