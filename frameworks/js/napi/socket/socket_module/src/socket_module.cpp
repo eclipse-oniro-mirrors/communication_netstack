@@ -39,6 +39,10 @@
 #include "socket_exec.h"
 #include "tcp_extra_context.h"
 #include "tcp_send_context.h"
+#include "tcp_server_common_context.h"
+#include "tcp_server_extra_context.h"
+#include "tcp_server_listen_context.h"
+#include "tcp_server_send_context.h"
 #include "tlssocket_module.h"
 #include "tlssocketserver_module.h"
 #include "udp_extra_context.h"
@@ -122,6 +126,45 @@ static bool MakeTcpSocket(napi_env env, napi_value thisVal, BindContext *context
     }
     int sock = SocketExec::MakeTcpSocket(context->address_.GetSaFamily());
     if (!SetSocket(env, thisVal, context, sock)) {
+        return false;
+    }
+    context->SetExecOK(true);
+    return true;
+}
+
+static bool SetServerSocket(napi_env env, napi_value thisVal, TcpServerListenContext *context, int sock)
+{
+    if (sock < 0) {
+        napi_value error = NapiUtils::CreateObject(env);
+        if (NapiUtils::GetValueType(env, error) != napi_object) {
+            return false;
+        }
+        NapiUtils::SetUint32Property(env, error, KEY_ERROR_CODE, errno);
+        context->Emit(EVENT_ERROR, std::make_pair(NapiUtils::GetUndefined(env), error));
+        return false;
+    }
+
+    EventManager *manager = nullptr;
+    if (napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager)) != napi_ok || manager == nullptr) {
+        return false;
+    }
+
+    manager->SetData(reinterpret_cast<void *>(sock));
+    NapiUtils::SetInt32Property(env, thisVal, KEY_SOCKET_FD, sock);
+    return true;
+}
+
+static bool MakeTcpServerSocket(napi_env env, napi_value thisVal, TcpServerListenContext *context)
+{
+    if (!context->IsParseOK()) {
+        return false;
+    }
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    int sock = SocketExec::MakeTcpSocket(context->address_.GetSaFamily());
+    if (!SetServerSocket(env, thisVal, context, sock)) {
         return false;
     }
     context->SetExecOK(true);
@@ -325,8 +368,8 @@ napi_value SocketModuleExports::TCPSocket::Off(napi_env env, napi_callback_info 
 napi_value SocketModuleExports::TCPConnection::Send(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(
-        TcpSendContext, ExecTcpConnectionSend, TcpConnectionSendCallback,
-        [](napi_env theEnv, napi_value thisVal, TcpSendContext *context) -> bool {
+        TcpServerSendContext, ExecTcpConnectionSend, TcpConnectionSendCallback,
+        [](napi_env theEnv, napi_value thisVal, TcpServerSendContext *context) -> bool {
             context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
             return true;
         },
@@ -336,8 +379,8 @@ napi_value SocketModuleExports::TCPConnection::Send(napi_env env, napi_callback_
 napi_value SocketModuleExports::TCPConnection::Close(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(
-        CloseContext, ExecTcpConnectionClose, TcpConnectionCloseCallback,
-        [](napi_env theEnv, napi_value thisVal, CloseContext *context) -> bool {
+        TcpServerCloseContext, ExecTcpConnectionClose, TcpConnectionCloseCallback,
+        [](napi_env theEnv, napi_value thisVal, TcpServerCloseContext *context) -> bool {
             context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
             return true;
         },
@@ -347,8 +390,8 @@ napi_value SocketModuleExports::TCPConnection::Close(napi_env env, napi_callback
 napi_value SocketModuleExports::TCPConnection::GetRemoteAddress(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(
-        TcpConnectionGetRemoteAddressContext, ExecTcpConnectionGetRemoteAddress, TcpConnectionGetRemoteAddressCallback,
-        [](napi_env theEnv, napi_value thisVal, TcpConnectionGetRemoteAddressContext *context) -> bool {
+        TcpServerGetRemoteAddressContext, ExecTcpConnectionGetRemoteAddress, TcpConnectionGetRemoteAddressCallback,
+        [](napi_env theEnv, napi_value thisVal, TcpServerGetRemoteAddressContext *context) -> bool {
             context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
             return true;
         },
@@ -368,18 +411,20 @@ napi_value SocketModuleExports::TCPConnection::Off(napi_env env, napi_callback_i
 /* tcp server async works */
 napi_value SocketModuleExports::TCPServerSocket::Listen(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(BindContext, ExecTcpServerListen, ListenCallback, MakeTcpSocket, TCP_SERVER_LISTEN_NAME);
+    return SOCKET_INTERFACE(TcpServerListenContext, ExecTcpServerListen, ListenCallback, MakeTcpServerSocket,
+                            TCP_SERVER_LISTEN_NAME);
 }
 
 napi_value SocketModuleExports::TCPServerSocket::GetState(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(GetStateContext, ExecTcpServerGetState, GetStateCallback, nullptr, TCP_SERVER_GET_STATE);
+    return SOCKET_INTERFACE(TcpServerGetStateContext, ExecTcpServerGetState, TcpServerGetStateCallback, nullptr,
+                            TCP_SERVER_GET_STATE);
 }
 
 napi_value SocketModuleExports::TCPServerSocket::SetExtraOptions(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(TcpSetExtraOptionsContext, ExecTcpServerSetExtraOptions, TcpSetExtraOptionsCallback,
-                            nullptr, TCP_SERVER_SET_EXTRA_OPTIONS_NAME);
+    return SOCKET_INTERFACE(TcpServerSetExtraOptionsContext, ExecTcpServerSetExtraOptions,
+                            TcpServerSetExtraOptionsCallback, nullptr, TCP_SERVER_SET_EXTRA_OPTIONS_NAME);
 }
 
 napi_value SocketModuleExports::TCPServerSocket::On(napi_env env, napi_callback_info info)

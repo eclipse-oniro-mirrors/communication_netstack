@@ -18,9 +18,9 @@
 
 #include <cstddef>
 
+#include "base_context.h"
 #include "napi/native_api.h"
 #include "net_address.h"
-#include "base_context.h"
 #include "nocopyable.h"
 #include "socket_remote_info.h"
 #include "socket_state_base.h"
@@ -46,7 +46,6 @@ public:
 
     NetAddress address_;
     int32_t errorNumber_ = 0;
-    int32_t clientId_ = 0;
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
@@ -55,8 +54,6 @@ private:
 typedef CommonContext GetStateContext;
 
 typedef CommonContext GetRemoteAddressContext;
-
-typedef CommonContext TcpConnectionGetRemoteAddressContext;
 
 typedef CommonContext GetSocketFdContext;
 

@@ -213,7 +213,7 @@ void ExecTcpServerListenFuzzTest(const uint8_t *data, size_t size)
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
     EventManager eventManager;
-    BindContext context(env, &eventManager);
+    TcpServerListenContext context(env, &eventManager);
 
     SocketExec::ExecTcpServerListen(&context);
 }
@@ -226,7 +226,7 @@ void ExecTcpServerSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
     EventManager eventManager;
-    TcpSetExtraOptionsContext context(env, &eventManager);
+    TcpServerSetExtraOptionsContext context(env, &eventManager);
 
     SocketExec::ExecTcpServerSetExtraOptions(&context);
 }
@@ -239,7 +239,7 @@ void ExecTcpServerGetStateFuzzTest(const uint8_t *data, size_t size)
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
     EventManager eventManager;
-    GetStateContext context(env, &eventManager);
+    TcpServerGetStateContext context(env, &eventManager);
 
     SocketExec::ExecTcpServerGetState(&context);
 }
@@ -252,7 +252,7 @@ void ExecTcpConnectionSendFuzzTest(const uint8_t *data, size_t size)
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
     EventManager eventManager;
-    TcpSendContext context(env, &eventManager);
+    TcpServerSendContext context(env, &eventManager);
 
     SocketExec::ExecTcpConnectionSend(&context);
 }
@@ -265,7 +265,7 @@ void ExecTcpConnectionGetRemoteAddressFuzzTest(const uint8_t *data, size_t size)
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
     EventManager eventManager;
-    TcpConnectionGetRemoteAddressContext context(env, &eventManager);
+    TcpServerGetRemoteAddressContext context(env, &eventManager);
 
     SocketExec::ExecTcpConnectionGetRemoteAddress(&context);
 }
@@ -278,7 +278,7 @@ void ExecTcpConnectionCloseFuzzTest(const uint8_t *data, size_t size)
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
     EventManager eventManager;
-    CloseContext context(env, &eventManager);
+    TcpServerCloseContext context(env, &eventManager);
 
     SocketExec::ExecTcpConnectionClose(&context);
 }

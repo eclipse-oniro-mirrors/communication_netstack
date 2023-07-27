@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef COMMUNICATIONNETSTACK_TCP_SEND_CONTEXT_H
-#define COMMUNICATIONNETSTACK_TCP_SEND_CONTEXT_H
+#ifndef COMMUNICATIONNETSTACK_TCP_SERVER_SEND_CONTEXT_H
+#define COMMUNICATIONNETSTACK_TCP_SERVER_SEND_CONTEXT_H
 
 #include <cstddef>
 
@@ -24,13 +24,13 @@
 #include "tcp_send_options.h"
 
 namespace OHOS::NetStack::Socket {
-class TcpSendContext final : public BaseContext {
+class TcpServerSendContext final : public BaseContext {
 public:
-    DISALLOW_COPY_AND_MOVE(TcpSendContext);
+    DISALLOW_COPY_AND_MOVE(TcpServerSendContext);
 
-    TcpSendContext() = delete;
+    TcpServerSendContext() = delete;
 
-    explicit TcpSendContext(napi_env env, EventManager *manager);
+    explicit TcpServerSendContext(napi_env env, EventManager *manager);
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
@@ -41,6 +41,7 @@ public:
     [[nodiscard]] std::string GetErrorMessage() const override;
 
     TCPSendOptions options;
+    int32_t clientId_ = 0;
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
@@ -49,4 +50,4 @@ private:
 };
 } // namespace OHOS::NetStack::Socket
 
-#endif /* COMMUNICATIONNETSTACK_TCP_SEND_CONTEXT_H */
+#endif /* COMMUNICATIONNETSTACK_TCP_SERVER_SEND_CONTEXT_H */

@@ -22,6 +22,10 @@
 #include "socket_exec.h"
 #include "tcp_extra_context.h"
 #include "tcp_send_context.h"
+#include "tcp_server_common_context.h"
+#include "tcp_server_extra_context.h"
+#include "tcp_server_listen_context.h"
+#include "tcp_server_send_context.h"
 #include "udp_extra_context.h"
 #include "udp_send_context.h"
 
@@ -88,33 +92,33 @@ void SocketAsyncWork::ExecUdpGetSocketFd(napi_env env, void *data)
 
 void SocketAsyncWork::ExecTcpConnectionSend(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<TcpSendContext, SocketExec::ExecTcpConnectionSend>(env, data);
+    BaseAsyncWork::ExecAsyncWork<TcpServerSendContext, SocketExec::ExecTcpConnectionSend>(env, data);
 }
 
 void SocketAsyncWork::ExecTcpConnectionGetRemoteAddress(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<TcpConnectionGetRemoteAddressContext, SocketExec::ExecTcpConnectionGetRemoteAddress>(
-        env, data);
+    BaseAsyncWork::ExecAsyncWork<TcpServerGetRemoteAddressContext, SocketExec::ExecTcpConnectionGetRemoteAddress>(env,
+                                                                                                                  data);
 }
 
 void SocketAsyncWork::ExecTcpConnectionClose(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<CloseContext, SocketExec::ExecTcpConnectionClose>(env, data);
+    BaseAsyncWork::ExecAsyncWork<TcpServerCloseContext, SocketExec::ExecTcpConnectionClose>(env, data);
 }
 
 void SocketAsyncWork::ExecTcpServerListen(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<BindContext, SocketExec::ExecTcpServerListen>(env, data);
+    BaseAsyncWork::ExecAsyncWork<TcpServerListenContext, SocketExec::ExecTcpServerListen>(env, data);
 }
 
 void SocketAsyncWork::ExecTcpServerSetExtraOptions(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<TcpSetExtraOptionsContext, SocketExec::ExecTcpServerSetExtraOptions>(env, data);
+    BaseAsyncWork::ExecAsyncWork<TcpServerSetExtraOptionsContext, SocketExec::ExecTcpServerSetExtraOptions>(env, data);
 }
 
 void SocketAsyncWork::ExecTcpServerGetState(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<GetStateContext, SocketExec::ExecTcpServerGetState>(env, data);
+    BaseAsyncWork::ExecAsyncWork<TcpServerGetStateContext, SocketExec::ExecTcpServerGetState>(env, data);
 }
 
 void SocketAsyncWork::BindCallback(napi_env env, napi_status status, void *data)
@@ -176,22 +180,34 @@ void SocketAsyncWork::UdpGetSocketFdCallback(napi_env env, napi_status status, v
 
 void SocketAsyncWork::TcpConnectionSendCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<TcpSendContext, SocketExec::TcpConnectionSendCallback>(env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<TcpServerSendContext, SocketExec::TcpConnectionSendCallback>(env, status, data);
 }
 
 void SocketAsyncWork::TcpConnectionCloseCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<CloseContext, SocketExec::TcpConnectionCloseCallback>(env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<TcpServerCloseContext, SocketExec::TcpConnectionCloseCallback>(env, status, data);
 }
 
 void SocketAsyncWork::TcpConnectionGetRemoteAddressCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<TcpConnectionGetRemoteAddressContext,
+    BaseAsyncWork::AsyncWorkCallback<TcpServerGetRemoteAddressContext,
                                      SocketExec::TcpConnectionGetRemoteAddressCallback>(env, status, data);
 }
 
 void SocketAsyncWork::ListenCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<BindContext, SocketExec::ListenCallback>(env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<TcpServerListenContext, SocketExec::ListenCallback>(env, status, data);
+}
+
+void SocketAsyncWork::TcpServerSetExtraOptionsCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<TcpServerSetExtraOptionsContext, SocketExec::TcpServerSetExtraOptionsCallback>(
+        env, status, data);
+}
+
+void SocketAsyncWork::TcpServerGetStateCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<TcpServerGetStateContext, SocketExec::TcpServerGetStateCallback>(env, status,
+                                                                                                      data);
 }
 } // namespace OHOS::NetStack::Socket
