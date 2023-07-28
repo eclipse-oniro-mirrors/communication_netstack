@@ -1164,7 +1164,7 @@ bool ExecUdpGetSocketFd(GetSocketFdContext *context)
     return true;
 }
 
-static bool GetIPv4Address(TcpConnectionGetRemoteAddressContext *context, int32_t fd, sockaddr sockAddr)
+static bool GetIPv4Address(TcpServerGetRemoteAddressContext *context, int32_t fd, sockaddr sockAddr)
 {
     sockaddr_in addr4 = {0};
     socklen_t len4 = sizeof(sockaddr_in);
@@ -1187,7 +1187,7 @@ static bool GetIPv4Address(TcpConnectionGetRemoteAddressContext *context, int32_
     return true;
 }
 
-static bool GetIPv6Address(TcpConnectionGetRemoteAddressContext *context, int32_t fd, sockaddr sockAddr)
+static bool GetIPv6Address(TcpServerGetRemoteAddressContext *context, int32_t fd, sockaddr sockAddr)
 {
     sockaddr_in6 addr6 = {0};
     socklen_t len6 = sizeof(sockaddr_in6);
@@ -1210,7 +1210,7 @@ static bool GetIPv6Address(TcpConnectionGetRemoteAddressContext *context, int32_
     return true;
 }
 
-bool ExecTcpConnectionGetRemoteAddress(TcpConnectionGetRemoteAddressContext *context)
+bool ExecTcpConnectionGetRemoteAddress(TcpServerGetRemoteAddressContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
@@ -1254,7 +1254,7 @@ bool ExecTcpConnectionGetRemoteAddress(TcpConnectionGetRemoteAddressContext *con
     return false;
 }
 
-static bool IsRemoteConnect(TcpSendContext *context, int32_t clientFd)
+static bool IsRemoteConnect(TcpServerSendContext *context, int32_t clientFd)
 {
     sockaddr sockAddr = {0};
     socklen_t len = sizeof(sockaddr);
@@ -1288,7 +1288,7 @@ static bool IsRemoteConnect(TcpSendContext *context, int32_t clientFd)
     return true;
 }
 
-bool ExecTcpConnectionSend(TcpSendContext *context)
+bool ExecTcpConnectionSend(TcpServerSendContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
@@ -1331,7 +1331,7 @@ bool ExecTcpConnectionSend(TcpSendContext *context)
     return true;
 }
 
-bool ExecTcpConnectionClose(CloseContext *context)
+bool ExecTcpConnectionClose(TcpServerCloseContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
@@ -1358,7 +1358,7 @@ bool ExecTcpConnectionClose(CloseContext *context)
     return true;
 }
 
-static bool ServerBind(BindContext *context)
+static bool ServerBind(TcpServerListenContext *context)
 {
     sockaddr_in addr4 = {0};
     sockaddr_in6 addr6 = {0};
@@ -1496,7 +1496,7 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
     }
 }
 
-bool ExecTcpServerListen(BindContext *context)
+bool ExecTcpServerListen(TcpServerListenContext *context)
 {
     int ret = 0;
     if (!ServerBind(context)) {
@@ -1521,7 +1521,7 @@ bool ExecTcpServerListen(BindContext *context)
     return true;
 }
 
-bool ExecTcpServerSetExtraOptions(TcpSetExtraOptionsContext *context)
+bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
@@ -1568,7 +1568,7 @@ bool ExecTcpServerSetExtraOptions(TcpSetExtraOptionsContext *context)
     return true;
 }
 
-static void SetIsConnected(GetStateContext *context)
+static void SetIsConnected(TcpServerGetStateContext *context)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
     if (g_clientFDs.empty()) {
@@ -1578,7 +1578,17 @@ static void SetIsConnected(GetStateContext *context)
     }
 }
 
-bool ExecTcpServerGetState(GetStateContext *context)
+static void SetIsBound(sa_family_t family, TcpServerGetStateContext *context, const sockaddr_in *addr4,
+                       const sockaddr_in6 *addr6)
+{
+    if (family == AF_INET) {
+        context->state_.SetIsBound(ntohs(addr4->sin_port) != 0);
+    } else if (family == AF_INET6) {
+        context->state_.SetIsBound(ntohs(addr6->sin6_port) != 0);
+    }
+}
+
+bool ExecTcpServerGetState(TcpServerGetStateContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
@@ -1723,12 +1733,12 @@ napi_value UdpGetSocketFdCallback(GetSocketFdContext *context)
     return NapiUtils::CreateUint32(context->GetEnv(), sockFd);
 }
 
-napi_value TcpConnectionSendCallback(TcpSendContext *context)
+napi_value TcpConnectionSendCallback(TcpServerSendContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
-napi_value TcpConnectionCloseCallback(CloseContext *context)
+napi_value TcpConnectionCloseCallback(TcpServerCloseContext *context)
 {
     int32_t clientFd = -1;
 
@@ -1759,7 +1769,7 @@ napi_value TcpConnectionCloseCallback(CloseContext *context)
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
-napi_value TcpConnectionGetRemoteAddressCallback(TcpConnectionGetRemoteAddressContext *context)
+napi_value TcpConnectionGetRemoteAddressCallback(TcpServerGetRemoteAddressContext *context)
 {
     napi_value obj = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
@@ -1773,8 +1783,27 @@ napi_value TcpConnectionGetRemoteAddressCallback(TcpConnectionGetRemoteAddressCo
     return obj;
 }
 
-napi_value ListenCallback(BindContext *context)
+napi_value ListenCallback(TcpServerListenContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value TcpServerSetExtraOptionsCallback(TcpServerSetExtraOptionsContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value TcpServerGetStateCallback(TcpServerGetStateContext *context)
+{
+    napi_value obj = NapiUtils::CreateObject(context->GetEnv());
+    if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_BOUND, context->state_.IsBound());
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_CLOSE, context->state_.IsClose());
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_CONNECTED, context->state_.IsConnected());
+
+    return obj;
 }
 } // namespace OHOS::NetStack::Socket::SocketExec

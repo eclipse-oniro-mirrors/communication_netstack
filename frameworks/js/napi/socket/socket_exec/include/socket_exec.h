@@ -21,6 +21,10 @@
 #include "connect_context.h"
 #include "tcp_extra_context.h"
 #include "tcp_send_context.h"
+#include "tcp_server_common_context.h"
+#include "tcp_server_extra_context.h"
+#include "tcp_server_listen_context.h"
+#include "tcp_server_send_context.h"
 #include "udp_extra_context.h"
 #include "udp_send_context.h"
 
@@ -54,17 +58,17 @@ bool ExecTcpGetSocketFd(GetSocketFdContext *context);
 
 bool ExecUdpGetSocketFd(GetSocketFdContext *context);
 
-bool ExecTcpConnectionSend(TcpSendContext *context);
+bool ExecTcpConnectionSend(TcpServerSendContext *context);
 
-bool ExecTcpConnectionGetRemoteAddress(TcpConnectionGetRemoteAddressContext *context);
+bool ExecTcpConnectionGetRemoteAddress(TcpServerGetRemoteAddressContext *context);
 
-bool ExecTcpConnectionClose(CloseContext *context);
+bool ExecTcpConnectionClose(TcpServerCloseContext *context);
 
-bool ExecTcpServerListen(BindContext *context);
+bool ExecTcpServerListen(TcpServerListenContext *context);
 
-bool ExecTcpServerSetExtraOptions(TcpSetExtraOptionsContext *context);
+bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context);
 
-bool ExecTcpServerGetState(GetStateContext *context);
+bool ExecTcpServerGetState(TcpServerGetStateContext *context);
 
 /* async work callback */
 napi_value BindCallback(BindContext *context);
@@ -87,13 +91,17 @@ napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context);
 
 napi_value TcpGetSocketFdCallback(GetSocketFdContext *context);
 
-napi_value TcpConnectionSendCallback(TcpSendContext *context);
+napi_value TcpConnectionSendCallback(TcpServerSendContext *context);
 
-napi_value TcpConnectionCloseCallback(CloseContext *context);
+napi_value TcpConnectionCloseCallback(TcpServerCloseContext *context);
 
-napi_value TcpConnectionGetRemoteAddressCallback(TcpConnectionGetRemoteAddressContext *context);
+napi_value TcpConnectionGetRemoteAddressCallback(TcpServerGetRemoteAddressContext *context);
 
-napi_value ListenCallback(BindContext *context);
+napi_value ListenCallback(TcpServerListenContext *context);
+
+napi_value TcpServerSetExtraOptionsCallback(TcpServerSetExtraOptionsContext *context);
+
+napi_value TcpServerGetStateCallback(TcpServerGetStateContext *context);
 
 napi_value UdpGetSocketFdCallback(GetSocketFdContext *context);
 } // namespace OHOS::NetStack::Socket::SocketExec

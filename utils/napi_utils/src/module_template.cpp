@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,10 +16,10 @@
 #include "module_template.h"
 
 #include <algorithm>
+#include <functional>
 #include <initializer_list>
 #include <new>
 #include <string>
-#include <functional>
 
 #include "event_manager.h"
 #include "netstack_log.h"
@@ -38,6 +38,7 @@ napi_value On(napi_env env, napi_callback_info info, const std::initializer_list
     if (paramsCount != EVENT_PARAM_NUM || NapiUtils::GetValueType(env, params[0]) != napi_string ||
         NapiUtils::GetValueType(env, params[1]) != napi_function) {
         NETSTACK_LOGE("on off once interface para: [string, function]");
+        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
         return NapiUtils::GetUndefined(env);
     }
 
@@ -93,11 +94,13 @@ napi_value Off(napi_env env, napi_callback_info info, const std::initializer_lis
     if ((paramsCount != 1 && paramsCount != EVENT_PARAM_NUM) ||
         NapiUtils::GetValueType(env, params[0]) != napi_string) {
         NETSTACK_LOGE("on off once interface para: [string, function?]");
+        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
         return NapiUtils::GetUndefined(env);
     }
 
     if (paramsCount == EVENT_PARAM_NUM && NapiUtils::GetValueType(env, params[1]) != napi_function) {
         NETSTACK_LOGE("on off once interface para: [string, function]");
+        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
         return NapiUtils::GetUndefined(env);
     }
 
