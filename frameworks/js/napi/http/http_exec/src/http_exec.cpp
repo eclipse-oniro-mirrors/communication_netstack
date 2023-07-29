@@ -248,7 +248,8 @@ bool HttpExec::ExecRequest(RequestContext *context)
         context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
         if (EventManager::IsManagerValid(context->GetManager())) {
             if (context->IsRequestInStream()) {
-                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestInStreamCallback);
+                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context,
+                                                     HttpAsyncWork::RequestInStreamCallback);
             } else {
                 NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
             }
