@@ -64,9 +64,9 @@ public:
 
     [[nodiscard]] std::string GetErrorMessage() const override;
 
-    void EnableRequest2();
+    void EnableRequestInStream();
 
-    [[nodiscard]] bool IsRequest2();
+    [[nodiscard]] bool IsRequestInStream();
 
     void SetDlLen(curl_off_t nowLen, curl_off_t totalLen);
 
@@ -82,7 +82,7 @@ public:
 
 private:
     bool usingCache_;
-    bool request2_;
+    bool requestInStream_;
     std::mutex dlLenLock_;
     std::mutex tempDataLock_;
     std::queue<std::string> tempData_;
