@@ -420,6 +420,7 @@ void HttpExec::SendRequest()
 
 void HttpExec::ReadResponse()
 {
+    std::lock_guard guard(staticVariable_.curlMultiMutex);
     CURLMsg *msg = nullptr; /* NOLINT */
     do {
         if (!staticVariable_.runThread || staticVariable_.curlMulti == nullptr) {
