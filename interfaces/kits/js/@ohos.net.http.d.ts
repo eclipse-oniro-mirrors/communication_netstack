@@ -271,7 +271,7 @@ declare namespace http {
     /**
      * Initiates an HTTP request to a given URL, applicable to scenarios where http response supports streaming.
      * @param { string } url URL for initiating an HTTP request.
-     * <p>@param { AsyncCallback<number> } callback Returns the callback of request2 {@link ResponseCode},
+     * <p>@param { AsyncCallback<number> } callback Returns the callback of requestInStream {@link ResponseCode},
      * should use on_headersReceive and on_dataReceive to get http response.</p>
      * @permission ohos.permission.INTERNET
      * @throws { BusinessError } 401 - Parameter error.
@@ -308,13 +308,13 @@ declare namespace http {
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    request2(url: string, callback: AsyncCallback<number>): void;
+    requestInStream(url: string, callback: AsyncCallback<number>): void;
 
     /**
      * Initiates an HTTP request to a given URL, applicable to scenarios where http response supports streaming.
      * @param { string } url URL for initiating an HTTP request.
      * @param { HttpRequestOptions } options Optional parameters {@link HttpRequestOptions}.
-     * @param { AsyncCallback<number> } callback - the callback of request2.
+     * @param { AsyncCallback<number> } callback - the callback of requestInStream.
      * @permission ohos.permission.INTERNET
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 201 - Permission denied.
@@ -350,7 +350,7 @@ declare namespace http {
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    request2(url: string, options: HttpRequestOptions, callback: AsyncCallback<number>): void;
+    requestInStream(url: string, options: HttpRequestOptions, callback: AsyncCallback<number>): void;
 
     /**
      * Initiates an HTTP request to a given URL, applicable to scenarios where http response supports streaming.
@@ -392,7 +392,7 @@ declare namespace http {
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    request2(url: string, options?: HttpRequestOptions): Promise<number>;
+    requestInStream(url: string, options?: HttpRequestOptions): Promise<number>;
 
     /**
      * Destroys an HTTP request.
@@ -494,7 +494,7 @@ declare namespace http {
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    on(type: 'dataProgress', callback: Callback<{ receiveSize: number, totalSize: number }>): void;
+    on(type: 'dataReceiveProgress', callback: Callback<{ receiveSize: number, totalSize: number }>): void;
 
     /**
      * Unregisters an observer for progress of receiving HTTP Response data events.
@@ -503,7 +503,7 @@ declare namespace http {
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    off(type: 'dataProgress', callback?: Callback<{ receiveSize: number, totalSize: number }>): void;
+    off(type: 'dataReceiveProgress', callback?: Callback<{ receiveSize: number, totalSize: number }>): void;
   }
 
   /**
