@@ -59,6 +59,7 @@ const char *const HttpConstant::HTTP_URL_PARAM_SEPARATOR = "&";
 const char *const HttpConstant::HTTP_URL_NAME_VALUE_SEPARATOR = "=";
 const char *const HttpConstant::HTTP_HEADER_SEPARATOR = ":";
 const char *const HttpConstant::HTTP_LINE_SEPARATOR = "\r\n";
+const char *const HttpConstant::HTTP_RESPONSE_HEADER_SEPARATOR = "\r\n\r\n";
 
 const char *const HttpConstant::HTTP_DEFAULT_USER_AGENT = "libcurl-agent/1.0";
 #ifndef WINDOWS_PLATFORM

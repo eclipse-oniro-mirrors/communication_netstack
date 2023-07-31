@@ -66,6 +66,24 @@ static constexpr const char *HTTP_PROXY_PORT_KEY = "persist.netmanager_base.http
 static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_base.http_proxy.exclusion_list";
 #endif
 
+template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)
+{
+    (void)status;
+
+    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
+    napi_env env = workWrapper->env;
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
+
+    napi_value obj = MakeJsValue(env, workWrapper->data);
+
+    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
+    workWrapper->manager->Emit(workWrapper->type, arg);
+
+    delete workWrapper;
+    delete work;
+}
+
 bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 {
     if (handle == nullptr || staticVariable_.curlMulti == nullptr) {
@@ -162,8 +180,6 @@ bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURL
         }
         cookies = cookies->next;
     }
-    context->response.ParseHeaders();
-
     return true;
 }
 
@@ -203,7 +219,7 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         return;
     }
 
-    if (context->GetManager()->IsManagerValid()) {
+    if (EventManager::IsManagerValid(context->GetManager())) {
         if (context->IsRequest2()) {
             if (context->IsExecOK()) {
                 NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd);
@@ -230,7 +246,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
 
     if (!RequestWithoutCache(context)) {
         context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
-        if (context->GetManager()->IsManagerValid()) {
+        if (EventManager::IsManagerValid(context->GetManager())) {
             if (context->IsRequest2()) {
                 NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::Request2Callback);
             } else {
@@ -255,9 +271,8 @@ napi_value HttpExec::RequestCallback(RequestContext *context)
     NapiUtils::SetStringPropertyUtf8(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_COOKIES,
                                      context->response.GetCookies());
 
-    napi_value header = MakeResponseHeader(context);
+    napi_value header = MakeResponseHeader(context->GetEnv(), context);
     if (NapiUtils::GetValueType(context->GetEnv(), header) == napi_object) {
-        OnHeaderReceive(context, header);
         NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_HEADER, header);
     }
 
@@ -628,6 +643,13 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
         return 0;
     }
     context->response.AppendRawHeader(data, size * memBytes);
+    if (CommonUtils::EndsWith(context->response.GetRawHeader(), HttpConstant::HTTP_RESPONSE_HEADER_SEPARATOR)) {
+        context->response.ParseHeaders();
+        if (context->GetManager() && EventManager::IsManagerValid(context->GetManager())) {
+            context->GetManager()->EmitByUv(ON_HEADER_RECEIVE, context, CallbackTemplate<MakeResponseHeader>);
+            context->GetManager()->EmitByUv(ON_HEADERS_RECEIVE, context, CallbackTemplate<MakeResponseHeader>);
+        }
+    }
     return size * memBytes;
 }
 
@@ -711,8 +733,10 @@ struct curl_slist *HttpExec::MakeHeaders(const std::vector<std::string> &vec)
     return header;
 }
 
-napi_value HttpExec::MakeResponseHeader(RequestContext *context)
+napi_value HttpExec::MakeResponseHeader(napi_env env, void *ctx)
 {
+    auto context = reinterpret_cast<RequestContext *>(ctx);
+    (void)env;
     napi_value header = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), header) == napi_object) {
         std::for_each(context->response.GetHeader().begin(), context->response.GetHeader().end(),
@@ -723,13 +747,6 @@ napi_value HttpExec::MakeResponseHeader(RequestContext *context)
                       });
     }
     return header;
-}
-
-void HttpExec::OnHeaderReceive(RequestContext *context, napi_value header)
-{
-    napi_value undefined = NapiUtils::GetUndefined(context->GetEnv());
-    context->Emit(ON_HEADER_RECEIVE, std::make_pair(undefined, header));
-    context->Emit(ON_HEADERS_RECEIVE, std::make_pair(undefined, header));
 }
 
 bool HttpExec::IsUnReserved(unsigned char in)

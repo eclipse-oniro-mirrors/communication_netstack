@@ -32,8 +32,6 @@ static constexpr const int PARAM_URL_AND_OPTIONS_OR_CALLBACK = 2;
 static constexpr const int PARAM_URL_AND_OPTIONS_AND_CALLBACK = 3;
 
 namespace OHOS::NetStack::Http {
-std::map<RequestContext *, napi_env> RequestContext::envMap_;
-std::mutex RequestContext::envMutex_;
 static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_UNSUPPORTED_PROTOCOL, "Unsupported protocol"},
     {HTTP_URL_MALFORMAT, "URL using bad/illegal format or missing URL"},
@@ -68,14 +66,6 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
 RequestContext::RequestContext(napi_env env, EventManager *manager)
     : BaseContext(env, manager), usingCache_(true), request2_(false), curlHeaderList_(nullptr)
 {
-    std::lock_guard guard(envMutex_);
-    envMap_[this] = env;
-}
-
-napi_env RequestContext::GetEnv()
-{
-    std::lock_guard guard(envMutex_);
-    return envMap_[this];
 }
 
 void RequestContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -401,11 +391,6 @@ RequestContext::~RequestContext()
     if (curlHeaderList_ != nullptr) {
         curl_slist_free_all(curlHeaderList_);
     }
-    std::lock_guard guard(envMutex_);
-    auto it = envMap_.find(this);
-    if (it != envMap_.end()) {
-        envMap_.erase(it);
-    }
     NETSTACK_LOGI("RequestContext is destructed by the destructor");
 }
 
@@ -445,11 +430,12 @@ std::string RequestContext::GetErrorMessage() const
     if (BaseContext::IsPermissionDenied()) {
         return PERMISSION_DENIED_MSG;
     }
-    if (err == HTTP_UNKNOWN_OTHER_ERROR) {
-        err -= HTTP_ERROR_CODE_BASE;
-    }
 
-    return HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE)->second;
+    auto pos = HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE);
+    if (pos != HTTP_ERR_MAP.end()) {
+        return pos->second;
+    }
+    return HTTP_ERR_MAP.at(HTTP_UNKNOWN_OTHER_ERROR);
 }
 
 void RequestContext::EnableRequest2()
