@@ -81,7 +81,7 @@ public:
     virtual void TearDown() {}
 };
 
-void TestSocketOneWaySplitCode_X(TLSSocket &server)
+void SetOneWayHwTestShortParam(TLSSocket &server)
 {
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
@@ -103,7 +103,7 @@ void TestSocketOneWaySplitCode_X(TLSSocket &server)
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
-void TestSocketOneWaySplitCode_Y(TLSSocket &server)
+void SetOneWayHwTestLongParam(TLSSocket &server)
 {
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
@@ -152,7 +152,7 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
     }
 
     TLSSocket server;
-    TestSocketOneWaySplitCode_X(server);
+    SetOneWayHwTestShortParam(server);
 
     const std::string data = "how do you do? this is connectInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -171,7 +171,7 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
     }
 
     TLSSocket server;
-    TestSocketOneWaySplitCode_X(server);
+    SetOneWayHwTestShortParam(server);
 
     const std::string data = "how do you do? this is closeInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -190,7 +190,7 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
     }
 
     TLSSocket server;
-    TestSocketOneWaySplitCode_X(server);
+    SetOneWayHwTestShortParam(server);
 
     const std::string data = "how do you do? this is sendInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -255,7 +255,7 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     }
 
     TLSSocket server;
-    TestSocketOneWaySplitCode_X(server);
+    SetOneWayHwTestShortParam(server);
 
     Socket::SocketStateBase TlsSocketstate;
     server.GetState([&TlsSocketstate](int32_t errCode, const Socket::SocketStateBase &state) {
@@ -283,7 +283,7 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
         return;
     }
     TLSSocket server;
-    TestSocketOneWaySplitCode_X(server);
+    SetOneWayHwTestShortParam(server);
 
     const std::string data = "how do you do? This is UT test getRemoteCertificateInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -304,7 +304,7 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
         return;
     }
     TLSSocket server;
-    TestSocketOneWaySplitCode_Y(server);
+    SetOneWayHwTestLongParamY(server);
 
     const std::string data = "how do you do? this is protocolInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -339,7 +339,7 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
         return;
     }
     TLSSocket server;
-    TestSocketOneWaySplitCode_Y(server);
+    SetOneWayHwTestLongParamY(server);
 
     bool flag = false;
     const std::string data = "how do you do? This is getCipherSuiteInterface";
@@ -373,7 +373,7 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
     }
     std::string getData = "server->client";
     TLSSocket server;
-    TestSocketOneWaySplitCode_Y(server);
+    SetOneWayHwTestLongParamY(server);
 
     server.OnMessage([&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {
         EXPECT_TRUE(data == getData);

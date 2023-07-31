@@ -81,7 +81,7 @@ public:
     virtual void TearDown() {}
 };
 
-void SplitSocketTestCode_X(TLSSocket &server)
+void SetSocketHwTestShortParam(TLSSocket &server)
 {
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
@@ -103,7 +103,7 @@ void SplitSocketTestCode_X(TLSSocket &server)
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
-void SplitSocketTestCode_Y(TLSSocket &server)
+void SetSocketHwTestLongParam(TLSSocket &server)
 {
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
@@ -151,7 +151,7 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
         return;
     }
     TLSSocket server;
-    SplitSocketTestCode_X(server);
+    SetSocketHwTestShortParam(server);
 
     const std::string data = "how do you do? this is connectInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -170,7 +170,7 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
     }
 
     TLSSocket server;
-    SplitSocketTestCode_X(server);
+    SetSocketHwTestShortParam(server);
 
     const std::string data = "how do you do? this is closeInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -188,7 +188,7 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
         return;
     }
     TLSSocket server;
-    SplitSocketTestCode_X(server);
+    SetSocketHwTestShortParam(server);
 
     const std::string data = "how do you do? this is sendInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -253,7 +253,7 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     }
 
     TLSSocket server;
-    SplitSocketTestCode_X(server);
+    SetSocketHwTestShortParam(server);
 
     Socket::SocketStateBase TlsSocketstate;
     server.GetState([&TlsSocketstate](int32_t errCode, const Socket::SocketStateBase &state) {
@@ -281,7 +281,7 @@ HWTEST_F(TlsSocketTest, getCertificateInterface, testing::ext::TestSize.Level2)
         return;
     }
     TLSSocket server;
-    SplitSocketTestCode_X(server);
+    SetSocketHwTestShortParam(server);
 
     const std::string data = "how do you do? This is UT test getCertificateInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -301,7 +301,7 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
         return;
     }
     TLSSocket server;
-    SplitSocketTestCode_X(server);
+    SetSocketHwTestShortParam(server);
 
     Socket::TCPSendOptions tcpSendOptions;
     const std::string data = "how do you do? This is UT test getRemoteCertificateInterface";
@@ -322,7 +322,7 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
         return;
     }
     TLSSocket server;
-    SplitSocketTestCode_Y(server);
+    SetSocketHwTestLongParam(server);
 
     const std::string data = "how do you do? this is protocolInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -357,7 +357,7 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
         return;
     }
     TLSSocket server;
-    SplitSocketTestCode_Y(server);
+    SetSocketHwTestLongParam(server);
 
     bool flag = false;
     const std::string data = "how do you do? This is getCipherSuiteInterface";
@@ -443,7 +443,7 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
     }
     std::string getData = "server->client";
     TLSSocket server;
-    SplitSocketTestCode_Y(server);
+    SetSocketHwTestLongParam(server);
 
     server.OnMessage([&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {
         if (data == getData) {
