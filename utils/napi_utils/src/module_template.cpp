@@ -154,6 +154,7 @@ napi_value NewInstance(napi_env env, napi_callback_info info, const std::string 
     NAPI_CALL(env, napi_new_instance(env, jsConstructor, 0, nullptr, &result));
 
     auto manager = new EventManager();
+    EventManager::SetValid(manager);
     napi_wrap(env, result, reinterpret_cast<void *>(manager), finalizer, nullptr, nullptr);
 
     return result;

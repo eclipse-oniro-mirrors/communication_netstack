@@ -18,12 +18,12 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <functional>
 #include <mutex>
+#include <queue>
 #include <thread>
 #include <utility>
 #include <vector>
-#include <queue>
-#include <functional>
 
 #include "curl/curl.h"
 #include "napi/native_api.h"
@@ -88,9 +88,7 @@ private:
 
     static struct curl_slist *MakeHeaders(const std::vector<std::string> &vec);
 
-    static napi_value MakeResponseHeader(RequestContext *context);
-
-    static void OnHeaderReceive(RequestContext *context, napi_value header);
+    static napi_value MakeResponseHeader(napi_env env, void *ctx);
 
     static bool IsUnReserved(unsigned char in);
 

@@ -45,6 +45,9 @@ void CommonContext::ParseParams(napi_value *params, size_t paramsCount)
 
 int CommonContext::GetSocketFd() const
 {
+    if (manager_->GetData() == nullptr) {
+        return -1;
+    }
     return (int)(uint64_t)manager_->GetData();
 }
 

@@ -23,8 +23,7 @@
 namespace OHOS::NetStack::Websocket {
 class WebSocketExec final {
 public:
-    static bool CreatConnectInfo(ConnectContext *context, lws_context *lwsContext, lws_client_connect_info &connectInfo,
-                          EventManager *manager);
+    static bool CreatConnectInfo(ConnectContext *context, lws_context *lwsContext, EventManager *manager);
     /* async work execute */
     static bool ExecConnect(ConnectContext *context);
 
