@@ -44,7 +44,9 @@
 #include "tcp_server_listen_context.h"
 #include "tcp_server_send_context.h"
 #include "tlssocket_module.h"
+#if !defined(CROSS_PLATFORM)
 #include "tlssocketserver_module.h"
+#endif
 #include "udp_extra_context.h"
 #include "udp_send_context.h"
 
@@ -191,7 +193,9 @@ static bool MakeUdpSocket(napi_env env, napi_value thisVal, BindContext *context
 napi_value SocketModuleExports::InitSocketModule(napi_env env, napi_value exports)
 {
     TlsSocket::TLSSocketModuleExports::InitTLSSocketModule(env, exports);
+#if !defined(CROSS_PLATFORM)
     TlsSocketServer::TLSSocketServerModuleExports::InitTLSSocketServerModule(env, exports);
+#endif
     DefineUDPSocketClass(env, exports);
     DefineTCPServerSocketClass(env, exports);
     DefineTCPSocketClass(env, exports);
