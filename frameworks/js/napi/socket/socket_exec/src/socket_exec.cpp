@@ -951,6 +951,7 @@ bool ExecClose(CloseContext *context)
     }
     NETSTACK_LOGI("sock %{public}d closed success", context->GetSocketFd());
 
+    context->state_.SetIsClose(true);
     context->SetSocketFd(0);
 
     return true;
