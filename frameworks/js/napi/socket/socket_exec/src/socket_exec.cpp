@@ -571,9 +571,6 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     fds[0].events |= POLLIN;
 
     while (true) {
-        if ((int)(uint64_t)callback.GetEventManager()->GetData() == 0) {
-            return;
-        }
         int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT);
         if (ret < 0) {
             NETSTACK_LOGE("poll to recv failed errno is: %{public}d %{public}s", errno, strerror(errno));
@@ -582,6 +579,9 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         }
         if (ret == 0) {
             continue;
+        }
+        if ((int)(uint64_t)callback.GetEventManager()->GetData() == 0) {
+            return;
         }
         (void)memset_s(buf.get(), bufferSize, 0, bufferSize);
         socklen_t tempAddrLen = addrLen;
