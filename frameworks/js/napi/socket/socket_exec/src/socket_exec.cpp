@@ -330,10 +330,17 @@ public:
                            std::shared_ptr<EventManager> manager) const = 0;
 
     virtual void OnTcpConnectionMessage(int32_t id) const = 0;
+    
+    [[nodiscard]] EventManager *GetEventManager() const;
 
 protected:
     EventManager *manager_;
 };
+
+EventManager *MessageCallback::GetEventManager() const
+{
+    return manager_;
+}
 
 class TcpMessageCallback final : public MessageCallback {
 public:
@@ -564,6 +571,9 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     fds[0].events |= POLLIN;
 
     while (true) {
+        if ((int)(uint64_t)callback.GetEventManager()->GetData() == 0) {
+            return;
+        }
         int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT);
         if (ret < 0) {
             NETSTACK_LOGE("poll to recv failed errno is: %{public}d %{public}s", errno, strerror(errno));
