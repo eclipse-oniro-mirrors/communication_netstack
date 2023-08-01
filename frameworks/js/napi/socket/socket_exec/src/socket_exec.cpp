@@ -330,7 +330,7 @@ public:
                            std::shared_ptr<EventManager> manager) const = 0;
 
     virtual void OnTcpConnectionMessage(int32_t id) const = 0;
-    
+
     [[nodiscard]] EventManager *GetEventManager() const;
 
 protected:
