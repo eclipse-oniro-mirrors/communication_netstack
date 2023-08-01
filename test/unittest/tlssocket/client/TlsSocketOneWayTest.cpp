@@ -304,7 +304,7 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
         return;
     }
     TLSSocket server;
-    SetOneWayHwTestLongParamY(server);
+    SetOneWayHwTestLongParam(server);
 
     const std::string data = "how do you do? this is protocolInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -339,7 +339,7 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
         return;
     }
     TLSSocket server;
-    SetOneWayHwTestLongParamY(server);
+    SetOneWayHwTestLongParam(server);
 
     bool flag = false;
     const std::string data = "how do you do? This is getCipherSuiteInterface";
@@ -373,7 +373,7 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
     }
     std::string getData = "server->client";
     TLSSocket server;
-    SetOneWayHwTestLongParamY(server);
+    SetOneWayHwTestLongParam(server);
 
     server.OnMessage([&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {
         EXPECT_TRUE(data == getData);
