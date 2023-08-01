@@ -359,6 +359,9 @@ public:
     {
         (void)addr;
 
+        if ((int)(uint64_t)manager_->GetData() == 0) {
+            return false;
+        }
         sockaddr sockAddr = {0};
         socklen_t len = sizeof(sockaddr);
         int ret = getsockname(sock, &sockAddr, &len);
