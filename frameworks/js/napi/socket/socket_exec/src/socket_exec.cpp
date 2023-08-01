@@ -358,7 +358,6 @@ public:
     bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const override
     {
         (void)addr;
-
         if ((int)(uint64_t)manager_->GetData() == 0) {
             return false;
         }
@@ -395,6 +394,9 @@ public:
                    std::shared_ptr<EventManager> manager) const override
     {
         (void)addr;
+        if ((int)(uint64_t)manager_->GetData() == 0) {
+            return false;
+        }
         sockaddr sockAddr = {0};
         socklen_t len = sizeof(sockaddr);
         int ret = getsockname(sock, &sockAddr, &len);
@@ -445,12 +447,18 @@ public:
 
     bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const override
     {
+        if ((int)(uint64_t)manager_->GetData() == 0) {
+            return false;
+        }
         return OnRecvMessage(manager_, data, dataLen, addr);
     }
 
     bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr,
                    std::shared_ptr<EventManager> manager) const override
     {
+        if ((int)(uint64_t)manager_->GetData() == 0) {
+            return false;
+        }
         return true;
     }
 
