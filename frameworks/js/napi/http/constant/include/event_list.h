@@ -19,7 +19,7 @@
 static constexpr const char *ON_HEADER_RECEIVE = "headerReceive";
 static constexpr const char *ON_DATA_RECEIVE = "dataReceive";
 static constexpr const char *ON_DATA_END = "dataEnd";
-static constexpr const char *ON_DATA_PROGRESS = "dataProgress";
+static constexpr const char *ON_DATA_RECEIVE_PROGRESS = "dataReceiveProgress";
 
 static constexpr const char *ON_HEADERS_RECEIVE = "headersReceive";
 

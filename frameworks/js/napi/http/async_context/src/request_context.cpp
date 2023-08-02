@@ -64,7 +64,7 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
 };
 RequestContext::RequestContext(napi_env env, EventManager *manager)
-    : BaseContext(env, manager), usingCache_(true), request2_(false), curlHeaderList_(nullptr)
+    : BaseContext(env, manager), usingCache_(true), requestInStream_(false), curlHeaderList_(nullptr)
 {
 }
 
@@ -438,14 +438,14 @@ std::string RequestContext::GetErrorMessage() const
     return HTTP_ERR_MAP.at(HTTP_UNKNOWN_OTHER_ERROR);
 }
 
-void RequestContext::EnableRequest2()
+void RequestContext::EnableRequestInStream()
 {
-    request2_ = true;
+    requestInStream_ = true;
 }
 
-bool RequestContext::IsRequest2()
+bool RequestContext::IsRequestInStream()
 {
-    return request2_;
+    return requestInStream_;
 }
 
 void RequestContext::SetDlLen(curl_off_t nowLen, curl_off_t totalLen)

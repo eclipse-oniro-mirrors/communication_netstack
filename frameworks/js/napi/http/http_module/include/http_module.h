@@ -33,14 +33,14 @@ public:
     class HttpRequest {
     public:
         static constexpr const char *FUNCTION_REQUEST = "request";
-        static constexpr const char *FUNCTION_REQUEST2 = "request2";
+        static constexpr const char *FUNCTION_REQUEST_IN_STREAM = "requestInStream";
         static constexpr const char *FUNCTION_DESTROY = "destroy";
         static constexpr const char *FUNCTION_ON = "on";
         static constexpr const char *FUNCTION_ONCE = "once";
         static constexpr const char *FUNCTION_OFF = "off";
 
         static napi_value Request(napi_env env, napi_callback_info info);
-        static napi_value Request2(napi_env env, napi_callback_info info);
+        static napi_value RequestInStream(napi_env env, napi_callback_info info);
         static napi_value Destroy(napi_env env, napi_callback_info info);
         static napi_value On(napi_env env, napi_callback_info info);
         static napi_value Once(napi_env env, napi_callback_info info);
