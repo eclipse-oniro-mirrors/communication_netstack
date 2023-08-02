@@ -82,6 +82,54 @@ public:
     virtual void TearDown() {}
 };
 
+void SetCertChainHwTestShortParam(TLSSocket &server)
+{
+    TLSConnectOptions options;
+    TLSSecureOptions secureOption;
+    Socket::NetAddress address;
+
+    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
+    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
+    address.SetFamilyBySaFamily(AF_INET);
+
+    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
+    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
+    secureOption.SetCaChain(caVec);
+    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
+
+    options.SetNetAddress(address);
+    options.SetTlsSecureOptions(secureOption);
+
+    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+}
+
+void SetCertChainHwTestLongParam(TLSSocket &server)
+{
+    TLSConnectOptions options;
+    TLSSecureOptions secureOption;
+    Socket::NetAddress address;
+
+    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
+    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
+    address.SetFamilyBySaFamily(AF_INET);
+
+    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
+    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
+    secureOption.SetCaChain(caVec);
+    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
+    secureOption.SetCipherSuite("AES256-SHA256");
+    std::string protocolV1_3 = "TLSv1.3";
+    std::vector<std::string> protocolVec = {protocolV1_3};
+    secureOption.SetProtocolChain(protocolVec);
+
+    options.SetNetAddress(address);
+    options.SetTlsSecureOptions(secureOption);
+
+    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+}
+
 HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
 {
     if (!CheckCaFileExistence("bindInterface")) {
@@ -103,27 +151,8 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
     if (!CheckCaFileExistence("connectInterface")) {
         return;
     }
-    TLSConnectOptions options;
     TLSSocket server;
-
-    TLSSecureOptions secureOption;
-    Socket::NetAddress address;
-
-    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
-    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
-    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
-    secureOption.SetCaChain(caVec);
-    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
-
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
-
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    SetCertChainHwTestShortParam(server);
 
     const std::string data = "how do you do? this is connectInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -140,28 +169,8 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
     if (!CheckCaFileExistence("closeInterface")) {
         return;
     }
-
-    TLSConnectOptions options;
     TLSSocket server;
-
-    TLSSecureOptions secureOption;
-    Socket::NetAddress address;
-
-    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
-    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
-    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
-    secureOption.SetCaChain(caVec);
-    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
-
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
-
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    SetCertChainHwTestShortParam(server);
 
     const std::string data = "how do you do? this is closeInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -178,27 +187,8 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
     if (!CheckCaFileExistence("sendInterface")) {
         return;
     }
-    TLSConnectOptions options;
     TLSSocket server;
-
-    TLSSecureOptions secureOption;
-    Socket::NetAddress address;
-
-    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
-    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
-    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
-    secureOption.SetCaChain(caVec);
-    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
-
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
-
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    SetCertChainHwTestShortParam(server);
 
     const std::string data = "how do you do? this is sendInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -215,9 +205,8 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     if (!CheckCaFileExistence("getRemoteAddressInterface")) {
         return;
     }
-
-    TLSConnectOptions options;
     TLSSocket server;
+    TLSConnectOptions options;
     TLSSecureOptions secureOption;
     Socket::NetAddress address;
 
@@ -234,7 +223,6 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     options.SetTlsSecureOptions(secureOption);
 
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     Socket::NetAddress netAddress;
@@ -262,26 +250,8 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     if (!CheckCaFileExistence("getRemoteAddressInterface")) {
         return;
     }
-
-    TLSConnectOptions options;
     TLSSocket server;
-    TLSSecureOptions secureOption;
-    Socket::NetAddress address;
-
-    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
-    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
-    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
-    secureOption.SetCaChain(caVec);
-    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
-
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
-
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    SetCertChainHwTestShortParam(server);
 
     Socket::SocketStateBase TlsSocketstate;
     server.GetState([&TlsSocketstate](int32_t errCode, const Socket::SocketStateBase &state) {
@@ -309,27 +279,9 @@ HWTEST_F(TlsSocketTest, getCertificateInterface, testing::ext::TestSize.Level2)
         return;
     }
     TLSSocket server;
-    TLSConnectOptions options;
+    SetCertChainHwTestShortParam(server);
     Socket::TCPSendOptions tcpSendOptions;
-    TLSSecureOptions secureOption;
-    Socket::NetAddress address;
     const std::string data = "how do you do? This is UT test getCertificateInterface";
-
-    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
-    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
-    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
-    secureOption.SetCaChain(caVec);
-    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
-
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
-
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     tcpSendOptions.SetData(data);
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -347,28 +299,9 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
         return;
     }
     TLSSocket server;
-    TLSConnectOptions options;
+    SetCertChainHwTestShortParam(server);
     Socket::TCPSendOptions tcpSendOptions;
-    TLSSecureOptions secureOption;
-    Socket::NetAddress address;
     const std::string data = "how do you do? This is UT test getRemoteCertificateInterface";
-
-    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
-    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
-    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
-    secureOption.SetCaChain(caVec);
-    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
-
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
-
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-
     tcpSendOptions.SetData(data);
 
     server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -385,30 +318,8 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
     if (!CheckCaFileExistence("protocolInterface")) {
         return;
     }
-    TLSConnectOptions options;
     TLSSocket server;
-    TLSSecureOptions secureOption;
-    Socket::NetAddress address;
-
-    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
-    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
-    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
-    secureOption.SetCaChain(caVec);
-    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
-    secureOption.SetCipherSuite("AES256-SHA256");
-    std::string protocolV1_3 = "TLSv1.3";
-    std::vector<std::string> protocolVec = {protocolV1_3};
-    secureOption.SetProtocolChain(protocolVec);
-
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
-
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    SetCertChainHwTestLongParam(server);
 
     const std::string data = "how do you do? this is protocolInterface";
     Socket::TCPSendOptions tcpSendOptions;
@@ -431,32 +342,10 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
     if (!CheckCaFileExistence("getCipherSuiteInterface")) {
         return;
     }
-
-    TLSConnectOptions options;
     TLSSocket server;
-    TLSSecureOptions secureOption;
-    Socket::NetAddress address;
-
-    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
-    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
-    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
-    secureOption.SetCaChain(caVec);
-    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
-    secureOption.SetCipherSuite("AES256-SHA256");
-    std::string protocolV1_3 = "TLSv1.3";
-    std::vector<std::string> protocolVec = {protocolV1_3};
-    secureOption.SetProtocolChain(protocolVec);
-
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
+    SetCertChainHwTestLongParam(server);
 
     bool flag = false;
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-
     const std::string data = "how do you do? This is getCipherSuiteInterface";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
@@ -539,30 +428,8 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
         return;
     }
     std::string getData = "server->client";
-    TLSConnectOptions options;
     TLSSocket server;
-    TLSSecureOptions secureOption;
-    Socket::NetAddress address;
-
-    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
-    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
-    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
-    secureOption.SetCaChain(caVec);
-    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
-    secureOption.SetCipherSuite("AES256-SHA256");
-    std::string protocolV1_3 = "TLSv1.3";
-    std::vector<std::string> protocolVec = {protocolV1_3};
-    secureOption.SetProtocolChain(protocolVec);
-
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
-
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    SetCertChainHwTestLongParam(server);
     server.OnMessage([&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {
         if (data == getData) {
             EXPECT_TRUE(true);
