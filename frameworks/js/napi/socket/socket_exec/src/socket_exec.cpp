@@ -153,13 +153,14 @@ static napi_value MakeClose(napi_env env, void *data)
 
     return obj;
 }
+
 void TcpServerConnectionFinalize(napi_env, void *data, void *)
 {
     NETSTACK_LOGI("socket handle is finalized");
     auto manager = static_cast<EventManager *>(data);
     if (manager != nullptr) {
         NETSTACK_LOGI("manager != nullpt");
-        int client_index = -1;
+        int clientIndex = -1;
         std::lock_guard<std::mutex> lock(g_mutex);
         for (auto it = g_clientEventManagers.begin(); it != g_clientEventManagers.end(); ++it) {
             if (it->second == manager) {
@@ -168,7 +169,7 @@ void TcpServerConnectionFinalize(napi_env, void *data, void *)
                 break;
             }
         }
-        auto clientIter = g_clientFDs.find(client_index);
+        auto clientIter = g_clientFDs.find(clientIndex);
         if (clientIter != g_clientFDs.end()) {
             if (clientIter->second != -1) {
                 close(clientIter->second);
@@ -178,6 +179,7 @@ void TcpServerConnectionFinalize(napi_env, void *data, void *)
     }
     EventManager::SetInvalid(manager);
 }
+
 napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, napi_value jsConstructor, int32_t counter)
 {
     napi_value result = nullptr;
