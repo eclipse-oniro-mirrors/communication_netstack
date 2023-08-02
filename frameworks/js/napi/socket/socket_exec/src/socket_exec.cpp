@@ -142,6 +142,17 @@ static napi_value MakeError(napi_env env, void *errCode)
     return err;
 }
 
+static napi_value MakeClose(napi_env env, void *data)
+{
+    (void)data;
+    napi_value obj = NapiUtils::CreateObject(env);
+    if (NapiUtils::GetValueType(env, obj) != napi_object) {
+        return NapiUtils::GetUndefined(env);
+    }
+
+    return obj;
+}
+
 napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, napi_value jsConstructor, int32_t counter)
 {
     napi_value result = nullptr;
@@ -154,16 +165,29 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
         g_cv.notify_one();
     }
 
+    EventManager::SetValid(manager.get());
     napi_wrap(
         env, result, reinterpret_cast<void *>(manager.get()),
         [](napi_env, void *data, void *) {
             NETSTACK_LOGI("socket handle is finalized");
             auto manager = static_cast<EventManager *>(data);
             if (manager != nullptr) {
-                EventManager::SetInvalid(manager);
-                int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
-                if (sock != 0) {
-                    close(sock);
+                int client_index = -1;
+                std::lock_guard<std::mutex> lock(g_mutex);
+                for (auto it = g_clientEventManagers.begin(); it != g_clientEventManagers.end(); ++it) {
+                    if (it->second.get() == manager) {
+                        client_index = it->first;
+                        g_clientEventManagers.erase(it);
+                        break;
+                    }
+                }
+
+                auto clientIter = g_clientFDs.find(client_index);
+                if (clientIter != g_clientFDs.end()) {
+                    if (clientIter->second != -1) {
+                        close(clientIter->second);
+                        clientIter->second = -1;
+                    }
                 }
             }
         },
@@ -324,6 +348,8 @@ public:
 
     virtual void OnError(int err) const = 0;
 
+    virtual void OnCloseMessage(std::shared_ptr<EventManager> manager) const = 0;
+
     virtual bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const = 0;
 
     virtual bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr,
@@ -346,6 +372,11 @@ public:
     void OnError(int err) const override
     {
         manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
+    }
+
+    void OnCloseMessage(std::shared_ptr<EventManager> manager) const override
+    {
+        manager->EmitByUv(EVENT_CLOSE, nullptr, CallbackTemplate<MakeClose>);
     }
 
     bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const override
@@ -432,6 +463,8 @@ public:
     {
         manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
     }
+
+    void OnCloseMessage(std::shared_ptr<EventManager> manager) const override {}
 
     bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const override
     {
@@ -1396,32 +1429,37 @@ static bool ServerBind(TcpServerListenContext *context)
     return true;
 }
 
-static void RemoveClientConnection(int32_t clientFd)
-{
-    std::lock_guard<std::mutex> lock(g_mutex);
-    for (auto it = g_clientFDs.begin(); it != g_clientFDs.end(); ++it) {
-        if (it->second == clientFd) {
-            g_clientFDs.erase(it->first);
-            g_clientEventManagers.erase(it->first);
-            break;
-        }
-    }
-}
-
 static bool IsClientFdClosed(int32_t clientFd)
 {
     return (fcntl(clientFd, F_GETFL) == -1 && errno == EBADF);
 }
 
-static void ClientHandler(int32_t connectFD, sockaddr *addr, socklen_t addrLen, const TcpMessageCallback &callback)
+static void RemoveClientConnection(int32_t clientId)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    for (auto it = g_clientFDs.begin(); it != g_clientFDs.end(); ++it) {
+        if (it->first == clientId) {
+            NETSTACK_LOGI("remove connection clientId: %{public}d, clientFd: %{public}d", it->second, it->first);
+            if (!IsClientFdClosed(it->second)) {
+                NETSTACK_LOGI("close connectFD");
+                shutdown(it->second, SHUT_RDWR);
+                close(it->second);
+            }
+            g_clientFDs.erase(it->first);
+            break;
+        }
+    }
+}
+
+static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, const TcpMessageCallback &callback)
 {
     char buffer[DEFAULT_BUFFER_SIZE];
 
     std::shared_ptr<EventManager> manager = nullptr;
     {
         std::unique_lock<std::mutex> lock(g_mutex);
-        g_cv.wait(lock, [&manager]() {
-            auto iter = g_clientEventManagers.find(g_userCounter);
+        g_cv.wait(lock, [&manager, &clientId]() {
+            auto iter = g_clientEventManagers.find(clientId);
             if (iter != g_clientEventManagers.end()) {
                 manager = iter->second;
                 return true;
@@ -1430,6 +1468,8 @@ static void ClientHandler(int32_t connectFD, sockaddr *addr, socklen_t addrLen, 
             }
         });
     }
+
+    auto connectFD = g_clientFDs[clientId];
     while (true) {
         if (memset_s(buffer, sizeof(buffer), 0, sizeof(buffer)) != EOK) {
             NETSTACK_LOGE("memset_s failed!");
@@ -1440,15 +1480,9 @@ static void ClientHandler(int32_t connectFD, sockaddr *addr, socklen_t addrLen, 
                       recvSize);
         if (recvSize <= 0) {
             NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
-            if (IsClientFdClosed(connectFD)) {
-                NETSTACK_LOGE("connectFD has been closed");
-                break;
-            }
             if (errno != EAGAIN) {
-                shutdown(connectFD, SHUT_RDWR);
-                close(connectFD);
-                manager->Emit(EVENT_CLOSE, std::make_pair(nullptr, nullptr));
-                RemoveClientConnection(connectFD);
+                callback.OnCloseMessage(manager);
+                RemoveClientConnection(clientId);
                 break;
             }
         } else {
@@ -1486,7 +1520,8 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
             g_clientFDs[g_userCounter] = connectFD;
         }
         callback.OnTcpConnectionMessage(g_userCounter);
-        std::thread handlerThread(ClientHandler, connectFD, nullptr, 0, callback);
+        int clientId = g_userCounter;
+        std::thread handlerThread(ClientHandler, clientId, nullptr, 0, callback);
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(TCP_SERVER_HANDLE_CLIENT);
 #else
@@ -1761,7 +1796,7 @@ napi_value TcpConnectionCloseCallback(TcpServerCloseContext *context)
                       context->GetSocketFd(), ret);
     } else {
         NETSTACK_LOGI("sock %{public}d closed success", clientFd);
-        RemoveClientConnection(clientFd);
+        RemoveClientConnection(context->clientId_);
         context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
                                                   NapiUtils::GetUndefined(context->GetEnv())));
     }
