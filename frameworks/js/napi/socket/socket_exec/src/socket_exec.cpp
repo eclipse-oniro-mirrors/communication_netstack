@@ -331,9 +331,16 @@ public:
 
     virtual void OnTcpConnectionMessage(int32_t id) const = 0;
 
+    [[nodiscard]] EventManager *GetEventManager() const;
+
 protected:
     EventManager *manager_;
 };
+
+EventManager *MessageCallback::GetEventManager() const
+{
+    return manager_;
+}
 
 class TcpMessageCallback final : public MessageCallback {
 public:
@@ -351,7 +358,9 @@ public:
     bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const override
     {
         (void)addr;
-
+        if ((int)(uint64_t)manager_->GetData() == 0) {
+            return false;
+        }
         sockaddr sockAddr = {0};
         socklen_t len = sizeof(sockaddr);
         int ret = getsockname(sock, &sockAddr, &len);
@@ -385,6 +394,9 @@ public:
                    std::shared_ptr<EventManager> manager) const override
     {
         (void)addr;
+        if ((int)(uint64_t)manager_->GetData() == 0) {
+            return false;
+        }
         sockaddr sockAddr = {0};
         socklen_t len = sizeof(sockaddr);
         int ret = getsockname(sock, &sockAddr, &len);
@@ -435,12 +447,18 @@ public:
 
     bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const override
     {
+        if ((int)(uint64_t)manager_->GetData() == 0) {
+            return false;
+        }
         return OnRecvMessage(manager_, data, dataLen, addr);
     }
 
     bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr,
                    std::shared_ptr<EventManager> manager) const override
     {
+        if ((int)(uint64_t)manager_->GetData() == 0) {
+            return false;
+        }
         return true;
     }
 
@@ -572,6 +590,9 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         }
         if (ret == 0) {
             continue;
+        }
+        if ((int)(uint64_t)callback.GetEventManager()->GetData() == 0) {
+            return;
         }
         (void)memset_s(buf.get(), bufferSize, 0, bufferSize);
         socklen_t tempAddrLen = addrLen;
@@ -941,6 +962,7 @@ bool ExecClose(CloseContext *context)
     }
     NETSTACK_LOGI("sock %{public}d closed success", context->GetSocketFd());
 
+    context->state_.SetIsClose(true);
     context->SetSocketFd(0);
 
     return true;
