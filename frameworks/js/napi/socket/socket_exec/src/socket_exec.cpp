@@ -166,6 +166,7 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
         g_cv.notify_one();
     }
 
+    manager->SetData(reinterpret_cast<void *>(counter));
     EventManager::SetValid(manager);
     for (const auto &pair : g_clientEventManagers) {
         NETSTACK_LOGI("g_clientEventManagers key %{public}d", pair.first);
@@ -174,33 +175,34 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
     napi_wrap(
         env, result, reinterpret_cast<void *>(manager),
         [](napi_env, void *data, void *) {
-            NETSTACK_LOGI("socket handle is finalized");
-            auto manager = static_cast<EventManager *>(data);
-            if (manager != nullptr) {
-                NETSTACK_LOGI("manager != nullpt");
-                int client_index = -1;
-                std::lock_guard<std::mutex> lock(g_mutex);
-                for (auto it = g_clientEventManagers.begin(); it != g_clientEventManagers.end(); ++it) {
-                    if (it->second == manager) {
-                        client_index = it->first;
-                        g_clientEventManagers.erase(it);
-                        break;
-                    }
-                }
-                auto clientIter = g_clientFDs.find(client_index);
-                if (clientIter != g_clientFDs.end()) {
-                    if (clientIter->second != -1) {
-                        close(clientIter->second);
-                        clientIter->second = -1;
-                    }
+        NETSTACK_LOGI("socket handle is finalized");
+        auto manager = static_cast<EventManager *>(data);
+        if (manager != nullptr) {
+            NETSTACK_LOGI("manager != nullpt");
+            int client_index = -1;
+            std::lock_guard<std::mutex> lock(g_mutex);
+            for (auto it = g_clientEventManagers.begin(); it != g_clientEventManagers.end(); ++it) {
+                if (it->second == manager) {
+                    client_index = it->first;
+                    g_clientEventManagers.erase(it);
+                    break;
                 }
             }
+            auto clientIter = g_clientFDs.find(client_index);
+            if (clientIter != g_clientFDs.end()) {
+                if (clientIter->second != -1) {
+                    close(clientIter->second);
+                    clientIter->second = -1;
+                }
+            }
+        }
+            }
             EventManager::SetInvalid(manager);
-        },
+},
         nullptr, nullptr);
 
-    return result;
-}
+return result;
+} // namespace OHOS::NetStack::Socket::SocketExec
 
 napi_value ConstructTCPSocketConnection(napi_env env, napi_callback_info info, int32_t counter)
 {
