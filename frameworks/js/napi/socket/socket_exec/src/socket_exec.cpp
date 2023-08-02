@@ -164,7 +164,7 @@ void TcpServerConnectionFinalize(napi_env, void *data, void *)
         std::lock_guard<std::mutex> lock(g_mutex);
         for (auto it = g_clientEventManagers.begin(); it != g_clientEventManagers.end(); ++it) {
             if (it->second == manager) {
-                client_index = it->first;
+                clientIndex = it->first;
                 g_clientEventManagers.erase(it);
                 break;
             }
