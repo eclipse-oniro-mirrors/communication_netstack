@@ -172,6 +172,7 @@ void TcpServerConnectionFinalize(napi_env, void *data, void *)
         auto clientIter = g_clientFDs.find(clientIndex);
         if (clientIter != g_clientFDs.end()) {
             if (clientIter->second != -1) {
+                NETSTACK_LOGI("close socketfd  %{public}d",clientIter->second);
                 close(clientIter->second);
                 clientIter->second = -1;
             }
@@ -194,10 +195,6 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
 
     manager->SetData(reinterpret_cast<void *>(counter));
     EventManager::SetValid(manager);
-    for (const auto &pair : g_clientEventManagers) {
-        NETSTACK_LOGI("g_clientEventManagers key %{public}d", pair.first);
-        NETSTACK_LOGI("g_clientEventManagers value %{public}p", pair.second);
-    }
     napi_wrap(env, result, reinterpret_cast<void *>(manager), TcpServerConnectionFinalize, nullptr, nullptr);
     return result;
 } // namespace OHOS::NetStack::Socket::SocketExec
@@ -1468,8 +1465,10 @@ static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, c
             auto iter = g_clientEventManagers.find(clientId);
             if (iter != g_clientEventManagers.end()) {
                 manager = iter->second;
+                 NETSTACK_LOGE("manager!=nullptr");
                 return true;
             } else {
+                NETSTACK_LOGE("iter==g_clientEventManagers.end()");
                 return false;
             }
         });
