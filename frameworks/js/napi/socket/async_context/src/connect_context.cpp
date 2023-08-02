@@ -104,6 +104,9 @@ int32_t ConnectContext::GetErrorCode() const
     if (err == PARSE_ERROR_CODE) {
         return PARSE_ERROR_CODE;
     }
+#if defined(IOS_PLATFORM)
+    err = ErrCodePlatformAdapter::GetOHOSErrCode(err);
+#endif
     return err + SOCKET_ERROR_CODE_BASE;
 }
 
@@ -117,8 +120,14 @@ std::string ConnectContext::GetErrorMessage() const
     if (errCode == PARSE_ERROR_CODE) {
         return PARSE_ERROR_MSG;
     }
+#if defined(IOS_PLATFORM)
+    std::string errMessage;
+    ErrCodePlatformAdapter::GetOHOSErrMessage(errCode, errMessage);
+    return errMessage;
+#else
     char err[MAX_ERR_NUM] = {0};
     (void)strerror_r(errCode, err, MAX_ERR_NUM);
     return err;
+#endif
 }
 } // namespace OHOS::NetStack::Socket
