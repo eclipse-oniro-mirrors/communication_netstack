@@ -172,7 +172,7 @@ void TcpServerConnectionFinalize(napi_env, void *data, void *)
         auto clientIter = g_clientFDs.find(clientIndex);
         if (clientIter != g_clientFDs.end()) {
             if (clientIter->second != -1) {
-                NETSTACK_LOGI("close socketfd  %{public}d",clientIter->second);
+                NETSTACK_LOGI("close socketfd %{public}d", clientIter->second);
                 close(clientIter->second);
                 clientIter->second = -1;
             }
@@ -1465,7 +1465,7 @@ static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, c
             auto iter = g_clientEventManagers.find(clientId);
             if (iter != g_clientEventManagers.end()) {
                 manager = iter->second;
-                 NETSTACK_LOGE("manager!=nullptr");
+                NETSTACK_LOGE("manager!=nullptr");
                 return true;
             } else {
                 NETSTACK_LOGE("iter==g_clientEventManagers.end()");
