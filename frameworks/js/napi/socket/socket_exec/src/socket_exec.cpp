@@ -62,7 +62,7 @@ static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "TCPServerAcceptRecvD
 static constexpr const char *TCP_SERVER_HANDLE_CLIENT = "TCPServerHandleClient";
 namespace OHOS::NetStack::Socket::SocketExec {
 std::map<int32_t, int32_t> g_clientFDs;
-std::map<int32_t, std::shared_ptr<EventManager>> g_clientEventManagers;
+std::map<int32_t, EventManager *> g_clientEventManagers;
 std::condition_variable g_cv;
 std::mutex g_mutex;
 std::atomic_int g_userCounter = 0;
@@ -145,6 +145,7 @@ static napi_value MakeError(napi_env env, void *errCode)
 static napi_value MakeClose(napi_env env, void *data)
 {
     (void)data;
+    NETSTACK_LOGI("go to MakeClose");
     napi_value obj = NapiUtils::CreateObject(env);
     if (NapiUtils::GetValueType(env, obj) != napi_object) {
         return NapiUtils::GetUndefined(env);
@@ -158,30 +159,34 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, jsConstructor, 0, nullptr, &result));
 
-    std::shared_ptr<EventManager> manager = std::make_shared<EventManager>();
+    EventManager *manager = new EventManager();
     {
         std::lock_guard<std::mutex> lock(g_mutex);
-        g_clientEventManagers.insert(std::pair<int32_t, std::shared_ptr<EventManager>>(counter, manager));
+        g_clientEventManagers.insert(std::pair<int32_t, EventManager *>(counter, manager));
         g_cv.notify_one();
     }
 
-    EventManager::SetValid(manager.get());
+    EventManager::SetValid(manager);
+    for (const auto &pair : g_clientEventManagers) {
+        NETSTACK_LOGI("g_clientEventManagers key %{public}d", pair.first);
+        NETSTACK_LOGI("g_clientEventManagers value %{public}p", pair.second);
+    }
     napi_wrap(
-        env, result, reinterpret_cast<void *>(manager.get()),
+        env, result, reinterpret_cast<void *>(manager),
         [](napi_env, void *data, void *) {
             NETSTACK_LOGI("socket handle is finalized");
             auto manager = static_cast<EventManager *>(data);
             if (manager != nullptr) {
+                NETSTACK_LOGI("manager != nullpt");
                 int client_index = -1;
                 std::lock_guard<std::mutex> lock(g_mutex);
                 for (auto it = g_clientEventManagers.begin(); it != g_clientEventManagers.end(); ++it) {
-                    if (it->second.get() == manager) {
+                    if (it->second == manager) {
                         client_index = it->first;
                         g_clientEventManagers.erase(it);
                         break;
                     }
                 }
-
                 auto clientIter = g_clientFDs.find(client_index);
                 if (clientIter != g_clientFDs.end()) {
                     if (clientIter->second != -1) {
@@ -190,6 +195,7 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
                     }
                 }
             }
+            EventManager::SetInvalid(manager);
         },
         nullptr, nullptr);
 
@@ -348,12 +354,11 @@ public:
 
     virtual void OnError(int err) const = 0;
 
-    virtual void OnCloseMessage(std::shared_ptr<EventManager> manager) const = 0;
+    virtual void OnCloseMessage(EventManager *manager) const = 0;
 
     virtual bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const = 0;
 
-    virtual bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr,
-                           std::shared_ptr<EventManager> manager) const = 0;
+    virtual bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr, EventManager *manager) const = 0;
 
     virtual void OnTcpConnectionMessage(int32_t id) const = 0;
 
@@ -374,7 +379,7 @@ public:
         manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
     }
 
-    void OnCloseMessage(std::shared_ptr<EventManager> manager) const override
+    void OnCloseMessage(EventManager *manager) const override
     {
         manager->EmitByUv(EVENT_CLOSE, nullptr, CallbackTemplate<MakeClose>);
     }
@@ -412,8 +417,7 @@ public:
         return false;
     }
 
-    bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr,
-                   std::shared_ptr<EventManager> manager) const override
+    bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr, EventManager *manager) const override
     {
         (void)addr;
         sockaddr sockAddr = {0};
@@ -431,7 +435,7 @@ public:
             if (ret < 0) {
                 return false;
             }
-            return OnRecvMessage(manager.get(), data, dataLen, reinterpret_cast<sockaddr *>(&addr4));
+            return OnRecvMessage(manager, data, dataLen, reinterpret_cast<sockaddr *>(&addr4));
         } else if (sockAddr.sa_family == AF_INET6) {
             sockaddr_in6 addr6 = {0};
             socklen_t len6 = sizeof(sockaddr_in6);
@@ -440,7 +444,7 @@ public:
             if (ret < 0) {
                 return false;
             }
-            return OnRecvMessage(manager.get(), data, dataLen, reinterpret_cast<sockaddr *>(&addr6));
+            return OnRecvMessage(manager, data, dataLen, reinterpret_cast<sockaddr *>(&addr6));
         }
         return false;
     }
@@ -464,15 +468,14 @@ public:
         manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
     }
 
-    void OnCloseMessage(std::shared_ptr<EventManager> manager) const override {}
+    void OnCloseMessage(EventManager *manager) const override {}
 
     bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const override
     {
         return OnRecvMessage(manager_, data, dataLen, addr);
     }
 
-    bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr,
-                   std::shared_ptr<EventManager> manager) const override
+    bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr, EventManager *manager) const override
     {
         return true;
     }
@@ -1439,12 +1442,15 @@ static void RemoveClientConnection(int32_t clientId)
     std::lock_guard<std::mutex> lock(g_mutex);
     for (auto it = g_clientFDs.begin(); it != g_clientFDs.end(); ++it) {
         if (it->first == clientId) {
-            NETSTACK_LOGI("remove connection clientId: %{public}d, clientFd: %{public}d", it->second, it->first);
+            NETSTACK_LOGI("remove clientfd and eventmanager clientid: %{public}dclientFd:%{public}d", it->second,
+                          it->first);
+
             if (!IsClientFdClosed(it->second)) {
-                NETSTACK_LOGI("close connectFD");
+                NETSTACK_LOGE("connectFD not close should close");
                 shutdown(it->second, SHUT_RDWR);
                 close(it->second);
             }
+
             g_clientFDs.erase(it->first);
             break;
         }
@@ -1455,7 +1461,7 @@ static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, c
 {
     char buffer[DEFAULT_BUFFER_SIZE];
 
-    std::shared_ptr<EventManager> manager = nullptr;
+    EventManager *manager = nullptr;
     {
         std::unique_lock<std::mutex> lock(g_mutex);
         g_cv.wait(lock, [&manager, &clientId]() {
@@ -1469,17 +1475,21 @@ static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, c
         });
     }
 
-    auto connectFD = g_clientFDs[clientId];
+    auto connectFD = g_clientFDs[clientId]; // std::lock_guard<std::mutex> lock(g_mutex);]
+
     while (true) {
         if (memset_s(buffer, sizeof(buffer), 0, sizeof(buffer)) != EOK) {
             NETSTACK_LOGE("memset_s failed!");
             break;
         }
         int32_t recvSize = recv(connectFD, buffer, sizeof(buffer), 0);
-        NETSTACK_LOGI("ClientRecv: fd is %{public}d, buf is %{public}s, size is %{public}d bytes", connectFD, buffer,
-                      recvSize);
+        NETSTACK_LOGI(
+            "ClientRecv: fd is %{public}d, buf is %{public}s, size is "
+            "%{public}d bytes",
+            connectFD, buffer, recvSize);
         if (recvSize <= 0) {
             NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
+
             if (errno != EAGAIN) {
                 callback.OnCloseMessage(manager);
                 RemoveClientConnection(clientId);
