@@ -153,7 +153,6 @@ private:
             }
         }
 
-        std::mutex mutex;
         std::mutex curlMultiMutex;
         CURLM *curlMulti;
         std::map<CURL *, RequestContext *> contextMap;
