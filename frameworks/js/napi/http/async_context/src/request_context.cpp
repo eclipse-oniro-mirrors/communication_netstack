@@ -437,7 +437,11 @@ std::string RequestContext::GetErrorMessage() const
         return PERMISSION_DENIED_MSG;
     }
 
-    return HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE)->second;
+    auto pos = HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE);
+    if (pos != HTTP_ERR_MAP.end()) {
+        return pos->second;
+    }
+    return HTTP_ERR_MAP.at(HTTP_UNKNOWN_OTHER_ERROR);
 }
 
 void RequestContext::EnableRequest2()
