@@ -1379,6 +1379,7 @@ void TLSSocketServer::DropFdFromPollList(int &fd_index)
 
 void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOptions)
 {
+#if !defined(CROSS_PLATFORM)
     int on = 1;
     isRunning_ = true;
     ioctl(listenSocketFd_, FIONBIO, (char *)&on);
@@ -1412,6 +1413,7 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
         }
     });
     thread_.detach();
+#endif
 }
 
 std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionByClientEventManager(
