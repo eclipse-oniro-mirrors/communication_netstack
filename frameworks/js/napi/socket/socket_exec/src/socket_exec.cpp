@@ -1079,6 +1079,20 @@ bool ExecGetState(GetStateContext *context)
     return true;
 }
 
+bool IsAddressAndRetValid(int &ret, std::string &address, GetRemoteAddressContext *context)
+{
+    if (ret < 0) {
+        context->SetErrorCode(errno);
+        return false;
+    }
+    if (address.empty()) {
+        NETSTACK_LOGE("addr family error, address invalid");
+        context->SetErrorCode(ADDRESS_INVALID);
+        return false;
+    }
+    return true;
+}
+
 bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
@@ -1099,15 +1113,8 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
         socklen_t len4 = sizeof(sockaddr_in);
 
         ret = getpeername(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr4), &len4);
-        if (ret < 0) {
-            context->SetErrorCode(errno);
-            return false;
-        }
-
         std::string address = MakeAddressString(reinterpret_cast<sockaddr *>(&addr4));
-        if (address.empty()) {
-            NETSTACK_LOGE("addr family error, address invalid");
-            context->SetErrorCode(ADDRESS_INVALID);
+        if (!IsAddressAndRetValid(ret, address, context)) {
             return false;
         }
         context->address_.SetAddress(address);
@@ -1119,15 +1126,8 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
         socklen_t len6 = sizeof(sockaddr_in6);
 
         ret = getpeername(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr6), &len6);
-        if (ret < 0) {
-            context->SetErrorCode(errno);
-            return false;
-        }
-
         std::string address = MakeAddressString(reinterpret_cast<sockaddr *>(&addr6));
-        if (address.empty()) {
-            NETSTACK_LOGE("addr family error, address invalid");
-            context->SetErrorCode(ADDRESS_INVALID);
+        if (!IsAddressAndRetValid(ret, address, context)) {
             return false;
         }
         context->address_.SetAddress(address);
