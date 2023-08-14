@@ -91,7 +91,8 @@ void EventMessageCallback(uv_work_t *work, int status)
         ParserNullBranch("workWrapper is nullptr", work, workWrapper);
         return;
     }
-    std::shared_ptr<Monitor::MessageRecvParma> messageRecvParma(static_cast<Monitor::MessageRecvParma *>(workWrapper->data));
+    std::shared_ptr<Monitor::MessageRecvParma> messageRecvParma(
+        static_cast<Monitor::MessageRecvParma *>(workWrapper->data));
     if (messageRecvParma == nullptr) {
         ParserNullBranch("monitor is nullptr", work, workWrapper);
         return;
