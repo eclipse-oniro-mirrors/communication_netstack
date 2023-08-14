@@ -17,11 +17,11 @@
 #define TLS_MONITOR_H
 
 #include <cstdint>
+#include <napi/native_api.h>
+#include <queue>
 #include <set>
 #include <string>
 #include <string_view>
-#include <queue>
-#include <napi/native_api.h>
 
 #include "event_manager.h"
 #include "singleton.h"
@@ -44,7 +44,7 @@ public:
     napi_value Off(napi_env env, napi_callback_info info);
 
 private:
-    void ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket);
+    void ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket, EventManager manager);
     void ParserEventForOff(const std::string event, TlsSocket::TLSSocket *tlsSocket);
 
 public:
@@ -55,10 +55,9 @@ public:
     std::string errorString_;
 
 private:
-    EventManager *manager_ = nullptr;
     std::set<std::string_view> monitors_;
 };
-} //namespace TlsSocket
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // TLS_CONTEXT_MONITOR_CONTEXT_H

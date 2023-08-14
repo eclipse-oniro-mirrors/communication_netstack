@@ -194,41 +194,36 @@ void EventErrorCallback(uv_work_t *work, int status)
 }
 } // namespace
 
-Monitor::Monitor() : manager_(nullptr) {}
+Monitor::Monitor() : {}
 
-Monitor::~Monitor()
-{
-    if (manager_ != nullptr) {
-        delete manager_;
-    }
-}
+Monitor::~Monitor() {}
 
-void Monitor::ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket)
+void Monitor::ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket, EventManager *manager)
 {
     if (event == EVENT_MESSAGE) {
         monitors_.insert(EVENT_MESSAGE);
-        tlsSocket->OnMessage([this](auto data, auto remoteInfo) {
+        tlsSocket->OnMessage([this, &manager](auto data, auto remoteInfo) {
             messagerQueue_.dataQueue.push(data);
             messagerQueue_.remoteInfoQueue.push(remoteInfo);
-            manager_->EmitByUv(std::string(EVENT_MESSAGE), static_cast<void *>(this), EventMessageCallback);
+            manager->EmitByUv(std::string(EVENT_MESSAGE), static_cast<void *>(this), EventMessageCallback);
         });
     }
     if (event == EVENT_CLOSE) {
         monitors_.insert(EVENT_CLOSE);
         tlsSocket->OnClose(
-            [this]() { manager_->EmitByUv(std::string(EVENT_CLOSE), nullptr, EventConnectCloseCallback); });
+            [this, &manager]() { manager->EmitByUv(std::string(EVENT_CLOSE), nullptr, EventConnectCloseCallback); });
     }
     if (event == EVENT_CONNECT) {
         monitors_.insert(EVENT_CONNECT);
         tlsSocket->OnConnect(
-            [this]() { manager_->EmitByUv(std::string(EVENT_CONNECT), nullptr, EventConnectCloseCallback); });
+            [this, &manager]() { manager->EmitByUv(std::string(EVENT_CONNECT), nullptr, EventConnectCloseCallback); });
     }
     if (event == EVENT_ERROR) {
         monitors_.insert(EVENT_ERROR);
-        tlsSocket->OnError([this](auto errorNumber, auto errorString) {
+        tlsSocket->OnError([this, &manager](auto errorNumber, auto errorString) {
             errorNumber_ = errorNumber;
             errorString_ = errorString;
-            manager_->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(this), EventErrorCallback);
+            manager->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(this), EventErrorCallback);
         });
     }
 }
@@ -250,12 +245,13 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
             return NapiUtils::GetUndefined(env);
         }
     }
-    napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager_));
-    if (manager_ == nullptr) {
+    EventManager *manager = nullptr;
+    napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager));
+    if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return NapiUtils::GetUndefined(env);
     }
-    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager_->GetData());
+    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("tlsSocket is null");
         return NapiUtils::GetUndefined(env);
@@ -266,8 +262,8 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
         NETSTACK_LOGE("Incorrect listening event %{public}s", event.c_str());
         return NapiUtils::GetUndefined(env);
     }
-    manager_->AddListener(env, event, params[1], false, false);
-    ParserEventForOn(event, tlsSocket);
+    manager->AddListener(env, event, params[1], false, false);
+    ParserEventForOn(event, tlsSocket, manager);
     return NapiUtils::GetUndefined(env);
 }
 
@@ -309,13 +305,13 @@ napi_value Monitor::Off(napi_env env, napi_callback_info info)
             return NapiUtils::GetUndefined(env);
         }
     }
-
-    napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager_));
-    if (manager_ == nullptr) {
+    EventManager *manager = nullptr;
+    napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager));
+    if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return NapiUtils::GetUndefined(env);
     }
-    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager_->GetData());
+    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("tlsSocket is null");
         return NapiUtils::GetUndefined(env);
@@ -327,7 +323,7 @@ napi_value Monitor::Off(napi_env env, napi_callback_info info)
         NETSTACK_LOGE("monitor is off %{public}s", event.c_str());
         return NapiUtils::GetUndefined(env);
     }
-    manager_->DeleteListener(event);
+    manager->DeleteListener(event);
     ParserEventForOff(event, tlsSocket);
     return NapiUtils::GetUndefined(env);
 }
