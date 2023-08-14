@@ -61,8 +61,8 @@ void ParserNullBranch(const std::string &errMessage, uv_work_t *&work, UvWorkWra
     }
 }
 
-void SetPropertyForWorkWrapper(UvWorkWrapper *workWrapper, MessageRecvParma *messageRecvParma, napi_value arrayBuffer,
-                               napi_value remoteInfo, napi_value obj)
+void SetPropertyForWorkWrapper(UvWorkWrapper *workWrapper, Monitor::MessageRecvParma *messageRecvParma,
+                               napi_value arrayBuffer, napi_value remoteInfo, napi_value obj)
 {
     napi_value message = nullptr;
     napi_create_typedarray(workWrapper->env, napi_uint8_array, messageRecvParma->data_.size(), arrayBuffer, 0,
@@ -91,7 +91,7 @@ void EventMessageCallback(uv_work_t *work, int status)
         ParserNullBranch("workWrapper is nullptr", work, workWrapper);
         return;
     }
-    std::shared_ptr<MessageRecvParma> messageRecvParma(<MessageRecvParma *>(workWrapper->data));
+    std::shared_ptr<Monitor::MessageRecvParma> messageRecvParma(static_cast<Monitor::MessageRecvParma *>(workWrapper->data));
     if (messageRecvParma == nullptr) {
         ParserNullBranch("monitor is nullptr", work, workWrapper);
         return;
@@ -161,7 +161,7 @@ void EventErrorCallback(uv_work_t *work, int status)
         delete work;
         return;
     }
-    std::shared_ptr<ErrorRecvParma> errorRecvParma(static_cast<ErrorRecvParma *>(workWrapper->data));
+    std::shared_ptr<Monitor::ErrorRecvParma> errorRecvParma(static_cast<Monitor::ErrorRecvParma *>(workWrapper->data));
     if (errorRecvParma == nullptr) {
         NETSTACK_LOGE("monitor is nullptr");
         delete workWrapper;
