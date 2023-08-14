@@ -44,7 +44,7 @@ public:
     napi_value Off(napi_env env, napi_callback_info info);
 
 private:
-    void ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket, EventManager manager);
+    void ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket, EventManager *manager);
     void ParserEventForOff(const std::string event, TlsSocket::TLSSocket *tlsSocket);
 
 public:
