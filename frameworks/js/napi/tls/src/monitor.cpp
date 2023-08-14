@@ -194,7 +194,7 @@ void EventErrorCallback(uv_work_t *work, int status)
 }
 } // namespace
 
-Monitor::Monitor() : {}
+Monitor::Monitor() {}
 
 Monitor::~Monitor() {}
 
