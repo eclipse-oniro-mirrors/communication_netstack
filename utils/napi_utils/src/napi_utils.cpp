@@ -503,8 +503,8 @@ void CreateUvQueueWork(napi_env env, void *data, void(handler)(uv_work_t *, int 
     auto work = new uv_work_t;
     work->data = data;
 
-    (void)uv_queue_work(
-        loop, work, [](uv_work_t *) {}, handler);
+    (void)uv_queue_work_with_qos(
+        loop, work, [](uv_work_t *) {}, handler, uv_qos_default);
 }
 
 /* scope */
@@ -567,8 +567,8 @@ void CreateUvQueueWorkEnhanced(napi_env env, void *data, void (*handler)(napi_en
         delete work;
     };
 
-    (void)uv_queue_work(
-        loop, work, [](uv_work_t *) {}, callback);
+    (void)uv_queue_work_with_qos(
+        loop, work, [](uv_work_t *) {}, callback, uv_qos_default);
 }
 
 /* error */

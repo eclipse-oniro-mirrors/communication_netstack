@@ -90,7 +90,7 @@ void BaseContext::CreateAsyncWork(const std::string &name, AsyncWorkExecutor exe
         return;
     }
     asyncWorkName_ = name;
-    (void)napi_queue_async_work(env_, asyncWork_);
+    (void)napi_queue_async_work_with_qos(env_, asyncWork_, napi_qos_default);
 }
 
 void BaseContext::DeleteAsyncWork()
