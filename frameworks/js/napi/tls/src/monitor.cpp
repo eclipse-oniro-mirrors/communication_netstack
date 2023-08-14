@@ -109,7 +109,7 @@ void EventMessageCallback(uv_work_t *work, int status)
             return;
         }
     }
-    SetPropertyForWorkWrapper(workWrapper, messageRecvParma, arrayBuffer, remoteInfo, obj);
+    SetPropertyForWorkWrapper(workWrapper, messageRecvParma.get(), arrayBuffer, remoteInfo, obj);
     if (workWrapper->manager == nullptr) {
         ParserNullBranch("manager is nullptr", work, workWrapper);
         NapiUtils::CloseScope(workWrapper->env, scope);
