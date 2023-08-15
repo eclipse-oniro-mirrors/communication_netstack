@@ -17,11 +17,11 @@
 #define TLS_MONITOR_H
 
 #include <cstdint>
+#include <napi/native_api.h>
+#include <queue>
 #include <set>
 #include <string>
 #include <string_view>
-#include <queue>
-#include <napi/native_api.h>
 
 #include "event_manager.h"
 #include "singleton.h"
@@ -32,33 +32,29 @@
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
-struct MessagerQueue {
-    std::queue<std::string> dataQueue;
-    std::queue<Socket::SocketRemoteInfo> remoteInfoQueue;
-};
+
 class Monitor final {
     DECLARE_DELAYED_SINGLETON(Monitor);
 
 public:
     napi_value On(napi_env env, napi_callback_info info);
     napi_value Off(napi_env env, napi_callback_info info);
+    class MessageRecvParma {
+    public:
+        std::string data_;
+        Socket::SocketRemoteInfo remoteInfo_;
+    };
+    class ErrorRecvParma {
+    public:
+        int32_t errorNumber_ = 0;
+        std::string errorString_;
+    };
 
 private:
-    void ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket);
+    void ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket, EventManager *manager);
     void ParserEventForOff(const std::string event, TlsSocket::TLSSocket *tlsSocket);
-
-public:
-    std::string data_;
-    Socket::SocketRemoteInfo remoteInfo_;
-    MessagerQueue messagerQueue_;
-    int32_t errorNumber_ = 0;
-    std::string errorString_;
-
-private:
-    EventManager *manager_ = nullptr;
-    std::set<std::string_view> monitors_;
 };
-} //namespace TlsSocket
+} // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
 #endif // TLS_CONTEXT_MONITOR_CONTEXT_H
