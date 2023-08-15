@@ -87,11 +87,11 @@ void Finalize(napi_env, void *data, void *)
     NETSTACK_LOGI("socket handle is finalized");
     auto manager = static_cast<EventManager *>(data);
     if (manager != nullptr) {
-        EventManager::SetInvalid(manager);
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
         if (sock != 0) {
             close(sock);
         }
+        EventManager::SetInvalid(manager);
     }
 }
 
