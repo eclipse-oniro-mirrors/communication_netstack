@@ -196,7 +196,7 @@ Monitor::~Monitor() {}
 void Monitor::ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket, EventManager *manager)
 {
     if (event == EVENT_MESSAGE) {
-        tlsSocket->OnMessage([this, &manager](auto data, auto remoteInfo) {
+        tlsSocket->OnMessage([this, manager](auto data, auto remoteInfo) {
             MessageRecvParma *messageRecvParma = new MessageRecvParma();
             messageRecvParma->data_ = data;
             messageRecvParma->remoteInfo_ = remoteInfo;
@@ -205,14 +205,14 @@ void Monitor::ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tl
     }
     if (event == EVENT_CLOSE) {
         tlsSocket->OnClose(
-            [this, &manager]() { manager->EmitByUv(std::string(EVENT_CLOSE), nullptr, EventConnectCloseCallback); });
+            [this, manager]() { manager->EmitByUv(std::string(EVENT_CLOSE), nullptr, EventConnectCloseCallback); });
     }
     if (event == EVENT_CONNECT) {
         tlsSocket->OnConnect(
-            [this, &manager]() { manager->EmitByUv(std::string(EVENT_CONNECT), nullptr, EventConnectCloseCallback); });
+            [this, manager]() { manager->EmitByUv(std::string(EVENT_CONNECT), nullptr, EventConnectCloseCallback); });
     }
     if (event == EVENT_ERROR) {
-        tlsSocket->OnError([this, &manager](auto errorNumber, auto errorString) {
+        tlsSocket->OnError([this, manager](auto errorNumber, auto errorString) {
             ErrorRecvParma *errorRecvParma = new ErrorRecvParma();
             errorRecvParma->errorNumber_ = errorNumber;
             errorRecvParma->errorString_ = errorString;
