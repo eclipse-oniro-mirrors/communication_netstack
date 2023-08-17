@@ -1307,6 +1307,7 @@ void TLSSocketServer::CallOnConnectCallback(const int32_t socketFd, std::shared_
 
 void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsListenOptions, int clientID)
 {
+#if !defined(CROSS_PLATFORM)
     struct sockaddr_in clientAddress;
     socklen_t clientAddrLength = sizeof(clientAddress);
     int connectFD = accept(listenSocketFd_, (struct sockaddr *)&clientAddress, &clientAddrLength);
@@ -1353,6 +1354,7 @@ void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsLi
     connection->SetEventManager(ptrEventManager);
     CallOnConnectCallback(clientID, ptrEventManager);
     NETSTACK_LOGI("New client come in, fd is %{public}d", connectFD);
+#endif
 }
 
 void TLSSocketServer::InitPollList(int &listendFd)
