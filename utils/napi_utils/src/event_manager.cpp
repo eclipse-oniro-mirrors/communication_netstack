@@ -97,6 +97,7 @@ void *EventManager::GetQueueData()
     if (!dataQueue_.empty()) {
         return dataQueue_.front();
     }
+    NETSTACK_LOGE("eventManager data queue is empty");
     return nullptr;
 }
 
