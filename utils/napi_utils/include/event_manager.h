@@ -23,10 +23,15 @@
 #include <unordered_set>
 #include <string>
 #include <utility>
+#include <queue>
 
 #include "event_listener.h"
 #include "napi/native_api.h"
 #include "uv.h"
+
+#ifdef ENABLE_EVENT_HANDLER
+#include "event_handler.h"
+#endif
 
 namespace OHOS::NetStack {
 class EventManager {
@@ -57,14 +62,32 @@ public:
 
     static void SetValid(EventManager *manager);
 
+    void SetQueueData(void *data);
+
+    void *GetQueueData();
+
+    void PopQueueData();
+
+#ifdef ENABLE_EVENT_HANDLER
+    bool InitNetstackEventHandler();
+    std::shared_ptr<AppExecFwk::EventHandler> GetNetstackEventHandler();
+#endif
+
 private:
     std::mutex mutexForListenersAndEmitByUv_;
     std::mutex mutexForEmitAndEmitByUv_;
-    std::mutex mutex_;
+    std::mutex dataMutex_;
+    std::mutex dataQueueMutex_;
     std::list<EventListener> listeners_;
     void *data_;
+    std::queue<void *> dataQueue_;
     static std::mutex mutexForManager_;
     static std::unordered_set<EventManager *> validManager_;
+
+#ifdef ENABLE_EVENT_HANDLER
+    std::shared_ptr<AppExecFwk::EventRunner> eventRunner_ = nullptr;
+    std::shared_ptr<AppExecFwk::EventHandler> eventHandler_ = nullptr;
+#endif
 };
 
 struct UvWorkWrapper {

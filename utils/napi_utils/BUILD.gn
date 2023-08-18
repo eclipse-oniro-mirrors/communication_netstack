@@ -23,6 +23,9 @@ config("napi_utils_public_config") {
   if (current_os != "ohos") {
     cflags = [ "-std=c++17" ]
   }
+  if (product_name != "ohos-sdk") {
+    defines = [ "ENABLE_EVENT_HANDLER" ]
+  }
 }
 
 ohos_static_library("napi_utils") {
@@ -46,6 +49,9 @@ ohos_static_library("napi_utils") {
     "hilog:libhilog",
     "napi:ace_napi",
   ]
+  if (product_name != "ohos-sdk") {
+    external_deps += [ "eventhandler:libeventhandler" ]
+  }
 }
 
 ohos_static_library("napi_utils_static") {
@@ -65,6 +71,7 @@ ohos_static_library("napi_utils_static") {
     public_deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
     external_deps = [
       "c_utils:utils",
+      "eventhandler:libeventhandler",
       "hilog:libhilog",
       "napi:ace_napi",
     ]
