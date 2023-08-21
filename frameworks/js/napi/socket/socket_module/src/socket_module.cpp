@@ -281,7 +281,17 @@ napi_value SocketModuleExports::UDPSocket::Bind(napi_env env, napi_callback_info
 
 napi_value SocketModuleExports::UDPSocket::Send(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(UdpSendContext, ExecUdpSend, UdpSendCallback, nullptr, UDP_SEND_NAME);
+    return ModuleTemplate::InterfaceWithOutAsyncWork<UdpSendContext>(
+        env, info,
+        [](napi_env, napi_value, UdpSendContext *context) -> bool {
+            auto manager = context->GetManager();
+            if (!manager->InitNetstackEventHandler()) {
+                return false;
+            }
+            SocketAsyncWork::ExecUdpSend(context->GetEnv(), context);
+            return true;
+        },
+        UDP_SEND_NAME, SocketAsyncWork::ExecUdpSend, SocketAsyncWork::UdpSendCallback);
 }
 
 napi_value SocketModuleExports::UDPSocket::Close(napi_env env, napi_callback_info info)
@@ -328,7 +338,17 @@ napi_value SocketModuleExports::TCPSocket::Connect(napi_env env, napi_callback_i
 
 napi_value SocketModuleExports::TCPSocket::Send(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(TcpSendContext, ExecTcpSend, TcpSendCallback, nullptr, TCP_SEND_NAME);
+    return ModuleTemplate::InterfaceWithOutAsyncWork<TcpSendContext>(
+        env, info,
+        [](napi_env, napi_value, TcpSendContext *context) -> bool {
+            auto manager = context->GetManager();
+            if (!manager->InitNetstackEventHandler()) {
+                return false;
+            }
+            SocketAsyncWork::ExecTcpSend(context->GetEnv(), context);
+            return true;
+        },
+        TCP_SEND_NAME, SocketAsyncWork::ExecTcpSend, SocketAsyncWork::TcpSendCallback);
 }
 
 napi_value SocketModuleExports::TCPSocket::Close(napi_env env, napi_callback_info info)

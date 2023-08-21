@@ -75,14 +75,38 @@ void EventManager::Emit(const std::string &type, const std::pair<napi_value, nap
 
 void EventManager::SetData(void *data)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(dataMutex_);
     data_ = data;
 }
 
 void *EventManager::GetData()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(dataMutex_);
     return data_;
+}
+
+void EventManager::SetQueueData(void *data)
+{
+    std::lock_guard<std::mutex> lock(dataQueueMutex_);
+    dataQueue_.push(data);
+}
+
+void *EventManager::GetQueueData()
+{
+    std::lock_guard<std::mutex> lock(dataQueueMutex_);
+    if (!dataQueue_.empty()) {
+        return dataQueue_.front();
+    }
+    NETSTACK_LOGE("eventManager data queue is empty");
+    return nullptr;
+}
+
+void EventManager::PopQueueData()
+{
+    std::lock_guard<std::mutex> lock(dataQueueMutex_);
+    if (!dataQueue_.empty()) {
+        dataQueue_.pop();
+    }
 }
 
 void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status))
@@ -141,6 +165,28 @@ void EventManager::SetValid(EventManager *manager)
     std::lock_guard lock(mutexForManager_);
     validManager_.emplace(manager);
 }
+
+#ifdef ENABLE_EVENT_HANDLER
+bool EventManager::InitNetstackEventHandler()
+{
+    if (eventRunner_ == nullptr) {
+        NETSTACK_LOGI("event handler is null, create handler.");
+        eventRunner_ = AppExecFwk::EventRunner::Create();
+        if (!eventRunner_) {
+            NETSTACK_LOGE("create event runner failed");
+            return false;
+        }
+        eventHandler_ = std::make_shared<AppExecFwk::EventHandler>(eventRunner_);
+        return true;
+    }
+    return true;
+}
+
+std::shared_ptr<AppExecFwk::EventHandler> EventManager::GetNetstackEventHandler()
+{
+    return eventHandler_;
+}
+#endif
 
 UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)
     : data(theData), env(theEnv), type(std::move(eventType)), manager(eventManager)

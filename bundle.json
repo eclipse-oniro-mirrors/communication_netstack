@@ -36,7 +36,8 @@
                 "init",
                 "napi",
                 "netmanager_base",
-                "ylong_http"
+                "ylong_http",
+                "eventhandler"
             ],
             "third_party": [
                 "curl",

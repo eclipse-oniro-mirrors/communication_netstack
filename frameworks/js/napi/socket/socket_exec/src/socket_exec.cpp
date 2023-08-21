@@ -36,6 +36,7 @@
 #include "netstack_log.h"
 #include "securec.h"
 #include "socket_module.h"
+#include "socket_async_work.h"
 
 static constexpr const int DEFAULT_BUFFER_SIZE = 8192;
 
@@ -60,6 +61,7 @@ static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "TCPServerAcceptRecvData";
 
 static constexpr const char *TCP_SERVER_HANDLE_CLIENT = "TCPServerHandleClient";
+
 namespace OHOS::NetStack::Socket::SocketExec {
 std::map<int32_t, int32_t> g_clientFDs;
 std::map<int32_t, EventManager *> g_clientEventManagers;
@@ -291,11 +293,13 @@ static napi_value MakeJsMessageParam(napi_env env, napi_value msgBuffer, SocketR
 
 static napi_value MakeMessage(napi_env env, void *para)
 {
-    auto messageData = reinterpret_cast<MessageData *>(para);
+    auto manager = reinterpret_cast<EventManager *>(para);
+    auto messageData = reinterpret_cast<MessageData *>(manager->GetQueueData());
+    manager->PopQueueData();
     auto deleter = [](const MessageData *p) { delete p; };
     std::unique_ptr<MessageData, decltype(deleter)> handler(messageData, deleter);
 
-    if (messageData->data == nullptr || messageData->len == 0) {
+    if (messageData == nullptr || messageData->data == nullptr || messageData->len == 0) {
         return MakeJsMessageParam(env, NapiUtils::GetUndefined(env), &messageData->remoteInfo);
     }
 
@@ -337,7 +341,9 @@ static bool OnRecvMessage(EventManager *manager, void *data, size_t len, sockadd
     }
     remoteInfo.SetSize(len);
 
-    manager->EmitByUv(EVENT_MESSAGE, new MessageData(data, len, remoteInfo), CallbackTemplate<MakeMessage>);
+    auto *messageStruct = new MessageData(data, len, remoteInfo);
+    manager->SetQueueData(reinterpret_cast<void *>(messageStruct));
+    manager->EmitByUv(EVENT_MESSAGE, manager, CallbackTemplate<MakeMessage>);
     return true;
 }
 
@@ -353,7 +359,7 @@ public:
 
     virtual void OnCloseMessage(EventManager *manager) const = 0;
 
-    virtual bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const = 0;
+    virtual bool OnMessage(void *data, size_t dataLen, sockaddr *addr) const = 0;
 
     virtual bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr, EventManager *manager) const = 0;
 
@@ -388,10 +394,11 @@ public:
         manager->EmitByUv(EVENT_CLOSE, nullptr, CallbackTemplate<MakeClose>);
     }
 
-    bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const override
+    bool OnMessage(void *data, size_t dataLen, sockaddr *addr) const override
     {
         (void)addr;
-        if ((int)(uint64_t)manager_->GetData() == 0) {
+        int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData()));
+        if (sock == 0) {
             return false;
         }
         sockaddr sockAddr = {0};
@@ -426,7 +433,7 @@ public:
     bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr, EventManager *manager) const override
     {
         (void)addr;
-        if ((int)(uint64_t)manager_->GetData() == 0) {
+        if (static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) == 0) {
             return false;
         }
         sockaddr sockAddr = {0};
@@ -479,9 +486,10 @@ public:
 
     void OnCloseMessage(EventManager *manager) const override {}
 
-    bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr) const override
+    bool OnMessage(void *data, size_t dataLen, sockaddr *addr) const override
     {
-        if ((int)(uint64_t)manager_->GetData() == 0) {
+        int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData()));
+        if (sock == 0) {
             return false;
         }
         return OnRecvMessage(manager_, data, dataLen, addr);
@@ -489,7 +497,7 @@ public:
 
     bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr, EventManager *manager) const override
     {
-        if ((int)(uint64_t)manager_->GetData() == 0) {
+        if (static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) == 0) {
             return false;
         }
         return true;
@@ -497,6 +505,24 @@ public:
 
     void OnTcpConnectionMessage(int32_t id) const override {}
 };
+
+static void GetAddr(NetAddress *address, sockaddr_in *addr4, sockaddr_in6 *addr6, sockaddr **addr, socklen_t *len)
+{
+    sa_family_t family = address->GetSaFamily();
+    if (family == AF_INET) {
+        addr4->sin_family = AF_INET;
+        addr4->sin_port = htons(address->GetPort());
+        addr4->sin_addr.s_addr = inet_addr(address->GetAddress().c_str());
+        *addr = reinterpret_cast<sockaddr *>(addr4);
+        *len = sizeof(sockaddr_in);
+    } else if (family == AF_INET6) {
+        addr6->sin6_family = AF_INET6;
+        addr6->sin6_port = htons(address->GetPort());
+        inet_pton(AF_INET6, address->GetAddress().c_str(), &addr6->sin6_addr);
+        *addr = reinterpret_cast<sockaddr *>(addr6);
+        *len = sizeof(sockaddr_in6);
+    }
+}
 
 static bool MakeNonBlock(int sock)
 {
@@ -583,6 +609,72 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     return true;
 }
 
+static bool TcpSendEvent(TcpSendContext *context)
+{
+    std::string encoding = context->options.GetEncoding();
+    (void)encoding;
+    /* no use for now */
+
+    sockaddr sockAddr = {0};
+    socklen_t len = sizeof(sockaddr);
+    if (getsockname(context->GetSocketFd(), &sockAddr, &len) < 0) {
+        NETSTACK_LOGE("get sock name failed, address invalid");
+        context->SetErrorCode(ADDRESS_INVALID);
+        return false;
+    }
+    bool connected = false;
+    if (sockAddr.sa_family == AF_INET) {
+        sockaddr_in addr4 = {0};
+        socklen_t len4 = sizeof(addr4);
+        int ret = getpeername(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr4), &len4);
+        if (ret >= 0 && addr4.sin_port != 0) {
+            connected = true;
+        }
+    } else if (sockAddr.sa_family == AF_INET6) {
+        sockaddr_in6 addr6 = {0};
+        socklen_t len6 = sizeof(addr6);
+        int ret = getpeername(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr6), &len6);
+        if (ret >= 0 && addr6.sin6_port != 0) {
+            connected = true;
+        }
+    }
+
+    if (!connected) {
+        NETSTACK_LOGE("sock is not connect to remote %{public}s", strerror(errno));
+        context->SetErrorCode(errno);
+        return false;
+    }
+
+    if (!PollSendData(context->GetSocketFd(), context->options.GetData().c_str(), context->options.GetData().size(),
+                      nullptr, 0)) {
+        NETSTACK_LOGE("send errno %{public}d %{public}s", errno, strerror(errno));
+        context->SetErrorCode(errno);
+        return false;
+    }
+    return true;
+}
+
+static bool UdpSendEvent(UdpSendContext *context)
+{
+    sockaddr_in addr4 = {0};
+    sockaddr_in6 addr6 = {0};
+    sockaddr *addr = nullptr;
+    socklen_t len;
+    GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
+    if (addr == nullptr) {
+        NETSTACK_LOGE("addr family error, address invalid");
+        context->SetErrorCode(ADDRESS_INVALID);
+        return false;
+    }
+
+    if (!PollSendData(context->GetSocketFd(), context->options.GetData().c_str(), context->options.GetData().size(),
+                      addr, len)) {
+        context->SetErrorCode(errno);
+        return false;
+    }
+    return true;
+}
+
 static int ConfirmBufferSize(int sock)
 {
     int bufferSize = DEFAULT_BUFFER_SIZE;
@@ -624,7 +716,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         if (ret == 0) {
             continue;
         }
-        if ((int)(uint64_t)callback.GetEventManager()->GetData() == 0) {
+        if (static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) == 0) {
             return;
         }
         (void)memset_s(buf.get(), bufferSize, 0, bufferSize);
@@ -647,7 +739,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             callback.OnError(NO_MEMORY);
             return;
         }
-        if (memcpy_s(data, recvLen, buf.get(), recvLen) != EOK || !callback.OnMessage(sock, data, recvLen, addr)) {
+        if (memcpy_s(data, recvLen, buf.get(), recvLen) != EOK || !callback.OnMessage(data, recvLen, addr)) {
             free(data);
         }
     }
@@ -695,24 +787,6 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
         return false;
     }
     return true;
-}
-
-static void GetAddr(NetAddress *address, sockaddr_in *addr4, sockaddr_in6 *addr6, sockaddr **addr, socklen_t *len)
-{
-    sa_family_t family = address->GetSaFamily();
-    if (family == AF_INET) {
-        addr4->sin_family = AF_INET;
-        addr4->sin_port = htons(address->GetPort());
-        addr4->sin_addr.s_addr = inet_addr(address->GetAddress().c_str());
-        *addr = reinterpret_cast<sockaddr *>(addr4);
-        *len = sizeof(sockaddr_in);
-    } else if (family == AF_INET6) {
-        addr6->sin6_family = AF_INET6;
-        addr6->sin6_port = htons(address->GetPort());
-        inet_pton(AF_INET6, address->GetAddress().c_str(), &addr6->sin6_addr);
-        *addr = reinterpret_cast<sockaddr *>(addr6);
-        *len = sizeof(sockaddr_in6);
-    }
 }
 
 static bool SetBaseOptions(int sock, ExtraOptionsBase *option)
@@ -874,24 +948,18 @@ bool ExecUdpSend(UdpSendContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-
-    sockaddr_in addr4 = {0};
-    sockaddr_in6 addr6 = {0};
-    sockaddr *addr = nullptr;
-    socklen_t len;
-    GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
-    if (addr == nullptr) {
-        NETSTACK_LOGE("addr family error, address invalid");
-        context->SetErrorCode(ADDRESS_INVALID);
+    bool result = true;
+#ifdef ENABLE_EVENT_HANDLER
+    auto manager = context->GetManager();
+    auto eventHandler = manager->GetNetstackEventHandler();
+    if (!eventHandler) {
+        NETSTACK_LOGE("netstack eventHandler is nullptr");
         return false;
     }
-
-    if (!PollSendData(context->GetSocketFd(), context->options.GetData().c_str(), context->options.GetData().size(),
-                      addr, len)) {
-        context->SetErrorCode(errno);
-        return false;
-    }
-    return true;
+    eventHandler->PostSyncTask([&result, context]() { result = UdpSendEvent(context); });
+    NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
+#endif
+    return result;
 }
 
 bool ExecTcpBind(BindContext *context)
@@ -937,47 +1005,18 @@ bool ExecTcpSend(TcpSendContext *context)
         return false;
     }
 
-    std::string encoding = context->options.GetEncoding();
-    (void)encoding;
-    /* no use for now */
-
-    sockaddr sockAddr = {0};
-    socklen_t len = sizeof(sockaddr);
-    if (getsockname(context->GetSocketFd(), &sockAddr, &len) < 0) {
-        NETSTACK_LOGE("get sock name failed, address invalid");
-        context->SetErrorCode(ADDRESS_INVALID);
+    bool result = true;
+#ifdef ENABLE_EVENT_HANDLER
+    auto manager = context->GetManager();
+    auto eventHandler = manager->GetNetstackEventHandler();
+    if (!eventHandler) {
+        NETSTACK_LOGE("netstack eventHandler is nullptr");
         return false;
     }
-    bool connected = false;
-    if (sockAddr.sa_family == AF_INET) {
-        sockaddr_in addr4 = {0};
-        socklen_t len4 = sizeof(addr4);
-        int ret = getpeername(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr4), &len4);
-        if (ret >= 0 && addr4.sin_port != 0) {
-            connected = true;
-        }
-    } else if (sockAddr.sa_family == AF_INET6) {
-        sockaddr_in6 addr6 = {0};
-        socklen_t len6 = sizeof(addr6);
-        int ret = getpeername(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr6), &len6);
-        if (ret >= 0 && addr6.sin6_port != 0) {
-            connected = true;
-        }
-    }
-
-    if (!connected) {
-        NETSTACK_LOGE("sock is not connect to remote %{public}s", strerror(errno));
-        context->SetErrorCode(errno);
-        return false;
-    }
-
-    if (!PollSendData(context->GetSocketFd(), context->options.GetData().c_str(), context->options.GetData().size(),
-                      nullptr, 0)) {
-        NETSTACK_LOGE("send errno %{public}d %{public}s", errno, strerror(errno));
-        context->SetErrorCode(errno);
-        return false;
-    }
-    return true;
+    manager->GetNetstackEventHandler()->PostSyncTask([&result, context]() { result = TcpSendEvent(context); });
+    NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
+#endif
+    return result;
 }
 
 bool ExecClose(CloseContext *context)
