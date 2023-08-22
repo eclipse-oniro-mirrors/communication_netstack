@@ -1500,7 +1500,7 @@ static void RemoveClientConnection(int32_t clientId)
     std::lock_guard<std::mutex> lock(g_mutex);
     for (auto it = g_clientFDs.begin(); it != g_clientFDs.end(); ++it) {
         if (it->first == clientId) {
-            NETSTACK_LOGI("remove clientfd and eventmanager clientid: %{public}dclientFd:%{public}d", it->second,
+            NETSTACK_LOGI("remove clientfd and eventmanager clientid: %{public}d clientFd:%{public}d", it->second,
                           it->first);
 
             if (!IsClientFdClosed(it->second)) {
