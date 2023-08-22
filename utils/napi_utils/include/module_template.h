@@ -97,12 +97,12 @@ napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
     if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
         ret = context->CreatePromise();
     }
+    context->CreateReference(thisVal);
     if (Work != nullptr) {
         if (!Work(env, thisVal, context)) {
             NETSTACK_LOGE("work failed error code = %{public}d", context->GetErrorCode());
         }
     }
-    context->CreateReference(thisVal);
     if (!context->IsParseOK() || context->IsPermissionDenied()) {
         context->CreateAsyncWork(asyncWorkName, executor, callback);
     }
