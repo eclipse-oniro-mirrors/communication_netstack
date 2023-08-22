@@ -64,7 +64,9 @@ public:
             return;
         }
         char buffer[BUFFER_SIZE] = {0};
-        (void)memset_s(buffer, BUFFER_SIZE, ASCII_ZERO, BUFFER_SIZE - 1);
+        if (memset_s(buffer, BUFFER_SIZE, ASCII_ZERO, BUFFER_SIZE - 1) != EOF) {
+            NETSTACK_LOGE("memory operation fail");
+        }
         auto deleter = [](Context *context) {
             context->DeleteReference();
             delete context;
