@@ -88,8 +88,8 @@ void HttpSession::RequestAndResponse()
     do {
         std::lock_guard<std::mutex> guard(curlMultiMutex_);
         if (!runThread_ || curlMulti_ == nullptr) {
-            NETSTACK_LOGE("RequestAndResponse() runThread_ = %{public}d curlMulti_ = 0x%{public}x", (int)runThread_,
-                          (int)curlMulti_);
+            NETSTACK_LOGE("RequestAndResponse() runThread_ = %{public}d curlMulti_ = 0x%{public}p",
+                          static_cast<int>(runThread_), curlMulti_);
             StopTask(task);
             break;
         }

@@ -390,10 +390,10 @@ int HttpClientTask::ProgressCallback(void *userData, curl_off_t dltotal, curl_of
                                      curl_off_t ulnow)
 {
     unsigned int taskId = *(unsigned int *)userData;
-    NETSTACK_LOGD(
-        "HttpClientTask::ProgressCallback() taskId=%{public}d dltotal=%{public}lld dlnow=%{public}lld "
-        "ultotal=%{public}lld ulnow=%{public}lld",
-        taskId, dltotal, dlnow, ultotal, ulnow);
+    NETSTACK_LOGD("HttpClientTask::ProgressCallback() taskId=%{public}d dltotal=%{public}" CURL_FORMAT_CURL_OFF_T
+                  " dlnow=%{public}" CURL_FORMAT_CURL_OFF_T " ultotal=%{public}" CURL_FORMAT_CURL_OFF_T
+                  " ulnow=%{public}" CURL_FORMAT_CURL_OFF_T,
+                  taskId, dltotal, dlnow, ultotal, ulnow);
 
     auto task = HttpSession::GetInstance().GetTaskById(taskId);
     if (task == nullptr) {
