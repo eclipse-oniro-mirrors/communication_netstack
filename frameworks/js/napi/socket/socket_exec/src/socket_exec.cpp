@@ -54,8 +54,6 @@ static constexpr const int MAX_SEC = 999999999;
 
 static constexpr const int USER_LIMIT = 511;
 
-static constexpr const int ERR_SYS_BASE = 2303100;
-
 static constexpr const int MAX_CLIENTS = 1024;
 
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
@@ -1463,7 +1461,7 @@ static bool ServerBind(TcpServerListenContext *context)
     GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
         NETSTACK_LOGE("addr family error, address invalid");
-        context->SetErrorCode(ADDRESS_INVALID);
+        context->SetError(ADDRESS_INVALID, "addr family error, address invalid");
         return false;
     }
 
