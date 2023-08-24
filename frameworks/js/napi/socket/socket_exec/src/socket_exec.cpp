@@ -35,14 +35,16 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "securec.h"
-#include "socket_module.h"
 #include "socket_async_work.h"
+#include "socket_module.h"
 
 static constexpr const int DEFAULT_BUFFER_SIZE = 8192;
 
 static constexpr const int DEFAULT_POLL_TIMEOUT = 500; // 0.5 Seconds
 
 static constexpr const int ADDRESS_INVALID = 99;
+
+static constexpr const int OTHER_ERROR = 100;
 
 static constexpr const int NO_MEMORY = -2;
 
@@ -1327,7 +1329,7 @@ bool ExecTcpConnectionGetRemoteAddress(TcpServerGetRemoteAddressContext *context
 
     if (!fdValid) {
         NETSTACK_LOGE("client fd is invalid");
-        context->SetErrorCode(ERR_SYS_BASE + errno);
+        context->SetError(OTHER_ERROR, "client fd is invalid");
         return false;
     }
 
@@ -1335,7 +1337,7 @@ bool ExecTcpConnectionGetRemoteAddress(TcpServerGetRemoteAddressContext *context
     socklen_t len = sizeof(sockaddr);
     int ret = getsockname(clientFd, &sockAddr, &len);
     if (ret < 0) {
-        context->SetErrorCode(ERR_SYS_BASE + errno);
+        context->SetError(errno, strerror(errno));
         return false;
     }
 
@@ -1405,7 +1407,7 @@ bool ExecTcpConnectionSend(TcpServerSendContext *context)
 
     if (!fdValid) {
         NETSTACK_LOGE("client fd is invalid");
-        context->SetErrorCode(ERR_SYS_BASE + errno);
+        context->SetError(OTHER_ERROR, "client fd is invalid");
         return false;
     }
 
@@ -1419,7 +1421,7 @@ bool ExecTcpConnectionSend(TcpServerSendContext *context)
 
     if (!PollSendData(clientFd, context->options.GetData().c_str(), context->options.GetData().size(), nullptr, 0)) {
         NETSTACK_LOGE("send errno %{public}d %{public}s", errno, strerror(errno));
-        context->SetErrorCode(ERR_SYS_BASE + errno);
+        context->SetError(errno, strerror(errno));
         return false;
     }
     return true;
@@ -1445,7 +1447,7 @@ bool ExecTcpConnectionClose(TcpServerCloseContext *context)
 
     if (!fdValid) {
         NETSTACK_LOGE("client fd is invalid");
-        context->SetErrorCode(ERR_SYS_BASE + errno);
+        context->SetError(OTHER_ERROR, "client fd is invalid");
         return false;
     }
 
@@ -1468,7 +1470,7 @@ static bool ServerBind(TcpServerListenContext *context)
     if (bind(context->GetSocketFd(), addr, len) < 0) {
         if (errno != EADDRINUSE) {
             NETSTACK_LOGE("bind error is %{public}s %{public}d", strerror(errno), errno);
-            context->SetErrorCode(ERR_SYS_BASE + errno);
+            context->SetError(errno, strerror(errno));
             return false;
         }
         if (addr->sa_family == AF_INET) {
@@ -1480,7 +1482,7 @@ static bool ServerBind(TcpServerListenContext *context)
         }
         if (bind(context->GetSocketFd(), addr, len) < 0) {
             NETSTACK_LOGE("rebind error is %{public}s %{public}d", strerror(errno), errno);
-            context->SetErrorCode(ERR_SYS_BASE + errno);
+            context->SetError(errno, strerror(errno));
             return false;
         }
         NETSTACK_LOGI("rebind success");
@@ -1634,14 +1636,14 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
     }
 
     if (!SetBaseOptions(context->GetSocketFd(), &context->options_)) {
-        context->SetErrorCode(ERR_SYS_BASE + errno);
+        context->SetError(errno, strerror(errno));
         return false;
     }
 
     if (context->options_.IsKeepAlive()) {
         int keepalive = 1;
         if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_KEEPALIVE, &keepalive, sizeof(keepalive)) < 0) {
-            context->SetErrorCode(ERR_SYS_BASE + errno);
+            context->SetError(errno, strerror(errno));
             return false;
         }
     }
@@ -1649,7 +1651,7 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
     if (context->options_.IsOOBInline()) {
         int oobInline = 1;
         if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_OOBINLINE, &oobInline, sizeof(oobInline)) < 0) {
-            context->SetErrorCode(ERR_SYS_BASE + errno);
+            context->SetError(errno, strerror(errno));
             return false;
         }
     }
@@ -1657,7 +1659,7 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
     if (context->options_.IsTCPNoDelay()) {
         int tcpNoDelay = 1;
         if (setsockopt(context->GetSocketFd(), IPPROTO_TCP, TCP_NODELAY, &tcpNoDelay, sizeof(tcpNoDelay)) < 0) {
-            context->SetErrorCode(ERR_SYS_BASE + errno);
+            context->SetError(errno, strerror(errno));
             return false;
         }
     }
@@ -1666,7 +1668,7 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
     soLinger.l_onoff = context->options_.socketLinger.IsOn();
     soLinger.l_linger = (int)context->options_.socketLinger.GetLinger();
     if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_LINGER, &soLinger, sizeof(soLinger)) < 0) {
-        context->SetErrorCode(ERR_SYS_BASE + errno);
+        context->SetError(errno, strerror(errno));
         return false;
     }
 
@@ -1710,7 +1712,7 @@ bool ExecTcpServerGetState(TcpServerGetStateContext *context)
     sockaddr sockAddr = {0};
     socklen_t len = sizeof(sockaddr);
     if (getsockname(context->GetSocketFd(), &sockAddr, &len) < 0) {
-        context->SetErrorCode(ERR_SYS_BASE + errno);
+        context->SetError(errno, strerror(errno));
         return false;
     }
 
@@ -1738,7 +1740,7 @@ bool ExecTcpServerGetState(TcpServerGetStateContext *context)
     }
     len = addrLen;
     if (getsockname(context->GetSocketFd(), addr, &len) < 0) {
-        context->SetErrorCode(ERR_SYS_BASE + errno);
+        context->SetError(errno, strerror(errno));
         return false;
     }
 

@@ -104,7 +104,7 @@ int32_t TcpServerListenContext::GetErrorCode() const
     if (err == PARSE_ERROR_CODE) {
         return PARSE_ERROR_CODE;
     }
-    return err + SOCKET_ERROR_CODE_BASE;
+    return err + SOCKET_SERVER_ERROR_CODE_BASE;
 }
 
 std::string TcpServerListenContext::GetErrorMessage() const

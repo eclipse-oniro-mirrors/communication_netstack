@@ -21,7 +21,10 @@
 namespace OHOS::NetStack::Socket {
 static constexpr const size_t MAX_ERR_NUM = 256;
 
-enum SocketErrorCode { SOCKET_ERROR_CODE_BASE = 2301000 };
+enum SocketErrorCode {
+    SOCKET_ERROR_CODE_BASE = 2301000,
+    SOCKET_SERVER_ERROR_CODE_BASE = 2303100,
+};
 
 #if defined(IOS_PLATFORM)
 enum OHOSErrorCode {
