@@ -63,6 +63,21 @@
             },
             "inner_kits": [
                 {
+                    "type": "so",
+                    "name": "//foundation/communication/netstack/interfaces/innerkits/http_client:http_client",
+                    "header": {
+                        "header_files": [
+                            "http_client.h",
+                            "http_client_constant.h",
+                            "http_client_request.h",
+                            "http_client_response.h",
+                            "http_client_error.h",
+                            "http_client_task.h"
+                        ],
+                        "header_base": "//foundation/communication/netstack/interfaces/innerkits/http_client/include"
+                    }
+                },
+                {
                     "header": {
                         "header_base": [],
                         "header_files": []
