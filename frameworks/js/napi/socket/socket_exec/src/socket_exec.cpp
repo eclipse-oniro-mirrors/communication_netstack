@@ -44,6 +44,10 @@ static constexpr const int DEFAULT_POLL_TIMEOUT = 500; // 0.5 Seconds
 
 static constexpr const int ADDRESS_INVALID = 99;
 
+static constexpr const int SOCKET_ENOTSTR = 60;
+
+static constexpr const int UNKNOW_ERROR = -1;
+
 static constexpr const int NO_MEMORY = -2;
 
 static constexpr const int MSEC_TO_USEC = 1000;
@@ -619,7 +623,7 @@ static bool TcpSendEvent(TcpSendContext *context)
     socklen_t len = sizeof(sockaddr);
     if (getsockname(context->GetSocketFd(), &sockAddr, &len) < 0) {
         NETSTACK_LOGE("get sock name failed, address invalid");
-        context->SetErrorCode(ADDRESS_INVALID);
+        context->SetErrorCode(SOCKET_ENOTSTR);
         return false;
     }
     bool connected = false;
@@ -1030,6 +1034,7 @@ bool ExecClose(CloseContext *context)
     if (ret < 0) {
         NETSTACK_LOGE("sock closed error %{public}s sock = %{public}d, ret = %{public}d", strerror(errno),
                       context->GetSocketFd(), ret);
+        context->SetErrorCode(UNKNOW_ERROR);
         return false;
     }
     NETSTACK_LOGI("sock %{public}d closed success", context->GetSocketFd());
