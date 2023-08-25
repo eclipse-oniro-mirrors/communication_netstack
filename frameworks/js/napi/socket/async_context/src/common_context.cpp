@@ -101,6 +101,9 @@ std::string CommonContext::GetErrorMessage() const
     ErrCodePlatformAdapter::GetOHOSErrMessage(errCode, errMessage);
     return errMessage;
 #else
+    if (errCode == -1) {
+        return "Unknown Other Error";
+    }
     char err[MAX_ERR_NUM] = {0};
     (void)strerror_r(errCode, err, MAX_ERR_NUM);
     return err;
