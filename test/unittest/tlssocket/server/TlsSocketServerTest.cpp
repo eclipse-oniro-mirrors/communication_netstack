@@ -89,7 +89,7 @@ HWTEST_F(TlsSocketServerTest, ListenInterface, testing::ext::TestSize.Level2)
     TLSSocketServer server;
     TlsSocket::TLSConnectOptions tlsListenOptions;
 	
-    server.Listen(tlsListenOptions,[](int32_t errCode){EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
+    server.Listen(tlsListenOptions,[](int32_t errCode) {EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketServerTest, sendInterface, testing::ext::TestSize.Level2)
@@ -102,7 +102,7 @@ HWTEST_F(TlsSocketServerTest, sendInterface, testing::ext::TestSize.Level2)
 
     TLSServerSendOptions tlsServerSendOptions;
 
-    const std::string data = "how do you do? this is sendInterface";   
+    const std::string data = "how do you do? this is sendInterface";
     tlsServerSendOptions.SetSendData(data);
     server.Send(tlsServerSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
 }
@@ -138,7 +138,7 @@ HWTEST_F(TlsSocketServerTest, stopInterface, testing::ext::TestSize.Level2)
     int socketFd =  tlsServerSendOptions.GetSocket();
 
 
-    const std::string data = "how do you do? this is stopInterface";   
+    const std::string data = "how do you do? this is stopInterface";
     tlsServerSendOptions.SetSendData(data);
     server.Send(tlsServerSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
     sleep(2);
@@ -191,7 +191,7 @@ HWTEST_F(TlsSocketServerTest, getRemoteCertificateInterface, testing::ext::TestS
 {
     if (!CheckCaFileExistence("getRemoteCertificateInterface")) {
         return;
-    }   
+    }
 
     TLSSocketServer server;
 
@@ -201,7 +201,8 @@ HWTEST_F(TlsSocketServerTest, getRemoteCertificateInterface, testing::ext::TestS
 
     const std::string data = "how do you do? This is UT test getRemoteCertificateInterface";
     tlsServerSendOptions.SetSendData(data);
-    server.Send(tlsServerSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
+    server.Send(tlsServerSendOptions, [](int32_t errCode) {
+		    EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
     sleep(2);
 
     server.GetRemoteCertificate(socketFd,
@@ -289,7 +290,8 @@ HWTEST_F(TlsSocketServerTest, getSignatureAlgorithmsInterface, testing::ext::Tes
     std::string signatureAlgorithmVec = {"rsa_pss_rsae_sha256:ECDSA+SHA256"};
     secureOption.SetSignatureAlgorithms(signatureAlgorithmVec);
     std::vector<std::string> signatureAlgorithms;
-    server.GetSignatureAlgorithms(socketFd, [&signatureAlgorithms](int32_t errCode, const std::vector<std::string> &algorithms) {
+    server.GetSignatureAlgorithms(socketFd, [&signatureAlgorithms](int32_t errCode, 
+			    const std::vector<std::string> &algorithms) {
         if (errCode == TlsSocket::TLSSOCKET_SUCCESS) {
             signatureAlgorithms = algorithms;
         }
@@ -304,7 +306,7 @@ HWTEST_F(TlsSocketServerTest, getSignatureAlgorithmsInterface, testing::ext::Tes
 
 
     (void)server.Close(socketFd, [](int32_t errCode) { EXPECT_TRUE(TlsSocket::TLSSOCKET_SUCCESS); });
-}  
+}
 
 
 } //TlsSocketServer
