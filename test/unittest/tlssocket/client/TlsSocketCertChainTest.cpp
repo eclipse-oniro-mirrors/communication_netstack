@@ -119,8 +119,8 @@ void SetCertChainHwTestLongParam(TLSSocket &server)
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
     secureOption.SetCipherSuite("AES256-SHA256");
-    std::string protocolV1_3 = "TLSv1.3";
-    std::vector<std::string> protocolVec = {protocolV1_3};
+    std::string protocolV13 = "TLSv1.3";
+    std::vector<std::string> protocolVec = {protocolV13};
     secureOption.SetProtocolChain(protocolVec);
 
     options.SetNetAddress(address);
@@ -389,8 +389,8 @@ HWTEST_F(TlsSocketTest, getSignatureAlgorithmsInterface, testing::ext::TestSize.
     std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
-    std::string protocolV1_3 = "TLSv1.3";
-    std::vector<std::string> protocolVec = {protocolV1_3};
+    std::string protocolV13 = "TLSv1.3";
+    std::vector<std::string> protocolVec = {protocolV13};
     secureOption.SetProtocolChain(protocolVec);
 
     options.SetNetAddress(address);

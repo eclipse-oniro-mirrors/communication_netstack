@@ -542,7 +542,7 @@ bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYUSERPWD, NETSTACK_PROXY_PASS, context);
 #endif // NETSTACK_PROXY_PASS
 
-#if NO_SSL_CERTIFICATION
+#ifdef NO_SSL_CERTIFICATION
     // in real life, you should buy a ssl certification and rename it to /etc/ssl/cert.pem
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
@@ -552,7 +552,7 @@ bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *
 #endif // WINDOWS_PLATFORM
 #endif // NO_SSL_CERTIFICATION
 
-#if HTTP_CURL_PRINT_VERBOSE
+#ifdef HTTP_CURL_PRINT_VERBOSE
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_VERBOSE, 1L, context);
 #endif
 
