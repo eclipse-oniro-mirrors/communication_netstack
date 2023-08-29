@@ -28,5 +28,6 @@ group("unittest") {
     "client:tls_socket_unilateral_connection",
     "client:two_way_tls_socket_certchain_unittest",
     "client:two_way_tls_socket_unittest",
+    "server:two_way_tls_socket_server_unittest",
   ]
 }
