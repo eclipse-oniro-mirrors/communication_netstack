@@ -290,7 +290,7 @@ HWTEST_F(TlsSocketServerTest, getSignatureAlgorithmsInterface, testing::ext::Tes
     std::string signatureAlgorithmVec = {"rsa_pss_rsae_sha256:ECDSA+SHA256"};
     secureOption.SetSignatureAlgorithms(signatureAlgorithmVec);
     std::vector<std::string> signatureAlgorithms;
-    server.GetSignatureAlgorithms(socketFd, [&signatureAlgorithms](int32_t errCode, 
+    server.GetSignatureAlgorithms(socketFd, [&signatureAlgorithms](int32_t errCode,
         const std::vector<std::string> &algorithms) {
         if (errCode == TlsSocket::TLSSOCKET_SUCCESS) {
             signatureAlgorithms = algorithms;
