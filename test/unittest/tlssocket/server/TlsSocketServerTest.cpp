@@ -89,7 +89,7 @@ HWTEST_F(TlsSocketServerTest, ListenInterface, testing::ext::TestSize.Level2)
     TLSSocketServer server;
     TlsSocket::TLSConnectOptions tlsListenOptions;
 	
-    server.Listen(tlsListenOptions,[](int32_t errCode) {EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
+    server.Listen(tlsListenOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketServerTest, sendInterface, testing::ext::TestSize.Level2)
@@ -168,8 +168,8 @@ HWTEST_F(TlsSocketServerTest, getRemoteAddressInterface, testing::ext::TestSize.
     address.SetFamilyBySaFamily(AF_INET);
 
     Socket::NetAddress netAddress;
-    server.GetRemoteAddress(socketFd,[&netAddress](int32_t errCode,
-    	const Socket::NetAddress &address) {
+    server.GetRemoteAddress(socketFd, [&netAddress](int32_t errCode,
+        const Socket::NetAddress &address) {
     EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS);
     netAddress.SetAddress(address.GetAddress());
     netAddress.SetPort(address.GetPort());
@@ -202,11 +202,11 @@ HWTEST_F(TlsSocketServerTest, getRemoteCertificateInterface, testing::ext::TestS
     const std::string data = "how do you do? This is UT test getRemoteCertificateInterface";
     tlsServerSendOptions.SetSendData(data);
     server.Send(tlsServerSendOptions, [](int32_t errCode) {
-		    EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
+        EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
     sleep(2);
 
-    server.GetRemoteCertificate(socketFd,
-        [](int32_t errCode, const TlsSocket::X509CertRawData &cert) { EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
+    server.GetRemoteCertificate(socketFd, [](int32_t errCode, const TlsSocket::X509CertRawData &cert) {
+        EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
 
     (void)server.Close(socketFd, [](int32_t errCode) { EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
     sleep(2);
@@ -291,7 +291,7 @@ HWTEST_F(TlsSocketServerTest, getSignatureAlgorithmsInterface, testing::ext::Tes
     secureOption.SetSignatureAlgorithms(signatureAlgorithmVec);
     std::vector<std::string> signatureAlgorithms;
     server.GetSignatureAlgorithms(socketFd, [&signatureAlgorithms](int32_t errCode, 
-			    const std::vector<std::string> &algorithms) {
+        const std::vector<std::string> &algorithms) {
         if (errCode == TlsSocket::TLSSOCKET_SUCCESS) {
             signatureAlgorithms = algorithms;
         }
