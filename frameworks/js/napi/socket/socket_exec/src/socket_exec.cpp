@@ -348,6 +348,7 @@ static bool OnRecvMessage(EventManager *manager, void *data, size_t len, sockadd
     auto *messageStruct = new MessageData(data, len, remoteInfo);
     manager->SetQueueData(reinterpret_cast<void *>(messageStruct));
     manager->EmitByUv(EVENT_MESSAGE, manager, CallbackTemplate<MakeMessage>);
+    delete(messageStruct);
     return true;
 }
 

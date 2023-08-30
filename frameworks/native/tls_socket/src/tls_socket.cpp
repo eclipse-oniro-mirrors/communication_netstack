@@ -471,62 +471,22 @@ void TLSSocket::CallOnErrorCallback(int32_t err, const std::string &errString)
 
 void TLSSocket::CallBindCallback(int32_t err, BindCallback callback)
 {
-    BindCallback func = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            func = callback;
-        }
-    }
-
-    if (func) {
-        func(err);
-    }
+    DealCallback<BindCallback>(err, callback);
 }
 
 void TLSSocket::CallConnectCallback(int32_t err, ConnectCallback callback)
 {
-    ConnectCallback func = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            func = callback;
-        }
-    }
-
-    if (func) {
-        func(err);
-    }
+    DealCallback<ConnectCallback>(err, callback);
 }
 
 void TLSSocket::CallSendCallback(int32_t err, SendCallback callback)
 {
-    SendCallback func = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            func = callback;
-        }
-    }
-
-    if (func) {
-        func(err);
-    }
+    DealCallback<SendCallback>(err, callback);
 }
 
 void TLSSocket::CallCloseCallback(int32_t err, CloseCallback callback)
 {
-    CloseCallback func = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            func = callback;
-        }
-    }
-
-    if (func) {
-        func(err);
-    }
+    DealCallback<CloseCallback>(err, callback);
 }
 
 void TLSSocket::CallGetRemoteAddressCallback(int32_t err, const Socket::NetAddress &address,
@@ -562,17 +522,7 @@ void TLSSocket::CallGetStateCallback(int32_t err, const Socket::SocketStateBase 
 
 void TLSSocket::CallSetExtraOptionsCallback(int32_t err, SetExtraOptionsCallback callback)
 {
-    SetExtraOptionsCallback func = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            func = callback;
-        }
-    }
-
-    if (func) {
-        func(err);
-    }
+    DealCallback<SetExtraOptionsCallback>(err, callback);
 }
 
 void TLSSocket::CallGetCertificateCallback(int32_t err, const X509CertRawData &cert, GetCertificateCallback callback)
@@ -1553,6 +1503,22 @@ const X509CertRawData &TLSSocket::TLSSocketInternal::GetRemoteCertRawData() cons
 ssl_st *TLSSocket::TLSSocketInternal::GetSSL() const
 {
     return ssl_;
+}
+
+template<class T>
+void TLSSocket::DealCallback(int32_t err, T &callback)
+{
+    T func = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (callback) {
+            func = callback;
+        }
+    }
+
+    if (func) {
+        func(err);
+    }
 }
 } // namespace TlsSocket
 } // namespace NetStack

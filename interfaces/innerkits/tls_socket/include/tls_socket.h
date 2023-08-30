@@ -578,6 +578,9 @@ private:
 
     void MakeIpSocket(sa_family_t family);
 
+    template<class T>
+    void DealCallback(int32_t err, T &callback);
+
 private:
     static constexpr const size_t MAX_ERROR_LEN = 128;
     static constexpr const size_t MAX_BUFFER_SIZE = 8192;
