@@ -95,7 +95,7 @@ void Finalize(napi_env, void *data, void *)
     }
 }
 
-static bool SetSocket(napi_env env, napi_value thisVal, BindContext *context, int sock)
+static bool SetSocket(napi_env env, napi_value thisVal, BaseContext *context, int sock)
 {
     if (sock < 0) {
         napi_value error = NapiUtils::CreateObject(env);
@@ -117,7 +117,24 @@ static bool SetSocket(napi_env env, napi_value thisVal, BindContext *context, in
     return true;
 }
 
-static bool MakeTcpSocket(napi_env env, napi_value thisVal, BindContext *context)
+static bool MakeClientTcpSocket(napi_env env, napi_value thisVal, ConnectContext *context)
+{
+    if (!context->IsParseOK()) {
+        return false;
+    }
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    int sock = SocketExec::MakeTcpSocket(context->options.address.GetSaFamily());
+    if (!SetSocket(env, thisVal, context, sock)) {
+        return false;
+    }
+    context->SetExecOK(true);
+    return true;
+}
+
+static bool MakeServerTcpSocket(napi_env env, napi_value thisVal, BindContext *context)
 {
     if (!context->IsParseOK()) {
         return false;
@@ -328,12 +345,12 @@ napi_value SocketModuleExports::UDPSocket::Off(napi_env env, napi_callback_info 
 /* tcp async works */
 napi_value SocketModuleExports::TCPSocket::Bind(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(BindContext, ExecTcpBind, BindCallback, MakeTcpSocket, TCP_BIND_NAME);
+    return SOCKET_INTERFACE(BindContext, ExecTcpBind, BindCallback, MakeServerTcpSocket, TCP_BIND_NAME);
 }
 
 napi_value SocketModuleExports::TCPSocket::Connect(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(ConnectContext, ExecConnect, ConnectCallback, nullptr, TCP_CONNECT_NAME);
+    return SOCKET_INTERFACE(ConnectContext, ExecConnect, ConnectCallback, MakeClientTcpSocket, TCP_CONNECT_NAME);
 }
 
 napi_value SocketModuleExports::TCPSocket::Send(napi_env env, napi_callback_info info)
@@ -341,10 +358,12 @@ napi_value SocketModuleExports::TCPSocket::Send(napi_env env, napi_callback_info
     return ModuleTemplate::InterfaceWithOutAsyncWork<TcpSendContext>(
         env, info,
         [](napi_env, napi_value, TcpSendContext *context) -> bool {
+#ifdef ENABLE_EVENT_HANDLER
             auto manager = context->GetManager();
             if (!manager->InitNetstackEventHandler()) {
                 return false;
             }
+#endif
             SocketAsyncWork::ExecTcpSend(context->GetEnv(), context);
             return true;
         },

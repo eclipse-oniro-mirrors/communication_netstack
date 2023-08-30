@@ -16,6 +16,9 @@
 #include "net_address.h"
 
 namespace OHOS::NetStack::Socket {
+
+static constexpr int INET_PTON_SUCCESS = 1;
+
 NetAddress::NetAddress() : family_(Family::IPv4), port_(0) {}
 
 void NetAddress::SetAddress(const std::string &address)
@@ -23,11 +26,31 @@ void NetAddress::SetAddress(const std::string &address)
     address_ = address;
 }
 
-void NetAddress::SetFamilyByJsValue(uint32_t family)
+bool NetAddress::IsValidAddress(const std::string &address)
 {
-    if (static_cast<Family>(family) == Family::IPv6) {
-        family_ = Family::IPv6;
+    if (address.empty()) {
+        return false;
     }
+    struct in_addr addrIPv4;
+    struct in6_addr addrIPv6;
+    if (inet_pton(AF_INET, address.c_str(), reinterpret_cast<void *>(&addrIPv4)) == INET_PTON_SUCCESS ||
+        inet_pton(AF_INET6, address.c_str(), reinterpret_cast<void *>(&addrIPv6)) == INET_PTON_SUCCESS) {
+        return true;
+    }
+    return false;
+}
+
+void NetAddress::SetFamilyByJsValue(const std::string &address)
+{
+    if (address.empty()) {
+        return;
+    }
+    struct in_addr addrIPv4;
+    if (inet_pton(AF_INET, address.c_str(), reinterpret_cast<void *>(&addrIPv4)) != INET_PTON_SUCCESS) {
+        family_ = Family::IPv6;
+        return;
+    }
+    family_ = Family::IPv4;
 }
 
 void NetAddress::SetFamilyBySaFamily(sa_family_t family)

@@ -39,10 +39,11 @@ void TLSBindContext::ParseParams(napi_value *params, size_t paramsCount)
         NETSTACK_LOGE("address is empty");
     }
     address_.SetAddress(addr);
-    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_FAMILY)) {
-        uint32_t family = NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_FAMILY);
-        address_.SetFamilyByJsValue(family);
+    if (!address_.IsValidAddress(addr)) {
+        return;
     }
+    address_.SetFamilyByJsValue(addr);
+
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_PORT)) {
         uint16_t port = static_cast<uint16_t>(NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_PORT));
         address_.SetPort(port);
