@@ -68,6 +68,14 @@ public:
 
     void PopQueueData();
 
+    void CreateEventReference(napi_env env, napi_value value);
+
+    void DeleteEventReference(napi_env env);
+
+    void SetEventDestroy(bool flag);
+
+    bool IsEventDestroy();
+
 #ifdef ENABLE_EVENT_HANDLER
     bool InitNetstackEventHandler();
     std::shared_ptr<AppExecFwk::EventHandler> GetNetstackEventHandler();
@@ -83,6 +91,8 @@ private:
     std::queue<void *> dataQueue_;
     static std::mutex mutexForManager_;
     static std::unordered_set<EventManager *> validManager_;
+    napi_ref eventRef_;
+    std::atomic_bool isDestroy_;
 
 #ifdef ENABLE_EVENT_HANDLER
     std::shared_ptr<AppExecFwk::EventRunner> eventRunner_ = nullptr;

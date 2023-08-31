@@ -252,6 +252,9 @@ bool HttpExec::ExecRequest(RequestContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+    if (context->GetManager()->IsEventDestroy()) {
+        return false;
+    }
     context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
     CacheProxy proxy(context->options);
     if (context->IsUsingCache() && proxy.ReadResponseFromCache(context)) {
@@ -637,6 +640,9 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
     if (context == nullptr) {
         return 0;
     }
+    if (context->GetManager()->IsEventDestroy()) {
+        return 0;
+    }
     if (context->IsRequestInStream()) {
         context->SetTempData(data, size * memBytes);
         NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataReceive);
@@ -654,6 +660,9 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
 {
     auto context = static_cast<RequestContext *>(userData);
     if (context == nullptr) {
+        return 0;
+    }
+    if (context->GetManager()->IsEventDestroy()) {
         return 0;
     }
     if (context->response.GetResult().size() > MAX_LIMIT) {
@@ -731,6 +740,9 @@ int HttpExec::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dl
     (void)ulnow;
     auto context = static_cast<RequestContext *>(userData);
     if (context == nullptr || !context->IsRequestInStream()) {
+        return 0;
+    }
+    if (context->GetManager()->IsEventDestroy()) {
         return 0;
     }
     if (dltotal != 0) {
