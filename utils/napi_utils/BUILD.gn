@@ -19,6 +19,7 @@ config("napi_utils_public_config") {
     "include",
     "$THIRD_PARTY_ROOT/node/src",
     "$NETSTACK_DIR/utils/log/include",
+    "$NETSTACK_DIR/frameworks/js/napi/http/http_module/include",
   ]
   if (current_os != "ohos") {
     cflags = [ "-std=c++17" ]

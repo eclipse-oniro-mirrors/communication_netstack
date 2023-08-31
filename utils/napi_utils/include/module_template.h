@@ -51,7 +51,11 @@ napi_value Interface(napi_env env, napi_callback_info info, const std::string &a
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
 
     EventManager *manager = nullptr;
-    napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager));
+    auto napi_ret = napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager));
+    if (napi_ret != napi_ok) {
+        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
+        return NapiUtils::GetUndefined(env);
+    }
 
     auto context = new Context(env, manager);
     context->ParseParams(params, paramsCount);
@@ -89,7 +93,11 @@ napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
 
     EventManager *manager = nullptr;
-    napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager));
+    auto napi_ret = napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager));
+    if (napi_ret != napi_ok) {
+        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
+        return NapiUtils::GetUndefined(env);
+    }
 
     auto context = new Context(env, manager);
     context->ParseParams(params, paramsCount);
@@ -103,7 +111,7 @@ napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
             NETSTACK_LOGE("work failed error code = %{public}d", context->GetErrorCode());
         }
     }
-    if (!context->IsParseOK() || context->IsPermissionDenied()) {
+    if (!context->IsParseOK() || context->IsPermissionDenied() || context->GetManager()->IsEventDestroy()) {
         context->CreateAsyncWork(asyncWorkName, executor, callback);
     }
     return ret;

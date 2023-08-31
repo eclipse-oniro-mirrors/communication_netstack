@@ -24,7 +24,7 @@ static constexpr const int CALLBACK_PARAM_NUM = 1;
 
 static constexpr const int ASYNC_CALLBACK_PARAM_NUM = 2;
 
-EventManager::EventManager() : data_(nullptr) {}
+EventManager::EventManager() : data_(nullptr), eventRef_(nullptr), isDestroy_(false) {}
 
 EventManager::~EventManager()
 {
@@ -188,6 +188,30 @@ std::shared_ptr<AppExecFwk::EventHandler> EventManager::GetNetstackEventHandler(
     return eventHandler_;
 }
 #endif
+
+void EventManager::CreateEventReference(napi_env env, napi_value value)
+{
+    if (env != nullptr && value != nullptr) {
+        eventRef_ = NapiUtils::CreateReference(env, value);
+    }
+}
+
+void EventManager::DeleteEventReference(napi_env env)
+{
+    if (env != nullptr && eventRef_ != nullptr) {
+        NapiUtils::DeleteReference(env, eventRef_);
+    }
+}
+
+void EventManager::SetEventDestroy(bool flag)
+{
+    isDestroy_.store(flag);
+}
+
+bool EventManager::IsEventDestroy()
+{
+    return isDestroy_.load();
+}
 
 UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)
     : data(theData), env(theEnv), type(std::move(eventType)), manager(eventManager)

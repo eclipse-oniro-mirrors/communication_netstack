@@ -446,7 +446,7 @@ void RequestContext::EnableRequestInStream()
     requestInStream_ = true;
 }
 
-bool RequestContext::IsRequestInStream()
+bool RequestContext::IsRequestInStream() const
 {
     return requestInStream_;
 }

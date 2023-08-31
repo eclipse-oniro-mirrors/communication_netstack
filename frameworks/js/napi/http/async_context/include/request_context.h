@@ -66,7 +66,7 @@ public:
 
     void EnableRequestInStream();
 
-    [[nodiscard]] bool IsRequestInStream();
+    [[nodiscard]] bool IsRequestInStream() const;
 
     void SetDlLen(curl_off_t nowLen, curl_off_t totalLen);
 
