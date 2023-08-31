@@ -1370,7 +1370,7 @@ void TLSSocketServer::InitPollList(int &listendFd)
 
 void TLSSocketServer::DropFdFromPollList(int &fd_index)
 {
-    if (g_userCounter < 0) { 
+    if (g_userCounter < 0) {
         NETSTACK_LOGE("g_userCounter  = %{public}d", g_userCounter);
         return;
     }
