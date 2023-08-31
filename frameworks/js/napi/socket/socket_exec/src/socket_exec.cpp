@@ -303,7 +303,7 @@ static napi_value MakeMessage(napi_env env, void *para)
     auto deleter = [](const MessageData *p) { delete p; };
     std::unique_ptr<MessageData, decltype(deleter)> handler(messageData, deleter);
 
-    if (messageData == nullptr || messageData->data == nullptr || messageData->len == 0) {
+    if (messageData->data == nullptr || messageData->len == 0) {
         return MakeJsMessageParam(env, NapiUtils::GetUndefined(env), &messageData->remoteInfo);
     }
 
@@ -1123,7 +1123,7 @@ bool ExecGetState(GetStateContext *context)
     return true;
 }
 
-bool IsAddressAndRetValid(int &ret, std::string &address, GetRemoteAddressContext *context)
+bool IsAddressAndRetValid(const int &ret, const std::string &address, GetRemoteAddressContext *context)
 {
     if (ret < 0) {
         context->SetErrorCode(errno);
