@@ -1017,7 +1017,7 @@ bool ExecTcpSend(TcpSendContext *context)
         NETSTACK_LOGE("netstack eventHandler is nullptr");
         return false;
     }
-    manager->GetNetstackEventHandler()->PostSyncTask([&result, context]() { result = TcpSendEvent(context); });
+    eventHandler->PostSyncTask([&result, context]() { result = TcpSendEvent(context); });
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
 #endif
     return result;

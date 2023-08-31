@@ -64,7 +64,7 @@ public:
             return;
         }
         char buffer[BUFFER_SIZE] = {0};
-        if (memset_s(buffer, BUFFER_SIZE, ASCII_ZERO, BUFFER_SIZE - 1) != EOF) {
+        if (memset_s(buffer, BUFFER_SIZE, ASCII_ZERO, BUFFER_SIZE - 1) != EOK) {
             NETSTACK_LOGE("memory operation fail");
         }
         auto deleter = [](Context *context) {

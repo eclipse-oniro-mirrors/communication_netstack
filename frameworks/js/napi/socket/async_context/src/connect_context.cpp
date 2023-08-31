@@ -51,10 +51,11 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
         NETSTACK_LOGE("address is empty");
     }
     options.address.SetAddress(addr);
-    if (NapiUtils::HasNamedProperty(GetEnv(), netAddress, KEY_FAMILY)) {
-        uint32_t family = NapiUtils::GetUint32Property(GetEnv(), netAddress, KEY_FAMILY);
-        options.address.SetFamilyByJsValue(family);
+    if (!options.address.IsValidAddress(addr)) {
+        return;
     }
+    options.address.SetFamilyByJsValue(addr);
+
     if (NapiUtils::HasNamedProperty(GetEnv(), netAddress, KEY_PORT)) {
         uint16_t port = static_cast<uint16_t>(NapiUtils::GetUint32Property(GetEnv(), netAddress, KEY_PORT));
         options.address.SetPort(port);

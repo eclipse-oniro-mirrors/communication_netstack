@@ -218,17 +218,32 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         NETSTACK_LOGE("can not find context manager");
         return;
     }
-
+#ifdef ENABLE_EVENT_HANDLER
+    std::mutex lock;
     if (EventManager::IsManagerValid(context->GetManager())) {
         if (context->IsRequestInStream()) {
-            if (context->IsExecOK()) {
-                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd);
+            auto manager = context->GetManager();
+            auto eventHandler = manager->GetNetstackEventHandler();
+            if (!eventHandler) {
+                NETSTACK_LOGE("netstack eventHandler is nullptr");
+                return;
             }
-            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestInStreamCallback);
+            eventHandler->PostSyncTask([&context, &lock]() {
+                std::lock_guard<std::mutex> callbackLock(lock);
+                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context,
+                                                     HttpAsyncWork::RequestInStreamCallback);
+            });
+            if (context->IsExecOK()) {
+                eventHandler->PostSyncTask([&context, &lock]() {
+                    std::lock_guard<std::mutex> callbackLock(lock);
+                    NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd);
+                });
+            }
         } else {
             NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
         }
     }
+#endif
 }
 
 bool HttpExec::ExecRequest(RequestContext *context)
@@ -237,7 +252,6 @@ bool HttpExec::ExecRequest(RequestContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-
     context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
     CacheProxy proxy(context->options);
     if (context->IsUsingCache() && proxy.ReadResponseFromCache(context)) {
@@ -336,13 +350,14 @@ std::string HttpExec::MakeUrl(const std::string &url, std::string param, const s
 bool HttpExec::MethodForGet(const std::string &method)
 {
     return (method == HttpConstant::HTTP_METHOD_HEAD || method == HttpConstant::HTTP_METHOD_OPTIONS ||
-            method == HttpConstant::HTTP_METHOD_DELETE || method == HttpConstant::HTTP_METHOD_TRACE ||
-            method == HttpConstant::HTTP_METHOD_GET || method == HttpConstant::HTTP_METHOD_CONNECT);
+            method == HttpConstant::HTTP_METHOD_TRACE || method == HttpConstant::HTTP_METHOD_GET ||
+            method == HttpConstant::HTTP_METHOD_CONNECT);
 }
 
 bool HttpExec::MethodForPost(const std::string &method)
 {
-    return (method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT);
+    return (method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT ||
+            method == HttpConstant::HTTP_METHOD_DELETE);
 }
 
 bool HttpExec::EncodeUrlParam(std::string &str)
@@ -628,6 +643,7 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
         return size * memBytes;
     }
     if (context->response.GetResult().size() > MAX_LIMIT) {
+        NETSTACK_LOGE("response data exceeds the maximum limit");
         return 0;
     }
     context->response.AppendResult(data, size * memBytes);
@@ -641,6 +657,7 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
         return 0;
     }
     if (context->response.GetResult().size() > MAX_LIMIT) {
+        NETSTACK_LOGE("response data exceeds the maximum limit");
         return 0;
     }
     context->response.AppendRawHeader(data, size * memBytes);
