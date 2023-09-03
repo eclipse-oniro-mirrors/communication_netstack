@@ -746,17 +746,17 @@ void TLSSocket::Close(const CloseCallback &callback)
         return;
     }
     isRunning_ = false;
-    if (!WaitConditionWithTimeout(&isRunOver_, TIMEOUT_MS)) {
-        callback(ConvertErrno());
-        NETSTACK_LOGE("The error is due to insufficient delay time");
-        return;
-    }
     auto res = tlsSocketInternal_.Close();
     if (!res) {
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         NETSTACK_LOGE("close error is %{public}s %{public}d", MakeSSLErrorString(resErr).c_str(), resErr);
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(resErr);
+        return;
+    }
+    if (!WaitConditionWithTimeout(&isRunOver_, TIMEOUT_MS)) {
+        callback(ConvertErrno());
+        NETSTACK_LOGE("The error is due to insufficient delay time");
         return;
     }
     CallOnCloseCallback();
