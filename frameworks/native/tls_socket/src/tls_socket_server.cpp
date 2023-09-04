@@ -381,7 +381,10 @@ void TLSSocketServer::GetState(const TlsSocket::GetStateCallback &callback)
     Socket::SocketStateBase state;
     int ret = getsockname(listenSocketFd_, &sockAddr, &len);
     state.SetIsBound(ret == 0);
-    getpeername(listenSocketFd_, &sockAddr, &len);
+    ret = getpeername(listenSocketFd_, &sockAddr, &len);
+    if (ret != 0) {
+        NETSTACK_LOGI("getpeername failed");
+    }
     state.SetIsConnected(GetConnectionClientCount() > 0);
     CallGetStateCallback(TlsSocket::TLSSOCKET_SUCCESS, state, callback);
 }

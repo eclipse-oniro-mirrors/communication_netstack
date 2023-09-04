@@ -579,7 +579,20 @@ private:
     void MakeIpSocket(sa_family_t family);
 
     template<class T>
-    void DealCallback(int32_t err, T &callback);
+    void DealCallback(int32_t err, T &callback)
+    {
+        T func = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (callback) {
+                func = callback;
+            }
+        }
+
+        if (func) {
+            func(err);
+        }
+    }
 
 private:
     static constexpr const size_t MAX_ERROR_LEN = 128;

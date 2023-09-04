@@ -1504,22 +1504,6 @@ ssl_st *TLSSocket::TLSSocketInternal::GetSSL() const
 {
     return ssl_;
 }
-
-template<class T>
-void TLSSocket::DealCallback(int32_t err, T &callback)
-{
-    T func = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            func = callback;
-        }
-    }
-
-    if (func) {
-        func(err);
-    }
-}
 } // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
