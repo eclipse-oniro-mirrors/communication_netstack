@@ -200,7 +200,8 @@ void RequestContext::ParseHeader(napi_value optionsValue)
         return;
     }
     if (HttpExec::MethodForPost(options.GetMethod())) {
-        options.SetHeader(CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE), HttpConstant::HTTP_CONTENT_TYPE_JSON); // default
+        options.SetHeader(CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE),
+                          HttpConstant::HTTP_CONTENT_TYPE_JSON); // default
     }
     auto names = NapiUtils::GetPropertyNames(GetEnv(), header);
     std::for_each(names.begin(), names.end(), [header, this](const std::string &name) {
