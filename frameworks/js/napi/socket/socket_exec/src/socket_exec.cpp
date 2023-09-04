@@ -1123,7 +1123,7 @@ bool ExecGetState(GetStateContext *context)
     return true;
 }
 
-bool IsAddressAndRetValid(int &ret, const std::string &address, GetRemoteAddressContext *context)
+bool IsAddressAndRetValid(int &ret, std::string &address, GetRemoteAddressContext *context)
 {
     if (ret < 0) {
         context->SetErrorCode(errno);
