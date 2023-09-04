@@ -127,6 +127,10 @@ static bool MakeTcpClientBindSocket(napi_env env, napi_value thisVal, BindContex
         context->SetPermissionDenied(true);
         return false;
     }
+    if (context->GetManager()->GetData() != nullptr) {
+        NETSTACK_LOGE("tcp connect has been called");
+        return true;
+    }
     int sock = SocketExec::MakeTcpSocket(context->address_.GetSaFamily());
     if (!SetSocket(env, thisVal, context, sock)) {
         return false;
