@@ -183,6 +183,36 @@ bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURL
     return true;
 }
 
+#ifdef ENABLE_EVENT_HANDLER
+void HttpExec::HttpEventHandlerCallback(RequestContext *context)
+{
+    std::mutex lock;
+    if (EventManager::IsManagerValid(context->GetManager())) {
+        if (context->IsRequestInStream()) {
+            auto manager = context->GetManager();
+            auto eventHandler = manager->GetNetstackEventHandler();
+            if (!eventHandler) {
+                NETSTACK_LOGE("netstack eventHandler is nullptr");
+                return;
+            }
+            eventHandler->PostSyncTask([&context, &lock]() {
+                std::lock_guard<std::mutex> callbackLock(lock);
+                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context,
+                                                     HttpAsyncWork::RequestInStreamCallback);
+            });
+            if (context->IsExecOK()) {
+                eventHandler->PostSyncTask([&context, &lock]() {
+                    std::lock_guard<std::mutex> callbackLock(lock);
+                    NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd);
+                });
+            }
+        } else {
+            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
+        }
+    }
+}
+#endif
+
 void HttpExec::HandleCurlData(CURLMsg *msg)
 {
     if (msg == nullptr) {
@@ -219,30 +249,7 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         return;
     }
 #ifdef ENABLE_EVENT_HANDLER
-    std::mutex lock;
-    if (EventManager::IsManagerValid(context->GetManager())) {
-        if (context->IsRequestInStream()) {
-            auto manager = context->GetManager();
-            auto eventHandler = manager->GetNetstackEventHandler();
-            if (!eventHandler) {
-                NETSTACK_LOGE("netstack eventHandler is nullptr");
-                return;
-            }
-            eventHandler->PostSyncTask([&context, &lock]() {
-                std::lock_guard<std::mutex> callbackLock(lock);
-                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context,
-                                                     HttpAsyncWork::RequestInStreamCallback);
-            });
-            if (context->IsExecOK()) {
-                eventHandler->PostSyncTask([&context, &lock]() {
-                    std::lock_guard<std::mutex> callbackLock(lock);
-                    NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd);
-                });
-            }
-        } else {
-            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
-        }
-    }
+    HttpEventHandlerCallback(context);
 #endif
 }
 
