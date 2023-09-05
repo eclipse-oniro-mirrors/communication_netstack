@@ -383,7 +383,7 @@ void TLSSocketServer::GetState(const TlsSocket::GetStateCallback &callback)
     state.SetIsBound(ret == 0);
     ret = getpeername(listenSocketFd_, &sockAddr, &len);
     if (ret != 0) {
-        NETSTACK_LOGI("getpeername failed");
+        NETSTACK_LOGE("getpeername failed");
     }
     state.SetIsConnected(GetConnectionClientCount() > 0);
     CallGetStateCallback(TlsSocket::TLSSOCKET_SUCCESS, state, callback);
