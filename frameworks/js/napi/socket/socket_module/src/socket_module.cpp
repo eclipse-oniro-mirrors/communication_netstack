@@ -291,10 +291,12 @@ napi_value SocketModuleExports::UDPSocket::Send(napi_env env, napi_callback_info
     return ModuleTemplate::InterfaceWithOutAsyncWork<UdpSendContext>(
         env, info,
         [](napi_env, napi_value, UdpSendContext *context) -> bool {
+#ifdef ENABLE_EVENT_HANDLER
             auto manager = context->GetManager();
             if (!manager->InitNetstackEventHandler()) {
                 return false;
             }
+#endif
             SocketAsyncWork::ExecUdpSend(context->GetEnv(), context);
             return true;
         },
