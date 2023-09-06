@@ -13,44 +13,46 @@
  * limitations under the License.
  */
 
+#include <netdb.h>
 #include "net_address.h"
+#include "netstack_log.h"
 
 namespace OHOS::NetStack::Socket {
-
-static constexpr int INET_PTON_SUCCESS = 1;
 
 NetAddress::NetAddress() : family_(Family::IPv4), port_(0) {}
 
 void NetAddress::SetAddress(const std::string &address)
 {
-    address_ = address;
-}
-
-bool NetAddress::IsValidAddress(const std::string &address)
-{
-    if (address.empty()) {
-        return false;
-    }
-    struct in_addr addrIPv4;
-    struct in6_addr addrIPv6;
-    if (inet_pton(AF_INET, address.c_str(), reinterpret_cast<void *>(&addrIPv4)) == INET_PTON_SUCCESS ||
-        inet_pton(AF_INET6, address.c_str(), reinterpret_cast<void *>(&addrIPv6)) == INET_PTON_SUCCESS) {
-        return true;
-    }
-    return false;
-}
-
-void NetAddress::SetFamilyByJsValue(const std::string &address)
-{
-    if (address.empty()) {
+    struct addrinfo hints;
+    sa_family_t saFamily = GetSaFamily();
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = saFamily;
+    char ipStr[INET6_ADDRSTRLEN];
+    struct addrinfo *res = nullptr;
+    int status = getaddrinfo(address.c_str(), nullptr, &hints, &res);
+    if (status != 0 || res == nullptr) {
+        NETSTACK_LOGE("getaddrinfo status is %{public}d, error is %{public}s", status, gai_strerror(status));
         return;
     }
-    struct in_addr addrIPv4;
-    if (inet_pton(AF_INET, address.c_str(), reinterpret_cast<void *>(&addrIPv4)) != INET_PTON_SUCCESS) {
+
+    void *addr = nullptr;
+    if (res->ai_family == AF_INET) {
+        auto *ipv4 = (struct sockaddr_in *)res->ai_addr;
+        addr = &(ipv4->sin_addr);
+    } else {
+        struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)res->ai_addr;
+        addr = &(ipv6->sin6_addr);
+    }
+    inet_ntop(res->ai_family, addr, ipStr, sizeof ipStr);
+    address_ = ipStr;
+    freeaddrinfo(res);
+}
+
+void NetAddress::SetFamilyByJsValue(uint32_t family)
+{
+    if (static_cast<Family>(family) == Family::IPv6) {
         family_ = Family::IPv6;
-        return;
     }
-    family_ = Family::IPv4;
 }
 
 void NetAddress::SetFamilyBySaFamily(sa_family_t family)
