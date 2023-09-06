@@ -16,6 +16,7 @@
 #include <netdb.h>
 #include "net_address.h"
 #include "netstack_log.h"
+#include "securec.h"
 
 namespace OHOS::NetStack::Socket {
 
