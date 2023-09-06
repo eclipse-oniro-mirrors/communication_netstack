@@ -25,7 +25,9 @@ void NetAddress::SetAddress(const std::string &address)
 {
     struct addrinfo hints;
     sa_family_t saFamily = GetSaFamily();
-    memset(&hints, 0, sizeof hints);
+    if (memset_s(&hints, sizeof hints, 0, sizeof hints) != EOK) {
+        NETSTACK_LOGE("memory operation fail");
+    }
     hints.ai_family = saFamily;
     char ipStr[INET6_ADDRSTRLEN];
     struct addrinfo *res = nullptr;
