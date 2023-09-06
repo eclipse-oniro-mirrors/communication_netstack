@@ -33,7 +33,9 @@ public:
 
     void SetAddress(const std::string &address);
 
-    void SetFamilyByJsValue(uint32_t family);
+    bool IsValidAddress(const std::string &address);
+
+    void SetFamilyByJsValue(const std::string &address);
 
     void SetFamilyBySaFamily(sa_family_t family);
 

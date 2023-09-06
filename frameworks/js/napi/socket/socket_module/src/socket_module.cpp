@@ -127,7 +127,6 @@ static bool MakeTcpClientBindSocket(napi_env env, napi_value thisVal, BindContex
         context->SetPermissionDenied(true);
         return false;
     }
-    NETSTACK_LOGD("bind ip family is %{public}d", context->address_.GetSaFamily());
     if (context->GetManager()->GetData() != nullptr) {
         NETSTACK_LOGE("tcp connect has been called");
         return true;
@@ -150,7 +149,6 @@ static bool MakeTcpClientConnectSocket(napi_env env, napi_value thisVal, Connect
         context->SetPermissionDenied(true);
         return false;
     }
-    NETSTACK_LOGD("connect ip family is %{public}d", context->options.address.GetSaFamily());
     if (context->GetManager()->GetData() != nullptr) {
         NETSTACK_LOGD("tcp bind has been called");
         return true;

@@ -47,15 +47,11 @@ void TcpServerListenContext::ParseParams(napi_value *params, size_t paramsCount)
     if (addr.empty()) {
         NETSTACK_LOGE("address is empty");
     }
-
-    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_FAMILY)) {
-        uint32_t family = NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_FAMILY);
-        address_.SetFamilyByJsValue(family);
-    }
     address_.SetAddress(addr);
-    if (address_.GetAddress().empty()) {
+    if (!address_.IsValidAddress(addr)) {
         return;
     }
+    address_.SetFamilyByJsValue(addr);
 
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_PORT)) {
         uint16_t port = static_cast<uint16_t>(NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_PORT));

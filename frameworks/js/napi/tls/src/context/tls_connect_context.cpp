@@ -39,7 +39,6 @@ constexpr const char *SIGNATURE_ALGORITHMS = "signatureAlgorithms";
 constexpr const char *USE_REMOTE_CIPHER_PREFER = "useRemoteCipherPrefer";
 constexpr const char *CIPHER_SUITE = "cipherSuite";
 constexpr const char *ADDRESS_NAME = "address";
-constexpr const char *FAMILY_NAME = "family";
 constexpr const char *PORT_NAME = "port";
 constexpr const char *VERIFY_MODE_NAME = "bidirectionAuthentication";
 constexpr uint32_t CA_CHAIN_LENGTH = 10;
@@ -211,12 +210,11 @@ Socket::NetAddress TLSConnectContext::ReadNetAddress(napi_env env, napi_value *p
     napi_value netAddress = NapiUtils::GetNamedProperty(GetEnv(), params[0], ADDRESS_NAME);
 
     std::string addr = NapiUtils::GetStringPropertyUtf8(GetEnv(), netAddress, ADDRESS_NAME);
-
-    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], FAMILY_NAME)) {
-        uint32_t family = NapiUtils::GetUint32Property(GetEnv(), params[0], FAMILY_NAME);
-        address.SetFamilyByJsValue(family);
-    }
     address.SetAddress(addr);
+    if (!address.IsValidAddress(addr)) {
+        return {};
+    }
+    address.SetFamilyByJsValue(addr);
 
     if (NapiUtils::HasNamedProperty(GetEnv(), netAddress, PORT_NAME)) {
         uint16_t port = static_cast<uint16_t>(NapiUtils::GetUint32Property(GetEnv(), netAddress, PORT_NAME));
