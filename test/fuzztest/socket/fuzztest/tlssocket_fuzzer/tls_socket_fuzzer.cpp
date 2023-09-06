@@ -69,7 +69,7 @@ void BindFuzzTest(const uint8_t *data, size_t size)
     Socket::NetAddress netAddress;
     std::string str = GetStringFromData(STR_LEN);
     netAddress.SetAddress(str);
-    netAddress.SetFamilyByJsValue(str);
+    netAddress.SetFamilyByJsValue(GetData<uint32_t>());
     netAddress.SetFamilyBySaFamily(GetData<sa_family_t>());
     netAddress.SetPort(GetData<uint16_t>());
     tlsSocket.Close([](int32_t errorNumber) {});
@@ -104,7 +104,7 @@ void ConnectFuzzTest(const uint8_t *data, size_t size)
     Socket::NetAddress netAddress;
     std::string str = GetStringFromData(STR_LEN);
     netAddress.SetAddress(str);
-    netAddress.SetFamilyByJsValue(str);
+    netAddress.SetFamilyByJsValue(GetData<uint32_t>());
     netAddress.SetFamilyBySaFamily(GetData<sa_family_t>());
     netAddress.SetPort(GetData<uint16_t>());
     TLSConnectOptions options;
@@ -312,7 +312,7 @@ void SetNetAddressFuzzTest(const uint8_t *data, size_t size)
     std::string str = GetStringFromData(STR_LEN);
     uint16_t port = GetData<uint16_t>();
     address.SetAddress(str);
-    address.SetFamilyByJsValue(str);
+    address.SetFamilyByJsValue(GetData<uint32_t>());
     address.SetPort(port);
     TLSConnectOptions option;
     option.SetNetAddress(address);

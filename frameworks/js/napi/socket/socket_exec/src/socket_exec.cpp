@@ -968,7 +968,18 @@ bool ExecUdpSend(UdpSendContext *context)
 
 bool ExecTcpBind(BindContext *context)
 {
-    return ExecBind(context);
+    sockaddr_in addr4 = {0};
+    sockaddr_in6 addr6 = {0};
+    sockaddr *addr = nullptr;
+    socklen_t len;
+    GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
+    if (addr == nullptr) {
+        NETSTACK_LOGE("addr family error, address invalid");
+        context->SetErrorCode(ADDRESS_INVALID);
+        return false;
+    }
+    NETSTACK_LOGI("ExecTcpBind success");
+    return true;
 }
 
 bool ExecConnect(ConnectContext *context)
