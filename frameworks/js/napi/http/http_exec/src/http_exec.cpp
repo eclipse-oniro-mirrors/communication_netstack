@@ -91,9 +91,12 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
         return false;
     }
 
-    std::lock_guard guard(staticVariable_.curlMultiMutex);
-    staticVariable_.infoQueue.emplace(context, handle);
-    staticVariable_.conditionVariable.notify_all();
+    std::thread([context, handle] {
+        std::lock_guard guard(staticVariable_.curlMultiMutex);
+        staticVariable_.infoQueue.emplace(context, handle);
+        staticVariable_.conditionVariable.notify_all();
+    }).detach();
+
     return true;
 }
 
@@ -526,7 +529,6 @@ void HttpExec::GetHttpProxyInfo(RequestContext *context, std::string &host, int3
 
 bool HttpExec::Initialize()
 {
-    std::lock_guard<std::mutex> lock(staticVariable_.curlMultiMutex);
     if (staticVariable_.initialized) {
         return true;
     }
