@@ -921,7 +921,8 @@ bool ExecUdpBind(BindContext *context)
     }
 
     if (addr->sa_family == AF_INET) {
-        auto pAddr4 = reinterpret_cast<sockaddr *>(malloc(sizeof(addr4)));
+        void *pTmpAddr = malloc(sizeof(addr4));
+        auto pAddr4 = reinterpret_cast<sockaddr *>(pTmpAddr);
         if (pAddr4 == nullptr) {
             NETSTACK_LOGE("no memory!");
             return false;
