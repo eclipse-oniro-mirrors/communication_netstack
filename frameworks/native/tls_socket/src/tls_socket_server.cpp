@@ -1411,7 +1411,8 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
             for (int i = 0; i < g_userCounter + 1; ++i) {
                 if ((fds_[i].fd == listenSocketFd_) && (static_cast<uint16_t>(fds_[i].revents) & POLLIN)) {
                     ProcessTcpAccept(tlsOption, ++clientId);
-		 } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLRDHUP) || (static_cast<uint16_t>(fds_[i].revents) & POLLERR)) {
+                } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLRDHUP) ||
+                           (static_cast<uint16_t>(fds_[i].revents) & POLLERR)) {
                     RemoveConnect(fds_[i].fd);
                     DropFdFromPollList(i);
                     NETSTACK_LOGI("A client left");
