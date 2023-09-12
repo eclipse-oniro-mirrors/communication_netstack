@@ -160,6 +160,7 @@ private:
         }
 
         std::mutex curlMultiMutex;
+        std::mutex mutexForInitialize;
         CURLM *curlMulti;
         std::map<CURL *, RequestContext *> contextMap;
         std::thread workThread;
