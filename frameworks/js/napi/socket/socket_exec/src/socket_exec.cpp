@@ -535,7 +535,7 @@ static bool MakeNonBlock(int sock)
         flags = fcntl(sock, F_GETFL, 0);
     }
     if (flags == -1) {
-        NETSTACK_LOGE("make non block failed %{public}s", strerror(errno));
+        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
         return false;
     }
     int ret = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
@@ -543,7 +543,7 @@ static bool MakeNonBlock(int sock)
         ret = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
     }
     if (ret == -1) {
-        NETSTACK_LOGE("make non block failed %{public}s", strerror(errno));
+        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
         return false;
     }
     return true;
@@ -553,11 +553,11 @@ static bool PollFd(pollfd *fds, nfds_t num, int timeout)
 {
     int ret = poll(fds, num, timeout);
     if (ret == -1) {
-        NETSTACK_LOGE("poll to send failed %{public}s", strerror(errno));
+        NETSTACK_LOGE("poll to send failed, socket is %{public}d, errno is %{public}d", fds->fd, errno);
         return false;
     }
     if (ret == 0) {
-        NETSTACK_LOGE("poll to send timeout");
+        NETSTACK_LOGE("poll to send timeout, socket is %{public}d, errno is %{public}d", fds->fd, errno);
         return false;
     }
     return true;
@@ -574,7 +574,7 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     int sockType = 0;
     optLen = sizeof(sockType);
     if (getsockopt(sock, SOL_SOCKET, SO_TYPE, reinterpret_cast<void *>(&sockType), &optLen) < 0) {
-        NETSTACK_LOGI("get sock opt sock type failed = %{public}s", strerror(errno));
+        NETSTACK_LOGI("get sock opt sock type failed, socket is %{public}d, errno is %{public}d", sock, errno);
         return false;
     }
 
@@ -596,7 +596,7 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
             if (errno == EAGAIN) {
                 continue;
             }
-            NETSTACK_LOGE("send failed %{public}s", strerror(errno));
+            NETSTACK_LOGE("send failed, socket is %{public}d, errno is %{public}d", sock, errno);
             return false;
         }
         if (sendLen == 0) {
@@ -607,7 +607,7 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     }
 
     if (leftSize != 0) {
-        NETSTACK_LOGE("send not complete");
+        NETSTACK_LOGE("send not complete, socket is %{public}d, errno is %{public}d", sock, errno);
         return false;
     }
     return true;
@@ -622,8 +622,11 @@ static bool TcpSendEvent(TcpSendContext *context)
     sockaddr sockAddr = {0};
     socklen_t len = sizeof(sockaddr);
     if (getsockname(context->GetSocketFd(), &sockAddr, &len) < 0) {
-        NETSTACK_LOGE("get sock name failed, address invalid");
+        NETSTACK_LOGE("get sock name failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
         context->SetErrorCode(SOCKET_ENOTSTR);
+        // reason: Crossplatform; Possible causes: socketfd error, socket type error, socket status error
+        // socket net connect, socket closed, socket option error
+        NETSTACK_LOGE("set errorCode is %{public}d", SOCKET_ENOTSTR);
         return false;
     }
     bool connected = false;
@@ -644,14 +647,15 @@ static bool TcpSendEvent(TcpSendContext *context)
     }
 
     if (!connected) {
-        NETSTACK_LOGE("sock is not connect to remote %{public}s", strerror(errno));
+        NETSTACK_LOGE("sock is not connect to remote, socket is %{public}d, errno is %{public}d",
+                      context->GetSocketFd(), errno);
         context->SetErrorCode(errno);
         return false;
     }
 
     if (!PollSendData(context->GetSocketFd(), context->options.GetData().c_str(), context->options.GetData().size(),
                       nullptr, 0)) {
-        NETSTACK_LOGE("send errno %{public}d %{public}s", errno, strerror(errno));
+        NETSTACK_LOGE("send failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
         context->SetErrorCode(errno);
         return false;
     }
@@ -666,13 +670,14 @@ static bool UdpSendEvent(UdpSendContext *context)
     socklen_t len;
     GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
-        NETSTACK_LOGE("addr family error, address invalid");
+        NETSTACK_LOGE("get sock name failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
 
     if (!PollSendData(context->GetSocketFd(), context->options.GetData().c_str(), context->options.GetData().size(),
                       addr, len)) {
+        NETSTACK_LOGE("send failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
         context->SetErrorCode(errno);
         return false;
     }
@@ -713,7 +718,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     while (true) {
         int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT);
         if (ret < 0) {
-            NETSTACK_LOGE("poll to recv failed errno is: %{public}d %{public}s", errno, strerror(errno));
+            NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
             callback.OnError(errno);
             return;
         }
@@ -721,6 +726,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             continue;
         }
         if (static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) == 0) {
+            NETSTACK_LOGI("manager get data is 0");
             return;
         }
         (void)memset_s(buf.get(), bufferSize, 0, bufferSize);
@@ -730,7 +736,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             if (errno == EAGAIN) {
                 continue;
             }
-            NETSTACK_LOGE("recv failed errno is: %{public}d %{public}s", errno, strerror(errno));
+            NETSTACK_LOGE("recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
             callback.OnError(errno);
             return;
         }
@@ -773,7 +779,7 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
 
     ret = select(sock + 1, nullptr, &set, nullptr, &timeout);
     if (ret < 0) {
-        NETSTACK_LOGE("select error: %{public}s\n", strerror(errno));
+        NETSTACK_LOGE("select failed, socket is %{public}d, errno is %{public}d", sock, errno);
         return false;
     } else if (ret == 0) {
         NETSTACK_LOGE("timeout!");
@@ -787,7 +793,7 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
         return false;
     }
     if (err != 0) {
-        NETSTACK_LOGE("NonBlockConnect err number: %{public}d, message: %{public}s", err, strerror(err));
+        NETSTACK_LOGE("NonBlockConnect exec failed, socket is %{public}d, errno is %{public}d", sock, errno);
         return false;
     }
     return true;
@@ -837,7 +843,7 @@ int MakeTcpSocket(sa_family_t family)
     int sock = socket(family, SOCK_STREAM, IPPROTO_TCP);
     NETSTACK_LOGI("new tcp socket is %{public}d", sock);
     if (sock < 0) {
-        NETSTACK_LOGE("make tcp socket failed errno is %{public}d %{public}s", errno, strerror(errno));
+        NETSTACK_LOGE("make tcp socket failed, errno is %{public}d", errno);
         return -1;
     }
     if (!MakeNonBlock(sock)) {
@@ -855,7 +861,7 @@ int MakeUdpSocket(sa_family_t family)
     int sock = socket(family, SOCK_DGRAM, IPPROTO_UDP);
     NETSTACK_LOGI("new udp socket is %{public}d", sock);
     if (sock < 0) {
-        NETSTACK_LOGE("make udp socket failed errno is %{public}d %{public}s", errno, strerror(errno));
+        NETSTACK_LOGE("make udp socket failed, errno is %{public}d", errno);
         return -1;
     }
     if (!MakeNonBlock(sock)) {
@@ -880,7 +886,7 @@ bool ExecBind(BindContext *context)
 
     if (bind(context->GetSocketFd(), addr, len) < 0) {
         if (errno != EADDRINUSE) {
-            NETSTACK_LOGE("bind error is %{public}s %{public}d", strerror(errno), errno);
+            NETSTACK_LOGE("bind failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
             context->SetErrorCode(errno);
             return false;
         }
@@ -892,7 +898,7 @@ bool ExecBind(BindContext *context)
             addr6.sin6_port = 0; /* distribute a random port */
         }
         if (bind(context->GetSocketFd(), addr, len) < 0) {
-            NETSTACK_LOGE("rebind error is %{public}s %{public}d", strerror(errno), errno);
+            NETSTACK_LOGE("rebind failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
             context->SetErrorCode(errno);
             return false;
         }
@@ -915,7 +921,7 @@ bool ExecUdpBind(BindContext *context)
     socklen_t len;
     GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
-        NETSTACK_LOGE("addr family error, address invalid");
+        NETSTACK_LOGE("get addr failed, addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
@@ -991,7 +997,7 @@ bool ExecConnect(ConnectContext *context)
     }
 
     if (!NonBlockConnect(context->GetSocketFd(), addr, len, context->options.GetTimeout())) {
-        NETSTACK_LOGE("connect errno %{public}d %{public}s", errno, strerror(errno));
+        NETSTACK_LOGE("connect errno %{public}d", errno);
         context->SetErrorCode(errno);
         return false;
     }
@@ -1033,8 +1039,7 @@ bool ExecClose(CloseContext *context)
 
     int ret = close(context->GetSocketFd());
     if (ret < 0) {
-        NETSTACK_LOGE("sock closed error %{public}s sock = %{public}d, ret = %{public}d", strerror(errno),
-                      context->GetSocketFd(), ret);
+        NETSTACK_LOGE("sock closed failed , socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
         context->SetErrorCode(UNKNOW_ERROR);
         return false;
     }
@@ -1381,7 +1386,7 @@ static bool IsRemoteConnect(TcpServerSendContext *context, int32_t clientFd)
     }
 
     if (!connected) {
-        NETSTACK_LOGE("sock is not connect to remote %{public}s", strerror(errno));
+        NETSTACK_LOGE("sock is not connect to remote, socket is %{public}d, errno is %{public}d", clientFd, errno);
         context->SetErrorCode(errno);
         return false;
     }
@@ -1424,7 +1429,7 @@ bool ExecTcpConnectionSend(TcpServerSendContext *context)
     }
 
     if (!PollSendData(clientFd, context->options.GetData().c_str(), context->options.GetData().size(), nullptr, 0)) {
-        NETSTACK_LOGE("send errno %{public}d %{public}s", errno, strerror(errno));
+        NETSTACK_LOGE("send failed, , socket is %{public}d, errno is %{public}d", clientFd, errno);
         context->SetError(errno, strerror(errno));
         return false;
     }
@@ -1473,7 +1478,7 @@ static bool ServerBind(TcpServerListenContext *context)
 
     if (bind(context->GetSocketFd(), addr, len) < 0) {
         if (errno != EADDRINUSE) {
-            NETSTACK_LOGE("bind error is %{public}s %{public}d", strerror(errno), errno);
+            NETSTACK_LOGE("bind failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
             context->SetError(errno, strerror(errno));
             return false;
         }
@@ -1485,7 +1490,7 @@ static bool ServerBind(TcpServerListenContext *context)
             addr6.sin6_port = 0; /* distribute a random port */
         }
         if (bind(context->GetSocketFd(), addr, len) < 0) {
-            NETSTACK_LOGE("rebind error is %{public}s %{public}d", strerror(errno), errno);
+            NETSTACK_LOGE("rebind failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
             context->SetError(errno, strerror(errno));
             return false;
         }
@@ -1508,7 +1513,6 @@ static void RemoveClientConnection(int32_t clientId)
         if (it->first == clientId) {
             NETSTACK_LOGI("remove clientfd and eventmanager clientid: %{public}d clientFd:%{public}d", it->second,
                           it->first);
-
             if (!IsClientFdClosed(it->second)) {
                 NETSTACK_LOGE("connectFD not close should close");
                 shutdown(it->second, SHUT_RDWR);
@@ -1549,10 +1553,8 @@ static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, c
             break;
         }
         int32_t recvSize = recv(connectFD, buffer, sizeof(buffer), 0);
-        NETSTACK_LOGI(
-            "ClientRecv: fd is %{public}d, buf is %{public}s, size is "
-            "%{public}d bytes",
-            connectFD, buffer, recvSize);
+        NETSTACK_LOGI("ClientRecv: fd is %{public}d, buf is %{public}s, size is %{public}d bytes", connectFD, buffer,
+                      recvSize);
         if (recvSize <= 0) {
             NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
 
@@ -1864,12 +1866,11 @@ napi_value TcpConnectionCloseCallback(TcpServerCloseContext *context)
     }
 
     if (shutdown(clientFd, SHUT_RDWR) != 0) {
-        NETSTACK_LOGE("socket shutdown error %{public}s", strerror(errno));
+        NETSTACK_LOGE("socket shutdown failed, socket is %{public}d, errno is %{public}d", clientFd, errno);
     }
     int ret = close(clientFd);
     if (ret < 0) {
-        NETSTACK_LOGE("sock closed error %{public}s sock = %{public}d, ret = %{public}d", strerror(errno),
-                      context->GetSocketFd(), ret);
+        NETSTACK_LOGE("sock closed failed, socket is %{public}d, errno is %{public}d", clientFd, errno);
     } else {
         NETSTACK_LOGI("sock %{public}d closed success", clientFd);
         RemoveClientConnection(context->clientId_);
