@@ -529,6 +529,7 @@ void HttpExec::GetHttpProxyInfo(RequestContext *context, std::string &host, int3
 
 bool HttpExec::Initialize()
 {
+    std::lock_guard<std::mutex> lock(staticVariable_.mutexForInitialize);
     if (staticVariable_.initialized) {
         return true;
     }
