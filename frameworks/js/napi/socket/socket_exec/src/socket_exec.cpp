@@ -726,7 +726,6 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             continue;
         }
         if (static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) == 0) {
-            NETSTACK_LOGI("manager get data is 0");
             return;
         }
         (void)memset_s(buf.get(), bufferSize, 0, bufferSize);
