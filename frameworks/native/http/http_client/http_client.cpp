@@ -52,19 +52,17 @@ void HttpSession::ExecRequest()
 void HttpSession::AddRequestInfo()
 {
     std::shared_ptr<HttpClientTask> task = nullptr;
+    std::lock_guard<std::mutex> lock(taskQueueMutex_);
+    NETSTACK_LOGD("HttpSession::AddRequestInfo() start");
+
     while (!taskQueue_.empty()) {
-        {
-            std::lock_guard<std::mutex> lock(taskQueueMutex_);
-            if (!taskQueue_.empty()) {
-                task = taskQueue_.top();
-                taskQueue_.pop();
-            }
-        }
+        task = taskQueue_.top();
+        taskQueue_.pop();
 
         NETSTACK_LOGD("taskQueue_ read GetTaskId : %{public}d", task->GetTaskId());
-        {
+        if (task != nullptr) {
             std::lock_guard<std::mutex> guard(curlMultiMutex_);
-            if (curlMulti_ == nullptr) {
+            if (nullptr == curlMulti_) {
                 NETSTACK_LOGE("HttpSession::AddRequestInfo() curlMulti_ is nullptr");
                 StopTask(task);
                 return;
@@ -77,6 +75,8 @@ void HttpSession::AddRequestInfo()
             }
             NETSTACK_LOGD("curl_multi_add_handle: %{public}p", task->GetCurlHandle());
         }
+
+        task = nullptr;
     }
 }
 
@@ -84,8 +84,12 @@ void HttpSession::RequestAndResponse()
 {
     std::shared_ptr<HttpClientTask> task = nullptr;
     int runningHandle = 0;
+    NETSTACK_LOGD("HttpSession::RequestAndResponse() start");
 
     do {
+        if (runningHandle > 0) {
+            AddRequestInfo();
+        }
         std::lock_guard<std::mutex> guard(curlMultiMutex_);
         if (!runThread_ || curlMulti_ == nullptr) {
             NETSTACK_LOGE("RequestAndResponse() runThread_ = %{public}d curlMulti_ = 0x%{public}p",
@@ -112,7 +116,7 @@ void HttpSession::RequestAndResponse()
         ReadResponse();
     } while (runningHandle > 0);
 
-    NETSTACK_LOGD("HttpSession::SendRequest() end");
+    NETSTACK_LOGD("HttpSession::RequestAndResponse() end");
 }
 
 void HttpSession::ReadResponse()
@@ -207,6 +211,7 @@ void HttpSession::Deinit()
     if (curlMulti_ != nullptr) {
         NETSTACK_LOGD("Deinit curl_multi_cleanup()");
         curl_multi_cleanup(curlMulti_);
+        curlMulti_ = nullptr;
     }
 
     NETSTACK_LOGD("Deinit curl_global_cleanup()");
