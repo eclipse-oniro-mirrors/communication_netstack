@@ -47,7 +47,8 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request)
       status_(IDLE),
       taskId_(nextTaskId_++),
       curlHeaderList_(nullptr),
-      canceled_(false)
+      canceled_(false),
+      file_(nullptr)
 {
     NETSTACK_LOGI("HttpClientTask::HttpClientTask() taskId_=%{public}d URL=%{public}s", taskId_,
                   request_.GetURL().c_str());
@@ -68,7 +69,8 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request, TaskType type, 
       taskId_(nextTaskId_++),
       curlHeaderList_(nullptr),
       canceled_(false),
-      filePath_(filePath)
+      filePath_(filePath),
+      file_(nullptr)
 {
     NETSTACK_LOGI(
         "HttpClientTask::HttpClientTask() taskId_=%{public}d URL=%{public}s type=%{public}d filePath=%{public}s",
