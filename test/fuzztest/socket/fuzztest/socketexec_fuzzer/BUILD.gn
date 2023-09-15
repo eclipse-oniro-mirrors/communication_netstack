@@ -22,7 +22,7 @@ import("//foundation/communication/netstack/netstack_config.gni")
 NETSTACK_NAPI_ROOT = "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/"
 
 ohos_fuzztest("SocketExecFuzzTest") {
-  module_out_path = "communication/netstack"
+  module_out_path = fuzz_test_path
   fuzz_config_file = "//foundation/communication/netstack/test/fuzztest/socket/fuzztest/socketexec_fuzzer"
 
   include_dirs = [

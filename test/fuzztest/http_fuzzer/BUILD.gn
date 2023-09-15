@@ -33,7 +33,7 @@ common_external_deps = [
 ]
 
 ohos_fuzztest("HttpFuzzTest") {
-  module_out_path = "communication/netstack"
+  module_out_path = fuzz_test_path
   fuzz_config_file = "$NETSTACK_DIR/test/fuzztest/http_fuzzer"
   include_dirs = [
     "$NETSTACK_DIR/utils/napi_utils/include",
