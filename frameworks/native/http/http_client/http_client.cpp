@@ -59,8 +59,8 @@ void HttpSession::AddRequestInfo()
         task = taskQueue_.top();
         taskQueue_.pop();
 
-        NETSTACK_LOGD("taskQueue_ read GetTaskId : %{public}d", task->GetTaskId());
         if (task != nullptr) {
+            NETSTACK_LOGD("taskQueue_ read GetTaskId : %{public}d", task->GetTaskId());
             std::lock_guard<std::mutex> guard(curlMultiMutex_);
             if (nullptr == curlMulti_) {
                 NETSTACK_LOGE("HttpSession::AddRequestInfo() curlMulti_ is nullptr");
@@ -73,7 +73,6 @@ void HttpSession::AddRequestInfo()
                 StopTask(task);
                 return;
             }
-            NETSTACK_LOGD("curl_multi_add_handle: %{public}p", task->GetCurlHandle());
         }
 
         task = nullptr;
@@ -82,7 +81,6 @@ void HttpSession::AddRequestInfo()
 
 void HttpSession::RequestAndResponse()
 {
-    std::shared_ptr<HttpClientTask> task = nullptr;
     int runningHandle = 0;
     NETSTACK_LOGD("HttpSession::RequestAndResponse() start");
 
@@ -92,9 +90,7 @@ void HttpSession::RequestAndResponse()
         }
         std::lock_guard<std::mutex> guard(curlMultiMutex_);
         if (!runThread_ || curlMulti_ == nullptr) {
-            NETSTACK_LOGE("RequestAndResponse() runThread_ = %{public}d curlMulti_ = 0x%{public}p",
-                          static_cast<int>(runThread_), curlMulti_);
-            StopTask(task);
+            NETSTACK_LOGE("RequestAndResponse() runThread_ or curlMulti_ nullptr");
             break;
         }
 
@@ -225,7 +221,7 @@ void HttpSession::Deinit()
 std::shared_ptr<HttpClientTask> HttpSession::CreateTask(const HttpClientRequest &request)
 {
     std::shared_ptr<HttpClientTask> ptr = std::make_shared<HttpClientTask>(request);
-    if (nullptr == ptr || nullptr == ptr->GetCurlHandle()) {
+    if (ptr->GetCurlHandle() == nullptr) {
         NETSTACK_LOGE("CreateTask A error!");
         return nullptr;
     }
@@ -237,7 +233,7 @@ std::shared_ptr<HttpClientTask> HttpSession::CreateTask(const HttpClientRequest 
                                                         const std::string &filePath)
 {
     std::shared_ptr<HttpClientTask> ptr = std::make_shared<HttpClientTask>(request, type, filePath);
-    if (nullptr == ptr || nullptr == ptr->GetCurlHandle()) {
+    if (ptr->GetCurlHandle() == nullptr) {
         NETSTACK_LOGE("CreateTask B error!");
         return nullptr;
     }
