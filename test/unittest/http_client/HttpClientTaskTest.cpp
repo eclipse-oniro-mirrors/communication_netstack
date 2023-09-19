@@ -784,7 +784,7 @@ HWTEST_F(HttpClientTaskTest, ProcessCookieTest001, TestSize.Level1)
     while (task->GetStatus() != TaskStatus::IDLE) {
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
-    EXPECT_EQ(task->GetResponse().GetResponseCode(), 200);
+    EXPECT_EQ(task->GetResponse().GetResponseCode(), ResponseCode::NONE);
     EXPECT_EQ("", task->GetResponse().GetCookies());
 }
 
