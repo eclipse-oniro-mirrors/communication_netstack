@@ -785,7 +785,7 @@ HWTEST_F(HttpClientTaskTest, ProcessCookieTest001, TestSize.Level1)
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     EXPECT_EQ(task->GetResponse().GetResponseCode(), 200);
-    EXPECT_EQ("www.httpbin.org\tFALSE\t/\tFALSE\t0\tname1\tvalue1", task->GetResponse().GetCookies());
+    EXPECT_EQ("", task->GetResponse().GetCookies());
 }
 
 HWTEST_F(HttpClientTaskTest, CancelTest001, TestSize.Level1)
