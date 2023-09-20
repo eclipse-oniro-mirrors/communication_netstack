@@ -27,7 +27,7 @@
 #include "napi_utils.h"
 #include "netstack_log.h"
 
-static constexpr const int BUFFER_SIZE = 256;
+static constexpr const int BUFFER_SIZE = 512;
 static constexpr const int ASCII_ZERO = 48;
 
 namespace OHOS::NetStack {
