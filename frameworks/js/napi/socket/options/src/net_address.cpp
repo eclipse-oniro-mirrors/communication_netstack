@@ -40,10 +40,10 @@ void NetAddress::SetAddress(const std::string &address)
 
     void *addr = nullptr;
     if (res->ai_family == AF_INET) {
-        auto *ipv4 = (struct sockaddr_in *)res->ai_addr;
+        auto *ipv4 = reinterpret_cast<struct sockaddr_in *>(res->ai_addr);
         addr = &(ipv4->sin_addr);
     } else {
-        struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)res->ai_addr;
+        struct sockaddr_in6 *ipv6 = reinterpret_cast<struct sockaddr_in6 *>(res->ai_addr);
         addr = &(ipv6->sin6_addr);
     }
     inet_ntop(res->ai_family, addr, ipStr, sizeof ipStr);

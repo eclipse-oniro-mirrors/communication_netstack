@@ -41,6 +41,18 @@ namespace HttpClient {
 static constexpr size_t MAX_LIMIT = 5 * 1024 * 1024;
 std::atomic<uint32_t> HttpClientTask::nextTaskId_(0);
 
+bool CheckFilePath(const std::string &fileName, std::string &realPath)
+{
+    char tmpPath[PATH_MAX] = {0};
+    if (!realpath(static_cast<const char *>(fileName.c_str()), tmpPath)) {
+        NETSTACK_LOGE("file name is error");
+        return false;
+    }
+
+    realPath = tmpPath;
+    return true;
+}
+
 HttpClientTask::HttpClientTask(const HttpClientRequest &request)
     : request_(request),
       type_(DEFAULT),
@@ -151,7 +163,7 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
         }
     }
 
-#if NO_SSL_CERTIFICATION
+#ifdef NO_SSL_CERTIFICATION
     // in real life, you should buy a ssl certification and rename it to /etc/ssl/cert.pem
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -161,7 +173,7 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
 #endif // WINDOWS_PLATFORM
 #endif // NO_SSL_CERTIFICATION
 
-#if HTTP_CURL_PRINT_VERBOSE
+#ifdef HTTP_CURL_PRINT_VERBOSE
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_VERBOSE, 1L);
 #endif
 
@@ -180,14 +192,21 @@ bool HttpClientTask::SetUploadOptions(CURL *handle)
         return false;
     }
 
-    file_ = fopen(filePath_.c_str(), "rb");
-    if (file_ == nullptr) {
-        NETSTACK_LOGE("HttpClientTask::SetUploadOptions() Failed to open file %{public}s", filePath_.c_str());
+    std::string realPath;
+    if (!CheckFilePath(filePath_, realPath)) {
+        NETSTACK_LOGE("filePath_ does not exist! ");
         error_.SetErrorCode(HttpErrorCode::HTTP_UPLOAD_FAILED);
         return false;
     }
 
-    NETSTACK_LOGI("HttpClientTask::SetUploadOptions() filePath_=%{public}s", filePath_.c_str());
+    file_ = fopen(realPath.c_str(), "rb");
+    if (file_ == nullptr) {
+        NETSTACK_LOGE("HttpClientTask::SetUploadOptions() Failed to open file %{public}s", realPath.c_str());
+        error_.SetErrorCode(HttpErrorCode::HTTP_UPLOAD_FAILED);
+        return false;
+    }
+
+    NETSTACK_LOGI("HttpClientTask::SetUploadOptions() filePath_=%{public}s", realPath.c_str());
     fseek(file_, 0, SEEK_END);
     long size = ftell(file_);
     rewind(file_);
@@ -239,7 +258,7 @@ bool HttpClientTask::SetCurlOptions()
         curl_slist_free_all(curlHeaderList_);
         curlHeaderList_ = nullptr;
     }
-    for (auto &header : request_.GetHeaders()) {
+    for (const auto &header : request_.GetHeaders()) {
         std::string headerStr = header.first + HttpConstant::HTTP_HEADER_SEPARATOR + header.second;
         curlHeaderList_ = curl_slist_append(curlHeaderList_, headerStr.c_str());
     }
@@ -361,7 +380,7 @@ void HttpClientTask::OnProgress(const std::function<void(const HttpClientRequest
 
 size_t HttpClientTask::DataReceiveCallback(const void *data, size_t size, size_t memBytes, void *userData)
 {
-    unsigned int taskId = *(unsigned int *)userData;
+    unsigned int taskId = *reinterpret_cast<unsigned int *>(userData);
     NETSTACK_LOGD("HttpClientTask::DataReceiveCallback() taskId=%{public}d size=%{public}zu memBytes=%{public}zu",
                   taskId, size, memBytes);
 
@@ -378,7 +397,7 @@ size_t HttpClientTask::DataReceiveCallback(const void *data, size_t size, size_t
 
     if (task->onDataReceive_) {
         HttpClientRequest request = task->request_;
-        task->onDataReceive_(request, (const uint8_t *)data, size * memBytes);
+        task->onDataReceive_(request, static_cast<const uint8_t *>(data), size * memBytes);
     }
 
     if (task->response_.GetResult().size() < MAX_LIMIT) {
@@ -391,7 +410,7 @@ size_t HttpClientTask::DataReceiveCallback(const void *data, size_t size, size_t
 int HttpClientTask::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
                                      curl_off_t ulnow)
 {
-    unsigned int taskId = *(unsigned int *)userData;
+    unsigned int taskId = *reinterpret_cast<unsigned int *>(userData);
     NETSTACK_LOGD("HttpClientTask::ProgressCallback() taskId=%{public}d dltotal=%{public}" CURL_FORMAT_CURL_OFF_T
                   " dlnow=%{public}" CURL_FORMAT_CURL_OFF_T " ultotal=%{public}" CURL_FORMAT_CURL_OFF_T
                   " ulnow=%{public}" CURL_FORMAT_CURL_OFF_T,
@@ -417,7 +436,7 @@ int HttpClientTask::ProgressCallback(void *userData, curl_off_t dltotal, curl_of
 
 size_t HttpClientTask::HeaderReceiveCallback(const void *data, size_t size, size_t memBytes, void *userData)
 {
-    unsigned int taskId = *(unsigned int *)userData;
+    unsigned int taskId = *reinterpret_cast<unsigned int *>(userData);
     NETSTACK_LOGD("HttpClientTask::HeaderReceiveCallback() taskId=%{public}d size=%{public}zu memBytes=%{public}zu",
                   taskId, size, memBytes);
 
@@ -433,8 +452,9 @@ size_t HttpClientTask::HeaderReceiveCallback(const void *data, size_t size, size
         return 0;
     }
 
-    NETSTACK_LOGD("HttpClientTask::HeaderReceiveCallback() (const char *)data=%{public}s", (const char *)data);
-    task->response_.AppendHeader((const char *)data, size * memBytes);
+    NETSTACK_LOGD("HttpClientTask::HeaderReceiveCallback() (const char *)data=%{public}s",
+                  static_cast<const char *>(data));
+    task->response_.AppendHeader(static_cast<const char *>(data), size * memBytes);
 
     return size * memBytes;
 }
