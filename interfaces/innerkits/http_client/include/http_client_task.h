@@ -16,17 +16,17 @@
 #ifndef COMMUNICATIONNETSTACK_HTTP_CLIENT_TASK_H
 #define COMMUNICATIONNETSTACK_HTTP_CLIENT_TASK_H
 
-#include <string>
-#include <functional>
-#include <mutex>
 #include <atomic>
+#include <functional>
 #include <memory>
+#include <mutex>
 #include <stdio.h>
 #include <string.h>
+#include <string>
 
+#include "http_client_error.h"
 #include "http_client_request.h"
 #include "http_client_response.h"
-#include "http_client_error.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -302,7 +302,7 @@ private:
     CURL *curlHandle_;
     static std::atomic<unsigned int> nextTaskId_;
     std::string filePath_;
-    FILE *file_;
+    FILE *file_ = nullptr;
 };
 
 } // namespace HttpClient
