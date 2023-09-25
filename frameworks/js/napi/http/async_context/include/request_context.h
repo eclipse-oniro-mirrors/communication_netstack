@@ -105,6 +105,8 @@ private:
     bool GetRequestBody(napi_value extraData);
 
     void UrlAndOptions(napi_value urlValue, napi_value optionsValue);
+
+    bool HandleMethodForGet(napi_value extraData);
 };
 } // namespace OHOS::NetStack::Http
 
