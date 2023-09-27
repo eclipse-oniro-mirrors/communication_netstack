@@ -336,13 +336,14 @@ std::string HttpExec::MakeUrl(const std::string &url, std::string param, const s
 bool HttpExec::MethodForGet(const std::string &method)
 {
     return (method == HttpConstant::HTTP_METHOD_HEAD || method == HttpConstant::HTTP_METHOD_OPTIONS ||
-            method == HttpConstant::HTTP_METHOD_DELETE || method == HttpConstant::HTTP_METHOD_TRACE ||
-            method == HttpConstant::HTTP_METHOD_GET || method == HttpConstant::HTTP_METHOD_CONNECT);
+            method == HttpConstant::HTTP_METHOD_TRACE || method == HttpConstant::HTTP_METHOD_GET ||
+            method == HttpConstant::HTTP_METHOD_CONNECT);
 }
 
 bool HttpExec::MethodForPost(const std::string &method)
 {
-    return (method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT);
+    return (method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT ||
+            method == HttpConstant::HTTP_METHOD_DELETE);
 }
 
 bool HttpExec::EncodeUrlParam(std::string &str)
