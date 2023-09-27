@@ -214,8 +214,13 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
         NETSTACK_LOGI("no extraData");
         return true;
     }
-    napi_value extraData = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_EXTRA_DATA);
 
+    napi_value extraData = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_EXTRA_DATA);
+    if (NapiUtils::GetValueType(GetEnv(), extraData) == napi_undefined ||
+        NapiUtils::GetValueType(GetEnv(), extraData) == napi_null) {
+        NETSTACK_LOGI("extraData is undefined or null");
+        return true;
+    }
     if (HttpExec::MethodForGet(options.GetMethod())) {
         std::string url = options.GetUrl();
         std::string param;
