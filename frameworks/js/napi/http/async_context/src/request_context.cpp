@@ -406,7 +406,7 @@ RequestContext::~RequestContext()
     if (curlHeaderList_ != nullptr) {
         curl_slist_free_all(curlHeaderList_);
     }
-    NETSTACK_LOGI("RequestContext is destructed by the destructor");
+    NETSTACK_LOGD("RequestContext is destructed by the destructor");
 }
 
 void RequestContext::SetCacheResponse(const HttpResponse &cacheResponse)
