@@ -28,7 +28,7 @@ EventManager::EventManager() : data_(nullptr), eventRef_(nullptr), isDestroy_(fa
 
 EventManager::~EventManager()
 {
-    NETSTACK_LOGI("EventManager is destructed by the destructor");
+    NETSTACK_LOGD("EventManager is destructed by the destructor");
 }
 
 void EventManager::AddListener(napi_env env, const std::string &type, napi_value callback, bool once,
