@@ -18,6 +18,7 @@
 
 #include <limits>
 #include <memory>
+#include <securec.h>
 
 #include <napi/native_api.h>
 #include <napi/native_common.h>
@@ -25,6 +26,9 @@
 #include "base_context.h"
 #include "napi_utils.h"
 #include "netstack_log.h"
+
+static constexpr const int BUFFER_SIZE = 512;
+static constexpr const int ASCII_ZERO = 48;
 
 namespace OHOS::NetStack {
 class BaseAsyncWork final {
@@ -58,6 +62,10 @@ public:
 
         if (status != napi_ok) {
             return;
+        }
+        char buffer[BUFFER_SIZE] = {0};
+        if (memset_s(buffer, BUFFER_SIZE, ASCII_ZERO, BUFFER_SIZE - 1) != EOK) {
+            NETSTACK_LOGE("memory operation fail");
         }
         auto deleter = [](Context *context) {
             context->DeleteReference();

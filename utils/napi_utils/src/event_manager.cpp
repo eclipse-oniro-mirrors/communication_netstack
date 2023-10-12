@@ -15,19 +15,20 @@
 
 #include "event_manager.h"
 
-#include "netstack_log.h"
 #include <algorithm>
+#include "netstack_log.h"
+#include "napi_utils.h"
 
 namespace OHOS::NetStack {
 static constexpr const int CALLBACK_PARAM_NUM = 1;
 
 static constexpr const int ASYNC_CALLBACK_PARAM_NUM = 2;
 
-EventManager::EventManager() : data_(nullptr) {}
+EventManager::EventManager() : data_(nullptr), eventRef_(nullptr), isDestroy_(false) {}
 
 EventManager::~EventManager()
 {
-    NETSTACK_LOGI("EventManager is destructed by the destructor");
+    NETSTACK_LOGD("EventManager is destructed by the destructor");
 }
 
 void EventManager::AddListener(napi_env env, const std::string &type, napi_value callback, bool once,
@@ -75,14 +76,38 @@ void EventManager::Emit(const std::string &type, const std::pair<napi_value, nap
 
 void EventManager::SetData(void *data)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(dataMutex_);
     data_ = data;
 }
 
 void *EventManager::GetData()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(dataMutex_);
     return data_;
+}
+
+void EventManager::SetQueueData(void *data)
+{
+    std::lock_guard<std::mutex> lock(dataQueueMutex_);
+    dataQueue_.push(data);
+}
+
+void *EventManager::GetQueueData()
+{
+    std::lock_guard<std::mutex> lock(dataQueueMutex_);
+    if (!dataQueue_.empty()) {
+        return dataQueue_.front();
+    }
+    NETSTACK_LOGE("eventManager data queue is empty");
+    return nullptr;
+}
+
+void EventManager::PopQueueData()
+{
+    std::lock_guard<std::mutex> lock(dataQueueMutex_);
+    if (!dataQueue_.empty()) {
+        dataQueue_.pop();
+    }
 }
 
 void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status))
@@ -140,6 +165,52 @@ void EventManager::SetValid(EventManager *manager)
 {
     std::lock_guard lock(mutexForManager_);
     validManager_.emplace(manager);
+}
+
+#ifdef ENABLE_EVENT_HANDLER
+bool EventManager::InitNetstackEventHandler()
+{
+    if (eventRunner_ == nullptr) {
+        NETSTACK_LOGI("event handler is null, create handler.");
+        eventRunner_ = AppExecFwk::EventRunner::Create();
+        if (!eventRunner_) {
+            NETSTACK_LOGE("create event runner failed");
+            return false;
+        }
+        eventHandler_ = std::make_shared<AppExecFwk::EventHandler>(eventRunner_);
+        return true;
+    }
+    return true;
+}
+
+std::shared_ptr<AppExecFwk::EventHandler> EventManager::GetNetstackEventHandler()
+{
+    return eventHandler_;
+}
+#endif
+
+void EventManager::CreateEventReference(napi_env env, napi_value value)
+{
+    if (env != nullptr && value != nullptr) {
+        eventRef_ = NapiUtils::CreateReference(env, value);
+    }
+}
+
+void EventManager::DeleteEventReference(napi_env env)
+{
+    if (env != nullptr && eventRef_ != nullptr) {
+        NapiUtils::DeleteReference(env, eventRef_);
+    }
+}
+
+void EventManager::SetEventDestroy(bool flag)
+{
+    isDestroy_.store(flag);
+}
+
+bool EventManager::IsEventDestroy()
+{
+    return isDestroy_.load();
 }
 
 UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)

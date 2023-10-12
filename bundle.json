@@ -36,7 +36,8 @@
                 "init",
                 "napi",
                 "netmanager_base",
-                "ylong_http"
+                "ylong_http",
+                "eventhandler"
             ],
             "third_party": [
                 "curl",
@@ -62,6 +63,21 @@
             },
             "inner_kits": [
                 {
+                    "type": "so",
+                    "name": "//foundation/communication/netstack/interfaces/innerkits/http_client:http_client",
+                    "header": {
+                        "header_files": [
+                            "http_client.h",
+                            "http_client_constant.h",
+                            "http_client_request.h",
+                            "http_client_response.h",
+                            "http_client_error.h",
+                            "http_client_task.h"
+                        ],
+                        "header_base": "//foundation/communication/netstack/interfaces/innerkits/http_client/include"
+                    }
+                },
+                {
                     "header": {
                         "header_base": [],
                         "header_files": []
@@ -74,6 +90,7 @@
                 "//foundation/communication/netstack/test/fuzztest/http_fuzzer:fuzztest",
                 "//foundation/communication/netstack/test/unittest/http:unittest",
                 "//foundation/communication/netstack/test/unittest/http/cache:unittest",
+                "//foundation/communication/netstack/test/unittest/http_client:unittest",
                 "//foundation/communication/netstack/test/unittest/tlssocket:unittest",
                 "//foundation/communication/netstack/test/unittest/utils/common_utils:unittest"
             ]

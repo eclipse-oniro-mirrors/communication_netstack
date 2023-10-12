@@ -199,6 +199,10 @@ void RequestContext::ParseHeader(napi_value optionsValue)
     if (NapiUtils::GetValueType(GetEnv(), header) != napi_object) {
         return;
     }
+    if (HttpExec::MethodForPost(options.GetMethod())) {
+        options.SetHeader(CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE),
+                          HttpConstant::HTTP_CONTENT_TYPE_JSON); // default
+    }
     auto names = NapiUtils::GetPropertyNames(GetEnv(), header);
     std::for_each(names.begin(), names.end(), [header, this](const std::string &name) {
         auto value = NapiUtils::GetStringPropertyUtf8(GetEnv(), header, name);
@@ -206,6 +210,51 @@ void RequestContext::ParseHeader(napi_value optionsValue)
             options.SetHeader(CommonUtils::ToLower(name), value);
         }
     });
+}
+
+bool RequestContext::HandleMethodForGet(napi_value extraData)
+{
+    std::string url = options.GetUrl();
+    std::string param;
+    auto index = url.find(HttpConstant::HTTP_URL_PARAM_START);
+    if (index != std::string::npos) {
+        param = url.substr(index + 1);
+        url.resize(index);
+    }
+
+    napi_valuetype type = NapiUtils::GetValueType(GetEnv(), extraData);
+    if (type == napi_string) {
+        std::string extraParam = NapiUtils::GetStringFromValueUtf8(GetEnv(), extraData);
+
+        options.SetUrl(HttpExec::MakeUrl(url, param, extraParam));
+        return true;
+    }
+    if (type != napi_object) {
+        return true;
+    }
+
+    std::string extraParam;
+    auto names = NapiUtils::GetPropertyNames(GetEnv(), extraData);
+    std::for_each(names.begin(), names.end(), [this, extraData, &extraParam](std::string name) {
+        auto value = NapiUtils::GetStringPropertyUtf8(GetEnv(), extraData, name);
+        NETSTACK_LOGI("url param name = ..., value = ...");
+        if (!name.empty() && !value.empty()) {
+            bool encodeName = HttpExec::EncodeUrlParam(name);
+            bool encodeValue = HttpExec::EncodeUrlParam(value);
+            if (encodeName || encodeValue) {
+                options.SetHeader(CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE),
+                                  HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE);
+            }
+            extraParam +=
+                name + HttpConstant::HTTP_URL_NAME_VALUE_SEPARATOR + value + HttpConstant::HTTP_URL_PARAM_SEPARATOR;
+        }
+    });
+    if (!extraParam.empty()) {
+        extraParam.pop_back(); // remove the last &
+    }
+
+    options.SetUrl(HttpExec::MakeUrl(url, param, extraParam));
+    return true;
 }
 
 bool RequestContext::ParseExtraData(napi_value optionsValue)
@@ -221,48 +270,9 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
         NETSTACK_LOGI("extraData is undefined or null");
         return true;
     }
+
     if (HttpExec::MethodForGet(options.GetMethod())) {
-        std::string url = options.GetUrl();
-        std::string param;
-        auto index = url.find(HttpConstant::HTTP_URL_PARAM_START);
-        if (index != std::string::npos) {
-            param = url.substr(index + 1);
-            url.resize(index);
-        }
-
-        napi_valuetype type = NapiUtils::GetValueType(GetEnv(), extraData);
-        if (type == napi_string) {
-            std::string extraParam = NapiUtils::GetStringFromValueUtf8(GetEnv(), extraData);
-
-            options.SetUrl(HttpExec::MakeUrl(url, param, extraParam));
-            return true;
-        }
-        if (type != napi_object) {
-            return true;
-        }
-
-        std::string extraParam;
-        auto names = NapiUtils::GetPropertyNames(GetEnv(), extraData);
-        std::for_each(names.begin(), names.end(), [this, extraData, &extraParam](std::string name) {
-            auto value = NapiUtils::GetStringPropertyUtf8(GetEnv(), extraData, name);
-            NETSTACK_LOGI("url param name = ..., value = ...");
-            if (!name.empty() && !value.empty()) {
-                bool encodeName = HttpExec::EncodeUrlParam(name);
-                bool encodeValue = HttpExec::EncodeUrlParam(value);
-                if (encodeName || encodeValue) {
-                    options.SetHeader(CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE),
-                                      HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE);
-                }
-                extraParam +=
-                    name + HttpConstant::HTTP_URL_NAME_VALUE_SEPARATOR + value + HttpConstant::HTTP_URL_PARAM_SEPARATOR;
-            }
-        });
-        if (!extraParam.empty()) {
-            extraParam.pop_back(); // remove the last &
-        }
-
-        options.SetUrl(HttpExec::MakeUrl(url, param, extraParam));
-        return true;
+        return HandleMethodForGet(extraData);
     }
 
     if (HttpExec::MethodForPost(options.GetMethod())) {
@@ -396,7 +406,7 @@ RequestContext::~RequestContext()
     if (curlHeaderList_ != nullptr) {
         curl_slist_free_all(curlHeaderList_);
     }
-    NETSTACK_LOGI("RequestContext is destructed by the destructor");
+    NETSTACK_LOGD("RequestContext is destructed by the destructor");
 }
 
 void RequestContext::SetCacheResponse(const HttpResponse &cacheResponse)
@@ -448,7 +458,7 @@ void RequestContext::EnableRequestInStream()
     requestInStream_ = true;
 }
 
-bool RequestContext::IsRequestInStream()
+bool RequestContext::IsRequestInStream() const
 {
     return requestInStream_;
 }

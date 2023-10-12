@@ -34,7 +34,6 @@ HttpRequestOptions::HttpRequestOptions()
       usingHttpProxyType_(UsingHttpProxyType::NOT_USE),
       httpProxyPort_(0)
 {
-    header_[CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE)] = HttpConstant::HTTP_CONTENT_TYPE_JSON; // default
 #ifndef WINDOWS_PLATFORM
     caPath_ = HttpConstant::HTTP_DEFAULT_CA_PATH;
 #endif // WINDOWS_PLATFORM

@@ -23,7 +23,7 @@ NETSTACK_NAPI_ROOT = "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/socket/"
 TLS = "$NETSTACK_NATIVE_ROOT/tls_socket"
 TLS_NAPI = "$NETSTACK_DIR/frameworks/js/napi/tls"
 ohos_fuzztest("TlsSocketFuzzTest") {
-  module_out_path = "communication/netstack"
+  module_out_path = fuzz_test_path
   fuzz_config_file = "//foundation/communication/netstack/test/fuzztest/socket/fuzztest/tlssocket_fuzzer"
   include_dirs = [
     "$NETSTACK_DIR/utils/napi_utils/include",
@@ -110,6 +110,7 @@ ohos_fuzztest("TlsSocketFuzzTest") {
 
   external_deps = [
     "c_utils:utils",
+    "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
   ]

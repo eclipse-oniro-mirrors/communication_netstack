@@ -95,7 +95,7 @@ void Finalize(napi_env, void *data, void *)
     }
 }
 
-static bool SetSocket(napi_env env, napi_value thisVal, BindContext *context, int sock)
+static bool SetSocket(napi_env env, napi_value thisVal, BaseContext *context, int sock)
 {
     if (sock < 0) {
         napi_value error = NapiUtils::CreateObject(env);
@@ -117,9 +117,56 @@ static bool SetSocket(napi_env env, napi_value thisVal, BindContext *context, in
     return true;
 }
 
-static bool MakeTcpSocket(napi_env env, napi_value thisVal, BindContext *context)
+static bool MakeTcpClientBindSocket(napi_env env, napi_value thisVal, BindContext *context)
 {
     if (!context->IsParseOK()) {
+        context->SetErrorCode(PARSE_ERROR_CODE);
+        return false;
+    }
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    NETSTACK_LOGD("bind ip family is %{public}d", context->address_.GetSaFamily());
+    if (context->GetManager()->GetData() != nullptr) {
+        NETSTACK_LOGE("tcp connect has been called");
+        return true;
+    }
+    int sock = SocketExec::MakeTcpSocket(context->address_.GetSaFamily());
+    if (!SetSocket(env, thisVal, context, sock)) {
+        return false;
+    }
+    context->SetExecOK(true);
+    return true;
+}
+
+static bool MakeTcpClientConnectSocket(napi_env env, napi_value thisVal, ConnectContext *context)
+{
+    if (!context->IsParseOK()) {
+        context->SetErrorCode(PARSE_ERROR_CODE);
+        return false;
+    }
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    NETSTACK_LOGD("connect ip family is %{public}d", context->options.address.GetSaFamily());
+    if (context->GetManager()->GetData() != nullptr) {
+        NETSTACK_LOGD("tcp bind has been called");
+        return true;
+    }
+    int sock = SocketExec::MakeTcpSocket(context->options.address.GetSaFamily());
+    if (!SetSocket(env, thisVal, context, sock)) {
+        return false;
+    }
+    context->SetExecOK(true);
+    return true;
+}
+
+static bool MakeTcpServerSocket(napi_env env, napi_value thisVal, TcpServerListenContext *context)
+{
+    if (!context->IsParseOK()) {
+        context->SetErrorCode(PARSE_ERROR_CODE);
         return false;
     }
     if (!CommonUtils::HasInternetPermission()) {
@@ -134,48 +181,10 @@ static bool MakeTcpSocket(napi_env env, napi_value thisVal, BindContext *context
     return true;
 }
 
-static bool SetServerSocket(napi_env env, napi_value thisVal, TcpServerListenContext *context, int sock)
-{
-    if (sock < 0) {
-        napi_value error = NapiUtils::CreateObject(env);
-        if (NapiUtils::GetValueType(env, error) != napi_object) {
-            return false;
-        }
-        NapiUtils::SetUint32Property(env, error, KEY_ERROR_CODE, errno);
-        context->Emit(EVENT_ERROR, std::make_pair(NapiUtils::GetUndefined(env), error));
-        return false;
-    }
-
-    EventManager *manager = nullptr;
-    if (napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager)) != napi_ok || manager == nullptr) {
-        return false;
-    }
-
-    manager->SetData(reinterpret_cast<void *>(sock));
-    NapiUtils::SetInt32Property(env, thisVal, KEY_SOCKET_FD, sock);
-    return true;
-}
-
-static bool MakeTcpServerSocket(napi_env env, napi_value thisVal, TcpServerListenContext *context)
-{
-    if (!context->IsParseOK()) {
-        return false;
-    }
-    if (!CommonUtils::HasInternetPermission()) {
-        context->SetPermissionDenied(true);
-        return false;
-    }
-    int sock = SocketExec::MakeTcpSocket(context->address_.GetSaFamily());
-    if (!SetServerSocket(env, thisVal, context, sock)) {
-        return false;
-    }
-    context->SetExecOK(true);
-    return true;
-}
-
 static bool MakeUdpSocket(napi_env env, napi_value thisVal, BindContext *context)
 {
     if (!context->IsParseOK()) {
+        context->SetErrorCode(PARSE_ERROR_CODE);
         return false;
     }
     if (!CommonUtils::HasInternetPermission()) {
@@ -281,7 +290,19 @@ napi_value SocketModuleExports::UDPSocket::Bind(napi_env env, napi_callback_info
 
 napi_value SocketModuleExports::UDPSocket::Send(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(UdpSendContext, ExecUdpSend, UdpSendCallback, nullptr, UDP_SEND_NAME);
+    return ModuleTemplate::InterfaceWithOutAsyncWork<UdpSendContext>(
+        env, info,
+        [](napi_env, napi_value, UdpSendContext *context) -> bool {
+#ifdef ENABLE_EVENT_HANDLER
+            auto manager = context->GetManager();
+            if (!manager->InitNetstackEventHandler()) {
+                return false;
+            }
+#endif
+            SocketAsyncWork::ExecUdpSend(context->GetEnv(), context);
+            return true;
+        },
+        UDP_SEND_NAME, SocketAsyncWork::ExecUdpSend, SocketAsyncWork::UdpSendCallback);
 }
 
 napi_value SocketModuleExports::UDPSocket::Close(napi_env env, napi_callback_info info)
@@ -318,17 +339,29 @@ napi_value SocketModuleExports::UDPSocket::Off(napi_env env, napi_callback_info 
 /* tcp async works */
 napi_value SocketModuleExports::TCPSocket::Bind(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(BindContext, ExecTcpBind, BindCallback, MakeTcpSocket, TCP_BIND_NAME);
+    return SOCKET_INTERFACE(BindContext, ExecTcpBind, BindCallback, MakeTcpClientBindSocket, TCP_BIND_NAME);
 }
 
 napi_value SocketModuleExports::TCPSocket::Connect(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(ConnectContext, ExecConnect, ConnectCallback, nullptr, TCP_CONNECT_NAME);
+    return SOCKET_INTERFACE(ConnectContext, ExecConnect, ConnectCallback, MakeTcpClientConnectSocket, TCP_CONNECT_NAME);
 }
 
 napi_value SocketModuleExports::TCPSocket::Send(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(TcpSendContext, ExecTcpSend, TcpSendCallback, nullptr, TCP_SEND_NAME);
+    return ModuleTemplate::InterfaceWithOutAsyncWork<TcpSendContext>(
+        env, info,
+        [](napi_env, napi_value, TcpSendContext *context) -> bool {
+#ifdef ENABLE_EVENT_HANDLER
+            auto manager = context->GetManager();
+            if (!manager->InitNetstackEventHandler()) {
+                return false;
+            }
+#endif
+            SocketAsyncWork::ExecTcpSend(context->GetEnv(), context);
+            return true;
+        },
+        TCP_SEND_NAME, SocketAsyncWork::ExecTcpSend, SocketAsyncWork::TcpSendCallback);
 }
 
 napi_value SocketModuleExports::TCPSocket::Close(napi_env env, napi_callback_info info)
