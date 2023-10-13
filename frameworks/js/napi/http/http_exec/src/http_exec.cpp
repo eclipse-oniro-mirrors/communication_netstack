@@ -91,11 +91,12 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
         return false;
     }
 
-    std::thread([context, handle] {
+    std::thread emplaceInfoThread([context, handle] {
         std::lock_guard guard(staticVariable_.curlMultiMutex);
         staticVariable_.infoQueue.emplace(context, handle);
         staticVariable_.conditionVariable.notify_all();
-    }).detach();
+    });
+    emplaceInfoThread.detach();
 
     return true;
 }
