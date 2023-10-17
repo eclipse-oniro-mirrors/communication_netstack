@@ -23,6 +23,7 @@
 
 #include "event_manager.h"
 #include "netstack_log.h"
+#include "http_module.h"
 
 namespace OHOS::NetStack::ModuleTemplate {
 static constexpr const int EVENT_PARAM_NUM = 2;
@@ -158,6 +159,9 @@ napi_value NewInstance(napi_env env, napi_callback_info info, const std::string 
 
     auto manager = new EventManager();
     EventManager::SetValid(manager);
+    if (className == Http::HttpModuleExports::INTERFACE_HTTP_REQUEST) {
+        manager->CreateEventReference(env, thisVal);
+    }
     napi_wrap(env, result, reinterpret_cast<void *>(manager), finalizer, nullptr, nullptr);
 
     return result;

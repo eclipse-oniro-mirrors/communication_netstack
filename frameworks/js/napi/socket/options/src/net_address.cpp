@@ -13,14 +13,42 @@
  * limitations under the License.
  */
 
+#include <netdb.h>
 #include "net_address.h"
+#include "netstack_log.h"
+#include "securec.h"
 
 namespace OHOS::NetStack::Socket {
+
 NetAddress::NetAddress() : family_(Family::IPv4), port_(0) {}
 
 void NetAddress::SetAddress(const std::string &address)
 {
-    address_ = address;
+    struct addrinfo hints;
+    sa_family_t saFamily = GetSaFamily();
+    if (memset_s(&hints, sizeof hints, 0, sizeof hints) != EOK) {
+        NETSTACK_LOGE("memory operation fail");
+    }
+    hints.ai_family = saFamily;
+    char ipStr[INET6_ADDRSTRLEN];
+    struct addrinfo *res = nullptr;
+    int status = getaddrinfo(address.c_str(), nullptr, &hints, &res);
+    if (status != 0 || res == nullptr) {
+        NETSTACK_LOGE("getaddrinfo status is %{public}d, error is %{public}s", status, gai_strerror(status));
+        return;
+    }
+
+    void *addr = nullptr;
+    if (res->ai_family == AF_INET) {
+        auto *ipv4 = reinterpret_cast<struct sockaddr_in *>(res->ai_addr);
+        addr = &(ipv4->sin_addr);
+    } else {
+        struct sockaddr_in6 *ipv6 = reinterpret_cast<struct sockaddr_in6 *>(res->ai_addr);
+        addr = &(ipv6->sin6_addr);
+    }
+    inet_ntop(res->ai_family, addr, ipStr, sizeof ipStr);
+    address_ = ipStr;
+    freeaddrinfo(res);
 }
 
 void NetAddress::SetFamilyByJsValue(uint32_t family)

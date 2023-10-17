@@ -310,10 +310,9 @@ void SetNetAddressFuzzTest(const uint8_t *data, size_t size)
     g_baseFuzzPos = 0;
     Socket::NetAddress address;
     std::string str = GetStringFromData(STR_LEN);
-    uint32_t num = GetData<uint32_t>();
     uint16_t port = GetData<uint16_t>();
     address.SetAddress(str);
-    address.SetFamilyByJsValue(num);
+    address.SetFamilyByJsValue(GetData<uint32_t>());
     address.SetPort(port);
     TLSConnectOptions option;
     option.SetNetAddress(address);

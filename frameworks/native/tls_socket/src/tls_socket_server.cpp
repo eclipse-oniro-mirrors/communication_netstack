@@ -382,6 +382,9 @@ void TLSSocketServer::GetState(const TlsSocket::GetStateCallback &callback)
     int ret = getsockname(listenSocketFd_, &sockAddr, &len);
     state.SetIsBound(ret == 0);
     ret = getpeername(listenSocketFd_, &sockAddr, &len);
+    if (ret != 0) {
+        NETSTACK_LOGE("getpeername failed");
+    }
     state.SetIsConnected(GetConnectionClientCount() > 0);
     CallGetStateCallback(TlsSocket::TLSSOCKET_SUCCESS, state, callback);
 }
@@ -1370,6 +1373,10 @@ void TLSSocketServer::InitPollList(int &listendFd)
 
 void TLSSocketServer::DropFdFromPollList(int &fd_index)
 {
+    if (g_userCounter < 0) {
+        NETSTACK_LOGE("g_userCounter  = %{public}d", g_userCounter);
+        return;
+    }
     fds_[fd_index].fd = fds_[g_userCounter].fd;
 
     fds_[g_userCounter].fd = -1;
@@ -1402,13 +1409,14 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
                 continue;
             }
             for (int i = 0; i < g_userCounter + 1; ++i) {
-                if ((fds_[i].fd == listenSocketFd_) && (fds_[i].revents & POLLIN)) {
+                if ((fds_[i].fd == listenSocketFd_) && (static_cast<uint16_t>(fds_[i].revents) & POLLIN)) {
                     ProcessTcpAccept(tlsOption, ++clientId);
-                } else if ((fds_[i].revents & POLLRDHUP) || (fds_[i].revents & POLLERR)) {
+                } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLRDHUP) ||
+                           (static_cast<uint16_t>(fds_[i].revents) & POLLERR)) {
                     RemoveConnect(fds_[i].fd);
                     DropFdFromPollList(i);
                     NETSTACK_LOGI("A client left");
-                } else if (fds_[i].revents & POLLIN) {
+                } else if (static_cast<uint16_t>(fds_[i].revents) & POLLIN) {
                     RecvRemoteInfo(fds_[i].fd, i);
                 }
             }

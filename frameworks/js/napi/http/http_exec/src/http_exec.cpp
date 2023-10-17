@@ -91,9 +91,13 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
         return false;
     }
 
-    std::lock_guard guard(staticVariable_.curlMultiMutex);
-    staticVariable_.infoQueue.emplace(context, handle);
-    staticVariable_.conditionVariable.notify_all();
+    std::thread emplaceInfoThread([context, handle] {
+        std::lock_guard guard(staticVariable_.curlMultiMutex);
+        staticVariable_.infoQueue.emplace(context, handle);
+        staticVariable_.conditionVariable.notify_all();
+    });
+    emplaceInfoThread.detach();
+
     return true;
 }
 
@@ -183,6 +187,36 @@ bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURL
     return true;
 }
 
+#ifdef ENABLE_EVENT_HANDLER
+void HttpExec::HttpEventHandlerCallback(RequestContext *context)
+{
+    std::mutex lock;
+    if (EventManager::IsManagerValid(context->GetManager())) {
+        if (context->IsRequestInStream()) {
+            auto manager = context->GetManager();
+            auto eventHandler = manager->GetNetstackEventHandler();
+            if (!eventHandler) {
+                NETSTACK_LOGE("netstack eventHandler is nullptr");
+                return;
+            }
+            eventHandler->PostSyncTask([&context, &lock]() {
+                std::lock_guard<std::mutex> callbackLock(lock);
+                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context,
+                                                     HttpAsyncWork::RequestInStreamCallback);
+            });
+            if (context->IsExecOK()) {
+                eventHandler->PostSyncTask([&context, &lock]() {
+                    std::lock_guard<std::mutex> callbackLock(lock);
+                    NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd);
+                });
+            }
+        } else {
+            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
+        }
+    }
+}
+#endif
+
 void HttpExec::HandleCurlData(CURLMsg *msg)
 {
     if (msg == nullptr) {
@@ -218,17 +252,9 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         NETSTACK_LOGE("can not find context manager");
         return;
     }
-
-    if (EventManager::IsManagerValid(context->GetManager())) {
-        if (context->IsRequestInStream()) {
-            if (context->IsExecOK()) {
-                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd);
-            }
-            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestInStreamCallback);
-        } else {
-            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
-        }
-    }
+#ifdef ENABLE_EVENT_HANDLER
+    HttpEventHandlerCallback(context);
+#endif
 }
 
 bool HttpExec::ExecRequest(RequestContext *context)
@@ -237,7 +263,9 @@ bool HttpExec::ExecRequest(RequestContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-
+    if (context->GetManager()->IsEventDestroy()) {
+        return false;
+    }
     context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
     CacheProxy proxy(context->options);
     if (context->IsUsingCache() && proxy.ReadResponseFromCache(context)) {
@@ -502,7 +530,7 @@ void HttpExec::GetHttpProxyInfo(RequestContext *context, std::string &host, int3
 
 bool HttpExec::Initialize()
 {
-    std::lock_guard<std::mutex> lock(staticVariable_.curlMultiMutex);
+    std::lock_guard<std::mutex> lock(staticVariable_.mutexForInitialize);
     if (staticVariable_.initialized) {
         return true;
     }
@@ -543,7 +571,7 @@ bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYUSERPWD, NETSTACK_PROXY_PASS, context);
 #endif // NETSTACK_PROXY_PASS
 
-#if NO_SSL_CERTIFICATION
+#ifdef NO_SSL_CERTIFICATION
     // in real life, you should buy a ssl certification and rename it to /etc/ssl/cert.pem
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
@@ -553,7 +581,7 @@ bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *
 #endif // WINDOWS_PLATFORM
 #endif // NO_SSL_CERTIFICATION
 
-#if HTTP_CURL_PRINT_VERBOSE
+#ifdef HTTP_CURL_PRINT_VERBOSE
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_VERBOSE, 1L, context);
 #endif
 
@@ -623,12 +651,16 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
     if (context == nullptr) {
         return 0;
     }
+    if (context->GetManager()->IsEventDestroy()) {
+        return 0;
+    }
     if (context->IsRequestInStream()) {
         context->SetTempData(data, size * memBytes);
         NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataReceive);
         return size * memBytes;
     }
     if (context->response.GetResult().size() > MAX_LIMIT) {
+        NETSTACK_LOGE("response data exceeds the maximum limit");
         return 0;
     }
     context->response.AppendResult(data, size * memBytes);
@@ -641,7 +673,11 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
     if (context == nullptr) {
         return 0;
     }
+    if (context->GetManager()->IsEventDestroy()) {
+        return 0;
+    }
     if (context->response.GetResult().size() > MAX_LIMIT) {
+        NETSTACK_LOGE("response data exceeds the maximum limit");
         return 0;
     }
     context->response.AppendRawHeader(data, size * memBytes);
@@ -715,6 +751,9 @@ int HttpExec::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dl
     (void)ulnow;
     auto context = static_cast<RequestContext *>(userData);
     if (context == nullptr || !context->IsRequestInStream()) {
+        return 0;
+    }
+    if (context->GetManager()->IsEventDestroy()) {
         return 0;
     }
     if (dltotal != 0) {

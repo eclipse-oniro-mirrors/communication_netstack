@@ -56,7 +56,7 @@ napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
 napi_value HttpModuleExports::CreateHttp(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::NewInstance(env, info, INTERFACE_HTTP_REQUEST, [](napi_env, void *data, void *) {
-        NETSTACK_LOGI("http request handle is finalized");
+        NETSTACK_LOGD("http request handle is finalized");
         auto manager = reinterpret_cast<EventManager *>(data);
         if (manager != nullptr) {
             EventManager::SetInvalid(manager);
@@ -218,7 +218,7 @@ napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_i
             }
 
             HttpExec::AsyncRunRequest(context);
-            return true;
+            return context->IsExecOK();
         },
         "Request", HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
 #else
@@ -238,7 +238,12 @@ napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_ca
             if (!HttpExec::Initialize()) {
                 return false;
             }
-
+#ifdef ENABLE_EVENT_HANDLER
+            auto manager = context->GetManager();
+            if (!manager->InitNetstackEventHandler()) {
+                return false;
+            }
+#endif
             context->EnableRequestInStream();
             HttpExec::AsyncRunRequest(context);
             return true;
@@ -254,9 +259,21 @@ napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_ca
 
 napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_info info)
 {
-    (void)env;
-    (void)info;
+    napi_value thisVal = nullptr;
+    NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr));
+    EventManager *manager = nullptr;
+    auto napi_ret = napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager));
+    if (napi_ret != napi_ok) {
+        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
+        return NapiUtils::GetUndefined(env);
+    }
 
+    if (manager->IsEventDestroy()) {
+        NETSTACK_LOGD("js object has been destroyed");
+        return NapiUtils::GetUndefined(env);
+    }
+    manager->SetEventDestroy(true);
+    manager->DeleteEventReference(env);
     return NapiUtils::GetUndefined(env);
 }
 

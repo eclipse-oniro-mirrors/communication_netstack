@@ -21,6 +21,7 @@ utils_include = [ "$NETSTACK_UTILS_ROOT/log/include" ]
 
 common_external_deps = [
   "c_utils:utils",
+  "eventhandler:libeventhandler",
   "hilog:libhilog",
 ]
 

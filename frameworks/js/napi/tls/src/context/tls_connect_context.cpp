@@ -211,13 +211,13 @@ Socket::NetAddress TLSConnectContext::ReadNetAddress(napi_env env, napi_value *p
     napi_value netAddress = NapiUtils::GetNamedProperty(GetEnv(), params[0], ADDRESS_NAME);
 
     std::string addr = NapiUtils::GetStringPropertyUtf8(GetEnv(), netAddress, ADDRESS_NAME);
-    address.SetAddress(addr);
-    uint32_t family = NapiUtils::GetUint32Property(GetEnv(), netAddress, FAMILY_NAME);
-    if (family == 1) {
-        address.SetFamilyBySaFamily(AF_INET);
-    } else {
-        address.SetFamilyBySaFamily(AF_INET6);
+
+    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], FAMILY_NAME)) {
+        uint32_t family = NapiUtils::GetUint32Property(GetEnv(), params[0], FAMILY_NAME);
+        address.SetFamilyByJsValue(family);
     }
+    address.SetAddress(addr);
+
     if (NapiUtils::HasNamedProperty(GetEnv(), netAddress, PORT_NAME)) {
         uint16_t port = static_cast<uint16_t>(NapiUtils::GetUint32Property(GetEnv(), netAddress, PORT_NAME));
         address.SetPort(port);
