@@ -38,6 +38,11 @@ static constexpr int CURL_MAX_WAIT_MSECS = 10;
 static constexpr int CURL_TIMEOUT_MS = 50;
 static constexpr int CONDITION_TIMEOUT_S = 3600;
 
+HttpSession::HttpSession()
+{
+    Init();
+}
+
 HttpSession::~HttpSession()
 {
     Deinit();
