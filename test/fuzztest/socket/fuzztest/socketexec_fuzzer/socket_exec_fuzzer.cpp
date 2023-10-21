@@ -282,6 +282,84 @@ void ExecTcpConnectionCloseFuzzTest(const uint8_t *data, size_t size)
 
     SocketExec::ExecTcpConnectionClose(&context);
 }
+
+void ExecUdpAddMembershipFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    MulticastMembershipContext context(env, &eventManager);
+
+    SocketExec::ExecUdpAddMembership(&context);
+}
+
+void ExecUdpDropMembershipFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    MulticastMembershipContext context(env, &eventManager);
+
+    SocketExec::ExecUdpDropMembership(&context);
+}
+
+void ExecSetMulticastTTLFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    MulticastSetTTLContext context(env, &eventManager);
+
+    SocketExec::ExecSetMulticastTTL(&context);
+}
+
+void ExecGetMulticastTTLFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    MulticastGetTTLContext context(env, &eventManager);
+
+    SocketExec::ExecGetMulticastTTL(&context);
+}
+
+void ExecSetLoopbackModeFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    MulticastSetLoopbackContext context(env, &eventManager);
+
+    SocketExec::ExecSetLoopbackMode(&context);
+}
+
+void ExecGetLoopbackModeFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    MulticastGetLoopbackContext context(env, &eventManager);
+
+    SocketExec::ExecGetLoopbackMode(&context);
+}
 } // namespace Socket
 } // namespace NetStack
 } // namespace OHOS
@@ -308,5 +386,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::NetStack::Socket::ExecTcpConnectionSendFuzzTest(data, size);
     OHOS::NetStack::Socket::ExecTcpConnectionGetRemoteAddressFuzzTest(data, size);
     OHOS::NetStack::Socket::ExecTcpConnectionCloseFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecUdpAddMembershipFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecUdpDropMembershipFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecSetMulticastTTLFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecGetMulticastTTLFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecSetLoopbackModeFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecGetLoopbackModeFuzzTest(data, size);
     return 0;
 }
