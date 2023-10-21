@@ -28,6 +28,11 @@
 #include "event_list.h"
 #include "event_manager.h"
 #include "module_template.h"
+#include "multicast_get_loopback_context.h"
+#include "multicast_get_ttl_context.h"
+#include "multicast_membership_context.h"
+#include "multicast_set_loopback_context.h"
+#include "multicast_set_ttl_context.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 #include "napi_utils.h"
@@ -58,6 +63,13 @@ static const char *UDP_CLOSE_NAME = "UdpClose";
 static const char *UDP_GET_STATE = "UdpGetState";
 static const char *UDP_SET_EXTRA_OPTIONS_NAME = "UdpSetExtraOptions";
 static constexpr const char *UDP_GET_SOCKET_FD = "UdpGetSocketFd";
+
+static constexpr const char *UDP_ADD_MEMBERSHIP = "UdpAddMembership";
+static constexpr const char *UDP_DROP_MEMBERSHIP = "UdpDropMembership";
+static constexpr const char *UDP_SET_MULTICAST_TTL = "UdpSetMulticastTTL";
+static constexpr const char *UDP_GET_MULTICAST_TTL = "UdpGetMulticastTTL";
+static constexpr const char *UDP_SET_LOOPBACK_MODE = "UdpSetLoopbackMode";
+static constexpr const char *UDP_GET_LOOPBACK_MODE = "UdpGetLoopbackMode";
 
 static const char *TCP_BIND_NAME = "TcpBind";
 static const char *TCP_CONNECT_NAME = "TcpConnect";
@@ -199,6 +211,28 @@ static bool MakeUdpSocket(napi_env env, napi_value thisVal, BindContext *context
     return true;
 }
 
+static bool MakeMulticastUdpSocket(napi_env env, napi_value thisVal, MulticastMembershipContext *context)
+{
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    if (context->GetSocketFd() > 0) {
+        NETSTACK_LOGI("socket exist: %{public}d", context->GetSocketFd());
+        return false;
+    }
+    if (!context->IsParseOK()) {
+        context->SetErrorCode(PARSE_ERROR_CODE);
+        return false;
+    }
+    int sock = SocketExec::MakeUdpSocket(context->address_.GetSaFamily());
+    if (!SetSocket(env, thisVal, context, sock)) {
+        return false;
+    }
+    context->SetExecOK(true);
+    return true;
+}
+
 napi_value SocketModuleExports::InitSocketModule(napi_env env, napi_value exports)
 {
     TlsSocket::TLSSocketModuleExports::InitTLSSocketModule(env, exports);
@@ -229,6 +263,12 @@ void SocketModuleExports::DefineUDPSocketClass(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_GET_SOCKET_FD, UDPSocket::GetSocketFd),
         DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_ON, UDPSocket::On),
         DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_OFF, UDPSocket::Off),
+        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_ADD_MEMBER_SHIP, UDPSocket::AddMembership),
+        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_DROP_MEMBER_SHIP, UDPSocket::DropMembership),
+        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_SET_MULTICAST_TTL, UDPSocket::SetMulticastTTL),
+        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_GET_MULTICAST_TTL, UDPSocket::GetMulticastTTL),
+        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_SET_LOOPBACK_MODE, UDPSocket::SetLoopbackMode),
+        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_GET_LOOPBACK_MODE, UDPSocket::GetLoopbackMode),
     };
     ModuleTemplate::DefineClass(env, exports, properties, INTERFACE_UDP_SOCKET);
 }
@@ -334,6 +374,43 @@ napi_value SocketModuleExports::UDPSocket::On(napi_env env, napi_callback_info i
 napi_value SocketModuleExports::UDPSocket::Off(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_LISTENING, EVENT_ERROR, EVENT_CLOSE});
+}
+
+/* udp multicast */
+napi_value SocketModuleExports::UDPSocket::AddMembership(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(MulticastMembershipContext, ExecUdpAddMembership, UdpAddMembershipCallback,
+                            MakeMulticastUdpSocket, UDP_ADD_MEMBERSHIP);
+}
+
+napi_value SocketModuleExports::UDPSocket::DropMembership(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(MulticastMembershipContext, ExecUdpDropMembership, UdpDropMembershipCallback,
+                            nullptr, UDP_DROP_MEMBERSHIP);
+}
+
+napi_value SocketModuleExports::UDPSocket::SetMulticastTTL(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(MulticastSetTTLContext, ExecSetMulticastTTL, UdpSetMulticastTTLCallback, nullptr,
+                            UDP_SET_MULTICAST_TTL);
+}
+
+napi_value SocketModuleExports::UDPSocket::GetMulticastTTL(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(MulticastGetTTLContext, ExecGetMulticastTTL, UdpGetMulticastTTLCallback, nullptr,
+                            UDP_GET_MULTICAST_TTL);
+}
+
+napi_value SocketModuleExports::UDPSocket::SetLoopbackMode(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(MulticastSetLoopbackContext, ExecSetLoopbackMode, UdpSetLoopbackModeCallback, nullptr,
+                            UDP_SET_LOOPBACK_MODE);
+}
+
+napi_value SocketModuleExports::UDPSocket::GetLoopbackMode(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(MulticastGetLoopbackContext, ExecGetLoopbackMode, UdpGetLoopbackModeCallback, nullptr,
+                            UDP_GET_LOOPBACK_MODE);
 }
 
 /* tcp async works */

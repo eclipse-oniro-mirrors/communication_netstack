@@ -19,6 +19,11 @@
 #include "bind_context.h"
 #include "common_context.h"
 #include "connect_context.h"
+#include "multicast_get_loopback_context.h"
+#include "multicast_get_ttl_context.h"
+#include "multicast_membership_context.h"
+#include "multicast_set_loopback_context.h"
+#include "multicast_set_ttl_context.h"
 #include "tcp_extra_context.h"
 #include "tcp_send_context.h"
 #include "tcp_server_common_context.h"
@@ -37,6 +42,18 @@ int MakeUdpSocket(sa_family_t family);
 bool ExecUdpBind(BindContext *context);
 
 bool ExecUdpSend(UdpSendContext *context);
+
+bool ExecUdpAddMembership(MulticastMembershipContext *context);
+
+bool ExecUdpDropMembership(MulticastMembershipContext *context);
+
+bool ExecSetMulticastTTL(MulticastSetTTLContext *context);
+
+bool ExecGetMulticastTTL(MulticastGetTTLContext *context);
+
+bool ExecSetLoopbackMode(MulticastSetLoopbackContext *context);
+
+bool ExecGetLoopbackMode(MulticastGetLoopbackContext *context);
 
 bool ExecTcpBind(BindContext *context);
 
@@ -74,6 +91,18 @@ bool ExecTcpServerGetState(TcpServerGetStateContext *context);
 napi_value BindCallback(BindContext *context);
 
 napi_value UdpSendCallback(UdpSendContext *context);
+
+napi_value UdpAddMembershipCallback(MulticastMembershipContext *context);
+
+napi_value UdpDropMembershipCallback(MulticastMembershipContext *context);
+
+napi_value UdpSetMulticastTTLCallback(MulticastSetTTLContext *context);
+
+napi_value UdpGetMulticastTTLCallback(MulticastGetTTLContext *context);
+
+napi_value UdpSetLoopbackModeCallback(MulticastSetLoopbackContext *context);
+
+napi_value UdpGetLoopbackModeCallback(MulticastGetLoopbackContext *context);
 
 napi_value ConnectCallback(ConnectContext *context);
 

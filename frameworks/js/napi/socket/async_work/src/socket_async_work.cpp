@@ -19,6 +19,11 @@
 #include "bind_context.h"
 #include "common_context.h"
 #include "connect_context.h"
+#include "multicast_get_loopback_context.h"
+#include "multicast_get_ttl_context.h"
+#include "multicast_membership_context.h"
+#include "multicast_set_loopback_context.h"
+#include "multicast_set_ttl_context.h"
 #include "socket_exec.h"
 #include "tcp_extra_context.h"
 #include "tcp_send_context.h"
@@ -38,6 +43,36 @@ void SocketAsyncWork::ExecUdpBind(napi_env env, void *data)
 void SocketAsyncWork::ExecUdpSend(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<UdpSendContext, SocketExec::ExecUdpSend>(env, data);
+}
+
+void SocketAsyncWork::ExecUdpAddMembership(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<MulticastMembershipContext, SocketExec::ExecUdpAddMembership>(env, data);
+}
+
+void SocketAsyncWork::ExecUdpDropMembership(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<MulticastMembershipContext, SocketExec::ExecUdpDropMembership>(env, data);
+}
+
+void SocketAsyncWork::ExecSetMulticastTTL(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<MulticastSetTTLContext, SocketExec::ExecSetMulticastTTL>(env, data);
+}
+
+void SocketAsyncWork::ExecGetMulticastTTL(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<MulticastGetTTLContext, SocketExec::ExecGetMulticastTTL>(env, data);
+}
+
+void SocketAsyncWork::ExecSetLoopbackMode(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<MulticastSetLoopbackContext, SocketExec::ExecSetLoopbackMode>(env, data);
+}
+
+void SocketAsyncWork::ExecGetLoopbackMode(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<MulticastGetLoopbackContext, SocketExec::ExecGetLoopbackMode>(env, data);
 }
 
 void SocketAsyncWork::ExecTcpBind(napi_env env, void *data)
@@ -129,6 +164,42 @@ void SocketAsyncWork::BindCallback(napi_env env, napi_status status, void *data)
 void SocketAsyncWork::UdpSendCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<UdpSendContext, SocketExec::UdpSendCallback>(env, status, data);
+}
+
+void SocketAsyncWork::UdpAddMembershipCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<MulticastMembershipContext, SocketExec::UdpAddMembershipCallback>(env,
+        status, data);
+}
+
+void SocketAsyncWork::UdpDropMembershipCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<MulticastMembershipContext, SocketExec::UdpDropMembershipCallback>(env,
+        status, data);
+}
+
+void SocketAsyncWork::UdpSetMulticastTTLCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<MulticastSetTTLContext, SocketExec::UdpSetMulticastTTLCallback>(env,
+        status, data);
+}
+
+void SocketAsyncWork::UdpGetMulticastTTLCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<MulticastGetTTLContext, SocketExec::UdpGetMulticastTTLCallback>(env,
+        status, data);
+}
+
+void SocketAsyncWork::UdpSetLoopbackModeCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<MulticastSetLoopbackContext, SocketExec::UdpSetLoopbackModeCallback>(env,
+        status, data);
+}
+
+void SocketAsyncWork::UdpGetLoopbackModeCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<MulticastGetLoopbackContext, SocketExec::UdpGetLoopbackModeCallback>(env,
+        status, data);
 }
 
 void SocketAsyncWork::ConnectCallback(napi_env env, napi_status status, void *data)

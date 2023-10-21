@@ -1258,6 +1258,178 @@ bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
     return true;
 }
 
+bool RecvfromMulticast(MulticastMembershipContext *context)
+{
+    struct sockaddr_in addrin = {0};
+    addrin.sin_family = context->address_.GetSaFamily();
+    addrin.sin_port = htons(context->address_.GetPort());
+    addrin.sin_addr.s_addr = htonl(INADDR_ANY);
+    if (bind(context->GetSocketFd(), (struct sockaddr *)&addrin, sizeof(addrin)) < 0) {
+        NETSTACK_LOGE("bind port: %{public}d error, errno: ", context->address_.GetPort(), errno);
+        context->SetErrorCode(errno);
+        return false;
+    }
+
+    sockaddr_in addr4 = {0};
+    sockaddr_in6 addr6 = {0};
+    sockaddr *addr = nullptr;
+    socklen_t len;
+    GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
+    if (addr == nullptr) {
+        NETSTACK_LOGE("get addr failed, addr family error, address invalid");
+        context->SetErrorCode(ADDRESS_INVALID);
+        return false;
+    }
+
+    if (addr->sa_family == AF_INET) {
+        void *pTmpAddr = malloc(sizeof(addr4));
+        auto pAddr4 = reinterpret_cast<sockaddr *>(pTmpAddr);
+        if (pAddr4 == nullptr) {
+            NETSTACK_LOGE("no memory!");
+            return false;
+        }
+        NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
+        std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
+                                  UdpMessageCallback(context->GetManager()));
+        serviceThread.detach();
+    } else if (addr->sa_family == AF_INET6) {
+        void *pTmpAddr = malloc(len);
+        auto pAddr6 = reinterpret_cast<sockaddr *>(pTmpAddr);
+        if (pAddr6 == nullptr) {
+            NETSTACK_LOGE("no memory!");
+            return false;
+        }
+        NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
+        std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
+                                  UdpMessageCallback(context->GetManager()));
+        serviceThread.detach();
+    }
+    return true;
+}
+
+bool ExecUdpAddMembership(MulticastMembershipContext *context)
+{
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    struct sockaddr_in multicastAddr = {0};
+    multicastAddr.sin_family = context->address_.GetSaFamily();
+    multicastAddr.sin_port = htons(context->address_.GetPort());
+    inet_pton(context->address_.GetSaFamily(), context->address_.GetAddress().c_str(), &(multicastAddr.sin_addr));
+    struct ip_mreq mreq;
+    memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
+    mreq.imr_multiaddr.s_addr = multicastAddr.sin_addr.s_addr;
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY); // network interface: any
+    if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
+        sizeof(mreq)) == -1) {
+        NETSTACK_LOGE("addmembership err, addr: %{public}s, port: %{public}u, err: %{public}s",
+            context->address_.GetAddress().c_str(), context->address_.GetPort(), strerror(errno));
+        context->SetErrorCode(errno);
+        return false;
+    }
+    return RecvfromMulticast(context);
+}
+
+bool ExecUdpDropMembership(MulticastMembershipContext *context)
+{
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    if (context->GetSocketFd() <= 0) {
+        return false;
+    }
+    struct ip_mreq mreq;
+    memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
+    inet_pton(context->address_.GetSaFamily(), context->address_.GetAddress().c_str(), &(mreq.imr_multiaddr.s_addr));
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY); // network interface: any
+    if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_DROP_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
+        sizeof(mreq)) == -1) {
+        NETSTACK_LOGE("failed to dropmembership, sock: %{public}d, ip: %{public}s, port: %{public}u",
+                      context->GetSocketFd(), context->address_.GetAddress().c_str(), context->address_.GetPort());
+        context->SetErrorCode(errno);
+        return false;
+    }
+
+    if (close(context->GetSocketFd()) < 0) {
+        NETSTACK_LOGE("sock closed failed , socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
+        context->SetErrorCode(errno);
+        return false;
+    }
+    NETSTACK_LOGI("ExecUdpDropMembership sock: %{public}d closed success", context->GetSocketFd());
+    context->SetSocketFd(0);
+    return true;
+}
+
+bool ExecSetMulticastTTL(MulticastSetTTLContext *context)
+{
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    int ttl = context->GetMulticastTTL();
+    if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_TTL, reinterpret_cast<void *>(&ttl),
+        sizeof(ttl)) == -1) {
+        NETSTACK_LOGE("multicast: failed to set ttl number, %{public}d", ttl);
+        context->SetErrorCode(errno);
+        return false;
+    }
+    return true;
+}
+
+bool ExecGetMulticastTTL(MulticastGetTTLContext *context)
+{
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    int ttl = 0;
+    socklen_t ttlLen = sizeof(ttl);
+    if (getsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_TTL, reinterpret_cast<void *>(&ttl),
+        &ttlLen) == -1) {
+        NETSTACK_LOGE("multicast: failed to get ttl number, %{public}d", ttl);
+        context->SetErrorCode(errno);
+        return false;
+    }
+    context->SetMulticastTTL(ttl);
+    return true;
+}
+
+bool ExecSetLoopbackMode(MulticastSetLoopbackContext *context)
+{
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    int enabled = static_cast<int>(context->GetLoopbackMode());
+    if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_LOOP, reinterpret_cast<void *>(&enabled),
+        sizeof(enabled)) == -1) {
+        NETSTACK_LOGE("multicast: failed to set loopback mode, %{public}d", enabled);
+        context->SetErrorCode(errno);
+        return false;
+    }
+    return true;
+}
+
+bool ExecGetLoopbackMode(MulticastGetLoopbackContext *context)
+{
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    int enabled = 0;
+    socklen_t len = sizeof(enabled);
+    if (getsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_LOOP, reinterpret_cast<void *>(&enabled),
+        &len) == -1) {
+        NETSTACK_LOGE("multicast: failed to get ttl number, %{public}d", enabled);
+        context->SetErrorCode(errno);
+        return false;
+    }
+    context->SetLoopbackMode(static_cast<bool>(enabled));
+    return true;
+}
+
 bool ExecTcpGetSocketFd(GetSocketFdContext *context)
 {
     return true;
@@ -1768,6 +1940,38 @@ napi_value BindCallback(BindContext *context)
 napi_value UdpSendCallback(UdpSendContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value UdpAddMembershipCallback(MulticastMembershipContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value UdpDropMembershipCallback(MulticastMembershipContext *context)
+{
+    context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                              NapiUtils::GetUndefined(context->GetEnv())));
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value UdpSetMulticastTTLCallback(MulticastSetTTLContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value UdpGetMulticastTTLCallback(MulticastGetTTLContext *context)
+{
+    return NapiUtils::CreateInt32(context->GetEnv(), context->GetMulticastTTL());
+}
+
+napi_value UdpSetLoopbackModeCallback(MulticastSetLoopbackContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value UdpGetLoopbackModeCallback(MulticastGetLoopbackContext *context)
+{
+    return NapiUtils::GetBoolean(context->GetEnv(), context->GetLoopbackMode());
 }
 
 napi_value ConnectCallback(ConnectContext *context)
