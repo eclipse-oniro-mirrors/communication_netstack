@@ -32,6 +32,13 @@ public:
         static constexpr const char *FUNCTION_ON = "on";
         static constexpr const char *FUNCTION_OFF = "off";
 
+        static constexpr char FUNCTION_ADD_MEMBER_SHIP[] = "addMembership";
+        static constexpr char FUNCTION_DROP_MEMBER_SHIP[] = "dropMembership";
+        static constexpr char FUNCTION_SET_MULTICAST_TTL[] = "setMulticastTTL";
+        static constexpr char FUNCTION_GET_MULTICAST_TTL[] = "getMulticastTTL";
+        static constexpr char FUNCTION_SET_LOOPBACK_MODE[] = "setLoopbackMode";
+        static constexpr char FUNCTION_GET_LOOPBACK_MODE[] = "getLoopbackMode";
+
         static napi_value Bind(napi_env env, napi_callback_info info);
         static napi_value Send(napi_env env, napi_callback_info info);
         static napi_value Close(napi_env env, napi_callback_info info);
@@ -40,6 +47,13 @@ public:
         static napi_value GetSocketFd(napi_env env, napi_callback_info info);
         static napi_value On(napi_env env, napi_callback_info info);
         static napi_value Off(napi_env env, napi_callback_info info);
+
+        static napi_value AddMembership(napi_env env, napi_callback_info info);
+        static napi_value DropMembership(napi_env env, napi_callback_info info);
+        static napi_value SetMulticastTTL(napi_env env, napi_callback_info info);
+        static napi_value GetMulticastTTL(napi_env env, napi_callback_info info);
+        static napi_value SetLoopbackMode(napi_env env, napi_callback_info info);
+        static napi_value GetLoopbackMode(napi_env env, napi_callback_info info);
     };
 
     class TCPSocket {

@@ -29,6 +29,18 @@ public:
 
     static void ExecUdpSend(napi_env env, void *data);
 
+    static void ExecUdpAddMembership(napi_env env, void *data);
+
+    static void ExecUdpDropMembership(napi_env env, void *data);
+
+    static void ExecSetMulticastTTL(napi_env env, void *data);
+
+    static void ExecGetMulticastTTL(napi_env env, void *data);
+
+    static void ExecSetLoopbackMode(napi_env env, void *data);
+
+    static void ExecGetLoopbackMode(napi_env env, void *data);
+
     static void ExecTcpBind(napi_env env, void *data);
 
     static void ExecConnect(napi_env env, void *data);
@@ -65,6 +77,18 @@ public:
     static void BindCallback(napi_env env, napi_status status, void *data);
 
     static void UdpSendCallback(napi_env env, napi_status status, void *data);
+
+    static void UdpAddMembershipCallback(napi_env env, napi_status status, void *data);
+
+    static void UdpDropMembershipCallback(napi_env env, napi_status status, void *data);
+
+    static void UdpSetMulticastTTLCallback(napi_env env, napi_status status, void *data);
+
+    static void UdpGetMulticastTTLCallback(napi_env env, napi_status status, void *data);
+
+    static void UdpSetLoopbackModeCallback(napi_env env, napi_status status, void *data);
+
+    static void UdpGetLoopbackModeCallback(napi_env env, napi_status status, void *data);
 
     static void ConnectCallback(napi_env env, napi_status status, void *data);
 
