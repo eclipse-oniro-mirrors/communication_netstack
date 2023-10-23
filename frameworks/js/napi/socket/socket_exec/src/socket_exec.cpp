@@ -1273,7 +1273,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
     sockaddr_in addr4 = {0};
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
-    socklen_t len;
+    socklen_t len = 0;
     GetAddr(&context->address_, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
         NETSTACK_LOGE("get addr failed, addr family error, address invalid");
@@ -1293,7 +1293,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
                                   UdpMessageCallback(context->GetManager()));
         serviceThread.detach();
     } else if (addr->sa_family == AF_INET6) {
-        void *pTmpAddr = malloc(len);
+        void *pTmpAddr = malloc(sizeof(addr6));
         auto pAddr6 = reinterpret_cast<sockaddr *>(pTmpAddr);
         if (pAddr6 == nullptr) {
             NETSTACK_LOGE("no memory!");
