@@ -112,6 +112,58 @@ public:
     }
 
     template <class Context, napi_value (*Callback)(Context *)>
+    static void AsyncWorkCallbackWithoutDel(napi_env env, napi_status status, void *data)
+    {
+        static_assert(std::is_base_of<BaseContext, Context>::value);
+
+        if (status != napi_ok) {
+            return;
+        }
+        char buffer[BUFFER_SIZE] = {0};
+        if (memset_s(buffer, BUFFER_SIZE, ASCII_ZERO, BUFFER_SIZE - 1) != EOK) {
+            NETSTACK_LOGE("memory operation fail");
+        }
+        auto context = static_cast<Context *>(data);
+        size_t argc = 2;
+        napi_value argv[2] = {nullptr};
+        if (context->IsParseOK() && context->IsExecOK()) {
+            argv[0] = NapiUtils::GetUndefined(env);
+
+            if (Callback != nullptr) {
+                argv[1] = Callback(context);
+            } else {
+                argv[1] = NapiUtils::GetUndefined(env);
+            }
+            if (argv[1] == nullptr) {
+                return;
+            }
+        } else {
+            argv[0] = NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
+            if (argv[0] == nullptr) {
+                NETSTACK_LOGE("AsyncWorkName %{public}s createErrorMessage fail", context->GetAsyncWorkName().c_str());
+                return;
+            }
+
+            argv[1] = NapiUtils::GetUndefined(env);
+        }
+
+        if (context->GetDeferred() != nullptr) {
+            if (context->IsExecOK()) {
+                napi_resolve_deferred(env, context->GetDeferred(), argv[1]);
+            } else {
+                napi_reject_deferred(env, context->GetDeferred(), argv[0]);
+            }
+            return;
+        }
+
+        napi_value func = context->GetCallback();
+        if (NapiUtils::GetValueType(env, func) == napi_function) {
+            napi_value undefined = NapiUtils::GetUndefined(env);
+            (void)NapiUtils::CallFunction(env, undefined, func, argc, argv);
+        }
+    }
+
+    template <class Context, napi_value (*Callback)(Context *)>
     static void AsyncWorkCallbackForSystem(napi_env env, napi_status status, void *data)
     {
         static_assert(std::is_base_of<BaseContext, Context>::value);

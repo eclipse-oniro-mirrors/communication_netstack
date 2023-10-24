@@ -192,21 +192,26 @@ void HttpExec::HttpEventHandlerCallback(RequestContext *context)
     std::mutex lock;
     if (EventManager::IsManagerValid(context->GetManager())) {
         if (context->IsRequestInStream()) {
-            auto manager = context->GetManager();
+            auto deleter = [](RequestContext *context) {
+                context->DeleteReference();
+                delete context;
+            };
+            std::unique_ptr<RequestContext, decltype(deleter)> callbackContext(context, deleter);
+            auto manager = callbackContext->GetManager();
             auto eventHandler = manager->GetNetstackEventHandler();
             if (!eventHandler) {
                 NETSTACK_LOGE("netstack eventHandler is nullptr");
                 return;
             }
-            eventHandler->PostSyncTask([&context, &lock]() {
+            eventHandler->PostSyncTask([&callbackContext, &lock]() {
                 std::lock_guard<std::mutex> callbackLock(lock);
-                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context,
-                                                     HttpAsyncWork::RequestInStreamCallback);
+                NapiUtils::CreateUvQueueWorkEnhanced(callbackContext->GetEnv(), callbackContext.get(),
+                                                     HttpAsyncWork::RequestInStreamCallbackNoDel);
             });
-            if (context->IsExecOK()) {
-                eventHandler->PostSyncTask([&context, &lock]() {
+            if (callbackContext->IsExecOK()) {
+                eventHandler->PostSyncTask([&callbackContext, &lock]() {
                     std::lock_guard<std::mutex> callbackLock(lock);
-                    NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd);
+                    NapiUtils::CreateUvQueueWorkEnhanced(callbackContext->GetEnv(), callbackContext.get(), OnDataEnd);
                 });
             }
         } else {
