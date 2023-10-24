@@ -680,13 +680,13 @@ static napi_value CreateTextMessagePara(napi_env env, void *callbackPara)
     return text;
 }
 
-static napi_value CreateBinaryMssagePara(napi_env env, void *callbackPara)
+static napi_value CreateBinaryMessagePara(napi_env env, void *callbackPara)
 {
     auto msg = reinterpret_cast<std::string *>(callbackPara);
     void *data = nullptr;
     napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(env, msg->size(), &data);
     if (data != nullptr && NapiUtils::ValueIsArrayBuffer(env, arrayBuffer) &&
-        memcpy_s(data, msg->size(), msg->data, msg->size()) >= 0) {
+        memcpy_s(data, msg->size(), msg->data(), msg->size()) >= 0) {
         delete msg;
         return arrayBuffer;
     }
