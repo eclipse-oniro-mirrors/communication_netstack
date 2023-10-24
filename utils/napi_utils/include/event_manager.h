@@ -78,7 +78,7 @@ public:
 
     static const std::string & GetWebSocketTextData();
 
-    void AppendWebSocketTextData(void *data,size_t length);
+    void AppendWebSocketTextData(void *data, size_t length);
 
     const std::string & GetWebSocketBinaryData();
 
