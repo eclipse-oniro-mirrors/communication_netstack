@@ -680,7 +680,7 @@ static napi_value CreateTextMessagePara(napi_env env, void *callbackPara)
     return text;
 }
 
-static napi_value CreateBinaryMssagePara(napi_value env, void *callbackPara)
+static napi_value CreateBinaryMssagePara(napi_env env, void *callbackPara)
 {
     auto msg = reinterpret_cast<std::string *>(callbackPara);
     void *data = nullptr;
