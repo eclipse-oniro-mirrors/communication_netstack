@@ -213,6 +213,36 @@ bool EventManager::IsEventDestroy()
     return isDestroy_.load();
 }
 
+const std::string &EventManager::GetWebSocketTextData()
+{
+    return webSocketTextData_;
+}
+
+void EventManager::AppendWebSocketTextData(void *data, size_t length)
+{
+    webSocketTextData_.append(reinterpret_cast<char *>(data), length);
+}
+
+const std::string &EventManager::GetWebSocketBinaryData()
+{
+    return webSocketBinaryData_;
+}
+
+void EventManager::AppendWebSocketBinaryData(void *data, size_t length)
+{
+    webSocketBinaryData_.append(reinterpret_cast<char *>(data), length);
+}
+
+void EventManager::ClearWebSocketTextData()
+{
+    webSocketTextData_.clear();
+}
+
+void EventManager::ClearWebSocketBinaryData()
+{
+    webSocketBinaryData_.clear();
+}
+
 UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)
     : data(theData), env(theEnv), type(std::move(eventType)), manager(eventManager)
 {
