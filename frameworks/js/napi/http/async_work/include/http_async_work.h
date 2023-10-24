@@ -27,6 +27,8 @@ public:
 
     static void RequestCallback(napi_env env, napi_status status, void *data);
 
+    static void RequestInStreamCallbackNoDel(napi_env env, napi_status status, void *data);
+
     static void RequestInStreamCallback(napi_env env, napi_status status, void *data);
 
     static void ExecFlush(napi_env env, void *data);
