@@ -254,10 +254,6 @@ void HttpSession::StartTask(std::shared_ptr<HttpClientTask> ptr)
     }
     NETSTACK_LOGD("HttpSession::StartTask taskId = %{public}d", ptr->GetTaskId());
 
-    if (!IsInited()) {
-        Init();
-    }
-
     std::lock_guard<std::mutex> lock(taskQueueMutex_);
     std::lock_guard<std::mutex> guard(taskMapMutex_);
     ptr->SetStatus(TaskStatus::RUNNING);
