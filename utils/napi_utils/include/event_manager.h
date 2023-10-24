@@ -80,7 +80,7 @@ public:
 
     void AppendWebSocketTextData(void *data,size_t length);
 
-    const std::string &GetWebSocketBinaryData();
+    const std::string & GetWebSocketBinaryData();
 
     void AppendWebSocketBinaryData(void *data, size_t length);
 
