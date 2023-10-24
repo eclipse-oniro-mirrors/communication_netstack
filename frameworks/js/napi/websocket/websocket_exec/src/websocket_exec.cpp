@@ -764,7 +764,7 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
             const std::string &msgFromManager = manager->GetWebSocketBinaryData();
             auto msg = new std::string;
             msg->append(msgFromManager.data(), msgFromManager.size());
-            manager->EmitByUv(EventName::EVENT_MESSAGE, msg, CallbackTemplate<CreateBinaryMssagePara>);
+            manager->EmitByUv(EventName::EVENT_MESSAGE, msg, CallbackTemplate<CreateBinaryMessagePara>);
             manager->ClearWebSocketBinaryData();
         }
     } else {
