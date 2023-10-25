@@ -42,42 +42,54 @@ using namespace OHOS::NetStack::Socket;
 
 HWTEST_F(SocketTest, MulticastTest001, TestSize.Level1)
 {
-    MulticastMembershipContext context(nullptr, nullptr);
+    napi_env env = nullptr;
+    OHOS::NetStack::EventManager eventManager;
+    MulticastMembershipContext context(env, &eventManager);
     bool ret = SocketExec::ExecUdpAddMembership(&context);
     EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(SocketTest, MulticastTest002, TestSize.Level1)
 {
-    MulticastMembershipContext context(nullptr, nullptr);
+    napi_env env = nullptr;
+    OHOS::NetStack::EventManager eventManager;
+    MulticastMembershipContext context(env, &eventManager);
     bool ret = SocketExec::ExecUdpDropMembership(&context);
     EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(SocketTest, MulticastTest003, TestSize.Level1)
 {
-    MulticastSetTTLContext context(nullptr, nullptr);
+    napi_env env = nullptr;
+    OHOS::NetStack::EventManager eventManager;
+    MulticastSetTTLContext context(env, &eventManager);
     bool ret = SocketExec::ExecSetMulticastTTL(&context);
     EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(SocketTest, MulticastTest004, TestSize.Level1)
 {
-    MulticastGetTTLContext context(nullptr, nullptr);
+    napi_env env = nullptr;
+    OHOS::NetStack::EventManager eventManager;
+    MulticastGetTTLContext context(env, &eventManager);
     bool ret = SocketExec::ExecGetMulticastTTL(&context);
     EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(SocketTest, MulticastTest005, TestSize.Level1)
 {
-    MulticastSetLoopbackContext context(nullptr, nullptr);
+    napi_env env = nullptr;
+    OHOS::NetStack::EventManager eventManager;
+    MulticastSetLoopbackContext context(env, &eventManager);
     bool ret = SocketExec::ExecSetLoopbackMode(&context);
     EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(SocketTest, MulticastTest006, TestSize.Level1)
 {
-    MulticastGetLoopbackContext context(nullptr, nullptr);
+    napi_env env = nullptr;
+    OHOS::NetStack::EventManager eventManager;
+    MulticastGetLoopbackContext context(env, &eventManager);
     bool ret = SocketExec::ExecGetLoopbackMode(&context);
     EXPECT_EQ(ret, false);
 }

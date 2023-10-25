@@ -29,13 +29,7 @@ MulticastGetLoopbackContext::MulticastGetLoopbackContext(napi_env env, EventMana
 
 void MulticastGetLoopbackContext::ParseParams(napi_value *params, size_t paramsCount)
 {
-    bool valid = CheckParamsType(params, paramsCount);
-    if (!valid) {
-        if (paramsCount == PARAM_JUST_CALLBACK) {
-            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
-                SetCallback(params[0]);
-            }
-        }
+    if (!CheckParamsType(params, paramsCount)) {
         return;
     }
 
@@ -53,7 +47,13 @@ bool MulticastGetLoopbackContext::CheckParamsType(napi_value *params, size_t par
     }
 
     if (paramsCount == PARAM_JUST_CALLBACK) {
-        return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function;
+        if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
+            return true;
+        } else {
+            NETSTACK_LOGE("first param is not callback");
+            SetNeedThrowException(true);
+            SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG);
+        }
     }
     return false;
 }

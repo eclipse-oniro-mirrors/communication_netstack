@@ -1337,9 +1337,6 @@ bool ExecUdpDropMembership(MulticastMembershipContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    if (context->GetSocketFd() <= 0) {
-        return false;
-    }
     struct ip_mreq mreq;
     memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
     inet_pton(context->address_.GetSaFamily(), context->address_.GetAddress().c_str(), &(mreq.imr_multiaddr.s_addr));
