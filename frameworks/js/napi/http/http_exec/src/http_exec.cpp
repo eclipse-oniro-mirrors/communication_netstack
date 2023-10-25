@@ -558,15 +558,14 @@ bool HttpExec::Initialize()
 
 bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context)
 {
+    std::string url = context->options.GetUrl();
     std::string host, exclusions;
     int32_t port = 0;
     GetHttpProxyInfo(context, host, port, exclusions);
-    if (!host.empty()) {
+    if (!host.empty() && !CommonUtils::IsHostNameExcluded(url, exclusions, ",")) {
+        NETSTACK_LOGD("Set CURLOPT_PROXY: %{public}s:%{public}d, %{public}s", host.c_str(), port, exclusions.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXY, host.c_str(), context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYPORT, port, context);
-        if (!exclusions.empty()) {
-            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOPROXY, exclusions.c_str(), context);
-        }
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP, context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTPPROXYTUNNEL, 1L, context);
     }

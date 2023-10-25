@@ -16,7 +16,9 @@
 #include "netstack_common_utils.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cerrno>
+#include <regex>
 #include <string>
 #include <unistd.h>
 #include <vector>
@@ -142,5 +144,126 @@ bool EndsWith(const std::string &str, const std::string &suffix)
         return false;
     }
     return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
+}
+
+std::string Trim(std::string str)
+{
+    if (str.empty()) {
+        return str;
+    }
+    while (std::isspace(str[0])) {
+        str.erase(0, 1);
+    }
+    if (str.empty()) {
+        return str;
+    }
+    while (std::isspace(str[str.size() - 1])) {
+        str.erase(str.size() - 1, 1);
+    }
+    return str;
+}
+
+bool IsMatch(const std::string &str, const std::string &patternStr)
+{
+    if (patternStr.empty()) {
+        return false;
+    }
+    if (patternStr == "*") {
+        return true;
+    }
+    if (!IsRegexValid(patternStr)) {
+        NETSTACK_LOGD("Invalid pattern string: %{public}s", patternStr.c_str());
+        return patternStr == str;
+    }
+    std::regex pattern(ReplaceCharacters(patternStr));
+    bool isMacth = patternStr != "" && std::regex_match(str, pattern);
+    if (isMacth) {
+        NETSTACK_LOGD("Match patternStr: %{public}s", patternStr.c_str());
+    }
+    return isMacth;
+}
+
+std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar)
+{
+    std::string output = input;
+    char arr[] = {preChar, from};
+    unsigned long strSize = sizeof(arr) / sizeof(arr[0]);
+    std::string str(arr, strSize);
+    std::size_t pos = output.find(from);
+    std::size_t length = output.length();
+    while (pos >= 0 && pos <= length - 1 && pos != std::string::npos) {
+        char nextCharTemp = pos >= length ? '\0' : output[pos + 1];
+        if (nextChar == '\0' || nextCharTemp == '\0' || nextCharTemp != nextChar) {
+            output.replace(pos, 1, str);
+            length += (strSize - 1);
+        }
+        pos = output.find(from, pos + strSize);
+    }
+    return output;
+}
+
+std::string ReplaceCharacters(const std::string &input)
+{
+    std::string output = InsertCharBefore(input, '*', '.', '\0');
+    output = InsertCharBefore(output, '.', '\\', '*');
+    return output;
+}
+
+bool IsRegexValid(const std::string &regex)
+{
+    if (Trim(regex).empty()) {
+        return false;
+    }
+    return regex_match(regex, std::regex("^[a-zA-Z0-9\\-_\\.*]+$"));
+}
+
+std::string GetHostnameFromURL(const std::string &url)
+{
+    std::string hostname;
+    std::string delimiter = "://";
+    std::string tempUrl = url;
+    size_t posStart = tempUrl.find(delimiter);
+    if (posStart != std::string::npos) {
+        posStart += delimiter.length();
+    } else {
+        posStart = 0;
+    }
+    size_t posEnd = tempUrl.find(":", posStart);
+    if (posEnd != std::string::npos) {
+        return tempUrl.substr(posStart, posEnd - posStart);
+    }
+    posEnd = tempUrl.find("?", posStart);
+    if (posEnd != std::string::npos) {
+        return tempUrl.substr(posStart, posEnd - posStart);
+    }
+    posEnd = tempUrl.find("/", posStart);
+    if (posEnd != std::string::npos) {
+        return tempUrl.substr(posStart, posEnd - posStart);
+    }
+    return tempUrl.substr(posStart);
+}
+
+bool IsExcluded(const std::string &str, const std::string &exclusions, const std::string &split)
+{
+    if (Trim(exclusions).empty()) {
+        return false;
+    }
+    std::size_t start = 0;
+    std::size_t end = exclusions.find(split);
+    while (end != std::string::npos) {
+        if (end - start > 0 && IsMatch(str, Trim(exclusions.substr(start, end - start)))) {
+            return true;
+        }
+        start = end + 1;
+        end = exclusions.find(split, start);
+    }
+    return IsMatch(str, Trim(exclusions.substr(start)));
+}
+
+bool IsHostNameExcluded(const std::string &url, const std::string &exclusions, const std::string &split)
+{
+    std::string hostName = GetHostnameFromURL(url);
+    NETSTACK_LOGD("hostName: %{public}s", hostName.c_str());
+    return IsExcluded(hostName, exclusions, split);
 }
 } // namespace OHOS::NetStack::CommonUtils
