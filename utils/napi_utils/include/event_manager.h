@@ -76,7 +76,7 @@ public:
 
     bool IsEventDestroy();
 
-    static const std::string & GetWebSocketTextData();
+    const std::string & GetWebSocketTextData();
 
     void AppendWebSocketTextData(void *data, size_t length);
 
@@ -105,8 +105,8 @@ private:
     static std::unordered_set<EventManager *> validManager_;
     napi_ref eventRef_;
     std::atomic_bool isDestroy_;
-    static inline std::string webSocketTextData_;
-    static inline std::string webSocketBinaryData_;
+    std::string webSocketTextData_;
+    std::string webSocketBinaryData_;
 
 #ifdef ENABLE_EVENT_HANDLER
     std::shared_ptr<AppExecFwk::EventRunner> eventRunner_ = nullptr;
