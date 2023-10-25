@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,6 +34,21 @@ std::string ToString(const std::list<std::string> &lists, char tab = ',');
 bool HasInternetPermission();
 
 bool EndsWith(const std::string &str, const std::string &suffix);
-} // namespace OHOS::NetStack::CommonUtils
 
+std::string Trim(std::string str);
+
+bool IsMatch(const std::string &str, const std::string &patternStr);
+
+std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar);
+
+std::string ReplaceCharacters(const std::string &input);
+
+bool IsRegexValid(const std::string &regex);
+
+std::string GetHostnameFromURL(const std::string& url);
+
+bool IsExcluded(const std::string &str, const std::string &exclusions, const std::string &split);
+
+bool IsHostNameExcluded(const std::string &url, const std::string &exclusions, const std::string &split);
+} // namespace OHOS::NetStack::CommonUtils
 #endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */

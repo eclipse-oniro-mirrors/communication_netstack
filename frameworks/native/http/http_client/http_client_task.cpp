@@ -147,14 +147,13 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
     std::string host, exclusions, userpwd;
     int32_t port = 0;
     bool tunnel = false;
+    std::string url = request_.GetURL();
     GetHttpProxyInfo(host, port, exclusions, userpwd, tunnel);
-    if (!host.empty()) {
+    if (!host.empty() && !CommonUtils::IsHostNameExcluded(url, exclusions, ",")) {
+        NETSTACK_LOGD("Set CURLOPT_PROXY: %{public}s:%{public}d, %{public}s", host.c_str(), port, exclusions.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXY, host.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYPORT, port);
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
-        if (!exclusions.empty()) {
-            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_NOPROXY, exclusions.c_str());
-        }
         if (!userpwd.empty()) {
             NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYUSERPWD, userpwd.c_str());
         }
