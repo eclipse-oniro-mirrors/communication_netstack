@@ -25,7 +25,6 @@ utils_include = [
 ]
 
 common_external_deps = [
-  "c_utils:utils",
   "hilog:libhilog",
   "napi:ace_napi",
 ]

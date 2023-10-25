@@ -26,20 +26,7 @@ MulticastSetTTLContext::MulticastSetTTLContext(napi_env env, EventManager *manag
 
 void MulticastSetTTLContext::ParseParams(napi_value *params, size_t paramsCount)
 {
-    bool valid = CheckParamsType(params, paramsCount);
-    if (!valid) {
-        if (paramsCount == PARAM_JUST_CALLBACK) {
-            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
-                SetCallback(params[0]);
-            }
-            return;
-        }
-        if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
-            if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
-                SetCallback(params[1]);
-            }
-            return;
-        }
+    if (!CheckParamsType(params, paramsCount)) {
         return;
     }
 
@@ -55,14 +42,28 @@ void MulticastSetTTLContext::ParseParams(napi_value *params, size_t paramsCount)
 bool MulticastSetTTLContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
     if (paramsCount == PARAM_JUST_OPTIONS) {
-        return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_number;
+        if (NapiUtils::GetValueType(GetEnv(), params[0]) != napi_number) {
+            NETSTACK_LOGE("first param is not ttl");
+            SetNeedThrowException(true);
+            SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG);
+            return false;
+        }
+    } else if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
+        if (NapiUtils::GetValueType(GetEnv(), params[0]) != napi_number) {
+            NETSTACK_LOGE("first param is not ttl");
+            SetNeedThrowException(true);
+            SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG);
+            return false;
+        }
+        if (NapiUtils::GetValueType(GetEnv(), params[1]) != napi_function) {
+            NETSTACK_LOGE("second param is not function");
+            return false;
+        }
+    } else {
+        NETSTACK_LOGE("invalid param count");
+        return false;
     }
-
-    if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
-        return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_number &&
-               NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function;
-    }
-    return false;
+    return true;
 }
 
 void MulticastSetTTLContext::SetMulticastTTL(int ttl)

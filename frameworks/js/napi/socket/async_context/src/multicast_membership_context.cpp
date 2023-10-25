@@ -28,17 +28,7 @@ MulticastMembershipContext::MulticastMembershipContext(napi_env env, EventManage
 
 void MulticastMembershipContext::ParseParams(napi_value *params, size_t paramsCount)
 {
-    bool valid = CheckParamsType(params, paramsCount);
-    if (!valid) {
-        if (paramsCount == PARAM_JUST_CALLBACK) {
-            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
-                SetCallback(params[0]);
-            }
-        } else if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
-            if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
-                SetCallback(params[PARAM_OPTIONS_AND_CALLBACK - 1]);
-            }
-        }
+    if (!CheckParamsType(params, paramsCount)) {
         return;
     }
 
@@ -70,14 +60,28 @@ int MulticastMembershipContext::GetSocketFd() const
 bool MulticastMembershipContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
     if (paramsCount == PARAM_JUST_OPTIONS) {
-        return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_object;
+        if (NapiUtils::GetValueType(GetEnv(), params[0]) != napi_object) {
+            NETSTACK_LOGE("first param is not NetAddress");
+            SetNeedThrowException(true);
+            SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG);
+            return false;
+        }
     } else if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
-        return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_object &&
-               NapiUtils::GetValueType(GetEnv(), params[paramsCount - 1]) == napi_function;
+        if (NapiUtils::GetValueType(GetEnv(), params[0]) != napi_object) {
+            NETSTACK_LOGE("first param is not NetAddress");
+            SetNeedThrowException(true);
+            SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG);
+            return false;
+        }
+        if (NapiUtils::GetValueType(GetEnv(), params[1]) != napi_function) {
+            NETSTACK_LOGE("second param is not function");
+            return false;
+        }
     } else {
         NETSTACK_LOGE("invalid param count");
+        return false;
     }
-    return false;
+    return true;
 }
 
 void MulticastMembershipContext::SetSocketFd(int sock)
