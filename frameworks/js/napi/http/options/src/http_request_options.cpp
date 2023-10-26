@@ -31,7 +31,7 @@ HttpRequestOptions::HttpRequestOptions()
       usingProtocol_(HttpProtocol::HTTP_NONE),
       dataType_(HttpDataType::NO_DATA_TYPE),
       priority_(MIN_PRIORITY),
-      usingHttpProxyType_(UsingHttpProxyType::NOT_USE),
+      usingHttpProxyType_(UsingHttpProxyType::USE_DEFAULT),
       httpProxyPort_(0)
 {
 #ifndef WINDOWS_PLATFORM
