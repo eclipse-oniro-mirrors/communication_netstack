@@ -38,11 +38,6 @@ static constexpr int CURL_MAX_WAIT_MSECS = 10;
 static constexpr int CURL_TIMEOUT_MS = 50;
 static constexpr int CONDITION_TIMEOUT_S = 3600;
 
-HttpSession::HttpSession()
-{
-    Init();
-}
-
 HttpSession::~HttpSession()
 {
     Deinit();
@@ -253,6 +248,10 @@ void HttpSession::StartTask(std::shared_ptr<HttpClientTask> ptr)
         return;
     }
     NETSTACK_LOGD("HttpSession::StartTask taskId = %{public}d", ptr->GetTaskId());
+
+    if (!IsInited()) {
+        Init();
+    }
 
     std::lock_guard<std::mutex> lock(taskQueueMutex_);
     std::lock_guard<std::mutex> guard(taskMapMutex_);
