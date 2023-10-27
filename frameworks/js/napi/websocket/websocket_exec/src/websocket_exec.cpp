@@ -79,19 +79,6 @@ struct OnOpenClosePara {
     std::string message;
 };
 
-struct OnMessagePara {
-    OnMessagePara() : data(nullptr), length(0), isBinary(false) {}
-    ~OnMessagePara()
-    {
-        if (data != nullptr) {
-            free(data);
-        }
-    }
-    void *data;
-    size_t length;
-    bool isBinary;
-};
-
 class UserData {
 public:
     struct SendData {
@@ -392,7 +379,7 @@ int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reaso
 int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     NETSTACK_LOGI("LwsCallbackClientReceive");
-    OnMessage(reinterpret_cast<EventManager *>(user), in, len, lws_frame_is_binary(wsi));
+    OnMessage(reinterpret_cast<EventManager *>(user), in, len, lws_frame_is_binary(wsi), lws_is_final_fragment(wsi));
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -685,23 +672,25 @@ static napi_value CreateClosePara(napi_env env, void *callbackPara)
     return obj;
 }
 
-static napi_value CreateMessagePara(napi_env env, void *callbackPara)
+static napi_value CreateTextMessagePara(napi_env env, void *callbackPara)
 {
-    auto para = reinterpret_cast<OnMessagePara *>(callbackPara);
-    auto deleter = [](const OnMessagePara *p) { delete p; };
-    std::unique_ptr<OnMessagePara, decltype(deleter)> handler(para, deleter);
-    if (!para->isBinary) {
-        std::string str;
-        str.append(reinterpret_cast<char *>(para->data), para->length);
-        return NapiUtils::CreateStringUtf8(env, str);
-    }
+    auto msg = reinterpret_cast<std::string *>(callbackPara);
+    auto text = NapiUtils::CreateStringUtf8(env, *msg);
+    delete msg;
+    return text;
+}
 
+static napi_value CreateBinaryMessagePara(napi_env env, void *callbackPara)
+{
+    auto msg = reinterpret_cast<std::string *>(callbackPara);
     void *data = nullptr;
-    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(env, para->length, &data);
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(env, msg->size(), &data);
     if (data != nullptr && NapiUtils::ValueIsArrayBuffer(env, arrayBuffer) &&
-        memcpy_s(data, para->length, para->data, para->length) >= 0) {
+        memcpy_s(data, msg->size(), msg->data(), msg->size()) >= 0) {
+        delete msg;
         return arrayBuffer;
     }
+    delete msg;
     return NapiUtils::GetUndefined(env);
 }
 
@@ -753,7 +742,7 @@ void WebSocketExec::OnClose(EventManager *manager, lws_close_status closeStatus,
     manager->EmitByUv(EventName::EVENT_CLOSE, para, CallbackTemplate<CreateClosePara>);
 }
 
-void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, bool isBinary)
+void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, bool isBinary, bool isFinal)
 {
     NETSTACK_LOGI("OnMessage %{public}d", isBinary);
     if (manager == nullptr) {
@@ -768,21 +757,25 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
         NETSTACK_LOGE("data length too long");
         return;
     }
-    auto para = new OnMessagePara;
-    // para->data will free on OnMessagePara destructor, so there is no memory leak problem.
-    para->data = malloc(length);
-    if (para->data == nullptr) {
-        delete para;
-        NETSTACK_LOGE("no memory");
-        return;
+
+    if (isBinary) {
+        manager->AppendWebSocketBinaryData(data, length);
+        if (isFinal) {
+            const std::string &msgFromManager = manager->GetWebSocketBinaryData();
+            auto msg = new std::string;
+            msg->append(msgFromManager.data(), msgFromManager.size());
+            manager->EmitByUv(EventName::EVENT_MESSAGE, msg, CallbackTemplate<CreateBinaryMessagePara>);
+            manager->ClearWebSocketBinaryData();
+        }
+    } else {
+        manager->AppendWebSocketTextData(data, length);
+        if (isFinal) {
+            const std::string &msgFromManager = manager->GetWebSocketTextData();
+            auto msg = new std::string;
+            msg->append(msgFromManager.data(), msgFromManager.size());
+            manager->EmitByUv(EventName::EVENT_MESSAGE, msg, CallbackTemplate<CreateTextMessagePara>);
+            manager->ClearWebSocketTextData();
+        }
     }
-    if (memcpy_s(para->data, length, data, length) < 0) {
-        delete para;
-        NETSTACK_LOGE("mem copy failed");
-        return;
-    }
-    para->length = length;
-    para->isBinary = isBinary;
-    manager->EmitByUv(EventName::EVENT_MESSAGE, para, CallbackTemplate<CreateMessagePara>);
 }
 } // namespace OHOS::NetStack::Websocket

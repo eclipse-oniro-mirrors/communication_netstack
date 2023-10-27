@@ -76,6 +76,18 @@ public:
 
     bool IsEventDestroy();
 
+    const std::string & GetWebSocketTextData();
+
+    void AppendWebSocketTextData(void *data, size_t length);
+
+    const std::string & GetWebSocketBinaryData();
+
+    void AppendWebSocketBinaryData(void *data, size_t length);
+
+    void ClearWebSocketTextData();
+
+    void ClearWebSocketBinaryData();
+
 #ifdef ENABLE_EVENT_HANDLER
     bool InitNetstackEventHandler();
     std::shared_ptr<AppExecFwk::EventHandler> GetNetstackEventHandler();
@@ -93,6 +105,8 @@ private:
     static std::unordered_set<EventManager *> validManager_;
     napi_ref eventRef_;
     std::atomic_bool isDestroy_;
+    std::string webSocketTextData_;
+    std::string webSocketBinaryData_;
 
 #ifdef ENABLE_EVENT_HANDLER
     std::shared_ptr<AppExecFwk::EventRunner> eventRunner_ = nullptr;
