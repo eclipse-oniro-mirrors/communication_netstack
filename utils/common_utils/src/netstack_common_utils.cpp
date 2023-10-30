@@ -228,15 +228,8 @@ std::string GetHostnameFromURL(const std::string &url)
     } else {
         posStart = 0;
     }
-    size_t posEnd = tempUrl.find(":", posStart);
-    if (posEnd != std::string::npos) {
-        return tempUrl.substr(posStart, posEnd - posStart);
-    }
-    posEnd = tempUrl.find("?", posStart);
-    if (posEnd != std::string::npos) {
-        return tempUrl.substr(posStart, posEnd - posStart);
-    }
-    posEnd = tempUrl.find("/", posStart);
+    size_t posEnd = std::min({ tempUrl.find(":", posStart),
+        tempUrl.find("/", posStart), tempUrl.find("?", posStart) });
     if (posEnd != std::string::npos) {
         return tempUrl.substr(posStart, posEnd - posStart);
     }
@@ -263,7 +256,7 @@ bool IsExcluded(const std::string &str, const std::string &exclusions, const std
 bool IsHostNameExcluded(const std::string &url, const std::string &exclusions, const std::string &split)
 {
     std::string hostName = GetHostnameFromURL(url);
-    NETSTACK_LOGD("hostName: %{public}s", hostName.c_str());
+    NETSTACK_LOGD("hostName is: %{public}s", hostName.c_str());
     return IsExcluded(hostName, exclusions, split);
 }
 } // namespace OHOS::NetStack::CommonUtils
