@@ -59,26 +59,23 @@ public:
     static void AsyncWorkCallback(napi_env env, napi_status status, void *data)
     {
         static_assert(std::is_base_of<BaseContext, Context>::value);
-
+        auto context = static_cast<Context*>(data);
         if (status != napi_ok) {
+            context->DeleteReference();
+            delete context;
             return;
         }
         char buffer[BUFFER_SIZE] = {0};
         if (memset_s(buffer, BUFFER_SIZE, ASCII_ZERO, BUFFER_SIZE - 1) != EOK) {
             NETSTACK_LOGE("memory operation fail");
         }
-        auto deleter = [](Context *context) {
-            context->DeleteReference();
-            delete context;
-        };
-        std::unique_ptr<Context, decltype(deleter)> context(static_cast<Context *>(data), deleter);
         size_t argc = 2;
         napi_value argv[2] = {nullptr};
         if (context->IsParseOK() && context->IsExecOK()) {
             argv[0] = NapiUtils::GetUndefined(env);
 
             if (Callback != nullptr) {
-                argv[1] = Callback(context.get());
+                argv[1] = Callback(context);
             } else {
                 argv[1] = NapiUtils::GetUndefined(env);
             }
@@ -89,6 +86,8 @@ public:
             argv[0] = NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
             if (argv[0] == nullptr) {
                 NETSTACK_LOGE("AsyncWorkName %{public}s createErrorMessage fail", context->GetAsyncWorkName().c_str());
+                context->DeleteReference();
+                delete context;
                 return;
             }
 
@@ -101,6 +100,8 @@ public:
             } else {
                 napi_reject_deferred(env, context->GetDeferred(), argv[0]);
             }
+            context->DeleteReference();
+            delete context;
             return;
         }
 
@@ -109,6 +110,8 @@ public:
             napi_value undefined = NapiUtils::GetUndefined(env);
             (void)NapiUtils::CallFunction(env, undefined, func, argc, argv);
         }
+        context->DeleteReference();
+        delete context;
     }
 
     template <class Context, napi_value (*Callback)(Context *)>
