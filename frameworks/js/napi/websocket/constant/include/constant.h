@@ -75,6 +75,8 @@ public:
     static const char *EVENT_CLOSE;
 
     static const char *EVENT_ERROR;
+
+    static const char *EVENT_DATA_END;
 };
 } // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_CONSTANT_H */

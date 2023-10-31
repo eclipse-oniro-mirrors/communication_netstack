@@ -29,4 +29,6 @@ const char *EventName::EVENT_MESSAGE = "message";
 const char *EventName::EVENT_CLOSE = "close";
 
 const char *EventName::EVENT_ERROR = "error";
+
+const char *EventName::EVENT_DATA_END = "dataEnd";
 } // namespace OHOS::NetStack::Websocket
