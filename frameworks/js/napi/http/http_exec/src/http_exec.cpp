@@ -196,7 +196,7 @@ void HttpExec::HttpEventHandlerCallback(RequestContext *context)
             auto eventHandler = manager->GetNetstackEventHandler();
             if (!eventHandler) {
                 NETSTACK_LOGE("netstack eventHandler is nullptr");
-				context->DeleteReference();
+                context->DeleteReference();
                 delete context;
                 return;
             }
