@@ -379,7 +379,24 @@ int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reaso
 int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     NETSTACK_LOGI("LwsCallbackClientReceive");
-    OnMessage(reinterpret_cast<EventManager *>(user), in, len, lws_frame_is_binary(wsi), lws_is_final_fragment(wsi));
+    std:mutex lock;
+    auto manager = reinterpret_cast<EventManager*>(user);
+    auto eventHandler = manager->GetNetstackEventHandler();
+    if (!eventHandler) {
+        NETSTACK_LOGE("netstack eventHandler is nullptr");
+        return HttpDummy(wsi, reason, user, in, len);
+    }
+    auto isFinal = lws_is_final_fragment(wsi);
+    eventHandler->PostSyncTask([&]() {
+        std::lock_guard<std::mutex> messageLock(lock);
+        OnMessage(manager, in, len, lws_frame_is_binary(wsi), isFinal);
+    });
+    if (isFinal) {
+        eventHandler->PostSyncTask([&]() {
+            std::lock_guard<std::mutex> dataEndLock(lock);
+            OnDataEnd(manager);
+        });
+    }
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -534,13 +551,14 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         return false;
     }
     NETSTACK_LOGI("begin connect, parse url");
-    if (context->GetManager() == nullptr) {
+    auto manager = context->GetManager();
+    if (manager == nullptr) {
         return false;
     }
+    manager->InitNetstackEventHandler();
     lws_context_creation_info info = {};
     FillContextInfo(info);
     lws_context *lwsContext = lws_create_context(&info);
-    EventManager *manager = context->GetManager();
     if (manager != nullptr && manager->GetData() == nullptr) {
         auto userData = new UserData(lwsContext);
         userData->header = context->header;
@@ -629,6 +647,12 @@ napi_value WebSocketExec::CloseCallback(CloseContext *context)
 {
     NETSTACK_LOGI("CloseCallback success");
     return NapiUtils::GetBoolean(context->GetEnv(), true);
+}
+
+static napi_value CreateDataEnd(napi_env env, void *callbackPara) 
+{
+    (void) callbackPara;
+    return NapiUtils::GetUndefined(env);
 }
 
 static napi_value CreateError(napi_env env, void *callbackPara)
@@ -777,5 +801,18 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
             manager->ClearWebSocketTextData();
         }
     }
+}
+
+void WebSocketExec::OnDataEnd(EventManager *manager) {
+    NETSTACK_LOGI("onDataEnd");
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is null");
+        return;
+    }
+    if (!manager->HasEventListener(EventName::EVENT_DATA_END)) {
+        NETSTACK_LOGI("no event lsitener: %{public}s", EventName::EVENT_DATA_END);
+        return;
+    }
+    manager->EmitByUv(EventName::EVENT_DATA_END, nullptr, CallbackTemplate<CreateDataEnd>);
 }
 } // namespace OHOS::NetStack::Websocket

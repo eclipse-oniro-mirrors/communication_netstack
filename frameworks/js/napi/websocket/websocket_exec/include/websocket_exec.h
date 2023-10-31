@@ -80,6 +80,8 @@ private:
     static void OnMessage(EventManager *manager, void *data, size_t length, bool isBinary, bool isFinal);
 
     static void OnClose(EventManager *manager, lws_close_status closeStatus, const std::string &closeReason);
+
+    static void OnDataEnd(EventManager *manager);
 };
 } // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_WEBSOCKET_EXEC_H */

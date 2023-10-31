@@ -83,14 +83,16 @@ napi_value WebSocketModule::WebSocket::Close(napi_env env, napi_callback_info in
 
 napi_value WebSocketModule::WebSocket::On(napi_env env, napi_callback_info info)
 {
-    ModuleTemplate::On(env, info, {EventName::EVENT_OPEN, EventName::EVENT_MESSAGE, EventName::EVENT_CLOSE}, true);
+    ModuleTemplate::On(env, info, {EventName::EVENT_OPEN, EventName::EVENT_MESSAGE, EventName::EVENT_CLOSE,
+                                   EventName::EVENT_DATA_END}, true);
     return ModuleTemplate::On(env, info, {EventName::EVENT_ERROR}, false);
 }
 
 napi_value WebSocketModule::WebSocket::Off(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::Off(
-        env, info, {EventName::EVENT_OPEN, EventName::EVENT_MESSAGE, EventName::EVENT_CLOSE, EventName::EVENT_ERROR});
+        env, info, {EventName::EVENT_OPEN, EventName::EVENT_MESSAGE, EventName::EVENT_CLOSE,
+                    EventName::EVENT_ERROR, EventName::EVENT_DATA_END});
 }
 
 static napi_module g_websocketModule = {
