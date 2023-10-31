@@ -192,28 +192,27 @@ void HttpExec::HttpEventHandlerCallback(RequestContext *context)
     std::mutex lock;
     if (EventManager::IsManagerValid(context->GetManager())) {
         if (context->IsRequestInStream()) {
-            auto deleter = [](RequestContext *context) {
-                context->DeleteReference();
-                delete context;
-            };
-            std::unique_ptr<RequestContext, decltype(deleter)> callbackContext(context, deleter);
-            auto manager = callbackContext->GetManager();
+            auto manager = context->GetManager();
             auto eventHandler = manager->GetNetstackEventHandler();
             if (!eventHandler) {
                 NETSTACK_LOGE("netstack eventHandler is nullptr");
+				context->DeleteReference();
+                delete context;
                 return;
             }
-            eventHandler->PostSyncTask([&callbackContext, &lock]() {
+            eventHandler->PostSyncTask([&context, &lock]() {
                 std::lock_guard<std::mutex> callbackLock(lock);
-                NapiUtils::CreateUvQueueWorkEnhanced(callbackContext->GetEnv(), callbackContext.get(),
+                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context,
                                                      HttpAsyncWork::RequestInStreamCallbackNoDel);
             });
-            if (callbackContext->IsExecOK()) {
-                eventHandler->PostSyncTask([&callbackContext, &lock]() {
+            if (context->IsExecOK()) {
+                eventHandler->PostSyncTask([&context, &lock]() {
                     std::lock_guard<std::mutex> callbackLock(lock);
-                    NapiUtils::CreateUvQueueWorkEnhanced(callbackContext->GetEnv(), callbackContext.get(), OnDataEnd);
+                    NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd);
                 });
             }
+            context->DeleteReference();
+            delete context;
         } else {
             NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
         }
