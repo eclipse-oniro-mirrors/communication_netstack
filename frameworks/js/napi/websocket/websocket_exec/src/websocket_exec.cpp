@@ -379,7 +379,7 @@ int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reaso
 int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     NETSTACK_LOGI("LwsCallbackClientReceive");
-    std:mutex lock;
+    std::mutex lock;
     auto manager = reinterpret_cast<EventManager*>(user);
     auto eventHandler = manager->GetNetstackEventHandler();
     if (!eventHandler) {
@@ -810,7 +810,7 @@ void WebSocketExec::OnDataEnd(EventManager *manager) {
         return;
     }
     if (!manager->HasEventListener(EventName::EVENT_DATA_END)) {
-        NETSTACK_LOGI("no event lsitener: %{public}s", EventName::EVENT_DATA_END);
+        NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_DATA_END);
         return;
     }
     manager->EmitByUv(EventName::EVENT_DATA_END, nullptr, CallbackTemplate<CreateDataEnd>);
