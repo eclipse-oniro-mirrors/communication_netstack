@@ -1693,6 +1693,58 @@ static void RemoveClientConnection(int32_t clientId)
     }
 }
 
+static void SetTcpServerExtraOptions(int listenFd, int acceptFd)
+{
+    TCPExtraOptions option;
+    if (!SingletonSocketConfig::GetInstance().GetTcpExtraOptions(listenFd, option)) {
+        NETSTACK_LOGE("can not get option, listenFd does not exist");
+        return;
+    }
+    if (option.IsKeepAlive()) {
+        int alive = 1;
+        if (setsockopt(acceptFd, SOL_SOCKET, SO_KEEPALIVE, reinterpret_cast<void*>(&alive), sizeof(alive)) < 0) {
+            NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
+        }
+    }
+    if (option.IsOOBInline()) {
+        int oob = 1;
+        if (setsockopt(acceptFd, SOL_SOCKET, SO_OOBINLINE, reinterpret_cast<void*>(&oob), sizeof(oob)) < 0) {
+            NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
+        }
+    }
+    if (option.IsTCPNoDelay()) {
+        int noDelay = 1;
+        if (setsockopt(acceptFd, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<void*>(&noDelay), sizeof(noDelay)) < 0) {
+            NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
+        }
+    }
+    linger soLinger = {option.socketLinger.IsOn(), (int)option.socketLinger.GetLinger()};
+    if (setsockopt(acceptFd, SOL_SOCKET, SO_LINGER, reinterpret_cast<void*>(&soLinger), sizeof(soLinger)) < 0) {
+        NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
+    }
+    if (option.GetReceiveBufferSize() != 0) {
+        int size = (int)option.GetReceiveBufferSize();
+        if (setsockopt(acceptFd, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<void *>(&size), sizeof(size)) < 0) {
+            NETSTACK_LOGE("set SO_RCVBUF failed, fd: %{public}d", acceptFd);
+        }
+    }
+    if (option.GetSendBufferSize() != 0) {
+        int size = (int)option.GetSendBufferSize();
+        if (setsockopt(acceptFd, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<void *>(&size), sizeof(size)) < 0) {
+            NETSTACK_LOGE("set SO_SNDBUF failed, fd: %{public}d", acceptFd);
+        }
+    }
+    if (option.GetSocketTimeout() != 0) {
+        timeval timeout = {(int)option.GetSocketTimeout(), 0};
+        if (setsockopt(acceptFd, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
+            NETSTACK_LOGE("set SO_RCVTIMEO failed, fd: %{public}d", acceptFd);
+        }
+        if (setsockopt(acceptFd, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
+            NETSTACK_LOGE("set SO_SNDTIMEO failed, fd: %{public}d", acceptFd);
+        }
+    }
+}
+
 static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, const TcpMessageCallback &callback)
 {
     char buffer[DEFAULT_BUFFER_SIZE];
@@ -1767,6 +1819,11 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
         }
         callback.OnTcpConnectionMessage(g_userCounter);
         int clientId = g_userCounter;
+
+        SingletonSocketConfig::GetInstance().AddNewAcceptSocket(sock, connectFD);
+        if (SingletonSocketConfig::GetInstance().IsTcpExtraOptionsInit(sock)) {
+            SetTcpServerExtraOptions(sock, connectFD);
+        }
         std::thread handlerThread(ClientHandler, clientId, nullptr, 0, callback);
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(TCP_SERVER_HANDLE_CLIENT);
@@ -1789,7 +1846,7 @@ bool ExecTcpServerListen(TcpServerListenContext *context)
         NETSTACK_LOGE("tcp server listen error");
         return false;
     }
-
+    SingletonSocketConfig::GetInstance().AddNewListenSocket(context->GetSocketFd());
     NETSTACK_LOGI("listen success");
     std::thread serviceThread(AcceptRecvData, context->GetSocketFd(), nullptr, 0,
                               TcpMessageCallback(context->GetManager()));
@@ -1808,44 +1865,11 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-
-    if (!SetBaseOptions(context->GetSocketFd(), &context->options_)) {
-        context->SetError(errno, strerror(errno));
-        return false;
+    SingletonSocketConfig::GetInstance().SetTcpExtraOptions(context->GetSocketFd(), context->options_);
+    auto clients = SingletonSocketConfig::GetInstance().GetClients(context->GetSocketFd());
+    for (const int fd : clients) {
+        SetTcpServerExtraOptions(context->GetSocketFd(), fd);
     }
-
-    if (context->options_.IsKeepAlive()) {
-        int keepalive = 1;
-        if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_KEEPALIVE, &keepalive, sizeof(keepalive)) < 0) {
-            context->SetError(errno, strerror(errno));
-            return false;
-        }
-    }
-
-    if (context->options_.IsOOBInline()) {
-        int oobInline = 1;
-        if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_OOBINLINE, &oobInline, sizeof(oobInline)) < 0) {
-            context->SetError(errno, strerror(errno));
-            return false;
-        }
-    }
-
-    if (context->options_.IsTCPNoDelay()) {
-        int tcpNoDelay = 1;
-        if (setsockopt(context->GetSocketFd(), IPPROTO_TCP, TCP_NODELAY, &tcpNoDelay, sizeof(tcpNoDelay)) < 0) {
-            context->SetError(errno, strerror(errno));
-            return false;
-        }
-    }
-
-    linger soLinger = {0};
-    soLinger.l_onoff = context->options_.socketLinger.IsOn();
-    soLinger.l_linger = (int)context->options_.socketLinger.GetLinger();
-    if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_LINGER, &soLinger, sizeof(soLinger)) < 0) {
-        context->SetError(errno, strerror(errno));
-        return false;
-    }
-
     return true;
 }
 

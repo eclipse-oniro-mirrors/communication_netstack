@@ -33,6 +33,9 @@
 #include "udp_extra_context.h"
 #include "udp_send_context.h"
 
+#include <map>
+#include <set>
+
 namespace OHOS::NetStack::Socket::SocketExec {
 int MakeTcpSocket(sa_family_t family);
 
@@ -133,5 +136,80 @@ napi_value TcpServerSetExtraOptionsCallback(TcpServerSetExtraOptionsContext *con
 napi_value TcpServerGetStateCallback(TcpServerGetStateContext *context);
 
 napi_value UdpGetSocketFdCallback(GetSocketFdContext *context);
+
+class SingletonSocketConfig {
+public:
+    static SingletonSocketConfig& GetInstance()
+    {
+        static SingletonSocketConfig instance;
+        return instance;
+    }
+
+    void SetTcpExtraOptions(int listenFd, const TCPExtraOptions& option)
+    {
+        std::lock_guard lock(serverMutex_);
+        tcpExtraOptions_[listenFd] = option;
+    }
+
+    bool GetTcpExtraOptions(int listenFd, TCPExtraOptions& option)
+    {
+        if (tcpExtraOptions_.find(listenFd) != tcpExtraOptions_.end()) {
+            option = tcpExtraOptions_[listenFd];
+            return true;
+        }
+        return false;
+    }
+
+    bool IsTcpExtraOptionsInit(int listenFd) const
+    {
+        return tcpExtraOptions_.find(listenFd) != tcpExtraOptions_.end();
+    }
+
+    void AddNewListenSocket(int listenFd)
+    {
+        std::lock_guard lock(serverMutex_);
+        if (tcpClients_.find(listenFd) == tcpClients_.end()) {
+            tcpClients_[listenFd] = {};
+        }
+    }
+
+    void AddNewAcceptSocket(int listenFd, int acceptFd)
+    {
+        if (tcpClients_.find(listenFd) != tcpClients_.end()) {
+            tcpClients_[listenFd].emplace(acceptFd);
+        }
+    }
+
+    std::set<int> GetClients(int listenFd)
+    {
+        if (tcpClients_.find(listenFd) != tcpClients_.end()) {
+            return tcpClients_[listenFd];
+        }
+        return {};
+    }
+
+    void RemoveServerSocket(int listenFd)
+    {
+        std::lock_guard lock(serverMutex_);
+        if (auto ite = tcpExtraOptions_.find(listenFd); ite != tcpExtraOptions_.end()) {
+            tcpExtraOptions_.erase(ite);
+        }
+        if (auto ite = tcpClients_.find(listenFd); ite != tcpClients_.end()) {
+            tcpClients_.erase(ite);
+        }
+    }
+
+private:
+    SingletonSocketConfig() {}
+    ~SingletonSocketConfig() {}
+
+    SingletonSocketConfig(const SingletonSocketConfig& singleton) = delete;
+    SingletonSocketConfig& operator=(const SingletonSocketConfig& singleton) = delete;
+
+    std::map<int, TCPExtraOptions> tcpExtraOptions_; // server fd & option
+    std::map<int, std::set<int>> tcpClients_; // server fd & client fds
+
+    std::mutex serverMutex_;
+};
 } // namespace OHOS::NetStack::Socket::SocketExec
 #endif /* COMMUNICATIONNETSTACK_SOCKET_EXEC_H */

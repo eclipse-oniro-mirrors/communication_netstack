@@ -47,6 +47,22 @@ public:
 
     ~TCPExtraOptions() = default;
 
+    TCPExtraOptions& operator=(const TCPExtraOptions& other)
+    {
+        if (this != &other) {
+            keepAlive_ = other.keepAlive_;
+            OOBInline_ = other.OOBInline_;
+            TCPNoDelay_ = other.TCPNoDelay_;
+            socketLinger.SetOn(other.socketLinger.IsOn());
+            socketLinger.SetLinger(other.socketLinger.GetLinger());
+            SetReceiveBufferSize(other.GetReceiveBufferSize());
+            SetSendBufferSize(other.GetSendBufferSize());
+            SetReuseAddress(other.IsReuseAddress());
+            SetSocketTimeout(other.GetSocketTimeout());
+        }
+        return *this;
+    }
+
     void SetKeepAlive(bool keepAlive);
 
     void SetOOBInline(bool OOBInline);
