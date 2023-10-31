@@ -101,6 +101,7 @@ void Finalize(napi_env, void *data, void *)
     if (manager != nullptr) {
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
         if (sock != 0) {
+            SocketExec::SingletonSocketConfig::GetInstance().RemoveServerSocket(sock);
             close(sock);
         }
         EventManager::SetInvalid(manager);
