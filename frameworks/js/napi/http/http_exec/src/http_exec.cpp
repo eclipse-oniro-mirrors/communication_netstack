@@ -210,9 +210,9 @@ void HttpExec::HttpEventHandlerCallback(RequestContext *context)
                                                      HttpAsyncWork::RequestInStreamCallback);
             });
             if (dataEndContext->IsExecOK()) {
-                eventHandler->PostSyncTask([&context, &lock]() {
+                eventHandler->PostSyncTask([&dataEndContext, &lock]() {
                     std::lock_guard<std::mutex> callbackLock(lock);
-                    NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd);
+                    NapiUtils::CreateUvQueueWorkEnhanced(dataEndContext->GetEnv(), dataEndContext, OnDataEnd);
                 });
             }
         } else {
