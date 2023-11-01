@@ -201,7 +201,9 @@ void HttpExec::HttpEventHandlerCallback(RequestContext *context)
                 return;
             }
             auto *dataEndContext = new RequestContext(context->GetEnv(), context->GetManager());
-            memcpy_s(dataEndContext, sizeof(RequestContext), context, sizeof(RequestContext));
+            if (memcpy_s(dataEndContext, sizeof(RequestContext), context, sizeof(RequestContext)) != EOK) {
+                return;
+            }
             eventHandler->PostSyncTask([&context, &lock]() {
                 std::lock_guard<std::mutex> callbackLock(lock);
                 NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context,
