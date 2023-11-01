@@ -40,9 +40,9 @@ static constexpr int CONDITION_TIMEOUT_S = 3600;
 
 HttpSession::HttpSession()
 {
-  if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
-    NETSTACK_LOGE("Failed to initialize 'curl'");
-  }
+    if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
+        NETSTACK_LOGE("Failed to initialize 'curl'");
+    }
 }
 
 HttpSession::~HttpSession()
