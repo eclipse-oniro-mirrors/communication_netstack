@@ -200,19 +200,21 @@ void HttpExec::HttpEventHandlerCallback(RequestContext *context)
                 delete context;
                 return;
             }
+            auto *dataEndContext = new RequestContext(context->GetEnv(), context->GetManager());
+            if (memcpy_s(dataEndContext, sizeof(RequestContext), context, sizeof(RequestContext)) != EOK) {
+                return;
+            }
             eventHandler->PostSyncTask([&context, &lock]() {
                 std::lock_guard<std::mutex> callbackLock(lock);
                 NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context,
-                                                     HttpAsyncWork::RequestInStreamCallbackNoDel);
+                                                     HttpAsyncWork::RequestInStreamCallback);
             });
-            if (context->IsExecOK()) {
-                eventHandler->PostSyncTask([&context, &lock]() {
+            if (dataEndContext->IsExecOK()) {
+                eventHandler->PostSyncTask([&dataEndContext, &lock]() {
                     std::lock_guard<std::mutex> callbackLock(lock);
-                    NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd);
+                    NapiUtils::CreateUvQueueWorkEnhanced(dataEndContext->GetEnv(), dataEndContext, OnDataEnd);
                 });
             }
-            context->DeleteReference();
-            delete context;
         } else {
             NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
         }
