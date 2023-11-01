@@ -65,7 +65,7 @@ private:
     /**
      * Default constructor.
      */
-    HttpSession() = default;
+    HttpSession();
     ~HttpSession();
 
     /**

@@ -38,6 +38,13 @@ static constexpr int CURL_MAX_WAIT_MSECS = 10;
 static constexpr int CURL_TIMEOUT_MS = 50;
 static constexpr int CONDITION_TIMEOUT_S = 3600;
 
+HttpSession::HttpSession()
+{
+  if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
+    NETSTACK_LOGE("Failed to initialize 'curl'");
+  }
+}
+
 HttpSession::~HttpSession()
 {
     Deinit();
@@ -160,12 +167,6 @@ bool HttpSession::Init()
         NETSTACK_LOGD("HttpSession::Init");
 
         std::lock_guard<std::mutex> lock(taskQueueMutex_);
-
-        if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
-            NETSTACK_LOGE("Failed to initialize 'curl'");
-            return false;
-        }
-
         std::lock_guard<std::mutex> guard(curlMultiMutex_);
         curlMulti_ = curl_multi_init();
         if (curlMulti_ == nullptr) {
