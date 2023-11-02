@@ -379,23 +379,16 @@ int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reaso
 int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     NETSTACK_LOGI("LwsCallbackClientReceive");
-    std::mutex lock;
-    auto manager = reinterpret_cast<EventManager*>(user);
+    auto manager = reinterpret_cast<EventManager *>(user);
     auto eventHandler = manager->GetNetstackEventHandler();
     if (!eventHandler) {
         NETSTACK_LOGE("netstack eventHandler is nullptr");
         return HttpDummy(wsi, reason, user, in, len);
     }
     auto isFinal = lws_is_final_fragment(wsi);
-    eventHandler->PostSyncTask([&]() {
-        std::lock_guard<std::mutex> messageLock(lock);
-        OnMessage(manager, in, len, lws_frame_is_binary(wsi), isFinal);
-    });
+    eventHandler->PostSyncTask([&]() { OnMessage(manager, in, len, lws_frame_is_binary(wsi), isFinal); });
     if (isFinal) {
-        eventHandler->PostSyncTask([&]() {
-            std::lock_guard<std::mutex> dataEndLock(lock);
-            OnDataEnd(manager);
-        });
+        eventHandler->PostSyncTask([&]() { OnDataEnd(manager); });
     }
     return HttpDummy(wsi, reason, user, in, len);
 }
@@ -649,9 +642,9 @@ napi_value WebSocketExec::CloseCallback(CloseContext *context)
     return NapiUtils::GetBoolean(context->GetEnv(), true);
 }
 
-static napi_value CreateDataEnd(napi_env env, void *callbackPara) 
+static napi_value CreateDataEnd(napi_env env, void *callbackPara)
 {
-    (void) callbackPara;
+    (void)callbackPara;
     return NapiUtils::GetUndefined(env);
 }
 
@@ -803,7 +796,8 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
     }
 }
 
-void WebSocketExec::OnDataEnd(EventManager *manager) {
+void WebSocketExec::OnDataEnd(EventManager *manager)
+{
     NETSTACK_LOGI("onDataEnd");
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is null");
