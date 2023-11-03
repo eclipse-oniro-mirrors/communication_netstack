@@ -56,6 +56,14 @@ static constexpr int CURL_TIMEOUT_MS = 50;
 static constexpr int CONDITION_TIMEOUT_S = 3600;
 static constexpr int CURL_MAX_WAIT_MSECS = 10;
 static constexpr int CURL_HANDLE_NUM = 10;
+static constexpr const char *TLS12_SECURITY_CIPHER_SUITE =
+    "DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-DSS-AES128-GCM-SHA256:DHE-DSS-AES256-GCM-SHA384:"
+    "PSK-AES256-GCM-SHA384:DHE-PSK-AES128-GCM-SHA256:DHE-PSK-AES256-GCM-SHA384:DHE-PSK-CHACHA20-POLY1305:"
+    "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:"
+    "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-PSK-CHACHA20-POLY1305:DHE-RSA-AES128-CCM:"
+    "DHE-RSA-AES256-CCM:DHE-RSA-CHACHA20-POLY1305:PSK-AES256-CCM:DHE-PSK-AES128-CCM:DHE-PSK-AES256-CCM:"
+    "ECDHE-ECDSA-AES128-CCM:ECDHE-ECDSA-AES256-CCM:ECDHE-ECDSA-CHACHA20-POLY1305";
+
 #ifdef HTTP_PROXY_ENABLE
 static constexpr int32_t SYSPARA_MAX_SIZE = 128;
 static constexpr const char *DEFAULT_HTTP_PROXY_HOST = "NONE";
@@ -189,7 +197,6 @@ bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURL
 #ifdef ENABLE_EVENT_HANDLER
 void HttpExec::HttpEventHandlerCallback(RequestContext *context)
 {
-    std::mutex lock;
     if (EventManager::IsManagerValid(context->GetManager())) {
         if (context->IsRequestInStream()) {
             auto manager = context->GetManager();
@@ -200,20 +207,13 @@ void HttpExec::HttpEventHandlerCallback(RequestContext *context)
                 delete context;
                 return;
             }
-            auto *dataEndContext = new RequestContext(context->GetEnv(), context->GetManager());
-            if (memcpy_s(dataEndContext, sizeof(RequestContext), context, sizeof(RequestContext)) != EOK) {
-                return;
-            }
-            eventHandler->PostSyncTask([&context, &lock]() {
-                std::lock_guard<std::mutex> callbackLock(lock);
+            eventHandler->PostSyncTask([&context]() {
                 NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context,
-                                                     HttpAsyncWork::RequestInStreamCallback);
+                                                     HttpAsyncWork::RequestInStreamCallbackWithoutDel);
             });
-            if (dataEndContext->IsExecOK()) {
-                eventHandler->PostSyncTask([&dataEndContext, &lock]() {
-                    std::lock_guard<std::mutex> callbackLock(lock);
-                    NapiUtils::CreateUvQueueWorkEnhanced(dataEndContext->GetEnv(), dataEndContext, OnDataEnd);
-                });
+            if (context->IsExecOK()) {
+                eventHandler->PostSyncTask(
+                    [&context]() { NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd); });
             }
         } else {
             NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
@@ -570,6 +570,8 @@ bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP, context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTPPROXYTUNNEL, 1L, context);
     }
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CIPHER_LIST, TLS12_SECURITY_CIPHER_SUITE, context);
 
 #ifdef NETSTACK_PROXY_PASS
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYUSERPWD, NETSTACK_PROXY_PASS, context);
@@ -746,6 +748,8 @@ void HttpExec::OnDataEnd(napi_env env, napi_status status, void *data)
     }
     auto undefined = NapiUtils::GetUndefined(context->GetEnv());
     context->Emit(ON_DATA_END, std::make_pair(undefined, undefined));
+    context->DeleteReference();
+    delete context;
 }
 
 int HttpExec::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,

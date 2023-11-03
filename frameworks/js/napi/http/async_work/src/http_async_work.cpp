@@ -35,7 +35,7 @@ void HttpAsyncWork::RequestInStreamCallback(napi_env env, napi_status status, vo
     BaseAsyncWork::AsyncWorkCallback<RequestContext, HttpExec::RequestInStreamCallback>(env, status, data);
 }
 
-void HttpAsyncWork::RequestInStreamCallbackNoDel(napi_env env, napi_status status, void *data)
+void HttpAsyncWork::RequestInStreamCallbackWithoutDel(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallbackWithoutDel<RequestContext, HttpExec::RequestInStreamCallback>(env, status, data);
 }

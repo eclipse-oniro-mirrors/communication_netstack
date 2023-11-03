@@ -27,9 +27,6 @@
 #include "napi_utils.h"
 #include "netstack_log.h"
 
-static constexpr const int BUFFER_SIZE = 512;
-static constexpr const int ASCII_ZERO = 48;
-
 namespace OHOS::NetStack {
 class BaseAsyncWork final {
 public:
@@ -65,10 +62,6 @@ public:
             delete context;
             return;
         }
-        char buffer[BUFFER_SIZE] = {0};
-        if (memset_s(buffer, BUFFER_SIZE, ASCII_ZERO, BUFFER_SIZE - 1) != EOK) {
-            NETSTACK_LOGE("memory operation fail");
-        }
         size_t argc = 2;
         napi_value argv[2] = {nullptr};
         if (context->IsParseOK() && context->IsExecOK()) {
@@ -80,12 +73,13 @@ public:
                 argv[1] = NapiUtils::GetUndefined(env);
             }
             if (argv[1] == nullptr) {
+                context->DeleteReference();
+                delete context;
                 return;
             }
         } else {
             argv[0] = NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
             if (argv[0] == nullptr) {
-                NETSTACK_LOGE("AsyncWorkName %{public}s createErrorMessage fail", context->GetAsyncWorkName().c_str());
                 context->DeleteReference();
                 delete context;
                 return;
@@ -122,10 +116,6 @@ public:
         if (status != napi_ok) {
             return;
         }
-        char buffer[BUFFER_SIZE] = {0};
-        if (memset_s(buffer, BUFFER_SIZE, ASCII_ZERO, BUFFER_SIZE - 1) != EOK) {
-            NETSTACK_LOGE("memory operation fail");
-        }
         auto context = static_cast<Context *>(data);
         size_t argc = 2;
         napi_value argv[2] = {nullptr};
@@ -143,7 +133,8 @@ public:
         } else {
             argv[0] = NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
             if (argv[0] == nullptr) {
-                NETSTACK_LOGE("AsyncWorkName %{public}s createErrorMessage fail", context->GetAsyncWorkName().c_str());
+                context->DeleteReference();
+                delete context;
                 return;
             }
 
@@ -155,6 +146,8 @@ public:
                 napi_resolve_deferred(env, context->GetDeferred(), argv[1]);
             } else {
                 napi_reject_deferred(env, context->GetDeferred(), argv[0]);
+                context->DeleteReference();
+                delete context;
             }
             return;
         }
@@ -163,6 +156,10 @@ public:
         if (NapiUtils::GetValueType(env, func) == napi_function) {
             napi_value undefined = NapiUtils::GetUndefined(env);
             (void)NapiUtils::CallFunction(env, undefined, func, argc, argv);
+        }
+        if (!context->IsExecOK()) {
+            context->DeleteReference();
+            delete context;
         }
     }
 
