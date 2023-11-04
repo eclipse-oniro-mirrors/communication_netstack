@@ -24,6 +24,7 @@
 #include "multicast_membership_context.h"
 #include "multicast_set_loopback_context.h"
 #include "multicast_set_ttl_context.h"
+#include "safe_map.h"
 #include "tcp_extra_context.h"
 #include "tcp_send_context.h"
 #include "tcp_server_common_context.h"
@@ -33,7 +34,6 @@
 #include "udp_extra_context.h"
 #include "udp_send_context.h"
 
-#include <map>
 #include <set>
 
 namespace OHOS::NetStack::Socket::SocketExec {
@@ -147,56 +147,47 @@ public:
 
     void SetTcpExtraOptions(int listenFd, const TCPExtraOptions& option)
     {
-        std::lock_guard lock(serverMutex_);
         tcpExtraOptions_[listenFd] = option;
     }
 
     bool GetTcpExtraOptions(int listenFd, TCPExtraOptions& option)
     {
-        if (tcpExtraOptions_.find(listenFd) != tcpExtraOptions_.end()) {
-            option = tcpExtraOptions_[listenFd];
-            return true;
-        }
-        return false;
-    }
-
-    bool IsTcpExtraOptionsInit(int listenFd) const
-    {
-        return tcpExtraOptions_.find(listenFd) != tcpExtraOptions_.end();
+        return tcpExtraOptions_.Find(listenFd, option);
     }
 
     void AddNewListenSocket(int listenFd)
     {
-        std::lock_guard lock(serverMutex_);
-        if (tcpClients_.find(listenFd) == tcpClients_.end()) {
-            tcpClients_[listenFd] = {};
-        }
+        tcpClients_.Insert(listenFd, {});
     }
 
     void AddNewAcceptSocket(int listenFd, int acceptFd)
     {
-        if (tcpClients_.find(listenFd) != tcpClients_.end()) {
+        std::set<int> fdSet;
+        if (tcpClients_.Find(listenFd, fdSet)) {
             tcpClients_[listenFd].emplace(acceptFd);
         }
     }
 
+    void RemoveAcceptSocket(int acceptFd)
+    {
+        tcpClients_.Iterate([acceptFd](int listenFd, std::set<int> fdSet) {
+            if (auto ite = fdSet.find(acceptFd); ite != fdSet.end()) {
+                fdSet.erase(ite);
+            }
+        });
+    }
+
     std::set<int> GetClients(int listenFd)
     {
-        if (tcpClients_.find(listenFd) != tcpClients_.end()) {
-            return tcpClients_[listenFd];
-        }
-        return {};
+        std::set<int> fdSet;
+        tcpClients_.Find(listenFd, fdSet);
+        return fdSet;
     }
 
     void RemoveServerSocket(int listenFd)
     {
-        std::lock_guard lock(serverMutex_);
-        if (auto ite = tcpExtraOptions_.find(listenFd); ite != tcpExtraOptions_.end()) {
-            tcpExtraOptions_.erase(ite);
-        }
-        if (auto ite = tcpClients_.find(listenFd); ite != tcpClients_.end()) {
-            tcpClients_.erase(ite);
-        }
+        tcpExtraOptions_.Erase(listenFd);
+        tcpClients_.Erase(listenFd);
     }
 
 private:
@@ -206,10 +197,8 @@ private:
     SingletonSocketConfig(const SingletonSocketConfig& singleton) = delete;
     SingletonSocketConfig& operator=(const SingletonSocketConfig& singleton) = delete;
 
-    std::map<int, TCPExtraOptions> tcpExtraOptions_; // server fd & option
-    std::map<int, std::set<int>> tcpClients_; // server fd & client fds
-
-    std::mutex serverMutex_;
+    SafeMap<int, TCPExtraOptions> tcpExtraOptions_;
+    SafeMap<int, std::set<int>> tcpClients_;
 };
 } // namespace OHOS::NetStack::Socket::SocketExec
 #endif /* COMMUNICATIONNETSTACK_SOCKET_EXEC_H */

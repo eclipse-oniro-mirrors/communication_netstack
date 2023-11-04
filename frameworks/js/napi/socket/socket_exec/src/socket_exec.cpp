@@ -60,6 +60,8 @@ static constexpr const int USER_LIMIT = 511;
 
 static constexpr const int MAX_CLIENTS = 1024;
 
+static constexpr const int ERRNO_BAD_FD = 9;
+
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
 static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "TCPServerAcceptRecvData";
@@ -1693,56 +1695,52 @@ static void RemoveClientConnection(int32_t clientId)
     }
 }
 
-static void SetTcpServerExtraOptions(int listenFd, int acceptFd)
+static bool SetTcpServerExtraOptions(int listenFd, int acceptFd, TCPExtraOptions& option)
 {
-    TCPExtraOptions option;
-    if (!SingletonSocketConfig::GetInstance().GetTcpExtraOptions(listenFd, option)) {
-        NETSTACK_LOGE("can not get option, listenFd does not exist");
-        return;
+    int alive = static_cast<int>(option.IsKeepAlive());
+    if (setsockopt(acceptFd, SOL_SOCKET, SO_KEEPALIVE, reinterpret_cast<void*>(&alive), sizeof(alive)) < 0) {
+        NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
+        return false;
     }
-    if (option.IsKeepAlive()) {
-        int alive = 1;
-        if (setsockopt(acceptFd, SOL_SOCKET, SO_KEEPALIVE, reinterpret_cast<void*>(&alive), sizeof(alive)) < 0) {
-            NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
-        }
+    int oob = static_cast<int>(option.IsOOBInline());
+    if (setsockopt(acceptFd, SOL_SOCKET, SO_OOBINLINE, reinterpret_cast<void*>(&oob), sizeof(oob)) < 0) {
+        NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
+        return false;
     }
-    if (option.IsOOBInline()) {
-        int oob = 1;
-        if (setsockopt(acceptFd, SOL_SOCKET, SO_OOBINLINE, reinterpret_cast<void*>(&oob), sizeof(oob)) < 0) {
-            NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
-        }
-    }
-    if (option.IsTCPNoDelay()) {
-        int noDelay = 1;
-        if (setsockopt(acceptFd, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<void*>(&noDelay), sizeof(noDelay)) < 0) {
-            NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
-        }
+    int noDelay = static_cast<int>(option.IsTCPNoDelay());
+    if (setsockopt(acceptFd, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<void*>(&noDelay), sizeof(noDelay)) < 0) {
+        NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
+        return false;
     }
     linger soLinger = {option.socketLinger.IsOn(), (int)option.socketLinger.GetLinger()};
     if (setsockopt(acceptFd, SOL_SOCKET, SO_LINGER, reinterpret_cast<void*>(&soLinger), sizeof(soLinger)) < 0) {
         NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
+        return false;
     }
     if (option.GetReceiveBufferSize() != 0) {
         int size = (int)option.GetReceiveBufferSize();
         if (setsockopt(acceptFd, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<void *>(&size), sizeof(size)) < 0) {
             NETSTACK_LOGE("set SO_RCVBUF failed, fd: %{public}d", acceptFd);
+            return false;
         }
     }
     if (option.GetSendBufferSize() != 0) {
         int size = (int)option.GetSendBufferSize();
         if (setsockopt(acceptFd, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<void *>(&size), sizeof(size)) < 0) {
             NETSTACK_LOGE("set SO_SNDBUF failed, fd: %{public}d", acceptFd);
+            return false;
         }
     }
-    if (option.GetSocketTimeout() != 0) {
-        timeval timeout = {(int)option.GetSocketTimeout(), 0};
-        if (setsockopt(acceptFd, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
-            NETSTACK_LOGE("set SO_RCVTIMEO failed, fd: %{public}d", acceptFd);
-        }
-        if (setsockopt(acceptFd, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
-            NETSTACK_LOGE("set SO_SNDTIMEO failed, fd: %{public}d", acceptFd);
-        }
+    timeval timeout = {(int)option.GetSocketTimeout(), 0};
+    if (setsockopt(acceptFd, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
+        NETSTACK_LOGE("set SO_RCVTIMEO failed, fd: %{public}d", acceptFd);
+        return false;
     }
+    if (setsockopt(acceptFd, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
+        NETSTACK_LOGE("set SO_SNDTIMEO failed, fd: %{public}d", acceptFd);
+        return false;
+    }
+    return true;
 }
 
 static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, const TcpMessageCallback &callback)
@@ -1781,6 +1779,7 @@ static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, c
             if (errno != EAGAIN) {
                 callback.OnCloseMessage(manager);
                 RemoveClientConnection(clientId);
+                SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
                 break;
             }
         } else {
@@ -1821,8 +1820,8 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
         int clientId = g_userCounter;
 
         SingletonSocketConfig::GetInstance().AddNewAcceptSocket(sock, connectFD);
-        if (SingletonSocketConfig::GetInstance().IsTcpExtraOptionsInit(sock)) {
-            SetTcpServerExtraOptions(sock, connectFD);
+        if (TCPExtraOptions option; SingletonSocketConfig::GetInstance().GetTcpExtraOptions(sock, option)) {
+            SetTcpServerExtraOptions(sock, connectFD, option);
         }
         std::thread handlerThread(ClientHandler, clientId, nullptr, 0, callback);
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
@@ -1865,11 +1864,18 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    SingletonSocketConfig::GetInstance().SetTcpExtraOptions(context->GetSocketFd(), context->options_);
+    if (context->GetSocketFd() <= 0) {
+        context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
+        return false;
+    }
     auto clients = SingletonSocketConfig::GetInstance().GetClients(context->GetSocketFd());
     for (const int fd : clients) {
-        SetTcpServerExtraOptions(context->GetSocketFd(), fd);
+        if (!SetTcpServerExtraOptions(context->GetSocketFd(), fd, context->options_)) {
+            context->SetError(errno, strerror(errno));
+            return false;
+        }
     }
+    SingletonSocketConfig::GetInstance().SetTcpExtraOptions(context->GetSocketFd(), context->options_);
     return true;
 }
 
