@@ -794,7 +794,7 @@ napi_value HttpExec::MakeResponseHeader(napi_env env, void *ctx)
     if (NapiUtils::GetValueType(context->GetEnv(), header) == napi_object) {
         for (auto it = context->response.GetHeader().begin(); it != context->response.GetHeader().end(); ++it) {
             if (!it->first.empty() && !it->second.empty()) {
-                NapiUtils::SetStringPropertyUtf8(context->GetEnv(), header, it.first, it.second);
+                NapiUtils::SetStringPropertyUtf8(context->GetEnv(), header, it->first, it->second);
             }
         }
     }
