@@ -56,6 +56,7 @@ static constexpr int CURL_TIMEOUT_MS = 50;
 static constexpr int CONDITION_TIMEOUT_S = 3600;
 static constexpr int CURL_MAX_WAIT_MSECS = 10;
 static constexpr int CURL_HANDLE_NUM = 10;
+static constexpr int CURL_OFF_SET = 256;
 static constexpr const char *TLS12_SECURITY_CIPHER_SUITE =
     "DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-DSS-AES128-GCM-SHA256:DHE-DSS-AES256-GCM-SHA384:"
     "PSK-AES256-GCM-SHA384:DHE-PSK-AES128-GCM-SHA256:DHE-PSK-AES256-GCM-SHA384:DHE-PSK-CHACHA20-POLY1305:"
@@ -784,16 +785,18 @@ struct curl_slist *HttpExec::MakeHeaders(const std::vector<std::string> &vec)
 
 napi_value HttpExec::MakeResponseHeader(napi_env env, void *ctx)
 {
+    NETSTACK_LOGI("MakeResponseHeader");
+    char x[CURL_OFF_SET] = {};
     auto context = reinterpret_cast<RequestContext *>(ctx);
     (void)env;
+    (void)x;
     napi_value header = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), header) == napi_object) {
-        std::for_each(context->response.GetHeader().begin(), context->response.GetHeader().end(),
-                      [context, header](const std::pair<std::string, std::string> &p) {
-                          if (!p.first.empty() && !p.second.empty()) {
-                              NapiUtils::SetStringPropertyUtf8(context->GetEnv(), header, p.first, p.second);
-                          }
-                      });
+        for (auto it = context->response.GetHeader().begin(); it != context->response.GetHeader().end(); ++it) {
+            if (!it->first.empty() && !it->second.empty()) {
+                NapiUtils::SetStringPropertyUtf8(context->GetEnv(), header, it.first, it.second);
+            }
+        }
     }
     return header;
 }
