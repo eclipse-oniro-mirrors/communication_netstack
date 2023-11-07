@@ -32,13 +32,6 @@ public:
         static constexpr const char *FUNCTION_ON = "on";
         static constexpr const char *FUNCTION_OFF = "off";
 
-        static constexpr char FUNCTION_ADD_MEMBER_SHIP[] = "addMembership";
-        static constexpr char FUNCTION_DROP_MEMBER_SHIP[] = "dropMembership";
-        static constexpr char FUNCTION_SET_MULTICAST_TTL[] = "setMulticastTTL";
-        static constexpr char FUNCTION_GET_MULTICAST_TTL[] = "getMulticastTTL";
-        static constexpr char FUNCTION_SET_LOOPBACK_MODE[] = "setLoopbackMode";
-        static constexpr char FUNCTION_GET_LOOPBACK_MODE[] = "getLoopbackMode";
-
         static napi_value Bind(napi_env env, napi_callback_info info);
         static napi_value Send(napi_env env, napi_callback_info info);
         static napi_value Close(napi_env env, napi_callback_info info);
@@ -47,6 +40,16 @@ public:
         static napi_value GetSocketFd(napi_env env, napi_callback_info info);
         static napi_value On(napi_env env, napi_callback_info info);
         static napi_value Off(napi_env env, napi_callback_info info);
+    };
+
+    class MulticastSocket : public UDPSocket {
+    public:
+        static constexpr char FUNCTION_ADD_MEMBER_SHIP[] = "addMembership";
+        static constexpr char FUNCTION_DROP_MEMBER_SHIP[] = "dropMembership";
+        static constexpr char FUNCTION_SET_MULTICAST_TTL[] = "setMulticastTTL";
+        static constexpr char FUNCTION_GET_MULTICAST_TTL[] = "getMulticastTTL";
+        static constexpr char FUNCTION_SET_LOOPBACK_MODE[] = "setLoopbackMode";
+        static constexpr char FUNCTION_GET_LOOPBACK_MODE[] = "getLoopbackMode";
 
         static napi_value AddMembership(napi_env env, napi_callback_info info);
         static napi_value DropMembership(napi_env env, napi_callback_info info);
@@ -113,9 +116,11 @@ public:
     };
 
     static constexpr const char *FUNCTION_CONSTRUCTOR_UDP_SOCKET_INSTANCE = "constructUDPSocketInstance";
+    static constexpr const char *FUNCTION_CONSTRUCTOR_MULTICAST_SOCKET_INSTANCE = "constructMulticastSocketInstance";
     static constexpr const char *FUNCTION_CONSTRUCTOR_TCP_SOCKET_INSTANCE = "constructTCPSocketInstance";
     static constexpr const char *FUNCTION_CONSTRUCTOR_TCP_SOCKET_SERVER_INSTANCE = "constructTCPSocketServerInstance";
     static constexpr const char *INTERFACE_UDP_SOCKET = "UDPSocket";
+    static constexpr const char *INTERFACE_MULTICAST_SOCKET = "MulticastSocket";
     static constexpr const char *INTERFACE_TCP_SOCKET = "TCPSocket";
     static constexpr const char *INTERFACE_TCP_SOCKET_SERVER = "TCPSocketServer";
 
@@ -124,11 +129,15 @@ public:
 private:
     static napi_value ConstructUDPSocketInstance(napi_env env, napi_callback_info info);
 
+    static napi_value ConstructMulticastSocketInstance(napi_env env, napi_callback_info info);
+
     static napi_value ConstructTCPSocketInstance(napi_env env, napi_callback_info info);
 
     static napi_value ConstructTCPSocketServerInstance(napi_env env, napi_callback_info info);
 
     static void DefineUDPSocketClass(napi_env env, napi_value exports);
+
+    static void DefineMulticastSocketClass(napi_env env, napi_value exports);
 
     static void DefineTCPSocketClass(napi_env env, napi_value exports);
 
