@@ -486,15 +486,15 @@ void HttpClientTask::ProcessCookie(CURL *handle)
 
 bool HttpClientTask::ProcessResponseCode()
 {
-    CURLcode code = CURLE_OK;
-    ResponseCode responseCode = ResponseCode::NONE;
-    code = curl_easy_getinfo(curlHandle_, CURLINFO_RESPONSE_CODE, &responseCode);
+    int64_t result = 0;
+    CURLcode code = curl_easy_getinfo(curlHandle_, CURLINFO_RESPONSE_CODE, &result);
     if (code != CURLE_OK) {
         error_.SetCURLResult(code);
         return false;
     }
-    NETSTACK_LOGI("HttpClientTask::ProcessResponseCode() responseCode=%{public}d", responseCode);
-    response_.SetResponseCode(responseCode);
+    ResponseCode resultCode = static_cast<ResponseCode>(result);
+    NETSTACK_LOGI("HttpClientTask::ProcessResponseCode() responseCode=%{public}d", resultCode);
+    response_.SetResponseCode(resultCode);
 
     return true;
 }
