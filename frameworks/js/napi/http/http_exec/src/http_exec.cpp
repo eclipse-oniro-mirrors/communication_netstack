@@ -786,7 +786,6 @@ struct curl_slist *HttpExec::MakeHeaders(const std::vector<std::string> &vec)
 
 napi_value HttpExec::MakeResponseHeader(napi_env env, void *ctx)
 {
-    NETSTACK_LOGI("MakeResponseHeader");
     char x[CURL_OFF_SET] = {};
     auto context = reinterpret_cast<RequestContext *>(ctx);
     (void)env;
