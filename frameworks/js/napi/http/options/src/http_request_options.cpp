@@ -24,6 +24,9 @@ namespace OHOS::NetStack::Http {
 static constexpr const uint32_t MIN_PRIORITY = 1;
 static constexpr const uint32_t MAX_PRIORITY = 1000;
 
+static constexpr const int32_t MIN_RESUM_NUMBER = 0;
+static constexpr const int32_t MAX_RESUM_NUMBER = 536870912;
+
 HttpRequestOptions::HttpRequestOptions()
     : method_(HttpConstant::HTTP_METHOD_GET),
       readTimeout_(HttpConstant::DEFAULT_READ_TIMEOUT),
@@ -32,7 +35,9 @@ HttpRequestOptions::HttpRequestOptions()
       dataType_(HttpDataType::NO_DATA_TYPE),
       priority_(MIN_PRIORITY),
       usingHttpProxyType_(UsingHttpProxyType::USE_DEFAULT),
-      httpProxyPort_(0)
+      httpProxyPort_(0),
+      resumeFromNumber_(0),
+      resumeToNumber_(0)
 {
 #ifndef WINDOWS_PLATFORM
     caPath_ = HttpConstant::HTTP_DEFAULT_CA_PATH;
@@ -106,6 +111,10 @@ void HttpRequestOptions::SetUsingProtocol(HttpProtocol httpProtocol)
 
 uint32_t HttpRequestOptions::GetHttpVersion() const
 {
+    if (usingProtocol_ == HttpProtocol::HTTP3) {
+        NETSTACK_LOGI("CURL_HTTP_VERSION_3");
+        return CURL_HTTP_VERSION_3;
+    }
     if (usingProtocol_ == HttpProtocol::HTTP2) {
         NETSTACK_LOGI("CURL_HTTP_VERSION_2_0");
         return CURL_HTTP_VERSION_2_0;
@@ -189,5 +198,56 @@ void HttpRequestOptions::SetCaPath(const std::string &path)
 const std::string &HttpRequestOptions::GetCaPath() const
 {
     return caPath_;
+}
+
+void HttpRequestOptions::SetDohUrl(const std::string &dohUrl)
+{
+    if (dohUrl.empty()) {
+        return;
+    }
+    dohUrl_ = dohUrl;
+}
+
+const std::string &HttpRequestOptions::GetDohUrl() const
+{
+    return dohUrl_;
+}
+
+void HttpRequestOptions::SetRangeNumber(int32_t resumeFromNumber, int32_t resumeToNumber)
+{
+    if (resumeFromNumber >= MIN_RESUM_NUMBER && resumeFromNumber <= MAX_RESUM_NUMBER) {
+        resumeFromNumber_ = resumeFromNumber;
+    }
+    if (resumeToNumber >= MIN_RESUM_NUMBER && resumeToNumber <= MAX_RESUM_NUMBER) {
+        resumeToNumber_ = resumeToNumber;
+    }
+}
+
+const std::string HttpRequestOptions::GetRangeString() const
+{
+    if (resumeToNumber_ <= MIN_RESUM_NUMBER) {
+        if (resumeFromNumber_ <= MIN_RESUM_NUMBER) {
+            return std::to_string(resumeFromNumber_) + '-';
+        } else {
+            return nullptr;
+        }
+    } else if (resumeFromNumber_ <= MIN_RESUM_NUMBER) {
+        return '-' + std::to_string(resumeToNumber_);
+    } else if (resumeToNumber_ <= resumeFromNumber_) {
+        NETSTACK_LOGE("Parameter error, resumeFrom is greater than resumeTo.");
+        return nullptr;
+    } else {
+        return std::to_string(resumeFromNumber_) + '-' + std::to_string(resumeToNumber_);
+    }
+}
+
+const std::vector<std::string> &HttpRequestOptions::GetDnsServers() const
+{
+        return dnsServers_;
+}
+
+void HttpRequestOptions::SetDnsServers(const std::vector<std::string> &dnsServers)
+{
+    dnsServers_ = dnsServers;
 }
 } // namespace OHOS::NetStack::Http

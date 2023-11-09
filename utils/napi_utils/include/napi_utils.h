@@ -70,6 +70,8 @@ std::string GetStringPropertyUtf8(napi_env env, napi_value object, const std::st
 
 void SetStringPropertyUtf8(napi_env env, napi_value object, const std::string &name, const std::string &value);
 
+std::vector<std::string> GetDnsServers(napi_env env, napi_value object, const std::string &propertyName);
+
 /* array buffer */
 bool ValueIsArrayBuffer(napi_env env, napi_value value);
 

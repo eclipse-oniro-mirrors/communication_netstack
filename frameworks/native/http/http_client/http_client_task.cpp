@@ -124,6 +124,9 @@ uint32_t HttpClientTask::GetHttpVersion(HttpProtocol ptcl) const
     } else if (ptcl == HttpProtocol::HTTP2) {
         NETSTACK_LOGD("CURL_HTTP_VERSION_2_0");
         return CURL_HTTP_VERSION_2_0;
+    } else if (ptcl == HttpProtocol::HTTP3) {
+        NETSTACK_LOGD("CURL_HTTP_VERSION_3");
+        return CURL_HTTP_VERSION_3;
     }
     return CURL_HTTP_VERSION_NONE;
 }

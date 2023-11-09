@@ -15,6 +15,14 @@
 
 #include "netstack_common_utils.h"
 
+#ifdef WINDOWS_PLATFORM
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+#else
+#include <arpa/inet.h>
+#endif
+
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
@@ -25,6 +33,8 @@
 
 #include "curl/curl.h"
 #include "netstack_log.h"
+
+constexpr int32_t INET_OPTION_SUC = 1;
 
 namespace OHOS::NetStack::CommonUtils {
 std::vector<std::string> Split(const std::string &str, const std::string &sep)
@@ -258,5 +268,39 @@ bool IsHostNameExcluded(const std::string &url, const std::string &exclusions, c
     std::string hostName = GetHostnameFromURL(url);
     NETSTACK_LOGD("hostName is: %{public}s", hostName.c_str());
     return IsExcluded(hostName, exclusions, split);
+}
+
+bool IsValidIPV4(const std::string &ip)
+{
+    return IsValidIP(ip, AF_INET);
+}
+
+bool IsValidIPV6(const std::string &ip)
+{
+    return IsValidIP(ip, AF_INET6);
+}
+
+bool IsValidIP(const std::string& ip, int af)
+{
+    if (ip.empty()) {
+        return false;
+    }
+#ifdef WINDOWS_PLATFORM
+    if (af == AF_INET6) {
+        struct sockaddr_in6 sa;
+        return inet_pton(af, ip.c_str(), &(sa.sin6_addr)) == INET_OPTION_SUC;
+    } else {
+        struct sockaddr_in sa;
+        return inet_pton(af, ip.c_str(), &(sa.sin_addr)) == INET_OPTION_SUC;
+    }
+#else
+    if (af == AF_INET6) {
+        struct in6_addr addr;
+        return inet_pton(af, ip.c_str(), reinterpret_cast<void *>(&addr)) == INET_OPTION_SUC;
+    } else {
+        struct in_addr addr;
+        return inet_pton(af, ip.c_str(), reinterpret_cast<void *>(&addr)) == INET_OPTION_SUC;
+    }
+#endif
 }
 } // namespace OHOS::NetStack::CommonUtils

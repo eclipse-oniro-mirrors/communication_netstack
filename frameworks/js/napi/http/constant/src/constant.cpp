@@ -34,6 +34,9 @@ const char *const HttpConstant::PARAM_KEY_METHOD = "method";
 const char *const HttpConstant::PARAM_KEY_EXTRA_DATA = "extraData";
 const char *const HttpConstant::PARAM_KEY_HEADER = "header";
 const char *const HttpConstant::PARAM_KEY_READ_TIMEOUT = "readTimeout";
+const char *const HttpConstant::PARAM_KEY_DNS_SERVERS = "dnsServers";
+const char *const HttpConstant::PARAM_KEY_RESUME_FROM = "resumeFrom";
+const char *const HttpConstant::PARAM_KEY_RESUME_TO = "resumeTo";
 const char *const HttpConstant::PARAM_KEY_CONNECT_TIMEOUT = "connectTimeout";
 const char *const HttpConstant::PARAM_KEY_USING_PROTOCOL = "usingProtocol";
 const char *const HttpConstant::PARAM_KEY_USING_CACHE = "usingCache";
@@ -42,10 +45,17 @@ const char *const HttpConstant::PARAM_KEY_PRIORITY = "priority";
 
 const char *const HttpConstant::PARAM_KEY_USING_HTTP_PROXY = "usingProxy";
 const char *const HttpConstant::PARAM_KEY_CA_PATH = "caPath";
+const char *const HttpConstant::PARAM_KEY_DOH_URL = "dnsOverHttp";
 
 const char *const HttpConstant::HTTP_PROXY_KEY_HOST = "host";
 const char *const HttpConstant::HTTP_PROXY_KEY_PORT = "port";
 const char *const HttpConstant::HTTP_PROXY_KEY_EXCLUSION_LIST = "exclusionList";
+
+const char *const HttpConstant::PARAM_KEY_CLINENT_CERT = "clientCert";
+const char* const HttpConstant::HTTP_CLINENT_CERT = "cert";
+const char* const HttpConstant::HTTP_CLINENT_KEY = "key";
+const char *const HttpConstant::HTTP_CLINENT_KEY_PASSWD = "keyPasswd";
+
 const char *const HttpConstant::HTTP_PROXY_EXCLUSIONS_SEPARATOR = ",";
 
 const char *const HttpConstant::RESPONSE_KEY_RESULT = "result";
@@ -70,6 +80,7 @@ const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/certs/cacert.pe
 #endif // MAC_PLATFORM
 #endif // WINDOWS_PLATFORM
 
+const char *const HttpConstant::HTTP_PREPARE_CA_PATH = "/etc/security/certificates";
 const char *const HttpConstant::HTTP_CONTENT_TYPE = "content-type";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE = "application/x-www-form-urlencoded";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_JSON = "application/json";
@@ -80,4 +91,15 @@ const char *const HttpConstant::HTTP_CONTENT_ENCODING_GZIP = "gzip";
 
 const char *const HttpConstant::REQUEST_TIME = "requestTime";
 const char *const HttpConstant::RESPONSE_TIME = "responseTime";
+const char *const HttpConstant::RESPONSE_PERFORMANCE_TIMING = "performanceTiming";
+const char *const HttpConstant::RESPONSE_DNS_TIMING = "dnsTiming";
+const char *const HttpConstant::RESPONSE_TCP_TIMING = "tcpTiming";
+const char *const HttpConstant::RESPONSE_TLS_TIMING = "tlsTiming";
+const char *const HttpConstant::RESPONSE_FIRST_SEND_TIMING = "firstSendTiming";
+const char *const HttpConstant::RESPONSE_FIRST_RECEIVE_TIMING = "firstReceiveTiming";
+const char *const HttpConstant::RESPONSE_TOTAL_FINISH_TIMING = "totalFinishTiming";
+const char *const HttpConstant::RESPONSE_REDIRECT_TIMING = "redirectTiming";
+const char *const HttpConstant::RESPONSE_HEADER_TIMING = "responseHeaderTiming";
+const char *const HttpConstant::RESPONSE_BODY_TIMING = "responseBodyTiming";
+const char *const HttpConstant::RESPONSE_TOTAL_TIMING = "totalTiming";
 } // namespace OHOS::NetStack::Http

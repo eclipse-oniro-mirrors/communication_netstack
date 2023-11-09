@@ -587,6 +587,7 @@ bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *
 #else
 #ifndef WINDOWS_PLATFORM
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, context->options.GetCaPath().c_str(), context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, HttpConstant::HTTP_PREPARE_CA_PATH, context);
 #endif // WINDOWS_PLATFORM
 #endif // NO_SSL_CERTIFICATION
 
@@ -633,8 +634,13 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTPHEADER, requestHeader, context);
 
-    // Some servers don't like requests that are made without a user-agent field, so we provide one
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_USERAGENT, HttpConstant::HTTP_DEFAULT_USER_AGENT, context);
+    const std::string range = context->options.GetRangeString();
+    if (range.empty()) {
+        // Some servers don't like requests that are made without a user-agent field, so we provide one
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_USERAGENT, HttpConstant::HTTP_DEFAULT_USER_AGENT, context);
+    } else {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RANGE, range.c_str(), context);
+    }
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FOLLOWLOCATION, 1L, context);
 
@@ -647,10 +653,25 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTP_VERSION, context->options.GetHttpVersion(), context);
+    SetDnsOption(curl, context);
     if (!SetOtherOption(curl, context)) {
         return false;
     }
 
+    return true;
+}
+
+bool HttpExec::SetDnsOption(CURL *curl, RequestContext *context)
+{
+    std::vector<std::string> dns_servers = context->options.GetDnsServers();
+    if (dns_servers.empty()) {
+        return true;
+    }
+    struct curl_slist *curlDnsServers = NULL;
+    for (const auto &server : dns_servers) {
+        curlDnsServers = curl_slist_append(curlDnsServers, server.c_str());
+    }
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DNS_SERVERS, curlDnsServers, context);
     return true;
 }
 
@@ -743,6 +764,25 @@ void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
     context->Emit(ON_DATA_RECEIVE_PROGRESS, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
 }
 
+void HttpExec::OnDataUploadProgress(napi_env env, napi_status status, void* data)
+{
+    auto context = static_cast<RequestContext*>(data);
+    if (context == nullptr) {
+        NETSTACK_LOGD("[OnDataUploadProgress] context is null.");
+        return;
+    }
+    auto progress = NapiUtils::CreateObject(context->GetEnv());
+    if (NapiUtils::GetValueType(context->GetEnv(), progress) == napi_undefined) {
+        NETSTACK_LOGD("[OnDataUploadProgress] napi_undefined.");
+        return;
+    }
+    NapiUtils::SetUint32Property(
+        context->GetEnv(), progress, "uploadSize", static_cast<uint32_t>(context->GetUlLen().nLen));
+    NapiUtils::SetUint32Property(
+        context->GetEnv(), progress, "totalSize", static_cast<uint32_t>(context->GetUlLen().tLen));
+    context->Emit(ON_DATA_SEND_PROGRESS, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
+}
+
 void HttpExec::OnDataEnd(napi_env env, napi_status status, void *data)
 {
     auto context = static_cast<RequestContext *>(data);
@@ -758,10 +798,15 @@ void HttpExec::OnDataEnd(napi_env env, napi_status status, void *data)
 int HttpExec::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
                                curl_off_t ulnow)
 {
-    (void)ultotal;
-    (void)ulnow;
-    auto context = static_cast<RequestContext *>(userData);
-    if (context == nullptr || !context->IsRequestInStream()) {
+    auto context = static_cast<RequestContext*>(userData);
+    if (context == nullptr) {
+        return 0;
+    }
+    if (ultotal != 0 && ultotal >= ulnow && !context->CompareWithLastElement(ulnow, ultotal)) {
+        context->SetUlLen(ulnow, ultotal);
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataUploadProgress);
+    }
+    if (!context->IsRequestInStream()) {
         return 0;
     }
     if (context->GetManager()->IsEventDestroy()) {

@@ -18,20 +18,21 @@
 
 #include <queue>
 #include <mutex>
+#include <map>
 #include "curl/curl.h"
 #include "base_context.h"
 #include "http_request_options.h"
 #include "http_response.h"
 
 namespace OHOS::NetStack::Http {
-struct DlBytes {
-    DlBytes() : nLen(0), tLen(0) {};
-    DlBytes(curl_off_t nowLen, curl_off_t totalLen)
+struct LoadBytes {
+    LoadBytes() : nLen(0), tLen(0) {};
+    LoadBytes(curl_off_t nowLen, curl_off_t totalLen)
     {
         nLen = nowLen;
         tLen = totalLen;
     };
-    ~DlBytes() = default;
+    ~LoadBytes() = default;
     curl_off_t nLen;
     curl_off_t tLen;
 };
@@ -70,9 +71,17 @@ public:
 
     void SetDlLen(curl_off_t nowLen, curl_off_t totalLen);
 
-    DlBytes GetDlLen();
+    LoadBytes GetDlLen();
+
+    void SetUlLen(curl_off_t nowLen, curl_off_t totalLen);
+
+    LoadBytes GetUlLen();
 
     void PopDlLen();
+
+    void PopUlLen();
+
+    bool CompareWithLastElement(curl_off_t nowLen, curl_off_t totalLen);
 
     void SetTempData(const void *data, size_t size);
 
@@ -84,10 +93,12 @@ private:
     bool usingCache_;
     bool requestInStream_;
     std::mutex dlLenLock_;
+    std::mutex ulLenLock_;
     std::mutex tempDataLock_;
     std::queue<std::string> tempData_;
     HttpResponse cacheResponse_;
-    std::queue<DlBytes> dlBytes_;
+    std::queue<LoadBytes> dlBytes_;
+    std::queue<LoadBytes> ulBytes_;
     struct curl_slist *curlHeaderList_;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
@@ -101,6 +112,12 @@ private:
     void ParseUsingHttpProxy(napi_value optionsValue);
 
     void ParseCaPath(napi_value optionsValue);
+
+    void ParseDnsServers(napi_value optionsValue);
+
+    void ParseDohUrl(napi_value optionsValue);
+
+    void ParseResumeFromToNumber(napi_value optionsValue);
 
     bool GetRequestBody(napi_value extraData);
 

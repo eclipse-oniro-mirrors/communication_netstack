@@ -135,12 +135,16 @@ public:
     static const char *const PARAM_KEY_EXTRA_DATA;
     static const char *const PARAM_KEY_HEADER;
     static const char *const PARAM_KEY_READ_TIMEOUT;
+    static const char *const PARAM_KEY_DNS_SERVERS;
+    static const char *const PARAM_KEY_RESUME_FROM;
+    static const char *const PARAM_KEY_RESUME_TO;
     static const char *const PARAM_KEY_CONNECT_TIMEOUT;
     static const char *const PARAM_KEY_USING_PROTOCOL;
     static const char *const PARAM_KEY_USING_CACHE;
     static const char *const PARAM_KEY_EXPECT_DATA_TYPE;
     static const char *const PARAM_KEY_PRIORITY;
     static const char *const PARAM_KEY_CA_PATH;
+    static const char *const PARAM_KEY_DOH_URL;
 
     static const char *const PARAM_KEY_USING_HTTP_PROXY;
 
@@ -149,11 +153,28 @@ public:
     static const char *const HTTP_PROXY_KEY_EXCLUSION_LIST;
     static const char *const HTTP_PROXY_EXCLUSIONS_SEPARATOR;
 
+    static const char *const PARAM_KEY_CLINENT_CERT;
+    static const char *const HTTP_CLINENT_CERT;
+    static const char *const HTTP_CLINENT_KEY;
+    static const char *const HTTP_CLINENT_KEY_PASSWD;
+
     static const char *const RESPONSE_KEY_RESULT;
     static const char *const RESPONSE_KEY_RESPONSE_CODE;
     static const char *const RESPONSE_KEY_HEADER;
     static const char *const RESPONSE_KEY_COOKIES;
     static const char *const RESPONSE_KEY_RESULT_TYPE;
+
+    static const char *const RESPONSE_PERFORMANCE_TIMING;
+    static const char *const RESPONSE_DNS_TIMING;
+    static const char *const RESPONSE_TCP_TIMING;
+    static const char *const RESPONSE_TLS_TIMING;
+    static const char *const RESPONSE_FIRST_SEND_TIMING;
+    static const char *const RESPONSE_FIRST_RECEIVE_TIMING;
+    static const char *const RESPONSE_TOTAL_FINISH_TIMING;
+    static const char *const RESPONSE_REDIRECT_TIMING;
+    static const char *const RESPONSE_HEADER_TIMING;
+    static const char *const RESPONSE_BODY_TIMING;
+    static const char *const RESPONSE_TOTAL_TIMING;
 
     static const char *const HTTP_URL_PARAM_START;
     static const char *const HTTP_URL_PARAM_SEPARATOR;
@@ -164,6 +185,7 @@ public:
 
     static const char *const HTTP_DEFAULT_USER_AGENT;
     static const char *const HTTP_DEFAULT_CA_PATH;
+    static const char *const HTTP_PREPARE_CA_PATH;
 
     static const char *const HTTP_CONTENT_TYPE;
     static const char *const HTTP_CONTENT_TYPE_URL_ENCODE;
