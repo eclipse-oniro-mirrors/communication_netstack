@@ -24,8 +24,8 @@ namespace OHOS::NetStack::Http {
 static constexpr const uint32_t MIN_PRIORITY = 1;
 static constexpr const uint32_t MAX_PRIORITY = 1000;
 
-static constexpr const int32_t MIN_RESUM_NUMBER = 0;
-static constexpr const int32_t MAX_RESUM_NUMBER = 536870912;
+static constexpr const uint32_t MIN_RESUM_NUMBER = 1;
+static constexpr const uint32_t MAX_RESUM_NUMBER = 536870912;
 
 HttpRequestOptions::HttpRequestOptions()
     : method_(HttpConstant::HTTP_METHOD_GET),
@@ -35,9 +35,7 @@ HttpRequestOptions::HttpRequestOptions()
       dataType_(HttpDataType::NO_DATA_TYPE),
       priority_(MIN_PRIORITY),
       usingHttpProxyType_(UsingHttpProxyType::USE_DEFAULT),
-      httpProxyPort_(0),
-      resumeFromNumber_(0),
-      resumeToNumber_(0)
+      httpProxyPort_(0)
 {
 #ifndef WINDOWS_PLATFORM
     caPath_ = HttpConstant::HTTP_DEFAULT_CA_PATH;
@@ -213,7 +211,7 @@ const std::string &HttpRequestOptions::GetDohUrl() const
     return dohUrl_;
 }
 
-void HttpRequestOptions::SetRangeNumber(int32_t resumeFromNumber, int32_t resumeToNumber)
+void HttpRequestOptions::SetRangeNumber(uint32_t resumeFromNumber, uint32_t resumeToNumber)
 {
     if (resumeFromNumber >= MIN_RESUM_NUMBER && resumeFromNumber <= MAX_RESUM_NUMBER) {
         resumeFromNumber_ = resumeFromNumber;
@@ -225,17 +223,18 @@ void HttpRequestOptions::SetRangeNumber(int32_t resumeFromNumber, int32_t resume
 
 const std::string HttpRequestOptions::GetRangeString() const
 {
-    if (resumeToNumber_ <= MIN_RESUM_NUMBER) {
-        if (resumeFromNumber_ <= MIN_RESUM_NUMBER) {
-            return std::to_string(resumeFromNumber_) + '-';
-        } else {
-            return nullptr;
-        }
-    } else if (resumeFromNumber_ <= MIN_RESUM_NUMBER) {
+    bool isSetFrom = resumeFromNumber_ >= MIN_RESUM_NUMBER;
+    bool isSetTo = resumeToNumber_ >= MIN_RESUM_NUMBER;
+    if (!isSetTo && !isSetFrom) {
+        return "";
+    } else if (!isSetTo && isSetFrom) {
+        return std::to_string(resumeFromNumber_) + '-';
+    } else if (isSetTo && !isSetFrom) {
+        return '-' + std::to_string(resumeToNumber_);
+    } else if (isSetTo && !isSetFrom) {
         return '-' + std::to_string(resumeToNumber_);
     } else if (resumeToNumber_ <= resumeFromNumber_) {
-        NETSTACK_LOGE("Parameter error, resumeFrom is greater than resumeTo.");
-        return nullptr;
+        return "";
     } else {
         return std::to_string(resumeFromNumber_) + '-' + std::to_string(resumeToNumber_);
     }

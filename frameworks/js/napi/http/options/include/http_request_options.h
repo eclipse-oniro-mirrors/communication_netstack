@@ -66,7 +66,7 @@ public:
 
     void SetDohUrl(const std::string &SetDohUrl);
 
-    void SetRangeNumber(int32_t resumeFromNumber, int32_t resumeToNumber);
+    void SetRangeNumber(uint32_t resumeFromNumber, uint32_t resumeToNumber);
 
     [[nodiscard]] const std::string &GetUrl() const;
 
