@@ -284,7 +284,7 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
 void RequestContext::ParseUsingHttpProxy(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_HTTP_PROXY)) {
-        NETSTACK_LOGI("Do not use http proxy");
+        NETSTACK_LOGI("Use default proxy");
         return;
     }
     napi_value httpProxyValue =
