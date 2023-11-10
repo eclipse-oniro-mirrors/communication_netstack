@@ -50,5 +50,11 @@ std::string GetHostnameFromURL(const std::string& url);
 bool IsExcluded(const std::string &str, const std::string &exclusions, const std::string &split);
 
 bool IsHostNameExcluded(const std::string &url, const std::string &exclusions, const std::string &split);
+
+bool IsValidIP(const std::string& ip, int af);
+
+bool IsValidIPV4(const std::string &ip);
+
+bool IsValidIPV6(const std::string &ip);
 } // namespace OHOS::NetStack::CommonUtils
 #endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */

@@ -184,6 +184,7 @@ void HttpModuleExports::InitHttpProtocol(napi_env env, napi_value exports)
     std::initializer_list<napi_property_descriptor> properties = {
         DECLARE_HTTP_PROTOCOL(HTTP1_1),
         DECLARE_HTTP_PROTOCOL(HTTP2),
+        DECLARE_HTTP_PROTOCOL(HTTP3),
     };
 
     napi_value httpProtocol = NapiUtils::CreateObject(env);
@@ -279,8 +280,9 @@ napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_i
 
 napi_value HttpModuleExports::HttpRequest::On(napi_env env, napi_callback_info info)
 {
-    ModuleTemplate::On(env, info, {ON_HEADERS_RECEIVE, ON_DATA_RECEIVE, ON_DATA_END, ON_DATA_RECEIVE_PROGRESS}, false);
-    return ModuleTemplate::On(env, info, {ON_HEADER_RECEIVE}, true);
+    ModuleTemplate::On(env, info,
+        { ON_HEADERS_RECEIVE, ON_DATA_RECEIVE, ON_DATA_END, ON_DATA_RECEIVE_PROGRESS, ON_DATA_SEND_PROGRESS }, false);
+    return ModuleTemplate::On(env, info, { ON_HEADER_RECEIVE }, true);
 }
 
 napi_value HttpModuleExports::HttpRequest::Once(napi_env env, napi_callback_info info)
@@ -290,8 +292,9 @@ napi_value HttpModuleExports::HttpRequest::Once(napi_env env, napi_callback_info
 
 napi_value HttpModuleExports::HttpRequest::Off(napi_env env, napi_callback_info info)
 {
-    ModuleTemplate::Off(env, info, {ON_HEADERS_RECEIVE, ON_DATA_RECEIVE, ON_DATA_END, ON_DATA_RECEIVE_PROGRESS});
-    return ModuleTemplate::Off(env, info, {ON_HEADER_RECEIVE});
+    ModuleTemplate::Off(env, info,
+        { ON_HEADERS_RECEIVE, ON_DATA_RECEIVE, ON_DATA_END, ON_DATA_RECEIVE_PROGRESS, ON_DATA_SEND_PROGRESS });
+    return ModuleTemplate::Off(env, info, { ON_HEADER_RECEIVE });
 }
 
 napi_value HttpModuleExports::HttpResponseCache::Flush(napi_env env, napi_callback_info info)

@@ -18,6 +18,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "constant.h"
 
@@ -25,6 +26,7 @@ namespace OHOS::NetStack::Http {
 enum class HttpProtocol {
     HTTP1_1,
     HTTP2,
+    HTTP3,
     HTTP_NONE, // default choose by curl
 };
 
@@ -60,6 +62,12 @@ public:
 
     void SetCaPath(const std::string &SetCaPath);
 
+    void SetDnsServers(const std::vector<std::string> &dnsServers);
+
+    void SetDohUrl(const std::string &SetDohUrl);
+
+    void SetRangeNumber(uint32_t resumeFromNumber, uint32_t resumeToNumber);
+
     [[nodiscard]] const std::string &GetUrl() const;
 
     [[nodiscard]] const std::string &GetMethod() const;
@@ -89,6 +97,12 @@ public:
     void GetSpecifiedHttpProxy(std::string &host, int32_t &port, std::string &exclusionList);
 
     [[nodiscard]] const std::string &GetCaPath() const;
+
+    [[nodiscard]] const std::string &GetDohUrl() const;
+
+    [[nodiscard]] const std::string GetRangeString() const;
+
+    [[nodiscard]] const std::vector<std::string> &GetDnsServers() const;
 
 private:
     std::string url_;
@@ -120,6 +134,14 @@ private:
     std::string httpProxyExclusions_;
 
     std::string caPath_;
+
+    std::string dohUrl_;
+
+    std::vector<std::string> dnsServers_;
+
+    int32_t resumeFromNumber_;
+
+    int32_t resumeToNumber_;
 };
 } // namespace OHOS::NetStack::Http
 

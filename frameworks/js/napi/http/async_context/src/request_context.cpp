@@ -31,6 +31,7 @@ static constexpr const int PARAM_URL_AND_OPTIONS_OR_CALLBACK = 2;
 
 static constexpr const int PARAM_URL_AND_OPTIONS_AND_CALLBACK = 3;
 
+static constexpr const uint32_t DNS_SERVER_SIZE = 3;
 namespace OHOS::NetStack::Http {
 static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_UNSUPPORTED_PROTOCOL, "Unsupported protocol"},
@@ -167,7 +168,8 @@ void RequestContext::ParseNumberOptions(napi_value optionsValue)
         if (NapiUtils::GetValueType(GetEnv(), value) == napi_number) {
             uint32_t number = NapiUtils::GetUint32FromValue(GetEnv(), value);
             if (number == static_cast<uint32_t>(HttpProtocol::HTTP1_1) ||
-                number == static_cast<uint32_t>(HttpProtocol::HTTP2)) {
+                number == static_cast<uint32_t>(HttpProtocol::HTTP2) ||
+                number == static_cast<uint32_t>(HttpProtocol::HTTP3)) {
                 options.SetUsingProtocol(static_cast<HttpProtocol>(number));
             }
         }
@@ -364,6 +366,22 @@ void RequestContext::ParseCaPath(napi_value optionsValue)
     }
 }
 
+void RequestContext::ParseDohUrl(napi_value optionsValue)
+{
+    std::string dohUrl = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_DOH_URL);
+    if (!dohUrl.empty()) {
+        options.SetDohUrl(dohUrl);
+    }
+}
+
+void RequestContext::ParseResumeFromToNumber(napi_value optionsValue)
+{
+    napi_env env = GetEnv();
+    uint32_t from = NapiUtils::GetUint32Property(env, optionsValue, HttpConstant::PARAM_KEY_RESUME_FROM);
+    uint32_t to = NapiUtils::GetUint32Property(env, optionsValue, HttpConstant::PARAM_KEY_RESUME_TO);
+    options.SetRangeNumber(from, to);
+}
+
 void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
 {
     options.SetUrl(NapiUtils::GetStringFromValueUtf8(GetEnv(), urlValue));
@@ -384,6 +402,9 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
 
     ParseHeader(optionsValue);
     ParseCaPath(optionsValue);
+    ParseDohUrl(optionsValue);
+    ParseResumeFromToNumber(optionsValue);
+    ParseDnsServers(optionsValue);
     SetParseOK(true);
 }
 
@@ -466,15 +487,51 @@ bool RequestContext::IsRequestInStream() const
 void RequestContext::SetDlLen(curl_off_t nowLen, curl_off_t totalLen)
 {
     std::lock_guard<std::mutex> lock(dlLenLock_);
-    DlBytes dlBytes{nowLen, totalLen};
+    LoadBytes dlBytes{nowLen, totalLen};
     dlBytes_.push(dlBytes);
 }
 
-DlBytes RequestContext::GetDlLen()
+
+LoadBytes RequestContext::GetDlLen()
 {
     std::lock_guard<std::mutex> lock(dlLenLock_);
-    DlBytes dlBytes{dlBytes_.front().nLen, dlBytes_.front().tLen};
+    LoadBytes dlBytes{dlBytes_.front().nLen, dlBytes_.front().tLen};
     return dlBytes;
+}
+
+void RequestContext::SetUlLen(curl_off_t nowLen, curl_off_t totalLen)
+{
+    std::lock_guard<std::mutex> lock(ulLenLock_);
+    if (!ulBytes_.empty()) {
+        ulBytes_.pop();
+    }
+    LoadBytes ulBytes{nowLen, totalLen};
+    ulBytes_.push(ulBytes);
+}
+
+LoadBytes RequestContext::GetUlLen()
+{
+    std::lock_guard<std::mutex> lock(ulLenLock_);
+    LoadBytes dlBytes{ulBytes_.front().nLen, ulBytes_.front().tLen};
+    return dlBytes;
+}
+
+void RequestContext::PopUlLen()
+{
+    std::lock_guard<std::mutex> lock(ulLenLock_);
+    if (!ulBytes_.empty()) {
+        ulBytes_.pop();
+    }
+}
+
+bool RequestContext::CompareWithLastElement(curl_off_t nowLen, curl_off_t totalLen)
+{
+    std::lock_guard<std::mutex> lock(ulLenLock_);
+    if (ulBytes_.empty()) {
+        return false;
+    }
+    const LoadBytes &lastElement = ulBytes_.back();
+    return nowLen == lastElement.nLen && totalLen == lastElement.tLen;
 }
 
 void RequestContext::PopDlLen()
@@ -508,5 +565,34 @@ void RequestContext::PopTempData()
     if (!tempData_.empty()) {
         tempData_.pop();
     }
+}
+
+void RequestContext::ParseDnsServers(napi_value optionsValue)
+{
+    napi_env env = GetEnv();
+    napi_value dnsServerValue = NapiUtils::GetNamedProperty(env, optionsValue, HttpConstant::PARAM_KEY_DNS_SERVERS);
+    uint32_t dnsLength = NapiUtils::GetArrayLength(env, dnsServerValue);
+    if (dnsLength <= 0) {
+        return;
+    }
+    std::vector<std::string> dnsServers;
+    uint32_t dnsSize = 0;
+    for (uint32_t i = 0; i < dnsLength && dnsSize < DNS_SERVER_SIZE; i++) {
+        napi_value element = NapiUtils::GetArrayElement(env, dnsServerValue, i);
+        std::string dnsServer = NapiUtils::GetStringFromValueUtf8(env, element);
+        if (dnsServer.length() <= 0) {
+            continue;
+        }
+        if (!CommonUtils::IsValidIPV4(dnsServer) && !CommonUtils::IsValidIPV6(dnsServer)) {
+            continue;
+        }
+        dnsServers.push_back(dnsServer);
+        dnsSize++;
+    }
+    if (dnsSize <= 0 || dnsServers.data() == nullptr || dnsServers.empty()) {
+        NETSTACK_LOGD("dnsServersArray is empty.");
+        return;
+    }
+    options.SetDnsServers(dnsServers);
 }
 } // namespace OHOS::NetStack::Http

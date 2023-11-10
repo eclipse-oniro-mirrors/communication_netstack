@@ -82,6 +82,10 @@ private:
 
     static bool SetOtherOption(CURL *curl, RequestContext *context);
 
+    static bool SetSSLCertOption(CURL *curl, RequestContext *context);
+
+    static bool SetDnsOption(CURL *curl, RequestContext *context);
+
     static size_t OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData);
 
     static size_t OnWritingMemoryHeader(const void *data, size_t size, size_t memBytes, void *userData);
@@ -117,6 +121,8 @@ private:
     static void OnDataReceive(napi_env env, napi_status status, void *data);
 
     static void OnDataProgress(napi_env env, napi_status status, void *data);
+
+    static void OnDataUploadProgress(napi_env env, napi_status status, void *data);
 
     static void OnDataEnd(napi_env env, napi_status status, void *data);
 

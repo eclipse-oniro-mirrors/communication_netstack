@@ -33,6 +33,7 @@ enum HttpProtocol {
     HTTP_NONE, // default choose by curl
     HTTP1_1,
     HTTP2,
+    HTTP3,
     HTTP_PROTOCOL_MAX,
 };
 
