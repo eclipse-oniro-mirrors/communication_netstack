@@ -45,7 +45,7 @@ const char *const HttpConstant::PARAM_KEY_PRIORITY = "priority";
 
 const char *const HttpConstant::PARAM_KEY_USING_HTTP_PROXY = "usingProxy";
 const char *const HttpConstant::PARAM_KEY_CA_PATH = "caPath";
-const char *const HttpConstant::PARAM_KEY_DOH_URL = "dnsOverHttp";
+const char *const HttpConstant::PARAM_KEY_DOH_URL = "dnsOverHttps";
 
 const char *const HttpConstant::HTTP_PROXY_KEY_HOST = "host";
 const char *const HttpConstant::HTTP_PROXY_KEY_PORT = "port";

@@ -38,11 +38,6 @@ Timer &TimerMap::RecieveTimer(const char *const type)
     }
 }
 
-std::map<const char *const, Timer> &TimerMap::GetMap()
-{
-    return timerMap_;
-}
-
 Timer::Timer() {}
 
 void Timer::Start()

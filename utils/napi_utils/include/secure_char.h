@@ -27,11 +27,9 @@ public:
     ~SecureChar();
     explicit SecureChar(const std::string &SecureChar);
     SecureChar(const uint8_t *SecureChar, size_t length);
-
     SecureChar(const SecureChar &SecureChar);
     SecureChar &operator=(const SecureChar &SecureChar);
 
-public:
     const char *Data() const;
     size_t Length() const;
 

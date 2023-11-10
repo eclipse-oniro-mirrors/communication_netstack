@@ -619,12 +619,11 @@ void RequestContext::CachePerformanceTimingItem(std::string key, double value)
     NETSTACK_LOGD("CachePerformanceTimingItem %{public}s : %{public}lf", key.c_str(), value);
 }
 
-void RequestContext::CacheNapiPerformanceTiming()
+void RequestContext::StopAndCacheNapiPerformanceTiming(const char *const key)
 {
-    std::map<const char *const, Timing::Timer> timingMap = GetTimerMap().GetMap();
-    for (const auto &pair : timingMap) {
-        CachePerformanceTimingItem(pair.first, pair.second.Elapsed());
-    }
+    Timing::Timer &timer = timerMap_.RecieveTimer(key);
+    timer.Stop();
+    CachePerformanceTimingItem(key, timer.Elapsed());
 }
 
 void RequestContext::SetPerformanceTimingToReslult(napi_value result)

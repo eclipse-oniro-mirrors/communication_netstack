@@ -37,7 +37,6 @@ private:
 class TimerMap {
 public:
     Timer& RecieveTimer(const char *const type);
-    std::map<const char *const, Timer>& GetMap();
 
 private:
     std::map<const char *const, Timer> timerMap_;

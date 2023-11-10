@@ -197,6 +197,35 @@ bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURL
     return true;
 }
 
+double HttpExec::GetTimingFromCurl(CURL *handle, CURLINFO info)
+{
+    time_t timing;
+    CURLcode result = curl_easy_getinfo(handle, info, &timing);
+    if (result != CURLE_OK) {
+        NETSTACK_LOGE("Failed to get timing: %{public}d, %{public}s", info, curl_easy_strerror(result));
+        return 0;
+    }
+    return Timing::TimeUtils::Microseconds2Milliseconds(timing);
+}
+
+void HttpExec::CacheCurlPerformanceTiming(CURL* handle, RequestContext* context)
+{
+    context->CachePerformanceTimingItem(
+        HttpConstant::RESPONSE_DNS_TIMING, HttpExec::GetTimingFromCurl(handle, CURLINFO_NAMELOOKUP_TIME_T));
+    context->CachePerformanceTimingItem(
+        HttpConstant::RESPONSE_TCP_TIMING, HttpExec::GetTimingFromCurl(handle, CURLINFO_CONNECT_TIME_T));
+    context->CachePerformanceTimingItem(
+        HttpConstant::RESPONSE_TLS_TIMING, HttpExec::GetTimingFromCurl(handle, CURLINFO_APPCONNECT_TIME_T));
+    context->CachePerformanceTimingItem(
+        HttpConstant::RESPONSE_FIRST_SEND_TIMING, HttpExec::GetTimingFromCurl(handle, CURLINFO_PRETRANSFER_TIME_T));
+    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_FIRST_RECEIVE_TIMING,
+        HttpExec::GetTimingFromCurl(handle, CURLINFO_STARTTRANSFER_TIME_T));
+    context->CachePerformanceTimingItem(
+        HttpConstant::RESPONSE_TOTAL_FINISH_TIMING, HttpExec::GetTimingFromCurl(handle, CURLINFO_TOTAL_TIME_T));
+    context->CachePerformanceTimingItem(
+        HttpConstant::RESPONSE_REDIRECT_TIMING, HttpExec::GetTimingFromCurl(handle, CURLINFO_REDIRECT_TIME_T));
+}
+
 #ifdef ENABLE_EVENT_HANDLER
 void HttpExec::HttpEventHandlerCallback(RequestContext *context)
 {
@@ -251,6 +280,7 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
 
     NETSTACK_LOGI("priority = %{public}d", context->options.GetPriority());
     context->SetExecOK(GetCurlDataFromHandle(handle, context, msg->msg, msg->data.result));
+    CacheCurlPerformanceTiming(handle, context);
     if (context->IsExecOK()) {
         CacheProxy proxy(context->options);
         proxy.WriteResponseToCache(context->response);
@@ -295,7 +325,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
     return true;
 }
 
-napi_value HttpExec::RequestCallback(RequestContext *context)
+napi_value HttpExec::BuildRequestCallback(RequestContext *context)
 {
     napi_value object = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), object) != napi_object) {
@@ -341,6 +371,14 @@ napi_value HttpExec::RequestCallback(RequestContext *context)
     NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
                                  static_cast<uint32_t>(HttpDataType::STRING));
     return object;
+}
+
+napi_value HttpExec::RequestCallback(RequestContext *context)
+{
+    napi_value result = HttpExec::BuildRequestCallback(context);
+    context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_TOTAL_TIMING);
+    context->SetPerformanceTimingToReslult(result);
+    return result;
 }
 
 napi_value HttpExec::RequestInStreamCallback(OHOS::NetStack::Http::RequestContext *context)
@@ -698,21 +736,26 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
 {
     auto context = static_cast<RequestContext *>(userData);
     if (context == nullptr) {
+        context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
         return 0;
     }
     if (context->GetManager()->IsEventDestroy()) {
+        context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
         return 0;
     }
     if (context->IsRequestInStream()) {
         context->SetTempData(data, size * memBytes);
         NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataReceive);
+        context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
         return size * memBytes;
     }
     if (context->response.GetResult().size() > MAX_LIMIT) {
         NETSTACK_LOGE("response data exceeds the maximum limit");
+        context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
         return 0;
     }
     context->response.AppendResult(data, size * memBytes);
+    context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
     return size * memBytes;
 }
 
@@ -720,13 +763,16 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
 {
     auto context = static_cast<RequestContext *>(userData);
     if (context == nullptr) {
+        context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
         return 0;
     }
     if (context->GetManager()->IsEventDestroy()) {
+        context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
         return 0;
     }
     if (context->response.GetResult().size() > MAX_LIMIT) {
         NETSTACK_LOGE("response data exceeds the maximum limit");
+        context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
         return 0;
     }
     context->response.AppendRawHeader(data, size * memBytes);
@@ -737,6 +783,7 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
             context->GetManager()->EmitByUv(ON_HEADERS_RECEIVE, context, CallbackTemplate<MakeResponseHeader>);
         }
     }
+    context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
     return size * memBytes;
 }
 

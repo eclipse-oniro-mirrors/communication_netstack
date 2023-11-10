@@ -94,6 +94,14 @@ public:
 
     void ParseClientCert(napi_value optionsValue);
 
+    Timing::TimerMap GetTimerMap();
+
+    void CachePerformanceTimingItem(std::string key, double value);
+
+    void StopAndCacheNapiPerformanceTiming(const char *const key);
+
+    void SetPerformanceTimingToReslult(napi_value result);
+
 private:
     bool usingCache_;
     bool requestInStream_;
@@ -131,14 +139,6 @@ private:
     void UrlAndOptions(napi_value urlValue, napi_value optionsValue);
 
     bool HandleMethodForGet(napi_value extraData);
-
-    Timing::TimerMap GetTimerMap();
-
-    void CachePerformanceTimingItem(std::string key, double value);
-
-    void CacheNapiPerformanceTiming();
-
-    void SetPerformanceTimingToReslult(napi_value result);
 };
 } // namespace OHOS::NetStack::Http
 
