@@ -648,7 +648,6 @@ bool HttpExec::SetSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext
         NETSTACK_LOGD("SetSSLCertOption param is empty.");
         return false;
     }
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLCERT, HttpConstant::PARAM_KEY_CLINENT_CERT, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLCERT, cert.c_str(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLKEY, key.c_str(), context);
     if (keyPasswd.Length() > 0) {
