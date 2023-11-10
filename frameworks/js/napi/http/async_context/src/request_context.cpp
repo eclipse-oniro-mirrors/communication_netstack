@@ -653,9 +653,11 @@ void RequestContext::ParseClientCert(napi_value optionsValue)
         return;
     }
     std::string cert = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_CERT);
+    std::string certType =
+        NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_CERT_TYPE);
     std::string key = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_KEY);
     Secure::SecureChar keyPasswd = Secure::SecureChar(
         NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_KEY_PASSWD));
-    options.SetClientCert(cert, key, keyPasswd);
+    options.SetClientCert(cert, certType, key, keyPasswd);
 }
 } // namespace OHOS::NetStack::Http

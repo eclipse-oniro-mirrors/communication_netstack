@@ -54,6 +54,7 @@ const char *const HttpConstant::HTTP_PROXY_KEY_EXCLUSION_LIST = "exclusionList";
 const char *const HttpConstant::PARAM_KEY_CLINENT_CERT = "clientCert";
 const char* const HttpConstant::HTTP_CLINENT_CERT = "certPath";
 const char* const HttpConstant::HTTP_CLINENT_KEY = "keyPath";
+const char* const HttpConstant::HTTP_CLINENT_CERT_TYPE = "certType";
 const char *const HttpConstant::HTTP_CLINENT_KEY_PASSWD = "keyPasswd";
 
 const char *const HttpConstant::HTTP_PROXY_EXCLUSIONS_SEPARATOR = ",";

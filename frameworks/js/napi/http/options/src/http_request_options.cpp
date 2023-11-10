@@ -185,16 +185,20 @@ void HttpRequestOptions::GetSpecifiedHttpProxy(std::string &host, int32_t &port,
     exclusionList = httpProxyExclusions_;
 }
 
-void HttpRequestOptions::SetClientCert(std::string &cert, std::string &key, Secure::SecureChar &keyPasswd)
+void HttpRequestOptions::SetClientCert(
+    std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd)
 {
     cert_ = cert;
+    certType_ = certType;
     key_ = key;
     keyPasswd_ = keyPasswd;
 }
 
-void HttpRequestOptions::GetClientCert(std::string &cert, std::string &key, Secure::SecureChar &keyPasswd)
+void HttpRequestOptions::GetClientCert(
+    std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd)
 {
     cert = cert_;
+    certType_ = certType;
     key = key_;
     keyPasswd = keyPasswd_;
 }

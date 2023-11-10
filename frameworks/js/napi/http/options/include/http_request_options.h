@@ -69,7 +69,7 @@ public:
 
     void SetRangeNumber(uint32_t resumeFromNumber, uint32_t resumeToNumber);
 
-    void SetClientCert(std::string &cert, std::string &key, Secure::SecureChar &keyPasswd);
+    void SetClientCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
 
     [[nodiscard]] const std::string &GetUrl() const;
 
@@ -107,7 +107,7 @@ public:
 
     [[nodiscard]] const std::vector<std::string> &GetDnsServers() const;
 
-    void GetClientCert(std::string &cert, std::string &key, Secure::SecureChar &keyPasswd);
+    void GetClientCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
 
 private:
     std::string url_;
@@ -149,6 +149,8 @@ private:
     int32_t resumeToNumber_;
 
     std::string cert_;
+
+    std::string certType_;
 
     std::string key_;
 
