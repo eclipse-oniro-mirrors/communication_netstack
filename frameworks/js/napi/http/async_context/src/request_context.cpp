@@ -22,6 +22,8 @@
 #include "napi_utils.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
+#include "secure_char.h"
+#include "timing.h"
 
 static constexpr const int PARAM_JUST_URL = 1;
 
@@ -67,6 +69,15 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
 RequestContext::RequestContext(napi_env env, EventManager *manager)
     : BaseContext(env, manager), usingCache_(true), requestInStream_(false), curlHeaderList_(nullptr)
 {
+    StartTiming();
+}
+
+void RequestContext::StartTiming()
+{
+    time_t startTime = Timing::TimeUtils::GetNowTimeMicroseconds();
+    timerMap_.RecieveTimer(HttpConstant::RESPONSE_HEADER_TIMING).Start(startTime);
+    timerMap_.RecieveTimer(HttpConstant::RESPONSE_BODY_TIMING).Start(startTime);
+    timerMap_.RecieveTimer(HttpConstant::RESPONSE_TOTAL_TIMING).Start(startTime);
 }
 
 void RequestContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -394,6 +405,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
 
     ParseNumberOptions(optionsValue);
     ParseUsingHttpProxy(optionsValue);
+    ParseClientCert(optionsValue);
 
     /* parse extra data here to recover header */
     if (!ParseExtraData(optionsValue)) {
@@ -594,5 +606,57 @@ void RequestContext::ParseDnsServers(napi_value optionsValue)
         return;
     }
     options.SetDnsServers(dnsServers);
+}
+
+Timing::TimerMap RequestContext::GetTimerMap()
+{
+    return timerMap_;
+}
+
+void RequestContext::CachePerformanceTimingItem(std::string key, double value)
+{
+    performanceTimingMap_.insert(std::pair<std::string, double>(key, value));
+    NETSTACK_LOGD("CachePerformanceTimingItem %{public}s : %{public}lf", key.c_str(), value);
+}
+
+void RequestContext::CacheNapiPerformanceTiming()
+{
+    std::map<const char *const, Timing::Timer> timingMap = GetTimerMap().GetMap();
+    for (const auto &pair : timingMap) {
+        CachePerformanceTimingItem(pair.first, pair.second.Elapsed());
+    }
+}
+
+void RequestContext::SetPerformanceTimingToReslult(napi_value result)
+{
+    if (performanceTimingMap_.empty()) {
+        NETSTACK_LOGD("Get performanceTiming data is empty.");
+        return;
+    }
+    napi_value performanceTimingValue;
+    napi_env env = GetEnv();
+    napi_create_object(env, &performanceTimingValue);
+    for (const auto& pair : performanceTimingMap_) {
+        NapiUtils::SetDoubleProperty(env, performanceTimingValue, pair.first, pair.second);
+    }
+    NapiUtils::SetNamedProperty(env, result, HttpConstant::RESPONSE_PERFORMANCE_TIMING, performanceTimingValue);
+}
+
+void RequestContext::ParseClientCert(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CLINENT_CERT)) {
+        return;
+    }
+    napi_value clientCertValue =
+        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CLINENT_CERT);
+    napi_valuetype type = NapiUtils::GetValueType(GetEnv(), clientCertValue);
+    if (type != napi_object || type == napi_undefined) {
+        return;
+    }
+    std::string cert = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_CERT);
+    std::string key = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_KEY);
+    Secure::SecureChar keyPasswd = Secure::SecureChar(
+        NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_KEY_PASSWD));
+    options.SetClientCert(cert, key, keyPasswd);
 }
 } // namespace OHOS::NetStack::Http

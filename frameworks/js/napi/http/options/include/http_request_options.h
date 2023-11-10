@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "constant.h"
+#include "secure_char.h"
 
 namespace OHOS::NetStack::Http {
 enum class HttpProtocol {
@@ -68,6 +69,8 @@ public:
 
     void SetRangeNumber(uint32_t resumeFromNumber, uint32_t resumeToNumber);
 
+    void SetClientCert(std::string &cert, std::string &key, Secure::SecureChar &keyPasswd);
+
     [[nodiscard]] const std::string &GetUrl() const;
 
     [[nodiscard]] const std::string &GetMethod() const;
@@ -103,6 +106,8 @@ public:
     [[nodiscard]] const std::string GetRangeString() const;
 
     [[nodiscard]] const std::vector<std::string> &GetDnsServers() const;
+
+    void GetClientCert(std::string &cert, std::string &key, Secure::SecureChar &keyPasswd);
 
 private:
     std::string url_;
@@ -142,6 +147,12 @@ private:
     int32_t resumeFromNumber_;
 
     int32_t resumeToNumber_;
+
+    std::string cert_;
+
+    std::string key_;
+
+    Secure::SecureChar keyPasswd_;
 };
 } // namespace OHOS::NetStack::Http
 

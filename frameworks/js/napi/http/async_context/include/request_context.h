@@ -23,6 +23,7 @@
 #include "base_context.h"
 #include "http_request_options.h"
 #include "http_response.h"
+#include "timing.h"
 
 namespace OHOS::NetStack::Http {
 struct LoadBytes {
@@ -44,6 +45,8 @@ public:
     RequestContext(napi_env env, EventManager *manager);
 
     ~RequestContext() override;
+
+    void StartTiming();
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
@@ -89,6 +92,8 @@ public:
 
     void PopTempData();
 
+    void ParseClientCert(napi_value optionsValue);
+
 private:
     bool usingCache_;
     bool requestInStream_;
@@ -100,6 +105,8 @@ private:
     std::queue<LoadBytes> dlBytes_;
     std::queue<LoadBytes> ulBytes_;
     struct curl_slist *curlHeaderList_;
+    Timing::TimerMap timerMap_;
+    std::map<std::string, double> performanceTimingMap_;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 
@@ -124,6 +131,14 @@ private:
     void UrlAndOptions(napi_value urlValue, napi_value optionsValue);
 
     bool HandleMethodForGet(napi_value extraData);
+
+    Timing::TimerMap GetTimerMap();
+
+    void CachePerformanceTimingItem(std::string key, double value);
+
+    void CacheNapiPerformanceTiming();
+
+    void SetPerformanceTimingToReslult(napi_value result);
 };
 } // namespace OHOS::NetStack::Http
 

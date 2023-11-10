@@ -38,6 +38,7 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "securec.h"
+#include "secure_char.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
@@ -254,7 +255,6 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         CacheProxy proxy(context->options);
         proxy.WriteResponseToCache(context->response);
     }
-
     if (context->GetManager() == nullptr) {
         NETSTACK_LOGE("can not find context manager");
         return;
@@ -600,6 +600,25 @@ bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *
     return true;
 }
 
+bool HttpExec::SetSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context)
+{
+    std::string cert;
+    std::string key;
+    Secure::SecureChar keyPasswd;
+    context->options.GetClientCert(cert, key, keyPasswd);
+    if (cert.empty() || key.empty()) {
+        NETSTACK_LOGD("SetSSLCertOption param is empty.");
+        return false;
+    }
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLCERT, HttpConstant::PARAM_KEY_CLINENT_CERT, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLCERT, cert.c_str(), context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLKEY, key.c_str(), context);
+    if (keyPasswd.Length() > 0) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_KEYPASSWD, keyPasswd.Data(), context);
+    }
+    return true;
+}
+
 bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader)
 {
     const std::string &method = context->options.GetMethod();
@@ -653,6 +672,7 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTP_VERSION, context->options.GetHttpVersion(), context);
     SetDnsOption(curl, context);
+    SetSSLCertOption(curl, context);
     if (!SetOtherOption(curl, context)) {
         return false;
     }

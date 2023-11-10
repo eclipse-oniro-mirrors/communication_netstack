@@ -19,6 +19,7 @@
 #include "netstack_log.h"
 
 #include "http_request_options.h"
+#include "secure_char.h"
 
 namespace OHOS::NetStack::Http {
 static constexpr const uint32_t MIN_PRIORITY = 1;
@@ -182,6 +183,20 @@ void HttpRequestOptions::GetSpecifiedHttpProxy(std::string &host, int32_t &port,
     host = httpProxyHost_;
     port = httpProxyPort_;
     exclusionList = httpProxyExclusions_;
+}
+
+void HttpRequestOptions::SetClientCert(std::string &cert, std::string &key, Secure::SecureChar &keyPasswd)
+{
+    cert_ = cert;
+    key_ = key;
+    keyPasswd_ = keyPasswd;
+}
+
+void HttpRequestOptions::GetClientCert(std::string &cert, std::string &key, Secure::SecureChar &keyPasswd)
+{
+    cert = cert_;
+    key = key_;
+    keyPasswd = keyPasswd_;
 }
 
 void HttpRequestOptions::SetCaPath(const std::string &path)
