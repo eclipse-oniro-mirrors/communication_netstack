@@ -712,6 +712,9 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTP_VERSION, context->options.GetHttpVersion(), context);
+    if (!context->options.GetDohUrl().empty()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DOH_URL, context->options.GetDohUrl().c_str(), context);
+    }
     SetDnsOption(curl, context);
     SetSSLCertOption(curl, context);
     if (!SetOtherOption(curl, context)) {
