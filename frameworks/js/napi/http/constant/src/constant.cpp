@@ -45,15 +45,16 @@ const char *const HttpConstant::PARAM_KEY_PRIORITY = "priority";
 
 const char *const HttpConstant::PARAM_KEY_USING_HTTP_PROXY = "usingProxy";
 const char *const HttpConstant::PARAM_KEY_CA_PATH = "caPath";
-const char *const HttpConstant::PARAM_KEY_DOH_URL = "dnsOverHttp";
+const char *const HttpConstant::PARAM_KEY_DOH_URL = "dnsOverHttps";
 
 const char *const HttpConstant::HTTP_PROXY_KEY_HOST = "host";
 const char *const HttpConstant::HTTP_PROXY_KEY_PORT = "port";
 const char *const HttpConstant::HTTP_PROXY_KEY_EXCLUSION_LIST = "exclusionList";
 
 const char *const HttpConstant::PARAM_KEY_CLINENT_CERT = "clientCert";
-const char* const HttpConstant::HTTP_CLINENT_CERT = "cert";
-const char* const HttpConstant::HTTP_CLINENT_KEY = "key";
+const char* const HttpConstant::HTTP_CLINENT_CERT = "certPath";
+const char* const HttpConstant::HTTP_CLINENT_KEY = "keyPath";
+const char* const HttpConstant::HTTP_CLINENT_CERT_TYPE = "certType";
 const char *const HttpConstant::HTTP_CLINENT_KEY_PASSWD = "keyPasswd";
 
 const char *const HttpConstant::HTTP_PROXY_EXCLUSIONS_SEPARATOR = ",";

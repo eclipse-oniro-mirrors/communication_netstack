@@ -61,6 +61,8 @@ int32_t GetInt32Property(napi_env env, napi_value object, const std::string &pro
 
 void SetInt32Property(napi_env env, napi_value object, const std::string &name, int32_t value);
 
+void SetDoubleProperty(napi_env env, napi_value object, const std::string &name, double value);
+
 /* String UTF8 */
 napi_value CreateStringUtf8(napi_env env, const std::string &str);
 

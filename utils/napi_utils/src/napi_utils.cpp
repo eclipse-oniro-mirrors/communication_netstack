@@ -209,6 +209,18 @@ void SetInt32Property(napi_env env, napi_value object, const std::string &name, 
     napi_set_named_property(env, object, name.c_str(), jsValue);
 }
 
+void SetDoubleProperty(napi_env env, napi_value object, const std::string &name, double value)
+{
+    napi_value jsValue;
+    if (napi_create_double(env, value, &jsValue) != napi_ok) {
+        return;
+    }
+    if (GetValueType(env, jsValue) != napi_number) {
+        return;
+    }
+    napi_set_named_property(env, object, name.c_str(), jsValue);
+}
+
 /* String UTF8 */
 napi_value CreateStringUtf8(napi_env env, const std::string &str)
 {

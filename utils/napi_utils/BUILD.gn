@@ -36,6 +36,8 @@ ohos_static_library("napi_utils") {
     "src/event_manager.cpp",
     "src/module_template.cpp",
     "src/napi_utils.cpp",
+    "src/secure_char.cpp",
+    "src/timing.cpp",
   ]
 
   part_name = "netstack"
@@ -62,6 +64,8 @@ ohos_static_library("napi_utils_static") {
     "src/event_manager.cpp",
     "src/module_template.cpp",
     "src/napi_utils.cpp",
+    "src/secure_char.cpp",
+    "src/timing.cpp",
   ]
 
   public_configs = [ ":napi_utils_public_config" ]

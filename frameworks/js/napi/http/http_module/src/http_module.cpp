@@ -217,7 +217,6 @@ napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_i
             if (!HttpExec::Initialize()) {
                 return false;
             }
-
             HttpExec::AsyncRunRequest(context);
             return context->IsExecOK();
         },

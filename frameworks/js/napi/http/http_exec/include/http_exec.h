@@ -55,6 +55,8 @@ public:
 
     static bool ExecRequest(RequestContext *context);
 
+    static napi_value BuildRequestCallback(RequestContext *context);
+
     static napi_value RequestCallback(RequestContext *context);
 
     static napi_value RequestInStreamCallback(RequestContext *context);
@@ -107,6 +109,10 @@ private:
     static void HandleCurlData(CURLMsg *msg);
 
     static bool GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURLMSG curlMsg, CURLcode result);
+
+    static double GetTimingFromCurl(CURL *handle, CURLINFO info);
+
+    static void CacheCurlPerformanceTiming(CURL *handle, RequestContext *context);
 
     static void RunThread();
 

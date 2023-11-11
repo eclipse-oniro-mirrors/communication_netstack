@@ -155,6 +155,7 @@ public:
 
     static const char *const PARAM_KEY_CLINENT_CERT;
     static const char *const HTTP_CLINENT_CERT;
+    static const char* const HTTP_CLINENT_CERT_TYPE;
     static const char *const HTTP_CLINENT_KEY;
     static const char *const HTTP_CLINENT_KEY_PASSWD;
 
