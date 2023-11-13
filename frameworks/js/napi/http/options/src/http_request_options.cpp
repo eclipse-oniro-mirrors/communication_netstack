@@ -36,7 +36,9 @@ HttpRequestOptions::HttpRequestOptions()
       dataType_(HttpDataType::NO_DATA_TYPE),
       priority_(MIN_PRIORITY),
       usingHttpProxyType_(UsingHttpProxyType::USE_DEFAULT),
-      httpProxyPort_(0)
+      httpProxyPort_(0),
+      resumeFromNumber_(0),
+      resumeToNumber_(0)
 {
 #ifndef WINDOWS_PLATFORM
     caPath_ = HttpConstant::HTTP_DEFAULT_CA_PATH;
