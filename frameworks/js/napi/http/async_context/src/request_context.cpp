@@ -582,7 +582,14 @@ void RequestContext::PopTempData()
 void RequestContext::ParseDnsServers(napi_value optionsValue)
 {
     napi_env env = GetEnv();
+    if (!NapiUtils::HasNamedProperty(env, optionsValue, HttpConstant::PARAM_KEY_DNS_SERVERS)) {
+        NETSTACK_LOGD("ParseDnsServers no data");
+        return;
+    }
     napi_value dnsServerValue = NapiUtils::GetNamedProperty(env, optionsValue, HttpConstant::PARAM_KEY_DNS_SERVERS);
+    if (NapiUtils::GetValueType(env, dnsServerValue) != napi_object) {
+        return;
+    }
     uint32_t dnsLength = NapiUtils::GetArrayLength(env, dnsServerValue);
     if (dnsLength <= 0) {
         return;
@@ -606,6 +613,7 @@ void RequestContext::ParseDnsServers(napi_value optionsValue)
         return;
     }
     options.SetDnsServers(dnsServers);
+    NETSTACK_LOGD("SetDnsServers success");
 }
 
 Timing::TimerMap RequestContext::GetTimerMap()
