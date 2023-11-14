@@ -22,6 +22,7 @@
 #include "base_context.h"
 #include "nocopyable.h"
 #include "libwebsockets.h"
+#include "secure_char.h" 
 
 namespace OHOS::NetStack::Websocket {
 class ConnectContext final : public BaseContext {
@@ -44,8 +45,24 @@ public:
 
     std::map<std::string, std::string> header;
 
+    std::string caPath_;
+
+    std::string clientCert_;
+
+    Secure::SecureChar clientKey_;
+
+    Secure::SecureChar keyPasswd_;    
+
 private:
     void ParseHeader(napi_value optionsValue);
+
+    void ParseCaPath(napi_value optionsValue);
+
+    void ParseClientCert(napi_value optionsValue);
+
+    void SetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd);
+
+    void GetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd);
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };

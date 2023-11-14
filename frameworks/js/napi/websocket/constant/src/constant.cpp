@@ -18,6 +18,16 @@
 namespace OHOS::NetStack::Websocket {
 const char *ContextKey::HEADER = "header";
 
+const char *ContextKey::CAPATH = "caPath";
+
+const char *ContextKey::PARAM_KEY_CLINENT_CERT = "clientCert";
+
+const char *ContextKey::WEBSCOKET_CLINENT_CERT = "certPath";
+
+const char *ContextKey::WEBSCOKET_CLINENT_KEY = "keyPath";
+
+const char *ContextKey::WEBSCOKET_CLINENT_PASSWD = "keyPasswd";
+
 const char *ContextKey::CODE = "code";
 
 const char *ContextKey::REASON = "reason";

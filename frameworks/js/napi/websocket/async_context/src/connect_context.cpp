@@ -65,12 +65,19 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
     }
 
     NETSTACK_LOGI("ConnectContext NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object");
-    ParseHeader(params[1]);
+    ParseHeader(params[1]);    
 
     if (paramsCount == FUNCTION_PARAM_THREE) {
         NETSTACK_LOGI("ConnectContext paramsCount == FUNCTION_PARAM_THREE");
         return SetParseOK(SetCallback(params[FUNCTION_PARAM_TWO]) == napi_ok);
     }
+    
+    NETSTACK_LOGI("ConnectContext NapiUtils::GetValueType(GetEnv(), params[1]) == napi_string");
+    ParseCaPath(params[1]);
+
+    NETSTACK_LOGI("ConnectContext NapiUtils::GetValueType(GetEnv(), params[1]) == napi_string for ClientCert");
+    ParseClientCert(params[1]);
+
     return SetParseOK(true);
 }
 
@@ -92,6 +99,49 @@ void ConnectContext::ParseHeader(napi_value optionsValue)
         }
     });
 }
+
+void ConnectContext::ParseCaPath(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::CAPATH)) {
+        return;
+    }
+    napi_value jsCaPath = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::CAPATH);
+    if (NapiUtils::GetValueType(GetEnv(), jsCaPath) != napi_string) {
+        return;
+    }
+    caPath_ = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCaPath,ContextKey::CAPATH);    
+}
+
+void ConnectContext::GetClientCert(
+    std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd)
+{
+    cert = clientCert_;
+    key = clientKey_;
+    keyPasswd = keyPasswd_;
+}
+
+void ConnectContext::SetClientCert(
+    std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd)
+{
+    clientCert_ = cert;
+    clientKey_ = key;
+    keyPasswd_ = keyPasswd;
+}
+
+void ConnectContext::ParseClientCert(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::PARAM_KEY_CLINENT_CERT)) {
+        return;
+    }
+    napi_value jsCert = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::PARAM_KEY_CLINENT_CERT); 
+
+    std::string cert = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::WEBSCOKET_CLINENT_CERT);
+    Secure::SecureChar key = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::WEBSCOKET_CLINENT_KEY));
+    Secure::SecureChar keyPasswd = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::WEBSCOKET_CLINENT_PASSWD));
+    SetClientCert(cert,key,keyPasswd);
+}
+
+
 
 bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
