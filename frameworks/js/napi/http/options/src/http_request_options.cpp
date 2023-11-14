@@ -198,7 +198,7 @@ void HttpRequestOptions::GetClientCert(
     std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd)
 {
     cert = cert_;
-    certType_ = certType;
+    certType = certType_;
     key = key_;
     keyPasswd = keyPasswd_;
 }
