@@ -156,15 +156,14 @@ bool RequestContext::CheckParamsType(napi_value *params, size_t paramsCount)
 
 void RequestContext::ParseNumberOptions(napi_value optionsValue)
 {
-    options.SetReadTimeout(NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_READ_TIMEOUT));
-    if (options.GetReadTimeout() == 0) {
-        options.SetReadTimeout(HttpConstant::DEFAULT_READ_TIMEOUT);
+    if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_READ_TIMEOUT)) {
+        options.SetReadTimeout(
+            NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_READ_TIMEOUT));
     }
 
-    options.SetConnectTimeout(
-        NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CONNECT_TIMEOUT));
-    if (options.GetConnectTimeout() == 0) {
-        options.SetConnectTimeout(HttpConstant::DEFAULT_CONNECT_TIMEOUT);
+    if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CONNECT_TIMEOUT)) {
+        options.SetConnectTimeout(
+            NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CONNECT_TIMEOUT));
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_CACHE)) {
