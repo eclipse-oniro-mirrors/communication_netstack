@@ -16,22 +16,27 @@
 #ifndef COMMUNICATIONNETSTACK_NET_SSL_TYPE_H
 #define COMMUNICATIONNETSTACK_NET_SSL_TYPE_H
 
+namespace OHOS {
+namespace NetStack {
+namespace Ssl {
 enum CertType {
-    /** PEM证书类型 */
+    /** PEM certificate type */
     CERT_TYPE_PEM = 0,
-    /** DER证书类型 */
+    /** DER certificate type */
     CERT_TYPE_DER = 1,
-    /** 错误证书类型 */
+    /** error certificate type */
     CERT_TYPE_MAX
 };
 
 struct CertBlob {
-    /** 证书类型 */
+    /** certificate type */
     CertType type;
-    /** 证书内容长度 */
+    /** certificate size */
     uint32_t size;
-    /** 证书内容 */
+    /** certificate data */
     uint8_t *data;
 };
-
+} // namespace Ssl
+} // namespace NetStack
+} // namespace OHOS
 #endif // COMMUNICATIONNETSTACK_NET_SSL_TYPE_H

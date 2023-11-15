@@ -19,6 +19,9 @@
 #include "net_ssl_type.h"
 #include "net_ssl_verify_cert.h"
 
+namespace OHOS {
+namespace NetStack {
+namespace Ssl {
 /**
  * Verifying Certificates with System Prefabricated Certificates
  * @param cert Certificates to be verified
@@ -33,5 +36,9 @@ uint32_t NetStackVerifyCertification(const CertBlob *cert);
  * @return Returns 0, verify the certificate successfully, otherwise it will fail
  */
 uint32_t NetStackVerifyCertification(const CertBlob *cert, const CertBlob *caCert);
+
+} // namespace Ssl
+} // namespace NetStack
+} // namespace OHOS
 
 #endif // COMMUNICATIONNETSTACK_NET_SSL_H

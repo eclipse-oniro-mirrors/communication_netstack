@@ -18,11 +18,13 @@
 #include "net_ssl.h"
 #include "netstack_log.h"
 
+namespace OHOS {
+namespace NetStack {
+namespace Ssl {
 uint32_t NetStackVerifyCertification(const CertBlob *cert)
 {
-    if (nullptr == cert) { // 指针判空
+    if (nullptr == cert) {
         NETSTACK_LOGE("input error:nullptr\n");
-        return X509_V_ERR_INVALID_CALL;
     }
 
     return VerifyCert(cert);
@@ -30,10 +32,12 @@ uint32_t NetStackVerifyCertification(const CertBlob *cert)
 
 uint32_t NetStackVerifyCertification(const CertBlob *cert, const CertBlob *caCert)
 {
-    if (nullptr == cert || nullptr == caCert) { // 指针判空
+    if (nullptr == cert || nullptr == caCert) {
         NETSTACK_LOGE("input error:nullptr\n");
-        return X509_V_ERR_INVALID_CALL;
     }
 
     return VerifyCert(cert, caCert);
 }
+} // namespace Ssl
+} // namespace NetStack
+} // namespace OHOS

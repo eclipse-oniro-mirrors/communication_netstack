@@ -18,14 +18,64 @@
 
 #include <fstream>
 #include <iostream>
+#include <set>
 
 #include <openssl/ssl.h>
 
 #include "net_ssl_type.h"
 
+namespace OHOS {
+namespace NetStack {
+namespace Ssl {
+class SslConstant final {
+public:
+    /* Ca Path */
+    static const char *const ENTERPRISECAPATH;
+    static const char *const SYSPRECAPATH;
+};
+
 enum VerifyResult { VERIFY_RESULT_UNKNOWN = -1, VERIFY_RESULT_FAIL = 0, VERIFY_RESULT_SUCCESS = 1 };
 
-void GetEnterpriseCaPath(char *enterpriseCaPath);
+enum SslErrorCode {
+    SSL_NONE_ERR = 0,
+    SSL_ERROR_CODE_BASE = 2305000,
+    SSL_X509_V_ERR_UNSPECIFIED = SSL_ERROR_CODE_BASE + X509_V_ERR_UNSPECIFIED,
+    SSL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT = SSL_ERROR_CODE_BASE + X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT,
+    SSL_X509_V_ERR_UNABLE_TO_GET_CRL = SSL_ERROR_CODE_BASE + X509_V_ERR_UNABLE_TO_GET_CRL,
+    SSL_X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE = SSL_ERROR_CODE_BASE + X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE,
+    SSL_X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE = SSL_ERROR_CODE_BASE + X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE,
+    SSL_X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY =
+        SSL_ERROR_CODE_BASE + X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY,
+    SSL_X509_V_ERR_CERT_SIGNATURE_FAILURE = SSL_ERROR_CODE_BASE + X509_V_ERR_CERT_SIGNATURE_FAILURE,
+    SSL_X509_V_ERR_CRL_SIGNATURE_FAILURE = SSL_ERROR_CODE_BASE + X509_V_ERR_CRL_SIGNATURE_FAILURE,
+    SSL_X509_V_ERR_CERT_NOT_YET_VALID = SSL_ERROR_CODE_BASE + X509_V_ERR_CERT_NOT_YET_VALID,
+    SSL_X509_V_ERR_CERT_HAS_EXPIRED = SSL_ERROR_CODE_BASE + X509_V_ERR_CERT_HAS_EXPIRED,
+    SSL_X509_V_ERR_CRL_NOT_YET_VALID = SSL_ERROR_CODE_BASE + X509_V_ERR_CRL_NOT_YET_VALID,
+    SSL_X509_V_ERR_CRL_HAS_EXPIRED = SSL_ERROR_CODE_BASE + X509_V_ERR_CRL_HAS_EXPIRED,
+    SSL_X509_V_ERR_CERT_REVOKED = SSL_ERROR_CODE_BASE + X509_V_ERR_CERT_REVOKED,
+    SSL_X509_V_ERR_INVALID_CA = SSL_ERROR_CODE_BASE + X509_V_ERR_INVALID_CA,
+    SSL_X509_V_ERR_CERT_UNTRUSTED = SSL_ERROR_CODE_BASE + X509_V_ERR_CERT_UNTRUSTED
+};
+
+static const std::multiset<uint32_t> SslErrorCodeSet{SSL_NONE_ERR,
+                                                     SSL_ERROR_CODE_BASE,
+                                                     SSL_X509_V_ERR_UNSPECIFIED,
+                                                     SSL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT,
+                                                     SSL_X509_V_ERR_UNABLE_TO_GET_CRL,
+                                                     SSL_X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE,
+                                                     SSL_X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE,
+                                                     SSL_X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY,
+                                                     SSL_X509_V_ERR_CERT_SIGNATURE_FAILURE,
+                                                     SSL_X509_V_ERR_CRL_SIGNATURE_FAILURE,
+                                                     SSL_X509_V_ERR_CERT_NOT_YET_VALID,
+                                                     SSL_X509_V_ERR_CERT_HAS_EXPIRED,
+                                                     SSL_X509_V_ERR_CRL_NOT_YET_VALID,
+                                                     SSL_X509_V_ERR_CRL_HAS_EXPIRED,
+                                                     SSL_X509_V_ERR_CERT_REVOKED,
+                                                     SSL_X509_V_ERR_INVALID_CA,
+                                                     SSL_X509_V_ERR_CERT_UNTRUSTED};
+
+char *GetUserInstalledCaPath();
 
 X509 *PemToX509(const uint8_t *pemCert, size_t pemSize);
 
@@ -39,6 +89,9 @@ uint32_t VerifyCert(const CertBlob *cert);
 
 uint32_t VerifyCert(const CertBlob *cert, const CertBlob *caCert);
 
-void FreeResources(X509 *certX509, X509 *caX509, X509_STORE *store, X509_STORE_CTX *ctx);
+void FreeResources(X509 *certX509, X509 *caX509, X509_STORE *store, X509_STORE_CTX *ctx, char *userInstalledCaPath);
+} // namespace Ssl
+} // namespace NetStack
+} // namespace OHOS
 
 #endif // COMMUNICATIONNETSTACK_VERIFY_CERT_H
