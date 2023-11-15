@@ -537,6 +537,10 @@ void CreateUvQueueWorkEnhanced(napi_env env, void *data, void (*handler)(napi_en
     uv_loop_s *loop = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_get_uv_event_loop(env, &loop));
 
+    if (loop == nullptr) {
+        return;
+    }
+
     class WorkData {
     public:
         WorkData() = delete;
