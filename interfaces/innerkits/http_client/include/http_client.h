@@ -37,10 +37,7 @@ public:
      * Gets the singleton instance of HttpSession.
      * @return The singleton instance of HttpSession.
      */
-    static HttpSession &GetInstance()
-    {
-        return instance_;
-    }
+    static HttpSession &GetInstance();
 
     /**
      * Creates an HTTP client task with the provided request.
@@ -110,7 +107,6 @@ private:
      */
     std::shared_ptr<HttpClientTask> GetTaskByCurlHandle(CURL *curlHandle);
 
-    static HttpSession instance_;
     static std::mutex curlMultiMutex_;
     static CURLM *curlMulti_;
     std::mutex taskMapMutex_;
