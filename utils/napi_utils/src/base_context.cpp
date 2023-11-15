@@ -36,6 +36,7 @@ BaseContext::BaseContext(napi_env env, EventManager *manager)
       needThrowException_(false),
       permissionDenied_(false)
 {
+    (void)memoryBuffer_;
 }
 
 BaseContext::~BaseContext()
