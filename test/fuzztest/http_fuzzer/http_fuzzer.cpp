@@ -14,10 +14,14 @@
  */
 
 #include <cstring>
+#include <map>
 #include <securec.h>
+#include <string>
+#include <vector>
 
 #include "http_request_options.h"
 #include "netstack_log.h"
+#include "secure_char.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -42,6 +46,13 @@ template <class T> T GetData()
     return object;
 }
 
+void SetGlobalFuzzData(const uint8_t *data, size_t size)
+{
+    g_baseFuzzData = data;
+    g_baseFuzzSize = size;
+    g_baseFuzzPos = 0;
+}
+
 std::string GetStringFromData(int strlen)
 {
     if (strlen < 1) {
@@ -62,16 +73,154 @@ void SetCaPathFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size < 1)) {
         return;
     }
-    g_baseFuzzData = data;
-    g_baseFuzzSize = size;
-    g_baseFuzzPos = 0;
-
-    HttpRequestOptions requestOptions;
+    SetGlobalFuzzData(data, size);
     std::string str = GetStringFromData(STR_LEN);
 
+    HttpRequestOptions requestOptions;
     requestOptions.SetCaPath(str);
 }
 
+void SetUrlFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    HttpRequestOptions requestOptions;
+    std::string str = GetStringFromData(STR_LEN);
+    requestOptions.SetUrl(str);
+}
+
+void SetMethodFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    HttpRequestOptions requestOptions;
+    std::string str = GetStringFromData(STR_LEN);
+    requestOptions.SetMethod(str);
+}
+
+void SetHeaderFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    HttpRequestOptions requestOptions;
+    std::string str = GetStringFromData(STR_LEN);
+    requestOptions.SetHeader(str, str);
+}
+
+void SetReadTimeoutFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    HttpRequestOptions requestOptions;
+    requestOptions.SetReadTimeout(size);
+}
+
+void SetConnectTimeoutFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    HttpRequestOptions requestOptions;
+    requestOptions.SetConnectTimeout(size);
+}
+
+void SetUsingProtocolFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    HttpRequestOptions requestOptions;
+}
+
+void SetHttpDataTypeFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    HttpRequestOptions requestOptions;
+    std::string str = GetStringFromData(STR_LEN);
+    requestOptions.SetRequestTime(str);
+}
+
+void SetUsingHttpProxyTypeFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    HttpRequestOptions requestOptions;
+    requestOptions.SetUsingHttpProxyType(UsingHttpProxyType::USE_SPECIFIED);
+}
+
+void SetSpecifiedHttpProxyFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    HttpRequestOptions requestOptions;
+    std::string str = GetStringFromData(STR_LEN);
+    requestOptions.SetSpecifiedHttpProxy(str, size, str);
+}
+
+void SetDnsServersFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    HttpRequestOptions requestOptions;
+    std::string str = GetStringFromData(STR_LEN);
+    std::vector<std::string> dnsServers = { GetStringFromData(STR_LEN), GetStringFromData(STR_LEN),
+        GetStringFromData(STR_LEN) };
+    requestOptions.SetDnsServers(dnsServers);
+}
+
+void SetDohUrlFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+
+    HttpRequestOptions requestOptions;
+    std::string str = GetStringFromData(STR_LEN);
+    requestOptions.SetDohUrl(str);
+}
+
+void SetRangeNumberFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    HttpRequestOptions requestOptions;
+    requestOptions.SetRangeNumber(size, size);
+}
+
+void SetClientCertFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+
+    HttpRequestOptions requestOptions;
+    std::string str = GetStringFromData(STR_LEN);
+    Secure::SecureChar pwd(str);
+    requestOptions.SetClientCert(str, str, str, pwd);
+}
 } // namespace Http
 } // namespace NetStack
 } // namespace OHOS
@@ -81,5 +230,18 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     OHOS::NetStack::Http::SetCaPathFuzzTest(data, size);
+    OHOS::NetStack::Http::SetUrlFuzzTest(data, size);
+    OHOS::NetStack::Http::SetMethodFuzzTest(data, size);
+    OHOS::NetStack::Http::SetHeaderFuzzTest(data, size);
+    OHOS::NetStack::Http::SetReadTimeoutFuzzTest(data, size);
+    OHOS::NetStack::Http::SetConnectTimeoutFuzzTest(data, size);
+    OHOS::NetStack::Http::SetUsingProtocolFuzzTest(data, size);
+    OHOS::NetStack::Http::SetHttpDataTypeFuzzTest(data, size);
+    OHOS::NetStack::Http::SetUsingHttpProxyTypeFuzzTest(data, size);
+    OHOS::NetStack::Http::SetSpecifiedHttpProxyFuzzTest(data, size);
+    OHOS::NetStack::Http::SetDnsServersFuzzTest(data, size);
+    OHOS::NetStack::Http::SetDohUrlFuzzTest(data, size);
+    OHOS::NetStack::Http::SetRangeNumberFuzzTest(data, size);
+    OHOS::NetStack::Http::SetClientCertFuzzTest(data, size);
     return 0;
 }
