@@ -32,7 +32,6 @@ std::mutex HttpSession::taskQueueMutex_;
 std::priority_queue<std::shared_ptr<HttpClientTask>, std::vector<std::shared_ptr<HttpClientTask>>,
                     HttpSession::CompareTasks>
     HttpSession::taskQueue_;
-HttpSession HttpSession::instance_;
 
 static constexpr int CURL_MAX_WAIT_MSECS = 10;
 static constexpr int CURL_TIMEOUT_MS = 50;
@@ -49,6 +48,12 @@ HttpSession::~HttpSession()
 {
     NETSTACK_LOGI("~HttpSession::enter");
     Deinit();
+}
+
+HttpSession &HttpSession::GetInstance()
+{
+    static HttpSession gInstance;
+    return gInstance;
 }
 
 void HttpSession::ExecRequest()
