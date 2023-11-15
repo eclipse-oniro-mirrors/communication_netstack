@@ -57,13 +57,6 @@ HWTEST_F(HttpClientTest, AddRequestInfoTest001, TestSize.Level1)
     EXPECT_EQ(task->GetStatus(), IDLE);
 }
 
-HWTEST_F(HttpClientTest, IsInitedTest001, TestSize.Level1)
-{
-    HttpSession req;
-
-    EXPECT_TRUE(req.IsInited());
-}
-
 HWTEST_F(HttpClientTest, InitTest001, TestSize.Level1)
 {
     HttpSession req;

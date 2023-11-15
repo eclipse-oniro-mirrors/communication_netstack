@@ -47,6 +47,7 @@ HttpSession::HttpSession()
 
 HttpSession::~HttpSession()
 {
+    NETSTACK_LOGI("~HttpSession::enter");
     Deinit();
 }
 
@@ -163,8 +164,10 @@ void HttpSession::RunThread()
 
 bool HttpSession::Init()
 {
+    std::lock_guard<std::mutex> guard(initMutex_);
+    NETSTACK_LOGI("HttpSession::Init enter");
     if (!initialized_) {
-        NETSTACK_LOGD("HttpSession::Init");
+        NETSTACK_LOGI("HttpSession::Init");
 
         std::lock_guard<std::mutex> lock(taskQueueMutex_);
         std::lock_guard<std::mutex> guard(curlMultiMutex_);
@@ -173,25 +176,19 @@ bool HttpSession::Init()
             NETSTACK_LOGE("Failed to initialize 'curl_multi'");
             return false;
         }
-
-        workThread_ = std::thread(RunThread);
-        runThread_ = true;
         initialized_ = true;
+        runThread_ = true;
+        workThread_ = std::thread(RunThread);
     }
 
     return true;
 }
 
-bool HttpSession::IsInited()
-{
-    return initialized_;
-}
-
 void HttpSession::Deinit()
 {
-    NETSTACK_LOGD("HttpSession::Deinit");
+    NETSTACK_LOGI("HttpSession::Deinit");
     if (!initialized_) {
-        NETSTACK_LOGD("HttpSession::Deinit not initialized");
+        NETSTACK_LOGE("HttpSession::Deinit not initialized");
         return;
     }
 
@@ -200,13 +197,15 @@ void HttpSession::Deinit()
     conditionVariable_.notify_all();
     lock.unlock();
     if (workThread_.joinable()) {
-        NETSTACK_LOGD("HttpSession::Deinit workThread_.join()");
+        NETSTACK_LOGI("HttpSession::Deinit workThread_.join()");
         workThread_.join();
     }
 
     std::lock_guard<std::mutex> guard(curlMultiMutex_);
+    curlTaskMap_.clear();
+    taskIdMap_.clear();
     if (curlMulti_ != nullptr) {
-        NETSTACK_LOGD("Deinit curl_multi_cleanup()");
+        NETSTACK_LOGI("Deinit curl_multi_cleanup()");
         curl_multi_cleanup(curlMulti_);
         curlMulti_ = nullptr;
     }
@@ -249,11 +248,7 @@ void HttpSession::StartTask(std::shared_ptr<HttpClientTask> ptr)
         return;
     }
     NETSTACK_LOGD("HttpSession::StartTask taskId = %{public}d", ptr->GetTaskId());
-
-    if (!IsInited()) {
-        Init();
-    }
-
+    Init();
     std::lock_guard<std::mutex> lock(taskQueueMutex_);
     std::lock_guard<std::mutex> guard(taskMapMutex_);
     ptr->SetStatus(TaskStatus::RUNNING);

@@ -75,12 +75,6 @@ private:
     bool Init();
 
     /**
-     * Checks if HttpSession is initialized.
-     * @return true if HttpSession is initialized, false otherwise.
-     */
-    bool IsInited();
-
-    /**
      * HttpSession initialization ended.
      */
     void Deinit();
@@ -120,6 +114,7 @@ private:
     static std::mutex curlMultiMutex_;
     static CURLM *curlMulti_;
     std::mutex taskMapMutex_;
+    std::mutex initMutex_;
     std::map<CURL *, std::shared_ptr<HttpClientTask>> curlTaskMap_;
     std::map<uint32_t, std::shared_ptr<HttpClientTask>> taskIdMap_;
     static std::condition_variable conditionVariable_;
