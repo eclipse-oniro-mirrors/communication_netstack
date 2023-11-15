@@ -653,6 +653,22 @@ bool HttpExec::SetSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext
     return true;
 }
 
+bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context)
+{
+#ifdef HAS_NETMANAGER_BASE
+    std::string pins;
+    auto hostname = CommonUtils::GetHostnameFromURL(context->options.GetUrl());
+    auto ret = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
+    if (ret != 0) {
+        return false;
+    }
+    if (!pins.empty()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str(), context);
+    }
+#endif
+    return true;
+}
+
 bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader)
 {
     const std::string &method = context->options.GetMethod();
@@ -710,6 +726,11 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     }
     SetDnsOption(curl, context);
     SetSSLCertOption(curl, context);
+
+    if (!SetServerSSLCertOption(curl, context)) {
+        return false;
+    }
+
     if (!SetOtherOption(curl, context)) {
         return false;
     }
