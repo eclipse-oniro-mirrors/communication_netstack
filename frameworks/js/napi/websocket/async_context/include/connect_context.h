@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -37,6 +37,10 @@ public:
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
+    void SetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd);
+
+    void GetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd);
+
     [[nodiscard]] int32_t GetErrorCode() const override;
 
     [[nodiscard]] std::string GetErrorMessage() const override;
@@ -58,11 +62,7 @@ private:
 
     void ParseCaPath(napi_value optionsValue);
 
-    void ParseClientCert(napi_value optionsValue);
-
-    void SetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd);
-
-    void GetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd);
+    void ParseClientCert(napi_value optionsValue);    
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };

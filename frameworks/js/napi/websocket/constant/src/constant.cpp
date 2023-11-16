@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,30 +15,31 @@
 
 #include "constant.h"
 
-namespace OHOS::NetStack::Websocket {
-const char *ContextKey::HEADER = "header";
+namespace OHOS::NetStack::Websocket
+{
+    const char *ContextKey::HEADER = "header";
 
-const char *ContextKey::CAPATH = "caPath";
+    const char *const ContextKey::CAPATH = "caPath";
+    
+    const char *const ContextKey::PARAM_KEY_CLINENT_CERT = "clientCert";
 
-const char *ContextKey::PARAM_KEY_CLINENT_CERT = "clientCert";
+    const char *const ContextKey::WEBSCOKET_CLINENT_CERT = "certPath";
 
-const char *ContextKey::WEBSCOKET_CLINENT_CERT = "certPath";
+    const char *const ContextKey::WEBSCOKET_CLINENT_KEY = "keyPath";
 
-const char *ContextKey::WEBSCOKET_CLINENT_KEY = "keyPath";
+    const char *const ContextKey::WEBSCOKET_CLINENT_PASSWD = "keyPasswd";
 
-const char *ContextKey::WEBSCOKET_CLINENT_PASSWD = "keyPasswd";
+    const char *ContextKey::CODE = "code";
 
-const char *ContextKey::CODE = "code";
+    const char *ContextKey::REASON = "reason";
 
-const char *ContextKey::REASON = "reason";
+    const char *EventName::EVENT_OPEN = "open";
 
-const char *EventName::EVENT_OPEN = "open";
+    const char *EventName::EVENT_MESSAGE = "message";
 
-const char *EventName::EVENT_MESSAGE = "message";
+    const char *EventName::EVENT_CLOSE = "close";
 
-const char *EventName::EVENT_CLOSE = "close";
+    const char *EventName::EVENT_ERROR = "error";
 
-const char *EventName::EVENT_ERROR = "error";
-
-const char *EventName::EVENT_DATA_END = "dataEnd";
+    const char *EventName::EVENT_DATA_END = "dataEnd";
 } // namespace OHOS::NetStack::Websocket

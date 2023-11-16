@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,183 +21,209 @@
 #include "napi_utils.h"
 #include "securec.h"
 
-namespace OHOS::NetStack::Websocket {
-ConnectContext::ConnectContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
-
-ConnectContext::~ConnectContext() = default;
-
-void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
+namespace OHOS::NetStack::Websocket
 {
-    if (!CheckParamsType(params, paramsCount)) {
-        NETSTACK_LOGE("ConnectContext Parse Failed");
-        if (paramsCount == FUNCTION_PARAM_ONE) {
-            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
-                SetCallback(params[0]);
+    ConnectContext::ConnectContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
+
+    ConnectContext::~ConnectContext() = default;
+
+    void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
+    {
+        if (!CheckParamsType(params, paramsCount))
+        {
+            NETSTACK_LOGE("ConnectContext Parse Failed");
+            if (paramsCount == FUNCTION_PARAM_ONE)
+            {
+                if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function)
+                {
+                    SetCallback(params[0]);
+                }
+                return;
+            }
+
+            if (paramsCount == FUNCTION_PARAM_TWO)
+            {
+                if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function)
+                {
+                    SetCallback(params[1]);
+                }
+                return;
+            }
+
+            if (paramsCount == FUNCTION_PARAM_THREE)
+            {
+                if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_TWO]) == napi_function)
+                {
+                    SetCallback(params[FUNCTION_PARAM_TWO]);
+                }
+                return;
             }
             return;
         }
 
-        if (paramsCount == FUNCTION_PARAM_TWO) {
-            if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
-                SetCallback(params[1]);
-            }
-            return;
+        url = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
+        if (paramsCount == FUNCTION_PARAM_ONE)
+        {
+            NETSTACK_LOGI("ConnectContext paramsCount == FUNCTION_PARAM_ONE");
+            return SetParseOK(true);
         }
 
-        if (paramsCount == FUNCTION_PARAM_THREE) {
-            if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_TWO]) == napi_function) {
-                SetCallback(params[FUNCTION_PARAM_TWO]);
-            }
-            return;
+        if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function)
+        {
+            NETSTACK_LOGI("ConnectContext NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function");
+            return SetParseOK(SetCallback(params[1]) == napi_ok);
         }
-        return;
-    }
 
-    url = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
-    if (paramsCount == FUNCTION_PARAM_ONE) {
-        NETSTACK_LOGI("ConnectContext paramsCount == FUNCTION_PARAM_ONE");
+        NETSTACK_LOGI("ConnectContext NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object");
+        ParseHeader(params[1]);
+
+        if (paramsCount == FUNCTION_PARAM_THREE)
+        {
+            NETSTACK_LOGI("ConnectContext paramsCount == FUNCTION_PARAM_THREE");
+            return SetParseOK(SetCallback(params[FUNCTION_PARAM_TWO]) == napi_ok);
+        }
+
+        ParseCaPath(params[1]);
+
+        ParseClientCert(params[1]);
+
         return SetParseOK(true);
     }
 
-    if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
-        NETSTACK_LOGI("ConnectContext NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function");
-        return SetParseOK(SetCallback(params[1]) == napi_ok);
-    }
-
-    NETSTACK_LOGI("ConnectContext NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object");
-    ParseHeader(params[1]);    
-
-    if (paramsCount == FUNCTION_PARAM_THREE) {
-        NETSTACK_LOGI("ConnectContext paramsCount == FUNCTION_PARAM_THREE");
-        return SetParseOK(SetCallback(params[FUNCTION_PARAM_TWO]) == napi_ok);
-    }
-    
-    NETSTACK_LOGI("ConnectContext NapiUtils::GetValueType(GetEnv(), params[1]) == napi_string");
-    ParseCaPath(params[1]);
-
-    NETSTACK_LOGI("ConnectContext NapiUtils::GetValueType(GetEnv(), params[1]) == napi_string for ClientCert");
-    ParseClientCert(params[1]);
-
-    return SetParseOK(true);
-}
-
-void ConnectContext::ParseHeader(napi_value optionsValue)
-{
-    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::HEADER)) {
-        return;
-    }
-    napi_value jsHeader = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::HEADER);
-    if (NapiUtils::GetValueType(GetEnv(), jsHeader) != napi_object) {
-        return;
-    }
-    auto names = NapiUtils::GetPropertyNames(GetEnv(), jsHeader);
-    std::for_each(names.begin(), names.end(), [jsHeader, this](const std::string &name) {
+    void ConnectContext::ParseHeader(napi_value optionsValue)
+    {
+        if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::HEADER))
+        {
+            return;
+        }
+        napi_value jsHeader = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::HEADER);
+        if (NapiUtils::GetValueType(GetEnv(), jsHeader) != napi_object)
+        {
+            return;
+        }
+        auto names = NapiUtils::GetPropertyNames(GetEnv(), jsHeader);
+        std::for_each(names.begin(), names.end(), [jsHeader, this](const std::string &name)
+                      {
         auto value = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsHeader, name);
         if (!value.empty()) {
             // header key ignores key but value not
             header[CommonUtils::ToLower(name)] = value;
+        } });
+    }
+
+    void ConnectContext::ParseCaPath(napi_value optionsValue)
+    {
+        if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::CAPATH))
+        {
+            return;
         }
-    });
-}
-
-void ConnectContext::ParseCaPath(napi_value optionsValue)
-{
-    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::CAPATH)) {
-        return;
-    }
-    napi_value jsCaPath = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::CAPATH);
-    if (NapiUtils::GetValueType(GetEnv(), jsCaPath) != napi_string) {
-        return;
-    }
-    caPath_ = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCaPath,ContextKey::CAPATH);    
-}
-
-void ConnectContext::GetClientCert(
-    std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd)
-{
-    cert = clientCert_;
-    key = clientKey_;
-    keyPasswd = keyPasswd_;
-}
-
-void ConnectContext::SetClientCert(
-    std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd)
-{
-    clientCert_ = cert;
-    clientKey_ = key;
-    keyPasswd_ = keyPasswd;
-}
-
-void ConnectContext::ParseClientCert(napi_value optionsValue)
-{
-    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::PARAM_KEY_CLINENT_CERT)) {
-        return;
-    }
-    napi_value jsCert = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::PARAM_KEY_CLINENT_CERT); 
-
-    std::string cert = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::WEBSCOKET_CLINENT_CERT);
-    Secure::SecureChar key = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::WEBSCOKET_CLINENT_KEY));
-    Secure::SecureChar keyPasswd = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::WEBSCOKET_CLINENT_PASSWD));
-    SetClientCert(cert,key,keyPasswd);
-}
-
-
-
-bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
-{
-    if (paramsCount == FUNCTION_PARAM_ONE) {
-        return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string;
+        napi_value jsCaPath = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::CAPATH);
+        if (NapiUtils::GetValueType(GetEnv(), jsCaPath) != napi_string)
+        {
+            return;
+        }
+        caPath_ = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCaPath, ContextKey::CAPATH);
     }
 
-    if (paramsCount == FUNCTION_PARAM_TWO) {
-        return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string &&
-               (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function ||
-                NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object);
+    void ConnectContext::GetClientCert(
+        std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd)
+    {
+        cert = clientCert_;
+        key = clientKey_;
+        keyPasswd = keyPasswd_;
     }
 
-    if (paramsCount == FUNCTION_PARAM_THREE) {
-        return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string &&
-               NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object &&
-               NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_TWO]) == napi_function;
+    void ConnectContext::SetClientCert(
+        std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd)
+    {
+        clientCert_ = cert;
+        clientKey_ = key;
+        keyPasswd_ = keyPasswd;
     }
 
-    return false;
-}
-
-int32_t ConnectContext::GetErrorCode() const
-{
-    if (BaseContext::IsPermissionDenied()) {
-        return PERMISSION_DENIED_CODE;
+    void ConnectContext::ParseClientCert(napi_value optionsValue)
+    {
+        if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::PARAM_KEY_CLINENT_CERT))
+        {
+            return;
+        }
+        napi_value jsCert = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::PARAM_KEY_CLINENT_CERT);
+        napi_valuetype type = NapiUtils::GetValueType(GetEnv(), jsCert);
+        if (type != napi_object || type == napi_undefined)
+        {
+            return;
+        }
+        std::string cert = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::WEBSCOKET_CLINENT_CERT);
+        Secure::SecureChar key = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::WEBSCOKET_CLINENT_KEY));
+        Secure::SecureChar keyPasswd = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::WEBSCOKET_CLINENT_PASSWD));
+        SetClientCert(cert, key, keyPasswd);
     }
 
-    auto err = BaseContext::GetErrorCode();
-    if (err == PARSE_ERROR_CODE) {
-        return PARSE_ERROR_CODE;
-    }
-    if (WEBSOCKET_ERR_MAP.find(err) != WEBSOCKET_ERR_MAP.end()) {
-        return err;
-    }
-    return WEBSOCKET_UNKNOWN_OTHER_ERROR;
-}
+    bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
+    {
+        if (paramsCount == FUNCTION_PARAM_ONE)
+        {
+            return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string;
+        }
 
-std::string ConnectContext::GetErrorMessage() const
-{
-    if (BaseContext::IsPermissionDenied()) {
-        return PERMISSION_DENIED_MSG;
+        if (paramsCount == FUNCTION_PARAM_TWO)
+        {
+            return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string &&
+                   (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function ||
+                    NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object);
+        }
+
+        if (paramsCount == FUNCTION_PARAM_THREE)
+        {
+            return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string &&
+                   NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object &&
+                   NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_TWO]) == napi_function;
+        }
+
+        return false;
     }
 
-    auto err = BaseContext::GetErrorCode();
-    if (err == PARSE_ERROR_CODE) {
-        return PARSE_ERROR_MSG;
+    int32_t ConnectContext::GetErrorCode() const
+    {
+        if (BaseContext::IsPermissionDenied())
+        {
+            return PERMISSION_DENIED_CODE;
+        }
+
+        auto err = BaseContext::GetErrorCode();
+        if (err == PARSE_ERROR_CODE)
+        {
+            return PARSE_ERROR_CODE;
+        }
+        if (WEBSOCKET_ERR_MAP.find(err) != WEBSOCKET_ERR_MAP.end())
+        {
+            return err;
+        }
+        return WEBSOCKET_UNKNOWN_OTHER_ERROR;
     }
-    auto it = WEBSOCKET_ERR_MAP.find(err);
-    if (it != WEBSOCKET_ERR_MAP.end()) {
-        return it->second;
+
+    std::string ConnectContext::GetErrorMessage() const
+    {
+        if (BaseContext::IsPermissionDenied())
+        {
+            return PERMISSION_DENIED_MSG;
+        }
+
+        auto err = BaseContext::GetErrorCode();
+        if (err == PARSE_ERROR_CODE)
+        {
+            return PARSE_ERROR_MSG;
+        }
+        auto it = WEBSOCKET_ERR_MAP.find(err);
+        if (it != WEBSOCKET_ERR_MAP.end())
+        {
+            return it->second;
+        }
+        it = WEBSOCKET_ERR_MAP.find(WEBSOCKET_UNKNOWN_OTHER_ERROR);
+        if (it != WEBSOCKET_ERR_MAP.end())
+        {
+            return it->second;
+        }
+        return {};
     }
-    it = WEBSOCKET_ERR_MAP.find(WEBSOCKET_UNKNOWN_OTHER_ERROR);
-    if (it != WEBSOCKET_ERR_MAP.end()) {
-        return it->second;
-    }
-    return {};
-}
 } // namespace OHOS::NetStack::Websocket
