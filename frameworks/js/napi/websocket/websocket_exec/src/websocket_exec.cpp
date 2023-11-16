@@ -445,6 +445,10 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
     if ((userData->closeReason).empty()) {
         userData->Close(userData->closeStatus, LINK_DOWN);
     }
+    if (userData->closeStatus == LWS_CLOSE_STATUS_NORMAL) {
+        NETSTACK_LOGE("The link is down, onError");
+        OnError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE);
+    }
     OnClose(reinterpret_cast<EventManager *>(user), userData->closeStatus, userData->closeReason);
     return HttpDummy(wsi, reason, user, in, len);
 }
