@@ -44,6 +44,10 @@ napi_value CreateUint32(napi_env env, uint32_t code);
 
 napi_value CreateUint64(napi_env env, uint64_t code);
 
+int64_t GetInt64FromValue(napi_env env, napi_value value);
+
+int64_t GetInt64Property(napi_env env, napi_value object, const std::string &propertyName);
+
 uint32_t GetUint32FromValue(napi_env env, napi_value value);
 
 uint32_t GetUint32Property(napi_env env, napi_value object, const std::string &propertyName);

@@ -25,8 +25,8 @@ namespace OHOS::NetStack::Http {
 static constexpr const uint32_t MIN_PRIORITY = 1;
 static constexpr const uint32_t MAX_PRIORITY = 1000;
 
-static constexpr const uint32_t MIN_RESUM_NUMBER = 1;
-static constexpr const uint32_t MAX_RESUM_NUMBER = 536870912;
+static constexpr const int64_t MIN_RESUM_NUMBER = 1;
+static constexpr const int64_t MAX_RESUM_NUMBER = 4294967296;
 
 HttpRequestOptions::HttpRequestOptions()
     : method_(HttpConstant::HTTP_METHOD_GET),
@@ -232,7 +232,7 @@ const std::string &HttpRequestOptions::GetDohUrl() const
     return dohUrl_;
 }
 
-void HttpRequestOptions::SetRangeNumber(uint32_t resumeFromNumber, uint32_t resumeToNumber)
+void HttpRequestOptions::SetRangeNumber(int64_t resumeFromNumber, int64_t resumeToNumber)
 {
     if (resumeFromNumber >= MIN_RESUM_NUMBER && resumeFromNumber <= MAX_RESUM_NUMBER) {
         resumeFromNumber_ = resumeFromNumber;
