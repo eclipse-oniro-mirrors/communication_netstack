@@ -388,8 +388,8 @@ void RequestContext::ParseDohUrl(napi_value optionsValue)
 void RequestContext::ParseResumeFromToNumber(napi_value optionsValue)
 {
     napi_env env = GetEnv();
-    uint32_t from = NapiUtils::GetUint32Property(env, optionsValue, HttpConstant::PARAM_KEY_RESUME_FROM);
-    uint32_t to = NapiUtils::GetUint32Property(env, optionsValue, HttpConstant::PARAM_KEY_RESUME_TO);
+    int64_t from = NapiUtils::GetInt64Property(env, optionsValue, HttpConstant::PARAM_KEY_RESUME_FROM);
+    int64_t to = NapiUtils::GetInt64Property(env, optionsValue, HttpConstant::PARAM_KEY_RESUME_TO);
     options.SetRangeNumber(from, to);
 }
 

@@ -67,7 +67,7 @@ public:
 
     void SetDohUrl(const std::string &SetDohUrl);
 
-    void SetRangeNumber(uint32_t resumeFromNumber, uint32_t resumeToNumber);
+    void SetRangeNumber(int64_t resumeFromNumber, int64_t resumeToNumber);
 
     void SetClientCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
 
@@ -144,9 +144,9 @@ private:
 
     std::vector<std::string> dnsServers_;
 
-    int32_t resumeFromNumber_;
+    int64_t resumeFromNumber_;
 
-    int32_t resumeToNumber_;
+    int64_t resumeToNumber_;
 
     std::string cert_;
 

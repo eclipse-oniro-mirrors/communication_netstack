@@ -129,6 +129,25 @@ napi_value CreateUint64(napi_env env, uint64_t code)
     return value;
 }
 
+int64_t GetInt64FromValue(napi_env env, napi_value value)
+{
+    if (GetValueType(env, value) != napi_number) {
+        return 0;
+    }
+    int64_t ret = 0;
+    NAPI_CALL_BASE(env, napi_get_value_int64(env, value, &ret), 0);
+    return ret;
+}
+
+int64_t GetInt64Property(napi_env env, napi_value object, const std::string &propertyName)
+{
+    if (!HasNamedProperty(env, object, propertyName)) {
+        return 0;
+    }
+    napi_value value = GetNamedProperty(env, object, propertyName);
+    return GetInt64FromValue(env, value);
+}
+
 uint32_t GetUint32FromValue(napi_env env, napi_value value)
 {
     if (GetValueType(env, value) != napi_number) {
