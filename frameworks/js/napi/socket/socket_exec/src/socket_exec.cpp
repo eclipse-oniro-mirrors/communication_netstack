@@ -62,6 +62,8 @@ static constexpr const int MAX_CLIENTS = 1024;
 
 static constexpr const int ERRNO_BAD_FD = 9;
 
+static constexpr const int TEMP_WAIT_REGISTER_MESSAGE_MS = 100;
+
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
 static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "TCPServerAcceptRecvData";
@@ -1764,7 +1766,7 @@ static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, c
     }
 
     auto connectFD = g_clientFDs[clientId]; // std::lock_guard<std::mutex> lock(g_mutex);]
-
+    std::this_thread::sleep_for(std::chrono::milliseconds(TEMP_WAIT_REGISTER_MESSAGE_MS));
     while (true) {
         if (memset_s(buffer, sizeof(buffer), 0, sizeof(buffer)) != EOK) {
             NETSTACK_LOGE("memset_s failed!");

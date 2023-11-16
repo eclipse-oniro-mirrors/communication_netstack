@@ -1213,6 +1213,7 @@ void TLSSocketServer::RemoveConnect(int socketFd)
 
         for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end();) {
             if (it->second->GetSocketFd() == socketFd) {
+                ptrConnection = it->second;
                 break;
             } else {
                 ++it;
