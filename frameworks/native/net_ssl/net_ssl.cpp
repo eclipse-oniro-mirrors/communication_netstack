@@ -23,7 +23,7 @@ namespace NetStack {
 namespace Ssl {
 uint32_t NetStackVerifyCertification(const CertBlob *cert)
 {
-    if (nullptr == cert) {
+    if (cert == nullptr) {
         NETSTACK_LOGE("input error:nullptr\n");
     }
 
@@ -32,7 +32,7 @@ uint32_t NetStackVerifyCertification(const CertBlob *cert)
 
 uint32_t NetStackVerifyCertification(const CertBlob *cert, const CertBlob *caCert)
 {
-    if (nullptr == cert || nullptr == caCert) {
+    if (cert == nullptr || caCert == nullptr) {
         NETSTACK_LOGE("input error:nullptr\n");
     }
 

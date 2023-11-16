@@ -30,7 +30,6 @@ namespace Ssl {
 class SslConstant final {
 public:
     /* Ca Path */
-    static const char *const ENTERPRISECAPATH;
     static const char *const SYSPRECAPATH;
 };
 
@@ -75,7 +74,7 @@ static const std::multiset<uint32_t> SslErrorCodeSet{SSL_NONE_ERR,
                                                      SSL_X509_V_ERR_INVALID_CA,
                                                      SSL_X509_V_ERR_CERT_UNTRUSTED};
 
-char *GetUserInstalledCaPath();
+std::string GetUserInstalledCaPath();
 
 X509 *PemToX509(const uint8_t *pemCert, size_t pemSize);
 
@@ -89,7 +88,7 @@ uint32_t VerifyCert(const CertBlob *cert);
 
 uint32_t VerifyCert(const CertBlob *cert, const CertBlob *caCert);
 
-void FreeResources(X509 *certX509, X509 *caX509, X509_STORE *store, X509_STORE_CTX *ctx, char *userInstalledCaPath);
+void FreeResources(X509 *certX509, X509 *caX509, X509_STORE *store, X509_STORE_CTX *ctx);
 } // namespace Ssl
 } // namespace NetStack
 } // namespace OHOS

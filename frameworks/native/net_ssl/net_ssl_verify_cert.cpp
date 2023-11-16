@@ -25,23 +25,16 @@ namespace OHOS {
 namespace NetStack {
 namespace Ssl {
 
-const char *const SslConstant::ENTERPRISECAPATH = "/user/0/cacerts";
 const char *const SslConstant::SYSPRECAPATH = "/etc/security/certificates";
 
-char *GetUserInstalledCaPath()
+std::string GetUserInstalledCaPath()
 {
-    constexpr int32_t BUFFER_SIZE = 1024;
-    char *userInstalledCaPath = new char[BUFFER_SIZE]();
-    strcpy(userInstalledCaPath, "/user/");
-    constexpr int32_t UID_TRANSFORM_DIVISOR = 200000;
+    std::string userInstalledCaPath("/user/");
+    int32_t uidTransformDivisor = 200000;
     int32_t uid = OHOS::IPCSkeleton::GetCallingUid();
     NETSTACK_LOGD("uid: %{public}d\n", uid);
-    uid /= UID_TRANSFORM_DIVISOR;
-    strncat(userInstalledCaPath, std::to_string(uid).c_str(), sizeof(std::to_string(uid)));
-    char tail[10] = "/cacerts";
-    strncat(userInstalledCaPath, tail, strlen(tail));
-    NETSTACK_LOGD("userInstalledCaPath: %{public}s\n", userInstalledCaPath);
-    return userInstalledCaPath;
+    uid /= uidTransformDivisor;
+    return userInstalledCaPath.append(std::to_string(uid).c_str()).append("/cacerts");
 }
 
 X509 *PemToX509(const uint8_t *pemCert, size_t pemSize)
@@ -126,7 +119,6 @@ uint32_t VerifyCert(const CertBlob *cert)
     X509 *certX509 = nullptr;
     X509_STORE *store = nullptr;
     X509_STORE_CTX *ctx = nullptr;
-    char *userInstalledCaPath = nullptr;
     do {
         certX509 = CertBlobToX509(cert);
         if (certX509 == nullptr) {
@@ -137,10 +129,9 @@ uint32_t VerifyCert(const CertBlob *cert)
         if (store == nullptr) {
             continue;
         }
-        userInstalledCaPath = GetUserInstalledCaPath();
-        if (X509_STORE_load_locations(store, nullptr, SslConstant::ENTERPRISECAPATH) != VERIFY_RESULT_SUCCESS &&
-            X509_STORE_load_locations(store, nullptr, SslConstant::SYSPRECAPATH) != VERIFY_RESULT_SUCCESS &&
-            X509_STORE_load_locations(store, nullptr, userInstalledCaPath) != VERIFY_RESULT_SUCCESS) {
+        std::string userInstalledCaPath = GetUserInstalledCaPath();
+        if (X509_STORE_load_locations(store, nullptr, SslConstant::SYSPRECAPATH) != VERIFY_RESULT_SUCCESS &&
+            X509_STORE_load_locations(store, nullptr, userInstalledCaPath.c_str()) != VERIFY_RESULT_SUCCESS) {
             NETSTACK_LOGE("load store failed\n");
             continue;
         }
@@ -150,23 +141,25 @@ uint32_t VerifyCert(const CertBlob *cert)
         }
         X509_STORE_CTX_init(ctx, store, certX509, nullptr);
         verifyResult = X509_verify_cert(ctx);
-        if (verifyResult != X509_V_OK) {
+        if (verifyResult != VERIFY_RESULT_SUCCESS) {
             verifyResult = static_cast<uint32_t>(X509_STORE_CTX_get_error(ctx) + SSL_ERROR_CODE_BASE);
             ProcessResult(verifyResult);
-            NETSTACK_LOGE("failed to verify certificate: %s (%d)\n",
+            NETSTACK_LOGE("failed to verify certificate: %{public}s (%{public}d)\n",
                           X509_verify_cert_error_string(X509_STORE_CTX_get_error(ctx)), verifyResult);
             break;
+        } else {
+            verifyResult = X509_V_OK;
         }
         NETSTACK_LOGI("certificate validation succeeded.\n");
     } while (false);
 
-    FreeResources(certX509, nullptr, store, ctx, userInstalledCaPath);
+    FreeResources(certX509, nullptr, store, ctx);
     return verifyResult;
 }
 
 uint32_t VerifyCert(const CertBlob *cert, const CertBlob *caCert)
 {
-    uint32_t verifyResult = SSL_X509_V_ERR_UNSPECIFIED;
+    uint32_t verifyResult = VERIFY_RESULT_UNKNOWN;
     X509 *certX509 = nullptr;
     X509 *caX509 = nullptr;
     X509_STORE *store = nullptr;
@@ -196,21 +189,23 @@ uint32_t VerifyCert(const CertBlob *cert, const CertBlob *caCert)
         }
         X509_STORE_CTX_init(ctx, store, certX509, nullptr);
         verifyResult = X509_verify_cert(ctx);
-        if (verifyResult != X509_V_OK) {
+        if (verifyResult != VERIFY_RESULT_SUCCESS) {
             verifyResult = static_cast<uint32_t>(X509_STORE_CTX_get_error(ctx) + SSL_ERROR_CODE_BASE);
             ProcessResult(verifyResult);
-            NETSTACK_LOGE("failed to verify certificate: %s (%d)\n",
+            NETSTACK_LOGE("failed to verify certificate: %{public}s (%{public}d)\n",
                           X509_verify_cert_error_string(X509_STORE_CTX_get_error(ctx)), verifyResult);
             break;
+        } else {
+            verifyResult = X509_V_OK;
         }
         NETSTACK_LOGI("certificate validation succeeded.\n");
     } while (false);
 
-    FreeResources(certX509, caX509, store, ctx, nullptr);
+    FreeResources(certX509, caX509, store, ctx);
     return verifyResult;
 }
 
-void FreeResources(X509 *certX509, X509 *caX509, X509_STORE *store, X509_STORE_CTX *ctx, char *userInstalledCaPath)
+void FreeResources(X509 *certX509, X509 *caX509, X509_STORE *store, X509_STORE_CTX *ctx)
 {
     if (certX509 != nullptr) {
         X509_free(certX509);
@@ -227,10 +222,6 @@ void FreeResources(X509 *certX509, X509 *caX509, X509_STORE *store, X509_STORE_C
     if (ctx != nullptr) {
         X509_STORE_CTX_free(ctx);
         ctx = nullptr;
-    }
-    if (userInstalledCaPath != nullptr) {
-        delete[] userInstalledCaPath;
-        userInstalledCaPath = nullptr;
     }
 }
 } // namespace Ssl
