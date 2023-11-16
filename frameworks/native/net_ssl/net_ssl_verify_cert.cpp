@@ -58,7 +58,7 @@ X509 *PemToX509(const uint8_t *pemCert, size_t pemSize)
     return x509;
 }
 
-X509 *DerToX509(const unsigned char *derCert, size_t derSize)
+X509 *DerToX509(const uint8_t *derCert, size_t derSize)
 {
     BIO *bio = BIO_new_mem_buf(derCert, derSize);
     if (bio == nullptr) {
