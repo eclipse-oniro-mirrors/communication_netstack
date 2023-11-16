@@ -62,7 +62,7 @@ private:
 
     void ParseCaPath(napi_value optionsValue);
 
-    void ParseClientCert(napi_value optionsValue);    
+    void ParseClientCert(napi_value optionsValue);
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };

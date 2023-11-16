@@ -19,79 +19,74 @@
 #include <map>
 #include <string>
 
-namespace OHOS::NetStack::Websocket
-{
-    enum
-    {
-        FUNCTION_PARAM_ZERO = 0,
-        FUNCTION_PARAM_ONE = 1,
-        FUNCTION_PARAM_TWO = 2,
-        FUNCTION_PARAM_THREE = 3,
-    };
+namespace OHOS::NetStack::Websocket {
+enum {
+    FUNCTION_PARAM_ZERO = 0,
+    FUNCTION_PARAM_ONE = 1,
+    FUNCTION_PARAM_TWO = 2,
+    FUNCTION_PARAM_THREE = 3,
+};
 
-    enum WebsocketErrorCode
-    {
-        WEBSOCKET_CONNECT_FAILED = -1,
-        WEBSOCKET_ERROR_CODE_BASE = 2302000,
-        WEBSOCKET_UNKNOWN_OTHER_ERROR = 2302999
-    };
+enum WebsocketErrorCode {
+    WEBSOCKET_CONNECT_FAILED = -1,
+    WEBSOCKET_ERROR_CODE_BASE = 2302000,
+    WEBSOCKET_UNKNOWN_OTHER_ERROR = 2302999
+};
 
-    static const std::map<int32_t, std::string> WEBSOCKET_ERR_MAP = {
-        {WEBSOCKET_CONNECT_FAILED, "Websocket connect failed"},
-        {WEBSOCKET_UNKNOWN_OTHER_ERROR, "Websocket Unknown Other Error"}};
+static const std::map<int32_t, std::string> WEBSOCKET_ERR_MAP = {
+    {WEBSOCKET_CONNECT_FAILED, "Websocket connect failed"},
+    {WEBSOCKET_UNKNOWN_OTHER_ERROR, "Websocket Unknown Other Error"}
+};
 
-    enum
-    {
-        CLOSE_REASON_NORMAL_CLOSE [[maybe_unused]] = 1000,
-        CLOSE_REASON_SERVER_CLOSED [[maybe_unused]] = 1001,
-        CLOSE_REASON_PROTOCOL_ERROR [[maybe_unused]] = 1002,
-        CLOSE_REASON_UNSUPPORT_DATA_TYPE [[maybe_unused]] = 1003,
-        CLOSE_REASON_RESERVED1 [[maybe_unused]],
-        CLOSE_REASON_RESERVED2 [[maybe_unused]],
-        CLOSE_REASON_RESERVED3 [[maybe_unused]],
-        CLOSE_REASON_RESERVED4 [[maybe_unused]],
-        CLOSE_REASON_RESERVED5 [[maybe_unused]],
-        CLOSE_REASON_RESERVED6 [[maybe_unused]],
-        CLOSE_REASON_RESERVED7 [[maybe_unused]],
-        CLOSE_REASON_RESERVED8 [[maybe_unused]],
-        CLOSE_REASON_RESERVED9 [[maybe_unused]],
-        CLOSE_REASON_RESERVED10 [[maybe_unused]],
-        CLOSE_REASON_RESERVED11 [[maybe_unused]],
-        CLOSE_REASON_RESERVED12 [[maybe_unused]],
-    };
+enum {
+    CLOSE_REASON_NORMAL_CLOSE [[maybe_unused]] = 1000,
+    CLOSE_REASON_SERVER_CLOSED [[maybe_unused]] = 1001,
+    CLOSE_REASON_PROTOCOL_ERROR [[maybe_unused]] = 1002,
+    CLOSE_REASON_UNSUPPORT_DATA_TYPE [[maybe_unused]] = 1003,
+    CLOSE_REASON_RESERVED1 [[maybe_unused]],
+    CLOSE_REASON_RESERVED2 [[maybe_unused]],
+    CLOSE_REASON_RESERVED3 [[maybe_unused]],
+    CLOSE_REASON_RESERVED4 [[maybe_unused]],
+    CLOSE_REASON_RESERVED5 [[maybe_unused]],
+    CLOSE_REASON_RESERVED6 [[maybe_unused]],
+    CLOSE_REASON_RESERVED7 [[maybe_unused]],
+    CLOSE_REASON_RESERVED8 [[maybe_unused]],
+    CLOSE_REASON_RESERVED9 [[maybe_unused]],
+    CLOSE_REASON_RESERVED10 [[maybe_unused]],
+    CLOSE_REASON_RESERVED11 [[maybe_unused]],
+    CLOSE_REASON_RESERVED12 [[maybe_unused]],
+};
 
-    class ContextKey final
-    {
-    public:
-        static const char *HEADER;
+class ContextKey final {
+public:
+    static const char *HEADER;
 
-        static const char *const CAPATH;  
+    static const char *const CAPATH;
 
-        static const char *const PARAM_KEY_CLINENT_CERT;
+    static const char *const PARAM_KEY_CLINENT_CERT;
 
-        static const char *const WEBSCOKET_CLINENT_CERT;
+    static const char *const WEBSCOKET_CLINENT_CERT;
 
-        static const char *const WEBSCOKET_CLINENT_KEY;
+    static const char *const WEBSCOKET_CLINENT_KEY;
 
-        static const char *const WEBSCOKET_CLINENT_PASSWD;
+    static const char *const WEBSCOKET_CLINENT_PASSWD;
 
-        static const char *CODE;
+    static const char *CODE;
 
-        static const char *REASON;
-    };
+    static const char *REASON;
+};
 
-    class EventName final
-    {
-    public:
-        static const char *EVENT_OPEN;
+class EventName final {
+public:
+    static const char *EVENT_OPEN;
 
-        static const char *EVENT_MESSAGE;
+    static const char *EVENT_MESSAGE;
 
-        static const char *EVENT_CLOSE;
+    static const char *EVENT_CLOSE;
 
-        static const char *EVENT_ERROR;
+    static const char *EVENT_ERROR;
 
-        static const char *EVENT_DATA_END;
-    };
+    static const char *EVENT_DATA_END;
+};
 } // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_CONSTANT_H */

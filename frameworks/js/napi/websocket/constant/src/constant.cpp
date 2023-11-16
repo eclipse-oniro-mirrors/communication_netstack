@@ -15,31 +15,30 @@
 
 #include "constant.h"
 
-namespace OHOS::NetStack::Websocket
-{
-    const char *ContextKey::HEADER = "header";
+namespace OHOS::NetStack::Websocket {
+const char *ContextKey::HEADER = "header";
 
-    const char *const ContextKey::CAPATH = "caPath";
-    
-    const char *const ContextKey::PARAM_KEY_CLINENT_CERT = "clientCert";
+const char *const ContextKey::CAPATH = "caPath";
 
-    const char *const ContextKey::WEBSCOKET_CLINENT_CERT = "certPath";
+const char *const ContextKey::PARAM_KEY_CLINENT_CERT = "clientCert";
 
-    const char *const ContextKey::WEBSCOKET_CLINENT_KEY = "keyPath";
+const char *const ContextKey::WEBSCOKET_CLINENT_CERT = "certPath";
 
-    const char *const ContextKey::WEBSCOKET_CLINENT_PASSWD = "keyPasswd";
+const char *const ContextKey::WEBSCOKET_CLINENT_KEY = "keyPath";
 
-    const char *ContextKey::CODE = "code";
+const char *const ContextKey::WEBSCOKET_CLINENT_PASSWD = "keyPasswd";
 
-    const char *ContextKey::REASON = "reason";
+const char *ContextKey::CODE = "code";
 
-    const char *EventName::EVENT_OPEN = "open";
+const char *ContextKey::REASON = "reason";
 
-    const char *EventName::EVENT_MESSAGE = "message";
+const char *EventName::EVENT_OPEN = "open";
 
-    const char *EventName::EVENT_CLOSE = "close";
+const char *EventName::EVENT_MESSAGE = "message";
 
-    const char *EventName::EVENT_ERROR = "error";
+const char *EventName::EVENT_CLOSE = "close";
 
-    const char *EventName::EVENT_DATA_END = "dataEnd";
+const char *EventName::EVENT_ERROR = "error";
+
+const char *EventName::EVENT_DATA_END = "dataEnd";
 } // namespace OHOS::NetStack::Websocket
