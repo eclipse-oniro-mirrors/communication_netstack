@@ -61,15 +61,15 @@ class ContextKey final {
 public:
     static const char *HEADER;
 
-    static const char *const CAPATH;
+    static const char *CAPATH;
 
-    static const char *const PARAM_KEY_CLINENT_CERT;
+    static const char *CLIENT_CERT;
 
-    static const char *const WEBSCOKET_CLINENT_CERT;
+    static const char *CERT_PATH;
 
-    static const char *const WEBSCOKET_CLINENT_KEY;
+    static const char *KEY_PATH;
 
-    static const char *const WEBSCOKET_CLINENT_PASSWD;
+    static const char *KEY_PASSWD;
 
     static const char *CODE;
 
