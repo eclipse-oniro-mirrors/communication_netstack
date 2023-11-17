@@ -159,7 +159,7 @@ uint32_t VerifyCert(const CertBlob *cert)
 
 uint32_t VerifyCert(const CertBlob *cert, const CertBlob *caCert)
 {
-    uint32_t verifyResult = VERIFY_RESULT_UNKNOWN;
+    uint32_t verifyResult = SSL_X509_V_ERR_UNSPECIFIED;
     X509 *certX509 = nullptr;
     X509 *caX509 = nullptr;
     X509_STORE *store = nullptr;
