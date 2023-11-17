@@ -101,13 +101,11 @@ std::string ToLower(const std::string &s)
 std::string ToString(const std::list<std::string> &lists, char tab)
 {
     std::string str;
-    int32_t index = 0;
-    for (const auto &s : lists) {
-        if (index > 0) {
-            str = str + tab;
+    for (auto it = lists.begin(); it != lists.end(); ++it) {
+        if (it != lists.begin()) {
+            str.append(1, tab);
         }
-        str = str + s;
-        index++;
+        str.append(*it);
     }
     return str;
 }
