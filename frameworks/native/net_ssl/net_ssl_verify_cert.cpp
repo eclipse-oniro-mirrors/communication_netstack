@@ -123,7 +123,6 @@ uint32_t VerifyCert(const CertBlob *cert)
         certX509 = CertBlobToX509(cert);
         if (certX509 == nullptr) {
             NETSTACK_LOGE("x509 of cert is nullptr\n");
-            continue;
         }
         store = X509_STORE_new();
         if (store == nullptr) {
@@ -133,7 +132,6 @@ uint32_t VerifyCert(const CertBlob *cert)
         if (X509_STORE_load_locations(store, nullptr, SslConstant::SYSPRECAPATH) != VERIFY_RESULT_SUCCESS &&
             X509_STORE_load_locations(store, nullptr, userInstalledCaPath.c_str()) != VERIFY_RESULT_SUCCESS) {
             NETSTACK_LOGE("load store failed\n");
-            continue;
         }
         ctx = X509_STORE_CTX_new();
         if (ctx == nullptr) {
@@ -149,8 +147,8 @@ uint32_t VerifyCert(const CertBlob *cert)
             break;
         } else {
             verifyResult = X509_V_OK;
+            NETSTACK_LOGI("certificate validation succeeded.\n");
         }
-        NETSTACK_LOGI("certificate validation succeeded.\n");
     } while (false);
 
     FreeResources(certX509, nullptr, store, ctx);
@@ -168,12 +166,10 @@ uint32_t VerifyCert(const CertBlob *cert, const CertBlob *caCert)
         certX509 = CertBlobToX509(cert);
         if (certX509 == nullptr) {
             NETSTACK_LOGE("x509 of cert is nullptr\n");
-            continue;
         }
         caX509 = CertBlobToX509(caCert);
         if (caX509 == nullptr) {
             NETSTACK_LOGE("x509 of ca is nullptr\n");
-            continue;
         }
         store = X509_STORE_new();
         if (store == nullptr) {
@@ -181,7 +177,6 @@ uint32_t VerifyCert(const CertBlob *cert, const CertBlob *caCert)
         }
         if (X509_STORE_add_cert(store, caX509) != VERIFY_RESULT_SUCCESS) {
             NETSTACK_LOGE("add ca to store failed\n");
-            continue;
         }
         ctx = X509_STORE_CTX_new();
         if (ctx == nullptr) {
@@ -197,8 +192,8 @@ uint32_t VerifyCert(const CertBlob *cert, const CertBlob *caCert)
             break;
         } else {
             verifyResult = X509_V_OK;
+            NETSTACK_LOGI("certificate validation succeeded.\n");
         }
-        NETSTACK_LOGI("certificate validation succeeded.\n");
     } while (false);
 
     FreeResources(certX509, caX509, store, ctx);
