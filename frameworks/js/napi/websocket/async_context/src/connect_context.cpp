@@ -106,7 +106,7 @@ void ConnectContext::ParseCaPath(napi_value optionsValue)
     if (NapiUtils::GetValueType(GetEnv(), jsCaPath) != napi_string) {
         return;
     }
-    caPath_ = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCaPath,ContextKey::CAPATH);    
+    caPath_ = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCaPath, ContextKey::CAPATH);    
 }
 
 void ConnectContext::GetClientCert(
