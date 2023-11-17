@@ -151,7 +151,7 @@ int32_t SendContext::GetErrorCode() const
     if (WEBSOCKET_ERR_MAP.find(err) != WEBSOCKET_ERR_MAP.end()) {
         return err;
     }
-    return WEBSOCKET_UNKNOWN_OTHER_ERROR;
+    return WEBSOCKET_CONNECT_FAILED;
 }
 
 std::string SendContext::GetErrorMessage() const
