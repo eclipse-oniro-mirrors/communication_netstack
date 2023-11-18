@@ -33,6 +33,8 @@ struct OHOS::NetStack::Ssl::CertBlob SwitchToCertBlob(const struct OH_NetStack_C
         case OH_NetStack_CERT_TYPE_MAX:
             cb.type = OHOS::NetStack::Ssl::CertType::CERT_TYPE_MAX;
             break;
+        default:
+            break;
     }
     cb.size = cert.size;
     cb.data = cert.data;
