@@ -20,7 +20,7 @@
  * @addtogroup netstack
  * @{
  *
- * @brief 为SSL/TLS证书链校验模块提供C接口
+ * @brief Provides C APIs for the SSL/TLS certificate chain verification module.
  *
  * @since 11
  * @version 1.0
@@ -29,7 +29,7 @@
 /**
  * @file net_ssl_c.h
  *
- * @brief 为SSL/TLS证书链校验模块定义C接口
+ * @brief Defines C APIs for the SSL/TLS certificate chain verification module.
  *
  * @library libnet_ssl.so
  * @syscap SystemCapability.Communication.Netstack
@@ -44,11 +44,11 @@ extern "C" {
 #endif
 
 /**
- * @brief  对外暴露的证书链校验接口
+ * @brief Provides certificate chain verification APIs for external systems.
  *
- * @param cert 用户传入的待校验证书
- * @param caCert   用户指定的证书，若为空则以系统预置证书进行校验
- * @return 返回0表示校验成功，否则，表示校验失败
+ * @param cert Certificate to be verified.
+ * @param caCert CA certificate specified by the user. If this parameter is left blank, the preset certificate is used.
+ * @return 0 if success; non-0 otherwise.
  * @syscap SystemCapability.Communication.Netstack
  * @since 11
  * @version 1.0

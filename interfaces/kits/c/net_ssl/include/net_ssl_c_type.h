@@ -20,7 +20,7 @@
  * @addtogroup netstack
  * @{
  *
- * @brief  为SSL/TLS证书链校验模块提供C接口
+ * @brief Provides C APIs for the SSL/TLS certificate chain verification module.
  *
  * @since 11
  * @version 1.0
@@ -28,7 +28,7 @@
 
 /**
  * @file net_ssl_c_type.h
- * @brief 定义SSL/TLS证书链校验模块的C接口需要的数据结构
+ * @brief Defines the data structures for the C APIs of the SSL/TLS certificate chain verification module.
  *
  * @library libnet_ssl.so
  * @syscap SystemCapability.Communication.Netstack
@@ -43,32 +43,32 @@ extern "C" {
 #endif
 
 /**
- * @brief 证书类型枚举
+ * @brief Enumerates certificate types.
  *
  * @since 11
  * @version 1.0
  */
 enum OH_NetStack_CertType {
-    /** PEM证书类型 */
+    /** PEM certificate */
     OH_NetStack_CERT_TYPE_PEM = 0,
-    /** DER证书类型 */
+    /** DER certificate */
     OH_NetStack_CERT_TYPE_DER = 1,
-    /** 错误证书类型 */
+    /** Invalid certificate */
     OH_NetStack_CERT_TYPE_MAX
 };
 
 /**
- * @brief 证书数据结构体
+ * @brief Defines the certificate data structure.
  *
  * @since 11
  * @version 1.0
  */
 struct OH_NetStack_CertBlob {
-    /** 证书类型 */
+    /** Certificate type */
     enum OH_NetStack_CertType type;
-    /** 证书内容长度 */
+    /** Certificate content length */
     uint32_t size;
-    /** 证书内容 */
+    /** Certificate content */
     uint8_t *data;
 };
 
