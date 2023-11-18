@@ -20,44 +20,30 @@
 #include "net_ssl_c.h"
 #include "net_ssl_c_type.h"
 
-struct OHOS::NetStack::Ssl::CertBlob *SwitchToCertBlob(const struct OH_NetStack_CertBlob *cert)
+struct OHOS::NetStack::Ssl::CertBlob SwitchToCertBlob(const struct OH_NetStack_CertBlob cert)
 {
-    OHOS::NetStack::Ssl::CertBlob *cb = new OHOS::NetStack::Ssl::CertBlob;
-    switch (cert->type) {
+    OHOS::NetStack::Ssl::CertBlob cb;
+    switch (cert.type) {
         case OH_NetStack_CERT_TYPE_PEM:
-            cb->type = OHOS::NetStack::Ssl::CertType::CERT_TYPE_PEM;
+            cb.type = OHOS::NetStack::Ssl::CertType::CERT_TYPE_PEM;
             break;
         case OH_NetStack_CERT_TYPE_DER:
-            cb->type = OHOS::NetStack::Ssl::CertType::CERT_TYPE_DER;
+            cb.type = OHOS::NetStack::Ssl::CertType::CERT_TYPE_DER;
             break;
         case OH_NetStack_CERT_TYPE_MAX:
-            cb->type = OHOS::NetStack::Ssl::CertType::CERT_TYPE_MAX;
+            cb.type = OHOS::NetStack::Ssl::CertType::CERT_TYPE_MAX;
             break;
     }
-    cb->size = cert->size;
-    cb->data = new uint8_t[cb->size];
-    memcpy(cb->data, cert->data, cb->size);
+    cb.size = cert.size;
+    cb.data = cert.data;
     return cb;
-}
-
-void FreeResources(OHOS::NetStack::Ssl::CertBlob *cb)
-{
-    if (cb != nullptr) {
-        if (cb->data != nullptr) {
-            delete cb->data;
-            cb->data = nullptr;
-        }
-        delete cb;
-        cb = nullptr;
-    }
 }
 
 uint32_t VerifyCert_With_RootCa(const struct OH_NetStack_CertBlob *cert)
 {
     uint32_t verifyResult = X509_V_ERR_UNSPECIFIED;
-    OHOS::NetStack::Ssl::CertBlob *cb = SwitchToCertBlob(cert);
-    verifyResult = OHOS::NetStack::Ssl::NetStackVerifyCertification(cb);
-    FreeResources(cb);
+    OHOS::NetStack::Ssl::CertBlob cb = SwitchToCertBlob(*cert);
+    verifyResult = OHOS::NetStack::Ssl::NetStackVerifyCertification(&cb);
     return verifyResult;
 }
 
@@ -65,11 +51,9 @@ uint32_t VerifyCert_With_DesignatedCa(const struct OH_NetStack_CertBlob *cert,
                                       const struct OH_NetStack_CertBlob *caCert)
 {
     uint32_t verifyResult = X509_V_ERR_UNSPECIFIED;
-    OHOS::NetStack::Ssl::CertBlob *cb = SwitchToCertBlob(cert);
-    OHOS::NetStack::Ssl::CertBlob *caCb = SwitchToCertBlob(caCert);
-    verifyResult = OHOS::NetStack::Ssl::NetStackVerifyCertification(cb, caCb);
-    FreeResources(cb);
-    FreeResources(caCb);
+    OHOS::NetStack::Ssl::CertBlob cb = SwitchToCertBlob(*cert);
+    OHOS::NetStack::Ssl::CertBlob caCb = SwitchToCertBlob(*caCert);
+    verifyResult = OHOS::NetStack::Ssl::NetStackVerifyCertification(&cb, &caCb);
     return verifyResult;
 }
 
