@@ -48,56 +48,37 @@ void CertContext::ParseParams(napi_value *params, size_t paramsCount)
             if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
                 SetCallback(params[0]);
             }
-            return;
-        }
-        if (paramsCount == PARAM_CERT_AND_CACERT_OR_CALLBACK) {
+        } else if (paramsCount == PARAM_CERT_AND_CACERT_OR_CALLBACK) {
             if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
                 SetCallback(params[1]);
             }
-            return;
-        }
-        if (paramsCount == PARAM_CERT_AND_CACERT_AND_CALLBACK) {
+        } else if (paramsCount == PARAM_CERT_AND_CACERT_AND_CALLBACK) {
             if (NapiUtils::GetValueType(GetEnv(), params[PARAM_CERT_AND_CACERT_AND_CALLBACK - 1]) == napi_function) {
                 SetCallback(params[PARAM_CERT_AND_CACERT_AND_CALLBACK - 1]);
             }
-            return;
         }
-        return;
-    }
-
-    if (paramsCount == PARAM_JUST_CERT) {
-        certBlob_ = ParseCertBlobFromParams(GetEnv(), params[0]);
-        SetParseOK(true);
-        return;
-    }
-
-    if (paramsCount == PARAM_CERT_AND_CACERT_OR_CALLBACK) {
-        napi_valuetype type = NapiUtils::GetValueType(GetEnv(), params[1]);
-        if (type == napi_function) {
+    } else {
+        if (paramsCount == PARAM_JUST_CERT) {
             certBlob_ = ParseCertBlobFromParams(GetEnv(), params[0]);
-            NETSTACK_LOGD("parse certBlobFromParams end %{public}d\n", (certBlob_ == nullptr));
-            NETSTACK_LOGD("certBlob type %{public}d\n", certBlob_->type);
-            NETSTACK_LOGD("certBlob size %{public}d\n", certBlob_->size);
-            NETSTACK_LOGD("certBlob data %{public}s\n", certBlob_->data);
-            SetParseOK(SetCallback(params[1]) == napi_ok);
-            return;
-        }
-        if (type == napi_object) {
+            SetParseOK(true);
+        } else if (paramsCount == PARAM_CERT_AND_CACERT_OR_CALLBACK) {
+            napi_valuetype type = NapiUtils::GetValueType(GetEnv(), params[1]);
+            if (type == napi_function) {
+                certBlob_ = ParseCertBlobFromParams(GetEnv(), params[0]);
+                SetParseOK(SetCallback(params[1]) == napi_ok);
+            } else if (type == napi_object) {
+                certBlob_ = ParseCertBlobFromParams(GetEnv(), params[0]);
+                certBlobClient_ = ParseCertBlobFromParams(GetEnv(), params[1]);
+                SetParseOK(certBlobClient_ != nullptr);
+            }
+        } else if (paramsCount == PARAM_CERT_AND_CACERT_AND_CALLBACK) {
+            if (SetCallback(params[PARAM_CERT_AND_CACERT_AND_CALLBACK - 1]) != napi_ok) {
+                return;
+            }
             certBlob_ = ParseCertBlobFromParams(GetEnv(), params[0]);
             certBlobClient_ = ParseCertBlobFromParams(GetEnv(), params[1]);
-            SetParseOK(certBlobClient_ != nullptr);
-            return;
+            SetParseOK(true);
         }
-        return;
-    }
-
-    if (paramsCount == PARAM_CERT_AND_CACERT_AND_CALLBACK) {
-        if (SetCallback(params[PARAM_CERT_AND_CACERT_AND_CALLBACK - 1]) != napi_ok) {
-            return;
-        }
-        certBlob_ = ParseCertBlobFromParams(GetEnv(), params[0]);
-        certBlobClient_ = ParseCertBlobFromParams(GetEnv(), params[1]);
-        SetParseOK(true);
     }
 }
 
@@ -124,6 +105,9 @@ CertBlob *CertContext::ParseCertBlobFromParams(napi_env env, napi_value value)
     napi_value typeValue, dataValue;
     napi_get_named_property(env, value, "type", &typeValue);
     napi_get_named_property(env, value, "data", &dataValue);
+    if (typeValue == nullptr || dataValue == nullptr) {
+        return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
+    }
     uint32_t type;
     napi_get_value_uint32(env, typeValue, &type);
     CertType certType = static_cast<CertType>(type);
