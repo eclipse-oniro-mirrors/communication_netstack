@@ -22,7 +22,7 @@
 #include "base_context.h"
 #include "nocopyable.h"
 #include "libwebsockets.h"
-#include "secure_char.h" 
+#include "secure_char.h"
 
 namespace OHOS::NetStack::Websocket {
 class ConnectContext final : public BaseContext {
@@ -55,7 +55,7 @@ public:
 
     Secure::SecureChar clientKey_;
 
-    Secure::SecureChar keyPasswd_;    
+    Secure::SecureChar keyPasswd_;
 
 private:
     void ParseHeader(napi_value optionsValue);

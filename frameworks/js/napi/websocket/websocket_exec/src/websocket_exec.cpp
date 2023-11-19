@@ -493,7 +493,7 @@ static inline void FillContextInfo(lws_context_creation_info &info)
     info.port = CONTEXT_PORT_NO_LISTEN;
     info.protocols = LWS_PROTOCOLS;
     info.fd_limit_per_thread = FD_LIMIT_PER_THREAD;
-    info.client_ssl_ca_filepath = WEBSCOKET_PREPARE_CA_PATH; 
+    info.client_ssl_ca_filepath = WEBSCOKET_PREPARE_CA_PATH;
 }
 
 bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsContext, EventManager *manager)
@@ -553,12 +553,10 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     manager->InitNetstackEventHandler();
     lws_context_creation_info info = {};
     FillContextInfo(info);
-    if(!context->caPath_.empty())
-    {
+    if(!context->caPath_.empty()) {
         info.client_ssl_ca_filepath = context->caPath_.c_str();
     }
-    if (!context->clientCert_.empty())
-    {
+    if (!context->clientCert_.empty()) {
         info.client_ssl_cert_filepath = context->clientCert_.c_str();
         info.client_ssl_private_key_filepath = context->clientKey_.Data();
         info.client_ssl_private_key_password = context->keyPasswd_.Data();
