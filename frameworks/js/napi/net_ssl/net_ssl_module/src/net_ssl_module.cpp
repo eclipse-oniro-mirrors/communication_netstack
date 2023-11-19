@@ -32,7 +32,7 @@ static inline napi_value priv_get_value(napi_env env, int32_t val)
     return value;
 }
 
-#define DECLARE_CONST_VAR(var) DECLARE_NAPI_STATIC_PROPERTY(#var, priv_get_value(env, (int32_t)var))
+#define DECLARE_CONST_VAR(var) DECLARE_NAPI_STATIC_PROPERTY(#var, priv_get_value(env, (int32_t)(var)))
 
 namespace OHOS::NetStack::Ssl {
 static constexpr const char *NET_SSL_MODULE_NAME = "net.networkSecurity";
@@ -47,14 +47,14 @@ struct AsyncCallbackInfo {
     napi_deferred deferred;
 };
 
-napi_value NetSslModuleExports::InitNetSslModule(napi_env env, napi_value exports) /////
+napi_value NetSslModuleExports::InitNetSslModule(napi_env env, napi_value exports)
 {
     InitSslProperties(env, exports);
 
     return exports;
 }
 
-void NetSslModuleExports::InitSslProperties(napi_env env, napi_value exports) /////
+void NetSslModuleExports::InitSslProperties(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
         DECLARE_NAPI_FUNCTION("certVerification", VerifyCertification),
@@ -64,7 +64,7 @@ void NetSslModuleExports::InitSslProperties(napi_env env, napi_value exports) //
     InitCertType(env, exports);
 }
 
-void NetSslModuleExports::InitCertType(napi_env env, napi_value exports) /////
+void NetSslModuleExports::InitCertType(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {DECLARE_CONST_VAR(CertType::CERT_TYPE_PEM),
                                                                   DECLARE_CONST_VAR(CertType::CERT_TYPE_DER)};
