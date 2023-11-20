@@ -68,7 +68,6 @@ public:
     typedef void (*OnOpenCallback)(WebsocketClient *client, OpenResult openResult);
 
     int Connect(std::string URL, OpenOptions Options);
-    // int  AddHeader(const std::map<std::string, std::string>& headers);
     int Send(char *data, size_t length);
     int Close(CloseOption options);
     int registcallback(OnOpenCallback OnOpen, OnMessageCallback onMessage, OnErrorCallback OnError,
