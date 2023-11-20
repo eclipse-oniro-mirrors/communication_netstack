@@ -32,7 +32,7 @@
  * @brief Defines C APIs for the SSL/TLS certificate chain verification module.
  *
  * @library libnet_ssl.so
- * @syscap SystemCapability.Communication.Netstack
+ * @syscap SystemCapability.Communication.NetStack
  * @since 11
  * @version 1.0
  */
@@ -49,7 +49,7 @@ extern "C" {
  * @param cert Certificate to be verified.
  * @param caCert CA certificate specified by the user. If this parameter is left blank, the preset certificate is used.
  * @return 0 if success; non-0 otherwise.
- * @syscap SystemCapability.Communication.Netstack
+ * @syscap SystemCapability.Communication.NetStack
  * @since 11
  * @version 1.0
  */

@@ -31,7 +31,7 @@
  * @brief Defines the data structures for the C APIs of the SSL/TLS certificate chain verification module.
  *
  * @library libnet_ssl.so
- * @syscap SystemCapability.Communication.Netstack
+ * @syscap SystemCapability.Communication.NetStack
  * @since 11
  * @version 1.0
  */
