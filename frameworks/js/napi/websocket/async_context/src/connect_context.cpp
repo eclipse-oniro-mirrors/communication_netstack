@@ -135,10 +135,10 @@ void ConnectContext::ParseClientCert(napi_value optionsValue)
         return;
     }
     std::string certPath = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::CERT_PATH);
-    Secure::SecureChar keyPath = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(), 
-                                                    jsCert, ContextKey::KEY_PATH));
-    Secure::SecureChar keyPasswd = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(), 
-                                                        jsCert, ContextKey::KEY_PASSWD));
+    Secure::SecureChar keyPath = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(),
+        jsCert, ContextKey::KEY_PATH));
+    Secure::SecureChar keyPasswd = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(),
+        jsCert, ContextKey::KEY_PASSWD));
     SetClientCert(certPath, keyPath, keyPasswd);
 }
 

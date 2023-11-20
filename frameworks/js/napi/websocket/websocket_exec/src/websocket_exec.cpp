@@ -553,7 +553,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     manager->InitNetstackEventHandler();
     lws_context_creation_info info = {};
     FillContextInfo(info);
-    if(!context->caPath_.empty()) {
+    if (!context->caPath_.empty()) {
         info.client_ssl_ca_filepath = context->caPath_.c_str();
     }
     if (!context->clientCert_.empty()) {
