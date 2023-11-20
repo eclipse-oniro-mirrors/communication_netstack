@@ -53,7 +53,6 @@ public:
     }
 
     ClientContex(){
-        //
     };
 
     bool IsClosed()
@@ -64,7 +63,6 @@ public:
 
     bool IsThreadStop()
     {
-        // std::cout <<"TS:inner api: "<< __func__ << ", line= " <<__LINE__<< std::endl;
         return threadStop_.load();
     }
 
@@ -87,7 +85,6 @@ public:
     {
         std::lock_guard<std::mutex> lock(mutex_);
         dataQueue_.push(SendData(data, length, protocol));
-        // std::cout <<"TS:inner api: Push"<< __func__ << ", line= " <<__LINE__<<", SendData.data:"<<data<<std::endl;
     }
 
     SendData Pop()
