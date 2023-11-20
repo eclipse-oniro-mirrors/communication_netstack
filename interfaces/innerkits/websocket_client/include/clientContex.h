@@ -52,7 +52,7 @@ public:
     {
     }
 
-    ClientContex(){
+    ClientContex() {
     };
 
     bool IsClosed()
@@ -73,7 +73,7 @@ public:
     }
 
     void Close(lws_close_status status, const std::string &reason)
-    { 
+    {
         NETSTACK_LOGI("ClientContex  Close, function at:  %{public}d", __LINE__);
         std::lock_guard<std::mutex> lock(mutex_);
         closeStatus = status;
