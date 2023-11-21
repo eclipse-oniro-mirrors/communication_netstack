@@ -161,7 +161,7 @@ HWTEST_F(NetStackCommonUtilsTest, CommonUtils16, TestSize.Level2)
 
 HWTEST_F(NetStackCommonUtilsTest, CommonUtils17, TestSize.Level2)
 {
-    bool isEndsWith = EndsWith("alibaba", "i");
+    bool isEndsWith = EndsWith("alibaba", "a");
     EXPECT_EQ(isEndsWith, true);
 }
 
@@ -241,6 +241,29 @@ HWTEST_F(NetStackCommonUtilsTest, CommonUtils27, TestSize.Level2)
     std::string ipV6Invalid = "invalid ipv6 string";
     bool isValidIPV6Invalid = IsValidIPV6(ipV6Invalid);
     EXPECT_EQ(isValidIPV6Invalid, false);
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CommonUtils28, TestSize.Level2)
+{
+    std::string ipv6Invalid = "2001:0db8:85a3::8a2e:0370:7334";
+    bool isValidIPV6Invalid = IsValidIPV6(ipv6Invalid);
+    EXPECT_EQ(isValidIPV6Invalid, true);
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CommonUtils29, TestSize.Level2)
+{
+    std::string ipv6Ip = "2001:0db8:85a3::8a2e:0370:7334";
+    std::string actualOutput = AnonymizeIp(ipv6Ip);
+    std::string expectedOutput = "****:****:****::****:****:****";
+    EXPECT_STREQ(actualOutput.c_str(), expectedOutput.c_str());
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CommonUtils30, TestSize.Level2)
+{
+    std::string ipv4Ips = "8.8.8.8,8.8.4.4";
+    std::string actualOutput = AnonymizeIp(ipv4Ips);
+    std::string expectedOutput = "*.*.*.*,*.*.*.*";
+    EXPECT_STREQ(actualOutput.c_str(), expectedOutput.c_str());
 }
 } // namespace CommonUtils
 } // namespace NetStack

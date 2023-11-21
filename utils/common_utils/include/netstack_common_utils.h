@@ -56,5 +56,7 @@ bool IsValidIP(const std::string& ip, int af);
 bool IsValidIPV4(const std::string &ip);
 
 bool IsValidIPV6(const std::string &ip);
+
+std::string AnonymizeIp(std::string &str);
 } // namespace OHOS::NetStack::CommonUtils
 #endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */

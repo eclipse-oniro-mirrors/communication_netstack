@@ -303,4 +303,13 @@ bool IsValidIP(const std::string& ip, int af)
     }
 #endif
 }
+
+std::string AnonymizeIp(std::string &str)
+{
+    if (str.empty()) {
+        return str;
+    }
+    std::regex digitRegex("[^.^:^,]");
+    return std::regex_replace(str, digitRegex, "*");
+}
 } // namespace OHOS::NetStack::CommonUtils
