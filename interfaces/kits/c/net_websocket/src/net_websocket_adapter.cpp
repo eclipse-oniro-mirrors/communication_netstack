@@ -19,13 +19,13 @@
 
 namespace OHOS::NetStack::WebsocketClient {
 
-std::map<OH_NetStack_WebsocketClient *, WebsocketClient *> globalMap;
+std::map<OH_NetStack_WebsocketClient *, WebsocketClient *> g_clientMap;
 std::map<std::string, std::string> globalheaders;
 
 WebsocketClient *GetInnerClientAdapter(OH_NetStack_WebsocketClient *key)
 {
-    auto it = globalMap.find(key);
-    if (it != globalMap.end()) {
+    auto it = g_clientMap.find(key);
+    if (it != g_clientMap.end()) {
         return it->second;
     } else {
         return nullptr;
@@ -34,7 +34,7 @@ WebsocketClient *GetInnerClientAdapter(OH_NetStack_WebsocketClient *key)
 
 OH_NetStack_WebsocketClient *GetNdkClientAdapter(WebsocketClient *websocketClient)
 {
-    for (const auto &pair : globalMap) {
+    for (const auto &pair : g_clientMap) {
         if (pair.second == websocketClient) {
             return pair.first;
         }
@@ -42,22 +42,11 @@ OH_NetStack_WebsocketClient *GetNdkClientAdapter(WebsocketClient *websocketClien
     return nullptr;
 }
 
-bool IsNull(void *ptr)
-{
-    return (ptr == nullptr);
-}
-
 int32_t Conv2RequestOptions(struct OpenOptions *openOptions,
                             struct OH_NetStack_WebsocketClient_RequestOptions RequestOptions)
 {
     if (openOptions == nullptr) {
         return -1;
-    }
-
-    if (IsNull(&RequestOptions)) {
-        printf("RequestOptions is empty (NULL).\n");
-    } else {
-        printf("RequestOptions is not empty.\n");
     }
 
     struct OH_NetStack_WebsocketClient_Slist *currentHeader = RequestOptions.headers;
