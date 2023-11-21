@@ -73,13 +73,13 @@ struct OH_NetStack_WebsocketClient *OH_NetStack_WebsocketClient_Construct(
     OH_client->onOpen = onOpen;
     websocketClient->registcallback(OH_NetStack_OnOpenCallback, OH_NetStack_OnMessageCallback,
                                     OH_NetStack_OnErrorCallback, OH_NetStack_OnCloseCallback);
-    if (globalMap.size() == MAX_CLIENT_SIZE) {
+    if (g_clientMap.size() == MAX_CLIENT_SIZE) {
         OH_client = nullptr;
         return OH_client;
     }
 
     OH_client->RequestOptions.headers = nullptr;
-    globalMap[OH_client] = websocketClient;
+    g_clientMap[OH_client] = websocketClient;
     return OH_client;
 }
 
@@ -188,6 +188,6 @@ int OH_NetStack_WebsocketClient_Destroy(struct OH_NetStack_WebsocketClient *clie
     OH_NetStack_WebsocketClient_FreeHeader(client->RequestOptions.headers);
 
     delete client;
-    globalMap.erase(client);
+    g_clientMap.erase(client);
     return ret;
 }
