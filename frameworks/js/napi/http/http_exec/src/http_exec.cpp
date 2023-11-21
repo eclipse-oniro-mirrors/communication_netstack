@@ -603,17 +603,6 @@ bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYUSERPWD, NETSTACK_PROXY_PASS, context);
 #endif // NETSTACK_PROXY_PASS
 
-#ifdef NO_SSL_CERTIFICATION
-    // in real life, you should buy a ssl certification and rename it to /etc/ssl/cert.pem
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
-#else
-#ifndef WINDOWS_PLATFORM
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, context->options.GetCaPath().c_str(), context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, HttpConstant::HTTP_PREPARE_CA_PATH, context);
-#endif // WINDOWS_PLATFORM
-#endif // NO_SSL_CERTIFICATION
-
 #ifdef HTTP_CURL_PRINT_VERBOSE
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_VERBOSE, 1L, context);
 #endif
@@ -650,38 +639,49 @@ bool HttpExec::SetSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext
 
 bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context)
 {
+#ifndef NO_SSL_CERTIFICATION
 #ifdef HAS_NETMANAGER_BASE
-    std::string pins;
     auto hostname = CommonUtils::GetHostnameFromURL(context->options.GetUrl());
-    auto ret = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
+#ifndef WINDOWS_PLATFORM
+    //customize trusted CAs.
+    std::vector<std::string> certs;
+    auto ret = NetManagerStandard::NetConnClient::GetInstance().GetTrustAnchorsForHostName(hostname, certs);
     if (ret != 0) {
+        return false;
+    }
+
+    std::string *pCert = nullptr;
+    for (auto &cert: certs) {
+        if (!cert.empty()) {
+            pCert = &cert;
+            break;
+        }
+    }
+    if (pCert != nullptr) {
+        NETSTACK_LOGD("curl set option capath: capath=%{public}s.", pCert->c_str());
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, pCert->c_str(), context);
+    } else {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, context->options.GetCaPath().c_str(), context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, HttpConstant::HTTP_PREPARE_CA_PATH, context);
+    }
+#endif // WINDOWS_PLATFORM
+    //pin trusted certifcate keys.
+    std::string pins;
+    auto ret1 = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
+    if (ret1 != 0) {
         return false;
     }
     if (!pins.empty()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str(), context);
     }
+#endif //HAS_NETMANAGER_BASE
+#else
+    // in real life, you should buy a ssl certification and rename it to /etc/ssl/cert.pem
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
+#endif // NO_SSL_CERTIFICATION
 
-    std::vector<std::string> certs;
-    ret = NetManagerStandard::NetConnClient::GetInstance().GetTrustAnchorsForHostName(hostname, certs);
-    if (ret != 0) {
-        return false;
-    }
-
-    for(auto cert: certs) {
-        if (!cert.empty()) {
-            std::string caPath;
-            auto delim = cert.find_last_of('/');
-            if (delim != std::string::npos) {
-                caPath = cert.substr(0, delim);
-            } else {
-                caPath = "./";
-            }
-            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, caPath.c_str(), context);
-            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, cert.c_str(), context);
-            break;
-        }
-    }
-#endif
     return true;
 }
 
