@@ -14,11 +14,6 @@
 {
   global:
     *WebsocketClient*;
-#    *HttpClientRequest*;
-#    *HttpClientResponse*;
-#    *HttpClientTask*;
-#    *HttpSession*;
-#    *HttpClient*;
   local:
     *;
 };
