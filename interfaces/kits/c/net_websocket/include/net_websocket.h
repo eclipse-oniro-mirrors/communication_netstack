@@ -25,7 +25,7 @@
  * @{
  *
  * @brief Provides C APIs for the WebSocket client module.
- 
+
  * @since 11
  * @version 1.0
  */
@@ -61,8 +61,8 @@ extern "C" {
  * @version 1.0
  */
 struct OH_NetStack_WebsocketClient *OH_NetStack_WebsocketClient_Construct(
-    OH_NetStack_WebsocketClient_OnOpenCallback OnOpen, OH_NetStack_WebsocketClient_OnMessageCallback onMessage,
-    OH_NetStack_WebsocketClient_OnErrorCallback OnError, OH_NetStack_WebsocketClient_OnCloseCallback onclose);
+    OH_NetStack_WebsocketClient_OnOpenCallback onOpen, OH_NetStack_WebsocketClient_OnMessageCallback onMessage,
+    OH_NetStack_WebsocketClient_OnErrorCallback onError, OH_NetStack_WebsocketClient_OnCloseCallback onclose);
 
 /**
  * @brief Adds the header information to the client request.
@@ -91,7 +91,7 @@ int OH_NetStack_WebSocketClient_AddHeader(struct OH_NetStack_WebsocketClient *cl
  * @version 1.0
  */
 int OH_NetStack_WebSocketClient_Connect(struct OH_NetStack_WebsocketClient *client, const char *url,
-                                       struct OH_NetStack_WebsocketClient_RequestOptions options);
+                                        struct OH_NetStack_WebsocketClient_RequestOptions options);
 
 /**
  * @brief Sends data from the client to the server.
