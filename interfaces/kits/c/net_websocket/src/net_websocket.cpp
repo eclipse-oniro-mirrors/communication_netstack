@@ -24,6 +24,8 @@ using namespace std;
 
 using namespace OHOS::NetStack::WebsocketClient;
 
+[[maybe_unused]] const int MAX_CLIENT_SIZE = 100;
+
 void OH_NetStack_OnMessageCallback(WebsocketClient *ptrInner, const std::string &data, size_t length)
 {
     NETSTACK_LOGI("OH_NetStack_OnMessageCallback at:  %{public}d", __LINE__);
@@ -60,18 +62,18 @@ void OH_NetStack_OnOpenCallback(WebsocketClient *ptrInner, OpenResult openResult
 }
 
 struct OH_NetStack_WebsocketClient *OH_NetStack_WebsocketClient_Construct(
-    OH_NetStack_WebsocketClient_OnOpenCallback OnOpen, OH_NetStack_WebsocketClient_OnMessageCallback onMessage,
-    OH_NetStack_WebsocketClient_OnErrorCallback OnError, OH_NetStack_WebsocketClient_OnCloseCallback onclose)
+    OH_NetStack_WebsocketClient_OnOpenCallback onOpen, OH_NetStack_WebsocketClient_OnMessageCallback onMessage,
+    OH_NetStack_WebsocketClient_OnErrorCallback onError, OH_NetStack_WebsocketClient_OnCloseCallback onclose)
 {
     OH_NetStack_WebsocketClient *OH_client = new OH_NetStack_WebsocketClient;
     WebsocketClient *websocketClient = new WebsocketClient();
     OH_client->onMessage = onMessage;
     OH_client->onClose = onclose;
-    OH_client->onError = OnError;
-    OH_client->onOpen = OnOpen;
+    OH_client->onError = onError;
+    OH_client->onOpen = onOpen;
     websocketClient->registcallback(OH_NetStack_OnOpenCallback, OH_NetStack_OnMessageCallback,
                                     OH_NetStack_OnErrorCallback, OH_NetStack_OnCloseCallback);
-    if (globalMap.size() == 100) {
+    if (globalMap.size() == MAX_CLIENT_SIZE) {
         OH_client = nullptr;
         return OH_client;
     }
@@ -90,11 +92,11 @@ int OH_NetStack_WebSocketClient_AddHeader(struct OH_NetStack_WebsocketClient *cl
     NETSTACK_LOGI("OH_NetStack_WebSocketClient_AddHeader at:  %{public}d", __LINE__);
     struct OH_NetStack_WebsocketClient_Slist *newHeader =
         (struct OH_NetStack_WebsocketClient_Slist *)malloc(sizeof(struct OH_NetStack_WebsocketClient_Slist));
-    newHeader->FieldName = header.FieldName;
-    newHeader->FieldValue = header.FieldValue;
+    newHeader->fieldName = header.fieldName;
+    newHeader->fieldValue = header.fieldValue;
     newHeader->next = NULL;
     struct OH_NetStack_WebsocketClient_Slist *currentHeader = client->RequestOptions.headers;
-    if (currentHeader == NULL) {
+    if (currentHeader == nullptr) {
         client->RequestOptions.headers = newHeader;
     } else {
         while (currentHeader->next != NULL) {
@@ -140,8 +142,8 @@ int OH_NetStack_WebSocketClient_Connect(struct OH_NetStack_WebsocketClient *clie
     if (websocketClient == NULL)
         return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
 
-    std::string URL = std::string(url);
-    ret = websocketClient->Connect(URL, openOptions);
+    std::string connectUrl = std::string(url);
+    ret = websocketClient->Connect(connectUrl, openOptions);
     NETSTACK_LOGI("function at:  %{public}d,ret=%{public}d", __LINE__, ret);
     return ret;
 }
@@ -166,7 +168,7 @@ int OH_NetStack_WebSocketClient_Close(struct OH_NetStack_WebsocketClient *client
 
 void OH_NetStack_WebsocketClient_FreeHeader(struct OH_NetStack_WebsocketClient_Slist *header)
 {
-    if (header == NULL) {
+    if (header == nullptr) {
         return;
     }
     OH_NetStack_WebsocketClient_FreeHeader(header->next);
