@@ -17,6 +17,7 @@
 #include "websocket_client_innerapi.h"
 #include <cstring>
 #include <iostream>
+#include <securec.h>
 #include <string>
 
 using namespace std;
@@ -28,16 +29,20 @@ static constexpr const char *PREFIX_HTTPS = "https";
 static constexpr const char *PREFIX_WSS = "wss";
 static constexpr const int MAX_URI_LENGTH = 1024;
 static constexpr const int MAX_HDR_LENGTH = 1024;
+static constexpr const int MAX_HEAR_LENGTH = 8192;
+static constexpr const size_t MAX_DATA_LENGTH = 4 * 1024 * 1024;
 static constexpr const int FD_LIMIT_PER_THREAD = 1 + 1 + 1;
 [[maybe_unused]] static constexpr const int COMMON_ERROR_CODE = 200;
+[[maybe_unused]] static constexpr const int CLOSE_RESULT_FROM_SERVER_CODE = 1001;
+[[maybe_unused]] static constexpr const int CLOSE_RESULT_FROM_CLIENT_CODE = 1000;
 static constexpr const char *LINK_DOWN = "The link is down";
 static constexpr const int FUNCTION_PARAM_TWO = 2;
 namespace OHOS::NetStack::WebsocketClient {
-static const uint32_t backoff_ms[] = {1000, 2000, 3000, 4000, 5000};
+static const uint32_t BACKOFF_MS[] = {1000, 2000, 3000, 4000, 5000};
 static const lws_retry_bo_t retry = {
-    .retry_ms_table = backoff_ms,
-    .retry_ms_table_count = LWS_ARRAY_SIZE(backoff_ms),
-    .conceal_count = LWS_ARRAY_SIZE(backoff_ms),
+    .retry_ms_table = BACKOFF_MS,
+    .retry_ms_table_count = LWS_ARRAY_SIZE(BACKOFF_MS),
+    .conceal_count = LWS_ARRAY_SIZE(BACKOFF_MS),
     .secs_since_valid_ping = 3,    /* force PINGs after secs idle */
     .secs_since_valid_hangup = 10, /* hangup after secs idle */
     .jitter_percent = 20,
@@ -87,8 +92,6 @@ int LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback_reasons reason
     }
     auto payload = reinterpret_cast<unsigned char **>(in);
     if (payload == nullptr || (*payload) == nullptr || len == 0) {
-        // NETSTACK_LOGE("header payload is null, do not append header");
-        // return RaiseError(manager);  //todo
         return -1;
     }
     auto payloadEnd = (*payload) + len;
@@ -144,11 +147,19 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
         return HttpDummy(wsi, reason, user, in, len);
     }
     const char *message = sendData.data;
-    size_t message_len = strlen(message);
-    unsigned char *buffer = new unsigned char[LWS_PRE + message_len];
-    memcpy(buffer + LWS_PRE, message, message_len);
-    int bytes_sent = lws_write(wsi, buffer + LWS_PRE, message_len, LWS_WRITE_TEXT);
-    NETSTACK_LOGI("send data length = %{public}d", bytes_sent);
+    size_t messageLen = strlen(message);
+    unsigned char *buffer = (unsigned char *)malloc(LWS_PRE + messageLen);
+    if (buffer == NULL) {
+        return -1;
+    }
+    int result = memcpy_s(buffer + LWS_PRE, LWS_PRE + messageLen, message, messageLen);
+    if (result != 0) {
+        free(buffer);
+        return -1;
+    }
+    int bytesSent = lws_write(wsi, buffer + LWS_PRE, messageLen, LWS_WRITE_TEXT);
+    free(buffer);
+    NETSTACK_LOGI("send data length = %{public}d", bytesSent);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -162,7 +173,7 @@ int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void
     ErrorResult errorResult;
     errorResult.errorCode = WebsocketErrorCode::WEBSOCKET_CONNECTION_ERROR;
     errorResult.errorMessage = data;
-    client->onErrorCallback(client, errorResult); // todo
+    client->onErrorCallback(client, errorResult);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -244,7 +255,7 @@ int LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason, void *user, v
     char *data = static_cast<char *>(in);
     buf.assign(data, len);
     CloseResult closeResult;
-    closeResult.code = 1001;
+    closeResult.code = CLOSE_RESULT_FROM_SERVER_CODE;
     closeResult.reason = "websocket close from server ";
     client->onCloseCallback(client, closeResult);
     client->GetClientContex()->SetThreadStop(true);
@@ -299,11 +310,10 @@ static struct lws_protocols protocols[] = {{"lws-minimal-client1", LwsCallback, 
     info.fd_limit_per_thread = FD_LIMIT_PER_THREAD;
 }
 
-bool ParseUrl(std::string url, char *prefix, size_t prefixLen, char *address, size_t addressLen, char *path,
-              size_t pathLen, int *port)
+bool ParseUrl(std::string url, char *prefix, char *address, char *path, int *port)
 {
     char uri[MAX_URI_LENGTH] = {0};
-    if (strcpy(uri, url.c_str()) == nullptr) {
+    if (strcpy_s(uri, MAX_URI_LENGTH, url.c_str()) < 0) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
@@ -311,15 +321,15 @@ bool ParseUrl(std::string url, char *prefix, size_t prefixLen, char *address, si
     const char *tempAddress = nullptr;
     const char *tempPath = nullptr;
     (void)lws_parse_uri(uri, &tempPrefix, &tempAddress, port, &tempPath);
-    if (strcpy(prefix, tempPrefix) == nullptr) {
+    if (strcpy_s(prefix, MAX_URI_LENGTH, tempPrefix) < 0) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
-    if (strcpy(address, tempAddress) == nullptr) {
+    if (strcpy_s(address, MAX_URI_LENGTH, tempAddress) < 0) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
-    if (strcpy(path, tempPath) == nullptr) {
+    if (strcpy_s(path, MAX_URI_LENGTH, tempPath) < 0) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
@@ -333,7 +343,7 @@ int CreatConnectInfo(std::string url, lws_context *lwsContext, WebsocketClient *
     char address[MAX_URI_LENGTH] = {0};
     char pathWithoutStart[MAX_URI_LENGTH] = {0};
     int port = 0;
-    if (!ParseUrl(url, prefix, MAX_URI_LENGTH, address, MAX_URI_LENGTH, pathWithoutStart, MAX_URI_LENGTH, &port)) {
+    if (!ParseUrl(url, prefix, address, pathWithoutStart, &port)) {
         return WebsocketErrorCode::WEBSOCKET_CONNECTION_PARSEURL_ERROR;
     }
     std::string path = PATH_START + std::string(pathWithoutStart);
@@ -369,11 +379,11 @@ int CreatConnectInfo(std::string url, lws_context *lwsContext, WebsocketClient *
     return WebsocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
-int WebsocketClient::Connect(std::string URL, struct OpenOptions options)
+int WebsocketClient::Connect(std::string url, struct OpenOptions options)
 {
     NETSTACK_LOGI("function at:  %{public}d", __LINE__);
     if (!options.headers.empty()) {
-        if (options.headers.size() > 8192) {
+        if (options.headers.size() > MAX_HEAR_LENGTH) {
             return WebsocketErrorCode::WEBSOCKET_ERROR_NO_HEADR_EXCEEDS;
         }
         for (const auto &item : options.headers) {
@@ -382,15 +392,15 @@ int WebsocketClient::Connect(std::string URL, struct OpenOptions options)
             this->GetClientContex()->header[key] = value;
         }
     }
-    lws_context_creation_info info;
-    memset(&info, 0, sizeof info);
+    lws_context_creation_info info = {};
     FillContextInfo(info);
     lws_context *lwsContext = lws_create_context(&info);
     this->GetClientContex()->SetContext(lwsContext);
-    int ret = CreatConnectInfo(URL, lwsContext, this);
+    int ret = CreatConnectInfo(url, lwsContext, this);
     NETSTACK_LOGI("function at:  line=%{public}d,ret=%{public}d", __LINE__, ret);
-    if (ret > 0)
+    if (ret > 0) {
         return ret;
+    }
     std::thread serviceThread(RunService, this);
     serviceThread.detach();
     return WebsocketErrorCode::WEBSOCKET_NONE_ERR;
@@ -401,7 +411,7 @@ int WebsocketClient::Send(char *data, size_t length)
     if (data == nullptr) {
         return WebsocketErrorCode::WEBSOCKET_SEND_DATA_NULL;
     }
-    if (length > 4 * 1024 * 1024) {
+    if (length > MAX_DATA_LENGTH) {
         return WebsocketErrorCode::WEBSOCKET_DATA_LENGTH_EXCEEDS;
     }
     if (this->GetClientContex() == nullptr) {
@@ -422,7 +432,7 @@ int WebsocketClient::Close(CloseOption options)
 
     if (options.reason == nullptr || options.code == 0) {
         options.reason = "";
-        options.code = 1000;
+        options.code = CLOSE_RESULT_FROM_CLIENT_CODE;
     }
     this->GetClientContex()->Close(static_cast<lws_close_status>(options.code), options.reason);
     return WebsocketErrorCode::WEBSOCKET_NONE_ERR;
