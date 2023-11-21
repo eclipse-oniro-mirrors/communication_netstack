@@ -20,7 +20,7 @@
 
 namespace OHOS::NetStack::WebsocketClient {
 
-extern std::map<OH_NetStack_WebsocketClient *, WebsocketClient *> globalMap;
+extern std::map<OH_NetStack_WebsocketClient *, WebsocketClient *> g_clientMap;
 
 WebsocketClient *GetInnerClientAdapter(OH_NetStack_WebsocketClient *key);
 OH_NetStack_WebsocketClient *GetNdkClientAdapter(WebsocketClient *websocketClient);
