@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +17,15 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "http_response.h"
+#include "json/json.h"
 
 namespace OHOS::NetStack::Http {
+
+static constexpr int COOKIE_VECTOR_LEN = 7;
+static std::vector <std::string> COOKIE_KEY = {HttpConstant::COOKIE_DOMAIN, HttpConstant::COOKIE_FLAG,
+                                               HttpConstant::COOKIE_PATH, HttpConstant::COOKIE_SECURE,
+                                               HttpConstant::COOKIE_EXPIRATION, HttpConstant::COOKIE_NAME,
+                                               HttpConstant::COOKIE_VALUE};
 HttpResponse::HttpResponse() : responseCode_(0) {}
 
 void HttpResponse::AppendResult(const void *data, size_t length)
@@ -54,9 +61,31 @@ void HttpResponse::ParseHeaders()
     }
 }
 
-void HttpResponse::AppendCookies(const void *data, size_t length)
+void HttpResponse::CookiesToJson(curl_slist *cookies)
 {
-    cookies_.append(static_cast<const char *>(data), length);
+    Json::Value allCookie;
+    Json::StreamWriterBuilder writer;
+    while (cookies) {
+        std::string strCookies(cookies->data);
+        std::vector<std::string> cookieParts;
+        const std::basic_string<char> &strStream(strCookies);
+        std::string part;
+
+        cookieParts = CommonUtils::Split(strStream, HttpConstant::COOKIE_TABLE);
+        // Create a Json object for each cookie
+        if (cookieParts.size() != COOKIE_VECTOR_LEN) {
+            cookies_ = "";
+            return;
+        }
+        Json::Value cookie;
+        for (int i = 0; i < COOKIE_VECTOR_LEN; i++) {
+            cookie[COOKIE_KEY[i]] = cookieParts[i];
+        }
+
+        allCookie.append(cookie);
+        cookies = cookies->next;
+    }
+    cookies_ = Json::writeString(writer, allCookie);
 }
 
 const std::string &HttpResponse::GetResult() const
