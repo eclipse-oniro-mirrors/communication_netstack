@@ -19,7 +19,6 @@
 
 namespace OHOS::NetStack::WebsocketClient {
 
-[[maybe_unused]] const int MAX_SIZE = 10;
 std::map<OH_NetStack_WebsocketClient *, WebsocketClient *> globalMap;
 std::map<std::string, std::string> globalheaders;
 
@@ -64,10 +63,14 @@ int32_t Conv2RequestOptions(struct OpenOptions *openOptions,
     struct OH_NetStack_WebsocketClient_Slist *currentHeader = RequestOptions.headers;
 
     while (currentHeader != nullptr) {
-        std::string fieldName(currentHeader->FieldName);
-        std::string fieldValue(currentHeader->FieldValue);
+        std::string fieldName(currentHeader->fieldName);
+        std::string fieldValue(currentHeader->fieldValue);
         openOptions->headers[fieldName] = fieldValue;
         currentHeader = currentHeader->next;
+    }
+    for (const auto &pair : openOptions->headers) {
+        std::cout << "TS:NDK ADAPTER: " << __func__ << ", line= " << __LINE__ << " " << pair.first << ": "
+                  << pair.second << std::endl;
     }
 
     return 0;
@@ -90,7 +93,6 @@ int32_t Conv2CloseResult(struct CloseResult closeResult, struct OH_NetStack_Webs
 
 int32_t Conv2ErrorResult(struct ErrorResult error, struct OH_NetStack_WebsocketClient_ErrorResult *OH_ErrorResult)
 {
-
     OH_ErrorResult->errorCode = error.errorCode;
     OH_ErrorResult->errorMessage = error.errorMessage;
     return 0;
@@ -98,7 +100,6 @@ int32_t Conv2ErrorResult(struct ErrorResult error, struct OH_NetStack_WebsocketC
 
 int32_t Conv2OpenResult(struct OpenResult openResult, struct OH_NetStack_WebsocketClient_OpenResult *OH_OpenResult)
 {
-
     OH_OpenResult->code = openResult.status;
     OH_OpenResult->reason = openResult.Message;
 
