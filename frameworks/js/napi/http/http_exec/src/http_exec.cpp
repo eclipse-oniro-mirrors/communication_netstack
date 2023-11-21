@@ -660,6 +660,27 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     if (!pins.empty()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str(), context);
     }
+
+    std::vector<std::string> certs;
+    ret = NetManagerStandard::NetConnClient::GetInstance().GetTrustAnchorsForHostName(hostname, certs);
+    if (ret != 0) {
+        return false;
+    }
+
+    for(auto cert: certs) {
+        if (!cert.empty()) {
+            std::string caPath;
+            auto delim = cert.find_last_of('/');
+            if (delim != std::string::npos) {
+                caPath = cert.substr(0, delim);
+            } else {
+                caPath = "./";
+            }
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, caPath.c_str(), context);
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, cert.c_str(), context);
+            break;
+        }
+    }
 #endif
     return true;
 }
