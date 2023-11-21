@@ -145,9 +145,9 @@ typedef void (*OH_NetStack_WebsocketClient_OnCloseCallback)(struct OH_NetStack_W
  */
 struct OH_NetStack_WebsocketClient_Slist {
     /** Header field name */
-    const char *FieldName;
+    const char *fieldName;
     /** Header field content */
-    const char *FieldValue;
+    const char *fieldValue;
     /** Next pointer of the header linked list */
     struct OH_NetStack_WebsocketClient_Slist *next;
 };
@@ -186,7 +186,7 @@ typedef enum OH_Websocket_ErrCode {
     /**
      * Operation success.
      */
-    Websocket_OK = 0,
+    WEBSOCKET_OK = 0,
 
     /**
      * @brief Error code base.
