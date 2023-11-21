@@ -68,10 +68,6 @@ int32_t Conv2RequestOptions(struct OpenOptions *openOptions,
         openOptions->headers[fieldName] = fieldValue;
         currentHeader = currentHeader->next;
     }
-    for (const auto &pair : openOptions->headers) {
-        std::cout << "TS:NDK ADAPTER: " << __func__ << ", line= " << __LINE__ << " " << pair.first << ": "
-                  << pair.second << std::endl;
-    }
 
     return 0;
 }
