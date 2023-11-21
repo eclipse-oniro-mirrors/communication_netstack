@@ -90,7 +90,7 @@ int OH_NetStack_WebSocketClient_AddHeader(struct OH_NetStack_WebsocketClient *cl
  * @since 11
  * @version 1.0
  */
-int OH_NetStack_WebSocketClient_Connet(struct OH_NetStack_WebsocketClient *client, const char *url,
+int OH_NetStack_WebSocketClient_Connect(struct OH_NetStack_WebsocketClient *client, const char *url,
                                        struct OH_NetStack_WebsocketClient_RequestOptions options);
 
 /**
