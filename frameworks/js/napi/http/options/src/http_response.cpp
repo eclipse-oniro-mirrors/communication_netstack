@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,10 +22,10 @@
 namespace OHOS::NetStack::Http {
 
 static constexpr int COOKIE_VECTOR_LEN = 7;
-static std::vector<std::string> COOKIE_KEY = {HttpConstant::COOKIE_DOMAIN,     HttpConstant::COOKIE_FLAG,
-                                             HttpConstant::COOKIE_PATH,       HttpConstant::COOKIE_SECURE,
-                                             HttpConstant::COOKIE_EXPIRATION, HttpConstant::COOKIE_NAME,
-                                             HttpConstant::COOKIE_VALUE};
+static std::vector <std::string> COOKIE_KEY = {HttpConstant::COOKIE_DOMAIN, HttpConstant::COOKIE_FLAG,
+                                               HttpConstant::COOKIE_PATH, HttpConstant::COOKIE_SECURE,
+                                               HttpConstant::COOKIE_EXPIRATION, HttpConstant::COOKIE_NAME,
+                                               HttpConstant::COOKIE_VALUE};
 HttpResponse::HttpResponse() : responseCode_(0) {}
 
 void HttpResponse::AppendResult(const void *data, size_t length)
