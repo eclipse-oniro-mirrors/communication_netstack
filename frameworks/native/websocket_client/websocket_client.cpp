@@ -149,7 +149,7 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
     const char *message = sendData.data;
     size_t messageLen = strlen(message);
     unsigned char *buffer = (unsigned char *)malloc(LWS_PRE + messageLen);
-    if (buffer == NULL) {
+    if (buffer == nullptr) {
         return -1;
     }
     int result = memcpy_s(buffer + LWS_PRE, LWS_PRE + messageLen, message, messageLen);
