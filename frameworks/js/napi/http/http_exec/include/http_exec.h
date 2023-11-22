@@ -86,6 +86,8 @@ private:
 
     static bool SetSSLCertOption(CURL *curl, RequestContext *context);
 
+    static bool SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context);
+
     static bool SetDnsOption(CURL *curl, RequestContext *context);
 
     static size_t OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData);

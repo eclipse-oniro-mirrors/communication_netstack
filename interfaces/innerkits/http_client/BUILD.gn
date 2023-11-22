@@ -73,12 +73,16 @@ ohos_shared_library("http_client") {
     sources +=
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
     deps += [ "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static" ]
+    external_deps = [ "netmanager_base:net_conn_manager_if" ]
   } else {
     deps += [
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
     ]
-    external_deps = [ "hilog:libhilog" ]
+    external_deps = [
+      "hilog:libhilog",
+      "netmanager_base:net_conn_manager_if",
+    ]
     if (product_name != "ohos-sdk") {
       external_deps += [ "init:libbegetutil" ]
     }
