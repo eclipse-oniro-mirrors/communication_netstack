@@ -31,6 +31,7 @@
         "deps": {
             "components": [
                 "hilog",
+                "ipc",
                 "zlib",
                 "c_utils",
                 "init",
@@ -77,6 +78,17 @@
                         "header_base": "//foundation/communication/netstack/interfaces/innerkits/http_client/include"
                     }
                 },
+                {
+                    "type": "so",
+                    "name": "//foundation/communication/netstack/interfaces/innerkits/net_ssl:net_ssl",
+                    "header": {
+                        "header_files": [
+                            "net_ssl_type.h",
+                            "net_ssl.h"
+                        ],
+                        "header_base": "//foundation/communication/netstack/interfaces/innerkits/net_ssl/include"
+                    }
+                },                
                 {
                     "header": {
                         "header_base": [],
