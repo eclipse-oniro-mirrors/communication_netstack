@@ -1,18 +1,4 @@
-/*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
- 
+#include "netstack_log.h"
 #include <atomic>
 #include <iostream>
 #include <libwebsockets.h>
@@ -24,7 +10,6 @@
 #include <string.h>
 #include <string>
 #include <thread>
-#include "netstack_log.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -52,8 +37,7 @@ public:
     {
     }
 
-    ClientContex() {
-    };
+    ClientContex(){};
 
     bool IsClosed()
     {
@@ -68,13 +52,12 @@ public:
 
     void SetThreadStop(bool threadStop)
     {
-        std::cout << "TS:inner api: " << __func__ << ", line= " << __LINE__ << std::endl;
         threadStop_.store(threadStop);
     }
 
     void Close(lws_close_status status, const std::string &reason)
     {
-        NETSTACK_LOGI("ClientContex  Close, function at:  %{public}d", __LINE__);
+        NETSTACK_LOGD("ClientContex  Close");
         std::lock_guard<std::mutex> lock(mutex_);
         closeStatus = status;
         closeReason = reason;
