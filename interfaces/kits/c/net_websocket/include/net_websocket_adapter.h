@@ -26,9 +26,9 @@ WebsocketClient *GetInnerClientAdapter(OH_NetStack_WebsocketClient *key);
 OH_NetStack_WebsocketClient *GetNdkClientAdapter(WebsocketClient *websocketClient);
 
 int32_t Conv2RequestOptions(struct OpenOptions *openOptions,
-                            struct OH_NetStack_WebsocketClient_RequestOptions RequestOptions);
+                            struct OH_NetStack_WebsocketClient_RequestOptions requestOptions);
 int32_t Conv2CloseOptions(struct CloseOption *closeOption,
-                          struct OH_NetStack_WebsocketClient_CloseOption RequestOptions);
+                          struct OH_NetStack_WebsocketClient_CloseOption requestOptions);
 int32_t Conv2CloseResult(struct CloseResult closeResult,
                          struct OH_NetStack_WebsocketClient_CloseResult *OH_CloseResult);
 int32_t Conv2ErrorResult(struct ErrorResult error, struct OH_NetStack_WebsocketClient_ErrorResult *OH_ErrorResult);
