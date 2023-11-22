@@ -70,7 +70,7 @@ public:
     int Connect(std::string URL, OpenOptions Options);
     int Send(char *data, size_t length);
     int Close(CloseOption options);
-    int registcallback(OnOpenCallback OnOpen, OnMessageCallback onMessage, OnErrorCallback OnError,
+    int Registcallback(OnOpenCallback OnOpen, OnMessageCallback onMessage, OnErrorCallback OnError,
                        OnCloseCallback onclose);
     int Destroy();
 
