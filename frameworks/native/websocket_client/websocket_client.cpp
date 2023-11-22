@@ -29,7 +29,7 @@ static constexpr const char *PREFIX_HTTPS = "https";
 static constexpr const char *PREFIX_WSS = "wss";
 static constexpr const int MAX_URI_LENGTH = 1024;
 static constexpr const int MAX_HDR_LENGTH = 1024;
-static constexpr const int MAX_HEADR_LENGTH = 8192;
+static constexpr const int MAX_HEADER_LENGTH = 8192;
 static constexpr const size_t MAX_DATA_LENGTH = 4 * 1024 * 1024;
 static constexpr const int FD_LIMIT_PER_THREAD = 1 + 1 + 1;
 [[maybe_unused]] static constexpr const int COMMON_ERROR_CODE = 200;
@@ -382,7 +382,7 @@ int WebsocketClient::Connect(std::string url, struct OpenOptions options)
 {
     NETSTACK_LOGI("Connect start");
     if (!options.headers.empty()) {
-        if (options.headers.size() > MAX_HEADR_LENGTH) {
+        if (options.headers.size() > MAX_HEADER_LENGTH) {
             return WebsocketErrorCode::WEBSOCKET_ERROR_NO_HEADR_EXCEEDS;
         }
         for (const auto &item : options.headers) {
@@ -393,7 +393,7 @@ int WebsocketClient::Connect(std::string url, struct OpenOptions options)
     }
     lws_context_creation_info info = {};
     FillContextInfo(info);
-    lws_context *lwsContext = lws_create_context(&info);
+    lws_context *lwsContext = lws_create_context(&info); 
     this->GetClientContex()->SetContext(lwsContext);
     int ret = CreatConnectInfo(url, lwsContext, this);
     if (ret > 0) {
@@ -436,7 +436,7 @@ int WebsocketClient::Close(CloseOption options)
     return WebsocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
-int WebsocketClient::registcallback(OnOpenCallback onOpen, OnMessageCallback onMessage, OnErrorCallback onError,
+int WebsocketClient::Registcallback(OnOpenCallback onOpen, OnMessageCallback onMessage, OnErrorCallback onError,
                                     OnCloseCallback onClose)
 {
     onMessageCallback = onMessage;
