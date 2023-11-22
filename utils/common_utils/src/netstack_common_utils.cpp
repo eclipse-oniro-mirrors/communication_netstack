@@ -35,8 +35,18 @@
 #include "netstack_log.h"
 
 constexpr int32_t INET_OPTION_SUC = 1;
+constexpr size_t MAX_DISPLAY_NUM = 2;
 
 namespace OHOS::NetStack::CommonUtils {
+const std::regex IP_PATTERN{
+    "((2([0-4]\\d|5[0-5])|1\\d\\d|[1-9]\\d|\\d)\\.){3}(2([0-4]\\d|5[0-5])|1\\d\\d|[1-9]\\d|\\d)"};
+const std::regex IP_MASK_PATTERN{
+    "((2([0-4]\\d|5[0-5])|1\\d\\d|[1-9]\\d|\\d)\\.){3}(2([0-4]\\d|5[0-5])|1\\d\\d|[1-9]\\d|\\d)/"
+    "(3[0-2]|[1-2]\\d|\\d)"};
+const std::regex IPV6_PATTERN{"([\\da-fA-F]{0,4}:){2,7}([\\da-fA-F]{0,4})"};
+const std::regex IPV6_MASK_PATTERN{"([\\da-fA-F]{0,4}:){2,7}([\\da-fA-F]{0,4})/(1[0-2][0-8]|[1-9]\\d|[1-9])"};
+std::mutex g_commonUtilsMutex;
+
 std::vector<std::string> Split(const std::string &str, const std::string &sep)
 {
     std::string s = str;
@@ -304,12 +314,59 @@ bool IsValidIP(const std::string& ip, int af)
 #endif
 }
 
-std::string AnonymizeIp(std::string &str)
+std::string MaskIpv4(std::string &maskedResult)
 {
-    if (str.empty()) {
-        return str;
+    int maxDisplayNum = MAX_DISPLAY_NUM;
+    for (char &i : maskedResult) {
+        if (i == '/') {
+            break;
+        }
+        if (maxDisplayNum > 0) {
+            if (i == '.') {
+                maxDisplayNum--;
+            }
+        } else {
+            if (i != '.') {
+                i = '*';
+            }
+        }
     }
-    std::regex digitRegex("[^.^:^,]");
-    return std::regex_replace(str, digitRegex, "*");
+    return maskedResult;
+}
+
+std::string MaskIpv6(std::string &maskedResult)
+{
+    size_t colonCount = 0;
+    for (char &i : maskedResult) {
+        if (i == '/') {
+            break;
+        }
+        if (i == ':') {
+            colonCount++;
+        }
+
+        if (colonCount >= MAX_DISPLAY_NUM) {
+            if (i != ':' && i != '/') {
+                i = '*';
+            }
+        }
+    }
+    return maskedResult;
+}
+
+std::string AnonymizeIp(std::string &input)
+{
+    if (input.empty()) {
+        return input;
+    }
+    std::lock_guard<std::mutex> lock(g_commonUtilsMutex);
+    std::string maskedResult{input};
+    if (std::regex_match(maskedResult, IP_PATTERN) || std::regex_match(maskedResult, IP_MASK_PATTERN)) {
+        return MaskIpv4(maskedResult);
+    }
+    if (std::regex_match(maskedResult, IPV6_PATTERN) || std::regex_match(maskedResult, IPV6_MASK_PATTERN)) {
+        return MaskIpv6(maskedResult);
+    }
+    return input;
 }
 } // namespace OHOS::NetStack::CommonUtils

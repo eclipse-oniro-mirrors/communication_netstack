@@ -726,11 +726,11 @@ bool HttpExec::SetDnsOption(CURL *curl, RequestContext *context)
         return true;
     }
     std::string serverList;
-    for (const auto& server : dnsServers) {
+    for (auto &server : dnsServers) {
         serverList += server + ",";
+        NETSTACK_LOGD("SetDns server: %{public}s", CommonUtils::AnonymizeIp(server).c_str());
     }
     serverList.pop_back();
-    NETSTACK_LOGD("SetDnsOption: %{public}s", CommonUtils::AnonymizeIp(serverList).c_str());
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DNS_SERVERS, serverList.c_str(), context);
     return true;
 }

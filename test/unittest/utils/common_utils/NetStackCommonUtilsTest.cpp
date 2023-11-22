@@ -254,15 +254,15 @@ HWTEST_F(NetStackCommonUtilsTest, CommonUtils29, TestSize.Level2)
 {
     std::string ipv6Ip = "2001:0db8:85a3::8a2e:0370:7334";
     std::string actualOutput = AnonymizeIp(ipv6Ip);
-    std::string expectedOutput = "****:****:****::****:****:****";
+    std::string expectedOutput = "2001:0db8:****::****:****:****";
     EXPECT_STREQ(actualOutput.c_str(), expectedOutput.c_str());
 }
 
 HWTEST_F(NetStackCommonUtilsTest, CommonUtils30, TestSize.Level2)
 {
-    std::string ipv4Ips = "8.8.8.8,8.8.4.4";
+    std::string ipv4Ips = "8.8.8.8";
     std::string actualOutput = AnonymizeIp(ipv4Ips);
-    std::string expectedOutput = "*.*.*.*,*.*.*.*";
+    std::string expectedOutput = "8.8.*.*";
     EXPECT_STREQ(actualOutput.c_str(), expectedOutput.c_str());
 }
 } // namespace CommonUtils
