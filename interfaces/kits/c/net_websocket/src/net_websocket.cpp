@@ -94,9 +94,8 @@ int OH_NetStack_WebSocketClient_AddHeader(struct OH_NetStack_WebsocketClient *cl
     struct OH_NetStack_WebsocketClient_Slist *newHeader =
         (struct OH_NetStack_WebsocketClient_Slist *)malloc(sizeof(struct OH_NetStack_WebsocketClient_Slist));
 
-    if (newHeader == NULL) {
+    if (newHeader == nullptr) {
         return WebsocketErrorCode::WEBSOCKET_CONNECTION_ERROR;
-
     } else {
         newHeader->fieldName = header.fieldName;
         newHeader->fieldValue = header.fieldValue;
