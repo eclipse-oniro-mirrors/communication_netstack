@@ -393,7 +393,7 @@ int WebsocketClient::Connect(std::string url, struct OpenOptions options)
     }
     lws_context_creation_info info = {};
     FillContextInfo(info);
-    lws_context *lwsContext = lws_create_context(&info); 
+    lws_context *lwsContext = lws_create_context(&info);
     this->GetClientContex()->SetContext(lwsContext);
     int ret = CreatConnectInfo(url, lwsContext, this);
     if (ret > 0) {
