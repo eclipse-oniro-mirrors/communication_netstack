@@ -36,8 +36,6 @@ config("networksecurity_napi_config") {
     defines = [ "WINDOWS_PLATFORM" ]
   } else if (is_mac) {
     defines = [ "MAC_PLATFORM" ]
-  } else if (product_name != "ohos-sdk") {
-    defines = [ "HTTP_PROXY_ENABLE" ]
   }
 }
 
@@ -58,15 +56,12 @@ ohos_shared_library("networksecurity_napi") {
     deps += [
       "$ARKUI_ROOT/napi:ace_napi",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
-      "$THIRD_PARTY_ROOT/bounds_checking_function:libsec_static",
-      "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
     ]
   } else {
     deps += [
       "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-      "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
       "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
       "$THIRD_PARTY_ROOT/openssl:libssl_shared",
     ]
@@ -74,17 +69,6 @@ ohos_shared_library("networksecurity_napi") {
       "hilog:libhilog",
       "napi:ace_napi",
     ]
-    if (defined(global_parts_info) &&
-        defined(global_parts_info.communication_netmanager_base) &&
-        global_parts_info.communication_netmanager_base) {
-      external_deps += [ "netmanager_base:net_conn_manager_if" ]
-      defines = [ "HAS_NETMANAGER_BASE=1" ]
-    } else {
-      defines = [ "HAS_NETMANAGER_BASE=0" ]
-    }
-    if (product_name != "ohos-sdk") {
-      external_deps += [ "init:libbegetutil" ]
-    }
   }
 
   relative_install_dir = "module/net"
