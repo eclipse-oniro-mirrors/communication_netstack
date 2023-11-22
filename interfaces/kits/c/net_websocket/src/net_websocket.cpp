@@ -71,7 +71,7 @@ struct OH_NetStack_WebsocketClient *OH_NetStack_WebsocketClient_Construct(
     OH_client->onClose = onclose;
     OH_client->onError = onError;
     OH_client->onOpen = onOpen;
-    websocketClient->registcallback(OH_NetStack_OnOpenCallback, OH_NetStack_OnMessageCallback,
+    websocketClient->Registcallback(OH_NetStack_OnOpenCallback, OH_NetStack_OnMessageCallback,
                                     OH_NetStack_OnErrorCallback, OH_NetStack_OnCloseCallback);
     if (g_clientMap.size() == MAX_CLIENT_SIZE) {
         OH_client = nullptr;
