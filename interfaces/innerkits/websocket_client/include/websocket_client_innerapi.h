@@ -17,7 +17,6 @@
 #define COMMUNICATIONNETSTACK_WEBSOCKET_CLIENT_H
 
 #include <atomic>
-#include <libwebsockets.h>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -26,6 +25,7 @@
 #include <string.h>
 #include <string>
 #include <thread>
+#include <libwebsockets.h>
 
 #include "clientContex.h"
 #include "websocket_client_error.h"
