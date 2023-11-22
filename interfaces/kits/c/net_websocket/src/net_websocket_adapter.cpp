@@ -43,13 +43,13 @@ OH_NetStack_WebsocketClient *GetNdkClientAdapter(WebsocketClient *websocketClien
 }
 
 int32_t Conv2RequestOptions(struct OpenOptions *openOptions,
-                            struct OH_NetStack_WebsocketClient_RequestOptions RequestOptions)
+                            struct OH_NetStack_WebsocketClient_RequestOptions requestOptions)
 {
     if (openOptions == nullptr) {
         return -1;
     }
 
-    struct OH_NetStack_WebsocketClient_Slist *currentHeader = RequestOptions.headers;
+    struct OH_NetStack_WebsocketClient_Slist *currentHeader = requestOptions.headers;
 
     while (currentHeader != nullptr) {
         std::string fieldName(currentHeader->fieldName);
@@ -62,10 +62,10 @@ int32_t Conv2RequestOptions(struct OpenOptions *openOptions,
 }
 
 int32_t Conv2CloseOptions(struct CloseOption *closeOption,
-                          struct OH_NetStack_WebsocketClient_CloseOption RequestOptions)
+                          struct OH_NetStack_WebsocketClient_CloseOption requestOptions)
 {
-    closeOption->code = RequestOptions.code;
-    closeOption->reason = RequestOptions.reason;
+    closeOption->code = requestOptions.code;
+    closeOption->reason = requestOptions.reason;
     return 0;
 }
 
