@@ -179,7 +179,7 @@ struct OH_NetStack_WebsocketClient {
     /** Pointer to the callback invoked when a close message is received */
     OH_NetStack_WebsocketClient_OnCloseCallback onClose;
     /** Content of the request for establishing a connection on the client */
-    OH_NetStack_WebsocketClient_RequestOptions RequestOptions;
+    OH_NetStack_WebsocketClient_RequestOptions requestOptions;
 };
 
 typedef enum OH_Websocket_ErrCode {
