@@ -735,15 +735,17 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 
 bool HttpExec::SetDnsOption(CURL *curl, RequestContext *context)
 {
-    std::vector<std::string> dns_servers = context->options.GetDnsServers();
-    if (dns_servers.empty()) {
+    std::vector<std::string> dnsServers = context->options.GetDnsServers();
+    if (dnsServers.empty()) {
         return true;
     }
-    struct curl_slist *curlDnsServers = NULL;
-    for (const auto &server : dns_servers) {
-        curlDnsServers = curl_slist_append(curlDnsServers, server.c_str());
+    std::string serverList;
+    for (auto &server : dnsServers) {
+        serverList += server + ",";
+        NETSTACK_LOGD("SetDns server: %{public}s", CommonUtils::AnonymizeIp(server).c_str());
     }
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DNS_SERVERS, curlDnsServers, context);
+    serverList.pop_back();
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DNS_SERVERS, serverList.c_str(), context);
     return true;
 }
 
