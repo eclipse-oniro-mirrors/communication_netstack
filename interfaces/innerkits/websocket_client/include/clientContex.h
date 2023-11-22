@@ -13,10 +13,8 @@
  * limitations under the License.
  */
 
-#include "netstack_log.h"
 #include <atomic>
 #include <iostream>
-#include <libwebsockets.h>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -25,6 +23,7 @@
 #include <string.h>
 #include <string>
 #include <thread>
+#include "netstack_log.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -120,7 +119,7 @@ public:
     std::string openMessage;
 
 private:
-    volatile bool closed_;
+    bool closed_;
 
     std::atomic_bool threadStop_;
 
