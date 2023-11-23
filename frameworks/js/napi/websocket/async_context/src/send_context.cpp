@@ -114,7 +114,6 @@ void SendContext::ParseParams(napi_value *params, size_t paramsCount)
     }
 
     if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
-        NETSTACK_LOGI("SendContext NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function");
         return SetParseOK(SetCallback(params[1]) == napi_ok);
     }
 

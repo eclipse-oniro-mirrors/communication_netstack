@@ -20,7 +20,6 @@
 #include "json/json.h"
 
 namespace OHOS::NetStack::Http {
-
 static constexpr int COOKIE_VECTOR_LEN = 7;
 static std::vector <std::string> COOKIE_KEY = {HttpConstant::COOKIE_DOMAIN, HttpConstant::COOKIE_FLAG,
                                                HttpConstant::COOKIE_PATH, HttpConstant::COOKIE_SECURE,

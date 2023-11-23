@@ -30,16 +30,6 @@ void HttpAsyncWork::RequestCallback(napi_env env, napi_status status, void *data
     BaseAsyncWork::AsyncWorkCallback<RequestContext, HttpExec::RequestCallback>(env, status, data);
 }
 
-void HttpAsyncWork::RequestInStreamCallback(napi_env env, napi_status status, void *data)
-{
-    BaseAsyncWork::AsyncWorkCallback<RequestContext, HttpExec::RequestInStreamCallback>(env, status, data);
-}
-
-void HttpAsyncWork::RequestInStreamCallbackWithoutDel(napi_env env, napi_status status, void *data)
-{
-    BaseAsyncWork::AsyncWorkCallbackWithoutDel<RequestContext, HttpExec::RequestInStreamCallback>(env, status, data);
-}
-
 void HttpAsyncWork::ExecFlush(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<BaseContext, HttpResponseCacheExec::ExecFlush>(env, data);

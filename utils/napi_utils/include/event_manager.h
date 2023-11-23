@@ -40,6 +40,9 @@ public:
 
     ~EventManager();
 
+    EventManager(const EventManager &) = delete;
+    EventManager &operator=(const EventManager &manager) = delete;
+
     void AddListener(napi_env env, const std::string &type, napi_value callback, bool once, bool asyncCallback);
 
     void DeleteListener(const std::string &type, napi_value callback);

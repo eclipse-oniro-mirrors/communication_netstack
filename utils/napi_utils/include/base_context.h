@@ -63,6 +63,8 @@ public:
 
     napi_value CreatePromise();
 
+    void DeletePromise();
+
     [[nodiscard]] bool IsParseOK() const;
 
     [[nodiscard]] bool IsExecOK() const;
@@ -120,6 +122,8 @@ private:
     std::string errorMessage_;
 
     napi_ref callback_;
+
+    napi_ref promiseRef_;
 
     napi_async_work asyncWork_;
 

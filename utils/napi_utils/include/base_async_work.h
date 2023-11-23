@@ -56,32 +56,32 @@ public:
     static void AsyncWorkCallback(napi_env env, napi_status status, void *data)
     {
         static_assert(std::is_base_of<BaseContext, Context>::value);
-        auto context = static_cast<Context*>(data);
+
         if (status != napi_ok) {
-            context->DeleteReference();
-            delete context;
             return;
         }
+        auto deleter = [](Context *context) {
+            context->DeleteReference();
+            delete context;
+            context = nullptr;
+        };
+        std::unique_ptr<Context, decltype(deleter)> context(static_cast<Context *>(data), deleter);
         size_t argc = 2;
         napi_value argv[2] = {nullptr};
         if (context->IsParseOK() && context->IsExecOK()) {
             argv[0] = NapiUtils::GetUndefined(env);
 
             if (Callback != nullptr) {
-                argv[1] = Callback(context);
+                argv[1] = Callback(context.get());
             } else {
                 argv[1] = NapiUtils::GetUndefined(env);
             }
             if (argv[1] == nullptr) {
-                context->DeleteReference();
-                delete context;
                 return;
             }
         } else {
             argv[0] = NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
             if (argv[0] == nullptr) {
-                context->DeleteReference();
-                delete context;
                 return;
             }
 
@@ -94,8 +94,6 @@ public:
             } else {
                 napi_reject_deferred(env, context->GetDeferred(), argv[0]);
             }
-            context->DeleteReference();
-            delete context;
             return;
         }
 
@@ -103,63 +101,6 @@ public:
         if (NapiUtils::GetValueType(env, func) == napi_function) {
             napi_value undefined = NapiUtils::GetUndefined(env);
             (void)NapiUtils::CallFunction(env, undefined, func, argc, argv);
-        }
-        context->DeleteReference();
-        delete context;
-    }
-
-    template <class Context, napi_value (*Callback)(Context *)>
-    static void AsyncWorkCallbackWithoutDel(napi_env env, napi_status status, void *data)
-    {
-        static_assert(std::is_base_of<BaseContext, Context>::value);
-
-        if (status != napi_ok) {
-            return;
-        }
-        auto context = static_cast<Context *>(data);
-        size_t argc = 2;
-        napi_value argv[2] = {nullptr};
-        if (context->IsParseOK() && context->IsExecOK()) {
-            argv[0] = NapiUtils::GetUndefined(env);
-
-            if (Callback != nullptr) {
-                argv[1] = Callback(context);
-            } else {
-                argv[1] = NapiUtils::GetUndefined(env);
-            }
-            if (argv[1] == nullptr) {
-                return;
-            }
-        } else {
-            argv[0] = NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
-            if (argv[0] == nullptr) {
-                context->DeleteReference();
-                delete context;
-                return;
-            }
-
-            argv[1] = NapiUtils::GetUndefined(env);
-        }
-
-        if (context->GetDeferred() != nullptr) {
-            if (context->IsExecOK()) {
-                napi_resolve_deferred(env, context->GetDeferred(), argv[1]);
-            } else {
-                napi_reject_deferred(env, context->GetDeferred(), argv[0]);
-                context->DeleteReference();
-                delete context;
-            }
-            return;
-        }
-
-        napi_value func = context->GetCallback();
-        if (NapiUtils::GetValueType(env, func) == napi_function) {
-            napi_value undefined = NapiUtils::GetUndefined(env);
-            (void)NapiUtils::CallFunction(env, undefined, func, argc, argv);
-        }
-        if (!context->IsExecOK()) {
-            context->DeleteReference();
-            delete context;
         }
     }
 

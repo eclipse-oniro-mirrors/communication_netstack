@@ -238,12 +238,6 @@ napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_ca
             if (!HttpExec::Initialize()) {
                 return false;
             }
-#ifdef ENABLE_EVENT_HANDLER
-            auto manager = context->GetManager();
-            if (!manager->InitNetstackEventHandler()) {
-                return false;
-            }
-#endif
             context->EnableRequestInStream();
             HttpExec::AsyncRunRequest(context);
             return true;
