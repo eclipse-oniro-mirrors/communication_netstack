@@ -109,7 +109,6 @@ int OH_NetStack_WebSocketClient_AddHeader(struct OH_NetStack_WebsocketClient *cl
             }
             currentHeader->next = newHeader;
         }
-        free(newHeader);
         return 0;
     }
 }
