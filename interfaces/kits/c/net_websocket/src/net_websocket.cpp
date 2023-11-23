@@ -15,9 +15,9 @@
 #include <cstring>
 #include <iostream>
 
-#include "netstack_log.h"
 #include "net_websocket.h"
 #include "net_websocket_adapter.h"
+#include "netstack_log.h"
 #include "websocket_client_innerapi.h"
 
 using namespace std;
@@ -121,8 +121,9 @@ int OH_NetStack_WebSocketClient_Send(struct OH_NetStack_WebsocketClient *client,
     }
     WebsocketClient *websocketClient = GetInnerClientAdapter(client);
 
-    if (websocketClient == NULL)
+    if (websocketClient == NULL) {
         return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
+    }
 
     ret = websocketClient->Send(data, length);
     return ret;
@@ -141,13 +142,15 @@ int OH_NetStack_WebSocketClient_Connect(struct OH_NetStack_WebsocketClient *clie
     struct OpenOptions openOptions;
     openOptions.headers = {};
 
-    if (options.headers != nullptr)
+    if (options.headers != nullptr) {
         retConv = Conv2RequestOptions(&openOptions, options);
+    }
 
     WebsocketClient *websocketClient = GetInnerClientAdapter(client);
 
-    if (websocketClient == NULL)
+    if (websocketClient == NULL) {
         return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
+    }
 
     std::string connectUrl = std::string(url);
     ret = websocketClient->Connect(connectUrl, openOptions);
@@ -165,8 +168,9 @@ int OH_NetStack_WebSocketClient_Close(struct OH_NetStack_WebsocketClient *client
     }
 
     WebsocketClient *websocketClient = GetInnerClientAdapter(client);
-    if (websocketClient == NULL)
+    if (websocketClient == NULL) {
         return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
+    }
 
     struct CloseOption closeOption;
     Conv2CloseOptions(&closeOption, options);
@@ -191,8 +195,9 @@ int OH_NetStack_WebsocketClient_Destroy(struct OH_NetStack_WebsocketClient *clie
         return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
     }
     WebsocketClient *websocketClient = GetInnerClientAdapter(client);
-    if (websocketClient == NULL)
+    if (websocketClient == NULL) {
         return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
+    }
     ret = websocketClient->Destroy();
 
     OH_NetStack_WebsocketClient_FreeHeader(client->requestOptions.headers);
