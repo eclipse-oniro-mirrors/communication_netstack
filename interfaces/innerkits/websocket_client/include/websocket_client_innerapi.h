@@ -27,7 +27,7 @@
 #include <thread>
 #include <libwebsockets.h>
 
-#include "clientContex.h"
+#include "client_context.h"
 #include "websocket_client_error.h"
 
 namespace OHOS {
@@ -51,7 +51,7 @@ struct ErrorResult {
 
 struct OpenResult {
     unsigned int status;
-    const char *Message;
+    const char *message;
 };
 
 struct OpenOptions {
@@ -74,16 +74,15 @@ public:
                        OnCloseCallback onclose);
     int Destroy();
 
-    OnMessageCallback onMessageCallback;
-    OnCloseCallback onCloseCallback;
-    OnErrorCallback onErrorCallback;
-    OnOpenCallback onOpenCallback;
-    ClientContex *GetClientContex() const;
+    OnMessageCallback onMessageCallback_;
+    OnCloseCallback onCloseCallback_;
+    OnErrorCallback onErrorCallback_;
+    OnOpenCallback onOpenCallback_;
+    ClientContext *GetClientContext() const;
 
 private:
-    ClientContex *clientContex;
+    ClientContext *clientContext;
 };
-
 } // namespace WebsocketClient
 } // namespace NetStack
 } // namespace OHOS
