@@ -20,11 +20,9 @@
 #include "netstack_log.h"
 #include "websocket_client_innerapi.h"
 
-using namespace std;
-
 using namespace OHOS::NetStack::WebsocketClient;
 
-[[maybe_unused]] const int MAX_CLIENT_SIZE = 100;
+const int MAX_CLIENT_SIZE = 100;
 
 void OH_NetStack_OnMessageCallback(WebsocketClient *ptrInner, const std::string &data, size_t length)
 {
@@ -134,7 +132,6 @@ int OH_NetStack_WebSocketClient_Connect(struct OH_NetStack_WebsocketClient *clie
 {
     NETSTACK_LOGI("websocket CAPI Connect");
     int ret = 0;
-    [[maybe_unused]] int32_t retConv;
     if (client == nullptr) {
         return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
     }
@@ -143,7 +140,7 @@ int OH_NetStack_WebSocketClient_Connect(struct OH_NetStack_WebsocketClient *clie
     openOptions.headers = {};
 
     if (options.headers != nullptr) {
-        retConv = Conv2RequestOptions(&openOptions, options);
+        Conv2RequestOptions(&openOptions, options);
     }
 
     WebsocketClient *websocketClient = GetInnerClientAdapter(client);
