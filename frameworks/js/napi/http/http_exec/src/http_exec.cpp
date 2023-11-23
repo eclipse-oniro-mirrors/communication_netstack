@@ -813,8 +813,11 @@ static void ResponseHeaderCallback(uv_work_t *work, int status)
     std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(env), header};
     workWrapper->manager->Emit(workWrapper->type, arg);
     delete headerMap;
+    headerMap = nullptr;
     delete workWrapper;
+    workWrapper = nullptr;
     delete work;
+    work = nullptr;
 }
 
 size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t memBytes, void *userData)
