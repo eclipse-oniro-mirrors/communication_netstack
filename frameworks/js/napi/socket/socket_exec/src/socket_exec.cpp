@@ -1761,7 +1761,7 @@ static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, c
             if (iter != g_clientEventManagers.end()) {
                 manager = iter->second;
                 if (manager->HasEventListener(EVENT_MESSAGE)) {
-                    NETSTACK_LOGE("find message event");
+                    NETSTACK_LOGI("manager is ready with registering message event");
                     return true;
                 }
             } else {
