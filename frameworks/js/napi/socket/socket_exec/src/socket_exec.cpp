@@ -1322,8 +1322,6 @@ bool ExecUdpAddMembership(MulticastMembershipContext *context)
         return false;
     }
     struct sockaddr_in multicastAddr = {0};
-    multicastAddr.sin_family = context->address_.GetSaFamily();
-    multicastAddr.sin_port = htons(context->address_.GetPort());
     inet_pton(context->address_.GetSaFamily(), context->address_.GetAddress().c_str(), &(multicastAddr.sin_addr));
     struct ip_mreq mreq;
     memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
@@ -1877,12 +1875,13 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
         return false;
     }
     auto clients = SingletonSocketConfig::GetInstance().GetClients(context->GetSocketFd());
-    for (const int fd : clients) {
-        if (!SetTcpServerExtraOptions(context->GetSocketFd(), fd, context->options_)) {
-            context->SetError(errno, strerror(errno));
-            return false;
-        }
+    if (std::any_of(clients.begin(), clients.end(), [&context](int32_t fd) {
+        return !SetTcpServerExtraOptions(context->GetSocketFd(), fd, context->options_);
+        })) {
+        context->SetError(errno, strerror(errno));
+        return false;
     }
+
     SingletonSocketConfig::GetInstance().SetTcpExtraOptions(context->GetSocketFd(), context->options_);
     return true;
 }

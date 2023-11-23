@@ -1111,9 +1111,9 @@ void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> &dn
         return;
     }
     std::string tempHostName = "" + hostName;
-    std::string tmpStr = "";
     if (!dnsNames.empty() || index > 0) {
         std::vector<std::string> hostParts = SplitHostName(tempHostName);
+        std::string tmpStr = "";
         if (!dnsNames.empty()) {
             valid = SeekIntersection(hostParts, dnsNames);
             tmpStr = ". is not in the cert's altnames";
@@ -1142,7 +1142,6 @@ void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> &dn
 std::string TLSSocketServer::Connection::CheckServerIdentityLegal(const std::string &hostName,
                                                                   const X509 *x509Certificates)
 {
-    std::string hostname = hostName;
     X509_NAME *subjectName = X509_get_subject_name(x509Certificates);
     if (!subjectName) {
         return "subject name is null";
@@ -1430,15 +1429,14 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
 std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionByClientEventManager(
     const EventManager *eventManager)
 {
-    std::shared_ptr<TLSSocketServer::Connection> ptrConnection = nullptr;
     std::lock_guard<std::mutex> its_lock(connectMutex_);
-    for (const auto &it : clientIdConnections_) {
-        if (it.second->GetEventManager().get() == eventManager) {
-            ptrConnection = it.second;
-            return ptrConnection;
-        }
+    auto it = std::find_if(clientIdConnections_.begin(), clientIdConnections_.end(), [eventManager](const auto& pair) {
+        return pair.second->GetEventManager().get() == eventManager;
+    });
+    if (it == clientIdConnections_.end()) {
+        return nullptr;
     }
-    return ptrConnection;
+    return it->second;
 }
 
 void TLSSocketServer::CloseConnectionByEventManager(EventManager *eventManager)
