@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #include <iostream>
 
 #include "net_websocket.h"
@@ -88,7 +87,7 @@ int32_t Conv2ErrorResult(struct ErrorResult error, struct OH_NetStack_WebsocketC
 int32_t Conv2OpenResult(struct OpenResult openResult, struct OH_NetStack_WebsocketClient_OpenResult *OH_OpenResult)
 {
     OH_OpenResult->code = openResult.status;
-    OH_OpenResult->reason = openResult.Message;
+    OH_OpenResult->reason = openResult.message;
 
     return 0;
 }
