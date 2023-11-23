@@ -21,7 +21,6 @@
 #include "netstack_log.h"
 #include "websocket_client_innerapi.h"
 
-using namespace std;
 static constexpr const char *PATH_START = "/";
 static constexpr const char *NAME_END = ":";
 static constexpr const char *STATUS_LINE_SEP = " ";
@@ -33,9 +32,8 @@ static constexpr const int MAX_HDR_LENGTH = 1024;
 static constexpr const int MAX_HEADER_LENGTH = 8192;
 static constexpr const size_t MAX_DATA_LENGTH = 4 * 1024 * 1024;
 static constexpr const int FD_LIMIT_PER_THREAD = 1 + 1 + 1;
-[[maybe_unused]] static constexpr const int COMMON_ERROR_CODE = 200;
-[[maybe_unused]] static constexpr const int CLOSE_RESULT_FROM_SERVER_CODE = 1001;
-[[maybe_unused]] static constexpr const int CLOSE_RESULT_FROM_CLIENT_CODE = 1000;
+static constexpr const int CLOSE_RESULT_FROM_SERVER_CODE = 1001;
+static constexpr const int CLOSE_RESULT_FROM_CLIENT_CODE = 1000;
 static constexpr const char *LINK_DOWN = "The link is down";
 static constexpr const char *CLOSE_REASON_FORM_SERVER = "websocket close from server";
 static constexpr const int FUNCTION_PARAM_TWO = 2;
@@ -58,6 +56,7 @@ WebsocketClient::WebsocketClient()
 WebsocketClient::~WebsocketClient()
 {
     delete clientContext;
+    clientContext= nullptr;
 }
 
 ClientContext *WebsocketClient::GetClientContext() const
@@ -302,7 +301,7 @@ int LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, siz
 static struct lws_protocols protocols[] = {{"lws-minimal-client1", LwsCallback, 0, 0, 0, NULL, 0},
                                            LWS_PROTOCOL_LIST_TERM};
 
-[[maybe_unused]] static void FillContextInfo(lws_context_creation_info &info)
+static void FillContextInfo(lws_context_creation_info &info)
 {
     info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
     info.port = CONTEXT_PORT_NO_LISTEN;
@@ -452,7 +451,6 @@ int WebsocketClient::Destroy()
     }
 
     lws_context_destroy(this->GetClientContext()->GetContext());
-    delete clientContext;
     return WebsocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
