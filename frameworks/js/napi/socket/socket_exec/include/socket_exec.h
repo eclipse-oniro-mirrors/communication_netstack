@@ -41,6 +41,8 @@ int MakeTcpSocket(sa_family_t family);
 
 int MakeUdpSocket(sa_family_t family);
 
+void NotifyRegisterEvent();
+
 /* async work execute */
 bool ExecUdpBind(BindContext *context);
 

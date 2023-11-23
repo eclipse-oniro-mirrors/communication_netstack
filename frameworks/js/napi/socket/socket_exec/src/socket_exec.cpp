@@ -62,8 +62,6 @@ static constexpr const int MAX_CLIENTS = 1024;
 
 static constexpr const int ERRNO_BAD_FD = 9;
 
-static constexpr const int TEMP_WAIT_REGISTER_MESSAGE_MS = 100;
-
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
 static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "TCPServerAcceptRecvData";
@@ -189,6 +187,12 @@ void TcpServerConnectionFinalize(napi_env, void *data, void *)
         }
     }
     EventManager::SetInvalid(manager);
+}
+
+void NotifyRegisterEvent()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_cv.notify_one();
 }
 
 napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, napi_value jsConstructor, int32_t counter)
@@ -1756,17 +1760,19 @@ static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, c
             auto iter = g_clientEventManagers.find(clientId);
             if (iter != g_clientEventManagers.end()) {
                 manager = iter->second;
-                NETSTACK_LOGE("manager!=nullptr");
-                return true;
+                if (manager->HasEventListener(EVENT_MESSAGE)) {
+                    NETSTACK_LOGE("find message event");
+                    return true;
+                }
             } else {
                 NETSTACK_LOGE("iter==g_clientEventManagers.end()");
-                return false;
             }
+            return false;
         });
     }
 
     auto connectFD = g_clientFDs[clientId]; // std::lock_guard<std::mutex> lock(g_mutex);]
-    std::this_thread::sleep_for(std::chrono::milliseconds(TEMP_WAIT_REGISTER_MESSAGE_MS));
+
     while (true) {
         if (memset_s(buffer, sizeof(buffer), 0, sizeof(buffer)) != EOK) {
             NETSTACK_LOGE("memset_s failed!");
