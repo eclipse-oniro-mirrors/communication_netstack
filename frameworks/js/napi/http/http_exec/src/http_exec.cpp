@@ -57,7 +57,9 @@ static constexpr int CURL_TIMEOUT_MS = 50;
 static constexpr int CONDITION_TIMEOUT_S = 3600;
 static constexpr int CURL_MAX_WAIT_MSECS = 10;
 static constexpr int CURL_HANDLE_NUM = 10;
-static constexpr int CURL_OFF_SET = 256;
+static constexpr const int EVENT_PARAM_ZERO = 0;
+static constexpr const int EVENT_PARAM_ONE = 1;
+static constexpr const int EVENT_PARAM_TWO = 2;
 static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!CBC:!eNULL:!EXPORT)";
 
 #ifdef HTTP_PROXY_ENABLE
@@ -70,22 +72,60 @@ static constexpr const char *HTTP_PROXY_PORT_KEY = "persist.netmanager_base.http
 static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_base.http_proxy.exclusion_list";
 #endif
 
-template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)
+template <class Context, napi_value (*Callback)(Context *)>
+static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, void *data)
 {
-    (void)status;
+    static_assert(std::is_base_of<BaseContext, Context>::value);
 
-    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
-    napi_env env = workWrapper->env;
-    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
-    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
+    if (status != napi_ok) {
+        return;
+    }
+    auto deleter = [](Context *context) {
+        context->DeleteReference();
+        delete context;
+        context = nullptr;
+    };
+    std::unique_ptr<Context, decltype(deleter)> context(static_cast<Context *>(data), deleter);
+    size_t argc = EVENT_PARAM_TWO;
+    napi_value argv[EVENT_PARAM_TWO] = {nullptr};
+    if (context->IsParseOK() && context->IsExecOK()) {
+        argv[EVENT_PARAM_ZERO] = NapiUtils::GetUndefined(env);
 
-    napi_value obj = MakeJsValue(env, workWrapper->data);
+        if (Callback != nullptr) {
+            argv[EVENT_PARAM_ONE] = Callback(context.get());
+        } else {
+            argv[EVENT_PARAM_ONE] = NapiUtils::GetUndefined(env);
+        }
+        if (argv[EVENT_PARAM_ONE] == nullptr) {
+            return;
+        }
+    } else {
+        argv[EVENT_PARAM_ZERO] =
+            NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
+        if (argv[EVENT_PARAM_ZERO] == nullptr) {
+            return;
+        }
 
-    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
-    workWrapper->manager->Emit(workWrapper->type, arg);
+        argv[EVENT_PARAM_ONE] = NapiUtils::GetUndefined(env);
+    }
 
-    delete workWrapper;
-    delete work;
+    napi_value undefined = NapiUtils::GetUndefined(env);
+    if (context->GetDeferred() != nullptr) {
+        if (context->IsExecOK()) {
+            napi_resolve_deferred(env, context->GetDeferred(), argv[EVENT_PARAM_ONE]);
+            context->Emit(ON_DATA_END, std::make_pair(undefined, undefined));
+        } else {
+            napi_reject_deferred(env, context->GetDeferred(), argv[EVENT_PARAM_ZERO]);
+        }
+        return;
+    }
+    napi_value func = context->GetCallback();
+    if (NapiUtils::GetValueType(env, func) == napi_function) {
+        (void)NapiUtils::CallFunction(env, undefined, func, argc, argv);
+    }
+    if (context->IsExecOK()) {
+        context->Emit(ON_DATA_END, std::make_pair(undefined, undefined));
+    }
 }
 
 bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
@@ -194,51 +234,23 @@ double HttpExec::GetTimingFromCurl(CURL *handle, CURLINFO info)
     return Timing::TimeUtils::Microseconds2Milliseconds(timing);
 }
 
-void HttpExec::CacheCurlPerformanceTiming(CURL* handle, RequestContext* context)
+void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
 {
-    context->CachePerformanceTimingItem(
-        HttpConstant::RESPONSE_DNS_TIMING, HttpExec::GetTimingFromCurl(handle, CURLINFO_NAMELOOKUP_TIME_T));
-    context->CachePerformanceTimingItem(
-        HttpConstant::RESPONSE_TCP_TIMING, HttpExec::GetTimingFromCurl(handle, CURLINFO_CONNECT_TIME_T));
-    context->CachePerformanceTimingItem(
-        HttpConstant::RESPONSE_TLS_TIMING, HttpExec::GetTimingFromCurl(handle, CURLINFO_APPCONNECT_TIME_T));
-    context->CachePerformanceTimingItem(
-        HttpConstant::RESPONSE_FIRST_SEND_TIMING, HttpExec::GetTimingFromCurl(handle, CURLINFO_PRETRANSFER_TIME_T));
+    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_DNS_TIMING,
+                                        HttpExec::GetTimingFromCurl(handle, CURLINFO_NAMELOOKUP_TIME_T));
+    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_TCP_TIMING,
+                                        HttpExec::GetTimingFromCurl(handle, CURLINFO_CONNECT_TIME_T));
+    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_TLS_TIMING,
+                                        HttpExec::GetTimingFromCurl(handle, CURLINFO_APPCONNECT_TIME_T));
+    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_FIRST_SEND_TIMING,
+                                        HttpExec::GetTimingFromCurl(handle, CURLINFO_PRETRANSFER_TIME_T));
     context->CachePerformanceTimingItem(HttpConstant::RESPONSE_FIRST_RECEIVE_TIMING,
-        HttpExec::GetTimingFromCurl(handle, CURLINFO_STARTTRANSFER_TIME_T));
-    context->CachePerformanceTimingItem(
-        HttpConstant::RESPONSE_TOTAL_FINISH_TIMING, HttpExec::GetTimingFromCurl(handle, CURLINFO_TOTAL_TIME_T));
-    context->CachePerformanceTimingItem(
-        HttpConstant::RESPONSE_REDIRECT_TIMING, HttpExec::GetTimingFromCurl(handle, CURLINFO_REDIRECT_TIME_T));
+                                        HttpExec::GetTimingFromCurl(handle, CURLINFO_STARTTRANSFER_TIME_T));
+    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_TOTAL_FINISH_TIMING,
+                                        HttpExec::GetTimingFromCurl(handle, CURLINFO_TOTAL_TIME_T));
+    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_REDIRECT_TIMING,
+                                        HttpExec::GetTimingFromCurl(handle, CURLINFO_REDIRECT_TIME_T));
 }
-
-#ifdef ENABLE_EVENT_HANDLER
-void HttpExec::HttpEventHandlerCallback(RequestContext *context)
-{
-    if (EventManager::IsManagerValid(context->GetManager())) {
-        if (context->IsRequestInStream()) {
-            auto manager = context->GetManager();
-            auto eventHandler = manager->GetNetstackEventHandler();
-            if (!eventHandler) {
-                NETSTACK_LOGE("netstack eventHandler is nullptr");
-                context->DeleteReference();
-                delete context;
-                return;
-            }
-            eventHandler->PostSyncTask([&context]() {
-                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context,
-                                                     HttpAsyncWork::RequestInStreamCallbackWithoutDel);
-            });
-            if (context->IsExecOK()) {
-                eventHandler->PostSyncTask(
-                    [&context]() { NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataEnd); });
-            }
-        } else {
-            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
-        }
-    }
-}
-#endif
 
 void HttpExec::HandleCurlData(CURLMsg *msg)
 {
@@ -275,9 +287,13 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         NETSTACK_LOGE("can not find context manager");
         return;
     }
-#ifdef ENABLE_EVENT_HANDLER
-    HttpEventHandlerCallback(context);
-#endif
+
+    if (context->IsRequestInStream()) {
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context,
+                                             AsyncWorkRequestInStreamCallback<RequestContext, RequestInStreamCallback>);
+    } else {
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
+    }
 }
 
 bool HttpExec::ExecRequest(RequestContext *context)
@@ -299,8 +315,9 @@ bool HttpExec::ExecRequest(RequestContext *context)
         context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
         if (EventManager::IsManagerValid(context->GetManager())) {
             if (context->IsRequestInStream()) {
-                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context,
-                                                     HttpAsyncWork::RequestInStreamCallback);
+                NapiUtils::CreateUvQueueWorkEnhanced(
+                    context->GetEnv(), context,
+                    AsyncWorkRequestInStreamCallback<RequestContext, RequestInStreamCallback>);
             } else {
                 NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
             }
@@ -776,6 +793,30 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
     return size * memBytes;
 }
 
+static void ResponseHeaderCallback(uv_work_t *work, int status)
+{
+    (void)status;
+
+    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
+    napi_env env = workWrapper->env;
+    auto headerMap = static_cast<std::map<std::string, std::string> *>(workWrapper->data);
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
+    napi_value header = NapiUtils::CreateObject(env);
+    if (NapiUtils::GetValueType(env, header) == napi_object) {
+        for (const auto &it : *headerMap) {
+            if (!it.first.empty() && !it.second.empty()) {
+                NapiUtils::SetStringPropertyUtf8(env, header, it.first, it.second);
+            }
+        }
+    }
+    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(env), header};
+    workWrapper->manager->Emit(workWrapper->type, arg);
+    delete headerMap;
+    delete workWrapper;
+    delete work;
+}
+
 size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t memBytes, void *userData)
 {
     auto context = static_cast<RequestContext *>(userData);
@@ -796,8 +837,9 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
     if (CommonUtils::EndsWith(context->response.GetRawHeader(), HttpConstant::HTTP_RESPONSE_HEADER_SEPARATOR)) {
         context->response.ParseHeaders();
         if (context->GetManager() && EventManager::IsManagerValid(context->GetManager())) {
-            context->GetManager()->EmitByUv(ON_HEADER_RECEIVE, context, CallbackTemplate<MakeResponseHeader>);
-            context->GetManager()->EmitByUv(ON_HEADERS_RECEIVE, context, CallbackTemplate<MakeResponseHeader>);
+            auto headerMap = new std::map<std::string, std::string>(context->response.GetHeader());
+            context->GetManager()->EmitByUv(ON_HEADER_RECEIVE, headerMap, ResponseHeaderCallback);
+            context->GetManager()->EmitByUv(ON_HEADERS_RECEIVE, headerMap, ResponseHeaderCallback);
         }
     }
     context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
@@ -808,6 +850,7 @@ void HttpExec::OnDataReceive(napi_env env, napi_status status, void *data)
 {
     auto context = static_cast<RequestContext *>(data);
     if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
         return;
     }
 
@@ -839,17 +882,18 @@ void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
     if (NapiUtils::GetValueType(context->GetEnv(), progress) == napi_undefined) {
         return;
     }
-    NapiUtils::SetUint32Property(context->GetEnv(), progress, "receiveSize",
-                                 static_cast<uint32_t>(context->GetDlLen().nLen));
-    NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize",
-                                 static_cast<uint32_t>(context->GetDlLen().tLen));
-    context->PopDlLen();
-    context->Emit(ON_DATA_RECEIVE_PROGRESS, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
+    auto dlLen = context->GetDlLen();
+    if (dlLen.tLen && dlLen.nLen) {
+        NapiUtils::SetUint32Property(context->GetEnv(), progress, "receiveSize", static_cast<uint32_t>(dlLen.nLen));
+        NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize", static_cast<uint32_t>(dlLen.tLen));
+
+        context->Emit(ON_DATA_RECEIVE_PROGRESS, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
+    }
 }
 
-void HttpExec::OnDataUploadProgress(napi_env env, napi_status status, void* data)
+void HttpExec::OnDataUploadProgress(napi_env env, napi_status status, void *data)
 {
-    auto context = static_cast<RequestContext*>(data);
+    auto context = static_cast<RequestContext *>(data);
     if (context == nullptr) {
         NETSTACK_LOGD("[OnDataUploadProgress] context is null.");
         return;
@@ -859,29 +903,17 @@ void HttpExec::OnDataUploadProgress(napi_env env, napi_status status, void* data
         NETSTACK_LOGD("[OnDataUploadProgress] napi_undefined.");
         return;
     }
-    NapiUtils::SetUint32Property(
-        context->GetEnv(), progress, "uploadSize", static_cast<uint32_t>(context->GetUlLen().nLen));
-    NapiUtils::SetUint32Property(
-        context->GetEnv(), progress, "totalSize", static_cast<uint32_t>(context->GetUlLen().tLen));
+    NapiUtils::SetUint32Property(context->GetEnv(), progress, "uploadSize",
+                                 static_cast<uint32_t>(context->GetUlLen().nLen));
+    NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize",
+                                 static_cast<uint32_t>(context->GetUlLen().tLen));
     context->Emit(ON_DATA_SEND_PROGRESS, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
-}
-
-void HttpExec::OnDataEnd(napi_env env, napi_status status, void *data)
-{
-    auto context = static_cast<RequestContext *>(data);
-    if (context == nullptr) {
-        return;
-    }
-    auto undefined = NapiUtils::GetUndefined(context->GetEnv());
-    context->Emit(ON_DATA_END, std::make_pair(undefined, undefined));
-    context->DeleteReference();
-    delete context;
 }
 
 int HttpExec::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
                                curl_off_t ulnow)
 {
-    auto context = static_cast<RequestContext*>(userData);
+    auto context = static_cast<RequestContext *>(userData);
     if (context == nullptr) {
         return 0;
     }
@@ -915,15 +947,17 @@ struct curl_slist *HttpExec::MakeHeaders(const std::vector<std::string> &vec)
 
 napi_value HttpExec::MakeResponseHeader(napi_env env, void *ctx)
 {
-    char x[CURL_OFF_SET] = {};
     auto context = reinterpret_cast<RequestContext *>(ctx);
     (void)env;
-    (void)x;
     napi_value header = NapiUtils::CreateObject(context->GetEnv());
+    if (!context) {
+        NETSTACK_LOGE("context is nullptr");
+        return header;
+    }
     if (NapiUtils::GetValueType(context->GetEnv(), header) == napi_object) {
-        for (auto it = context->response.GetHeader().begin(); it != context->response.GetHeader().end(); ++it) {
-            if (!it->first.empty() && !it->second.empty()) {
-                NapiUtils::SetStringPropertyUtf8(context->GetEnv(), header, it->first, it->second);
+        for (const auto &it : context->response.GetHeader()) {
+            if (!it.first.empty() && !it.second.empty()) {
+                NapiUtils::SetStringPropertyUtf8(context->GetEnv(), header, it.first, it.second);
             }
         }
     }

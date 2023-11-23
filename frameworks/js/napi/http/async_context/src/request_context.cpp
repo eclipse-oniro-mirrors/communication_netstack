@@ -506,7 +506,13 @@ void RequestContext::SetDlLen(curl_off_t nowLen, curl_off_t totalLen)
 LoadBytes RequestContext::GetDlLen()
 {
     std::lock_guard<std::mutex> lock(dlLenLock_);
-    LoadBytes dlBytes{dlBytes_.front().nLen, dlBytes_.front().tLen};
+    LoadBytes dlBytes;
+    if (!dlBytes_.empty()) {
+        dlBytes.nLen = dlBytes_.front().nLen;
+        dlBytes.tLen = dlBytes_.front().tLen;
+        dlBytes_.pop();
+        return dlBytes;
+    }
     return dlBytes;
 }
 
@@ -543,14 +549,6 @@ bool RequestContext::CompareWithLastElement(curl_off_t nowLen, curl_off_t totalL
     }
     const LoadBytes &lastElement = ulBytes_.back();
     return nowLen == lastElement.nLen && totalLen == lastElement.tLen;
-}
-
-void RequestContext::PopDlLen()
-{
-    std::lock_guard<std::mutex> lock(dlLenLock_);
-    if (!dlBytes_.empty()) {
-        dlBytes_.pop();
-    }
 }
 
 void RequestContext::SetTempData(const void *data, size_t size)

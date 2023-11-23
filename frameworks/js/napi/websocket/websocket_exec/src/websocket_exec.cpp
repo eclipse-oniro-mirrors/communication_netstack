@@ -380,16 +380,8 @@ int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reaso
 {
     NETSTACK_LOGI("LwsCallbackClientReceive");
     auto manager = reinterpret_cast<EventManager *>(user);
-    auto eventHandler = manager->GetNetstackEventHandler();
-    if (!eventHandler) {
-        NETSTACK_LOGE("netstack eventHandler is nullptr");
-        return HttpDummy(wsi, reason, user, in, len);
-    }
     auto isFinal = lws_is_final_fragment(wsi);
-    eventHandler->PostSyncTask([&]() { OnMessage(manager, in, len, lws_frame_is_binary(wsi), isFinal); });
-    if (isFinal) {
-        eventHandler->PostSyncTask([&]() { OnDataEnd(manager); });
-    }
+    OnMessage(manager, in, len, lws_frame_is_binary(wsi), isFinal);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -445,9 +437,9 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
     if ((userData->closeReason).empty()) {
         userData->Close(userData->closeStatus, LINK_DOWN);
     }
-    if (userData->closeStatus == LWS_CLOSE_STATUS_NORMAL) {
+    if (userData->closeStatus == LWS_CLOSE_STATUS_NOSTATUS) {
         NETSTACK_LOGE("The link is down, onError");
-        OnError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE);
+        OnError(manager, COMMON_ERROR_CODE);
     }
     OnClose(reinterpret_cast<EventManager *>(user), userData->closeStatus, userData->closeReason);
     return HttpDummy(wsi, reason, user, in, len);
@@ -531,6 +523,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     if (lws_client_connect_via_info(&connectInfo) == nullptr) {
         NETSTACK_LOGI("ExecConnect websocket connect failed");
         context->SetErrorCode(-1);
+        OnConnectError(manager, COMMON_ERROR_CODE);
         lws_context_destroy(lwsContext);
         return false;
     }
@@ -552,7 +545,6 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     if (manager == nullptr) {
         return false;
     }
-    manager->InitNetstackEventHandler();
     lws_context_creation_info info = {};
     FillContextInfo(info);
     lws_context *lwsContext = lws_create_context(&info);
@@ -787,6 +779,12 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
             msg->append(msgFromManager.data(), msgFromManager.size());
             manager->EmitByUv(EventName::EVENT_MESSAGE, msg, CallbackTemplate<CreateBinaryMessagePara>);
             manager->ClearWebSocketBinaryData();
+            NETSTACK_LOGI("onDataEnd");
+            if (!manager->HasEventListener(EventName::EVENT_DATA_END)) {
+                NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_DATA_END);
+                return;
+            }
+            manager->EmitByUv(EventName::EVENT_DATA_END, nullptr, CallbackTemplate<CreateDataEnd>);
         }
     } else {
         manager->AppendWebSocketTextData(data, length);
@@ -798,19 +796,5 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
             manager->ClearWebSocketTextData();
         }
     }
-}
-
-void WebSocketExec::OnDataEnd(EventManager *manager)
-{
-    NETSTACK_LOGI("onDataEnd");
-    if (manager == nullptr) {
-        NETSTACK_LOGE("manager is null");
-        return;
-    }
-    if (!manager->HasEventListener(EventName::EVENT_DATA_END)) {
-        NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_DATA_END);
-        return;
-    }
-    manager->EmitByUv(EventName::EVENT_DATA_END, nullptr, CallbackTemplate<CreateDataEnd>);
 }
 } // namespace OHOS::NetStack::Websocket

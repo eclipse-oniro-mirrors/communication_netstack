@@ -80,8 +80,6 @@ public:
         } else {
             argv[0] = NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
             if (argv[0] == nullptr) {
-                context->DeleteReference();
-                delete context;
                 return;
             }
 
@@ -146,8 +144,6 @@ public:
                 napi_resolve_deferred(env, context->GetDeferred(), argv[1]);
             } else {
                 napi_reject_deferred(env, context->GetDeferred(), argv[0]);
-                context->DeleteReference();
-                delete context;
             }
             return;
         }
@@ -156,10 +152,6 @@ public:
         if (NapiUtils::GetValueType(env, func) == napi_function) {
             napi_value undefined = NapiUtils::GetUndefined(env);
             (void)NapiUtils::CallFunction(env, undefined, func, argc, argv);
-        }
-        if (!context->IsExecOK()) {
-            context->DeleteReference();
-            delete context;
         }
     }
 

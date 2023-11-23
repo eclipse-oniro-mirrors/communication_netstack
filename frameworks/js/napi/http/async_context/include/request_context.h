@@ -80,8 +80,6 @@ public:
 
     LoadBytes GetUlLen();
 
-    void PopDlLen();
-
     void PopUlLen();
 
     bool CompareWithLastElement(curl_off_t nowLen, curl_off_t totalLen);

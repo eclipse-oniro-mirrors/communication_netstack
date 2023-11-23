@@ -104,10 +104,6 @@ private:
 
     static bool AddCurlHandle(CURL *handle, RequestContext *context);
 
-#ifdef ENABLE_EVENT_HANDLER
-    static void HttpEventHandlerCallback(RequestContext *context);
-#endif
-
     static void HandleCurlData(CURLMsg *msg);
 
     static bool GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURLMSG curlMsg, CURLcode result);
@@ -131,8 +127,6 @@ private:
     static void OnDataProgress(napi_env env, napi_status status, void *data);
 
     static void OnDataUploadProgress(napi_env env, napi_status status, void *data);
-
-    static void OnDataEnd(napi_env env, napi_status status, void *data);
 
     static int ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
                                 curl_off_t ulnow);
