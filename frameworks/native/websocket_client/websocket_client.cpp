@@ -165,6 +165,7 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
 
 int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
+    NETSTACK_LOGE("Lws Callback ClientConnectionError");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     std::string buf;
     char *data = static_cast<char *>(in);
@@ -172,7 +173,6 @@ int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void
     ErrorResult errorResult;
     errorResult.errorCode = WebsocketErrorCode::WEBSOCKET_CONNECTION_ERROR;
     errorResult.errorMessage = data;
-    NETSTACK_LOGE("Lws Callback ClientConnectionError,%{public}s",data);
     client->onErrorCallback_(client, errorResult);
     return HttpDummy(wsi, reason, user, in, len);
 }
