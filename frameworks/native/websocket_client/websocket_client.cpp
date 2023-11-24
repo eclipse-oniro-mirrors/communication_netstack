@@ -56,7 +56,7 @@ WebsocketClient::WebsocketClient()
 WebsocketClient::~WebsocketClient()
 {
     delete clientContext;
-    clientContext= nullptr;
+    clientContext = nullptr;
 }
 
 ClientContext *WebsocketClient::GetClientContext() const
@@ -87,6 +87,7 @@ int LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback_reasons reason
     NETSTACK_LOGD("Lws Callback AppendHandshakeHeader");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
+        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
         return -1;
     }
     auto payload = reinterpret_cast<unsigned char **>(in);
@@ -110,6 +111,7 @@ int LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reasons reason, void 
     NETSTACK_LOGD("Lws Callback WsPeerInitiatedClose");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
+        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
         return -1;
     }
     if (in == nullptr || len < sizeof(uint16_t)) {
@@ -130,6 +132,7 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
     NETSTACK_LOGD("Lws Callback ClientWritable");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
+        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
         return -1;
     }
     if (client->GetClientContext()->IsClosed()) {
@@ -212,6 +215,7 @@ int LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_reasons reason, v
     NETSTACK_LOGD("Lws Callback ClientFilterPreEstablish");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
+        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
         return -1;
     }
     client->GetClientContext()->openStatus = lws_http_client_http_response(wsi);
@@ -233,6 +237,7 @@ int LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons reason, void *us
     NETSTACK_LOGD("Lws Callback ClientEstablished");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
+        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
         return -1;
     }
     OpenResult openResult;
@@ -248,6 +253,7 @@ int LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason, void *user, v
     NETSTACK_LOGI("Lws Callback ClientClosed");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
+        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
         return -1;
     }
     std::string buf;
