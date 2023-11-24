@@ -199,7 +199,6 @@ int OH_NetStack_WebsocketClient_Destroy(struct OH_NetStack_WebsocketClient *clie
 
     OH_NetStack_WebsocketClient_FreeHeader(client->requestOptions.headers);
 
-    delete client;
     g_clientMap.erase(client);
     return ret;
 }
