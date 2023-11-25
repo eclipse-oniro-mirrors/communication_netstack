@@ -30,6 +30,7 @@ BaseContext::BaseContext(napi_env env, EventManager *manager)
       requestOK_(false),
       errorCode_(0),
       callback_(nullptr),
+      promiseRef_(nullptr),
       asyncWork_(nullptr),
       deferred_(nullptr),
       needPromise_(true),
@@ -42,6 +43,7 @@ BaseContext::BaseContext(napi_env env, EventManager *manager)
 BaseContext::~BaseContext()
 {
     DeleteCallback();
+    DeletePromise();
     DeleteAsyncWork();
 }
 
@@ -106,7 +108,17 @@ napi_value BaseContext::CreatePromise()
 {
     napi_value result = nullptr;
     NAPI_CALL(env_, napi_create_promise(env_, &deferred_, &result));
+    promiseRef_ = NapiUtils::CreateReference(env_, result);
     return result;
+}
+
+void BaseContext::DeletePromise()
+{
+    if (promiseRef_ == nullptr) {
+        return;
+    }
+    (void)napi_delete_reference(env_, promiseRef_);
+    promiseRef_ = nullptr;
 }
 
 bool BaseContext::IsParseOK() const

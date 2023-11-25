@@ -537,7 +537,9 @@ napi_value SocketModuleExports::TCPConnection::GetRemoteAddress(napi_env env, na
 
 napi_value SocketModuleExports::TCPConnection::On(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
+    napi_value ret = ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
+    SocketExec::NotifyRegisterEvent();
+    return ret;
 }
 
 napi_value SocketModuleExports::TCPConnection::Off(napi_env env, napi_callback_info info)

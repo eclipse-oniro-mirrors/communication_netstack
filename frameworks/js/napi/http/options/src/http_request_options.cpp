@@ -263,7 +263,7 @@ const std::string HttpRequestOptions::GetRangeString() const
 
 const std::vector<std::string> &HttpRequestOptions::GetDnsServers() const
 {
-        return dnsServers_;
+    return dnsServers_;
 }
 
 void HttpRequestOptions::SetDnsServers(const std::vector<std::string> &dnsServers)

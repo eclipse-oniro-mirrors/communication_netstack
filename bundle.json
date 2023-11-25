@@ -31,6 +31,7 @@
         "deps": {
             "components": [
                 "hilog",
+                "ipc",
                 "zlib",
                 "c_utils",
                 "init",
@@ -54,6 +55,7 @@
                     "//foundation/communication/netstack/frameworks/js/napi/socket:socket",
                     "//foundation/communication/netstack/frameworks/js/napi/websocket:websocket",
                     "//foundation/communication/netstack/interfaces/kits/c/net_websocket:net_websocket",
+                    "//foundation/communication/netstack/frameworks/js/napi/net_ssl:networksecurity_napi",
                     "//foundation/communication/netstack/frameworks/js/napi/fetch:fetch",
                     "//foundation/communication/netstack/utils:common_utils"
                 ],
@@ -88,6 +90,17 @@
                         "header_base": "//foundation/communication/netstack/interfaces/innerkits/websocket_client/include"
                     }
                 },
+                {
+                    "type": "so",
+                    "name": "//foundation/communication/netstack/interfaces/innerkits/net_ssl:net_ssl",
+                    "header": {
+                        "header_files": [
+                            "net_ssl_type.h",
+                            "net_ssl.h"
+                        ],
+                        "header_base": "//foundation/communication/netstack/interfaces/innerkits/net_ssl/include"
+                    }
+                },                
                 {
                     "header": {
                         "header_base": [],

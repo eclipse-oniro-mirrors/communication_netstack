@@ -55,7 +55,7 @@ const char *const HttpConstant::PARAM_KEY_CLINENT_CERT = "clientCert";
 const char* const HttpConstant::HTTP_CLINENT_CERT = "certPath";
 const char* const HttpConstant::HTTP_CLINENT_KEY = "keyPath";
 const char* const HttpConstant::HTTP_CLINENT_CERT_TYPE = "certType";
-const char *const HttpConstant::HTTP_CLINENT_KEY_PASSWD = "keyPasswd";
+const char *const HttpConstant::HTTP_CLINENT_KEY_PASSWD = "keyPassword";
 
 const char *const HttpConstant::HTTP_PROXY_EXCLUSIONS_SEPARATOR = ",";
 
@@ -103,4 +103,14 @@ const char *const HttpConstant::RESPONSE_REDIRECT_TIMING = "redirectTiming";
 const char *const HttpConstant::RESPONSE_HEADER_TIMING = "responseHeaderTiming";
 const char *const HttpConstant::RESPONSE_BODY_TIMING = "responseBodyTiming";
 const char *const HttpConstant::RESPONSE_TOTAL_TIMING = "totalTiming";
+
+const char *const HttpConstant::COOKIE_TABLE = "\t";
+const char *const HttpConstant::COOKIE_ENTER = "\n";
+const char *const HttpConstant::COOKIE_DOMAIN = "domain";
+const char *const HttpConstant::COOKIE_FLAG = "flag";
+const char *const HttpConstant::COOKIE_PATH = "path";
+const char *const HttpConstant::COOKIE_SECURE = "secure";
+const char *const HttpConstant::COOKIE_EXPIRATION = "expiration";
+const char *const HttpConstant::COOKIE_NAME = "name";
+const char *const HttpConstant::COOKIE_VALUE = "value";
 } // namespace OHOS::NetStack::Http

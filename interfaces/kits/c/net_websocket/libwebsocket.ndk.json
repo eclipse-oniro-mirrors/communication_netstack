@@ -1,0 +1,9 @@
+[
+    {"name": "OH_NetStack_WebsocketClient_Construct"},
+    {"name": "OH_NetStack_WebSocketClient_AddHeader"},
+    {"name": "OH_NetStack_WebSocketClient_Connect"},
+    {"name": "OH_NetStack_WebSocketClient_Send"},
+    {"name": "OH_NetStack_WebSocketClient_Close"},
+    {"name": "OH_NetStack_WebsocketClient_Destroy"},
+    {"name": "OH_NetStack_WebSocketClient_FreeAll"}
+]

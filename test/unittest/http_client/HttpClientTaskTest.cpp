@@ -801,4 +801,18 @@ HWTEST_F(HttpClientTaskTest, CancelTest001, TestSize.Level1)
     EXPECT_TRUE(task->canceled_);
 }
 
+HWTEST_F(HttpClientTaskTest, SetServerSSLCertOption001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "https://www.baidu.com";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    bool result = task->SetServerSSLCertOption(task->curlHandle_);
+    EXPECT_FALSE(result);
+}
+
+
 } // namespace

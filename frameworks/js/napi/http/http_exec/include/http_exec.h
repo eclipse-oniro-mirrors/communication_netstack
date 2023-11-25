@@ -86,6 +86,8 @@ private:
 
     static bool SetSSLCertOption(CURL *curl, RequestContext *context);
 
+    static bool SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context);
+
     static bool SetDnsOption(CURL *curl, RequestContext *context);
 
     static size_t OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData);
@@ -101,10 +103,6 @@ private:
     static bool ProcByExpectDataType(napi_value object, RequestContext *context);
 
     static bool AddCurlHandle(CURL *handle, RequestContext *context);
-
-#ifdef ENABLE_EVENT_HANDLER
-    static void HttpEventHandlerCallback(RequestContext *context);
-#endif
 
     static void HandleCurlData(CURLMsg *msg);
 
@@ -129,8 +127,6 @@ private:
     static void OnDataProgress(napi_env env, napi_status status, void *data);
 
     static void OnDataUploadProgress(napi_env env, napi_status status, void *data);
-
-    static void OnDataEnd(napi_env env, napi_status status, void *data);
 
     static int ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
                                 curl_off_t ulnow);

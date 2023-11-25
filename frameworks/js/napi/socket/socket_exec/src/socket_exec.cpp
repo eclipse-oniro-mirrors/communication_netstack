@@ -62,8 +62,6 @@ static constexpr const int MAX_CLIENTS = 1024;
 
 static constexpr const int ERRNO_BAD_FD = 9;
 
-static constexpr const int TEMP_WAIT_REGISTER_MESSAGE_MS = 100;
-
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
 static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "TCPServerAcceptRecvData";
@@ -189,6 +187,12 @@ void TcpServerConnectionFinalize(napi_env, void *data, void *)
         }
     }
     EventManager::SetInvalid(manager);
+}
+
+void NotifyRegisterEvent()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_cv.notify_one();
 }
 
 napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, napi_value jsConstructor, int32_t counter)
@@ -1318,8 +1322,6 @@ bool ExecUdpAddMembership(MulticastMembershipContext *context)
         return false;
     }
     struct sockaddr_in multicastAddr = {0};
-    multicastAddr.sin_family = context->address_.GetSaFamily();
-    multicastAddr.sin_port = htons(context->address_.GetPort());
     inet_pton(context->address_.GetSaFamily(), context->address_.GetAddress().c_str(), &(multicastAddr.sin_addr));
     struct ip_mreq mreq;
     memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
@@ -1756,17 +1758,19 @@ static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, c
             auto iter = g_clientEventManagers.find(clientId);
             if (iter != g_clientEventManagers.end()) {
                 manager = iter->second;
-                NETSTACK_LOGE("manager!=nullptr");
-                return true;
+                if (manager->HasEventListener(EVENT_MESSAGE)) {
+                    NETSTACK_LOGI("manager is ready with registering message event");
+                    return true;
+                }
             } else {
                 NETSTACK_LOGE("iter==g_clientEventManagers.end()");
-                return false;
             }
+            return false;
         });
     }
 
     auto connectFD = g_clientFDs[clientId]; // std::lock_guard<std::mutex> lock(g_mutex);]
-    std::this_thread::sleep_for(std::chrono::milliseconds(TEMP_WAIT_REGISTER_MESSAGE_MS));
+
     while (true) {
         if (memset_s(buffer, sizeof(buffer), 0, sizeof(buffer)) != EOK) {
             NETSTACK_LOGE("memset_s failed!");
@@ -1871,12 +1875,13 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
         return false;
     }
     auto clients = SingletonSocketConfig::GetInstance().GetClients(context->GetSocketFd());
-    for (const int fd : clients) {
-        if (!SetTcpServerExtraOptions(context->GetSocketFd(), fd, context->options_)) {
-            context->SetError(errno, strerror(errno));
-            return false;
-        }
+    if (std::any_of(clients.begin(), clients.end(), [&context](int32_t fd) {
+        return !SetTcpServerExtraOptions(context->GetSocketFd(), fd, context->options_);
+        })) {
+        context->SetError(errno, strerror(errno));
+        return false;
     }
+
     SingletonSocketConfig::GetInstance().SetTcpExtraOptions(context->GetSocketFd(), context->options_);
     return true;
 }

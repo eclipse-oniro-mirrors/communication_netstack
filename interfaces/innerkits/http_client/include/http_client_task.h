@@ -205,6 +205,12 @@ private:
     bool SetOtherCurlOption(CURL *handle);
 
     /**
+     * Sets the server ssl cert options for the HTTP request.
+     * @param handle The Curl handle.
+     * @return Returns true if the set options are set successfully, false otherwise.
+     */
+    bool SetServerSSLCertOption(CURL *curl);
+    /**
      * Sets the upload options for the HTTP request.
      * @param handle The Curl handle.
      * @return Returns true if the upload options are set successfully, false otherwise.
