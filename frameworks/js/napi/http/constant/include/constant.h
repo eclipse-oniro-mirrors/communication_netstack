@@ -125,6 +125,7 @@ public:
     static const char *const HTTP_METHOD_CONNECT;
 
     /* default options */
+    static const uint32_t DEFAULT_MAX_LIMIT;
     static const uint32_t DEFAULT_READ_TIMEOUT;
     static const uint32_t DEFAULT_CONNECT_TIMEOUT;
 
@@ -134,6 +135,7 @@ public:
     static const char *const PARAM_KEY_METHOD;
     static const char *const PARAM_KEY_EXTRA_DATA;
     static const char *const PARAM_KEY_HEADER;
+    static const char *const PARAM_KEY_MAX_LIMIT;
     static const char *const PARAM_KEY_READ_TIMEOUT;
     static const char *const PARAM_KEY_DNS_SERVERS;
     static const char *const PARAM_KEY_RESUME_FROM;

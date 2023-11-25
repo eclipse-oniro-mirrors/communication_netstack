@@ -52,7 +52,6 @@
     } while (0)
 
 namespace OHOS::NetStack::Http {
-static constexpr size_t MAX_LIMIT = 5 * 1024 * 1024;
 static constexpr int CURL_TIMEOUT_MS = 50;
 static constexpr int CONDITION_TIMEOUT_S = 3600;
 static constexpr int CURL_MAX_WAIT_MSECS = 10;
@@ -783,7 +782,7 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
         return size * memBytes;
     }
-    if (context->response.GetResult().size() > MAX_LIMIT) {
+    if (context->response.GetResult().size() > context->options.GetMaxLimit()) {
         NETSTACK_LOGE("response data exceeds the maximum limit");
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
         return 0;
@@ -831,7 +830,7 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
         return 0;
     }
-    if (context->response.GetResult().size() > MAX_LIMIT) {
+    if (context->response.GetResult().size() > context->options.GetMaxLimit()) {
         NETSTACK_LOGE("response data exceeds the maximum limit");
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
         return 0;

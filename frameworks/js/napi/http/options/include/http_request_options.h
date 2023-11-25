@@ -51,6 +51,8 @@ public:
 
     void SetReadTimeout(uint32_t readTimeout);
 
+    void SetMaxLimit(uint32_t maxLimit);
+
     void SetConnectTimeout(uint32_t connectTimeout);
 
     void SetUsingProtocol(HttpProtocol httpProtocol);
@@ -80,6 +82,8 @@ public:
     [[nodiscard]] const std::map<std::string, std::string> &GetHeader() const;
 
     [[nodiscard]] uint32_t GetReadTimeout() const;
+
+    [[nodiscard]] uint32_t GetMaxLimit() const;
 
     [[nodiscard]] uint32_t GetConnectTimeout() const;
 
@@ -119,6 +123,8 @@ private:
     std::map<std::string, std::string> header_;
 
     uint32_t readTimeout_;
+
+    uint32_t maxLimit_;
 
     uint32_t connectTimeout_;
 
