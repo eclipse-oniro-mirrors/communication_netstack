@@ -81,7 +81,7 @@ public:
     ClientContext *GetClientContext() const;
 
 private:
-    ClientContext *clientContext;   
+    ClientContext *clientContext;
 };
 } // namespace WebsocketClient
 } // namespace NetStack
