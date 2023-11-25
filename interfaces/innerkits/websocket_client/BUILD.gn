@@ -43,9 +43,7 @@ config("websocket_client_config") {
 }
 
 ohos_shared_library("websocket_client") {
-  sources = [
-    "$NETSTACK_NATIVE_ROOT/websocket_client/websocket_client.cpp",
-  ]
+  sources = [ "$NETSTACK_NATIVE_ROOT/websocket_client/websocket_client.cpp" ]
 
   include_dirs = [
     "$NETSTACK_DIR/utils/common_utils/include",
@@ -59,10 +57,10 @@ ohos_shared_library("websocket_client") {
 
   defines = [ "OHOS_LIBWEBSOCKETS=1" ]
 
-  deps = [ 
-     "$THIRD_PARTY_ROOT/libwebsockets:websockets",
-     "$THIRD_PARTY_ROOT/openssl:libssl_shared",
-   ]
+  deps = [
+    "$THIRD_PARTY_ROOT/libwebsockets:websockets",
+    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
+  ]
   deps += [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
@@ -82,7 +80,6 @@ ohos_shared_library("websocket_client") {
       external_deps += [ "init:libbegetutil" ]
     }
   }
-
 
   innerapi_tags = [ "platformsdk" ]
   part_name = "netstack"
