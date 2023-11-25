@@ -20,12 +20,12 @@ ohos_ndk_library("libnet_websocket") {
   ndk_description_file = "./libwebsocket.ndk.json"
   min_compact_version = "1"
   system_capability = "SystemCapability.Communication.NetStack"
-  system_capability_headers = [   
+  system_capability_headers = [
     "network/netstack/net_websocket/net_websocket.h",
     "network/netstack/net_websocket/net_websocket_type.h",
-    ]
+  ]
 }
- 
+
 ohos_ndk_headers("websocket_header") {
   dest_dir = "$ndk_headers_out_dir/network/netstack/net_websocket"
   sources = [
@@ -36,21 +36,20 @@ ohos_ndk_headers("websocket_header") {
 
 ohos_shared_library("net_websocket") {
   output_extension = "so"
-  include_dirs =[
+  include_dirs = [
     "$NETSTACK_DIR/interfaces/kits/c/net_websocket/include",
     "$NETSTACK_DIR/interfaces/innerkits/websocket_client/include",
     "$NETSTACK_DIR/frameworks/native/websocket_client/include",
     "$NETSTACK_DIR/utils/log/include",
-    ]
+  ]
 
   sources = [
     "src/net_websocket.cpp",
     "src/net_websocket_adapter.cpp",
   ]
 
-  deps = [
-    "$NETSTACK_DIR/interfaces/innerkits/websocket_client:websocket_client",
-  ]
+  deps =
+      [ "$NETSTACK_DIR/interfaces/innerkits/websocket_client:websocket_client" ]
 
   external_deps = [
     "c_utils:utils",
