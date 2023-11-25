@@ -82,6 +82,7 @@ public:
 
 private:
     ClientContext *clientContext;
+    
 };
 } // namespace WebsocketClient
 } // namespace NetStack
