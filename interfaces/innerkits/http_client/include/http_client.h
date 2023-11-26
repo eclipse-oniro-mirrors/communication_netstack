@@ -63,7 +63,7 @@ private:
      * Default constructor.
      */
     HttpSession();
-    ~HttpSession();
+    ~HttpSession();  
 
     /**
      * Initializes the HttpSession.
@@ -79,7 +79,7 @@ private:
     /**
      * Runs the thread for handling HTTP tasks.
      */
-    static void RunThread();
+    void RunThread();
 
     /**
      * Starts the specified HTTP client task.
@@ -107,13 +107,13 @@ private:
      */
     std::shared_ptr<HttpClientTask> GetTaskByCurlHandle(CURL *curlHandle);
 
-    static std::mutex curlMultiMutex_;
-    static CURLM *curlMulti_;
+    std::mutex curlMultiMutex_;
+    CURLM *curlMulti_;
     std::mutex taskMapMutex_;
     std::mutex initMutex_;
     std::map<CURL *, std::shared_ptr<HttpClientTask>> curlTaskMap_;
     std::map<uint32_t, std::shared_ptr<HttpClientTask>> taskIdMap_;
-    static std::condition_variable conditionVariable_;
+    std::condition_variable conditionVariable_;
     struct CompareTasks {
         bool operator()(const std::shared_ptr<HttpClientTask> &task1, const std::shared_ptr<HttpClientTask> &task2)
         {
@@ -124,13 +124,11 @@ private:
             return task1->GetRequest().GetPriority() < task2->GetRequest().GetPriority();
         }
     };
-    static std::mutex taskQueueMutex_;
-    static std::priority_queue<std::shared_ptr<HttpClientTask>, std::vector<std::shared_ptr<HttpClientTask>>,
-                               CompareTasks>
-        taskQueue_;
-    static std::atomic_bool initialized_;
-    static std::thread workThread_;
-    static std::atomic_bool runThread_;
+    std::mutex taskQueueMutex_;
+
+    std::atomic_bool initialized_;
+    std::thread workThread_;
+    std::atomic_bool runThread_;
 
     /**
      * Sends an HTTP request and handles the response.
@@ -143,14 +141,9 @@ private:
     void ReadResponse();
 
     /**
-     * Adds additional information to the HTTP request.
+     * Resum Task
      */
-    void AddRequestInfo();
-
-    /**
-     * Executes the HTTP request.
-     */
-    void ExecRequest();
+    void ResumTask();
 };
 } // namespace HttpClient
 } // namespace NetStack
