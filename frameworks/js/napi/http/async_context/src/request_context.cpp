@@ -161,6 +161,11 @@ void RequestContext::ParseNumberOptions(napi_value optionsValue)
             NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_READ_TIMEOUT));
     }
 
+    if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_MAX_LIMIT)) {
+        options.SetMaxLimit(
+            NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_MAX_LIMIT));
+    }
+
     if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CONNECT_TIMEOUT)) {
         options.SetConnectTimeout(
             NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CONNECT_TIMEOUT));

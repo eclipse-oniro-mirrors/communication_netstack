@@ -25,6 +25,7 @@ const char *const HttpConstant::HTTP_METHOD_POST = "POST";
 const char *const HttpConstant::HTTP_METHOD_PUT = "PUT";
 const char *const HttpConstant::HTTP_METHOD_CONNECT = "CONNECT";
 
+const uint32_t HttpConstant::DEFAULT_MAX_LIMIT = 5 * 1024 * 1024;
 const uint32_t HttpConstant::DEFAULT_READ_TIMEOUT = 60000;
 const uint32_t HttpConstant::DEFAULT_CONNECT_TIMEOUT = 60000;
 
@@ -33,6 +34,7 @@ const size_t HttpConstant::MAX_JSON_PARSE_SIZE = 65536;
 const char *const HttpConstant::PARAM_KEY_METHOD = "method";
 const char *const HttpConstant::PARAM_KEY_EXTRA_DATA = "extraData";
 const char *const HttpConstant::PARAM_KEY_HEADER = "header";
+const char *const HttpConstant::PARAM_KEY_MAX_LIMIT = "maxLimit";
 const char *const HttpConstant::PARAM_KEY_READ_TIMEOUT = "readTimeout";
 const char *const HttpConstant::PARAM_KEY_DNS_SERVERS = "dnsServers";
 const char *const HttpConstant::PARAM_KEY_RESUME_FROM = "resumeFrom";

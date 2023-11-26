@@ -31,6 +31,7 @@ static constexpr const int64_t MAX_RESUM_NUMBER = 4294967296;
 HttpRequestOptions::HttpRequestOptions()
     : method_(HttpConstant::HTTP_METHOD_GET),
       readTimeout_(HttpConstant::DEFAULT_READ_TIMEOUT),
+      maxLimit_(HttpConstant::DEFAULT_MAX_LIMIT),
       connectTimeout_(HttpConstant::DEFAULT_CONNECT_TIMEOUT),
       usingProtocol_(HttpProtocol::HTTP_NONE),
       dataType_(HttpDataType::NO_DATA_TYPE),
@@ -70,6 +71,11 @@ void HttpRequestOptions::SetReadTimeout(uint32_t readTimeout)
     readTimeout_ = readTimeout;
 }
 
+void HttpRequestOptions::SetMaxLimit(uint32_t maxLimit)
+{
+    maxLimit_ = maxLimit;
+}
+
 void HttpRequestOptions::SetConnectTimeout(uint32_t connectTimeout)
 {
     connectTimeout_ = connectTimeout;
@@ -98,6 +104,11 @@ const std::map<std::string, std::string> &HttpRequestOptions::GetHeader() const
 uint32_t HttpRequestOptions::GetReadTimeout() const
 {
     return readTimeout_;
+}
+
+uint32_t HttpRequestOptions::GetMaxLimit() const
+{
+    return maxLimit_;
 }
 
 uint32_t HttpRequestOptions::GetConnectTimeout() const
