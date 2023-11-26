@@ -64,8 +64,8 @@ static HttpGlobal g_httpGlobal;
 
 HttpSession::HttpSession() : 
     curlMulti_(nullptr),
-    runThread_(false),
-    initialized_(false) {
+    initialized_(false),
+    runThread_(false) {
 }
 
 HttpSession::~HttpSession()
