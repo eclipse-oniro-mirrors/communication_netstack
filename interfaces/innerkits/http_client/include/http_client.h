@@ -107,7 +107,7 @@ private:
      */
     std::shared_ptr<HttpClientTask> GetTaskByCurlHandle(CURL *curlHandle);
 
-    std::recursive_mutex curlMultiMutex_;
+    std::mutex curlMultiMutex_;
     CURLM *curlMulti_;
     std::mutex taskMapMutex_;
     std::mutex initMutex_;
