@@ -79,16 +79,16 @@ void HttpSession::RequestAndResponse()
         // send request
         auto ret = curl_multi_perform(curlMulti_, &runningHandle);
         if (ret != CURLM_OK) {
-            NETSTACK_LOGE("curl_multi_perform() error! ret = %{public}, err = %{public}s", 
-                ret, curl_multi_strerror(ret));
+            NETSTACK_LOGE("curl_multi_perform() error! ret = %{public}d", 
+                ret);
             continue;
         }
 
         // wait for response
         ret = curl_multi_poll(curlMulti_, nullptr, 0, CURL_MAX_WAIT_MSECS, nullptr);
         if (ret != CURLM_OK) {
-            NETSTACK_LOGE("curl_multi_poll() error! ret = %{public}d, err = %{public}s",
-                ret, curl_multi_strerror(ret));
+            NETSTACK_LOGE("curl_multi_poll() error! ret = %{public}d",
+                ret);
             continue;
         }
         // read response
@@ -132,8 +132,8 @@ void HttpSession::RunThread()
     while (runThread_) {
         RequestAndResponse();
         std::this_thread::sleep_for(std::chrono::milliseconds(CURL_TIMEOUT_MS));
-        NETSTACK_LOGD("RunThread in loop runThread_ = %{public}s, Id = %{public}d, task = %{public}d", 
-            runThread_ ? "true" : "false", taskIdMap_.size(), curlTaskMap_.size());
+        NETSTACK_LOGD("RunThread in loop runThread_ = %{public}s", 
+            runThread_ ? "true" : "false");
         
         std::function<bool()> f = [this]() -> bool {
             NETSTACK_LOGD("RunThread in loop wait_for taskQueue_.empty() = %{public}d runThread_ = %{public}s",
