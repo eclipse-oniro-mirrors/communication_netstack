@@ -55,6 +55,7 @@
                     "//foundation/communication/netstack/frameworks/js/napi/socket:socket",
                     "//foundation/communication/netstack/frameworks/js/napi/websocket:websocket",
                     "//foundation/communication/netstack/frameworks/js/napi/net_ssl:networksecurity_napi",
+                    "//foundation/communication/netstack/interfaces/kits/c/net_websocket:net_websocket",
                     "//foundation/communication/netstack/frameworks/js/napi/fetch:fetch",
                     "//foundation/communication/netstack/utils:common_utils"
                 ],
@@ -88,6 +89,16 @@
                             "net_ssl.h"
                         ],
                         "header_base": "//foundation/communication/netstack/interfaces/innerkits/net_ssl/include"
+                    }
+                },
+                {
+                    "type": "so",
+                    "name": "//foundation/communication/netstack/interfaces/innerkits/websocket_client:websocket_client",
+                    "header": {
+                        "header_files": [
+                            "websocket_client_innerapi.h"
+                        ],
+                        "header_base": "//foundation/communication/netstack/interfaces/innerkits/websocket_client/include"
                     }
                 },                
                 {
