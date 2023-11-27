@@ -71,30 +71,33 @@ static constexpr const char *HTTP_PROXY_PORT_KEY = "persist.netmanager_base.http
 static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_base.http_proxy.exclusion_list";
 #endif
 
-template <class Context, napi_value (*Callback)(Context *)>
+static void RequestContextDeleter(RequestContext *context)
+{
+    std::lock_guard lockGuard(HttpExec::staticContextSet_.mutexForContextVec);
+    auto it = std::find(HttpExec::staticContextSet_.contextSet.begin(), HttpExec::staticContextSet_.contextSet.end(),
+                        context);
+    if (it == HttpExec::staticContextSet_.contextSet.end()) {
+        NETSTACK_LOGE("can't find request context in set");
+    } else {
+        HttpExec::staticContextSet_.contextSet.erase(it);
+    }
+
+    context->DeleteReference();
+    delete context;
+    context = nullptr;
+}
+
 static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, void *data)
 {
-    static_assert(std::is_base_of<BaseContext, Context>::value);
-
     if (status != napi_ok) {
         return;
     }
-    auto deleter = [](Context *context) {
-        context->DeleteReference();
-        delete context;
-        context = nullptr;
-    };
-    std::unique_ptr<Context, decltype(deleter)> context(static_cast<Context *>(data), deleter);
-    size_t argc = EVENT_PARAM_TWO;
+    std::unique_ptr<RequestContext, decltype(&RequestContextDeleter)> context(static_cast<RequestContext *>(data),
+                                                                              RequestContextDeleter);
     napi_value argv[EVENT_PARAM_TWO] = {nullptr};
     if (context->IsParseOK() && context->IsExecOK()) {
         argv[EVENT_PARAM_ZERO] = NapiUtils::GetUndefined(env);
-
-        if (Callback != nullptr) {
-            argv[EVENT_PARAM_ONE] = Callback(context.get());
-        } else {
-            argv[EVENT_PARAM_ONE] = NapiUtils::GetUndefined(env);
-        }
+        argv[EVENT_PARAM_ONE] = HttpExec::RequestInStreamCallback(context.get());
         if (argv[EVENT_PARAM_ONE] == nullptr) {
             return;
         }
@@ -120,10 +123,48 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
     }
     napi_value func = context->GetCallback();
     if (NapiUtils::GetValueType(env, func) == napi_function) {
-        (void)NapiUtils::CallFunction(env, undefined, func, argc, argv);
+        (void)NapiUtils::CallFunction(env, undefined, func, EVENT_PARAM_TWO, argv);
     }
     if (context->IsExecOK()) {
         context->Emit(ON_DATA_END, std::make_pair(undefined, undefined));
+    }
+}
+
+static void AsyncWorkRequestCallback(napi_env env, napi_status status, void *data)
+{
+    if (status != napi_ok) {
+        return;
+    }
+    std::unique_ptr<RequestContext, decltype(&RequestContextDeleter)> context(static_cast<RequestContext *>(data),
+                                                                              RequestContextDeleter);
+    napi_value argv[EVENT_PARAM_TWO] = {nullptr};
+    if (context->IsParseOK() && context->IsExecOK()) {
+        argv[EVENT_PARAM_ZERO] = NapiUtils::GetUndefined(env);
+        argv[EVENT_PARAM_ONE] = HttpExec::RequestCallback(context.get());
+        if (argv[EVENT_PARAM_ONE] == nullptr) {
+            return;
+        }
+    } else {
+        argv[EVENT_PARAM_ZERO] =
+            NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
+        if (argv[EVENT_PARAM_ZERO] == nullptr) {
+            return;
+        }
+
+        argv[EVENT_PARAM_ONE] = NapiUtils::GetUndefined(env);
+    }
+    napi_value undefined = NapiUtils::GetUndefined(env);
+    if (context->GetDeferred() != nullptr) {
+        if (context->IsExecOK()) {
+            napi_resolve_deferred(env, context->GetDeferred(), argv[EVENT_PARAM_ONE]);
+        } else {
+            napi_reject_deferred(env, context->GetDeferred(), argv[EVENT_PARAM_ZERO]);
+        }
+        return;
+    }
+    napi_value func = context->GetCallback();
+    if (NapiUtils::GetValueType(env, func) == napi_function) {
+        (void)NapiUtils::CallFunction(env, undefined, func, EVENT_PARAM_TWO, argv);
     }
 }
 
@@ -138,12 +179,17 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
         std::lock_guard guard(staticVariable_.curlMultiMutex);
         staticVariable_.infoQueue.emplace(context, handle);
         staticVariable_.conditionVariable.notify_all();
+        {
+            std::lock_guard lockGuard(staticContextSet_.mutexForContextVec);
+            HttpExec::staticContextSet_.contextSet.emplace(context);
+        }
     }).detach();
 
     return true;
 }
 
 HttpExec::StaticVariable HttpExec::staticVariable_; /* NOLINT */
+HttpExec::StaticContextVec HttpExec::staticContextSet_;
 
 bool HttpExec::RequestWithoutCache(RequestContext *context)
 {
@@ -288,10 +334,9 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
     }
 
     if (context->IsRequestInStream()) {
-        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context,
-                                             AsyncWorkRequestInStreamCallback<RequestContext, RequestInStreamCallback>);
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, AsyncWorkRequestInStreamCallback);
     } else {
-        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, AsyncWorkRequestCallback);
     }
 }
 
@@ -314,11 +359,9 @@ bool HttpExec::ExecRequest(RequestContext *context)
         context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
         if (EventManager::IsManagerValid(context->GetManager())) {
             if (context->IsRequestInStream()) {
-                NapiUtils::CreateUvQueueWorkEnhanced(
-                    context->GetEnv(), context,
-                    AsyncWorkRequestInStreamCallback<RequestContext, RequestInStreamCallback>);
+                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, AsyncWorkRequestInStreamCallback);
             } else {
-                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, HttpAsyncWork::RequestCallback);
+                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, AsyncWorkRequestCallback);
             }
         }
         return false;
@@ -900,6 +943,15 @@ void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
     auto context = static_cast<RequestContext *>(data);
     if (context == nullptr) {
         return;
+    }
+    {
+        std::lock_guard lockGuard(HttpExec::staticContextSet_.mutexForContextVec);
+        auto it = std::find(HttpExec::staticContextSet_.contextSet.begin(),
+                            HttpExec::staticContextSet_.contextSet.end(), context);
+        if (it == HttpExec::staticContextSet_.contextSet.end()) {
+            NETSTACK_LOGI("context has benn deleted in libuv thread");
+            return;
+        }
     }
     auto progress = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), progress) == napi_undefined) {
