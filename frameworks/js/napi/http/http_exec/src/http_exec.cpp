@@ -73,7 +73,6 @@ static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_bas
 
 static void RequestContextDeleter(RequestContext *context)
 {
-
     std::lock_guard lockGuard(HttpExec::staticContextSet_.mutexForContextVec);
     auto it = std::find(HttpExec::staticContextSet_.contextSet.begin(), HttpExec::staticContextSet_.contextSet.end(),
                         context);
