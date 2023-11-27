@@ -24,6 +24,7 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <set>
 
 #include "curl/curl.h"
 #include "napi/native_api.h"
@@ -78,6 +79,13 @@ public:
 #ifndef MAC_PLATFORM
     static void AsyncRunRequest(RequestContext *context);
 #endif
+    struct StaticContextVec {
+        StaticContextVec() = default;
+        ~StaticContextVec() = default;
+        std::mutex mutexForContextVec;
+        std::set<RequestContext *> contextSet;
+    };
+    static StaticContextVec staticContextSet_;
 
 private:
     static bool SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader);
