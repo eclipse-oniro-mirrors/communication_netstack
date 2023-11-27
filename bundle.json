@@ -55,7 +55,7 @@
                     "//foundation/communication/netstack/frameworks/js/napi/socket:socket",
                     "//foundation/communication/netstack/frameworks/js/napi/websocket:websocket",
                     "//foundation/communication/netstack/frameworks/js/napi/net_ssl:networksecurity_napi",
-		            "//foundation/communication/netstack/interfaces/kits/c/net_websocket:net_websocket",
+                    "//foundation/communication/netstack/interfaces/kits/c/net_websocket:net_websocket",
                     "//foundation/communication/netstack/frameworks/js/napi/fetch:fetch",
                     "//foundation/communication/netstack/utils:common_utils"
                 ],
