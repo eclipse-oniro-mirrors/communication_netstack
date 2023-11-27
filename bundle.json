@@ -91,7 +91,7 @@
                         "header_base": "//foundation/communication/netstack/interfaces/innerkits/net_ssl/include"
                     }
                 },
-			    {
+                {
                     "type": "so",
                     "name": "//foundation/communication/netstack/interfaces/innerkits/websocket_client:websocket_client",
                     "header": {
