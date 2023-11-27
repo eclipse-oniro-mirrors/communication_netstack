@@ -89,7 +89,7 @@ void HttpSession::RequestAndResponse()
         if (runThread_ == false) {
             break;
         }
-        std::lock_guard<std::mutex> guard(curlMultiMutex_);
+        std::lock_guard<std::recursive_mutex> guard(curlMultiMutex_);
         if (curlMulti_ == nullptr) {
             NETSTACK_LOGE("RequestAndResponse() runThread_ or curlMulti_ nullptr");
             break;
@@ -166,7 +166,7 @@ bool HttpSession::Init()
     if (!initialized_) {
         NETSTACK_LOGI("HttpSession::Init");
 
-        std::lock_guard<std::mutex> guard(curlMultiMutex_);
+        std::lock_guard<std::recursive_mutex> guard(curlMultiMutex_);
         curlMulti_ = curl_multi_init();
         if (curlMulti_ == nullptr) {
             NETSTACK_LOGE("Failed to initialize 'curl_multi'");
@@ -199,11 +199,15 @@ void HttpSession::Deinit()
             workThread_.join();
         }
     } while(0);
-    
+
     do {
-        std::lock_guard<std::mutex> guard(curlMultiMutex_);
+        std::lock_guard<std::mutex> guard(taskMapMutex_);
         curlTaskMap_.clear();
         taskIdMap_.clear();
+    } while(0);
+
+    do {
+        std::lock_guard<std::recursive_mutex> guard(curlMultiMutex_);
         if (curlMulti_ != nullptr) {
             NETSTACK_LOGI("Deinit curl_multi_cleanup()");
             curl_multi_cleanup(curlMulti_);
@@ -239,6 +243,12 @@ std::shared_ptr<HttpClientTask> HttpSession::CreateTask(const HttpClientRequest 
 
 void HttpSession::ResumTask()
 {
+    do {
+        std::lock_guard<std::recursive_mutex> guard(curlMultiMutex_);
+        if (curlMulti_ != nullptr) {
+            curl_multi_wakeup(curlMulti_);
+        }
+    } while(0);
     std::lock_guard<std::mutex> lock(taskQueueMutex_);
     conditionVariable_.notify_all();
 }
@@ -262,7 +272,7 @@ void HttpSession::StartTask(std::shared_ptr<HttpClientTask> ptr)
 
     /* add handle to curl muti */ 
     do {
-        std::lock_guard<std::mutex> guard(curlMultiMutex_);
+        std::lock_guard<std::recursive_mutex> guard(curlMultiMutex_);
         if (nullptr == curlMulti_) {
             NETSTACK_LOGE("curlMulti_ is nullptr");
             return;
@@ -278,15 +288,14 @@ void HttpSession::StartTask(std::shared_ptr<HttpClientTask> ptr)
 
 void HttpSession::StopTask(std::shared_ptr<HttpClientTask> ptr)
 {
+    std::lock_guard<std::mutex> guard(taskMapMutex_);
     if (nullptr == ptr) {
         NETSTACK_LOGE("HttpSession::StopTask  shared_ptr = nullptr! Error!");
         return;
     }
-
     NETSTACK_LOGD("HttpSession::StopTask taskId = %{public}d", ptr->GetTaskId());
-    std::lock_guard<std::mutex> guard(taskMapMutex_);
-    ptr->SetStatus(TaskStatus::IDLE);
 
+    ptr->SetStatus(TaskStatus::IDLE);
     if (ptr->GetCurlHandle() != nullptr) {
         curlTaskMap_.erase(ptr->GetCurlHandle());
     }
