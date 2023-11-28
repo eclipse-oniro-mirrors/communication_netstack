@@ -149,7 +149,7 @@ public:
 
     void SetTcpExtraOptions(int listenFd, const TCPExtraOptions& option)
     {
-        tcpExtraOptions_[listenFd] = option;
+        tcpExtraOptions_.EnsureInsert(listenFd, option);
     }
 
     bool GetTcpExtraOptions(int listenFd, TCPExtraOptions& option)
@@ -165,8 +165,11 @@ public:
     void AddNewAcceptSocket(int listenFd, int acceptFd)
     {
         std::set<int> fdSet;
+        auto fn = [&](std::set<int> &value) -> void {
+            value.emplace(acceptFd);
+        };
         if (tcpClients_.Find(listenFd, fdSet)) {
-            tcpClients_[listenFd].emplace(acceptFd);
+            tcpClients_.ChangeValueByLambda(listenFd, fn);
         }
     }
 
