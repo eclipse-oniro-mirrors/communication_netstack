@@ -73,7 +73,7 @@ CURLMcode HttpSession::PerformRequest(int &runningHandle)
     // send request
     ret = curl_multi_perform(curlMulti_, &runningHandle);
     if (ret != CURLM_OK) {
-        NETSTACK_LOGE("curl_multi_perform() error! ret = %{public}", ret);
+        NETSTACK_LOGE("curl_multi_perform() error! ret = %{public}d", ret);
         return ret;
     }
 
