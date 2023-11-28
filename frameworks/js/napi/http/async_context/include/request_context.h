@@ -46,6 +46,8 @@ public:
 
     ~RequestContext() override;
 
+    curl_mime *multipart_;
+
     void StartTiming();
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
@@ -80,8 +82,6 @@ public:
 
     LoadBytes GetUlLen();
 
-    void PopUlLen();
-
     bool CompareWithLastElement(curl_off_t nowLen, curl_off_t totalLen);
 
     void SetTempData(const void *data, size_t size);
@@ -92,13 +92,11 @@ public:
 
     void ParseClientCert(napi_value optionsValue);
 
-    Timing::TimerMap GetTimerMap();
+    void CachePerformanceTimingItem(const std::string &key, double value);
 
-    void CachePerformanceTimingItem(std::string key, double value);
+    void StopAndCacheNapiPerformanceTiming(const char *key);
 
-    void StopAndCacheNapiPerformanceTiming(const char *const key);
-
-    void SetPerformanceTimingToReslult(napi_value result);
+    void SetPerformanceTimingToResult(napi_value result);
 
 private:
     bool usingCache_;
@@ -128,6 +126,8 @@ private:
 
     void ParseDnsServers(napi_value optionsValue);
 
+    void ParseMultiFormData(napi_value optionsValue);
+
     void ParseDohUrl(napi_value optionsValue);
 
     void ParseResumeFromToNumber(napi_value optionsValue);
@@ -137,6 +137,10 @@ private:
     void UrlAndOptions(napi_value urlValue, napi_value optionsValue);
 
     bool HandleMethodForGet(napi_value extraData);
+
+    MultiFormData NapiValue2FormData(napi_value formDataValue);
+
+    void SaveFormData(napi_env env, napi_value dataValue, MultiFormData &multiFormData);
 };
 } // namespace OHOS::NetStack::Http
 

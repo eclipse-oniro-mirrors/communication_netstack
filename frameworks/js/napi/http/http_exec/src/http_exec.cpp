@@ -320,13 +320,15 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         NETSTACK_LOGE("can not find context");
         return;
     }
-
     NETSTACK_LOGI("priority = %{public}d", context->options.GetPriority());
     context->SetExecOK(GetCurlDataFromHandle(handle, context, msg->msg, msg->data.result));
     CacheCurlPerformanceTiming(handle, context);
     if (context->IsExecOK()) {
         CacheProxy proxy(context->options);
         proxy.WriteResponseToCache(context->response);
+    }
+    if (context->multipart_ != nullptr) {
+        curl_mime_free(context->multipart_);
     }
     if (context->GetManager() == nullptr) {
         NETSTACK_LOGE("can not find context manager");
@@ -422,7 +424,7 @@ napi_value HttpExec::RequestCallback(RequestContext *context)
 {
     napi_value result = HttpExec::BuildRequestCallback(context);
     context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_TOTAL_TIMING);
-    context->SetPerformanceTimingToReslult(result);
+    context->SetPerformanceTimingToResult(result);
     return result;
 }
 
@@ -801,15 +803,58 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     }
     SetDnsOption(curl, context);
     SetSSLCertOption(curl, context);
-
     if (!SetServerSSLCertOption(curl, context)) {
         return false;
     }
-
     if (!SetOtherOption(curl, context)) {
         return false;
     }
+    SetMultiPartOption(curl, context);
+    return true;
+}
 
+bool HttpExec::SetMultiPartOption(CURL *curl, RequestContext *context)
+{
+    auto header =  context->options.GetHeader();
+    auto type = CommonUtils::ToLower(header[HttpConstant::HTTP_CONTENT_TYPE]);
+    if (type != HttpConstant::HTTP_CONTENT_TYPE_MULTIPART) {
+        return true;
+    }
+    auto multiPartDataList = context->options.GetMultiPartDataList();
+    context->multipart_ = curl_mime_init(curl);
+    curl_mimepart *part = nullptr;
+    for (auto &multiFormData : multiPartDataList) {
+        if (multiFormData.name.empty()) {
+            continue;
+        }
+        if (multiFormData.data.empty() && multiFormData.fileName.empty()) {
+            continue;
+        }
+        part = curl_mime_addpart(context->multipart_);
+        CURLcode result = curl_mime_name(part, multiFormData.name.c_str());
+        if (result != CURLE_OK) {
+            NETSTACK_LOGE("Failed to set name %{public}s, error: %{public}s", multiFormData.name.c_str(), curl_easy_strerror(result));
+            continue;
+        }
+        if (!multiFormData.contentType.empty()) {
+            result = curl_mime_type(part, multiFormData.contentType.c_str());
+            if (result != CURLE_OK) {
+                NETSTACK_LOGE("Failed to set contentType: %{public}s, error: %{public}s", multiFormData.name.c_str(), curl_easy_strerror(result));
+            }
+        }
+        if (!multiFormData.data.empty()) {
+            result = curl_mime_data(part, multiFormData.data.c_str(), CURL_ZERO_TERMINATED);
+            if (result != CURLE_OK) {
+                NETSTACK_LOGE("Failed to set data: %{public}s, error: %{public}s", multiFormData.name.c_str(), curl_easy_strerror(result));
+            }
+        } else {
+            result = curl_mime_filedata(part, multiFormData.fileName.c_str());
+            if (result != CURLE_OK) {
+                NETSTACK_LOGE("Failed to set file data: %{public}s, error: %{public}s", multiFormData.name.c_str(), curl_easy_strerror(result));
+            }
+        }
+    }
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_MIMEPOST, context->multipart_, context);
     return true;
 }
 

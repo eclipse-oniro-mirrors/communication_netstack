@@ -37,6 +37,16 @@ enum class UsingHttpProxyType {
     USE_SPECIFIED,
 };
 
+struct MultiFormData {
+    MultiFormData() = default;
+    ~MultiFormData() = default;
+    std::string name;
+    std::string contentType;
+    std::string remoteFileName;
+    std::string data;
+    std::string fileName;
+};
+
 class HttpRequestOptions final {
 public:
     HttpRequestOptions();
@@ -72,6 +82,8 @@ public:
     void SetRangeNumber(int64_t resumeFromNumber, int64_t resumeToNumber);
 
     void SetClientCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
+
+    void AddMultiFormData(const MultiFormData &multiFormData);
 
     [[nodiscard]] const std::string &GetUrl() const;
 
@@ -113,6 +125,7 @@ public:
 
     void GetClientCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
 
+    std::vector<MultiFormData> GetMultiPartDataList();
 private:
     std::string url_;
 
@@ -161,6 +174,8 @@ private:
     std::string key_;
 
     Secure::SecureChar keyPasswd_;
+
+    std::vector<MultiFormData> multiFormDataList_;
 };
 } // namespace OHOS::NetStack::Http
 

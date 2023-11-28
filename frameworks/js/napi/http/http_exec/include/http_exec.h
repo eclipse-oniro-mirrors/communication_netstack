@@ -192,6 +192,7 @@ private:
 #endif
     };
     static StaticVariable staticVariable_;
+    static bool SetMultiPartOption(void *curl, RequestContext *context);
 };
 } // namespace OHOS::NetStack::Http
 

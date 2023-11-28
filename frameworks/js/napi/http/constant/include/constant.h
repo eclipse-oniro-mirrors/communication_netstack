@@ -149,17 +149,24 @@ public:
     static const char *const PARAM_KEY_DOH_URL;
 
     static const char *const PARAM_KEY_USING_HTTP_PROXY;
+    static const char *const PARAM_KEY_CLINENT_CERT;
+    static const char *const PARAM_KEY_MULTI_FORM_DATA_LIST;
 
     static const char *const HTTP_PROXY_KEY_HOST;
     static const char *const HTTP_PROXY_KEY_PORT;
     static const char *const HTTP_PROXY_KEY_EXCLUSION_LIST;
     static const char *const HTTP_PROXY_EXCLUSIONS_SEPARATOR;
 
-    static const char *const PARAM_KEY_CLINENT_CERT;
     static const char *const HTTP_CLINENT_CERT;
     static const char* const HTTP_CLINENT_CERT_TYPE;
     static const char *const HTTP_CLINENT_KEY;
     static const char *const HTTP_CLINENT_KEY_PASSWD;
+
+    static const char *const HTTP_MULTI_FORM_DATA_NAME;
+    static const char *const HTTP_MULTI_FORM_DATA_CONTENT_TYPE;
+    static const char *const HTTP_MULTI_FORM_DATA_REMOTE_FILE_NAME;
+    static const char *const HTTP_MULTI_FORM_DATA_DATA;
+    static const char *const HTTP_MULTI_FORM_DATA_FILE_NAME;
 
     static const char *const RESPONSE_KEY_RESULT;
     static const char *const RESPONSE_KEY_RESPONSE_CODE;
@@ -195,6 +202,7 @@ public:
     static const char *const HTTP_CONTENT_TYPE_JSON;
     static const char *const HTTP_CONTENT_TYPE_OCTET_STREAM;
     static const char *const HTTP_CONTENT_TYPE_IMAGE;
+    static const char *const HTTP_CONTENT_TYPE_MULTIPART;
 
     static const char *const HTTP_CONTENT_ENCODING_GZIP;
 
