@@ -130,6 +130,11 @@ private:
     std::thread workThread_;
     std::atomic_bool runThread_;
 
+     /**
+     * Perform Http request 
+     */
+    CURLMcode PerformRequest(int &runningHandle);
+    
     /**
      * Sends an HTTP request and handles the response.
      */

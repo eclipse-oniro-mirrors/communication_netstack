@@ -61,40 +61,48 @@ HttpSession &HttpSession::GetInstance()
     return gInstance;
 }
 
+CURLMcode HttpSession::PerformRequest(int &runningHandle)
+{
+    CURLMcode ret = CURLM_LAST;
+    std::unique_lock<std::mutex> lock(curlMultiMutex_);
+    if (curlMulti_ == nullptr) {
+        NETSTACK_LOGE("curlMulti_ is nullptr");
+        return ret;
+    }
+
+    // send request
+    ret = curl_multi_perform(curlMulti_, &runningHandle);
+    if (ret != CURLM_OK) {
+        NETSTACK_LOGE("curl_multi_perform() error! ret = %{public}", ret);
+        return ret;
+    }
+
+    // wait for response
+    ret = curl_multi_poll(curlMulti_, nullptr, 0, CURL_MAX_WAIT_MSECS, nullptr);
+    if (ret != CURLM_OK) {
+        NETSTACK_LOGE("curl_multi_poll() error! ret = %{public}d", ret);
+        return ret;
+    }
+    return ret;
+}
+
 void HttpSession::RequestAndResponse()
 {
     NETSTACK_LOGD("HttpSession::RequestAndResponse() start");
 
+    CURLMcode ret = CURLM_LAST;
     int runningHandle = 0;
     do {
-        if (runThread_ == false) {
-            return;
-        }
-        std::unique_lock<std::mutex> lock(curlMultiMutex_);
-        if (curlMulti_ == nullptr) {
-            NETSTACK_LOGE("RequestAndResponse() runThread_ or curlMulti_ nullptr");
-            return;
-        }
-
-        // send request
-        auto ret = curl_multi_perform(curlMulti_, &runningHandle);
-        if (ret != CURLM_OK) {
-            NETSTACK_LOGE("curl_multi_perform() error! ret = %{public}d", 
-                ret);
+        ret = PerformRequest(runningHandle);
+        if (ret == CURLM_CALL_MULTI_PERFORM) {
             continue;
-        }
-
-        // wait for response
-        ret = curl_multi_poll(curlMulti_, nullptr, 0, CURL_MAX_WAIT_MSECS, nullptr);
-        if (ret != CURLM_OK) {
-            NETSTACK_LOGE("curl_multi_poll() error! ret = %{public}d",
-                ret);
+        } else if (ret == CURLM_OK) {
+            ReadResponse();
+        } else {
+            // others are error
             continue;
         }
         // read response
-        lock.unlock();
-        ReadResponse();
-        lock.lock();
     } while (runningHandle > 0 && runThread_);
     NETSTACK_LOGD("HttpSession::RequestAndResponse() end");
 }
