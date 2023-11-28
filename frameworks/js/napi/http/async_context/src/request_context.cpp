@@ -641,21 +641,21 @@ void RequestContext::SetPerformanceTimingToResult(napi_value result)
 
 void RequestContext::ParseClientCert(napi_value optionsValue)
 {
-    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CLINENT_CERT)) {
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CLIENT_CERT)) {
         return;
     }
     napi_value clientCertValue =
-        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CLINENT_CERT);
+        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CLIENT_CERT);
     napi_valuetype type = NapiUtils::GetValueType(GetEnv(), clientCertValue);
     if (type != napi_object) {
         return;
     }
-    std::string cert = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_CERT);
+    std::string cert = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_CERT);
     std::string certType =
-        NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_CERT_TYPE);
-    std::string key = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_KEY);
+        NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_CERT_TYPE);
+    std::string key = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_KEY);
     Secure::SecureChar keyPasswd = Secure::SecureChar(
-        NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_KEY_PASSWD));
+        NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_KEY_PASSWD));
     options.SetClientCert(cert, certType, key, keyPasswd);
 }
 
@@ -715,7 +715,8 @@ void RequestContext::SaveFormData(napi_env env, napi_value dataValue, MultiFormD
         multiFormData.data = std::string(static_cast<const char *>(data), length);
         NETSTACK_LOGD("SaveFormData ArrayBuffer");
     } else if (type == napi_object) {
-        multiFormData.data = NapiUtils::GetStringFromValueUtf8(GetEnv(), NapiUtils::JsonStringify(GetEnv(), dataValue));
+        multiFormData.data = NapiUtils::GetStringFromValueUtf8(
+            GetEnv(), NapiUtils::JsonStringify(GetEnv(), dataValue));
         NETSTACK_LOGD("SaveFormData Object");
     } else {
         NETSTACK_LOGD("only support string, ArrayBuffer and Object");
