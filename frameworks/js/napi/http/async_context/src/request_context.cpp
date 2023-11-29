@@ -695,8 +695,8 @@ MultiFormData RequestContext::NapiValue2FormData(napi_value formDataValue)
         NapiUtils::GetStringPropertyUtf8(env, formDataValue, HttpConstant::HTTP_MULTI_FORM_DATA_REMOTE_FILE_NAME);
     RequestContext::SaveFormData(
         env, NapiUtils::GetNamedProperty(env, formDataValue, HttpConstant::HTTP_MULTI_FORM_DATA_DATA), multiFormData);
-    multiFormData.fileName =
-        NapiUtils::GetStringPropertyUtf8(env, formDataValue, HttpConstant::HTTP_MULTI_FORM_DATA_FILE_NAME);
+    multiFormData.filePath =
+        NapiUtils::GetStringPropertyUtf8(env, formDataValue, HttpConstant::HTTP_MULTI_FORM_DATA_FILE_PATH);
     return multiFormData;
 }
 

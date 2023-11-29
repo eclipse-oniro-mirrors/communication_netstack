@@ -827,7 +827,7 @@ bool HttpExec::SetMultiPartOption(CURL *curl, RequestContext *context)
         if (multiFormData.name.empty()) {
             continue;
         }
-        if (multiFormData.data.empty() && multiFormData.fileName.empty()) {
+        if (multiFormData.data.empty() && multiFormData.filePath.empty()) {
             continue;
         }
         part = curl_mime_addpart(context->multipart_);
@@ -851,7 +851,7 @@ bool HttpExec::SetMultiPartOption(CURL *curl, RequestContext *context)
                               multiFormData.name.c_str(), curl_easy_strerror(result));
             }
         } else {
-            result = curl_mime_filedata(part, multiFormData.fileName.c_str());
+            result = curl_mime_filedata(part, multiFormData.filePath.c_str());
             if (result != CURLE_OK) {
                 NETSTACK_LOGE("Failed to set file data: %{public}s, error: %{public}s",
                               multiFormData.name.c_str(), curl_easy_strerror(result));

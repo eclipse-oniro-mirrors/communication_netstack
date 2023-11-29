@@ -44,7 +44,7 @@ struct MultiFormData {
     std::string contentType;
     std::string remoteFileName;
     std::string data;
-    std::string fileName;
+    std::string filePath;
 };
 
 class HttpRequestOptions final {

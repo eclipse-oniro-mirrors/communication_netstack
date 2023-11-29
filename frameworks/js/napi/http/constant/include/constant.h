@@ -166,7 +166,7 @@ public:
     static const char *const HTTP_MULTI_FORM_DATA_CONTENT_TYPE;
     static const char *const HTTP_MULTI_FORM_DATA_REMOTE_FILE_NAME;
     static const char *const HTTP_MULTI_FORM_DATA_DATA;
-    static const char *const HTTP_MULTI_FORM_DATA_FILE_NAME;
+    static const char *const HTTP_MULTI_FORM_DATA_FILE_PATH;
 
     static const char *const RESPONSE_KEY_RESULT;
     static const char *const RESPONSE_KEY_RESPONSE_CODE;

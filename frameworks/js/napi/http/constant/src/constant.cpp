@@ -72,7 +72,7 @@ const char *const HttpConstant::HTTP_MULTI_FORM_DATA_NAME = "name";
 const char *const HttpConstant::HTTP_MULTI_FORM_DATA_CONTENT_TYPE = "contentType";
 const char *const HttpConstant::HTTP_MULTI_FORM_DATA_REMOTE_FILE_NAME = "remoteFileName";
 const char *const HttpConstant::HTTP_MULTI_FORM_DATA_DATA = "data";
-const char *const HttpConstant::HTTP_MULTI_FORM_DATA_FILE_NAME = "fileName";
+const char *const HttpConstant::HTTP_MULTI_FORM_DATA_FILE_PATH = "filePath";
 
 const char *const HttpConstant::HTTP_URL_PARAM_START = "?";
 const char *const HttpConstant::HTTP_URL_PARAM_SEPARATOR = "&";
