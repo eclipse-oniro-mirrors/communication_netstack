@@ -63,7 +63,7 @@ private:
      * Default constructor.
      */
     HttpSession();
-    ~HttpSession();  
+    ~HttpSession();
 
     /**
      * Initializes the HttpSession.
@@ -130,8 +130,8 @@ private:
     std::thread workThread_;
     std::atomic_bool runThread_;
 
-     /**
-     * Perform Http request 
+    /**
+     * Perform Http request
      */
     CURLMcode PerformRequest(int &runningHandle);
     

@@ -28,23 +28,23 @@ static constexpr int CURL_MAX_WAIT_MSECS = 100;
 static constexpr int CURL_TIMEOUT_MS = 50;
 static constexpr int CONDITION_TIMEOUT_S = 3600;
 
-class HttpGlobal
-{
+class HttpGlobal {
 public:
-    HttpGlobal() {
+    HttpGlobal()
+    {
         if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
             NETSTACK_LOGE("Failed to initialize 'curl'");
         }
     }
-    ~HttpGlobal() {
+    ~HttpGlobal()
+    {
         NETSTACK_LOGD("Deinit curl_global_cleanup()");
         curl_global_cleanup();
     }
 };
 static HttpGlobal g_httpGlobal;
 
-HttpSession::HttpSession() : 
-    curlMulti_(nullptr),
+HttpSession::HttpSession() : curlMulti_(nullptr),
     initialized_(false),
     runThread_(false) {
 }
@@ -189,7 +189,7 @@ void HttpSession::Deinit()
     do {
         std::unique_lock<std::mutex> lock(taskQueueMutex_);
         conditionVariable_.notify_all();
-    } while(0);
+    } while (0);
 
     if (workThread_.joinable()) {
         NETSTACK_LOGI("HttpSession::Deinit workThread_.join()");
@@ -200,7 +200,7 @@ void HttpSession::Deinit()
         std::lock_guard<std::mutex> guard(taskMapMutex_);
         curlTaskMap_.clear();
         taskIdMap_.clear();
-    } while(0);
+    } while (0);
 
     do {
         std::lock_guard<std::mutex> guard(curlMultiMutex_);
@@ -209,7 +209,7 @@ void HttpSession::Deinit()
             curl_multi_cleanup(curlMulti_);
             curlMulti_ = nullptr;
         }
-    } while(0);
+    } while (0);
     
     initialized_ = false;
     std::this_thread::sleep_for(std::chrono::milliseconds(CURL_TIMEOUT_MS));
@@ -259,7 +259,7 @@ void HttpSession::StartTask(std::shared_ptr<HttpClientTask> ptr)
         taskIdMap_[ptr->GetTaskId()] = ptr;
         curlTaskMap_[ptr->GetCurlHandle()] = ptr;
         ptr->SetStatus(TaskStatus::RUNNING);
-    } while(0);
+    } while (0);
 
     /* add handle to curl muti */ 
     do {
@@ -273,7 +273,7 @@ void HttpSession::StartTask(std::shared_ptr<HttpClientTask> ptr)
             NETSTACK_LOGE("curl_multi_add_handle err, ret = %{public}d", ret);
             return;
         }
-    } while(0);
+    } while (0);
     ResumTask();
 }
 
