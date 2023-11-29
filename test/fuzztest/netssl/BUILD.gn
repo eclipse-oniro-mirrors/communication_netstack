@@ -15,7 +15,5 @@ import("//build/test.gni")
 
 group("fuzztest") {
   testonly = true
-  deps = [
-    "fuzztest/netsslexec_fuzzer:fuzztest",
-  ]
+  deps = [ "fuzztest/netsslexec_fuzzer:fuzztest" ]
 }
