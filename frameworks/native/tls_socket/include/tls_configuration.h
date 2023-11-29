@@ -68,7 +68,7 @@ public:
     [[nodiscard]] VerifyMode GetVerifyMode() const;
 
 private:
-    TLSProtocol minProtocol_ = TLS_V1_3;
+    TLSProtocol minProtocol_ = TLS_V1_2;
     TLSProtocol maxProtocol_ = TLS_V1_3;
     TLSProtocol protocol_ = TLS_V1_3;
 
