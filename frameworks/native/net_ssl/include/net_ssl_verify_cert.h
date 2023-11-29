@@ -29,8 +29,12 @@ namespace NetStack {
 namespace Ssl {
 class SslConstant final {
 public:
-    /* Ca Path */
+    /* Sys Ca Path */
     static const char *const SYSPRECAPATH;
+    /* User Installed Ca Path */
+    static const char *const USERINSTALLEDCAPATH;
+    /* Uidtransformdivisor */
+    static const int UIDTRANSFORMDIVISOR;
 };
 
 enum VerifyResult { VERIFY_RESULT_UNKNOWN = -1, VERIFY_RESULT_FAIL = 0, VERIFY_RESULT_SUCCESS = 1 };
