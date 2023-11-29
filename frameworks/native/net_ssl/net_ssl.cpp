@@ -16,6 +16,7 @@
 #include <iostream>
 
 #include "net_ssl.h"
+#include "net_ssl_verify_cert.h"
 #include "netstack_log.h"
 
 namespace OHOS {

@@ -17,7 +17,6 @@
 #define COMMUNICATIONNETSTACK_NET_SSL_H
 
 #include "net_ssl_type.h"
-#include "net_ssl_verify_cert.h"
 
 namespace OHOS {
 namespace NetStack {
