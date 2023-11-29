@@ -140,7 +140,7 @@ void HttpSession::RunThread()
     while (runThread_) {
         RequestAndResponse();
         std::this_thread::sleep_for(std::chrono::milliseconds(CURL_TIMEOUT_MS));
-        NETSTACK_LOGD("RunThread in loop runThread_ = %{public}s", 
+        NETSTACK_LOGD("RunThread in loop runThread_ = %{public}s",
             runThread_ ? "true" : "false");
         
         std::function<bool()> f = [this]() -> bool {
@@ -252,7 +252,7 @@ void HttpSession::StartTask(std::shared_ptr<HttpClientTask> ptr)
     
     Init();
     
-    /* add to task map */ 
+    /* add to task map */
     do {
         NETSTACK_LOGD("HttpSession::StartTask taskId = %{public}d", ptr->GetTaskId());
         std::lock_guard<std::mutex> guard(taskMapMutex_);
@@ -261,7 +261,7 @@ void HttpSession::StartTask(std::shared_ptr<HttpClientTask> ptr)
         ptr->SetStatus(TaskStatus::RUNNING);
     } while (0);
 
-    /* add handle to curl muti */ 
+    /* add handle to curl muti */
     do {
         std::lock_guard<std::mutex> guard(curlMultiMutex_);
         if (nullptr == curlMulti_) {
