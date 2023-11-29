@@ -26,7 +26,7 @@ const char *ContextKey::CERT_PATH = "certPath";
 
 const char *ContextKey::KEY_PATH = "keyPath";
 
-const char *ContextKey::KEY_PASSWD = "keyPasswd";
+const char *ContextKey::KEY_PASSWD = "keyPassword";
 
 const char *ContextKey::CODE = "code";
 

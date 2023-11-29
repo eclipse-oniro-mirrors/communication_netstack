@@ -37,9 +37,9 @@ public:
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
-    void SetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd);
+    void SetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPassword);
 
-    void GetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd);
+    void GetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPassword);
 
     [[nodiscard]] int32_t GetErrorCode() const override;
 
@@ -55,7 +55,7 @@ public:
 
     Secure::SecureChar clientKey_;
 
-    Secure::SecureChar keyPasswd_;
+    Secure::SecureChar keyPassword_;
 
 private:
     void ParseHeader(napi_value optionsValue);

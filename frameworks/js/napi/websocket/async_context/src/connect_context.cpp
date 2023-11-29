@@ -68,6 +68,7 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
     ParseHeader(params[1]);
 
     ParseCaPath(params[1]);
+    
     ParseClientCert(params[1]);
 
     if (paramsCount == FUNCTION_PARAM_THREE) {
@@ -98,35 +99,36 @@ void ConnectContext::ParseHeader(napi_value optionsValue)
 
 void ConnectContext::ParseCaPath(napi_value optionsValue)
 {
-    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::CAPATH)) {
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::CAPATH)) {        
         return;
     }
     napi_value jsCaPath = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::CAPATH);
-    if (NapiUtils::GetValueType(GetEnv(), jsCaPath) != napi_string) {
+    if (NapiUtils::GetValueType(GetEnv(), jsCaPath) != napi_string) {        
         return;
     }
-    caPath_ = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCaPath, ContextKey::CAPATH);
+    caPath_ = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, ContextKey::CAPATH);
 }
 
 void ConnectContext::GetClientCert(
-    std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd)
+    std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPassword)
 {
     cert = clientCert_;
     key = clientKey_;
-    keyPasswd = keyPasswd_;
+    keyPassword = keyPassword_;
 }
 
 void ConnectContext::SetClientCert(
-    std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPasswd)
+    std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPassword)
 {
     clientCert_ = cert;
     clientKey_ = key;
-    keyPasswd_ = keyPasswd;
+    keyPassword_ = keyPassword;
 }
 
 void ConnectContext::ParseClientCert(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::CLIENT_CERT)) {
+
         return;
     }
     napi_value jsCert = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::CLIENT_CERT);
@@ -137,9 +139,9 @@ void ConnectContext::ParseClientCert(napi_value optionsValue)
     std::string certPath = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::CERT_PATH);
     Secure::SecureChar keyPath = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(),
         jsCert, ContextKey::KEY_PATH));
-    Secure::SecureChar keyPasswd = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(),
+    Secure::SecureChar keyPassword = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(),
         jsCert, ContextKey::KEY_PASSWD));
-    SetClientCert(certPath, keyPath, keyPasswd);
+    SetClientCert(certPath, keyPath, keyPassword);    
 }
 
 bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
