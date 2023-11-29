@@ -54,8 +54,8 @@ ohos_unittest("netssl_unittest") {
   ]
 
   deps = [
-    "$NETSSL_NAPI:networksecurity_napi",
     "$NETSSL_INNERAPI:net_ssl",
+    "$NETSSL_NAPI:networksecurity_napi",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
     "$THIRD_PARTY_ROOT/openssl:libssl_shared",
