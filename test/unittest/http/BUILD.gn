@@ -51,10 +51,7 @@ ohos_unittest("http_unittest") {
     "HttpRequestOptionsTest.cpp",
   ]
 
-  deps = [
-    "$SUBSYSTEM_DIR/netstack/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
-  ]
+  deps = [ "$SUBSYSTEM_DIR/netstack/utils/napi_utils:napi_utils" ]
 
   part_name = "netstack"
   subsystem_name = "communication"

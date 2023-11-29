@@ -264,7 +264,14 @@ bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURL
     }
 
     std::unique_ptr<struct curl_slist, decltype(&curl_slist_free_all)> cookiesHandle(cookies, curl_slist_free_all);
-    context->response.CookiesToJson(cookies);
+    while (cookies) {
+        context->response.AppendCookies(cookies->data, strlen(cookies->data));
+        if (cookies->next != nullptr) {
+            context->response.AppendCookies(HttpConstant::HTTP_LINE_SEPARATOR,
+                                            strlen(HttpConstant::HTTP_LINE_SEPARATOR));
+        }
+        cookies = cookies->next;
+    }
     return true;
 }
 

@@ -40,7 +40,7 @@ public:
 
     void SetCookies(const std::string &cookies);
 
-    void CookiesToJson(curl_slist *cookies);
+    void AppendCookies(const void *data, size_t length);
 
     [[nodiscard]] const std::string &GetResult() const;
 
