@@ -42,10 +42,7 @@ ohos_unittest("http_cache_unittest") {
 
   external_deps = common_external_deps
 
-  deps = [
-    "$SUBSYSTEM_DIR/netstack/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
-  ]
+  deps = [ "$SUBSYSTEM_DIR/netstack/utils/napi_utils:napi_utils" ]
 
   sources = [
     "$NETSTACK_NAPI_ROOT/http/cache/base64/src/base64_utils.cpp",

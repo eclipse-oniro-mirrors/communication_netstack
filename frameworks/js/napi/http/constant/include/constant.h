@@ -200,16 +200,6 @@ public:
 
     static const char *const REQUEST_TIME;
     static const char *const RESPONSE_TIME;
-
-    static const char *const COOKIE_TABLE;
-    static const char *const COOKIE_ENTER;
-    static const char *const COOKIE_DOMAIN;
-    static const char *const COOKIE_FLAG;
-    static const char *const COOKIE_PATH;
-    static const char *const COOKIE_SECURE;
-    static const char *const COOKIE_EXPIRATION;
-    static const char *const COOKIE_NAME;
-    static const char *const COOKIE_VALUE;
 };
 } // namespace OHOS::NetStack::Http
 
