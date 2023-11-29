@@ -29,7 +29,7 @@ const char *const SslConstant::SYSPRECAPATH = "/etc/security/certificates";
 
 std::string GetUserInstalledCaPath()
 {
-    std::string userInstalledCaPath("/user/");
+    std::string userInstalledCaPath("/data/service/el1/public/cert_manager_service/certificates/user/");
     int32_t uidTransformDivisor = 200000;
     int32_t uid = OHOS::IPCSkeleton::GetCallingUid();
     NETSTACK_LOGD("uid: %{public}d\n", uid);
