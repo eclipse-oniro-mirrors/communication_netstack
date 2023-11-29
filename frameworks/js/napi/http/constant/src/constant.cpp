@@ -95,9 +95,8 @@ const char *const HttpConstant::HTTP_CONTENT_TYPE = "content-type";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE = "application/x-www-form-urlencoded";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_JSON = "application/json";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM = "application/octet-stream";
-const char *const HttpConstant::HTTP_CONTENT_TYPE_MULTIPART = "multipart/form-data";
-
 const char *const HttpConstant::HTTP_CONTENT_TYPE_IMAGE = "image";
+const char *const HttpConstant::HTTP_CONTENT_TYPE_MULTIPART = "multipart/form-data";
 
 const char *const HttpConstant::HTTP_CONTENT_ENCODING_GZIP = "gzip";
 

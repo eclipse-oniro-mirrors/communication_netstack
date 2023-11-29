@@ -813,55 +813,6 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     return true;
 }
 
-bool HttpExec::SetMultiPartOption(CURL *curl, RequestContext *context)
-{
-    auto header =  context->options.GetHeader();
-    auto type = CommonUtils::ToLower(header[HttpConstant::HTTP_CONTENT_TYPE]);
-    if (type != HttpConstant::HTTP_CONTENT_TYPE_MULTIPART) {
-        return true;
-    }
-    auto multiPartDataList = context->options.GetMultiPartDataList();
-    context->multipart_ = curl_mime_init(curl);
-    curl_mimepart *part = nullptr;
-    for (auto &multiFormData : multiPartDataList) {
-        if (multiFormData.name.empty()) {
-            continue;
-        }
-        if (multiFormData.data.empty() && multiFormData.filePath.empty()) {
-            continue;
-        }
-        part = curl_mime_addpart(context->multipart_);
-        CURLcode result = curl_mime_name(part, multiFormData.name.c_str());
-        if (result != CURLE_OK) {
-            NETSTACK_LOGE("Failed to set name %{public}s, error: %{public}s",
-                          multiFormData.name.c_str(), curl_easy_strerror(result));
-            continue;
-        }
-        if (!multiFormData.contentType.empty()) {
-            result = curl_mime_type(part, multiFormData.contentType.c_str());
-            if (result != CURLE_OK) {
-                NETSTACK_LOGE("Failed to set contentType: %{public}s, error: %{public}s",
-                              multiFormData.name.c_str(), curl_easy_strerror(result));
-            }
-        }
-        if (!multiFormData.data.empty()) {
-            result = curl_mime_data(part, multiFormData.data.c_str(), CURL_ZERO_TERMINATED);
-            if (result != CURLE_OK) {
-                NETSTACK_LOGE("Failed to set data: %{public}s, error: %{public}s",
-                              multiFormData.name.c_str(), curl_easy_strerror(result));
-            }
-        } else {
-            result = curl_mime_filedata(part, multiFormData.filePath.c_str());
-            if (result != CURLE_OK) {
-                NETSTACK_LOGE("Failed to set file data: %{public}s, error: %{public}s",
-                              multiFormData.name.c_str(), curl_easy_strerror(result));
-            }
-        }
-    }
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_MIMEPOST, context->multipart_, context);
-    return true;
-}
-
 bool HttpExec::SetDnsOption(CURL *curl, RequestContext *context)
 {
     std::vector<std::string> dnsServers = context->options.GetDnsServers();
@@ -1200,5 +1151,67 @@ bool HttpResponseCacheExec::ExecDelete(BaseContext *context)
 napi_value HttpResponseCacheExec::DeleteCallback(BaseContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+bool HttpExec::SetMultiPartOption(CURL *curl, RequestContext *context)
+{
+    auto header =  context->options.GetHeader();
+    auto type = CommonUtils::ToLower(header[HttpConstant::HTTP_CONTENT_TYPE]);
+    if (type != HttpConstant::HTTP_CONTENT_TYPE_MULTIPART) {
+        return true;
+    }
+    auto multiPartDataList = context->options.GetMultiPartDataList();
+    context->multipart_ = curl_mime_init(curl);
+    curl_mimepart *part = nullptr;
+    for (auto &multiFormData : multiPartDataList) {
+        SetFormDataOption(multiFormData, part, curl, context);
+    }
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_MIMEPOST, context->multipart_, context);
+    return true;
+}
+
+void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *part,
+                                 CURL *curl, RequestContext *context)
+{
+    if (multiFormData.name.empty()) {
+        return;
+    }
+    if (multiFormData.data.empty() && multiFormData.filePath.empty()) {
+        return;
+    }
+    part = curl_mime_addpart(context->multipart_);
+    CURLcode result = curl_mime_name(part, multiFormData.name.c_str());
+    if (result != CURLE_OK) {
+        NETSTACK_LOGE("Failed to set name %{public}s, error: %{public}s",
+                      multiFormData.name.c_str(), curl_easy_strerror(result));
+        return;
+    }
+    if (!multiFormData.contentType.empty()) {
+        result = curl_mime_type(part, multiFormData.contentType.c_str());
+        if (result != CURLE_OK) {
+            NETSTACK_LOGE("Failed to set contentType: %{public}s, error: %{public}s",
+                          multiFormData.name.c_str(), curl_easy_strerror(result));
+        }
+    }
+    if (!multiFormData.remoteFileName.empty()) {
+        result = curl_mime_filename(part, multiFormData.remoteFileName.c_str());
+        if (result != CURLE_OK) {
+            NETSTACK_LOGE("Failed to set remoteFileName: %{public}s, error: %{public}s",
+                          multiFormData.name.c_str(), curl_easy_strerror(result));
+        }
+    }
+    if (!multiFormData.data.empty()) {
+        result = curl_mime_data(part, multiFormData.data.c_str(), CURL_ZERO_TERMINATED);
+        if (result != CURLE_OK) {
+            NETSTACK_LOGE("Failed to set data: %{public}s, error: %{public}s",
+                          multiFormData.name.c_str(), curl_easy_strerror(result));
+        }
+    } else {
+        result = curl_mime_filedata(part, multiFormData.filePath.c_str());
+        if (result != CURLE_OK) {
+            NETSTACK_LOGE("Failed to set file data: %{public}s, error: %{public}s",
+                          multiFormData.name.c_str(), curl_easy_strerror(result));
+        }
+    }
 }
 } // namespace OHOS::NetStack::Http

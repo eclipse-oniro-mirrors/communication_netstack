@@ -139,6 +139,11 @@ private:
     static int ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
                                 curl_off_t ulnow);
 
+    static bool SetMultiPartOption(void *curl, RequestContext *context);
+
+    static void SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *part,
+                                  void *curl, RequestContext *context);
+
     static void AddRequestInfo();
 
     struct RequestInfo {
@@ -192,7 +197,6 @@ private:
 #endif
     };
     static StaticVariable staticVariable_;
-    static bool SetMultiPartOption(void *curl, RequestContext *context);
 };
 } // namespace OHOS::NetStack::Http
 
