@@ -135,20 +135,13 @@ void ConnectContext::ParseClientCert(napi_value optionsValue)
     napi_valuetype type = NapiUtils::GetValueType(GetEnv(), jsCert);
     if (type != napi_object || type == napi_undefined) {
         return;
-    }
-    if(NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::CERT_PATH)) {
-        std::string certPath = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::CERT_PATH);
-        if(!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::KEY_PATH)) {
-            NETSTACK_LOGE("Websocket context KEY_PATH parameter is null");
-            return;
-        }
+    }    
+    std::string certPath = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::CERT_PATH);
     Secure::SecureChar keyPath = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(),
-        jsCert, ContextKey::KEY_PATH));
+    jsCert, ContextKey::KEY_PATH));
     Secure::SecureChar keyPassword = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(),
-        jsCert, ContextKey::KEY_PASSWD));
+    jsCert, ContextKey::KEY_PASSWD));
     SetClientCert(certPath, keyPath, keyPassword);
-    }
-        
 }
 
 bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
