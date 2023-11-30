@@ -1,0 +1,73 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//build/test.gni")
+import("//foundation/communication/netstack/netstack_config.gni")
+
+NETSSL_NAPI = "$NETSTACK_DIR/frameworks/js/napi/net_ssl"
+NETSSL_INNERAPI = "$NETSTACK_DIR/interfaces/innerkits/net_ssl"
+
+utils_include = [
+  "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
+  "$SUBSYSTEM_DIR/netstack/utils/log/include",
+  "$SUBSYSTEM_DIR/netstack/utils/napi_utils/include",
+  "$THIRD_PARTY_ROOT/curl/include",
+]
+
+common_external_deps = [
+  "hilog:libhilog",
+  "napi:ace_napi",
+]
+
+ohos_unittest("netssl_unittest") {
+  module_out_path = "netstack/netssl_unittest"
+
+  include_dirs = [
+    "$NETSTACK_DIR/utils/napi_utils/include",
+    "$THIRD_PARTY_ROOT/openssl/include",
+    "$NETSSL_INNERAPI/include",
+    "$NETSTACK_DIR/frameworks/native/net_ssl/include",
+    "$NETSSL_NAPI/async_context/include",
+    "$NETSSL_NAPI/async_work/include",
+    "$NETSSL_NAPI/net_ssl_exec/include",
+    "$NETSSL_NAPI/net_ssl_module/include",
+  ]
+  include_dirs += utils_include
+
+  sources = [
+    "$NETSSL_NAPI/async_context/src/cert_context.cpp",
+    "$NETSSL_NAPI/async_work/src/net_ssl_async_work.cpp",
+    "$NETSSL_NAPI/net_ssl_exec/src/net_ssl_exec.cpp",
+    "$NETSSL_NAPI/net_ssl_module/src/net_ssl_module.cpp",
+    "NetsslTest.cpp",
+  ]
+
+  deps = [
+    "$NETSSL_INNERAPI:net_ssl",
+    "$NETSSL_NAPI:networksecurity_napi",
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
+    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
+  ]
+
+  external_deps = common_external_deps
+
+  part_name = "netstack"
+  subsystem_name = "communication"
+}
+
+group("unittest") {
+  testonly = true
+  deps = [ ":netssl_unittest" ]
+}
