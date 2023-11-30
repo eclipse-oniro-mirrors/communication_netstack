@@ -49,8 +49,24 @@ void HttpResponse::ParseHeaders()
             NETSTACK_LOGI("HEAD: %{public}s", CommonUtils::Strip(header).c_str());
             continue;
         }
+        if (CommonUtils::ToLower(CommonUtils::Strip(header.substr(0, index))) ==
+            HttpConstant::RESPONSE_KEY_SET_COOKIE) {
+            if (header_[HttpConstant::RESPONSE_KEY_SET_COOKIE].empty()) {
+                header_[HttpConstant::RESPONSE_KEY_SET_COOKIE] = CommonUtils::Strip(header.substr(index + 1));
+                continue;
+            }
+            header_[HttpConstant::RESPONSE_KEY_SET_COOKIE] = header_[HttpConstant::RESPONSE_KEY_SET_COOKIE] +
+                                                             HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR +
+                                                             CommonUtils::Strip(header.substr(index + 1));
+            continue;
+        }
         header_[CommonUtils::ToLower(CommonUtils::Strip(header.substr(0, index)))] =
             CommonUtils::Strip(header.substr(index + 1));
+    }
+    if (!header_[HttpConstant::RESPONSE_KEY_SET_COOKIE].empty()) {
+        auto tempSetCookie = header_[HttpConstant::RESPONSE_KEY_SET_COOKIE];
+        header_[HttpConstant::RESPONSE_KEY_SET_COOKIE] =
+            HttpConstant::RESPONSE_KEY_SET_COOKIE_BEGIN + tempSetCookie + HttpConstant::RESPONSE_KEY_SET_COOKIE_END;
     }
 }
 
