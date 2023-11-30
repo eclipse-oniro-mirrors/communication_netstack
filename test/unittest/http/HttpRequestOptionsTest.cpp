@@ -18,7 +18,9 @@
 #include "gtest/gtest.h"
 #include "http_request_options.h"
 #include "netstack_log.h"
+#include "constant.h"
 #include "secure_char.h"
+#include "curl/curl.h"
 
 using namespace OHOS::NetStack;
 using namespace OHOS::NetStack::Http;
@@ -161,5 +163,154 @@ HWTEST_F(HttpRequestOptionsTest, SetClientCertTest, TestSize.Level1)
     EXPECT_EQ(retrievedKey, key);
     EXPECT_EQ(retrievedCertType, certType);
     EXPECT_EQ(strcmp(retrievedKeyPasswd.Data(), keyPasswd.Data()), 0);
+}
+
+HWTEST_F(HttpRequestOptionsTest, AddMultiFormDataTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+    for (int i = 0; i < 10; i++) {
+        MultiFormData multiFormData;
+        multiFormData.name = "name" + std::to_string(i);
+        multiFormData.data = "data" + std::to_string(i);
+        multiFormData.contentType = "contentType" + std::to_string(i);
+        multiFormData.remoteFileName = "remoteFileName" + std::to_string(i);
+        multiFormData.filePath = "filePath" + std::to_string(i);
+        requestOptions.AddMultiFormData(multiFormData);
+    }
+    std::vector<MultiFormData> dataList = requestOptions.GetMultiPartDataList();
+    EXPECT_EQ(dataList.size(), 10);
+    for (int i = 0; i < 10; i++) {
+        MultiFormData data = dataList[i];
+        EXPECT_EQ(data.name, "name" + std::to_string(i));
+        EXPECT_EQ(data.data, "data" + std::to_string(i));
+        EXPECT_EQ(data.contentType, "contentType" + std::to_string(i));
+        EXPECT_EQ(data.filePath, "filePath" + std::to_string(i));
+        EXPECT_EQ(data.remoteFileName, "remoteFileName" + std::to_string(i));
+    }
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetUrlTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    std::string testValue = "Example";
+    requestOptions.SetUrl(testValue);
+    std::string url = requestOptions.GetUrl();
+    EXPECT_EQ(url, testValue);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetPrioritylTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    uint32_t testValue = 2;
+    requestOptions.SetPriority(testValue);
+    uint32_t resultValue = requestOptions.GetPriority();
+    EXPECT_EQ(resultValue, testValue);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetHttpDataTypeTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    HttpDataType testValue = HttpDataType::ARRAY_BUFFER;
+    requestOptions.SetHttpDataType(testValue);
+    HttpDataType resultValue = requestOptions.GetHttpDataType();
+    EXPECT_EQ(resultValue, testValue);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetUsingProtocolTest001, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    HttpProtocol testValue = HttpProtocol::HTTP1_1;
+    requestOptions.SetUsingProtocol(testValue);
+    uint32_t resultValue = requestOptions.GetHttpVersion();
+    EXPECT_EQ(resultValue, CURL_HTTP_VERSION_1_1);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetUsingProtocolTest002, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    HttpProtocol testValue = HttpProtocol::HTTP2;
+    requestOptions.SetUsingProtocol(testValue);
+    uint32_t resultValue = requestOptions.GetHttpVersion();
+    EXPECT_EQ(resultValue, CURL_HTTP_VERSION_2_0);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetUsingProtocolTest003, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    HttpProtocol testValue = HttpProtocol::HTTP3;
+    requestOptions.SetUsingProtocol(testValue);
+    uint32_t resultValue = requestOptions.GetHttpVersion();
+    EXPECT_EQ(resultValue, CURL_HTTP_VERSION_3);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetUsingProtocolTest004, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    HttpProtocol testValue = HttpProtocol::HTTP_NONE;
+    requestOptions.SetUsingProtocol(testValue);
+    uint32_t resultValue = requestOptions.GetHttpVersion();
+    EXPECT_EQ(resultValue, CURL_HTTP_VERSION_NONE);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetMaxLimitTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    uint32_t testValue = 50;
+    requestOptions.SetMaxLimit(testValue);
+    uint32_t resultValue = requestOptions.GetMaxLimit();
+    EXPECT_EQ(resultValue, testValue);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetConnectTimeoutTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    uint32_t testValue = 5000;
+    requestOptions.SetConnectTimeout(testValue);
+    uint32_t resultValue = requestOptions.GetConnectTimeout();
+    EXPECT_EQ(resultValue, testValue);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetReadTimeoutTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    uint32_t testValue = 5000;
+    requestOptions.SetReadTimeout(testValue);
+    uint32_t resultValue = requestOptions.GetReadTimeout();
+    EXPECT_EQ(resultValue, testValue);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetHeaderTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    int testSize = 10;
+    for (int i = 0; i < testSize; i++) {
+        requestOptions.SetHeader("key" + std::to_string(i), "value" + std::to_string(i));
+    }
+    const std::map<std::string, std::string> header = requestOptions.GetHeader();
+    for (int i = 0; i < testSize; i++) {
+        const std::string& value = header.at("key" + std::to_string(i));
+        EXPECT_EQ(value, "value" + std::to_string(i));
+    }
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetBodyTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    std::string testValue = "TestBody";
+    requestOptions.SetBody(testValue.data(), testValue.size());
+    std::string resultValue = requestOptions.GetBody();
+    EXPECT_EQ(resultValue, testValue);
 }
 } // namespace
