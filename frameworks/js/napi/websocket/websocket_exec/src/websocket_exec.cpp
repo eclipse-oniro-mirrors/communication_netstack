@@ -493,7 +493,7 @@ static inline void FillContextInfo(lws_context_creation_info &info)
     info.port = CONTEXT_PORT_NO_LISTEN;
     info.protocols = LWS_PROTOCOLS;
     info.fd_limit_per_thread = FD_LIMIT_PER_THREAD;
-    info.client_ssl_cert_filepath = WEBSCOKET_PREPARE_CA_PATH;
+    info.client_ssl_ca_filepath = WEBSCOKET_PREPARE_CA_PATH;
 }
 
 bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsContext, EventManager *manager)
@@ -520,7 +520,8 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     connectInfo.host = address;
     connectInfo.origin = address;
     if (strcmp(prefix, PREFIX_HTTPS) == 0 || strcmp(prefix, PREFIX_WSS) == 0) {
-        connectInfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_SELFSIGNED;
+        connectInfo.ssl_connection =
+            LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_SELFSIGNED;
     }
     lws *wsi = nullptr;
     connectInfo.pwsi = &wsi;
@@ -553,14 +554,18 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     manager->InitNetstackEventHandler();
     lws_context_creation_info info = {};
     FillContextInfo(info);
-    if (!context->caPath_.empty()) {
+    if (!context->caPath_.empty()) {  
         info.client_ssl_ca_filepath = context->caPath_.c_str();
     }
+    NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
     if (!context->clientCert_.empty()) {
         info.client_ssl_cert_filepath = context->clientCert_.c_str();
         info.client_ssl_private_key_filepath = context->clientKey_.Data();
         info.client_ssl_private_key_password = context->keyPassword_.Data();
     }
+    NETSTACK_LOGD("cert file path: %{public}s", info.client_ssl_cert_filepath);
+    NETSTACK_LOGD("key file path: %{public}s", info.client_ssl_private_key_filepath );
+    NETSTACK_LOGD("password: %{public}s", info.client_ssl_private_key_password);
     lws_context *lwsContext = lws_create_context(&info);
     if (manager != nullptr && manager->GetData() == nullptr) {
         auto userData = new UserData(lwsContext);
