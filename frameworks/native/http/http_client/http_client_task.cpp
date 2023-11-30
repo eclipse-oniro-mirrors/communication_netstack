@@ -185,7 +185,7 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
 #endif
 
 #ifndef WINDOWS_PLATFORM
-    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_ACCEPT_ENCODING, HttpConstant::HTTP_CONTENT_ENCODING_GZIP);
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_ACCEPT_ENCODING, "");
 #endif
 
     return true;
