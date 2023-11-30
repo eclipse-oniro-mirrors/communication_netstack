@@ -67,6 +67,11 @@ const char *const HttpConstant::RESPONSE_KEY_RESPONSE_CODE = "responseCode";
 const char *const HttpConstant::RESPONSE_KEY_HEADER = "header";
 const char *const HttpConstant::RESPONSE_KEY_COOKIES = "cookies";
 const char *const HttpConstant::RESPONSE_KEY_RESULT_TYPE = "resultType";
+const char *const HttpConstant::RESPONSE_KEY_SET_COOKIE = "set-cookie";
+const char *const HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR = " }, { ";
+const char *const HttpConstant::RESPONSE_KEY_SET_COOKIE_BEGIN = "[{ ";
+const char *const HttpConstant::RESPONSE_KEY_SET_COOKIE_END = " }]";
+
 
 const char *const HttpConstant::HTTP_MULTI_FORM_DATA_NAME = "name";
 const char *const HttpConstant::HTTP_MULTI_FORM_DATA_CONTENT_TYPE = "contentType";
