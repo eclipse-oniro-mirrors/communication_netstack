@@ -38,12 +38,8 @@ static constexpr const char *LINK_DOWN = "The link is down";
 static constexpr const char *CLOSE_REASON_FORM_SERVER = "websocket close from server";
 static constexpr const int FUNCTION_PARAM_TWO = 2;
 namespace OHOS::NetStack::WebsocketClient {
-static const uint32_t BACKOFF_MS[] = {1000, 2000, 3000, 4000, 5000};
 static const lws_retry_bo_t RETRY = {
-    .retry_ms_table = BACKOFF_MS,
-    .retry_ms_table_count = LWS_ARRAY_SIZE(BACKOFF_MS),
-    .conceal_count = LWS_ARRAY_SIZE(BACKOFF_MS),
-    .secs_since_valid_ping = 3,    /* force PINGs after secs idle */
+    .secs_since_valid_ping = 0,    /* force PINGs after secs idle */
     .secs_since_valid_hangup = 10, /* hangup after secs idle */
     .jitter_percent = 20,
 };
@@ -136,7 +132,7 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
         return -1;
     }
     if (client->GetClientContext()->IsClosed()) {
-        NETSTACK_LOGD("Lws Callback kClientWritable need to close");
+        NETSTACK_LOGI("Lws Callback kClientWritable need to close");
         lws_close_reason(
             wsi, client->GetClientContext()->closeStatus,
             reinterpret_cast<unsigned char *>(const_cast<char *>(client->GetClientContext()->closeReason.c_str())),
@@ -402,6 +398,7 @@ int WebsocketClient::Connect(std::string url, struct OpenOptions options)
     if (ret > 0) {
         return ret;
     }
+    this->GetClientContext()->SetCloseFalse();
     std::thread serviceThread(RunService, this);
     serviceThread.detach();
     return WebsocketErrorCode::WEBSOCKET_NONE_ERR;

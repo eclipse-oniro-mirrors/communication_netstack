@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+#ifndef CLIENT_CONTEXT_H
+#define CLIENT_CONTEXT_H
+
 #include <atomic>
 #include <iostream>
 #include <map>
@@ -78,6 +81,12 @@ public:
         closed_ = true;
     }
 
+    void SetCloseFalse()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        closed_ = false;
+    }
+
     void Push(char *data, size_t length, lws_write_protocol protocol)
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -132,3 +141,4 @@ private:
 }; // namespace WebsocketClient
 } // namespace NetStack
 } // namespace OHOS
+#endif
