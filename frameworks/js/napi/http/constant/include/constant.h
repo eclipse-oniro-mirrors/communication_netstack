@@ -126,6 +126,7 @@ public:
 
     /* default options */
     static const uint32_t DEFAULT_MAX_LIMIT;
+    static const uint32_t MAX_LIMIT;
     static const uint32_t DEFAULT_READ_TIMEOUT;
     static const uint32_t DEFAULT_CONNECT_TIMEOUT;
 

@@ -73,6 +73,11 @@ void HttpRequestOptions::SetReadTimeout(uint32_t readTimeout)
 
 void HttpRequestOptions::SetMaxLimit(uint32_t maxLimit)
 {
+    if (maxLimit > HttpConstant::MAX_LIMIT) {
+        NETSTACK_LOGI("maxLimit setting exceeds the maximum limit, use max limit");
+        maxLimit_ = HttpConstant::MAX_LIMIT;
+        return;
+    }
     maxLimit_ = maxLimit;
 }
 

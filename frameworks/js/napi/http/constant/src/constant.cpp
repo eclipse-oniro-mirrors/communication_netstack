@@ -26,6 +26,7 @@ const char *const HttpConstant::HTTP_METHOD_PUT = "PUT";
 const char *const HttpConstant::HTTP_METHOD_CONNECT = "CONNECT";
 
 const uint32_t HttpConstant::DEFAULT_MAX_LIMIT = 5 * 1024 * 1024;
+const uint32_t HttpConstant::MAX_LIMIT = 100 * 1024 * 1024;
 const uint32_t HttpConstant::DEFAULT_READ_TIMEOUT = 60000;
 const uint32_t HttpConstant::DEFAULT_CONNECT_TIMEOUT = 60000;
 
