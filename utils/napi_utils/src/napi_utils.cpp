@@ -23,8 +23,6 @@
 #include <new>
 #include <string>
 #include <vector>
-#include <thread>
-#include <chrono>
 
 #include "securec.h"
 #include "napi/native_api.h"
@@ -43,8 +41,6 @@ static constexpr const char *GLOBAL_JSON_PARSE = "parse";
 static constexpr const char *CODE = "code";
 
 static constexpr const char *MSG = "message";
-
-static constexpr const int HOLD_OFF_TIME = 30;
 
 napi_valuetype GetValueType(napi_env env, napi_value value)
 {
@@ -557,7 +553,6 @@ void CloseScope(napi_env env, napi_handle_scope scope)
 
 void CreateUvQueueWorkEnhanced(napi_env env, void *data, void (*handler)(napi_env env, napi_status status, void *data))
 {
-    std::this_thread::sleep_for(std::chrono::milliseconds(HOLD_OFF_TIME));
     uv_loop_s *loop = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_get_uv_event_loop(env, &loop));
 
