@@ -162,8 +162,7 @@ void RequestContext::ParseNumberOptions(napi_value optionsValue)
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_MAX_LIMIT)) {
-        options.SetMaxLimit(
-            NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_MAX_LIMIT));
+        options.SetMaxLimit(NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_MAX_LIMIT));
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CONNECT_TIMEOUT)) {
@@ -223,9 +222,7 @@ void RequestContext::ParseHeader(napi_value optionsValue)
     auto names = NapiUtils::GetPropertyNames(GetEnv(), header);
     std::for_each(names.begin(), names.end(), [header, this](const std::string &name) {
         auto value = NapiUtils::GetStringPropertyUtf8(GetEnv(), header, name);
-        if (!value.empty()) {
-            options.SetHeader(CommonUtils::ToLower(name), value);
-        }
+        options.SetHeader(CommonUtils::ToLower(name), value);
     });
 }
 
