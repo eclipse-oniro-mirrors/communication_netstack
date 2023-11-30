@@ -158,7 +158,7 @@ public:
     static const char *const HTTP_PROXY_EXCLUSIONS_SEPARATOR;
 
     static const char *const HTTP_CLIENT_CERT;
-    static const char* const HTTP_CLIENT_CERT_TYPE;
+    static const char *const HTTP_CLIENT_CERT_TYPE;
     static const char *const HTTP_CLIENT_KEY;
     static const char *const HTTP_CLIENT_KEY_PASSWD;
 
