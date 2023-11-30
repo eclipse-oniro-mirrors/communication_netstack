@@ -520,7 +520,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     connectInfo.host = address;
     connectInfo.origin = address;
     if (strcmp(prefix, PREFIX_HTTPS) == 0 || strcmp(prefix, PREFIX_WSS) == 0) {
-        connectInfo.ssl_connection = LCCSCF_USE_SSL;
+        connectInfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_SELFSIGNED;
     }
     lws *wsi = nullptr;
     connectInfo.pwsi = &wsi;
@@ -554,7 +554,6 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     lws_context_creation_info info = {};
     FillContextInfo(info);
     if (!context->caPath_.empty()) {
-        NETSTACK_LOGI("caPath is not NULL");    
         info.client_ssl_ca_filepath = context->caPath_.c_str();
     }
     if (!context->clientCert_.empty()) {
