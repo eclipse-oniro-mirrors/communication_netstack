@@ -343,6 +343,7 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
     }
 
     if (context->IsRequestInStream()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(CURL_TIMEOUT_MS));
         NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, AsyncWorkRequestInStreamCallback);
     } else {
         NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, AsyncWorkRequestCallback);
@@ -368,6 +369,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
         context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
         if (EventManager::IsManagerValid(context->GetManager())) {
             if (context->IsRequestInStream()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(CURL_TIMEOUT_MS));
                 NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, AsyncWorkRequestInStreamCallback);
             } else {
                 NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, AsyncWorkRequestCallback);
