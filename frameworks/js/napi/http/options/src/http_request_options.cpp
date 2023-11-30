@@ -156,6 +156,7 @@ void HttpRequestOptions::SetHttpDataType(HttpDataType dataType)
     }
     dataType_ = dataType;
 }
+
 HttpDataType HttpRequestOptions::GetHttpDataType() const
 {
     return dataType_;
@@ -205,6 +206,11 @@ void HttpRequestOptions::SetClientCert(
     certType_ = certType;
     key_ = key;
     keyPasswd_ = keyPasswd;
+}
+
+void HttpRequestOptions::AddMultiFormData(const MultiFormData &multiFormData)
+{
+    multiFormDataList_.push_back(multiFormData);
 }
 
 void HttpRequestOptions::GetClientCert(
@@ -280,5 +286,9 @@ const std::vector<std::string> &HttpRequestOptions::GetDnsServers() const
 void HttpRequestOptions::SetDnsServers(const std::vector<std::string> &dnsServers)
 {
     dnsServers_ = dnsServers;
+}
+std::vector<MultiFormData> HttpRequestOptions::GetMultiPartDataList()
+{
+    return multiFormDataList_;
 }
 } // namespace OHOS::NetStack::Http

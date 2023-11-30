@@ -421,6 +421,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParseDohUrl(optionsValue);
     ParseResumeFromToNumber(optionsValue);
     ParseDnsServers(optionsValue);
+    ParseMultiFormData(optionsValue);
     SetParseOK(true);
 }
 
@@ -538,14 +539,6 @@ LoadBytes RequestContext::GetUlLen()
     return dlBytes;
 }
 
-void RequestContext::PopUlLen()
-{
-    std::lock_guard<std::mutex> lock(ulLenLock_);
-    if (!ulBytes_.empty()) {
-        ulBytes_.pop();
-    }
-}
-
 bool RequestContext::CompareWithLastElement(curl_off_t nowLen, curl_off_t totalLen)
 {
     std::lock_guard<std::mutex> lock(ulLenLock_);
@@ -618,25 +611,20 @@ void RequestContext::ParseDnsServers(napi_value optionsValue)
     NETSTACK_LOGD("SetDnsServers success");
 }
 
-Timing::TimerMap RequestContext::GetTimerMap()
-{
-    return timerMap_;
-}
-
-void RequestContext::CachePerformanceTimingItem(std::string key, double value)
+void RequestContext::CachePerformanceTimingItem(const std::string &key, double value)
 {
     performanceTimingMap_.insert(std::pair<std::string, double>(key, value));
     NETSTACK_LOGD("CachePerformanceTimingItem %{public}s : %{public}lf", key.c_str(), value);
 }
 
-void RequestContext::StopAndCacheNapiPerformanceTiming(const char *const key)
+void RequestContext::StopAndCacheNapiPerformanceTiming(const char *key)
 {
     Timing::Timer &timer = timerMap_.RecieveTimer(key);
     timer.Stop();
     CachePerformanceTimingItem(key, timer.Elapsed());
 }
 
-void RequestContext::SetPerformanceTimingToReslult(napi_value result)
+void RequestContext::SetPerformanceTimingToResult(napi_value result)
 {
     if (performanceTimingMap_.empty()) {
         NETSTACK_LOGD("Get performanceTiming data is empty.");
@@ -653,21 +641,85 @@ void RequestContext::SetPerformanceTimingToReslult(napi_value result)
 
 void RequestContext::ParseClientCert(napi_value optionsValue)
 {
-    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CLINENT_CERT)) {
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CLIENT_CERT)) {
         return;
     }
     napi_value clientCertValue =
-        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CLINENT_CERT);
+        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CLIENT_CERT);
     napi_valuetype type = NapiUtils::GetValueType(GetEnv(), clientCertValue);
-    if (type != napi_object || type == napi_undefined) {
+    if (type != napi_object) {
         return;
     }
-    std::string cert = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_CERT);
+    std::string cert = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_CERT);
     std::string certType =
-        NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_CERT_TYPE);
-    std::string key = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_KEY);
+        NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_CERT_TYPE);
+    std::string key = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_KEY);
     Secure::SecureChar keyPasswd = Secure::SecureChar(
-        NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLINENT_KEY_PASSWD));
+        NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_KEY_PASSWD));
     options.SetClientCert(cert, certType, key, keyPasswd);
+}
+
+void RequestContext::ParseMultiFormData(napi_value optionsValue)
+{
+    napi_env env = GetEnv();
+    if (!NapiUtils::HasNamedProperty(env, optionsValue, HttpConstant::PARAM_KEY_MULTI_FORM_DATA_LIST)) {
+        NETSTACK_LOGD("ParseMultiFormData multiFormDataList is null.");
+        return;
+    }
+    napi_value multiFormDataListValue =
+        NapiUtils::GetNamedProperty(env, optionsValue, HttpConstant::PARAM_KEY_MULTI_FORM_DATA_LIST);
+    if (NapiUtils::GetValueType(env, multiFormDataListValue) != napi_object) {
+        NETSTACK_LOGD("ParseMultiFormData multiFormDataList type is not object.");
+        return;
+    }
+    uint32_t dataLength = NapiUtils::GetArrayLength(env, multiFormDataListValue);
+    if (dataLength <= 0) {
+        NETSTACK_LOGD("ParseMultiFormData multiFormDataList length is 0.");
+        return;
+    }
+    for (uint32_t i = 0; i < dataLength; i++) {
+        napi_value formDataValue = NapiUtils::GetArrayElement(env, multiFormDataListValue, i);
+        MultiFormData multiFormData = NapiValue2FormData(formDataValue);
+        options.AddMultiFormData(multiFormData);
+    }
+}
+
+MultiFormData RequestContext::NapiValue2FormData(napi_value formDataValue)
+{
+    napi_env env = GetEnv();
+    MultiFormData multiFormData;
+    multiFormData.name = NapiUtils::GetStringPropertyUtf8(env, formDataValue, HttpConstant::HTTP_MULTI_FORM_DATA_NAME);
+    multiFormData.contentType =
+        NapiUtils::GetStringPropertyUtf8(env, formDataValue, HttpConstant::HTTP_MULTI_FORM_DATA_CONTENT_TYPE);
+    multiFormData.remoteFileName =
+        NapiUtils::GetStringPropertyUtf8(env, formDataValue, HttpConstant::HTTP_MULTI_FORM_DATA_REMOTE_FILE_NAME);
+    RequestContext::SaveFormData(
+        env, NapiUtils::GetNamedProperty(env, formDataValue, HttpConstant::HTTP_MULTI_FORM_DATA_DATA), multiFormData);
+    multiFormData.filePath =
+        NapiUtils::GetStringPropertyUtf8(env, formDataValue, HttpConstant::HTTP_MULTI_FORM_DATA_FILE_PATH);
+    return multiFormData;
+}
+
+void RequestContext::SaveFormData(napi_env env, napi_value dataValue, MultiFormData &multiFormData)
+{
+    napi_valuetype type = NapiUtils::GetValueType(env, dataValue);
+    if (type == napi_string) {
+        multiFormData.data = NapiUtils::GetStringFromValueUtf8(GetEnv(), dataValue);
+        NETSTACK_LOGD("SaveFormData string");
+    } else if (NapiUtils::ValueIsArrayBuffer(GetEnv(), dataValue)) {
+        size_t length = 0;
+        void *data = NapiUtils::GetInfoFromArrayBufferValue(GetEnv(), dataValue, &length);
+        if (data == nullptr) {
+            return;
+        }
+        multiFormData.data = std::string(static_cast<const char *>(data), length);
+        NETSTACK_LOGD("SaveFormData ArrayBuffer");
+    } else if (type == napi_object) {
+        multiFormData.data = NapiUtils::GetStringFromValueUtf8(
+            GetEnv(), NapiUtils::JsonStringify(GetEnv(), dataValue));
+        NETSTACK_LOGD("SaveFormData Object");
+    } else {
+        NETSTACK_LOGD("only support string, ArrayBuffer and Object");
+    }
 }
 } // namespace OHOS::NetStack::Http
