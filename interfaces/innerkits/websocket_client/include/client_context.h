@@ -49,12 +49,7 @@ struct SendData {
 
 class ClientContext {
 public:
-    ClientContext(lws_context *context)
-        : closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), closed_(false), threadStop_(false), context_(context)
-    {
-    }
-
-    ClientContext(){};
+    ClientContext() : closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), closed_(false), threadStop_(false) {}
 
     bool IsClosed()
     {
@@ -79,12 +74,6 @@ public:
         closeStatus = status;
         closeReason = reason;
         closed_ = true;
-    }
-
-    void SetCloseFalse()
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        closed_ = false;
     }
 
     void Push(char *data, size_t length, lws_write_protocol protocol)

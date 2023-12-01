@@ -132,7 +132,7 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
         return -1;
     }
     if (client->GetClientContext()->IsClosed()) {
-        NETSTACK_LOGI("Lws Callback kClientWritable need to close");
+        NETSTACK_LOGD("Lws Callback kClientWritable need to close");
         lws_close_reason(
             wsi, client->GetClientContext()->closeStatus,
             reinterpret_cast<unsigned char *>(const_cast<char *>(client->GetClientContext()->closeReason.c_str())),
@@ -398,7 +398,6 @@ int WebsocketClient::Connect(std::string url, struct OpenOptions options)
     if (ret > 0) {
         return ret;
     }
-    this->GetClientContext()->SetCloseFalse();
     std::thread serviceThread(RunService, this);
     serviceThread.detach();
     return WebsocketErrorCode::WEBSOCKET_NONE_ERR;
