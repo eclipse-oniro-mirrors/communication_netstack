@@ -37,7 +37,7 @@ static constexpr const int CLOSE_RESULT_FROM_CLIENT_CODE = 1000;
 static constexpr const char *LINK_DOWN = "The link is down";
 static constexpr const char *CLOSE_REASON_FORM_SERVER = "websocket close from server";
 static constexpr const int FUNCTION_PARAM_TWO = 2;
-static int g_clientID = 0;
+static std::atomic<int> g_clientID(0);
 namespace OHOS::NetStack::WebsocketClient {
 static const lws_retry_bo_t RETRY = {
     .secs_since_valid_ping = 0,    /* force PINGs after secs idle */
@@ -48,8 +48,7 @@ static const lws_retry_bo_t RETRY = {
 WebsocketClient::WebsocketClient()
 {
     clientContext = new ClientContext();
-    clientContext->SetClientId(g_clientID);
-    g_clientID++;
+    clientContext->SetClientId(++g_clientID);
 }
 
 WebsocketClient::~WebsocketClient()
