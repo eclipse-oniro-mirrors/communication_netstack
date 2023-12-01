@@ -37,6 +37,7 @@ static constexpr const int CLOSE_RESULT_FROM_CLIENT_CODE = 1000;
 static constexpr const char *LINK_DOWN = "The link is down";
 static constexpr const char *CLOSE_REASON_FORM_SERVER = "websocket close from server";
 static constexpr const int FUNCTION_PARAM_TWO = 2;
+static int g_clientID = 0;
 namespace OHOS::NetStack::WebsocketClient {
 static const lws_retry_bo_t RETRY = {
     .secs_since_valid_ping = 0,    /* force PINGs after secs idle */
@@ -47,6 +48,8 @@ static const lws_retry_bo_t RETRY = {
 WebsocketClient::WebsocketClient()
 {
     clientContext = new ClientContext();
+    clientContext->SetClientId(g_clientID);
+    g_clientID = g_clientID++;
 }
 
 WebsocketClient::~WebsocketClient()
@@ -86,6 +89,8 @@ int LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback_reasons reason
         NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
         return -1;
     }
+    NETSTACK_LOGD("ClientId:%{public}d, Lws Callback AppendHandshakeHeader,",
+                  client->GetClientContext()->GetClientId());
     auto payload = reinterpret_cast<unsigned char **>(in);
     if (payload == nullptr || (*payload) == nullptr || len == 0) {
         return -1;
@@ -115,7 +120,7 @@ int LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reasons reason, void 
         client->GetClientContext()->Close(LWS_CLOSE_STATUS_NORMAL, "");
         return HttpDummy(wsi, reason, user, in, len);
     }
-
+    NETSTACK_LOGD("ClientId:%{public}d, Lws Callback WsPeerInitiatedClose,", client->GetClientContext()->GetClientId());
     uint16_t closeStatus = ntohs(*reinterpret_cast<uint16_t *>(in));
     std::string closeReason;
     closeReason.append(reinterpret_cast<char *>(in) + sizeof(uint16_t), len - sizeof(uint16_t));
@@ -131,6 +136,8 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
         NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
         return -1;
     }
+    NETSTACK_LOGD("ClientId:%{public}d, Lws Callback CallbackClientWritable,",
+                  client->GetClientContext()->GetClientId());
     if (client->GetClientContext()->IsClosed()) {
         NETSTACK_LOGD("Lws Callback kClientWritable need to close");
         lws_close_reason(

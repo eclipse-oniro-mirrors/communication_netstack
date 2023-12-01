@@ -104,6 +104,16 @@ public:
         return context_;
     }
 
+    void SetClientId(int id)
+    {
+        clientId = id;
+    }
+
+    int GetClientId()
+    {
+        return clientId;
+    }
+
     std::map<std::string, std::string> header;
 
     lws_close_status closeStatus;
@@ -126,6 +136,8 @@ private:
     lws_context *context_;
 
     std::queue<SendData> dataQueue_;
+
+    int clientId;
 };
 }; // namespace WebsocketClient
 } // namespace NetStack
