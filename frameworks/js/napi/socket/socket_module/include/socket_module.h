@@ -59,6 +59,62 @@ public:
         static napi_value GetLoopbackMode(napi_env env, napi_callback_info info);
     };
 
+    class LocalSocket {
+    public:
+        static constexpr char FUNCTION_BIND[] = "bind";
+        static constexpr char FUNCTION_CONNECT[] = "connect";
+        static constexpr char FUNCTION_SEND[] = "send";
+        static constexpr char FUNCTION_CLOSE[] = "close";
+        static constexpr char FUNCTION_GET_STATE[] = "getState";
+        static constexpr char FUNCTION_GET_SOCKET_FD[] = "getSocketFd";
+        static constexpr char FUNCTION_SET_EXTRA_OPTIONS[] = "setExtraOptions";
+        static constexpr char FUNCTION_GET_EXTRA_OPTIONS[] = "getExtraOptions";
+        static constexpr char FUNCTION_ON[] = "on";
+        static constexpr char FUNCTION_OFF[] = "off";
+
+        static napi_value Bind(napi_env env, napi_callback_info info);
+        static napi_value Connect(napi_env env, napi_callback_info info);
+        static napi_value Send(napi_env env, napi_callback_info info);
+        static napi_value Close(napi_env env, napi_callback_info info);
+        static napi_value GetState(napi_env env, napi_callback_info info);
+        static napi_value GetSocketFd(napi_env env, napi_callback_info info);
+        static napi_value SetExtraOptions(napi_env env, napi_callback_info info);
+        static napi_value GetExtraOptions(napi_env env, napi_callback_info info);
+        static napi_value On(napi_env env, napi_callback_info info);
+        static napi_value Off(napi_env env, napi_callback_info info);
+    };
+
+    class LocalSocketServer {
+    public:
+        static constexpr char FUNCTION_LISTEN[] = "listen";
+        static constexpr char FUNCTION_GET_STATE[] = "getState";
+        static constexpr char FUNCTION_SET_EXTRA_OPTIONS[] = "setExtraOptions";
+        static constexpr char FUNCTION_GET_EXTRA_OPTIONS[] = "getExtraOptions";
+        static constexpr char FUNCTION_ON[] = "on";
+        static constexpr char FUNCTION_OFF[] = "off";
+
+        static napi_value Listen(napi_env env, napi_callback_info info);
+        static napi_value GetState(napi_env env, napi_callback_info info);
+        static napi_value SetExtraOptions(napi_env env, napi_callback_info info);
+        static napi_value GetExtraOptions(napi_env env, napi_callback_info info);
+        static napi_value On(napi_env env, napi_callback_info info);
+        static napi_value Off(napi_env env, napi_callback_info info);
+    };
+
+    class LocalSocketConnection {
+    public:
+        static constexpr char PROPERTY_CLIENT_ID[] = "clientId";
+        static constexpr char FUNCTION_SEND[] = "send";
+        static constexpr char FUNCTION_CLOSE[] = "close";
+        static constexpr char FUNCTION_ON[] = "on";
+        static constexpr char FUNCTION_OFF[] = "off";
+
+        static napi_value Send(napi_env env, napi_callback_info info);
+        static napi_value Close(napi_env env, napi_callback_info info);
+        static napi_value On(napi_env env, napi_callback_info info);
+        static napi_value Off(napi_env env, napi_callback_info info);
+    };
+
     class TCPSocket {
     public:
         static constexpr const char *FUNCTION_BIND = "bind";
@@ -119,10 +175,15 @@ public:
     static constexpr const char *FUNCTION_CONSTRUCTOR_MULTICAST_SOCKET_INSTANCE = "constructMulticastSocketInstance";
     static constexpr const char *FUNCTION_CONSTRUCTOR_TCP_SOCKET_INSTANCE = "constructTCPSocketInstance";
     static constexpr const char *FUNCTION_CONSTRUCTOR_TCP_SOCKET_SERVER_INSTANCE = "constructTCPSocketServerInstance";
+    static constexpr const char *FUNCTION_CONSTRUCTOR_LOCAL_SOCKET_INSTANCE = "constructLocalSocketInstance";
+    static constexpr const char *FUNCTION_CONSTRUCTOR_LOCAL_SOCKET_SERVER_INSTANCE =
+        "constructLocalSocketServerInstance";
     static constexpr const char *INTERFACE_UDP_SOCKET = "UDPSocket";
     static constexpr const char *INTERFACE_MULTICAST_SOCKET = "MulticastSocket";
     static constexpr const char *INTERFACE_TCP_SOCKET = "TCPSocket";
     static constexpr const char *INTERFACE_TCP_SOCKET_SERVER = "TCPSocketServer";
+    static constexpr const char *INTERFACE_LOCAL_SOCKET = "LocalSocket";
+    static constexpr const char *INTERFACE_LOCAL_SOCKET_SERVER = "LocalSocketServer";
 
     static napi_value InitSocketModule(napi_env env, napi_value exports);
 
@@ -135,6 +196,10 @@ private:
 
     static napi_value ConstructTCPSocketServerInstance(napi_env env, napi_callback_info info);
 
+    static napi_value ConstructLocalSocketInstance(napi_env env, napi_callback_info info);
+
+    static napi_value ConstructLocalSocketServerInstance(napi_env env, napi_callback_info info);
+
     static void DefineUDPSocketClass(napi_env env, napi_value exports);
 
     static void DefineMulticastSocketClass(napi_env env, napi_value exports);
@@ -142,6 +207,10 @@ private:
     static void DefineTCPSocketClass(napi_env env, napi_value exports);
 
     static void DefineTCPServerSocketClass(napi_env env, napi_value exports);
+
+    static void DefineLocalSocketClass(napi_env env, napi_value exports);
+
+    static void DefineLocalSocketServerClass(napi_env env, napi_value exports);
 
     static void InitSocketProperties(napi_env env, napi_value exports);
 };
