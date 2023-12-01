@@ -49,7 +49,7 @@ WebsocketClient::WebsocketClient()
 {
     clientContext = new ClientContext();
     clientContext->SetClientId(g_clientID);
-    g_clientID = g_clientID++;
+    g_clientID++;
 }
 
 WebsocketClient::~WebsocketClient()
@@ -83,7 +83,6 @@ struct CallbackDispatcher {
 
 int LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGD("Lws Callback AppendHandshakeHeader");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
         NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
@@ -109,18 +108,17 @@ int LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback_reasons reason
 
 int LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGD("Lws Callback WsPeerInitiatedClose");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
         NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
         return -1;
     }
+    NETSTACK_LOGD("ClientId:%{public}d, Lws Callback WsPeerInitiatedClose", client->GetClientContext()->GetClientId());
     if (in == nullptr || len < sizeof(uint16_t)) {
         NETSTACK_LOGE("Lws Callback WsPeerInitiatedClose");
         client->GetClientContext()->Close(LWS_CLOSE_STATUS_NORMAL, "");
         return HttpDummy(wsi, reason, user, in, len);
     }
-    NETSTACK_LOGD("ClientId:%{public}d, Lws Callback WsPeerInitiatedClose,", client->GetClientContext()->GetClientId());
     uint16_t closeStatus = ntohs(*reinterpret_cast<uint16_t *>(in));
     std::string closeReason;
     closeReason.append(reinterpret_cast<char *>(in) + sizeof(uint16_t), len - sizeof(uint16_t));
@@ -130,7 +128,6 @@ int LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reasons reason, void 
 
 int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGD("Lws Callback ClientWritable");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
         NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
@@ -139,7 +136,8 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
     NETSTACK_LOGD("ClientId:%{public}d, Lws Callback CallbackClientWritable,",
                   client->GetClientContext()->GetClientId());
     if (client->GetClientContext()->IsClosed()) {
-        NETSTACK_LOGD("Lws Callback kClientWritable need to close");
+        NETSTACK_LOGD("ClientId:%{public}d, Lws Callback Lws Callback Callback ClientWritable need to close",
+                      client->GetClientContext()->GetClientId());
         lws_close_reason(
             wsi, client->GetClientContext()->closeStatus,
             reinterpret_cast<unsigned char *>(const_cast<char *>(client->GetClientContext()->closeReason.c_str())),
@@ -164,14 +162,15 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
     }
     int bytesSent = lws_write(wsi, buffer + LWS_PRE, messageLen, LWS_WRITE_TEXT);
     free(buffer);
-    NETSTACK_LOGD("ClientWritable send data length = %{public}d", bytesSent);
+    NETSTACK_LOGD("ClientId:%{public}d,Client Writable send data length = %{public}d",
+                  client->GetClientContext()->GetClientId(), bytesSent);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
 int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGE("Lws Callback ClientConnectionError");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
+    NETSTACK_LOGE("ClientId:%{public}d, Lws Callback ClientConnectionError", client->GetClientContext()->GetClientId());
     std::string buf;
     char *data = static_cast<char *>(in);
     buf.assign(data, len);
@@ -184,8 +183,8 @@ int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void
 
 int LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGD("Lws Callback ClientReceive");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
+    NETSTACK_LOGD("ClientId:%{public}d, lws Callback ClientReceive", client->GetClientContext()->GetClientId());
     std::string buf;
     char *data = static_cast<char *>(in);
     buf.assign(data, len);
@@ -215,15 +214,14 @@ std::vector<std::string> Split(const std::string &str, const std::string &sep, s
 
 int LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGD("Lws Callback ClientFilterPreEstablish");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
         NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
         return -1;
     }
     client->GetClientContext()->openStatus = lws_http_client_http_response(wsi);
-    NETSTACK_LOGD("Lws Callback ClientFilterPreEstablish openStatus = %{public}d",
-                  client->GetClientContext()->openStatus);
+    NETSTACK_LOGD("ClientId:%{public}d, Lws Callback ClientFilterPreEstablish openStatus = %{public}d",
+                  client->GetClientContext()->GetClientId(), client->GetClientContext()->openStatus);
     char statusLine[MAX_HDR_LENGTH] = {0};
     if (lws_hdr_copy(wsi, statusLine, MAX_HDR_LENGTH, WSI_TOKEN_HTTP) < 0 || strlen(statusLine) == 0) {
         return HttpDummy(wsi, reason, user, in, len);
@@ -237,12 +235,12 @@ int LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_reasons reason, v
 
 int LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGD("Lws Callback ClientEstablished");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
         NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
         return -1;
     }
+    NETSTACK_LOGI("ClientId:%{public}d, Lws Callback ClientEstablished", client->GetClientContext()->GetClientId());
     OpenResult openResult;
     openResult.status = client->GetClientContext()->openStatus;
     openResult.message = client->GetClientContext()->openMessage.c_str();
@@ -253,12 +251,12 @@ int LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons reason, void *us
 
 int LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGI("Lws Callback ClientClosed");
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
         NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
         return -1;
     }
+    NETSTACK_LOGI("ClientId:%{public}d, Lws Callback ClientClosed", client->GetClientContext()->GetClientId());
     std::string buf;
     char *data = static_cast<char *>(in);
     buf.assign(data, len);
@@ -275,7 +273,12 @@ int LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason, void *user, v
 
 int LwsCallbackWsiDestroy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGI("Lws Callback WsiDestroy");
+    WebsocketClient *client = static_cast<WebsocketClient *>(user);
+    if (client->GetClientContext() == nullptr) {
+        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
+        return -1;
+    }
+    NETSTACK_LOGI("ClientId:%{public}d, Lws Callback WsiDestroy", client->GetClientContext()->GetClientId());
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -386,7 +389,7 @@ int CreatConnectInfo(std::string url, lws_context *lwsContext, WebsocketClient *
 
 int WebsocketClient::Connect(std::string url, struct OpenOptions options)
 {
-    NETSTACK_LOGI("Connect start");
+    NETSTACK_LOGI("ClientId:%{public}d, Connect start", this->GetClientContext()->GetClientId());
     if (!options.headers.empty()) {
         if (options.headers.size() > MAX_HEADER_LENGTH) {
             return WebsocketErrorCode::WEBSOCKET_ERROR_NO_HEADR_EXCEEDS;
