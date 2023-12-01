@@ -26,14 +26,15 @@ namespace NetStack {
 namespace Ssl {
 
 const char *const SslConstant::SYSPRECAPATH = "/etc/security/certificates";
+const char *const SslConstant::USERINSTALLEDCAPATH = "/data/service/el1/public/cert_manager_service/certificates/user/";
+const int SslConstant::UIDTRANSFORMDIVISOR = 200000;
 
 std::string GetUserInstalledCaPath()
 {
-    std::string userInstalledCaPath("/user/");
-    int32_t uidTransformDivisor = 200000;
+    std::string userInstalledCaPath = SslConstant::USERINSTALLEDCAPATH;
     int32_t uid = OHOS::IPCSkeleton::GetCallingUid();
     NETSTACK_LOGD("uid: %{public}d\n", uid);
-    uid /= uidTransformDivisor;
+    uid /= SslConstant::UIDTRANSFORMDIVISOR;
     return userInstalledCaPath.append(std::to_string(uid).c_str()).append("/cacerts");
 }
 
