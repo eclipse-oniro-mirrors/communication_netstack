@@ -38,6 +38,7 @@ ohos_unittest("http_unittest") {
     "$NETSTACK_NAPI_ROOT/http/constant/include",
     "$NETSTACK_NAPI_ROOT/http/options/include",
     "$NETSTACK_NAPI_ROOT/http/cache/base64/include",
+    "$THIRD_PARTY_ROOT/curl/include",
   ]
   include_dirs += utils_include
 
@@ -51,7 +52,10 @@ ohos_unittest("http_unittest") {
     "HttpRequestOptionsTest.cpp",
   ]
 
-  deps = [ "$SUBSYSTEM_DIR/netstack/utils/napi_utils:napi_utils" ]
+  deps = [
+    "$SUBSYSTEM_DIR/netstack/utils/napi_utils:napi_utils",
+    "$THIRD_PARTY_ROOT/curl:curl_shared",
+  ]
 
   part_name = "netstack"
   subsystem_name = "communication"

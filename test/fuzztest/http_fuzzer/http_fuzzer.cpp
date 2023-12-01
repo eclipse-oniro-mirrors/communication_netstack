@@ -221,6 +221,23 @@ void SetClientCertFuzzTest(const uint8_t *data, size_t size)
     Secure::SecureChar pwd(str);
     requestOptions.SetClientCert(str, str, str, pwd);
 }
+
+void AddMultiFormDataFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    HttpRequestOptions requestOptions;
+    MultiFormData multiFormData;
+    std::string str = GetStringFromData(STR_LEN);
+    multiFormData.name = str;
+    multiFormData.data = str;
+    multiFormData.contentType = str;
+    multiFormData.remoteFileName = str;
+    multiFormData.filePath = str;
+    requestOptions.AddMultiFormData(multiFormData);
+}
 } // namespace Http
 } // namespace NetStack
 } // namespace OHOS
@@ -243,5 +260,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::NetStack::Http::SetDohUrlFuzzTest(data, size);
     OHOS::NetStack::Http::SetRangeNumberFuzzTest(data, size);
     OHOS::NetStack::Http::SetClientCertFuzzTest(data, size);
+    OHOS::NetStack::Http::AddMultiFormDataFuzzTest(data, size);
     return 0;
 }
