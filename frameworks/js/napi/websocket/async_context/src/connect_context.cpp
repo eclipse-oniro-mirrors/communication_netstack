@@ -99,11 +99,12 @@ void ConnectContext::ParseHeader(napi_value optionsValue)
 
 void ConnectContext::ParseCaPath(napi_value optionsValue)
 {
-    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::CAPATH)) {        
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::CAPATH)) {
+        NETSTACK_LOGI("ConnectContext CAPATH not found");
         return;
     }
     napi_value jsCaPath = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::CAPATH);
-    if (NapiUtils::GetValueType(GetEnv(), jsCaPath) != napi_string) {        
+    if (NapiUtils::GetValueType(GetEnv(), jsCaPath) != napi_string) {
         return;
     }
     caPath_ = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, ContextKey::CAPATH);
@@ -128,7 +129,7 @@ void ConnectContext::SetClientCert(
 void ConnectContext::ParseClientCert(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::CLIENT_CERT)) {
-
+        NETSTACK_LOGI("ConnectContext CLIENT_CERT not found");
         return;
     }
     napi_value jsCert = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::CLIENT_CERT);

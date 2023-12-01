@@ -554,7 +554,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     manager->InitNetstackEventHandler();
     lws_context_creation_info info = {};
     FillContextInfo(info);
-    if (!context->caPath_.empty()) {  
+    if (!context->caPath_.empty()) {
         info.client_ssl_ca_filepath = context->caPath_.c_str();
     }
     NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
@@ -563,9 +563,6 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         info.client_ssl_private_key_filepath = context->clientKey_.Data();
         info.client_ssl_private_key_password = context->keyPassword_.Data();
     }
-    NETSTACK_LOGD("cert file path: %{public}s", info.client_ssl_cert_filepath);
-    NETSTACK_LOGD("key file path: %{public}s", info.client_ssl_private_key_filepath );
-    NETSTACK_LOGD("password: %{public}s", info.client_ssl_private_key_password);
     lws_context *lwsContext = lws_create_context(&info);
     if (manager != nullptr && manager->GetData() == nullptr) {
         auto userData = new UserData(lwsContext);
