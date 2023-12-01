@@ -73,6 +73,34 @@ public:
 
     static void ExecTcpServerGetState(napi_env env, void *data);
 
+    static void ExecLocalSocketBind(napi_env env, void *data);
+
+    static void ExecLocalSocketConnect(napi_env env, void *data);
+
+    static void ExecLocalSocketSend(napi_env env, void *data);
+
+    static void ExecLocalSocketClose(napi_env env, void *data);
+
+    static void ExecLocalSocketGetState(napi_env env, void *data);
+
+    static void ExecLocalSocketGetSocketFd(napi_env env, void *data);
+
+    static void ExecLocalSocketSetExtraOptions(napi_env env, void *data);
+
+    static void ExecLocalSocketGetExtraOptions(napi_env env, void *data);
+
+    static void ExecLocalSocketServerListen(napi_env env, void *data);
+
+    static void ExecLocalSocketServerGetState(napi_env env, void *data);
+
+    static void ExecLocalSocketServerSetExtraOptions(napi_env env, void *data);
+
+    static void ExecLocalSocketServerGetExtraOptions(napi_env env, void *data);
+
+    static void ExecLocalSocketConnectionSend(napi_env env, void *data);
+
+    static void ExecLocalSocketConnectionClose(napi_env env, void *data);
+
     /* callback */
     static void BindCallback(napi_env env, napi_status status, void *data);
 
@@ -119,6 +147,34 @@ public:
     static void TcpServerSetExtraOptionsCallback(napi_env env, napi_status status, void *data);
 
     static void TcpServerGetStateCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketBindCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketConnectCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketSendCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketCloseCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketGetStateCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketGetSocketFdCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketSetExtraOptionsCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketGetExtraOptionsCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketServerListenCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketServerGetStateCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketServerSetExtraOptionsCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketServerGetExtraOptionsCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketConnectionSendCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketConnectionCloseCallback(napi_env env, napi_status status, void *data);
 };
 } // namespace OHOS::NetStack::Socket
 
