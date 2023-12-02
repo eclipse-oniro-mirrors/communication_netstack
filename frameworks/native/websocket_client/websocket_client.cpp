@@ -169,7 +169,7 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
 int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
-    NETSTACK_LOGE("ClientId:%{public}d, Lws Callback ClientConnectionError", client->GetClientContext()->GetClientId());
+    NETSTACK_LOGE("ClientId:%{public}d, libwebsockets Callback ClientConnectionError", client->GetClientContext()->GetClientId());
     std::string buf;
     char *data = static_cast<char *>(in);
     buf.assign(data, len);
@@ -183,7 +183,7 @@ int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void
 int LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
-    NETSTACK_LOGD("ClientId:%{public}d, lws Callback ClientReceive", client->GetClientContext()->GetClientId());
+    NETSTACK_LOGD("ClientId:%{public}d, libwebsockets Callback ClientReceive", client->GetClientContext()->GetClientId());
     std::string buf;
     char *data = static_cast<char *>(in);
     buf.assign(data, len);
@@ -215,11 +215,11 @@ int LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_reasons reason, v
 {
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
-        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
+        NETSTACK_LOGE("libwebsockets Callback ClientContext is nullptr");
         return -1;
     }
     client->GetClientContext()->openStatus = lws_http_client_http_response(wsi);
-    NETSTACK_LOGD("ClientId:%{public}d, Lws Callback ClientFilterPreEstablish openStatus = %{public}d",
+    NETSTACK_LOGD("ClientId:%{public}d, libwebsockets Callback ClientFilterPreEstablish openStatus = %{public}d",
                   client->GetClientContext()->GetClientId(), client->GetClientContext()->openStatus);
     char statusLine[MAX_HDR_LENGTH] = {0};
     if (lws_hdr_copy(wsi, statusLine, MAX_HDR_LENGTH, WSI_TOKEN_HTTP) < 0 || strlen(statusLine) == 0) {
@@ -236,10 +236,10 @@ int LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons reason, void *us
 {
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
-        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
+        NETSTACK_LOGE("libwebsockets Callback ClientContext is nullptr");
         return -1;
     }
-    NETSTACK_LOGI("ClientId:%{public}d, Lws Callback ClientEstablished", client->GetClientContext()->GetClientId());
+    NETSTACK_LOGI("ClientId:%{public}d, libwebsockets Callback ClientEstablished", client->GetClientContext()->GetClientId());
     OpenResult openResult;
     openResult.status = client->GetClientContext()->openStatus;
     openResult.message = client->GetClientContext()->openMessage.c_str();
@@ -252,10 +252,10 @@ int LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason, void *user, v
 {
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
-        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
+        NETSTACK_LOGE("libwebsockets Callback ClientContext is nullptr");
         return -1;
     }
-    NETSTACK_LOGI("ClientId:%{public}d, Lws Callback ClientClosed", client->GetClientContext()->GetClientId());
+    NETSTACK_LOGI("ClientId:%{public}d, libwebsockets Callback ClientClosed", client->GetClientContext()->GetClientId());
     std::string buf;
     char *data = static_cast<char *>(in);
     buf.assign(data, len);
@@ -274,10 +274,10 @@ int LwsCallbackWsiDestroy(lws *wsi, lws_callback_reasons reason, void *user, voi
 {
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
-        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
+        NETSTACK_LOGE("libwebsockets Callback ClientContext is nullptr");
         return -1;
     }
-    NETSTACK_LOGI("ClientId:%{public}d, Lws Callback WsiDestroy", client->GetClientContext()->GetClientId());
+    NETSTACK_LOGI("ClientId:%{public}d, libwebsockets Callback WsiDestroy", client->GetClientContext()->GetClientId());
     return HttpDummy(wsi, reason, user, in, len);
 }
 
