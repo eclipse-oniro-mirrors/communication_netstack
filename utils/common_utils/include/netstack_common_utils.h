@@ -39,7 +39,7 @@ std::string Trim(std::string str);
 
 bool IsMatch(const std::string &str, const std::string &patternStr);
 
-std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar);
+std::string InsertCharBefore(const std::string &input, const char from, const char preChar, const char nextChar);
 
 std::string ReplaceCharacters(const std::string &input);
 

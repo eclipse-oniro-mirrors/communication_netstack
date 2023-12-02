@@ -166,19 +166,13 @@ bool EndsWith(const std::string &str, const std::string &suffix)
 
 std::string Trim(std::string str)
 {
-    if (str.empty()) {
-        return str;
+    size_t start = str.find_first_not_of(" \t\n\r");
+    size_t end = str.find_last_not_of(" \t\n\r");
+    if (start == std::string::npos || end == std::string::npos) {
+        return "";
+    } else {
+        return str.substr(start, end - start + 1);
     }
-    while (std::isspace(str[0])) {
-        str.erase(0, 1);
-    }
-    if (str.empty()) {
-        return str;
-    }
-    while (std::isspace(str[str.size() - 1])) {
-        str.erase(str.size() - 1, 1);
-    }
-    return str;
 }
 
 bool IsMatch(const std::string &str, const std::string &patternStr)
@@ -201,7 +195,7 @@ bool IsMatch(const std::string &str, const std::string &patternStr)
     return isMacth;
 }
 
-std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar)
+std::string InsertCharBefore(const std::string &input, const char from, const char preChar, const char nextChar)
 {
     std::string output = input;
     char arr[] = {preChar, from};
@@ -209,8 +203,8 @@ std::string InsertCharBefore(std::string input, char from, char preChar, char ne
     std::string str(arr, strSize);
     std::size_t pos = output.find(from);
     std::size_t length = output.length();
-    while (pos >= 0 && pos <= length - 1 && pos != std::string::npos) {
-        char nextCharTemp = pos >= length ? '\0' : output[pos + 1];
+    while (pos <= length - 1 && pos != std::string::npos) {
+        char nextCharTemp = pos == length - 1 ? '\0' : output[pos + 1];
         if (nextChar == '\0' || nextCharTemp == '\0' || nextCharTemp != nextChar) {
             output.replace(pos, 1, str);
             length += (strSize - 1);
@@ -237,7 +231,6 @@ bool IsRegexValid(const std::string &regex)
 
 std::string GetHostnameFromURL(const std::string &url)
 {
-    std::string hostname;
     std::string delimiter = "://";
     std::string tempUrl = url;
     size_t posStart = tempUrl.find(delimiter);
