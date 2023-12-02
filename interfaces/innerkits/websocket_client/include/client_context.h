@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+#ifndef CLIENT_CONTEXT_H
+#define CLIENT_CONTEXT_H
+
 #include <atomic>
 #include <iostream>
 #include <map>
@@ -46,12 +49,7 @@ struct SendData {
 
 class ClientContext {
 public:
-    ClientContext(lws_context *context)
-        : closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), closed_(false), threadStop_(false), context_(context)
-    {
-    }
-
-    ClientContext(){};
+    ClientContext() : closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), closed_(false), threadStop_(false) {}
 
     bool IsClosed()
     {
@@ -106,6 +104,16 @@ public:
         return context_;
     }
 
+    void SetClientId(int id)
+    {
+        clientId = id;
+    }
+
+    int GetClientId()
+    {
+        return clientId;
+    }
+
     std::map<std::string, std::string> header;
 
     lws_close_status closeStatus;
@@ -128,7 +136,10 @@ private:
     lws_context *context_;
 
     std::queue<SendData> dataQueue_;
+
+    int clientId;
 };
 }; // namespace WebsocketClient
 } // namespace NetStack
 } // namespace OHOS
+#endif
