@@ -84,7 +84,7 @@ int LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback_reasons reason
 {
     WebsocketClient *client = static_cast<WebsocketClient *>(user);
     if (client->GetClientContext() == nullptr) {
-        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
+        NETSTACK_LOGE("libwebsockets Callback ClientContext is nullptr");
         return -1;
     }
     NETSTACK_LOGD("ClientId:%{public}d, Lws Callback AppendHandshakeHeader,",
@@ -112,7 +112,7 @@ int LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reasons reason, void 
         NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
         return -1;
     }
-    NETSTACK_LOGD("ClientId:%{public}d, Lws Callback WsPeerInitiatedClose", client->GetClientContext()->GetClientId());
+    NETSTACK_LOGD("ClientId:%{public}d, libwebsockets Callback WsPeerInitiatedClose", client->GetClientContext()->GetClientId());
     if (in == nullptr || len < sizeof(uint16_t)) {
         NETSTACK_LOGE("Lws Callback WsPeerInitiatedClose");
         client->GetClientContext()->Close(LWS_CLOSE_STATUS_NORMAL, "");
@@ -132,10 +132,10 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
         NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
         return -1;
     }
-    NETSTACK_LOGD("ClientId:%{public}d, Lws Callback CallbackClientWritable,",
+    NETSTACK_LOGD("ClientId:%{public}d, libwebsockets Callback CallbackClientWritable,",
                   client->GetClientContext()->GetClientId());
     if (client->GetClientContext()->IsClosed()) {
-        NETSTACK_LOGD("ClientId:%{public}d, Lws Callback Lws Callback Callback ClientWritable need to close",
+        NETSTACK_LOGD("ClientId:%{public}d, libwebsockets Callback Lws Callback Callback ClientWritable need to close",
                       client->GetClientContext()->GetClientId());
         lws_close_reason(
             wsi, client->GetClientContext()->closeStatus,
