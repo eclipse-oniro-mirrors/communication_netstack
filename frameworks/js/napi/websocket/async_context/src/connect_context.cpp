@@ -136,7 +136,7 @@ void ConnectContext::ParseClientCert(napi_value optionsValue)
     napi_valuetype type = NapiUtils::GetValueType(GetEnv(), jsCert);
     if (type != napi_object || type == napi_undefined) {
         return;
-    }    
+    }
     std::string certPath = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::CERT_PATH);
     Secure::SecureChar keyPath = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(),
     jsCert, ContextKey::KEY_PATH));
