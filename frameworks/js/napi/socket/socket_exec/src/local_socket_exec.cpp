@@ -361,4 +361,397 @@ static napi_value MakeClose(napi_env env, void *data)
 
     return obj;
 }
+
+bool ExecLocalSocketBind(LocalSocketBindContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    struct sockaddr_un addr;
+    addr.sun_family = AF_UNIX;
+    if (strcpy_s(addr.sun_path, sizeof(addr.sun_path) - 1, context->GetSocketPath().c_str()) != 0) {
+        NETSTACK_LOGE("failed to copy socket path, sockfd: %{public}d", context->GetSocketFd());
+        context->SetErrorCode(UNKNOW_ERROR);
+        return false;
+    }
+    if (bind(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr)) == -1) {
+        NETSTACK_LOGE("failed to bind local socket, errno: %{public}d", errno);
+        context->SetErrorCode(errno);
+        return false;
+    }
+    return true;
+}
+
+bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    struct sockaddr_un addr;
+    memset_s(&addr, sizeof(addr), 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    if (strcpy_s(addr.sun_path, sizeof(addr.sun_path) - 1, context->GetSocketPath().c_str()) != 0) {
+        NETSTACK_LOGE("failed to copy local socket path, sockfd: %{public}d", context->GetSocketFd());
+        context->SetErrorCode(UNKNOW_ERROR);
+        return false;
+    }
+    NETSTACK_LOGI("local socket client fd: %{public}d, path: %{public}s", context->GetSocketFd(), addr.sun_path);
+    if (connect(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr)) == -1) {
+        NETSTACK_LOGE("failed to connect local socket, errno: %{public}d, %{public}s", errno, strerror(errno));
+        context->SetErrorCode(errno);
+        return false;
+    }
+    if (auto pMgr = reinterpret_cast<LocalSocketManager*>(context->GetManager()->GetData()); pMgr != nullptr) {
+        pMgr->isConnected_ = true;
+    }
+    std::thread serviceThread(PollRecvData, context->GetSocketFd(), nullptr, 0,
+                              LocalSocketMessageCallback(context->GetManager(), context->GetSocketPath()));
+    serviceThread.detach();
+    return true;
+}
+
+bool ExecLocalSocketSend(LocalSocketSendContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    bool result = true;
+#ifdef ENABLE_EVENT_HANDLER
+    auto manager = context->GetManager();
+    auto eventHandler = manager->GetNetstackEventHandler();
+    if (!eventHandler) {
+        NETSTACK_LOGE("netstack eventHandler is nullptr");
+        return false;
+    }
+    eventHandler->PostSyncTask([&result, context]() { result = LocalSocketSendEvent(context); });
+    NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::LocalSocketSendCallback);
+#endif
+    return result;
+}
+
+bool ExecLocalSocketClose(LocalSocketCloseContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    if (close(context->GetSocketFd()) < 0) {
+        NETSTACK_LOGE("failed to closed localsock, fd: %{public}d, errno: %{public}d", context->GetSocketFd(), errno);
+        context->SetErrorCode(errno);
+        return false;
+    }
+    context->SetSocketFd(0);
+    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetManager()->GetData()); pMgr != nullptr) {
+        pMgr->isConnected_ = false;
+    }
+    return true;
+}
+
+bool ExecLocalSocketGetState(LocalSocketGetStateContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    struct sockaddr_un unAddr = {0};
+    socklen_t len = sizeof(unAddr);
+    SocketStateBase &state = context->GetStateRef();
+    if (getsockname(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&unAddr), &len) < 0) {
+        NETSTACK_LOGI("localsocket do not bind or socket has closed");
+        state.SetIsBound(false);
+    } else {
+        state.SetIsBound(strlen(unAddr.sun_path) > 0);
+    }
+    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetManager()->GetData()); pMgr != nullptr) {
+        state.SetIsConnected(pMgr->isConnected_);
+    }
+    return true;
+}
+
+bool ExecLocalSocketGetSocketFd(LocalSocketGetSocketFdContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    return true;
+}
+
+bool ExecLocalSocketSetExtraOptions(LocalSocketSetExtraOptionsContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    if (SetLocalSocketOptions(context->GetSocketFd(), context->GetOptionsRef())) {
+        return true;
+    }
+    context->SetErrorCode(errno);
+    return false;
+}
+
+bool ExecLocalSocketGetExtraOptions(LocalSocketGetExtraOptionsContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    LocalExtraOptions &optionsRef = context->GetOptionsRef();
+    if (!GetLocalSocketOptions(context->GetSocketFd(), optionsRef)) {
+        context->SetErrorCode(errno);
+        return false;
+    }
+    return true;
+}
+
+bool ExecLocalSocketServerListen(LocalSocketServerListenContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    if (!LocalSocketServerBind(context)) {
+        return false;
+    }
+    if (listen(context->GetSocketFd(), BACKLOG) < 0) {
+        NETSTACK_LOGE("local socket server listen error, fd: %{public}d", context->GetSocketFd());
+        context->SetErrorCode(errno);
+        return false;
+    }
+    NETSTACK_LOGI("local socket server listen success");
+    LocalSocketServerManager *mgr = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData());
+    if (mgr == nullptr) {
+        NETSTACK_LOGE("LocalSocketServerManager reinterpret cast failed");
+        context->SetErrorCode(UNKNOW_ERROR);
+        return false;
+    }
+    std::thread serviceThread(LocalSocketServerAccept, mgr, LocalSocketMessageCallback(context->GetManager()),
+                              context->GetSocketPath());
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
+#else
+    pthread_setname_np(serviceThread.native_handle(), LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
+#endif
+    serviceThread.detach();
+    return true;
+}
+
+bool ExecLocalSocketServerGetState(LocalSocketServerGetStateContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    struct sockaddr_un unAddr = {0};
+    socklen_t len = sizeof(unAddr);
+    SocketStateBase &state = context->GetStateRef();
+    if (getsockname(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&unAddr), &len) == 0) {
+        state.SetIsBound(true);
+    }
+    auto pMgr = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData());
+    if (pMgr != nullptr) {
+        state.SetIsConnected(pMgr->GetClientCounts() > 0);
+    }
+    return true;
+}
+
+bool ExecLocalSocketServerSetExtraOptions(LocalSocketServerSetExtraOptionsContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    auto serverManager = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData());
+    for (const auto &[id, fd] : serverManager->acceptFds_) {
+        if (!SetLocalSocketOptions(fd, context->GetOptionsRef())) {
+            context->SetErrorCode(errno);
+            return false;
+        }
+    }
+    serverManager->extraOptions_ = context->GetOptionsRef();
+    serverManager->alreadySetExtraOptions_ = true;
+    return true;
+}
+
+bool ExecLocalSocketServerGetExtraOptions(LocalSocketServerGetExtraOptionsContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    if (auto pMgr = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData()); pMgr != nullptr) {
+        LocalExtraOptions &options = context->GetOptionsRef();
+        if (pMgr->alreadySetExtraOptions_) {
+            options = pMgr->extraOptions_;
+        } else {
+            if (!GetLocalSocketOptions(context->GetSocketFd(), options)) {
+                context->SetErrorCode(errno);
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool ExecLocalSocketConnectionSend(LocalSocketServerSendContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    int clientId = context->GetClientId();
+    auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetManager()->GetData());
+    if (data == nullptr) {
+        NETSTACK_LOGE("is nullptr, id: %{public}d", clientId);
+        return false;
+    }
+    int acceptFd = data->serverManager_->GetAcceptFd(clientId);
+    if (acceptFd <= 0) {
+        NETSTACK_LOGE("accept fd is invalid, id: %{public}d, fd: %{public}d", clientId, acceptFd);
+        context->SetErrorCode(ERRNO_BAD_FD);
+        return false;
+    }
+
+    if (!PollSendData(acceptFd, context->GetOptionsRef().GetBufferRef().c_str(),
+                      context->GetOptionsRef().GetBufferRef().size(), nullptr, 0)) {
+        NETSTACK_LOGE("localsocket connection send failed, fd: %{public}d, errno: %{public}d", acceptFd, errno);
+        context->SetErrorCode(errno);
+        return false;
+    }
+    return true;
+}
+
+bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    auto serverManager = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData());
+    if (serverManager->sockfd_ > 0) {
+        return true;
+    }
+    NETSTACK_LOGI("socket has lost, fd: %{public}d", serverManager->sockfd_);
+    context->SetErrorCode(UNKNOW_ERROR);
+    return false;
+}
+
+napi_value LocalSocketBindCallback(LocalSocketBindContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value LocalSocketConnectCallback(LocalSocketConnectContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value LocalSocketSendCallback(LocalSocketSendContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value LocalSocketCloseCallback(LocalSocketCloseContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value LocalSocketGetStateCallback(LocalSocketGetStateContext *context)
+{
+    napi_value obj = NapiUtils::CreateObject(context->GetEnv());
+    if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_BOUND, context->GetStateRef().IsBound());
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_CLOSE, context->GetStateRef().IsClose());
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_CONNECTED, context->GetStateRef().IsConnected());
+    return obj;
+}
+
+napi_value LocalSocketGetSocketFdCallback(LocalSocketGetSocketFdContext *context)
+{
+    int sockFd = context->GetSocketFd();
+    if (sockFd <= 0) {
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+    return NapiUtils::CreateUint32(context->GetEnv(), sockFd);
+}
+
+napi_value LocalSocketSetExtraOptionsCallback(LocalSocketSetExtraOptionsContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value LocalSocketGetExtraOptionsCallback(LocalSocketGetExtraOptionsContext *context)
+{
+    napi_value obj = NapiUtils::CreateObject(context->GetEnv());
+    if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_REUSE_ADDRESS, false);
+    NapiUtils::SetInt32Property(context->GetEnv(), obj, KEY_RECEIVE_BUFFER_SIZE,
+                                context->GetOptionsRef().GetReceiveBufferSize());
+    NapiUtils::SetInt32Property(context->GetEnv(), obj, KEY_SEND_BUFFER_SIZE,
+                                context->GetOptionsRef().GetSendBufferSize());
+    NapiUtils::SetInt32Property(context->GetEnv(), obj, KEY_TIMEOUT, context->GetOptionsRef().GetSocketTimeout());
+    return obj;
+}
+
+napi_value LocalSocketServerListenCallback(LocalSocketServerListenContext *context)
+{
+    context->Emit(EVENT_LISTENING, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                                  NapiUtils::GetUndefined(context->GetEnv())));
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value LocalSocketServerGetStateCallback(LocalSocketServerGetStateContext *context)
+{
+    napi_value obj = NapiUtils::CreateObject(context->GetEnv());
+    if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_BOUND, context->GetStateRef().IsBound());
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_CLOSE, context->GetStateRef().IsClose());
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_IS_CONNECTED, context->GetStateRef().IsConnected());
+    return obj;
+}
+
+napi_value LocalSocketServerSetExtraOptionsCallback(LocalSocketServerSetExtraOptionsContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value LocalSocketServerGetExtraOptionsCallback(LocalSocketServerGetExtraOptionsContext *context)
+{
+    napi_value obj = NapiUtils::CreateObject(context->GetEnv());
+    if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+    NapiUtils::SetBooleanProperty(context->GetEnv(), obj, KEY_REUSE_ADDRESS, false);
+    NapiUtils::SetInt32Property(context->GetEnv(), obj, KEY_RECEIVE_BUFFER_SIZE,
+                                context->GetOptionsRef().GetReceiveBufferSize());
+    NapiUtils::SetInt32Property(context->GetEnv(), obj, KEY_SEND_BUFFER_SIZE,
+                                context->GetOptionsRef().GetSendBufferSize());
+    NapiUtils::SetInt32Property(context->GetEnv(), obj, KEY_TIMEOUT, context->GetOptionsRef().GetSocketTimeout());
+    return obj;
+}
+
+napi_value LocalSocketConnectionSendCallback(LocalSocketServerSendContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value LocalSocketConnectionCloseCallback(LocalSocketServerCloseContext *context)
+{
+    auto pServerManager = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData());
+    int acceptFd = pServerManager->GetAcceptFd(context->GetClientId());
+    if (acceptFd <= 0) {
+        NETSTACK_LOGE("socket invalid, fd: %{public}d", acceptFd);
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+
+    if (shutdown(acceptFd, SHUT_RDWR) != 0) {
+        NETSTACK_LOGE("socket shutdown failed, socket is %{public}d, errno is %{public}d", acceptFd, errno);
+    }
+    int ret = close(acceptFd);
+    if (ret < 0) {
+        NETSTACK_LOGE("sock closed failed, socket is %{public}d, errno is %{public}d", acceptFd, errno);
+    } else {
+        NETSTACK_LOGI("sock %{public}d closed success", acceptFd);
+        pServerManager->RemoveAccept(context->GetClientId());
+        context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                                  NapiUtils::GetUndefined(context->GetEnv())));
+    }
+
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
 } // namespace OHOS::NetStack::Socket::LocalSocketExec
