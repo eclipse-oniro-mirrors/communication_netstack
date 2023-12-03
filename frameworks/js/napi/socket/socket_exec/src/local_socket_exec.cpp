@@ -163,4 +163,202 @@ static napi_value MakeJsLocalSocketMessageParam(napi_env env, napi_value msgBuff
     NapiUtils::SetNamedProperty(env, obj, KEY_REMOTE_INFO, jsRemoteInfo);
     return obj;
 }
+
+static napi_value MakeLocalSocketMessage(napi_env env, void *param)
+{
+    EventManager *manager = reinterpret_cast<EventManager *>(param);
+    MsgWithLocalRemoteInfo *msg = reinterpret_cast<MsgWithLocalRemoteInfo *>(manager->GetQueueData());
+    manager->PopQueueData();
+    auto deleter = [](const MsgWithLocalRemoteInfo *p) { delete p; };
+    std::unique_ptr<MsgWithLocalRemoteInfo, decltype(deleter)> handler(msg, deleter);
+    if (msg == nullptr || msg->data == nullptr || msg->len == 0) {
+        NETSTACK_LOGE("msg or msg->data or msg->len is invalid");
+        return NapiUtils::GetUndefined(env);
+    }
+    void *dataHandle = nullptr;
+    napi_value msgBuffer = NapiUtils::CreateArrayBuffer(env, msg->len, &dataHandle);
+    if (dataHandle == nullptr || !NapiUtils::ValueIsArrayBuffer(env, msgBuffer)) {
+        return NapiUtils::GetUndefined(env);
+    }
+    int result = memcpy_s(dataHandle, msg->len, msg->data, msg->len);
+    if (result != EOK) {
+        NETSTACK_LOGE("memcpy err, res: %{public}d, msg: %{public}s, len: %{public}u", result,
+            reinterpret_cast<char *>(msg->data), msg->len);
+        return NapiUtils::GetUndefined(env);
+    }
+    return MakeJsLocalSocketMessageParam(env, msgBuffer, msg);
+}
+
+template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)
+{
+    (void)status;
+
+    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
+    napi_env env = workWrapper->env;
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
+
+    napi_value obj = MakeJsValue(env, workWrapper->data);
+
+    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
+    workWrapper->manager->Emit(workWrapper->type, arg);
+
+    delete workWrapper;
+    delete work;
+}
+
+static bool OnRecvLocalSocketMessage(EventManager *manager, void *data, size_t len, const std::string &path)
+{
+    if (manager == nullptr || data == nullptr || len == 0) {
+        NETSTACK_LOGE("manager or data or len is invalid");
+        return false;
+    }
+    MsgWithLocalRemoteInfo *msg = new (std::nothrow) MsgWithLocalRemoteInfo(data, len, path);
+    if (msg == nullptr) {
+        NETSTACK_LOGE("MsgWithLocalRemoteInfo construct error");
+        return false;
+    }
+    manager->SetQueueData(reinterpret_cast<void *>(msg));
+    manager->EmitByUv(EVENT_MESSAGE, manager, CallbackTemplate<MakeLocalSocketMessage>);
+    return true;
+}
+
+static bool PollFd(pollfd *fds, nfds_t num, int timeout)
+{
+    int ret = poll(fds, num, timeout);
+    if (ret == -1) {
+        NETSTACK_LOGE("poll to send failed, socket is %{public}d, errno is %{public}d", fds->fd, errno);
+        return false;
+    }
+    if (ret == 0) {
+        NETSTACK_LOGE("poll to send timeout, socket is %{public}d, errno is %{public}d", fds->fd, errno);
+        return false;
+    }
+    return true;
+}
+
+static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr, socklen_t addrLen)
+{
+    int bufferSize = DEFAULT_BUFFER_SIZE;
+    int opt = 0;
+    socklen_t optLen = sizeof(opt);
+    if (getsockopt(sock, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<void *>(&opt), &optLen) >= 0 && opt > 0) {
+        bufferSize = opt;
+    }
+    int sockType = 0;
+    optLen = sizeof(sockType);
+    if (getsockopt(sock, SOL_SOCKET, SO_TYPE, reinterpret_cast<void *>(&sockType), &optLen) < 0) {
+        NETSTACK_LOGI("get sock opt sock type failed, socket is %{public}d, errno is %{public}d", sock, errno);
+        return false;
+    }
+
+    auto curPos = data;
+    auto leftSize = size;
+    nfds_t num = 1;
+    pollfd fds[1] = {{0}};
+    fds[0].fd = sock;
+    fds[0].events = 0;
+    fds[0].events |= POLLOUT;
+
+    while (leftSize > 0) {
+        if (!PollFd(fds, num, DEFAULT_BUFFER_SIZE)) {
+            return false;
+        }
+        size_t sendSize = (sockType == SOCK_STREAM ? leftSize : std::min<size_t>(leftSize, bufferSize));
+        auto sendLen = sendto(sock, curPos, sendSize, 0, addr, addrLen);
+        if (sendLen < 0) {
+            if (errno == EAGAIN) {
+                continue;
+            }
+            NETSTACK_LOGE("send failed, socket is %{public}d, errno is %{public}d", sock, errno);
+            return false;
+        }
+        if (sendLen == 0) {
+            break;
+        }
+        curPos += sendLen;
+        leftSize -= sendLen;
+    }
+
+    if (leftSize != 0) {
+        NETSTACK_LOGE("send not complete, socket is %{public}d, errno is %{public}d", sock, errno);
+        return false;
+    }
+    return true;
+}
+
+static bool LocalSocketSendEvent(LocalSocketSendContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    if (!PollSendData(context->GetSocketFd(), context->GetOptionsRef().GetBufferRef().c_str(),
+                      context->GetOptionsRef().GetBufferRef().size(), nullptr, 0)) {
+        NETSTACK_LOGE("send failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
+        context->SetErrorCode(errno);
+        return false;
+    }
+    return true;
+}
+
+static bool MakeNonBlock(int sock)
+{
+    int flags = fcntl(sock, F_GETFL, 0);
+    while (flags == -1 && errno == EINTR) {
+        flags = fcntl(sock, F_GETFL, 0);
+    }
+    if (flags == -1) {
+        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
+        return false;
+    }
+    int ret = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+    while (ret == -1 && errno == EINTR) {
+        ret = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+    }
+    if (ret == -1) {
+        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
+        return false;
+    }
+    return true;
+}
+
+int MakeLocalSocket(int socketType)
+{
+    int sock = socket(AF_UNIX, socketType, 0);
+    NETSTACK_LOGI("new local socket is %{public}d", sock);
+    if (sock < 0) {
+        NETSTACK_LOGE("make local socket failed, errno is %{public}d", errno);
+        return -1;
+    }
+    if (!MakeNonBlock(sock)) {
+        close(sock);
+        return -1;
+    }
+    return sock;
+}
+
+static napi_value MakeError(napi_env env, void *errCode)
+{
+    auto code = reinterpret_cast<int32_t *>(errCode);
+    auto deleter = [](const int32_t *p) { delete p; };
+    std::unique_ptr<int32_t, decltype(deleter)> handler(code, deleter);
+
+    napi_value err = NapiUtils::CreateObject(env);
+    if (NapiUtils::GetValueType(env, err) != napi_object) {
+        return NapiUtils::GetUndefined(env);
+    }
+    NapiUtils::SetInt32Property(env, err, KEY_ERROR_CODE, *code);
+    return err;
+}
+
+static napi_value MakeClose(napi_env env, void *data)
+{
+    (void)data;
+    napi_value obj = NapiUtils::CreateObject(env);
+    if (NapiUtils::GetValueType(env, obj) != napi_object) {
+        return NapiUtils::GetUndefined(env);
+    }
+
+    return obj;
+}
 } // namespace OHOS::NetStack::Socket::LocalSocketExec
