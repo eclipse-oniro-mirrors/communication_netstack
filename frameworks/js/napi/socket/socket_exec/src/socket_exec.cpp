@@ -842,7 +842,7 @@ static bool SetBaseOptions(int sock, ExtraOptionsBase *option)
     return true;
 }
 
-int MakeTcpSocket(sa_family_t family)
+int MakeTcpSocket(sa_family_t family, bool needNonblock)
 {
     if (family != AF_INET && family != AF_INET6) {
         return -1;
@@ -853,7 +853,7 @@ int MakeTcpSocket(sa_family_t family)
         NETSTACK_LOGE("make tcp socket failed, errno is %{public}d", errno);
         return -1;
     }
-    if (!MakeNonBlock(sock)) {
+    if (needNonblock && !MakeNonBlock(sock)) {
         close(sock);
         return -1;
     }

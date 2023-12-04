@@ -186,7 +186,7 @@ static bool MakeTcpServerSocket(napi_env env, napi_value thisVal, TcpServerListe
         context->SetPermissionDenied(true);
         return false;
     }
-    int sock = SocketExec::MakeTcpSocket(context->address_.GetSaFamily());
+    int sock = SocketExec::MakeTcpSocket(context->address_.GetSaFamily(), false);
     if (!SetSocket(env, thisVal, context, sock)) {
         return false;
     }

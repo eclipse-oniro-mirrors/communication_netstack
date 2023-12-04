@@ -37,7 +37,7 @@
 #include <set>
 
 namespace OHOS::NetStack::Socket::SocketExec {
-int MakeTcpSocket(sa_family_t family);
+int MakeTcpSocket(sa_family_t family, bool needNonblock = true);
 
 int MakeUdpSocket(sa_family_t family);
 
