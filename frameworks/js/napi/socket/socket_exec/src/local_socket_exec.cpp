@@ -35,6 +35,8 @@ constexpr int BACKLOG = 32;
 
 constexpr int DEFAULT_BUFFER_SIZE = 8192;
 
+constexpr int MAX_SOCKET_BUFFER_SIZE = 212992;
+
 constexpr int DEFAULT_POLL_TIMEOUT_MS = 500;
 
 constexpr int UNKNOW_ERROR = -1;
@@ -362,6 +364,248 @@ static napi_value MakeClose(napi_env env, void *data)
     return obj;
 }
 
+class LocalSocketMessageCallback {
+public:
+    LocalSocketMessageCallback() = delete;
+
+    ~LocalSocketMessageCallback() = default;
+
+    explicit LocalSocketMessageCallback(EventManager *manager, const std::string &path = "")
+        : manager_(manager), socketPath_(path)
+    {
+    }
+
+    void OnError(int err) const
+    {
+        manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
+    }
+
+    void OnCloseMessage(EventManager *manager) const
+    {
+        manager->EmitByUv(EVENT_CLOSE, nullptr, CallbackTemplate<MakeClose>);
+    }
+
+    bool OnMessage(void *data, size_t dataLen, [[maybe_unused]] sockaddr *addr) const
+    {
+        return OnRecvLocalSocketMessage(manager_, data, dataLen, socketPath_);
+    }
+
+    bool OnMessage(EventManager *manager, void *data, size_t len, const std::string &path) const
+    {
+        return OnRecvLocalSocketMessage(manager, data, len, path);
+    }
+
+    void OnLocalSocketConnectionMessage(int clientId, LocalSocketServerManager *serverManager) const
+    {
+        LocalSocketConnectionData *data = new (std::nothrow) LocalSocketConnectionData(clientId, serverManager);
+        if (data != nullptr) {
+            manager_->EmitByUv(EVENT_CONNECT, data, CallbackTemplate<MakeLocalSocketConnectionMessage>);
+        }
+    }
+    EventManager *GetEventManager() const
+    {
+        return manager_;
+    }
+
+protected:
+    EventManager *manager_;
+
+private:
+    std::string socketPath_;
+};
+
+static bool SetSocketBufferSize(int sockfd, int type, uint32_t size)
+{
+    if (size > MAX_SOCKET_BUFFER_SIZE) {
+        NETSTACK_LOGE("invalid socket buffer size: %{public}u", size);
+        return false;
+    }
+    if (setsockopt(sockfd, SOL_SOCKET, type, reinterpret_cast<void *>(&size), sizeof(size)) < 0) {
+        NETSTACK_LOGE("localsocket set sock size failed, sock: %{public}d, type: %{public}d, size: %{public}u, size",
+            sockfd, type, size);
+        return false;
+    }
+    return true;
+}
+
+static bool SetLocalSocketOptions(int sockfd, const LocalExtraOptions &options)
+{
+    if (options.AlreadySetRecvBufSize()) {
+        uint32_t recvBufSize = options.GetReceiveBufferSize();
+        if (!SetSocketBufferSize(sockfd, SO_RCVBUF, recvBufSize)) {
+            return false;
+        }
+    }
+    if (options.AlreadySetSendBufSize()) {
+        uint32_t sendBufSize = options.GetSendBufferSize();
+        if (!SetSocketBufferSize(sockfd, SO_SNDBUF, sendBufSize)) {
+            return false;
+        }
+    }
+    if (options.AlreadySetTimeout()) {
+        uint32_t timeout = options.GetSocketTimeout();
+        if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
+            NETSTACK_LOGE("localsocket setsockopt error, SO_RCVTIMEO, fd: %{public}d", sockfd);
+            return false;
+        }
+        if (setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
+            NETSTACK_LOGE("localsocket setsockopt error, SO_SNDTIMEO, fd: %{public}d", sockfd);
+            return false;
+        }
+    }
+    return true;
+}
+
+static void SetSocketDefaultBufferSize(int sockfd, LocalSocketServerManager *mgr)
+{
+    uint32_t recvSize = DEFAULT_BUFFER_SIZE;
+    if (mgr->alreadySetExtraOptions_ && mgr->extraOptions_.AlreadySetRecvBufSize()) {
+        recvSize = mgr->extraOptions_.GetReceiveBufferSize();
+    }
+    SetSocketBufferSize(sockfd, SO_RCVBUF, recvSize);
+    uint32_t sendSize = DEFAULT_BUFFER_SIZE;
+    if (mgr->alreadySetExtraOptions_ && mgr->extraOptions_.AlreadySetSendBufSize()) {
+        sendSize = mgr->extraOptions_.GetSendBufferSize();
+    }
+    SetSocketBufferSize(sockfd, SO_SNDBUF, sendSize);
+}
+
+static int ConfirmBufferSize(int sock)
+{
+    int bufferSize = DEFAULT_BUFFER_SIZE;
+    int opt = 0;
+    socklen_t optLen = sizeof(opt);
+    if (getsockopt(sock, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<void *>(&opt), &optLen) >= 0 && opt > 0) {
+        bufferSize = opt;
+    }
+    return bufferSize;
+}
+
+static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager *serverManager,
+                                         const LocalSocketMessageCallback &callback, const std::string &path)
+{
+    int clientId = serverManager->AddAccept(connectFd);
+    if (serverManager->alreadySetExtraOptions_) {
+        SetLocalSocketOptions(connectFd, serverManager->extraOptions_);
+    }
+    NETSTACK_LOGI("local socket server accept new, fd: %{public}d, id: %{public}d", connectFd, clientId);
+    callback.OnLocalSocketConnectionMessage(clientId, serverManager);
+    EventManager *eventManager = serverManager->WaitForManager(clientId);
+    int sockRecvSize = ConfirmBufferSize(connectFd);
+    void *buffer = malloc(sockRecvSize);
+    if (buffer == nullptr) {
+        NETSTACK_LOGE("failed to malloc, connectFd: %{public}d, malloc size: %{public}d", connectFd, sockRecvSize);
+        return;
+    }
+    while (true) {
+        if (memset_s(buffer, sockRecvSize, 0, sockRecvSize) != EOK) {
+            NETSTACK_LOGE("memset_s failed, connectFd: %{public}d, clientId: %{public}d", connectFd, clientId);
+            break;
+        }
+        int32_t recvSize = recv(connectFd, buffer, sockRecvSize, 0);
+        if (recvSize <= 0) {
+            if (errno != EAGAIN) {
+                NETSTACK_LOGE("conntion close, recvSize:%{public}d, errno:%{public}d, fd:%{public}d, id:%{public}d",
+                    recvSize, errno, connectFd, clientId);
+                callback.OnCloseMessage(eventManager);
+                serverManager->RemoveAccept(clientId);
+                break;
+            }
+        } else {
+            NETSTACK_LOGD("localsocket recv: fd: %{public}d, size: %{public}d, buf: %{public}s", connectFd, recvSize,
+                          reinterpret_cast<char *>(buffer));
+            void *data = malloc(recvSize);
+            if (data == nullptr) {
+                callback.OnError(NO_MEMORY);
+                break;
+            }
+            if (memcpy_s(data, recvSize, buffer, recvSize) != EOK ||
+                !callback.OnMessage(eventManager, data, recvSize, path)) {
+                free(data);
+            }
+        }
+    }
+    free(buffer);
+}
+
+static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSocketMessageCallback &callback,
+                                    const std::string &path)
+{
+    while (true) {
+        struct sockaddr_un clientAddress;
+        socklen_t clientAddrLength = sizeof(clientAddress);
+        int connectFd = accept(mgr->sockfd_, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddrLength);
+        if (connectFd < 0) {
+            continue;
+        }
+        if (mgr->GetClientCounts() >= MAX_CLIENTS) {
+            NETSTACK_LOGE("local socket server max number of clients reached, sockfd: %{public}d", mgr->sockfd_);
+            close(connectFd);
+            continue;
+        }
+        SetSocketDefaultBufferSize(connectFd, mgr);
+        std::thread handlerThread(LocalSocketServerRecvHandler, connectFd, mgr, std::ref(callback), std::ref(path));
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+        pthread_setname_np(LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
+#else
+        pthread_setname_np(handlerThread.native_handle(), LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
+#endif
+        handlerThread.detach();
+    }
+}
+
+static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const LocalSocketMessageCallback &callback)
+{
+    int bufferSize = ConfirmBufferSize(sock);
+    auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
+    std::unique_ptr<char, decltype(deleter)> buf(reinterpret_cast<char *>(malloc(bufferSize)), deleter);
+    if (buf == nullptr) {
+        callback.OnError(NO_MEMORY);
+        return;
+    }
+    auto addrDeleter = [](sockaddr *a) { free(reinterpret_cast<void *>(a)); };
+    std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
+    nfds_t num = 1;
+    pollfd fds[1] = {{.fd = sock, .events = 0}};
+    fds[0].events |= POLLIN;
+    while (true) {
+        int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT_MS);
+        if (ret < 0) {
+            NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
+            callback.OnError(errno);
+            return;
+        }
+        if (ret == 0) {
+            continue;
+        }
+        if (static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) == 0) {
+            return;
+        }
+        (void)memset_s(buf.get(), bufferSize, 0, bufferSize);
+        socklen_t tempAddrLen = addrLen;
+        auto recvLen = recvfrom(sock, buf.get(), bufferSize, 0, addr, &tempAddrLen);
+        if (recvLen < 0) {
+            if (errno == EAGAIN) {
+                continue;
+            }
+            NETSTACK_LOGE("recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
+            callback.OnError(errno);
+            return;
+        }
+        if (recvLen == 0) {
+            continue;
+        }
+        void *data = malloc(recvLen);
+        if (data == nullptr) {
+            callback.OnError(NO_MEMORY);
+            return;
+        }
+        if (memcpy_s(data, recvLen, buf.get(), recvLen) != EOK || !callback.OnMessage(data, recvLen, addr)) {
+            free(data);
+        }
+    }
+}
+
 bool ExecLocalSocketBind(LocalSocketBindContext *context)
 {
     if (context == nullptr) {
@@ -486,6 +730,28 @@ bool ExecLocalSocketSetExtraOptions(LocalSocketSetExtraOptionsContext *context)
     return false;
 }
 
+static bool GetLocalSocketOptions(int sockfd, LocalExtraOptions &optionsRef)
+{
+    int result = 0;
+    socklen_t len = sizeof(result);
+    if (getsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &result, &len) == -1) {
+        NETSTACK_LOGE("getsockopt error, SO_RCVBUF");
+        return false;
+    }
+    optionsRef.SetReceiveBufferSize(result);
+    if (getsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &result, &len) == -1) {
+        NETSTACK_LOGE("getsockopt error, SO_SNDBUF");
+        return false;
+    }
+    optionsRef.SetSendBufferSize(result);
+    if (getsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &result, &len) == -1) {
+        NETSTACK_LOGE("getsockopt error, SO_SNDTIMEO");
+        return false;
+    }
+    optionsRef.SetSocketTimeout(result);
+    return true;
+}
+
 bool ExecLocalSocketGetExtraOptions(LocalSocketGetExtraOptionsContext *context)
 {
     if (context == nullptr) {
@@ -496,6 +762,25 @@ bool ExecLocalSocketGetExtraOptions(LocalSocketGetExtraOptionsContext *context)
         context->SetErrorCode(errno);
         return false;
     }
+    return true;
+}
+
+static bool LocalSocketServerBind(LocalSocketServerListenContext *context)
+{
+    unlink(context->GetSocketPath().c_str());
+    struct sockaddr_un addr;
+    addr.sun_family = AF_UNIX;
+    if (int err = strcpy_s(addr.sun_path, sizeof(addr.sun_path) - 1, context->GetSocketPath().c_str()); err != 0) {
+        NETSTACK_LOGE("failed to copy socket path");
+        context->SetErrorCode(err);
+        return false;
+    }
+    if (bind(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr)) == -1) {
+        NETSTACK_LOGE("failed to bind local socket, fd: %{public}d, errno: %{public}d", context->GetSocketFd(), errno);
+        context->SetErrorCode(errno);
+        return false;
+    }
+    NETSTACK_LOGI("local socket server bind success: %{public}s", addr.sun_path);
     return true;
 }
 
@@ -579,6 +864,8 @@ bool ExecLocalSocketServerGetExtraOptions(LocalSocketServerGetExtraOptionsContex
                 context->SetErrorCode(errno);
                 return false;
             }
+            options.SetReceiveBufferSize(DEFAULT_BUFFER_SIZE);
+            options.SetSendBufferSize(DEFAULT_BUFFER_SIZE);
         }
     }
     return true;
