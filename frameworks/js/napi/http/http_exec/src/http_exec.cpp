@@ -334,9 +334,6 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         CacheProxy proxy(context->options);
         proxy.WriteResponseToCache(context->response);
     }
-    if (context->multipart_ != nullptr) {
-        curl_mime_free(context->multipart_);
-    }
     if (context->GetManager() == nullptr) {
         NETSTACK_LOGE("can not find context manager");
         return;
