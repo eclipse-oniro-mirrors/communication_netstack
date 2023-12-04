@@ -176,8 +176,6 @@ public:
     static const char *const RESPONSE_KEY_RESULT_TYPE;
     static const char *const RESPONSE_KEY_SET_COOKIE;
     static const char *const RESPONSE_KEY_SET_COOKIE_SEPARATOR;
-    static const char *const RESPONSE_KEY_SET_COOKIE_BEGIN;
-    static const char *const RESPONSE_KEY_SET_COOKIE_END;
 
     static const char *const RESPONSE_PERFORMANCE_TIMING;
     static const char *const RESPONSE_DNS_TIMING;
