@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +17,16 @@
 
 namespace OHOS::NetStack::Websocket {
 const char *ContextKey::HEADER = "header";
+
+const char *ContextKey::CAPATH = "caPath";
+
+const char *ContextKey::CLIENT_CERT = "clientCert";
+
+const char *ContextKey::CERT_PATH = "certPath";
+
+const char *ContextKey::KEY_PATH = "keyPath";
+
+const char *ContextKey::KEY_PASSWD = "keyPassword";
 
 const char *ContextKey::CODE = "code";
 

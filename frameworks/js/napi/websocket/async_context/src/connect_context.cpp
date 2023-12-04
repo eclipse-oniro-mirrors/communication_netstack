@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -67,6 +67,10 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
     NETSTACK_LOGI("ConnectContext NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object");
     ParseHeader(params[1]);
 
+    ParseCaPath(params[1]);
+    
+    ParseClientCert(params[1]);
+
     if (paramsCount == FUNCTION_PARAM_THREE) {
         NETSTACK_LOGI("ConnectContext paramsCount == FUNCTION_PARAM_THREE");
         return SetParseOK(SetCallback(params[FUNCTION_PARAM_TWO]) == napi_ok);
@@ -91,6 +95,54 @@ void ConnectContext::ParseHeader(napi_value optionsValue)
             header[CommonUtils::ToLower(name)] = value;
         }
     });
+}
+
+void ConnectContext::ParseCaPath(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::CAPATH)) {
+        NETSTACK_LOGI("ConnectContext CAPATH not found");
+        return;
+    }
+    napi_value jsCaPath = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::CAPATH);
+    if (NapiUtils::GetValueType(GetEnv(), jsCaPath) != napi_string) {
+        return;
+    }
+    caPath_ = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, ContextKey::CAPATH);
+}
+
+void ConnectContext::GetClientCert(
+    std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPassword)
+{
+    cert = clientCert_;
+    key = clientKey_;
+    keyPassword = keyPassword_;
+}
+
+void ConnectContext::SetClientCert(
+    std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPassword)
+{
+    clientCert_ = cert;
+    clientKey_ = key;
+    keyPassword_ = keyPassword;
+}
+
+void ConnectContext::ParseClientCert(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::CLIENT_CERT)) {
+        NETSTACK_LOGI("ConnectContext CLIENT_CERT not found");
+        return;
+    }
+    napi_value jsCert = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::CLIENT_CERT);
+    napi_valuetype type = NapiUtils::GetValueType(GetEnv(), jsCert);
+    if (type != napi_object || type == napi_undefined) {
+        return;
+    }
+    std::string certPath = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::CERT_PATH);
+    Secure::SecureChar keyPath = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(),
+    jsCert, ContextKey::KEY_PATH));
+    Secure::SecureChar keyPassword = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(),
+    jsCert, ContextKey::KEY_PASSWD));
+    SetClientCert(certPath, keyPath, keyPassword);
 }
 
 bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)

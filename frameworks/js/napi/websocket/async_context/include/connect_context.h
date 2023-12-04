@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,6 +22,7 @@
 #include "base_context.h"
 #include "nocopyable.h"
 #include "libwebsockets.h"
+#include "secure_char.h"
 
 namespace OHOS::NetStack::Websocket {
 class ConnectContext final : public BaseContext {
@@ -36,6 +37,10 @@ public:
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
+    void SetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPassword);
+
+    void GetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPassword);
+
     [[nodiscard]] int32_t GetErrorCode() const override;
 
     [[nodiscard]] std::string GetErrorMessage() const override;
@@ -44,8 +49,20 @@ public:
 
     std::map<std::string, std::string> header;
 
+    std::string caPath_;
+
+    std::string clientCert_;
+
+    Secure::SecureChar clientKey_;
+
+    Secure::SecureChar keyPassword_;
+
 private:
     void ParseHeader(napi_value optionsValue);
+
+    void ParseCaPath(napi_value optionsValue);
+
+    void ParseClientCert(napi_value optionsValue);
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 };
