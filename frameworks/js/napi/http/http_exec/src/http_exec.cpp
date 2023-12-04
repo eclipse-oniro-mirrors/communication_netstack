@@ -876,7 +876,6 @@ static void ResponseHeaderCallback(uv_work_t *work, int status)
         for (const auto &it : *headerMap) {
             if (!it.first.empty() && !it.second.empty()) {
                 if (it.first == HttpConstant::RESPONSE_KEY_SET_COOKIE) {
-                    NETSTACK_LOGI("YYSHEADER has setcookie");
                     std::vector<std::string> cookieVec =
                         CommonUtils::Split(it.second, HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR);
                     uint32_t index = 0;
