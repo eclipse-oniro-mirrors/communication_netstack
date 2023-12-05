@@ -27,6 +27,9 @@
 #include "context_key.h"
 #include "event_list.h"
 #include "event_manager.h"
+#include "local_socket_context.h"
+#include "local_socket_exec.h"
+#include "local_socket_server_context.h"
 #include "module_template.h"
 #include "multicast_get_loopback_context.h"
 #include "multicast_get_ttl_context.h"
@@ -71,6 +74,23 @@ static constexpr const char *UDP_GET_MULTICAST_TTL = "UdpGetMulticastTTL";
 static constexpr const char *UDP_SET_LOOPBACK_MODE = "UdpSetLoopbackMode";
 static constexpr const char *UDP_GET_LOOPBACK_MODE = "UdpGetLoopbackMode";
 
+static constexpr const char *LOCAL_SOCKET_BIND = "LocalSocketBind";
+static constexpr const char *LOCAL_SOCKET_CONNECT = "LocalSocketConnect";
+static constexpr const char *LOCAL_SOCKET_SEND = "LocalSocketSend";
+static constexpr const char *LOCAL_SOCKET_CLOSE = "LocalSocketClose";
+static constexpr const char *LOCAL_SOCKET_GET_STATE = "LocalSocketGetState";
+static constexpr const char *LOCAL_SOCKET_GET_SOCKET_FD = "LocalSocketGetSocketFd";
+static constexpr const char *LOCAL_SOCKET_SET_EXTRA_OPTIONS = "LocalSocketSetExtraOptions";
+static constexpr const char *LOCAL_SOCKET_GET_EXTRA_OPTIONS = "LocalSocketGetExtraOptions";
+
+static constexpr const char *LOCAL_SOCKET_SERVER_LISTEN = "LocalSocketServerListen";
+static constexpr const char *LOCAL_SOCKET_SERVER_GET_STATE = "LocalSocketServerGetState";
+static constexpr const char *LOCAL_SOCKET_SERVER_SET_EXTRA_OPTIONS = "LocalSocketServerSetExtraOptions";
+static constexpr const char *LOCAL_SOCKET_SERVER_GET_EXTRA_OPTIONS = "LocalSocketServerGetExtraOptions";
+
+static constexpr const char *LOCAL_SOCKET_CONNECTION_SEND = "LocalSocketConnectionSend";
+static constexpr const char *LOCAL_SOCKET_CONNECTION_CLOSE = "LocalSocketConnectionClose";
+
 static const char *TCP_BIND_NAME = "TcpBind";
 static const char *TCP_CONNECT_NAME = "TcpConnect";
 static const char *TCP_SEND_NAME = "TcpSend";
@@ -90,6 +110,8 @@ static constexpr const char *TCP_CONNECTION_GET_REMOTE_ADDRESS = "TcpConnectionG
 
 static constexpr const char *KEY_SOCKET_FD = "socketFd";
 
+static constexpr int PARAM_COUNT_TWO = 2;
+
 #define SOCKET_INTERFACE(Context, executor, callback, work, name) \
     ModuleTemplate::Interface<Context>(env, info, name, work, SocketAsyncWork::executor, SocketAsyncWork::callback)
 
@@ -103,6 +125,40 @@ void Finalize(napi_env, void *data, void *)
         if (sock != 0) {
             SocketExec::SingletonSocketConfig::GetInstance().RemoveServerSocket(sock);
             close(sock);
+        }
+        EventManager::SetInvalid(manager);
+    }
+}
+
+void FinalizeLocalsocketServer(napi_env, void *data, void *)
+{
+    EventManager* manager = reinterpret_cast<EventManager*>(data);
+    if (manager != nullptr) {
+        if (auto serverMgr = reinterpret_cast<LocalSocketServerManager*>(manager->GetData()); serverMgr != nullptr) {
+            NETSTACK_LOGI("localsocket server handle is finalized, fd: %{public}d", serverMgr->sockfd_);
+            serverMgr->RemoveAllAccept();
+            serverMgr->RemoveAllEventManager();
+            if (serverMgr->sockfd_ > 0) {
+                close(serverMgr->sockfd_);
+                serverMgr->sockfd_ = 0;
+            }
+            delete serverMgr;
+        }
+        EventManager::SetInvalid(manager);
+    }
+}
+
+void FinalizeLocalSocket(napi_env, void *data, void *)
+{
+    auto manager = static_cast<EventManager *>(data);
+    if (manager != nullptr) {
+        if (auto pMgr = reinterpret_cast<LocalSocketServerManager*>(manager->GetData()); pMgr != nullptr) {
+            NETSTACK_LOGI("localsocket handle is finalized, fd: %{public}d", pMgr->sockfd_);
+            if (pMgr->sockfd_ > 0) {
+                close(pMgr->sockfd_);
+                pMgr->sockfd_ = 0;
+            }
+            delete pMgr;
         }
         EventManager::SetInvalid(manager);
     }
@@ -234,6 +290,100 @@ static bool MakeMulticastUdpSocket(napi_env env, napi_value thisVal, MulticastMe
     return true;
 }
 
+static bool SetSocketManager(napi_env env, napi_value thisVal, BaseContext *context, SocketBaseManager* mgr)
+{
+    if (mgr->sockfd_ <= 0) {
+        NETSTACK_LOGE("SetSocketManager sockfd < 0");
+        napi_value error = NapiUtils::CreateObject(env);
+        if (NapiUtils::GetValueType(env, error) != napi_object) {
+            return false;
+        }
+        NapiUtils::SetUint32Property(env, error, KEY_ERROR_CODE, errno);
+        context->Emit(EVENT_ERROR, std::make_pair(NapiUtils::GetUndefined(env), error));
+        return false;
+    }
+    EventManager *manager = nullptr;
+    if (napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager)) != napi_ok || manager == nullptr) {
+        NETSTACK_LOGE("SetSocketManager unwrap err");
+        return false;
+    }
+    manager->SetData(reinterpret_cast<void *>(mgr));
+    NapiUtils::SetInt32Property(env, thisVal, KEY_SOCKET_FD, mgr->sockfd_);
+    return true;
+}
+
+static bool MakeLocalSocketBind(napi_env env, napi_value thisVal, LocalSocketBindContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    if (context->GetSocketFd() > 0) {
+        NETSTACK_LOGI("socket exist: %{public}d", context->GetSocketFd());
+        return false;
+    }
+    int sock = LocalSocketExec::MakeLocalSocket(SOCK_STREAM);
+    if (sock < 0) {
+        return false;
+    }
+    auto pManager = new (std::nothrow) LocalSocketManager(sock);
+    if (pManager == nullptr) {
+        return false;
+    }
+    if (!SetSocketManager(env, thisVal, context, pManager)) {
+        return false;
+    }
+    context->SetExecOK(true);
+    return true;
+}
+
+static bool MakeLocalSocketConnect(napi_env env, napi_value thisVal, LocalSocketConnectContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    if (context->GetSocketFd() > 0) {
+        NETSTACK_LOGI("socket exist: %{public}d", context->GetSocketFd());
+        return false;
+    }
+    int sock = LocalSocketExec::MakeLocalSocket(SOCK_STREAM);
+    if (sock < 0) {
+        return false;
+    }
+    auto pManager = new (std::nothrow) LocalSocketManager(sock);
+    if (pManager == nullptr) {
+        return false;
+    }
+    if (!SetSocketManager(env, thisVal, context, pManager)) {
+        return false;
+    }
+    context->SetExecOK(true);
+    return true;
+}
+
+static bool MakeLocalServerSocket(napi_env env, napi_value thisVal, LocalSocketServerListenContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    if (int sock = context->GetSocketFd(); sock > 0) {
+        NETSTACK_LOGI("socket exist: %{public}d", sock);
+        return false;
+    }
+    int sock = LocalSocketExec::MakeLocalSocket(SOCK_STREAM, false);
+    if (sock < 0) {
+        return false;
+    }
+    auto pManager = new (std::nothrow) LocalSocketServerManager(sock);
+    if (pManager == nullptr) {
+        return false;
+    }
+    if (!SetSocketManager(env, thisVal, context, pManager)) {
+        return false;
+    }
+    context->SetExecOK(true);
+    return true;
+}
+
 napi_value SocketModuleExports::InitSocketModule(napi_env env, napi_value exports)
 {
     TlsSocket::TLSSocketModuleExports::InitTLSSocketModule(env, exports);
@@ -244,6 +394,8 @@ napi_value SocketModuleExports::InitSocketModule(napi_env env, napi_value export
     DefineMulticastSocketClass(env, exports);
     DefineTCPServerSocketClass(env, exports);
     DefineTCPSocketClass(env, exports);
+    DefineLocalSocketClass(env, exports);
+    DefineLocalSocketServerClass(env, exports);
     InitSocketProperties(env, exports);
 
     return exports;
@@ -257,6 +409,16 @@ napi_value SocketModuleExports::ConstructUDPSocketInstance(napi_env env, napi_ca
 napi_value SocketModuleExports::ConstructMulticastSocketInstance(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::NewInstance(env, info, INTERFACE_MULTICAST_SOCKET, Finalize);
+}
+
+napi_value SocketModuleExports::ConstructLocalSocketInstance(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::NewInstance(env, info, INTERFACE_LOCAL_SOCKET, FinalizeLocalSocket);
+}
+
+napi_value SocketModuleExports::ConstructLocalSocketServerInstance(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::NewInstance(env, info, INTERFACE_LOCAL_SOCKET_SERVER, FinalizeLocalsocketServer);
 }
 
 void SocketModuleExports::DefineUDPSocketClass(napi_env env, napi_value exports)
@@ -317,6 +479,37 @@ void SocketModuleExports::DefineTCPSocketClass(napi_env env, napi_value exports)
     ModuleTemplate::DefineClass(env, exports, properties, INTERFACE_TCP_SOCKET);
 }
 
+void SocketModuleExports::DefineLocalSocketClass(napi_env env, napi_value exports)
+{
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_BIND, LocalSocket::Bind),
+        DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_CONNECT, LocalSocket::Connect),
+        DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_SEND, LocalSocket::Send),
+        DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_CLOSE, LocalSocket::Close),
+        DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_GET_STATE, LocalSocket::GetState),
+        DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_GET_STATE, LocalSocket::GetSocketFd),
+        DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_SET_EXTRA_OPTIONS, LocalSocket::SetExtraOptions),
+        DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_GET_EXTRA_OPTIONS, LocalSocket::GetExtraOptions),
+        DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_GET_SOCKET_FD, LocalSocket::GetSocketFd),
+        DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_ON, LocalSocket::On),
+        DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_OFF, LocalSocket::Off),
+    };
+    ModuleTemplate::DefineClass(env, exports, properties, INTERFACE_LOCAL_SOCKET);
+}
+
+void SocketModuleExports::DefineLocalSocketServerClass(napi_env env, napi_value exports)
+{
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_LISTEN, LocalSocketServer::Listen),
+        DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_GET_STATE, LocalSocketServer::GetState),
+        DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_SET_EXTRA_OPTIONS, LocalSocketServer::SetExtraOptions),
+        DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_GET_EXTRA_OPTIONS, LocalSocketServer::GetExtraOptions),
+        DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_ON, LocalSocketServer::On),
+        DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_OFF, LocalSocketServer::Off),
+    };
+    ModuleTemplate::DefineClass(env, exports, properties, INTERFACE_LOCAL_SOCKET_SERVER);
+}
+
 napi_value SocketModuleExports::ConstructTCPSocketServerInstance(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::NewInstance(env, info, INTERFACE_TCP_SOCKET_SERVER, Finalize);
@@ -341,6 +534,8 @@ void SocketModuleExports::InitSocketProperties(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION(FUNCTION_CONSTRUCTOR_MULTICAST_SOCKET_INSTANCE, ConstructMulticastSocketInstance),
         DECLARE_NAPI_FUNCTION(FUNCTION_CONSTRUCTOR_TCP_SOCKET_SERVER_INSTANCE, ConstructTCPSocketServerInstance),
         DECLARE_NAPI_FUNCTION(FUNCTION_CONSTRUCTOR_TCP_SOCKET_INSTANCE, ConstructTCPSocketInstance),
+        DECLARE_NAPI_FUNCTION(FUNCTION_CONSTRUCTOR_LOCAL_SOCKET_INSTANCE, ConstructLocalSocketInstance),
+        DECLARE_NAPI_FUNCTION(FUNCTION_CONSTRUCTOR_LOCAL_SOCKET_SERVER_INSTANCE, ConstructLocalSocketServerInstance),
     };
     NapiUtils::DefineProperties(env, exports, properties);
 }
@@ -572,6 +767,170 @@ napi_value SocketModuleExports::TCPServerSocket::On(napi_env env, napi_callback_
 }
 
 napi_value SocketModuleExports::TCPServerSocket::Off(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
+}
+
+/* local socket */
+napi_value SocketModuleExports::LocalSocket::Bind(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketBindContext, ExecLocalSocketBind, LocalSocketBindCallback,
+        MakeLocalSocketBind, LOCAL_SOCKET_BIND);
+}
+
+napi_value SocketModuleExports::LocalSocket::Connect(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketConnectContext, ExecLocalSocketConnect, LocalSocketConnectCallback,
+        MakeLocalSocketConnect, LOCAL_SOCKET_CONNECT);
+}
+
+napi_value SocketModuleExports::LocalSocket::Send(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::InterfaceWithOutAsyncWork<LocalSocketSendContext>(
+        env, info, [](napi_env, napi_value, LocalSocketSendContext *context) -> bool {
+#ifdef ENABLE_EVENT_HANDLER
+            auto manager = context->GetManager();
+            if (!manager->InitNetstackEventHandler()) {
+                return false;
+            }
+#endif
+            SocketAsyncWork::ExecLocalSocketSend(context->GetEnv(), context);
+            return true;
+        },
+        LOCAL_SOCKET_SEND, SocketAsyncWork::ExecLocalSocketSend, SocketAsyncWork::LocalSocketSendCallback);
+}
+
+napi_value SocketModuleExports::LocalSocket::Close(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketCloseContext, ExecLocalSocketClose, LocalSocketCloseCallback,
+        nullptr, LOCAL_SOCKET_CLOSE);
+}
+
+napi_value SocketModuleExports::LocalSocket::GetState(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketGetStateContext, ExecLocalSocketGetState, LocalSocketGetStateCallback,
+        nullptr, LOCAL_SOCKET_GET_STATE);
+}
+
+napi_value SocketModuleExports::LocalSocket::GetSocketFd(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketGetSocketFdContext, ExecLocalSocketGetSocketFd, LocalSocketGetSocketFdCallback,
+        nullptr, LOCAL_SOCKET_GET_SOCKET_FD);
+}
+
+napi_value SocketModuleExports::LocalSocket::SetExtraOptions(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketSetExtraOptionsContext, ExecLocalSocketSetExtraOptions,
+        LocalSocketSetExtraOptionsCallback, nullptr, LOCAL_SOCKET_SET_EXTRA_OPTIONS);
+}
+
+napi_value SocketModuleExports::LocalSocket::GetExtraOptions(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketGetExtraOptionsContext, ExecLocalSocketGetExtraOptions,
+        LocalSocketGetExtraOptionsCallback, nullptr, LOCAL_SOCKET_GET_EXTRA_OPTIONS);
+}
+
+napi_value SocketModuleExports::LocalSocket::On(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
+}
+
+napi_value SocketModuleExports::LocalSocket::Off(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
+}
+
+/* local socket server */
+napi_value SocketModuleExports::LocalSocketServer::Listen(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketServerListenContext, ExecLocalSocketServerListen,
+        LocalSocketServerListenCallback, MakeLocalServerSocket, LOCAL_SOCKET_SERVER_LISTEN);
+}
+
+napi_value SocketModuleExports::LocalSocketServer::GetState(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketServerGetStateContext, ExecLocalSocketServerGetState,
+        LocalSocketServerGetStateCallback, nullptr, LOCAL_SOCKET_SERVER_GET_STATE);
+}
+
+napi_value SocketModuleExports::LocalSocketServer::SetExtraOptions(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketServerSetExtraOptionsContext, ExecLocalSocketServerSetExtraOptions,
+        LocalSocketServerSetExtraOptionsCallback, nullptr, LOCAL_SOCKET_SERVER_SET_EXTRA_OPTIONS);
+}
+
+napi_value SocketModuleExports::LocalSocketServer::GetExtraOptions(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketServerGetExtraOptionsContext, ExecLocalSocketServerGetExtraOptions,
+        LocalSocketServerGetExtraOptionsCallback, nullptr, LOCAL_SOCKET_SERVER_GET_EXTRA_OPTIONS);
+}
+
+napi_value SocketModuleExports::LocalSocketServer::On(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
+}
+
+napi_value SocketModuleExports::LocalSocketServer::Off(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_LISTENING, EVENT_ERROR, EVENT_CLOSE});
+}
+
+/* localsocket connection */
+napi_value SocketModuleExports::LocalSocketConnection::Send(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(
+        LocalSocketServerSendContext, ExecLocalSocketConnectionSend, LocalSocketConnectionSendCallback,
+        [](napi_env theEnv, napi_value thisVal, LocalSocketServerSendContext *context) -> bool {
+            context->SetClientId(NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID));
+            return true;
+        }, LOCAL_SOCKET_CONNECTION_SEND);
+}
+
+napi_value SocketModuleExports::LocalSocketConnection::Close(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(
+        LocalSocketServerCloseContext, ExecLocalSocketConnectionClose, LocalSocketConnectionCloseCallback,
+        [](napi_env theEnv, napi_value thisVal, LocalSocketServerCloseContext *context) -> bool {
+            context->SetClientId(NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID));
+            return true;
+        }, LOCAL_SOCKET_CONNECTION_CLOSE);
+}
+
+napi_value SocketModuleExports::LocalSocketConnection::On(napi_env env, napi_callback_info info)
+{
+    napi_value thisVal = nullptr;
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
+
+    if (paramsCount != PARAM_COUNT_TWO || NapiUtils::GetValueType(env, params[0]) != napi_string ||
+        NapiUtils::GetValueType(env, params[PARAM_COUNT_TWO - 1]) != napi_function) {
+        NETSTACK_LOGE("localsocket connection on, err param");
+        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
+        return NapiUtils::GetUndefined(env);
+    }
+    std::initializer_list<std::string> events = {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE};
+    std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
+    if (std::find(events.begin(), events.end(), event) == events.end()) {
+        return NapiUtils::GetUndefined(env);
+    }
+    EventManager *manager = nullptr;
+    napi_unwrap(env, thisVal, reinterpret_cast<void**>(&manager));
+    if (manager == nullptr) {
+        NETSTACK_LOGE("failed to unwrap");
+        return NapiUtils::GetUndefined(env);
+    }
+    manager->AddListener(env, event, params[PARAM_COUNT_TWO - 1], false, false);
+    if (event == EVENT_MESSAGE) {
+        if (auto mgr = reinterpret_cast<LocalSocketExec::LocalSocketConnectionData*>(manager->GetData());
+            mgr != nullptr) {
+            mgr->serverManager_->NotifyRegisterEvent();
+        }
+    }
+    return NapiUtils::GetUndefined(env);
+}
+
+napi_value SocketModuleExports::LocalSocketConnection::Off(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
 }
