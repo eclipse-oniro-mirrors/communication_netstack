@@ -862,22 +862,27 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
     return size * memBytes;
 }
 
+static void MakeSetCookieArray(napi_env env, napi_value header, const std::pair<const std::basic_string<char>, std::basic_string<char>> &headerElement)
+{
+    std::vector<std::string> cookieVec =
+        CommonUtils::Split(headerElement.second, HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR);
+    uint32_t index = 0;
+    auto len = cookieVec.size();
+    auto array = NapiUtils::CreateArray(env, len);
+    for (const auto &setCookie : cookieVec) {
+        auto str = NapiUtils::CreateStringUtf8(env, setCookie);
+        NapiUtils::SetArrayElement(env, array, index, str);
+        ++index;
+    }
+    NapiUtils::SetArrayProperty(env, header, HttpConstant::RESPONSE_KEY_SET_COOKIE, array);
+}
+
 static void MakeHeaderWithSetCookieArray(napi_env env, napi_value header, std::map<std::string, std::string> *headerMap)
 {
     for (const auto &it : *headerMap) {
         if (!it.first.empty() && !it.second.empty()) {
             if (it.first == HttpConstant::RESPONSE_KEY_SET_COOKIE) {
-                std::vector<std::string> cookieVec =
-                    CommonUtils::Split(it.second, HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR);
-                uint32_t index = 0;
-                auto len = cookieVec.size();
-                auto array = NapiUtils::CreateArray(env, len);
-                for (const auto &setCookie : cookieVec) {
-                    auto str = NapiUtils::CreateStringUtf8(env, setCookie);
-                    NapiUtils::SetArrayElement(env, array, index, str);
-                    ++index;
-                }
-                NapiUtils::SetArrayProperty(env, header, HttpConstant::RESPONSE_KEY_SET_COOKIE, array);
+                MakeSetCookieArray(env, header, it);
                 continue;
             }
             NapiUtils::SetStringPropertyUtf8(env, header, it.first, it.second);
