@@ -862,7 +862,8 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
     return size * memBytes;
 }
 
-static void MakeSetCookieArray(napi_env env, napi_value header, const std::pair<const std::basic_string<char>, std::basic_string<char>> &headerElement)
+static void MakeSetCookieArray(napi_env env, napi_value header,
+                               const std::pair<const std::basic_string<char>, std::basic_string<char>> &headerElement)
 {
     std::vector<std::string> cookieVec =
         CommonUtils::Split(headerElement.second, HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR);
