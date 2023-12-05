@@ -862,6 +862,22 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
     return size * memBytes;
 }
 
+static void MakeSetCookieArray(napi_env env, napi_value header,
+                               const std::pair<const std::basic_string<char>, std::basic_string<char>> &headerElement)
+{
+    std::vector<std::string> cookieVec =
+        CommonUtils::Split(headerElement.second, HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR);
+    uint32_t index = 0;
+    auto len = cookieVec.size();
+    auto array = NapiUtils::CreateArray(env, len);
+    for (const auto &setCookie : cookieVec) {
+        auto str = NapiUtils::CreateStringUtf8(env, setCookie);
+        NapiUtils::SetArrayElement(env, array, index, str);
+        ++index;
+    }
+    NapiUtils::SetArrayProperty(env, header, HttpConstant::RESPONSE_KEY_SET_COOKIE, array);
+}
+
 static void ResponseHeaderCallback(uv_work_t *work, int status)
 {
     (void)status;
@@ -876,17 +892,7 @@ static void ResponseHeaderCallback(uv_work_t *work, int status)
         for (const auto &it : *headerMap) {
             if (!it.first.empty() && !it.second.empty()) {
                 if (it.first == HttpConstant::RESPONSE_KEY_SET_COOKIE) {
-                    std::vector<std::string> cookieVec =
-                        CommonUtils::Split(it.second, HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR);
-                    uint32_t index = 0;
-                    auto len = cookieVec.size();
-                    auto array = NapiUtils::CreateArray(env, len);
-                    for (const auto &setCookie : cookieVec) {
-                        auto str = NapiUtils::CreateStringUtf8(env, setCookie);
-                        NapiUtils::SetArrayElement(env, array, index, str);
-                        ++index;
-                    }
-                    NapiUtils::SetArrayProperty(env, header, HttpConstant::RESPONSE_KEY_SET_COOKIE, array);
+                    MakeSetCookieArray(env, header, it);
                     continue;
                 }
                 NapiUtils::SetStringPropertyUtf8(env, header, it.first, it.second);
@@ -901,6 +907,22 @@ static void ResponseHeaderCallback(uv_work_t *work, int status)
     workWrapper = nullptr;
     delete work;
     work = nullptr;
+}
+
+static std::map<std::string, std::string> MakeHeaderWithSetCookie(RequestContext * context)
+{
+    std::map<std::string, std::string> tempMap = context->response.GetHeader();
+    std::string setCookies;
+    int loop = 0;
+    for (const auto &setCookie : context->response.GetsetCookie()) {
+        setCookies += setCookie;
+        if (loop < context->response.GetsetCookie().size() - 1) {
+            setCookies += HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR;
+        }
+        ++loop;
+    }
+    tempMap[HttpConstant::RESPONSE_KEY_SET_COOKIE] = setCookies;
+    return tempMap;
 }
 
 size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t memBytes, void *userData)
@@ -923,18 +945,7 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
     if (CommonUtils::EndsWith(context->response.GetRawHeader(), HttpConstant::HTTP_RESPONSE_HEADER_SEPARATOR)) {
         context->response.ParseHeaders();
         if (context->GetManager() && EventManager::IsManagerValid(context->GetManager())) {
-            std::map<std::string, std::string> tempMap = context->response.GetHeader();
-            std::string setCookies;
-            int loop = 0;
-            for (const auto &setCookie : context->response.GetsetCookie()) {
-                setCookies += setCookie;
-                if (loop < context->response.GetsetCookie().size() - 1) {
-                    setCookies += HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR;
-                }
-                ++loop;
-            }
-            tempMap[HttpConstant::RESPONSE_KEY_SET_COOKIE] = setCookies;
-            auto headerMap = new std::map<std::string, std::string>(tempMap);
+            auto headerMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
             context->GetManager()->EmitByUv(ON_HEADER_RECEIVE, headerMap, ResponseHeaderCallback);
             context->GetManager()->EmitByUv(ON_HEADERS_RECEIVE, headerMap, ResponseHeaderCallback);
         }
