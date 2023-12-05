@@ -862,20 +862,27 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
     return size * memBytes;
 }
 
-static void MakeSetCookieArray(napi_env env, napi_value header,
-                               const std::pair<const std::basic_string<char>, std::basic_string<char>> &headerElement)
+static void MakeHeaderWithSetCookieArray(napi_env env, napi_value header, std::map<std::string, std::string> *headerMap)
 {
-    std::vector<std::string> cookieVec =
-        CommonUtils::Split(headerElement.second, HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR);
-    uint32_t index = 0;
-    auto len = cookieVec.size();
-    auto array = NapiUtils::CreateArray(env, len);
-    for (const auto &setCookie : cookieVec) {
-        auto str = NapiUtils::CreateStringUtf8(env, setCookie);
-        NapiUtils::SetArrayElement(env, array, index, str);
-        ++index;
+    for (const auto &it : *headerMap) {
+        if (!it.first.empty() && !it.second.empty()) {
+            if (it.first == HttpConstant::RESPONSE_KEY_SET_COOKIE) {
+                std::vector<std::string> cookieVec =
+                    CommonUtils::Split(it.second, HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR);
+                uint32_t index = 0;
+                auto len = cookieVec.size();
+                auto array = NapiUtils::CreateArray(env, len);
+                for (const auto &setCookie : cookieVec) {
+                    auto str = NapiUtils::CreateStringUtf8(env, setCookie);
+                    NapiUtils::SetArrayElement(env, array, index, str);
+                    ++index;
+                }
+                NapiUtils::SetArrayProperty(env, header, HttpConstant::RESPONSE_KEY_SET_COOKIE, array);
+                continue;
+            }
+            NapiUtils::SetStringPropertyUtf8(env, header, it.first, it.second);
+        }
     }
-    NapiUtils::SetArrayProperty(env, header, HttpConstant::RESPONSE_KEY_SET_COOKIE, array);
 }
 
 static void ResponseHeaderCallback(uv_work_t *work, int status)
@@ -889,15 +896,7 @@ static void ResponseHeaderCallback(uv_work_t *work, int status)
     std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     napi_value header = NapiUtils::CreateObject(env);
     if (NapiUtils::GetValueType(env, header) == napi_object) {
-        for (const auto &it : *headerMap) {
-            if (!it.first.empty() && !it.second.empty()) {
-                if (it.first == HttpConstant::RESPONSE_KEY_SET_COOKIE) {
-                    MakeSetCookieArray(env, header, it);
-                    continue;
-                }
-                NapiUtils::SetStringPropertyUtf8(env, header, it.first, it.second);
-            }
-        }
+        MakeHeaderWithSetCookieArray(env, header, headerMap);
     }
     std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(env), header};
     workWrapper->manager->Emit(workWrapper->type, arg);
