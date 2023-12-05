@@ -1780,9 +1780,8 @@ static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, c
         NETSTACK_LOGI("ClientRecv: fd is %{public}d, buf is %{public}s, size is %{public}d bytes", connectFD, buffer,
                       recvSize);
         if (recvSize <= 0) {
-            NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
-
             if ((errno != EAGAIN) && (errno != EINTR)) {
+                NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
                 callback.OnCloseMessage(manager);
                 RemoveClientConnection(clientId);
                 SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
