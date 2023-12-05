@@ -1782,7 +1782,7 @@ static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, c
         if (recvSize <= 0) {
             NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
 
-            if (errno != EAGAIN) {
+            if ((errno != EAGAIN) && (errno != EINTR)) {
                 callback.OnCloseMessage(manager);
                 RemoveClientConnection(clientId);
                 SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
