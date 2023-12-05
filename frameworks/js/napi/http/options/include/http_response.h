@@ -18,6 +18,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 namespace OHOS::NetStack::Http {
 static constexpr const char *WARNING = "Warning";
