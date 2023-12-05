@@ -710,7 +710,7 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
 #ifdef HAS_NETMANAGER_BASE
     auto hostname = CommonUtils::GetHostnameFromURL(context->options.GetUrl());
 #ifndef WINDOWS_PLATFORM
-    //customize trusted CAs.
+    // customize trusted CAs.
     std::vector<std::string> certs;
     auto ret = NetManagerStandard::NetConnClient::GetInstance().GetTrustAnchorsForHostName(hostname, certs);
     if (ret != 0) {
@@ -718,7 +718,7 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     }
 
     std::string *pCert = nullptr;
-    for (auto &cert: certs) {
+    for (auto &cert : certs) {
         if (!cert.empty()) {
             pCert = &cert;
             break;
@@ -733,7 +733,7 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, HttpConstant::HTTP_PREPARE_CA_PATH, context);
     }
 #endif // WINDOWS_PLATFORM
-    //pin trusted certifcate keys.
+    // pin trusted certifcate keys.
     std::string pins;
     auto ret1 = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
     if (ret1 != 0) {
@@ -742,7 +742,7 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     if (!pins.empty()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str(), context);
     }
-#endif //HAS_NETMANAGER_BASE
+#endif // HAS_NETMANAGER_BASE
 #else
     // in real life, you should buy a ssl certification and rename it to /etc/ssl/cert.pem
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
@@ -862,6 +862,35 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
     return size * memBytes;
 }
 
+static void MakeSetCookieArray(napi_env env, napi_value header,
+                               const std::pair<const std::basic_string<char>, std::basic_string<char>> &headerElement)
+{
+    std::vector<std::string> cookieVec =
+        CommonUtils::Split(headerElement.second, HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR);
+    uint32_t index = 0;
+    auto len = cookieVec.size();
+    auto array = NapiUtils::CreateArray(env, len);
+    for (const auto &setCookie : cookieVec) {
+        auto str = NapiUtils::CreateStringUtf8(env, setCookie);
+        NapiUtils::SetArrayElement(env, array, index, str);
+        ++index;
+    }
+    NapiUtils::SetArrayProperty(env, header, HttpConstant::RESPONSE_KEY_SET_COOKIE, array);
+}
+
+static void MakeHeaderWithSetCookieArray(napi_env env, napi_value header, std::map<std::string, std::string> *headerMap)
+{
+    for (const auto &it : *headerMap) {
+        if (!it.first.empty() && !it.second.empty()) {
+            if (it.first == HttpConstant::RESPONSE_KEY_SET_COOKIE) {
+                MakeSetCookieArray(env, header, it);
+                continue;
+            }
+            NapiUtils::SetStringPropertyUtf8(env, header, it.first, it.second);
+        }
+    }
+}
+
 static void ResponseHeaderCallback(uv_work_t *work, int status)
 {
     (void)status;
@@ -873,11 +902,7 @@ static void ResponseHeaderCallback(uv_work_t *work, int status)
     std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     napi_value header = NapiUtils::CreateObject(env);
     if (NapiUtils::GetValueType(env, header) == napi_object) {
-        for (const auto &it : *headerMap) {
-            if (!it.first.empty() && !it.second.empty()) {
-                NapiUtils::SetStringPropertyUtf8(env, header, it.first, it.second);
-            }
-        }
+        MakeHeaderWithSetCookieArray(env, header, headerMap);
     }
     std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(env), header};
     workWrapper->manager->Emit(workWrapper->type, arg);
@@ -887,6 +912,22 @@ static void ResponseHeaderCallback(uv_work_t *work, int status)
     workWrapper = nullptr;
     delete work;
     work = nullptr;
+}
+
+static std::map<std::string, std::string> MakeHeaderWithSetCookie(RequestContext * context)
+{
+    std::map<std::string, std::string> tempMap = context->response.GetHeader();
+    std::string setCookies;
+    int loop = 0;
+    for (const auto &setCookie : context->response.GetsetCookie()) {
+        setCookies += setCookie;
+        if (loop < context->response.GetsetCookie().size() - 1) {
+            setCookies += HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR;
+        }
+        ++loop;
+    }
+    tempMap[HttpConstant::RESPONSE_KEY_SET_COOKIE] = setCookies;
+    return tempMap;
 }
 
 size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t memBytes, void *userData)
@@ -909,7 +950,7 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
     if (CommonUtils::EndsWith(context->response.GetRawHeader(), HttpConstant::HTTP_RESPONSE_HEADER_SEPARATOR)) {
         context->response.ParseHeaders();
         if (context->GetManager() && EventManager::IsManagerValid(context->GetManager())) {
-            auto headerMap = new std::map<std::string, std::string>(context->response.GetHeader());
+            auto headerMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
             context->GetManager()->EmitByUv(ON_HEADER_RECEIVE, headerMap, ResponseHeaderCallback);
             context->GetManager()->EmitByUv(ON_HEADERS_RECEIVE, headerMap, ResponseHeaderCallback);
         }
@@ -1041,6 +1082,17 @@ napi_value HttpExec::MakeResponseHeader(napi_env env, void *ctx)
                 NapiUtils::SetStringPropertyUtf8(context->GetEnv(), header, it.first, it.second);
             }
         }
+        if (!context->response.GetsetCookie().empty()) {
+            uint32_t index = 0;
+            auto len = context->response.GetsetCookie().size();
+            auto array = NapiUtils::CreateArray(context->GetEnv(), len);
+            for (const auto &setCookie : context->response.GetsetCookie()) {
+                auto str = NapiUtils::CreateStringUtf8(context->GetEnv(), setCookie);
+                NapiUtils::SetArrayElement(context->GetEnv(), array, index, str);
+                ++index;
+            }
+            NapiUtils::SetArrayProperty(context->GetEnv(), header, HttpConstant::RESPONSE_KEY_SET_COOKIE, array);
+        }
     }
     return header;
 }
@@ -1161,7 +1213,7 @@ napi_value HttpResponseCacheExec::DeleteCallback(BaseContext *context)
 
 bool HttpExec::SetMultiPartOption(CURL *curl, RequestContext *context)
 {
-    auto header =  context->options.GetHeader();
+    auto header = context->options.GetHeader();
     auto type = CommonUtils::ToLower(header[HttpConstant::HTTP_CONTENT_TYPE]);
     if (type != HttpConstant::HTTP_CONTENT_TYPE_MULTIPART) {
         return true;
@@ -1176,8 +1228,7 @@ bool HttpExec::SetMultiPartOption(CURL *curl, RequestContext *context)
     return true;
 }
 
-void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *part,
-                                 CURL *curl, RequestContext *context)
+void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *part, CURL *curl, RequestContext *context)
 {
     if (multiFormData.name.empty()) {
         return;
@@ -1188,35 +1239,35 @@ void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *pa
     part = curl_mime_addpart(context->multipart_);
     CURLcode result = curl_mime_name(part, multiFormData.name.c_str());
     if (result != CURLE_OK) {
-        NETSTACK_LOGE("Failed to set name %{public}s, error: %{public}s",
-                      multiFormData.name.c_str(), curl_easy_strerror(result));
+        NETSTACK_LOGE("Failed to set name %{public}s, error: %{public}s", multiFormData.name.c_str(),
+                      curl_easy_strerror(result));
         return;
     }
     if (!multiFormData.contentType.empty()) {
         result = curl_mime_type(part, multiFormData.contentType.c_str());
         if (result != CURLE_OK) {
-            NETSTACK_LOGE("Failed to set contentType: %{public}s, error: %{public}s",
-                          multiFormData.name.c_str(), curl_easy_strerror(result));
+            NETSTACK_LOGE("Failed to set contentType: %{public}s, error: %{public}s", multiFormData.name.c_str(),
+                          curl_easy_strerror(result));
         }
     }
     if (!multiFormData.remoteFileName.empty()) {
         result = curl_mime_filename(part, multiFormData.remoteFileName.c_str());
         if (result != CURLE_OK) {
-            NETSTACK_LOGE("Failed to set remoteFileName: %{public}s, error: %{public}s",
-                          multiFormData.name.c_str(), curl_easy_strerror(result));
+            NETSTACK_LOGE("Failed to set remoteFileName: %{public}s, error: %{public}s", multiFormData.name.c_str(),
+                          curl_easy_strerror(result));
         }
     }
     if (!multiFormData.data.empty()) {
         result = curl_mime_data(part, multiFormData.data.c_str(), CURL_ZERO_TERMINATED);
         if (result != CURLE_OK) {
-            NETSTACK_LOGE("Failed to set data: %{public}s, error: %{public}s",
-                          multiFormData.name.c_str(), curl_easy_strerror(result));
+            NETSTACK_LOGE("Failed to set data: %{public}s, error: %{public}s", multiFormData.name.c_str(),
+                          curl_easy_strerror(result));
         }
     } else {
         result = curl_mime_filedata(part, multiFormData.filePath.c_str());
         if (result != CURLE_OK) {
-            NETSTACK_LOGE("Failed to set file data: %{public}s, error: %{public}s",
-                          multiFormData.name.c_str(), curl_easy_strerror(result));
+            NETSTACK_LOGE("Failed to set file data: %{public}s, error: %{public}s", multiFormData.name.c_str(),
+                          curl_easy_strerror(result));
         }
     }
 }

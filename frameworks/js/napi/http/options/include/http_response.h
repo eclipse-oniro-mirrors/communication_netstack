@@ -44,6 +44,8 @@ public:
 
     [[nodiscard]] const std::string &GetResult() const;
 
+    [[nodiscard]] const std::vector<std::string> &GetsetCookie() const;
+
     [[nodiscard]] uint32_t GetResponseCode() const;
 
     [[nodiscard]] const std::map<std::string, std::string> &GetHeader() const;
@@ -70,6 +72,8 @@ private:
     uint32_t responseCode_;
 
     std::map<std::string, std::string> header_;
+
+    std::vector<std::string> setCookie_;
 
     std::string cookies_;
 

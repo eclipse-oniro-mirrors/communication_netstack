@@ -51,22 +51,11 @@ void HttpResponse::ParseHeaders()
         }
         if (CommonUtils::ToLower(CommonUtils::Strip(header.substr(0, index))) ==
             HttpConstant::RESPONSE_KEY_SET_COOKIE) {
-            if (header_[HttpConstant::RESPONSE_KEY_SET_COOKIE].empty()) {
-                header_[HttpConstant::RESPONSE_KEY_SET_COOKIE] = CommonUtils::Strip(header.substr(index + 1));
-                continue;
-            }
-            header_[HttpConstant::RESPONSE_KEY_SET_COOKIE] = header_[HttpConstant::RESPONSE_KEY_SET_COOKIE] +
-                                                             HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR +
-                                                             CommonUtils::Strip(header.substr(index + 1));
+            setCookie_.push_back(CommonUtils::Strip(header.substr(index + 1)));
             continue;
         }
         header_[CommonUtils::ToLower(CommonUtils::Strip(header.substr(0, index)))] =
             CommonUtils::Strip(header.substr(index + 1));
-    }
-    if (!header_[HttpConstant::RESPONSE_KEY_SET_COOKIE].empty()) {
-        auto tempSetCookie = header_[HttpConstant::RESPONSE_KEY_SET_COOKIE];
-        header_[HttpConstant::RESPONSE_KEY_SET_COOKIE] =
-            HttpConstant::RESPONSE_KEY_SET_COOKIE_BEGIN + tempSetCookie + HttpConstant::RESPONSE_KEY_SET_COOKIE_END;
     }
 }
 
@@ -88,6 +77,11 @@ uint32_t HttpResponse::GetResponseCode() const
 const std::map<std::string, std::string> &HttpResponse::GetHeader() const
 {
     return header_;
+}
+
+const std::vector<std::string> &HttpResponse::GetsetCookie() const
+{
+    return setCookie_;
 }
 
 const std::string &HttpResponse::GetCookies() const

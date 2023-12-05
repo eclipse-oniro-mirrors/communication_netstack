@@ -120,6 +120,7 @@ void DefineProperties(napi_env env, napi_value object,
 napi_value CreateArray(napi_env env, size_t length);
 void SetArrayElement(napi_env env, napi_value array, uint32_t index, napi_value value);
 bool IsArray(napi_env env, napi_value value);
+void SetArrayProperty(napi_env env, napi_value object, const std::string &name, napi_value value);
 uint32_t GetArrayLength(napi_env env, napi_value arr);
 napi_value GetArrayElement(napi_env env, napi_value arr, uint32_t index);
 

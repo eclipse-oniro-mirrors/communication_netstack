@@ -453,6 +453,14 @@ bool IsArray(napi_env env, napi_value value)
     return result;
 }
 
+void SetArrayProperty(napi_env env, napi_value object, const std::string &name, napi_value value)
+{
+    if (!IsArray(env, value)) {
+        return;
+    }
+    napi_set_named_property(env, object, name.c_str(), value);
+}
+
 uint32_t GetArrayLength(napi_env env, napi_value arr)
 {
     uint32_t arrayLength = 0;
