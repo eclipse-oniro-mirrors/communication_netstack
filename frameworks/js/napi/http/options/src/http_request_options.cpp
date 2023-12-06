@@ -264,7 +264,7 @@ void HttpRequestOptions::SetRangeNumber(int64_t resumeFromNumber, int64_t resume
     }
 }
 
-const std::string HttpRequestOptions::GetRangeString() const
+std::string HttpRequestOptions::GetRangeString() const
 {
     bool isSetFrom = resumeFromNumber_ >= MIN_RESUM_NUMBER;
     bool isSetTo = resumeToNumber_ >= MIN_RESUM_NUMBER;
@@ -272,8 +272,6 @@ const std::string HttpRequestOptions::GetRangeString() const
         return "";
     } else if (!isSetTo && isSetFrom) {
         return std::to_string(resumeFromNumber_) + '-';
-    } else if (isSetTo && !isSetFrom) {
-        return '-' + std::to_string(resumeToNumber_);
     } else if (isSetTo && !isSetFrom) {
         return '-' + std::to_string(resumeToNumber_);
     } else if (resumeToNumber_ <= resumeFromNumber_) {
@@ -292,6 +290,7 @@ void HttpRequestOptions::SetDnsServers(const std::vector<std::string> &dnsServer
 {
     dnsServers_ = dnsServers;
 }
+
 std::vector<MultiFormData> HttpRequestOptions::GetMultiPartDataList()
 {
     return multiFormDataList_;

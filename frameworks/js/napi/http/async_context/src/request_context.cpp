@@ -67,7 +67,11 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
 };
 RequestContext::RequestContext(napi_env env, EventManager *manager)
-    : BaseContext(env, manager), usingCache_(true), requestInStream_(false), curlHeaderList_(nullptr)
+    : BaseContext(env, manager),
+      usingCache_(true),
+      requestInStream_(false),
+      curlHeaderList_(nullptr),
+      multipart_(nullptr)
 {
     StartTiming();
 }
@@ -441,6 +445,10 @@ RequestContext::~RequestContext()
     if (curlHeaderList_ != nullptr) {
         curl_slist_free_all(curlHeaderList_);
     }
+    if (multipart_ != nullptr) {
+        curl_mime_free(multipart_);
+        multipart_ = nullptr;
+    }
     NETSTACK_LOGD("RequestContext is destructed by the destructor");
 }
 
@@ -718,5 +726,10 @@ void RequestContext::SaveFormData(napi_env env, napi_value dataValue, MultiFormD
     } else {
         NETSTACK_LOGD("only support string, ArrayBuffer and Object");
     }
+}
+
+void RequestContext::SetMultipart(curl_mime *multipart)
+{
+    multipart_ = multipart;
 }
 } // namespace OHOS::NetStack::Http
