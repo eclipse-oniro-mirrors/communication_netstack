@@ -27,6 +27,7 @@
 #include <curl/curl.h>
 #include "http_client_request.h"
 #include "http_client_response.h"
+#include "secure_char.h"
 
 using namespace OHOS::NetStack::HttpClient;
 
@@ -95,7 +96,7 @@ HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest001, TestSize.Level1)
     proxy.host = "192.168.147.60";
     proxy.port = 8888;
     proxy.exclusions = "www.httpbin.org";
-    proxy.userpwd = "username:password";
+    proxy.userpwd = OHOS::NetStack::Secure::SecureChar("username:password");
     proxy.tunnel = false;
     httpReq.SetHttpProxy(proxy);
 
@@ -116,7 +117,7 @@ HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest002, TestSize.Level1)
     HttpProxy proxy;
     proxy.host = "192.168.147.60";
     proxy.port = 8888;
-    proxy.userpwd = "username:password";
+    proxy.userpwd = OHOS::NetStack::Secure::SecureChar("username:password");
     proxy.tunnel = false;
     httpReq.SetHttpProxy(proxy);
 
@@ -655,14 +656,16 @@ HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoTest001, TestSize.Level1)
     proxy.host = "192.168.147.60";
     proxy.port = 8888;
     proxy.exclusions = "www.httpbin.org";
-    proxy.userpwd = "username:password";
+    proxy.userpwd = OHOS::NetStack::Secure::SecureChar("username:password");
     proxy.tunnel = false;
     httpReq.SetHttpProxy(proxy);
 
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    std::string host, exclusions, userpwd;
+    std::string host;
+    std::string exclusions;
+    OHOS::NetStack::Secure::SecureChar userpwd;
     int32_t port = 0;
     bool tunnel = false;
     task->GetHttpProxyInfo(host, port, exclusions, userpwd, tunnel);
@@ -670,7 +673,7 @@ HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoTest001, TestSize.Level1)
     EXPECT_EQ(host, "192.168.147.60");
     EXPECT_EQ(port, 8888);
     EXPECT_EQ(exclusions, "www.httpbin.org");
-    EXPECT_EQ(userpwd, "username:password");
+    EXPECT_EQ(userpwd.Data(), "username:password");
     EXPECT_FALSE(tunnel);
 }
 
@@ -685,14 +688,16 @@ HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoTest002, TestSize.Level1)
     proxy.host = "192.168.147.60";
     proxy.port = 8888;
     proxy.exclusions = "www.httpbin.org";
-    proxy.userpwd = "username:password";
+    proxy.userpwd = OHOS::NetStack::Secure::SecureChar("username:password");
     proxy.tunnel = false;
     httpReq.SetHttpProxy(proxy);
 
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    std::string host, exclusions, userpwd;
+    std::string host;
+    std::string  exclusions;
+    OHOS::NetStack::Secure::SecureChar userpwd;
     int32_t port = 0;
     bool tunnel = false;
     task->GetHttpProxyInfo(host, port, exclusions, userpwd, tunnel);
@@ -700,7 +705,7 @@ HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoTest002, TestSize.Level1)
     EXPECT_EQ(host, "");
     EXPECT_EQ(port, 0);
     EXPECT_EQ(exclusions, "");
-    EXPECT_EQ(userpwd, "");
+    EXPECT_EQ(userpwd.Data(), "");
     EXPECT_FALSE(tunnel);
 }
 

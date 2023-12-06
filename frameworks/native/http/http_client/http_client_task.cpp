@@ -23,7 +23,7 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "net_conn_client.h"
-
+#include "secure_char.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data)                                                 \
     do {                                                                                                 \
@@ -133,7 +133,7 @@ uint32_t HttpClientTask::GetHttpVersion(HttpProtocol ptcl) const
     return CURL_HTTP_VERSION_NONE;
 }
 
-void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions, std::string &userpwd,
+void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions, Secure::SecureChar &userpwd,
                                       bool &tunnel)
 {
     if (request_.GetHttpProxyType() == HttpProxyType::USE_SPECIFIED) {
@@ -141,7 +141,7 @@ void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::str
         host = proxy.host;
         port = proxy.port;
         exclusions = proxy.exclusions;
-        userpwd = proxy.userpwd;
+        userpwd = Secure::SecureChar(proxy.userpwd);
         tunnel = proxy.tunnel;
     }
 }
@@ -149,7 +149,9 @@ void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::str
 bool HttpClientTask::SetOtherCurlOption(CURL *handle)
 {
     // set proxy
-    std::string host, exclusions, userpwd;
+    std::string host;
+    std::string exclusions;
+    Secure::SecureChar userpwd;
     int32_t port = 0;
     bool tunnel = false;
     std::string url = request_.GetURL();
@@ -159,8 +161,8 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXY, host.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYPORT, port);
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
-        if (!userpwd.empty()) {
-            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYUSERPWD, userpwd.c_str());
+        if (userpwd.Length() > 0) {
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYUSERPWD, userpwd.Data());
         }
         if (tunnel) {
             NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_HTTPPROXYTUNNEL, 1L);

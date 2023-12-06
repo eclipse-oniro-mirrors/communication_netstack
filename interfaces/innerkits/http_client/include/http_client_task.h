@@ -27,6 +27,7 @@
 #include "http_client_error.h"
 #include "http_client_request.h"
 #include "http_client_response.h"
+#include "secure_char.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -232,7 +233,7 @@ private:
      * @param userpwd The output string to store the proxy username and password.
      * @param tunnel The output bool to indicate if the proxy uses tunneling.
      */
-    void GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions, std::string &userpwd,
+    void GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions, Secure::SecureChar &userpwd,
                           bool &tunnel);
 
     /**
