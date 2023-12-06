@@ -92,6 +92,8 @@ private:
 
     static bool SetOtherOption(CURL *curl, RequestContext *context);
 
+    static bool SetRequestOption(void *curl, RequestContext *context);
+
     static bool SetSSLCertOption(CURL *curl, RequestContext *context);
 
     static bool SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context);

@@ -752,6 +752,41 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     return true;
 }
 
+bool HttpExec::SetDnsOption(CURL *curl, RequestContext *context)
+{
+    std::vector<std::string> dnsServers = context->options.GetDnsServers();
+    if (dnsServers.empty()) {
+        return true;
+    }
+    std::string serverList;
+    for (auto &server : dnsServers) {
+        serverList += server + ",";
+        NETSTACK_LOGD("SetDns server: %{public}s", CommonUtils::AnonymizeIp(server).c_str());
+    }
+    serverList.pop_back();
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DNS_SERVERS, serverList.c_str(), context);
+    return true;
+}
+
+bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
+{
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTP_VERSION, context->options.GetHttpVersion(), context);
+    const std::string range = context->options.GetRangeString();
+    if (range.empty()) {
+        // Some servers don't like requests that are made without a user-agent field, so we provide one
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_USERAGENT, HttpConstant::HTTP_DEFAULT_USER_AGENT, context);
+    } else {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RANGE, range.c_str(), context);
+    }
+    if (!context->options.GetDohUrl().empty()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DOH_URL, context->options.GetDohUrl().c_str(), context);
+    }
+    SetDnsOption(curl, context);
+    SetSSLCertOption(curl, context);
+    SetMultiPartOption(curl, context);
+    return true;
+}
+
 bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader)
 {
     const std::string &method = context->options.GetMethod();
@@ -782,56 +817,22 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HEADERFUNCTION, OnWritingMemoryHeader, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HEADERDATA, context, context);
-
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTPHEADER, requestHeader, context);
-
-    const std::string range = context->options.GetRangeString();
-    if (range.empty()) {
-        // Some servers don't like requests that are made without a user-agent field, so we provide one
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_USERAGENT, HttpConstant::HTTP_DEFAULT_USER_AGENT, context);
-    } else {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RANGE, range.c_str(), context);
-    }
-
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FOLLOWLOCATION, 1L, context);
 
     /* first #undef CURL_DISABLE_COOKIES in curl config */
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_COOKIEFILE, "", context);
-
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOSIGNAL, 1L, context);
-
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_TIMEOUT_MS, context->options.GetReadTimeout(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
 
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTP_VERSION, context->options.GetHttpVersion(), context);
-    if (!context->options.GetDohUrl().empty()) {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DOH_URL, context->options.GetDohUrl().c_str(), context);
-    }
-    SetDnsOption(curl, context);
-    SetSSLCertOption(curl, context);
+    SetRequestOption(curl, context);
     if (!SetServerSSLCertOption(curl, context)) {
         return false;
     }
     if (!SetOtherOption(curl, context)) {
         return false;
     }
-    SetMultiPartOption(curl, context);
-    return true;
-}
-
-bool HttpExec::SetDnsOption(CURL *curl, RequestContext *context)
-{
-    std::vector<std::string> dnsServers = context->options.GetDnsServers();
-    if (dnsServers.empty()) {
-        return true;
-    }
-    std::string serverList;
-    for (auto &server : dnsServers) {
-        serverList += server + ",";
-        NETSTACK_LOGD("SetDns server: %{public}s", CommonUtils::AnonymizeIp(server).c_str());
-    }
-    serverList.pop_back();
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DNS_SERVERS, serverList.c_str(), context);
     return true;
 }
 
