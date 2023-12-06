@@ -1220,6 +1220,9 @@ bool HttpExec::SetMultiPartOption(CURL *curl, RequestContext *context)
     }
     auto multiPartDataList = context->options.GetMultiPartDataList();
     curl_mime *multipart = curl_mime_init(curl);
+    if (multipart == nullptr) {
+        return false;
+    }
     context->SetMultipart(multipart);
     curl_mimepart *part = nullptr;
     for (auto &multiFormData : multiPartDataList) {
