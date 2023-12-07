@@ -46,8 +46,6 @@ public:
 
     ~RequestContext() override;
 
-    curl_mime *multipart_;
-
     void StartTiming();
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
@@ -98,6 +96,8 @@ public:
 
     void SetPerformanceTimingToResult(napi_value result);
 
+    void SetMultipart(curl_mime *multipart);
+
 private:
     bool usingCache_;
     bool requestInStream_;
@@ -111,6 +111,7 @@ private:
     struct curl_slist *curlHeaderList_;
     Timing::TimerMap timerMap_;
     std::map<std::string, double> performanceTimingMap_;
+    curl_mime *multipart_;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 
