@@ -246,7 +246,7 @@ static bool MakeTcpServerSocket(napi_env env, napi_value thisVal, TcpServerListe
     if (sock <= 0) {
         return false;
     }
-    int reuse = 1;
+    int reuse = 1; // 1 means enable reuseaddr feature
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<void *>(&reuse), sizeof(reuse)) < 0) {
         NETSTACK_LOGE("failed to set tcp server listen socket reuseaddr on, sockfd: %{public}d", sock);
     }
