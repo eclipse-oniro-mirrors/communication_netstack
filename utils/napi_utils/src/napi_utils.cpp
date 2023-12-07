@@ -285,7 +285,7 @@ std::string GetStringPropertyUtf8(napi_env env, napi_value object, const std::st
     return GetStringFromValueUtf8(env, value);
 }
 
-std::string GetNapiValueToString(napi_env env, napi_value value)
+std::string NapiValueToString(napi_env env, napi_value value)
 {
     napi_status status;
     napi_valuetype valueType;
@@ -296,7 +296,6 @@ std::string GetNapiValueToString(napi_env env, napi_value value)
     switch (valueType) {
         case napi_undefined:
         case napi_null:
-            return "";
             break;
         case napi_boolean:
             bool boolValue;
