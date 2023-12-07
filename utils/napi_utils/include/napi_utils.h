@@ -74,6 +74,8 @@ std::string GetStringFromValueUtf8(napi_env env, napi_value value);
 
 std::string GetStringPropertyUtf8(napi_env env, napi_value object, const std::string &propertyName);
 
+std::string GetNapiValueToString(napi_env env, napi_value value);
+
 void SetStringPropertyUtf8(napi_env env, napi_value object, const std::string &name, const std::string &value);
 
 std::vector<std::string> GetDnsServers(napi_env env, napi_value object, const std::string &propertyName);
