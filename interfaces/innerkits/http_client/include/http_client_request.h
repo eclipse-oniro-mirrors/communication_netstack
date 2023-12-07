@@ -19,7 +19,6 @@
 #include <string>
 #include <map>
 #include <vector>
-#include "secure_char.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -42,10 +41,9 @@ struct HttpProxy {
     std::string host;
     int32_t port;
     std::string exclusions;
-    Secure::SecureChar userpwd;
     bool tunnel;
 
-    HttpProxy() : host(""), port(0), exclusions(""), userpwd(Secure::SecureChar("")), tunnel(false) {}
+    HttpProxy() : host(""), port(0), exclusions(""), tunnel(false) {}
 };
 
 class HttpClientRequest {
