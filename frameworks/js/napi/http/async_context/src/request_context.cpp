@@ -225,8 +225,9 @@ void RequestContext::ParseHeader(napi_value optionsValue)
     }
     auto names = NapiUtils::GetPropertyNames(GetEnv(), header);
     std::for_each(names.begin(), names.end(), [header, this](const std::string &name) {
-        auto value = NapiUtils::GetStringPropertyUtf8(GetEnv(), header, name);
-        options.SetHeader(CommonUtils::ToLower(name), value);
+        napi_value value = NapiUtils::GetNamedProperty(GetEnv(), header, name);
+        std::string valueStr = NapiUtils::GetNapiValueToString(GetEnv(), value);
+        options.SetHeader(CommonUtils::ToLower(name), valueStr);
     });
 }
 
