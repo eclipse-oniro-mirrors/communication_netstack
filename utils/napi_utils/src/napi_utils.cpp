@@ -297,12 +297,14 @@ std::string GetNapiValueToString(napi_env env, napi_value value)
         case napi_undefined:
         case napi_null:
             return "";
+            break;
         case napi_boolean:
             bool boolValue;
             status = napi_get_value_bool(env, value, &boolValue);
             if (status == napi_ok) {
                 return boolValue ? "true" : "false";
             }
+            break;
         case napi_number:
             double doubleValue;
             status = napi_get_value_double(env, value, &doubleValue);
@@ -312,6 +314,7 @@ std::string GetNapiValueToString(napi_env env, napi_value value)
                 }
                 return std::to_string(doubleValue);
             }
+            break;
         case napi_string:
             return GetStringFromValueUtf8(env, value);
         default:
