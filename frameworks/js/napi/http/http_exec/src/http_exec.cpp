@@ -60,7 +60,6 @@ static constexpr const int EVENT_PARAM_ZERO = 0;
 static constexpr const int EVENT_PARAM_ONE = 1;
 static constexpr const int EVENT_PARAM_TWO = 2;
 static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!CBC:!eNULL:!EXPORT)";
-static constexpr const bool IS_SUPPORT_DNS_SERVERS = false;
 
 #ifdef HTTP_PROXY_ENABLE
 static constexpr int32_t SYSPARA_MAX_SIZE = 128;
@@ -782,9 +781,7 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
     if (!context->options.GetDohUrl().empty()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DOH_URL, context->options.GetDohUrl().c_str(), context);
     }
-    if (IS_SUPPORT_DNS_SERVERS) {
-        SetDnsOption(curl, context);
-    }
+    SetDnsOption(curl, context);
     SetSSLCertOption(curl, context);
     SetMultiPartOption(curl, context);
     return true;
