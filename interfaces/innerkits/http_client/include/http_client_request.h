@@ -40,11 +40,10 @@ enum HttpProtocol {
 struct HttpProxy {
     std::string host;
     int32_t port;
-    std::string exclusions; // "example.com,example.org,example.net"
-    std::string userpwd;    // "username:password"
+    std::string exclusions;
     bool tunnel;
 
-    HttpProxy() : host(""), port(0), exclusions(""), userpwd(""), tunnel(false) {}
+    HttpProxy() : host(""), port(0), exclusions(""), tunnel(false) {}
 };
 
 class HttpClientRequest {
