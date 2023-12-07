@@ -712,33 +712,32 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     // customize trusted CAs.
     std::vector<std::string> certs;
     auto ret = NetManagerStandard::NetConnClient::GetInstance().GetTrustAnchorsForHostName(hostname, certs);
-    if (ret != 0) {
-        return false;
-    }
-
-    std::string *pCert = nullptr;
-    for (auto &cert : certs) {
-        if (!cert.empty()) {
-            pCert = &cert;
-            break;
-        }
-    }
-    if (pCert != nullptr) {
-        NETSTACK_LOGD("curl set option capath: capath=%{public}s.", pCert->c_str());
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, pCert->c_str(), context);
+    if (ret != 0 || certs.empty()) {
+        NETSTACK_LOGD("Get no trust anchor by host name[%{public}s]", hostname.c_str());
     } else {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, context->options.GetCaPath().c_str(), context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, HttpConstant::HTTP_PREPARE_CA_PATH, context);
+        std::string *pCert = nullptr;
+        for (auto &cert : certs) {
+            if (!cert.empty()) {
+                pCert = &cert;
+                break;
+            }
+        }
+        if (pCert != nullptr) {
+            NETSTACK_LOGD("curl set option capath: capath=%{public}s.", pCert->c_str());
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, pCert->c_str(), context);
+        } else {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, context->options.GetCaPath().c_str(), context);
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, HttpConstant::HTTP_PREPARE_CA_PATH, context);
+        }
     }
 #endif // WINDOWS_PLATFORM
     // pin trusted certifcate keys.
     std::string pins;
     auto ret1 = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
-    if (ret1 != 0) {
-        return false;
-    }
-    if (!pins.empty()) {
+    if (ret1 != 0 || pins.empty()) {
+        NETSTACK_LOGD("Get no pinset by host name[%{public}s]", hostname.c_str());
+    } else {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str(), context);
     }
 #endif // HAS_NETMANAGER_BASE
@@ -826,9 +825,9 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
 
     SetRequestOption(curl, context);
-    if (!SetServerSSLCertOption(curl, context)) {
-        return false;
-    }
+
+    SetServerSSLCertOption(curl, context);
+
     if (!SetOtherOption(curl, context)) {
         return false;
     }

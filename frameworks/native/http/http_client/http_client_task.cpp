@@ -171,9 +171,7 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
 #ifndef WINDOWS_PLATFORM
     NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_CAINFO, request_.GetCaPath().c_str());
 #endif // WINDOWS_PLATFORM
-    if (!SetServerSSLCertOption(handle)) {
-        return false;
-    }
+    SetServerSSLCertOption(handle);
 #endif // NO_SSL_CERTIFICATION
 
 #ifdef HTTP_CURL_PRINT_VERBOSE
@@ -192,10 +190,9 @@ bool HttpClientTask::SetServerSSLCertOption(CURL *curl)
     std::string pins;
     auto hostname = CommonUtils::GetHostnameFromURL(request_.GetURL());
     auto ret = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
-    if (ret != 0) {
-        return false;
-    }
-    if (!pins.empty()) {
+    if (ret != 0 || pins.empty()) {
+        NETSTACK_LOGD("Get no pin set by host name[%{public}s]", hostname.c_str());
+    } else {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str());
     }
 
