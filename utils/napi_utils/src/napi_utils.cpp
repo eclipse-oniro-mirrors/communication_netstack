@@ -285,6 +285,43 @@ std::string GetStringPropertyUtf8(napi_env env, napi_value object, const std::st
     return GetStringFromValueUtf8(env, value);
 }
 
+std::string NapiValueToString(napi_env env, napi_value value)
+{
+    napi_status status;
+    napi_valuetype valueType;
+    status = napi_typeof(env, value, &valueType);
+    if (status != napi_ok) {
+        return "";
+    }
+    switch (valueType) {
+        case napi_undefined:
+        case napi_null:
+            break;
+        case napi_boolean:
+            bool boolValue;
+            status = napi_get_value_bool(env, value, &boolValue);
+            if (status == napi_ok) {
+                return boolValue ? "true" : "false";
+            }
+            break;
+        case napi_number:
+            double doubleValue;
+            status = napi_get_value_double(env, value, &doubleValue);
+            if (status == napi_ok) {
+                if (doubleValue  == std::floor(doubleValue)) {
+                    return std::to_string(static_cast<int>(doubleValue));
+                }
+                return std::to_string(doubleValue);
+            }
+            break;
+        case napi_string:
+            return GetStringFromValueUtf8(env, value);
+        default:
+            break;
+    }
+    return "";
+}
+
 void SetStringPropertyUtf8(napi_env env, napi_value object, const std::string &name, const std::string &value)
 {
     napi_value jsValue = CreateStringUtf8(env, value);
