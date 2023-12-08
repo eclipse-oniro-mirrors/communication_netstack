@@ -51,6 +51,15 @@ ohos_shared_library("websocket_client") {
     "$NETSTACK_NATIVE_ROOT/websocket_client/include",
   ]
 
+  cflags = [
+    "-fstack-protector-strong",
+    "-D_FORTIFY_SOURCE=2 -O2",
+  ]
+  cflags_cc = [
+    "-fstack-protector-strong",
+    "-D_FORTIFY_SOURCE=2 -O2",
+  ]
+
   version_script = "libwebsocket_client.map"
 
   public_configs = [ ":websocket_client_config" ]

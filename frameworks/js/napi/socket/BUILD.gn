@@ -102,6 +102,16 @@ ohos_shared_library("socket") {
   sources += tls_sources
   sources += tls_napi_sources
 
+  cflags = [
+    "-fstack-protector-strong",
+    "-D_FORTIFY_SOURCE=2 -O2",
+  ]
+
+  cflags_cc = [
+    "-fstack-protector-strong",
+    "-D_FORTIFY_SOURCE=2 -O2",
+  ]
+
   deps = [
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",

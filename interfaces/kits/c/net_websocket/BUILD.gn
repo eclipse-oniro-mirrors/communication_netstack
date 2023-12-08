@@ -56,9 +56,16 @@ ohos_shared_library("net_websocket") {
     "hilog:libhilog",
   ]
 
+  cflags = [
+    "-fstack-protector-strong",
+    "-D_FORTIFY_SOURCE=2 -O2",
+  ]
+
   cflags_cc = [
     "-Wall",
     "-Werror",
+    "-fstack-protector-strong",
+    "-D_FORTIFY_SOURCE=2 -O2",
   ]
 
   part_name = "netstack"
