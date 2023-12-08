@@ -398,7 +398,7 @@ public:
 
     void OnError(int err) const override
     {
-        if(EventManager::IsManagerValid(manager_)) {
+        if (EventManager::IsManagerValid(manager_)) {
             manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
             return;
         }
@@ -497,7 +497,7 @@ public:
 
     void OnError(int err) const override
     {
-        if(EventManager::IsManagerValid(manager_)) {
+        if (EventManager::IsManagerValid(manager_)) {
             manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
             return;
         }
