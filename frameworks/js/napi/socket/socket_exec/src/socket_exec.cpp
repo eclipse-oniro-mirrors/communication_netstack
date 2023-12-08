@@ -501,7 +501,7 @@ public:
             manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
             return;
         }
-        NETSTACK_LOGI("udp socket handle has been finalized, manager is invalid");        
+        NETSTACK_LOGI("udp socket handle has been finalized, manager is invalid");
     }
 
     void OnCloseMessage(EventManager *manager) const override {}
