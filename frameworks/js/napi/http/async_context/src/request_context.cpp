@@ -620,6 +620,7 @@ void RequestContext::ParseDnsServers(napi_value optionsValue)
 void RequestContext::CachePerformanceTimingItem(const std::string &key, double value)
 {
     performanceTimingMap_.insert(std::pair<std::string, double>(key, value));
+    NETSTACK_LOGD("CachePerformanceTimingItem %{public}s : %{public}lf", key.c_str(), value);
 }
 
 void RequestContext::StopAndCacheNapiPerformanceTiming(const char *key)
