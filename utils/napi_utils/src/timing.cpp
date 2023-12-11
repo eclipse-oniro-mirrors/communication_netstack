@@ -16,9 +16,6 @@
 
 #include <chrono>
 #include <map>
-#include <string>
-
-#include "netstack_log.h"
 
 static constexpr const double MICROSECONDS_TO_MILLISECONDS = 1000.0;
 
@@ -27,13 +24,11 @@ Timer &TimerMap::RecieveTimer(const char *const type)
 {
     std::map<const char *const, Timer>::iterator it = timerMap_.find(type);
     if (it != timerMap_.end()) {
-        NETSTACK_LOGD("RecieveTimer: %{public}s\n", type);
         return it->second;
     } else {
         Timer timer;
         timer.timerName_ = type;
         timerMap_.insert(std::pair<const char *const, Timer>(type, timer));
-        NETSTACK_LOGD("RecieveTimer and create: %{public}s\n", type);
         return timerMap_[type];
     }
 }
@@ -57,7 +52,6 @@ void Timer::Start(time_t time)
 void Timer::Stop()
 {
     endTime_ = TimeUtils::GetNowTimeMicroseconds();
-    NETSTACK_LOGD("stop: %{public}s : %{public}f\n", timerName_, this->Elapsed());
 }
 
 double Timer::Elapsed() const

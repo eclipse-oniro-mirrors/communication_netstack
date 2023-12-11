@@ -16,7 +16,6 @@
 #define COMMUNICATIONNETSTACK_NETSTACK_TIMIMG_H
 
 #include <map>
-#include <string>
 
 namespace OHOS::NetStack::Timing {
 
