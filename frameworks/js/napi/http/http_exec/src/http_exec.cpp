@@ -712,8 +712,8 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     // customize trusted CAs.
     std::vector<std::string> certs;
     auto ret = NetManagerStandard::NetConnClient::GetInstance().GetTrustAnchorsForHostName(hostname, certs);
-    if (ret != 0 || certs.empty()) {
-        NETSTACK_LOGD("Get no trust anchor by host name[%{public}s]", hostname.c_str());
+    if (ret != 0) {
+        NETSTACK_LOGD("Get no trust anchor by host name[%{public}s], ret[%{public}d]", hostname.c_str(), ret);
     } else {
         std::string *pCert = nullptr;
         for (auto &cert : certs) {
@@ -727,6 +727,7 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
             NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
             NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, pCert->c_str(), context);
         } else {
+            NETSTACK_LOGD("Get no trust anchor by host name[%{public}s]", hostname.c_str());
             NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, context->options.GetCaPath().c_str(), context);
             NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, HttpConstant::HTTP_PREPARE_CA_PATH, context);
         }
@@ -738,6 +739,7 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     if (ret1 != 0 || pins.empty()) {
         NETSTACK_LOGD("Get no pinset by host name[%{public}s]", hostname.c_str());
     } else {
+        NETSTACK_LOGD("curl set pin =[%{public}s]", pins.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str(), context);
     }
 #endif // HAS_NETMANAGER_BASE
