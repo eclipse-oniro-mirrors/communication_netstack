@@ -63,7 +63,7 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request)
       canceled_(false),
       file_(nullptr)
 {
-    NETSTACK_LOGI("HttpClientTask::HttpClientTask() taskId_=%{public}d URL=%{public}s", taskId_,
+    NETSTACK_LOGI("taskId_=%{public}d URL=%{public}s", taskId_,
                   request_.GetURL().c_str());
 
     curlHandle_ = curl_easy_init();
@@ -85,7 +85,7 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request, TaskType type, 
       filePath_(filePath),
       file_(nullptr)
 {
-    NETSTACK_LOGI(
+    NETSTACK_LOGD(
         "HttpClientTask::HttpClientTask() taskId_=%{public}d URL=%{public}s type=%{public}d filePath=%{public}s",
         taskId_, request_.GetURL().c_str(), type_, filePath_.c_str());
 
@@ -224,14 +224,14 @@ bool HttpClientTask::SetUploadOptions(CURL *handle)
         return false;
     }
 
-    NETSTACK_LOGI("HttpClientTask::SetUploadOptions() filePath_=%{public}s", realPath.c_str());
+    NETSTACK_LOGD("HttpClientTask::SetUploadOptions() filePath_=%{public}s", realPath.c_str());
     fseek(file_, 0, SEEK_END);
     long size = ftell(file_);
     rewind(file_);
 
     // Set the file data and file size to upload
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_READDATA, file_);
-    NETSTACK_LOGI("HttpClientTask::SetUploadOptions() CURLOPT_INFILESIZE=%{public}ld", size);
+    NETSTACK_LOGD("HttpClientTask::SetUploadOptions() CURLOPT_INFILESIZE=%{public}ld", size);
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_INFILESIZE, size);
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_UPLOAD, 1L);
 
@@ -308,7 +308,7 @@ bool HttpClientTask::Start()
 {
     auto task = shared_from_this();
     if (task->GetStatus() != TaskStatus::IDLE) {
-        NETSTACK_LOGI("HttpClientTask::Start() task is running, taskId_=%{public}d", task->GetTaskId());
+        NETSTACK_LOGD("HttpClientTask::Start() task is running, taskId_=%{public}d", task->GetTaskId());
         return false;
     }
 
@@ -441,7 +441,7 @@ int HttpClientTask::ProgressCallback(void *userData, curl_off_t dltotal, curl_of
     }
 
     if (task->canceled_) {
-        NETSTACK_LOGI("HttpClientTask::ProgressCallback() canceled");
+        NETSTACK_LOGD("HttpClientTask::ProgressCallback() canceled");
         return CURLE_ABORTED_BY_CALLBACK;
     }
 
@@ -512,7 +512,7 @@ bool HttpClientTask::ProcessResponseCode()
         return false;
     }
     ResponseCode resultCode = static_cast<ResponseCode>(result);
-    NETSTACK_LOGI("HttpClientTask::ProcessResponseCode() responseCode=%{public}d", resultCode);
+    NETSTACK_LOGI("taskid=%{public}d, responseCode=%{public}d", taskId_, resultCode);
     response_.SetResponseCode(resultCode);
 
     return (resultCode == ResponseCode::OK);
@@ -521,7 +521,7 @@ bool HttpClientTask::ProcessResponseCode()
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
 {
     CURLcode code = msg->data.result;
-    NETSTACK_LOGI("HttpClientTask::ProcessResponse() taskid=%{public}d code=%{public}d", taskId_, code);
+    NETSTACK_LOGD("taskid=%{public}d code=%{public}d", taskId_, code);
     error_.SetCURLResult(code);
     response_.SetResponseTime(HttpTime::GetNowTimeGMT());
 
