@@ -181,7 +181,6 @@ void SetDnsServersFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     HttpRequestOptions requestOptions;
-    std::string str = GetStringFromData(STR_LEN);
     std::vector<std::string> dnsServers = { GetStringFromData(STR_LEN), GetStringFromData(STR_LEN),
         GetStringFromData(STR_LEN) };
     requestOptions.SetDnsServers(dnsServers);

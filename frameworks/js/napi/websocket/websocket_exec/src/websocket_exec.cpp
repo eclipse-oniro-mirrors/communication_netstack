@@ -560,7 +560,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         info.client_ssl_private_key_password = context->keyPassword_.Data();
     }
     lws_context *lwsContext = lws_create_context(&info);
-    if (manager != nullptr && manager->GetData() == nullptr) {
+    if (manager->GetData() == nullptr) {
         auto userData = new UserData(lwsContext);
         userData->header = context->header;
         manager->SetData(userData);

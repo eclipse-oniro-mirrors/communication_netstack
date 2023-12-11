@@ -33,13 +33,15 @@ WebsocketClient *GetInnerClientAdapter(OH_NetStack_WebsocketClient *key)
     }
 }
 
-OH_NetStack_WebsocketClient *GetNdkClientAdapter(WebsocketClient *websocketClient)
+OH_NetStack_WebsocketClient *GetNdkClientAdapter(WebsocketClient * const websocketClient)
 {
-    for (const auto &pair : g_clientMap) {
-        if (pair.second == websocketClient) {
-            return pair.first;
-        }
+    auto it = std::find_if(g_clientMap.begin(), g_clientMap.end(), [&websocketClient](const auto &pair) {
+        return pair.second == websocketClient;
+    });
+    if (it != g_clientMap.end()) {
+        return it->first;
     }
+
     return nullptr;
 }
 
