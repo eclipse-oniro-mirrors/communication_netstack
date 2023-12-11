@@ -398,7 +398,11 @@ public:
 
     void OnError(int err) const override
     {
-        manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
+        if (EventManager::IsManagerValid(manager_)) {
+            manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
+            return;
+        }
+        NETSTACK_LOGI("tcp socket handle has been finalized, manager is invalid");
     }
 
     void OnCloseMessage(EventManager *manager) const override
@@ -493,7 +497,11 @@ public:
 
     void OnError(int err) const override
     {
-        manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
+        if (EventManager::IsManagerValid(manager_)) {
+            manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
+            return;
+        }
+        NETSTACK_LOGI("udp socket handle has been finalized, manager is invalid");
     }
 
     void OnCloseMessage(EventManager *manager) const override {}
