@@ -1114,7 +1114,7 @@ declare namespace http {
      * @atomicservice
      * @since 11
      */
-    on(type: "headersReceive", callback: Callback<Object>): void;
+    on(type: 'headersReceive', callback: Callback<Object>): void;
 
     /**
      * Unregisters the observer for HTTP Response Header events.
@@ -1140,7 +1140,7 @@ declare namespace http {
      * @atomicservice
      * @since 11
      */
-    off(type: "headersReceive", callback?: Callback<Object>): void;
+    off(type: 'headersReceive', callback?: Callback<Object>): void;
 
     /**
      * Registers a one-time observer for HTTP Response Header events.
@@ -1157,7 +1157,7 @@ declare namespace http {
      * @crossplatform
      * @since 10
      */
-    once(type: "headersReceive", callback: Callback<Object>): void;
+    once(type: 'headersReceive', callback: Callback<Object>): void;
 
     /**
      * Registers an observer for receiving HTTP Response data events continuously.
@@ -1166,7 +1166,7 @@ declare namespace http {
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    on(type: "dataReceive", callback: Callback<ArrayBuffer>): void;
+    on(type: 'dataReceive', callback: Callback<ArrayBuffer>): void;
 
     /**
      * Unregisters an observer for receiving HTTP Response data events continuously.
@@ -1184,7 +1184,7 @@ declare namespace http {
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    on(type: "dataEnd", callback: Callback<void>): void;
+    on(type: 'dataEnd', callback: Callback<void>): void;
 
     /**
      * Unregisters an observer for receiving HTTP Response data ends events.
@@ -1193,7 +1193,7 @@ declare namespace http {
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    off(type: "dataEnd", callback?: Callback<void>): void;
+    off(type: 'dataEnd', callback?: Callback<void>): void;
 
     /**
      * Registers an observer for progress of receiving HTTP Response data events.
