@@ -289,7 +289,7 @@ int LwsCallbackProtocolDestroy(lws *wsi, lws_callback_reasons reason, void *user
 
 int LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    CallbackDispatcher dispatchers[] = {
+    constexpr CallbackDispatcher dispatchers[] = {
         {LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER, LwsCallbackClientAppendHandshakeHeader},
         {LWS_CALLBACK_WS_PEER_INITIATED_CLOSE, LwsCallbackWsPeerInitiatedClose},
         {LWS_CALLBACK_CLIENT_WRITEABLE, LwsCallbackClientWritable},
@@ -301,10 +301,11 @@ int LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, siz
         {LWS_CALLBACK_WSI_DESTROY, LwsCallbackWsiDestroy},
         {LWS_CALLBACK_PROTOCOL_DESTROY, LwsCallbackProtocolDestroy},
     };
-    for (const auto dispatcher : dispatchers) {
-        if (dispatcher.reason == reason) {
-            return dispatcher.callback(wsi, reason, user, in, len);
-        }
+
+    auto it = std::find_if(std::begin(dispatchers), std::end(dispatchers),
+        [&reason](const CallbackDispatcher &dispatcher) { return dispatcher.reason == reason; });
+    if (it != std::end(dispatchers)) {
+        return it->callback(wsi, reason, user, in, len);
     }
     return HttpDummy(wsi, reason, user, in, len);
 }
@@ -320,7 +321,7 @@ static void FillContextInfo(lws_context_creation_info &info)
     info.fd_limit_per_thread = FD_LIMIT_PER_THREAD;
 }
 
-bool ParseUrl(std::string url, char *prefix, char *address, char *path, int *port)
+bool ParseUrl(const std::string url, char *prefix, char *address, char *path, int *port)
 {
     char uri[MAX_URI_LENGTH] = {0};
     if (strcpy_s(uri, MAX_URI_LENGTH, url.c_str()) < 0) {
@@ -346,7 +347,7 @@ bool ParseUrl(std::string url, char *prefix, char *address, char *path, int *por
     return true;
 }
 
-int CreatConnectInfo(std::string url, lws_context *lwsContext, WebsocketClient *client)
+int CreatConnectInfo(const std::string url, lws_context *lwsContext, WebsocketClient *client)
 {
     lws_client_connect_info connectInfo = {};
     char prefix[MAX_URI_LENGTH] = {0};

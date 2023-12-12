@@ -23,7 +23,7 @@ namespace OHOS::NetStack::WebsocketClient {
 extern std::map<OH_NetStack_WebsocketClient *, WebsocketClient *> g_clientMap;
 
 WebsocketClient *GetInnerClientAdapter(OH_NetStack_WebsocketClient *key);
-OH_NetStack_WebsocketClient *GetNdkClientAdapter(WebsocketClient *websocketClient);
+OH_NetStack_WebsocketClient *GetNdkClientAdapter(WebsocketClient * const websocketClient);
 
 int32_t Conv2RequestOptions(struct OpenOptions *openOptions,
                             struct OH_NetStack_WebsocketClient_RequestOptions requestOptions);

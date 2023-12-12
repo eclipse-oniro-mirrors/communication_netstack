@@ -592,7 +592,7 @@ void RequestContext::ParseDnsServers(napi_value optionsValue)
         return;
     }
     uint32_t dnsLength = NapiUtils::GetArrayLength(env, dnsServerValue);
-    if (dnsLength <= 0) {
+    if (dnsLength == 0) {
         return;
     }
     std::vector<std::string> dnsServers;
@@ -600,7 +600,7 @@ void RequestContext::ParseDnsServers(napi_value optionsValue)
     for (uint32_t i = 0; i < dnsLength && dnsSize < DNS_SERVER_SIZE; i++) {
         napi_value element = NapiUtils::GetArrayElement(env, dnsServerValue, i);
         std::string dnsServer = NapiUtils::GetStringFromValueUtf8(env, element);
-        if (dnsServer.length() <= 0) {
+        if (dnsServer.length() == 0) {
             continue;
         }
         if (!CommonUtils::IsValidIPV4(dnsServer) && !CommonUtils::IsValidIPV6(dnsServer)) {
@@ -609,7 +609,7 @@ void RequestContext::ParseDnsServers(napi_value optionsValue)
         dnsServers.push_back(dnsServer);
         dnsSize++;
     }
-    if (dnsSize <= 0 || dnsServers.data() == nullptr || dnsServers.empty()) {
+    if (dnsSize == 0 || dnsServers.data() == nullptr || dnsServers.empty()) {
         NETSTACK_LOGD("dnsServersArray is empty.");
         return;
     }

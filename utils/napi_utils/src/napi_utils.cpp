@@ -621,7 +621,10 @@ void CreateUvQueueWorkEnhanced(napi_env env, void *data, void (*handler)(napi_en
 
     auto workData = new WorkData(env, data, handler);
 
-    auto work = new uv_work_t;
+    auto work = new (std::nothrow) uv_work_t;
+    if (work == nullptr) {
+        return;
+    }
     work->data = reinterpret_cast<void *>(workData);
 
     auto callback = [](uv_work_t *work, int status) {
