@@ -63,7 +63,7 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request)
       canceled_(false),
       file_(nullptr)
 {
-    NETSTACK_LOGI("HttpClientTask::HttpClientTask() taskId_=%{public}d URL=%{public}s", taskId_,
+    NETSTACK_LOGI("taskId_=%{public}d URL=%{public}s", taskId_,
                   request_.GetURL().c_str());
 
     curlHandle_ = curl_easy_init();
@@ -85,7 +85,7 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request, TaskType type, 
       filePath_(filePath),
       file_(nullptr)
 {
-    NETSTACK_LOGI(
+    NETSTACK_LOGD(
         "HttpClientTask::HttpClientTask() taskId_=%{public}d URL=%{public}s type=%{public}d filePath=%{public}s",
         taskId_, request_.GetURL().c_str(), type_, filePath_.c_str());
 
@@ -221,14 +221,14 @@ bool HttpClientTask::SetUploadOptions(CURL *handle)
         return false;
     }
 
-    NETSTACK_LOGI("HttpClientTask::SetUploadOptions() filePath_=%{public}s", realPath.c_str());
+    NETSTACK_LOGD("filePath_=%{public}s", realPath.c_str());
     fseek(file_, 0, SEEK_END);
     long size = ftell(file_);
     rewind(file_);
 
     // Set the file data and file size to upload
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_READDATA, file_);
-    NETSTACK_LOGI("HttpClientTask::SetUploadOptions() CURLOPT_INFILESIZE=%{public}ld", size);
+    NETSTACK_LOGD("CURLOPT_INFILESIZE=%{public}ld", size);
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_INFILESIZE, size);
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_UPLOAD, 1L);
 
@@ -305,25 +305,25 @@ bool HttpClientTask::Start()
 {
     auto task = shared_from_this();
     if (task->GetStatus() != TaskStatus::IDLE) {
-        NETSTACK_LOGI("HttpClientTask::Start() task is running, taskId_=%{public}d", task->GetTaskId());
+        NETSTACK_LOGD("task is running, taskId_=%{public}d", task->GetTaskId());
         return false;
     }
 
     if (!CommonUtils::HasInternetPermission()) {
-        NETSTACK_LOGE("HttpClientTask::Start() Don't Has Internet Permission()");
+        NETSTACK_LOGE("Don't Has Internet Permission()");
         error_.SetErrorCode(HttpErrorCode::HTTP_PERMISSION_DENIED_CODE);
         return false;
     }
 
     if (error_.GetErrorCode() != HttpErrorCode::HTTP_NONE_ERR) {
-        NETSTACK_LOGE("HttpClientTask::Start() error_.GetErrorCode()=%{public}d", error_.GetErrorCode());
+        NETSTACK_LOGE("error_.GetErrorCode()=%{public}d", error_.GetErrorCode());
         return false;
     }
 
     request_.SetRequestTime(HttpTime::GetNowTimeGMT());
 
     HttpSession &session = HttpSession::GetInstance();
-    NETSTACK_LOGD("HttpClientTask::Start() taskId_=%{public}d", taskId_);
+    NETSTACK_LOGD("taskId_=%{public}d", taskId_);
     task->canceled_ = false;
 
     response_.SetRequestTime(HttpTime::GetNowTimeGMT());
@@ -396,17 +396,17 @@ void HttpClientTask::OnProgress(const std::function<void(const HttpClientRequest
 size_t HttpClientTask::DataReceiveCallback(const void *data, size_t size, size_t memBytes, void *userData)
 {
     unsigned int taskId = *reinterpret_cast<unsigned int *>(userData);
-    NETSTACK_LOGD("HttpClientTask::DataReceiveCallback() taskId=%{public}d size=%{public}zu memBytes=%{public}zu",
+    NETSTACK_LOGD("taskId=%{public}d size=%{public}zu memBytes=%{public}zu",
                   taskId, size, memBytes);
 
     auto task = HttpSession::GetInstance().GetTaskById(taskId);
     if (task == nullptr) {
-        NETSTACK_LOGE("HttpClientTask::DataReceiveCallback() task == nullptr");
+        NETSTACK_LOGE("task == nullptr");
         return 0;
     }
 
     if (task->canceled_) {
-        NETSTACK_LOGD("HttpClientTask::DataReceiveCallback() canceled");
+        NETSTACK_LOGD("canceled");
         return 0;
     }
 
@@ -426,7 +426,7 @@ int HttpClientTask::ProgressCallback(void *userData, curl_off_t dltotal, curl_of
                                      curl_off_t ulnow)
 {
     unsigned int taskId = *reinterpret_cast<unsigned int *>(userData);
-    NETSTACK_LOGD("HttpClientTask::ProgressCallback() taskId=%{public}d dltotal=%{public}" CURL_FORMAT_CURL_OFF_T
+    NETSTACK_LOGD("taskId=%{public}d dltotal=%{public}" CURL_FORMAT_CURL_OFF_T
                   " dlnow=%{public}" CURL_FORMAT_CURL_OFF_T " ultotal=%{public}" CURL_FORMAT_CURL_OFF_T
                   " ulnow=%{public}" CURL_FORMAT_CURL_OFF_T,
                   taskId, dltotal, dlnow, ultotal, ulnow);
@@ -438,7 +438,7 @@ int HttpClientTask::ProgressCallback(void *userData, curl_off_t dltotal, curl_of
     }
 
     if (task->canceled_) {
-        NETSTACK_LOGI("HttpClientTask::ProgressCallback() canceled");
+        NETSTACK_LOGD("canceled");
         return CURLE_ABORTED_BY_CALLBACK;
     }
 
@@ -452,11 +452,11 @@ int HttpClientTask::ProgressCallback(void *userData, curl_off_t dltotal, curl_of
 size_t HttpClientTask::HeaderReceiveCallback(const void *data, size_t size, size_t memBytes, void *userData)
 {
     unsigned int taskId = *reinterpret_cast<unsigned int *>(userData);
-    NETSTACK_LOGD("HttpClientTask::HeaderReceiveCallback() taskId=%{public}d size=%{public}zu memBytes=%{public}zu",
+    NETSTACK_LOGD("taskId=%{public}d size=%{public}zu memBytes=%{public}zu",
                   taskId, size, memBytes);
 
     if (size * memBytes > MAX_LIMIT) {
-        NETSTACK_LOGE("HttpClientTask::HeaderReceiveCallback() size * memBytes(%{public}zu) > MAX_LIMIT(%{public}zu)",
+        NETSTACK_LOGE("size * memBytes(%{public}zu) > MAX_LIMIT(%{public}zu)",
                       size * memBytes, MAX_LIMIT);
         return 0;
     }
@@ -467,7 +467,7 @@ size_t HttpClientTask::HeaderReceiveCallback(const void *data, size_t size, size
         return 0;
     }
 
-    NETSTACK_LOGD("HttpClientTask::HeaderReceiveCallback() (const char *)data=%{public}s",
+    NETSTACK_LOGD("data=%{public}s",
                   static_cast<const char *>(data));
     task->response_.AppendHeader(static_cast<const char *>(data), size * memBytes);
 
@@ -509,7 +509,7 @@ bool HttpClientTask::ProcessResponseCode()
         return false;
     }
     ResponseCode resultCode = static_cast<ResponseCode>(result);
-    NETSTACK_LOGI("HttpClientTask::ProcessResponseCode() responseCode=%{public}d", resultCode);
+    NETSTACK_LOGI("taskid=%{public}d, responseCode=%{public}d", taskId_, resultCode);
     response_.SetResponseCode(resultCode);
 
     return (resultCode == ResponseCode::OK);
@@ -518,7 +518,7 @@ bool HttpClientTask::ProcessResponseCode()
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
 {
     CURLcode code = msg->data.result;
-    NETSTACK_LOGI("HttpClientTask::ProcessResponse() taskid=%{public}d code=%{public}d", taskId_, code);
+    NETSTACK_LOGD("taskid=%{public}d code=%{public}d", taskId_, code);
     error_.SetCURLResult(code);
     response_.SetResponseTime(HttpTime::GetNowTimeGMT());
 

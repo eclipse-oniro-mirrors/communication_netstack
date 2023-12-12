@@ -51,7 +51,7 @@ HttpSession::HttpSession() : curlMulti_(nullptr),
 
 HttpSession::~HttpSession()
 {
-    NETSTACK_LOGI("~HttpSession::enter");
+    NETSTACK_LOGD("~HttpSession::enter");
     Deinit();
 }
 
@@ -115,9 +115,9 @@ void HttpSession::ReadResponse()
         std::unique_lock<std::mutex> lock(curlMultiMutex_);
         struct CURLMsg *m = curl_multi_info_read(curlMulti_, &msgq);
         if (m) {
-            NETSTACK_LOGI("curl_multi_info_read() m->msg = %{public}d", m->msg);
+            NETSTACK_LOGD("curl_multi_info_read() m->msg = %{public}d", m->msg);
             if (m->msg != CURLMSG_DONE) {
-                NETSTACK_LOGI("curl_multi_info_read failed, m->msg = %{public}d", m->msg);
+                NETSTACK_LOGD("curl_multi_info_read failed, m->msg = %{public}d", m->msg);
                 continue;
             }
             curl_multi_remove_handle(curlMulti_, m->easy_handle);
@@ -135,7 +135,7 @@ void HttpSession::ReadResponse()
 void HttpSession::RunThread()
 {
     runThread_ = true;
-    NETSTACK_LOGI("RunThread start runThread_ = %{public}s", runThread_ ? "true" : "false");
+    NETSTACK_LOGD("RunThread start runThread_ = %{public}s", runThread_ ? "true" : "false");
 
     while (runThread_) {
         RequestAndResponse();
@@ -152,15 +152,15 @@ void HttpSession::RunThread()
         conditionVariable_.wait_for(lock, std::chrono::seconds(CONDITION_TIMEOUT_S), f);
     }
 
-    NETSTACK_LOGI("RunThread exit()");
+    NETSTACK_LOGD("RunThread exit()");
 }
 
 bool HttpSession::Init()
 {
     std::lock_guard<std::mutex> guard(initMutex_);
-    NETSTACK_LOGI("HttpSession::Init enter");
+    NETSTACK_LOGD("HttpSession::Init enter");
     if (!initialized_) {
-        NETSTACK_LOGI("HttpSession::Init");
+        NETSTACK_LOGD("HttpSession::Init");
 
         std::lock_guard<std::mutex> guard(curlMultiMutex_);
         curlMulti_ = curl_multi_init();
@@ -178,7 +178,7 @@ bool HttpSession::Init()
 
 void HttpSession::Deinit()
 {
-    NETSTACK_LOGI("HttpSession::Deinit");
+    NETSTACK_LOGD("HttpSession::Deinit");
 
     std::lock_guard<std::mutex> guard(initMutex_);
     if (!initialized_) {
@@ -192,7 +192,7 @@ void HttpSession::Deinit()
     } while (0);
 
     if (workThread_.joinable()) {
-        NETSTACK_LOGI("HttpSession::Deinit workThread_.join()");
+        NETSTACK_LOGD("HttpSession::Deinit workThread_.join()");
         workThread_.join();
     }
 
@@ -205,7 +205,7 @@ void HttpSession::Deinit()
     do {
         std::lock_guard<std::mutex> guard(curlMultiMutex_);
         if (curlMulti_ != nullptr) {
-            NETSTACK_LOGI("Deinit curl_multi_cleanup()");
+            NETSTACK_LOGD("Deinit curl_multi_cleanup()");
             curl_multi_cleanup(curlMulti_);
             curlMulti_ = nullptr;
         }
