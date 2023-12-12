@@ -1175,7 +1175,7 @@ declare namespace http {
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    off(type: "dataReceive", callback?: Callback<ArrayBuffer>): void;
+    off(type: 'dataReceive', callback?: Callback<ArrayBuffer>): void;
 
     /**
      * Registers an observer for receiving HTTP Response data ends events.
