@@ -974,17 +974,8 @@ bool ExecUdpSend(UdpSendContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    bool result = true;
-#ifdef ENABLE_EVENT_HANDLER
-    auto manager = context->GetManager();
-    auto eventHandler = manager->GetNetstackEventHandler();
-    if (!eventHandler) {
-        NETSTACK_LOGE("netstack eventHandler is nullptr");
-        return false;
-    }
-    eventHandler->PostSyncTask([&result, context]() { result = UdpSendEvent(context); });
+    bool result = UdpSendEvent(context);
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
-#endif
     return result;
 }
 
@@ -1031,17 +1022,8 @@ bool ExecTcpSend(TcpSendContext *context)
         return false;
     }
 
-    bool result = true;
-#ifdef ENABLE_EVENT_HANDLER
-    auto manager = context->GetManager();
-    auto eventHandler = manager->GetNetstackEventHandler();
-    if (!eventHandler) {
-        NETSTACK_LOGE("netstack eventHandler is nullptr");
-        return false;
-    }
-    eventHandler->PostSyncTask([&result, context]() { result = TcpSendEvent(context); });
+    bool result = TcpSendEvent(context);
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
-#endif
     return result;
 }
 
@@ -1336,9 +1318,9 @@ bool ExecUdpAddMembership(MulticastMembershipContext *context)
     mreq.imr_multiaddr.s_addr = multicastAddr.sin_addr.s_addr;
     mreq.imr_interface.s_addr = htonl(INADDR_ANY); // network interface: any
     if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
-        sizeof(mreq)) == -1) {
+                   sizeof(mreq)) == -1) {
         NETSTACK_LOGE("addmembership err, addr: %{public}s, port: %{public}u, err: %{public}s",
-            context->address_.GetAddress().c_str(), context->address_.GetPort(), strerror(errno));
+                      context->address_.GetAddress().c_str(), context->address_.GetPort(), strerror(errno));
         context->SetErrorCode(errno);
         return false;
     }
@@ -1356,7 +1338,7 @@ bool ExecUdpDropMembership(MulticastMembershipContext *context)
     inet_pton(context->address_.GetSaFamily(), context->address_.GetAddress().c_str(), &(mreq.imr_multiaddr.s_addr));
     mreq.imr_interface.s_addr = htonl(INADDR_ANY); // network interface: any
     if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_DROP_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
-        sizeof(mreq)) == -1) {
+                   sizeof(mreq)) == -1) {
         NETSTACK_LOGE("failed to dropmembership, sock: %{public}d, ip: %{public}s, port: %{public}u",
                       context->GetSocketFd(), context->address_.GetAddress().c_str(), context->address_.GetPort());
         context->SetErrorCode(errno);
@@ -1380,8 +1362,8 @@ bool ExecSetMulticastTTL(MulticastSetTTLContext *context)
         return false;
     }
     int ttl = context->GetMulticastTTL();
-    if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_TTL, reinterpret_cast<void *>(&ttl),
-        sizeof(ttl)) == -1) {
+    if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_TTL, reinterpret_cast<void *>(&ttl), sizeof(ttl)) ==
+        -1) {
         NETSTACK_LOGE("multicast: failed to set ttl number, %{public}d", ttl);
         context->SetErrorCode(errno);
         return false;
@@ -1397,8 +1379,8 @@ bool ExecGetMulticastTTL(MulticastGetTTLContext *context)
     }
     int ttl = 0;
     socklen_t ttlLen = sizeof(ttl);
-    if (getsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_TTL, reinterpret_cast<void *>(&ttl),
-        &ttlLen) == -1) {
+    if (getsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_TTL, reinterpret_cast<void *>(&ttl), &ttlLen) ==
+        -1) {
         NETSTACK_LOGE("multicast: failed to get ttl number, %{public}d", ttl);
         context->SetErrorCode(errno);
         return false;
@@ -1415,7 +1397,7 @@ bool ExecSetLoopbackMode(MulticastSetLoopbackContext *context)
     }
     int enabled = static_cast<int>(context->GetLoopbackMode());
     if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_LOOP, reinterpret_cast<void *>(&enabled),
-        sizeof(enabled)) == -1) {
+                   sizeof(enabled)) == -1) {
         NETSTACK_LOGE("multicast: failed to set loopback mode, %{public}d", enabled);
         context->SetErrorCode(errno);
         return false;
@@ -1431,8 +1413,8 @@ bool ExecGetLoopbackMode(MulticastGetLoopbackContext *context)
     }
     int enabled = 0;
     socklen_t len = sizeof(enabled);
-    if (getsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_LOOP, reinterpret_cast<void *>(&enabled),
-        &len) == -1) {
+    if (getsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_LOOP, reinterpret_cast<void *>(&enabled), &len) ==
+        -1) {
         NETSTACK_LOGE("multicast: failed to get ttl number, %{public}d", enabled);
         context->SetErrorCode(errno);
         return false;
@@ -1707,25 +1689,25 @@ static void RemoveClientConnection(int32_t clientId)
     }
 }
 
-static bool SetTcpServerExtraOptions(int listenFd, int acceptFd, TCPExtraOptions& option)
+static bool SetTcpServerExtraOptions(int listenFd, int acceptFd, TCPExtraOptions &option)
 {
     int alive = static_cast<int>(option.IsKeepAlive());
-    if (setsockopt(acceptFd, SOL_SOCKET, SO_KEEPALIVE, reinterpret_cast<void*>(&alive), sizeof(alive)) < 0) {
+    if (setsockopt(acceptFd, SOL_SOCKET, SO_KEEPALIVE, reinterpret_cast<void *>(&alive), sizeof(alive)) < 0) {
         NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
         return false;
     }
     int oob = static_cast<int>(option.IsOOBInline());
-    if (setsockopt(acceptFd, SOL_SOCKET, SO_OOBINLINE, reinterpret_cast<void*>(&oob), sizeof(oob)) < 0) {
+    if (setsockopt(acceptFd, SOL_SOCKET, SO_OOBINLINE, reinterpret_cast<void *>(&oob), sizeof(oob)) < 0) {
         NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
         return false;
     }
     int noDelay = static_cast<int>(option.IsTCPNoDelay());
-    if (setsockopt(acceptFd, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<void*>(&noDelay), sizeof(noDelay)) < 0) {
+    if (setsockopt(acceptFd, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<void *>(&noDelay), sizeof(noDelay)) < 0) {
         NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
         return false;
     }
     linger soLinger = {option.socketLinger.IsOn(), (int)option.socketLinger.GetLinger()};
-    if (setsockopt(acceptFd, SOL_SOCKET, SO_LINGER, reinterpret_cast<void*>(&soLinger), sizeof(soLinger)) < 0) {
+    if (setsockopt(acceptFd, SOL_SOCKET, SO_LINGER, reinterpret_cast<void *>(&soLinger), sizeof(soLinger)) < 0) {
         NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
         return false;
     }
@@ -1883,7 +1865,7 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
     }
     auto clients = SingletonSocketConfig::GetInstance().GetClients(context->GetSocketFd());
     if (std::any_of(clients.begin(), clients.end(), [&context](int32_t fd) {
-        return !SetTcpServerExtraOptions(context->GetSocketFd(), fd, context->options_);
+            return !SetTcpServerExtraOptions(context->GetSocketFd(), fd, context->options_);
         })) {
         context->SetError(errno, strerror(errno));
         return false;

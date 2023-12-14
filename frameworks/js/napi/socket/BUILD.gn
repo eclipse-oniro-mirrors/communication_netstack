@@ -109,7 +109,6 @@ ohos_shared_library("socket") {
   ]
 
   external_deps = [
-    "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
   ]

@@ -119,7 +119,6 @@ ohos_unittest("two_way_tls_socket_unittest") {
   ]
   external_deps = [
     "c_utils:utils",
-    "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
   ]
@@ -145,7 +144,6 @@ ohos_unittest("one_way_tls_socket_unittest") {
   ]
   external_deps = [
     "c_utils:utils",
-    "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
   ]
@@ -171,7 +169,6 @@ ohos_unittest("two_way_tls_socket_certchain_unittest") {
   ]
   external_deps = [
     "c_utils:utils",
-    "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
   ]
@@ -197,7 +194,6 @@ ohos_unittest("one_way_tls_socket_certchain_unittest") {
   ]
   external_deps = [
     "c_utils:utils",
-    "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
   ]
@@ -226,7 +222,6 @@ ohos_unittest("tls_socket_unilateral_connection") {
     "access_token:libnativetoken",
     "access_token:libtoken_setproc",
     "c_utils:utils",
-    "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
   ]
@@ -247,7 +242,6 @@ ohos_unittest("secure_data_unittest") {
   deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
   external_deps = [
     "c_utils:utils",
-    "eventhandler:libeventhandler",
     "hilog:libhilog",
   ]
 
@@ -272,7 +266,6 @@ ohos_unittest("tls_key_test") {
   ]
   external_deps = [
     "c_utils:utils",
-    "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
   ]
@@ -298,7 +291,6 @@ ohos_unittest("tls_cert_test") {
   ]
   external_deps = [
     "c_utils:utils",
-    "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
   ]
@@ -324,7 +316,6 @@ ohos_unittest("tls_configuration_test") {
   ]
   external_deps = [
     "c_utils:utils",
-    "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
   ]
@@ -350,7 +341,6 @@ ohos_unittest("tls_context_test") {
   ]
   external_deps = [
     "c_utils:utils",
-    "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
   ]
@@ -376,7 +366,6 @@ ohos_unittest("socket_error_unittest") {
   ]
   external_deps = [
     "c_utils:utils",
-    "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
   ]
@@ -405,7 +394,6 @@ ohos_unittest("tls_socket_branch_test") {
     "access_token:libnativetoken",
     "access_token:libtoken_setproc",
     "c_utils:utils",
-    "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
   ]

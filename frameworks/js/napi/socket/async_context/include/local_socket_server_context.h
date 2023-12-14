@@ -18,6 +18,7 @@
 
 #include <cstddef>
 #include <unistd.h>
+#include <map>
 
 #include "base_context.h"
 #include "event_list.h"

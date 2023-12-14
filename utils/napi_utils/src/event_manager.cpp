@@ -167,28 +167,6 @@ void EventManager::SetValid(EventManager *manager)
     validManager_.emplace(manager);
 }
 
-#ifdef ENABLE_EVENT_HANDLER
-bool EventManager::InitNetstackEventHandler()
-{
-    if (eventRunner_ == nullptr) {
-        NETSTACK_LOGI("event handler is null, create handler.");
-        eventRunner_ = AppExecFwk::EventRunner::Create();
-        if (!eventRunner_) {
-            NETSTACK_LOGE("create event runner failed");
-            return false;
-        }
-        eventHandler_ = std::make_shared<AppExecFwk::EventHandler>(eventRunner_);
-        return true;
-    }
-    return true;
-}
-
-std::shared_ptr<AppExecFwk::EventHandler> EventManager::GetNetstackEventHandler()
-{
-    return eventHandler_;
-}
-#endif
-
 void EventManager::CreateEventReference(napi_env env, napi_value value)
 {
     if (env != nullptr && value != nullptr) {
