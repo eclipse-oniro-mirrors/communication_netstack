@@ -512,7 +512,7 @@ bool HttpClientTask::ProcessResponseCode()
     NETSTACK_LOGI("taskid=%{public}d, responseCode=%{public}d", taskId_, resultCode);
     response_.SetResponseCode(resultCode);
 
-    return (resultCode == ResponseCode::OK);
+    return true;
 }
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
@@ -531,7 +531,6 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
     }
 
     if (code != CURLE_OK) {
-        (void)ProcessResponseCode();
         if (onFailed_) {
             onFailed_(request_, response_, error_);
         }
