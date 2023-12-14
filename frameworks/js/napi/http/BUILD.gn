@@ -49,8 +49,16 @@ config("http_config") {
     defines = [ "WINDOWS_PLATFORM" ]
   } else if (is_mac) {
     defines = [ "MAC_PLATFORM" ]
+    cflags_cc = [
+      "-fstack-protector-strong",
+      "-D_FORTIFY_SOURCE=2 -O2",
+    ]
   } else if (product_name != "ohos-sdk") {
     defines = [ "HTTP_PROXY_ENABLE" ]
+    cflags_cc = [
+      "-fstack-protector-strong",
+      "-D_FORTIFY_SOURCE=2 -O2",
+    ]
   }
 }
 
@@ -108,6 +116,10 @@ ohos_shared_library("http") {
       external_deps += [ "init:libbegetutil" ]
     }
   }
+  cflags = [
+    "-fstack-protector-strong",
+    "-D_FORTIFY_SOURCE=2 -O2",
+  ]
 
   relative_install_dir = "module/net"
   part_name = "netstack"
