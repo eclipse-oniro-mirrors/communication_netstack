@@ -132,9 +132,9 @@ void Finalize(napi_env, void *data, void *)
 
 void FinalizeLocalsocketServer(napi_env, void *data, void *)
 {
-    EventManager* manager = reinterpret_cast<EventManager*>(data);
+    EventManager *manager = reinterpret_cast<EventManager *>(data);
     if (manager != nullptr) {
-        if (auto serverMgr = reinterpret_cast<LocalSocketServerManager*>(manager->GetData()); serverMgr != nullptr) {
+        if (auto serverMgr = reinterpret_cast<LocalSocketServerManager *>(manager->GetData()); serverMgr != nullptr) {
             NETSTACK_LOGI("localsocket server handle is finalized, fd: %{public}d", serverMgr->sockfd_);
             serverMgr->RemoveAllAccept();
             serverMgr->RemoveAllEventManager();
@@ -152,7 +152,7 @@ void FinalizeLocalSocket(napi_env, void *data, void *)
 {
     auto manager = static_cast<EventManager *>(data);
     if (manager != nullptr) {
-        if (auto pMgr = reinterpret_cast<LocalSocketServerManager*>(manager->GetData()); pMgr != nullptr) {
+        if (auto pMgr = reinterpret_cast<LocalSocketServerManager *>(manager->GetData()); pMgr != nullptr) {
             NETSTACK_LOGI("localsocket handle is finalized, fd: %{public}d", pMgr->sockfd_);
             if (pMgr->sockfd_ > 0) {
                 close(pMgr->sockfd_);
@@ -297,7 +297,7 @@ static bool MakeMulticastUdpSocket(napi_env env, napi_value thisVal, MulticastMe
     return true;
 }
 
-static bool SetSocketManager(napi_env env, napi_value thisVal, BaseContext *context, SocketBaseManager* mgr)
+static bool SetSocketManager(napi_env env, napi_value thisVal, BaseContext *context, SocketBaseManager *mgr)
 {
     if (mgr->sockfd_ <= 0) {
         NETSTACK_LOGE("SetSocketManager sockfd < 0");
@@ -558,12 +558,6 @@ napi_value SocketModuleExports::UDPSocket::Send(napi_env env, napi_callback_info
     return ModuleTemplate::InterfaceWithOutAsyncWork<UdpSendContext>(
         env, info,
         [](napi_env, napi_value, UdpSendContext *context) -> bool {
-#ifdef ENABLE_EVENT_HANDLER
-            auto manager = context->GetManager();
-            if (!manager->InitNetstackEventHandler()) {
-                return false;
-            }
-#endif
             SocketAsyncWork::ExecUdpSend(context->GetEnv(), context);
             return true;
         },
@@ -610,8 +604,8 @@ napi_value SocketModuleExports::MulticastSocket::AddMembership(napi_env env, nap
 
 napi_value SocketModuleExports::MulticastSocket::DropMembership(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(MulticastMembershipContext, ExecUdpDropMembership, UdpDropMembershipCallback,
-                            nullptr, UDP_DROP_MEMBERSHIP);
+    return SOCKET_INTERFACE(MulticastMembershipContext, ExecUdpDropMembership, UdpDropMembershipCallback, nullptr,
+                            UDP_DROP_MEMBERSHIP);
 }
 
 napi_value SocketModuleExports::MulticastSocket::SetMulticastTTL(napi_env env, napi_callback_info info)
@@ -654,12 +648,6 @@ napi_value SocketModuleExports::TCPSocket::Send(napi_env env, napi_callback_info
     return ModuleTemplate::InterfaceWithOutAsyncWork<TcpSendContext>(
         env, info,
         [](napi_env, napi_value, TcpSendContext *context) -> bool {
-#ifdef ENABLE_EVENT_HANDLER
-            auto manager = context->GetManager();
-            if (!manager->InitNetstackEventHandler()) {
-                return false;
-            }
-#endif
             SocketAsyncWork::ExecTcpSend(context->GetEnv(), context);
             return true;
         },
@@ -781,26 +769,21 @@ napi_value SocketModuleExports::TCPServerSocket::Off(napi_env env, napi_callback
 /* local socket */
 napi_value SocketModuleExports::LocalSocket::Bind(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(LocalSocketBindContext, ExecLocalSocketBind, LocalSocketBindCallback,
-        MakeLocalSocketBind, LOCAL_SOCKET_BIND);
+    return SOCKET_INTERFACE(LocalSocketBindContext, ExecLocalSocketBind, LocalSocketBindCallback, MakeLocalSocketBind,
+                            LOCAL_SOCKET_BIND);
 }
 
 napi_value SocketModuleExports::LocalSocket::Connect(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(LocalSocketConnectContext, ExecLocalSocketConnect, LocalSocketConnectCallback,
-        MakeLocalSocketConnect, LOCAL_SOCKET_CONNECT);
+                            MakeLocalSocketConnect, LOCAL_SOCKET_CONNECT);
 }
 
 napi_value SocketModuleExports::LocalSocket::Send(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::InterfaceWithOutAsyncWork<LocalSocketSendContext>(
-        env, info, [](napi_env, napi_value, LocalSocketSendContext *context) -> bool {
-#ifdef ENABLE_EVENT_HANDLER
-            auto manager = context->GetManager();
-            if (!manager->InitNetstackEventHandler()) {
-                return false;
-            }
-#endif
+        env, info,
+        [](napi_env, napi_value, LocalSocketSendContext *context) -> bool {
             SocketAsyncWork::ExecLocalSocketSend(context->GetEnv(), context);
             return true;
         },
@@ -809,32 +792,32 @@ napi_value SocketModuleExports::LocalSocket::Send(napi_env env, napi_callback_in
 
 napi_value SocketModuleExports::LocalSocket::Close(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(LocalSocketCloseContext, ExecLocalSocketClose, LocalSocketCloseCallback,
-        nullptr, LOCAL_SOCKET_CLOSE);
+    return SOCKET_INTERFACE(LocalSocketCloseContext, ExecLocalSocketClose, LocalSocketCloseCallback, nullptr,
+                            LOCAL_SOCKET_CLOSE);
 }
 
 napi_value SocketModuleExports::LocalSocket::GetState(napi_env env, napi_callback_info info)
 {
-    return SOCKET_INTERFACE(LocalSocketGetStateContext, ExecLocalSocketGetState, LocalSocketGetStateCallback,
-        nullptr, LOCAL_SOCKET_GET_STATE);
+    return SOCKET_INTERFACE(LocalSocketGetStateContext, ExecLocalSocketGetState, LocalSocketGetStateCallback, nullptr,
+                            LOCAL_SOCKET_GET_STATE);
 }
 
 napi_value SocketModuleExports::LocalSocket::GetSocketFd(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(LocalSocketGetSocketFdContext, ExecLocalSocketGetSocketFd, LocalSocketGetSocketFdCallback,
-        nullptr, LOCAL_SOCKET_GET_SOCKET_FD);
+                            nullptr, LOCAL_SOCKET_GET_SOCKET_FD);
 }
 
 napi_value SocketModuleExports::LocalSocket::SetExtraOptions(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(LocalSocketSetExtraOptionsContext, ExecLocalSocketSetExtraOptions,
-        LocalSocketSetExtraOptionsCallback, nullptr, LOCAL_SOCKET_SET_EXTRA_OPTIONS);
+                            LocalSocketSetExtraOptionsCallback, nullptr, LOCAL_SOCKET_SET_EXTRA_OPTIONS);
 }
 
 napi_value SocketModuleExports::LocalSocket::GetExtraOptions(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(LocalSocketGetExtraOptionsContext, ExecLocalSocketGetExtraOptions,
-        LocalSocketGetExtraOptionsCallback, nullptr, LOCAL_SOCKET_GET_EXTRA_OPTIONS);
+                            LocalSocketGetExtraOptionsCallback, nullptr, LOCAL_SOCKET_GET_EXTRA_OPTIONS);
 }
 
 napi_value SocketModuleExports::LocalSocket::On(napi_env env, napi_callback_info info)
@@ -851,25 +834,25 @@ napi_value SocketModuleExports::LocalSocket::Off(napi_env env, napi_callback_inf
 napi_value SocketModuleExports::LocalSocketServer::Listen(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(LocalSocketServerListenContext, ExecLocalSocketServerListen,
-        LocalSocketServerListenCallback, MakeLocalServerSocket, LOCAL_SOCKET_SERVER_LISTEN);
+                            LocalSocketServerListenCallback, MakeLocalServerSocket, LOCAL_SOCKET_SERVER_LISTEN);
 }
 
 napi_value SocketModuleExports::LocalSocketServer::GetState(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(LocalSocketServerGetStateContext, ExecLocalSocketServerGetState,
-        LocalSocketServerGetStateCallback, nullptr, LOCAL_SOCKET_SERVER_GET_STATE);
+                            LocalSocketServerGetStateCallback, nullptr, LOCAL_SOCKET_SERVER_GET_STATE);
 }
 
 napi_value SocketModuleExports::LocalSocketServer::SetExtraOptions(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(LocalSocketServerSetExtraOptionsContext, ExecLocalSocketServerSetExtraOptions,
-        LocalSocketServerSetExtraOptionsCallback, nullptr, LOCAL_SOCKET_SERVER_SET_EXTRA_OPTIONS);
+                            LocalSocketServerSetExtraOptionsCallback, nullptr, LOCAL_SOCKET_SERVER_SET_EXTRA_OPTIONS);
 }
 
 napi_value SocketModuleExports::LocalSocketServer::GetExtraOptions(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(LocalSocketServerGetExtraOptionsContext, ExecLocalSocketServerGetExtraOptions,
-        LocalSocketServerGetExtraOptionsCallback, nullptr, LOCAL_SOCKET_SERVER_GET_EXTRA_OPTIONS);
+                            LocalSocketServerGetExtraOptionsCallback, nullptr, LOCAL_SOCKET_SERVER_GET_EXTRA_OPTIONS);
 }
 
 napi_value SocketModuleExports::LocalSocketServer::On(napi_env env, napi_callback_info info)
@@ -890,7 +873,8 @@ napi_value SocketModuleExports::LocalSocketConnection::Send(napi_env env, napi_c
         [](napi_env theEnv, napi_value thisVal, LocalSocketServerSendContext *context) -> bool {
             context->SetClientId(NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID));
             return true;
-        }, LOCAL_SOCKET_CONNECTION_SEND);
+        },
+        LOCAL_SOCKET_CONNECTION_SEND);
 }
 
 napi_value SocketModuleExports::LocalSocketConnection::Close(napi_env env, napi_callback_info info)
@@ -900,7 +884,8 @@ napi_value SocketModuleExports::LocalSocketConnection::Close(napi_env env, napi_
         [](napi_env theEnv, napi_value thisVal, LocalSocketServerCloseContext *context) -> bool {
             context->SetClientId(NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID));
             return true;
-        }, LOCAL_SOCKET_CONNECTION_CLOSE);
+        },
+        LOCAL_SOCKET_CONNECTION_CLOSE);
 }
 
 napi_value SocketModuleExports::LocalSocketConnection::On(napi_env env, napi_callback_info info)
@@ -922,14 +907,14 @@ napi_value SocketModuleExports::LocalSocketConnection::On(napi_env env, napi_cal
         return NapiUtils::GetUndefined(env);
     }
     EventManager *manager = nullptr;
-    napi_unwrap(env, thisVal, reinterpret_cast<void**>(&manager));
+    napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager));
     if (manager == nullptr) {
         NETSTACK_LOGE("failed to unwrap");
         return NapiUtils::GetUndefined(env);
     }
     manager->AddListener(env, event, params[PARAM_COUNT_TWO - 1], false, false);
     if (event == EVENT_MESSAGE) {
-        if (auto mgr = reinterpret_cast<LocalSocketExec::LocalSocketConnectionData*>(manager->GetData());
+        if (auto mgr = reinterpret_cast<LocalSocketExec::LocalSocketConnectionData *>(manager->GetData());
             mgr != nullptr) {
             mgr->serverManager_->NotifyRegisterEvent();
         }

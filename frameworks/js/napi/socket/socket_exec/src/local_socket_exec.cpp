@@ -185,7 +185,7 @@ static napi_value MakeLocalSocketMessage(napi_env env, void *param)
     int result = memcpy_s(dataHandle, msg->len, msg->data, msg->len);
     if (result != EOK) {
         NETSTACK_LOGE("memcpy err, res: %{public}d, msg: %{public}s, len: %{public}u", result,
-            reinterpret_cast<char *>(msg->data), msg->len);
+                      reinterpret_cast<char *>(msg->data), msg->len);
         return NapiUtils::GetUndefined(env);
     }
     return MakeJsLocalSocketMessageParam(env, msgBuffer, msg);
@@ -422,7 +422,7 @@ static bool SetSocketBufferSize(int sockfd, int type, uint32_t size)
     }
     if (setsockopt(sockfd, SOL_SOCKET, type, reinterpret_cast<void *>(&size), sizeof(size)) < 0) {
         NETSTACK_LOGE("localsocket set sock size failed, sock: %{public}d, type: %{public}d, size: %{public}u, size",
-            sockfd, type, size);
+                      sockfd, type, size);
         return false;
     }
     return true;
@@ -506,7 +506,7 @@ static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager
         if (recvSize <= 0) {
             if (errno != EAGAIN) {
                 NETSTACK_LOGE("conntion close, recvSize:%{public}d, errno:%{public}d, fd:%{public}d, id:%{public}d",
-                    recvSize, errno, connectFd, clientId);
+                              recvSize, errno, connectFd, clientId);
                 callback.OnCloseMessage(eventManager);
                 serverManager->RemoveAccept(clientId);
                 break;
@@ -645,7 +645,7 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
         context->SetErrorCode(errno);
         return false;
     }
-    if (auto pMgr = reinterpret_cast<LocalSocketManager*>(context->GetManager()->GetData()); pMgr != nullptr) {
+    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetManager()->GetData()); pMgr != nullptr) {
         pMgr->isConnected_ = true;
     }
     std::thread serviceThread(PollRecvData, context->GetSocketFd(), nullptr, 0,
@@ -659,17 +659,8 @@ bool ExecLocalSocketSend(LocalSocketSendContext *context)
     if (context == nullptr) {
         return false;
     }
-    bool result = true;
-#ifdef ENABLE_EVENT_HANDLER
-    auto manager = context->GetManager();
-    auto eventHandler = manager->GetNetstackEventHandler();
-    if (!eventHandler) {
-        NETSTACK_LOGE("netstack eventHandler is nullptr");
-        return false;
-    }
-    eventHandler->PostSyncTask([&result, context]() { result = LocalSocketSendEvent(context); });
+    bool result = LocalSocketSendEvent(context);
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::LocalSocketSendCallback);
-#endif
     return result;
 }
 

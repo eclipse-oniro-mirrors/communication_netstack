@@ -186,8 +186,7 @@ void SocketAsyncWork::ExecLocalSocketGetState(napi_env env, void *data)
 
 void SocketAsyncWork::ExecLocalSocketGetSocketFd(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<LocalSocketGetSocketFdContext, LocalSocketExec::ExecLocalSocketGetSocketFd>(env,
-        data);
+    BaseAsyncWork::ExecAsyncWork<LocalSocketGetSocketFdContext, LocalSocketExec::ExecLocalSocketGetSocketFd>(env, data);
 }
 
 void SocketAsyncWork::ExecLocalSocketSetExtraOptions(napi_env env, void *data)
@@ -205,7 +204,7 @@ void SocketAsyncWork::ExecLocalSocketGetExtraOptions(napi_env env, void *data)
 void SocketAsyncWork::ExecLocalSocketServerListen(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<LocalSocketServerListenContext, LocalSocketExec::ExecLocalSocketServerListen>(env,
-        data);
+                                                                                                               data);
 }
 
 void SocketAsyncWork::ExecLocalSocketServerGetState(napi_env env, void *data)
@@ -217,25 +216,25 @@ void SocketAsyncWork::ExecLocalSocketServerGetState(napi_env env, void *data)
 void SocketAsyncWork::ExecLocalSocketServerSetExtraOptions(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<LocalSocketServerSetExtraOptionsContext,
-        LocalSocketExec::ExecLocalSocketServerSetExtraOptions>(env, data);
+                                 LocalSocketExec::ExecLocalSocketServerSetExtraOptions>(env, data);
 }
 
 void SocketAsyncWork::ExecLocalSocketServerGetExtraOptions(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<LocalSocketServerGetExtraOptionsContext,
-        LocalSocketExec::ExecLocalSocketServerGetExtraOptions>(env, data);
+                                 LocalSocketExec::ExecLocalSocketServerGetExtraOptions>(env, data);
 }
 
 void SocketAsyncWork::ExecLocalSocketConnectionSend(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<LocalSocketServerSendContext,
-        LocalSocketExec::ExecLocalSocketConnectionSend>(env, data);
+    BaseAsyncWork::ExecAsyncWork<LocalSocketServerSendContext, LocalSocketExec::ExecLocalSocketConnectionSend>(env,
+                                                                                                               data);
 }
 
 void SocketAsyncWork::ExecLocalSocketConnectionClose(napi_env env, void *data)
 {
-    BaseAsyncWork::ExecAsyncWork<LocalSocketServerCloseContext,
-        LocalSocketExec::ExecLocalSocketConnectionClose>(env, data);
+    BaseAsyncWork::ExecAsyncWork<LocalSocketServerCloseContext, LocalSocketExec::ExecLocalSocketConnectionClose>(env,
+                                                                                                                 data);
 }
 
 void SocketAsyncWork::BindCallback(napi_env env, napi_status status, void *data)
@@ -250,38 +249,36 @@ void SocketAsyncWork::UdpSendCallback(napi_env env, napi_status status, void *da
 
 void SocketAsyncWork::UdpAddMembershipCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<MulticastMembershipContext, SocketExec::UdpAddMembershipCallback>(env,
-        status, data);
+    BaseAsyncWork::AsyncWorkCallback<MulticastMembershipContext, SocketExec::UdpAddMembershipCallback>(env, status,
+                                                                                                       data);
 }
 
 void SocketAsyncWork::UdpDropMembershipCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<MulticastMembershipContext, SocketExec::UdpDropMembershipCallback>(env,
-        status, data);
+    BaseAsyncWork::AsyncWorkCallback<MulticastMembershipContext, SocketExec::UdpDropMembershipCallback>(env, status,
+                                                                                                        data);
 }
 
 void SocketAsyncWork::UdpSetMulticastTTLCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<MulticastSetTTLContext, SocketExec::UdpSetMulticastTTLCallback>(env,
-        status, data);
+    BaseAsyncWork::AsyncWorkCallback<MulticastSetTTLContext, SocketExec::UdpSetMulticastTTLCallback>(env, status, data);
 }
 
 void SocketAsyncWork::UdpGetMulticastTTLCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<MulticastGetTTLContext, SocketExec::UdpGetMulticastTTLCallback>(env,
-        status, data);
+    BaseAsyncWork::AsyncWorkCallback<MulticastGetTTLContext, SocketExec::UdpGetMulticastTTLCallback>(env, status, data);
 }
 
 void SocketAsyncWork::UdpSetLoopbackModeCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<MulticastSetLoopbackContext, SocketExec::UdpSetLoopbackModeCallback>(env,
-        status, data);
+    BaseAsyncWork::AsyncWorkCallback<MulticastSetLoopbackContext, SocketExec::UdpSetLoopbackModeCallback>(env, status,
+                                                                                                          data);
 }
 
 void SocketAsyncWork::UdpGetLoopbackModeCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<MulticastGetLoopbackContext, SocketExec::UdpGetLoopbackModeCallback>(env,
-        status, data);
+    BaseAsyncWork::AsyncWorkCallback<MulticastGetLoopbackContext, SocketExec::UdpGetLoopbackModeCallback>(env, status,
+                                                                                                          data);
 }
 
 void SocketAsyncWork::ConnectCallback(napi_env env, napi_status status, void *data)
@@ -366,8 +363,8 @@ void SocketAsyncWork::TcpServerGetStateCallback(napi_env env, napi_status status
 
 void SocketAsyncWork::LocalSocketBindCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<LocalSocketBindContext, LocalSocketExec::LocalSocketBindCallback>(
-        env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<LocalSocketBindContext, LocalSocketExec::LocalSocketBindCallback>(env, status,
+                                                                                                       data);
 }
 
 void SocketAsyncWork::LocalSocketConnectCallback(napi_env env, napi_status status, void *data)
@@ -378,14 +375,14 @@ void SocketAsyncWork::LocalSocketConnectCallback(napi_env env, napi_status statu
 
 void SocketAsyncWork::LocalSocketSendCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<LocalSocketSendContext, LocalSocketExec::LocalSocketSendCallback>(
-        env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<LocalSocketSendContext, LocalSocketExec::LocalSocketSendCallback>(env, status,
+                                                                                                       data);
 }
 
 void SocketAsyncWork::LocalSocketCloseCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<LocalSocketCloseContext, LocalSocketExec::LocalSocketCloseCallback>(
-        env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<LocalSocketCloseContext, LocalSocketExec::LocalSocketCloseCallback>(env, status,
+                                                                                                         data);
 }
 
 void SocketAsyncWork::LocalSocketGetStateCallback(napi_env env, napi_status status, void *data)
@@ -396,55 +393,55 @@ void SocketAsyncWork::LocalSocketGetStateCallback(napi_env env, napi_status stat
 
 void SocketAsyncWork::LocalSocketGetSocketFdCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<LocalSocketGetSocketFdContext,
-        LocalSocketExec::LocalSocketGetSocketFdCallback>(env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<LocalSocketGetSocketFdContext, LocalSocketExec::LocalSocketGetSocketFdCallback>(
+        env, status, data);
 }
 
 void SocketAsyncWork::LocalSocketSetExtraOptionsCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<LocalSocketSetExtraOptionsContext,
-        LocalSocketExec::LocalSocketSetExtraOptionsCallback>(env, status, data);
+                                     LocalSocketExec::LocalSocketSetExtraOptionsCallback>(env, status, data);
 }
 
 void SocketAsyncWork::LocalSocketGetExtraOptionsCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<LocalSocketGetExtraOptionsContext,
-        LocalSocketExec::LocalSocketGetExtraOptionsCallback>(env, status, data);
+                                     LocalSocketExec::LocalSocketGetExtraOptionsCallback>(env, status, data);
 }
 
 void SocketAsyncWork::LocalSocketServerListenCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<LocalSocketServerListenContext,
-        LocalSocketExec::LocalSocketServerListenCallback>(env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<LocalSocketServerListenContext, LocalSocketExec::LocalSocketServerListenCallback>(
+        env, status, data);
 }
 
 void SocketAsyncWork::LocalSocketServerGetStateCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<LocalSocketServerGetStateContext,
-        LocalSocketExec::LocalSocketServerGetStateCallback>(env, status, data);
+                                     LocalSocketExec::LocalSocketServerGetStateCallback>(env, status, data);
 }
 
 void SocketAsyncWork::LocalSocketServerSetExtraOptionsCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<LocalSocketServerSetExtraOptionsContext,
-        LocalSocketExec::LocalSocketServerSetExtraOptionsCallback>(env, status, data);
+                                     LocalSocketExec::LocalSocketServerSetExtraOptionsCallback>(env, status, data);
 }
 
 void SocketAsyncWork::LocalSocketServerGetExtraOptionsCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<LocalSocketServerGetExtraOptionsContext,
-        LocalSocketExec::LocalSocketServerGetExtraOptionsCallback>(env, status, data);
+                                     LocalSocketExec::LocalSocketServerGetExtraOptionsCallback>(env, status, data);
 }
 
 void SocketAsyncWork::LocalSocketConnectionSendCallback(napi_env env, napi_status status, void *data)
 {
-    BaseAsyncWork::AsyncWorkCallback<LocalSocketServerSendContext,
-        LocalSocketExec::LocalSocketConnectionSendCallback>(env, status, data);
+    BaseAsyncWork::AsyncWorkCallback<LocalSocketServerSendContext, LocalSocketExec::LocalSocketConnectionSendCallback>(
+        env, status, data);
 }
 
 void SocketAsyncWork::LocalSocketConnectionCloseCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<LocalSocketServerCloseContext,
-        LocalSocketExec::LocalSocketConnectionCloseCallback>(env, status, data);
+                                     LocalSocketExec::LocalSocketConnectionCloseCallback>(env, status, data);
 }
 } // namespace OHOS::NetStack::Socket

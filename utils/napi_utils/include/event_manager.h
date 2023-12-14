@@ -29,10 +29,6 @@
 #include "napi/native_api.h"
 #include "uv.h"
 
-#ifdef ENABLE_EVENT_HANDLER
-#include "event_handler.h"
-#endif
-
 namespace OHOS::NetStack {
 class EventManager {
 public:
@@ -91,11 +87,6 @@ public:
 
     void ClearWebSocketBinaryData();
 
-#ifdef ENABLE_EVENT_HANDLER
-    bool InitNetstackEventHandler();
-    std::shared_ptr<AppExecFwk::EventHandler> GetNetstackEventHandler();
-#endif
-
 private:
     std::mutex mutexForListenersAndEmitByUv_;
     std::mutex mutexForEmitAndEmitByUv_;
@@ -110,11 +101,6 @@ private:
     std::atomic_bool isDestroy_;
     std::string webSocketTextData_;
     std::string webSocketBinaryData_;
-
-#ifdef ENABLE_EVENT_HANDLER
-    std::shared_ptr<AppExecFwk::EventRunner> eventRunner_ = nullptr;
-    std::shared_ptr<AppExecFwk::EventHandler> eventHandler_ = nullptr;
-#endif
 };
 
 struct UvWorkWrapper {
