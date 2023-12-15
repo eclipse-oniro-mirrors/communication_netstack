@@ -583,15 +583,16 @@ static bool PollFd(pollfd *fds, nfds_t num, int timeout)
     return true;
 }
 
-static int ConfirmSocketTimeoutMs(int sock, int defaultValue)
+static int ConfirmSocketTimeoutMs(int sock, int type, int defaultValue)
 {
     timeval timeout;
     socklen_t optlen = sizeof(timeout);
-    if (getsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<void *>(&timeout), &optlen) < 0) {
-        NETSTACK_LOGE("get SO_SNDTIMEO failed, use default value, sock: %{public}d, errno: %{public}d", sock, errno);
+    if (getsockopt(sock, SOL_SOCKET, type, reinterpret_cast<void *>(&timeout), &optlen) < 0) {
+        NETSTACK_LOGE("get timeout failed, type: %{public}d, sock: %{public}d, errno: %{public}d", type, sock, errno);
         return defaultValue;
     }
-    return timeout.tv_sec * UNIT_CONVERSION_1000 + timeout.tv_usec / UNIT_CONVERSION_1000;
+    auto socketTimeoutMs = timeout.tv_sec * UNIT_CONVERSION_1000 + timeout.tv_usec / UNIT_CONVERSION_1000;
+    return socketTimeoutMs == 0 ? defaultValue : socketTimeoutMs;
 }
 
 static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr, socklen_t addrLen)
@@ -616,7 +617,7 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     fds[0].fd = sock;
     fds[0].events = 0;
     fds[0].events |= POLLOUT;
-    int sendTimeoutMs = ConfirmSocketTimeoutMs(sock, DEFAULT_TIMEOUT_MS);
+    int sendTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_SNDTIMEO, DEFAULT_TIMEOUT_MS);
     while (leftSize > 0) {
         if (!PollFd(fds, num, sendTimeoutMs)) {
             return false;
@@ -741,13 +742,11 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
 
     nfds_t num = 1;
-    pollfd fds[1] = {{0}};
-    fds[0].fd = sock;
-    fds[0].events = 0;
+    pollfd fds[1] = {{.fd = sock, .events = 0}};
     fds[0].events |= POLLIN;
-
+    int recvTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT);
     while (true) {
-        int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT);
+        int ret = poll(fds, num, recvTimeoutMs);
         if (ret < 0) {
             NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
             callback.OnError(errno);
