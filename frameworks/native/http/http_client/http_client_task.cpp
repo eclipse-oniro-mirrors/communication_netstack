@@ -520,7 +520,8 @@ double HttpClientTask::GetTimingFromCurl(CURL *handle, CURLINFO info)
     time_t timing;
     CURLcode result = curl_easy_getinfo(handle, info, &timing);
     if (result != CURLE_OK) {
-        NETSTACK_LOGE("Failed to get timing: %{public}d, %{public}s", info, curl_easy_strerror(result));+        return 0;
+        NETSTACK_LOGE("Failed to get timing: %{public}d, %{public}s", info, curl_easy_strerror(result));
+        return 0;
     }
     return static_cast<double>(timing);
 }
