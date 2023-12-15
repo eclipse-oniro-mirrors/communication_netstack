@@ -47,22 +47,6 @@ public:
 
     ~TCPExtraOptions() = default;
 
-    TCPExtraOptions& operator=(const TCPExtraOptions& other)
-    {
-        if (this != &other) {
-            keepAlive_ = other.keepAlive_;
-            OOBInline_ = other.OOBInline_;
-            TCPNoDelay_ = other.TCPNoDelay_;
-            socketLinger.SetOn(other.socketLinger.IsOn());
-            socketLinger.SetLinger(other.socketLinger.GetLinger());
-            SetReceiveBufferSize(other.GetReceiveBufferSize());
-            SetSendBufferSize(other.GetSendBufferSize());
-            SetReuseAddress(other.IsReuseAddress());
-            SetSocketTimeout(other.GetSocketTimeout());
-        }
-        return *this;
-    }
-
     void SetKeepAlive(bool keepAlive);
 
     void SetOOBInline(bool OOBInline);
@@ -75,6 +59,39 @@ public:
 
     [[nodiscard]] bool IsTCPNoDelay() const;
 
+    [[nodiscard]] bool AlreadySetKeepAlive() const
+    {
+        return keepAliveFlag_;
+    }
+    void SetKeepAliveFlag(bool flag)
+    {
+        keepAliveFlag_ = flag;
+    }
+    [[nodiscard]] bool AlreadySetOobInline() const
+    {
+        return oobInlineFlag_;
+    }
+    void SetOobInlineFlag(bool flag)
+    {
+        oobInlineFlag_ = flag;
+    }
+    [[nodiscard]] bool AlreadySetTcpNoDelay() const
+    {
+        return tcpNoDelayFlag_;
+    }
+    void SetTcpNoDelayFlag(bool flag)
+    {
+        tcpNoDelayFlag_ = flag;
+    }
+    [[nodiscard]] bool AlreadySetLinger() const
+    {
+        return lingerFlag_;
+    }
+    void SetLingerFlag(bool flag)
+    {
+        lingerFlag_ = flag;
+    }
+
     SocketLinger socketLinger;
 
 private:
@@ -83,6 +100,14 @@ private:
     bool OOBInline_;
 
     bool TCPNoDelay_;
+
+    bool keepAliveFlag_ = false;
+
+    bool oobInlineFlag_ = false;
+
+    bool tcpNoDelayFlag_ = false;
+
+    bool lingerFlag_ = false;
 };
 } // namespace OHOS::NetStack::Socket
 
