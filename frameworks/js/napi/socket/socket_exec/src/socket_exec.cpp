@@ -1862,7 +1862,7 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
     }
     auto clients = SingletonSocketConfig::GetInstance().GetClients(context->GetSocketFd());
     if (std::any_of(clients.begin(), clients.end(), [&context](int32_t fd) {
-        return !SocketSetTcpExtraOptions(fd, context->options_);
+            return !SocketSetTcpExtraOptions(fd, context->options_);
         })) {
         context->SetError(errno, strerror(errno));
         return false;
