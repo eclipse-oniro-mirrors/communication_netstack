@@ -59,38 +59,21 @@ public:
 
     [[nodiscard]] bool IsTCPNoDelay() const;
 
-    [[nodiscard]] bool AlreadySetKeepAlive() const
-    {
-        return keepAliveFlag_;
-    }
-    void SetKeepAliveFlag(bool flag)
-    {
-        keepAliveFlag_ = flag;
-    }
-    [[nodiscard]] bool AlreadySetOobInline() const
-    {
-        return oobInlineFlag_;
-    }
-    void SetOobInlineFlag(bool flag)
-    {
-        oobInlineFlag_ = flag;
-    }
-    [[nodiscard]] bool AlreadySetTcpNoDelay() const
-    {
-        return tcpNoDelayFlag_;
-    }
-    void SetTcpNoDelayFlag(bool flag)
-    {
-        tcpNoDelayFlag_ = flag;
-    }
-    [[nodiscard]] bool AlreadySetLinger() const
-    {
-        return lingerFlag_;
-    }
-    void SetLingerFlag(bool flag)
-    {
-        lingerFlag_ = flag;
-    }
+    [[nodiscard]] bool AlreadySetKeepAlive() const;
+
+    void SetKeepAliveFlag(bool flag);
+
+    [[nodiscard]] bool AlreadySetOobInline() const;
+
+    void SetOobInlineFlag(bool flag);
+
+    [[nodiscard]] bool AlreadySetTcpNoDelay() const;
+
+    void SetTcpNoDelayFlag(bool flag);
+
+    [[nodiscard]] bool AlreadySetLinger() const;
+
+    void SetLingerFlag(bool flag);
 
     SocketLinger socketLinger;
 

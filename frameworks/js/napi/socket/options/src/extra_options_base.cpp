@@ -60,4 +60,44 @@ uint32_t ExtraOptionsBase::GetSocketTimeout() const
 {
     return socketTimeout_;
 }
+
+bool ExtraOptionsBase::AlreadySetRecvBufSize() const
+{
+    return recvBufSizeFlag_;
+}
+
+void ExtraOptionsBase::SetRecvBufSizeFlag(bool flag)
+{
+    recvBufSizeFlag_ = flag;
+}
+
+bool ExtraOptionsBase::AlreadySetSendBufSize() const
+{
+    return sendBufSizeFlag_;
+}
+
+void ExtraOptionsBase::SetSendBufSizeFlag(bool flag)
+{
+    sendBufSizeFlag_ = flag;
+}
+
+bool ExtraOptionsBase::AlreadySetTimeout() const
+{
+    return timeoutFlag_;
+}
+
+void ExtraOptionsBase::SetTimeoutFlag(bool flag)
+{
+    timeoutFlag_ = flag;
+}
+
+bool ExtraOptionsBase::AlreadySetReuseAddr() const
+{
+    return reuseAddrFlag_;
+}
+
+void ExtraOptionsBase::SetReuseaddrFlag(bool flag)
+{
+    reuseAddrFlag_ = flag;
+}
 } // namespace OHOS::NetStack::Socket

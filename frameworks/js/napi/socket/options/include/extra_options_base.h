@@ -41,38 +41,21 @@ public:
 
     [[nodiscard]] uint32_t GetSocketTimeout() const;
 
-    [[nodiscard]] bool AlreadySetRecvBufSize() const
-    {
-        return recvBufSizeFlag_;
-    }
-    void SetRecvBufSizeFlag(bool flag)
-    {
-        recvBufSizeFlag_ = flag;
-    }
-    [[nodiscard]] bool AlreadySetSendBufSize() const
-    {
-        return sendBufSizeFlag_;
-    }
-    void SetSendBufSizeFlag(bool flag)
-    {
-        sendBufSizeFlag_ = flag;
-    }
-    [[nodiscard]] bool AlreadySetTimeout() const
-    {
-        return timeoutFlag_;
-    }
-    void SetTimeoutFlag(bool flag)
-    {
-        timeoutFlag_ = flag;
-    }
-    [[nodiscard]] bool AlreadySetReuseAddr() const
-    {
-        return reuseAddrFlag_;
-    }
-    void SetReuseaddrFlag(bool flag)
-    {
-        reuseAddrFlag_ = flag;
-    }
+    [[nodiscard]] bool AlreadySetRecvBufSize() const;
+
+    void SetRecvBufSizeFlag(bool flag);
+
+    [[nodiscard]] bool AlreadySetSendBufSize() const;
+
+    void SetSendBufSizeFlag(bool flag);
+
+    [[nodiscard]] bool AlreadySetTimeout() const;
+
+    void SetTimeoutFlag(bool flag);
+
+    [[nodiscard]] bool AlreadySetReuseAddr() const;
+
+    void SetReuseaddrFlag(bool flag);
 
 private:
     uint32_t receiveBufferSize_;
