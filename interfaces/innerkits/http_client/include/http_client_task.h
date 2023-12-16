@@ -279,6 +279,12 @@ private:
     bool ProcessResponseCode();
 
     /**
+     * Get the timing from curl handle
+     * @return Returns timing, unit is seconds.
+     */
+    double GetTimingFromCurl(CURL *handle, CURLINFO info);
+
+    /**
      * Processes the cookie in the HTTP response.
      * @param handle The Curl handle.
      */

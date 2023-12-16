@@ -515,12 +515,31 @@ bool HttpClientTask::ProcessResponseCode()
     return true;
 }
 
+double HttpClientTask::GetTimingFromCurl(CURL *handle, CURLINFO info)
+{
+    time_t timing;
+    CURLcode result = curl_easy_getinfo(handle, info, &timing);
+    if (result != CURLE_OK) {
+        NETSTACK_LOGE("Failed to get timing: %{public}d, %{public}s", info, curl_easy_strerror(result));
+        return 0;
+    }
+    return static_cast<double>(timing);
+}
+
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
 {
     CURLcode code = msg->data.result;
     NETSTACK_LOGD("taskid=%{public}d code=%{public}d", taskId_, code);
     error_.SetCURLResult(code);
     response_.SetResponseTime(HttpTime::GetNowTimeGMT());
+
+    NETSTACK_LOGD("dnsTiming: %{public}lf", GetTimingFromCurl(curlHandle_, CURLINFO_NAMELOOKUP_TIME_T));
+    NETSTACK_LOGD("connectTiming: %{public}lf", GetTimingFromCurl(curlHandle_, CURLINFO_CONNECT_TIME_T));
+    NETSTACK_LOGD("tlsTiming: %{public}lf", GetTimingFromCurl(curlHandle_, CURLINFO_APPCONNECT_TIME_T));
+    NETSTACK_LOGD("firstSendTiming: %{public}lf", GetTimingFromCurl(curlHandle_, CURLINFO_PRETRANSFER_TIME_T));
+    NETSTACK_LOGD("firstRecvTiming: %{public}lf", GetTimingFromCurl(curlHandle_, CURLINFO_STARTTRANSFER_TIME_T));
+    NETSTACK_LOGD("totalTiming: %{public}lf", GetTimingFromCurl(curlHandle_, CURLINFO_TOTAL_TIME_T));
+    NETSTACK_LOGD("redirectTiming: %{public}lf", GetTimingFromCurl(curlHandle_, CURLINFO_REDIRECT_TIME_T));
 
     if (CURLE_ABORTED_BY_CALLBACK == code) {
         (void)ProcessResponseCode();

@@ -20,6 +20,9 @@
 #include <mutex>
 #include <thread>
 #include <condition_variable>
+#include <memory>
+#include <map>
+#include <vector>
 #include <queue>
 #include <atomic>
 #include <iostream>
@@ -113,6 +116,7 @@ private:
     std::mutex initMutex_;
     std::map<CURL *, std::shared_ptr<HttpClientTask>> curlTaskMap_;
     std::map<uint32_t, std::shared_ptr<HttpClientTask>> taskIdMap_;
+    std::mutex taskMutex_;
     std::condition_variable conditionVariable_;
     struct CompareTasks {
         bool operator()(const std::shared_ptr<HttpClientTask> &task1, const std::shared_ptr<HttpClientTask> &task2)
@@ -125,10 +129,17 @@ private:
         }
     };
     std::mutex taskQueueMutex_;
+    std::priority_queue<std::shared_ptr<HttpClientTask>, std::vector<std::shared_ptr<HttpClientTask>>,
+                    HttpSession::CompareTasks> taskQueue_;
 
     std::atomic_bool initialized_;
     std::thread workThread_;
     std::atomic_bool runThread_;
+
+    /**
+     * Add Request info
+     */
+    void AddRequestInfo();
 
     /**
      * Perform Http request
