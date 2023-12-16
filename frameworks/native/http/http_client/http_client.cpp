@@ -169,11 +169,11 @@ void HttpSession::RunThread()
     while (runThread_) {
         RequestAndResponse();
         NETSTACK_LOGD("RunThread in loop runThread_ = %{public}s",
-                    runThread_ ? "true" : "false");
+            runThread_ ? "true" : "false");
         
         std::function<bool()> f = [this]() -> bool {
             NETSTACK_LOGD("RunThread in loop wait_for taskQueue_.empty() = %{public}d runThread_ = %{public}s",
-                        !taskQueue_.empty(), runThread_ ? "true" : "false");
+                !taskQueue_.empty(), runThread_ ? "true" : "false");
             return !taskQueue_.empty() || !runThread_;
         };
         std::unique_lock<std::mutex> lock(taskMutex_);
