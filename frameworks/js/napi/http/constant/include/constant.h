@@ -163,6 +163,10 @@ public:
     static const char *const HTTP_CLIENT_KEY;
     static const char *const HTTP_CLIENT_KEY_PASSWD;
 
+    static const char *const HTTP_CERT_TYPE_PEM;
+    static const char *const HTTP_CERT_TYPE_DER;
+    static const char *const HTTP_CERT_TYPE_P12;
+
     static const char *const HTTP_MULTI_FORM_DATA_NAME;
     static const char *const HTTP_MULTI_FORM_DATA_CONTENT_TYPE;
     static const char *const HTTP_MULTI_FORM_DATA_REMOTE_FILE_NAME;

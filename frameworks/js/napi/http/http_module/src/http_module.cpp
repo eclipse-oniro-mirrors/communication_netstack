@@ -114,6 +114,7 @@ void HttpModuleExports::InitHttpProperties(napi_env env, napi_value exports)
 
     InitRequestMethod(env, exports);
     InitResponseCode(env, exports);
+    InitCertType(env, exports);
     InitHttpProtocol(env, exports);
     InitHttpDataType(env, exports);
 }
@@ -191,6 +192,21 @@ void HttpModuleExports::InitHttpProtocol(napi_env env, napi_value exports)
     NapiUtils::DefineProperties(env, httpProtocol, properties);
 
     NapiUtils::SetNamedProperty(env, exports, INTERFACE_HTTP_PROTOCOL, httpProtocol);
+}
+
+void HttpModuleExports::InitCertType(napi_env env, napi_value exports)
+{
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::HTTP_CERT_TYPE_PEM,
+                                     NapiUtils::CreateStringUtf8(env, HttpConstant::HTTP_CERT_TYPE_PEM)),
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::HTTP_CERT_TYPE_DER,
+                                     NapiUtils::CreateStringUtf8(env, HttpConstant::HTTP_CERT_TYPE_DER)),
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::HTTP_CERT_TYPE_P12,
+                                     NapiUtils::CreateStringUtf8(env, HttpConstant::HTTP_CERT_TYPE_P12)),
+    };
+    napi_value httpCertType = NapiUtils::CreateObject(env);
+    NapiUtils::DefineProperties(env, httpCertType, properties);
+    NapiUtils::SetNamedProperty(env, exports, INTERFACE_CERT_TYPE, httpCertType);
 }
 
 void HttpModuleExports::InitHttpDataType(napi_env env, napi_value exports)
