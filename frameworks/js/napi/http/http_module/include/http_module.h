@@ -53,6 +53,7 @@ public:
     static constexpr const char *INTERFACE_RESPONSE_CODE = "ResponseCode";
     static constexpr const char *INTERFACE_HTTP_REQUEST = "HttpRequest";
     static constexpr const char *INTERFACE_HTTP_PROTOCOL = "HttpProtocol";
+    static constexpr const char *INTERFACE_CERT_TYPE = "CertType";
     static constexpr const char *INTERFACE_HTTP_RESPONSE_CACHE = "HttpResponseCache";
     static constexpr const char *INTERFACE_HTTP_DATA_TYPE = "HttpDataType";
 
@@ -74,6 +75,8 @@ private:
     static void InitResponseCode(napi_env env, napi_value exports);
 
     static void InitHttpProtocol(napi_env env, napi_value exports);
+
+    static void InitCertType(napi_env env, napi_value exports);
 
     static void InitHttpDataType(napi_env env, napi_value exports);
 };

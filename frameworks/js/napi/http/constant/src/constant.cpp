@@ -61,6 +61,10 @@ const char *const HttpConstant::HTTP_CLIENT_KEY = "keyPath";
 const char *const HttpConstant::HTTP_CLIENT_CERT_TYPE = "certType";
 const char *const HttpConstant::HTTP_CLIENT_KEY_PASSWD = "keyPassword";
 
+const char *const HttpConstant::HTTP_CERT_TYPE_PEM = "PEM";
+const char *const HttpConstant::HTTP_CERT_TYPE_DER = "DER";
+const char *const HttpConstant::HTTP_CERT_TYPE_P12 = "P12";
+
 const char *const HttpConstant::HTTP_PROXY_EXCLUSIONS_SEPARATOR = ",";
 
 const char *const HttpConstant::RESPONSE_KEY_RESULT = "result";
