@@ -148,6 +148,8 @@ private:
 
     static void AddRequestInfo();
 
+    static bool IsContextDeleted(RequestContext *context);
+
     struct RequestInfo {
         RequestInfo() = delete;
         ~RequestInfo() = default;

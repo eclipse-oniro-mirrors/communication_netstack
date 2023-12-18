@@ -519,6 +519,23 @@ void HttpExec::AddRequestInfo()
     }
 }
 
+bool HttpExec::IsContextDeleted(RequestContext *context)
+{
+    if (context == nullptr) {
+        return true;
+    }
+    {
+        std::lock_guard<std::mutex> lockGuard(HttpExec::staticContextSet_.mutexForContextVec);
+        auto it = std::find(HttpExec::staticContextSet_.contextSet.begin(),
+                            HttpExec::staticContextSet_.contextSet.end(), context);
+        if (it == HttpExec::staticContextSet_.contextSet.end()) {
+            NETSTACK_LOGI("context has been deleted in libuv thread");
+            return true;
+        }
+    }
+    return false;
+}
+
 void HttpExec::RunThread()
 {
     while (staticVariable_.runThread && staticVariable_.curlMulti != nullptr) {
@@ -840,7 +857,6 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
 {
     auto context = static_cast<RequestContext *>(userData);
     if (context == nullptr) {
-        context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
         return 0;
     }
     if (context->GetManager()->IsEventDestroy()) {
@@ -935,7 +951,6 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
 {
     auto context = static_cast<RequestContext *>(userData);
     if (context == nullptr) {
-        context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
         return 0;
     }
     if (context->GetManager()->IsEventDestroy()) {
@@ -989,17 +1004,8 @@ void HttpExec::OnDataReceive(napi_env env, napi_status status, void *data)
 void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
 {
     auto context = static_cast<RequestContext *>(data);
-    if (context == nullptr) {
+    if (IsContextDeleted(context)) {
         return;
-    }
-    {
-        std::lock_guard lockGuard(HttpExec::staticContextSet_.mutexForContextVec);
-        auto it = std::find(HttpExec::staticContextSet_.contextSet.begin(),
-                            HttpExec::staticContextSet_.contextSet.end(), context);
-        if (it == HttpExec::staticContextSet_.contextSet.end()) {
-            NETSTACK_LOGI("context has benn deleted in libuv thread");
-            return;
-        }
     }
     auto progress = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), progress) == napi_undefined) {
@@ -1017,7 +1023,7 @@ void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
 void HttpExec::OnDataUploadProgress(napi_env env, napi_status status, void *data)
 {
     auto context = static_cast<RequestContext *>(data);
-    if (context == nullptr) {
+    if (IsContextDeleted(context)) {
         NETSTACK_LOGD("[OnDataUploadProgress] context is null.");
         return;
     }
@@ -1026,7 +1032,7 @@ void HttpExec::OnDataUploadProgress(napi_env env, napi_status status, void *data
         NETSTACK_LOGD("[OnDataUploadProgress] napi_undefined.");
         return;
     }
-    NapiUtils::SetUint32Property(context->GetEnv(), progress, "uploadSize",
+    NapiUtils::SetUint32Property(context->GetEnv(), progress, "sendSize",
                                  static_cast<uint32_t>(context->GetUlLen().nLen));
     NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize",
                                  static_cast<uint32_t>(context->GetUlLen().tLen));

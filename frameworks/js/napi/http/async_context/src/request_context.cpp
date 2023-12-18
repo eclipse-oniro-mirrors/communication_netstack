@@ -523,7 +523,6 @@ LoadBytes RequestContext::GetDlLen()
         dlBytes.nLen = dlBytes_.front().nLen;
         dlBytes.tLen = dlBytes_.front().tLen;
         dlBytes_.pop();
-        return dlBytes;
     }
     return dlBytes;
 }
@@ -541,8 +540,12 @@ void RequestContext::SetUlLen(curl_off_t nowLen, curl_off_t totalLen)
 LoadBytes RequestContext::GetUlLen()
 {
     std::lock_guard<std::mutex> lock(ulLenLock_);
-    LoadBytes dlBytes{ulBytes_.front().nLen, ulBytes_.front().tLen};
-    return dlBytes;
+    LoadBytes ulBytes;
+    if (!ulBytes_.empty()) {
+        ulBytes.nLen = ulBytes_.back().nLen;
+        ulBytes.tLen = ulBytes_.back().tLen;
+    }
+    return ulBytes;
 }
 
 bool RequestContext::CompareWithLastElement(curl_off_t nowLen, curl_off_t totalLen)
