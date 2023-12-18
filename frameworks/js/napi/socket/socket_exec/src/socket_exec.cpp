@@ -40,6 +40,8 @@
 
 static constexpr const int DEFAULT_BUFFER_SIZE = 8192;
 
+static constexpr const int DEFAULT_TIMEOUT_MS = 20000;
+
 static constexpr const int DEFAULT_POLL_TIMEOUT = 500; // 0.5 Seconds
 
 static constexpr const int ADDRESS_INVALID = 99;
@@ -61,6 +63,8 @@ static constexpr const int USER_LIMIT = 511;
 static constexpr const int MAX_CLIENTS = 1024;
 
 static constexpr const int ERRNO_BAD_FD = 9;
+
+static constexpr const int UNIT_CONVERSION_1000 = 1000;
 
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
@@ -573,10 +577,22 @@ static bool PollFd(pollfd *fds, nfds_t num, int timeout)
         return false;
     }
     if (ret == 0) {
-        NETSTACK_LOGE("poll to send timeout, socket is %{public}d, errno is %{public}d", fds->fd, errno);
+        NETSTACK_LOGE("poll to send timeout, socket is %{public}d, timeout is %{public}d", fds->fd, timeout);
         return false;
     }
     return true;
+}
+
+static int ConfirmSocketTimeoutMs(int sock, int type, int defaultValue)
+{
+    timeval timeout;
+    socklen_t optlen = sizeof(timeout);
+    if (getsockopt(sock, SOL_SOCKET, type, reinterpret_cast<void *>(&timeout), &optlen) < 0) {
+        NETSTACK_LOGE("get timeout failed, type: %{public}d, sock: %{public}d, errno: %{public}d", type, sock, errno);
+        return defaultValue;
+    }
+    auto socketTimeoutMs = timeout.tv_sec * UNIT_CONVERSION_1000 + timeout.tv_usec / UNIT_CONVERSION_1000;
+    return socketTimeoutMs == 0 ? defaultValue : socketTimeoutMs;
 }
 
 static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr, socklen_t addrLen)
@@ -601,9 +617,9 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     fds[0].fd = sock;
     fds[0].events = 0;
     fds[0].events |= POLLOUT;
-
+    int sendTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_SNDTIMEO, DEFAULT_TIMEOUT_MS);
     while (leftSize > 0) {
-        if (!PollFd(fds, num, DEFAULT_BUFFER_SIZE)) {
+        if (!PollFd(fds, num, sendTimeoutMs)) {
             return false;
         }
         size_t sendSize = (sockType == SOCK_STREAM ? leftSize : std::min<size_t>(leftSize, bufferSize));
@@ -726,13 +742,11 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
 
     nfds_t num = 1;
-    pollfd fds[1] = {{0}};
-    fds[0].fd = sock;
-    fds[0].events = 0;
+    pollfd fds[1] = {{.fd = sock, .events = 0}};
     fds[0].events |= POLLIN;
-
+    int recvTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT);
     while (true) {
-        int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT);
+        int ret = poll(fds, num, recvTimeoutMs);
         if (ret < 0) {
             NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
             callback.OnError(errno);
@@ -816,33 +830,39 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
 
 static bool SetBaseOptions(int sock, ExtraOptionsBase *option)
 {
-    if (option->GetReceiveBufferSize() != 0) {
-        int size = (int)option->GetReceiveBufferSize();
+    if (option->AlreadySetRecvBufSize()) {
+        int size = static_cast<int>(option->GetReceiveBufferSize());
         if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<void *>(&size), sizeof(size)) < 0) {
+            NETSTACK_LOGE("set SO_RCVBUF failed, fd: %{public}d", sock);
             return false;
         }
     }
 
-    if (option->GetSendBufferSize() != 0) {
-        int size = (int)option->GetSendBufferSize();
+    if (option->AlreadySetSendBufSize()) {
+        int size = static_cast<int>(option->GetSendBufferSize());
         if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<void *>(&size), sizeof(size)) < 0) {
+            NETSTACK_LOGE("set SO_SNDBUF failed, fd: %{public}d", sock);
             return false;
         }
     }
 
-    if (option->IsReuseAddress()) {
-        int reuse = 1;
+    if (option->AlreadySetReuseAddr()) {
+        int reuse = static_cast<int>(option->IsReuseAddress());
         if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<void *>(&reuse), sizeof(reuse)) < 0) {
+            NETSTACK_LOGE("set SO_REUSEADDR failed, fd: %{public}d", sock);
             return false;
         }
     }
 
-    if (option->GetSocketTimeout() != 0) {
-        timeval timeout = {(int)option->GetSocketTimeout(), 0};
+    if (option->AlreadySetTimeout()) {
+        int value = option->GetSocketTimeout();
+        timeval timeout = {value / UNIT_CONVERSION_1000, (value % UNIT_CONVERSION_1000) * UNIT_CONVERSION_1000};
         if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
+            NETSTACK_LOGE("set SO_RCVTIMEO failed, fd: %{public}d", sock);
             return false;
         }
         if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
+            NETSTACK_LOGE("set SO_SNDTIMEO failed, fd: %{public}d", sock);
             return false;
         }
     }
@@ -1186,6 +1206,46 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
     return false;
 }
 
+static bool SocketSetTcpExtraOptions(int sockfd, TCPExtraOptions& option)
+{
+    if (!SetBaseOptions(sockfd, &option)) {
+        return false;
+    }
+    if (option.AlreadySetKeepAlive()) {
+        int alive = static_cast<int>(option.IsKeepAlive());
+        if (setsockopt(sockfd, SOL_SOCKET, SO_KEEPALIVE, reinterpret_cast<void*>(&alive), sizeof(alive)) < 0) {
+            NETSTACK_LOGE("set SO_KEEPALIVE failed, fd: %{public}d", sockfd);
+            return false;
+        }
+    }
+    
+    if (option.AlreadySetOobInline()) {
+        int oob = static_cast<int>(option.IsOOBInline());
+        if (setsockopt(sockfd, SOL_SOCKET, SO_OOBINLINE, reinterpret_cast<void*>(&oob), sizeof(oob)) < 0) {
+            NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", sockfd);
+            return false;
+        }
+    }
+    
+    if (option.AlreadySetTcpNoDelay()) {
+        int noDelay = static_cast<int>(option.IsTCPNoDelay());
+        if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<void*>(&noDelay), sizeof(noDelay)) < 0) {
+            NETSTACK_LOGE("set TCP_NODELAY failed, fd: %{public}d", sockfd);
+            return false;
+        }
+    }
+
+    if (option.AlreadySetLinger()) {
+        linger soLinger = {.l_onoff = option.socketLinger.IsOn(),
+                           .l_linger = static_cast<int>(option.socketLinger.GetLinger())};
+        if (setsockopt(sockfd, SOL_SOCKET, SO_LINGER, &soLinger, sizeof(soLinger)) < 0) {
+            NETSTACK_LOGE("set SO_LINGER failed, fd: %{public}d", sockfd);
+            return false;
+        }
+    }
+    return true;
+}
+
 bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
@@ -1193,43 +1253,10 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
         return false;
     }
 
-    if (!SetBaseOptions(context->GetSocketFd(), &context->options_)) {
+    if (!SocketSetTcpExtraOptions(context->GetSocketFd(), context->options_)) {
         context->SetErrorCode(errno);
         return false;
     }
-
-    if (context->options_.IsKeepAlive()) {
-        int keepalive = 1;
-        if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_KEEPALIVE, &keepalive, sizeof(keepalive)) < 0) {
-            context->SetErrorCode(errno);
-            return false;
-        }
-    }
-
-    if (context->options_.IsOOBInline()) {
-        int oobInline = 1;
-        if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_OOBINLINE, &oobInline, sizeof(oobInline)) < 0) {
-            context->SetErrorCode(errno);
-            return false;
-        }
-    }
-
-    if (context->options_.IsTCPNoDelay()) {
-        int tcpNoDelay = 1;
-        if (setsockopt(context->GetSocketFd(), IPPROTO_TCP, TCP_NODELAY, &tcpNoDelay, sizeof(tcpNoDelay)) < 0) {
-            context->SetErrorCode(errno);
-            return false;
-        }
-    }
-
-    linger soLinger = {0};
-    soLinger.l_onoff = context->options_.socketLinger.IsOn();
-    soLinger.l_linger = (int)context->options_.socketLinger.GetLinger();
-    if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_LINGER, &soLinger, sizeof(soLinger)) < 0) {
-        context->SetErrorCode(errno);
-        return false;
-    }
-
     return true;
 }
 
@@ -1689,84 +1716,52 @@ static void RemoveClientConnection(int32_t clientId)
     }
 }
 
-static bool SetTcpServerExtraOptions(int listenFd, int acceptFd, TCPExtraOptions &option)
+static EventManager *WaitForManagerReady(int32_t clientId, int &connectFd)
 {
-    int alive = static_cast<int>(option.IsKeepAlive());
-    if (setsockopt(acceptFd, SOL_SOCKET, SO_KEEPALIVE, reinterpret_cast<void *>(&alive), sizeof(alive)) < 0) {
-        NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
-        return false;
-    }
-    int oob = static_cast<int>(option.IsOOBInline());
-    if (setsockopt(acceptFd, SOL_SOCKET, SO_OOBINLINE, reinterpret_cast<void *>(&oob), sizeof(oob)) < 0) {
-        NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
-        return false;
-    }
-    int noDelay = static_cast<int>(option.IsTCPNoDelay());
-    if (setsockopt(acceptFd, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<void *>(&noDelay), sizeof(noDelay)) < 0) {
-        NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
-        return false;
-    }
-    linger soLinger = {option.socketLinger.IsOn(), (int)option.socketLinger.GetLinger()};
-    if (setsockopt(acceptFd, SOL_SOCKET, SO_LINGER, reinterpret_cast<void *>(&soLinger), sizeof(soLinger)) < 0) {
-        NETSTACK_LOGE("set SO_OOBINLINE failed, fd: %{public}d", acceptFd);
-        return false;
-    }
-    if (option.GetReceiveBufferSize() != 0) {
-        int size = (int)option.GetReceiveBufferSize();
-        if (setsockopt(acceptFd, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<void *>(&size), sizeof(size)) < 0) {
-            NETSTACK_LOGE("set SO_RCVBUF failed, fd: %{public}d", acceptFd);
-            return false;
+    EventManager *manager = nullptr;
+    std::unique_lock<std::mutex> lock(g_mutex);
+    g_cv.wait(lock, [&manager, &clientId]() {
+        auto iter = g_clientEventManagers.find(clientId);
+        if (iter != g_clientEventManagers.end()) {
+            manager = iter->second;
+            if (manager->HasEventListener(EVENT_MESSAGE)) {
+                NETSTACK_LOGI("manager is ready with registering message event");
+                return true;
+            }
+        } else {
+            NETSTACK_LOGE("iter==g_clientEventManagers.end()");
         }
-    }
-    if (option.GetSendBufferSize() != 0) {
-        int size = (int)option.GetSendBufferSize();
-        if (setsockopt(acceptFd, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<void *>(&size), sizeof(size)) < 0) {
-            NETSTACK_LOGE("set SO_SNDBUF failed, fd: %{public}d", acceptFd);
-            return false;
-        }
-    }
-    timeval timeout = {(int)option.GetSocketTimeout(), 0};
-    if (setsockopt(acceptFd, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
-        NETSTACK_LOGE("set SO_RCVTIMEO failed, fd: %{public}d", acceptFd);
         return false;
-    }
-    if (setsockopt(acceptFd, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
-        NETSTACK_LOGE("set SO_SNDTIMEO failed, fd: %{public}d", acceptFd);
-        return false;
-    }
-    return true;
+    });
+    connectFd = g_clientFDs[clientId];
+    return manager;
 }
 
-static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, const TcpMessageCallback &callback)
+static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallback &callback)
 {
-    char buffer[DEFAULT_BUFFER_SIZE];
+    int32_t connectFD = 0;
+    EventManager *manager = WaitForManagerReady(clientId, connectFD);
 
-    EventManager *manager = nullptr;
-    {
-        std::unique_lock<std::mutex> lock(g_mutex);
-        g_cv.wait(lock, [&manager, &clientId]() {
-            auto iter = g_clientEventManagers.find(clientId);
-            if (iter != g_clientEventManagers.end()) {
-                manager = iter->second;
-                if (manager->HasEventListener(EVENT_MESSAGE)) {
-                    NETSTACK_LOGI("manager is ready with registering message event");
-                    return true;
-                }
-            } else {
-                NETSTACK_LOGE("iter==g_clientEventManagers.end()");
-            }
-            return false;
-        });
+    uint32_t recvBufferSize = DEFAULT_BUFFER_SIZE;
+    if (TCPExtraOptions option; SingletonSocketConfig::GetInstance().GetTcpExtraOptions(sock, option)) {
+        if (option.GetReceiveBufferSize() != 0) {
+            recvBufferSize = option.GetReceiveBufferSize();
+        }
+    }
+    char *buffer = new (std::nothrow) char[recvBufferSize];
+    if (buffer == nullptr) {
+        NETSTACK_LOGE("client malloc failed, listenfd: %{public}d, connectFd: %{public}d, size: %{public}d", sock,
+                      connectFD, recvBufferSize);
+        callback.OnError(NO_MEMORY);
+        return;
     }
 
-    auto connectFD = g_clientFDs[clientId]; // std::lock_guard<std::mutex> lock(g_mutex);]
-
     while (true) {
-        if (memset_s(buffer, sizeof(buffer), 0, sizeof(buffer)) != EOK) {
+        if (memset_s(buffer, recvBufferSize, 0, recvBufferSize) != EOK) {
             NETSTACK_LOGE("memset_s failed!");
             break;
         }
-        int32_t recvSize = recv(connectFD, buffer, sizeof(buffer), 0);
+        int32_t recvSize = recv(connectFD, buffer, recvBufferSize, 0);
         NETSTACK_LOGI("ClientRecv: fd is %{public}d, buf is %{public}s, size is %{public}d bytes", connectFD, buffer,
                       recvSize);
         if (recvSize <= 0) {
@@ -1784,11 +1779,12 @@ static void ClientHandler(int32_t clientId, sockaddr *addr, socklen_t addrLen, c
                 break;
             }
             if (memcpy_s(data, recvSize, buffer, recvSize) != EOK ||
-                !callback.OnMessage(connectFD, data, recvSize, addr, manager)) {
+                !callback.OnMessage(connectFD, data, recvSize, nullptr, manager)) {
                 free(data);
             }
         }
     }
+    delete[] buffer;
 }
 
 static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const TcpMessageCallback &callback)
@@ -1816,9 +1812,9 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
 
         SingletonSocketConfig::GetInstance().AddNewAcceptSocket(sock, connectFD);
         if (TCPExtraOptions option; SingletonSocketConfig::GetInstance().GetTcpExtraOptions(sock, option)) {
-            SetTcpServerExtraOptions(sock, connectFD, option);
+            SocketSetTcpExtraOptions(connectFD, option);
         }
-        std::thread handlerThread(ClientHandler, clientId, nullptr, 0, callback);
+        std::thread handlerThread(ClientHandler, sock, clientId, callback);
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(TCP_SERVER_HANDLE_CLIENT);
 #else
@@ -1865,7 +1861,7 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
     }
     auto clients = SingletonSocketConfig::GetInstance().GetClients(context->GetSocketFd());
     if (std::any_of(clients.begin(), clients.end(), [&context](int32_t fd) {
-            return !SetTcpServerExtraOptions(context->GetSocketFd(), fd, context->options_);
+            return !SocketSetTcpExtraOptions(fd, context->options_);
         })) {
         context->SetError(errno, strerror(errno));
         return false;
