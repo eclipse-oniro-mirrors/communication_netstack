@@ -48,13 +48,13 @@ extern "C" {
  * @since 11
  * @version 1.0
  */
-enum OH_NetStack_CertType {
+enum NetStack_CertType {
     /** PEM certificate */
-    OH_NetStack_CERT_TYPE_PEM = 0,
+    NetStack_CERT_TYPE_PEM = 0,
     /** DER certificate */
-    OH_NetStack_CERT_TYPE_DER = 1,
+    NetStack_CERT_TYPE_DER = 1,
     /** Invalid certificate */
-    OH_NetStack_CERT_TYPE_MAX
+    NetStack_CERT_TYPE_INVALID
 };
 
 /**
@@ -63,9 +63,9 @@ enum OH_NetStack_CertType {
  * @since 11
  * @version 1.0
  */
-struct OH_NetStack_CertBlob {
+struct NetStack_CertBlob {
     /** Certificate type */
-    enum OH_NetStack_CertType type;
+    enum NetStack_CertType type;
     /** Certificate content length */
     uint32_t size;
     /** Certificate content */

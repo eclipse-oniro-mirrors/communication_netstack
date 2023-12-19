@@ -26,7 +26,7 @@ namespace NetStack {
 namespace Ssl {
 
 const char *const SslConstant::SYSPRECAPATH = "/etc/security/certificates";
-const char *const SslConstant::USERINSTALLEDCAPATH = "/data/service/el1/public/cert_manager_service/certificates/user/";
+const char *const SslConstant::USERINSTALLEDCAPATH = "/data/certificates/user_cacerts/";
 const int SslConstant::UIDTRANSFORMDIVISOR = 200000;
 
 std::string GetUserInstalledCaPath()
@@ -35,7 +35,7 @@ std::string GetUserInstalledCaPath()
     int32_t uid = OHOS::IPCSkeleton::GetCallingUid();
     NETSTACK_LOGD("uid: %{public}d\n", uid);
     uid /= SslConstant::UIDTRANSFORMDIVISOR;
-    return userInstalledCaPath.append(std::to_string(uid).c_str()).append("/cacerts");
+    return userInstalledCaPath.append(std::to_string(uid).c_str()).append("/");
 }
 
 X509 *PemToX509(const uint8_t *pemCert, size_t pemSize)
