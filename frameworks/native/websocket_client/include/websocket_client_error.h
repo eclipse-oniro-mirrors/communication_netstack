@@ -21,9 +21,9 @@
 
 namespace OHOS {
 namespace NetStack {
-namespace WebsocketClient {
+namespace WebSocketClient {
 
-enum WebsocketErrorCode {
+enum WebSocketErrorCode {
     WEBSOCKET_NONE_ERR = 0,
     WEBSOCKET_COMMON_ERROR_CODE = 200,
     WEBSOCKET_ERROR_CODE_BASE = 1000,
@@ -48,7 +48,7 @@ enum WebsocketErrorCode {
     WEBSOCKET_UNKNOWN_OTHER_ERROR = 9999
 };
 
-} // namespace WebsocketClient
+} // namespace WebSocketClient
 } // namespace NetStack
 } // namespace OHOS
 

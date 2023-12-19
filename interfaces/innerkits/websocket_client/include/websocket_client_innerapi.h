@@ -32,7 +32,7 @@
 
 namespace OHOS {
 namespace NetStack {
-namespace WebsocketClient {
+namespace WebSocketClient {
 
 struct CloseResult {
     unsigned int code;
@@ -58,14 +58,14 @@ struct OpenOptions {
     std::map<std::string, std::string> headers;
 };
 
-class WebsocketClient {
+class WebSocketClient {
 public:
-    WebsocketClient();
-    ~WebsocketClient();
-    typedef void (*OnMessageCallback)(WebsocketClient *client, const std::string &data, size_t length);
-    typedef void (*OnCloseCallback)(WebsocketClient *client, CloseResult closeResult);
-    typedef void (*OnErrorCallback)(WebsocketClient *client, ErrorResult error);
-    typedef void (*OnOpenCallback)(WebsocketClient *client, OpenResult openResult);
+    WebSocketClient();
+    ~WebSocketClient();
+    typedef void (*OnMessageCallback)(WebSocketClient *client, const std::string &data, size_t length);
+    typedef void (*OnCloseCallback)(WebSocketClient *client, CloseResult closeResult);
+    typedef void (*OnErrorCallback)(WebSocketClient *client, ErrorResult error);
+    typedef void (*OnOpenCallback)(WebSocketClient *client, OpenResult openResult);
 
     int Connect(std::string URL, OpenOptions Options);
     int Send(char *data, size_t length);
@@ -83,7 +83,7 @@ public:
 private:
     ClientContext *clientContext;
 };
-} // namespace WebsocketClient
+} // namespace WebSocketClient
 } // namespace NetStack
 } // namespace OHOS
 

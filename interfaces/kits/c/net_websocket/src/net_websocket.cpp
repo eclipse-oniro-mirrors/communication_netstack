@@ -20,51 +20,50 @@
 #include "netstack_log.h"
 #include "websocket_client_innerapi.h"
 
-using namespace OHOS::NetStack::WebsocketClient;
+using namespace OHOS::NetStack::WebSocketClient;
 
 const int MAX_CLIENT_SIZE = 100;
 
-void OH_NetStack_OnMessageCallback(WebsocketClient *ptrInner, const std::string &data, size_t length)
+void OH_NetStack_OnMessageCallback(WebSocketClient *ptrInner, const std::string &data, size_t length)
 {
     NETSTACK_LOGD("websocket CAPI Message Callback");
     char *data1 = const_cast<char *>(data.c_str());
-    OH_NetStack_WebsocketClient *OH_client = GetNdkClientAdapter(ptrInner);
+    WebSocket *OH_client = GetNdkClientAdapter(ptrInner);
     OH_client->onMessage(OH_client, data1, length);
 }
 
-void OH_NetStack_OnCloseCallback(WebsocketClient *ptrInner, CloseResult closeResult)
+void OH_NetStack_OnCloseCallback(WebSocketClient *ptrInner, CloseResult closeResult)
 {
     NETSTACK_LOGD("websocket CAPI Close Callback");
-    struct OH_NetStack_WebsocketClient_CloseResult OH_CloseResult;
+    struct WebSocket_CloseResult OH_CloseResult;
     Conv2CloseResult(closeResult, &OH_CloseResult);
-    OH_NetStack_WebsocketClient *OH_client = GetNdkClientAdapter(ptrInner);
+    WebSocket *OH_client = GetNdkClientAdapter(ptrInner);
     OH_client->onClose(OH_client, OH_CloseResult);
 }
 
-void OH_NetStack_OnErrorCallback(WebsocketClient *ptrInner, ErrorResult error)
+void OH_NetStack_OnErrorCallback(WebSocketClient *ptrInner, ErrorResult error)
 {
     NETSTACK_LOGD("websocket CAPI Error Callback");
-    struct OH_NetStack_WebsocketClient_ErrorResult OH_ErrorResult;
+    struct WebSocket_ErrorResult OH_ErrorResult;
     Conv2ErrorResult(error, &OH_ErrorResult);
-    OH_NetStack_WebsocketClient *OH_client = GetNdkClientAdapter(ptrInner);
+    WebSocket *OH_client = GetNdkClientAdapter(ptrInner);
     OH_client->onError(OH_client, OH_ErrorResult);
 }
 
-void OH_NetStack_OnOpenCallback(WebsocketClient *ptrInner, OpenResult openResult)
+void OH_NetStack_OnOpenCallback(WebSocketClient *ptrInner, OpenResult openResult)
 {
     NETSTACK_LOGD("websocket CAPI Open Callback");
-    struct OH_NetStack_WebsocketClient_OpenResult OH_OpenResult;
+    struct WebSocket_OpenResult OH_OpenResult;
     Conv2OpenResult(openResult, &OH_OpenResult);
-    OH_NetStack_WebsocketClient *OH_client = GetNdkClientAdapter(ptrInner);
+    WebSocket *OH_client = GetNdkClientAdapter(ptrInner);
     OH_client->onOpen(OH_client, OH_OpenResult);
 }
 
-struct OH_NetStack_WebsocketClient *OH_NetStack_WebsocketClient_Construct(
-    OH_NetStack_WebsocketClient_OnOpenCallback onOpen, OH_NetStack_WebsocketClient_OnMessageCallback onMessage,
-    OH_NetStack_WebsocketClient_OnErrorCallback onError, OH_NetStack_WebsocketClient_OnCloseCallback onclose)
+struct WebSocket *OH_WebSocketClient_Constructor(WebSocket_OnOpenCallback onOpen, WebSocket_OnMessageCallback onMessage,
+                                                 WebSocket_OnErrorCallback onError, WebSocket_OnCloseCallback onclose)
 {
-    OH_NetStack_WebsocketClient *OH_client = new OH_NetStack_WebsocketClient;
-    WebsocketClient *websocketClient = new WebsocketClient();
+    WebSocket *OH_client = new WebSocket;
+    WebSocketClient *websocketClient = new WebSocketClient();
     OH_client->onMessage = onMessage;
     OH_client->onClose = onclose;
     OH_client->onError = onError;
@@ -81,24 +80,22 @@ struct OH_NetStack_WebsocketClient *OH_NetStack_WebsocketClient_Construct(
     return OH_client;
 }
 
-int OH_NetStack_WebSocketClient_AddHeader(struct OH_NetStack_WebsocketClient *client,
-                                          struct OH_NetStack_WebsocketClient_Slist header)
+int OH_WebSocketClient_AddHeader(struct WebSocket *client, struct WebSocket_Header header)
 {
     NETSTACK_LOGD("websocket CAPI AddHeader");
     if (client == nullptr) {
-        return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
+        return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
     }
 
-    struct OH_NetStack_WebsocketClient_Slist *newHeader =
-        (struct OH_NetStack_WebsocketClient_Slist *)malloc(sizeof(struct OH_NetStack_WebsocketClient_Slist));
+    struct WebSocket_Header *newHeader = (struct WebSocket_Header *)malloc(sizeof(struct WebSocket_Header));
 
     if (newHeader == nullptr) {
-        return WebsocketErrorCode::WEBSOCKET_CONNECTION_ERROR;
+        return WebSocketErrorCode::WEBSOCKET_CONNECTION_ERROR;
     } else {
         newHeader->fieldName = header.fieldName;
         newHeader->fieldValue = header.fieldValue;
         newHeader->next = NULL;
-        struct OH_NetStack_WebsocketClient_Slist *currentHeader = client->requestOptions.headers;
+        struct WebSocket_Header *currentHeader = client->requestOptions.headers;
         if (currentHeader == nullptr) {
             client->requestOptions.headers = newHeader;
         } else {
@@ -111,29 +108,28 @@ int OH_NetStack_WebSocketClient_AddHeader(struct OH_NetStack_WebsocketClient *cl
     }
 }
 
-int OH_NetStack_WebSocketClient_Send(struct OH_NetStack_WebsocketClient *client, char *data, size_t length)
+int OH_WebSocketClient_Send(struct WebSocket *client, char *data, size_t length)
 {
     int ret;
     if (client == nullptr) {
-        return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
+        return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
     }
-    WebsocketClient *websocketClient = GetInnerClientAdapter(client);
+    WebSocketClient *websocketClient = GetInnerClientAdapter(client);
 
     if (websocketClient == NULL) {
-        return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
+        return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
     }
 
     ret = websocketClient->Send(data, length);
     return ret;
 }
 
-int OH_NetStack_WebSocketClient_Connect(struct OH_NetStack_WebsocketClient *client, const char *url,
-                                        struct OH_NetStack_WebsocketClient_RequestOptions options)
+int OH_WebSocketClient_Connect(struct WebSocket *client, const char *url, struct WebSocket_RequestOptions options)
 {
     NETSTACK_LOGI("websocket CAPI Connect");
     int ret = 0;
     if (client == nullptr) {
-        return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
+        return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
     }
 
     struct OpenOptions openOptions;
@@ -143,10 +139,10 @@ int OH_NetStack_WebSocketClient_Connect(struct OH_NetStack_WebsocketClient *clie
         Conv2RequestOptions(&openOptions, options);
     }
 
-    WebsocketClient *websocketClient = GetInnerClientAdapter(client);
+    WebSocketClient *websocketClient = GetInnerClientAdapter(client);
 
     if (websocketClient == NULL) {
-        return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
+        return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
     }
 
     std::string connectUrl = std::string(url);
@@ -155,18 +151,17 @@ int OH_NetStack_WebSocketClient_Connect(struct OH_NetStack_WebsocketClient *clie
     return ret;
 }
 
-int OH_NetStack_WebSocketClient_Close(struct OH_NetStack_WebsocketClient *client,
-                                      struct OH_NetStack_WebsocketClient_CloseOption options)
+int OH_WebSocketClient_Close(struct WebSocket *client, struct WebSocket_CloseOption options)
 {
     int ret = 0;
 
     if (client == nullptr) {
-        return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
+        return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
     }
 
-    WebsocketClient *websocketClient = GetInnerClientAdapter(client);
+    WebSocketClient *websocketClient = GetInnerClientAdapter(client);
     if (websocketClient == NULL) {
-        return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
+        return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
     }
 
     struct CloseOption closeOption;
@@ -175,29 +170,29 @@ int OH_NetStack_WebSocketClient_Close(struct OH_NetStack_WebsocketClient *client
     return ret;
 }
 
-void OH_NetStack_WebsocketClient_FreeHeader(struct OH_NetStack_WebsocketClient_Slist *header)
+void OH_WebSocketClient_FreeHeader(struct WebSocket_Header *header)
 {
     if (header == nullptr) {
         return;
     }
-    OH_NetStack_WebsocketClient_FreeHeader(header->next);
+    OH_WebSocketClient_FreeHeader(header->next);
     free(header);
 }
 
-int OH_NetStack_WebsocketClient_Destroy(struct OH_NetStack_WebsocketClient *client)
+int OH_WebSocketClient_Destroy(struct WebSocket *client)
 {
     NETSTACK_LOGI("websocket CAPI Destroy");
     int ret = 0;
     if (client == nullptr) {
-        return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
+        return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
     }
-    WebsocketClient *websocketClient = GetInnerClientAdapter(client);
+    WebSocketClient *websocketClient = GetInnerClientAdapter(client);
     if (websocketClient == NULL) {
-        return WebsocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
+        return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
     }
     ret = websocketClient->Destroy();
 
-    OH_NetStack_WebsocketClient_FreeHeader(client->requestOptions.headers);
+    OH_WebSocketClient_FreeHeader(client->requestOptions.headers);
 
     g_clientMap.erase(client);
     return ret;
