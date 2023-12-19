@@ -177,6 +177,8 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 
     std::thread([context, handle] {
         std::lock_guard guard(staticVariable_.curlMultiMutex);
+        //Do SetServerSSLCertOption here to avoid blocking the main thread.
+        SetServerSSLCertOption(handle, context);
         staticVariable_.infoQueue.emplace(context, handle);
         staticVariable_.conditionVariable.notify_all();
         {
@@ -844,8 +846,6 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
 
     SetRequestOption(curl, context);
-
-    SetServerSSLCertOption(curl, context);
 
     if (!SetOtherOption(curl, context)) {
         return false;
