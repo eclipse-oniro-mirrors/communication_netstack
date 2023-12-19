@@ -20,7 +20,7 @@ ohos_ndk_library("libnet_ssl_ndk") {
   ndk_description_file = "./libnet_ssl_c.json"
   min_compact_version = "1"
   system_capability = "SystemCapability.Communication.Netstack"
-  
+
   system_capability_headers = [
     "network/netstack/net_ssl/net_ssl_c.h",
     "network/netstack/net_ssl/net_ssl_c_type.h",
@@ -42,22 +42,20 @@ ohos_shared_library("net_ssl_ndk") {
     "$THIRD_PARTY_ROOT/openssl/include",
     "$NETSTACK_DIR/interfaces/kits/c/net_ssl/include",
     "$NETSTACK_DIR/interfaces/innerkits/net_ssl/include",
-    "$NETSTACK_DIR/frameworks/native/net_ssl/include"
+    "$NETSTACK_DIR/frameworks/native/net_ssl/include",
   ]
 
-  sources = [
-    "src/net_ssl_c.cpp",
-  ]
+  sources = [ "src/net_ssl_c.cpp" ]
 
   deps = [
     "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
     "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
+    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
 
-  external_deps = [ 
+  external_deps = [
     "hilog:libhilog",
-    "ipc:ipc_core", 
+    "ipc:ipc_core",
   ]
 
   cflags_cc = [
