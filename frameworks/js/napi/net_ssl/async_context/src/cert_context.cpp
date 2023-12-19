@@ -70,46 +70,47 @@ CertBlob *CertContext::ParseCertBlobFromParams(napi_env env, napi_value value)
     if (typeValue == nullptr || dataValue == nullptr) {
         return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
     }
+    size_t dataSize = 0;
     uint32_t type;
-    napi_get_value_uint32(env, typeValue, &type);
-    CertType certType = static_cast<CertType>(type);
     uint32_t size = 0;
     uint8_t *data = nullptr;
-
+    napi_get_value_uint32(env, typeValue, &type);
+    CertType certType = static_cast<CertType>(type);
     if (certType == CERT_TYPE_PEM) {
         napi_valuetype valueType;
         napi_typeof(env, dataValue, &valueType);
         if (valueType != napi_string) {
+            NETSTACK_LOGE("pem but not string\n");
             return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
         }
-        size_t dataSize = 0;
         napi_get_value_string_utf8(env, dataValue, nullptr, 0, &dataSize);
-        if (dataSize + 1 > 0 && dataSize + 1 < SIZE_MAX / sizeof(uint8_t)) {
+        if (dataSize + 1 < SIZE_MAX / sizeof(uint8_t)) {
             data = new uint8_t[dataSize + 1];
+            napi_get_value_string_utf8(env, dataValue, reinterpret_cast<char *>(data), dataSize + 1, &dataSize);
+            size = static_cast<uint32_t>(dataSize);
+        } else {
+            return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
         }
-        napi_get_value_string_utf8(env, dataValue, reinterpret_cast<char *>(data), dataSize + 1, &dataSize);
-        size = static_cast<uint32_t>(dataSize);
     } else if (certType == CERT_TYPE_DER) {
         bool isArrayBuffer = false;
         napi_is_buffer(env, dataValue, &isArrayBuffer);
         if (!isArrayBuffer) {
+            NETSTACK_LOGE("der but bot arraybuffer\n");
             return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
         }
         void *dataArray = nullptr;
-        size_t dataSize = 0;
         napi_get_arraybuffer_info(env, dataValue, &dataArray, &dataSize);
-        if (dataSize > 0 && dataSize < SIZE_MAX / sizeof(uint8_t)) {
+        if (dataSize < SIZE_MAX / sizeof(uint8_t)) {
             data = new uint8_t[dataSize];
+            std::copy(static_cast<uint8_t *>(dataArray), static_cast<uint8_t *>(dataArray) + dataSize, data);
+            size = static_cast<uint32_t>(dataSize);
+        } else {
+            return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
         }
-        std::copy(static_cast<uint8_t *>(dataArray), static_cast<uint8_t *>(dataArray) + dataSize, data);
-        size = static_cast<uint32_t>(dataSize);
     } else {
         return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
     }
-
-    CertBlob *certBlob =
-        new CertBlob{static_cast<CertType>(type), static_cast<uint32_t>(size), static_cast<uint8_t *>(data)};
-    return certBlob;
+    return new CertBlob{static_cast<CertType>(type), static_cast<uint32_t>(size), static_cast<uint8_t *>(data)};
 }
 
 CertBlob *CertContext::GetCertBlob()

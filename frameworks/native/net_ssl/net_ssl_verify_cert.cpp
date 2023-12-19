@@ -26,7 +26,7 @@ namespace NetStack {
 namespace Ssl {
 
 const char *const SslConstant::SYSPRECAPATH = "/etc/security/certificates";
-const char *const SslConstant::USERINSTALLEDCAPATH = "/data/certificates/user_cacerts/";
+const char *const SslConstant::USERINSTALLEDCAPATH = "/data/certificates/user_cacerts";
 const int SslConstant::UIDTRANSFORMDIVISOR = 200000;
 
 std::string GetUserInstalledCaPath()
@@ -35,7 +35,7 @@ std::string GetUserInstalledCaPath()
     int32_t uid = OHOS::IPCSkeleton::GetCallingUid();
     NETSTACK_LOGD("uid: %{public}d\n", uid);
     uid /= SslConstant::UIDTRANSFORMDIVISOR;
-    return userInstalledCaPath.append(std::to_string(uid).c_str()).append("/");
+    return userInstalledCaPath.append("/").append(std::to_string(uid).c_str());
 }
 
 X509 *PemToX509(const uint8_t *pemCert, size_t pemSize)
@@ -130,9 +130,11 @@ uint32_t VerifyCert(const CertBlob *cert)
             continue;
         }
         std::string userInstalledCaPath = GetUserInstalledCaPath();
-        if (X509_STORE_load_locations(store, nullptr, SslConstant::SYSPRECAPATH) != VERIFY_RESULT_SUCCESS &&
-            X509_STORE_load_locations(store, nullptr, userInstalledCaPath.c_str()) != VERIFY_RESULT_SUCCESS) {
-            NETSTACK_LOGE("load store failed\n");
+        if (X509_STORE_load_locations(store, nullptr, SslConstant::SYSPRECAPATH) != VERIFY_RESULT_SUCCESS) {
+            NETSTACK_LOGE("load SYSPRECAPATH store failed\n");
+        }
+        if (X509_STORE_load_locations(store, nullptr, userInstalledCaPath.c_str()) != VERIFY_RESULT_SUCCESS) {
+            NETSTACK_LOGI("load userInstalledCaPath store failed\n");
         }
         ctx = X509_STORE_CTX_new();
         if (ctx == nullptr) {
