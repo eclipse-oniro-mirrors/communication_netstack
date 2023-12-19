@@ -84,7 +84,7 @@ ohos_shared_library("http") {
 
   configs = [ ":http_config" ]
 
-  deps = [ "$THIRD_PARTY_ROOT/curl:curl_shared" ]
+  deps = [ "$THIRD_PARTY_ROOT/curl:curl_shared_http3" ]
   if (is_mingw || is_mac) {
     sources +=
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
