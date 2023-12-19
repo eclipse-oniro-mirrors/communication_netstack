@@ -18,12 +18,12 @@
 #include "net_websocket.h"
 #include "websocket_client_innerapi.h"
 
-namespace OHOS::NetStack::WebsocketClient {
+namespace OHOS::NetStack::WebSocketClient {
 
-std::map<OH_NetStack_WebsocketClient *, WebsocketClient *> g_clientMap;
+std::map<WebSocket *, WebSocketClient *> g_clientMap;
 std::map<std::string, std::string> globalheaders;
 
-WebsocketClient *GetInnerClientAdapter(OH_NetStack_WebsocketClient *key)
+WebSocketClient *GetInnerClientAdapter(WebSocket *key)
 {
     auto it = g_clientMap.find(key);
     if (it != g_clientMap.end()) {
@@ -33,26 +33,24 @@ WebsocketClient *GetInnerClientAdapter(OH_NetStack_WebsocketClient *key)
     }
 }
 
-OH_NetStack_WebsocketClient *GetNdkClientAdapter(WebsocketClient * const websocketClient)
+WebSocket *GetNdkClientAdapter(WebSocketClient *websocketClient)
 {
-    auto it = std::find_if(g_clientMap.begin(), g_clientMap.end(), [&websocketClient](const auto &pair) {
-        return pair.second == websocketClient;
-    });
-    if (it != g_clientMap.end()) {
-        return it->first;
+    for (const auto &pair : g_clientMap) {
+        if (pair.second == websocketClient) {
+            return pair.first;
+        }
     }
-
     return nullptr;
 }
 
 int32_t Conv2RequestOptions(struct OpenOptions *openOptions,
-                            struct OH_NetStack_WebsocketClient_RequestOptions requestOptions)
+                            struct WebSocket_RequestOptions requestOptions)
 {
     if (openOptions == nullptr) {
         return -1;
     }
 
-    struct OH_NetStack_WebsocketClient_Slist *currentHeader = requestOptions.headers;
+    struct WebSocket_Header *currentHeader = requestOptions.headers;
 
     while (currentHeader != nullptr) {
         std::string fieldName(currentHeader->fieldName);
@@ -65,28 +63,28 @@ int32_t Conv2RequestOptions(struct OpenOptions *openOptions,
 }
 
 int32_t Conv2CloseOptions(struct CloseOption *closeOption,
-                          struct OH_NetStack_WebsocketClient_CloseOption requestOptions)
+                          struct WebSocket_CloseOption requestOptions)
 {
     closeOption->code = requestOptions.code;
     closeOption->reason = requestOptions.reason;
     return 0;
 }
 
-int32_t Conv2CloseResult(struct CloseResult closeResult, struct OH_NetStack_WebsocketClient_CloseResult *OH_CloseResult)
+int32_t Conv2CloseResult(struct CloseResult closeResult, struct WebSocket_CloseResult *OH_CloseResult)
 {
     OH_CloseResult->code = closeResult.code;
     OH_CloseResult->reason = closeResult.reason;
     return 0;
 }
 
-int32_t Conv2ErrorResult(struct ErrorResult error, struct OH_NetStack_WebsocketClient_ErrorResult *OH_ErrorResult)
+int32_t Conv2ErrorResult(struct ErrorResult error, struct WebSocket_ErrorResult *OH_ErrorResult)
 {
     OH_ErrorResult->errorCode = error.errorCode;
     OH_ErrorResult->errorMessage = error.errorMessage;
     return 0;
 }
 
-int32_t Conv2OpenResult(struct OpenResult openResult, struct OH_NetStack_WebsocketClient_OpenResult *OH_OpenResult)
+int32_t Conv2OpenResult(struct OpenResult openResult, struct WebSocket_OpenResult *OH_OpenResult)
 {
     OH_OpenResult->code = openResult.status;
     OH_OpenResult->reason = openResult.message;
@@ -94,4 +92,4 @@ int32_t Conv2OpenResult(struct OpenResult openResult, struct OH_NetStack_Websock
     return 0;
 }
 
-} // namespace OHOS::NetStack::WebsocketClient
+} // namespace OHOS::NetStack::WebSocketClient
