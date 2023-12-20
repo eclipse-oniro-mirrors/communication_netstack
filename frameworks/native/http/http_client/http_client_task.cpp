@@ -141,6 +141,13 @@ void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::str
         port = proxy.port;
         exclusions = proxy.exclusions;
         tunnel = proxy.tunnel;
+    } else {
+        using namespace NetManagerStandard;
+        NetManagerStandard::HttpProxy httpProxy;
+        NetConnClient::GetInstance().GetDefaultHttpProxy(httpProxy);
+        host = httpProxy.GetHost();
+        port = httpProxy.GetPort();
+        exclusions = CommonUtils::ToString(httpProxy.GetExclusionList());
     }
 }
 
@@ -157,10 +164,10 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
         NETSTACK_LOGD("Set CURLOPT_PROXY: %{public}s:%{public}d, %{public}s", host.c_str(), port, exclusions.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXY, host.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYPORT, port);
-        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
-        if (tunnel) {
-            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_HTTPPROXYTUNNEL, 1L);
-        }
+        auto curlTunnelValue = (url.find("https://") != std::string::npos) ? 1L : 0L;
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_HTTPPROXYTUNNEL, curlTunnelValue);
+        auto proxyType = (host.find("https://") != std::string::npos) ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYTYPE, proxyType);
     }
 
 #ifdef NO_SSL_CERTIFICATION
