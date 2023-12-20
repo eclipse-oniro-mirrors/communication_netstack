@@ -968,7 +968,8 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
         if (context->GetManager() && EventManager::IsManagerValid(context->GetManager())) {
             auto headerMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
             context->GetManager()->EmitByUv(ON_HEADER_RECEIVE, headerMap, ResponseHeaderCallback);
-            context->GetManager()->EmitByUv(ON_HEADERS_RECEIVE, headerMap, ResponseHeaderCallback);
+            auto headersMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
+            context->GetManager()->EmitByUv(ON_HEADERS_RECEIVE, headersMap, ResponseHeaderCallback);
         }
     }
     context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
