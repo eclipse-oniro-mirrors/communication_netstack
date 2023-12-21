@@ -177,6 +177,7 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
 #else
 #ifndef WINDOWS_PLATFORM
     NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_CAINFO, request_.GetCaPath().c_str());
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_CAPATH, HttpConstant::HTTP_PREPARE_CA_PATH);
 #endif // WINDOWS_PLATFORM
     SetServerSSLCertOption(handle);
 #endif // NO_SSL_CERTIFICATION
