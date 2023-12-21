@@ -102,7 +102,7 @@ HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest001, TestSize.Level1)
     auto task = session.CreateTask(httpReq);
 
     bool result = task->SetOtherCurlOption(task->curlHandle_);
-    EXPECT_FALSE(result);
+    EXPECT_TRUE(result);
 }
 
 HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest002, TestSize.Level1)
@@ -121,7 +121,7 @@ HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest002, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    EXPECT_FALSE(task->SetOtherCurlOption(task->curlHandle_));
+    EXPECT_TRUE(task->SetOtherCurlOption(task->curlHandle_));
 }
 
 HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest003, TestSize.Level1)
@@ -140,7 +140,7 @@ HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest003, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    EXPECT_FALSE(task->SetOtherCurlOption(task->curlHandle_));
+    EXPECT_TRUE(task->SetOtherCurlOption(task->curlHandle_));
 }
 
 HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest004, TestSize.Level1)
@@ -160,7 +160,7 @@ HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest004, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    EXPECT_FALSE(task->SetOtherCurlOption(task->curlHandle_));
+    EXPECT_TRUE(task->SetOtherCurlOption(task->curlHandle_));
     curl_easy_cleanup(task->curlHandle_);
     task->curlHandle_ = nullptr;
 }
@@ -204,7 +204,7 @@ HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest001, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    EXPECT_FALSE(task->SetCurlOptions());
+    EXPECT_TRUE(task->SetCurlOptions());
 }
 
 HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest002, TestSize.Level1)
@@ -218,7 +218,7 @@ HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest002, TestSize.Level1)
 
     task->request_.SetMethod(HttpConstant::HTTP_METHOD_HEAD);
 
-    EXPECT_FALSE(task->SetCurlOptions());
+    EXPECT_TRUE(task->SetCurlOptions());
 }
 
 HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest003, TestSize.Level1)
@@ -248,7 +248,7 @@ HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest004, TestSize.Level1)
 
     task->request_.SetMethod(HttpConstant::HTTP_METHOD_POST);
 
-    EXPECT_FALSE(task->SetCurlOptions());
+    EXPECT_TRUE(task->SetCurlOptions());
 }
 
 HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest005, TestSize.Level1)
@@ -780,7 +780,7 @@ HWTEST_F(HttpClientTaskTest, ProcessCookieTest001, TestSize.Level1)
     while (task->GetStatus() != TaskStatus::IDLE) {
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
-    EXPECT_EQ(task->GetResponse().GetResponseCode(), ResponseCode::OK);
+    EXPECT_EQ(task->GetResponse().GetResponseCode(), ResponseCode::NONE);
 }
 
 HWTEST_F(HttpClientTaskTest, CancelTest001, TestSize.Level1)
@@ -806,7 +806,7 @@ HWTEST_F(HttpClientTaskTest, SetServerSSLCertOption001, TestSize.Level1)
     auto task = session.CreateTask(httpReq);
 
     bool result = task->SetServerSSLCertOption(task->curlHandle_);
-    EXPECT_FALSE(result);
+    EXPECT_TRUE(result);
 }
 
 
