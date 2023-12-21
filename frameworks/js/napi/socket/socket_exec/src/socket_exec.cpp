@@ -741,7 +741,8 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         if (ret == 0) {
             continue;
         }
-        if (static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) == 0) {
+        if (!EventManager::IsManagerValid(callback.GetEventManager()) ||
+            static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) == 0) {
             return;
         }
         (void)memset_s(buf.get(), bufferSize, 0, bufferSize);
