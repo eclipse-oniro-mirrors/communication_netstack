@@ -742,8 +742,8 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
 
     nfds_t num = 1;
-    pollfd fds[1] = {{.fd = sock, .events = 0}};
-    fds[0].events |= POLLIN;
+    pollfd fds[1] = {{sock, POLLIN, 0}};
+
     int recvTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT);
     while (true) {
         int ret = poll(fds, num, recvTimeoutMs);
