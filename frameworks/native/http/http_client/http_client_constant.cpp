@@ -76,6 +76,7 @@ const char *const HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE = "application/x-ww
 const char *const HttpConstant::HTTP_CONTENT_TYPE_JSON = "application/json";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM = "application/octet-stream";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_IMAGE = "image";
+const char *const HttpConstant::HTTP_PREPARE_CA_PATH = "/etc/security/certificates";
 
 const char *const HttpConstant::HTTP_CONTENT_ENCODING_GZIP = "gzip";
 

@@ -52,6 +52,7 @@ public:
     static const char *const PARAM_KEY_EXPECT_DATA_TYPE;
     static const char *const PARAM_KEY_PRIORITY;
     static const char *const PARAM_KEY_CA_PATH;
+    static const char *const HTTP_PREPARE_CA_PATH;
 
     static const char *const PARAM_KEY_USING_HTTP_PROXY;
 
