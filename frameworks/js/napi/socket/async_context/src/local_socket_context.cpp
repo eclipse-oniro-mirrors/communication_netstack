@@ -168,9 +168,14 @@ const std::string &LocalSocketConnectContext::GetSocketPath() const
     return socketPath_;
 }
 
+int LocalSocketConnectContext::GetTimeoutMs() const
+{
+    return timeout_;
+}
+
 bool LocalSocketSendContext::GetData(napi_value sendOptions)
 {
-    if (NapiUtils::HasNamedProperty(GetEnv(), sendOptions, KEY_TIMEOUT)) {
+    if (!NapiUtils::HasNamedProperty(GetEnv(), sendOptions, KEY_DATA)) {
         return false;
     }
     napi_value jsData = NapiUtils::GetNamedProperty(GetEnv(), sendOptions, KEY_DATA);

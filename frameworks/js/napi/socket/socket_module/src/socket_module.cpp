@@ -352,7 +352,7 @@ static bool MakeLocalSocketConnect(napi_env env, napi_value thisVal, LocalSocket
         NETSTACK_LOGI("socket exist: %{public}d", context->GetSocketFd());
         return false;
     }
-    int sock = LocalSocketExec::MakeLocalSocket(SOCK_STREAM);
+    int sock = LocalSocketExec::MakeLocalSocket(SOCK_STREAM, false);
     if (sock < 0) {
         return false;
     }
@@ -494,7 +494,6 @@ void SocketModuleExports::DefineLocalSocketClass(napi_env env, napi_value export
         DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_SEND, LocalSocket::Send),
         DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_CLOSE, LocalSocket::Close),
         DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_GET_STATE, LocalSocket::GetState),
-        DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_GET_STATE, LocalSocket::GetSocketFd),
         DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_SET_EXTRA_OPTIONS, LocalSocket::SetExtraOptions),
         DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_GET_EXTRA_OPTIONS, LocalSocket::GetExtraOptions),
         DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_GET_SOCKET_FD, LocalSocket::GetSocketFd),

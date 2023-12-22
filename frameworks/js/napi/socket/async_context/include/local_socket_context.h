@@ -66,6 +66,7 @@ public:
     LocalSocketConnectContext(napi_env env, EventManager *manager) : LocalSocketBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
     const std::string &GetSocketPath() const;
+    int GetTimeoutMs() const;
 
 private:
     std::string socketPath_;

@@ -47,6 +47,12 @@ constexpr int MAX_CLIENTS = 1024;
 
 constexpr int ERRNO_BAD_FD = 9;
 
+constexpr int DEFAULT_TIMEOUT_MS = 20000;
+
+constexpr int UNIT_CONVERSION_1000 = 1000; // multiples of conversion between units
+
+constexpr int SOCKET_SIZE_CONVERSION = 2; // accept socket buffer size, the actual value is twice the set value
+
 constexpr char LOCAL_SOCKET_CONNECTION[] = "LocalSocketConnection";
 
 constexpr char LOCAL_SOCKET_SERVER_HANDLE_CLIENT[] = "LocalSocketServerHandleClient";
@@ -156,13 +162,8 @@ static napi_value MakeJsLocalSocketMessageParam(napi_env env, napi_value msgBuff
     if (NapiUtils::ValueIsArrayBuffer(env, msgBuffer)) {
         NapiUtils::SetNamedProperty(env, obj, KEY_MESSAGE, msgBuffer);
     }
-    napi_value jsRemoteInfo = NapiUtils::CreateObject(env);
-    if (NapiUtils::GetValueType(env, jsRemoteInfo) != napi_object) {
-        return nullptr;
-    }
-    NapiUtils::SetStringPropertyUtf8(env, jsRemoteInfo, KEY_ADDRESS, msg->remoteInfo.GetAddress());
-    NapiUtils::SetUint32Property(env, jsRemoteInfo, KEY_SIZE, msg->len);
-    NapiUtils::SetNamedProperty(env, obj, KEY_REMOTE_INFO, jsRemoteInfo);
+    NapiUtils::SetStringPropertyUtf8(env, obj, KEY_ADDRESS, msg->remoteInfo.GetAddress());
+    NapiUtils::SetUint32Property(env, obj, KEY_SIZE, msg->len);
     return obj;
 }
 
@@ -233,10 +234,22 @@ static bool PollFd(pollfd *fds, nfds_t num, int timeout)
         return false;
     }
     if (ret == 0) {
-        NETSTACK_LOGE("poll to send timeout, socket is %{public}d, errno is %{public}d", fds->fd, errno);
+        NETSTACK_LOGE("poll to send timeout, socket is %{public}d, timeout is %{public}d", fds->fd, timeout);
         return false;
     }
     return true;
+}
+
+static int ConfirmSocketTimeoutMs(int sock, int type, int defaultValue)
+{
+    timeval timeout;
+    socklen_t optlen = sizeof(timeout);
+    if (getsockopt(sock, SOL_SOCKET, type, reinterpret_cast<void *>(&timeout), &optlen) < 0) {
+        NETSTACK_LOGE("get timeout failed, type: %{public}d, sock: %{public}d, errno: %{public}d", type, sock, errno);
+        return defaultValue;
+    }
+    auto socketTimeoutMs = timeout.tv_sec * UNIT_CONVERSION_1000 + timeout.tv_usec / UNIT_CONVERSION_1000;
+    return socketTimeoutMs == 0 ? defaultValue : socketTimeoutMs;
 }
 
 static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr, socklen_t addrLen)
@@ -262,8 +275,9 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     fds[0].events = 0;
     fds[0].events |= POLLOUT;
 
+    int sendTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_SNDTIMEO, DEFAULT_TIMEOUT_MS);
     while (leftSize > 0) {
-        if (!PollFd(fds, num, DEFAULT_BUFFER_SIZE)) {
+        if (!PollFd(fds, num, sendTimeoutMs)) {
             return false;
         }
         size_t sendSize = (sockType == SOCK_STREAM ? leftSize : std::min<size_t>(leftSize, bufferSize));
@@ -431,13 +445,13 @@ static bool SetSocketBufferSize(int sockfd, int type, uint32_t size)
 static bool SetLocalSocketOptions(int sockfd, const LocalExtraOptions &options)
 {
     if (options.AlreadySetRecvBufSize()) {
-        uint32_t recvBufSize = options.GetReceiveBufferSize();
+        uint32_t recvBufSize = options.GetReceiveBufferSize() / SOCKET_SIZE_CONVERSION;
         if (!SetSocketBufferSize(sockfd, SO_RCVBUF, recvBufSize)) {
             return false;
         }
     }
     if (options.AlreadySetSendBufSize()) {
-        uint32_t sendBufSize = options.GetSendBufferSize();
+        uint32_t sendBufSize = options.GetSendBufferSize() / SOCKET_SIZE_CONVERSION;
         if (!SetSocketBufferSize(sockfd, SO_SNDBUF, sendBufSize)) {
             return false;
         }
@@ -458,12 +472,12 @@ static bool SetLocalSocketOptions(int sockfd, const LocalExtraOptions &options)
 
 static void SetSocketDefaultBufferSize(int sockfd, LocalSocketServerManager *mgr)
 {
-    uint32_t recvSize = DEFAULT_BUFFER_SIZE;
+    uint32_t recvSize = DEFAULT_BUFFER_SIZE / SOCKET_SIZE_CONVERSION;
     if (mgr->alreadySetExtraOptions_ && mgr->extraOptions_.AlreadySetRecvBufSize()) {
         recvSize = mgr->extraOptions_.GetReceiveBufferSize();
     }
     SetSocketBufferSize(sockfd, SO_RCVBUF, recvSize);
-    uint32_t sendSize = DEFAULT_BUFFER_SIZE;
+    uint32_t sendSize = DEFAULT_BUFFER_SIZE / SOCKET_SIZE_CONVERSION;
     if (mgr->alreadySetExtraOptions_ && mgr->extraOptions_.AlreadySetSendBufSize()) {
         sendSize = mgr->extraOptions_.GetSendBufferSize();
     }
@@ -568,8 +582,9 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Loca
     nfds_t num = 1;
     pollfd fds[1] = {{.fd = sock, .events = 0}};
     fds[0].events |= POLLIN;
+    int recvTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT_MS);
     while (true) {
-        int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT_MS);
+        int ret = poll(fds, num, recvTimeoutMs);
         if (ret < 0) {
             NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
             callback.OnError(errno);
@@ -626,6 +641,32 @@ bool ExecLocalSocketBind(LocalSocketBindContext *context)
     return true;
 }
 
+static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeoutMSec)
+{
+    if (connect(sock, addr, addrLen) == -1) {
+        pollfd fds[1] = {{.fd = sock, .events = POLLOUT}};
+        if (errno != EINPROGRESS) {
+            NETSTACK_LOGE("connect error, fd: %{public}d, errno: %{public}d", sock, errno);
+            return false;
+        }
+        int pollResult = poll(fds, 1, timeoutMSec);
+        if (pollResult == 0) {
+            NETSTACK_LOGE("connection timeout, fd: %{public}d, timeout: %{public}d", sock, timeoutMSec);
+            return false;
+        } else if (pollResult == -1) {
+            NETSTACK_LOGE("poll connect error, fd: %{public}d, errno: %{public}d", sock, errno);
+            return false;
+        }
+        int error = 0;
+        socklen_t errorLen = sizeof(error);
+        if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &errorLen) < 0 || error != 0) {
+            NETSTACK_LOGE("failed to get socket so_error, fd: %{public}d, errno: %{public}d", sock, errno);
+            return false;
+        }
+    }
+    return true;
+}
+
 bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
 {
     if (context == nullptr) {
@@ -634,13 +675,15 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
     struct sockaddr_un addr;
     memset_s(&addr, sizeof(addr), 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
+    int sockfd = context->GetSocketFd();
+    SetSocketBufferSize(sockfd, SO_RCVBUF, DEFAULT_BUFFER_SIZE);
     if (strcpy_s(addr.sun_path, sizeof(addr.sun_path) - 1, context->GetSocketPath().c_str()) != 0) {
-        NETSTACK_LOGE("failed to copy local socket path, sockfd: %{public}d", context->GetSocketFd());
+        NETSTACK_LOGE("failed to copy local socket path, sockfd: %{public}d", sockfd);
         context->SetErrorCode(UNKNOW_ERROR);
         return false;
     }
     NETSTACK_LOGI("local socket client fd: %{public}d, path: %{public}s", context->GetSocketFd(), addr.sun_path);
-    if (connect(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr)) == -1) {
+    if (!NonBlockConnect(sockfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr), context->GetTimeoutMs())) {
         NETSTACK_LOGE("failed to connect local socket, errno: %{public}d, %{public}s", errno, strerror(errno));
         context->SetErrorCode(errno);
         return false;
@@ -648,8 +691,8 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
     if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetManager()->GetData()); pMgr != nullptr) {
         pMgr->isConnected_ = true;
     }
-    std::thread serviceThread(PollRecvData, context->GetSocketFd(), nullptr, 0,
-                              LocalSocketMessageCallback(context->GetManager(), context->GetSocketPath()));
+    std::thread serviceThread(PollRecvData, sockfd, nullptr, 0, LocalSocketMessageCallback(context->GetManager(),
+                              context->GetSocketPath()));
     serviceThread.detach();
     return true;
 }

@@ -14,6 +14,8 @@
  */
 
 #include "socket_exec_fuzzer.h"
+
+#include "local_socket_exec.h"
 #include "netstack_log.h"
 #include "securec.h"
 #include "socket_exec.h"
@@ -360,6 +362,197 @@ void ExecGetLoopbackModeFuzzTest(const uint8_t *data, size_t size)
 
     SocketExec::ExecGetLoopbackMode(&context);
 }
+
+void MakeLocalSocketFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    LocalSocketExec::MakeLocalSocket(SOCK_STREAM);
+}
+
+void ExecLocalSocketBindFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    LocalSocketBindContext context(env, &eventManager);
+
+    LocalSocketExec::ExecLocalSocketBind(&context);
+}
+
+void ExecLocalSocketConnectFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    LocalSocketConnectContext context(env, &eventManager);
+
+    LocalSocketExec::ExecLocalSocketConnect(&context);
+}
+
+void ExecLocalSocketSendFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    LocalSocketSendContext context(env, &eventManager);
+
+    LocalSocketExec::ExecLocalSocketSend(&context);
+}
+
+void ExecLocalSocketCloseFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    LocalSocketCloseContext context(env, &eventManager);
+
+    LocalSocketExec::ExecLocalSocketClose(&context);
+}
+
+void ExecLocalSocketGetStateFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    LocalSocketGetStateContext context(env, &eventManager);
+
+    LocalSocketExec::ExecLocalSocketGetState(&context);
+}
+
+void ExecLocalSocketGetSocketFdFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    LocalSocketGetSocketFdContext context(env, &eventManager);
+
+    LocalSocketExec::ExecLocalSocketGetSocketFd(&context);
+}
+
+void ExecLocalSocketSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    LocalSocketSetExtraOptionsContext context(env, &eventManager);
+
+    LocalSocketExec::ExecLocalSocketSetExtraOptions(&context);
+}
+
+void ExecLocalSocketGetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    LocalSocketGetExtraOptionsContext context(env, &eventManager);
+
+    LocalSocketExec::ExecLocalSocketGetExtraOptions(&context);
+}
+
+void ExecLocalSocketServerListenFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    LocalSocketServerListenContext context(env, &eventManager);
+
+    LocalSocketExec::ExecLocalSocketServerListen(&context);
+}
+
+void ExecLocalSocketServerGetStateFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    LocalSocketServerGetStateContext context(env, &eventManager);
+
+    LocalSocketExec::ExecLocalSocketServerGetState(&context);
+}
+
+void ExecLocalSocketServerSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    LocalSocketServerSetExtraOptionsContext context(env, &eventManager);
+
+    LocalSocketExec::ExecLocalSocketServerSetExtraOptions(&context);
+}
+
+void ExecLocalSocketServerGetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    LocalSocketServerGetExtraOptionsContext context(env, &eventManager);
+
+    LocalSocketExec::ExecLocalSocketServerGetExtraOptions(&context);
+}
+
+void ExecLocalSocketConnectionSendFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    LocalSocketServerSendContext context(env, &eventManager);
+
+    LocalSocketExec::ExecLocalSocketConnectionSend(&context);
+}
+
+void ExecLocalSocketConnectionCloseFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager eventManager;
+    LocalSocketServerCloseContext context(env, &eventManager);
+
+    LocalSocketExec::ExecLocalSocketConnectionClose(&context);
+}
 } // namespace Socket
 } // namespace NetStack
 } // namespace OHOS
@@ -392,5 +585,20 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::NetStack::Socket::ExecGetMulticastTTLFuzzTest(data, size);
     OHOS::NetStack::Socket::ExecSetLoopbackModeFuzzTest(data, size);
     OHOS::NetStack::Socket::ExecGetLoopbackModeFuzzTest(data, size);
+    OHOS::NetStack::Socket::MakeLocalSocketFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecLocalSocketBindFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecLocalSocketConnectFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecLocalSocketSendFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecLocalSocketCloseFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecLocalSocketGetStateFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecLocalSocketGetSocketFdFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecLocalSocketSetExtraOptionsFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecLocalSocketGetExtraOptionsFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecLocalSocketServerListenFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecLocalSocketServerGetStateFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecLocalSocketServerSetExtraOptionsFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecLocalSocketServerGetExtraOptionsFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecLocalSocketConnectionSendFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecLocalSocketConnectionCloseFuzzTest(data, size);
     return 0;
 }
