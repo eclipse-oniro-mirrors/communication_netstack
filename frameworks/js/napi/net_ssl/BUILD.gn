@@ -46,14 +46,6 @@ ohos_shared_library("networksecurity_napi") {
     "net_ssl_exec/src/net_ssl_exec.cpp",
     "net_ssl_module/src/net_ssl_module.cpp",
   ]
-  cflags = [
-    "-fstack-protector-strong",
-    "-D_FORTIFY_SOURCE=2 -O2",
-  ]
-  cflags_cc = [
-    "-fstack-protector-strong",
-    "-D_FORTIFY_SOURCE=2 -O2",
-  ]
 
   configs = [ ":networksecurity_napi_config" ]
 

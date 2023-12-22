@@ -16,21 +16,23 @@
 #include <cstring>
 #include <iostream>
 
+#include <openssl/ssl.h>
+
 #include "net_ssl.h"
 #include "net_ssl_c.h"
 #include "net_ssl_c_type.h"
 
-struct OHOS::NetStack::Ssl::CertBlob SwitchToCertBlob(const struct OH_NetStack_CertBlob cert)
+struct OHOS::NetStack::Ssl::CertBlob SwitchToCertBlob(const struct NetStack_CertBlob cert)
 {
     OHOS::NetStack::Ssl::CertBlob cb;
     switch (cert.type) {
-        case OH_NetStack_CERT_TYPE_PEM:
+        case NETSTACK_CERT_TYPE_PEM:
             cb.type = OHOS::NetStack::Ssl::CertType::CERT_TYPE_PEM;
             break;
-        case OH_NetStack_CERT_TYPE_DER:
+        case NETSTACK_CERT_TYPE_DER:
             cb.type = OHOS::NetStack::Ssl::CertType::CERT_TYPE_DER;
             break;
-        case OH_NetStack_CERT_TYPE_MAX:
+        case NETSTACK_CERT_TYPE_INVALID:
             cb.type = OHOS::NetStack::Ssl::CertType::CERT_TYPE_MAX;
             break;
         default:
@@ -41,7 +43,7 @@ struct OHOS::NetStack::Ssl::CertBlob SwitchToCertBlob(const struct OH_NetStack_C
     return cb;
 }
 
-uint32_t VerifyCert_With_RootCa(const struct OH_NetStack_CertBlob *cert)
+uint32_t VerifyCert_With_RootCa(const struct NetStack_CertBlob *cert)
 {
     uint32_t verifyResult = X509_V_ERR_UNSPECIFIED;
     OHOS::NetStack::Ssl::CertBlob cb = SwitchToCertBlob(*cert);
@@ -49,8 +51,7 @@ uint32_t VerifyCert_With_RootCa(const struct OH_NetStack_CertBlob *cert)
     return verifyResult;
 }
 
-uint32_t VerifyCert_With_DesignatedCa(const struct OH_NetStack_CertBlob *cert,
-                                      const struct OH_NetStack_CertBlob *caCert)
+uint32_t VerifyCert_With_DesignatedCa(const struct NetStack_CertBlob *cert, const struct NetStack_CertBlob *caCert)
 {
     uint32_t verifyResult = X509_V_ERR_UNSPECIFIED;
     OHOS::NetStack::Ssl::CertBlob cb = SwitchToCertBlob(*cert);
@@ -59,8 +60,7 @@ uint32_t VerifyCert_With_DesignatedCa(const struct OH_NetStack_CertBlob *cert,
     return verifyResult;
 }
 
-uint32_t OH_NetStack_VerifyCertification(const struct OH_NetStack_CertBlob *cert,
-                                         const struct OH_NetStack_CertBlob *caCert)
+uint32_t OH_NetStack_CertVerification(const struct NetStack_CertBlob *cert, const struct NetStack_CertBlob *caCert)
 {
     if (cert == nullptr) {
         return X509_V_ERR_INVALID_CALL;
