@@ -36,17 +36,14 @@ ohos_unittest("websocket_inner_unittest") {
   include_dirs = [
     "$NETSTACK_DIR/utils/napi_utils/include",
     "$WEBSOCKET_INNERAPI/include",
-
   ]
   include_dirs += utils_include
 
-  sources = [
-    "websocket_inner_unittest.cpp",
-  ]
+  sources = [ "websocket_inner_unittest.cpp" ]
 
   deps = [
-    "$NETSTACK_INNERKITS_DIR/websocket_client:websocket_client",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "$NETSTACK_INNERKITS_DIR/websocket_client:websocket_client",
   ]
 
   external_deps = common_external_deps
