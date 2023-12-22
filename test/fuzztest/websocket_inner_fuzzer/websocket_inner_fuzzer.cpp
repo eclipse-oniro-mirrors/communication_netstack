@@ -25,7 +25,7 @@
 
 namespace OHOS {
 namespace NetStack {
-namespace WebsocketClient {
+namespace WebSocketClient {
 namespace {
 OpenOptions openOptions;
 std::map<std::string, std::string> headers = {
@@ -73,13 +73,13 @@ std::string GetStringFromData(int strlen)
     return str;
 }
 
-static void OnMessage(WebsocketClient *client, const std::string &data, size_t length) {}
+static void OnMessage(WebSocketClient *client, const std::string &data, size_t length) {}
 
-static void OnOpen(WebsocketClient *client, OpenResult openResult) {}
+static void OnOpen(WebSocketClient *client, OpenResult openResult) {}
 
-static void OnError(WebsocketClient *client, ErrorResult error) {}
+static void OnError(WebSocketClient *client, ErrorResult error) {}
 
-static void OnClose(WebsocketClient *client, CloseResult closeResult) {}
+static void OnClose(WebSocketClient *client, CloseResult closeResult) {}
 
 void SetRequestOptionsTest(const uint8_t *data, size_t size)
 {
@@ -91,7 +91,7 @@ void SetRequestOptionsTest(const uint8_t *data, size_t size)
     std::string str = GetStringFromData(STR_LEN);
     openOptions.headers["Content-Type"] = str;
     openOptions.headers["Authorization"] = str;
-    WebsocketClient *client = new WebsocketClient();
+    WebSocketClient *client = new WebSocketClient();
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
     ret = client->Connect("www.baidu.com", openOptions);
 }
@@ -106,7 +106,7 @@ void SetConnectUrlTest(const uint8_t *data, size_t size)
     std::string str = GetStringFromData(STR_LEN);
     openOptions.headers["Content-Type"] = "application/json";
     openOptions.headers["Authorization"] = "Bearer your_token_here";
-    WebsocketClient *client = new WebsocketClient();
+    WebSocketClient *client = new WebSocketClient();
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
     ret = client->Connect(str, openOptions);
 }
@@ -121,7 +121,7 @@ void SetSendDataTest(const uint8_t *data, size_t size)
     std::string str = GetStringFromData(STR_LEN);
     openOptions.headers["Content-Type"] = "application/json";
     openOptions.headers["Authorization"] = "Bearer your_token_here";
-    WebsocketClient *client = new WebsocketClient();
+    WebSocketClient *client = new WebSocketClient();
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
     ret = client->Connect("www.baidu.com", openOptions);
     const char *data1 = str.c_str();
@@ -139,7 +139,7 @@ void SetSendDataLengthTest(const uint8_t *data, size_t size)
     std::string str = GetStringFromData(STR_LEN);
     openOptions.headers["Content-Type"] = "application/json";
     openOptions.headers["Authorization"] = "Bearer your_token_here";
-    WebsocketClient *client = new WebsocketClient();
+    WebSocketClient *client = new WebSocketClient();
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
     ret = client->Connect("www.baidu.com", openOptions);
     const char *data1 = "Hello,world!";
@@ -157,7 +157,7 @@ void SetCloseOptionTest(const uint8_t *data, size_t size)
     openOptions.headers["Content-Type"] = "application/json";
     openOptions.headers["Authorization"] = "Bearer your_token_here";
 
-    WebsocketClient *client = new WebsocketClient();
+    WebSocketClient *client = new WebSocketClient();
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
     ret = client->Connect("www.baidu.com", openOptions);
     CloseOption CloseOptions;
@@ -166,7 +166,7 @@ void SetCloseOptionTest(const uint8_t *data, size_t size)
     client->Close(CloseOptions);
 }
 
-} // namespace WebsocketClient
+} // namespace WebSocketClient
 } // namespace NetStack
 } // namespace OHOS
 
@@ -174,10 +174,10 @@ void SetCloseOptionTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::NetStack::WebsocketClient::SetRequestOptionsTest(data, size);
-    OHOS::NetStack::WebsocketClient::SetConnectUrlTest(data, size);
-    OHOS::NetStack::WebsocketClient::SetSendDataTest(data, size);
-    OHOS::NetStack::WebsocketClient::SetSendDataLengthTest(data, size);
-    OHOS::NetStack::WebsocketClient::SetCloseOptionTest(data, size);
+    OHOS::NetStack::WebSocketClient::SetRequestOptionsTest(data, size);
+    OHOS::NetStack::WebSocketClient::SetConnectUrlTest(data, size);
+    OHOS::NetStack::WebSocketClient::SetSendDataTest(data, size);
+    OHOS::NetStack::WebSocketClient::SetSendDataLengthTest(data, size);
+    OHOS::NetStack::WebSocketClient::SetCloseOptionTest(data, size);
     return 0;
 }

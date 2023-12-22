@@ -31,7 +31,7 @@
 
 namespace OHOS {
 namespace NetStack {
-namespace WebsocketClient {
+namespace WebSocketClient {
 namespace {
 const uint8_t *g_baseFuzzData = nullptr;
 size_t g_baseFuzzSize = 0;
@@ -74,13 +74,13 @@ std::string GetStringFromData(int strlen)
     return str;
 }
 
-// static void OnOpen(struct OH_NetStack_WebsocketClient *client, OH_NetStack_WebsocketClient_OpenResult openResult) {}
+// static void OnOpen(struct WebSocket *client, WebSocket_OpenResult openResult) {}
 
-// static void OnMessage(struct OH_NetStack_WebsocketClient *client, char *data, uint32_t length) {}
+// static void OnMessage(struct WebSocket *client, char *data, uint32_t length) {}
 
-// static void OnError(struct OH_NetStack_WebsocketClient *client, OH_NetStack_WebsocketClient_ErrorResult error) {}
+// static void OnError(struct WebSocket *client, WebSocket_ErrorResult error) {}
 
-// static void OnClose(struct OH_NetStack_WebsocketClient *client, OH_NetStack_WebsocketClient_CloseResult closeResult)
+// static void OnClose(struct WebSocket *client, WebSocket_CloseResult closeResult)
 // {}
 
 void SetAddHeaderTest(const uint8_t *data, size_t size)
@@ -91,12 +91,12 @@ void SetAddHeaderTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     std::string str = GetStringFromData(STR_LEN);
-    struct OH_NetStack_WebsocketClient *client = nullptr;
-    struct OH_NetStack_WebsocketClient_Slist header1;
+    struct WebSocket *client = nullptr;
+    struct WebSocket_Header header1;
     header1.fieldName = str.c_str();
     header1.fieldValue = str.c_str();
     header1.next = nullptr;
-    ret = OH_NetStack_WebSocketClient_AddHeader(client, header1);
+    ret = OH_WebSocketClient_AddHeader(client, header1);
 }
 
 void SetRequestOptionsTest(const uint8_t *data, size_t size)
@@ -106,14 +106,14 @@ void SetRequestOptionsTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     std::string str = GetStringFromData(STR_LEN);
-    struct OH_NetStack_WebsocketClient *client = new OH_NetStack_WebsocketClient();
+    struct WebSocket *client = new WebSocket();
     const char *url1 = "www.baidu.com";
 
-    struct OH_NetStack_WebsocketClient_Slist header1;
+    struct WebSocket_Header header1;
     header1.fieldName = str.c_str();
     header1.fieldValue = str.c_str();
     header1.next = nullptr;
-    OH_NetStack_WebSocketClient_Connect(client, url1, client->requestOptions);
+    OH_WebSocketClient_Connect(client, url1, client->requestOptions);
 }
 
 void SetConnectUrlTest(const uint8_t *data, size_t size)
@@ -123,9 +123,9 @@ void SetConnectUrlTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     std::string str = GetStringFromData(STR_LEN);
-    struct OH_NetStack_WebsocketClient *client = new OH_NetStack_WebsocketClient();
+    struct WebSocket *client = new WebSocket();
     const char *url1 = str.c_str();
-    OH_NetStack_WebSocketClient_Connect(client, url1, client->requestOptions);
+    OH_WebSocketClient_Connect(client, url1, client->requestOptions);
 }
 
 void SetSendDataTest(const uint8_t *data, size_t size)
@@ -135,10 +135,10 @@ void SetSendDataTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     std::string str = GetStringFromData(STR_LEN);
-    struct OH_NetStack_WebsocketClient *client = new OH_NetStack_WebsocketClient();
+    struct WebSocket *client = new WebSocket();
     const char *Senddata = "Hello, world,NDK!";
     int SendLength = std::strlen(Senddata);
-    OH_NetStack_WebSocketClient_Send(client, const_cast<char *>(Senddata), SendLength);
+    OH_WebSocketClient_Send(client, const_cast<char *>(Senddata), SendLength);
 }
 
 void SetSendDataLengthTest(const uint8_t *data, size_t size)
@@ -148,10 +148,10 @@ void SetSendDataLengthTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     std::string str = GetStringFromData(STR_LEN);
-    struct OH_NetStack_WebsocketClient *client = new OH_NetStack_WebsocketClient();
+    struct WebSocket *client = new WebSocket();
     const char *Senddata = "Hello, world,NDK!";
     int SendLength = size;
-    OH_NetStack_WebSocketClient_Send(client, const_cast<char *>(Senddata), SendLength);
+    OH_WebSocketClient_Send(client, const_cast<char *>(Senddata), SendLength);
 }
 
 void SetCloseOptionTest(const uint8_t *data, size_t size)
@@ -161,15 +161,15 @@ void SetCloseOptionTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     std::string str = GetStringFromData(STR_LEN);
-    struct OH_NetStack_WebsocketClient *client = new OH_NetStack_WebsocketClient();
+    struct WebSocket *client = new WebSocket();
 
-    struct OH_NetStack_WebsocketClient_CloseOption CloseOption;
+    struct WebSocket_CloseOption CloseOption;
     CloseOption.code = 1000;
     CloseOption.reason = " ";
-    OH_NetStack_WebSocketClient_Close(client, CloseOption);
+    OH_WebSocketClient_Close(client, CloseOption);
 }
 
-} // namespace WebsocketClient
+} // namespace WebSocketClient
 } // namespace NetStack
 } // namespace OHOS
 
@@ -177,11 +177,11 @@ void SetCloseOptionTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::NetStack::WebsocketClient::SetAddHeaderTest(data, size);
-    OHOS::NetStack::WebsocketClient::SetRequestOptionsTest(data, size);
-    OHOS::NetStack::WebsocketClient::SetConnectUrlTest(data, size);
-    OHOS::NetStack::WebsocketClient::SetSendDataTest(data, size);
-    OHOS::NetStack::WebsocketClient::SetSendDataLengthTest(data, size);
-    OHOS::NetStack::WebsocketClient::SetCloseOptionTest(data, size);
+    OHOS::NetStack::WebSocketClient::SetAddHeaderTest(data, size);
+    OHOS::NetStack::WebSocketClient::SetRequestOptionsTest(data, size);
+    OHOS::NetStack::WebSocketClient::SetConnectUrlTest(data, size);
+    OHOS::NetStack::WebSocketClient::SetSendDataTest(data, size);
+    OHOS::NetStack::WebSocketClient::SetSendDataLengthTest(data, size);
+    OHOS::NetStack::WebSocketClient::SetCloseOptionTest(data, size);
     return 0;
 }
