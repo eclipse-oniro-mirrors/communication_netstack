@@ -50,11 +50,11 @@ extern "C" {
  */
 enum NetStack_CertType {
     /** PEM certificate */
-    NetStack_CERT_TYPE_PEM = 0,
+    NETSTACK_CERT_TYPE_PEM = 0,
     /** DER certificate */
-    NetStack_CERT_TYPE_DER = 1,
+    NETSTACK_CERT_TYPE_DER = 1,
     /** Invalid certificate */
-    NetStack_CERT_TYPE_INVALID
+    NETSTACK_CERT_TYPE_INVALID
 };
 
 /**

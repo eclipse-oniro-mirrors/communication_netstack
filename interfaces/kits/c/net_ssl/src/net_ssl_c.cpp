@@ -26,13 +26,13 @@ struct OHOS::NetStack::Ssl::CertBlob SwitchToCertBlob(const struct NetStack_Cert
 {
     OHOS::NetStack::Ssl::CertBlob cb;
     switch (cert.type) {
-        case NetStack_CERT_TYPE_PEM:
+        case NETSTACK_CERT_TYPE_PEM:
             cb.type = OHOS::NetStack::Ssl::CertType::CERT_TYPE_PEM;
             break;
-        case NetStack_CERT_TYPE_DER:
+        case NETSTACK_CERT_TYPE_DER:
             cb.type = OHOS::NetStack::Ssl::CertType::CERT_TYPE_DER;
             break;
-        case NetStack_CERT_TYPE_INVALID:
+        case NETSTACK_CERT_TYPE_INVALID:
             cb.type = OHOS::NetStack::Ssl::CertType::CERT_TYPE_MAX;
             break;
         default:
