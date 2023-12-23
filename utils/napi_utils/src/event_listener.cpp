@@ -18,6 +18,7 @@
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 #include "napi_utils.h"
+#include "netstack_log.h"
 
 namespace OHOS::NetStack {
 EventListener::EventListener(napi_env env, std::string type, napi_value callback, bool once, bool asyncCallback)
@@ -120,10 +121,12 @@ bool EventListener::IsAsyncCallback() const
 void EventListener::EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status)) const
 {
     if (type_ != type) {
+        NETSTACK_LOGE("event type does not match");
         return;
     }
 
     if (callbackRef_ == nullptr) {
+        NETSTACK_LOGE("callback reference is nullptr");        
         return;
     }
 
