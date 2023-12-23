@@ -56,9 +56,9 @@ static constexpr int CURL_TIMEOUT_MS = 50;
 static constexpr int CONDITION_TIMEOUT_S = 3600;
 static constexpr int CURL_MAX_WAIT_MSECS = 10;
 static constexpr int CURL_HANDLE_NUM = 10;
-static constexpr const int EVENT_PARAM_ZERO = 0;
-static constexpr const int EVENT_PARAM_ONE = 1;
-static constexpr const int EVENT_PARAM_TWO = 2;
+static constexpr const uint32_t EVENT_PARAM_ZERO = 0;
+static constexpr const uint32_t EVENT_PARAM_ONE = 1;
+static constexpr const uint32_t EVENT_PARAM_TWO = 2;
 static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!CBC:!eNULL:!EXPORT)";
 
 #ifdef HTTP_PROXY_ENABLE
@@ -177,6 +177,8 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 
     std::thread([context, handle] {
         std::lock_guard guard(staticVariable_.curlMultiMutex);
+        //Do SetServerSSLCertOption here to avoid blocking the main thread.
+        SetServerSSLCertOption(handle, context);
         staticVariable_.infoQueue.emplace(context, handle);
         staticVariable_.conditionVariable.notify_all();
         {
@@ -519,6 +521,23 @@ void HttpExec::AddRequestInfo()
     }
 }
 
+bool HttpExec::IsContextDeleted(RequestContext *context)
+{
+    if (context == nullptr) {
+        return true;
+    }
+    {
+        std::lock_guard<std::mutex> lockGuard(HttpExec::staticContextSet_.mutexForContextVec);
+        auto it = std::find(HttpExec::staticContextSet_.contextSet.begin(),
+                            HttpExec::staticContextSet_.contextSet.end(), context);
+        if (it == HttpExec::staticContextSet_.contextSet.end()) {
+            NETSTACK_LOGI("context has been deleted in libuv thread");
+            return true;
+        }
+    }
+    return false;
+}
+
 void HttpExec::RunThread()
 {
     while (staticVariable_.runThread && staticVariable_.curlMulti != nullptr) {
@@ -660,8 +679,10 @@ bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *
         NETSTACK_LOGD("Set CURLOPT_PROXY: %{public}s:%{public}d, %{public}s", host.c_str(), port, exclusions.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXY, host.c_str(), context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYPORT, port, context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP, context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTPPROXYTUNNEL, 1L, context);
+        auto curlTunnelValue = (url.find("https://") != std::string::npos) ? 1L : 0L;
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTPPROXYTUNNEL, curlTunnelValue, context);
+        auto proxyType = (host.find("https://") != std::string::npos) ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYTYPE, proxyType, context);
     }
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CIPHER_LIST, TLS12_SECURITY_CIPHER_SUITE, context);
@@ -714,32 +735,33 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     std::vector<std::string> certs;
     auto ret = NetManagerStandard::NetConnClient::GetInstance().GetTrustAnchorsForHostName(hostname, certs);
     if (ret != 0) {
-        return false;
-    }
-
-    std::string *pCert = nullptr;
-    for (auto &cert : certs) {
-        if (!cert.empty()) {
-            pCert = &cert;
-            break;
-        }
-    }
-    if (pCert != nullptr) {
-        NETSTACK_LOGD("curl set option capath: capath=%{public}s.", pCert->c_str());
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, pCert->c_str(), context);
+        NETSTACK_LOGD("Get no trust anchor by host name[%{public}s], ret[%{public}d]", hostname.c_str(), ret);
     } else {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, context->options.GetCaPath().c_str(), context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, HttpConstant::HTTP_PREPARE_CA_PATH, context);
+        std::string *pCert = nullptr;
+        for (auto &cert : certs) {
+            if (!cert.empty()) {
+                pCert = &cert;
+                break;
+            }
+        }
+        if (pCert != nullptr) {
+            NETSTACK_LOGD("curl set option capath: capath=%{public}s.", pCert->c_str());
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, pCert->c_str(), context);
+        } else {
+            NETSTACK_LOGD("Get no trust anchor by host name[%{public}s]", hostname.c_str());
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, context->options.GetCaPath().c_str(), context);
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, HttpConstant::HTTP_PREPARE_CA_PATH, context);
+        }
     }
 #endif // WINDOWS_PLATFORM
     // pin trusted certifcate keys.
     std::string pins;
     auto ret1 = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
-    if (ret1 != 0) {
-        return false;
-    }
-    if (!pins.empty()) {
+    if (ret1 != 0 || pins.empty()) {
+        NETSTACK_LOGD("Get no pinset by host name[%{public}s]", hostname.c_str());
+    } else {
+        NETSTACK_LOGD("curl set pin =[%{public}s]", pins.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str(), context);
     }
 #endif // HAS_NETMANAGER_BASE
@@ -749,6 +771,41 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
 #endif // NO_SSL_CERTIFICATION
 
+    return true;
+}
+
+bool HttpExec::SetDnsOption(CURL *curl, RequestContext *context)
+{
+    std::vector<std::string> dnsServers = context->options.GetDnsServers();
+    if (dnsServers.empty()) {
+        return true;
+    }
+    std::string serverList;
+    for (auto &server : dnsServers) {
+        serverList += server + ",";
+        NETSTACK_LOGD("SetDns server: %{public}s", CommonUtils::AnonymizeIp(server).c_str());
+    }
+    serverList.pop_back();
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DNS_SERVERS, serverList.c_str(), context);
+    return true;
+}
+
+bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
+{
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTP_VERSION, context->options.GetHttpVersion(), context);
+    const std::string range = context->options.GetRangeString();
+    if (range.empty()) {
+        // Some servers don't like requests that are made without a user-agent field, so we provide one
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_USERAGENT, HttpConstant::HTTP_DEFAULT_USER_AGENT, context);
+    } else {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RANGE, range.c_str(), context);
+    }
+    if (!context->options.GetDohUrl().empty()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DOH_URL, context->options.GetDohUrl().c_str(), context);
+    }
+    SetDnsOption(curl, context);
+    SetSSLCertOption(curl, context);
+    SetMultiPartOption(curl, context);
     return true;
 }
 
@@ -782,56 +839,20 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HEADERFUNCTION, OnWritingMemoryHeader, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HEADERDATA, context, context);
-
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTPHEADER, requestHeader, context);
-
-    const std::string range = context->options.GetRangeString();
-    if (range.empty()) {
-        // Some servers don't like requests that are made without a user-agent field, so we provide one
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_USERAGENT, HttpConstant::HTTP_DEFAULT_USER_AGENT, context);
-    } else {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RANGE, range.c_str(), context);
-    }
-
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FOLLOWLOCATION, 1L, context);
 
     /* first #undef CURL_DISABLE_COOKIES in curl config */
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_COOKIEFILE, "", context);
-
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOSIGNAL, 1L, context);
-
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_TIMEOUT_MS, context->options.GetReadTimeout(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
 
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTP_VERSION, context->options.GetHttpVersion(), context);
-    if (!context->options.GetDohUrl().empty()) {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DOH_URL, context->options.GetDohUrl().c_str(), context);
-    }
-    SetDnsOption(curl, context);
-    SetSSLCertOption(curl, context);
-    if (!SetServerSSLCertOption(curl, context)) {
-        return false;
-    }
+    SetRequestOption(curl, context);
+
     if (!SetOtherOption(curl, context)) {
         return false;
     }
-    SetMultiPartOption(curl, context);
-    return true;
-}
-
-bool HttpExec::SetDnsOption(CURL *curl, RequestContext *context)
-{
-    std::vector<std::string> dnsServers = context->options.GetDnsServers();
-    if (dnsServers.empty()) {
-        return true;
-    }
-    std::string serverList;
-    for (auto &server : dnsServers) {
-        serverList += server + ",";
-        NETSTACK_LOGD("SetDns server: %{public}s", CommonUtils::AnonymizeIp(server).c_str());
-    }
-    serverList.pop_back();
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DNS_SERVERS, serverList.c_str(), context);
     return true;
 }
 
@@ -839,7 +860,6 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
 {
     auto context = static_cast<RequestContext *>(userData);
     if (context == nullptr) {
-        context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
         return 0;
     }
     if (context->GetManager()->IsEventDestroy()) {
@@ -934,7 +954,6 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
 {
     auto context = static_cast<RequestContext *>(userData);
     if (context == nullptr) {
-        context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
         return 0;
     }
     if (context->GetManager()->IsEventDestroy()) {
@@ -952,7 +971,8 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
         if (context->GetManager() && EventManager::IsManagerValid(context->GetManager())) {
             auto headerMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
             context->GetManager()->EmitByUv(ON_HEADER_RECEIVE, headerMap, ResponseHeaderCallback);
-            context->GetManager()->EmitByUv(ON_HEADERS_RECEIVE, headerMap, ResponseHeaderCallback);
+            auto headersMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
+            context->GetManager()->EmitByUv(ON_HEADERS_RECEIVE, headersMap, ResponseHeaderCallback);
         }
     }
     context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
@@ -988,17 +1008,8 @@ void HttpExec::OnDataReceive(napi_env env, napi_status status, void *data)
 void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
 {
     auto context = static_cast<RequestContext *>(data);
-    if (context == nullptr) {
+    if (IsContextDeleted(context)) {
         return;
-    }
-    {
-        std::lock_guard lockGuard(HttpExec::staticContextSet_.mutexForContextVec);
-        auto it = std::find(HttpExec::staticContextSet_.contextSet.begin(),
-                            HttpExec::staticContextSet_.contextSet.end(), context);
-        if (it == HttpExec::staticContextSet_.contextSet.end()) {
-            NETSTACK_LOGI("context has benn deleted in libuv thread");
-            return;
-        }
     }
     auto progress = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), progress) == napi_undefined) {
@@ -1016,7 +1027,7 @@ void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
 void HttpExec::OnDataUploadProgress(napi_env env, napi_status status, void *data)
 {
     auto context = static_cast<RequestContext *>(data);
-    if (context == nullptr) {
+    if (IsContextDeleted(context)) {
         NETSTACK_LOGD("[OnDataUploadProgress] context is null.");
         return;
     }
@@ -1025,7 +1036,7 @@ void HttpExec::OnDataUploadProgress(napi_env env, napi_status status, void *data
         NETSTACK_LOGD("[OnDataUploadProgress] napi_undefined.");
         return;
     }
-    NapiUtils::SetUint32Property(context->GetEnv(), progress, "uploadSize",
+    NapiUtils::SetUint32Property(context->GetEnv(), progress, "sendSize",
                                  static_cast<uint32_t>(context->GetUlLen().nLen));
     NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize",
                                  static_cast<uint32_t>(context->GetUlLen().tLen));
@@ -1219,24 +1230,31 @@ bool HttpExec::SetMultiPartOption(CURL *curl, RequestContext *context)
         return true;
     }
     auto multiPartDataList = context->options.GetMultiPartDataList();
-    context->multipart_ = curl_mime_init(curl);
+    curl_mime *multipart = curl_mime_init(curl);
+    if (multipart == nullptr) {
+        return false;
+    }
+    context->SetMultipart(multipart);
     curl_mimepart *part = nullptr;
     for (auto &multiFormData : multiPartDataList) {
+        if (multiFormData.name.empty()) {
+            continue;
+        }
+        if (multiFormData.data.empty() && multiFormData.filePath.empty()) {
+            NETSTACK_LOGE("Failed to set name %{public}s, error no data and filepath at the same time",
+                          multiFormData.name.c_str());
+            continue;
+        }
+        part = curl_mime_addpart(multipart);
         SetFormDataOption(multiFormData, part, curl, context);
     }
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_MIMEPOST, context->multipart_, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_MIMEPOST, multipart, context);
     return true;
 }
 
-void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *part, CURL *curl, RequestContext *context)
+void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *part, CURL *curl,
+                                 RequestContext *context)
 {
-    if (multiFormData.name.empty()) {
-        return;
-    }
-    if (multiFormData.data.empty() && multiFormData.filePath.empty()) {
-        return;
-    }
-    part = curl_mime_addpart(context->multipart_);
     CURLcode result = curl_mime_name(part, multiFormData.name.c_str());
     if (result != CURLE_OK) {
         NETSTACK_LOGE("Failed to set name %{public}s, error: %{public}s", multiFormData.name.c_str(),

@@ -119,7 +119,6 @@ ohos_fuzztest("TlsSocketFuzzTest") {
 
   external_deps = [
     "c_utils:utils",
-    "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
   ]

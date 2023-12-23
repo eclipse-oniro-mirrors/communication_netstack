@@ -30,7 +30,7 @@
 
 namespace OHOS {
 namespace NetStack {
-namespace WebsocketClient {
+namespace WebSocketClient {
 
 struct SendData {
     SendData(char *paraData, size_t paraLength, lws_write_protocol paraProtocol)
@@ -139,7 +139,7 @@ private:
 
     int clientId;
 };
-}; // namespace WebsocketClient
+}; // namespace WebSocketClient
 } // namespace NetStack
 } // namespace OHOS
 #endif

@@ -225,14 +225,13 @@ private:
     uint32_t GetHttpVersion(HttpProtocol ptcl) const;
 
     /**
-     * Retrieves the HttpProxyInfo including host, port, exclusions, userpwd, and tunnel flag.
+     * Retrieves the HttpProxyInfo including host, port, exclusions, and tunnel flag.
      * @param host The output string to store the proxy host.
      * @param port The output integer to store the proxy port.
      * @param exclusions The output string to store the proxy exclusions.
-     * @param userpwd The output string to store the proxy username and password.
      * @param tunnel The output bool to indicate if the proxy uses tunneling.
      */
-    void GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions, std::string &userpwd,
+    void GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions,
                           bool &tunnel);
 
     /**
@@ -278,6 +277,12 @@ private:
      * @return Returns true if the response code is processed successfully, false otherwise.
      */
     bool ProcessResponseCode();
+
+    /**
+     * Get the timing from curl handle
+     * @return Returns timing, unit is seconds.
+     */
+    double GetTimingFromCurl(CURL *handle, CURLINFO info);
 
     /**
      * Processes the cookie in the HTTP response.

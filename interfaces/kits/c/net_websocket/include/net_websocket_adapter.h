@@ -18,21 +18,21 @@
 #include "net_websocket.h"
 #include "websocket_client_innerapi.h"
 
-namespace OHOS::NetStack::WebsocketClient {
+namespace OHOS::NetStack::WebSocketClient {
 
-extern std::map<OH_NetStack_WebsocketClient *, WebsocketClient *> g_clientMap;
+extern std::map<WebSocket *, WebSocketClient *> g_clientMap;
 
-WebsocketClient *GetInnerClientAdapter(OH_NetStack_WebsocketClient *key);
-OH_NetStack_WebsocketClient *GetNdkClientAdapter(WebsocketClient *websocketClient);
+WebSocketClient *GetInnerClientAdapter(WebSocket *key);
+WebSocket *GetNdkClientAdapter(WebSocketClient *websocketClient);
 
 int32_t Conv2RequestOptions(struct OpenOptions *openOptions,
-                            struct OH_NetStack_WebsocketClient_RequestOptions requestOptions);
+                            struct WebSocket_RequestOptions requestOptions);
 int32_t Conv2CloseOptions(struct CloseOption *closeOption,
-                          struct OH_NetStack_WebsocketClient_CloseOption requestOptions);
+                          struct WebSocket_CloseOption requestOptions);
 int32_t Conv2CloseResult(struct CloseResult closeResult,
-                         struct OH_NetStack_WebsocketClient_CloseResult *OH_CloseResult);
-int32_t Conv2ErrorResult(struct ErrorResult error, struct OH_NetStack_WebsocketClient_ErrorResult *OH_ErrorResult);
-int32_t Conv2OpenResult(struct OpenResult openResult, struct OH_NetStack_WebsocketClient_OpenResult *OH_OpenResult);
+                         struct WebSocket_CloseResult *OH_CloseResult);
+int32_t Conv2ErrorResult(struct ErrorResult error, struct WebSocket_ErrorResult *OH_ErrorResult);
+int32_t Conv2OpenResult(struct OpenResult openResult, struct WebSocket_OpenResult *OH_OpenResult);
 
-} // namespace OHOS::NetStack::WebsocketClient
+} // namespace OHOS::NetStack::WebSocketClient
 #endif /* NATIVE_WEBSOCKET_ADAPTER_H */

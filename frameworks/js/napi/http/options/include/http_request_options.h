@@ -119,7 +119,7 @@ public:
 
     [[nodiscard]] const std::string &GetDohUrl() const;
 
-    [[nodiscard]] const std::string GetRangeString() const;
+    [[nodiscard]] std::string GetRangeString() const;
 
     [[nodiscard]] const std::vector<std::string> &GetDnsServers() const;
 

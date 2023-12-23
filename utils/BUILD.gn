@@ -36,6 +36,15 @@ config("stack_utils_common_public_config") {
 }
 
 ohos_shared_library("stack_utils_common") {
+  cflags = [
+    "-fstack-protector-strong",
+    "-D_FORTIFY_SOURCE=2 -O2",
+  ]
+  cflags_cc = [
+    "-fstack-protector-strong",
+    "-D_FORTIFY_SOURCE=2 -O2",
+  ]
+
   sources = [ "common_utils/src/netstack_common_utils.cpp" ]
 
   public_configs = [ ":stack_utils_common_public_config" ]

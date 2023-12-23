@@ -69,4 +69,44 @@ bool TCPExtraOptions::IsTCPNoDelay() const
 {
     return TCPNoDelay_;
 }
+
+bool TCPExtraOptions::AlreadySetKeepAlive() const
+{
+    return keepAliveFlag_;
+}
+
+void TCPExtraOptions::SetKeepAliveFlag(bool flag)
+{
+    keepAliveFlag_ = flag;
+}
+
+bool TCPExtraOptions::AlreadySetOobInline() const
+{
+    return oobInlineFlag_;
+}
+
+void TCPExtraOptions::SetOobInlineFlag(bool flag)
+{
+    oobInlineFlag_ = flag;
+}
+
+bool TCPExtraOptions::AlreadySetTcpNoDelay() const
+{
+    return tcpNoDelayFlag_;
+}
+
+void TCPExtraOptions::SetTcpNoDelayFlag(bool flag)
+{
+    tcpNoDelayFlag_ = flag;
+}
+
+bool TCPExtraOptions::AlreadySetLinger() const
+{
+    return lingerFlag_;
+}
+
+void TCPExtraOptions::SetLingerFlag(bool flag)
+{
+    lingerFlag_ = flag;
+}
 } // namespace OHOS::NetStack::Socket

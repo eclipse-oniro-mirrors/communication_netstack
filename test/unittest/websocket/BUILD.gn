@@ -1,0 +1,73 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//build/test.gni")
+import("//foundation/communication/netstack/netstack_config.gni")
+
+WEBSOCKET_NAPI = "$NETSTACK_DIR/frameworks/js/napi/websocket"
+
+utils_include = [
+  "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
+  "$SUBSYSTEM_DIR/netstack/utils/log/include",
+  "$SUBSYSTEM_DIR/netstack/utils/napi_utils/include",
+]
+
+common_external_deps = [
+  "hilog:libhilog",
+  "napi:ace_napi",
+]
+
+ohos_unittest("websocket_unittest") {
+  module_out_path = "netstack/websocket_unittest"
+
+  include_dirs = [
+    "$NETSTACK_DIR/utils/napi_utils/include",
+    "$THIRD_PARTY_ROOT/libwebsockets/include",
+    "$WEBSOCKET_NAPI/async_context/include",
+    "$WEBSOCKET_NAPI/async_work/include",
+    "$WEBSOCKET_NAPI/constant/include",
+    "$WEBSOCKET_NAPI/websocket_exec/include",
+    "$WEBSOCKET_NAPI/websocket_module/include",
+  ]
+  include_dirs += utils_include
+
+  sources = [
+    "$WEBSOCKET_NAPI/async_context/src/close_context.cpp",
+    "$WEBSOCKET_NAPI/async_context/src/connect_context.cpp",
+    "$WEBSOCKET_NAPI/async_context/src/send_context.cpp",
+    "$WEBSOCKET_NAPI/async_work/src/websocket_async_work.cpp",
+    "$WEBSOCKET_NAPI/constant/src/constant.cpp",
+    "$WEBSOCKET_NAPI/websocket_exec/src/websocket_exec.cpp",
+    "$WEBSOCKET_NAPI/websocket_module/src/websocket_module.cpp",
+    "WebSocketTest.cpp",
+  ]
+
+  defines = [ "OHOS_LIBWEBSOCKETS=1" ]
+
+  deps = [
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "$THIRD_PARTY_ROOT/libwebsockets:websockets",
+    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
+  ]
+
+  external_deps = common_external_deps
+
+  part_name = "netstack"
+  subsystem_name = "communication"
+}
+
+group("unittest") {
+  testonly = true
+  deps = [ ":websocket_unittest" ]
+}

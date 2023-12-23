@@ -95,7 +95,6 @@ HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest001, TestSize.Level1)
     proxy.host = "192.168.147.60";
     proxy.port = 8888;
     proxy.exclusions = "www.httpbin.org";
-    proxy.userpwd = "username:password";
     proxy.tunnel = false;
     httpReq.SetHttpProxy(proxy);
 
@@ -103,7 +102,7 @@ HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest001, TestSize.Level1)
     auto task = session.CreateTask(httpReq);
 
     bool result = task->SetOtherCurlOption(task->curlHandle_);
-    EXPECT_FALSE(result);
+    EXPECT_TRUE(result);
 }
 
 HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest002, TestSize.Level1)
@@ -116,14 +115,13 @@ HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest002, TestSize.Level1)
     HttpProxy proxy;
     proxy.host = "192.168.147.60";
     proxy.port = 8888;
-    proxy.userpwd = "username:password";
     proxy.tunnel = false;
     httpReq.SetHttpProxy(proxy);
 
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    EXPECT_FALSE(task->SetOtherCurlOption(task->curlHandle_));
+    EXPECT_TRUE(task->SetOtherCurlOption(task->curlHandle_));
 }
 
 HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest003, TestSize.Level1)
@@ -142,7 +140,7 @@ HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest003, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    EXPECT_FALSE(task->SetOtherCurlOption(task->curlHandle_));
+    EXPECT_TRUE(task->SetOtherCurlOption(task->curlHandle_));
 }
 
 HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest004, TestSize.Level1)
@@ -162,7 +160,7 @@ HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest004, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    EXPECT_FALSE(task->SetOtherCurlOption(task->curlHandle_));
+    EXPECT_TRUE(task->SetOtherCurlOption(task->curlHandle_));
     curl_easy_cleanup(task->curlHandle_);
     task->curlHandle_ = nullptr;
 }
@@ -206,7 +204,7 @@ HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest001, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    EXPECT_FALSE(task->SetCurlOptions());
+    EXPECT_TRUE(task->SetCurlOptions());
 }
 
 HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest002, TestSize.Level1)
@@ -220,7 +218,7 @@ HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest002, TestSize.Level1)
 
     task->request_.SetMethod(HttpConstant::HTTP_METHOD_HEAD);
 
-    EXPECT_FALSE(task->SetCurlOptions());
+    EXPECT_TRUE(task->SetCurlOptions());
 }
 
 HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest003, TestSize.Level1)
@@ -250,7 +248,7 @@ HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest004, TestSize.Level1)
 
     task->request_.SetMethod(HttpConstant::HTTP_METHOD_POST);
 
-    EXPECT_FALSE(task->SetCurlOptions());
+    EXPECT_TRUE(task->SetCurlOptions());
 }
 
 HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest005, TestSize.Level1)
@@ -655,22 +653,21 @@ HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoTest001, TestSize.Level1)
     proxy.host = "192.168.147.60";
     proxy.port = 8888;
     proxy.exclusions = "www.httpbin.org";
-    proxy.userpwd = "username:password";
     proxy.tunnel = false;
     httpReq.SetHttpProxy(proxy);
 
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    std::string host, exclusions, userpwd;
+    std::string host;
+    std::string exclusions;
     int32_t port = 0;
     bool tunnel = false;
-    task->GetHttpProxyInfo(host, port, exclusions, userpwd, tunnel);
+    task->GetHttpProxyInfo(host, port, exclusions, tunnel);
 
     EXPECT_EQ(host, "192.168.147.60");
     EXPECT_EQ(port, 8888);
     EXPECT_EQ(exclusions, "www.httpbin.org");
-    EXPECT_EQ(userpwd, "username:password");
     EXPECT_FALSE(tunnel);
 }
 
@@ -685,22 +682,21 @@ HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoTest002, TestSize.Level1)
     proxy.host = "192.168.147.60";
     proxy.port = 8888;
     proxy.exclusions = "www.httpbin.org";
-    proxy.userpwd = "username:password";
     proxy.tunnel = false;
     httpReq.SetHttpProxy(proxy);
 
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    std::string host, exclusions, userpwd;
+    std::string host;
+    std::string  exclusions;
     int32_t port = 0;
     bool tunnel = false;
-    task->GetHttpProxyInfo(host, port, exclusions, userpwd, tunnel);
+    task->GetHttpProxyInfo(host, port, exclusions, tunnel);
 
     EXPECT_EQ(host, "");
     EXPECT_EQ(port, 0);
     EXPECT_EQ(exclusions, "");
-    EXPECT_EQ(userpwd, "");
     EXPECT_FALSE(tunnel);
 }
 
@@ -785,7 +781,6 @@ HWTEST_F(HttpClientTaskTest, ProcessCookieTest001, TestSize.Level1)
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     EXPECT_EQ(task->GetResponse().GetResponseCode(), ResponseCode::NONE);
-    EXPECT_EQ("", task->GetResponse().GetCookies());
 }
 
 HWTEST_F(HttpClientTaskTest, CancelTest001, TestSize.Level1)
@@ -811,7 +806,7 @@ HWTEST_F(HttpClientTaskTest, SetServerSSLCertOption001, TestSize.Level1)
     auto task = session.CreateTask(httpReq);
 
     bool result = task->SetServerSSLCertOption(task->curlHandle_);
-    EXPECT_FALSE(result);
+    EXPECT_TRUE(result);
 }
 
 

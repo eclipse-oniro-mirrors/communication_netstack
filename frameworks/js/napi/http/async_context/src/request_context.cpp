@@ -67,7 +67,11 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
 };
 RequestContext::RequestContext(napi_env env, EventManager *manager)
-    : BaseContext(env, manager), usingCache_(true), requestInStream_(false), curlHeaderList_(nullptr)
+    : BaseContext(env, manager),
+      usingCache_(true),
+      requestInStream_(false),
+      curlHeaderList_(nullptr),
+      multipart_(nullptr)
 {
     StartTiming();
 }
@@ -221,8 +225,9 @@ void RequestContext::ParseHeader(napi_value optionsValue)
     }
     auto names = NapiUtils::GetPropertyNames(GetEnv(), header);
     std::for_each(names.begin(), names.end(), [header, this](const std::string &name) {
-        auto value = NapiUtils::GetStringPropertyUtf8(GetEnv(), header, name);
-        options.SetHeader(CommonUtils::ToLower(name), value);
+        napi_value value = NapiUtils::GetNamedProperty(GetEnv(), header, name);
+        std::string valueStr = NapiUtils::NapiValueToString(GetEnv(), value);
+        options.SetHeader(CommonUtils::ToLower(name), valueStr);
     });
 }
 
@@ -441,6 +446,10 @@ RequestContext::~RequestContext()
     if (curlHeaderList_ != nullptr) {
         curl_slist_free_all(curlHeaderList_);
     }
+    if (multipart_ != nullptr) {
+        curl_mime_free(multipart_);
+        multipart_ = nullptr;
+    }
     NETSTACK_LOGD("RequestContext is destructed by the destructor");
 }
 
@@ -514,7 +523,6 @@ LoadBytes RequestContext::GetDlLen()
         dlBytes.nLen = dlBytes_.front().nLen;
         dlBytes.tLen = dlBytes_.front().tLen;
         dlBytes_.pop();
-        return dlBytes;
     }
     return dlBytes;
 }
@@ -532,8 +540,12 @@ void RequestContext::SetUlLen(curl_off_t nowLen, curl_off_t totalLen)
 LoadBytes RequestContext::GetUlLen()
 {
     std::lock_guard<std::mutex> lock(ulLenLock_);
-    LoadBytes dlBytes{ulBytes_.front().nLen, ulBytes_.front().tLen};
-    return dlBytes;
+    LoadBytes ulBytes;
+    if (!ulBytes_.empty()) {
+        ulBytes.nLen = ulBytes_.back().nLen;
+        ulBytes.tLen = ulBytes_.back().tLen;
+    }
+    return ulBytes;
 }
 
 bool RequestContext::CompareWithLastElement(curl_off_t nowLen, curl_off_t totalLen)
@@ -583,7 +595,7 @@ void RequestContext::ParseDnsServers(napi_value optionsValue)
         return;
     }
     uint32_t dnsLength = NapiUtils::GetArrayLength(env, dnsServerValue);
-    if (dnsLength <= 0) {
+    if (dnsLength == 0) {
         return;
     }
     std::vector<std::string> dnsServers;
@@ -591,7 +603,7 @@ void RequestContext::ParseDnsServers(napi_value optionsValue)
     for (uint32_t i = 0; i < dnsLength && dnsSize < DNS_SERVER_SIZE; i++) {
         napi_value element = NapiUtils::GetArrayElement(env, dnsServerValue, i);
         std::string dnsServer = NapiUtils::GetStringFromValueUtf8(env, element);
-        if (dnsServer.length() <= 0) {
+        if (dnsServer.length() == 0) {
             continue;
         }
         if (!CommonUtils::IsValidIPV4(dnsServer) && !CommonUtils::IsValidIPV6(dnsServer)) {
@@ -600,7 +612,7 @@ void RequestContext::ParseDnsServers(napi_value optionsValue)
         dnsServers.push_back(dnsServer);
         dnsSize++;
     }
-    if (dnsSize <= 0 || dnsServers.data() == nullptr || dnsServers.empty()) {
+    if (dnsSize == 0 || dnsServers.data() == nullptr || dnsServers.empty()) {
         NETSTACK_LOGD("dnsServersArray is empty.");
         return;
     }
@@ -610,8 +622,7 @@ void RequestContext::ParseDnsServers(napi_value optionsValue)
 
 void RequestContext::CachePerformanceTimingItem(const std::string &key, double value)
 {
-    performanceTimingMap_.insert(std::pair<std::string, double>(key, value));
-    NETSTACK_LOGD("CachePerformanceTimingItem %{public}s : %{public}lf", key.c_str(), value);
+    performanceTimingMap_[key] = value;
 }
 
 void RequestContext::StopAndCacheNapiPerformanceTiming(const char *key)
@@ -718,5 +729,10 @@ void RequestContext::SaveFormData(napi_env env, napi_value dataValue, MultiFormD
     } else {
         NETSTACK_LOGD("only support string, ArrayBuffer and Object");
     }
+}
+
+void RequestContext::SetMultipart(curl_mime *multipart)
+{
+    multipart_ = multipart;
 }
 } // namespace OHOS::NetStack::Http

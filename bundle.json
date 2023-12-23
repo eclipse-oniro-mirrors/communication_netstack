@@ -37,8 +37,7 @@
                 "init",
                 "napi",
                 "netmanager_base",
-                "ylong_http",
-                "eventhandler"
+                "ylong_http"
             ],
             "third_party": [
                 "curl",
@@ -56,6 +55,7 @@
                     "//foundation/communication/netstack/frameworks/js/napi/websocket:websocket",
                     "//foundation/communication/netstack/frameworks/js/napi/net_ssl:networksecurity_napi",
                     "//foundation/communication/netstack/interfaces/kits/c/net_websocket:net_websocket",
+                    "//foundation/communication/netstack/interfaces/kits/c/net_ssl:net_ssl_ndk",
                     "//foundation/communication/netstack/frameworks/js/napi/fetch:fetch",
                     "//foundation/communication/netstack/utils:common_utils"
                 ],
@@ -113,16 +113,14 @@
                 "//foundation/communication/netstack/test/fuzztest/socket:fuzztest",
                 "//foundation/communication/netstack/test/fuzztest/http_fuzzer:fuzztest",
                 "//foundation/communication/netstack/test/fuzztest/netssl:fuzztest",
+                "//foundation/communication/netstack/test/fuzztest/websocket:fuzztest",
                 "//foundation/communication/netstack/test/unittest/http:unittest",
                 "//foundation/communication/netstack/test/unittest/http/cache:unittest",
                 "//foundation/communication/netstack/test/unittest/http_client:unittest",
                 "//foundation/communication/netstack/test/unittest/socket:unittest",
                 "//foundation/communication/netstack/test/unittest/tlssocket:unittest",
                 "//foundation/communication/netstack/test/unittest/netssl:unittest",
-                "//foundation/communication/netstack/test/unittest/websocket_inner_unittest:unittest",
-                "//foundation/communication/netstack/test/unittest/websocket_capi_unittest:unittest",
-                "//foundation/communication/netstack/test/fuzztest/websocket_inner_fuzzer:fuzztest",
-                "//foundation/communication/netstack/test/fuzztest/websocket_capi_fuzzer:fuzztest",
+                "//foundation/communication/netstack/test/unittest/websocket:unittest",
                 "//foundation/communication/netstack/test/unittest/utils/common_utils:unittest"
             ]
         }

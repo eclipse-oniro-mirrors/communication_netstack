@@ -41,6 +41,22 @@ public:
 
     [[nodiscard]] uint32_t GetSocketTimeout() const;
 
+    [[nodiscard]] bool AlreadySetRecvBufSize() const;
+
+    void SetRecvBufSizeFlag(bool flag);
+
+    [[nodiscard]] bool AlreadySetSendBufSize() const;
+
+    void SetSendBufSizeFlag(bool flag);
+
+    [[nodiscard]] bool AlreadySetTimeout() const;
+
+    void SetTimeoutFlag(bool flag);
+
+    [[nodiscard]] bool AlreadySetReuseAddr() const;
+
+    void SetReuseaddrFlag(bool flag);
+
 private:
     uint32_t receiveBufferSize_;
 
@@ -49,6 +65,14 @@ private:
     bool reuseAddress_;
 
     uint32_t socketTimeout_;
+
+    bool recvBufSizeFlag_ = false;
+
+    bool sendBufSizeFlag_ = false;
+
+    bool timeoutFlag_ = false;
+
+    bool reuseAddrFlag_ = false;
 };
 } // namespace OHOS::NetStack::Socket
 
