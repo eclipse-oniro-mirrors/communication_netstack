@@ -51,7 +51,7 @@ constexpr int DEFAULT_TIMEOUT_MS = 20000;
 
 constexpr int UNIT_CONVERSION_1000 = 1000; // multiples of conversion between units
 
-constexpr int SOCKET_SIZE_CONVERSION = 2; // accept socket buffer size, the actual value is twice the set value
+constexpr int SOCKET_SIZE_CONVERSION = 2; // socket buffer size, the actual value is twice the set value
 
 constexpr char LOCAL_SOCKET_CONNECTION[] = "LocalSocketConnection";
 
@@ -872,6 +872,9 @@ bool ExecLocalSocketServerSetExtraOptions(LocalSocketServerSetExtraOptionsContex
         return false;
     }
     auto serverManager = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData());
+    if (serverManager == nullptr) {
+        return false;
+    }
     for (const auto &[id, fd] : serverManager->acceptFds_) {
         if (!SetLocalSocketOptions(fd, context->GetOptionsRef())) {
             context->SetErrorCode(errno);
@@ -900,8 +903,10 @@ bool ExecLocalSocketServerGetExtraOptions(LocalSocketServerGetExtraOptionsContex
             options.SetReceiveBufferSize(DEFAULT_BUFFER_SIZE);
             options.SetSendBufferSize(DEFAULT_BUFFER_SIZE);
         }
+        return true;
     }
-    return true;
+    context->SetErrorCode(UNKNOW_ERROR);
+    return false;
 }
 
 bool ExecLocalSocketConnectionSend(LocalSocketServerSendContext *context)
@@ -936,11 +941,12 @@ bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
     if (context == nullptr) {
         return false;
     }
-    auto serverManager = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData());
-    if (serverManager->sockfd_ > 0) {
-        return true;
+    if (auto mgr = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData()); mgr != nullptr) {
+        if (mgr->sockfd_ > 0) {
+            return true;
+        }
     }
-    NETSTACK_LOGI("socket has lost, fd: %{public}d", serverManager->sockfd_);
+    NETSTACK_LOGI("socket has lost");
     context->SetErrorCode(UNKNOW_ERROR);
     return false;
 }
@@ -1053,6 +1059,10 @@ napi_value LocalSocketConnectionSendCallback(LocalSocketServerSendContext *conte
 napi_value LocalSocketConnectionCloseCallback(LocalSocketServerCloseContext *context)
 {
     auto pServerManager = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData());
+    if (pServerManager == nullptr) {
+        NETSTACK_LOGE("connection close callback reinterpret cast failed");
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
     int acceptFd = pServerManager->GetAcceptFd(context->GetClientId());
     if (acceptFd <= 0) {
         NETSTACK_LOGE("socket invalid, fd: %{public}d", acceptFd);

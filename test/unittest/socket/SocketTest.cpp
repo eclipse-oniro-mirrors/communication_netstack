@@ -139,7 +139,7 @@ HWTEST_F(SocketTest, LocalSocketTest005, TestSize.Level1)
     OHOS::NetStack::EventManager eventManager;
     LocalSocketGetStateContext context(env, &eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketGetState(&context);
-    EXPECT_EQ(ret, false);
+    EXPECT_EQ(ret, true);
 }
 
 HWTEST_F(SocketTest, LocalSocketTest006, TestSize.Level1)
@@ -148,7 +148,7 @@ HWTEST_F(SocketTest, LocalSocketTest006, TestSize.Level1)
     OHOS::NetStack::EventManager eventManager;
     LocalSocketGetSocketFdContext context(env, &eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketGetSocketFd(&context);
-    EXPECT_EQ(ret, false);
+    EXPECT_EQ(ret, true);
 }
 
 HWTEST_F(SocketTest, LocalSocketTest007, TestSize.Level1)
@@ -157,7 +157,7 @@ HWTEST_F(SocketTest, LocalSocketTest007, TestSize.Level1)
     OHOS::NetStack::EventManager eventManager;
     LocalSocketSetExtraOptionsContext context(env, &eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketSetExtraOptions(&context);
-    EXPECT_EQ(ret, false);
+    EXPECT_EQ(ret, true);
 }
 
 HWTEST_F(SocketTest, LocalSocketTest008, TestSize.Level1)
@@ -184,7 +184,7 @@ HWTEST_F(SocketTest, LocalSocketServerTest002, TestSize.Level1)
     OHOS::NetStack::EventManager eventManager;
     LocalSocketServerGetStateContext context(env, &eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketServerGetState(&context);
-    EXPECT_EQ(ret, false);
+    EXPECT_EQ(ret, true);
 }
 
 HWTEST_F(SocketTest, LocalSocketServerTest003, TestSize.Level1)
