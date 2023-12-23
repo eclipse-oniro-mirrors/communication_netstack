@@ -580,8 +580,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Loca
     auto addrDeleter = [](sockaddr *a) { free(reinterpret_cast<void *>(a)); };
     std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
     nfds_t num = 1;
-    pollfd fds[1] = {{.fd = sock, .events = 0}};
-    fds[0].events |= POLLIN;
+    pollfd fds[1] = {{.fd = sock, .events = POLLIN}};
     int recvTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT_MS);
     while (true) {
         int ret = poll(fds, num, recvTimeoutMs);
@@ -692,7 +691,7 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
         pMgr->isConnected_ = true;
     }
     std::thread serviceThread(PollRecvData, sockfd, nullptr, 0, LocalSocketMessageCallback(context->GetManager(),
-                              context->GetSocketPath()));
+        context->GetSocketPath()));
     serviceThread.detach();
     return true;
 }
