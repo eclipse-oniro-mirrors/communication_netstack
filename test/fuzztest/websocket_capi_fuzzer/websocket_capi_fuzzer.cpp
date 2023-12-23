@@ -136,7 +136,7 @@ void SetSendDataTest(const uint8_t *data, size_t size)
     SetGlobalFuzzData(data, size);
     std::string str = GetStringFromData(STR_LEN);
     struct WebSocket *client = new WebSocket();
-    const char *Senddata = "Hello, world,NDK!";
+    const char *Senddata = "Hello, world,websocket!";
     int SendLength = std::strlen(Senddata);
     OH_WebSocketClient_Send(client, const_cast<char *>(Senddata), SendLength);
 }
@@ -149,7 +149,7 @@ void SetSendDataLengthTest(const uint8_t *data, size_t size)
     SetGlobalFuzzData(data, size);
     std::string str = GetStringFromData(STR_LEN);
     struct WebSocket *client = new WebSocket();
-    const char *Senddata = "Hello, world,NDK!";
+    const char *Senddata = "Hello, world,websocket!";
     int SendLength = size;
     OH_WebSocketClient_Send(client, const_cast<char *>(Senddata), SendLength);
 }
