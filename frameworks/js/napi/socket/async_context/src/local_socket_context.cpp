@@ -23,12 +23,18 @@
 namespace OHOS::NetStack::Socket {
 int LocalSocketBaseContext::GetSocketFd() const
 {
+    if (manager_ == nullptr) {
+        return -1;
+    }
     LocalSocketManager *pMgr = reinterpret_cast<LocalSocketManager *>(manager_->GetData());
     return (pMgr != nullptr) ? pMgr->sockfd_ : -1;
 }
 
 void LocalSocketBaseContext::SetSocketFd(int sock)
 {
+    if (manager_ == nullptr) {
+        return;
+    }
     manager_->SetData(reinterpret_cast<void *>(sock));
 }
 
@@ -168,9 +174,14 @@ const std::string &LocalSocketConnectContext::GetSocketPath() const
     return socketPath_;
 }
 
+int LocalSocketConnectContext::GetTimeoutMs() const
+{
+    return timeout_;
+}
+
 bool LocalSocketSendContext::GetData(napi_value sendOptions)
 {
-    if (NapiUtils::HasNamedProperty(GetEnv(), sendOptions, KEY_TIMEOUT)) {
+    if (!NapiUtils::HasNamedProperty(GetEnv(), sendOptions, KEY_DATA)) {
         return false;
     }
     napi_value jsData = NapiUtils::GetNamedProperty(GetEnv(), sendOptions, KEY_DATA);
