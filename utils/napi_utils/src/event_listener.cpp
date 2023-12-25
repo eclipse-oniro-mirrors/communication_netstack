@@ -126,7 +126,7 @@ void EventListener::EmitByUv(const std::string &type, void *data, void(Handler)(
     }
 
     if (callbackRef_ == nullptr) {
-        NETSTACK_LOGE("callback reference is nullptr");        
+        NETSTACK_LOGE("callback reference is nullptr");
         return;
     }
 
