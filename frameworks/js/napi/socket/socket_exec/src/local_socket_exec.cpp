@@ -457,7 +457,8 @@ static bool SetLocalSocketOptions(int sockfd, const LocalExtraOptions &options)
         }
     }
     if (options.AlreadySetTimeout()) {
-        uint32_t timeout = options.GetSocketTimeout();
+        uint32_t timeMs = options.GetSocketTimeout();
+        timeval timeout = {timeMs / UNIT_CONVERSION_1000, (timeMs % UNIT_CONVERSION_1000) * UNIT_CONVERSION_1000};
         if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
             NETSTACK_LOGE("localsocket setsockopt error, SO_RCVTIMEO, fd: %{public}d", sockfd);
             return false;
@@ -777,11 +778,13 @@ static bool GetLocalSocketOptions(int sockfd, LocalExtraOptions &optionsRef)
         return false;
     }
     optionsRef.SetSendBufferSize(result);
-    if (getsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &result, &len) == -1) {
+    timeval timeout;
+    socklen_t timeLen = sizeof(timeout);
+    if (getsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, &timeLen) == -1) {
         NETSTACK_LOGE("getsockopt error, SO_SNDTIMEO");
         return false;
     }
-    optionsRef.SetSocketTimeout(result);
+    optionsRef.SetSocketTimeout(timeout.tv_sec * UNIT_CONVERSION_1000 + timeout.tv_usec / UNIT_CONVERSION_1000);
     return true;
 }
 
