@@ -404,7 +404,8 @@ napi_value HttpExec::BuildRequestCallback(RequestContext *context)
     auto contentType = CommonUtils::ToLower(const_cast<std::map<std::string, std::string> &>(
         context->response.GetHeader())[HttpConstant::HTTP_CONTENT_TYPE]);
     if (contentType.find(HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM) != std::string::npos ||
-        contentType.find(HttpConstant::HTTP_CONTENT_TYPE_IMAGE) != std::string::npos) {
+        contentType.find(HttpConstant::HTTP_CONTENT_TYPE_IMAGE) != std::string::npos ||
+        contentType.find(HttpConstant::HTTP_CONTENT_TYPE_FONT_TTF) != std::string::npos) {
         void *data = nullptr;
         auto body = context->response.GetResult();
         napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);

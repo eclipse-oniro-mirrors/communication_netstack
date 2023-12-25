@@ -210,6 +210,7 @@ public:
     static const char *const HTTP_CONTENT_TYPE_OCTET_STREAM;
     static const char *const HTTP_CONTENT_TYPE_IMAGE;
     static const char *const HTTP_CONTENT_TYPE_MULTIPART;
+    static const char *const HTTP_CONTENT_TYPE_FONT_TTF;
 
     static const char *const HTTP_CONTENT_ENCODING_GZIP;
 
