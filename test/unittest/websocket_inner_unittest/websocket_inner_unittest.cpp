@@ -40,6 +40,8 @@ using namespace OHOS::NetStack::WebSocketClient;
 
 OpenOptions openOptions;
 
+CloseOption closeOptions;
+
 static void OnMessage(WebSocketClient *client, const std::string &data, size_t length) {}
 
 static void OnOpen(WebSocketClient *client, OpenResult openResult) {}
@@ -48,11 +50,14 @@ static void OnError(WebSocketClient *client, ErrorResult error) {}
 
 static void OnClose(WebSocketClient *client, CloseResult closeResult) {}
 
+WebSocketClient *client = new WebSocketClient();
+
 HWTEST_F(WebSocketTest, WebSocketRegistcallback001, TestSize.Level1)
 {
     openOptions.headers["Content-Type"] = "application/json";
     openOptions.headers["Authorization"] = "Bearer your_token_here";
-    WebSocketClient *client = new WebSocketClient();
+    closeOptions.code = LWS_CLOSE_STATUS_NORMAL;
+    closeOptions.reason = "";
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
     int ret = client->Connect("www.baidu.com", openOptions);
     EXPECT_EQ(ret, 0);
@@ -60,17 +65,20 @@ HWTEST_F(WebSocketTest, WebSocketRegistcallback001, TestSize.Level1)
 
 HWTEST_F(WebSocketTest, WebSocketConnect002, TestSize.Level1)
 {
-    WebSocketClient *client = new WebSocketClient();
-    int ret = client->Connect("www.baidu.com", openOptions);
+    int ret = 0;
+    openOptions.headers["Content-Type"] = "application/json";
+    openOptions.headers["Authorization"] = "Bearer your_token_here";
+    client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
+    ret = client->Connect("www.baidu.com", openOptions);
     EXPECT_EQ(ret, 0);
 }
 
 HWTEST_F(WebSocketTest, WebSocketSend003, TestSize.Level1)
 {
     int ret;
-    WebSocketClient *client = new WebSocketClient();
     const char *data = "Hello, world!";
     int length = std::strlen(data);
+    client->Connect("www.baidu.com", openOptions);
     ret = client->Send(const_cast<char *>(data), length);
     EXPECT_EQ(ret, 0);
 }
@@ -80,7 +88,6 @@ HWTEST_F(WebSocketTest, WebSocketClose004, TestSize.Level1)
     CloseOption CloseOptions;
     CloseOptions.code = LWS_CLOSE_STATUS_NORMAL;
     CloseOptions.reason = "";
-    WebSocketClient *client = new WebSocketClient();
     int ret = client->Close(CloseOptions);
     EXPECT_EQ(ret, 1017);
 }
@@ -88,9 +95,9 @@ HWTEST_F(WebSocketTest, WebSocketClose004, TestSize.Level1)
 HWTEST_F(WebSocketTest, WebSocketDestroy005, TestSize.Level1)
 {
     int ret;
-    WebSocketClient *client = new WebSocketClient();
     ret = client->Destroy();
-    EXPECT_EQ(ret, 1018);
+    delete client;
+    EXPECT_EQ(ret, 0);
 }
 
 } // namespace

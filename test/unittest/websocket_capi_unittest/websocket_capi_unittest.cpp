@@ -57,6 +57,7 @@ HWTEST_F(WebSocketTest, WebSocketConstruct001, TestSize.Level1)
     client = OH_WebSocketClient_Constructor(OnOpen, OnMessage, OnError, OnClose);
     ret = OH_WebSocketClient_AddHeader(client, header1);
     OH_WebSocketClient_Connect(client, url1, client->requestOptions);
+    OH_WebSocketClient_Destroy(client);
     EXPECT_EQ(ret, 0);
 }
 
@@ -78,7 +79,7 @@ HWTEST_F(WebSocketTest, WebSocketConnect003, TestSize.Level1)
     struct WebSocket *client = new WebSocket();
     const char *url1 = "www.baidu.com";
     ret = OH_WebSocketClient_Connect(client, url1, client->requestOptions);
-
+    OH_WebSocketClient_Destroy(client);
     EXPECT_EQ(ret, 1002);
 }
 
