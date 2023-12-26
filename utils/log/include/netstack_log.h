@@ -24,11 +24,11 @@
 #if !defined(_WIN32) && !defined(__APPLE__)
 
 #ifndef LOG_DOMAIN
-#define LOG_DOMAIN 0xD0015B1
+#define LOG_DOMAIN 0xD0015B0
 #endif
 
 #ifndef LOG_TAG
-#define LOG_TAG "NetMgrSubsystemTEST"
+#define LOG_TAG "NetMgrSubsystem"
 #endif
 
 #include "hilog/log.h"
