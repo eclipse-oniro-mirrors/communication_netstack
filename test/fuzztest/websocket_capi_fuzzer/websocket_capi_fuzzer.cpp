@@ -22,8 +22,8 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
-#include <signal.h>
-#include <string.h>
+#include <csignal>
+#include <cstring>
 
 #include "net_websocket.h"
 #include "netstack_log.h"
@@ -136,9 +136,9 @@ void SetSendDataTest(const uint8_t *data, size_t size)
     SetGlobalFuzzData(data, size);
     std::string str = GetStringFromData(STR_LEN);
     struct WebSocket *client = new WebSocket();
-    const char *Senddata = "Hello, world,websocket!";
-    int SendLength = std::strlen(Senddata);
-    OH_WebSocketClient_Send(client, const_cast<char *>(Senddata), SendLength);
+    const char *senddata = "Hello, world,websocket!";
+    int SendLength = std::strlen(senddata);
+    OH_WebSocketClient_Send(client, const_cast<char *>(senddata), SendLength);
 }
 
 void SetSendDataLengthTest(const uint8_t *data, size_t size)
@@ -149,9 +149,9 @@ void SetSendDataLengthTest(const uint8_t *data, size_t size)
     SetGlobalFuzzData(data, size);
     std::string str = GetStringFromData(STR_LEN);
     struct WebSocket *client = new WebSocket();
-    const char *Senddata = "Hello, world,websocket!";
+    const char *senddata = "Hello, world,websocket!";
     int SendLength = size;
-    OH_WebSocketClient_Send(client, const_cast<char *>(Senddata), SendLength);
+    OH_WebSocketClient_Send(client, const_cast<char *>(senddata), SendLength);
 }
 
 void SetCloseOptionTest(const uint8_t *data, size_t size)
