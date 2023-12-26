@@ -35,8 +35,7 @@ common_external_deps = [
 
 ohos_fuzztest("websocket_capi_fuzzer") {
   module_out_path = fuzz_test_path
-  fuzz_config_file =
-      "$NETSTACK_DIR/test/fuzztest/websocket_inner_fuzzer"
+  fuzz_config_file = "$NETSTACK_DIR/test/fuzztest/websocket_inner_fuzzer"
   include_dirs = [
     "$NETSTACK_DIR/interfaces/kits/c/net_websocket/include",
     "$NETSTACK_DIR/utils/napi_utils/include",
@@ -57,8 +56,8 @@ ohos_fuzztest("websocket_capi_fuzzer") {
   ]
 
   deps = [
-    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$NETSTACK_DIR/interfaces/kits/c/net_websocket:net_websocket",
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
   ]
 
   external_deps = common_external_deps
