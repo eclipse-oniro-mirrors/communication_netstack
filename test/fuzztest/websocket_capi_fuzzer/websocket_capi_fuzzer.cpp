@@ -32,12 +32,11 @@
 namespace OHOS {
 namespace NetStack {
 namespace WebSocketClient {
-namespace {
 const uint8_t *g_baseFuzzData = nullptr;
 size_t g_baseFuzzSize = 0;
 size_t g_baseFuzzPos = 0;
-[[maybe_unused]] constexpr size_t STR_LEN = 255;
-} // namespace
+constexpr size_t STR_LEN = 255;
+const int LWS_CLOSE_STATUS_NORMAL=1000;
 template <class T> T GetData()
 {
     T object{};
@@ -45,8 +44,9 @@ template <class T> T GetData()
     if (g_baseFuzzData == nullptr || g_baseFuzzSize <= g_baseFuzzPos || objectSize > g_baseFuzzSize - g_baseFuzzPos) {
         return object;
     }
-    if (memcpy_s(&object, objectSize, g_baseFuzzData + g_baseFuzzPos, objectSize)) {
-        return {};
+    errno_t ret = memcpy_s(&object, objectSize, g_baseFuzzData + g_baseFuzzPos, objectSize);
+    if (ret != EOK) {
+        return object;
     }
     g_baseFuzzPos += objectSize;
     return object;
@@ -137,8 +137,8 @@ void SetSendDataTest(const uint8_t *data, size_t size)
     std::string str = GetStringFromData(STR_LEN);
     struct WebSocket *client = new WebSocket();
     const char *senddata = "Hello, world,websocket!";
-    int SendLength = std::strlen(senddata);
-    OH_WebSocketClient_Send(client, const_cast<char *>(senddata), SendLength);
+    int sendLength = std::strlen(senddata);
+    OH_WebSocketClient_Send(client, const_cast<char *>(senddata), sendLength);
 }
 
 void SetSendDataLengthTest(const uint8_t *data, size_t size)
@@ -150,8 +150,8 @@ void SetSendDataLengthTest(const uint8_t *data, size_t size)
     std::string str = GetStringFromData(STR_LEN);
     struct WebSocket *client = new WebSocket();
     const char *senddata = "Hello, world,websocket!";
-    int SendLength = size;
-    OH_WebSocketClient_Send(client, const_cast<char *>(senddata), SendLength);
+    int sendLength = size;
+    OH_WebSocketClient_Send(client, const_cast<char *>(senddata), sendLength);
 }
 
 void SetCloseOptionTest(const uint8_t *data, size_t size)
@@ -164,7 +164,7 @@ void SetCloseOptionTest(const uint8_t *data, size_t size)
     struct WebSocket *client = new WebSocket();
 
     struct WebSocket_CloseOption CloseOption;
-    CloseOption.code = 1000;
+    CloseOption.code = LWS_CLOSE_STATUS_NORMAL;
     CloseOption.reason = " ";
     OH_WebSocketClient_Close(client, CloseOption);
 }

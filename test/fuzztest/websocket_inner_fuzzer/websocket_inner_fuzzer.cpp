@@ -44,8 +44,9 @@ template <class T> T GetData()
     if (g_baseFuzzData == nullptr || g_baseFuzzSize <= g_baseFuzzPos || objectSize > g_baseFuzzSize - g_baseFuzzPos) {
         return object;
     }
-    if (memcpy_s(&object, objectSize, g_baseFuzzData + g_baseFuzzPos, objectSize)) {
-        return {};
+    errno_t ret = memcpy_s(&object, objectSize, g_baseFuzzData + g_baseFuzzPos, objectSize);
+    if (ret != EOK) {
+        return object;
     }
     g_baseFuzzPos += objectSize;
     return object;
@@ -125,8 +126,8 @@ void SetSendDataTest(const uint8_t *data, size_t size)
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
     ret = client->Connect("www.baidu.com", openOptions);
     const char *data1 = str.c_str();
-    int SendLength = std::strlen(data1);
-    ret = client->Send(const_cast<char *>(data1), SendLength);
+    int sendLength = std::strlen(data1);
+    ret = client->Send(const_cast<char *>(data1), sendLength);
 }
 
 void SetSendDataLengthTest(const uint8_t *data, size_t size)
