@@ -1231,12 +1231,16 @@ bool HttpExec::SetMultiPartOption(CURL *curl, RequestContext *context)
         return true;
     }
     auto multiPartDataList = context->options.GetMultiPartDataList();
+    if (multiPartDataList.empty()) {
+        return true;
+    }
     curl_mime *multipart = curl_mime_init(curl);
     if (multipart == nullptr) {
         return false;
     }
     context->SetMultipart(multipart);
     curl_mimepart *part = nullptr;
+    int size = 0;
     for (auto &multiFormData : multiPartDataList) {
         if (multiFormData.name.empty()) {
             continue;
@@ -1248,8 +1252,11 @@ bool HttpExec::SetMultiPartOption(CURL *curl, RequestContext *context)
         }
         part = curl_mime_addpart(multipart);
         SetFormDataOption(multiFormData, part, curl, context);
+        size++;
     }
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_MIMEPOST, multipart, context);
+    if (size > 0) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_MIMEPOST, multipart, context);
+    }
     return true;
 }
 
