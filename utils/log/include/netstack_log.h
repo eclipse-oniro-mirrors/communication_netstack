@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,17 +23,18 @@
 
 #if !defined(_WIN32) && !defined(__APPLE__)
 
+#ifndef LOG_DOMAIN
+#define LOG_DOMAIN 0xD0015B1
+#endif
+
+#ifndef LOG_TAG
+#define LOG_TAG "NetMgrSubsystemTEST"
+#endif
+
 #include "hilog/log.h"
 
-#define NETSTACK_LOG_TAG "NetMgrSubsystem"
-
-#define NETSTACK_LOG_DOMAIN 0xD0015B0
-
-static constexpr OHOS::HiviewDFX::HiLogLabel NETSTACK_LOG_LABEL = {LOG_CORE, NETSTACK_LOG_DOMAIN, NETSTACK_LOG_TAG};
-
-#define NETSTACK_HILOG_PRINT(Level, fmt, ...)                                                                        \
-    (void)OHOS::HiviewDFX::HiLog::Level(NETSTACK_LOG_LABEL, "NETSTACK [%{public}s %{public}d] " fmt, MAKE_FILE_NAME, \
-                                        __LINE__, ##__VA_ARGS__)
+#define NETSTACK_HILOG_PRINT(Level, fmt, ...) \
+    (void)HILOG_##Level(LOG_CORE, "NETSTACK [%{public}s %{public}d] " fmt, MAKE_FILE_NAME, __LINE__, ##__VA_ARGS__)
 
 #else
 
@@ -76,10 +77,10 @@ static void NetStackPrintLog(const char *fmt, ...)
 
 #endif /* !defined(_WIN32) && !defined(__APPLE__) */
 
-#define NETSTACK_LOGE(fmt, ...) NETSTACK_HILOG_PRINT(Error, fmt, ##__VA_ARGS__)
+#define NETSTACK_LOGE(fmt, ...) NETSTACK_HILOG_PRINT(ERROR, fmt, ##__VA_ARGS__)
 
-#define NETSTACK_LOGI(fmt, ...) NETSTACK_HILOG_PRINT(Info, fmt, ##__VA_ARGS__)
+#define NETSTACK_LOGI(fmt, ...) NETSTACK_HILOG_PRINT(INFO, fmt, ##__VA_ARGS__)
 
-#define NETSTACK_LOGD(fmt, ...) NETSTACK_HILOG_PRINT(Debug, fmt, ##__VA_ARGS__)
+#define NETSTACK_LOGD(fmt, ...) NETSTACK_HILOG_PRINT(DEBUG, fmt, ##__VA_ARGS__)
 
 #endif /* COMMUNICATIONNETSTACK_NETSTACK_LOG */
