@@ -88,8 +88,8 @@ HWTEST_F(WebSocketTest, WebSocketSend004, TestSize.Level1)
     int ret;
     struct WebSocket *client = nullptr;
     const char *senddata = "Hello, I love China!";
-    int SendLength = std::strlen(senddata);
-    ret = OH_WebSocketClient_Send(client, const_cast<char *>(senddata), SendLength);
+    int sendLength = std::strlen(senddata);
+    ret = OH_WebSocketClient_Send(client, const_cast<char *>(senddata), sendLength);
     EXPECT_EQ(ret, 1001);
 }
 
