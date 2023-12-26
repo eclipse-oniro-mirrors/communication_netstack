@@ -19,11 +19,10 @@
 #include <string>
 #include <vector>
 
+#include <csignal>
 #include <cstring>
 #include <functional>
 #include <iostream>
-#include <csignal>
-#include <cstring>
 
 #include "net_websocket.h"
 #include "netstack_log.h"
@@ -36,7 +35,7 @@ const uint8_t *g_baseFuzzData = nullptr;
 size_t g_baseFuzzSize = 0;
 size_t g_baseFuzzPos = 0;
 constexpr size_t STR_LEN = 255;
-const int LWS_CLOSE_STATUS_NORMAL=1000;
+const int LWS_CLOSE_STATUS_NORMAL = 1000;
 template <class T> T GetData()
 {
     T object{};
