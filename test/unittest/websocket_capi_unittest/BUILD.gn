@@ -31,14 +31,14 @@ ohos_unittest("websocket_capi_unittest") {
   module_out_path = "netstack/websocket_capi_unittest"
 
   include_dirs = [
-    "//foundation/communication/netstack/interfaces/kits/c/net_websocket/include",
+    "$NETSTACK_DIR/interfaces/kits/c/net_websocket/include",
     "$NETSTACK_DIR/utils/log/include",
   ]
   include_dirs += utils_include
 
   sources = [ "websocket_capi_unittest.cpp" ]
 
-  deps = [ "//foundation/communication/netstack/interfaces/kits/c/net_websocket:net_websocket" ]
+  deps = [ "$NETSTACK_DIR/interfaces/kits/c/net_websocket:net_websocket" ]
 
   external_deps = common_external_deps
 

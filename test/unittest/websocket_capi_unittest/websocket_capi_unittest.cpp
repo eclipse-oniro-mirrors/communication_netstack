@@ -18,8 +18,8 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
-#include <signal.h>
-#include <string.h>
+#include <csignal>
+#include <cstring>
 
 #include "net_websocket.h"
 
@@ -87,9 +87,9 @@ HWTEST_F(WebSocketTest, WebSocketSend004, TestSize.Level1)
 {
     int ret;
     struct WebSocket *client = nullptr;
-    const char *Senddata = "Hello, I love China!";
-    int SendLength = std::strlen(Senddata);
-    ret = OH_WebSocketClient_Send(client, const_cast<char *>(Senddata), SendLength);
+    const char *senddata = "Hello, I love China!";
+    int SendLength = std::strlen(senddata);
+    ret = OH_WebSocketClient_Send(client, const_cast<char *>(senddata), SendLength);
     EXPECT_EQ(ret, 1001);
 }
 

@@ -18,8 +18,8 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
-#include <signal.h>
-#include <string.h>
+#include <csignal>
+#include <cstring>
 
 #include "websocket_client_innerapi.h"
 
