@@ -23,13 +23,9 @@
 
 #if !defined(_WIN32) && !defined(__APPLE__)
 
-#ifndef LOG_DOMAIN
 #define LOG_DOMAIN 0xD0015B0
-#endif
 
-#ifndef LOG_TAG
 #define LOG_TAG "NetMgrSubsystem"
-#endif
 
 #include "hilog/log.h"
 
@@ -38,9 +34,9 @@
 
 #else
 
+#include "securec.h"
 #include <cstdarg>
 #include <cstdio>
-#include "securec.h"
 
 static constexpr uint32_t NETSTACK_MAX_BUFFER_SIZE = 4096;
 
