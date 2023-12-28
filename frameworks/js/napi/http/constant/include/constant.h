@@ -197,6 +197,7 @@ public:
     static const char *const HTTP_URL_PARAM_SEPARATOR;
     static const char *const HTTP_URL_NAME_VALUE_SEPARATOR;
     static const char *const HTTP_HEADER_SEPARATOR;
+    static const char *const HTTP_HEADER_BLANK_SEPARATOR;
     static const char *const HTTP_LINE_SEPARATOR;
     static const char *const HTTP_RESPONSE_HEADER_SEPARATOR;
 
@@ -210,7 +211,6 @@ public:
     static const char *const HTTP_CONTENT_TYPE_OCTET_STREAM;
     static const char *const HTTP_CONTENT_TYPE_IMAGE;
     static const char *const HTTP_CONTENT_TYPE_MULTIPART;
-    static const char *const HTTP_CONTENT_TYPE_FONT_TTF;
 
     static const char *const HTTP_CONTENT_ENCODING_GZIP;
 

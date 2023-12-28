@@ -209,7 +209,11 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
     std::vector<std::string> vec;
     std::for_each(context->options.GetHeader().begin(), context->options.GetHeader().end(),
                   [&vec](const std::pair<std::string, std::string> &p) {
-                      vec.emplace_back(p.first + HttpConstant::HTTP_HEADER_SEPARATOR + p.second);
+                      if (!p.second.empty()) {
+                          vec.emplace_back(p.first + HttpConstant::HTTP_HEADER_SEPARATOR + p.second);
+                      } else {
+                          vec.emplace_back(p.first + HttpConstant::HTTP_HEADER_BLANK_SEPARATOR);
+                      }
                   });
     context->SetCurlHeaderList(MakeHeaders(vec));
 
@@ -404,8 +408,7 @@ napi_value HttpExec::BuildRequestCallback(RequestContext *context)
     auto contentType = CommonUtils::ToLower(const_cast<std::map<std::string, std::string> &>(
         context->response.GetHeader())[HttpConstant::HTTP_CONTENT_TYPE]);
     if (contentType.find(HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM) != std::string::npos ||
-        contentType.find(HttpConstant::HTTP_CONTENT_TYPE_IMAGE) != std::string::npos ||
-        contentType.find(HttpConstant::HTTP_CONTENT_TYPE_FONT_TTF) != std::string::npos) {
+        contentType.find(HttpConstant::HTTP_CONTENT_TYPE_IMAGE) != std::string::npos) {
         void *data = nullptr;
         auto body = context->response.GetResult();
         napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);
