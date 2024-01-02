@@ -1,0 +1,58 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//build/test.gni")
+import("//foundation/communication/netstack/netstack_config.gni")
+
+#SOCKET_NAPI = "$NETSTACK_DIR/frameworks/js/napi/socket"
+WEBSOCKET_INNERAPI = "$NETSTACK_DIR/frameworks/native/websocket_client"
+
+utils_include = [
+  "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
+  "$SUBSYSTEM_DIR/netstack/utils/log/include",
+  "$SUBSYSTEM_DIR/netstack/utils/napi_utils/include",
+  "$THIRD_PARTY_ROOT/libwebsockets/include",
+]
+
+common_external_deps = [
+  "hilog:libhilog",
+  "napi:ace_napi",
+]
+
+ohos_unittest("websocket_inner_unittest") {
+  module_out_path = "netstack/websocket_inner_unittest"
+
+  include_dirs = [
+    "$NETSTACK_DIR/utils/napi_utils/include",
+    "$WEBSOCKET_INNERAPI/include",
+  ]
+  include_dirs += utils_include
+
+  sources = [ "websocket_inner_unittest.cpp" ]
+
+  deps = [
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "$NETSTACK_INNERKITS_DIR/websocket_client:websocket_client",
+  ]
+
+  external_deps = common_external_deps
+
+  part_name = "netstack"
+  subsystem_name = "communication"
+}
+
+group("unittest") {
+  testonly = true
+  deps = [ ":websocket_inner_unittest" ]
+}
