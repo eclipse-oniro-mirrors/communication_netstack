@@ -84,7 +84,7 @@ static void OnClose(WebSocketClient *client, CloseResult closeResult) {}
 
 void SetRequestOptionsTest(const uint8_t *data, size_t size)
 {
-    int ret;
+    int32_t ret;
     if ((data == nullptr) || (size < 1)) {
         return;
     }
@@ -99,7 +99,7 @@ void SetRequestOptionsTest(const uint8_t *data, size_t size)
 
 void SetConnectUrlTest(const uint8_t *data, size_t size)
 {
-    int ret;
+    int32_t ret;
     if ((data == nullptr) || (size < 1)) {
         return;
     }
@@ -114,7 +114,7 @@ void SetConnectUrlTest(const uint8_t *data, size_t size)
 
 void SetSendDataTest(const uint8_t *data, size_t size)
 {
-    int ret;
+    int32_t ret;
     if ((data == nullptr) || (size < 1)) {
         return;
     }
@@ -126,13 +126,13 @@ void SetSendDataTest(const uint8_t *data, size_t size)
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
     ret = client->Connect("www.baidu.com", openOptions);
     const char *data1 = str.c_str();
-    int sendLength = std::strlen(data1);
+    int32_t sendLength = std::strlen(data1);
     ret = client->Send(const_cast<char *>(data1), sendLength);
 }
 
 void SetSendDataLengthTest(const uint8_t *data, size_t size)
 {
-    int ret;
+    int32_t ret;
     if ((data == nullptr) || (size < 1)) {
         return;
     }
@@ -149,7 +149,7 @@ void SetSendDataLengthTest(const uint8_t *data, size_t size)
 
 void SetCloseOptionTest(const uint8_t *data, size_t size)
 {
-    int ret;
+    int32_t ret;
     if ((data == nullptr) || (size < 1)) {
         return;
     }

@@ -35,7 +35,7 @@ const uint8_t *g_baseFuzzData = nullptr;
 size_t g_baseFuzzSize = 0;
 size_t g_baseFuzzPos = 0;
 constexpr size_t STR_LEN = 255;
-const int LWS_CLOSE_STATUS_NORMAL = 1000;
+const int32_t LWS_CLOSE_STATUS_NORMAL = 1000;
 template <class T> T GetData()
 {
     T object{};
@@ -73,18 +73,9 @@ std::string GetStringFromData(int strlen)
     return str;
 }
 
-// static void OnOpen(struct WebSocket *client, WebSocket_OpenResult openResult) {}
-
-// static void OnMessage(struct WebSocket *client, char *data, uint32_t length) {}
-
-// static void OnError(struct WebSocket *client, WebSocket_ErrorResult error) {}
-
-// static void OnClose(struct WebSocket *client, WebSocket_CloseResult closeResult)
-// {}
-
 void SetAddHeaderTest(const uint8_t *data, size_t size)
 {
-    int ret;
+    int32_t ret;
     if ((data == nullptr) || (size < 1)) {
         return;
     }
@@ -136,7 +127,7 @@ void SetSendDataTest(const uint8_t *data, size_t size)
     std::string str = GetStringFromData(STR_LEN);
     struct WebSocket *client = new WebSocket();
     const char *senddata = "Hello, world,websocket!";
-    int sendLength = std::strlen(senddata);
+    int32_t sendLength = std::strlen(senddata);
     OH_WebSocketClient_Send(client, const_cast<char *>(senddata), sendLength);
 }
 
@@ -149,7 +140,7 @@ void SetSendDataLengthTest(const uint8_t *data, size_t size)
     std::string str = GetStringFromData(STR_LEN);
     struct WebSocket *client = new WebSocket();
     const char *senddata = "Hello, world,websocket!";
-    int sendLength = size;
+    int32_t sendLength = size;
     OH_WebSocketClient_Send(client, const_cast<char *>(senddata), sendLength);
 }
 
