@@ -942,10 +942,10 @@ static std::map<std::string, std::string> MakeHeaderWithSetCookie(RequestContext
 {
     std::map<std::string, std::string> tempMap = context->response.GetHeader();
     std::string setCookies;
-    int loop = 0;
+    size_t loop = 0;
     for (const auto &setCookie : context->response.GetsetCookie()) {
         setCookies += setCookie;
-        if (loop < context->response.GetsetCookie().size() - 1) {
+        if (loop + 1 < context->response.GetsetCookie().size()) {
             setCookies += HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR;
         }
         ++loop;

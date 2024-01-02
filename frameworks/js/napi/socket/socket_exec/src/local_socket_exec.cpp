@@ -83,11 +83,11 @@ void LocalSocketServerConnectionFinalize(napi_env, void *data, void *)
     NETSTACK_LOGI("localsocket connection is finalized");
     EventManager *manager = reinterpret_cast<EventManager *>(data);
     if (manager != nullptr) {
-        LocalSocketConnectionData *data = reinterpret_cast<LocalSocketConnectionData *>(manager->GetData());
-        if (data != nullptr) {
-            data->serverManager_->RemoveEventManager(data->clientId_);
-            data->serverManager_->RemoveAccept(data->clientId_);
-            delete data;
+        LocalSocketConnectionData *connectData = reinterpret_cast<LocalSocketConnectionData *>(manager->GetData());
+        if (connectData != nullptr) {
+            connectData->serverManager_->RemoveEventManager(connectData->clientId_);
+            connectData->serverManager_->RemoveAccept(connectData->clientId_);
+            delete connectData;
         }
     }
 }

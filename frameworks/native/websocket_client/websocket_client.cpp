@@ -150,17 +150,15 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
     }
     const char *message = sendData.data;
     size_t messageLen = strlen(message);
-    unsigned char *buffer = (unsigned char *)malloc(LWS_PRE + messageLen);
+    auto buffer = std::make_unique<unsigned char[]>(LWS_PRE + messageLen);
     if (buffer == nullptr) {
         return -1;
     }
-    int result = memcpy_s(buffer + LWS_PRE, LWS_PRE + messageLen, message, messageLen);
+    int result = memcpy_s(buffer.get() + LWS_PRE, LWS_PRE + messageLen, message, messageLen);
     if (result != 0) {
-        free(buffer);
         return -1;
     }
-    int bytesSent = lws_write(wsi, buffer + LWS_PRE, messageLen, LWS_WRITE_TEXT);
-    free(buffer);
+    int bytesSent = lws_write(wsi, buffer.get() + LWS_PRE, messageLen, LWS_WRITE_TEXT);
     NETSTACK_LOGD("ClientId:%{public}d,Client Writable send data length = %{public}d",
                   client->GetClientContext()->GetClientId(), bytesSent);
     return HttpDummy(wsi, reason, user, in, len);

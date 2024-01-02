@@ -337,7 +337,7 @@ std::string MaskIpv6(std::string &maskedResult)
         }
 
         if (colonCount >= MAX_DISPLAY_NUM) {
-            if (i != ':' && i != '/') {
+            if (i != ':') {
                 i = '*';
             }
         }

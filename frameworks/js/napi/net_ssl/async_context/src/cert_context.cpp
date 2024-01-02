@@ -29,7 +29,7 @@ static constexpr const int PARAM_CERT_AND_CACERT = 2;
 
 namespace OHOS::NetStack::Ssl {
 CertContext::CertContext(napi_env env, EventManager *manager)
-    : BaseContext(env, manager), certBlob_(nullptr), certBlobClient_(nullptr)
+    : BaseContext(env, manager), certBlob_(nullptr), certBlobClient_(nullptr), verifyResult_(0)
 {
     if (manager_ == nullptr) {
         manager_ = new EventManager;
