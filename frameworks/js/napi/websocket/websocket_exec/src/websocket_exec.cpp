@@ -38,6 +38,8 @@ static constexpr const char *PREFIX_HTTPS = "https";
 
 static constexpr const char *PREFIX_WSS = "wss";
 
+static constexpr const char *PREFIX_WS = "ws";
+
 static constexpr const int MAX_URI_LENGTH = 1024;
 
 static constexpr const int MAX_HDR_LENGTH = 1024;
@@ -80,6 +82,8 @@ struct OnOpenClosePara {
     uint32_t status;
     std::string message;
 };
+
+static const std::vector<std::string> WS_PREFIX = {PREFIX_WSS, PREFIX_WS};
 
 class UserData {
 public:
@@ -208,6 +212,10 @@ bool WebSocketExec::ParseUrl(ConnectContext *context, char *prefix, size_t prefi
     (void)lws_parse_uri(uri, &tempPrefix, &tempAddress, port, &tempPath);
     if (strcpy_s(prefix, prefixLen, tempPrefix) < 0) {
         NETSTACK_LOGE("strcpy_s failed");
+        return false;
+    }
+    if (std::find(WS_PREFIX.begin(), WS_PREFIX.end(), prefix) == WS_PREFIX.end()) {
+        NETSTACK_LOGE("prefix failed");
         return false;
     }
     if (strcpy_s(address, addressLen, tempAddress) < 0) {
@@ -501,6 +509,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     int port = 0;
     if (!ParseUrl(context, prefix, MAX_URI_LENGTH, address, MAX_URI_LENGTH, pathWithoutStart, MAX_URI_LENGTH, &port)) {
         NETSTACK_LOGE("ParseUrl failed");
+        context->SetErrorCode(WEBSOCKET_ERROR_CODE_URL_ERROR);
         return false;
     }
     std::string path = PATH_START + std::string(pathWithoutStart);
@@ -533,6 +542,17 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     return true;
 }
 
+static bool CheckFilePath(std::string &path)
+{
+    char tmpPath[PATH_MAX] = {0};
+    if (!realpath(static_cast<const char *>(path.c_str()), tmpPath)) {
+        NETSTACK_LOGE("path is error");
+        return false;
+    }
+    path = tmpPath;
+    return true;
+}
+
 bool WebSocketExec::ExecConnect(ConnectContext *context)
 {
     if (context == nullptr) {
@@ -551,10 +571,25 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     lws_context_creation_info info = {};
     FillContextInfo(info);
     if (!context->caPath_.empty()) {
+        if (!CheckFilePath(context->caPath_)) {
+            context->SetErrorCode(WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
+            return false;
+        }
         info.client_ssl_ca_filepath = context->caPath_.c_str();
     }
     NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
     if (!context->clientCert_.empty()) {
+        if (!CheckFilePath(context->clientCert_)) {
+            context->SetErrorCode(WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
+            return false;
+        }
+        char realKeyPath[PATH_MAX] = {0};
+        if (!realpath(context->clientKey_.Data(), realKeyPath)) {
+            NETSTACK_LOGE("client key file not exist");
+            context->SetErrorCode(WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
+            return false;
+        }
+        context->clientKey_ = Secure::SecureChar(realKeyPath);
         info.client_ssl_cert_filepath = context->clientCert_.c_str();
         info.client_ssl_private_key_filepath = context->clientKey_.Data();
         info.client_ssl_private_key_password = context->keyPassword_.Data();
