@@ -572,6 +572,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     FillContextInfo(info);
     if (!context->caPath_.empty()) {
         if (!CheckFilePath(context->caPath_)) {
+            NETSTACK_LOGE("ca not exist");
             context->SetErrorCode(WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
             return false;
         }
@@ -579,12 +580,9 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     }
     NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
     if (!context->clientCert_.empty()) {
-        if (!CheckFilePath(context->clientCert_)) {
-            context->SetErrorCode(WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
-            return false;
-        }
         char realKeyPath[PATH_MAX] = {0};
-        if (!realpath(context->clientKey_.Data(), realKeyPath)) {
+        if (!CheckFilePath(context->clientCert_) || !realpath(context->clientKey_.Data(), realKeyPath)) {
+            NETSTACK_LOGE("client cret not exist");
             context->SetErrorCode(WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
             return false;
         }
