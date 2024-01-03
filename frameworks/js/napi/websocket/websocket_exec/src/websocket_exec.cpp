@@ -582,7 +582,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     if (!context->clientCert_.empty()) {
         char realKeyPath[PATH_MAX] = {0};
         if (!CheckFilePath(context->clientCert_) || !realpath(context->clientKey_.Data(), realKeyPath)) {
-            NETSTACK_LOGE("client cret not exist");
+            NETSTACK_LOGE("client cert not exist");
             context->SetErrorCode(WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
             return false;
         }
