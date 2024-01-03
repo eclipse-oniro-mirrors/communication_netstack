@@ -57,6 +57,7 @@ static const std::map<int32_t, const std::string> HTTP_ERR_MAP = {
     {HTTP_SSL_CACERT_BADFILE, "Problem with the SSL CA cert (path? access rights?)"},
     {HTTP_REMOTE_FILE_NOT_FOUND, "Remote file not found"},
     {HTTP_AUTH_ERROR, "An authentication function returned an error"},
+    {HTTP_SSL_PINNEDPUBKEYNOTMATCH, "Specified pinned public key did not match"},
     {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
 };
 
