@@ -141,7 +141,7 @@ uint32_t VerifyCert(const CertBlob *cert)
             continue;
         }
         X509_STORE_CTX_init(ctx, store, certX509, nullptr);
-        verifyResult = X509_verify_cert(ctx);
+        verifyResult = static_cast<uint32_t>(X509_verify_cert(ctx));
         if (verifyResult != VERIFY_RESULT_SUCCESS) {
             verifyResult = static_cast<uint32_t>(X509_STORE_CTX_get_error(ctx) + SSL_ERROR_CODE_BASE);
             ProcessResult(verifyResult);
