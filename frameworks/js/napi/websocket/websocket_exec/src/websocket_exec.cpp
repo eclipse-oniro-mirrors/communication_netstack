@@ -585,7 +585,6 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         }
         char realKeyPath[PATH_MAX] = {0};
         if (!realpath(context->clientKey_.Data(), realKeyPath)) {
-            NETSTACK_LOGE("client key file not exist");
             context->SetErrorCode(WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
             return false;
         }
