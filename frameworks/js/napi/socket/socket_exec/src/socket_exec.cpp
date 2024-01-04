@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1291,7 +1291,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
     addrin.sin_port = htons(context->address_.GetPort());
     addrin.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(context->GetSocketFd(), (struct sockaddr *)&addrin, sizeof(addrin)) < 0) {
-        NETSTACK_LOGE("bind port: %{public}d error, errno: ", context->address_.GetPort(), errno);
+        NETSTACK_LOGE("bind port: %{public}d error, errno: %{public}d", context->address_.GetPort(), errno);
         context->SetErrorCode(errno);
         return false;
     }
