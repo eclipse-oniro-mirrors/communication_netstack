@@ -63,8 +63,7 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request)
       canceled_(false),
       file_(nullptr)
 {
-    NETSTACK_LOGI("taskId_=%{public}d URL=%{public}s", taskId_,
-                  request_.GetURL().c_str());
+    NETSTACK_LOGI("taskId_=%{public}d", taskId_);
 
     curlHandle_ = curl_easy_init();
     if (!curlHandle_) {
@@ -86,8 +85,8 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request, TaskType type, 
       file_(nullptr)
 {
     NETSTACK_LOGD(
-        "HttpClientTask::HttpClientTask() taskId_=%{public}d URL=%{public}s type=%{public}d filePath=%{public}s",
-        taskId_, request_.GetURL().c_str(), type_, filePath_.c_str());
+        "HttpClientTask taskId_=%{public}d type=%{public}d filePath=%{public}s",
+        taskId_, type_, filePath_.c_str());
 
     curlHandle_ = curl_easy_init();
     if (!curlHandle_) {

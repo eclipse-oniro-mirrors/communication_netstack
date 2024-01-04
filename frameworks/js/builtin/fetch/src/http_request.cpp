@@ -37,7 +37,7 @@
         CURLcode result = curl_easy_perform(handle);                                             \
         if (result != CURLE_OK) {                                                                \
             const char *err = curl_easy_strerror(result);                                        \
-            HTTP_REQUEST_ERROR("Failed to fetch, url:%s, %s", (reqData)->GetUrl().c_str(), err); \
+            HTTP_REQUEST_ERROR("Failed to fetch, err: %s", err);                                 \
             (respData)->SetErrString(err);                                                       \
             (respData)->SetCode(result);                                                         \
             return false;                                                                        \

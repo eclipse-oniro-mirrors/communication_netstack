@@ -40,8 +40,8 @@
     do {                                                                                                 \
         CURLcode result = curl_easy_perform(handle);                                                     \
         if (result != CURLE_OK) {                                                                        \
-            NETSTACK_LOGE("request fail, url:%{public}s, %{public}s %{public}d",                         \
-                          (asyncContext)->request.GetUrl().c_str(), curl_easy_strerror(result), result); \
+            NETSTACK_LOGE("request fail, err: %{public}s, result: %{public}d",                         \
+                          curl_easy_strerror(result), result); \
             (asyncContext)->SetErrorCode(result);                                                        \
             return false;                                                                                \
         }                                                                                                \
@@ -78,8 +78,6 @@ bool FetchExec::ExecFetch(FetchContext *context)
         NETSTACK_LOGE("Failed to create fetch task");
         return false;
     }
-
-    NETSTACK_LOGI("final url: %{public}s", context->request.GetUrl().c_str());
 
     std::vector<std::string> vec;
     std::for_each(context->request.GetHeader().begin(), context->request.GetHeader().end(),
