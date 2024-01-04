@@ -1291,7 +1291,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
     addrin.sin_port = htons(context->address_.GetPort());
     addrin.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(context->GetSocketFd(), (struct sockaddr *)&addrin, sizeof(addrin)) < 0) {
-        NETSTACK_LOGE("bind port: %{public}d error, errno: ", context->address_.GetPort(), errno);
+        NETSTACK_LOGE("bind port: %{public}d error, errno: %{public}d", context->address_.GetPort(), errno);
         context->SetErrorCode(errno);
         return false;
     }
