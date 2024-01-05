@@ -107,7 +107,8 @@ bool CertContext::CheckParamsType(napi_value *params, size_t paramsCount)
 
 CertBlob *CertContext::ParseCertBlobFromValue(napi_env env, napi_value value)
 {
-    napi_value typeValue, dataValue;
+    napi_value typeValue;
+    napi_value dataValue;
     napi_get_named_property(env, value, "type", &typeValue);
     napi_get_named_property(env, value, "data", &dataValue);
     if (typeValue == nullptr || dataValue == nullptr) {
