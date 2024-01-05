@@ -15,14 +15,16 @@
 
 #include "event_manager.h"
 
+#include <map>
 #include <algorithm>
 #include "netstack_log.h"
 #include "napi_utils.h"
 
 namespace OHOS::NetStack {
 static constexpr const int CALLBACK_PARAM_NUM = 1;
-
 static constexpr const int ASYNC_CALLBACK_PARAM_NUM = 2;
+static constexpr const char *ON_HEADER_RECEIVE = "headerReceive";
+static constexpr const char *ON_HEADERS_RECEIVE = "headersReceive";
 
 EventManager::EventManager() : data_(nullptr), eventRef_(nullptr), isDestroy_(false) {}
 
@@ -116,6 +118,28 @@ void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(u
     std::lock_guard lock2(mutexForListenersAndEmitByUv_);
     if (!EventManager::IsManagerValid(this)) {
         return;
+    }
+    bool foundHeader = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
+                           return listener.MatchType(ON_HEADER_RECEIVE);
+                       }) != listeners_.end();
+    bool foundHeaders = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
+                            return listener.MatchType(ON_HEADERS_RECEIVE);
+                        }) != listeners_.end();
+    if (!foundHeader && !foundHeaders) {
+        if (type == ON_HEADER_RECEIVE || type == ON_HEADERS_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
+    } else if (foundHeader && !foundHeaders) {
+        if (type == ON_HEADERS_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
+    } else if (!foundHeader) {
+        if (type == ON_HEADER_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
     }
 
     std::for_each(listeners_.begin(), listeners_.end(), [type, data, Handler, this](const EventListener &listener) {
