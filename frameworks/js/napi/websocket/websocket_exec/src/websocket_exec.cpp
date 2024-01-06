@@ -73,6 +73,9 @@ static const lws_protocols LWS_PROTOCOLS[] = {
     {nullptr, nullptr, 0, 0}, // this line is needed
 };
 
+static int32_t uid = IPCSkeleton::GetCallingUid();
+static int32_t userid = uid / UID_TRANSFORM_DIVISOR;
+
 static const lws_retry_bo_t RETRY = {
     .secs_since_valid_ping = 0,
     .secs_since_valid_hangup = 10,
@@ -585,12 +588,13 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         }
         info.client_ssl_ca_filepath = context->caPath_.c_str();
     }
-    int32_t uid = IPCSkeleton::GetCallingUid();
-    int32_t userid = uid / UID_TRANSFORM_DIVISOR;
+
     if (context->caPath_.empty()) {
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
         char tmp[128] = {0};
-        sprintf_s(tmp, sizeof(tmp), "%s%d", BASE_PATH, userid);
+        if (sprintf_s(tmp, sizeof(tmp), "%s%d", BASE_PATH, userid) < 0) {
+            return false;
+        }
         info.client_ssl_ca_dirs[1] = tmp;
     }
     NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
