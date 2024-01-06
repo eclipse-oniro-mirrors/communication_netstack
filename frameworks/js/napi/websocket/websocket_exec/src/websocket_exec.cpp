@@ -59,11 +59,13 @@ static constexpr const char *EVENT_KEY_MESSAGE = "message";
 
 static constexpr const char *LINK_DOWN = "The link is down";
 
+static constexpr const char *WEBSCOKET_PREPARE_CA_PATH = "/etc/ssl/certs/cacert.pem";
+
 static constexpr std::int32_t UID_TRANSFORM_DIVISOR = 200000;
 
 static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 
-static constexpr const char *WEBSOCKET_PREPARE_CA_PATH = "/etc/security/certificates";
+static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
 
 namespace OHOS::NetStack::Websocket {
 static const lws_protocols LWS_PROTOCOLS[] = {
@@ -502,6 +504,7 @@ static inline void FillContextInfo(lws_context_creation_info &info)
     info.port = CONTEXT_PORT_NO_LISTEN;
     info.protocols = LWS_PROTOCOLS;
     info.fd_limit_per_thread = FD_LIMIT_PER_THREAD;
+    info.client_ssl_ca_filepath = WEBSCOKET_PREPARE_CA_PATH;
 }
 
 bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsContext, EventManager *manager)
@@ -585,7 +588,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     int32_t uid = IPCSkeleton::GetCallingUid();
     int32_t userid = uid / UID_TRANSFORM_DIVISOR;
     if (context->caPath_.empty()) {
-        info.client_ssl_ca_dirs[0] = WEBSOCKET_PREPARE_CA_PATH;
+        info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
         char tmp[128] = {0};
         sprintf_s(tmp, sizeof(tmp), "%s%d", BASE_PATH, userid);
         info.client_ssl_ca_dirs[1] = tmp;
