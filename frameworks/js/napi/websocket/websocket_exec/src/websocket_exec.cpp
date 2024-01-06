@@ -67,6 +67,8 @@ static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 
 static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
 
+static constexpr int MAX_PATH_LENGTH= 128;
+
 namespace OHOS::NetStack::Websocket {
 static const lws_protocols LWS_PROTOCOLS[] = {
     {"lws-minimal-client", WebSocketExec::LwsCallback, 0, 0},
@@ -590,7 +592,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     }
     if (context->caPath_.empty()) {
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
-        char tmp[128] = {0};
+        char tmp[MAX_PATH_LENGTH] = {0};
         if (sprintf_s(tmp, sizeof(tmp), "%s%d", BASE_PATH, userid) < 0) {
             return false;
         }
