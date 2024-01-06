@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,14 +15,7 @@
 
 #include "net_ssl_exec.h"
 
-#include <cstddef>
-#include <cstring>
-#include <memory>
-#include <thread>
-#include <unistd.h>
-
 #include "napi_utils.h"
-#include "net_ssl.h"
 #include "net_ssl_async_work.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
@@ -54,26 +47,28 @@ bool SslExec::ExecVerify(CertContext *context)
         return false;
     }
 
+    if (context->GetErrorCode() == PARSE_ERROR_CODE) {
+        return false;
+    }
+
     if (context->GetCertBlob() == nullptr) {
         return false;
     }
 
     if (context->GetCertBlobClient() == nullptr) {
-        context->SetVerifyResult(NetStackVerifyCertification(context->GetCertBlob()));
-        NETSTACK_LOGD("verifyResult is %{public}d\n", context->GetVerifyResult());
+        context->SetErrorCode(NetStackVerifyCertification(context->GetCertBlob()));
+        NETSTACK_LOGD("verifyResult is %{public}d\n", context->GetErrorCode());
 
-        if (context->GetVerifyResult() != 0) {
-            context->SetErrorCode(context->GetVerifyResult());
+        if (context->GetErrorCode() != 0) {
             if (EventManager::IsManagerValid(context->GetManager())) {
                 NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, NetSslAsyncWork::VerifyCallback);
             }
             return false;
         }
     } else {
-        context->SetVerifyResult(NetStackVerifyCertification(context->GetCertBlob(), context->GetCertBlobClient()));
-        NETSTACK_LOGD("verifyResult is %{public}d\n", context->GetVerifyResult());
-        if (context->GetVerifyResult() != 0) {
-            context->SetErrorCode(context->GetVerifyResult());
+        context->SetErrorCode(NetStackVerifyCertification(context->GetCertBlob(), context->GetCertBlobClient()));
+        NETSTACK_LOGD("verifyResult is %{public}d\n", context->GetErrorCode());
+        if (context->GetErrorCode() != 0) {
             if (EventManager::IsManagerValid(context->GetManager())) {
                 NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, NetSslAsyncWork::VerifyCallback);
             }
@@ -87,7 +82,7 @@ bool SslExec::ExecVerify(CertContext *context)
 napi_value SslExec::VerifyCallback(CertContext *context)
 {
     napi_value result;
-    napi_create_int32(context->GetEnv(), static_cast<int32_t>(context->GetVerifyResult()), &result);
+    napi_create_int32(context->GetEnv(), static_cast<int32_t>(context->GetErrorCode()), &result);
     return result;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -154,7 +154,7 @@ uint32_t VerifyCert(const CertBlob *cert)
         }
     } while (false);
 
-    FreeResources(certX509, nullptr, store, ctx);
+    FreeResources(&certX509, nullptr, &store, &ctx);
     return verifyResult;
 }
 
@@ -199,27 +199,35 @@ uint32_t VerifyCert(const CertBlob *cert, const CertBlob *caCert)
         }
     } while (false);
 
-    FreeResources(certX509, caX509, store, ctx);
+    FreeResources(&certX509, &caX509, &store, &ctx);
     return verifyResult;
 }
 
-void FreeResources(X509 *certX509, X509 *caX509, X509_STORE *store, X509_STORE_CTX *ctx)
+void FreeResources(X509 **certX509, X509 **caX509, X509_STORE **store, X509_STORE_CTX **ctx)
 {
     if (certX509 != nullptr) {
-        X509_free(certX509);
-        certX509 = nullptr;
+        if (*certX509 != nullptr) {
+            X509_free(*certX509);
+            *certX509 = nullptr;
+        }
     }
     if (caX509 != nullptr) {
-        X509_free(caX509);
-        caX509 = nullptr;
+        if (*caX509 != nullptr) {
+            X509_free(*caX509);
+            *caX509 = nullptr;
+        }
     }
     if (store != nullptr) {
-        X509_STORE_free(store);
-        store = nullptr;
+        if (*store != nullptr) {
+            X509_STORE_free(*store);
+            *store = nullptr;
+        }
     }
     if (ctx != nullptr) {
-        X509_STORE_CTX_free(ctx);
-        ctx = nullptr;
+        if (*ctx != nullptr) {
+            X509_STORE_CTX_free(*ctx);
+            *ctx = nullptr;
+        }
     }
 }
 } // namespace Ssl

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,8 +18,6 @@
 
 #include "base_context.h"
 #include "net_ssl.h"
-#include <mutex>
-#include <queue>
 
 namespace OHOS::NetStack::Ssl {
 class CertContext final : public BaseContext {
@@ -38,18 +36,16 @@ public:
 
     CertBlob *GetCertBlobClient();
 
-    void SetVerifyResult(const uint32_t &verifyResult);
-
-    uint32_t GetVerifyResult();
+    [[nodiscard]] std::string GetErrorMessage() const override;
 
 private:
-    CertBlob *ParseCertBlobFromParams(napi_env env, napi_value value);
+    CertBlob *ParseCertBlobFromValue(napi_env env, napi_value value);
+
+    CertBlob *ParseCertBlobFromData(napi_env env, napi_value value, napi_value typeValue, napi_value dataValue);
 
     CertBlob *certBlob_;
 
     CertBlob *certBlobClient_;
-
-    uint32_t verifyResult_;
 };
 } // namespace OHOS::NetStack::Ssl
 

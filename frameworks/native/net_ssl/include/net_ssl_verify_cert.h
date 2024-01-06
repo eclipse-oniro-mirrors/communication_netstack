@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -92,7 +92,7 @@ uint32_t VerifyCert(const CertBlob *cert);
 
 uint32_t VerifyCert(const CertBlob *cert, const CertBlob *caCert);
 
-void FreeResources(X509 *certX509, X509 *caX509, X509_STORE *store, X509_STORE_CTX *ctx);
+void FreeResources(X509 **certX509, X509 **caX509, X509_STORE **store, X509_STORE_CTX **ctx);
 } // namespace Ssl
 } // namespace NetStack
 } // namespace OHOS

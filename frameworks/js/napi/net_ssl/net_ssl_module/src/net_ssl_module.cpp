@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,7 +22,6 @@
 
 #include "js_native_api.h"
 #include "module_template.h"
-#include "net_ssl.h"
 #include "netstack_log.h"
 
 static inline napi_value priv_get_value(napi_env env, int32_t val)
@@ -94,16 +93,18 @@ napi_value NetSslModuleExports::VerifyCertificationSync(napi_env env, napi_callb
     EventManager *manager = nullptr;
     CertContext *context = new CertContext(env, manager);
     context->ParseParams(params, paramsCount);
-    if (context->GetCertBlobClient() == nullptr) {
-        context->SetVerifyResult(NetStackVerifyCertification(context->GetCertBlob()));
-        NETSTACK_LOGD("verifyResult is %{public}d\n", context->GetVerifyResult());
-    } else {
-        context->SetVerifyResult(NetStackVerifyCertification(context->GetCertBlob(), context->GetCertBlobClient()));
-        NETSTACK_LOGD("verifyResult is %{public}d\n", context->GetVerifyResult());
+    if (context->GetErrorCode() != PARSE_ERROR_CODE) {
+        if (context->GetCertBlobClient() == nullptr) {
+            context->SetErrorCode(NetStackVerifyCertification(context->GetCertBlob()));
+            NETSTACK_LOGD("verifyResult is %{public}d\n", context->GetErrorCode());
+        } else {
+            context->SetErrorCode(NetStackVerifyCertification(context->GetCertBlob(), context->GetCertBlobClient()));
+            NETSTACK_LOGD("verifyResult is %{public}d\n", context->GetErrorCode());
+        }
     }
 
     napi_value verifyResult;
-    napi_status status = napi_create_int32(env, context->GetVerifyResult(), &verifyResult);
+    napi_status status = napi_create_int32(env, context->GetErrorCode(), &verifyResult);
     if (status != napi_ok) {
         return nullptr;
     }
