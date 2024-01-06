@@ -16,6 +16,7 @@ import("//foundation/communication/netstack/netstack_config.gni")
 
 ohos_shared_library("websocket") {
   include_dirs = [
+    "$SUBSYSTEM_DIR/ipc/interfaces/innerkits/ipc_core/include",
     "async_context/include",
     "async_work/include",
     "constant/include",
@@ -55,6 +56,7 @@ ohos_shared_library("websocket") {
   ]
 
   external_deps = [
+    "ipc:ipc_core",
     "hilog:libhilog",
     "napi:ace_napi",
   ]
