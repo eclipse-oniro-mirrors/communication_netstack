@@ -588,7 +588,6 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         }
         info.client_ssl_ca_filepath = context->caPath_.c_str();
     }
-
     if (context->caPath_.empty()) {
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
         char tmp[128] = {0};
