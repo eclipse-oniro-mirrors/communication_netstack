@@ -143,6 +143,8 @@ void CloseScope(napi_env env, napi_handle_scope scope);
 
 /* error */
 napi_value CreateErrorMessage(napi_env env, int32_t errorCodeconst, const std::string &errorMessage);
+
+napi_value GetGlobal(napi_env env);
 } // namespace OHOS::NetStack::NapiUtils
 
 #endif /* COMMUNICATIONNETSTACK_NETSTACK_NAPI_UTILS_H */

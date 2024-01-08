@@ -51,10 +51,10 @@ public:
     static constexpr const char *FUNCTION_CREATE_HTTP_RESPONSE_CACHE = "createHttpResponseCache";
     static constexpr const char *INTERFACE_REQUEST_METHOD = "RequestMethod";
     static constexpr const char *INTERFACE_RESPONSE_CODE = "ResponseCode";
-    static constexpr const char *INTERFACE_HTTP_REQUEST = "HttpRequest";
+    static constexpr const char *INTERFACE_HTTP_REQUEST = "OHOS_NET_HTTP_HttpRequest";
     static constexpr const char *INTERFACE_HTTP_PROTOCOL = "HttpProtocol";
     static constexpr const char *INTERFACE_CERT_TYPE = "CertType";
-    static constexpr const char *INTERFACE_HTTP_RESPONSE_CACHE = "HttpResponseCache";
+    static constexpr const char *INTERFACE_HTTP_RESPONSE_CACHE = "OHOS_NET_HTTP_HttpResponseCache";
     static constexpr const char *INTERFACE_HTTP_DATA_TYPE = "HttpDataType";
 
     static napi_value InitHttpModule(napi_env env, napi_value exports);
