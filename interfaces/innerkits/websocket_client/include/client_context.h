@@ -49,7 +49,8 @@ struct SendData {
 
 class ClientContext {
 public:
-    ClientContext() : closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), closed_(false), threadStop_(false) {}
+    ClientContext() : closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), closed_(false), threadStop_(false),
+                      clientId(0) {}
 
     bool IsClosed()
     {

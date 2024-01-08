@@ -83,11 +83,11 @@ void LocalSocketServerConnectionFinalize(napi_env, void *data, void *)
     NETSTACK_LOGI("localsocket connection is finalized");
     EventManager *manager = reinterpret_cast<EventManager *>(data);
     if (manager != nullptr) {
-        LocalSocketConnectionData *data = reinterpret_cast<LocalSocketConnectionData *>(manager->GetData());
-        if (data != nullptr) {
-            data->serverManager_->RemoveEventManager(data->clientId_);
-            data->serverManager_->RemoveAccept(data->clientId_);
-            delete data;
+        LocalSocketConnectionData *connectData = reinterpret_cast<LocalSocketConnectionData *>(manager->GetData());
+        if (connectData != nullptr) {
+            connectData->serverManager_->RemoveEventManager(connectData->clientId_);
+            connectData->serverManager_->RemoveAccept(connectData->clientId_);
+            delete connectData;
         }
     }
 }
@@ -268,12 +268,12 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     }
 
     auto curPos = data;
-    auto leftSize = size;
+    ssize_t leftSize = static_cast<ssize_t>(size);
     nfds_t num = 1;
     pollfd fds[1] = {{0}};
     fds[0].fd = sock;
     fds[0].events = 0;
-    fds[0].events |= POLLOUT;
+    fds[0].events |= static_cast<uint32_t>(POLLOUT);
 
     int sendTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_SNDTIMEO, DEFAULT_TIMEOUT_MS);
     while (leftSize > 0) {
@@ -327,9 +327,9 @@ static bool MakeNonBlock(int sock)
         NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
         return false;
     }
-    int ret = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+    int ret = fcntl(sock, F_SETFL, static_cast<size_t>(flags) | static_cast<size_t>(O_NONBLOCK));
     while (ret == -1 && errno == EINTR) {
-        ret = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+        ret = fcntl(sock, F_SETFL, static_cast<size_t>(flags) | static_cast<size_t>(O_NONBLOCK));
     }
     if (ret == -1) {
         NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);

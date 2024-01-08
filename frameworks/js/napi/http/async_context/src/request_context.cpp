@@ -682,7 +682,7 @@ void RequestContext::ParseMultiFormData(napi_value optionsValue)
         return;
     }
     uint32_t dataLength = NapiUtils::GetArrayLength(env, multiFormDataListValue);
-    if (dataLength <= 0) {
+    if (dataLength == 0) {
         NETSTACK_LOGD("ParseMultiFormData multiFormDataList length is 0.");
         return;
     }

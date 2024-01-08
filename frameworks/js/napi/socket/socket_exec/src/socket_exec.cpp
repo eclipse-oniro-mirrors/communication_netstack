@@ -856,7 +856,7 @@ static bool SetBaseOptions(int sock, ExtraOptionsBase *option)
     }
 
     if (option->AlreadySetTimeout()) {
-        int value = option->GetSocketTimeout();
+        int value = static_cast<int>(option->GetSocketTimeout());
         timeval timeout = {value / UNIT_CONVERSION_1000, (value % UNIT_CONVERSION_1000) * UNIT_CONVERSION_1000};
         if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<void *>(&timeout), sizeof(timeout)) < 0) {
             NETSTACK_LOGE("set SO_RCVTIMEO failed, fd: %{public}d", sock);

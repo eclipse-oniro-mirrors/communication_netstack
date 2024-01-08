@@ -185,7 +185,7 @@ void HttpSession::RunThread()
 
 bool HttpSession::Init()
 {
-    std::lock_guard<std::mutex> guard(initMutex_);
+    std::lock_guard<std::mutex> guarder(initMutex_);
     NETSTACK_LOGD("HttpSession::Init enter");
     if (!initialized_) {
         NETSTACK_LOGD("HttpSession::Init");

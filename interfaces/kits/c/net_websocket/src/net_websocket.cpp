@@ -29,6 +29,9 @@ void OH_NetStack_OnMessageCallback(WebSocketClient *ptrInner, const std::string 
     NETSTACK_LOGD("websocket CAPI Message Callback");
     char *data1 = const_cast<char *>(data.c_str());
     WebSocket *OH_client = GetNdkClientAdapter(ptrInner);
+    if (OH_client == nullptr) {
+        return;
+    }
     OH_client->onMessage(OH_client, data1, length);
 }
 
@@ -38,6 +41,9 @@ void OH_NetStack_OnCloseCallback(WebSocketClient *ptrInner, CloseResult closeRes
     struct WebSocket_CloseResult OH_CloseResult;
     Conv2CloseResult(closeResult, &OH_CloseResult);
     WebSocket *OH_client = GetNdkClientAdapter(ptrInner);
+    if (OH_client == nullptr) {
+        return;
+    }
     OH_client->onClose(OH_client, OH_CloseResult);
 }
 
@@ -47,6 +53,9 @@ void OH_NetStack_OnErrorCallback(WebSocketClient *ptrInner, ErrorResult error)
     struct WebSocket_ErrorResult OH_ErrorResult;
     Conv2ErrorResult(error, &OH_ErrorResult);
     WebSocket *OH_client = GetNdkClientAdapter(ptrInner);
+    if (OH_client == nullptr) {
+        return;
+    }
     OH_client->onError(OH_client, OH_ErrorResult);
 }
 
@@ -56,6 +65,9 @@ void OH_NetStack_OnOpenCallback(WebSocketClient *ptrInner, OpenResult openResult
     struct WebSocket_OpenResult OH_OpenResult;
     Conv2OpenResult(openResult, &OH_OpenResult);
     WebSocket *OH_client = GetNdkClientAdapter(ptrInner);
+    if (OH_client == nullptr) {
+        return;
+    }
     OH_client->onOpen(OH_client, OH_OpenResult);
 }
 
@@ -86,9 +98,7 @@ int OH_WebSocketClient_AddHeader(struct WebSocket *client, struct WebSocket_Head
     if (client == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
     }
-
-    struct WebSocket_Header *newHeader = (struct WebSocket_Header *)malloc(sizeof(struct WebSocket_Header));
-
+    auto newHeader = std::make_unique<struct WebSocket_Header>();
     if (newHeader == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_CONNECTION_ERROR;
     } else {
@@ -97,12 +107,12 @@ int OH_WebSocketClient_AddHeader(struct WebSocket *client, struct WebSocket_Head
         newHeader->next = NULL;
         struct WebSocket_Header *currentHeader = client->requestOptions.headers;
         if (currentHeader == nullptr) {
-            client->requestOptions.headers = newHeader;
+            client->requestOptions.headers = newHeader.release();
         } else {
             while (currentHeader->next != NULL) {
                 currentHeader = currentHeader->next;
             }
-            currentHeader->next = newHeader;
+            currentHeader->next = newHeader.release();
         }
         return 0;
     }
