@@ -664,7 +664,8 @@ napi_value CreateErrorMessage(napi_env env, int32_t errorCode, const std::string
     return result;
 }
 
-napi_value GetGlobal(napi_env env) {
+napi_value GetGlobal(napi_env env)
+{
     napi_value undefined = GetUndefined(env);
     napi_value global = nullptr;
     NAPI_CALL_BASE(env, napi_get_global(env, &global), undefined);
