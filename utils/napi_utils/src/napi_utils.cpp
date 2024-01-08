@@ -308,7 +308,7 @@ std::string NapiValueToString(napi_env env, napi_value value)
             double doubleValue;
             status = napi_get_value_double(env, value, &doubleValue);
             if (status == napi_ok) {
-                if (doubleValue  == std::floor(doubleValue)) {
+                if (doubleValue == std::floor(doubleValue)) {
                     return std::to_string(static_cast<int>(doubleValue));
                 }
                 return std::to_string(doubleValue);
@@ -662,5 +662,13 @@ napi_value CreateErrorMessage(napi_env env, int32_t errorCode, const std::string
     SetNamedProperty(env, result, CODE, CreateInt32(env, errorCode));
     SetNamedProperty(env, result, MSG, CreateStringUtf8(env, errorMessage));
     return result;
+}
+
+napi_value GetGlobal(napi_env env)
+{
+    napi_value undefined = GetUndefined(env);
+    napi_value global = nullptr;
+    NAPI_CALL_BASE(env, napi_get_global(env, &global), undefined);
+    return global;
 }
 } // namespace OHOS::NetStack::NapiUtils
