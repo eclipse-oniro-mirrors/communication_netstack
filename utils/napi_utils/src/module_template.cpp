@@ -140,7 +140,7 @@ void DefineClass(napi_env env, napi_value exports, const std::initializer_list<n
 
     NAPI_CALL_RETURN_VOID(env, napi_define_class(env, className.c_str(), NAPI_AUTO_LENGTH, constructor, nullptr,
                                                  properties.size(), descriptors, &jsConstructor));
-
+    (void)exports;
     auto global = NapiUtils::GetGlobal(env);
     NapiUtils::SetNamedProperty(env, global, className, jsConstructor);
 }
@@ -149,7 +149,6 @@ napi_value NewInstance(napi_env env, napi_callback_info info, const std::string 
 {
     napi_value thisVal = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr));
-    (void)thisVal;
 
     auto global = NapiUtils::GetGlobal(env);
     napi_value jsConstructor = NapiUtils::GetNamedProperty(env, global, className);
