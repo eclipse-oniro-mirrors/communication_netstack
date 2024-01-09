@@ -33,12 +33,13 @@ WebSocketClient *GetInnerClientAdapter(WebSocket *key)
     }
 }
 
-WebSocket *GetNdkClientAdapter(WebSocketClient *websocketClient)
+WebSocket *GetNdkClientAdapter(const WebSocketClient *websocketClient)
 {
-    for (const auto &pair : g_clientMap) {
-        if (pair.second == websocketClient) {
-            return pair.first;
-        }
+    auto it = std::find_if(g_clientMap.begin(), g_clientMap.end(), [&websocketClient](const auto& pair) {
+        return pair.second == websocketClient;
+    });
+    if (it != g_clientMap.end()) {
+        return it->first;
     }
     return nullptr;
 }
@@ -70,24 +71,24 @@ int32_t Conv2CloseOptions(struct CloseOption *closeOption,
     return 0;
 }
 
-int32_t Conv2CloseResult(struct CloseResult closeResult, struct WebSocket_CloseResult *OH_CloseResult)
+int32_t Conv2CloseResult(struct CloseResult closeResult, struct WebSocket_CloseResult *webSocketCloseResult)
 {
-    OH_CloseResult->code = closeResult.code;
-    OH_CloseResult->reason = closeResult.reason;
+    webSocketCloseResult->code = closeResult.code;
+    webSocketCloseResult->reason = closeResult.reason;
     return 0;
 }
 
-int32_t Conv2ErrorResult(struct ErrorResult error, struct WebSocket_ErrorResult *OH_ErrorResult)
+int32_t Conv2ErrorResult(struct ErrorResult error, struct WebSocket_ErrorResult *webSocketErrorResult)
 {
-    OH_ErrorResult->errorCode = error.errorCode;
-    OH_ErrorResult->errorMessage = error.errorMessage;
+    webSocketErrorResult->errorCode = error.errorCode;
+    webSocketErrorResult->errorMessage = error.errorMessage;
     return 0;
 }
 
-int32_t Conv2OpenResult(struct OpenResult openResult, struct WebSocket_OpenResult *OH_OpenResult)
+int32_t Conv2OpenResult(struct OpenResult openResult, struct WebSocket_OpenResult *webSocketOpenResult)
 {
-    OH_OpenResult->code = openResult.status;
-    OH_OpenResult->reason = openResult.message;
+    webSocketOpenResult->code = openResult.status;
+    webSocketOpenResult->reason = openResult.message;
 
     return 0;
 }
