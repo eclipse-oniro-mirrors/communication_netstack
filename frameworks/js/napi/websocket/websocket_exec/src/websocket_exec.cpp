@@ -61,13 +61,13 @@ static constexpr const char *LINK_DOWN = "The link is down";
 
 static constexpr const char *WEBSCOKET_PREPARE_CA_PATH = "/etc/ssl/certs/cacert.pem";
 
-static constexpr std::int32_t UID_TRANSFORM_DIVISOR = 200000;
+static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
 
 static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 
 static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
 
-static constexpr int MAX_PATH_LENGTH= 128;
+static constexpr const int32_t MAX_PATH_LENGTH = 128;
 
 namespace OHOS::NetStack::Websocket {
 static const lws_protocols LWS_PROTOCOLS[] = {
