@@ -19,9 +19,9 @@
 #include <memory>
 #include <queue>
 #include <thread>
+#include <unistd.h>
 
 #include "constant.h"
-#include "ipc_skeleton.h"
 #include "napi_utils.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
@@ -75,7 +75,7 @@ static const lws_protocols LWS_PROTOCOLS[] = {
     {nullptr, nullptr, 0, 0}, // this line is needed
 };
 
-static int32_t uid = IPCSkeleton::GetCallingUid();
+static int32_t uid = getuid();
 static int32_t userid = uid / UID_TRANSFORM_DIVISOR;
 
 static const lws_retry_bo_t RETRY = {
