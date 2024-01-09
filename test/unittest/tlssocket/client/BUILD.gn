@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+# Copyright (c) 2022-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -104,6 +104,14 @@ config("tls_test_config") {
 }
 
 ohos_unittest("two_way_tls_socket_unittest") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   sources = [ "TlsSocketTest.cpp" ]
   sources += tls_sources
   sources += tls_napi_sources
@@ -129,6 +137,14 @@ ohos_unittest("two_way_tls_socket_unittest") {
 }
 
 ohos_unittest("one_way_tls_socket_unittest") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   sources = [ "TlsSocketOneWayTest.cpp" ]
   sources += tls_sources
   sources += tls_napi_sources
@@ -154,6 +170,14 @@ ohos_unittest("one_way_tls_socket_unittest") {
 }
 
 ohos_unittest("two_way_tls_socket_certchain_unittest") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   sources = [ "TlsSocketCertChainTest.cpp" ]
   sources += tls_sources
   sources += tls_napi_sources
@@ -179,6 +203,14 @@ ohos_unittest("two_way_tls_socket_certchain_unittest") {
 }
 
 ohos_unittest("one_way_tls_socket_certchain_unittest") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   sources = [ "TlsSocketCertChainOneWayTest.cpp" ]
   sources += tls_sources
   sources += tls_napi_sources
@@ -204,6 +236,14 @@ ohos_unittest("one_way_tls_socket_certchain_unittest") {
 }
 
 ohos_unittest("tls_socket_unilateral_connection") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   sources = [ "TlsSocketUnilateralConnection.cpp" ]
   sources += tls_sources
   sources += tls_napi_sources
@@ -232,6 +272,14 @@ ohos_unittest("tls_socket_unilateral_connection") {
 }
 
 ohos_unittest("secure_data_unittest") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   sources = [
     "$TLS/src/secure_data.cpp",
     "SecureDataTest.cpp",
@@ -251,6 +299,14 @@ ohos_unittest("secure_data_unittest") {
 }
 
 ohos_unittest("tls_key_test") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   sources = [ "TlsKeyTest.cpp" ]
   sources += tls_sources
   sources += tls_napi_sources
@@ -276,6 +332,14 @@ ohos_unittest("tls_key_test") {
 }
 
 ohos_unittest("tls_cert_test") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   sources = [ "TlsCertificateTest.cpp" ]
   sources += tls_sources
   sources += tls_napi_sources
@@ -301,6 +365,14 @@ ohos_unittest("tls_cert_test") {
 }
 
 ohos_unittest("tls_configuration_test") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   sources = [ "TlsConfigurationTest.cpp" ]
   sources += tls_sources
   sources += tls_napi_sources
@@ -326,6 +398,14 @@ ohos_unittest("tls_configuration_test") {
 }
 
 ohos_unittest("tls_context_test") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   sources = [ "TlsContextTest.cpp" ]
   sources += tls_sources
   sources += tls_napi_sources
@@ -351,6 +431,14 @@ ohos_unittest("tls_context_test") {
 }
 
 ohos_unittest("socket_error_unittest") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   sources = [ "SocketErrorTest.cpp" ]
   sources += tls_sources
   sources += tls_napi_sources
@@ -376,6 +464,14 @@ ohos_unittest("socket_error_unittest") {
 }
 
 ohos_unittest("tls_socket_branch_test") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   sources = [ "TlsSocketBranchTest.cpp" ]
   sources += tls_sources
   sources += tls_napi_sources
