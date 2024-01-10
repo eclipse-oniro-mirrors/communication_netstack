@@ -619,7 +619,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     }
     lws_context_creation_info info = {};
     FillContextInfo(info);
-    if(!FillCaPath(context, info)) {
+    if (!FillCaPath(context, info)) {
         return false;
     }
     lws_context *lwsContext = nullptr;
