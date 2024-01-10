@@ -19,6 +19,7 @@
 #include <memory>
 #include <queue>
 #include <thread>
+#include <unistd.h>
 
 #include "constant.h"
 #include "napi_utils.h"
@@ -59,6 +60,14 @@ static constexpr const char *EVENT_KEY_MESSAGE = "message";
 static constexpr const char *LINK_DOWN = "The link is down";
 
 static constexpr const char *WEBSCOKET_PREPARE_CA_PATH = "/etc/ssl/certs/cacert.pem";
+
+static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
+
+static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
+
+static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
+
+static constexpr const int32_t MAX_PATH_LENGTH = 128;
 
 namespace OHOS::NetStack::Websocket {
 static const lws_protocols LWS_PROTOCOLS[] = {
@@ -553,8 +562,45 @@ static bool CheckFilePath(std::string &path)
     return true;
 }
 
+static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info)
+{
+    int32_t uid = getuid();
+    int32_t userid = uid / UID_TRANSFORM_DIVISOR;
+    if (!context->caPath_.empty()) {
+        if (!CheckFilePath(context->caPath_)) {
+            NETSTACK_LOGE("ca not exist");
+            context->SetErrorCode(WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
+            return false;
+        }
+        info.client_ssl_ca_filepath = context->caPath_.c_str();
+    }
+    if (context->caPath_.empty()) {
+        info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
+        char tmp[MAX_PATH_LENGTH] = {0};
+        if (sprintf_s(tmp, sizeof(tmp), "%s%d", BASE_PATH, userid) < 0) {
+            return false;
+        }
+        info.client_ssl_ca_dirs[1] = tmp;
+    }
+    NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
+    if (!context->clientCert_.empty()) {
+        char realKeyPath[PATH_MAX] = {0};
+        if (!CheckFilePath(context->clientCert_) || !realpath(context->clientKey_.Data(), realKeyPath)) {
+            NETSTACK_LOGE("client cert not exist");
+            context->SetErrorCode(WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
+            return false;
+        }
+        context->clientKey_ = Secure::SecureChar(realKeyPath);
+        info.client_ssl_cert_filepath = context->clientCert_.c_str();
+        info.client_ssl_private_key_filepath = context->clientKey_.Data();
+        info.client_ssl_private_key_password = context->keyPassword_.Data();
+    }
+    return true;
+}
+
 bool WebSocketExec::ExecConnect(ConnectContext *context)
 {
+    NETSTACK_LOGE("websocket_SSL ExecConnect begin\n");
     if (context == nullptr) {
         NETSTACK_LOGE("context is nullptr");
         return false;
@@ -570,27 +616,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     }
     lws_context_creation_info info = {};
     FillContextInfo(info);
-    if (!context->caPath_.empty()) {
-        if (!CheckFilePath(context->caPath_)) {
-            NETSTACK_LOGE("ca not exist");
-            context->SetErrorCode(WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
-            return false;
-        }
-        info.client_ssl_ca_filepath = context->caPath_.c_str();
-    }
-    NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
-    if (!context->clientCert_.empty()) {
-        char realKeyPath[PATH_MAX] = {0};
-        if (!CheckFilePath(context->clientCert_) || !realpath(context->clientKey_.Data(), realKeyPath)) {
-            NETSTACK_LOGE("client cert not exist");
-            context->SetErrorCode(WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
-            return false;
-        }
-        context->clientKey_ = Secure::SecureChar(realKeyPath);
-        info.client_ssl_cert_filepath = context->clientCert_.c_str();
-        info.client_ssl_private_key_filepath = context->clientKey_.Data();
-        info.client_ssl_private_key_password = context->keyPassword_.Data();
-    }
+    FillCaPath(context, info);
     lws_context *lwsContext = lws_create_context(&info);
     if (manager->GetData() == nullptr) {
         auto userData = new UserData(lwsContext);
