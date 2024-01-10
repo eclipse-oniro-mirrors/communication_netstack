@@ -75,9 +75,6 @@ static const lws_protocols LWS_PROTOCOLS[] = {
     {nullptr, nullptr, 0, 0}, // this line is needed
 };
 
-static int32_t uid = getuid();
-static int32_t userid = uid / UID_TRANSFORM_DIVISOR;
-
 static const lws_retry_bo_t RETRY = {
     .secs_since_valid_ping = 0,
     .secs_since_valid_hangup = 10,
@@ -565,23 +562,10 @@ static bool CheckFilePath(std::string &path)
     return true;
 }
 
-bool WebSocketExec::ExecConnect(ConnectContext *context)
+static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info)
 {
-    if (context == nullptr) {
-        NETSTACK_LOGE("context is nullptr");
-        return false;
-    }
-    if (!CommonUtils::HasInternetPermission()) {
-        context->SetPermissionDenied(true);
-        return false;
-    }
-    NETSTACK_LOGI("begin connect, parse url");
-    auto manager = context->GetManager();
-    if (manager == nullptr) {
-        return false;
-    }
-    lws_context_creation_info info = {};
-    FillContextInfo(info);
+    int32_t uid = getuid();
+    int32_t userid = uid / UID_TRANSFORM_DIVISOR;
     if (!context->caPath_.empty()) {
         if (!CheckFilePath(context->caPath_)) {
             NETSTACK_LOGE("ca not exist");
@@ -611,6 +595,28 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         info.client_ssl_private_key_filepath = context->clientKey_.Data();
         info.client_ssl_private_key_password = context->keyPassword_.Data();
     }
+    return true;
+}
+
+bool WebSocketExec::ExecConnect(ConnectContext *context)
+{
+    NETSTACK_LOGE("websocket_SSL ExecConnect begin\n");
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    NETSTACK_LOGI("begin connect, parse url");
+    auto manager = context->GetManager();
+    if (manager == nullptr) {
+        return false;
+    }
+    lws_context_creation_info info = {};
+    FillContextInfo(info);
+    FillCaPath(context, info);
     lws_context *lwsContext = lws_create_context(&info);
     if (manager->GetData() == nullptr) {
         auto userData = new UserData(lwsContext);
