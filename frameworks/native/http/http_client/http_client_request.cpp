@@ -30,6 +30,7 @@ static constexpr const uint32_t HTTP_MIN_PRIORITY = 1;
 static constexpr const uint32_t HTTP_DEFAULT_PRIORITY = 500;
 static constexpr const uint32_t HTTP_MAX_PRIORITY = 1000;
 static constexpr uint32_t DEFAULT_MAX_LIMIT = 20 * 1024 * 1024;
+static constexpr uint32_t MAX_LIMIT_MAX_VALUE = 100 * 1024 * 1024;
 
 HttpClientRequest::HttpClientRequest()
     : method_(HttpConstant::HTTP_METHOD_GET),
@@ -122,7 +123,13 @@ void HttpClientRequest::SetPriority(unsigned int priority)
 
 void HttpClientRequest::SetMaxLimit(unsigned int maxLimit)
 {
-    maxLimit_ = maxLimit;
+    if (maxLimit > MAX_LIMIT_MAX_VALUE) {
+        maxLimit_ = MAX_LIMIT_MAX_VALUE;
+    } else if (maxLimit > 0) {
+        maxLimit_ = maxLimit;
+    } else {
+        NETSTACK_LOGD("MaxLimit is an illegal value.");
+    }
 }
 
 const std::string &HttpClientRequest::GetURL() const
