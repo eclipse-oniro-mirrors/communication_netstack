@@ -67,8 +67,6 @@ static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 
 static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
 
-static constexpr const int32_t MAX_PATH_LENGTH = 128;
-
 namespace OHOS::NetStack::Websocket {
 static const lws_protocols LWS_PROTOCOLS[] = {
     {"lws-minimal-client", WebSocketExec::LwsCallback, 0, 0},
@@ -579,11 +577,9 @@ static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info)
     }
     if (context->caPath_.empty()) {
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
-        char tmp[MAX_PATH_LENGTH] = {0};
-        if (sprintf_s(tmp, sizeof(tmp), "%s%d", BASE_PATH, userid) < 0) {
-            return false;
-        }
-        info.client_ssl_ca_dirs[1] = tmp;
+        context->caPathDir_.emplace_back(BASE_PATH + std::to_string(userid));
+        info.client_ssl_ca_dirs[1] = context->caPathDir_[0].c_str();
+        NETSTACK_LOGE("info.client_ssl_ca_dirs[1]: %{public}s", info.client_ssl_ca_dirs[1]);
     }
     NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
     if (!context->clientCert_.empty()) {
