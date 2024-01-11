@@ -303,8 +303,9 @@ HWTEST_F(HttpClientRequestTest, SetMaxLimitTest002, TestSize.Level1)
 {
     HttpClientRequest req;
     req.SetMaxLimit(-1);
+    unsigned int maxValue = 100 * 1024 * 1024;
     unsigned int limit = req.GetMaxLimit();
-    EXPECT_EQ(limit, 20 * 1024 * 1024);
+    EXPECT_EQ(limit, maxValue);
 }
 
 HWTEST_F(HttpClientRequestTest, SetMaxLimitTest003, TestSize.Level1)
