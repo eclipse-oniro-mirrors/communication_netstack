@@ -579,7 +579,6 @@ static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info)
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
         context->caPathDir_.emplace_back(BASE_PATH + std::to_string(userid));
         info.client_ssl_ca_dirs[1] = context->caPathDir_[0].c_str();
-        NETSTACK_LOGE("info.client_ssl_ca_dirs[1]: %{public}s", info.client_ssl_ca_dirs[1]);
     }
     NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
     if (!context->clientCert_.empty()) {
