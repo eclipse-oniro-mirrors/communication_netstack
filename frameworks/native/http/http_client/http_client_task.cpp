@@ -471,8 +471,6 @@ size_t HttpClientTask::HeaderReceiveCallback(const void *data, size_t size, size
                       size * memBytes, request.GetMaxLimit());
         return 0;
     }
-    NETSTACK_LOGD("data=%{public}s",
-                  static_cast<const char *>(data));
     task->response_.AppendHeader(static_cast<const char *>(data), size * memBytes);
 
     return size * memBytes;
