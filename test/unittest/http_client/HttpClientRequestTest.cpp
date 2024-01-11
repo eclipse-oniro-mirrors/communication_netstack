@@ -315,4 +315,22 @@ HWTEST_F(HttpClientRequestTest, SetMaxLimitTest003, TestSize.Level1)
     unsigned int limit = req.GetMaxLimit();
     EXPECT_EQ(limit, 100 * 1024 * 1024);
 }
+
+HWTEST_F(HttpClientRequestTest, SetSslVerifyTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    req.SetSslVerify(true);
+    bool sslVerify = req.GetSslVerify();
+    EXPECT_EQ(true, sslVerify);
+}
+
+HWTEST_F(HttpClientRequestTest, SetSslVerifyTest002, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    req.SetSslVerify(false);
+    bool sslVerify = req.GetSslVerify();
+    EXPECT_EQ(false, sslVerify);
+}
 } // namespace

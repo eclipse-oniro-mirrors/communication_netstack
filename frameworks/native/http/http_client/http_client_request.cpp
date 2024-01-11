@@ -39,7 +39,8 @@ HttpClientRequest::HttpClientRequest()
       protocol_(HttpProtocol::HTTP_NONE),
       proxyType_(HttpProxyType::NOT_USE),
       priority_(HTTP_DEFAULT_PRIORITY),
-      maxLimit_(DEFAULT_MAX_LIMIT)
+      maxLimit_(DEFAULT_MAX_LIMIT),
+      sslVerify_(false)
 {
 #ifndef WINDOWS_PLATFORM
     caPath_ = HttpConstant::HTTP_DEFAULT_CA_PATH;
@@ -132,6 +133,11 @@ void HttpClientRequest::SetMaxLimit(unsigned int maxLimit)
     }
 }
 
+void SetSslVerify(bool verify)
+{
+    sslVerify_ = verify;
+}
+
 const std::string &HttpClientRequest::GetURL() const
 {
     return url_;
@@ -185,6 +191,11 @@ uint32_t HttpClientRequest::GetPriority() const
 unsigned int HttpClientRequest::GetMaxLimit() const
 {
     return maxLimit_;
+}
+
+bool GetSslVerify() const
+{
+    return sslVerify_;
 }
 
 void HttpClientRequest::SetHttpProxy(const HttpProxy &proxy)

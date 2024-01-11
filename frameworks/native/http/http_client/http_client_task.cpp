@@ -173,11 +173,18 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
 #else
+    if (request_.GetSslVerify()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SSL_VERIFYHOST, 1L);
+        NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SSL_VERIFYPEER, 1L);
 #ifndef WINDOWS_PLATFORM
-    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_CAINFO, request_.GetCaPath().c_str());
-    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_CAPATH, HttpConstant::HTTP_PREPARE_CA_PATH);
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_CAINFO, request_.GetCaPath().c_str());
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_CAPATH, HttpConstant::HTTP_PREPARE_CA_PATH);
 #endif // WINDOWS_PLATFORM
-    SetServerSSLCertOption(handle);
+        SetServerSSLCertOption(handle);
+    } else {
+        NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
+        NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
+    }
 #endif // NO_SSL_CERTIFICATION
 
 #ifdef HTTP_CURL_PRINT_VERBOSE
