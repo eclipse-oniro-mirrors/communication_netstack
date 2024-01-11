@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -64,6 +64,22 @@ HWTEST_F(WebSocketTest, WebSocketTest003, TestSize.Level1)
     OHOS::NetStack::EventManager eventManager;
     CloseContext context(env, &eventManager);
     bool ret = WebSocketExec::ExecClose(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest004, TestSize.Level1)
+{
+    bool ret = WebSocketExec::ExecConnect(nullptr);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest005, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    OHOS::NetStack::EventManager eventManager;
+    ConnectContext context(env, &eventManager);
+    context.caPath_ = "/etc/ssl/certs/test_ca.crt";
+    bool ret = WebSocketExec::ExecConnect(&context);
     EXPECT_EQ(ret, false);
 }
 

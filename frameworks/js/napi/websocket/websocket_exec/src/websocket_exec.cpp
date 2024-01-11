@@ -378,6 +378,10 @@ void OnConnectError(EventManager *manager, int32_t code)
         NETSTACK_LOGE("manager is null");
         return;
     }
+    if (auto userData = reinterpret_cast<UserData *>(manager->GetData()); userData != nullptr) {
+        NETSTACK_LOGI("OnConnectError SetThreadStop");
+        userData->SetThreadStop(true);
+    }
     if (!manager->HasEventListener(EventName::EVENT_ERROR)) {
         NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_ERROR);
         return;
@@ -545,7 +549,6 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
         NETSTACK_LOGI("ExecConnect websocket connect failed");
         context->SetErrorCode(-1);
         OnConnectError(manager, COMMON_ERROR_CODE);
-        lws_context_destroy(lwsContext);
         return false;
     }
     return true;
@@ -616,14 +619,26 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     }
     lws_context_creation_info info = {};
     FillContextInfo(info);
-    FillCaPath(context, info);
-    lws_context *lwsContext = lws_create_context(&info);
+    if (!FillCaPath(context, info)) {
+        return false;
+    }
+    lws_context *lwsContext = nullptr;
+    UserData *userData = nullptr;
     if (manager->GetData() == nullptr) {
-        auto userData = new UserData(lwsContext);
+        lwsContext = lws_create_context(&info);
+        userData = new UserData(lwsContext);
         userData->header = context->header;
         manager->SetData(userData);
+    } else {
+        NETSTACK_LOGE("Websocket connect already exist");
+        context->SetErrorCode(WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST);
+        return false;
     }
     if (!CreatConnectInfo(context, lwsContext, manager)) {
+        manager->SetData(nullptr);
+        userData->SetContext(nullptr);
+        lws_context_destroy(lwsContext);
+        delete userData;
         return false;
     }
 
