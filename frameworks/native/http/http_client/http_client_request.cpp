@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -39,8 +39,8 @@ HttpClientRequest::HttpClientRequest()
       protocol_(HttpProtocol::HTTP_NONE),
       proxyType_(HttpProxyType::NOT_USE),
       priority_(HTTP_DEFAULT_PRIORITY),
-      maxLimit_(DEFAULT_MAX_LIMIT),
-      sslVerify_(false)
+      isSslVerify_(false),
+      maxLimit_(DEFAULT_MAX_LIMIT)
 {
 #ifndef WINDOWS_PLATFORM
     caPath_ = HttpConstant::HTTP_DEFAULT_CA_PATH;
@@ -133,9 +133,9 @@ void HttpClientRequest::SetMaxLimit(unsigned int maxLimit)
     }
 }
 
-void SetSslVerify(bool verify)
+void HttpClientRequest::SetSslVerify(bool verify)
 {
-    sslVerify_ = verify;
+    isSslVerify_ = verify;
 }
 
 const std::string &HttpClientRequest::GetURL() const
@@ -193,9 +193,9 @@ unsigned int HttpClientRequest::GetMaxLimit() const
     return maxLimit_;
 }
 
-bool GetSslVerify() const
+bool HttpClientRequest::GetSslVerify() const
 {
-    return sslVerify_;
+    return isSslVerify_;
 }
 
 void HttpClientRequest::SetHttpProxy(const HttpProxy &proxy)
