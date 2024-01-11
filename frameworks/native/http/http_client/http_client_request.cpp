@@ -39,7 +39,7 @@ HttpClientRequest::HttpClientRequest()
       protocol_(HttpProtocol::HTTP_NONE),
       proxyType_(HttpProxyType::NOT_USE),
       priority_(HTTP_DEFAULT_PRIORITY),
-      isSslVerify_(false),
+      isSslVerify_(true),
       maxLimit_(DEFAULT_MAX_LIMIT)
 {
 #ifndef WINDOWS_PLATFORM
