@@ -23,16 +23,16 @@ namespace OHOS::NetStack::WebSocketClient {
 extern std::map<WebSocket *, WebSocketClient *> g_clientMap;
 
 WebSocketClient *GetInnerClientAdapter(WebSocket *key);
-WebSocket *GetNdkClientAdapter(WebSocketClient *websocketClient);
+WebSocket *GetNdkClientAdapter(const WebSocketClient *websocketClient);
 
 int32_t Conv2RequestOptions(struct OpenOptions *openOptions,
                             struct WebSocket_RequestOptions requestOptions);
 int32_t Conv2CloseOptions(struct CloseOption *closeOption,
                           struct WebSocket_CloseOption requestOptions);
 int32_t Conv2CloseResult(struct CloseResult closeResult,
-                         struct WebSocket_CloseResult *OH_CloseResult);
-int32_t Conv2ErrorResult(struct ErrorResult error, struct WebSocket_ErrorResult *OH_ErrorResult);
-int32_t Conv2OpenResult(struct OpenResult openResult, struct WebSocket_OpenResult *OH_OpenResult);
+                         struct WebSocket_CloseResult *webSocketCloseResult);
+int32_t Conv2ErrorResult(struct ErrorResult error, struct WebSocket_ErrorResult *webSocketErrorResult);
+int32_t Conv2OpenResult(struct OpenResult openResult, struct WebSocket_OpenResult *webSocketOpenResult);
 
 } // namespace OHOS::NetStack::WebSocketClient
 #endif /* NATIVE_WEBSOCKET_ADAPTER_H */

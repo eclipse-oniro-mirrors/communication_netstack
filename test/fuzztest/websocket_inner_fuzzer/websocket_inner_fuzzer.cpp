@@ -84,7 +84,6 @@ static void OnClose(WebSocketClient *client, CloseResult closeResult) {}
 
 void SetRequestOptionsTest(const uint8_t *data, size_t size)
 {
-    int32_t ret;
     if ((data == nullptr) || (size < 1)) {
         return;
     }
@@ -94,12 +93,11 @@ void SetRequestOptionsTest(const uint8_t *data, size_t size)
     openOptions.headers["Authorization"] = str;
     WebSocketClient *client = new WebSocketClient();
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
-    ret = client->Connect("www.baidu.com", openOptions);
+    client->Connect("www.baidu.com", openOptions);
 }
 
 void SetConnectUrlTest(const uint8_t *data, size_t size)
 {
-    int32_t ret;
     if ((data == nullptr) || (size < 1)) {
         return;
     }
@@ -109,12 +107,11 @@ void SetConnectUrlTest(const uint8_t *data, size_t size)
     openOptions.headers["Authorization"] = "Bearer your_token_here";
     WebSocketClient *client = new WebSocketClient();
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
-    ret = client->Connect(str, openOptions);
+    client->Connect(str, openOptions);
 }
 
 void SetSendDataTest(const uint8_t *data, size_t size)
 {
-    int32_t ret;
     if ((data == nullptr) || (size < 1)) {
         return;
     }
@@ -124,15 +121,14 @@ void SetSendDataTest(const uint8_t *data, size_t size)
     openOptions.headers["Authorization"] = "Bearer your_token_here";
     WebSocketClient *client = new WebSocketClient();
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
-    ret = client->Connect("www.baidu.com", openOptions);
+    client->Connect("www.baidu.com", openOptions);
     const char *data1 = str.c_str();
     int32_t sendLength = std::strlen(data1);
-    ret = client->Send(const_cast<char *>(data1), sendLength);
+    client->Send(const_cast<char *>(data1), sendLength);
 }
 
 void SetSendDataLengthTest(const uint8_t *data, size_t size)
 {
-    int32_t ret;
     if ((data == nullptr) || (size < 1)) {
         return;
     }
@@ -142,14 +138,13 @@ void SetSendDataLengthTest(const uint8_t *data, size_t size)
     openOptions.headers["Authorization"] = "Bearer your_token_here";
     WebSocketClient *client = new WebSocketClient();
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
-    ret = client->Connect("www.baidu.com", openOptions);
+    client->Connect("www.baidu.com", openOptions);
     const char *data1 = "Hello,world!";
-    ret = client->Send(const_cast<char *>(data1), size);
+    client->Send(const_cast<char *>(data1), size);
 }
 
 void SetCloseOptionTest(const uint8_t *data, size_t size)
 {
-    int32_t ret;
     if ((data == nullptr) || (size < 1)) {
         return;
     }
@@ -160,7 +155,7 @@ void SetCloseOptionTest(const uint8_t *data, size_t size)
 
     WebSocketClient *client = new WebSocketClient();
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
-    ret = client->Connect("www.baidu.com", openOptions);
+    client->Connect("www.baidu.com", openOptions);
     CloseOption CloseOptions;
     CloseOptions.code = size;
     CloseOptions.reason = str.c_str();

@@ -75,7 +75,6 @@ std::string GetStringFromData(int strlen)
 
 void SetAddHeaderTest(const uint8_t *data, size_t size)
 {
-    int32_t ret;
     if ((data == nullptr) || (size < 1)) {
         return;
     }
@@ -86,7 +85,7 @@ void SetAddHeaderTest(const uint8_t *data, size_t size)
     header1.fieldName = str.c_str();
     header1.fieldValue = str.c_str();
     header1.next = nullptr;
-    ret = OH_WebSocketClient_AddHeader(client, header1);
+    OH_WebSocketClient_AddHeader(client, header1);
 }
 
 void SetRequestOptionsTest(const uint8_t *data, size_t size)
@@ -124,7 +123,6 @@ void SetSendDataTest(const uint8_t *data, size_t size)
         return;
     }
     SetGlobalFuzzData(data, size);
-    std::string str = GetStringFromData(STR_LEN);
     struct WebSocket *client = new WebSocket();
     const char *senddata = "Hello, world,websocket!";
     int32_t sendLength = std::strlen(senddata);
@@ -137,7 +135,6 @@ void SetSendDataLengthTest(const uint8_t *data, size_t size)
         return;
     }
     SetGlobalFuzzData(data, size);
-    std::string str = GetStringFromData(STR_LEN);
     struct WebSocket *client = new WebSocket();
     const char *senddata = "Hello, world,websocket!";
     int32_t sendLength = size;
@@ -150,7 +147,6 @@ void SetCloseOptionTest(const uint8_t *data, size_t size)
         return;
     }
     SetGlobalFuzzData(data, size);
-    std::string str = GetStringFromData(STR_LEN);
     struct WebSocket *client = new WebSocket();
 
     struct WebSocket_CloseOption CloseOption;
