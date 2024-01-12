@@ -24,6 +24,22 @@ NetAddress::NetAddress() : family_(Family::IPv4), port_(0) {}
 
 void NetAddress::SetAddress(const std::string &address)
 {
+    if (family_ == Family::IPv4) {
+        struct in_addr ipv4;
+        if (inet_pton(AF_INET, address.c_str(), &(ipv4.s_addr)) > 0) {
+            address_ = address;
+            return;
+        }
+        NETSTACK_LOGI("address is not ipv4, address: %{public}s", address.c_str());
+    } else {
+        struct in6_addr ipv6;
+        if (inet_pton(AF_INET6, address.c_str(), &ipv6) > 0) {
+            address_ = address;
+            return;
+        }
+        NETSTACK_LOGI("address is not ipv6, address: %{public}s", address.c_str());
+    }
+
     struct addrinfo hints;
     sa_family_t saFamily = GetSaFamily();
     if (memset_s(&hints, sizeof hints, 0, sizeof hints) != EOK) {
