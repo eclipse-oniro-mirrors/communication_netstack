@@ -83,4 +83,14 @@ HWTEST_F(WebSocketTest, WebSocketTest005, TestSize.Level1)
     EXPECT_EQ(ret, false);
 }
 
+HWTEST_F(WebSocketTest, WebSocketTest006, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    OHOS::NetStack::EventManager eventManager;
+    ConnectContext context(env, &eventManager);
+    context.caPath_ = "";
+    bool ret = WebSocketExec::ExecConnect(&context);
+    EXPECT_EQ(ret, false);
+}
+
 } // namespace
