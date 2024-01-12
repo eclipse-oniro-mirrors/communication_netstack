@@ -30,14 +30,12 @@ void NetAddress::SetAddress(const std::string &address)
             address_ = address;
             return;
         }
-        NETSTACK_LOGI("address is not ipv4, address: %{public}s", address.c_str());
     } else {
         struct in6_addr ipv6;
         if (inet_pton(AF_INET6, address.c_str(), &ipv6) > 0) {
             address_ = address;
             return;
         }
-        NETSTACK_LOGI("address is not ipv6, address: %{public}s", address.c_str());
     }
 
     struct addrinfo hints;
