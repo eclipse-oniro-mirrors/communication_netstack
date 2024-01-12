@@ -39,7 +39,6 @@ namespace OHOS {
 namespace NetStack {
 namespace HttpClient {
 
-static constexpr size_t MAX_LIMIT = 5 * 1024 * 1024;
 std::atomic<uint32_t> HttpClientTask::nextTaskId_(0);
 
 bool CheckFilePath(const std::string &fileName, std::string &realPath)
@@ -84,8 +83,8 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request, TaskType type, 
       filePath_(filePath),
       file_(nullptr)
 {
-    NETSTACK_LOGD(
-        "HttpClientTask taskId_=%{public}d type=%{public}d filePath=%{public}s",
+    NETSTACK_LOGI(
+        "taskId_=%{public}d type=%{public}d filePath=%{public}s",
         taskId_, type_, filePath_.c_str());
 
     curlHandle_ = curl_easy_init();
@@ -99,7 +98,7 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request, TaskType type, 
 
 HttpClientTask::~HttpClientTask()
 {
-    NETSTACK_LOGD("HttpClientTask::~HttpClientTask()");
+    NETSTACK_LOGD("Destroy: taskId_=%{public}d", taskId_);
     if (curlHeaderList_ != nullptr) {
         curl_slist_free_all(curlHeaderList_);
         curlHeaderList_ = nullptr;
@@ -417,12 +416,12 @@ size_t HttpClientTask::DataReceiveCallback(const void *data, size_t size, size_t
         return 0;
     }
 
+    HttpClientRequest request = task->request_;
     if (task->onDataReceive_) {
-        HttpClientRequest request = task->request_;
         task->onDataReceive_(request, static_cast<const uint8_t *>(data), size * memBytes);
     }
 
-    if (task->response_.GetResult().size() < MAX_LIMIT) {
+    if (task->response_.GetResult().size() < request.GetMaxLimit()) {
         task->response_.AppendResult(data, size * memBytes);
     }
 
@@ -461,21 +460,17 @@ size_t HttpClientTask::HeaderReceiveCallback(const void *data, size_t size, size
     unsigned int taskId = *reinterpret_cast<unsigned int *>(userData);
     NETSTACK_LOGD("taskId=%{public}d size=%{public}zu memBytes=%{public}zu",
                   taskId, size, memBytes);
-
-    if (size * memBytes > MAX_LIMIT) {
-        NETSTACK_LOGE("size * memBytes(%{public}zu) > MAX_LIMIT(%{public}zu)",
-                      size * memBytes, MAX_LIMIT);
-        return 0;
-    }
-
     auto task = HttpSession::GetInstance().GetTaskById(taskId);
     if (task == nullptr) {
         NETSTACK_LOGE("HttpClientTask::HeaderReceiveCallback() task == nullptr");
         return 0;
     }
-
-    NETSTACK_LOGD("data=%{public}s",
-                  static_cast<const char *>(data));
+    HttpClientRequest request = task->request_;
+    if (size * memBytes > request.GetMaxLimit()) {
+        NETSTACK_LOGE("size * memBytes(%{public}zu) > MAX_LIMIT(%{public}zu)",
+                      size * memBytes, request.GetMaxLimit());
+        return 0;
+    }
     task->response_.AppendHeader(static_cast<const char *>(data), size * memBytes);
 
     return size * memBytes;

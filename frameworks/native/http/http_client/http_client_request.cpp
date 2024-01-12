@@ -29,6 +29,8 @@ namespace HttpClient {
 static constexpr const uint32_t HTTP_MIN_PRIORITY = 1;
 static constexpr const uint32_t HTTP_DEFAULT_PRIORITY = 500;
 static constexpr const uint32_t HTTP_MAX_PRIORITY = 1000;
+static constexpr uint32_t DEFAULT_MAX_LIMIT = 20 * 1024 * 1024;
+static constexpr uint32_t MAX_LIMIT_MAX_VALUE = 100 * 1024 * 1024;
 
 HttpClientRequest::HttpClientRequest()
     : method_(HttpConstant::HTTP_METHOD_GET),
@@ -36,7 +38,8 @@ HttpClientRequest::HttpClientRequest()
       connectTimeout_(HttpConstant::DEFAULT_CONNECT_TIMEOUT),
       protocol_(HttpProtocol::HTTP_NONE),
       proxyType_(HttpProxyType::NOT_USE),
-      priority_(HTTP_DEFAULT_PRIORITY)
+      priority_(HTTP_DEFAULT_PRIORITY),
+      maxLimit_(DEFAULT_MAX_LIMIT)
 {
 #ifndef WINDOWS_PLATFORM
     caPath_ = HttpConstant::HTTP_DEFAULT_CA_PATH;
@@ -118,6 +121,17 @@ void HttpClientRequest::SetPriority(unsigned int priority)
     priority_ = priority;
 }
 
+void HttpClientRequest::SetMaxLimit(unsigned int maxLimit)
+{
+    if (maxLimit > MAX_LIMIT_MAX_VALUE) {
+        maxLimit_ = MAX_LIMIT_MAX_VALUE;
+    } else if (maxLimit > 0) {
+        maxLimit_ = maxLimit;
+    } else {
+        NETSTACK_LOGD("MaxLimit is an illegal value.");
+    }
+}
+
 const std::string &HttpClientRequest::GetURL() const
 {
     return url_;
@@ -166,6 +180,11 @@ const std::string &HttpClientRequest::GetCaPath()
 uint32_t HttpClientRequest::GetPriority() const
 {
     return priority_;
+}
+
+unsigned int HttpClientRequest::GetMaxLimit() const
+{
+    return maxLimit_;
 }
 
 void HttpClientRequest::SetHttpProxy(const HttpProxy &proxy)
