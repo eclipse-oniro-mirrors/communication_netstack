@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -39,6 +39,7 @@ namespace OHOS {
 namespace NetStack {
 namespace HttpClient {
 
+static constexpr size_t MAX_LIMIT = 100 * 1024 * 1024;
 std::atomic<uint32_t> HttpClientTask::nextTaskId_(0);
 
 bool CheckFilePath(const std::string &fileName, std::string &realPath)
@@ -416,12 +417,12 @@ size_t HttpClientTask::DataReceiveCallback(const void *data, size_t size, size_t
         return 0;
     }
 
-    HttpClientRequest request = task->request_;
     if (task->onDataReceive_) {
+        HttpClientRequest request = task->request_;
         task->onDataReceive_(request, static_cast<const uint8_t *>(data), size * memBytes);
     }
 
-    if (task->response_.GetResult().size() < request.GetMaxLimit()) {
+    if (task->response_.GetResult().size() < MAX_LIMIT) {
         task->response_.AppendResult(data, size * memBytes);
     }
 
@@ -460,17 +461,19 @@ size_t HttpClientTask::HeaderReceiveCallback(const void *data, size_t size, size
     unsigned int taskId = *reinterpret_cast<unsigned int *>(userData);
     NETSTACK_LOGD("taskId=%{public}d size=%{public}zu memBytes=%{public}zu",
                   taskId, size, memBytes);
+
+    if (size * memBytes > MAX_LIMIT) {
+        NETSTACK_LOGE("size * memBytes(%{public}zu) > MAX_LIMIT(%{public}zu)",
+                      size * memBytes, MAX_LIMIT);
+        return 0;
+    }
+
     auto task = HttpSession::GetInstance().GetTaskById(taskId);
     if (task == nullptr) {
         NETSTACK_LOGE("HttpClientTask::HeaderReceiveCallback() task == nullptr");
         return 0;
     }
-    HttpClientRequest request = task->request_;
-    if (size * memBytes > request.GetMaxLimit()) {
-        NETSTACK_LOGE("size * memBytes(%{public}zu) > MAX_LIMIT(%{public}zu)",
-                      size * memBytes, request.GetMaxLimit());
-        return 0;
-    }
+
     task->response_.AppendHeader(static_cast<const char *>(data), size * memBytes);
 
     return size * memBytes;
