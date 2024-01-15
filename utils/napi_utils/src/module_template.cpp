@@ -173,7 +173,7 @@ napi_value NewInstanceNoManager(napi_env env, napi_callback_info info, const std
 {
     napi_value thisVal = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr));
-
+    (void)thisVal;
     auto global = NapiUtils::GetGlobal(env);
     napi_value jsConstructor = NapiUtils::GetNamedProperty(env, global, name);
     if (NapiUtils::GetValueType(env, jsConstructor) == napi_undefined) {
