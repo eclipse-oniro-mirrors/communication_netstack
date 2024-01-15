@@ -122,18 +122,6 @@ public:
     void SetPriority(unsigned int priority);
 
     /**
-     * Set the maximum limit of data received.
-     * @param maxLimit The maximum limit of data received to be set.
-     */
-    void SetMaxLimit(unsigned int maxLimit);
-
-    /**
-     * Setting Certificate Verification。
-     * @param maxlimit The maximum limit of data received to be set.
-     */
-    void SetSslVerify(bool verify);
-
-    /**
      * Get the URL of the HTTP request.
      * @return The URL of the request.
      */
@@ -200,18 +188,6 @@ public:
     [[nodiscard]] uint32_t GetPriority() const;
 
     /**
-     * Get the maximum limit of data received.
-     * @return The maximum limit of data received to be set.
-     */
-    [[nodiscard]] unsigned int GetMaxLimit() const;
-
-    /**
-     * Getting Certificate Verification。
-     * @return Getting Certificate Verification.
-     */
-    [[nodiscard]] bool GetSslVerify() const;
-
-    /**
      * Check if the specified method is suitable for a GET request.
      * @param method The method to check.
      * @return True if the method is suitable for a GET request, false otherwise.
@@ -249,9 +225,7 @@ private:
     HttpProxyType proxyType_;
     std::string caPath_;
     unsigned int priority_;
-    bool isSslVerify_;
     std::string requestTime_;
-    unsigned int maxLimit_;
 };
 } // namespace HttpClient
 } // namespace NetStack
