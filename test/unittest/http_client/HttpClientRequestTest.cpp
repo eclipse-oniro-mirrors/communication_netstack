@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -315,23 +315,5 @@ HWTEST_F(HttpClientRequestTest, SetMaxLimitTest003, TestSize.Level1)
     req.SetMaxLimit(100 * 1024 * 1024 + 10);
     unsigned int limit = req.GetMaxLimit();
     EXPECT_EQ(limit, 100 * 1024 * 1024);
-}
-
-HWTEST_F(HttpClientRequestTest, SetSslVerifyTest001, TestSize.Level1)
-{
-    HttpClientRequest req;
-
-    req.SetSslVerify(true);
-    bool sslVerify = req.GetSslVerify();
-    EXPECT_EQ(true, sslVerify);
-}
-
-HWTEST_F(HttpClientRequestTest, SetSslVerifyTest002, TestSize.Level1)
-{
-    HttpClientRequest req;
-
-    req.SetSslVerify(false);
-    bool sslVerify = req.GetSslVerify();
-    EXPECT_EQ(false, sslVerify);
 }
 } // namespace

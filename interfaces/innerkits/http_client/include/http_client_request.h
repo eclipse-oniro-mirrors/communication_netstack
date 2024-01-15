@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -128,12 +128,6 @@ public:
     void SetMaxLimit(unsigned int maxLimit);
 
     /**
-     * Setting Certificate Verification。
-     * @param maxlimit The maximum limit of data received to be set.
-     */
-    void SetSslVerify(bool verify);
-
-    /**
      * Get the URL of the HTTP request.
      * @return The URL of the request.
      */
@@ -206,12 +200,6 @@ public:
     [[nodiscard]] unsigned int GetMaxLimit() const;
 
     /**
-     * Getting Certificate Verification。
-     * @return Getting Certificate Verification.
-     */
-    [[nodiscard]] bool GetSslVerify() const;
-
-    /**
      * Check if the specified method is suitable for a GET request.
      * @param method The method to check.
      * @return True if the method is suitable for a GET request, false otherwise.
@@ -249,7 +237,6 @@ private:
     HttpProxyType proxyType_;
     std::string caPath_;
     unsigned int priority_;
-    bool isSslVerify_;
     std::string requestTime_;
     unsigned int maxLimit_;
 };
