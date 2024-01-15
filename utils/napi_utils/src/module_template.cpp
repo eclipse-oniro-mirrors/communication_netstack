@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -173,8 +173,9 @@ napi_value NewInstanceNoManager(napi_env env, napi_callback_info info, const std
 {
     napi_value thisVal = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr));
-
-    napi_value jsConstructor = NapiUtils::GetNamedProperty(env, thisVal, name);
+    (void)thisVal;
+    auto global = NapiUtils::GetGlobal(env);
+    napi_value jsConstructor = NapiUtils::GetNamedProperty(env, global, name);
     if (NapiUtils::GetValueType(env, jsConstructor) == napi_undefined) {
         return nullptr;
     }
