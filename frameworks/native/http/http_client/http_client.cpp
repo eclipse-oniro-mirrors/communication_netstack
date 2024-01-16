@@ -208,7 +208,7 @@ void HttpSession::Deinit()
 {
     NETSTACK_LOGD("HttpSession::Deinit");
 
-    std::lock_guard<std::mutex> guard(initMutex_);
+    std::lock_guard<std::mutex> initGuard(initMutex_);
     if (!initialized_) {
         NETSTACK_LOGE("HttpSession::Deinit not initialized");
         return;
@@ -225,7 +225,7 @@ void HttpSession::Deinit()
     }
 
     do {
-        std::lock_guard<std::mutex> guard(taskMapMutex_);
+        std::lock_guard<std::mutex> taskGuard(taskMapMutex_);
         std::lock_guard<std::mutex> lock(taskQueueMutex_);
         curlTaskMap_.clear();
         taskIdMap_.clear();
@@ -235,7 +235,7 @@ void HttpSession::Deinit()
     } while (0);
 
     do {
-        std::lock_guard<std::mutex> guard(curlMultiMutex_);
+        std::lock_guard<std::mutex> curlMultiGuard(curlMultiMutex_);
         if (curlMulti_ != nullptr) {
             NETSTACK_LOGD("Deinit curl_multi_cleanup()");
             curl_multi_cleanup(curlMulti_);
