@@ -55,7 +55,7 @@ bool SendContext::HandleParseString(napi_value *params)
 
 bool SendContext::HandleParseArrayBuffer(napi_value *params)
 {
-    NETSTACK_LOGI("SendContext data is ArrayBuffer");
+    NETSTACK_LOGD("SendContext data is ArrayBuffer");
     size_t len = 0;
     void *mem = NapiUtils::GetInfoFromArrayBufferValue(GetEnv(), params[0], &len);
     if (mem == nullptr || len == 0) {
@@ -117,7 +117,7 @@ void SendContext::ParseParams(napi_value *params, size_t paramsCount)
         return SetParseOK(SetCallback(params[1]) == napi_ok);
     }
 
-    NETSTACK_LOGI("SendContext SetParseOK");
+    NETSTACK_LOGD("SendContext SetParseOK");
     return SetParseOK(true);
 }
 

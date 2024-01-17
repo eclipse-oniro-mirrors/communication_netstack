@@ -74,7 +74,7 @@ void HttpRequestOptions::SetReadTimeout(uint32_t readTimeout)
 void HttpRequestOptions::SetMaxLimit(uint32_t maxLimit)
 {
     if (maxLimit > HttpConstant::MAX_LIMIT) {
-        NETSTACK_LOGI("maxLimit setting exceeds the maximum limit, use max limit");
+        NETSTACK_LOGD("maxLimit setting exceeds the maximum limit, use max limit");
         maxLimit_ = HttpConstant::MAX_LIMIT;
         return;
     }
@@ -129,15 +129,15 @@ void HttpRequestOptions::SetUsingProtocol(HttpProtocol httpProtocol)
 uint32_t HttpRequestOptions::GetHttpVersion() const
 {
     if (usingProtocol_ == HttpProtocol::HTTP3) {
-        NETSTACK_LOGI("CURL_HTTP_VERSION_3");
+        NETSTACK_LOGD("CURL_HTTP_VERSION_3");
         return CURL_HTTP_VERSION_3;
     }
     if (usingProtocol_ == HttpProtocol::HTTP2) {
-        NETSTACK_LOGI("CURL_HTTP_VERSION_2_0");
+        NETSTACK_LOGD("CURL_HTTP_VERSION_2_0");
         return CURL_HTTP_VERSION_2_0;
     }
     if (usingProtocol_ == HttpProtocol::HTTP1_1) {
-        NETSTACK_LOGI("CURL_HTTP_VERSION_1_1");
+        NETSTACK_LOGD("CURL_HTTP_VERSION_1_1");
         return CURL_HTTP_VERSION_1_1;
     }
     return CURL_HTTP_VERSION_NONE;
