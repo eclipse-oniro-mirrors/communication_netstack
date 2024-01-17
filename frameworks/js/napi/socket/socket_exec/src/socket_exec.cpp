@@ -771,7 +771,9 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             return;
         }
         if (recvLen == 0) {
-            continue;
+            callback.OnError(UNKNOW_ERROR);
+            NETSTACK_LOGE("socket error errno");
+            return;
         }
 
         void *data = malloc(recvLen);
