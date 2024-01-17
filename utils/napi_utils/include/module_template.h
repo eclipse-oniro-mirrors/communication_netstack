@@ -74,7 +74,7 @@ napi_value Interface(napi_env env, napi_callback_info info, const std::string &a
     context->CreateReference(thisVal);
     context->CreateAsyncWork(asyncWorkName, executor, callback);
     if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
-        NETSTACK_LOGI("%{public}s create promise", asyncWorkName.c_str());
+        NETSTACK_LOGD("%{public}s create promise", asyncWorkName.c_str());
         return context->CreatePromise();
     }
     return NapiUtils::GetUndefined(env);
@@ -103,7 +103,7 @@ napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
     context->ParseParams(params, paramsCount);
     napi_value ret = NapiUtils::GetUndefined(env);
     if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
-        NETSTACK_LOGI("%{public}s create promise", asyncWorkName.c_str());
+        NETSTACK_LOGD("%{public}s create promise", asyncWorkName.c_str());
         ret = context->CreatePromise();
     }
     context->CreateReference(thisVal);

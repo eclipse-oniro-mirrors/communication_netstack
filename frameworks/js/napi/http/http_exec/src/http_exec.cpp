@@ -333,7 +333,7 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         NETSTACK_LOGE("can not find context");
         return;
     }
-    NETSTACK_LOGI("priority = %{public}d", context->options.GetPriority());
+    NETSTACK_LOGD("priority = %{public}d", context->options.GetPriority());
     context->SetExecOK(GetCurlDataFromHandle(handle, context, msg->msg, msg->data.result));
     CacheCurlPerformanceTiming(handle, context);
     if (context->IsExecOK()) {
@@ -655,7 +655,7 @@ bool HttpExec::Initialize()
     if (staticVariable_.initialized) {
         return true;
     }
-    NETSTACK_LOGI("call curl_global_init");
+    NETSTACK_LOGD("call curl_global_init");
     if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
         NETSTACK_LOGE("Failed to initialize 'curl'");
         return false;

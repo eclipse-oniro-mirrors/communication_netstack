@@ -280,14 +280,14 @@ bool RequestContext::HandleMethodForGet(napi_value extraData)
 bool RequestContext::ParseExtraData(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_EXTRA_DATA)) {
-        NETSTACK_LOGI("no extraData");
+        NETSTACK_LOGD("no extraData");
         return true;
     }
 
     napi_value extraData = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_EXTRA_DATA);
     if (NapiUtils::GetValueType(GetEnv(), extraData) == napi_undefined ||
         NapiUtils::GetValueType(GetEnv(), extraData) == napi_null) {
-        NETSTACK_LOGI("extraData is undefined or null");
+        NETSTACK_LOGD("extraData is undefined or null");
         return true;
     }
 
@@ -304,7 +304,7 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
 void RequestContext::ParseUsingHttpProxy(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_HTTP_PROXY)) {
-        NETSTACK_LOGI("Use default proxy");
+        NETSTACK_LOGD("Use default proxy");
         return;
     }
     napi_value httpProxyValue =

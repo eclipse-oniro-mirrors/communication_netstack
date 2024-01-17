@@ -399,7 +399,7 @@ int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reaso
 
 int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGI("LwsCallbackClientReceive");
+    NETSTACK_LOGD("LwsCallbackClientReceive");
     auto manager = reinterpret_cast<EventManager *>(user);
     auto isFinal = lws_is_final_fragment(wsi);
     OnMessage(manager, in, len, lws_frame_is_binary(wsi), isFinal);
@@ -598,7 +598,7 @@ static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info)
 
 bool WebSocketExec::ExecConnect(ConnectContext *context)
 {
-    NETSTACK_LOGE("websocket_SSL ExecConnect begin\n");
+    NETSTACK_LOGD("websocket_SSL ExecConnect begin\n");
     if (context == nullptr) {
         NETSTACK_LOGE("context is nullptr");
         return false;
@@ -607,7 +607,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    NETSTACK_LOGI("begin connect, parse url");
+    NETSTACK_LOGD("begin connect, parse url");
     auto manager = context->GetManager();
     if (manager == nullptr) {
         return false;
@@ -837,7 +837,7 @@ void WebSocketExec::OnClose(EventManager *manager, lws_close_status closeStatus,
 
 void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, bool isBinary, bool isFinal)
 {
-    NETSTACK_LOGI("OnMessage %{public}d", isBinary);
+    NETSTACK_LOGD("OnMessage %{public}d", isBinary);
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is null");
         return;
