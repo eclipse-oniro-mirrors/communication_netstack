@@ -1087,10 +1087,6 @@ napi_value HttpExec::MakeResponseHeader(napi_env env, void *ctx)
     auto context = reinterpret_cast<RequestContext *>(ctx);
     (void)env;
     napi_value header = NapiUtils::CreateObject(context->GetEnv());
-    if (!context) {
-        NETSTACK_LOGE("context is nullptr");
-        return header;
-    }
     if (NapiUtils::GetValueType(context->GetEnv(), header) == napi_object) {
         for (const auto &it : context->response.GetHeader()) {
             if (!it.first.empty() && !it.second.empty()) {

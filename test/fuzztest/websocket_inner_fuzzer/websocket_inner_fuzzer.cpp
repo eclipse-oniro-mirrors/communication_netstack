@@ -133,7 +133,6 @@ void SetSendDataLengthTest(const uint8_t *data, size_t size)
         return;
     }
     SetGlobalFuzzData(data, size);
-    std::string str = GetStringFromData(STR_LEN);
     openOptions.headers["Content-Type"] = "application/json";
     openOptions.headers["Authorization"] = "Bearer your_token_here";
     WebSocketClient *client = new WebSocketClient();
