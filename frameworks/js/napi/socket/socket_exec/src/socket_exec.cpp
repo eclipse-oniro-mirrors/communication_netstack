@@ -772,7 +772,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         }
         if (recvLen == 0) {
             callback.OnError(UNKNOW_ERROR);
-            NETSTACK_LOGE("socket error errno");
+            NETSTACK_LOGE("socket unknown error");
             return;
         }
 
