@@ -86,20 +86,21 @@ ohos_shared_library("http") {
 
   configs = [ ":http_config" ]
 
-  deps = [ "$THIRD_PARTY_ROOT/curl:curl_shared_http3" ]
   if (is_mingw || is_mac) {
     sources +=
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
-    deps += [
+    deps = [
       "$ARKUI_ROOT/napi:ace_napi",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
       "$THIRD_PARTY_ROOT/bounds_checking_function:libsec_static",
+      "$THIRD_PARTY_ROOT/curl:curl_shared",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
     ]
   } else {
-    deps += [
+    deps = [
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+      "$THIRD_PARTY_ROOT/curl:curl_shared_http3",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
     ]
     external_deps = [
