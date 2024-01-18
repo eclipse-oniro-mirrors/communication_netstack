@@ -101,7 +101,8 @@ void EventMessageCallback(uv_work_t *work, int status)
     napi_value obj = NapiUtils::CreateObject(workWrapper->env);
     napi_value remoteInfo = NapiUtils::CreateObject(workWrapper->env);
     void *data = nullptr;
-    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(workWrapper->env, messageRecvParma->remoteInfo_.GetSize(), &data);
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(workWrapper->env, messageRecvParma->remoteInfo_.GetSize(),
+                                                          &data);
     if (data != nullptr && arrayBuffer != nullptr) {
         if (memcpy_s(data, messageRecvParma->remoteInfo_.GetSize(), messageRecvParma->data_.c_str(),
                      messageRecvParma->remoteInfo_.GetSize()) != EOK) {
