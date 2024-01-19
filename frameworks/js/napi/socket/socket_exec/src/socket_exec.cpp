@@ -762,16 +762,13 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         (void)memset_s(buf.get(), bufferSize, 0, bufferSize);
         socklen_t tempAddrLen = addrLen;
         auto recvLen = recvfrom(sock, buf.get(), bufferSize, 0, addr, &tempAddrLen);
-        if (recvLen < 0) {
+        if (recvLen <= 0) {
             if (errno == EAGAIN) {
                 continue;
             }
-            NETSTACK_LOGE("recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
-            callback.OnError(errno);
+            NETSTACK_LOGE("recv failed, socket:%{public}d, recvLen:%{public}d, errno:%{public}d", sock, recvLen, errno);
+            callback.OnError(recvLen == 0 ? UNKNOW_ERROR : errno);
             return;
-        }
-        if (recvLen == 0) {
-            continue;
         }
 
         void *data = malloc(recvLen);
