@@ -272,8 +272,7 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     nfds_t num = 1;
     pollfd fds[1] = {{0}};
     fds[0].fd = sock;
-    fds[0].events = 0;
-    fds[0].events |= static_cast<uint32_t>(POLLOUT);
+    fds[0].events = static_cast<short>(POLLOUT);
 
     int sendTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_SNDTIMEO, DEFAULT_TIMEOUT_MS);
     while (leftSize > 0) {

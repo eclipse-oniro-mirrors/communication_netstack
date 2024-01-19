@@ -94,14 +94,9 @@ void SetRequestOptionsTest(const uint8_t *data, size_t size)
         return;
     }
     SetGlobalFuzzData(data, size);
-    std::string str = GetStringFromData(STR_LEN);
     struct WebSocket *client = new WebSocket();
     const char *url1 = "www.baidu.com";
 
-    struct WebSocket_Header header1;
-    header1.fieldName = str.c_str();
-    header1.fieldValue = str.c_str();
-    header1.next = nullptr;
     OH_WebSocketClient_Connect(client, url1, client->requestOptions);
 }
 

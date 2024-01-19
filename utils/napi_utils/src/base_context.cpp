@@ -35,10 +35,7 @@ BaseContext::BaseContext(napi_env env, EventManager *manager)
       deferred_(nullptr),
       needPromise_(true),
       needThrowException_(false),
-      permissionDenied_(false)
-{
-    (void)memoryBuffer_;
-}
+      permissionDenied_(false) {}
 
 BaseContext::~BaseContext()
 {
