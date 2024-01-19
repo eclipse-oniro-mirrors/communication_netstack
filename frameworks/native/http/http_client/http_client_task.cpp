@@ -470,7 +470,7 @@ size_t HttpClientTask::HeaderReceiveCallback(const void *data, size_t size, size
 
     auto task = HttpSession::GetInstance().GetTaskById(taskId);
     if (task == nullptr) {
-        NETSTACK_LOGE("HeaderReceiveCallback task == nullptr");
+        NETSTACK_LOGE("Callback task is null.");
         return 0;
     }
 
@@ -483,13 +483,13 @@ void HttpClientTask::ProcessCookie(CURL *handle)
 {
     struct curl_slist *cookies = nullptr;
     if (handle == nullptr) {
-        NETSTACK_LOGE("ProcessCookie handle == nullptr");
+        NETSTACK_LOGE("Cookie handle is null.");
         return;
     }
 
     CURLcode res = curl_easy_getinfo(handle, CURLINFO_COOKIELIST, &cookies);
     if (res != CURLE_OK) {
-        NETSTACK_LOGE("ProcessCookie curl_easy_getinfo() error! res = %{public}d", res);
+        NETSTACK_LOGE("Get cookie info error! res = %{public}d", res);
         return;
     }
 
@@ -545,8 +545,8 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
 
     if (CURLE_ABORTED_BY_CALLBACK == code) {
         (void)ProcessResponseCode();
-        NETSTACK_LOGI("onCanceled_ taskid=%{public}d, code=%{public}d, responseCode=%{public}d",
-                        taskId_, code, response_.GetResponseCode());
+        NETSTACK_LOGI("onCancel task id=%{public}d, code=%{public}d, responseCode=%{public}d", taskId_, code,
+                      response_.GetResponseCode());
         if (onCanceled_) {
             onCanceled_(request_, response_);
         }
@@ -554,7 +554,7 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
     }
 
     if (code != CURLE_OK) {
-        NETSTACK_LOGI("onFailed_ taskid=%{public}d, code=%{public}d", taskId_, code);
+        NETSTACK_LOGI("onFail task id=%{public}d, code=%{public}d", taskId_, code);
         if (onFailed_) {
             onFailed_(request_, response_, error_);
         }
@@ -565,14 +565,14 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
     response_.ParseHeaders();
 
     if (ProcessResponseCode()) {
-        NETSTACK_LOGI("onSucceeded taskid=%{public}d, code=%{public}d, responseCode=%{public}d",
-                        taskId_, code, response_.GetResponseCode());
+        NETSTACK_LOGI("onSuccess task id=%{public}d, code=%{public}d, responseCode=%{public}d", taskId_, code,
+                      response_.GetResponseCode());
         if (onSucceeded_) {
             onSucceeded_(request_, response_);
         }
     } else if (onFailed_) {
-        NETSTACK_LOGI("onFailed taskid=%{public}d, code=%{public}d, responseCode=%{public}d",
-                        taskId_, code, response_.GetResponseCode());
+        NETSTACK_LOGI("onFail task id=%{public}d, code=%{public}d, responseCode=%{public}d", taskId_, code,
+                      response_.GetResponseCode());
         onFailed_(request_, response_, error_);
     }
 }
