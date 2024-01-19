@@ -24,15 +24,6 @@
 #include "module_template.h"
 #include "netstack_log.h"
 
-static inline napi_value priv_get_value(napi_env env, int32_t val)
-{
-    napi_value value;
-    napi_create_int32(env, val, &value);
-    return value;
-}
-
-#define DECLARE_CONST_VAR(var) DECLARE_NAPI_STATIC_PROPERTY(#var, priv_get_value(env, (int32_t)(var)))
-
 namespace OHOS::NetStack::Ssl {
 static constexpr const char *NET_SSL_MODULE_NAME = "net.networkSecurity";
 
@@ -65,8 +56,9 @@ void NetSslModuleExports::InitSslProperties(napi_env env, napi_value exports)
 
 void NetSslModuleExports::InitCertType(napi_env env, napi_value exports)
 {
-    std::initializer_list<napi_property_descriptor> properties = {DECLARE_CONST_VAR(CertType::CERT_TYPE_PEM),
-                                                                  DECLARE_CONST_VAR(CertType::CERT_TYPE_DER)};
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_STATIC_PROPERTY("CERT_TYPE_PEM", NapiUtils::CreateUint32(env, CERT_TYPE_PEM)),
+        DECLARE_NAPI_STATIC_PROPERTY("CERT_TYPE_DER", NapiUtils::CreateUint32(env, CERT_TYPE_DER))};
 
     napi_value certType = NapiUtils::CreateObject(env);
     NapiUtils::DefineProperties(env, certType, properties);
