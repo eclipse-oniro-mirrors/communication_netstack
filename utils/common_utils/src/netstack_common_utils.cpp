@@ -233,14 +233,16 @@ std::string GetHostnameFromURL(const std::string &url)
 {
     std::string delimiter = "://";
     std::string tempUrl = url;
+    std::replace(tempUrl.begin(), tempUrl.end(), '\\', '/');
     size_t posStart = tempUrl.find(delimiter);
     if (posStart != std::string::npos) {
         posStart += delimiter.length();
     } else {
         posStart = 0;
     }
-    size_t posEnd = std::min({ tempUrl.find(":", posStart),
-        tempUrl.find("/", posStart), tempUrl.find("?", posStart) });
+    posStart = tempUrl.find_first_not_of('/', posStart);
+    size_t posEnd = std::min({ tempUrl.find(':', posStart),
+        tempUrl.find('/', posStart), tempUrl.find('?', posStart) });
     if (posEnd != std::string::npos) {
         return tempUrl.substr(posStart, posEnd - posStart);
     }
