@@ -63,7 +63,7 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request)
       canceled_(false),
       file_(nullptr)
 {
-    NETSTACK_LOGI("Create task: taskId_=%{public}d", taskId_);
+    NETSTACK_LOGI("taskId_=%{public}d", taskId_);
 
     curlHandle_ = curl_easy_init();
     if (!curlHandle_) {
@@ -470,7 +470,7 @@ size_t HttpClientTask::HeaderReceiveCallback(const void *data, size_t size, size
 
     auto task = HttpSession::GetInstance().GetTaskById(taskId);
     if (task == nullptr) {
-        NETSTACK_LOGE("Callback task is null.");
+        NETSTACK_LOGE("HttpClientTask::HeaderReceiveCallback() task == nullptr");
         return 0;
     }
 
@@ -483,13 +483,13 @@ void HttpClientTask::ProcessCookie(CURL *handle)
 {
     struct curl_slist *cookies = nullptr;
     if (handle == nullptr) {
-        NETSTACK_LOGE("Cookie handle is null.");
+        NETSTACK_LOGE("HttpClientTask::ProcessCookie() handle == nullptr");
         return;
     }
 
     CURLcode res = curl_easy_getinfo(handle, CURLINFO_COOKIELIST, &cookies);
     if (res != CURLE_OK) {
-        NETSTACK_LOGE("Get cookie info error! res = %{public}d", res);
+        NETSTACK_LOGE("HttpClientTask::ProcessCookie() curl_easy_getinfo() error! res = %{public}d", res);
         return;
     }
 
@@ -514,7 +514,9 @@ bool HttpClientTask::ProcessResponseCode()
         return false;
     }
     ResponseCode resultCode = static_cast<ResponseCode>(result);
+    NETSTACK_LOGI("taskid=%{public}d, responseCode=%{public}d", taskId_, resultCode);
     response_.SetResponseCode(resultCode);
+
     return true;
 }
 
@@ -532,6 +534,7 @@ double HttpClientTask::GetTimingFromCurl(CURL *handle, CURLINFO info)
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
 {
     CURLcode code = msg->data.result;
+    NETSTACK_LOGD("taskid=%{public}d code=%{public}d", taskId_, code);
     error_.SetCURLResult(code);
     response_.SetResponseTime(HttpTime::GetNowTimeGMT());
 
@@ -545,8 +548,6 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
 
     if (CURLE_ABORTED_BY_CALLBACK == code) {
         (void)ProcessResponseCode();
-        NETSTACK_LOGI("onCancel task id=%{public}d, code=%{public}d, responseCode=%{public}d", taskId_, code,
-                      response_.GetResponseCode());
         if (onCanceled_) {
             onCanceled_(request_, response_);
         }
@@ -554,7 +555,6 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
     }
 
     if (code != CURLE_OK) {
-        NETSTACK_LOGI("onFail task id=%{public}d, code=%{public}d", taskId_, code);
         if (onFailed_) {
             onFailed_(request_, response_, error_);
         }
@@ -565,14 +565,10 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
     response_.ParseHeaders();
 
     if (ProcessResponseCode()) {
-        NETSTACK_LOGI("onSuccess task id=%{public}d, code=%{public}d, responseCode=%{public}d", taskId_, code,
-                      response_.GetResponseCode());
         if (onSucceeded_) {
             onSucceeded_(request_, response_);
         }
     } else if (onFailed_) {
-        NETSTACK_LOGI("onFail task id=%{public}d, code=%{public}d, responseCode=%{public}d", taskId_, code,
-                      response_.GetResponseCode());
         onFailed_(request_, response_, error_);
     }
 }

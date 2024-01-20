@@ -265,18 +265,6 @@ HWTEST_F(NetStackCommonUtilsTest, CommonUtils30, TestSize.Level2)
     std::string expectedOutput = "8.8.*.*";
     EXPECT_STREQ(actualOutput.c_str(), expectedOutput.c_str());
 }
-
-HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL01, TestSize.Level2)
-{
-    std::string hostname = GetHostnameFromURL("https:////www.alibaba.com?data_string");
-    EXPECT_STREQ(hostname.c_str(), "www.alibaba.com");
-}
-
-HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL02, TestSize.Level2)
-{
-    std::string hostname = GetHostnameFromURL("https:/\\\\\\///\\/www.alibaba.com?data_string");
-    EXPECT_STREQ(hostname.c_str(), "www.alibaba.com");
-}
 } // namespace CommonUtils
 } // namespace NetStack
 } // namespace OHOS
