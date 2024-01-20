@@ -64,10 +64,10 @@ ClientContext *WebSocketClient::GetClientContext() const
 
 void RunService(WebSocketClient *Client)
 {
+    if (Client->GetClientContext()->GetContext() == nullptr) {
+        return;
+    }
     while (!Client->GetClientContext()->IsThreadStop()) {
-        if (Client->GetClientContext()->GetContext() == nullptr) {
-            return;
-        }
         lws_service(Client->GetClientContext()->GetContext(), 0);
     }
 }
@@ -404,7 +404,7 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
     this->GetClientContext()->SetContext(lwsContext);
     int ret = CreatConnectInfo(url, lwsContext, this);
     if (ret != WEBSOCKET_NONE_ERR) {
-        NETSTACK_LOGE("websocket Connect error");
+        NETSTACK_LOGE("websocket CreatConnectInfo error");
         GetClientContext()->SetContext(nullptr);
         lws_context_destroy(lwsContext);
         return ret;
@@ -463,8 +463,9 @@ int WebSocketClient::Destroy()
         return WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT_CONTEXT;
     }
 
-    lws_context_destroy(this->GetClientContext()->GetContext());
     this->GetClientContext()->SetContext(nullptr);
+    lws_context_destroy(this->GetClientContext()->GetContext());
+
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
