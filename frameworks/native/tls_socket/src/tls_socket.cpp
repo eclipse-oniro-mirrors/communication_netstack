@@ -397,10 +397,10 @@ void TLSSocket::StartReadMessage()
             }
 
             Socket::SocketRemoteInfo remoteInfo;
-            remoteInfo.SetSize(len);
+            remoteInfo.SetSize(len); // actual received length, it may contain '\0'
             tlsSocketInternal_.MakeRemoteInfo(remoteInfo);
-            std::string bufContent(buffer, len);
-            CallOnMessageCallback(bufContent, remoteInfo);
+            std::string bufContent(buffer, len); // construct a specified length string, it may contain '\0'
+            CallOnMessageCallback(bufContent, remoteInfo); // if directly pass char[], truncation may occur at '\0'
             if (strncmp(buffer, QUIT_RESPONSE_CODE, QUIT_RESPONSE_CODE_LEN) == 0) {
                 break;
             }
