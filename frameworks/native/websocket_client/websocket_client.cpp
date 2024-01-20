@@ -462,10 +462,8 @@ int WebSocketClient::Destroy()
     if (this->GetClientContext()->GetContext() == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT_CONTEXT;
     }
-
     this->GetClientContext()->SetContext(nullptr);
     lws_context_destroy(this->GetClientContext()->GetContext());
-
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
