@@ -66,7 +66,7 @@ void SetPropertyForWorkWrapper(UvWorkWrapper *workWrapper, Monitor::MessageRecvP
 {
     napi_value message = nullptr;
     napi_create_typedarray(workWrapper->env, napi_uint8_array, messageRecvParma->remoteInfo_.GetSize(), arrayBuffer, 0,
-                           &message);
+                           &message); // If using data_.size() to represent length, it may be truncated at '\0'
     napi_value address = NapiUtils::CreateStringUtf8(workWrapper->env, messageRecvParma->remoteInfo_.GetAddress());
     napi_value family = NapiUtils::CreateStringUtf8(workWrapper->env, messageRecvParma->remoteInfo_.GetFamily());
     napi_value port = NapiUtils::CreateInt32(workWrapper->env, messageRecvParma->remoteInfo_.GetPort());
