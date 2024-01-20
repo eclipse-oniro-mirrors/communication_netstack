@@ -752,11 +752,12 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     auto addrDeleter = [](sockaddr *a) { free(reinterpret_cast<void *>(a)); };
     std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
 
+    nfds_t num = 1;
     pollfd fds[1] = {{sock, POLLIN, 0}};
 
     int recvTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT);
     while (true) {
-        int ret = poll(fds, sizeof(fds) / sizeof(fds[0]), recvTimeoutMs);
+        int ret = poll(fds, num, recvTimeoutMs);
         if (ret < 0) {
             NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
             callback.OnError(errno);
@@ -778,9 +779,6 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             }
             NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
             callback.OnError(recvLen == 0 && IsTCPSocket(sock) ? UNKNOW_ERROR : errno);
-            if (recvLen == 0 && IsTCPSocket(sock)) {
-                break;
-            }
             return;
         }
 
