@@ -646,6 +646,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         delete[] info.client_ssl_ca_dirs[1];
         return false;
     }
+    
     std::thread serviceThread(RunService, manager);
     serviceThread.detach();
     return true;
