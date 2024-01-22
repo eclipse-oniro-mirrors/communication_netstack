@@ -63,8 +63,6 @@ static constexpr const char *WEBSCOKET_PREPARE_CA_PATH = "/etc/ssl/certs/cacert.
 
 static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
 
-static constexpr const int32_t MAX_DIR_LENGTH = 8192;
-
 static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 
 static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
@@ -578,15 +576,14 @@ static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info)
         info.client_ssl_ca_filepath = context->caPath_.c_str();
     }
     if (context->caPath_.empty()) {
-        info.client_ssl_ca_dirs[1] = new char[MAX_DIR_LENGTH];
+        info.client_ssl_ca_dirs[1] = new char[PATH_MAX];
         if (info.client_ssl_ca_dirs[1] == nullptr) {
             return false;
         }
-        (void)memset_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), MAX_DIR_LENGTH, 0, MAX_DIR_LENGTH);
+        (void)memset_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), PATH_MAX, 0, PATH_MAX);
         std::string path = BASE_PATH + std::to_string(userid);
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
-        (void)memcpy_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), MAX_DIR_LENGTH, path.c_str(),
-                       strlen(path.c_str()));
+        (void)memcpy_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), PATH_MAX, path.c_str(), path.size());
     }
     NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
     if (!context->clientCert_.empty()) {
