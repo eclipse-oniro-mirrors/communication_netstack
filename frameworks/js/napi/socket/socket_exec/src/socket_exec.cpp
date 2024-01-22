@@ -727,6 +727,17 @@ static int ConfirmBufferSize(int sock)
     return bufferSize;
 }
 
+static bool IsTCPSocket(int sockfd)
+{
+    int optval;
+    socklen_t optlen = sizeof(optval);
+
+    if (getsockopt(sockfd, SOL_SOCKET, SO_PROTOCOL, &optval, &optlen) != 0) {
+        return false;
+    }
+    return optval == IPPROTO_TCP;
+}
+
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
 {
     int bufferSize = ConfirmBufferSize(sock);
@@ -763,11 +774,11 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         socklen_t tempAddrLen = addrLen;
         auto recvLen = recvfrom(sock, buf.get(), bufferSize, 0, addr, &tempAddrLen);
         if (recvLen <= 0) {
-            if (errno == EAGAIN) {
+            if (errno == EAGAIN || (recvLen == 0 && !IsTCPSocket(sock))) {
                 continue;
             }
-            NETSTACK_LOGE("recv failed, socket:%{public}d, recvLen:%{public}d, errno:%{public}d", sock, recvLen, errno);
-            callback.OnError(recvLen == 0 ? UNKNOW_ERROR : errno);
+            NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
+            callback.OnError(recvLen == 0 && IsTCPSocket(sock) ? UNKNOW_ERROR : errno);
             return;
         }
 
