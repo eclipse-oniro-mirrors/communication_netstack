@@ -63,6 +63,8 @@ static constexpr const char *WEBSCOKET_PREPARE_CA_PATH = "/etc/ssl/certs/cacert.
 
 static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
 
+static constexpr const int32_t MAX_DIR_LENGTH = 128;
+
 static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 
 static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
@@ -376,7 +378,8 @@ void OnConnectError(EventManager *manager, int32_t code)
         NETSTACK_LOGE("manager is null");
         return;
     }
-    if (auto userData = reinterpret_cast<UserData *>(manager->GetData()); userData != nullptr) {
+    auto userData = reinterpret_cast<UserData *>(manager->GetData());
+    if (userData != nullptr) {
         NETSTACK_LOGI("OnConnectError SetThreadStop");
         userData->SetThreadStop(true);
     }
@@ -575,10 +578,13 @@ static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info)
         }
         info.client_ssl_ca_filepath = context->caPath_.c_str();
     }
+
+    info.client_ssl_ca_dirs[1] = new char[MAX_DIR_LENGTH];
+    context->caPathDir_.emplace_back(BASE_PATH + std::to_string(userid));
+
     if (context->caPath_.empty()) {
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
-        context->caPathDir_.emplace_back(BASE_PATH + std::to_string(userid));
-        info.client_ssl_ca_dirs[1] = context->caPathDir_[0].c_str();
+        strcpy_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), MAX_DIR_LENGTH, context->caPathDir_[0].c_str());
     }
     NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
     if (!context->clientCert_.empty()) {
@@ -634,6 +640,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         userData->SetContext(nullptr);
         lws_context_destroy(lwsContext);
         delete userData;
+        delete info.client_ssl_ca_dirs[1];
         return false;
     }
 
