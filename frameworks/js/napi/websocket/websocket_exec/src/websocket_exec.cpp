@@ -378,8 +378,7 @@ void OnConnectError(EventManager *manager, int32_t code)
         NETSTACK_LOGE("manager is null");
         return;
     }
-    auto userData = reinterpret_cast<UserData *>(manager->GetData());
-    if (userData != nullptr) {
+    if (auto userData = reinterpret_cast<UserData *>(manager->GetData()); userData != nullptr) {
         NETSTACK_LOGI("OnConnectError SetThreadStop");
         userData->SetThreadStop(true);
     }
