@@ -578,13 +578,13 @@ static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info)
         info.client_ssl_ca_filepath = context->caPath_.c_str();
     }
 
-    info.client_ssl_ca_dirs[1] = new char[MAX_DIR_LENGTH];
-    if (info.client_ssl_ca_dirs[1] == nullptr) {
-        return false;
-    }
-    (void)memset_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), MAX_DIR_LENGTH, 0, MAX_DIR_LENGTH);
-    std::string path = BASE_PATH + std::to_string(userid);
     if (context->caPath_.empty()) {
+        info.client_ssl_ca_dirs[1] = new char[MAX_DIR_LENGTH];
+        if (info.client_ssl_ca_dirs[1] == nullptr) {
+            return false;
+        }
+        (void)memset_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), MAX_DIR_LENGTH, 0, MAX_DIR_LENGTH);
+        std::string path = BASE_PATH + std::to_string(userid);
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
         (void)memcpy_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), MAX_DIR_LENGTH, path.c_str(),
                        strlen(path.c_str()));
@@ -643,7 +643,9 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         userData->SetContext(nullptr);
         lws_context_destroy(lwsContext);
         delete userData;
-        delete[] info.client_ssl_ca_dirs[1];
+        if (info.client_ssl_ca_dirs[1] != nullptr) {
+            delete[] info.client_ssl_ca_dirs[1];
+        }
         return false;
     }
     std::thread serviceThread(RunService, manager);
