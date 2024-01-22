@@ -579,11 +579,13 @@ static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info)
     }
 
     info.client_ssl_ca_dirs[1] = new char[MAX_DIR_LENGTH];
+    (void)memset_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), MAX_DIR_LENGTH, 0, MAX_DIR_LENGTH);
     context->caPathDir_.emplace_back(BASE_PATH + std::to_string(userid));
 
     if (context->caPath_.empty()) {
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
-        strcpy_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), MAX_DIR_LENGTH, context->caPathDir_[0].c_str());
+        (void)memcpy_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), MAX_DIR_LENGTH, context->caPathDir_[0].c_str(),
+                       strlen(context->caPathDir_[0].c_str()));
     }
     NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
     if (!context->clientCert_.empty()) {
@@ -639,10 +641,10 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         userData->SetContext(nullptr);
         lws_context_destroy(lwsContext);
         delete userData;
-        delete info.client_ssl_ca_dirs[1];
+        delete[] info.client_ssl_ca_dirs[1];
         return false;
     }
-
+    delete[] info.client_ssl_ca_dirs[1];
     std::thread serviceThread(RunService, manager);
     serviceThread.detach();
     return true;
