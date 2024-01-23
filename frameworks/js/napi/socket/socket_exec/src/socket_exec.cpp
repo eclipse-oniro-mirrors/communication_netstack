@@ -1003,9 +1003,11 @@ bool ExecUdpSend(UdpSendContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    bool result = UdpSendEvent(context);
+    if (!UdpSendEvent(context)) {
+        return false;
+    }
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
-    return result;
+    return true;
 }
 
 bool ExecTcpBind(BindContext *context)
@@ -1051,9 +1053,11 @@ bool ExecTcpSend(TcpSendContext *context)
         return false;
     }
 
-    bool result = TcpSendEvent(context);
+    if (!TcpSendEvent(context)) {
+        return false;
+    }
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
-    return result;
+    return true;
 }
 
 bool ExecClose(CloseContext *context)

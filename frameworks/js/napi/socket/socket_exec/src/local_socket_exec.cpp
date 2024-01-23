@@ -701,9 +701,11 @@ bool ExecLocalSocketSend(LocalSocketSendContext *context)
     if (context == nullptr) {
         return false;
     }
-    bool result = LocalSocketSendEvent(context);
+    if (!LocalSocketSendEvent(context)) {
+        return false;
+    }
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::LocalSocketSendCallback);
-    return result;
+    return true;
 }
 
 bool ExecLocalSocketClose(LocalSocketCloseContext *context)
