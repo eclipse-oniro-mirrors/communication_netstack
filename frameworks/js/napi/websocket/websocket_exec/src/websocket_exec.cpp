@@ -576,7 +576,7 @@ static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info)
         info.client_ssl_ca_filepath = context->caPath_.c_str();
     }
     if (context->caPath_.empty()) {
-        info.client_ssl_ca_dirs[1] = new char[PATH_MAX];
+        info.client_ssl_ca_dirs[1] = new (std::nothrow) char[PATH_MAX];
         if (info.client_ssl_ca_dirs[1] == nullptr) {
             return false;
         }
