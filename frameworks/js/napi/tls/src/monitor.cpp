@@ -65,8 +65,8 @@ void SetPropertyForWorkWrapper(UvWorkWrapper *workWrapper, Monitor::MessageRecvP
                                napi_value arrayBuffer, napi_value remoteInfo, napi_value obj)
 {
     napi_value message = nullptr;
-    napi_create_typedarray(workWrapper->env, napi_uint8_array, messageRecvParma->remoteInfo_.GetSize(), arrayBuffer, 0,
-                           &message); // If using data_.size() to represent length, it may be truncated at '\0'
+    napi_create_typedarray(workWrapper->env, napi_uint8_array, messageRecvParma->data_.size(), arrayBuffer, 0,
+                           &message);
     napi_value address = NapiUtils::CreateStringUtf8(workWrapper->env, messageRecvParma->remoteInfo_.GetAddress());
     napi_value family = NapiUtils::CreateStringUtf8(workWrapper->env, messageRecvParma->remoteInfo_.GetFamily());
     napi_value port = NapiUtils::CreateInt32(workWrapper->env, messageRecvParma->remoteInfo_.GetPort());
@@ -101,11 +101,10 @@ void EventMessageCallback(uv_work_t *work, int status)
     napi_value obj = NapiUtils::CreateObject(workWrapper->env);
     napi_value remoteInfo = NapiUtils::CreateObject(workWrapper->env);
     void *data = nullptr;
-    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(workWrapper->env, messageRecvParma->remoteInfo_.GetSize(),
-                                                          &data);
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(workWrapper->env, messageRecvParma->data_.size(), &data);
     if (data != nullptr && arrayBuffer != nullptr) {
-        if (memcpy_s(data, messageRecvParma->remoteInfo_.GetSize(), messageRecvParma->data_.c_str(),
-                     messageRecvParma->remoteInfo_.GetSize()) != EOK) {
+        if (memcpy_s(data, messageRecvParma->data_.size(), messageRecvParma->data_.c_str(),
+                     messageRecvParma->data_.size()) != EOK) {
             ParserNullBranch("memcpy_s failed!", work, workWrapper);
             NapiUtils::CloseScope(workWrapper->env, scope);
             return;
