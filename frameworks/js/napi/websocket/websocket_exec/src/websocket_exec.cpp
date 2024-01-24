@@ -642,12 +642,15 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         userData->SetContext(nullptr);
         lws_context_destroy(lwsContext);
         delete userData;
-        delete[] info.client_ssl_ca_dirs[1];
-        info.client_ssl_ca_dirs[1] = nullptr;
+        if (info.client_ssl_ca_dirs[1] != nullptr) {
+            delete[] info.client_ssl_ca_dirs[1];
+        }
         return false;
     }
-    delete[] info.client_ssl_ca_dirs[1];
-    info.client_ssl_ca_dirs[1] = nullptr;
+    if (info.client_ssl_ca_dirs[1] != nullptr) {
+        delete[] info.client_ssl_ca_dirs[1];
+        info.client_ssl_ca_dirs[1] = nullptr;
+    }
     std::thread serviceThread(RunService, manager);
     serviceThread.detach();
     return true;
