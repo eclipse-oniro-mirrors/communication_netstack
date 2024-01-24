@@ -397,9 +397,10 @@ void TLSSocket::StartReadMessage()
             }
 
             Socket::SocketRemoteInfo remoteInfo;
-            remoteInfo.SetSize(strlen(buffer));
+            remoteInfo.SetSize(len);
             tlsSocketInternal_.MakeRemoteInfo(remoteInfo);
-            CallOnMessageCallback(buffer, remoteInfo);
+            std::string bufContent(buffer, len);
+            CallOnMessageCallback(bufContent, remoteInfo);
             if (strncmp(buffer, QUIT_RESPONSE_CODE, QUIT_RESPONSE_CODE_LEN) == 0) {
                 break;
             }
