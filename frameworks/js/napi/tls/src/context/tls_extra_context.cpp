@@ -85,7 +85,7 @@ void TLSSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCou
 
 int TLSSetExtraOptionsContext::GetSocketFd() const
 {
-    return manager_->GetData() ? (int)(uint64_t)manager_->GetData() : -1;
+    return manager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) : -1;
 }
 
 bool TLSSetExtraOptionsContext::CheckParamsType(napi_value *params, size_t paramsCount)
