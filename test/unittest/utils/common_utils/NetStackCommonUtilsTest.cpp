@@ -265,6 +265,60 @@ HWTEST_F(NetStackCommonUtilsTest, CommonUtils30, TestSize.Level2)
     std::string expectedOutput = "8.8.*.*";
     EXPECT_STREQ(actualOutput.c_str(), expectedOutput.c_str());
 }
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL01, TestSize.Level2)
+{
+    std::string hostname = GetHostnameFromURL("https:////www.example.com?data_string");
+    EXPECT_STREQ(hostname.c_str(), "www.example.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL02, TestSize.Level2)
+{
+    std::string hostname = GetHostnameFromURL(R"(https:/\\\\\\///\\/www.example.com?data_string)");
+    EXPECT_STREQ(hostname.c_str(), "www.example.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL03, TestSize.Level2)
+{
+    std::string hostname = GetHostnameFromURL("");
+    EXPECT_STREQ(hostname.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL04, TestSize.Level2)
+{
+    std::string hostname = GetHostnameFromURL("https://");
+    EXPECT_STREQ(hostname.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL05, TestSize.Level2)
+{
+    std::string hostname = GetHostnameFromURL("https://www.example.com:8080");
+    EXPECT_STREQ(hostname.c_str(), "www.example.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL06, TestSize.Level2)
+{
+    std::string hostname = GetHostnameFromURL("https://www.example.com/for/test");
+    EXPECT_STREQ(hostname.c_str(), "www.example.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL07, TestSize.Level2)
+{
+    std::string hostname = GetHostnameFromURL(R"(https:/\\\\\)");
+    EXPECT_STREQ(hostname.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL08, TestSize.Level2)
+{
+    std::string hostname = GetHostnameFromURL(R"(https://www.example.com/watch/80033982:sadsda?dd\\\df)");
+    EXPECT_STREQ(hostname.c_str(), "www.example.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL09, TestSize.Level2)
+{
+    std::string hostname = GetHostnameFromURL(R"(https://www.example.com:8080/watch/80033982:sadsda?dd\\\df)");
+    EXPECT_STREQ(hostname.c_str(), "www.example.com");
+}
 } // namespace CommonUtils
 } // namespace NetStack
 } // namespace OHOS
