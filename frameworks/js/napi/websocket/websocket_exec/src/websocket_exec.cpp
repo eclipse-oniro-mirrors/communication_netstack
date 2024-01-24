@@ -576,7 +576,6 @@ static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info)
         info.client_ssl_ca_filepath = context->caPath_.c_str();
     }
     if (context->caPath_.empty()) {
-
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
         info.client_ssl_ca_dirs[1] = CERTPATH.c_str();
     }
