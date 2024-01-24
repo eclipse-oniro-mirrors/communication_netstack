@@ -65,6 +65,8 @@ static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
 
 static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 
+static const std::string CERTPATH = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
+
 static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
 
 namespace OHOS::NetStack::Websocket {
@@ -574,19 +576,9 @@ static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info)
         info.client_ssl_ca_filepath = context->caPath_.c_str();
     }
     if (context->caPath_.empty()) {
-        info.client_ssl_ca_dirs[1] = new (std::nothrow) char[PATH_MAX];
-        if (info.client_ssl_ca_dirs[1] == nullptr) {
-            return false;
-        }
-        static int32_t uid = getuid();
-        static int32_t userid = uid / UID_TRANSFORM_DIVISOR;
-        static std::string path = BASE_PATH + std::to_string(userid);
-        (void)memset_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), PATH_MAX, 0, PATH_MAX);
 
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
-        if (memcpy_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), PATH_MAX, path.c_str(), path.size()) != EOK) {
-            return false;
-        }
+        info.client_ssl_ca_dirs[1] = CERTPATH.c_str();
     }
     NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
     if (!context->clientCert_.empty()) {
@@ -642,14 +634,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         userData->SetContext(nullptr);
         lws_context_destroy(lwsContext);
         delete userData;
-        if (info.client_ssl_ca_dirs[1] != nullptr) {
-            delete[] info.client_ssl_ca_dirs[1];
-        }
         return false;
-    }
-    if (info.client_ssl_ca_dirs[1] != nullptr) {
-        delete[] info.client_ssl_ca_dirs[1];
-        info.client_ssl_ca_dirs[1] = nullptr;
     }
     std::thread serviceThread(RunService, manager);
     serviceThread.detach();
