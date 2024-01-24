@@ -77,7 +77,7 @@ void UdpSendContext::ParseParams(napi_value *params, size_t paramsCount)
 
 int UdpSendContext::GetSocketFd() const
 {
-    return (int)(uint64_t)manager_->GetData();
+    return manager_->GetData() ? (int)(uint64_t)manager_->GetData() : -1;
 }
 
 bool UdpSendContext::CheckParamsType(napi_value *params, size_t paramsCount)

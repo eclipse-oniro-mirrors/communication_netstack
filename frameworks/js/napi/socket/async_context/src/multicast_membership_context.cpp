@@ -54,7 +54,7 @@ void MulticastMembershipContext::ParseParams(napi_value *params, size_t paramsCo
 
 int MulticastMembershipContext::GetSocketFd() const
 {
-    return (int)(uint64_t)manager_->GetData();
+    return manager_->GetData() ? (int)(uint64_t)manager_->GetData() : -1;
 }
 
 bool MulticastMembershipContext::CheckParamsType(napi_value *params, size_t paramsCount)

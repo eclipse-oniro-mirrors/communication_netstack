@@ -60,7 +60,7 @@ void TcpSendContext::ParseParams(napi_value *params, size_t paramsCount)
 
 int TcpSendContext::GetSocketFd() const
 {
-    return (int)(uint64_t)manager_->GetData();
+    return manager_->GetData() ? (int)(uint64_t)manager_->GetData() : -1;
 }
 
 bool TcpSendContext::CheckParamsType(napi_value *params, size_t paramsCount)

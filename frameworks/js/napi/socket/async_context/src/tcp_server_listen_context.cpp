@@ -71,7 +71,7 @@ void TcpServerListenContext::ParseParams(napi_value *params, size_t paramsCount)
 
 int TcpServerListenContext::GetSocketFd() const
 {
-    return (int)(uint64_t)manager_->GetData();
+    return manager_->GetData() ? (int)(uint64_t)manager_->GetData() : -1;
 }
 
 bool TcpServerListenContext::CheckParamsType(napi_value *params, size_t paramsCount)
