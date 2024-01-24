@@ -319,6 +319,293 @@ HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL09, TestSize.Level2)
     std::string hostname = GetHostnameFromURL(R"(https://www.example.com:8080/watch/80033982:sadsda?dd\\\df)");
     EXPECT_STREQ(hostname.c_str(), "www.example.com");
 }
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL10, TestSize.Level2)
+{
+    std::string url = "example.com:98421/dsdsd?dsdsds";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "example.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL11, TestSize.Level2)
+{
+    std::string url = R"(\/\/\/\/\/\/\/\////\)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL12, TestSize.Level2)
+{
+    std::string url = "http://www.example.com";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "www.example.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL13, TestSize.Level2)
+{
+    std::string url = "https://www.example-test.com";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "www.example-test.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL14, TestSize.Level2)
+{
+    std::string url = "ftp://www.baidu-test.com";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "www.baidu-test.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL15, TestSize.Level2)
+{
+    std::string url = R"(\\\/\/\/\/\/\///\/\\\:80808)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL16, TestSize.Level2)
+{
+    std::string url = R"(?????DSdsafhu34r3urihiu45t794\\56y&^&*%$^&$&*&^%*&((*)))";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL17, TestSize.Level2)
+{
+    std::string url = R"(16456465221-*/*/\)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "16456465221-*");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL18, TestSize.Level2)
+{
+    std::string url = "czvxkhcvjhkgfidkh";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "czvxkhcvjhkgfidkh");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL19, TestSize.Level2)
+{
+    std::string url = "hcd   dfdf4efd446576";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "hcd   dfdf4efd446576");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL20, TestSize.Level2)
+{
+    std::string url = " ";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), " ");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL21, TestSize.Level2)
+{
+    std::string url = "                             ";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "                             ");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL22, TestSize.Level2)
+{
+    std::string url = R"(dsd!!!@@#$$%%%^df\\)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "dsd!!!@@#$$%%%^df");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL23, TestSize.Level2)
+{
+    std::string url = "http://example.com";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "example.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL24, TestSize.Level2)
+{
+    std::string url = "example.com";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "example.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL25, TestSize.Level2)
+{
+    std::string url = "https:////??::||///stackoverflow.com";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL26, TestSize.Level2)
+{
+    std::string url = R"(https://\\\154545\\\stackoverflow.com)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "154545");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL27, TestSize.Level2)
+{
+    std::string url = R"(https://\\\\\\////\\\\stackoverflow.com)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "stackoverflow.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL28, TestSize.Level2)
+{
+    std::string url = R"(https:/\151\\\\23243435)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "151");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL29, TestSize.Level2)
+{
+    std::string url = R"(https:\\)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL30, TestSize.Level2)
+{
+    std::string url = R"(""""\\"""""""""""""")";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), R"("""")");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL31, TestSize.Level2)
+{
+    std::string url = ":::::::dfsfd::::::::::::";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL32, TestSize.Level2)
+{
+    std::string url = "1--**--4545";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "1--**--4545");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL33, TestSize.Level2)
+{
+    std::string url = R"( https:\)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), " https");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL34, TestSize.Level2)
+{
+    std::string url = " https:////";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL35, TestSize.Level2)
+{
+    std::string url = " saasa";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), " saasa");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL36, TestSize.Level2)
+{
+    std::string url = R"(|||///\\\)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "|||");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL37, TestSize.Level2)
+{
+    std::string url = "-- fdsf";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "-- fdsf");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL38, TestSize.Level2)
+{
+    std::string url = "xnmku:9090?(sdfgjhg)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "xnmku");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL39, TestSize.Level2)
+{
+    std::string url = "oooxxx111-===";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "oooxxx111-===");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL40, TestSize.Level2)
+{
+    std::string url = R"($^%(_*_()*+_)(YU(\_)))";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "$^%(_*_()*+_)(YU(");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL41, TestSize.Level2)
+{
+    std::string url = R"(万维网.com:9090\)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "万维网.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL42, TestSize.Level2)
+{
+    std::string url = R"(https://\\\中文测试)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "中文测试");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL43, TestSize.Level2)
+{
+    std::string url = R"(http://\\\中文测试?中文数据)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "中文测试");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL44, TestSize.Level2)
+{
+    std::string url = R"(http://\\\中文测试：8080?中文数据)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "中文测试：8080");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL45, TestSize.Level2)
+{
+    std::string url = R"(http：：：/\\\中文测试：8080?中文数据)";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "http：：：");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL46, TestSize.Level2)
+{
+    std::string url = R"(（）“”{}P{{}:\、、、})";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "（）“”{}P{{}");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL47, TestSize.Level2)
+{
+    std::string url = R"(（）“”{}P{http://{}:\、、、})";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "{}");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL48, TestSize.Level2)
+{
+    std::string url = R"(（）“===\\///?=”{}P{{的‘；‘’；’}:\、、、})";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "（）“===");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL49, TestSize.Level2)
+{
+    std::string url = R"(（）“”{}P{{；‘k:’}:\、、、})";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "（）“”{}P{{；‘k");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL50, TestSize.Level2)
+{
+    std::string url = R"(（）“”{}P{0%%%VVV{}:\、、、})";
+    std::string hostname = GetHostnameFromURL(url);
+    EXPECT_STREQ(hostname.c_str(), "（）“”{}P{0%%%VVV{}");
+}
 } // namespace CommonUtils
 } // namespace NetStack
 } // namespace OHOS
