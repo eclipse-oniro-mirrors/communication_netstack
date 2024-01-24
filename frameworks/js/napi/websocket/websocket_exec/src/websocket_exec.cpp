@@ -67,13 +67,13 @@ static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 
 static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
 
-#define SAFE_DELETE(p)        \
-    do {                      \
-        if ((p) != nullptr) { \
-            delete[] (p);     \
-            (p) = nullptr;    \
-        }                     \
-    } while (0)
+template <typename T> void SafeDelete(T *&p)
+{
+    if (p != nullptr) {
+        delete[] p;
+        p = nullptr;
+    }
+}
 
 namespace OHOS::NetStack::Websocket {
 static const lws_protocols LWS_PROTOCOLS[] = {
@@ -650,10 +650,10 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         userData->SetContext(nullptr);
         lws_context_destroy(lwsContext);
         delete userData;
-        SAFE_DELETE(info.client_ssl_ca_dirs[1]);
+        SafeDelete(info.client_ssl_ca_dirs[1]);
         return false;
     }
-    SAFE_DELETE(info.client_ssl_ca_dirs[1]);
+    SafeDelete(info.client_ssl_ca_dirs[1]);
     std::thread serviceThread(RunService, manager);
     serviceThread.detach();
     return true;
