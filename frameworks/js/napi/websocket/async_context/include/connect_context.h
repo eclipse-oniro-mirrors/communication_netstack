@@ -51,8 +51,6 @@ public:
 
     std::string caPath_;
 
-    std::vector<std::string> caPathDir_;
-
     std::string clientCert_;
 
     Secure::SecureChar clientKey_;
