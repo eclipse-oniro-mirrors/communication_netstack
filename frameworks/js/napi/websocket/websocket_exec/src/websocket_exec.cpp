@@ -67,6 +67,14 @@ static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 
 static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
 
+#define SAFE_DELETE(p)        \
+    do {                      \
+        if ((p) != nullptr) { \
+            delete[] (p);     \
+            (p) = nullptr;    \
+        }                     \
+    } while (0)
+
 namespace OHOS::NetStack::Websocket {
 static const lws_protocols LWS_PROTOCOLS[] = {
     {"lws-minimal-client", WebSocketExec::LwsCallback, 0, 0},
@@ -565,8 +573,6 @@ static bool CheckFilePath(std::string &path)
 
 static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info)
 {
-    int32_t uid = getuid();
-    int32_t userid = uid / UID_TRANSFORM_DIVISOR;
     if (!context->caPath_.empty()) {
         if (!CheckFilePath(context->caPath_)) {
             NETSTACK_LOGE("ca not exist");
@@ -580,10 +586,15 @@ static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info)
         if (info.client_ssl_ca_dirs[1] == nullptr) {
             return false;
         }
+        static int32_t uid = getuid();
+        static int32_t userid = uid / UID_TRANSFORM_DIVISOR;
+        static std::string path = BASE_PATH + std::to_string(userid);
         (void)memset_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), PATH_MAX, 0, PATH_MAX);
-        std::string path = BASE_PATH + std::to_string(userid);
+
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
-        (void)memcpy_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), PATH_MAX, path.c_str(), path.size());
+        if (memcpy_s(const_cast<char *>(info.client_ssl_ca_dirs[1]), PATH_MAX, path.c_str(), path.size()) != EOK) {
+            return false;
+        }
     }
     NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
     if (!context->clientCert_.empty()) {
@@ -639,11 +650,10 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         userData->SetContext(nullptr);
         lws_context_destroy(lwsContext);
         delete userData;
-        if (info.client_ssl_ca_dirs[1] != nullptr) {
-            delete[] info.client_ssl_ca_dirs[1];
-        }
+        SAFE_DELETE(info.client_ssl_ca_dirs[1]);
         return false;
     }
+    SAFE_DELETE(info.client_ssl_ca_dirs[1]);
     std::thread serviceThread(RunService, manager);
     serviceThread.detach();
     return true;
