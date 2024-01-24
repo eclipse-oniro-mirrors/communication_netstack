@@ -62,7 +62,7 @@ void TLSBindContext::ParseParams(napi_value *params, size_t paramsCount)
 
 int TLSBindContext::GetSocketFd() const
 {
-    return (int)(uint64_t)manager_->GetData();
+    return manager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) : -1;
 }
 
 bool TLSBindContext::CheckParamsType(napi_value *params, size_t paramsCount)

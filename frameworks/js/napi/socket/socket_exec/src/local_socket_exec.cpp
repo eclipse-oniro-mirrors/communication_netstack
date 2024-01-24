@@ -701,6 +701,9 @@ bool ExecLocalSocketSend(LocalSocketSendContext *context)
     if (context == nullptr) {
         return false;
     }
+    if (context->GetSocketFd() < 0) {
+        return false;
+    }
     bool result = LocalSocketSendEvent(context);
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::LocalSocketSendCallback);
     return result;

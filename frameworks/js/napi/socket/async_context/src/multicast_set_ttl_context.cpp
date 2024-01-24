@@ -78,7 +78,7 @@ int MulticastSetTTLContext::GetMulticastTTL() const
 
 int MulticastSetTTLContext::GetSocketFd() const
 {
-    return (int)(uint64_t)manager_->GetData();
+    return manager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) : -1;
 }
 
 int32_t MulticastSetTTLContext::GetErrorCode() const
