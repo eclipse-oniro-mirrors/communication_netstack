@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -231,16 +231,24 @@ bool IsRegexValid(const std::string &regex)
 
 std::string GetHostnameFromURL(const std::string &url)
 {
+    if (url.empty()) {
+        return "";
+    }
     std::string delimiter = "://";
     std::string tempUrl = url;
+    std::replace(tempUrl.begin(), tempUrl.end(), '\\', '/');
     size_t posStart = tempUrl.find(delimiter);
     if (posStart != std::string::npos) {
         posStart += delimiter.length();
     } else {
         posStart = 0;
     }
-    size_t posEnd = std::min({ tempUrl.find(":", posStart),
-        tempUrl.find("/", posStart), tempUrl.find("?", posStart) });
+    size_t notSlash = tempUrl.find_first_not_of('/', posStart);
+    if (notSlash != std::string::npos) {
+        posStart = notSlash;
+    }
+    size_t posEnd = std::min({ tempUrl.find(':', posStart),
+                              tempUrl.find('/', posStart), tempUrl.find('?', posStart) });
     if (posEnd != std::string::npos) {
         return tempUrl.substr(posStart, posEnd - posStart);
     }
