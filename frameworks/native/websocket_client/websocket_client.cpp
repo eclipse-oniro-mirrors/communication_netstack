@@ -64,6 +64,9 @@ ClientContext *WebSocketClient::GetClientContext() const
 
 void RunService(WebSocketClient *Client)
 {
+    if (Client->GetClientContext()->GetContext() == nullptr) {
+        return;
+    }
     while (!Client->GetClientContext()->IsThreadStop()) {
         lws_service(Client->GetClientContext()->GetContext(), 0);
     }
@@ -356,10 +359,6 @@ int CreatConnectInfo(const std::string url, lws_context *lwsContext, WebSocketCl
     }
     std::string path = PATH_START + std::string(pathWithoutStart);
 
-    if (lwsContext == nullptr) {
-        return WebSocketErrorCode::WEBSOCKET_CONNECTION_NO_MEMOERY;
-    }
-
     connectInfo.context = lwsContext;
     connectInfo.address = address;
     connectInfo.port = port;
@@ -377,7 +376,6 @@ int CreatConnectInfo(const std::string url, lws_context *lwsContext, WebSocketCl
     connectInfo.pwsi = &wsi;
     connectInfo.userdata = client;
     if (lws_client_connect_via_info(&connectInfo) == nullptr) {
-        lws_context_destroy(lwsContext);
         NETSTACK_LOGE("Connect lws_context_destroy");
         return WebSocketErrorCode::WEBSOCKET_CONNECTION_TO_SERVER_FAIL;
     }
@@ -400,9 +398,15 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
     lws_context_creation_info info = {};
     FillContextInfo(info);
     lws_context *lwsContext = lws_create_context(&info);
+    if (lwsContext == nullptr) {
+        return WebSocketErrorCode::WEBSOCKET_CONNECTION_NO_MEMOERY;
+    }
     this->GetClientContext()->SetContext(lwsContext);
     int ret = CreatConnectInfo(url, lwsContext, this);
-    if (ret > 0) {
+    if (ret != WEBSOCKET_NONE_ERR) {
+        NETSTACK_LOGE("websocket CreatConnectInfo error");
+        GetClientContext()->SetContext(nullptr);
+        lws_context_destroy(lwsContext);
         return ret;
     }
     std::thread serviceThread(RunService, this);
@@ -458,7 +462,7 @@ int WebSocketClient::Destroy()
     if (this->GetClientContext()->GetContext() == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT_CONTEXT;
     }
-
+    this->GetClientContext()->SetContext(nullptr);
     lws_context_destroy(this->GetClientContext()->GetContext());
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
