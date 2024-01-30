@@ -667,7 +667,7 @@ bool HttpExec::Initialize()
         return false;
     }
 
-    staticVariable_.workThread = std::thread(RunThread);
+    staticVariable_.OS_InitWorkThread = std::thread(RunThread);
 
     staticVariable_.initialized = true;
     return staticVariable_.initialized;
@@ -1189,8 +1189,8 @@ void HttpExec::DeInitialize()
     std::lock_guard<std::mutex> lock(staticVariable_.curlMultiMutex);
     staticVariable_.runThread = false;
     staticVariable_.conditionVariable.notify_all();
-    if (staticVariable_.workThread.joinable()) {
-        staticVariable_.workThread.join();
+    if (staticVariable_.OS_InitWorkThread.joinable()) {
+        staticVariable_.OS_InitWorkThread.join();
     }
     if (staticVariable_.curlMulti) {
         curl_multi_cleanup(staticVariable_.curlMulti);
