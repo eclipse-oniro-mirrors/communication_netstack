@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -45,22 +45,27 @@ void UdpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCou
 
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_RECEIVE_BUFFER_SIZE)) {
         options.SetReceiveBufferSize(NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_RECEIVE_BUFFER_SIZE));
+        options.SetRecvBufSizeFlag(true);
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_SEND_BUFFER_SIZE)) {
         options.SetSendBufferSize(NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_SEND_BUFFER_SIZE));
+        options.SetSendBufSizeFlag(true);
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_REUSE_ADDRESS)) {
         options.SetReuseAddress(NapiUtils::GetBooleanProperty(GetEnv(), params[0], KEY_REUSE_ADDRESS));
+        options.SetReuseaddrFlag(true);
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_SOCKET_TIMEOUT)) {
         options.SetSocketTimeout(NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_SOCKET_TIMEOUT));
+        options.SetTimeoutFlag(true);
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_BROADCAST)) {
         options.SetBroadcast(NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_BROADCAST));
+        options.SetBroadcastFlag(true);
     }
 
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {

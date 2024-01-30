@@ -1273,8 +1273,8 @@ bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
         return false;
     }
 
-    if (context->options.IsBroadcast()) {
-        int broadcast = 1;
+    if (context->options.AlreadySetBroadcast()) {
+        int broadcast = static_cast<int>(context->options.IsBroadcast());
         if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast)) < 0) {
             context->SetErrorCode(errno);
             return false;
