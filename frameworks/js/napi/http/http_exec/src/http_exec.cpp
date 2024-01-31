@@ -177,7 +177,8 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 
     std::thread([context, handle] {
         std::lock_guard guard(staticVariable_.curlMultiMutex);
-        //Do SetServerSSLCertOption here to avoid blocking the main thread.
+        // Do SetServerSSLCertOption here to avoid blocking the main thread.
+        pthread_setname_np(pthread_self(), "OS_AddCurlHandle");
         SetServerSSLCertOption(handle, context);
         staticVariable_.infoQueue.emplace(context, handle);
         staticVariable_.conditionVariable.notify_all();
@@ -668,7 +669,7 @@ bool HttpExec::Initialize()
     }
 
     staticVariable_.workThread = std::thread(RunThread);
-
+    pthread_setname_np(staticVariable_.workThread.native_handle(), "OS_TaskHttp");
     staticVariable_.initialized = true;
     return staticVariable_.initialized;
 }

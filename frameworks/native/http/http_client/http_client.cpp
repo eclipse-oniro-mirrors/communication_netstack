@@ -200,6 +200,7 @@ bool HttpSession::Init()
         runThread_ = true;
         auto f = std::bind(&HttpSession::RunThread, this);
         workThread_ = std::thread(f);
+        pthread_setname_np(workThread_.native_handle(), "OS_HttpSessionInit");
     }
     return true;
 }
