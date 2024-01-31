@@ -635,8 +635,8 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         delete userData;
         return false;
     }
-    std::thread serviceThread(RunService, manager);
-    serviceThread.detach();
+    std::thread OS_ExecConnectThread(RunService, manager);
+    OS_ExecConnectThread.detach();
     return true;
 }
 

@@ -558,13 +558,13 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
             continue;
         }
         SetSocketDefaultBufferSize(connectFd, mgr);
-        std::thread handlerThread(LocalSocketServerRecvHandler, connectFd, mgr, std::ref(callback), std::ref(path));
+        std::thread OS_SocketServerHandlerThread(LocalSocketServerRecvHandler, connectFd, mgr, std::ref(callback), std::ref(path));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
 #else
-        pthread_setname_np(handlerThread.native_handle(), LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
+        pthread_setname_np(OS_SocketServerHandlerThread.native_handle(), LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
 #endif
-        handlerThread.detach();
+        OS_SocketServerHandlerThread.detach();
     }
 }
 
@@ -690,9 +690,9 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
     if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetManager()->GetData()); pMgr != nullptr) {
         pMgr->isConnected_ = true;
     }
-    std::thread serviceThread(PollRecvData, sockfd, nullptr, 0, LocalSocketMessageCallback(context->GetManager(),
+    std::thread OS_SocketConnectServiceThread(PollRecvData, sockfd, nullptr, 0, LocalSocketMessageCallback(context->GetManager(),
         context->GetSocketPath()));
-    serviceThread.detach();
+    OS_SocketConnectServiceThread.detach();
     return true;
 }
 
@@ -842,14 +842,14 @@ bool ExecLocalSocketServerListen(LocalSocketServerListenContext *context)
         context->SetErrorCode(UNKNOW_ERROR);
         return false;
     }
-    std::thread serviceThread(LocalSocketServerAccept, mgr, LocalSocketMessageCallback(context->GetManager()),
+    std::thread OS_SocketServerListenThread(LocalSocketServerAccept, mgr, LocalSocketMessageCallback(context->GetManager()),
                               context->GetSocketPath());
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
 #else
-    pthread_setname_np(serviceThread.native_handle(), LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
+    pthread_setname_np(OS_SocketServerListenThread.native_handle(), LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
 #endif
-    serviceThread.detach();
+    OS_SocketServerListenThread.detach();
     return true;
 }
 
