@@ -165,7 +165,7 @@ void HttpSession::ReadResponse()
 void HttpSession::RunThread()
 {
     NETSTACK_LOGD("RunThread start runThread_ = %{public}s", runThread_ ? "true" : "false");
-
+    pthread_setname_np(pthread_self(), "OS_HttpRunThread");
     while (runThread_) {
         RequestAndResponse();
         NETSTACK_LOGD("RunThread in loop runThread_ = %{public}s",
@@ -200,7 +200,6 @@ bool HttpSession::Init()
         runThread_ = true;
         auto f = std::bind(&HttpSession::RunThread, this);
         workThread_ = std::thread(f);
-        pthread_setname_np(workThread_.native_handle(), "OS_HttpSessionInit");
     }
     return true;
 }
