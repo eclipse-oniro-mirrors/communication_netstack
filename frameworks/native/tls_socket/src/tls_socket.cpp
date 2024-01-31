@@ -371,7 +371,7 @@ void TLSSocket::MakeIpSocket(sa_family_t family)
 
 void TLSSocket::StartReadMessage()
 {
-    std::thread OS_StartReadMessageThread([this]() {
+    std::thread thread([this]() {
         isRunning_ = true;
         isRunOver_ = false;
         while (isRunning_) {
@@ -407,7 +407,7 @@ void TLSSocket::StartReadMessage()
         }
         isRunOver_ = true;
     });
-    OS_StartReadMessageThread.detach();
+    thread.detach();
 }
 
 void TLSSocket::CallOnMessageCallback(const std::string &data, const Socket::SocketRemoteInfo &remoteInfo)

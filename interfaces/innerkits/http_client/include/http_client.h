@@ -133,7 +133,7 @@ private:
                     HttpSession::CompareTasks> taskQueue_;
 
     std::atomic_bool initialized_;
-    std::thread OS_InitWorkThread_;
+    std::thread workThread_;
     std::atomic_bool runThread_;
 
     /**

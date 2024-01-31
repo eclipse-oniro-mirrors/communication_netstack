@@ -1393,7 +1393,7 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
     isRunning_ = true;
     ioctl(listenSocketFd_, FIONBIO, (char *)&on);
     NETSTACK_LOGE("PollThread  start working %{public}d", isRunning_);
-    std::thread OS_PollThreadthread_([this, &tlsListenOptions]() {
+    std::thread thread_([this, &tlsListenOptions]() {
         TlsSocket::TLSConnectOptions tlsOption = tlsListenOptions;
         InitPollList(listenSocketFd_);
         int clientId = 0;
@@ -1422,7 +1422,7 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
             }
         }
     });
-    OS_PollThreadthread_.detach();
+    thread_.detach();
 #endif
 }
 

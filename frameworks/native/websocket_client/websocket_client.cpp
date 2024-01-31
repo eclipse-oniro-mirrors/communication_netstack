@@ -409,8 +409,8 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
         lws_context_destroy(lwsContext);
         return ret;
     }
-    std::thread OS_ConnectThread(RunService, this);
-    OS_ConnectThread.detach();
+    std::thread serviceThread(RunService, this);
+    serviceThread.detach();
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 

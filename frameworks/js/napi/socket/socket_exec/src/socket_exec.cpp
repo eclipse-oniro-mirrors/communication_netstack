@@ -68,9 +68,9 @@ static constexpr const int UNIT_CONVERSION_1000 = 1000;
 
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
-static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "TCPServerAcceptRecvData";
+static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "OS_TCPServerAcceptRecvData";
 
-static constexpr const char *TCP_SERVER_HANDLE_CLIENT = "TCPServerHandleClient";
+static constexpr const char *TCP_SERVER_HANDLE_CLIENT = "OS_TCPServerHandleClient";
 
 namespace OHOS::NetStack::Socket::SocketExec {
 std::map<int32_t, int32_t> g_clientFDs;
@@ -978,9 +978,9 @@ bool ExecUdpBind(BindContext *context)
             return false;
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
-        std::thread OS_ExecUdpBindThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
+        std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetManager()));
-        OS_ExecUdpBindThread.detach();
+        serviceThread.detach();
     } else if (addr->sa_family == AF_INET6) {
         void *pTmpAddr = malloc(len);
         auto pAddr6 = reinterpret_cast<sockaddr *>(pTmpAddr);
@@ -989,9 +989,9 @@ bool ExecUdpBind(BindContext *context)
             return false;
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
-        std::thread OS_ExecUdpBindThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
+        std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetManager()));
-        OS_ExecUdpBindThread.detach();
+        serviceThread.detach();
     }
 
     return true;
@@ -1041,9 +1041,9 @@ bool ExecConnect(ConnectContext *context)
     }
 
     NETSTACK_LOGI("connect success");
-    std::thread OS_ExecConnectThread(PollRecvData, context->GetSocketFd(), nullptr, 0,
+    std::thread serviceThread(PollRecvData, context->GetSocketFd(), nullptr, 0,
                               TcpMessageCallback(context->GetManager()));
-    OS_ExecConnectThread.detach();
+    serviceThread.detach();
     return true;
 }
 
@@ -1328,9 +1328,9 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
             return false;
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
-        std::thread OS_RecvfromMulticastThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
+        std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetManager()));
-        OS_RecvfromMulticastThread.detach();
+        serviceThread.detach();
     } else if (addr->sa_family == AF_INET6) {
         void *pTmpAddr = malloc(sizeof(addr6));
         auto pAddr6 = reinterpret_cast<sockaddr *>(pTmpAddr);
@@ -1339,9 +1339,9 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
             return false;
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
-        std::thread OS_RecvfromMulticastThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
+        std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetManager()));
-        OS_RecvfromMulticastThread.detach();
+        serviceThread.detach();
     }
     return true;
 }
@@ -1828,13 +1828,13 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
         if (TCPExtraOptions option; SingletonSocketConfig::GetInstance().GetTcpExtraOptions(sock, option)) {
             SocketSetTcpExtraOptions(connectFD, option);
         }
-        std::thread OS_AcceptRecvDataThread(ClientHandler, sock, clientId, callback);
+        std::thread handlerThread(ClientHandler, sock, clientId, callback);
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(TCP_SERVER_HANDLE_CLIENT);
 #else
-        pthread_setname_np(OS_AcceptRecvDataThread.native_handle(), TCP_SERVER_HANDLE_CLIENT);
+        pthread_setname_np(handlerThread.native_handle(), TCP_SERVER_HANDLE_CLIENT);
 #endif
-        OS_AcceptRecvDataThread.detach();
+        handlerThread.detach();
     }
 }
 
@@ -1852,14 +1852,14 @@ bool ExecTcpServerListen(TcpServerListenContext *context)
     }
     SingletonSocketConfig::GetInstance().AddNewListenSocket(context->GetSocketFd());
     NETSTACK_LOGI("listen success");
-    std::thread OS_ExecTcpServerListenThread(AcceptRecvData, context->GetSocketFd(), nullptr, 0,
+    std::thread serviceThread(AcceptRecvData, context->GetSocketFd(), nullptr, 0,
                               TcpMessageCallback(context->GetManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(TCP_SERVER_ACCEPT_RECV_DATA);
 #else
-    pthread_setname_np(OS_ExecTcpServerListenThread.native_handle(), TCP_SERVER_ACCEPT_RECV_DATA);
+    pthread_setname_np(serviceThread.native_handle(), TCP_SERVER_ACCEPT_RECV_DATA);
 #endif
-    OS_ExecTcpServerListenThread.detach();
+    serviceThread.detach();
     return true;
 }
 

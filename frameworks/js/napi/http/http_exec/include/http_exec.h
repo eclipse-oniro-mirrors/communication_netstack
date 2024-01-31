@@ -188,7 +188,7 @@ private:
         std::mutex mutexForInitialize;
         CURLM *curlMulti;
         std::map<CURL *, RequestContext *> contextMap;
-        std::thread OS_InitWorkThread;
+        std::thread workThread;
         std::condition_variable conditionVariable;
         std::priority_queue<RequestInfo> infoQueue;
 

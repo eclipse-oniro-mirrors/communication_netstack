@@ -199,7 +199,7 @@ bool HttpSession::Init()
         initialized_ = true;
         runThread_ = true;
         auto f = std::bind(&HttpSession::RunThread, this);
-        OS_InitWorkThread_ = std::thread(f);
+        workThread_ = std::thread(f);
     }
     return true;
 }
@@ -219,9 +219,9 @@ void HttpSession::Deinit()
         conditionVariable_.notify_all();
     } while (0);
 
-    if (OS_InitWorkThread_.joinable()) {
-        NETSTACK_LOGD("HttpSession::Deinit os_InitWorkThread_.join()");
-        OS_InitWorkThread_.join();
+    if (workThread_.joinable()) {
+        NETSTACK_LOGD("HttpSession::Deinit workThread_.join()");
+        workThread_.join();
     }
 
     do {
