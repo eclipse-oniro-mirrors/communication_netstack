@@ -241,6 +241,7 @@ bool WebSocketExec::ParseUrl(ConnectContext *context, char *prefix, size_t prefi
 void WebSocketExec::RunService(EventManager *manager)
 {
     NETSTACK_LOGI("websocket run service start");
+    pthread_setname_np(pthread_self(), "OS_WebSocketRunService");
     if (manager == nullptr || manager->GetData() == nullptr) {
         NETSTACK_LOGE("RunService para error");
         return;

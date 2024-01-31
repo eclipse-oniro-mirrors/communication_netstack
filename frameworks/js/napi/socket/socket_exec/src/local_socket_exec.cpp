@@ -58,6 +58,8 @@ constexpr char LOCAL_SOCKET_CONNECTION[] = "LocalSocketConnection";
 constexpr char LOCAL_SOCKET_SERVER_HANDLE_CLIENT[] = "OS_LocalSocketServerHandleClient";
 
 constexpr char LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA[] = "OS_LocalSocketServerAcceptRecvData";
+
+constexpr char LOCAL_SOCKET_CONNECT[] = "OS_ExecLocalSocketConnect";
 } // namespace
 
 namespace OHOS::NetStack::Socket::LocalSocketExec {
@@ -570,6 +572,7 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
 
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const LocalSocketMessageCallback &callback)
 {
+    pthread_setname_np(pthread_self(), LOCAL_SOCKET_CONNECT);
     int bufferSize = ConfirmBufferSize(sock);
     auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
     std::unique_ptr<char, decltype(deleter)> buf(reinterpret_cast<char *>(malloc(bufferSize)), deleter);
@@ -690,9 +693,8 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
     if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetManager()->GetData()); pMgr != nullptr) {
         pMgr->isConnected_ = true;
     }
-    std::thread serviceThread(PollRecvData, sockfd, nullptr, 0, LocalSocketMessageCallback(context->GetManager(),
-        context->GetSocketPath()));
-    pthread_setname_np(serviceThread.native_handle(), "OS_ExecLocalSocketConnect");
+    std::thread serviceThread(PollRecvData, sockfd, nullptr, 0,
+                              LocalSocketMessageCallback(context->GetManager(), context->GetSocketPath()));
     serviceThread.detach();
     return true;
 }
