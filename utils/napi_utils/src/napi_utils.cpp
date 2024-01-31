@@ -585,6 +585,7 @@ void CreateUvQueueWork(napi_env env, void *data, void(handler)(uv_work_t *, int 
         NETSTACK_LOGE("uv_queue_work_with_qos error = %{public}d, manual delete", ret);
         delete static_cast<UvWorkWrapper *>(work->data);
         delete work;
+    }
 }
 
 /* scope */
