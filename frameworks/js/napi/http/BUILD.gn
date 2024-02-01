@@ -91,14 +91,12 @@ ohos_shared_library("http") {
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
     deps = [
       "$ARKUI_ROOT/napi:ace_napi",
-      "$NETSTACK_DIR/utils/napi_utils:napi_utils",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
       "$THIRD_PARTY_ROOT/bounds_checking_function:libsec_static",
       "$THIRD_PARTY_ROOT/curl:curl_shared",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
-      "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-      "$THIRD_PARTY_ROOT/openssl:libssl_shared",
     ]
+    ldflags = [ "-lpthread" ]
   } else {
     deps = [
       "$NETSTACK_DIR/utils:stack_utils_common",
@@ -106,15 +104,7 @@ ohos_shared_library("http") {
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
       "$THIRD_PARTY_ROOT/curl:curl_shared_http3",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
-      "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-      "$THIRD_PARTY_ROOT/openssl:libssl_shared",
     ]
-    cflags = [
-      "-fstack-protector-strong",
-      "-D_FORTIFY_SOURCE=2",
-      "-O2",
-    ]
-
     cflags_cc = [
       "-fstack-protector-strong",
       "-D_FORTIFY_SOURCE=2",
@@ -128,9 +118,9 @@ ohos_shared_library("http") {
         defined(global_parts_info.communication_netmanager_base) &&
         global_parts_info.communication_netmanager_base) {
       external_deps += [ "netmanager_base:net_conn_manager_if" ]
-      defines = [ "HAS_NETMANAGER_BASE=1" ]
+      defines += [ "HAS_NETMANAGER_BASE=1" ]
     } else {
-      defines = [ "HAS_NETMANAGER_BASE=0" ]
+      defines += [ "HAS_NETMANAGER_BASE=0" ]
     }
     if (product_name != "ohos-sdk") {
       external_deps += [ "init:libbegetutil" ]
@@ -145,5 +135,5 @@ ohos_shared_library("http") {
   relative_install_dir = "module/net"
   part_name = "netstack"
   subsystem_name = "communication"
-  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  
 }
