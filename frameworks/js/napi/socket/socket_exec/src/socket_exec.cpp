@@ -72,7 +72,11 @@ static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "OS_TCPServerAcceptRe
 
 static constexpr const char *TCP_SERVER_HANDLE_CLIENT = "OS_TCPServerHandleClient";
 
-static constexpr const char *UDP_SOCKET_BIND = "OS_ExecUdpBind";
+static constexpr const char *SOCKET_EXEC_UDP_BIND = "OS_ExecUdpBind";
+
+static constexpr const char *SOCKET_EXEC_CONNECT = "OS_SocketExecConnect";
+
+static constexpr const char *SOCKET_RECV_FROM_MULTI_CAST = "OS_RecvFromMulticast";
 
 namespace OHOS::NetStack::Socket::SocketExec {
 std::map<int32_t, int32_t> g_clientFDs;
@@ -742,7 +746,6 @@ static bool IsTCPSocket(int sockfd)
 
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
 {
-    pthread_setname_np(pthread_self(), UDP_SOCKET_BIND);
     int bufferSize = ConfirmBufferSize(sock);
     auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
     std::unique_ptr<char, decltype(deleter)> buf(reinterpret_cast<char *>(malloc(bufferSize)), deleter);
@@ -982,6 +985,7 @@ bool ExecUdpBind(BindContext *context)
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetManager()));
+        pthread_setname_np(serviceThread.native_handle(), SOCKET_EXEC_UDP_BIND);
         serviceThread.detach();
     } else if (addr->sa_family == AF_INET6) {
         void *pTmpAddr = malloc(len);
@@ -993,6 +997,7 @@ bool ExecUdpBind(BindContext *context)
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetManager()));
+        pthread_setname_np(serviceThread.native_handle(), SOCKET_EXEC_UDP_BIND);
         serviceThread.detach();
     }
 
@@ -1045,6 +1050,7 @@ bool ExecConnect(ConnectContext *context)
     NETSTACK_LOGI("connect success");
     std::thread serviceThread(PollRecvData, context->GetSocketFd(), nullptr, 0,
                               TcpMessageCallback(context->GetManager()));
+    pthread_setname_np(serviceThread.native_handle(), SOCKET_EXEC_CONNECT);                          
     serviceThread.detach();
     return true;
 }
@@ -1332,6 +1338,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetManager()));
+        pthread_setname_np(serviceThread.native_handle(), SOCKET_RECV_FROM_MULTI_CAST);
         serviceThread.detach();
     } else if (addr->sa_family == AF_INET6) {
         void *pTmpAddr = malloc(sizeof(addr6));
@@ -1343,6 +1350,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetManager()));
+        pthread_setname_np(serviceThread.native_handle(), SOCKET_RECV_FROM_MULTI_CAST);
         serviceThread.detach();
     }
     return true;

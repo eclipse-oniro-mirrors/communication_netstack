@@ -572,7 +572,6 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
 
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const LocalSocketMessageCallback &callback)
 {
-    pthread_setname_np(pthread_self(), LOCAL_SOCKET_CONNECT);
     int bufferSize = ConfirmBufferSize(sock);
     auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
     std::unique_ptr<char, decltype(deleter)> buf(reinterpret_cast<char *>(malloc(bufferSize)), deleter);
@@ -695,6 +694,7 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
     }
     std::thread serviceThread(PollRecvData, sockfd, nullptr, 0,
                               LocalSocketMessageCallback(context->GetManager(), context->GetSocketPath()));
+    pthread_setname_np(serviceThread.native_handle(), LOCAL_SOCKET_CONNECT); 
     serviceThread.detach();
     return true;
 }

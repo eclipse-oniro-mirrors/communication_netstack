@@ -241,7 +241,6 @@ bool WebSocketExec::ParseUrl(ConnectContext *context, char *prefix, size_t prefi
 void WebSocketExec::RunService(EventManager *manager)
 {
     NETSTACK_LOGI("websocket run service start");
-    pthread_setname_np(pthread_self(), "OS_WebSocketRunService");
     if (manager == nullptr || manager->GetData() == nullptr) {
         NETSTACK_LOGE("RunService para error");
         return;
@@ -637,6 +636,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         return false;
     }
     std::thread serviceThread(RunService, manager);
+    pthread_setname_np(serviceThread.native_handle(), "OS_WebSocketRunService");
     serviceThread.detach();
     return true;
 }

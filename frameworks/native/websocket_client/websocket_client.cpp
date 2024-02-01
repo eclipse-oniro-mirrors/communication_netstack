@@ -64,7 +64,6 @@ ClientContext *WebSocketClient::GetClientContext() const
 
 void RunService(WebSocketClient *Client)
 {
-    pthread_setname_np(pthread_self(), "OS_WebSocketRunService");
     if (Client->GetClientContext()->GetContext() == nullptr) {
         return;
     }
@@ -411,6 +410,7 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
         return ret;
     }
     std::thread serviceThread(RunService, this);
+    pthread_setname_np(serviceThread.native_handle(), "OS_WebSocketRunService");
     serviceThread.detach();
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
