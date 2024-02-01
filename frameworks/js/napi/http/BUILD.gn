@@ -95,6 +95,9 @@ ohos_shared_library("http") {
       "$THIRD_PARTY_ROOT/bounds_checking_function:libsec_static",
       "$THIRD_PARTY_ROOT/curl:curl_shared",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
+      "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+      "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
+      "$THIRD_PARTY_ROOT/openssl:libssl_shared",
     ]
   } else {
     deps = [
