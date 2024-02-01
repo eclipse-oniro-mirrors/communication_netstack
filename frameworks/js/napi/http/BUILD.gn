@@ -101,14 +101,8 @@ ohos_shared_library("http") {
     deps = [
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-      "$NETSTACK_DIR/utils/napi_utils:napi_utils",
       "$THIRD_PARTY_ROOT/curl:curl_shared_http3",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
-    ]
-    cflags_cc = [
-      "-fstack-protector-strong",
-      "-D_FORTIFY_SOURCE=2",
-      "-O2",
     ]
     external_deps = [
       "hilog:libhilog",
@@ -118,9 +112,9 @@ ohos_shared_library("http") {
         defined(global_parts_info.communication_netmanager_base) &&
         global_parts_info.communication_netmanager_base) {
       external_deps += [ "netmanager_base:net_conn_manager_if" ]
-      defines += [ "HAS_NETMANAGER_BASE=1" ]
+      defines = [ "HAS_NETMANAGER_BASE=1" ]
     } else {
-      defines += [ "HAS_NETMANAGER_BASE=0" ]
+      defines = [ "HAS_NETMANAGER_BASE=0" ]
     }
     if (product_name != "ohos-sdk") {
       external_deps += [ "init:libbegetutil" ]
