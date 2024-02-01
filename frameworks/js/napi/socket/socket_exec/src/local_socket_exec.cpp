@@ -694,7 +694,7 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
     }
     std::thread serviceThread(PollRecvData, sockfd, nullptr, 0,
                               LocalSocketMessageCallback(context->GetManager(), context->GetSocketPath()));
-    pthread_setname_np(serviceThread.native_handle(), LOCAL_SOCKET_CONNECT); 
+    pthread_setname_np(serviceThread.native_handle(), LOCAL_SOCKET_CONNECT);
     serviceThread.detach();
     return true;
 }
