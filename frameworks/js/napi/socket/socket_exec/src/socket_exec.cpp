@@ -1050,7 +1050,7 @@ bool ExecConnect(ConnectContext *context)
     NETSTACK_LOGI("connect success");
     std::thread serviceThread(PollRecvData, context->GetSocketFd(), nullptr, 0,
                               TcpMessageCallback(context->GetManager()));
-    pthread_setname_np(serviceThread.native_handle(), SOCKET_EXEC_CONNECT);                          
+    pthread_setname_np(serviceThread.native_handle(), SOCKET_EXEC_CONNECT);
     serviceThread.detach();
     return true;
 }
