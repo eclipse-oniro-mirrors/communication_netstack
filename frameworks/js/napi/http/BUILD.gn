@@ -102,7 +102,21 @@ ohos_shared_library("http") {
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
       "$THIRD_PARTY_ROOT/curl:curl_shared_http3",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
+      "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+      "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
+      "$THIRD_PARTY_ROOT/openssl:libssl_shared",
     ]
+    cflags = [
+    "-fstack-protector-strong",
+    "-D_FORTIFY_SOURCE=2",
+    "-O2",
+  ]
+
+  cflags_cc = [
+    "-fstack-protector-strong",
+    "-D_FORTIFY_SOURCE=2",
+    "-O2",
+  ]
     external_deps = [
       "hilog:libhilog",
       "napi:ace_napi",
@@ -128,4 +142,5 @@ ohos_shared_library("http") {
   relative_install_dir = "module/net"
   part_name = "netstack"
   subsystem_name = "communication"
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
 }
