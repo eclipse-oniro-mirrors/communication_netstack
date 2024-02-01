@@ -20,6 +20,7 @@
 #include <memory>
 #include <thread>
 #include <unistd.h>
+#include <pthread.h>
 
 #ifdef HTTP_PROXY_ENABLE
 #include "parameter.h"
