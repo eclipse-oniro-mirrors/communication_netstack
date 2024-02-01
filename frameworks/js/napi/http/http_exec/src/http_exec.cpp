@@ -546,6 +546,7 @@ bool HttpExec::IsContextDeleted(RequestContext *context)
 
 void HttpExec::RunThread()
 {
+    pthread_setname_np(pthread_self(), "OS_TaskHttp");
     while (staticVariable_.runThread && staticVariable_.curlMulti != nullptr) {
         AddRequestInfo();
         SendRequest();
@@ -670,7 +671,6 @@ bool HttpExec::Initialize()
     }
 
     staticVariable_.workThread = std::thread(RunThread);
-    pthread_setname_np(staticVariable_.workThread.native_handle(), "OS_TaskHttp");
     staticVariable_.initialized = true;
     return staticVariable_.initialized;
 }
