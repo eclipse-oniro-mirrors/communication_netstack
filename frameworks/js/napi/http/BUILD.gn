@@ -129,5 +129,4 @@ ohos_shared_library("http") {
   relative_install_dir = "module/net"
   part_name = "netstack"
   subsystem_name = "communication"
-  
 }
