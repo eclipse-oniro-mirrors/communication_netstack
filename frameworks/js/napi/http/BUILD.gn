@@ -91,11 +91,11 @@ ohos_shared_library("http") {
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
     deps = [
       "$ARKUI_ROOT/napi:ace_napi",
+      "$NETSTACK_DIR/utils/napi_utils:napi_utils",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
       "$THIRD_PARTY_ROOT/bounds_checking_function:libsec_static",
       "$THIRD_PARTY_ROOT/curl:curl_shared",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
-      "$NETSTACK_DIR/utils/napi_utils:napi_utils",
       "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
       "$THIRD_PARTY_ROOT/openssl:libssl_shared",
     ]
@@ -103,23 +103,23 @@ ohos_shared_library("http") {
     deps = [
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+      "$NETSTACK_DIR/utils/napi_utils:napi_utils",
       "$THIRD_PARTY_ROOT/curl:curl_shared_http3",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
-      "$NETSTACK_DIR/utils/napi_utils:napi_utils",
       "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
       "$THIRD_PARTY_ROOT/openssl:libssl_shared",
     ]
     cflags = [
-    "-fstack-protector-strong",
-    "-D_FORTIFY_SOURCE=2",
-    "-O2",
-  ]
+      "-fstack-protector-strong",
+      "-D_FORTIFY_SOURCE=2",
+      "-O2",
+    ]
 
-  cflags_cc = [
-    "-fstack-protector-strong",
-    "-D_FORTIFY_SOURCE=2",
-    "-O2",
-  ]
+    cflags_cc = [
+      "-fstack-protector-strong",
+      "-D_FORTIFY_SOURCE=2",
+      "-O2",
+    ]
     external_deps = [
       "hilog:libhilog",
       "napi:ace_napi",
