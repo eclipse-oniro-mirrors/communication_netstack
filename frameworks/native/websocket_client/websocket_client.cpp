@@ -410,7 +410,7 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
         return ret;
     }
     std::thread serviceThread(RunService, this);
-    pthread_setname_np(serviceThread.native_handle(), "OS_WebSocketRunService");
+    pthread_setname_np(serviceThread.native_handle(), "OS_WebSocket");
     serviceThread.detach();
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }

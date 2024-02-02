@@ -165,7 +165,7 @@ void HttpSession::ReadResponse()
 void HttpSession::RunThread()
 {
     NETSTACK_LOGD("RunThread start runThread_ = %{public}s", runThread_ ? "true" : "false");
-    pthread_setname_np(pthread_self(), "OS_HttpRunThread");
+    pthread_setname_np(pthread_self(), "OS_HttpRun");
     while (runThread_) {
         RequestAndResponse();
         NETSTACK_LOGD("RunThread in loop runThread_ = %{public}s",

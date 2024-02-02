@@ -1395,7 +1395,7 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
     NETSTACK_LOGE("PollThread  start working %{public}d", isRunning_);
     std::thread thread_([this, &tlsListenOptions]() {
         TlsSocket::TLSConnectOptions tlsOption = tlsListenOptions;
-        pthread_setname_np(pthread_self(), "OS_PollThread");
+        pthread_setname_np(pthread_self(), "OS_SocketServer");
         InitPollList(listenSocketFd_);
         int clientId = 0;
         while (isRunning_) {

@@ -636,7 +636,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         return false;
     }
     std::thread serviceThread(RunService, manager);
-    pthread_setname_np(serviceThread.native_handle(), "OS_WebSocketRunService");
+    pthread_setname_np(serviceThread.native_handle(), "OS_WebSocket");
     serviceThread.detach();
     return true;
 }

@@ -374,7 +374,7 @@ void TLSSocket::StartReadMessage()
     std::thread thread([this]() {
         isRunning_ = true;
         isRunOver_ = false;
-        pthread_setname_np(pthread_self(), "OS_StartReadMessage");
+        pthread_setname_np(pthread_self(), "OS_SocketRead");
         while (isRunning_) {
             char buffer[MAX_BUFFER_SIZE];
             if (memset_s(buffer, MAX_BUFFER_SIZE, 0, MAX_BUFFER_SIZE) != EOK) {

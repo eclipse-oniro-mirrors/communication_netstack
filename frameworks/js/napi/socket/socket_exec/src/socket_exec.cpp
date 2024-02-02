@@ -68,15 +68,15 @@ static constexpr const int UNIT_CONVERSION_1000 = 1000;
 
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
-static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "OS_TCPServerAcceptRecvData";
+static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "OS_SocketTCPServer";
 
-static constexpr const char *TCP_SERVER_HANDLE_CLIENT = "OS_TCPServerHandleClient";
+static constexpr const char *TCP_SERVER_HANDLE_CLIENT = "OS_SocketHandle";
 
-static constexpr const char *SOCKET_EXEC_UDP_BIND = "OS_ExecUdpBind";
+static constexpr const char *SOCKET_EXEC_UDP_BIND = "OS_SocketExec";
 
-static constexpr const char *SOCKET_EXEC_CONNECT = "OS_SocketExecConnect";
+static constexpr const char *SOCKET_EXEC_CONNECT = "OS_SocketCon";
 
-static constexpr const char *SOCKET_RECV_FROM_MULTI_CAST = "OS_RecvFromMulticast";
+static constexpr const char *SOCKET_RECV_FROM_MULTI_CAST = "OS_SockeRecv";
 
 namespace OHOS::NetStack::Socket::SocketExec {
 std::map<int32_t, int32_t> g_clientFDs;
