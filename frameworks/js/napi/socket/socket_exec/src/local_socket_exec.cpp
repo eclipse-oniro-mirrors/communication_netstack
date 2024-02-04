@@ -55,11 +55,11 @@ constexpr int SOCKET_SIZE_CONVERSION = 2; // socket buffer size, the actual valu
 
 constexpr char LOCAL_SOCKET_CONNECTION[] = "LocalSocketConnection";
 
-constexpr char LOCAL_SOCKET_SERVER_HANDLE_CLIENT[] = "OS_SocketAccept";
+constexpr char LOCAL_SOCKET_SERVER_HANDLE_CLIENT[] = "OS_SockAccept";
 
-constexpr char LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA[] = "OS_ServerListen";
+constexpr char LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA[] = "OS_SockListen";
 
-constexpr char LOCAL_SOCKET_CONNECT[] = "OS_SocketCon";
+constexpr char LOCAL_SOCKET_CONNECT[] = "OS_SockCon";
 } // namespace
 
 namespace OHOS::NetStack::Socket::LocalSocketExec {
