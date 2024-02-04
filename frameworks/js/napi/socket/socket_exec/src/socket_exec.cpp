@@ -1317,6 +1317,15 @@ bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
     return true;
 }
 
+void RecvfromMulticastSetThreadName(pthread_t threadhandle)
+{
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(SOCKET_RECV_FROM_MULTI_CAST);
+#else
+    pthread_setname_np(threadhandle, SOCKET_RECV_FROM_MULTI_CAST);
+#endif
+}
+
 bool RecvfromMulticast(MulticastMembershipContext *context)
 {
     struct sockaddr_in addrin = {0};
@@ -1350,11 +1359,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetManager()));
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-        pthread_setname_np(SOCKET_RECV_FROM_MULTI_CAST);
-#else
-        pthread_setname_np(serviceThread.native_handle(), SOCKET_RECV_FROM_MULTI_CAST);
-#endif
+        RecvfromMulticastSetThreadName(serviceThread.native_handle());
         serviceThread.detach();
     } else if (addr->sa_family == AF_INET6) {
         void *pTmpAddr = malloc(sizeof(addr6));
@@ -1366,11 +1371,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetManager()));
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-        pthread_setname_np(SOCKET_RECV_FROM_MULTI_CAST);
-#else
-        pthread_setname_np(serviceThread.native_handle(), SOCKET_RECV_FROM_MULTI_CAST);
-#endif
+        RecvfromMulticastSetThreadName(serviceThread.native_handle());
         serviceThread.detach();
     }
     return true;
