@@ -180,7 +180,7 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 
     std::thread([context, handle] {
         std::lock_guard guard(staticVariable_.curlMultiMutex);
-        // Do SetServerSSLCertOption here to avoid blocking the main thread.
+        //Do SetServerSSLCertOption here to avoid blocking the main thread.
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(HTTP_CLIENT_TASK_THREAD);
 #else
