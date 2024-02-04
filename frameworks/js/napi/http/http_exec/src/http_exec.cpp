@@ -61,6 +61,8 @@ static constexpr const uint32_t EVENT_PARAM_ZERO = 0;
 static constexpr const uint32_t EVENT_PARAM_ONE = 1;
 static constexpr const uint32_t EVENT_PARAM_TWO = 2;
 static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!eNULL:!EXPORT)";
+static constexpr const char *HTTP_TASK_RUN_THREAD = "OS_TaskHttp";
+static constexpr const char *HTTP_CLIENT_TASK_THREAD = "OS_HttpJsCli";
 
 #ifdef HTTP_PROXY_ENABLE
 static constexpr int32_t SYSPARA_MAX_SIZE = 128;
@@ -179,7 +181,11 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     std::thread([context, handle] {
         std::lock_guard guard(staticVariable_.curlMultiMutex);
         // Do SetServerSSLCertOption here to avoid blocking the main thread.
-        pthread_setname_np(pthread_self(), "OS_HttpHandle");
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+        pthread_setname_np(HTTP_CLIENT_TASK_THREAD);
+#else
+        pthread_setname_np(pthread_self(), HTTP_CLIENT_TASK_THREAD);
+#endif
         SetServerSSLCertOption(handle, context);
         staticVariable_.infoQueue.emplace(context, handle);
         staticVariable_.conditionVariable.notify_all();
@@ -546,7 +552,11 @@ bool HttpExec::IsContextDeleted(RequestContext *context)
 
 void HttpExec::RunThread()
 {
-    pthread_setname_np(pthread_self(), "OS_TaskHttp");
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(HTTP_TASK_RUN_THREAD);
+#else
+    pthread_setname_np(pthread_self(), HTTP_TASK_RUN_THREAD);
+#endif
     while (staticVariable_.runThread && staticVariable_.curlMulti != nullptr) {
         AddRequestInfo();
         SendRequest();

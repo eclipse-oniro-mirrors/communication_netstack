@@ -62,6 +62,7 @@ constexpr const char *SIGN_NID_UNDEF_ADD = "UNDEF+";
 constexpr const char *SIGN_NID_UNDEF = "UNDEF";
 constexpr const char *OPERATOR_PLUS_SIGN = "+";
 constexpr const char *QUIT_RESPONSE_CODE = "221";
+static constexpr const char *TLS_SOCKET_CLIENT_READ = "OS_TlsSockCliRD";
 const std::regex JSON_STRING_PATTERN{R"(/^"(?:[^"\\\u0000-\u001f]|\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4}))*"/)"};
 const std::regex PATTERN{
     "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|"
@@ -374,7 +375,11 @@ void TLSSocket::StartReadMessage()
     std::thread thread([this]() {
         isRunning_ = true;
         isRunOver_ = false;
-        pthread_setname_np(pthread_self(), "OS_SocketRead");
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+        pthread_setname_np(TLS_SOCKET_CLIENT_READ);
+#else
+        pthread_setname_np(pthread_self(), TLS_SOCKET_CLIENT_READ);
+#endif
         while (isRunning_) {
             char buffer[MAX_BUFFER_SIZE];
             if (memset_s(buffer, MAX_BUFFER_SIZE, 0, MAX_BUFFER_SIZE) != EOK) {

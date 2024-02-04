@@ -68,15 +68,15 @@ static constexpr const int UNIT_CONVERSION_1000 = 1000;
 
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
-static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "OS_SocketTCPServer";
+static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "OS_SockTcpAccRD";
 
-static constexpr const char *TCP_SERVER_HANDLE_CLIENT = "OS_SocketHandle";
+static constexpr const char *TCP_SERVER_HANDLE_CLIENT = "OS_SockTcpAcc";
 
-static constexpr const char *SOCKET_EXEC_UDP_BIND = "OS_SocketExec";
+static constexpr const char *SOCKET_EXEC_UDP_BIND = "OS_SockUdpPolRD";
 
-static constexpr const char *SOCKET_EXEC_CONNECT = "OS_SocketCon";
+static constexpr const char *SOCKET_EXEC_CONNECT = "OS_SockTcpPolRD";
 
-static constexpr const char *SOCKET_RECV_FROM_MULTI_CAST = "OS_SockeRecv";
+static constexpr const char *SOCKET_RECV_FROM_MULTI_CAST = "OS_SockMulPolRD";
 
 namespace OHOS::NetStack::Socket::SocketExec {
 std::map<int32_t, int32_t> g_clientFDs;
@@ -985,7 +985,11 @@ bool ExecUdpBind(BindContext *context)
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetManager()));
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+        pthread_setname_np(SOCKET_EXEC_UDP_BIND);
+#else
         pthread_setname_np(serviceThread.native_handle(), SOCKET_EXEC_UDP_BIND);
+#endif
         serviceThread.detach();
     } else if (addr->sa_family == AF_INET6) {
         void *pTmpAddr = malloc(len);
@@ -997,7 +1001,11 @@ bool ExecUdpBind(BindContext *context)
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetManager()));
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+        pthread_setname_np(SOCKET_EXEC_UDP_BIND);
+#else
         pthread_setname_np(serviceThread.native_handle(), SOCKET_EXEC_UDP_BIND);
+#endif
         serviceThread.detach();
     }
 
@@ -1050,7 +1058,11 @@ bool ExecConnect(ConnectContext *context)
     NETSTACK_LOGI("connect success");
     std::thread serviceThread(PollRecvData, context->GetSocketFd(), nullptr, 0,
                               TcpMessageCallback(context->GetManager()));
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(SOCKET_EXEC_CONNECT);
+#else
     pthread_setname_np(serviceThread.native_handle(), SOCKET_EXEC_CONNECT);
+#endif
     serviceThread.detach();
     return true;
 }
@@ -1338,7 +1350,11 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetManager()));
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+        pthread_setname_np(SOCKET_RECV_FROM_MULTI_CAST);
+#else
         pthread_setname_np(serviceThread.native_handle(), SOCKET_RECV_FROM_MULTI_CAST);
+#endif
         serviceThread.detach();
     } else if (addr->sa_family == AF_INET6) {
         void *pTmpAddr = malloc(sizeof(addr6));
@@ -1350,7 +1366,11 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetManager()));
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+        pthread_setname_np(SOCKET_RECV_FROM_MULTI_CAST);
+#else
         pthread_setname_np(serviceThread.native_handle(), SOCKET_RECV_FROM_MULTI_CAST);
+#endif
         serviceThread.detach();
     }
     return true;
