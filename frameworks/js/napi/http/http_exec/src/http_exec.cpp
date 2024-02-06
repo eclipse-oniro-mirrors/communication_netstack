@@ -61,8 +61,8 @@ static constexpr const uint32_t EVENT_PARAM_ZERO = 0;
 static constexpr const uint32_t EVENT_PARAM_ONE = 1;
 static constexpr const uint32_t EVENT_PARAM_TWO = 2;
 static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!eNULL:!EXPORT)";
-static constexpr const char *HTTP_TASK_RUN_THREAD = "OS_TaskHttp";
-static constexpr const char *HTTP_CLIENT_TASK_THREAD = "OS_HttpJsCli";
+static constexpr const char *HTTP_TASK_RUN_THREAD = "OS_NET_TaskHttp";
+static constexpr const char *HTTP_CLIENT_TASK_THREAD = "OS_NET_HttpJs";
 
 #ifdef HTTP_PROXY_ENABLE
 static constexpr int32_t SYSPARA_MAX_SIZE = 128;

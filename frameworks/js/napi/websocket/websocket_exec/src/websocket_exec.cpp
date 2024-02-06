@@ -69,7 +69,7 @@ static const std::string CERTPATH = BASE_PATH + std::to_string(getuid() / UID_TR
 
 static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
 
-static constexpr const char *WEBSOCKET_CLIENT_THREAD_RUN = "OS_WebSockJsCli";
+static constexpr const char *WEBSOCKET_CLIENT_THREAD_RUN = "OS_NET_WSJsCli";
 
 namespace OHOS::NetStack::Websocket {
 static const lws_protocols LWS_PROTOCOLS[] = {

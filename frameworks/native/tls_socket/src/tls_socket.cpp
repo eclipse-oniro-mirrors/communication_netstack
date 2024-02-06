@@ -62,7 +62,7 @@ constexpr const char *SIGN_NID_UNDEF_ADD = "UNDEF+";
 constexpr const char *SIGN_NID_UNDEF = "UNDEF";
 constexpr const char *OPERATOR_PLUS_SIGN = "+";
 constexpr const char *QUIT_RESPONSE_CODE = "221";
-static constexpr const char *TLS_SOCKET_CLIENT_READ = "OS_TlsSockCliRD";
+static constexpr const char *TLS_SOCKET_CLIENT_READ = "OS_NET_TSCliRD";
 const std::regex JSON_STRING_PATTERN{R"(/^"(?:[^"\\\u0000-\u001f]|\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4}))*"/)"};
 const std::regex PATTERN{
     "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|"
