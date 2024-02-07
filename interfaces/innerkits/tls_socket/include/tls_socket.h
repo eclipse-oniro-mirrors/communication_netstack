@@ -604,6 +604,7 @@ private:
     OnErrorCallback onErrorCallback_;
 
     std::mutex mutex_;
+    std::mutex recvMutex_;
     bool isRunning_ = false;
     bool isRunOver_ = true;
 

@@ -37,7 +37,7 @@ namespace TlsSocket {
 namespace {
 constexpr int WAIT_MS = 10;
 constexpr int TIMEOUT_MS = 10000;
-constexpr int TIMEOUT_US = 500000;
+constexpr int READ_TIMEOUT_US = 500000;
 constexpr int REMOTE_CERT_LEN = 8192;
 constexpr int COMMON_NAME_BUF_SIZE = 256;
 constexpr int BUF_SIZE = 2048;
@@ -146,6 +146,27 @@ bool SeekIntersection(std::vector<std::string> &vecA, std::vector<std::string> &
     return !result.empty();
 }
 } // namespace
+
+static bool MakeNonBlock(int sock)
+{
+    int flags = fcntl(sock, F_GETFL, 0);
+    while (flags == -1 && errno == EINTR) {
+        flags = fcntl(sock, F_GETFL, 0);
+    }
+    if (flags == -1) {
+        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
+        return false;
+    }
+    int ret = fcntl(sock, F_SETFL, static_cast<size_t>(flags) | static_cast<size_t>(O_NONBLOCK));
+    while (ret == -1 && errno == EINTR) {
+        ret = fcntl(sock, F_SETFL, static_cast<size_t>(flags) | static_cast<size_t>(O_NONBLOCK));
+    }
+    if (ret == -1) {
+        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
+        return false;
+    }
+    return true;
+}
 
 TLSSecureOptions::TLSSecureOptions(const TLSSecureOptions &tlsSecureOptions)
 {
@@ -375,34 +396,45 @@ void TLSSocket::StartReadMessage()
     std::thread thread([this]() {
         isRunning_ = true;
         isRunOver_ = false;
+        fd_set fds;
+        int resErr = 0;
         while (isRunning_) {
             char buffer[MAX_BUFFER_SIZE];
             if (memset_s(buffer, MAX_BUFFER_SIZE, 0, MAX_BUFFER_SIZE) != EOK) {
                 NETSTACK_LOGE("memcpy_s failed!");
                 break;
             }
-            int len = tlsSocketInternal_.Recv(buffer, MAX_BUFFER_SIZE);
-            if (!isRunning_) {
-                break;
-            }
-            if (len < 0) {
-                int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
-                NETSTACK_LOGE("SSL_read function read error, errno is %{public}d, errno info is %{public}s", resErr,
-                              MakeSSLErrorString(resErr).c_str());
-                CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-                break;
-            }
-
-            if (len == 0) {
+            int sock = SSL_get_rfd(tlsSocketInternal_.GetSSL());
+            FD_ZERO(&fds);
+            FD_SET(sock, &fds);
+            struct timeval timeout = {0, READ_TIMEOUT_US};
+            int err = select(sock+1, &fds, NULL, NULL, &timeout);
+            if (err > 0) {
+                std::lock_guard<std::mutex> lock(recvMutex_);
+                int len = tlsSocketInternal_.Recv(buffer, MAX_BUFFER_SIZE);
+                if (len < 0) {
+                    resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
+                    NETSTACK_LOGE("SSL_read function read error, errno is %{public}d, errno info is %{public}s", 
+                                  resErr, MakeSSLErrorString(resErr).c_str());
+                    CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
+                    continue;
+                } else if (len == 0) {
+                    continue;
+                }
+                Socket::SocketRemoteInfo remoteInfo;
+                remoteInfo.SetSize(len);
+                tlsSocketInternal_.MakeRemoteInfo(remoteInfo);
+                std::string bufContent(buffer, len);
+                CallOnMessageCallback(bufContent, remoteInfo);
+                if (strncmp(buffer, QUIT_RESPONSE_CODE, QUIT_RESPONSE_CODE_LEN) == 0) {
+                    break;
+                }
+            } else if (err == 0) {
                 continue;
-            }
-
-            Socket::SocketRemoteInfo remoteInfo;
-            remoteInfo.SetSize(len);
-            tlsSocketInternal_.MakeRemoteInfo(remoteInfo);
-            std::string bufContent(buffer, len);
-            CallOnMessageCallback(bufContent, remoteInfo);
-            if (strncmp(buffer, QUIT_RESPONSE_CODE, QUIT_RESPONSE_CODE_LEN) == 0) {
+            } else {
+                resErr = ConvertErrno();
+                NETSTACK_LOGE("Message select errno is %{public}d %{public}s", errno, MakeErrnoString().c_str());
+                CallOnErrorCallback(resErr, MakeErrnoString());
                 break;
             }
         }
@@ -657,6 +689,9 @@ void TLSSocket::Connect(OHOS::NetStack::TlsSocket::TLSConnectOptions &tlsConnect
         callback(resErr);
         return;
     }
+    if (!MakeNonBlock(sockFd_)) {
+        return;
+    }
     StartReadMessage();
     CallOnConnectCallback();
     callback(TLSSOCKET_SUCCESS);
@@ -692,6 +727,7 @@ bool WaitConditionWithTimeout(const bool *flag, const int32_t timeoutMs)
 
 void TLSSocket::Close(const CloseCallback &callback)
 {
+    std::lock_guard<std::mutex> lock(recvMutex_);
     if (!WaitConditionWithTimeout(&isRunning_, TIMEOUT_MS)) {
         callback(ConvertErrno());
         NETSTACK_LOGE("The error cause is that the runtime wait time is insufficient");
