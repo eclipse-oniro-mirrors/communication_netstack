@@ -37,6 +37,7 @@ namespace TlsSocket {
 namespace {
 constexpr int WAIT_MS = 10;
 constexpr int TIMEOUT_MS = 10000;
+constexpr int TIMEOUT_US = 500000;
 constexpr int REMOTE_CERT_LEN = 8192;
 constexpr int COMMON_NAME_BUF_SIZE = 256;
 constexpr int BUF_SIZE = 2048;
