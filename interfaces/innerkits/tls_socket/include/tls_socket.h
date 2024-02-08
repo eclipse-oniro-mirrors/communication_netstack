@@ -568,6 +568,7 @@ private:
     void CallGetSignatureAlgorithmsCallback(int32_t err, const std::vector<std::string> &algorithms,
                                             GetSignatureAlgorithmsCallback callback);
 
+    int ReadMessage();
     void StartReadMessage();
 
     void GetIp4RemoteAddress(const GetRemoteAddressCallback &callback);
