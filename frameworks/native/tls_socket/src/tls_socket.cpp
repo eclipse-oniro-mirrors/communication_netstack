@@ -407,8 +407,8 @@ void TLSSocket::StartReadMessage()
             int sock = SSL_get_rfd(tlsSocketInternal_.GetSSL());
             FD_ZERO(&fds);
             FD_SET(sock, &fds);
-            struct timeval timeout = {0, READ_TIMEOUT_US};
-            int err = select(sock+1, &fds, NULL, NULL, &timeout);
+            struct timeval timeOut = {0, READ_TIMEOUT_US};
+            int err = select(sock+1, &fds, NULL, NULL, &timeOut);
             if (err > 0) {
                 std::lock_guard<std::mutex> lock(recvMutex_);
                 int len = tlsSocketInternal_.Recv(buffer, MAX_BUFFER_SIZE);
@@ -690,6 +690,10 @@ void TLSSocket::Connect(OHOS::NetStack::TlsSocket::TLSConnectOptions &tlsConnect
         return;
     }
     if (!MakeNonBlock(sockFd_)) {
+        int resErr = ConvertErrno();
+        NETSTACK_LOGE("makenonblock error is %{public}s %{public}d", MakeErrnoString().c_str(), errno);
+        CallOnErrorCallback(resErr, MakeErrnoString());
+        callback(resErr);
         return;
     }
     StartReadMessage();
