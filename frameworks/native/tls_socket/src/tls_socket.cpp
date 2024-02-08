@@ -410,7 +410,7 @@ int TLSSocket::ReadMessage()
         CallOnErrorCallback(resErr, MakeErrnoString());
         return ret;
     } else if (ret == 0) {
-        return ret;    //timeout
+        return ret;
     }
 
     std::lock_guard<std::mutex> lock(recvMutex_);
@@ -432,7 +432,7 @@ int TLSSocket::ReadMessage()
     if (strncmp(buffer, QUIT_RESPONSE_CODE, QUIT_RESPONSE_CODE_LEN) == 0) {
         return -1;
     }
-    
+
     return ret;
 }
 
