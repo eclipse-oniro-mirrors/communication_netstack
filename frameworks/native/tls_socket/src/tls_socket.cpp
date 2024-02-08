@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -418,7 +418,7 @@ int TLSSocket::ReadMessage()
     if (len < 0) {
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         NETSTACK_LOGE("SSL_read function read error, errno is %{public}d, errno info is %{public}s",
-                        resErr, MakeSSLErrorString(resErr).c_str());
+                      resErr, MakeSSLErrorString(resErr).c_str());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         return resErr;
     } else if (len == 0) {
@@ -1148,7 +1148,34 @@ int TLSSocket::TLSSocketInternal::Recv(char *buffer, int maxBufferSize)
         NETSTACK_LOGE("ssl is null");
         return SSL_ERROR_RETURN;
     }
-    return SSL_read(ssl_, buffer, maxBufferSize);
+
+    int ret = SSL_read(ssl_, buffer, maxBufferSize);
+    if (ret < 0) {
+        int err = SSL_get_error(ssl_, SSL_RET_CODE);
+        switch (err) {
+            case SSL_ERROR_SSL:
+            {
+                NETSTACK_LOGE("An error occurred in the SSL library");
+                return SSL_ERROR_RETURN;
+            }
+            case SSL_ERROR_ZERO_RETURN:
+            {
+                NETSTACK_LOGE("peer disconnected...");
+                return SSL_ERROR_RETURN;
+            }
+            case SSL_ERROR_WANT_READ:
+            {
+                NETSTACK_LOGD("SSL_read function no data available for reading, try again at a later time");
+                return SSL_RET_CODE;
+            }
+            default:
+            {
+                NETSTACK_LOGE("SSL_read function failed, error code is %{public}d", err);
+                return SSL_ERROR_RETURN;
+            }
+        }
+    }
+    return ret;
 }
 
 bool TLSSocket::TLSSocketInternal::Close()
