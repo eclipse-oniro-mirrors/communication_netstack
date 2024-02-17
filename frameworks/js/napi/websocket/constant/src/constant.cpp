@@ -19,26 +19,27 @@ namespace OHOS::NetStack::Websocket {
 const char *ContextKey::HEADER = "header";
 
 const char *ContextKey::CAPATH = "caPath";
-
 const char *ContextKey::CLIENT_CERT = "clientCert";
-
 const char *ContextKey::CERT_PATH = "certPath";
-
 const char *ContextKey::KEY_PATH = "keyPath";
-
 const char *ContextKey::KEY_PASSWD = "keyPassword";
 
-const char *ContextKey::CODE = "code";
+const char *ContextKey::PROXY = "proxy";
+const char *ContextKey::PROTCOL = "protocol";
+const char *ContextKey::USE_SYSTEM_PROXY = "system";
+const char *ContextKey::NOT_USE_PROXY = "no-proxy";
 
+const char *ContextKey::WEBSOCKET_PROXY_HOST = "host";
+const char *ContextKey::WEBSOCKET_PROXY_PORT = "port";
+const char *ContextKey::WEBSOCKET_PROXY_EXCLUSION_LIST = "exclusionList";
+const char *ContextKey::WEBSOCKET_PROXY_EXCLUSIONS_SEPARATOR = ",";
+
+const char *ContextKey::CODE = "code";
 const char *ContextKey::REASON = "reason";
 
 const char *EventName::EVENT_OPEN = "open";
-
 const char *EventName::EVENT_MESSAGE = "message";
-
 const char *EventName::EVENT_CLOSE = "close";
-
 const char *EventName::EVENT_ERROR = "error";
-
 const char *EventName::EVENT_DATA_END = "dataEnd";
 } // namespace OHOS::NetStack::Websocket

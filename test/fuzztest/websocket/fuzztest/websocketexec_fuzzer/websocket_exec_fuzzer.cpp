@@ -26,6 +26,8 @@ namespace {
 const uint8_t *g_netstackFuzzData = nullptr;
 size_t g_netstackFuzzSize = 0;
 size_t g_netstackFuzzPos = 0;
+constexpr size_t STR_LEN = 255;
+
 template <class T> T GetData()
 {
     T object{};
@@ -46,6 +48,21 @@ inline void SetGlobalFuzzData(const uint8_t *data, size_t size)
     g_netstackFuzzData = data;
     g_netstackFuzzSize = size;
     g_netstackFuzzPos = 0;
+}
+
+std::string GetStringFromData(int strlen)
+{
+    if (strlen < 1) {
+        return "";
+    }
+
+    char cstr[strlen];
+    cstr[strlen - 1] = '\0';
+    for (int i = 0; i < strlen - 1; i++) {
+        cstr[i] = GetData<char>();
+    }
+    std::string str(cstr);
+    return str;
 }
 } // namespace
 
@@ -84,6 +101,45 @@ void ExecCloseFuzzTest(const uint8_t *data, size_t size)
 
     WebSocketExec::ExecClose(&context);
 }
+
+void SetWebsocketProxyTypeFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager *manager(GetData<EventManager *>());
+    ConnectContext context(env, manager);
+    WebsocketProxyType proxyType(GetData<WebsocketProxyType>());
+    context.SetWebsocketProxyType(proxyType);
+}
+
+void SetSpecifiedWebsocketProxyFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager *manager(GetData<EventManager *>());
+    ConnectContext context(env, manager);
+    std::string str = GetStringFromData(STR_LEN);
+    context.SetSpecifiedWebsocketProxy(str, size, str);
+}
+
+void SetWebsocketProtocolFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    EventManager *manager(GetData<EventManager *>());
+    ConnectContext context(env, manager);
+    std::string str = GetStringFromData(STR_LEN);
+    context.SetProtocol(str);
+}
 } // namespace Websocket
 } // namespace NetStack
 } // namespace OHOS
@@ -95,5 +151,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::NetStack::Websocket::ExecConnectFuzzTest(data, size);
     OHOS::NetStack::Websocket::ExecSendFuzzTest(data, size);
     OHOS::NetStack::Websocket::ExecCloseFuzzTest(data, size);
+    OHOS::NetStack::Websocket::SetWebsocketProxyTypeFuzzTest(data, size);
+    OHOS::NetStack::Websocket::SetSpecifiedWebsocketProxyFuzzTest(data, size);
+    OHOS::NetStack::Websocket::SetWebsocketProtocolFuzzTest(data, size);
     return 0;
 }

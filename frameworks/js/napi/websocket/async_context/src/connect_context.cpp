@@ -14,12 +14,12 @@
  */
 
 #include "connect_context.h"
-
 #include "constant.h"
+#include "napi_utils.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
-#include "napi_utils.h"
 #include "securec.h"
+#include <utility>
 
 namespace OHOS::NetStack::Websocket {
 ConnectContext::ConnectContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
@@ -29,53 +29,83 @@ ConnectContext::~ConnectContext() = default;
 void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     if (!CheckParamsType(params, paramsCount)) {
-        NETSTACK_LOGE("ConnectContext Parse Failed");
-        if (paramsCount == FUNCTION_PARAM_ONE) {
-            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
-                SetCallback(params[0]);
-            }
-            return;
-        }
+        ParseCallback(params, paramsCount);
+        return;
+    }
 
-        if (paramsCount == FUNCTION_PARAM_TWO) {
-            if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
-                SetCallback(params[1]);
-            }
-            return;
+    if (paramsCount == FUNCTION_PARAM_ONE) {
+        if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string) {
+            url = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
+            SetParseOK(true);
         }
-
-        if (paramsCount == FUNCTION_PARAM_THREE) {
-            if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_TWO]) == napi_function) {
-                SetCallback(params[FUNCTION_PARAM_TWO]);
+        return;
+    }
+    if (paramsCount == FUNCTION_PARAM_TWO) {
+        if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string) {
+            url = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
+        }
+        if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
+            return SetParseOK(SetCallback(params[1]) == napi_ok);
+        }
+        if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object) {
+            ParseHeader(params[1]);
+            ParseCaPath(params[1]);
+            ParseClientCert(params[1]);
+            if (!ParseProxy(params[1]) || !ParseProtocol(params[1])) {
+                return;
             }
-            return;
+            return SetParseOK(true);
+        }
+    }
+    if (paramsCount == FUNCTION_PARAM_THREE) {
+        ParseParamsCountThree(params);
+    }
+}
+
+void ConnectContext::ParseCallback(napi_value const *params, size_t paramsCount)
+{
+    if (paramsCount == FUNCTION_PARAM_ONE) {
+        if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_ONE - 1]) == napi_function) {
+            SetCallback(params[FUNCTION_PARAM_ONE - 1]);
         }
         return;
     }
 
-    url = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
-    if (paramsCount == FUNCTION_PARAM_ONE) {
-        NETSTACK_LOGI("ConnectContext paramsCount == FUNCTION_PARAM_ONE");
-        return SetParseOK(true);
+    if (paramsCount == FUNCTION_PARAM_TWO) {
+        if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_TWO - 1]) == napi_function) {
+            SetCallback(params[FUNCTION_PARAM_TWO - 1]);
+        }
+        return;
     }
-
-    if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
-        NETSTACK_LOGI("ConnectContext NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function");
-        return SetParseOK(SetCallback(params[1]) == napi_ok);
-    }
-
-    NETSTACK_LOGI("ConnectContext NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object");
-    ParseHeader(params[1]);
-
-    ParseCaPath(params[1]);
-    
-    ParseClientCert(params[1]);
 
     if (paramsCount == FUNCTION_PARAM_THREE) {
-        NETSTACK_LOGI("ConnectContext paramsCount == FUNCTION_PARAM_THREE");
-        return SetParseOK(SetCallback(params[FUNCTION_PARAM_TWO]) == napi_ok);
+        if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_THREE - 1]) == napi_function) {
+            SetCallback(params[FUNCTION_PARAM_THREE - 1]);
+        }
+        return;
     }
-    return SetParseOK(true);
+}
+
+void ConnectContext::ParseParamsCountThree(napi_value const *params)
+{
+    if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string) {
+        url = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
+    }
+    if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object) {
+        ParseHeader(params[1]);
+        ParseCaPath(params[1]);
+        ParseClientCert(params[1]);
+        if (!ParseProxy(params[1]) || !ParseProtocol(params[1])) {
+            if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_THREE - 1]) == napi_function) {
+                SetCallback(params[FUNCTION_PARAM_THREE - 1]);
+                return;
+            }
+            return;
+        }
+    }
+    if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_THREE - 1]) == napi_function) {
+        return SetParseOK(SetCallback(params[FUNCTION_PARAM_THREE - 1]) == napi_ok);
+    }
 }
 
 void ConnectContext::ParseHeader(napi_value optionsValue)
@@ -145,25 +175,120 @@ void ConnectContext::ParseClientCert(napi_value optionsValue)
     SetClientCert(certPath, keyPath, keyPassword);
 }
 
+bool ConnectContext::ParseProxy(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::PROXY)) {
+        SetWebsocketProxyType(WebsocketProxyType::USE_SYSTEM);
+        NETSTACK_LOGD("websocket connect proxy not found, use system proxy");
+        return true;
+    }
+    napi_value websocketProxyValue = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::PROXY);
+    napi_valuetype type = NapiUtils::GetValueType(GetEnv(), websocketProxyValue);
+    if (type == napi_string) {
+        std::string proxyStr = NapiUtils::GetStringFromValueUtf8(GetEnv(), websocketProxyValue);
+        if (proxyStr == ContextKey::NOT_USE_PROXY) {
+            SetWebsocketProxyType(WebsocketProxyType::NOT_USE);
+            return true;
+        } else if (proxyStr == ContextKey::USE_SYSTEM_PROXY) {
+            SetWebsocketProxyType(WebsocketProxyType::USE_SYSTEM);
+            return true;
+        } else {
+            NETSTACK_LOGE("websocket proxy param parse failed!");
+            return false;
+        }
+    }
+    if (type != napi_object) {
+        NETSTACK_LOGE("websocket proxy param parse failed!");
+        return false;
+    }
+
+    std::string exclusionList;
+    std::string host =
+        NapiUtils::GetStringPropertyUtf8(GetEnv(), websocketProxyValue, ContextKey::WEBSOCKET_PROXY_HOST);
+    int32_t port = NapiUtils::GetInt32Property(GetEnv(), websocketProxyValue, ContextKey::WEBSOCKET_PROXY_PORT);
+    if (NapiUtils::HasNamedProperty(GetEnv(), websocketProxyValue, ContextKey::WEBSOCKET_PROXY_EXCLUSION_LIST)) {
+        napi_value exclusionListValue =
+            NapiUtils::GetNamedProperty(GetEnv(), websocketProxyValue, ContextKey::WEBSOCKET_PROXY_EXCLUSION_LIST);
+        uint32_t listLength = NapiUtils::GetArrayLength(GetEnv(), exclusionListValue);
+        for (uint32_t index = 0; index < listLength; ++index) {
+            napi_value exclusionValue = NapiUtils::GetArrayElement(GetEnv(), exclusionListValue, index);
+            std::string exclusion = NapiUtils::GetStringFromValueUtf8(GetEnv(), exclusionValue);
+            if (index != 0) {
+                exclusionList.append(ContextKey::WEBSOCKET_PROXY_EXCLUSIONS_SEPARATOR);
+            }
+            exclusionList += exclusion;
+        }
+    }
+    SetSpecifiedWebsocketProxy(host, port, exclusionList);
+    SetWebsocketProxyType(WebsocketProxyType::USE_SPECIFIED);
+    return true;
+}
+
+bool ConnectContext::ParseProtocol(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::PROTCOL)) {
+        NETSTACK_LOGD("websocket connect protocol not found");
+        return true;
+    }
+    napi_value jsProtocol = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::PROTCOL);
+    if (NapiUtils::GetValueType(GetEnv(), jsProtocol) == napi_string) {
+        SetProtocol(NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, ContextKey::PROTCOL));
+        return true;
+    }
+    NETSTACK_LOGE("websocket connect protocol param parse failed");
+    return false;
+}
+
 bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
     if (paramsCount == FUNCTION_PARAM_ONE) {
         return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string;
     }
-
     if (paramsCount == FUNCTION_PARAM_TWO) {
         return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string &&
                (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function ||
                 NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object);
     }
-
     if (paramsCount == FUNCTION_PARAM_THREE) {
         return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string &&
                NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object &&
-               NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_TWO]) == napi_function;
+               NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_THREE - 1]) == napi_function;
     }
-
     return false;
+}
+
+void ConnectContext::SetProtocol(std::string protocol)
+{
+    websocketProtocol_ = std::move(protocol);
+}
+
+std::string ConnectContext::GetProtocol() const
+{
+    return websocketProtocol_;
+}
+
+void ConnectContext::SetWebsocketProxyType(WebsocketProxyType type)
+{
+    usingWebsocketProxyType_ = type;
+}
+
+WebsocketProxyType ConnectContext::GetUsingWebsocketProxyType() const
+{
+    return usingWebsocketProxyType_;
+}
+
+void ConnectContext::SetSpecifiedWebsocketProxy(const std::string &host, int32_t port, const std::string &exclusionList)
+{
+    websocketProxyHost_ = host;
+    websocketProxyPort_ = port;
+    websocketProxyExclusions_ = exclusionList;
+}
+
+void ConnectContext::GetSpecifiedWebsocketProxy(std::string &host, int32_t &port, std::string &exclusionList) const
+{
+    host = websocketProxyHost_;
+    port = websocketProxyPort_;
+    exclusionList = websocketProxyExclusions_;
 }
 
 int32_t ConnectContext::GetErrorCode() const

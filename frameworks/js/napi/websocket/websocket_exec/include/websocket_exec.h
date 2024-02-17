@@ -80,6 +80,13 @@ private:
     static void OnMessage(EventManager *manager, void *data, size_t length, bool isBinary, bool isFinal);
 
     static void OnClose(EventManager *manager, lws_close_status closeStatus, const std::string &closeReason);
+
+    static void FillContextInfo(ConnectContext *context, lws_context_creation_info &info, char *proxyAds);
+
+    static bool FillCaPath(ConnectContext *context, lws_context_creation_info &info);
+
+    static void GetWebsocketProxyInfo(ConnectContext *context, std::string &host, int32_t &port,
+                                      std::string &exclusions);
 };
 } // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_WEBSOCKET_EXEC_H */
