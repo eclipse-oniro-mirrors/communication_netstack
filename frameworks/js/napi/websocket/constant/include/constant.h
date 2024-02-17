@@ -32,7 +32,7 @@ enum WebsocketErrorCode {
     WEBSOCKET_ERROR_CODE_BASE = 2302000,
     WEBSOCKET_ERROR_CODE_URL_ERROR = WEBSOCKET_ERROR_CODE_BASE + 1,
     WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST = WEBSOCKET_ERROR_CODE_BASE + 2,
-    WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST =  WEBSOCKET_ERROR_CODE_BASE + 3,
+    WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST = WEBSOCKET_ERROR_CODE_BASE + 3,
     WEBSOCKET_UNKNOWN_OTHER_ERROR = 2302999
 };
 
@@ -41,8 +41,7 @@ static const std::map<int32_t, std::string> WEBSOCKET_ERR_MAP = {
     {WEBSOCKET_ERROR_CODE_URL_ERROR, "Websocket url error"},
     {WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST, "Websocket file not exist"},
     {WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST, "Websocket connection exist"},
-    {WEBSOCKET_UNKNOWN_OTHER_ERROR, "Websocket Unknown Other Error"}
-};
+    {WEBSOCKET_UNKNOWN_OTHER_ERROR, "Websocket Unknown Other Error"}};
 
 enum {
     CLOSE_REASON_NORMAL_CLOSE [[maybe_unused]] = 1000,
@@ -63,35 +62,42 @@ enum {
     CLOSE_REASON_RESERVED12 [[maybe_unused]],
 };
 
+enum class WebsocketProxyType {
+    NOT_USE,
+    USE_SYSTEM,
+    USE_SPECIFIED,
+};
+
 class ContextKey final {
 public:
     static const char *HEADER;
 
     static const char *CAPATH;
-
     static const char *CLIENT_CERT;
-
     static const char *CERT_PATH;
-
     static const char *KEY_PATH;
-
     static const char *KEY_PASSWD;
 
-    static const char *CODE;
+    static const char *PROXY;
+    static const char *PROTCOL;
+    static const char *USE_SYSTEM_PROXY;
+    static const char *NOT_USE_PROXY;
 
+    static const char *WEBSOCKET_PROXY_HOST;
+    static const char *WEBSOCKET_PROXY_PORT;
+    static const char *WEBSOCKET_PROXY_EXCLUSION_LIST;
+    static const char *WEBSOCKET_PROXY_EXCLUSIONS_SEPARATOR;
+
+    static const char *CODE;
     static const char *REASON;
 };
 
 class EventName final {
 public:
     static const char *EVENT_OPEN;
-
     static const char *EVENT_MESSAGE;
-
     static const char *EVENT_CLOSE;
-
     static const char *EVENT_ERROR;
-
     static const char *EVENT_DATA_END;
 };
 } // namespace OHOS::NetStack::Websocket

@@ -93,4 +93,41 @@ HWTEST_F(WebSocketTest, WebSocketTest006, TestSize.Level1)
     EXPECT_EQ(ret, false);
 }
 
+HWTEST_F(WebSocketTest, WebSocketTest007, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    OHOS::NetStack::EventManager eventManager;
+    ConnectContext context(env, &eventManager);
+
+    context.url = "ws://192.168.0.122:9000";
+    std::string myProtocol = "my-protocol";
+    context.SetProtocol(myProtocol);
+    std::string getMyProtocol = context.GetProtocol();
+    bool ret = WebSocketExec::ExecConnect(&context);
+    EXPECT_EQ(getMyProtocol, "my-protocol");
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest008, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    OHOS::NetStack::EventManager eventManager;
+    ConnectContext context(env, &eventManager);
+
+    context.url = "ws://192.168.0.122:9000";
+    context.SetWebsocketProxyType(WebsocketProxyType::USE_SPECIFIED);
+    std::string host = "192.168.147.60";
+    int32_t port = 8888;
+    std::string exclusions = "www.httpbin.org";
+    context.SetSpecifiedWebsocketProxy(host, port, exclusions);
+    std::string getHost;
+    int32_t getPort;
+    std::string getExclusions;
+    context.GetSpecifiedWebsocketProxy(getHost, getPort, getExclusions);
+    bool ret = WebSocketExec::ExecConnect(&context);
+    EXPECT_EQ(getHost, "192.168.147.60");
+    EXPECT_EQ(getPort, 8888);
+    EXPECT_EQ(getExclusions, "www.httpbin.org");
+    EXPECT_FALSE(ret);
+}
 } // namespace

@@ -20,6 +20,7 @@
 #include <string>
 
 #include "base_context.h"
+#include "constant.h"
 #include "nocopyable.h"
 #include "libwebsockets.h"
 #include "secure_char.h"
@@ -41,6 +42,18 @@ public:
 
     void GetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPassword);
 
+    void SetProtocol(std::string protocol);
+
+    [[nodiscard]] std::string GetProtocol() const;
+
+    void SetWebsocketProxyType(WebsocketProxyType type);
+
+    [[nodiscard]] WebsocketProxyType GetUsingWebsocketProxyType() const;
+
+    void SetSpecifiedWebsocketProxy(const std::string &host, int32_t port, const std::string &exclusionList);
+
+    void GetSpecifiedWebsocketProxy(std::string &host, int32_t &port, std::string &exclusionList) const;
+
     [[nodiscard]] int32_t GetErrorCode() const override;
 
     [[nodiscard]] std::string GetErrorMessage() const override;
@@ -57,6 +70,16 @@ public:
 
     Secure::SecureChar keyPassword_;
 
+    std::string websocketProtocol_;
+
+    WebsocketProxyType usingWebsocketProxyType_ = WebsocketProxyType::USE_SYSTEM;
+
+    std::string websocketProxyHost_;
+
+    int32_t websocketProxyPort_ = 0;
+
+    std::string websocketProxyExclusions_;
+
 private:
     void ParseHeader(napi_value optionsValue);
 
@@ -64,7 +87,15 @@ private:
 
     void ParseClientCert(napi_value optionsValue);
 
+    bool ParseProxy(napi_value optionsValue);
+
+    bool ParseProtocol(napi_value optionsValue);
+
     bool CheckParamsType(napi_value *params, size_t paramsCount);
+
+    void ParseCallback(napi_value const *params, size_t paramsCount);
+
+    void ParseParamsCountThree(napi_value const *params);
 };
 } // namespace OHOS::NetStack::Websocket
 
