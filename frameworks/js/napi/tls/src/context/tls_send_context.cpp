@@ -34,7 +34,23 @@ void TLSSendContext::ParseParams(napi_value *params, size_t paramsCount)
     if (!CheckParamsType(params, paramsCount)) {
         return;
     }
-    data_ = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
+    if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_0]) == napi_string) {
+        data_ = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[ARG_INDEX_0]);
+        if (data_.empty()) {
+            NETSTACK_LOGE("string data is empty");
+            return;
+        }
+    }
+
+    if (NapiUtils::ValueIsArrayBuffer(GetEnv(), params[ARG_INDEX_0])) {
+        size_t length = 0;
+        void *data = NapiUtils::GetInfoFromArrayBufferValue(GetEnv(), params[ARG_INDEX_0], &length);
+        if (data == nullptr || length == 0) {
+            NETSTACK_LOGE("arraybuffer data is empty");
+            return;
+        }
+        data_.append(reinterpret_cast<char *>(data), length);
+    }
 
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
         SetParseOK(SetCallback(params[ARG_INDEX_1]) == napi_ok);
@@ -46,8 +62,9 @@ void TLSSendContext::ParseParams(napi_value *params, size_t paramsCount)
 bool TLSSendContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
     if (paramsCount == PARAM_JUST_OPTIONS) {
-        if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_0]) != napi_string) {
-            NETSTACK_LOGE("first param is not string");
+        if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_0]) != napi_string &&
+            !NapiUtils::ValueIsArrayBuffer(GetEnv(), params[ARG_INDEX_0])) {
+            NETSTACK_LOGE("first param is not string or arraybuffer");
             SetNeedThrowException(true);
             SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
             return false;
@@ -56,8 +73,9 @@ bool TLSSendContext::CheckParamsType(napi_value *params, size_t paramsCount)
     }
 
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
-        if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_0]) != napi_string) {
-            NETSTACK_LOGE("first param is not string");
+        if (NapiUtils::GetValueType(GetEnv(), params[ARG_INDEX_0]) != napi_string &&
+            !NapiUtils::ValueIsArrayBuffer(GetEnv(), params[ARG_INDEX_0])) {
+            NETSTACK_LOGE("first param is not string or arraybuffer");
             SetNeedThrowException(true);
             SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
             return false;

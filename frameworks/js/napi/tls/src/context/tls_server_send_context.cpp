@@ -38,8 +38,23 @@ void TLSServerSendContext::ParseParams(napi_value *params, size_t paramsCount)
     if (!CheckParamsType(params, paramsCount)) {
         return;
     }
+    if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_0]) == napi_string) {
+        m_sendData = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[TlsSocket::ARG_INDEX_0]);
+        if (m_sendData.empty()) {
+            NETSTACK_LOGE("string data is empty");
+            return;
+        }
+    }
 
-    m_sendData = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
+    if (NapiUtils::ValueIsArrayBuffer(GetEnv(), params[TlsSocket::ARG_INDEX_0])) {
+        size_t length = 0;
+        void *data = NapiUtils::GetInfoFromArrayBufferValue(GetEnv(), params[TlsSocket::ARG_INDEX_0], &length);
+        if (data == nullptr || length == 0) {
+            NETSTACK_LOGE("arraybuffer data is empty");
+            return;
+        }
+        m_sendData.append(reinterpret_cast<char *>(data), length);
+    }
 
     if (paramsCount == TlsSocket::PARAM_OPTIONS_AND_CALLBACK) {
         SetParseOK(SetCallback(params[TlsSocket::ARG_INDEX_1]) == napi_ok);
@@ -51,8 +66,9 @@ void TLSServerSendContext::ParseParams(napi_value *params, size_t paramsCount)
 bool TLSServerSendContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
     if (paramsCount == TlsSocket::PARAM_JUST_OPTIONS) {
-        if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_0]) != napi_string) {
-            NETSTACK_LOGE("first param is not string");
+        if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_0]) != napi_string &&
+            !NapiUtils::ValueIsArrayBuffer(GetEnv(), params[TlsSocket::ARG_INDEX_0])) {
+            NETSTACK_LOGE("first param is not string or arraybuffer");
             SetNeedThrowException(true);
             SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
             return false;
@@ -61,8 +77,9 @@ bool TLSServerSendContext::CheckParamsType(napi_value *params, size_t paramsCoun
     }
 
     if (paramsCount == TlsSocket::PARAM_OPTIONS_AND_CALLBACK) {
-        if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_0]) != napi_string) {
-            NETSTACK_LOGE("first param is not string");
+        if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_0]) != napi_string &&
+            !NapiUtils::ValueIsArrayBuffer(GetEnv(), params[TlsSocket::ARG_INDEX_0])) {
+            NETSTACK_LOGE("first param is not string or arraybuffer");
             SetNeedThrowException(true);
             SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
             return false;
