@@ -17,26 +17,17 @@
 
 #include <cinttypes>
 #include <string>
-#include <unistd.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
 #include "netstack_log.h"
 #include "net_conn_client.h"
 #include "netstack_common_utils.h"
+#include "tls_utils.h"
 
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
-namespace {
-static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
-static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
-static const std::string USER_CERT_PATH = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
-static constexpr const char *ROOT_CERT_PATH = "/data/certificates/user_cacerts/0";
-static constexpr const char *SYSTEM_REPLACE_CA_PATH = "/etc/security/certificates";
-static constexpr const char *SYSTEM_REPLACE_CA_FILE = "/etc/ssl/certs/cacert.pem";
-} // namespace
-
 VerifyMode TLSContextServer::verifyMode_ = TWO_WAY_MODE;
 std::unique_ptr<TLSContextServer> TLSContextServer::CreateConfiguration(const TLSConfiguration &configuration)
 {
@@ -190,9 +181,9 @@ bool TLSContextServer::SetDefaultCa(TLSContextServer *tlsContext, const TLSConfi
     }
 #endif // HAS_NETMANAGER_BASE
 
-    if (access(ROOT_CERT_PATH, F_OK | R_OK) == 0) {
+    if (access(ROOT_CERT_PATH.c_str(), F_OK | R_OK) == 0) {
         NETSTACK_LOGD("root CA certificates folder exist and can read");
-        if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), ROOT_CERT_PATH)) {
+        if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), ROOT_CERT_PATH.c_str())) {
             NETSTACK_LOGE("load root certificates failed");
             return false;
         }
@@ -208,11 +199,11 @@ bool TLSContextServer::SetDefaultCa(TLSContextServer *tlsContext, const TLSConfi
     } else {
         NETSTACK_LOGD("user CA certificates folder not exist or can not read");
     }
-    if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), SYSTEM_REPLACE_CA_PATH)) {
+    if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), SYSTEM_REPLACE_CA_PATH.c_str())) {
         NETSTACK_LOGE("load system replace certificates failed");
         return false;
     }
-    if (!X509_STORE_load_file(SSL_CTX_get_cert_store(tlsContext->ctx_), SYSTEM_REPLACE_CA_FILE)) {
+    if (!X509_STORE_load_file(SSL_CTX_get_cert_store(tlsContext->ctx_), SYSTEM_REPLACE_CA_FILE.c_str())) {
         NETSTACK_LOGE("load system replace certificates failed");
         return false;
     }

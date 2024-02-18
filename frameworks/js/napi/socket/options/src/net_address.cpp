@@ -22,7 +22,7 @@ namespace OHOS::NetStack::Socket {
 
 NetAddress::NetAddress() : family_(Family::IPv4), port_(0) {}
 
-NetAddress::NetAddress(const NetAddress &other) : address_(other.address_), family_(other.family_), port(other.port_)
+NetAddress::NetAddress(const NetAddress &other) : address_(other.address_), family_(other.family_), port_(other.port_)
 {
 }
 
