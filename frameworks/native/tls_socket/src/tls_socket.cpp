@@ -399,7 +399,11 @@ int TLSSocket::ReadMessage()
         NETSTACK_LOGE("memset_s failed!");
         return -1;
     }
-    int sock = SSL_get_rfd(tlsSocketInternal_.GetSSL());
+    ssl_st *ssl = tlsSocketInternal_.GetSSL();
+    if (!ssl) {
+        return TLS_ERR_SSL_NULL;
+    }
+    int sock = SSL_get_rfd(ssl);
     FD_ZERO(&fds);
     FD_SET(sock, &fds);
     struct timeval timeOut = {0, READ_TIMEOUT_US};
@@ -414,6 +418,9 @@ int TLSSocket::ReadMessage()
     }
 
     std::lock_guard<std::mutex> lock(recvMutex_);
+    if (!isRunning_) {
+        return -1;
+    }
     int len = tlsSocketInternal_.Recv(buffer, MAX_BUFFER_SIZE);
     if (len < 0) {
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
