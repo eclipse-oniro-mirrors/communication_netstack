@@ -49,7 +49,7 @@ constexpr std::string_view PARSE_ERROR = "options is not type of TLSConnectOptio
 bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptions &secureOption)
 {
     if (!NapiUtils::HasNamedProperty(env, secureOptions, CA_NAME)) {
-        return false;
+        NETSTACK_LOGI("use default ca certification");
     }
     napi_value caCert = NapiUtils::GetNamedProperty(env, secureOptions, CA_NAME);
     std::vector<std::string> caVec;
@@ -79,8 +79,8 @@ bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptio
     }
     if (NapiUtils::HasNamedProperty(env, secureOptions, VERIFY_MODE_NAME)) {
         VerifyMode tempVerifyMode = !NapiUtils::GetBooleanProperty(env, secureOptions, VERIFY_MODE_NAME)
-            ? VerifyMode::ONE_WAY_MODE
-            : VerifyMode::TWO_WAY_MODE;
+                                        ? VerifyMode::ONE_WAY_MODE
+                                        : VerifyMode::TWO_WAY_MODE;
         secureOption.SetVerifyMode(tempVerifyMode);
     } else {
         secureOption.SetVerifyMode(VerifyMode::ONE_WAY_MODE);

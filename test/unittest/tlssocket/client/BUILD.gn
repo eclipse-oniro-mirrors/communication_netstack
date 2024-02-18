@@ -100,7 +100,6 @@ config("tls_test_config") {
     "$SOCKET/options/include",
     "$SOCKET/task_queue/include",
   ]
-  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
 }
 
 ohos_unittest("two_way_tls_socket_unittest") {
@@ -122,6 +121,16 @@ ohos_unittest("two_way_tls_socket_unittest") {
     "hilog:libhilog",
     "napi:ace_napi",
   ]
+
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
 
   module_out_path = "netstack/tls_socket_unittest"
   part_name = "netstack"
@@ -148,6 +157,16 @@ ohos_unittest("one_way_tls_socket_unittest") {
     "napi:ace_napi",
   ]
 
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
+
   module_out_path = "netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
@@ -173,6 +192,16 @@ ohos_unittest("two_way_tls_socket_certchain_unittest") {
     "napi:ace_napi",
   ]
 
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
+
   module_out_path = "netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
@@ -197,6 +226,16 @@ ohos_unittest("one_way_tls_socket_certchain_unittest") {
     "hilog:libhilog",
     "napi:ace_napi",
   ]
+
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
 
   module_out_path = "netstack/tls_socket_unittest"
   part_name = "netstack"
@@ -225,6 +264,16 @@ ohos_unittest("tls_socket_unilateral_connection") {
     "hilog:libhilog",
     "napi:ace_napi",
   ]
+
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
 
   module_out_path = "netstack/tls_socket_unittest"
   part_name = "netstack"
@@ -270,6 +319,16 @@ ohos_unittest("tls_key_test") {
     "napi:ace_napi",
   ]
 
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
+
   module_out_path = "netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
@@ -294,6 +353,16 @@ ohos_unittest("tls_cert_test") {
     "hilog:libhilog",
     "napi:ace_napi",
   ]
+
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
 
   module_out_path = "netstack/tls_socket_unittest"
   part_name = "netstack"
@@ -320,6 +389,16 @@ ohos_unittest("tls_configuration_test") {
     "napi:ace_napi",
   ]
 
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
+
   module_out_path = "netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
@@ -345,6 +424,16 @@ ohos_unittest("tls_context_test") {
     "napi:ace_napi",
   ]
 
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
+
   module_out_path = "netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
@@ -369,6 +458,16 @@ ohos_unittest("socket_error_unittest") {
     "hilog:libhilog",
     "napi:ace_napi",
   ]
+
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
 
   module_out_path = "netstack/tls_socket_unittest"
   part_name = "netstack"
@@ -397,6 +496,16 @@ ohos_unittest("tls_socket_branch_test") {
     "hilog:libhilog",
     "napi:ace_napi",
   ]
+
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
 
   module_out_path = "netstack/tls_socket_unittest"
   part_name = "netstack"

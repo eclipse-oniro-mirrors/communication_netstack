@@ -23,6 +23,7 @@
 #include "tls.h"
 #include "tls_certificate.h"
 #include "tls_key.h"
+#include "net_address.h"
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
@@ -67,6 +68,9 @@ public:
     void SetVerifyMode(VerifyMode verifyMode);
     [[nodiscard]] VerifyMode GetVerifyMode() const;
 
+    void SetNetAddress(const Socket::NetAddress& address);
+    [[nodiscard]] Socket::NetAddress GetNetAddress() const;
+
 private:
     TLSProtocol minProtocol_ = TLS_V1_2;
     TLSProtocol maxProtocol_ = TLS_V1_3;
@@ -85,6 +89,7 @@ private:
     TLSCertificate caCertificate_;
     std::vector<std::string> caCertificateChain_;
     VerifyMode tlsVerifyMode_;
+    Socket::NetAddress netAddress_;
 };
 } // namespace TlsSocket
 } // namespace NetStack

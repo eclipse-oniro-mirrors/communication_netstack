@@ -124,9 +124,17 @@ ohos_shared_library("socket") {
     "hilog:libhilog",
     "napi:ace_napi",
   ]
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
 
   relative_install_dir = "module/net"
   part_name = "netstack"
   subsystem_name = "communication"
-  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
 }

@@ -47,6 +47,10 @@ public:
 
     [[nodiscard]] uint16_t GetPort() const;
 
+    [[nodiscard]] Family GetFamily() const;
+
+    NetAddress &operator=(const NetAddress &other);
+
 private:
     std::string address_;
 

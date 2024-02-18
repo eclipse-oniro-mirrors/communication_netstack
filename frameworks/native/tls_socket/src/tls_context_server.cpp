@@ -15,19 +15,28 @@
 
 #include "tls_context_server.h"
 
-#include <cerrno>
 #include <cinttypes>
 #include <string>
-
+#include <unistd.h>
 #include <openssl/err.h>
-#include <openssl/evp.h>
 #include <openssl/ssl.h>
 
 #include "netstack_log.h"
+#include "net_conn_client.h"
+#include "netstack_common_utils.h"
 
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
+namespace {
+static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
+static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
+static const std::string USER_CERT_PATH = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
+static constexpr const char *ROOT_CERT_PATH = "/data/certificates/user_cacerts/0";
+static constexpr const char *SYSTEM_REPLACE_CA_PATH = "/etc/security/certificates";
+static constexpr const char *SYSTEM_REPLACE_CA_FILE = "/etc/ssl/certs/cacert.pem";
+} // namespace
+
 VerifyMode TLSContextServer::verifyMode_ = TWO_WAY_MODE;
 std::unique_ptr<TLSContextServer> TLSContextServer::CreateConfiguration(const TLSConfiguration &configuration)
 {
@@ -162,6 +171,54 @@ void TLSContextServer::SetMinAndMaxProtocol(TLSContextServer *tlsContext)
                   SSL_CTX_get_min_proto_version(tlsContext->ctx_), SSL_CTX_get_max_proto_version(tlsContext->ctx_));
 }
 
+bool TLSContextServer::SetDefaultCa(TLSContextServer *tlsContext, const TLSConfiguration &configuration)
+{
+#ifdef HAS_NETMANAGER_BASE
+    auto hostname = CommonUtils::GetHostnameFromURL(configuration.GetNetAddress().GetAddress());
+    // customize trusted CAs.
+    std::vector<std::string> cert_paths;
+
+    if (NetManagerStandard::NetConnClient::GetInstance().GetTrustAnchorsForHostName(hostname, cert_paths) != 0) {
+        NETSTACK_LOGE("get customize trusted CAs failed");
+        return false;
+    }
+    for (const auto &path : cert_paths) {
+        if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), path.c_str())) {
+            NETSTACK_LOGE("load customize certificates failed");
+            return false;
+        }
+    }
+#endif // HAS_NETMANAGER_BASE
+
+    if (access(ROOT_CERT_PATH, F_OK | R_OK) == 0) {
+        NETSTACK_LOGD("root CA certificates folder exist and can read");
+        if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), ROOT_CERT_PATH)) {
+            NETSTACK_LOGE("load root certificates failed");
+            return false;
+        }
+    } else {
+        NETSTACK_LOGD("root CA certificates folder not exist or can not read");
+    }
+    if (access(USER_CERT_PATH.c_str(), F_OK | R_OK) == 0) {
+        NETSTACK_LOGD("user CA certificates folder exist and can read");
+        if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), USER_CERT_PATH.c_str())) {
+            NETSTACK_LOGE("load user certificates failed");
+            return false;
+        }
+    } else {
+        NETSTACK_LOGD("user CA certificates folder not exist or can not read");
+    }
+    if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), SYSTEM_REPLACE_CA_PATH)) {
+        NETSTACK_LOGE("load system replace certificates failed");
+        return false;
+    }
+    if (!X509_STORE_load_file(SSL_CTX_get_cert_store(tlsContext->ctx_), SYSTEM_REPLACE_CA_FILE)) {
+        NETSTACK_LOGE("load system replace certificates failed");
+        return false;
+    }
+    return true;
+}
+
 bool TLSContextServer::SetCaAndVerify(TLSContextServer *tlsContext, const TLSConfiguration &configuration)
 {
     NETSTACK_LOGI("SetCaAndVerify  ");
@@ -170,10 +227,16 @@ bool TLSContextServer::SetCaAndVerify(TLSContextServer *tlsContext, const TLSCon
         NETSTACK_LOGE("tlsContext is null");
         return false;
     }
-    for (const auto &cert : configuration.GetCaCertificate()) {
-        TLSCertificate ca(cert, CA_CERT);
-        if (!X509_STORE_add_cert(SSL_CTX_get_cert_store(tlsContext->ctx_), static_cast<X509 *>(ca.handle()))) {
-            NETSTACK_LOGE("Failed to add x509 cert");
+    if (!configuration.GetCaCertificate().empty()) {
+        for (const auto &cert : configuration.GetCaCertificate()) {
+            TLSCertificate ca(cert, CA_CERT);
+            if (!X509_STORE_add_cert(SSL_CTX_get_cert_store(tlsContext->ctx_), static_cast<X509 *>(ca.handle()))) {
+                NETSTACK_LOGE("Failed to add x509 cert");
+                return false;
+            }
+        }
+    } else {
+        if (!SetDefaultCa(tlsContext, configuration)) {
             return false;
         }
     }
@@ -241,9 +304,8 @@ void TLSContextServer::SetVerify(TLSContextServer *tlsContext)
         return;
     }
 
-    NETSTACK_LOGE("TLSContextServer::SetVerify tlsContext  %{public}d",
-                  tlsContext->tlsConfiguration_.GetVerifyMode());
-    if (tlsContext->tlsConfiguration_.GetVerifyMode() == ONE_WAY_MODE) {
+    if (!tlsContext->tlsConfiguration_.GetCertificate().data.Length() ||
+        !tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyData().Length()) {
         SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_PEER, nullptr);
         verifyMode_ = ONE_WAY_MODE;
     } else {

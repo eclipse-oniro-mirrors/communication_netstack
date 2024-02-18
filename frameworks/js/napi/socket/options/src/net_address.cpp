@@ -106,4 +106,17 @@ uint16_t NetAddress::GetPort() const
 {
     return port_;
 }
+
+NetAddress::Family NetAddress::GetFamily() const
+{
+    return family_;
+}
+
+NetAddress &NetAddress::operator=(const NetAddress &other)
+{
+    address_ = other.GetAddress();
+    family_ = other.GetFamily();
+    port_ = other.GetPort();
+    return *this;
+}
 } // namespace OHOS::NetStack::Socket

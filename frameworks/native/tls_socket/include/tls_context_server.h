@@ -39,6 +39,7 @@ private:
     static void GetCiphers(TLSContextServer *tlsContext);
     static void UseRemoteCipher(TLSContextServer *tlsContext);
     static void SetMinAndMaxProtocol(TLSContextServer *tlsContext);
+    static bool SetDefaultCa(TLSContextServer *tlsContext, const TLSConfiguration &configuration);
     static bool SetCaAndVerify(TLSContextServer *tlsContext, const TLSConfiguration &configuration);
     static bool SetLocalCertificate(TLSContextServer *tlsContext, const TLSConfiguration &configuration);
     static bool SetKeyAndCheck(TLSContextServer *tlsContext, const TLSConfiguration &configuration);

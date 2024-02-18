@@ -187,6 +187,15 @@ VerifyMode TLSConfiguration::GetVerifyMode() const
 {
     return tlsVerifyMode_;
 }
+void TLSConfiguration::SetNetAddress(const Socket::NetAddress& netAddress)
+{
+    netAddress_ = netAddress;
+}
+
+Socket::NetAddress TLSConfiguration::GetNetAddress() const
+{
+    return netAddress_;
+}
 } // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
