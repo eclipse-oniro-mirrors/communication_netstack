@@ -219,7 +219,6 @@ bool TLSContext::SetDefaultCa(TLSContext *tlsContext, const TLSConfiguration &co
     return true;
 }
 
-
 bool TLSContext::SetCaAndVerify(TLSContext *tlsContext, const TLSConfiguration &configuration)
 {
     if (!tlsContext) {
