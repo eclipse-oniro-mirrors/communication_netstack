@@ -1154,25 +1154,17 @@ int TLSSocket::TLSSocketInternal::Recv(char *buffer, int maxBufferSize)
         int err = SSL_get_error(ssl_, SSL_RET_CODE);
         switch (err) {
             case SSL_ERROR_SSL:
-            {
                 NETSTACK_LOGE("An error occurred in the SSL library");
                 return SSL_ERROR_RETURN;
-            }
             case SSL_ERROR_ZERO_RETURN:
-            {
                 NETSTACK_LOGE("peer disconnected...");
                 return SSL_ERROR_RETURN;
-            }
             case SSL_ERROR_WANT_READ:
-            {
                 NETSTACK_LOGD("SSL_read function no data available for reading, try again at a later time");
                 return SSL_RET_CODE;
-            }
             default:
-            {
                 NETSTACK_LOGE("SSL_read function failed, error code is %{public}d", err);
                 return SSL_ERROR_RETURN;
-            }
         }
     }
     return ret;
