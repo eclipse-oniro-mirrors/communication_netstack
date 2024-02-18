@@ -49,7 +49,7 @@ constexpr std::string_view PARSE_ERROR = "options is not type of TLSConnectOptio
 bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptions &secureOption)
 {
     if (!NapiUtils::HasNamedProperty(env, secureOptions, CA_NAME)) {
-        NETSTACK_LOGI("use default ca certification");
+        NETSTACK_LOGD("use default ca certification");
     }
     napi_value caCert = NapiUtils::GetNamedProperty(env, secureOptions, CA_NAME);
     std::vector<std::string> caVec;

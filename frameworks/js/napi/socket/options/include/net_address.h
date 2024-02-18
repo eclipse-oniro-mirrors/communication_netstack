@@ -29,6 +29,8 @@ public:
 
     NetAddress();
 
+    NetAddress(const NetAddress &other);
+
     ~NetAddress() = default;
 
     void SetAddress(const std::string &address);
