@@ -227,17 +227,16 @@ bool TLSContextServer::SetCaAndVerify(TLSContextServer *tlsContext, const TLSCon
         NETSTACK_LOGE("tlsContext is null");
         return false;
     }
-    if (!configuration.GetCaCertificate().empty()) {
+
+    if (configuration.GetCaCertificate().empty()) {
+        return SetDefaultCa(tlsContext, configuration);
+    } else {
         for (const auto &cert : configuration.GetCaCertificate()) {
             TLSCertificate ca(cert, CA_CERT);
             if (!X509_STORE_add_cert(SSL_CTX_get_cert_store(tlsContext->ctx_), static_cast<X509 *>(ca.handle()))) {
                 NETSTACK_LOGE("Failed to add x509 cert");
                 return false;
             }
-        }
-    } else {
-        if (!SetDefaultCa(tlsContext, configuration)) {
-            return false;
         }
     }
 
