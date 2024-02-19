@@ -784,7 +784,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         socklen_t tempAddrLen = addrLen;
         auto recvLen = recvfrom(sock, buf.get(), bufferSize, 0, addr, &tempAddrLen);
         if (recvLen <= 0) {
-            if (errno == EAGAIN || (recvLen == 0 && !IsTCPSocket(sock))) {
+            if (errno == EAGAIN || errno == EINTR || (recvLen == 0 && !IsTCPSocket(sock))) {
                 continue;
             }
             NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
