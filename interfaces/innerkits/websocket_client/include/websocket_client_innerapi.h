@@ -74,10 +74,10 @@ public:
                        OnCloseCallback onclose);
     int Destroy();
 
-    OnMessageCallback onMessageCallback_;
-    OnCloseCallback onCloseCallback_;
-    OnErrorCallback onErrorCallback_;
-    OnOpenCallback onOpenCallback_;
+    OnMessageCallback onMessageCallback_ = nullptr;
+    OnCloseCallback onCloseCallback_ = nullptr;
+    OnErrorCallback onErrorCallback_ = nullptr;
+    OnOpenCallback onOpenCallback_ = nullptr;
     ClientContext *GetClientContext() const;
 
 private:

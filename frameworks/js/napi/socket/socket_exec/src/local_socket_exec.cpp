@@ -268,7 +268,7 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     }
 
     auto curPos = data;
-    ssize_t leftSize = static_cast<ssize_t>(size);
+    size_t leftSize = size;
     nfds_t num = 1;
     pollfd fds[1] = {{0}};
     fds[0].fd = sock;
