@@ -16,12 +16,13 @@
 #define COMMUNICATIONNETSTACK_NETSTACK_TIMIMG_H
 
 #include <map>
+#include <ctime>
 
 namespace OHOS::NetStack::Timing {
 
 class Timer {
 public:
-    const char* timerName_;
+    const char* timerName_{};
     Timer();
     void Start(time_t time);
     void Start();
@@ -29,8 +30,8 @@ public:
     double Elapsed() const;
 
 private:
-    time_t startTime_;
-    time_t endTime_;
+    time_t startTime_ = 0;
+    time_t endTime_ = 0;
 };
 
 class TimerMap {
