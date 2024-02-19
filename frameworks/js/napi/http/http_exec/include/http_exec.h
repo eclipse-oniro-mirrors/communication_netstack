@@ -25,6 +25,9 @@
 #include <utility>
 #include <vector>
 #include <set>
+#ifdef HTTP_PROXY_ENABLE
+#include <openssl/ssl.h>
+#endif
 
 #include "curl/curl.h"
 #include "napi/native_api.h"
@@ -84,6 +87,13 @@ public:
         ~StaticContextVec() = default;
         std::mutex mutexForContextVec;
         std::set<RequestContext *> contextSet;
+    };
+
+    struct CertsPath {
+        CertsPath() = default;
+        ~CertsPath() = default;
+        std::vector<std::string> certPathList;
+        std::string certFile;
     };
     static StaticContextVec staticContextSet_;
 
@@ -149,6 +159,8 @@ private:
     static void AddRequestInfo();
 
     static bool IsContextDeleted(RequestContext *context);
+
+    static CURLcode SslCtxFunction(void *curl, void *ssl_ctx, void *parm);
 
     struct RequestInfo {
         RequestInfo() = delete;

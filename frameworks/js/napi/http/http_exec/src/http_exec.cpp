@@ -20,6 +20,9 @@
 #include <memory>
 #include <thread>
 #include <unistd.h>
+#ifdef HTTP_PROXY_ENABLE
+#include <openssl/ssl.h>
+#endif
 
 #ifdef HTTP_PROXY_ENABLE
 #include "parameter.h"
@@ -60,7 +63,12 @@ static constexpr const uint32_t EVENT_PARAM_ZERO = 0;
 static constexpr const uint32_t EVENT_PARAM_ONE = 1;
 static constexpr const uint32_t EVENT_PARAM_TWO = 2;
 static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!eNULL:!EXPORT)";
-
+#ifdef HTTP_PROXY_ENABLE
+static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
+static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
+static constexpr const char *USER_CERT_ROOT_PATH = "/data/certificates/user_cacerts/0/";
+static const std::string USER_CERT_PATH = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
+#endif
 #ifdef HTTP_PROXY_ENABLE
 static constexpr int32_t SYSPARA_MAX_SIZE = 128;
 static constexpr const char *DEFAULT_HTTP_PROXY_HOST = "NONE";
@@ -729,36 +737,67 @@ bool HttpExec::SetSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext
     return true;
 }
 
+CURLcode HttpExec::SslCtxFunction(CURL *curl, void *ssl_ctx, void *parm)
+{
+#ifdef HTTP_PROXY_ENABLE
+    auto certsPath = static_cast<CertsPath *>(parm);
+    if (ssl_ctx == nullptr) {
+        NETSTACK_LOGE("ssl_ctx is null");
+        delete certsPath;
+        return CURLE_SSL_CERTPROBLEM;
+    }
+
+    for (const auto &path: certsPath->certPathList) {
+        if (path.empty() || access(path.c_str(), F_OK) != 0) {
+            NETSTACK_LOGD("certificate directory path is not exist");
+            continue;
+        }
+        if (!SSL_CTX_load_verify_locations((SSL_CTX *) ssl_ctx, nullptr, path.c_str())) {
+            NETSTACK_LOGD("loading certificates from directory error.");
+            continue;
+        }
+    }
+
+    if (access(certsPath->certFile.c_str(), F_OK) == 0 &&
+        !SSL_CTX_load_verify_locations((SSL_CTX *) ssl_ctx, certsPath->certFile.c_str(),
+                                       nullptr)) {
+        NETSTACK_LOGE("loading certificates from context cert error.");
+    }
+    delete certsPath;
+#endif
+    return CURLE_OK;
+}
+
 bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context)
 {
 #ifndef NO_SSL_CERTIFICATION
 #ifdef HAS_NETMANAGER_BASE
     auto hostname = CommonUtils::GetHostnameFromURL(context->options.GetUrl());
-#ifndef WINDOWS_PLATFORM
-    // customize trusted CAs.
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     std::vector<std::string> certs;
+    // add app cert path
     auto ret = NetManagerStandard::NetConnClient::GetInstance().GetTrustAnchorsForHostName(hostname, certs);
     if (ret != 0) {
-        NETSTACK_LOGD("Get no trust anchor by host name[%{public}s], ret[%{public}d]", hostname.c_str(), ret);
-    } else {
-        std::string *pCert = nullptr;
-        for (auto &cert : certs) {
-            if (!cert.empty()) {
-                pCert = &cert;
-                break;
-            }
-        }
-        if (pCert != nullptr) {
-            NETSTACK_LOGD("curl set option capath: capath=%{public}s.", pCert->c_str());
-            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
-            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, pCert->c_str(), context);
-        } else {
-            NETSTACK_LOGD("Get no trust anchor by host name[%{public}s]", hostname.c_str());
-            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, context->options.GetCaPath().c_str(), context);
-            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, HttpConstant::HTTP_PREPARE_CA_PATH, context);
-        }
+        NETSTACK_LOGE("GetTrustAnchorsForHostName error. ret [%{public}d]", ret);
     }
-#endif // WINDOWS_PLATFORM
+#ifdef HTTP_PROXY_ENABLE
+    // add user cert path
+    certs.emplace_back(USER_CERT_ROOT_PATH);
+    certs.emplace_back(USER_CERT_PATH);
+#endif
+    // add system cert path
+    certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
+    auto *certsPath = new CertsPath;
+    certsPath->certFile = context->options.GetCaPath();
+    certsPath->certPathList = certs;
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 1L, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 2L, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_FUNCTION, SslCtxFunction, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, certsPath, context);
+#else
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
+#endif //  !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     // pin trusted certifcate keys.
     std::string pins;
     auto ret1 = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);

@@ -27,3 +27,7 @@ THIRD_PARTY_ROOT = "//third_party"
 HILOG_ROOT = "//base/hiviewdfx/hilog"
 HILOG_LITE_ROOT = "//base/hiviewdfx/hilog_lite"
 fuzz_test_path = "netstack/netstack"
+
+declare_args() {
+  netstack_http_boringssl = false
+}

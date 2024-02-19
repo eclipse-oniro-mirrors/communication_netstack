@@ -92,6 +92,17 @@ ohos_unittest("http_unittest") {
       "hilog:libhilog",
       "napi:ace_napi",
     ]
+    if (netstack_http_boringssl) {
+      deps += [
+        "//vendor/open_source/boringssl:crypto_boringssl",
+        "//vendor/open_source/boringssl:ssl_boringssl",
+      ]
+    } else {
+      external_deps += [
+        "openssl:libcrypto_shared",
+        "openssl:libssl_shared",
+      ]
+    }
     if (defined(global_parts_info) &&
         defined(global_parts_info.communication_netmanager_base) &&
         global_parts_info.communication_netmanager_base) {
