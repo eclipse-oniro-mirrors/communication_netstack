@@ -55,9 +55,11 @@ constexpr int SOCKET_SIZE_CONVERSION = 2; // socket buffer size, the actual valu
 
 constexpr char LOCAL_SOCKET_CONNECTION[] = "LocalSocketConnection";
 
-constexpr char LOCAL_SOCKET_SERVER_HANDLE_CLIENT[] = "LocalSocketServerHandleClient";
+constexpr char LOCAL_SOCKET_SERVER_HANDLE_CLIENT[] = "OS_NET_LSAcc";
 
-constexpr char LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA[] = "LocalSocketServerAcceptRecvData";
+constexpr char LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA[] = "OS_NET_LSAccRD";
+
+constexpr char LOCAL_SOCKET_CONNECT[] = "OS_NET_LSCon";
 } // namespace
 
 namespace OHOS::NetStack::Socket::LocalSocketExec {
@@ -268,7 +270,7 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     }
 
     auto curPos = data;
-    ssize_t leftSize = static_cast<ssize_t>(size);
+    size_t leftSize = size;
     nfds_t num = 1;
     pollfd fds[1] = {{0}};
     fds[0].fd = sock;
@@ -690,8 +692,13 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
     if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetManager()->GetData()); pMgr != nullptr) {
         pMgr->isConnected_ = true;
     }
-    std::thread serviceThread(PollRecvData, sockfd, nullptr, 0, LocalSocketMessageCallback(context->GetManager(),
-        context->GetSocketPath()));
+    std::thread serviceThread(PollRecvData, sockfd, nullptr, 0,
+                              LocalSocketMessageCallback(context->GetManager(), context->GetSocketPath()));
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(LOCAL_SOCKET_CONNECT);
+#else
+    pthread_setname_np(serviceThread.native_handle(), LOCAL_SOCKET_CONNECT);
+#endif
     serviceThread.detach();
     return true;
 }

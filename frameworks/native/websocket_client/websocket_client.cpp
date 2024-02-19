@@ -37,6 +37,7 @@ static constexpr const int CLOSE_RESULT_FROM_CLIENT_CODE = 1000;
 static constexpr const char *LINK_DOWN = "The link is down";
 static constexpr const char *CLOSE_REASON_FORM_SERVER = "websocket close from server";
 static constexpr const int FUNCTION_PARAM_TWO = 2;
+static constexpr const char *WEBSOCKET_CLIENT_THREAD_RUN = "OS_NET_WSCli";
 static std::atomic<int> g_clientID(0);
 namespace OHOS::NetStack::WebSocketClient {
 static const lws_retry_bo_t RETRY = {
@@ -410,6 +411,11 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
         return ret;
     }
     std::thread serviceThread(RunService, this);
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(WEBSOCKET_CLIENT_THREAD_RUN);
+#else
+    pthread_setname_np(serviceThread.native_handle(), WEBSOCKET_CLIENT_THREAD_RUN);
+#endif
     serviceThread.detach();
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }

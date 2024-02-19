@@ -61,6 +61,7 @@ constexpr const char *SIGN_NID_UNDEF = "UNDEF";
 constexpr const char *OPERATOR_PLUS_SIGN = "+";
 constexpr const char *UNKNOW_REASON = "Unknown reason";
 constexpr const char *IP = "IP: ";
+static constexpr const char *TLS_SOCKET_SERVER_READ = "OS_NET_TSAccRD";
 const std::regex JSON_STRING_PATTERN{R"(/^"(?:[^"\\\u0000-\u001f]|\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4}))*"/)"};
 const std::regex PATTERN{
     "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|"
@@ -1396,6 +1397,11 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
     NETSTACK_LOGE("PollThread  start working %{public}d", isRunning_);
     std::thread thread_([this, &tlsListenOptions]() {
         TlsSocket::TLSConnectOptions tlsOption = tlsListenOptions;
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+        pthread_setname_np(TLS_SOCKET_SERVER_READ);
+#else
+        pthread_setname_np(pthread_self(), TLS_SOCKET_SERVER_READ);
+#endif
         InitPollList(listenSocketFd_);
         int clientId = 0;
         while (isRunning_) {

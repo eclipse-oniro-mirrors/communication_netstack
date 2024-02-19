@@ -20,6 +20,7 @@
 #include <memory>
 #include <thread>
 #include <unistd.h>
+#include <pthread.h>
 #ifdef HTTP_PROXY_ENABLE
 #include <openssl/ssl.h>
 #endif
@@ -63,13 +64,14 @@ static constexpr const uint32_t EVENT_PARAM_ZERO = 0;
 static constexpr const uint32_t EVENT_PARAM_ONE = 1;
 static constexpr const uint32_t EVENT_PARAM_TWO = 2;
 static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!eNULL:!EXPORT)";
+static constexpr const char *HTTP_TASK_RUN_THREAD = "OS_NET_TaskHttp";
+static constexpr const char *HTTP_CLIENT_TASK_THREAD = "OS_NET_HttpJs";
+
 #ifdef HTTP_PROXY_ENABLE
 static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
 static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 static constexpr const char *USER_CERT_ROOT_PATH = "/data/certificates/user_cacerts/0/";
 static const std::string USER_CERT_PATH = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
-#endif
-#ifdef HTTP_PROXY_ENABLE
 static constexpr int32_t SYSPARA_MAX_SIZE = 128;
 static constexpr const char *DEFAULT_HTTP_PROXY_HOST = "NONE";
 static constexpr const char *DEFAULT_HTTP_PROXY_PORT = "0";
@@ -186,6 +188,11 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     std::thread([context, handle] {
         std::lock_guard guard(staticVariable_.curlMultiMutex);
         //Do SetServerSSLCertOption here to avoid blocking the main thread.
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+        pthread_setname_np(HTTP_CLIENT_TASK_THREAD);
+#else
+        pthread_setname_np(pthread_self(), HTTP_CLIENT_TASK_THREAD);
+#endif
         SetServerSSLCertOption(handle, context);
         staticVariable_.infoQueue.emplace(context, handle);
         staticVariable_.conditionVariable.notify_all();
@@ -552,6 +559,11 @@ bool HttpExec::IsContextDeleted(RequestContext *context)
 
 void HttpExec::RunThread()
 {
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(HTTP_TASK_RUN_THREAD);
+#else
+    pthread_setname_np(pthread_self(), HTTP_TASK_RUN_THREAD);
+#endif
     while (staticVariable_.runThread && staticVariable_.curlMulti != nullptr) {
         AddRequestInfo();
         SendRequest();
@@ -676,7 +688,6 @@ bool HttpExec::Initialize()
     }
 
     staticVariable_.workThread = std::thread(RunThread);
-
     staticVariable_.initialized = true;
     return staticVariable_.initialized;
 }
