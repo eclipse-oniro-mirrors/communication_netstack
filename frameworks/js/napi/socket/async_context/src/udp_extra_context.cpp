@@ -64,7 +64,7 @@ void UdpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCou
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_BROADCAST)) {
-        options.SetBroadcast(NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_BROADCAST));
+        options.SetBroadcast(NapiUtils::GetBooleanProperty(GetEnv(), params[0], KEY_BROADCAST));
         options.SetBroadcastFlag(true);
     }
 
