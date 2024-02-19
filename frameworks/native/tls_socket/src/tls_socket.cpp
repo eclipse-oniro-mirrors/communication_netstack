@@ -407,7 +407,7 @@ int TLSSocket::ReadMessage()
     FD_ZERO(&fds);
     FD_SET(sock, &fds);
     struct timeval timeOut = {0, READ_TIMEOUT_US};
-    int ret = select(sock+1, &fds, NULL, NULL, &timeOut);
+    int ret = select(sock + 1, &fds, NULL, NULL, &timeOut);
     if (ret < 0) {
         int resErr = ConvertErrno();
         NETSTACK_LOGE("Message select errno is %{public}d %{public}s", errno, MakeErrnoString().c_str());
@@ -429,6 +429,7 @@ int TLSSocket::ReadMessage()
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         return resErr;
     } else if (len == 0) {
+        NETSTACK_LOGD("Message recv len 0");
         return ret;
     }
     Socket::SocketRemoteInfo remoteInfo;
