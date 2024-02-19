@@ -20,6 +20,7 @@
 #include <memory>
 #include <thread>
 #include <unistd.h>
+#include <pthread.h>
 
 #ifdef HTTP_PROXY_ENABLE
 #include "parameter.h"
@@ -60,6 +61,8 @@ static constexpr const uint32_t EVENT_PARAM_ZERO = 0;
 static constexpr const uint32_t EVENT_PARAM_ONE = 1;
 static constexpr const uint32_t EVENT_PARAM_TWO = 2;
 static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!eNULL:!EXPORT)";
+static constexpr const char *HTTP_TASK_RUN_THREAD = "OS_NET_TaskHttp";
+static constexpr const char *HTTP_CLIENT_TASK_THREAD = "OS_NET_HttpJs";
 
 #ifdef HTTP_PROXY_ENABLE
 static constexpr int32_t SYSPARA_MAX_SIZE = 128;
@@ -178,6 +181,11 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     std::thread([context, handle] {
         std::lock_guard guard(staticVariable_.curlMultiMutex);
         //Do SetServerSSLCertOption here to avoid blocking the main thread.
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+        pthread_setname_np(HTTP_CLIENT_TASK_THREAD);
+#else
+        pthread_setname_np(pthread_self(), HTTP_CLIENT_TASK_THREAD);
+#endif
         SetServerSSLCertOption(handle, context);
         staticVariable_.infoQueue.emplace(context, handle);
         staticVariable_.conditionVariable.notify_all();
@@ -544,6 +552,11 @@ bool HttpExec::IsContextDeleted(RequestContext *context)
 
 void HttpExec::RunThread()
 {
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(HTTP_TASK_RUN_THREAD);
+#else
+    pthread_setname_np(pthread_self(), HTTP_TASK_RUN_THREAD);
+#endif
     while (staticVariable_.runThread && staticVariable_.curlMulti != nullptr) {
         AddRequestInfo();
         SendRequest();
@@ -668,7 +681,6 @@ bool HttpExec::Initialize()
     }
 
     staticVariable_.workThread = std::thread(RunThread);
-
     staticVariable_.initialized = true;
     return staticVariable_.initialized;
 }

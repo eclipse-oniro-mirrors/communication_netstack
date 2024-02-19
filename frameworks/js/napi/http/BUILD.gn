@@ -96,6 +96,7 @@ ohos_shared_library("http") {
       "$THIRD_PARTY_ROOT/curl:curl_shared",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
     ]
+    ldflags = [ "-lpthread" ]
   } else {
     deps = [
       "$NETSTACK_DIR/utils:stack_utils_common",

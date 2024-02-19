@@ -78,6 +78,8 @@ static const std::string CERTPATH = BASE_PATH + std::to_string(getuid() / UID_TR
 
 static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
 
+static constexpr const char *WEBSOCKET_CLIENT_THREAD_RUN = "OS_NET_WSJsCli";
+
 namespace OHOS::NetStack::Websocket {
 static const lws_protocols LWS_PROTOCOLS[] = {
     {"lws-minimal-client", WebSocketExec::LwsCallback, 0, 0},
@@ -714,6 +716,12 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         return false;
     }
     std::thread serviceThread(RunService, manager);
+
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(WEBSOCKET_CLIENT_THREAD_RUN);
+#else
+    pthread_setname_np(serviceThread.native_handle(), WEBSOCKET_CLIENT_THREAD_RUN);
+#endif
     serviceThread.detach();
     return true;
 }
