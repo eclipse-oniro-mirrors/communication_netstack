@@ -586,8 +586,6 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     char protocol[MAX_URI_LENGTH] = {0};
     char address[MAX_URI_LENGTH] = {0};
     char path[MAX_URI_LENGTH] = {0};
-    char host[MAX_URI_LENGTH] = {0};
-    char origin[MAX_URI_LENGTH] = {0};
     char customizedProtocol[MAX_PROTOCOL_LENGTH] = {0};
     int port = 0;
 
@@ -602,9 +600,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     }
     std::string tempHost = std::string(address) + NAME_END + std::to_string(port);
     std::string tempOrigin = std::string(protocol) + NAME_END + PROTOCOL_DELIMITER + tempHost;
-    if (strcpy_s(host, tempHost.length() + 1, tempHost.c_str()) != EOK ||
-        strcpy_s(origin, tempOrigin.length() + 1, tempOrigin.c_str()) != EOK ||
-        strcpy_s(customizedProtocol, context->GetProtocol().length() + 1, context->GetProtocol().c_str()) != EOK) {
+    if (strcpy_s(customizedProtocol, context->GetProtocol().length() + 1, context->GetProtocol().c_str()) != EOK) {
         NETSTACK_LOGE("memory copy failed");
     }
 
@@ -612,8 +608,8 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     connectInfo.port = port;
     connectInfo.address = address;
     connectInfo.path = path;
-    connectInfo.host = host;
-    connectInfo.origin = origin;
+    connectInfo.host = address;
+    connectInfo.origin = address;
     connectInfo.protocol = customizedProtocol;
 
     if (strcmp(protocol, PREFIX_HTTPS) == 0 || strcmp(protocol, PREFIX_WSS) == 0) {
