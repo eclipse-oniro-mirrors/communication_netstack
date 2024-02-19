@@ -427,10 +427,10 @@ int TLSSocket::ReadMessage()
         NETSTACK_LOGE("SSL_read function read error, errno is %{public}d, errno info is %{public}s",
                       resErr, MakeSSLErrorString(resErr).c_str());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        return resErr;
+        return len;
     } else if (len == 0) {
         NETSTACK_LOGD("Message recv len 0");
-        return ret;
+        return len;
     }
     Socket::SocketRemoteInfo remoteInfo;
     remoteInfo.SetSize(len);
@@ -748,14 +748,14 @@ bool WaitConditionWithTimeout(const bool *flag, const int32_t timeoutMs)
 
 void TLSSocket::Close(const CloseCallback &callback)
 {
-    std::lock_guard<std::mutex> lock(recvMutex_);
     if (!WaitConditionWithTimeout(&isRunning_, TIMEOUT_MS)) {
         callback(ConvertErrno());
         NETSTACK_LOGE("The error cause is that the runtime wait time is insufficient");
         return;
     }
     isRunning_ = false;
-   
+
+    std::lock_guard<std::mutex> lock(recvMutex_);
     auto res = tlsSocketInternal_.Close();
     if (!res) {
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
