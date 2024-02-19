@@ -37,14 +37,15 @@
                 "init",
                 "napi",
                 "netmanager_base",
-                "ylong_http"
+                "ylong_http",
+                "openssl"
             ],
             "third_party": [
                 "curl",
                 "libwebsockets",
                 "jsoncpp",
-                "openssl",
-                "node"
+                "node",
+                "openssl"
             ]
         },
         "build": {
