@@ -737,6 +737,7 @@ void TLSSocketServer::Connection::SetTlsConfiguration(const TlsSocket::TLSConnec
                                            config.GetTlsSecureOptions().GetKeyPass());
     connectionConfiguration_.SetLocalCertificate(config.GetTlsSecureOptions().GetCert());
     connectionConfiguration_.SetCaCertificate(config.GetTlsSecureOptions().GetCaChain());
+    connectionConfiguration_.SetNetAddress(config.GetNetAddress());
 }
 
 bool TLSSocketServer::Connection::Send(const std::string &data)

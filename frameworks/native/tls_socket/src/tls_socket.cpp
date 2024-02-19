@@ -648,7 +648,6 @@ void TLSSocket::Connect(OHOS::NetStack::TlsSocket::TLSConnectOptions &tlsConnect
         callback(resErr);
         return;
     }
-
     auto res = tlsSocketInternal_.TlsConnectToHost(sockFd_, tlsConnectOptions);
     if (!res) {
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
@@ -1069,6 +1068,7 @@ void TLSSocket::TLSSocketInternal::SetTlsConfiguration(const TLSConnectOptions &
     configuration_.SetPrivateKey(config.GetTlsSecureOptions().GetKey(), config.GetTlsSecureOptions().GetKeyPass());
     configuration_.SetLocalCertificate(config.GetTlsSecureOptions().GetCert());
     configuration_.SetCaCertificate(config.GetTlsSecureOptions().GetCaChain());
+    configuration_.SetNetAddress(config.GetNetAddress());
 }
 
 bool TLSSocket::TLSSocketInternal::Send(const std::string &data)

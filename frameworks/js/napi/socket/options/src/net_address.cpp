@@ -22,6 +22,10 @@ namespace OHOS::NetStack::Socket {
 
 NetAddress::NetAddress() : family_(Family::IPv4), port_(0) {}
 
+NetAddress::NetAddress(const NetAddress &other) : address_(other.address_), family_(other.family_), port_(other.port_)
+{
+}
+
 void NetAddress::SetAddress(const std::string &address)
 {
     if (family_ == Family::IPv4) {
@@ -105,5 +109,18 @@ uint32_t NetAddress::GetJsValueFamily() const
 uint16_t NetAddress::GetPort() const
 {
     return port_;
+}
+
+NetAddress::Family NetAddress::GetFamily() const
+{
+    return family_;
+}
+
+NetAddress &NetAddress::operator=(const NetAddress &other)
+{
+    address_ = other.GetAddress();
+    family_ = other.GetFamily();
+    port_ = other.GetPort();
+    return *this;
 }
 } // namespace OHOS::NetStack::Socket

@@ -29,6 +29,8 @@ public:
 
     NetAddress();
 
+    NetAddress(const NetAddress &other);
+
     ~NetAddress() = default;
 
     void SetAddress(const std::string &address);
@@ -46,6 +48,10 @@ public:
     [[nodiscard]] sa_family_t GetSaFamily() const;
 
     [[nodiscard]] uint16_t GetPort() const;
+
+    [[nodiscard]] Family GetFamily() const;
+
+    NetAddress &operator=(const NetAddress &other);
 
 private:
     std::string address_;
