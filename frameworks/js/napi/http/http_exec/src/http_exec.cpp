@@ -21,7 +21,7 @@
 #include <thread>
 #include <unistd.h>
 #include <pthread.h>
-#ifdef HTTP_PROXY_ENABLE
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
 #endif
 
@@ -67,7 +67,7 @@ static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!eNULL:!EX
 static constexpr const char *HTTP_TASK_RUN_THREAD = "OS_NET_TaskHttp";
 static constexpr const char *HTTP_CLIENT_TASK_THREAD = "OS_NET_HttpJs";
 
-#ifdef HTTP_PROXY_ENABLE
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
 static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
 static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 static constexpr const char *USER_CERT_ROOT_PATH = "/data/certificates/user_cacerts/0/";
@@ -750,8 +750,12 @@ bool HttpExec::SetSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext
 
 CURLcode HttpExec::SslCtxFunction(CURL *curl, void *ssl_ctx, void *parm)
 {
-#ifdef HTTP_PROXY_ENABLE
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
     auto certsPath = static_cast<CertsPath *>(parm);
+    if (certsPath == nullptr) {
+        NETSTACK_LOGE("certsPath is null");
+        return CURLE_SSL_CERTPROBLEM;
+    }
     if (ssl_ctx == nullptr) {
         NETSTACK_LOGE("ssl_ctx is null");
         delete certsPath;
@@ -764,18 +768,17 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *ssl_ctx, void *parm)
             continue;
         }
         if (!SSL_CTX_load_verify_locations((SSL_CTX *) ssl_ctx, nullptr, path.c_str())) {
-            NETSTACK_LOGD("loading certificates from directory error.");
+            NETSTACK_LOGE("loading certificates from directory error.");
             continue;
         }
     }
-
-    if (access(certsPath->certFile.c_str(), F_OK) == 0 &&
-        !SSL_CTX_load_verify_locations((SSL_CTX *) ssl_ctx, certsPath->certFile.c_str(),
-                                       nullptr)) {
+    if (access(certsPath->certFile.c_str(), F_OK) != 0) {
+        NETSTACK_LOGD("certificate directory path is not exist");
+    } else if (!SSL_CTX_load_verify_locations((SSL_CTX *) ssl_ctx, certsPath->certFile.c_str(), nullptr)) {
         NETSTACK_LOGE("loading certificates from context cert error.");
     }
     delete certsPath;
-#endif
+#endif // HTTP_MULTIPATH_CERT_ENABLE
     return CURLE_OK;
 }
 
@@ -791,11 +794,11 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     if (ret != 0) {
         NETSTACK_LOGE("GetTrustAnchorsForHostName error. ret [%{public}d]", ret);
     }
-#ifdef HTTP_PROXY_ENABLE
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
     // add user cert path
     certs.emplace_back(USER_CERT_ROOT_PATH);
     certs.emplace_back(USER_CERT_PATH);
-#endif
+#endif // HTTP_MULTIPATH_CERT_ENABLE
     // add system cert path
     certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
     auto *certsPath = new CertsPath;

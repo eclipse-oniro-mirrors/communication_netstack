@@ -25,7 +25,7 @@
 #include <utility>
 #include <vector>
 #include <set>
-#ifdef HTTP_PROXY_ENABLE
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
 #endif
 
