@@ -22,7 +22,7 @@ namespace OHOS::NetStack::Timing {
 
 class Timer {
 public:
-    const char* timerName_{};
+    const char* timerName_ = nullptr;
     Timer();
     void Start(time_t time);
     void Start();
