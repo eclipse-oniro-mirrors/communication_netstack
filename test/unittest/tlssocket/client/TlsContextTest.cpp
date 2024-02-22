@@ -201,8 +201,8 @@ HWTEST_F(TlsContextTest, ContextTest3, TestSize.Level2)
     std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
     EXPECT_NE(tlsContext, nullptr);
     bool setCaAndVerify = TLSContext::SetCaAndVerify(tlsContext.get(), configuration);
-    EXPECT_TRUE(setCaAndVerify);
     tlsContext->CloseCtx();
+    EXPECT_TRUE(setCaAndVerify);
 }
 
 HWTEST_F(TlsContextTest, InitTlsContext3, TestSize.Level2)
