@@ -193,6 +193,18 @@ HWTEST_F(TlsContextTest, ContextTest2, TestSize.Level2)
     tlsContext->CloseCtx();
 }
 
+HWTEST_F(TlsContextTest, ContextTest3, TestSize.Level2)
+{
+    TLSConfiguration configuration;
+    std::vector<std::string> caVec = {};
+    configuration.SetCaCertificate(caVec);
+    std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
+    EXPECT_NE(tlsContext, nullptr);
+    bool setCaAndVerify = TLSContext::SetCaAndVerify(tlsContext.get(), configuration);
+    EXPECT_TRUE(setCaAndVerify);
+    tlsContext->CloseCtx();
+}
+
 HWTEST_F(TlsContextTest, InitTlsContext3, TestSize.Level2)
 {
     TLSConfiguration configuration;
