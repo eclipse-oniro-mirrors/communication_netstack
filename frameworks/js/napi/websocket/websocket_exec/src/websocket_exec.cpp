@@ -376,6 +376,7 @@ int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reas
     int sendLength = lws_write(wsi, reinterpret_cast<unsigned char *>(sendData.data) + LWS_SEND_BUFFER_PRE_PADDING,
                                sendData.length, sendData.protocol);
     free(sendData.data);
+    NETSTACK_LOGD("send data length = %{public}d", sendLength);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
