@@ -21,6 +21,7 @@
 #include <regex>
 #include <securec.h>
 #include <thread>
+#include <poll.h>
 
 #include <netinet/tcp.h>
 #include <openssl/err.h>
@@ -37,7 +38,7 @@ namespace TlsSocket {
 namespace {
 constexpr int WAIT_MS = 10;
 constexpr int TIMEOUT_MS = 10000;
-constexpr int READ_TIMEOUT_US = 500000;
+constexpr int READ_TIMEOUT_MS = 500;
 constexpr int REMOTE_CERT_LEN = 8192;
 constexpr int COMMON_NAME_BUF_SIZE = 256;
 constexpr int BUF_SIZE = 2048;
@@ -393,7 +394,6 @@ void TLSSocket::MakeIpSocket(sa_family_t family)
 
 int TLSSocket::ReadMessage()
 {
-    fd_set fds;
     char buffer[MAX_BUFFER_SIZE];
     if (memset_s(buffer, MAX_BUFFER_SIZE, 0, MAX_BUFFER_SIZE) != EOK) {
         NETSTACK_LOGE("memset_s failed!");
@@ -404,13 +404,12 @@ int TLSSocket::ReadMessage()
         return TLS_ERR_SSL_NULL;
     }
     int sock = SSL_get_rfd(ssl);
-    FD_ZERO(&fds);
-    FD_SET(sock, &fds);
-    struct timeval timeOut = {0, READ_TIMEOUT_US};
-    int ret = select(sock + 1, &fds, NULL, NULL, &timeOut);
+    nfds_t num = 1;
+    pollfd fds[1] = {{.fd = sock, .events = POLLIN}};
+    int ret = poll(fds, num, READ_TIMEOUT_MS);
     if (ret < 0) {
         int resErr = ConvertErrno();
-        NETSTACK_LOGE("Message select errno is %{public}d %{public}s", errno, MakeErrnoString().c_str());
+        NETSTACK_LOGE("Message poll errno is %{public}d %{public}s", errno, MakeErrnoString().c_str());
         CallOnErrorCallback(resErr, MakeErrnoString());
         return ret;
     } else if (ret == 0) {
