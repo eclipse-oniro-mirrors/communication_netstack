@@ -38,6 +38,7 @@ config("http_config") {
       "$NETMANAGER_BASE_INNERKITS_DIR/netconnclient/include",
     ]
   }
+  defines = []
 
   if (is_mingw || is_mac) {
     cflags = [
@@ -46,21 +47,25 @@ config("http_config") {
     ]
   }
   if (is_mingw) {
-    defines = [ "WINDOWS_PLATFORM" ]
+    defines += [ "WINDOWS_PLATFORM" ]
   } else if (is_mac) {
-    defines = [ "MAC_PLATFORM" ]
+    defines += [ "MAC_PLATFORM" ]
     cflags_cc = [
       "-fstack-protector-strong",
       "-D_FORTIFY_SOURCE=2",
       "-O2",
     ]
   } else if (product_name != "ohos-sdk") {
-    defines = [ "HTTP_PROXY_ENABLE" ]
+    defines += [ "HTTP_PROXY_ENABLE" ]
     cflags_cc = [
       "-fstack-protector-strong",
       "-D_FORTIFY_SOURCE=2",
       "-O2",
     ]
+  }
+
+  if (product_name != "ohos-sdk") {
+    defines += [ "HTTP_MULTIPATH_CERT_ENABLE" ]
   }
 }
 
