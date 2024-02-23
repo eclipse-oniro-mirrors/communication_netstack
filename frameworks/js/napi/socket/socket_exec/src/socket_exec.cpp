@@ -38,6 +38,10 @@
 #include "socket_async_work.h"
 #include "socket_module.h"
 
+#ifdef IOS_PLATFORM
+#define SO_PROTOCOL 38
+#endif
+
 static constexpr const int DEFAULT_BUFFER_SIZE = 8192;
 
 static constexpr const int DEFAULT_TIMEOUT_MS = 20000;
