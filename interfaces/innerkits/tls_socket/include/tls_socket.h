@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -568,6 +568,7 @@ private:
     void CallGetSignatureAlgorithmsCallback(int32_t err, const std::vector<std::string> &algorithms,
                                             GetSignatureAlgorithmsCallback callback);
 
+    int ReadMessage();
     void StartReadMessage();
 
     void GetIp4RemoteAddress(const GetRemoteAddressCallback &callback);
@@ -604,6 +605,7 @@ private:
     OnErrorCallback onErrorCallback_;
 
     std::mutex mutex_;
+    std::mutex recvMutex_;
     bool isRunning_ = false;
     bool isRunOver_ = true;
 

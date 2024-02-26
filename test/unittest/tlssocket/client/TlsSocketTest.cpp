@@ -163,6 +163,40 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
     sleep(2);
 }
 
+HWTEST_F(TlsSocketTest, startReadMessageInterface, testing::ext::TestSize.Level2)
+{
+    if (!CheckCaFileExistence("startReadMessageInterface")) {
+        return;
+    }
+    TLSSocket server;
+    SetSocketHwTestShortParam(server);
+
+    const std::string data = "how do you do? this is startReadMessageInterface";
+    Socket::TCPSendOptions tcpSendOptions;
+    tcpSendOptions.SetData(data);
+    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    sleep(2);
+
+    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+}
+
+HWTEST_F(TlsSocketTest, readMessageInterface, testing::ext::TestSize.Level2)
+{
+    if (!CheckCaFileExistence("readMessageInterface")) {
+        return;
+    }
+    TLSSocket server;
+    SetSocketHwTestShortParam(server);
+
+    const std::string data = "how do you do? this is readMessageInterface";
+    Socket::TCPSendOptions tcpSendOptions;
+    tcpSendOptions.SetData(data);
+    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    sleep(2);
+
+    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+}
+
 HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
 {
     if (!CheckCaFileExistence("closeInterface")) {
