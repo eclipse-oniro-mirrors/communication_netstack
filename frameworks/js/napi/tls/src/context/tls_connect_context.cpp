@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -42,7 +42,7 @@ constexpr const char *ADDRESS_NAME = "address";
 constexpr const char *FAMILY_NAME = "family";
 constexpr const char *PORT_NAME = "port";
 constexpr const char *VERIFY_MODE_NAME = "bidirectionAuthentication";
-constexpr uint32_t CA_CHAIN_LENGTH = 10;
+constexpr uint32_t CA_CHAIN_LENGTH = 1000;
 constexpr uint32_t PROTOCOLS_SIZE = 10;
 constexpr std::string_view PARSE_ERROR = "options is not type of TLSConnectOptions";
 
