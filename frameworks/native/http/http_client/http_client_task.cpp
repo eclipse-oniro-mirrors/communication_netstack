@@ -84,10 +84,6 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request, TaskType type, 
       filePath_(filePath),
       file_(nullptr)
 {
-    NETSTACK_LOGI(
-        "taskId_=%{public}d type=%{public}d filePath=%{public}s",
-        taskId_, type_, filePath_.c_str());
-
     curlHandle_ = curl_easy_init();
     if (!curlHandle_) {
         NETSTACK_LOGE("Failed to create task!");
