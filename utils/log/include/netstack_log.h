@@ -25,12 +25,12 @@
 
 #define LOG_DOMAIN 0xD0015B0
 
-#define LOG_TAG "NetMgrSubsystem"
+#define LOG_TAG "NETSTACK_1"
 
 #include "hilog/log.h"
 
 #define NETSTACK_HILOG_PRINT(Level, fmt, ...) \
-    (void)HILOG_##Level(LOG_CORE, "NETSTACK [%{public}s %{public}d] " fmt, MAKE_FILE_NAME, __LINE__, ##__VA_ARGS__)
+    (void)HILOG_##Level(LOG_CORE, "[%{public}s %{public}d] " fmt, MAKE_FILE_NAME, __LINE__, ##__VA_ARGS__)
 
 #else
 
@@ -67,9 +67,10 @@ static void NetStackPrintLog(const char *fmt, ...)
     printf("%s\r\n", buf);
     fflush(stdout);
 }
-
+#undef LOG_TAG
+#define LOG_TAG "NETSTACK_2"
 #define NETSTACK_HILOG_PRINT(Level, fmt, ...) \
-    NetStackPrintLog("NETSTACK %s [%s %d] " fmt, #Level, MAKE_FILE_NAME, __LINE__, ##__VA_ARGS__)
+    NetStackPrintLog("%s [%s %d] " fmt, #Level, MAKE_FILE_NAME, __LINE__, ##__VA_ARGS__)
 
 #endif /* !defined(_WIN32) && !defined(__APPLE__) */
 
