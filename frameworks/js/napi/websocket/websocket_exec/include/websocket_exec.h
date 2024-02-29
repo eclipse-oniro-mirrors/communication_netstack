@@ -81,7 +81,7 @@ private:
 
     static void OnClose(EventManager *manager, lws_close_status closeStatus, const std::string &closeReason);
 
-    static void OnReceiveHeader(EventManager *manager, const std::map<std::string, std::string> &headers);
+    static void OnHeaderReceive(EventManager *manager, const std::map<std::string, std::string> &headers);
 
     static void FillContextInfo(ConnectContext *context, lws_context_creation_info &info, char *proxyAds);
 

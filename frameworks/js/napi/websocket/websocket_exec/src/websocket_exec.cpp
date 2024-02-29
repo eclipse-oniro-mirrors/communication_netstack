@@ -465,7 +465,7 @@ int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_re
         userData->openMessage = vec[1];
     }
 
-    char buffer[MAX_HDR_LENGTH];
+    char buffer[MAX_HDR_LENGTH] = {};
     std::map<std::string, std::string> responseHeader;
     for (int i = 0; i < WSI_TOKEN_COUNT; i++) {
         if (lws_hdr_total_length(wsi, static_cast<lws_token_indexes>(i)) > 0) {
@@ -474,16 +474,13 @@ int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_re
             if (lws_token_to_string(static_cast<lws_token_indexes>(i))) {
                 str =
                     std::string(reinterpret_cast<const char *>(lws_token_to_string(static_cast<lws_token_indexes>(i))));
-            } else {
-                str = "";
             }
             if (str.back() == ':') {
-                responseHeader.emplace(
-                    std::make_pair<std::string, std::string>(str.substr(0, str.size() - 1), std::string(buffer)));
+                responseHeader.emplace(str.substr(0, str.size() - 1), std::string(buffer));
             }
         }
     }
-    OnReceiveHeader(manager, responseHeader);
+    OnHeaderReceive(manager, responseHeader);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -908,7 +905,10 @@ void WebSocketExec::OnError(EventManager *manager, int32_t code)
 napi_value CreateResponseHeader(napi_env env, void *callbackPara)
 {
     auto para = reinterpret_cast<std::map<std::string, std::string> *>(callbackPara);
-    auto deleter = [](const std::map<std::string, std::string> *p) { delete p; };
+    auto deleter = [](const std::map<std::string, std::string> *p) {
+        delete p;
+        p = nullptr;
+    };
     std::unique_ptr<std::map<std::string, std::string>, decltype(deleter)> handler(para, deleter);
     napi_value header = NapiUtils::CreateObject(env);
     if (NapiUtils::GetValueType(env, header) != napi_object) {
@@ -1009,12 +1009,17 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
     }
 }
 
-void WebSocketExec::OnReceiveHeader(EventManager *manager, const std::map<std::string, std::string> &headers)
+void WebSocketExec::OnHeaderReceive(EventManager *manager, const std::map<std::string, std::string> &headers)
 {
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is null");
         return;
     }
+    if (!EventManager::IsManagerValid(manager)) {
+        NETSTACK_LOGE("manager is invalid");
+        return;
+    }
+
     if (!manager->HasEventListener(EventName::EVENT_HEADER_RECEIVE)) {
         NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_HEADER_RECEIVE);
         return;
