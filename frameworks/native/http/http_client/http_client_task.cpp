@@ -63,7 +63,7 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request)
       canceled_(false),
       file_(nullptr)
 {
-    NETSTACK_LOGI("taskId_=%{public}d", taskId_);
+    NETSTACK_LOGI("Id=%{public}d", taskId_);
 
     curlHandle_ = curl_easy_init();
     if (!curlHandle_) {
@@ -510,7 +510,7 @@ bool HttpClientTask::ProcessResponseCode()
         return false;
     }
     ResponseCode resultCode = static_cast<ResponseCode>(result);
-    NETSTACK_LOGI("taskid=%{public}d, responseCode=%{public}d", taskId_, resultCode);
+    NETSTACK_LOGI("id=%{public}d, code=%{public}d", taskId_, resultCode);
     response_.SetResponseCode(resultCode);
 
     return true;
