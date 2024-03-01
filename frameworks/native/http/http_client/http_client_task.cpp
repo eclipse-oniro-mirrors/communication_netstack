@@ -63,7 +63,7 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request)
       canceled_(false),
       file_(nullptr)
 {
-    NETSTACK_LOGI("Id=%{public}d", taskId_);
+    NETSTACK_LOGI("id=%{public}d", taskId_);
 
     curlHandle_ = curl_easy_init();
     if (!curlHandle_) {
