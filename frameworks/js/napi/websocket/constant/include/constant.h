@@ -99,6 +99,7 @@ public:
     static const char *EVENT_CLOSE;
     static const char *EVENT_ERROR;
     static const char *EVENT_DATA_END;
+    static const char *EVENT_HEADER_RECEIVE;
 };
 } // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_CONSTANT_H */
