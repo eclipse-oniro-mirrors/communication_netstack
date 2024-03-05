@@ -119,8 +119,10 @@ void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(u
     }
 
     std::for_each(listeners_.begin(), listeners_.end(), [type, data, Handler, this](const EventListener &listener) {
-        auto workWrapper = new UvWorkWrapper(data, listener.GetEnv(), type, this);
-        listener.EmitByUv(type, workWrapper, Handler);
+        if (listener.MatchType(type)) {
+            auto workWrapper = new UvWorkWrapper(data, listener.GetEnv(), type, this);
+            listener.EmitByUv(type, workWrapper, Handler);
+        }
     });
 }
 
