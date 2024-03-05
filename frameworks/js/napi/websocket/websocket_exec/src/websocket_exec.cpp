@@ -212,8 +212,9 @@ template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTempl
     napi_value obj = MakeJsValue(env, workWrapper->data);
 
     std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
-    workWrapper->manager->Emit(workWrapper->type, arg);
-
+    if (EventManager::IsManagerValid(workWrapper->manager)) {
+        workWrapper->manager->Emit(workWrapper->type, arg);
+    }
     delete workWrapper;
     delete work;
 }
@@ -296,6 +297,10 @@ int WebSocketExec::LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback
 {
     NETSTACK_LOGI("LwsCallbackClientAppendHandshakeHeader");
     auto manager = reinterpret_cast<EventManager *>(user);
+    if (!EventManager::IsManagerValid(manager)) {
+        NETSTACK_LOGE("manager is invalid");
+        return -1;
+    }
     if (manager->GetData() == nullptr) {
         NETSTACK_LOGE("user data is null");
         return RaiseError(manager);
@@ -327,6 +332,7 @@ int WebSocketExec::LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reason
     NETSTACK_LOGI("LwsCallbackWsPeerInitiatedClose");
     auto manager = reinterpret_cast<EventManager *>(user);
     if (!EventManager::IsManagerValid(manager)) {
+        NETSTACK_LOGE("manager is invalid");
         return -1;
     }
     if (manager->GetData() == nullptr) {
