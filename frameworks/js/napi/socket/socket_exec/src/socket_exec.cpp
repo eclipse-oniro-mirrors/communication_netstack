@@ -59,6 +59,7 @@ static constexpr const int MAX_SEC = 999999999;
 static constexpr const int USER_LIMIT = 511;
 
 static constexpr const int MAX_CLIENTS = 1024;
+static constexpr const int UNIT_CONVERSION_1000 = 1000;
 
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
@@ -390,7 +391,11 @@ public:
 
     void OnError(int err) const override
     {
-        manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
+        if (EventManager::IsManagerValid(manager_)) {
+            manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
+            return;
+        }
+        NETSTACK_LOGI("tcp socket handle has been finalized, manager is invalid");
     }
 
     void OnCloseMessage(EventManager *manager) const override
@@ -485,7 +490,11 @@ public:
 
     void OnError(int err) const override
     {
-        manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
+        if (EventManager::IsManagerValid(manager_)) {
+            manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
+            return;
+        }
+        NETSTACK_LOGI("udp socket handle has been finalized, manager is invalid");
     }
 
     void OnCloseMessage(EventManager *manager) const override {}
@@ -561,6 +570,18 @@ static bool PollFd(pollfd *fds, nfds_t num, int timeout)
         return false;
     }
     return true;
+}
+
+static int ConfirmSocketTimeoutMs(int sock, int type, int defaultValue)
+{
+    timeval timeout;
+    socklen_t optlen = sizeof(timeout);
+    if (getsockopt(sock, SOL_SOCKET, type, reinterpret_cast<void *>(&timeout), &optlen) < 0) {
+        NETSTACK_LOGE("get timeout failed, type: %{public}d, sock: %{public}d, errno: %{public}d", type, sock, errno);
+        return defaultValue;
+    }
+    auto socketTimeoutMs = timeout.tv_sec * UNIT_CONVERSION_1000 + timeout.tv_usec / UNIT_CONVERSION_1000;
+    return socketTimeoutMs == 0 ? defaultValue : socketTimeoutMs;
 }
 
 static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr, socklen_t addrLen)
@@ -695,6 +716,17 @@ static int ConfirmBufferSize(int sock)
     return bufferSize;
 }
 
+static bool IsTCPSocket(int sockfd)
+{
+    int optval;
+    socklen_t optlen = sizeof(optval);
+
+    if (getsockopt(sockfd, SOL_SOCKET, SO_PROTOCOL, &optval, &optlen) != 0) {
+        return false;
+    }
+    return optval == IPPROTO_TCP;
+}
+
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
 {
     int bufferSize = ConfirmBufferSize(sock);
@@ -710,13 +742,11 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
 
     nfds_t num = 1;
-    pollfd fds[1] = {{0}};
-    fds[0].fd = sock;
-    fds[0].events = 0;
-    fds[0].events |= POLLIN;
+    pollfd fds[1] = {{sock, POLLIN, 0}};
 
+    int recvTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT);
     while (true) {
-        int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT);
+        int ret = poll(fds, num, recvTimeoutMs);
         if (ret < 0) {
             NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
             callback.OnError(errno);
@@ -725,22 +755,20 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         if (ret == 0) {
             continue;
         }
-        if (static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) == 0) {
+        if (!EventManager::IsManagerValid(callback.GetEventManager()) ||
+            static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) == 0) {
             return;
         }
         (void)memset_s(buf.get(), bufferSize, 0, bufferSize);
         socklen_t tempAddrLen = addrLen;
         auto recvLen = recvfrom(sock, buf.get(), bufferSize, 0, addr, &tempAddrLen);
-        if (recvLen < 0) {
-            if (errno == EAGAIN) {
+        if (recvLen <= 0) {
+            if (errno == EAGAIN || (recvLen == 0 && !IsTCPSocket(sock))) {
                 continue;
             }
-            NETSTACK_LOGE("recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
-            callback.OnError(errno);
+            NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
+            callback.OnError(recvLen == 0 && IsTCPSocket(sock) ? UNKNOW_ERROR : errno);
             return;
-        }
-        if (recvLen == 0) {
-            continue;
         }
 
         void *data = malloc(recvLen);
