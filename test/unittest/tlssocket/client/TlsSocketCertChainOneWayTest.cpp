@@ -116,15 +116,15 @@ void SetCertChainOneWayHwTestLongParam(TLSSocket &server)
 
     secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
     std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
+    std::string protocolV13 = "TLSv1.3";
+    std::vector<std::string> protocolVec = {protocolV13};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
     secureOption.SetCipherSuite("AES256-SHA256");
-    std::string protocolV13 = "TLSv1.3";
-    std::vector<std::string> protocolVec = {protocolV13};
     secureOption.SetProtocolChain(protocolVec);
 
-    options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
+    options.SetNetAddress(address);
 
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -136,14 +136,14 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
         return;
     }
 
-    TLSSocket server;
+    TLSSocket srv;
     Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    srv.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
@@ -219,8 +219,8 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
 
-    options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
+    options.SetNetAddress(address);
 
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -228,8 +228,8 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     Socket::NetAddress netAddress;
     server.GetRemoteAddress([&netAddress](int32_t errCode, const Socket::NetAddress &address) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
-        netAddress.SetAddress(address.GetAddress());
         netAddress.SetPort(address.GetPort());
+        netAddress.SetAddress(address.GetAddress());
         netAddress.SetFamilyBySaFamily(address.GetSaFamily());
     });
     EXPECT_STREQ(netAddress.GetAddress().c_str(), GetIp(ReadFileContent(IP_ADDRESS)).c_str());
