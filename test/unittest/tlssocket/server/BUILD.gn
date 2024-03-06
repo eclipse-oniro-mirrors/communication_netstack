@@ -103,6 +103,14 @@ config("tls_test_config") {
 }
 
 ohos_unittest("two_way_tls_socket_server_unittest") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   sources = [
     "TlsSocketServerTest.cpp",
     "tls_socket_branch_test.cpp",
