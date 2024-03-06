@@ -16,6 +16,7 @@
 #include "request_context.h"
 
 #include <algorithm>
+#include <utility>
 
 #include "constant.h"
 #include "http_exec.h"
@@ -515,6 +516,16 @@ void RequestContext::SetDlLen(curl_off_t nowLen, curl_off_t totalLen)
     dlBytes_.push(dlBytes);
 }
 
+void RequestContext::SetCertsPath(std::vector<std::string> &&certPathList, const std::string &certFile)
+{
+    certsPath_.certPathList = std::move(certPathList);
+    certsPath_.certFile = certFile;
+}
+ 
+const CertsPath& RequestContext::GetCertsPath()
+{
+    return certsPath_;
+}
 
 LoadBytes RequestContext::GetDlLen()
 {

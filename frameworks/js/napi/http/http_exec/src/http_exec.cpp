@@ -758,7 +758,6 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *ssl_ctx, void *parm)
     }
     if (ssl_ctx == nullptr) {
         NETSTACK_LOGE("ssl_ctx is null");
-        delete certsPath;
         return CURLE_SSL_CERTPROBLEM;
     }
 
@@ -777,7 +776,6 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *ssl_ctx, void *parm)
     } else if (!SSL_CTX_load_verify_locations((SSL_CTX *) ssl_ctx, certsPath->certFile.c_str(), nullptr)) {
         NETSTACK_LOGE("loading certificates from context cert error.");
     }
-    delete certsPath;
 #endif // HTTP_MULTIPATH_CERT_ENABLE
     return CURLE_OK;
 }
@@ -801,13 +799,11 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
 #endif // HTTP_MULTIPATH_CERT_ENABLE
     // add system cert path
     certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
-    auto *certsPath = new CertsPath;
-    certsPath->certFile = context->options.GetCaPath();
-    certsPath->certPathList = certs;
+    context->SetCertsPath(std::move(certs), context->options.GetCaPath());
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 1L, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 2L, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_FUNCTION, SslCtxFunction, context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, certsPath, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, &context->GetCertsPath(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
 #else
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
