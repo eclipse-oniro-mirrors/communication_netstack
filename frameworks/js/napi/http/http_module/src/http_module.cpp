@@ -230,9 +230,6 @@ napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_i
     return ModuleTemplate::InterfaceWithOutAsyncWork<RequestContext>(
         env, info,
         [](napi_env, napi_value, RequestContext *context) -> bool {
-            if (!HttpExec::Initialize()) {
-                return false;
-            }
             HttpExec::AsyncRunRequest(context);
             return context->IsExecOK();
         },
@@ -240,7 +237,7 @@ napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_i
 #else
     return ModuleTemplate::Interface<RequestContext>(
         env, info, REQUEST_ASYNC_WORK_NAME,
-        [](napi_env, napi_value, RequestContext *) -> bool { return HttpExec::Initialize(); },
+        [](napi_env, napi_value, RequestContext *) -> bool { return true; },
         HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
 #endif
 }
@@ -251,9 +248,6 @@ napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_ca
     return ModuleTemplate::InterfaceWithOutAsyncWork<RequestContext>(
         env, info,
         [](napi_env, napi_value, RequestContext *context) -> bool {
-            if (!HttpExec::Initialize()) {
-                return false;
-            }
             context->EnableRequestInStream();
             HttpExec::AsyncRunRequest(context);
             return true;
@@ -262,7 +256,7 @@ napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_ca
 #else
     return ModuleTemplate::Interface<RequestContext>(
         env, info, REQUEST_ASYNC_WORK_NAME,
-        [](napi_env, napi_value, RequestContext *) -> bool { return HttpExec::Initialize(); },
+        [](napi_env, napi_value, RequestContext *) -> bool { return true; },
         HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
 #endif
 }

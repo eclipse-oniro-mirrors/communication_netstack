@@ -73,15 +73,10 @@ public:
 
     static bool EncodeUrlParam(std::string &str);
 
-    static bool Initialize();
-
-    static bool IsInitialized();
-
-    static void DeInitialize();
-
 #ifndef MAC_PLATFORM
     static void AsyncRunRequest(RequestContext *context);
 #endif
+
     struct StaticContextVec {
         StaticContextVec() = default;
         ~StaticContextVec() = default;
@@ -124,19 +119,13 @@ private:
 
     static bool AddCurlHandle(CURL *handle, RequestContext *context);
 
-    static void HandleCurlData(CURLMsg *msg);
+    static void HandleCurlData(CURLMsg *msg, RequestContext *context);
 
     static bool GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURLMSG curlMsg, CURLcode result);
 
     static double GetTimingFromCurl(CURL *handle, CURLINFO info);
 
     static void CacheCurlPerformanceTiming(CURL *handle, RequestContext *context);
-
-    static void RunThread();
-
-    static void SendRequest();
-
-    static void ReadResponse();
 
     static void GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions);
 
@@ -155,8 +144,6 @@ private:
 
     static void SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *part,
                                   void *curl, RequestContext *context);
-
-    static void AddRequestInfo();
 
     static bool IsContextDeleted(RequestContext *context);
 
@@ -185,34 +172,6 @@ private:
             return context->options.GetPriority() > info.context->options.GetPriority();
         }
     };
-
-    struct StaticVariable {
-        StaticVariable() : curlMulti(nullptr), initialized(false), runThread(true) {}
-
-        ~StaticVariable()
-        {
-            if (HttpExec::IsInitialized()) {
-                HttpExec::DeInitialize();
-            }
-        }
-
-        std::mutex curlMultiMutex;
-        std::mutex mutexForInitialize;
-        CURLM *curlMulti;
-        std::map<CURL *, RequestContext *> contextMap;
-        std::thread workThread;
-        std::condition_variable conditionVariable;
-        std::priority_queue<RequestInfo> infoQueue;
-
-#ifndef MAC_PLATFORM
-        std::atomic_bool initialized;
-        std::atomic_bool runThread;
-#else
-        bool initialized;
-        bool runThread;
-#endif
-    };
-    static StaticVariable staticVariable_;
 };
 } // namespace OHOS::NetStack::Http
 

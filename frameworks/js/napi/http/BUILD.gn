@@ -29,6 +29,7 @@ config("http_config") {
     "options/include",
     "$THIRD_PARTY_ROOT/curl/include",
     "$NETSTACK_DIR/utils/common_utils/include",
+    "$NETSTACK_DIR/utils/http_over_curl/include",
   ]
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
@@ -87,6 +88,8 @@ ohos_shared_library("http") {
     "http_module/src/http_module.cpp",
     "options/src/http_request_options.cpp",
     "options/src/http_response.cpp",
+    "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",
+    "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
   ]
 
   configs = [ ":http_config" ]

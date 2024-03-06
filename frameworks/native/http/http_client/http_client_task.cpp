@@ -16,13 +16,13 @@
 #include <iostream>
 #include <memory>
 
-#include "http_client_task.h"
 #include "http_client.h"
 #include "http_client_constant.h"
+#include "http_client_task.h"
 #include "http_client_time.h"
+#include "net_conn_client.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
-#include "net_conn_client.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data)                                                 \
     do {                                                                                                 \
@@ -127,8 +127,7 @@ uint32_t HttpClientTask::GetHttpVersion(HttpProtocol ptcl) const
     return CURL_HTTP_VERSION_NONE;
 }
 
-void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions,
-                                      bool &tunnel)
+void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions, bool &tunnel)
 {
     if (request_.GetHttpProxyType() == HttpProxyType::USE_SPECIFIED) {
         HttpProxy proxy = request_.GetHttpProxy();
@@ -263,14 +262,14 @@ bool HttpClientTask::SetCurlOptions()
     }
 
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_XFERINFOFUNCTION, ProgressCallback);
-    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_XFERINFODATA, &taskId_);
+    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_XFERINFODATA, this);
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_NOPROGRESS, 0L);
 
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_WRITEFUNCTION, DataReceiveCallback);
-    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_WRITEDATA, &taskId_);
+    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_WRITEDATA, this);
 
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_HEADERFUNCTION, HeaderReceiveCallback);
-    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_HEADERDATA, &taskId_);
+    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_HEADERDATA, this);
 
     if (curlHeaderList_ != nullptr) {
         curl_slist_free_all(curlHeaderList_);
@@ -306,9 +305,8 @@ bool HttpClientTask::SetCurlOptions()
 
 bool HttpClientTask::Start()
 {
-    auto task = shared_from_this();
-    if (task->GetStatus() != TaskStatus::IDLE) {
-        NETSTACK_LOGD("task is running, taskId_=%{public}d", task->GetTaskId());
+    if (GetStatus() != TaskStatus::IDLE) {
+        NETSTACK_LOGD("task is running, taskId_=%{public}d", taskId_);
         return false;
     }
 
@@ -327,9 +325,11 @@ bool HttpClientTask::Start()
 
     HttpSession &session = HttpSession::GetInstance();
     NETSTACK_LOGD("taskId_=%{public}d", taskId_);
-    task->canceled_ = false;
+    canceled_ = false;
 
     response_.SetRequestTime(HttpTime::GetNowTimeGMT());
+
+    auto task = shared_from_this();
     session.StartTask(task);
 
     return true;
@@ -398,15 +398,8 @@ void HttpClientTask::OnProgress(const std::function<void(const HttpClientRequest
 
 size_t HttpClientTask::DataReceiveCallback(const void *data, size_t size, size_t memBytes, void *userData)
 {
-    unsigned int taskId = *reinterpret_cast<unsigned int *>(userData);
-    NETSTACK_LOGD("taskId=%{public}d size=%{public}zu memBytes=%{public}zu",
-                  taskId, size, memBytes);
-
-    auto task = HttpSession::GetInstance().GetTaskById(taskId);
-    if (task == nullptr) {
-        NETSTACK_LOGE("task == nullptr");
-        return 0;
-    }
+    auto task = static_cast<HttpClientTask *>(userData);
+    NETSTACK_LOGD("taskId=%{public}d size=%{public}zu memBytes=%{public}zu", task->taskId_, size, memBytes);
 
     if (task->canceled_) {
         NETSTACK_LOGD("canceled");
@@ -428,17 +421,10 @@ size_t HttpClientTask::DataReceiveCallback(const void *data, size_t size, size_t
 int HttpClientTask::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
                                      curl_off_t ulnow)
 {
-    unsigned int taskId = *reinterpret_cast<unsigned int *>(userData);
-    NETSTACK_LOGD("taskId=%{public}d dltotal=%{public}" CURL_FORMAT_CURL_OFF_T
-                  " dlnow=%{public}" CURL_FORMAT_CURL_OFF_T " ultotal=%{public}" CURL_FORMAT_CURL_OFF_T
-                  " ulnow=%{public}" CURL_FORMAT_CURL_OFF_T,
-                  taskId, dltotal, dlnow, ultotal, ulnow);
-
-    auto task = HttpSession::GetInstance().GetTaskById(taskId);
-    if (task == nullptr) {
-        NETSTACK_LOGE("HttpClientTask::ProgressCallback() task == nullptr");
-        return 0;
-    }
+    auto task = static_cast<HttpClientTask *>(userData);
+    NETSTACK_LOGD("taskId=%{public}d dltotal=%{public}" CURL_FORMAT_CURL_OFF_T " dlnow=%{public}" CURL_FORMAT_CURL_OFF_T
+                  " ultotal=%{public}" CURL_FORMAT_CURL_OFF_T " ulnow=%{public}" CURL_FORMAT_CURL_OFF_T,
+                  task->taskId_, dltotal, dlnow, ultotal, ulnow);
 
     if (task->canceled_) {
         NETSTACK_LOGD("canceled");
@@ -454,22 +440,15 @@ int HttpClientTask::ProgressCallback(void *userData, curl_off_t dltotal, curl_of
 
 size_t HttpClientTask::HeaderReceiveCallback(const void *data, size_t size, size_t memBytes, void *userData)
 {
-    unsigned int taskId = *reinterpret_cast<unsigned int *>(userData);
-    NETSTACK_LOGD("taskId=%{public}d size=%{public}zu memBytes=%{public}zu",
-                  taskId, size, memBytes);
+    auto task = static_cast<HttpClientTask *>(userData);
+    NETSTACK_LOGD("taskId=%{public}d size=%{public}zu memBytes=%{public}zu", task->taskId_, size, memBytes);
 
     if (size * memBytes > MAX_LIMIT) {
-        NETSTACK_LOGE("size * memBytes(%{public}zu) > MAX_LIMIT(%{public}zu)",
-                      size * memBytes, MAX_LIMIT);
+        NETSTACK_LOGE("size * memBytes(%{public}zu) > MAX_LIMIT(%{public}zu)", size * memBytes, MAX_LIMIT);
         return 0;
     }
 
-    auto task = HttpSession::GetInstance().GetTaskById(taskId);
-    if (task == nullptr) {
-        NETSTACK_LOGE("HttpClientTask::HeaderReceiveCallback() task == nullptr");
-        return 0;
-    }
-
+    NETSTACK_LOGD("data=%{public}s", static_cast<const char *>(data));
     task->response_.AppendHeader(static_cast<const char *>(data), size * memBytes);
 
     return size * memBytes;
@@ -509,7 +488,7 @@ bool HttpClientTask::ProcessResponseCode()
         error_.SetCURLResult(code);
         return false;
     }
-    ResponseCode resultCode = static_cast<ResponseCode>(result);
+    auto resultCode = static_cast<ResponseCode>(result);
     NETSTACK_LOGI("id=%{public}d, code=%{public}d", taskId_, resultCode);
     response_.SetResponseCode(resultCode);
 
