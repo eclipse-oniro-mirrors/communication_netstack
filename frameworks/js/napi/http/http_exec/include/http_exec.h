@@ -88,13 +88,6 @@ public:
         std::mutex mutexForContextVec;
         std::set<RequestContext *> contextSet;
     };
-
-    struct CertsPath {
-        CertsPath() = default;
-        ~CertsPath() = default;
-        std::vector<std::string> certPathList;
-        std::string certFile;
-    };
     static StaticContextVec staticContextSet_;
 
 private:

@@ -38,6 +38,14 @@ struct LoadBytes {
     curl_off_t tLen;
 };
 
+struct CertsPath {
+    CertsPath() = default;
+    ~CertsPath() = default;
+    std::vector<std::string> certPathList;
+    std::string certFile;
+};
+ 
+
 class RequestContext final : public BaseContext {
 public:
     RequestContext() = delete;
@@ -97,7 +105,11 @@ public:
     void SetPerformanceTimingToResult(napi_value result);
 
     void SetMultipart(curl_mime *multipart);
-
+    
+    void SetCertsPath(std::vector<std::string> &&certPathList, const std::string &certFile);
+ 
+    const CertsPath& GetCertsPath();
+ 
 private:
     bool usingCache_;
     bool requestInStream_;
@@ -112,6 +124,7 @@ private:
     Timing::TimerMap timerMap_;
     std::map<std::string, double> performanceTimingMap_;
     curl_mime *multipart_;
+    CertsPath certsPath_;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 
