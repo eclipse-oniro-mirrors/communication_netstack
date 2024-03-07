@@ -83,21 +83,21 @@ public:
 
 void SetOneWayHwTestShortParam(TLSSocket &server)
 {
-    TLSConnectOptions options;
     TLSSecureOptions secureOption;
     Socket::NetAddress address;
+    TLSConnectOptions options;
 
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
+    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
 
-    options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
+    options.SetNetAddress(address);
 
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -106,8 +106,8 @@ void SetOneWayHwTestShortParam(TLSSocket &server)
 void SetOneWayHwTestLongParam(TLSSocket &server)
 {
     TLSConnectOptions options;
-    TLSSecureOptions secureOption;
     Socket::NetAddress address;
+    TLSSecureOptions secureOption;
 
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
@@ -116,11 +116,11 @@ void SetOneWayHwTestLongParam(TLSSocket &server)
     secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
-    secureOption.SetCert(ChangeToFile(CLIENT_CRT));
     secureOption.SetCipherSuite("AES256-SHA256");
     std::string protocolV13 = "TLSv1.3";
     std::vector<std::string> protocolVec = {protocolV13};
     secureOption.SetProtocolChain(protocolVec);
+    secureOption.SetCert(ChangeToFile(CLIENT_CRT));
 
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
@@ -213,14 +213,14 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     TLSSecureOptions secureOption;
     Socket::NetAddress address;
 
+    address.SetFamilyBySaFamily(AF_INET);
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
 
     secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
-    secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
+    secureOption.SetCaChain(caVec);
 
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);

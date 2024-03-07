@@ -84,20 +84,20 @@ public:
 void SetSocketHwTestShortParam(TLSSocket &server)
 {
     TLSConnectOptions options;
-    TLSSecureOptions secureOption;
     Socket::NetAddress address;
+    TLSSecureOptions secureOption;
 
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
     secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
-    std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
-    secureOption.SetCaChain(caVec);
+    std::vector<std::string> caVec1 = {ChangeToFile(CA_DER)};
+    secureOption.SetCaChain(caVec1);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
 
-    options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
+    options.SetNetAddress(address);
 
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -109,18 +109,18 @@ void SetSocketHwTestLongParam(TLSSocket &server)
     TLSSecureOptions secureOption;
     Socket::NetAddress address;
 
-    address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
+    address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
 
     secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
-    std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
-    secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
     secureOption.SetCipherSuite("AES256-SHA256");
     std::string protocolV13 = "TLSv1.3";
     std::vector<std::string> protocolVec = {protocolV13};
     secureOption.SetProtocolChain(protocolVec);
+    std::vector<std::string> caVect = {ChangeToFile(CA_DER)};
+    secureOption.SetCaChain(caVect);
 
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
@@ -135,8 +135,8 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
         return;
     }
 
-    TLSSocket server;
     Socket::NetAddress address;
+    TLSSocket server;
 
     address.SetAddress(GetIp(ChangeToFile(IP_ADDRESS)));
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
@@ -240,8 +240,8 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
         return;
     }
 
-    TLSSocket server;
     TLSConnectOptions options;
+    TLSSocket server;
     TLSSecureOptions secureOption;
     Socket::NetAddress address;
 
@@ -249,8 +249,8 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     address.SetPort(std::atoi(ChangeToFile(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> caVec = {ChangeToFile(CA_DER)};
+    secureOption.SetKey(SecureData(ChangeToFile(PRIVATE_KEY_PEM)));
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ChangeToFile(CLIENT_CRT));
 
@@ -264,8 +264,8 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     server.GetRemoteAddress([&netAddress](int32_t errCode, const Socket::NetAddress &address) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         netAddress.SetAddress(address.GetAddress());
-        netAddress.SetPort(address.GetPort());
         netAddress.SetFamilyBySaFamily(address.GetSaFamily());
+        netAddress.SetPort(address.GetPort());
     });
     EXPECT_STREQ(netAddress.GetAddress().c_str(), GetIp(ChangeToFile(IP_ADDRESS)).c_str());
     EXPECT_EQ(address.GetPort(), std::atoi(ChangeToFile(PORT).c_str()));

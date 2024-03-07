@@ -176,7 +176,7 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
         return;
     }
 
-    TLSSocket server;
+    TLSSocket serverTLS;
     Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
@@ -184,7 +184,7 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
     address.SetFamilyBySaFamily(AF_INET);
 
     AccessToken token;
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    serverTLS.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
@@ -270,9 +270,9 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     Socket::NetAddress netAddress;
     server.GetRemoteAddress([&netAddress](int32_t errCode, const Socket::NetAddress &address) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
+        netAddress.SetFamilyBySaFamily(address.GetSaFamily());
         netAddress.SetAddress(address.GetAddress());
         netAddress.SetPort(address.GetPort());
-        netAddress.SetFamilyBySaFamily(address.GetSaFamily());
     });
     EXPECT_STREQ(netAddress.GetAddress().c_str(), GetIp(ReadFileContent(IP_ADDRESS)).c_str());
     EXPECT_EQ(address.GetPort(), std::atoi(ReadFileContent(PORT).c_str()));

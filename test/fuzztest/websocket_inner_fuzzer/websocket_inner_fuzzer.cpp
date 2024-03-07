@@ -98,13 +98,13 @@ void SetRequestOptionsTest(const uint8_t *data, size_t size)
 
 void SetConnectUrlTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size < 1)) {
+    if (size < 1 || data == nullptr) {
         return;
     }
     SetGlobalFuzzData(data, size);
     std::string str = GetStringFromData(STR_LEN);
-    openOptions.headers["Content-Type"] = "application/json";
     openOptions.headers["Authorization"] = "Bearer your_token_here";
+    openOptions.headers["Content-Type"] = "application/json";
     WebSocketClient *client = new WebSocketClient();
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
     client->Connect(str, openOptions);
@@ -115,10 +115,10 @@ void SetSendDataTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size < 1)) {
         return;
     }
+    openOptions.headers["Authorization"] = "Bearer your_token_here";
     SetGlobalFuzzData(data, size);
     std::string str = GetStringFromData(STR_LEN);
     openOptions.headers["Content-Type"] = "application/json";
-    openOptions.headers["Authorization"] = "Bearer your_token_here";
     WebSocketClient *client = new WebSocketClient();
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
     client->Connect("www.baidu.com", openOptions);
@@ -147,10 +147,10 @@ void SetCloseOptionTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size < 1)) {
         return;
     }
-    SetGlobalFuzzData(data, size);
-    std::string str = GetStringFromData(STR_LEN);
     openOptions.headers["Content-Type"] = "application/json";
     openOptions.headers["Authorization"] = "Bearer your_token_here";
+    SetGlobalFuzzData(data, size);
+    std::string str = GetStringFromData(STR_LEN);
 
     WebSocketClient *client = new WebSocketClient();
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);

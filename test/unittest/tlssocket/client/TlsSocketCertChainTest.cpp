@@ -118,10 +118,10 @@ void SetCertChainHwTestLongParam(TLSSocket &server)
     std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
-    secureOption.SetCipherSuite("AES256-SHA256");
     std::string protocolV13 = "TLSv1.3";
     std::vector<std::string> protocolVec = {protocolV13};
     secureOption.SetProtocolChain(protocolVec);
+    secureOption.SetCipherSuite("AES256-SHA256");
 
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
@@ -136,14 +136,14 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
         return;
     }
 
-    TLSSocket server;
+    TLSSocket testServer;
     Socket::NetAddress address;
 
     address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
     address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
     address.SetFamilyBySaFamily(AF_INET);
 
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    testServer.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
@@ -228,9 +228,9 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     Socket::NetAddress netAddress;
     server.GetRemoteAddress([&netAddress](int32_t errCode, const Socket::NetAddress &address) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
-        netAddress.SetAddress(address.GetAddress());
         netAddress.SetPort(address.GetPort());
         netAddress.SetFamilyBySaFamily(address.GetSaFamily());
+        netAddress.SetAddress(address.GetAddress());
     });
     EXPECT_STREQ(netAddress.GetAddress().c_str(), GetIp(ReadFileContent(IP_ADDRESS)).c_str());
     EXPECT_EQ(address.GetPort(), std::atoi(ReadFileContent(PORT).c_str()));
