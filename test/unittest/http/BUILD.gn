@@ -19,6 +19,7 @@ NETSTACK_NAPI_ROOT = "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/"
 
 utils_include = [
   "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
+  "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/include",
   "$SUBSYSTEM_DIR/netstack/utils/log/include",
   "$THIRD_PARTY_ROOT/curl/include",
 ]
@@ -65,6 +66,7 @@ ohos_unittest("http_unittest") {
     "$NETSTACK_NAPI_ROOT/http/options/src/http_request_options.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_response.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/src/epoll_request_handler.cpp",
     "HttpExecTest.cpp",
     "HttpRequestOptionsTest.cpp",
   ]
