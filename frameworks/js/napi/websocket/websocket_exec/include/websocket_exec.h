@@ -77,7 +77,7 @@ private:
 
     static void OnError(EventManager *manager, int32_t code);
 
-    static void OnMessage(EventManager *manager, void *data, size_t length, bool isBinary);
+    static void OnMessage(EventManager *manager, void *data, size_t length, bool isBinary, bool isFinal);
 
     static void OnClose(EventManager *manager, lws_close_status closeStatus, const std::string &closeReason);
 };

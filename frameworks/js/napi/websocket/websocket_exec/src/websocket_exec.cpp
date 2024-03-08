@@ -38,6 +38,8 @@ static constexpr const char *PREFIX_HTTPS = "https";
 
 static constexpr const char *PREFIX_WSS = "wss";
 
+static constexpr const char *PREFIX_WS = "ws";
+
 static constexpr const int MAX_URI_LENGTH = 1024;
 
 static constexpr const int MAX_HDR_LENGTH = 1024;
@@ -79,18 +81,7 @@ struct OnOpenClosePara {
     std::string message;
 };
 
-struct OnMessagePara {
-    OnMessagePara() : data(nullptr), length(0), isBinary(false) {}
-    ~OnMessagePara()
-    {
-        if (data != nullptr) {
-            free(data);
-        }
-    }
-    void *data;
-    size_t length;
-    bool isBinary;
-};
+static const std::vector<std::string> WS_PREFIX = {PREFIX_WSS, PREFIX_WS};
 
 class UserData {
 public:
@@ -391,8 +382,14 @@ int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reaso
 
 int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGI("LwsCallbackClientReceive");
-    OnMessage(reinterpret_cast<EventManager *>(user), in, len, lws_frame_is_binary(wsi));
+    NETSTACK_LOGD("LwsCallbackClientReceive");
+    auto manager = reinterpret_cast<EventManager *>(user);
+    if (!EventManager::IsManagerValid(manager)) {
+        NETSTACK_LOGE("manager is invalid");
+        return -1;
+    }
+    auto isFinal = lws_is_final_fragment(wsi);
+    OnMessage(manager, in, len, lws_frame_is_binary(wsi), isFinal);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -401,6 +398,10 @@ int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_re
 {
     NETSTACK_LOGI("LwsCallbackClientFilterPreEstablish");
     auto manager = reinterpret_cast<EventManager *>(user);
+    if (!EventManager::IsManagerValid(manager)) {
+        NETSTACK_LOGE("manager is invalid");
+        return -1;
+    }
     if (manager->GetData() == nullptr) {
         NETSTACK_LOGE("user data is null");
         return RaiseError(manager);
@@ -425,6 +426,10 @@ int WebSocketExec::LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons r
 {
     NETSTACK_LOGI("LwsCallbackClientEstablished");
     auto manager = reinterpret_cast<EventManager *>(user);
+    if (!EventManager::IsManagerValid(manager)) {
+        NETSTACK_LOGE("manager is invalid");
+        return -1;
+    }
     if (manager->GetData() == nullptr) {
         NETSTACK_LOGE("user data is null");
         return RaiseError(manager);
@@ -439,6 +444,10 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
 {
     NETSTACK_LOGI("LwsCallbackClientClosed");
     auto manager = reinterpret_cast<EventManager *>(user);
+    if (!EventManager::IsManagerValid(manager)) {
+        NETSTACK_LOGE("manager is invalid");
+        return -1;
+    }
     if (manager->GetData() == nullptr) {
         NETSTACK_LOGE("user data is null");
         return RaiseError(manager);
@@ -447,6 +456,10 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
     userData->SetThreadStop(true);
     if ((userData->closeReason).empty()) {
         userData->Close(userData->closeStatus, LINK_DOWN);
+    }
+    if (userData->closeStatus == LWS_CLOSE_STATUS_NOSTATUS) {
+        NETSTACK_LOGE("The link is down, onError");
+        OnError(manager, COMMON_ERROR_CODE);
     }
     OnClose(reinterpret_cast<EventManager *>(user), userData->closeStatus, userData->closeReason);
     return HttpDummy(wsi, reason, user, in, len);
@@ -538,6 +551,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
 
 bool WebSocketExec::ExecConnect(ConnectContext *context)
 {
+    NETSTACK_LOGD("websocket_SSL ExecConnect begin\n");
     if (context == nullptr) {
         NETSTACK_LOGE("context is nullptr");
         return false;
@@ -546,25 +560,35 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    NETSTACK_LOGI("begin connect, parse url");
-    if (context->GetManager() == nullptr) {
+    NETSTACK_LOGD("begin connect, parse url");
+    auto manager = context->GetManager();
+    if (manager == nullptr) {
         return false;
     }
     lws_context_creation_info info = {};
     FillContextInfo(info);
-    lws_context *lwsContext = lws_create_context(&info);
-    EventManager *manager = context->GetManager();
-    if (manager != nullptr && manager->GetData() == nullptr) {
-        auto userData = new UserData(lwsContext);
+    lws_context *lwsContext = nullptr;
+    UserData *userData = nullptr;
+    if (manager->GetData() == nullptr) {
+        lwsContext = lws_create_context(&info);
+        userData = new UserData(lwsContext);
         userData->header = context->header;
         manager->SetData(userData);
-    }
-    if (!CreatConnectInfo(context, lwsContext, manager)) {
+    } else {
+        NETSTACK_LOGE("Websocket connect already exist");
+        context->SetErrorCode(WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST);
         return false;
     }
-
+    if (!CreatConnectInfo(context, lwsContext, manager)) {
+        manager->SetData(nullptr);
+        userData->SetContext(nullptr);
+        lws_context_destroy(lwsContext);
+        delete userData;
+        return false;
+    }
     std::thread serviceThread(RunService, manager);
     serviceThread.detach();
+    delete userData;
     return true;
 }
 
@@ -644,6 +668,12 @@ napi_value WebSocketExec::CloseCallback(CloseContext *context)
     return NapiUtils::GetBoolean(context->GetEnv(), true);
 }
 
+static napi_value CreateDataEnd(napi_env env, void *callbackPara)
+{
+    (void)callbackPara;
+    return NapiUtils::GetUndefined(env);
+}
+
 static napi_value CreateError(napi_env env, void *callbackPara)
 {
     auto code = reinterpret_cast<int32_t *>(callbackPara);
@@ -685,29 +715,35 @@ static napi_value CreateClosePara(napi_env env, void *callbackPara)
     return obj;
 }
 
-static napi_value CreateMessagePara(napi_env env, void *callbackPara)
+static napi_value CreateTextMessagePara(napi_env env, void *callbackPara)
 {
-    auto para = reinterpret_cast<OnMessagePara *>(callbackPara);
-    auto deleter = [](const OnMessagePara *p) { delete p; };
-    std::unique_ptr<OnMessagePara, decltype(deleter)> handler(para, deleter);
-    if (!para->isBinary) {
-        std::string str;
-        str.append(reinterpret_cast<char *>(para->data), para->length);
-        return NapiUtils::CreateStringUtf8(env, str);
-    }
+    auto msg = reinterpret_cast<std::string *>(callbackPara);
+    auto text = NapiUtils::CreateStringUtf8(env, *msg);
+    delete msg;
+    return text;
+}
 
+static napi_value CreateBinaryMessagePara(napi_env env, void *callbackPara)
+{
+    auto msg = reinterpret_cast<std::string *>(callbackPara);
     void *data = nullptr;
-    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(env, para->length, &data);
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(env, msg->size(), &data);
     if (data != nullptr && NapiUtils::ValueIsArrayBuffer(env, arrayBuffer) &&
-        memcpy_s(data, para->length, para->data, para->length) >= 0) {
+        memcpy_s(data, msg->size(), msg->data(), msg->size()) == EOK) {
+        delete msg;
         return arrayBuffer;
     }
+    delete msg;
     return NapiUtils::GetUndefined(env);
 }
 
 void WebSocketExec::OnError(EventManager *manager, int32_t code)
 {
     NETSTACK_LOGI("OnError %{public}d", code);
+    if (!EventManager::IsManagerValid(manager)) {
+        NETSTACK_LOGE("manager is invalid");
+        return;
+    }
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is null");
         return;
@@ -722,6 +758,10 @@ void WebSocketExec::OnError(EventManager *manager, int32_t code)
 void WebSocketExec::OnOpen(EventManager *manager, uint32_t status, const std::string &message)
 {
     NETSTACK_LOGI("OnOpen %{public}u %{public}s", status, message.c_str());
+    if (!EventManager::IsManagerValid(manager)) {
+        NETSTACK_LOGE("manager is invalid");
+        return;
+    }
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is null");
         return;
@@ -739,6 +779,10 @@ void WebSocketExec::OnOpen(EventManager *manager, uint32_t status, const std::st
 void WebSocketExec::OnClose(EventManager *manager, lws_close_status closeStatus, const std::string &closeReason)
 {
     NETSTACK_LOGI("OnClose %{public}u %{public}s", closeStatus, closeReason.c_str());
+    if (!EventManager::IsManagerValid(manager)) {
+        NETSTACK_LOGE("manager is invalid");
+        return;
+    }
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is null");
         return;
@@ -753,9 +797,9 @@ void WebSocketExec::OnClose(EventManager *manager, lws_close_status closeStatus,
     manager->EmitByUv(EventName::EVENT_CLOSE, para, CallbackTemplate<CreateClosePara>);
 }
 
-void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, bool isBinary)
+void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, bool isBinary, bool isFinal)
 {
-    NETSTACK_LOGI("OnMessage %{public}d", isBinary);
+    NETSTACK_LOGD("OnMessage %{public}d", isBinary);
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is null");
         return;
@@ -768,21 +812,40 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
         NETSTACK_LOGE("data length too long");
         return;
     }
-    auto para = new OnMessagePara;
-    // para->data will free on OnMessagePara destructor, so there is no memory leak problem.
-    para->data = malloc(length);
-    if (para->data == nullptr) {
-        delete para;
-        NETSTACK_LOGE("no memory");
-        return;
+    if (isBinary) {
+        manager->AppendWebSocketBinaryData(data, length);
+        if (isFinal) {
+            const std::string &msgFromManager = manager->GetWebSocketBinaryData();
+            auto msg = new std::string;
+            msg->append(msgFromManager.data(), msgFromManager.size());
+            if (EventManager::IsManagerValid(manager)) {
+                manager->EmitByUv(EventName::EVENT_MESSAGE, msg, CallbackTemplate<CreateBinaryMessagePara>);
+            } else {
+                NETSTACK_LOGE("manager is invalid");
+                return;
+            }
+            manager->ClearWebSocketBinaryData();
+            if (!manager->HasEventListener(EventName::EVENT_DATA_END)) {
+                NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_DATA_END);
+                return;
+            }
+            manager->EmitByUv(EventName::EVENT_DATA_END, nullptr, CallbackTemplate<CreateDataEnd>);
+            delete msg;
+        }
+    } else {
+        manager->AppendWebSocketTextData(data, length);
+        if (isFinal) {
+            const std::string &msgFromManager = manager->GetWebSocketTextData();
+            auto msg = new std::string;
+            msg->append(msgFromManager.data(), msgFromManager.size());
+            if (!EventManager::IsManagerValid(manager)) {
+                NETSTACK_LOGE("manager is invalid");
+                return;
+            }
+            manager->EmitByUv(EventName::EVENT_MESSAGE, msg, CallbackTemplate<CreateTextMessagePara>);
+            manager->ClearWebSocketTextData();
+            delete msg;
+        }
     }
-    if (memcpy_s(para->data, length, data, length) < 0) {
-        delete para;
-        NETSTACK_LOGE("mem copy failed");
-        return;
-    }
-    para->length = length;
-    para->isBinary = isBinary;
-    manager->EmitByUv(EventName::EVENT_MESSAGE, para, CallbackTemplate<CreateMessagePara>);
 }
 } // namespace OHOS::NetStack::Websocket

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,11 +30,17 @@ enum {
 enum WebsocketErrorCode {
     WEBSOCKET_CONNECT_FAILED = -1,
     WEBSOCKET_ERROR_CODE_BASE = 2302000,
+    WEBSOCKET_ERROR_CODE_URL_ERROR = WEBSOCKET_ERROR_CODE_BASE + 1,
+    WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST = WEBSOCKET_ERROR_CODE_BASE + 2,
+    WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST =  WEBSOCKET_ERROR_CODE_BASE + 3,
     WEBSOCKET_UNKNOWN_OTHER_ERROR = 2302999
 };
 
 static const std::map<int32_t, std::string> WEBSOCKET_ERR_MAP = {
     {WEBSOCKET_CONNECT_FAILED, "Websocket connect failed"},
+    {WEBSOCKET_ERROR_CODE_URL_ERROR, "Websocket url error"},
+    {WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST, "Websocket file not exist"},
+    {WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST, "Websocket connection exist"},
     {WEBSOCKET_UNKNOWN_OTHER_ERROR, "Websocket Unknown Other Error"}
 };
 
@@ -75,6 +81,8 @@ public:
     static const char *EVENT_CLOSE;
 
     static const char *EVENT_ERROR;
+
+    static const char *EVENT_DATA_END;
 };
 } // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_CONSTANT_H */
