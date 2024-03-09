@@ -765,18 +765,20 @@ bool WebSocketExec::ExecSend(SendContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    if (context->GetManager() == nullptr) {
+    auto manager = context->GetManager();
+    if (manager == nullptr) {
         NETSTACK_LOGE("context is null");
         return false;
     }
-
-    auto manager = context->GetManager();
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
     if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
         return false;
     }
-
+    if(userData->IsClosed() || userData->IsThreadStop()) {
+        NETSTACK_LOGE("session is closed or stopped");
+        return false;
+    }
     userData->Push(context->data, context->length, context->protocol);
     NETSTACK_LOGI("ExecSend OK");
     return true;
@@ -784,7 +786,6 @@ bool WebSocketExec::ExecSend(SendContext *context)
 
 napi_value WebSocketExec::SendCallback(SendContext *context)
 {
-    NETSTACK_LOGI("SendCallback success");
     return NapiUtils::GetBoolean(context->GetEnv(), true);
 }
 
@@ -817,7 +818,6 @@ bool WebSocketExec::ExecClose(CloseContext *context)
 
 napi_value WebSocketExec::CloseCallback(CloseContext *context)
 {
-    NETSTACK_LOGI("CloseCallback success");
     return NapiUtils::GetBoolean(context->GetEnv(), true);
 }
 
