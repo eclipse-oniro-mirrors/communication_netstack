@@ -780,7 +780,7 @@ bool WebSocketExec::ExecSend(SendContext *context)
         return false;
     }
     userData->Push(context->data, context->length, context->protocol);
-    NETSTACK_LOGI("ExecSend OK");
+    NETSTACK_LOGI("websocket send OK");
     return true;
 }
 
