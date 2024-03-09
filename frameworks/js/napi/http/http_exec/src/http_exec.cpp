@@ -796,7 +796,6 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     // add user cert path
     certs.emplace_back(USER_CERT_ROOT_PATH);
     certs.emplace_back(USER_CERT_PATH);
-#endif // HTTP_MULTIPATH_CERT_ENABLE
     // add system cert path
     certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
     context->SetCertsPath(std::move(certs), context->options.GetCaPath());
@@ -805,6 +804,10 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_FUNCTION, SslCtxFunction, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, &context->GetCertsPath(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
+#else
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
+#endif // HTTP_MULTIPATH_CERT_ENABLE
 #else
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
