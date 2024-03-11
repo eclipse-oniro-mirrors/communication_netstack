@@ -19,6 +19,7 @@
 
 #include "tls_configuration.h"
 #include "tls.h"
+#include "TlsTest.h"
 
 namespace OHOS {
 namespace NetStack {

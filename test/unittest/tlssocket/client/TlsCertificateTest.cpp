@@ -20,6 +20,7 @@
 
 #define private public
 #include "tls.h"
+#include "TlsTest.h"
 #include "tls_certificate.h"
 
 namespace OHOS {

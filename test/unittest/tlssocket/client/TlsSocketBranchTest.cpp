@@ -24,6 +24,7 @@
 #include "socket_remote_info.h"
 #include "token_setproc.h"
 #include "tls.h"
+#include "TlsTest.h"
 
 namespace OHOS {
 namespace NetStack {

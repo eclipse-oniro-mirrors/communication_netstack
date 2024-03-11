@@ -22,6 +22,7 @@
 #define private public
 #include "tls_context.h"
 #include "tls.h"
+#include "TlsTest.h"
 
 namespace OHOS {
 namespace NetStack {
