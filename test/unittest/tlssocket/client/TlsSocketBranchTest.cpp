@@ -50,12 +50,12 @@ const int SSL_ERROR_RETURN = -1;
 TLSConnectOptions BaseOption()
 {
     TLSSecureOptions secureOption;
-    SecureData structureData(g_priKeyFile);
+    SecureData structureData(PRI_KEY_FILE);
     secureOption.SetKey(structureData);
     std::vector<std::string> caChain;
-    caChain.push_back(g_caCrtFile);
+    caChain.push_back(CA_CRT_FILE);
     secureOption.SetCaChain(caChain);
-    secureOption.SetCert(g_clientFile);
+    secureOption.SetCert(CLIENT_FILE);
     secureOption.SetCipherSuite(CIPHER_SUITE);
     secureOption.SetSignatureAlgorithms(SIGNATURE_ALGORITHM);
     std::vector<std::string> protocol;
@@ -141,20 +141,20 @@ public:
 HWTEST_F(TlsSocketBranchTest, BranchTest1, TestSize.Level2)
 {
     TLSSecureOptions secureOption;
-    SecureData structureData(g_priKeyFile);
+    SecureData structureData(PRI_KEY_FILE);
     secureOption.SetKey(structureData);
 
     SecureData keyPass(KEY_PASS);
     secureOption.SetKeyPass(keyPass);
     SecureData secureData = secureOption.GetKey();
-    EXPECT_EQ(structureData.Length(), strlen(g_priKeyFile));
+    EXPECT_EQ(structureData.Length(), strlen(PRI_KEY_FILE));
     std::vector<std::string> caChain;
-    caChain.push_back(g_caCrtFile);
+    caChain.push_back(CA_CRT_FILE);
     secureOption.SetCaChain(caChain);
     std::vector<std::string> getCaChain = secureOption.GetCaChain();
     EXPECT_NE(getCaChain.data(), nullptr);
 
-    secureOption.SetCert(g_clientFile);
+    secureOption.SetCert(CLIENT_FILE);
     std::string getCert = secureOption.GetCert();
     EXPECT_NE(getCert.data(), nullptr);
 
@@ -219,12 +219,12 @@ HWTEST_F(TlsSocketBranchTest, BranchTest3, TestSize.Level2)
 HWTEST_F(TlsSocketBranchTest, BranchTest4, TestSize.Level2)
 {
     TLSSecureOptions secureOption;
-    SecureData structureData(g_priKeyFile);
+    SecureData structureData(PRI_KEY_FILE);
     secureOption.SetKey(structureData);
     std::vector<std::string> caChain;
-    caChain.push_back(g_caCrtFile);
+    caChain.push_back(CA_CRT_FILE);
     secureOption.SetCaChain(caChain);
-    secureOption.SetCert(g_clientFile);
+    secureOption.SetCert(CLIENT_FILE);
 
     TLSConnectOptions connectOptions;
     connectOptions.SetTlsSecureOptions(secureOption);

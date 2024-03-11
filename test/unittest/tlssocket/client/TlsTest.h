@@ -21,7 +21,7 @@
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
-constexpr const char g_clientFile[] =
+constexpr const char CLIENT_FILE[] =
     "-----BEGIN CERTIFICATE-----\r\n"
     "MIIDezCCAmMCFD6h5R4QvySV9q9mC6s31qQFLX14MA0GCSqGSIb3DQEBCwUAMHgx\r\n"
     "CzAJBgNVBAYTAkNOMQswCQYDVQQIDAJHRDELMAkGA1UEBwwCU1oxDDAKBgNVBAoM\r\n"
@@ -44,7 +44,7 @@ constexpr const char g_clientFile[] =
     "yA7Z3PBj8aqEwmRUF8SAR1bxWBGk2IYRwgStuwvusg==\r\n"
     "-----END CERTIFICATE-----\r\n";
 
-constexpr const char g_certificat[] =
+constexpr const char CERTIFICAT[] =
     "-----BEGIN CERTIFICATE-----\r\n"
     "MIIDNzCCAh8CFDtvcMez0hxPAfnZQnWFGukh69e4MA0GCSqGSIb3DQEBCwUAMFgx\r\n"
     "CzAJBgNVBAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQKDBhJbnRl\r\n"
@@ -66,7 +66,7 @@ constexpr const char g_certificat[] =
     "ed2YEa3zgjRGFIE=\r\n"
     "-----END CERTIFICATE-----\r\n";
 
-constexpr const char g_caCrtFile[] =
+constexpr const char CA_CRT_FILE[] =
     "Certificate:\r\n"
     "   Data:\r\n"
     "        Version: 3 (0x2)\r\n"
@@ -141,7 +141,7 @@ constexpr const char g_caCrtFile[] =
     "RH8V5PqYHj1YwrZaZGjQ\r\n"
     "-----END CERTIFICATE-----\r\n";
 
-constexpr const char g_priKeyFile[] =
+constexpr const char PRI_KEY_FILE[] =
     "-----BEGIN RSA PRIVATE KEY-----"
     "MIIEowIBAAKCAQEAqVzrf6PkLu0uhp5yl2HPNm0vLyI1KLqgsdz5s+JvVdbPXNxD"
     "g6fmdwa64tJXZPKx7i1KwNs/Jx3xv1N6rqB0au+Ku0Zdq7zbMCqej63SbFW1XWvQ"
