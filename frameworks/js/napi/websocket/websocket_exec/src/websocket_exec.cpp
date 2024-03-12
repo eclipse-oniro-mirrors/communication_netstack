@@ -588,7 +588,6 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     }
     std::thread serviceThread(RunService, manager);
     serviceThread.detach();
-    delete userData;
     return true;
 }
 
@@ -830,7 +829,6 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
                 return;
             }
             manager->EmitByUv(EventName::EVENT_DATA_END, nullptr, CallbackTemplate<CreateDataEnd>);
-            delete msg;
         }
     } else {
         manager->AppendWebSocketTextData(data, length);
@@ -844,7 +842,6 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
             }
             manager->EmitByUv(EventName::EVENT_MESSAGE, msg, CallbackTemplate<CreateTextMessagePara>);
             manager->ClearWebSocketTextData();
-            delete msg;
         }
     }
 }
