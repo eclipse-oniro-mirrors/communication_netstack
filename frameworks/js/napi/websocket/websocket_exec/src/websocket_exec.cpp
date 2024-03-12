@@ -424,8 +424,7 @@ void OnConnectError(EventManager *manager, int32_t code)
 int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                     size_t len)
 {
-    NETSTACK_LOGI("Lws client connection error %{public}s",
-                  (in == nullptr) ? "null" : reinterpret_cast<char *>(in));
+    NETSTACK_LOGI("Lws client connection error %{public}s", (in == nullptr) ? "null" : reinterpret_cast<char *>(in));
     // 200 means connect failed
     OnConnectError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE);
     return HttpDummy(wsi, reason, user, in, len);
@@ -486,6 +485,16 @@ int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_re
             }
         }
     }
+    lws_hdr_custom_name_foreach(
+        wsi,
+        [](const char *name, int nlen, void *opaque) -> void {
+            auto responseHeader = static_cast<std::map<std::string, std::string> *>(opaque);
+            if (responseHeader == nullptr) {
+                return;
+            }
+            responseHeader->emplace(std::string(name).substr(0, nlen - 1), std::string(name).substr(nlen));
+        },
+        &responseHeader);
     OnHeaderReceive(manager, responseHeader);
     return HttpDummy(wsi, reason, user, in, len);
 }
@@ -911,6 +920,9 @@ void WebSocketExec::OnError(EventManager *manager, int32_t code)
 napi_value CreateResponseHeader(napi_env env, void *callbackPara)
 {
     auto para = reinterpret_cast<std::map<std::string, std::string> *>(callbackPara);
+    if (para == nullptr) {
+        return NapiUtils::GetUndefined(env);
+    }
     auto deleter = [](const std::map<std::string, std::string> *p) {
         delete p;
         p = nullptr;
@@ -1007,7 +1019,10 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
         manager->AppendWebSocketTextData(data, length);
         if (isFinal) {
             const std::string &msgFromManager = manager->GetWebSocketTextData();
-            auto msg = new std::string;
+            auto msg = new (std::nothrow) std::string;
+            if (msg == nullptr) {
+                return;
+            }
             msg->append(msgFromManager.data(), msgFromManager.size());
             manager->EmitByUv(EventName::EVENT_MESSAGE, msg, CallbackTemplate<CreateTextMessagePara>);
             manager->ClearWebSocketTextData();
