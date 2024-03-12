@@ -22,6 +22,7 @@
 #define private public
 #include "tls_context.h"
 #include "tls.h"
+#include "TlsTest.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -64,12 +65,12 @@ HWTEST_F(TlsContextTest, ContextTest2, TestSize.Level2)
     protocol.push_back(PROTOCOL12);
     protocol.push_back(PROTOCOL11);
     TLSConfiguration configuration;
-    std::vector<std::string> caVec = {g_caCrtFile};
+    std::vector<std::string> caVec = {CA_CRT_FILE};
     configuration.SetCaCertificate(caVec);
     configuration.SetProtocol(protocol);
     configuration.SetCipherSuite(CIPHER_SUITE);
     configuration.SetSignatureAlgorithms(SIGNATURE_ALGORITHMS);
-    configuration.SetLocalCertificate(g_clientFile);
+    configuration.SetLocalCertificate(CLIENT_FILE);
     std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
     EXPECT_NE(tlsContext, nullptr);
     TLSContext::SetMinAndMaxProtocol(tlsContext.get());
@@ -137,12 +138,12 @@ HWTEST_F(TlsContextTest, ContextNullTest, TestSize.Level2)
     protocol.push_back(PROTOCOL12);
     protocol.push_back(PROTOCOL11);
     TLSConfiguration configuration;
-    std::vector<std::string> caVec = {g_caCrtFile};
+    std::vector<std::string> caVec = {CA_CRT_FILE};
     configuration.SetCaCertificate(caVec);
     configuration.SetProtocol(protocol);
     configuration.SetCipherSuite(CIPHER_SUITE);
     configuration.SetSignatureAlgorithms(SIGNATURE_ALGORITHMS);
-    configuration.SetLocalCertificate(g_clientFile);
+    configuration.SetLocalCertificate(CLIENT_FILE);
     std::unique_ptr<TLSContext> tlsContext = nullptr;
     EXPECT_EQ(tlsContext, nullptr);
     TLSContext::SetMinAndMaxProtocol(tlsContext.get());
@@ -169,7 +170,7 @@ HWTEST_F(TlsContextTest, ContextFailTest1, TestSize.Level2)
     protocol.push_back("1.3");
     protocol.push_back("1.2");
     TLSConfiguration configuration;
-    std::vector<std::string> caVec = {g_caCrtFile};
+    std::vector<std::string> caVec = {CA_CRT_FILE};
     configuration.SetCaCertificate(caVec);
     configuration.SetProtocol(protocol);
     configuration.SetCipherSuite(CIPHER_SUITE);

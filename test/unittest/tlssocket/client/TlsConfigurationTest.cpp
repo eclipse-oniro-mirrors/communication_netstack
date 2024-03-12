@@ -19,6 +19,7 @@
 
 #include "tls_configuration.h"
 #include "tls.h"
+#include "TlsTest.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -42,7 +43,7 @@ HWTEST_F(TlsConfigurationTest, AssignmentConstruction, TestSize.Level2)
 {
     TLSConfiguration tlsConfiguration;
     TLSConfiguration configuration = tlsConfiguration;
-    configuration.SetLocalCertificate(g_clientFile);
+    configuration.SetLocalCertificate(CLIENT_FILE);
     TLSCertificate tlsCertificate = configuration.GetLocalCertificate();
     EXPECT_NE(tlsCertificate.handle(), nullptr);
     X509CertRawData x509CertRawData = configuration.GetCertificate();
@@ -52,7 +53,7 @@ HWTEST_F(TlsConfigurationTest, AssignmentConstruction, TestSize.Level2)
 HWTEST_F(TlsConfigurationTest, CopyConstruction, TestSize.Level2)
 {
     TLSConfiguration tlsConfiguration;
-    tlsConfiguration.SetLocalCertificate(g_clientFile);
+    tlsConfiguration.SetLocalCertificate(CLIENT_FILE);
     TLSConfiguration configuration = TLSConfiguration(tlsConfiguration);
     TLSCertificate tlsCertificate = configuration.GetLocalCertificate();
     EXPECT_NE(tlsCertificate.handle(), nullptr);
@@ -61,9 +62,9 @@ HWTEST_F(TlsConfigurationTest, CopyConstruction, TestSize.Level2)
 HWTEST_F(TlsConfigurationTest, SetAndGetCa, TestSize.Level2)
 {
     TLSConfiguration tlsConfiguration;
-    tlsConfiguration.SetLocalCertificate(g_clientFile);
+    tlsConfiguration.SetLocalCertificate(CLIENT_FILE);
     std::vector<std::string> certificate;
-    certificate.push_back(g_caCrtFile);
+    certificate.push_back(CA_CRT_FILE);
     tlsConfiguration.SetCaCertificate(certificate);
     std::vector<std::string> getCaCertificate;
     getCaCertificate = tlsConfiguration.GetCaCertificate();
@@ -73,14 +74,14 @@ HWTEST_F(TlsConfigurationTest, SetAndGetCa, TestSize.Level2)
 HWTEST_F(TlsConfigurationTest, SetPrivateKey, TestSize.Level2)
 {
     TLSConfiguration tlsConfiguration;
-    tlsConfiguration.SetLocalCertificate(g_clientFile);
-    SecureData structureData(g_priKeyFile);
+    tlsConfiguration.SetLocalCertificate(CLIENT_FILE);
+    SecureData structureData(PRI_KEY_FILE);
     std::string keyPassStr = "";
     SecureData keyPass(keyPassStr);
     tlsConfiguration.SetPrivateKey(structureData, keyPass);
     TLSKey tlsKey = tlsConfiguration.GetPrivateKey();
     SecureData tlsKeyData = tlsKey.GetKeyData();
-    EXPECT_EQ(tlsKeyData.Length(), strlen(g_priKeyFile));
+    EXPECT_EQ(tlsKeyData.Length(), strlen(PRI_KEY_FILE));
 }
 
 HWTEST_F(TlsConfigurationTest, SetProtocol, TestSize.Level2)
