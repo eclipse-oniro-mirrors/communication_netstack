@@ -775,7 +775,7 @@ bool WebSocketExec::ExecSend(SendContext *context)
         NETSTACK_LOGE("user data is null");
         return false;
     }
-    if(userData->IsClosed() || userData->IsThreadStop()) {
+    if (userData->IsClosed() || userData->IsThreadStop()) {
         NETSTACK_LOGE("session is closed or stopped");
         return false;
     }
