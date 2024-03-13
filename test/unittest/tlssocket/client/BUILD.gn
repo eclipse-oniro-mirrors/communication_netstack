@@ -17,6 +17,7 @@ import("//foundation/communication/netstack/netstack_config.gni")
 TLS = "$NETSTACK_NATIVE_ROOT/tls_socket"
 TLS_NAPI = "$NETSTACK_DIR/frameworks/js/napi/tls"
 SOCKET = "$NETSTACK_DIR/frameworks/js/napi/socket"
+TLS_SOCKET_TEST = "$NETSTACK_DIR/test/unittest/tlssocket/client"
 
 tls_sources = [
   "$TLS/src/secure_data.cpp",
@@ -85,6 +86,8 @@ socket_sources = [
   "$SOCKET/socket_module/src/socket_module.cpp",
 ]
 
+tls_socket_test_sources = [ "$TLS_SOCKET_TEST/tls_utils_test.cpp" ]
+
 config("tls_test_config") {
   include_dirs = [
     "$TLS/include",
@@ -115,6 +118,7 @@ ohos_unittest("two_way_tls_socket_unittest") {
   sources += tls_sources
   sources += tls_napi_sources
   sources += socket_sources
+  sources += tls_socket_test_sources
 
   configs = [ ":tls_test_config" ]
 
@@ -158,6 +162,7 @@ ohos_unittest("one_way_tls_socket_unittest") {
   sources += tls_sources
   sources += tls_napi_sources
   sources += socket_sources
+  sources += tls_socket_test_sources
 
   configs = [ ":tls_test_config" ]
 
@@ -201,6 +206,7 @@ ohos_unittest("two_way_tls_socket_certchain_unittest") {
   sources += tls_sources
   sources += tls_napi_sources
   sources += socket_sources
+  sources += tls_socket_test_sources
 
   configs = [ ":tls_test_config" ]
 
@@ -244,6 +250,7 @@ ohos_unittest("one_way_tls_socket_certchain_unittest") {
   sources += tls_sources
   sources += tls_napi_sources
   sources += socket_sources
+  sources += tls_socket_test_sources
 
   configs = [ ":tls_test_config" ]
 
@@ -287,6 +294,7 @@ ohos_unittest("tls_socket_unilateral_connection") {
   sources += tls_sources
   sources += tls_napi_sources
   sources += socket_sources
+  sources += tls_socket_test_sources
 
   configs = [ ":tls_test_config" ]
 
