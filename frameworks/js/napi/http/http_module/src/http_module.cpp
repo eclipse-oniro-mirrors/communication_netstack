@@ -36,10 +36,6 @@
 namespace OHOS::NetStack::Http {
 static constexpr const char *FLUSH_ASYNC_WORK_NAME = "ExecFlush";
 
-#ifdef MAC_PLATFORM
-static constexpr const char *REQUEST_ASYNC_WORK_NAME = "ExecRequest";
-#endif
-
 static constexpr const char *DELETE_ASYNC_WORK_NAME = "ExecDelete";
 
 static constexpr const char *HTTP_MODULE_NAME = "net.http";
@@ -226,7 +222,6 @@ void HttpModuleExports::InitHttpDataType(napi_env env, napi_value exports)
 
 napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_info info)
 {
-#ifndef MAC_PLATFORM
     return ModuleTemplate::InterfaceWithOutAsyncWork<RequestContext>(
         env, info,
         [](napi_env, napi_value, RequestContext *context) -> bool {
@@ -237,17 +232,10 @@ napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_i
             return context->IsExecOK();
         },
         "Request", HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
-#else
-    return ModuleTemplate::Interface<RequestContext>(
-        env, info, REQUEST_ASYNC_WORK_NAME,
-        [](napi_env, napi_value, RequestContext *) -> bool { return HttpExec::Initialize(); },
-        HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
-#endif
 }
 
 napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_callback_info info)
 {
-#ifndef MAC_PLATFORM
     return ModuleTemplate::InterfaceWithOutAsyncWork<RequestContext>(
         env, info,
         [](napi_env, napi_value, RequestContext *context) -> bool {
@@ -259,12 +247,6 @@ napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_ca
             return true;
         },
         "RequestInStream", HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
-#else
-    return ModuleTemplate::Interface<RequestContext>(
-        env, info, REQUEST_ASYNC_WORK_NAME,
-        [](napi_env, napi_value, RequestContext *) -> bool { return HttpExec::Initialize(); },
-        HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
-#endif
 }
 
 napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_info info)

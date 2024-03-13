@@ -1222,12 +1222,10 @@ bool HttpExec::ProcByExpectDataType(napi_value object, RequestContext *context)
     return false;
 }
 
-#ifndef MAC_PLATFORM
 void HttpExec::AsyncRunRequest(RequestContext *context)
 {
     HttpAsyncWork::ExecRequest(context->GetEnv(), context);
 }
-#endif
 
 bool HttpExec::IsInitialized()
 {

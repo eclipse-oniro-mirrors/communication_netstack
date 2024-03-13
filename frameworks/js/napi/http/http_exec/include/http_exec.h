@@ -79,9 +79,7 @@ public:
 
     static void DeInitialize();
 
-#ifndef MAC_PLATFORM
     static void AsyncRunRequest(RequestContext *context);
-#endif
     struct StaticContextVec {
         StaticContextVec() = default;
         ~StaticContextVec() = default;
