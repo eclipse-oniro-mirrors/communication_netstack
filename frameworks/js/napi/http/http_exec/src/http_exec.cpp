@@ -35,15 +35,17 @@
 #include "base64_utils.h"
 #include "cache_proxy.h"
 #include "constant.h"
+#if HAS_NETMANAGER_BASE
 #include "epoll_request_handler.h"
+#endif
 #include "event_list.h"
 #include "http_async_work.h"
 #include "http_time.h"
 #include "napi_utils.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
-#include "secure_char.h"
 #include "securec.h"
+#include "secure_char.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
@@ -58,10 +60,18 @@
 
 namespace OHOS::NetStack::Http {
 static constexpr int CURL_TIMEOUT_MS = 50;
+#if !HAS_NETMANAGER_BASE
+static constexpr int CONDITION_TIMEOUT_S = 3600;
+static constexpr int CURL_MAX_WAIT_MSECS = 10;
+static constexpr int CURL_HANDLE_NUM = 10;
+#endif
 static constexpr const uint32_t EVENT_PARAM_ZERO = 0;
 static constexpr const uint32_t EVENT_PARAM_ONE = 1;
 static constexpr const uint32_t EVENT_PARAM_TWO = 2;
 static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!eNULL:!EXPORT)";
+#if !HAS_NETMANAGER_BASE
+static constexpr const char *HTTP_TASK_RUN_THREAD = "OS_NET_TaskHttp";
+#endif
 static constexpr const char *HTTP_CLIENT_TASK_THREAD = "OS_NET_HttpJs";
 
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
@@ -177,11 +187,16 @@ static void AsyncWorkRequestCallback(napi_env env, napi_status status, void *dat
 
 bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 {
+#if HAS_NETMANAGER_BASE
     if (handle == nullptr) {
+#else
+    if (handle == nullptr || staticVariable_.curlMulti == nullptr) {
+#endif
         NETSTACK_LOGE("handle nullptr");
         return false;
     }
 
+#if HAS_NETMANAGER_BASE
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(HTTP_CLIENT_TASK_THREAD);
 #else
@@ -207,19 +222,51 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 
     requestHandler.Process(handle, startedCallback, responseCallback, context);
     return true;
+#else
+    std::thread([context, handle] {
+        std::lock_guard guard(staticVariable_.curlMultiMutex);
+        //Do SetServerSSLCertOption here to avoid blocking the main thread.
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+        pthread_setname_np(HTTP_CLIENT_TASK_THREAD);
+#else
+        pthread_setname_np(pthread_self(), HTTP_CLIENT_TASK_THREAD);
+#endif
+        SetServerSSLCertOption(handle, context);
+        staticVariable_.infoQueue.emplace(context, handle);
+        staticVariable_.conditionVariable.notify_all();
+        {
+            std::lock_guard lockGuard(staticContextSet_.mutexForContextVec);
+            HttpExec::staticContextSet_.contextSet.emplace(context);
+        }
+    }).detach();
+
+    return true;
+#endif
 }
 
+#if !HAS_NETMANAGER_BASE
+HttpExec::StaticVariable HttpExec::staticVariable_; /* NOLINT */
+#endif
 HttpExec::StaticContextVec HttpExec::staticContextSet_;
 
 bool HttpExec::RequestWithoutCache(RequestContext *context)
 {
+#if !HAS_NETMANAGER_BASE
+    if (!staticVariable_.initialized) {
+        NETSTACK_LOGE("curl not init");
+        return false;
+    }
+#endif
+
     auto handle = curl_easy_init();
     if (!handle) {
         NETSTACK_LOGE("Failed to create fetch task");
         return false;
     }
 
+#if HAS_NETMANAGER_BASE
     NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PRIVATE, context, context);
+#endif
 
     std::vector<std::string> vec;
     std::for_each(context->options.GetHeader().begin(), context->options.GetHeader().end(),
@@ -325,7 +372,11 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
                                         HttpExec::GetTimingFromCurl(handle, CURLINFO_REDIRECT_TIME_T));
 }
 
+#if HAS_NETMANAGER_BASE
 void HttpExec::HandleCurlData(CURLMsg *msg, RequestContext *context)
+#else
+void HttpExec::HandleCurlData(CURLMsg *msg)
+#endif
 {
     if (msg == nullptr) {
         return;
@@ -336,6 +387,20 @@ void HttpExec::HandleCurlData(CURLMsg *msg, RequestContext *context)
         return;
     }
 
+#if !HAS_NETMANAGER_BASE
+    auto it = staticVariable_.contextMap.find(handle);
+    if (it == staticVariable_.contextMap.end()) {
+        NETSTACK_LOGE("can not find context");
+        return;
+    }
+
+    auto context = it->second;
+    staticVariable_.contextMap.erase(it);
+    if (context == nullptr) {
+        NETSTACK_LOGE("can not find context");
+        return;
+    }
+#endif
     NETSTACK_LOGD("priority = %{public}d", context->options.GetPriority());
     context->SetExecOK(GetCurlDataFromHandle(handle, context, msg->msg, msg->data.result));
     CacheCurlPerformanceTiming(handle, context);
@@ -505,6 +570,31 @@ bool HttpExec::EncodeUrlParam(std::string &str)
     return true;
 }
 
+#if !HAS_NETMANAGER_BASE
+void HttpExec::AddRequestInfo()
+{
+    std::lock_guard guard(staticVariable_.curlMultiMutex);
+    int num = 0;
+    while (!staticVariable_.infoQueue.empty()) {
+        if (!staticVariable_.runThread || staticVariable_.curlMulti == nullptr) {
+            break;
+        }
+
+        auto info = staticVariable_.infoQueue.top();
+        staticVariable_.infoQueue.pop();
+        auto ret = curl_multi_add_handle(staticVariable_.curlMulti, info.handle);
+        if (ret == CURLM_OK) {
+            staticVariable_.contextMap[info.handle] = info.context;
+        }
+
+        ++num;
+        if (num >= CURL_HANDLE_NUM) {
+            break;
+        }
+    }
+}
+#endif
+
 bool HttpExec::IsContextDeleted(RequestContext *context)
 {
     if (context == nullptr) {
@@ -521,6 +611,78 @@ bool HttpExec::IsContextDeleted(RequestContext *context)
     }
     return false;
 }
+
+#if !HAS_NETMANAGER_BASE
+void HttpExec::RunThread()
+{
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(HTTP_TASK_RUN_THREAD);
+#else
+    pthread_setname_np(pthread_self(), HTTP_TASK_RUN_THREAD);
+#endif
+    while (staticVariable_.runThread && staticVariable_.curlMulti != nullptr) {
+        AddRequestInfo();
+        SendRequest();
+        ReadResponse();
+        std::this_thread::sleep_for(std::chrono::milliseconds(CURL_TIMEOUT_MS));
+        std::unique_lock l(staticVariable_.curlMultiMutex);
+        staticVariable_.conditionVariable.wait_for(l, std::chrono::seconds(CONDITION_TIMEOUT_S), [] {
+            return !staticVariable_.infoQueue.empty() || !staticVariable_.contextMap.empty();
+        });
+    }
+}
+
+void HttpExec::SendRequest()
+{
+    std::lock_guard guard(staticVariable_.curlMultiMutex);
+
+    int runningHandle = 0;
+    int num = 0;
+    do {
+        if (!staticVariable_.runThread || staticVariable_.curlMulti == nullptr) {
+            break;
+        }
+
+        auto ret = curl_multi_perform(staticVariable_.curlMulti, &runningHandle);
+
+        if (runningHandle > 0) {
+            ret = curl_multi_poll(staticVariable_.curlMulti, nullptr, 0, CURL_MAX_WAIT_MSECS, nullptr);
+        }
+
+        if (ret != CURLM_OK) {
+            return;
+        }
+
+        ++num;
+        if (num >= CURL_HANDLE_NUM) {
+            break;
+        }
+    } while (runningHandle > 0);
+}
+
+void HttpExec::ReadResponse()
+{
+    std::lock_guard guard(staticVariable_.curlMultiMutex);
+    CURLMsg *msg = nullptr; /* NOLINT */
+    do {
+        if (!staticVariable_.runThread || staticVariable_.curlMulti == nullptr) {
+            break;
+        }
+
+        int leftMsg;
+        msg = curl_multi_info_read(staticVariable_.curlMulti, &leftMsg);
+        if (msg) {
+            if (msg->msg == CURLMSG_DONE) {
+                HandleCurlData(msg);
+            }
+            if (msg->easy_handle) {
+                (void)curl_multi_remove_handle(staticVariable_.curlMulti, msg->easy_handle);
+                (void)curl_easy_cleanup(msg->easy_handle);
+            }
+        }
+    } while (msg);
+}
+#endif
 
 void HttpExec::GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions)
 {
@@ -563,6 +725,31 @@ void HttpExec::GetHttpProxyInfo(RequestContext *context, std::string &host, int3
         context->options.GetSpecifiedHttpProxy(host, port, exclusions);
     }
 }
+
+#if !HAS_NETMANAGER_BASE
+bool HttpExec::Initialize()
+{
+    std::lock_guard<std::mutex> lock(staticVariable_.mutexForInitialize);
+    if (staticVariable_.initialized) {
+        return true;
+    }
+    NETSTACK_LOGD("call curl_global_init");
+    if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
+        NETSTACK_LOGE("Failed to initialize 'curl'");
+        return false;
+    }
+
+    staticVariable_.curlMulti = curl_multi_init();
+    if (staticVariable_.curlMulti == nullptr) {
+        NETSTACK_LOGE("Failed to initialize 'curl_multi'");
+        return false;
+    }
+
+    staticVariable_.workThread = std::thread(RunThread);
+    staticVariable_.initialized = true;
+    return staticVariable_.initialized;
+}
+#endif
 
 bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context)
 {
@@ -1102,6 +1289,27 @@ bool HttpExec::ProcByExpectDataType(napi_value object, RequestContext *context)
 void HttpExec::AsyncRunRequest(RequestContext *context)
 {
     HttpAsyncWork::ExecRequest(context->GetEnv(), context);
+}
+#endif
+
+#if !HAS_NETMANAGER_BASE
+bool HttpExec::IsInitialized()
+{
+    return staticVariable_.initialized;
+}
+
+void HttpExec::DeInitialize()
+{
+    std::lock_guard<std::mutex> lock(staticVariable_.curlMultiMutex);
+    staticVariable_.runThread = false;
+    staticVariable_.conditionVariable.notify_all();
+    if (staticVariable_.workThread.joinable()) {
+        staticVariable_.workThread.join();
+    }
+    if (staticVariable_.curlMulti) {
+        curl_multi_cleanup(staticVariable_.curlMulti);
+    }
+    staticVariable_.initialized = false;
 }
 #endif
 
