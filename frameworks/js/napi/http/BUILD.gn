@@ -29,7 +29,6 @@ config("http_config") {
     "options/include",
     "$THIRD_PARTY_ROOT/curl/include",
     "$NETSTACK_DIR/utils/common_utils/include",
-    "$NETSTACK_DIR/utils/http_over_curl/include",
   ]
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
@@ -37,6 +36,7 @@ config("http_config") {
     include_dirs += [
       "$NETMANAGER_BASE_INNERKITS_DIR/include",
       "$NETMANAGER_BASE_INNERKITS_DIR/netconnclient/include",
+      "$NETSTACK_DIR/utils/http_over_curl/include",
     ]
   }
   defines = []
@@ -132,6 +132,10 @@ ohos_shared_library("http") {
         global_parts_info.communication_netmanager_base) {
       external_deps += [ "netmanager_base:net_conn_manager_if" ]
       defines = [ "HAS_NETMANAGER_BASE=1" ]
+      sources += [
+        "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",
+        "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
+      ]
     } else {
       defines = [ "HAS_NETMANAGER_BASE=0" ]
     }
