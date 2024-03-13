@@ -488,11 +488,11 @@ int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_re
     lws_hdr_custom_name_foreach(
         wsi,
         [](const char *name, int nlen, void *opaque) -> void {
-            auto responseHeader = static_cast<std::map<std::string, std::string> *>(opaque);
-            if (responseHeader == nullptr) {
+            auto header = static_cast<std::map<std::string, std::string> *>(opaque);
+            if (header == nullptr) {
                 return;
             }
-            responseHeader->emplace(std::string(name).substr(0, nlen - 1), std::string(name).substr(nlen));
+            header->emplace(std::string(name).substr(0, nlen - 1), std::string(name).substr(nlen));
         },
         &responseHeader);
     OnHeaderReceive(manager, responseHeader);
