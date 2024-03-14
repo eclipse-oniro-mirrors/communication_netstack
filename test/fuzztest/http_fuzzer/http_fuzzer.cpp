@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +19,10 @@
 #include <string>
 #include <vector>
 
+#define private public
+#include "http_client.h"
+#include "http_client_request.h"
+#undef private
 #include "http_request_options.h"
 #include "netstack_log.h"
 #include "secure_char.h"
@@ -27,10 +31,12 @@ namespace OHOS {
 namespace NetStack {
 namespace Http {
 namespace {
+using namespace OHOS::NetStack::HttpClient;
 const uint8_t *g_baseFuzzData = nullptr;
 size_t g_baseFuzzSize = 0;
 size_t g_baseFuzzPos = 0;
 constexpr size_t STR_LEN = 255;
+constexpr int32_t TEST_PORT = 8888;
 } // namespace
 template <class T> T GetData()
 {
@@ -237,6 +243,119 @@ void AddMultiFormDataFuzzTest(const uint8_t *data, size_t size)
     multiFormData.filePath = str;
     requestOptions.AddMultiFormData(multiFormData);
 }
+
+HttpClientRequest CreateHttpClientRequest()
+{
+    HttpClientRequest httpReq;
+    std::string url = "https://www.baidu.com";
+    httpReq.SetURL(url);
+    return httpReq;
+}
+
+void HttpSessionCreateTaskFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    HttpClientRequest httpReq = CreateHttpClientRequest();
+    HttpSession &session = HttpSession::GetInstance();
+    auto testTask = session.CreateTask(httpReq);
+    testTask->Start();
+}
+
+void HttpClientTaskGetHttpVersionFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+
+    HttpClientRequest httpReq = CreateHttpClientRequest();
+    auto task = HttpSession::GetInstance().CreateTask(httpReq);
+    HttpClient::HttpProtocol ptcl = HttpClient::HttpProtocol::HTTP1_1;
+    HttpClientRequest request;
+    request.SetHttpProtocol(ptcl);
+    uint32_t timeout = GetData<uint32_t>();
+    request.SetTimeout(timeout);
+    std::string testData = GetStringFromData(STR_LEN);
+    std::string result = request.GetBody();
+    request.body_ = "";
+    request.SetCaPath(testData);
+    uint32_t priority = GetData<uint32_t>();
+    request.SetPriority(priority);
+    result = request.GetURL();
+    result = request.GetMethod();
+    uint32_t ret = request.GetTimeout();
+    ret = request.GetConnectTimeout();
+    ptcl = request.GetHttpProtocol();
+    HttpClient::HttpProxyType proType = request.GetHttpProxyType();
+    NETSTACK_LOGD("ptcl = %{private}d, proType = %{private}d", ptcl, proType);
+    result = request.GetCaPath();
+    ret = request.GetPriority();
+    HttpProxy proxy = request.GetHttpProxy();
+    request.SetRequestTime(testData);
+    result = request.GetRequestTime();
+    task->GetHttpVersion(ptcl);
+}
+
+void HttpClientTaskSetOtherCurlOptionFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+
+    HttpClientRequest request;
+    std::string url = "http://www.httpbin.org/get";
+    request.SetURL(url);
+    request.SetHttpProxyType(NOT_USE);
+    HttpProxy testProxy;
+    testProxy.host = "192.168.147.60";
+    testProxy.exclusions = "www.httpbin.org";
+    testProxy.port = TEST_PORT;
+    testProxy.tunnel = false;
+    request.SetHttpProxy(testProxy);
+    auto task = HttpSession::GetInstance().CreateTask(request);
+    task->SetOtherCurlOption(task->curlHandle_);
+}
+
+void HttpClientTaskSetCurlOptionsFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/get";
+    httpReq.SetURL(url);
+    auto task = HttpSession::GetInstance().CreateTask(httpReq);
+    task->request_.SetMethod(HttpConstant::HTTP_METHOD_HEAD);
+    task->SetCurlOptions();
+}
+
+void HttpClientTaskGetTypeFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+
+    HttpClientRequest httpReq = CreateHttpClientRequest();
+    auto task = HttpSession::GetInstance().CreateTask(httpReq);
+    TaskType type = task->GetType();
+    std::string result = task->GetFilePath();
+    int taskId = task->GetTaskId();
+    TaskStatus status = static_cast<TaskStatus>(size % 2);
+    task->SetStatus(status);
+    status = task->GetStatus();
+    NETSTACK_LOGD("type = %{private}d, result = %{private}s, taskId = %{private}d, status = %{private}d", type,
+        result.c_str(), taskId, status);
+    task->OnSuccess([task](const HttpClientRequest &request, const HttpClientResponse &response) {});
+    task->OnCancel([](const HttpClientRequest &request, const HttpClientResponse &response) {});
+    task->OnFail(
+        [](const HttpClientRequest &request, const HttpClientResponse &response, const HttpClientError &error) {});
+    task->OnDataReceive([](const HttpClientRequest &request, const uint8_t *data, size_t length) {});
+    task->OnProgress(
+        [](const HttpClientRequest &request, u_long dltotal, u_long dlnow, u_long ultotal, u_long ulnow) {});
+    task->OnDataReceive([](const HttpClientRequest &request, const uint8_t *data, size_t length) {});
+}
 } // namespace Http
 } // namespace NetStack
 } // namespace OHOS
@@ -260,5 +379,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::NetStack::Http::SetRangeNumberFuzzTest(data, size);
     OHOS::NetStack::Http::SetClientCertFuzzTest(data, size);
     OHOS::NetStack::Http::AddMultiFormDataFuzzTest(data, size);
+    OHOS::NetStack::Http::HttpSessionCreateTaskFuzzTest(data, size);
+    OHOS::NetStack::Http::HttpClientTaskGetHttpVersionFuzzTest(data, size);
+    OHOS::NetStack::Http::HttpClientTaskSetOtherCurlOptionFuzzTest(data, size);
+    OHOS::NetStack::Http::HttpClientTaskSetCurlOptionsFuzzTest(data, size);
+    OHOS::NetStack::Http::HttpClientTaskGetTypeFuzzTest(data, size);
     return 0;
 }
