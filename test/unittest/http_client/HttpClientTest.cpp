@@ -57,37 +57,4 @@ HWTEST_F(HttpClientTest, AddRequestInfoTest001, TestSize.Level1)
     EXPECT_EQ(task->GetStatus(), IDLE);
 }
 
-HWTEST_F(HttpClientTest, InitTest001, TestSize.Level1)
-{
-    HttpSession req;
-
-    EXPECT_TRUE(req.Init());
-    EXPECT_TRUE(req.initialized_);
-}
-
-HWTEST_F(HttpClientTest, DeinitTest001, TestSize.Level1)
-{
-    HttpSession req;
-
-    req.Deinit();
-
-    EXPECT_FALSE(req.initialized_);
-    EXPECT_TRUE(req.Init());
-}
-
-HWTEST_F(HttpClientTest, GetTaskByIdTest001, TestSize.Level1)
-{
-    HttpClientRequest httpReq;
-    std::string url = "https://www.baidu.com";
-    httpReq.SetURL(url);
-
-    HttpSession &session = HttpSession::GetInstance();
-    auto task = session.CreateTask(httpReq);
-    int32_t taskId = task->GetTaskId();
-    session.taskIdMap_[taskId] = task;
-
-    EXPECT_NE(nullptr, session.GetTaskById(taskId));
-    session.taskIdMap_.erase(taskId);
-}
-
 } // namespace

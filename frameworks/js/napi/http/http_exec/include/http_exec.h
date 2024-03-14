@@ -73,11 +73,13 @@ public:
 
     static bool EncodeUrlParam(std::string &str);
 
+#if !HAS_NETMANAGER_BASE
     static bool Initialize();
 
     static bool IsInitialized();
 
     static void DeInitialize();
+#endif
 
     static void AsyncRunRequest(RequestContext *context);
     struct StaticContextVec {
@@ -115,7 +117,11 @@ private:
 
     static bool AddCurlHandle(CURL *handle, RequestContext *context);
 
+#if HAS_NETMANAGER_BASE
+    static void HandleCurlData(CURLMsg *msg, RequestContext *context);
+#else
     static void HandleCurlData(CURLMsg *msg);
+#endif
 
     static bool GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURLMSG curlMsg, CURLcode result);
 
@@ -123,11 +129,13 @@ private:
 
     static void CacheCurlPerformanceTiming(CURL *handle, RequestContext *context);
 
+#if !HAS_NETMANAGER_BASE
     static void RunThread();
 
     static void SendRequest();
 
     static void ReadResponse();
+#endif
 
     static void GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions);
 
@@ -147,7 +155,9 @@ private:
     static void SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *part,
                                   void *curl, RequestContext *context);
 
+#if !HAS_NETMANAGER_BASE
     static void AddRequestInfo();
+#endif
 
     static bool IsContextDeleted(RequestContext *context);
 
@@ -177,6 +187,7 @@ private:
         }
     };
 
+#if !HAS_NETMANAGER_BASE
     struct StaticVariable {
         StaticVariable() : curlMulti(nullptr), initialized(false), runThread(true) {}
 
@@ -204,6 +215,7 @@ private:
 #endif
     };
     static StaticVariable staticVariable_;
+#endif
 };
 } // namespace OHOS::NetStack::Http
 

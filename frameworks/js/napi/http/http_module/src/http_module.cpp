@@ -226,9 +226,11 @@ napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_i
     return ModuleTemplate::InterfaceWithOutAsyncWork<RequestContext>(
         env, info,
         [](napi_env, napi_value, RequestContext *context) -> bool {
+#if !HAS_NETMANAGER_BASE
             if (!HttpExec::Initialize()) {
                 return false;
             }
+#endif
             HttpExec::AsyncRunRequest(context);
             return context->IsExecOK();
         },
@@ -240,9 +242,11 @@ napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_ca
     return ModuleTemplate::InterfaceWithOutAsyncWork<RequestContext>(
         env, info,
         [](napi_env, napi_value, RequestContext *context) -> bool {
+#if !HAS_NETMANAGER_BASE
             if (!HttpExec::Initialize()) {
                 return false;
             }
+#endif
             context->EnableRequestInStream();
             HttpExec::AsyncRunRequest(context);
             return true;

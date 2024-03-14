@@ -35,6 +35,9 @@
 #include "base64_utils.h"
 #include "cache_proxy.h"
 #include "constant.h"
+#if HAS_NETMANAGER_BASE
+#include "epoll_request_handler.h"
+#endif
 #include "event_list.h"
 #include "http_async_work.h"
 #include "http_time.h"
@@ -57,14 +60,18 @@
 
 namespace OHOS::NetStack::Http {
 static constexpr int CURL_TIMEOUT_MS = 50;
+#if !HAS_NETMANAGER_BASE
 static constexpr int CONDITION_TIMEOUT_S = 3600;
 static constexpr int CURL_MAX_WAIT_MSECS = 10;
 static constexpr int CURL_HANDLE_NUM = 10;
+#endif
 static constexpr const uint32_t EVENT_PARAM_ZERO = 0;
 static constexpr const uint32_t EVENT_PARAM_ONE = 1;
 static constexpr const uint32_t EVENT_PARAM_TWO = 2;
 static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!eNULL:!EXPORT)";
+#if !HAS_NETMANAGER_BASE
 static constexpr const char *HTTP_TASK_RUN_THREAD = "OS_NET_TaskHttp";
+#endif
 static constexpr const char *HTTP_CLIENT_TASK_THREAD = "OS_NET_HttpJs";
 
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
@@ -180,11 +187,42 @@ static void AsyncWorkRequestCallback(napi_env env, napi_status status, void *dat
 
 bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 {
+#if HAS_NETMANAGER_BASE
+    if (handle == nullptr) {
+#else
     if (handle == nullptr || staticVariable_.curlMulti == nullptr) {
+#endif
         NETSTACK_LOGE("handle nullptr");
         return false;
     }
 
+#if HAS_NETMANAGER_BASE
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(HTTP_CLIENT_TASK_THREAD);
+#else
+    pthread_setname_np(pthread_self(), HTTP_CLIENT_TASK_THREAD);
+#endif
+    SetServerSSLCertOption(handle, context);
+    {
+        std::lock_guard lockGuard(staticContextSet_.mutexForContextVec);
+        HttpExec::staticContextSet_.contextSet.emplace(context);
+    }
+
+    static HttpOverCurl::EpollRequestHandler requestHandler;
+
+    static auto startedCallback = +[](CURL *easyHandle, void *opaqueData) {
+        char *url = nullptr;
+        curl_easy_getinfo(easyHandle, CURLINFO_EFFECTIVE_URL, &url);
+    };
+
+    static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {
+        auto context = static_cast<RequestContext *>(opaqueData);
+        HttpExec::HandleCurlData(curlMessage, context);
+    };
+
+    requestHandler.Process(handle, startedCallback, responseCallback, context);
+    return true;
+#else
     std::thread([context, handle] {
         std::lock_guard guard(staticVariable_.curlMultiMutex);
         //Do SetServerSSLCertOption here to avoid blocking the main thread.
@@ -203,23 +241,32 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     }).detach();
 
     return true;
+#endif
 }
 
+#if !HAS_NETMANAGER_BASE
 HttpExec::StaticVariable HttpExec::staticVariable_; /* NOLINT */
+#endif
 HttpExec::StaticContextVec HttpExec::staticContextSet_;
 
 bool HttpExec::RequestWithoutCache(RequestContext *context)
 {
+#if !HAS_NETMANAGER_BASE
     if (!staticVariable_.initialized) {
         NETSTACK_LOGE("curl not init");
         return false;
     }
+#endif
 
     auto handle = curl_easy_init();
     if (!handle) {
         NETSTACK_LOGE("Failed to create fetch task");
         return false;
     }
+
+#if HAS_NETMANAGER_BASE
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PRIVATE, context, context);
+#endif
 
     std::vector<std::string> vec;
     std::for_each(context->options.GetHeader().begin(), context->options.GetHeader().end(),
@@ -325,7 +372,11 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
                                         HttpExec::GetTimingFromCurl(handle, CURLINFO_REDIRECT_TIME_T));
 }
 
+#if HAS_NETMANAGER_BASE
+void HttpExec::HandleCurlData(CURLMsg *msg, RequestContext *context)
+#else
 void HttpExec::HandleCurlData(CURLMsg *msg)
+#endif
 {
     if (msg == nullptr) {
         return;
@@ -336,6 +387,7 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         return;
     }
 
+#if !HAS_NETMANAGER_BASE
     auto it = staticVariable_.contextMap.find(handle);
     if (it == staticVariable_.contextMap.end()) {
         NETSTACK_LOGE("can not find context");
@@ -348,6 +400,7 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         NETSTACK_LOGE("can not find context");
         return;
     }
+#endif
     NETSTACK_LOGD("priority = %{public}d", context->options.GetPriority());
     context->SetExecOK(GetCurlDataFromHandle(handle, context, msg->msg, msg->data.result));
     CacheCurlPerformanceTiming(handle, context);
@@ -517,6 +570,7 @@ bool HttpExec::EncodeUrlParam(std::string &str)
     return true;
 }
 
+#if !HAS_NETMANAGER_BASE
 void HttpExec::AddRequestInfo()
 {
     std::lock_guard guard(staticVariable_.curlMultiMutex);
@@ -539,6 +593,7 @@ void HttpExec::AddRequestInfo()
         }
     }
 }
+#endif
 
 bool HttpExec::IsContextDeleted(RequestContext *context)
 {
@@ -557,6 +612,7 @@ bool HttpExec::IsContextDeleted(RequestContext *context)
     return false;
 }
 
+#if !HAS_NETMANAGER_BASE
 void HttpExec::RunThread()
 {
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
@@ -626,6 +682,7 @@ void HttpExec::ReadResponse()
         }
     } while (msg);
 }
+#endif
 
 void HttpExec::GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions)
 {
@@ -669,6 +726,7 @@ void HttpExec::GetHttpProxyInfo(RequestContext *context, std::string &host, int3
     }
 }
 
+#if !HAS_NETMANAGER_BASE
 bool HttpExec::Initialize()
 {
     std::lock_guard<std::mutex> lock(staticVariable_.mutexForInitialize);
@@ -691,6 +749,7 @@ bool HttpExec::Initialize()
     staticVariable_.initialized = true;
     return staticVariable_.initialized;
 }
+#endif
 
 bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context)
 {
@@ -1235,6 +1294,7 @@ void HttpExec::AsyncRunRequest(RequestContext *context)
     HttpAsyncWork::ExecRequest(context->GetEnv(), context);
 }
 
+#if !HAS_NETMANAGER_BASE
 bool HttpExec::IsInitialized()
 {
     return staticVariable_.initialized;
@@ -1253,6 +1313,7 @@ void HttpExec::DeInitialize()
     }
     staticVariable_.initialized = false;
 }
+#endif
 
 bool HttpResponseCacheExec::ExecFlush(BaseContext *context)
 {

@@ -52,6 +52,8 @@ ohos_shared_library("http_client") {
   branch_protector_ret = "pac_ret"
 
   sources = [
+    "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",
+    "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_constant.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_error.cpp",
@@ -63,6 +65,7 @@ ohos_shared_library("http_client") {
 
   include_dirs = [
     "$NETSTACK_DIR/utils/common_utils/include",
+    "$NETSTACK_DIR/utils/http_over_curl/include",
     "$NETSTACK_DIR/utils/log/include",
     "$NETSTACK_NATIVE_ROOT/http/http_client/include",
   ]

@@ -16,19 +16,19 @@
 #ifndef COMMUNICATIONNETSTACK_HTTP_CLIENT_H
 #define COMMUNICATIONNETSTACK_HTTP_CLIENT_H
 
-#include <string>
-#include <mutex>
-#include <thread>
-#include <condition_variable>
-#include <memory>
-#include <map>
-#include <vector>
-#include <queue>
 #include <atomic>
+#include <condition_variable>
 #include <iostream>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <queue>
+#include <string>
+#include <thread>
+#include <vector>
 
-#include "http_client_request.h"
 #include "http_client_error.h"
+#include "http_client_request.h"
 #include "http_client_task.h"
 
 namespace OHOS {
@@ -69,97 +69,10 @@ private:
     ~HttpSession();
 
     /**
-     * Initializes the HttpSession.
-     * @return true if initialization succeeds, false otherwise.
-     */
-    bool Init();
-
-    /**
-     * HttpSession initialization ended.
-     */
-    void Deinit();
-
-    /**
-     * Runs the thread for handling HTTP tasks.
-     */
-    void RunThread();
-
-    /**
      * Starts the specified HTTP client task.
      * @param ptr A shared pointer to the HttpClientTask object.
      */
-    void StartTask(std::shared_ptr<HttpClientTask> ptr);
-
-    /**
-     * Stops the specified HTTP client task.
-     * @param ptr A shared pointer to the HttpClientTask object.
-     */
-    void StopTask(std::shared_ptr<HttpClientTask> ptr);
-
-    /**
-     * Gets the HTTP client task with the specified task ID.
-     * @param taskId The ID of the task to retrieve.
-     * @return A shared pointer to the HttpClientTask object, or nullptr if not found.
-     */
-    std::shared_ptr<HttpClientTask> GetTaskById(uint32_t taskId);
-
-    /**
-     * Gets the HTTP client task with the specified Curl handle.
-     * @param curlHandle The Curl handle of the task to retrieve.
-     * @return A shared pointer to the HttpClientTask object, or nullptr if not found.
-     */
-    std::shared_ptr<HttpClientTask> GetTaskByCurlHandle(CURL *curlHandle);
-
-    std::mutex curlMultiMutex_;
-    CURLM *curlMulti_;
-    std::mutex taskMapMutex_;
-    std::mutex initMutex_;
-    std::map<CURL *, std::shared_ptr<HttpClientTask>> curlTaskMap_;
-    std::map<uint32_t, std::shared_ptr<HttpClientTask>> taskIdMap_;
-    std::mutex taskMutex_;
-    std::condition_variable conditionVariable_;
-    struct CompareTasks {
-        bool operator()(const std::shared_ptr<HttpClientTask> &task1, const std::shared_ptr<HttpClientTask> &task2)
-        {
-            if (task1->GetRequest().GetPriority() == task2->GetRequest().GetPriority()) {
-                return task1->GetTaskId() > task2->GetTaskId();
-            }
-
-            return task1->GetRequest().GetPriority() < task2->GetRequest().GetPriority();
-        }
-    };
-    std::mutex taskQueueMutex_;
-    std::priority_queue<std::shared_ptr<HttpClientTask>, std::vector<std::shared_ptr<HttpClientTask>>,
-                    HttpSession::CompareTasks> taskQueue_;
-
-    std::atomic_bool initialized_;
-    std::thread workThread_;
-    std::atomic_bool runThread_;
-
-    /**
-     * Add Request info
-     */
-    void AddRequestInfo();
-
-    /**
-     * Perform Http request
-     */
-    CURLMcode PerformRequest(int &runningHandle);
-    
-    /**
-     * Sends an HTTP request and handles the response.
-     */
-    void RequestAndResponse();
-
-    /**
-     * Reads the response received from the HTTP request.
-     */
-    void ReadResponse();
-
-    /**
-     * Resum Task
-     */
-    void ResumTask();
+    void StartTask(const std::shared_ptr<HttpClientTask> &ptr);
 };
 } // namespace HttpClient
 } // namespace NetStack

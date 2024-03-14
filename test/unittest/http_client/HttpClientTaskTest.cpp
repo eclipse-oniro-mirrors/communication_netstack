@@ -385,11 +385,7 @@ HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest001, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    unsigned int taskId = task->GetTaskId();
-    std::lock_guard<std::mutex> lock(session.taskQueueMutex_);
-    session.taskIdMap_[taskId] = task;
-
-    unsigned int *userData = &taskId;
+    auto *userData = task.get();
     size_t size = 10;
     size_t memBytes = 1;
 
@@ -397,7 +393,6 @@ HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest001, TestSize.Level1)
     size_t result = task->DataReceiveCallback(data, size, memBytes, userData);
 
     EXPECT_EQ(result, size * memBytes);
-    session.taskIdMap_.erase(taskId);
 }
 
 HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest002, TestSize.Level1)
@@ -410,8 +405,7 @@ HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest002, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    unsigned int taskId = task->GetTaskId();
-    unsigned int *userData = &taskId;
+    auto *userData = task.get();
     size_t size = 10;
     size_t memBytes = 1;
     size_t result = task->DataReceiveCallback(data, size, memBytes, userData);
@@ -429,11 +423,7 @@ HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest003, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    unsigned int taskId = task->GetTaskId();
-    std::lock_guard<std::mutex> lock(session.taskQueueMutex_);
-    session.taskIdMap_[taskId] = task;
-
-    unsigned int *userData = &taskId;
+    auto *userData = task.get();
     size_t size = 10;
     size_t memBytes = 1;
     task->canceled_ = true;
@@ -441,7 +431,6 @@ HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest003, TestSize.Level1)
 
     EXPECT_EQ(result, 0);
     task->canceled_ = false;
-    session.taskIdMap_.erase(taskId);
 }
 
 HWTEST_F(HttpClientTaskTest, ProgressCallbackTest001, TestSize.Level1)
@@ -453,8 +442,7 @@ HWTEST_F(HttpClientTaskTest, ProgressCallbackTest001, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    unsigned int taskId = task->GetTaskId();
-    unsigned int *userData = &taskId;
+    auto *userData = task.get();
     curl_off_t dltotal = 100;
     curl_off_t dlnow = 50;
     curl_off_t ultotal = 200;
@@ -474,11 +462,7 @@ HWTEST_F(HttpClientTaskTest, ProgressCallbackTest002, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    unsigned int taskId = task->GetTaskId();
-    std::lock_guard<std::mutex> lock(session.taskQueueMutex_);
-    session.taskIdMap_[taskId] = task;
-
-    unsigned int *userData = &taskId;
+    auto *userData = task.get();
     curl_off_t dltotal = 100;
     curl_off_t dlnow = 50;
     curl_off_t ultotal = 200;
@@ -488,7 +472,6 @@ HWTEST_F(HttpClientTaskTest, ProgressCallbackTest002, TestSize.Level1)
     task->Cancel();
     result = task->ProgressCallback(userData, dltotal, dlnow, ultotal, ulnow);
     EXPECT_EQ(result, CURLE_ABORTED_BY_CALLBACK);
-    session.taskIdMap_.erase(taskId);
 }
 
 HWTEST_F(HttpClientTaskTest, ProgressCallbackTest003, TestSize.Level1)
@@ -500,20 +483,14 @@ HWTEST_F(HttpClientTaskTest, ProgressCallbackTest003, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    unsigned int taskId = task->GetTaskId();
-    std::lock_guard<std::mutex> lock(session.taskQueueMutex_);
-    session.taskIdMap_[taskId] = task;
-
-    unsigned int *userData = &taskId;
+    auto *userData = task.get();
     curl_off_t dltotal = 100;
     curl_off_t dlnow = 50;
     curl_off_t ultotal = 200;
     curl_off_t ulnow = 100;
 
-    int result;
-    result = task->ProgressCallback(userData, dltotal, dlnow, ultotal, ulnow);
+    int result = task->ProgressCallback(userData, dltotal, dlnow, ultotal, ulnow);
     EXPECT_EQ(result, 0);
-    session.taskIdMap_.erase(taskId);
 }
 
 HWTEST_F(HttpClientTaskTest, HeaderReceiveCallbackTest001, TestSize.Level1)
@@ -525,17 +502,12 @@ HWTEST_F(HttpClientTaskTest, HeaderReceiveCallbackTest001, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    unsigned int taskId = task->GetTaskId();
-    std::lock_guard<std::mutex> lock(session.taskQueueMutex_);
-    session.taskIdMap_[taskId] = task;
-
-    unsigned int *userData = &taskId;
+    auto *userData = task.get();
     const char *data = "Test Header";
     size_t size = 5;
     size_t memBytes = 2;
     size_t result = task->HeaderReceiveCallback(data, size, memBytes, userData);
     EXPECT_EQ(result, size * memBytes);
-    session.taskIdMap_.erase(taskId);
 }
 
 HWTEST_F(HttpClientTaskTest, HeaderReceiveCallbackTest002, TestSize.Level1)
@@ -547,8 +519,7 @@ HWTEST_F(HttpClientTaskTest, HeaderReceiveCallbackTest002, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    unsigned int taskId = task->GetTaskId();
-    unsigned int *userData = &taskId;
+    auto *userData = task.get();
 
     const char *data = "Test Header";
     size_t size = 5 * 1024 * 1024;
@@ -566,8 +537,7 @@ HWTEST_F(HttpClientTaskTest, HeaderReceiveCallbackTest003, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
 
-    unsigned int taskId = task->GetTaskId();
-    unsigned int *userData = &taskId;
+    auto *userData = task.get();
 
     const char *data = "Test Header";
     size_t size = 5;
