@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,23 +27,31 @@
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
+void MockOneWayNetAddress(Socket::NetAddress &address)
+{
+    address.SetAddress(TlsUtilsTest::GetIp(TlsUtilsTest::ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(TlsUtilsTest::ChangeToFile(PORT).c_str()));
+    address.SetFamilyBySaFamily(AF_INET);
+}
+
+void MockOneWayParamOptions(Socket::NetAddress &address, TLSSecureOptions &secureOption, TLSConnectOptions &options)
+{
+    secureOption.SetKey(SecureData(TlsUtilsTest::ChangeToFile(PRIVATE_KEY_PEM)));
+    secureOption.SetCert(TlsUtilsTest::ChangeToFile(CLIENT_CRT));
+
+    MockOneWayNetAddress(address);
+    options.SetTlsSecureOptions(secureOption);
+    options.SetNetAddress(address);
+}
+
 void SetOneWayHwTestShortParam(TLSSocket &server)
 {
     TLSSecureOptions secureOption;
     Socket::NetAddress address;
     TLSConnectOptions options;
-
-    address.SetAddress(TlsUtilsTest::GetIp(TlsUtilsTest::ChangeToFile(IP_ADDRESS)));
-    address.SetPort(std::atoi(TlsUtilsTest::ChangeToFile(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    std::vector<std::string> caVec = { TlsUtilsTest::ChangeToFile(CA_DER) };
+    std::vector<std::string> caVec = {TlsUtilsTest::ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
-    secureOption.SetCert(TlsUtilsTest::ChangeToFile(CLIENT_CRT));
-    secureOption.SetKey(SecureData(TlsUtilsTest::ChangeToFile(PRIVATE_KEY_PEM)));
-
-    options.SetTlsSecureOptions(secureOption);
-    options.SetNetAddress(address);
+    MockOneWayParamOptions(address, secureOption, options);
 
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -51,26 +59,17 @@ void SetOneWayHwTestShortParam(TLSSocket &server)
 
 void SetOneWayHwTestLongParam(TLSSocket &server)
 {
-    TLSConnectOptions options;
     Socket::NetAddress address;
     TLSSecureOptions secureOption;
 
-    address.SetAddress(TlsUtilsTest::GetIp(TlsUtilsTest::ChangeToFile(IP_ADDRESS)));
-    address.SetPort(std::atoi(TlsUtilsTest::ChangeToFile(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(TlsUtilsTest::ChangeToFile(PRIVATE_KEY_PEM)));
-    std::vector<std::string> caVec = { TlsUtilsTest::ChangeToFile(CA_DER) };
+    std::vector<std::string> caVec = {TlsUtilsTest::ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
     secureOption.SetCipherSuite("AES256-SHA256");
     std::string protocolV13 = "TLSv1.3";
-    std::vector<std::string> protocolVec = { protocolV13 };
+    std::vector<std::string> protocolVec = {protocolV13};
     secureOption.SetProtocolChain(protocolVec);
-    secureOption.SetCert(TlsUtilsTest::ChangeToFile(CLIENT_CRT));
-
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
-
+    TLSConnectOptions options;
+    MockOneWayParamOptions(address, secureOption, options);
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
@@ -81,14 +80,11 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
         return;
     }
 
-    TLSSocket server;
+    TLSSocket oneWayService;
     Socket::NetAddress address;
+    MockOneWayNetAddress(address);
 
-    address.SetAddress(TlsUtilsTest::GetIp(TlsUtilsTest::ChangeToFile(IP_ADDRESS)));
-    address.SetPort(std::atoi(TlsUtilsTest::ChangeToFile(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    oneWayService.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
@@ -97,16 +93,16 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
         return;
     }
 
-    TLSSocket server;
-    SetOneWayHwTestShortParam(server);
+    TLSSocket oneWayService;
+    SetOneWayHwTestShortParam(oneWayService);
 
     const std::string data = "how do you do? this is connectInterface";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    oneWayService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     sleep(2);
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)oneWayService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     sleep(2);
 }
 
@@ -116,17 +112,17 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
         return;
     }
 
-    TLSSocket server;
-    SetOneWayHwTestShortParam(server);
+    TLSSocket oneWayService;
+    SetOneWayHwTestShortParam(oneWayService);
 
     const std::string data = "how do you do? this is closeInterface";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    oneWayService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     sleep(2);
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)oneWayService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
@@ -135,17 +131,17 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
         return;
     }
 
-    TLSSocket server;
-    SetOneWayHwTestShortParam(server);
+    TLSSocket oneWayService;
+    SetOneWayHwTestShortParam(oneWayService);
 
     const std::string data = "how do you do? this is sendInterface";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    oneWayService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     sleep(2);
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)oneWayService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2)
@@ -154,28 +150,20 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
         return;
     }
 
-    TLSSocket server;
+    TLSSocket oneWayService;
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
     Socket::NetAddress address;
 
-    address.SetFamilyBySaFamily(AF_INET);
-    address.SetAddress(TlsUtilsTest::GetIp(TlsUtilsTest::ChangeToFile(IP_ADDRESS)));
-    address.SetPort(std::atoi(TlsUtilsTest::ChangeToFile(PORT).c_str()));
-
-    secureOption.SetKey(SecureData(TlsUtilsTest::ChangeToFile(PRIVATE_KEY_PEM)));
-    std::vector<std::string> caVec = { TlsUtilsTest::ChangeToFile(CA_DER) };
-    secureOption.SetCert(TlsUtilsTest::ChangeToFile(CLIENT_CRT));
+    std::vector<std::string> caVec = {TlsUtilsTest::ChangeToFile(CA_DER)};
     secureOption.SetCaChain(caVec);
+    MockOneWayParamOptions(address, secureOption, options);
 
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
-
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    oneWayService.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    oneWayService.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     Socket::NetAddress netAddress;
-    server.GetRemoteAddress([&netAddress](int32_t errCode, const Socket::NetAddress &address) {
+    oneWayService.GetRemoteAddress([&netAddress](int32_t errCode, const Socket::NetAddress &address) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         netAddress.SetAddress(address.GetAddress());
         netAddress.SetPort(address.GetPort());
@@ -189,9 +177,9 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    oneWayService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)oneWayService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
@@ -200,27 +188,27 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
         return;
     }
 
-    TLSSocket server;
-    SetOneWayHwTestShortParam(server);
+    TLSSocket oneWayService;
+    SetOneWayHwTestShortParam(oneWayService);
 
     Socket::SocketStateBase TlsSocketstate;
-    server.GetState([&TlsSocketstate](int32_t errCode, const Socket::SocketStateBase &state) {
+    oneWayService.GetState([&TlsSocketstate](int32_t errCode, const Socket::SocketStateBase &state) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         TlsSocketstate = state;
     });
-    std::cout << "TlsSocketstate.IsClose(): " << TlsSocketstate.IsClose() << std::endl;
+    std::cout << "TlsSocketTest TlsSocketstate.IsClose(): " << TlsSocketstate.IsClose() << std::endl;
     EXPECT_TRUE(TlsSocketstate.IsBound());
     EXPECT_TRUE(!TlsSocketstate.IsClose());
     EXPECT_TRUE(TlsSocketstate.IsConnected());
 
-    const std::string data = "how do you do? this is getStateInterface";
+    const std::string tlsSocketTestData = "how do you do? this is getStateInterface";
     Socket::TCPSendOptions tcpSendOptions;
-    tcpSendOptions.SetData(data);
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tcpSendOptions.SetData(tlsSocketTestData);
+    oneWayService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     sleep(2);
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)oneWayService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Level2)
@@ -228,20 +216,20 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
     if (!TlsUtilsTest::CheckCaFileExistence("getRemoteCertificateInterface")) {
         return;
     }
-    TLSSocket server;
-    SetOneWayHwTestShortParam(server);
+    TLSSocket oneWayService;
+    SetOneWayHwTestShortParam(oneWayService);
 
     const std::string data = "how do you do? This is UT test getRemoteCertificateInterface";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    oneWayService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    server.GetRemoteCertificate(
+    oneWayService.GetRemoteCertificate(
         [](int32_t errCode, const X509CertRawData &cert) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     sleep(2);
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)oneWayService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
@@ -249,23 +237,23 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
     if (!TlsUtilsTest::CheckCaFileExistence("protocolInterface")) {
         return;
     }
-    TLSSocket server;
-    SetOneWayHwTestLongParam(server);
+    TLSSocket oneWayService;
+    SetOneWayHwTestLongParam(oneWayService);
 
     const std::string data = "how do you do? this is protocolInterface";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-    std::string getProtocolVal;
-    server.GetProtocol([&getProtocolVal](int32_t errCode, const std::string &protocol) {
+    oneWayService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    std::string protocolVal;
+    oneWayService.GetProtocol([&protocolVal](int32_t errCode, const std::string &protocol) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
-        getProtocolVal = protocol;
+        protocolVal = protocol;
     });
-    EXPECT_STREQ(getProtocolVal.c_str(), "TLSv1.3");
+    EXPECT_STREQ(protocolVal.c_str(), "TLSv1.3");
 
     Socket::SocketStateBase stateBase;
-    server.GetState([&stateBase](int32_t errCode, Socket::SocketStateBase state) {
+    oneWayService.GetState([&stateBase](int32_t errCode, Socket::SocketStateBase state) {
         if (errCode == TLSSOCKET_SUCCESS) {
             EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
             stateBase.SetIsBound(state.IsBound());
@@ -276,7 +264,7 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
     EXPECT_TRUE(stateBase.IsConnected());
     sleep(2);
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)oneWayService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
@@ -284,23 +272,23 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
     if (!TlsUtilsTest::CheckCaFileExistence("getCipherSuiteInterface")) {
         return;
     }
-    TLSSocket server;
-    SetOneWayHwTestLongParam(server);
+    TLSSocket oneWayService;
+    SetOneWayHwTestLongParam(oneWayService);
 
     bool flag = false;
     const std::string data = "how do you do? This is getCipherSuiteInterface";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    oneWayService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    std::vector<std::string> cipherSuite;
-    server.GetCipherSuite([&cipherSuite](int32_t errCode, const std::vector<std::string> &suite) {
+    std::vector<std::string> testSuite;
+    oneWayService.GetCipherSuite([&testSuite](int32_t errCode, const std::vector<std::string> &suite) {
         if (errCode == TLSSOCKET_SUCCESS) {
-            cipherSuite = suite;
+            testSuite = suite;
         }
     });
 
-    for (auto const &iter : cipherSuite) {
+    for (auto const &iter : testSuite) {
         if (iter == "AES256-SHA256") {
             flag = true;
         }
@@ -309,7 +297,7 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
     EXPECT_TRUE(flag);
     sleep(2);
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)oneWayService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
@@ -318,20 +306,20 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
         return;
     }
     std::string getData = "server->client";
-    TLSSocket server;
-    SetOneWayHwTestLongParam(server);
+    TLSSocket oneWayService;
+    SetOneWayHwTestLongParam(oneWayService);
 
-    server.OnMessage([&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {
+    oneWayService.OnMessage([&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {
         EXPECT_TRUE(data == getData);
     });
 
     const std::string data = "how do you do? this is tlsSocketOnMessageData";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    oneWayService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     sleep(2);
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)oneWayService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 } // namespace TlsSocket
 } // namespace NetStack

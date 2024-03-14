@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,24 +27,32 @@
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
+void MockCertChainNetAddress(Socket::NetAddress &address)
+{
+    address.SetAddress(TlsUtilsTest::GetIp(TlsUtilsTest::ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(TlsUtilsTest::ChangeToFile(PORT).c_str()));
+    address.SetFamilyBySaFamily(AF_INET);
+}
+
+void MockCertChainParamOptions(Socket::NetAddress &address, TLSSecureOptions &secureOption, TLSConnectOptions &options)
+{
+    secureOption.SetKey(SecureData(TlsUtilsTest::ChangeToFile(PRIVATE_KEY_PEM_CHAIN)));
+    secureOption.SetCert(TlsUtilsTest::ChangeToFile(CLIENT_CRT_CHAIN));
+
+    MockCertChainNetAddress(address);
+    options.SetNetAddress(address);
+    options.SetTlsSecureOptions(secureOption);
+}
+
 void SetCertChainHwTestShortParam(TLSSocket &server)
 {
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
-    Socket::NetAddress address;
-
-    address.SetAddress(TlsUtilsTest::GetIp(TlsUtilsTest::ChangeToFile(IP_ADDRESS)));
-    address.SetPort(std::atoi(TlsUtilsTest::ChangeToFile(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(TlsUtilsTest::ChangeToFile(PRIVATE_KEY_PEM_CHAIN)));
     std::vector<std::string> caVec = { TlsUtilsTest::ChangeToFile(CA_PATH_CHAIN),
         TlsUtilsTest::ChangeToFile(MID_CA_PATH_CHAIN) };
     secureOption.SetCaChain(caVec);
-    secureOption.SetCert(TlsUtilsTest::ChangeToFile(CLIENT_CRT_CHAIN));
-
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
+    Socket::NetAddress address;
+    MockCertChainParamOptions(address, secureOption, options);
 
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -52,26 +60,18 @@ void SetCertChainHwTestShortParam(TLSSocket &server)
 
 void SetCertChainHwTestLongParam(TLSSocket &server)
 {
-    TLSConnectOptions options;
-    TLSSecureOptions secureOption;
     Socket::NetAddress address;
-
-    address.SetAddress(TlsUtilsTest::GetIp(TlsUtilsTest::ChangeToFile(IP_ADDRESS)));
-    address.SetPort(std::atoi(TlsUtilsTest::ChangeToFile(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(TlsUtilsTest::ChangeToFile(PRIVATE_KEY_PEM_CHAIN)));
     std::vector<std::string> caVec = { TlsUtilsTest::ChangeToFile(CA_PATH_CHAIN),
         TlsUtilsTest::ChangeToFile(MID_CA_PATH_CHAIN) };
+    TLSSecureOptions secureOption;
     secureOption.SetCaChain(caVec);
-    secureOption.SetCert(TlsUtilsTest::ChangeToFile(CLIENT_CRT_CHAIN));
     std::string protocolV13 = "TLSv1.3";
     std::vector<std::string> protocolVec = { protocolV13 };
     secureOption.SetProtocolChain(protocolVec);
     secureOption.SetCipherSuite("AES256-SHA256");
 
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
+    TLSConnectOptions options;
+    MockCertChainParamOptions(address, secureOption, options);
 
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -85,11 +85,7 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
 
     TLSSocket testServer;
     Socket::NetAddress address;
-
-    address.SetAddress(TlsUtilsTest::GetIp(TlsUtilsTest::ChangeToFile(IP_ADDRESS)));
-    address.SetPort(std::atoi(TlsUtilsTest::ChangeToFile(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
+    MockCertChainNetAddress(address);
     testServer.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
@@ -98,16 +94,16 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
     if (!TlsUtilsTest::CheckCaPathChainExistence("connectInterface")) {
         return;
     }
-    TLSSocket server;
-    SetCertChainHwTestShortParam(server);
+    TLSSocket certChainServer;
+    SetCertChainHwTestShortParam(certChainServer);
 
     const std::string data = "how do you do? this is connectInterface";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    certChainServer.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     sleep(2);
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)certChainServer.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     sleep(2);
 }
 
@@ -116,17 +112,17 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
     if (!TlsUtilsTest::CheckCaPathChainExistence("closeInterface")) {
         return;
     }
-    TLSSocket server;
-    SetCertChainHwTestShortParam(server);
+    TLSSocket certChainServer;
+    SetCertChainHwTestShortParam(certChainServer);
 
     const std::string data = "how do you do? this is closeInterface";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    certChainServer.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     sleep(2);
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)certChainServer.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
@@ -134,17 +130,17 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
     if (!TlsUtilsTest::CheckCaPathChainExistence("sendInterface")) {
         return;
     }
-    TLSSocket server;
-    SetCertChainHwTestShortParam(server);
+    TLSSocket certChainServer;
+    SetCertChainHwTestShortParam(certChainServer);
 
     const std::string data = "how do you do? this is sendInterface";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    certChainServer.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     sleep(2);
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)certChainServer.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2)
@@ -152,29 +148,20 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     if (!TlsUtilsTest::CheckCaPathChainExistence("getRemoteAddressInterface")) {
         return;
     }
-    TLSSocket server;
+    TLSSocket certChainServer;
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
     Socket::NetAddress address;
-
-    address.SetAddress(TlsUtilsTest::GetIp(TlsUtilsTest::ChangeToFile(IP_ADDRESS)));
-    address.SetPort(std::atoi(TlsUtilsTest::ChangeToFile(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(TlsUtilsTest::ChangeToFile(PRIVATE_KEY_PEM_CHAIN)));
     std::vector<std::string> caVec = { TlsUtilsTest::ChangeToFile(CA_PATH_CHAIN),
         TlsUtilsTest::ChangeToFile(MID_CA_PATH_CHAIN) };
     secureOption.SetCaChain(caVec);
-    secureOption.SetCert(TlsUtilsTest::ChangeToFile(CLIENT_CRT_CHAIN));
+    MockCertChainParamOptions(address, secureOption, options);
 
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
-
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    certChainServer.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    certChainServer.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     Socket::NetAddress netAddress;
-    server.GetRemoteAddress([&netAddress](int32_t errCode, const Socket::NetAddress &address) {
+    certChainServer.GetRemoteAddress([&netAddress](int32_t errCode, const Socket::NetAddress &address) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         netAddress.SetPort(address.GetPort());
         netAddress.SetFamilyBySaFamily(address.GetSaFamily());
@@ -188,9 +175,9 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    certChainServer.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)certChainServer.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
@@ -198,27 +185,27 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
     if (!TlsUtilsTest::CheckCaPathChainExistence("getRemoteAddressInterface")) {
         return;
     }
-    TLSSocket server;
-    SetCertChainHwTestShortParam(server);
+    TLSSocket certChainServer;
+    SetCertChainHwTestShortParam(certChainServer);
 
     Socket::SocketStateBase TlsSocketstate;
-    server.GetState([&TlsSocketstate](int32_t errCode, const Socket::SocketStateBase &state) {
+    certChainServer.GetState([&TlsSocketstate](int32_t errCode, const Socket::SocketStateBase &state) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         TlsSocketstate = state;
     });
-    std::cout << "TlsSocketstate.IsClose(): " << TlsSocketstate.IsClose() << std::endl;
+    std::cout << "TlsSocketCertChainTest TlsSocketstate.IsClose(): " << TlsSocketstate.IsClose() << std::endl;
     EXPECT_TRUE(TlsSocketstate.IsBound());
     EXPECT_TRUE(!TlsSocketstate.IsClose());
     EXPECT_TRUE(TlsSocketstate.IsConnected());
 
-    const std::string data = "how do you do? this is getStateInterface";
+    const std::string tlsSocketCertChainTestData = "how do you do? this is getStateInterface";
     Socket::TCPSendOptions tcpSendOptions;
-    tcpSendOptions.SetData(data);
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tcpSendOptions.SetData(tlsSocketCertChainTestData);
+    certChainServer.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     sleep(2);
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)certChainServer.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, getCertificateInterface, testing::ext::TestSize.Level2)
@@ -226,19 +213,19 @@ HWTEST_F(TlsSocketTest, getCertificateInterface, testing::ext::TestSize.Level2)
     if (!TlsUtilsTest::CheckCaPathChainExistence("getCertificateInterface")) {
         return;
     }
-    TLSSocket server;
-    SetCertChainHwTestShortParam(server);
+    TLSSocket certChainServer;
+    SetCertChainHwTestShortParam(certChainServer);
     Socket::TCPSendOptions tcpSendOptions;
     const std::string data = "how do you do? This is UT test getCertificateInterface";
 
     tcpSendOptions.SetData(data);
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    certChainServer.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    server.GetCertificate(
+    certChainServer.GetCertificate(
         [](int32_t errCode, const X509CertRawData &cert) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     sleep(2);
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)certChainServer.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Level2)
@@ -246,19 +233,19 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
     if (!TlsUtilsTest::CheckCaPathChainExistence("getRemoteCertificateInterface")) {
         return;
     }
-    TLSSocket server;
-    SetCertChainHwTestShortParam(server);
+    TLSSocket certChainServer;
+    SetCertChainHwTestShortParam(certChainServer);
     Socket::TCPSendOptions tcpSendOptions;
     const std::string data = "how do you do? This is UT test getRemoteCertificateInterface";
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    certChainServer.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    server.GetRemoteCertificate(
+    certChainServer.GetRemoteCertificate(
         [](int32_t errCode, const X509CertRawData &cert) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     sleep(2);
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)certChainServer.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
@@ -266,23 +253,23 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
     if (!TlsUtilsTest::CheckCaPathChainExistence("protocolInterface")) {
         return;
     }
-    TLSSocket server;
-    SetCertChainHwTestLongParam(server);
+    TLSSocket certChainServer;
+    SetCertChainHwTestLongParam(certChainServer);
 
-    const std::string data = "how do you do? this is protocolInterface";
+    const std::string data = "how do you do? this is protocolInterface.";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-    std::string getProtocolVal;
-    server.GetProtocol([&getProtocolVal](int32_t errCode, const std::string &protocol) {
+    certChainServer.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    std::string getProtocolVal = "";
+    certChainServer.GetProtocol([&getProtocolVal](int32_t errCode, const std::string &protocol) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         getProtocolVal = protocol;
     });
     EXPECT_STREQ(getProtocolVal.c_str(), "TLSv1.3");
     sleep(2);
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)certChainServer.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
@@ -290,31 +277,31 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
     if (!TlsUtilsTest::CheckCaPathChainExistence("getCipherSuiteInterface")) {
         return;
     }
-    TLSSocket server;
-    SetCertChainHwTestLongParam(server);
+    TLSSocket certChainServer;
+    SetCertChainHwTestLongParam(certChainServer);
 
-    bool flag = false;
+    bool successFlag = false;
     const std::string data = "how do you do? This is getCipherSuiteInterface";
-    Socket::TCPSendOptions tcpSendOptions;
-    tcpSendOptions.SetData(data);
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    Socket::TCPSendOptions testTcpSendOptions;
+    testTcpSendOptions.SetData(data);
+    certChainServer.Send(testTcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    std::vector<std::string> cipherSuite;
-    server.GetCipherSuite([&cipherSuite](int32_t errCode, const std::vector<std::string> &suite) {
+    std::vector<std::string> testCipherSuite;
+    certChainServer.GetCipherSuite([&testCipherSuite](int32_t errCode, const std::vector<std::string> &suite) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
-        cipherSuite = suite;
+        testCipherSuite = suite;
     });
 
-    for (auto const &iter : cipherSuite) {
+    for (auto const &iter : testCipherSuite) {
         if (iter == "AES256-SHA256") {
-            flag = true;
+            successFlag = true;
         }
     }
 
-    EXPECT_TRUE(flag);
+    EXPECT_TRUE(successFlag);
     sleep(2);
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)certChainServer.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, getSignatureAlgorithmsInterface, testing::ext::TestSize.Level2)
@@ -322,53 +309,46 @@ HWTEST_F(TlsSocketTest, getSignatureAlgorithmsInterface, testing::ext::TestSize.
     if (!TlsUtilsTest::CheckCaPathChainExistence("getSignatureAlgorithmsInterface")) {
         return;
     }
-    TLSConnectOptions options;
-    TLSSocket server;
+    
+    TLSSocket certChainServer;
     TLSSecureOptions secureOption;
-    Socket::NetAddress address;
-
-    address.SetAddress(TlsUtilsTest::GetIp(TlsUtilsTest::ChangeToFile(IP_ADDRESS)));
-    address.SetPort(std::atoi(TlsUtilsTest::ChangeToFile(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    std::string signatureAlgorithmVec = { "rsa_pss_rsae_sha256:ECDSA+SHA256" };
+    std::string signatureAlgorithmVec = {"rsa_pss_rsae_sha256:ECDSA+SHA256"};
     secureOption.SetSignatureAlgorithms(signatureAlgorithmVec);
-    secureOption.SetKey(SecureData(TlsUtilsTest::ChangeToFile(PRIVATE_KEY_PEM_CHAIN)));
     std::vector<std::string> caVec = { TlsUtilsTest::ChangeToFile(CA_PATH_CHAIN),
         TlsUtilsTest::ChangeToFile(MID_CA_PATH_CHAIN) };
     secureOption.SetCaChain(caVec);
-    secureOption.SetCert(TlsUtilsTest::ChangeToFile(CLIENT_CRT_CHAIN));
     std::string protocolV13 = "TLSv1.3";
-    std::vector<std::string> protocolVec = { protocolV13 };
+    std::vector<std::string> protocolVec = {protocolV13};
     secureOption.SetProtocolChain(protocolVec);
+    Socket::NetAddress address;
+    TLSConnectOptions options;
+    MockCertChainParamOptions(address, secureOption, options);
 
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
-
-    bool flag = false;
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    bool successFlag = false;
+    certChainServer.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    certChainServer.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     const std::string data = "how do you do? this is getSignatureAlgorithmsInterface";
-    Socket::TCPSendOptions tcpSendOptions;
-    tcpSendOptions.SetData(data);
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    Socket::TCPSendOptions testOptions;
+    testOptions.SetData(data);
+    certChainServer.Send(testOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    std::vector<std::string> signatureAlgorithms;
-    server.GetSignatureAlgorithms([&signatureAlgorithms](int32_t errCode, const std::vector<std::string> &algorithms) {
-        if (errCode == TLSSOCKET_SUCCESS) {
-            signatureAlgorithms = algorithms;
-        }
-    });
-    for (auto const &iter : signatureAlgorithms) {
+    std::vector<std::string> testSignatureAlgorithms;
+    certChainServer.GetSignatureAlgorithms(
+        [&testSignatureAlgorithms](int32_t errCode, const std::vector<std::string> &algorithms) {
+            if (errCode == TLSSOCKET_SUCCESS) {
+                testSignatureAlgorithms = algorithms;
+            }
+        });
+
+    for (auto const &iter : testSignatureAlgorithms) {
         if (iter == "ECDSA+SHA256") {
-            flag = true;
+            successFlag = true;
         }
     }
-    EXPECT_TRUE(flag);
+    EXPECT_TRUE(successFlag);
     sleep(2);
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)certChainServer.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
@@ -377,9 +357,9 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
         return;
     }
     std::string getData = "server->client";
-    TLSSocket server;
-    SetCertChainHwTestLongParam(server);
-    server.OnMessage([&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {
+    TLSSocket certChainServer;
+    SetCertChainHwTestLongParam(certChainServer);
+    certChainServer.OnMessage([&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {
         if (data == getData) {
             EXPECT_TRUE(true);
         } else {
@@ -390,10 +370,10 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
     const std::string data = "how do you do? this is tlsSocketOnMessageData";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    certChainServer.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     sleep(2);
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)certChainServer.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 } // namespace TlsSocket
 } // namespace NetStack
