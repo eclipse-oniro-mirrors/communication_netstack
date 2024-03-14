@@ -766,14 +766,14 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *ssl_ctx, void *parm)
             NETSTACK_LOGD("certificate directory path is not exist");
             continue;
         }
-        if (!SSL_CTX_load_verify_locations((SSL_CTX *) ssl_ctx, nullptr, path.c_str())) {
+        if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(ssl_ctx), nullptr, path.c_str())) {
             NETSTACK_LOGE("loading certificates from directory error.");
             continue;
         }
     }
     if (access(certsPath->certFile.c_str(), F_OK) != 0) {
         NETSTACK_LOGD("certificate directory path is not exist");
-    } else if (!SSL_CTX_load_verify_locations((SSL_CTX *) ssl_ctx, certsPath->certFile.c_str(), nullptr)) {
+    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(ssl_ctx), certsPath->certFile.c_str(), nullptr)) {
         NETSTACK_LOGE("loading certificates from context cert error.");
     }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
