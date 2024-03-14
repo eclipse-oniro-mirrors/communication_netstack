@@ -72,8 +72,6 @@ config("http_config") {
 
 ohos_shared_library("http") {
   sources = [
-    "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",
-    "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
     "async_context/src/request_context.cpp",
     "async_work/src/http_async_work.cpp",
     "cache/base64/src/base64_utils.cpp",

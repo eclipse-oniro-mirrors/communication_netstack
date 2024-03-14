@@ -18,6 +18,7 @@
 
 #include <mutex>
 #include <queue>
+#include <utility>
 #include <vector>
 
 #include "manual_reset_event.h"
@@ -56,7 +57,7 @@ template <typename T> std::vector<T> ThreadSafeStorage<T>::Flush()
     std::lock_guard lock(queueMutex_);
 
     while (!queue_.empty()) {
-        elementsToReturn.push_back(queue_.front());
+        elementsToReturn.push_back(std::move(queue_.front()));
         queue_.pop();
     }
 

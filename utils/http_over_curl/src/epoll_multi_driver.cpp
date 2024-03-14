@@ -20,7 +20,7 @@
 
 namespace OHOS::NetStack::HttpOverCurl {
 
-constexpr size_t MAX_EPOLL_EVENTS = 10;
+static constexpr size_t MAX_EPOLL_EVENTS = 10;
 
 EpollMultiDriver::EpollMultiDriver(const std::shared_ptr<HttpOverCurl::ThreadSafeStorage<RequestInfo *>> &incomingQueue)
     : incomingQueue_(incomingQueue)
@@ -33,7 +33,6 @@ void EpollMultiDriver::Initialize()
     timeoutTimer_.RegisterForPolling(poller_);
     incomingQueue_->GetSyncEvent().RegisterForPolling(poller_);
     multi_ = curl_multi_init();
-
     if (!multi_) {
         NETSTACK_LOGE("Failed to initialize curl_multi handle");
         return;
@@ -66,7 +65,6 @@ void EpollMultiDriver::Step(int waitEventsTimeoutMs)
 {
     epoll_event events[MAX_EPOLL_EVENTS];
     int eventsToHandle = poller_.Wait(events, MAX_EPOLL_EVENTS, waitEventsTimeoutMs);
-
     if (eventsToHandle == -1) {
         NETSTACK_LOGE("Error on epoll");
         return;
@@ -86,11 +84,9 @@ void EpollMultiDriver::Step(int waitEventsTimeoutMs)
 void EpollMultiDriver::IncomingRequestCallback()
 {
     auto requestsToAdd = incomingQueue_->Flush();
-
     for (auto &request : requestsToAdd) {
         ongoingRequests_[request->easyHandle] = request;
         auto ret = curl_multi_add_handle(multi_, request->easyHandle);
-
         if (ret != CURLM_OK) {
             NETSTACK_LOGE("curl_multi_add_handle err, ret = %{public}d %{public}s", ret, curl_multi_strerror(ret));
             continue;
@@ -124,9 +120,8 @@ void EpollMultiDriver::EpollTimerCallback()
 {
     timeoutTimer_.ResetEvent();
     auto rc = curl_multi_socket_action(multi_, CURL_SOCKET_TIMEOUT, 0, &stillRunning);
-
     if (rc != CURLM_OK) {
-        NETSTACK_LOGE("curl_multi returned error %d", rc);
+        NETSTACK_LOGE("curl_multi returned error = %{public}d", rc);
     } else {
         CheckMultiInfo();
     }
@@ -173,7 +168,7 @@ int EpollMultiDriver::MultiSocketCallback(curl_socket_t socket, int action, Curl
             delete socketContext;
             break;
         default:
-            abort();
+            NETSTACK_LOGE("Unexpected socket action = %{public}d", action);
     }
 
     return 0;
@@ -212,9 +207,8 @@ void EpollMultiDriver::EpollSocketCallback(int fd, int revents)
 {
     int action = ((revents & EPOLLIN) ? CURL_CSELECT_IN : 0) | ((revents & EPOLLOUT) ? CURL_CSELECT_OUT : 0);
     auto rc = curl_multi_socket_action(multi_, fd, action, &stillRunning);
-
     if (rc != CURLM_OK) {
-        NETSTACK_LOGE("curl_multi returned error %d", rc);
+        NETSTACK_LOGE("curl_multi returned error = %{public}d", rc);
     } else {
         CheckMultiInfo();
     }

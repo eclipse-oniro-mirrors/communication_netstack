@@ -24,8 +24,12 @@
 
 #include "epoller.h"
 #include "file_descriptor.h"
+#include "securec.h"
 
 namespace OHOS::NetStack::HttpOverCurl {
+
+static constexpr long MILLISECONDS_IN_SECOND = 1000;
+static constexpr long NANOSECONDS_IN_MILLISECOND = 1000 * 1000;
 
 struct TimeoutTimer {
     TimeoutTimer()
@@ -56,29 +60,29 @@ struct TimeoutTimer {
         SetTimeoutMs(0);
     }
 
-    void SetTimeoutNs(int timeoutNs)
+    void SetTimeoutNs(long timeoutNs)
     {
         itimerspec its{};
-        memset(&its, 0, sizeof(itimerspec));
+        memset_s(&its, sizeof(itimerspec), 0, sizeof(itimerspec));
 
         if (timeoutNs > 0) {
             its.it_value.tv_nsec = timeoutNs;
         }
 
-        timerfd_settime(underlying_, /* flags= */ 0, &its, nullptr);
+        timerfd_settime(underlying_, 0, &its, nullptr);
     }
 
-    void SetTimeoutMs(int timeoutMs)
+    void SetTimeoutMs(long timeoutMs)
     {
         itimerspec its{};
-        memset(&its, 0, sizeof(itimerspec));
+        memset_s(&its, sizeof(itimerspec), 0, sizeof(itimerspec));
 
         if (timeoutMs > 0) {
-            its.it_value.tv_sec = timeoutMs / 1000;
-            its.it_value.tv_nsec = (timeoutMs % 1000) * 1000 * 1000;
+            its.it_value.tv_sec = timeoutMs / MILLISECONDS_IN_SECOND;
+            its.it_value.tv_nsec = (timeoutMs % MILLISECONDS_IN_SECOND) * NANOSECONDS_IN_MILLISECOND;
         }
 
-        timerfd_settime(underlying_, /* flags= */ 0, &its, nullptr);
+        timerfd_settime(underlying_, 0, &its, nullptr);
     }
 
     void ResetEvent()

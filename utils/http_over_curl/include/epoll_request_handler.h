@@ -35,7 +35,7 @@ public:
     ~EpollRequestHandler();
 
     void Process(CURL *easyHandle, const TransferStartedCallback &startedCallback,
-                 const TransferDoneCallback &responseCallback, void *opaqueData);
+                 const TransferDoneCallback &responseCallback, void *opaqueData = nullptr);
 
 private:
     void WorkingThread();

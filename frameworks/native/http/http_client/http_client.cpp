@@ -86,16 +86,10 @@ void HttpSession::StartTask(const std::shared_ptr<HttpClientTask> &ptr)
 
     static HttpOverCurl::EpollRequestHandler requestHandler;
 
-    static auto startedCallback = +[](CURL *easyHandle, void *opaqueData) {};
+    auto startedCallback = [ptr](CURL *, void *) {};
+    auto responseCallback = [ptr](CURLMsg *curlMessage, void *) { ptr->ProcessResponse(curlMessage); };
 
-    static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {
-        auto task = static_cast<std::shared_ptr<HttpClientTask> *>(opaqueData);
-        (*task)->ProcessResponse(curlMessage);
-        delete task;
-    };
-
-    auto pcopy = new std::shared_ptr<HttpClientTask>(ptr);
-    requestHandler.Process(ptr->GetCurlHandle(), startedCallback, responseCallback, pcopy);
+    requestHandler.Process(ptr->GetCurlHandle(), startedCallback, responseCallback);
 }
 
 } // namespace HttpClient
