@@ -46,6 +46,7 @@
 #include "netstack_log.h"
 #include "securec.h"
 #include "secure_char.h"
+#include "hitrace_meter.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
@@ -87,6 +88,8 @@ static constexpr const char *HTTP_PROXY_HOST_KEY = "persist.netmanager_base.http
 static constexpr const char *HTTP_PROXY_PORT_KEY = "persist.netmanager_base.http_proxy.port";
 static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_base.http_proxy.exclusion_list";
 #endif
+
+static constexpr const char *HTTP_REQ_TRACE_NAME = "HttpRequest";
 
 static void RequestContextDeleter(RequestContext *context)
 {
@@ -202,6 +205,7 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 #else
     pthread_setname_np(pthread_self(), HTTP_CLIENT_TASK_THREAD);
 #endif
+    StartAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, context->GetTaskId());
     SetServerSSLCertOption(handle, context);
     {
         std::lock_guard lockGuard(staticContextSet_.mutexForContextVec);
@@ -218,6 +222,7 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {
         auto context = static_cast<RequestContext *>(opaqueData);
         HttpExec::HandleCurlData(curlMessage, context);
+        FinishAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, context->GetTaskId());
     };
 
     requestHandler.Process(handle, startedCallback, responseCallback, context);

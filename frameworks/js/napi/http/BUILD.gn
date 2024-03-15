@@ -122,6 +122,7 @@ ohos_shared_library("http") {
     ]
     external_deps = [
       "hilog:libhilog",
+      "hitrace:hitrace_meter",
       "napi:ace_napi",
     ]
     if (netstack_http_boringssl) {
