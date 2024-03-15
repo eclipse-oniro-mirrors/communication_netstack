@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,13 +13,16 @@
  * limitations under the License.
  */
 
-#include "netstack_log.h"
-#include "gtest/gtest.h"
 #include <csignal>
 #include <cstring>
 #include <functional>
 #include <iostream>
 
+#include "netstack_log.h"
+#include "gtest/gtest.h"
+#ifdef GTEST_API_
+#define private public
+#endif
 #include "websocket_client_innerapi.h"
 
 class WebSocketTest : public testing::Test {
@@ -36,6 +39,8 @@ public:
 namespace {
 using namespace testing::ext;
 using namespace OHOS::NetStack::WebSocketClient;
+static constexpr const size_t TEST_MAX_DATA_LENGTH = 5 * 1024 * 1024;
+static constexpr const size_t TEST_LENGTH = 1;
 
 OpenOptions openOptions;
 
@@ -100,4 +105,40 @@ HWTEST_F(WebSocketTest, WebSocketDestroy005, TestSize.Level1)
     EXPECT_EQ(ret, 0);
 }
 
+HWTEST_F(WebSocketTest, WebSocketBranchTest001, TestSize.Level1)
+{
+    const char *data = "test data";
+    char *testData = nullptr;
+    size_t length = 0;
+    int32_t ret = client->Send(testData, length);
+    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_SEND_DATA_NULL);
+
+    ret = client->Send(const_cast<char *>(data), TEST_MAX_DATA_LENGTH);
+    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_DATA_LENGTH_EXCEEDS);
+
+    CloseOption options;
+    options.reason = "";
+    options.code = 0;
+    WebSocketClient *client = new WebSocketClient();
+    EXPECT_TRUE(client->GetClientContext() != nullptr);
+    client->GetClientContext()->openStatus = TEST_LENGTH;
+    ret = client->Close(options);
+    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
+    client->GetClientContext()->openStatus = 0;
+    ret = client->Close(options);
+    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT);
+}
+
+HWTEST_F(WebSocketTest, WebSocketBranchTest002, TestSize.Level1)
+{
+    client->clientContext = nullptr;
+    const char *data = "test data";
+    size_t length = 0;
+    int32_t ret = client->Send(const_cast<char *>(data), length);
+    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX);
+
+    CloseOption options;
+    ret = client->Close(options);
+    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX);
+}
 } // namespace
