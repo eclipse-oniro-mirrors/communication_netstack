@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,17 +13,6 @@
  * limitations under the License.
  */
 
-#include <fstream>
-#include <gtest/gtest.h>
-#include <iostream>
-#include <openssl/rsa.h>
-#include <openssl/ssl.h>
-#include <sstream>
-#include <string>
-#include <string_view>
-#include <unistd.h>
-#include <vector>
-
 #include "accesstoken_kit.h"
 #include "net_address.h"
 #include "secure_data.h"
@@ -34,6 +23,7 @@
 #include "tls_configuration.h"
 #include "tls_key.h"
 #include "tls_socket.h"
+#include "tls_utils_test.h"
 #include "token_setproc.h"
 
 namespace OHOS {
@@ -42,67 +32,34 @@ namespace TlsSocket {
 namespace {
 using namespace testing::ext;
 using namespace Security::AccessToken;
-const std::string_view PRIVATE_KEY_PEM_CHAIN = "/data/ClientCertChain/privekey.pem.unsecure";
-const std::string_view CA_PATH_CHAIN = "/data/ClientCertChain/RootCa.pem";
-const std::string_view MID_CA_PATH_CHAIN = "/data/ClientCertChain/MidCa.pem";
-const std::string_view CLIENT_CRT_CHAIN = "/data/ClientCertChain/secondServer.crt";
-const std::string_view IP_ADDRESS = "/data/Ip/address.txt";
-const std::string_view PORT = "/data/Ip/port.txt";
-
-inline bool CheckCaFileExistence(const char *function)
-{
-    if (access(CA_PATH_CHAIN.data(), 0)) {
-        std::cout << "CA file does not exist! (" << function << ")";
-        return false;
-    }
-    return true;
-}
-
-std::string ReadFileContent(const std::string_view fileName)
-{
-    std::ifstream file;
-    file.open(fileName);
-    std::stringstream ss;
-    ss << file.rdbuf();
-    std::string infos = ss.str();
-    file.close();
-    return infos;
-}
-
-std::string GetIp(std::string ip)
-{
-    return ip.substr(0, ip.length() - 1);
-}
 } // namespace
 
-class TlsSocketTest : public testing::Test {
-public:
-    static void SetUpTestCase() {}
+void MockConnectionNetAddress(Socket::NetAddress &address)
+{
+    address.SetAddress(TlsUtilsTest::GetIp(TlsUtilsTest::ChangeToFile(IP_ADDRESS)));
+    address.SetPort(std::atoi(TlsUtilsTest::ChangeToFile(PORT).c_str()));
+    address.SetFamilyBySaFamily(AF_INET);
+}
 
-    static void TearDownTestCase() {}
+void MockConnectionParamOptions(Socket::NetAddress &address, TLSSecureOptions &secureOption, TLSConnectOptions &options)
+{
+    secureOption.SetKey(SecureData(TlsUtilsTest::ChangeToFile(PRIVATE_KEY_PEM_CHAIN)));
+    secureOption.SetCert(TlsUtilsTest::ChangeToFile(CLIENT_CRT_CHAIN));
 
-    virtual void SetUp() {}
-
-    virtual void TearDown() {}
-};
+    MockConnectionNetAddress(address);
+    options.SetTlsSecureOptions(secureOption);
+    options.SetNetAddress(address);
+}
 
 void SetUnilateralHwTestShortParam(TLSSocket &server)
 {
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
     Socket::NetAddress address;
-
-    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
-    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
-    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
+    std::vector<std::string> caVec = { TlsUtilsTest::ChangeToFile(ROOT_CA_PATH_CHAIN),
+        TlsUtilsTest::ChangeToFile(MID_CA_CHAIN) };
     secureOption.SetCaChain(caVec);
-    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
-
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
+    MockConnectionParamOptions(address, secureOption, options);
 
     server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
@@ -172,45 +129,42 @@ public:
 
 HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
 {
-    if (!CheckCaFileExistence("bindInterface")) {
+    if (!TlsUtilsTest::CheckCaPathChainExistence("bindInterface")) {
         return;
     }
 
-    TLSSocket serverTLS;
+    TLSSocket tlsService;
     Socket::NetAddress address;
-
-    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
-    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
+    MockConnectionNetAddress(address);
 
     AccessToken token;
-    serverTLS.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tlsService.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
 {
-    if (!CheckCaFileExistence("connectInterface")) {
+    if (!TlsUtilsTest::CheckCaPathChainExistence("connectInterface")) {
         return;
     }
-    TLSSocket server;
-    SetUnilateralHwTestShortParam(server);
+    TLSSocket tlsService;
+    SetUnilateralHwTestShortParam(tlsService);
 
     AccessToken token;
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tlsService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)tlsService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
 {
-    if (!CheckCaFileExistence("closeInterface")) {
+    if (!TlsUtilsTest::CheckCaPathChainExistence("closeInterface")) {
         return;
     }
-    TLSSocket server;
-    SetUnilateralHwTestShortParam(server);
+    TLSSocket tlsService;
+    SetUnilateralHwTestShortParam(tlsService);
 
     AccessToken token;
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
@@ -218,205 +172,182 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tlsService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)tlsService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
 {
-    if (!CheckCaFileExistence("sendInterface")) {
+    if (!TlsUtilsTest::CheckCaPathChainExistence("sendInterface")) {
         return;
     }
-    TLSSocket server;
-    SetUnilateralHwTestShortParam(server);
+    TLSSocket tlsService;
+    SetUnilateralHwTestShortParam(tlsService);
 
     AccessToken token;
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tlsService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)tlsService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2)
 {
-    if (!CheckCaFileExistence("getRemoteAddressInterface")) {
+    if (!TlsUtilsTest::CheckCaPathChainExistence("getRemoteAddressInterface")) {
         return;
     }
-    TLSSocket server;
+    TLSSocket tlsService;
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
     Socket::NetAddress address;
-
-    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
-    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
-    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
+    std::vector<std::string> caVec = { TlsUtilsTest::ChangeToFile(ROOT_CA_PATH_CHAIN),
+        TlsUtilsTest::ChangeToFile(MID_CA_CHAIN) };
     secureOption.SetCaChain(caVec);
-    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
+    MockConnectionParamOptions(address, secureOption, options);
 
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
-
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tlsService.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tlsService.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     AccessToken token;
     Socket::NetAddress netAddress;
-    server.GetRemoteAddress([&netAddress](int32_t errCode, const Socket::NetAddress &address) {
+    tlsService.GetRemoteAddress([&netAddress](int32_t errCode, const Socket::NetAddress &address) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         netAddress.SetFamilyBySaFamily(address.GetSaFamily());
         netAddress.SetAddress(address.GetAddress());
         netAddress.SetPort(address.GetPort());
     });
-    EXPECT_STREQ(netAddress.GetAddress().c_str(), GetIp(ReadFileContent(IP_ADDRESS)).c_str());
-    EXPECT_EQ(address.GetPort(), std::atoi(ReadFileContent(PORT).c_str()));
+    EXPECT_STREQ(netAddress.GetAddress().c_str(), TlsUtilsTest::GetIp(TlsUtilsTest::ChangeToFile(IP_ADDRESS)).c_str());
+    EXPECT_EQ(address.GetPort(), std::atoi(TlsUtilsTest::ChangeToFile(PORT).c_str()));
     EXPECT_EQ(netAddress.GetSaFamily(), AF_INET);
 
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tlsService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)tlsService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
 {
-    if (!CheckCaFileExistence("getRemoteAddressInterface")) {
+    if (!TlsUtilsTest::CheckCaPathChainExistence("getRemoteAddressInterface")) {
         return;
     }
 
-    TLSSocket server;
-    SetUnilateralHwTestShortParam(server);
+    TLSSocket tlsService;
+    SetUnilateralHwTestShortParam(tlsService);
 
     AccessToken token;
     Socket::SocketStateBase TlsSocketstate;
-    server.GetState([&TlsSocketstate](int32_t errCode, const Socket::SocketStateBase &state) {
+    tlsService.GetState([&TlsSocketstate](int32_t errCode, const Socket::SocketStateBase &state) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         TlsSocketstate = state;
     });
-    std::cout << "TlsSocketstate.IsClose(): " << TlsSocketstate.IsClose() << std::endl;
+    std::cout << "TlsSocketUnilateralConnection TlsSocketstate.IsClose(): " << TlsSocketstate.IsClose() << std::endl;
     EXPECT_TRUE(TlsSocketstate.IsBound());
     EXPECT_TRUE(!TlsSocketstate.IsClose());
     EXPECT_TRUE(TlsSocketstate.IsConnected());
 
-    const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
+    const std::string connectionData = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
     Socket::TCPSendOptions tcpSendOptions;
-    tcpSendOptions.SetData(data);
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tcpSendOptions.SetData(connectionData);
+    tlsService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)tlsService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Level2)
 {
-    if (!CheckCaFileExistence("getRemoteCertificateInterface")) {
+    if (!TlsUtilsTest::CheckCaPathChainExistence("getRemoteCertificateInterface")) {
         return;
     }
-    TLSSocket server;
-    SetUnilateralHwTestShortParam(server);
+    TLSSocket tlsService;
+    SetUnilateralHwTestShortParam(tlsService);
     Socket::TCPSendOptions tcpSendOptions;
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
 
     AccessToken token;
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tlsService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    server.GetRemoteCertificate(
+    tlsService.GetRemoteCertificate(
         [](int32_t errCode, const X509CertRawData &cert) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)tlsService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
 {
-    if (!CheckCaFileExistence("protocolInterface")) {
+    if (!TlsUtilsTest::CheckCaPathChainExistence("protocolInterface")) {
         return;
     }
+
+    TLSSocket tlsService;
     TLSConnectOptions options;
-    TLSSocket server;
     TLSSecureOptions secureOption;
-    Socket::NetAddress address;
-
-    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
-    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
-    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
+    std::vector<std::string> caVec = { TlsUtilsTest::ChangeToFile(ROOT_CA_PATH_CHAIN),
+        TlsUtilsTest::ChangeToFile(MID_CA_CHAIN) };
     secureOption.SetCaChain(caVec);
-    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
     std::string protocolV13 = "TLSv1.2";
-    std::vector<std::string> protocolVec = {protocolV13};
+    std::vector<std::string> protocolVec = { protocolV13 };
     secureOption.SetProtocolChain(protocolVec);
-
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
+    Socket::NetAddress address;
+    MockConnectionParamOptions(address, secureOption, options);
 
     AccessToken token;
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tlsService.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tlsService.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
 
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tlsService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     std::string getProtocolVal;
-    server.GetProtocol([&getProtocolVal](int32_t errCode, const std::string &protocol) {
+    tlsService.GetProtocol([&getProtocolVal](int32_t errCode, const std::string &protocol) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         getProtocolVal = protocol;
     });
     EXPECT_STREQ(getProtocolVal.c_str(), "TLSv1.2");
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)tlsService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
 {
-    if (!CheckCaFileExistence("getCipherSuiteInterface")) {
+    if (!TlsUtilsTest::CheckCaPathChainExistence("getCipherSuiteInterface")) {
         return;
     }
 
     TLSConnectOptions options;
-    TLSSocket server;
+    TLSSocket tlsService;
     TLSSecureOptions secureOption;
-    Socket::NetAddress address;
-
-    address.SetAddress(GetIp(ReadFileContent(IP_ADDRESS)));
-    address.SetPort(std::atoi(ReadFileContent(PORT).c_str()));
-    address.SetFamilyBySaFamily(AF_INET);
-
-    secureOption.SetKey(SecureData(ReadFileContent(PRIVATE_KEY_PEM_CHAIN)));
-    std::vector<std::string> caVec = {ReadFileContent(CA_PATH_CHAIN), ReadFileContent(MID_CA_PATH_CHAIN)};
+    std::vector<std::string> caVec = { TlsUtilsTest::ChangeToFile(ROOT_CA_PATH_CHAIN),
+        TlsUtilsTest::ChangeToFile(MID_CA_CHAIN) };
     secureOption.SetCaChain(caVec);
-    secureOption.SetCert(ReadFileContent(CLIENT_CRT_CHAIN));
     secureOption.SetCipherSuite("ECDHE-RSA-AES128-GCM-SHA256");
-
-    options.SetNetAddress(address);
-    options.SetTlsSecureOptions(secureOption);
+    Socket::NetAddress address;
+    MockConnectionParamOptions(address, secureOption, options);
 
     bool flag = false;
     AccessToken token;
-    server.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
-    server.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tlsService.Bind(address, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tlsService.Connect(options, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     const std::string data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: keep-alive\r\n\r\n";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
-    server.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    tlsService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 
     std::vector<std::string> cipherSuite;
-    server.GetCipherSuite([&cipherSuite](int32_t errCode, const std::vector<std::string> &suite) {
+    tlsService.GetCipherSuite([&cipherSuite](int32_t errCode, const std::vector<std::string> &suite) {
         EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS);
         cipherSuite = suite;
     });
@@ -429,7 +360,7 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
 
     EXPECT_TRUE(flag);
 
-    (void)server.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    (void)tlsService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
 } // namespace TlsSocket
 } // namespace NetStack

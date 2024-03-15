@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -286,22 +286,22 @@ HWTEST_F(TlsSocketServerTest, getSignatureAlgorithmsInterface, testing::ext::Tes
     server.Send(tlsServerSendOptions, [](int32_t errCode) { EXPECT_TRUE(TlsSocket::TLSSOCKET_SUCCESS); });
     sleep(2);
 
-    bool flag = false;
+    bool testFlag = false;
     std::string signatureAlgorithmVec = {"rsa_pss_rsae_sha256:ECDSA+SHA256"};
     secureOption.SetSignatureAlgorithms(signatureAlgorithmVec);
-    std::vector<std::string> signatureAlgorithms;
-    server.GetSignatureAlgorithms(socketFd, [&signatureAlgorithms](int32_t errCode,
+    std::vector<std::string> testSignatureAlgorithms;
+    server.GetSignatureAlgorithms(socketFd, [&testSignatureAlgorithms](int32_t errCode,
         const std::vector<std::string> &algorithms) {
         if (errCode == TlsSocket::TLSSOCKET_SUCCESS) {
-            signatureAlgorithms = algorithms;
+            testSignatureAlgorithms = algorithms;
         }
     });
-    for (auto const &iter : signatureAlgorithms) {
+    for (auto const &iter : testSignatureAlgorithms) {
         if (iter == "ECDSA+SHA256") {
-            flag = true;
+            testFlag = true;
         }
     }
-    EXPECT_TRUE(flag);
+    EXPECT_TRUE(testFlag);
     sleep(2);
 
 
