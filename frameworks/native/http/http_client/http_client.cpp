@@ -86,8 +86,12 @@ void HttpSession::StartTask(const std::shared_ptr<HttpClientTask> &ptr)
 
     static HttpOverCurl::EpollRequestHandler requestHandler;
 
+    ptr->SetStatus(TaskStatus::RUNNING);
     auto startedCallback = [ptr](CURL *, void *) {};
-    auto responseCallback = [ptr](CURLMsg *curlMessage, void *) { ptr->ProcessResponse(curlMessage); };
+    auto responseCallback = [ptr](CURLMsg *curlMessage, void *) {
+        ptr->SetStatus(TaskStatus::IDLE);
+        ptr->ProcessResponse(curlMessage);
+    };
 
     requestHandler.Process(ptr->GetCurlHandle(), startedCallback, responseCallback);
 }
