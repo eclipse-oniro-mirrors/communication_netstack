@@ -59,7 +59,7 @@
     } while (0)
 
 namespace OHOS::NetStack::Http {
-static constexpr int CURL_TIMEOUT_MS = 50;
+static constexpr int CURL_TIMEOUT_MS = 20;
 #if !HAS_NETMANAGER_BASE
 static constexpr int CONDITION_TIMEOUT_S = 3600;
 static constexpr int CURL_MAX_WAIT_MSECS = 10;
