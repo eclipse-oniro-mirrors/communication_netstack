@@ -39,6 +39,9 @@
 #include "epoll_request_handler.h"
 #endif
 #include "event_list.h"
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#include "hitrace_meter.h"
+#endif
 #include "http_async_work.h"
 #include "http_time.h"
 #include "napi_utils.h"
@@ -46,7 +49,6 @@
 #include "netstack_log.h"
 #include "securec.h"
 #include "secure_char.h"
-#include "hitrace_meter.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
@@ -74,6 +76,7 @@ static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!eNULL:!EX
 static constexpr const char *HTTP_TASK_RUN_THREAD = "OS_NET_TaskHttp";
 #endif
 static constexpr const char *HTTP_CLIENT_TASK_THREAD = "OS_NET_HttpJs";
+static constexpr const char *HTTP_REQ_TRACE_NAME = "HttpRequest";
 
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
@@ -88,8 +91,6 @@ static constexpr const char *HTTP_PROXY_HOST_KEY = "persist.netmanager_base.http
 static constexpr const char *HTTP_PROXY_PORT_KEY = "persist.netmanager_base.http_proxy.port";
 static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_base.http_proxy.exclusion_list";
 #endif
-
-static constexpr const char *HTTP_REQ_TRACE_NAME = "HttpRequest";
 
 static void RequestContextDeleter(RequestContext *context)
 {
@@ -205,12 +206,11 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 #else
     pthread_setname_np(pthread_self(), HTTP_CLIENT_TASK_THREAD);
 #endif
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     StartAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, context->GetTaskId());
+#endif
     SetServerSSLCertOption(handle, context);
-    {
-        std::lock_guard lockGuard(staticContextSet_.mutexForContextVec);
-        HttpExec::staticContextSet_.contextSet.emplace(context);
-    }
+    StoreContext(context);
 
     static HttpOverCurl::EpollRequestHandler requestHandler;
 
@@ -222,7 +222,9 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {
         auto context = static_cast<RequestContext *>(opaqueData);
         HttpExec::HandleCurlData(curlMessage, context);
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
         FinishAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, context->GetTaskId());
+#endif
     };
 
     requestHandler.Process(handle, startedCallback, responseCallback, context);
@@ -239,10 +241,7 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
         SetServerSSLCertOption(handle, context);
         staticVariable_.infoQueue.emplace(context, handle);
         staticVariable_.conditionVariable.notify_all();
-        {
-            std::lock_guard lockGuard(staticContextSet_.mutexForContextVec);
-            HttpExec::staticContextSet_.contextSet.emplace(context);
-        }
+        StoreContext(context);
     }).detach();
 
     return true;
@@ -1417,5 +1416,11 @@ void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *pa
                           curl_easy_strerror(result));
         }
     }
+}
+
+void HttpExec::StoreContext(RequestContext *context)
+{
+    std::lock_guard lockGuard(staticContextSet_.mutexForContextVec);
+    HttpExec::staticContextSet_.contextSet.emplace(context);
 }
 } // namespace OHOS::NetStack::Http

@@ -117,6 +117,8 @@ private:
 
     static bool AddCurlHandle(CURL *handle, RequestContext *context);
 
+    static void StoreContext(RequestContext *context);
+
 #if HAS_NETMANAGER_BASE
     static void HandleCurlData(CURLMsg *msg, RequestContext *context);
 #else

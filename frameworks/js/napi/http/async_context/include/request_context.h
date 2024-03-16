@@ -110,7 +110,7 @@ public:
  
     const CertsPath& GetCertsPath();
 
-    int32_t GetTaskId() const;
+    [[nodiscard]] int32_t GetTaskId() const;
  
 private:
     int32_t taskId_;

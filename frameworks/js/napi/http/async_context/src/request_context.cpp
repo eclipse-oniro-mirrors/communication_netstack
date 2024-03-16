@@ -16,8 +16,9 @@
 #include "request_context.h"
 
 #include <algorithm>
-#include <utility>
 #include <atomic>
+#include <limits>
+#include <utility>
 
 #include "constant.h"
 #include "http_exec.h"
@@ -69,7 +70,7 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_SSL_PINNEDPUBKEYNOTMATCH, "Specified pinned public key did not match"},
     {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
 };
-static std::atomic<int32_t> g_currentTaskId = 0;
+static std::atomic<int32_t> g_currentTaskId = std::numeric_limits<int32_t>::min();
 RequestContext::RequestContext(napi_env env, EventManager *manager)
     : BaseContext(env, manager),
       usingCache_(true),
@@ -77,8 +78,7 @@ RequestContext::RequestContext(napi_env env, EventManager *manager)
       curlHeaderList_(nullptr),
       multipart_(nullptr)
 {
-    g_currentTaskId++;
-    taskId_ = g_currentTaskId;
+    taskId_ = g_currentTaskId++;
     StartTiming();
 }
 
