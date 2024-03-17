@@ -397,7 +397,11 @@ public:
 
     void OnCloseMessage(EventManager *manager) const
     {
-        manager->EmitByUv(EVENT_CLOSE, nullptr, CallbackTemplate<MakeClose>);
+        if (manager == nullptr) {
+            manager_->EmitByUv(EVENT_CLOSE, nullptr, CallbackTemplate<MakeClose>);
+        } else {
+            manager->EmitByUv(EVENT_CLOSE, nullptr, CallbackTemplate<MakeClose>);
+        }
     }
 
     bool OnMessage(void *data, size_t dataLen, [[maybe_unused]] sockaddr *addr) const
@@ -497,6 +501,13 @@ static int ConfirmBufferSize(int sock)
     return bufferSize;
 }
 
+static inline void RecvInErrorCondition(int reason, int clientId, const LocalSocketMessageCallback &callback,
+                                        LocalSocketServerManager *serverManager)
+{
+    callback.OnError(reason);
+    serverManager->RemoveAccept(clientId);
+}
+
 static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager *serverManager,
                                          const LocalSocketMessageCallback &callback, const std::string &path)
 {
@@ -508,40 +519,42 @@ static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager
     callback.OnLocalSocketConnectionMessage(clientId, serverManager);
     EventManager *eventManager = serverManager->WaitForManager(clientId);
     int sockRecvSize = ConfirmBufferSize(connectFd);
-    void *buffer = malloc(sockRecvSize);
+    std::unique_ptr<char[]> buffer(new (std::nothrow) char[sockRecvSize]);
     if (buffer == nullptr) {
         NETSTACK_LOGE("failed to malloc, connectFd: %{public}d, malloc size: %{public}d", connectFd, sockRecvSize);
+        RecvInErrorCondition(NO_MEMORY, clientId, callback, serverManager);
         return;
     }
     while (true) {
-        if (memset_s(buffer, sockRecvSize, 0, sockRecvSize) != EOK) {
+        if (memset_s(buffer.get(), sockRecvSize, 0, sockRecvSize) != EOK) {
             NETSTACK_LOGE("memset_s failed, connectFd: %{public}d, clientId: %{public}d", connectFd, clientId);
-            break;
+            continue;
         }
-        int32_t recvSize = recv(connectFd, buffer, sockRecvSize, 0);
-        if (recvSize <= 0) {
-            if (errno != EAGAIN) {
-                NETSTACK_LOGE("conntion close, recvSize:%{public}d, errno:%{public}d, fd:%{public}d, id:%{public}d",
-                              recvSize, errno, connectFd, clientId);
-                callback.OnCloseMessage(eventManager);
-                serverManager->RemoveAccept(clientId);
+        int32_t recvSize = recv(connectFd, buffer.get(), sockRecvSize, 0);
+        if (recvSize == 0) {
+            NETSTACK_LOGI("session closed, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFd, clientId);
+            callback.OnCloseMessage(eventManager);
+            serverManager->RemoveAccept(clientId);
+            break;
+        } else if (recvSize < 0) {
+            if (errno != EINTR) {
+                NETSTACK_LOGE("recv error, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFd, clientId);
+                RecvInErrorCondition(errno, clientId, callback, serverManager);
                 break;
             }
         } else {
-            NETSTACK_LOGD("localsocket recv: fd: %{public}d, size: %{public}d, buf: %{public}s", connectFd, recvSize,
-                          reinterpret_cast<char *>(buffer));
+            NETSTACK_LOGD("recv, fd:%{public}d, size:%{public}d, buf:%{public}s", connectFd, recvSize, buffer.get());
             void *data = malloc(recvSize);
             if (data == nullptr) {
-                callback.OnError(NO_MEMORY);
+                RecvInErrorCondition(NO_MEMORY, clientId, callback, serverManager);
                 break;
             }
-            if (memcpy_s(data, recvSize, buffer, recvSize) != EOK ||
+            if (memcpy_s(data, recvSize, buffer.get(), recvSize) != EOK ||
                 !callback.OnMessage(eventManager, data, recvSize, path)) {
                 free(data);
             }
         }
     }
-    free(buffer);
 }
 
 static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSocketMessageCallback &callback,
@@ -601,7 +614,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Loca
         socklen_t tempAddrLen = addrLen;
         auto recvLen = recvfrom(sock, buf.get(), bufferSize, 0, addr, &tempAddrLen);
         if (recvLen < 0) {
-            if (errno == EAGAIN) {
+            if (errno == EAGAIN || errno == EINTR) {
                 continue;
             }
             NETSTACK_LOGE("recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
@@ -609,7 +622,8 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Loca
             return;
         }
         if (recvLen == 0) {
-            continue;
+            callback.OnCloseMessage();
+            break;
         }
         void *data = malloc(recvLen);
         if (data == nullptr) {
@@ -928,8 +942,8 @@ bool ExecLocalSocketConnectionSend(LocalSocketServerSendContext *context)
     }
     int clientId = context->GetClientId();
     auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetManager()->GetData());
-    if (data == nullptr) {
-        NETSTACK_LOGE("is nullptr, id: %{public}d", clientId);
+    if (data == nullptr || data->serverManager_ == nullptr) {
+        NETSTACK_LOGE("localsocket connection send, data or manager is nullptr, id: %{public}d", clientId);
         return false;
     }
     int acceptFd = data->serverManager_->GetAcceptFd(clientId);
@@ -953,12 +967,12 @@ bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
     if (context == nullptr) {
         return false;
     }
-    if (auto mgr = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData()); mgr != nullptr) {
-        if (mgr->sockfd_ > 0) {
+    if (auto mgr = reinterpret_cast<LocalSocketConnectionData *>(context->GetManager()->GetData()); mgr != nullptr) {
+        if (data->serverManager_ != nullptr && data->serverManager_->sockfd_ > 0) {
             return true;
         }
     }
-    NETSTACK_LOGI("socket has lost");
+    NETSTACK_LOGE("invalid serverManager or socket has lost");
     context->SetErrorCode(UNKNOW_ERROR);
     return false;
 }
@@ -970,6 +984,8 @@ napi_value LocalSocketBindCallback(LocalSocketBindContext *context)
 
 napi_value LocalSocketConnectCallback(LocalSocketConnectContext *context)
 {
+    context->Emit(EVENT_CONNECT, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                                NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
@@ -1070,12 +1086,12 @@ napi_value LocalSocketConnectionSendCallback(LocalSocketServerSendContext *conte
 
 napi_value LocalSocketConnectionCloseCallback(LocalSocketServerCloseContext *context)
 {
-    auto pServerManager = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData());
-    if (pServerManager == nullptr) {
+    auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetManager()->GetData());
+    if (data == nullptr || data->serverManager_ == nullptr) {
         NETSTACK_LOGE("connection close callback reinterpret cast failed");
         return NapiUtils::GetUndefined(context->GetEnv());
     }
-    int acceptFd = pServerManager->GetAcceptFd(context->GetClientId());
+    int acceptFd = data->serverManager_->GetAcceptFd(context->GetClientId());
     if (acceptFd <= 0) {
         NETSTACK_LOGE("socket invalid, fd: %{public}d", acceptFd);
         return NapiUtils::GetUndefined(context->GetEnv());
@@ -1089,7 +1105,7 @@ napi_value LocalSocketConnectionCloseCallback(LocalSocketServerCloseContext *con
         NETSTACK_LOGE("sock closed failed, socket is %{public}d, errno is %{public}d", acceptFd, errno);
     } else {
         NETSTACK_LOGI("sock %{public}d closed success", acceptFd);
-        pServerManager->RemoveAccept(context->GetClientId());
+        data->serverManager_->RemoveAccept(context->GetClientId());
         context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
                                                   NapiUtils::GetUndefined(context->GetEnv())));
     }

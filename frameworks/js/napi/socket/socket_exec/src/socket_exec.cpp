@@ -1786,6 +1786,13 @@ static EventManager *WaitForManagerReady(int32_t clientId, int &connectFd)
     return manager;
 }
 
+static inline void RecvInErrorCondition(int reason, int clientId, int connectFD, const TcpMessageCallback &callback)
+{
+    RemoveClientConnection(clientId);
+    SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
+    callback.OnError(reason);
+}
+
 static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallback &callback)
 {
     int32_t connectFD = 0;
@@ -1801,30 +1808,35 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
     if (buffer == nullptr) {
         NETSTACK_LOGE("client malloc failed, listenfd: %{public}d, connectFd: %{public}d, size: %{public}d", sock,
                       connectFD, recvBufferSize);
-        callback.OnError(NO_MEMORY);
+        RecvInErrorCondition(NO_MEMORY, clientId, connectFD, callback);
         return;
     }
 
     while (true) {
         if (memset_s(buffer, recvBufferSize, 0, recvBufferSize) != EOK) {
             NETSTACK_LOGE("memset_s failed!");
+            RecvInErrorCondition(UNKNOW_ERROR, clientId, connectFD, callback);
             break;
         }
         int32_t recvSize = recv(connectFD, buffer, recvBufferSize, 0);
         NETSTACK_LOGI("ClientRecv: fd is %{public}d, buf is %{public}s, size is %{public}d bytes", connectFD, buffer,
                       recvSize);
-        if (recvSize <= 0) {
+        if (recvSize == 0) {
+            NETSTACK_LOGI("session closed, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFD, clientId);
+            callback.OnCloseMessage(manager);
+            RemoveClientConnection(clientId);
+            SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
+            break;
+        } else if (recvSize < 0) {
             if (errno != EAGAIN && errno != EINTR) {
-                NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
-                callback.OnCloseMessage(manager);
-                RemoveClientConnection(clientId);
-                SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
+                NETSTACK_LOGE("recv error, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFD, clientId);
+                RecvInErrorCondition(errno, clientId, connectFD, callback);
                 break;
             }
         } else {
             void *data = malloc(recvSize);
             if (data == nullptr) {
-                callback.OnError(NO_MEMORY);
+                RecvInErrorCondition(NO_MEMORY, clientId, connectFD, callback);
                 break;
             }
             if (memcpy_s(data, recvSize, buffer, recvSize) != EOK ||
