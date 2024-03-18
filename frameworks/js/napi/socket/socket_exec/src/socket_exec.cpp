@@ -1819,8 +1819,7 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
             break;
         }
         int32_t recvSize = recv(connectFD, buffer, recvBufferSize, 0);
-        NETSTACK_LOGI("ClientRecv: fd is %{public}d, buf is %{public}s, size is %{public}d bytes", connectFD, buffer,
-                      recvSize);
+        NETSTACK_LOGI("ClientRecv: fd:%{public}d, buf:%{public}s, size:%{public}d", connectFD, buffer, recvSize);
         if (recvSize == 0) {
             NETSTACK_LOGI("session closed, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFD, clientId);
             callback.OnCloseMessage(manager);

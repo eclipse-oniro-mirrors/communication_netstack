@@ -404,7 +404,7 @@ public:
         }
     }
 
-    bool OnMessage(void *data, size_t dataLen, [[maybe_unused]] sockaddr *addr) const
+    bool OnMessage(void *data, size_t dataLen) const
     {
         return OnRecvLocalSocketMessage(manager_, data, dataLen, socketPath_);
     }
@@ -519,7 +519,7 @@ static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager
     callback.OnLocalSocketConnectionMessage(clientId, serverManager);
     EventManager *eventManager = serverManager->WaitForManager(clientId);
     int sockRecvSize = ConfirmBufferSize(connectFd);
-    std::unique_ptr<char[]> buffer(new (std::nothrow) char[sockRecvSize]);
+    auto buffer = std::make_unique<char[]>(sockRecvSize);
     if (buffer == nullptr) {
         NETSTACK_LOGE("failed to malloc, connectFd: %{public}d, malloc size: %{public}d", connectFd, sockRecvSize);
         RecvInErrorCondition(NO_MEMORY, clientId, callback, serverManager);
@@ -583,17 +583,14 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
     }
 }
 
-static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const LocalSocketMessageCallback &callback)
+static void PollRecvData(int sock, const LocalSocketMessageCallback &callback)
 {
     int bufferSize = ConfirmBufferSize(sock);
-    auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
-    std::unique_ptr<char, decltype(deleter)> buf(reinterpret_cast<char *>(malloc(bufferSize)), deleter);
+    auto buf = std::make_unique<char[]>(bufferSize);
     if (buf == nullptr) {
         callback.OnError(NO_MEMORY);
         return;
     }
-    auto addrDeleter = [](sockaddr *a) { free(reinterpret_cast<void *>(a)); };
-    std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
     nfds_t num = 1;
     pollfd fds[1] = {{.fd = sock, .events = POLLIN}};
     int recvTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT_MS);
@@ -603,16 +600,14 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Loca
             NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
             callback.OnError(errno);
             return;
-        }
-        if (ret == 0) {
+        } else if (ret == 0) {
             continue;
         }
-        if (static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) == 0) {
-            return;
+        if (memset_s(buf.get(), bufferSize, 0, bufferSize) != EOK) {
+            NETSTACK_LOGE("memset_s failed, client fd: %{public}d, bufferSize: %{public}d", sock, bufferSize);
+            continue;
         }
-        (void)memset_s(buf.get(), bufferSize, 0, bufferSize);
-        socklen_t tempAddrLen = addrLen;
-        auto recvLen = recvfrom(sock, buf.get(), bufferSize, 0, addr, &tempAddrLen);
+        auto recvLen = recv(sock, buf.get(), bufferSize, 0);
         if (recvLen < 0) {
             if (errno == EAGAIN || errno == EINTR) {
                 continue;
@@ -620,8 +615,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Loca
             NETSTACK_LOGE("recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
             callback.OnError(errno);
             return;
-        }
-        if (recvLen == 0) {
+        } else if (recvLen == 0) {
             callback.OnCloseMessage();
             break;
         }
@@ -630,7 +624,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Loca
             callback.OnError(NO_MEMORY);
             return;
         }
-        if (memcpy_s(data, recvLen, buf.get(), recvLen) != EOK || !callback.OnMessage(data, recvLen, addr)) {
+        if (memcpy_s(data, recvLen, buf.get(), recvLen) != EOK || !callback.OnMessage(data, recvLen)) {
             free(data);
         }
     }
