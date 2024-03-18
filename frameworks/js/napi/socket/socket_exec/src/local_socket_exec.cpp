@@ -613,7 +613,9 @@ static void PollRecvData(int sock, const LocalSocketMessageCallback &callback)
                 continue;
             }
             NETSTACK_LOGE("recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
-            callback.OnError(errno);
+            if (auto mgr = reinterpret_cast<LocalSocketManager *>(callback.manager_->GetData()); mgr != nullptr) {
+                mgr->GetSocketCloseStatus() ? callback.OnCloseMessage() : callback.OnError(errno);
+            }
             return;
         } else if (recvLen == 0) {
             callback.OnCloseMessage();
@@ -717,6 +719,7 @@ bool ExecLocalSocketSend(LocalSocketSendContext *context)
         return false;
     }
     if (context->GetSocketFd() < 0) {
+        context->SetErrorCode(EBADF);
         return false;
     }
     bool result = LocalSocketSendEvent(context);
@@ -734,9 +737,10 @@ bool ExecLocalSocketClose(LocalSocketCloseContext *context)
         context->SetErrorCode(errno);
         return false;
     }
-    context->SetSocketFd(0);
+    context->SetSocketFd(-1);
     if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetManager()->GetData()); pMgr != nullptr) {
         pMgr->isConnected_ = false;
+        pMgr->SetSocketCloseStatus(true);
     }
     return true;
 }
@@ -962,12 +966,14 @@ bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
         return false;
     }
     if (auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetManager()->GetData()); data != nullptr) {
-        if (data->serverManager_ != nullptr && data->serverManager_->sockfd_ > 0) {
-            return true;
+        if (data->serverManager_ != nullptr) {
+            if (data->serverManager_->GetAcceptFd(context->GetClientId()) > 0) {
+                return true;
+            }
         }
     }
-    NETSTACK_LOGE("invalid serverManager or socket has lost");
-    context->SetErrorCode(UNKNOW_ERROR);
+    NETSTACK_LOGE("invalid serverManager or socket has closed");
+    context->SetErrorCode(EBADF);
     return false;
 }
 
@@ -1100,8 +1106,6 @@ napi_value LocalSocketConnectionCloseCallback(LocalSocketServerCloseContext *con
     } else {
         NETSTACK_LOGI("sock %{public}d closed success", acceptFd);
         data->serverManager_->RemoveAccept(context->GetClientId());
-        context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
-                                                  NapiUtils::GetUndefined(context->GetEnv())));
     }
 
     return NapiUtils::GetUndefined(context->GetEnv());

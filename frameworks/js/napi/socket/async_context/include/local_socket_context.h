@@ -34,6 +34,16 @@ struct SocketBaseManager {
 struct LocalSocketManager : public SocketBaseManager {
     explicit LocalSocketManager(int sockfd) : SocketBaseManager(sockfd) {}
     bool isConnected_ = false;
+    std::atomic_bool isSockClosed;
+
+    void SetSocketCloseStatus(bool flag)
+    {
+        isSockClosed.store(flag, std::memory_order_relaxed);
+    }
+    bool GetSocketCloseStatus()
+    {
+        return isSockClosed.load(std::memory_order_relaxed);
+    }
 }__attribute__((packed));
 
 class LocalSocketBaseContext : public BaseContext {

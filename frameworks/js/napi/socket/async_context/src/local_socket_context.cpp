@@ -35,7 +35,8 @@ void LocalSocketBaseContext::SetSocketFd(int sock)
     if (manager_ == nullptr) {
         return;
     }
-    manager_->SetData(reinterpret_cast<void *>(sock));
+    LocalSocketManager *pMgr = reinterpret_cast<LocalSocketManager *>(manager_->GetData());
+    pMgr->sockfd_ = sock;
 }
 
 int32_t LocalSocketBaseContext::GetErrorCode() const

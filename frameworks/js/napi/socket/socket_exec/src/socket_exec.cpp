@@ -1820,16 +1820,12 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
         }
         int32_t recvSize = recv(connectFD, buffer, recvBufferSize, 0);
         NETSTACK_LOGI("ClientRecv: fd:%{public}d, buf:%{public}s, size:%{public}d", connectFD, buffer, recvSize);
-        if (recvSize == 0) {
-            NETSTACK_LOGI("session closed, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFD, clientId);
-            callback.OnCloseMessage(manager);
-            RemoveClientConnection(clientId);
-            SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
-            break;
-        } else if (recvSize < 0) {
+        if (recvSize <= 0) {
             if (errno != EAGAIN && errno != EINTR) {
-                NETSTACK_LOGE("recv error, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFD, clientId);
-                RecvInErrorCondition(errno, clientId, connectFD, callback);
+                NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
+                callback.OnCloseMessage(manager);
+                RemoveClientConnection(clientId);
+                SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
                 break;
             }
         } else {
