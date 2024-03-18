@@ -395,7 +395,7 @@ public:
         manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
     }
 
-    void OnCloseMessage(EventManager *manager) const
+    void OnCloseMessage(EventManager *manager = nullptr) const
     {
         if (manager == nullptr) {
             manager_->EmitByUv(EVENT_CLOSE, nullptr, CallbackTemplate<MakeClose>);
@@ -967,7 +967,7 @@ bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
     if (context == nullptr) {
         return false;
     }
-    if (auto mgr = reinterpret_cast<LocalSocketConnectionData *>(context->GetManager()->GetData()); mgr != nullptr) {
+    if (auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetManager()->GetData()); data != nullptr) {
         if (data->serverManager_ != nullptr && data->serverManager_->sockfd_ > 0) {
             return true;
         }
