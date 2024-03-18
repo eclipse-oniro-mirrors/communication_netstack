@@ -426,7 +426,6 @@ public:
         return manager_;
     }
 
-protected:
     EventManager *manager_;
 
 private:
