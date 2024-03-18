@@ -700,8 +700,8 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
     if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetManager()->GetData()); pMgr != nullptr) {
         pMgr->isConnected_ = true;
     }
-    std::thread serviceThread(PollRecvData, sockfd, nullptr, 0,
-                              LocalSocketMessageCallback(context->GetManager(), context->GetSocketPath()));
+    std::thread serviceThread(PollRecvData, sockfd, LocalSocketMessageCallback(context->GetManager(),
+                              context->GetSocketPath()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(LOCAL_SOCKET_CONNECT);
 #else
