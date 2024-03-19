@@ -39,7 +39,7 @@
 #include "epoll_request_handler.h"
 #endif
 #include "event_list.h"
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if HAS_NETMANAGER_BASE
 #include "hitrace_meter.h"
 #endif
 #include "http_async_work.h"
@@ -206,7 +206,7 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 #else
     pthread_setname_np(pthread_self(), HTTP_CLIENT_TASK_THREAD);
 #endif
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if HAS_NETMANAGER_BASE
     StartAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, context->GetTaskId());
 #endif
     SetServerSSLCertOption(handle, context);
@@ -222,7 +222,7 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {
         auto context = static_cast<RequestContext *>(opaqueData);
         HttpExec::HandleCurlData(curlMessage, context);
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if HAS_NETMANAGER_BASE
         FinishAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, context->GetTaskId());
 #endif
     };
