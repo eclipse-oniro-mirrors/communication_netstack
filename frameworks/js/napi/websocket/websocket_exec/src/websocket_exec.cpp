@@ -123,7 +123,12 @@ public:
     };
 
     explicit UserData(lws_context *context)
-        : closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), closed_(false), threadStop_(false), context_(context)
+        : closeStatus(LWS_CLOSE_STATUS_NOSTATUS),
+          openStatus(0),
+          closed_(false),
+          threadStop_(false),
+          context_(context),
+          wsi_(nullptr)
     {
     }
 
@@ -178,6 +183,27 @@ public:
         return context_;
     }
 
+    bool IsEmpty()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (dataQueue_.empty()) {
+            return true;
+        }
+        return false;
+    }
+
+    void SetLws(lws *wsi)
+    {
+        std::lock_guard<std::mutex> lock(mutexForLws_);
+        wsi_ = wsi;
+    }
+
+    lws *GetLws()
+    {
+        std::lock_guard<std::mutex> lock(mutexForLws_);
+        return wsi_;
+    }
+
     std::map<std::string, std::string> header;
 
     lws_close_status closeStatus;
@@ -195,9 +221,13 @@ private:
 
     std::mutex mutex_;
 
+    std::mutex mutexForLws_;
+
     lws_context *context_;
 
     std::queue<SendData> dataQueue_;
+
+    lws *wsi_;
 };
 
 template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)
@@ -253,6 +283,7 @@ bool WebSocketExec::ParseUrl(ConnectContext *context, char *protocol, size_t pro
 void WebSocketExec::RunService(EventManager *manager)
 {
     NETSTACK_LOGI("websocket run service start");
+    int res = 0;
     if (!EventManager::IsManagerValid(manager)) {
         NETSTACK_LOGE("manager is invalid");
         return;
@@ -267,8 +298,8 @@ void WebSocketExec::RunService(EventManager *manager)
         NETSTACK_LOGE("context is null");
         return;
     }
-    while (!userData->IsThreadStop()) {
-        lws_service(context, 0);
+    while (res >= 0 && !userData->IsThreadStop()) {
+        res = lws_service(context, 0);
     }
     lws_context_destroy(context);
     userData->SetContext(nullptr);
@@ -295,7 +326,7 @@ int WebSocketExec::HttpDummy(lws *wsi, lws_callback_reasons reason, void *user, 
 int WebSocketExec::LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                           size_t len)
 {
-    NETSTACK_LOGI("LwsCallbackClientAppendHandshakeHeader");
+    NETSTACK_LOGD("lws callback client append handshake header");
     auto manager = reinterpret_cast<EventManager *>(user);
     if (!EventManager::IsManagerValid(manager)) {
         NETSTACK_LOGE("manager is invalid");
@@ -329,7 +360,7 @@ int WebSocketExec::LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback
 int WebSocketExec::LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                    size_t len)
 {
-    NETSTACK_LOGI("LwsCallbackWsPeerInitiatedClose");
+    NETSTACK_LOGD("lws callback ws peer initiated close");
     auto manager = reinterpret_cast<EventManager *>(user);
     if (!EventManager::IsManagerValid(manager)) {
         NETSTACK_LOGE("manager is invalid");
@@ -356,6 +387,7 @@ int WebSocketExec::LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reason
 
 int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
+    NETSTACK_LOGD("lws callback client writable");
     auto manager = reinterpret_cast<EventManager *>(user);
     if (!EventManager::IsManagerValid(manager)) {
         NETSTACK_LOGE("manager is invalid");
@@ -374,7 +406,6 @@ int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reas
         // here do not emit error, because we close it
         return -1;
     }
-    lws_callback_on_writable(wsi);
     auto sendData = userData->Pop();
     if (sendData.data == nullptr || sendData.length == 0) {
         return HttpDummy(wsi, reason, user, in, len);
@@ -382,7 +413,10 @@ int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reas
     int sendLength = lws_write(wsi, reinterpret_cast<unsigned char *>(sendData.data) + LWS_SEND_BUFFER_PRE_PADDING,
                                sendData.length, sendData.protocol);
     free(sendData.data);
-    NETSTACK_LOGD("send data length = %{public}d", sendLength);
+    NETSTACK_LOGD("lws send data length is %{public}d", sendLength);
+    if (!userData->IsEmpty()) {
+        lws_callback_on_writable(wsi);
+    }
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -424,6 +458,7 @@ void OnConnectError(EventManager *manager, int32_t code)
 int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                     size_t len)
 {
+    NETSTACK_LOGD("lws callback client connection error");
     NETSTACK_LOGI("Lws client connection error %{public}s", (in == nullptr) ? "null" : reinterpret_cast<char *>(in));
     // 200 means connect failed
     OnConnectError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE);
@@ -432,7 +467,7 @@ int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reaso
 
 int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGD("LwsCallbackClientReceive");
+    NETSTACK_LOGD("lws callback client receive");
     auto manager = reinterpret_cast<EventManager *>(user);
     if (!EventManager::IsManagerValid(manager)) {
         NETSTACK_LOGE("manager is invalid");
@@ -446,8 +481,7 @@ int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reaso
 int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                        size_t len)
 {
-    NETSTACK_LOGD("LwsCallbackClientFilterPreEstablish");
-    lws_callback_on_writable(wsi);
+    NETSTACK_LOGD("lws callback client filter preEstablish");
     auto manager = reinterpret_cast<EventManager *>(user);
     if (!EventManager::IsManagerValid(manager)) {
         NETSTACK_LOGE("manager is invalid");
@@ -501,7 +535,7 @@ int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_re
 
 int WebSocketExec::LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGD("LwsCallbackClientEstablished");
+    NETSTACK_LOGD("lws callback client established");
     auto manager = reinterpret_cast<EventManager *>(user);
     if (!EventManager::IsManagerValid(manager)) {
         NETSTACK_LOGE("manager is invalid");
@@ -512,14 +546,15 @@ int WebSocketExec::LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons r
         return RaiseError(manager);
     }
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
-
+    lws_callback_on_writable(wsi);
+    userData->SetLws(wsi);
     OnOpen(reinterpret_cast<EventManager *>(user), userData->openStatus, userData->openMessage);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
 int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGD("LwsCallbackClientClosed");
+    NETSTACK_LOGD("lws callback client closed");
     auto manager = reinterpret_cast<EventManager *>(user);
     if (!EventManager::IsManagerValid(manager)) {
         NETSTACK_LOGE("manager is invalid");
@@ -544,18 +579,19 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
 
 int WebSocketExec::LwsCallbackWsiDestroy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGD("LwsCallbackWsiDestroy");
+    NETSTACK_LOGD("lws callback wsi destroy");
     return HttpDummy(wsi, reason, user, in, len);
 }
 
 int WebSocketExec::LwsCallbackProtocolDestroy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGD("LwsCallbackProtocolDestroy");
+    NETSTACK_LOGD("lws callback protocol destroy");
     return HttpDummy(wsi, reason, user, in, len);
 }
 
 int WebSocketExec::LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
+    NETSTACK_LOGD("lws callback reason is %{public}d", reason);
     CallbackDispatcher dispatchers[] = {
         {LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER, LwsCallbackClientAppendHandshakeHeader},
         {LWS_CALLBACK_WS_PEER_INITIATED_CLOSE, LwsCallbackWsPeerInitiatedClose},
@@ -790,7 +826,8 @@ bool WebSocketExec::ExecSend(SendContext *context)
         return false;
     }
     userData->Push(context->data, context->length, context->protocol);
-    NETSTACK_LOGI("websocket send OK");
+    lws_callback_on_writable(userData->GetLws());
+    NETSTACK_LOGD("lws ts send success");
     return true;
 }
 
