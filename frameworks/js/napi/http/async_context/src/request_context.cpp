@@ -756,4 +756,14 @@ int32_t RequestContext::GetTaskId() const
 {
     return taskId_;
 }
+
+void RequestContext::SetModuleId(uint64_t moduleId)
+{
+    moduleId_ = moduleId;
+}
+
+uint64_t RequestContext::GetModuleId() const
+{
+    return moduleId_;
+}
 } // namespace OHOS::NetStack::Http

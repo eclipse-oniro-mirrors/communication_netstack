@@ -40,12 +40,14 @@ static constexpr const char *DELETE_ASYNC_WORK_NAME = "ExecDelete";
 
 static constexpr const char *HTTP_MODULE_NAME = "net.http";
 
+static thread_local uint64_t g_moduleId;
+
 napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
 {
     DefineHttpRequestClass(env, exports);
     DefineHttpResponseCacheClass(env, exports);
     InitHttpProperties(env, exports);
-
+    g_moduleId = NapiUtils::CreateUvHandlerQueue(env);
     return exports;
 }
 
@@ -231,6 +233,7 @@ napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_i
                 return false;
             }
 #endif
+            context->SetModuleId(g_moduleId);
             HttpExec::AsyncRunRequest(context);
             return context->IsExecOK();
         },
@@ -247,6 +250,7 @@ napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_ca
                 return false;
             }
 #endif
+            context->SetModuleId(g_moduleId);
             context->EnableRequestInStream();
             HttpExec::AsyncRunRequest(context);
             return true;
