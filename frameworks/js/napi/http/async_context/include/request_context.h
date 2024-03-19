@@ -109,8 +109,11 @@ public:
     void SetCertsPath(std::vector<std::string> &&certPathList, const std::string &certFile);
  
     const CertsPath& GetCertsPath();
+
+    [[nodiscard]] int32_t GetTaskId() const;
  
 private:
+    int32_t taskId_;
     bool usingCache_;
     bool requestInStream_;
     std::mutex dlLenLock_;

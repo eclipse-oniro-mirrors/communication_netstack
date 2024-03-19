@@ -31,6 +31,7 @@
         "deps": {
             "components": [
                 "hilog",
+                "hitrace",
                 "ipc",
                 "zlib",
                 "c_utils",
