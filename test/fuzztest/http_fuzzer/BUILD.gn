@@ -35,6 +35,7 @@ ohos_fuzztest("HttpFuzzTest") {
   module_out_path = fuzz_test_path
   fuzz_config_file = "$NETSTACK_DIR/test/fuzztest/http_fuzzer"
   include_dirs = [
+    "$NETSTACK_INNERKITS_DIR/http_client/include",
     "$NETSTACK_DIR/utils/napi_utils/include",
     "$NETSTACK_NAPI_ROOT/http/constant/include",
     "$NETSTACK_NAPI_ROOT/http/options/include",
@@ -65,7 +66,10 @@ ohos_fuzztest("HttpFuzzTest") {
     "http_fuzzer.cpp",
   ]
 
-  deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
+  deps = [
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "$NETSTACK_INNERKITS_DIR/http_client:http_client",
+  ]
 
   external_deps = common_external_deps
 }
