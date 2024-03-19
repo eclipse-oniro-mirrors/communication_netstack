@@ -751,8 +751,7 @@ static bool IsTCPSocket(int sockfd)
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
 {
     int bufferSize = ConfirmBufferSize(sock);
-    auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
-    std::unique_ptr<char, decltype(deleter)> buf(reinterpret_cast<char *>(malloc(bufferSize)), deleter);
+    auto buf = std::make_unique<char[]>(bufferSize);
     if (buf == nullptr) {
         callback.OnError(NO_MEMORY);
         return;
@@ -771,8 +770,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
             callback.OnError(errno);
             return;
-        }
-        if (ret == 0) {
+        } else if (ret == 0) {
             continue;
         }
         if (!EventManager::IsManagerValid(callback.GetEventManager()) ||
@@ -787,7 +785,11 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
                 continue;
             }
             NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
-            callback.OnError(recvLen == 0 && IsTCPSocket(sock) ? UNKNOW_ERROR : errno);
+            if (errno == 0) {
+                callback.OnCloseMessage(callback.GetEventManager());
+            } else {
+                callback.OnError(recvLen == 0 && IsTCPSocket(sock) ? UNKNOW_ERROR : errno);
+            }
             return;
         }
 
@@ -2152,8 +2154,6 @@ napi_value TcpConnectionCloseCallback(TcpServerCloseContext *context)
     } else {
         NETSTACK_LOGI("sock %{public}d closed success", clientFd);
         RemoveClientConnection(context->clientId_);
-        context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
-                                                  NapiUtils::GetUndefined(context->GetEnv())));
     }
 
     return NapiUtils::GetUndefined(context->GetEnv());

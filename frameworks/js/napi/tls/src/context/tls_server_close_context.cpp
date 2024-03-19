@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -47,27 +47,15 @@ void TLSServerCloseContext::ParseParams(napi_value *params, size_t paramsCount)
 
 bool TLSServerCloseContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
-    if (paramsCount == TlsSocket::PARAM_JUST_OPTIONS) {
+    if (paramsCount == TlsSocket::PARAM_JUST_CALLBACK) {
         if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_0]) != napi_function) {
-            NETSTACK_LOGE("first param is not string");
+            NETSTACK_LOGE("first param is not function");
             SetNeedThrowException(true);
             SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
             return false;
         }
         return true;
-    }
-
-    if (paramsCount == TlsSocket::PARAM_OPTIONS_AND_CALLBACK) {
-        if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_0]) != napi_number) {
-            NETSTACK_LOGE("first param is not int");
-            SetNeedThrowException(true);
-            SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
-            return false;
-        }
-        if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_1]) != napi_function) {
-            NETSTACK_LOGE("second param is not function");
-            return false;
-        }
+    } else if (paramsCount == TlsSocket::PARAM_NONE) {
         return true;
     }
     return false;
