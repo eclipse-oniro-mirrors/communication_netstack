@@ -76,7 +76,9 @@ static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!eNULL:!EX
 static constexpr const char *HTTP_TASK_RUN_THREAD = "OS_NET_TaskHttp";
 #endif
 static constexpr const char *HTTP_CLIENT_TASK_THREAD = "OS_NET_HttpJs";
+#if HAS_NETMANAGER_BASE
 static constexpr const char *HTTP_REQ_TRACE_NAME = "HttpRequest";
+#endif
 
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
