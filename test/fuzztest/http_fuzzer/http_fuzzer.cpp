@@ -252,14 +252,28 @@ HttpClientRequest CreateHttpClientRequest()
     return httpReq;
 }
 
+HttpClientRequest CreateHttpClientRequest(const uint8_t *data, size_t size)
+{
+    g_baseFuzzData = data;
+    g_baseFuzzSize = size;
+    g_baseFuzzPos = 0;
+    HttpClientRequest httpReq;
+    std::string str = GetStringFromData(STR_LEN);
+    httpReq.SetURL(str);
+    return httpReq;
+}
+
 void HttpSessionCreateTaskFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size < 1)) {
         return;
     }
     HttpClientRequest httpReq = CreateHttpClientRequest();
-    HttpSession &session = HttpSession::GetInstance();
-    auto testTask = session.CreateTask(httpReq);
+    auto testTask = HttpSession::GetInstance().CreateTask(httpReq);
+    testTask->Start();
+
+    httpReq = CreateHttpClientRequest(data, size);
+    testTask = HttpSession::GetInstance().CreateTask(httpReq);
     testTask->Start();
 }
 
@@ -297,6 +311,40 @@ void HttpClientTaskGetHttpVersionFuzzTest(const uint8_t *data, size_t size)
     task->GetHttpVersion(ptcl);
 }
 
+void HttpClientTaskSetHttpProtocolFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+
+    HttpClientRequest httpReq = CreateHttpClientRequest(data, size);
+    auto task = HttpSession::GetInstance().CreateTask(httpReq);
+    HttpClientRequest request;
+    HttpClient::HttpProtocol ptcl = HttpClient::HttpProtocol::HTTP1_1;
+    request.SetHttpProtocol(ptcl);
+    HttpProxy proxy = request.GetHttpProxy();
+    std::string testData = GetStringFromData(STR_LEN);
+    request.SetCaPath(testData);
+    request.SetRequestTime(testData);
+    std::string result = request.GetRequestTime();
+    result = request.GetBody();
+    request.body_ = "";
+    task->GetHttpVersion(ptcl);
+    result = request.GetURL();
+    result = request.GetMethod();
+    result = request.GetCaPath();
+    uint32_t timeout = GetData<uint32_t>();
+    request.SetTimeout(timeout);
+    uint32_t prio = GetData<uint32_t>();
+    request.SetPriority(prio);
+    uint32_t ret = request.GetTimeout();
+    ret = request.GetConnectTimeout();
+    ret = request.GetPriority();
+    ptcl = request.GetHttpProtocol();
+    HttpClient::HttpProxyType proType = request.GetHttpProxyType();
+    NETSTACK_LOGD("ptcl = %{private}d, proType = %{private}d", ptcl, proType);
+}
+
 void HttpClientTaskSetOtherCurlOptionFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size < 1)) {
@@ -315,6 +363,10 @@ void HttpClientTaskSetOtherCurlOptionFuzzTest(const uint8_t *data, size_t size)
     request.SetHttpProxy(testProxy);
     auto task = HttpSession::GetInstance().CreateTask(request);
     task->SetOtherCurlOption(task->curlHandle_);
+
+    request = CreateHttpClientRequest(data, size);
+    task = HttpSession::GetInstance().CreateTask(request);
+    task->SetOtherCurlOption(task->curlHandle_);
 }
 
 void HttpClientTaskSetCurlOptionsFuzzTest(const uint8_t *data, size_t size)
@@ -327,6 +379,11 @@ void HttpClientTaskSetCurlOptionsFuzzTest(const uint8_t *data, size_t size)
     std::string url = "http://www.httpbin.org/get";
     httpReq.SetURL(url);
     auto task = HttpSession::GetInstance().CreateTask(httpReq);
+    task->request_.SetMethod(HttpConstant::HTTP_METHOD_HEAD);
+    task->SetCurlOptions();
+
+    httpReq = CreateHttpClientRequest(data, size);
+    task = HttpSession::GetInstance().CreateTask(httpReq);
     task->request_.SetMethod(HttpConstant::HTTP_METHOD_HEAD);
     task->SetCurlOptions();
 }
@@ -355,6 +412,13 @@ void HttpClientTaskGetTypeFuzzTest(const uint8_t *data, size_t size)
     task->OnProgress(
         [](const HttpClientRequest &request, u_long dltotal, u_long dlnow, u_long ultotal, u_long ulnow) {});
     task->OnDataReceive([](const HttpClientRequest &request, const uint8_t *data, size_t length) {});
+    httpReq = CreateHttpClientRequest(data, size);
+    task = HttpSession::GetInstance().CreateTask(httpReq);
+    type = task->GetType();
+    result = task->GetFilePath();
+    taskId = task->GetTaskId();
+    status = task->GetStatus();
+    task->SetStatus(status);
 }
 } // namespace Http
 } // namespace NetStack
@@ -381,6 +445,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::NetStack::Http::AddMultiFormDataFuzzTest(data, size);
     OHOS::NetStack::Http::HttpSessionCreateTaskFuzzTest(data, size);
     OHOS::NetStack::Http::HttpClientTaskGetHttpVersionFuzzTest(data, size);
+    OHOS::NetStack::Http::HttpClientTaskSetHttpProtocolFuzzTest(data, size);
     OHOS::NetStack::Http::HttpClientTaskSetOtherCurlOptionFuzzTest(data, size);
     OHOS::NetStack::Http::HttpClientTaskSetCurlOptionsFuzzTest(data, size);
     OHOS::NetStack::Http::HttpClientTaskGetTypeFuzzTest(data, size);
