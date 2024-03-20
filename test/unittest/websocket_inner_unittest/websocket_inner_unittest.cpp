@@ -62,9 +62,8 @@ HWTEST_F(WebSocketTest, WebSocketRegistcallback001, TestSize.Level1)
     openOptions.headers["Authorization"] = "Bearer your_token_here";
     closeOptions.code = LWS_CLOSE_STATUS_NORMAL;
     closeOptions.reason = "";
-    client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
-    int32_t ret = client->Connect("www.baidu.com", openOptions);
-    EXPECT_EQ(ret, 0);
+    int32_t ret = client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
+    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
 }
 
 HWTEST_F(WebSocketTest, WebSocketConnect002, TestSize.Level1)
@@ -73,8 +72,8 @@ HWTEST_F(WebSocketTest, WebSocketConnect002, TestSize.Level1)
     openOptions.headers["Content-Type"] = "application/json";
     openOptions.headers["Authorization"] = "Bearer your_token_here";
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
-    ret = client->Connect("www.baidu.com", openOptions);
-    EXPECT_EQ(ret, 0);
+    ret = client->Connect("192.168.1.105:8080", openOptions);
+    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
 }
 
 HWTEST_F(WebSocketTest, WebSocketSend003, TestSize.Level1)
@@ -82,27 +81,34 @@ HWTEST_F(WebSocketTest, WebSocketSend003, TestSize.Level1)
     int32_t ret;
     const char *data = "Hello, world!";
     int32_t length = std::strlen(data);
-    client->Connect("www.baidu.com", openOptions);
+    client->Connect("192.168.1.105:8080", openOptions);
     ret = client->Send(const_cast<char *>(data), length);
-    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
 }
 
 HWTEST_F(WebSocketTest, WebSocketClose004, TestSize.Level1)
 {
-    const int32_t WEBSOCKET_NO_CONNECTION = 1017;
     CloseOption CloseOptions;
     CloseOptions.code = LWS_CLOSE_STATUS_NORMAL;
     CloseOptions.reason = "";
     int32_t ret = client->Close(CloseOptions);
-    EXPECT_EQ(ret, WEBSOCKET_NO_CONNECTION);
+    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT);
 }
 
 HWTEST_F(WebSocketTest, WebSocketDestroy005, TestSize.Level1)
 {
-    int32_t ret;
+    int32_t ret = 0;
+    openOptions.headers["Content-Type"] = "application/json";
+    openOptions.headers["Authorization"] = "Bearer your_token_here";
+    closeOptions.code = LWS_CLOSE_STATUS_NORMAL;
+    closeOptions.reason = "";
+    client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
+    ret = client->Connect("192.168.1.105:8080", openOptions);
+    ret = client->Close(closeOptions);
     ret = client->Destroy();
     delete client;
-    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
+
 }
 
 HWTEST_F(WebSocketTest, WebSocketBranchTest001, TestSize.Level1)
