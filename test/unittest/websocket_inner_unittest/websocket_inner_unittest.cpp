@@ -108,7 +108,6 @@ HWTEST_F(WebSocketTest, WebSocketDestroy005, TestSize.Level1)
     ret = client->Destroy();
     delete client;
     EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
-
 }
 
 HWTEST_F(WebSocketTest, WebSocketBranchTest001, TestSize.Level1)
