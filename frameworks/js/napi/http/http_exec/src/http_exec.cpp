@@ -1416,7 +1416,7 @@ void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *pa
         }
     }
     if (!multiFormData.data.empty()) {
-        result = curl_mime_data(part, multiFormData.data.c_str(), CURL_ZERO_TERMINATED);
+        result = curl_mime_data(part, multiFormData.data.c_str(), multiFormData.data.length());
         if (result != CURLE_OK) {
             NETSTACK_LOGE("Failed to set data: %{public}s, error: %{public}s", multiFormData.name.c_str(),
                           curl_easy_strerror(result));
