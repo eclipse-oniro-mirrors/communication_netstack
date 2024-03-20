@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1354,7 +1354,7 @@ void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsLi
     fds_[g_userCounter].revents = 0;
     AddConnect(connectFD, connection);
     auto ptrEventManager = std::make_shared<EventManager>();
-
+    EventManager::SetValid(ptrEventManager.get());
     ptrEventManager->SetData(this);
     connection->SetEventManager(ptrEventManager);
     CallOnConnectCallback(clientID, ptrEventManager);
