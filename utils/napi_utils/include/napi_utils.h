@@ -20,6 +20,9 @@
 #include <cstdint>
 #include <iosfwd>
 #include <vector>
+#include <functional>
+#include <queue>
+#include <mutex>
 
 #include "initializer_list"
 #include "napi/native_api.h"
@@ -27,6 +30,13 @@
 
 namespace OHOS::NetStack::NapiUtils {
 static constexpr int NETSTACK_NAPI_INTERNAL_ERROR = 2300002;
+using UvHandler = std::function<void()>;
+struct UvHandlerQueue : public std::queue<UvHandler> {
+    UvHandler Pop();
+    void Push(const UvHandler &handler);
+private:
+    std::mutex mutex;
+};
 
 napi_valuetype GetValueType(napi_env env, napi_value value);
 
@@ -145,6 +155,12 @@ void CloseScope(napi_env env, napi_handle_scope scope);
 napi_value CreateErrorMessage(napi_env env, int32_t errorCodeconst, const std::string &errorMessage);
 
 napi_value GetGlobal(napi_env env);
+
+napi_value GetValueFromGlobal(napi_env env, const std::string &className);
+
+void CreateUvQueueWorkByModuleId(napi_env env, const UvHandler &handler, uint64_t id);
+
+uint64_t CreateUvHandlerQueue(napi_env env);
 } // namespace OHOS::NetStack::NapiUtils
 
 #endif /* COMMUNICATIONNETSTACK_NETSTACK_NAPI_UTILS_H */

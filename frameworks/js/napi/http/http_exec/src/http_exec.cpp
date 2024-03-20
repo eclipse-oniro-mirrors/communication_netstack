@@ -62,8 +62,8 @@
     } while (0)
 
 namespace OHOS::NetStack::Http {
-static constexpr int CURL_TIMEOUT_MS = 20;
 #if !HAS_NETMANAGER_BASE
+static constexpr int CURL_TIMEOUT_MS = 20;
 static constexpr int CONDITION_TIMEOUT_S = 3600;
 static constexpr int CURL_MAX_WAIT_MSECS = 10;
 static constexpr int CURL_HANDLE_NUM = 10;
@@ -234,7 +234,7 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 #else
     std::thread([context, handle] {
         std::lock_guard guard(staticVariable_.curlMultiMutex);
-        //Do SetServerSSLCertOption here to avoid blocking the main thread.
+        // Do SetServerSSLCertOption here to avoid blocking the main thread.
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(HTTP_CLIENT_TASK_THREAD);
 #else
@@ -420,10 +420,13 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
     }
 
     if (context->IsRequestInStream()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(CURL_TIMEOUT_MS));
-        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, AsyncWorkRequestInStreamCallback);
+        NapiUtils::CreateUvQueueWorkByModuleId(
+            context->GetEnv(), std::bind(AsyncWorkRequestInStreamCallback, context->GetEnv(), napi_ok, context),
+            context->GetModuleId());
     } else {
-        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, AsyncWorkRequestCallback);
+        NapiUtils::CreateUvQueueWorkByModuleId(context->GetEnv(),
+                                               std::bind(AsyncWorkRequestCallback, context->GetEnv(), napi_ok, context),
+                                               context->GetModuleId());
     }
 }
 
@@ -446,10 +449,13 @@ bool HttpExec::ExecRequest(RequestContext *context)
         context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
         if (EventManager::IsManagerValid(context->GetManager())) {
             if (context->IsRequestInStream()) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(CURL_TIMEOUT_MS));
-                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, AsyncWorkRequestInStreamCallback);
+                NapiUtils::CreateUvQueueWorkByModuleId(
+                    context->GetEnv(), std::bind(AsyncWorkRequestInStreamCallback, context->GetEnv(), napi_ok, context),
+                    context->GetModuleId());
             } else {
-                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, AsyncWorkRequestCallback);
+                NapiUtils::CreateUvQueueWorkByModuleId(
+                    context->GetEnv(), std::bind(AsyncWorkRequestCallback, context->GetEnv(), napi_ok, context),
+                    context->GetModuleId());
             }
         }
         return false;
@@ -826,7 +832,7 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *ssl_ctx, void *parm)
         return CURLE_SSL_CERTPROBLEM;
     }
 
-    for (const auto &path: certsPath->certPathList) {
+    for (const auto &path : certsPath->certPathList) {
         if (path.empty() || access(path.c_str(), F_OK) != 0) {
             NETSTACK_LOGD("certificate directory path is not exist");
             continue;
@@ -995,7 +1001,8 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
     }
     if (context->IsRequestInStream()) {
         context->SetTempData(data, size * memBytes);
-        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataReceive);
+        NapiUtils::CreateUvQueueWorkByModuleId(
+            context->GetEnv(), std::bind(OnDataReceive, context->GetEnv(), napi_ok, context), context->GetModuleId());
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
         return size * memBytes;
     }
@@ -1179,7 +1186,9 @@ int HttpExec::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dl
     }
     if (ultotal != 0 && ultotal >= ulnow && !context->CompareWithLastElement(ulnow, ultotal)) {
         context->SetUlLen(ulnow, ultotal);
-        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataUploadProgress);
+        NapiUtils::CreateUvQueueWorkByModuleId(context->GetEnv(),
+                                               std::bind(OnDataUploadProgress, context->GetEnv(), napi_ok, context),
+                                               context->GetModuleId());
     }
     if (!context->IsRequestInStream()) {
         return 0;
@@ -1189,7 +1198,8 @@ int HttpExec::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dl
     }
     if (dltotal != 0) {
         context->SetDlLen(dlnow, dltotal);
-        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, OnDataProgress);
+        NapiUtils::CreateUvQueueWorkByModuleId(
+            context->GetEnv(), std::bind(OnDataProgress, context->GetEnv(), napi_ok, context), context->GetModuleId());
     }
     return 0;
 }

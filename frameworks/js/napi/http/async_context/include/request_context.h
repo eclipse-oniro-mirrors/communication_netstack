@@ -27,7 +27,7 @@
 
 namespace OHOS::NetStack::Http {
 struct LoadBytes {
-    LoadBytes() : nLen(0), tLen(0) {};
+    LoadBytes() : nLen(0), tLen(0){};
     LoadBytes(curl_off_t nowLen, curl_off_t totalLen)
     {
         nLen = nowLen;
@@ -44,7 +44,6 @@ struct CertsPath {
     std::vector<std::string> certPathList;
     std::string certFile;
 };
- 
 
 class RequestContext final : public BaseContext {
 public:
@@ -105,13 +104,17 @@ public:
     void SetPerformanceTimingToResult(napi_value result);
 
     void SetMultipart(curl_mime *multipart);
-    
+
     void SetCertsPath(std::vector<std::string> &&certPathList, const std::string &certFile);
- 
-    const CertsPath& GetCertsPath();
+
+    const CertsPath &GetCertsPath();
 
     [[nodiscard]] int32_t GetTaskId() const;
- 
+
+    void SetModuleId(uint64_t moduleId);
+
+    uint64_t GetModuleId() const;
+
 private:
     int32_t taskId_;
     bool usingCache_;
@@ -128,6 +131,7 @@ private:
     std::map<std::string, double> performanceTimingMap_;
     curl_mime *multipart_;
     CertsPath certsPath_;
+    uint64_t moduleId_ = 0;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 
