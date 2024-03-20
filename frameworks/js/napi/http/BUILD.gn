@@ -121,6 +121,7 @@ ohos_shared_library("http") {
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
     ]
     external_deps = [
+      "cJSON:cjson",
       "hilog:libhilog",
       "hitrace:hitrace_meter",
       "napi:ace_napi",

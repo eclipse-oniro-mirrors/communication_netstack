@@ -94,13 +94,10 @@ ohos_shared_library("http_client") {
   if (is_mingw || is_mac) {
     sources +=
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
-    deps += [ "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static" ]
+
     external_deps = [ "netmanager_base:net_conn_manager_if" ]
   } else {
-    deps += [
-      "$NETSTACK_DIR/utils:stack_utils_common",
-      "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
-    ]
+    deps += [ "$NETSTACK_DIR/utils:stack_utils_common" ]
     external_deps = [
       "hilog:libhilog",
       "netmanager_base:net_conn_manager_if",

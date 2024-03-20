@@ -49,6 +49,18 @@ Json::Value LRUCacheDiskHandler::ReadJsonValueFromFile()
         NETSTACK_LOGE("parse json not success, maybe file is broken: %{public}s", err.c_str());
         return {};
     }
+
+    Json::StyledWriter styledWriter;
+    std::string json = styledWriter.write(root);
+    NETSTACK_LOGE("ReadJsonValueFromFile : %{public}s", json.c_str());
+    return root;
+}
+
+cJSON* LRUCacheDiskHandler::CjsonReadJsonValueFromFile()
+{
+    std::string jsonStr = diskHandler_.Read();
+    cJSON *root = cJSON_Parse(jsonStr.c_str());
+    NETSTACK_LOGE("CjsonReadJsonValueFromFile : %{public}s", cJSON_Print(root));
     return root;
 }
 
@@ -65,19 +77,30 @@ void LRUCacheDiskHandler::WriteJsonValueToFile(const Json::Value &root)
     diskHandler_.Write(s.str());
 }
 
+void LRUCacheDiskHandler::CjsonWriteJsonValueToFile(cJSON *root)
+{
+    char *s = cJSON_Print(root);
+    free(s);
+    cJSON_Delete(root);
+}
+
 void LRUCacheDiskHandler::WriteCacheToJsonFile()
 {
     LRUCache oldCache(capacity_);
     oldCache.ReadCacheFromJsonValue(ReadJsonValueFromFile());
+    oldCache.CjsonReadCacheFromJsonValue(CjsonReadJsonValueFromFile());
     oldCache.MergeOtherCache(cache_);
     Json::Value root = oldCache.WriteCacheToJsonValue();
+    cJSON* json = oldCache.CjsonWriteCacheToJsonValue();
     WriteJsonValueToFile(root);
+    CjsonWriteJsonValueToFile(json);
     cache_.Clear();
 }
 
 void LRUCacheDiskHandler::ReadCacheFromJsonFile()
 {
     cache_.ReadCacheFromJsonValue(ReadJsonValueFromFile());
+    cache_.CjsonReadCacheFromJsonValue(CjsonReadJsonValueFromFile());
 }
 
 std::unordered_map<std::string, std::string> LRUCacheDiskHandler::Get(const std::string &key)
@@ -89,6 +112,7 @@ std::unordered_map<std::string, std::string> LRUCacheDiskHandler::Get(const std:
 
     LRUCache diskCache(capacity_);
     diskCache.ReadCacheFromJsonValue(ReadJsonValueFromFile());
+    diskCache.CjsonReadCacheFromJsonValue(CjsonReadJsonValueFromFile());
     auto valueFromDisk = diskCache.Get(key);
     cache_.Put(key, valueFromDisk);
     return valueFromDisk;

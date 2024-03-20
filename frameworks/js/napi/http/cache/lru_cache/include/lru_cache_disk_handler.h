@@ -49,8 +49,9 @@ private:
     std::atomic<size_t> capacity_;
 
     Json::Value ReadJsonValueFromFile();
-
+    cJSON* CjsonReadJsonValueFromFile();
     void WriteJsonValueToFile(const Json::Value &root);
+    void CjsonWriteJsonValueToFile(cJSON *root);
 };
 } // namespace OHOS::NetStack::Http
 #endif /* COMMUNICATIONNETSTACK_LRU_CACHE_DISK_HANDLER_H */

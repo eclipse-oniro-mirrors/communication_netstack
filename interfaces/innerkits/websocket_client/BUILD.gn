@@ -88,12 +88,8 @@ ohos_shared_library("websocket_client") {
   if (is_mingw || is_mac) {
     sources +=
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
-    deps += [ "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static" ]
   } else {
-    deps += [
-      "$NETSTACK_DIR/utils:stack_utils_common",
-      "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
-    ]
+    deps += [ "$NETSTACK_DIR/utils:stack_utils_common" ]
     external_deps = [ "hilog:libhilog" ]
     if (product_name != "ohos-sdk") {
       external_deps += [ "init:libbegetutil" ]

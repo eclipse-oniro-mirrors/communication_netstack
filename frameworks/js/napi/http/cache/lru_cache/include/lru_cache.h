@@ -20,6 +20,7 @@
 #include <string>
 #include <unordered_map>
 #include "json/json.h"
+#include "cJSON.h"
 
 namespace OHOS::NetStack::Http {
 class LRUCache {
@@ -35,9 +36,9 @@ public:
     void MergeOtherCache(const LRUCache &other);
 
     Json::Value WriteCacheToJsonValue();
-
+    cJSON* CjsonWriteCacheToJsonValue();
     void ReadCacheFromJsonValue(const Json::Value &root);
-
+    void CjsonReadCacheFromJsonValue(const cJSON * const root);
     void Clear();
 
 private:

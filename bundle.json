@@ -39,7 +39,8 @@
                 "napi",
                 "netmanager_base",
                 "ylong_http",
-                "openssl"
+                "openssl",
+                "cJSON"
             ],
             "third_party": [
                 "curl",
