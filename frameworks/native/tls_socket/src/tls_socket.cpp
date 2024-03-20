@@ -429,8 +429,9 @@ int TLSSocket::ReadMessage()
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         return len;
     } else if (len == 0) {
-        NETSTACK_LOGD("Message recv len 0");
-        return len;
+        NETSTACK_LOGI("Message recv len 0, session is closed by peer");
+        CallOnCloseCallback();
+        return -1;
     }
     Socket::SocketRemoteInfo remoteInfo;
     remoteInfo.SetSize(len);

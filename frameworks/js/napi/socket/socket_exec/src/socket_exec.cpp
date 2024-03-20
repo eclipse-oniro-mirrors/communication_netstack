@@ -751,8 +751,7 @@ static bool IsTCPSocket(int sockfd)
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
 {
     int bufferSize = ConfirmBufferSize(sock);
-    auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
-    std::unique_ptr<char, decltype(deleter)> buf(reinterpret_cast<char *>(malloc(bufferSize)), deleter);
+    auto buf = std::make_unique<char[]>(bufferSize);
     if (buf == nullptr) {
         callback.OnError(NO_MEMORY);
         return;
@@ -771,8 +770,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
             callback.OnError(errno);
             return;
-        }
-        if (ret == 0) {
+        } else if (ret == 0) {
             continue;
         }
         if (!EventManager::IsManagerValid(callback.GetEventManager()) ||
@@ -787,7 +785,11 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
                 continue;
             }
             NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
-            callback.OnError(recvLen == 0 && IsTCPSocket(sock) ? UNKNOW_ERROR : errno);
+            if (errno == 0) {
+                callback.OnCloseMessage(callback.GetEventManager());
+            } else {
+                callback.OnError(recvLen == 0 && IsTCPSocket(sock) ? UNKNOW_ERROR : errno);
+            }
             return;
         }
 
@@ -1786,6 +1788,13 @@ static EventManager *WaitForManagerReady(int32_t clientId, int &connectFd)
     return manager;
 }
 
+static inline void RecvInErrorCondition(int reason, int clientId, int connectFD, const TcpMessageCallback &callback)
+{
+    RemoveClientConnection(clientId);
+    SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
+    callback.OnError(reason);
+}
+
 static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallback &callback)
 {
     int32_t connectFD = 0;
@@ -1801,18 +1810,18 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
     if (buffer == nullptr) {
         NETSTACK_LOGE("client malloc failed, listenfd: %{public}d, connectFd: %{public}d, size: %{public}d", sock,
                       connectFD, recvBufferSize);
-        callback.OnError(NO_MEMORY);
+        RecvInErrorCondition(NO_MEMORY, clientId, connectFD, callback);
         return;
     }
 
     while (true) {
         if (memset_s(buffer, recvBufferSize, 0, recvBufferSize) != EOK) {
             NETSTACK_LOGE("memset_s failed!");
+            RecvInErrorCondition(UNKNOW_ERROR, clientId, connectFD, callback);
             break;
         }
         int32_t recvSize = recv(connectFD, buffer, recvBufferSize, 0);
-        NETSTACK_LOGI("ClientRecv: fd is %{public}d, buf is %{public}s, size is %{public}d bytes", connectFD, buffer,
-                      recvSize);
+        NETSTACK_LOGI("ClientRecv: fd:%{public}d, buf:%{public}s, size:%{public}d", connectFD, buffer, recvSize);
         if (recvSize <= 0) {
             if (errno != EAGAIN && errno != EINTR) {
                 NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
@@ -1824,7 +1833,7 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
         } else {
             void *data = malloc(recvSize);
             if (data == nullptr) {
-                callback.OnError(NO_MEMORY);
+                RecvInErrorCondition(NO_MEMORY, clientId, connectFD, callback);
                 break;
             }
             if (memcpy_s(data, recvSize, buffer, recvSize) != EOK ||
@@ -2145,8 +2154,6 @@ napi_value TcpConnectionCloseCallback(TcpServerCloseContext *context)
     } else {
         NETSTACK_LOGI("sock %{public}d closed success", clientFd);
         RemoveClientConnection(context->clientId_);
-        context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
-                                                  NapiUtils::GetUndefined(context->GetEnv())));
     }
 
     return NapiUtils::GetUndefined(context->GetEnv());

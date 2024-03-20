@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,6 +34,16 @@ struct SocketBaseManager {
 struct LocalSocketManager : public SocketBaseManager {
     explicit LocalSocketManager(int sockfd) : SocketBaseManager(sockfd) {}
     bool isConnected_ = false;
+    std::atomic_bool isSockClosed;
+
+    void SetSocketCloseStatus(bool flag)
+    {
+        isSockClosed.store(flag, std::memory_order_relaxed);
+    }
+    bool GetSocketCloseStatus()
+    {
+        return isSockClosed.load(std::memory_order_relaxed);
+    }
 }__attribute__((packed));
 
 class LocalSocketBaseContext : public BaseContext {
