@@ -139,31 +139,7 @@ void LRUCache::MergeOtherCache(const LRUCache &other)
     }
 }
 
-Json::Value LRUCache::WriteCacheToJsonValue()
-{
-    Json::Value root;
-
-    int index = 0;
-    {
-        // set mutex in min scope
-        std::lock_guard<std::mutex> guard(mutex_);
-        for (const auto &node : nodeList_) {
-            root[node.key] = Json::Value();
-            for (const auto &p : node.value) {
-                root[node.key][p.first] = p.second;
-            }
-            root[node.key][LRU_INDEX] = std::to_string(index);
-            ++index;
-        }
-    }
-
-    Json::StyledWriter styledWriter;
-    std::string jsonStr = styledWriter.write(root);
-    NETSTACK_LOGE("WriteCacheToJsonValue : %{public}s", jsonStr.c_str());
-    return root;
-}
-
-cJSON* LRUCache::CjsonWriteCacheToJsonValue()
+cJSON* LRUCache::WriteCacheToJsonValue()
 {
     cJSON* root = cJSON_CreateObject();
 
@@ -182,57 +158,10 @@ cJSON* LRUCache::CjsonWriteCacheToJsonValue()
         }
     }
 
-    NETSTACK_LOGE("CjsonWriteCacheToJsonValue : %{public}s", cJSON_Print(root));
     return root;
 }
 
-void LRUCache::ReadCacheFromJsonValue(const Json::Value &root)
-{
-    Json::StyledWriter styledWriter;
-    std::string jsonStr = styledWriter.write(root);
-    NETSTACK_LOGE("ReadCacheFromJsonValue : %{public}s", jsonStr.c_str());
-
-    std::vector<Node> nodeVec;
-    for (auto it = root.begin(); it != root.end(); ++it) {
-        if (!it.key().isString()) {
-            continue;
-        }
-        Json::Value value = root[it.key().asString()];
-        if (!value.isObject()) {
-            continue;
-        }
-        NETSTACK_LOGE("key=%{public}s", it.key().asString().c_str());
-        std::unordered_map<std::string, std::string> m;
-        for (auto innerIt = value.begin(); innerIt != value.end(); ++innerIt) {
-            if (!innerIt.key().isString()) {
-                continue;
-            }
-            Json::Value innerValue = root[it.key().asString()][innerIt.key().asString()];
-            if (!innerValue.isString()) {
-                continue;
-            }
-
-            m[innerIt.key().asString()] = innerValue.asString();
-            NETSTACK_LOGE("m[%{public}s]=%{public}s", innerIt.key().asString().c_str(), innerValue.asString().c_str());
-        }
-
-        if (m.find(LRU_INDEX) != m.end()) {
-            nodeVec.emplace_back(it.key().asString(), m);
-        }
-    }
-    std::sort(nodeVec.begin(), nodeVec.end(), [](Node &a, Node &b) {
-        return std::strtol(a.value[LRU_INDEX].c_str(), nullptr, DECIMAL_BASE) >
-               std::strtol(b.value[LRU_INDEX].c_str(), nullptr, DECIMAL_BASE);
-    });
-    for (auto &node : nodeVec) {
-        node.value.erase(LRU_INDEX);
-        if (!node.value.empty()) {
-            Put(node.key, node.value);
-        }
-    }
-}
-
-void LRUCache::CjsonReadCacheFromJsonValue(const cJSON * const root)
+void LRUCache::ReadCacheFromJsonValue(const cJSON* const root)
 {
     std::vector<Node> nodeVec;
     uint32_t size = cJSON_GetArraySize(root);
@@ -249,12 +178,21 @@ void LRUCache::CjsonReadCacheFromJsonValue(const cJSON * const root)
                 continue;
             }
             cJSON *value = cJSON_GetObjectItem(valueItem, valueItem->string);
-            m[valueItem->string] = value->valuestring;
-            NETSTACK_LOGE("CjsonReadCacheValue m[%{public}s]=%{public}s", valueItem->string, value->valuestring);
+            m[valueItem->string] = cJSON_GetStringValue(value);
         }
 
         if (m.find(LRU_INDEX) != m.end()) {
             nodeVec.emplace_back(keyItem->string, m);
+        }
+    }
+    std::sort(nodeVec.begin(), nodeVec.end(), [](Node &a, Node &b) {
+        return std::strtol(a.value[LRU_INDEX].c_str(), nullptr, DECIMAL_BASE) >
+               std::strtol(b.value[LRU_INDEX].c_str(), nullptr, DECIMAL_BASE);
+    });
+    for (auto &node : nodeVec) {
+        node.value.erase(LRU_INDEX);
+        if (!node.value.empty()) {
+            Put(node.key, node.value);
         }
     }
 }

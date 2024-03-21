@@ -45,7 +45,6 @@
             "third_party": [
                 "curl",
                 "libwebsockets",
-                "jsoncpp",
                 "node",
                 "openssl"
             ]

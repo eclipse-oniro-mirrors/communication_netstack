@@ -19,7 +19,7 @@
 #include <list>
 #include <string>
 #include <unordered_map>
-#include "json/json.h"
+#include <mutex>
 #include "cJSON.h"
 
 namespace OHOS::NetStack::Http {
@@ -35,10 +35,10 @@ public:
 
     void MergeOtherCache(const LRUCache &other);
 
-    Json::Value WriteCacheToJsonValue();
-    cJSON* CjsonWriteCacheToJsonValue();
-    void ReadCacheFromJsonValue(const Json::Value &root);
-    void CjsonReadCacheFromJsonValue(const cJSON * const root);
+    cJSON* WriteCacheToJsonValue();
+
+    void ReadCacheFromJsonValue(const cJSON* const root);
+
     void Clear();
 
 private:
