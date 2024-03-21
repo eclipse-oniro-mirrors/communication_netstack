@@ -164,15 +164,13 @@ cJSON* LRUCache::WriteCacheToJsonValue()
 void LRUCache::ReadCacheFromJsonValue(const cJSON* const root)
 {
     std::vector<Node> nodeVec;
-    uint32_t size = cJSON_GetArraySize(root);
-    for (uint32_t i = 0; i < size; i++) {
+    for (uint32_t i = 0; i < cJSON_GetArraySize(root); i++) {
         cJSON *keyItem = cJSON_GetArrayItem(root, i);
         if (keyItem == nullptr || !cJSON_IsObject(keyItem)) {
             continue;
         }
         std::unordered_map<std::string, std::string> m;
-        uint32_t sized = cJSON_GetArraySize(keyItem);
-        for (uint32_t j = 0; j < sized; j++) {
+        for (uint32_t j = 0; j < cJSON_GetArraySize(keyItem); j++) {
             cJSON *valueItem = cJSON_GetArrayItem(keyItem, j);
             if (valueItem == nullptr || !cJSON_IsObject(valueItem)) {
                 continue;
