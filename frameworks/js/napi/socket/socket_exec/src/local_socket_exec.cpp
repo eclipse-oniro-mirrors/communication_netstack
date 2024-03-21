@@ -554,32 +554,46 @@ static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager
             }
         }
     }
+    serverManager->NotifyLoopFinished();
 }
 
 static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSocketMessageCallback &callback,
                                     const std::string &path)
 {
+    struct sockaddr_un clientAddress;
+    socklen_t clientAddrLength = sizeof(clientAddress);
+    struct pollfd fds[1] = {{.fd = mgr->sockfd_, .events = POLLIN}};
+    nfds_t num = 1;
     while (true) {
-        struct sockaddr_un clientAddress;
-        socklen_t clientAddrLength = sizeof(clientAddress);
-        int connectFd = accept(mgr->sockfd_, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddrLength);
-        if (connectFd < 0) {
-            continue;
+        int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT_MS);
+        if (ret < 0) {
+            NETSTACK_LOGE("poll to accept failed, socket is %{public}d, errno is %{public}d", mgr->sockfd_, errno);
+            callback.OnError(errno);
+            break;
         }
-        if (mgr->GetClientCounts() >= MAX_CLIENTS) {
-            NETSTACK_LOGE("local socket server max number of clients reached, sockfd: %{public}d", mgr->sockfd_);
-            close(connectFd);
-            continue;
-        }
-        SetSocketDefaultBufferSize(connectFd, mgr);
-        std::thread handlerThread(LocalSocketServerRecvHandler, connectFd, mgr, std::ref(callback), std::ref(path));
+        if (fds[0].revents & POLLIN) {
+            int connectFd = accept(mgr->sockfd_, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddrLength);
+            if (connectFd < 0) {
+                continue;
+            }
+            if (mgr->GetClientCounts() >= MAX_CLIENTS) {
+                NETSTACK_LOGE("local socket server max number of clients reached, sockfd: %{public}d", mgr->sockfd_);
+                close(connectFd);
+                continue;
+            }
+            SetSocketDefaultBufferSize(connectFd, mgr);
+            if (!mgr->isServerDestruct_) {
+                std::thread handlerThread(LocalSocketServerRecvHandler, connectFd, mgr, std::ref(callback), std::ref(path));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-        pthread_setname_np(LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
+                pthread_setname_np(LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
 #else
-        pthread_setname_np(handlerThread.native_handle(), LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
+                pthread_setname_np(handlerThread.native_handle(), LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
 #endif
-        handlerThread.detach();
+                handlerThread.detach();
+            }
+        }
     }
+    mgr->NotifyLoopFinished();
 }
 
 static void PollRecvData(int sock, const LocalSocketMessageCallback &callback)

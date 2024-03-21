@@ -136,12 +136,14 @@ void FinalizeLocalsocketServer(napi_env, void *data, void *)
     if (manager != nullptr) {
         if (auto serverMgr = reinterpret_cast<LocalSocketServerManager *>(manager->GetData()); serverMgr != nullptr) {
             NETSTACK_LOGI("localsocket server handle is finalized, fd: %{public}d", serverMgr->sockfd_);
+            serverMgr->isServerDestruct_ = true;
             serverMgr->RemoveAllAccept();
             serverMgr->RemoveAllEventManager();
             if (serverMgr->sockfd_ > 0) {
                 close(serverMgr->sockfd_);
-                serverMgr->sockfd_ = 0;
+                serverMgr->sockfd_ = -1;
             }
+            serverMgr->WaitForEndingLoop();
             delete serverMgr;
         }
         EventManager::SetInvalid(manager);

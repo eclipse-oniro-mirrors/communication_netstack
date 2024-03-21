@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,6 +32,9 @@ struct LocalSocketServerManager : public SocketBaseManager {
     int clientId_ = 0;
     LocalExtraOptions extraOptions_;
     bool alreadySetExtraOptions_ = false;
+    bool isServerDestruct_ = false;
+    std::mutex finishMutex_;
+    std::condition_variable finishCond_;
     std::mutex clientMutex_;
     std::condition_variable cond_;
     std::map<int, int> acceptFds_;                      // id & fd
@@ -116,6 +119,20 @@ struct LocalSocketServerManager : public SocketBaseManager {
             EventManager::SetInvalid(manager);
         }
         clientEventManagers_.clear();
+    }
+    void NotifyLoopFinished()
+    {
+        std::lock_guard<std::mutex> lock(finishMutex_);
+        if (--clientId_ == 0) {
+            finishCond_.notify_one();
+        }
+    }
+    void WaitForEndingLoop()
+    {
+        std::unique_lock<std::mutex> lock(finishMutex_);
+        finishCond_.wait(lock, [this]() {
+            return clientId_ == 0;
+        });
     }
 };
 
