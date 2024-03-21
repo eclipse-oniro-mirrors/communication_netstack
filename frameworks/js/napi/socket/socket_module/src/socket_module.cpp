@@ -378,7 +378,7 @@ static bool MakeLocalServerSocket(napi_env env, napi_value thisVal, LocalSocketS
         NETSTACK_LOGI("socket exist: %{public}d", sock);
         return false;
     }
-    int sock = LocalSocketExec::MakeLocalSocket(SOCK_STREAM, false);
+    int sock = LocalSocketExec::MakeLocalSocket(SOCK_STREAM);
     if (sock < 0) {
         return false;
     }
