@@ -582,6 +582,20 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
     }
 }
 
+static inline int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &buf,
+                                   const LocalSocketMessageCallback &callback)
+{
+    if (int currentRecvBufferSize = ConfirmBufferSize(sock); currentRecvBufferSize != bufferSize) {
+        bufferSize = currentRecvBufferSize;
+        buf.reset(new (std::nothrow) char[bufferSize]);
+        if (buf == nullptr) {
+            callback.OnError(NO_MEMORY);
+            return NO_MEMORY;
+        }
+    }
+    return 0;
+}
+
 static void PollRecvData(int sock, const LocalSocketMessageCallback &callback)
 {
     int bufferSize = ConfirmBufferSize(sock);
@@ -605,6 +619,9 @@ static void PollRecvData(int sock, const LocalSocketMessageCallback &callback)
         if (memset_s(buf.get(), bufferSize, 0, bufferSize) != EOK) {
             NETSTACK_LOGE("memset_s failed, client fd: %{public}d, bufferSize: %{public}d", sock, bufferSize);
             continue;
+        }
+        if (UpdateRecvBuffer(sock, bufferSize, buf, callback) < 0) {
+            return;
         }
         auto recvLen = recv(sock, buf.get(), bufferSize, 0);
         if (recvLen < 0) {
