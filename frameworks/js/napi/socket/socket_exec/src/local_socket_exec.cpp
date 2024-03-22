@@ -510,6 +510,7 @@ static inline void RecvInErrorCondition(int reason, int clientId, const LocalSoc
 static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager *serverManager,
                                          const LocalSocketMessageCallback &callback, const std::string &path)
 {
+    serverManager->IncreaseThreadCounts();
     int clientId = serverManager->AddAccept(connectFd);
     if (serverManager->alreadySetExtraOptions_) {
         SetLocalSocketOptions(connectFd, serverManager->extraOptions_);
@@ -522,6 +523,7 @@ static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager
     if (buffer == nullptr) {
         NETSTACK_LOGE("failed to malloc, connectFd: %{public}d, malloc size: %{public}d", connectFd, sockRecvSize);
         RecvInErrorCondition(NO_MEMORY, clientId, callback, serverManager);
+        serverManager->NotifyLoopFinished();
         return;
     }
     while (true) {
@@ -564,11 +566,16 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
     socklen_t clientAddrLength = sizeof(clientAddress);
     struct pollfd fds[1] = {{.fd = mgr->sockfd_, .events = POLLIN}};
     nfds_t num = 1;
+    mgr->IncreaseThreadCounts();
     while (true) {
         int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT_MS);
         if (ret < 0) {
             NETSTACK_LOGE("poll to accept failed, socket is %{public}d, errno is %{public}d", mgr->sockfd_, errno);
             callback.OnError(errno);
+            break;
+        }
+        if (mgr->isServerDestruct_) {
+            NETSTACK_LOGI("server object destruction, loop finished");
             break;
         }
         if (fds[0].revents & POLLIN) {
@@ -583,7 +590,8 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
             }
             SetSocketDefaultBufferSize(connectFd, mgr);
             if (!mgr->isServerDestruct_) {
-                std::thread handlerThread(LocalSocketServerRecvHandler, connectFd, mgr, std::ref(callback), std::ref(path));
+                std::thread handlerThread(LocalSocketServerRecvHandler, connectFd, mgr, std::ref(callback),
+                                          std::ref(path));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
                 pthread_setname_np(LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
 #else

@@ -30,6 +30,7 @@
 namespace OHOS::NetStack::Socket {
 struct LocalSocketServerManager : public SocketBaseManager {
     int clientId_ = 0;
+    int threadCounts_ = 0;
     LocalExtraOptions extraOptions_;
     bool alreadySetExtraOptions_ = false;
     bool isServerDestruct_ = false;
@@ -120,10 +121,15 @@ struct LocalSocketServerManager : public SocketBaseManager {
         }
         clientEventManagers_.clear();
     }
+    void IncreaseThreadCounts()
+    {
+        std::lock_guard<std::mutex> lock(finishMutex_);
+        ++threadCounts_;
+    }
     void NotifyLoopFinished()
     {
         std::lock_guard<std::mutex> lock(finishMutex_);
-        if (--clientId_ == 0) {
+        if (--threadCounts_ == 0) {
             finishCond_.notify_one();
         }
     }
@@ -131,7 +137,7 @@ struct LocalSocketServerManager : public SocketBaseManager {
     {
         std::unique_lock<std::mutex> lock(finishMutex_);
         finishCond_.wait(lock, [this]() {
-            return clientId_ == 0;
+            return threadCounts_ == 0;
         });
     }
 };
