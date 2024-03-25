@@ -127,7 +127,7 @@ void EpollMultiDriver::EpollTimerCallback()
     }
 }
 
-void EpollMultiDriver::CheckMultiInfo()
+__attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
 {
     CURLMsg *message;
     int pending;
