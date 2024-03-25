@@ -37,7 +37,7 @@ public:
 
     cJSON* WriteCacheToJsonValue();
 
-    void ReadCacheFromJsonValue(const cJSON* const root);
+    void ReadCacheFromJsonValue(cJSON* root);
 
     void Clear();
 
