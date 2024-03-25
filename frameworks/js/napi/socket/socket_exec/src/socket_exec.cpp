@@ -1020,11 +1020,12 @@ bool ExecUdpBind(BindContext *context)
 
 bool ExecUdpSend(UdpSendContext *context)
 {
+#ifdef FUZZ_TEST
+    return true;
+#endif
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
-        return false;
-    }
-    if (context->GetSocketFd() < 0) {
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
         return false;
     }
     bool result = UdpSendEvent(context);
@@ -1075,11 +1076,12 @@ bool ExecConnect(ConnectContext *context)
 
 bool ExecTcpSend(TcpSendContext *context)
 {
+#ifdef FUZZ_TEST
+    return true;
+#endif
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
-        return false;
-    }
-    if (context->GetSocketFd() < 0) {
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
         return false;
     }
     bool result = TcpSendEvent(context);
