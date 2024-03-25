@@ -697,7 +697,10 @@ uint64_t CreateUvHandlerQueue(napi_env env)
     auto global = GetGlobal(env);
     auto queueWrapper = CreateObject(env);
     SetNamedProperty(env, global, HTTP_UV_SYNC_QUEUE_NAME, queueWrapper);
-    g_handlerQueueMap.emplace(newId, std::make_shared<UvHandlerQueue>());
+    {
+        std::lock_guard lock(g_mutex);
+        g_handlerQueueMap.emplace(newId, std::make_shared<UvHandlerQueue>());
+    }
     napi_wrap(
         env, queueWrapper, reinterpret_cast<void *>(newId),
         [](napi_env env, void *data, void *) {
