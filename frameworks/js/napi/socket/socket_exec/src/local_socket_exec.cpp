@@ -581,7 +581,7 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
 }
 
 static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &buf,
-                                   const LocalSocketMessageCallback &callback)
+                            const LocalSocketMessageCallback &callback)
 {
     if (int currentRecvBufferSize = ConfirmBufferSize(sock); currentRecvBufferSize != bufferSize) {
         bufferSize = currentRecvBufferSize;
