@@ -79,10 +79,11 @@ ohos_static_library("napi_utils_static") {
 
   public_configs = [ ":napi_utils_public_config" ]
 
+  external_deps = [ "cJSON:cjson" ]
+
   if (current_os == "ohos") {
     public_deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
-    external_deps = [
-      "cJSON:cjson",
+    external_deps += [
       "c_utils:utils",
       "hilog:libhilog",
       "napi:ace_napi",
