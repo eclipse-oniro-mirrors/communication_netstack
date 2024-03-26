@@ -917,6 +917,74 @@ bool HttpExec::SetDnsOption(CURL *curl, RequestContext *context)
     return true;
 }
 
+bool HttpExec::ParseHostAndPortFromUrl(const std::string &url, std::string &host, uint16_t &port)
+{
+    CURLU *cu = curl_url();
+    if (!cu) {
+        NETSTACK_LOGE("out of memory");
+        return false;
+    }
+    if (curl_url_set(cu, CURLUPART_URL, url.c_str(), 0)) {
+        NETSTACK_LOGD("not a URL: '%{public}s'", url.c_str());
+        curl_url_cleanup(cu);
+        return false;
+    }
+    char *chost = nullptr;
+    char *cport = nullptr;
+    (void)curl_url_get(cu, CURLUPART_HOST, &chost, 0);
+    (void)curl_url_get(cu, CURLUPART_PORT, &cport, 0);
+    if (chost != nullptr) {
+        host = chost;
+        NETSTACK_LOGD("parse host: '%{public}s'", host.c_str());
+        curl_free(chost);
+    }
+    
+    if (cport != nullptr) {
+        port = atoi(cport);
+        NETSTACK_LOGD("parse port: '%{public}u'", port);
+        curl_free(cport);
+    }
+    curl_url_cleanup(cu);
+    return !host.empty();
+}
+
+bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
+{
+    std::string host = "";
+    uint16_t port = 0;
+    if (!ParseHostAndPortFromUrl(context->options.GetUrl(), host, port)) {
+        NETSTACK_LOGE("parse url failed");
+        return true;
+    }
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    std::vector<std::string> dnsResult;
+    lookup_result lookup = [](char *ip, void *usrp) {
+        std::vector<std::string> *dnsResult = static_cast<std::vector<std::string> *>(usrp);
+        if (dnsResult) {
+            dnsResult->push_back(ip);
+        }
+    };
+    predefined_host_lookup_ip(host.c_str(), lookup, &dnsResult);
+    if (dnsResult.empty()) {
+        return true;
+    }
+    struct curl_slist *hostSlist = context->GetCurlHostList();
+    for (auto result: dnsResult) {
+        if (OHOS::NetStack::CommonUtils::IsValidIPV4(result) || OHOS::NetStack::CommonUtils::IsValidIPV6(result)) {
+            std::string resolvHost = host + ":" + std::to_string(port) + ":" + result;
+            hostSlist = curl_slist_append(hostSlist, resolvHost.c_str());
+        }
+    }
+    if (hostSlist == nullptr) {
+        NETSTACK_LOGE("no valid ip");
+        return false;
+    }
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RESOLVE, hostSlist, context);
+    context->SetCurlHostList(hostSlist);
+#endif
+    return true;
+}
+
 bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
 {
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTP_VERSION, context->options.GetHttpVersion(), context);
@@ -933,6 +1001,7 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
     SetDnsOption(curl, context);
     SetSSLCertOption(curl, context);
     SetMultiPartOption(curl, context);
+    SetDnsResolvOption(curl, context);
     return true;
 }
 
