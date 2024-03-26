@@ -19,6 +19,7 @@
 #include <list>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <mutex>
 #include "cJSON.h"
 
