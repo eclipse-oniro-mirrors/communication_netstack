@@ -187,7 +187,7 @@ static napi_value MakeLocalSocketMessage(napi_env env, void *param)
     }
     int result = memcpy_s(dataHandle, msg->len, msg->data, msg->len);
     if (result != EOK) {
-        NETSTACK_LOGE("memcpy err, res: %{public}d, msg: %{public}s, len: %{public}u", result,
+        NETSTACK_LOGE("memcpy err, res: %{public}d, msg: %{public}s, len: %{public}zu", result,
                       reinterpret_cast<char *>(msg->data), msg->len);
         return NapiUtils::GetUndefined(env);
     }
