@@ -115,6 +115,10 @@ public:
 
     uint64_t GetModuleId() const;
 
+    void SetCurlHostList(struct curl_slist *curlHostList);
+
+    [[nodiscard]] struct curl_slist *GetCurlHostList();
+
 private:
     int32_t taskId_;
     bool usingCache_;
@@ -132,6 +136,7 @@ private:
     curl_mime *multipart_;
     CertsPath certsPath_;
     uint64_t moduleId_ = 0;
+    struct curl_slist *curlHostList_;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 

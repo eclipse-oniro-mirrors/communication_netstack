@@ -76,7 +76,8 @@ RequestContext::RequestContext(napi_env env, EventManager *manager)
       usingCache_(true),
       requestInStream_(false),
       curlHeaderList_(nullptr),
-      multipart_(nullptr)
+      multipart_(nullptr),
+      curlHostList_(nullptr)
 {
     taskId_ = g_currentTaskId++;
     StartTiming();
@@ -447,10 +448,24 @@ struct curl_slist *RequestContext::GetCurlHeaderList()
 {
     return curlHeaderList_;
 }
+
+void RequestContext::SetCurlHostList(struct curl_slist *curlHostList)
+{
+    curlHostList_ = curlHostList;
+}
+
+struct curl_slist *RequestContext::GetCurlHostList()
+{
+    return curlHostList_;
+}
+
 RequestContext::~RequestContext()
 {
     if (curlHeaderList_ != nullptr) {
         curl_slist_free_all(curlHeaderList_);
+    }
+    if (curlHostList_ != nullptr) {
+        curl_slist_free_all(curlHostList_);
     }
     if (multipart_ != nullptr) {
         curl_mime_free(multipart_);
