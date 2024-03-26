@@ -51,8 +51,6 @@ constexpr int DEFAULT_TIMEOUT_MS = 20000;
 
 constexpr int UNIT_CONVERSION_1000 = 1000; // multiples of conversion between units
 
-constexpr int SOCKET_SIZE_CONVERSION = 2; // socket buffer size, the actual value is twice the set value
-
 constexpr char LOCAL_SOCKET_CONNECTION[] = "LocalSocketConnection";
 
 constexpr char LOCAL_SOCKET_SERVER_HANDLE_CLIENT[] = "OS_NET_LSAcc";
@@ -449,13 +447,13 @@ static bool SetSocketBufferSize(int sockfd, int type, uint32_t size)
 static bool SetLocalSocketOptions(int sockfd, const LocalExtraOptions &options)
 {
     if (options.AlreadySetRecvBufSize()) {
-        uint32_t recvBufSize = options.GetReceiveBufferSize() / SOCKET_SIZE_CONVERSION;
+        uint32_t recvBufSize = options.GetReceiveBufferSize();
         if (!SetSocketBufferSize(sockfd, SO_RCVBUF, recvBufSize)) {
             return false;
         }
     }
     if (options.AlreadySetSendBufSize()) {
-        uint32_t sendBufSize = options.GetSendBufferSize() / SOCKET_SIZE_CONVERSION;
+        uint32_t sendBufSize = options.GetSendBufferSize();
         if (!SetSocketBufferSize(sockfd, SO_SNDBUF, sendBufSize)) {
             return false;
         }
@@ -477,12 +475,12 @@ static bool SetLocalSocketOptions(int sockfd, const LocalExtraOptions &options)
 
 static void SetSocketDefaultBufferSize(int sockfd, LocalSocketServerManager *mgr)
 {
-    uint32_t recvSize = DEFAULT_BUFFER_SIZE / SOCKET_SIZE_CONVERSION;
+    uint32_t recvSize = DEFAULT_BUFFER_SIZE;
     if (mgr->alreadySetExtraOptions_ && mgr->extraOptions_.AlreadySetRecvBufSize()) {
         recvSize = mgr->extraOptions_.GetReceiveBufferSize();
     }
     SetSocketBufferSize(sockfd, SO_RCVBUF, recvSize);
-    uint32_t sendSize = DEFAULT_BUFFER_SIZE / SOCKET_SIZE_CONVERSION;
+    uint32_t sendSize = DEFAULT_BUFFER_SIZE;
     if (mgr->alreadySetExtraOptions_ && mgr->extraOptions_.AlreadySetSendBufSize()) {
         sendSize = mgr->extraOptions_.GetSendBufferSize();
     }
@@ -582,7 +580,7 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
     }
 }
 
-static inline int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &buf,
+static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &buf,
                                    const LocalSocketMessageCallback &callback)
 {
     if (int currentRecvBufferSize = ConfirmBufferSize(sock); currentRecvBufferSize != bufferSize) {
