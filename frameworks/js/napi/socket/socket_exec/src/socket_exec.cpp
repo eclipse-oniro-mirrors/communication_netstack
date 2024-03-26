@@ -68,8 +68,6 @@ static constexpr const int ERRNO_BAD_FD = 9;
 
 static constexpr const int UNIT_CONVERSION_1000 = 1000;
 
-static constexpr const int SOCKET_SIZE_CONVERSION = 2; // socket buffer size, the actual value is twice the set value
-
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
 static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "OS_NET_SockRD";
@@ -750,8 +748,7 @@ static bool IsTCPSocket(int sockfd)
     return optval == IPPROTO_TCP;
 }
 
-static inline int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &buf,
-                                    const MessageCallback &callback)
+static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &buf, const MessageCallback &callback)
 {
     if (int currentRecvBufferSize = ConfirmBufferSize(sock); currentRecvBufferSize != bufferSize) {
         bufferSize = currentRecvBufferSize;
@@ -762,6 +759,21 @@ static inline int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<ch
         }
     }
     return 0;
+}
+
+static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &callback)
+{
+    if (errno == EAGAIN || errno == EINTR || (recvLen == 0 && !IsTCPSocket(sock))) {
+        return 0;
+    }
+    if (errno == 0) {
+        NETSTACK_LOGI("closed by peer, socket:%{public}d, recvLen:%{public}zd", sock, recvLen);
+        callback.OnCloseMessage(callback.GetEventManager());
+    } else {
+        NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
+        callback.OnError(recvLen == 0 && IsTCPSocket(sock) ? UNKNOW_ERROR : errno);
+    }
+    return -1;
 }
 
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
@@ -800,13 +812,10 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         socklen_t tempAddrLen = addrLen;
         auto recvLen = recvfrom(sock, buf.get(), bufferSize, 0, addr, &tempAddrLen);
         if (recvLen <= 0) {
-            if (errno == EAGAIN || errno == EINTR || (recvLen == 0 && !IsTCPSocket(sock))) {
-                continue;
+            if (ExitOrAbnormal(sock, recvLen, callback) < 0) {
+                return;
             }
-            NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
-            (errno == 0) ? callback.OnCloseMessage(callback.GetEventManager()) : callback.OnError(recvLen == 0 &&
-                IsTCPSocket(sock) ? UNKNOW_ERROR : errno);
-            return;
+            continue;
         }
 
         void *data = malloc(recvLen);
@@ -867,7 +876,7 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
 static bool SetBaseOptions(int sock, ExtraOptionsBase *option)
 {
     if (option->AlreadySetRecvBufSize()) {
-        int size = static_cast<int>(option->GetReceiveBufferSize()) / SOCKET_SIZE_CONVERSION;
+        int size = static_cast<int>(option->GetReceiveBufferSize());
         if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<void *>(&size), sizeof(size)) < 0) {
             NETSTACK_LOGE("set SO_RCVBUF failed, fd: %{public}d", sock);
             return false;
@@ -875,7 +884,7 @@ static bool SetBaseOptions(int sock, ExtraOptionsBase *option)
     }
 
     if (option->AlreadySetSendBufSize()) {
-        int size = static_cast<int>(option->GetSendBufferSize()) / SOCKET_SIZE_CONVERSION;
+        int size = static_cast<int>(option->GetSendBufferSize());
         if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<void *>(&size), sizeof(size)) < 0) {
             NETSTACK_LOGE("set SO_SNDBUF failed, fd: %{public}d", sock);
             return false;
