@@ -35,7 +35,7 @@ constexpr int BACKLOG = 32;
 
 constexpr int DEFAULT_BUFFER_SIZE = 8192;
 
-constexpr int MAX_SOCKET_BUFFER_SIZE = 212992;
+constexpr int MAX_SOCKET_BUFFER_SIZE = 262144;
 
 constexpr int DEFAULT_POLL_TIMEOUT_MS = 500;
 
@@ -585,6 +585,10 @@ static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &
 {
     if (int currentRecvBufferSize = ConfirmBufferSize(sock); currentRecvBufferSize != bufferSize) {
         bufferSize = currentRecvBufferSize;
+        if (bufferSize <= 0 || bufferSize > MAX_SOCKET_BUFFER_SIZE) {
+            NETSTACK_LOGE("buffer size is out of range, size: %{public}d", bufferSize);
+            bufferSize = DEFAULT_BUFFER_SIZE;
+        }
         buf.reset(new (std::nothrow) char[bufferSize]);
         if (buf == nullptr) {
             callback.OnError(NO_MEMORY);
