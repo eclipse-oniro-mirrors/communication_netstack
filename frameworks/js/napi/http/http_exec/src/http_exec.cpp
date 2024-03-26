@@ -74,8 +74,9 @@ static constexpr const uint32_t EVENT_PARAM_TWO = 2;
 static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!eNULL:!EXPORT)";
 #if !HAS_NETMANAGER_BASE
 static constexpr const char *HTTP_TASK_RUN_THREAD = "OS_NET_TaskHttp";
-#endif
 static constexpr const char *HTTP_CLIENT_TASK_THREAD = "OS_NET_HttpJs";
+#endif
+
 #if HAS_NETMANAGER_BASE
 static constexpr const char *HTTP_REQ_TRACE_NAME = "HttpRequest";
 #endif
@@ -203,14 +204,7 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     }
 
 #if HAS_NETMANAGER_BASE
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-    pthread_setname_np(HTTP_CLIENT_TASK_THREAD);
-#else
-    pthread_setname_np(pthread_self(), HTTP_CLIENT_TASK_THREAD);
-#endif
-#if HAS_NETMANAGER_BASE
     StartAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, context->GetTaskId());
-#endif
     SetServerSSLCertOption(handle, context);
     StoreContext(context);
 
