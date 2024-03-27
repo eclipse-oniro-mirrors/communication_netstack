@@ -17,10 +17,11 @@
 #define COMMUNICATIONNETSTACK_LRU_CACHE_H
 
 #include <list>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <mutex>
+
 #include "cJSON.h"
 
 namespace OHOS::NetStack::Http {

@@ -53,6 +53,11 @@ cJSON* LRUCacheDiskHandler::ReadJsonValueFromFile()
 void LRUCacheDiskHandler::WriteJsonValueToFile(cJSON *root)
 {
     char *jsonStr = cJSON_Print(root);
+    if (jsonStr == nullptr) {
+        NETSTACK_LOGE("write json failed");
+        cJSON_Delete(root);
+        return;
+    }
     std::string s = jsonStr;
     diskHandler_.Write(s);
     free(jsonStr);

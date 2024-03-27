@@ -34,13 +34,13 @@
                 "hitrace",
                 "ipc",
                 "zlib",
+                "cJSON",
                 "c_utils",
                 "init",
                 "napi",
                 "netmanager_base",
                 "ylong_http",
-                "openssl",
-                "cJSON"
+                "openssl"
             ],
             "third_party": [
                 "curl",
