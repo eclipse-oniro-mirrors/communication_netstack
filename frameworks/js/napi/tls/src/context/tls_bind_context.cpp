@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -45,6 +45,9 @@ void TLSBindContext::ParseParams(napi_value *params, size_t paramsCount)
     }
     address_.SetAddress(addr);
     if (address_.GetAddress().empty()) {
+        if (SetCallback(params[1]) != napi_ok) {
+            NETSTACK_LOGE("failed to set callback");
+        }
         return;
     }
 
