@@ -44,6 +44,8 @@
 
 static constexpr const int DEFAULT_BUFFER_SIZE = 8192;
 
+static constexpr const int MAX_SOCKET_BUFFER_SIZE = 262144;
+
 static constexpr const int DEFAULT_TIMEOUT_MS = 20000;
 
 static constexpr const int DEFAULT_POLL_TIMEOUT = 500; // 0.5 Seconds
@@ -748,6 +750,38 @@ static bool IsTCPSocket(int sockfd)
     return optval == IPPROTO_TCP;
 }
 
+static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &buf, const MessageCallback &callback)
+{
+    if (int currentRecvBufferSize = ConfirmBufferSize(sock); currentRecvBufferSize != bufferSize) {
+        bufferSize = currentRecvBufferSize;
+        if (bufferSize <= 0 || bufferSize > MAX_SOCKET_BUFFER_SIZE) {
+            NETSTACK_LOGE("buffer size is out of range, size: %{public}d", bufferSize);
+            bufferSize = DEFAULT_BUFFER_SIZE;
+        }
+        buf.reset(new (std::nothrow) char[bufferSize]);
+        if (buf == nullptr) {
+            callback.OnError(NO_MEMORY);
+            return NO_MEMORY;
+        }
+    }
+    return 0;
+}
+
+static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &callback)
+{
+    if (errno == EAGAIN || errno == EINTR || (recvLen == 0 && !IsTCPSocket(sock))) {
+        return 0;
+    }
+    if (errno == 0) {
+        NETSTACK_LOGI("closed by peer, socket:%{public}d, recvLen:%{public}zd", sock, recvLen);
+        callback.OnCloseMessage(callback.GetEventManager());
+    } else {
+        NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
+        callback.OnError(recvLen == 0 && IsTCPSocket(sock) ? UNKNOW_ERROR : errno);
+    }
+    return -1;
+}
+
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
 {
     int bufferSize = ConfirmBufferSize(sock);
@@ -777,20 +811,17 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) == 0) {
             return;
         }
+        if (UpdateRecvBuffer(sock, bufferSize, buf, callback) < 0) {
+            return;
+        }
         (void)memset_s(buf.get(), bufferSize, 0, bufferSize);
         socklen_t tempAddrLen = addrLen;
         auto recvLen = recvfrom(sock, buf.get(), bufferSize, 0, addr, &tempAddrLen);
         if (recvLen <= 0) {
-            if (errno == EAGAIN || errno == EINTR || (recvLen == 0 && !IsTCPSocket(sock))) {
-                continue;
+            if (ExitOrAbnormal(sock, recvLen, callback) < 0) {
+                return;
             }
-            NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
-            if (errno == 0) {
-                callback.OnCloseMessage(callback.GetEventManager());
-            } else {
-                callback.OnError(recvLen == 0 && IsTCPSocket(sock) ? UNKNOW_ERROR : errno);
-            }
-            return;
+            continue;
         }
 
         void *data = malloc(recvLen);

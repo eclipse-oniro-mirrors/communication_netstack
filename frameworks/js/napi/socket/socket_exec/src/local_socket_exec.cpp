@@ -35,7 +35,7 @@ constexpr int BACKLOG = 32;
 
 constexpr int DEFAULT_BUFFER_SIZE = 8192;
 
-constexpr int MAX_SOCKET_BUFFER_SIZE = 212992;
+constexpr int MAX_SOCKET_BUFFER_SIZE = 262144;
 
 constexpr int DEFAULT_POLL_TIMEOUT_MS = 500;
 
@@ -50,8 +50,6 @@ constexpr int ERRNO_BAD_FD = 9;
 constexpr int DEFAULT_TIMEOUT_MS = 20000;
 
 constexpr int UNIT_CONVERSION_1000 = 1000; // multiples of conversion between units
-
-constexpr int SOCKET_SIZE_CONVERSION = 2; // socket buffer size, the actual value is twice the set value
 
 constexpr char LOCAL_SOCKET_CONNECTION[] = "LocalSocketConnection";
 
@@ -449,13 +447,13 @@ static bool SetSocketBufferSize(int sockfd, int type, uint32_t size)
 static bool SetLocalSocketOptions(int sockfd, const LocalExtraOptions &options)
 {
     if (options.AlreadySetRecvBufSize()) {
-        uint32_t recvBufSize = options.GetReceiveBufferSize() / SOCKET_SIZE_CONVERSION;
+        uint32_t recvBufSize = options.GetReceiveBufferSize();
         if (!SetSocketBufferSize(sockfd, SO_RCVBUF, recvBufSize)) {
             return false;
         }
     }
     if (options.AlreadySetSendBufSize()) {
-        uint32_t sendBufSize = options.GetSendBufferSize() / SOCKET_SIZE_CONVERSION;
+        uint32_t sendBufSize = options.GetSendBufferSize();
         if (!SetSocketBufferSize(sockfd, SO_SNDBUF, sendBufSize)) {
             return false;
         }
@@ -477,12 +475,12 @@ static bool SetLocalSocketOptions(int sockfd, const LocalExtraOptions &options)
 
 static void SetSocketDefaultBufferSize(int sockfd, LocalSocketServerManager *mgr)
 {
-    uint32_t recvSize = DEFAULT_BUFFER_SIZE / SOCKET_SIZE_CONVERSION;
+    uint32_t recvSize = DEFAULT_BUFFER_SIZE;
     if (mgr->alreadySetExtraOptions_ && mgr->extraOptions_.AlreadySetRecvBufSize()) {
         recvSize = mgr->extraOptions_.GetReceiveBufferSize();
     }
     SetSocketBufferSize(sockfd, SO_RCVBUF, recvSize);
-    uint32_t sendSize = DEFAULT_BUFFER_SIZE / SOCKET_SIZE_CONVERSION;
+    uint32_t sendSize = DEFAULT_BUFFER_SIZE;
     if (mgr->alreadySetExtraOptions_ && mgr->extraOptions_.AlreadySetSendBufSize()) {
         sendSize = mgr->extraOptions_.GetSendBufferSize();
     }
@@ -604,6 +602,24 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
     mgr->NotifyLoopFinished();
 }
 
+static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &buf,
+                            const LocalSocketMessageCallback &callback)
+{
+    if (int currentRecvBufferSize = ConfirmBufferSize(sock); currentRecvBufferSize != bufferSize) {
+        bufferSize = currentRecvBufferSize;
+        if (bufferSize <= 0 || bufferSize > MAX_SOCKET_BUFFER_SIZE) {
+            NETSTACK_LOGE("buffer size is out of range, size: %{public}d", bufferSize);
+            bufferSize = DEFAULT_BUFFER_SIZE;
+        }
+        buf.reset(new (std::nothrow) char[bufferSize]);
+        if (buf == nullptr) {
+            callback.OnError(NO_MEMORY);
+            return NO_MEMORY;
+        }
+    }
+    return 0;
+}
+
 static void PollRecvData(int sock, const LocalSocketMessageCallback &callback)
 {
     int bufferSize = ConfirmBufferSize(sock);
@@ -627,6 +643,9 @@ static void PollRecvData(int sock, const LocalSocketMessageCallback &callback)
         if (memset_s(buf.get(), bufferSize, 0, bufferSize) != EOK) {
             NETSTACK_LOGE("memset_s failed, client fd: %{public}d, bufferSize: %{public}d", sock, bufferSize);
             continue;
+        }
+        if (UpdateRecvBuffer(sock, bufferSize, buf, callback) < 0) {
+            return;
         }
         auto recvLen = recv(sock, buf.get(), bufferSize, 0);
         if (recvLen < 0) {
