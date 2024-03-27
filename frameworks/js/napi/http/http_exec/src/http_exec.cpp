@@ -1000,7 +1000,8 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
         return size * memBytes;
     }
-    if (context->response.GetResult().size() > context->options.GetMaxLimit()) {
+    if (context->response.GetResult().size() > context->options.GetMaxLimit() ||
+        size * memBytes > context->options.GetMaxLimit()) {
         NETSTACK_LOGE("response data exceeds the maximum limit");
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
         return 0;
@@ -1085,11 +1086,6 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
         return 0;
     }
     if (context->GetManager()->IsEventDestroy()) {
-        context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
-        return 0;
-    }
-    if (context->response.GetResult().size() > context->options.GetMaxLimit()) {
-        NETSTACK_LOGE("response data exceeds the maximum limit");
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
         return 0;
     }
