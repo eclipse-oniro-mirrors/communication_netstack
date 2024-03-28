@@ -24,6 +24,9 @@
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
 #endif
+#if HAS_NETMANAGER_BASE
+#include <netdb.h>
+#endif
 
 #ifdef HTTP_PROXY_ENABLE
 #include "parameter.h"
