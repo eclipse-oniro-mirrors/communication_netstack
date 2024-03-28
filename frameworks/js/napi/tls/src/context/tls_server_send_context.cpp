@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -42,6 +42,9 @@ void TLSServerSendContext::ParseParams(napi_value *params, size_t paramsCount)
         m_sendData = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[TlsSocket::ARG_INDEX_0]);
         if (m_sendData.empty()) {
             NETSTACK_LOGE("string data is empty");
+            if (paramsCount == TlsSocket::PARAM_OPTIONS_AND_CALLBACK && SetCallback(params[1]) != napi_ok) {
+                NETSTACK_LOGE("failed to set callback");
+            }
             return;
         }
     }
@@ -51,6 +54,9 @@ void TLSServerSendContext::ParseParams(napi_value *params, size_t paramsCount)
         void *data = NapiUtils::GetInfoFromArrayBufferValue(GetEnv(), params[TlsSocket::ARG_INDEX_0], &length);
         if (data == nullptr || length == 0) {
             NETSTACK_LOGE("arraybuffer data is empty");
+            if (paramsCount == TlsSocket::PARAM_OPTIONS_AND_CALLBACK && SetCallback(params[1]) != napi_ok) {
+                NETSTACK_LOGE("failed to set callback");
+            }
             return;
         }
         m_sendData.append(reinterpret_cast<char *>(data), length);

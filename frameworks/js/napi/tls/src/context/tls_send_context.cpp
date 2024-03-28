@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -38,6 +38,9 @@ void TLSSendContext::ParseParams(napi_value *params, size_t paramsCount)
         data_ = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[ARG_INDEX_0]);
         if (data_.empty()) {
             NETSTACK_LOGE("string data is empty");
+            if (paramsCount == PARAM_OPTIONS_AND_CALLBACK && SetCallback(params[1]) != napi_ok) {
+                NETSTACK_LOGE("failed to set callback");
+            }
             return;
         }
     }
@@ -47,6 +50,9 @@ void TLSSendContext::ParseParams(napi_value *params, size_t paramsCount)
         void *data = NapiUtils::GetInfoFromArrayBufferValue(GetEnv(), params[ARG_INDEX_0], &length);
         if (data == nullptr || length == 0) {
             NETSTACK_LOGE("arraybuffer data is empty");
+            if (paramsCount == PARAM_OPTIONS_AND_CALLBACK && SetCallback(params[1]) != napi_ok) {
+                NETSTACK_LOGE("failed to set callback");
+            }
             return;
         }
         data_.append(reinterpret_cast<char *>(data), length);

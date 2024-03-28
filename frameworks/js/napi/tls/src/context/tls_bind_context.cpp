@@ -45,7 +45,7 @@ void TLSBindContext::ParseParams(napi_value *params, size_t paramsCount)
     }
     address_.SetAddress(addr);
     if (address_.GetAddress().empty()) {
-        if (SetCallback(params[1]) != napi_ok) {
+        if (paramsCount == PARAM_OPTIONS_AND_CALLBACK && SetCallback(params[1]) != napi_ok) {
             NETSTACK_LOGE("failed to set callback");
         }
         return;

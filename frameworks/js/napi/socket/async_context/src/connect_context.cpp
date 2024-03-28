@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -57,6 +57,9 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
     }
     options.address.SetAddress(addr);
     if (options.address.GetAddress().empty()) {
+        if (paramsCount == PARAM_OPTIONS_AND_CALLBACK && SetCallback(params[1]) != napi_ok) {
+            NETSTACK_LOGE("failed to set callback");
+        }
         return;
     }
 
