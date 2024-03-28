@@ -196,7 +196,7 @@ void LRUCache::ReadCacheFromJsonValue(const cJSON* root)
         if (!node.value.empty()) {
             Put(node.key, node.value);
         }
-    }   
+    }
 }
 
 void LRUCache::Clear()
