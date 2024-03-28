@@ -120,9 +120,9 @@ public:
     [[nodiscard]] struct curl_slist *GetCurlHostList();
 
 private:
-    int32_t taskId_;
-    bool usingCache_;
-    bool requestInStream_;
+    int32_t taskId_ = -1;
+    bool usingCache_ = true;
+    bool requestInStream_ = false;
     std::mutex dlLenLock_;
     std::mutex ulLenLock_;
     std::mutex tempDataLock_;
@@ -130,13 +130,13 @@ private:
     HttpResponse cacheResponse_;
     std::queue<LoadBytes> dlBytes_;
     std::queue<LoadBytes> ulBytes_;
-    struct curl_slist *curlHeaderList_;
+    struct curl_slist *curlHeaderList_ = nullptr;
     Timing::TimerMap timerMap_;
     std::map<std::string, double> performanceTimingMap_;
-    curl_mime *multipart_;
+    curl_mime *multipart_ = nullptr;
     CertsPath certsPath_;
     uint64_t moduleId_ = 0;
-    struct curl_slist *curlHostList_;
+    struct curl_slist *curlHostList_ = nullptr;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 

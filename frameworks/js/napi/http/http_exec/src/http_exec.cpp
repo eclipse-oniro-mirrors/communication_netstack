@@ -956,16 +956,16 @@ bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
         NETSTACK_LOGE("parse url failed");
         return true;
     }
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if HAS_NETMANAGER_BASE
     std::vector<std::string> dnsResult;
-    lookup_result lookup = [](char *ip, void *usrp) {
+    lookup_result lookup = [](const char *ip, void *usrp) {
         std::vector<std::string> *dnsResult = static_cast<std::vector<std::string> *>(usrp);
         if (dnsResult) {
             dnsResult->push_back(ip);
         }
     };
-    predefined_host_lookup_ip(host.c_str(), lookup, &dnsResult);
-    if (dnsResult.empty()) {
+    int ret = predefined_host_lookup_ip(host.c_str(), lookup, &dnsResult);
+    if (ret <= 0 || dnsResult.empty()) {
         return true;
     }
     struct curl_slist *hostSlist = context->GetCurlHostList();
