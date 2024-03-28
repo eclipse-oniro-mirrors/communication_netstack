@@ -174,12 +174,12 @@ void LRUCache::ReadCacheFromJsonValue(const cJSON* root)
         std::unordered_map<std::string, std::string> m;
         for (uint32_t j = 0; j < cJSON_GetArraySize(keyItem); j++) {
             cJSON *valueItem = cJSON_GetArrayItem(keyItem, j);
-            if (valueItem == nullptr || !cJSON_IsObject(valueItem)) {
+            if (valueItem == nullptr) {
+                NETSTACK_LOGD("valueItem is null");
                 continue;
             }
             std::string valueKey = valueItem->string;
-            cJSON *value = cJSON_GetObjectItem(valueItem, valueKey.c_str());
-            m[valueKey] = cJSON_GetStringValue(value);
+            m[valueKey] = cJSON_GetStringValue(valueItem);
             NETSTACK_LOGD("m[%{public}s]: %{public}s", valueKey.c_str(), m[valueKey].c_str());
         }
 
