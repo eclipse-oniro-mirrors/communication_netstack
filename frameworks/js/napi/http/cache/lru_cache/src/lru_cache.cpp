@@ -161,7 +161,7 @@ cJSON* LRUCache::WriteCacheToJsonValue()
     return root;
 }
 
-void LRUCache::ReadCacheFromJsonValue(cJSON* root)
+void LRUCache::ReadCacheFromJsonValue(const cJSON* root)
 {
     std::vector<Node> nodeVec;
     for (uint32_t i = 0; i < cJSON_GetArraySize(root); i++) {
@@ -196,8 +196,7 @@ void LRUCache::ReadCacheFromJsonValue(cJSON* root)
         if (!node.value.empty()) {
             Put(node.key, node.value);
         }
-    }
-    cJSON_Delete(root);
+    }   
 }
 
 void LRUCache::Clear()

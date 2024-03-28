@@ -50,7 +50,7 @@ private:
 
     cJSON* ReadJsonValueFromFile();
 
-    void WriteJsonValueToFile(cJSON *root);
+    void WriteJsonValueToFile(const cJSON *root);
 };
 } // namespace OHOS::NetStack::Http
 #endif /* COMMUNICATIONNETSTACK_LRU_CACHE_DISK_HANDLER_H */
