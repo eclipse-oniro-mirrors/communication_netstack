@@ -959,7 +959,7 @@ bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
         NETSTACK_LOGE("parse url failed");
         return true;
     }
-#if HAS_NETMANAGER_BASE
+#ifdef HAS_NETMANAGER_BASE
     std::vector<std::string> dnsResult;
     lookup_result lookup = [](const char *ip, void *usrp) {
         std::vector<std::string> *dnsResult = static_cast<std::vector<std::string> *>(usrp);
