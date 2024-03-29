@@ -30,7 +30,7 @@
 #include "napi/native_common.h"
 #include "node_api.h"
 #include "base_context.h"
-#include "json/json.h"
+#include "cJSON.h"
 #include "netstack_log.h"
 
 namespace OHOS::NetStack::NapiUtils {
@@ -546,14 +546,12 @@ napi_value JsonStringify(napi_env env, napi_value object)
 napi_value JsonParse(napi_env env, const std::string &inStr)
 {
     napi_value undefined = GetUndefined(env);
-    JSONCPP_STRING err;
-    Json::Value valueJson;
-    Json::CharReaderBuilder readerBuilder;
-    std::unique_ptr<Json::CharReader> const jsonReader(readerBuilder.newCharReader());
-    bool ret = jsonReader->parse(inStr.c_str(), inStr.c_str() + inStr.length(), &valueJson, &err);
-    if (!ret || !err.empty()) {
+    cJSON *valueJson = cJSON_Parse(inStr.c_str());
+    if (valueJson == nullptr) {
+        NETSTACK_LOGE("cJSON_Parse error");
         return undefined;
     }
+    cJSON_Delete(valueJson);
 
     auto str = NapiUtils::CreateStringUtf8(env, inStr);
     if (GetValueType(env, str) != napi_string) {

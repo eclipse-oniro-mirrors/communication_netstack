@@ -112,6 +112,7 @@ ohos_shared_library("http") {
       "$THIRD_PARTY_ROOT/curl:curl_shared",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
     ]
+    external_deps = [ "cJSON:cjson" ]
     ldflags = [ "-lpthread" ]
   } else {
     deps = [
@@ -121,6 +122,7 @@ ohos_shared_library("http") {
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
     ]
     external_deps = [
+      "cJSON:cjson",
       "hilog:libhilog",
       "hitrace:hitrace_meter",
       "napi:ace_napi",

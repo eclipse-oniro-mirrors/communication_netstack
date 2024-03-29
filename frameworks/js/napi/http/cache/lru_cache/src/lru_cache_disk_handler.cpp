@@ -38,46 +38,48 @@ void LRUCacheDiskHandler::Delete()
     diskHandler_.Delete();
 }
 
-Json::Value LRUCacheDiskHandler::ReadJsonValueFromFile()
+cJSON* LRUCacheDiskHandler::ReadJsonValueFromFile()
 {
     std::string jsonStr = diskHandler_.Read();
-    Json::Value root;
-    JSONCPP_STRING err;
-    Json::CharReaderBuilder builder;
-    std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
-    if (!reader->parse(jsonStr.c_str(), jsonStr.c_str() + jsonStr.size(), &root, &err)) {
-        NETSTACK_LOGE("parse json not success, maybe file is broken: %{public}s", err.c_str());
-        return {};
+    cJSON *root = cJSON_Parse(jsonStr.c_str());
+    if (root == nullptr) {
+        NETSTACK_LOGE("parse json not success, maybe file is broken");
+        return nullptr;
     }
+    NETSTACK_LOGD("root = %{public}s", cJSON_PrintUnformatted(root));
     return root;
 }
 
-void LRUCacheDiskHandler::WriteJsonValueToFile(const Json::Value &root)
+void LRUCacheDiskHandler::WriteJsonValueToFile(const cJSON *root)
 {
-    Json::StreamWriterBuilder builder;
-    std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
-    std::stringstream s;
-    int res = writer->write(root, &s);
-    if (res != 0) {
-        NETSTACK_LOGE("write json failed %{public}d", res);
+    char *jsonStr = cJSON_Print(root);
+    if (jsonStr == nullptr) {
+        NETSTACK_LOGE("write json failed");
         return;
     }
-    diskHandler_.Write(s.str());
+    std::string s = jsonStr;
+    diskHandler_.Write(s);
+    free(jsonStr);
 }
 
 void LRUCacheDiskHandler::WriteCacheToJsonFile()
 {
     LRUCache oldCache(capacity_);
-    oldCache.ReadCacheFromJsonValue(ReadJsonValueFromFile());
+    cJSON *readRoot = ReadJsonValueFromFile();
+    oldCache.ReadCacheFromJsonValue(readRoot);
+    cJSON_Delete(readRoot);
     oldCache.MergeOtherCache(cache_);
-    Json::Value root = oldCache.WriteCacheToJsonValue();
-    WriteJsonValueToFile(root);
+    cJSON *writeRoot = oldCache.WriteCacheToJsonValue();
+    WriteJsonValueToFile(writeRoot);
+    cJSON_Delete(writeRoot);
     cache_.Clear();
 }
 
 void LRUCacheDiskHandler::ReadCacheFromJsonFile()
 {
-    cache_.ReadCacheFromJsonValue(ReadJsonValueFromFile());
+    cJSON *root = ReadJsonValueFromFile();
+    cache_.ReadCacheFromJsonValue(root);
+    cJSON_Delete(root);
 }
 
 std::unordered_map<std::string, std::string> LRUCacheDiskHandler::Get(const std::string &key)
@@ -88,7 +90,9 @@ std::unordered_map<std::string, std::string> LRUCacheDiskHandler::Get(const std:
     }
 
     LRUCache diskCache(capacity_);
-    diskCache.ReadCacheFromJsonValue(ReadJsonValueFromFile());
+    cJSON *root = ReadJsonValueFromFile();
+    diskCache.ReadCacheFromJsonValue(root);
+    cJSON_Delete(root);
     auto valueFromDisk = diskCache.Get(key);
     cache_.Put(key, valueFromDisk);
     return valueFromDisk;

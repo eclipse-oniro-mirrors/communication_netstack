@@ -90,13 +90,11 @@ ohos_unittest("http_unittest") {
       "$ARKUI_ROOT/napi:ace_napi",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
       "$THIRD_PARTY_ROOT/bounds_checking_function:libsec_static",
-      "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
     ]
   } else {
     deps += [
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-      "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
     ]
     external_deps += [
       "hilog:libhilog",

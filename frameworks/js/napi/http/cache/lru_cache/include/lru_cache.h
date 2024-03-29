@@ -17,9 +17,12 @@
 #define COMMUNICATIONNETSTACK_LRU_CACHE_H
 
 #include <list>
+#include <mutex>
 #include <string>
 #include <unordered_map>
-#include "json/json.h"
+#include <vector>
+
+#include "cJSON.h"
 
 namespace OHOS::NetStack::Http {
 class LRUCache {
@@ -34,9 +37,9 @@ public:
 
     void MergeOtherCache(const LRUCache &other);
 
-    Json::Value WriteCacheToJsonValue();
+    cJSON* WriteCacheToJsonValue();
 
-    void ReadCacheFromJsonValue(const Json::Value &root);
+    void ReadCacheFromJsonValue(const cJSON* root);
 
     void Clear();
 

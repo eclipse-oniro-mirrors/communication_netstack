@@ -49,10 +49,9 @@ ohos_static_library("napi_utils") {
   subsystem_name = "communication"
   public_configs = [ ":napi_utils_public_config" ]
 
-  deps = [ "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp" ]
-
   public_deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
   external_deps = [
+    "cJSON:cjson",
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
@@ -80,11 +79,11 @@ ohos_static_library("napi_utils_static") {
 
   public_configs = [ ":napi_utils_public_config" ]
 
-  deps = [ "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp" ]
+  external_deps = [ "cJSON:cjson" ]
 
   if (current_os == "ohos") {
     public_deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
-    external_deps = [
+    external_deps += [
       "c_utils:utils",
       "hilog:libhilog",
       "napi:ace_napi",

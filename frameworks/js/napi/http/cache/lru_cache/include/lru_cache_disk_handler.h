@@ -48,9 +48,9 @@ private:
     DiskHandler diskHandler_;
     std::atomic<size_t> capacity_;
 
-    Json::Value ReadJsonValueFromFile();
+    cJSON* ReadJsonValueFromFile();
 
-    void WriteJsonValueToFile(const Json::Value &root);
+    void WriteJsonValueToFile(const cJSON *root);
 };
 } // namespace OHOS::NetStack::Http
 #endif /* COMMUNICATIONNETSTACK_LRU_CACHE_DISK_HANDLER_H */

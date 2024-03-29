@@ -34,6 +34,7 @@
                 "hitrace",
                 "ipc",
                 "zlib",
+                "cJSON",
                 "c_utils",
                 "init",
                 "napi",
@@ -44,7 +45,6 @@
             "third_party": [
                 "curl",
                 "libwebsockets",
-                "jsoncpp",
                 "node",
                 "openssl"
             ]
