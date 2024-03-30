@@ -939,24 +939,26 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
 bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader)
 {
     const std::string &method = context->options.GetMethod();
-    if (!MethodForGet(method) && !MethodForPost(method)) {
+    if (MethodForPost(method)) {
+        if (!context->options.GetBody().empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POST, 1L, context);
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->options.GetBody().c_str(), context);
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->options.GetBody().size(), context);
+        } 
+        if (method == HttpConstant::HTTP_METHOD_PUT || method == HttpConstant::HTTP_METHOD_DELETE) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CUSTOMREQUEST, method.c_str(), context);
+        }
+    } else if (MethodForGet(method)) {
+        if (context->options.GetMethod() == HttpConstant::HTTP_METHOD_HEAD) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOBODY, 1L, context);
+        }
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CUSTOMREQUEST, method.c_str(), context);
+    } else {
         NETSTACK_LOGE("method %{public}s not supported", method.c_str());
         return false;
     }
 
-    if (context->options.GetMethod() == HttpConstant::HTTP_METHOD_HEAD) {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOBODY, 1L, context);
-    }
-
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_URL, context->options.GetUrl().c_str(), context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CUSTOMREQUEST, method.c_str(), context);
-
-    if (MethodForPost(method) && !context->options.GetBody().empty()) {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POST, 1L, context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->options.GetBody().c_str(), context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->options.GetBody().size(), context);
-    }
-
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_XFERINFOFUNCTION, ProgressCallback, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_XFERINFODATA, context, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOPROGRESS, 0L, context);
