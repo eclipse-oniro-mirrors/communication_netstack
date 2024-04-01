@@ -962,9 +962,9 @@ bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
 #ifdef HAS_NETMANAGER_BASE
     std::vector<std::string> dnsResult;
     lookup_result lookup = [](const char *ip, void *usrp) {
-        std::vector<std::string> *dnsResult = static_cast<std::vector<std::string> *>(usrp);
-        if (dnsResult) {
-            dnsResult->push_back(ip);
+        std::vector<std::string> *dnsVec = static_cast<std::vector<std::string> *>(usrp);
+        if (dnsVec) {
+            dnsVec->push_back(ip);
         }
     };
     int ret = predefined_host_lookup_ip(host.c_str(), lookup, &dnsResult);
@@ -972,7 +972,7 @@ bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
         return true;
     }
     struct curl_slist *hostSlist = context->GetCurlHostList();
-    for (auto result: dnsResult) {
+    for (auto &result: dnsResult) {
         if (OHOS::NetStack::CommonUtils::IsValidIPV4(result) || OHOS::NetStack::CommonUtils::IsValidIPV6(result)) {
             std::string resolvHost = host + ":" + std::to_string(port) + ":" + result;
             hostSlist = curl_slist_append(hostSlist, resolvHost.c_str());
