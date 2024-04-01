@@ -925,6 +925,12 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
         // Some servers don't like requests that are made without a user-agent field, so we provide one
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_USERAGENT, HttpConstant::HTTP_DEFAULT_USER_AGENT, context);
     } else {
+        // https://curl.se/libcurl/c/CURLOPT_RANGE.html
+        if (context->options.GetMethod() != HttpConstant::HTTP_METHOD_GET) {
+            context->SetErrorCode(CURLE_RANGE_ERROR);
+            NETSTACK_LOGE("For HTTP PUT uploads this option should not be used, since it may conflict with other options.");
+            return false;
+        }
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RANGE, range.c_str(), context);
     }
     if (!context->options.GetDohUrl().empty()) {
@@ -975,7 +981,9 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_TIMEOUT_MS, context->options.GetReadTimeout(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
 
-    SetRequestOption(curl, context);
+    if (!SetRequestOption(curl, context)) {
+        return false;
+    }
 
     if (!SetOtherOption(curl, context)) {
         return false;
