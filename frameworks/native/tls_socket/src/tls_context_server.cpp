@@ -21,7 +21,9 @@
 #include <openssl/ssl.h>
 
 #include "netstack_log.h"
+#if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 #include "net_conn_client.h"
+#endif
 #include "netstack_common_utils.h"
 #include "tls_utils.h"
 
