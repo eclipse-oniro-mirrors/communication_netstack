@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -61,7 +61,8 @@ void MakeUdpSocketFuzzTest(const uint8_t *data, size_t size)
     if (family == AF_INET || family == AF_INET6) {
         return;
     }
-    SocketExec::MakeUdpSocket(family);
+    int sockfd = SocketExec::MakeUdpSocket(family);
+    close(sockfd);
 }
 
 void MakeTcpSocketFuzzTest(const uint8_t *data, size_t size)
@@ -74,7 +75,8 @@ void MakeTcpSocketFuzzTest(const uint8_t *data, size_t size)
     if (family == AF_INET || family == AF_INET6) {
         return;
     }
-    SocketExec::MakeTcpSocket(family);
+    int sockfd = SocketExec::MakeTcpSocket(family);
+    close(sockfd);
 }
 
 void ExecUdpBindFuzzTest(const uint8_t *data, size_t size)
@@ -369,7 +371,8 @@ void MakeLocalSocketFuzzTest(const uint8_t *data, size_t size)
         return;
     }
     SetGlobalFuzzData(data, size);
-    LocalSocketExec::MakeLocalSocket(SOCK_STREAM);
+    int sockfd = LocalSocketExec::MakeLocalSocket(SOCK_STREAM);
+    close(sockfd);
 }
 
 void ExecLocalSocketBindFuzzTest(const uint8_t *data, size_t size)
