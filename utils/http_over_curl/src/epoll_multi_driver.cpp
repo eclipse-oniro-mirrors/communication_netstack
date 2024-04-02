@@ -39,14 +39,14 @@ void EpollMultiDriver::Initialize()
     }
 
     static auto socketCallback = +[](CURL *easy, curl_socket_t s, int action, void *userp, void *socketp) {
-        auto instance = (EpollMultiDriver *)userp;
-        return instance->MultiSocketCallback(s, action, (CurlSocketContext *)socketp);
+        auto instance = static_cast<EpollMultiDriver *>(userp);
+        return instance->MultiSocketCallback(s, action, static_cast<CurlSocketContext *>(socketp));
     };
     curl_multi_setopt(multi_, CURLMOPT_SOCKETDATA, this);
     curl_multi_setopt(multi_, CURLMOPT_SOCKETFUNCTION, socketCallback);
 
     static auto timerCallback = +[](CURLM *multi, long timeout_ms, void *userp) {
-        auto instance = (EpollMultiDriver *)userp;
+        auto instance = static_cast<EpollMultiDriver *>(userp);
         instance->MultiTimeoutCallback(timeout_ms);
     };
     curl_multi_setopt(multi_, CURLMOPT_TIMERDATA, this);
