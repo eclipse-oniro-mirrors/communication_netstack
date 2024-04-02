@@ -22,6 +22,7 @@
 #include "request_info.h"
 
 namespace OHOS::NetStack::HttpOverCurl {
+static constexpr const char *HTTP_WORK_THREAD = "OS_NET_HttpWork";
 
 EpollRequestHandler::EpollRequestHandler(int sleepTimeoutMs)
     : sleepTimeoutMs_(sleepTimeoutMs),
@@ -41,7 +42,14 @@ void EpollRequestHandler::Process(CURL *easyHandle, const TransferStartedCallbac
     incomingQueue_->Push(requestInfo);
 
     auto start = [this]() {
-        auto f = [this]() { WorkingThread(); };
+        auto f = [this]() {
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+            pthread_setname_np(HTTP_WORK_THREAD);
+#else
+            pthread_setname_np(pthread_self(), HTTP_WORK_THREAD);
+#endif
+            WorkingThread();
+        };
         auto workThread_ = std::thread(f);
         workThread_.detach();
     };

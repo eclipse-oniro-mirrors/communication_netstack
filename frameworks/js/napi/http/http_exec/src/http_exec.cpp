@@ -97,15 +97,6 @@ static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_bas
 
 static void RequestContextDeleter(RequestContext *context)
 {
-    std::lock_guard lockGuard(HttpExec::staticContextSet_.mutexForContextVec);
-    auto it = std::find(HttpExec::staticContextSet_.contextSet.begin(), HttpExec::staticContextSet_.contextSet.end(),
-                        context);
-    if (it == HttpExec::staticContextSet_.contextSet.end()) {
-        NETSTACK_LOGE("can't find request context in set");
-    } else {
-        HttpExec::staticContextSet_.contextSet.erase(it);
-    }
-
     context->DeleteReference();
     delete context;
     context = nullptr;
@@ -206,7 +197,6 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 #if HAS_NETMANAGER_BASE
     StartAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, context->GetTaskId());
     SetServerSSLCertOption(handle, context);
-    StoreContext(context);
 
     static HttpOverCurl::EpollRequestHandler requestHandler;
 
@@ -218,9 +208,6 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {
         auto context = static_cast<RequestContext *>(opaqueData);
         HttpExec::HandleCurlData(curlMessage, context);
-#if HAS_NETMANAGER_BASE
-        FinishAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, context->GetTaskId());
-#endif
     };
 
     requestHandler.Process(handle, startedCallback, responseCallback, context);
@@ -237,7 +224,6 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
         SetServerSSLCertOption(handle, context);
         staticVariable_.infoQueue.emplace(context, handle);
         staticVariable_.conditionVariable.notify_all();
-        StoreContext(context);
     }).detach();
 
     return true;
@@ -247,7 +233,6 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 #if !HAS_NETMANAGER_BASE
 HttpExec::StaticVariable HttpExec::staticVariable_; /* NOLINT */
 #endif
-HttpExec::StaticContextVec HttpExec::staticContextSet_;
 
 bool HttpExec::RequestWithoutCache(RequestContext *context)
 {
@@ -412,7 +397,9 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         NETSTACK_LOGE("can not find context manager");
         return;
     }
-
+#if HAS_NETMANAGER_BASE
+    FinishAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, context->GetTaskId());
+#endif
     if (context->IsRequestInStream()) {
         NapiUtils::CreateUvQueueWorkByModuleId(
             context->GetEnv(), std::bind(AsyncWorkRequestInStreamCallback, context->GetEnv(), napi_ok, context),
@@ -600,23 +587,6 @@ void HttpExec::AddRequestInfo()
     }
 }
 #endif
-
-bool HttpExec::IsContextDeleted(RequestContext *context)
-{
-    if (context == nullptr) {
-        return true;
-    }
-    {
-        std::lock_guard<std::mutex> lockGuard(HttpExec::staticContextSet_.mutexForContextVec);
-        auto it = std::find(HttpExec::staticContextSet_.contextSet.begin(),
-                            HttpExec::staticContextSet_.contextSet.end(), context);
-        if (it == HttpExec::staticContextSet_.contextSet.end()) {
-            NETSTACK_LOGI("context has been deleted in libuv thread");
-            return true;
-        }
-    }
-    return false;
-}
 
 #if !HAS_NETMANAGER_BASE
 void HttpExec::RunThread()
@@ -1132,7 +1102,8 @@ void HttpExec::OnDataReceive(napi_env env, napi_status status, void *data)
 void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
 {
     auto context = static_cast<RequestContext *>(data);
-    if (IsContextDeleted(context)) {
+    if (context == nullptr) {
+        NETSTACK_LOGD("OnDataProgress context is null");
         return;
     }
     auto progress = NapiUtils::CreateObject(context->GetEnv());
@@ -1151,13 +1122,13 @@ void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
 void HttpExec::OnDataUploadProgress(napi_env env, napi_status status, void *data)
 {
     auto context = static_cast<RequestContext *>(data);
-    if (IsContextDeleted(context)) {
-        NETSTACK_LOGD("[OnDataUploadProgress] context is null.");
+    if (context == nullptr) {
+        NETSTACK_LOGD("OnDataUploadProgress context is null");
         return;
     }
     auto progress = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), progress) == napi_undefined) {
-        NETSTACK_LOGD("[OnDataUploadProgress] napi_undefined.");
+        NETSTACK_LOGD("OnDataUploadProgress napi_undefined");
         return;
     }
     NapiUtils::SetUint32Property(context->GetEnv(), progress, "sendSize",
@@ -1418,11 +1389,5 @@ void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *pa
                           curl_easy_strerror(result));
         }
     }
-}
-
-void HttpExec::StoreContext(RequestContext *context)
-{
-    std::lock_guard lockGuard(staticContextSet_.mutexForContextVec);
-    HttpExec::staticContextSet_.contextSet.emplace(context);
 }
 } // namespace OHOS::NetStack::Http

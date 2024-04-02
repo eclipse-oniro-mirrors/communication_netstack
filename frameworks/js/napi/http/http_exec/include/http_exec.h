@@ -82,13 +82,6 @@ public:
 #endif
 
     static void AsyncRunRequest(RequestContext *context);
-    struct StaticContextVec {
-        StaticContextVec() = default;
-        ~StaticContextVec() = default;
-        std::mutex mutexForContextVec;
-        std::set<RequestContext *> contextSet;
-    };
-    static StaticContextVec staticContextSet_;
 
 private:
     static bool SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader);
@@ -116,8 +109,6 @@ private:
     static bool ProcByExpectDataType(napi_value object, RequestContext *context);
 
     static bool AddCurlHandle(CURL *handle, RequestContext *context);
-
-    static void StoreContext(RequestContext *context);
 
 #if HAS_NETMANAGER_BASE
     static void HandleCurlData(CURLMsg *msg, RequestContext *context);
@@ -160,8 +151,6 @@ private:
 #if !HAS_NETMANAGER_BASE
     static void AddRequestInfo();
 #endif
-
-    static bool IsContextDeleted(RequestContext *context);
 
     static CURLcode SslCtxFunction(void *curl, void *ssl_ctx, void *parm);
 
