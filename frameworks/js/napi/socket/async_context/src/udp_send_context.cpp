@@ -51,8 +51,8 @@ void UdpSendContext::ParseParams(napi_value *params, size_t paramsCount)
         NETSTACK_LOGE("address is empty");
     }
 
-    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_FAMILY)) {
-        uint32_t family = NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_FAMILY);
+    if (NapiUtils::HasNamedProperty(GetEnv(), netAddress, KEY_FAMILY)) {
+        uint32_t family = NapiUtils::GetUint32Property(GetEnv(), netAddress, KEY_FAMILY);
         options.address.SetFamilyByJsValue(family);
     }
     options.address.SetAddress(addr);

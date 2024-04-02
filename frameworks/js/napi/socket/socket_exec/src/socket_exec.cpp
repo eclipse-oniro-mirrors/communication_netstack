@@ -83,6 +83,13 @@ static constexpr const char *SOCKET_EXEC_CONNECT = "OS_NET_SockTPRD";
 static constexpr const char *SOCKET_RECV_FROM_MULTI_CAST = "OS_NET_SockMPRD";
 
 namespace OHOS::NetStack::Socket::SocketExec {
+#define ERROR_RETURN(context, ...) \
+    do { \
+        NETSTACK_LOGE(__VA_ARGS__); \
+        context->SetErrorCode(errno); \
+        return false; \
+    } while (0)
+
 std::map<int32_t, int32_t> g_clientFDs;
 std::map<int32_t, EventManager *> g_clientEventManagers;
 std::condition_variable g_cv;
@@ -1367,16 +1374,6 @@ void RecvfromMulticastSetThreadName(pthread_t threadhandle)
 
 bool RecvfromMulticast(MulticastMembershipContext *context)
 {
-    struct sockaddr_in addrin = {0};
-    addrin.sin_family = context->address_.GetSaFamily();
-    addrin.sin_port = htons(context->address_.GetPort());
-    addrin.sin_addr.s_addr = htonl(INADDR_ANY);
-    if (bind(context->GetSocketFd(), (struct sockaddr *)&addrin, sizeof(addrin)) < 0) {
-        NETSTACK_LOGE("bind port: %{public}d error, errno: %{public}d", context->address_.GetPort(), errno);
-        context->SetErrorCode(errno);
-        return false;
-    }
-
     sockaddr_in addr4 = {0};
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
@@ -1395,6 +1392,10 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
             NETSTACK_LOGE("no memory!");
             return false;
         }
+        addr4.sin_addr.s_addr = htonl(INADDR_ANY);
+        if (bind(context->GetSocketFd(), (struct sockaddr *)&addr4, sizeof(addr4)) < 0) {
+            ERROR_RETURN(context, "v4bind err, port:%{public}d, errno:%{public}d", context->address_.GetPort(), errno);
+        }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetManager()));
@@ -1407,6 +1408,10 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
             NETSTACK_LOGE("no memory!");
             return false;
         }
+        addr6.sin6_addr = in6addr_any;
+        if (bind(context->GetSocketFd(), (struct sockaddr *)&addr6, sizeof(addr6)) < 0) {
+            ERROR_RETURN(context, "v6bind err, port:%{public}d, errno:%{public}d", context->address_.GetPort(), errno);
+        }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetManager()));
@@ -1416,25 +1421,47 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
     return true;
 }
 
+static inline int GetSockFamily(int fd)
+{
+    sockaddr sockAddr = {0};
+    socklen_t len = sizeof(sockaddr);
+    return (getsockname(fd, &sockAddr, &len) < 0) ? -1 : sockAddr.sa_family;
+}
+
 bool ExecUdpAddMembership(MulticastMembershipContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
     }
-    struct sockaddr_in multicastAddr = {0};
-    inet_pton(context->address_.GetSaFamily(), context->address_.GetAddress().c_str(), &(multicastAddr.sin_addr));
-    struct ip_mreq mreq;
-    memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
-    mreq.imr_multiaddr.s_addr = multicastAddr.sin_addr.s_addr;
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY); // network interface: any
-    if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
-                   sizeof(mreq)) == -1) {
-        NETSTACK_LOGE("addmembership err, addr: %{public}s, port: %{public}u, err: %{public}s",
-                      context->address_.GetAddress().c_str(), context->address_.GetPort(), strerror(errno));
-        context->SetErrorCode(errno);
-        return false;
+
+    if (context->address_.GetFamily() == NetAddress::Family::IPv4) {
+        struct ip_mreq mreq;
+        memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
+        mreq.imr_multiaddr.s_addr = inet_addr(context->address_.GetAddress().c_str());
+        mreq.imr_interface.s_addr = INADDR_ANY;
+        if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
+                       sizeof(mreq)) == -1) {
+            NETSTACK_LOGE("ipv4 addmembership err, addr: %{public}s, port: %{public}u, err: %{public}d",
+                          context->address_.GetAddress().c_str(), context->address_.GetPort(), errno);
+            context->SetErrorCode(errno);
+            return false;
+        }
+    } else {
+        struct ipv6_mreq mreq;
+        memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
+        inet_pton(AF_INET6, context->address_.GetAddress().c_str(), &mreq.ipv6mr_multiaddr);
+        mreq.ipv6mr_interface = 0;
+        if (setsockopt(context->GetSocketFd(), IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
+                       sizeof(mreq)) == -1) {
+            NETSTACK_LOGE("ipv6 addmembership err, addr: %{public}s, port: %{public}u, err: %{public}d",
+                          context->address_.GetAddress().c_str(), context->address_.GetPort(), errno);
+            context->SetErrorCode(errno);
+            return false;
+        }
     }
+    NETSTACK_LOGI("addmembership ok, sock:%{public}d, addr:%{public}s, family:%{public}u", context->GetSocketFd(),
+                  context->address_.GetAddress().c_str(), context->address_.GetJsValueFamily());
     return RecvfromMulticast(context);
 }
 
@@ -1444,16 +1471,30 @@ bool ExecUdpDropMembership(MulticastMembershipContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    struct ip_mreq mreq;
-    memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
-    inet_pton(context->address_.GetSaFamily(), context->address_.GetAddress().c_str(), &(mreq.imr_multiaddr.s_addr));
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY); // network interface: any
-    if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_DROP_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
-                   sizeof(mreq)) == -1) {
-        NETSTACK_LOGE("failed to dropmembership, sock: %{public}d, ip: %{public}s, port: %{public}u",
-                      context->GetSocketFd(), context->address_.GetAddress().c_str(), context->address_.GetPort());
-        context->SetErrorCode(errno);
-        return false;
+    if (context->address_.GetFamily() == NetAddress::Family::IPv4) {
+        struct ip_mreq mreq;
+        memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
+        mreq.imr_multiaddr.s_addr = inet_addr(context->address_.GetAddress().c_str());
+        mreq.imr_interface.s_addr = INADDR_ANY;
+        if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
+                       sizeof(mreq)) == -1) {
+            NETSTACK_LOGE("ipv4 dropmembership err, addr: %{public}s, port: %{public}u, err: %{public}d",
+                          context->address_.GetAddress().c_str(), context->address_.GetPort(), errno);
+            context->SetErrorCode(errno);
+            return false;
+        }
+    } else {
+        struct ipv6_mreq mreq;
+        memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
+        inet_pton(AF_INET6, context->address_.GetAddress().c_str(), &mreq.ipv6mr_multiaddr);
+        mreq.ipv6mr_interface = 0;
+        if (setsockopt(context->GetSocketFd(), IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
+                       sizeof(mreq)) == -1) {
+            NETSTACK_LOGE("ipv6 dropmembership err, addr: %{public}s, port: %{public}u, err: %{public}d",
+                          context->address_.GetAddress().c_str(), context->address_.GetPort(), errno);
+            context->SetErrorCode(errno);
+            return false;
+        }
     }
 
     if (close(context->GetSocketFd()) < 0) {
@@ -1473,11 +1514,10 @@ bool ExecSetMulticastTTL(MulticastSetTTLContext *context)
         return false;
     }
     int ttl = context->GetMulticastTTL();
-    if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_TTL, reinterpret_cast<void *>(&ttl), sizeof(ttl)) ==
-        -1) {
-        NETSTACK_LOGE("multicast: failed to set ttl number, %{public}d", ttl);
-        context->SetErrorCode(errno);
-        return false;
+    int family = GetSockFamily(context->GetSocketFd());
+    if (setsockopt(context->GetSocketFd(), (family == AF_INET) ? IPPROTO_IP : IPPROTO_IPV6, (family == AF_INET) ?
+        IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS, reinterpret_cast<void *>(&ttl), sizeof(ttl)) == -1) {
+        ERROR_RETURN(context, "set ttl err, ttl:%{public}d, family:%{public}d, errno:%{public}d", ttl, family, errno);
     }
     return true;
 }
@@ -1490,11 +1530,10 @@ bool ExecGetMulticastTTL(MulticastGetTTLContext *context)
     }
     int ttl = 0;
     socklen_t ttlLen = sizeof(ttl);
-    if (getsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_TTL, reinterpret_cast<void *>(&ttl), &ttlLen) ==
-        -1) {
-        NETSTACK_LOGE("multicast: failed to get ttl number, %{public}d", ttl);
-        context->SetErrorCode(errno);
-        return false;
+    int family = GetSockFamily(context->GetSocketFd());
+    if (getsockopt(context->GetSocketFd(), (family == AF_INET) ? IPPROTO_IP : IPPROTO_IPV6, (family == AF_INET) ?
+        IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS, reinterpret_cast<void *>(&ttl), &ttlLen) == -1) {
+        ERROR_RETURN(context, "get ttl err, family:%{public}d, errno:%{public}d", family, errno);
     }
     context->SetMulticastTTL(ttl);
     return true;
@@ -1506,12 +1545,11 @@ bool ExecSetLoopbackMode(MulticastSetLoopbackContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    int enabled = static_cast<int>(context->GetLoopbackMode());
-    if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_LOOP, reinterpret_cast<void *>(&enabled),
-                   sizeof(enabled)) == -1) {
-        NETSTACK_LOGE("multicast: failed to set loopback mode, %{public}d", enabled);
-        context->SetErrorCode(errno);
-        return false;
+    int mode = static_cast<int>(context->GetLoopbackMode());
+    int family = GetSockFamily(context->GetSocketFd());
+    if (setsockopt(context->GetSocketFd(), (family == AF_INET) ? IPPROTO_IP : IPPROTO_IPV6, (family == AF_INET) ?
+        IP_MULTICAST_LOOP : IPV6_MULTICAST_LOOP, reinterpret_cast<void *>(&mode), sizeof(mode)) == -1) {
+        ERROR_RETURN(context, "setloopback err, mode:%{public}d, fa:%{public}d, err:%{public}d", mode, family, errno);
     }
     return true;
 }
@@ -1522,15 +1560,14 @@ bool ExecGetLoopbackMode(MulticastGetLoopbackContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    int enabled = 0;
-    socklen_t len = sizeof(enabled);
-    if (getsockopt(context->GetSocketFd(), IPPROTO_IP, IP_MULTICAST_LOOP, reinterpret_cast<void *>(&enabled), &len) ==
-        -1) {
-        NETSTACK_LOGE("multicast: failed to get ttl number, %{public}d", enabled);
-        context->SetErrorCode(errno);
-        return false;
+    int mode = 0;
+    socklen_t len = sizeof(mode);
+    int family = GetSockFamily(context->GetSocketFd());
+    if (getsockopt(context->GetSocketFd(), (family == AF_INET) ? IPPROTO_IP : IPPROTO_IPV6, (family == AF_INET) ?
+        IP_MULTICAST_LOOP : IPV6_MULTICAST_LOOP, reinterpret_cast<void *>(&mode), &len) == -1) {
+        ERROR_RETURN(context, "getloopback err, family:%{public}d, errno:%{public}d", family, errno);
     }
-    context->SetLoopbackMode(static_cast<bool>(enabled));
+    context->SetLoopbackMode(static_cast<bool>(mode));
     return true;
 }
 
