@@ -43,8 +43,6 @@ constexpr int UNKNOW_ERROR = -1;
 
 constexpr int NO_MEMORY = -2;
 
-constexpr int MAX_CLIENTS = 1024;
-
 constexpr int ERRNO_BAD_FD = 9;
 
 constexpr int DEFAULT_TIMEOUT_MS = 20000;
@@ -407,9 +405,9 @@ public:
         return OnRecvLocalSocketMessage(manager_, data, dataLen, socketPath_);
     }
 
-    bool OnMessage(EventManager *manager, void *data, size_t len, const std::string &path) const
+    bool OnMessage(EventManager *manager, void *data, size_t len) const
     {
-        return OnRecvLocalSocketMessage(manager, data, len, path);
+        return OnRecvLocalSocketMessage(manager, data, len, socketPath_);
     }
 
     void OnLocalSocketConnectionMessage(int clientId, LocalSocketServerManager *serverManager) const
@@ -505,97 +503,109 @@ static inline void RecvInErrorCondition(int reason, int clientId, const LocalSoc
     serverManager->RemoveAccept(clientId);
 }
 
-static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager *serverManager,
-                                         const LocalSocketMessageCallback &callback, const std::string &path)
+static void RecvHandler(int connectFd, const LocalSocketMessageCallback &callback, LocalSocketServerManager *serverManager)
 {
-    serverManager->IncreaseThreadCounts();
-    int clientId = serverManager->AddAccept(connectFd);
-    if (serverManager->alreadySetExtraOptions_) {
-        SetLocalSocketOptions(connectFd, serverManager->extraOptions_);
+    int clientId = serverManager->GetClientId(connectFd);
+    EventManager *eventManager = serverManager->GetManager(clientId);
+    if (eventManager == nullptr) {
+        NETSTACK_LOGI("manager is null");
+        callback.OnError(UNKNOW_ERROR);
+        return;
     }
-    NETSTACK_LOGI("local socket server accept new, fd: %{public}d, id: %{public}d", connectFd, clientId);
-    callback.OnLocalSocketConnectionMessage(clientId, serverManager);
-    EventManager *eventManager = serverManager->WaitForManager(clientId);
     int sockRecvSize = ConfirmBufferSize(connectFd);
     auto buffer = std::make_unique<char[]>(sockRecvSize);
     if (buffer == nullptr) {
         NETSTACK_LOGE("failed to malloc, connectFd: %{public}d, malloc size: %{public}d", connectFd, sockRecvSize);
         RecvInErrorCondition(NO_MEMORY, clientId, callback, serverManager);
-        serverManager->NotifyLoopFinished();
+        return;
+    }
+    int32_t recvSize = recv(connectFd, buffer.get(), sockRecvSize, 0);
+    if (recvSize == 0) {
+        NETSTACK_LOGI("session closed, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFd, clientId);
+        callback.OnCloseMessage(eventManager);
+        serverManager->RemoveAccept(clientId);
+    } else if (recvSize < 0) {
+        if (errno != EINTR && errno != EAGAIN) {
+            NETSTACK_LOGE("recv error, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFd, clientId);
+            RecvInErrorCondition(errno, clientId, callback, serverManager);
+        }
+    } else {
+        NETSTACK_LOGI("recv, fd:%{public}d, size:%{public}d, buf:%{public}s", connectFd, recvSize, buffer.get());
+        void *data = malloc(recvSize);
+        if (data == nullptr) {
+            RecvInErrorCondition(NO_MEMORY, clientId, callback, serverManager);
+            return;
+        }
+        if (memcpy_s(data, recvSize, buffer.get(), recvSize) != EOK ||
+            !callback.OnMessage(eventManager, data, recvSize)) {
+            free(data);
+        }
+    }
+}
+
+static void AcceptHandler(int fd, LocalSocketServerManager *mgr, const LocalSocketMessageCallback &callback)
+{
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
+#else
+    pthread_setname_np(pthread_self(), LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
+#endif
+    int clientId = mgr->AddAccept(fd);
+    if (clientId < 0) {
+        NETSTACK_LOGE("add connect fd err, fd:%{public}d", fd);
+        callback.OnError(UNKNOW_ERROR);
+        close(fd);
+        return;
+    }
+    callback.OnLocalSocketConnectionMessage(clientId, mgr);
+    mgr->WaitRegisteringEvent(clientId);
+    if (mgr->RegisterEpollEvent(fd, EPOLLIN) == -1) {
+        NETSTACK_LOGE("new connection register err, fd:%{public}d, errno:%{public}d", fd, errno);
+        callback.OnError(errno);
+        close(fd);
+        return;
+    }
+    SetSocketDefaultBufferSize(fd, mgr);
+    if (mgr->alreadySetExtraOptions_) {
+        SetLocalSocketOptions(fd, mgr->extraOptions_);
+    }
+}
+
+static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSocketMessageCallback &callback)
+{
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
+#else
+    pthread_setname_np(pthread_self(), LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
+#endif
+    struct sockaddr_un clientAddress;
+    socklen_t clientAddrLength = sizeof(clientAddress);
+    if (mgr->RegisterEpollEvent(mgr->sockfd_, EPOLLIN) == -1) {
+        NETSTACK_LOGE("register listen fd err, fd:%{public}d, errno:%{public}d", mgr->sockfd_, errno);
+        callback.OnError(errno);
         return;
     }
     while (true) {
-        if (memset_s(buffer.get(), sockRecvSize, 0, sockRecvSize) != EOK) {
-            NETSTACK_LOGE("memset_s failed, connectFd: %{public}d, clientId: %{public}d", connectFd, clientId);
-            continue;
-        }
-        int32_t recvSize = recv(connectFd, buffer.get(), sockRecvSize, 0);
-        if (recvSize == 0) {
-            NETSTACK_LOGI("session closed, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFd, clientId);
-            callback.OnCloseMessage(eventManager);
-            serverManager->RemoveAccept(clientId);
-            break;
-        } else if (recvSize < 0) {
-            if (errno != EINTR) {
-                NETSTACK_LOGE("recv error, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFd, clientId);
-                RecvInErrorCondition(errno, clientId, callback, serverManager);
-                break;
-            }
-        } else {
-            NETSTACK_LOGD("recv, fd:%{public}d, size:%{public}d, buf:%{public}s", connectFd, recvSize, buffer.get());
-            void *data = malloc(recvSize);
-            if (data == nullptr) {
-                RecvInErrorCondition(NO_MEMORY, clientId, callback, serverManager);
-                break;
-            }
-            if (memcpy_s(data, recvSize, buffer.get(), recvSize) != EOK ||
-                !callback.OnMessage(eventManager, data, recvSize, path)) {
-                free(data);
-            }
-        }
-    }
-    serverManager->NotifyLoopFinished();
-}
-
-static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSocketMessageCallback &callback,
-                                    const std::string &path)
-{
-    struct sockaddr_un clientAddress;
-    socklen_t clientAddrLength = sizeof(clientAddress);
-    struct pollfd fds[1] = {{.fd = mgr->sockfd_, .events = POLLIN}};
-    nfds_t num = 1;
-    mgr->IncreaseThreadCounts();
-    while (true) {
-        int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT_MS);
-        if (ret < 0) {
-            NETSTACK_LOGE("poll to accept failed, socket is %{public}d, errno is %{public}d", mgr->sockfd_, errno);
+        int eventNum = mgr->EpollWait();
+        if (eventNum == -1) {
+            NETSTACK_LOGE("epoll wait err, fd:%{public}d, errno:%{public}d", mgr->sockfd_, errno);
             callback.OnError(errno);
             break;
         }
-        if (mgr->isServerDestruct_) {
-            NETSTACK_LOGI("server object destruction, loop finished");
+        if (mgr->GetServerDestructStatus()) {
+            NETSTACK_LOGI("server object destruct, exit the loop");
             break;
         }
-        if (fds[0].revents & POLLIN) {
-            int connectFd = accept(mgr->sockfd_, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddrLength);
-            if (connectFd < 0) {
-                continue;
-            }
-            if (mgr->GetClientCounts() >= MAX_CLIENTS) {
-                NETSTACK_LOGE("local socket server max number of clients reached, sockfd: %{public}d", mgr->sockfd_);
-                close(connectFd);
-                continue;
-            }
-            SetSocketDefaultBufferSize(connectFd, mgr);
-            if (!mgr->isServerDestruct_) {
-                std::thread handlerThread(LocalSocketServerRecvHandler, connectFd, mgr, std::ref(callback),
-                                          std::ref(path));
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-                pthread_setname_np(LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
-#else
-                pthread_setname_np(handlerThread.native_handle(), LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
-#endif
-                handlerThread.detach();
+        for (int i = 0; i < eventNum; ++i) {
+            if (mgr->events_[i].data.fd == mgr->sockfd_ && mgr->events_[i].events & EPOLLIN) {
+                int connectFd = accept(mgr->sockfd_, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddrLength);
+                if (connectFd < 0) {
+                    continue;
+                }
+                std::thread th(AcceptHandler, connectFd, mgr, callback);
+                th.detach();
+            } else if (mgr->events_[i].data.fd != mgr->sockfd_ && mgr->events_[i].events & EPOLLIN) {
+                RecvHandler(mgr->events_[i].data.fd, callback, mgr);
             }
         }
     }
@@ -901,13 +911,8 @@ bool ExecLocalSocketServerListen(LocalSocketServerListenContext *context)
         context->SetErrorCode(UNKNOW_ERROR);
         return false;
     }
-    std::thread serviceThread(LocalSocketServerAccept, mgr, LocalSocketMessageCallback(context->GetManager()),
-                              context->GetSocketPath());
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-    pthread_setname_np(LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
-#else
-    pthread_setname_np(serviceThread.native_handle(), LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
-#endif
+    std::thread serviceThread(LocalSocketServerAccept, mgr, LocalSocketMessageCallback(context->GetManager(),
+                              context->GetSocketPath()));
     serviceThread.detach();
     return true;
 }

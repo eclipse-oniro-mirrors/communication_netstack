@@ -17,8 +17,9 @@
 #define LOCAL_SOCKET_SERVER_CONTEXT_H
 
 #include <cstddef>
-#include <unistd.h>
 #include <map>
+#include <sys/epoll.h>
+#include <unistd.h>
 
 #include "base_context.h"
 #include "event_list.h"
@@ -28,12 +29,17 @@
 #include "socket_state_base.h"
 
 namespace OHOS::NetStack::Socket {
+constexpr int MAX_USERS = 16;
+constexpr int MAX_EVENTS = 10;
+constexpr int EPOLL_TIMEOUT_MS = 500;
 struct LocalSocketServerManager : public SocketBaseManager {
     int clientId_ = 0;
-    int threadCounts_ = 0;
     LocalExtraOptions extraOptions_;
     bool alreadySetExtraOptions_ = false;
-    bool isServerDestruct_ = false;
+    std::atomic_bool isServerDestruct_;
+    bool isLoopFinished_ = false;
+    int epollFd_ = 0;
+    epoll_event events_[MAX_EVENTS];
     std::mutex finishMutex_;
     std::condition_variable finishCond_;
     std::mutex clientMutex_;
@@ -42,11 +48,65 @@ struct LocalSocketServerManager : public SocketBaseManager {
     std::map<int, EventManager *> clientEventManagers_; // id & EventManager*
     explicit LocalSocketServerManager(int sockfd) : SocketBaseManager(sockfd) {}
 
+    void SetServerDestructStatus(bool flag)
+    {
+        isServerDestruct_.store(flag, std::memory_order_relaxed);
+    }
+    bool GetServerDestructStatus()
+    {
+        return isServerDestruct_.load(std::memory_order_relaxed);
+    }
+    int StartEpoll()
+    {
+        epollFd_ = epoll_create1(0);
+        return epollFd_;
+    }
+    int EpollWait()
+    {
+        return epoll_wait(epollFd_, events_, MAX_EVENTS - 1, EPOLL_TIMEOUT_MS);
+    }
+    int RegisterEpollEvent(int sockfd, int events)
+    {
+        epoll_event event;
+        event.events = events;
+        event.data.fd = sockfd;
+        return epoll_ctl(epollFd_, EPOLL_CTL_ADD, sockfd, &event);
+    }
+    void WaitRegisteringEvent(int id)
+    {
+        std::unique_lock<std::mutex> lock(clientMutex_);
+        cond_.wait(lock, [&id, this]() {
+            if (auto iter = clientEventManagers_.find(id); iter != clientEventManagers_.end()) {
+                if (iter->second->HasEventListener(EVENT_MESSAGE)) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
+    int GetClientId(int fd)
+    {
+        std::lock_guard<std::mutex> lock(clientMutex_);
+        for (const auto &[clientId, connectFd] : acceptFds_) {
+            if (fd == connectFd) {
+                return clientId;
+            }
+        }
+        return -1;
+    }
+    EventManager *GetManager(int id)
+    {
+        std::lock_guard<std::mutex> lock(clientMutex_);
+        if (auto ite = clientEventManagers_.find(id); ite != clientEventManagers_.end()) {
+            return ite->second;
+        }
+        return nullptr;
+    }
     int AddAccept(int accpetFd)
     {
         std::lock_guard<std::mutex> lock(clientMutex_);
-        acceptFds_.emplace(++clientId_, accpetFd);
-        return clientId_;
+        auto res = acceptFds_.emplace(++clientId_, accpetFd);
+        return res.second ? clientId_ : -1;
     }
     void RemoveAllAccept()
     {
@@ -79,21 +139,6 @@ struct LocalSocketServerManager : public SocketBaseManager {
         std::lock_guard<std::mutex> lock(clientMutex_);
         return acceptFds_.size();
     }
-    EventManager *WaitForManager(int clientId)
-    {
-        EventManager *manager = nullptr;
-        std::unique_lock<std::mutex> lock(clientMutex_);
-        cond_.wait(lock, [&manager, &clientId, this]() {
-            if (auto iter = clientEventManagers_.find(clientId); iter != clientEventManagers_.end()) {
-                manager = iter->second;
-                if (manager->HasEventListener(EVENT_MESSAGE)) {
-                    return true;
-                }
-            }
-            return false;
-        });
-        return manager;
-    }
     void NotifyRegisterEvent()
     {
         std::lock_guard<std::mutex> lock(clientMutex_);
@@ -121,23 +166,17 @@ struct LocalSocketServerManager : public SocketBaseManager {
         }
         clientEventManagers_.clear();
     }
-    void IncreaseThreadCounts()
-    {
-        std::lock_guard<std::mutex> lock(finishMutex_);
-        ++threadCounts_;
-    }
     void NotifyLoopFinished()
     {
         std::lock_guard<std::mutex> lock(finishMutex_);
-        if (--threadCounts_ == 0) {
-            finishCond_.notify_one();
-        }
+        isLoopFinished_ = true;
+        finishCond_.notify_one();
     }
     void WaitForEndingLoop()
     {
         std::unique_lock<std::mutex> lock(finishMutex_);
         finishCond_.wait(lock, [this]() {
-            return threadCounts_ == 0;
+            return isLoopFinished_;
         });
     }
 };
