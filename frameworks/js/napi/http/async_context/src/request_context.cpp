@@ -456,7 +456,7 @@ RequestContext::~RequestContext()
         curl_mime_free(multipart_);
         multipart_ = nullptr;
     }
-    NETSTACK_LOGD("RequestContext is destructed by the destructor");
+    NETSTACK_LOGD("the destructor of request context is invoked");
 }
 
 void RequestContext::SetCacheResponse(const HttpResponse &cacheResponse)
