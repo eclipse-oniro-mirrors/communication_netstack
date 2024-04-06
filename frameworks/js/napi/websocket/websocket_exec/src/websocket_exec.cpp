@@ -226,7 +226,7 @@ private:
 
     std::queue<SendData> dataQueue_;
 
-    lws *wsi_ == nullptr;
+    lws *wsi_ = nullptr;
 };
 
 template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)
