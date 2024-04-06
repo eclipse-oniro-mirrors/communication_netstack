@@ -127,8 +127,7 @@ public:
           openStatus(0),
           closed_(false),
           threadStop_(false),
-          context_(context),
-          wsi_(nullptr)
+          context_(context)
     {
     }
 
@@ -227,7 +226,7 @@ private:
 
     std::queue<SendData> dataQueue_;
 
-    lws *wsi_;
+    lws *wsi_ = nullptr;
 };
 
 template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)
@@ -817,8 +816,8 @@ bool WebSocketExec::ExecSend(SendContext *context)
         return false;
     }
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
-    if (userData == nullptr) {
-        NETSTACK_LOGE("user data is null");
+    if (userData == nullptr || userData->GetLws() == nullptr) {
+        NETSTACK_LOGE("user data or lws is nullptr");
         return false;
     }
     if (userData->IsClosed() || userData->IsThreadStop()) {
