@@ -513,7 +513,7 @@ int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_re
                 str =
                     std::string(reinterpret_cast<const char *>(lws_token_to_string(static_cast<lws_token_indexes>(i))));
             }
-            if (str.back() == ':') {
+            if (!str.empty() && str.back() == ':') {
                 responseHeader.emplace(str.substr(0, str.size() - 1), std::string(buffer));
             }
         }
