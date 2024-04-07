@@ -934,19 +934,17 @@ bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
         NETSTACK_LOGE("getaddrinfo_hook failed");
         return true;
     }
-    
+
     struct curl_slist *hostSlist = nullptr;
     for (struct addrinfo *p = res; p != nullptr; p = p->ai_next) {
-        char ipstr[INET6_ADDRSTRLEN];
-        char port[NI_MAXSERV];
-        int status = 0;
-        status = getnameinfo(p->ai_addr, p->ai_addrlen, ipstr, sizeof(ipstr),
-                             port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV); 
-        if (status != 0) {
+        char ipstr[INET6_ADDRSTRLEN] = {0};
+        char port[NI_MAXSERV] = {0};
+
+        if (getnameinfo(p->ai_addr, p->ai_addrlen, ipstr, sizeof(ipstr), port,
+            sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV)) {
             continue;
         }
         std::string resolvHost = host + ":" + std::string(port) + ":" + ipstr;
-        NETSTACK_LOGE("dns parse: %{public}s", resolvHost.c_str());
         hostSlist = curl_slist_append(hostSlist, resolvHost.c_str());
     }
     freeaddrinfo(res);
