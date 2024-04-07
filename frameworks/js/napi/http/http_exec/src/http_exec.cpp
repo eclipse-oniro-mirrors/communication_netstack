@@ -208,6 +208,9 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {
         auto context = static_cast<RequestContext *>(opaqueData);
         HttpExec::HandleCurlData(curlMessage, context);
+        if (curlMessage->easy_handle) {
+            (void)curl_easy_cleanup(curlMessage->easy_handle);
+        }
     };
 
     requestHandler.Process(handle, startedCallback, responseCallback, context);
