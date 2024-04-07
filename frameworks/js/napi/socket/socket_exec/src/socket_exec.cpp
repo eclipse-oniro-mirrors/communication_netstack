@@ -1393,7 +1393,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
             return false;
         }
         addr4.sin_addr.s_addr = htonl(INADDR_ANY);
-        if (bind(context->GetSocketFd(), (struct sockaddr *)&addr4, sizeof(addr4)) < 0) {
+        if (bind(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&addr4), sizeof(addr4)) < 0) {
             ERROR_RETURN(context, "v4bind err, port:%{public}d, errno:%{public}d", context->address_.GetPort(), errno);
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
@@ -1409,7 +1409,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
             return false;
         }
         addr6.sin6_addr = in6addr_any;
-        if (bind(context->GetSocketFd(), (struct sockaddr *)&addr6, sizeof(addr6)) < 0) {
+        if (bind(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&addr6), sizeof(addr6)) < 0) {
             ERROR_RETURN(context, "v6bind err, port:%{public}d, errno:%{public}d", context->address_.GetPort(), errno);
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
@@ -1436,8 +1436,7 @@ bool ExecUdpAddMembership(MulticastMembershipContext *context)
     }
 
     if (context->address_.GetFamily() == NetAddress::Family::IPv4) {
-        struct ip_mreq mreq;
-        memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
+        ip_mreq mreq = {};
         mreq.imr_multiaddr.s_addr = inet_addr(context->address_.GetAddress().c_str());
         mreq.imr_interface.s_addr = INADDR_ANY;
         if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
@@ -1448,8 +1447,7 @@ bool ExecUdpAddMembership(MulticastMembershipContext *context)
             return false;
         }
     } else {
-        struct ipv6_mreq mreq;
-        memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
+        ipv6_mreq mreq = {};
         inet_pton(AF_INET6, context->address_.GetAddress().c_str(), &mreq.ipv6mr_multiaddr);
         mreq.ipv6mr_interface = 0;
         if (setsockopt(context->GetSocketFd(), IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
@@ -1472,8 +1470,7 @@ bool ExecUdpDropMembership(MulticastMembershipContext *context)
         return false;
     }
     if (context->address_.GetFamily() == NetAddress::Family::IPv4) {
-        struct ip_mreq mreq;
-        memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
+        ip_mreq mreq = {};
         mreq.imr_multiaddr.s_addr = inet_addr(context->address_.GetAddress().c_str());
         mreq.imr_interface.s_addr = INADDR_ANY;
         if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
@@ -1484,8 +1481,7 @@ bool ExecUdpDropMembership(MulticastMembershipContext *context)
             return false;
         }
     } else {
-        struct ipv6_mreq mreq;
-        memset_s(&mreq, sizeof(mreq), 0, sizeof(mreq));
+        ipv6_mreq mreq = {};
         inet_pton(AF_INET6, context->address_.GetAddress().c_str(), &mreq.ipv6mr_multiaddr);
         mreq.ipv6mr_interface = 0;
         if (setsockopt(context->GetSocketFd(), IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
