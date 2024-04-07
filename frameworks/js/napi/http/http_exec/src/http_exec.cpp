@@ -928,7 +928,8 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
         // https://curl.se/libcurl/c/CURLOPT_RANGE.html
         if (context->options.GetMethod() != HttpConstant::HTTP_METHOD_GET) {
             context->SetErrorCode(CURLE_RANGE_ERROR);
-            NETSTACK_LOGE("For HTTP PUT uploads this option should not be used, since it may conflict with other options.");
+            NETSTACK_LOGE("For HTTP PUT uploads this option should not be used, since it may conflict with \
+                          other options.");
             return false;
         }
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RANGE, range.c_str(), context);
