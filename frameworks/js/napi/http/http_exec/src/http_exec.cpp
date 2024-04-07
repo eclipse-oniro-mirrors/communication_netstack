@@ -920,64 +920,36 @@ bool HttpExec::SetDnsOption(CURL *curl, RequestContext *context)
     return true;
 }
 
-bool HttpExec::ParseHostAndPortFromUrl(const std::string &url, std::string &host, uint16_t &port)
-{
-    CURLU *cu = curl_url();
-    if (!cu) {
-        NETSTACK_LOGE("out of memory");
-        return false;
-    }
-    if (curl_url_set(cu, CURLUPART_URL, url.c_str(), 0)) {
-        NETSTACK_LOGD("not a URL: '%{public}s'", url.c_str());
-        curl_url_cleanup(cu);
-        return false;
-    }
-    char *chost = nullptr;
-    char *cport = nullptr;
-    (void)curl_url_get(cu, CURLUPART_HOST, &chost, 0);
-    (void)curl_url_get(cu, CURLUPART_PORT, &cport, 0);
-    if (chost != nullptr) {
-        host = chost;
-        NETSTACK_LOGD("parse host: '%{public}s'", host.c_str());
-        curl_free(chost);
-    }
-    
-    if (cport != nullptr) {
-        port = atoi(cport);
-        NETSTACK_LOGD("parse port: '%{public}u'", port);
-        curl_free(cport);
-    }
-    curl_url_cleanup(cu);
-    return !host.empty();
-}
-
 bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
 {
-    std::string host = "";
-    uint16_t port = 0;
-    if (!ParseHostAndPortFromUrl(context->options.GetUrl(), host, port)) {
-        NETSTACK_LOGE("parse url failed");
-        return true;
-    }
+    std::string host = CommonUtils::GetHostnameFromURL(context->options.GetUrl());
 #ifdef HAS_NETMANAGER_BASE
-    std::vector<std::string> dnsResult;
-    lookup_result lookup = [](const char *ip, void *usrp) {
-        std::vector<std::string> *dnsVec = static_cast<std::vector<std::string> *>(usrp);
-        if (dnsVec) {
-            dnsVec->push_back(ip);
-        }
-    };
-    int ret = predefined_host_lookup_ip(host.c_str(), lookup, &dnsResult);
-    if (ret <= 0 || dnsResult.empty()) {
+    struct addrinfo hints, *res = nullptr;
+
+    memset(&hints, 0, sizeof(hints));  
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    int ret = getaddrinfo_hook(host.c_str(), nullptr, &hints, &res);
+    if (ret < 0) {
+        NETSTACK_LOGE("getaddrinfo_hook failed");
         return true;
     }
-    struct curl_slist *hostSlist = context->GetCurlHostList();
-    for (auto &result: dnsResult) {
-        if (OHOS::NetStack::CommonUtils::IsValidIPV4(result) || OHOS::NetStack::CommonUtils::IsValidIPV6(result)) {
-            std::string resolvHost = host + ":" + std::to_string(port) + ":" + result;
-            hostSlist = curl_slist_append(hostSlist, resolvHost.c_str());
+    
+    struct curl_slist *hostSlist = nullptr;
+    for (struct addrinfo *p = res; p != nullptr; p = p->ai_next) {
+        char ipstr[INET6_ADDRSTRLEN];
+        char port[NI_MAXSERV];
+        int status = 0;
+        status = getnameinfo(p->ai_addr, p->ai_addrlen, ipstr, sizeof(ipstr),
+                             port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV); 
+        if (status != 0) {
+            continue;
         }
+        std::string resolvHost = host + ":" + std::string(port) + ":" + ipstr;
+        NETSTACK_LOGE("dns parse: %{public}s", resolvHost.c_str());
+        hostSlist = curl_slist_append(hostSlist, resolvHost.c_str());
     }
+    freeaddrinfo(res);
     if (hostSlist == nullptr) {
         NETSTACK_LOGE("no valid ip");
         return false;
