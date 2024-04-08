@@ -173,15 +173,21 @@ TLSSecureOptions TLSConnectContext::ReadTLSSecureOptions(napi_env env, napi_valu
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, PROTOCOLS_NAME)) {
-        napi_value protocolVector = NapiUtils::GetNamedProperty(env, secureOptions, PROTOCOLS_NAME);
-        uint32_t num = NapiUtils::GetArrayLength(GetEnv(), protocolVector);
-        num = num > PROTOCOLS_SIZE ? PROTOCOLS_SIZE : num;
-        napi_value element = nullptr;
+        napi_value protocolValue = NapiUtils::GetNamedProperty(env, secureOptions, PROTOCOLS_NAME);
         std::vector<std::string> protocolVec;
-        for (uint32_t i = 0; i < num; i++) {
-            element = NapiUtils::GetArrayElement(GetEnv(), protocolVector, i);
-            std::string protocol = NapiUtils::GetStringFromValueUtf8(GetEnv(), element);
-            protocolVec.push_back(protocol);
+        if (NapiUtils::GetValueType(env, protocolValue) == napi_string) {
+            std::string protocolStr = NapiUtils::GetStringFromValueUtf8(env, protocolValue);
+            protocolVec.push_back(std::move(protocolStr));
+        } else if (NapiUtils::IsArray(env, protocolValue)) {
+            uint32_t num = NapiUtils::GetArrayLength(GetEnv(), protocolValue);
+            num = num > PROTOCOLS_SIZE ? PROTOCOLS_SIZE : num;
+            protocolVec.reserve(num);
+            napi_value element = nullptr;
+            for (uint32_t i = 0; i < num; i++) {
+                element = NapiUtils::GetArrayElement(GetEnv(), protocolValue, i);
+                std::string protocol = NapiUtils::GetStringFromValueUtf8(GetEnv(), element);
+                protocolVec.push_back(std::move(protocol));
+            }
         }
         secureOption.SetProtocolChain(protocolVec);
     }
