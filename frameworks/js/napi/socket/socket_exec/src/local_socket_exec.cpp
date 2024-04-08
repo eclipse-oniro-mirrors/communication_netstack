@@ -503,10 +503,10 @@ static inline void RecvInErrorCondition(int reason, int clientId, const LocalSoc
     serverManager->RemoveAccept(clientId);
 }
 
-static void RecvHandler(int connectFd, const LocalSocketMessageCallback &callback, LocalSocketServerManager *serverManager)
+static void RecvHandler(int connectFd, const LocalSocketMessageCallback &callback, LocalSocketServerManager *mgr)
 {
-    int clientId = serverManager->GetClientId(connectFd);
-    EventManager *eventManager = serverManager->GetManager(clientId);
+    int clientId = mgr->GetClientId(connectFd);
+    EventManager *eventManager = mgr->GetManager(clientId);
     if (eventManager == nullptr) {
         NETSTACK_LOGI("manager is null");
         callback.OnError(UNKNOW_ERROR);
@@ -516,24 +516,24 @@ static void RecvHandler(int connectFd, const LocalSocketMessageCallback &callbac
     auto buffer = std::make_unique<char[]>(sockRecvSize);
     if (buffer == nullptr) {
         NETSTACK_LOGE("failed to malloc, connectFd: %{public}d, malloc size: %{public}d", connectFd, sockRecvSize);
-        RecvInErrorCondition(NO_MEMORY, clientId, callback, serverManager);
+        RecvInErrorCondition(NO_MEMORY, clientId, callback, mgr);
         return;
     }
     int32_t recvSize = recv(connectFd, buffer.get(), sockRecvSize, 0);
     if (recvSize == 0) {
         NETSTACK_LOGI("session closed, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFd, clientId);
         callback.OnCloseMessage(eventManager);
-        serverManager->RemoveAccept(clientId);
+        mgr->RemoveAccept(clientId);
     } else if (recvSize < 0) {
         if (errno != EINTR && errno != EAGAIN) {
             NETSTACK_LOGE("recv error, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFd, clientId);
-            RecvInErrorCondition(errno, clientId, callback, serverManager);
+            RecvInErrorCondition(errno, clientId, callback, mgr);
         }
     } else {
         NETSTACK_LOGI("recv, fd:%{public}d, size:%{public}d, buf:%{public}s", connectFd, recvSize, buffer.get());
         void *data = malloc(recvSize);
         if (data == nullptr) {
-            RecvInErrorCondition(NO_MEMORY, clientId, callback, serverManager);
+            RecvInErrorCondition(NO_MEMORY, clientId, callback, mgr);
             return;
         }
         if (memcpy_s(data, recvSize, buffer.get(), recvSize) != EOK ||
@@ -550,6 +550,10 @@ static void AcceptHandler(int fd, LocalSocketServerManager *mgr, const LocalSock
 #else
     pthread_setname_np(pthread_self(), LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
 #endif
+    if (fd < 0) {
+        NETSTACK_LOGE("accept a invalid fd");
+        return;
+    }
     int clientId = mgr->AddAccept(fd);
     if (clientId < 0) {
         NETSTACK_LOGE("add connect fd err, fd:%{public}d", fd);
@@ -598,14 +602,11 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
             break;
         }
         for (int i = 0; i < eventNum; ++i) {
-            if (mgr->events_[i].data.fd == mgr->sockfd_ && mgr->events_[i].events & EPOLLIN) {
+            if ((mgr->events_[i].data.fd == mgr->sockfd_) && (mgr->events_[i].events & EPOLLIN)) {
                 int connectFd = accept(mgr->sockfd_, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddrLength);
-                if (connectFd < 0) {
-                    continue;
-                }
                 std::thread th(AcceptHandler, connectFd, mgr, callback);
                 th.detach();
-            } else if (mgr->events_[i].data.fd != mgr->sockfd_ && mgr->events_[i].events & EPOLLIN) {
+            } else if ((mgr->events_[i].data.fd != mgr->sockfd_) && (mgr->events_[i].events & EPOLLIN)) {
                 RecvHandler(mgr->events_[i].data.fd, callback, mgr);
             }
         }
@@ -913,7 +914,7 @@ bool ExecLocalSocketServerListen(LocalSocketServerListenContext *context)
         return false;
     }
     std::thread serviceThread(LocalSocketServerAccept, mgr, LocalSocketMessageCallback(context->GetManager(),
-                              context->GetSocketPath()));
+                                                                                       context->GetSocketPath()));
     serviceThread.detach();
     return true;
 }
