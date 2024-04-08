@@ -926,7 +926,7 @@ bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
 #ifdef HAS_NETMANAGER_BASE
     struct addrinfo hints, *res = nullptr;
 
-    memset(&hints, 0, sizeof(hints));  
+    memset_s(&hints, sizeof(hints), 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     int ret = getaddrinfo_hook(host.c_str(), nullptr, &hints, &res);
