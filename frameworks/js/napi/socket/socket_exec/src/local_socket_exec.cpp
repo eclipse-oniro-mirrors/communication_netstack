@@ -585,6 +585,7 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
         callback.OnError(errno);
         return;
     }
+    mgr->SetServerDestructStatus(false);
     while (true) {
         int eventNum = mgr->EpollWait();
         if (eventNum == -1) {

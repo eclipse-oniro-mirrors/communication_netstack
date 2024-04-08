@@ -29,10 +29,9 @@
 #include "socket_state_base.h"
 
 namespace OHOS::NetStack::Socket {
-constexpr int MAX_USERS = 16;
-constexpr int MAX_EVENTS = 10;
-constexpr int EPOLL_TIMEOUT_MS = 500;
 struct LocalSocketServerManager : public SocketBaseManager {
+    static constexpr int MAX_EVENTS = 10;
+    static constexpr int EPOLL_TIMEOUT_MS = 500;
     int clientId_ = 0;
     LocalExtraOptions extraOptions_;
     bool alreadySetExtraOptions_ = false;

@@ -870,7 +870,7 @@ napi_value SocketModuleExports::LocalSocketServer::On(napi_env env, napi_callbac
 
 napi_value SocketModuleExports::LocalSocketServer::Off(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_LISTENING, EVENT_ERROR, EVENT_CLOSE});
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
 }
 
 /* localsocket connection */
