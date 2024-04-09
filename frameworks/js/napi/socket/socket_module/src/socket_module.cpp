@@ -390,6 +390,7 @@ static bool MakeLocalServerSocket(napi_env env, napi_value thisVal, LocalSocketS
     if (pManager->StartEpoll() < 0) {
         NETSTACK_LOGE("localsocket server start epoll err, sock: %{public}d", sock);
         close(sock);
+        return false;
     }
     if (!SetSocketManager(env, thisVal, context, pManager)) {
         close(sock);

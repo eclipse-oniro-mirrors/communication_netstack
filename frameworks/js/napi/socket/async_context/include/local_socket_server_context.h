@@ -131,7 +131,7 @@ struct LocalSocketServerManager : public SocketBaseManager {
         if (auto ite = acceptFds_.find(clientId); ite != acceptFds_.end()) {
             return ite->second;
         }
-        return 0;
+        return -1;
     }
     size_t GetClientCounts()
     {

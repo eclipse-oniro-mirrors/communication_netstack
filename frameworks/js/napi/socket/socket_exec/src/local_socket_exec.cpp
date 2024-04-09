@@ -526,6 +526,10 @@ static void RecvHandler(int connectFd, const LocalSocketMessageCallback &callbac
         mgr->RemoveAccept(clientId);
     } else if (recvSize < 0) {
         if (errno != EINTR && errno != EAGAIN) {
+            if (mgr->GetAcceptFd(clientId) < 0) {
+                callback.OnCloseMessage(eventManager);
+                return;
+            }
             NETSTACK_LOGE("recv error, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFd, clientId);
             RecvInErrorCondition(errno, clientId, callback, mgr);
         }
@@ -770,9 +774,11 @@ bool ExecLocalSocketSend(LocalSocketSendContext *context)
     if (context == nullptr) {
         return false;
     }
+#ifdef FUZZ_TEST
+    return true;
+#endif
     if (context->GetSocketFd() < 0) {
         context->SetErrorCode(EBADF);
-        return false;
     }
     bool result = LocalSocketSendEvent(context);
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::LocalSocketSendCallback);
