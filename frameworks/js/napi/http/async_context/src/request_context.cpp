@@ -439,22 +439,22 @@ bool RequestContext::IsUsingCache() const
     return usingCache_;
 }
 
-void RequestContext::SetCurlHeaderList(struct curl_slist *curlHeaderList)
+void RequestContext::SetCurlHeaderList(curl_slist *curlHeaderList)
 {
     curlHeaderList_ = curlHeaderList;
 }
 
-struct curl_slist *RequestContext::GetCurlHeaderList()
+curl_slist *RequestContext::GetCurlHeaderList()
 {
     return curlHeaderList_;
 }
 
-void RequestContext::SetCurlHostList(struct curl_slist *curlHostList)
+void RequestContext::SetCurlHostList(curl_slist *curlHostList)
 {
     curlHostList_ = curlHostList;
 }
 
-struct curl_slist *RequestContext::GetCurlHostList()
+curl_slist *RequestContext::GetCurlHostList()
 {
     return curlHostList_;
 }

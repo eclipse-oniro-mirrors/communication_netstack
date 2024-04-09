@@ -63,9 +63,9 @@ public:
 
     [[nodiscard]] bool IsUsingCache() const;
 
-    void SetCurlHeaderList(struct curl_slist *curlHeaderList);
+    void SetCurlHeaderList(curl_slist *curlHeaderList);
 
-    struct curl_slist *GetCurlHeaderList();
+    curl_slist *GetCurlHeaderList();
 
     void SetCacheResponse(const HttpResponse &cacheResponse);
 
@@ -115,9 +115,9 @@ public:
 
     uint64_t GetModuleId() const;
 
-    void SetCurlHostList(struct curl_slist *curlHostList);
+    void SetCurlHostList(curl_slist *curlHostList);
 
-    [[nodiscard]] struct curl_slist *GetCurlHostList();
+    [[nodiscard]] curl_slist *GetCurlHostList();
 
 private:
     int32_t taskId_ = -1;
@@ -130,13 +130,13 @@ private:
     HttpResponse cacheResponse_;
     std::queue<LoadBytes> dlBytes_;
     std::queue<LoadBytes> ulBytes_;
-    struct curl_slist *curlHeaderList_ = nullptr;
+    curl_slist *curlHeaderList_ = nullptr;
     Timing::TimerMap timerMap_;
     std::map<std::string, double> performanceTimingMap_;
     curl_mime *multipart_ = nullptr;
     CertsPath certsPath_;
     uint64_t moduleId_ = 0;
-    struct curl_slist *curlHostList_ = nullptr;
+    curl_slist *curlHostList_ = nullptr;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 

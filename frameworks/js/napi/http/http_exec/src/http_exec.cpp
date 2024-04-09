@@ -920,16 +920,47 @@ bool HttpExec::SetDnsOption(CURL *curl, RequestContext *context)
     return true;
 }
 
+bool HttpExec::ParseHostAndPortFromUrl(const std::string &url, std::string &host, uint16_t &port)
+{
+    CURLU *cu = curl_url();
+    if (!cu) {
+        NETSTACK_LOGE("out of memory");
+        return false;
+    }
+    if (curl_url_set(cu, CURLUPART_URL, url.c_str(), 0)) {
+        NETSTACK_LOGD("not a URL: '%{public}s'", url.c_str());
+        curl_url_cleanup(cu);
+        return false;
+    }
+    char *chost = nullptr;
+    char *cport = nullptr;
+    (void)curl_url_get(cu, CURLUPART_HOST, &chost, 0);
+    (void)curl_url_get(cu, CURLUPART_PORT, &cport, 0);
+    if (chost != nullptr) {
+        host = chost;
+        NETSTACK_LOGD("parse host: '%{public}s'", host.c_str());
+        curl_free(chost);
+    }
+    
+    if (cport != nullptr) {
+        port = atoi(cport);
+        NETSTACK_LOGD("parse port: '%{public}u'", port);
+        curl_free(cport);
+    }
+    curl_url_cleanup(cu);
+    return !host.empty();
+}
+
 bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
 {
-    std::string host = CommonUtils::GetHostnameFromURL(context->options.GetUrl());
+    std::string host = "";
+    uint16_t port = 0;
+    if (!ParseHostAndPortFromUrl(context->options.GetUrl(), host, port)) {
+        return true;
+    }
 #ifdef HAS_NETMANAGER_BASE
-    struct addrinfo hints, *res = nullptr;
-
-    memset_s(&hints, sizeof(hints), 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    int ret = getaddrinfo_hook(host.c_str(), nullptr, &hints, &res);
+    struct addrinfo *res = nullptr;
+    int ret = getaddrinfo_hook(host.c_str(), nullptr, nullptr, &res);
     if (ret < 0) {
         NETSTACK_LOGE("getaddrinfo_hook failed");
         return true;
@@ -937,14 +968,21 @@ bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
 
     struct curl_slist *hostSlist = nullptr;
     for (struct addrinfo *p = res; p != nullptr; p = p->ai_next) {
-        char ipstr[INET6_ADDRSTRLEN] = {0};
-        char port[NI_MAXSERV] = {0};
+        char ipstr[INET6_ADDRSTRLEN];
+        void *addr = nullptr;
 
-        if (getnameinfo(p->ai_addr, p->ai_addrlen, ipstr, sizeof(ipstr), port,
-            sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV)) {
+        if (p->ai_family == AF_INET) {
+            struct sockaddr_in *ipv4 = reinterpret_cast<struct sockaddr_in *>(p->ai_addr);
+            addr = &ipv4->sin_addr;
+        } else {
+            struct sockaddr_in6 *ipv6 = reinterpret_cast<struct sockaddr_in6 *>(p->ai_addr);
+            addr = &ipv6->sin6_addr;
+        }
+        if (inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr)) == NULL) {
             continue;
         }
-        std::string resolvHost = host + ":" + std::string(port) + ":" + ipstr;
+        std::string resolvHost = host + ":" + std::to_string(port) + ":" + ipstr;
+        NETSTACK_LOGE("dns parse: %{public}s", resolvHost.c_str());
         hostSlist = curl_slist_append(hostSlist, resolvHost.c_str());
     }
     freeaddrinfo(res);
