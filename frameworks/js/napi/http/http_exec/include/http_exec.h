@@ -105,7 +105,7 @@ private:
 
     static bool SetDnsOption(CURL *curl, RequestContext *context);
 
-    static bool SetDnsResolvOption(CURL *curl, RequestContext *context);
+    static void SetDnsResolvOption(CURL *curl, RequestContext *context);
 
     static size_t OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData);
 

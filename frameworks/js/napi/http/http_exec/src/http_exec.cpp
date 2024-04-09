@@ -934,6 +934,7 @@ bool HttpExec::ParseHostAndPortFromUrl(const std::string &url, std::string &host
     }
     char *chost = nullptr;
     char *cport = nullptr;
+
     (void)curl_url_get(cu, CURLUPART_HOST, &chost, 0);
     (void)curl_url_get(cu, CURLUPART_PORT, &cport, 0);
     if (chost != nullptr) {
@@ -941,7 +942,6 @@ bool HttpExec::ParseHostAndPortFromUrl(const std::string &url, std::string &host
         NETSTACK_LOGD("parse host: '%{public}s'", host.c_str());
         curl_free(chost);
     }
-    
     if (cport != nullptr) {
         port = atoi(cport);
         NETSTACK_LOGD("parse port: '%{public}u'", port);
@@ -951,19 +951,20 @@ bool HttpExec::ParseHostAndPortFromUrl(const std::string &url, std::string &host
     return !host.empty();
 }
 
-bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
+void HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
 {
     std::string host = "";
     uint16_t port = 0;
     if (!ParseHostAndPortFromUrl(context->options.GetUrl(), host, port)) {
-        return true;
+        NETSTACK_LOGE("get host and port failed");
+        return;
     }
 #ifdef HAS_NETMANAGER_BASE
     struct addrinfo *res = nullptr;
     int ret = getaddrinfo_hook(host.c_str(), nullptr, nullptr, &res);
     if (ret < 0) {
         NETSTACK_LOGE("getaddrinfo_hook failed");
-        return true;
+        return;
     }
 
     struct curl_slist *hostSlist = nullptr;
@@ -988,12 +989,11 @@ bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
     freeaddrinfo(res);
     if (hostSlist == nullptr) {
         NETSTACK_LOGE("no valid ip");
-        return true;
+        return;
     }
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RESOLVE, hostSlist, context);
     context->SetCurlHostList(hostSlist);
 #endif
-    return true;
 }
 
 bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
