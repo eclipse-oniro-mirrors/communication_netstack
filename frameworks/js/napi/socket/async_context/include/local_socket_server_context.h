@@ -38,7 +38,7 @@ struct LocalSocketServerManager : public SocketBaseManager {
     std::atomic_bool isServerDestruct_;
     bool isLoopFinished_ = false;
     int epollFd_ = 0;
-    epoll_event events_[MAX_EVENTS];
+    epoll_event events_[MAX_EVENTS] = {};
     std::mutex finishMutex_;
     std::condition_variable finishCond_;
     std::mutex clientMutex_;
