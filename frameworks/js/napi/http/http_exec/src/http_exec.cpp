@@ -988,7 +988,7 @@ bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
     freeaddrinfo(res);
     if (hostSlist == nullptr) {
         NETSTACK_LOGE("no valid ip");
-        return false;
+        return true;
     }
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RESOLVE, hostSlist, context);
     context->SetCurlHostList(hostSlist);
