@@ -951,20 +951,19 @@ bool HttpExec::ParseHostAndPortFromUrl(const std::string &url, std::string &host
     return !host.empty();
 }
 
-void HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
+bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
 {
     std::string host = "";
     uint16_t port = 0;
     if (!ParseHostAndPortFromUrl(context->options.GetUrl(), host, port)) {
         NETSTACK_LOGE("get host and port failed");
-        return;
+        return true;
     }
 #ifdef HAS_NETMANAGER_BASE
     struct addrinfo *res = nullptr;
     int ret = getaddrinfo_hook(host.c_str(), nullptr, nullptr, &res);
     if (ret < 0) {
-        NETSTACK_LOGE("getaddrinfo_hook failed");
-        return;
+        return true;
     }
 
     struct curl_slist *hostSlist = nullptr;
@@ -989,11 +988,12 @@ void HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
     freeaddrinfo(res);
     if (hostSlist == nullptr) {
         NETSTACK_LOGE("no valid ip");
-        return;
+        return true;
     }
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RESOLVE, hostSlist, context);
     context->SetCurlHostList(hostSlist);
 #endif
+    return true;
 }
 
 bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
