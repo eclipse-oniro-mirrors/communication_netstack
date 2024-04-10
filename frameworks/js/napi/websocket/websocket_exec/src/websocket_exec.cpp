@@ -852,12 +852,13 @@ bool WebSocketExec::ExecClose(CloseContext *context)
 
     auto manager = context->GetManager();
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
-    if (userData == nullptr) {
-        NETSTACK_LOGE("user data is null");
+    if (userData == nullptr || userData->GetLws() == nullptr) {
+        NETSTACK_LOGE("user data or lws is nullptr");
         return false;
     }
 
     userData->Close(static_cast<lws_close_status>(context->code), context->reason);
+    lws_callback_on_writable(userData->GetLws());
     NETSTACK_LOGI("ExecClose OK");
     return true;
 }
