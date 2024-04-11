@@ -597,6 +597,9 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
     while (true) {
         int eventNum = mgr->EpollWait();
         if (eventNum == -1) {
+            if (errno == EINTR) {
+                continue;
+            }
             NETSTACK_LOGE("epoll wait err, fd:%{public}d, errno:%{public}d", mgr->sockfd_, errno);
             callback.OnError(errno);
             break;
