@@ -24,6 +24,9 @@
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
 #endif
+#if HAS_NETMANAGER_BASE
+#include <netdb.h>
+#endif
 
 #ifdef HTTP_PROXY_ENABLE
 #include "parameter.h"
@@ -890,6 +893,82 @@ bool HttpExec::SetDnsOption(CURL *curl, RequestContext *context)
     return true;
 }
 
+bool HttpExec::ParseHostAndPortFromUrl(const std::string &url, std::string &host, uint16_t &port)
+{
+    CURLU *cu = curl_url();
+    if (!cu) {
+        NETSTACK_LOGE("out of memory");
+        return false;
+    }
+    if (curl_url_set(cu, CURLUPART_URL, url.c_str(), 0)) {
+        NETSTACK_LOGD("not a URL: '%{public}s'", url.c_str());
+        curl_url_cleanup(cu);
+        return false;
+    }
+    char *chost = nullptr;
+    char *cport = nullptr;
+
+    (void)curl_url_get(cu, CURLUPART_HOST, &chost, 0);
+    (void)curl_url_get(cu, CURLUPART_PORT, &cport, 0);
+    if (chost != nullptr) {
+        host = chost;
+        NETSTACK_LOGD("parse host: '%{public}s'", host.c_str());
+        curl_free(chost);
+    }
+    if (cport != nullptr) {
+        port = atoi(cport);
+        NETSTACK_LOGD("parse port: '%{public}u'", port);
+        curl_free(cport);
+    }
+    curl_url_cleanup(cu);
+    return !host.empty();
+}
+
+bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
+{
+    std::string host = "";
+    uint16_t port = 0;
+    if (!ParseHostAndPortFromUrl(context->options.GetUrl(), host, port)) {
+        NETSTACK_LOGE("get host and port failed");
+        return true;
+    }
+#ifdef HAS_NETMANAGER_BASE
+    struct addrinfo *res = nullptr;
+    int ret = getaddrinfo_hook(host.c_str(), nullptr, nullptr, &res);
+    if (ret < 0) {
+        return true;
+    }
+
+    struct curl_slist *hostSlist = nullptr;
+    for (struct addrinfo *p = res; p != nullptr; p = p->ai_next) {
+        char ipstr[INET6_ADDRSTRLEN];
+        void *addr = nullptr;
+
+        if (p->ai_family == AF_INET) {
+            struct sockaddr_in *ipv4 = reinterpret_cast<struct sockaddr_in *>(p->ai_addr);
+            addr = &ipv4->sin_addr;
+        } else {
+            struct sockaddr_in6 *ipv6 = reinterpret_cast<struct sockaddr_in6 *>(p->ai_addr);
+            addr = &ipv6->sin6_addr;
+        }
+        if (inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr)) == NULL) {
+            continue;
+        }
+        std::string resolvHost = host + ":" + std::to_string(port) + ":" + ipstr;
+        NETSTACK_LOGE("dns parse: %{public}s", resolvHost.c_str());
+        hostSlist = curl_slist_append(hostSlist, resolvHost.c_str());
+    }
+    freeaddrinfo(res);
+    if (hostSlist == nullptr) {
+        NETSTACK_LOGE("no valid ip");
+        return true;
+    }
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RESOLVE, hostSlist, context);
+    context->SetCurlHostList(hostSlist);
+#endif
+    return true;
+}
+
 bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
 {
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTP_VERSION, context->options.GetHttpVersion(), context);
@@ -906,6 +985,7 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
     SetDnsOption(curl, context);
     SetSSLCertOption(curl, context);
     SetMultiPartOption(curl, context);
+    SetDnsResolvOption(curl, context);
     return true;
 }
 

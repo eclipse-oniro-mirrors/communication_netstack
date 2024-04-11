@@ -73,6 +73,8 @@ public:
 
     static bool EncodeUrlParam(std::string &str);
 
+    static bool ParseHostAndPortFromUrl(const std::string &url, std::string &host, uint16_t &port);
+
 #if !HAS_NETMANAGER_BASE
     static bool Initialize();
 
@@ -95,6 +97,8 @@ private:
     static bool SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context);
 
     static bool SetDnsOption(CURL *curl, RequestContext *context);
+
+    static bool SetDnsResolvOption(CURL *curl, RequestContext *context);
 
     static size_t OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData);
 
