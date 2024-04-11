@@ -14,27 +14,6 @@
 import("//build/ohos.gni")
 import("//foundation/communication/netstack/netstack_config.gni")
 
-ohos_ndk_library("libnet_ssl_ndk") {
-  output_name = "net_ssl"
-  output_extension = "so"
-  ndk_description_file = "./libnet_ssl_c.json"
-  min_compact_version = "1"
-  system_capability = "SystemCapability.Communication.Netstack"
-
-  system_capability_headers = [
-    "network/netstack/net_ssl/net_ssl_c.h",
-    "network/netstack/net_ssl/net_ssl_c_type.h",
-  ]
-}
-
-ohos_ndk_headers("net_ssl_header") {
-  dest_dir = "$ndk_headers_out_dir/network/netstack/net_ssl"
-  sources = [
-    "include/net_ssl_c.h",
-    "include/net_ssl_c_type.h",
-  ]
-}
-
 ohos_shared_library("net_ssl_ndk") {
   sanitize = {
     cfi = true
