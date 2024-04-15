@@ -1473,7 +1473,7 @@ bool ExecUdpDropMembership(MulticastMembershipContext *context)
         ip_mreq mreq = {};
         mreq.imr_multiaddr.s_addr = inet_addr(context->address_.GetAddress().c_str());
         mreq.imr_interface.s_addr = INADDR_ANY;
-        if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
+        if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_DROP_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
                        sizeof(mreq)) == -1) {
             NETSTACK_LOGE("ipv4 dropmembership err, addr: %{public}s, port: %{public}u, err: %{public}d",
                           context->address_.GetAddress().c_str(), context->address_.GetPort(), errno);
