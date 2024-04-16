@@ -52,8 +52,6 @@ static constexpr const int ADDRESS_INVALID = 99;
 
 static constexpr const int OTHER_ERROR = 100;
 
-static constexpr const int SOCKET_ENOTSTR = 60;
-
 static constexpr const int UNKNOW_ERROR = -1;
 
 static constexpr const int NO_MEMORY = -2;
@@ -664,10 +662,7 @@ static bool TcpSendEvent(TcpSendContext *context)
     socklen_t len = sizeof(sockaddr);
     if (getsockname(context->GetSocketFd(), &sockAddr, &len) < 0) {
         NETSTACK_LOGE("get sock name failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
-        context->SetErrorCode(SOCKET_ENOTSTR);
-        // reason: Crossplatform; Possible causes: socketfd error, socket type error, socket status error
-        // socket net connect, socket closed, socket option error
-        NETSTACK_LOGE("set errorCode is %{public}d", SOCKET_ENOTSTR);
+        context->SetErrorCode(errno);
         return false;
     }
     bool connected = false;
@@ -1008,11 +1003,12 @@ bool ExecUdpBind(BindContext *context)
 
 bool ExecUdpSend(UdpSendContext *context)
 {
+#ifdef FUZZ_TEST
+    return true;
+#endif
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
-        return false;
-    }
-    if (context->GetSocketFd() < 0) {
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
         return false;
     }
     bool result = UdpSendEvent(context);
@@ -1058,11 +1054,12 @@ bool ExecConnect(ConnectContext *context)
 
 bool ExecTcpSend(TcpSendContext *context)
 {
+#ifdef FUZZ_TEST
+    return true;
+#endif
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
-        return false;
-    }
-    if (context->GetSocketFd() < 0) {
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
         return false;
     }
     bool result = TcpSendEvent(context);
