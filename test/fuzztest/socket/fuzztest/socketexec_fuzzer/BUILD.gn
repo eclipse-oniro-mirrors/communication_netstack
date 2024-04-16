@@ -59,6 +59,7 @@ ohos_fuzztest("SocketExecFuzzTest") {
   ]
 
   sources = [
+    "$NETSTACK_DIR/utils/common_utils/src/apipolicy_client_adapter.cpp",
     "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
     "$NETSTACK_NAPI_ROOT/socket/async_context/src/bind_context.cpp",
     "$NETSTACK_NAPI_ROOT/socket/async_context/src/common_context.cpp",
@@ -128,9 +129,13 @@ ohos_fuzztest("SocketExecFuzzTest") {
   ]
 
   external_deps = [
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "hilog:libhilog",
+    "ipc:ipc_core",
     "napi:ace_napi",
+    "samgr:samgr_proxy",
   ]
 
   defines = [

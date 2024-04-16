@@ -94,6 +94,10 @@ public:
 
     [[nodiscard]] bool IsPermissionDenied() const;
 
+    void SetNoAllowedHost(bool needThrowException);
+
+    [[nodiscard]] bool IsNoAllowedHost() const;
+
     [[nodiscard]] EventManager *GetManager() const;
 
     void CreateReference(napi_value value);
@@ -133,6 +137,8 @@ private:
     bool needThrowException_;
 
     bool permissionDenied_;
+
+    bool noAllowedHost_;
 };
 } // namespace OHOS::NetStack
 

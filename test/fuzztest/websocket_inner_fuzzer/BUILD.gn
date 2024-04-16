@@ -28,9 +28,13 @@ utils_include = [
 ]
 
 common_external_deps = [
+  "bundle_framework:appexecfwk_base",
+  "bundle_framework:appexecfwk_core",
   "c_utils:utils",
   "eventhandler:libeventhandler",
   "hilog:libhilog",
+  "ipc:ipc_core",
+  "samgr:samgr_proxy",
 ]
 
 ohos_fuzztest("websocket_inner_fuzzer") {
@@ -50,6 +54,7 @@ ohos_fuzztest("websocket_inner_fuzzer") {
   ]
 
   sources = [
+    "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/apipolicy_client_adapter.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
     "websocket_inner_fuzzer.cpp",
   ]

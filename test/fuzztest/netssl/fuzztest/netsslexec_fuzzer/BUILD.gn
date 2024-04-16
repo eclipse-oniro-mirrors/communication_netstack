@@ -55,6 +55,7 @@ ohos_fuzztest("NetsslExecFuzzTest") {
   ]
 
   sources = [
+    "$NETSTACK_DIR/utils/common_utils/src/apipolicy_client_adapter.cpp",
     "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
     "$NETSTACK_NAPI_ROOT/net_ssl/async_context/src/cert_context.cpp",
     "$NETSTACK_NAPI_ROOT/net_ssl/async_work/src/net_ssl_async_work.cpp",
@@ -71,9 +72,13 @@ ohos_fuzztest("NetsslExecFuzzTest") {
   ]
 
   external_deps = [
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "hilog:libhilog",
+    "ipc:ipc_core",
     "napi:ace_napi",
+    "samgr:samgr_proxy",
   ]
 
   defines = [

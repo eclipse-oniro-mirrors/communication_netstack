@@ -25,8 +25,12 @@ utils_include = [
 ]
 
 common_external_deps = [
+  "bundle_framework:appexecfwk_base",
+  "bundle_framework:appexecfwk_core",
   "c_utils:utils",
   "hilog:libhilog",
+  "ipc:ipc_core",
+  "samgr:samgr_proxy",
 ]
 
 ohos_unittest("http_unittest") {
@@ -73,6 +77,7 @@ ohos_unittest("http_unittest") {
     "$NETSTACK_NAPI_ROOT/http/http_exec/src/http_exec.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_request_options.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_response.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/apipolicy_client_adapter.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/src/epoll_request_handler.cpp",
     "HttpExecTest.cpp",

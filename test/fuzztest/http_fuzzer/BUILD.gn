@@ -27,8 +27,12 @@ utils_include = [
 ]
 
 common_external_deps = [
+  "bundle_framework:appexecfwk_base",
+  "bundle_framework:appexecfwk_core",
   "c_utils:utils",
   "hilog:libhilog",
+  "ipc:ipc_core",
+  "samgr:samgr_proxy",
 ]
 
 ohos_fuzztest("HttpFuzzTest") {
@@ -62,6 +66,7 @@ ohos_fuzztest("HttpFuzzTest") {
   sources = [
     "$NETSTACK_NAPI_ROOT/http/constant/src/constant.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_request_options.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/apipolicy_client_adapter.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
     "http_fuzzer.cpp",
   ]
@@ -74,10 +79,8 @@ ohos_fuzztest("HttpFuzzTest") {
   external_deps = common_external_deps
 }
 
-###############################################################################
 group("fuzztest") {
   testonly = true
 
   deps = [ ":HttpFuzzTest" ]
 }
-###############################################################################

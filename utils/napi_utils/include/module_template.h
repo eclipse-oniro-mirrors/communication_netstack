@@ -112,7 +112,8 @@ napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
             NETSTACK_LOGE("work failed error code = %{public}d", context->GetErrorCode());
         }
     }
-    if (!context->IsParseOK() || context->IsPermissionDenied() || context->GetManager()->IsEventDestroy()) {
+    if (!context->IsParseOK() || context->IsPermissionDenied() || context->IsNoAllowedHost() ||
+        context->GetManager()->IsEventDestroy()) {
         context->CreateAsyncWork(asyncWorkName, executor, callback);
     }
     return ret;

@@ -45,6 +45,7 @@ ohos_fuzztest("WebSocketExecFuzzTest") {
   ]
 
   sources = [
+    "$NETSTACK_DIR/utils/common_utils/src/apipolicy_client_adapter.cpp",
     "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
     "$NETSTACK_NAPI_ROOT/websocket/async_context/src/close_context.cpp",
     "$NETSTACK_NAPI_ROOT/websocket/async_context/src/connect_context.cpp",
@@ -64,10 +65,14 @@ ohos_fuzztest("WebSocketExecFuzzTest") {
   ]
 
   external_deps = [
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "eventhandler:libeventhandler",
     "hilog:libhilog",
+    "ipc:ipc_core",
     "napi:ace_napi",
+    "samgr:samgr_proxy",
   ]
 
   defines = [

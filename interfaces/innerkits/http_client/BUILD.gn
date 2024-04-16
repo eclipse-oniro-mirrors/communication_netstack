@@ -96,6 +96,13 @@ ohos_shared_library("http_client") {
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
 
     external_deps = [ "netmanager_base:net_conn_manager_if" ]
+    external_deps += [
+      "bundle_framework:appexecfwk_base",
+      "bundle_framework:appexecfwk_core",
+      "c_utils:utils",
+      "ipc:ipc_core",
+      "samgr:samgr_proxy",
+    ]
   } else {
     deps += [ "$NETSTACK_DIR/utils:stack_utils_common" ]
     external_deps = [

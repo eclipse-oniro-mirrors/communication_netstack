@@ -68,6 +68,7 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_REMOTE_FILE_NOT_FOUND, "Remote file not found"},
     {HTTP_AUTH_ERROR, "An authentication function returned an error"},
     {HTTP_SSL_PINNEDPUBKEYNOTMATCH, "Specified pinned public key did not match"},
+    {HTTP_NOT_ALLOWED_HOST, "It is not allowed to visit this host"},
     {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
 };
 static std::atomic<int32_t> g_currentTaskId = std::numeric_limits<int32_t>::min();
@@ -494,6 +495,10 @@ int32_t RequestContext::GetErrorCode() const
         return PERMISSION_DENIED_CODE;
     }
 
+    if (BaseContext::IsNoAllowedHost()) {
+        return HTTP_NOT_ALLOWED_HOST;
+    }
+
     if (HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE) != HTTP_ERR_MAP.end()) {
         return err + HTTP_ERROR_CODE_BASE;
     }
@@ -509,6 +514,10 @@ std::string RequestContext::GetErrorMessage() const
 
     if (BaseContext::IsPermissionDenied()) {
         return PERMISSION_DENIED_MSG;
+    }
+
+    if (BaseContext::IsNoAllowedHost()) {
+        return HTTP_ERR_MAP.at(HTTP_NOT_ALLOWED_HOST);
     }
 
     auto pos = HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE);

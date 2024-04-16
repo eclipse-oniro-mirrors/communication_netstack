@@ -423,6 +423,10 @@ bool HttpExec::ExecRequest(RequestContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+    if (!CommonUtils::IsNoAllowedHostnameForAtomicService(context->options.GetUrl())) {
+        context->SetNoAllowedHost(true);
+        return false;
+    }
     if (context->GetManager()->IsEventDestroy()) {
         return false;
     }

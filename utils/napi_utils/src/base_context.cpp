@@ -35,7 +35,8 @@ BaseContext::BaseContext(napi_env env, EventManager *manager)
       deferred_(nullptr),
       needPromise_(true),
       needThrowException_(false),
-      permissionDenied_(false) {}
+      permissionDenied_(false),
+      noAllowedHost_(false) {}
 
 BaseContext::~BaseContext()
 {
@@ -220,6 +221,16 @@ void BaseContext::SetPermissionDenied(bool permissionDenied)
 bool BaseContext::IsPermissionDenied() const
 {
     return permissionDenied_;
+}
+
+void BaseContext::SetNoAllowedHost(bool noAllowed)
+{
+    noAllowedHost_ = noAllowed;
+}
+
+bool BaseContext::IsNoAllowedHost() const
+{
+    return noAllowedHost_;
 }
 
 void BaseContext::CreateReference(napi_value value)

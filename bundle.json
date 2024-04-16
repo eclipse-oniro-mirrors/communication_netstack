@@ -40,7 +40,9 @@
                 "napi",
                 "netmanager_base",
                 "ylong_http",
-                "openssl"
+                "openssl",
+                "samgr",
+                "bundle_framework"
             ],
             "third_party": [
                 "curl",
