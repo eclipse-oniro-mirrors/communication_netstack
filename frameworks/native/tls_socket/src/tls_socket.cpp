@@ -44,8 +44,8 @@ constexpr int COMMON_NAME_BUF_SIZE = 256;
 constexpr int BUF_SIZE = 2048;
 constexpr int SSL_RET_CODE = 0;
 constexpr int SSL_ERROR_RETURN = -1;
+constexpr int SSL_WANT_READ_RETURN = -2;
 constexpr int OFFSET = 2;
-constexpr int QUIT_RESPONSE_CODE_LEN = 3;
 constexpr const char *SPLIT_ALT_NAMES = ",";
 constexpr const char *SPLIT_HOST_NAME = ".";
 constexpr const char *PROTOCOL_UNKNOW = "UNKNOW_PROTOCOL";
@@ -63,7 +63,6 @@ constexpr const char *SIGN_NID_ED_FOUR_FOUR_EIGHT = "Ed448+";
 constexpr const char *SIGN_NID_UNDEF_ADD = "UNDEF+";
 constexpr const char *SIGN_NID_UNDEF = "UNDEF";
 constexpr const char *OPERATOR_PLUS_SIGN = "+";
-constexpr const char *QUIT_RESPONSE_CODE = "221";
 static constexpr const char *TLS_SOCKET_CLIENT_READ = "OS_NET_TSCliRD";
 const std::regex JSON_STRING_PATTERN{R"(/^"(?:[^"\\\u0000-\u001f]|\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4}))*"/)"};
 const std::regex PATTERN{
@@ -423,6 +422,13 @@ int TLSSocket::ReadMessage()
     }
     int len = tlsSocketInternal_.Recv(buffer, MAX_BUFFER_SIZE);
     if (len < 0) {
+        if (errno == EAGAIN || errno == EINTR) {
+            NETSTACK_LOGD("EINTR or EAGAIN");
+            return 0;
+        }
+        if (len == SSL_WANT_READ_RETURN) {
+            return 0;
+        }
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         NETSTACK_LOGE("SSL_read function read error, errno is %{public}d, errno info is %{public}s",
                       resErr, MakeSSLErrorString(resErr).c_str());
@@ -438,9 +444,6 @@ int TLSSocket::ReadMessage()
     tlsSocketInternal_.MakeRemoteInfo(remoteInfo);
     std::string bufContent(buffer, len);
     CallOnMessageCallback(bufContent, remoteInfo);
-    if (strncmp(buffer, QUIT_RESPONSE_CODE, QUIT_RESPONSE_CODE_LEN) == 0) {
-        return -1;
-    }
 
     return ret;
 }
@@ -1175,7 +1178,7 @@ int TLSSocket::TLSSocketInternal::Recv(char *buffer, int maxBufferSize)
                 return SSL_ERROR_RETURN;
             case SSL_ERROR_WANT_READ:
                 NETSTACK_LOGD("SSL_read function no data available for reading, try again at a later time");
-                return SSL_RET_CODE;
+                return SSL_WANT_READ_RETURN;
             default:
                 NETSTACK_LOGE("SSL_read function failed, error code is %{public}d", err);
                 return SSL_ERROR_RETURN;
