@@ -422,11 +422,7 @@ int TLSSocket::ReadMessage()
     }
     int len = tlsSocketInternal_.Recv(buffer, MAX_BUFFER_SIZE);
     if (len < 0) {
-        if (errno == EAGAIN || errno == EINTR) {
-            NETSTACK_LOGD("EINTR or EAGAIN");
-            return 0;
-        }
-        if (len == SSL_WANT_READ_RETURN) {
+        if (errno == EAGAIN || errno == EINTR || len == SSL_WANT_READ_RETURN) {
             return 0;
         }
         int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
