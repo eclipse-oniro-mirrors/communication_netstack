@@ -1887,7 +1887,7 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
             break;
         }
         int32_t recvSize = recv(connectFD, buffer, recvBufferSize, 0);
-        NETSTACK_LOGI("ClientRecv: fd:%{public}d, buf:%{public}s, size:%{public}d", connectFD, buffer, recvSize);
+        NETSTACK_LOGD("ClientRecv: fd:%{public}d, buf:%{public}s, size:%{public}d", connectFD, buffer, recvSize);
         if (recvSize <= 0) {
             if (errno != EAGAIN && errno != EINTR) {
                 NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
