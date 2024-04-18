@@ -100,6 +100,7 @@ ohos_shared_library("http_client") {
     deps += [ "$NETSTACK_DIR/utils:stack_utils_common" ]
     external_deps = [
       "hilog:libhilog",
+      "hitrace:hitrace_meter",
       "netmanager_base:net_conn_manager_if",
     ]
     if (product_name != "ohos-sdk") {

@@ -17,6 +17,7 @@
 #include <memory>
 
 #include "http_client.h"
+#include "hitrace_meter.h"
 #include "http_client_constant.h"
 #include "http_client_task.h"
 #include "http_client_time.h"
@@ -39,6 +40,7 @@ namespace OHOS {
 namespace NetStack {
 namespace HttpClient {
 
+static constexpr const char *HTTP_REQ_TRACE_NAME = "HttpRequestNative";
 static constexpr size_t MAX_LIMIT = 100 * 1024 * 1024;
 std::atomic<uint32_t> HttpClientTask::nextTaskId_(0);
 
@@ -332,6 +334,8 @@ bool HttpClientTask::Start()
     auto task = shared_from_this();
     session.StartTask(task);
 
+    StartAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, static_cast<int32_t>(taskId_));
+
     return true;
 }
 
@@ -508,6 +512,7 @@ double HttpClientTask::GetTimingFromCurl(CURL *handle, CURLINFO info)
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
 {
+    FinishAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, static_cast<int32_t>(taskId_));
     CURLcode code = msg->data.result;
     NETSTACK_LOGD("taskid=%{public}d code=%{public}d", taskId_, code);
     error_.SetCURLResult(code);
