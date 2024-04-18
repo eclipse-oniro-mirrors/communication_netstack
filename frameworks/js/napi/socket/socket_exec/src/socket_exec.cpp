@@ -1450,7 +1450,7 @@ bool ExecUdpAddMembership(MulticastMembershipContext *context)
         ipv6_mreq mreq = {};
         inet_pton(AF_INET6, context->address_.GetAddress().c_str(), &mreq.ipv6mr_multiaddr);
         mreq.ipv6mr_interface = 0;
-        if (setsockopt(context->GetSocketFd(), IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
+        if (setsockopt(context->GetSocketFd(), IPPROTO_IPV6, IPV6_JOIN_GROUP, reinterpret_cast<void *>(&mreq),
                        sizeof(mreq)) == -1) {
             NETSTACK_LOGE("ipv6 addmembership err, addr: %{public}s, port: %{public}u, err: %{public}d",
                           context->address_.GetAddress().c_str(), context->address_.GetPort(), errno);
@@ -1484,7 +1484,7 @@ bool ExecUdpDropMembership(MulticastMembershipContext *context)
         ipv6_mreq mreq = {};
         inet_pton(AF_INET6, context->address_.GetAddress().c_str(), &mreq.ipv6mr_multiaddr);
         mreq.ipv6mr_interface = 0;
-        if (setsockopt(context->GetSocketFd(), IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
+        if (setsockopt(context->GetSocketFd(), IPPROTO_IPV6, IPV6_LEAVE_GROUP, reinterpret_cast<void *>(&mreq),
                        sizeof(mreq)) == -1) {
             NETSTACK_LOGE("ipv6 dropmembership err, addr: %{public}s, port: %{public}u, err: %{public}d",
                           context->address_.GetAddress().c_str(), context->address_.GetPort(), errno);
