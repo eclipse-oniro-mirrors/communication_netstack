@@ -40,6 +40,8 @@
 
 #ifdef IOS_PLATFORM
 #define SO_PROTOCOL 38
+#define IPV6_ADD_MEMBERSHIP 20
+#define IPV6_DROP_MEMBERSHIP 21
 #endif
 
 static constexpr const int DEFAULT_BUFFER_SIZE = 8192;
