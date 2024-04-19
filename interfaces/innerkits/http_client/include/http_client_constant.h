@@ -40,6 +40,7 @@ public:
     static const uint32_t DEFAULT_CONNECT_TIMEOUT;
 
     static const size_t MAX_JSON_PARSE_SIZE;
+    static const size_t MAX_DATA_LIMIT;
 
     /* options key */
     static const char *const PARAM_KEY_METHOD;

@@ -39,7 +39,7 @@ namespace OHOS {
 namespace NetStack {
 namespace HttpClient {
 
-static constexpr size_t MAX_LIMIT = 100 * 1024 * 1024;
+static const size_t MAX_LIMIT = HttpConstant::MAX_DATA_LIMIT;
 std::atomic<uint32_t> HttpClientTask::nextTaskId_(0);
 
 bool CheckFilePath(const std::string &fileName, std::string &realPath)
