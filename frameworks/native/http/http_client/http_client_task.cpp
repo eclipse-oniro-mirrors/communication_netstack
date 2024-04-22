@@ -42,7 +42,7 @@ namespace OHOS {
 namespace NetStack {
 namespace HttpClient {
 #if !defined(_WIN32) && !defined(__APPLE__)
-static constexpr const char *HTTP_REQ_TRACE_NAME = "HttpRequestNative";
+static constexpr const char *HTTP_REQ_TRACE_NAME = "HttpRequestInner";
 #endif
 static constexpr size_t MAX_LIMIT = 100 * 1024 * 1024;
 std::atomic<uint32_t> HttpClientTask::nextTaskId_(0);
