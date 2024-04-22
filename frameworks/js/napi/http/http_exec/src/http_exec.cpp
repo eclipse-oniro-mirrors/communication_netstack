@@ -1009,9 +1009,11 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     }
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_URL, context->options.GetUrl().c_str(), context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CUSTOMREQUEST, method.c_str(), context);
+    if (method != HttpConstant::HTTP_METHOD_POST) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CUSTOMREQUEST, method.c_str(), context);
+    }
 
-    if (MethodForPost(method) && !context->options.GetBody().empty()) {
+    if (MethodForPost(method)) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POST, 1L, context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->options.GetBody().c_str(), context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->options.GetBody().size(), context);

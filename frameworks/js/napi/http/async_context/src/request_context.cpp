@@ -744,7 +744,6 @@ void RequestContext::SaveFormData(napi_env env, napi_value dataValue, MultiFormD
     if (type == napi_string) {
         multiFormData.data = NapiUtils::GetStringFromValueUtf8(GetEnv(), dataValue);
         NETSTACK_LOGD("SaveFormData string");
-        options.SetHttpDataType(HttpDataType::STRING);
     } else if (NapiUtils::ValueIsArrayBuffer(GetEnv(), dataValue)) {
         size_t length = 0;
         void *data = NapiUtils::GetInfoFromArrayBufferValue(GetEnv(), dataValue, &length);
@@ -753,15 +752,12 @@ void RequestContext::SaveFormData(napi_env env, napi_value dataValue, MultiFormD
         }
         multiFormData.data = std::string(static_cast<const char *>(data), length);
         NETSTACK_LOGD("SaveFormData ArrayBuffer");
-        options.SetHttpDataType(HttpDataType::ARRAY_BUFFER);
     } else if (type == napi_object) {
         multiFormData.data = NapiUtils::GetStringFromValueUtf8(
             GetEnv(), NapiUtils::JsonStringify(GetEnv(), dataValue));
         NETSTACK_LOGD("SaveFormData Object");
-        options.SetHttpDataType(HttpDataType::OBJECT);
     } else {
         NETSTACK_LOGD("only support string, ArrayBuffer and Object");
-        options.SetHttpDataType(HttpDataType::NO_DATA_TYPE);
     }
 }
 
