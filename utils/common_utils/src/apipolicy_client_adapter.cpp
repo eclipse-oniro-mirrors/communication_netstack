@@ -19,6 +19,9 @@
 #include "netstack_log.h"
 
 namespace OHOS::NetStack::CommonUtils {
+namespace {
+    constexpr const char *APIPOLICY_SO_PATH = "/system/lib64/platformsdk/libapipolicy_client.z.so";
+}
 
 std::string ApiPolicyAdapter::DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
 std::string ApiPolicyAdapter::DOMAIN_TYPE_WEB_SOCKET = "webSocket";
@@ -39,7 +42,7 @@ ApiPolicyAdapter::ApiPolicyAdapter()
         NETSTACK_LOGI("apipolicy lib handle have load");
         return;
     }
-    libHandle = dlopen("/system/lib64/libapipolicy_client.z.so", RTLD_NOW);
+    libHandle = dlopen(APIPOLICY_SO_PATH, RTLD_NOW);
     if (!libHandle) {
         const char *err = dlerror();
         NETSTACK_LOGE("apipolicy so dlopen failed: %{public}s", err ? err : "unknown");
