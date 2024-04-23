@@ -776,7 +776,7 @@ static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &
 
 static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &callback)
 {
-    if (errno == EAGAIN || errno == EINTR || (recvLen == 0 && !IsTCPSocket(sock))) {
+    if (errno == EAGAIN || errno == EINTR || !IsTCPSocket(sock)) {
         return 0;
     }
     if (errno == 0) {
@@ -784,7 +784,7 @@ static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &call
         callback.OnCloseMessage(callback.GetEventManager());
     } else {
         NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
-        callback.OnError(recvLen == 0 && IsTCPSocket(sock) ? UNKNOW_ERROR : errno);
+        callback.OnError(recvLen == 0 ? UNKNOW_ERROR : errno);
     }
     return -1;
 }
