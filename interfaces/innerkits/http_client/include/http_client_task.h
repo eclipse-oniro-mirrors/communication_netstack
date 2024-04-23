@@ -210,6 +210,22 @@ private:
      * @return Returns true if the set options are set successfully, false otherwise.
      */
     bool SetServerSSLCertOption(CURL *curl);
+
+    /**
+     * Sets the ssl cert options for the HTTP request.
+     * @param handle The Curl handle.
+     * @return Returns true if the set options are set successfully, false otherwise.
+     */
+    bool SetSSLCertOption(CURL *curl);
+
+    /**
+     * Ssl verify function for the HTTP request.
+     * @param handle The Curl handle.
+     * @param sslCtl The SSL handle.
+     * @return Returns CURLM_OK if the set options are set successfully, error code otherwise.
+     */
+    CURLcode SslCtxFunction(CURL *curl, void *sslCtx);
+
     /**
      * Sets the upload options for the HTTP request.
      * @param handle The Curl handle.

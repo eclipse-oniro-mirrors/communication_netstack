@@ -70,6 +70,11 @@ const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/cert.pem";
 const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/certs/cacert.pem";
 #endif // MAC_PLATFORM
 #endif // WINDOWS_PLATFORM
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+const int32_t HttpConstant::UID_TRANSFORM_DIVISOR = 200000;
+const char *HttpConstant::USER_CERT_BASE_PATH = "/data/certificates/user_cacerts/";
+const char *HttpConstant::USER_CERT_ROOT_PATH = "/data/certificates/user_cacerts/0/";
+#endif
 
 const char *const HttpConstant::HTTP_CONTENT_TYPE = "content-type";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE = "application/x-www-form-urlencoded";

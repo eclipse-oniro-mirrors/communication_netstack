@@ -13,6 +13,10 @@
  * limitations under the License.
  */
 
+#include <unistd.h>
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+#include <openssl/ssl.h>
+#endif
 #include <iostream>
 #include <memory>
 
@@ -150,6 +154,76 @@ void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::str
     }
 }
 
+CURLcode HttpClientTask::SslCtxFunction(CURL *curl, void *sslCtx)
+{
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+    std::vector<std::string> certs;
+    certs.emplace_back(HttpConstant::USER_CERT_ROOT_PATH);
+    certs.emplace_back(std::string(HttpConstant::USER_CERT_BASE_PATH) +
+                       std::to_string(getuid() / HttpConstant::UID_TRANSFORM_DIVISOR));
+    certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
+
+    if (sslCtx == nullptr) {
+        NETSTACK_LOGE("sslCtx is null");
+        return CURLE_SSL_CERTPROBLEM;
+    }
+
+    for (const auto &path : certs) {
+        NETSTACK_LOGD("certificate directory path: %{public}s", path.c_str());
+        if (path.empty() || access(path.c_str(), F_OK) != 0) {
+            NETSTACK_LOGD("certificate directory path is not exist");
+            continue;
+        }
+        if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), nullptr, path.c_str())) {
+            NETSTACK_LOGE("loading certificates from directory error.");
+            continue;
+        }
+    }
+    NETSTACK_LOGD("certificate directory path: %{public}s", request_.GetCaPath().c_str());
+    if (access(request_.GetCaPath().c_str(), F_OK) != 0) {
+        NETSTACK_LOGD("certificate directory path is not exist");
+    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), request_.GetCaPath().c_str(), nullptr)) {
+        NETSTACK_LOGE("loading certificates from context cert error.");
+    }
+#endif // HTTP_MULTIPATH_CERT_ENABLE
+    return CURLE_OK;
+}
+
+bool HttpClientTask::SetSSLCertOption(CURL *handle)
+{
+#ifdef NO_SSL_CERTIFICATION
+    // in real life, you should buy a ssl certification and rename it to /etc/ssl/cert.pem
+    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
+    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
+#else
+#ifndef WINDOWS_PLATFORM
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+    curl_ssl_ctx_callback sslCtxFunc = [](CURL *curl, void *sslCtx, void *parm) -> CURLcode {
+        HttpClientTask *task = static_cast<HttpClientTask *>(parm);
+        if (!task) {
+            return CURLE_SSL_CERTPROBLEM;
+        }
+        return task->SslCtxFunction(curl, sslCtx);
+    };
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_CTX_FUNCTION, sslCtxFunc);
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_CTX_DATA, this);
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_CAINFO, nullptr);
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_VERIFYPEER, 1L);
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_VERIFYHOST, 2L);
+#else
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_CAINFO, nullptr);
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_VERIFYHOST, 0L);
+#endif // HTTP_MULTIPATH_CERT_ENABLE
+#else
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_VERIFYHOST, 0L);
+#endif // WINDOWS_PLATFORM
+    SetServerSSLCertOption(handle);
+#endif // NO_SSL_CERTIFICATION
+    return true;
+}
+
 bool HttpClientTask::SetOtherCurlOption(CURL *handle)
 {
     // set proxy
@@ -169,17 +243,7 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYTYPE, proxyType);
     }
 
-#ifdef NO_SSL_CERTIFICATION
-    // in real life, you should buy a ssl certification and rename it to /etc/ssl/cert.pem
-    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
-    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
-#else
-#ifndef WINDOWS_PLATFORM
-    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_CAINFO, request_.GetCaPath().c_str());
-    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_CAPATH, HttpConstant::HTTP_PREPARE_CA_PATH);
-#endif // WINDOWS_PLATFORM
-    SetServerSSLCertOption(handle);
-#endif // NO_SSL_CERTIFICATION
+    SetSSLCertOption(handle);
 
 #ifdef HTTP_CURL_PRINT_VERBOSE
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_VERBOSE, 1L);
