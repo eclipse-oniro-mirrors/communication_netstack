@@ -157,7 +157,6 @@ cJSON* LRUCache::WriteCacheToJsonValue()
             cJSON_AddItemToObject(root, node.key.c_str(), nodeKey);
         }
     }
-    NETSTACK_LOGD("root = %{public}s", cJSON_PrintUnformatted(root));
     return root;
 }
 

@@ -14,26 +14,6 @@
 import("//build/ohos.gni")
 import("//foundation/communication/netstack/netstack_config.gni")
 
-ohos_ndk_library("libnet_websocket") {
-  output_name = "net_websocket"
-  output_extension = "so"
-  ndk_description_file = "./libwebsocket.ndk.json"
-  min_compact_version = "1"
-  system_capability = "SystemCapability.Communication.NetStack"
-  system_capability_headers = [
-    "network/netstack/net_websocket/net_websocket.h",
-    "network/netstack/net_websocket/net_websocket_type.h",
-  ]
-}
-
-ohos_ndk_headers("websocket_header") {
-  dest_dir = "$ndk_headers_out_dir/network/netstack/net_websocket"
-  sources = [
-    "./include/net_websocket.h",
-    "./include/net_websocket_type.h",
-  ]
-}
-
 ohos_shared_library("net_websocket") {
   sanitize = {
     cfi = true

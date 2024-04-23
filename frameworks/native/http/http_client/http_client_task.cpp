@@ -17,6 +17,9 @@
 #include <memory>
 
 #include "http_client.h"
+#if !defined(_WIN32) && !defined(__APPLE__)
+#include "hitrace_meter.h"
+#endif
 #include "http_client_constant.h"
 #include "http_client_task.h"
 #include "http_client_time.h"
@@ -40,6 +43,10 @@ namespace NetStack {
 namespace HttpClient {
 
 static const size_t MAX_LIMIT = HttpConstant::MAX_DATA_LIMIT;
+
+#if !defined(_WIN32) && !defined(__APPLE__)
+static constexpr const char *HTTP_REQ_TRACE_NAME = "HttpRequestInner";
+#endif
 std::atomic<uint32_t> HttpClientTask::nextTaskId_(0);
 
 bool CheckFilePath(const std::string &fileName, std::string &realPath)
@@ -331,7 +338,9 @@ bool HttpClientTask::Start()
 
     auto task = shared_from_this();
     session.StartTask(task);
-
+#if !defined(_WIN32) && !defined(__APPLE__)
+    StartAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, static_cast<int32_t>(taskId_));
+#endif
     return true;
 }
 
@@ -508,6 +517,9 @@ double HttpClientTask::GetTimingFromCurl(CURL *handle, CURLINFO info)
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
 {
+#if !defined(_WIN32) && !defined(__APPLE__)
+    FinishAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, static_cast<int32_t>(taskId_));
+#endif
     CURLcode code = msg->data.result;
     NETSTACK_LOGD("taskid=%{public}d code=%{public}d", taskId_, code);
     error_.SetCURLResult(code);
