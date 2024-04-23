@@ -399,13 +399,8 @@ int TLSSocket::ReadMessage()
         NETSTACK_LOGE("memset_s failed!");
         return -1;
     }
-    ssl_st *ssl = tlsSocketInternal_.GetSSL();
-    if (!ssl) {
-        return TLS_ERR_SSL_NULL;
-    }
-    int sock = SSL_get_rfd(ssl);
     nfds_t num = 1;
-    pollfd fds[1] = {{.fd = sock, .events = POLLIN}};
+    pollfd fds[1] = {{.fd = sockFd_, .events = POLLIN}};
     int ret = poll(fds, num, READ_TIMEOUT_MS);
     if (ret < 0) {
         int resErr = ConvertErrno();
