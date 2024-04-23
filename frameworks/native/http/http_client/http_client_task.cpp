@@ -169,7 +169,6 @@ CURLcode HttpClientTask::SslCtxFunction(CURL *curl, void *sslCtx)
     }
 
     for (const auto &path : certs) {
-        NETSTACK_LOGD("certificate directory path: %{public}s", path.c_str());
         if (path.empty() || access(path.c_str(), F_OK) != 0) {
             NETSTACK_LOGD("certificate directory path is not exist");
             continue;
@@ -179,7 +178,7 @@ CURLcode HttpClientTask::SslCtxFunction(CURL *curl, void *sslCtx)
             continue;
         }
     }
-    NETSTACK_LOGD("certificate directory path: %{public}s", request_.GetCaPath().c_str());
+
     if (access(request_.GetCaPath().c_str(), F_OK) != 0) {
         NETSTACK_LOGD("certificate directory path is not exist");
     } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), request_.GetCaPath().c_str(), nullptr)) {
