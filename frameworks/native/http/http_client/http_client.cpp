@@ -89,8 +89,8 @@ void HttpSession::StartTask(const std::shared_ptr<HttpClientTask> &ptr)
     ptr->SetStatus(TaskStatus::RUNNING);
     auto startedCallback = [ptr](CURL *, void *) {};
     auto responseCallback = [ptr](CURLMsg *curlMessage, void *) {
-        ptr->SetStatus(TaskStatus::IDLE);
         ptr->ProcessResponse(curlMessage);
+        ptr->SetStatus(TaskStatus::IDLE);
     };
 
     requestHandler.Process(ptr->GetCurlHandle(), startedCallback, responseCallback);
