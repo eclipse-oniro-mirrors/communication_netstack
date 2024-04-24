@@ -78,7 +78,6 @@ ohos_shared_library("networksecurity_napi") {
     external_deps = [
       "bundle_framework:appexecfwk_base",
       "bundle_framework:appexecfwk_core",
-      "ipc:ipc_core",
       "samgr:samgr_proxy",
     ]
   } else {
