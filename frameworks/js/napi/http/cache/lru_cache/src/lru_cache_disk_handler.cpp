@@ -46,7 +46,6 @@ cJSON* LRUCacheDiskHandler::ReadJsonValueFromFile()
         NETSTACK_LOGE("parse json not success, maybe file is broken");
         return nullptr;
     }
-    NETSTACK_LOGD("root = %{public}s", cJSON_PrintUnformatted(root));
     return root;
 }
 

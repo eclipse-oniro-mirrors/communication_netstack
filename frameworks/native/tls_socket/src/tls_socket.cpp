@@ -46,6 +46,8 @@ constexpr int SSL_RET_CODE = 0;
 constexpr int SSL_ERROR_RETURN = -1;
 constexpr int SSL_WANT_READ_RETURN = -2;
 constexpr int OFFSET = 2;
+constexpr int DEFAULT_BUFFER_SIZE = 8192;
+constexpr int DEFAULT_POLL_TIMEOUT_MS = 500;
 constexpr const char *SPLIT_ALT_NAMES = ",";
 constexpr const char *SPLIT_HOST_NAME = ".";
 constexpr const char *PROTOCOL_UNKNOW = "UNKNOW_PROTOCOL";
@@ -399,13 +401,8 @@ int TLSSocket::ReadMessage()
         NETSTACK_LOGE("memset_s failed!");
         return -1;
     }
-    ssl_st *ssl = tlsSocketInternal_.GetSSL();
-    if (!ssl) {
-        return TLS_ERR_SSL_NULL;
-    }
-    int sock = SSL_get_rfd(ssl);
     nfds_t num = 1;
-    pollfd fds[1] = {{.fd = sock, .events = POLLIN}};
+    pollfd fds[1] = {{.fd = sockFd_, .events = POLLIN}};
     int ret = poll(fds, num, READ_TIMEOUT_MS);
     if (ret < 0) {
         int resErr = ConvertErrno();
@@ -1134,6 +1131,42 @@ void TLSSocket::TLSSocketInternal::SetTlsConfiguration(const TLSConnectOptions &
     configuration_.SetNetAddress(config.GetNetAddress());
 }
 
+static bool PollSend(int sockfd, ssl_st *ssl, const char *pdata, int sendSize)
+{
+    int bufferSize = DEFAULT_BUFFER_SIZE;
+    auto curPos = pdata;
+    nfds_t num = 1;
+    pollfd fds[1] = {{.fd = sockfd, .events = POLLOUT}};
+    while (sendSize > 0) {
+        int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT_MS);
+        if (ret == -1) {
+            NETSTACK_LOGE("send poll error, fd: %{public}d, errno: %{public}d", sockfd, errno);
+            return false;
+        } else if (ret == 0) {
+            NETSTACK_LOGI("send poll timeout, fd: %{public}d, errno: %{public}d", sockfd, errno);
+            continue;
+        }
+        size_t curSendSize = std::min<size_t>(sendSize, bufferSize);
+        int len = SSL_write(ssl, curPos, curSendSize);
+        if (len < 0) {
+            int err = SSL_get_error(ssl, SSL_RET_CODE);
+            if (err == SSL_ERROR_WANT_WRITE || errno == EAGAIN) {
+                NETSTACK_LOGI("write failed, retry");
+                continue;
+            } else {
+                NETSTACK_LOGE("write failed, return, err: %{public}d", err);
+                return false;
+            }
+        } else if (len == 0) {
+            NETSTACK_LOGI("send len is 0, should have sent len is %{public}d", sendSize);
+            return false;
+        }
+        curPos += len;
+        sendSize -= len;
+    }
+    return true;
+}
+
 bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
 {
     NETSTACK_LOGD("data to send :%{public}s", data.c_str());
@@ -1145,14 +1178,9 @@ bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
         NETSTACK_LOGE("ssl is null");
         return false;
     }
-    int len = SSL_write(ssl_, data.c_str(), data.length());
-    if (len < 0) {
-        int resErr = ConvertSSLError(GetSSL());
-        NETSTACK_LOGE("data '%{public}s' send failed!The error code is %{public}d, The error message is'%{public}s'",
-                      data.c_str(), resErr, MakeSSLErrorString(resErr).c_str());
+    if (!PollSend(socketDescriptor_, ssl_, data.c_str(), data.size())) {
         return false;
     }
-    NETSTACK_LOGD("data '%{public}s' Sent successfully,sent in total %{public}d bytes!", data.c_str(), len);
     return true;
 }
 int TLSSocket::TLSSocketInternal::Recv(char *buffer, int maxBufferSize)
