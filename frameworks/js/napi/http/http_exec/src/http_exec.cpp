@@ -112,9 +112,11 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
     }
     std::unique_ptr<RequestContext, decltype(&RequestContextDeleter)> context(static_cast<RequestContext *>(data),
                                                                               RequestContextDeleter);
+    napi_value undefined = NapiUtils::GetUndefined(env);
     napi_value argv[EVENT_PARAM_TWO] = {nullptr};
     if (context->IsParseOK() && context->IsExecOK()) {
-        argv[EVENT_PARAM_ZERO] = NapiUtils::GetUndefined(env);
+        context->Emit(ON_DATA_END, std::make_pair(undefined, undefined));
+        argv[EVENT_PARAM_ZERO] = undefined;
         argv[EVENT_PARAM_ONE] = HttpExec::RequestInStreamCallback(context.get());
         if (argv[EVENT_PARAM_ONE] == nullptr) {
             return;
@@ -126,14 +128,12 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
             return;
         }
 
-        argv[EVENT_PARAM_ONE] = NapiUtils::GetUndefined(env);
+        argv[EVENT_PARAM_ONE] = undefined;
     }
 
-    napi_value undefined = NapiUtils::GetUndefined(env);
     if (context->GetDeferred() != nullptr) {
         if (context->IsExecOK()) {
             napi_resolve_deferred(env, context->GetDeferred(), argv[EVENT_PARAM_ONE]);
-            context->Emit(ON_DATA_END, std::make_pair(undefined, undefined));
         } else {
             napi_reject_deferred(env, context->GetDeferred(), argv[EVENT_PARAM_ZERO]);
         }
@@ -142,9 +142,6 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
     napi_value func = context->GetCallback();
     if (NapiUtils::GetValueType(env, func) == napi_function) {
         (void)NapiUtils::CallFunction(env, undefined, func, EVENT_PARAM_TWO, argv);
-    }
-    if (context->IsExecOK()) {
-        context->Emit(ON_DATA_END, std::make_pair(undefined, undefined));
     }
 }
 
