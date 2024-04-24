@@ -92,7 +92,7 @@ private:
     std::mutex mutexForEmitAndEmitByUv_;
     std::mutex dataMutex_;
     std::mutex dataQueueMutex_;
-    std::vector<EventListener> listeners_;
+    std::list<EventListener> listeners_;
     void *data_;
     std::queue<void *> dataQueue_;
     static std::mutex mutexForManager_;
