@@ -18,6 +18,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 namespace OHOS {
 namespace NetStack {
@@ -76,9 +77,9 @@ public:
     static const char *const HTTP_DEFAULT_USER_AGENT;
     static const char *const HTTP_DEFAULT_CA_PATH;
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
-    static const int32_t UID_TRANSFORM_DIVISOR;
-    static const char *USER_CERT_BASE_PATH;
-    static const char *USER_CERT_ROOT_PATH;
+    static const std::string USER_CERT_BASE_PATH;
+    static const std::string USER_CERT_ROOT_PATH;
+    static const std::string USER_CERT_PATH;
 #endif
 
     static const char *const HTTP_CONTENT_TYPE;

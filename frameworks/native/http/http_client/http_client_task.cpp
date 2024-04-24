@@ -163,8 +163,7 @@ CURLcode HttpClientTask::SslCtxFunction(CURL *curl, void *sslCtx)
     }
     std::vector<std::string> certs;
     certs.emplace_back(HttpConstant::USER_CERT_ROOT_PATH);
-    certs.emplace_back(std::string(HttpConstant::USER_CERT_BASE_PATH) +
-                       std::to_string(getuid() / HttpConstant::UID_TRANSFORM_DIVISOR));
+    certs.emplace_back(HttpConstant::USER_CERT_PATH);
     certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
 
     for (const auto &path : certs) {
@@ -189,11 +188,6 @@ CURLcode HttpClientTask::SslCtxFunction(CURL *curl, void *sslCtx)
 
 bool HttpClientTask::SetSSLCertOption(CURL *handle)
 {
-#ifdef NO_SSL_CERTIFICATION
-    // in real life, you should buy a ssl certification and rename it to /etc/ssl/cert.pem
-    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
-    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
-#else
 #ifndef WINDOWS_PLATFORM
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
     curl_ssl_ctx_callback sslCtxFunc = [](CURL *curl, void *sslCtx, void *parm) -> CURLcode {
@@ -218,7 +212,6 @@ bool HttpClientTask::SetSSLCertOption(CURL *handle)
     NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_VERIFYHOST, 0L);
 #endif // WINDOWS_PLATFORM
     SetServerSSLCertOption(handle);
-#endif // NO_SSL_CERTIFICATION
     return true;
 }
 
