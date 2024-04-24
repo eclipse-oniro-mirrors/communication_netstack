@@ -157,16 +157,15 @@ void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::str
 CURLcode HttpClientTask::SslCtxFunction(CURL *curl, void *sslCtx)
 {
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
+    if (sslCtx == nullptr) {
+        NETSTACK_LOGE("sslCtx is null");
+        return CURLE_SSL_CERTPROBLEM;
+    }
     std::vector<std::string> certs;
     certs.emplace_back(HttpConstant::USER_CERT_ROOT_PATH);
     certs.emplace_back(std::string(HttpConstant::USER_CERT_BASE_PATH) +
                        std::to_string(getuid() / HttpConstant::UID_TRANSFORM_DIVISOR));
     certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
-
-    if (sslCtx == nullptr) {
-        NETSTACK_LOGE("sslCtx is null");
-        return CURLE_SSL_CERTPROBLEM;
-    }
 
     for (const auto &path : certs) {
         if (path.empty() || access(path.c_str(), F_OK) != 0) {
