@@ -29,6 +29,7 @@ common_external_deps = [
   "bundle_framework:appexecfwk_core",
   "c_utils:utils",
   "hilog:libhilog",
+  "ipc:ipc_core",
   "samgr:samgr_proxy",
 ]
 
