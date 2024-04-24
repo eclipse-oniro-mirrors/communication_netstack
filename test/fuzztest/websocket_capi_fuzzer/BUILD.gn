@@ -33,7 +33,6 @@ common_external_deps = [
   "c_utils:utils",
   "eventhandler:libeventhandler",
   "hilog:libhilog",
-  "ipc:ipc_core",
   "samgr:samgr_proxy",
 ]
 
