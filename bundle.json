@@ -30,9 +30,11 @@
         "ram": "5MB",
         "deps": {
             "components": [
+                "curl",
                 "hilog",
                 "hitrace",
                 "ipc",
+                "jsoncpp",
                 "zlib",
                 "cJSON",
                 "c_utils",
@@ -52,6 +54,7 @@
         "build": {
             "group_type": {
                 "base_group": [
+                    "//foundation/communication/netstack/frameworks/cj/http:cj_net_http_ffi",
                     "//foundation/communication/netstack/frameworks/js/napi/http:http",
                     "//foundation/communication/netstack/frameworks/js/napi/socket:socket",
                     "//foundation/communication/netstack/frameworks/js/napi/websocket:websocket",
