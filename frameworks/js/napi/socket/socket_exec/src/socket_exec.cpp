@@ -776,15 +776,19 @@ static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &
 
 static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &callback)
 {
-    if (errno == EAGAIN || errno == EINTR || (recvLen == 0 && !IsTCPSocket(sock))) {
+    if (errno == EAGAIN || errno == EINTR) {
         return 0;
     }
-    if (errno == 0) {
+    if (!IsTCPSocket(sock)) {
+        NETSTACK_LOGI("not tcpsocket, continue loop, recvLen: %{public}zd, err: %{public}d", recvLen, errno);
+        return 0;
+    }
+    if (errno == 0 && recvLen == 0) {
         NETSTACK_LOGI("closed by peer, socket:%{public}d, recvLen:%{public}zd", sock, recvLen);
         callback.OnCloseMessage(callback.GetEventManager());
     } else {
         NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
-        callback.OnError(recvLen == 0 && IsTCPSocket(sock) ? UNKNOW_ERROR : errno);
+        callback.OnError(errno);
     }
     return -1;
 }
