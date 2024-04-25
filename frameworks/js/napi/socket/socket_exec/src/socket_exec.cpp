@@ -856,7 +856,7 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
         return false;
     }
     struct pollfd fds[1] = {{.fd = sockfd, .events = POLLOUT}};
-    ret = poll(fds, 1, timeoutMSec);
+    ret = poll(fds, 1, timeoutMSec == 0 ? DEFAULT_CONNECT_TIMEOUT : timeoutMSec);
     if (ret < 0) {
         NETSTACK_LOGE("connect poll failed, socket is %{public}d, errno is %{public}d", sock, errno);
         return false;
