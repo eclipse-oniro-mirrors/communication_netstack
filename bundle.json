@@ -125,8 +125,8 @@
                 "//foundation/communication/netstack/test/unittest/websocket:unittest",
                 "//foundation/communication/netstack/test/unittest/websocket_inner_unittest:unittest",
                 "//foundation/communication/netstack/test/unittest/websocket_capi_unittest:unittest",
-                "//foundation/communication/netstack/test/fuzztest/websocket_inner_fuzzer:fuzztest",
-                "//foundation/communication/netstack/test/fuzztest/websocket_capi_fuzzer:fuzztest",
+                "//foundation/communication/netstack/test/fuzztest/websocketinnerapi_fuzzer:fuzztest",
+                "//foundation/communication/netstack/test/fuzztest/websocketcapi_fuzzer:fuzztest",
                 "//foundation/communication/netstack/test/unittest/utils/common_utils:unittest"
             ]
         }
