@@ -173,11 +173,15 @@ std::string _getHostnameFromUrl(const std::string &url)
 
 bool IsAllowedHostnameForAtomicService(const std::string &url)
 {
-    if (!BundleUtils::IsAtomicService()) {
+    std::string bundleName;
+    if (!BundleUtils::IsAtomicService(bundleName)) {
         NETSTACK_LOGD("IsAllowedHostnameForAtomicService not atomic service");
         return true;
     }
-    std::string bundleName = bundleInfo.applicationInfo.bundleName;
+    if (bundleName.empty()) {
+        NETSTACK_LOGE("IsAllowedHostnameForAtomicService bundleName is empty");
+        return true;
+    }
     auto hostname = _getHostnameFromUrl(url);
     if (hostname.empty()) {
         NETSTACK_LOGE("IsAllowedHostnameForAtomicService url hostname is empty");

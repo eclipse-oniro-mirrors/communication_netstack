@@ -15,12 +15,13 @@
 
 #include "netstack_bundle_utils.h"
 
-#include "iservice_registry.h"
-#include "system_ability_definition.h"
 #include "bundle_mgr_proxy.h"
+#include "iservice_registry.h"
+#include "netstack_log.h"
+#include "system_ability_definition.h"
 
 namespace OHOS::NetStack::BundleUtils {
-bool IsAtomicService()
+bool IsAtomicService(std::string &bundleName)
 {
     auto systemAbilityManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (systemAbilityManager == nullptr) {
@@ -45,6 +46,7 @@ bool IsAtomicService()
         NETSTACK_LOGE("getBundleInfoForSelf occur err");
         return false;
     }
-    return bundleInfo.applicationInfo.bundleType == AppExecFwk::BundleType::ATOMIC_SERVICE
+    bundleName = bundleInfo.applicationInfo.bundleName;
+    return bundleInfo.applicationInfo.bundleType == AppExecFwk::BundleType::ATOMIC_SERVICE;
 }
 }

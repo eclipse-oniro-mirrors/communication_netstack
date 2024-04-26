@@ -16,8 +16,10 @@
 #ifndef COMMUNICATION_NETSTACK_NETSTACK_BUNDLE_UTILS_H
 #define COMMUNICATION_NETSTACK_NETSTACK_BUNDLE_UTILS_H
 
+#include <string>
+
 namespace OHOS::NetStack::BundleUtils {
-bool IsAtomicService();
+bool IsAtomicService(std::string &bundleName);
 }
 
 #endif //COMMUNICATION_NETSTACK_NETSTACK_BUNDLE_UTILS_H
