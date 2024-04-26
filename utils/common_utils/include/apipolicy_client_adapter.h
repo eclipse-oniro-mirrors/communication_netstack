@@ -18,28 +18,10 @@
 
 #include <string>
 
-namespace OHOS::NetStack::CommonUtils {
-    class ApiPolicyAdapter {
-    public:
-        static std::string DOMAIN_TYPE_HTTP_REQUEST;
-        static std::string DOMAIN_TYPE_WEB_SOCKET;
-        static std::string DOMAIN_TYPE_DOWNLOAD;
-        static std::string DOMAIN_TYPE_UPLOAD;
-        static std::string DOMAIN_TYPE_WEBVIEW;
+namespace OHOS::NetStack::ApiPolicyUtils {
 
-        static int32_t RESULT_ACCEPT;
-        static int32_t RESULT_REJECT;
+bool IsAllowedHostname(const std::string &bundleName, const std::string &hostname);
 
-        ApiPolicyAdapter();
-
-        ~ApiPolicyAdapter();
-
-        int32_t CheckUrl(std::string bundle_name, std::string domain_type, std::string url);
-
-    private:
-        bool isInit = false;
-        void *libHandle = nullptr;
-    };
 }
 
 #endif //COMMUNICATION_NETSTACK_APIPOLICY_CLIENT_ADAPTER_H

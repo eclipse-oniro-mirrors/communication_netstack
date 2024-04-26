@@ -187,13 +187,7 @@ bool IsAllowedHostnameForAtomicService(const std::string &url)
         NETSTACK_LOGE("IsAllowedHostnameForAtomicService url hostname is empty");
         return true;
     }
-    auto apiPolicyClient = new ApiPolicyAdapter();
-    int32_t res = apiPolicyClient->CheckUrl(bundleName,
-                                            ApiPolicyAdapter::DOMAIN_TYPE_HTTP_REQUEST,
-                                            hostname);
-    NETSTACK_LOGD("ApiPolicy CheckHttpUrl result=%{public}d, bundle_name=%{public}s, hostname=%{public}s",
-                  res, bundleName.c_str(), hostname.c_str());
-    return res == ApiPolicyAdapter::RESULT_ACCEPT;
+    return ApiPolicyUtils::IsAllowedHostname(bundleName, hostname);
 }
 
 bool EndsWith(const std::string &str, const std::string &suffix)

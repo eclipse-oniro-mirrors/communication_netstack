@@ -18,65 +18,31 @@
 #include "apipolicy_client_adapter.h"
 #include "netstack_log.h"
 
-namespace OHOS::NetStack::CommonUtils {
+namespace OHOS::NetStack::ApiPolicyUtils {
 namespace {
-    constexpr const char *APIPOLICY_SO_PATH = "/system/lib64/platformsdk/libapipolicy_client.z.so";
+static constexpr const char *APIPOLICY_SO_PATH = "/system/lib64/platformsdk/libapipolicy_client.z.so";
+static std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
+static constexpr uint32_t RESULT_ACCEPT = 0;
 }
 
-std::string ApiPolicyAdapter::DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
-std::string ApiPolicyAdapter::DOMAIN_TYPE_WEB_SOCKET = "webSocket";
-std::string ApiPolicyAdapter::DOMAIN_TYPE_DOWNLOAD = "download";
-std::string ApiPolicyAdapter::DOMAIN_TYPE_UPLOAD = "upload";
-std::string ApiPolicyAdapter::DOMAIN_TYPE_WEBVIEW = "webView";
-
-int32_t ApiPolicyAdapter::RESULT_ACCEPT = 0;
-int32_t ApiPolicyAdapter::RESULT_REJECT = 1;
-
-ApiPolicyAdapter::ApiPolicyAdapter()
+bool IsAllowedHostname(const std::string &bundleName, const std::string &hostname)
 {
-    if (isInit) {
-        NETSTACK_LOGI("apipolicy so have load");
-        return;
-    }
-    if (libHandle) {
-        NETSTACK_LOGI("apipolicy lib handle have load");
-        return;
-    }
-    libHandle = dlopen(APIPOLICY_SO_PATH, RTLD_NOW);
+    void *libHandle = dlopen(APIPOLICY_SO_PATH, RTLD_NOW);
     if (!libHandle) {
         const char *err = dlerror();
         NETSTACK_LOGE("apipolicy so dlopen failed: %{public}s", err ? err : "unknown");
-        return;
-    }
-    NETSTACK_LOGD("apipolicy so dlopen success");
-    isInit = true;
-}
-
-ApiPolicyAdapter::~ApiPolicyAdapter()
-{
-    if (libHandle) {
-        dlclose(libHandle);
-        libHandle = nullptr;
-        NETSTACK_LOGD("apipolicy so have dlclose");
-    }
-    isInit = false;
-}
-
-int32_t ApiPolicyAdapter::CheckUrl(std::string bundle_name, std::string domain_type, std::string url)
-{
-    int32_t res = -1;
-    if (!isInit || !libHandle) {
-        NETSTACK_LOGE("apipolicy so handle is not init");
-        return res;
+        return true;
     }
     using CheckUrlFunc = int32_t (*)(std::string, std::string, std::string);
     auto func = reinterpret_cast<CheckUrlFunc>(dlsym(libHandle, "CheckUrl"));
     if (func == nullptr) {
         const char *err = dlerror();
         NETSTACK_LOGE("apipolicy dlsym CheckUrl failed: %{public}s", err ? err : "unknown");
-        return res;
+        return true;
     }
-    res = func(bundle_name, domain_type, url);
-    return res;
+    int32_t res = func(bundleName, DOMAIN_TYPE_HTTP_REQUEST, hostname);
+    NETSTACK_LOGD("ApiPolicy CheckHttpUrl result=%{public}d, bundle_name=%{public}s, hostname=%{public}s",
+                  res, bundleName.c_str(), hostname.c_str());
+    return res == RESULT_ACCEPT;
 }
 };
