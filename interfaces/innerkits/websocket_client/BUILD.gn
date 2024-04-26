@@ -88,11 +88,6 @@ ohos_shared_library("websocket_client") {
   if (is_mingw || is_mac) {
     sources +=
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
-    external_deps = [
-      "bundle_framework:appexecfwk_base",
-      "bundle_framework:appexecfwk_core",
-      "samgr:samgr_proxy",
-    ]
   } else {
     deps += [ "$NETSTACK_DIR/utils:stack_utils_common" ]
     external_deps = [ "hilog:libhilog" ]

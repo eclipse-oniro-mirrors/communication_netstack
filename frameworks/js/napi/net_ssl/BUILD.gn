@@ -75,11 +75,6 @@ ohos_shared_library("networksecurity_napi") {
       "$ARKUI_ROOT/napi:ace_napi",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
     ]
-    external_deps = [
-      "bundle_framework:appexecfwk_base",
-      "bundle_framework:appexecfwk_core",
-      "samgr:samgr_proxy",
-    ]
   } else {
     deps += [
       "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
