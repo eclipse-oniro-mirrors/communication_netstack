@@ -58,10 +58,6 @@ static constexpr const int UNKNOW_ERROR = -1;
 
 static constexpr const int NO_MEMORY = -2;
 
-static constexpr const int MSEC_TO_USEC = 1000;
-
-static constexpr const int MAX_SEC = 999999999;
-
 static constexpr const int USER_LIMIT = 511;
 
 static constexpr const int MAX_CLIENTS = 1024;
@@ -855,25 +851,13 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
     if (errno != EINPROGRESS) {
         return false;
     }
-
-    fd_set set = {0};
-    FD_ZERO(&set);
-    FD_SET(sock, &set);
-    if (timeoutMSec == 0) {
-        timeoutMSec = DEFAULT_CONNECT_TIMEOUT;
-    }
-
-    timeval timeout = {
-        .tv_sec = (timeoutMSec / MSEC_TO_USEC) % MAX_SEC,
-        .tv_usec = (timeoutMSec % MSEC_TO_USEC) * MSEC_TO_USEC,
-    };
-
-    ret = select(sock + 1, nullptr, &set, nullptr, &timeout);
+    struct pollfd fds[1] = {{.fd = sock, .events = POLLOUT}};
+    ret = poll(fds, 1, timeoutMSec == 0 ? DEFAULT_CONNECT_TIMEOUT : timeoutMSec);
     if (ret < 0) {
-        NETSTACK_LOGE("select failed, socket is %{public}d, errno is %{public}d", sock, errno);
+        NETSTACK_LOGE("connect poll failed, socket is %{public}d, errno is %{public}d", sock, errno);
         return false;
     } else if (ret == 0) {
-        NETSTACK_LOGE("timeout!");
+        NETSTACK_LOGE("connect poll timeout, socket is %{public}d", sock);
         return false;
     }
 
