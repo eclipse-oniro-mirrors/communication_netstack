@@ -115,6 +115,9 @@ ohos_shared_library("http") {
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
     ]
     external_deps = [ "cJSON:cjson" ]
+    external_deps += [
+      "c_utils:utils",
+    ]
     ldflags = [ "-lpthread" ]
   } else {
     deps = [
