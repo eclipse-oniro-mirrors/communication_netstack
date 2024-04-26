@@ -23,7 +23,9 @@
 
 #include "netstack_log.h"
 #include "netstack_common_utils.h"
+#if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 #include "net_conn_client.h"
+#endif
 #include "tls_utils.h"
 
 namespace OHOS {
