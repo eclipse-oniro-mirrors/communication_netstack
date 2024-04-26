@@ -33,7 +33,7 @@ std::string ToString(const std::list<std::string> &lists, char tab = ',');
 
 bool HasInternetPermission();
 
-bool IsNoAllowedHostnameForAtomicService(const std::string &url);
+bool IsAllowedHostnameForAtomicService(const std::string &url);
 
 bool EndsWith(const std::string &str, const std::string &suffix);
 

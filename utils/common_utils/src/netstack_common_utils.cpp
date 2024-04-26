@@ -33,10 +33,8 @@
 
 #include "curl/curl.h"
 #include "netstack_log.h"
-#include "iservice_registry.h"
-#include "system_ability_definition.h"
-#include "bundle_mgr_proxy.h"
 #include "apipolicy_client_adapter.h"
+#include "netstack_bundle_utils.h"
 
 constexpr int32_t INET_OPTION_SUC = 1;
 constexpr size_t MAX_DISPLAY_NUM = 2;
@@ -173,40 +171,17 @@ std::string _getHostnameFromUrl(const std::string &url)
     return hostname;
 }
 
-bool IsNoAllowedHostnameForAtomicService(const std::string &url)
+bool IsAllowedHostnameForAtomicService(const std::string &url)
 {
-    auto systemAbilityManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (systemAbilityManager == nullptr) {
-        NETSTACK_LOGE("systemAbilityManger is null");
-        return true;
-    }
-    auto bundleMgrSa = systemAbilityManager->GetSystemAbility(OHOS::BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
-    if (bundleMgrSa == nullptr) {
-        NETSTACK_LOGE("bundleMgrSa is null");
-        return true;
-    }
-    sptr<AppExecFwk::BundleMgrProxy> bundleMgrProxy = iface_cast<AppExecFwk::BundleMgrProxy>(bundleMgrSa);
-    if (bundleMgrProxy == nullptr) {
-        NETSTACK_LOGE("buildMgrProxy is null.");
-        return true;
-    }
-    AppExecFwk::BundleInfo bundleInfo;
-    auto flagsWithAppInfo = AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION;
-    auto flagsWithSign = AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_SIGNATURE_INFO;
-    if (bundleMgrProxy->GetBundleInfoForSelf(int32_t(flagsWithAppInfo) | int32_t(flagsWithSign),
-                                             bundleInfo) != ERR_OK) {
-        NETSTACK_LOGE("getBundleInfoForSelf occur err");
-        return true;
-    }
-    if (bundleInfo.applicationInfo.bundleType != AppExecFwk::BundleType::ATOMIC_SERVICE) {
-        NETSTACK_LOGD("isNoAllowedHostnameForAtomicService not atomic service");
+    if (!BundleUtils::IsAtomicService()) {
+        NETSTACK_LOGD("IsAllowedHostnameForAtomicService not atomic service");
         return true;
     }
     std::string bundleName = bundleInfo.applicationInfo.bundleName;
     auto hostname = _getHostnameFromUrl(url);
     if (hostname.empty()) {
-        NETSTACK_LOGE("isNoAllowedHostnameForAtomicService url hostname is empty");
-        return false;
+        NETSTACK_LOGE("IsAllowedHostnameForAtomicService url hostname is empty");
+        return true;
     }
     auto apiPolicyClient = new ApiPolicyAdapter();
     int32_t res = apiPolicyClient->CheckUrl(bundleName,
@@ -214,10 +189,7 @@ bool IsNoAllowedHostnameForAtomicService(const std::string &url)
                                             hostname);
     NETSTACK_LOGD("ApiPolicy CheckHttpUrl result=%{public}d, bundle_name=%{public}s, hostname=%{public}s",
                   res, bundleName.c_str(), hostname.c_str());
-    if (res == ApiPolicyAdapter::RESULT_ACCEPT) {
-        return true;
-    }
-    return false;
+    return res == ApiPolicyAdapter::RESULT_ACCEPT;
 }
 
 bool EndsWith(const std::string &str, const std::string &suffix)

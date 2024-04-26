@@ -57,6 +57,7 @@ ohos_shared_library("stack_utils_common") {
 
   sources = [
     "common_utils/src/apipolicy_client_adapter.cpp",
+    "common_utils/src/netstack_bundle_utils.cpp",
     "common_utils/src/netstack_common_utils.cpp",
   ]
 
