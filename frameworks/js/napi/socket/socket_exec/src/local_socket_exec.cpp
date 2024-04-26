@@ -167,9 +167,8 @@ static napi_value MakeJsLocalSocketMessageParam(napi_env env, napi_value msgBuff
 
 static napi_value MakeLocalSocketMessage(napi_env env, void *param)
 {
-    EventManager *manager = reinterpret_cast<EventManager *>(param);
-    MsgWithLocalRemoteInfo *msg = reinterpret_cast<MsgWithLocalRemoteInfo *>(manager->GetQueueData());
-    manager->PopQueueData();
+    auto *manager = reinterpret_cast<EventManager *>(param);
+    auto *msg = reinterpret_cast<MsgWithLocalRemoteInfo *>(manager->GetQueueData());
     auto deleter = [](const MsgWithLocalRemoteInfo *p) { delete p; };
     std::unique_ptr<MsgWithLocalRemoteInfo, decltype(deleter)> handler(msg, deleter);
     if (msg == nullptr || msg->data == nullptr || msg->len == 0) {
