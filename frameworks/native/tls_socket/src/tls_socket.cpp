@@ -410,6 +410,7 @@ int TLSSocket::ReadMessage()
         CallOnErrorCallback(resErr, MakeErrnoString());
         return ret;
     } else if (ret == 0) {
+        NETSTACK_LOGD("tls recv poll timeout");
         return ret;
     }
 
