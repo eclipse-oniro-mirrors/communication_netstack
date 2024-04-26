@@ -74,7 +74,7 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request)
       canceled_(false),
       file_(nullptr)
 {
-    NETSTACK_LOGI("id=%{public}d", taskId_);
+    NETSTACK_LOGD("id=%{public}d", taskId_);
 
     curlHandle_ = curl_easy_init();
     if (!curlHandle_) {
@@ -559,7 +559,7 @@ bool HttpClientTask::ProcessResponseCode()
     return true;
 }
 
-double HttpClientTask::GetTimingFromCurl(CURL *handle, CURLINFO info)
+double HttpClientTask::GetTimingFromCurl(CURL *handle, CURLINFO info) const
 {
     time_t timing;
     CURLcode result = curl_easy_getinfo(handle, info, &timing);
@@ -568,6 +568,45 @@ double HttpClientTask::GetTimingFromCurl(CURL *handle, CURLINFO info)
         return 0;
     }
     return static_cast<double>(timing);
+}
+
+curl_off_t HttpClientTask::GetSizeFromCurl(CURL *handle) const
+{
+    auto info = CURLINFO_SIZE_DOWNLOAD_T;
+    if (auto method = request_.GetMethod();
+        method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT) {
+        info = CURLINFO_SIZE_UPLOAD_T;
+    }
+    curl_off_t size = 0;
+    CURLcode result = curl_easy_getinfo(handle, info, &size);
+    if (result != CURLE_OK) {
+        NETSTACK_LOGE("curl_easy_getinfo failed, %{public}d, %{public}s", info, curl_easy_strerror(result));
+        return 0;
+    }
+    return size;
+}
+
+void HttpClientTask::DumpHttpPerformance() const
+{
+    NETSTACK_LOGI(
+        "taskid=%{public}d"
+        ", size:%{public}" CURL_FORMAT_CURL_OFF_T
+        ", dnsTime:%{public}.3f"
+        ", connectTime:%{public}.3f"
+        ", tlsTime:%{public}.3f"
+        ", firstSendTime:%{public}.3f"
+        ", firstRecvTime:%{public}.3f"
+        ", totalTime:%{public}.3f"
+        ", redirectTime:%{public}.3f",
+        taskId_,
+        GetSizeFromCurl(curlHandle_),
+        GetTimingFromCurl(curlHandle_, CURLINFO_NAMELOOKUP_TIME_T),
+        GetTimingFromCurl(curlHandle_, CURLINFO_CONNECT_TIME_T),
+        GetTimingFromCurl(curlHandle_, CURLINFO_APPCONNECT_TIME_T),
+        GetTimingFromCurl(curlHandle_, CURLINFO_PRETRANSFER_TIME_T),
+        GetTimingFromCurl(curlHandle_, CURLINFO_STARTTRANSFER_TIME_T),
+        GetTimingFromCurl(curlHandle_, CURLINFO_TOTAL_TIME_T),
+        GetTimingFromCurl(curlHandle_, CURLINFO_REDIRECT_TIME_T));
 }
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
@@ -580,13 +619,7 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
     error_.SetCURLResult(code);
     response_.SetResponseTime(HttpTime::GetNowTimeGMT());
 
-    NETSTACK_LOGD("dnsTiming: %{public}lf", GetTimingFromCurl(curlHandle_, CURLINFO_NAMELOOKUP_TIME_T));
-    NETSTACK_LOGD("connectTiming: %{public}lf", GetTimingFromCurl(curlHandle_, CURLINFO_CONNECT_TIME_T));
-    NETSTACK_LOGD("tlsTiming: %{public}lf", GetTimingFromCurl(curlHandle_, CURLINFO_APPCONNECT_TIME_T));
-    NETSTACK_LOGD("firstSendTiming: %{public}lf", GetTimingFromCurl(curlHandle_, CURLINFO_PRETRANSFER_TIME_T));
-    NETSTACK_LOGD("firstRecvTiming: %{public}lf", GetTimingFromCurl(curlHandle_, CURLINFO_STARTTRANSFER_TIME_T));
-    NETSTACK_LOGD("totalTiming: %{public}lf", GetTimingFromCurl(curlHandle_, CURLINFO_TOTAL_TIME_T));
-    NETSTACK_LOGD("redirectTiming: %{public}lf", GetTimingFromCurl(curlHandle_, CURLINFO_REDIRECT_TIME_T));
+    DumpHttpPerformance();
 
     if (CURLE_ABORTED_BY_CALLBACK == code) {
         (void)ProcessResponseCode();

@@ -342,22 +342,52 @@ double HttpExec::GetTimingFromCurl(CURL *handle, CURLINFO info)
     return Timing::TimeUtils::Microseconds2Milliseconds(timing);
 }
 
+curl_off_t HttpExec::GetSizeFromCurl(CURL *handle, RequestContext *context)
+{
+    auto info = CURLINFO_SIZE_DOWNLOAD_T;
+    auto method = context->options.GetMethod();
+    NETSTACK_LOGD("method is %{public}s", method.c_str());
+    if (MethodForPost(method)) {
+        info = CURLINFO_SIZE_UPLOAD_T;
+    }
+
+    curl_off_t size = 0;
+    CURLcode result = curl_easy_getinfo(handle, info, &size);
+    if (result != CURLE_OK) {
+        NETSTACK_LOGE("Failed to get timing: %{public}d, %{public}s", info, curl_easy_strerror(result));
+        return 0;
+    }
+    return size;
+}
+
 void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
 {
-    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_DNS_TIMING,
-                                        HttpExec::GetTimingFromCurl(handle, CURLINFO_NAMELOOKUP_TIME_T));
-    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_TCP_TIMING,
-                                        HttpExec::GetTimingFromCurl(handle, CURLINFO_CONNECT_TIME_T));
-    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_TLS_TIMING,
-                                        HttpExec::GetTimingFromCurl(handle, CURLINFO_APPCONNECT_TIME_T));
-    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_FIRST_SEND_TIMING,
-                                        HttpExec::GetTimingFromCurl(handle, CURLINFO_PRETRANSFER_TIME_T));
-    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_FIRST_RECEIVE_TIMING,
-                                        HttpExec::GetTimingFromCurl(handle, CURLINFO_STARTTRANSFER_TIME_T));
-    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_TOTAL_FINISH_TIMING,
-                                        HttpExec::GetTimingFromCurl(handle, CURLINFO_TOTAL_TIME_T));
-    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_REDIRECT_TIMING,
-                                        HttpExec::GetTimingFromCurl(handle, CURLINFO_REDIRECT_TIME_T));
+    auto dnsTime = HttpExec::GetTimingFromCurl(handle, CURLINFO_NAMELOOKUP_TIME_T);
+    auto connectTime = HttpExec::GetTimingFromCurl(handle, CURLINFO_CONNECT_TIME_T);
+    auto tlsTime = HttpExec::GetTimingFromCurl(handle, CURLINFO_APPCONNECT_TIME_T);
+    auto firstSendTime = HttpExec::GetTimingFromCurl(handle, CURLINFO_PRETRANSFER_TIME_T);
+    auto firstRecvTime = HttpExec::GetTimingFromCurl(handle, CURLINFO_STARTTRANSFER_TIME_T);
+    auto totalTime = HttpExec::GetTimingFromCurl(handle, CURLINFO_TOTAL_TIME_T);
+    auto redirectTime = HttpExec::GetTimingFromCurl(handle, CURLINFO_REDIRECT_TIME_T);
+
+    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_DNS_TIMING, dnsTime);
+    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_TCP_TIMING, connectTime);
+    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_TLS_TIMING, tlsTime);
+    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_FIRST_SEND_TIMING, firstSendTime);
+    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_FIRST_RECEIVE_TIMING, firstRecvTime);
+    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_TOTAL_FINISH_TIMING, totalTime);
+    context->CachePerformanceTimingItem(HttpConstant::RESPONSE_REDIRECT_TIMING, redirectTime);
+
+    NETSTACK_LOGI("size:%{public}" CURL_FORMAT_CURL_OFF_T
+                  ", dnsTime:%{public}.3f"
+                  ", connectTime:%{public}.3f"
+                  ", tlsTime:%{public}.3f"
+                  ", firstSendTime:%{public}.3f"
+                  ", firstRecvTime:%{public}.3f"
+                  ", totalTime:%{public}.3f"
+                  ", redirectTime:%{public}.3f",
+                  GetSizeFromCurl(handle, context), dnsTime, connectTime, tlsTime, firstSendTime, firstRecvTime,
+                  totalTime, redirectTime);
 }
 
 #if HAS_NETMANAGER_BASE

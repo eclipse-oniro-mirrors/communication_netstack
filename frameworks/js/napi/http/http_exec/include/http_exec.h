@@ -126,6 +126,8 @@ private:
 
     static void CacheCurlPerformanceTiming(CURL *handle, RequestContext *context);
 
+    static curl_off_t GetSizeFromCurl(CURL *handle, RequestContext *context);
+
 #if !HAS_NETMANAGER_BASE
     static void RunThread();
 
