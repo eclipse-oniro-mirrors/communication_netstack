@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 namespace OHOS {
 namespace NetStack {
@@ -76,6 +77,11 @@ public:
 
     static const char *const HTTP_DEFAULT_USER_AGENT;
     static const char *const HTTP_DEFAULT_CA_PATH;
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+    static const std::string USER_CERT_BASE_PATH;
+    static const std::string USER_CERT_ROOT_PATH;
+    static const std::string USER_CERT_PATH;
+#endif
 
     static const char *const HTTP_CONTENT_TYPE;
     static const char *const HTTP_CONTENT_TYPE_URL_ENCODE;

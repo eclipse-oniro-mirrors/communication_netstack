@@ -14,6 +14,8 @@
  */
 
 #include "http_client_constant.h"
+#include <unistd.h>
+#include <string>
 
 namespace OHOS {
 namespace NetStack {
@@ -71,6 +73,11 @@ const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/cert.pem";
 const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/certs/cacert.pem";
 #endif // MAC_PLATFORM
 #endif // WINDOWS_PLATFORM
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+const std::string HttpConstant::USER_CERT_BASE_PATH = "/data/certificates/user_cacerts/";
+const std::string HttpConstant::USER_CERT_ROOT_PATH = "/data/certificates/user_cacerts/0/";
+const std::string HttpConstant::USER_CERT_PATH = USER_CERT_BASE_PATH + std::to_string(getuid() / 200000);
+#endif
 
 const char *const HttpConstant::HTTP_CONTENT_TYPE = "content-type";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE = "application/x-www-form-urlencoded";
