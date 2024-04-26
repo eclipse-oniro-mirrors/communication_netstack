@@ -103,8 +103,10 @@ ohos_shared_library("http") {
   configs = [ ":http_config" ]
 
   if (is_mingw || is_mac) {
-    sources +=
-        [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
+    sources += [
+      "$NETSTACK_DIR/utils/common_utils/src/apipolicy_client_adapter.cpp",
+      "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
+    ]
     deps = [
       "$ARKUI_ROOT/napi:ace_napi",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
