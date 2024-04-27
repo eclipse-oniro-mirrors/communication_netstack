@@ -33,8 +33,10 @@
 
 #include "curl/curl.h"
 #include "netstack_log.h"
+#ifndef WINDOWS_PLATFORM
 #include "apipolicy_client_adapter.h"
 #include "netstack_bundle_utils.h"
+#endif
 
 constexpr int32_t INET_OPTION_SUC = 1;
 constexpr size_t MAX_DISPLAY_NUM = 2;
@@ -173,6 +175,7 @@ std::string _getHostnameFromUrl(const std::string &url)
 
 bool IsAllowedHostnameForAtomicService(const std::string &url)
 {
+#ifndef WINDOWS_PLATFORM
     std::string bundleName;
     if (!BundleUtils::IsAtomicService(bundleName)) {
         NETSTACK_LOGD("IsAllowedHostnameForAtomicService not atomic service");
@@ -188,6 +191,9 @@ bool IsAllowedHostnameForAtomicService(const std::string &url)
         return true;
     }
     return ApiPolicyUtils::IsAllowedHostname(bundleName, hostname);
+#else
+    return true;
+#endif
 }
 
 bool EndsWith(const std::string &str, const std::string &suffix)

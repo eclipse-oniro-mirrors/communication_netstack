@@ -13,9 +13,10 @@
  * limitations under the License.
  */
 
+#include "apipolicy_client_adapter.h"
+
 #include <dlfcn.h>
 
-#include "apipolicy_client_adapter.h"
 #include "netstack_log.h"
 
 namespace OHOS::NetStack::ApiPolicyUtils {
