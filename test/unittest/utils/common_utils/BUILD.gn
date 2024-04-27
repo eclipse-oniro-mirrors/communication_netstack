@@ -50,6 +50,7 @@ ohos_unittest("netstack_common_utils_test") {
 
   sources = [
     "$NETSTACK_UTILS_ROOT/common_utils/src/apipolicy_client_adapter.cpp",
+    "$NETSTACK_UTILS_ROOT/common_utils/src/netstack_bundle_utils.cpp",
     "$NETSTACK_UTILS_ROOT/common_utils/src/netstack_common_utils.cpp",
     "NetStackCommonUtilsTest.cpp",
   ]

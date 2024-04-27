@@ -266,6 +266,13 @@ HWTEST_F(NetStackCommonUtilsTest, CommonUtils30, TestSize.Level2)
     EXPECT_STREQ(actualOutput.c_str(), expectedOutput.c_str());
 }
 
+HWTEST_F(NetStackCommonUtilsTest, CommonUtils31, TestSize.Level2)
+{
+    std::string url = "https://www.example.com";
+    auto ret = IsAllowedHostnameForAtomicService(url);
+    EXPECT_TRUE(ret);
+}
+
 HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL01, TestSize.Level2)
 {
     std::string hostname = GetHostnameFromURL("https:////www.example.com?data_string");
