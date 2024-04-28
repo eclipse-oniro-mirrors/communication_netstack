@@ -16,11 +16,15 @@
 #include "netstack_bundle_utils.h"
 
 #include <dlfcn.h>
+#include <mutex>
 
 #include "netstack_log.h"
 #include "net_bundle.h"
 
 namespace OHOS::NetStack::BundleUtils {
+namespace {
+    std::mutex lockIns;
+}
 
 #ifdef __LP64__
     const std::string LIB_NET_BUNDL_UTILS_SO_PATH = "/system/lib64/libnet_bundle_utils.z.so";
@@ -32,6 +36,8 @@ using GetNetBundleClass = OHOS::NetManagerStandard::INetBundle *(*)();
 
 __attribute__((no_sanitize("cfi"))) bool IsAtomicService(std::string &bundleName)
 {
+    std::lock_guard<std::mutex> lock(lockIns);
+
     void *handler = dlopen(LIB_NET_BUNDL_UTILS_SO_PATH.c_str(), RTLD_LAZY | RTLD_NODELETE);
     if (handler == nullptr) {
         const char *err = dlerror();
@@ -52,7 +58,7 @@ __attribute__((no_sanitize("cfi"))) bool IsAtomicService(std::string &bundleName
         return false;
     }
     auto ret = netBundle->IsAtomicService(bundleName);
-    NETSTACK_LOGD("netBundle IsAtomicService result=%{public}d, bundle_name=%{public}s", res, bundleName.c_str());
+    NETSTACK_LOGD("netBundle IsAtomicService result=%{public}d, bundle_name=%{public}s", ret, bundleName.c_str());
     dlclose(handler);
     return ret;
 }
