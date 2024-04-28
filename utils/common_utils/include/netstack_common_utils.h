@@ -49,6 +49,8 @@ bool IsRegexValid(const std::string &regex);
 
 std::string GetHostnameFromURL(const std::string& url);
 
+std::string GetHostnameWithProtocolFromURL(const std::string& url);
+
 bool IsExcluded(const std::string &str, const std::string &exclusions, const std::string &split);
 
 bool IsHostNameExcluded(const std::string &url, const std::string &exclusions, const std::string &split);

@@ -15,38 +15,45 @@
 
 #include "netstack_bundle_utils.h"
 
-#include "bundle_mgr_proxy.h"
-#include "iservice_registry.h"
+#include <dlfcn.h>
+
 #include "netstack_log.h"
-#include "system_ability_definition.h"
+#include "net_bundle.h"
 
 namespace OHOS::NetStack::BundleUtils {
-bool IsAtomicService(std::string &bundleName)
+
+#ifdef __LP64__
+    const std::string LIB_NET_BUNDL_UTILS_SO_PATH = "/system/lib64/libnet_bundle_utils.z.so";
+#else
+    const std::string LIB_NET_BUNDL_UTILS_SO_PATH = "/system/lib/libnet_bundle_utils.z.so";
+#endif
+
+using GetNetBundleClass = OHOS::NetManagerStandard::INetBundle *(*)();
+
+__attribute__((no_sanitize("cfi"))) bool IsAtomicService(std::string &bundleName)
 {
-    auto systemAbilityManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (systemAbilityManager == nullptr) {
-        NETSTACK_LOGE("systemAbilityManger is null");
+    void *handler = dlopen(LIB_NET_BUNDL_UTILS_SO_PATH.c_str(), RTLD_LAZY | RTLD_NODELETE);
+    if (handler == nullptr) {
+        const char *err = dlerror();
+        NETSTACK_LOGE("load failed, reason: %{public}s", err ? err : "unknown");
         return false;
     }
-    auto bundleMgrSa = systemAbilityManager->GetSystemAbility(OHOS::BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
-    if (bundleMgrSa == nullptr) {
-        NETSTACK_LOGE("bundleMgrSa is null");
+    GetNetBundleClass getNetBundle = (GetNetBundleClass) dlsym(handler, "GetNetBundle");
+    if (getNetBundle == nullptr) {
+        const char *err = dlerror();
+        NETSTACK_LOGE("getNetBundle failed, reason: %{public}s", err ? err : "unknown");
+        dlclose(handler);
         return false;
     }
-    sptr<AppExecFwk::BundleMgrProxy> bundleMgrProxy = iface_cast<AppExecFwk::BundleMgrProxy>(bundleMgrSa);
-    if (bundleMgrProxy == nullptr) {
-        NETSTACK_LOGE("buildMgrProxy is null.");
+    auto netBundle = getNetBundle();
+    if (netBundle == nullptr) {
+        NETSTACK_LOGE("netBundle is nullptr");
+        dlclose(handler);
         return false;
     }
-    AppExecFwk::BundleInfo bundleInfo;
-    auto flagsWithAppInfo = AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION;
-    auto flagsWithSign = AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_SIGNATURE_INFO;
-    if (bundleMgrProxy->GetBundleInfoForSelf(int32_t(flagsWithAppInfo) | int32_t(flagsWithSign),
-                                             bundleInfo) != ERR_OK) {
-        NETSTACK_LOGE("getBundleInfoForSelf occur err");
-        return false;
-    }
-    bundleName = bundleInfo.applicationInfo.bundleName;
-    return bundleInfo.applicationInfo.bundleType == AppExecFwk::BundleType::ATOMIC_SERVICE;
+    auto ret = netBundle->IsAtomicService(bundleName);
+    NETSTACK_LOGD("netBundle IsAtomicService result=%{public}d, bundle_name=%{public}s", res, bundleName.c_str());
+    dlclose(handler);
+    return ret;
 }
 }

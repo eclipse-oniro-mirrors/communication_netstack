@@ -18,8 +18,10 @@ NETSTACK_NATIVE_ROOT = "$NETSTACK_DIR/frameworks/native"
 NETSTACK_INNERKITS_DIR = "$NETSTACK_DIR/interfaces/innerkits"
 
 # args of base module
+NETMANAGER_BASE_DIR =
+    "$SUBSYSTEM_DIR/netmanager_base"
 NETMANAGER_BASE_INNERKITS_DIR =
-    "$SUBSYSTEM_DIR/netmanager_base/interfaces/innerkits"
+    "$NETMANAGER_BASE_DIR/interfaces/innerkits"
 
 # args of other module
 ARKUI_ROOT = "//foundation/arkui"

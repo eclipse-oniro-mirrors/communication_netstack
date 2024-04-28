@@ -19,6 +19,7 @@
 #include <string>
 
 namespace OHOS::NetStack::BundleUtils {
+
 bool IsAtomicService(std::string &bundleName);
 }
 

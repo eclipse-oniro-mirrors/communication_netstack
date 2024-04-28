@@ -20,12 +20,9 @@ NETSTACK_UTILS_ROOT = "$SUBSYSTEM_DIR/netstack/utils"
 utils_include = [ "$NETSTACK_UTILS_ROOT/log/include" ]
 
 common_external_deps = [
-  "bundle_framework:appexecfwk_base",
-  "bundle_framework:appexecfwk_core",
   "c_utils:utils",
   "hilog:libhilog",
-  "ipc:ipc_core",
-  "samgr:samgr_proxy",
+  "netmanager_base:net_bundle_utils",
 ]
 
 ohos_unittest("netstack_common_utils_test") {
@@ -40,6 +37,7 @@ ohos_unittest("netstack_common_utils_test") {
   module_out_path = "netstack/utils_unittest"
 
   include_dirs = [
+    "$NETMANAGER_BASE_DIR/utils/bundle_utils/include",
     "$NETSTACK_UTILS_ROOT/common_utils/include",
     "$THIRD_PARTY_ROOT/curl/include",
   ]
@@ -49,7 +47,7 @@ ohos_unittest("netstack_common_utils_test") {
   external_deps = common_external_deps
 
   sources = [
-    "$NETSTACK_UTILS_ROOT/common_utils/src/apipolicy_client_adapter.cpp",
+    "$NETSTACK_UTILS_ROOT/common_utils/src/netstack_apipolicy_utils.cpp",
     "$NETSTACK_UTILS_ROOT/common_utils/src/netstack_bundle_utils.cpp",
     "$NETSTACK_UTILS_ROOT/common_utils/src/netstack_common_utils.cpp",
     "NetStackCommonUtilsTest.cpp",

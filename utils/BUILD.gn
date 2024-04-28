@@ -25,6 +25,7 @@ config("stack_utils_common_public_config") {
   include_dirs = [
     "common_utils/include",
     "log/include",
+    "$NETMANAGER_BASE_DIR/utils/bundle_utils/include",
     "$THIRD_PARTY_ROOT/curl/include",
   ]
   if (product_name == "ohcore") {
@@ -56,7 +57,7 @@ ohos_shared_library("stack_utils_common") {
   ]
 
   sources = [
-    "common_utils/src/apipolicy_client_adapter.cpp",
+    "common_utils/src/netstack_apipolicy_utils.cpp",
     "common_utils/src/netstack_bundle_utils.cpp",
     "common_utils/src/netstack_common_utils.cpp",
   ]
@@ -64,12 +65,8 @@ ohos_shared_library("stack_utils_common") {
   public_configs = [ ":stack_utils_common_public_config" ]
 
   external_deps = [
-    "bundle_framework:appexecfwk_base",
-    "bundle_framework:appexecfwk_core",
-    "c_utils:utils",
     "hilog:libhilog",
-    "ipc:ipc_core",
-    "samgr:samgr_proxy",
+    "netmanager_base:net_bundle_utils",
   ]
 
   innerapi_tags = [ "platformsdk" ]
