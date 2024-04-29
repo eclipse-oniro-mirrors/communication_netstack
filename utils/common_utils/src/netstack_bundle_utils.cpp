@@ -19,7 +19,6 @@
 #include <mutex>
 
 #include "netstack_log.h"
-#include "net_bundle.h"
 
 namespace OHOS::NetStack::BundleUtils {
 
@@ -29,7 +28,7 @@ namespace OHOS::NetStack::BundleUtils {
     const std::string LIB_NET_BUNDL_UTILS_SO_PATH = "/system/lib/libnet_bundle_utils.z.so";
 #endif
 
-using GetNetBundleClass = OHOS::NetManagerStandard::INetBundle *(*)();
+using IsAtomicServiceFunc = bool (*)(std::string&);
 
 __attribute__((no_sanitize("cfi"))) bool IsAtomicService(std::string &bundleName)
 {
@@ -39,21 +38,15 @@ __attribute__((no_sanitize("cfi"))) bool IsAtomicService(std::string &bundleName
         NETSTACK_LOGE("load failed, reason: %{public}s", err ? err : "unknown");
         return false;
     }
-    GetNetBundleClass getNetBundle = (GetNetBundleClass) dlsym(handler, "GetNetBundle");
-    if (getNetBundle == nullptr) {
+    IsAtomicServiceFunc func = (IsAtomicServiceFunc) dlsym(handler, "IsAtomicService");
+    if (func == nullptr) {
         const char *err = dlerror();
-        NETSTACK_LOGE("getNetBundle failed, reason: %{public}s", err ? err : "unknown");
+        NETSTACK_LOGE("dlsym IsAtomicService failed, reason: %{public}s", err ? err : "unknown");
         dlclose(handler);
         return false;
     }
-    auto netBundle = getNetBundle();
-    if (netBundle == nullptr) {
-        NETSTACK_LOGE("netBundle is nullptr");
-        dlclose(handler);
-        return false;
-    }
-    auto ret = netBundle->IsAtomicService(bundleName);
-    NETSTACK_LOGD("netBundle IsAtomicService result=%{public}d, bundle_name=%{public}s", ret, bundleName.c_str());
+    auto ret = func(bundleName);
+    NETSTACK_LOGD("netBundleUtils IsAtomicService result=%{public}d, bundle_name=%{public}s", ret, bundleName.c_str());
     dlclose(handler);
     return ret;
 }
