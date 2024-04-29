@@ -18,7 +18,9 @@
 
 #include <cstddef>
 #include <map>
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
 #include <sys/epoll.h>
+#endif
 #include <unistd.h>
 
 #include "base_context.h"
@@ -38,7 +40,9 @@ struct LocalSocketServerManager : public SocketBaseManager {
     std::atomic_bool isServerDestruct_;
     bool isLoopFinished_ = false;
     int epollFd_ = 0;
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
     epoll_event events_[MAX_EVENTS] = {};
+#endif
     std::mutex finishMutex_;
     std::condition_variable finishCond_;
     std::mutex clientMutex_;
@@ -57,19 +61,29 @@ struct LocalSocketServerManager : public SocketBaseManager {
     }
     int StartEpoll()
     {
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
         epollFd_ = epoll_create1(0);
+#endif
         return epollFd_;
     }
     int EpollWait()
     {
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
         return epoll_wait(epollFd_, events_, MAX_EVENTS - 1, EPOLL_TIMEOUT_MS);
+#else
+        return 0;
+#endif
     }
     int RegisterEpollEvent(int sockfd, int events)
     {
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
         epoll_event event;
         event.events = events;
         event.data.fd = sockfd;
         return epoll_ctl(epollFd_, EPOLL_CTL_ADD, sockfd, &event);
+#else
+        return 0;
+#endif
     }
     void WaitRegisteringEvent(int id)
     {
