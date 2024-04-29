@@ -119,6 +119,14 @@ public:
 
     [[nodiscard]] curl_slist *GetCurlHostList();
 
+    void SetAtomicService(bool isAtomicService);
+
+    [[nodiscard]] bool IsAtomicService() const;
+
+    void SetBundleName(const std::string &bundleName);
+
+    [[nodiscard]] std::string GetBundleName() const;
+
 private:
     int32_t taskId_ = -1;
     bool usingCache_ = true;
@@ -137,6 +145,8 @@ private:
     CertsPath certsPath_;
     uint64_t moduleId_ = 0;
     curl_slist *curlHostList_ = nullptr;
+    bool isAtomicService_ = false;
+    std::string bundleName_;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 

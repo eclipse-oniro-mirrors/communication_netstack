@@ -81,6 +81,8 @@ RequestContext::RequestContext(napi_env env, EventManager *manager)
       curlHostList_(nullptr)
 {
     taskId_ = g_currentTaskId++;
+    isAtomicService_ = false;
+    bundleName_ = "";
     StartTiming();
 }
 
@@ -792,5 +794,25 @@ void RequestContext::SetModuleId(uint64_t moduleId)
 uint64_t RequestContext::GetModuleId() const
 {
     return moduleId_;
+}
+
+bool RequestContext::IsAtomicService() const
+{
+    return isAtomicService_;
+}
+
+void RequestContext::SetAtomicService(bool isAtomicService)
+{
+    isAtomicService_ = isAtomicService;
+}
+
+void RequestContext::SetBundleName(const std::string &bundleName)
+{
+    bundleName_ = bundleName;
+}
+
+std::string RequestContext::GetBundleName() const
+{
+    return bundleName_;
 }
 } // namespace OHOS::NetStack::Http

@@ -160,14 +160,18 @@ bool HasInternetPermission()
 #endif
 }
 
-bool IsAllowedHostnameForAtomicService(const std::string &url)
+bool IsAtomicService(std::string &bundleName)
 {
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    std::string bundleName;
-    if (!BundleUtils::IsAtomicService(bundleName)) {
-        NETSTACK_LOGD("isAllowedHostnameForAtomicService not atomic service");
-        return true;
-    }
+    return BundleUtils::IsAtomicService(bundleName);
+#else
+    return false;
+#endif
+}
+
+bool IsAllowedHostname(const std::string &bundleName, const std::string &url)
+{
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     if (bundleName.empty()) {
         NETSTACK_LOGE("isAllowedHostnameForAtomicService bundleName is empty");
         return true;
