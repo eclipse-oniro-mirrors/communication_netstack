@@ -1058,6 +1058,7 @@ bool ExecUdpSend(UdpSendContext *context)
 
     if (context->GetSocketFd() <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
         return false;
     }
 
@@ -1120,6 +1121,7 @@ bool ExecTcpSend(TcpSendContext *context)
 
     if (context->GetSocketFd() <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
         return false;
     }
 
