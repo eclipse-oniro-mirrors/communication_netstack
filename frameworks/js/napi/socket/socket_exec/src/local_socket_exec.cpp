@@ -30,6 +30,10 @@
 #include "socket_async_work.h"
 #include "socket_module.h"
 
+#ifndef EPOLLIN
+#define EPOLLIN 0x001
+#endif
+
 namespace {
 constexpr int BACKLOG = 32;
 
