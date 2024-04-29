@@ -135,6 +135,9 @@ struct LocalSocketServerManager : public SocketBaseManager {
     {
         std::lock_guard<std::mutex> lock(clientMutex_);
         if (auto ite = acceptFds_.find(clientId); ite != acceptFds_.end()) {
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
+            epoll_ctl(epollFd_, EPOLL_CTL_DEL, ite->second, nullptr);
+#endif
             close(ite->second);
             acceptFds_.erase(ite);
         }
