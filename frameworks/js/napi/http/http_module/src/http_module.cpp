@@ -43,9 +43,9 @@ static constexpr const char *HTTP_MODULE_NAME = "net.http";
 
 static thread_local uint64_t g_moduleId;
 
-static bool APP_IS_ATOMIC_SERVICE = false;
+static bool g_appIsAtomicService = false;
 
-static std::string APP_BUNDLE_NAME;
+static std::string g_appBundleName;
 
 napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
 {
@@ -58,7 +58,7 @@ napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
 
 napi_value HttpModuleExports::CreateHttp(napi_env env, napi_callback_info info)
 {
-    APP_IS_ATOMIC_SERVICE = CommonUtils::IsAtomicService(APP_BUNDLE_NAME);
+    g_appIsAtomicService = CommonUtils::IsAtomicService(g_appBundleName);
     return ModuleTemplate::NewInstance(env, info, INTERFACE_HTTP_REQUEST, [](napi_env, void *data, void *) {
         NETSTACK_LOGD("http request handle is finalized");
         auto manager = reinterpret_cast<EventManager *>(data);
@@ -240,8 +240,8 @@ napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_i
             }
 #endif
             context->SetModuleId(g_moduleId);
-            context->SetAtomicService(APP_IS_ATOMIC_SERVICE);
-            context->SetBundleName(APP_BUNDLE_NAME);
+            context->SetAtomicService(g_appIsAtomicService);
+            context->SetBundleName(g_appBundleName);
             HttpExec::AsyncRunRequest(context);
             return context->IsExecOK();
         },
@@ -259,8 +259,8 @@ napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_ca
             }
 #endif
             context->SetModuleId(g_moduleId);
-            context->SetAtomicService(APP_IS_ATOMIC_SERVICE);
-            context->SetBundleName(APP_BUNDLE_NAME);
+            context->SetAtomicService(g_appIsAtomicService);
+            context->SetBundleName(g_appBundleName);
             context->EnableRequestInStream();
             HttpExec::AsyncRunRequest(context);
             return true;

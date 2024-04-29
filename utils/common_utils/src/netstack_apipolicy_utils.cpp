@@ -24,7 +24,6 @@ namespace OHOS::NetStack::ApiPolicyUtils {
 namespace {
 const std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
 constexpr const uint32_t RESULT_ACCEPT = 0;
-std::mutex lockInstance;
 }
 
 #ifdef __LP64__
@@ -35,8 +34,6 @@ std::mutex lockInstance;
 
 bool IsAllowedHostname(const std::string &bundleName, const std::string &hostname)
 {
-    std::lock_guard<std::mutex> lock(lockInstance);
-
     void *libHandle = dlopen(APIPOLICY_SO_PATH.c_str(), RTLD_NOW);
     if (!libHandle) {
         const char *err = dlerror();

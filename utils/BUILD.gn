@@ -25,9 +25,15 @@ config("stack_utils_common_public_config") {
   include_dirs = [
     "common_utils/include",
     "log/include",
-    "$NETMANAGER_BASE_DIR/utils/bundle_utils/include",
     "$THIRD_PARTY_ROOT/curl/include",
   ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    include_dirs += [
+      "$NETMANAGER_BASE_DIR/utils/bundle_utils/include",
+    ]
+  }
   if (product_name == "ohcore") {
     defines = [ "OH_CORE_NETSTACK_PERMISSION_CHECK" ]
   }
