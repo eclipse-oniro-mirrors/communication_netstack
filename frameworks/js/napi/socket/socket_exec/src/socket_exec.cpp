@@ -782,8 +782,11 @@ static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &call
         NETSTACK_LOGI("closed by peer, socket:%{public}d, recvLen:%{public}zd", sock, recvLen);
         callback.OnCloseMessage(callback.GetEventManager());
     } else {
-        NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
-        callback.OnError(errno);
+        if (EventManager::IsManagerValid(callback.GetEventManager()) && static_cast<int>(
+            reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
+            NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
+            callback.OnError(errno);
+        }
     }
     return -1;
 }
@@ -807,15 +810,14 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     while (true) {
         int ret = poll(fds, num, recvTimeoutMs);
         if (ret < 0) {
-            NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
-            callback.OnError(errno);
+            if (EventManager::IsManagerValid(callback.GetEventManager()) && static_cast<int>(
+                reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
+                NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
+                callback.OnError(errno);
+            }
             return;
         } else if (ret == 0) {
             continue;
-        }
-        if (!EventManager::IsManagerValid(callback.GetEventManager()) ||
-            static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) == 0) {
-            return;
         }
         if (UpdateRecvBuffer(sock, bufferSize, buf, callback) < 0) {
             return;
@@ -1142,7 +1144,7 @@ bool ExecClose(CloseContext *context)
     NETSTACK_LOGI("sock %{public}d closed success", context->GetSocketFd());
 
     context->state_.SetIsClose(true);
-    context->SetSocketFd(0);
+    context->SetSocketFd(-1);
 
     return true;
 }
