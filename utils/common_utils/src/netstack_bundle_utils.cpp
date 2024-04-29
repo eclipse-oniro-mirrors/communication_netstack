@@ -16,7 +16,6 @@
 #include "netstack_bundle_utils.h"
 
 #include <dlfcn.h>
-#include <mutex>
 
 #include "netstack_log.h"
 
