@@ -99,18 +99,12 @@ void *EventManager::GetQueueData()
 {
     std::lock_guard<std::mutex> lock(dataQueueMutex_);
     if (!dataQueue_.empty()) {
-        return dataQueue_.front();
+        auto data = dataQueue_.front();
+        dataQueue_.pop();
+        return data;
     }
     NETSTACK_LOGE("eventManager data queue is empty");
     return nullptr;
-}
-
-void EventManager::PopQueueData()
-{
-    std::lock_guard<std::mutex> lock(dataQueueMutex_);
-    if (!dataQueue_.empty()) {
-        dataQueue_.pop();
-    }
 }
 
 void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status))

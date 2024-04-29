@@ -324,7 +324,6 @@ static napi_value MakeMessage(napi_env env, void *para)
 {
     auto manager = reinterpret_cast<EventManager *>(para);
     auto messageData = reinterpret_cast<MessageData *>(manager->GetQueueData());
-    manager->PopQueueData();
     auto deleter = [](const MessageData *p) { delete p; };
     std::unique_ptr<MessageData, decltype(deleter)> handler(messageData, deleter);
 

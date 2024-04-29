@@ -239,10 +239,14 @@ template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTempl
     std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
 
     napi_value obj = MakeJsValue(env, workWrapper->data);
-
-    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
+    auto undefined = NapiUtils::GetUndefined(workWrapper->env);
+    std::pair<napi_value, napi_value> arg = {undefined, obj};
     if (EventManager::IsManagerValid(workWrapper->manager)) {
         workWrapper->manager->Emit(workWrapper->type, arg);
+        if (workWrapper->type == EventName::EVENT_MESSAGE &&
+            workWrapper->manager->HasEventListener(EventName::EVENT_DATA_END)) {
+            workWrapper->manager->Emit(EventName::EVENT_DATA_END, {undefined, undefined});
+        }
     }
     delete workWrapper;
     delete work;
@@ -868,12 +872,6 @@ napi_value WebSocketExec::CloseCallback(CloseContext *context)
     return NapiUtils::GetBoolean(context->GetEnv(), true);
 }
 
-static napi_value CreateDataEnd(napi_env env, void *callbackPara)
-{
-    (void)callbackPara;
-    return NapiUtils::GetUndefined(env);
-}
-
 static napi_value CreateError(napi_env env, void *callbackPara)
 {
     auto code = reinterpret_cast<int32_t *>(callbackPara);
@@ -917,7 +915,8 @@ static napi_value CreateClosePara(napi_env env, void *callbackPara)
 
 static napi_value CreateTextMessagePara(napi_env env, void *callbackPara)
 {
-    auto msg = reinterpret_cast<std::string *>(callbackPara);
+    auto manager = reinterpret_cast<EventManager *>(callbackPara);
+    auto msg = reinterpret_cast<std::string *>(manager->GetQueueData());
     auto text = NapiUtils::CreateStringUtf8(env, *msg);
     delete msg;
     return text;
@@ -925,7 +924,8 @@ static napi_value CreateTextMessagePara(napi_env env, void *callbackPara)
 
 static napi_value CreateBinaryMessagePara(napi_env env, void *callbackPara)
 {
-    auto msg = reinterpret_cast<std::string *>(callbackPara);
+    auto manager = reinterpret_cast<EventManager *>(callbackPara);
+    auto msg = reinterpret_cast<std::string *>(manager->GetQueueData());
     void *data = nullptr;
     napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(env, msg->size(), &data);
     if (data != nullptr && NapiUtils::ValueIsArrayBuffer(env, arrayBuffer) &&
@@ -1037,21 +1037,20 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
         NETSTACK_LOGE("data length too long");
         return;
     }
+    HandleRcvMessage(manager, data, length, isBinary, isFinal);
+}
 
+void WebSocketExec::HandleRcvMessage(EventManager *manager, void *data, size_t length, bool isBinary, bool isFinal)
+{
     if (isBinary) {
         manager->AppendWebSocketBinaryData(data, length);
         if (isFinal) {
             const std::string &msgFromManager = manager->GetWebSocketBinaryData();
             auto msg = new std::string;
             msg->append(msgFromManager.data(), msgFromManager.size());
-            manager->EmitByUv(EventName::EVENT_MESSAGE, msg, CallbackTemplate<CreateBinaryMessagePara>);
+            manager->SetQueueData(msg);
+            manager->EmitByUv(EventName::EVENT_MESSAGE, manager, CallbackTemplate<CreateBinaryMessagePara>);
             manager->ClearWebSocketBinaryData();
-            NETSTACK_LOGI("onDataEnd");
-            if (!manager->HasEventListener(EventName::EVENT_DATA_END)) {
-                NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_DATA_END);
-                return;
-            }
-            manager->EmitByUv(EventName::EVENT_DATA_END, nullptr, CallbackTemplate<CreateDataEnd>);
         }
     } else {
         manager->AppendWebSocketTextData(data, length);
@@ -1062,7 +1061,8 @@ void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, 
                 return;
             }
             msg->append(msgFromManager.data(), msgFromManager.size());
-            manager->EmitByUv(EventName::EVENT_MESSAGE, msg, CallbackTemplate<CreateTextMessagePara>);
+            manager->SetQueueData(msg);
+            manager->EmitByUv(EventName::EVENT_MESSAGE, manager, CallbackTemplate<CreateTextMessagePara>);
             manager->ClearWebSocketTextData();
         }
     }

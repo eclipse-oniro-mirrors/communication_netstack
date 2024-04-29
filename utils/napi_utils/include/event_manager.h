@@ -65,8 +65,6 @@ public:
 
     void *GetQueueData();
 
-    void PopQueueData();
-
     void CreateEventReference(napi_env env, napi_value value);
 
     void DeleteEventReference(napi_env env);
