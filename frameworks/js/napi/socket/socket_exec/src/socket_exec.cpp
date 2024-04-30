@@ -1066,6 +1066,13 @@ bool ExecUdpSend(UdpSendContext *context)
         NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
         return false;
     }
+
+    if (context->GetSocketFd() <= 0) {
+        context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
+        return false;
+    }
+
     bool result = UdpSendEvent(context);
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
     return result;
@@ -1122,6 +1129,13 @@ bool ExecTcpSend(TcpSendContext *context)
         NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
         return false;
     }
+
+    if (context->GetSocketFd() <= 0) {
+        context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
+        return false;
+    }
+
     bool result = TcpSendEvent(context);
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
     return result;
@@ -1333,6 +1347,11 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
         return false;
     }
 
+    if (context->GetSocketFd() <= 0) {
+        context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
+        return false;
+    }
+
     if (!SocketSetTcpExtraOptions(context->GetSocketFd(), context->options_)) {
         context->SetErrorCode(errno);
         return false;
@@ -1344,6 +1363,11 @@ bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
+        return false;
+    }
+
+    if (context->GetSocketFd() <= 0) {
+        context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
         return false;
     }
 
