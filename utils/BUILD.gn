@@ -55,7 +55,11 @@ ohos_shared_library("stack_utils_common") {
     "-O2",
   ]
 
-  sources = [ "common_utils/src/netstack_common_utils.cpp" ]
+  sources = [
+    "common_utils/src/netstack_apipolicy_utils.cpp",
+    "common_utils/src/netstack_bundle_utils.cpp",
+    "common_utils/src/netstack_common_utils.cpp",
+  ]
 
   public_configs = [ ":stack_utils_common_public_config" ]
 

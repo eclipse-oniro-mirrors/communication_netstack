@@ -266,6 +266,51 @@ HWTEST_F(NetStackCommonUtilsTest, CommonUtils30, TestSize.Level2)
     EXPECT_STREQ(actualOutput.c_str(), expectedOutput.c_str());
 }
 
+HWTEST_F(NetStackCommonUtilsTest, CommonUtils31, TestSize.Level2)
+{
+    std::string bundleName;
+    std::string url = "https://www.example.com";
+    auto ret = IsAllowedHostname(bundleName, url);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CommonUtils32, TestSize.Level2)
+{
+    std::string bundleName;
+    auto ret = IsAtomicService(bundleName);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolFromURLTest001, TestSize.Level2)
+{
+    std::string hostname = GetHostnameWithProtocolFromURL("https:////www.example.com?data_string");
+    EXPECT_STREQ(hostname.c_str(), "https://www.example.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolFromURLTest002, TestSize.Level2)
+{
+    std::string hostname = GetHostnameWithProtocolFromURL("https://");
+    EXPECT_STREQ(hostname.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolFromURLTest003, TestSize.Level2)
+{
+    std::string hostname = GetHostnameWithProtocolFromURL("https://www.example.com/for/test");
+    EXPECT_STREQ(hostname.c_str(), "https://www.example.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolFromURLTest004, TestSize.Level2)
+{
+    std::string hostname = GetHostnameWithProtocolFromURL("www.example.com/for/test");
+    EXPECT_STREQ(hostname.c_str(), "www.example.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolFromURLTest005, TestSize.Level2)
+{
+    std::string hostname = GetHostnameWithProtocolFromURL("ws://www.example.com/for/test");
+    EXPECT_STREQ(hostname.c_str(), "ws://www.example.com");
+}
+
 HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL01, TestSize.Level2)
 {
     std::string hostname = GetHostnameFromURL("https:////www.example.com?data_string");

@@ -45,6 +45,8 @@ ohos_unittest("netstack_common_utils_test") {
   external_deps = common_external_deps
 
   sources = [
+    "$NETSTACK_UTILS_ROOT/common_utils/src/netstack_apipolicy_utils.cpp",
+    "$NETSTACK_UTILS_ROOT/common_utils/src/netstack_bundle_utils.cpp",
     "$NETSTACK_UTILS_ROOT/common_utils/src/netstack_common_utils.cpp",
     "NetStackCommonUtilsTest.cpp",
   ]

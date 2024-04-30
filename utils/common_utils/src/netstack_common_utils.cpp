@@ -33,6 +33,10 @@
 
 #include "curl/curl.h"
 #include "netstack_log.h"
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#include "netstack_apipolicy_utils.h"
+#include "netstack_bundle_utils.h"
+#endif
 
 constexpr int32_t INET_OPTION_SUC = 1;
 constexpr size_t MAX_DISPLAY_NUM = 2;
@@ -156,6 +160,33 @@ bool HasInternetPermission()
 #endif
 }
 
+bool IsAtomicService(std::string &bundleName)
+{
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    return BundleUtils::IsAtomicService(bundleName);
+#else
+    return false;
+#endif
+}
+
+bool IsAllowedHostname(const std::string &bundleName, const std::string &url)
+{
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    if (bundleName.empty()) {
+        NETSTACK_LOGE("isAllowedHostnameForAtomicService bundleName is empty");
+        return true;
+    }
+    auto hostname = GetHostnameWithProtocolFromURL(url);
+    if (hostname.empty()) {
+        NETSTACK_LOGE("isAllowedHostnameForAtomicService url hostname is empty");
+        return true;
+    }
+    return ApiPolicyUtils::IsAllowedHostname(bundleName, hostname);
+#else
+    return true;
+#endif
+}
+
 bool EndsWith(const std::string &str, const std::string &suffix)
 {
     if (str.length() < suffix.length()) {
@@ -253,6 +284,19 @@ std::string GetHostnameFromURL(const std::string &url)
         return tempUrl.substr(posStart, posEnd - posStart);
     }
     return tempUrl.substr(posStart);
+}
+
+std::string GetHostnameWithProtocolFromURL(const std::string& url)
+{
+    auto hostname = GetHostnameFromURL(url);
+    if (!hostname.empty()) {
+        std::string delimiter = "://";
+        size_t pos = url.find(delimiter);
+        if (pos != std::string::npos) {
+            hostname = url.substr(0, pos + delimiter.length()) + hostname;
+        }
+    }
+    return hostname;
 }
 
 bool IsExcluded(const std::string &str, const std::string &exclusions, const std::string &split)

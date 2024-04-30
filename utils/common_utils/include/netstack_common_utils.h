@@ -33,6 +33,10 @@ std::string ToString(const std::list<std::string> &lists, char tab = ',');
 
 bool HasInternetPermission();
 
+bool IsAtomicService(std::string &bundleName);
+
+bool IsAllowedHostname(const std::string &bundleName, const std::string &url);
+
 bool EndsWith(const std::string &str, const std::string &suffix);
 
 std::string Trim(std::string str);
@@ -46,6 +50,8 @@ std::string ReplaceCharacters(const std::string &input);
 bool IsRegexValid(const std::string &regex);
 
 std::string GetHostnameFromURL(const std::string& url);
+
+std::string GetHostnameWithProtocolFromURL(const std::string& url);
 
 bool IsExcluded(const std::string &str, const std::string &exclusions, const std::string &split);
 
