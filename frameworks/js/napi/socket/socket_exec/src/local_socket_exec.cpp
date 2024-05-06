@@ -30,6 +30,10 @@
 #include "socket_async_work.h"
 #include "socket_module.h"
 
+#ifndef EPOLLIN
+#define EPOLLIN 0x001
+#endif
+
 namespace {
 constexpr int BACKLOG = 32;
 
@@ -584,7 +588,7 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
     pthread_setname_np(LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
 #else
     pthread_setname_np(pthread_self(), LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
-#endif
+
     struct sockaddr_un clientAddress;
     socklen_t clientAddrLength = sizeof(clientAddress);
     if (mgr->RegisterEpollEvent(mgr->sockfd_, EPOLLIN) == -1) {
@@ -618,6 +622,7 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
         }
     }
     mgr->NotifyLoopFinished();
+#endif
 }
 
 static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &buf,
