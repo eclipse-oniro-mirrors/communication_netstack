@@ -290,13 +290,24 @@ private:
      * Get the timing from curl handle
      * @return Returns timing, unit is seconds.
      */
-    double GetTimingFromCurl(CURL *handle, CURLINFO info);
+    double GetTimingFromCurl(CURL *handle, CURLINFO info) const;
 
     /**
      * Processes the cookie in the HTTP response.
      * @param handle The Curl handle.
      */
     void ProcessCookie(CURL *handle);
+
+    /**
+     * Get download or uploader size from curl handle
+     * @return Returns size, unit is bytes.
+     */
+    curl_off_t GetSizeFromCurl(CURL *handle) const;
+
+    /**
+     * dump http informations from curl
+     */
+    void DumpHttpPerformance() const;
 
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onSucceeded_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onCanceled_;
