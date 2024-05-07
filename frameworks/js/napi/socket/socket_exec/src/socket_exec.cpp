@@ -791,6 +791,21 @@ static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &call
     return -1;
 }
 
+static bool IsValidSock(int sock)
+{
+    int optVal;
+    socklen_t optLen = sizeof(optVal);
+    if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &optVal, &optLen) < 0) {
+        NETSTACK_LOGE("socket is %{public}d, get SO_ERROR fail, errno: %{public}d", sock, errno);
+        return false;
+    }
+    if (optVal != 0) {
+        NETSTACK_LOGE("error occur, socket is %{public}d, errno: %{public}d", sock, errno);
+        return false;
+    }
+    return true;
+}
+
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
 {
     int bufferSize = ConfirmBufferSize(sock);
@@ -808,6 +823,9 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
 
     int recvTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT);
     while (true) {
+        if (!IsValidSock(sock)) {
+            return;
+        }
         int ret = poll(fds, num, recvTimeoutMs);
         if (ret < 0) {
             if (EventManager::IsManagerValid(callback.GetEventManager()) && static_cast<int>(
