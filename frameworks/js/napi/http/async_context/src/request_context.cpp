@@ -412,11 +412,12 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
 {
     options.SetUrl(NapiUtils::GetStringFromValueUtf8(GetEnv(), urlValue));
 
-    std::string method = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_METHOD);
-    if (method.empty()) {
-        method = HttpConstant::HTTP_METHOD_GET;
+    if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_METHOD)) {
+        napi_value requestMethod = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_METHOD);
+        if (NapiUtils::GetValueType(GetEnv(), requestMethod) == napi_string) {
+            options.SetMethod(NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_METHOD));
+        }
     }
-    options.SetMethod(method);
 
     ParseNumberOptions(optionsValue);
     ParseUsingHttpProxy(optionsValue);
