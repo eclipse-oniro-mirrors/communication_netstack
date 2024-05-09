@@ -39,6 +39,12 @@ config("http_client_config") {
     defines = [ "WINDOWS_PLATFORM" ]
   } else if (is_mac) {
     defines = [ "MAC_PLATFORM" ]
+  } else {
+    defines = []
+  }
+
+  if (product_name != "ohos-sdk") {
+    defines += [ "HTTP_MULTIPATH_CERT_ENABLE" ]
   }
 }
 
@@ -107,6 +113,11 @@ ohos_shared_library("http_client") {
       external_deps += [ "init:libbegetutil" ]
     }
   }
+
+  external_deps += [
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
+  ]
 
   innerapi_tags = [ "platformsdk" ]
   part_name = "netstack"
