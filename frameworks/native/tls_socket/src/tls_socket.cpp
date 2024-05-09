@@ -727,14 +727,9 @@ void TLSSocket::Send(const OHOS::NetStack::Socket::TCPSendOptions &tcpSendOption
 {
     (void)tcpSendOptions;
 
-    bool res = false;
-    int resErr = 0;
-    {
-        std::lock_guard<std::mutex> lock(recvMutex_);
-        res = tlsSocketInternal_.Send(tcpSendOptions.GetData());
-        resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
-    }
+    auto res = tlsSocketInternal_.Send(tcpSendOptions.GetData());
     if (!res) {
+        int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         CallSendCallback(resErr, callback);
         return;
