@@ -413,17 +413,20 @@ int TLSSocket::ReadMessage()
         NETSTACK_LOGD("tls recv poll timeout");
         return ret;
     }
-
-    std::lock_guard<std::mutex> lock(recvMutex_);
-    if (!isRunning_) {
-        return -1;
+    int len = 0;
+    int resErr = 0;
+    {
+        std::lock_guard<std::mutex> lock(recvMutex_);
+        if (!isRunning_) {
+            return -1;
+        }
+        len = tlsSocketInternal_.Recv(buffer, MAX_BUFFER_SIZE);
+        resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
     }
-    int len = tlsSocketInternal_.Recv(buffer, MAX_BUFFER_SIZE);
     if (len < 0) {
         if (errno == EAGAIN || errno == EINTR || len == SSL_WANT_READ_RETURN) {
             return 0;
         }
-        int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         NETSTACK_LOGE("SSL_read function read error, errno is %{public}d, errno info is %{public}s",
                       resErr, MakeSSLErrorString(resErr).c_str());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
@@ -724,9 +727,14 @@ void TLSSocket::Send(const OHOS::NetStack::Socket::TCPSendOptions &tcpSendOption
 {
     (void)tcpSendOptions;
 
-    auto res = tlsSocketInternal_.Send(tcpSendOptions.GetData());
+    bool res = false;
+    int resErr = 0;
+    {
+        std::lock_guard<std::mutex> lock(recvMutex_);
+        res = tlsSocketInternal_.Send(tcpSendOptions.GetData());
+        resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
+    }
     if (!res) {
-        int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         CallSendCallback(resErr, callback);
         return;
@@ -757,10 +765,14 @@ void TLSSocket::Close(const CloseCallback &callback)
     }
     isRunning_ = false;
 
-    std::lock_guard<std::mutex> lock(recvMutex_);
-    auto res = tlsSocketInternal_.Close();
+    bool res = false;
+    int resErr = 0;
+    {
+        std::lock_guard<std::mutex> lock(recvMutex_);
+        res = tlsSocketInternal_.Close();
+        resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
+    }
     if (!res) {
-        int resErr = ConvertSSLError(tlsSocketInternal_.GetSSL());
         NETSTACK_LOGE("close error is %{public}s %{public}d", MakeSSLErrorString(resErr).c_str(), resErr);
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(resErr);
