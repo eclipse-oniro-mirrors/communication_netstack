@@ -378,16 +378,20 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     context->CachePerformanceTimingItem(HttpConstant::RESPONSE_TOTAL_FINISH_TIMING, totalTime);
     context->CachePerformanceTimingItem(HttpConstant::RESPONSE_REDIRECT_TIMING, redirectTime);
 
-    NETSTACK_LOGI("size:%{public}" CURL_FORMAT_CURL_OFF_T
-                  ", dnsTime:%{public}.3f"
-                  ", connectTime:%{public}.3f"
-                  ", tlsTime:%{public}.3f"
-                  ", firstSendTime:%{public}.3f"
-                  ", firstRecvTime:%{public}.3f"
-                  ", totalTime:%{public}.3f"
-                  ", redirectTime:%{public}.3f",
-                  GetSizeFromCurl(handle, context), dnsTime, connectTime, tlsTime, firstSendTime, firstRecvTime,
-                  totalTime, redirectTime);
+    NETSTACK_LOGI(
+        "taskid=%{public}d"
+        ", size:%{public}" CURL_FORMAT_CURL_OFF_T
+        ", dns:%{public}.3f"
+        ", connect:%{public}.3f"
+        ", tls:%{public}.3f"
+        ", firstSend:%{public}.3f"
+        ", firstRecv:%{public}.3f"
+        ", total:%{public}.3f"
+        ", redirect:%{public}.3f",
+        context->GetTaskId(), GetSizeFromCurl(handle, context), dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
+        tlsTime == 0 ? 0 : tlsTime - connectTime,
+        firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
+        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime);
 }
 
 #if HAS_NETMANAGER_BASE

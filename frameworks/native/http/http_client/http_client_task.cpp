@@ -26,6 +26,7 @@
 #include "net_conn_client.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
+#include "timing.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data)                                                 \
     do {                                                                                                 \
@@ -515,7 +516,7 @@ double HttpClientTask::GetTimingFromCurl(CURL *handle, CURLINFO info) const
         NETSTACK_LOGE("Failed to get timing: %{public}d, %{public}s", info, curl_easy_strerror(result));
         return 0;
     }
-    return static_cast<double>(timing);
+    return Timing::TimeUtils::Microseconds2Milliseconds(timing);
 }
 
 curl_off_t HttpClientTask::GetSizeFromCurl(CURL *handle) const
@@ -536,25 +537,27 @@ curl_off_t HttpClientTask::GetSizeFromCurl(CURL *handle) const
 
 void HttpClientTask::DumpHttpPerformance() const
 {
+    auto dnsTime = GetTimingFromCurl(curlHandle_, CURLINFO_NAMELOOKUP_TIME_T);
+    auto connectTime = GetTimingFromCurl(curlHandle_, CURLINFO_CONNECT_TIME_T);
+    auto tlsTime = GetTimingFromCurl(curlHandle_, CURLINFO_APPCONNECT_TIME_T);
+    auto firstSendTime = GetTimingFromCurl(curlHandle_, CURLINFO_PRETRANSFER_TIME_T);
+    auto firstRecvTime = GetTimingFromCurl(curlHandle_, CURLINFO_STARTTRANSFER_TIME_T);
+    auto totalTime = GetTimingFromCurl(curlHandle_, CURLINFO_TOTAL_TIME_T);
+    auto redirectTime = GetTimingFromCurl(curlHandle_, CURLINFO_REDIRECT_TIME_T);
     NETSTACK_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
-        ", dnsTime:%{public}.3f"
-        ", connectTime:%{public}.3f"
-        ", tlsTime:%{public}.3f"
-        ", firstSendTime:%{public}.3f"
-        ", firstRecvTime:%{public}.3f"
-        ", totalTime:%{public}.3f"
-        ", redirectTime:%{public}.3f",
-        taskId_,
-        GetSizeFromCurl(curlHandle_),
-        GetTimingFromCurl(curlHandle_, CURLINFO_NAMELOOKUP_TIME_T),
-        GetTimingFromCurl(curlHandle_, CURLINFO_CONNECT_TIME_T),
-        GetTimingFromCurl(curlHandle_, CURLINFO_APPCONNECT_TIME_T),
-        GetTimingFromCurl(curlHandle_, CURLINFO_PRETRANSFER_TIME_T),
-        GetTimingFromCurl(curlHandle_, CURLINFO_STARTTRANSFER_TIME_T),
-        GetTimingFromCurl(curlHandle_, CURLINFO_TOTAL_TIME_T),
-        GetTimingFromCurl(curlHandle_, CURLINFO_REDIRECT_TIME_T));
+        ", Duration: dns:%{public}.3f"
+        ", connect:%{public}.3f"
+        ", tls:%{public}.3f"
+        ", firstSend:%{public}.3f"
+        ", firstRecv:%{public}.3f"
+        ", total:%{public}.3f"
+        ", redirect:%{public}.3f",
+        taskId_, GetSizeFromCurl(curlHandle_), dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
+        tlsTime == 0 ? 0 : tlsTime - connectTime,
+        firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
+        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime);
 }
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
