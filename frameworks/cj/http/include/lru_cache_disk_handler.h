@@ -19,7 +19,7 @@
 #include <list>
 #include <string>
 #include <unordered_map>
-#include "json/json.h"
+#include "cJSON.h"
 #include <mutex>
 
 namespace OHOS::NetStack::Http {
@@ -43,9 +43,9 @@ public:
 
     void MergeOtherCache(const LRUCache &other);
 
-    Json::Value WriteCacheToJsonValue();
+    cJSON* WriteCacheToJsonValue();
 
-    void ReadCacheFromJsonValue(const Json::Value &root);
+    void ReadCacheFromJsonValue(const cJSON* root);
 
     void Clear();
 
@@ -113,9 +113,9 @@ private:
     DiskHandler diskHandler_;
     std::atomic<size_t> capacity_;
 
-    Json::Value ReadJsonValueFromFile();
+    cJSON* ReadJsonValueFromFile();
 
-    void WriteJsonValueToFile(const Json::Value &root);
+    void WriteJsonValueToFile(const cJSON *root);
 };
 
 } // namespace OHOS::NetStack::Http

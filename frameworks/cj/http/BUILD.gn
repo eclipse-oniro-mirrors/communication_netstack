@@ -28,23 +28,11 @@ config("http_ffi_config") {
 
   cflags_cc = [ "-fvisibility=hidden" ]
 
-  if (is_mingw || is_mac) {
-    cflags = [
-      "-std=c++17",
-      "-stdlib=libc++",
+  if (!build_ohos_sdk) {
+    defines += [
+      "HTTP_PROXY_ENABLE",
+      "HTTP_MULTIPATH_CERT_ENABLE",
     ]
-  }
-  if (is_mingw) {
-    defines += [ "WINDOWS_PLATFORM" ]
-  } else if (is_mac) {
-    defines += [ "MAC_PLATFORM" ]
-    cflags_cc += [
-      "-fstack-protector-strong",
-      "-D_FORTIFY_SOURCE=2",
-      "-O2",
-    ]
-  } else if (product_name != "ohos-sdk") {
-    defines += [ "HTTP_PROXY_ENABLE" ]
     cflags_cc += [
       "-fstack-protector-strong",
       "-D_FORTIFY_SOURCE=2",
@@ -55,14 +43,10 @@ config("http_ffi_config") {
   if (current_os == "ohos") {
     defines += [ "OHOS_PLATFORM" ]
   }
-
-  if (product_name != "ohos-sdk") {
-    defines += [ "HTTP_MULTIPATH_CERT_ENABLE" ]
-  }
 }
 
 ohos_shared_library("cj_net_http_ffi") {
-  if (product_name != "ohos-sdk") {
+  if (!build_ohos_sdk) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -87,63 +71,40 @@ ohos_shared_library("cj_net_http_ffi") {
 
   configs = [ ":http_ffi_config" ]
 
-  if (product_name == "ohos-sdk") {
-    defines += [ "PREVIEWER" ]
-    sources = [ "src/net_http_mock.cpp" ]
-  }
-
   external_deps = [
+    "cJSON:cjson",
     "c_utils:utils",
+    "curl:curl_shared",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "napi:cj_bind_ffi",
     "napi:cj_bind_native",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
-  if (is_mingw || is_mac) {
-    sources +=
-        [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
-    deps = [
-      "$THIRD_PARTY_ROOT/bounds_checking_function:libsec_static",
-      "$THIRD_PARTY_ROOT/curl:curl_shared",
-      "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
-    ]
-    external_deps += [ "cJSON:cjson" ]
-    ldflags = [ "-lpthread" ]
+  if (build_ohos_sdk) {
+    defines += [ "PREVIEWER" ]
+    sources = [ "src/net_http_mock.cpp" ]
   } else {
-    deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
-    external_deps += [
-      "cJSON:cjson",
-      "curl:curl_shared_http3",
-      "hilog:libhilog",
-      "hitrace:hitrace_meter",
-      "jsoncpp:jsoncpp",
-    ]
-    if (netstack_http_boringssl) {
-      deps += [
-        "//vendor/open_source/boringssl:crypto_boringssl",
-        "//vendor/open_source/boringssl:ssl_boringssl",
-      ]
-    } else {
-      external_deps += [
-        "openssl:libcrypto_shared",
-        "openssl:libssl_shared",
-      ]
-    }
-    if (defined(global_parts_info) &&
-        defined(global_parts_info.communication_netmanager_base) &&
-        global_parts_info.communication_netmanager_base) {
-      external_deps += [ "netmanager_base:net_conn_manager_if" ]
-      defines = [ "HAS_NETMANAGER_BASE=1" ]
-      sources += [
-        "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",
-        "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
-      ]
-    } else {
-      defines = [ "HAS_NETMANAGER_BASE=0" ]
-    }
-    if (product_name != "ohos-sdk") {
-      external_deps += [ "init:libbegetutil" ]
-    }
+    external_deps += [ "init:libbegetutil" ]
   }
+
+  deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines = [ "HAS_NETMANAGER_BASE=1" ]
+    sources += [
+      "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",
+      "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
+    ]
+  } else {
+    defines = [ "HAS_NETMANAGER_BASE=0" ]
+  }
+
   cflags = [
     "-fstack-protector-strong",
     "-D_FORTIFY_SOURCE=2",

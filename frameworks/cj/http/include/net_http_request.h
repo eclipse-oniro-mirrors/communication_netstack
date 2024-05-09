@@ -28,7 +28,6 @@ namespace OHOS::NetStack::Http {
 enum class HttpProtocol {
     HTTP1_1,
     HTTP2,
-    HTTP3,
     HTTP_NONE, // default choose by curl
 };
 

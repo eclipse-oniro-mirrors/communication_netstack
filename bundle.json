@@ -34,7 +34,6 @@
                 "hilog",
                 "hitrace",
                 "ipc",
-                "jsoncpp",
                 "zlib",
                 "cJSON",
                 "c_utils",
@@ -64,10 +63,8 @@
                     "//foundation/communication/netstack/frameworks/js/napi/fetch:fetch",
                     "//foundation/communication/netstack/utils:common_utils"
                 ],
-                "fwk_group": [
-                ],
-                "service_group": [
-                ]
+                "fwk_group": [],
+                "service_group": []
             },
             "inner_kits": [
                 {
@@ -105,7 +102,7 @@
                         ],
                         "header_base": "//foundation/communication/netstack/interfaces/innerkits/websocket_client/include"
                     }
-                },                
+                },
                 {
                     "header": {
                         "header_base": [],

@@ -344,8 +344,7 @@ void RequestContext::ParseParams(std::string url, CHttpRequestOptions *ops)
         options.SetConnectTimeout(ops->connectTimeout);
         usingCache_ = ops->usingCache;
         if (ops->usingProtocol == static_cast<int32_t>(HttpProtocol::HTTP1_1) ||
-            ops->usingProtocol == static_cast<int32_t>(HttpProtocol::HTTP2) ||
-            ops->usingProtocol == static_cast<int32_t>(HttpProtocol::HTTP3)) {
+            ops->usingProtocol == static_cast<int32_t>(HttpProtocol::HTTP2)) {
                 options.SetUsingProtocol(static_cast<HttpProtocol>(ops->usingProtocol));
             }
         if (ops->expectDataType != PROP_UNSET) {

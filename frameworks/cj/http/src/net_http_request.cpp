@@ -120,10 +120,6 @@ void HttpRequest::SetUsingProtocol(HttpProtocol httpProtocol)
 
 uint32_t HttpRequest::GetHttpVersion() const
 {
-    if (usingProtocol_ == HttpProtocol::HTTP3) {
-        NETSTACK_LOGI("CURL_HTTP_VERSION_3");
-        return CURL_HTTP_VERSION_3;
-    }
     if (usingProtocol_ == HttpProtocol::HTTP2) {
         NETSTACK_LOGI("CURL_HTTP_VERSION_2_0");
         return CURL_HTTP_VERSION_2_0;
