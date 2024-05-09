@@ -66,6 +66,8 @@ static constexpr const int ERRNO_BAD_FD = 9;
 
 static constexpr const int UNIT_CONVERSION_1000 = 1000;
 
+static constexpr const int MAX_CONNECT_RETRY_TIMES = 3;
+
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
 static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "OS_NET_SockRD";
@@ -871,13 +873,38 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
         return false;
     }
     struct pollfd fds[1] = {{.fd = sock, .events = POLLOUT}};
-    ret = poll(fds, 1, timeoutMSec == 0 ? DEFAULT_CONNECT_TIMEOUT : timeoutMSec);
-    if (ret < 0) {
-        NETSTACK_LOGE("connect poll failed, socket is %{public}d, errno is %{public}d", sock, errno);
-        return false;
-    } else if (ret == 0) {
-        NETSTACK_LOGE("connect poll timeout, socket is %{public}d", sock);
-        return false;
+    int timeoutMs = (timeoutMSec == 0) ? DEFAULT_CONNECT_TIMEOUT : timeoutMSec;
+    for (int i = 0; i < MAX_CONNECT_RETRY_TIMES; ++i) {
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+        timeval startTime;
+        gettimeofday(&startTime, nullptr);
+#else
+        timespec startTime;
+        clock_gettime(CLOCK_MONOTONIC, &startTime);
+#endif
+        ret = poll(fds, 1, timeoutMs);
+        if (ret < 0) {
+            if (errno == EINTR) {
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+                timeval endTime;
+                gettimeofday(&endTime, nullptr);
+                timeoutMs -= ((endTime.tv_sec - startTime.tv_sec) * UNIT_CONVERSION_1000 + (endTime.tv_usec -
+                              startTime.tv_usec) / UNIT_CONVERSION_1000);
+#else
+                timespec endTime;
+                clock_gettime(CLOCK_MONOTONIC, &endTime);
+                timeoutMs -= ((endTime.tv_sec - startTime.tv_sec) * UNIT_CONVERSION_1000 + (endTime.tv_nsec -
+                              startTime.tv_nsec) / UNIT_CONVERSION_1000 / UNIT_CONVERSION_1000);
+#endif
+                continue;
+            }
+            NETSTACK_LOGE("connect poll failed, socket is %{public}d, errno is %{public}d", sock, errno);
+            return false;
+        } else if (ret == 0) {
+            NETSTACK_LOGE("connect poll timeout, socket is %{public}d", sock);
+            return false;
+        }
+        break;
     }
 
     int err = 0;
