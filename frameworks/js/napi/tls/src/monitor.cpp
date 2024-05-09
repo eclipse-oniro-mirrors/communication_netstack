@@ -200,24 +200,33 @@ void Monitor::ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tl
             MessageRecvParma *messageRecvParma = new MessageRecvParma();
             messageRecvParma->data_ = data;
             messageRecvParma->remoteInfo_ = remoteInfo;
-            manager->EmitByUv(std::string(EVENT_MESSAGE), static_cast<void *>(messageRecvParma), EventMessageCallback);
+            if (EventManager::IsManagerValid(manager)) {
+                manager->EmitByUv(std::string(EVENT_MESSAGE), static_cast<void *>(messageRecvParma), EventMessageCallback);
+            }
         });
     }
     if (event == EVENT_CLOSE) {
-        tlsSocket->OnClose(
-            [this, manager]() { manager->EmitByUv(std::string(EVENT_CLOSE), nullptr, EventConnectCloseCallback); });
+        tlsSocket->OnClose([this, manager]() {
+            if (EventManager::IsManagerValid(manager)) {
+                manager->EmitByUv(std::string(EVENT_CLOSE), nullptr, EventConnectCloseCallback);
+            }
+        });
     }
     if (event == EVENT_CONNECT) {
-        tlsSocket->OnConnect(
-            [this, manager]() { manager->EmitByUv(std::string(EVENT_CONNECT), nullptr, EventConnectCloseCallback); });
+        tlsSocket->OnConnect([this, manager]() {
+            if (EventManager::IsManagerValid(manager)) {
+                manager->EmitByUv(std::string(EVENT_CONNECT), nullptr, EventConnectCloseCallback);
+            }
+        });
     }
     if (event == EVENT_ERROR) {
         tlsSocket->OnError([this, manager](auto errorNumber, auto errorString) {
             ErrorRecvParma *errorRecvParma = new ErrorRecvParma();
             errorRecvParma->errorNumber_ = errorNumber;
             errorRecvParma->errorString_ = errorString;
-
-            manager->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(errorRecvParma), EventErrorCallback);
+            if (EventManager::IsManagerValid(manager)) {
+                manager->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(errorRecvParma), EventErrorCallback);
+            }
         });
     }
 }
