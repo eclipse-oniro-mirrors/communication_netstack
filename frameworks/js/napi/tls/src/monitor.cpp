@@ -201,7 +201,8 @@ void Monitor::ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tl
             messageRecvParma->data_ = data;
             messageRecvParma->remoteInfo_ = remoteInfo;
             if (EventManager::IsManagerValid(manager)) {
-                manager->EmitByUv(std::string(EVENT_MESSAGE), static_cast<void *>(messageRecvParma), EventMessageCallback);
+                manager->EmitByUv(std::string(EVENT_MESSAGE), static_cast<void *>(messageRecvParma),
+                                  EventMessageCallback);
             }
         });
     }
