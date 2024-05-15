@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include <cinttypes>
 #include <unistd.h>
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
@@ -555,7 +554,7 @@ bool HttpClientTask::ProcessResponseCode()
         return false;
     }
     auto resultCode = static_cast<ResponseCode>(result);
-    NETSTACK_LOGD("id=%{public}d, code=%{public}d", taskId_, resultCode);
+    NETSTACK_LOGI("id=%{public}d, code=%{public}d", taskId_, resultCode);
     response_.SetResponseCode(resultCode);
 
     return true;
@@ -597,30 +596,20 @@ void HttpClientTask::DumpHttpPerformance() const
     auto firstRecvTime = GetTimingFromCurl(curlHandle_, CURLINFO_STARTTRANSFER_TIME_T);
     auto totalTime = GetTimingFromCurl(curlHandle_, CURLINFO_TOTAL_TIME_T);
     auto redirectTime = GetTimingFromCurl(curlHandle_, CURLINFO_REDIRECT_TIME_T);
-
-    int64_t responseCode = 0;
-    (void)curl_easy_getinfo(curlHandle_,  CURLINFO_RESPONSE_CODE, &responseCode);
-    int64_t httpVersion = CURL_HTTP_VERSION_NONE;
-    (void)curl_easy_getinfo(curlHandle_,  CURLINFO_HTTP_VERSION, &httpVersion);
-
     NETSTACK_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
-        ", dns:%{public}.3f"
+        ", Duration: dns:%{public}.3f"
         ", connect:%{public}.3f"
         ", tls:%{public}.3f"
         ", firstSend:%{public}.3f"
         ", firstRecv:%{public}.3f"
         ", total:%{public}.3f"
-        ", redirect:%{public}.3f"
-        ", RespCode:%{public}" PRId64
-        ", httpVer:%{public}" PRId64
-        ", method:%{public}s",
+        ", redirect:%{public}.3f",
         taskId_, GetSizeFromCurl(curlHandle_), dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
-        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
-        responseCode, httpVersion, request_.GetMethod().c_str());
+        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime);
 }
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)

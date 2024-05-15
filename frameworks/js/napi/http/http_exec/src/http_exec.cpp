@@ -285,14 +285,14 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
 bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURLMSG curlMsg, CURLcode result)
 {
     if (curlMsg != CURLMSG_DONE) {
-        NETSTACK_LOGE("taskid=%{public}d, CURLMSG %{public}s", context->GetTaskId(), std::to_string(curlMsg).c_str());
+        NETSTACK_LOGE("CURLMSG %{public}s", std::to_string(curlMsg).c_str());
         context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
         return false;
     }
 
     if (result != CURLE_OK) {
         context->SetErrorCode(result);
-        NETSTACK_LOGE("taskid=%{public}d, CURLcode %{public}s", context->GetTaskId(), std::to_string(result).c_str());
+        NETSTACK_LOGE("CURLcode result %{public}s", std::to_string(result).c_str());
         return false;
     }
 
@@ -306,7 +306,7 @@ bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURL
     }
     context->response.SetResponseCode(responseCode);
     if (context->response.GetResponseCode() == static_cast<uint32_t>(ResponseCode::NOT_MODIFIED)) {
-        NETSTACK_LOGI("taskid=%{public}d, cache is NOT_MODIFIED, we use the cache", context->GetTaskId());
+        NETSTACK_LOGI("cache is NOT_MODIFIED, we use the cache");
         context->SetResponseByCache();
         return true;
     }
@@ -378,11 +378,6 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     context->CachePerformanceTimingItem(HttpConstant::RESPONSE_TOTAL_FINISH_TIMING, totalTime);
     context->CachePerformanceTimingItem(HttpConstant::RESPONSE_REDIRECT_TIMING, redirectTime);
 
-    int64_t responseCode = 0;
-    (void)curl_easy_getinfo(handle,  CURLINFO_RESPONSE_CODE, &responseCode);
-    int64_t httpVersion = CURL_HTTP_VERSION_NONE;
-    (void)curl_easy_getinfo(handle,  CURLINFO_HTTP_VERSION, &httpVersion);
-
     NETSTACK_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
@@ -392,15 +387,11 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         ", firstSend:%{public}.3f"
         ", firstRecv:%{public}.3f"
         ", total:%{public}.3f"
-        ", redirect:%{public}.3f"
-        ", RespCode:%{public}" PRId64
-        ", httpVer:%{public}" PRId64
-        ", method:%{public}s",
+        ", redirect:%{public}.3f",
         context->GetTaskId(), GetSizeFromCurl(handle, context), dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
-        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
-        responseCode, httpVersion, context->options.GetMethod().c_str());
+        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime);
 }
 
 #if HAS_NETMANAGER_BASE
