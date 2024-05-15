@@ -91,6 +91,8 @@ public:
 
     static void ExecLocalSocketServerListen(napi_env env, void *data);
 
+    static void ExecLocalSocketServerEnd(napi_env env, void *data);
+
     static void ExecLocalSocketServerGetState(napi_env env, void *data);
 
     static void ExecLocalSocketServerSetExtraOptions(napi_env env, void *data);
@@ -165,6 +167,8 @@ public:
     static void LocalSocketGetExtraOptionsCallback(napi_env env, napi_status status, void *data);
 
     static void LocalSocketServerListenCallback(napi_env env, napi_status status, void *data);
+
+    static void LocalSocketServerEndCallback(napi_env env, napi_status status, void *data);
 
     static void LocalSocketServerGetStateCallback(napi_env env, napi_status status, void *data);
 

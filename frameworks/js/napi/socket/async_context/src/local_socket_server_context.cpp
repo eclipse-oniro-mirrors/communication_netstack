@@ -62,6 +62,18 @@ const std::string &LocalSocketServerListenContext::GetSocketPath() const
     return socketPath_;
 }
 
+void LocalSocketServerEndContext::ParseParams(napi_value *params, size_t paramsCount)
+{
+    if (!CheckParamsWithoutOptions(params, paramsCount)) {
+        return;
+    }
+    if (paramsCount != PARAM_NONE) {
+        SetParseOK(SetCallback(params[0]) == napi_ok);
+        return;
+    }
+    SetParseOK(true);
+}
+
 void LocalSocketServerGetStateContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     if (!CheckParamsWithoutOptions(params, paramsCount)) {
