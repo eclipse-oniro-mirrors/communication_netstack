@@ -305,11 +305,6 @@ bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURL
         return false;
     }
     context->response.SetResponseCode(responseCode);
-    if (context->response.GetResponseCode() == static_cast<uint32_t>(ResponseCode::NOT_MODIFIED)) {
-        NETSTACK_LOGI("cache is NOT_MODIFIED, we use the cache");
-        context->SetResponseByCache();
-        return true;
-    }
     NETSTACK_LOGD("responseCode is %{public}s", std::to_string(responseCode).c_str());
 
     struct curl_slist *cookies = nullptr;
@@ -465,6 +460,17 @@ bool HttpExec::ExecRequest(RequestContext *context)
     context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
     CacheProxy proxy(context->options);
     if (context->IsUsingCache() && proxy.ReadResponseFromCache(context)) {
+        if (EventManager::IsManagerValid(context->GetManager())) {
+            if (context->IsRequestInStream()) {
+                NapiUtils::CreateUvQueueWorkByModuleId(
+                    context->GetEnv(), std::bind(AsyncWorkRequestInStreamCallback, context->GetEnv(), napi_ok, context),
+                    context->GetModuleId());
+            } else {
+                NapiUtils::CreateUvQueueWorkByModuleId(
+                    context->GetEnv(), std::bind(AsyncWorkRequestCallback, context->GetEnv(), napi_ok, context),
+                    context->GetModuleId());
+            }
+        }
         return true;
     }
 

@@ -30,10 +30,12 @@ time_t HttpTime::StrTimeToTimestamp(const std::string &time_str)
     std::tm tm = {0};
     std::stringstream ss(time_str);
     ss >> std::get_time(&tm, GMT_TIME);
-    auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
 
-    auto tmp = std::chrono::duration_cast<std::chrono::seconds>(tp.time_since_epoch());
-    return tmp.count();
+#ifdef WINDOWS_PLATFORM
+    return _mkgmtime(&tm);
+#else
+    return timegm(&tm);
+#endif
 }
 
 time_t HttpTime::GetNowTimeSeconds()
