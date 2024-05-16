@@ -278,12 +278,14 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     int sendTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_SNDTIMEO, DEFAULT_TIMEOUT_MS);
     while (leftSize > 0) {
         if (!PollFd(fds, num, sendTimeoutMs)) {
-            return false;
+            if (errno != EINTR) {
+                return false;
+            }
         }
         size_t sendSize = (sockType == SOCK_STREAM ? leftSize : std::min<size_t>(leftSize, bufferSize));
         auto sendLen = sendto(sock, curPos, sendSize, 0, addr, addrLen);
         if (sendLen < 0) {
-            if (errno == EAGAIN) {
+            if (errno == EAGAIN || errno == EINTR) {
                 continue;
             }
             NETSTACK_LOGE("send failed, socket is %{public}d, errno is %{public}d", sock, errno);
