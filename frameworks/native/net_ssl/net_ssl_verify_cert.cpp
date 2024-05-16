@@ -144,7 +144,6 @@ uint32_t VerifyCert(const CertBlob *cert)
         verifyResult = static_cast<uint32_t>(X509_verify_cert(ctx));
         if (verifyResult != VERIFY_RESULT_SUCCESS) {
             verifyResult = static_cast<uint32_t>(X509_STORE_CTX_get_error(ctx) + SSL_ERROR_CODE_BASE);
-            ProcessResult(verifyResult);
             NETSTACK_LOGE("failed to verify certificate: %{public}s (%{public}d)\n",
                           X509_verify_cert_error_string(X509_STORE_CTX_get_error(ctx)), verifyResult);
             break;
