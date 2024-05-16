@@ -21,9 +21,11 @@
 #include <openssl/ssl.h>
 
 #include "netstack_log.h"
-#include "net_conn_client.h"
 #include "netstack_common_utils.h"
 #include "tls_utils.h"
+#ifdef HAS_NETMANAGER_BASE
+#include "net_conn_client.h"
+#endif
 
 namespace OHOS {
 namespace NetStack {
