@@ -23,8 +23,10 @@
 
 #include "netstack_log.h"
 #include "netstack_common_utils.h"
-#include "net_conn_client.h"
 #include "tls_utils.h"
+#ifdef HAS_NETMANAGER_BASE
+#include "net_conn_client.h"
+#endif
 
 namespace OHOS {
 namespace NetStack {
