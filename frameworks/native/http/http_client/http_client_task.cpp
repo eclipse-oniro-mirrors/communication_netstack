@@ -12,7 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#if !defined(_WIN32) && !defined(__APPLE__)
+#include <cinttypes>
+#endif
 #include <unistd.h>
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
@@ -554,7 +556,7 @@ bool HttpClientTask::ProcessResponseCode()
         return false;
     }
     auto resultCode = static_cast<ResponseCode>(result);
-    NETSTACK_LOGI("id=%{public}d, code=%{public}d", taskId_, resultCode);
+    NETSTACK_LOGD("id=%{public}d, code=%{public}d", taskId_, resultCode);
     response_.SetResponseCode(resultCode);
 
     return true;
@@ -589,6 +591,7 @@ curl_off_t HttpClientTask::GetSizeFromCurl(CURL *handle) const
 
 void HttpClientTask::DumpHttpPerformance() const
 {
+#if !defined(_WIN32) && !defined(__APPLE__)
     auto dnsTime = GetTimingFromCurl(curlHandle_, CURLINFO_NAMELOOKUP_TIME_T);
     auto connectTime = GetTimingFromCurl(curlHandle_, CURLINFO_CONNECT_TIME_T);
     auto tlsTime = GetTimingFromCurl(curlHandle_, CURLINFO_APPCONNECT_TIME_T);
@@ -596,20 +599,39 @@ void HttpClientTask::DumpHttpPerformance() const
     auto firstRecvTime = GetTimingFromCurl(curlHandle_, CURLINFO_STARTTRANSFER_TIME_T);
     auto totalTime = GetTimingFromCurl(curlHandle_, CURLINFO_TOTAL_TIME_T);
     auto redirectTime = GetTimingFromCurl(curlHandle_, CURLINFO_REDIRECT_TIME_T);
+
+    int64_t responseCode = 0;
+    (void)curl_easy_getinfo(curlHandle_,  CURLINFO_RESPONSE_CODE, &responseCode);
+
+    /*
+    CURL_HTTP_VERSION_NONE         0
+    CURL_HTTP_VERSION_1_0          1
+    CURL_HTTP_VERSION_1_1          2
+    CURL_HTTP_VERSION_2            3
+    */
+    int64_t httpVer = CURL_HTTP_VERSION_NONE;
+    (void)curl_easy_getinfo(curlHandle_,  CURLINFO_HTTP_VERSION, &httpVer);
+
     NETSTACK_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
-        ", Duration: dns:%{public}.3f"
+        ", dns:%{public}.3f"
         ", connect:%{public}.3f"
         ", tls:%{public}.3f"
         ", firstSend:%{public}.3f"
         ", firstRecv:%{public}.3f"
         ", total:%{public}.3f"
-        ", redirect:%{public}.3f",
+        ", redirect:%{public}.3f"
+        ", errCode:%{public}d"
+        ", RespCode:%{public}" PRId64
+        ", httpVer:%{public}" PRId64
+        ", method:%{public}s",
         taskId_, GetSizeFromCurl(curlHandle_), dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
-        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime);
+        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
+        error_.GetErrorCode(), responseCode, httpVer, request_.GetMethod().c_str());
+#endif
 }
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
