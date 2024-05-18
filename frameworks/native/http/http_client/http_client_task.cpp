@@ -12,9 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if !defined(_WIN32) && !defined(__APPLE__)
-#include <cinttypes>
-#endif
 #include <unistd.h>
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
@@ -591,7 +588,6 @@ curl_off_t HttpClientTask::GetSizeFromCurl(CURL *handle) const
 
 void HttpClientTask::DumpHttpPerformance() const
 {
-#if !defined(_WIN32) && !defined(__APPLE__)
     auto dnsTime = GetTimingFromCurl(curlHandle_, CURLINFO_NAMELOOKUP_TIME_T);
     auto connectTime = GetTimingFromCurl(curlHandle_, CURLINFO_CONNECT_TIME_T);
     auto tlsTime = GetTimingFromCurl(curlHandle_, CURLINFO_APPCONNECT_TIME_T);
@@ -623,15 +619,15 @@ void HttpClientTask::DumpHttpPerformance() const
         ", total:%{public}.3f"
         ", redirect:%{public}.3f"
         ", errCode:%{public}d"
-        ", RespCode:%{public}" PRId64
-        ", httpVer:%{public}" PRId64
+        ", RespCode:%{public}s"
+        ", httpVer:%{public}s"
         ", method:%{public}s",
         taskId_, GetSizeFromCurl(curlHandle_), dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
-        error_.GetErrorCode(), responseCode, httpVer, request_.GetMethod().c_str());
-#endif
+        error_.GetErrorCode(), std::to_string(responseCode).c_str(), std::to_string(httpVer).c_str(),
+        request_.GetMethod().c_str());
 }
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)

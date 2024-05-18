@@ -372,7 +372,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     context->CachePerformanceTimingItem(HttpConstant::RESPONSE_FIRST_RECEIVE_TIMING, firstRecvTime);
     context->CachePerformanceTimingItem(HttpConstant::RESPONSE_TOTAL_FINISH_TIMING, totalTime);
     context->CachePerformanceTimingItem(HttpConstant::RESPONSE_REDIRECT_TIMING, redirectTime);
-#if HAS_NETMANAGER_BASE
+
     int64_t responseCode = 0;
     (void)curl_easy_getinfo(handle,  CURLINFO_RESPONSE_CODE, &responseCode);
 
@@ -396,15 +396,15 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         ", total:%{public}.3f"
         ", redirect:%{public}.3f"
         ", errCode:%{public}d"
-        ", RespCode:%{public}" PRId64
-        ", httpVer:%{public}" PRId64
+        ", RespCode:%{public}s"
+        ", httpVer:%{public}s"
         ", method:%{public}s",
         context->GetTaskId(), GetSizeFromCurl(handle, context), dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
-        context->IsExecOK() ? 0: context->GetErrorCode(), responseCode, httpVer, context->options.GetMethod().c_str());
-#endif
+        context->IsExecOK() ? 0: context->GetErrorCode(), std::to_string(responseCode).c_str(),
+        std::to_string(httpVer).c_str(), context->options.GetMethod().c_str());
 }
 
 #if HAS_NETMANAGER_BASE
