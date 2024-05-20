@@ -507,7 +507,7 @@ private:
          * Obtain the ssl used in encrypted communication
          * @return SSL used in encrypted communication
          */
-        [[nodiscard]] ssl_st *GetSSL() const;
+        [[nodiscard]] ssl_st *GetSSL();
 
     private:
         bool StartTlsConnected(const TLSConnectOptions &options);
@@ -520,6 +520,7 @@ private:
                                              const X509 *x509Certificates);
 
     private:
+        std::mutex mutexForSsl_;
         ssl_st *ssl_ = nullptr;
         X509 *peerX509_ = nullptr;
         uint16_t port_ = 0;

@@ -87,37 +87,33 @@ void EventMessageCallback(uv_work_t *work, int status)
         return;
     }
     auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
-    if (workWrapper == nullptr) {
-        ParserNullBranch("workWrapper is nullptr", work, workWrapper);
-        return;
-    }
-    std::shared_ptr<Monitor::MessageRecvParma> messageRecvParma(
-        static_cast<Monitor::MessageRecvParma *>(workWrapper->data));
-    if (messageRecvParma == nullptr) {
-        ParserNullBranch("monitor is nullptr", work, workWrapper);
-        return;
-    }
-    napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
+    auto eventManager = reinterpret_cast<EventManager *>(workWrapper->data);
+    auto messageRecvParam = reinterpret_cast<Monitor::MessageRecvParma *>(eventManager->GetQueueData());
+
+    napi_env env = workWrapper->env;
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
+
     napi_value obj = NapiUtils::CreateObject(workWrapper->env);
     napi_value remoteInfo = NapiUtils::CreateObject(workWrapper->env);
     void *data = nullptr;
-    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(workWrapper->env, messageRecvParma->data_.size(), &data);
-    if (data != nullptr && arrayBuffer != nullptr) {
-        if (memcpy_s(data, messageRecvParma->data_.size(), messageRecvParma->data_.c_str(),
-                     messageRecvParma->data_.size()) != EOK) {
-            ParserNullBranch("memcpy_s failed!", work, workWrapper);
-            NapiUtils::CloseScope(workWrapper->env, scope);
-            return;
-        }
+    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(workWrapper->env, messageRecvParam->data_.size(), &data);
+    if (data != nullptr && NapiUtils::ValueIsArrayBuffer(env, arrayBuffer) && 
+        memcpy_s(data, messageRecvParam->data_.size(), messageRecvParam->data_.c_str(),
+                 messageRecvParam->data_.size()) != EOK) {
+        delete messageRecvParam;
+        ParserNullBranch("", work, workWrapper);
+        return;
     }
-    SetPropertyForWorkWrapper(workWrapper, messageRecvParma.get(), arrayBuffer, remoteInfo, obj);
-    if (workWrapper->manager == nullptr) {
-        ParserNullBranch("manager is nullptr", work, workWrapper);
-        NapiUtils::CloseScope(workWrapper->env, scope);
+    SetPropertyForWorkWrapper(workWrapper, messageRecvParam, arrayBuffer, remoteInfo, obj);
+
+    if (workWrapper->manager == nullptr || !EventManager::IsManagerValid(workWrapper->manager)) {
+        delete messageRecvParam;
+        ParserNullBranch("manager is invalid", work, workWrapper);
         return;
     }
     workWrapper->manager->Emit(workWrapper->type, std::make_pair(NapiUtils::GetUndefined(workWrapper->env), obj));
-    NapiUtils::CloseScope(workWrapper->env, scope);
+    delete messageRecvParam;
     ParserNullBranch("event message callback success", work, workWrapper);
 }
 
@@ -201,8 +197,8 @@ void Monitor::ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tl
             messageRecvParma->data_ = data;
             messageRecvParma->remoteInfo_ = remoteInfo;
             if (EventManager::IsManagerValid(manager)) {
-                manager->EmitByUv(std::string(EVENT_MESSAGE), static_cast<void *>(messageRecvParma),
-                                  EventMessageCallback);
+                manager->SetQueueData(reinterpret_cast<void *>(messageRecvParma));
+                manager->EmitByUv(std::string(EVENT_MESSAGE), reinterpret_cast<void *>(manager), EventMessageCallback);
             }
         });
     }

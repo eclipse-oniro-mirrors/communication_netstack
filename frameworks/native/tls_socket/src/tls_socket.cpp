@@ -410,8 +410,13 @@ int TLSSocket::ReadMessage()
         CallOnErrorCallback(resErr, MakeErrnoString());
         return ret;
     } else if (ret == 0) {
-        NETSTACK_LOGD("tls recv poll timeout");
-        return ret;
+        int pendRet = SSL_pending(tlsSocketInternal_.GetSSL());
+        if (pendRet > 0) {
+            NETSTACK_LOGE("ssl pending");
+        } else {
+            NETSTACK_LOGD("tls recv poll timeout");
+            return ret;
+        }
     }
 
     std::lock_guard<std::mutex> lock(recvMutex_);
@@ -1415,9 +1420,12 @@ bool TLSSocket::TLSSocketInternal::CreatTlsContext()
         NETSTACK_LOGE("failed to create tls context pointer");
         return false;
     }
-    if (!(ssl_ = tlsContextPointer_->CreateSsl())) {
-        NETSTACK_LOGE("failed to create ssl session");
-        return false;
+    {
+        std::lock_guard<std::mutex> lock(mutexForSsl_);
+        if (!(ssl_ = tlsContextPointer_->CreateSsl())) {
+            NETSTACK_LOGE("failed to create ssl session");
+            return false;
+        }
     }
     SSL_set_fd(ssl_, socketDescriptor_);
     SSL_set_connect_state(ssl_);
@@ -1629,8 +1637,9 @@ const X509CertRawData &TLSSocket::TLSSocketInternal::GetRemoteCertRawData() cons
     return remoteRawData_;
 }
 
-ssl_st *TLSSocket::TLSSocketInternal::GetSSL() const
+ssl_st *TLSSocket::TLSSocketInternal::GetSSL()
 {
+    std::lock_guard<std::mutex> lock(mutexForSsl_);
     return ssl_;
 }
 } // namespace TlsSocket
