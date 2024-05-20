@@ -294,9 +294,9 @@ VerifyMode TLSSecureOptions::GetVerifyMode() const
 
 void TLSConnectOptions::SetNetAddress(const Socket::NetAddress &address)
 {
+    address_.SetFamilyBySaFamily(address.GetSaFamily());
     address_.SetAddress(address.GetAddress());
     address_.SetPort(address.GetPort());
-    address_.SetFamilyBySaFamily(address.GetSaFamily());
 }
 
 void TLSConnectOptions::SetTlsSecureOptions(TLSSecureOptions &tlsSecureOptions)
@@ -812,8 +812,8 @@ void TLSSocket::GetIp4RemoteAddress(const GetRemoteAddressCallback &callback)
         return;
     }
     Socket::NetAddress netAddress;
-    netAddress.SetAddress(address);
     netAddress.SetFamilyBySaFamily(AF_INET);
+    netAddress.SetAddress(address);
     netAddress.SetPort(ntohs(addr4.sin_port));
     CallGetRemoteAddressCallback(TLSSOCKET_SUCCESS, netAddress, callback);
 }
@@ -840,8 +840,8 @@ void TLSSocket::GetIp6RemoteAddress(const GetRemoteAddressCallback &callback)
         return;
     }
     Socket::NetAddress netAddress;
-    netAddress.SetAddress(address);
     netAddress.SetFamilyBySaFamily(AF_INET6);
+    netAddress.SetAddress(address);
     netAddress.SetPort(ntohs(addr6.sin6_port));
     CallGetRemoteAddressCallback(TLSSOCKET_SUCCESS, netAddress, callback);
 }
@@ -1084,11 +1084,32 @@ bool ExecSocketConnect(const std::string &hostName, int port, sa_family_t family
     struct sockaddr_in dest = {0};
     dest.sin_family = family;
     dest.sin_port = htons(port);
-    if (!inet_aton(hostName.c_str(), reinterpret_cast<in_addr *>(&dest.sin_addr.s_addr))) {
-        NETSTACK_LOGE("inet_aton is error, hostName is %s", hostName.c_str());
-        return false;
+
+    sockaddr_in addr4 = {0};
+    sockaddr_in6 addr6 = {0};
+    sockaddr *addr = nullptr;
+    socklen_t len = 0;
+    if (family == AF_INET) {
+        if (inet_pton(AF_INET, hostName.c_str(), &addr4.sin_addr.s_addr) <= 0) {
+            NETSTACK_LOGE("inet_pton is error, ipv4: %s", hostName.c_str());
+            return false;
+        }
+        addr4.sin_family = family;
+        addr4.sin_port = htons(port);
+        addr = reinterpret_cast<sockaddr *>(&addr4);
+        len = sizeof(sockaddr_in);
+    } else {
+        if (inet_pton(AF_INET6, hostName.c_str(), &addr6.sin6_addr) <= 0) {
+            NETSTACK_LOGE("inet_pton is error, ipv6: %s", hostName.c_str());
+            return false;
+        }
+        addr6.sin6_family = family;
+        addr6.sin6_port = htons(port);
+        addr = reinterpret_cast<sockaddr *>(&addr6);
+        len = sizeof(sockaddr_in6);
     }
-    int connectResult = connect(socketDescriptor, reinterpret_cast<struct sockaddr *>(&dest), sizeof(dest));
+
+    int connectResult = connect(socketDescriptor, addr, len);
     if (connectResult == -1) {
         NETSTACK_LOGE("socket connect error!The error code is %{public}d, The error message is %{public}s", errno,
                       strerror(errno));
@@ -1270,9 +1291,9 @@ bool TLSSocket::TLSSocketInternal::SetAlpnProtocols(const std::vector<std::strin
 
 void TLSSocket::TLSSocketInternal::MakeRemoteInfo(Socket::SocketRemoteInfo &remoteInfo)
 {
+    remoteInfo.SetFamily(family_);
     remoteInfo.SetAddress(hostName_);
     remoteInfo.SetPort(port_);
-    remoteInfo.SetFamily(family_);
 }
 
 TLSConfiguration TLSSocket::TLSSocketInternal::GetTlsConfiguration() const
