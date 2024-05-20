@@ -214,6 +214,12 @@ private:
     std::string socketPath_;
 };
 
+class LocalSocketServerEndContext final : public LocalSocketServerBaseContext {
+public:
+    LocalSocketServerEndContext(napi_env env, EventManager *manager) : LocalSocketServerBaseContext(env, manager) {}
+    void ParseParams(napi_value *params, size_t paramsCount) override;
+};
+
 class LocalSocketServerGetStateContext final : public LocalSocketServerBaseContext {
 public:
     LocalSocketServerGetStateContext(napi_env env, EventManager *manager) : LocalSocketServerBaseContext(env, manager)

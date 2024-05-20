@@ -41,6 +41,8 @@ bool ExecLocalSocketGetExtraOptions(LocalSocketGetExtraOptionsContext *context);
 
 bool ExecLocalSocketServerListen(LocalSocketServerListenContext *context);
 
+bool ExecLocalSocketServerEnd(LocalSocketServerEndContext *context);
+
 bool ExecLocalSocketServerGetState(LocalSocketServerGetStateContext *context);
 
 bool ExecLocalSocketServerSetExtraOptions(LocalSocketServerSetExtraOptionsContext *context);
@@ -69,6 +71,8 @@ napi_value LocalSocketSetExtraOptionsCallback(LocalSocketSetExtraOptionsContext 
 napi_value LocalSocketGetExtraOptionsCallback(LocalSocketGetExtraOptionsContext *context);
 
 napi_value LocalSocketServerListenCallback(LocalSocketServerListenContext *context);
+
+napi_value LocalSocketServerEndCallback(LocalSocketServerEndContext *context);
 
 napi_value LocalSocketServerGetStateCallback(LocalSocketServerGetStateContext *context);
 

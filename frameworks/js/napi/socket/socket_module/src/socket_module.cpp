@@ -84,6 +84,7 @@ static constexpr const char *LOCAL_SOCKET_SET_EXTRA_OPTIONS = "LocalSocketSetExt
 static constexpr const char *LOCAL_SOCKET_GET_EXTRA_OPTIONS = "LocalSocketGetExtraOptions";
 
 static constexpr const char *LOCAL_SOCKET_SERVER_LISTEN = "LocalSocketServerListen";
+static constexpr const char *LOCAL_SOCKET_SERVER_END = "LocalSocketServerEnd";
 static constexpr const char *LOCAL_SOCKET_SERVER_GET_STATE = "LocalSocketServerGetState";
 static constexpr const char *LOCAL_SOCKET_SERVER_SET_EXTRA_OPTIONS = "LocalSocketServerSetExtraOptions";
 static constexpr const char *LOCAL_SOCKET_SERVER_GET_EXTRA_OPTIONS = "LocalSocketServerGetExtraOptions";
@@ -517,6 +518,7 @@ void SocketModuleExports::DefineLocalSocketServerClass(napi_env env, napi_value 
 {
     std::initializer_list<napi_property_descriptor> properties = {
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_LISTEN, LocalSocketServer::Listen),
+        DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_CLOSE, LocalSocketServer::Close),
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_GET_STATE, LocalSocketServer::GetState),
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_SET_EXTRA_OPTIONS, LocalSocketServer::SetExtraOptions),
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_GET_EXTRA_OPTIONS, LocalSocketServer::GetExtraOptions),
@@ -844,6 +846,12 @@ napi_value SocketModuleExports::LocalSocketServer::Listen(napi_env env, napi_cal
 {
     return SOCKET_INTERFACE(LocalSocketServerListenContext, ExecLocalSocketServerListen,
                             LocalSocketServerListenCallback, MakeLocalServerSocket, LOCAL_SOCKET_SERVER_LISTEN);
+}
+
+napi_value SocketModuleExports::LocalSocketServer::Close(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketServerEndContext, ExecLocalSocketServerEnd,
+                            LocalSocketServerEndCallback, nullptr, LOCAL_SOCKET_SERVER_END);
 }
 
 napi_value SocketModuleExports::LocalSocketServer::GetState(napi_env env, napi_callback_info info)

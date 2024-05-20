@@ -207,6 +207,11 @@ void SocketAsyncWork::ExecLocalSocketServerListen(napi_env env, void *data)
                                                                                                                data);
 }
 
+void SocketAsyncWork::ExecLocalSocketServerEnd(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<LocalSocketServerEndContext, LocalSocketExec::ExecLocalSocketServerEnd>(env, data);
+}
+
 void SocketAsyncWork::ExecLocalSocketServerGetState(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<LocalSocketServerGetStateContext, LocalSocketExec::ExecLocalSocketServerGetState>(
@@ -412,6 +417,12 @@ void SocketAsyncWork::LocalSocketGetExtraOptionsCallback(napi_env env, napi_stat
 void SocketAsyncWork::LocalSocketServerListenCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<LocalSocketServerListenContext, LocalSocketExec::LocalSocketServerListenCallback>(
+        env, status, data);
+}
+
+void SocketAsyncWork::LocalSocketServerEndCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<LocalSocketServerEndContext, LocalSocketExec::LocalSocketServerEndCallback>(
         env, status, data);
 }
 

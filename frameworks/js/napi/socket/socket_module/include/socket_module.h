@@ -87,6 +87,7 @@ public:
     class LocalSocketServer {
     public:
         static constexpr char FUNCTION_LISTEN[] = "listen";
+        static constexpr char FUNCTION_CLOSE[] = "close";
         static constexpr char FUNCTION_GET_STATE[] = "getState";
         static constexpr char FUNCTION_SET_EXTRA_OPTIONS[] = "setExtraOptions";
         static constexpr char FUNCTION_GET_EXTRA_OPTIONS[] = "getExtraOptions";
@@ -94,6 +95,7 @@ public:
         static constexpr char FUNCTION_OFF[] = "off";
 
         static napi_value Listen(napi_env env, napi_callback_info info);
+        static napi_value Close(napi_env env, napi_callback_info info);
         static napi_value GetState(napi_env env, napi_callback_info info);
         static napi_value SetExtraOptions(napi_env env, napi_callback_info info);
         static napi_value GetExtraOptions(napi_env env, napi_callback_info info);
