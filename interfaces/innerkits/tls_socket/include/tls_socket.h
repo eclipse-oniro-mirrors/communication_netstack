@@ -610,7 +610,7 @@ private:
     std::mutex cvMutex_;
     bool isRunning_ = false;
     bool isRunOver_ = true;
-    std::condition_variable cvSslFree;
+    std::condition_variable cvSslFree_;
     int sockFd_ = -1;
 };
 } // namespace TlsSocket

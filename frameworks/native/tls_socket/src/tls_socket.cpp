@@ -464,7 +464,7 @@ void TLSSocket::StartReadMessage()
             }
         }
         isRunOver_ = true;
-        cvSslFree.notify_one();
+        cvSslFree_.notify_one();
     });
     thread.detach();
 }
@@ -757,7 +757,7 @@ bool WaitConditionWithTimeout(const bool *flag, const int32_t timeoutMs)
 void TLSSocket::Close(const CloseCallback &callback)
 {
     std::unique_lock<std::mutex> cvLock(cvMutex_);
-    cvSslFree.wait(cvLock, [this]() -> bool { return isRunOver_; });
+    cvSslFree_.wait(cvLock, [this]() -> bool { return isRunOver_; });
 
     if (!WaitConditionWithTimeout(&isRunning_, TIMEOUT_MS)) {
         callback(ConvertErrno());
