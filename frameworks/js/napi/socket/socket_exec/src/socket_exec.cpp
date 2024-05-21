@@ -87,10 +87,12 @@ namespace OHOS::NetStack::Socket::SocketExec {
     } while (0)
 
 #define CHECK_PERMISSION(context) \
-    if (!CommonUtils::HasInternetPermission()) { \
-        context->SetPermissionDenied(true); \
-        return false; \
-    }
+    do { \
+        if (!CommonUtils::HasInternetPermission()) { \
+            context->SetPermissionDenied(true); \
+            return false; \
+        } \
+    } while (0)
 
 std::map<int32_t, int32_t> g_clientFDs;
 std::map<int32_t, EventManager *> g_clientEventManagers;
