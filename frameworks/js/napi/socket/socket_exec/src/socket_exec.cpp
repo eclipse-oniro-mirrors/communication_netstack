@@ -86,14 +86,6 @@ namespace OHOS::NetStack::Socket::SocketExec {
         return false; \
     } while (0)
 
-#define CHECK_PERMISSION(context) \
-    do { \
-        if (!CommonUtils::HasInternetPermission()) { \
-            context->SetPermissionDenied(true); \
-            return false; \
-        } \
-    } while (0)
-
 std::map<int32_t, int32_t> g_clientFDs;
 std::map<int32_t, EventManager *> g_clientEventManagers;
 std::condition_variable g_cv;
@@ -688,9 +680,7 @@ static bool TcpSendEvent(TcpSendContext *context)
     sockaddr sockAddr = {0};
     socklen_t len = sizeof(sockaddr);
     if (getsockname(context->GetSocketFd(), &sockAddr, &len) < 0) {
-        NETSTACK_LOGE("get sock name failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
-        context->SetErrorCode(errno);
-        return false;
+        ERROR_RETURN(context, "getsockname failed, sock:%{public}d, errno:%{public}d", context->GetSocketFd(), errno);
     }
     bool connected = false;
     if (sockAddr.sa_family == AF_INET) {
@@ -718,9 +708,7 @@ static bool TcpSendEvent(TcpSendContext *context)
 
     if (!PollSendData(context->GetSocketFd(), context->options.GetData().c_str(), context->options.GetData().size(),
                       nullptr, 0)) {
-        NETSTACK_LOGE("send failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
-        context->SetErrorCode(errno);
-        return false;
+        ERROR_RETURN(context, "send failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
     }
     return true;
 }
@@ -740,9 +728,7 @@ static bool UdpSendEvent(UdpSendContext *context)
 
     if (!PollSendData(context->GetSocketFd(), context->options.GetData().c_str(), context->options.GetData().size(),
                       addr, len)) {
-        NETSTACK_LOGE("send failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
-        context->SetErrorCode(errno);
-        return false;
+        ERROR_RETURN(context, "send failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
     }
     return true;
 }
@@ -1003,9 +989,7 @@ bool ExecBind(BindContext *context)
 
     if (bind(context->GetSocketFd(), addr, len) < 0) {
         if (errno != EADDRINUSE) {
-            NETSTACK_LOGE("bind failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
-            context->SetErrorCode(errno);
-            return false;
+            ERROR_RETURN(context, "bind failed, socket:%{public}d, errno:%{public}d", context->GetSocketFd(), errno);
         }
         if (addr->sa_family == AF_INET) {
             NETSTACK_LOGI("distribute a random port");
@@ -1015,9 +999,7 @@ bool ExecBind(BindContext *context)
             addr6.sin6_port = 0; /* distribute a random port */
         }
         if (bind(context->GetSocketFd(), addr, len) < 0) {
-            NETSTACK_LOGE("rebind failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
-            context->SetErrorCode(errno);
-            return false;
+            ERROR_RETURN(context, "rebind failed, socket:%{public}d, errno:%{public}d", context->GetSocketFd(), errno);
         }
         NETSTACK_LOGI("rebind success");
     }
@@ -1085,7 +1067,11 @@ bool ExecUdpSend(UdpSendContext *context)
 #ifdef FUZZ_TEST
     return true;
 #endif
-    CHECK_PERMISSION(context)
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
+        return false;
+    }
 
     if (context->GetSocketFd() <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
@@ -1105,7 +1091,10 @@ bool ExecTcpBind(BindContext *context)
 
 bool ExecConnect(ConnectContext *context)
 {
-    CHECK_PERMISSION(context)
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
 
     sockaddr_in addr4 = {0};
     sockaddr_in6 addr6 = {0};
@@ -1119,9 +1108,7 @@ bool ExecConnect(ConnectContext *context)
     }
 
     if (!NonBlockConnect(context->GetSocketFd(), addr, len, context->options.GetTimeout())) {
-        NETSTACK_LOGE("connect errno %{public}d", errno);
-        context->SetErrorCode(errno);
-        return false;
+        ERROR_RETURN(context, "connect errno %{public}d", errno);
     }
 
     NETSTACK_LOGI("connect success");
@@ -1141,7 +1128,11 @@ bool ExecTcpSend(TcpSendContext *context)
 #ifdef FUZZ_TEST
     return true;
 #endif
-    CHECK_PERMISSION(context)
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
+        return false;
+    }
 
     if (context->GetSocketFd() <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
@@ -1156,7 +1147,10 @@ bool ExecTcpSend(TcpSendContext *context)
 
 bool ExecClose(CloseContext *context)
 {
-    CHECK_PERMISSION(context)
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
 
     int ret = close(context->GetSocketFd());
     if (ret < 0) {
@@ -1196,7 +1190,10 @@ static bool CheckSocketFd(GetStateContext *context, sockaddr &sockAddr)
 
 bool ExecGetState(GetStateContext *context)
 {
-    CHECK_PERMISSION(context)
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
 
     int opt;
     if (CheckClosed(context, opt)) {
@@ -1263,7 +1260,10 @@ bool IsAddressAndRetValid(const int &ret, const std::string &address, GetRemoteA
 
 bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 {
-    CHECK_PERMISSION(context)
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
 
     sockaddr sockAddr = {0};
     socklen_t len = sizeof(sockaddr);
@@ -1346,7 +1346,10 @@ static bool SocketSetTcpExtraOptions(int sockfd, TCPExtraOptions& option)
 
 bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
 {
-    CHECK_PERMISSION(context)
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
 
     if (context->GetSocketFd() <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
@@ -1362,7 +1365,10 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
 
 bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
 {
-    CHECK_PERMISSION(context)
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
 
     if (context->GetSocketFd() <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
@@ -1452,7 +1458,10 @@ static inline int GetSockFamily(int fd)
 
 bool ExecUdpAddMembership(MulticastMembershipContext *context)
 {
-    CHECK_PERMISSION(context)
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
 
     if (context->address_.GetFamily() == NetAddress::Family::IPv4) {
         ip_mreq mreq = {};
@@ -1484,8 +1493,10 @@ bool ExecUdpAddMembership(MulticastMembershipContext *context)
 
 bool ExecUdpDropMembership(MulticastMembershipContext *context)
 {
-    CHECK_PERMISSION(context)
-
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
     if (context->address_.GetFamily() == NetAddress::Family::IPv4) {
         ip_mreq mreq = {};
         mreq.imr_multiaddr.s_addr = inet_addr(context->address_.GetAddress().c_str());
@@ -1522,8 +1533,10 @@ bool ExecUdpDropMembership(MulticastMembershipContext *context)
 
 bool ExecSetMulticastTTL(MulticastSetTTLContext *context)
 {
-    CHECK_PERMISSION(context)
-
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
     int ttl = context->GetMulticastTTL();
     int family = GetSockFamily(context->GetSocketFd());
     if (setsockopt(context->GetSocketFd(), (family == AF_INET) ? IPPROTO_IP : IPPROTO_IPV6, (family == AF_INET) ?
@@ -1535,8 +1548,10 @@ bool ExecSetMulticastTTL(MulticastSetTTLContext *context)
 
 bool ExecGetMulticastTTL(MulticastGetTTLContext *context)
 {
-    CHECK_PERMISSION(context)
-
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
     int ttl = 0;
     socklen_t ttlLen = sizeof(ttl);
     int family = GetSockFamily(context->GetSocketFd());
@@ -1550,8 +1565,10 @@ bool ExecGetMulticastTTL(MulticastGetTTLContext *context)
 
 bool ExecSetLoopbackMode(MulticastSetLoopbackContext *context)
 {
-    CHECK_PERMISSION(context)
-
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
     int mode = static_cast<int>(context->GetLoopbackMode());
     int family = GetSockFamily(context->GetSocketFd());
     if (setsockopt(context->GetSocketFd(), (family == AF_INET) ? IPPROTO_IP : IPPROTO_IPV6, (family == AF_INET) ?
@@ -1563,8 +1580,10 @@ bool ExecSetLoopbackMode(MulticastSetLoopbackContext *context)
 
 bool ExecGetLoopbackMode(MulticastGetLoopbackContext *context)
 {
-    CHECK_PERMISSION(context)
-
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
     int mode = 0;
     socklen_t len = sizeof(mode);
     int family = GetSockFamily(context->GetSocketFd());
@@ -1634,7 +1653,10 @@ static bool GetIPv6Address(TcpServerGetRemoteAddressContext *context, int32_t fd
 
 bool ExecTcpConnectionGetRemoteAddress(TcpServerGetRemoteAddressContext *context)
 {
-    CHECK_PERMISSION(context)
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
 
     int32_t clientFd = -1;
     bool fdValid = false;
@@ -1700,16 +1722,17 @@ static bool IsRemoteConnect(TcpServerSendContext *context, int32_t clientFd)
     }
 
     if (!connected) {
-        NETSTACK_LOGE("sock is not connect to remote, socket is %{public}d, errno is %{public}d", clientFd, errno);
-        context->SetErrorCode(errno);
-        return false;
+        ERROR_RETURN(context, "sock is not connect to remote, socket:%{public}d, errno:%{public}d", clientFd, errno);
     }
     return true;
 }
 
 bool ExecTcpConnectionSend(TcpServerSendContext *context)
 {
-    CHECK_PERMISSION(context)
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
 
     int32_t clientFd = -1;
     bool fdValid = false;
@@ -1749,8 +1772,10 @@ bool ExecTcpConnectionSend(TcpServerSendContext *context)
 
 bool ExecTcpConnectionClose(TcpServerCloseContext *context)
 {
-    CHECK_PERMISSION(context)
-
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
     bool fdValid = false;
 
     {
@@ -1976,8 +2001,10 @@ bool ExecTcpServerListen(TcpServerListenContext *context)
 
 bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
 {
-    CHECK_PERMISSION(context)
-
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
     if (context->GetSocketFd() <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
         return false;
@@ -2016,7 +2043,10 @@ static void SetIsBound(sa_family_t family, TcpServerGetStateContext *context, co
 
 bool ExecTcpServerGetState(TcpServerGetStateContext *context)
 {
-    CHECK_PERMISSION(context)
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
 
     int opt;
     socklen_t optLen = sizeof(int);
