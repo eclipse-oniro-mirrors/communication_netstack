@@ -1249,8 +1249,8 @@ bool TLSSocket::TLSSocketInternal::Close()
         int resErr = ConvertSSLError(GetSSL());
         NETSTACK_LOGE("Error in shutdown, errno is %{public}d, error info is %{public}s", resErr,
                       MakeSSLErrorString(resErr).c_str());
-        return false;
     }
+    NETSTACK_LOGI("tls socket close");
     SSL_free(ssl_);
     ssl_ = nullptr;
     close(socketDescriptor_);
