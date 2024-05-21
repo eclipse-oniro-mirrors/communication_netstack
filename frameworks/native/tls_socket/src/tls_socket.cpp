@@ -464,6 +464,7 @@ void TLSSocket::StartReadMessage()
             }
         }
         isRunOver_ = true;
+        cvSslFree_.notify_one();
     });
     thread.detach();
 }
@@ -755,6 +756,9 @@ bool WaitConditionWithTimeout(const bool *flag, const int32_t timeoutMs)
 
 void TLSSocket::Close(const CloseCallback &callback)
 {
+    std::unique_lock<std::mutex> cvLock(cvMutex_);
+    cvSslFree_.wait(cvLock, [this]() -> bool { return isRunOver_; });
+
     if (!WaitConditionWithTimeout(&isRunning_, TIMEOUT_MS)) {
         callback(ConvertErrno());
         NETSTACK_LOGE("The error cause is that the runtime wait time is insufficient");
@@ -1249,8 +1253,8 @@ bool TLSSocket::TLSSocketInternal::Close()
         int resErr = ConvertSSLError(GetSSL());
         NETSTACK_LOGE("Error in shutdown, errno is %{public}d, error info is %{public}s", resErr,
                       MakeSSLErrorString(resErr).c_str());
-        return false;
     }
+    NETSTACK_LOGI("tls socket close");
     SSL_free(ssl_);
     ssl_ = nullptr;
     close(socketDescriptor_);
