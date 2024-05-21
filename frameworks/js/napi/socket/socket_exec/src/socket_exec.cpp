@@ -375,9 +375,12 @@ static bool OnRecvMessage(EventManager *manager, void *data, size_t len, sockadd
     remoteInfo.SetSize(len);
 
     auto *messageStruct = new MessageData(data, len, remoteInfo);
-    manager->SetQueueData(reinterpret_cast<void *>(messageStruct));
-    manager->EmitByUv(EVENT_MESSAGE, manager, CallbackTemplate<MakeMessage>);
-    return true;
+    if (EventManager::IsManagerValid(manager)) {
+        manager->SetQueueData(reinterpret_cast<void *>(messageStruct));
+        manager->EmitByUv(EVENT_MESSAGE, manager, CallbackTemplate<MakeMessage>);
+        return true;
+    }
+    return false;
 }
 
 class MessageCallback {
@@ -434,6 +437,10 @@ public:
     bool OnMessage(void *data, size_t dataLen, sockaddr *addr) const override
     {
         (void)addr;
+        if (!EventManager::IsManagerValid(manager_)) {
+            NETSTACK_LOGE("invalid manager");
+            return false;
+        }
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData()));
         if (sock == 0) {
             return false;
