@@ -793,16 +793,17 @@ static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &call
     return -1;
 }
 
-static bool IsValidSock(int sock)
+static bool IsValidSock(int &currentFd, const MessageCallback &callback)
 {
-    int optVal;
-    socklen_t optLen = sizeof(optVal);
-    if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &optVal, &optLen) < 0) {
-        NETSTACK_LOGE("socket is %{public}d, get SO_ERROR fail, errno: %{public}d", sock, errno);
-        return false;
-    }
-    if (optVal != 0) {
-        NETSTACK_LOGE("error occur, socket is %{public}d, errno: %{public}d", sock, errno);
+    auto manager = callback.GetEventManager();
+    if (EventManager::IsManagerValid(manager)) {
+        currentFd = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
+        if (currentFd <= 0) {
+            NETSTACK_LOGE("currentfd is error");
+            return false;
+        }
+    } else {
+        NETSTACK_LOGE("manager is error");
         return false;
     }
     return true;
@@ -820,33 +821,33 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     auto addrDeleter = [](sockaddr *a) { free(reinterpret_cast<void *>(a)); };
     std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
 
-    nfds_t num = 1;
-    pollfd fds[1] = {{sock, POLLIN, 0}};
-
     int recvTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT);
     while (true) {
-        if (!IsValidSock(sock)) {
+        int currentFd = -1;
+        if (!IsValidSock(currentFd, callback)) {
             return;
         }
-        int ret = poll(fds, num, recvTimeoutMs);
+
+        pollfd fds[1] = {{currentFd, POLLIN, 0}};
+        int ret = poll(fds, 1, recvTimeoutMs);
         if (ret < 0) {
             if (EventManager::IsManagerValid(callback.GetEventManager()) && static_cast<int>(
                 reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
-                NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
+                NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", currentFd, errno);
                 callback.OnError(errno);
             }
             return;
         } else if (ret == 0) {
             continue;
         }
-        if (UpdateRecvBuffer(sock, bufferSize, buf, callback) < 0) {
+        if (UpdateRecvBuffer(currentFd, bufferSize, buf, callback) < 0) {
             return;
         }
         (void)memset_s(buf.get(), bufferSize, 0, bufferSize);
         socklen_t tempAddrLen = addrLen;
-        auto recvLen = recvfrom(sock, buf.get(), bufferSize, 0, addr, &tempAddrLen);
+        auto recvLen = recvfrom(currentFd, buf.get(), bufferSize, 0, addr, &tempAddrLen);
         if (recvLen <= 0) {
-            if (ExitOrAbnormal(sock, recvLen, callback) < 0) {
+            if (ExitOrAbnormal(currentFd, recvLen, callback) < 0) {
                 return;
             }
             continue;
