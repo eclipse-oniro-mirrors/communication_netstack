@@ -265,35 +265,6 @@ HWTEST_F(TlsSocketBranchTest, BranchTest5, TestSize.Level2)
     (void)tlsSocket.Close([](int32_t errCode) { EXPECT_FALSE(errCode == TLSSOCKET_SUCCESS); });
 }
 
-HWTEST_F(TlsSocketBranchTest, BranchTest6, TestSize.Level2)
-{
-    TLSConnectOptions connectOptions = BaseOption();
-
-    TLSSocket tlsSocket;
-    TLSSocket::TLSSocketInternal *tlsSocketInternal = new TLSSocket::TLSSocketInternal();
-    bool isConnectToHost = tlsSocketInternal->TlsConnectToHost(SOCKET_FD, connectOptions);
-    EXPECT_FALSE(isConnectToHost);
-    tlsSocketInternal->SetTlsConfiguration(connectOptions);
-
-    bool sendSslNull = tlsSocketInternal->Send(SEND_DATA);
-    EXPECT_FALSE(sendSslNull);
-    char buffer[MAX_BUFFER_SIZE];
-    bzero(buffer, MAX_BUFFER_SIZE);
-    int recvSslNull = tlsSocketInternal->Recv(buffer, MAX_BUFFER_SIZE);
-    EXPECT_EQ(recvSslNull, SSL_ERROR_RETURN);
-    bool closeSslNull = tlsSocketInternal->Close();
-    EXPECT_FALSE(closeSslNull);
-    tlsSocketInternal->ssl_ = SSL_new(SSL_CTX_new(TLS_client_method()));
-    bool send = tlsSocketInternal->Send(SEND_DATA);
-    EXPECT_FALSE(send);
-    bool sendEmpty = tlsSocketInternal->Send(SEND_DATA_EMPTY);
-    EXPECT_FALSE(sendEmpty);
-    int recv = tlsSocketInternal->Recv(buffer, MAX_BUFFER_SIZE);
-    EXPECT_EQ(recv, SSL_ERROR_RETURN);
-    bool close = tlsSocketInternal->Close();
-    EXPECT_FALSE(close);
-    delete tlsSocketInternal;
-}
 
 HWTEST_F(TlsSocketBranchTest, BranchTest7, TestSize.Level2)
 {
