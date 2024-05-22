@@ -318,7 +318,7 @@ bool HttpClientTask::SetCurlOptions()
             NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_CUSTOMREQUEST, request_.GetMethod().c_str());
         }
 
-        if ((method.empty()|| method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT) &&
+        if ((method.empty() || method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT) &&
             !request_.GetBody().empty()) {
             NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_POST, 1L);
             NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_POSTFIELDS, request_.GetBody().c_str());
@@ -576,8 +576,9 @@ double HttpClientTask::GetTimingFromCurl(CURL *handle, CURLINFO info) const
 curl_off_t HttpClientTask::GetSizeFromCurl(CURL *handle) const
 {
     auto info = CURLINFO_SIZE_DOWNLOAD_T;
-    if (auto method = request_.GetMethod();
-        method.empty() || method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT) {
+    auto method = request_.GetMethod();
+    if (((method.empty() || method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT) &&
+        !request_.GetBody().empty()) || type_ == TaskType::UPLOAD) {
         info = CURLINFO_SIZE_UPLOAD_T;
     }
     curl_off_t size = 0;
