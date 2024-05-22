@@ -40,12 +40,7 @@ static constexpr const char *IP_ADDRESS = "127.0.0.1";
 static constexpr const char *ALPN_PROTOCOL = "http/1.1";
 static constexpr const char *SIGNATURE_ALGORITHM = "rsa_pss_rsae_sha256:ECDSA+SHA256";
 static constexpr const char *CIPHER_SUITE = "AES256-SHA256";
-static constexpr const char *SEND_DATA = "How do you do";
-static constexpr const char *SEND_DATA_EMPTY = "";
-static constexpr const size_t MAX_BUFFER_SIZE = 8192;
 const int PORT = 7838;
-const int SOCKET_FD = 5;
-const int SSL_ERROR_RETURN = -1;
 
 TLSConnectOptions BaseOption()
 {
