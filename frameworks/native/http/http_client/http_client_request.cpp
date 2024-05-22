@@ -62,7 +62,7 @@ bool HttpClientRequest::MethodForGet(const std::string &method)
 
 bool HttpClientRequest::MethodForPost(const std::string &method)
 {
-    return (method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT);
+    return (method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT || method.empty());
 }
 
 void HttpClientRequest::SetMethod(const std::string &method)
