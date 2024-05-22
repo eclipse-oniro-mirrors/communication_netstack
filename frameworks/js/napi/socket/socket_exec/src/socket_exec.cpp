@@ -375,9 +375,12 @@ static bool OnRecvMessage(EventManager *manager, void *data, size_t len, sockadd
     remoteInfo.SetSize(len);
 
     auto *messageStruct = new MessageData(data, len, remoteInfo);
-    manager->SetQueueData(reinterpret_cast<void *>(messageStruct));
-    manager->EmitByUv(EVENT_MESSAGE, manager, CallbackTemplate<MakeMessage>);
-    return true;
+    if (EventManager::IsManagerValid(manager)) {
+        manager->SetQueueData(reinterpret_cast<void *>(messageStruct));
+        manager->EmitByUv(EVENT_MESSAGE, manager, CallbackTemplate<MakeMessage>);
+        return true;
+    }
+    return false;
 }
 
 class MessageCallback {
@@ -434,6 +437,10 @@ public:
     bool OnMessage(void *data, size_t dataLen, sockaddr *addr) const override
     {
         (void)addr;
+        if (!EventManager::IsManagerValid(manager_)) {
+            NETSTACK_LOGE("invalid manager");
+            return false;
+        }
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData()));
         if (sock == 0) {
             return false;
@@ -673,9 +680,7 @@ static bool TcpSendEvent(TcpSendContext *context)
     sockaddr sockAddr = {0};
     socklen_t len = sizeof(sockaddr);
     if (getsockname(context->GetSocketFd(), &sockAddr, &len) < 0) {
-        NETSTACK_LOGE("get sock name failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
-        context->SetErrorCode(errno);
-        return false;
+        ERROR_RETURN(context, "getsockname failed, sock:%{public}d, errno:%{public}d", context->GetSocketFd(), errno);
     }
     bool connected = false;
     if (sockAddr.sa_family == AF_INET) {
@@ -703,9 +708,7 @@ static bool TcpSendEvent(TcpSendContext *context)
 
     if (!PollSendData(context->GetSocketFd(), context->options.GetData().c_str(), context->options.GetData().size(),
                       nullptr, 0)) {
-        NETSTACK_LOGE("send failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
-        context->SetErrorCode(errno);
-        return false;
+        ERROR_RETURN(context, "send failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
     }
     return true;
 }
@@ -725,9 +728,7 @@ static bool UdpSendEvent(UdpSendContext *context)
 
     if (!PollSendData(context->GetSocketFd(), context->options.GetData().c_str(), context->options.GetData().size(),
                       addr, len)) {
-        NETSTACK_LOGE("send failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
-        context->SetErrorCode(errno);
-        return false;
+        ERROR_RETURN(context, "send failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
     }
     return true;
 }
@@ -988,9 +989,7 @@ bool ExecBind(BindContext *context)
 
     if (bind(context->GetSocketFd(), addr, len) < 0) {
         if (errno != EADDRINUSE) {
-            NETSTACK_LOGE("bind failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
-            context->SetErrorCode(errno);
-            return false;
+            ERROR_RETURN(context, "bind failed, socket:%{public}d, errno:%{public}d", context->GetSocketFd(), errno);
         }
         if (addr->sa_family == AF_INET) {
             NETSTACK_LOGI("distribute a random port");
@@ -1000,9 +999,7 @@ bool ExecBind(BindContext *context)
             addr6.sin6_port = 0; /* distribute a random port */
         }
         if (bind(context->GetSocketFd(), addr, len) < 0) {
-            NETSTACK_LOGE("rebind failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
-            context->SetErrorCode(errno);
-            return false;
+            ERROR_RETURN(context, "rebind failed, socket:%{public}d, errno:%{public}d", context->GetSocketFd(), errno);
         }
         NETSTACK_LOGI("rebind success");
     }
@@ -1111,9 +1108,7 @@ bool ExecConnect(ConnectContext *context)
     }
 
     if (!NonBlockConnect(context->GetSocketFd(), addr, len, context->options.GetTimeout())) {
-        NETSTACK_LOGE("connect errno %{public}d", errno);
-        context->SetErrorCode(errno);
-        return false;
+        ERROR_RETURN(context, "connect errno %{public}d", errno);
     }
 
     NETSTACK_LOGI("connect success");
@@ -1727,9 +1722,7 @@ static bool IsRemoteConnect(TcpServerSendContext *context, int32_t clientFd)
     }
 
     if (!connected) {
-        NETSTACK_LOGE("sock is not connect to remote, socket is %{public}d, errno is %{public}d", clientFd, errno);
-        context->SetErrorCode(errno);
-        return false;
+        ERROR_RETURN(context, "sock is not connect to remote, socket:%{public}d, errno:%{public}d", clientFd, errno);
     }
     return true;
 }
