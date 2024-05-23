@@ -285,14 +285,14 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
 bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURLMSG curlMsg, CURLcode result)
 {
     if (curlMsg != CURLMSG_DONE) {
-        NETSTACK_LOGE("CURLMSG %{public}s", std::to_string(curlMsg).c_str());
+        NETSTACK_LOGE("taskid=%{public}d, CURLMSG %{public}s", context->GetTaskId(), std::to_string(curlMsg).c_str());
         context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
         return false;
     }
 
     if (result != CURLE_OK) {
         context->SetErrorCode(result);
-        NETSTACK_LOGE("CURLcode result %{public}s", std::to_string(result).c_str());
+        NETSTACK_LOGD("CURLcode result %{public}s", std::to_string(result).c_str());
         return false;
     }
 
@@ -373,6 +373,18 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     context->CachePerformanceTimingItem(HttpConstant::RESPONSE_TOTAL_FINISH_TIMING, totalTime);
     context->CachePerformanceTimingItem(HttpConstant::RESPONSE_REDIRECT_TIMING, redirectTime);
 
+    int64_t responseCode = 0;
+    (void)curl_easy_getinfo(handle,  CURLINFO_RESPONSE_CODE, &responseCode);
+
+    /*
+    CURL_HTTP_VERSION_NONE         0
+    CURL_HTTP_VERSION_1_0          1
+    CURL_HTTP_VERSION_1_1          2
+    CURL_HTTP_VERSION_2            3
+    */
+    int64_t httpVer = CURL_HTTP_VERSION_NONE;
+    (void)curl_easy_getinfo(handle,  CURLINFO_HTTP_VERSION, &httpVer);
+
     NETSTACK_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
@@ -382,11 +394,17 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         ", firstSend:%{public}.3f"
         ", firstRecv:%{public}.3f"
         ", total:%{public}.3f"
-        ", redirect:%{public}.3f",
+        ", redirect:%{public}.3f"
+        ", errCode:%{public}d"
+        ", RespCode:%{public}s"
+        ", httpVer:%{public}s"
+        ", method:%{public}s",
         context->GetTaskId(), GetSizeFromCurl(handle, context), dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
-        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime);
+        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
+        context->IsExecOK() ? 0: context->GetErrorCode(), std::to_string(responseCode).c_str(),
+        std::to_string(httpVer).c_str(), context->options.GetMethod().c_str());
 }
 
 #if HAS_NETMANAGER_BASE

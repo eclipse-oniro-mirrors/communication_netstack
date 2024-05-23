@@ -554,7 +554,7 @@ bool HttpClientTask::ProcessResponseCode()
         return false;
     }
     auto resultCode = static_cast<ResponseCode>(result);
-    NETSTACK_LOGI("id=%{public}d, code=%{public}d", taskId_, resultCode);
+    NETSTACK_LOGD("id=%{public}d, code=%{public}d", taskId_, resultCode);
     response_.SetResponseCode(resultCode);
 
     return true;
@@ -596,20 +596,39 @@ void HttpClientTask::DumpHttpPerformance() const
     auto firstRecvTime = GetTimingFromCurl(curlHandle_, CURLINFO_STARTTRANSFER_TIME_T);
     auto totalTime = GetTimingFromCurl(curlHandle_, CURLINFO_TOTAL_TIME_T);
     auto redirectTime = GetTimingFromCurl(curlHandle_, CURLINFO_REDIRECT_TIME_T);
+
+    int64_t responseCode = 0;
+    (void)curl_easy_getinfo(curlHandle_,  CURLINFO_RESPONSE_CODE, &responseCode);
+
+    /*
+    CURL_HTTP_VERSION_NONE         0
+    CURL_HTTP_VERSION_1_0          1
+    CURL_HTTP_VERSION_1_1          2
+    CURL_HTTP_VERSION_2            3
+    */
+    int64_t httpVer = CURL_HTTP_VERSION_NONE;
+    (void)curl_easy_getinfo(curlHandle_,  CURLINFO_HTTP_VERSION, &httpVer);
+
     NETSTACK_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
-        ", Duration: dns:%{public}.3f"
+        ", dns:%{public}.3f"
         ", connect:%{public}.3f"
         ", tls:%{public}.3f"
         ", firstSend:%{public}.3f"
         ", firstRecv:%{public}.3f"
         ", total:%{public}.3f"
-        ", redirect:%{public}.3f",
+        ", redirect:%{public}.3f"
+        ", errCode:%{public}d"
+        ", RespCode:%{public}s"
+        ", httpVer:%{public}s"
+        ", method:%{public}s",
         taskId_, GetSizeFromCurl(curlHandle_), dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
-        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime);
+        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
+        error_.GetErrorCode(), std::to_string(responseCode).c_str(), std::to_string(httpVer).c_str(),
+        request_.GetMethod().c_str());
 }
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
