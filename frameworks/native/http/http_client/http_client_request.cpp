@@ -62,12 +62,12 @@ bool HttpClientRequest::MethodForGet(const std::string &method)
 
 bool HttpClientRequest::MethodForPost(const std::string &method)
 {
-    return (method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT || method.empty());
+    return (method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT);
 }
 
 void HttpClientRequest::SetMethod(const std::string &method)
 {
-    if (!MethodForGet(method) && !MethodForPost(method)) {
+    if (!MethodForGet(method) && !MethodForPost(method) && !method.empty()) {
         NETSTACK_LOGE("HttpClientRequest::SetMethod method %{public}s not supported", method.c_str());
         return;
     }
