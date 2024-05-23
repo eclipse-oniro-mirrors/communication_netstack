@@ -20,8 +20,6 @@
 #include "local_socket_server_context.h"
 
 namespace OHOS::NetStack::Socket::LocalSocketExec {
-int MakeLocalSocket(int socketType, bool needNonblock = true);
-
 /* async work execute */
 bool ExecLocalSocketBind(LocalSocketBindContext *context);
 

@@ -567,27 +567,6 @@ static void GetAddr(NetAddress *address, sockaddr_in *addr4, sockaddr_in6 *addr6
     }
 }
 
-static bool MakeNonBlock(int sock)
-{
-    int flags = fcntl(sock, F_GETFL, 0);
-    while (flags == -1 && errno == EINTR) {
-        flags = fcntl(sock, F_GETFL, 0);
-    }
-    if (flags == -1) {
-        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
-        return false;
-    }
-    int ret = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-    while (ret == -1 && errno == EINTR) {
-        ret = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-    }
-    if (ret == -1) {
-        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
-        return false;
-    }
-    return true;
-}
-
 static bool PollFd(pollfd *fds, nfds_t num, int timeout)
 {
     int ret = poll(fds, num, timeout);
@@ -875,27 +854,14 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
     struct pollfd fds[1] = {{.fd = sock, .events = POLLOUT}};
     int timeoutMs = (timeoutMSec == 0) ? DEFAULT_CONNECT_TIMEOUT : timeoutMSec;
     for (int i = 0; i < MAX_CONNECT_RETRY_TIMES; ++i) {
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-        timeval startTime;
-        gettimeofday(&startTime, nullptr);
-#else
-        timespec startTime;
-        clock_gettime(CLOCK_MONOTONIC, &startTime);
-#endif
+        auto startMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().
+                                                                             time_since_epoch());
         ret = poll(fds, 1, timeoutMs);
         if (ret < 0) {
             if (errno == EINTR) {
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-                timeval endTime;
-                gettimeofday(&endTime, nullptr);
-                timeoutMs -= ((endTime.tv_sec - startTime.tv_sec) * UNIT_CONVERSION_1000 + (endTime.tv_usec -
-                              startTime.tv_usec) / UNIT_CONVERSION_1000);
-#else
-                timespec endTime;
-                clock_gettime(CLOCK_MONOTONIC, &endTime);
-                timeoutMs -= ((endTime.tv_sec - startTime.tv_sec) * UNIT_CONVERSION_1000 + (endTime.tv_nsec -
-                              startTime.tv_nsec) / UNIT_CONVERSION_1000 / UNIT_CONVERSION_1000);
-#endif
+                auto endMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().
+                                                                                   time_since_epoch());
+                timeoutMs -= static_cast<int>((endMs - startMs).count());
                 continue;
             }
             NETSTACK_LOGE("connect poll failed, socket is %{public}d, errno is %{public}d", sock, errno);
@@ -960,42 +926,6 @@ static bool SetBaseOptions(int sock, ExtraOptionsBase *option)
     }
 
     return true;
-}
-
-int MakeTcpSocket(sa_family_t family, bool needNonblock)
-{
-    if (family != AF_INET && family != AF_INET6) {
-        return -1;
-    }
-    int sock = socket(family, SOCK_STREAM, IPPROTO_TCP);
-    NETSTACK_LOGI("new tcp socket is %{public}d", sock);
-    if (sock < 0) {
-        NETSTACK_LOGE("make tcp socket failed, errno is %{public}d", errno);
-        return -1;
-    }
-    if (needNonblock && !MakeNonBlock(sock)) {
-        close(sock);
-        return -1;
-    }
-    return sock;
-}
-
-int MakeUdpSocket(sa_family_t family)
-{
-    if (family != AF_INET && family != AF_INET6) {
-        return -1;
-    }
-    int sock = socket(family, SOCK_DGRAM, IPPROTO_UDP);
-    NETSTACK_LOGI("new udp socket is %{public}d", sock);
-    if (sock < 0) {
-        NETSTACK_LOGE("make udp socket failed, errno is %{public}d", errno);
-        return -1;
-    }
-    if (!MakeNonBlock(sock)) {
-        close(sock);
-        return -1;
-    }
-    return sock;
 }
 
 bool ExecBind(BindContext *context)
