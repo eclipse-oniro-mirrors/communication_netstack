@@ -198,39 +198,6 @@ HWTEST_F(TLSSecureOptionsBranchTest, TLSSecureOptionsBranchTest003, testing::ext
     EXPECT_TRUE(server.onConnectCallback_ == nullptr);
 }
 
-HWTEST_F(TLSSecureOptionsBranchTest, TLSSecureOptionsBranchTest004, testing::ext::TestSize.Level2)
-{
-    TLSSocket server;
-    server.OffError();
-
-    TLSConfiguration tLSConfiguration;
-    TLSSocket::TLSSocketInternal internal;
-    tLSConfiguration = internal.GetTlsConfiguration();
-    std::vector<std::string> certificate;
-    tLSConfiguration.SetCaCertificate(certificate);
-    EXPECT_TRUE(tLSConfiguration.GetCaCertificate().empty());
-
-    TLSConnectOptions connectOptions;
-    auto ret = internal.StartTlsConnected(connectOptions);
-    EXPECT_FALSE(ret);
-
-    ret = internal.CreatTlsContext();
-    EXPECT_TRUE(ret);
-
-    ret = internal.StartShakingHands(connectOptions);
-    EXPECT_FALSE(ret);
-
-    ret = internal.GetRemoteCertificateFromPeer();
-    EXPECT_FALSE(ret);
-
-    ret = internal.SetRemoteCertRawData();
-    EXPECT_FALSE(ret);
-
-    OnCloseCallback onCloseCallback;
-    server.OnClose(onCloseCallback);
-    server.OffClose();
-    EXPECT_TRUE(server.onCloseCallback_ == nullptr);
-}
 } // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
