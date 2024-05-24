@@ -856,24 +856,25 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
     for (int i = 0; i < MAX_CONNECT_RETRY_TIMES; ++i) {
         auto startTime = std::chrono::steady_clock::now();
         ret = poll(fds, 1, timeoutMs);
-        if (ret < 0) {
-            if (errno == EINTR) {
-                auto endTime = std::chrono::steady_clock::now();
-                auto intervalMs = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-                timeoutMs -= static_cast<int>(intervalMs.count());
-                if (timeoutMs < 0) {
-                    NETSTACK_LOGE("invalid timeout");
-                    return false;
-                }
-                continue;
-            }
-            NETSTACK_LOGE("connect poll failed, socket is %{public}d, errno is %{public}d", sock, errno);
-            return false;
+        if (ret > 0) {
+            break;
         } else if (ret == 0) {
             NETSTACK_LOGE("connect poll timeout, socket is %{public}d", sock);
             return false;
         }
-        break;
+
+        if (errno == EINTR) {
+            auto endTime = std::chrono::steady_clock::now();
+            auto intervalMs = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+            timeoutMs -= static_cast<int>(intervalMs.count());
+            if (timeoutMs < 0) {
+                NETSTACK_LOGE("invalid timeout");
+                return false;
+            }
+            continue;
+        }
+        NETSTACK_LOGE("connect poll failed, socket is %{public}d, errno is %{public}d", sock, errno);
+        return false;
     }
 
     int err = 0;
