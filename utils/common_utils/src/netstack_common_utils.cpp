@@ -435,12 +435,12 @@ bool MakeNonBlock(int sock)
     return true;
 }
 
-int MakeTcpSocket(sa_family_t family, bool needNonblock)
+int MakeTcpSocket(unsigned short saFamily, bool needNonblock)
 {
-    if (family != AF_INET && family != AF_INET6) {
+    if (saFamily != AF_INET && saFamily != AF_INET6) {
         return -1;
     }
-    int sock = socket(family, SOCK_STREAM, IPPROTO_TCP);
+    int sock = socket(saFamily, SOCK_STREAM, IPPROTO_TCP);
     NETSTACK_LOGI("new tcp socket is %{public}d", sock);
     if (sock < 0) {
         NETSTACK_LOGE("make tcp socket failed, errno is %{public}d", errno);
@@ -453,12 +453,12 @@ int MakeTcpSocket(sa_family_t family, bool needNonblock)
     return sock;
 }
 
-int MakeUdpSocket(sa_family_t family)
+int MakeUdpSocket(unsigned short saFamily)
 {
-    if (family != AF_INET && family != AF_INET6) {
+    if (saFamily != AF_INET && saFamily != AF_INET6) {
         return -1;
     }
-    int sock = socket(family, SOCK_DGRAM, IPPROTO_UDP);
+    int sock = socket(saFamily, SOCK_DGRAM, IPPROTO_UDP);
     NETSTACK_LOGI("new udp socket is %{public}d", sock);
     if (sock < 0) {
         NETSTACK_LOGE("make udp socket failed, errno is %{public}d", errno);

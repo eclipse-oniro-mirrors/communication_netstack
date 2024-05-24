@@ -16,6 +16,7 @@
 #include "socket_exec_fuzzer.h"
 
 #include "local_socket_exec.h"
+#include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "securec.h"
 #include "socket_exec.h"
@@ -61,7 +62,7 @@ void MakeUdpSocketFuzzTest(const uint8_t *data, size_t size)
     if (family == AF_INET || family == AF_INET6) {
         return;
     }
-    int sockfd = SocketExec::MakeUdpSocket(family);
+    int sockfd = CommonUtils::MakeUdpSocket(family);
     close(sockfd);
 }
 
@@ -75,7 +76,7 @@ void MakeTcpSocketFuzzTest(const uint8_t *data, size_t size)
     if (family == AF_INET || family == AF_INET6) {
         return;
     }
-    int sockfd = SocketExec::MakeTcpSocket(family);
+    int sockfd = CommonUtils::MakeTcpSocket(family);
     close(sockfd);
 }
 
@@ -371,7 +372,7 @@ void MakeLocalSocketFuzzTest(const uint8_t *data, size_t size)
         return;
     }
     SetGlobalFuzzData(data, size);
-    int sockfd = LocalSocketExec::MakeLocalSocket(SOCK_STREAM);
+    int sockfd = CommonUtils::MakeLocalSocket(SOCK_STREAM);
     close(sockfd);
 }
 

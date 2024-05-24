@@ -19,7 +19,6 @@
 #include <iosfwd>
 #include <list>
 #include <vector>
-#include <sys/socket.h>
 
 namespace OHOS::NetStack::CommonUtils {
 std::vector<std::string> Split(const std::string &str, const std::string &sep);
@@ -72,9 +71,9 @@ std::string AnonymizeIp(std::string &input);
 
 bool MakeNonBlock(int sock);
 
-int MakeTcpSocket(sa_family_t family, bool needNonblock = true);
+int MakeTcpSocket(unsigned short family, bool needNonblock = true);
 
-int MakeUdpSocket(sa_family_t family);
+int MakeUdpSocket(unsigned short family);
 
 int MakeLocalSocket(int socketType, bool needNonblock = true);
 } // namespace OHOS::NetStack::CommonUtils
