@@ -410,13 +410,8 @@ int TLSSocket::ReadMessage()
         CallOnErrorCallback(resErr, MakeErrnoString());
         return ret;
     } else if (ret == 0) {
-        int pendRet = SSL_pending(tlsSocketInternal_.GetSSL());
-        if (pendRet > 0) {
-            NETSTACK_LOGE("ssl pending");
-        } else {
-            NETSTACK_LOGD("tls recv poll timeout");
-            return ret;
-        }
+        NETSTACK_LOGD("tls recv poll timeout");
+        return ret;
     }
 
     std::lock_guard<std::mutex> lock(recvMutex_);
