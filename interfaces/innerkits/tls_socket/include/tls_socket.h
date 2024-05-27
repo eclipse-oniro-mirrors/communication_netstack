@@ -455,6 +455,8 @@ private:
          */
         void MakeRemoteInfo(Socket::SocketRemoteInfo &remoteInfo);
 
+        int ConvertSSLError(ssl_st *ssl);
+
         /**
          * Get configuration options for encrypted communication process
          * @return configuration options for encrypted communication processes
@@ -537,6 +539,8 @@ private:
 
         std::vector<std::string> signatureAlgorithms_;
         std::unique_ptr<TLSContext> tlsContextPointer_ = nullptr;
+        std::mutex mutexSsl_;
+        volatile bool isSslFree_ = false;
     };
 
 private:
