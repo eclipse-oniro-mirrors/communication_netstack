@@ -1121,7 +1121,7 @@ bool ExecSocketConnect(const std::string &hostName, int port, sa_family_t family
 
 int TLSSocket::TLSSocketInternal::ConvertSSLError(ssl_st *ssl)
 {
-    std::lock_guard<std::mutex> lock(mutexSsl_);
+    std::lock_guard<std::mutex> lock(mutexForSsl_);
     if (!ssl || isSslFree_) {
         return TLS_ERR_SSL_NULL;
     }
@@ -1163,7 +1163,7 @@ void TLSSocket::TLSSocketInternal::SetTlsConfiguration(const TLSConnectOptions &
     configuration_.SetNetAddress(config.GetNetAddress());
 }
 
-static bool PollSend(int sockfd, ssl_st *ssl, const char *pdata, int sendSize)
+bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, ssl_st *ssl, const char *pdata, int sendSize)
 {
     int bufferSize = DEFAULT_BUFFER_SIZE;
     auto curPos = pdata;
@@ -1177,6 +1177,13 @@ static bool PollSend(int sockfd, ssl_st *ssl, const char *pdata, int sendSize)
         } else if (ret == 0) {
             NETSTACK_LOGI("send poll timeout, fd: %{public}d, errno: %{public}d", sockfd, errno);
             continue;
+        }
+        {
+            std::lock_guard<std::mutex> lock(mutexForSsl_);
+            if (!ssl_ || isSslFree_) {
+                NETSTACK_LOGE("ssl is null");
+                return false;
+            }
         }
         size_t curSendSize = std::min<size_t>(sendSize, bufferSize);
         int len = SSL_write(ssl, curPos, curSendSize);
@@ -1217,7 +1224,7 @@ bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
 }
 int TLSSocket::TLSSocketInternal::Recv(char *buffer, int maxBufferSize)
 {
-    std::lock_guard<std::mutex> lock(mutexSsl_);
+    std::lock_guard<std::mutex> lock(mutexForSsl_);
     if (!ssl_ || isSslFree_) {
         NETSTACK_LOGE("ssl is null");
         return SSL_ERROR_RETURN;
@@ -1246,7 +1253,7 @@ int TLSSocket::TLSSocketInternal::Recv(char *buffer, int maxBufferSize)
 
 bool TLSSocket::TLSSocketInternal::Close()
 {
-    std::lock_guard<std::mutex> lock(mutexSsl_);
+    std::lock_guard<std::mutex> lock(mutexForSsl_);
     if (!ssl_ || isSslFree_) {
         NETSTACK_LOGE("ssl is null");
         return false;
