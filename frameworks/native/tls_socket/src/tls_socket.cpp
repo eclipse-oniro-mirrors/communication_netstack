@@ -1213,10 +1213,7 @@ bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
         NETSTACK_LOGE("data is empty");
         return false;
     }
-    if (!ssl_ || isSslFree_) {
-        NETSTACK_LOGE("ssl is null");
-        return false;
-    }
+
     if (!PollSend(socketDescriptor_, ssl_, data.c_str(), data.size())) {
         return false;
     }
