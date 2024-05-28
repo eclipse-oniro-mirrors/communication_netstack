@@ -405,6 +405,9 @@ int TLSSocket::ReadMessage()
     pollfd fds[1] = {{.fd = sockFd_, .events = POLLIN}};
     int ret = poll(fds, num, READ_TIMEOUT_MS);
     if (ret < 0) {
+        if (errno == EAGAIN || errno == EINTR) {
+            return 0;
+        }
         int resErr = ConvertErrno();
         NETSTACK_LOGE("Message poll errno is %{public}d %{public}s", errno, MakeErrnoString().c_str());
         CallOnErrorCallback(resErr, MakeErrnoString());
