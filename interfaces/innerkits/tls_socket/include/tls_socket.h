@@ -444,8 +444,6 @@ private:
 
         /**
          * Set the application layer negotiation protocol in the encrypted communication process
-         * @param sockfd application layer negotiation protocol
-         * @param alpnProtocols application layer negotiation protocol
          * @param alpnProtocols application layer negotiation protocol
          * @return set whether the application layer negotiation protocol is successful during encrypted communication
          */
