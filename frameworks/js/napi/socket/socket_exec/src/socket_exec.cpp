@@ -851,7 +851,7 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
     }
     struct pollfd fds[1] = {{.fd = sock, .events = POLLOUT}};
     int timeoutMs = (timeoutMSec == 0) ? DEFAULT_CONNECT_TIMEOUT : timeoutMSec;
-    while(true) {
+    while (true) {
         auto startTime = std::chrono::steady_clock::now();
         ret = poll(fds, 1, timeoutMs);
         if (ret > 0) {
@@ -872,7 +872,7 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
             continue;
         }
         NETSTACK_LOGE("connect poll failed, socket is %{public}d, errno is %{public}d", sock, errno);
-        return false;       
+        return false;
     }
 
     int err = 0;
