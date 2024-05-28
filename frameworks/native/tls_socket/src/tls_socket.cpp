@@ -1122,7 +1122,7 @@ bool ExecSocketConnect(const std::string &hostName, int port, sa_family_t family
 int TLSSocket::TLSSocketInternal::ConvertSSLError(void)
 {
     std::lock_guard<std::mutex> lock(mutexForSsl_);
-    if (!ssl_ || isSslFree_) {
+    if (!ssl_) {
         return TLS_ERR_SSL_NULL;
     }
     return TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
@@ -1178,12 +1178,10 @@ bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, ssl_st *ssl, const char 
             NETSTACK_LOGI("send poll timeout, fd: %{public}d, errno: %{public}d", sockfd, errno);
             continue;
         }
-        {
-            std::lock_guard<std::mutex> lock(mutexForSsl_);
-            if (!ssl_ || isSslFree_) {
-                NETSTACK_LOGE("ssl is null");
-                return false;
-            }
+        std::lock_guard<std::mutex> lock(mutexForSsl_);
+        if (!ssl) {
+            NETSTACK_LOGE("ssl is null");
+            return false;
         }
         size_t curSendSize = std::min<size_t>(sendSize, bufferSize);
         int len = SSL_write(ssl, curPos, curSendSize);
@@ -1222,7 +1220,7 @@ bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
 int TLSSocket::TLSSocketInternal::Recv(char *buffer, int maxBufferSize)
 {
     std::lock_guard<std::mutex> lock(mutexForSsl_);
-    if (!ssl_ || isSslFree_) {
+    if (!ssl_) {
         NETSTACK_LOGE("ssl is null");
         return SSL_ERROR_RETURN;
     }
@@ -1251,7 +1249,7 @@ int TLSSocket::TLSSocketInternal::Recv(char *buffer, int maxBufferSize)
 bool TLSSocket::TLSSocketInternal::Close()
 {
     std::lock_guard<std::mutex> lock(mutexForSsl_);
-    if (!ssl_ || isSslFree_) {
+    if (!ssl_) {
         NETSTACK_LOGE("ssl is null");
         return false;
     }
@@ -1266,7 +1264,6 @@ bool TLSSocket::TLSSocketInternal::Close()
     ssl_ = nullptr;
     close(socketDescriptor_);
     socketDescriptor_ = -1;
-    isSslFree_ = true;
     if (!tlsContextPointer_) {
         NETSTACK_LOGE("Tls context pointer is null");
         return false;
@@ -1432,14 +1429,13 @@ bool TLSSocket::TLSSocketInternal::CreatTlsContext()
         NETSTACK_LOGE("failed to create tls context pointer");
         return false;
     }
-    {
-        std::lock_guard<std::mutex> lock(mutexForSsl_);
-        if (!(ssl_ = tlsContextPointer_->CreateSsl())) {
-            NETSTACK_LOGE("failed to create ssl session");
-            return false;
-        }
+
+    std::lock_guard<std::mutex> lock(mutexForSsl_);
+    if (!(ssl_ = tlsContextPointer_->CreateSsl())) {
+        NETSTACK_LOGE("failed to create ssl session");
+        return false;
     }
-    isSslFree_ = false;
+
     SSL_set_fd(ssl_, socketDescriptor_);
     SSL_set_connect_state(ssl_);
     return true;
