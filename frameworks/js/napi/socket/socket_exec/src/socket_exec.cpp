@@ -66,8 +66,6 @@ static constexpr const int ERRNO_BAD_FD = 9;
 
 static constexpr const int UNIT_CONVERSION_1000 = 1000;
 
-static constexpr const int MAX_CONNECT_RETRY_TIMES = 3;
-
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
 static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "OS_NET_SockRD";
