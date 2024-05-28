@@ -544,7 +544,6 @@ private:
 
         std::vector<std::string> signatureAlgorithms_;
         std::unique_ptr<TLSContext> tlsContextPointer_ = nullptr;
-        volatile bool isSslFree_ = false;
     };
 
 private:
