@@ -457,10 +457,9 @@ private:
 
         /**
          * convert the code to ssl error code
-         * @param ssl used in encrypted communication
          * @return the value for ssl error code.
          */
-        int ConvertSSLError(ssl_st *ssl);
+        int ConvertSSLError(void);
 
         /**
          * Get configuration options for encrypted communication process
