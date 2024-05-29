@@ -456,6 +456,12 @@ private:
         void MakeRemoteInfo(Socket::SocketRemoteInfo &remoteInfo);
 
         /**
+         * convert the code to ssl error code
+         * @return the value for ssl error code.
+         */
+        int ConvertSSLError(void);
+
+        /**
          * Get configuration options for encrypted communication process
          * @return configuration options for encrypted communication processes
          */
@@ -515,6 +521,7 @@ private:
         bool StartShakingHands(const TLSConnectOptions &options);
         bool GetRemoteCertificateFromPeer();
         bool SetRemoteCertRawData();
+        bool PollSend(int sockfd, ssl_st *ssl, const char *pdata, int sendSize);
         std::string CheckServerIdentityLegal(const std::string &hostName, const X509 *x509Certificates);
         std::string CheckServerIdentityLegal(const std::string &hostName, X509_EXTENSION *ext,
                                              const X509 *x509Certificates);
