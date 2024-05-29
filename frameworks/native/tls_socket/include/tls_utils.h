@@ -27,7 +27,7 @@ const std::string BASE_PATH = "/data/certificates/user_cacerts/";
 const std::string USER_CERT_PATH = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
 const std::string ROOT_CERT_PATH = "/data/certificates/user_cacerts/0";
 const std::string SYSTEM_REPLACE_CA_PATH = "/etc/security/certificates";
-const std::string SYSTEM_REPLACE_CA_FILE = "/etc/ssl/certs/cacert.pem";
+const std::string SYSTEM_REPLACE_CA_FILE = "";
 
 bool CheckFilePath(const std::string &fileName, std::string &realPath);
 } // namespace TlsSocket

@@ -68,8 +68,6 @@ static constexpr const char *EVENT_KEY_MESSAGE = "message";
 
 static constexpr const char *LINK_DOWN = "The link is down";
 
-static constexpr const char *WEBSCOKET_PREPARE_CA_PATH = "/etc/ssl/certs/cacert.pem";
-
 static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
 
 static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
@@ -623,7 +621,6 @@ void WebSocketExec::FillContextInfo(ConnectContext *context, lws_context_creatio
     info.port = CONTEXT_PORT_NO_LISTEN;
     info.protocols = LWS_PROTOCOLS;
     info.fd_limit_per_thread = FD_LIMIT_PER_THREAD;
-    info.client_ssl_ca_filepath = WEBSCOKET_PREPARE_CA_PATH;
 
     char tempUri[MAX_URI_LENGTH] = {0};
     const char *tempProtocol = nullptr;
@@ -722,12 +719,12 @@ bool WebSocketExec::FillCaPath(ConnectContext *context, lws_context_creation_inf
             return false;
         }
         info.client_ssl_ca_filepath = context->caPath_.c_str();
-    }
-    if (context->caPath_.empty()) {
+        NETSTACK_LOGD("load customize CA: %{public}s", info.client_ssl_ca_filepath);
+    } else {
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
         info.client_ssl_ca_dirs[1] = CERTPATH.c_str();
+        NETSTACK_LOGD("load system CA");
     }
-    NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
     if (!context->clientCert_.empty()) {
         char realKeyPath[PATH_MAX] = {0};
         if (!CheckFilePath(context->clientCert_) || !realpath(context->clientKey_.Data(), realKeyPath)) {

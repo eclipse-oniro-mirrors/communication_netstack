@@ -94,7 +94,7 @@ const char *const HttpConstant::HTTP_DEFAULT_USER_AGENT = "libcurl-agent/1.0";
 #ifdef MAC_PLATFORM
 const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/cert.pem";
 #else
-const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/certs/cacert.pem";
+const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "";
 #endif // MAC_PLATFORM
 #endif // WINDOWS_PLATFORM
 
