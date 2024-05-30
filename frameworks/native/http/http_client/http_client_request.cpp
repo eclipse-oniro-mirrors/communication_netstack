@@ -38,9 +38,6 @@ HttpClientRequest::HttpClientRequest()
       proxyType_(HttpProxyType::NOT_USE),
       priority_(HTTP_DEFAULT_PRIORITY)
 {
-#ifndef WINDOWS_PLATFORM
-    caPath_ = HttpConstant::HTTP_DEFAULT_CA_PATH;
-#endif // WINDOWS_PLATFORM
 }
 
 void HttpClientRequest::SetURL(const std::string &url)

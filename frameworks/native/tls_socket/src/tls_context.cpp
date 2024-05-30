@@ -205,10 +205,6 @@ bool TLSContext::SetDefaultCa(TLSContext *tlsContext, const TLSConfiguration &co
         NETSTACK_LOGE("load system replace certificates failed");
         return false;
     }
-    if (!X509_STORE_load_file(SSL_CTX_get_cert_store(tlsContext->ctx_), SYSTEM_REPLACE_CA_FILE.c_str())) {
-        NETSTACK_LOGE("load system replace ca cert failed");
-        return false;
-    }
     return true;
 }
 

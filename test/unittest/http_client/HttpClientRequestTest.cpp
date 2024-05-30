@@ -43,7 +43,7 @@ HWTEST_F(HttpClientRequestTest, GetCaPathTest001, TestSize.Level1)
     HttpClientRequest req;
 
     string path = req.GetCaPath();
-    EXPECT_EQ(path, HttpConstant::HTTP_DEFAULT_CA_PATH);
+    EXPECT_EQ(path, "");
 }
 
 HWTEST_F(HttpClientRequestTest, SetCaPathTest001, TestSize.Level1)
@@ -53,7 +53,7 @@ HWTEST_F(HttpClientRequestTest, SetCaPathTest001, TestSize.Level1)
     req.SetCaPath("");
     string path = req.GetCaPath();
 
-    EXPECT_EQ(path, HttpConstant::HTTP_DEFAULT_CA_PATH);
+    EXPECT_EQ(path, "");
 }
 
 HWTEST_F(HttpClientRequestTest, SetCaPathTest002, TestSize.Level1)

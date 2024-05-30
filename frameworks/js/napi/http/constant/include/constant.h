@@ -205,7 +205,6 @@ public:
     static const char *const HTTP_RESPONSE_HEADER_SEPARATOR;
 
     static const char *const HTTP_DEFAULT_USER_AGENT;
-    static const char *const HTTP_DEFAULT_CA_PATH;
     static const char *const HTTP_PREPARE_CA_PATH;
 
     static const char *const HTTP_CONTENT_TYPE;

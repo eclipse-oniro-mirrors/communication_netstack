@@ -41,9 +41,6 @@ HttpRequestOptions::HttpRequestOptions()
       resumeFromNumber_(0),
       resumeToNumber_(0)
 {
-#ifndef WINDOWS_PLATFORM
-    caPath_ = HttpConstant::HTTP_DEFAULT_CA_PATH;
-#endif // WINDOWS_PLATFORM
 }
 
 void HttpRequestOptions::SetUrl(const std::string &url)
