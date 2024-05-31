@@ -1169,7 +1169,10 @@ bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, ssl_st *ssl, const char 
     pollfd fds[1] = {{.fd = sockfd, .events = POLLOUT}};
     while (sendSize > 0) {
         int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT_MS);
-        if (ret == -1) {
+        if (ret < 0) {
+            if (errno == EAGAIN || errno == EINTR) {
+                continue;
+            }
             NETSTACK_LOGE("send poll error, fd: %{public}d, errno: %{public}d", sockfd, errno);
             return false;
         } else if (ret == 0) {
