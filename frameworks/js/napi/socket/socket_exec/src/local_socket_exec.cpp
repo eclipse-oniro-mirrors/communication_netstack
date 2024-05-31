@@ -321,42 +321,6 @@ static bool LocalSocketSendEvent(LocalSocketSendContext *context)
     return true;
 }
 
-static bool MakeNonBlock(int sock)
-{
-    int flags = fcntl(sock, F_GETFL, 0);
-    while (flags == -1 && errno == EINTR) {
-        flags = fcntl(sock, F_GETFL, 0);
-    }
-    if (flags == -1) {
-        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
-        return false;
-    }
-    int ret = fcntl(sock, F_SETFL, static_cast<size_t>(flags) | static_cast<size_t>(O_NONBLOCK));
-    while (ret == -1 && errno == EINTR) {
-        ret = fcntl(sock, F_SETFL, static_cast<size_t>(flags) | static_cast<size_t>(O_NONBLOCK));
-    }
-    if (ret == -1) {
-        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
-        return false;
-    }
-    return true;
-}
-
-int MakeLocalSocket(int socketType, bool needNonblock)
-{
-    int sock = socket(AF_UNIX, socketType, 0);
-    NETSTACK_LOGI("new local socket is %{public}d", sock);
-    if (sock < 0) {
-        NETSTACK_LOGE("make local socket failed, errno is %{public}d", errno);
-        return -1;
-    }
-    if (needNonblock && !MakeNonBlock(sock)) {
-        close(sock);
-        return -1;
-    }
-    return sock;
-}
-
 static napi_value MakeError(napi_env env, void *errCode)
 {
     auto code = reinterpret_cast<int32_t *>(errCode);

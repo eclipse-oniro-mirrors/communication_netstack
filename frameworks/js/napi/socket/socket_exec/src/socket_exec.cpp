@@ -572,27 +572,6 @@ static void GetAddr(NetAddress *address, sockaddr_in *addr4, sockaddr_in6 *addr6
     }
 }
 
-static bool MakeNonBlock(int sock)
-{
-    int flags = fcntl(sock, F_GETFL, 0);
-    while (flags == -1 && errno == EINTR) {
-        flags = fcntl(sock, F_GETFL, 0);
-    }
-    if (flags == -1) {
-        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
-        return false;
-    }
-    int ret = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-    while (ret == -1 && errno == EINTR) {
-        ret = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-    }
-    if (ret == -1) {
-        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
-        return false;
-    }
-    return true;
-}
-
 static bool PollFd(pollfd *fds, nfds_t num, int timeout)
 {
     int ret = poll(fds, num, timeout);
@@ -875,12 +854,28 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
         return false;
     }
     struct pollfd fds[1] = {{.fd = sock, .events = POLLOUT}};
-    ret = poll(fds, 1, timeoutMSec == 0 ? DEFAULT_CONNECT_TIMEOUT : timeoutMSec);
-    if (ret < 0) {
+    int timeoutMs = (timeoutMSec == 0) ? DEFAULT_CONNECT_TIMEOUT : timeoutMSec;
+    while (true) {
+        auto startTime = std::chrono::steady_clock::now();
+        ret = poll(fds, 1, timeoutMs);
+        if (ret > 0) {
+            break;
+        } else if (ret == 0) {
+            NETSTACK_LOGE("connect poll timeout, socket is %{public}d", sock);
+            return false;
+        }
+
+        if (errno == EINTR) {
+            auto endTime = std::chrono::steady_clock::now();
+            auto intervalMs = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+            timeoutMs -= static_cast<int>(intervalMs.count());
+            if (timeoutMs <= 0) {
+                NETSTACK_LOGE("invalid timeout");
+                return false;
+            }
+            continue;
+        }
         NETSTACK_LOGE("connect poll failed, socket is %{public}d, errno is %{public}d", sock, errno);
-        return false;
-    } else if (ret == 0) {
-        NETSTACK_LOGE("connect poll timeout, socket is %{public}d", sock);
         return false;
     }
 
@@ -937,42 +932,6 @@ static bool SetBaseOptions(int sock, ExtraOptionsBase *option)
     }
 
     return true;
-}
-
-int MakeTcpSocket(sa_family_t family, bool needNonblock)
-{
-    if (family != AF_INET && family != AF_INET6) {
-        return -1;
-    }
-    int sock = socket(family, SOCK_STREAM, IPPROTO_TCP);
-    NETSTACK_LOGI("new tcp socket is %{public}d", sock);
-    if (sock < 0) {
-        NETSTACK_LOGE("make tcp socket failed, errno is %{public}d", errno);
-        return -1;
-    }
-    if (needNonblock && !MakeNonBlock(sock)) {
-        close(sock);
-        return -1;
-    }
-    return sock;
-}
-
-int MakeUdpSocket(sa_family_t family)
-{
-    if (family != AF_INET && family != AF_INET6) {
-        return -1;
-    }
-    int sock = socket(family, SOCK_DGRAM, IPPROTO_UDP);
-    NETSTACK_LOGI("new udp socket is %{public}d", sock);
-    if (sock < 0) {
-        NETSTACK_LOGE("make udp socket failed, errno is %{public}d", errno);
-        return -1;
-    }
-    if (!MakeNonBlock(sock)) {
-        close(sock);
-        return -1;
-    }
-    return sock;
 }
 
 bool ExecBind(BindContext *context)
