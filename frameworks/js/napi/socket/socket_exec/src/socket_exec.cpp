@@ -66,8 +66,6 @@ static constexpr const int ERRNO_BAD_FD = 9;
 
 static constexpr const int UNIT_CONVERSION_1000 = 1000;
 
-static constexpr const int MAX_CONNECT_RETRY_TIMES = 3;
-
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
 static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "OS_NET_SockRD";
@@ -853,7 +851,7 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
     }
     struct pollfd fds[1] = {{.fd = sock, .events = POLLOUT}};
     int timeoutMs = (timeoutMSec == 0) ? DEFAULT_CONNECT_TIMEOUT : timeoutMSec;
-    for (int i = 0; i < MAX_CONNECT_RETRY_TIMES; ++i) {
+    while (true) {
         auto startTime = std::chrono::steady_clock::now();
         ret = poll(fds, 1, timeoutMs);
         if (ret > 0) {
@@ -867,7 +865,7 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
             auto endTime = std::chrono::steady_clock::now();
             auto intervalMs = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
             timeoutMs -= static_cast<int>(intervalMs.count());
-            if (timeoutMs < 0) {
+            if (timeoutMs <= 0) {
                 NETSTACK_LOGE("invalid timeout");
                 return false;
             }
