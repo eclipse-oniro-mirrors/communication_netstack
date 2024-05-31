@@ -26,7 +26,6 @@
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
-#include <fcntl.h>
 #include <regex>
 #include <string>
 #include <unistd.h>
@@ -412,77 +411,5 @@ std::string AnonymizeIp(std::string &input)
         return MaskIpv6(maskedResult);
     }
     return input;
-}
-
-bool MakeNonBlock(int sock)
-{
-    int flags = fcntl(sock, F_GETFL, 0);
-    while (flags == -1 && errno == EINTR) {
-        flags = fcntl(sock, F_GETFL, 0);
-    }
-    if (flags == -1) {
-        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
-        return false;
-    }
-    int ret = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-    while (ret == -1 && errno == EINTR) {
-        ret = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-    }
-    if (ret == -1) {
-        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
-        return false;
-    }
-    return true;
-}
-
-int MakeTcpSocket(unsigned short saFamily, bool needNonblock)
-{
-    if (saFamily != AF_INET && saFamily != AF_INET6) {
-        return -1;
-    }
-    int sock = socket(saFamily, SOCK_STREAM, IPPROTO_TCP);
-    NETSTACK_LOGI("new tcp socket is %{public}d", sock);
-    if (sock < 0) {
-        NETSTACK_LOGE("make tcp socket failed, errno is %{public}d", errno);
-        return -1;
-    }
-    if (needNonblock && !MakeNonBlock(sock)) {
-        close(sock);
-        return -1;
-    }
-    return sock;
-}
-
-int MakeUdpSocket(unsigned short saFamily)
-{
-    if (saFamily != AF_INET && saFamily != AF_INET6) {
-        return -1;
-    }
-    int sock = socket(saFamily, SOCK_DGRAM, IPPROTO_UDP);
-    NETSTACK_LOGI("new udp socket is %{public}d", sock);
-    if (sock < 0) {
-        NETSTACK_LOGE("make udp socket failed, errno is %{public}d", errno);
-        return -1;
-    }
-    if (!MakeNonBlock(sock)) {
-        close(sock);
-        return -1;
-    }
-    return sock;
-}
-
-int MakeLocalSocket(int socketType, bool needNonblock)
-{
-    int sock = socket(AF_UNIX, socketType, 0);
-    NETSTACK_LOGI("new local socket is %{public}d", sock);
-    if (sock < 0) {
-        NETSTACK_LOGE("make local socket failed, errno is %{public}d", errno);
-        return -1;
-    }
-    if (needNonblock && !MakeNonBlock(sock)) {
-        close(sock);
-        return -1;
-    }
-    return sock;
 }
 } // namespace OHOS::NetStack::CommonUtils

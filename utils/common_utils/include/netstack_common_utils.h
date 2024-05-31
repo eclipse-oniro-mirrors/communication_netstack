@@ -68,13 +68,5 @@ std::string MaskIpv4(std::string &maskedResult);
 std::string MaskIpv6(std::string &maskedResult);
 
 std::string AnonymizeIp(std::string &input);
-
-bool MakeNonBlock(int sock);
-
-int MakeTcpSocket(unsigned short family, bool needNonblock = true);
-
-int MakeUdpSocket(unsigned short family);
-
-int MakeLocalSocket(int socketType, bool needNonblock = true);
 } // namespace OHOS::NetStack::CommonUtils
 #endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */
