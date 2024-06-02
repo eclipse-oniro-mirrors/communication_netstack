@@ -46,7 +46,7 @@ HWTEST_F(HttpRequestOptionsTest, CaPathTest001, TestSize.Level1)
     HttpRequestOptions requestOptions;
 
     string path = requestOptions.GetCaPath();
-    EXPECT_EQ(path, HttpConstant::HTTP_DEFAULT_CA_PATH);
+    EXPECT_EQ(path, "");
 }
 
 HWTEST_F(HttpRequestOptionsTest, CaPathTest002, TestSize.Level1)
@@ -55,7 +55,7 @@ HWTEST_F(HttpRequestOptionsTest, CaPathTest002, TestSize.Level1)
 
     requestOptions.SetCaPath("");
     string path = requestOptions.GetCaPath();
-    EXPECT_EQ(path, HttpConstant::HTTP_DEFAULT_CA_PATH);
+    EXPECT_EQ(path, "");
 }
 
 HWTEST_F(HttpRequestOptionsTest, CaPathTest003, TestSize.Level1)
