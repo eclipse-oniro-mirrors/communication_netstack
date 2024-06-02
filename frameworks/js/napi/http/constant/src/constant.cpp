@@ -52,6 +52,8 @@ const char *const HttpConstant::PARAM_KEY_DOH_URL = "dnsOverHttps";
 const char *const HttpConstant::PARAM_KEY_CLIENT_CERT = "clientCert";
 const char *const HttpConstant::PARAM_KEY_MULTI_FORM_DATA_LIST = "multiFormDataList";
 
+const char *const HttpConstant::PARAM_KEY_CERTIFICATE_PINNING = "certificatePinning";
+
 const char *const HttpConstant::HTTP_PROXY_KEY_HOST = "host";
 const char *const HttpConstant::HTTP_PROXY_KEY_PORT = "port";
 const char *const HttpConstant::HTTP_PROXY_KEY_EXCLUSION_LIST = "exclusionList";
@@ -60,6 +62,9 @@ const char *const HttpConstant::HTTP_CLIENT_CERT = "certPath";
 const char *const HttpConstant::HTTP_CLIENT_KEY = "keyPath";
 const char *const HttpConstant::HTTP_CLIENT_CERT_TYPE = "certType";
 const char *const HttpConstant::HTTP_CLIENT_KEY_PASSWD = "keyPassword";
+
+const char *const HttpConstant::HTTP_PUBLIC_KEY_HASH = "publicKeyHash";
+const char *const HttpConstant::HTTP_HASH_ALGORITHM = "hashAlgorithm";
 
 const char *const HttpConstant::HTTP_CERT_TYPE_PEM = "PEM";
 const char *const HttpConstant::HTTP_CERT_TYPE_DER = "DER";

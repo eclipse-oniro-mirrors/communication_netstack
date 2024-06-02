@@ -47,6 +47,16 @@ struct MultiFormData {
     std::string filePath;
 };
 
+enum class HashAlgorithm {
+    SHA256,
+    INVALID,
+};
+
+struct CertificatePinning {
+    HashAlgorithm hashAlgorithm = HashAlgorithm::SHA256;
+    std::string publicKeyHash;
+};
+
 class HttpRequestOptions final {
 public:
     HttpRequestOptions();
@@ -84,6 +94,10 @@ public:
     void SetClientCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
 
     void AddMultiFormData(const MultiFormData &multiFormData);
+
+    void SetCertificatePinning(std::string certPIN);
+
+    [[nodiscard]] std::string GetCertificatePinning() const;
 
     [[nodiscard]] const std::string &GetUrl() const;
 
@@ -176,6 +190,8 @@ private:
     Secure::SecureChar keyPasswd_;
 
     std::vector<MultiFormData> multiFormDataList_;
+
+    std::string certificatePinning_;
 };
 } // namespace OHOS::NetStack::Http
 

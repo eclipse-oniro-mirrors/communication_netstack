@@ -292,4 +292,14 @@ std::vector<MultiFormData> HttpRequestOptions::GetMultiPartDataList()
 {
     return multiFormDataList_;
 }
+
+void HttpRequestOptions::SetCertificatePinning(std::string certPIN)
+{
+    certificatePinning_ = std::move(certPIN);
+}
+
+std::string HttpRequestOptions::GetCertificatePinning() const
+{
+    return certificatePinning_;
+}
 } // namespace OHOS::NetStack::Http
