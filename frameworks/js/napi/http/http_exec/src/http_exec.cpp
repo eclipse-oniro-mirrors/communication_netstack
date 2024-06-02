@@ -937,6 +937,18 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     return true;
 }
 
+bool HttpExec::SetCertPinnerOption(CURL *curl, RequestContext *context)
+{
+    auto certPIN = context->options.GetCertificatePinning();
+    if (certPIN.empty()) {
+        NETSTACK_LOGD("CertificatePinning is empty");
+        return true;
+    }
+
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, certPIN.c_str(), context);
+    return true;
+}
+
 bool HttpExec::SetDnsOption(CURL *curl, RequestContext *context)
 {
     std::vector<std::string> dnsServers = context->options.GetDnsServers();
@@ -1049,6 +1061,8 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
     if (!context->options.GetDohUrl().empty()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DOH_URL, context->options.GetDohUrl().c_str(), context);
     }
+
+    SetCertPinnerOption(curl, context);
     SetDnsOption(curl, context);
     SetSSLCertOption(curl, context);
     SetMultiPartOption(curl, context);

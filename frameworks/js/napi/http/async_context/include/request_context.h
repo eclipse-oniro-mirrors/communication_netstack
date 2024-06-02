@@ -168,6 +168,8 @@ private:
 
     void ParseResumeFromToNumber(napi_value optionsValue);
 
+    void ParseCertificatePinning(napi_value optionsValue);
+
     bool GetRequestBody(napi_value extraData);
 
     void UrlAndOptions(napi_value urlValue, napi_value optionsValue);
@@ -175,6 +177,8 @@ private:
     bool HandleMethodForGet(napi_value extraData);
 
     MultiFormData NapiValue2FormData(napi_value formDataValue);
+
+    CertificatePinning NapiValue2CertPinning(napi_value certPIN);
 
     void SaveFormData(napi_env env, napi_value dataValue, MultiFormData &multiFormData);
 };

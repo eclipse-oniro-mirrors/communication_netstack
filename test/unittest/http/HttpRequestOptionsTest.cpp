@@ -313,4 +313,13 @@ HWTEST_F(HttpRequestOptionsTest, SetBodyTest, TestSize.Level1)
     std::string resultValue = requestOptions.GetBody();
     EXPECT_EQ(resultValue, testValue);
 }
+
+HWTEST_F(HttpRequestOptionsTest, SetCertificatePinningTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+    std::string testPIN = "sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3tvRMwE=;sha256//t62CeU2tQiqkexU74Gxa2eg7fRbEg";
+    requestOptions.SetCertificatePinning(testPIN);
+    std::string resultPIN = requestOptions.GetCertificatePinning();
+    EXPECT_EQ(testPIN, resultPIN);
+}
 } // namespace
