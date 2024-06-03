@@ -68,6 +68,8 @@ bool ExecGetState(GetStateContext *context);
 
 bool ExecGetRemoteAddress(GetRemoteAddressContext *context);
 
+bool ExecGetLocalAddress(GetLocalAddressContext *context);
+
 bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context);
 
 bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context);
@@ -80,6 +82,8 @@ bool ExecTcpConnectionSend(TcpServerSendContext *context);
 
 bool ExecTcpConnectionGetRemoteAddress(TcpServerGetRemoteAddressContext *context);
 
+bool ExecTcpConnectionGetLocalAddress(TcpServerGetLocalAddressContext *context);
+
 bool ExecTcpConnectionClose(TcpServerCloseContext *context);
 
 bool ExecTcpServerListen(TcpServerListenContext *context);
@@ -87,6 +91,8 @@ bool ExecTcpServerListen(TcpServerListenContext *context);
 bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context);
 
 bool ExecTcpServerGetState(TcpServerGetStateContext *context);
+
+bool ExecTcpServerGetLocalAddress(TcpServerGetLocalAddressContext *context);
 
 /* async work callback */
 napi_value BindCallback(BindContext *context);
@@ -115,6 +121,8 @@ napi_value GetStateCallback(GetStateContext *context);
 
 napi_value GetRemoteAddressCallback(GetRemoteAddressContext *context);
 
+napi_value GetLocalAddressCallback(GetLocalAddressContext *context);
+
 napi_value TcpSetExtraOptionsCallback(TcpSetExtraOptionsContext *context);
 
 napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context);
@@ -127,13 +135,40 @@ napi_value TcpConnectionCloseCallback(TcpServerCloseContext *context);
 
 napi_value TcpConnectionGetRemoteAddressCallback(TcpServerGetRemoteAddressContext *context);
 
+napi_value TcpConnectionGetLocalAddressCallback(TcpServerGetLocalAddressContext *context);
+
 napi_value ListenCallback(TcpServerListenContext *context);
 
 napi_value TcpServerSetExtraOptionsCallback(TcpServerSetExtraOptionsContext *context);
 
 napi_value TcpServerGetStateCallback(TcpServerGetStateContext *context);
 
+napi_value TcpServerGetLocalAddressCallback(TcpServerGetLocalAddressContext *context);
+
 napi_value UdpGetSocketFdCallback(GetSocketFdContext *context);
+
+struct MessageData {
+    MessageData() = delete;
+    MessageData(void *d, size_t l, const SocketRemoteInfo &info) : data(d), len(l), remoteInfo(info) {}
+    ~MessageData()
+    {
+        if (data) {
+            free(data);
+        }
+    }
+
+    void *data;
+    size_t len;
+    SocketRemoteInfo remoteInfo;
+};
+
+struct TcpConnection {
+    TcpConnection() = delete;
+    explicit TcpConnection(int32_t clientid) : clientId(clientid) {}
+    ~TcpConnection() = default;
+
+    int32_t clientId;
+};
 
 class SingletonSocketConfig {
 public:

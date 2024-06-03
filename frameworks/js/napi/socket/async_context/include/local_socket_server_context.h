@@ -232,6 +232,21 @@ private:
     SocketStateBase state_;
 };
 
+class LocalSocketServerGetLocalAddressContext final : public LocalSocketServerBaseContext {
+public:
+    LocalSocketServerGetLocalAddressContext(napi_env env, EventManager *manager)
+        : LocalSocketServerBaseContext(env, manager) {}
+    void ParseParams(napi_value *params, size_t paramsCount) override;
+    void SetSocketPath(const std::string socketPath);
+    std::string GetSocketPath();
+    int GetClientId() const;
+    void SetClientId(int clientId);
+
+private:
+    std::string socketPath_;
+    int clientId_ = 0;
+};
+
 class LocalSocketServerSetExtraOptionsContext final : public LocalSocketServerBaseContext {
 public:
     LocalSocketServerSetExtraOptionsContext(napi_env env, EventManager *manager)

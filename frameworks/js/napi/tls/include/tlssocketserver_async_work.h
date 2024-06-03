@@ -37,6 +37,8 @@ public:
     static void ExecStop(napi_env env, void *data);
     static void ExecGetState(napi_env env, void *data);
     static void ExecGetRemoteAddress(napi_env env, void *data);
+    static void ExecGetLocalAddress(napi_env env, void *data);
+    static void ExecConnectionGetLocalAddress(napi_env env, void *data);
     static void ExecSetExtraOptions(napi_env env, void *data);
 
     static void GetCertificateCallback(napi_env env, napi_status status, void *data);
@@ -50,6 +52,8 @@ public:
     static void StopCallback(napi_env env, napi_status status, void *data);
     static void GetStateCallback(napi_env env, napi_status status, void *data);
     static void GetRemoteAddressCallback(napi_env env, napi_status status, void *data);
+    static void GetLocalAddressCallback(napi_env env, napi_status status, void *data);
+    static void GetConnectionLocalAddressCallback(napi_env env, napi_status status, void *data);
     static void SetExtraOptionsCallback(napi_env env, napi_status status, void *data);
 };
 } // namespace TlsSocketServer

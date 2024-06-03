@@ -27,6 +27,7 @@ public:
     public:
         static constexpr const char *FUNCTION_LISTEN = "listen";
         static constexpr const char *FUNCTION_GET_STATE = "getState";
+        static constexpr const char *FUNCTION_GET_LOCAL_ADDRESS = "getLocalAddress";
         static constexpr const char *FUNCTION_SET_EXTRA_OPTIONS = "setExtraOptions";
         static constexpr const char *FUNCTION_ON = "on";
         static constexpr const char *FUNCTION_OFF = "off";
@@ -37,6 +38,7 @@ public:
         static napi_value GetProtocol(napi_env env, napi_callback_info info);
         static napi_value Listen(napi_env env, napi_callback_info info);
         static napi_value GetState(napi_env env, napi_callback_info info);
+        static napi_value GetLocalAddress(napi_env env, napi_callback_info info);
         static napi_value SetExtraOptions(napi_env env, napi_callback_info info);
         static napi_value On(napi_env env, napi_callback_info info);
         static napi_value Off(napi_env env, napi_callback_info info);
@@ -48,6 +50,7 @@ public:
         static constexpr const char *FUNCTION_SEND = "send";
         static constexpr const char *FUNCTION_CLOSE = "close";
         static constexpr const char *FUNCTION_GET_REMOTE_ADDRESS = "getRemoteAddress";
+        static constexpr const char *FUNCTION_GET_LOCAL_ADDRESS = "getLocalAddress";
         static constexpr const char *FUNCTION_GET_REMOTE_CERTIFICATE = "getRemoteCertificate";
         static constexpr const char *FUNCTION_GET_CERTIFICATE = "getCertificate";
         static constexpr const char *FUNCTION_GET_CIPHER_SUITE = "getCipherSuite";
@@ -58,6 +61,7 @@ public:
         static napi_value Send(napi_env env, napi_callback_info info);
         static napi_value Close(napi_env env, napi_callback_info info);
         static napi_value GetRemoteAddress(napi_env env, napi_callback_info info);
+        static napi_value GetLocalAddress(napi_env env, napi_callback_info info);
         static napi_value GetRemoteCertificate(napi_env env, napi_callback_info info);
         static napi_value GetCipherSuites(napi_env env, napi_callback_info info);
         static napi_value GetSignatureAlgorithms(napi_env env, napi_callback_info info);

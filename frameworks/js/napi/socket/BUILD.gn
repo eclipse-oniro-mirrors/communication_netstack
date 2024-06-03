@@ -105,6 +105,7 @@ ohos_shared_library("socket") {
     "options/src/udp_send_options.cpp",
     "socket_exec/src/local_socket_exec.cpp",
     "socket_exec/src/socket_exec.cpp",
+    "socket_exec/src/socket_extra_exec.cpp",
     "socket_module/src/socket_module.cpp",
   ]
   sources += tls_sources

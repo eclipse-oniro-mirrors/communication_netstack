@@ -31,6 +31,8 @@ bool ExecLocalSocketClose(LocalSocketCloseContext *context);
 
 bool ExecLocalSocketGetState(LocalSocketGetStateContext *context);
 
+bool ExecLocalSocketGetLocalAddress(LocalSocketGetLocalAddressContext *context);
+
 bool ExecLocalSocketGetSocketFd(LocalSocketGetSocketFdContext *context);
 
 bool ExecLocalSocketSetExtraOptions(LocalSocketSetExtraOptionsContext *context);
@@ -43,6 +45,8 @@ bool ExecLocalSocketServerEnd(LocalSocketServerEndContext *context);
 
 bool ExecLocalSocketServerGetState(LocalSocketServerGetStateContext *context);
 
+bool ExecLocalSocketServerGetLocalAddress(LocalSocketServerGetLocalAddressContext *context);
+
 bool ExecLocalSocketServerSetExtraOptions(LocalSocketServerSetExtraOptionsContext *context);
 
 bool ExecLocalSocketServerGetExtraOptions(LocalSocketServerGetExtraOptionsContext *context);
@@ -50,6 +54,8 @@ bool ExecLocalSocketServerGetExtraOptions(LocalSocketServerGetExtraOptionsContex
 bool ExecLocalSocketConnectionSend(LocalSocketServerSendContext *context);
 
 bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context);
+
+bool ExecLocalSocketConnectionGetLocalAddress(LocalSocketServerGetLocalAddressContext *context);
 
 /* async work callback */
 napi_value LocalSocketBindCallback(LocalSocketBindContext *context);
@@ -61,6 +67,8 @@ napi_value LocalSocketSendCallback(LocalSocketSendContext *context);
 napi_value LocalSocketCloseCallback(LocalSocketCloseContext *context);
 
 napi_value LocalSocketGetStateCallback(LocalSocketGetStateContext *context);
+
+napi_value LocalSocketGetLocalAddressCallback(LocalSocketGetLocalAddressContext *context);
 
 napi_value LocalSocketGetSocketFdCallback(LocalSocketGetSocketFdContext *context);
 
@@ -74,6 +82,8 @@ napi_value LocalSocketServerEndCallback(LocalSocketServerEndContext *context);
 
 napi_value LocalSocketServerGetStateCallback(LocalSocketServerGetStateContext *context);
 
+napi_value LocalSocketServerGetLocalAddressCallback(LocalSocketServerGetLocalAddressContext *context);
+
 napi_value LocalSocketServerSetExtraOptionsCallback(LocalSocketServerSetExtraOptionsContext *context);
 
 napi_value LocalSocketServerGetExtraOptionsCallback(LocalSocketServerGetExtraOptionsContext *context);
@@ -81,6 +91,8 @@ napi_value LocalSocketServerGetExtraOptionsCallback(LocalSocketServerGetExtraOpt
 napi_value LocalSocketConnectionSendCallback(LocalSocketServerSendContext *context);
 
 napi_value LocalSocketConnectionCloseCallback(LocalSocketServerCloseContext *context);
+
+napi_value LocalSocketConnectionGetLocalAddressCallback(LocalSocketServerGetLocalAddressContext *context);
 
 struct LocalSocketConnectionData {
     LocalSocketConnectionData(int32_t clientId, LocalSocketServerManager *serverManager)

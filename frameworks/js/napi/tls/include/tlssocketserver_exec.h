@@ -46,6 +46,8 @@ public:
     static bool ExecStop(TlsSocket::TLSNapiContext *context);
     static bool ExecGetState(TlsSocket::TLSGetStateContext *context);
     static bool ExecGetRemoteAddress(ServerTLSGetRemoteAddressContext *context);
+    static bool ExecGetLocalAddress(TLSServerGetLocalAddressContext *context);
+    static bool ExecConnectionGetLocalAddress(TLSConnectionGetLocalAddressContext *context);
     static bool ExecSetExtraOptions(TlsSocket::TLSSetExtraOptionsContext *context);
 
     static napi_value GetCertificateCallback(TlsSocket::GetCertificateContext *context);
@@ -59,6 +61,8 @@ public:
     static napi_value StopCallback(TlsSocket::TLSNapiContext *context);
     static napi_value GetStateCallback(TlsSocket::TLSGetStateContext *context);
     static napi_value GetRemoteAddressCallback(ServerTLSGetRemoteAddressContext *context);
+    static napi_value GetLocalAddressCallback(TLSServerGetLocalAddressContext *context);
+    static napi_value GetConnectionLocalAddressCallback(TLSConnectionGetLocalAddressContext *context);
     static napi_value SetExtraOptionsCallback(TlsSocket::TLSSetExtraOptionsContext *context);
 
     static bool ExecConnectionSend(TLSServerSendContext *context);

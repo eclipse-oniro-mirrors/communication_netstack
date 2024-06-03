@@ -82,6 +82,7 @@ socket_sources = [
   "$SOCKET/options/src/udp_send_options.cpp",
   "$SOCKET/socket_exec/src/local_socket_exec.cpp",
   "$SOCKET/socket_exec/src/socket_exec.cpp",
+  "$SOCKET/socket_exec/src/socket_extra_exec.cpp",
   "$SOCKET/socket_module/src/socket_module.cpp",
 ]
 

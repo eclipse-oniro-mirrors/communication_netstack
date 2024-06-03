@@ -366,6 +366,20 @@ void TLSSocketServer::GetRemoteAddress(const int socketFd, const TlsSocket::GetR
     callback(TlsSocket::TLSSOCKET_SUCCESS, address);
 }
 
+void TLSSocketServer::GetLocalAddress(const int socketFd, const TlsSocket::GetLocalAddressCallback &callback)
+{
+    auto connect_iterator = clientIdConnections_.find(socketFd);
+    if (connect_iterator == clientIdConnections_.end()) {
+        NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", socketFd);
+        CallOnErrorCallback(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
+        callback(TlsSocket::TLS_ERR_SYS_EINVAL, {});
+        return;
+    }
+    auto connect = connect_iterator->second;
+    auto localAddress = connect->GetLocalAddress();
+    callback(TlsSocket::TLSSOCKET_SUCCESS, localAddress);
+}
+
 void TLSSocketServer::GetState(const TlsSocket::GetStateCallback &callback)
 {
     int opt;
@@ -665,6 +679,21 @@ void TLSSocketServer::GetAddr(const Socket::NetAddress &address, sockaddr_in *ad
     }
 }
 
+int TLSSocketServer::GetListenSocketFd()
+{
+    return listenSocketFd_;
+}
+
+void TLSSocketServer::SetLocalAddress(const Socket::NetAddress &address)
+{
+    localAddress_ = address;
+}
+
+Socket::NetAddress TLSSocketServer::GetLocalAddress()
+{
+    return localAddress_;
+}
+
 std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionByClientID(int clientid)
 {
     std::shared_ptr<Connection> ptrConnection = nullptr;
@@ -700,6 +729,11 @@ void TLSSocketServer::CallListenCallback(int32_t err, ListenCallback callback)
 void TLSSocketServer::Connection::SetAddress(const Socket::NetAddress address)
 {
     address_ = address;
+}
+
+void TLSSocketServer::Connection::SetLocalAddress(const Socket::NetAddress address)
+{
+    localAddress_ = address;
 }
 
 const TlsSocket::X509CertRawData &TLSSocketServer::Connection::GetRemoteCertRawData() const
@@ -944,6 +978,11 @@ ssl_st *TLSSocketServer::Connection::GetSSL() const
 Socket::NetAddress TLSSocketServer::Connection::GetAddress() const
 {
     return address_;
+}
+
+Socket::NetAddress TLSSocketServer::Connection::GetLocalAddress() const
+{
+    return localAddress_;
 }
 
 int TLSSocketServer::Connection::GetSocketFd() const
@@ -1310,6 +1349,34 @@ void TLSSocketServer::CallOnConnectCallback(const int32_t socketFd, std::shared_
     }
 }
 
+bool TLSSocketServer::GetTlsConnectionLocalAddress(int acceptSockFD, Socket::NetAddress &localAddress)
+{
+    struct sockaddr_storage addr{};
+    socklen_t addrLen = sizeof(addr);
+    if (getsockname(acceptSockFD, (struct sockaddr *)&addr, &addrLen) < 0) {
+        if (acceptSockFD > 0) {
+            close(acceptSockFD);
+            CallOnErrorCallback(errno, strerror(errno));
+            return false;
+        }
+    }
+    char ip_str[INET6_ADDRSTRLEN];
+    if (addr.ss_family == AF_INET) {
+        auto *addr_in = (struct sockaddr_in *)&addr;
+        inet_ntop(AF_INET, &addr_in->sin_addr, ip_str, sizeof(ip_str));
+        localAddress.SetFamilyBySaFamily(AF_INET);
+        localAddress.SetAddress(ip_str);
+        localAddress.SetPort(ntohs(addr_in->sin_port));
+    } else if (addr.ss_family == AF_INET6) {
+        auto *addr_in6 = (struct sockaddr_in6 *)&addr;
+        inet_ntop(AF_INET6, &addr_in6->sin6_addr, ip_str, sizeof(ip_str));
+        localAddress.SetFamilyBySaFamily(AF_INET6);
+        localAddress.SetAddress(ip_str);
+        localAddress.SetPort(ntohs(addr_in6->sin6_port));
+    }
+    return true;
+}
+
 void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsListenOptions, int clientID)
 {
 #if !defined(CROSS_PLATFORM)
@@ -1325,6 +1392,7 @@ void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsLi
     NETSTACK_LOGI("Server accept new client SUCCESS");
     std::shared_ptr<Connection> connection = std::make_shared<Connection>();
     Socket::NetAddress netAddress;
+    Socket::NetAddress localAddress;
     char clientIp[INET_ADDRSTRLEN];
     inet_ntop(address_.GetSaFamily(), &clientAddress.sin_addr, clientIp, INET_ADDRSTRLEN);
     int clientPort = ntohs(clientAddress.sin_port);
@@ -1332,6 +1400,15 @@ void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsLi
     netAddress.SetPort(clientPort);
     netAddress.SetFamilyBySaFamily(address_.GetSaFamily());
     connection->SetAddress(netAddress);
+    if (GetTlsConnectionLocalAddress(connectFD, localAddress)) {
+        connection->SetLocalAddress(localAddress);
+    }
+    SetTlsConnectionSecureOptions(tlsListenOptions, clientID, connectFD, connection);
+#endif
+}
+void TLSSocketServer::SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectOptions &tlsListenOptions, int clientID,
+                                                    int connectFD, std::shared_ptr<Connection> &connection)
+{
     connection->SetClientID(clientID);
     auto res = connection->TlsAcceptToHost(connectFD, tlsListenOptions);
     if (!res) {
@@ -1359,7 +1436,6 @@ void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsLi
     connection->SetEventManager(ptrEventManager);
     CallOnConnectCallback(clientID, ptrEventManager);
     NETSTACK_LOGI("New client come in, fd is %{public}d", connectFD);
-#endif
 }
 
 void TLSSocketServer::InitPollList(int &listendFd)

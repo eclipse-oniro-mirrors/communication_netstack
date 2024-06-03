@@ -45,6 +45,9 @@ public:
     SocketStateBase state_;
 
     NetAddress address_;
+
+    NetAddress localAddress_;
+
     int32_t errorNumber_ = 0;
 
 private:
@@ -54,6 +57,8 @@ private:
 typedef CommonContext GetStateContext;
 
 typedef CommonContext GetRemoteAddressContext;
+
+typedef CommonContext GetLocalAddressContext;
 
 typedef CommonContext GetSocketFdContext;
 

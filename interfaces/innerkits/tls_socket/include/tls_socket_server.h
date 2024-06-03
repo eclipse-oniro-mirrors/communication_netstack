@@ -128,6 +128,13 @@ public:
     void GetRemoteAddress(const int socketFd, const TlsSocket::GetRemoteAddressCallback &callback);
 
     /**
+     * Get the peer network address
+     * @param socketFd The socket ID of the client
+     * @param callback callback to the caller
+     */
+    void GetLocalAddress(const int socketFd, const TlsSocket::GetLocalAddressCallback &callback);
+
+    /**
      * Get the status of the current socket
      * @param callback callback to the caller
      */
@@ -202,6 +209,21 @@ public:
      */
     void OffError();
 
+    /**
+     * Get the socket file description of the server
+     */
+    int GetListenSocketFd();
+
+    /**
+     * Set the current socket file description address of the server
+     */
+    void SetLocalAddress(const Socket::NetAddress &address);
+
+    /**
+     * Get the current socket file description address of the server
+     */
+    Socket::NetAddress GetLocalAddress();
+
 public:
     class Connection : public std::enable_shared_from_this<Connection> {
     public:
@@ -224,6 +246,11 @@ public:
          * Set address information
          */
         void SetAddress(const Socket::NetAddress address);
+
+        /**
+         * Set local address information
+         */
+        void SetLocalAddress(const Socket::NetAddress address);
 
         /**
          * Send data through an established encrypted connection
@@ -320,6 +347,12 @@ public:
         [[nodiscard]] Socket::NetAddress GetAddress() const;
 
         /**
+         * Get local address information
+         * @return Returns the address information of the local accept connect
+         */
+        [[nodiscard]] Socket::NetAddress GetLocalAddress() const;
+
+        /**
          * Get address information
          * @return Returns the address information of the remote client
          */
@@ -387,6 +420,7 @@ public:
         TlsSocket::TLSContextServer tlsContext_;
         TlsSocket::TLSConfiguration connectionConfiguration_;
         Socket::NetAddress address_;
+        Socket::NetAddress localAddress_;
         TlsSocket::X509CertRawData remoteRawData_;
 
         std::string hostName_;
@@ -427,12 +461,15 @@ private:
     std::mutex connectMutex_;
     int listenSocketFd_ = -1;
     Socket::NetAddress address_;
+    Socket::NetAddress localAddress_;
+
     std::map<int, std::shared_ptr<Connection>> clientIdConnections_;
     TlsSocket::TLSConfiguration TLSServerConfiguration_;
 
     OnConnectCallback onConnectCallback_;
     TlsSocket::OnErrorCallback onErrorCallback_;
 
+    bool GetTlsConnectionLocalAddress(int acceptSockFD, Socket::NetAddress &localAddress);
     void ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsListenOptions, int clientId);
     void DropFdFromPollList(int &fd_index);
     void InitPollList(int &listendFd);
@@ -448,6 +485,8 @@ public:
     std::shared_ptr<Connection> GetConnectionByClientEventManager(const EventManager *eventManager);
     void CloseConnectionByEventManager(EventManager *eventManager);
     void DeleteConnectionByEventManager(EventManager *eventManager);
+    void SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectOptions &tlsListenOptions, int clientID,
+                                       int connectFD, std::shared_ptr<Connection> &connection);
 };
 } // namespace TlsSocketServer
 } // namespace NetStack

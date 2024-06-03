@@ -65,6 +65,7 @@ static const char *UDP_BIND_NAME = "UdpBind";
 static const char *UDP_SEND_NAME = "UdpSend";
 static const char *UDP_CLOSE_NAME = "UdpClose";
 static const char *UDP_GET_STATE = "UdpGetState";
+static const char *UDP_GET_LOCAL_ADDRESS = "UdpGetLocalAddress";
 static const char *UDP_SET_EXTRA_OPTIONS_NAME = "UdpSetExtraOptions";
 static constexpr const char *UDP_GET_SOCKET_FD = "UdpGetSocketFd";
 
@@ -80,6 +81,7 @@ static constexpr const char *LOCAL_SOCKET_CONNECT = "LocalSocketConnect";
 static constexpr const char *LOCAL_SOCKET_SEND = "LocalSocketSend";
 static constexpr const char *LOCAL_SOCKET_CLOSE = "LocalSocketClose";
 static constexpr const char *LOCAL_SOCKET_GET_STATE = "LocalSocketGetState";
+static constexpr const char *LOCAL_SOCKET_GET_LOCAL_ADDRESS = "LocalSocketGetState";
 static constexpr const char *LOCAL_SOCKET_GET_SOCKET_FD = "LocalSocketGetSocketFd";
 static constexpr const char *LOCAL_SOCKET_SET_EXTRA_OPTIONS = "LocalSocketSetExtraOptions";
 static constexpr const char *LOCAL_SOCKET_GET_EXTRA_OPTIONS = "LocalSocketGetExtraOptions";
@@ -87,10 +89,12 @@ static constexpr const char *LOCAL_SOCKET_GET_EXTRA_OPTIONS = "LocalSocketGetExt
 static constexpr const char *LOCAL_SOCKET_SERVER_LISTEN = "LocalSocketServerListen";
 static constexpr const char *LOCAL_SOCKET_SERVER_END = "LocalSocketServerEnd";
 static constexpr const char *LOCAL_SOCKET_SERVER_GET_STATE = "LocalSocketServerGetState";
+static constexpr const char *LOCAL_SOCKET_SERVER_GET_LOCAL_ADDRESS = "LocalSocketServerGetState";
 static constexpr const char *LOCAL_SOCKET_SERVER_SET_EXTRA_OPTIONS = "LocalSocketServerSetExtraOptions";
 static constexpr const char *LOCAL_SOCKET_SERVER_GET_EXTRA_OPTIONS = "LocalSocketServerGetExtraOptions";
 
 static constexpr const char *LOCAL_SOCKET_CONNECTION_SEND = "LocalSocketConnectionSend";
+static constexpr const char *LOCAL_SOCKET_CONNECTION_GET_LOCAL_ADDRESS = "LocalSocketConnectionGetLocalAddress";
 static constexpr const char *LOCAL_SOCKET_CONNECTION_CLOSE = "LocalSocketConnectionClose";
 
 static const char *TCP_BIND_NAME = "TcpBind";
@@ -99,16 +103,19 @@ static const char *TCP_SEND_NAME = "TcpSend";
 static const char *TCP_CLOSE_NAME = "TcpClose";
 static const char *TCP_GET_STATE = "TcpGetState";
 static const char *TCP_GET_REMOTE_ADDRESS = "TcpGetRemoteAddress";
+static const char *TCP_GET_LOCAL_ADDRESS = "TcpGetLocalAddress";
 static const char *TCP_SET_EXTRA_OPTIONS_NAME = "TcpSetExtraOptions";
 static constexpr const char *TCP_GET_SOCKET_FD = "TcpGetSocketFd";
 
 static constexpr const char *TCP_SERVER_LISTEN_NAME = "TcpServerListen";
 static constexpr const char *TCP_SERVER_GET_STATE = "TcpServerGetState";
+static constexpr const char *TCP_SERVER_GET_LOCAL_ADDRESS = "TcpServerGetLocalAddress";
 static constexpr const char *TCP_SERVER_SET_EXTRA_OPTIONS_NAME = "TcpServerSetExtraOptions";
 
 static constexpr const char *TCP_CONNECTION_SEND_NAME = "TcpConnectionSend";
 static constexpr const char *TCP_CONNECTION_CLOSE_NAME = "TcpConnectionClose";
 static constexpr const char *TCP_CONNECTION_GET_REMOTE_ADDRESS = "TcpConnectionGetRemoteAddress";
+static constexpr const char *TCP_CONNECTION_GET_LOCAL_ADDRESS = "TcpConnectionGetLocalAddress";
 
 static constexpr const char *KEY_SOCKET_FD = "socketFd";
 
@@ -447,6 +454,7 @@ void SocketModuleExports::DefineUDPSocketClass(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_SEND, UDPSocket::Send),
         DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_CLOSE, UDPSocket::Close),
         DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_GET_STATE, UDPSocket::GetState),
+        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_GET_LOCAL_ADDRESS, UDPSocket::GetLocalAddress),
         DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_SET_EXTRA_OPTIONS, UDPSocket::SetExtraOptions),
         DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_GET_SOCKET_FD, UDPSocket::GetSocketFd),
         DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_ON, UDPSocket::On),
@@ -464,6 +472,7 @@ void SocketModuleExports::DefineMulticastSocketClass(napi_env env, napi_value ex
         DECLARE_NAPI_FUNCTION(MulticastSocket::FUNCTION_GET_STATE, MulticastSocket::GetState),
         DECLARE_NAPI_FUNCTION(MulticastSocket::FUNCTION_SET_EXTRA_OPTIONS, MulticastSocket::SetExtraOptions),
         DECLARE_NAPI_FUNCTION(MulticastSocket::FUNCTION_GET_SOCKET_FD, MulticastSocket::GetSocketFd),
+        DECLARE_NAPI_FUNCTION(MulticastSocket::FUNCTION_GET_LOCAL_ADDRESS, MulticastSocket::GetLocalAddress),
         DECLARE_NAPI_FUNCTION(MulticastSocket::FUNCTION_ON, MulticastSocket::On),
         DECLARE_NAPI_FUNCTION(MulticastSocket::FUNCTION_OFF, MulticastSocket::Off),
         DECLARE_NAPI_FUNCTION(MulticastSocket::FUNCTION_ADD_MEMBER_SHIP, MulticastSocket::AddMembership),
@@ -489,6 +498,7 @@ void SocketModuleExports::DefineTCPSocketClass(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION(TCPSocket::FUNCTION_SEND, TCPSocket::Send),
         DECLARE_NAPI_FUNCTION(TCPSocket::FUNCTION_CLOSE, TCPSocket::Close),
         DECLARE_NAPI_FUNCTION(TCPSocket::FUNCTION_GET_REMOTE_ADDRESS, TCPSocket::GetRemoteAddress),
+        DECLARE_NAPI_FUNCTION(TCPSocket::FUNCTION_GET_LOCAL_ADDRESS, TCPSocket::GetLocalAddress),
         DECLARE_NAPI_FUNCTION(TCPSocket::FUNCTION_GET_STATE, TCPSocket::GetState),
         DECLARE_NAPI_FUNCTION(TCPSocket::FUNCTION_SET_EXTRA_OPTIONS, TCPSocket::SetExtraOptions),
         DECLARE_NAPI_FUNCTION(TCPSocket::FUNCTION_GET_SOCKET_FD, TCPSocket::GetSocketFd),
@@ -506,6 +516,7 @@ void SocketModuleExports::DefineLocalSocketClass(napi_env env, napi_value export
         DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_SEND, LocalSocket::Send),
         DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_CLOSE, LocalSocket::Close),
         DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_GET_STATE, LocalSocket::GetState),
+        DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_GET_LOCAL_ADDRESS, LocalSocket::GetLocalAddress),
         DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_SET_EXTRA_OPTIONS, LocalSocket::SetExtraOptions),
         DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_GET_EXTRA_OPTIONS, LocalSocket::GetExtraOptions),
         DECLARE_NAPI_FUNCTION(LocalSocket::FUNCTION_GET_SOCKET_FD, LocalSocket::GetSocketFd),
@@ -521,6 +532,7 @@ void SocketModuleExports::DefineLocalSocketServerClass(napi_env env, napi_value 
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_LISTEN, LocalSocketServer::Listen),
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_CLOSE, LocalSocketServer::Close),
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_GET_STATE, LocalSocketServer::GetState),
+        DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_GET_LOCAL_ADDRESS, LocalSocketServer::GetLocalAddress),
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_SET_EXTRA_OPTIONS, LocalSocketServer::SetExtraOptions),
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_GET_EXTRA_OPTIONS, LocalSocketServer::GetExtraOptions),
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_ON, LocalSocketServer::On),
@@ -539,6 +551,7 @@ void SocketModuleExports::DefineTCPServerSocketClass(napi_env env, napi_value ex
     std::initializer_list<napi_property_descriptor> properties = {
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_LISTEN, TCPServerSocket::Listen),
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_GET_STATE, TCPServerSocket::GetState),
+        DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_GET_LOCAL_ADDRESS, TCPServerSocket::GetLocalAddress),
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_SET_EXTRA_OPTIONS, TCPServerSocket::SetExtraOptions),
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_ON, TCPServerSocket::On),
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_OFF, TCPServerSocket::Off),
@@ -586,6 +599,12 @@ napi_value SocketModuleExports::UDPSocket::GetState(napi_env env, napi_callback_
     return SOCKET_INTERFACE(GetStateContext, ExecGetState, GetStateCallback, nullptr, UDP_GET_STATE);
 }
 
+napi_value SocketModuleExports::UDPSocket::GetLocalAddress(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(GetLocalAddressContext, ExecGetLocalAddress, GetLocalAddressCallback, nullptr,
+                            UDP_GET_LOCAL_ADDRESS);
+}
+
 napi_value SocketModuleExports::UDPSocket::SetExtraOptions(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(UdpSetExtraOptionsContext, ExecUdpSetExtraOptions, UdpSetExtraOptionsCallback, nullptr,
@@ -618,6 +637,12 @@ napi_value SocketModuleExports::MulticastSocket::DropMembership(napi_env env, na
 {
     return SOCKET_INTERFACE(MulticastMembershipContext, ExecUdpDropMembership, UdpDropMembershipCallback, nullptr,
                             UDP_DROP_MEMBERSHIP);
+}
+
+napi_value SocketModuleExports::MulticastSocket::GetLocalAddress(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(GetLocalAddressContext, ExecGetLocalAddress, GetLocalAddressCallback, nullptr,
+                            UDP_GET_LOCAL_ADDRESS);
 }
 
 napi_value SocketModuleExports::MulticastSocket::SetMulticastTTL(napi_env env, napi_callback_info info)
@@ -675,6 +700,12 @@ napi_value SocketModuleExports::TCPSocket::GetRemoteAddress(napi_env env, napi_c
 {
     return SOCKET_INTERFACE(GetRemoteAddressContext, ExecGetRemoteAddress, GetRemoteAddressCallback, nullptr,
                             TCP_GET_REMOTE_ADDRESS);
+}
+
+napi_value SocketModuleExports::TCPSocket::GetLocalAddress(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(GetLocalAddressContext, ExecGetLocalAddress, GetLocalAddressCallback, nullptr,
+                            TCP_GET_LOCAL_ADDRESS);
 }
 
 napi_value SocketModuleExports::TCPSocket::GetState(napi_env env, napi_callback_info info)
@@ -737,6 +768,17 @@ napi_value SocketModuleExports::TCPConnection::GetRemoteAddress(napi_env env, na
         TCP_CONNECTION_GET_REMOTE_ADDRESS);
 }
 
+napi_value SocketModuleExports::TCPConnection::GetLocalAddress(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(
+        TcpConnectionGetLocalAddressContext, ExecTcpConnectionGetLocalAddress, TcpConnectionGetLocalAddressCallback,
+        [](napi_env theEnv, napi_value thisVal, TcpServerGetLocalAddressContext *context) -> bool {
+            context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
+            return true;
+        },
+        TCP_CONNECTION_GET_LOCAL_ADDRESS);
+}
+
 napi_value SocketModuleExports::TCPConnection::On(napi_env env, napi_callback_info info)
 {
     napi_value ret = ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
@@ -760,6 +802,12 @@ napi_value SocketModuleExports::TCPServerSocket::GetState(napi_env env, napi_cal
 {
     return SOCKET_INTERFACE(TcpServerGetStateContext, ExecTcpServerGetState, TcpServerGetStateCallback, nullptr,
                             TCP_SERVER_GET_STATE);
+}
+
+napi_value SocketModuleExports::TCPServerSocket::GetLocalAddress(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(TcpServerGetLocalAddressContext, ExecTcpServerGetLocalAddress,
+                            TcpServerGetLocalAddressCallback, nullptr, TCP_SERVER_GET_LOCAL_ADDRESS);
 }
 
 napi_value SocketModuleExports::TCPServerSocket::SetExtraOptions(napi_env env, napi_callback_info info)
@@ -814,6 +862,12 @@ napi_value SocketModuleExports::LocalSocket::GetState(napi_env env, napi_callbac
                             LOCAL_SOCKET_GET_STATE);
 }
 
+napi_value SocketModuleExports::LocalSocket::GetLocalAddress(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketGetLocalAddressContext, ExecLocalSocketGetLocalAddress,
+                            LocalSocketGetLocalAddressCallback, nullptr, LOCAL_SOCKET_GET_LOCAL_ADDRESS);
+}
+
 napi_value SocketModuleExports::LocalSocket::GetSocketFd(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(LocalSocketGetSocketFdContext, ExecLocalSocketGetSocketFd, LocalSocketGetSocketFdCallback,
@@ -861,6 +915,12 @@ napi_value SocketModuleExports::LocalSocketServer::GetState(napi_env env, napi_c
                             LocalSocketServerGetStateCallback, nullptr, LOCAL_SOCKET_SERVER_GET_STATE);
 }
 
+napi_value SocketModuleExports::LocalSocketServer::GetLocalAddress(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketServerGetLocalAddressContext, ExecLocalSocketServerGetLocalAddress,
+                            LocalSocketServerGetLocalAddressCallback, nullptr, LOCAL_SOCKET_SERVER_GET_LOCAL_ADDRESS);
+}
+
 napi_value SocketModuleExports::LocalSocketServer::SetExtraOptions(napi_env env, napi_callback_info info)
 {
     return SOCKET_INTERFACE(LocalSocketServerSetExtraOptionsContext, ExecLocalSocketServerSetExtraOptions,
@@ -904,6 +964,17 @@ napi_value SocketModuleExports::LocalSocketConnection::Close(napi_env env, napi_
             return true;
         },
         LOCAL_SOCKET_CONNECTION_CLOSE);
+}
+
+napi_value SocketModuleExports::LocalSocketConnection::GetLocalAddress(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(
+        LocalSocketServerGetLocalAddressContext, ExecLocalSocketConnectionGetLocalAddress,
+        LocalSocketConnectionGetLocalAddressCallback,
+        [](napi_env theEnv, napi_value thisVal, LocalSocketServerGetLocalAddressContext *context) -> bool {
+            context->SetClientId(NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID));
+            return true;
+        }, LOCAL_SOCKET_CONNECTION_GET_LOCAL_ADDRESS);
 }
 
 napi_value SocketModuleExports::LocalSocketConnection::On(napi_env env, napi_callback_info info)
