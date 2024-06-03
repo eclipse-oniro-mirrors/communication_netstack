@@ -30,7 +30,6 @@
         "ram": "5MB",
         "deps": {
             "components": [
-                "curl",
                 "hilog",
                 "hitrace",
                 "ipc",
@@ -53,7 +52,6 @@
         "build": {
             "group_type": {
                 "base_group": [
-                    "//foundation/communication/netstack/frameworks/cj/http:cj_net_http_ffi",
                     "//foundation/communication/netstack/frameworks/js/napi/http:http",
                     "//foundation/communication/netstack/frameworks/js/napi/socket:socket",
                     "//foundation/communication/netstack/frameworks/js/napi/websocket:websocket",
@@ -63,8 +61,10 @@
                     "//foundation/communication/netstack/frameworks/js/napi/fetch:fetch",
                     "//foundation/communication/netstack/utils:common_utils"
                 ],
-                "fwk_group": [],
-                "service_group": []
+                "fwk_group": [
+                ],
+                "service_group": [
+                ]
             },
             "inner_kits": [
                 {
@@ -102,7 +102,7 @@
                         ],
                         "header_base": "//foundation/communication/netstack/interfaces/innerkits/websocket_client/include"
                     }
-                },
+                },                
                 {
                     "header": {
                         "header_base": [],
