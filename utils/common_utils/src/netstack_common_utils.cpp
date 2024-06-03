@@ -277,12 +277,12 @@ std::string GetPortFromURL(const std::string &url) {
     std::string delimiter = "://";
     std::string protocol = GetProtocolFromURL(url);
     std::string hostname = GetHostnameFromURL(url);
-    size_t posStart = url.find(":", protocol.size() + delimiter.size() + hostname.size());
+    size_t posStart = url.find(':', protocol.size() + delimiter.size() + hostname.size());
     if (posStart == std::string::npos) {
-        if (protocol = HTTPS_PROTOCOL) {
+        if (protocol == HTTPS_PROTOCOL) {
             return HTTPS_DEFAULT_PORT;
         }
-        if (protocol = HTTP_PROTOCOL) {
+        if (protocol == HTTP_PROTOCOL) {
             return HTTP_DEFAULT_PORT;
         }
         return "";

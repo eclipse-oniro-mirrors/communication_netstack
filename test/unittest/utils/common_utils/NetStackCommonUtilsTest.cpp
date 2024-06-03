@@ -301,31 +301,31 @@ HWTEST_F(NetStackCommonUtilsTest, GetProtocolFromURLTest003, TestSize.Level2)
 
 HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest001, TestSize.Level2)
 {
-    std::string port = GetProtocolFromURL("https://www.example.com?data_string");
+    std::string port = GetPortFromURL("https://www.example.com?data_string");
     EXPECT_STREQ(port.c_str(), "443");
 }
 
 HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest002, TestSize.Level2)
 {
-    std::string port = GetProtocolFromURL("http://www.example.com?data_string");
+    std::string port = GetPortFromURL("http://www.example.com?data_string");
     EXPECT_STREQ(port.c_str(), "80");
 }
 
 HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest003, TestSize.Level2)
 {
-    std::string port = GetProtocolFromURL("https://www.example.com:9984?data_string");
+    std::string port = GetPortFromURL("https://www.example.com:9984?data_string");
     EXPECT_STREQ(port.c_str(), "9984");
 }
 
 HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest004, TestSize.Level2)
 {
-    std::string port = GetProtocolFromURL("www.example.com:9984?data_string");
+    std::string port = GetPortFromURL("www.example.com:9984?data_string");
     EXPECT_STREQ(port.c_str(), "9984");
 }
 
 HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest005, TestSize.Level2)
 {
-    std::string port = GetProtocolFromURL("www.example.com?data_string");
+    std::string port = GetPortFromURL("www.example.com?data_string");
     EXPECT_STREQ(port.c_str(), "");
 }
 
