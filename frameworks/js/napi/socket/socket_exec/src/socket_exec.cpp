@@ -739,7 +739,7 @@ static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &
     if (int currentRecvBufferSize = ConfirmBufferSize(sock); currentRecvBufferSize != bufferSize) {
         bufferSize = currentRecvBufferSize;
         if (bufferSize <= 0 || bufferSize > MAX_SOCKET_BUFFER_SIZE) {
-            NETSTACK_LOGE("buffer size is out of range, size: %{public}d", bufferSize);
+            NETSTACK_LOGD("buffer size is out of range, size: %{public}d", bufferSize);
             bufferSize = DEFAULT_BUFFER_SIZE;
         }
         buf.reset(new (std::nothrow) char[bufferSize]);
@@ -963,7 +963,7 @@ bool ExecBind(BindContext *context)
         }
         NETSTACK_LOGI("rebind success");
     }
-    NETSTACK_LOGI("bind success");
+    NETSTACK_LOGI("bind success, sock:%{public}d", context->GetSocketFd());
 
     return true;
 }
@@ -1071,7 +1071,7 @@ bool ExecConnect(ConnectContext *context)
         ERROR_RETURN(context, "connect errno %{public}d", errno);
     }
 
-    NETSTACK_LOGI("connect success");
+    NETSTACK_LOGI("connect success, sock:%{public}d", context->GetSocketFd());
     std::thread serviceThread(PollRecvData, context->GetSocketFd(), nullptr, 0,
                               TcpMessageCallback(context->GetManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
