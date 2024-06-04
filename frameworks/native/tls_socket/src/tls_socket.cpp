@@ -1247,7 +1247,7 @@ bool TLSSocket::TLSSocketInternal::Close()
 {
     std::lock_guard<std::mutex> lock(mutexForSsl_);
     if (!ssl_) {
-        NETSTACK_LOGE("ssl is null");
+        NETSTACK_LOGE("ssl is null, fd =%{public}d", socketDescriptor_);
         return false;
     }
     int result = SSL_shutdown(ssl_);
@@ -1256,7 +1256,7 @@ bool TLSSocket::TLSSocketInternal::Close()
         NETSTACK_LOGE("Error in shutdown, errno is %{public}d, error info is %{public}s", resErr,
                       MakeSSLErrorString(resErr).c_str());
     }
-    NETSTACK_LOGI("tls socket close");
+    NETSTACK_LOGI("tls socket close, fd =%{public}d", socketDescriptor_);
     SSL_free(ssl_);
     ssl_ = nullptr;
     close(socketDescriptor_);
