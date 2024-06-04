@@ -25,7 +25,8 @@ napi_value WebSocketModule::InitWebSocketModule(napi_env env, napi_value exports
 {
     DefineWebSocketClass(env, exports);
     InitWebSocketProperties(env, exports);
-
+    NapiUtils::SetEnvValid(env);
+    napi_add_env_cleanup_hook(env, NapiUtils::HookForEnvCleanup, env);
     return exports;
 }
 

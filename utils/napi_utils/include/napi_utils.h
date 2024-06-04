@@ -161,6 +161,10 @@ napi_value GetValueFromGlobal(napi_env env, const std::string &className);
 void CreateUvQueueWorkByModuleId(napi_env env, const UvHandler &handler, uint64_t id);
 
 uint64_t CreateUvHandlerQueue(napi_env env);
+
+void HookForEnvCleanup(void *data);
+void SetEnvValid(napi_env env);
+bool IsEnvValid(napi_env env);
 } // namespace OHOS::NetStack::NapiUtils
 
 #endif /* COMMUNICATIONNETSTACK_NETSTACK_NAPI_UTILS_H */

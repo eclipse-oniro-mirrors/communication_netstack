@@ -416,7 +416,8 @@ napi_value SocketModuleExports::InitSocketModule(napi_env env, napi_value export
     DefineLocalSocketClass(env, exports);
     DefineLocalSocketServerClass(env, exports);
     InitSocketProperties(env, exports);
-
+    NapiUtils::SetEnvValid(env);
+    napi_add_env_cleanup_hook(env, NapiUtils::HookForEnvCleanup, env);
     return exports;
 }
 
