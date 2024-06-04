@@ -264,7 +264,8 @@ bool IsRegexValid(const std::string &regex)
     return regex_match(regex, std::regex("^[a-zA-Z0-9\\-_\\.*]+$"));
 }
 
-std::string GetProtocolFromURL(const std::string &url) {
+std::string GetProtocolFromURL(const std::string &url)
+{
     std::string delimiter = "://";
     size_t pos = url.find(delimiter);
     if (pos != std::string::npos) {
@@ -273,11 +274,13 @@ std::string GetProtocolFromURL(const std::string &url) {
     return "";
 }
 
-std::string GetPortFromURL(const std::string &url) {
+std::string GetPortFromURL(const std::string &url)
+{
     std::string delimiter = "://";
     std::string protocol = GetProtocolFromURL(url);
     std::string hostname = GetHostnameFromURL(url);
-    size_t posStart = url.find(':', protocol.size() + delimiter.size() + hostname.size());
+    size_t start = protocol.empty() ? hostname.size() : protocol.size() + delimiter.size() + hostname.size();
+    size_t posStart = url.find(':', start);
     if (posStart == std::string::npos) {
         if (protocol == HTTPS_PROTOCOL) {
             return HTTPS_DEFAULT_PORT;
@@ -287,8 +290,7 @@ std::string GetPortFromURL(const std::string &url) {
         }
         return "";
     }
-    size_t posEnd = std::min({url.find('/', protocol.size() + delimiter.size() + hostname.size()),
-                              url.find('?', protocol.size() + delimiter.size() + hostname.size())});
+    size_t posEnd = std::min({url.find('/', start), url.find('?', start)});
     if (posEnd == std::string::npos) {
         return url.substr(posStart + 1);
     }
