@@ -689,10 +689,11 @@ napi_value GetGlobal(napi_env env)
 
 uint64_t CreateUvHandlerQueue(napi_env env)
 {
+    static std::atomic<uint64_t> id = 1; // start from 1
+    uint64_t newId = 0;
     {
         std::lock_guard<std::mutex> lock(g_mutexForModuleId);
-        static std::atomic<uint64_t> id = 1; // start from 1
-        auto newId = id.load();
+        newId = id.load();
         ++id;
     }
     NETSTACK_LOGI("CreateUvHandlerQueue newId = %{public}s, id = %{public}s",
