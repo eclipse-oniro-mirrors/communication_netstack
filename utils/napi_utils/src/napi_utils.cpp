@@ -45,6 +45,7 @@ static constexpr const char *CODE = "code";
 static constexpr const char *MSG = "message";
 
 static std::mutex g_mutex;
+static std::mutex g_mutexForModuleId;
 static std::unordered_map<uint64_t, std::shared_ptr<UvHandlerQueue>> g_handlerQueueMap;
 static const char *const HTTP_UV_SYNC_QUEUE_NAME = "HTTP_UV_SYNC_QUEUE_NAME";
 
@@ -689,8 +690,14 @@ napi_value GetGlobal(napi_env env)
 uint64_t CreateUvHandlerQueue(napi_env env)
 {
     static std::atomic<uint64_t> id = 1; // start from 1
-    auto newId = id.load();
-    ++id;
+    uint64_t newId = 0;
+    {
+        std::lock_guard<std::mutex> lock(g_mutexForModuleId);
+        newId = id.load();
+        ++id;
+    }
+    NETSTACK_LOGI("CreateUvHandlerQueue newId = %{public}s, id = %{public}s",
+                  std::to_string(newId).c_str(), std::to_string(id).c_str());
 
     auto global = GetGlobal(env);
     auto queueWrapper = CreateObject(env);
