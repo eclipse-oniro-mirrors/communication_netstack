@@ -688,9 +688,12 @@ napi_value GetGlobal(napi_env env)
 
 uint64_t CreateUvHandlerQueue(napi_env env)
 {
-    static std::atomic<uint64_t> id = 1; // start from 1
-    auto newId = id.load();
-    ++id;
+    {
+        std::lock_guard lock(g_mutex);
+        static std::atomic<uint64_t> id = 1; // start from 1
+        auto newId = id.load();
+        ++id;
+    }
 
     auto global = GetGlobal(env);
     auto queueWrapper = CreateObject(env);
