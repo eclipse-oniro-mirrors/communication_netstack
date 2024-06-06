@@ -254,7 +254,7 @@ bool WebSocketExec::ParseUrl(ConnectContext *context, char *protocol, size_t pro
                              size_t addressLen, char *path, size_t pathLen, int *port)
 {
     char uri[MAX_URI_LENGTH] = {0};
-    if (strcpy_s(uri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
+    if (strcpy_s(uri, MAX_URI_LENGTH, AddSlashBeforeQuery(context->url.c_str()).c_str()) < 0) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
@@ -581,6 +581,21 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
 int WebSocketExec::LwsCallbackWsiDestroy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     NETSTACK_LOGD("lws callback wsi destroy");
+    auto manager = reinterpret_cast<EventManager *>(user);
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is null");
+        return RaiseError(manager);
+    }
+    if (!EventManager::IsManagerValid(manager)) {
+        NETSTACK_LOGE("manager is invalid");
+        return -1;
+    }
+    auto userData = reinterpret_cast<UserData *>(manager->GetData());
+    if (userData == nullptr) {
+        NETSTACK_LOGE("user data is null");
+        return RaiseError(manager);
+    }
+    userData->SetLws(nullptr);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -629,10 +644,10 @@ void WebSocketExec::FillContextInfo(ConnectContext *context, lws_context_creatio
     int32_t tempPort = 0;
 
     std::string host;
-    int32_t port = 0;
+    uint32_t port = 0;
     std::string exclusions;
 
-    if (strcpy_s(tempUri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
+    if (strcpy_s(tempUri, MAX_URI_LENGTH, AddSlashBeforeQuery(context->url.c_str()).c_str()) < 0) {
         NETSTACK_LOGE("strcpy_s failed");
         return;
     }
@@ -1084,7 +1099,7 @@ void WebSocketExec::OnHeaderReceive(EventManager *manager, const std::map<std::s
     manager->EmitByUv(EventName::EVENT_HEADER_RECEIVE, para, CallbackTemplate<CreateResponseHeader>);
 }
 
-void WebSocketExec::GetWebsocketProxyInfo(ConnectContext *context, std::string &host, int32_t &port,
+void WebSocketExec::GetWebsocketProxyInfo(ConnectContext *context, std::string &host, uint32_t &port,
                                           std::string &exclusions)
 {
     if (context->GetUsingWebsocketProxyType() == WebsocketProxyType::USE_SYSTEM) {
@@ -1099,5 +1114,14 @@ void WebSocketExec::GetWebsocketProxyInfo(ConnectContext *context, std::string &
     } else if (context->GetUsingWebsocketProxyType() == WebsocketProxyType::USE_SPECIFIED) {
         context->GetSpecifiedWebsocketProxy(host, port, exclusions);
     }
+}
+
+std::string WebSocketExec::AddSlashBeforeQuery(std::string url)
+{
+    size_t queryStart = url.find('?');
+    if (queryStart != std::string::npos && url.at(queryStart - 1) != '/') {
+        url.insert(queryStart, 1, '/');
+    }
+    return url;
 }
 } // namespace OHOS::NetStack::Websocket

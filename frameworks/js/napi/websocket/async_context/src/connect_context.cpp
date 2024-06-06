@@ -284,7 +284,7 @@ void ConnectContext::SetSpecifiedWebsocketProxy(const std::string &host, int32_t
     websocketProxyExclusions_ = exclusionList;
 }
 
-void ConnectContext::GetSpecifiedWebsocketProxy(std::string &host, int32_t &port, std::string &exclusionList) const
+void ConnectContext::GetSpecifiedWebsocketProxy(std::string &host, uint32_t &port, std::string &exclusionList) const
 {
     host = websocketProxyHost_;
     port = websocketProxyPort_;
