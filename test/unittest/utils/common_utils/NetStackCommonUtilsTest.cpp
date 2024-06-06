@@ -281,33 +281,81 @@ HWTEST_F(NetStackCommonUtilsTest, CommonUtils32, TestSize.Level2)
     EXPECT_FALSE(ret);
 }
 
-HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolFromURLTest001, TestSize.Level2)
+HWTEST_F(NetStackCommonUtilsTest, GetProtocolFromURLTest001, TestSize.Level2)
 {
-    std::string hostname = GetHostnameWithProtocolFromURL("https:////www.example.com?data_string");
-    EXPECT_STREQ(hostname.c_str(), "https://www.example.com");
+    std::string protocol = GetProtocolFromURL("https:////www.example.com?data_string");
+    EXPECT_STREQ(protocol.c_str(), "https");
 }
 
-HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolFromURLTest002, TestSize.Level2)
+HWTEST_F(NetStackCommonUtilsTest, GetProtocolFromURLTest002, TestSize.Level2)
 {
-    std::string hostname = GetHostnameWithProtocolFromURL("https://");
+    std::string protocol = GetProtocolFromURL("ws:////www.example.com?data_string");
+    EXPECT_STREQ(protocol.c_str(), "ws");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetProtocolFromURLTest003, TestSize.Level2)
+{
+    std::string protocol = GetProtocolFromURL("www.example.com?data_string");
+    EXPECT_STREQ(protocol.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest001, TestSize.Level2)
+{
+    std::string port = GetPortFromURL("https://www.example.com?data_string");
+    EXPECT_STREQ(port.c_str(), "443");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest002, TestSize.Level2)
+{
+    std::string port = GetPortFromURL("http://www.example.com?data_string");
+    EXPECT_STREQ(port.c_str(), "80");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest003, TestSize.Level2)
+{
+    std::string port = GetPortFromURL("https://www.example.com:9984?data_string");
+    EXPECT_STREQ(port.c_str(), "9984");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest004, TestSize.Level2)
+{
+    std::string port = GetPortFromURL("www.example.com:9984?data_string");
+    EXPECT_STREQ(port.c_str(), "9984");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest005, TestSize.Level2)
+{
+    std::string port = GetPortFromURL("www.example.com?data_string");
+    EXPECT_STREQ(port.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolAndPortFromURLTest001, TestSize.Level2)
+{
+    std::string hostname = GetHostnameWithProtocolAndPortFromURL("https:////www.example.com?data_string");
+    EXPECT_STREQ(hostname.c_str(), "https://www.example.com:443");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolAndPortFromURLTest002, TestSize.Level2)
+{
+    std::string hostname = GetHostnameWithProtocolAndPortFromURL("https://");
     EXPECT_STREQ(hostname.c_str(), "");
 }
 
-HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolFromURLTest003, TestSize.Level2)
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolAndPortFromURLTest003, TestSize.Level2)
 {
-    std::string hostname = GetHostnameWithProtocolFromURL("https://www.example.com/for/test");
-    EXPECT_STREQ(hostname.c_str(), "https://www.example.com");
+    std::string hostname = GetHostnameWithProtocolAndPortFromURL("http://www.example.com/for/test");
+    EXPECT_STREQ(hostname.c_str(), "http://www.example.com:80");
 }
 
-HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolFromURLTest004, TestSize.Level2)
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolAndPortFromURLTest004, TestSize.Level2)
 {
-    std::string hostname = GetHostnameWithProtocolFromURL("www.example.com/for/test");
+    std::string hostname = GetHostnameWithProtocolAndPortFromURL("www.example.com/for/test");
     EXPECT_STREQ(hostname.c_str(), "www.example.com");
 }
 
-HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolFromURLTest005, TestSize.Level2)
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolAndPortFromURLTest005, TestSize.Level2)
 {
-    std::string hostname = GetHostnameWithProtocolFromURL("ws://www.example.com/for/test");
+    std::string hostname = GetHostnameWithProtocolAndPortFromURL("ws://www.example.com/for/test");
     EXPECT_STREQ(hostname.c_str(), "ws://www.example.com");
 }
 
