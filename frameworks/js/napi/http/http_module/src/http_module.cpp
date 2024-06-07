@@ -53,6 +53,8 @@ napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
     DefineHttpResponseCacheClass(env, exports);
     InitHttpProperties(env, exports);
     g_moduleId = NapiUtils::CreateUvHandlerQueue(env);
+    NapiUtils::SetEnvValid(env);
+    napi_add_env_cleanup_hook(env, NapiUtils::HookForEnvCleanup, env);
     return exports;
 }
 
