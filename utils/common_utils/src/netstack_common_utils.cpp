@@ -49,6 +49,10 @@ const std::regex IP_MASK_PATTERN{
     "(3[0-2]|[1-2]\\d|\\d)"};
 const std::regex IPV6_PATTERN{"([\\da-fA-F]{0,4}:){2,7}([\\da-fA-F]{0,4})"};
 const std::regex IPV6_MASK_PATTERN{"([\\da-fA-F]{0,4}:){2,7}([\\da-fA-F]{0,4})/(1[0-2][0-8]|[1-9]\\d|[1-9])"};
+const std::string HTTPS_PROTOCOL = "https";
+const std::string HTTP_PROTOCOL = "http";
+const std::string HTTPS_DEFAULT_PORT = "443";
+const std::string HTTP_DEFAULT_PORT = "80";
 std::mutex g_commonUtilsMutex;
 
 std::vector<std::string> Split(const std::string &str, const std::string &sep)
@@ -176,7 +180,7 @@ bool IsAllowedHostname(const std::string &bundleName, const std::string &url)
         NETSTACK_LOGE("isAllowedHostnameForAtomicService bundleName is empty");
         return true;
     }
-    auto hostname = GetHostnameWithProtocolFromURL(url);
+    auto hostname = GetHostnameWithProtocolAndPortFromURL(url);
     if (hostname.empty()) {
         NETSTACK_LOGE("isAllowedHostnameForAtomicService url hostname is empty");
         return true;
@@ -260,6 +264,39 @@ bool IsRegexValid(const std::string &regex)
     return regex_match(regex, std::regex("^[a-zA-Z0-9\\-_\\.*]+$"));
 }
 
+std::string GetProtocolFromURL(const std::string &url)
+{
+    std::string delimiter = "://";
+    size_t pos = url.find(delimiter);
+    if (pos != std::string::npos) {
+        return url.substr(0, pos);
+    }
+    return "";
+}
+
+std::string GetPortFromURL(const std::string &url)
+{
+    std::string delimiter = "://";
+    std::string protocol = GetProtocolFromURL(url);
+    std::string hostname = GetHostnameFromURL(url);
+    size_t start = protocol.empty() ? hostname.size() : protocol.size() + delimiter.size() + hostname.size();
+    size_t posStart = url.find(':', start);
+    if (posStart == std::string::npos) {
+        if (protocol == HTTPS_PROTOCOL) {
+            return HTTPS_DEFAULT_PORT;
+        }
+        if (protocol == HTTP_PROTOCOL) {
+            return HTTP_DEFAULT_PORT;
+        }
+        return "";
+    }
+    size_t posEnd = std::min({url.find('/', start), url.find('?', start)});
+    if (posEnd == std::string::npos) {
+        return url.substr(posStart + 1);
+    }
+    return url.substr(posStart + 1, posEnd - posStart - 1);
+}
+
 std::string GetHostnameFromURL(const std::string &url)
 {
     if (url.empty()) {
@@ -286,14 +323,19 @@ std::string GetHostnameFromURL(const std::string &url)
     return tempUrl.substr(posStart);
 }
 
-std::string GetHostnameWithProtocolFromURL(const std::string& url)
+std::string GetHostnameWithProtocolAndPortFromURL(const std::string& url)
 {
+    std::string delimiter = "://";
+    std::string portDelimiter = ":";
     auto hostname = GetHostnameFromURL(url);
     if (!hostname.empty()) {
-        std::string delimiter = "://";
-        size_t pos = url.find(delimiter);
-        if (pos != std::string::npos) {
-            hostname = url.substr(0, pos + delimiter.length()) + hostname;
+        std::string protocol = GetProtocolFromURL(url);
+        if (!protocol.empty()) {
+            hostname = protocol + delimiter + hostname;
+        }
+        std::string port = GetPortFromURL(url);
+        if (!port.empty()) {
+            hostname += portDelimiter + port;
         }
     }
     return hostname;

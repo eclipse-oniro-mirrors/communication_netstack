@@ -52,6 +52,8 @@ const char *const HttpConstant::PARAM_KEY_DOH_URL = "dnsOverHttps";
 const char *const HttpConstant::PARAM_KEY_CLIENT_CERT = "clientCert";
 const char *const HttpConstant::PARAM_KEY_MULTI_FORM_DATA_LIST = "multiFormDataList";
 
+const char *const HttpConstant::PARAM_KEY_CERTIFICATE_PINNING = "certificatePinning";
+
 const char *const HttpConstant::HTTP_PROXY_KEY_HOST = "host";
 const char *const HttpConstant::HTTP_PROXY_KEY_PORT = "port";
 const char *const HttpConstant::HTTP_PROXY_KEY_EXCLUSION_LIST = "exclusionList";
@@ -60,6 +62,9 @@ const char *const HttpConstant::HTTP_CLIENT_CERT = "certPath";
 const char *const HttpConstant::HTTP_CLIENT_KEY = "keyPath";
 const char *const HttpConstant::HTTP_CLIENT_CERT_TYPE = "certType";
 const char *const HttpConstant::HTTP_CLIENT_KEY_PASSWD = "keyPassword";
+
+const char *const HttpConstant::HTTP_PUBLIC_KEY_HASH = "publicKeyHash";
+const char *const HttpConstant::HTTP_HASH_ALGORITHM = "hashAlgorithm";
 
 const char *const HttpConstant::HTTP_CERT_TYPE_PEM = "PEM";
 const char *const HttpConstant::HTTP_CERT_TYPE_DER = "DER";
@@ -90,13 +95,6 @@ const char *const HttpConstant::HTTP_LINE_SEPARATOR = "\r\n";
 const char *const HttpConstant::HTTP_RESPONSE_HEADER_SEPARATOR = "\r\n\r\n";
 
 const char *const HttpConstant::HTTP_DEFAULT_USER_AGENT = "libcurl-agent/1.0";
-#ifndef WINDOWS_PLATFORM
-#ifdef MAC_PLATFORM
-const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/cert.pem";
-#else
-const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/certs/cacert.pem";
-#endif // MAC_PLATFORM
-#endif // WINDOWS_PLATFORM
 
 const char *const HttpConstant::HTTP_PREPARE_CA_PATH = "/etc/security/certificates";
 const char *const HttpConstant::HTTP_CONTENT_TYPE = "content-type";

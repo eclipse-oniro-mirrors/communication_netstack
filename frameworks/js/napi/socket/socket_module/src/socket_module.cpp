@@ -45,6 +45,7 @@
 #include "node_api.h"
 #include "socket_async_work.h"
 #include "socket_exec.h"
+#include "socket_exec_common.h"
 #include "tcp_extra_context.h"
 #include "tcp_send_context.h"
 #include "tcp_server_common_context.h"
@@ -205,7 +206,7 @@ static bool MakeTcpClientBindSocket(napi_env env, napi_value thisVal, BindContex
         NETSTACK_LOGE("tcp connect has been called");
         return true;
     }
-    int sock = SocketExec::MakeTcpSocket(context->address_.GetSaFamily());
+    int sock = ExecCommonUtils::MakeTcpSocket(context->address_.GetSaFamily());
     if (!SetSocket(env, thisVal, context, sock)) {
         return false;
     }
@@ -228,7 +229,7 @@ static bool MakeTcpClientConnectSocket(napi_env env, napi_value thisVal, Connect
         NETSTACK_LOGD("tcp bind has been called");
         return true;
     }
-    int sock = SocketExec::MakeTcpSocket(context->options.address.GetSaFamily());
+    int sock = ExecCommonUtils::MakeTcpSocket(context->options.address.GetSaFamily());
     if (!SetSocket(env, thisVal, context, sock)) {
         return false;
     }
@@ -246,7 +247,7 @@ static bool MakeTcpServerSocket(napi_env env, napi_value thisVal, TcpServerListe
         context->SetPermissionDenied(true);
         return false;
     }
-    int sock = SocketExec::MakeTcpSocket(context->address_.GetSaFamily(), false);
+    int sock = ExecCommonUtils::MakeTcpSocket(context->address_.GetSaFamily(), false);
     if (sock <= 0) {
         return false;
     }
@@ -271,7 +272,7 @@ static bool MakeUdpSocket(napi_env env, napi_value thisVal, BindContext *context
         context->SetPermissionDenied(true);
         return false;
     }
-    int sock = SocketExec::MakeUdpSocket(context->address_.GetSaFamily());
+    int sock = ExecCommonUtils::MakeUdpSocket(context->address_.GetSaFamily());
     if (!SetSocket(env, thisVal, context, sock)) {
         return false;
     }
@@ -293,7 +294,7 @@ static bool MakeMulticastUdpSocket(napi_env env, napi_value thisVal, MulticastMe
         context->SetErrorCode(PARSE_ERROR_CODE);
         return false;
     }
-    int sock = SocketExec::MakeUdpSocket(context->address_.GetSaFamily());
+    int sock = ExecCommonUtils::MakeUdpSocket(context->address_.GetSaFamily());
     if (!SetSocket(env, thisVal, context, sock)) {
         return false;
     }
@@ -332,7 +333,7 @@ static bool MakeLocalSocketBind(napi_env env, napi_value thisVal, LocalSocketBin
         NETSTACK_LOGI("socket exist: %{public}d", context->GetSocketFd());
         return false;
     }
-    int sock = LocalSocketExec::MakeLocalSocket(SOCK_STREAM);
+    int sock = ExecCommonUtils::MakeLocalSocket(SOCK_STREAM);
     if (sock < 0) {
         return false;
     }
@@ -356,7 +357,7 @@ static bool MakeLocalSocketConnect(napi_env env, napi_value thisVal, LocalSocket
         NETSTACK_LOGI("socket exist: %{public}d", context->GetSocketFd());
         return false;
     }
-    int sock = LocalSocketExec::MakeLocalSocket(SOCK_STREAM, false);
+    int sock = ExecCommonUtils::MakeLocalSocket(SOCK_STREAM, false);
     if (sock < 0) {
         return false;
     }
@@ -380,7 +381,7 @@ static bool MakeLocalServerSocket(napi_env env, napi_value thisVal, LocalSocketS
         NETSTACK_LOGI("socket exist: %{public}d", sock);
         return false;
     }
-    int sock = LocalSocketExec::MakeLocalSocket(SOCK_STREAM);
+    int sock = ExecCommonUtils::MakeLocalSocket(SOCK_STREAM);
     if (sock < 0) {
         return false;
     }
@@ -415,7 +416,8 @@ napi_value SocketModuleExports::InitSocketModule(napi_env env, napi_value export
     DefineLocalSocketClass(env, exports);
     DefineLocalSocketServerClass(env, exports);
     InitSocketProperties(env, exports);
-
+    NapiUtils::SetEnvValid(env);
+    napi_add_env_cleanup_hook(env, NapiUtils::HookForEnvCleanup, env);
     return exports;
 }
 

@@ -121,7 +121,7 @@ HWTEST_F(WebSocketTest, WebSocketTest008, TestSize.Level1)
     std::string exclusions = "www.httpbin.org";
     context.SetSpecifiedWebsocketProxy(host, port, exclusions);
     std::string getHost;
-    int32_t getPort;
+    uint32_t getPort;
     std::string getExclusions;
     context.GetSpecifiedWebsocketProxy(getHost, getPort, getExclusions);
     bool ret = WebSocketExec::ExecConnect(&context);

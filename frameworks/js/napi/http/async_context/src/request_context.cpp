@@ -19,6 +19,7 @@
 #include <atomic>
 #include <limits>
 #include <utility>
+#include <sstream>
 
 #include "constant.h"
 #include "http_exec.h"
@@ -436,6 +437,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParseResumeFromToNumber(optionsValue);
     ParseDnsServers(optionsValue);
     ParseMultiFormData(optionsValue);
+    ParseCertificatePinning(optionsValue);
     SetParseOK(true);
 }
 
@@ -553,8 +555,8 @@ void RequestContext::SetCertsPath(std::vector<std::string> &&certPathList, const
     certsPath_.certPathList = std::move(certPathList);
     certsPath_.certFile = certFile;
 }
- 
-const CertsPath& RequestContext::GetCertsPath()
+
+const CertsPath &RequestContext::GetCertsPath()
 {
     return certsPath_;
 }
@@ -685,7 +687,7 @@ void RequestContext::SetPerformanceTimingToResult(napi_value result)
     napi_value performanceTimingValue;
     napi_env env = GetEnv();
     napi_create_object(env, &performanceTimingValue);
-    for (const auto& pair : performanceTimingMap_) {
+    for (const auto &pair : performanceTimingMap_) {
         NapiUtils::SetDoubleProperty(env, performanceTimingValue, pair.first, pair.second);
     }
     NapiUtils::SetNamedProperty(env, result, HttpConstant::RESPONSE_PERFORMANCE_TIMING, performanceTimingValue);
@@ -721,7 +723,7 @@ void RequestContext::ParseMultiFormData(napi_value optionsValue)
     napi_value multiFormDataListValue =
         NapiUtils::GetNamedProperty(env, optionsValue, HttpConstant::PARAM_KEY_MULTI_FORM_DATA_LIST);
     if (NapiUtils::GetValueType(env, multiFormDataListValue) != napi_object) {
-        NETSTACK_LOGD("ParseMultiFormData multiFormDataList type is not object.");
+        NETSTACK_LOGE("ParseMultiFormData multiFormDataList type is not object.");
         return;
     }
     uint32_t dataLength = NapiUtils::GetArrayLength(env, multiFormDataListValue);
@@ -752,6 +754,21 @@ MultiFormData RequestContext::NapiValue2FormData(napi_value formDataValue)
     return multiFormData;
 }
 
+CertificatePinning RequestContext::NapiValue2CertPinning(napi_value certPIN)
+{
+    napi_env env = GetEnv();
+    CertificatePinning singleCertPIN;
+    auto algorithm = NapiUtils::GetStringPropertyUtf8(env, certPIN, HttpConstant::HTTP_HASH_ALGORITHM);
+    if (algorithm == "SHA-256") {
+        singleCertPIN.hashAlgorithm = HashAlgorithm::SHA256;
+    } else {
+        singleCertPIN.hashAlgorithm = HashAlgorithm::INVALID;
+    }
+
+    singleCertPIN.publicKeyHash = NapiUtils::GetStringPropertyUtf8(env, certPIN, HttpConstant::HTTP_PUBLIC_KEY_HASH);
+    return singleCertPIN;
+}
+
 void RequestContext::SaveFormData(napi_env env, napi_value dataValue, MultiFormData &multiFormData)
 {
     napi_valuetype type = NapiUtils::GetValueType(env, dataValue);
@@ -767,11 +784,44 @@ void RequestContext::SaveFormData(napi_env env, napi_value dataValue, MultiFormD
         multiFormData.data = std::string(static_cast<const char *>(data), length);
         NETSTACK_LOGD("SaveFormData ArrayBuffer");
     } else if (type == napi_object) {
-        multiFormData.data = NapiUtils::GetStringFromValueUtf8(
-            GetEnv(), NapiUtils::JsonStringify(GetEnv(), dataValue));
+        multiFormData.data = NapiUtils::GetStringFromValueUtf8(GetEnv(), NapiUtils::JsonStringify(GetEnv(), dataValue));
         NETSTACK_LOGD("SaveFormData Object");
     } else {
         NETSTACK_LOGD("only support string, ArrayBuffer and Object");
+    }
+}
+
+void RequestContext::ParseCertificatePinning(napi_value optionsValue)
+{
+    auto env = GetEnv();
+    if (!NapiUtils::HasNamedProperty(env, optionsValue, HttpConstant::PARAM_KEY_CERTIFICATE_PINNING)) {
+        NETSTACK_LOGD("NO CertificatePinning option");
+        return;
+    }
+    napi_value certificatePin =
+        NapiUtils::GetNamedProperty(env, optionsValue, HttpConstant::PARAM_KEY_CERTIFICATE_PINNING);
+    std::stringstream certPinBuilder;
+
+    if (NapiUtils::IsArray(env, certificatePin)) {
+        auto arrayLen = NapiUtils::GetArrayLength(env, certificatePin);
+        for (uint32_t i = 0; i < arrayLen; i++) {
+            napi_value certPIN = NapiUtils::GetArrayElement(env, certificatePin, i);
+            CertificatePinning singleCertPIN = NapiValue2CertPinning(certPIN);
+            if (singleCertPIN.hashAlgorithm == HashAlgorithm::SHA256) {
+                certPinBuilder << "sha256//" << singleCertPIN.publicKeyHash << ';';
+            }
+        }
+    } else {
+        CertificatePinning singleCertPIN = NapiValue2CertPinning(certificatePin);
+        if (singleCertPIN.hashAlgorithm == HashAlgorithm::SHA256) {
+            certPinBuilder << "sha256//" << singleCertPIN.publicKeyHash << ';';
+        }
+    }
+
+    std::string pinRes = certPinBuilder.str();
+    if (!pinRes.empty()) {
+        pinRes.pop_back();
+        options.SetCertificatePinning(pinRes);
     }
 }
 

@@ -203,6 +203,7 @@ bool TLSSocketExec::ExecClose(TLSNapiContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    std::lock_guard<std::recursive_mutex> lock(manager->GetDataMutex());
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecClose tlsSocket is null");
@@ -267,13 +268,12 @@ bool TLSSocketExec::ExecGetState(TLSGetStateContext *context)
     auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
-        context->state_.SetIsClose(true);
-        return true;
+        context->SetError(TLS_ERR_SYS_EINVAL, MakeErrorMessage(TLS_ERR_SYS_EINVAL));
+        return false;
     }
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecGetState tlsSocket is null");
-        context->state_.SetIsClose(true);
         return true;
     }
     tlsSocket->GetState([&context](int32_t errorNumber, const Socket::SocketStateBase state) {

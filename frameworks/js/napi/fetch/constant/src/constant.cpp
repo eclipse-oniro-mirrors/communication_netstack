@@ -45,7 +45,7 @@ const char *const FetchConstant::HTTP_HEADER_SEPARATOR = ":";
 const char *const FetchConstant::HTTP_LINE_SEPARATOR = "\r\n";
 
 const char *const FetchConstant::HTTP_DEFAULT_USER_AGENT = "libcurl-agent/1.0";
-const char *const FetchConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/certs/cacert.pem";
+const char *const FetchConstant::HTTP_PREPARE_CA_PATH = "/etc/security/certificates";
 
 const char *const FetchConstant::HTTP_CONTENT_TYPE = "content-type";
 const char *const FetchConstant::HTTP_CONTENT_TYPE_URL_ENCODE = "application/x-www-form-urlencoded";

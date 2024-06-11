@@ -155,6 +155,7 @@ public:
     static const char *const PARAM_KEY_USING_HTTP_PROXY;
     static const char *const PARAM_KEY_CLIENT_CERT;
     static const char *const PARAM_KEY_MULTI_FORM_DATA_LIST;
+    static const char *const PARAM_KEY_CERTIFICATE_PINNING;
 
     static const char *const HTTP_PROXY_KEY_HOST;
     static const char *const HTTP_PROXY_KEY_PORT;
@@ -165,6 +166,9 @@ public:
     static const char *const HTTP_CLIENT_CERT_TYPE;
     static const char *const HTTP_CLIENT_KEY;
     static const char *const HTTP_CLIENT_KEY_PASSWD;
+
+    static const char *const HTTP_HASH_ALGORITHM;
+    static const char *const HTTP_PUBLIC_KEY_HASH;
 
     static const char *const HTTP_CERT_TYPE_PEM;
     static const char *const HTTP_CERT_TYPE_DER;
@@ -205,7 +209,6 @@ public:
     static const char *const HTTP_RESPONSE_HEADER_SEPARATOR;
 
     static const char *const HTTP_DEFAULT_USER_AGENT;
-    static const char *const HTTP_DEFAULT_CA_PATH;
     static const char *const HTTP_PREPARE_CA_PATH;
 
     static const char *const HTTP_CONTENT_TYPE;

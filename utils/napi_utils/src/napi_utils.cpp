@@ -45,8 +45,26 @@ static constexpr const char *CODE = "code";
 static constexpr const char *MSG = "message";
 
 static std::mutex g_mutex;
+static std::mutex g_mutexForModuleId;
 static std::unordered_map<uint64_t, std::shared_ptr<UvHandlerQueue>> g_handlerQueueMap;
 static const char *const HTTP_UV_SYNC_QUEUE_NAME = "HTTP_UV_SYNC_QUEUE_NAME";
+
+static std::unordered_set<napi_env> unorderedSetEnv;
+static std::mutex mutexForEnv;
+
+class WorkData {
+public:
+    WorkData() = delete;
+
+    WorkData(napi_env env, void *data, void (*handler)(napi_env env, napi_status status, void *data))
+        : env_(env), data_(data), handler_(handler)
+    {
+    }
+
+    napi_env env_;
+    void *data_;
+    void (*handler_)(napi_env env, napi_status status, void *data);
+};
 
 napi_valuetype GetValueType(napi_env env, napi_value value)
 {
@@ -578,6 +596,10 @@ napi_value JsonParse(napi_env env, const std::string &inStr)
 void CreateUvQueueWork(napi_env env, void *data, void(handler)(uv_work_t *, int status))
 {
     uv_loop_s *loop = nullptr;
+    if (!IsEnvValid(env)) {
+        NETSTACK_LOGE("the env is invalid");
+        return;
+    }
     NAPI_CALL_RETURN_VOID(env, napi_get_uv_event_loop(env, &loop));
 
     auto work = new uv_work_t;
@@ -605,28 +627,42 @@ void CloseScope(napi_env env, napi_handle_scope scope)
     (void)napi_close_handle_scope(env, scope);
 }
 
+static void UvQueueWorkCallback(uv_work_t *work, int status)
+{
+    auto workData = static_cast<WorkData *>(work->data);
+    if (!workData) {
+        delete work;
+        return;
+    }
+
+    if (!workData->env_ || !workData->data_ || !workData->handler_) {
+        delete workData;
+        delete work;
+        return;
+    }
+
+    napi_env env = workData->env_;
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
+
+    workData->handler_(workData->env_, static_cast<napi_status>(status), workData->data_);
+
+    delete workData;
+    delete work;
+};
+
 void CreateUvQueueWorkEnhanced(napi_env env, void *data, void (*handler)(napi_env env, napi_status status, void *data))
 {
     uv_loop_s *loop = nullptr;
+    if (!IsEnvValid(env)) {
+        NETSTACK_LOGE("the env is invalid");
+        return;
+    }
     NAPI_CALL_RETURN_VOID(env, napi_get_uv_event_loop(env, &loop));
 
     if (loop == nullptr) {
         return;
     }
-
-    class WorkData {
-    public:
-        WorkData() = delete;
-
-        WorkData(napi_env env, void *data, void (*handler)(napi_env env, napi_status status, void *data))
-            : env_(env), data_(data), handler_(handler)
-        {
-        }
-
-        napi_env env_;
-        void *data_;
-        void (*handler_)(napi_env env, napi_status status, void *data);
-    };
 
     auto workData = new WorkData(env, data, handler);
 
@@ -636,31 +672,8 @@ void CreateUvQueueWorkEnhanced(napi_env env, void *data, void (*handler)(napi_en
     }
     work->data = reinterpret_cast<void *>(workData);
 
-    auto callback = [](uv_work_t *work, int status) {
-        auto workData = static_cast<WorkData *>(work->data);
-        if (!workData) {
-            delete work;
-            return;
-        }
-
-        if (!workData->env_ || !workData->data_ || !workData->handler_) {
-            delete workData;
-            delete work;
-            return;
-        }
-
-        napi_env env = workData->env_;
-        auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
-        std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
-
-        workData->handler_(workData->env_, static_cast<napi_status>(status), workData->data_);
-
-        delete workData;
-        delete work;
-    };
-
     int ret = uv_queue_work_with_qos(
-        loop, work, [](uv_work_t *) {}, callback, uv_qos_default);
+        loop, work, [](uv_work_t *) {}, UvQueueWorkCallback, uv_qos_default);
     if (ret != 0) {
         NETSTACK_LOGE("uv_queue_work_with_qos error = %{public}d, manual release", ret);
         delete static_cast<WorkData *>(work->data);
@@ -689,8 +702,14 @@ napi_value GetGlobal(napi_env env)
 uint64_t CreateUvHandlerQueue(napi_env env)
 {
     static std::atomic<uint64_t> id = 1; // start from 1
-    auto newId = id.load();
-    ++id;
+    uint64_t newId = 0;
+    {
+        std::lock_guard<std::mutex> lock(g_mutexForModuleId);
+        newId = id.load();
+        ++id;
+    }
+    NETSTACK_LOGI("CreateUvHandlerQueue newId = %{public}s, id = %{public}s",
+                  std::to_string(newId).c_str(), std::to_string(id).c_str());
 
     auto global = GetGlobal(env);
     auto queueWrapper = CreateObject(env);
@@ -765,6 +784,10 @@ static uv_after_work_cb MakeUvCallback()
 void CreateUvQueueWorkByModuleId(napi_env env, const UvHandler &handler, uint64_t id)
 {
     uv_loop_s *loop = nullptr;
+    if (!IsEnvValid(env)) {
+        NETSTACK_LOGE("the env is invalid");
+        return;
+    }
     napi_get_uv_event_loop(env, &loop);
     if (!loop) {
         return;
@@ -800,5 +823,35 @@ void UvHandlerQueue::Push(const UvHandler &handler)
 {
     std::lock_guard lock(mutex);
     push(handler);
+}
+
+void HookForEnvCleanup(void *data)
+{
+    std::lock_guard<std::mutex> lock(mutexForEnv);
+    auto env = static_cast<napi_env>(data);
+    auto pos = unorderedSetEnv.find(env);
+    if (pos == unorderedSetEnv.end()) {
+        NETSTACK_LOGE("The env is not in the unordered set");
+        return;
+    }
+    NETSTACK_LOGD("env clean up, erase from the unordered set");
+    unorderedSetEnv.erase(pos);
+}
+
+void SetEnvValid(napi_env env)
+{
+    std::lock_guard<std::mutex> lock(mutexForEnv);
+    unorderedSetEnv.emplace(env);
+}
+
+bool IsEnvValid(napi_env env)
+{
+    std::lock_guard<std::mutex> lock(mutexForEnv);
+    auto pos = unorderedSetEnv.find(env);
+    if (pos == unorderedSetEnv.end()) {
+        NETSTACK_LOGE("The env is not in the unordered set");
+        return false;
+    }
+    return true;
 }
 } // namespace OHOS::NetStack::NapiUtils

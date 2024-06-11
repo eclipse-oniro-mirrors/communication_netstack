@@ -40,7 +40,8 @@ struct AsyncCallbackInfo {
 napi_value NetSslModuleExports::InitNetSslModule(napi_env env, napi_value exports)
 {
     InitSslProperties(env, exports);
-
+    NapiUtils::SetEnvValid(env);
+    napi_add_env_cleanup_hook(env, NapiUtils::HookForEnvCleanup, env);
     return exports;
 }
 

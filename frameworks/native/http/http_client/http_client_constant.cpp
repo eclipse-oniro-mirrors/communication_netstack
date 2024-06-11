@@ -66,13 +66,6 @@ const char *const HttpConstant::HTTP_HEADER_SEPARATOR = ":";
 const char *const HttpConstant::HTTP_LINE_SEPARATOR = "\r\n";
 
 const char *const HttpConstant::HTTP_DEFAULT_USER_AGENT = "libcurl-agent/1.0";
-#ifndef WINDOWS_PLATFORM
-#ifdef MAC_PLATFORM
-const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/cert.pem";
-#else
-const char *const HttpConstant::HTTP_DEFAULT_CA_PATH = "/etc/ssl/certs/cacert.pem";
-#endif // MAC_PLATFORM
-#endif // WINDOWS_PLATFORM
 
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 const std::string HttpConstant::USER_CERT_BASE_PATH = "/data/certificates/user_cacerts/";

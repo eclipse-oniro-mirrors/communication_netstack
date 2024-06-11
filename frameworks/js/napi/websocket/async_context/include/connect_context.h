@@ -52,7 +52,7 @@ public:
 
     void SetSpecifiedWebsocketProxy(const std::string &host, int32_t port, const std::string &exclusionList);
 
-    void GetSpecifiedWebsocketProxy(std::string &host, int32_t &port, std::string &exclusionList) const;
+    void GetSpecifiedWebsocketProxy(std::string &host, uint32_t &port, std::string &exclusionList) const;
 
     [[nodiscard]] int32_t GetErrorCode() const override;
 

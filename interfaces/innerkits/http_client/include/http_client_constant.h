@@ -76,7 +76,6 @@ public:
     static const char *const HTTP_LINE_SEPARATOR;
 
     static const char *const HTTP_DEFAULT_USER_AGENT;
-    static const char *const HTTP_DEFAULT_CA_PATH;
 
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
     static const std::string USER_CERT_BASE_PATH;

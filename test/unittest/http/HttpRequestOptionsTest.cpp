@@ -47,7 +47,7 @@ HWTEST_F(HttpRequestOptionsTest, CaPathTest001, TestSize.Level1)
     HttpRequestOptions requestOptions;
 
     string path = requestOptions.GetCaPath();
-    EXPECT_EQ(path, HttpConstant::HTTP_DEFAULT_CA_PATH);
+    EXPECT_EQ(path, "");
 }
 
 HWTEST_F(HttpRequestOptionsTest, CaPathTest002, TestSize.Level1)
@@ -56,7 +56,7 @@ HWTEST_F(HttpRequestOptionsTest, CaPathTest002, TestSize.Level1)
 
     requestOptions.SetCaPath("");
     string path = requestOptions.GetCaPath();
-    EXPECT_EQ(path, HttpConstant::HTTP_DEFAULT_CA_PATH);
+    EXPECT_EQ(path, "");
 }
 
 HWTEST_F(HttpRequestOptionsTest, CaPathTest003, TestSize.Level1)
@@ -313,6 +313,15 @@ HWTEST_F(HttpRequestOptionsTest, SetBodyTest, TestSize.Level1)
     requestOptions.SetBody(testValue.data(), testValue.size());
     std::string resultValue = requestOptions.GetBody();
     EXPECT_EQ(resultValue, testValue);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetCertificatePinningTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+    std::string testPIN = "sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3tvRMwE=;sha256//t62CeU2tQiqkexU74Gxa2eg7fRbEg";
+    requestOptions.SetCertificatePinning(testPIN);
+    std::string resultPIN = requestOptions.GetCertificatePinning();
+    EXPECT_EQ(testPIN, resultPIN);
 }
 
 HWTEST_F(HttpRequestOptionsTest, TlvEncodeDecodeTest001, TestSize.Level1)

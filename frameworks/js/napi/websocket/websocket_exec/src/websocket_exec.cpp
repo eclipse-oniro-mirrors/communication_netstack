@@ -68,8 +68,6 @@ static constexpr const char *EVENT_KEY_MESSAGE = "message";
 
 static constexpr const char *LINK_DOWN = "The link is down";
 
-static constexpr const char *WEBSCOKET_PREPARE_CA_PATH = "/etc/ssl/certs/cacert.pem";
-
 static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
 
 static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
@@ -256,7 +254,7 @@ bool WebSocketExec::ParseUrl(ConnectContext *context, char *protocol, size_t pro
                              size_t addressLen, char *path, size_t pathLen, int *port)
 {
     char uri[MAX_URI_LENGTH] = {0};
-    if (strcpy_s(uri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
+    if (strcpy_s(uri, MAX_URI_LENGTH, AddSlashBeforeQuery(context->url.c_str()).c_str()) < 0) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
@@ -583,6 +581,21 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
 int WebSocketExec::LwsCallbackWsiDestroy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     NETSTACK_LOGD("lws callback wsi destroy");
+    auto manager = reinterpret_cast<EventManager *>(user);
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is null");
+        return RaiseError(manager);
+    }
+    if (!EventManager::IsManagerValid(manager)) {
+        NETSTACK_LOGE("manager is invalid");
+        return -1;
+    }
+    auto userData = reinterpret_cast<UserData *>(manager->GetData());
+    if (userData == nullptr) {
+        NETSTACK_LOGE("user data is null");
+        return RaiseError(manager);
+    }
+    userData->SetLws(nullptr);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -623,7 +636,6 @@ void WebSocketExec::FillContextInfo(ConnectContext *context, lws_context_creatio
     info.port = CONTEXT_PORT_NO_LISTEN;
     info.protocols = LWS_PROTOCOLS;
     info.fd_limit_per_thread = FD_LIMIT_PER_THREAD;
-    info.client_ssl_ca_filepath = WEBSCOKET_PREPARE_CA_PATH;
 
     char tempUri[MAX_URI_LENGTH] = {0};
     const char *tempProtocol = nullptr;
@@ -632,10 +644,10 @@ void WebSocketExec::FillContextInfo(ConnectContext *context, lws_context_creatio
     int32_t tempPort = 0;
 
     std::string host;
-    int32_t port = 0;
+    uint32_t port = 0;
     std::string exclusions;
 
-    if (strcpy_s(tempUri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
+    if (strcpy_s(tempUri, MAX_URI_LENGTH, AddSlashBeforeQuery(context->url.c_str()).c_str()) < 0) {
         NETSTACK_LOGE("strcpy_s failed");
         return;
     }
@@ -722,12 +734,12 @@ bool WebSocketExec::FillCaPath(ConnectContext *context, lws_context_creation_inf
             return false;
         }
         info.client_ssl_ca_filepath = context->caPath_.c_str();
-    }
-    if (context->caPath_.empty()) {
+        NETSTACK_LOGD("load customize CA: %{public}s", info.client_ssl_ca_filepath);
+    } else {
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
         info.client_ssl_ca_dirs[1] = CERTPATH.c_str();
+        NETSTACK_LOGD("load system CA");
     }
-    NETSTACK_LOGD("caPath: %{public}s", info.client_ssl_ca_filepath);
     if (!context->clientCert_.empty()) {
         char realKeyPath[PATH_MAX] = {0};
         if (!CheckFilePath(context->clientCert_) || !realpath(context->clientKey_.Data(), realKeyPath)) {
@@ -1087,7 +1099,7 @@ void WebSocketExec::OnHeaderReceive(EventManager *manager, const std::map<std::s
     manager->EmitByUv(EventName::EVENT_HEADER_RECEIVE, para, CallbackTemplate<CreateResponseHeader>);
 }
 
-void WebSocketExec::GetWebsocketProxyInfo(ConnectContext *context, std::string &host, int32_t &port,
+void WebSocketExec::GetWebsocketProxyInfo(ConnectContext *context, std::string &host, uint32_t &port,
                                           std::string &exclusions)
 {
     if (context->GetUsingWebsocketProxyType() == WebsocketProxyType::USE_SYSTEM) {
@@ -1102,5 +1114,14 @@ void WebSocketExec::GetWebsocketProxyInfo(ConnectContext *context, std::string &
     } else if (context->GetUsingWebsocketProxyType() == WebsocketProxyType::USE_SPECIFIED) {
         context->GetSpecifiedWebsocketProxy(host, port, exclusions);
     }
+}
+
+std::string WebSocketExec::AddSlashBeforeQuery(std::string url)
+{
+    size_t queryStart = url.find('?');
+    if (queryStart != std::string::npos && url.at(queryStart - 1) != '/') {
+        url.insert(queryStart, 1, '/');
+    }
+    return url;
 }
 } // namespace OHOS::NetStack::Websocket
