@@ -36,8 +36,6 @@ namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
 namespace {
-constexpr int WAIT_MS = 10;
-constexpr int TIMEOUT_MS = 10000;
 constexpr int READ_TIMEOUT_MS = 500;
 constexpr int REMOTE_CERT_LEN = 8192;
 constexpr int COMMON_NAME_BUF_SIZE = 256;
@@ -730,31 +728,11 @@ void TLSSocket::Send(const OHOS::NetStack::Socket::TCPSendOptions &tcpSendOption
     CallSendCallback(TLSSOCKET_SUCCESS, callback);
 }
 
-bool WaitConditionWithTimeout(const bool *flag, const int32_t timeoutMs)
-{
-    int maxWaitCnt = timeoutMs / WAIT_MS;
-    int cnt = 0;
-    while (!(*flag)) {
-        if (cnt >= maxWaitCnt) {
-            return false;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(WAIT_MS));
-        cnt++;
-    }
-    return true;
-}
-
 void TLSSocket::Close(const CloseCallback &callback)
 {
+    isRunning_ = false;
     std::unique_lock<std::mutex> cvLock(cvMutex_);
     cvSslFree_.wait(cvLock, [this]() -> bool { return isRunOver_; });
-
-    if (!WaitConditionWithTimeout(&isRunning_, TIMEOUT_MS)) {
-        callback(ConvertErrno());
-        NETSTACK_LOGE("The error cause is that the runtime wait time is insufficient");
-        return;
-    }
-    isRunning_ = false;
 
     std::lock_guard<std::mutex> lock(recvMutex_);
     auto res = tlsSocketInternal_.Close();
