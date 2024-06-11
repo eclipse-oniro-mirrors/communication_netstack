@@ -27,6 +27,7 @@
 #include "netstack_log.h"
 #include "secure_char.h"
 #include "timing.h"
+#include "http_network_message.h"
 
 static constexpr const int PARAM_JUST_URL = 1;
 
@@ -84,6 +85,7 @@ RequestContext::RequestContext(napi_env env, EventManager *manager)
     isAtomicService_ = false;
     bundleName_ = "";
     StartTiming();
+    networkProfilerUtils_ = std::make_unique<NetworkProfilerUtils>();
 }
 
 void RequestContext::StartTiming()
@@ -811,5 +813,17 @@ void RequestContext::SetBundleName(const std::string &bundleName)
 std::string RequestContext::GetBundleName() const
 {
     return bundleName_;
+}
+
+void RequestContext::SetCurlHandle(CURL *handle)
+{
+    curlHandle_ = handle;
+}
+
+void RequestContext::SendNetworkProfiler()
+{
+    HttpNetworkMessage networkMessage(std::to_string(GetTaskId()), options, response,
+                                      curlHandle_);
+    networkProfilerUtils_->NetworkProfiling(networkMessage);
 }
 } // namespace OHOS::NetStack::Http

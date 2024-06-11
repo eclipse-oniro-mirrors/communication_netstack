@@ -112,6 +112,7 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
     }
     std::unique_ptr<RequestContext, decltype(&RequestContextDeleter)> context(static_cast<RequestContext *>(data),
                                                                               RequestContextDeleter);
+    context->SendNetworkProfiler();
     napi_value undefined = NapiUtils::GetUndefined(env);
     napi_value argv[EVENT_PARAM_TWO] = {nullptr};
     if (context->IsParseOK() && context->IsExecOK()) {
@@ -152,6 +153,7 @@ static void AsyncWorkRequestCallback(napi_env env, napi_status status, void *dat
     }
     std::unique_ptr<RequestContext, decltype(&RequestContextDeleter)> context(static_cast<RequestContext *>(data),
                                                                               RequestContextDeleter);
+    context->SendNetworkProfiler();
     napi_value argv[EVENT_PARAM_TWO] = {nullptr};
     if (context->IsParseOK() && context->IsExecOK()) {
         argv[EVENT_PARAM_ZERO] = NapiUtils::GetUndefined(env);
@@ -273,6 +275,7 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
     }
 
     context->response.SetRequestTime(HttpTime::GetNowTimeGMT());
+    context->SetCurlHandle(handle);
 
     if (!AddCurlHandle(handle, context)) {
         NETSTACK_LOGE("add handle failed");
