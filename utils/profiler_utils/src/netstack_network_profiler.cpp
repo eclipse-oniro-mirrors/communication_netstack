@@ -19,7 +19,6 @@
 #include "network_profiler.h"
 #include "time_service_client.h"
 #endif
-#include "netstack_log.h"
 
 namespace OHOS::NetStack {
 namespace {
@@ -29,7 +28,6 @@ const size_t BUFFER_MAX_SIZE = 256 * 1024;
 NetworkProfilerUtils::NetworkProfilerUtils() : enable_(false), requestBeginTime_(0), data_(nullptr), dataSize_(0)
 {
     if (!IsProfilerEnable()) {
-        NETSTACK_LOGD("netstack network profiler disable");
         return;
     }
     enable_ = true;
@@ -48,7 +46,6 @@ NetworkProfilerUtils::~NetworkProfilerUtils()
 void NetworkProfilerUtils::NetworkProfiling(INetworkMessage &networkMessage)
 {
     if (!enable_) {
-        NETSTACK_LOGD("netstack network profiling disable");
         return;
     }
     networkMessage.SetRequestBeginTime(requestBeginTime_);
@@ -56,13 +53,11 @@ void NetworkProfilerUtils::NetworkProfiling(INetworkMessage &networkMessage)
     if (data_ == nullptr) {
         data_ = malloc(BUFFER_MAX_SIZE);
         if (data_ == nullptr) {
-            NETSTACK_LOGE("netstack network profiling malloc data failed");
             return;
         }
     }
     auto ret = TlvUtils::Encode(msg_, data_, dataSize_);
     if (ret != TLV_OK) {
-        NETSTACK_LOGE("netstack network profiling tlvEncode failed. code=%{public}u", ret);
         return;
     }
     SendNetworkProfiling();
@@ -85,7 +80,6 @@ void NetworkProfilerUtils::SendNetworkProfiling()
 {
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     if (data_ == nullptr || dataSize_ <= 0) {
-        NETSTACK_LOGE("netstack network profiling data invalid");
         return;
     }
     auto profiler = OHOS::Developtools::Profiler::NetworkProfiler::GetInstance();
@@ -97,9 +91,8 @@ uint64_t NetworkProfilerUtils::GetBootTime()
 {
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     int64_t ns2micro = 1000;
-    auto powerTime = MicServices::TimeServiceClient::GetInstance()->GetBootTimeNs();
+    auto powerTime = MiscServices::TimeServiceClient::GetInstance()->GetBootTimeNs();
     if (powerTime < 0) {
-        NETSTACK_LOGE("netstack network profiler getBootTime failed.");
         return 0;
     }
     return static_cast<uint64_t>(powerTime / ns2micro);

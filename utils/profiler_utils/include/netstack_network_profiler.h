@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #ifndef NETSTACK_NETSTACK_NETWORK_PROFILER_H
 #define NETSTACK_NETSTACK_NETWORK_PROFILER_H
 

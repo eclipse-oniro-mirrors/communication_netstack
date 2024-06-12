@@ -21,8 +21,11 @@ const size_t RESPONSE_BODY_MAX_SIZE = 64 * 1024;
 }
 
 HttpNetworkMessage::HttpNetworkMessage(std::string requestId, Http::HttpRequestOptions &request,
-                                       Http::HttpResponse &response, CURL *handle) :
-        INetworkMessage(std::move(requestId)), handle_(handle), request_(request), response_(response) {}
+                                       Http::HttpResponse &response, CURL *handle)
+    : INetworkMessage(std::move(requestId)),
+      handle_(handle),
+      request_(request),
+      response_(response) {}
 
 HttpNetworkMessage::~HttpNetworkMessage() = default;
 

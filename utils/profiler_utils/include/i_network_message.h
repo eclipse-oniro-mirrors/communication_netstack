@@ -13,28 +13,28 @@
  * limitations under the License.
  */
 
-#include <map>
-#include "curl/curl.h"
-
-#include "tlv_utils.h"
-
 #ifndef NETSTACK_I_NETWORK_MESSAGE_H
 #define NETSTACK_I_NETWORK_MESSAGE_H
 
-namespace OHOS::NetStack {
-#define CURL_GET_INFO(curl, options, ptr)                       \
-    do {                                                        \
-      auto code = curl_easy_getinfo((curl), (options), (ptr));  \
-      if (code != CURLE_OK) {                                   \
-        return static_cast<uint32_t>(code);                     \
-      }                                                         \
-    }while(false)                                               \
+#include <map>
 
-#define CURL_GET_TIME_INFO(curl, options, time, timeInfo)       \
-    do {                                                        \
-      CURL_GET_INFO((curl), (options), &(time));                \
-      timeInfo.time = static_cast<uint64_t>(time);                \
-    }while(false)                                               \
+#include "curl/curl.h"
+#include "tlv_utils.h"
+
+namespace OHOS::NetStack {
+#define CURL_GET_INFO(curl, options, ptr)    \
+    do {    \
+      auto code = curl_easy_getinfo((curl), (options), (ptr));     \
+      if (code != CURLE_OK) {    \
+        return static_cast<uint32_t>(code);    \
+      }    \
+    }while(false)    \
+
+#define CURL_GET_TIME_INFO(curl, options, time, timeInfo)    \
+    do {    \
+      CURL_GET_INFO((curl), (options), &(time));    \
+      (timeInfo).(time) = static_cast<uint64_t>(time);    \
+    }while(false)    \
 
 struct TimeInfo {
     double dnsTime = 0;

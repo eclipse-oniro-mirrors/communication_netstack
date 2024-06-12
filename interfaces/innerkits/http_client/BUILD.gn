@@ -60,9 +60,9 @@ ohos_shared_library("http_client") {
   sources = [
     "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",
     "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
-    "$NETSTACK_DIR/utils/profiler_utils/include/http_client_network_message.cpp",
-    "$NETSTACK_DIR/utils/profiler_utils/include/i_network_message.cpp",
-    "$NETSTACK_DIR/utils/profiler_utils/include/netstack_network_profiler.cpp",
+    "$NETSTACK_DIR/utils/profiler_utils/src/http_client_network_message.cpp",
+    "$NETSTACK_DIR/utils/profiler_utils/src/i_network_message.cpp",
+    "$NETSTACK_DIR/utils/profiler_utils/src/netstack_network_profiler.cpp",
     "$NETSTACK_DIR/utils/tlv_utils/src/tlv_utils.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_constant.cpp",
@@ -112,7 +112,6 @@ ohos_shared_library("http_client") {
     deps += [ "$NETSTACK_DIR/utils:stack_utils_common" ]
     external_deps = [
       "ability_runtime:wantagent_innerkits",
-      "c_utils:utils",
       "hilog:libhilog",
       "hiprofiler:libnetwork_profiler",
       "hitrace:hitrace_meter",

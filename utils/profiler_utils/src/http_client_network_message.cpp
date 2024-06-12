@@ -21,8 +21,11 @@ const size_t RESPONSE_BODY_MAX_SIZE = 64 * 1024;
 }
 
 HttpClientNetworkMessage::HttpClientNetworkMessage(std::string requestId, HttpClient::HttpClientRequest &request,
-                                                   HttpClient::HttpClientResponse &response, CURL *handle) :
-        INetworkMessage(std::move(requestId)), handle_(handle), request_(request), response_(response) {}
+                                                   HttpClient::HttpClientResponse &response, CURL *handle)
+    : INetworkMessage(std::move(requestId)),
+      handle_(handle),
+      request_(request),
+      response_(response) {}
 
 HttpClientNetworkMessage::~HttpClientNetworkMessage() = default;
 

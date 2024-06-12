@@ -84,9 +84,9 @@ ohos_shared_library("http") {
   include_dirs = []
 
   sources = [
-    "$NETSTACK_DIR/utils/profiler_utils/include/http_network_message.cpp",
-    "$NETSTACK_DIR/utils/profiler_utils/include/i_network_message.cpp",
-    "$NETSTACK_DIR/utils/profiler_utils/include/netstack_network_profiler.cpp",
+    "$NETSTACK_DIR/utils/profiler_utils/src/http_network_message.cpp",
+    "$NETSTACK_DIR/utils/profiler_utils/src/i_network_message.cpp",
+    "$NETSTACK_DIR/utils/profiler_utils/src/netstack_network_profiler.cpp",
     "$NETSTACK_DIR/utils/tlv_utils/src/tlv_utils.cpp",
     "async_context/src/request_context.cpp",
     "async_work/src/http_async_work.cpp",
@@ -129,7 +129,6 @@ ohos_shared_library("http") {
     ]
     external_deps = [
       "ability_runtime:wantagent_innerkits",
-      "c_utils:utils",
       "cJSON:cjson",
       "hilog:libhilog",
       "hiprofiler:libnetwork_profiler",

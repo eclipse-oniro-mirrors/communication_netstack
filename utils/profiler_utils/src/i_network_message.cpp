@@ -23,8 +23,11 @@ namespace {
 constexpr const size_t STATUS_LINE_SIZE = 3;
 }
 
-INetworkMessage::INetworkMessage(std::string requestId) :
-        requestId_(std::move(requestId)), requestBeginTime_(0) {}
+INetworkMessage::INetworkMessage(std::string requestId)
+    : requestId_(std::move(requestId)),
+      requestBeginTime_(0) {}
+
+INetworkMessage::~INetworkMessage() = default;
 
 void INetworkMessage::SetRequestBeginTime(uint64_t bootTime)
 {
@@ -129,7 +132,7 @@ std::string INetworkMessage::GetRawHeader(const std::map<std::string, std::strin
     std::for_each(headers.begin(), headers.end(), [&result](const auto &item) {
         result += item.first + ":" + item.second + "\r\n";
     });
-    return std::move(result);
+    return result;
 }
 
 std::string INetworkMessage::GetHttpVersion(long httpVersion)
@@ -149,6 +152,3 @@ std::string INetworkMessage::GetHttpVersion(long httpVersion)
     return "unknown";
 }
 }
-
-
-
