@@ -1213,6 +1213,14 @@ bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
         return false;
     }
 
+    {
+        std::lock_guard<std::mutex> lock(mutexForSsl_);
+        if (!ssl_) {
+            NETSTACK_LOGE("ssl is null");
+            return false;
+        }
+    }
+
     if (!PollSend(socketDescriptor_, ssl_, data.c_str(), data.size())) {
         return false;
     }
