@@ -21,7 +21,7 @@
 namespace OHOS::NetStack {
 
 #define DFX_MSG_FIELD_NUM 30
-#define BUFFER_MAX_SIZE (1 * 1024 * 1024)
+#define BUFFER_MAX_SIZE (1 * 256 * 1024)
 
 #define TLV_TAG_LEN sizeof(uint32_t)
 #define TLV_LENGTH_LEN sizeof(uint32_t)

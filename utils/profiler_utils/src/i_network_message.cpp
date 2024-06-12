@@ -41,8 +41,8 @@ uint32_t INetworkMessage::GetIpAddressFromCurlHandle(std::string &ip, CURL *hand
     }
     char *tmp = nullptr;
     CURL_GET_INFO(handle, CURLINFO_PRIMARY_IP, &tmp);
-    if (tmp) {
-        ip = std::string(tmp);
+    if (tmp != nullptr) {
+        ip.append(tmp);
     }
     return static_cast<uint32_t>(CURLE_OK);
 }
@@ -54,8 +54,8 @@ uint32_t INetworkMessage::GetEffectiveUrlFromCurlHandle(std::string &effectiveUr
     }
     char *tmp = nullptr;
     CURL_GET_INFO(handle, CURLINFO_EFFECTIVE_URL, &tmp);
-    if (tmp) {
-        effectiveUrl = std::string(tmp);
+    if (tmp != nullptr) {
+        effectiveUrl.append(tmp);
     }
     return static_cast<uint32_t>(CURLE_OK);
 }
