@@ -254,7 +254,7 @@ bool WebSocketExec::ParseUrl(ConnectContext *context, char *protocol, size_t pro
                              size_t addressLen, char *path, size_t pathLen, int *port)
 {
     char uri[MAX_URI_LENGTH] = {0};
-    if (strcpy_s(uri, MAX_URI_LENGTH, AddSlashBeforeQuery(context->url.c_str()).c_str()) < 0) {
+    if (strcpy_s(uri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
@@ -647,7 +647,7 @@ void WebSocketExec::FillContextInfo(ConnectContext *context, lws_context_creatio
     uint32_t port = 0;
     std::string exclusions;
 
-    if (strcpy_s(tempUri, MAX_URI_LENGTH, AddSlashBeforeQuery(context->url.c_str()).c_str()) < 0) {
+    if (strcpy_s(tempUri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
         NETSTACK_LOGE("strcpy_s failed");
         return;
     }
@@ -1114,14 +1114,5 @@ void WebSocketExec::GetWebsocketProxyInfo(ConnectContext *context, std::string &
     } else if (context->GetUsingWebsocketProxyType() == WebsocketProxyType::USE_SPECIFIED) {
         context->GetSpecifiedWebsocketProxy(host, port, exclusions);
     }
-}
-
-std::string WebSocketExec::AddSlashBeforeQuery(std::string url)
-{
-    size_t queryStart = url.find('?');
-    if (queryStart != std::string::npos && url.at(queryStart - 1) != '/') {
-        url.insert(queryStart, 1, '/');
-    }
-    return url;
 }
 } // namespace OHOS::NetStack::Websocket
