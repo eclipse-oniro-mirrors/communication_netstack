@@ -44,10 +44,10 @@ DfxMessage HttpNetworkMessage::Parse()
                          static_cast<uint64_t>(std::max(0.0, timeInfo_.firstSendTime -
                                                              std::max({timeInfo_.dnsTime,
                                                                        timeInfo_.tcpConnectTime,
-                                                                       timeInfo_.tcpConnectTime})));
+                                                                       timeInfo_.tlsHandshakeTime})));
     msg.firstRecvTime_ = msg.firstSendTime_ +
                          static_cast<uint64_t>(std::max(0.0, timeInfo_.firstRecvTime - timeInfo_.firstSendTime));
-    msg.requestEndTime_ = msg.requestBeginTime_ + static_cast<uint64_t>(timeInfo_.totalTime);
+    msg.requestEndTime_ = msg.firstRecvTime_ + static_cast<uint64_t>(timeInfo_.totalTime - timeInfo_.firstRecvTime);
     msg.requestId_ = requestId_;
     msg.requestUrl_ = request_.GetUrl();
     msg.requestMethod_ = request_.GetMethod();

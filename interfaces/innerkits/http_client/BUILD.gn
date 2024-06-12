@@ -19,6 +19,8 @@ config("http_client_config") {
   include_dirs = [
     "$THIRD_PARTY_ROOT/curl/include",
     "$NETSTACK_DIR/interfaces/innerkits/http_client/include",
+    "$NETSTACK_DIR/utils/profiler_utils/include",
+    "$NETSTACK_DIR/utils/tlv_utils/include",
   ]
 
   cflags = []
@@ -77,8 +79,6 @@ ohos_shared_library("http_client") {
     "$NETSTACK_DIR/utils/common_utils/include",
     "$NETSTACK_DIR/utils/http_over_curl/include",
     "$NETSTACK_DIR/utils/log/include",
-    "$NETSTACK_DIR/utils/profiler_utils/include",
-    "$NETSTACK_DIR/utils/tlv_utils/include",
     "$NETSTACK_NATIVE_ROOT/http/http_client/include",
   ]
 

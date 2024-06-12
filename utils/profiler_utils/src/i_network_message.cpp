@@ -79,17 +79,17 @@ uint32_t INetworkMessage::GetTimeInfoFromCurlHandle(TimeInfo &timeInfo, CURL *ha
     curl_off_t dnsTime = 0;
     CURL_GET_TIME_INFO(handle, CURLINFO_NAMELOOKUP_TIME_T, dnsTime, timeInfo);
     curl_off_t tcpConnectTime = 0;
-    CURL_GET_TIME_INFO(handle, CURLINFO_NAMELOOKUP_TIME_T, tcpConnectTime, timeInfo);
+    CURL_GET_TIME_INFO(handle, CURLINFO_CONNECT_TIME_T, tcpConnectTime, timeInfo);
     curl_off_t tlsHandshakeTime = 0;
-    CURL_GET_TIME_INFO(handle, CURLINFO_NAMELOOKUP_TIME_T, tlsHandshakeTime, timeInfo);
+    CURL_GET_TIME_INFO(handle, CURLINFO_APPCONNECT_TIME_T, tlsHandshakeTime, timeInfo);
     curl_off_t firstSendTime = 0;
-    CURL_GET_TIME_INFO(handle, CURLINFO_NAMELOOKUP_TIME_T, firstSendTime, timeInfo);
+    CURL_GET_TIME_INFO(handle, CURLINFO_PRETRANSFER_TIME_T, firstSendTime, timeInfo);
     curl_off_t firstRecvTime = 0;
-    CURL_GET_TIME_INFO(handle, CURLINFO_NAMELOOKUP_TIME_T, firstRecvTime, timeInfo);
+    CURL_GET_TIME_INFO(handle, CURLINFO_STARTTRANSFER_TIME_T, firstRecvTime, timeInfo);
     curl_off_t redirectTime = 0;
-    CURL_GET_TIME_INFO(handle, CURLINFO_NAMELOOKUP_TIME_T, redirectTime, timeInfo);
+    CURL_GET_TIME_INFO(handle, CURLINFO_REDIRECT_TIME_T, redirectTime, timeInfo);
     curl_off_t totalTime = 0;
-    CURL_GET_TIME_INFO(handle, CURLINFO_NAMELOOKUP_TIME_T, totalTime, timeInfo);
+    CURL_GET_TIME_INFO(handle, CURLINFO_TOTAL_TIME_T, totalTime, timeInfo);
     return static_cast<uint32_t>(CURLE_OK);
 }
 
