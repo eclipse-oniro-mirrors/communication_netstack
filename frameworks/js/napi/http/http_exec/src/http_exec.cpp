@@ -112,7 +112,6 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
     }
     std::unique_ptr<RequestContext, decltype(&RequestContextDeleter)> context(static_cast<RequestContext *>(data),
                                                                               RequestContextDeleter);
-    context->SendNetworkProfiler();
     napi_value undefined = NapiUtils::GetUndefined(env);
     napi_value argv[EVENT_PARAM_TWO] = {nullptr};
     if (context->IsParseOK() && context->IsExecOK()) {
@@ -153,7 +152,6 @@ static void AsyncWorkRequestCallback(napi_env env, napi_status status, void *dat
     }
     std::unique_ptr<RequestContext, decltype(&RequestContextDeleter)> context(static_cast<RequestContext *>(data),
                                                                               RequestContextDeleter);
-    context->SendNetworkProfiler();
     napi_value argv[EVENT_PARAM_TWO] = {nullptr};
     if (context->IsParseOK() && context->IsExecOK()) {
         argv[EVENT_PARAM_ZERO] = NapiUtils::GetUndefined(env);
@@ -453,6 +451,7 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
 #if HAS_NETMANAGER_BASE
     FinishAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, context->GetTaskId());
 #endif
+    context->SendNetworkProfiler();
     if (context->IsRequestInStream()) {
         NapiUtils::CreateUvQueueWorkByModuleId(
             context->GetEnv(), std::bind(AsyncWorkRequestInStreamCallback, context->GetEnv(), napi_ok, context),
