@@ -35,6 +35,8 @@ namespace OHOS {
 namespace NetStack {
 namespace TlsSocketServer {
 namespace {
+constexpr size_t MAX_ERR_LENzTH = 1024;
+
 constexpr int SSL_RET_CODE = 0;
 
 constexpr int BUF_SIZE = 2048;
@@ -108,7 +110,7 @@ std::string MakeErrnoString()
 
 std::string MakeSSLErrorString(int error)
 {
-    char err[TlsSocket::MAX_ERR_LEN] = {0};
+    char err[MAX_ERR_LENzTH] = {0};
     ERR_error_string_n(error - TlsSocket::TlsSocketError::TLS_ERR_SYS_BASE, err, sizeof(err));
     return err;
 }
