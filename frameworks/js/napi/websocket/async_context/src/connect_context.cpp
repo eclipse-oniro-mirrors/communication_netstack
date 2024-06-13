@@ -26,6 +26,28 @@ ConnectContext::ConnectContext(napi_env env, EventManager *manager) : BaseContex
 
 ConnectContext::~ConnectContext() = default;
 
+static void AddSlashBeforeQuery(std::string &url)
+{
+    if (url.empty()) {
+        return;
+    }
+    std::string delimiter = "://";
+    size_t posStart = url.find(delimiter);
+    if (posStart != std::string::npos) {
+        posStart += delimiter.length();
+    } else {
+        posStart = 0;
+    }
+    size_t notSlash = url.find_first_not_of('/', posStart);
+    if (notSlash != std::string::npos) {
+        posStart = notSlash;
+    }
+    auto queryPos = url.find('?', posStart);
+    if (url.find('/', posStart) > queryPos) {
+        url.insert(queryPos, 1, '/');
+    }
+}
+
 void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     if (!CheckParamsType(params, paramsCount)) {
@@ -36,6 +58,7 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
     if (paramsCount == FUNCTION_PARAM_ONE) {
         if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string) {
             url = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
+            AddSlashBeforeQuery(url);
             SetParseOK(true);
         }
         return;
@@ -43,6 +66,7 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
     if (paramsCount == FUNCTION_PARAM_TWO) {
         if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string) {
             url = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
+            AddSlashBeforeQuery(url);
         }
         if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
             return SetParseOK(SetCallback(params[1]) == napi_ok);
@@ -90,6 +114,7 @@ void ConnectContext::ParseParamsCountThree(napi_value const *params)
 {
     if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_string) {
         url = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
+        AddSlashBeforeQuery(url);
     }
     if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_object) {
         ParseHeader(params[1]);

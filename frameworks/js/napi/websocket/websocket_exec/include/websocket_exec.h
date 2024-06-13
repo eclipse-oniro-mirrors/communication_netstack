@@ -90,8 +90,6 @@ private:
     static void GetWebsocketProxyInfo(ConnectContext *context, std::string &host, uint32_t &port,
                                       std::string &exclusions);
     static void HandleRcvMessage(EventManager *manager, void *data, size_t length, bool isBinary, bool isFinal);
-
-    static std::string AddSlashBeforeQuery(std::string url);
 };
 } // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_WEBSOCKET_EXEC_H */
