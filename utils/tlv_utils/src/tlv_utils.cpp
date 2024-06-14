@@ -29,7 +29,8 @@ namespace OHOS::NetStack {
 
 uint8_t *TlvUtils::GetNextTlv(const uint8_t *buffer)
 {
-    return (uint8_t *) buffer + ((TlvCommon *) buffer)->len_ + TLV_TLV_HEAD_LEN;
+    return const_cast<uint8_t *>(buffer) + (reinterpret_cast<TlvCommon *>(const_cast<uint8_t *>(buffer)))->len_ +
+           TLV_TLV_HEAD_LEN;
 }
 
 uint8_t *TlvUtils::ParseTlv(const uint8_t *buffer, TlvCommon *tlv, const uint8_t *boundary, uint32_t *retCode)
@@ -42,9 +43,9 @@ uint8_t *TlvUtils::ParseTlv(const uint8_t *buffer, TlvCommon *tlv, const uint8_t
         *retCode = TLV_ERR_PARSE_PAYLOAD_ERR;
         return nullptr;
     }
-    tlv->tag_ = ((TlvCommon *) buffer)->tag_;
-    tlv->len_ = ((TlvCommon *) buffer)->len_;
-    tlv->value_ = (uint8_t *) buffer + TLV_TLV_HEAD_LEN;
+    tlv->tag_ = (reinterpret_cast<TlvCommon *>(const_cast<uint8_t *>(buffer)))->tag_;
+    tlv->len_ = (reinterpret_cast<TlvCommon *>(const_cast<uint8_t *>(buffer)))->len_;
+    tlv->value_ = const_cast<uint8_t *>(buffer) + TLV_TLV_HEAD_LEN;
     *retCode = TLV_OK;
     return GetNextTlv(buffer);
 }
@@ -55,12 +56,12 @@ uint8_t *TlvUtils::AppendTlv(uint8_t *buffer, const TlvCommon *tlv, const uint8_
         *retCode = TLV_ERR_BUFF_NO_ENOUGH;
         return nullptr;
     }
-    if (buffer + ((TlvCommon *) tlv)->len_ + TLV_TLV_HEAD_LEN > boundary) {
+    if (buffer + (reinterpret_cast<TlvCommon *>(const_cast<uint8_t *>(buffer)))->len_ + TLV_TLV_HEAD_LEN > boundary) {
         *retCode = TLV_ERR_BUFF_NO_ENOUGH;
         return nullptr;
     }
-    ((TlvCommon *) buffer)->tag_ = tlv->tag_;
-    ((TlvCommon *) buffer)->len_ = tlv->len_;
+    (reinterpret_cast<TlvCommon *>(const_cast<uint8_t *>(buffer)))->tag_ = tlv->tag_;
+    (reinterpret_cast<TlvCommon *>(const_cast<uint8_t *>(buffer)))->len_ = tlv->len_;
     if (tlv->len_ != 0 && tlv->value_ != nullptr) {
         if (memcpy_s(buffer + TLV_TLV_HEAD_LEN, boundary - buffer - TLV_TLV_HEAD_LEN, tlv->value_, tlv->len_) !=
             EOK) {
@@ -99,7 +100,7 @@ uint32_t TlvUtils::Deserialize(const uint8_t *buff, uint32_t buffSize, TlvCommon
         return TLV_ERR_INVALID_PARA;
     }
 
-    uint8_t *msg = (uint8_t *) buff;
+    auto *msg = const_cast<uint8_t *>(buff);
     const uint8_t *boundary = buff + buffSize;
     uint32_t index = 0;
 

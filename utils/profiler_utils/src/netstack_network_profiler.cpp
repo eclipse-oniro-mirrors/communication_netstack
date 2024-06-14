@@ -22,17 +22,17 @@
 
 namespace OHOS::NetStack {
 namespace {
-const size_t BUFFER_MAX_SIZE = 256 * 1024;
+static constexpr const size_t BUFFER_MAX_SIZE = 256 * 1024;
+static constexpr const uint64_t NS_TO_MICRO = 1000;
 }
 
-NetworkProfilerUtils::NetworkProfilerUtils() : enable_(false), requestBeginTime_(0), data_(nullptr), dataSize_(0)
+NetworkProfilerUtils::NetworkProfilerUtils()
 {
     if (!IsProfilerEnable()) {
         return;
     }
     enable_ = true;
     requestBeginTime_ = GetBootTime();
-    msg_ = {};
 }
 
 NetworkProfilerUtils::~NetworkProfilerUtils()
@@ -90,12 +90,11 @@ void NetworkProfilerUtils::SendNetworkProfiling()
 uint64_t NetworkProfilerUtils::GetBootTime()
 {
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    int64_t ns2micro = 1000;
     auto powerTime = MiscServices::TimeServiceClient::GetInstance()->GetBootTimeNs();
     if (powerTime < 0) {
         return 0;
     }
-    return static_cast<uint64_t>(powerTime / ns2micro);
+    return static_cast<uint64_t>(powerTime / NS_TO_MICRO);
 #else
     return 0;
 #endif

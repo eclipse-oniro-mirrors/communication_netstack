@@ -49,26 +49,17 @@ struct TimeInfo {
 class INetworkMessage {
 public:
     INetworkMessage() = default;
-
     explicit INetworkMessage(std::string requestId);
-
     virtual ~INetworkMessage();
-
     virtual DfxMessage Parse() = 0;
-
     void SetRequestBeginTime(uint64_t bootTime);
 
 protected:
     static uint32_t GetIpAddressFromCurlHandle(std::string &ip, CURL *handle);
-
     static uint32_t GetEffectiveUrlFromCurlHandle(std::string &effectiveUrl, CURL *handle);
-
     static uint32_t GetHttpVersionFromCurlHandle(std::string &httpVersion, CURL *handle);
-
     static uint32_t GetTimeInfoFromCurlHandle(TimeInfo &timeInfo, CURL *handle);
-
     static std::string GetReasonParse(const std::string &rawHeader);
-
     static std::string GetRawHeader(const std::map<std::string, std::string> &headers);
 
 private:

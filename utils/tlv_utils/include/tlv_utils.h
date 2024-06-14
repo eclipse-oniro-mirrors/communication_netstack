@@ -67,24 +67,17 @@ typedef struct TlvCommon {
 class TlvUtils {
 public:
     static uint32_t Encode(DfxMessage &msg, void *data, uint32_t &dataSize);
-
     static uint32_t Decode(DfxMessage &msg, void *data, uint32_t dataSize);
 
 private:
     static uint8_t *GetNextTlv(const uint8_t *buffer);
-
     static uint8_t *ParseTlv(const uint8_t *buffer, TlvCommon *tlv, const uint8_t *boundary, uint32_t *retCode);
-
     static uint8_t *AppendTlv(uint8_t *buffer, const TlvCommon *tlv, const uint8_t *boundary, uint32_t *retCode);
-
     static uint32_t Serialize(const TlvCommon *tlv, uint32_t tlvCount, uint8_t *buff, uint32_t maxBuffSize,
                               uint32_t *buffSize);
-
     static uint32_t Deserialize(const uint8_t *buff, uint32_t buffSize, TlvCommon *tlv, uint32_t maxTlvCount,
                                 uint32_t *tlvCount);
-
     static uint32_t GenerateTlv(DfxMessage &msg, TlvCommon *tlv, uint32_t *tlvCount);
-
     static uint32_t Parse(DfxMessage &msg, TlvCommon *tlvs, uint32_t tlvCount);
 };
 }

@@ -23,24 +23,20 @@ namespace OHOS::NetStack {
 class NetworkProfilerUtils {
 public:
     NetworkProfilerUtils();
-
     ~NetworkProfilerUtils();
-
     void NetworkProfiling(INetworkMessage &networkMessage);
 
 private:
     static bool IsProfilerEnable();
-
     void SendNetworkProfiling();
-
     static uint64_t GetBootTime();
 
 private:
-    bool enable_;
-    uint64_t requestBeginTime_;
+    bool enable_ = false;
+    uint64_t requestBeginTime_ = 0;
     DfxMessage msg_;
-    void *data_;
-    uint32_t dataSize_;
+    void *data_ = nullptr;
+    uint32_t dataSize_ = 0;
 };
 }
 #endif //NETSTACK_NETSTACK_NETWORK_PROFILER_H

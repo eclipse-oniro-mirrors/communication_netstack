@@ -17,7 +17,7 @@
 
 namespace OHOS::NetStack {
 namespace {
-const size_t RESPONSE_BODY_MAX_SIZE = 64 * 1024;
+constexpr const size_t RESPONSE_BODY_MAX_SIZE = 64 * 1024;
 }
 
 HttpNetworkMessage::HttpNetworkMessage(std::string requestId, Http::HttpRequestOptions &request,
