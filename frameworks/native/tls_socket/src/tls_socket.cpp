@@ -48,6 +48,7 @@ constexpr int SSL_WANT_READ_RETURN = -2;
 constexpr int OFFSET = 2;
 constexpr int DEFAULT_BUFFER_SIZE = 8192;
 constexpr int DEFAULT_POLL_TIMEOUT_MS = 500;
+constexpr int MAX_RECV_BUFFER_SIZE = 1024 * 16;
 constexpr const char *SPLIT_ALT_NAMES = ",";
 constexpr const char *SPLIT_HOST_NAME = ".";
 constexpr const char *PROTOCOL_UNKNOW = "UNKNOW_PROTOCOL";
@@ -388,8 +389,8 @@ void TLSSocket::MakeIpSocket(sa_family_t family)
 
 int TLSSocket::ReadMessage()
 {
-    char buffer[MAX_BUFFER_SIZE];
-    if (memset_s(buffer, MAX_BUFFER_SIZE, 0, MAX_BUFFER_SIZE) != EOK) {
+    char buffer[MAX_RECV_BUFFER_SIZE];
+    if (memset_s(buffer, MAX_RECV_BUFFER_SIZE, 0, MAX_RECV_BUFFER_SIZE) != EOK) {
         NETSTACK_LOGE("memset_s failed!");
         return -1;
     }
@@ -413,7 +414,7 @@ int TLSSocket::ReadMessage()
     if (!isRunning_) {
         return -1;
     }
-    int len = tlsSocketInternal_.Recv(buffer, MAX_BUFFER_SIZE);
+    int len = tlsSocketInternal_.Recv(buffer, MAX_RECV_BUFFER_SIZE);
     if (len < 0) {
         if (errno == EAGAIN || errno == EINTR || len == SSL_WANT_READ_RETURN) {
             return 0;
