@@ -22,8 +22,8 @@
 
 namespace OHOS::NetStack {
 namespace {
-static constexpr const size_t BUFFER_MAX_SIZE = 256 * 1024;
-static constexpr const uint64_t NS_TO_MICRO = 1000;
+constexpr const size_t BUFFER_MAX_SIZE = 256 * 1024;
+constexpr const uint64_t NS_TO_MICRO = 1000;
 }
 
 NetworkProfilerUtils::NetworkProfilerUtils()
