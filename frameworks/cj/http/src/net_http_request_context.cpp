@@ -334,6 +334,17 @@ bool RequestContext::IsDestroyed() const
     return isDestroyed_;
 }
 
+void RequestContext::SetCertsPath(std::vector<std::string> &&certPathList, const std::string &certFile)
+{
+    certsPath_.certPathList = std::move(certPathList);
+    certsPath_.certFile = certFile;
+}
+
+const CertsPath &RequestContext::GetCertsPath()
+{
+    return certsPath_;
+}
+
 void RequestContext::ParseParams(std::string url, CHttpRequestOptions *ops)
 {
     options.SetUrl(url);

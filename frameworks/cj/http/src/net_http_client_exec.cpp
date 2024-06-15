@@ -20,6 +20,13 @@
 #include <memory>
 #include <thread>
 #include <unistd.h>
+#include <pthread.h>
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+#include <openssl/ssl.h>
+#endif
+#if HAS_NETMANAGER_BASE
+#include <netdb.h>
+#endif
 
 #ifdef HTTP_PROXY_ENABLE
 #include "parameter.h"
@@ -55,7 +62,10 @@ static constexpr int CURL_HANDLE_NUM = 10;
 static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!eNULL:!EXPORT)";
 static constexpr int NETSTACK_NAPI_INTERNAL_ERROR = 2300002;
 
-#ifdef HTTP_PROXY_ENABLE
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
+static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
+static constexpr const char *USER_CERT_ROOT_PATH = "/data/certificates/user_cacerts/0/";
 static constexpr int32_t SYSPARA_MAX_SIZE = 128;
 static constexpr const char *DEFAULT_HTTP_PROXY_HOST = "NONE";
 static constexpr const char *DEFAULT_HTTP_PROXY_PORT = "0";
@@ -529,44 +539,84 @@ bool NetHttpClientExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::Request
     return true;
 }
 
+CURLcode SslCtxFunction(CURL *curl, void *ssl_ctx, void *parm)
+{
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+    auto certsPath = static_cast<CertsPath *>(parm);
+    if (certsPath == nullptr) {
+        NETSTACK_LOGE("certsPath is null");
+        return CURLE_SSL_CERTPROBLEM;
+    }
+    if (ssl_ctx == nullptr) {
+        NETSTACK_LOGE("ssl_ctx is null");
+        return CURLE_SSL_CERTPROBLEM;
+    }
+
+    for (const auto &path : certsPath->certPathList) {
+        if (path.empty() || access(path.c_str(), F_OK) != 0) {
+            NETSTACK_LOGD("certificate directory path is not exist");
+            continue;
+        }
+        if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(ssl_ctx), nullptr, path.c_str())) {
+            NETSTACK_LOGE("loading certificates from directory error.");
+            continue;
+        }
+    }
+    if (access(certsPath->certFile.c_str(), F_OK) != 0) {
+        NETSTACK_LOGD("certificate directory path is not exist");
+    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(ssl_ctx), certsPath->certFile.c_str(), nullptr)) {
+        NETSTACK_LOGE("loading certificates from context cert error.");
+    }
+#endif // HTTP_MULTIPATH_CERT_ENABLE
+    return CURLE_OK;
+}
+
 bool NetHttpClientExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context)
 {
 #ifndef NO_SSL_CERTIFICATION
 #ifdef HAS_NETMANAGER_BASE
     auto hostname = CommonUtils::GetHostnameFromURL(context->options.GetUrl());
-#ifndef WINDOWS_PLATFORM
-    // customize trusted CAs.
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     std::vector<std::string> certs;
+    // add app cert path
     auto ret = NetManagerStandard::NetConnClient::GetInstance().GetTrustAnchorsForHostName(hostname, certs);
     if (ret != 0) {
-        return false;
+        NETSTACK_LOGE("GetTrustAnchorsForHostName error. ret [%{public}d]", ret);
     }
-
-    std::string *pCert = nullptr;
-    for (auto &cert: certs) {
-        if (!cert.empty()) {
-            pCert = &cert;
-            break;
-        }
-    }
-    if (pCert != nullptr) {
-        NETSTACK_LOGI("curl set option capath: capath=%{public}s.", pCert->c_str());
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, pCert->c_str(), context);
-    } else {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, context->options.GetCaPath().c_str(), context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAPATH, HTTP_PREPARE_CA_PATH, context);
-    }
-#endif // WINDOWS_PLATFORM
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+    // add user cert path
+    certs.emplace_back(USER_CERT_ROOT_PATH);
+    certs.emplace_back(BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR));
+    // add system cert path
+    certs.emplace_back(HTTP_PREPARE_CA_PATH);
+    context->SetCertsPath(std::move(certs), context->options.GetCaPath());
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 1L, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 2L, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_FUNCTION, SslCtxFunction, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, &context->GetCertsPath(), context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
+#else
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
+#endif // HTTP_MULTIPATH_CERT_ENABLE
+#else
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
+#endif //  !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     // pin trusted certifcate keys.
     std::string pins;
     auto ret1 = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
-    if (ret1 != 0) {
-        return false;
-    }
-    if (!pins.empty()) {
+    if (ret1 != 0 || pins.empty()) {
+        NETSTACK_LOGD("Get no pinset by host name[%{public}s]", hostname.c_str());
+    } else {
+        NETSTACK_LOGD("curl set pin =[%{public}s]", pins.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str(), context);
     }
+#else
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
 #endif // HAS_NETMANAGER_BASE
 #else
     // in real life, you should buy a ssl certification and rename it to /etc/ssl/cert.pem
@@ -700,6 +750,13 @@ bool NetHttpClientExec::SetRequestOption(CURL *curl, RequestContext *context)
         // Some servers don't like requests that are made without a user-agent field, so we provide one
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_USERAGENT, HTTP_DEFAULT_USER_AGENT, context);
     } else {
+        // https://curl.se/libcurl/c/CURLOPT_RANGE.html
+        if (context->options.GetMethod() == HTTP_METHOD_PUT) {
+            context->SetErrorCode(CURLE_RANGE_ERROR);
+            NETSTACK_LOGE("For HTTP PUT uploads this option should not be used, since it may conflict with \
+                          other options.");
+            return false;
+        }
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RANGE, range.c_str(), context);
     }
     if (!context->options.GetDohUrl().empty()) {
