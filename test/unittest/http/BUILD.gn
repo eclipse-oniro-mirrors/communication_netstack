@@ -52,8 +52,6 @@ ohos_unittest("http_unittest") {
     "$NETSTACK_NAPI_ROOT/http/http_exec/include",
     "$NETSTACK_NAPI_ROOT/http/http_module/include",
     "$NETSTACK_NAPI_ROOT/http/options/include",
-    "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/include",
-    "$SUBSYSTEM_DIR/netstack/utils/tlv_utils/include",
     "$THIRD_PARTY_ROOT/curl/include",
   ]
   include_dirs += utils_include
@@ -77,8 +75,6 @@ ohos_unittest("http_unittest") {
     "$NETSTACK_NAPI_ROOT/http/options/src/http_response.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/src/epoll_request_handler.cpp",
-    "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/src/netstack_network_profiler.cpp",
-    "$SUBSYSTEM_DIR/netstack/utils/tlv_utils/src/tlv_utils.cpp",
     "HttpExecTest.cpp",
     "HttpRequestOptionsTest.cpp",
   ]
@@ -101,12 +97,9 @@ ohos_unittest("http_unittest") {
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     ]
     external_deps += [
-      "ability_runtime:wantagent_innerkits",
       "hilog:libhilog",
-      "hiprofiler:libnetwork_profiler",
       "hitrace:hitrace_meter",
       "napi:ace_napi",
-      "time_service:time_client",
     ]
     if (netstack_http_boringssl) {
       deps += [

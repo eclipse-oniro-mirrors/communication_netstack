@@ -19,9 +19,6 @@
     *HttpClientTask*;
     *HttpSession*;
     *HttpClient*;
-    *NetworkProfilerUtils*;
-    *NetworkMessage*;
-    *TlvUtils*;
   local:
     *;
 };

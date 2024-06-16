@@ -24,7 +24,6 @@
 #include "http_request_options.h"
 #include "http_response.h"
 #include "timing.h"
-#include "netstack_network_profiler.h"
 
 namespace OHOS::NetStack::Http {
 struct LoadBytes {
@@ -128,10 +127,6 @@ public:
 
     [[nodiscard]] std::string GetBundleName() const;
 
-    void SetCurlHandle(CURL *handle);
-
-    void SendNetworkProfiler();
-
 private:
     int32_t taskId_ = -1;
     bool usingCache_ = true;
@@ -152,8 +147,6 @@ private:
     curl_slist *curlHostList_ = nullptr;
     bool isAtomicService_ = false;
     std::string bundleName_;
-    std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
-    CURL *curlHandle_;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 

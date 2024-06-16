@@ -21,7 +21,6 @@
 #include "constant.h"
 #include "secure_char.h"
 #include "curl/curl.h"
-#include "tlv_utils.h"
 
 using namespace OHOS::NetStack;
 using namespace OHOS::NetStack::Http;
@@ -322,30 +321,5 @@ HWTEST_F(HttpRequestOptionsTest, SetCertificatePinningTest, TestSize.Level1)
     requestOptions.SetCertificatePinning(testPIN);
     std::string resultPIN = requestOptions.GetCertificatePinning();
     EXPECT_EQ(testPIN, resultPIN);
-}
-
-HWTEST_F(HttpRequestOptionsTest, TlvEncodeDecodeTest001, TestSize.Level1)
-{
-    DfxMessage msg{};
-    msg.requestBeginTime_ = 0;
-    msg.requestEndTime_ = 1;
-    msg.requestId_ = "1";
-    msg.responseStatusCode_ = 200;
-    msg.responseHttpVersion_ = "1.1";
-    const int bufferMaxSize = 1 * 256 * 1024;
-    void *data = malloc(bufferMaxSize);
-    EXPECT_TRUE(data != nullptr);
-    uint32_t dataSize = 0;
-    auto ret = TlvUtils::Encode(msg, data, dataSize);
-    EXPECT_EQ(ret, TLV_OK);
-    EXPECT_GT(dataSize, 0);
-    DfxMessage result{};
-    ret = TlvUtils::Decode(result, data, dataSize);
-    EXPECT_EQ(ret, TLV_OK);
-    EXPECT_EQ(msg.requestBeginTime_, result.requestBeginTime_);
-    EXPECT_EQ(msg.requestEndTime_, result.requestEndTime_);
-    EXPECT_EQ(msg.requestId_, result.requestId_);
-    EXPECT_EQ(msg.responseStatusCode_, result.responseStatusCode_);
-    EXPECT_EQ(msg.responseHttpVersion_, result.responseHttpVersion_);
 }
 } // namespace
