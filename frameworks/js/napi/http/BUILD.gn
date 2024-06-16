@@ -81,13 +81,7 @@ ohos_shared_library("http") {
 
   branch_protector_ret = "pac_ret"
 
-  include_dirs = []
-
   sources = [
-    "$NETSTACK_DIR/utils/profiler_utils/src/http_network_message.cpp",
-    "$NETSTACK_DIR/utils/profiler_utils/src/i_network_message.cpp",
-    "$NETSTACK_DIR/utils/profiler_utils/src/netstack_network_profiler.cpp",
-    "$NETSTACK_DIR/utils/tlv_utils/src/tlv_utils.cpp",
     "async_context/src/request_context.cpp",
     "async_work/src/http_async_work.cpp",
     "cache/base64/src/base64_utils.cpp",
@@ -128,13 +122,10 @@ ohos_shared_library("http") {
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
     ]
     external_deps = [
-      "ability_runtime:wantagent_innerkits",
       "cJSON:cjson",
       "hilog:libhilog",
-      "hiprofiler:libnetwork_profiler",
       "hitrace:hitrace_meter",
       "napi:ace_napi",
-      "time_service:time_client",
     ]
     if (netstack_http_boringssl) {
       deps += [
@@ -163,10 +154,6 @@ ohos_shared_library("http") {
       external_deps += [ "init:libbegetutil" ]
     }
   }
-  include_dirs += [
-    "$NETSTACK_DIR/utils/profiler_utils/include",
-    "$NETSTACK_DIR/utils/tlv_utils/include",
-  ]
   cflags = [
     "-fstack-protector-strong",
     "-D_FORTIFY_SOURCE=2",

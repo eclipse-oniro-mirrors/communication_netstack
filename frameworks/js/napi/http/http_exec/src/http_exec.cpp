@@ -273,7 +273,6 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
     }
 
     context->response.SetRequestTime(HttpTime::GetNowTimeGMT());
-    context->SetCurlHandle(handle);
 
     if (!AddCurlHandle(handle, context)) {
         NETSTACK_LOGE("add handle failed");
@@ -451,7 +450,6 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
 #if HAS_NETMANAGER_BASE
     FinishAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, context->GetTaskId());
 #endif
-    context->SendNetworkProfiler();
     if (context->IsRequestInStream()) {
         NapiUtils::CreateUvQueueWorkByModuleId(
             context->GetEnv(), std::bind(AsyncWorkRequestInStreamCallback, context->GetEnv(), napi_ok, context),
