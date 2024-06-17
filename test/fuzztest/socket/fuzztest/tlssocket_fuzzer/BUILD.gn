@@ -106,6 +106,7 @@ ohos_fuzztest("TlsSocketFuzzTest") {
     "$TLS_NAPI/src/context/tls_bind_context.cpp",
     "$TLS_NAPI/src/context/tls_connect_context.cpp",
     "$TLS_NAPI/src/context/tls_extra_context.cpp",
+    "$TLS_NAPI/src/context/tls_init_context.cpp",
     "$TLS_NAPI/src/context/tls_napi_context.cpp",
     "$TLS_NAPI/src/context/tls_send_context.cpp",
     "$TLS_NAPI/src/context/tls_server_close_context.cpp",

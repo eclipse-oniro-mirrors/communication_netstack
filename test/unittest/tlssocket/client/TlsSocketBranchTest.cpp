@@ -271,7 +271,7 @@ HWTEST_F(TlsSocketBranchTest, BranchTest6, TestSize.Level2)
 
     TLSSocket tlsSocket;
     TLSSocket::TLSSocketInternal *tlsSocketInternal = new TLSSocket::TLSSocketInternal();
-    bool isConnectToHost = tlsSocketInternal->TlsConnectToHost(SOCKET_FD, connectOptions);
+    bool isConnectToHost = tlsSocketInternal->TlsConnectToHost(SOCKET_FD, connectOptions, false);
     EXPECT_FALSE(isConnectToHost);
     tlsSocketInternal->SetTlsConfiguration(connectOptions);
 

@@ -93,6 +93,11 @@ void TLSSocketAsyncWork::ExecSetExtraOptions(napi_env env, void *data)
     BaseAsyncWork::ExecAsyncWork<TLSSetExtraOptionsContext, TLSSocketExec::ExecSetExtraOptions>(env, data);
 }
 
+void TLSSocketAsyncWork::ExecInit(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<TLSInitContext, TLSSocketExec::ExecInit>(env, data);
+}
+
 void TLSSocketAsyncWork::GetCertificateCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<GetCertificateContext, TLSSocketExec::GetCertificateCallback>(env, status, data);

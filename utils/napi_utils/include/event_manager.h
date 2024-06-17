@@ -17,6 +17,7 @@
 #define COMMUNICATIONNETSTACK_EVENT_MANAGER_H
 
 #include <atomic>
+#include <condition_variable>
 #include <iosfwd>
 #include <list>
 #include <mutex>
@@ -87,6 +88,10 @@ public:
 
     std::recursive_mutex &GetDataMutex();
 
+    void NotifyRcvThdExit();
+
+    void WaitForRcvThdExit();
+
 private:
     std::mutex mutexForListenersAndEmitByUv_;
     std::mutex mutexForEmitAndEmitByUv_;
@@ -101,6 +106,8 @@ private:
     std::atomic_bool isDestroy_;
     std::string webSocketTextData_;
     std::string webSocketBinaryData_;
+    std::mutex sockRcvThdMtx_;
+    std::condition_variable sockRcvThdCon_;
 };
 
 struct UvWorkWrapper {

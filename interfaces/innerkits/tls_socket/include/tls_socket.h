@@ -281,6 +281,8 @@ public:
     TLSSocket() = default;
     ~TLSSocket() = default;
 
+    explicit TLSSocket(int sockFd): sockFd_(sockFd), isExtSock_(true) {}
+
     /**
      * Create a socket and bind to the address specified by address
      * @param address ip address
@@ -426,9 +428,10 @@ private:
          * Establish an encrypted connection on the specified socket
          * @param sock socket for establishing encrypted connection
          * @param options some options required during tls connection
+         * @param isExtSock socket fd is originated from external source when constructing tls socket
          * @return whether the encrypted connection is successfully established
          */
-        bool TlsConnectToHost(int sock, const TLSConnectOptions &options);
+        bool TlsConnectToHost(int sock, const TLSConnectOptions &options, bool isExtSock);
 
         /**
          * Set the configuration items for establishing encrypted connections
@@ -634,6 +637,7 @@ private:
     bool isRunOver_ = true;
     std::condition_variable cvSslFree_;
     int sockFd_ = -1;
+    bool isExtSock_ = false;
     Socket::NetAddress localAddress_;
 };
 } // namespace TlsSocket

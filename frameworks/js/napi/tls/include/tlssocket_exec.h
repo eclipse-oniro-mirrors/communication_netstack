@@ -24,6 +24,7 @@
 #include "tls_extra_context.h"
 #include "tls_napi_context.h"
 #include "tls_connect_context.h"
+#include "tls_init_context.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -33,6 +34,7 @@ public:
     TLSSocketExec() = delete;
     ~TLSSocketExec() = delete;
 
+    static bool ExecInit(TLSInitContext *context);
     static bool ExecGetCertificate(GetCertificateContext *context);
     static bool ExecConnect(TLSConnectContext *context);
     static bool ExecGetCipherSuites(GetCipherSuitesContext *context);
