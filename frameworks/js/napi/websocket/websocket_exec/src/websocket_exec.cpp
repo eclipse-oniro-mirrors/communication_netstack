@@ -72,8 +72,6 @@ static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
 
 static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 
-static const std::string CERTPATH = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
-
 static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
 
 static constexpr const char *WEBSOCKET_CLIENT_THREAD_RUN = "OS_NET_WSJsCli";
@@ -737,7 +735,8 @@ bool WebSocketExec::FillCaPath(ConnectContext *context, lws_context_creation_inf
         NETSTACK_LOGD("load customize CA: %{public}s", info.client_ssl_ca_filepath);
     } else {
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
-        info.client_ssl_ca_dirs[1] = CERTPATH.c_str();
+        std::string certPath = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
+        info.client_ssl_ca_dirs[1] = certPath.c_str();
         NETSTACK_LOGD("load system CA");
     }
     if (!context->clientCert_.empty()) {

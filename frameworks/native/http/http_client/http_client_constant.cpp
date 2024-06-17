@@ -68,9 +68,9 @@ const char *const HttpConstant::HTTP_LINE_SEPARATOR = "\r\n";
 const char *const HttpConstant::HTTP_DEFAULT_USER_AGENT = "libcurl-agent/1.0";
 
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
+const int32_t HttpConstant::UID_TRANSFORM_DIVISOR = 200000;
 const std::string HttpConstant::USER_CERT_BASE_PATH = "/data/certificates/user_cacerts/";
 const std::string HttpConstant::USER_CERT_ROOT_PATH = "/data/certificates/user_cacerts/0/";
-const std::string HttpConstant::USER_CERT_PATH = USER_CERT_BASE_PATH + std::to_string(getuid() / 200000);
 #endif
 
 const char *const HttpConstant::HTTP_CONTENT_TYPE = "content-type";

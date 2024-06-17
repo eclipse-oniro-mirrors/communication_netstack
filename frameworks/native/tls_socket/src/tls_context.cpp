@@ -192,9 +192,10 @@ bool TLSContext::SetDefaultCa(TLSContext *tlsContext, const TLSConfiguration &co
     } else {
         NETSTACK_LOGD("root CA certificates folder not exist or can not read");
     }
-    if (access(USER_CERT_PATH.c_str(), F_OK | R_OK) == 0) {
+    std::string userCertPath = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
+    if (access(userCertPath.c_str(), F_OK | R_OK) == 0) {
         NETSTACK_LOGD("user CA certificates folder exist and can read");
-        if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), USER_CERT_PATH.c_str())) {
+        if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), userCertPath.c_str())) {
             NETSTACK_LOGE("load user certificates failed");
             return false;
         }
