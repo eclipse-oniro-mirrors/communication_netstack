@@ -41,7 +41,10 @@
                 "napi",
                 "netmanager_base",
                 "ylong_http",
-                "openssl"
+                "openssl",
+                "hiprofiler",
+                "time_service",
+                "ability_runtime"
             ],
             "third_party": [
                 "curl",
