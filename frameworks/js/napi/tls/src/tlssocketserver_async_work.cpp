@@ -88,6 +88,18 @@ void TLSSocketServerAsyncWork::ExecGetRemoteAddress(napi_env env, void *data)
                                                                                                               data);
 }
 
+void TLSSocketServerAsyncWork::ExecConnectionGetLocalAddress(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<TLSConnectionGetLocalAddressContext,
+        TLSSocketServerExec::ExecConnectionGetLocalAddress>(env, data);
+}
+
+void TLSSocketServerAsyncWork::ExecGetLocalAddress(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<TLSServerGetLocalAddressContext,
+                                 TLSSocketServerExec::ExecGetLocalAddress>(env, data);
+}
+
 void TLSSocketServerAsyncWork::ExecSetExtraOptions(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<TlsSocket::TLSSetExtraOptionsContext, TLSSocketServerExec::ExecSetExtraOptions>(env,
@@ -157,12 +169,23 @@ void TLSSocketServerAsyncWork::GetRemoteAddressCallback(napi_env env, napi_statu
         env, status, data);
 }
 
+void TLSSocketServerAsyncWork::GetConnectionLocalAddressCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<TLSConnectionGetLocalAddressContext,
+        TLSSocketServerExec::GetConnectionLocalAddressCallback>(env, status, data);
+}
+
+void TLSSocketServerAsyncWork::GetLocalAddressCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<TLSServerGetLocalAddressContext, TLSSocketServerExec::GetLocalAddressCallback>(
+        env, status, data);
+}
+
 void TLSSocketServerAsyncWork::SetExtraOptionsCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<TlsSocket::TLSSetExtraOptionsContext,
                                      TLSSocketServerExec::SetExtraOptionsCallback>(env, status, data);
 }
-
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS

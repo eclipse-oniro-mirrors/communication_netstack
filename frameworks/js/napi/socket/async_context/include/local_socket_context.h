@@ -71,6 +71,17 @@ private:
     std::string socketPath_;
 };
 
+class LocalSocketGetLocalAddressContext final : public LocalSocketBaseContext {
+public:
+    LocalSocketGetLocalAddressContext(napi_env env, EventManager *manager) : LocalSocketBaseContext(env, manager) {}
+    void ParseParams(napi_value *params, size_t paramsCount) override;
+    void SetSocketPath(const std::string socketPath);
+    std::string GetSocketPath();
+
+private:
+    std::string socketPath_;
+};
+
 class LocalSocketConnectContext final : public LocalSocketBaseContext {
 public:
     LocalSocketConnectContext(napi_env env, EventManager *manager) : LocalSocketBaseContext(env, manager) {}

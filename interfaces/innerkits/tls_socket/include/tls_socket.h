@@ -49,6 +49,7 @@ using ConnectCallback = std::function<void(int32_t errorNumber)>;
 using SendCallback = std::function<void(int32_t errorNumber)>;
 using CloseCallback = std::function<void(int32_t errorNumber)>;
 using GetRemoteAddressCallback = std::function<void(int32_t errorNumber, const Socket::NetAddress &address)>;
+using GetLocalAddressCallback = std::function<void(int32_t errorNumber, const Socket::NetAddress &address)>;
 using GetStateCallback = std::function<void(int32_t errorNumber, const Socket::SocketStateBase &state)>;
 using SetExtraOptionsCallback = std::function<void(int32_t errorNumber)>;
 using GetCertificateCallback = std::function<void(int32_t errorNumber, const X509CertRawData &cert)>;
@@ -401,6 +402,20 @@ public:
      */
     void OffError();
 
+    /**
+     * Get the socket file description of the server
+     */
+    int GetSocketFd();
+
+    /**
+     * Set the current socket file description address of the server
+     */
+    void SetLocalAddress(const Socket::NetAddress &address);
+
+    /**
+     * Get the current socket file description address of the server
+     */
+    Socket::NetAddress GetLocalAddress();
 private:
     class TLSSocketInternal final {
     public:
@@ -619,6 +634,7 @@ private:
     bool isRunOver_ = true;
     std::condition_variable cvSslFree_;
     int sockFd_ = -1;
+    Socket::NetAddress localAddress_;
 };
 } // namespace TlsSocket
 } // namespace NetStack

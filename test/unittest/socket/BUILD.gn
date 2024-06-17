@@ -97,6 +97,7 @@ ohos_unittest("socket_unittest") {
     "$SOCKET_NAPI/options/src/udp_send_options.cpp",
     "$SOCKET_NAPI/socket_exec/src/local_socket_exec.cpp",
     "$SOCKET_NAPI/socket_exec/src/socket_exec.cpp",
+    "$SOCKET_NAPI/socket_exec/src/socket_extra_exec.cpp",
     "$SOCKET_NAPI/socket_module/src/socket_module.cpp",
     "$TLS_NAPI/src/context/tls_bind_context.cpp",
     "$TLS_NAPI/src/context/tls_connect_context.cpp",

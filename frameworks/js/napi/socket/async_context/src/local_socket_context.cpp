@@ -320,4 +320,25 @@ LocalExtraOptions &LocalSocketGetExtraOptionsContext::GetOptionsRef()
 {
     return options_;
 }
+
+void LocalSocketGetLocalAddressContext::ParseParams(napi_value *params, size_t paramsCount)
+{
+    if (paramsCount != PARAM_NONE) {
+        NETSTACK_LOGE("get local address param error");
+        SetNeedThrowException(true);
+        SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG);
+        return;
+    }
+    SetParseOK(true);
+}
+
+void LocalSocketGetLocalAddressContext::SetSocketPath(const std::string socketPath)
+{
+    socketPath_ = socketPath;
+}
+
+std::string LocalSocketGetLocalAddressContext::GetSocketPath()
+{
+    return socketPath_;
+}
 } // namespace OHOS::NetStack::Socket

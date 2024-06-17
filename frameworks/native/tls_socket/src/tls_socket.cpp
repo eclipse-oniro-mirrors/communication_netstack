@@ -1057,6 +1057,21 @@ void TLSSocket::OffError()
     }
 }
 
+int TLSSocket::GetSocketFd()
+{
+    return sockFd_;
+}
+
+void TLSSocket::SetLocalAddress(const Socket::NetAddress &address)
+{
+    localAddress_ = address;
+}
+
+Socket::NetAddress TLSSocket::GetLocalAddress()
+{
+    return localAddress_;
+}
+
 bool ExecSocketConnect(const std::string &hostName, int port, sa_family_t family, int socketDescriptor)
 {
     struct sockaddr_in dest = {0};

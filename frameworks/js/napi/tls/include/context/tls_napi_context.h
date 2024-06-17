@@ -60,6 +60,7 @@ using GetRemoteCertificateContext = TLSNapiContext;
 using GetCertificateContext = TLSNapiContext;
 using TLSGetStateContext = TLSNapiContext;
 using TLSGetRemoteAddressContext = TLSNapiContext;
+using TLSGetLocalAddressContext = TLSNapiContext;
 } // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

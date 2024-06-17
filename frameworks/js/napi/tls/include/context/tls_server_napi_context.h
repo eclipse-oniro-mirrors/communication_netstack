@@ -40,6 +40,7 @@ public:
     int32_t clientId_ = 0;
     int32_t errorNumber_ = 0;
     Socket::NetAddress address_;
+    Socket::NetAddress localAddress_;
     TlsSocket::X509CertRawData remoteCert_;
     std::vector<std::string> cipherSuites_;
     std::vector<std::string> signatureAlgorithms_;
@@ -52,6 +53,8 @@ private:
 };
 
 using ServerTLSGetRemoteAddressContext = TLSServerNapiContext;
+using TLSServerGetLocalAddressContext = TLSServerNapiContext;
+using TLSConnectionGetLocalAddressContext = TLSServerNapiContext;
 using ServerGetRemoteCertificateContext = TLSServerNapiContext;
 using ServerGetCipherSuitesContext = TLSServerNapiContext;
 using ServerGetSignatureAlgorithmsContext = TLSServerNapiContext;

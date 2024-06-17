@@ -104,6 +104,18 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetRemoteAddress(n
         TLSSocketServerAsyncWork::ExecGetRemoteAddress, TLSSocketServerAsyncWork::GetRemoteAddressCallback);
 }
 
+napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetLocalAddress(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::Interface<TLSServerGetLocalAddressContext>(
+        env, info, FUNCTION_GET_LOCAL_ADDRESS,
+        [](napi_env theEnv, napi_value thisVal, TLSServerGetLocalAddressContext *context) -> bool {
+            context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
+            return true;
+        },
+        TLSSocketServerAsyncWork::ExecConnectionGetLocalAddress,
+            TLSSocketServerAsyncWork::GetConnectionLocalAddressCallback);
+}
+
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetRemoteCertificate(napi_env env,
                                                                                    napi_callback_info info)
 {
@@ -163,6 +175,13 @@ napi_value TLSSocketServerModuleExports::TLSSocketServer::GetState(napi_env env,
                                                                     TLSSocketServerAsyncWork::GetStateCallback);
 }
 
+napi_value TLSSocketServerModuleExports::TLSSocketServer::GetLocalAddress(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::Interface<TLSServerGetLocalAddressContext>(
+        env, info, FUNCTION_GET_LOCAL_ADDRESS, nullptr, TLSSocketServerAsyncWork::ExecGetLocalAddress,
+        TLSSocketServerAsyncWork::GetLocalAddressCallback);
+}
+
 napi_value TLSSocketServerModuleExports::TLSSocketServer::SetExtraOptions(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::Interface<TlsSocket::TLSSetExtraOptionsContext>(
@@ -185,6 +204,7 @@ void TLSSocketServerModuleExports::DefineTLSSocketServerClass(napi_env env, napi
     std::initializer_list<napi_property_descriptor> functions = {
         DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_LISTEN, TLSSocketServer::Listen),
         DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_GET_STATE, TLSSocketServer::GetState),
+        DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_GET_LOCAL_ADDRESS, TLSSocketServer::GetLocalAddress),
         DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_SET_EXTRA_OPTIONS, TLSSocketServer::SetExtraOptions),
         DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_ON, TLSSocketServer::On),
         DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_OFF, TLSSocketServer::Off),
@@ -218,6 +238,7 @@ void TlsSocketServer::TLSSocketServerModuleExports::DefineTLSSocketConnectionCla
         DECLARE_NAPI_FUNCTION(TLSSocketConnection::FUNCTION_SEND, TLSSocketConnection::Send),
         DECLARE_NAPI_FUNCTION(TLSSocketConnection::FUNCTION_CLOSE, TLSSocketConnection::Close),
         DECLARE_NAPI_FUNCTION(TLSSocketConnection::FUNCTION_GET_REMOTE_ADDRESS, TLSSocketConnection::GetRemoteAddress),
+        DECLARE_NAPI_FUNCTION(TLSSocketConnection::FUNCTION_GET_LOCAL_ADDRESS, TLSSocketConnection::GetLocalAddress),
         DECLARE_NAPI_FUNCTION(TLSSocketConnection::FUNCTION_ON, TLSSocketConnection::On),
         DECLARE_NAPI_FUNCTION(TLSSocketConnection::FUNCTION_OFF, TLSSocketConnection::Off),
     };

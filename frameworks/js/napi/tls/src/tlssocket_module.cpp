@@ -120,6 +120,13 @@ napi_value TLSSocketModuleExports::TLSSocket::GetRemoteAddress(napi_env env, nap
                                                                  TLSSocketAsyncWork::GetRemoteAddressCallback);
 }
 
+napi_value TLSSocketModuleExports::TLSSocket::GetLocalAddress(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::Interface<TLSGetLocalAddressContext>(env, info, FUNCTION_GET_LOCAL_ADDRESS, nullptr,
+                                                                 TLSSocketAsyncWork::ExecGetLocalAddress,
+                                                                 TLSSocketAsyncWork::GetLocalAddressCallback);
+}
+
 napi_value TLSSocketModuleExports::TLSSocket::SetExtraOptions(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::Interface<TLSSetExtraOptionsContext>(env, info, FUNCTION_BIND, nullptr,
@@ -151,6 +158,7 @@ void TLSSocketModuleExports::DefineTLSSocketClass(napi_env env, napi_value expor
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_BIND, TLSSocket::Bind),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_GET_STATE, TLSSocket::GetState),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_GET_REMOTE_ADDRESS, TLSSocket::GetRemoteAddress),
+        DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_GET_LOCAL_ADDRESS, TLSSocket::GetLocalAddress),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_SET_EXTRA_OPTIONS, TLSSocket::SetExtraOptions),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_ON, TLSSocket::On),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_OFF, TLSSocket::Off),

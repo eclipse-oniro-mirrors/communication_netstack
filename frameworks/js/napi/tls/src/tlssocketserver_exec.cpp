@@ -34,6 +34,8 @@ namespace TlsSocketServer {
 namespace {
 constexpr const char *CERTIFICATA_DATA = "data";
 constexpr const char *CERTIFICATA_ENCODING_FORMAT = "encodingFormat";
+constexpr const int SYSTEM_INTERNAL_ERROR_CODE = 2300002;
+const std::string SYSTEM_INTERNAL_ERROR_MESSAGE = "system internal error";
 } // namespace
 bool TLSSocketServerExec::ExecGetCertificate(TlsSocket::GetCertificateContext *context)
 {
@@ -281,6 +283,84 @@ bool TLSSocketServerExec::ExecGetRemoteAddress(ServerTLSGetRemoteAddressContext 
     return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
 }
 
+bool TLSSocketServerExec::ExecGetLocalAddress(TLSServerGetLocalAddressContext *context)
+{
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
+    auto manager = context->GetManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        context->SetNeedThrowException(true);
+        context->SetError(SYSTEM_INTERNAL_ERROR_CODE, SYSTEM_INTERNAL_ERROR_MESSAGE);
+        return false;
+    }
+    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    if (tlsSocketServer == nullptr) {
+        NETSTACK_LOGE("ExecGetRemoteAddress tlsSocketServer is null");
+        context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
+                          TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
+        return false;
+    }
+    struct sockaddr_storage addr{};
+    socklen_t addrLen = sizeof(addr);
+    if (getsockname(tlsSocketServer->GetListenSocketFd(), (struct sockaddr *)&addr, &addrLen) < 0) {
+        context->SetErrorCode(errno);
+        return false;
+    }
+
+    char ip_str[INET6_ADDRSTRLEN];
+    Socket::NetAddress localAddress;
+    if (addr.ss_family == AF_INET) {
+        auto *addr_in = (struct sockaddr_in *)&addr;
+        inet_ntop(AF_INET, &addr_in->sin_addr, ip_str, sizeof(ip_str));
+        localAddress.SetFamilyBySaFamily(AF_INET);
+        localAddress.SetAddress(ip_str);
+        localAddress.SetPort(ntohs(addr_in->sin_port));
+        context->localAddress_ = localAddress;
+    } else if (addr.ss_family == AF_INET6) {
+        auto *addr_in6 = (struct sockaddr_in6 *)&addr;
+        inet_ntop(AF_INET6, &addr_in6->sin6_addr, ip_str, sizeof(ip_str));
+        localAddress.SetFamilyBySaFamily(AF_INET6);
+        localAddress.SetAddress(ip_str);
+        localAddress.SetPort(ntohs(addr_in6->sin6_port));
+        context->localAddress_ = localAddress;
+    }
+    return true;
+}
+
+bool TLSSocketServerExec::ExecConnectionGetLocalAddress(TLSConnectionGetLocalAddressContext *context)
+{
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
+    auto manager = context->GetManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        context->SetNeedThrowException(true);
+        context->SetError(SYSTEM_INTERNAL_ERROR_CODE, SYSTEM_INTERNAL_ERROR_MESSAGE);
+        return false;
+    }
+    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    if (tlsSocketServer == nullptr) {
+        NETSTACK_LOGE("ExecGetRemoteAddress tlsSocketServer is null");
+        context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
+                          TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
+        return false;
+    }
+    tlsSocketServer->GetLocalAddress(context->clientId_,
+                                     [&context](int32_t errorNumber, const Socket::NetAddress address) {
+                                         context->localAddress_ = address;
+                                         context->errorNumber_ = errorNumber;
+                                         if (errorNumber != TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS) {
+                                             context->SetError(errorNumber, TlsSocket::MakeErrorMessage(errorNumber));
+                                         }
+                                     });
+    return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+}
+
 bool TLSSocketServerExec::ExecGetState(TlsSocket::TLSGetStateContext *context)
 {
     auto manager = context->GetManager();
@@ -455,6 +535,42 @@ napi_value TLSSocketServerExec::GetRemoteAddressCallback(ServerTLSGetRemoteAddre
     NapiUtils::SetStringPropertyUtf8(context->GetEnv(), obj, KEY_ADDRESS, context->address_.GetAddress());
     NapiUtils::SetUint32Property(context->GetEnv(), obj, KEY_FAMILY, context->address_.GetJsValueFamily());
     NapiUtils::SetUint32Property(context->GetEnv(), obj, KEY_PORT, context->address_.GetPort());
+    return obj;
+}
+
+napi_value TLSSocketServerExec::GetLocalAddressCallback(TLSServerGetLocalAddressContext *context)
+{
+    napi_value obj = NapiUtils::CreateObject(context->GetEnv());
+    if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+    auto manager = context->GetManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return obj;
+    }
+    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    if (tlsSocketServer == nullptr) {
+        NETSTACK_LOGE("get localAddress callback tlsSocketServer is null");
+        return obj;
+    }
+    auto env = context->GetEnv();
+    NapiUtils::SetStringPropertyUtf8(env, obj, KEY_ADDRESS, tlsSocketServer->GetLocalAddress().GetAddress());
+    NapiUtils::SetUint32Property(env, obj, KEY_FAMILY, tlsSocketServer->GetLocalAddress().GetJsValueFamily());
+    NapiUtils::SetUint32Property(env, obj, KEY_PORT, tlsSocketServer->GetLocalAddress().GetPort());
+    return obj;
+}
+
+napi_value TLSSocketServerExec::GetConnectionLocalAddressCallback(TLSConnectionGetLocalAddressContext *context)
+{
+    napi_value obj = NapiUtils::CreateObject(context->GetEnv());
+    if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+    auto env = context->GetEnv();
+    NapiUtils::SetStringPropertyUtf8(env, obj, KEY_ADDRESS, context->localAddress_.GetAddress());
+    NapiUtils::SetUint32Property(env, obj, KEY_FAMILY, context->localAddress_.GetJsValueFamily());
+    NapiUtils::SetUint32Property(env, obj, KEY_PORT, context->localAddress_.GetPort());
     return obj;
 }
 

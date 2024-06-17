@@ -263,6 +263,56 @@ bool TLSSocketExec::ExecGetRemoteAddress(TLSGetRemoteAddressContext *context)
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
+bool TLSSocketExec::ExecGetLocalAddress(TLSGetLocalAddressContext *context)
+{
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
+    auto manager = context->GetManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        context->SetNeedThrowException(true);
+        context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
+                          TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
+        return false;
+    }
+    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
+    if (tlsSocket == nullptr) {
+        NETSTACK_LOGE("get local address tlsSocketServer is null");
+        context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
+                          TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
+        return false;
+    }
+    auto listenSocketFD = tlsSocket->GetSocketFd();
+    struct sockaddr_storage addr{};
+    socklen_t addrLen = sizeof(addr);
+    if (getsockname(listenSocketFD, (struct sockaddr *)&addr, &addrLen) == -1) {
+        context->SetNeedThrowException(true);
+        context->SetErrorCode(errno);
+        return false;
+    }
+
+    char ip_str[INET6_ADDRSTRLEN];
+    Socket::NetAddress localAddress;
+    if (addr.ss_family == AF_INET) {
+        auto *addr_in = (struct sockaddr_in *)&addr;
+        inet_ntop(AF_INET, &addr_in->sin_addr, ip_str, sizeof(ip_str));
+        localAddress.SetFamilyBySaFamily(AF_INET);
+        localAddress.SetAddress(ip_str);
+        localAddress.SetPort(ntohs(addr_in->sin_port));
+        tlsSocket->SetLocalAddress(localAddress);
+    } else if (addr.ss_family == AF_INET6) {
+        auto *addr_in6 = (struct sockaddr_in6 *)&addr;
+        inet_ntop(AF_INET6, &addr_in6->sin6_addr, ip_str, sizeof(ip_str));
+        localAddress.SetFamilyBySaFamily(AF_INET6);
+        localAddress.SetAddress(ip_str);
+        localAddress.SetPort(ntohs(addr_in6->sin6_port));
+        tlsSocket->SetLocalAddress(localAddress);
+    }
+    return true;
+}
+
 bool TLSSocketExec::ExecGetState(TLSGetStateContext *context)
 {
     auto manager = context->GetManager();
@@ -428,6 +478,29 @@ napi_value TLSSocketExec::GetRemoteAddressCallback(TLSGetRemoteAddressContext *c
     NapiUtils::SetStringPropertyUtf8(context->GetEnv(), obj, KEY_ADDRESS, context->address_.GetAddress());
     NapiUtils::SetUint32Property(context->GetEnv(), obj, KEY_FAMILY, context->address_.GetJsValueFamily());
     NapiUtils::SetUint32Property(context->GetEnv(), obj, KEY_PORT, context->address_.GetPort());
+    return obj;
+}
+
+napi_value TLSSocketExec::GetLocalAddressCallback(TLSGetLocalAddressContext *context)
+{
+    napi_value obj = NapiUtils::CreateObject(context->GetEnv());
+    if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+    auto manager = context->GetManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return obj;
+    }
+    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
+    if (tlsSocket == nullptr) {
+        NETSTACK_LOGE("get localAddress callback tlsSocketServer is null");
+        return obj;
+    }
+    auto env = context->GetEnv();
+    NapiUtils::SetStringPropertyUtf8(env, obj, KEY_ADDRESS, tlsSocket->GetLocalAddress().GetAddress());
+    NapiUtils::SetUint32Property(env, obj, KEY_FAMILY, tlsSocket->GetLocalAddress().GetJsValueFamily());
+    NapiUtils::SetUint32Property(env, obj, KEY_PORT, tlsSocket->GetLocalAddress().GetPort());
     return obj;
 }
 

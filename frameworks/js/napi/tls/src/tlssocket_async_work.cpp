@@ -83,6 +83,11 @@ void TLSSocketAsyncWork::ExecGetRemoteAddress(napi_env env, void *data)
     BaseAsyncWork::ExecAsyncWork<TLSGetRemoteAddressContext, TLSSocketExec::ExecGetRemoteAddress>(env, data);
 }
 
+void TLSSocketAsyncWork::ExecGetLocalAddress(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<TLSGetLocalAddressContext, TLSSocketExec::ExecGetLocalAddress>(env, data);
+}
+
 void TLSSocketAsyncWork::ExecSetExtraOptions(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<TLSSetExtraOptionsContext, TLSSocketExec::ExecSetExtraOptions>(env, data);
@@ -144,6 +149,12 @@ void TLSSocketAsyncWork::GetRemoteAddressCallback(napi_env env, napi_status stat
 {
     BaseAsyncWork::AsyncWorkCallback<TLSGetRemoteAddressContext, TLSSocketExec::GetRemoteAddressCallback>(env, status,
                                                                                                           data);
+}
+
+void TLSSocketAsyncWork::GetLocalAddressCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<TLSGetLocalAddressContext, TLSSocketExec::GetLocalAddressCallback>(env, status,
+                                                                                                        data);
 }
 
 void TLSSocketAsyncWork::SetExtraOptionsCallback(napi_env env, napi_status status, void *data)

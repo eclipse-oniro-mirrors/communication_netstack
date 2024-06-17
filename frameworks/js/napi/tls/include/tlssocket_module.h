@@ -35,6 +35,7 @@ public:
         static constexpr const char *FUNCTION_CLOSE = "close";
         static constexpr const char *FUNCTION_BIND = "bind";
         static constexpr const char *FUNCTION_GET_REMOTE_ADDRESS = "getRemoteAddress";
+        static constexpr const char *FUNCTION_GET_LOCAL_ADDRESS = "getLocalAddress";
         static constexpr const char *FUNCTION_GET_STATE = "getState";
         static constexpr const char *FUNCTION_SET_EXTRA_OPTIONS = "setExtraOptions";
         static constexpr const char *FUNCTION_ON = "on";
@@ -50,6 +51,7 @@ public:
         static napi_value Close(napi_env env, napi_callback_info info);
         static napi_value Bind(napi_env env, napi_callback_info info);
         static napi_value GetRemoteAddress(napi_env env, napi_callback_info info);
+        static napi_value GetLocalAddress(napi_env env, napi_callback_info info);
         static napi_value GetState(napi_env env, napi_callback_info info);
         static napi_value SetExtraOptions(napi_env env, napi_callback_info info);
         static napi_value On(napi_env env, napi_callback_info info);

@@ -45,6 +45,7 @@ public:
     SocketStateBase state_;
 
     NetAddress address_;
+    NetAddress localAddress_;
     int32_t errorNumber_ = 0;
     int32_t clientId_ = 0;
 
@@ -53,9 +54,9 @@ private:
 };
 
 typedef TcpServerCommonContext TcpServerGetStateContext;
-
+typedef TcpServerCommonContext TcpServerGetLocalAddressContext;
+typedef TcpServerCommonContext TcpConnectionGetLocalAddressContext;
 typedef TcpServerCommonContext TcpServerGetRemoteAddressContext;
-
 typedef TcpServerCommonContext TcpServerCloseContext;
 } // namespace OHOS::NetStack::Socket
 

@@ -233,4 +233,36 @@ void LocalSocketServerCloseContext::SetClientId(int clientId)
 {
     clientId_ = clientId;
 }
+
+void LocalSocketServerGetLocalAddressContext::ParseParams(napi_value *params, size_t paramsCount)
+{
+    if (paramsCount != PARAM_NONE) {
+        NETSTACK_LOGE("get local address param error");
+        SetNeedThrowException(true);
+        SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG);
+        return;
+    }
+    SetParseOK(true);
+}
+
+void LocalSocketServerGetLocalAddressContext::SetSocketPath(const std::string socketPath)
+{
+    socketPath_ = socketPath;
+}
+
+std::string LocalSocketServerGetLocalAddressContext::GetSocketPath()
+{
+    return socketPath_;
+}
+
+int LocalSocketServerGetLocalAddressContext::GetClientId() const
+{
+    return clientId_;
+}
+
+void LocalSocketServerGetLocalAddressContext::SetClientId(int clientId)
+{
+    clientId_ = clientId;
+}
+
 } // namespace OHOS::NetStack::Socket

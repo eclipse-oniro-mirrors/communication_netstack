@@ -44,6 +44,7 @@ public:
     static bool ExecBind(TLSBindContext *context);
     static bool ExecGetState(TLSGetStateContext *context);
     static bool ExecGetRemoteAddress(TLSGetRemoteAddressContext *context);
+    static bool ExecGetLocalAddress(TLSGetLocalAddressContext *context);
     static bool ExecSetExtraOptions(TLSSetExtraOptionsContext *context);
 
     static napi_value GetCertificateCallback(GetCertificateContext *context);
@@ -57,6 +58,7 @@ public:
     static napi_value BindCallback(TLSBindContext *context);
     static napi_value GetStateCallback(TLSGetStateContext *context);
     static napi_value GetRemoteAddressCallback(TLSGetRemoteAddressContext *context);
+    static napi_value GetLocalAddressCallback(TLSGetLocalAddressContext *context);
     static napi_value SetExtraOptionsCallback(TLSSetExtraOptionsContext *context);
 };
 } // namespace TlsSocket

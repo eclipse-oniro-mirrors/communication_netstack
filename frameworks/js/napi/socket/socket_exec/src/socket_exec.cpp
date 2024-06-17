@@ -78,6 +78,10 @@ static constexpr const char *SOCKET_EXEC_CONNECT = "OS_NET_SockTPRD";
 
 static constexpr const char *SOCKET_RECV_FROM_MULTI_CAST = "OS_NET_SockMPRD";
 
+static constexpr const int SYSTEM_INTERNAL_ERROR_CODE = 2300002;
+
+static constexpr const char *SYSTEM_INTERNAL_ERROR_MESSAGE = "system internal error";
+
 namespace OHOS::NetStack::Socket::SocketExec {
 #define ERROR_RETURN(context, ...) \
     do { \
@@ -91,29 +95,6 @@ std::map<int32_t, EventManager *> g_clientEventManagers;
 std::condition_variable g_cv;
 std::mutex g_mutex;
 std::atomic_int g_userCounter = 0;
-
-struct MessageData {
-    MessageData() = delete;
-    MessageData(void *d, size_t l, const SocketRemoteInfo &info) : data(d), len(l), remoteInfo(info) {}
-    ~MessageData()
-    {
-        if (data) {
-            free(data);
-        }
-    }
-
-    void *data;
-    size_t len;
-    SocketRemoteInfo remoteInfo;
-};
-
-struct TcpConnection {
-    TcpConnection() = delete;
-    explicit TcpConnection(int32_t clientid) : clientId(clientid) {}
-    ~TcpConnection() = default;
-
-    int32_t clientId;
-};
 
 static void SetIsBound(sa_family_t family, GetStateContext *context, const sockaddr_in *addr4,
                        const sockaddr_in6 *addr6)
@@ -240,6 +221,8 @@ napi_value ConstructTCPSocketConnection(napi_env env, napi_callback_info info, i
                               SocketModuleExports::TCPConnection::Close),
         DECLARE_NAPI_FUNCTION(SocketModuleExports::TCPConnection::FUNCTION_GET_REMOTE_ADDRESS,
                               SocketModuleExports::TCPConnection::GetRemoteAddress),
+        DECLARE_NAPI_FUNCTION(SocketModuleExports::TCPConnection::FUNCTION_GET_LOCAL_ADDRESS,
+                              SocketModuleExports::TCPConnection::GetLocalAddress),
         DECLARE_NAPI_FUNCTION(SocketModuleExports::TCPConnection::FUNCTION_ON, SocketModuleExports::TCPConnection::On),
         DECLARE_NAPI_FUNCTION(SocketModuleExports::TCPConnection::FUNCTION_OFF,
                               SocketModuleExports::TCPConnection::Off),
@@ -1652,6 +1635,51 @@ bool ExecTcpConnectionGetRemoteAddress(TcpServerGetRemoteAddressContext *context
     }
 
     return false;
+}
+
+bool ExecTcpConnectionGetLocalAddress(TcpConnectionGetLocalAddressContext *context)
+{
+    if (context == nullptr) {
+        context->SetNeedThrowException(true);
+        context->SetError(SYSTEM_INTERNAL_ERROR_CODE, SYSTEM_INTERNAL_ERROR_MESSAGE);
+        return false;
+    }
+    int32_t clientFd = -1;
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        auto iter = g_clientFDs.find(context->clientId_);
+        if (iter != g_clientFDs.end()) {
+            clientFd = iter->second;
+        } else {
+            NETSTACK_LOGE("not find clientId");
+        }
+    }
+    struct sockaddr_storage addr{};
+    socklen_t addrLen = sizeof(addr);
+    if (getsockname(clientFd, reinterpret_cast<struct sockaddr *>(&addr), &addrLen) < 0) {
+        context->SetNeedThrowException(true);
+        context->SetErrorCode(errno);
+        return false;
+    }
+
+    char ipStr[INET6_ADDRSTRLEN];
+    Socket::NetAddress localAddress;
+    if (addr.ss_family == AF_INET) {
+        auto *addrIn = reinterpret_cast<struct sockaddr_in *>(&addr);
+        inet_ntop(AF_INET, &addrIn->sin_addr, ipStr, sizeof(ipStr));
+        localAddress.SetFamilyBySaFamily(AF_INET);
+        localAddress.SetAddress(ipStr);
+        localAddress.SetPort(ntohs(addrIn->sin_port));
+        context->localAddress_ = localAddress;
+    } else if (addr.ss_family == AF_INET6) {
+        auto *addrIn6 = reinterpret_cast<struct sockaddr_in6 *>(&addr);
+        inet_ntop(AF_INET6, &addrIn6->sin6_addr, ipStr, sizeof(ipStr));
+        localAddress.SetFamilyBySaFamily(AF_INET6);
+        localAddress.SetAddress(ipStr);
+        localAddress.SetPort(ntohs(addrIn6->sin6_port));
+        context->localAddress_ = localAddress;
+    }
+    return true;
 }
 
 static bool IsRemoteConnect(TcpServerSendContext *context, int32_t clientFd)
