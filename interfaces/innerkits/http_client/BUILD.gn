@@ -19,6 +19,8 @@ config("http_client_config") {
   include_dirs = [
     "$THIRD_PARTY_ROOT/curl/include",
     "$NETSTACK_DIR/interfaces/innerkits/http_client/include",
+    "$NETSTACK_DIR/utils/profiler_utils/include",
+    "$NETSTACK_DIR/utils/tlv_utils/include",
   ]
 
   cflags = []
@@ -60,6 +62,10 @@ ohos_shared_library("http_client") {
   sources = [
     "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",
     "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
+    "$NETSTACK_DIR/utils/profiler_utils/src/http_client_network_message.cpp",
+    "$NETSTACK_DIR/utils/profiler_utils/src/i_network_message.cpp",
+    "$NETSTACK_DIR/utils/profiler_utils/src/netstack_network_profiler.cpp",
+    "$NETSTACK_DIR/utils/tlv_utils/src/tlv_utils.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_constant.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_error.cpp",
@@ -105,9 +111,12 @@ ohos_shared_library("http_client") {
   } else {
     deps += [ "$NETSTACK_DIR/utils:stack_utils_common" ]
     external_deps = [
+      "ability_runtime:wantagent_innerkits",
       "hilog:libhilog",
+      "hiprofiler:libnetwork_profiler",
       "hitrace:hitrace_meter",
       "netmanager_base:net_conn_manager_if",
+      "time_service:time_client",
     ]
     if (product_name != "ohos-sdk") {
       external_deps += [ "init:libbegetutil" ]
