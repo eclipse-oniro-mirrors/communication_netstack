@@ -166,7 +166,8 @@ CURLcode HttpClientTask::SslCtxFunction(CURL *curl, void *sslCtx)
     }
     std::vector<std::string> certs;
     certs.emplace_back(HttpConstant::USER_CERT_ROOT_PATH);
-    certs.emplace_back(HttpConstant::USER_CERT_PATH);
+    certs.emplace_back(
+        HttpConstant::USER_CERT_BASE_PATH + std::to_string(getuid() / HttpConstant::UID_TRANSFORM_DIVISOR));
     certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
 
     for (const auto &path : certs) {

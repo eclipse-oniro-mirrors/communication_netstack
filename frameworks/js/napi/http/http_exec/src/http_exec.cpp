@@ -88,7 +88,6 @@ static constexpr const char *HTTP_REQ_TRACE_NAME = "HttpRequest";
 static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
 static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 static constexpr const char *USER_CERT_ROOT_PATH = "/data/certificates/user_cacerts/0/";
-static const std::string USER_CERT_PATH = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
 static constexpr int32_t SYSPARA_MAX_SIZE = 128;
 static constexpr const char *DEFAULT_HTTP_PROXY_HOST = "NONE";
 static constexpr const char *DEFAULT_HTTP_PROXY_PORT = "0";
@@ -896,7 +895,7 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
     // add user cert path
     certs.emplace_back(USER_CERT_ROOT_PATH);
-    certs.emplace_back(USER_CERT_PATH);
+    certs.emplace_back(BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR));
     // add system cert path
     certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
     context->SetCertsPath(std::move(certs), context->options.GetCaPath());

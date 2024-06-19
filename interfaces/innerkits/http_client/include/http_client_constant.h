@@ -78,9 +78,9 @@ public:
     static const char *const HTTP_DEFAULT_USER_AGENT;
 
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
+    static const int32_t UID_TRANSFORM_DIVISOR;
     static const std::string USER_CERT_BASE_PATH;
     static const std::string USER_CERT_ROOT_PATH;
-    static const std::string USER_CERT_PATH;
 #endif
 
     static const char *const HTTP_CONTENT_TYPE;
