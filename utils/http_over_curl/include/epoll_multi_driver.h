@@ -53,7 +53,7 @@ private:
     int MultiSocketCallback(curl_socket_t s, int action, CurlSocketContext *socketContext);
 
     void EpollTimerCallback();
-    void EpollSocketCallback(int fd, int revents);
+    void EpollSocketCallback(int fd);
 
     void CheckMultiInfo();
 

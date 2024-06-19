@@ -78,7 +78,7 @@ void EpollMultiDriver::Step(int waitEventsTimeoutMs)
         } else if (timeoutTimer_.IsItYours(events[idx].data.fd)) {
             EpollTimerCallback();
         } else { // curl socket event
-            EpollSocketCallback(events[idx].data.fd, events[idx].events);
+            EpollSocketCallback(events[idx].data.fd);
         }
     }
 }
@@ -205,9 +205,9 @@ EpollMultiDriver::CurlSocketContext::~CurlSocketContext()
 }
 
 // Called by main loop when we get action on a multi socket file descriptor
-void EpollMultiDriver::EpollSocketCallback(int fd, int revents)
+void EpollMultiDriver::EpollSocketCallback(int fd)
 {
-    int action = ((revents & EPOLLIN) ? CURL_CSELECT_IN : 0) | ((revents & EPOLLOUT) ? CURL_CSELECT_OUT : 0);
+    int action = CURL_CSELECT_IN | CURL_CSELECT_OUT;
     auto rc = curl_multi_socket_action(multi_, fd, action, &stillRunning);
     if (rc != CURLM_OK) {
         NETSTACK_LOGE("curl_multi returned error = %{public}d", rc);
