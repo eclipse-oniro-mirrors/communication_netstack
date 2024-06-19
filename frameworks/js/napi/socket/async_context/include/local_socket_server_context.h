@@ -17,6 +17,9 @@
 #define LOCAL_SOCKET_SERVER_CONTEXT_H
 
 #include <cstddef>
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+#include <unistd.h>
+#endif
 #include <map>
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
 #include <sys/epoll.h>
@@ -35,6 +38,10 @@ struct LocalSocketServerManager : public SocketBaseManager {
     static constexpr int MAX_EVENTS = 10;
     static constexpr int EPOLL_TIMEOUT_MS = 500;
     int clientId_ = 0;
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    int threadCounts_ = 0;
+    bool isServerDestruct_ = false;
+#endif
     LocalExtraOptions extraOptions_;
     bool alreadySetExtraOptions_ = false;
     std::atomic_bool isServerDestruct_;
@@ -155,6 +162,23 @@ struct LocalSocketServerManager : public SocketBaseManager {
         std::lock_guard<std::mutex> lock(clientMutex_);
         return acceptFds_.size();
     }
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    EventManager *WaitForManager(int clientId)
+    {
+        EventManager *manager = nullptr;
+        std::unique_lock<std::mutex> lock(clientMutex_);
+        cond_.wait(lock, [&manager, &clientId, this]() {
+            if (auto iter = clientEventManagers_.find(clientId); iter != clientEventManagers_.end()) {
+                manager = iter->second;
+                if (manager->HasEventListener(EVENT_MESSAGE)) {
+                    return true;
+                }
+            }
+            return false;
+        });
+        return manager;
+    }
+#endif
     void NotifyRegisterEvent()
     {
         std::lock_guard<std::mutex> lock(clientMutex_);
@@ -182,6 +206,13 @@ struct LocalSocketServerManager : public SocketBaseManager {
         }
         clientEventManagers_.clear();
     }
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    void IncreaseThreadCounts()
+    {
+        std::lock_guard<std::mutex> lock(finishMutex_);
+        ++threadCounts_;
+    }
+#endif
     void NotifyLoopFinished()
     {
         std::lock_guard<std::mutex> lock(finishMutex_);
