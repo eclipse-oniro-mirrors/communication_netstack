@@ -146,7 +146,7 @@ void FinalizeLocalsocketServer(napi_env, void *data, void *)
         if (auto serverMgr = reinterpret_cast<LocalSocketServerManager *>(manager->GetData()); serverMgr != nullptr) {
             NETSTACK_LOGI("localsocket server handle is finalized, fd: %{public}d", serverMgr->sockfd_);
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
-	    serverMgr->SetServerDestructStatus(true);
+            serverMgr->SetServerDestructStatus(true);
 #else
             serverMgr->isServerDestruct_ = true;
 #endif
