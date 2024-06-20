@@ -58,10 +58,10 @@ ohos_unittest("websocket_unittest") {
   deps = [
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/libwebsockets:websockets",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
 
   external_deps = common_external_deps
+  external_deps += [ "openssl:libssl_shared" ]
 
   part_name = "netstack"
   subsystem_name = "communication"

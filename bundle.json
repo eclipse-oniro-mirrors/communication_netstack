@@ -47,10 +47,8 @@
                 "ability_runtime"
             ],
             "third_party": [
-                "curl",
                 "libwebsockets",
-                "node",
-                "openssl"
+                "node"
             ]
         },
         "build": {

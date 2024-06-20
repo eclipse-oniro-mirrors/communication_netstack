@@ -41,8 +41,8 @@ ohos_unittest("netstack_common_utils_test") {
   ]
   include_dirs += utils_include
 
-  deps = [ "$THIRD_PARTY_ROOT/curl:curl_shared" ]
   external_deps = common_external_deps
+  external_deps += [ "curl:curl_shared" ]
 
   sources = [
     "$NETSTACK_UTILS_ROOT/common_utils/src/netstack_apipolicy_utils.cpp",

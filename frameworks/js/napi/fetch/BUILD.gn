@@ -30,7 +30,6 @@ ohos_shared_library("fetch") {
     "fetch_exec/include",
     "fetch_module/include",
     "options/include",
-    "$THIRD_PARTY_ROOT/curl/include",
   ]
 
   sources = [
@@ -55,12 +54,10 @@ ohos_shared_library("fetch") {
     "-O2",
   ]
 
-  deps = [
-    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/curl:curl_shared",
-  ]
+  deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
 
   external_deps = [
+    "curl:curl_shared",
     "hilog:libhilog",
     "napi:ace_napi",
   ]

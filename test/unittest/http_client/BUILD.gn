@@ -48,12 +48,10 @@ ohos_unittest("http_client_unittest") {
     "HttpClientTest.cpp",
   ]
 
-  deps = [
-    "$NETSTACK_INNERKITS_DIR/http_client:http_client",
-    "$THIRD_PARTY_ROOT/curl:curl_shared",
-  ]
+  deps = [ "$NETSTACK_INNERKITS_DIR/http_client:http_client" ]
 
   external_deps = common_external_deps
+  external_deps += [ "curl:curl_shared" ]
 
   part_name = "netstack"
   subsystem_name = "communication"

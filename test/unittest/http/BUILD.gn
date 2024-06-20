@@ -68,7 +68,7 @@ ohos_unittest("http_unittest") {
   }
 
   external_deps = common_external_deps
-
+  external_deps += [ "curl:curl_shared" ]
   sources = [
     "$NETSTACK_NAPI_ROOT/http/async_context/src/request_context.cpp",
     "$NETSTACK_NAPI_ROOT/http/constant/src/constant.cpp",
@@ -83,10 +83,7 @@ ohos_unittest("http_unittest") {
     "HttpRequestOptionsTest.cpp",
   ]
 
-  deps = [
-    "$SUBSYSTEM_DIR/netstack/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/curl:curl_shared",
-  ]
+  deps = [ "$SUBSYSTEM_DIR/netstack/utils/napi_utils:napi_utils" ]
   if (is_mingw || is_mac) {
     sources +=
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]

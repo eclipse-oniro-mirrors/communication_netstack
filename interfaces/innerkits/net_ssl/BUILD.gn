@@ -73,14 +73,11 @@ ohos_shared_library("net_ssl") {
 
   public_configs = [ ":net_ssl_config" ]
 
-  deps = [
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
-  ]
-
   external_deps = [
     "hilog:libhilog",
     "ipc:ipc_core",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   innerapi_tags = [ "platformsdk" ]

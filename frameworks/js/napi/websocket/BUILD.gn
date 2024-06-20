@@ -59,12 +59,12 @@ ohos_shared_library("websocket") {
   deps = [
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/libwebsockets:websockets",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
 
   external_deps = [
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libssl_shared",
   ]
 
   if (defined(global_parts_info) &&

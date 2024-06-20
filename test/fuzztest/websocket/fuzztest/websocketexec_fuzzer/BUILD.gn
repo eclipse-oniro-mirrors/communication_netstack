@@ -60,7 +60,6 @@ ohos_fuzztest("WebSocketExecFuzzTest") {
   deps = [
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/libwebsockets:websockets",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
 
   external_deps = [
@@ -68,6 +67,7 @@ ohos_fuzztest("WebSocketExecFuzzTest") {
     "eventhandler:libeventhandler",
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libssl_shared",
   ]
 
   defines = [

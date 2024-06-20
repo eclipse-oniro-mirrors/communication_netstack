@@ -27,7 +27,6 @@ config("http_config") {
     "http_exec/include",
     "http_module/include",
     "options/include",
-    "$THIRD_PARTY_ROOT/curl/include",
     "$NETSTACK_DIR/utils/common_utils/include",
   ]
   if (defined(global_parts_info) &&
@@ -115,21 +114,23 @@ ohos_shared_library("http") {
       "$ARKUI_ROOT/napi:ace_napi",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
       "$THIRD_PARTY_ROOT/bounds_checking_function:libsec_static",
-      "$THIRD_PARTY_ROOT/curl:curl_shared",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
     ]
-    external_deps = [ "cJSON:cjson" ]
+    external_deps = [
+      "cJSON:cjson",
+      "curl:curl_shared",
+    ]
     ldflags = [ "-lpthread" ]
   } else {
     deps = [
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-      "$THIRD_PARTY_ROOT/curl:curl_shared_http3",
       "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
     ]
     external_deps = [
       "ability_runtime:wantagent_innerkits",
       "cJSON:cjson",
+      "curl:curl_shared_http3",
       "hilog:libhilog",
       "hiprofiler:libnetwork_profiler",
       "hitrace:hitrace_meter",

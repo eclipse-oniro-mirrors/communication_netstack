@@ -126,13 +126,13 @@ ohos_unittest("two_way_tls_socket_server_unittest") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
