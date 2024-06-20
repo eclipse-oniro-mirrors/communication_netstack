@@ -145,14 +145,20 @@ void FinalizeLocalsocketServer(napi_env, void *data, void *)
     if (manager != nullptr) {
         if (auto serverMgr = reinterpret_cast<LocalSocketServerManager *>(manager->GetData()); serverMgr != nullptr) {
             NETSTACK_LOGI("localsocket server handle is finalized, fd: %{public}d", serverMgr->sockfd_);
-            serverMgr->SetServerDestructStatus(true);
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
+	    serverMgr->SetServerDestructStatus(true);
+#else
+            serverMgr->isServerDestruct_ = true;
+#endif
             serverMgr->RemoveAllAccept();
             serverMgr->RemoveAllEventManager();
             if (serverMgr->sockfd_ > 0) {
                 close(serverMgr->sockfd_);
                 serverMgr->sockfd_ = -1;
             }
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
             close(serverMgr->epollFd_);
+#endif
             serverMgr->WaitForEndingLoop();
             delete serverMgr;
         }
@@ -396,14 +402,18 @@ static bool MakeLocalServerSocket(napi_env env, napi_value thisVal, LocalSocketS
     if (pManager == nullptr) {
         return false;
     }
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
     if (pManager->StartEpoll() < 0) {
         NETSTACK_LOGE("localsocket server start epoll err, sock: %{public}d", sock);
         close(sock);
         return false;
     }
+#endif
     if (!SetSocketManager(env, thisVal, context, pManager)) {
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
         close(sock);
         close(pManager->epollFd_);
+#endif
         return false;
     }
     context->SetExecOK(true);
