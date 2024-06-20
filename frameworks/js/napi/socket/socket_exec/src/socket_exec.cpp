@@ -1174,7 +1174,6 @@ static bool CheckClosed(GetStateContext *context, int &opt)
     socklen_t optLen = sizeof(int);
     int r = getsockopt(context->GetSocketFd(), SOL_SOCKET, SO_TYPE, &opt, &optLen);
     if (r < 0) {
-        context->state_.SetIsClose(true);
         return true;
     }
     return false;
@@ -2056,7 +2055,6 @@ bool ExecTcpServerGetState(TcpServerGetStateContext *context)
     int opt;
     socklen_t optLen = sizeof(int);
     if (getsockopt(context->GetSocketFd(), SOL_SOCKET, SO_TYPE, &opt, &optLen) < 0) {
-        context->state_.SetIsClose(true);
         return true;
     }
 
