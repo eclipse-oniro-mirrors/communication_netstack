@@ -292,7 +292,6 @@ bool TLSSocketServerExec::ExecGetState(TlsSocket::TLSGetStateContext *context)
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetState tlsSocketServer is null");
-        context->state_.SetIsClose(true);
         return true;
     }
     tlsSocketServer->GetState([&context](int32_t errorNumber, const Socket::SocketStateBase state) {
