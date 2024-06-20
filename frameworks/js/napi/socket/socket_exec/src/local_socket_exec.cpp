@@ -480,7 +480,7 @@ static inline void RecvInErrorCondition(int reason, int clientId, const LocalSoc
     serverManager->RemoveAccept(clientId);
 }
 
-#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
 static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager *serverManager,
                                          const LocalSocketMessageCallback &callback, const std::string &path)
 {
