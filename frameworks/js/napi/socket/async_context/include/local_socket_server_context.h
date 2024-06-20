@@ -58,6 +58,7 @@ struct LocalSocketServerManager : public SocketBaseManager {
     std::map<int, EventManager *> clientEventManagers_; // id & EventManager*
     explicit LocalSocketServerManager(int sockfd) : SocketBaseManager(sockfd) {}
 
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
     void SetServerDestructStatus(bool flag)
     {
         isServerDestruct_.store(flag, std::memory_order_relaxed);
@@ -68,29 +69,19 @@ struct LocalSocketServerManager : public SocketBaseManager {
     }
     int StartEpoll()
     {
-#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
         epollFd_ = epoll_create1(0);
-#endif
         return epollFd_;
     }
     int EpollWait()
     {
-#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
         return epoll_wait(epollFd_, events_, MAX_EVENTS - 1, EPOLL_TIMEOUT_MS);
-#else
-        return 0;
-#endif
     }
     int RegisterEpollEvent(int sockfd, int events)
     {
-#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
         epoll_event event;
         event.events = events;
         event.data.fd = sockfd;
         return epoll_ctl(epollFd_, EPOLL_CTL_ADD, sockfd, &event);
-#else
-        return 0;
-#endif
     }
     void WaitRegisteringEvent(int id)
     {
@@ -122,6 +113,7 @@ struct LocalSocketServerManager : public SocketBaseManager {
         }
         return nullptr;
     }
+#endif
     int AddAccept(int accpetFd)
     {
         std::lock_guard<std::mutex> lock(clientMutex_);

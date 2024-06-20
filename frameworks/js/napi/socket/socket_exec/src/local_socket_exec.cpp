@@ -566,11 +566,7 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
             if (!mgr->isServerDestruct_) {
                 std::thread handlerThread(LocalSocketServerRecvHandler, connectFd, mgr, std::ref(callback),
                                           std::ref(path));
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
                 pthread_setname_np(LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
-#else
-                pthread_setname_np(handlerThread.native_handle(), LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
-#endif
                 handlerThread.detach();
             }
         }
@@ -578,6 +574,7 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
 }
 #endif
 
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
 static void RecvHandler(int connectFd, const LocalSocketMessageCallback &callback, LocalSocketServerManager *mgr)
 {
     int clientId = mgr->GetClientId(connectFd);
@@ -624,11 +621,7 @@ static void RecvHandler(int connectFd, const LocalSocketMessageCallback &callbac
 
 static void AcceptHandler(int fd, LocalSocketServerManager *mgr, const LocalSocketMessageCallback &callback)
 {
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-    pthread_setname_np(LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
-#else
     pthread_setname_np(pthread_self(), LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
-#endif
     if (fd < 0) {
         NETSTACK_LOGE("accept a invalid fd");
         return;
@@ -656,9 +649,6 @@ static void AcceptHandler(int fd, LocalSocketServerManager *mgr, const LocalSock
 
 static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSocketMessageCallback &callback)
 {
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-    pthread_setname_np(LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
-#else
     pthread_setname_np(pthread_self(), LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
 
     struct sockaddr_un clientAddress;
@@ -694,8 +684,8 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
         }
     }
     mgr->NotifyLoopFinished();
-#endif
 }
+#endif
 
 static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &buf,
                             const LocalSocketMessageCallback &callback)
@@ -1017,8 +1007,14 @@ bool ExecLocalSocketServerListen(LocalSocketServerListenContext *context)
         context->SetErrorCode(UNKNOW_ERROR);
         return false;
     }
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    std::thread serviceThread(LocalSocketServerAccept, mgr, LocalSocketMessageCallback(context->GetManager()),
+                                                                                       context->GetSocketPath());
+    pthread_setname_np(LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
+#elif !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
     std::thread serviceThread(LocalSocketServerAccept, mgr, LocalSocketMessageCallback(context->GetManager(),
                                                                                        context->GetSocketPath()));
+#endif
     serviceThread.detach();
     return true;
 }
