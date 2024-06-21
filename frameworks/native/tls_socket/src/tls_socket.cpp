@@ -141,22 +141,30 @@ bool SeekIntersection(std::vector<std::string> &vecA, std::vector<std::string> &
 }
 } // namespace
 
-static bool MakeNonBlock(int sock)
+static bool SetSockBlockFlag(int sock, bool noneBlock)
 {
     int flags = fcntl(sock, F_GETFL, 0);
     while (flags == -1 && errno == EINTR) {
         flags = fcntl(sock, F_GETFL, 0);
     }
     if (flags == -1) {
-        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
+        NETSTACK_LOGE("set block flags failed, socket is %{public}d, errno is %{public}d", sock, errno);
         return false;
     }
-    int ret = fcntl(sock, F_SETFL, static_cast<size_t>(flags) | static_cast<size_t>(O_NONBLOCK));
+
+    auto newFlags = static_cast<size_t>(flags);
+    if (noneBlock) {
+        newFlags |= static_cast<size_t>(O_NONBLOCK);
+    } else {
+        newFlags &= ~static_cast<size_t>(O_NONBLOCK);
+    }
+
+    int ret = fcntl(sock, F_SETFL, newFlags);
     while (ret == -1 && errno == EINTR) {
-        ret = fcntl(sock, F_SETFL, static_cast<size_t>(flags) | static_cast<size_t>(O_NONBLOCK));
+        ret = fcntl(sock, F_SETFL, newFlags);
     }
     if (ret == -1) {
-        NETSTACK_LOGE("make non block failed, socket is %{public}d, errno is %{public}d", sock, errno);
+        NETSTACK_LOGE("set block flags failed, socket is %{public}d, errno is %{public}d", sock, errno);
         return false;
     }
     return true;
@@ -696,16 +704,25 @@ void TLSSocket::Connect(OHOS::NetStack::TlsSocket::TLSConnectOptions &tlsConnect
         callback(resErr);
         return;
     }
-    auto res = tlsSocketInternal_.TlsConnectToHost(sockFd_, tlsConnectOptions);
+
+    if (isExtSock_ && !SetSockBlockFlag(sockFd_, false)) {
+        int resErr = ConvertErrno();
+        NETSTACK_LOGE("SetSockBlockFlag error is %{public}s %{public}d", MakeErrnoString().c_str(), errno);
+        CallOnErrorCallback(resErr, MakeErrnoString());
+        callback(resErr);
+        return;
+    }
+
+    auto res = tlsSocketInternal_.TlsConnectToHost(sockFd_, tlsConnectOptions, isExtSock_);
     if (!res) {
         int resErr = tlsSocketInternal_.ConvertSSLError();
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(resErr);
         return;
     }
-    if (!MakeNonBlock(sockFd_)) {
+    if (!SetSockBlockFlag(sockFd_, true)) {
         int resErr = ConvertErrno();
-        NETSTACK_LOGE("makenonblock error is %{public}s %{public}d", MakeErrnoString().c_str(), errno);
+        NETSTACK_LOGE("SetSockBlockFlag error is %{public}s %{public}d", MakeErrnoString().c_str(), errno);
         CallOnErrorCallback(resErr, MakeErrnoString());
         callback(resErr);
         return;
@@ -1120,7 +1137,7 @@ int TLSSocket::TLSSocketInternal::ConvertSSLError(void)
     return TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
 }
 
-bool TLSSocket::TLSSocketInternal::TlsConnectToHost(int sock, const TLSConnectOptions &options)
+bool TLSSocket::TLSSocketInternal::TlsConnectToHost(int sock, const TLSConnectOptions &options, bool isExtSock)
 {
     SetTlsConfiguration(options);
     std::string cipherSuite = options.GetTlsSecureOptions().GetCipherSuite();
@@ -1140,8 +1157,8 @@ bool TLSSocket::TLSSocketInternal::TlsConnectToHost(int sock, const TLSConnectOp
     port_ = options.GetNetAddress().GetPort();
     family_ = options.GetNetAddress().GetSaFamily();
     socketDescriptor_ = sock;
-    if (!ExecSocketConnect(options.GetNetAddress().GetAddress(), options.GetNetAddress().GetPort(),
-                           options.GetNetAddress().GetSaFamily(), socketDescriptor_)) {
+    if (!isExtSock && !ExecSocketConnect(options.GetNetAddress().GetAddress(), options.GetNetAddress().GetPort(),
+                                         options.GetNetAddress().GetSaFamily(), socketDescriptor_)) {
         return false;
     }
     return StartTlsConnected(options);

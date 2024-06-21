@@ -731,6 +731,7 @@ static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &
             return NO_MEMORY;
         }
     }
+    (void)memset_s(buf.get(), bufferSize, 0, bufferSize);
     return 0;
 }
 
@@ -778,6 +779,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     auto buf = std::make_unique<char[]>(bufferSize);
     if (buf == nullptr) {
         callback.OnError(NO_MEMORY);
+        callback.GetEventManager()->NotifyRcvThdExit();
         return;
     }
 
@@ -788,7 +790,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     while (true) {
         int currentFd = -1;
         if (!IsValidSock(currentFd, callback)) {
-            return;
+            break;
         }
 
         pollfd fds[1] = {{currentFd, POLLIN, 0}};
@@ -799,19 +801,18 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
                 NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", currentFd, errno);
                 callback.OnError(errno);
             }
-            return;
+            break;
         } else if (ret == 0) {
             continue;
         }
         if (UpdateRecvBuffer(currentFd, bufferSize, buf, callback) < 0) {
-            return;
+            break;
         }
-        (void)memset_s(buf.get(), bufferSize, 0, bufferSize);
         socklen_t tempAddrLen = addrLen;
         auto recvLen = recvfrom(currentFd, buf.get(), bufferSize, 0, addr, &tempAddrLen);
         if (recvLen <= 0) {
             if (ExitOrAbnormal(currentFd, recvLen, callback) < 0) {
-                return;
+                break;
             }
             continue;
         }
@@ -819,12 +820,14 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         void *data = malloc(recvLen);
         if (data == nullptr) {
             callback.OnError(NO_MEMORY);
-            return;
+            break;
         }
         if (memcpy_s(data, recvLen, buf.get(), recvLen) != EOK || !callback.OnMessage(data, recvLen, addr)) {
             free(data);
         }
     }
+
+    callback.GetEventManager()->NotifyRcvThdExit();
 }
 
 static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeoutMSec)

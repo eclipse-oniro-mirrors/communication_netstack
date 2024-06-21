@@ -35,6 +35,34 @@ namespace {
 constexpr const char *CERTIFICATA_DATA = "data";
 constexpr const char *CERTIFICATA_ENCODING_FORMAT = "encodingFormat";
 } // namespace
+
+bool TLSSocketExec::ExecInit(TLSInitContext *context)
+{
+    auto manager = context->GetManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+
+    auto sockFd = static_cast<int>(reinterpret_cast<uint64_t>(context->extManager_->GetData()));
+    auto tlsSocket = new TLSSocket(sockFd);
+    if (tlsSocket == nullptr) {
+        NETSTACK_LOGE("new TLSSocket failed, no enough memory");
+        return false;
+    }
+
+    manager->SetData(tlsSocket);
+
+    std::string events[] = {EVENT_MESSAGE, EVENT_ERROR, EVENT_CONNECT, EVENT_CLOSE};
+    for (auto event : events) {
+        context->extManager_->DeleteListener(event);
+    }
+
+    context->extManager_->SetData(reinterpret_cast<void *>(-1));
+    context->extManager_->WaitForRcvThdExit();
+    return true;
+}
+
 bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
 {
     auto manager = context->GetManager();
@@ -228,7 +256,14 @@ bool TLSSocketExec::ExecBind(TLSBindContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    auto tlsSocket = new TLSSocket();
+
+    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
+    if (tlsSocket != nullptr) {
+        NETSTACK_LOGI("TLSSocket has been constructed");
+        return true;
+    }
+
+    tlsSocket = new TLSSocket();
     tlsSocket->Bind(context->address_, [&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {

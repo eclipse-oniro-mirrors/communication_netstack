@@ -30,6 +30,7 @@
 #include "tls_extra_context.h"
 #include "tls_napi_context.h"
 #include "tls_send_context.h"
+#include "tls_init_context.h"
 #include "tlssocket_async_work.h"
 
 namespace OHOS {
@@ -180,7 +181,38 @@ void TLSSocketModuleExports::InitProtocol(napi_env env, napi_value exports)
 
 napi_value TLSSocketModuleExports::ConstructTLSSocketInstance(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::NewInstance(env, info, INTERFACE_TLS_SOCKET, Finalize);
+    napi_value result = ModuleTemplate::NewInstance(env, info, INTERFACE_TLS_SOCKET, Finalize);
+    if (result == nullptr) {
+        return nullptr;
+    }
+
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, nullptr, nullptr));
+    if (paramsCount == 0) {
+        return result;
+    }
+
+    EventManager *manager = nullptr;
+    auto napi_ret = napi_unwrap(env, result, reinterpret_cast<void **>(&manager));
+    if (napi_ret != napi_ok) {
+        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
+        return result;
+    }
+
+    auto context = new TLSInitContext(env, manager);
+    if (context == nullptr) {
+        NETSTACK_LOGE("new TLSInitContext failed, no enough memory");
+        return result;
+    }
+
+    context->ParseParams(params, paramsCount);
+    if (context->IsParseOK()) {
+        TLSSocketAsyncWork::ExecInit(env, (void *) context);
+    }
+    delete context;
+
+    return result;
 }
 
 void TLSSocketModuleExports::InitTLSSocketProperties(napi_env env, napi_value exports)
