@@ -525,7 +525,7 @@ static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager
                 break;
             }
             if (memcpy_s(data, recvSize, buffer.get(), recvSize) != EOK ||
-                !callback.OnMessage(eventManager, data, recvSize, path)) {
+                !callback.OnMessage(eventManager, data, recvSize)) {
                 free(data);
             }
         }

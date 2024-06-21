@@ -57,7 +57,6 @@ struct LocalSocketServerManager : public SocketBaseManager {
     std::map<int, EventManager *> clientEventManagers_; // id & EventManager*
     explicit LocalSocketServerManager(int sockfd) : SocketBaseManager(sockfd) {}
 
-#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
     void SetServerDestructStatus(bool flag)
     {
         isServerDestruct_.store(flag, std::memory_order_relaxed);
@@ -66,6 +65,7 @@ struct LocalSocketServerManager : public SocketBaseManager {
     {
         return isServerDestruct_.load(std::memory_order_relaxed);
     }
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
     int StartEpoll()
     {
         epollFd_ = epoll_create1(0);
