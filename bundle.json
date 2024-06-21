@@ -30,6 +30,7 @@
         "ram": "5MB",
         "deps": {
             "components": [
+                "bounds_checking_function",
                 "curl",
                 "hilog",
                 "hitrace",

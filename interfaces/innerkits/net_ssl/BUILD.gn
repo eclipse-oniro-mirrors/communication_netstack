@@ -79,6 +79,7 @@ ohos_shared_library("net_ssl") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "hilog:libhilog",
     "ipc:ipc_core",
   ]

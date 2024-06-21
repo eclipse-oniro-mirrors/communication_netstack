@@ -63,7 +63,10 @@ ohos_shared_library("stack_utils_common") {
 
   public_configs = [ ":stack_utils_common_public_config" ]
 
-  external_deps = [ "hilog:libhilog" ]
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "hilog:libhilog",
+  ]
 
   innerapi_tags = [ "platformsdk" ]
   part_name = "netstack"
