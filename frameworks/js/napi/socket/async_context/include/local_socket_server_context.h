@@ -40,14 +40,13 @@ struct LocalSocketServerManager : public SocketBaseManager {
     int clientId_ = 0;
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     int threadCounts_ = 0;
-    bool isServerDestruct_ = false;
 #endif
     LocalExtraOptions extraOptions_;
     bool alreadySetExtraOptions_ = false;
-#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
     std::atomic_bool isServerDestruct_;
     bool isLoopFinished_ = false;
     int epollFd_ = 0;
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
     epoll_event events_[MAX_EVENTS] = {};
 #endif
     std::mutex finishMutex_;
