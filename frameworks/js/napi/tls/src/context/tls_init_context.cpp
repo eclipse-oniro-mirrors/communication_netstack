@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -53,10 +53,11 @@ bool TLSInitContext::CheckParamsType(napi_value *params, size_t paramsCount)
             return false;
         }
         return true;
-    } else {
-        NETSTACK_LOGE("invalid param number");
     }
 
+    NETSTACK_LOGE("invalid param number");
+    SetNeedThrowException(true);
+    SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
     return false;
 }
 } // namespace OHOS::NetStack::TlsSocket
