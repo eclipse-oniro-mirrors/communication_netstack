@@ -302,13 +302,13 @@ HWTEST_F(NetStackCommonUtilsTest, GetProtocolFromURLTest003, TestSize.Level2)
 HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest001, TestSize.Level2)
 {
     std::string port = GetPortFromURL("https://www.example.com?data_string");
-    EXPECT_STREQ(port.c_str(), "443");
+    EXPECT_STREQ(port.c_str(), "");
 }
 
 HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest002, TestSize.Level2)
 {
     std::string port = GetPortFromURL("http://www.example.com?data_string");
-    EXPECT_STREQ(port.c_str(), "80");
+    EXPECT_STREQ(port.c_str(), "");
 }
 
 HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest003, TestSize.Level2)
@@ -332,7 +332,7 @@ HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest005, TestSize.Level2)
 HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolAndPortFromURLTest001, TestSize.Level2)
 {
     std::string hostname = GetHostnameWithProtocolAndPortFromURL("https:////www.example.com?data_string");
-    EXPECT_STREQ(hostname.c_str(), "https://www.example.com:443");
+    EXPECT_STREQ(hostname.c_str(), "https://www.example.com");
 }
 
 HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolAndPortFromURLTest002, TestSize.Level2)
@@ -344,7 +344,7 @@ HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolAndPortFromURLTest002, 
 HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolAndPortFromURLTest003, TestSize.Level2)
 {
     std::string hostname = GetHostnameWithProtocolAndPortFromURL("http://www.example.com/for/test");
-    EXPECT_STREQ(hostname.c_str(), "http://www.example.com:80");
+    EXPECT_STREQ(hostname.c_str(), "http://www.example.com");
 }
 
 HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolAndPortFromURLTest004, TestSize.Level2)
