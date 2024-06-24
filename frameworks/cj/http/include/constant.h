@@ -93,14 +93,6 @@ constexpr const char *HTTP_CONTENT_TYPE_OCTET_STREAM = "application/octet-stream
 constexpr const char *HTTP_CONTENT_TYPE_IMAGE = "image";
 constexpr const char *HTTP_CONTENT_TYPE_MULTIPART = "multipart/form-data";
 
-#ifndef WINDOWS_PLATFORM
-#ifdef MAC_PLATFORM
-constexpr const char *HTTP_DEFAULT_CA_PATH = "/etc/ssl/cert.pem";
-#else
-constexpr const char *HTTP_DEFAULT_CA_PATH = "/etc/ssl/certs/cacert.pem";
-#endif // MAC_PLATFORM
-#endif // WINDOWS_PLATFORM
-
 // events
 constexpr const char *ON_HEADER_RECEIVE = "headerReceive";
 constexpr const char *ON_DATA_RECEIVE = "dataReceive";

@@ -32,11 +32,7 @@ HttpRequest::HttpRequest()
       httpProxyPort_(0),
       resumeFromNumber_(0),
       resumeToNumber_(0)
-{
-#ifndef WINDOWS_PLATFORM
-    caPath_ = HTTP_DEFAULT_CA_PATH;
-#endif // WINDOWS_PLATFORM
-}
+{}
 
 void HttpRequest::SetUrl(const std::string &url)
 {

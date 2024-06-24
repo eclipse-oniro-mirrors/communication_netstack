@@ -29,6 +29,13 @@
 
 namespace OHOS::NetStack::Http {
 
+struct CertsPath {
+    CertsPath() = default;
+    ~CertsPath() = default;
+    std::vector<std::string> certPathList;
+    std::string certFile;
+};
+
 struct LoadBytes {
     LoadBytes() : nLen(0), tLen(0) {};
     LoadBytes(curl_off_t nowLen, curl_off_t totalLen): nLen(nowLen), tLen(totalLen) {};
@@ -97,6 +104,10 @@ public:
 
     void PopTempData();
 
+    void SetCertsPath(std::vector<std::string> &&certPathList, const std::string &certFile);
+
+    const CertsPath &GetCertsPath();
+
     void CachePerformanceTimingItem(const std::string &key, double value);
 
     void StopAndCachePerformanceTiming(const char *key);
@@ -142,6 +153,7 @@ private:
     curl_mime *multipart_ = nullptr;
     int32_t errCode_ = 0;
     std::string errMsg_;
+    CertsPath certsPath_;
     bool parseok_ = false;
     bool requestOK_ = false;
     bool permissionDenied_ = false;
