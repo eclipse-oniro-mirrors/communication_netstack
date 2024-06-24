@@ -190,13 +190,20 @@ public:
     void SetLws(lws *wsi)
     {
         std::lock_guard<std::mutex> lock(mutexForLws_);
+        if (wsi == nullptr) {
+            NETSTACK_LOGD("set wsi nullptr");
+        }
         wsi_ = wsi;
     }
 
-    lws *GetLws()
+    void TriggerWritable()
     {
         std::lock_guard<std::mutex> lock(mutexForLws_);
-        return wsi_;
+        if (wsi_ == nullptr) {
+            NETSTACK_LOGE("wsi is nullptr, can not trigger");
+            return;
+        }
+        lws_callback_on_writable(wsi_);
     }
 
     std::map<std::string, std::string> header;
@@ -605,7 +612,7 @@ int WebSocketExec::LwsCallbackProtocolDestroy(lws *wsi, lws_callback_reasons rea
 
 int WebSocketExec::LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGD("lws callback reason is %{public}d", reason);
+    NETSTACK_LOGI("lws callback reason is %{public}d", reason);
     CallbackDispatcher dispatchers[] = {
         {LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER, LwsCallbackClientAppendHandshakeHeader},
         {LWS_CALLBACK_WS_PEER_INITIATED_CLOSE, LwsCallbackWsPeerInitiatedClose},
@@ -831,8 +838,8 @@ bool WebSocketExec::ExecSend(SendContext *context)
         return false;
     }
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
-    if (userData == nullptr || userData->GetLws() == nullptr) {
-        NETSTACK_LOGE("user data or lws is nullptr");
+    if (userData == nullptr) {
+        NETSTACK_LOGE("user data is nullptr");
         return false;
     }
     if (userData->IsClosed() || userData->IsThreadStop()) {
@@ -840,7 +847,7 @@ bool WebSocketExec::ExecSend(SendContext *context)
         return false;
     }
     userData->Push(context->data, context->length, context->protocol);
-    lws_callback_on_writable(userData->GetLws());
+    userData->TriggerWritable();
     NETSTACK_LOGD("lws ts send success");
     return true;
 }
@@ -867,13 +874,13 @@ bool WebSocketExec::ExecClose(CloseContext *context)
 
     auto manager = context->GetManager();
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
-    if (userData == nullptr || userData->GetLws() == nullptr) {
-        NETSTACK_LOGE("user data or lws is nullptr");
+    if (userData == nullptr) {
+        NETSTACK_LOGE("user data is nullptr");
         return false;
     }
 
     userData->Close(static_cast<lws_close_status>(context->code), context->reason);
-    lws_callback_on_writable(userData->GetLws());
+    userData->TriggerWritable();
     NETSTACK_LOGI("ExecClose OK");
     return true;
 }
