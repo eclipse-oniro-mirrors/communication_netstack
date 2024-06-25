@@ -294,8 +294,9 @@ void TLSContextServer::SetVerify(TLSContextServer *tlsContext)
     }
 
     if (!tlsContext->tlsConfiguration_.GetCertificate().data.Length() ||
-        !tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyData().Length()) {
-        SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_PEER, nullptr);
+        !tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyData().Length() ||
+        tlsContext->tlsConfiguration_.GetVerifyMode() == ONE_WAY_MODE) {
+        SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_NONE, nullptr);
         verifyMode_ = ONE_WAY_MODE;
     } else {
         verifyMode_ = TWO_WAY_MODE;
