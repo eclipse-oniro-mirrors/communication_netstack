@@ -29,6 +29,8 @@ config("http_config") {
     "options/include",
     "$THIRD_PARTY_ROOT/curl/include",
     "$NETSTACK_DIR/utils/common_utils/include",
+    "$NETSTACK_DIR/utils/profiler_utils/include",
+    "$NETSTACK_DIR/utils/tlv_utils/include",
   ]
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
@@ -80,8 +82,6 @@ ohos_shared_library("http") {
   }
 
   branch_protector_ret = "pac_ret"
-
-  include_dirs = []
 
   sources = [
     "$NETSTACK_DIR/utils/profiler_utils/src/http_network_message.cpp",
@@ -163,10 +163,6 @@ ohos_shared_library("http") {
       external_deps += [ "init:libbegetutil" ]
     }
   }
-  include_dirs += [
-    "$NETSTACK_DIR/utils/profiler_utils/include",
-    "$NETSTACK_DIR/utils/tlv_utils/include",
-  ]
   cflags = [
     "-fstack-protector-strong",
     "-D_FORTIFY_SOURCE=2",
