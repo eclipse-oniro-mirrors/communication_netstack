@@ -194,24 +194,30 @@ napi_value TLSSocketModuleExports::ConstructTLSSocketInstance(napi_env env, napi
     }
 
     EventManager *manager = nullptr;
-    auto napi_ret = napi_unwrap(env, result, reinterpret_cast<void **>(&manager));
-    if (napi_ret != napi_ok) {
-        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
-        return result;
+    auto napiRet = napi_unwrap(env, result, reinterpret_cast<void **>(&manager));
+    if (napiRet != napi_ok) {
+        NETSTACK_LOGE("get event manager in napi_unwrap failed, napiRet is %{public}d", napiRet);
+        return nullptr;
     }
 
     auto context = new TLSInitContext(env, manager);
     if (context == nullptr) {
         NETSTACK_LOGE("new TLSInitContext failed, no enough memory");
-        return result;
+        return nullptr;
     }
 
     context->ParseParams(params, paramsCount);
     if (context->IsParseOK()) {
-        TLSSocketAsyncWork::ExecInit(env, (void *) context);
+        TLSSocketAsyncWork::ExecInit(env, (void *)context);
     }
-    delete context;
 
+    if (context->IsNeedThrowException()) { // only api9 or later need throw exception.
+        napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
+        delete context;
+        return nullptr;
+    }
+
+    delete context;
     return result;
 }
 

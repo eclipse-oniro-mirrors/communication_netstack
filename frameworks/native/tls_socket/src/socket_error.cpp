@@ -58,6 +58,9 @@ std::string MakeErrorMessage(int error)
         {TLS_ERR_WANT_ASYNC_JOB, "Error occurred in the tls async work"},
         {TLS_ERR_WANT_CLIENT_HELLO_CB, "Error occured in client hello"},
         {TLS_ERR_NO_BIND, "No bind socket"},
+        {TLS_ERR_SOCK_INVALID_FD, "Invalid socket FD"},
+        {TLS_ERR_SOCK_NOT_CONNECT, "Socket is not connected"},
+        {TLS_ERR_CONSTRUCT, "An error occurred in the TLS constructor"},
     };
     auto search = ERROR_MAP.find(error);
     if (search != ERROR_MAP.end()) {

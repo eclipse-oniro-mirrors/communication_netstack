@@ -36,18 +36,46 @@ constexpr const char *CERTIFICATA_DATA = "data";
 constexpr const char *CERTIFICATA_ENCODING_FORMAT = "encodingFormat";
 } // namespace
 
+static inline void TLSSocketThrowException(TLSInitContext *context, int32_t errorCode)
+{
+    context->SetNeedThrowException(true);
+    context->SetError(errorCode, MakeErrorMessage(errorCode));
+}
+
 bool TLSSocketExec::ExecInit(TLSInitContext *context)
 {
     auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
+        TLSSocketThrowException(context, TLS_ERR_CONSTRUCT);
         return false;
     }
 
     auto sockFd = static_cast<int>(reinterpret_cast<uint64_t>(context->extManager_->GetData()));
+    if (sockFd <= 0) {
+        NETSTACK_LOGE("invalid tcp socket fd");
+        TLSSocketThrowException(context, TLS_ERR_SOCK_INVALID_FD);
+        return false;
+    }
+
     auto tlsSocket = new TLSSocket(sockFd);
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("new TLSSocket failed, no enough memory");
+        TLSSocketThrowException(context, TLS_ERR_CONSTRUCT);
+        return false;
+    }
+
+    int32_t errorCode = 0;
+    tlsSocket->GetState([&errorCode](int32_t errorNumber, const Socket::SocketStateBase state) {
+        if (errorNumber != TLSSOCKET_SUCCESS) {
+            errorCode = errorNumber;
+        } else if (!state.IsConnected()) {
+            errorCode = TLS_ERR_SOCK_NOT_CONNECT;
+        }
+    });
+    if (errorCode != 0) {
+        delete tlsSocket;
+        TLSSocketThrowException(context, errorCode);
         return false;
     }
 
@@ -264,6 +292,11 @@ bool TLSSocketExec::ExecBind(TLSBindContext *context)
     }
 
     tlsSocket = new TLSSocket();
+    if (tlsSocket == nullptr) {
+        NETSTACK_LOGE("new TLSSocket failed, no enough memory");
+        return false;
+    }
+
     tlsSocket->Bind(context->address_, [&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
