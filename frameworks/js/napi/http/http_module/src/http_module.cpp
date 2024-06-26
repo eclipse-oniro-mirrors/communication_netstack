@@ -55,12 +55,12 @@ napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
     g_moduleId = NapiUtils::CreateUvHandlerQueue(env);
     NapiUtils::SetEnvValid(env);
     napi_add_env_cleanup_hook(env, NapiUtils::HookForEnvCleanup, env);
+    g_appIsAtomicService = CommonUtils::IsAtomicService(g_appBundleName);
     return exports;
 }
 
 napi_value HttpModuleExports::CreateHttp(napi_env env, napi_callback_info info)
 {
-    g_appIsAtomicService = CommonUtils::IsAtomicService(g_appBundleName);
     return ModuleTemplate::NewInstance(env, info, INTERFACE_HTTP_REQUEST, [](napi_env, void *data, void *) {
         NETSTACK_LOGD("http request handle is finalized");
         auto manager = reinterpret_cast<EventManager *>(data);
