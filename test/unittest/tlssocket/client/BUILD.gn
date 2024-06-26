@@ -127,13 +127,13 @@ ohos_unittest("two_way_tls_socket_unittest") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -171,13 +171,13 @@ ohos_unittest("one_way_tls_socket_unittest") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -215,13 +215,13 @@ ohos_unittest("two_way_tls_socket_certchain_unittest") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -259,13 +259,13 @@ ohos_unittest("one_way_tls_socket_certchain_unittest") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -303,8 +303,6 @@ ohos_unittest("tls_socket_unilateral_connection") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
   external_deps = [
     "access_token:libaccesstoken_sdk",
@@ -313,6 +311,8 @@ ohos_unittest("tls_socket_unilateral_connection") {
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -376,13 +376,13 @@ ohos_unittest("tls_key_test") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -419,13 +419,13 @@ ohos_unittest("tls_cert_test") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -462,13 +462,13 @@ ohos_unittest("tls_configuration_test") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -505,13 +505,13 @@ ohos_unittest("tls_context_test") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -548,13 +548,13 @@ ohos_unittest("socket_error_unittest") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -591,8 +591,6 @@ ohos_unittest("tls_socket_branch_test") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
   external_deps = [
     "access_token:libaccesstoken_sdk",
@@ -601,6 +599,8 @@ ohos_unittest("tls_socket_branch_test") {
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]

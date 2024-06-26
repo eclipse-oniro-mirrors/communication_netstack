@@ -80,12 +80,12 @@ ohos_shared_library("networksecurity_napi") {
       "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-      "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-      "$THIRD_PARTY_ROOT/openssl:libssl_shared",
     ]
     external_deps = [
       "hilog:libhilog",
       "napi:ace_napi",
+      "openssl:libcrypto_shared",
+      "openssl:libssl_shared",
     ]
   }
 

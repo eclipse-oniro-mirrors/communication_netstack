@@ -123,16 +123,14 @@ ohos_fuzztest("TlsSocketFuzzTest") {
   ]
   sources += [ "tls_socket_fuzzer.cpp" ]
 
-  deps = [
-    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
-  ]
+  deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
 
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   defines = [

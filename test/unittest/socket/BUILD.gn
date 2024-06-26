@@ -122,11 +122,13 @@ ohos_unittest("socket_unittest") {
   deps = [
     "$NETSTACK_DIR/frameworks/js/napi/socket:socket",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
   ]
 
   external_deps = common_external_deps
+  external_deps += [
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
+  ]
 
   defines = []
   if (defined(global_parts_info) &&

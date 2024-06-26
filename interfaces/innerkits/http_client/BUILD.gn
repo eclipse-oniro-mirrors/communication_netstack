@@ -97,8 +97,7 @@ ohos_shared_library("http_client") {
 
   public_configs = [ ":http_client_config" ]
 
-  deps = [ "$THIRD_PARTY_ROOT/curl:curl_shared" ]
-  deps += [
+  deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
   ]
@@ -124,6 +123,7 @@ ohos_shared_library("http_client") {
   }
 
   external_deps += [
+    "curl:curl_shared",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
   ]

@@ -124,15 +124,13 @@ ohos_shared_library("socket") {
     "-O2",
   ]
 
-  deps = [
-    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
-  ]
+  deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
 
   external_deps = [
     "hilog:libhilog",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
   if (defined(global_parts_info) &&

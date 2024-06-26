@@ -34,15 +34,13 @@ ohos_shared_library("net_ssl_ndk") {
 
   sources = [ "src/net_ssl_c.cpp" ]
 
-  deps = [
-    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
-    "$THIRD_PARTY_ROOT/openssl:libcrypto_shared",
-    "$THIRD_PARTY_ROOT/openssl:libssl_shared",
-  ]
+  deps = [ "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl" ]
 
   external_deps = [
     "hilog:libhilog",
     "ipc:ipc_core",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
   ]
 
   cflags_cc = [
