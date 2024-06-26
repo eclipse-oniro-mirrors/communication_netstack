@@ -48,6 +48,11 @@ void TLSServerNapiContext::ParseParams(napi_value *params, size_t paramsCount)
 
 bool TLSServerNapiContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
+    if (paramsCount == TlsSocket::PARAM_NONE) {
+        NETSTACK_LOGD("param is none");
+        return true;
+    }
+
     if (paramsCount == TlsSocket::PARAM_JUST_CALLBACK) {
         if (NapiUtils::GetValueType(GetEnv(), params[TlsSocket::ARG_INDEX_0]) != napi_function) {
             NETSTACK_LOGE("first param is not string");
