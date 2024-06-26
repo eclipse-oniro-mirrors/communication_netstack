@@ -546,9 +546,6 @@ void HttpClientTask::ProcessCookie(CURL *handle)
         }
         cookies = cookies->next;
     }
-
-    NETSTACK_LOGD("ProcessCookie() GetCookies() = %{public}s", response_.GetCookies().c_str());
-    NETSTACK_LOGD("ProcessCookie() GetHeader() = %{public}s", response_.GetHeader().c_str());
 }
 
 bool HttpClientTask::ProcessResponseCode()
