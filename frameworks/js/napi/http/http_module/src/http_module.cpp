@@ -47,6 +47,8 @@ static bool g_appIsAtomicService = false;
 
 static std::string g_appBundleName;
 
+static std::once_flag g_isAtomicServiceFlag;
+
 napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
 {
     DefineHttpRequestClass(env, exports);
@@ -55,7 +57,11 @@ napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
     g_moduleId = NapiUtils::CreateUvHandlerQueue(env);
     NapiUtils::SetEnvValid(env);
     napi_add_env_cleanup_hook(env, NapiUtils::HookForEnvCleanup, env);
-    g_appIsAtomicService = CommonUtils::IsAtomicService(g_appBundleName);
+    std::call_once(g_isAtomicServiceFlag, []() {
+        g_appIsAtomicService = CommonUtils::IsAtomicService(g_appBundleName);
+        NETSTACK_LOGI("IsAtomicService bundleName is %{public}s, isAtomicService is %{public}d",
+                      g_appBundleName.c_str(), g_appIsAtomicService);
+    });
     return exports;
 }
 
