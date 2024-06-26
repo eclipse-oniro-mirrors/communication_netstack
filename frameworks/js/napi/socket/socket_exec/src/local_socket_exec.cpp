@@ -500,23 +500,26 @@ static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager
         serverManager->NotifyLoopFinished();
         return;
     }
-        while (true) {
+    while (true) {
         if (memset_s(buffer.get(), sockRecvSize, 0, sockRecvSize) != EOK) {
             NETSTACK_LOGE("memset_s failed, connectFd: %{public}d, clientId: %{public}d", connectFd, clientId);
             continue;
         }
+	NETSTACK_LOGI("start recv");
         int32_t recvSize = recv(connectFd, buffer.get(), sockRecvSize, 0);
+        NETSTACK_LOGI("end recv");
         if (recvSize == 0) {
             NETSTACK_LOGI("session closed, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFd, clientId);
             callback.OnCloseMessage(eventManager);
             serverManager->RemoveAccept(clientId);
             break;
         } else if (recvSize < 0) {
-            if (errno != EINTR) {
+            if (errno != EINTR && errno != EAGAIN) {
                 NETSTACK_LOGE("recv error, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFd, clientId);
                 RecvInErrorCondition(errno, clientId, callback, serverManager);
                 break;
             }
+            NETSTACK_LOGE("recv error with EINTR");
         } else {
             NETSTACK_LOGD("recv, fd:%{public}d, size:%{public}d, buf:%{public}s", connectFd, recvSize, buffer.get());
             void *data = malloc(recvSize);
@@ -536,6 +539,7 @@ static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager
 static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSocketMessageCallback &callback,
                                     const std::string &path)
 {
+    NETSTACK_LOGE("LocalSocketServerAccept with IOS path is %{public}s", path);
     struct sockaddr_un clientAddress;
     socklen_t clientAddrLength = sizeof(clientAddress);
     struct pollfd fds[1] = {{.fd = mgr->sockfd_, .events = POLLIN}};
@@ -650,7 +654,7 @@ static void AcceptHandler(int fd, LocalSocketServerManager *mgr, const LocalSock
 static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSocketMessageCallback &callback)
 {
     pthread_setname_np(pthread_self(), LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
-
+    NETSTACK_LOGE("LocalSocketServerAccept without IOS path is %{public}s");
     struct sockaddr_un clientAddress;
     socklen_t clientAddrLength = sizeof(clientAddress);
     if (mgr->RegisterEpollEvent(mgr->sockfd_, EPOLLIN) == -1) {
