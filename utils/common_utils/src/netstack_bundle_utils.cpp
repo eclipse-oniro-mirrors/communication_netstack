@@ -31,7 +31,7 @@ using IsAtomicServiceFunc = bool (*)(std::string&);
 
 __attribute__((no_sanitize("cfi"))) bool IsAtomicService(std::string &bundleName)
 {
-    void *handler = dlopen(LIB_NET_BUNDL_UTILS_SO_PATH.c_str(), RTLD_LAZY | RTLD_NODELETE);
+    void *handler = dlopen(LIB_NET_BUNDL_UTILS_SO_PATH.c_str(), RTLD_NOW);
     if (handler == nullptr) {
         const char *err = dlerror();
         NETSTACK_LOGE("load failed, reason: %{public}s", err ? err : "unknown");
