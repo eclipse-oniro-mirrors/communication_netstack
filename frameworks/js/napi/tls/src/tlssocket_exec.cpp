@@ -42,6 +42,17 @@ static inline void TLSSocketThrowException(TLSInitContext *context, int32_t erro
     context->SetError(errorCode, MakeErrorMessage(errorCode));
 }
 
+static bool IsTCPSocket(int sockFD)
+{
+    int optval;
+    socklen_t optlen = sizeof(optval);
+
+    if (getsockopt(sockFD, SOL_SOCKET, SO_PROTOCOL, &optval, &optlen) != 0) {
+        return false;
+    }
+    return optval == IPPROTO_TCP;
+}
+
 bool TLSSocketExec::ExecInit(TLSInitContext *context)
 {
     auto manager = context->GetManager();
@@ -52,7 +63,7 @@ bool TLSSocketExec::ExecInit(TLSInitContext *context)
     }
 
     auto sockFd = static_cast<int>(reinterpret_cast<uint64_t>(context->extManager_->GetData()));
-    if (sockFd <= 0) {
+    if (sockFd <= 0 || !IsTCPSocket(sockFd)) {
         NETSTACK_LOGE("invalid tcp socket fd");
         TLSSocketThrowException(context, TLS_ERR_SOCK_INVALID_FD);
         return false;
