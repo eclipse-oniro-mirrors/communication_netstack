@@ -420,6 +420,38 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
     sleep(2);
     (void)testService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
 }
+
+HWTEST_F(TlsSocketTest, upgradeInterface, testing::ext::TestSize.Level2)
+{
+    if (!TlsUtilsTest::CheckCaFileExistence("upgradeInterface")) {
+        return;
+    }
+
+    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    EXPECT_TRUE(sock > 0);
+
+    sockaddr_in addr4 = {0};
+    Socket::NetAddress address;
+    MockNetAddress(address);
+    addr4.sin_family = AF_INET;
+    addr4.sin_port = htons(address.GetPort());
+    addr4.sin_addr.s_addr = inet_addr(address.GetAddress().c_str());
+
+    int ret = connect(sock, reinterpret_cast<sockaddr *>(&addr4), sizeof(sockaddr_in));
+    EXPECT_TRUE(ret >= 0);
+
+    TLSSocket testService(sock);
+    SetSocketHwTestShortParam(testService);
+
+    const std::string data = "how do you do? this is upgradeInterface";
+    Socket::TCPSendOptions tcpSendOptions;
+    tcpSendOptions.SetData(data);
+    testService.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    sleep(2);
+
+    (void)testService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+    sleep(2);
+}
 } // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

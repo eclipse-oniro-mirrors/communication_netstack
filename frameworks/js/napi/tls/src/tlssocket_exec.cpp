@@ -58,7 +58,7 @@ bool TLSSocketExec::ExecInit(TLSInitContext *context)
     auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
-        TLSSocketThrowException(context, TLS_ERR_CONSTRUCT);
+        TLSSocketThrowException(context, SYSTEM_INTERNAL_ERROR);
         return false;
     }
 
@@ -72,7 +72,7 @@ bool TLSSocketExec::ExecInit(TLSInitContext *context)
     auto tlsSocket = new TLSSocket(sockFd);
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("new TLSSocket failed, no enough memory");
-        TLSSocketThrowException(context, TLS_ERR_CONSTRUCT);
+        TLSSocketThrowException(context, SYSTEM_INTERNAL_ERROR);
         return false;
     }
 
