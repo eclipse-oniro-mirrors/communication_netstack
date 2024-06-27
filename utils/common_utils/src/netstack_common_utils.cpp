@@ -33,7 +33,7 @@
 
 #include "curl/curl.h"
 #include "netstack_log.h"
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#ifdef HAS_NETMANAGER_BASE
 #include "netstack_apipolicy_utils.h"
 #include "netstack_bundle_utils.h"
 #endif
@@ -162,7 +162,7 @@ bool HasInternetPermission()
 
 bool IsAtomicService(std::string &bundleName)
 {
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#ifdef HAS_NETMANAGER_BASE
     return BundleUtils::IsAtomicService(bundleName);
 #else
     return false;
@@ -171,7 +171,7 @@ bool IsAtomicService(std::string &bundleName)
 
 bool IsAllowedHostname(const std::string &bundleName, const std::string &url)
 {
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#ifdef HAS_NETMANAGER_BASE
     if (bundleName.empty()) {
         NETSTACK_LOGE("isAllowedHostnameForAtomicService bundleName is empty");
         return true;
