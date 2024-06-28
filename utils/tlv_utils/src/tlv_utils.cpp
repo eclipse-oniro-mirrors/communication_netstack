@@ -172,7 +172,7 @@ uint32_t TlvUtils::Parse(DfxMessage &msg, TlvCommon *tlvs, uint32_t tlvCount)
     index++;
     msg.requestHeader_ = std::string(static_cast<char *>(tlvs[index].value_), tlvs[index].len_);
     index++;
-    msg.responseStatusCode_ = *(static_cast<uint32_t *>(tlvs[index++].value_));
+    msg.responseStatusCode_ = *(static_cast<uint32_t *>(tlvs[index].value_));
     index++;
     msg.responseHeader_ = std::string(static_cast<char *>(tlvs[index].value_), tlvs[index].len_);
     index++;
