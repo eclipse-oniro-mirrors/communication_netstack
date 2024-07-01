@@ -40,6 +40,8 @@ private:
 
 napi_valuetype GetValueType(napi_env env, napi_value value);
 
+bool IsInstanceOf(napi_env env, napi_value object, const std::string &name);
+
 /* named property */
 bool HasNamedProperty(napi_env env, napi_value object, const std::string &propertyName);
 
