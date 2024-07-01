@@ -33,6 +33,7 @@ std::string MakeErrorMessage(int error)
 {
     static const std::map<int32_t, std::string> ERROR_MAP = {
         {PERMISSION_DENIED_CODE, PERMISSION_DENIED_MSG},
+        {SYSTEM_INTERNAL_ERROR, "System internal error"},
         {TLS_ERR_SYS_EINTR, "Interrupted system call"},
         {TLS_ERR_SYS_EIO, "I/O error"},
         {TLS_ERR_SYS_EBADF, "Bad file number"},
@@ -60,7 +61,6 @@ std::string MakeErrorMessage(int error)
         {TLS_ERR_NO_BIND, "No bind socket"},
         {TLS_ERR_SOCK_INVALID_FD, "Invalid socket FD"},
         {TLS_ERR_SOCK_NOT_CONNECT, "Socket is not connected"},
-        {TLS_ERR_CONSTRUCT, "An error occurred in the TLS constructor"},
     };
     auto search = ERROR_MAP.find(error);
     if (search != ERROR_MAP.end()) {

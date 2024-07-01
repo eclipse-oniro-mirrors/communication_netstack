@@ -24,6 +24,7 @@ namespace NetStack {
 namespace TlsSocket {
 enum TlsSocketError {
     TLSSOCKET_SUCCESS = 0,
+    SYSTEM_INTERNAL_ERROR = 2300002,
     TLS_ERR_SYS_BASE = 2303100,
     TLS_ERR_SYS_EINTR = 2303104,
     TLS_ERR_SYS_EIO = 2303105,
@@ -53,7 +54,6 @@ enum TlsSocketError {
     TLS_ERR_NO_BIND = 2303600,
     TLS_ERR_SOCK_INVALID_FD = 2303601,
     TLS_ERR_SOCK_NOT_CONNECT = 2303602,
-    TLS_ERR_CONSTRUCT = 2303603,
 };
 
 std::string MakeErrorMessage(int error);
