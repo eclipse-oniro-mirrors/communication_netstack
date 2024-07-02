@@ -77,6 +77,23 @@ napi_valuetype GetValueType(napi_env env, napi_value value)
     return valueType;
 }
 
+bool IsInstanceOf(napi_env env, napi_value object, const std::string &name)
+{
+    if (GetValueType(env, object) != napi_object) {
+        return false;
+    }
+
+    auto global = GetGlobal(env);
+    napi_value constructor = GetNamedProperty(env, global, name);
+    if (GetValueType(env, constructor) == napi_undefined) {
+        return false;
+    }
+
+    bool isInstance = false;
+    NAPI_CALL_BASE(env, napi_instanceof(env, object, constructor, &isInstance), false);
+    return isInstance;
+}
+
 /* named property */
 bool HasNamedProperty(napi_env env, napi_value object, const std::string &propertyName)
 {

@@ -23,7 +23,8 @@
 #include "napi_utils.h"
 
 namespace OHOS::NetStack::TlsSocket {
-static constexpr std::string_view PARSE_ERROR = "param is not type of TCPSocket";
+static constexpr std::string_view PARSE_ERROR = "Parameter error";
+static constexpr const char *INTERFACE_TCP_SOCKET = "TCPSocket";
 
 TLSInitContext::TLSInitContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
@@ -46,7 +47,7 @@ void TLSInitContext::ParseParams(napi_value *params, size_t paramsCount)
 bool TLSInitContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
     if (paramsCount == PARAM_JUST_OPTIONS) {
-        if (NapiUtils::GetValueType(GetEnv(), params[0]) != napi_object) {
+        if (!NapiUtils::IsInstanceOf(GetEnv(), params[0], INTERFACE_TCP_SOCKET)) {
             NETSTACK_LOGE("param is not TCPSocket");
             SetNeedThrowException(true);
             SetError(PARSE_ERROR_CODE, PARSE_ERROR.data());
