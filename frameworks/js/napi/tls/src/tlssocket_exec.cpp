@@ -46,7 +46,7 @@ static inline void TLSSocketThrowException(TLSInitContext *context, int32_t erro
     context->SetError(errorCode, MakeErrorMessage(errorCode));
 }
 
-static bool IsTCPSocket(int sockFD)
+static inline bool IsTCPSocket(int sockFD)
 {
     int optval;
     socklen_t optlen = sizeof(optval);
@@ -55,6 +55,13 @@ static bool IsTCPSocket(int sockFD)
         return false;
     }
     return optval == IPPROTO_TCP;
+}
+
+static inline bool IsConnected(int sockFD)
+{
+    sockaddr_storage addr{};
+    socklen_t len = sizeof(addr);
+    return getpeername(sockFD, reinterpret_cast<sockaddr *>(&addr), &len) == 0;
 }
 
 bool TLSSocketExec::ExecInit(TLSInitContext *context)
@@ -73,24 +80,16 @@ bool TLSSocketExec::ExecInit(TLSInitContext *context)
         return false;
     }
 
+    if (!IsConnected(sockFd)) {
+        NETSTACK_LOGE("tcp socket is not connected");
+        TLSSocketThrowException(context, TLS_ERR_SOCK_NOT_CONNECT);
+        return false;
+    }
+
     auto tlsSocket = new TLSSocket(sockFd);
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("new TLSSocket failed, no enough memory");
         TLSSocketThrowException(context, SYSTEM_INTERNAL_ERROR);
-        return false;
-    }
-
-    int32_t errorCode = 0;
-    tlsSocket->GetState([&errorCode](int32_t errorNumber, const Socket::SocketStateBase state) {
-        if (errorNumber != TLSSOCKET_SUCCESS) {
-            errorCode = errorNumber;
-        } else if (!state.IsConnected()) {
-            errorCode = TLS_ERR_SOCK_NOT_CONNECT;
-        }
-    });
-    if (errorCode != 0) {
-        delete tlsSocket;
-        TLSSocketThrowException(context, errorCode);
         return false;
     }
 
