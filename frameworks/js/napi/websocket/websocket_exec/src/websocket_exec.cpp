@@ -772,6 +772,11 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+    if (context->IsAtomicService() &&
+        !CommonUtils::IsAllowedHostname(context->GetBundleName(), context->url)) {
+        context->SetNoAllowedHost(true);
+        return false;
+    }
     auto manager = context->GetManager();
     if (manager == nullptr) {
         return false;

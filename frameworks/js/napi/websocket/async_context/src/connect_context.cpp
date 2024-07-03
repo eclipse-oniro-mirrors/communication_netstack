@@ -321,6 +321,9 @@ int32_t ConnectContext::GetErrorCode() const
     if (BaseContext::IsPermissionDenied()) {
         return PERMISSION_DENIED_CODE;
     }
+    if (BaseContext::IsNoAllowedHost()) {
+        return WEBSOCKET_NOT_ALLOWED_HOST;
+    }
 
     auto err = BaseContext::GetErrorCode();
     if (err == PARSE_ERROR_CODE) {
@@ -337,6 +340,9 @@ std::string ConnectContext::GetErrorMessage() const
     if (BaseContext::IsPermissionDenied()) {
         return PERMISSION_DENIED_MSG;
     }
+    if (BaseContext::IsNoAllowedHost()) {
+        return WEBSOCKET_ERR_MAP.at(WEBSOCKET_NOT_ALLOWED_HOST);
+    }
 
     auto err = BaseContext::GetErrorCode();
     if (err == PARSE_ERROR_CODE) {
@@ -351,5 +357,25 @@ std::string ConnectContext::GetErrorMessage() const
         return it->second;
     }
     return {};
+}
+
+bool ConnectContext::IsAtomicService() const
+{
+    return isAtomicService_;
+}
+
+void ConnectContext::SetAtomicService(bool isAtomicService)
+{
+    isAtomicService_ = isAtomicService;
+}
+
+void ConnectContext::SetBundleName(const std::string &bundleName)
+{
+    bundleName_ = bundleName;
+}
+
+std::string ConnectContext::GetBundleName() const
+{
+    return bundleName_;
 }
 } // namespace OHOS::NetStack::Websocket

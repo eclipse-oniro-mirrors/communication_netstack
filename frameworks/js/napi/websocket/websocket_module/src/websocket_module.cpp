@@ -18,15 +18,25 @@
 #include "constant.h"
 #include "netstack_log.h"
 #include "module_template.h"
+#include "netstack_common_utils.h"
 #include "websocket_async_work.h"
 
 namespace OHOS::NetStack::Websocket {
+static bool g_appIsAtomicService = false;
+static std::once_flag g_isAtomicServiceFlag;
+static std::string g_appBundleName;
+
 napi_value WebSocketModule::InitWebSocketModule(napi_env env, napi_value exports)
 {
     DefineWebSocketClass(env, exports);
     InitWebSocketProperties(env, exports);
     NapiUtils::SetEnvValid(env);
     napi_add_env_cleanup_hook(env, NapiUtils::HookForEnvCleanup, env);
+    std::call_once(g_isAtomicServiceFlag, []() {
+        g_appIsAtomicService = CommonUtils::IsAtomicService(g_appBundleName);
+        NETSTACK_LOGI("IsAtomicService  bundleName is %{public}s, isAtomicService is %{public}d",
+                      g_appBundleName.c_str(), g_appIsAtomicService);
+    });
     return exports;
 }
 
@@ -67,7 +77,13 @@ void WebSocketModule::FinalizeWebSocketInstance(napi_env env, void *data, void *
 napi_value WebSocketModule::WebSocket::Connect(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::Interface<ConnectContext>(
-        env, info, "WebSocketConnect", nullptr, WebSocketAsyncWork::ExecConnect, WebSocketAsyncWork::ConnectCallback);
+        env, info, "WebSocketConnect",
+        [](napi_env, napi_value, ConnectContext *context) -> bool {
+            context->SetAtomicService(g_appIsAtomicService);
+            context->SetBundleName(g_appBundleName);
+            return true;
+        },
+        WebSocketAsyncWork::ExecConnect, WebSocketAsyncWork::ConnectCallback);
 }
 
 napi_value WebSocketModule::WebSocket::Send(napi_env env, napi_callback_info info)

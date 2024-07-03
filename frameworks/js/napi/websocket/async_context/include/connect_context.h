@@ -58,6 +58,14 @@ public:
 
     [[nodiscard]] std::string GetErrorMessage() const override;
 
+    void SetAtomicService(bool isAtomicService);
+
+    [[nodiscard]] bool IsAtomicService() const;
+
+    void SetBundleName(const std::string &bundleName);
+
+    [[nodiscard]] std::string GetBundleName() const;
+
     std::string url;
 
     std::map<std::string, std::string> header;
@@ -79,6 +87,10 @@ public:
     int32_t websocketProxyPort_ = 0;
 
     std::string websocketProxyExclusions_;
+
+    bool isAtomicService_ = false;
+
+    std::string bundleName_;
 
 private:
     void ParseHeader(napi_value optionsValue);
