@@ -19,6 +19,7 @@
 #include <iosfwd>
 #include <list>
 #include <vector>
+#include <string>
 
 namespace OHOS::NetStack::CommonUtils {
 static const std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
