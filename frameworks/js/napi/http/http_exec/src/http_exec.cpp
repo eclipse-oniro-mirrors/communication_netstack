@@ -469,7 +469,8 @@ bool HttpExec::ExecRequest(RequestContext *context)
         return false;
     }
     if (context->IsAtomicService() &&
-        !CommonUtils::IsAllowedHostname(context->GetBundleName(), context->options.GetUrl())) {
+        !CommonUtils::IsAllowedHostname(context->GetBundleName(), CommonUtils::DOMAIN_TYPE_HTTP_REQUEST,
+                                        context->options.GetUrl())) {
         context->SetNoAllowedHost(true);
         return false;
     }
