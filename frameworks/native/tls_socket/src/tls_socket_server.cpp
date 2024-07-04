@@ -1411,6 +1411,7 @@ void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsLi
 void TLSSocketServer::SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectOptions &tlsListenOptions, int clientID,
                                                     int connectFD, std::shared_ptr<Connection> &connection)
 {
+#if !defined(CROSS_PLATFORM)
     connection->SetClientID(clientID);
     auto res = connection->TlsAcceptToHost(connectFD, tlsListenOptions);
     if (!res) {
@@ -1438,6 +1439,7 @@ void TLSSocketServer::SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectO
     connection->SetEventManager(ptrEventManager);
     CallOnConnectCallback(clientID, ptrEventManager);
     NETSTACK_LOGI("New client come in, fd is %{public}d", connectFD);
+#endif
 }
 
 void TLSSocketServer::InitPollList(int &listendFd)

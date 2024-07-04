@@ -28,6 +28,10 @@
 #include "socket_error.h"
 #include "tls_socket.h"
 
+#ifdef IOS_PLATFORM
+#define SO_PROTOCOL 38
+#endif
+
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
