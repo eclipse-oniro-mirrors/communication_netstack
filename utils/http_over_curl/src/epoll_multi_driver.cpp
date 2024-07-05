@@ -66,9 +66,6 @@ void EpollMultiDriver::Step(int waitEventsTimeoutMs)
     epoll_event events[MAX_EPOLL_EVENTS];
     int eventsToHandle = poller_.Wait(events, MAX_EPOLL_EVENTS, waitEventsTimeoutMs);
     if (eventsToHandle == -1) {
-        if (errno != EINTR) {
-            NETSTACK_LOGE("Error on epoll, errno = %{public}d", errno);
-        }
         return;
     }
 

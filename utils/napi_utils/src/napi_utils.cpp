@@ -725,7 +725,7 @@ uint64_t CreateUvHandlerQueue(napi_env env)
         newId = id.load();
         ++id;
     }
-    NETSTACK_LOGI("CreateUvHandlerQueue newId = %{public}s, id = %{public}s",
+    NETSTACK_LOGI("newId = %{public}s, id = %{public}s",
                   std::to_string(newId).c_str(), std::to_string(id).c_str());
 
     auto global = GetGlobal(env);
