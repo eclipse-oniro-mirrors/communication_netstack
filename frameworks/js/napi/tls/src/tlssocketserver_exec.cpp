@@ -318,14 +318,14 @@ bool TLSSocketServerExec::ExecGetLocalAddress(TLSServerGetLocalAddressContext *c
         localAddress.SetFamilyBySaFamily(AF_INET);
         localAddress.SetAddress(ip_str);
         localAddress.SetPort(ntohs(addr_in->sin_port));
-        context->localAddress_ = localAddress;
+        tlsSocketServer->SetLocalAddress(localAddress);
     } else if (addr.ss_family == AF_INET6) {
         auto *addr_in6 = (struct sockaddr_in6 *)&addr;
         inet_ntop(AF_INET6, &addr_in6->sin6_addr, ip_str, sizeof(ip_str));
         localAddress.SetFamilyBySaFamily(AF_INET6);
         localAddress.SetAddress(ip_str);
         localAddress.SetPort(ntohs(addr_in6->sin6_port));
-        context->localAddress_ = localAddress;
+        tlsSocketServer->SetLocalAddress(localAddress);
     }
     return true;
 }
