@@ -773,7 +773,8 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         return false;
     }
     if (context->IsAtomicService() &&
-        !CommonUtils::IsAllowedHostname(context->GetBundleName(), context->url)) {
+        !CommonUtils::IsAllowedHostname(context->GetBundleName(), CommonUtils::DOMAIN_TYPE_WEBSOCKET_REQUEST,
+                                        context->url)) {
         context->SetNoAllowedHost(true);
         return false;
     }

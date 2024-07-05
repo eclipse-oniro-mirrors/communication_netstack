@@ -20,7 +20,7 @@
 
 namespace OHOS::NetStack::ApiPolicyUtils {
 
-bool IsAllowedHostname(const std::string &bundleName, const std::string &hostname);
+bool IsAllowedHostname(const std::string &bundleName, const std::string &domainType, const std::string &hostname);
 }
 
 #endif //COMMUNICATION_NETSTACK_APIPOLICY_CLIENT_ADAPTER_H

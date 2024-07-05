@@ -22,7 +22,6 @@
 
 namespace OHOS::NetStack::ApiPolicyUtils {
 namespace {
-const std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
 constexpr const uint32_t RESULT_ACCEPT = 0;
 }
 
@@ -32,7 +31,7 @@ constexpr const uint32_t RESULT_ACCEPT = 0;
     const std::string APIPOLICY_SO_PATH = "/system/lib/platformsdk/libapipolicy_client.z.so";
 #endif
 
-bool IsAllowedHostname(const std::string &bundleName, const std::string &hostname)
+bool IsAllowedHostname(const std::string &bundleName, const std::string &domainType, const std::string &hostname)
 {
     void *libHandle = dlopen(APIPOLICY_SO_PATH.c_str(), RTLD_NOW);
     if (!libHandle) {
@@ -48,7 +47,7 @@ bool IsAllowedHostname(const std::string &bundleName, const std::string &hostnam
         dlclose(libHandle);
         return true;
     }
-    int32_t res = func(bundleName, DOMAIN_TYPE_HTTP_REQUEST, hostname);
+    int32_t res = func(bundleName, domainType, hostname);
     NETSTACK_LOGD("ApiPolicy CheckHttpUrl result=%{public}d, bundle_name=%{public}s, hostname=%{public}s",
                   res, bundleName.c_str(), hostname.c_str());
     dlclose(libHandle);

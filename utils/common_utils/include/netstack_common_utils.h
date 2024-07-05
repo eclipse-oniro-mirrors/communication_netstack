@@ -19,8 +19,12 @@
 #include <iosfwd>
 #include <list>
 #include <vector>
+#include <string>
 
 namespace OHOS::NetStack::CommonUtils {
+static const std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
+static const std::string DOMAIN_TYPE_WEBSOCKET_REQUEST = "webSocket";
+
 std::vector<std::string> Split(const std::string &str, const std::string &sep);
 
 std::vector<std::string> Split(const std::string &str, const std::string &sep, size_t size);
@@ -35,7 +39,7 @@ bool HasInternetPermission();
 
 bool IsAtomicService(std::string &bundleName);
 
-bool IsAllowedHostname(const std::string &bundleName, const std::string &url);
+bool IsAllowedHostname(const std::string &bundleName, const std::string &domainType, const std::string &url);
 
 bool EndsWith(const std::string &str, const std::string &suffix);
 

@@ -270,7 +270,7 @@ HWTEST_F(NetStackCommonUtilsTest, CommonUtils31, TestSize.Level2)
 {
     std::string bundleName;
     std::string url = "https://www.example.com";
-    auto ret = IsAllowedHostname(bundleName, url);
+    auto ret = IsAllowedHostname(bundleName, DOMAIN_TYPE_HTTP_REQUEST, url);
     EXPECT_TRUE(ret);
 }
 

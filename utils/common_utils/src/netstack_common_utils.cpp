@@ -169,7 +169,7 @@ bool IsAtomicService(std::string &bundleName)
 #endif
 }
 
-bool IsAllowedHostname(const std::string &bundleName, const std::string &url)
+bool IsAllowedHostname(const std::string &bundleName, const std::string &domainType, const std::string &url)
 {
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (bundleName.empty()) {
@@ -181,7 +181,7 @@ bool IsAllowedHostname(const std::string &bundleName, const std::string &url)
         NETSTACK_LOGE("isAllowedHostnameForAtomicService url hostname is empty");
         return true;
     }
-    return ApiPolicyUtils::IsAllowedHostname(bundleName, hostname);
+    return ApiPolicyUtils::IsAllowedHostname(bundleName, domainType, hostname);
 #else
     return true;
 #endif
