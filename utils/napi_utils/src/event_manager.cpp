@@ -249,7 +249,6 @@ std::recursive_mutex &EventManager::GetDataMutex()
 
 void EventManager::NotifyRcvThdExit()
 {
-    std::lock_guard<std::mutex> lock(sockRcvThdMtx_);
     sockRcvThdCon_.notify_one();
 }
 

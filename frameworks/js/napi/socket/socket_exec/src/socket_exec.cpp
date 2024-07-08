@@ -777,13 +777,23 @@ static bool IsValidSock(int &currentFd, const MessageCallback &callback)
     return true;
 }
 
+static inline void PollRecvFinish(const MessageCallback &callback)
+{
+    auto manager = callback.GetEventManager();
+    if (EventManager::IsManagerValid(manager)) {
+        manager->NotifyRcvThdExit();
+    } else {
+        NETSTACK_LOGE("manager is error");
+    }
+}
+
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
 {
     int bufferSize = ConfirmBufferSize(sock);
     auto buf = std::make_unique<char[]>(bufferSize);
     if (buf == nullptr) {
         callback.OnError(NO_MEMORY);
-        callback.GetEventManager()->NotifyRcvThdExit();
+        PollRecvFinish(callback);
         return;
     }
 
@@ -831,7 +841,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         }
     }
 
-    callback.GetEventManager()->NotifyRcvThdExit();
+    PollRecvFinish(callback);
 }
 
 static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeoutMSec)
