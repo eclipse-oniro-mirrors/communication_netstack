@@ -1274,7 +1274,10 @@ bool TLSSocket::TLSSocketInternal::Close()
     }
     int result = SSL_shutdown(ssl_);
     if (result < 0) {
-        int resErr = ConvertSSLError();
+        if (!ssl_) {
+            return TLS_ERR_SSL_NULL;
+        }
+        int resErr = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
         NETSTACK_LOGE("Error in shutdown, errno is %{public}d, error info is %{public}s", resErr,
                       MakeSSLErrorString(resErr).c_str());
     }
