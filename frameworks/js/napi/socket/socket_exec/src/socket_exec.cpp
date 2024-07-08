@@ -87,6 +87,7 @@ namespace OHOS::NetStack::Socket::SocketExec {
     do { \
         NETSTACK_LOGE(__VA_ARGS__); \
         context->SetErrorCode(errno); \
+        context->SetExecOK(false); \
         return false; \
     } while (0)
 
@@ -583,6 +584,7 @@ static int ConfirmSocketTimeoutMs(int sock, int type, int defaultValue)
 
 static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr, socklen_t addrLen)
 {
+    NETSTACK_LOGD("js send RawSize: %{public}zu", size);
     int bufferSize = DEFAULT_BUFFER_SIZE;
     int opt = 0;
     socklen_t optLen = sizeof(opt);
@@ -612,6 +614,7 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
         }
         size_t sendSize = (sockType == SOCK_STREAM ? leftSize : std::min<size_t>(leftSize, bufferSize));
         auto sendLen = sendto(sock, curPos, sendSize, 0, addr, addrLen);
+        NETSTACK_LOGD("socketFD: %{public}d, send len: %{public}d", sock, sendLen);
         if (sendLen < 0) {
             if (errno == EAGAIN || errno == EINTR) {
                 continue;
@@ -685,6 +688,7 @@ static bool UdpSendEvent(UdpSendContext *context)
     if (addr == nullptr) {
         NETSTACK_LOGE("get sock name failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
         context->SetErrorCode(ADDRESS_INVALID);
+        context->SetExecOK(false);
         return false;
     }
 
@@ -1013,15 +1017,12 @@ bool ExecUdpSend(UdpSendContext *context)
 #ifdef FUZZ_TEST
     return true;
 #endif
-    if (!CommonUtils::HasInternetPermission()) {
-        context->SetPermissionDenied(true);
-        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
+    if (!context->IsParseOK()) {
         return false;
     }
 
-    if (context->GetSocketFd() <= 0) {
-        context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
-        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
         return false;
     }
 
@@ -1074,15 +1075,12 @@ bool ExecTcpSend(TcpSendContext *context)
 #ifdef FUZZ_TEST
     return true;
 #endif
-    if (!CommonUtils::HasInternetPermission()) {
-        context->SetPermissionDenied(true);
-        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
+    if (!context->IsParseOK()) {
         return false;
     }
 
-    if (context->GetSocketFd() <= 0) {
-        context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
-        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
         return false;
     }
 
@@ -1903,7 +1901,7 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
             break;
         }
         int32_t recvSize = recv(connectFD, buffer, recvBufferSize, 0);
-        NETSTACK_LOGD("ClientRecv: fd:%{public}d, buf:%{public}s, size:%{public}d", connectFD, buffer, recvSize);
+        NETSTACK_LOGI("ClientRecv: fd:%{public}d, buf:%{public}s, size:%{public}d", connectFD, buffer, recvSize);
         if (recvSize <= 0) {
             if (errno != EAGAIN && errno != EINTR) {
                 NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);

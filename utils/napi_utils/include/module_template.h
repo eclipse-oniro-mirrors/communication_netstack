@@ -43,6 +43,7 @@ napi_value Interface(napi_env env, napi_callback_info info, const std::string &a
                      bool (*Work)(napi_env, napi_value, Context *), AsyncWorkExecutor executor,
                      AsyncWorkCallback callback)
 {
+    NETSTACK_LOGI("js invoke %{public}s", asyncWorkName.c_str());
     static_assert(std::is_base_of<BaseContext, Context>::value);
 
     napi_value thisVal = nullptr;
@@ -103,8 +104,10 @@ napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
     context->ParseParams(params, paramsCount);
     napi_value ret = NapiUtils::GetUndefined(env);
     if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
-        NETSTACK_LOGD("%{public}s create promise", asyncWorkName.c_str());
+        NETSTACK_LOGD("%{public}s is invoked in promise mode", asyncWorkName.c_str());
         ret = context->CreatePromise();
+    } else {
+        NETSTACK_LOGD("%{public}s is invoked in callback mode", asyncWorkName.c_str());
     }
     context->CreateReference(thisVal);
     if (Work != nullptr) {
