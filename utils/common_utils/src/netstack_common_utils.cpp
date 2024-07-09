@@ -49,6 +49,7 @@ const std::regex IP_MASK_PATTERN{
     "(3[0-2]|[1-2]\\d|\\d)"};
 const std::regex IPV6_PATTERN{"([\\da-fA-F]{0,4}:){2,7}([\\da-fA-F]{0,4})"};
 const std::regex IPV6_MASK_PATTERN{"([\\da-fA-F]{0,4}:){2,7}([\\da-fA-F]{0,4})/(1[0-2][0-8]|[1-9]\\d|[1-9])"};
+static const std::string PROTOCOL_WSS = "wss";
 std::mutex g_commonUtilsMutex;
 
 std::vector<std::string> Split(const std::string &str, const std::string &sep)
@@ -323,9 +324,11 @@ std::string GetHostnameWithProtocolAndPortFromURL(const std::string& url)
         if (!protocol.empty()) {
             hostname = protocol + delimiter + hostname;
         }
-        std::string port = GetPortFromURL(url);
-        if (!port.empty()) {
-            hostname += portDelimiter + port;
+        if (protocol != PROTOCOL_WSS) {
+            std::string port = GetPortFromURL(url);
+            if (!port.empty()) {
+                hostname += portDelimiter + port;
+            }
         }
     }
     return hostname;
