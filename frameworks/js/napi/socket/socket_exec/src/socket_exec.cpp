@@ -614,7 +614,7 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
         }
         size_t sendSize = (sockType == SOCK_STREAM ? leftSize : std::min<size_t>(leftSize, bufferSize));
         auto sendLen = sendto(sock, curPos, sendSize, 0, addr, addrLen);
-        NETSTACK_LOGD("socketFD: %{public}d, send len: %{public}d", sock, sendLen);
+        NETSTACK_LOGD("socketFD: %{public}d, send len: %{public}zu", sock, sendLen);
         if (sendLen < 0) {
             if (errno == EAGAIN || errno == EINTR) {
                 continue;
