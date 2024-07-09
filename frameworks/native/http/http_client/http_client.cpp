@@ -17,14 +17,21 @@
 #include <curl/curl.h>
 #include <functional>
 #include <iostream>
+#include <sstream>
 
 #include "epoll_request_handler.h"
+#if !defined(_WIN32) && !defined(__APPLE__)
+#include "hitrace_meter.h"
+#endif
 #include "http_client.h"
 #include "netstack_log.h"
 
 namespace OHOS {
 namespace NetStack {
 namespace HttpClient {
+#if !defined(_WIN32) && !defined(__APPLE__)
+static constexpr const char *HTTP_REQ_TRACE_NAME = "HttpRequestInner";
+#endif
 
 class HttpGlobal {
 public:
@@ -87,12 +94,25 @@ void HttpSession::StartTask(const std::shared_ptr<HttpClientTask> &ptr)
     static HttpOverCurl::EpollRequestHandler requestHandler;
 
     ptr->SetStatus(TaskStatus::RUNNING);
+
     auto startedCallback = [ptr](CURL *, void *) {};
+#if !defined(_WIN32) && !defined(__APPLE__)
+    std::stringstream name;
+    name << HTTP_REQ_TRACE_NAME << "_" << std::this_thread::get_id();
+    std::string traceName = name.str();
+    StartAsyncTrace(HITRACE_TAG_NET, traceName, ptr->GetTaskId());
+
+    auto responseCallback = [ptr, traceName](CURLMsg *curlMessage, void *) {
+        FinishAsyncTrace(HITRACE_TAG_NET, traceName, ptr->GetTaskId());
+        ptr->ProcessResponse(curlMessage);
+        ptr->SetStatus(TaskStatus::IDLE);
+    };
+#else
     auto responseCallback = [ptr](CURLMsg *curlMessage, void *) {
         ptr->ProcessResponse(curlMessage);
         ptr->SetStatus(TaskStatus::IDLE);
     };
-
+#endif
     requestHandler.Process(ptr->GetCurlHandle(), startedCallback, responseCallback);
 }
 

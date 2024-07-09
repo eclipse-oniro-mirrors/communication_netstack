@@ -865,6 +865,16 @@ std::string RequestContext::GetBundleName() const
     return bundleName_;
 }
 
+void RequestContext::SetTraceName(const std::string &traceName)
+{
+    traceName_ = traceName;
+}
+
+std::string RequestContext::GetTraceName() const
+{
+    return traceName_;
+}
+
 void RequestContext::SetCurlHandle(CURL *handle)
 {
     curlHandle_ = handle;

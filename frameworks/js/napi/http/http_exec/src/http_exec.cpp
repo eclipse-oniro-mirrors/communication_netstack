@@ -21,6 +21,7 @@
 #include <thread>
 #include <unistd.h>
 #include <pthread.h>
+#include <sstream>
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
 #endif
@@ -194,7 +195,10 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     }
 
 #if HAS_NETMANAGER_BASE
-    StartAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, context->GetTaskId());
+    std::stringstream name;
+    name << HTTP_REQ_TRACE_NAME << "_" << std::this_thread::get_id();
+    context->SetTraceName(name.str());
+    StartAsyncTrace(HITRACE_TAG_NET, context->GetTraceName(), context->GetTaskId());
     SetServerSSLCertOption(handle, context);
 
     static HttpOverCurl::EpollRequestHandler requestHandler;
@@ -448,7 +452,7 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         return;
     }
 #if HAS_NETMANAGER_BASE
-    FinishAsyncTrace(HITRACE_TAG_NET, HTTP_REQ_TRACE_NAME, context->GetTaskId());
+    FinishAsyncTrace(HITRACE_TAG_NET, context->GetTraceName(), context->GetTaskId());
 #endif
     context->SendNetworkProfiler();
     if (context->IsRequestInStream()) {
