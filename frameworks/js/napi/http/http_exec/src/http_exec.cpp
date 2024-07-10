@@ -1032,7 +1032,6 @@ bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
             continue;
         }
         std::string resolvHost = host + ":" + std::to_string(port) + ":" + ipstr;
-        NETSTACK_LOGE("dns parse: %{public}s", resolvHost.c_str());
         hostSlist = curl_slist_append(hostSlist, resolvHost.c_str());
     }
     freeaddrinfo(res);

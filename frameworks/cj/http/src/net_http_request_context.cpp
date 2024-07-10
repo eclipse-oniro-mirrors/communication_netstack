@@ -491,7 +491,8 @@ void RequestContext::ParseMultiFormData(CArrMultiFormData multi)
 void ParseSetCookie(CArrString &setCookie, HttpResponse &response)
 {
     auto setCookieSize = response.GetsetCookie().size();
-    if (setCookieSize > 0) {
+    const int RESPONSE_MAX_SIZE = 2 * 1024 * 1024;
+    if (setCookieSize > 0 && setCookieSize < RESPONSE_MAX_SIZE) {
         setCookie.head = static_cast<char**>(malloc(sizeof(char*) * setCookieSize));
         if (setCookie.head == nullptr) {
             return;
