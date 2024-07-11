@@ -509,7 +509,7 @@ void RequestContext::SendResponse()
 {
     CHttpResponse resp = { .errCode = 0,
         .errMsg = nullptr,
-        .result = nullptr,
+        .result = { .head = nullptr, .size = 0},
         .resultType = 2,
         .responseCode = 0,
         .header = CArrString{ .head = nullptr, .size = 0 },
@@ -527,7 +527,8 @@ void RequestContext::SendResponse()
             ParseSetCookie(resp.setCookie, response);
             StopAndCachePerformanceTiming(RESPONSE_TOTAL_TIMING);
             SetPerformanceTimingToResult(resp);
-            resp.result = MallocCString(response.GetResult());
+            resp.result.head = (uint8_t*)MallocCString(response.GetResult());
+            resp.result.size = response.GetResult().length();
             resp.resultType = static_cast<int32_t>(options.GetHttpDataType());
         }
     } else {
