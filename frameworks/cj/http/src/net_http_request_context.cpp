@@ -23,7 +23,7 @@
 #include "netstack_log.h"
 #include "net_http_utils.h"
 
-static constexpr const int32_t RESPONSE_MAX_SIZE = 2 * 1024 * 1024 * 1024;
+static constexpr const uint32_t RESPONSE_MAX_SIZE = 2 * 1024 * 1024 * 1024;
 static constexpr const uint32_t DNS_SERVER_SIZE = 3;
 static constexpr const int32_t PROP_UNSET = -1;
 static constexpr size_t PERMISSION_DENIED_CODE = 201;
