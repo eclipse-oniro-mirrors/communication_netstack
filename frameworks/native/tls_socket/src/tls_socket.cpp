@@ -1101,7 +1101,6 @@ bool ExecSocketConnect(const std::string &hostName, int port, sa_family_t family
     socklen_t len = 0;
     if (family == AF_INET) {
         if (inet_pton(AF_INET, hostName.c_str(), &addr4.sin_addr.s_addr) <= 0) {
-            NETSTACK_LOGE("inet_pton is error, ipv4: %s", hostName.c_str());
             return false;
         }
         addr4.sin_family = family;
@@ -1110,7 +1109,6 @@ bool ExecSocketConnect(const std::string &hostName, int port, sa_family_t family
         len = sizeof(sockaddr_in);
     } else {
         if (inet_pton(AF_INET6, hostName.c_str(), &addr6.sin6_addr) <= 0) {
-            NETSTACK_LOGE("inet_pton is error, ipv6: %s", hostName.c_str());
             return false;
         }
         addr6.sin6_family = family;
