@@ -604,7 +604,7 @@ void HttpClientTask::DumpHttpPerformance() const
     int64_t httpVer = CURL_HTTP_VERSION_NONE;
     (void)curl_easy_getinfo(curlHandle_,  CURLINFO_HTTP_VERSION, &httpVer);
 
-    NETSTACK_LOGI(
+    NETSTACK_CORE_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
         ", dns:%{public}.3f"
