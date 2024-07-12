@@ -605,19 +605,19 @@ void HttpClientTask::DumpHttpPerformance() const
     (void)curl_easy_getinfo(curlHandle_,  CURLINFO_HTTP_VERSION, &httpVer);
 
     NETSTACK_CORE_LOGI(
-        "id=%{public}d"
-        " size:%{public}" CURL_FORMAT_CURL_OFF_T
-        " dnsT:%{public}.2f"
-        " conT:%{public}.2f"
-        " tlsT:%{public}.2f"
-        " sendT:%{public}.2f"
-        " recvT:%{public}.2f"
-        " totalT:%{public}.2f"
-        " redT:%{public}.2f"
-        " err:%{public}d"
-        " resp:%{public}s"
-        " ver:%{public}s"
-        " meth:%{public}s",
+        "taskid=%{public}d"
+        ", size:%{public}" CURL_FORMAT_CURL_OFF_T
+        ", dns:%{public}.3f"
+        ", connect:%{public}.3f"
+        ", tls:%{public}.3f"
+        ", firstSend:%{public}.3f"
+        ", firstRecv:%{public}.3f"
+        ", total:%{public}.3f"
+        ", redirect:%{public}.3f"
+        ", errCode:%{public}d"
+        ", RespCode:%{public}s"
+        ", httpVer:%{public}s"
+        ", method:%{public}s",
         taskId_, GetSizeFromCurl(curlHandle_), dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
