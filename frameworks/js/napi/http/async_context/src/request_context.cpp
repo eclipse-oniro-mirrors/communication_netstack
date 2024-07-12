@@ -70,7 +70,7 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_REMOTE_FILE_NOT_FOUND, "Remote file not found"},
     {HTTP_AUTH_ERROR, "An authentication function returned an error"},
     {HTTP_SSL_PINNEDPUBKEYNOTMATCH, "Specified pinned public key did not match"},
-    {HTTP_NOT_ALLOWED_HOST, "It is not allowed to visit this host"},
+    {HTTP_NOT_ALLOWED_HOST, "It is not allowed to access this domain"},
     {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
 };
 static std::atomic<int32_t> g_currentTaskId = std::numeric_limits<int32_t>::min();
