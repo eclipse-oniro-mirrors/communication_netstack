@@ -31,18 +31,18 @@ namespace OHOS::NetStack {
 #define TLV_ERR_BUFF_NO_ENOUGH 1004
 
 struct DfxMessage {
-    uint64_t requestBeginTime_;
-    uint64_t dnsEndTime_;
-    uint64_t tcpConnectEndTime_;
-    uint64_t tlsHandshakeEndTime_;
-    uint64_t firstSendTime_;
-    uint64_t firstRecvTime_;
-    uint64_t requestEndTime_;
+    uint64_t requestBeginTime_ = 0;
+    uint64_t dnsEndTime_ = 0;
+    uint64_t tcpConnectEndTime_ = 0;
+    uint64_t tlsHandshakeEndTime_ = 0;
+    uint64_t firstSendTime_ = 0;
+    uint64_t firstRecvTime_ = 0;
+    uint64_t requestEndTime_ = 0;
     std::string requestId_;
     std::string requestUrl_;
     std::string requestMethod_;
     std::string requestHeader_;
-    uint32_t responseStatusCode_;
+    uint32_t responseStatusCode_ = 0;
     std::string responseHeader_;
     std::string responseEffectiveUrl_;
     std::string responseIpAddress_;

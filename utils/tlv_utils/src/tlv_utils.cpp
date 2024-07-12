@@ -214,6 +214,7 @@ uint32_t TlvUtils::Encode(DfxMessage &msg, void *data, uint32_t &dataSize)
     if (data == nullptr) {
         data = malloc(BUFFER_MAX_SIZE);
         if (data == nullptr) {
+            free(tlvCount);
             NETSTACK_LOGE("tlv encode malloc data failed");
             return TLV_ERR;
         }
@@ -221,6 +222,7 @@ uint32_t TlvUtils::Encode(DfxMessage &msg, void *data, uint32_t &dataSize)
     (void) memset_s(data, BUFFER_MAX_SIZE, 0, BUFFER_MAX_SIZE);
     uint32_t ret = Serialize(tlvs, *tlvCount, static_cast<uint8_t *>(data), BUFFER_MAX_SIZE,
                              &dataSize);
+    free(tlvCount);
     NETSTACK_LOGI("tlv encode finished. code=%{public}u", ret);
     return ret;
 }
@@ -247,6 +249,7 @@ uint32_t TlvUtils::Decode(DfxMessage &msg, void *data, uint32_t dataSize)
     auto *tlvCount = static_cast<uint32_t *>(tlvCountTmp);
     auto ret = Deserialize(static_cast<uint8_t *>(data), dataSize, tlvs, DFX_MSG_FIELD_NUM, tlvCount);
     Parse(msg, tlvs, *tlvCount);
+    free(tlvCount);
     NETSTACK_LOGI("tlv decode finished. code=%{public}u", ret);
     return ret;
 }
