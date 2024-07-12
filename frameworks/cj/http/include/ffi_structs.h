@@ -94,7 +94,7 @@ EXTERN_C_START
     struct CHttpResponse {
         int32_t errCode;
         char* errMsg;
-        char* result;
+        CArrUI8 result;
         int32_t resultType;
         uint32_t responseCode;
         CArrString header;
