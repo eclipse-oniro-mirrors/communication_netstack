@@ -253,6 +253,21 @@ void EventManager::WaitForRcvThdExit()
     sockRcvThdCon_.wait(lock);
 }
 
+bool EventManager::IsClosing()
+{
+    return isClosing;
+}
+
+void EventManager::SetIsClosing(bool flag)
+{
+    isClosing = flag;
+}
+
+std::mutex &EventManager::GetCloseLock()
+{
+    return mutexForClose_;
+}
+
 UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)
     : data(theData), env(theEnv), type(std::move(eventType)), manager(eventManager)
 {
