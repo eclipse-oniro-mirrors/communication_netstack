@@ -134,17 +134,15 @@ HWTEST_F(HttpClientResponseTest, ResponseAppendCookie001, TestSize.Level1)
     const char *emptyHead = " \r\n";
     const char *errHead = "test data\r\n";
     const char *realHead = "test:data\r\n";
-    int len = strlen(emptyHead) + strlen(errHead) + strlen(realHead);
-    char result[len];
-    strcat(result, emptyHead);
-    strcat(result, errHead);
-    strcat(result, realHead);
-    string str(result);
+    string cookies = "";
+    cookies.append(emptyHead);
+    cookies.append(errHead);
+    cookies.append(realHead);
     req.AppendCookies(emptyHead, strlen(emptyHead));
     req.AppendCookies(errHead, strlen(errHead));
     req.AppendCookies(realHead, strlen(realHead));
     auto ret = req.GetCookies();
-    EXPECT_EQ(str, ret);
+    EXPECT_EQ(cookies, ret);
 }
  
 HWTEST_F(HttpClientResponseTest, ResponseSetCookie001, TestSize.Level1)
