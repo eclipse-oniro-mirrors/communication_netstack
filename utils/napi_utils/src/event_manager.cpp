@@ -79,13 +79,13 @@ void EventManager::Emit(const std::string &type, const std::pair<napi_value, nap
 
 void EventManager::SetData(void *data)
 {
-    std::lock_guard<std::recursive_mutex> lock(dataMutex_);
+    std::lock_guard<std::mutex> lock(dataMutex_);
     data_ = data;
 }
 
 void *EventManager::GetData()
 {
-    std::lock_guard<std::recursive_mutex> lock(dataMutex_);
+    std::lock_guard<std::mutex> lock(dataMutex_);
     return data_;
 }
 
@@ -240,11 +240,6 @@ void EventManager::ClearWebSocketTextData()
 void EventManager::ClearWebSocketBinaryData()
 {
     webSocketBinaryData_.clear();
-}
-
-std::recursive_mutex &EventManager::GetDataMutex()
-{
-    return dataMutex_;
 }
 
 void EventManager::NotifyRcvThdExit()

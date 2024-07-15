@@ -62,6 +62,10 @@ public:
     static napi_value GetRemoteAddressCallback(TLSGetRemoteAddressContext *context);
     static napi_value GetLocalAddressCallback(TLSGetLocalAddressContext *context);
     static napi_value SetExtraOptionsCallback(TLSSetExtraOptionsContext *context);
+
+private:
+    bool isClosing = false;
+    std::mutex mutexForClose_;
 };
 } // namespace TlsSocket
 } // namespace NetStack
