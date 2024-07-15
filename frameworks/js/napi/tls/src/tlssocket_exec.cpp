@@ -273,20 +273,19 @@ bool TLSSocketExec::ExecClose(TLSNapiContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    {
-        std::lock_guard<std::mutex> lock(manager->GetCloseLock());
-        if (manager->IsClosing()) {
-            NETSTACK_LOGE("Socket is closing");
-            context->SetError(TLS_ERR_IS_CLOSING, MakeErrorMessage(TLS_ERR_IS_CLOSING));
-            return false;
-        }
-        manager->SetIsClosing(true);
-    }
     auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecClose tlsSocket is null");
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
+    }
+    {
+        std::lock_guard<std::mutex> lock(tlsSocket->GetCloseLock());
+        if (tlsSocket->GetCloseState()) {
+            NETSTACK_LOGE("Socket is closing");
+            return true;
+        }
+        tlsSocket->SetCloseState(true);
     }
     tlsSocket->Close([&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
@@ -294,9 +293,9 @@ bool TLSSocketExec::ExecClose(TLSNapiContext *context)
             context->SetError(errorNumber, MakeErrorMessage(errorNumber));
         }
     });
+    tlsSocket->SetCloseState(false);
     delete tlsSocket;
     manager->SetData(nullptr);
-    manager->SetIsClosing(false);
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 

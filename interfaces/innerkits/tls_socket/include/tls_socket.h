@@ -418,6 +418,12 @@ public:
      * Get the current socket file description address of the server
      */
     Socket::NetAddress GetLocalAddress();
+
+    bool GetCloseState();
+
+    void SetCloseState(bool flag);
+
+    std::mutex &GetCloseLock();
 private:
     class TLSSocketInternal final {
     public:
@@ -639,6 +645,8 @@ private:
     int sockFd_ = -1;
     bool isExtSock_ = false;
     Socket::NetAddress localAddress_;
+    bool isClosed = false;
+    std::mutex mutexForClose_;
 };
 } // namespace TlsSocket
 } // namespace NetStack

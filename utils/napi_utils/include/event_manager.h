@@ -90,12 +90,6 @@ public:
 
     void WaitForRcvThdExit();
 
-    bool IsClosing();
-
-    void SetIsClosing(bool flag);
-
-    std::mutex &GetCloseLock();
-
 private:
     std::mutex mutexForListenersAndEmitByUv_;
     std::mutex mutexForEmitAndEmitByUv_;
@@ -112,8 +106,6 @@ private:
     std::string webSocketBinaryData_;
     std::mutex sockRcvThdMtx_;
     std::condition_variable sockRcvThdCon_;
-    bool isClosing = false;
-    std::mutex mutexForClose_;
 };
 
 struct UvWorkWrapper {

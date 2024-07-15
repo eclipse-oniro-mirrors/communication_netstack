@@ -1089,6 +1089,21 @@ Socket::NetAddress TLSSocket::GetLocalAddress()
     return localAddress_;
 }
 
+bool TLSSocket::GetCloseState()
+{
+    return isClosed;
+}
+
+void TLSSocket::SetCloseState(bool flag)
+{
+    isClosed = flag;
+}
+
+std::mutex &TLSSocket::GetCloseLock()
+{
+    return mutexForClose_;
+}
+
 bool ExecSocketConnect(const std::string &hostName, int port, sa_family_t family, int socketDescriptor)
 {
     struct sockaddr_in dest = {0};
