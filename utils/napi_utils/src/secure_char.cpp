@@ -23,9 +23,7 @@ SecureChar::SecureChar() : data_(std::make_unique<char[]>(0)) {}
 
 SecureChar::~SecureChar()
 {
-    if (memset_s(data_.get(), length_, 0, length_) != EOK) {
-        NETSTACK_LOGE("memcpy_s failed!");
-    }
+    (void)memset_s(data_.get(), length_, 0, length_);
 }
 
 SecureChar::SecureChar(const std::string &SecureChar)
