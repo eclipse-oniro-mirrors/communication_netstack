@@ -192,7 +192,6 @@ uint32_t TlvUtils::Parse(DfxMessage &msg, TlvCommon *tlvs, uint32_t tlvCount)
     return TLV_OK;
 }
 
-
 uint32_t TlvUtils::Encode(DfxMessage &msg, void *data, uint32_t &dataSize)
 {
     void *tlvsTemp = malloc(sizeof(TlvCommon) * DFX_MSG_FIELD_NUM);
@@ -203,26 +202,19 @@ uint32_t TlvUtils::Encode(DfxMessage &msg, void *data, uint32_t &dataSize)
     auto *tlvs = static_cast<TlvCommon *>(tlvsTemp);
     (void) memset_s(&tlvs[0], sizeof(TlvCommon) * DFX_MSG_FIELD_NUM, 0,
                     sizeof(TlvCommon) * DFX_MSG_FIELD_NUM);
-    void *tlvCountTmp = malloc(sizeof(uint32_t));
-    if (tlvCountTmp == nullptr) {
-        NETSTACK_LOGE("tlv encode malloc tlvCount failed");
-        return TLV_ERR;
-    }
-    auto *tlvCount = static_cast<uint32_t *>(tlvCountTmp);
-    GenerateTlv(msg, tlvs, tlvCount);
+    uint32_t fieldCount = 0;
+    GenerateTlv(msg, tlvs, &fieldCount);
 
     if (data == nullptr) {
         data = malloc(BUFFER_MAX_SIZE);
         if (data == nullptr) {
-            free(tlvCount);
             NETSTACK_LOGE("tlv encode malloc data failed");
             return TLV_ERR;
         }
     }
     (void) memset_s(data, BUFFER_MAX_SIZE, 0, BUFFER_MAX_SIZE);
-    uint32_t ret = Serialize(tlvs, *tlvCount, static_cast<uint8_t *>(data), BUFFER_MAX_SIZE,
+    uint32_t ret = Serialize(tlvs, fieldCount, static_cast<uint8_t *>(data), BUFFER_MAX_SIZE,
                              &dataSize);
-    free(tlvCount);
     NETSTACK_LOGI("tlv encode finished. code=%{public}u", ret);
     return ret;
 }
@@ -241,15 +233,9 @@ uint32_t TlvUtils::Decode(DfxMessage &msg, void *data, uint32_t dataSize)
     auto *tlvs = static_cast<TlvCommon *>(tlvsTemp);
     (void) memset_s(&tlvs[0], sizeof(TlvCommon) * DFX_MSG_FIELD_NUM, 0,
                     sizeof(TlvCommon) * DFX_MSG_FIELD_NUM);
-    void *tlvCountTmp = malloc(sizeof(uint32_t));
-    if (tlvCountTmp == nullptr) {
-        NETSTACK_LOGE("tlv decode malloc tlvCount failed");
-        return TLV_ERR;
-    }
-    auto *tlvCount = static_cast<uint32_t *>(tlvCountTmp);
-    auto ret = Deserialize(static_cast<uint8_t *>(data), dataSize, tlvs, DFX_MSG_FIELD_NUM, tlvCount);
-    Parse(msg, tlvs, *tlvCount);
-    free(tlvCount);
+    uint32_t fieldCount = 0;
+    auto ret = Deserialize(static_cast<uint8_t *>(data), dataSize, tlvs, DFX_MSG_FIELD_NUM, &fieldCount);
+    Parse(msg, tlvs, fieldCount);
     NETSTACK_LOGI("tlv decode finished. code=%{public}u", ret);
     return ret;
 }
