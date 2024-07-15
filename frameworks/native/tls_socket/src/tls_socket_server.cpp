@@ -1288,6 +1288,13 @@ int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
                     it->second->CallOnMessageCallback(socketFd, buffer, remoteInfo);
                     return len;
                 }
+#if defined(CROSS_PLATFORM)
+                if (len == 0) {
+                    RemoveConnect(socketFd);
+                    DropFdFromPollList(index);
+                    NETSTACK_LOGI("A client left");
+		}
+#endif
                 break;
             } else {
                 ++it;
@@ -1472,7 +1479,6 @@ void TLSSocketServer::DropFdFromPollList(int &fd_index)
 
 void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOptions)
 {
-#if !defined(CROSS_PLATFORM)
     int on = 1;
     isRunning_ = true;
     ioctl(listenSocketFd_, FIONBIO, (char *)&on);
@@ -1500,7 +1506,10 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
             for (int i = 0; i < g_userCounter + 1; ++i) {
                 if ((fds_[i].fd == listenSocketFd_) && (static_cast<uint16_t>(fds_[i].revents) & POLLIN)) {
                     ProcessTcpAccept(tlsOption, ++clientId);
-                } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLRDHUP) ||
+                } else if (
+#if !defined(CROSS_PLATFORM)
+                           (static_cast<uint16_t>(fds_[i].revents) & POLLRDHUP) ||
+#endif
                            (static_cast<uint16_t>(fds_[i].revents) & POLLERR)) {
                     RemoveConnect(fds_[i].fd);
                     DropFdFromPollList(i);
@@ -1512,7 +1521,6 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
         }
     });
     thread_.detach();
-#endif
 }
 
 std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionByClientEventManager(
