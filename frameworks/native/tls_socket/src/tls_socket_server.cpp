@@ -1289,7 +1289,7 @@ int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
                     return len;
                 }
 #if defined(CROSS_PLATFORM)
-                if (len == 0) {
+                if (len == 0 &&  errno == 0) {
                     RemoveConnect(socketFd);
                     DropFdFromPollList(index);
                     NETSTACK_LOGI("A client left");
