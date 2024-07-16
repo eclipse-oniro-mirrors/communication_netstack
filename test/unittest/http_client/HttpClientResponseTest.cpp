@@ -107,4 +107,76 @@ HWTEST_F(HttpClientResponseTest, SetResponseCodeTest001, TestSize.Level1)
     EXPECT_EQ(responseTest, ResponseCode::MULT_CHOICE);
 }
 
+HWTEST_F(HttpClientResponseTest, ResponseParseHeader001, TestSize.Level1)
+{
+    HttpClientResponse req;
+    const char *emptyHead = " \r\n";
+    const char *errHead = "test1 data1\r\n";
+    const char *realHead = "test:data\r\n";
+    req.AppendHeader(emptyHead, strlen(emptyHead));
+    req.AppendHeader(errHead, strlen(errHead));
+    req.AppendHeader(realHead, strlen(realHead));
+ 
+    req.ParseHeaders();
+    auto headers = req.GetHeaders();
+    std::string ret;
+    std::for_each(headers.begin(), headers.end(), [&ret](const auto &item) {
+        if (!item.first.empty() && !item.second.empty()) {
+            ret += item.first + ":" + item.second + "\r\n";
+        }
+    });
+    EXPECT_EQ(realHead, ret);
+}
+ 
+HWTEST_F(HttpClientResponseTest, ResponseAppendCookie001, TestSize.Level1)
+{
+    HttpClientResponse req;
+    const char *emptyHead = " \r\n";
+    const char *errHead = "test data\r\n";
+    const char *realHead = "test:data\r\n";
+    string cookies = "";
+    cookies.append(emptyHead);
+    cookies.append(errHead);
+    cookies.append(realHead);
+    req.AppendCookies(emptyHead, strlen(emptyHead));
+    req.AppendCookies(errHead, strlen(errHead));
+    req.AppendCookies(realHead, strlen(realHead));
+    auto ret = req.GetCookies();
+    EXPECT_EQ(cookies, ret);
+}
+ 
+HWTEST_F(HttpClientResponseTest, ResponseSetCookie001, TestSize.Level1)
+{
+    HttpClientResponse req;
+    const char *realHead = "test:data\r\n";
+    req.SetCookies(realHead);
+    auto result = req.GetCookies();
+    EXPECT_EQ(realHead, result);
+}
+ 
+HWTEST_F(HttpClientResponseTest, ResponseSetWarning001, TestSize.Level1)
+{
+    HttpClientResponse req;
+    const char *realHead = "test:data";
+    const char *warningText = "Warning";
+    req.SetWarning(realHead);
+    auto headers = req.GetHeaders();
+    for (auto &item: headers) {
+        auto key = item.first.c_str();
+        if (strcmp(warningText, key) == 0) {
+            EXPECT_EQ(realHead, item.second);
+            return;
+        }
+    }
+    EXPECT_FALSE(true);
+}
+ 
+HWTEST_F(HttpClientResponseTest, ResponseSetRawHeader001, TestSize.Level1)
+{
+    HttpClientResponse req;
+    const char *realHead = "test:data\r\n";
+    req.SetRawHeader(realHead);
+    auto header = req.GetHeader();
+    EXPECT_EQ(realHead, header);
+}
 } // namespace
