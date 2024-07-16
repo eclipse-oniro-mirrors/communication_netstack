@@ -86,8 +86,6 @@ public:
 
     void ClearWebSocketBinaryData();
 
-    std::recursive_mutex &GetDataMutex();
-
     void NotifyRcvThdExit();
 
     void WaitForRcvThdExit();
@@ -95,7 +93,7 @@ public:
 private:
     std::mutex mutexForListenersAndEmitByUv_;
     std::mutex mutexForEmitAndEmitByUv_;
-    std::recursive_mutex dataMutex_;
+    std::mutex dataMutex_;
     std::mutex dataQueueMutex_;
     std::list<EventListener> listeners_;
     void *data_;
