@@ -298,6 +298,12 @@ void TLSContext::SetVerify(TLSContext *tlsContext)
         verifyMode_ = TWO_WAY_MODE;
         SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_FAIL_IF_NO_PEER_CERT, nullptr);
     }
+
+    if (tlsContext->tlsConfiguration_.GetSkipFlag()) {
+        NETSTACK_LOGI("Choose to skip remote validation.");
+        SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_NONE, nullptr);
+    }
+
     NETSTACK_LOGD("Authentication mode is %{public}s",
                   verifyMode_ ? "two-way authentication" : "one-way authentication");
 }

@@ -313,6 +313,11 @@ void TLSConnectOptions::SetAlpnProtocols(const std::vector<std::string> &alpnPro
     alpnProtocols_ = alpnProtocols;
 }
 
+void TLSConnectOptions::SetSkipRemoteValidation(bool skipRemoteValidation)
+{
+    skipRemoteValidation_ = skipRemoteValidation;
+}
+
 Socket::NetAddress TLSConnectOptions::GetNetAddress() const
 {
     return address_;
@@ -331,6 +336,11 @@ CheckServerIdentity TLSConnectOptions::GetCheckServerIdentity() const
 const std::vector<std::string> &TLSConnectOptions::GetAlpnProtocols() const
 {
     return alpnProtocols_;
+}
+
+bool TLSConnectOptions::GetSkipRemoteValidation() const
+{
+    return skipRemoteValidation_;
 }
 
 std::string TLSSocket::MakeAddressString(sockaddr *addr)
@@ -1165,7 +1175,7 @@ bool TLSSocket::TLSSocketInternal::TlsConnectToHost(int sock, const TLSConnectOp
     if (!protocolVec.empty()) {
         configuration_.SetProtocol(protocolVec);
     }
-
+    configuration_.SetSkipFlag(options.GetSkipRemoteValidation());
     hostName_ = options.GetNetAddress().GetAddress();
     port_ = options.GetNetAddress().GetPort();
     family_ = options.GetNetAddress().GetSaFamily();
