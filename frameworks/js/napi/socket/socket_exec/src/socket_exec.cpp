@@ -1913,7 +1913,13 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
         int32_t recvSize = recv(connectFD, buffer, recvBufferSize, 0);
         NETSTACK_LOGI("ClientRecv: fd:%{public}d, errno:%{public}d, size:%{public}d", connectFD, errno, recvSize);
         if (recvSize <= 0) {
-            if (errno != EINTR) {
+	    if (recvSize == 0 && errno == EAGAIN) {
+                NETSTACK_LOGE("closed by peer, socket is %{public}d, errno is %{public}d", sock, errno);
+                RemoveClientConnection(clientId);
+                SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
+                break;
+            }
+            if (errno != EAGAIN && errno != EINTR) {
                 NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
                 callback.OnCloseMessage(manager);
                 RemoveClientConnection(clientId);
