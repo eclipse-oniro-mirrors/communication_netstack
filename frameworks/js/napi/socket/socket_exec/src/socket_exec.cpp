@@ -78,10 +78,6 @@ static constexpr const char *SOCKET_EXEC_CONNECT = "OS_NET_SockTPRD";
 
 static constexpr const char *SOCKET_RECV_FROM_MULTI_CAST = "OS_NET_SockMPRD";
 
-static constexpr const int SYSTEM_INTERNAL_ERROR_CODE = 2300002;
-
-static constexpr const char *SYSTEM_INTERNAL_ERROR_MESSAGE = "system internal error";
-
 namespace OHOS::NetStack::Socket::SocketExec {
 #define ERROR_RETURN(context, ...) \
     do { \
@@ -1651,8 +1647,7 @@ bool ExecTcpConnectionGetRemoteAddress(TcpServerGetRemoteAddressContext *context
 bool ExecTcpConnectionGetLocalAddress(TcpConnectionGetLocalAddressContext *context)
 {
     if (context == nullptr) {
-        context->SetNeedThrowException(true);
-        context->SetError(SYSTEM_INTERNAL_ERROR_CODE, SYSTEM_INTERNAL_ERROR_MESSAGE);
+        NETSTACK_LOGE("context is nullptr");
         return false;
     }
     int32_t clientFd = -1;
