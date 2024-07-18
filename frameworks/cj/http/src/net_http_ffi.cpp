@@ -51,6 +51,9 @@ EXTERN_C_START
     int64_t CJ_CreateHttp()
     {
         auto request = FFI::FFIData::Create<HttpRequestProxy>();
+        if (!request) {
+            return ERR_INVALID_INSTANCE_CODE;
+        }
         return request->GetID();
     }
 
