@@ -1919,8 +1919,8 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
         int32_t recvSize = recv(connectFD, buffer, recvBufferSize, 0);
         NETSTACK_LOGI("ClientRecv: fd:%{public}d, size:%{public}d, errno:%{public}d", connectFD, recvSize, errno);
         if (recvSize <= 0) {
-	    if (recvSize == 0 && errno == EAGAIN) {
-                NETSTACK_LOGE("closed by peer, socket is %{public}d, errno is %{public}d", sock, errno);
+            if (recvSize == 0 && errno == EAGAIN) {
+                callback.OnCloseMessage(manager);
                 CloseClientHandler(clientId, connectFD);
                 break;
             }
