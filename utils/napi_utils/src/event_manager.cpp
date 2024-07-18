@@ -249,14 +249,17 @@ std::recursive_mutex &EventManager::GetDataMutex()
 
 void EventManager::NotifyRcvThdExit()
 {
-    std::lock_guard<std::mutex> lock(sockRcvThdMtx_);
+    std::unique_lock<std::mutex> lock(sockRcvThdMtx_);
+    sockRcvExit_ = true;
     sockRcvThdCon_.notify_one();
 }
 
 void EventManager::WaitForRcvThdExit()
 {
     std::unique_lock<std::mutex> lock(sockRcvThdMtx_);
-    sockRcvThdCon_.wait(lock);
+    sockRcvThdCon_.wait(lock, [this]() {
+        return sockRcvExit_;
+    });
 }
 
 UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)
