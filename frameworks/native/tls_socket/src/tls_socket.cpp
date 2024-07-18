@@ -749,10 +749,9 @@ void TLSSocket::Send(const OHOS::NetStack::Socket::TCPSendOptions &tcpSendOption
 void TLSSocket::Close(const CloseCallback &callback)
 {
     isRunning_ = false;
-    {
-        std::unique_lock<std::mutex> cvLock(cvMutex_);
-        cvSslFree_.wait(cvLock, [this]() -> bool { return isRunOver_; });
-    }
+    std::unique_lock<std::mutex> cvLock(cvMutex_);
+    cvSslFree_.wait(cvLock, [this]() -> bool { return isRunOver_; });
+
     std::lock_guard<std::mutex> lock(recvMutex_);
     auto res = tlsSocketInternal_.Close();
     if (!res) {
