@@ -1598,21 +1598,25 @@ std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::st
 
 bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &options)
 {
-    if (!ssl_) {
-        NETSTACK_LOGE("ssl is null");
-        return false;
-    }
-    int result = SSL_connect(ssl_);
-    if (result == -1) {
-        int errorStatus = ConvertSSLError();
-        NETSTACK_LOGE("SSL connect is error, errno is %{public}d, error info is %{public}s", errorStatus,
-                      MakeSSLErrorString(errorStatus).c_str());
-        return false;
-    }
+    {
+        std::lock_guard<std::mutex> lock(mutexForSsl_);
+        if (!ssl_) {
+            NETSTACK_LOGE("ssl is null");
+            return false;
+        }
+        int result = SSL_connect(ssl_);
+        if (result == -1) {
+            int errorStatus = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
+            NETSTACK_LOGE("SSL connect is error, errno is %{public}d, error info is %{public}s",
+                          errorStatus, MakeSSLErrorString(errorStatus).c_str());
+            return false;
+        }
 
-    std::string list = SSL_get_cipher_list(ssl_, 0);
-    NETSTACK_LOGI("SSL_get_cipher_list: %{public}s", list.c_str());
-    configuration_.SetCipherSuite(list);
+        std::string list = SSL_get_cipher_list(ssl_, 0);
+        NETSTACK_LOGI("cipher_list: %{public}s, Version: %{public}s, Cipher: %{public}s", list.c_str(),
+                      SSL_get_version(ssl_), SSL_get_cipher(ssl_));
+        configuration_.SetCipherSuite(list);
+    }
     if (!SetSharedSigals()) {
         NETSTACK_LOGE("Failed to set sharedSigalgs");
     }
@@ -1632,8 +1636,6 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
     } else {
         checkServerIdentity(hostName_, {remoteCert_});
     }
-    NETSTACK_LOGI("SSL Get Version: %{public}s, SSL Get Cipher: %{public}s", SSL_get_version(ssl_),
-                  SSL_get_cipher(ssl_));
     return true;
 }
 
