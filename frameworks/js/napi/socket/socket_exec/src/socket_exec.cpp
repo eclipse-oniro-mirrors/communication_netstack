@@ -1880,6 +1880,12 @@ static inline void RecvInErrorCondition(int reason, int clientId, int connectFD,
     callback.OnError(reason);
 }
 
+static inline void CloseClientHandler(int clientId, int connectFD)
+{
+    RemoveClientConnection(clientId);
+    SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
+}
+
 static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallback &callback)
 {
     int32_t connectFD = 0;
@@ -1906,13 +1912,17 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
             break;
         }
         int32_t recvSize = recv(connectFD, buffer, recvBufferSize, 0);
-        NETSTACK_LOGI("ClientRecv: fd:%{public}d, buf:%{public}s, size:%{public}d", connectFD, buffer, recvSize);
+        NETSTACK_LOGI("ClientRecv: fd:%{public}d, size:%{public}d, errno:%{public}d", connectFD, recvSize, errno);
         if (recvSize <= 0) {
+            if (recvSize == 0 && errno == EAGAIN) {
+                callback.OnCloseMessage(manager);
+                CloseClientHandler(clientId, connectFD);
+                break;
+            }
             if (errno != EAGAIN && errno != EINTR) {
                 NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
                 callback.OnCloseMessage(manager);
-                RemoveClientConnection(clientId);
-                SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
+                CloseClientHandler(clientId, connectFD);
                 break;
             }
         } else {
