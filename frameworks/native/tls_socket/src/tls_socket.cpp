@@ -313,6 +313,11 @@ void TLSConnectOptions::SetAlpnProtocols(const std::vector<std::string> &alpnPro
     alpnProtocols_ = alpnProtocols;
 }
 
+void TLSConnectOptions::SetSkipRemoteValidation(bool skipRemoteValidation)
+{
+    skipRemoteValidation_ = skipRemoteValidation;
+}
+
 Socket::NetAddress TLSConnectOptions::GetNetAddress() const
 {
     return address_;
@@ -331,6 +336,11 @@ CheckServerIdentity TLSConnectOptions::GetCheckServerIdentity() const
 const std::vector<std::string> &TLSConnectOptions::GetAlpnProtocols() const
 {
     return alpnProtocols_;
+}
+
+bool TLSConnectOptions::GetSkipRemoteValidation() const
+{
+    return skipRemoteValidation_;
 }
 
 std::string TLSSocket::MakeAddressString(sockaddr *addr)
@@ -1089,6 +1099,21 @@ Socket::NetAddress TLSSocket::GetLocalAddress()
     return localAddress_;
 }
 
+bool TLSSocket::GetCloseState()
+{
+    return isClosed;
+}
+
+void TLSSocket::SetCloseState(bool flag)
+{
+    isClosed = flag;
+}
+
+std::mutex &TLSSocket::GetCloseLock()
+{
+    return mutexForClose_;
+}
+
 bool ExecSocketConnect(const std::string &hostName, int port, sa_family_t family, int socketDescriptor)
 {
     struct sockaddr_in dest = {0};
@@ -1101,7 +1126,6 @@ bool ExecSocketConnect(const std::string &hostName, int port, sa_family_t family
     socklen_t len = 0;
     if (family == AF_INET) {
         if (inet_pton(AF_INET, hostName.c_str(), &addr4.sin_addr.s_addr) <= 0) {
-            NETSTACK_LOGE("inet_pton is error, ipv4: %s", hostName.c_str());
             return false;
         }
         addr4.sin_family = family;
@@ -1110,7 +1134,6 @@ bool ExecSocketConnect(const std::string &hostName, int port, sa_family_t family
         len = sizeof(sockaddr_in);
     } else {
         if (inet_pton(AF_INET6, hostName.c_str(), &addr6.sin6_addr) <= 0) {
-            NETSTACK_LOGE("inet_pton is error, ipv6: %s", hostName.c_str());
             return false;
         }
         addr6.sin6_family = family;
@@ -1152,7 +1175,7 @@ bool TLSSocket::TLSSocketInternal::TlsConnectToHost(int sock, const TLSConnectOp
     if (!protocolVec.empty()) {
         configuration_.SetProtocol(protocolVec);
     }
-
+    configuration_.SetSkipFlag(options.GetSkipRemoteValidation());
     hostName_ = options.GetNetAddress().GetAddress();
     port_ = options.GetNetAddress().GetPort();
     family_ = options.GetNetAddress().GetSaFamily();
@@ -1274,7 +1297,7 @@ bool TLSSocket::TLSSocketInternal::Close()
     }
     int result = SSL_shutdown(ssl_);
     if (result < 0) {
-        int resErr = ConvertSSLError();
+        int resErr = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
         NETSTACK_LOGE("Error in shutdown, errno is %{public}d, error info is %{public}s", resErr,
                       MakeSSLErrorString(resErr).c_str());
     }
@@ -1575,21 +1598,25 @@ std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::st
 
 bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &options)
 {
-    if (!ssl_) {
-        NETSTACK_LOGE("ssl is null");
-        return false;
-    }
-    int result = SSL_connect(ssl_);
-    if (result == -1) {
-        int errorStatus = ConvertSSLError();
-        NETSTACK_LOGE("SSL connect is error, errno is %{public}d, error info is %{public}s", errorStatus,
-                      MakeSSLErrorString(errorStatus).c_str());
-        return false;
-    }
+    {
+        std::lock_guard<std::mutex> lock(mutexForSsl_);
+        if (!ssl_) {
+            NETSTACK_LOGE("ssl is null");
+            return false;
+        }
+        int result = SSL_connect(ssl_);
+        if (result == -1) {
+            int errorStatus = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
+            NETSTACK_LOGE("SSL connect is error, errno is %{public}d, error info is %{public}s",
+                          errorStatus, MakeSSLErrorString(errorStatus).c_str());
+            return false;
+        }
 
-    std::string list = SSL_get_cipher_list(ssl_, 0);
-    NETSTACK_LOGI("SSL_get_cipher_list: %{public}s", list.c_str());
-    configuration_.SetCipherSuite(list);
+        std::string list = SSL_get_cipher_list(ssl_, 0);
+        NETSTACK_LOGI("cipher_list: %{public}s, Version: %{public}s, Cipher: %{public}s", list.c_str(),
+                      SSL_get_version(ssl_), SSL_get_cipher(ssl_));
+        configuration_.SetCipherSuite(list);
+    }
     if (!SetSharedSigals()) {
         NETSTACK_LOGE("Failed to set sharedSigalgs");
     }
@@ -1609,8 +1636,6 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
     } else {
         checkServerIdentity(hostName_, {remoteCert_});
     }
-    NETSTACK_LOGI("SSL Get Version: %{public}s, SSL Get Cipher: %{public}s", SSL_get_version(ssl_),
-                  SSL_get_cipher(ssl_));
     return true;
 }
 

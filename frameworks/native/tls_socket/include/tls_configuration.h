@@ -71,6 +71,9 @@ public:
     void SetNetAddress(const Socket::NetAddress& address);
     [[nodiscard]] Socket::NetAddress GetNetAddress() const;
 
+    void SetSkipFlag(bool whetherToSkip);
+    [[nodiscard]] bool GetSkipFlag() const;
+
 private:
     TLSProtocol minProtocol_ = TLS_V1_2;
     TLSProtocol maxProtocol_ = TLS_V1_3;
@@ -90,6 +93,7 @@ private:
     std::vector<std::string> caCertificateChain_;
     VerifyMode tlsVerifyMode_;
     Socket::NetAddress netAddress_;
+    bool whetherToSkip_ = false;
 };
 } // namespace TlsSocket
 } // namespace NetStack

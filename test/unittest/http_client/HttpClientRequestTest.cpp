@@ -94,8 +94,9 @@ HWTEST_F(HttpClientRequestTest, GetMethodTest001, TestSize.Level1)
 HWTEST_F(HttpClientRequestTest, SetMethodTest001, TestSize.Level1)
 {
     HttpClientRequest req;
-    req.SetMethod("");
+    req.SetMethod("abc");
     string method = req.GetMethod();
+    NETSTACK_LOGI("SetMethodTest001 GetMethod = %{public}s", method.c_str());
     EXPECT_EQ(method, HttpConstant::HTTP_METHOD_GET);
 }
 

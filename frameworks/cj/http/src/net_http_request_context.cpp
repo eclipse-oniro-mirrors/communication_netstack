@@ -23,6 +23,7 @@
 #include "netstack_log.h"
 #include "net_http_utils.h"
 
+static constexpr const int32_t RESPONSE_MAX_SIZE = 1024 * 1024 * 1024;
 static constexpr const uint32_t DNS_SERVER_SIZE = 3;
 static constexpr const int32_t PROP_UNSET = -1;
 static constexpr size_t PERMISSION_DENIED_CODE = 201;
@@ -491,7 +492,7 @@ void RequestContext::ParseMultiFormData(CArrMultiFormData multi)
 void ParseSetCookie(CArrString &setCookie, HttpResponse &response)
 {
     auto setCookieSize = response.GetsetCookie().size();
-    if (setCookieSize > 0) {
+    if (setCookieSize > 0 && setCookieSize < RESPONSE_MAX_SIZE) {
         setCookie.head = static_cast<char**>(malloc(sizeof(char*) * setCookieSize));
         if (setCookie.head == nullptr) {
             return;
@@ -509,7 +510,7 @@ void RequestContext::SendResponse()
 {
     CHttpResponse resp = { .errCode = 0,
         .errMsg = nullptr,
-        .result = nullptr,
+        .result = { .head = nullptr, .size = 0},
         .resultType = 2,
         .responseCode = 0,
         .header = CArrString{ .head = nullptr, .size = 0 },
@@ -527,7 +528,8 @@ void RequestContext::SendResponse()
             ParseSetCookie(resp.setCookie, response);
             StopAndCachePerformanceTiming(RESPONSE_TOTAL_TIMING);
             SetPerformanceTimingToResult(resp);
-            resp.result = MallocCString(response.GetResult());
+            resp.result.head = (uint8_t*)MallocCString(response.GetResult());
+            resp.result.size = response.GetResult().length();
             resp.resultType = static_cast<int32_t>(options.GetHttpDataType());
         }
     } else {

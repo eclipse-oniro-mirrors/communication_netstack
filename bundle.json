@@ -22,7 +22,11 @@
         "syscap": [
             "SystemCapability.Communication.NetStack"
         ],
-        "features": [],
+        "features": [
+            "netstack_feature_http3",
+            "netstack_http_boringssl",
+            "netstack_feature_communication_http3"
+        ],
         "adapted_system_type": [
             "standard"
         ],

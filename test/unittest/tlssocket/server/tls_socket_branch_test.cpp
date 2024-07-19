@@ -231,6 +231,16 @@ HWTEST_F(TLSSecureOptionsBranchTest, TLSSecureOptionsBranchTest004, testing::ext
     server.OffClose();
     EXPECT_TRUE(server.onCloseCallback_ == nullptr);
 }
+
+HWTEST_F(TLSSecureOptionsBranchTest, TLSSecureOptionsBranchTest005, testing::ext::TestSize.Level2)
+{
+    TLSConnectOptions connectOptions;
+    TLSSocket::TLSSocketInternal *tlsSocketInternal = new TLSSocket::TLSSocketInternal();
+    tlsSocketInternal->ssl_ = nullptr;
+    bool ret = tlsSocketInternal->StartShakingHands(connectOptions);
+    NETSTACK_LOGI("TLSSecureOptionsBranchTest005 StartShakingHands = %{public}s", std::to_string(ret).c_str());
+    EXPECT_FALSE(ret);
+}
 } // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

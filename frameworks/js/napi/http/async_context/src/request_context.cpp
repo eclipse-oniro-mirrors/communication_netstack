@@ -70,7 +70,7 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_REMOTE_FILE_NOT_FOUND, "Remote file not found"},
     {HTTP_AUTH_ERROR, "An authentication function returned an error"},
     {HTTP_SSL_PINNEDPUBKEYNOTMATCH, "Specified pinned public key did not match"},
-    {HTTP_NOT_ALLOWED_HOST, "It is not allowed to visit this host"},
+    {HTTP_NOT_ALLOWED_HOST, "It is not allowed to access this domain"},
     {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
 };
 static std::atomic<int32_t> g_currentTaskId = std::numeric_limits<int32_t>::min();
@@ -863,6 +863,16 @@ void RequestContext::SetBundleName(const std::string &bundleName)
 std::string RequestContext::GetBundleName() const
 {
     return bundleName_;
+}
+
+void RequestContext::SetTraceName(const std::string &traceName)
+{
+    traceName_ = traceName;
+}
+
+std::string RequestContext::GetTraceName() const
+{
+    return traceName_;
 }
 
 void RequestContext::SetCurlHandle(CURL *handle)

@@ -33,6 +33,7 @@ TLSConfiguration::TLSConfiguration(const TLSConfiguration &other)
     maxProtocol_ = other.maxProtocol_;
     cipherSuite_ = other.cipherSuite_;
     tlsVerifyMode_ = other.tlsVerifyMode_;
+    whetherToSkip_ = other.whetherToSkip_;
 }
 
 const TLSKey &TLSConfiguration::PrivateKey() const
@@ -52,6 +53,7 @@ TLSConfiguration &TLSConfiguration::operator=(const TLSConfiguration &other)
     signatureAlgorithms_ = other.signatureAlgorithms_;
     privateKey_ = other.privateKey_;
     tlsVerifyMode_ = other.tlsVerifyMode_;
+    whetherToSkip_ = other.whetherToSkip_;
     return *this;
 }
 
@@ -195,6 +197,16 @@ void TLSConfiguration::SetNetAddress(const Socket::NetAddress& netAddress)
 Socket::NetAddress TLSConfiguration::GetNetAddress() const
 {
     return netAddress_;
+}
+
+void TLSConfiguration::SetSkipFlag(bool whetherToSkip)
+{
+    whetherToSkip_ = whetherToSkip;
+}
+
+bool TLSConfiguration::GetSkipFlag() const
+{
+    return whetherToSkip_;
 }
 } // namespace TlsSocket
 } // namespace NetStack

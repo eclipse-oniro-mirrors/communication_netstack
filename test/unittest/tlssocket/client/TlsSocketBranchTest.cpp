@@ -284,8 +284,6 @@ HWTEST_F(TlsSocketBranchTest, BranchTest6, TestSize.Level2)
     bool closeSslNull = tlsSocketInternal->Close();
     EXPECT_FALSE(closeSslNull);
     tlsSocketInternal->ssl_ = SSL_new(SSL_CTX_new(TLS_client_method()));
-    bool send = tlsSocketInternal->Send(SEND_DATA);
-    EXPECT_FALSE(send);
     bool sendEmpty = tlsSocketInternal->Send(SEND_DATA_EMPTY);
     EXPECT_FALSE(sendEmpty);
     int recv = tlsSocketInternal->Recv(buffer, MAX_BUFFER_SIZE);

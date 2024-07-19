@@ -128,10 +128,13 @@ public:
 
     [[nodiscard]] std::string GetBundleName() const;
 
+    void SetTraceName(const std::string &traceName);
+
+    [[nodiscard]] std::string GetTraceName() const;
+
     void SetCurlHandle(CURL *handle);
 
     void SendNetworkProfiler();
-
 private:
     int32_t taskId_ = -1;
     bool usingCache_ = true;
@@ -152,6 +155,7 @@ private:
     curl_slist *curlHostList_ = nullptr;
     bool isAtomicService_ = false;
     std::string bundleName_;
+    std::string traceName_;
     std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
     CURL *curlHandle_;
 

@@ -237,6 +237,12 @@ public:
     void SetAlpnProtocols(const std::vector<std::string> &alpnProtocols);
 
     /**
+     * Set whether to skip remote validation
+     * @param skipRemoteValidation flag to choose whether to skip validation
+     */
+    void SetSkipRemoteValidation(bool skipRemoteValidation);
+
+    /**
      * Obtain the network address of the communication process
      * @return network address
      */
@@ -260,11 +266,18 @@ public:
      */
     [[nodiscard]] const std::vector<std::string> &GetAlpnProtocols() const;
 
+    /**
+     * Get the choice of whether to skip remote validaion
+     * @return skipRemoteValidaion result
+     */
+    [[nodiscard]] bool GetSkipRemoteValidation() const;
+
 private:
     Socket::NetAddress address_;
     TLSSecureOptions tlsSecureOptions_;
     CheckServerIdentity checkServerIdentity_;
     std::vector<std::string> alpnProtocols_;
+    bool skipRemoteValidation_ = false;
 };
 
 /**
@@ -418,6 +431,12 @@ public:
      * Get the current socket file description address of the server
      */
     Socket::NetAddress GetLocalAddress();
+
+    bool GetCloseState();
+
+    void SetCloseState(bool flag);
+
+    std::mutex &GetCloseLock();
 private:
     class TLSSocketInternal final {
     public:
@@ -639,6 +658,8 @@ private:
     int sockFd_ = -1;
     bool isExtSock_ = false;
     Socket::NetAddress localAddress_;
+    bool isClosed = false;
+    std::mutex mutexForClose_;
 };
 } // namespace TlsSocket
 } // namespace NetStack

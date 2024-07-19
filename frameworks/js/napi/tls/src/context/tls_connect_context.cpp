@@ -42,6 +42,7 @@ constexpr const char *ADDRESS_NAME = "address";
 constexpr const char *FAMILY_NAME = "family";
 constexpr const char *PORT_NAME = "port";
 constexpr const char *VERIFY_MODE_NAME = "bidirectionAuthentication";
+constexpr const char *SKIP_REMOTE_VALIDATION = "skipRemoteValidation";
 constexpr uint32_t CA_CHAIN_LENGTH = 1000;
 constexpr uint32_t PROTOCOLS_SIZE = 10;
 constexpr std::string_view PARSE_ERROR = "options is not type of TLSConnectOptions";
@@ -153,6 +154,12 @@ TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_va
         }
         options.SetAlpnProtocols(alpnProtocolVec);
     }
+
+    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], SKIP_REMOTE_VALIDATION)) {
+        bool whetherToSkip = NapiUtils::GetBooleanProperty(GetEnv(), params[0], SKIP_REMOTE_VALIDATION);
+        options.SetSkipRemoteValidation(whetherToSkip);
+    }
+
     return options;
 }
 

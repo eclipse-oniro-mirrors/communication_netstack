@@ -359,6 +359,18 @@ HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolAndPortFromURLTest005, 
     EXPECT_STREQ(hostname.c_str(), "ws://www.example.com");
 }
 
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolAndPortFromURLTest006, TestSize.Level2)
+{
+    std::string hostname = GetHostnameWithProtocolAndPortFromURL("wss://www.example.com/for/test");
+    EXPECT_STREQ(hostname.c_str(), "wss://www.example.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolAndPortFromURLTest007, TestSize.Level2)
+{
+    std::string hostname = GetHostnameWithProtocolAndPortFromURL("wss://www.example.com:8989/for/test");
+    EXPECT_STREQ(hostname.c_str(), "wss://www.example.com");
+}
+
 HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL01, TestSize.Level2)
 {
     std::string hostname = GetHostnameFromURL("https:////www.example.com?data_string");
