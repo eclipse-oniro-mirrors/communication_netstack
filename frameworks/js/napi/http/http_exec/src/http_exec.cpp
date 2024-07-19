@@ -1291,7 +1291,7 @@ void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
     }
 }
 
-void HttpExec::OnDataUploadProgress(napi_env env, napi_status status, void *data)
+__attribute__((no_sanitize("cfi"))) void HttpExec::OnDataUploadProgress(napi_env env, napi_status status, void *data)
 {
     auto context = static_cast<RequestContext *>(data);
     if (context == nullptr) {
