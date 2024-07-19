@@ -885,6 +885,10 @@ bool WebSocketExec::ExecClose(CloseContext *context)
         return false;
     }
 
+    if (userData->IsClosed()) {
+        NETSTACK_LOGE("connection has been closed");
+        return false;
+    }
     userData->Close(static_cast<lws_close_status>(context->code), context->reason);
     userData->TriggerWritable();
     NETSTACK_LOGI("ExecClose OK");

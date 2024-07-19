@@ -238,7 +238,11 @@ static bool MakeTcpClientConnectSocket(napi_env env, napi_value thisVal, Connect
         return false;
     }
     NETSTACK_LOGD("connect ip family is %{public}d", context->options.address.GetSaFamily());
-    if (context->GetManager()->GetData() != nullptr) {
+
+    auto manager = context->GetManager();
+    if (manager != nullptr &&
+        manager->GetData() != nullptr &&
+        static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) != -1) {
         NETSTACK_LOGD("tcp bind has been called");
         return true;
     }

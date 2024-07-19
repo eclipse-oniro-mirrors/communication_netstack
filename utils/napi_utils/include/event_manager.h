@@ -106,6 +106,7 @@ private:
     std::string webSocketBinaryData_;
     std::mutex sockRcvThdMtx_;
     std::condition_variable sockRcvThdCon_;
+    bool sockRcvExit_ = false;
 };
 
 struct UvWorkWrapper {
