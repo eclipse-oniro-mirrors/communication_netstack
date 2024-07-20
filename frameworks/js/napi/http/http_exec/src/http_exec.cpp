@@ -1291,7 +1291,7 @@ void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
     }
 }
 
-void HttpExec::OnDataUploadProgress(napi_env env, napi_status status, void *data)
+__attribute__((no_sanitize("cfi"))) void HttpExec::OnDataUploadProgress(napi_env env, napi_status status, void *data)
 {
     auto context = static_cast<RequestContext *>(data);
     if (context == nullptr) {
@@ -1310,8 +1310,8 @@ void HttpExec::OnDataUploadProgress(napi_env env, napi_status status, void *data
     context->Emit(ON_DATA_SEND_PROGRESS, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
 }
 
-int HttpExec::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
-                               curl_off_t ulnow)
+__attribute__((no_sanitize("cfi"))) int HttpExec::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow,
+                                                                   curl_off_t ultotal, curl_off_t ulnow)
 {
     auto context = static_cast<RequestContext *>(userData);
     if (context == nullptr) {
