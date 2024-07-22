@@ -329,6 +329,48 @@ HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest005, TestSize.Level2)
     EXPECT_STREQ(port.c_str(), "");
 }
 
+HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest006, TestSize.Level2)
+{
+    std::string port = GetPortFromURL("https://www.example.com?k_string=data_string:234");
+    EXPECT_STREQ(port.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest007, TestSize.Level2)
+{
+    std::string port = GetPortFromURL("https://www.example.com/path:data_string:234");
+    EXPECT_STREQ(port.c_str(), "");
+    }
+
+HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest008, TestSize.Level2)
+{
+    std::string port = GetPortFromURL("https://www.example.com:8989/path:path2?k_string=data_string:234");
+    EXPECT_STREQ(port.c_str(), "8989");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest009, TestSize.Level2)
+{
+    std::string port = GetPortFromURL("https://www.example.com/path:path2?k_string=data_string:234");
+    EXPECT_STREQ(port.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest010, TestSize.Level2)
+{
+    std::string port = GetPortFromURL("https://www.example.com:");
+    EXPECT_STREQ(port.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest011, TestSize.Level2)
+{
+    std::string port = GetPortFromURL("https://www.example.com:/path?k_string_data_string");
+    EXPECT_STREQ(port.c_str(), "");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetPortFromURLTest012, TestSize.Level2)
+{
+    std::string port = GetPortFromURL("https://www.example.com:?k_string_data_string:43:data_string");
+    EXPECT_STREQ(port.c_str(), "");
+}
+
 HWTEST_F(NetStackCommonUtilsTest, GetHostnameWithProtocolAndPortFromURLTest001, TestSize.Level2)
 {
     std::string hostname = GetHostnameWithProtocolAndPortFromURL("https:////www.example.com?data_string");

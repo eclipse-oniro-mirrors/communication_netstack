@@ -277,13 +277,16 @@ std::string GetPortFromURL(const std::string &url)
     std::string protocol = GetProtocolFromURL(url);
     std::string hostname = GetHostnameFromURL(url);
     size_t start = protocol.empty() ? hostname.size() : protocol.size() + delimiter.size() + hostname.size();
-    size_t posStart = url.find(':', start);
+    size_t posStart = url.find_first_of(':', start);
     if (posStart == std::string::npos) {
         return "";
     }
     size_t posEnd = std::min({url.find('/', start), url.find('?', start)});
     if (posEnd == std::string::npos) {
         return url.substr(posStart + 1);
+    }
+    if (posStart > posEnd) {
+        return "";
     }
     return url.substr(posStart + 1, posEnd - posStart - 1);
 }
