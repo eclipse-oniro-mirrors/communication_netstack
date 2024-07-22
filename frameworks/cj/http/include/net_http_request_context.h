@@ -169,20 +169,7 @@ private:
 };
 
 class HttpRequestProxy : public OHOS::FFI::FFIData {
-private:
-    friend class OHOS::FFI::RuntimeType;
-    friend class OHOS::FFI::TypeBase;
-    static OHOS::FFI::RuntimeType *GetClassType()
-    {
-        static OHOS::FFI::RuntimeType runtimeType =
-            OHOS::FFI::RuntimeType::Create<OHOS::FFI::FFIData>("HttpRequestProxy");
-        return &runtimeType;
-    }
-public:
-    OHOS::FFI::RuntimeType *GetRuntimeType() override
-    {
-        return GetClassType();
-    }
+    DECL_TYPE(HttpRequestProxy, OHOS::FFI::FFIData);
 public:
     RequestContext* Request(std::string url, CHttpRequestOptions *ops, bool isInStream);
     RequestContext* RequestInStream(std::string url, CHttpRequestOptions *ops);
