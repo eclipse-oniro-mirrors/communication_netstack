@@ -121,6 +121,8 @@ HWTEST_F(NetStackNetworkProfilerUtilsTest, HttpNetworkMessageTest001, TestSize.L
     Http::HttpResponse response{};
     {
         HttpNetworkMessage httpMsg(REQUEST_ID, request, response, GetCurlHandle());
+        DfxMessage dfxMsg = httpMsg.Parse();
+        EXPECT_EQ(dfxMsg.requestId_, REQUEST_ID);
     }
 }
 
@@ -133,11 +135,23 @@ HWTEST_F(NetStackNetworkProfilerUtilsTest, HttpNetworkMessageTest002, TestSize.L
     EXPECT_EQ(dfxMsg.requestBeginTime_, 0);
 }
 
+HWTEST_F(NetStackNetworkProfilerUtilsTest, HttpNetworkMessageTest003, TestSize.Level2) {
+    Http::HttpRequestOptions request{};
+    Http::HttpResponse response{};
+    HttpNetworkMessage httpMsg(REQUEST_ID, request, response, nullptr);
+    DfxMessage dfxMsg = httpMsg.Parse();
+    EXPECT_EQ(dfxMsg.requestId_, REQUEST_ID);
+    EXPECT_EQ(dfxMsg.requestBeginTime_, 0);
+    EXPECT_EQ(dfxMsg.dnsEndTime_, 0);
+}
+
 HWTEST_F(NetStackNetworkProfilerUtilsTest, HttpClientNetworkMessageTest001, TestSize.Level2) {
     HttpClient::HttpClientRequest request{};
     HttpClient::HttpClientResponse response{};
     {
         HttpClientNetworkMessage httpClientMsg(REQUEST_ID, request, response, GetCurlHandle());
+        DfxMessage dfxMsg = httpClientMsg.Parse();
+        EXPECT_EQ(dfxMsg.requestId_, REQUEST_ID);
     }
 }
 
@@ -148,6 +162,16 @@ HWTEST_F(NetStackNetworkProfilerUtilsTest, HttpClientNetworkMessageTest002, Test
     DfxMessage dfxMsg = httpClientMsg.Parse();
     EXPECT_EQ(dfxMsg.requestId_, REQUEST_ID);
     EXPECT_EQ(dfxMsg.requestBeginTime_, 0);
+}
+
+HWTEST_F(NetStackNetworkProfilerUtilsTest, HttpClientNetworkMessageTest003, TestSize.Level2) {
+    HttpClient::HttpClientRequest request{};
+    HttpClient::HttpClientResponse response{};
+    HttpClientNetworkMessage httpClientMsg(REQUEST_ID, request, response, nullptr);
+    DfxMessage dfxMsg = httpClientMsg.Parse();
+    EXPECT_EQ(dfxMsg.requestId_, REQUEST_ID);
+    EXPECT_EQ(dfxMsg.requestBeginTime_, 0);
+    EXPECT_EQ(dfxMsg.dnsEndTime_, 0);
 }
 }
 }
