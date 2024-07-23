@@ -261,7 +261,8 @@ bool TLSContext::SetKeyAndCheck(TLSContext *tlsContext, const TLSConfiguration &
         } else if (tlsContext->tlsConfiguration_.GetPrivateKey().Algorithm() == ALGORITHM_DH) {
             EVP_PKEY_assign_DH(tlsContext->pkey_, reinterpret_cast<DH *>(configuration.GetPrivateKey().handle()));
         } else if (tlsContext->tlsConfiguration_.GetPrivateKey().Algorithm() == ALGORITHM_EC) {
-            EVP_PKEY_assign_EC_KEY(tlsContext->pkey_, reinterpret_cast<EC_KEY *>(configuration.GetPrivateKey().handle()));
+            EVP_PKEY_assign_EC_KEY(tlsContext->pkey_,
+                                   reinterpret_cast<EC_KEY *>(configuration.GetPrivateKey().handle()));
         }
     }
 
