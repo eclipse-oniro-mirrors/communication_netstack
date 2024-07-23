@@ -130,7 +130,6 @@ HWTEST_F(WebSocketTest, WebSocketSendTest007, TestSize.Level1)
     ret = OH_WebSocketClient_AddHeader(client, header1);
     EXPECT_EQ(ret, WebSocket_ErrCode::WEBSOCKET_OK);
     OH_WebSocketClient_Connect(client, url1, client->requestOptions);
-    EXPECT_EQ(ret, WebSocket_ErrCode::WEBSOCKET_OK);
     ret = OH_WebSocketClient_Send(client, const_cast<char *>(senddata), sendLength);
     EXPECT_EQ(ret, WebSocket_ErrCode::WEBSOCKET_OK);
     ret = OH_WebSocketClient_Send(client, const_cast<char *>(senddata2), 10);
