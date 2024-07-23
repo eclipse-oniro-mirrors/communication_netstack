@@ -153,16 +153,18 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
         return HttpDummy(wsi, reason, user, in, len);
     }
     const char *message = sendData.data;
-    size_t messageLen = strlen(message);
+    size_t messageLen = sendData.length;
     auto buffer = std::make_unique<unsigned char[]>(LWS_PRE + messageLen);
     if (buffer == nullptr) {
         return -1;
     }
     int result = memcpy_s(buffer.get() + LWS_PRE, LWS_PRE + messageLen, message, messageLen);
+    free(sendData.data);
     if (result != 0) {
+        NETSTACK_LOGE("websocket_client memcpy_s error");
         return -1;
     }
-    int bytesSent = lws_write(wsi, buffer.get() + LWS_PRE, messageLen, LWS_WRITE_TEXT);
+    int bytesSent = lws_write(wsi, buffer.get() + LWS_PRE, messageLen, sendData.protocol);
     NETSTACK_LOGD("ClientId:%{public}d,Client Writable send data length = %{public}d",
                   client->GetClientContext()->GetClientId(), bytesSent);
     return HttpDummy(wsi, reason, user, in, len);
@@ -422,6 +424,7 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
 
 int WebSocketClient::Send(char *data, size_t length)
 {
+    size_t dataLength;
     if (data == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_SEND_DATA_NULL;
     }
@@ -431,7 +434,22 @@ int WebSocketClient::Send(char *data, size_t length)
     if (this->GetClientContext() == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
     }
-    this->GetClientContext()->Push(data, length, LWS_WRITE_TEXT);
+
+    //all data has LWS_SEND_BUFFER_PRE_PADDING padding ahead.
+    dataLength = LWS_SEND_BUFFER_PRE_PADDING + length + LWS_SEND_BUFFER_POST_PADDING;
+    char *dataCopy = (char *)malloc(dataLength+1);
+    if (dataCopy == nullptr) {
+        NETSTACK_LOGE("webSocketClient malloc error");
+        return WEBSOCKET_SEND_NO_MEMOERY_ERROR;
+    } else if (memcpy_s(dataCopy + LWS_SEND_BUFFER_POST_PADDING, length, data, length) != EOK) {
+        free(dataCopy);
+        NETSTACK_LOGE("webSocketClient malloc copy error");
+        return WEBSOCKET_SEND_NO_MEMOERY_ERROR;
+    }
+    *(dataCopy + dataLength) = '\0'; //for set the tail of memory as '\0'
+    lws_write_protocol protocol =
+        (strlen(dataCopy + LWS_SEND_BUFFER_POST_PADDING) == length) ? LWS_WRITE_TEXT : LWS_WRITE_BINARY;
+    this->GetClientContext()->Push(dataCopy, length, protocol);
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
