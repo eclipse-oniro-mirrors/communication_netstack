@@ -45,6 +45,15 @@ TLSKey::TLSKey(const SecureData &data, KeyAlgorithm algorithm, const SecureData 
     }
 }
 
+TLSKey::TLSKey(const SecureData &data, const SecureData &passPhrase)
+{
+    if (data.Length() == 0) {
+        NETSTACK_LOGD("data is empty");
+    } else {
+        DecodeData(data, passPhrase);
+    }
+}
+
 TLSKey::TLSKey(const TLSKey &other)
 {
     *this = other;
@@ -64,6 +73,10 @@ TLSKey &TLSKey::operator=(const TLSKey &other)
         dh_ = DH_new();
         dh_ = other.dh_;
     }
+    if (other.ec_ != nullptr) {
+        ec_ = EC_KEY_new();
+        ec_ = other.ec_;
+    }
     if (other.genericKey_ != nullptr) {
         genericKey_ = EVP_PKEY_new();
         genericKey_ = other.genericKey_;
@@ -74,6 +87,55 @@ TLSKey &TLSKey::operator=(const TLSKey &other)
     keyPass_ = other.keyPass_;
     keyData_ = other.keyData_;
     return *this;
+}
+
+void TLSKey::DecodeData(const SecureData &data, const SecureData &passPhrase)
+{
+    if (data.Length() == 0) {
+        NETSTACK_LOGE("The parameter data is empty");
+        return;
+    }
+    keyData_ = data;
+    keyPass_ = passPhrase;
+    BIO *bio = BIO_new_mem_buf(data.Data(), -1);
+    if (!bio) {
+        NETSTACK_LOGE("Failed to create bio buffer");
+        return;
+    }
+    EVP_PKEY *evp_pkey = PEM_read_bio_PrivateKey(bio, nullptr, nullptr, nullptr);
+    if (rsa_) {
+        keyIsNull_ = false;
+    }
+    int alg_id = EVP_PKEY_base_id(evp_pkey);
+
+    switch (alg_id) {
+        case EVP_PKEY_RSA:
+            rsa_ = EVP_PKEY_get1_RSA(evp_pkey);
+            keyAlgorithm_ = ALGORITHM_RSA;
+            break;
+        case EVP_PKEY_DSA:
+            dsa_ = EVP_PKEY_get1_DSA(evp_pkey);
+            keyAlgorithm_ = ALGORITHM_DSA;
+            break;
+        case EVP_PKEY_DH:
+            dh_ = EVP_PKEY_get1_DH(evp_pkey);
+            keyAlgorithm_ = ALGORITHM_DH;
+            break;
+        case EVP_PKEY_EC:
+            ec_ = EVP_PKEY_get1_EC_KEY(evp_pkey);
+            keyAlgorithm_ = ALGORITHM_EC;
+            break;
+        default:
+            NETSTACK_LOGE("unknown key");
+            break;
+    }
+
+    EVP_PKEY_free(evp_pkey);
+    BIO_free(bio);
+
+    if (ec_ || rsa_ || dh_ || dsa_) {
+        keyIsNull_ = false;
+    }
 }
 
 void TLSKey::DecodeData(const SecureData &data, KeyAlgorithm algorithm, const SecureData &passPhrase)
