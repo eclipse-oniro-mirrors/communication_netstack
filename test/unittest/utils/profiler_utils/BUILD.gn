@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2024 Huawei Device Co., Ltd.
+# Copyright (c) 2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -63,6 +63,7 @@ ohos_unittest("netstack_network_profiler_utils_test") {
     "$NETSTACK_NAPI_ROOT/http/constant/src/constant.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_request_options.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_response.cpp",
+    "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_constant.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_request.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_response.cpp",
     "$NETSTACK_UTILS_ROOT/profiler_utils/src/http_client_network_message.cpp",

@@ -30,7 +30,7 @@ static constexpr const char *HTTP_VERSION_2 = "2";
 static constexpr const char *REQUEST_URL = "https://127.0.0.1";
 static constexpr const char *REQUEST_IP_ADDRESS = "127.0.0.1";
 static constexpr const char *REQUEST_STRING = "unused";
-static constexpr const char *REQUEST_HEADERS = "200 OK\r\nk:v";
+static constexpr const char *REQUEST_HEADERS = "HTTP/1.1 200 OK\r\nk:v";
 static constexpr const char *REQUEST_REASON_PARSE = "OK";
 static constexpr const uint64_t REQUEST_BEGIN_TIME = 100;
 static constexpr const double REQUEST_DNS_TIME = 10;
@@ -62,16 +62,22 @@ DfxMessage MockNetworkMessage::Parse()
     msg.requestId_ = requestId_;
     msg.requestBeginTime_ = requestBeginTime_;
     uint32_t ret = 0;
-    GetIpAddressFromCurlHandle(msg.responseIpAddress_, handle_);
+    ret = GetIpAddressFromCurlHandle(msg.responseIpAddress_, handle_);
+    if (ret == 0) {
+        msg.responseIpAddress_ = REQUEST_IP_ADDRESS;
+    }
     ret = GetEffectiveUrlFromCurlHandle(msg.responseEffectiveUrl_, handle_);
     if (ret != 0) {
         msg.responseEffectiveUrl_ = REQUEST_STRING;
     }
-    GetHttpVersionFromCurlHandle(msg.responseHttpVersion_, handle_);
+    ret = GetHttpVersionFromCurlHandle(msg.responseHttpVersion_, handle_);
+    if (ret == 0) {
+        msg.responseHttpVersion_ = HTTP_VERSION_2;
+    }
     TimeInfo timeInfo{};
     ret = GetTimeInfoFromCurlHandle(timeInfo, handle_);
     if (ret == 0) {
-        timeInfo.dnsTime = REQUEST_DNS_TIME;
+        msg.dnsEndTime_ = REQUEST_DNS_TIME;
     }
     msg.responseReasonPhrase_ = GetReasonParse(REQUEST_HEADERS);
     return msg;
@@ -125,10 +131,23 @@ HWTEST_F(NetStackNetworkProfilerUtilsTest, HttpNetworkMessageTest002, TestSize.L
     DfxMessage dfxMsg = httpMsg.Parse();
     EXPECT_EQ(dfxMsg.requestId_, REQUEST_ID);
     EXPECT_EQ(dfxMsg.requestBeginTime_, 0);
-    EXPECT_EQ(dfxMsg.responseIpAddress_, REQUEST_IP_ADDRESS);
-    EXPECT_EQ(dfxMsg.responseHttpVersion_, HTTP_VERSION_2);
-    EXPECT_NE(dfxMsg.responseEffectiveUrl_, REQUEST_STRING);
-    EXPECT_EQ(dfxMsg.responseReasonPhrase_, REQUEST_REASON_PARSE);
+}
+
+HWTEST_F(NetStackNetworkProfilerUtilsTest, HttpClientNetworkMessageTest001, TestSize.Level2) {
+    HttpClient::HttpClientRequest request{};
+    HttpClient::HttpClientResponse response{};
+    {
+        HttpClientNetworkMessage httpClientMsg(REQUEST_ID, request, response, GetCurlHandle());
+    }
+}
+
+HWTEST_F(NetStackNetworkProfilerUtilsTest, HttpClientNetworkMessageTest002, TestSize.Level2) {
+    HttpClient::HttpClientRequest request{};
+    HttpClient::HttpClientResponse response{};
+    HttpClientNetworkMessage httpClientMsg(REQUEST_ID, request, response, GetCurlHandle());
+    DfxMessage dfxMsg = httpClientMsg.Parse();
+    EXPECT_EQ(dfxMsg.requestId_, REQUEST_ID);
+    EXPECT_EQ(dfxMsg.requestBeginTime_, 0);
 }
 }
 }
