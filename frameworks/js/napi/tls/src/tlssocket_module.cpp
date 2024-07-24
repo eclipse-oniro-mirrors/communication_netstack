@@ -44,6 +44,11 @@ void Finalize(napi_env, void *data, void *)
 {
     auto manager = reinterpret_cast<EventManager *>(data);
     if (manager != nullptr) {
+        auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
+        if (tlsSocket != nullptr) {
+            delete tlsSocket;
+            tlsSocket = nullptr;
+        }
         EventManager::SetInvalid(manager);
     }
 }
