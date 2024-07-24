@@ -419,6 +419,167 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest016, testing::ext::
     EXPECT_TRUE(callbackCalled);
     delete tlsSocketServer;
 }
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest017, testing::ext::TestSize.Level2)
+{
+    auto tlsSocketServer = new TLSSocketServer();
+    int sockFd = 0;
+    bool callbackCalled = false;
+    tlsSocketServer->GetRemoteCertificate(
+        sockFd, [&callbackCalled](int32_t errorNumber, const TlsSocket::X509CertRawData &cert) {
+        EXPECT_EQ(errorNumber, TlsSocket::TLS_ERR_SYS_EINVAL);
+        callbackCalled = true;
+    });
+    EXPECT_TRUE(callbackCalled);
+    delete tlsSocketServer;
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest018, testing::ext::TestSize.Level2)
+{
+    constexpr int sockFd = 1;
+    constexpr int testLen = 5;
+    auto tlsSocketServer = new TLSSocketServer();
+    auto connection = std::make_shared<TLSSocketServer::Connection>();
+    connection->remoteRawData_.data.length_ = testLen;
+    tlsSocketServer->clientIdConnections_.emplace(sockFd, connection);
+    bool callbackCalled = false;
+    tlsSocketServer->GetRemoteCertificate(
+        sockFd, [&callbackCalled, testLen](int32_t errorNumber, const TlsSocket::X509CertRawData &cert) {
+        EXPECT_EQ(errorNumber, TlsSocket::TLSSOCKET_SUCCESS);
+        EXPECT_EQ(cert.data.Length(), testLen);
+        callbackCalled = true;
+    });
+    EXPECT_TRUE(callbackCalled);
+    delete tlsSocketServer;
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest019, testing::ext::TestSize.Level2)
+{
+    constexpr int sockFd = 1;
+    constexpr int testLen = 0;
+    auto tlsSocketServer = new TLSSocketServer();
+    auto connection = std::make_shared<TLSSocketServer::Connection>();
+    connection->remoteRawData_.data.length_ = testLen;
+    tlsSocketServer->clientIdConnections_.emplace(sockFd, connection);
+    bool callbackCalled = false;
+    tlsSocketServer->GetRemoteCertificate(
+        sockFd, [&callbackCalled, testLen](int32_t errorNumber, const TlsSocket::X509CertRawData &cert) {
+        EXPECT_NE(errorNumber, TlsSocket::TLSSOCKET_SUCCESS);
+        EXPECT_EQ(cert.data.Length(), testLen);
+        callbackCalled = true;
+    });
+    EXPECT_TRUE(callbackCalled);
+    delete tlsSocketServer;
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest020, testing::ext::TestSize.Level2)
+{
+    auto tlsSocketServer = new TLSSocketServer();
+    tlsSocketServer->TLSServerConfiguration_.protocol_ = TlsSocket::TLS_V1_3;
+    bool callbackCalled = false;
+    tlsSocketServer->GetProtocol([&callbackCalled](int32_t errorNumber, const std::string &protocol) {
+        EXPECT_EQ(errorNumber, TlsSocket::TLSSOCKET_SUCCESS);
+        EXPECT_EQ(protocol, TlsSocket::PROTOCOL_TLS_V13);
+        callbackCalled = true;
+    });
+    EXPECT_TRUE(callbackCalled);
+    delete tlsSocketServer;
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest021, testing::ext::TestSize.Level2)
+{
+    auto tlsSocketServer = new TLSSocketServer();
+    tlsSocketServer->TLSServerConfiguration_.protocol_ = TlsSocket::TLS_V1_2;
+    bool callbackCalled = false;
+    tlsSocketServer->GetProtocol([&callbackCalled](int32_t errorNumber, const std::string &protocol) {
+        EXPECT_EQ(errorNumber, TlsSocket::TLSSOCKET_SUCCESS);
+        EXPECT_EQ(protocol, TlsSocket::PROTOCOL_TLS_V12);
+        callbackCalled = true;
+    });
+    EXPECT_TRUE(callbackCalled);
+    delete tlsSocketServer;
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest022, testing::ext::TestSize.Level2)
+{
+    auto tlsSocketServer = new TLSSocketServer();
+    constexpr int sockFd = 1;
+    bool callbackCalled = false;
+    tlsSocketServer->GetCipherSuite(sockFd,
+                                    [&callbackCalled](int32_t errorNumber, const std::vector<std::string> &suite) {
+        EXPECT_EQ(errorNumber, TlsSocket::TLS_ERR_SYS_EINVAL);
+        callbackCalled = true;
+    });
+    EXPECT_TRUE(callbackCalled);
+    delete tlsSocketServer;
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest023, testing::ext::TestSize.Level2)
+{
+    constexpr int sockFd = 1;
+    auto tlsSocketServer = new TLSSocketServer();
+    auto connection = std::make_shared<TLSSocketServer::Connection>();
+    tlsSocketServer->clientIdConnections_.emplace(sockFd, connection);
+
+    bool callbackCalled = false;
+    tlsSocketServer->GetCipherSuite(sockFd,
+                                    [&callbackCalled](int32_t errorNumber, const std::vector<std::string> &suite) {
+        EXPECT_NE(errorNumber, TlsSocket::TLSSOCKET_SUCCESS);
+        callbackCalled = true;
+    });
+    EXPECT_TRUE(callbackCalled);
+    delete tlsSocketServer;
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest024, testing::ext::TestSize.Level2)
+{
+    constexpr int sockFd = 1;
+    auto tlsSocketServer = new TLSSocketServer();
+
+    bool callbackCalled = false;
+    tlsSocketServer->GetSignatureAlgorithms(
+        sockFd, [&callbackCalled](int32_t errorNumber, const std::vector<std::string> &algorithms) {
+        EXPECT_EQ(errorNumber, TlsSocket::TLS_ERR_SYS_EINVAL);
+        callbackCalled = true;
+    });
+    EXPECT_TRUE(callbackCalled);
+    delete tlsSocketServer;
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest025, testing::ext::TestSize.Level2)
+{
+    constexpr int sockFd = 1;
+    auto tlsSocketServer = new TLSSocketServer();
+    auto connection = std::make_shared<TLSSocketServer::Connection>();
+    tlsSocketServer->clientIdConnections_.emplace(sockFd, connection);
+
+    bool callbackCalled = false;
+    tlsSocketServer->GetSignatureAlgorithms(
+        sockFd, [&callbackCalled](int32_t errorNumber, const std::vector<std::string> &suite) {
+        EXPECT_NE(errorNumber, TlsSocket::TLSSOCKET_SUCCESS);
+        callbackCalled = true;
+    });
+    EXPECT_TRUE(callbackCalled);
+    delete tlsSocketServer;
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest026, testing::ext::TestSize.Level2)
+{
+    constexpr int sockFd = 1;
+    auto tlsSocketServer = new TLSSocketServer();
+    auto connection = std::make_shared<TLSSocketServer::Connection>();
+    connection->signatureAlgorithms_ = {"TEST"};
+    tlsSocketServer->clientIdConnections_.emplace(sockFd, connection);
+
+    bool callbackCalled = false;
+    tlsSocketServer->GetSignatureAlgorithms(
+        sockFd, [&callbackCalled](int32_t errorNumber, const std::vector<std::string> &suite) {
+        EXPECT_EQ(errorNumber, TlsSocket::TLSSOCKET_SUCCESS);
+        callbackCalled = true;
+    });
+    EXPECT_TRUE(callbackCalled);
+    delete tlsSocketServer;
+}
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS
