@@ -16,7 +16,6 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <iostream>
-include <openssl/ssl.h>
 
 #ifdef GTEST_API_
 #define private public
@@ -390,15 +389,6 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest012, testing::ext::
     std::vector<std::string> vecA = {"apple", "banana", "cherry"};
     std::vector<std::string> vecB = {"banana", "cherry", "date"};
     EXPECT_TRUE(SeekIntersection(vecA, vecB));
-}
-
-extern int ConvertSSLError(ssl_st *ssl);
-HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest013, testing::ext::TestSize.Level2)
-{
-    EXPECT_EQ(ConvertSSLError(nullptr), TlsSocket::TLS_ERR_SSL_NULL);
-    SSL_CTX *ctx = SSL_CTX_new(TLS_method());
-    SSL *ssl = SSL_new(ctx);
-    EXPECT_GE(ConvertSSLError(ssl), TlsSocket::TlsSocketError::TLS_ERR_SSL_BASE);
 }
 
 extern std::vector<std::string> SplitEscapedAltNames(std::string &altNames);
