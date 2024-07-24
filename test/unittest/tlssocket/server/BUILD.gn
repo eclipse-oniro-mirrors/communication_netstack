@@ -102,6 +102,8 @@ config("tls_test_config") {
     "$SOCKET/options/include",
     "$SOCKET/task_queue/include",
   ]
+
+  defines = [ "UNITTEST=1" ]
 }
 
 ohos_unittest("two_way_tls_socket_server_unittest") {

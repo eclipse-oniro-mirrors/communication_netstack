@@ -34,7 +34,10 @@
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocketServer {
+#if UNITTEST
+#else
 namespace {
+#endif // UNITTEST
 constexpr size_t MAX_ERR_LENGTH = 1024;
 
 constexpr int SSL_RET_CODE = 0;
@@ -146,7 +149,10 @@ std::vector<std::string> SplitEscapedAltNames(std::string &altNames)
     result.push_back(currentToken);
     return result;
 }
+#if UNITTEST
+#else
 } // namespace
+#endif
 
 void TLSServerSendOptions::SetSocket(const int &socketFd)
 {

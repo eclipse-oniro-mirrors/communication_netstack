@@ -16,6 +16,7 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <iostream>
+include <openssl/ssl.h>
 
 #ifdef GTEST_API_
 #define private public
@@ -128,9 +129,6 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest003, testing::ext::
 {
     auto tlsSocketServer = new TLSSocketServer();
     EXPECT_TRUE(tlsSocketServer != nullptr);
-    if (tlsSocketServer == nullptr) {
-        return;
-    }
 
     std::shared_ptr<TLSSocketServer::Connection> connection = std::make_shared<TLSSocketServer::Connection>();
     EXPECT_TRUE(connection != nullptr);
@@ -313,6 +311,123 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest006, testing::ext::
     tlsSocketServer->DeleteConnectionByEventManager(&manager);
     auto connections = tlsSocketServer->GetConnectionByClientEventManager(&manager);
     EXPECT_TRUE(connections == nullptr);
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest007, testing::ext::TestSize.Level2)
+{
+    auto connection = std::make_shared<TLSSocketServer::Connection>();
+    std::string hostName = "testHost";
+    X509 *x509Certificates = X509_new();
+
+    std::string result = connection->CheckServerIdentityLegal(hostName, x509Certificates);
+    EXPECT_GE(result.length(), 0);
+    X509_EXTENSION *ext = X509_EXTENSION_new();
+    X509_add_ext(x509Certificates, ext, -1);
+    result = connection->CheckServerIdentityLegal(hostName, x509Certificates);
+    EXPECT_GE(result.length(), 0);
+
+    X509_EXTENSION_free(ext);
+    X509_free(x509Certificates);
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest008, testing::ext::TestSize.Level2)
+{
+    auto connection = std::make_shared<TLSSocketServer::Connection>();
+    std::string hostName = "172.0.0.1";
+    X509 *x509Certificates = X509_new();
+
+    std::string result = connection->CheckServerIdentityLegal(hostName, x509Certificates);
+    EXPECT_GE(result.length(), 0);
+    X509_EXTENSION *ext = X509_EXTENSION_new();
+    X509_add_ext(x509Certificates, ext, -1);
+    result = connection->CheckServerIdentityLegal(hostName, x509Certificates);
+    EXPECT_GE(result.length(), 0);
+
+    X509_EXTENSION_free(ext);
+    X509_free(x509Certificates);
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest009, testing::ext::TestSize.Level2)
+{
+    auto connection = std::make_shared<TLSSocketServer::Connection>();
+    std::string hostName = "testHost";
+    X509 *x509Certificates = X509_new();
+    X509_NAME *subjectName = X509_get_subject_name(x509Certificates);
+    X509_NAME_add_entry_by_txt(subjectName, "CN", MBSTRING_ASC, (unsigned char *)"testHost", -1, -1, 0);
+    int index = X509_get_ext_by_NID(x509Certificates, NID_subject_alt_name, -1);
+    X509_EXTENSION *ext = X509_EXTENSION_new();
+    X509_add_ext(x509Certificates, ext, index);
+    std::string result = connection->CheckServerIdentityLegal(hostName, x509Certificates);
+    EXPECT_GE(result.length(), 0);
+    X509_EXTENSION_free(ext);
+    X509_free(x509Certificates);
+}
+
+extern bool IsIP(const std::string &ip);
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest010, testing::ext::TestSize.Level2)
+{
+    std::string ip = "192.168.1.1";
+
+    EXPECT_EQ(IsIP(ip), true);
+    std::string ip2 = "192.168.1";
+    EXPECT_EQ(IsIP(ip2), false);
+    std::string ip3;
+    EXPECT_EQ(IsIP(ip3), false);
+}
+
+extern std::vector<std::string> SplitHostName(std::string &hostName);
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest011, testing::ext::TestSize.Level2)
+{
+    std::string hostName = "www.example.com";
+    std::vector<std::string> result = TlsSocketServer::SplitHostName(hostName);
+    std::vector<std::string> expect = {"www", "example", "com"};
+    EXPECT_EQ(result, expect);
+}
+
+extern bool SeekIntersection(std::vector<std::string> &vecA, std::vector<std::string> &vecB);
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest012, testing::ext::TestSize.Level2)
+{
+    std::vector<std::string> vecA = {"apple", "banana", "cherry"};
+    std::vector<std::string> vecB = {"banana", "cherry", "date"};
+    EXPECT_TRUE(SeekIntersection(vecA, vecB));
+}
+
+extern int ConvertSSLError(ssl_st *ssl);
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest013, testing::ext::TestSize.Level2)
+{
+    EXPECT_EQ(ConvertSSLError(nullptr), TlsSocket::TLS_ERR_SSL_NULL);
+    SSL_CTX *ctx = SSL_CTX_new(TLS_method());
+    SSL *ssl = SSL_new(ctx);
+    EXPECT_GE(ConvertSSLError(ssl), TlsSocket::TlsSocketError::TLS_ERR_SSL_BASE);
+}
+
+extern std::vector<std::string> SplitEscapedAltNames(std::string &altNames);
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest014, testing::ext::TestSize.Level2)
+{
+    std::string altNames = R"("test1", "test2", "test3", "test4")";
+    std::vector<std::string> expected = {""};
+    std::vector<std::string> result = SplitEscapedAltNames(altNames);
+    EXPECT_EQ(result, expected);
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest015, testing::ext::TestSize.Level2)
+{
+    std::string altNames = "test1";
+    std::vector<std::string> expected = {"test1"};
+    std::vector<std::string> result = SplitEscapedAltNames(altNames);
+    EXPECT_EQ(result, expected);
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest016, testing::ext::TestSize.Level2)
+{
+    auto tlsSocketServer = new TLSSocketServer();
+    bool callbackCalled = false;
+    tlsSocketServer->GetCertificate([&callbackCalled](int32_t errorNumber, const TlsSocket::X509CertRawData &cert) {
+        EXPECT_EQ(errorNumber, -1);
+        callbackCalled = true;
+    });
+    EXPECT_TRUE(callbackCalled);
+    delete tlsSocketServer;
 }
 } // namespace TlsSocketServer
 } // namespace NetStack
