@@ -22,6 +22,7 @@
 
 #include "base64_utils.h"
 #include "constant.h"
+#include "casche_constant.h"
 #include "lru_cache_disk_handler.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
@@ -44,6 +45,9 @@ CacheProxy::CacheProxy(HttpRequestOptions &requestOptions) : strategy_(requestOp
     std::string str = requestOptions.GetUrl() + HttpConstant::HTTP_LINE_SEPARATOR +
                       CommonUtils::ToLower(requestOptions.GetMethod()) + HttpConstant::HTTP_LINE_SEPARATOR;
     for (const auto &p : requestOptions.GetHeader()) {
+        if (p.first == IF_NONE_MATCH || p.first == IF_MODIFIED_SINCE) {
+            continue;
+        }
         str += p.first + HttpConstant::HTTP_HEADER_SEPARATOR + p.second + HttpConstant::HTTP_LINE_SEPARATOR;
     }
     str += std::to_string(requestOptions.GetHttpVersion());
