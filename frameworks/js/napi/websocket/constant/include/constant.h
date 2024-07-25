@@ -42,7 +42,7 @@ static const std::map<int32_t, std::string> WEBSOCKET_ERR_MAP = {
     {WEBSOCKET_ERROR_CODE_URL_ERROR, "Websocket url error"},
     {WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST, "Websocket file not exist"},
     {WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST, "Websocket connection exist"},
-    {WEBSOCKET_NOT_ALLOWED_HOST, "It is not allowed to visit this host"},
+    {WEBSOCKET_NOT_ALLOWED_HOST, "It is not allowed to access this domain"},
     {WEBSOCKET_UNKNOWN_OTHER_ERROR, "Websocket Unknown Other Error"}};
 
 enum {
