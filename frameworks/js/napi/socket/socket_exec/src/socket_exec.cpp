@@ -113,24 +113,6 @@ static void SetIsConnected(sa_family_t family, GetStateContext *context, const s
     }
 }
 
-template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)
-{
-    (void)status;
-
-    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
-    napi_env env = workWrapper->env;
-    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
-    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
-
-    napi_value obj = MakeJsValue(env, workWrapper->data);
-
-    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
-    workWrapper->manager->Emit(workWrapper->type, arg);
-
-    delete workWrapper;
-    delete work;
-}
-
 static napi_value MakeError(napi_env env, void *errCode)
 {
     auto code = reinterpret_cast<int32_t *>(errCode);
@@ -362,30 +344,6 @@ static bool OnRecvMessage(EventManager *manager, void *data, size_t len, sockadd
     }
     return false;
 }
-
-class MessageCallback {
-public:
-    MessageCallback() = delete;
-
-    virtual ~MessageCallback() = default;
-
-    explicit MessageCallback(EventManager *manager) : manager_(manager) {}
-
-    virtual void OnError(int err) const = 0;
-
-    virtual void OnCloseMessage(EventManager *manager) const = 0;
-
-    virtual bool OnMessage(void *data, size_t dataLen, sockaddr *addr) const = 0;
-
-    virtual bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr, EventManager *manager) const = 0;
-
-    virtual void OnTcpConnectionMessage(int32_t id) const = 0;
-
-    [[nodiscard]] EventManager *GetEventManager() const;
-
-protected:
-    EventManager *manager_;
-};
 
 EventManager *MessageCallback::GetEventManager() const
 {
@@ -1121,6 +1079,7 @@ static bool CheckClosed(GetStateContext *context, int &opt)
     socklen_t optLen = sizeof(int);
     int r = getsockopt(context->GetSocketFd(), SOL_SOCKET, SO_TYPE, &opt, &optLen);
     if (r < 0) {
+        context->state_.SetIsClose(true);
         return true;
     }
     return false;
@@ -1137,13 +1096,8 @@ static bool CheckSocketFd(GetStateContext *context, sockaddr &sockAddr)
     return true;
 }
 
-bool ExecGetState(GetStateContext *context)
+static bool GetSocketState(GetStateContext *context)
 {
-    if (!CommonUtils::HasInternetPermission()) {
-        context->SetPermissionDenied(true);
-        return false;
-    }
-
     int opt;
     if (CheckClosed(context, opt)) {
         return true;
@@ -1191,6 +1145,24 @@ bool ExecGetState(GetStateContext *context)
     (void)getpeername(context->GetSocketFd(), addr, &len);
     SetIsConnected(sockAddr.sa_family, context, &addr4, &addr6);
     return true;
+}
+
+bool ExecGetState(GetStateContext *context)
+{
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    auto manager = context->GetManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGI("manager is nullptr");
+        return false;
+    }
+    if (!manager->GetData()) {
+        return true;
+    }
+
+    return GetSocketState(context);
 }
 
 bool IsAddressAndRetValid(const int &ret, const std::string &address, GetRemoteAddressContext *context)
@@ -2044,16 +2016,12 @@ static void SetIsBound(sa_family_t family, TcpServerGetStateContext *context, co
     }
 }
 
-bool ExecTcpServerGetState(TcpServerGetStateContext *context)
+static bool GetTcpServerState(TcpServerGetStateContext *context)
 {
-    if (!CommonUtils::HasInternetPermission()) {
-        context->SetPermissionDenied(true);
-        return false;
-    }
-
     int opt;
     socklen_t optLen = sizeof(int);
     if (getsockopt(context->GetSocketFd(), SOL_SOCKET, SO_TYPE, &opt, &optLen) < 0) {
+        context->state_.SetIsClose(true);
         return true;
     }
 
@@ -2099,6 +2067,24 @@ bool ExecTcpServerGetState(TcpServerGetStateContext *context)
     }
     SetIsConnected(context);
     return true;
+}
+
+bool ExecTcpServerGetState(TcpServerGetStateContext *context)
+{
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    auto manager = context->GetManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    if (!manager->GetData()) {
+        return true;
+    }
+
+    return GetTcpServerState(context);
 }
 
 napi_value BindCallback(BindContext *context)
