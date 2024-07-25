@@ -1852,49 +1852,53 @@ static inline void RecvInErrorCondition(int reason, int clientId, int connectFD,
     callback.OnError(reason);
 }
 
-static inline void CloseClientHandler(int clientId, int connectFD)
+static inline void CloseClientHandler(int clientId, int connectFD,
+                                      EventManager *manager, const TcpMessageCallback &callback)
 {
+    callback.OnCloseMessage(manager);
     RemoveClientConnection(clientId);
     SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
 }
 
-static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallback &callback)
+static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize, EventManager *manager,
+                           const TcpMessageCallback &callback)
 {
-    int32_t connectFD = 0;
-    EventManager *manager = WaitForManagerReady(clientId, connectFD);
-
-    uint32_t recvBufferSize = DEFAULT_BUFFER_SIZE;
-    if (TCPExtraOptions option; SingletonSocketConfig::GetInstance().GetTcpExtraOptions(sock, option)) {
-        if (option.GetReceiveBufferSize() != 0) {
-            recvBufferSize = option.GetReceiveBufferSize();
-        }
-    }
-    char *buffer = new (std::nothrow) char[recvBufferSize];
+    auto buffer = std::make_unique<char[]>(recvBufferSize);
     if (buffer == nullptr) {
-        NETSTACK_LOGE("client malloc failed, listenfd: %{public}d, connectFd: %{public}d, size: %{public}d", sock,
-                      connectFD, recvBufferSize);
+        NETSTACK_LOGE("client malloc failed, connectFd: %{public}d, size: %{public}d", connectFD, recvBufferSize);
         RecvInErrorCondition(NO_MEMORY, clientId, connectFD, callback);
         return;
     }
-
     while (true) {
-        if (memset_s(buffer, recvBufferSize, 0, recvBufferSize) != EOK) {
+        if (memset_s(buffer.get(), recvBufferSize, 0, recvBufferSize) != EOK) {
             NETSTACK_LOGE("memset_s failed!");
             RecvInErrorCondition(UNKNOW_ERROR, clientId, connectFD, callback);
             break;
         }
-        int32_t recvSize = recv(connectFD, buffer, recvBufferSize, 0);
-        NETSTACK_LOGI("ClientRecv: fd:%{public}d, size:%{public}d, errno:%{public}d", connectFD, recvSize, errno);
+        pollfd fds[1] = {{connectFD, POLLIN, 0}};
+        int ret = poll(fds, 1, DEFAULT_POLL_TIMEOUT);
+        if (ret < 0) {
+            NETSTACK_LOGE("Client poll to recv failed, socket is %{public}d, errno is %{public}d", connectFD, errno);
+            callback.OnCloseMessage(manager);
+            CloseClientHandler(clientId, connectFD, manager, callback);
+            break;
+        } else if (ret == 0) {
+            continue;
+        }
+
+        int32_t recvSize = recv(connectFD, buffer.get(), recvBufferSize, 0);
+        int flags = fcntl(connectFD, F_GETFL, 0);
+        if (flags == -1) {
+            NETSTACK_LOGE("read flag fail");
+            CloseClientHandler(clientId, connectFD, manager, callback);
+            break;
+        }
+
         if (recvSize <= 0) {
-            if (recvSize == 0 && errno == EAGAIN) {
-                callback.OnCloseMessage(manager);
-                CloseClientHandler(clientId, connectFD);
-                break;
-            }
-            if (errno != EAGAIN && errno != EINTR) {
-                NETSTACK_LOGE("close ClientHandler: recvSize is %{public}d, errno is %{public}d", recvSize, errno);
-                callback.OnCloseMessage(manager);
-                CloseClientHandler(clientId, connectFD);
+            NETSTACK_LOGI("ClientRecv: fd:%{public}d, size:%{public}d, errno:%{public}d, is non blocking:%{public}s",
+                          connectFD, recvSize, errno, flags & O_NONBLOCK ? "true" : "false");
+            if ((recvSize == 0 && errno == EAGAIN) || (errno != EAGAIN && errno != EINTR)) {
+                CloseClientHandler(clientId, connectFD, manager, callback);
                 break;
             }
         } else {
@@ -1903,13 +1907,27 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
                 RecvInErrorCondition(NO_MEMORY, clientId, connectFD, callback);
                 break;
             }
-            if (memcpy_s(data, recvSize, buffer, recvSize) != EOK ||
+            if (memcpy_s(data, recvSize, buffer.get(), recvSize) != EOK ||
                 !callback.OnMessage(connectFD, data, recvSize, nullptr, manager)) {
                 free(data);
             }
         }
     }
-    delete[] buffer;
+}
+
+static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallback &callback)
+{
+    int32_t connectFD = 0;
+    EventManager *manager = WaitForManagerReady(clientId, connectFD);
+
+    uint32_t recvBufferSize = DEFAULT_BUFFER_SIZE;
+    TCPExtraOptions option;
+    if (SingletonSocketConfig::GetInstance().GetTcpExtraOptions(sock, option)) {
+        if (option.GetReceiveBufferSize() != 0) {
+            recvBufferSize = option.GetReceiveBufferSize();
+        }
+    }
+    ClientPollRecv(clientId, connectFD, recvBufferSize, manager, callback);
 }
 
 static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const TcpMessageCallback &callback)
