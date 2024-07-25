@@ -74,7 +74,7 @@ void TLSConfiguration::SetPrivateKey(const TLSKey &key)
 
 void TLSConfiguration::SetPrivateKey(const SecureData &key, const SecureData &keyPass)
 {
-    TLSKey pkey(key, ALGORITHM_RSA, keyPass);
+    TLSKey pkey(key, keyPass);
     privateKey_ = pkey;
 }
 

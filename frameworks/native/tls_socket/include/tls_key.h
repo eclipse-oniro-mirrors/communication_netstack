@@ -38,6 +38,7 @@ public:
     TLSKey() = default;
     ~TLSKey() = default;
 
+    TLSKey(const SecureData &data, const SecureData &passPhrase);
     TLSKey(const SecureData &data, KeyAlgorithm algorithm, const SecureData &passPhrase);
     TLSKey(const std::string &fileName, KeyAlgorithm algorithm, const SecureData &passPhrase,
            EncodingFormat format = PEM, KeyType type = PRIVATE_KEY);
@@ -51,6 +52,7 @@ public:
     const SecureData &GetKeyData() const;
 
 private:
+    void DecodeData(const SecureData &data, const SecureData &passPhrase);
     void DecodeData(const SecureData &data, KeyAlgorithm algorithm, const SecureData &passPhrase);
     void DecodeDer(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const SecureData &passPhrase);
     void DecodePem(KeyType type, KeyAlgorithm algorithm, const std::string &fileName, const SecureData &passPhrase);
