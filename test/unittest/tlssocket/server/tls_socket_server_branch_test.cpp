@@ -580,6 +580,73 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest026, testing::ext::
     EXPECT_TRUE(callbackCalled);
     delete tlsSocketServer;
 }
+
+extern void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> &dnsNames,
+                              std::vector<std::string> &ips, const X509 *x509Certificates,
+                              std::tuple<bool, std::string> &result);
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest027, testing::ext::TestSize.Level2)
+{
+    auto tlsSocketServer = new TLSSocketServer();
+    std::string hostName = "192.168.1.1";
+    std::vector<std::string> dnsNames = {"www.test.com", "www.example.com"};
+    std::vector<std::string>  ips = {"192.168.1.1", "192.168.1.2"};
+    const X509 *x509Certificates = X509_new();
+    std::tuple<bool, std::string> result;
+    CheckIpAndDnsName(hostName, dnsNames, ips, x509Certificates, result);
+    EXPECT_FALSE(std::get<0>(result));
+    delete tlsSocketServer;
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest028, testing::ext::TestSize.Level2)
+{
+    auto tlsSocketServer = new TLSSocketServer();
+    std::string hostName = "192.168.1.3";
+    std::vector<std::string> dnsNames = {"www.test.com", "www.example.com"};
+    std::vector<std::string>  ips = {"192.168.1.1", "192.168.1.2"};
+    const X509 *x509Certificates = X509_new();
+    std::tuple<bool, std::string> result;
+    CheckIpAndDnsName(hostName, dnsNames, ips, x509Certificates, result);
+    EXPECT_FALSE(std::get<0>(result));
+    EXPECT_EQ(std::get<1>(result), "IP: 192.168.1.3 is not in the cert's list");
+    delete tlsSocketServer;
+}
+
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest029, testing::ext::TestSize.Level2)
+{
+    auto tlsSocketServer = new TLSSocketServer();
+    std::string hostName = "www.test.com";
+    std::vector<std::string> dnsNames = {"www", "test", "com"};
+    std::vector<std::string>  ips = {"192.168.1.1", "192.168.1.2"};
+    const X509 *x509Certificates = X509_new();
+    std::tuple<bool, std::string> result;
+    CheckIpAndDnsName(hostName, dnsNames, ips, x509Certificates, result);
+    EXPECT_TRUE(std::get<0>(result));
+    delete tlsSocketServer;
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest031, testing::ext::TestSize.Level2)
+{
+    auto connection = std::make_shared<TLSSocketServer::Connection>();
+    std::string hostName = "testHost";
+    X509 *x509Certificates = X509_new();
+    std::string result = connection->CheckServerIdentityLegal(hostName, x509Certificates);
+    ASSERT_EQ(result, "X509 get ext nid error");
+    X509_free(x509Certificates);
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest032, testing::ext::TestSize.Level2)
+{
+    auto connection = std::make_shared<TLSSocketServer::Connection>();
+    std::string hostName = "testHost";
+    X509 *x509Certificates = X509_new();
+    X509_EXTENSION *ext = X509_EXTENSION_new();
+    X509_add_ext(x509Certificates, ext, -1);
+    std::string result = connection->CheckServerIdentityLegal(hostName, x509Certificates);
+    ASSERT_EQ(result, "X509 get ext nid error");
+    X509_EXTENSION_free(ext);
+    X509_free(x509Certificates);
+}
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS
