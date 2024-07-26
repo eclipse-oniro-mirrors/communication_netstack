@@ -27,7 +27,9 @@
 #include "http_client_error.h"
 #include "http_client_request.h"
 #include "http_client_response.h"
+#if HAS_NETMANAGER_BASE
 #include "netstack_network_profiler.h"
+#endif
 
 namespace OHOS {
 namespace NetStack {
@@ -342,7 +344,9 @@ private:
     static std::atomic<unsigned int> nextTaskId_;
     std::string filePath_;
     FILE *file_ = nullptr;
+#if HAS_NETMANAGER_BASE
     std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
+#endif
 };
 
 } // namespace HttpClient

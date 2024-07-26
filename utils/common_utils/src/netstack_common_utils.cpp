@@ -31,7 +31,6 @@
 #include <unistd.h>
 #include <vector>
 
-#include "curl/curl.h"
 #include "netstack_log.h"
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "netstack_apipolicy_utils.h"

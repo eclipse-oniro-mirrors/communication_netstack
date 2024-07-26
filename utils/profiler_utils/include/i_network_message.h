@@ -18,10 +18,13 @@
 
 #include <map>
 
+#if HAS_NETMANAGER_BASE
 #include "curl/curl.h"
+#endif
 #include "tlv_utils.h"
 
 namespace OHOS::NetStack {
+#if HAS_NETMANAGER_BASE
 #define CURL_GET_INFO(curl, options, ptr)                           \
     do {                                                            \
         auto code = curl_easy_getinfo((curl), (options), (ptr));    \
@@ -35,6 +38,8 @@ namespace OHOS::NetStack {
         CURL_GET_INFO((curl), (options), &(time));                  \
         (timeInfo).time = static_cast<uint64_t>(time);              \
     } while (false)                                                 \
+
+#endif
 
 struct TimeInfo {
     double dnsTime = 0;
@@ -55,10 +60,12 @@ public:
     void SetRequestBeginTime(uint64_t bootTime);
 
 protected:
+#if HAS_NETMANAGER_BASE
     static uint32_t GetIpAddressFromCurlHandle(std::string &ip, CURL *handle);
     static uint32_t GetEffectiveUrlFromCurlHandle(std::string &effectiveUrl, CURL *handle);
     static uint32_t GetHttpVersionFromCurlHandle(std::string &httpVersion, CURL *handle);
     static uint32_t GetTimeInfoFromCurlHandle(TimeInfo &timeInfo, CURL *handle);
+#endif
     static std::string GetReasonParse(const std::string &rawHeader);
     static std::string GetRawHeader(const std::map<std::string, std::string> &headers);
 

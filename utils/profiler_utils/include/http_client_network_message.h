@@ -24,13 +24,17 @@ namespace OHOS::NetStack {
 class HttpClientNetworkMessage : public INetworkMessage {
 public:
     HttpClientNetworkMessage() = delete;
+#if HAS_NETMANAGER_BASE
     HttpClientNetworkMessage(std::string requestId, HttpClient::HttpClientRequest &request,
                              HttpClient::HttpClientResponse &response, CURL *handle);
+#endif
     ~HttpClientNetworkMessage() override;
     DfxMessage Parse() override;
 
 private:
+#if HAS_NETMANAGER_BASE
     CURL *handle_ = nullptr;
+#endif
     TimeInfo timeInfo_;
     HttpClient::HttpClientRequest request_;
     HttpClient::HttpClientResponse response_;

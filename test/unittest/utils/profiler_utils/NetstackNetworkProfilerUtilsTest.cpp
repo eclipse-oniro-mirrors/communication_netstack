@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
+#if HAS_NETMANAGER_BASE
 #include "http_client_network_message.h"
 #include "http_network_message.h"
 #include "i_network_message.h"
@@ -175,3 +176,4 @@ HWTEST_F(NetStackNetworkProfilerUtilsTest, HttpClientNetworkMessageTest003, Test
 }
 }
 }
+#endif
