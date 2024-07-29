@@ -103,31 +103,32 @@ void TLSKey::DecodeData(const SecureData &data, const SecureData &passPhrase)
         return;
     }
     EVP_PKEY *evp_pkey = PEM_read_bio_PrivateKey(bio, nullptr, nullptr, nullptr);
-    if (rsa_) {
-        keyIsNull_ = false;
-    }
-    int alg_id = EVP_PKEY_base_id(evp_pkey);
+    if (evp_pkey != nullptr) {
+        int alg_id = EVP_PKEY_base_id(evp_pkey);
 
-    switch (alg_id) {
-        case EVP_PKEY_RSA:
-            rsa_ = EVP_PKEY_get1_RSA(evp_pkey);
-            keyAlgorithm_ = ALGORITHM_RSA;
-            break;
-        case EVP_PKEY_DSA:
-            dsa_ = EVP_PKEY_get1_DSA(evp_pkey);
-            keyAlgorithm_ = ALGORITHM_DSA;
-            break;
-        case EVP_PKEY_DH:
-            dh_ = EVP_PKEY_get1_DH(evp_pkey);
-            keyAlgorithm_ = ALGORITHM_DH;
-            break;
-        case EVP_PKEY_EC:
-            ec_ = EVP_PKEY_get1_EC_KEY(evp_pkey);
-            keyAlgorithm_ = ALGORITHM_EC;
-            break;
-        default:
-            NETSTACK_LOGE("unknown key");
-            break;
+        switch (alg_id) {
+            case EVP_PKEY_RSA:
+                rsa_ = EVP_PKEY_get1_RSA(evp_pkey);
+                keyAlgorithm_ = ALGORITHM_RSA;
+                break;
+            case EVP_PKEY_DSA:
+                dsa_ = EVP_PKEY_get1_DSA(evp_pkey);
+                keyAlgorithm_ = ALGORITHM_DSA;
+                break;
+            case EVP_PKEY_DH:
+                dh_ = EVP_PKEY_get1_DH(evp_pkey);
+                keyAlgorithm_ = ALGORITHM_DH;
+                break;
+            case EVP_PKEY_EC:
+                ec_ = EVP_PKEY_get1_EC_KEY(evp_pkey);
+                keyAlgorithm_ = ALGORITHM_EC;
+                break;
+            default:
+                NETSTACK_LOGE("unknown key");
+                break;
+        }
+    } else {
+        rsa_ = PEM_read_bio_RSAPrivateKey(bio, nullptr, nullptr, nullptr);
     }
 
     EVP_PKEY_free(evp_pkey);
