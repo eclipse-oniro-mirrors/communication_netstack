@@ -978,7 +978,7 @@ bool HttpExec::ParseHostAndPortFromUrl(const std::string &url, std::string &host
         return false;
     }
     if (curl_url_set(cu, CURLUPART_URL, url.c_str(), 0)) {
-        NETSTACK_LOGD("not a URL: '%{public}s'", url.c_str());
+        NETSTACK_LOGE("not a normalized URL");
         curl_url_cleanup(cu);
         return false;
     }
@@ -986,15 +986,13 @@ bool HttpExec::ParseHostAndPortFromUrl(const std::string &url, std::string &host
     char *cport = nullptr;
 
     (void)curl_url_get(cu, CURLUPART_HOST, &chost, 0);
-    (void)curl_url_get(cu, CURLUPART_PORT, &cport, 0);
+    (void)curl_url_get(cu, CURLUPART_PORT, &cport, CURLU_DEFAULT_PORT);
     if (chost != nullptr) {
         host = chost;
-        NETSTACK_LOGD("parse host: '%{public}s'", host.c_str());
         curl_free(chost);
     }
     if (cport != nullptr) {
         port = atoi(cport);
-        NETSTACK_LOGD("parse port: '%{public}u'", port);
         curl_free(cport);
     }
     curl_url_cleanup(cu);
