@@ -1170,7 +1170,7 @@ bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
     if (acceptFd <= 0) {
         NETSTACK_LOGE("socket invalid, fd: %{public}d", acceptFd);
         context->SetErrorCode(EBADF);
-	return false;
+        return false;
     }
 
     if (shutdown(acceptFd, SHUT_RDWR) != 0) {
