@@ -422,9 +422,8 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
-int WebSocketClient::Send(char *data, size_t length)
+int WebSocketClient::Send(char *data, size_t length, lws_write_protocol protocol)
 {
-    size_t dataLength;
     if (data == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_SEND_DATA_NULL;
     }
@@ -435,9 +434,7 @@ int WebSocketClient::Send(char *data, size_t length)
         return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
     }
 
-    //all data has LWS_SEND_BUFFER_PRE_PADDING padding ahead.
-    dataLength = LWS_SEND_BUFFER_PRE_PADDING + length + LWS_SEND_BUFFER_POST_PADDING;
-    char *dataCopy = (char *)malloc(dataLength+1);
+    char *dataCopy = (char *)malloc(dataLength);
     if (dataCopy == nullptr) {
         NETSTACK_LOGE("webSocketClient malloc error");
         return WEBSOCKET_SEND_NO_MEMOERY_ERROR;
@@ -446,9 +443,6 @@ int WebSocketClient::Send(char *data, size_t length)
         NETSTACK_LOGE("webSocketClient malloc copy error");
         return WEBSOCKET_SEND_NO_MEMOERY_ERROR;
     }
-    *(dataCopy + dataLength) = '\0'; //for set the tail of memory as '\0'
-    lws_write_protocol protocol =
-        (strlen(dataCopy + LWS_SEND_BUFFER_POST_PADDING) == length) ? LWS_WRITE_TEXT : LWS_WRITE_BINARY;
     this->GetClientContext()->Push(dataCopy, length, protocol);
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }

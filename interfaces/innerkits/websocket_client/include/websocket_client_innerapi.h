@@ -68,7 +68,7 @@ public:
     typedef void (*OnOpenCallback)(WebSocketClient *client, OpenResult openResult);
 
     int Connect(std::string URL, OpenOptions Options);
-    int Send(char *data, size_t length);
+    int Send(char *data, size_t length, lws_write_protocol protocol = LWS_WRITE_TEXT);
     int Close(CloseOption options);
     int Registcallback(OnOpenCallback OnOpen, OnMessageCallback onMessage, OnErrorCallback OnError,
                        OnCloseCallback onclose);
