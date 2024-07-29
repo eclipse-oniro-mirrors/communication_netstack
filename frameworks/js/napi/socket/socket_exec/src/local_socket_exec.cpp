@@ -1183,7 +1183,6 @@ bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
         NETSTACK_LOGI("sock %{public}d closed success", acceptFd);
         data->serverManager_->RemoveAccept(context->GetClientId());
     }
-    context->GetManager()->DeleteEventReference(context->GetEnv());
     return true;
 }
 
@@ -1356,6 +1355,7 @@ napi_value LocalSocketConnectionSendCallback(LocalSocketServerSendContext *conte
 
 napi_value LocalSocketConnectionCloseCallback(LocalSocketServerCloseContext *context)
 {
+    context->GetManager()->DeleteEventReference(context->GetEnv());
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
