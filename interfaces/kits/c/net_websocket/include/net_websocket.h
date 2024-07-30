@@ -41,6 +41,7 @@
  * @version 1.0
  */
 
+#include <libwebsockets.h>
 #include "net_websocket_type.h"
 
 #ifdef __cplusplus
@@ -94,13 +95,15 @@ int OH_WebSocketClient_Connect(struct WebSocket *client, const char *url, struct
  * @param client Pointer to the WebSocket client.
  * @param data Data sent by the client.
  * @param length Length of the data sent by the client.
+ * @param protocol indicate which protocol the input data used
  * @return 0 if success; non-0 otherwise. For details about error codes, see {@link OH_Websocket_ErrCode}.
  * @permission ohos.permission.INTERNET
  * @syscap SystemCapability.Communication.NetStack
  * @since 11
  * @version 1.0
  */
-int OH_WebSocketClient_Send(struct WebSocket *client, char *data, size_t length);
+int OH_WebSocketClient_Send(struct WebSocket *client, char *data, size_t length,
+                            lws_write_protocol protocol = LWS_WRITE_TEXT);
 
 /**
  * @brief Closes a WebSocket connection.
