@@ -22,6 +22,7 @@
 
 #include "net_websocket.h"
 #include "net_websocket_type.h"
+#include "websocket_client_innerapi.h"
 
 class WebSocketTest : public testing::Test {
 public:
