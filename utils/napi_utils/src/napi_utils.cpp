@@ -866,7 +866,6 @@ bool IsEnvValid(napi_env env)
     std::lock_guard<std::mutex> lock(mutexForEnv);
     auto pos = unorderedSetEnv.find(env);
     if (pos == unorderedSetEnv.end()) {
-        NETSTACK_LOGE("The env is not in the unordered set");
         return false;
     }
     return true;
