@@ -91,9 +91,13 @@ void LocalSocketServerConnectionFinalize(napi_env, void *data, void *)
     if (manager != nullptr) {
         LocalSocketConnectionData *connectData = reinterpret_cast<LocalSocketConnectionData *>(manager->GetData());
         if (connectData != nullptr) {
-            connectData->serverManager_->RemoveEventManager(connectData->clientId_);
-            connectData->serverManager_->RemoveAccept(connectData->clientId_);
+            auto serverManager = connectData->serverManager_;
+            if (serverManager != nullptr) {
+                serverManager->RemoveEventManager(connectData->clientId_);
+                serverManager->RemoveAccept(connectData->clientId_);
+            }
             delete connectData;
+            connectData = nullptr;
         }
     }
 }
@@ -111,6 +115,7 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
     manager->SetData(reinterpret_cast<void *>(data));
     EventManager::SetValid(manager);
     data->serverManager_->AddEventManager(data->clientId_, manager);
+    manager->CreateEventReference(env, result);
     napi_wrap(env, result, reinterpret_cast<void *>(manager), LocalSocketServerConnectionFinalize, nullptr, nullptr);
     return result;
 }
@@ -1156,16 +1161,29 @@ bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
     if (context == nullptr) {
         return false;
     }
-    if (auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetManager()->GetData()); data != nullptr) {
-        if (data->serverManager_ != nullptr) {
-            if (data->serverManager_->GetAcceptFd(context->GetClientId()) > 0) {
-                return true;
-            }
-        }
+    auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetManager()->GetData());
+    if (data == nullptr || data->serverManager_ == nullptr) {
+        NETSTACK_LOGE("connection close callback reinterpret cast failed");
+        return false;
     }
-    NETSTACK_LOGE("invalid serverManager or socket has closed");
-    context->SetErrorCode(EBADF);
-    return false;
+    int acceptFd = data->serverManager_->GetAcceptFd(context->GetClientId());
+    if (acceptFd <= 0) {
+        NETSTACK_LOGE("socket invalid, fd: %{public}d", acceptFd);
+        context->SetErrorCode(EBADF);
+        return false;
+    }
+
+    if (shutdown(acceptFd, SHUT_RDWR) != 0) {
+        NETSTACK_LOGE("socket shutdown failed, socket is %{public}d, errno is %{public}d", acceptFd, errno);
+    }
+    int ret = close(acceptFd);
+    if (ret < 0) {
+        NETSTACK_LOGE("sock closed failed, socket is %{public}d, errno is %{public}d", acceptFd, errno);
+    } else {
+        NETSTACK_LOGI("sock %{public}d closed success", acceptFd);
+        data->serverManager_->RemoveAccept(context->GetClientId());
+    }
+    return true;
 }
 
 bool ExecLocalSocketConnectionGetLocalAddress(LocalSocketServerGetLocalAddressContext *context)
@@ -1337,28 +1355,7 @@ napi_value LocalSocketConnectionSendCallback(LocalSocketServerSendContext *conte
 
 napi_value LocalSocketConnectionCloseCallback(LocalSocketServerCloseContext *context)
 {
-    auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetManager()->GetData());
-    if (data == nullptr || data->serverManager_ == nullptr) {
-        NETSTACK_LOGE("connection close callback reinterpret cast failed");
-        return NapiUtils::GetUndefined(context->GetEnv());
-    }
-    int acceptFd = data->serverManager_->GetAcceptFd(context->GetClientId());
-    if (acceptFd <= 0) {
-        NETSTACK_LOGE("socket invalid, fd: %{public}d", acceptFd);
-        return NapiUtils::GetUndefined(context->GetEnv());
-    }
-
-    if (shutdown(acceptFd, SHUT_RDWR) != 0) {
-        NETSTACK_LOGE("socket shutdown failed, socket is %{public}d, errno is %{public}d", acceptFd, errno);
-    }
-    int ret = close(acceptFd);
-    if (ret < 0) {
-        NETSTACK_LOGE("sock closed failed, socket is %{public}d, errno is %{public}d", acceptFd, errno);
-    } else {
-        NETSTACK_LOGI("sock %{public}d closed success", acceptFd);
-        data->serverManager_->RemoveAccept(context->GetClientId());
-    }
-
+    context->GetManager()->DeleteEventReference(context->GetEnv());
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
