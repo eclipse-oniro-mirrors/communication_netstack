@@ -528,8 +528,8 @@ void RequestContext::SendResponse()
             ParseSetCookie(resp.setCookie, response);
             StopAndCachePerformanceTiming(RESPONSE_TOTAL_TIMING);
             SetPerformanceTimingToResult(resp);
-            resp.result.head = (uint8_t*)MallocCString(response.GetResult());
-            resp.result.size = response.GetResult().length();
+            resp.result.head = reinterpret_cast<uint8_t*>(MallocCString(response.GetResult()));
+            resp.result.size = static_cast<int64_t>(response.GetResult().length());
             resp.resultType = static_cast<int32_t>(options.GetHttpDataType());
         }
     } else {
