@@ -553,6 +553,7 @@ private:
         [[nodiscard]] ssl_st *GetSSL();
 
     private:
+        bool SendRetry(ssl_st *ssl, const char *curPos, size_t curSendSize, int sockfd);
         bool StartTlsConnected(const TLSConnectOptions &options);
         bool CreatTlsContext();
         bool StartShakingHands(const TLSConnectOptions &options);

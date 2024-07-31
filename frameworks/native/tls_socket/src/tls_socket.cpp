@@ -46,6 +46,8 @@ constexpr int SSL_WANT_READ_RETURN = -2;
 constexpr int OFFSET = 2;
 constexpr int DEFAULT_BUFFER_SIZE = 8192;
 constexpr int DEFAULT_POLL_TIMEOUT_MS = 500;
+constexpr int SEND_RETRY_TIMES = 5;
+constexpr int SEND_POLL_TIMEOUT_MS = 1000;
 constexpr int MAX_RECV_BUFFER_SIZE = 1024 * 16;
 constexpr const char *SPLIT_ALT_NAMES = ",";
 constexpr const char *SPLIT_HOST_NAME = ".";
@@ -1195,6 +1197,41 @@ void TLSSocket::TLSSocketInternal::SetTlsConfiguration(const TLSConnectOptions &
     configuration_.SetNetAddress(config.GetNetAddress());
 }
 
+bool TLSSocket::TLSSocketInternal::SendRetry(ssl_st *ssl, const char *curPos, size_t curSendSize, int sockfd)
+{
+    pollfd fds[1] = {{.fd = sockfd, .events = POLLOUT}};
+    for (int i = 0; i <= SEND_RETRY_TIMES; i++) {
+        int ret = poll(fds, 1, SEND_POLL_TIMEOUT_MS);
+        if (ret < 0) {
+            if (errno == EAGAIN || errno == EINTR) {
+                continue;
+            }
+            NETSTACK_LOGE("send poll error, fd: %{public}d, errno: %{public}d", sockfd, errno);
+            return false;
+        } else if (ret == 0) {
+            NETSTACK_LOGI("send poll timeout, fd: %{public}d, errno: %{public}d", sockfd, errno);
+            continue;
+        }
+        int len = SSL_write(ssl, curPos, curSendSize);
+        if (len < 0) {
+            int err = SSL_get_error(ssl, SSL_RET_CODE);
+            if (err == SSL_ERROR_WANT_WRITE || errno == EAGAIN) {
+                NETSTACK_LOGI("write retry times: %{public}d err: %{public}d errno: %{public}d", i, err, errno);
+                continue;
+            } else {
+                NETSTACK_LOGE("write failed err: %{public}d errno: %{public}d", err, errno);
+                return false;
+            }
+        } else if (len == 0) {
+            NETSTACK_LOGI("send len is 0, should have sent len");
+            return false;
+        } else {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, ssl_st *ssl, const char *pdata, int sendSize)
 {
     int bufferSize = DEFAULT_BUFFER_SIZE;
@@ -1222,11 +1259,10 @@ bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, ssl_st *ssl, const char 
         int len = SSL_write(ssl, curPos, curSendSize);
         if (len < 0) {
             int err = SSL_get_error(ssl, SSL_RET_CODE);
-            if (err == SSL_ERROR_WANT_WRITE || errno == EAGAIN) {
-                NETSTACK_LOGI("write failed, retry");
-                continue;
-            } else {
-                NETSTACK_LOGE("write failed, return, err: %{public}d", err);
+            if (err != SSL_ERROR_WANT_WRITE || errno != EAGAIN) {
+                NETSTACK_LOGE("write failed, return, err: %{public}d errno: %{public}d", err, errno);
+                return false;
+            } else if (!SendRetry(ssl, curPos, curSendSize, sockfd)) {
                 return false;
             }
         } else if (len == 0) {
