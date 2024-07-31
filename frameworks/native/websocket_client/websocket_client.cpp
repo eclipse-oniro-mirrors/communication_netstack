@@ -434,7 +434,7 @@ int WebSocketClient::Send(char *data, size_t length)
     }
 
     lws_write_protocol protocol = (strlen(data) == length) ? LWS_WRITE_TEXT : LWS_WRITE_BINARY;
-    auto dataCopy = reinter_cast<cahr *>(malloc(length));
+    auto dataCopy = reinterpret_cast<char *>(malloc(length));
     if (dataCopy == nullptr) {
         NETSTACK_LOGE("webSocketClient malloc error");
         return WEBSOCKET_SEND_NO_MEMOERY_ERROR;
