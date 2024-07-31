@@ -33,7 +33,6 @@ ohos_unittest("websocket_capi_unittest") {
   include_dirs = [
     "$NETSTACK_DIR/interfaces/kits/c/net_websocket/include",
     "$NETSTACK_DIR/utils/log/include",
-    "$NETSTACK_NATIVE_ROOT/websocket_client/include",
   ]
   include_dirs += utils_include
 

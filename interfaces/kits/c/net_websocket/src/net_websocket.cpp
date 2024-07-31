@@ -118,7 +118,7 @@ int OH_WebSocketClient_AddHeader(struct WebSocket *client, struct WebSocket_Head
     }
 }
 
-int OH_WebSocketClient_Send(struct WebSocket *client, char *data, size_t length, lws_write_protocol protocol)
+int OH_WebSocketClient_Send(struct WebSocket *client, char *data, size_t length)
 {
     int ret;
     if (client == nullptr) {
@@ -130,7 +130,7 @@ int OH_WebSocketClient_Send(struct WebSocket *client, char *data, size_t length,
         return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
     }
 
-    ret = websocketClient->Send(data, length, protocol);
+    ret = websocketClient->Send(data, length);
     return ret;
 }
 
