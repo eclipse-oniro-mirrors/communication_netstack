@@ -901,6 +901,14 @@ bool ExecBind(BindContext *context)
         return false;
     }
 
+    int reuseOpt = 1;
+    if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_REUSEADDR, &reuseOpt, sizeof(reuseOpt)) < 0) {
+        NETSTACK_LOGE("set reuse addr failed");
+        context->SetNeedThrowException(true);
+        context->SetErrorCode(errno);
+        return false;
+    }
+
     if (bind(context->GetSocketFd(), addr, len) < 0) {
         if (errno != EADDRINUSE) {
             ERROR_RETURN(context, "bind failed, socket:%{public}d, errno:%{public}d", context->GetSocketFd(), errno);
