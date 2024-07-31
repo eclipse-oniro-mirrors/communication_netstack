@@ -24,7 +24,9 @@
 #include "http_request_options.h"
 #include "http_response.h"
 #include "timing.h"
+#if HAS_NETMANAGER_BASE
 #include "netstack_network_profiler.h"
+#endif
 
 namespace OHOS::NetStack::Http {
 struct LoadBytes {
@@ -156,7 +158,9 @@ private:
     bool isAtomicService_ = false;
     std::string bundleName_;
     std::string traceName_;
+#if HAS_NETMANAGER_BASE
     std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
+#endif
     CURL *curlHandle_;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);

@@ -34,6 +34,7 @@ void INetworkMessage::SetRequestBeginTime(uint64_t bootTime)
     requestBeginTime_ = bootTime;
 }
 
+#if HAS_NETMANAGER_BASE
 uint32_t INetworkMessage::GetIpAddressFromCurlHandle(std::string &ip, CURL *handle)
 {
     if (handle == nullptr) {
@@ -92,6 +93,7 @@ uint32_t INetworkMessage::GetTimeInfoFromCurlHandle(TimeInfo &timeInfo, CURL *ha
     CURL_GET_TIME_INFO(handle, CURLINFO_TOTAL_TIME_T, totalTime, timeInfo);
     return static_cast<uint32_t>(CURLE_OK);
 }
+#endif
 
 std::string INetworkMessage::GetReasonParse(const std::string &rawHeader)
 {
@@ -137,6 +139,7 @@ std::string INetworkMessage::GetRawHeader(const std::map<std::string, std::strin
 
 std::string INetworkMessage::GetHttpVersion(long httpVersion)
 {
+#if HAS_NETMANAGER_BASE
     switch (httpVersion) {
         case CURL_HTTP_VERSION_1_0:
             return "1.0";
@@ -149,6 +152,7 @@ std::string INetworkMessage::GetHttpVersion(long httpVersion)
         default:
             break;
     }
+#endif
     return "unknown";
 }
 }

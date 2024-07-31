@@ -17,21 +17,26 @@
 
 namespace OHOS::NetStack {
 namespace {
+#if HAS_NETMANAGER_BASE
 constexpr const size_t RESPONSE_BODY_MAX_SIZE = 64 * 1024;
+#endif
 }
 
+#if HAS_NETMANAGER_BASE
 HttpClientNetworkMessage::HttpClientNetworkMessage(std::string requestId, HttpClient::HttpClientRequest &request,
                                                    HttpClient::HttpClientResponse &response, CURL *handle)
     : INetworkMessage(std::move(requestId)),
       handle_(handle),
       request_(request),
       response_(response) {}
+#endif
 
 HttpClientNetworkMessage::~HttpClientNetworkMessage() = default;
 
 DfxMessage HttpClientNetworkMessage::Parse()
 {
     DfxMessage msg{};
+#if HAS_NETMANAGER_BASE
     GetTimeInfoFromCurlHandle(timeInfo_, handle_);
     msg.requestBeginTime_ = requestBeginTime_;
     msg.dnsEndTime_ = msg.requestBeginTime_ + static_cast<uint64_t>(timeInfo_.dnsTime);
@@ -63,6 +68,7 @@ DfxMessage HttpClientNetworkMessage::Parse()
     GetIpAddressFromCurlHandle(msg.responseIpAddress_, handle_);
     GetEffectiveUrlFromCurlHandle(msg.responseEffectiveUrl_, handle_);
     GetHttpVersionFromCurlHandle(msg.responseHttpVersion_, handle_);
+#endif
     return msg;
 }
 }

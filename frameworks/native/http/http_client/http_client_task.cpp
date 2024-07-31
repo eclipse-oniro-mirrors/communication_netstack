@@ -28,7 +28,9 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "timing.h"
+#if HAS_NETMANAGER_BASE
 #include "http_client_network_message.h"
+#endif
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data)                                                 \
     do {                                                                                                 \
@@ -79,7 +81,9 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request)
     }
 
     SetCurlOptions();
+#if HAS_NETMANAGER_BASE
     networkProfilerUtils_ = std::make_unique<NetworkProfilerUtils>();
+#endif
 }
 
 HttpClientTask::HttpClientTask(const HttpClientRequest &request, TaskType type, const std::string &filePath)
@@ -99,7 +103,9 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request, TaskType type, 
     }
 
     SetCurlOptions();
+#if HAS_NETMANAGER_BASE
     networkProfilerUtils_ = std::make_unique<NetworkProfilerUtils>();
+#endif
 }
 
 HttpClientTask::~HttpClientTask()
@@ -660,9 +666,10 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
     } else if (onFailed_) {
         onFailed_(request_, response_, error_);
     }
-    HttpClientNetworkMessage httpClientNetworkMessage(std::to_string(GetTaskId()), request_,
-                                                      response_, curlHandle_);
+#if HAS_NETMANAGER_BASE
+    HttpClientNetworkMessage httpClientNetworkMessage(std::to_string(GetTaskId()), request_, response_, curlHandle_);
     networkProfilerUtils_->NetworkProfiling(httpClientNetworkMessage);
+#endif
 }
 
 void HttpClientTask::SetResponse(const HttpClientResponse &response)
