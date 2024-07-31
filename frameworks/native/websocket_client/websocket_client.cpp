@@ -153,18 +153,16 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
         return HttpDummy(wsi, reason, user, in, len);
     }
     const char *message = sendData.data;
-    size_t messageLen = sendData.length;
+    size_t messageLen = strlen(message);
     auto buffer = std::make_unique<unsigned char[]>(LWS_PRE + messageLen);
     if (buffer == nullptr) {
         return -1;
     }
     int result = memcpy_s(buffer.get() + LWS_PRE, LWS_PRE + messageLen, message, messageLen);
-    free(sendData.data);
     if (result != 0) {
-        NETSTACK_LOGE("websocket_client memcpy_s error");
         return -1;
     }
-    int bytesSent = lws_write(wsi, buffer.get() + LWS_PRE, messageLen, sendData.protocol);
+    int bytesSent = lws_write(wsi, buffer.get() + LWS_PRE, messageLen, LWS_WRITE_TEXT);
     NETSTACK_LOGD("ClientId:%{public}d,Client Writable send data length = %{public}d",
                   client->GetClientContext()->GetClientId(), bytesSent);
     return HttpDummy(wsi, reason, user, in, len);
@@ -422,7 +420,7 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
-int WebSocketClient::Send(char *data, size_t length, lws_write_protocol protocol)
+int WebSocketClient::Send(char *data, size_t length)
 {
     if (data == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_SEND_DATA_NULL;
@@ -433,17 +431,7 @@ int WebSocketClient::Send(char *data, size_t length, lws_write_protocol protocol
     if (this->GetClientContext() == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
     }
-
-    char *dataCopy = (char *)malloc(length);
-    if (dataCopy == nullptr) {
-        NETSTACK_LOGE("webSocketClient malloc error");
-        return WEBSOCKET_SEND_NO_MEMOERY_ERROR;
-    } else if (memcpy_s(dataCopy, length, data, length) != EOK) {
-        free(dataCopy);
-        NETSTACK_LOGE("webSocketClient malloc copy error");
-        return WEBSOCKET_SEND_NO_MEMOERY_ERROR;
-    }
-    this->GetClientContext()->Push(dataCopy, length, protocol);
+    this->GetClientContext()->Push(data, length, LWS_WRITE_TEXT);
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
