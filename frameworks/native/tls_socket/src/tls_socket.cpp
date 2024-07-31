@@ -1200,7 +1200,7 @@ void TLSSocket::TLSSocketInternal::SetTlsConfiguration(const TLSConnectOptions &
 bool TLSSocket::TLSSocketInternal::SendRetry(ssl_st *ssl, const char *curPos, size_t curSendSize, int sockfd)
 {
     pollfd fds[1] = {{.fd = sockfd, .events = POLLOUT}};
-    for (int i =0; i <= SEND_RETRY_TIMES; i++) {
+    for (int i =0 ; i <= SEND_RETRY_TIMES ; i++) {
         int ret = poll(fds, 1, SEND_POLL_TIMEOUT_MS);
         if (ret < 0) {
             if (errno == EAGAIN || errno == EINTR) {
@@ -1222,7 +1222,7 @@ bool TLSSocket::TLSSocketInternal::SendRetry(ssl_st *ssl, const char *curPos, si
                 NETSTACK_LOGE("write failed err: %{public}d errno: %{public}d", err, errno);
                 return false;
             }
-	} else if (len == 0) {
+        } else if (len == 0) {
             NETSTACK_LOGI("send len is 0, should have sent len");
             return false;
         } else {
@@ -1262,7 +1262,7 @@ bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, ssl_st *ssl, const char 
             if (err != SSL_ERROR_WANT_WRITE || errno != EAGAIN) {
                 NETSTACK_LOGE("write failed, return, err: %{public}d errno: %{public}d", err, errno);
                 return false;
-            } else if (!SendRetry(ssl, curPos, curSendSize, sockfd)){
+            } else if (!SendRetry(ssl, curPos, curSendSize, sockfd)) {
                 return false;
             }
         } else if (len == 0) {
