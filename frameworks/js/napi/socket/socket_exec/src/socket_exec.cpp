@@ -1896,7 +1896,7 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
 
         if (recvSize <= 0) {
             NETSTACK_LOGI("ClientRecv: fd:%{public}d, size:%{public}d, errno:%{public}d, is non blocking:%{public}s",
-                          connectFD, recvSize, errno, flags & O_NONBLOCK ? "true" : "false");
+                          connectFD, recvSize, errno, static_cast<uint32_t>(flags) & O_NONBLOCK ? "true" : "false");
             if ((recvSize == 0 && errno == EAGAIN) || (errno != EAGAIN && errno != EINTR)) {
                 CloseClientHandler(clientId, connectFD, manager, callback);
                 break;
