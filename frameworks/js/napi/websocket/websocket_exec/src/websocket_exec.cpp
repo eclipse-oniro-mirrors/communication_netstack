@@ -681,7 +681,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
 
     if (!ParseUrl(context, protocol, MAX_URI_LENGTH, address, MAX_URI_LENGTH, path, MAX_URI_LENGTH, &port)) {
         NETSTACK_LOGE("ParseUrl failed");
-        context->SetErrorCode(WEBSOCKET_ERROR_CODE_URL_ERROR);
+        context->SetErrorCode(WEBSOCKET_CONNECT_FAILED);
         return false;
     }
     if (lwsContext == nullptr) {
@@ -735,7 +735,7 @@ bool WebSocketExec::FillCaPath(ConnectContext *context, lws_context_creation_inf
     if (!context->caPath_.empty()) {
         if (!CheckFilePath(context->caPath_)) {
             NETSTACK_LOGE("ca not exist");
-            context->SetErrorCode(WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
+            context->SetErrorCode(WEBSOCKET_CONNECT_FAILED);
             return false;
         }
         info.client_ssl_ca_filepath = context->caPath_.c_str();
@@ -750,7 +750,7 @@ bool WebSocketExec::FillCaPath(ConnectContext *context, lws_context_creation_inf
         char realKeyPath[PATH_MAX] = {0};
         if (!CheckFilePath(context->clientCert_) || !realpath(context->clientKey_.Data(), realKeyPath)) {
             NETSTACK_LOGE("client cert not exist");
-            context->SetErrorCode(WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
+            context->SetErrorCode(WEBSOCKET_CONNECT_FAILED);
             return false;
         }
         context->clientKey_ = Secure::SecureChar(realKeyPath);
@@ -797,7 +797,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         manager->SetData(userData);
     } else {
         NETSTACK_LOGE("Websocket connect already exist");
-        context->SetErrorCode(WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST);
+        context->SetErrorCode(WEBSOCKET_CONNECT_FAILED);
         return false;
     }
     if (!CreatConnectInfo(context, lwsContext, manager)) {
