@@ -36,12 +36,15 @@ class MockSSL {
 class TlsSocketServerMockBranchTest : public testing::Test {
 protected:
     TLSSocketServer::Connection *connection;
-    void SetUp() override {
+    void SetUp() override
+    {
         connection = new TLSSocketServer::Connection();
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         delete connection;
+        connection = nullptr;
     }
 };
 
