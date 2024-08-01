@@ -1291,7 +1291,7 @@ int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
 #if defined(CROSS_PLATFORM)
                 if (len == 0 &&  errno == 0) {
                     NETSTACK_LOGI("A client left");
-		}
+                }
 #endif
                 break;
             } else {
@@ -1504,11 +1504,12 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
             for (int i = 0; i < g_userCounter + 1; ++i) {
                 if ((fds_[i].fd == listenSocketFd_) && (static_cast<uint16_t>(fds_[i].revents) & POLLIN)) {
                     ProcessTcpAccept(tlsOption, ++clientId);
-                } else if (
 #if !defined(CROSS_PLATFORM)
-                           (static_cast<uint16_t>(fds_[i].revents) & POLLRDHUP) ||
-#endif
+                } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLRDHUP) ||
                            (static_cast<uint16_t>(fds_[i].revents) & POLLERR)) {
+#else
+                } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLERR)) {
+#endif
                     RemoveConnect(fds_[i].fd);
                     DropFdFromPollList(i);
                     NETSTACK_LOGI("A client left");
