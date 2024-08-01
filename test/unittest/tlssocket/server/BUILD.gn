@@ -152,3 +152,47 @@ ohos_unittest("two_way_tls_socket_server_unittest") {
   part_name = "netstack"
   subsystem_name = "communication"
 }
+
+ohos_unittest("tls_socket_server_mock_branch_test") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
+  sources = [ "tls_socket_server_mock_branch_test.cpp" ]
+  sources += tls_sources
+  sources += tls_napi_sources
+  sources += socket_sources
+
+  configs = [ ":tls_test_config" ]
+
+  deps = [
+    "$NETSTACK_DIR/utils:stack_utils_common",
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "//third_party/googletest:gmock_main",
+  ]
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
+  ]
+
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
+
+  module_out_path = "netstack/tls_socket_unittest"
+  part_name = "netstack"
+  subsystem_name = "communication"
+}
