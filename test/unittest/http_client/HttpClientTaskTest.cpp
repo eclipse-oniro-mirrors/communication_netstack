@@ -16,6 +16,7 @@
 #include <iostream>
 #include <cstring>
 #include "gtest/gtest.h"
+#include "gmock/gmock.h"
 #include "http_client_constant.h"
 #include "netstack_log.h"
 #include "netstack_common_utils.h"
@@ -27,8 +28,14 @@
 #include <curl/curl.h>
 #include "http_client_request.h"
 #include "http_client_response.h"
+#if HAS_NETMANAGER_BASE
+#include "net_conn_client.h"
+#include "network_security_config.h"
+#endif
 
 using namespace OHOS::NetStack::HttpClient;
+using namespace testing;
+using namespace testing::ext;
 
 class HttpClientTaskTest : public testing::Test {
 public:
@@ -82,6 +89,8 @@ HWTEST_F(HttpClientTaskTest, GetHttpVersionTest003, TestSize.Level1)
 
     uint32_t httpVersionTest = task->GetHttpVersion(HttpProtocol::HTTP2);
     EXPECT_EQ(httpVersionTest, CURL_HTTP_VERSION_2_0);
+    httpVersionTest = task->GetHttpVersion(HttpProtocol::HTTP3);
+    EXPECT_EQ(httpVersionTest, CURL_HTTP_VERSION_3);
 }
 
 HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest001, TestSize.Level1)
@@ -165,6 +174,27 @@ HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest004, TestSize.Level1)
     task->curlHandle_ = nullptr;
 }
 
+HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest005, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+
+    std::string url = "http://www.httpbin.org/get";
+    httpReq.SetURL(url);
+    httpReq.SetHttpProxyType(USE_SPECIFIED);
+    HttpProxy proxy;
+    proxy.host = "192.168.147.60";
+    proxy.port = 8888;
+    proxy.exclusions = "www.test.org";
+    proxy.tunnel = true;
+    httpReq.SetHttpProxy(proxy);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    EXPECT_TRUE(task->SetOtherCurlOption(task->curlHandle_));
+    curl_easy_cleanup(task->curlHandle_);
+    task->curlHandle_ = nullptr;
+}
+
 HWTEST_F(HttpClientTaskTest, SetUploadOptionsTest001, TestSize.Level1)
 {
     HttpClientRequest httpReq;
@@ -190,6 +220,21 @@ HWTEST_F(HttpClientTaskTest, SetUploadOptionsTest002, TestSize.Level1)
 
     HttpSession &session = HttpSession::GetInstance();
     std::string filePath = "";
+    auto task = session.CreateTask(httpReq, UPLOAD, filePath);
+
+    EXPECT_FALSE(task->SetUploadOptions(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetUploadOptionsTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/put";
+    httpReq.SetURL(url);
+    std::string method = "PUT";
+    httpReq.SetMethod(method);
+
+    HttpSession &session = HttpSession::GetInstance();
+    std::string filePath = "unavailable";
     auto task = session.CreateTask(httpReq, UPLOAD, filePath);
 
     EXPECT_FALSE(task->SetUploadOptions(task->curlHandle_));
@@ -261,6 +306,22 @@ HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest005, TestSize.Level1)
     auto task = session.CreateTask(httpReq);
 
     task->curlHandle_ = nullptr;
+
+    EXPECT_FALSE(task->SetCurlOptions());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest006, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/get";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    task->curlHandle_ = nullptr;
+    std::string headerStr = "Connection:keep-alive";
+    task->curlHeaderList_ = curl_slist_append(task->curlHeaderList_, headerStr.c_str());
 
     EXPECT_FALSE(task->SetCurlOptions());
 }
@@ -779,5 +840,48 @@ HWTEST_F(HttpClientTaskTest, SetServerSSLCertOption001, TestSize.Level1)
     EXPECT_TRUE(result);
 }
 
+#if HAS_NETMANAGER_BASE
+HWTEST_F(HttpClientTaskTest, SetServerSSLCertOption_ShouldReturnTrue_WhenGetPinSetForHostNameReturnsZeroAndPinsIsEmpty,
+         TestSize.Level2)
+{
+    auto configInstance = OHOS::NetManagerStandard::NetworkSecurityConfig::GetInstance();
+    OHOS::NetManagerStandard::DomainConfig config = {};
+    OHOS::NetManagerStandard::Domain domain;
+    domain.domainName_ = "https://www.example.com";
+    domain.includeSubDomains_ = false;
+    config.domains_.push_back(domain);
+    OHOS::NetManagerStandard::Pin pin;
+    pin.digestAlgorithm_ = "TEST";
+    pin.digest_ = "TEST";
+    config.pinSet_.pins_.push_back(pin);
+    configInstance.domainConfigs_.push_back(config);
+    HttpClientRequest httpReq;
+    std::string url = "https://www.example.com";
+    httpReq.SetURL(url);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    EXPECT_TRUE(task->SetServerSSLCertOption(task->curlHandle_));
+}
+#endif
 
+class MockCurl {
+public:
+    MOCK_METHOD0(easy_init, CURL *());
+};
+
+HWTEST_F(HttpClientTaskTest, HttpClientTask_ShouldNotCreate_WhenCurlInitFails, TestSize.Level0)
+{
+    MockCurl mockCurl;
+    ON_CALL(mockCurl, easy_init).WillByDefault(Return(nullptr));
+
+    HttpClientRequest request;
+    HttpClientTask httpClientTask(request);
+    ASSERT_EQ(httpClientTask.GetStatus(), IDLE);
+    ASSERT_EQ(httpClientTask.GetType(), DEFAULT);
+    ASSERT_EQ(httpClientTask.canceled_, false);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto httpClientTask2 = session.CreateTask(request, UPLOAD, "testFakePath");
+    ASSERT_EQ(httpClientTask2->GetType(), UPLOAD);
+}
 } // namespace
