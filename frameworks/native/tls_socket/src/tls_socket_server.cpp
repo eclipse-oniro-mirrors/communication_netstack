@@ -1294,6 +1294,11 @@ int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
                     it->second->CallOnMessageCallback(socketFd, buffer, remoteInfo);
                     return len;
                 }
+#if defined(CROSS_PLATFORM)
+                if (len == 0 &&  errno == 0) {
+                    NETSTACK_LOGI("A client left");
+                }
+#endif
                 break;
             } else {
                 ++it;
@@ -1435,7 +1440,11 @@ void TLSSocketServer::SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectO
     }
     g_userCounter++;
     fds_[g_userCounter].fd = connectFD;
+#if defined(CROSS_PLATFORM)
+    fds_[g_userCounter].events = POLLIN | POLLERR;
+#else
     fds_[g_userCounter].events = POLLIN | POLLRDHUP | POLLERR;
+#endif
     fds_[g_userCounter].revents = 0;
     AddConnect(connectFD, connection);
     auto ptrEventManager = std::make_shared<EventManager>();
@@ -1474,7 +1483,6 @@ void TLSSocketServer::DropFdFromPollList(int &fd_index)
 
 void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOptions)
 {
-#if !defined(CROSS_PLATFORM)
     int on = 1;
     isRunning_ = true;
     ioctl(listenSocketFd_, FIONBIO, (char *)&on);
@@ -1502,8 +1510,12 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
             for (int i = 0; i < g_userCounter + 1; ++i) {
                 if ((fds_[i].fd == listenSocketFd_) && (static_cast<uint16_t>(fds_[i].revents) & POLLIN)) {
                     ProcessTcpAccept(tlsOption, ++clientId);
+#if !defined(CROSS_PLATFORM)
                 } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLRDHUP) ||
                            (static_cast<uint16_t>(fds_[i].revents) & POLLERR)) {
+#else
+                } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLERR)) {
+#endif
                     RemoveConnect(fds_[i].fd);
                     DropFdFromPollList(i);
                     NETSTACK_LOGI("A client left");
@@ -1514,7 +1526,6 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
         }
     });
     thread_.detach();
-#endif
 }
 
 std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionByClientEventManager(
