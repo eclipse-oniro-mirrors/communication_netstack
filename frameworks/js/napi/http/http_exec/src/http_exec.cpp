@@ -35,6 +35,7 @@
 #ifdef HAS_NETMANAGER_BASE
 #include "http_proxy.h"
 #include "net_conn_client.h"
+#include "netsys_client.h"
 #endif
 #include "base64_utils.h"
 #include "cache_proxy.h"
@@ -1085,6 +1086,11 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     }
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_URL, context->options.GetUrl().c_str(), context);
+#ifdef HAS_NETMANAGER_BASE
+    if (!NetSysIsIpv6Enable(0)) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4, context);
+    }
+#endif
     if (!method.empty()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CUSTOMREQUEST, method.c_str(), context);
     }
