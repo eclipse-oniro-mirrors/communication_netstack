@@ -1240,6 +1240,11 @@ napi_value LocalSocketSendCallback(LocalSocketSendContext *context)
 
 napi_value LocalSocketCloseCallback(LocalSocketCloseContext *context)
 {
+    auto manager = context->GetManager();
+    if (manager != nullptr) {
+        NETSTACK_LOGD("local socket close, delete js ref");
+        manager->DeleteEventReference(context->GetEnv());
+    }
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
@@ -1355,7 +1360,11 @@ napi_value LocalSocketConnectionSendCallback(LocalSocketServerSendContext *conte
 
 napi_value LocalSocketConnectionCloseCallback(LocalSocketServerCloseContext *context)
 {
-    context->GetManager()->DeleteEventReference(context->GetEnv());
+    auto manager = context->GetManager();
+    if (manager != nullptr) {
+        NETSTACK_LOGD("local socket connection close, delete js ref");
+        manager->DeleteEventReference(context->GetEnv());
+    }
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
