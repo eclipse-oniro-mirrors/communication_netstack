@@ -432,18 +432,19 @@ int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reas
 
 static napi_value CreateConnectError(napi_env env, void *callbackPara)
 {
-    auto code = reinterpret_cast<int32_t *>(callbackPara);
-    auto deleter = [](const int32_t *p) { delete p; };
-    std::unique_ptr<int32_t, decltype(deleter)> handler(code, deleter);
+    auto pair = reinterpret_cast<std::pair<int, uint32_t> *>(callbackPara);
+    auto deleter = [](std::pair<int, uint32_t> *p) { delete p; };
+    std::unique_ptr<std::pair<int, uint32_t>, decltype(deleter)> handler(pair, deleter);
     napi_value err = NapiUtils::CreateObject(env);
     if (NapiUtils::GetValueType(env, err) != napi_object) {
         return NapiUtils::GetUndefined(env);
     }
-    NapiUtils::SetInt32Property(env, err, EVENT_KEY_CODE, *code);
+    NapiUtils::SetInt32Property(env, err, EVENT_KEY_CODE, pair->first);
+    NapiUtils::SetStringPropertyUtf8(env, err, "data", std::to_string(pair->second));
     return err;
 }
 
-void OnConnectError(EventManager *manager, int32_t code)
+void OnConnectError(EventManager *manager, int32_t code, uint32_t httpResponse)
 {
     NETSTACK_LOGI("OnError %{public}d", code);
     if (!EventManager::IsManagerValid(manager)) {
@@ -462,7 +463,10 @@ void OnConnectError(EventManager *manager, int32_t code)
         NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_ERROR);
         return;
     }
-    manager->EmitByUv(EventName::EVENT_ERROR, new int32_t(code), CallbackTemplate<CreateConnectError>);
+    auto pair = new std::pair<int, uint32_t>;
+    pair->first = code;
+    pair->second = httpResponse;
+    manager->EmitByUv(EventName::EVENT_ERROR, pair, CallbackTemplate<CreateConnectError>);
 }
 
 int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in,
@@ -717,7 +721,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     if (lws_client_connect_via_info(&connectInfo) == nullptr) {
         NETSTACK_LOGI("ExecConnect websocket connect failed");
         context->SetErrorCode(-1);
-        OnConnectError(manager, COMMON_ERROR_CODE);
+        OnConnectError(manager, COMMON_ERROR_CODE, 0);
         return false;
     }
     return true;
