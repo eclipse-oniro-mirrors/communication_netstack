@@ -534,6 +534,11 @@ napi_value TLSSocketExec::SendCallback(TLSSendContext *context)
 
 napi_value TLSSocketExec::CloseCallback(TLSNapiContext *context)
 {
+    auto manager = context->GetManager();
+    if (manager != nullptr) {
+        NETSTACK_LOGD("tls socket close, delete js ref");
+        manager->DeleteEventReference(context->GetEnv());
+    }
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 

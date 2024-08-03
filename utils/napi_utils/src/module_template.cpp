@@ -23,10 +23,13 @@
 
 #include "event_manager.h"
 #include "netstack_log.h"
-#include "http_module.h"
 
 namespace OHOS::NetStack::ModuleTemplate {
 static constexpr const int EVENT_PARAM_NUM = 2;
+static constexpr const char *INTERFACE_LOCAL_SOCKET = "LocalSocket";
+static constexpr const char *INTERFACE_TLS_SOCKET = "TLSSocket";
+static constexpr const char *INTERFACE_WEB_SOCKET = "WebSocket";
+static constexpr const char *INTERFACE_HTTP_REQUEST = "OHOS_NET_HTTP_HttpRequest";
 
 napi_value On(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
               bool asyncCallback)
@@ -147,6 +150,7 @@ void DefineClass(napi_env env, napi_value exports, const std::initializer_list<n
 
 napi_value NewInstance(napi_env env, napi_callback_info info, const std::string &className, Finalizer finalizer)
 {
+    NETSTACK_LOGD("create new instance for %{public}s", className.c_str());
     napi_value thisVal = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr));
 
@@ -161,7 +165,9 @@ napi_value NewInstance(napi_env env, napi_callback_info info, const std::string 
 
     auto manager = new EventManager();
     EventManager::SetValid(manager);
-    if (className == Http::HttpModuleExports::INTERFACE_HTTP_REQUEST) {
+    if (className == INTERFACE_HTTP_REQUEST || className == INTERFACE_LOCAL_SOCKET ||
+        className == INTERFACE_TLS_SOCKET || className == INTERFACE_WEB_SOCKET) {
+        NETSTACK_LOGD("create reference for %{public}s", className.c_str());
         manager->CreateEventReference(env, thisVal);
     }
     napi_wrap(env, result, reinterpret_cast<void *>(manager), finalizer, nullptr, nullptr);

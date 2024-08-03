@@ -1643,8 +1643,8 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
         int result = SSL_connect(ssl_);
         if (result == -1) {
             int errorStatus = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
-            NETSTACK_LOGE("SSL connect is error, errno is %{public}d, error info is %{public}s",
-                          errorStatus, MakeSSLErrorString(errorStatus).c_str());
+            NETSTACK_LOGE("SSL connect error, err: %{public}d, error info: %{public}s errno: %{public}d",
+                          errorStatus, MakeSSLErrorString(errorStatus).c_str(), errno);
             return false;
         }
 
