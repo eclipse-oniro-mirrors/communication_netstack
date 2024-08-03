@@ -475,7 +475,7 @@ int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reaso
     NETSTACK_LOGD("lws callback client connection error");
     NETSTACK_LOGI("Lws client connection error %{public}s", (in == nullptr) ? "null" : reinterpret_cast<char *>(in));
     // 200 means connect failed
-    OnConnectError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE);
+    OnConnectError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE, GetHttpResponseFromWsi(wsi));
     return HttpDummy(wsi, reason, user, in, len);
 }
 
