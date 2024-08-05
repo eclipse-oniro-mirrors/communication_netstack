@@ -119,11 +119,7 @@ public:
     };
 
     explicit UserData(lws_context *context)
-        : closeStatus(LWS_CLOSE_STATUS_NOSTATUS),
-          openStatus(0),
-          closed_(false),
-          threadStop_(false),
-          context_(context)
+        : closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), closed_(false), threadStop_(false), context_(context)
     {
     }
 
@@ -314,17 +310,25 @@ void WebSocketExec::RunService(EventManager *manager)
     NETSTACK_LOGI("websocket run service end");
 }
 
-int WebSocketExec::RaiseError(EventManager *manager)
+int WebSocketExec::RaiseError(EventManager *manager, uint32_t httpResponse)
 {
-    OnError(manager, COMMON_ERROR_CODE);
+    OnError(manager, COMMON_ERROR_CODE, httpResponse);
     return -1;
+}
+
+uint32_t WebSocketExec::GetHttpResponseFromWsi(lws *wsi)
+{
+    if (wsi == nullptr) {
+        return 0;
+    }
+    return lws_http_client_http_response(wsi);
 }
 
 int WebSocketExec::HttpDummy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     int ret = lws_callback_http_dummy(wsi, reason, user, in, len);
     if (ret < 0) {
-        OnError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE);
+        OnError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE, GetHttpResponseFromWsi(wsi));
     }
     return ret;
 }
@@ -340,14 +344,14 @@ int WebSocketExec::LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback
     }
     if (manager->GetData() == nullptr) {
         NETSTACK_LOGE("user data is null");
-        return RaiseError(manager);
+        return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
 
     auto payload = reinterpret_cast<unsigned char **>(in);
     if (payload == nullptr || (*payload) == nullptr || len == 0) {
         NETSTACK_LOGE("header payload is null, do not append header");
-        return RaiseError(manager);
+        return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
     auto payloadEnd = (*payload) + len;
     for (const auto &pair : userData->header) {
@@ -356,7 +360,7 @@ int WebSocketExec::LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback
                                         reinterpret_cast<const unsigned char *>(pair.second.c_str()),
                                         static_cast<int>(strlen(pair.second.c_str())), payload, payloadEnd)) {
             NETSTACK_LOGE("add header failed");
-            return RaiseError(manager);
+            return RaiseError(manager, GetHttpResponseFromWsi(wsi));
         }
     }
     NETSTACK_LOGI("add header OK");
@@ -374,7 +378,7 @@ int WebSocketExec::LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reason
     }
     if (manager->GetData() == nullptr) {
         NETSTACK_LOGE("user data is null");
-        return RaiseError(manager);
+        return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
 
@@ -401,7 +405,7 @@ int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reas
     }
     if (manager->GetData() == nullptr) {
         NETSTACK_LOGE("user data is null");
-        return RaiseError(manager);
+        return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
     if (userData->IsClosed()) {
@@ -428,18 +432,19 @@ int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reas
 
 static napi_value CreateConnectError(napi_env env, void *callbackPara)
 {
-    auto code = reinterpret_cast<int32_t *>(callbackPara);
-    auto deleter = [](const int32_t *p) { delete p; };
-    std::unique_ptr<int32_t, decltype(deleter)> handler(code, deleter);
+    auto pair = reinterpret_cast<std::pair<int, uint32_t> *>(callbackPara);
+    auto deleter = [](std::pair<int, uint32_t> *p) { delete p; };
+    std::unique_ptr<std::pair<int, uint32_t>, decltype(deleter)> handler(pair, deleter);
     napi_value err = NapiUtils::CreateObject(env);
     if (NapiUtils::GetValueType(env, err) != napi_object) {
         return NapiUtils::GetUndefined(env);
     }
-    NapiUtils::SetInt32Property(env, err, EVENT_KEY_CODE, *code);
+    NapiUtils::SetInt32Property(env, err, EVENT_KEY_CODE, pair->first);
+    NapiUtils::SetStringPropertyUtf8(env, err, "data", std::to_string(pair->second));
     return err;
 }
 
-void OnConnectError(EventManager *manager, int32_t code)
+void OnConnectError(EventManager *manager, int32_t code, uint32_t httpResponse)
 {
     NETSTACK_LOGI("OnError %{public}d", code);
     if (!EventManager::IsManagerValid(manager)) {
@@ -458,7 +463,10 @@ void OnConnectError(EventManager *manager, int32_t code)
         NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_ERROR);
         return;
     }
-    manager->EmitByUv(EventName::EVENT_ERROR, new int32_t(code), CallbackTemplate<CreateConnectError>);
+    auto pair = new std::pair<int, uint32_t>;
+    pair->first = code;
+    pair->second = httpResponse;
+    manager->EmitByUv(EventName::EVENT_ERROR, pair, CallbackTemplate<CreateConnectError>);
 }
 
 int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in,
@@ -467,7 +475,7 @@ int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reaso
     NETSTACK_LOGD("lws callback client connection error");
     NETSTACK_LOGI("Lws client connection error %{public}s", (in == nullptr) ? "null" : reinterpret_cast<char *>(in));
     // 200 means connect failed
-    OnConnectError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE);
+    OnConnectError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE, GetHttpResponseFromWsi(wsi));
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -495,11 +503,11 @@ int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_re
     }
     if (manager->GetData() == nullptr) {
         NETSTACK_LOGE("user data is null");
-        return RaiseError(manager);
+        return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
 
-    userData->openStatus = lws_http_client_http_response(wsi);
+    userData->openStatus = GetHttpResponseFromWsi(wsi);
     char statusLine[MAX_HDR_LENGTH] = {0};
     if (lws_hdr_copy(wsi, statusLine, MAX_HDR_LENGTH, WSI_TOKEN_HTTP) < 0 || strlen(statusLine) == 0) {
         return HttpDummy(wsi, reason, user, in, len);
@@ -549,7 +557,7 @@ int WebSocketExec::LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons r
     }
     if (manager->GetData() == nullptr) {
         NETSTACK_LOGE("user data is null");
-        return RaiseError(manager);
+        return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
     lws_callback_on_writable(wsi);
@@ -568,7 +576,7 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
     }
     if (manager->GetData() == nullptr) {
         NETSTACK_LOGE("user data is null");
-        return RaiseError(manager);
+        return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
     userData->SetThreadStop(true);
@@ -577,7 +585,7 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
     }
     if (userData->closeStatus == LWS_CLOSE_STATUS_NOSTATUS) {
         NETSTACK_LOGE("The link is down, onError");
-        OnError(manager, COMMON_ERROR_CODE);
+        OnError(manager, COMMON_ERROR_CODE, GetHttpResponseFromWsi(wsi));
     }
     OnClose(reinterpret_cast<EventManager *>(user), userData->closeStatus, userData->closeReason);
     return HttpDummy(wsi, reason, user, in, len);
@@ -589,7 +597,7 @@ int WebSocketExec::LwsCallbackWsiDestroy(lws *wsi, lws_callback_reasons reason, 
     auto manager = reinterpret_cast<EventManager *>(user);
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is null");
-        return RaiseError(manager);
+        return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
     if (!EventManager::IsManagerValid(manager)) {
         NETSTACK_LOGE("manager is invalid");
@@ -598,7 +606,7 @@ int WebSocketExec::LwsCallbackWsiDestroy(lws *wsi, lws_callback_reasons reason, 
     auto userData = reinterpret_cast<UserData *>(manager->GetData());
     if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
-        return RaiseError(manager);
+        return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
     userData->SetLws(nullptr);
     return HttpDummy(wsi, reason, user, in, len);
@@ -713,7 +721,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     if (lws_client_connect_via_info(&connectInfo) == nullptr) {
         NETSTACK_LOGI("ExecConnect websocket connect failed");
         context->SetErrorCode(-1);
-        OnConnectError(manager, COMMON_ERROR_CODE);
+        OnConnectError(manager, COMMON_ERROR_CODE, 0);
         return false;
     }
     return true;
@@ -907,14 +915,15 @@ napi_value WebSocketExec::CloseCallback(CloseContext *context)
 
 static napi_value CreateError(napi_env env, void *callbackPara)
 {
-    auto code = reinterpret_cast<int32_t *>(callbackPara);
-    auto deleter = [](const int32_t *p) { delete p; };
-    std::unique_ptr<int32_t, decltype(deleter)> handler(code, deleter);
+    auto pair = reinterpret_cast<std::pair<int, uint32_t> *>(callbackPara);
+    auto deleter = [](std::pair<int, uint32_t> *p) { delete p; };
+    std::unique_ptr<std::pair<int, uint32_t>, decltype(deleter)> handler(pair, deleter);
     napi_value err = NapiUtils::CreateObject(env);
     if (NapiUtils::GetValueType(env, err) != napi_object) {
         return NapiUtils::GetUndefined(env);
     }
-    NapiUtils::SetInt32Property(env, err, EVENT_KEY_CODE, *code);
+    NapiUtils::SetInt32Property(env, err, EVENT_KEY_CODE, pair->first);
+    NapiUtils::SetStringPropertyUtf8(env, err, "data", std::to_string(pair->second));
     return err;
 }
 
@@ -970,7 +979,7 @@ static napi_value CreateBinaryMessagePara(napi_env env, void *callbackPara)
     return NapiUtils::GetUndefined(env);
 }
 
-void WebSocketExec::OnError(EventManager *manager, int32_t code)
+void WebSocketExec::OnError(EventManager *manager, int32_t code, uint32_t httpResponse)
 {
     NETSTACK_LOGI("OnError %{public}d", code);
     if (!EventManager::IsManagerValid(manager)) {
@@ -985,7 +994,10 @@ void WebSocketExec::OnError(EventManager *manager, int32_t code)
         NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_ERROR);
         return;
     }
-    manager->EmitByUv(EventName::EVENT_ERROR, new int32_t(code), CallbackTemplate<CreateError>);
+    auto pair = new std::pair<int, uint32_t>;
+    pair->first = code;
+    pair->second = httpResponse;
+    manager->EmitByUv(EventName::EVENT_ERROR, pair, CallbackTemplate<CreateError>);
 }
 
 napi_value CreateResponseHeader(napi_env env, void *callbackPara)
