@@ -1435,7 +1435,11 @@ void TLSSocketServer::SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectO
     }
     g_userCounter++;
     fds_[g_userCounter].fd = connectFD;
+#if defined(CROSS_PLATFORM)
+    fds_[g_userCounter].events = POLLIN | POLLERR;
+#else
     fds_[g_userCounter].events = POLLIN | POLLRDHUP | POLLERR;
+#endif
     fds_[g_userCounter].revents = 0;
     AddConnect(connectFD, connection);
     auto ptrEventManager = std::make_shared<EventManager>();
