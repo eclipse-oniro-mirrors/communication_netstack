@@ -46,11 +46,6 @@ void Finalize(napi_env, void *data, void *)
     NETSTACK_LOGI("tls socket server is finalized");
     auto manager = reinterpret_cast<EventManager *>(data);
     if (manager != nullptr) {
-        auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
-        if (tlsSocketServer != nullptr) {
-            delete tlsSocketServer;
-            tlsSocketServer = nullptr;
-        }
         EventManager::SetInvalid(manager);
     }
 }
