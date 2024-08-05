@@ -127,7 +127,7 @@ static constexpr int PARAM_COUNT_TWO = 2;
 namespace OHOS::NetStack::Socket {
 void Finalize(napi_env, void *data, void *)
 {
-    NETSTACK_LOGI("socket handle is finalized");
+    NETSTACK_LOGD("socket handle is finalized");
     auto manager = static_cast<EventManager *>(data);
     if (manager != nullptr) {
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
