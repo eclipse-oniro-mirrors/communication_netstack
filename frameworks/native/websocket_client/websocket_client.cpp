@@ -289,6 +289,12 @@ int LwsCallbackProtocolDestroy(lws *wsi, lws_callback_reasons reason, void *user
     return HttpDummy(wsi, reason, user, in, len);
 }
 
+int LwsCallbackVhostCertAging(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
+{
+    NETSTACK_LOGI("lws callback vhost cert aging. len: %{public}zu", len);
+    return HttpDummy(wsi, reason, user, in, len);
+}
+
 int LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     constexpr CallbackDispatcher dispatchers[] = {
@@ -302,6 +308,7 @@ int LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, siz
         {LWS_CALLBACK_CLIENT_CLOSED, LwsCallbackClientClosed},
         {LWS_CALLBACK_WSI_DESTROY, LwsCallbackWsiDestroy},
         {LWS_CALLBACK_PROTOCOL_DESTROY, LwsCallbackProtocolDestroy},
+        {LWS_CALLBACK_VHOST_CERT_AGING, LwsCallbackVhostCertAging},
     };
     auto it = std::find_if(std::begin(dispatchers), std::end(dispatchers),
         [&reason](const CallbackDispatcher &dispatcher) { return dispatcher.reason == reason; });
