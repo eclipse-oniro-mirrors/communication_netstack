@@ -808,7 +808,10 @@ void CreateUvQueueWorkByModuleId(napi_env env, const UvHandler &handler, uint64_
         if (it == g_handlerQueueMap.end()) {
             return;
         }
-        work = new uv_work_t;
+        work = new (std::nothrow) uv_work_t;
+        if (!work) {
+            return;
+        }
         work->data = env;
         it->second->Push(handler);
     }
