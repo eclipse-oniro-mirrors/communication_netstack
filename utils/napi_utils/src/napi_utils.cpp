@@ -809,7 +809,7 @@ void CreateUvQueueWorkByModuleId(napi_env env, const UvHandler &handler, uint64_
             return;
         }
         work = new (std::nothrow) uv_work_t;
-        if (!work) {
+        if (work == nullptr) {
             return;
         }
         work->data = env;
