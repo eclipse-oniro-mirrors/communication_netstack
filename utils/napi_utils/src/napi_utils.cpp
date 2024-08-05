@@ -15,23 +15,23 @@
 
 #include "napi_utils.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <initializer_list>
 #include <memory>
-#include <algorithm>
 #include <new>
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
-#include "securec.h"
-#include "napi/native_api.h"
-#include "napi/native_common.h"
-#include "node_api.h"
 #include "base_context.h"
 #include "cJSON.h"
+#include "napi/native_api.h"
+#include "napi/native_common.h"
 #include "netstack_log.h"
+#include "node_api.h"
+#include "securec.h"
 
 namespace OHOS::NetStack::NapiUtils {
 static constexpr const char *GLOBAL_JSON = "JSON";
@@ -45,7 +45,6 @@ static constexpr const char *CODE = "code";
 static constexpr const char *MSG = "message";
 
 static std::mutex g_mutex;
-static std::mutex g_mutexForModuleId;
 static std::unordered_map<uint64_t, std::shared_ptr<UvHandlerQueue>> g_handlerQueueMap;
 static const char *const HTTP_UV_SYNC_QUEUE_NAME = "HTTP_UV_SYNC_QUEUE_NAME";
 
@@ -719,14 +718,8 @@ napi_value GetGlobal(napi_env env)
 uint64_t CreateUvHandlerQueue(napi_env env)
 {
     static std::atomic<uint64_t> id = 1; // start from 1
-    uint64_t newId = 0;
-    {
-        std::lock_guard<std::mutex> lock(g_mutexForModuleId);
-        newId = id.load();
-        ++id;
-    }
-    NETSTACK_LOGI("newId = %{public}s, id = %{public}s",
-                  std::to_string(newId).c_str(), std::to_string(id).c_str());
+    uint64_t newId = id++;
+    NETSTACK_LOGI("newId = %{public}s, id = %{public}s", std::to_string(newId).c_str(), std::to_string(id).c_str());
 
     auto global = GetGlobal(env);
     auto queueWrapper = CreateObject(env);
@@ -783,10 +776,9 @@ static uv_after_work_cb MakeUvCallback()
             return;
         }
         UvHandler handler;
-        decltype(g_handlerQueueMap.end()) it;
         {
             std::lock_guard lock(g_mutex);
-            it = g_handlerQueueMap.find(reinterpret_cast<uint64_t>(theId));
+            auto it = g_handlerQueueMap.find(reinterpret_cast<uint64_t>(theId));
             if (it == g_handlerQueueMap.end()) {
                 return;
             }
@@ -809,20 +801,22 @@ void CreateUvQueueWorkByModuleId(napi_env env, const UvHandler &handler, uint64_
     if (!loop) {
         return;
     }
-    decltype(g_handlerQueueMap.end()) it;
+    uv_work_t *work = nullptr;
     {
         std::lock_guard lock(g_mutex);
-        it = g_handlerQueueMap.find(id);
+        auto it = g_handlerQueueMap.find(id);
         if (it == g_handlerQueueMap.end()) {
             return;
         }
+        work = new uv_work_t;
+        work->data = env;
+        it->second->Push(handler);
     }
 
-    auto work = new uv_work_t;
-    work->data = env;
-    it->second->Push(handler);
-    (void)uv_queue_work_with_qos(
-        loop, work, [](uv_work_t *) {}, MakeUvCallback(), uv_qos_default);
+    if (work) {
+        (void)uv_queue_work_with_qos(
+            loop, work, [](uv_work_t *) {}, MakeUvCallback(), uv_qos_default);
+    }
 }
 
 UvHandler UvHandlerQueue::Pop()
