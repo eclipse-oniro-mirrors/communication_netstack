@@ -427,7 +427,6 @@ int WebSocketClient::Send(char *data, size_t length)
         return WebSocketErrorCode::WEBSOCKET_SEND_DATA_NULL;
     }
     if (length == 0) {
-        NETSTACK_LOGE("xiachen webSocketClient input length is 0, no action, directly return 0");
         return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
     }
     if (length > MAX_DATA_LENGTH) {
