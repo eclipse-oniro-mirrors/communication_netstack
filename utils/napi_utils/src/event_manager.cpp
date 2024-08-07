@@ -200,6 +200,7 @@ void EventManager::DeleteEventReference(napi_env env)
     if (env != nullptr && eventRef_ != nullptr) {
         NapiUtils::DeleteReference(env, eventRef_);
     }
+    eventRef_ = nullptr;
 }
 
 void EventManager::SetEventDestroy(bool flag)

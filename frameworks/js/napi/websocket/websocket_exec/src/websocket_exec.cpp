@@ -897,6 +897,11 @@ bool WebSocketExec::ExecClose(CloseContext *context)
 
 napi_value WebSocketExec::CloseCallback(CloseContext *context)
 {
+    auto manager = context->GetManager();
+    if (manager != nullptr) {
+        NETSTACK_LOGD("websocket close, delete js ref");
+        manager->DeleteEventReference(context->GetEnv());
+    }
     return NapiUtils::GetBoolean(context->GetEnv(), true);
 }
 
