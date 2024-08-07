@@ -84,7 +84,7 @@ napi_value NetSslModuleExports::VerifyCertificationSync(napi_env env, napi_callb
     napi_value params[MAX_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
     EventManager *manager = nullptr;
-    auto context = std::make_unique(env, manager);
+    auto context = std::make_unique<CertContext>(env, manager);
     context->ParseParams(params, paramsCount);
     if (context->GetErrorCode() != PARSE_ERROR_CODE) {
         if (context->GetCertBlobClient() == nullptr) {
