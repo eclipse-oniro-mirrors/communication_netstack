@@ -618,6 +618,13 @@ int WebSocketExec::LwsCallbackProtocolDestroy(lws *wsi, lws_callback_reasons rea
     return HttpDummy(wsi, reason, user, in, len);
 }
 
+// len: he number of days left before it expires
+int WebSocketExec::LwsCallbackVhostCertAging(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
+{
+    NETSTACK_LOGI("lws callback vhost cert aging. len: %{public}zu", len);
+    return HttpDummy(wsi, reason, user, in, len);
+}
+
 int WebSocketExec::LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     NETSTACK_LOGI("lws callback reason is %{public}d", reason);
@@ -632,6 +639,7 @@ int WebSocketExec::LwsCallback(lws *wsi, lws_callback_reasons reason, void *user
         {LWS_CALLBACK_CLIENT_CLOSED, LwsCallbackClientClosed},
         {LWS_CALLBACK_WSI_DESTROY, LwsCallbackWsiDestroy},
         {LWS_CALLBACK_PROTOCOL_DESTROY, LwsCallbackProtocolDestroy},
+        {LWS_CALLBACK_VHOST_CERT_AGING, LwsCallbackVhostCertAging},
     };
 
     for (const auto dispatcher : dispatchers) {

@@ -73,6 +73,8 @@ private:
 
     static int LwsCallbackProtocolDestroy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
 
+    static int LwsCallbackVhostCertAging(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
+
     static void OnOpen(EventManager *manager, uint32_t status, const std::string &message);
 
     static void OnError(EventManager *manager, int32_t code, uint32_t httpResponse);
