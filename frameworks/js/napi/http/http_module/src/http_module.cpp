@@ -24,6 +24,7 @@
 #include "module_template.h"
 #include "netstack_log.h"
 #include "netstack_common_utils.h"
+#include "trace_events.h"
 
 #define DECLARE_RESPONSE_CODE(code) \
     DECLARE_NAPI_STATIC_PROPERTY(#code, NapiUtils::CreateUint32(env, static_cast<uint32_t>(ResponseCode::code)))
@@ -247,6 +248,7 @@ napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_i
                 return false;
             }
 #endif
+            context->GetTrace().Tracepoint(TraceEvents::FETCH);
             context->SetModuleId(g_moduleId);
             context->SetAtomicService(g_appIsAtomicService);
             context->SetBundleName(g_appBundleName);
@@ -266,6 +268,7 @@ napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_ca
                 return false;
             }
 #endif
+            context->GetTrace().Tracepoint(TraceEvents::FETCH);
             context->SetModuleId(g_moduleId);
             context->SetAtomicService(g_appIsAtomicService);
             context->SetBundleName(g_appBundleName);

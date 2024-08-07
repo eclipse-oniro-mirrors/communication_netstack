@@ -59,6 +59,7 @@ ohos_shared_library("stack_utils_common") {
     "common_utils/src/netstack_apipolicy_utils.cpp",
     "common_utils/src/netstack_bundle_utils.cpp",
     "common_utils/src/netstack_common_utils.cpp",
+    "common_utils/src/request_tracer.cpp",
   ]
 
   public_configs = [ ":stack_utils_common_public_config" ]
@@ -67,6 +68,15 @@ ohos_shared_library("stack_utils_common") {
     "bounds_checking_function:libsec_shared",
     "hilog:libhilog",
   ]
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "hitrace:hitrace_meter" ]
+    defines = [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines = [ "HAS_NETMANAGER_BASE=0" ]
+  }
 
   innerapi_tags = [ "platformsdk" ]
   part_name = "netstack"

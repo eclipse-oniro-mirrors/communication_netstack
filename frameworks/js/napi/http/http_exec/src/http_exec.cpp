@@ -14,6 +14,8 @@
  */
 
 #include "http_exec.h"
+#include "curl/curl.h"
+#include "request_context.h"
 
 #include <cstddef>
 #include <cstring>
@@ -54,6 +56,7 @@
 #include "netstack_log.h"
 #include "securec.h"
 #include "secure_char.h"
+#include "trace_events.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
@@ -133,6 +136,7 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
     }
 
     if (context->GetDeferred() != nullptr) {
+        context->GetTrace().Finish();
         if (context->IsExecOK()) {
             napi_resolve_deferred(env, context->GetDeferred(), argv[EVENT_PARAM_ONE]);
         } else {
@@ -171,6 +175,7 @@ static void AsyncWorkRequestCallback(napi_env env, napi_status status, void *dat
     }
     napi_value undefined = NapiUtils::GetUndefined(env);
     if (context->GetDeferred() != nullptr) {
+        context->GetTrace().Finish();
         if (context->IsExecOK()) {
             napi_resolve_deferred(env, context->GetDeferred(), argv[EVENT_PARAM_ONE]);
         } else {
@@ -183,6 +188,60 @@ static void AsyncWorkRequestCallback(napi_env env, napi_status status, void *dat
         (void)NapiUtils::CallFunction(env, undefined, func, EVENT_PARAM_TWO, argv);
     }
 }
+#if HAS_NETMANAGER_BASE
+bool SetTraceOptions(CURL *curl, RequestContext *context)
+{
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RESOLVER_START_DATA, context, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RESOLVER_START_FUNCTION,
+                                  +[](void *, void *, void *clientp) {
+        if (!clientp) {
+            NETSTACK_LOGE("resolver_start_function clientp pointer is null");
+            return 0;
+        }
+        auto ctx = reinterpret_cast<RequestContext *>(clientp);
+        ctx->GetTrace().Tracepoint(TraceEvents::DNS);
+        return 0;
+    }, context);
+
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SOCKOPTDATA, context, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SOCKOPTFUNCTION,
+                                  +[](void *clientp, curl_socket_t, curlsocktype) {
+        if (!clientp) {
+            NETSTACK_LOGE("sockopt_functon clientp pointer is null");
+            return 0;
+        }
+        auto ctx = reinterpret_cast<RequestContext *>(clientp);
+        ctx->GetTrace().Tracepoint(TraceEvents::TCP);
+        return CURL_SOCKOPT_OK;
+    }, context);
+
+    //this option may be overriden if HTTP_MULTIPATH_CERT_ENABLE enabled
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, context, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_FUNCTION,
+                                  +[](CURL *, void *, void *clientp) {
+        if (!clientp) {
+            NETSTACK_LOGE("ssl_ctx func clientp pointer is null");
+            return 0;
+        }
+        auto ctx = reinterpret_cast<RequestContext *>(clientp);
+        ctx->GetTrace().Tracepoint(TraceEvents::TLS);
+        return CURL_SOCKOPT_OK;
+    }, context);
+
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PREREQDATA, context, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PREREQFUNCTION,
+                                  +[](void *clientp, char *, char *, int, int) {
+        if (!clientp) {
+            NETSTACK_LOGE("prereq_functon clientp pointer is null");
+            return CURL_PREREQFUNC_OK;
+        }
+        auto ctx = reinterpret_cast<RequestContext *>(clientp);
+        ctx->GetTrace().Tracepoint(TraceEvents::SENDING);
+        return CURL_PREREQFUNC_OK;
+    }, context);
+    return true;
+}
+#endif
 
 bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 {
@@ -198,8 +257,7 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 #if HAS_NETMANAGER_BASE
     std::stringstream name;
     name << HTTP_REQ_TRACE_NAME << "_" << std::this_thread::get_id();
-    context->SetTraceName(name.str());
-    StartAsyncTrace(HITRACE_TAG_NET, context->GetTraceName(), context->GetTaskId());
+    SetTraceOptions(handle, context);
     SetServerSSLCertOption(handle, context);
 
     static HttpOverCurl::EpollRequestHandler requestHandler;
@@ -207,10 +265,13 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     static auto startedCallback = +[](CURL *easyHandle, void *opaqueData) {
         char *url = nullptr;
         curl_easy_getinfo(easyHandle, CURLINFO_EFFECTIVE_URL, &url);
+        auto context = static_cast<RequestContext *>(opaqueData);
+        context->GetTrace().Tracepoint(TraceEvents::QUEUE);
     };
 
     static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {
         auto context = static_cast<RequestContext *>(opaqueData);
+        context->GetTrace().Tracepoint(TraceEvents::NAPI_QUEUE);
         HttpExec::HandleCurlData(curlMessage, context);
         if (curlMessage->easy_handle) {
             (void)curl_easy_cleanup(curlMessage->easy_handle);
@@ -452,9 +513,6 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         NETSTACK_LOGE("can not find context manager");
         return;
     }
-#if HAS_NETMANAGER_BASE
-    FinishAsyncTrace(HITRACE_TAG_NET, context->GetTraceName(), context->GetTaskId());
-#endif
     context->SendNetworkProfiler();
     if (context->IsRequestInStream()) {
         NapiUtils::CreateUvQueueWorkByModuleId(
@@ -855,20 +913,22 @@ bool HttpExec::SetSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext
     return true;
 }
 
-CURLcode HttpExec::SslCtxFunction(CURL *curl, void *ssl_ctx, void *parm)
+CURLcode HttpExec::SslCtxFunction(CURL *curl, void *ssl_ctx, void *request_context)
 {
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
-    auto certsPath = static_cast<CertsPath *>(parm);
-    if (certsPath == nullptr) {
-        NETSTACK_LOGE("certsPath is null");
+    auto requestContext = static_cast<RequestContext *>(request_context);
+    if (requestContext == nullptr) {
+        NETSTACK_LOGE("requestContext is null");
         return CURLE_SSL_CERTPROBLEM;
     }
+    requestContext->GetTrace().Tracepoint(TraceEvents::TLS);
+    auto &certsPath = requestContext->GetCertsPath();
     if (ssl_ctx == nullptr) {
         NETSTACK_LOGE("ssl_ctx is null");
         return CURLE_SSL_CERTPROBLEM;
     }
 
-    for (const auto &path : certsPath->certPathList) {
+    for (const auto &path : certsPath.certPathList) {
         if (path.empty() || access(path.c_str(), F_OK) != 0) {
             NETSTACK_LOGD("certificate directory path is not exist");
             continue;
@@ -878,9 +938,9 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *ssl_ctx, void *parm)
             continue;
         }
     }
-    if (access(certsPath->certFile.c_str(), F_OK) != 0) {
+    if (access(certsPath.certFile.c_str(), F_OK) != 0) {
         NETSTACK_LOGD("certificate directory path is not exist");
-    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(ssl_ctx), certsPath->certFile.c_str(), nullptr)) {
+    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(ssl_ctx), certsPath.certFile.c_str(), nullptr)) {
         NETSTACK_LOGE("loading certificates from context cert error.");
     }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
@@ -909,7 +969,7 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 1L, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 2L, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_FUNCTION, SslCtxFunction, context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, &context->GetCertsPath(), context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, context, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
 #else
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
@@ -1231,6 +1291,7 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
     if (context == nullptr) {
         return 0;
     }
+    context->GetTrace().Tracepoint(TraceEvents::RECEIVING);
     if (context->GetManager()->IsEventDestroy()) {
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
         return 0;
