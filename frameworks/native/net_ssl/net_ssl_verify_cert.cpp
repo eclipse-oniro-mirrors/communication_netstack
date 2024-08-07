@@ -107,13 +107,6 @@ X509 *CertBlobToX509(const CertBlob *cert)
     return x509;
 }
 
-void ProcessResult(uint32_t &verifyResult)
-{
-    if (SslErrorCodeSet.find(verifyResult) == SslErrorCodeSet.end()) {
-        verifyResult = SSL_X509_V_ERR_UNSPECIFIED;
-    }
-}
-
 uint32_t VerifyCert(const CertBlob *cert)
 {
     uint32_t verifyResult = SSL_X509_V_ERR_UNSPECIFIED;
