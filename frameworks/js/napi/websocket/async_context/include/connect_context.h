@@ -28,6 +28,7 @@
 namespace OHOS::NetStack::Websocket {
 class ConnectContext final : public BaseContext {
 public:
+    friend class WebSocketExec;
     DISALLOW_COPY_AND_MOVE(ConnectContext);
 
     ConnectContext() = delete;
@@ -93,6 +94,8 @@ public:
     std::string bundleName_;
 
 private:
+    std::string userCertPath_;
+
     void ParseHeader(napi_value optionsValue);
 
     void ParseCaPath(napi_value optionsValue);
