@@ -293,6 +293,8 @@ bool TLSSocketExec::ExecClose(TLSNapiContext *context)
             context->SetError(errorNumber, MakeErrorMessage(errorNumber));
         }
     });
+    delete tlsSocket;
+    manager->SetData(nullptr);
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
@@ -534,6 +536,11 @@ napi_value TLSSocketExec::SendCallback(TLSSendContext *context)
 
 napi_value TLSSocketExec::CloseCallback(TLSNapiContext *context)
 {
+    auto manager = context->GetManager();
+    if (manager != nullptr) {
+        NETSTACK_LOGD("tls socket close, delete js ref");
+        manager->DeleteEventReference(context->GetEnv());
+    }
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
