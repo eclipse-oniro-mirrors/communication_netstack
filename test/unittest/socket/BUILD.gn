@@ -108,14 +108,14 @@ ohos_unittest("socket_unittest") {
     "$TLS_NAPI/src/context/tls_server_send_context.cpp",
     "$TLS_NAPI/src/monitor.cpp",
     "$TLS_NAPI/src/monitor_server.cpp",
+    "$TLS_NAPI/src/tls_socket.cpp",
+    "$TLS_NAPI/src/tls_socket_server.cpp",
     "$TLS_NAPI/src/tlssocket_async_work.cpp",
     "$TLS_NAPI/src/tlssocket_exec.cpp",
     "$TLS_NAPI/src/tlssocket_module.cpp",
     "$TLS_NAPI/src/tlssocketserver_async_work.cpp",
     "$TLS_NAPI/src/tlssocketserver_exec.cpp",
     "$TLS_NAPI/src/tlssocketserver_module.cpp",
-    "$TLS_NAPI/src/tls_socket.cpp",
-    "$TLS_NAPI/src/tls_socket_server.cpp",
     "SocketTest.cpp",
   ]
 
