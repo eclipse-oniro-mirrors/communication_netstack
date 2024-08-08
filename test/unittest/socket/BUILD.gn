@@ -64,8 +64,6 @@ ohos_unittest("socket_unittest") {
     "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_context.cpp",
     "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_context_server.cpp",
     "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_key.cpp",
-    "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_socket.cpp",
-    "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_socket_server.cpp",
     "$SOCKET_NAPI/async_context/src/bind_context.cpp",
     "$SOCKET_NAPI/async_context/src/common_context.cpp",
     "$SOCKET_NAPI/async_context/src/connect_context.cpp",
@@ -116,6 +114,8 @@ ohos_unittest("socket_unittest") {
     "$TLS_NAPI/src/tlssocketserver_async_work.cpp",
     "$TLS_NAPI/src/tlssocketserver_exec.cpp",
     "$TLS_NAPI/src/tlssocketserver_module.cpp",
+    "$TLS_NAPI/src/tls_socket.cpp",
+    "$TLS_NAPI/src/tls_socket_server.cpp",
     "SocketTest.cpp",
   ]
 

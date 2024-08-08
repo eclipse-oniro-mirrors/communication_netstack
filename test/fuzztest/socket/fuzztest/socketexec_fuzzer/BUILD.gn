@@ -20,6 +20,7 @@ import("//foundation/communication/netstack/netstack_config.gni")
 ##############################fuzztest##########################################
 
 NETSTACK_NAPI_ROOT = "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/"
+TLS_NAPI = "$NETSTACK_NAPI_ROOT/tls"
 
 ohos_fuzztest("SocketExecFuzzTest") {
   module_out_path = fuzz_test_path
@@ -117,9 +118,9 @@ ohos_fuzztest("SocketExecFuzzTest") {
     "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_context.cpp",
     "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_context_server.cpp",
     "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_key.cpp",
-    "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_socket.cpp",
-    "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_socket_server.cpp",
     "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_utils.cpp",
+    "$TLS_NAPI/src/tls_socket.cpp",
+    "$TLS_NAPI/src/tls_socket_server.cpp",
   ]
   sources += [ "socket_exec_fuzzer.cpp" ]
 
