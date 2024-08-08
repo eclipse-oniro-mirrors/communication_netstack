@@ -162,6 +162,9 @@ CertBlob *CertContext::GetCertBlobClient()
 int32_t CertContext::GetErrorCode() const
 {
     auto errorCode = BaseContext::GetErrorCode();
+    if (errorCode == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_CODE;
+    }
 #if HAS_NETMANAGER_BASE
     const auto &errorCodeSet =
         OHOS::NetManagerStandard::NetConnClient::IsAPIVersionSupported(CommonUtils::SdkVersion::TWELVE)
