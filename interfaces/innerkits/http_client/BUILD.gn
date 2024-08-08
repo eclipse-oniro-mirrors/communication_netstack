@@ -103,8 +103,10 @@ ohos_shared_library("http_client") {
   ]
 
   if (is_mingw || is_mac) {
-    sources +=
-        [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
+    sources += [
+      "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
+      "$NETSTACK_DIR/utils/common_utils/src/request_tracer.cpp"
+    ]
 
     external_deps = [ "netmanager_base:net_conn_manager_if" ]
   } else {
