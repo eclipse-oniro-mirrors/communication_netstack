@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <atomic>
 #include <limits>
+#include <string>
 #include <utility>
 #include <sstream>
 
@@ -26,6 +27,7 @@
 #include "napi_utils.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
+#include "request_tracer.h"
 #include "secure_char.h"
 #include "timing.h"
 #if HAS_NETMANAGER_BASE
@@ -78,15 +80,16 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
 static std::atomic<int32_t> g_currentTaskId = std::numeric_limits<int32_t>::min();
 RequestContext::RequestContext(napi_env env, EventManager *manager)
     : BaseContext(env, manager),
+      taskId_(g_currentTaskId++),
       usingCache_(true),
       requestInStream_(false),
       curlHeaderList_(nullptr),
       multipart_(nullptr),
-      curlHostList_(nullptr)
+      curlHostList_(nullptr),
+      isAtomicService_(false),
+      bundleName_(""),
+      trace_("HttpRequest_" + std::to_string(taskId_))
 {
-    taskId_ = g_currentTaskId++;
-    isAtomicService_ = false;
-    bundleName_ = "";
     StartTiming();
 #if HAS_NETMANAGER_BASE
     networkProfilerUtils_ = std::make_unique<NetworkProfilerUtils>();
@@ -472,6 +475,7 @@ curl_slist *RequestContext::GetCurlHostList()
 
 RequestContext::~RequestContext()
 {
+    trace_.Finish();
     if (curlHeaderList_ != nullptr) {
         curl_slist_free_all(curlHeaderList_);
     }
@@ -869,16 +873,6 @@ std::string RequestContext::GetBundleName() const
     return bundleName_;
 }
 
-void RequestContext::SetTraceName(const std::string &traceName)
-{
-    traceName_ = traceName;
-}
-
-std::string RequestContext::GetTraceName() const
-{
-    return traceName_;
-}
-
 void RequestContext::SetCurlHandle(CURL *handle)
 {
     curlHandle_ = handle;
@@ -890,5 +884,10 @@ void RequestContext::SendNetworkProfiler()
     HttpNetworkMessage networkMessage(std::to_string(GetTaskId()), options, response, curlHandle_);
     networkProfilerUtils_->NetworkProfiling(networkMessage);
 #endif
+}
+
+RequestTracer::Trace &RequestContext::GetTrace()
+{
+    return trace_;
 }
 } // namespace OHOS::NetStack::Http
