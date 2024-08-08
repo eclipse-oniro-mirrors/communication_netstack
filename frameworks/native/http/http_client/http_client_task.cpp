@@ -329,7 +329,6 @@ bool HttpClientTask::SetTraceOptions(CURL *curl)
         return CURL_SOCKOPT_OK;
     });
 
-
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PREREQDATA, this);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PREREQFUNCTION,
                                   +[](void *clientp, char *, char *, int, int) {
@@ -409,7 +408,6 @@ bool HttpClientTask::SetCurlOptions()
     if (!SetOtherCurlOption(curlHandle_)) {
         return false;
     }
-
 
     return true;
 }
@@ -721,7 +719,8 @@ void HttpClientTask::SetResponse(const HttpClientResponse &response)
     response_ = response;
 }
 
-RequestTracer::Trace &HttpClientTask::GetTrace() {
+RequestTracer::Trace &HttpClientTask::GetTrace()
+{
     return trace_;
 }
 
