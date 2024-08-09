@@ -24,7 +24,7 @@ namespace OHOS::NetStack {
         static constexpr const char* TLS = "HttpRequest::TLS";
         static constexpr const char* SENDING = "HttpRequest::SENDING";
         static constexpr const char* RECEIVING = "HttpRequest::RECEIVING";
-        static constexpr const char* NATIVE = "HttpRequest::NATIVE"; 
+        static constexpr const char* NATIVE = "HttpRequest::NATIVE";
         static constexpr const char* NAPI_QUEUE = "HttpRequest::NAPI_QUEUE";
     };
 } // namespace OHOS::NetStack::RequestTracer
