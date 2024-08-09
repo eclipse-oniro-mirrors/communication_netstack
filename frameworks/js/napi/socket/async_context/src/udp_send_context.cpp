@@ -48,10 +48,6 @@ void UdpSendContext::ParseParams(napi_value *params, size_t paramsCount)
     napi_value netAddress = NapiUtils::GetNamedProperty(GetEnv(), params[0], KEY_ADDRESS);
 
     std::string addr = NapiUtils::GetStringPropertyUtf8(GetEnv(), netAddress, KEY_ADDRESS);
-    if (addr.empty()) {
-        NETSTACK_LOGE("address is empty");
-    }
-
     if (NapiUtils::HasNamedProperty(GetEnv(), netAddress, KEY_FAMILY)) {
         uint32_t family = NapiUtils::GetUint32Property(GetEnv(), netAddress, KEY_FAMILY);
         options.address.SetFamilyByJsValue(family);
