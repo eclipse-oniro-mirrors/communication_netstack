@@ -55,7 +55,7 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
         uint32_t family = NapiUtils::GetUint32Property(GetEnv(), netAddress, KEY_FAMILY);
         options.address.SetFamilyByJsValue(family);
     }
-    options.address.SetAddress(addr);
+    options.address.SetRawAddress(addr);
     if (options.address.GetAddress().empty()) {
         if (paramsCount == PARAM_OPTIONS_AND_CALLBACK && SetCallback(params[1]) != napi_ok) {
             NETSTACK_LOGE("failed to set callback");

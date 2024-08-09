@@ -37,6 +37,7 @@
 #include "securec.h"
 #include "socket_async_work.h"
 #include "socket_module.h"
+#include "socket_exec_common.h"
 
 #ifdef IOS_PLATFORM
 #define SO_PROTOCOL 38
@@ -638,6 +639,8 @@ static bool UdpSendEvent(UdpSendContext *context)
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
     socklen_t len;
+    context->options.address.SetAddress(
+        ConvertAddressToIp(context->options.address.GetAddress(), context->options.address.GetSaFamily()));
     GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
         NETSTACK_LOGE("get sock name failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
@@ -1011,6 +1014,8 @@ bool ExecConnect(ConnectContext *context)
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
     socklen_t len;
+    context->options.address.SetAddress(
+        ConvertAddressToIp(context->options.address.GetAddress(), context->options.address.GetSaFamily()));
     GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
         NETSTACK_LOGE("addr family error, address invalid");
@@ -1237,7 +1242,7 @@ static bool SocketSetTcpExtraOptions(int sockfd, TCPExtraOptions& option)
             return false;
         }
     }
-    
+
     if (option.AlreadySetOobInline()) {
         int oob = static_cast<int>(option.IsOOBInline());
         if (setsockopt(sockfd, SOL_SOCKET, SO_OOBINLINE, reinterpret_cast<void*>(&oob), sizeof(oob)) < 0) {
@@ -1245,7 +1250,7 @@ static bool SocketSetTcpExtraOptions(int sockfd, TCPExtraOptions& option)
             return false;
         }
     }
-    
+
     if (option.AlreadySetTcpNoDelay()) {
         int noDelay = static_cast<int>(option.IsTCPNoDelay());
         if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<void*>(&noDelay), sizeof(noDelay)) < 0) {
@@ -2295,3 +2300,29 @@ napi_value TcpServerGetStateCallback(TcpServerGetStateContext *context)
     return obj;
 }
 } // namespace OHOS::NetStack::Socket::SocketExec
+
+std::string ConvertAddressToIp(const std::string &address, sa_family_t family)
+{
+    addrinfo hints{};
+    hints.ai_family = family;
+    char ipStr[INET6_ADDRSTRLEN] = {0};
+    addrinfo *res = nullptr;
+    auto status = getaddrinfo(address.c_str(), nullptr, &hints, &res);
+    if (status != 0 || res == nullptr) {
+        return {};
+    }
+    std::string ip;
+    if (res->ai_family == AF_INET) {
+        auto *ipv4 = reinterpret_cast<struct sockaddr_in *>(res->ai_addr);
+        auto addr = &(ipv4->sin_addr);
+        inet_ntop(res->ai_family, addr, ipStr, sizeof(ipStr));
+        ip = ipStr;
+    } else {
+        auto *ipv6 = reinterpret_cast<struct sockaddr_in6 *>(res->ai_addr);
+        auto addr = &(ipv6->sin6_addr);
+        inet_ntop(res->ai_family, addr, ipStr, sizeof(ipStr));
+        ip = ipStr;
+    }
+    freeaddrinfo(res);
+    return ip;
+}

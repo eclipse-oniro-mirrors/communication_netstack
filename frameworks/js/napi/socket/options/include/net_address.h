@@ -35,6 +35,8 @@ public:
 
     void SetAddress(const std::string &address);
 
+    void SetRawAddress(const std::string &address);
+
     void SetFamilyByJsValue(uint32_t family);
 
     void SetFamilyBySaFamily(sa_family_t family);

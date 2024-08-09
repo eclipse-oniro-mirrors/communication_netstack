@@ -227,7 +227,7 @@ Socket::NetAddress TLSConnectContext::ReadNetAddress(napi_env env, napi_value *p
     }
     if (NapiUtils::HasNamedProperty(GetEnv(), netAddress, ADDRESS_NAME)) {
         std::string addr = NapiUtils::GetStringPropertyUtf8(GetEnv(), netAddress, ADDRESS_NAME);
-        address.SetAddress(addr);
+        address.SetRawAddress(addr);
     }
     if (NapiUtils::HasNamedProperty(GetEnv(), netAddress, PORT_NAME)) {
         uint16_t port = static_cast<uint16_t>(NapiUtils::GetUint32Property(GetEnv(), netAddress, PORT_NAME));
