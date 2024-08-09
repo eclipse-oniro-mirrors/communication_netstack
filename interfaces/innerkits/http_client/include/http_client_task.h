@@ -30,10 +30,12 @@
 #if HAS_NETMANAGER_BASE
 #include "netstack_network_profiler.h"
 #endif
-#include "request_tracer.h"
 
 namespace OHOS {
 namespace NetStack {
+namespace RequestTracer {
+    class Trace;
+}
 namespace HttpClient {
 enum TaskStatus {
     IDLE,
@@ -355,7 +357,7 @@ private:
 #if HAS_NETMANAGER_BASE
     std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
 #endif
-    RequestTracer::Trace trace_;
+    std::unique_ptr<RequestTracer::Trace> trace_;
 };
 
 } // namespace HttpClient

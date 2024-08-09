@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "http_client_task.h"
 #include "request_tracer.h"
 #include "trace_events.h"
 #include <unistd.h>
@@ -21,10 +22,8 @@
 #endif
 #include <iostream>
 #include <memory>
-
 #include "http_client.h"
 #include "http_client_constant.h"
-#include "http_client_task.h"
 #include "http_client_time.h"
 #include "net_conn_client.h"
 #include "netstack_common_utils.h"
@@ -79,7 +78,7 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request, TaskType type, 
       canceled_(false),
       filePath_(filePath),
       file_(nullptr),
-      trace_("HttpClientTask" + std::to_string(taskId_))
+      trace_(std::make_unique<RequestTracer::Trace>("HttpClientTask" + std::to_string(taskId_)))
 {
     curlHandle_ = curl_easy_init();
     if (!curlHandle_) {
@@ -675,7 +674,7 @@ void HttpClientTask::DumpHttpPerformance() const
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
 {
-    trace_.Finish();
+    trace_->Finish();
     CURLcode code = msg->data.result;
     NETSTACK_LOGD("taskid=%{public}d code=%{public}d", taskId_, code);
     error_.SetCURLResult(code);
@@ -721,7 +720,7 @@ void HttpClientTask::SetResponse(const HttpClientResponse &response)
 
 RequestTracer::Trace &HttpClientTask::GetTrace()
 {
-    return trace_;
+    return *trace_;
 }
 
 } // namespace HttpClient

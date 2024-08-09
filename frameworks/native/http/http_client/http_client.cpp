@@ -20,6 +20,7 @@
 #include <sstream>
 
 #include "epoll_request_handler.h"
+#include "request_tracer.h"
 #include "trace_events.h"
 #include "http_client.h"
 #include "netstack_log.h"
