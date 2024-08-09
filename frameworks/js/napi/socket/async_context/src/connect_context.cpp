@@ -21,6 +21,7 @@
 #include "event_manager.h"
 #include "netstack_log.h"
 #include "napi_utils.h"
+#include "socket_exec_common.h"
 
 namespace OHOS::NetStack::Socket {
 ConnectContext::ConnectContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
@@ -54,6 +55,9 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
     if (NapiUtils::HasNamedProperty(GetEnv(), netAddress, KEY_FAMILY)) {
         uint32_t family = NapiUtils::GetUint32Property(GetEnv(), netAddress, KEY_FAMILY);
         options.address.SetFamilyByJsValue(family);
+    }
+    if (!IpMatchFamily(addr, options.address.GetSaFamily())) {
+        return;
     }
     options.address.SetRawAddress(addr);
     if (options.address.GetAddress().empty()) {

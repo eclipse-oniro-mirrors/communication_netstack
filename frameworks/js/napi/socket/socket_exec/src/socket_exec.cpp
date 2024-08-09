@@ -2326,3 +2326,19 @@ std::string ConvertAddressToIp(const std::string &address, sa_family_t family)
     freeaddrinfo(res);
     return ip;
 }
+
+bool IpMatchFamily(const std::string &address, sa_family_t family)
+{
+    if (family == AF_INET6) {
+        in_addr ipv4{};
+        if (inet_pton(AF_INET, address.c_str(), &(ipv4.s_addr)) > 0) {
+            return false;
+        }
+    } else if (family == AF_INET) {
+        in6_addr ipv6{};
+        if (inet_pton(AF_INET6, address.c_str(), &ipv6) > 0) {
+            return false;
+        }
+    }
+    return true;
+}
