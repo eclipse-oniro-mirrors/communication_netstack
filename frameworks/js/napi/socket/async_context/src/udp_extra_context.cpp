@@ -54,8 +54,13 @@ void UdpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCou
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_REUSE_ADDRESS)) {
-        options.SetReuseAddress(NapiUtils::GetBooleanProperty(GetEnv(), params[0], KEY_REUSE_ADDRESS));
+        auto reuseAddr = NapiUtils::GetBooleanProperty(GetEnv(), params[0], KEY_REUSE_ADDRESS);
+        options.SetReuseAddress(reuseAddr);
         options.SetReuseaddrFlag(true);
+        auto manager = this->GetManager();
+        if (manager != nullptr) {
+            manager->SetReuseAddr(reuseAddr);
+        }
     }
 
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_SOCKET_TIMEOUT)) {
