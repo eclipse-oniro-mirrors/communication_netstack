@@ -13,16 +13,17 @@
  * limitations under the License.
  */
 
+#include "http_client_task.h"
+#include "request_tracer.h"
+#include "trace_events.h"
 #include <unistd.h>
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
 #endif
 #include <iostream>
 #include <memory>
-
 #include "http_client.h"
 #include "http_client_constant.h"
-#include "http_client_task.h"
 #include "http_client_time.h"
 #include "net_conn_client.h"
 #include "netstack_common_utils.h"
@@ -64,26 +65,8 @@ bool CheckFilePath(const std::string &fileName, std::string &realPath)
 }
 
 HttpClientTask::HttpClientTask(const HttpClientRequest &request)
-    : request_(request),
-      type_(DEFAULT),
-      status_(IDLE),
-      taskId_(nextTaskId_++),
-      curlHeaderList_(nullptr),
-      canceled_(false),
-      file_(nullptr)
+    : HttpClientTask(request, DEFAULT, std::string())
 {
-    NETSTACK_LOGD("id=%{public}d", taskId_);
-
-    curlHandle_ = curl_easy_init();
-    if (!curlHandle_) {
-        NETSTACK_LOGE("Failed to create task!");
-        return;
-    }
-
-    SetCurlOptions();
-#if HAS_NETMANAGER_BASE
-    networkProfilerUtils_ = std::make_unique<NetworkProfilerUtils>();
-#endif
 }
 
 HttpClientTask::HttpClientTask(const HttpClientRequest &request, TaskType type, const std::string &filePath)
@@ -94,7 +77,8 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request, TaskType type, 
       curlHeaderList_(nullptr),
       canceled_(false),
       filePath_(filePath),
-      file_(nullptr)
+      file_(nullptr),
+      trace_(std::make_unique<RequestTracer::Trace>("HttpClientTask" + std::to_string(taskId_)))
 {
     curlHandle_ = curl_easy_init();
     if (!curlHandle_) {
@@ -202,6 +186,7 @@ bool HttpClientTask::SetSSLCertOption(CURL *handle)
         if (!task) {
             return CURLE_SSL_CERTPROBLEM;
         }
+        task->GetTrace().Tracepoint(TraceEvents::TLS);
         return task->SslCtxFunction(curl, sslCtx);
     };
     NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_CTX_FUNCTION, sslCtxFunc);
@@ -304,12 +289,66 @@ bool HttpClientTask::SetUploadOptions(CURL *handle)
     return true;
 }
 
+bool HttpClientTask::SetTraceOptions(CURL *curl)
+{
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RESOLVER_START_DATA, this);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RESOLVER_START_FUNCTION,
+                                  +[](void *, void *, void *clientp) {
+        if (!clientp) {
+            NETSTACK_LOGE("resolver_start_function clientp pointer is null");
+            return 0;
+        }
+        HttpClientTask *task = static_cast<HttpClientTask *>(clientp);
+        task->GetTrace().Tracepoint(TraceEvents::DNS);
+        return 0;
+    });
+
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SOCKOPTDATA, this);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SOCKOPTFUNCTION,
+                                  +[](void *clientp, curl_socket_t, curlsocktype) {
+        if (!clientp) {
+            NETSTACK_LOGE("sockopt_functon clientp pointer is null");
+            return 0;
+        }
+        HttpClientTask *task = static_cast<HttpClientTask *>(clientp);
+        task->GetTrace().Tracepoint(TraceEvents::TCP);
+        return CURL_SOCKOPT_OK;
+    });
+
+    //this option may be overriden if HTTP_MULTIPATH_CERT_ENABLE enabled
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, this);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_FUNCTION,
+                                  +[](CURL *, void *, void *clientp) {
+        if (!clientp) {
+            NETSTACK_LOGE("ssl_ctx func clientp pointer is null");
+            return 0;
+        }
+        HttpClientTask *task = static_cast<HttpClientTask *>(clientp);
+        task->GetTrace().Tracepoint(TraceEvents::TLS);
+        return CURL_SOCKOPT_OK;
+    });
+
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PREREQDATA, this);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PREREQFUNCTION,
+                                  +[](void *clientp, char *, char *, int, int) {
+        if (!clientp) {
+            NETSTACK_LOGE("prereq_functon clientp pointer is null");
+            return CURL_PREREQFUNC_OK;
+        }
+        HttpClientTask *task = static_cast<HttpClientTask *>(clientp);
+        task->GetTrace().Tracepoint(TraceEvents::SENDING);
+        return CURL_PREREQFUNC_OK;
+    });
+    return true;
+}
+
 bool HttpClientTask::SetCurlOptions()
 {
     auto method = request_.GetMethod();
     if (method == HttpConstant::HTTP_METHOD_HEAD) {
         NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_NOBODY, 1L);
     }
+    SetTraceOptions(curlHandle_);
 
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_URL, request_.GetURL().c_str());
 
@@ -509,6 +548,7 @@ int HttpClientTask::ProgressCallback(void *userData, curl_off_t dltotal, curl_of
 size_t HttpClientTask::HeaderReceiveCallback(const void *data, size_t size, size_t memBytes, void *userData)
 {
     auto task = static_cast<HttpClientTask *>(userData);
+    task->GetTrace().Tracepoint(TraceEvents::RECEIVING);
     NETSTACK_LOGD("taskId=%{public}d size=%{public}zu memBytes=%{public}zu", task->taskId_, size, memBytes);
 
     if (size * memBytes > MAX_LIMIT) {
@@ -634,6 +674,7 @@ void HttpClientTask::DumpHttpPerformance() const
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
 {
+    trace_->Finish();
     CURLcode code = msg->data.result;
     NETSTACK_LOGD("taskid=%{public}d code=%{public}d", taskId_, code);
     error_.SetCURLResult(code);
@@ -676,6 +717,12 @@ void HttpClientTask::SetResponse(const HttpClientResponse &response)
 {
     response_ = response;
 }
+
+RequestTracer::Trace &HttpClientTask::GetTrace()
+{
+    return *trace_;
+}
+
 } // namespace HttpClient
 } // namespace NetStack
 } // namespace OHOS

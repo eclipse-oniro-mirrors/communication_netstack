@@ -33,6 +33,9 @@
 
 namespace OHOS {
 namespace NetStack {
+namespace RequestTracer {
+    class Trace;
+}
 namespace HttpClient {
 enum TaskStatus {
     IDLE,
@@ -185,6 +188,7 @@ public:
      */
     void SetResponse(const HttpClientResponse &response);
 
+    RequestTracer::Trace &GetTrace();
 private:
     friend class HttpSession;
 
@@ -199,6 +203,12 @@ private:
      * @return Returns true if the Curl options are set successfully, false otherwise.
      */
     bool SetCurlOptions();
+
+    /**
+     * Sets the Curl options for the tracing stages.
+     * @return Returns true if the trace options are set successfully, false otherwise.
+     */
+    bool SetTraceOptions(CURL *handle);
 
     /**
      * Sets other Curl options for the HTTP request.
@@ -347,6 +357,7 @@ private:
 #if HAS_NETMANAGER_BASE
     std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
 #endif
+    std::unique_ptr<RequestTracer::Trace> trace_;
 };
 
 } // namespace HttpClient
