@@ -48,6 +48,7 @@
 #include "event_list.h"
 #if HAS_NETMANAGER_BASE
 #include "hitrace_meter.h"
+#include "netstack_hisysevent.h"
 #endif
 #include "http_async_work.h"
 #include "http_time.h"
@@ -57,7 +58,6 @@
 #include "securec.h"
 #include "secure_char.h"
 #include "trace_events.h"
-#include "netstack_hisysevent.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
@@ -472,7 +472,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
         context->IsExecOK() ? 0: context->GetErrorCode(), std::to_string(responseCode).c_str(),
         std::to_string(httpVer).c_str(), context->options.GetMethod().c_str());
-
+#if HAS_NETMANAGER_BASE
     if (EventReport::GetInstance().IsValid()) {
         HttpPerfInfo httpPerfInfo;
         httpPerfInfo.totalTime = totalTime;
@@ -485,6 +485,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         httpPerfInfo.version = std::to_string(httpVer);
         EventReport::GetInstance().ProcessHttpPerfHiSysevent(httpPerfInfo);
     }
+#endif
 }
 
 #if HAS_NETMANAGER_BASE
