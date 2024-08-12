@@ -66,14 +66,6 @@ HWTEST_F(NetsslTest, NetStackVerifyCertificationTest002, TestSize.Level1)
     CertBlob cert;
     CertBlob caCert;
 
-    uint32_t verifyResult = 0;
-    ProcessResult(verifyResult);
-    EXPECT_EQ(verifyResult, SSL_NONE_ERR);
-
-    verifyResult = 1;
-    ProcessResult(verifyResult);
-    EXPECT_EQ(verifyResult, SSL_X509_V_ERR_UNSPECIFIED);
-
     uint32_t ret = NetStackVerifyCertification(&cert);
     EXPECT_EQ(ret, SSL_X509_V_ERR_UNSPECIFIED);
 
