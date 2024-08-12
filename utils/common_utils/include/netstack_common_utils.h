@@ -24,6 +24,16 @@
 namespace OHOS::NetStack::CommonUtils {
 static const std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
 static const std::string DOMAIN_TYPE_WEBSOCKET_REQUEST = "webSocket";
+enum SdkVersion {
+    FIVE = 5,
+    SIX,
+    SEVEN,
+    EIGHT,
+    NINE,
+    TEN,
+    ELEVEN,
+    TWELVE
+};
 
 std::vector<std::string> Split(const std::string &str, const std::string &sep);
 

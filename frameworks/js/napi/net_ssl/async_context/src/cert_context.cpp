@@ -23,33 +23,16 @@
 #include "net_ssl_exec.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
+#include "net_ssl_verify_cert.h"
+#if HAS_NETMANAGER_BASE
+#include "net_conn_client.h"
+#endif // HAS_NETMANAGER_BASE
 
 static constexpr const int PARAM_JUST_CERT = 1;
 
 static constexpr const int PARAM_CERT_AND_CACERT = 2;
 
 namespace OHOS::NetStack::Ssl {
-
-enum SslErrorCode {
-    SSL_NONE_ERR = 0,
-    SSL_ERROR_CODE_BASE = 2305000,
-    SSL_X509_V_ERR_UNSPECIFIED = SSL_ERROR_CODE_BASE + X509_V_ERR_UNSPECIFIED,
-    SSL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT = SSL_ERROR_CODE_BASE + X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT,
-    SSL_X509_V_ERR_UNABLE_TO_GET_CRL = SSL_ERROR_CODE_BASE + X509_V_ERR_UNABLE_TO_GET_CRL,
-    SSL_X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE = SSL_ERROR_CODE_BASE + X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE,
-    SSL_X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE = SSL_ERROR_CODE_BASE + X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE,
-    SSL_X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY =
-        SSL_ERROR_CODE_BASE + X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY,
-    SSL_X509_V_ERR_CERT_SIGNATURE_FAILURE = SSL_ERROR_CODE_BASE + X509_V_ERR_CERT_SIGNATURE_FAILURE,
-    SSL_X509_V_ERR_CRL_SIGNATURE_FAILURE = SSL_ERROR_CODE_BASE + X509_V_ERR_CRL_SIGNATURE_FAILURE,
-    SSL_X509_V_ERR_CERT_NOT_YET_VALID = SSL_ERROR_CODE_BASE + X509_V_ERR_CERT_NOT_YET_VALID,
-    SSL_X509_V_ERR_CERT_HAS_EXPIRED = SSL_ERROR_CODE_BASE + X509_V_ERR_CERT_HAS_EXPIRED,
-    SSL_X509_V_ERR_CRL_NOT_YET_VALID = SSL_ERROR_CODE_BASE + X509_V_ERR_CRL_NOT_YET_VALID,
-    SSL_X509_V_ERR_CRL_HAS_EXPIRED = SSL_ERROR_CODE_BASE + X509_V_ERR_CRL_HAS_EXPIRED,
-    SSL_X509_V_ERR_CERT_REVOKED = SSL_ERROR_CODE_BASE + X509_V_ERR_CERT_REVOKED,
-    SSL_X509_V_ERR_INVALID_CA = SSL_ERROR_CODE_BASE + X509_V_ERR_INVALID_CA,
-    SSL_X509_V_ERR_CERT_UNTRUSTED = SSL_ERROR_CODE_BASE + X509_V_ERR_CERT_UNTRUSTED
-};
 
 static const std::map<int32_t, const char *> SSL_ERR_MAP = {
     {SslErrorCode::SSL_NONE_ERR, "Verify success."},
@@ -68,7 +51,8 @@ static const std::map<int32_t, const char *> SSL_ERR_MAP = {
     {SslErrorCode::SSL_X509_V_ERR_CERT_REVOKED, "Certificate has been revoked."},
     {SslErrorCode::SSL_X509_V_ERR_INVALID_CA, "Invalid certificate authority (CA)."},
     {SslErrorCode::SSL_X509_V_ERR_CERT_UNTRUSTED, "Certificate is untrusted."},
-
+    {SslErrorCode::SSL_X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT, "self-signed certificate."},
+    {SslErrorCode::SSL_X509_V_ERR_INVALID_CALL, "invalid certificate verification context."}
 };
 
 CertContext::CertContext(napi_env env, EventManager *manager)
@@ -173,6 +157,26 @@ CertBlob *CertContext::GetCertBlob()
 CertBlob *CertContext::GetCertBlobClient()
 {
     return certBlobClient_;
+}
+
+int32_t CertContext::GetErrorCode() const
+{
+    auto errorCode = BaseContext::GetErrorCode();
+    if (errorCode == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_CODE;
+    }
+#if HAS_NETMANAGER_BASE
+    const auto &errorCodeSet =
+        OHOS::NetManagerStandard::NetConnClient::IsAPIVersionSupported(CommonUtils::SdkVersion::TWELVE)
+            ? SslErrorCodeSetSinceAPI12
+            : SslErrorCodeSetBase;
+#else
+    const auto &errorCodeSet = SslErrorCodeSetSinceAPI12;
+#endif
+    if (errorCodeSet.find(errorCode) == errorCodeSet.end()) {
+        errorCode = SSL_X509_V_ERR_UNSPECIFIED;
+    }
+    return errorCode;
 }
 
 std::string CertContext::GetErrorMessage() const

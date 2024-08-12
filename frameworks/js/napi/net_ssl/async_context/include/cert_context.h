@@ -36,6 +36,8 @@ public:
 
     CertBlob *GetCertBlobClient();
 
+    [[nodiscard]] int32_t GetErrorCode() const override;
+
     [[nodiscard]] std::string GetErrorMessage() const override;
 
 private:

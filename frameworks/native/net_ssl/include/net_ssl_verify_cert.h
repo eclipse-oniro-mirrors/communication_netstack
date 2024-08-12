@@ -42,6 +42,7 @@ enum VerifyResult { VERIFY_RESULT_UNKNOWN = -1, VERIFY_RESULT_FAIL = 0, VERIFY_R
 enum SslErrorCode {
     SSL_NONE_ERR = 0,
     SSL_ERROR_CODE_BASE = 2305000,
+    // The following error codes are added since API11
     SSL_X509_V_ERR_UNSPECIFIED = SSL_ERROR_CODE_BASE + X509_V_ERR_UNSPECIFIED,
     SSL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT = SSL_ERROR_CODE_BASE + X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT,
     SSL_X509_V_ERR_UNABLE_TO_GET_CRL = SSL_ERROR_CODE_BASE + X509_V_ERR_UNABLE_TO_GET_CRL,
@@ -57,26 +58,50 @@ enum SslErrorCode {
     SSL_X509_V_ERR_CRL_HAS_EXPIRED = SSL_ERROR_CODE_BASE + X509_V_ERR_CRL_HAS_EXPIRED,
     SSL_X509_V_ERR_CERT_REVOKED = SSL_ERROR_CODE_BASE + X509_V_ERR_CERT_REVOKED,
     SSL_X509_V_ERR_INVALID_CA = SSL_ERROR_CODE_BASE + X509_V_ERR_INVALID_CA,
-    SSL_X509_V_ERR_CERT_UNTRUSTED = SSL_ERROR_CODE_BASE + X509_V_ERR_CERT_UNTRUSTED
+    SSL_X509_V_ERR_CERT_UNTRUSTED = SSL_ERROR_CODE_BASE + X509_V_ERR_CERT_UNTRUSTED,
+    // The following error codes are added since API12
+    SSL_X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT = SSL_ERROR_CODE_BASE + X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT,
+    SSL_X509_V_ERR_INVALID_CALL = SSL_ERROR_CODE_BASE + X509_V_ERR_INVALID_CALL
 };
 
-static const std::multiset<uint32_t> SslErrorCodeSet{SSL_NONE_ERR,
-                                                     SSL_ERROR_CODE_BASE,
-                                                     SSL_X509_V_ERR_UNSPECIFIED,
-                                                     SSL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT,
-                                                     SSL_X509_V_ERR_UNABLE_TO_GET_CRL,
-                                                     SSL_X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE,
-                                                     SSL_X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE,
-                                                     SSL_X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY,
-                                                     SSL_X509_V_ERR_CERT_SIGNATURE_FAILURE,
-                                                     SSL_X509_V_ERR_CRL_SIGNATURE_FAILURE,
-                                                     SSL_X509_V_ERR_CERT_NOT_YET_VALID,
-                                                     SSL_X509_V_ERR_CERT_HAS_EXPIRED,
-                                                     SSL_X509_V_ERR_CRL_NOT_YET_VALID,
-                                                     SSL_X509_V_ERR_CRL_HAS_EXPIRED,
-                                                     SSL_X509_V_ERR_CERT_REVOKED,
-                                                     SSL_X509_V_ERR_INVALID_CA,
-                                                     SSL_X509_V_ERR_CERT_UNTRUSTED};
+static const std::multiset<uint32_t> SslErrorCodeSetBase{SSL_NONE_ERR,
+                                                         SSL_ERROR_CODE_BASE,
+                                                         SSL_X509_V_ERR_UNSPECIFIED,
+                                                         SSL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT,
+                                                         SSL_X509_V_ERR_UNABLE_TO_GET_CRL,
+                                                         SSL_X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE,
+                                                         SSL_X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE,
+                                                         SSL_X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY,
+                                                         SSL_X509_V_ERR_CERT_SIGNATURE_FAILURE,
+                                                         SSL_X509_V_ERR_CRL_SIGNATURE_FAILURE,
+                                                         SSL_X509_V_ERR_CERT_NOT_YET_VALID,
+                                                         SSL_X509_V_ERR_CERT_HAS_EXPIRED,
+                                                         SSL_X509_V_ERR_CRL_NOT_YET_VALID,
+                                                         SSL_X509_V_ERR_CRL_HAS_EXPIRED,
+                                                         SSL_X509_V_ERR_CERT_REVOKED,
+                                                         SSL_X509_V_ERR_INVALID_CA,
+                                                         SSL_X509_V_ERR_CERT_UNTRUSTED};
+
+static const std::multiset<uint32_t> SslErrorCodeSetSinceAPI12{SSL_NONE_ERR,
+                                                               SSL_ERROR_CODE_BASE,
+                                                               SSL_X509_V_ERR_UNSPECIFIED,
+                                                               SSL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT,
+                                                               SSL_X509_V_ERR_UNABLE_TO_GET_CRL,
+                                                               SSL_X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE,
+                                                               SSL_X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE,
+                                                               SSL_X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY,
+                                                               SSL_X509_V_ERR_CERT_SIGNATURE_FAILURE,
+                                                               SSL_X509_V_ERR_CRL_SIGNATURE_FAILURE,
+                                                               SSL_X509_V_ERR_CERT_NOT_YET_VALID,
+                                                               SSL_X509_V_ERR_CERT_HAS_EXPIRED,
+                                                               SSL_X509_V_ERR_CRL_NOT_YET_VALID,
+                                                               SSL_X509_V_ERR_CRL_HAS_EXPIRED,
+                                                               SSL_X509_V_ERR_CERT_REVOKED,
+                                                               SSL_X509_V_ERR_INVALID_CA,
+                                                               SSL_X509_V_ERR_CERT_UNTRUSTED,
+                                                               // New error code since API12.
+                                                               SSL_X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT,
+                                                               SSL_X509_V_ERR_INVALID_CALL};
 
 std::string GetUserInstalledCaPath();
 
@@ -85,8 +110,6 @@ X509 *PemToX509(const uint8_t *pemCert, size_t pemSize);
 X509 *DerToX509(const uint8_t *derCert, size_t derSize);
 
 X509 *CertBlobToX509(const CertBlob *cert);
-
-void ProcessResult(uint32_t &verifyResult);
 
 uint32_t VerifyCert(const CertBlob *cert);
 
