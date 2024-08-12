@@ -1007,6 +1007,7 @@ bool ExecUdpSend(UdpSendContext *context)
 
     if (context->GetSocketFd() <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
+        return false;
     }
 
     bool result = UdpSendEvent(context);
@@ -1071,6 +1072,7 @@ bool ExecTcpSend(TcpSendContext *context)
 
     if (context->GetSocketFd() <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
+        return false;
     }
 
     bool result = TcpSendEvent(context);
