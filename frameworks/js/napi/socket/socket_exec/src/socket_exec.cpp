@@ -1005,6 +1005,10 @@ bool ExecUdpSend(UdpSendContext *context)
         return false;
     }
 
+    if (context->GetSocketFd() <= 0) {
+        context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
+    }
+
     bool result = UdpSendEvent(context);
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
     return result;
@@ -1063,6 +1067,10 @@ bool ExecTcpSend(TcpSendContext *context)
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
+    }
+
+    if (context->GetSocketFd() <= 0) {
+        context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
     }
 
     bool result = TcpSendEvent(context);
