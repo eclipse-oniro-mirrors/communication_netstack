@@ -90,6 +90,10 @@ public:
 
     void WaitForRcvThdExit();
 
+    void SetReuseAddr(bool reuse);
+
+    bool GetReuseAddr();
+
 private:
     std::mutex mutexForListenersAndEmitByUv_;
     std::mutex mutexForEmitAndEmitByUv_;
@@ -107,6 +111,7 @@ private:
     std::mutex sockRcvThdMtx_;
     std::condition_variable sockRcvThdCon_;
     bool sockRcvExit_ = false;
+    std::atomic_bool isReuseAddr_ = false;
 };
 
 struct UvWorkWrapper {
