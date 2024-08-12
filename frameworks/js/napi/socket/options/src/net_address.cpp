@@ -26,6 +26,11 @@ NetAddress::NetAddress(const NetAddress &other) : address_(other.address_), fami
 {
 }
 
+void NetAddress::SetRawAddress(const std::string &address)
+{
+    address_ = address;
+}
+
 void NetAddress::SetAddress(const std::string &address)
 {
     if (family_ == Family::IPv4) {

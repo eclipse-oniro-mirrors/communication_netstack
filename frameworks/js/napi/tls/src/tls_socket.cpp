@@ -31,6 +31,7 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "tls.h"
+#include "socket_exec_common.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -1116,8 +1117,9 @@ std::mutex &TLSSocket::GetCloseLock()
     return mutexForClose_;
 }
 
-bool ExecSocketConnect(const std::string &hostName, int port, sa_family_t family, int socketDescriptor)
+bool ExecSocketConnect(const std::string &host, int port, sa_family_t family, int socketDescriptor)
 {
+    auto hostName = ConvertAddressToIp(host, family);
     struct sockaddr_in dest = {0};
     dest.sin_family = family;
     dest.sin_port = htons(port);
