@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -57,6 +57,7 @@
 #include "securec.h"
 #include "secure_char.h"
 #include "trace_events.h"
+#include "netstack_hisysevent.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
@@ -450,7 +451,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     */
     int64_t httpVer = CURL_HTTP_VERSION_NONE;
     (void)curl_easy_getinfo(handle,  CURLINFO_HTTP_VERSION, &httpVer);
-
+    curl_off_t size = GetSizeFromCurl(handle, context);
     NETSTACK_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
@@ -465,12 +466,25 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         ", RespCode:%{public}s"
         ", httpVer:%{public}s"
         ", method:%{public}s",
-        context->GetTaskId(), GetSizeFromCurl(handle, context), dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
+        context->GetTaskId(), size, dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
         context->IsExecOK() ? 0: context->GetErrorCode(), std::to_string(responseCode).c_str(),
         std::to_string(httpVer).c_str(), context->options.GetMethod().c_str());
+
+    if (EventReport::GetInstance().IsValid()) {
+        HttpPerfInfo httpPerfInfo;
+        httpPerfInfo.totalTime = totalTime;
+        httpPerfInfo.size = size;
+        httpPerfInfo.dnsTime = dnsTime;
+        httpPerfInfo.tlsTime = tlsTime == 0 ? 0 : tlsTime - connectTime;
+        httpPerfInfo.tcpTime = connectTime == 0 ? 0 : connectTime - dnsTime;
+        httpPerfInfo.firstRecvTime = firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime;
+        httpPerfInfo.responseCode = responseCode;
+        httpPerfInfo.version = std::to_string(httpVer);
+        EventReport::GetInstance().ProcessHttpPerfHiSysevent(httpPerfInfo);
+    }
 }
 
 #if HAS_NETMANAGER_BASE
