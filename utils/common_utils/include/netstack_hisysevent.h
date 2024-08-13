@@ -17,7 +17,6 @@
 #define NETSTACK_INCLUDE_HISYSEVENT_H
 
 #include <string>
-#include <cmath>
 #include <map>
 
 #include "curl/curl.h"
@@ -26,24 +25,24 @@ namespace OHOS::NetStack {
 
 struct EventInfo {
     std::string packageName;
-    double totalTime = 0.0;
-    double totalRate = 0.0;
-    double totalDnsTime = 0.0;
-    double totalTlsTime = 0.0;
-    double totalTcpTime = 0.0;
-    double totalFirstRecvTime = 0.0;
+    double totalTime;
+    double totalRate;
+    double totalDnsTime;
+    double totalTlsTime;
+    double totalTcpTime;
+    double totalFirstRecvTime;
     curl_off_t size;
-    uint32_t successCount = 0;
-    uint32_t totalCount = 0;
+    uint32_t successCount;
+    uint32_t totalCount;
     std::string version;
 };
 
 struct HttpPerfInfo {
-    double totalTime = 0.0;
-    double dnsTime = 0.0;
-    double tlsTime = 0.0;
-    double firstRecvTime = 0.0;
-    double tcpTime = 0.0;
+    double totalTime;
+    double dnsTime;
+    double tlsTime;
+    double firstRecvTime;
+    double tcpTime;
     curl_off_t size;
     int64_t responseCode;
     std::string version;
@@ -54,7 +53,7 @@ public:
 class EventReport {
 public:
     void ProcessHttpPerfHiSysevent(const HttpPerfInfo &httpPerfInfo);
-    static void SendHttpPerfEvent(const EventInfo &eventInfo);
+    void SendHttpPerfEvent(const EventInfo &eventInfo);
     static EventReport &GetInstance();
     bool IsValid();
 
@@ -66,7 +65,6 @@ private:
     void InitPackageName();
     void ResetCounters();
     std::string GetPackageName();
-    bool IsCloseToZero(double value, double epsilon = 1e-9);
     std::string MapToJsonString(const std::map<std::string, uint32_t> mapPara);
 
 private:

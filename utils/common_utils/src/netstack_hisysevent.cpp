@@ -75,11 +75,6 @@ EventReport &EventReport::GetInstance()
     return instance;
 }
 
-bool EventReport::IsCloseToZero(double value, double epsilon)
-{
-    return std::fabs(value) <= epsilon;
-}
-
 void EventReport::ProcessHttpPerfHiSysevent(const HttpPerfInfo &httpPerfInfo)
 {
     time_t currentTime = time(0);
@@ -88,7 +83,7 @@ void EventReport::ProcessHttpPerfHiSysevent(const HttpPerfInfo &httpPerfInfo)
         reportTime = currentTime;
     }
     eventInfo.totalCount += 1;
-    if (httpPerfInfo.IsSuccess() && !IsCloseToZero(httpPerfInfo.totalTime)) {
+    if (httpPerfInfo.IsSuccess() && httpPerfInfo.totalTime != 0) {
         eventInfo.successCount += 1;
         eventInfo.totalTime += httpPerfInfo.totalTime;
         eventInfo.totalRate += httpPerfInfo.size / httpPerfInfo.totalTime;
