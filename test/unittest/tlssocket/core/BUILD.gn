@@ -22,6 +22,7 @@ tls_sources = [
   "$TLS/src/secure_data.cpp",
   "$TLS/src/socket_error.cpp",
   "$TLS/src/tls_certificate.cpp",
+  "$TLS/src/tls_config_enhanced.cpp",
   "$TLS/src/tls_configuration.cpp",
   "$TLS/src/tls_context.cpp",
   "$TLS/src/tls_context_server.cpp",
@@ -118,6 +119,7 @@ ohos_unittest("tls_socket_core_test") {
   sources = [
     "socket_error.test.cpp",
     "tls_certificate.test.cpp",
+    "tls_config_enhanced.test.cpp",
     "tls_context.test.cpp",
     "tls_context_server.test.cpp",
     "tls_key.test.cpp",

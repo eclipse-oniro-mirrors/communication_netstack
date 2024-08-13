@@ -55,4 +55,30 @@ HWTEST_F(TLSKeyTest, TLSKeyTestt001, testing::ext::TestSize.Level1)
     EXPECT_NE(key.ec_, nullptr);
     EXPECT_NE(key.genericKey_, nullptr);
 }
+
+HWTEST_F(TLSKeyTest, TLSKeyTestt002, testing::ext::TestSize.Level1)
+{
+    TLSKey key;
+    key.rsa_ = RSA_new();
+    key.dsa_ = DSA_new();
+    key.dh_ = DH_new();
+    key.ec_ = EC_KEY_new();
+    key.genericKey_ = EVP_PKEY_new();
+    SecureData data;
+    SecureData phrase;
+    key.DecodeData(data, phrase);
+
+    key.keyAlgorithm_ = OPAQUE;
+    EXPECT_EQ(key.handle(), nullptr);
+    key.keyAlgorithm_ = ALGORITHM_RSA;
+    EXPECT_NE(key.handle(), nullptr);
+    key.keyAlgorithm_ = ALGORITHM_DSA;
+    EXPECT_NE(key.handle(), nullptr);
+    key.keyAlgorithm_ = ALGORITHM_DH;
+    EXPECT_NE(key.handle(), nullptr);
+    key.keyAlgorithm_ = ALGORITHM_EC;
+    EXPECT_NE(key.handle(), nullptr);
+    key.keyAlgorithm_ = static_cast<KeyAlgorithm>(9999999);
+    EXPECT_EQ(key.handle(), nullptr);
+}
 } // namespace OHOS::NetStack::TlsSocket
