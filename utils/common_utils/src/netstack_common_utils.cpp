@@ -36,6 +36,9 @@
 #include "netstack_apipolicy_utils.h"
 #include "netstack_bundle_utils.h"
 #endif
+#if HAS_NETMANAGER_BASE
+#include "net_conn_client.h"
+#endif // HAS_NETMANAGER_BASE
 
 constexpr int32_t INET_OPTION_SUC = 1;
 constexpr size_t MAX_DISPLAY_NUM = 2;
@@ -448,5 +451,13 @@ std::string AnonymizeIp(std::string &input)
         return MaskIpv6(maskedResult);
     }
     return input;
+}
+
+std::optional<std::string> GetBundleName()
+{
+#if HAS_NETMANAGER_BASE
+    return OHOS::NetManagerStandard::NetConnClient::ObtainBundleNameForSelf();
+#endif
+    return std::nullopt;
 }
 } // namespace OHOS::NetStack::CommonUtils

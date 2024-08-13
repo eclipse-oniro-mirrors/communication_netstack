@@ -38,6 +38,7 @@
                 "curl",
                 "hilog",
                 "hitrace",
+                "hisysevent",
                 "ipc",
                 "zlib",
                 "cJSON",

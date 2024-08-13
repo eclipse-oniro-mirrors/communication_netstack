@@ -32,6 +32,7 @@
 #if HAS_NETMANAGER_BASE
 #include "http_client_network_message.h"
 #endif
+#include "netstack_hisysevent.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data)                                                 \
     do {                                                                                                 \
@@ -650,6 +651,7 @@ void HttpClientTask::DumpHttpPerformance() const
     int64_t httpVer = CURL_HTTP_VERSION_NONE;
     (void)curl_easy_getinfo(curlHandle_,  CURLINFO_HTTP_VERSION, &httpVer);
 
+    curl_off_t size = GetSizeFromCurl(curlHandle_);
     NETSTACK_CORE_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
@@ -664,12 +666,25 @@ void HttpClientTask::DumpHttpPerformance() const
         ", RespCode:%{public}s"
         ", httpVer:%{public}s"
         ", method:%{public}s",
-        taskId_, GetSizeFromCurl(curlHandle_), dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
+        taskId_, size, dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
         error_.GetErrorCode(), std::to_string(responseCode).c_str(), std::to_string(httpVer).c_str(),
         request_.GetMethod().c_str());
+
+    if (EventReport::GetInstance().IsValid()) {
+        HttpPerfInfo httpPerfInfo;
+        httpPerfInfo.totalTime = totalTime;
+        httpPerfInfo.size = size;
+        httpPerfInfo.dnsTime = dnsTime;
+        httpPerfInfo.tlsTime = tlsTime == 0 ? 0 : tlsTime - connectTime;
+        httpPerfInfo.tcpTime = connectTime == 0 ? 0 : connectTime - dnsTime;
+        httpPerfInfo.firstRecvTime = firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime;
+        httpPerfInfo.responseCode = responseCode;
+        httpPerfInfo.version = std::to_string(httpVer);
+        EventReport::GetInstance().ProcessHttpPerfHiSysevent(httpPerfInfo);
+    }
 }
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)

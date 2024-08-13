@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -86,5 +86,7 @@ std::string MaskIpv4(std::string &maskedResult);
 std::string MaskIpv6(std::string &maskedResult);
 
 std::string AnonymizeIp(std::string &input);
+
+std::optional<std::string> GetBundleName();
 } // namespace OHOS::NetStack::CommonUtils
 #endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */
