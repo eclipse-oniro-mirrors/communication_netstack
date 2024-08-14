@@ -998,6 +998,13 @@ bool ExecUdpSend(UdpSendContext *context)
         return false;
     }
 
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    if (context->GetSocketFd() <= 0) {
+        context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
+        return false;
+    }
+#endif
+
     bool result = UdpSendEvent(context);
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
     return result;
@@ -1055,6 +1062,13 @@ bool ExecTcpSend(TcpSendContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    if (context->GetSocketFd() <= 0) {
+        context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
+        return false;
+    }
+#endif
 
     bool result = TcpSendEvent(context);
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
