@@ -835,7 +835,9 @@ size_t NetHttpClientExec::OnWritingMemoryBody(const void *data, size_t size, siz
         auto tmp = context->GetTempData();
         context->PopTempData();
         for (size_t i = 0; i < callbackSize; i++) {
-            char *body = MallocCString(tmp);
+            CArrUI8 body;
+            body.head = reinterpret_cast<uint8_t*>(MallocCString(tmp));
+            body.size = static_cast<int64_t>(tmp.size());
             context->streamingCallback->dataReceive[i](body);
         }
         context->StopAndCachePerformanceTiming(RESPONSE_BODY_TIMING);
