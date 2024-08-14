@@ -1120,9 +1120,6 @@ std::mutex &TLSSocket::GetCloseLock()
 bool ExecSocketConnect(const std::string &host, int port, sa_family_t family, int socketDescriptor)
 {
     auto hostName = ConvertAddressToIp(host, family);
-    struct sockaddr_in dest = {0};
-    dest.sin_family = family;
-    dest.sin_port = htons(port);
 
     sockaddr_in addr4 = {0};
     sockaddr_in6 addr6 = {0};
