@@ -48,7 +48,7 @@ struct LoadBytes {
 struct RequestCallback {
     std::vector<std::function<void(CArrString)>> headersReceive;
     std::vector<std::function<void(CArrString)>> headersReceiveOnce;
-    std::vector<std::function<void(char*)>> dataReceive;
+    std::vector<std::function<void(CArrUI8)>> dataReceive;
     std::vector<std::function<void()>> dataEnd;
     std::vector<std::function<void(CDataReceiveProgressInfo)>> dataReceiveProgress;
     std::vector<std::function<void(CDataSendProgressInfo)>> dataSendProgress;
