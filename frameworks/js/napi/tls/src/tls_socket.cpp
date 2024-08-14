@@ -1279,7 +1279,7 @@ bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, ssl_st *ssl, const char 
 
 bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
 {
-    NETSTACK_LOGD("data to send :%{public}s", data.c_str());
+    NETSTACK_LOGD("send data size: %{public}zu", data.size());
     if (data.empty()) {
         NETSTACK_LOGE("data is empty");
         return false;
