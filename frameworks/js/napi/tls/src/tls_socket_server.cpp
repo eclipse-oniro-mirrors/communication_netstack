@@ -1255,22 +1255,14 @@ std::string TLSSocketServer::Connection::CheckServerIdentityLegal(const std::str
 
 void TLSSocketServer::RemoveConnect(int socketFd)
 {
-    std::shared_ptr<Connection> ptrConnection = nullptr;
-    {
-        std::lock_guard<std::mutex> its_lock(connectMutex_);
+    std::lock_guard<std::mutex> its_lock(connectMutex_);
 
-        for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end();) {
-            if (it->second->GetSocketFd() == socketFd) {
-                ptrConnection = it->second;
-                break;
-            } else {
-                ++it;
-            }
+    for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end();) {
+        if (it->second->GetSocketFd() == socketFd) {
+            break;
+        } else {
+            ++it;
         }
-    }
-    if (ptrConnection != nullptr) {
-        ptrConnection->CallOnCloseCallback(static_cast<unsigned int>(socketFd));
-        ptrConnection->Close();
     }
 }
 
