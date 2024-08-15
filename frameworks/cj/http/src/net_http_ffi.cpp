@@ -126,7 +126,7 @@ EXTERN_C_START
         req->callbacks->headersReceive.clear();
     }
 
-    void CJ_OnDataReceive(int64_t id, void (*callback)(char*))
+    void CJ_OnDataReceive(int64_t id, void (*callback)(CArrUI8))
     {
         auto req = FFIData::GetData<HttpRequestProxy>(id);
         if (req == nullptr) {
