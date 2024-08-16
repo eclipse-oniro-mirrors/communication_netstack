@@ -94,7 +94,7 @@ void EventReport::ProcessHttpPerfHiSysevent(const HttpPerfInfo &httpPerfInfo)
         eventInfo.totalTcpTime += httpPerfInfo.tcpTime;
         auto result = versionMap.emplace(httpPerfInfo.version, 1);
         if (!result.second) {
-            ++result.first->second;
+            ++(result.first->second);
         }
     }
     if (currentTime - reportTime >= REPORT_INTERVAL) {
