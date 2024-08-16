@@ -123,12 +123,15 @@ void EventReport::ResetCounters()
 
 std::string EventReport::MapToJsonString(const std::map<std::string, uint32_t> mapPara)
 {
+    if (mapPara.empty()) {
+        return "{}";
+    }
     std::stringstream sStream;
-    auto tailIt = mapPara.end();
-    --tailIt;
-    for (auto it = mapPara.begin(); it != mapPara.end(); ++it) {
-        sStream << "\"" << it->first << "\":" << it->second;
-        if (it != tailIt) {
+    size_t count = 0;
+    for (const auto &pair : mapPara) {
+        sStream << "\"" << pair.first << "\":" << pair.second;
+        count++;
+        if (count < mapPara.size()) {
             sStream << ",";
         }
     }
