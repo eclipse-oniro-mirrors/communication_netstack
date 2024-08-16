@@ -998,12 +998,11 @@ bool ExecUdpSend(UdpSendContext *context)
         return false;
     }
 
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     if (context->GetSocketFd() <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
         return false;
     }
-#endif
 
     bool result = UdpSendEvent(context);
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
@@ -1063,12 +1062,11 @@ bool ExecTcpSend(TcpSendContext *context)
         return false;
     }
 
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     if (context->GetSocketFd() <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
+        NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
         return false;
     }
-#endif
 
     bool result = TcpSendEvent(context);
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
