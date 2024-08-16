@@ -18,6 +18,7 @@
 
 #include <string>
 #include <map>
+#include <mutex>
 
 #include "curl/curl.h"
 
@@ -73,6 +74,7 @@ private:
     EventInfo eventInfo;
     std::map<std::string, uint32_t> versionMap;
     bool validFlag = true;
+    std::recursive_mutex mutex;
 };
 }
 #endif

@@ -77,6 +77,7 @@ EventReport &EventReport::GetInstance()
 
 void EventReport::ProcessHttpPerfHiSysevent(const HttpPerfInfo &httpPerfInfo)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     time_t currentTime = time(0);
 
     if (reportTime == 0) {
