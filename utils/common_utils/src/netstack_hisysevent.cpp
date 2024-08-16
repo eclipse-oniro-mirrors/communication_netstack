@@ -77,6 +77,7 @@ EventReport &EventReport::GetInstance()
 
 void EventReport::ProcessHttpPerfHiSysevent(const HttpPerfInfo &httpPerfInfo)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     time_t currentTime = time(0);
 
     if (reportTime == 0) {
@@ -91,11 +92,9 @@ void EventReport::ProcessHttpPerfHiSysevent(const HttpPerfInfo &httpPerfInfo)
         eventInfo.totalTlsTime += httpPerfInfo.tlsTime;
         eventInfo.totalFirstRecvTime += httpPerfInfo.firstRecvTime;
         eventInfo.totalTcpTime += httpPerfInfo.tcpTime;
-        auto it = versionMap.find(httpPerfInfo.version);
-        if (it != versionMap.end()) {
-            versionMap[httpPerfInfo.version] += 1;
-        } else {
-            versionMap[httpPerfInfo.version] = 1;
+        auto result = versionMap.emplace(httpPerfInfo.version, 1);
+        if (!result.second) {
+            ++(result.first->second);
         }
     }
     if (currentTime - reportTime >= REPORT_INTERVAL) {
@@ -123,12 +122,15 @@ void EventReport::ResetCounters()
 
 std::string EventReport::MapToJsonString(const std::map<std::string, uint32_t> mapPara)
 {
+    if (mapPara.empty()) {
+        return "{}";
+    }
     std::stringstream sStream;
-    auto tailIt = mapPara.end();
-    --tailIt;
-    for (auto it = mapPara.begin(); it != mapPara.end(); ++it) {
-        sStream << "\"" << it->first << "\":" << it->second;
-        if (it != tailIt) {
+    size_t count = 0;
+    for (const auto &pair : mapPara) {
+        sStream << "\"" << pair.first << "\":" << pair.second;
+        count++;
+        if (count < mapPara.size()) {
             sStream << ",";
         }
     }
