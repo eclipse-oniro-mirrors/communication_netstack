@@ -32,7 +32,6 @@ struct EventInfo {
     double totalTlsTime;
     double totalTcpTime;
     double totalFirstRecvTime;
-    curl_off_t size;
     uint32_t successCount;
     uint32_t totalCount;
     std::string version;
