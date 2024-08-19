@@ -24,7 +24,7 @@ namespace OHOS::NetStack {
 
 namespace {
 using HiSysEvent = OHOS::HiviewDFX::HiSysEvent;
-const uint32_t REPORT_INTERVAL = 10;
+const uint32_t REPORT_INTERVAL = 3 * 60;
 // event_name
 constexpr const char *HTTP_PERF_ENAME = "HTTP_PERF";
 // event params
@@ -44,10 +44,7 @@ const int64_t VALIAD_RESP_CODE_END = 399;
 
 bool HttpPerfInfo::IsSuccess() const
 {
-    if (responseCode >= VALIAD_RESP_CODE_START && responseCode <= VALIAD_RESP_CODE_END) {
-        return true;
-    }
-    return false;
+    return responseCode >= VALIAD_RESP_CODE_START && responseCode <= VALIAD_RESP_CODE_END;
 }
 
 EventReport::EventReport()
@@ -57,11 +54,13 @@ EventReport::EventReport()
 
 void EventReport::InitPackageName()
 {
-    auto bundleName = CommonUtils::GetBundleName();
-    packageName_ = bundleName.value_or("");
-    if (packageName_.empty()) {
+    if (CommonUtils::GetBundleName().has_value()) {
+        packageName_ = CommonUtils::GetBundleName().value();
+    } else {
         validFlag = false;
     }
+    // init eventInfo
+    ResetCounters();
 }
 
 bool EventReport::IsValid()
