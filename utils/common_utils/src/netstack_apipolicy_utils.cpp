@@ -26,9 +26,9 @@ constexpr const uint32_t RESULT_ACCEPT = 0;
 }
 
 #ifdef __LP64__
-    const std::string APIPOLICY_SO_PATH = "/system/lib64/platformsdk/libapipolicy_client.z.so";
+    const std::string APIPOLICY_SO_PATH = "libapipolicy_client.z.so";
 #else
-    const std::string APIPOLICY_SO_PATH = "/system/lib/platformsdk/libapipolicy_client.z.so";
+    const std::string APIPOLICY_SO_PATH = "libapipolicy_client.z.so";
 #endif
 
 bool IsAllowedHostname(const std::string &bundleName, const std::string &domainType, const std::string &hostname)
