@@ -455,17 +455,9 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     NETSTACK_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
-        ", dns:%{public}.3f"
-        ", connect:%{public}.3f"
-        ", tls:%{public}.3f"
-        ", firstSend:%{public}.3f"
-        ", firstRecv:%{public}.3f"
-        ", total:%{public}.3f"
-        ", redirect:%{public}.3f"
-        ", errCode:%{public}d"
-        ", RespCode:%{public}s"
-        ", httpVer:%{public}s"
-        ", method:%{public}s",
+        ", dns:%{public}.3f, connect:%{public}.3f, tls:%{public}.3f, firstSend:%{public}.3f"
+        ", firstRecv:%{public}.3f, total:%{public}.3f, redirect:%{public}.3f"
+        ", errCode:%{public}d, RespCode:%{public}s, httpVer:%{public}s, method:%{public}s"
         context->GetTaskId(), size, dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
