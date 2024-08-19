@@ -69,6 +69,13 @@ extern "C" {
  * @version 1.0
  */
 uint32_t OH_NetStack_CertVerification(const struct NetStack_CertBlob *cert, const struct NetStack_CertBlob *caCert);
+
+int32_t OH_NetStack_GetPinSetForHostName(const char *hostname, NetStack_CertificatePinning *pin);
+
+int32_t OH_NetStack_GetCertificatesForHostName(const char *hostname, NetStack_Certificates *certs);
+
+void OH_Netstack_DestroyCertificatesContent(NetStack_Certificates *certs);
+
 #ifdef __cplusplus
 }
 #endif
