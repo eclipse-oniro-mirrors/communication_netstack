@@ -15,12 +15,18 @@
 
 #include <cstring>
 #include <iostream>
+#include <vector>
+#include <string>
 
 #include <openssl/ssl.h>
 
 #include "net_ssl.h"
 #include "net_ssl_c.h"
 #include "net_ssl_c_type.h"
+#include "securec.h"
+#include "netstack_log.h"
+#include "net_manager_constants.h"
+#include "net_conn_client.h"
 
 struct OHOS::NetStack::Ssl::CertBlob SwitchToCertBlob(const struct NetStack_CertBlob cert)
 {
@@ -70,4 +76,104 @@ uint32_t OH_NetStack_CertVerification(const struct NetStack_CertBlob *cert, cons
     } else {
         return VerifyCert_With_DesignatedCa(cert, caCert);
     }
+}
+
+int32_t OH_NetStack_GetPinSetForHostName(const char *hostname, NetStack_CertificatePinning *pin)
+{
+    if (hostname == nullptr || pin == nullptr) {
+        NETSTACK_LOGE("OH_NetStack_GetPinSetForHostName received invalid parameters");
+        return OHOS::NetManagerStandard::NETMANAGER_ERR_PARAMETER_ERROR;
+    }
+
+    std::string innerHostname = std::string(hostname);
+    std::string innerPins;
+
+    int32_t ret = OHOS::NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(innerHostname, innerPins);
+    if (ret != OHOS::NetManagerStandard::NETMANAGER_SUCCESS) {
+        return ret;
+    }
+
+    size_t size = innerPins.length() + 1;
+    char *key = (char *)malloc(size);
+    if (key == nullptr) {
+        NETSTACK_LOGE("OH_NetStack_GetPinSetForHostName malloc failed");
+        return OHOS::NetManagerStandard::NETMANAGER_ERR_INTERNAL;
+    }
+
+    if (strcpy_s(key, size, innerPins.c_str()) != 0) {
+        NETSTACK_LOGE("OH_NetStack_GetPinSetForHostName string copy failed");
+        return OHOS::NetManagerStandard::NETMANAGER_ERR_STRCPY_FAIL;
+    }
+    pin->hashAlgorithm = NetStack_HashAlgorithm::SHA_256;
+    pin->kind = NetStack_CertificatePinningKind::PUBLIC_KEY;
+    pin->publicKeyHash = key;
+
+    return OHOS::NetManagerStandard::NETMANAGER_SUCCESS;
+}
+
+int32_t OH_NetStack_GetCertificatesForHostName(const char *hostname, NetStack_Certificates *certs)
+{
+    if (hostname == nullptr || certs == nullptr) {
+        NETSTACK_LOGE("OH_NetStack_GetCertificatesForHostName received invalid parameters");
+        return OHOS::NetManagerStandard::NETMANAGER_ERR_PARAMETER_ERROR;
+    }
+
+    std::string innerHostname = std::string(hostname);
+    std::vector<std::string> innerCerts;
+
+    int32_t ret = OHOS::NetManagerStandard::NetConnClient::GetInstance()
+                  .GetTrustAnchorsForHostName(innerHostname, innerCerts);
+    if (ret != OHOS::NetManagerStandard::NETMANAGER_SUCCESS) {
+        return ret;
+    }
+
+    size_t innerCertsLength = innerCerts.size();
+    if (innerCertsLength <= 0) {
+        certs->length = 0;
+        certs->content = nullptr;
+        return OHOS::NetManagerStandard::NETMANAGER_SUCCESS;
+    }
+    char **contentPtr = (char **)malloc(innerCertsLength * sizeof(char *));
+    if (contentPtr == nullptr) {
+        NETSTACK_LOGE("OH_NetStack_GetCertificatesForHostName malloc failed");
+        return OHOS::NetManagerStandard::NETMANAGER_ERR_INTERNAL;
+    }
+
+    for (size_t i = 0; i < innerCertsLength; ++i) {
+        size_t certLen = innerCerts[i].size() + 1;
+        char *certPtr = (char *)malloc(certLen);
+        if (certPtr == nullptr) {
+            NETSTACK_LOGE("OH_NetStack_GetCertificatesForHostName malloc failed");
+            return OHOS::NetManagerStandard::NETMANAGER_ERR_INTERNAL;
+        }
+        if (strcpy_s(certPtr, certLen, innerCerts[i].c_str()) != 0) {
+            NETSTACK_LOGE("OH_NetStack_GetCertificatesForHostName string copy failed");
+            return OHOS::NetManagerStandard::NETMANAGER_ERR_STRCPY_FAIL;
+        }
+        contentPtr[i] = certPtr;
+    }
+
+    certs->length = innerCertsLength;
+    certs->content = contentPtr;
+    return OHOS::NetManagerStandard::NETMANAGER_SUCCESS;
+}
+
+void OH_Netstack_DestroyCertificatesContent(NetStack_Certificates *certs)
+{
+    if (certs == nullptr) {
+        NETSTACK_LOGE("OH_Netstack_DestroyCertificatesContent received invalid parameters");
+        return;
+    }
+
+    if (certs->content == nullptr) {
+        return;
+    }
+
+    for (size_t i = 0; i < certs->length; ++i) {
+        free(certs->content[i]);
+    }
+
+    free((void *)certs->content);
+    certs->content = nullptr;
+    certs->length = 0;
 }

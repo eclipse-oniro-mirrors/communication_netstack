@@ -30,6 +30,7 @@ common_external_deps = [
   "eventhandler:libeventhandler",
   "hilog:libhilog",
   "ipc:ipc_core",
+  "netmanager_base:net_conn_manager_if",
   "openssl:libcrypto_shared",
   "openssl:libssl_shared",
 ]
