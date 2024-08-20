@@ -129,6 +129,7 @@ void LocalSocketBindContext::ParseParams(napi_value *params, size_t paramsCount)
     }
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_ADDRESS)) {
         socketPath_ = NapiUtils::GetStringPropertyUtf8(GetEnv(), params[0], KEY_ADDRESS);
+        NETSTACK_LOGD("LocalSocketBindContext parse, path: %{public}s", socketPath_.c_str());
     } else {
         NETSTACK_LOGE("params do not contain socket path");
     }
