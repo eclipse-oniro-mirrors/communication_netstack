@@ -48,8 +48,7 @@ bool IsAllowedHostname(const std::string &bundleName, const std::string &domainT
         return true;
     }
     int32_t res = func(bundleName, domainType, hostname);
-    NETSTACK_LOGD("ApiPolicy CheckHttpUrl result=%{public}d, bundle_name=%{public}s, hostname=%{public}s",
-                  res, bundleName.c_str(), hostname.c_str());
+    NETSTACK_LOGD("ApiPolicy CheckHttpUrl result=%{public}d", res);
     dlclose(libHandle);
     return res == RESULT_ACCEPT;
 }

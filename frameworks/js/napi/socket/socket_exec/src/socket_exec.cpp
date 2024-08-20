@@ -1419,8 +1419,7 @@ bool ExecUdpAddMembership(MulticastMembershipContext *context)
         mreq.imr_interface.s_addr = INADDR_ANY;
         if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
                        sizeof(mreq)) == -1) {
-            NETSTACK_LOGE("ipv4 addmembership err, addr: %{public}s, port: %{public}u, err: %{public}d",
-                          context->address_.GetAddress().c_str(), context->address_.GetPort(), errno);
+            NETSTACK_LOGE("ipv4 addmembership err: %{public}d", errno);
             context->SetErrorCode(errno);
             return false;
         }
@@ -1430,14 +1429,12 @@ bool ExecUdpAddMembership(MulticastMembershipContext *context)
         mreq.ipv6mr_interface = 0;
         if (setsockopt(context->GetSocketFd(), IPPROTO_IPV6, IPV6_JOIN_GROUP, reinterpret_cast<void *>(&mreq),
                        sizeof(mreq)) == -1) {
-            NETSTACK_LOGE("ipv6 addmembership err, addr: %{public}s, port: %{public}u, err: %{public}d",
-                          context->address_.GetAddress().c_str(), context->address_.GetPort(), errno);
+            NETSTACK_LOGE("ipv6 addmembership err: %{public}d", errno);
             context->SetErrorCode(errno);
             return false;
         }
     }
-    NETSTACK_LOGI("addmembership ok, sock:%{public}d, addr:%{public}s, family:%{public}u", context->GetSocketFd(),
-                  context->address_.GetAddress().c_str(), context->address_.GetJsValueFamily());
+    NETSTACK_LOGI("addmembership ok, sock:%{public}d", context->GetSocketFd());
     return RecvfromMulticast(context);
 }
 
@@ -1453,8 +1450,7 @@ bool ExecUdpDropMembership(MulticastMembershipContext *context)
         mreq.imr_interface.s_addr = INADDR_ANY;
         if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_DROP_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
                        sizeof(mreq)) == -1) {
-            NETSTACK_LOGE("ipv4 dropmembership err, addr: %{public}s, port: %{public}u, err: %{public}d",
-                          context->address_.GetAddress().c_str(), context->address_.GetPort(), errno);
+            NETSTACK_LOGE("ipv4 dropmembership err: %{public}d", errno);
             context->SetErrorCode(errno);
             return false;
         }
@@ -1464,8 +1460,7 @@ bool ExecUdpDropMembership(MulticastMembershipContext *context)
         mreq.ipv6mr_interface = 0;
         if (setsockopt(context->GetSocketFd(), IPPROTO_IPV6, IPV6_LEAVE_GROUP, reinterpret_cast<void *>(&mreq),
                        sizeof(mreq)) == -1) {
-            NETSTACK_LOGE("ipv6 dropmembership err, addr: %{public}s, port: %{public}u, err: %{public}d",
-                          context->address_.GetAddress().c_str(), context->address_.GetPort(), errno);
+            NETSTACK_LOGE("ipv6 dropmembership err: %{public}d", errno);
             context->SetErrorCode(errno);
             return false;
         }

@@ -218,7 +218,6 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
     std::string url = request_.GetURL();
     GetHttpProxyInfo(host, port, exclusions, tunnel);
     if (!host.empty() && !CommonUtils::IsHostNameExcluded(url, exclusions, ",")) {
-        NETSTACK_LOGD("Set CURLOPT_PROXY: %{public}s:%{public}d, %{public}s", host.c_str(), port, exclusions.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXY, host.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYPORT, port);
         auto curlTunnelValue = (url.find("https://") != std::string::npos) ? 1L : 0L;
@@ -271,12 +270,11 @@ bool HttpClientTask::SetUploadOptions(CURL *handle)
 
     file_ = fopen(realPath.c_str(), "rb");
     if (file_ == nullptr) {
-        NETSTACK_LOGE("HttpClientTask::SetUploadOptions() Failed to open file %{public}s", realPath.c_str());
+        NETSTACK_LOGE("HttpClientTask::SetUploadOptions() Failed to open file");
         error_.SetErrorCode(HttpErrorCode::HTTP_UPLOAD_FAILED);
         return false;
     }
 
-    NETSTACK_LOGD("filePath_=%{public}s", realPath.c_str());
     fseek(file_, 0, SEEK_END);
     long size = ftell(file_);
     rewind(file_);
@@ -557,7 +555,6 @@ size_t HttpClientTask::HeaderReceiveCallback(const void *data, size_t size, size
         return 0;
     }
 
-    NETSTACK_LOGD("data=%{public}s", static_cast<const char *>(data));
     task->response_.AppendHeader(static_cast<const char *>(data), size * memBytes);
 
     return size * memBytes;

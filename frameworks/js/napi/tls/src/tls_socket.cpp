@@ -1587,7 +1587,6 @@ std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::st
     obj = X509_EXTENSION_get_object(ext);
     char subAltNameBuf[BUF_SIZE] = {0};
     OBJ_obj2txt(subAltNameBuf, BUF_SIZE, obj, 0);
-    NETSTACK_LOGD("extions obj : %{public}s\n", subAltNameBuf);
 
     return CheckServerIdentityLegal(hostName, ext, x509Certificates);
 }

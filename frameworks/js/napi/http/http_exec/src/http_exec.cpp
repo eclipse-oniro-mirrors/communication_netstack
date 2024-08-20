@@ -1610,35 +1610,30 @@ void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *pa
 {
     CURLcode result = curl_mime_name(part, multiFormData.name.c_str());
     if (result != CURLE_OK) {
-        NETSTACK_LOGE("Failed to set name %{public}s, error: %{public}s", multiFormData.name.c_str(),
-                      curl_easy_strerror(result));
+        NETSTACK_LOGE("Failed to set name error: %{public}s", curl_easy_strerror(result));
         return;
     }
     if (!multiFormData.contentType.empty()) {
         result = curl_mime_type(part, multiFormData.contentType.c_str());
         if (result != CURLE_OK) {
-            NETSTACK_LOGE("Failed to set contentType: %{public}s, error: %{public}s", multiFormData.name.c_str(),
-                          curl_easy_strerror(result));
+            NETSTACK_LOGE("Failed to set contentType error: %{public}s", curl_easy_strerror(result));
         }
     }
     if (!multiFormData.remoteFileName.empty()) {
         result = curl_mime_filename(part, multiFormData.remoteFileName.c_str());
         if (result != CURLE_OK) {
-            NETSTACK_LOGE("Failed to set remoteFileName: %{public}s, error: %{public}s", multiFormData.name.c_str(),
-                          curl_easy_strerror(result));
+            NETSTACK_LOGE("Failed to set remoteFileName error: %{public}s", curl_easy_strerror(result));
         }
     }
     if (!multiFormData.data.empty()) {
         result = curl_mime_data(part, multiFormData.data.c_str(), multiFormData.data.length());
         if (result != CURLE_OK) {
-            NETSTACK_LOGE("Failed to set data: %{public}s, error: %{public}s", multiFormData.name.c_str(),
-                          curl_easy_strerror(result));
+            NETSTACK_LOGE("Failed to set data error: %{public}s", curl_easy_strerror(result));
         }
     } else {
         result = curl_mime_filedata(part, multiFormData.filePath.c_str());
         if (result != CURLE_OK) {
-            NETSTACK_LOGE("Failed to set file data: %{public}s, error: %{public}s", multiFormData.name.c_str(),
-                          curl_easy_strerror(result));
+            NETSTACK_LOGE("Failed to set file data error: %{public}s", curl_easy_strerror(result));
         }
     }
 }
