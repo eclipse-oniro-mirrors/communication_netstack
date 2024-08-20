@@ -258,6 +258,16 @@ void EventManager::WaitForRcvThdExit()
     });
 }
 
+void EventManager::SetReuseAddr(bool reuse)
+{
+    isReuseAddr_.store(reuse);
+}
+
+bool EventManager::GetReuseAddr()
+{
+    return isReuseAddr_.load();
+}
+
 UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)
     : data(theData), env(theEnv), type(std::move(eventType)), manager(eventManager)
 {
