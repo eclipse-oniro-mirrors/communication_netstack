@@ -176,7 +176,6 @@ bool FetchContext::GetUrlParam(napi_value data)
     auto names = NapiUtils::GetPropertyNames(GetEnv(), data);
     std::for_each(names.begin(), names.end(), [this, data, &extraParam](std::string name) {
         auto value = NapiUtils::GetStringPropertyUtf8(GetEnv(), data, name);
-        NETSTACK_LOGI("url param name = %{public}s, value = %{public}s", name.c_str(), value.c_str());
         if (!name.empty() && !value.empty()) {
             bool encodeName = FetchExec::EncodeUrlParam(name);
             bool encodeValue = FetchExec::EncodeUrlParam(value);

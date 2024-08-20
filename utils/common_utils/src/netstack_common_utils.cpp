@@ -215,13 +215,13 @@ bool IsMatch(const std::string &str, const std::string &patternStr)
         return true;
     }
     if (!IsRegexValid(patternStr)) {
-        NETSTACK_LOGD("Invalid pattern string: %{public}s", patternStr.c_str());
+        NETSTACK_LOGD("Invalid pattern");
         return patternStr == str;
     }
     std::regex pattern(ReplaceCharacters(patternStr));
     bool isMacth = patternStr != "" && std::regex_match(str, pattern);
     if (isMacth) {
-        NETSTACK_LOGD("Match patternStr: %{public}s", patternStr.c_str());
+        NETSTACK_LOGD("Match patternStr");
     }
     return isMacth;
 }
@@ -356,7 +356,6 @@ bool IsExcluded(const std::string &str, const std::string &exclusions, const std
 bool IsHostNameExcluded(const std::string &url, const std::string &exclusions, const std::string &split)
 {
     std::string hostName = GetHostnameFromURL(url);
-    NETSTACK_LOGD("hostName is: %{public}s", hostName.c_str());
     return IsExcluded(hostName, exclusions, split);
 }
 
