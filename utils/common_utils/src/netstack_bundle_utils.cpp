@@ -22,9 +22,9 @@
 namespace OHOS::NetStack::BundleUtils {
 
 #ifdef __LP64__
-    const std::string LIB_NET_BUNDL_UTILS_SO_PATH = "/system/lib64/libnet_bundle_utils.z.so";
+    const std::string LIB_NET_BUNDL_UTILS_SO_PATH = "libnet_bundle_utils.z.so";
 #else
-    const std::string LIB_NET_BUNDL_UTILS_SO_PATH = "/system/lib/libnet_bundle_utils.z.so";
+    const std::string LIB_NET_BUNDL_UTILS_SO_PATH = "libnet_bundle_utils.z.so";
 #endif
 
 using IsAtomicServiceFunc = bool (*)(std::string&);
