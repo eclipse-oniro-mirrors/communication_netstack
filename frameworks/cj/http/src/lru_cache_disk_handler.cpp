@@ -165,7 +165,6 @@ void LRUCache::ReadCacheFromJsonValue(const cJSON* root)
             continue;
         }
         std::string key = keyItem->string;
-        NETSTACK_LOGD("key: %{public}s", key.c_str());
         std::unordered_map<std::string, std::string> m;
         for (int32_t j = 0; j < cJSON_GetArraySize(keyItem); j++) {
             cJSON *valueItem = cJSON_GetArrayItem(keyItem, j);
@@ -175,7 +174,6 @@ void LRUCache::ReadCacheFromJsonValue(const cJSON* root)
             }
             std::string valueKey = valueItem->string;
             m[valueKey] = cJSON_GetStringValue(valueItem);
-            NETSTACK_LOGD("m[%{public}s]: %{public}s", valueKey.c_str(), m[valueKey].c_str());
         }
 
         if (m.find(LRU_INDEX) != m.end()) {

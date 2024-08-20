@@ -785,7 +785,6 @@ void TLSSocketServer::Connection::SetTlsConfiguration(const TlsSocket::TLSConnec
 
 bool TLSSocketServer::Connection::Send(const std::string &data)
 {
-    NETSTACK_LOGD("data to send :%{public}s", data.c_str());
     if (data.empty()) {
         NETSTACK_LOGE("data is empty");
         return false;
@@ -797,11 +796,11 @@ bool TLSSocketServer::Connection::Send(const std::string &data)
     int len = SSL_write(ssl_, data.c_str(), data.length());
     if (len < 0) {
         int resErr = ConvertSSLError(GetSSL());
-        NETSTACK_LOGE("data '%{public}s' send failed!The error code is %{public}d, The error message is'%{public}s'",
-                      data.c_str(), resErr, MakeSSLErrorString(resErr).c_str());
+        NETSTACK_LOGE("data send failed!The error code is %{public}d, The error message is'%{public}s'",
+                      resErr, MakeSSLErrorString(resErr).c_str());
         return false;
     }
-    NETSTACK_LOGD("data '%{public}s' Sent successfully,sent in total %{public}d bytes!", data.c_str(), len);
+    NETSTACK_LOGD("data Sent successfully,sent in total %{public}d bytes!", len);
     return true;
 }
 
@@ -1278,7 +1277,7 @@ int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
                     break;
                 }
                 int len = it->second->Recv(buffer, MAX_BUFFER_SIZE);
-                NETSTACK_LOGE("revc message is size is  %{public}d  buffer is   %{public}s ", len, buffer);
+                NETSTACK_LOGE("revc message is size is %{public}d", len);
                 if (len > 0) {
                     Socket::SocketRemoteInfo remoteInfo;
                     remoteInfo.SetSize(strlen(buffer));

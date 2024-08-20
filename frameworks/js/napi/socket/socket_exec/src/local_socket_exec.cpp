@@ -195,8 +195,7 @@ static napi_value MakeLocalSocketMessage(napi_env env, void *param)
     }
     int result = memcpy_s(dataHandle, msg->len, msg->data, msg->len);
     if (result != EOK) {
-        NETSTACK_LOGE("memcpy err, res: %{public}d, msg: %{public}s, len: %{public}zu", result,
-                      reinterpret_cast<char *>(msg->data), msg->len);
+        NETSTACK_LOGE("memcpy err, res: %{public}d, len: %{public}zu", result, msg->len);
         return NapiUtils::GetUndefined(env);
     }
     return MakeJsLocalSocketMessageParam(env, msgBuffer, msg);
@@ -523,7 +522,7 @@ static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager
                 break;
             }
         } else {
-            NETSTACK_LOGD("recv, fd:%{public}d, size:%{public}d, buf:%{public}s", connectFd, recvSize, buffer.get());
+            NETSTACK_LOGD("recv, fd:%{public}d, size:%{public}d", connectFd, recvSize);
             void *data = malloc(recvSize);
             if (data == nullptr) {
                 RecvInErrorCondition(NO_MEMORY, clientId, callback, serverManager);
@@ -609,7 +608,7 @@ static void RecvHandler(int connectFd, const LocalSocketMessageCallback &callbac
             RecvInErrorCondition(errno, clientId, callback, mgr);
         }
     } else {
-        NETSTACK_LOGI("recv, fd:%{public}d, size:%{public}d, buf:%{public}s", connectFd, recvSize, buffer.get());
+        NETSTACK_LOGI("recv, fd:%{public}d, size:%{public}d", connectFd, recvSize);
         void *data = malloc(recvSize);
         if (data == nullptr) {
             RecvInErrorCondition(NO_MEMORY, clientId, callback, mgr);
@@ -820,7 +819,7 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
         context->SetErrorCode(UNKNOW_ERROR);
         return false;
     }
-    NETSTACK_LOGI("local socket client fd: %{public}d, path: %{public}s", context->GetSocketFd(), addr.sun_path);
+    NETSTACK_LOGI("local socket client fd: %{public}d", context->GetSocketFd());
     if (!NonBlockConnect(sockfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr), context->GetTimeoutMs())) {
         NETSTACK_LOGE("failed to connect local socket, errno: %{public}d, %{public}s", errno, strerror(errno));
         context->SetErrorCode(errno);
@@ -985,7 +984,7 @@ static bool LocalSocketServerBind(LocalSocketServerListenContext *context)
         context->SetErrorCode(errno);
         return false;
     }
-    NETSTACK_LOGI("local socket server bind success: %{public}s", addr.sun_path);
+    NETSTACK_LOGI("local socket server bind success");
     return true;
 }
 

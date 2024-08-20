@@ -515,7 +515,6 @@ bool NetHttpClientExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::Request
     int32_t port = 0;
     GetHttpProxyInfo(context, host, port, exclusions);
     if (!host.empty() && !CommonUtils::IsHostNameExcluded(url, exclusions, ",")) {
-        NETSTACK_LOGI("Set CURLOPT_PROXY: %{public}s:%{public}d, %{public}s", host.c_str(), port, exclusions.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXY, host.c_str(), context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYPORT, port, context);
         auto curlTunnelValue = (url.find("https://") != std::string::npos) ? 1L : 0L;
@@ -608,9 +607,8 @@ bool NetHttpClientExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http:
     std::string pins;
     auto ret1 = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
     if (ret1 != 0 || pins.empty()) {
-        NETSTACK_LOGD("Get no pinset by host name[%{public}s]", hostname.c_str());
+        NETSTACK_LOGD("Get no pinset by host name");
     } else {
-        NETSTACK_LOGD("curl set pin =[%{public}s]", pins.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str(), context);
     }
 #else
@@ -650,8 +648,7 @@ bool NetHttpClientExec::SetMultiPartOption(CURL *curl, RequestContext *context)
             continue;
         }
         if (multiFormData.data.empty() && multiFormData.filePath.empty()) {
-            NETSTACK_LOGE("Failed to set name %{public}s, error no data and filepath at the same time",
-                multiFormData.name.c_str());
+            NETSTACK_LOGE("Failed to set name error no data and filepath at the same time");
             continue;
         }
         part = curl_mime_addpart(multipart);
@@ -669,35 +666,30 @@ void NetHttpClientExec::SetFormDataOption(MultiFormData &multiFormData, curl_mim
 {
     CURLcode result = curl_mime_name(part, multiFormData.name.c_str());
     if (result != CURLE_OK) {
-        NETSTACK_LOGE("Failed to set name %{public}s, error: %{public}s",
-            multiFormData.name.c_str(), curl_easy_strerror(result));
+        NETSTACK_LOGE("Failed to set name error: %{public}s", curl_easy_strerror(result));
         return;
     }
     if (!multiFormData.contentType.empty()) {
         result = curl_mime_type(part, multiFormData.contentType.c_str());
         if (result != CURLE_OK) {
-            NETSTACK_LOGE("Failed to set contentType: %{public}s, error: %{public}s",
-                multiFormData.name.c_str(), curl_easy_strerror(result));
+            NETSTACK_LOGE("Failed to set contentType error: %{public}s", curl_easy_strerror(result));
         }
     }
     if (!multiFormData.remoteFileName.empty()) {
         result = curl_mime_filename(part, multiFormData.remoteFileName.c_str());
         if (result != CURLE_OK) {
-            NETSTACK_LOGE("Failed to set remoteFileName: %{public}s, error: %{public}s",
-                multiFormData.name.c_str(), curl_easy_strerror(result));
+            NETSTACK_LOGE("Failed to set remoteFileName error: %{public}s", curl_easy_strerror(result));
         }
     }
     if (!multiFormData.data.empty()) {
         result = curl_mime_data(part, multiFormData.data.c_str(), CURL_ZERO_TERMINATED);
         if (result != CURLE_OK) {
-            NETSTACK_LOGE("Failed to set data: %{public}s, error: %{public}s",
-                multiFormData.name.c_str(), curl_easy_strerror(result));
+            NETSTACK_LOGE("Failed to set data error: %{public}s", curl_easy_strerror(result));
         }
     } else {
         result = curl_mime_filedata(part, multiFormData.filePath.c_str());
         if (result != CURLE_OK) {
-            NETSTACK_LOGE("Failed to set file data: %{public}s, error: %{public}s",
-                multiFormData.name.c_str(), curl_easy_strerror(result));
+            NETSTACK_LOGE("Failed to set file data error: %{public}s", curl_easy_strerror(result));
         }
     }
 }
