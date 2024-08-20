@@ -1591,7 +1591,7 @@ bool HttpExec::SetMultiPartOption(CURL *curl, RequestContext *context)
             continue;
         }
         if (multiFormData.data.empty() && multiFormData.filePath.empty()) {
-            NETSTACK_LOGE("Failed to set name error no data and filepath at the same time");
+            NETSTACK_LOGE("Failed to set multiFormData error no data and filepath at the same time");
             continue;
         }
         part = curl_mime_addpart(multipart);
