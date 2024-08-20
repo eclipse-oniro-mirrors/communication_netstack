@@ -25,6 +25,7 @@
 #include "net_ssl_c_type.h"
 #include "securec.h"
 #include "netstack_log.h"
+#include "net_ssl_verify_cert.h"
 #include "net_manager_constants.h"
 #include "net_conn_client.h"
 
@@ -87,25 +88,30 @@ int32_t OH_NetStack_GetPinSetForHostName(const char *hostname, NetStack_Certific
 
     std::string innerHostname = std::string(hostname);
     std::string innerPins;
+    pin->hashAlgorithm = NetStack_HashAlgorithm::SHA_256;
+    pin->kind = NetStack_CertificatePinningKind::PUBLIC_KEY;
 
     int32_t ret = OHOS::NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(innerHostname, innerPins);
     if (ret != OHOS::NetManagerStandard::NETMANAGER_SUCCESS) {
         return ret;
+    }
+    
+    if (innerPins.length() <= 0) {
+        pin->publicKeyHash = nullptr;
+        return OHOS::NetManagerStandard::NETMANAGER_SUCCESS;
     }
 
     size_t size = innerPins.length() + 1;
     char *key = (char *)malloc(size);
     if (key == nullptr) {
         NETSTACK_LOGE("OH_NetStack_GetPinSetForHostName malloc failed");
-        return OHOS::NetManagerStandard::NETMANAGER_ERR_INTERNAL;
+        return OHOS::NetStack::Ssl::SslErrorCode::SSL_X509_V_ERR_OUT_OF_MEMORY;
     }
 
     if (strcpy_s(key, size, innerPins.c_str()) != 0) {
         NETSTACK_LOGE("OH_NetStack_GetPinSetForHostName string copy failed");
-        return OHOS::NetManagerStandard::NETMANAGER_ERR_STRCPY_FAIL;
+        return OHOS::NetStack::Ssl::SslErrorCode::SSL_X509_V_ERR_OUT_OF_MEMORY;
     }
-    pin->hashAlgorithm = NetStack_HashAlgorithm::SHA_256;
-    pin->kind = NetStack_CertificatePinningKind::PUBLIC_KEY;
     pin->publicKeyHash = key;
 
     return OHOS::NetManagerStandard::NETMANAGER_SUCCESS;
@@ -136,7 +142,7 @@ int32_t OH_NetStack_GetCertificatesForHostName(const char *hostname, NetStack_Ce
     char **contentPtr = (char **)malloc(innerCertsLength * sizeof(char *));
     if (contentPtr == nullptr) {
         NETSTACK_LOGE("OH_NetStack_GetCertificatesForHostName malloc failed");
-        return OHOS::NetManagerStandard::NETMANAGER_ERR_INTERNAL;
+        return OHOS::NetStack::Ssl::SslErrorCode::SSL_X509_V_ERR_OUT_OF_MEMORY;
     }
 
     for (size_t i = 0; i < innerCertsLength; ++i) {
@@ -144,11 +150,11 @@ int32_t OH_NetStack_GetCertificatesForHostName(const char *hostname, NetStack_Ce
         char *certPtr = (char *)malloc(certLen);
         if (certPtr == nullptr) {
             NETSTACK_LOGE("OH_NetStack_GetCertificatesForHostName malloc failed");
-            return OHOS::NetManagerStandard::NETMANAGER_ERR_INTERNAL;
+            return OHOS::NetStack::Ssl::SslErrorCode::SSL_X509_V_ERR_OUT_OF_MEMORY;
         }
         if (strcpy_s(certPtr, certLen, innerCerts[i].c_str()) != 0) {
             NETSTACK_LOGE("OH_NetStack_GetCertificatesForHostName string copy failed");
-            return OHOS::NetManagerStandard::NETMANAGER_ERR_STRCPY_FAIL;
+            return OHOS::NetStack::Ssl::SslErrorCode::SSL_X509_V_ERR_OUT_OF_MEMORY;
         }
         contentPtr[i] = certPtr;
     }
