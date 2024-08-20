@@ -159,7 +159,7 @@ void TcpServerConnectionFinalize(napi_env, void *data, void *)
         if (clientIter != g_clientFDs.end()) {
             if (clientIter->second != -1) {
                 NETSTACK_LOGI("close socketfd %{public}d", clientIter->second);
-                close(clientIter->second);
+                shutdown(clientIter->second, SHUT_RDWR);
                 clientIter->second = -1;
             }
         }
@@ -1894,13 +1894,11 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
 {
     auto buffer = std::make_unique<char[]>(recvBufferSize);
     if (buffer == nullptr) {
-        NETSTACK_LOGE("client malloc failed, connectFd: %{public}d, size: %{public}d", connectFD, recvBufferSize);
         RecvInErrorCondition(NO_MEMORY, clientId, connectFD, callback);
         return;
     }
     while (true) {
         if (memset_s(buffer.get(), recvBufferSize, 0, recvBufferSize) != EOK) {
-            NETSTACK_LOGE("memset_s failed!");
             RecvInErrorCondition(UNKNOW_ERROR, clientId, connectFD, callback);
             break;
         }
@@ -1916,9 +1914,11 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
         }
 
         int32_t recvSize = recv(connectFD, buffer.get(), recvBufferSize, 0);
+        if (recvSize == 0) {
+            close(connectFD);
+        }
         int flags = fcntl(connectFD, F_GETFL, 0);
         if (flags == -1) {
-            NETSTACK_LOGE("read flag fail");
             CloseClientHandler(clientId, connectFD, manager, callback);
             break;
         }
