@@ -150,6 +150,10 @@ bool HasInternetPermission()
         return false;
     }
     auto groups = (gid_t *)malloc(groupNum * sizeof(gid_t));
+    if (groups == nullptr) {
+        NETSTACK_LOGE("INTERNET permission denied by malloc");
+        return false;
+    }
     groupNum = getgroups(groupNum, groups);
     for (int i = 0; i < groupNum; i++) {
         if (groups[i] == inetGroup) {
