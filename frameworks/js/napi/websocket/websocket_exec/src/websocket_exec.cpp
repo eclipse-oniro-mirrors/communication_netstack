@@ -326,7 +326,7 @@ int WebSocketExec::HttpDummy(lws *wsi, lws_callback_reasons reason, void *user, 
     if (ret < 0) {
         OnError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE);
     }
-    return ret;
+    return 0;
 }
 
 int WebSocketExec::LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback_reasons reason, void *user, void *in,
