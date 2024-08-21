@@ -109,6 +109,7 @@ int32_t OH_NetStack_GetPinSetForHostName(const char *hostname, NetStack_Certific
     }
 
     if (strcpy_s(key, size, innerPins.c_str()) != 0) {
+        free(key);
         NETSTACK_LOGE("OH_NetStack_GetPinSetForHostName string copy failed");
         return OHOS::NetStack::Ssl::SslErrorCode::SSL_X509_V_ERR_OUT_OF_MEMORY;
     }
@@ -139,24 +140,29 @@ int32_t OH_NetStack_GetCertificatesForHostName(const char *hostname, NetStack_Ce
         certs->content = nullptr;
         return OHOS::NetManagerStandard::NETMANAGER_SUCCESS;
     }
-    char **contentPtr = (char **)malloc(innerCertsLength * sizeof(char *));
-    if (contentPtr == nullptr) {
+
+    size_t contentPtrSize = innerCertsLength * sizeof(char *);
+    size_t totalMallocSize = contentPtrSize;
+    for (size_t i = 0; i < innerCertsLength; ++i) {
+        totalMallocSize += innerCerts[i].size() + 1;
+    }
+    char *ptr = (char *)malloc(totalMallocSize);
+    if (ptr == nullptr) {
         NETSTACK_LOGE("OH_NetStack_GetCertificatesForHostName malloc failed");
         return OHOS::NetStack::Ssl::SslErrorCode::SSL_X509_V_ERR_OUT_OF_MEMORY;
     }
+    char **contentPtr = reinterpret_cast<char **>(ptr);
+    char *certPtr = ptr + contentPtrSize;
 
     for (size_t i = 0; i < innerCertsLength; ++i) {
         size_t certLen = innerCerts[i].size() + 1;
-        char *certPtr = (char *)malloc(certLen);
-        if (certPtr == nullptr) {
-            NETSTACK_LOGE("OH_NetStack_GetCertificatesForHostName malloc failed");
-            return OHOS::NetStack::Ssl::SslErrorCode::SSL_X509_V_ERR_OUT_OF_MEMORY;
-        }
         if (strcpy_s(certPtr, certLen, innerCerts[i].c_str()) != 0) {
+            free(ptr);
             NETSTACK_LOGE("OH_NetStack_GetCertificatesForHostName string copy failed");
             return OHOS::NetStack::Ssl::SslErrorCode::SSL_X509_V_ERR_OUT_OF_MEMORY;
         }
         contentPtr[i] = certPtr;
+        certPtr += certLen;
     }
 
     certs->length = innerCertsLength;
@@ -175,11 +181,7 @@ void OH_Netstack_DestroyCertificatesContent(NetStack_Certificates *certs)
         return;
     }
 
-    for (size_t i = 0; i < certs->length; ++i) {
-        free(certs->content[i]);
-    }
-
-    free((void *)certs->content);
+    free(certs->content);
     certs->content = nullptr;
     certs->length = 0;
 }
