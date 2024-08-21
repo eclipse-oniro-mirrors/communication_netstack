@@ -988,13 +988,15 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
 #endif //  !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     // pin trusted certifcate keys.
-    std::string pins;
-    auto ret1 = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
-    if (ret1 != 0 || pins.empty()) {
-        NETSTACK_LOGD("Get no pinset by host name[%{public}s]", hostname.c_str());
-    } else {
-        NETSTACK_LOGD("curl set pin =[%{public}s]", pins.c_str());
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str(), context);
+    if (!NetManagerStandard::NetConnClient::GetInstance().IsPinOpenMode(hostname)) {
+        std::string pins;
+        auto ret1 = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
+        if (ret1 != 0 || pins.empty()) {
+            NETSTACK_LOGD("Get no pinset by host name[%{public}s]", hostname.c_str());
+        } else {
+            NETSTACK_LOGD("curl set pin =[%{public}s]", pins.c_str());
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str(), context);
+        }
     }
 #else
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
