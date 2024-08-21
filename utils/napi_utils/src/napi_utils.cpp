@@ -305,7 +305,7 @@ std::string GetStringFromValueUtf8(napi_env env, napi_value value)
 
     auto deleter = [](char *s) { free(reinterpret_cast<void *>(s)); };
     std::unique_ptr<char, decltype(deleter)> str(static_cast<char *>(malloc(stringLength + 1)), deleter);
-    if (memset_s(str.get(), stringLength + 1, 0, stringLength + 1) != EOK) {
+    if (str == nullptr || memset_s(str.get(), stringLength + 1, 0, stringLength + 1) != EOK) {
         return result;
     }
     size_t length = 0;
