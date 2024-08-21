@@ -68,7 +68,7 @@ private:
     std::string MapToJsonString(const std::map<std::string, uint32_t> mapPara);
 
 private:
-    time_t reportTime;
+    time_t reportTime = 0;
     std::string packageName_;
     EventInfo eventInfo;
     std::map<std::string, uint32_t> versionMap;
