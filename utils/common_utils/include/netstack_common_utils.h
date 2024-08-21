@@ -20,6 +20,7 @@
 #include <list>
 #include <vector>
 #include <string>
+#include <optional>
 
 namespace OHOS::NetStack::CommonUtils {
 static const std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
