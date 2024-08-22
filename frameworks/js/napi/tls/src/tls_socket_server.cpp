@@ -286,6 +286,7 @@ void TLSSocketServer::ExecAccept(const TlsSocket::TLSConnectOptions &tlsAcceptOp
 
 bool TLSSocketServer::Send(const TLSServerSendOptions &data, const TlsSocket::SendCallback &callback)
 {
+    std::lock_guard<std::mutex> its_lock(connectMutex_);
     int socketFd = data.GetSocket();
     std::string info = data.GetSendData();
 
