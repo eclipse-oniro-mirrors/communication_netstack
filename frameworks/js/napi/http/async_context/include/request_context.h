@@ -30,6 +30,7 @@
 #include "request_tracer.h"
 
 namespace OHOS::NetStack::Http {
+static constexpr const uint32_t MAGIC_NUMBER = 0x86161616;
 struct LoadBytes {
     LoadBytes() : nLen(0), tLen(0){};
     LoadBytes(curl_off_t nowLen, curl_off_t totalLen)
@@ -51,6 +52,8 @@ struct CertsPath {
 
 class RequestContext final : public BaseContext {
 public:
+    friend class HttpExec;
+
     RequestContext() = delete;
 
     RequestContext(napi_env env, EventManager *manager);
@@ -137,6 +140,7 @@ public:
 
     RequestTracer::Trace &GetTrace();
 private:
+    uint32_t magicNumber_ = MAGIC_NUMBER;
     int32_t taskId_ = -1;
     bool usingCache_ = true;
     bool requestInStream_ = false;

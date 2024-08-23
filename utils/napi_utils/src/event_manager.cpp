@@ -162,9 +162,13 @@ void EventManager::DeleteListener(const std::string &type)
 
 std::unordered_set<EventManager *> EventManager::validManager_;
 std::mutex EventManager::mutexForManager_;
+EventManagerMagic EventManager::magic_;
 
 void EventManager::SetInvalid(EventManager *manager)
 {
+    if (magic_.magicNumber_ != EVENT_MANAGER_MAGIC_NUMBER) {
+        return;
+    }
     std::lock_guard lock(mutexForManager_);
     auto pos = validManager_.find(manager);
     if (pos == validManager_.end()) {
@@ -178,12 +182,18 @@ void EventManager::SetInvalid(EventManager *manager)
 
 bool EventManager::IsManagerValid(EventManager *manager)
 {
+    if (magic_.magicNumber_ != EVENT_MANAGER_MAGIC_NUMBER) {
+        return false;
+    }
     std::lock_guard lock(mutexForManager_);
     return validManager_.find(manager) != validManager_.end();
 }
 
 void EventManager::SetValid(EventManager *manager)
 {
+    if (magic_.magicNumber_ != EVENT_MANAGER_MAGIC_NUMBER) {
+        return;
+    }
     std::lock_guard lock(mutexForManager_);
     validManager_.emplace(manager);
 }
