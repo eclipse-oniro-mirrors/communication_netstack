@@ -88,8 +88,6 @@ int32_t OH_NetStack_GetPinSetForHostName(const char *hostname, NetStack_Certific
 
     std::string innerHostname = std::string(hostname);
     std::string innerPins;
-    pin->hashAlgorithm = NetStack_HashAlgorithm::SHA_256;
-    pin->kind = NetStack_CertificatePinningKind::PUBLIC_KEY;
 
     int32_t ret = OHOS::NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(innerHostname, innerPins);
     if (ret != OHOS::NetManagerStandard::NETMANAGER_SUCCESS) {
@@ -97,6 +95,8 @@ int32_t OH_NetStack_GetPinSetForHostName(const char *hostname, NetStack_Certific
     }
     
     if (innerPins.length() <= 0) {
+        pin->hashAlgorithm = NetStack_HashAlgorithm::SHA_256;
+        pin->kind = NetStack_CertificatePinningKind::PUBLIC_KEY;
         pin->publicKeyHash = nullptr;
         return OHOS::NetManagerStandard::NETMANAGER_SUCCESS;
     }
@@ -113,6 +113,8 @@ int32_t OH_NetStack_GetPinSetForHostName(const char *hostname, NetStack_Certific
         NETSTACK_LOGE("OH_NetStack_GetPinSetForHostName string copy failed");
         return OHOS::NetStack::Ssl::SslErrorCode::SSL_X509_V_ERR_OUT_OF_MEMORY;
     }
+    pin->hashAlgorithm = NetStack_HashAlgorithm::SHA_256;
+    pin->kind = NetStack_CertificatePinningKind::PUBLIC_KEY;
     pin->publicKeyHash = key;
 
     return OHOS::NetManagerStandard::NETMANAGER_SUCCESS;
