@@ -48,10 +48,25 @@ ohos_unittest("http_client_unittest") {
     "HttpClientTest.cpp",
   ]
 
-  deps = [ "$NETSTACK_INNERKITS_DIR/http_client:http_client" ]
+  deps = [
+    "$NETSTACK_INNERKITS_DIR/http_client:http_client",
+    "//third_party/googletest:gmock_main",
+  ]
 
+  defines = []
   external_deps = common_external_deps
-  external_deps += [ "curl:curl_shared" ]
+  external_deps += [
+    "cJSON:cjson",
+    "curl:curl_shared",
+    "openssl:libssl_shared",
+  ]
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  }
 
   part_name = "netstack"
   subsystem_name = "communication"

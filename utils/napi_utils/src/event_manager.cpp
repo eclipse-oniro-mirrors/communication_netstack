@@ -200,6 +200,7 @@ void EventManager::DeleteEventReference(napi_env env)
     if (env != nullptr && eventRef_ != nullptr) {
         NapiUtils::DeleteReference(env, eventRef_);
     }
+    eventRef_ = nullptr;
 }
 
 void EventManager::SetEventDestroy(bool flag)
@@ -255,6 +256,16 @@ void EventManager::WaitForRcvThdExit()
     sockRcvThdCon_.wait(lock, [this]() {
         return sockRcvExit_;
     });
+}
+
+void EventManager::SetReuseAddr(bool reuse)
+{
+    isReuseAddr_.store(reuse);
+}
+
+bool EventManager::GetReuseAddr()
+{
+    return isReuseAddr_.load();
 }
 
 UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)

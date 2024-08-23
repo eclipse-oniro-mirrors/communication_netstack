@@ -901,12 +901,16 @@ bool ExecBind(BindContext *context)
         return false;
     }
 
-    int reuseOpt = 1;
-    if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_REUSEADDR, &reuseOpt, sizeof(reuseOpt)) < 0) {
-        NETSTACK_LOGE("set reuse addr failed");
-        context->SetNeedThrowException(true);
-        context->SetErrorCode(errno);
-        return false;
+    int reuse = 0;
+    auto manager = context->GetManager();
+    if (manager != nullptr) {
+        reuse = manager->GetReuseAddr();
+        if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<void *>(&reuse),
+                       sizeof(reuse)) < 0) {
+            NETSTACK_LOGE("set SO_REUSEADDR failed, fd: %{public}d", context->GetSocketFd());
+            context->SetErrorCode(errno);
+            return false;
+        }
     }
 
     if (bind(context->GetSocketFd(), addr, len) < 0) {

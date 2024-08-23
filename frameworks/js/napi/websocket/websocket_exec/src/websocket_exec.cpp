@@ -326,7 +326,7 @@ int WebSocketExec::HttpDummy(lws *wsi, lws_callback_reasons reason, void *user, 
     if (ret < 0) {
         OnError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE);
     }
-    return ret;
+    return 0;
 }
 
 int WebSocketExec::LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback_reasons reason, void *user, void *in,
@@ -897,6 +897,11 @@ bool WebSocketExec::ExecClose(CloseContext *context)
 
 napi_value WebSocketExec::CloseCallback(CloseContext *context)
 {
+    auto manager = context->GetManager();
+    if (manager != nullptr) {
+        NETSTACK_LOGD("websocket close, delete js ref");
+        manager->DeleteEventReference(context->GetEnv());
+    }
     return NapiUtils::GetBoolean(context->GetEnv(), true);
 }
 

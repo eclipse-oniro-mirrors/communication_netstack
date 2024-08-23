@@ -42,13 +42,9 @@ static constexpr const char *PROTOCOL_TLSV12 = "TLSv12";
 
 void Finalize(napi_env, void *data, void *)
 {
+    NETSTACK_LOGI("tls socket is finalized");
     auto manager = reinterpret_cast<EventManager *>(data);
     if (manager != nullptr) {
-        auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
-        if (tlsSocket != nullptr) {
-            delete tlsSocket;
-            tlsSocket = nullptr;
-        }
         EventManager::SetInvalid(manager);
     }
 }
