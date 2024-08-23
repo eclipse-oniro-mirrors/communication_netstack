@@ -1297,6 +1297,7 @@ bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
 }
 int TLSSocket::TLSSocketInternal::Recv(char *buffer, int maxBufferSize)
 {
+    std::lock_guard<std::mutex> lock(mutexForSsl_);
     if (!ssl_) {
         NETSTACK_LOGE("ssl is null");
         return SSL_ERROR_RETURN;
