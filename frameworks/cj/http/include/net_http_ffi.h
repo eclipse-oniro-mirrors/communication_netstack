@@ -32,7 +32,7 @@ EXTERN_C_START
     // callback events
     FFI_EXPORT void CJ_OnHeadersReceive(int64_t id, bool once, void (*callback)(CArrString));
     FFI_EXPORT void CJ_OffHeadersReceive(int64_t id);
-    FFI_EXPORT void CJ_OnDataReceive(int64_t id, void (*callback)(char*));
+    FFI_EXPORT void CJ_OnDataReceive(int64_t id, void (*callback)(CArrUI8));
     FFI_EXPORT void CJ_OffDataReceive(int64_t id);
     FFI_EXPORT void CJ_OnDataEnd(int64_t id, void (*callback)());
     FFI_EXPORT void CJ_OffDataEnd(int64_t id);
