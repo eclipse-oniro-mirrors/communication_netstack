@@ -31,6 +31,15 @@
 #include "uv.h"
 
 namespace OHOS::NetStack {
+static constexpr const uint32_t EVENT_MANAGER_MAGIC_NUMBER = 0x86161616;
+struct EventManagerMagic {
+    uint32_t magicNumber_ = EVENT_MANAGER_MAGIC_NUMBER;
+    ~EventManagerMagic()
+    {
+        magicNumber_ = ~magicNumber_;
+    }
+};
+
 class EventManager {
 public:
     EventManager();
@@ -102,6 +111,7 @@ private:
     std::list<EventListener> listeners_;
     void *data_;
     std::queue<void *> dataQueue_;
+    static EventManagerMagic magic_;
     static std::mutex mutexForManager_;
     static std::unordered_set<EventManager *> validManager_;
     napi_ref eventRef_;

@@ -1425,19 +1425,22 @@ struct curl_slist *HttpExec::MakeHeaders(const std::vector<std::string> &vec)
 napi_value HttpExec::MakeResponseHeader(napi_env env, void *ctx)
 {
     auto context = reinterpret_cast<RequestContext *>(ctx);
+    if (context->magicNumber_ != MAGIC_NUMBER) {
+        return NapiUtils::CreateObject(env);
+    }
     (void)env;
     napi_value header = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), header) == napi_object) {
-        for (const auto &it : context->response.GetHeader()) {
+        for (const auto it : context->response.header_) {
             if (!it.first.empty() && !it.second.empty()) {
                 NapiUtils::SetStringPropertyUtf8(context->GetEnv(), header, it.first, it.second);
             }
         }
-        if (!context->response.GetsetCookie().empty()) {
+        if (!context->response.setCookie_.empty()) {
             uint32_t index = 0;
-            auto len = context->response.GetsetCookie().size();
+            auto len = context->response.setCookie_.size();
             auto array = NapiUtils::CreateArray(context->GetEnv(), len);
-            for (const auto &setCookie : context->response.GetsetCookie()) {
+            for (const auto setCookie : context->response.setCookie_) {
                 auto str = NapiUtils::CreateStringUtf8(context->GetEnv(), setCookie);
                 NapiUtils::SetArrayElement(context->GetEnv(), array, index, str);
                 ++index;

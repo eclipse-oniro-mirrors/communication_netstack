@@ -25,6 +25,8 @@ static constexpr const char *WARNING = "Warning";
 
 class HttpResponse final {
 public:
+    friend class HttpExec;
+
     HttpResponse();
 
     void AppendResult(const void *data, size_t length);
