@@ -1596,6 +1596,10 @@ std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::st
                                                                    const X509 *x509Certificates)
 {
     ASN1_OCTET_STRING *extData = X509_EXTENSION_get_data(ext);
+    if (!extData) {
+        NETSTACK_LOGE("extData is nullptr");
+        return "";
+    }
     std::string altNames = reinterpret_cast<char *>(extData->data);
     std::string hostname = " " + hostName;
     BIO *bio = BIO_new(BIO_s_file());

@@ -967,6 +967,10 @@ static napi_value CreateTextMessagePara(napi_env env, void *callbackPara)
 {
     auto manager = reinterpret_cast<EventManager *>(callbackPara);
     auto msg = reinterpret_cast<std::string *>(manager->GetQueueData());
+    if (!msg) {
+        NETSTACK_LOGE("msg is nullptr");
+        return NapiUtils::GetUndefined(env);
+    }
     auto text = NapiUtils::CreateStringUtf8(env, *msg);
     delete msg;
     return text;
@@ -976,6 +980,10 @@ static napi_value CreateBinaryMessagePara(napi_env env, void *callbackPara)
 {
     auto manager = reinterpret_cast<EventManager *>(callbackPara);
     auto msg = reinterpret_cast<std::string *>(manager->GetQueueData());
+    if (!msg) {
+        NETSTACK_LOGE("msg is nullptr");
+        return NapiUtils::GetUndefined(env);
+    }
     void *data = nullptr;
     napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(env, msg->size(), &data);
     if (data != nullptr && NapiUtils::ValueIsArrayBuffer(env, arrayBuffer) &&

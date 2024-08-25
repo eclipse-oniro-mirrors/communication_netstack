@@ -89,6 +89,10 @@ void EventMessageCallback(uv_work_t *work, int status)
     auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
     auto eventManager = reinterpret_cast<EventManager *>(workWrapper->data);
     auto messageRecvParam = reinterpret_cast<Monitor::MessageRecvParma *>(eventManager->GetQueueData());
+    if (!messageRecvParam) {
+        NETSTACK_LOGE("messageRecvParam is nullptr");
+        return;
+    }
 
     napi_env env = workWrapper->env;
     auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
