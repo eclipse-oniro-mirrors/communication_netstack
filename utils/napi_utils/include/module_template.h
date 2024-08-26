@@ -59,6 +59,10 @@ napi_value Interface(napi_env env, napi_callback_info info, const std::string &a
     }
 
     auto context = new Context(env, manager);
+    if (!context) {
+        NETSTACK_LOGE("new context is nullptr");
+        return NapiUtils::GetUndefined(env);
+    }
     context->ParseParams(params, paramsCount);
     if (context->IsNeedThrowException()) { // only api9 or later need throw exception.
         napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
@@ -101,6 +105,10 @@ napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
     }
 
     auto context = new Context(env, manager);
+    if (!context) {
+        NETSTACK_LOGE("new context is nullptr");
+        return NapiUtils::GetUndefined(env);
+    }
     context->ParseParams(params, paramsCount);
     napi_value ret = NapiUtils::GetUndefined(env);
     if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
