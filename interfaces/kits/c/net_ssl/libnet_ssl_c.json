@@ -2,5 +2,17 @@
     {
         "first_introduced":"11",
         "name": "OH_NetStack_VerifyCertification"
+    },
+    {
+        "first_introduced":"11",
+        "name": "OH_NetStack_GetPinSetForHostName"
+    },
+    {
+        "first_introduced":"11",
+        "name": "OH_NetStack_GetCertificatesForHostName"
+    },
+    {
+        "first_introduced":"11",
+        "name": "OH_Netstack_DestroyCertificatesContent"
     }
 ]

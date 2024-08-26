@@ -72,6 +72,27 @@ struct NetStack_CertBlob {
     uint8_t *data;
 };
 
+typedef enum NetStack_CertificatePinningKind {
+    PUBLIC_KEY,
+} NetStack_CertificatePinningKind;
+
+typedef enum NetStack_HashAlgorithm {
+    SHA_256,
+} NetStack_HashAlgorithm;
+
+typedef struct NetStack_CertificatePinning {
+    NetStack_CertificatePinningKind kind;
+    NetStack_HashAlgorithm hashAlgorithm;
+    union {
+        char *publicKeyHash;
+    };
+} NetStack_CertificatePinning;
+
+typedef struct NetStack_Certificates {
+    char **content;
+    size_t length;
+} NetStack_Certificates;
+
 #ifdef __cplusplus
 }
 #endif
