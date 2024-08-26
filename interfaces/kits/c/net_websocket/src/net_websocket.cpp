@@ -83,8 +83,11 @@ struct WebSocket *OH_WebSocketClient_Constructor(WebSocket_OnOpenCallback onOpen
     websocketClient->Registcallback(OH_NetStack_OnOpenCallback, OH_NetStack_OnMessageCallback,
                                     OH_NetStack_OnErrorCallback, OH_NetStack_OnCloseCallback);
     if (g_clientMap.size() == MAX_CLIENT_SIZE) {
+        delete OH_client;
         OH_client = nullptr;
-        return OH_client;
+        delete websocketClient;
+        websocketClient = nullptr;
+        return nullptr;
     }
 
     OH_client->requestOptions.headers = nullptr;
