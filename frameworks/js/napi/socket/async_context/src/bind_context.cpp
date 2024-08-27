@@ -73,6 +73,9 @@ void BindContext::ParseParams(napi_value *params, size_t paramsCount)
 
 int BindContext::GetSocketFd() const
 {
+    if (manager_ == nullptr) {
+        return -1;
+    }
     return manager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) : -1;
 }
 
