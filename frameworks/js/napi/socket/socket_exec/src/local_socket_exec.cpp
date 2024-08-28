@@ -1033,7 +1033,6 @@ bool ExecLocalSocketServerEnd(LocalSocketServerEndContext *context)
     }
     mgr->SetServerDestructStatus(true);
     mgr->RemoveAllAccept();
-    mgr->RemoveAllEventManager();
     if (mgr->sockfd_ > 0) {
         close(mgr->sockfd_);
         mgr->sockfd_ = -1;
