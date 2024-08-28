@@ -30,6 +30,8 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <fstream>
+#include <sstream>
 
 #include "netstack_log.h"
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
