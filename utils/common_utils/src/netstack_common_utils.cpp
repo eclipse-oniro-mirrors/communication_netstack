@@ -30,6 +30,8 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <fstream>
+#include <sstream>
 
 #include "netstack_log.h"
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -462,5 +464,19 @@ std::optional<std::string> GetBundleName()
     return OHOS::NetManagerStandard::NetConnClient::ObtainBundleNameForSelf();
 #endif
     return std::nullopt;
+}
+
+std::string GetFileDataFromFilePath(const std::string& filePath)
+{
+    std::ifstream file(filePath);
+    if (file.is_open()) {
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        file.close();
+        return buffer.str();
+    } else {
+        NETSTACK_LOGE("Failed to obtain the file data stream.");
+        return {};
+    }
 }
 } // namespace OHOS::NetStack::CommonUtils
