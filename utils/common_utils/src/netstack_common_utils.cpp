@@ -463,4 +463,18 @@ std::optional<std::string> GetBundleName()
 #endif
     return std::nullopt;
 }
+
+std::string GetFileDataFromFilePath(const std::string& filePath)
+{
+    std::ifstream file(filePath);
+    if (file.is_open()) {
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        file.close();
+        return buffer.str();
+    } else {
+        NETSTACK_LOGE("Failed to obtain the file data stream.");
+        return {};
+    }
+}
 } // namespace OHOS::NetStack::CommonUtils

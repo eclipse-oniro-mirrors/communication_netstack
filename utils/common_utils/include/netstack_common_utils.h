@@ -89,5 +89,7 @@ std::string MaskIpv6(std::string &maskedResult);
 std::string AnonymizeIp(std::string &input);
 
 std::optional<std::string> GetBundleName();
+
+std::string GetFileDataFromFilePath(const std::string& filePath);
 } // namespace OHOS::NetStack::CommonUtils
 #endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */
