@@ -1909,9 +1909,6 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
         }
 
         int32_t recvSize = recv(connectFD, buffer.get(), recvBufferSize, 0);
-        if (recvSize == 0) {
-            close(connectFD);
-        }
         int flags = fcntl(connectFD, F_GETFL, 0);
         if (flags == -1) {
             CloseClientHandler(clientId, connectFD, manager, callback);
@@ -1921,7 +1918,7 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
         if (recvSize <= 0) {
             NETSTACK_LOGI("ClientRecv: fd:%{public}d, size:%{public}d, errno:%{public}d, is non blocking:%{public}s",
                           connectFD, recvSize, errno, static_cast<uint32_t>(flags) & O_NONBLOCK ? "true" : "false");
-            if ((recvSize == 0 && errno == EAGAIN) || (errno != EAGAIN && errno != EINTR)) {
+            if ((recvSize == 0) || (recvSize == 0 && errno == EAGAIN) || (errno != EAGAIN && errno != EINTR)) {
                 CloseClientHandler(clientId, connectFD, manager, callback);
                 break;
             }
@@ -1934,6 +1931,7 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
             if (memcpy_s(data, recvSize, buffer.get(), recvSize) != EOK ||
                 !callback.OnMessage(connectFD, data, recvSize, nullptr, manager)) {
                 free(data);
+                CloseClientHandler(clientId, connectFD, manager, callback);
             }
         }
     }
