@@ -104,15 +104,26 @@ public:
 
     void DeleteReference();
 
+    napi_async_work GetAsyncWork();
+
     virtual void ParseParams(napi_value *params, size_t paramsCount);
 
+    napi_deferred deferredBack1_ = nullptr;
+    napi_deferred deferredBack2_ = nullptr;
+    napi_deferred deferredBack3_ = nullptr;
+    napi_deferred deferredBack4_ = nullptr;
+    napi_async_work asyncWorkBack1_ = nullptr;
+    napi_async_work asyncWorkBack2_ = nullptr;
+    napi_async_work asyncWorkBack3_ = nullptr;
+    napi_async_work asyncWorkBack4_ = nullptr;
+
 protected:
-    EventManager *manager_;
+    EventManager *manager_ = nullptr;
 
 private:
-    napi_env env_;
+    napi_env env_ = nullptr;
 
-    napi_ref ref_;
+    napi_ref ref_ = nullptr;
 
     bool parseOK_;
 
@@ -120,17 +131,13 @@ private:
 
     int32_t errorCode_;
 
-    std::string errorMessage_;
+    napi_ref callback_ = nullptr;
 
-    napi_ref callback_;
+    napi_ref promiseRef_ = nullptr;
 
-    napi_ref promiseRef_;
+    napi_async_work asyncWork_ = nullptr;
 
-    napi_async_work asyncWork_;
-
-    napi_deferred deferred_;
-
-    std::string asyncWorkName_;
+    napi_deferred deferred_ = nullptr;
 
     bool needPromise_;
 
@@ -139,6 +146,10 @@ private:
     bool permissionDenied_;
 
     bool noAllowedHost_;
+
+    std::string asyncWorkName_;
+
+    std::string errorMessage_;
 };
 } // namespace OHOS::NetStack
 
