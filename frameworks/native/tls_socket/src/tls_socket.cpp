@@ -1277,18 +1277,17 @@ bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, ssl_st *ssl, const char 
 
 bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
 {
-    NETSTACK_LOGD("send data size: %{public}zu", data.size());
-    if (data.empty()) {
-        NETSTACK_LOGE("data is empty");
-        return false;
-    }
-
     {
         std::lock_guard<std::mutex> lock(mutexForSsl_);
         if (!ssl_) {
             NETSTACK_LOGE("ssl is null");
             return false;
         }
+    }
+
+    if (data.empty()) {
+        NETSTACK_LOGE("data is empty");
+        return true;
     }
 
     if (!PollSend(socketDescriptor_, ssl_, data.c_str(), data.size())) {

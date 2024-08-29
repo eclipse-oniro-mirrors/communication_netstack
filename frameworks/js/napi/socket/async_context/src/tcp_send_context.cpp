@@ -86,7 +86,7 @@ bool TcpSendContext::GetData(napi_value udpSendOptions)
         std::string data = NapiUtils::GetStringFromValueUtf8(GetEnv(), jsData);
         if (data.empty()) {
             NETSTACK_LOGE("string data is empty");
-            return false;
+            return true;
         }
         options.SetData(data);
         return true;
@@ -97,7 +97,7 @@ bool TcpSendContext::GetData(napi_value udpSendOptions)
         void *data = NapiUtils::GetInfoFromArrayBufferValue(GetEnv(), jsData, &length);
         if (data == nullptr) {
             NETSTACK_LOGE("arraybuffer data is empty");
-            return false;
+            return true;
         }
         options.SetData(data, length);
         return true;
