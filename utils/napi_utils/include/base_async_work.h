@@ -57,6 +57,23 @@ public:
     {
         static_assert(std::is_base_of<BaseContext, Context>::value);
 
+        if (!data) {
+            return;
+        }
+        auto baseContext = reinterpret_cast<BaseContext *>(data);
+        if (baseContext->GetDeferred() != baseContext->deferredBack1_ ||
+            baseContext->GetDeferred() != baseContext->deferredBack2_ ||
+            baseContext->GetDeferred() != baseContext->deferredBack3_ ||
+            baseContext->GetDeferred() != baseContext->deferredBack4_) {
+            return;
+        }
+        if (baseContext->GetAsyncWork() != baseContext->asyncWorkBack1_ ||
+            baseContext->GetAsyncWork() != baseContext->asyncWorkBack2_ ||
+            baseContext->GetAsyncWork() != baseContext->asyncWorkBack3_ ||
+            baseContext->GetAsyncWork() != baseContext->asyncWorkBack4_) {
+            return;
+        }
+
         if (status != napi_ok) {
             return;
         }

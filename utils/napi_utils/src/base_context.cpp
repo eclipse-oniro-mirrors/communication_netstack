@@ -36,7 +36,9 @@ BaseContext::BaseContext(napi_env env, EventManager *manager)
       needPromise_(true),
       needThrowException_(false),
       permissionDenied_(false),
-      noAllowedHost_(false) {}
+      noAllowedHost_(false)
+{
+}
 
 BaseContext::~BaseContext()
 {
@@ -83,10 +85,19 @@ void BaseContext::DeleteCallback()
     callback_ = nullptr;
 }
 
+napi_async_work BaseContext::GetAsyncWork()
+{
+    return asyncWork_;
+}
+
 void BaseContext::CreateAsyncWork(const std::string &name, AsyncWorkExecutor executor, AsyncWorkCallback callback)
 {
     napi_status ret = napi_create_async_work(env_, nullptr, NapiUtils::CreateStringUtf8(env_, name), executor, callback,
                                              this, &asyncWork_);
+    asyncWorkBack1_ = asyncWork_;
+    asyncWorkBack2_ = asyncWork_;
+    asyncWorkBack3_ = asyncWork_;
+    asyncWorkBack4_ = asyncWork_;
     if (ret != napi_ok) {
         return;
     }
@@ -107,6 +118,10 @@ napi_value BaseContext::CreatePromise()
     napi_value result = nullptr;
     NAPI_CALL(env_, napi_create_promise(env_, &deferred_, &result));
     promiseRef_ = NapiUtils::CreateReference(env_, result);
+    deferredBack1_ = deferred_;
+    deferredBack2_ = deferred_;
+    deferredBack3_ = deferred_;
+    deferredBack4_ = deferred_;
     return result;
 }
 
