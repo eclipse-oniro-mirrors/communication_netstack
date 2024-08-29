@@ -639,7 +639,7 @@ static bool UdpSendEvent(UdpSendContext *context)
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
     socklen_t len;
-    context->options.address.SetAddress(
+    context->options.address.SetRawAddress(
         ConvertAddressToIp(context->options.address.GetAddress(), context->options.address.GetSaFamily()));
     GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
@@ -1032,7 +1032,7 @@ bool ExecConnect(ConnectContext *context)
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
     socklen_t len;
-    context->options.address.SetAddress(
+    context->options.address.SetRawAddress(
         ConvertAddressToIp(context->options.address.GetAddress(), context->options.address.GetSaFamily()));
     GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
@@ -1232,7 +1232,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
         if (!IsAddressAndRetValid(ret, address, context)) {
             return false;
         }
-        context->address_.SetAddress(address);
+        context->address_.SetRawAddress(address);
         context->address_.SetFamilyBySaFamily(sockAddr.sa_family);
         context->address_.SetPort(ntohs(addr4.sin_port));
         return true;
@@ -1245,7 +1245,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
         if (!IsAddressAndRetValid(ret, address, context)) {
             return false;
         }
-        context->address_.SetAddress(address);
+        context->address_.SetRawAddress(address);
         context->address_.SetFamilyBySaFamily(sockAddr.sa_family);
         context->address_.SetPort(ntohs(addr6.sin6_port));
         return true;
@@ -1567,7 +1567,7 @@ static bool GetIPv4Address(TcpServerGetRemoteAddressContext *context, int32_t fd
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
-    context->address_.SetAddress(address);
+    context->address_.SetRawAddress(address);
     context->address_.SetFamilyBySaFamily(sockAddr.sa_family);
     context->address_.SetPort(ntohs(addr4.sin_port));
     return true;
@@ -1590,7 +1590,7 @@ static bool GetIPv6Address(TcpServerGetRemoteAddressContext *context, int32_t fd
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
-    context->address_.SetAddress(address);
+    context->address_.SetRawAddress(address);
     context->address_.SetFamilyBySaFamily(sockAddr.sa_family);
     context->address_.SetPort(ntohs(addr6.sin6_port));
     return true;
@@ -1664,20 +1664,20 @@ bool ExecTcpConnectionGetLocalAddress(TcpConnectionGetLocalAddressContext *conte
         return false;
     }
 
-    char ipStr[INET6_ADDRSTRLEN];
+    char ipStr[INET6_ADDRSTRLEN] = {0};
     Socket::NetAddress localAddress;
     if (addr.ss_family == AF_INET) {
         auto *addrIn = reinterpret_cast<struct sockaddr_in *>(&addr);
         inet_ntop(AF_INET, &addrIn->sin_addr, ipStr, sizeof(ipStr));
         localAddress.SetFamilyBySaFamily(AF_INET);
-        localAddress.SetAddress(ipStr);
+        localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addrIn->sin_port));
         context->localAddress_ = localAddress;
     } else if (addr.ss_family == AF_INET6) {
         auto *addrIn6 = reinterpret_cast<struct sockaddr_in6 *>(&addr);
         inet_ntop(AF_INET6, &addrIn6->sin6_addr, ipStr, sizeof(ipStr));
         localAddress.SetFamilyBySaFamily(AF_INET6);
-        localAddress.SetAddress(ipStr);
+        localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addrIn6->sin6_port));
         context->localAddress_ = localAddress;
     }
@@ -2322,6 +2322,9 @@ napi_value TcpServerGetStateCallback(TcpServerGetStateContext *context)
 
 std::string ConvertAddressToIp(const std::string &address, sa_family_t family)
 {
+    if (address.empty()) {
+        return {};
+    }
     addrinfo hints{};
     hints.ai_family = family;
     char ipStr[INET6_ADDRSTRLEN] = {0};

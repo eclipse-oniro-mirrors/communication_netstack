@@ -54,20 +54,20 @@ bool ExecGetLocalAddress(GetLocalAddressContext *context)
         return false;
     }
 
-    char ipStr[INET6_ADDRSTRLEN];
+    char ipStr[INET6_ADDRSTRLEN] = {0};
     Socket::NetAddress localAddress;
     if (addr.ss_family == AF_INET) {
         auto *addrIn = reinterpret_cast<struct sockaddr_in *>(&addr);
         inet_ntop(AF_INET, &addrIn->sin_addr, ipStr, sizeof(ipStr));
         localAddress.SetFamilyBySaFamily(AF_INET);
-        localAddress.SetAddress(ipStr);
+        localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addrIn->sin_port));
         context->localAddress_ = localAddress;
     } else if (addr.ss_family == AF_INET6) {
         auto *addrIn6 = reinterpret_cast<struct sockaddr_in6 *>(&addr);
         inet_ntop(AF_INET6, &addrIn6->sin6_addr, ipStr, sizeof(ipStr));
         localAddress.SetFamilyBySaFamily(AF_INET6);
-        localAddress.SetAddress(ipStr);
+        localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addrIn6->sin6_port));
         context->localAddress_ = localAddress;
     }
@@ -89,20 +89,20 @@ bool ExecTcpServerGetLocalAddress(TcpServerGetLocalAddressContext *context)
         return false;
     }
 
-    char ipStr[INET6_ADDRSTRLEN];
+    char ipStr[INET6_ADDRSTRLEN] = {0};
     Socket::NetAddress localAddress;
     if (addr.ss_family == AF_INET) {
         auto *addrIn = reinterpret_cast<struct sockaddr_in *>(&addr);
         inet_ntop(AF_INET, &addrIn->sin_addr, ipStr, sizeof(ipStr));
         localAddress.SetFamilyBySaFamily(AF_INET);
-        localAddress.SetAddress(ipStr);
+        localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addrIn->sin_port));
         context->localAddress_ = localAddress;
     } else if (addr.ss_family == AF_INET6) {
         auto *addrIn6 = reinterpret_cast<struct sockaddr_in6 *>(&addr);
         inet_ntop(AF_INET6, &addrIn6->sin6_addr, ipStr, sizeof(ipStr));
         localAddress.SetFamilyBySaFamily(AF_INET6);
-        localAddress.SetAddress(ipStr);
+        localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addrIn6->sin6_port));
         context->localAddress_ = localAddress;
     }

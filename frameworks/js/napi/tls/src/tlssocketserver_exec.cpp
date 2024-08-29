@@ -310,20 +310,20 @@ bool TLSSocketServerExec::ExecGetLocalAddress(TLSServerGetLocalAddressContext *c
         return false;
     }
 
-    char ip_str[INET6_ADDRSTRLEN];
+    char ipStr[INET6_ADDRSTRLEN] = {0};
     Socket::NetAddress localAddress;
     if (addr.ss_family == AF_INET) {
         auto *addr_in = (struct sockaddr_in *)&addr;
-        inet_ntop(AF_INET, &addr_in->sin_addr, ip_str, sizeof(ip_str));
+        inet_ntop(AF_INET, &addr_in->sin_addr, ipStr, sizeof(ipStr));
         localAddress.SetFamilyBySaFamily(AF_INET);
-        localAddress.SetAddress(ip_str);
+        localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addr_in->sin_port));
         tlsSocketServer->SetLocalAddress(localAddress);
     } else if (addr.ss_family == AF_INET6) {
         auto *addr_in6 = (struct sockaddr_in6 *)&addr;
-        inet_ntop(AF_INET6, &addr_in6->sin6_addr, ip_str, sizeof(ip_str));
+        inet_ntop(AF_INET6, &addr_in6->sin6_addr, ipStr, sizeof(ipStr));
         localAddress.SetFamilyBySaFamily(AF_INET6);
-        localAddress.SetAddress(ip_str);
+        localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addr_in6->sin6_port));
         tlsSocketServer->SetLocalAddress(localAddress);
     }
