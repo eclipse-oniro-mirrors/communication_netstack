@@ -30,6 +30,8 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <fstream>
+#include <sstream>
 
 #include "netstack_log.h"
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -451,5 +453,19 @@ std::string AnonymizeIp(std::string &input)
         return MaskIpv6(maskedResult);
     }
     return input;
+}
+
+std::string GetFileDataFromFilePath(const std::string& filePath)
+{
+    std::ifstream file(filePath);
+    if (file.is_open()) {
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        file.close();
+        return buffer.str();
+    } else {
+        NETSTACK_LOGE("Failed to obtain the file data stream.");
+        return {};
+    }
 }
 } // namespace OHOS::NetStack::CommonUtils

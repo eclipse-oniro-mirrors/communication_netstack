@@ -1555,7 +1555,12 @@ void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *pa
             NETSTACK_LOGE("Failed to set data error: %{public}s", curl_easy_strerror(result));
         }
     } else {
-        result = curl_mime_filedata(part, multiFormData.filePath.c_str());
+        if (!multiFormData.remoteFileName.empty()) {
+            std::string fileData = CommonUtils::GetFileDataFromFilePath(multiFormData.filePath.c_str());
+            result = curl_mime_data(part, fileData.c_str(), fileData.size());
+        } else {
+            result = curl_mime_filedata(part, multiFormData.filePath.c_str());
+        }
         if (result != CURLE_OK) {
             NETSTACK_LOGE("Failed to set file data error: %{public}s", curl_easy_strerror(result));
         }
