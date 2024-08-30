@@ -39,7 +39,7 @@ void MulticastMembershipContext::ParseParams(napi_value *params, size_t paramsCo
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_FAMILY)) {
         address_.SetFamilyByJsValue(NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_FAMILY));
     }
-    address_.SetAddress(addr);
+    address_.SetIpAddress(addr);
 
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_PORT)) {
         address_.SetPort(static_cast<uint16_t>(NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_PORT)));

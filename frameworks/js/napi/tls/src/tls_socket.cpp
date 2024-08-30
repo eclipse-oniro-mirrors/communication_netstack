@@ -297,7 +297,7 @@ VerifyMode TLSSecureOptions::GetVerifyMode() const
 void TLSConnectOptions::SetNetAddress(const Socket::NetAddress &address)
 {
     address_.SetFamilyBySaFamily(address.GetSaFamily());
-    address_.SetAddress(address.GetAddress());
+    address_.SetRawAddress(address.GetAddress());
     address_.SetPort(address.GetPort());
 }
 
@@ -821,7 +821,7 @@ void TLSSocket::GetIp4RemoteAddress(const GetRemoteAddressCallback &callback)
     }
     Socket::NetAddress netAddress;
     netAddress.SetFamilyBySaFamily(AF_INET);
-    netAddress.SetAddress(address);
+    netAddress.SetRawAddress(address);
     netAddress.SetPort(ntohs(addr4.sin_port));
     CallGetRemoteAddressCallback(TLSSOCKET_SUCCESS, netAddress, callback);
 }
@@ -849,7 +849,7 @@ void TLSSocket::GetIp6RemoteAddress(const GetRemoteAddressCallback &callback)
     }
     Socket::NetAddress netAddress;
     netAddress.SetFamilyBySaFamily(AF_INET6);
-    netAddress.SetAddress(address);
+    netAddress.SetRawAddress(address);
     netAddress.SetPort(ntohs(addr6.sin6_port));
     CallGetRemoteAddressCallback(TLSSOCKET_SUCCESS, netAddress, callback);
 }

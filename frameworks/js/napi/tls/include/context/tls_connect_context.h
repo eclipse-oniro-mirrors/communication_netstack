@@ -31,6 +31,7 @@ namespace NetStack {
 namespace TlsSocket {
 class TLSConnectContext final : public BaseContext {
 public:
+    friend class TLSSocketExec;
     TLSConnectContext() = delete;
     explicit TLSConnectContext(napi_env env, EventManager *manager);
 

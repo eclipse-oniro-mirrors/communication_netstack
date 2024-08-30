@@ -1368,18 +1368,18 @@ bool TLSSocketServer::GetTlsConnectionLocalAddress(int acceptSockFD, Socket::Net
             return false;
         }
     }
-    char ip_str[INET6_ADDRSTRLEN];
+    char ipStr[INET6_ADDRSTRLEN] = {0};
     if (addr.ss_family == AF_INET) {
         auto *addr_in = (struct sockaddr_in *)&addr;
-        inet_ntop(AF_INET, &addr_in->sin_addr, ip_str, sizeof(ip_str));
+        inet_ntop(AF_INET, &addr_in->sin_addr, ipStr, sizeof(ipStr));
         localAddress.SetFamilyBySaFamily(AF_INET);
-        localAddress.SetAddress(ip_str);
+        localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addr_in->sin_port));
     } else if (addr.ss_family == AF_INET6) {
         auto *addr_in6 = (struct sockaddr_in6 *)&addr;
-        inet_ntop(AF_INET6, &addr_in6->sin6_addr, ip_str, sizeof(ip_str));
+        inet_ntop(AF_INET6, &addr_in6->sin6_addr, ipStr, sizeof(ipStr));
         localAddress.SetFamilyBySaFamily(AF_INET6);
-        localAddress.SetAddress(ip_str);
+        localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addr_in6->sin6_port));
     }
     return true;
@@ -1401,10 +1401,10 @@ void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsLi
     std::shared_ptr<Connection> connection = std::make_shared<Connection>();
     Socket::NetAddress netAddress;
     Socket::NetAddress localAddress;
-    char clientIp[INET_ADDRSTRLEN];
+    char clientIp[INET6_ADDRSTRLEN] = {0};
     inet_ntop(address_.GetSaFamily(), &clientAddress.sin_addr, clientIp, INET_ADDRSTRLEN);
     int clientPort = ntohs(clientAddress.sin_port);
-    netAddress.SetAddress(clientIp);
+    netAddress.SetRawAddress(clientIp);
     netAddress.SetPort(clientPort);
     netAddress.SetFamilyBySaFamily(address_.GetSaFamily());
     connection->SetAddress(netAddress);
