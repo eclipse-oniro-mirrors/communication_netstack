@@ -465,6 +465,9 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         context->IsExecOK() ? 0: context->GetErrorCode(), std::to_string(responseCode).c_str(),
         std::to_string(httpVer).c_str(), context->options.GetMethod().c_str());
 #if HAS_NETMANAGER_BASE
+    if (context->options.GetMethod() != HttpConstant::HTTP_METHOD_GET) {
+        return;
+    }
     if (EventReport::GetInstance().IsValid()) {
         HttpPerfInfo httpPerfInfo;
         httpPerfInfo.totalTime = totalTime;
