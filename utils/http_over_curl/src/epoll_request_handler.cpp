@@ -33,6 +33,9 @@ EpollRequestHandler::EpollRequestHandler(int sleepTimeoutMs)
 EpollRequestHandler::~EpollRequestHandler()
 {
     stop_ = true;
+    if (workThread_.joinable()) {
+        workThread_.join();
+    }
 }
 
 void EpollRequestHandler::Process(CURL *easyHandle, const TransferStartedCallback &startedCallback,
@@ -50,7 +53,7 @@ void EpollRequestHandler::Process(CURL *easyHandle, const TransferStartedCallbac
 #endif
             WorkingThread();
         };
-        auto workThread_ = std::thread(f);
+        workThread_ = std::thread(f);
         workThread_.detach();
     };
 

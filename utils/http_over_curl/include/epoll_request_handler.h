@@ -19,6 +19,7 @@
 #include <atomic>
 #include <memory>
 #include <mutex>
+#include <thread>
 
 #include "curl/curl.h"
 
@@ -42,6 +43,7 @@ private:
     std::atomic_bool stop_ = false;
     std::once_flag init_;
     int sleepTimeoutMs_;
+    std::thread workThread_;
 
     std::shared_ptr<HttpOverCurl::ThreadSafeStorage<RequestInfo *>> incomingQueue_;
 };
