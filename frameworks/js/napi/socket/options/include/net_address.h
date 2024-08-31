@@ -33,6 +33,10 @@ public:
 
     ~NetAddress() = default;
 
+    void SetRawAddress(const std::string &address);
+
+    void SetIpAddress(const std::string &address);
+
     void SetAddress(const std::string &address);
 
     void SetFamilyByJsValue(uint32_t family);

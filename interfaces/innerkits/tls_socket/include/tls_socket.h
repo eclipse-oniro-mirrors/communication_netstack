@@ -212,6 +212,7 @@ private:
  */
 class TLSConnectOptions {
 public:
+    friend class TLSSocketExec;
     /**
      * Communication parameters required for connection establishment
      * @param address communication parameters during connection

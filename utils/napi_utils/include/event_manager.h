@@ -95,12 +95,12 @@ public:
     bool GetReuseAddr();
 
 private:
+    void *data_;
     std::mutex mutexForListenersAndEmitByUv_;
     std::mutex mutexForEmitAndEmitByUv_;
     std::mutex dataMutex_;
     std::mutex dataQueueMutex_;
     std::list<EventListener> listeners_;
-    void *data_;
     std::queue<void *> dataQueue_;
     static std::mutex mutexForManager_;
     static std::unordered_set<EventManager *> validManager_;
