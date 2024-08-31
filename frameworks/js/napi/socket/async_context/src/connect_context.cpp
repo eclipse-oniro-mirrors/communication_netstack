@@ -21,6 +21,7 @@
 #include "event_manager.h"
 #include "netstack_log.h"
 #include "napi_utils.h"
+#include "socket_exec_common.h"
 
 namespace OHOS::NetStack::Socket {
 ConnectContext::ConnectContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
@@ -55,7 +56,10 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
         uint32_t family = NapiUtils::GetUint32Property(GetEnv(), netAddress, KEY_FAMILY);
         options.address.SetFamilyByJsValue(family);
     }
-    options.address.SetAddress(addr);
+    if (!IpMatchFamily(addr, options.address.GetSaFamily())) {
+        return;
+    }
+    options.address.SetRawAddress(addr);
     if (options.address.GetAddress().empty()) {
         if (paramsCount == PARAM_OPTIONS_AND_CALLBACK && SetCallback(params[1]) != napi_ok) {
             NETSTACK_LOGE("failed to set callback");

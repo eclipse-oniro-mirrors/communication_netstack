@@ -31,6 +31,7 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "tls.h"
+#include "socket_exec_common.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -296,7 +297,7 @@ VerifyMode TLSSecureOptions::GetVerifyMode() const
 void TLSConnectOptions::SetNetAddress(const Socket::NetAddress &address)
 {
     address_.SetFamilyBySaFamily(address.GetSaFamily());
-    address_.SetAddress(address.GetAddress());
+    address_.SetRawAddress(address.GetAddress());
     address_.SetPort(address.GetPort());
 }
 
@@ -820,7 +821,7 @@ void TLSSocket::GetIp4RemoteAddress(const GetRemoteAddressCallback &callback)
     }
     Socket::NetAddress netAddress;
     netAddress.SetFamilyBySaFamily(AF_INET);
-    netAddress.SetAddress(address);
+    netAddress.SetRawAddress(address);
     netAddress.SetPort(ntohs(addr4.sin_port));
     CallGetRemoteAddressCallback(TLSSOCKET_SUCCESS, netAddress, callback);
 }
@@ -848,7 +849,7 @@ void TLSSocket::GetIp6RemoteAddress(const GetRemoteAddressCallback &callback)
     }
     Socket::NetAddress netAddress;
     netAddress.SetFamilyBySaFamily(AF_INET6);
-    netAddress.SetAddress(address);
+    netAddress.SetRawAddress(address);
     netAddress.SetPort(ntohs(addr6.sin6_port));
     CallGetRemoteAddressCallback(TLSSOCKET_SUCCESS, netAddress, callback);
 }
@@ -1116,8 +1117,9 @@ std::mutex &TLSSocket::GetCloseLock()
     return mutexForClose_;
 }
 
-bool ExecSocketConnect(const std::string &hostName, int port, sa_family_t family, int socketDescriptor)
+bool ExecSocketConnect(const std::string &host, int port, sa_family_t family, int socketDescriptor)
 {
+    auto hostName = ConvertAddressToIp(host, family);
     struct sockaddr_in dest = {0};
     dest.sin_family = family;
     dest.sin_port = htons(port);

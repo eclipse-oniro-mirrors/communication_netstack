@@ -98,5 +98,6 @@ static int MakeLocalSocket(int socketType, bool needNonblock = true)
 }
 };
 }
-
+std::string ConvertAddressToIp(const std::string &address, sa_family_t family);
+bool IpMatchFamily(const std::string &address, sa_family_t family);
 #endif

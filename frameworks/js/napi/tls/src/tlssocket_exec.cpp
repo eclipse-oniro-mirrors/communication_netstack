@@ -27,6 +27,7 @@
 #include "netstack_log.h"
 #include "socket_error.h"
 #include "tls_socket.h"
+#include "socket_exec_common.h"
 
 #ifdef IOS_PLATFORM
 #define SO_PROTOCOL 38
@@ -130,6 +131,10 @@ bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
 
 bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
 {
+    if (context) {
+        context->connectOptions_.address_.SetRawAddress(ConvertAddressToIp(
+            context->connectOptions_.address_.GetAddress(), context->connectOptions_.address_.GetSaFamily()));
+    }
     auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
@@ -374,7 +379,7 @@ bool TLSSocketExec::ExecGetLocalAddress(TLSGetLocalAddressContext *context)
         return false;
     }
     auto listenSocketFD = tlsSocket->GetSocketFd();
-    struct sockaddr_storage addr{};
+    struct sockaddr_storage addr {};
     socklen_t addrLen = sizeof(addr);
     if (getsockname(listenSocketFD, (struct sockaddr *)&addr, &addrLen) == -1) {
         context->SetNeedThrowException(true);
@@ -382,20 +387,20 @@ bool TLSSocketExec::ExecGetLocalAddress(TLSGetLocalAddressContext *context)
         return false;
     }
 
-    char ip_str[INET6_ADDRSTRLEN];
+    char ipStr[INET6_ADDRSTRLEN] = {0};
     Socket::NetAddress localAddress;
     if (addr.ss_family == AF_INET) {
         auto *addr_in = (struct sockaddr_in *)&addr;
-        inet_ntop(AF_INET, &addr_in->sin_addr, ip_str, sizeof(ip_str));
+        inet_ntop(AF_INET, &addr_in->sin_addr, ipStr, sizeof(ipStr));
         localAddress.SetFamilyBySaFamily(AF_INET);
-        localAddress.SetAddress(ip_str);
+        localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addr_in->sin_port));
         tlsSocket->SetLocalAddress(localAddress);
     } else if (addr.ss_family == AF_INET6) {
         auto *addr_in6 = (struct sockaddr_in6 *)&addr;
-        inet_ntop(AF_INET6, &addr_in6->sin6_addr, ip_str, sizeof(ip_str));
+        inet_ntop(AF_INET6, &addr_in6->sin6_addr, ipStr, sizeof(ipStr));
         localAddress.SetFamilyBySaFamily(AF_INET6);
-        localAddress.SetAddress(ip_str);
+        localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addr_in6->sin6_port));
         tlsSocket->SetLocalAddress(localAddress);
     }

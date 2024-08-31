@@ -26,6 +26,59 @@ NetAddress::NetAddress(const NetAddress &other) : address_(other.address_), fami
 {
 }
 
+void NetAddress::SetIpAddress(const std::string &address)
+{
+    if (family_ == Family::IPv4) {
+        in6_addr ipv6{};
+        if (inet_pton(AF_INET6, address.c_str(), &ipv6) > 0) {
+            return;
+        }
+        auto pos = address.find('%');
+        if (pos != std::string::npos) {
+            auto subAddr = address.substr(0, pos);
+            in6_addr newIpv6{};
+            if (inet_pton(AF_INET6, subAddr.c_str(), &newIpv6) > 0) {
+                return;
+            }
+        }
+        in_addr ipv4{};
+        if (inet_pton(AF_INET, address.c_str(), &(ipv4.s_addr)) > 0) {
+            address_ = address;
+            return;
+        }
+    } else {
+        in6_addr ipv6{};
+        if (inet_pton(AF_INET6, address.c_str(), &ipv6) > 0) {
+            address_ = address;
+            return;
+        }
+    }
+    if (family_ == Family::IPv4) {
+        auto inet = atoi(address.c_str());
+        if (inet >= 0) {
+            in_addr addr{};
+            addr.s_addr = inet;
+            address_ = inet_ntoa(addr);
+        }
+    } else if (family_ == Family::IPv6) {
+        auto pos = address.find('%');
+        if (pos == std::string::npos) {
+            return;
+        }
+        auto subAddr = address.substr(0, pos);
+        in6_addr ipv6{};
+        if (inet_pton(AF_INET6, subAddr.c_str(), &ipv6) > 0) {
+            address_ = subAddr;
+            return;
+        }
+    }
+}
+
+void NetAddress::SetRawAddress(const std::string &address)
+{
+    address_ = address;
+}
+
 void NetAddress::SetAddress(const std::string &address)
 {
     if (family_ == Family::IPv4) {

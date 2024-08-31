@@ -37,6 +37,7 @@
 #include "securec.h"
 #include "socket_async_work.h"
 #include "socket_module.h"
+#include "socket_exec_common.h"
 
 #ifdef IOS_PLATFORM
 #define SO_PROTOCOL 38
@@ -638,6 +639,8 @@ static bool UdpSendEvent(UdpSendContext *context)
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
     socklen_t len;
+    context->options.address.SetRawAddress(
+        ConvertAddressToIp(context->options.address.GetAddress(), context->options.address.GetSaFamily()));
     GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
         NETSTACK_LOGE("get sock name failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
@@ -1023,6 +1026,8 @@ bool ExecConnect(ConnectContext *context)
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
     socklen_t len;
+    context->options.address.SetRawAddress(
+        ConvertAddressToIp(context->options.address.GetAddress(), context->options.address.GetSaFamily()));
     GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
     if (addr == nullptr) {
         NETSTACK_LOGE("addr family error, address invalid");
@@ -1215,7 +1220,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
         if (!IsAddressAndRetValid(ret, address, context)) {
             return false;
         }
-        context->address_.SetAddress(address);
+        context->address_.SetRawAddress(address);
         context->address_.SetFamilyBySaFamily(sockAddr.sa_family);
         context->address_.SetPort(ntohs(addr4.sin_port));
         return true;
@@ -1228,7 +1233,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
         if (!IsAddressAndRetValid(ret, address, context)) {
             return false;
         }
-        context->address_.SetAddress(address);
+        context->address_.SetRawAddress(address);
         context->address_.SetFamilyBySaFamily(sockAddr.sa_family);
         context->address_.SetPort(ntohs(addr6.sin6_port));
         return true;
@@ -1249,7 +1254,7 @@ static bool SocketSetTcpExtraOptions(int sockfd, TCPExtraOptions& option)
             return false;
         }
     }
-    
+
     if (option.AlreadySetOobInline()) {
         int oob = static_cast<int>(option.IsOOBInline());
         if (setsockopt(sockfd, SOL_SOCKET, SO_OOBINLINE, reinterpret_cast<void*>(&oob), sizeof(oob)) < 0) {
@@ -1257,7 +1262,7 @@ static bool SocketSetTcpExtraOptions(int sockfd, TCPExtraOptions& option)
             return false;
         }
     }
-    
+
     if (option.AlreadySetTcpNoDelay()) {
         int noDelay = static_cast<int>(option.IsTCPNoDelay());
         if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<void*>(&noDelay), sizeof(noDelay)) < 0) {
@@ -1550,7 +1555,7 @@ static bool GetIPv4Address(TcpServerGetRemoteAddressContext *context, int32_t fd
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
-    context->address_.SetAddress(address);
+    context->address_.SetRawAddress(address);
     context->address_.SetFamilyBySaFamily(sockAddr.sa_family);
     context->address_.SetPort(ntohs(addr4.sin_port));
     return true;
@@ -1573,7 +1578,7 @@ static bool GetIPv6Address(TcpServerGetRemoteAddressContext *context, int32_t fd
         context->SetErrorCode(ADDRESS_INVALID);
         return false;
     }
-    context->address_.SetAddress(address);
+    context->address_.SetRawAddress(address);
     context->address_.SetFamilyBySaFamily(sockAddr.sa_family);
     context->address_.SetPort(ntohs(addr6.sin6_port));
     return true;
@@ -1647,20 +1652,20 @@ bool ExecTcpConnectionGetLocalAddress(TcpConnectionGetLocalAddressContext *conte
         return false;
     }
 
-    char ipStr[INET6_ADDRSTRLEN];
+    char ipStr[INET6_ADDRSTRLEN] = {0};
     Socket::NetAddress localAddress;
     if (addr.ss_family == AF_INET) {
         auto *addrIn = reinterpret_cast<struct sockaddr_in *>(&addr);
         inet_ntop(AF_INET, &addrIn->sin_addr, ipStr, sizeof(ipStr));
         localAddress.SetFamilyBySaFamily(AF_INET);
-        localAddress.SetAddress(ipStr);
+        localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addrIn->sin_port));
         context->localAddress_ = localAddress;
     } else if (addr.ss_family == AF_INET6) {
         auto *addrIn6 = reinterpret_cast<struct sockaddr_in6 *>(&addr);
         inet_ntop(AF_INET6, &addrIn6->sin6_addr, ipStr, sizeof(ipStr));
         localAddress.SetFamilyBySaFamily(AF_INET6);
-        localAddress.SetAddress(ipStr);
+        localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addrIn6->sin6_port));
         context->localAddress_ = localAddress;
     }
@@ -2302,3 +2307,48 @@ napi_value TcpServerGetStateCallback(TcpServerGetStateContext *context)
     return obj;
 }
 } // namespace OHOS::NetStack::Socket::SocketExec
+
+std::string ConvertAddressToIp(const std::string &address, sa_family_t family)
+{
+    if (address.empty()) {
+        return {};
+    }
+    addrinfo hints{};
+    hints.ai_family = family;
+    char ipStr[INET6_ADDRSTRLEN] = {0};
+    addrinfo *res = nullptr;
+    auto status = getaddrinfo(address.c_str(), nullptr, &hints, &res);
+    if (status != 0 || res == nullptr) {
+        return {};
+    }
+    std::string ip;
+    if (res->ai_family == AF_INET) {
+        auto *ipv4 = reinterpret_cast<struct sockaddr_in *>(res->ai_addr);
+        auto addr = &(ipv4->sin_addr);
+        inet_ntop(res->ai_family, addr, ipStr, sizeof(ipStr));
+        ip = ipStr;
+    } else {
+        auto *ipv6 = reinterpret_cast<struct sockaddr_in6 *>(res->ai_addr);
+        auto addr = &(ipv6->sin6_addr);
+        inet_ntop(res->ai_family, addr, ipStr, sizeof(ipStr));
+        ip = ipStr;
+    }
+    freeaddrinfo(res);
+    return ip;
+}
+
+bool IpMatchFamily(const std::string &address, sa_family_t family)
+{
+    if (family == AF_INET6) {
+        in_addr ipv4{};
+        if (inet_pton(AF_INET, address.c_str(), &(ipv4.s_addr)) > 0) {
+            return false;
+        }
+    } else if (family == AF_INET) {
+        in6_addr ipv6{};
+        if (inet_pton(AF_INET6, address.c_str(), &ipv6) > 0) {
+            return false;
+        }
+    }
+    return true;
+}

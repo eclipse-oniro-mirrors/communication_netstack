@@ -52,7 +52,7 @@ void TcpServerListenContext::ParseParams(napi_value *params, size_t paramsCount)
         uint32_t family = NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_FAMILY);
         address_.SetFamilyByJsValue(family);
     }
-    address_.SetAddress(addr);
+    address_.SetIpAddress(addr);
     if (address_.GetAddress().empty()) {
         if (paramsCount == PARAM_OPTIONS_AND_CALLBACK && SetCallback(params[1]) != napi_ok) {
             NETSTACK_LOGE("failed to set callback");
