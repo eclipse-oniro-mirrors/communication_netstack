@@ -151,9 +151,15 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
     }
 }
 
-static void AsyncWorkRequestCallback(napi_env env, napi_status status, void *data)
+void HttpExec::AsyncWorkRequestCallback(napi_env env, napi_status status, void *data)
 {
     if (status != napi_ok) {
+        return;
+    }
+    if (!data) {
+        return;
+    }
+    if (reinterpret_cast<RequestContext *>(data)->magicNumber_ != MAGIC_NUMBER) {
         return;
     }
     std::unique_ptr<RequestContext, decltype(&RequestContextDeleter)> context(static_cast<RequestContext *>(data),
