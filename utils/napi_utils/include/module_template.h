@@ -86,6 +86,52 @@ napi_value Interface(napi_env env, napi_callback_info info, const std::string &a
 }
 
 template <class Context>
+napi_value InterfaceWithOutAsyncWork2(napi_env env, napi_callback_info info,
+                                      bool (*Work)(napi_env, napi_value, Context *), const std::string &asyncWorkName,
+                                      AsyncWorkExecutor executor, AsyncWorkCallback callback)
+{
+    static_assert(std::is_base_of<BaseContext, Context>::value);
+
+    napi_value thisVal = nullptr;
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
+
+    EventManager *manager = nullptr;
+    auto napi_ret = napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager));
+    if (napi_ret != napi_ok) {
+        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
+        return NapiUtils::GetUndefined(env);
+    }
+
+    auto context = new Context(env, manager);
+    if (!context) {
+        NETSTACK_LOGE("new context is nullptr");
+        return NapiUtils::GetUndefined(env);
+    }
+    context->ParseParams(params, paramsCount);
+    napi_value ret = NapiUtils::GetUndefined(env);
+    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
+        NETSTACK_LOGD("%{public}s is invoked in promise mode", asyncWorkName.c_str());
+        ret = context->CreatePromise();
+    } else {
+        NETSTACK_LOGD("%{public}s is invoked in callback mode", asyncWorkName.c_str());
+    }
+    context->CreateReference(thisVal);
+    if (!context->IsParseOK() || context->IsPermissionDenied() || context->IsNoAllowedHost() ||
+        context->GetManager()->IsEventDestroy()) {
+        context->CreateAsyncWork(asyncWorkName, executor, callback);
+        return ret;
+    }
+    if (Work != nullptr) {
+        if (!Work(env, thisVal, context)) {
+            NETSTACK_LOGE("work failed error code = %{public}d", context->GetErrorCode());
+        }
+    }
+    return ret;
+}
+
+template <class Context>
 napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
                                      bool (*Work)(napi_env, napi_value, Context *), const std::string &asyncWorkName,
                                      AsyncWorkExecutor executor, AsyncWorkCallback callback)

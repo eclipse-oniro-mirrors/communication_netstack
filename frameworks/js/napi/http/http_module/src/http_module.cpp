@@ -240,7 +240,7 @@ void HttpModuleExports::InitHttpDataType(napi_env env, napi_value exports)
 
 napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithOutAsyncWork<RequestContext>(
+    return ModuleTemplate::InterfaceWithOutAsyncWork2<RequestContext>(
         env, info,
         [](napi_env, napi_value, RequestContext *context) -> bool {
 #if !HAS_NETMANAGER_BASE
@@ -260,7 +260,7 @@ napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_i
 
 napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithOutAsyncWork<RequestContext>(
+    return ModuleTemplate::InterfaceWithOutAsyncWork2<RequestContext>(
         env, info,
         [](napi_env, napi_value, RequestContext *context) -> bool {
 #if !HAS_NETMANAGER_BASE

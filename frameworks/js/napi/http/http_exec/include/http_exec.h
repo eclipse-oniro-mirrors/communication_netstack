@@ -75,6 +75,8 @@ public:
 
     static bool ParseHostAndPortFromUrl(const std::string &url, std::string &host, uint16_t &port);
 
+    static void AsyncWorkRequestCallback(napi_env env, napi_status status, void *data);
+
 #if !HAS_NETMANAGER_BASE
     static bool Initialize();
 
