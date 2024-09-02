@@ -191,7 +191,7 @@ bool LocalSocketSendContext::GetData(napi_value sendOptions)
         std::string data = NapiUtils::GetStringFromValueUtf8(GetEnv(), jsData);
         if (data.empty()) {
             NETSTACK_LOGE("string data is empty");
-            return false;
+            return true;
         }
         options_.SetBuffer(data);
         return true;
@@ -202,7 +202,7 @@ bool LocalSocketSendContext::GetData(napi_value sendOptions)
         void *data = NapiUtils::GetInfoFromArrayBufferValue(GetEnv(), jsData, &length);
         if (data == nullptr || length == 0) {
             NETSTACK_LOGE("arraybuffer data is empty");
-            return false;
+            return true;
         }
         options_.SetBuffer(data, length);
         return true;

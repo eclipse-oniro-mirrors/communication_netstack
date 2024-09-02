@@ -785,13 +785,13 @@ void TLSSocketServer::Connection::SetTlsConfiguration(const TlsSocket::TLSConnec
 
 bool TLSSocketServer::Connection::Send(const std::string &data)
 {
-    if (data.empty()) {
-        NETSTACK_LOGE("data is empty");
-        return false;
-    }
     if (!ssl_) {
         NETSTACK_LOGE("ssl is null");
         return false;
+    }
+    if (data.empty()) {
+        NETSTACK_LOGI("data is empty");
+        return true;
     }
     int len = SSL_write(ssl_, data.c_str(), data.length());
     if (len < 0) {
