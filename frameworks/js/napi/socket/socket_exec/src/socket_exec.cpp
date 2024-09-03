@@ -1931,7 +1931,7 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
             if (memcpy_s(data, recvSize, buffer.get(), recvSize) != EOK ||
                 !callback.OnMessage(connectFD, data, recvSize, nullptr, manager)) {
                 free(data);
-                RecvInErrorCondition(clientId, connectFD, manager, callback);
+                RecvInErrorCondition(UNKNOW_ERROR, clientId, connectFD, callback);
             }
         }
     }
