@@ -14,6 +14,7 @@
  */
 
 #include "netstack_common_utils.h"
+#include <filesystem>
 
 #ifdef WINDOWS_PLATFORM
 #include <winsock2.h>
