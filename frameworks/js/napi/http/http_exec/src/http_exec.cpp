@@ -1634,8 +1634,13 @@ void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *pa
         }
     } else {
         if (!multiFormData.remoteFileName.empty()) {
-            std::string fileData = CommonUtils::GetFileDataFromFilePath(multiFormData.filePath.c_str());
-            result = curl_mime_data(part, fileData.c_str(), fileData.size());
+            std::string fileData;
+            bool isReadFile = CommonUtils::GetFileDataFromFilePath(multiFormData.filePath.c_str(), fileData);
+            if (isReadFile) {
+                result = curl_mime_data(part, fileData.c_str(), fileData.size());
+            } else {
+                result = curl_mime_filedata(part, multiFormData.filePath.c_str());
+            }
         } else {
             result = curl_mime_filedata(part, multiFormData.filePath.c_str());
         }

@@ -90,6 +90,6 @@ std::string AnonymizeIp(std::string &input);
 
 std::optional<std::string> GetBundleName();
 
-std::string GetFileDataFromFilePath(const std::string& filePath);
+bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData);
 } // namespace OHOS::NetStack::CommonUtils
 #endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */
