@@ -468,6 +468,10 @@ std::optional<std::string> GetBundleName()
 
 std::string GetFileDataFromFilePath(const std::string& filePath)
 {
+    if (access(filePath.c_str(), F_OK) != 0) {
+        NETSTACK_LOGE("file path is not exist");
+        return {};
+    }
     std::ifstream file(filePath);
     if (file.is_open()) {
         std::stringstream buffer;
