@@ -13,12 +13,13 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+#include <map>
+
 #include "event_manager.h"
 
-#include <map>
-#include <algorithm>
-#include "netstack_log.h"
 #include "napi_utils.h"
+#include "netstack_log.h"
 
 namespace OHOS::NetStack {
 static constexpr const int CALLBACK_PARAM_NUM = 1;
@@ -253,9 +254,7 @@ void EventManager::NotifyRcvThdExit()
 void EventManager::WaitForRcvThdExit()
 {
     std::unique_lock<std::mutex> lock(sockRcvThdMtx_);
-    sockRcvThdCon_.wait(lock, [this]() {
-        return sockRcvExit_;
-    });
+    sockRcvThdCon_.wait(lock, [this]() { return sockRcvExit_; });
 }
 
 void EventManager::SetReuseAddr(bool reuse)

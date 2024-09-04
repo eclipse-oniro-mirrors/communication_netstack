@@ -21,10 +21,10 @@
 #include <iosfwd>
 #include <list>
 #include <mutex>
-#include <unordered_set>
-#include <string>
-#include <utility>
 #include <queue>
+#include <string>
+#include <unordered_set>
+#include <utility>
 
 #include "event_listener.h"
 #include "napi/native_api.h"
@@ -95,12 +95,12 @@ public:
     bool GetReuseAddr();
 
 private:
-    void *data_;
     std::mutex mutexForListenersAndEmitByUv_;
     std::mutex mutexForEmitAndEmitByUv_;
     std::mutex dataMutex_;
     std::mutex dataQueueMutex_;
     std::list<EventListener> listeners_;
+    void *data_;
     std::queue<void *> dataQueue_;
     static std::mutex mutexForManager_;
     static std::unordered_set<EventManager *> validManager_;
