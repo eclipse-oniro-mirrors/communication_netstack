@@ -469,8 +469,13 @@ std::optional<std::string> GetBundleName()
 
 std::string GetFileDataFromFilePath(const std::string& filePath)
 {
-    std::filesystem::path fp = std::filesystem::absolute(filePath);
-    std::ifstream file(fp);
+    std::error_code error;
+    auto path = std::filesystem::absolute(filePath, error);
+    if (error) {
+        NETSTACK_LOGE("Failed to obtain the absolute path");
+        return {};
+    }
+    std::ifstream file(path);
     if (file.is_open()) {
         std::stringstream buffer;
         buffer << file.rdbuf();
