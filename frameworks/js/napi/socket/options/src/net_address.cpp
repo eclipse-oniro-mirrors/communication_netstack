@@ -57,7 +57,7 @@ void NetAddress::SetIpAddress(const std::string &address)
         auto inet = atoi(address.c_str());
         if (inet >= 0) {
             in_addr addr{};
-            addr.s_addr = inet;
+            addr.s_addr = static_cast<in_addr_t>(inet);
             address_ = inet_ntoa(addr);
         }
     } else if (family_ == Family::IPv6) {
