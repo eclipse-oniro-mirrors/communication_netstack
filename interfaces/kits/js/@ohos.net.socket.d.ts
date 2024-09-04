@@ -15,7 +15,7 @@
 
 /**
  * @file
- * @kit Network Kit
+ * @kit NetworkKit
  */
 
 import type { AsyncCallback, Callback, ErrorCallback } from './@ohos.base';
@@ -44,6 +44,7 @@ declare namespace socket {
    */
   /**
    * Deposit certificate
+   * @typedef { cert.EncodingBlob }
    * @syscap SystemCapability.Communication.NetStack
    * @crossplatform
    * @since 10
@@ -70,6 +71,13 @@ declare namespace socket {
    * @returns { MulticastSocket } the MulticastSocket of the constructMulticastSocketInstance.
    * @syscap SystemCapability.Communication.NetStack
    * @since 11
+   */
+  /**
+   * Creates a MulticastSocket object.
+   * @returns { MulticastSocket } the MulticastSocket of the constructMulticastSocketInstance.
+   * @syscap SystemCapability.Communication.NetStack
+   * @crossplatform
+   * @since 12
    */
   function constructMulticastSocketInstance(): MulticastSocket;
 
@@ -104,6 +112,19 @@ declare namespace socket {
   function constructTLSSocketInstance(): TLSSocket;
 
   /**
+   * Creates a TLSSocket object with a TCPSocket object.
+   * @param { TCPSocket } tcpSocket - Parameter for creating a TLSSocket object.
+   * @returns { TLSSocket } the TLSSocket of the constructTLSSocketInstance.
+   * @throws { BusinessError } 401 - Parameter error.
+   * @throws { BusinessError } 2300002 - System internal error.
+   * @throws { BusinessError } 2303601 - Invalid socket FD.
+   * @throws { BusinessError } 2303602 - Socket is not connected.
+   * @syscap SystemCapability.Communication.NetStack
+   * @since 12
+   */
+  function constructTLSSocketInstance(tcpSocket: TCPSocket): TLSSocket;
+
+  /**
    * Creates a TCPSocketServer object.
    * @returns { TCPSocketServer } the TCPSocketServer of the constructTCPSocketServerInstance.
    * @syscap SystemCapability.Communication.NetStack
@@ -118,6 +139,36 @@ declare namespace socket {
    * @since 10
    */
   function constructTLSSocketServerInstance(): TLSSocketServer;
+
+  /**
+   * Creates a LocalSocket object.
+   * @returns { LocalSocket } the LocalSocket of the constructLocalSocketInstance.
+   * @syscap SystemCapability.Communication.NetStack
+   * @since 11
+   */
+  /**
+   * Creates a LocalSocket object.
+   * @returns { LocalSocket } the LocalSocket of the constructLocalSocketInstance.
+   * @syscap SystemCapability.Communication.NetStack
+   * @crossplatform
+   * @since 12
+   */
+  function constructLocalSocketInstance(): LocalSocket;
+
+  /**
+   * Creates a LocalSocketServer object.
+   * @returns { LocalSocketServer } the LocalSocketServer of the constructLocalSocketServerInstance.
+   * @syscap SystemCapability.Communication.NetStack
+   * @since 11
+   */
+  /**
+   * Creates a LocalSocketServer object.
+   * @returns { LocalSocketServer } the LocalSocketServer of the constructLocalSocketServerInstance.
+   * @syscap SystemCapability.Communication.NetStack
+   * @crossplatform
+   * @since 12
+   */
+  function constructLocalSocketServerInstance(): LocalSocketServer;
 
   /**
    * Defines the parameters for sending data over the UDPSocket connection.
@@ -403,6 +454,186 @@ declare namespace socket {
   }
 
   /**
+   * Defines the local socket connection information.
+   * @interface LocalSocketMessageInfo
+   * @syscap SystemCapability.Communication.NetStack
+   * @since 11
+   */
+  /**
+   * Defines the local socket connection information.
+   * @interface LocalSocketMessageInfo
+   * @syscap SystemCapability.Communication.NetStack
+   * @crossplatform
+   * @since 12
+   */
+  export interface LocalSocketMessageInfo {
+    /**
+     * Message data.
+     * @type {ArrayBuffer}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Message data.
+     * @type {ArrayBuffer}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    message: ArrayBuffer;
+
+    /**
+     * Bound local socket address.
+     * @type {string}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Bound local socket address.
+     * @type {string}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    address: string;
+
+    /**
+     * Length of the message, in bytes.
+     * @type {number}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Length of the message, in bytes.
+     * @type {number}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    size: number;
+  }
+
+  /**
+   * Defines a local address.
+   * @interface LocalAddress
+   * @syscap SystemCapability.Communication.NetStack
+   * @since 11
+   */
+  /**
+   * Defines a local address.
+   * @interface LocalAddress
+   * @syscap SystemCapability.Communication.NetStack
+   * @crossplatform
+   * @since 12
+   */
+  export interface LocalAddress {
+    /**
+     * LocalAddress address.
+     * @type {string}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * LocalAddress address.
+     * @type {string}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    address: string;
+  }
+
+  /**
+   * Defines LocalSocket connection parameters.
+   * @interface LocalConnectOptions
+   * @syscap SystemCapability.Communication.NetStack
+   * @since 11
+   */
+  /**
+   * Defines LocalSocket connection parameters.
+   * @interface LocalConnectOptions
+   * @syscap SystemCapability.Communication.NetStack
+   * @crossplatform
+   * @since 12
+   */
+  export interface LocalConnectOptions {
+    /**
+     * Bound Local address.
+     * @type {LocalAddress}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Bound Local address.
+     * @type {LocalAddress}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    address: LocalAddress;
+
+    /**
+     * Timeout duration of the LocalSocket connection, in milliseconds.
+     * @type {?number}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Timeout duration of the LocalSocket connection, in milliseconds.
+     * @type {?number}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    timeout?: number;
+  }
+
+  /**
+   * Defines the parameters for sending data over the LocalSocket connection.
+   * @interface LocalSendOptions
+   * @syscap SystemCapability.Communication.NetStack
+   * @since 11
+   */
+  /**
+   * Defines the parameters for sending data over the LocalSocket connection.
+   * @interface LocalSendOptions
+   * @syscap SystemCapability.Communication.NetStack
+   * @crossplatform
+   * @since 12
+   */
+  export interface LocalSendOptions {
+    /**
+     * Data to send.
+     * @type {string | ArrayBuffer}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Data to send.
+     * @type {string | ArrayBuffer}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    data: string | ArrayBuffer;
+
+    /**
+     * Character encoding format.
+     * @type {?string}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Character encoding format.
+     * @type {?string}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    encoding?: string;
+  }
+
+  /**
    * Defines a UDPSocket connection.
    * @interface UDPSocket
    * @syscap SystemCapability.Communication.NetStack
@@ -461,6 +692,17 @@ declare namespace socket {
      * @since 10
      */
     bind(address: NetAddress): Promise<void>;
+
+    /**
+     * Obtains the local address of a UDPSocket connection.
+     * @returns { Promise<NetAddress> } The promise returned by the function.
+     * @throws { BusinessError } 2300002 - System internal error.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @throws { BusinessError } 2303188 - Socket operation on non-socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 12
+     */
+    getLocalAddress(): Promise<NetAddress>;
 
     /**
      * Sends data over a UDPSocket connection.
@@ -645,7 +887,15 @@ declare namespace socket {
      * @crossplatform
      * @since 10
      */
-    on(type: 'message', callback: Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }>): void;
+    /**
+     * Listens for message receiving events of the UDPSocket connection.
+     * @param { 'message' } type - Indicates Event name.
+     * @param { Callback<SocketMessageInfo> } callback - the callback used to return the result.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 11
+     */
+    on(type: 'message', callback: Callback<SocketMessageInfo>): void;
 
     /**
      * Cancels listening for message receiving events of the UDPSocket connection.
@@ -662,7 +912,15 @@ declare namespace socket {
      * @crossplatform
      * @since 10
      */
-    off(type: 'message', callback?: Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }>): void;
+    /**
+     * Cancels listening for message receiving events of the UDPSocket connection.
+     * @param { 'message' } type - Indicates Event name.
+     * @param { Callback<SocketMessageInfo> } callback - the callback used to return the result.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 11
+     */
+    off(type: 'message', callback?: Callback<SocketMessageInfo>): void;
 
     /**
      * Listens for data packet message events or close events of the UDPSocket connection.
@@ -739,6 +997,13 @@ declare namespace socket {
    * @syscap SystemCapability.Communication.NetStack
    * @since 11
    */
+  /**
+   * Defines a UDP MulticastSocket connection.
+   * @interface MulticastSocket
+   * @syscap SystemCapability.Communication.NetStack
+   * @crossplatform
+   * @since 12
+   */
   export interface MulticastSocket extends UDPSocket {
     /**
      * Add the socket to the multicast group.
@@ -752,6 +1017,20 @@ declare namespace socket {
      * @throws { BusinessError } 2301098 - Address in use.
      * @syscap SystemCapability.Communication.NetStack
      * @since 11
+     */
+    /**
+     * Add the socket to the multicast group.
+     * @permission ohos.permission.INTERNET
+     * @param { NetAddress } multicastAddress - Multicast address information. {@link NetAddress}.
+     * @param { AsyncCallback<void> } callback - The callback of addMembership.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301022 - Invalid argument.
+     * @throws { BusinessError } 2301088 - Not a socket.
+     * @throws { BusinessError } 2301098 - Address in use.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
      */
     addMembership(multicastAddress: NetAddress, callback: AsyncCallback<void>): void;
 
@@ -767,6 +1046,19 @@ declare namespace socket {
      * @syscap SystemCapability.Communication.NetStack
      * @since 11
      */
+    /**
+     * Add the socket to the multicast group.
+     * @permission ohos.permission.INTERNET
+     * @param { NetAddress } multicastAddress - Multicast address information. {@link NetAddress}.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301088 - Not a socket.
+     * @throws { BusinessError } 2301098 - Address in use.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
     addMembership(multicastAddress: NetAddress): Promise<void>;
 
     /**
@@ -780,6 +1072,19 @@ declare namespace socket {
      * @throws { BusinessError } 2301098 - Address in use.
      * @syscap SystemCapability.Communication.NetStack
      * @since 11
+     */
+    /**
+     * Drop the socket from the multicast group.
+     * @permission ohos.permission.INTERNET
+     * @param { NetAddress } multicastAddress - Multicast address information. {@link NetAddress}.
+     * @param { AsyncCallback<void> } callback - The callback of dropMembership.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301088 - Not a socket.
+     * @throws { BusinessError } 2301098 - Address in use.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
      */
     dropMembership(multicastAddress: NetAddress, callback: AsyncCallback<void>): void;
 
@@ -795,6 +1100,19 @@ declare namespace socket {
      * @syscap SystemCapability.Communication.NetStack
      * @since 11
      */
+    /**
+     * Drop the socket from the multicast group.
+     * @permission ohos.permission.INTERNET
+     * @param { NetAddress } multicastAddress - Multicast address information. {@link NetAddress}.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301088 - Not a socket.
+     * @throws { BusinessError } 2301098 - Address in use.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
     dropMembership(multicastAddress: NetAddress): Promise<void>;
 
     /**
@@ -806,6 +1124,17 @@ declare namespace socket {
      * @throws { BusinessError } 2301088 - Not a socket.
      * @syscap SystemCapability.Communication.NetStack
      * @since 11
+     */
+    /**
+     * Set the TTL value for socket multicast packets.
+     * @param { number } ttl - The TTL value to set. Valid range is typically 0 to 255.
+     * @param { AsyncCallback<void> } callback - The callback of setMulticastTTL.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301022 - Invalid argument.
+     * @throws { BusinessError } 2301088 - Not a socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
      */
     setMulticastTTL(ttl: number, callback: AsyncCallback<void>): void;
 
@@ -819,6 +1148,17 @@ declare namespace socket {
      * @syscap SystemCapability.Communication.NetStack
      * @since 11
      */
+    /**
+     * Set the TTL value for socket multicast packet.
+     * @param { number } ttl - The TTL value to set. Valid range is typically 0 to 255.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301022 - Invalid argument.
+     * @throws { BusinessError } 2301088 - Not a socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
     setMulticastTTL(ttl: number): Promise<void>;
 
     /**
@@ -829,6 +1169,15 @@ declare namespace socket {
      * @syscap SystemCapability.Communication.NetStack
      * @since 11
      */
+    /**
+     * Get the TTL value of socket multicast packet.
+     * @param { AsyncCallback<number> } callback - The callback of getMulticastTTL.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301088 - Not a socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
     getMulticastTTL(callback: AsyncCallback<number>): void;
 
     /**
@@ -838,6 +1187,15 @@ declare namespace socket {
      * @throws { BusinessError } 2301088 - Not a socket.
      * @syscap SystemCapability.Communication.NetStack
      * @since 11
+     */
+    /**
+     * Get the TTL value of socket multicast packet.
+     * @returns { Promise<number> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301088 - Not a socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
      */
     getMulticastTTL(): Promise<number>;
 
@@ -850,6 +1208,16 @@ declare namespace socket {
      * @syscap SystemCapability.Communication.NetStack
      * @since 11
      */
+    /**
+     * Set the loopback mode for the socket.
+     * @param { boolean } flag - Whether to enable loopback mode.
+     * @param { AsyncCallback<void> } callback - The callback of setLoopbackMode.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301088 - Not a socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
     setLoopbackMode(flag: boolean, callback: AsyncCallback<void>): void;
 
     /**
@@ -861,6 +1229,16 @@ declare namespace socket {
      * @syscap SystemCapability.Communication.NetStack
      * @since 11
      */
+    /**
+     * Set the loopback mode for the socket.
+     * @param { boolean } flag - Whether to enable loopback mode.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301088 - Not a socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
     setLoopbackMode(flag: boolean): Promise<void>;
 
     /**
@@ -870,6 +1248,15 @@ declare namespace socket {
      * @throws { BusinessError } 2301088 - Not a socket.
      * @syscap SystemCapability.Communication.NetStack
      * @since 11
+     */
+    /**
+     * Get the loopback mode of the socket.
+     * @param { AsyncCallback<boolean> } callback - The callback of getLoopbackMode.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301088 - Not a socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
      */
     getLoopbackMode(callback: AsyncCallback<boolean>): void;
 
@@ -881,7 +1268,731 @@ declare namespace socket {
      * @syscap SystemCapability.Communication.NetStack
      * @since 11
      */
+    /**
+     * Get the loopback mode of the socket.
+     * @returns { Promise<boolean> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301088 - Not a socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
     getLoopbackMode(): Promise<boolean>;
+  }
+
+  /**
+   * Defines a LocalSocket connection.
+   * @interface LocalSocket
+   * @syscap SystemCapability.Communication.NetStack
+   * @since 11
+   */
+  /**
+   * Defines a LocalSocket connection.
+   * @interface LocalSocket
+   * @syscap SystemCapability.Communication.NetStack
+   * @crossplatform
+   * @since 12
+   */
+  export interface LocalSocket {
+    /**
+     * Binds the Local address.
+     * @param { LocalAddress } address - Destination address. {@link LocalAddress}
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301013 - Insufficient permissions.
+     * @throws { BusinessError } 2301022 - Invalid argument.
+     * @throws { BusinessError } 2301098 - Address already in use.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Binds the Local address.
+     * @param { LocalAddress } address - Destination address. {@link LocalAddress}
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301013 - Insufficient permissions.
+     * @throws { BusinessError } 2301022 - Invalid argument.
+     * @throws { BusinessError } 2301098 - Address already in use.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    bind(address: LocalAddress): Promise<void>;
+
+    /**
+     * Sets up a connection to the specified Local address .
+     * @param { LocalConnectOptions } options - Optional parameters {@link LocalConnectOptions}.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301013 - Insufficient permissions.
+     * @throws { BusinessError } 2301022 - Invalid argument.
+     * @throws { BusinessError } 2301111 - Connection refused.
+     * @throws { BusinessError } 2301099 - Cannot assign requested address.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Sets up a connection to the specified Local address .
+     * @param { LocalConnectOptions } options - Optional parameters {@link LocalConnectOptions}.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301013 - Insufficient permissions.
+     * @throws { BusinessError } 2301022 - Invalid argument.
+     * @throws { BusinessError } 2301111 - Connection refused.
+     * @throws { BusinessError } 2301099 - Cannot assign requested address.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    connect(options: LocalConnectOptions): Promise<void>;
+
+    /**
+     * Sends data over a LocalSocket connection.
+     * @param { LocalSendOptions } options - Optional parameters {@link LocalSendOptions}.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301011 - Operation would block.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Sends data over a LocalSocket connection.
+     * @param { LocalSendOptions } options - Optional parameters {@link LocalSendOptions}.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301011 - Operation would block.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    send(options: LocalSendOptions): Promise<void>;
+
+    /**
+     * Closes a LocalSocket connection.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Closes a LocalSocket connection.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    close(): Promise<void>;
+
+    /**
+     * Obtains the status of the LocalSocket connection.
+     * @returns { Promise<SocketStateBase> } The promise returned by the function.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Obtains the status of the LocalSocket connection.
+     * @returns { Promise<SocketStateBase> } The promise returned by the function.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    getState(): Promise<SocketStateBase>;
+
+    /**
+     * Obtains the file descriptor of the LocalSocket connection.
+     * @returns { Promise<number> } The promise returns the file descriptor of the LocalSocket connection.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Obtains the file descriptor of the LocalSocket connection.
+     * @returns { Promise<number> } The promise returns the file descriptor of the LocalSocket connection.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    getSocketFd(): Promise<number>;
+
+    /**
+     * Sets other attributes of the LocalSocket connection.
+     * @param { ExtraOptionsBase } options - Optional parameters {@link ExtraOptionsBase}.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Sets other attributes of the LocalSocket connection.
+     * @param { ExtraOptionsBase } options - Optional parameters {@link ExtraOptionsBase}.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    setExtraOptions(options: ExtraOptionsBase): Promise<void>;
+
+    /**
+     * Gets other attributes of the LocalSocket connection.
+     * @returns { Promise<ExtraOptionsBase> } The promise returned by the function.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Gets other attributes of the LocalSocket connection.
+     * @returns { Promise<ExtraOptionsBase> } The promise returned by the function.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    getExtraOptions(): Promise<ExtraOptionsBase>;
+
+    /**
+     * Obtains the local address of a LocalSocket connection.
+     * @returns { Promise<string> } The promise returned by the function.
+     * @throws { BusinessError } 2300002 - System internal error.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @throws { BusinessError } 2303188 - Socket operation on non-socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 12
+     */
+    getLocalAddress(): Promise<string>;
+
+    /**
+     * Listens for message receiving events of the LocalSocket connection.
+     * @param { 'message' } type Indicates Event name.
+     * @param { Callback<LocalSocketMessageInfo> } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Listens for message receiving events of the LocalSocket connection.
+     * @param { 'message' } type Indicates Event name.
+     * @param { Callback<LocalSocketMessageInfo> } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    on(type: 'message', callback: Callback<LocalSocketMessageInfo>): void;
+
+    /**
+     * Cancels listening for message receiving events of the LocalSocket connection.
+     * @param { 'message' } type Indicates Event name.
+     * @param { Callback<LocalSocketMessageInfo> } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Cancels listening for message receiving events of the LocalSocket connection.
+     * @param { 'message' } type Indicates Event name.
+     * @param { Callback<LocalSocketMessageInfo> } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    off(type: 'message', callback?: Callback<LocalSocketMessageInfo>): void;
+
+    /**
+     * Listens for connection events of the LocalSocket connection.
+     * @param { 'connect' } type - Indicates Event name.
+     * @param { Callback<void> } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Listens for connection events of the LocalSocket connection.
+     * @param { 'connect' } type - Indicates Event name.
+     * @param { Callback<void> } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    on(type: 'connect', callback: Callback<void>): void;
+
+    /**
+     * Cancels listening for connection events of the LocalSocket connection.
+     * @param { 'connect' } type - Indicates Event name.
+     * @param { Callback<void> } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Cancels listening for connection events of the LocalSocket connection.
+     * @param { 'connect' } type - Indicates Event name.
+     * @param { Callback<void> } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    off(type: 'connect', callback?: Callback<void>): void;
+
+    /**
+     * Listens for close events of the LocalSocket connection.
+     * @param { 'close' } type - Indicates Event name.
+     * @param { Callback<void> } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Listens for close events of the LocalSocket connection.
+     * @param { 'close' } type - Indicates Event name.
+     * @param { Callback<void> } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    on(type: 'close', callback: Callback<void>): void;
+
+    /**
+     * Cancels listening for close events of the LocalSocket connection.
+     * @param { 'close' } type - Indicates Event name.
+     * @param { Callback<void> } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Cancels listening for close events of the LocalSocket connection.
+     * @param { 'close' } type - Indicates Event name.
+     * @param { Callback<void> } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    off(type: 'close', callback?: Callback<void>): void;
+
+    /**
+     * Listens for error events of the LocalSocket connection.
+     * @param { 'error' } type - Indicates Event name.
+     * @param { ErrorCallback } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Listens for error events of the LocalSocket connection.
+     * @param { 'error' } type - Indicates Event name.
+     * @param { ErrorCallback } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    on(type: 'error', callback: ErrorCallback): void;
+
+    /**
+     * Cancels listening for error events of the LocalSocket connection.
+     * @param { 'error' } type - Indicates Event name.
+     * @param { ErrorCallback } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Cancels listening for error events of the LocalSocket connection.
+     * @param { 'error' } type - Indicates Event name.
+     * @param { ErrorCallback } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    off(type: 'error', callback?: ErrorCallback): void;
+  }
+
+  /**
+   * Defines the connection of the LocalSocket client and server.
+   * @interface LocalSocketConnection
+   * @syscap SystemCapability.Communication.NetStack
+   * @since 11
+   */
+  /**
+   * Defines the connection of the LocalSocket client and server.
+   * @interface LocalSocketConnection
+   * @syscap SystemCapability.Communication.NetStack
+   * @crossplatform
+   * @since 12
+   */
+  export interface LocalSocketConnection {
+    /**
+     * The id of a client connects to the LocalSocketServer.
+     * @type {number}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * The id of a client connects to the LocalSocketServer.
+     * @type {number}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    clientId: number;
+
+    /**
+     * Sends data over a LocalSocketServer connection to client.
+     * @param { LocalSendOptions } options - Parameters for sending data {@link LocalSendOptions}.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301011 - Operation would block.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Sends data over a LocalSocketServer connection to client.
+     * @param { LocalSendOptions } options - Parameters for sending data {@link LocalSendOptions}.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301011 - Operation would block.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    send(options: LocalSendOptions): Promise<void>;
+
+    /**
+     * Closes a LocalSocket client connection.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Closes a LocalSocket client connection.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    close(): Promise<void>;
+
+    /**
+     * Obtains the local address of a LocalSocket client connection.
+     * @returns { Promise<string> } The promise returned by the function.
+     * @throws { BusinessError } 2300002 - System internal error.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @throws { BusinessError } 2303188 - Socket operation on non-socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 12
+     */
+    getLocalAddress(): Promise<string>;
+
+    /**
+     * Listens for message receiving events of the LocalSocketConnection.
+     * @param { 'message' } type - Indicates Event name.
+     * @param { Callback<LocalSocketMessageInfo> } callback - The callback of on.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Listens for message receiving events of the LocalSocketConnection.
+     * @param { 'message' } type - Indicates Event name.
+     * @param { Callback<LocalSocketMessageInfo> } callback - The callback of on.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    on(type: 'message', callback: Callback<LocalSocketMessageInfo>): void;
+
+    /**
+     * Cancels listening for message receiving events of the LocalSocketConnection.
+     * @param { 'message' } type - Indicates Event name.
+     * @param { Callback<LocalSocketMessageInfo> } callback - The callback of off.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Cancels listening for message receiving events of the LocalSocketConnection.
+     * @param { 'message' } type - Indicates Event name.
+     * @param { Callback<LocalSocketMessageInfo> } callback - The callback of off.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    off(type: 'message', callback?: Callback<LocalSocketMessageInfo>): void;
+
+    /**
+     * Listens for close events of the LocalSocketConnection.
+     * @param { 'close' } type - Indicates Event name.
+     * @param { Callback<void> } callback - The callback of on.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Listens for close events of the LocalSocketConnection.
+     * @param { 'close' } type - Indicates Event name.
+     * @param { Callback<void> } callback - The callback of on.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    on(type: 'close', callback: Callback<void>): void;
+
+    /**
+     * Cancels listening for close events of the LocalSocketConnection.
+     * @param { 'close' } type - Indicates Event name.
+     * @param { Callback<void> } callback - The callback of off.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Cancels listening for close events of the LocalSocketConnection.
+     * @param { 'close' } type - Indicates Event name.
+     * @param { Callback<void> } callback - The callback of off.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    off(type: 'close', callback?: Callback<void>): void;
+
+    /**
+     * Listens for error events of the LocalSocketConnection.
+     * @param { 'error' } type - Indicates Event name.
+     * @param { ErrorCallback } callback - The callback of on.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Listens for error events of the LocalSocketConnection.
+     * @param { 'error' } type - Indicates Event name.
+     * @param { ErrorCallback } callback - The callback of on.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    on(type: 'error', callback: ErrorCallback): void;
+
+    /**
+     * Cancels listening for error events of the LocalSocketConnection.
+     * @param { 'error' } type - Indicates Event name.
+     * @param { ErrorCallback } callback - The callback of off.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Cancels listening for error events of the LocalSocketConnection.
+     * @param { 'error' } type - Indicates Event name.
+     * @param { ErrorCallback } callback - The callback of off.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    off(type: 'error', callback?: ErrorCallback): void;
+  }
+
+  /**
+   * Defines a LocalSocket server connection.
+   * @interface LocalSocketServer
+   * @syscap SystemCapability.Communication.NetStack
+   * @since 11
+   */
+  /**
+   * Defines a LocalSocket server connection.
+   * @interface LocalSocketServer
+   * @syscap SystemCapability.Communication.NetStack
+   * @crossplatform
+   * @since 12
+   */
+  export interface LocalSocketServer {
+    /**
+     * Binds the Local address.
+     * <p>Listens for a LocalSocket connection to be made to this socket and accepts it. This interface uses multiple threads
+     * for accept processing and uses poll multiplex to process client connections.</p>
+     * @param { LocalAddress } address - Network address information {@link LocalAddress}.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2303109 - Bad file number.
+     * @throws { BusinessError } 2301013 - Insufficient permissions.
+     * @throws { BusinessError } 2301022 - Invalid argument.
+     * @throws { BusinessError } 2301098 - Address already in use.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Binds the Local address.
+     * <p>Listens for a LocalSocket connection to be made to this socket and accepts it. This interface uses multiple threads
+     * for accept processing and uses poll multiplex to process client connections.</p>
+     * @param { LocalAddress } address - Network address information {@link LocalAddress}.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2303109 - Bad file number.
+     * @throws { BusinessError } 2301013 - Insufficient permissions.
+     * @throws { BusinessError } 2301022 - Invalid argument.
+     * @throws { BusinessError } 2301098 - Address already in use.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    listen(address: LocalAddress): Promise<void>;
+
+    /**
+     * Obtains the status of the LocalSocketServer connection.
+     * @returns { Promise<SocketStateBase> } The promise returned by the function.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Obtains the status of the LocalSocketServer connection.
+     * @returns { Promise<SocketStateBase> } The promise returned by the function.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    getState(): Promise<SocketStateBase>;
+
+    /**
+     * Sets other attributes of the LocalSocketServer connection.
+     * @param { ExtraOptionsBase } options - Parameters of the attributes {@link ExtraOptionsBase}.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Sets other attributes of the LocalSocketServer connection.
+     * @param { ExtraOptionsBase } options - Parameters of the attributes {@link ExtraOptionsBase}.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    setExtraOptions(options: ExtraOptionsBase): Promise<void>;
+
+    /**
+     * Gets other attributes of the LocalSocket connection.
+     * @returns { Promise<ExtraOptionsBase> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Gets other attributes of the LocalSocket connection.
+     * @returns { Promise<ExtraOptionsBase> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    getExtraOptions(): Promise<ExtraOptionsBase>;
+
+    /**
+     * Obtains the local address of the LocalSocketServer connection.
+     * @returns { Promise<string> } The promise returned by the function.
+     * @throws { BusinessError } 2300002 - System internal error.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @throws { BusinessError } 2303188 - Socket operation on non-socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 12
+     */
+    getLocalAddress(): Promise<string>;
+
+    /**
+     * Listens for connect events of the LocalSocketServer connection.
+     * @param { 'connect' } type - Indicates Event name.
+     * @param { Callback<LocalSocketConnection> } callback - The callback of on.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Listens for connect events of the LocalSocketServer connection.
+     * @param { 'connect' } type - Indicates Event name.
+     * @param { Callback<LocalSocketConnection> } callback - The callback of on.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    on(type: 'connect', callback: Callback<LocalSocketConnection>): void;
+
+    /**
+     * Cancels listening for connect events of the LocalSocketServer connection.
+     * @param { 'connect' } type - Indicates Event name.
+     * @param { Callback<LocalSocketConnection> } callback - The callback of off.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Cancels listening for connect events of the LocalSocketServer connection.
+     * @param { 'connect' } type - Indicates Event name.
+     * @param { Callback<LocalSocketConnection> } callback - The callback of off.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    off(type: 'connect', callback?: Callback<LocalSocketConnection>): void;
+
+    /**
+     * Listens for error events of the LocalSocketServer connection.
+     * @param { 'error' } type - Indicates Event name.
+     * @param { ErrorCallback } callback - The callback of on.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Listens for error events of the LocalSocketServer connection.
+     * @param { 'error' } type - Indicates Event name.
+     * @param { ErrorCallback } callback - The callback of on.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    on(type: 'error', callback: ErrorCallback): void;
+
+    /**
+     * Cancels listening for error events of the LocalSocketServer connection.
+     * @param { 'error' } type - Indicates Event name.
+     * @param { ErrorCallback } callback - The callback of off.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Cancels listening for error events of the LocalSocketServer connection.
+     * @param { 'error' } type - Indicates Event name.
+     * @param { ErrorCallback } callback - The callback of off.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    off(type: 'error', callback?: ErrorCallback): void;
   }
 
   /**
@@ -1379,6 +2490,17 @@ declare namespace socket {
     setExtraOptions(options: TCPExtraOptions): Promise<void>;
 
     /**
+     * Obtains the local address of a TCPSocket connection.
+     * @returns { Promise<NetAddress> } The promise returned by the function.
+     * @throws { BusinessError } 2300002 - System internal error.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @throws { BusinessError } 2303188 - Socket operation on non-socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 12
+     */
+    getLocalAddress(): Promise<NetAddress>;
+
+    /**
      * Listens for message receiving events of the TCPSocket connection.
      * @param { 'message' } type - Indicates Event name.
      * @param { Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }> } callback - the callback used to return the result.
@@ -1393,7 +2515,15 @@ declare namespace socket {
      * @crossplatform
      * @since 10
      */
-    on(type: 'message', callback: Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }>): void;
+    /**
+     * Listens for message receiving events of the TCPSocket connection.
+     * @param { 'message' } type Indicates Event name.
+     * @param { Callback<SocketMessageInfo> } callback - the callback used to return the result.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 11
+     */
+    on(type: 'message', callback: Callback<SocketMessageInfo>): void;
 
     /**
      * Cancels listening for message receiving events of the TCPSocket connection.
@@ -1410,7 +2540,15 @@ declare namespace socket {
      * @crossplatform
      * @since 10
      */
-    off(type: 'message', callback?: Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }>): void;
+    /**
+     * Cancels listening for message receiving events of the TCPSocket connection.
+     * @param { 'message' } type Indicates Event name.
+     * @param { Callback<SocketMessageInfo> } callback - the callback used to return the result.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 11
+     */
+    off(type: 'message', callback?: Callback<SocketMessageInfo>): void;
 
 
     /**
@@ -1673,6 +2811,17 @@ declare namespace socket {
     setExtraOptions(options: TCPExtraOptions): Promise<void>;
 
     /**
+     * Obtains the local address of a TLSSocket connection.
+     * @returns { Promise<NetAddress> } The promise returned by the function.
+     * @throws { BusinessError } 2300002 - System internal error.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @throws { BusinessError } 2303188 - Socket operation on non-socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 12
+     */
+    getLocalAddress(): Promise<NetAddress>;
+
+    /**
      * Listens for message receiving events of the TLSSocket connection.
      * @param { 'message' } type - Indicates Event name.
      * @param { Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }> } callback - the callback used to return the result.
@@ -1689,7 +2838,16 @@ declare namespace socket {
      * @crossplatform
      * @since 10
      */
-    on(type: 'message', callback: Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }>): void;
+    /**
+     * Listens for message receiving events of the TLSSocket connection.
+     * @param { 'message' } type Indicates Event name.
+     * @param { Callback<SocketMessageInfo> } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 11
+     */
+    on(type: 'message', callback: Callback<SocketMessageInfo>): void;
 
     /**
      * Cancels listening for message receiving events of the TLSSocket connection.
@@ -1708,7 +2866,16 @@ declare namespace socket {
      * @crossplatform
      * @since 10
      */
-    off(type: 'message', callback?: Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }>): void;
+    /**
+     * Cancels listening for message receiving events of the TLSSocket connection.
+     * @param { 'message' } type Indicates Event name.
+     * @param { Callback<SocketMessageInfo> } callback - the callback used to return the result.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 11
+     */
+    off(type: 'message', callback?: Callback<SocketMessageInfo>): void;
 
     /**
      * Listens for connection or close events of the TLSSocket connection.
@@ -1790,7 +2957,7 @@ declare namespace socket {
      * Returns an object representing a local certificate.
      * @param { AsyncCallback<X509CertRawData> } callback - the callback of getCertificate.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303504 - Error looking up x509
+     * @throws { BusinessError } 2303504 - An error occurred when verifying the X.509 certificate.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 9
@@ -1799,7 +2966,7 @@ declare namespace socket {
      * Returns an object representing a local certificate.
      * @param { AsyncCallback<X509CertRawData> } callback - the callback of getCertificate.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303504 - Error looking up x509
+     * @throws { BusinessError } 2303504 - An error occurred when verifying the X.509 certificate.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
@@ -1811,7 +2978,7 @@ declare namespace socket {
      * Returns an object representing a local certificate.
      * @returns { Promise<X509CertRawData> } The promise returned by the function.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303504 - Error looking up x509
+     * @throws { BusinessError } 2303504 - An error occurred when verifying the X.509 certificate.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 9
@@ -1820,7 +2987,7 @@ declare namespace socket {
      * Returns an object representing a local certificate.
      * @returns { Promise<X509CertRawData> } The promise returned by the function.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303504 - Error looking up x509
+     * @throws { BusinessError } 2303504 - An error occurred when verifying the X.509 certificate.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
@@ -1880,7 +3047,7 @@ declare namespace socket {
      * Server sockets or disconnected client sockets will return a value of null.
      * @param { AsyncCallback<string> } callback - the callback of getProtocol.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 9
@@ -1891,7 +3058,7 @@ declare namespace socket {
      * Server sockets or disconnected client sockets will return a value of null.
      * @param { AsyncCallback<string> } callback - the callback of getProtocol.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
@@ -1905,7 +3072,7 @@ declare namespace socket {
      * Server sockets or disconnected client sockets will return a value of null.
      * @returns { Promise<string> } The promise returned by the function.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 9
@@ -1916,7 +3083,7 @@ declare namespace socket {
      * Server sockets or disconnected client sockets will return a value of null.
      * @returns { Promise<string> } The promise returned by the function.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
@@ -1929,8 +3096,8 @@ declare namespace socket {
      * For example:{"TLS_RSA_WITH_AES_128_CBC_SHA256", "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256"}
      * @param { AsyncCallback<Array<string>> } callback - the callback of getCipherSuite.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303502 - Error in tls reading.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
+     * @throws { BusinessError } 2303502 - An error occurred when reading data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 9
@@ -1940,8 +3107,8 @@ declare namespace socket {
      * For example:{"TLS_RSA_WITH_AES_128_CBC_SHA256", "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256"}
      * @param { AsyncCallback<Array<string>> } callback - the callback of getCipherSuite.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303502 - Error in tls reading.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
+     * @throws { BusinessError } 2303502 - An error occurred when reading data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
@@ -1954,8 +3121,8 @@ declare namespace socket {
      * For example:{"TLS_RSA_WITH_AES_128_CBC_SHA256", "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256"}
      * @returns { Promise<Array<string>> } The promise returned by the function.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303502 - Error in tls reading.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
+     * @throws { BusinessError } 2303502 - An error occurred when reading data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 9
@@ -1965,8 +3132,8 @@ declare namespace socket {
      * For example:{"TLS_RSA_WITH_AES_128_CBC_SHA256", "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256"}
      * @returns { Promise<Array<string>> } The promise returned by the function.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303502 - Error in tls reading.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
+     * @throws { BusinessError } 2303502 - An error occurred when reading data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
@@ -2024,17 +3191,17 @@ declare namespace socket {
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303104 - Interrupted system call.
      * @throws { BusinessError } 2303109 - Bad file number.
-     * @throws { BusinessError } 2303111 - Resource temporarily unavailable try again.
+     * @throws { BusinessError } 2303111 - Resource temporarily unavailable. Try again.
      * @throws { BusinessError } 2303188 - Socket operation on non-socket.
-     * @throws { BusinessError } 2303191 - Protocol wrong type for socket.
+     * @throws { BusinessError } 2303191 - Incorrect socket protocol type.
      * @throws { BusinessError } 2303198 - Address already in use.
      * @throws { BusinessError } 2303199 - Cannot assign requested address.
      * @throws { BusinessError } 2303210 - Connection timed out.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303502 - Error in tls reading.
-     * @throws { BusinessError } 2303503 - Error in tls writing
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303502 - An error occurred when reading data on the TLS socket.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 9
@@ -2047,17 +3214,17 @@ declare namespace socket {
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303104 - Interrupted system call.
      * @throws { BusinessError } 2303109 - Bad file number.
-     * @throws { BusinessError } 2303111 - Resource temporarily unavailable try again.
+     * @throws { BusinessError } 2303111 - Resource temporarily unavailable. Try again.
      * @throws { BusinessError } 2303188 - Socket operation on non-socket.
-     * @throws { BusinessError } 2303191 - Protocol wrong type for socket.
+     * @throws { BusinessError } 2303191 - Incorrect socket protocol type.
      * @throws { BusinessError } 2303198 - Address already in use.
      * @throws { BusinessError } 2303199 - Cannot assign requested address.
      * @throws { BusinessError } 2303210 - Connection timed out.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303502 - Error in tls reading.
-     * @throws { BusinessError } 2303503 - Error in tls writing
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303502 - An error occurred when reading data on the TLS socket.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
@@ -2073,17 +3240,17 @@ declare namespace socket {
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303104 - Interrupted system call.
      * @throws { BusinessError } 2303109 - Bad file number.
-     * @throws { BusinessError } 2303111 - Resource temporarily unavailable try again.
+     * @throws { BusinessError } 2303111 - Resource temporarily unavailable. Try again.
      * @throws { BusinessError } 2303188 - Socket operation on non-socket.
-     * @throws { BusinessError } 2303191 - Protocol wrong type for socket.
+     * @throws { BusinessError } 2303191 - Incorrect socket protocol type.
      * @throws { BusinessError } 2303198 - Address already in use.
      * @throws { BusinessError } 2303199 - Cannot assign requested address.
      * @throws { BusinessError } 2303210 - Connection timed out.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303502 - Error in tls reading.
-     * @throws { BusinessError } 2303503 - Error in tls writing
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303502 - An error occurred when reading data on the TLS socket.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 9
@@ -2096,17 +3263,17 @@ declare namespace socket {
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303104 - Interrupted system call.
      * @throws { BusinessError } 2303109 - Bad file number.
-     * @throws { BusinessError } 2303111 - Resource temporarily unavailable try again.
+     * @throws { BusinessError } 2303111 - Resource temporarily unavailable. Try again.
      * @throws { BusinessError } 2303188 - Socket operation on non-socket.
-     * @throws { BusinessError } 2303191 - Protocol wrong type for socket.
+     * @throws { BusinessError } 2303191 - Incorrect socket protocol type.
      * @throws { BusinessError } 2303198 - Address already in use.
      * @throws { BusinessError } 2303199 - Cannot assign requested address.
      * @throws { BusinessError } 2303210 - Connection timed out.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303502 - Error in tls reading.
-     * @throws { BusinessError } 2303503 - Error in tls writing
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303502 - An error occurred when reading data on the TLS socket.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
@@ -2116,69 +3283,97 @@ declare namespace socket {
 
     /**
      * Sends data over a TLSSocket connection.
-     * @param { string } data - Optional parameters {@link string}.
+     * @param { string } data - Parameters for sending data {@link string}.
      * @param { AsyncCallback<void> } callback - the callback of send.
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303503 - Error in tls writing.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 9
      */
     /**
      * Sends data over a TLSSocket connection.
-     * @param { string } data - Optional parameters {@link string}.
+     * @param { string } data - Parameters for sending data {@link string}.
      * @param { AsyncCallback<void> } callback - the callback of send.
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303503 - Error in tls writing.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
      * @since 10
      */
-    send(data: string, callback: AsyncCallback<void>): void;
+    /**
+     * Sends data over a TLSSocket connection.
+     * @param { string | ArrayBuffer } data - Parameters for sending data.
+     * @param { AsyncCallback<void> } callback - the callback of send.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2303501 - SSL is null.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
+     * @throws { BusinessError } 2300002 - System internal error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    send(data: string | ArrayBuffer, callback: AsyncCallback<void>): void;
 
     /**
      * Sends data over a TLSSocket connection.
-     * @param { string } data - Optional parameters {@link string}.
+     * @param { string } data - Parameters for sending data {@link string}.
      * @returns { Promise<void> } The promise returned by the function.
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303503 - Error in tls writing.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 9
      */
     /**
      * Sends data over a TLSSocket connection.
-     * @param { string } data - Optional parameters {@link string}.
+     * @param { string } data - Parameters for sending data {@link string}.
      * @returns { Promise<void> } The promise returned by the function.
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303503 - Error in tls writing.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
      * @since 10
      */
-    send(data: string): Promise<void>;
+    /**
+     * Sends data over a TLSSocket connection.
+     * @param { string | ArrayBuffer } data - Parameters for sending data.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2303501 - SSL is null.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
+     * @throws { BusinessError } 2300002 - System internal error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    send(data: string | ArrayBuffer): Promise<void>;
 
     /**
      * Closes a TLSSocket connection
      * @param { AsyncCallback<void> } callback - the callback of close.
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 9
@@ -2188,8 +3383,8 @@ declare namespace socket {
      * @param { AsyncCallback<void> } callback - the callback of close.
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
@@ -2202,8 +3397,8 @@ declare namespace socket {
      * @returns { Promise<void> } The promise returned by the function.
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 9
@@ -2213,8 +3408,8 @@ declare namespace socket {
      * @returns { Promise<void> } The promise returned by the function.
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
@@ -2244,13 +3439,20 @@ declare namespace socket {
      * @since 9
      */
     /**
-     * Certificate used to verify the identity of the server
+     * Certificate used to verify the identity of the server.
      * @type {string | Array<string>}
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
      * @since 10
      */
-    ca: string | Array<string>;
+    /**
+     * Certificate used to verify the identity of the server, if it is not set, use system ca.
+     * @type {?(string | Array<string>)}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    ca?: string | Array<string>;
 
     /**
      * Certificate proving the identity of the client
@@ -2305,7 +3507,7 @@ declare namespace socket {
      */
     /**
      * TLS protocol version
-     * @type {?Protocol | Array<Protocol>}
+     * @type {?(Protocol | Array<Protocol>)}
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
      * @since 10
@@ -2358,6 +3560,14 @@ declare namespace socket {
      * @since 10
      */
     cipherSuite?: string;
+
+    /**
+     * Used to set up bidirectional authentication. The default value is false.
+     * @type {?boolean}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 12
+     */
+    isBidirectionalAuthentication?: boolean;
   }
 
   /**
@@ -2418,6 +3628,14 @@ declare namespace socket {
      * @since 10
      */
     ALPNProtocols?: Array<string>;
+
+    /**
+     * Skip identity verification for remote servers. The default value is false.
+     * @type {?boolean}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 12
+     */
+    skipRemoteValidation?: boolean;
   }
 
   /**
@@ -2551,6 +3769,17 @@ declare namespace socket {
     getRemoteAddress(): Promise<NetAddress>;
 
     /**
+     * Obtains the local address of a TCPSocketServer connection.
+     * @returns { Promise<NetAddress> } The promise returned by the function.
+     * @throws { BusinessError } 2300002 - System internal error.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @throws { BusinessError } 2303188 - Socket operation on non-socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 12
+     */
+    getLocalAddress(): Promise<NetAddress>;
+
+    /**
      * Listens for message receiving events of the TCPSocketConnection.
      * @param { 'message' } type - Indicates Event name.
      * @param { Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }> } callback - The callback of on.
@@ -2558,7 +3787,24 @@ declare namespace socket {
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    on(type: 'message', callback: Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }>): void;
+    /**
+     * Listens for message receiving events of the TCPSocketConnection.
+     * @param { 'message' } type - Indicates Event name.
+     * @param { Callback<SocketMessageInfo> } callback - The callback of on.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Listens for message receiving events of the TCPSocketConnection.
+     * @param { 'message' } type - Indicates Event name.
+     * @param { Callback<SocketMessageInfo> } callback - The callback of on.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    on(type: 'message', callback: Callback<SocketMessageInfo>): void;
 
     /**
      * Cancels listening for message receiving events of the TCPSocketConnection.
@@ -2568,7 +3814,24 @@ declare namespace socket {
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    off(type: 'message', callback?: Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }>): void;
+    /**
+     * Cancels listening for message receiving events of the TCPSocketConnection.
+     * @param { 'message' } type - Indicates Event name.
+     * @param { Callback<SocketMessageInfo> } callback - The callback of off.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Cancels listening for message receiving events of the TCPSocketConnection.
+     * @param { 'message' } type - Indicates Event name.
+     * @param { Callback<SocketMessageInfo> } callback - The callback of off.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    off(type: 'message', callback?: Callback<SocketMessageInfo>): void;
 
     /**
      * Listens for close events of the TCPSocketConnection.
@@ -2629,7 +3892,7 @@ declare namespace socket {
      * @throws { BusinessError } 201 - Permission denied.
      * @throws { BusinessError } 2300002 - System internal error.
      * @throws { BusinessError } 2303109 - Bad file number.
-     * @throws { BusinessError } 2303111 - Resource temporarily unavailable try again.
+     * @throws { BusinessError } 2303111 - Resource temporarily unavailable. Try again.
      * @throws { BusinessError } 2303198 - Address already in use.
      * @throws { BusinessError } 2303199 - Cannot assign requested address.
      * @syscap SystemCapability.Communication.NetStack
@@ -2648,7 +3911,7 @@ declare namespace socket {
      * @throws { BusinessError } 201 - Permission denied.
      * @throws { BusinessError } 2300002 - System internal error.
      * @throws { BusinessError } 2303109 - Bad file number.
-     * @throws { BusinessError } 2303111 - Resource temporarily unavailable try again.
+     * @throws { BusinessError } 2303111 - Resource temporarily unavailable. Try again.
      * @throws { BusinessError } 2303198 - Address already in use.
      * @throws { BusinessError } 2303199 - Cannot assign requested address.
      * @syscap SystemCapability.Communication.NetStack
@@ -2708,6 +3971,17 @@ declare namespace socket {
      * @since 10
      */
     setExtraOptions(options: TCPExtraOptions): Promise<void>;
+
+    /**
+     * Obtains the local address of a TCPSocketServer connection.
+     * @returns { Promise<NetAddress> } The promise returned by the function.
+     * @throws { BusinessError } 2300002 - System internal error.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @throws { BusinessError } 2303188 - Socket operation on non-socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 12
+     */
+    getLocalAddress(): Promise<NetAddress>;
 
     /**
      * Listens for connect events of the TCPSocketServer connection.
@@ -2771,14 +4045,27 @@ declare namespace socket {
      * @param { AsyncCallback<void> } callback - The callback of send.
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303503 - Error in tls writing.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    send(data: string, callback: AsyncCallback<void>): void;
+    /**
+     * Sends data over a TLSSocketServer connection to client.
+     * @param { string | ArrayBuffer } data - Parameters for sending data.
+     * @param { AsyncCallback<void> } callback - The callback of send.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2303501 - SSL is null.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
+     * @throws { BusinessError } 2300002 - System internal error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 12
+     */
+    send(data: string | ArrayBuffer, callback: AsyncCallback<void>): void;
 
     /**
      * Sends data over a TLSSocketServer connection to client.
@@ -2786,22 +4073,35 @@ declare namespace socket {
      * @returns { Promise<void> } The promise returned by the function.
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303503 - Error in tls writing.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    send(data: string): Promise<void>;
+    /**
+     * Sends data over a TLSSocketServer connection to client.
+     * @param { string | ArrayBuffer } data - Parameters for sending data.
+     * @returns { Promise<void> } The promise returned by the function.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @throws { BusinessError } 2303501 - SSL is null.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
+     * @throws { BusinessError } 2300002 - System internal error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 12
+     */
+    send(data: string | ArrayBuffer): Promise<void>;
 
     /**
      * Closes a TLSSocket client connection.
      * @param { AsyncCallback<void> } callback - The callback of close.
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
@@ -2812,8 +4112,8 @@ declare namespace socket {
      * Closes a TLSSocket client connection.
      * @returns { Promise<void> } The promise returned by the function.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
@@ -2872,8 +4172,8 @@ declare namespace socket {
      * @param { AsyncCallback<Array<string>> } callback - The callback of getCipherSuite.
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303502 - Error in tls reading.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
+     * @throws { BusinessError } 2303502 - An error occurred when reading data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
@@ -2885,8 +4185,8 @@ declare namespace socket {
      * For example:{"TLS_RSA_WITH_AES_128_CBC_SHA256", "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256"}
      * @returns { Promise<Array<string>> } The promise returned by the function.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303502 - Error in tls reading.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
+     * @throws { BusinessError } 2303502 - An error occurred when reading data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
@@ -2917,6 +4217,17 @@ declare namespace socket {
     getSignatureAlgorithms(): Promise<Array<string>>;
 
     /**
+     * Obtains the local address of a TLSSocketServer connection.
+     * @returns { Promise<NetAddress> } The promise returned by the function.
+     * @throws { BusinessError } 2300002 - System internal error.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @throws { BusinessError } 2303188 - Socket operation on non-socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 12
+     */
+    getLocalAddress(): Promise<NetAddress>;
+
+    /**
      * Listens for message receiving events of the TLSSocketConnection.
      * @param { 'message' } type - Indicates Event name.
      * @param { Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }> } callback - The callback of on.
@@ -2924,7 +4235,24 @@ declare namespace socket {
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    on(type: 'message', callback: Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }>): void;
+    /**
+     * Listens for message receiving events of the TLSSocketConnection.
+     * @param { 'message' } type - Indicates Event name.
+     * @param { Callback<SocketMessageInfo> } callback - The callback of on.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Listens for message receiving events of the TLSSocketConnection.
+     * @param { 'message' } type - Indicates Event name.
+     * @param { Callback<SocketMessageInfo> } callback - The callback of on.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    on(type: 'message', callback: Callback<SocketMessageInfo>): void;
 
     /**
      * Cancels listening for message receiving events of the TLSSocketConnection.
@@ -2934,7 +4262,24 @@ declare namespace socket {
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
-    off(type: 'message', callback?: Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }>): void;
+    /**
+     * Cancels listening for message receiving events of the TLSSocketConnection.
+     * @param { 'message' } type - Indicates Event name.
+     * @param { Callback<SocketMessageInfo> } callback - The callback of off.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 11
+     */
+    /**
+     * Cancels listening for message receiving events of the TLSSocketConnection.
+     * @param { 'message' } type - Indicates Event name.
+     * @param { Callback<SocketMessageInfo> } callback - The callback of off.
+     * @throws { BusinessError } 401 - Parameter error.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 12
+     */
+    off(type: 'message', callback?: Callback<SocketMessageInfo>): void;
 
     /**
      * Listens for close events of the TLSSocketConnection.
@@ -2978,6 +4323,32 @@ declare namespace socket {
   }
 
   /**
+   * Defines the socket connection information.
+   * @interface SocketMessageInfo
+   * @syscap SystemCapability.Communication.NetStack
+   * @crossplatform
+   * @since 11
+   */
+  export interface SocketMessageInfo {
+    /**
+     * Receive the message event.
+     * @type { ArrayBuffer }
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 11
+     */
+    message: ArrayBuffer;
+    /**
+     * Socket connection information.
+     * @type { SocketRemoteInfo }
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 11
+     */
+    remoteInfo: SocketRemoteInfo;
+  }
+
+  /**
    * Defines a TLSSocketServer server connection.
    * @interface TLSSocketServer
    * @syscap SystemCapability.Communication.NetStack
@@ -2995,14 +4366,14 @@ declare namespace socket {
      * @throws { BusinessError } 201 - Permission denied.
      * @throws { BusinessError } 2300002 - System internal error.
      * @throws { BusinessError } 2303109 - Bad file number.
-     * @throws { BusinessError } 2303111 - Resource temporarily unavailable try again.
+     * @throws { BusinessError } 2303111 - Resource temporarily unavailable. Try again.
      * @throws { BusinessError } 2303198 - Address already in use.
      * @throws { BusinessError } 2303199 - Cannot assign requested address.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303502 - Error in tls reading.
-     * @throws { BusinessError } 2303503 - Error in tls writing
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303502 - An error occurred when reading data on the TLS socket.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
@@ -3019,14 +4390,14 @@ declare namespace socket {
      * @throws { BusinessError } 201 - Permission denied.
      * @throws { BusinessError } 2300002 - System internal error.
      * @throws { BusinessError } 2303109 - Bad file number.
-     * @throws { BusinessError } 2303111 - Resource temporarily unavailable try again.
+     * @throws { BusinessError } 2303111 - Resource temporarily unavailable. Try again.
      * @throws { BusinessError } 2303198 - Address already in use.
      * @throws { BusinessError } 2303199 - Cannot assign requested address.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303502 - Error in tls reading.
-     * @throws { BusinessError } 2303503 - Error in tls writing
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
-     * @throws { BusinessError } 2303506 - Error clearing tls connection.
+     * @throws { BusinessError } 2303502 - An error occurred when reading data on the TLS socket.
+     * @throws { BusinessError } 2303503 - An error occurred when writing data on the TLS socket.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
+     * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
@@ -3082,7 +4453,7 @@ declare namespace socket {
      * @param { AsyncCallback<X509CertRawData> } callback - The callback of getCertificate.
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303504 - Error looking up x509
+     * @throws { BusinessError } 2303504 - An error occurred when verifying the X.509 certificate.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
@@ -3093,7 +4464,7 @@ declare namespace socket {
      * Returns an object representing a local certificate.
      * @returns { Promise<X509CertRawData> } The promise returned by the function.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303504 - Error looking up x509
+     * @throws { BusinessError } 2303504 - An error occurred when verifying the X.509 certificate.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
@@ -3107,7 +4478,7 @@ declare namespace socket {
      * @param { AsyncCallback<string> } callback - The callback of getProtocol.
      * @throws { BusinessError } 401 - Parameter error.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
@@ -3120,12 +4491,23 @@ declare namespace socket {
      * Server sockets or disconnected client sockets will return a value of null.
      * @returns { Promise<string> } The promise returned by the function.
      * @throws { BusinessError } 2303501 - SSL is null.
-     * @throws { BusinessError } 2303505 - Error occurred in the tls system call.
+     * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
      * @throws { BusinessError } 2300002 - System internal error.
      * @syscap SystemCapability.Communication.NetStack
      * @since 10
      */
     getProtocol(): Promise<string>;
+
+    /**
+     * Obtains the local address of the TLSSocketServer connection.
+     * @returns { Promise<NetAddress> } The promise returned by the function.
+     * @throws { BusinessError } 2300002 - System internal error.
+     * @throws { BusinessError } 2301009 - Bad file descriptor.
+     * @throws { BusinessError } 2303188 - Socket operation on non-socket.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 12
+     */
+    getLocalAddress(): Promise<NetAddress>;
 
     /**
      * Listens for connect events of the TLSSocketServer connection.
