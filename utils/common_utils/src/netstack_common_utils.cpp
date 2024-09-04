@@ -14,6 +14,7 @@
  */
 
 #include "netstack_common_utils.h"
+#include <filesystem>
 
 #ifdef WINDOWS_PLATFORM
 #include <winsock2.h>
@@ -457,11 +458,13 @@ std::string AnonymizeIp(std::string &input)
 
 std::string GetFileDataFromFilePath(const std::string& filePath)
 {
-    if (access(filePath.c_str(), F_OK) != 0) {
-        NETSTACK_LOGE("file path is not exist");
+    std::error_code error;
+    auto path = std::filesystem::absolute(filePath, error);
+    if (error) {
+        NETSTACK_LOGE("Failed to obtain the absolute path");
         return {};
     }
-    std::ifstream file(filePath);
+    std::ifstream file(path);
     if (file.is_open()) {
         std::stringstream buffer;
         buffer << file.rdbuf();
