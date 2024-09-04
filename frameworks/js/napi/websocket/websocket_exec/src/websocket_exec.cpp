@@ -282,10 +282,19 @@ bool WebSocketExec::ParseUrl(ConnectContext *context, char *protocol, size_t pro
     return true;
 }
 
-void RunService(UserData *userData)
+void WebSocketExec::RunService(EventManager *manager)
 {
     NETSTACK_LOGI("websocket run service start");
     int res = 0;
+    if (!EventManager::IsManagerValid(manager)) {
+        NETSTACK_LOGE("manager is invalid");
+        return;
+    }
+    if (manager == nullptr || manager->GetData() == nullptr) {
+        NETSTACK_LOGE("RunService para error");
+        return;
+    }
+    auto userData = reinterpret_cast<UserData *>(manager->GetData());
     lws_context *context = userData->GetContext();
     if (context == nullptr) {
         NETSTACK_LOGE("context is null");
@@ -297,6 +306,7 @@ void RunService(UserData *userData)
     lws_context_destroy(context);
     userData->SetContext(nullptr);
     delete userData;
+    manager->SetData(nullptr);
     NETSTACK_LOGI("websocket run service end");
 }
 
@@ -813,7 +823,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         delete userData;
         return false;
     }
-    std::thread serviceThread(RunService, userData);
+    std::thread serviceThread(RunService, manager);
 
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(WEBSOCKET_CLIENT_THREAD_RUN);
