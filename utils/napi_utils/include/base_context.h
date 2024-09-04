@@ -40,7 +40,9 @@ class BaseContext {
 public:
     BaseContext() = delete;
 
-    explicit BaseContext(napi_env env, EventManager *manager);
+    BaseContext(napi_env env, EventManager *manager);
+
+    BaseContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager);
 
     virtual ~BaseContext();
 
@@ -100,6 +102,8 @@ public:
 
     [[nodiscard]] EventManager *GetManager() const;
 
+    [[nodiscard]] std::shared_ptr<EventManager> GetSharedManager() const;
+
     void CreateReference(napi_value value);
 
     void DeleteReference();
@@ -150,6 +154,8 @@ private:
     std::string asyncWorkName_;
 
     std::string errorMessage_;
+
+    std::shared_ptr<EventManager> sharedManager_;
 };
 } // namespace OHOS::NetStack
 

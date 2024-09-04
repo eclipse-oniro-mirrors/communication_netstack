@@ -23,6 +23,10 @@
 
 namespace OHOS::NetStack::Websocket {
 ConnectContext::ConnectContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
+ConnectContext::ConnectContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager)
+    : BaseContext(env, sharedManager)
+{
+}
 
 ConnectContext::~ConnectContext() = default;
 
@@ -165,16 +169,14 @@ void ConnectContext::ParseCaPath(napi_value optionsValue)
     caPath_ = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, ContextKey::CAPATH);
 }
 
-void ConnectContext::GetClientCert(
-    std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPassword)
+void ConnectContext::GetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPassword)
 {
     cert = clientCert_;
     key = clientKey_;
     keyPassword = keyPassword_;
 }
 
-void ConnectContext::SetClientCert(
-    std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPassword)
+void ConnectContext::SetClientCert(std::string &cert, Secure::SecureChar &key, Secure::SecureChar &keyPassword)
 {
     clientCert_ = cert;
     clientKey_ = key;
@@ -193,10 +195,10 @@ void ConnectContext::ParseClientCert(napi_value optionsValue)
         return;
     }
     std::string certPath = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::CERT_PATH);
-    Secure::SecureChar keyPath = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(),
-    jsCert, ContextKey::KEY_PATH));
-    Secure::SecureChar keyPassword = Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(),
-    jsCert, ContextKey::KEY_PASSWD));
+    Secure::SecureChar keyPath =
+        Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::KEY_PATH));
+    Secure::SecureChar keyPassword =
+        Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::KEY_PASSWD));
     SetClientCert(certPath, keyPath, keyPassword);
 }
 

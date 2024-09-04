@@ -42,7 +42,7 @@ napi_value WebSocketModule::InitWebSocketModule(napi_env env, napi_value exports
 
 napi_value WebSocketModule::CreateWebSocket(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::NewInstance(env, info, INTERFACE_WEB_SOCKET, FinalizeWebSocketInstance);
+    return ModuleTemplate::NewInstanceWithSharedManager(env, info, INTERFACE_WEB_SOCKET, FinalizeWebSocketInstance);
 }
 
 void WebSocketModule::DefineWebSocketClass(napi_env env, napi_value exports)
@@ -68,15 +68,13 @@ void WebSocketModule::InitWebSocketProperties(napi_env env, napi_value exports)
 void WebSocketModule::FinalizeWebSocketInstance(napi_env env, void *data, void *hint)
 {
     NETSTACK_LOGI("websocket handle is finalized");
-    auto manager = reinterpret_cast<EventManager *>(data);
-    if (manager != nullptr) {
-        EventManager::SetInvalid(manager);
-    }
+    auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
+    delete sharedManager;
 }
 
 napi_value WebSocketModule::WebSocket::Connect(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<ConnectContext>(
+    return ModuleTemplate::InterfaceWithSharedManager<ConnectContext>(
         env, info, "WebSocketConnect",
         [](napi_env, napi_value, ConnectContext *context) -> bool {
             context->SetAtomicService(g_appIsAtomicService);
@@ -88,28 +86,30 @@ napi_value WebSocketModule::WebSocket::Connect(napi_env env, napi_callback_info 
 
 napi_value WebSocketModule::WebSocket::Send(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<SendContext>(env, info, "WebSocketSend", nullptr, WebSocketAsyncWork::ExecSend,
-                                                  WebSocketAsyncWork::SendCallback);
+    return ModuleTemplate::InterfaceWithSharedManager<SendContext>(
+        env, info, "WebSocketSend", nullptr, WebSocketAsyncWork::ExecSend, WebSocketAsyncWork::SendCallback);
 }
 
 napi_value WebSocketModule::WebSocket::Close(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<CloseContext>(env, info, "WebSocketClose", nullptr, WebSocketAsyncWork::ExecClose,
-                                                   WebSocketAsyncWork::CloseCallback);
+    return ModuleTemplate::InterfaceWithSharedManager<CloseContext>(
+        env, info, "WebSocketClose", nullptr, WebSocketAsyncWork::ExecClose, WebSocketAsyncWork::CloseCallback);
 }
 
 napi_value WebSocketModule::WebSocket::On(napi_env env, napi_callback_info info)
 {
-    ModuleTemplate::On(env, info, {EventName::EVENT_OPEN, EventName::EVENT_MESSAGE, EventName::EVENT_CLOSE}, true);
-    return ModuleTemplate::On(
+    ModuleTemplate::OnSharedManager(env, info,
+                                    {EventName::EVENT_OPEN, EventName::EVENT_MESSAGE, EventName::EVENT_CLOSE}, true);
+    return ModuleTemplate::OnSharedManager(
         env, info, {EventName::EVENT_ERROR, EventName::EVENT_HEADER_RECEIVE, EventName::EVENT_DATA_END}, false);
 }
 
 napi_value WebSocketModule::WebSocket::Off(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Off(env, info,
-                               {EventName::EVENT_OPEN, EventName::EVENT_MESSAGE, EventName::EVENT_CLOSE,
-                                EventName::EVENT_ERROR, EventName::EVENT_DATA_END, EventName::EVENT_HEADER_RECEIVE});
+    return ModuleTemplate::OffSharedManager(env, info,
+                                            {EventName::EVENT_OPEN, EventName::EVENT_MESSAGE, EventName::EVENT_CLOSE,
+                                             EventName::EVENT_ERROR, EventName::EVENT_DATA_END,
+                                             EventName::EVENT_HEADER_RECEIVE});
 }
 
 static napi_module g_websocketModule = {

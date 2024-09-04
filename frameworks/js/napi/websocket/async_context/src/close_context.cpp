@@ -26,6 +26,11 @@ CloseContext::CloseContext(napi_env env, EventManager *manager)
 {
 }
 
+CloseContext::CloseContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager)
+    : BaseContext(env, sharedManager), code(CLOSE_REASON_NORMAL_CLOSE), reason("CLOSE_NORMAL")
+{
+}
+
 void CloseContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     if (!CheckParamsType(params, paramsCount)) {
