@@ -240,7 +240,7 @@ template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTempl
     napi_value obj = MakeJsValue(env, workWrapper->data);
     auto undefined = NapiUtils::GetUndefined(workWrapper->env);
     std::pair<napi_value, napi_value> arg = {undefined, obj};
-    if (EventManager::IsManagerValid(workWrapper->manager)) {
+    if (workWrapper->manager->innerMagic_.magicNumber == EVENT_MANAGER_MAGIC_NUMBER) {
         workWrapper->manager->Emit(workWrapper->type, arg);
         if (workWrapper->type == EventName::EVENT_MESSAGE &&
             workWrapper->manager->HasEventListener(EventName::EVENT_DATA_END)) {
@@ -282,19 +282,10 @@ bool WebSocketExec::ParseUrl(ConnectContext *context, char *protocol, size_t pro
     return true;
 }
 
-void WebSocketExec::RunService(EventManager *manager)
+void RunService(std::shared_ptr<UserData> userData, std::shared_ptr<EventManager> manager)
 {
     NETSTACK_LOGI("websocket run service start");
     int res = 0;
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
-        return;
-    }
-    if (manager == nullptr || manager->GetData() == nullptr) {
-        NETSTACK_LOGE("RunService para error");
-        return;
-    }
-    auto userData = reinterpret_cast<UserData *>(manager->GetData());
     lws_context *context = userData->GetContext();
     if (context == nullptr) {
         NETSTACK_LOGE("context is null");
@@ -305,8 +296,7 @@ void WebSocketExec::RunService(EventManager *manager)
     }
     lws_context_destroy(context);
     userData->SetContext(nullptr);
-    delete userData;
-    manager->SetData(nullptr);
+    manager->SetWebSocketUserData(nullptr);
     NETSTACK_LOGI("websocket run service end");
 }
 
@@ -338,15 +328,11 @@ int WebSocketExec::LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback
 {
     NETSTACK_LOGD("lws callback client append handshake header");
     auto manager = reinterpret_cast<EventManager *>(user);
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
-        return -1;
-    }
-    if (manager->GetData() == nullptr) {
+    auto userData = manager->GetWebSocketUserData();
+    if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
         return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
-    auto userData = reinterpret_cast<UserData *>(manager->GetData());
 
     auto payload = reinterpret_cast<unsigned char **>(in);
     if (payload == nullptr || (*payload) == nullptr || len == 0) {
@@ -372,15 +358,11 @@ int WebSocketExec::LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reason
 {
     NETSTACK_LOGD("lws callback ws peer initiated close");
     auto manager = reinterpret_cast<EventManager *>(user);
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
-        return -1;
-    }
-    if (manager->GetData() == nullptr) {
+    auto userData = manager->GetWebSocketUserData();
+    if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
         return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
-    auto userData = reinterpret_cast<UserData *>(manager->GetData());
 
     if (in == nullptr || len < sizeof(uint16_t)) {
         NETSTACK_LOGI("No close reason");
@@ -399,15 +381,11 @@ int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reas
 {
     NETSTACK_LOGD("lws callback client writable");
     auto manager = reinterpret_cast<EventManager *>(user);
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
-        return -1;
-    }
-    if (manager->GetData() == nullptr) {
+    auto userData = manager->GetWebSocketUserData();
+    if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
         return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
-    auto userData = reinterpret_cast<UserData *>(manager->GetData());
     if (userData->IsClosed()) {
         NETSTACK_LOGI("need to close");
         lws_close_reason(wsi, userData->closeStatus,
@@ -447,15 +425,11 @@ static napi_value CreateConnectError(napi_env env, void *callbackPara)
 void OnConnectError(EventManager *manager, int32_t code, uint32_t httpResponse)
 {
     NETSTACK_LOGI("OnError %{public}d", code);
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
-        return;
-    }
-    if (manager == nullptr) {
+    if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
         NETSTACK_LOGE("manager is null");
         return;
     }
-    if (auto userData = reinterpret_cast<UserData *>(manager->GetData()); userData != nullptr) {
+    if (auto userData = manager->GetWebSocketUserData(); userData != nullptr) {
         NETSTACK_LOGI("OnConnectError SetThreadStop");
         userData->SetThreadStop(true);
     }
@@ -466,7 +440,7 @@ void OnConnectError(EventManager *manager, int32_t code, uint32_t httpResponse)
     auto pair = new std::pair<int, uint32_t>;
     pair->first = code;
     pair->second = httpResponse;
-    manager->EmitByUv(EventName::EVENT_ERROR, pair, CallbackTemplate<CreateConnectError>);
+    manager->EmitByUvWithoutCheck(EventName::EVENT_ERROR, pair, CallbackTemplate<CreateConnectError>);
 }
 
 int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in,
@@ -483,10 +457,6 @@ int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reaso
 {
     NETSTACK_LOGD("lws callback client receive");
     auto manager = reinterpret_cast<EventManager *>(user);
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
-        return -1;
-    }
     auto isFinal = lws_is_final_fragment(wsi);
     OnMessage(manager, in, len, lws_frame_is_binary(wsi), isFinal);
     return HttpDummy(wsi, reason, user, in, len);
@@ -497,15 +467,11 @@ int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_re
 {
     NETSTACK_LOGD("lws callback client filter preEstablish");
     auto manager = reinterpret_cast<EventManager *>(user);
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
-        return -1;
-    }
-    if (manager->GetData() == nullptr) {
+    auto userData = manager->GetWebSocketUserData();
+    if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
         return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
-    auto userData = reinterpret_cast<UserData *>(manager->GetData());
 
     userData->openStatus = GetHttpResponseFromWsi(wsi);
     char statusLine[MAX_HDR_LENGTH] = {0};
@@ -551,15 +517,11 @@ int WebSocketExec::LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons r
 {
     NETSTACK_LOGD("lws callback client established");
     auto manager = reinterpret_cast<EventManager *>(user);
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
-        return -1;
-    }
-    if (manager->GetData() == nullptr) {
+    auto userData = manager->GetWebSocketUserData();
+    if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
         return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
-    auto userData = reinterpret_cast<UserData *>(manager->GetData());
     lws_callback_on_writable(wsi);
     userData->SetLws(wsi);
     OnOpen(reinterpret_cast<EventManager *>(user), userData->openStatus, userData->openMessage);
@@ -570,15 +532,11 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
 {
     NETSTACK_LOGD("lws callback client closed");
     auto manager = reinterpret_cast<EventManager *>(user);
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
-        return -1;
-    }
-    if (manager->GetData() == nullptr) {
+    auto userData = manager->GetWebSocketUserData();
+    if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
         return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
-    auto userData = reinterpret_cast<UserData *>(manager->GetData());
     userData->SetThreadStop(true);
     if ((userData->closeReason).empty()) {
         userData->Close(userData->closeStatus, LINK_DOWN);
@@ -599,11 +557,7 @@ int WebSocketExec::LwsCallbackWsiDestroy(lws *wsi, lws_callback_reasons reason, 
         NETSTACK_LOGE("manager is null");
         return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
-        return -1;
-    }
-    auto userData = reinterpret_cast<UserData *>(manager->GetData());
+    auto userData = manager->GetWebSocketUserData();
     if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
         return RaiseError(manager, GetHttpResponseFromWsi(wsi));
@@ -686,7 +640,8 @@ void WebSocketExec::FillContextInfo(ConnectContext *context, lws_context_creatio
     }
 }
 
-bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsContext, EventManager *manager)
+bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsContext,
+                                     const std::shared_ptr<EventManager> &manager)
 {
     lws_client_connect_info connectInfo = {};
     char protocol[MAX_URI_LENGTH] = {0};
@@ -725,11 +680,11 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     lws *wsi = nullptr;
     connectInfo.pwsi = &wsi;
     connectInfo.retry_and_idle_policy = &RETRY;
-    connectInfo.userdata = reinterpret_cast<void *>(manager);
+    connectInfo.userdata = manager.get();
     if (lws_client_connect_via_info(&connectInfo) == nullptr) {
         NETSTACK_LOGI("ExecConnect websocket connect failed");
         context->SetErrorCode(-1);
-        OnConnectError(manager, COMMON_ERROR_CODE, 0);
+        OnConnectError(manager.get(), COMMON_ERROR_CODE, 0);
         return false;
     }
     return true;
@@ -794,7 +749,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         context->SetNoAllowedHost(true);
         return false;
     }
-    auto manager = context->GetManager();
+    auto manager = context->GetSharedManager();
     if (manager == nullptr) {
         return false;
     }
@@ -805,25 +760,24 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         return false;
     }
     lws_context *lwsContext = nullptr;
-    UserData *userData = nullptr;
-    if (manager->GetData() == nullptr) {
+    std::shared_ptr<UserData> userData;
+    if (manager->GetWebSocketUserData() == nullptr) {
         lwsContext = lws_create_context(&info);
-        userData = new UserData(lwsContext);
+        userData = std::make_shared<UserData>(lwsContext);
         userData->header = context->header;
-        manager->SetData(userData);
+        manager->SetWebSocketUserData(userData);
     } else {
         NETSTACK_LOGE("Websocket connect already exist");
         context->SetErrorCode(WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST);
         return false;
     }
     if (!CreatConnectInfo(context, lwsContext, manager)) {
-        manager->SetData(nullptr);
         userData->SetContext(nullptr);
         lws_context_destroy(lwsContext);
-        delete userData;
+        manager->SetWebSocketUserData(nullptr);
         return false;
     }
-    std::thread serviceThread(RunService, manager);
+    std::thread serviceThread(RunService, userData, manager);
 
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(WEBSOCKET_CLIENT_THREAD_RUN);
@@ -854,12 +808,12 @@ bool WebSocketExec::ExecSend(SendContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    auto manager = context->GetManager();
+    auto manager = context->GetSharedManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("context is null");
         return false;
     }
-    auto userData = reinterpret_cast<UserData *>(manager->GetData());
+    auto userData = manager->GetWebSocketUserData();
     if (userData == nullptr) {
         NETSTACK_LOGE("user data is nullptr");
         return false;
@@ -889,13 +843,13 @@ bool WebSocketExec::ExecClose(CloseContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    if (context->GetManager() == nullptr) {
+    if (context->GetSharedManager() == nullptr) {
         NETSTACK_LOGE("context is null");
         return false;
     }
 
-    auto manager = context->GetManager();
-    auto userData = reinterpret_cast<UserData *>(manager->GetData());
+    auto manager = context->GetSharedManager();
+    auto userData = manager->GetWebSocketUserData();
     if (userData == nullptr) {
         NETSTACK_LOGE("user data is nullptr");
         return false;
@@ -913,7 +867,7 @@ bool WebSocketExec::ExecClose(CloseContext *context)
 
 napi_value WebSocketExec::CloseCallback(CloseContext *context)
 {
-    auto manager = context->GetManager();
+    auto manager = context->GetSharedManager();
     if (manager != nullptr) {
         NETSTACK_LOGD("websocket close, delete js ref");
         manager->DeleteEventReference(context->GetEnv());
@@ -966,6 +920,9 @@ static napi_value CreateClosePara(napi_env env, void *callbackPara)
 static napi_value CreateTextMessagePara(napi_env env, void *callbackPara)
 {
     auto manager = reinterpret_cast<EventManager *>(callbackPara);
+    if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
+        return NapiUtils::CreateStringUtf8(env, "");
+    }
     auto msg = reinterpret_cast<std::string *>(manager->GetQueueData());
     if (!msg) {
         NETSTACK_LOGE("msg is nullptr");
@@ -998,11 +955,7 @@ static napi_value CreateBinaryMessagePara(napi_env env, void *callbackPara)
 void WebSocketExec::OnError(EventManager *manager, int32_t code, uint32_t httpResponse)
 {
     NETSTACK_LOGI("OnError %{public}d", code);
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
-        return;
-    }
-    if (manager == nullptr) {
+    if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
         NETSTACK_LOGE("manager is null");
         return;
     }
@@ -1013,7 +966,7 @@ void WebSocketExec::OnError(EventManager *manager, int32_t code, uint32_t httpRe
     auto pair = new std::pair<int, uint32_t>;
     pair->first = code;
     pair->second = httpResponse;
-    manager->EmitByUv(EventName::EVENT_ERROR, pair, CallbackTemplate<CreateError>);
+    manager->EmitByUvWithoutCheck(EventName::EVENT_ERROR, pair, CallbackTemplate<CreateError>);
 }
 
 napi_value CreateResponseHeader(napi_env env, void *callbackPara)
@@ -1040,11 +993,7 @@ napi_value CreateResponseHeader(napi_env env, void *callbackPara)
 void WebSocketExec::OnOpen(EventManager *manager, uint32_t status, const std::string &message)
 {
     NETSTACK_LOGI("OnOpen %{public}u %{public}s", status, message.c_str());
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
-        return;
-    }
-    if (manager == nullptr) {
+    if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
         NETSTACK_LOGE("manager is null");
         return;
     }
@@ -1055,17 +1004,13 @@ void WebSocketExec::OnOpen(EventManager *manager, uint32_t status, const std::st
     auto para = new OnOpenClosePara;
     para->status = status;
     para->message = message;
-    manager->EmitByUv(EventName::EVENT_OPEN, para, CallbackTemplate<CreateOpenPara>);
+    manager->EmitByUvWithoutCheck(EventName::EVENT_OPEN, para, CallbackTemplate<CreateOpenPara>);
 }
 
 void WebSocketExec::OnClose(EventManager *manager, lws_close_status closeStatus, const std::string &closeReason)
 {
     NETSTACK_LOGI("OnClose %{public}u %{public}s", closeStatus, closeReason.c_str());
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
-        return;
-    }
-    if (manager == nullptr) {
+    if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
         NETSTACK_LOGE("manager is null");
         return;
     }
@@ -1076,17 +1021,13 @@ void WebSocketExec::OnClose(EventManager *manager, lws_close_status closeStatus,
     auto para = new OnOpenClosePara;
     para->status = closeStatus;
     para->message = closeReason;
-    manager->EmitByUv(EventName::EVENT_CLOSE, para, CallbackTemplate<CreateClosePara>);
+    manager->EmitByUvWithoutCheck(EventName::EVENT_CLOSE, para, CallbackTemplate<CreateClosePara>);
 }
 
 void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, bool isBinary, bool isFinal)
 {
     NETSTACK_LOGD("OnMessage %{public}d", isBinary);
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
-        return;
-    }
-    if (manager == nullptr) {
+    if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
         NETSTACK_LOGE("manager is null");
         return;
     }
@@ -1110,7 +1051,7 @@ void WebSocketExec::HandleRcvMessage(EventManager *manager, void *data, size_t l
             auto msg = new std::string;
             msg->append(msgFromManager.data(), msgFromManager.size());
             manager->SetQueueData(msg);
-            manager->EmitByUv(EventName::EVENT_MESSAGE, manager, CallbackTemplate<CreateBinaryMessagePara>);
+            manager->EmitByUvWithoutCheck(EventName::EVENT_MESSAGE, manager, CallbackTemplate<CreateBinaryMessagePara>);
             manager->ClearWebSocketBinaryData();
         }
     } else {
@@ -1123,7 +1064,7 @@ void WebSocketExec::HandleRcvMessage(EventManager *manager, void *data, size_t l
             }
             msg->append(msgFromManager.data(), msgFromManager.size());
             manager->SetQueueData(msg);
-            manager->EmitByUv(EventName::EVENT_MESSAGE, manager, CallbackTemplate<CreateTextMessagePara>);
+            manager->EmitByUvWithoutCheck(EventName::EVENT_MESSAGE, manager, CallbackTemplate<CreateTextMessagePara>);
             manager->ClearWebSocketTextData();
         }
     }
@@ -1131,12 +1072,8 @@ void WebSocketExec::HandleRcvMessage(EventManager *manager, void *data, size_t l
 
 void WebSocketExec::OnHeaderReceive(EventManager *manager, const std::map<std::string, std::string> &headers)
 {
-    if (manager == nullptr) {
+    if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
         NETSTACK_LOGE("manager is null");
-        return;
-    }
-    if (!EventManager::IsManagerValid(manager)) {
-        NETSTACK_LOGE("manager is invalid");
         return;
     }
 
@@ -1145,7 +1082,7 @@ void WebSocketExec::OnHeaderReceive(EventManager *manager, const std::map<std::s
         return;
     }
     auto para = new std::map<std::string, std::string>(headers);
-    manager->EmitByUv(EventName::EVENT_HEADER_RECEIVE, para, CallbackTemplate<CreateResponseHeader>);
+    manager->EmitByUvWithoutCheck(EventName::EVENT_HEADER_RECEIVE, para, CallbackTemplate<CreateResponseHeader>);
 }
 
 void WebSocketExec::GetWebsocketProxyInfo(ConnectContext *context, std::string &host, uint32_t &port,

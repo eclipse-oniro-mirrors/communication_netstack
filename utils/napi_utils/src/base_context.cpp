@@ -40,6 +40,25 @@ BaseContext::BaseContext(napi_env env, EventManager *manager)
 {
 }
 
+BaseContext::BaseContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager)
+    : manager_(nullptr),
+      env_(env),
+      ref_(nullptr),
+      parseOK_(false),
+      requestOK_(false),
+      errorCode_(0),
+      callback_(nullptr),
+      promiseRef_(nullptr),
+      asyncWork_(nullptr),
+      deferred_(nullptr),
+      needPromise_(true),
+      needThrowException_(false),
+      permissionDenied_(false),
+      noAllowedHost_(false),
+      sharedManager_(sharedManager)
+{
+}
+
 BaseContext::~BaseContext()
 {
     DeleteCallback();
@@ -199,6 +218,11 @@ bool BaseContext::IsNeedPromise() const
 EventManager *BaseContext::GetManager() const
 {
     return manager_;
+}
+
+std::shared_ptr<EventManager> BaseContext::GetSharedManager() const
+{
+    return sharedManager_;
 }
 
 void BaseContext::ParseParams(napi_value *params, size_t paramsCount)

@@ -23,7 +23,8 @@
 namespace OHOS::NetStack::Websocket {
 class WebSocketExec final {
 public:
-    static bool CreatConnectInfo(ConnectContext *context, lws_context *lwsContext, EventManager *manager);
+    static bool CreatConnectInfo(ConnectContext *context, lws_context *lwsContext,
+                                 const std::shared_ptr<EventManager> &manager);
     /* async work execute */
     static bool ExecConnect(ConnectContext *context);
 
@@ -43,8 +44,6 @@ public:
 private:
     static bool ParseUrl(ConnectContext *context, char *prefix, size_t prefixLen, char *address, size_t addressLen,
                          char *path, size_t pathLen, int *port);
-
-    static void RunService(EventManager *manager);
 
     static int RaiseError(EventManager *manager, uint32_t httpResponse);
 

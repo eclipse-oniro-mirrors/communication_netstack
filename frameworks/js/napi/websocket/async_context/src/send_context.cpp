@@ -28,6 +28,11 @@ SendContext::SendContext(napi_env env, EventManager *manager)
 {
 }
 
+SendContext::SendContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager)
+    : BaseContext(env, sharedManager), data(nullptr), length(0), protocol(LWS_WRITE_TEXT)
+{
+}
+
 bool SendContext::HandleParseString(napi_value *params)
 {
     NETSTACK_LOGI("SendContext data is String");
