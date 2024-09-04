@@ -472,7 +472,7 @@ std::string GetFileDataFromFilePath(const std::string& filePath)
     std::error_code error;
     auto path = std::filesystem::absolute(filePath, error);
     if (error) {
-        NETSTACK_LOGE("Failed to obtain the absolute path");
+        NETSTACK_LOGE("Failed to obtain the absolute path: %{public}s", error.message().c_str());
         return false;
     }
     std::ifstream file(path);
