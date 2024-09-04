@@ -44,6 +44,8 @@ private:
     static bool ParseUrl(ConnectContext *context, char *prefix, size_t prefixLen, char *address, size_t addressLen,
                          char *path, size_t pathLen, int *port);
 
+    static void RunService(EventManager *manager);
+
     static int RaiseError(EventManager *manager, uint32_t httpResponse);
 
     static int HttpDummy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
