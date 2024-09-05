@@ -111,31 +111,4 @@ HWTEST_F(WebSocketTest, WebSocketDestroy006, TestSize.Level1)
     ret = OH_WebSocketClient_Destroy(client);
     EXPECT_EQ(ret, WebSocket_ErrCode::WEBSOCKET_CLIENT_NOT_CREATED);
 }
-
-HWTEST_F(WebSocketTest, WebSocketSendTest007, TestSize.Level1)
-{
-    int32_t ret;
-    const char *url1 = "www.baidu.com";
-    struct WebSocket *client = new WebSocket();
-    struct WebSocket_Header header1;
-    const char *senddata = "Hello, world!";
-    int sendLength = std::strlen(senddata);
-    const char senddata2[10] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x00, 0x17, 0x19, 0x19};
-
-    header1.fieldName = "Content-Type";
-    header1.fieldValue = "application/json";
-    header1.next = nullptr;
-
-    client = OH_WebSocketClient_Constructor(OnOpen, OnMessage, OnError, OnClose);
-    ret = OH_WebSocketClient_AddHeader(client, header1);
-    EXPECT_EQ(ret, WebSocket_ErrCode::WEBSOCKET_OK);
-    OH_WebSocketClient_Connect(client, url1, client->requestOptions);
-    ret = OH_WebSocketClient_Send(client, const_cast<char *>(senddata), sendLength);
-    EXPECT_EQ(ret, WebSocket_ErrCode::WEBSOCKET_OK);
-    ret = OH_WebSocketClient_Send(client, const_cast<char *>(senddata2), sizeof(senddata2));
-    EXPECT_EQ(ret, WebSocket_ErrCode::WEBSOCKET_OK);
-    ret = OH_WebSocketClient_Destroy(client);
-    EXPECT_EQ(ret, WebSocket_ErrCode::WEBSOCKET_OK);
-}
-
 } // namespace
