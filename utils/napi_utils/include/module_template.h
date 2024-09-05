@@ -39,6 +39,61 @@ namespace OHOS::NetStack::ModuleTemplate {
 typedef void (*Finalizer)(napi_env, void *data, void *);
 
 template <class Context>
+napi_value InterfaceWithSharedManager(napi_env env, napi_callback_info info, const std::string &asyncWorkName,
+                                      bool (*Work)(napi_env, napi_value, Context *), AsyncWorkExecutor executor,
+                                      AsyncWorkCallback callback)
+{
+    NETSTACK_LOGI("js invoke %{public}s", asyncWorkName.c_str());
+    static_assert(std::is_base_of<BaseContext, Context>::value);
+
+    napi_value thisVal = nullptr;
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
+
+    std::shared_ptr<EventManager> *sharedManager = nullptr;
+    auto napi_ret = napi_unwrap(env, thisVal, reinterpret_cast<void **>(&sharedManager));
+    if (napi_ret != napi_ok) {
+        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
+        return NapiUtils::GetUndefined(env);
+    }
+    if (sharedManager == nullptr) {
+        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
+        return NapiUtils::GetUndefined(env);
+    }
+    auto manager = *sharedManager;
+    if (manager == nullptr) {
+        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
+        return NapiUtils::GetUndefined(env);
+    }
+    auto context = new Context(env, manager);
+    if (!context) {
+        NETSTACK_LOGE("new context is nullptr");
+        return NapiUtils::GetUndefined(env);
+    }
+    context->ParseParams(params, paramsCount);
+    if (context->IsNeedThrowException()) { // only api9 or later need throw exception.
+        napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
+        delete context;
+        context = nullptr;
+        return NapiUtils::GetUndefined(env);
+    }
+    if (Work != nullptr) {
+        if (!Work(env, thisVal, context)) {
+            NETSTACK_LOGE("work failed error code = %{public}d", context->GetErrorCode());
+        }
+    }
+
+    context->CreateReference(thisVal);
+    context->CreateAsyncWork(asyncWorkName, executor, callback);
+    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
+        NETSTACK_LOGD("%{public}s create promise", asyncWorkName.c_str());
+        return context->CreatePromise();
+    }
+    return NapiUtils::GetUndefined(env);
+}
+
+template <class Context>
 napi_value Interface(napi_env env, napi_callback_info info, const std::string &asyncWorkName,
                      bool (*Work)(napi_env, napi_value, Context *), AsyncWorkExecutor executor,
                      AsyncWorkCallback callback)
@@ -190,5 +245,13 @@ void DefineClass(napi_env env, napi_value exports, const std::initializer_list<n
 napi_value NewInstance(napi_env env, napi_callback_info info, const std::string &className, Finalizer finalizer);
 
 napi_value NewInstanceNoManager(napi_env env, napi_callback_info info, const std::string &name, Finalizer finalizer);
+
+napi_value NewInstanceWithSharedManager(napi_env env, napi_callback_info info, const std::string &className,
+                                        Finalizer finalizer);
+
+napi_value OnSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
+                           bool asyncCallback);
+
+napi_value OffSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events);
 } // namespace OHOS::NetStack::ModuleTemplate
 #endif /* COMMUNICATIONNETSTACK_NETSTACK_MODULE_TEMPLATE_H */

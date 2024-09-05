@@ -20,6 +20,7 @@
 #include <condition_variable>
 #include <iosfwd>
 #include <list>
+#include <memory>
 #include <mutex>
 #include <queue>
 #include <string>
@@ -39,6 +40,10 @@ struct EventManagerMagic {
         magicNumber_ = ~magicNumber_;
     }
 };
+
+namespace Websocket {
+class UserData;
+}
 
 class EventManager {
 public:
@@ -60,6 +65,8 @@ public:
     [[nodiscard]] void *GetData();
 
     void EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
+
+    void EmitByUvWithoutCheck(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
 
     bool HasEventListener(const std::string &type);
 
@@ -101,6 +108,10 @@ public:
 
     void SetReuseAddr(bool reuse);
 
+    void SetWebSocketUserData(const std::shared_ptr<Websocket::UserData> &userData);
+
+    std::shared_ptr<Websocket::UserData> GetWebSocketUserData();
+
     bool GetReuseAddr();
 
 private:
@@ -122,12 +133,17 @@ private:
     std::condition_variable sockRcvThdCon_;
     bool sockRcvExit_ = false;
     std::atomic_bool isReuseAddr_ = false;
+    std::shared_ptr<Websocket::UserData> webSocketUserData_;
+public:
+    struct {
+        uint32_t magicNumber = EVENT_MANAGER_MAGIC_NUMBER;
+    } innerMagic_;
 };
 
 struct UvWorkWrapper {
     UvWorkWrapper() = delete;
 
-    explicit UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager);
+    UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager);
 
     void *data;
     napi_env env;
