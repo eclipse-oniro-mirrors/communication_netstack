@@ -241,13 +241,15 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
 
 bool HttpClientTask::SetServerSSLCertOption(CURL *curl)
 {
-    std::string pins;
     auto hostname = CommonUtils::GetHostnameFromURL(request_.GetURL());
-    auto ret = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
-    if (ret != 0 || pins.empty()) {
-        NETSTACK_LOGD("Get no pin set by host name[%{public}s]", hostname.c_str());
-    } else {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str());
+    if (!NetManagerStandard::NetConnClient::GetInstance().IsPinOpenMode(hostname)) {
+        std::string pins;
+        auto ret = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
+        if (ret != 0 || pins.empty()) {
+            NETSTACK_LOGD("Get no pin set by host name invalid");
+        } else {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str());
+        }
     }
 
     return true;
