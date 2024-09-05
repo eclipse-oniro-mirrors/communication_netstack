@@ -32,6 +32,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 
 #include "netstack_log.h"
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -466,17 +467,24 @@ std::optional<std::string> GetBundleName()
     return std::nullopt;
 }
 
-std::string GetFileDataFromFilePath(const std::string& filePath)
+bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData)
 {
-    std::ifstream file(filePath);
+    std::error_code error;
+    auto path = std::filesystem::absolute(filePath, error);
+    if (error) {
+        NETSTACK_LOGE("Failed to obtain the absolute path: %{public}s", error.message().c_str());
+        return false;
+    }
+    std::ifstream file(path);
     if (file.is_open()) {
         std::stringstream buffer;
         buffer << file.rdbuf();
         file.close();
-        return buffer.str();
+        fileData = buffer.str();
+        return true;
     } else {
         NETSTACK_LOGE("Failed to obtain the file data stream.");
-        return {};
+        return false;
     }
 }
 } // namespace OHOS::NetStack::CommonUtils
