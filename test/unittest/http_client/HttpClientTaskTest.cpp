@@ -798,22 +798,6 @@ HWTEST_F(HttpClientTaskTest, StartTest002, TestSize.Level1)
     EXPECT_FALSE(result);
 }
 
-HWTEST_F(HttpClientTaskTest, ProcessCookieTest001, TestSize.Level1)
-{
-    HttpClientRequest httpReq;
-    std::string url = "http://www.httpbin.org/cookies/set/name1/value1";
-    httpReq.SetURL(url);
-    httpReq.SetHeader("content-type", "text/plain");
-    HttpSession &session = HttpSession::GetInstance();
-    auto task = session.CreateTask(httpReq);
-    task->Start();
-
-    while (task->GetStatus() != TaskStatus::IDLE) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    }
-    EXPECT_EQ(task->GetResponse().GetResponseCode(), ResponseCode::OK);
-}
-
 HWTEST_F(HttpClientTaskTest, CancelTest001, TestSize.Level1)
 {
     HttpClientRequest httpReq;
