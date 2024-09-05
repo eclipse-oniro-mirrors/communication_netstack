@@ -108,6 +108,41 @@ void *EventManager::GetQueueData()
     return nullptr;
 }
 
+void EventManager::EmitByUvWithoutCheck(const std::string &type, void *data, void(Handler)(uv_work_t *, int status))
+{
+    std::lock_guard lock1(mutexForEmitAndEmitByUv_);
+    std::lock_guard lock2(mutexForListenersAndEmitByUv_);
+    bool foundHeader = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
+                           return listener.MatchType(ON_HEADER_RECEIVE);
+                       }) != listeners_.end();
+    bool foundHeaders = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
+                            return listener.MatchType(ON_HEADERS_RECEIVE);
+                        }) != listeners_.end();
+    if (!foundHeader && !foundHeaders) {
+        if (type == ON_HEADER_RECEIVE || type == ON_HEADERS_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
+    } else if (foundHeader && !foundHeaders) {
+        if (type == ON_HEADERS_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
+    } else if (!foundHeader) {
+        if (type == ON_HEADER_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
+    }
+
+    std::for_each(listeners_.begin(), listeners_.end(), [type, data, Handler, this](const EventListener &listener) {
+        if (listener.MatchType(type)) {
+            auto workWrapper = new UvWorkWrapper(data, listener.GetEnv(), type, this);
+            listener.EmitByUv(type, workWrapper, Handler);
+        }
+    });
+}
+
 void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status))
 {
     std::lock_guard lock1(mutexForEmitAndEmitByUv_);
@@ -265,6 +300,18 @@ void EventManager::SetReuseAddr(bool reuse)
 bool EventManager::GetReuseAddr()
 {
     return isReuseAddr_.load();
+}
+
+void EventManager::SetWebSocketUserData(const std::shared_ptr<Websocket::UserData> &userData)
+{
+    std::lock_guard<std::mutex> lock(dataMutex_);
+    webSocketUserData_ = userData;
+}
+
+std::shared_ptr<Websocket::UserData> EventManager::GetWebSocketUserData()
+{
+    std::lock_guard<std::mutex> lock(dataMutex_);
+    return webSocketUserData_;
 }
 
 UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)
