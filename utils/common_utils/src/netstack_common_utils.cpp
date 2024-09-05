@@ -467,7 +467,7 @@ std::optional<std::string> GetBundleName()
     return std::nullopt;
 }
 
-std::string GetFileDataFromFilePath(const std::string& filePath)
+bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData)
 {
     std::error_code error;
     auto path = std::filesystem::absolute(filePath, error);
