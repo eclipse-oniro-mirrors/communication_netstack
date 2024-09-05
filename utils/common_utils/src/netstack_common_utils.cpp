@@ -32,7 +32,9 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <filesystem>
+#endif
 
 #include "netstack_log.h"
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -458,6 +460,7 @@ std::string AnonymizeIp(std::string &input)
 
 bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData)
 {
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     std::error_code error;
     auto path = std::filesystem::absolute(filePath, error);
     if (error) {
@@ -465,6 +468,9 @@ bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData)
         return false;
     }
     std::ifstream file(path);
+#else
+    std::ifstream file(filePath);
+#endif
     if (file.is_open()) {
         std::stringstream buffer;
         buffer << file.rdbuf();
