@@ -159,7 +159,7 @@ void TcpServerConnectionFinalize(napi_env, void *data, void *)
         if (clientIter != g_clientFDs.end()) {
             if (clientIter->second != -1) {
                 NETSTACK_LOGI("close socketfd %{public}d", clientIter->second);
-                close(clientIter->second);
+                shutdown(clientIter->second, SHUT_RDWR);
                 clientIter->second = -1;
             }
         }
@@ -1883,7 +1883,6 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
     }
     while (true) {
         if (memset_s(buffer.get(), recvBufferSize, 0, recvBufferSize) != EOK) {
-            NETSTACK_LOGE("memset_s failed!");
             RecvInErrorCondition(UNKNOW_ERROR, clientId, connectFD, callback);
             break;
         }
@@ -1909,7 +1908,7 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
         if (recvSize <= 0) {
             NETSTACK_LOGI("ClientRecv: fd:%{public}d, size:%{public}d, errno:%{public}d, is non blocking:%{public}s",
                           connectFD, recvSize, errno, static_cast<uint32_t>(flags) & O_NONBLOCK ? "true" : "false");
-            if ((recvSize == 0 && errno == EAGAIN) || (errno != EAGAIN && errno != EINTR)) {
+            if ((recvSize == 0) || (recvSize < 0 && errno != EAGAIN && errno != EINTR)) {
                 CloseClientHandler(clientId, connectFD, manager, callback);
                 break;
             }
@@ -1922,6 +1921,7 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
             if (memcpy_s(data, recvSize, buffer.get(), recvSize) != EOK ||
                 !callback.OnMessage(connectFD, data, recvSize, nullptr, manager)) {
                 free(data);
+                RecvInErrorCondition(UNKNOW_ERROR, clientId, connectFD, callback);
             }
         }
     }
