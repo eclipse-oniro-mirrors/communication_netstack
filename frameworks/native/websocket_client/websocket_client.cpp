@@ -426,6 +426,9 @@ int WebSocketClient::Send(char *data, size_t length)
     if (data == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_SEND_DATA_NULL;
     }
+    if (length == 0) {
+        return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
+    }
     if (length > MAX_DATA_LENGTH) {
         return WebSocketErrorCode::WEBSOCKET_DATA_LENGTH_EXCEEDS;
     }
