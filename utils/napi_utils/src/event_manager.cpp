@@ -15,6 +15,10 @@
 
 #include <algorithm>
 #include <map>
+#if !defined(_WIN32) && !defined(__APPLE__)
+#include <sys/syscall.h>
+#include <unistd.h>
+#endif
 
 #include "event_manager.h"
 
@@ -44,7 +48,11 @@ void EventManager::AddListener(napi_env env, const std::string &type, napi_value
         listeners_.erase(it, listeners_.end());
     }
 
-    listeners_.emplace_back(EventListener(env, type, callback, once, asyncCallback));
+#if !defined(_WIN32) && !defined(__APPLE__)
+    listeners_.emplace_back(syscall(SYS_gettid), env, type, callback, once, asyncCallback);
+#else
+    listeners_.emplace_back(0, env, type, callback, once, asyncCallback);
+#endif
 }
 
 void EventManager::DeleteListener(const std::string &type, napi_value callback)

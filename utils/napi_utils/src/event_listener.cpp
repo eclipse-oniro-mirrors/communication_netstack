@@ -13,6 +13,11 @@
  * limitations under the License.
  */
 
+#if !defined(_WIN32) && !defined(__APPLE__)
+#include <sys/syscall.h>
+#include <unistd.h>
+#endif
+
 #include "event_listener.h"
 
 #include "napi/native_api.h"
@@ -21,12 +26,14 @@
 #include "netstack_log.h"
 
 namespace OHOS::NetStack {
-EventListener::EventListener(napi_env env, std::string type, napi_value callback, bool once, bool asyncCallback)
+EventListener::EventListener(long tid, napi_env env, std::string type, napi_value callback, bool once,
+                             bool asyncCallback)
     : env_(env),
       type_(std::move(type)),
       once_(once),
       callbackRef_(NapiUtils::CreateReference(env, callback)),
-      asyncCallback_(asyncCallback)
+      asyncCallback_(asyncCallback),
+      tid_(tid)
 {
 }
 
@@ -36,6 +43,7 @@ EventListener::EventListener(const EventListener &listener)
     type_ = listener.type_;
     once_ = listener.once_;
     asyncCallback_ = listener.asyncCallback_;
+    tid_ = listener.tid_;
 
     if (listener.callbackRef_ == nullptr) {
         callbackRef_ = nullptr;
@@ -47,7 +55,11 @@ EventListener::EventListener(const EventListener &listener)
 
 EventListener::~EventListener()
 {
+#if !defined(_WIN32) && !defined(__APPLE__)
+    if (syscall(SYS_gettid) == tid_ && callbackRef_ != nullptr) {
+#else
     if (callbackRef_ != nullptr) {
+#endif
         NapiUtils::DeleteReference(env_, callbackRef_);
     }
     callbackRef_ = nullptr;
@@ -59,6 +71,7 @@ EventListener &EventListener::operator=(const EventListener &listener)
     type_ = listener.type_;
     once_ = listener.once_;
     asyncCallback_ = listener.asyncCallback_;
+    tid_ = listener.tid_;
 
     if (callbackRef_ != nullptr) {
         NapiUtils::DeleteReference(env_, callbackRef_);
@@ -75,6 +88,11 @@ EventListener &EventListener::operator=(const EventListener &listener)
 
 void EventListener::Emit(const std::string &eventType, size_t argc, napi_value *argv) const
 {
+#if !defined(_WIN32) && !defined(__APPLE__)
+    if (syscall(SYS_gettid) != tid_) {
+        return;
+    }
+#endif
     if (type_ != eventType) {
         return;
     }
@@ -90,6 +108,11 @@ void EventListener::Emit(const std::string &eventType, size_t argc, napi_value *
 
 bool EventListener::Match(const std::string &type, napi_value callback) const
 {
+#if !defined(_WIN32) && !defined(__APPLE__)
+    if (syscall(SYS_gettid) != tid_) {
+        return false;
+    }
+#endif
     if (type_ != type) {
         return false;
     }
