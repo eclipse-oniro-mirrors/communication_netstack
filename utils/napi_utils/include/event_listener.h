@@ -17,8 +17,8 @@
 #define COMMUNICATIONNETSTACK_EVENT_LISTENER_H
 
 #include <cstddef>
-#include <string>
 #include <iosfwd>
+#include <string>
 
 #include "napi/native_api.h"
 #include "uv.h"
@@ -30,7 +30,7 @@ public:
 
     EventListener(const EventListener &listener);
 
-    EventListener(napi_env env, std::string type, napi_value callback, bool once, bool asyncCallback);
+    EventListener(long tid, napi_env env, std::string type, napi_value callback, bool once, bool asyncCallback);
 
     ~EventListener();
 
@@ -53,15 +53,17 @@ public:
     [[nodiscard]] napi_ref GetCallbackRef() const;
 
 private:
-    napi_env env_;
+    napi_env env_ = nullptr;
 
     std::string type_;
 
     bool once_;
 
-    napi_ref callbackRef_;
+    napi_ref callbackRef_ = nullptr;
 
     bool asyncCallback_;
+
+    long tid_ = 0;
 };
 } // namespace OHOS::NetStack
 
