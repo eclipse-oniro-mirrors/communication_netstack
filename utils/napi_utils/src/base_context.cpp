@@ -92,12 +92,18 @@ napi_status BaseContext::SetCallback(napi_value callback)
     if (callback_ != nullptr) {
         (void)napi_delete_reference(env_, callback_);
     }
-    return napi_create_reference(env_, callback, 1, &callback_);
+    auto status = napi_create_reference(env_, callback, 1, &callback_);
+    callbackBak1_ = callback_;
+    callbackBak2_ = callback_;
+    callbackBak3_ = callback_;
+    callbackBak4_ = callback_;
+    return status;
 }
 
 void BaseContext::DeleteCallback()
 {
-    if (callback_ == nullptr) {
+    if (callback_ == nullptr || callback_ != callbackBak1_ || callback_ != callbackBak2_ ||
+        callback_ != callbackBak3_ || callback_ != callbackBak4_) {
         return;
     }
     (void)napi_delete_reference(env_, callback_);
@@ -180,7 +186,8 @@ std::string BaseContext::GetErrorMessage() const
 
 napi_value BaseContext::GetCallback() const
 {
-    if (callback_ == nullptr) {
+    if (callback_ == nullptr || callback_ != callbackBak1_ || callback_ != callbackBak2_ ||
+        callback_ != callbackBak3_ || callback_ != callbackBak4_) {
         return nullptr;
     }
     napi_value callback = nullptr;
@@ -196,6 +203,13 @@ napi_deferred BaseContext::GetDeferred() const
 const std::string &BaseContext::GetAsyncWorkName() const
 {
     return asyncWorkName_;
+}
+
+void BaseContext::EmitSharedManager(const std::string &type, const std::pair<napi_value, napi_value> &argv)
+{
+    if (sharedManager_ != nullptr) {
+        sharedManager_->Emit(type, argv);
+    }
 }
 
 void BaseContext::Emit(const std::string &type, const std::pair<napi_value, napi_value> &argv)
@@ -223,6 +237,11 @@ EventManager *BaseContext::GetManager() const
 std::shared_ptr<EventManager> BaseContext::GetSharedManager() const
 {
     return sharedManager_;
+}
+
+void BaseContext::SetSharedManager(const std::shared_ptr<EventManager> &sharedManager)
+{
+    sharedManager_ = sharedManager;
 }
 
 void BaseContext::ParseParams(napi_value *params, size_t paramsCount)

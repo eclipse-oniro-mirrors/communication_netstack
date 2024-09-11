@@ -14,6 +14,7 @@
  */
 
 #include <netdb.h>
+
 #include "net_address.h"
 #include "netstack_log.h"
 #include "securec.h"
@@ -28,6 +29,9 @@ NetAddress::NetAddress(const NetAddress &other) : address_(other.address_), fami
 
 void NetAddress::SetIpAddress(const std::string &address)
 {
+    if (address.empty()) {
+        return;
+    }
     if (family_ == Family::IPv4) {
         in6_addr ipv6{};
         if (inet_pton(AF_INET6, address.c_str(), &ipv6) > 0) {
@@ -54,8 +58,9 @@ void NetAddress::SetIpAddress(const std::string &address)
         }
     }
     if (family_ == Family::IPv4) {
-        auto inet = atoi(address.c_str());
-        if (inet >= 0) {
+        size_t size = SIZE_MAX;
+        auto inet = std::stoi(address, &size);
+        if (size == address.length()) {
             in_addr addr{};
             addr.s_addr = static_cast<in_addr_t>(inet);
             address_ = inet_ntoa(addr);

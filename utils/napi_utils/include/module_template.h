@@ -23,11 +23,11 @@
 #include <vector>
 
 #include "base_async_work.h"
+#include "base_context.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
-#include "base_context.h"
-#include "netstack_log.h"
 #include "napi_utils.h"
+#include "netstack_log.h"
 
 namespace OHOS::NetStack {
 class EventManager;
@@ -57,19 +57,14 @@ napi_value InterfaceWithSharedManager(napi_env env, napi_callback_info info, con
         NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
         return NapiUtils::GetUndefined(env);
     }
-    if (sharedManager == nullptr) {
-        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
-        return NapiUtils::GetUndefined(env);
-    }
-    auto manager = *sharedManager;
-    if (manager == nullptr) {
-        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
-        return NapiUtils::GetUndefined(env);
-    }
-    auto context = new Context(env, manager);
+
+    auto context = new (std::nothrow) Context(env, nullptr);
     if (!context) {
         NETSTACK_LOGE("new context is nullptr");
         return NapiUtils::GetUndefined(env);
+    }
+    if (sharedManager) {
+        context->SetSharedManager(*sharedManager);
     }
     context->ParseParams(params, paramsCount);
     if (context->IsNeedThrowException()) { // only api9 or later need throw exception.
@@ -91,6 +86,55 @@ napi_value InterfaceWithSharedManager(napi_env env, napi_callback_info info, con
         return context->CreatePromise();
     }
     return NapiUtils::GetUndefined(env);
+}
+
+template <class Context>
+napi_value InterfaceWithOutAsyncWorkWithSharedManager(napi_env env, napi_callback_info info,
+                                                      bool (*Work)(napi_env, napi_value, Context *),
+                                                      const std::string &asyncWorkName, AsyncWorkExecutor executor,
+                                                      AsyncWorkCallback callback)
+{
+    static_assert(std::is_base_of<BaseContext, Context>::value);
+
+    napi_value thisVal = nullptr;
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
+
+    std::shared_ptr<EventManager> *sharedManager = nullptr;
+    auto napi_ret = napi_unwrap(env, thisVal, reinterpret_cast<void **>(&sharedManager));
+    if (napi_ret != napi_ok) {
+        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
+        return NapiUtils::GetUndefined(env);
+    }
+
+    auto context = new (std::nothrow) Context(env, nullptr);
+    if (!context) {
+        NETSTACK_LOGE("new context is nullptr");
+        return NapiUtils::GetUndefined(env);
+    }
+    if (sharedManager) {
+        context->SetSharedManager(*sharedManager);
+    }
+    context->ParseParams(params, paramsCount);
+    napi_value ret = NapiUtils::GetUndefined(env);
+    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
+        NETSTACK_LOGD("%{public}s is invoked in promise mode", asyncWorkName.c_str());
+        ret = context->CreatePromise();
+    } else {
+        NETSTACK_LOGD("%{public}s is invoked in callback mode", asyncWorkName.c_str());
+    }
+    context->CreateReference(thisVal);
+    if (Work != nullptr) {
+        if (!Work(env, thisVal, context)) {
+            NETSTACK_LOGE("work failed error code = %{public}d", context->GetErrorCode());
+        }
+    }
+    if (!context->IsParseOK() || context->IsPermissionDenied() || context->IsNoAllowedHost() ||
+        context->GetSharedManager()->IsEventDestroy()) {
+        context->CreateAsyncWork(asyncWorkName, executor, callback);
+    }
+    return ret;
 }
 
 template <class Context>
@@ -251,6 +295,9 @@ napi_value NewInstanceWithSharedManager(napi_env env, napi_callback_info info, c
 
 napi_value OnSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
                            bool asyncCallback);
+
+napi_value OnceSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
+                             bool asyncCallback);
 
 napi_value OffSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events);
 } // namespace OHOS::NetStack::ModuleTemplate
