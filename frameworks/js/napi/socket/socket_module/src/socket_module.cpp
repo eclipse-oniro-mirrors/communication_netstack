@@ -170,7 +170,7 @@ void FinalizeLocalSocket(napi_env, void *data, void *)
 {
     auto manager = static_cast<EventManager *>(data);
     if (manager != nullptr) {
-        if (auto pMgr = reinterpret_cast<LocalSocketServerManager *>(manager->GetData()); pMgr != nullptr) {
+        if (auto pMgr = reinterpret_cast<LocalSocketManager *>(manager->GetData()); pMgr != nullptr) {
             NETSTACK_LOGI("localsocket handle is finalized, fd: %{public}d", pMgr->sockfd_);
             if (pMgr->sockfd_ > 0) {
                 close(pMgr->sockfd_);
