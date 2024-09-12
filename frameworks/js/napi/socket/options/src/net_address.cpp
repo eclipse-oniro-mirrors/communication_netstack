@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <cerrno>
 #include <netdb.h>
 
 #include "net_address.h"
