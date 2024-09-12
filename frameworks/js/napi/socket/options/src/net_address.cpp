@@ -17,6 +17,7 @@
 
 #include "net_address.h"
 #include "netstack_log.h"
+#include "socket_exec_common.h"
 #include "securec.h"
 
 namespace OHOS::NetStack::Socket {
@@ -30,6 +31,14 @@ NetAddress::NetAddress(const NetAddress &other) : address_(other.address_), fami
 void NetAddress::SetIpAddress(const std::string &address)
 {
     if (address.empty()) {
+        return;
+    }
+    if (address == "localhost") {
+        if (family_ == Family::IPv4) {
+            address_ = ConvertAddressToIp(address, AF_INET);
+        } else if (family_ == Family::IPv6) {
+            address_ = ConvertAddressToIp(address, AF_INET6);
+        }
         return;
     }
     if (family_ == Family::IPv4) {
