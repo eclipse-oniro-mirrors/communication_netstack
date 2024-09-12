@@ -84,6 +84,8 @@ public:
 
     void Emit(const std::string &type, const std::pair<napi_value, napi_value> &argv);
 
+    void EmitSharedManager(const std::string &type, const std::pair<napi_value, napi_value> &argv);
+
     void SetNeedPromise(bool needPromise);
 
     [[nodiscard]] bool IsNeedPromise() const;
@@ -103,6 +105,8 @@ public:
     [[nodiscard]] EventManager *GetManager() const;
 
     [[nodiscard]] std::shared_ptr<EventManager> GetSharedManager() const;
+
+    void SetSharedManager(const std::shared_ptr<EventManager> &sharedManager);
 
     void CreateReference(napi_value value);
 
@@ -155,7 +159,14 @@ private:
 
     std::string errorMessage_;
 
+protected:
     std::shared_ptr<EventManager> sharedManager_;
+
+private:
+    napi_ref callbackBak1_ = nullptr;
+    napi_ref callbackBak2_ = nullptr;
+    napi_ref callbackBak3_ = nullptr;
+    napi_ref callbackBak4_ = nullptr;
 };
 } // namespace OHOS::NetStack
 
