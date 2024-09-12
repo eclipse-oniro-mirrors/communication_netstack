@@ -74,6 +74,43 @@ napi_value OnSharedManager(napi_env env, napi_callback_info info, const std::ini
     return NapiUtils::GetUndefined(env);
 }
 
+napi_value OnceSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
+                             bool asyncCallback)
+{
+    napi_value thisVal = nullptr;
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
+
+    if (paramsCount != EVENT_PARAM_NUM || NapiUtils::GetValueType(env, params[0]) != napi_string ||
+        NapiUtils::GetValueType(env, params[1]) != napi_function) {
+        NETSTACK_LOGE("on off once interface para: [string, function]");
+        return NapiUtils::GetUndefined(env);
+    }
+
+    std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
+    if (std::find(events.begin(), events.end(), event) == events.end()) {
+        return NapiUtils::GetUndefined(env);
+    }
+
+    std::shared_ptr<EventManager> *sharedManager = nullptr;
+    auto napi_ret = napi_unwrap(env, thisVal, reinterpret_cast<void **>(&sharedManager));
+    if (napi_ret != napi_ok) {
+        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
+        return NapiUtils::GetUndefined(env);
+    }
+    if (sharedManager == nullptr) {
+        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
+        return NapiUtils::GetUndefined(env);
+    }
+    auto manager = *sharedManager;
+    if (manager != nullptr) {
+        manager->AddListener(env, event, params[1], true, asyncCallback);
+    }
+
+    return NapiUtils::GetUndefined(env);
+}
+
 napi_value OffSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events)
 {
     napi_value thisVal = nullptr;

@@ -15,11 +15,12 @@
 
 #include "napi_utils.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <initializer_list>
 #include <memory>
-#include <algorithm>
 #include <new>
 #include <string>
 #include <vector>
