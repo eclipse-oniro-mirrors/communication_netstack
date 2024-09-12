@@ -1482,8 +1482,7 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
     isRunning_ = true;
     ioctl(listenSocketFd_, FIONBIO, (char *)&on);
     NETSTACK_LOGE("PollThread  start working %{public}d", isRunning_);
-    std::thread thread_([this, &tlsListenOptions]() {
-        TlsSocket::TLSConnectOptions tlsOption = tlsListenOptions;
+    std::thread thread_([this, tlsOption = tlsListenOptions]() {
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(TLS_SOCKET_SERVER_READ);
 #else
