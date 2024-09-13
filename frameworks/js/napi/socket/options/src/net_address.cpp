@@ -66,10 +66,16 @@ void NetAddress::SetIpAddress(const std::string &address)
             return;
         }
     }
+    SetIpAddressInner(address);
+}
+
+void NetAddress::SetIpAddressInner(const std::string &address)
+{
     if (family_ == Family::IPv4) {
-        size_t size = SIZE_MAX;
-        auto inet = std::stoi(address, &size);
-        if (size == address.length()) {
+        constexpr int LONG_BASE = 10;
+        char *error = nullptr;
+        auto inet = std::strtol(address.c_str(), &error, LONG_BASE);
+        if (error && *error == '\0' && inet >= 0 && inet <= UINT32_MAX) {
             in_addr addr{};
             addr.s_addr = static_cast<in_addr_t>(inet);
             address_ = inet_ntoa(addr);
