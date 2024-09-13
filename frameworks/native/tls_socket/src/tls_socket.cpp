@@ -673,7 +673,7 @@ void TLSSocket::CallGetSignatureAlgorithmsCallback(int32_t err, const std::vecto
     }
 }
 
-void TLSSocket::Bind(const Socket::NetAddress &address, const BindCallback &callback)
+void TLSSocket::Bind(Socket::NetAddress &address, const BindCallback &callback)
 {
     if (!CommonUtils::HasInternetPermission()) {
         CallBindCallback(PERMISSION_DENIED_CODE, callback);

@@ -55,6 +55,16 @@ ohos_static_library("napi_utils") {
     "hilog:libhilog",
     "napi:ace_napi",
   ]
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base && is_ohos &&
+      is_standard_system && !is_arkui_x && product_name != "ohos-sdk") {
+    defines = [ "HAS_NETMANAGER_BASE=1" ]
+    external_deps += [ "ffrt:libffrt" ]
+  } else {
+    defines = [ "HAS_NETMANAGER_BASE=0" ]
+  }
 }
 
 ohos_static_library("napi_utils_static") {
@@ -79,6 +89,16 @@ ohos_static_library("napi_utils_static") {
   public_configs = [ ":napi_utils_public_config" ]
 
   external_deps = [ "cJSON:cjson" ]
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base && is_ohos &&
+      is_standard_system && !is_arkui_x && product_name != "ohos-sdk") {
+    defines = [ "HAS_NETMANAGER_BASE=1" ]
+    external_deps += [ "ffrt:libffrt" ]
+  } else {
+    defines = [ "HAS_NETMANAGER_BASE=0" ]
+  }
 
   if (current_os == "ohos") {
     public_deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
