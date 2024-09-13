@@ -843,7 +843,7 @@ static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_
         return false;
     }
     if (err != 0) {
-        NETSTACK_LOGE("NonBlockConnect exec failed, socket is %{public}d, errno is %{public}d", sock, errno);
+        NETSTACK_LOGE("NonBlockConnect exec failed, socket is %{public}d, err is %{public}d", sock, err);
         return false;
     }
     return true;
