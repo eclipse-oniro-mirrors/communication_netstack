@@ -1825,7 +1825,7 @@ static void RemoveClientConnection(int32_t clientId)
             NETSTACK_LOGI("remove clientfd and eventmanager clientid: %{public}d clientFd:%{public}d", it->second,
                           it->first);
             if (!IsClientFdClosed(it->second)) {
-                NETSTACK_LOGE("connectFD not close should close");
+                NETSTACK_LOGI("connectFD not close should close");
                 shutdown(it->second, SHUT_RDWR);
                 close(it->second);
             }
@@ -2243,29 +2243,8 @@ napi_value TcpConnectionSendCallback(TcpServerSendContext *context)
 
 napi_value TcpConnectionCloseCallback(TcpServerCloseContext *context)
 {
-    int32_t clientFd = -1;
-
-    {
-        std::lock_guard<std::mutex> lock(g_mutex);
-        auto iter = g_clientFDs.find(context->clientId_);
-        if (iter != g_clientFDs.end()) {
-            clientFd = iter->second;
-        } else {
-            NETSTACK_LOGE("not find clientId");
-        }
-    }
-
-    if (shutdown(clientFd, SHUT_RDWR) != 0) {
-        NETSTACK_LOGE("socket shutdown failed, socket is %{public}d, errno is %{public}d", clientFd, errno);
-    }
-    int ret = close(clientFd);
-    if (ret < 0) {
-        NETSTACK_LOGE("sock closed failed, socket is %{public}d, errno is %{public}d", clientFd, errno);
-    } else {
-        NETSTACK_LOGI("sock %{public}d closed success", clientFd);
-        RemoveClientConnection(context->clientId_);
-    }
-
+    NETSTACK_LOGI("Close tcp socket, clientId:%{public}d", context->clientId_);
+    RemoveClientConnection(context->clientId_);
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
