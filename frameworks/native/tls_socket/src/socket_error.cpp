@@ -28,11 +28,14 @@ namespace TlsSocket {
 static constexpr int32_t ERROR_DIVISOR = 1000;
 static constexpr int32_t ERROR_RANGE = 500;
 static constexpr const size_t MAX_ERR_LEN = 1024;
+static constexpr int32_t PARSE_ERROR_CODE = 401;
+static constexpr const char *PARSE_ERROR_MSG = "Parameter error";
 
 std::string MakeErrorMessage(int error)
 {
     static const std::map<int32_t, std::string> ERROR_MAP = {
         {PERMISSION_DENIED_CODE, PERMISSION_DENIED_MSG},
+        {PARSE_ERROR_CODE, PARSE_ERROR_MSG},
         {SYSTEM_INTERNAL_ERROR, "System internal error"},
         {TLS_ERR_SYS_EINTR, "Interrupted system call"},
         {TLS_ERR_SYS_EIO, "I/O error"},
