@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
-#if !defined(_WIN32) && !defined(__APPLE__)
-#include <sys/syscall.h>
-#include <unistd.h>
+#if HAS_NETMANAGER_BASE
+#include "ffrt.h"
 #endif
 
 #include "event_listener.h"
@@ -55,8 +54,8 @@ EventListener::EventListener(const EventListener &listener)
 
 EventListener::~EventListener()
 {
-#if !defined(_WIN32) && !defined(__APPLE__)
-    if (syscall(SYS_gettid) == tid_ && callbackRef_ != nullptr) {
+#if HAS_NETMANAGER_BASE
+    if (ffrt_this_task_get_id() == tid_ && callbackRef_ != nullptr) {
 #else
     if (callbackRef_ != nullptr) {
 #endif
@@ -88,8 +87,8 @@ EventListener &EventListener::operator=(const EventListener &listener)
 
 void EventListener::Emit(const std::string &eventType, size_t argc, napi_value *argv) const
 {
-#if !defined(_WIN32) && !defined(__APPLE__)
-    if (syscall(SYS_gettid) != tid_) {
+#if HAS_NETMANAGER_BASE
+    if (ffrt_this_task_get_id() != tid_) {
         return;
     }
 #endif
@@ -108,8 +107,8 @@ void EventListener::Emit(const std::string &eventType, size_t argc, napi_value *
 
 bool EventListener::Match(const std::string &type, napi_value callback) const
 {
-#if !defined(_WIN32) && !defined(__APPLE__)
-    if (syscall(SYS_gettid) != tid_) {
+#if HAS_NETMANAGER_BASE
+    if (ffrt_this_task_get_id() != tid_) {
         return false;
     }
 #endif

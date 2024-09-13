@@ -36,6 +36,7 @@
             "components": [
                 "bounds_checking_function",
                 "curl",
+                "ffrt",
                 "hilog",
                 "hitrace",
                 "hisysevent",

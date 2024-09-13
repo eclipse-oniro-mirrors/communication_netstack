@@ -302,7 +302,7 @@ public:
      * @param address ip address
      * @param callback callback to the caller if bind ok or not
      */
-    void Bind(const Socket::NetAddress &address, const BindCallback &callback);
+    void Bind(Socket::NetAddress &address, const BindCallback &callback);
 
     /**
      * Establish a secure connection based on the created socket
