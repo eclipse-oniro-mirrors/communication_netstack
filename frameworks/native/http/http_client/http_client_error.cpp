@@ -92,7 +92,7 @@ void HttpClientError::SetCURLResult(CURLcode result)
         err = HTTP_NONE_ERR;
     }
 
-    NETSTACK_LOGD("HttpClientError::SetCURLResult: result=%d, err=%d", result, err);
+    NETSTACK_LOGE("CURLResult: result=%d, err=%d", result, err);
     SetErrorCode(err);
 }
 } // namespace HttpClient
