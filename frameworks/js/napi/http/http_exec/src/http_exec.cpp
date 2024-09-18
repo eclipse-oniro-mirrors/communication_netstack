@@ -18,10 +18,10 @@
 #include <cstddef>
 #include <cstring>
 #include <memory>
-#include <thread>
-#include <unistd.h>
 #include <pthread.h>
 #include <sstream>
+#include <thread>
+#include <unistd.h>
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
 #endif
@@ -116,7 +116,7 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
     napi_value undefined = NapiUtils::GetUndefined(env);
     napi_value argv[EVENT_PARAM_TWO] = {nullptr};
     if (context->IsParseOK() && context->IsExecOK()) {
-        context->Emit(ON_DATA_END, std::make_pair(undefined, undefined));
+        context->EmitSharedManager(ON_DATA_END, std::make_pair(undefined, undefined));
         argv[EVENT_PARAM_ZERO] = undefined;
         argv[EVENT_PARAM_ONE] = HttpExec::RequestInStreamCallback(context.get());
         if (argv[EVENT_PARAM_ONE] == nullptr) {
@@ -379,7 +379,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     context->CachePerformanceTimingItem(HttpConstant::RESPONSE_REDIRECT_TIMING, redirectTime);
 
     int64_t responseCode = 0;
-    (void)curl_easy_getinfo(handle,  CURLINFO_RESPONSE_CODE, &responseCode);
+    (void)curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responseCode);
 
     /*
     CURL_HTTP_VERSION_NONE         0
@@ -448,7 +448,7 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         CacheProxy proxy(context->options);
         proxy.WriteResponseToCache(context->response);
     }
-    if (context->GetManager() == nullptr) {
+    if (context->GetSharedManager() == nullptr) {
         NETSTACK_LOGE("can not find context manager");
         return;
     }
@@ -479,13 +479,13 @@ bool HttpExec::ExecRequest(RequestContext *context)
         context->SetNoAllowedHost(true);
         return false;
     }
-    if (context->GetManager()->IsEventDestroy()) {
+    if (context->GetSharedManager()->IsEventDestroy()) {
         return false;
     }
     context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
     CacheProxy proxy(context->options);
     if (context->IsUsingCache() && proxy.ReadResponseFromCache(context)) {
-        if (EventManager::IsManagerValid(context->GetManager())) {
+        if (context->GetSharedManager()) {
             if (context->IsRequestInStream()) {
                 NapiUtils::CreateUvQueueWorkByModuleId(
                     context->GetEnv(), std::bind(AsyncWorkRequestInStreamCallback, context->GetEnv(), napi_ok, context),
@@ -501,7 +501,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
 
     if (!RequestWithoutCache(context)) {
         context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
-        if (EventManager::IsManagerValid(context->GetManager())) {
+        if (context->GetSharedManager()) {
             if (context->IsRequestInStream()) {
                 NapiUtils::CreateUvQueueWorkByModuleId(
                     context->GetEnv(), std::bind(AsyncWorkRequestInStreamCallback, context->GetEnv(), napi_ok, context),
@@ -1056,8 +1056,8 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
         // https://curl.se/libcurl/c/CURLOPT_RANGE.html
         if (context->options.GetMethod() == HttpConstant::HTTP_METHOD_PUT) {
             context->SetErrorCode(CURLE_RANGE_ERROR);
-            NETSTACK_LOGE("For HTTP PUT uploads this option should not be used, since it may conflict with \
-                          other options.");
+            NETSTACK_LOGE(
+                "For HTTP PUT uploads this option should not be used, since it may conflict with other options.");
             return false;
         }
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_RANGE, range.c_str(), context);
@@ -1133,10 +1133,10 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData)
 {
     auto context = static_cast<RequestContext *>(userData);
-    if (context == nullptr) {
+    if (context == nullptr || !context->GetSharedManager()) {
         return 0;
     }
-    if (context->GetManager()->IsEventDestroy()) {
+    if (context->GetSharedManager()->IsEventDestroy()) {
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
         return 0;
     }
@@ -1273,7 +1273,8 @@ void HttpExec::OnDataReceive(napi_env env, napi_status status, void *data)
         NETSTACK_LOGE("[CreateArrayBuffer] memory copy failed");
         return;
     }
-    context->Emit(ON_DATA_RECEIVE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), arrayBuffer));
+    context->EmitSharedManager(ON_DATA_RECEIVE,
+                               std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), arrayBuffer));
 }
 
 void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
@@ -1292,7 +1293,8 @@ void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
         NapiUtils::SetUint32Property(context->GetEnv(), progress, "receiveSize", static_cast<uint32_t>(dlLen.nLen));
         NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize", static_cast<uint32_t>(dlLen.tLen));
 
-        context->Emit(ON_DATA_RECEIVE_PROGRESS, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
+        context->EmitSharedManager(ON_DATA_RECEIVE_PROGRESS,
+                                   std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
     }
 }
 
@@ -1312,7 +1314,8 @@ __attribute__((no_sanitize("cfi"))) void HttpExec::OnDataUploadProgress(napi_env
                                  static_cast<uint32_t>(context->GetUlLen().nLen));
     NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize",
                                  static_cast<uint32_t>(context->GetUlLen().tLen));
-    context->Emit(ON_DATA_SEND_PROGRESS, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
+    context->EmitSharedManager(ON_DATA_SEND_PROGRESS,
+                               std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
 }
 
 __attribute__((no_sanitize("cfi"))) int HttpExec::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow,
@@ -1331,7 +1334,7 @@ __attribute__((no_sanitize("cfi"))) int HttpExec::ProgressCallback(void *userDat
     if (!context->IsRequestInStream()) {
         return 0;
     }
-    if (context->GetManager()->IsEventDestroy()) {
+    if (context->GetSharedManager()->IsEventDestroy()) {
         return 0;
     }
     if (dltotal != 0) {
@@ -1529,8 +1532,7 @@ bool HttpExec::SetMultiPartOption(CURL *curl, RequestContext *context)
     return true;
 }
 
-void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *part, CURL *curl,
-                                 RequestContext *context)
+void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *part, CURL *curl, RequestContext *context)
 {
     CURLcode result = curl_mime_name(part, multiFormData.name.c_str());
     if (result != CURLE_OK) {
