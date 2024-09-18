@@ -63,8 +63,9 @@ private:
 
     bool asyncCallback_;
 
-    long tid_ = 0;
+    uint64_t tid_ = 0;
 };
 } // namespace OHOS::NetStack
 
+uint64_t GetCurrentThreadId();
 #endif /* COMMUNICATIONNETSTACK_EVENT_LISTENER_H */
