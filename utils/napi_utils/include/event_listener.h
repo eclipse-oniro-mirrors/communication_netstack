@@ -65,7 +65,6 @@ private:
 
     uint64_t tid_ = 0;
 };
-} // namespace OHOS::NetStack
-
 uint64_t GetCurrentThreadId();
+} // namespace OHOS::NetStack
 #endif /* COMMUNICATIONNETSTACK_EVENT_LISTENER_H */
