@@ -15,9 +15,6 @@
 
 #include <algorithm>
 #include <map>
-#if HAS_NETMANAGER_BASE
-#include "ffrt.h"
-#endif
 
 #include "event_manager.h"
 
@@ -47,11 +44,7 @@ void EventManager::AddListener(napi_env env, const std::string &type, napi_value
         listeners_.erase(it, listeners_.end());
     }
 
-#if HAS_NETMANAGER_BASE
-    listeners_.emplace_back(ffrt_this_task_get_id(), env, type, callback, once, asyncCallback);
-#else
-    listeners_.emplace_back(0, env, type, callback, once, asyncCallback);
-#endif
+    listeners_.emplace_back(GetCurrentThreadId(), env, type, callback, once, asyncCallback);
 }
 
 void EventManager::DeleteListener(const std::string &type, napi_value callback)
