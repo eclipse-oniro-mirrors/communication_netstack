@@ -15,6 +15,8 @@
 
 #if HAS_NETMANAGER_BASE
 #include "ffrt.h"
+#include <syscall.h>
+#include <unistd.h>
 #endif
 
 #include "event_listener.h"
@@ -54,11 +56,7 @@ EventListener::EventListener(const EventListener &listener)
 
 EventListener::~EventListener()
 {
-#if HAS_NETMANAGER_BASE
-    if (ffrt_this_task_get_id() == tid_ && callbackRef_ != nullptr) {
-#else
-    if (callbackRef_ != nullptr) {
-#endif
+    if (GetCurrentThreadId() == tid_ && callbackRef_ != nullptr) {
         NapiUtils::DeleteReference(env_, callbackRef_);
     }
     callbackRef_ = nullptr;
@@ -87,11 +85,9 @@ EventListener &EventListener::operator=(const EventListener &listener)
 
 void EventListener::Emit(const std::string &eventType, size_t argc, napi_value *argv) const
 {
-#if HAS_NETMANAGER_BASE
-    if (ffrt_this_task_get_id() != tid_) {
+    if (GetCurrentThreadId() != tid_) {
         return;
     }
-#endif
     if (type_ != eventType) {
         return;
     }
@@ -107,11 +103,9 @@ void EventListener::Emit(const std::string &eventType, size_t argc, napi_value *
 
 bool EventListener::Match(const std::string &type, napi_value callback) const
 {
-#if HAS_NETMANAGER_BASE
-    if (ffrt_this_task_get_id() != tid_) {
+    if (GetCurrentThreadId() != tid_) {
         return false;
     }
-#endif
     if (type_ != type) {
         return false;
     }
@@ -163,5 +157,18 @@ napi_env EventListener::GetEnv() const
 napi_ref EventListener::GetCallbackRef() const
 {
     return callbackRef_;
+}
+
+uint64_t GetCurrentThreadId()
+{
+#if HAS_NETMANAGER_BASE
+    auto tid = ffrt_this_task_get_id();
+    if (tid == 0) {
+        tid = syscall(SYS_gettid);
+    }
+    return tid;
+#else
+    return 0;
+#endif
 }
 } // namespace OHOS::NetStack
