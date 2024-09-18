@@ -675,6 +675,7 @@ void TLSSocket::CallGetSignatureAlgorithmsCallback(int32_t err, const std::vecto
 
 void TLSSocket::Bind(Socket::NetAddress &address, const BindCallback &callback)
 {
+    static constexpr int32_t PARSE_ERROR_CODE = 401;
     if (!CommonUtils::HasInternetPermission()) {
         CallBindCallback(PERMISSION_DENIED_CODE, callback);
         return;
@@ -690,6 +691,14 @@ void TLSSocket::Bind(Socket::NetAddress &address, const BindCallback &callback)
         NETSTACK_LOGE("make tcp socket failed errno is %{public}d %{public}s", errno, MakeErrnoString().c_str());
         CallOnErrorCallback(resErr, MakeErrnoString());
         CallBindCallback(resErr, callback);
+        return;
+    }
+
+    auto temp = address.GetAddress();
+    address.SetRawAddress("");
+    address.SetAddress(temp);
+    if (address.GetAddress().empty()) {
+        CallBindCallback(PARSE_ERROR_CODE, callback);
         return;
     }
 
