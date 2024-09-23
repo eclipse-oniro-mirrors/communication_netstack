@@ -22,6 +22,7 @@ utils_include = [ "$NETSTACK_UTILS_ROOT/log/include" ]
 common_external_deps = [
   "c_utils:utils",
   "hilog:libhilog",
+  "hisysevent:libhisysevent",
 ]
 
 ohos_unittest("netstack_common_utils_test") {
@@ -48,7 +49,9 @@ ohos_unittest("netstack_common_utils_test") {
     "$NETSTACK_UTILS_ROOT/common_utils/src/netstack_apipolicy_utils.cpp",
     "$NETSTACK_UTILS_ROOT/common_utils/src/netstack_bundle_utils.cpp",
     "$NETSTACK_UTILS_ROOT/common_utils/src/netstack_common_utils.cpp",
+    "$NETSTACK_UTILS_ROOT/common_utils/src/netstack_hisysevent.cpp",
     "NetStackCommonUtilsTest.cpp",
+    "netstack_hisysevent_test.cpp",
   ]
 
   part_name = "netstack"
