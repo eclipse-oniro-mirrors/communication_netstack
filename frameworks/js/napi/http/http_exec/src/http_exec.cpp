@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1087,7 +1087,7 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     }
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_URL, context->options.GetUrl().c_str(), context);
-#ifdef HAS_NETMANAGER_BASE
+#if HAS_NETMANAGER_BASE
     if (!NetSysIsIpv6Enable(0)) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4, context);
     }
@@ -1210,7 +1210,7 @@ static void ResponseHeaderCallback(uv_work_t *work, int status)
     work = nullptr;
 }
 
-static std::map<std::string, std::string> MakeHeaderWithSetCookie(RequestContext * context)
+static std::map<std::string, std::string> MakeHeaderWithSetCookie(RequestContext *context)
 {
     std::map<std::string, std::string> tempMap = context->response.GetHeader();
     std::string setCookies;
@@ -1232,18 +1232,18 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
     if (context == nullptr) {
         return 0;
     }
-    if (context->GetManager()->IsEventDestroy()) {
+    if (context->GetSharedManager()->IsEventDestroy()) {
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
         return 0;
     }
     context->response.AppendRawHeader(data, size * memBytes);
     if (CommonUtils::EndsWith(context->response.GetRawHeader(), HttpConstant::HTTP_RESPONSE_HEADER_SEPARATOR)) {
         context->response.ParseHeaders();
-        if (context->GetManager() && EventManager::IsManagerValid(context->GetManager())) {
+        if (context->GetSharedManager()) {
             auto headerMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
-            context->GetManager()->EmitByUv(ON_HEADER_RECEIVE, headerMap, ResponseHeaderCallback);
+            context->GetSharedManager()->EmitByUvWithoutCheck(ON_HEADER_RECEIVE, headerMap, ResponseHeaderCallback);
             auto headersMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
-            context->GetManager()->EmitByUv(ON_HEADERS_RECEIVE, headersMap, ResponseHeaderCallback);
+            context->GetSharedManager()->EmitByUvWithoutCheck(ON_HEADERS_RECEIVE, headersMap, ResponseHeaderCallback);
         }
     }
     context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
@@ -1307,7 +1307,7 @@ __attribute__((no_sanitize("cfi"))) void HttpExec::OnDataUploadProgress(napi_env
     }
     auto progress = NapiUtils::CreateObject(context->GetEnv());
     if (NapiUtils::GetValueType(context->GetEnv(), progress) == napi_undefined) {
-        NETSTACK_LOGD("OnDataUploadProgress napi_undefined");
+        NETSTACK_LOGD("OnDataUploadProgress napi_undefined.");
         return;
     }
     NapiUtils::SetUint32Property(context->GetEnv(), progress, "sendSize",
