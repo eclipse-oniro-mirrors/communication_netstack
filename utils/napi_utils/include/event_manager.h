@@ -33,6 +33,13 @@
 
 namespace OHOS::NetStack {
 static constexpr const uint32_t EVENT_MANAGER_MAGIC_NUMBER = 0x86161616;
+struct EventManagerMagic {
+    uint32_t magicNumber_ = EVENT_MANAGER_MAGIC_NUMBER;
+    ~EventManagerMagic()
+    {
+        magicNumber_ = ~magicNumber_;
+    }
+};
 
 namespace Websocket {
 class UserData;
@@ -142,6 +149,11 @@ struct UvWorkWrapper {
     napi_env env;
     std::string type;
     EventManager *manager;
+};
+
+struct EventManagerWrapper {
+    EventManager eventManager;
+    std::shared_ptr<EventManager> sharedManager;
 };
 } // namespace OHOS::NetStack
 #endif /* COMMUNICATIONNETSTACK_EVENT_MANAGER_H */
