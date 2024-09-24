@@ -39,6 +39,7 @@ public:
 namespace {
 using namespace testing::ext;
 using namespace OHOS::NetStack::Ssl;
+constexpr const uint32_t CERT_BlOB_TO_X509_ERROR = 2305069;
 
 HWTEST_F(NetsslTest, CertVerifyTest001, TestSize.Level1)
 {
@@ -55,10 +56,10 @@ HWTEST_F(NetsslTest, NetStackVerifyCertificationTest001, TestSize.Level1)
     CertBlob *caCert = nullptr;
 
     uint32_t ret = NetStackVerifyCertification(cert);
-    EXPECT_EQ(ret, SSL_X509_V_ERR_UNSPECIFIED);
+    EXPECT_EQ(ret, CERT_BlOB_TO_X509_ERROR);
 
     ret = NetStackVerifyCertification(cert, caCert);
-    EXPECT_EQ(ret, SSL_X509_V_ERR_UNSPECIFIED);
+    EXPECT_EQ(ret, CERT_BlOB_TO_X509_ERROR);
 }
 
 HWTEST_F(NetsslTest, NetStackVerifyCertificationTest002, TestSize.Level1)
@@ -67,9 +68,9 @@ HWTEST_F(NetsslTest, NetStackVerifyCertificationTest002, TestSize.Level1)
     CertBlob caCert;
 
     uint32_t ret = NetStackVerifyCertification(&cert);
-    EXPECT_EQ(ret, SSL_X509_V_ERR_UNSPECIFIED);
+    EXPECT_EQ(ret, CERT_BlOB_TO_X509_ERROR);
 
     ret = NetStackVerifyCertification(&cert, &caCert);
-    EXPECT_EQ(ret, SSL_X509_V_ERR_UNSPECIFIED);
+    EXPECT_EQ(ret, CERT_BlOB_TO_X509_ERROR);
 }
 } // namespace
