@@ -409,7 +409,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
         context->IsExecOK() ? 0: context->GetErrorCode(), std::to_string(responseCode).c_str(),
         std::to_string(httpVer).c_str(), context->options.GetMethod().c_str());
-    }
+}
 
 #if HAS_NETMANAGER_BASE
 void HttpExec::HandleCurlData(CURLMsg *msg, RequestContext *context)
