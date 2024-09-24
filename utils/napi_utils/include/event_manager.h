@@ -126,7 +126,6 @@ private:
     bool sockRcvExit_ = false;
     std::atomic_bool isReuseAddr_ = false;
     std::shared_ptr<Websocket::UserData> webSocketUserData_;
-
 public:
     struct {
         uint32_t magicNumber = EVENT_MANAGER_MAGIC_NUMBER;
@@ -142,6 +141,11 @@ struct UvWorkWrapper {
     napi_env env;
     std::string type;
     EventManager *manager;
+};
+
+struct EventManagerWrapper {
+    EventManager eventManager;
+    std::shared_ptr<EventManager> sharedManager;
 };
 } // namespace OHOS::NetStack
 #endif /* COMMUNICATIONNETSTACK_EVENT_MANAGER_H */

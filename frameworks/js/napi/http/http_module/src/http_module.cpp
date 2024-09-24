@@ -22,8 +22,8 @@
 #include "http_exec.h"
 
 #include "module_template.h"
-#include "netstack_log.h"
 #include "netstack_common_utils.h"
+#include "netstack_log.h"
 
 #define DECLARE_RESPONSE_CODE(code) \
     DECLARE_NAPI_STATIC_PROPERTY(#code, NapiUtils::CreateUint32(env, static_cast<uint32_t>(ResponseCode::code)))
@@ -67,13 +67,12 @@ napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
 
 napi_value HttpModuleExports::CreateHttp(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::NewInstance(env, info, INTERFACE_HTTP_REQUEST, [](napi_env, void *data, void *) {
-        NETSTACK_LOGD("http request handle is finalized");
-        auto manager = reinterpret_cast<EventManager *>(data);
-        if (manager != nullptr) {
-            EventManager::SetInvalid(manager);
-        }
-    });
+    return ModuleTemplate::NewInstanceWithManagerWrapper(
+        env, info, INTERFACE_HTTP_REQUEST, [](napi_env, void *data, void *) {
+            NETSTACK_LOGD("http request handle is finalized");
+            auto wrapper = reinterpret_cast<EventManagerWrapper *>(data);
+            delete wrapper;
+        });
 }
 
 napi_value HttpModuleExports::CreateHttpResponseCache(napi_env env, napi_callback_info info)
@@ -239,7 +238,7 @@ void HttpModuleExports::InitHttpDataType(napi_env env, napi_value exports)
 
 napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithOutAsyncWork<RequestContext>(
+    return ModuleTemplate::InterfaceWithOutAsyncWorkWithManagerWrapper<RequestContext>(
         env, info,
         [](napi_env, napi_value, RequestContext *context) -> bool {
 #if !HAS_NETMANAGER_BASE
@@ -258,7 +257,7 @@ napi_value HttpModuleExports::HttpRequest::Request(napi_env env, napi_callback_i
 
 napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithOutAsyncWork<RequestContext>(
+    return ModuleTemplate::InterfaceWithOutAsyncWorkWithManagerWrapper<RequestContext>(
         env, info,
         [](napi_env, napi_value, RequestContext *context) -> bool {
 #if !HAS_NETMANAGER_BASE
@@ -280,13 +279,20 @@ napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_i
 {
     napi_value thisVal = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr));
-    EventManager *manager = nullptr;
-    auto napi_ret = napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager));
-    if (napi_ret != napi_ok) {
-        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
+    EventManagerWrapper *wrapper = nullptr;
+    auto napiRet = napi_unwrap(env, thisVal, reinterpret_cast<void **>(&wrapper));
+    if (napiRet != napi_ok) {
+        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napiRet);
         return NapiUtils::GetUndefined(env);
     }
 
+    if (!wrapper) {
+        return NapiUtils::GetUndefined(env);
+    }
+    auto manager = wrapper->sharedManager;
+    if (!manager) {
+        return NapiUtils::GetUndefined(env);
+    }
     if (manager->IsEventDestroy()) {
         NETSTACK_LOGD("js object has been destroyed");
         return NapiUtils::GetUndefined(env);
@@ -298,33 +304,34 @@ napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_i
 
 napi_value HttpModuleExports::HttpRequest::On(napi_env env, napi_callback_info info)
 {
-    ModuleTemplate::On(env, info,
-        { ON_HEADERS_RECEIVE, ON_DATA_RECEIVE, ON_DATA_END, ON_DATA_RECEIVE_PROGRESS, ON_DATA_SEND_PROGRESS }, false);
-    return ModuleTemplate::On(env, info, { ON_HEADER_RECEIVE }, true);
+    ModuleTemplate::OnManagerWrapper(
+        env, info, {ON_HEADERS_RECEIVE, ON_DATA_RECEIVE, ON_DATA_END, ON_DATA_RECEIVE_PROGRESS, ON_DATA_SEND_PROGRESS},
+        false);
+    return ModuleTemplate::OnManagerWrapper(env, info, {ON_HEADER_RECEIVE}, true);
 }
 
 napi_value HttpModuleExports::HttpRequest::Once(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Once(env, info, {ON_HEADER_RECEIVE, ON_HEADERS_RECEIVE}, false);
+    return ModuleTemplate::OnceManagerWrapper(env, info, {ON_HEADER_RECEIVE, ON_HEADERS_RECEIVE}, false);
 }
 
 napi_value HttpModuleExports::HttpRequest::Off(napi_env env, napi_callback_info info)
 {
-    ModuleTemplate::Off(env, info,
-        { ON_HEADERS_RECEIVE, ON_DATA_RECEIVE, ON_DATA_END, ON_DATA_RECEIVE_PROGRESS, ON_DATA_SEND_PROGRESS });
-    return ModuleTemplate::Off(env, info, { ON_HEADER_RECEIVE });
+    ModuleTemplate::OffManagerWrapper(
+        env, info, {ON_HEADERS_RECEIVE, ON_DATA_RECEIVE, ON_DATA_END, ON_DATA_RECEIVE_PROGRESS, ON_DATA_SEND_PROGRESS});
+    return ModuleTemplate::OffManagerWrapper(env, info, {ON_HEADER_RECEIVE});
 }
 
 napi_value HttpModuleExports::HttpResponseCache::Flush(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<BaseContext>(env, info, FLUSH_ASYNC_WORK_NAME, nullptr, HttpAsyncWork::ExecFlush,
-                                                  HttpAsyncWork::FlushCallback);
+    return ModuleTemplate::InterfaceWithManagerWrapper<BaseContext>(
+        env, info, FLUSH_ASYNC_WORK_NAME, nullptr, HttpAsyncWork::ExecFlush, HttpAsyncWork::FlushCallback);
 }
 
 napi_value HttpModuleExports::HttpResponseCache::Delete(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::Interface<BaseContext>(env, info, DELETE_ASYNC_WORK_NAME, nullptr, HttpAsyncWork::ExecDelete,
-                                                  HttpAsyncWork::DeleteCallback);
+    return ModuleTemplate::InterfaceWithManagerWrapper<BaseContext>(
+        env, info, DELETE_ASYNC_WORK_NAME, nullptr, HttpAsyncWork::ExecDelete, HttpAsyncWork::DeleteCallback);
 }
 
 static napi_module g_httpModule = {
