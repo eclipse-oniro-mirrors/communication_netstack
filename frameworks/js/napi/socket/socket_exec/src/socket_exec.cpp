@@ -701,7 +701,7 @@ static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &call
     if (errno == EAGAIN || errno == EINTR) {
         return 0;
     }
-    if (!IsTCPSocket(sock)) {
+    if (!IsTCPSocket(sock) && errno != EBADF) {
         NETSTACK_LOGI("not tcpsocket, continue loop, recvLen: %{public}zd, err: %{public}d", recvLen, errno);
         return 0;
     }
