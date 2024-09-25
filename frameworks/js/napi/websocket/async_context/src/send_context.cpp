@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -51,6 +51,7 @@ bool SendContext::HandleParseString(napi_value *params)
     if (memcpy_s(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(data) + LWS_SEND_BUFFER_PRE_PADDING),
                  str.length(), str.c_str(), str.length()) < 0) {
         NETSTACK_LOGE("copy failed");
+        free(data);
         return false;
     }
     length = str.length();
@@ -81,6 +82,7 @@ bool SendContext::HandleParseArrayBuffer(napi_value *params)
     if (memcpy_s(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(data) + LWS_SEND_BUFFER_PRE_PADDING), len, mem,
                  len) < 0) {
         NETSTACK_LOGE("copy failed");
+        free(data);
         return false;
     }
     length = len;
