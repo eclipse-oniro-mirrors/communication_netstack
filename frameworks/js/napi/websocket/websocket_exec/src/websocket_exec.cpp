@@ -1051,7 +1051,7 @@ void WebSocketExec::HandleRcvMessage(EventManager *manager, void *data, size_t l
             auto msg = new std::string;
             msg->append(msgFromManager.data(), msgFromManager.size());
             manager->SetQueueData(msg);
-            manager->EmitByUvWithoutCheckShared(EventName::EVENT_MESSAGE, manager, 
+            manager->EmitByUvWithoutCheckShared(EventName::EVENT_MESSAGE, manager,
                                                 CallbackTemplate<CreateBinaryMessagePara>);
             manager->ClearWebSocketBinaryData();
         }
