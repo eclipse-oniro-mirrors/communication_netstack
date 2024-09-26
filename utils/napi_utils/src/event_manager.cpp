@@ -90,7 +90,8 @@ void *EventManager::GetData()
     return data_;
 }
 
-void EventManager::EmitByUvWithoutCheckShared(const std::string &type, void *data, void (*Handler)(uv_work_t *, int)) {
+void EventManager::EmitByUvWithoutCheckShared(const std::string &type, void *data, void (*Handler)(uv_work_t *, int))
+{
     std::lock_guard lock1(mutexForEmitAndEmitByUv_);
     std::lock_guard lock2(mutexForListenersAndEmitByUv_);
     bool foundHeader = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
