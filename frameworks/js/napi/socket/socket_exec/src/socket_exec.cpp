@@ -743,6 +743,19 @@ static inline void PollRecvFinish(const MessageCallback &callback)
         NETSTACK_LOGE("manager is error");
     }
 }
+static bool ProcessPollResult(int currentFd, const MessageCallback &callback)
+{
+    if (errno == EINTR) {
+        NETSTACK_LOGE("socket is %{public}d, errno is %{public}d", currentFd, errno);
+        return true;
+    }
+    if (EventManager::IsManagerValid(callback.GetEventManager()) && static_cast<int>(
+        reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
+        NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", currentFd, errno);
+        return false;
+    }
+    return true;
+}
 
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
 {
@@ -767,12 +780,11 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         pollfd fds[1] = {{currentFd, POLLIN, 0}};
         int ret = poll(fds, 1, recvTimeoutMs);
         if (ret < 0) {
-            if (EventManager::IsManagerValid(callback.GetEventManager()) && static_cast<int>(
-                reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
-                NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", currentFd, errno);
+            if (!ProcessPollResult(currentFd, callback)) {
+                NETSTACK_LOGE("ProcessPollResult failed, socket is %{public}d, errno is %{public}d", currentFd, errno);
                 callback.OnError(errno);
+                break;
             }
-            break;
         } else if (ret == 0) {
             continue;
         }
