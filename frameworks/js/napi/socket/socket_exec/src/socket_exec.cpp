@@ -754,7 +754,7 @@ static bool ProcessPollResult(int currentFd, const MessageCallback &callback)
         NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", currentFd, errno);
         return false;
     }
-    return true;
+    return false;
 }
 
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
