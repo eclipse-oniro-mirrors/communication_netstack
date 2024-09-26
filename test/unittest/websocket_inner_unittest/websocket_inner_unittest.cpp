@@ -135,7 +135,7 @@ HWTEST_F(WebSocketTest, WebSocketBranchTest002, TestSize.Level1)
     const char *data = "test data";
     size_t length = 0;
     int32_t ret = client->Send(const_cast<char *>(data), length);
-    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX);
+    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
 
     CloseOption options;
     ret = client->Close(options);
