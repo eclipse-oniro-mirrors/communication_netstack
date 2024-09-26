@@ -232,7 +232,7 @@ template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTempl
 {
     (void)status;
 
-    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
+    auto workWrapper = static_cast<UvWorkWrapperShared *>(work->data);
     napi_env env = workWrapper->env;
     auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
     std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
@@ -240,7 +240,7 @@ template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTempl
     napi_value obj = MakeJsValue(env, workWrapper->data);
     auto undefined = NapiUtils::GetUndefined(workWrapper->env);
     std::pair<napi_value, napi_value> arg = {undefined, obj};
-    if (workWrapper->manager->innerMagic_.magicNumber == EVENT_MANAGER_MAGIC_NUMBER) {
+    if (workWrapper->manager || workWrapper->manager->innerMagic_.magicNumber == EVENT_MANAGER_MAGIC_NUMBER) {
         workWrapper->manager->Emit(workWrapper->type, arg);
         if (workWrapper->type == EventName::EVENT_MESSAGE &&
             workWrapper->manager->HasEventListener(EventName::EVENT_DATA_END)) {
@@ -440,7 +440,7 @@ void OnConnectError(EventManager *manager, int32_t code, uint32_t httpResponse)
     auto pair = new std::pair<int, uint32_t>;
     pair->first = code;
     pair->second = httpResponse;
-    manager->EmitByUvWithoutCheck(EventName::EVENT_ERROR, pair, CallbackTemplate<CreateConnectError>);
+    manager->EmitByUvWithoutCheckShared(EventName::EVENT_ERROR, pair, CallbackTemplate<CreateConnectError>);
 }
 
 int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in,
@@ -966,7 +966,7 @@ void WebSocketExec::OnError(EventManager *manager, int32_t code, uint32_t httpRe
     auto pair = new std::pair<int, uint32_t>;
     pair->first = code;
     pair->second = httpResponse;
-    manager->EmitByUvWithoutCheck(EventName::EVENT_ERROR, pair, CallbackTemplate<CreateError>);
+    manager->EmitByUvWithoutCheckShared(EventName::EVENT_ERROR, pair, CallbackTemplate<CreateError>);
 }
 
 napi_value CreateResponseHeader(napi_env env, void *callbackPara)
@@ -1004,7 +1004,7 @@ void WebSocketExec::OnOpen(EventManager *manager, uint32_t status, const std::st
     auto para = new OnOpenClosePara;
     para->status = status;
     para->message = message;
-    manager->EmitByUvWithoutCheck(EventName::EVENT_OPEN, para, CallbackTemplate<CreateOpenPara>);
+    manager->EmitByUvWithoutCheckShared(EventName::EVENT_OPEN, para, CallbackTemplate<CreateOpenPara>);
 }
 
 void WebSocketExec::OnClose(EventManager *manager, lws_close_status closeStatus, const std::string &closeReason)
@@ -1021,7 +1021,7 @@ void WebSocketExec::OnClose(EventManager *manager, lws_close_status closeStatus,
     auto para = new OnOpenClosePara;
     para->status = closeStatus;
     para->message = closeReason;
-    manager->EmitByUvWithoutCheck(EventName::EVENT_CLOSE, para, CallbackTemplate<CreateClosePara>);
+    manager->EmitByUvWithoutCheckShared(EventName::EVENT_CLOSE, para, CallbackTemplate<CreateClosePara>);
 }
 
 void WebSocketExec::OnMessage(EventManager *manager, void *data, size_t length, bool isBinary, bool isFinal)
@@ -1051,7 +1051,7 @@ void WebSocketExec::HandleRcvMessage(EventManager *manager, void *data, size_t l
             auto msg = new std::string;
             msg->append(msgFromManager.data(), msgFromManager.size());
             manager->SetQueueData(msg);
-            manager->EmitByUvWithoutCheck(EventName::EVENT_MESSAGE, manager, CallbackTemplate<CreateBinaryMessagePara>);
+            manager->EmitByUvWithoutCheckShared(EventName::EVENT_MESSAGE, manager, CallbackTemplate<CreateBinaryMessagePara>);
             manager->ClearWebSocketBinaryData();
         }
     } else {
@@ -1064,7 +1064,8 @@ void WebSocketExec::HandleRcvMessage(EventManager *manager, void *data, size_t l
             }
             msg->append(msgFromManager.data(), msgFromManager.size());
             manager->SetQueueData(msg);
-            manager->EmitByUvWithoutCheck(EventName::EVENT_MESSAGE, manager, CallbackTemplate<CreateTextMessagePara>);
+            manager->EmitByUvWithoutCheckShared(EventName::EVENT_MESSAGE, manager,
+                                                CallbackTemplate<CreateTextMessagePara>);
             manager->ClearWebSocketTextData();
         }
     }
@@ -1082,7 +1083,7 @@ void WebSocketExec::OnHeaderReceive(EventManager *manager, const std::map<std::s
         return;
     }
     auto para = new std::map<std::string, std::string>(headers);
-    manager->EmitByUvWithoutCheck(EventName::EVENT_HEADER_RECEIVE, para, CallbackTemplate<CreateResponseHeader>);
+    manager->EmitByUvWithoutCheckShared(EventName::EVENT_HEADER_RECEIVE, para, CallbackTemplate<CreateResponseHeader>);
 }
 
 void WebSocketExec::GetWebsocketProxyInfo(ConnectContext *context, std::string &host, uint32_t &port,
