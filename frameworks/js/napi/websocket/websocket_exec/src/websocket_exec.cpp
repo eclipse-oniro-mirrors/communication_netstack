@@ -240,7 +240,7 @@ template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTempl
     napi_value obj = MakeJsValue(env, workWrapper->data);
     auto undefined = NapiUtils::GetUndefined(workWrapper->env);
     std::pair<napi_value, napi_value> arg = {undefined, obj};
-    if (workWrapper->manager || workWrapper->manager->innerMagic_.magicNumber == EVENT_MANAGER_MAGIC_NUMBER) {
+    if (workWrapper->manager) {
         workWrapper->manager->Emit(workWrapper->type, arg);
         if (workWrapper->type == EventName::EVENT_MESSAGE &&
             workWrapper->manager->HasEventListener(EventName::EVENT_DATA_END)) {
@@ -1051,7 +1051,8 @@ void WebSocketExec::HandleRcvMessage(EventManager *manager, void *data, size_t l
             auto msg = new std::string;
             msg->append(msgFromManager.data(), msgFromManager.size());
             manager->SetQueueData(msg);
-            manager->EmitByUvWithoutCheckShared(EventName::EVENT_MESSAGE, manager, CallbackTemplate<CreateBinaryMessagePara>);
+            manager->EmitByUvWithoutCheckShared(EventName::EVENT_MESSAGE, manager, 
+                                                CallbackTemplate<CreateBinaryMessagePara>);
             manager->ClearWebSocketBinaryData();
         }
     } else {
