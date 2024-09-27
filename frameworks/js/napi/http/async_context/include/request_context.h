@@ -50,6 +50,8 @@ struct CertsPath {
 
 class RequestContext final : public BaseContext {
 public:
+    friend class HttpExec;
+
     RequestContext() = delete;
 
     RequestContext(napi_env env, EventManager *manager);
