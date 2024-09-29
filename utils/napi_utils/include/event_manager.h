@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -38,7 +38,7 @@ namespace Websocket {
 class UserData;
 }
 
-class EventManager {
+class EventManager : public std::enable_shared_from_this<EventManager> {
 public:
     EventManager();
 
@@ -60,6 +60,8 @@ public:
     void EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
 
     void EmitByUvWithoutCheck(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
+
+    void EmitByUvWithoutCheckShared(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
 
     bool HasEventListener(const std::string &type);
 
@@ -137,15 +139,27 @@ struct UvWorkWrapper {
 
     UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager);
 
-    void *data;
-    napi_env env;
+    void *data = nullptr;
+    napi_env env = nullptr;
     std::string type;
-    EventManager *manager;
+    EventManager *manager = nullptr;
 };
 
 struct EventManagerWrapper {
     EventManager eventManager;
     std::shared_ptr<EventManager> sharedManager;
+};
+
+struct UvWorkWrapperShared {
+    UvWorkWrapperShared() = delete;
+
+    UvWorkWrapperShared(void *theData, napi_env theEnv, std::string eventType,
+                        const std::shared_ptr<EventManager> &eventManager);
+
+    void *data = nullptr;
+    napi_env env = nullptr;
+    std::string type;
+    std::shared_ptr<EventManager> manager;
 };
 } // namespace OHOS::NetStack
 #endif /* COMMUNICATIONNETSTACK_EVENT_MANAGER_H */
