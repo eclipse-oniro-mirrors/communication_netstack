@@ -476,9 +476,6 @@ curl_slist *RequestContext::GetCurlHostList()
 RequestContext::~RequestContext()
 {
     trace_.Finish();
-    if (easyHandle_) {
-        curl_easy_cleanup(easyHandle_);
-    }
     if (curlHeaderList_ != nullptr) {
         curl_slist_free_all(curlHeaderList_);
     }
