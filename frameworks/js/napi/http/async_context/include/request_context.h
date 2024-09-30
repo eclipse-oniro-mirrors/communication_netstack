@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -50,8 +50,6 @@ struct CertsPath {
 
 class RequestContext final : public BaseContext {
 public:
-    friend class HttpExec;
-
     RequestContext() = delete;
 
     RequestContext(napi_env env, EventManager *manager);
@@ -164,7 +162,6 @@ private:
     std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
 #endif
     CURL *curlHandle_;
-    CURL *easyHandle_ = nullptr;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 
