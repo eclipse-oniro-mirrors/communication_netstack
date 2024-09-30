@@ -212,8 +212,7 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
         auto context = static_cast<RequestContext *>(opaqueData);
         HttpExec::HandleCurlData(curlMessage, context);
         if (curlMessage->easy_handle) {
-            context->easyHandle_ = curlMessage->easy_handle;
-            curlMessage->easy_handle = nullptr;
+            (void)curl_easy_cleanup(curlMessage->easy_handle);
         }
     };
 

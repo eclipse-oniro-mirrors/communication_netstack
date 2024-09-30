@@ -164,7 +164,6 @@ private:
     std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
 #endif
     CURL *curlHandle_;
-    CURL *easyHandle_ = nullptr;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 
