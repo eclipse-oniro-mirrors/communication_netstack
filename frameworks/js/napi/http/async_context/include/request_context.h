@@ -50,8 +50,6 @@ struct CertsPath {
 
 class RequestContext final : public BaseContext {
 public:
-    friend class HttpExec;
-
     RequestContext() = delete;
 
     RequestContext(napi_env env, EventManager *manager);
@@ -164,7 +162,6 @@ private:
     std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
 #endif
     CURL *curlHandle_;
-    CURL *easyHandle_ = nullptr;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 
