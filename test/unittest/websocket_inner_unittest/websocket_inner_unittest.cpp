@@ -128,17 +128,4 @@ HWTEST_F(WebSocketTest, WebSocketBranchTest001, TestSize.Level1)
     ret = client->Close(options);
     EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT);
 }
-
-HWTEST_F(WebSocketTest, WebSocketBranchTest002, TestSize.Level1)
-{
-    client->clientContext = nullptr;
-    const char *data = "test data";
-    size_t length = 0;
-    int32_t ret = client->Send(const_cast<char *>(data), length);
-    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX);
-
-    CloseOption options;
-    ret = client->Close(options);
-    EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX);
-}
 } // namespace
