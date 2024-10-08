@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -38,7 +38,7 @@ namespace Websocket {
 class UserData;
 }
 
-class EventManager {
+class EventManager : public std::enable_shared_from_this<EventManager> {
 public:
     EventManager();
 
@@ -60,6 +60,8 @@ public:
     void EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
 
     void EmitByUvWithoutCheck(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
+
+    void EmitByUvWithoutCheckShared(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
 
     bool HasEventListener(const std::string &type);
 
@@ -126,6 +128,7 @@ private:
     bool sockRcvExit_ = false;
     std::atomic_bool isReuseAddr_ = false;
     std::shared_ptr<Websocket::UserData> webSocketUserData_;
+
 public:
     struct {
         uint32_t magicNumber = EVENT_MANAGER_MAGIC_NUMBER;
@@ -137,15 +140,54 @@ struct UvWorkWrapper {
 
     UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager);
 
-    void *data;
-    napi_env env;
+    void *data = nullptr;
+    napi_env env = nullptr;
     std::string type;
-    EventManager *manager;
+    EventManager *manager = nullptr;
+};
+
+class EventManagerForHttp {
+private:
+    [[maybe_unused]] std::mutex mutexForListenersAndEmitByUv_;
+    [[maybe_unused]] std::mutex mutexForEmitAndEmitByUv_;
+    [[maybe_unused]] std::mutex dataMutex_;
+    [[maybe_unused]] std::mutex dataQueueMutex_;
+    [[maybe_unused]] std::list<EventListener> listeners_;
+    [[maybe_unused]] void *data_ = nullptr;
+    [[maybe_unused]] std::queue<void *> dataQueue_;
+    [[maybe_unused]] static std::mutex mutexForManager_;
+    [[maybe_unused]] static std::unordered_set<EventManager *> validManager_;
+    [[maybe_unused]] napi_ref eventRef_ = nullptr;
+    [[maybe_unused]] std::atomic_bool isDestroy_;
+    [[maybe_unused]] std::string webSocketTextData_;
+    [[maybe_unused]] std::string webSocketBinaryData_;
+    [[maybe_unused]] std::mutex sockRcvThdMtx_;
+    [[maybe_unused]] std::condition_variable sockRcvThdCon_;
+    [[maybe_unused]] bool sockRcvExit_ = false;
+    [[maybe_unused]] std::atomic_bool isReuseAddr_ = false;
+    [[maybe_unused]] std::shared_ptr<Websocket::UserData> webSocketUserData_;
+
+public:
+    [[maybe_unused]] struct {
+        uint32_t magicNumber = EVENT_MANAGER_MAGIC_NUMBER;
+    } innerMagic_;
 };
 
 struct EventManagerWrapper {
-    EventManager eventManager;
+    EventManagerForHttp eventManager;
     std::shared_ptr<EventManager> sharedManager;
+};
+
+struct UvWorkWrapperShared {
+    UvWorkWrapperShared() = delete;
+
+    UvWorkWrapperShared(void *theData, napi_env theEnv, std::string eventType,
+                        const std::shared_ptr<EventManager> &eventManager);
+
+    void *data = nullptr;
+    napi_env env = nullptr;
+    std::string type;
+    std::shared_ptr<EventManager> manager;
 };
 } // namespace OHOS::NetStack
 #endif /* COMMUNICATIONNETSTACK_EVENT_MANAGER_H */

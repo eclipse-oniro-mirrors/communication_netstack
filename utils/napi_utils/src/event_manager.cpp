@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -96,6 +96,42 @@ void *EventManager::GetData()
 {
     std::lock_guard<std::mutex> lock(dataMutex_);
     return data_;
+}
+
+void EventManager::EmitByUvWithoutCheckShared(const std::string &type, void *data, void (*Handler)(uv_work_t *, int))
+{
+    std::lock_guard lock1(mutexForEmitAndEmitByUv_);
+    std::lock_guard lock2(mutexForListenersAndEmitByUv_);
+    bool foundHeader = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
+        return listener.MatchType(ON_HEADER_RECEIVE);
+    }) != listeners_.end();
+
+    bool foundHeaders = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
+        return listener.MatchType(ON_HEADERS_RECEIVE);
+    }) != listeners_.end();
+    if (!foundHeader && !foundHeaders) {
+        if (type == ON_HEADER_RECEIVE || type == ON_HEADERS_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
+    } else if (foundHeader && !foundHeaders) {
+        if (type == ON_HEADERS_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
+    } else if (!foundHeader) {
+        if (type == ON_HEADER_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
+    }
+
+    std::for_each(listeners_.begin(), listeners_.end(), [type, data, Handler, this](const EventListener &listener) {
+        if (listener.MatchType(type)) {
+            auto workWrapper = new UvWorkWrapperShared(data, listener.GetEnv(), type, shared_from_this());
+            listener.EmitByUv(type, workWrapper, Handler);
+        }
+    });
 }
 
 void EventManager::SetQueueData(void *data)
@@ -323,6 +359,12 @@ std::shared_ptr<Websocket::UserData> EventManager::GetWebSocketUserData()
 }
 
 UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)
+    : data(theData), env(theEnv), type(std::move(eventType)), manager(eventManager)
+{
+}
+
+UvWorkWrapperShared::UvWorkWrapperShared(void *theData, napi_env theEnv, std::string eventType,
+                                         const std::shared_ptr<EventManager> &eventManager)
     : data(theData), env(theEnv), type(std::move(eventType)), manager(eventManager)
 {
 }
