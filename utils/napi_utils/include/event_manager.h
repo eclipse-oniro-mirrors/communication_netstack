@@ -153,8 +153,36 @@ struct UvWorkWrapper {
     EventManager *manager = nullptr;
 };
 
+class EventManagerForHttp {
+private:
+    [[maybe_unused]] std::mutex mutexForListenersAndEmitByUv_;
+    [[maybe_unused]] std::mutex mutexForEmitAndEmitByUv_;
+    [[maybe_unused]] std::mutex dataMutex_;
+    [[maybe_unused]] std::mutex dataQueueMutex_;
+    [[maybe_unused]] std::list<EventListener> listeners_;
+    [[maybe_unused]] void *data_ = nullptr;
+    [[maybe_unused]] std::queue<void *> dataQueue_;
+    [[maybe_unused]] static EventManagerMagic magic_;
+    [[maybe_unused]] static std::mutex mutexForManager_;
+    [[maybe_unused]] static std::unordered_set<EventManager *> validManager_;
+    [[maybe_unused]] napi_ref eventRef_ = nullptr;
+    [[maybe_unused]] std::atomic_bool isDestroy_;
+    [[maybe_unused]] std::string webSocketTextData_;
+    [[maybe_unused]] std::string webSocketBinaryData_;
+    [[maybe_unused]] std::mutex sockRcvThdMtx_;
+    [[maybe_unused]] std::condition_variable sockRcvThdCon_;
+    [[maybe_unused]] bool sockRcvExit_ = false;
+    [[maybe_unused]] std::atomic_bool isReuseAddr_ = false;
+    [[maybe_unused]] std::shared_ptr<Websocket::UserData> webSocketUserData_;
+
+public:
+    [[maybe_unused]] struct {
+        uint32_t magicNumber = EVENT_MANAGER_MAGIC_NUMBER;
+    } innerMagic_;
+};
+
 struct EventManagerWrapper {
-    EventManager eventManager;
+    EventManagerForHttp eventManager;
     std::shared_ptr<EventManager> sharedManager;
 };
 
