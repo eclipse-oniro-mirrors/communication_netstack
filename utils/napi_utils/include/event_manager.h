@@ -155,7 +155,6 @@ private:
     [[maybe_unused]] std::list<EventListener> listeners_;
     [[maybe_unused]] void *data_ = nullptr;
     [[maybe_unused]] std::queue<void *> dataQueue_;
-    [[maybe_unused]] static EventManagerMagic magic_;
     [[maybe_unused]] static std::mutex mutexForManager_;
     [[maybe_unused]] static std::unordered_set<EventManager *> validManager_;
     [[maybe_unused]] napi_ref eventRef_ = nullptr;
