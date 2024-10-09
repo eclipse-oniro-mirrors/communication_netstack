@@ -83,6 +83,9 @@ HttpErrorCode HttpClientError::GetErrorCode() const
 
 void HttpClientError::SetCURLResult(CURLcode result)
 {
+    if (result != CURLE_OK) {
+        NETSTACK_LOGE("HttpClient CURLcode result %{public}d", result);
+    }
     HttpErrorCode err = HTTP_UNKNOWN_OTHER_ERROR;
     if (result > CURLE_OK) {
         if (HTTP_ERR_MAP.find(result + HTTP_ERROR_CODE_BASE) != HTTP_ERR_MAP.end()) {
@@ -91,8 +94,6 @@ void HttpClientError::SetCURLResult(CURLcode result)
     } else {
         err = HTTP_NONE_ERR;
     }
-
-    NETSTACK_LOGE("CURLResult: result=%d, err=%d", result, err);
     SetErrorCode(err);
 }
 } // namespace HttpClient
