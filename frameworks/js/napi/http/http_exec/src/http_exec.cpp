@@ -1265,7 +1265,7 @@ static void ResponseHeaderCallback(uv_work_t *work, int status)
 {
     (void)status;
 
-    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
+    auto workWrapper = static_cast<UvWorkWrapperShared *>(work->data);
     napi_env env = workWrapper->env;
     auto headerMap = static_cast<std::map<std::string, std::string> *>(workWrapper->data);
     auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
@@ -1316,9 +1316,11 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
         context->response.ParseHeaders();
         if (context->GetSharedManager()) {
             auto headerMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
-            context->GetSharedManager()->EmitByUvWithoutCheck(ON_HEADER_RECEIVE, headerMap, ResponseHeaderCallback);
+            context->GetSharedManager()->EmitByUvWithoutCheckShared(ON_HEADER_RECEIVE, headerMap, 
+                                                                    ResponseHeaderCallback);
             auto headersMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
-            context->GetSharedManager()->EmitByUvWithoutCheck(ON_HEADERS_RECEIVE, headersMap, ResponseHeaderCallback);
+            context->GetSharedManager()->EmitByUvWithoutCheckShared(ON_HEADERS_RECEIVE, headersMap, 
+                                                                    ResponseHeaderCallback);
         }
     }
     context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
