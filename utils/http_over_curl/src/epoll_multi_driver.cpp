@@ -158,7 +158,11 @@ int EpollMultiDriver::MultiSocketCallback(curl_socket_t socket, int action, Curl
         case CURL_POLL_OUT:
         case CURL_POLL_INOUT:
             if (!socketContext) {
-                curl_multi_assign(multi_, socket, new CurlSocketContext(poller_, socket, action));
+                auto curlSocket = new (std::nothrow) CurlSocketContext(poller_, socket, action);
+                if (curlSocket == nullptr) {
+                    return -1;
+                }
+                curl_multi_assign(multi_, socket, curlSocket);
             } else {
                 socketContext->Reassign(socket, action);
             }
