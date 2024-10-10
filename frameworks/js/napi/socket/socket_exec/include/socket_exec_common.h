@@ -16,7 +16,7 @@
 #ifndef SOCKET_EXEC_COMMON_H
 #define SOCKET_EXEC_COMMON_H
 
-
+#include <cerrno>
 #include <fcntl.h>
 #include <unistd.h>
 
