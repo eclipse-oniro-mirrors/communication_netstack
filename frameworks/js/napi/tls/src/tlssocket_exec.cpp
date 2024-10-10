@@ -131,10 +131,12 @@ bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
 
 bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
 {
-    if (context) {
-        context->connectOptions_.address_.SetRawAddress(ConvertAddressToIp(
-            context->connectOptions_.address_.GetAddress(), context->connectOptions_.address_.GetSaFamily()));
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
     }
+    context->connectOptions_.address_.SetRawAddress(ConvertAddressToIp(
+        context->connectOptions_.address_.GetAddress(), context->connectOptions_.address_.GetSaFamily()));
     auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
