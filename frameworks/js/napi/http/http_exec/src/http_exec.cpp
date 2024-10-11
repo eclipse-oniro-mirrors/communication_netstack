@@ -1316,10 +1316,10 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
         context->response.ParseHeaders();
         if (context->GetSharedManager()) {
             auto headerMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
-            context->GetSharedManager()->EmitByUvWithoutCheckShared(ON_HEADER_RECEIVE, headerMap, 
+            context->GetSharedManager()->EmitByUvWithoutCheckShared(ON_HEADER_RECEIVE, headerMap,
                                                                     ResponseHeaderCallback);
             auto headersMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
-            context->GetSharedManager()->EmitByUvWithoutCheckShared(ON_HEADERS_RECEIVE, headersMap, 
+            context->GetSharedManager()->EmitByUvWithoutCheckShared(ON_HEADERS_RECEIVE, headersMap,
                                                                     ResponseHeaderCallback);
         }
     }
