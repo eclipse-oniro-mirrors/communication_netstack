@@ -1355,11 +1355,11 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
         void *pTmpAddr = malloc(sizeof(addr4));
         auto pAddr4 = reinterpret_cast<sockaddr *>(pTmpAddr);
         if (pAddr4 == nullptr) {
-            NETSTACK_LOGE("no memory!");
             return false;
         }
         addr4.sin_addr.s_addr = htonl(INADDR_ANY);
         if (bind(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&addr4), sizeof(addr4)) < 0) {
+            free(pTmpAddr);
             ERROR_RETURN(context, "v4bind err, port:%{public}d, errno:%{public}d", context->address_.GetPort(), errno);
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
@@ -1371,11 +1371,11 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
         void *pTmpAddr = malloc(sizeof(addr6));
         auto pAddr6 = reinterpret_cast<sockaddr *>(pTmpAddr);
         if (pAddr6 == nullptr) {
-            NETSTACK_LOGE("no memory!");
             return false;
         }
         addr6.sin6_addr = in6addr_any;
         if (bind(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&addr6), sizeof(addr6)) < 0) {
+            free(pTmpAddr);
             ERROR_RETURN(context, "v6bind err, port:%{public}d, errno:%{public}d", context->address_.GetPort(), errno);
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
