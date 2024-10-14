@@ -51,8 +51,8 @@ public:
     };
 
 private:
-    void ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket, EventManager *manager);
-    void ParserEventForOff(const std::string event, TlsSocket::TLSSocket *tlsSocket);
+    void ParserEventForOn(const std::string event, const std::shared_ptr<TLSSocket> &tlsSocket, EventManager *manager);
+    void ParserEventForOff(const std::string event, const std::shared_ptr<TLSSocket> &tlsSocket);
 };
 } // namespace TlsSocket
 } // namespace NetStack
