@@ -420,12 +420,10 @@ bool TLSSocketExec::ExecGetRemoteAddress(TLSGetRemoteAddressContext *context)
 bool TLSSocketExec::ExecGetLocalAddress(TLSGetLocalAddressContext *context)
 {
     if (context == nullptr) {
-        NETSTACK_LOGE("context is nullptr");
         return false;
     }
     auto manager = context->GetManager();
     if (manager == nullptr) {
-        NETSTACK_LOGE("manager is nullptr");
         context->SetNeedThrowException(true);
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
                           TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
@@ -433,14 +431,12 @@ bool TLSSocketExec::ExecGetLocalAddress(TLSGetLocalAddressContext *context)
     }
     auto tlsSocket = reinterpret_cast<std::shared_ptr<TLSSocket> *>(manager->GetData());
     if (tlsSocket == nullptr) {
-        NETSTACK_LOGE("get local address tlsSocketServer is null");
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
                           TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
         return false;
     }
     auto shared = *tlsSocket;
     if (!shared) {
-        NETSTACK_LOGE("get local address tlsSocketServer is null");
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
                           TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
         return false;
