@@ -32,7 +32,6 @@ public:
 
 public:
     void ParseParams(napi_value *params, size_t paramsCount) override;
-    [[nodiscard]] int GetSocketFd() const;
 
 public:
     Socket::TCPExtraOptions options_;

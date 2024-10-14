@@ -193,7 +193,8 @@ Monitor::Monitor() {}
 
 Monitor::~Monitor() {}
 
-void Monitor::ParserEventForOn(const std::string event, TlsSocket::TLSSocket *tlsSocket, EventManager *manager)
+void Monitor::ParserEventForOn(const std::string event, const std::shared_ptr<TLSSocket> &tlsSocket,
+                               EventManager *manager)
 {
     if (event == EVENT_MESSAGE) {
         tlsSocket->OnMessage([this, manager](auto data, auto remoteInfo) {
@@ -255,7 +256,7 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
         NETSTACK_LOGE("manager is nullptr");
         return NapiUtils::GetUndefined(env);
     }
-    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
+    auto tlsSocket = reinterpret_cast<std::shared_ptr<TLSSocket> *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("tlsSocket is null");
         return NapiUtils::GetUndefined(env);
@@ -267,11 +268,15 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
     manager->AddListener(env, event, params[1], false, false);
-    ParserEventForOn(event, tlsSocket, manager);
+    auto shared = *tlsSocket;
+    if (!shared) {
+        return NapiUtils::GetUndefined(env);
+    }
+    ParserEventForOn(event, shared, manager);
     return NapiUtils::GetUndefined(env);
 }
 
-void Monitor::ParserEventForOff(const std::string event, TLSSocket *tlsSocket)
+void Monitor::ParserEventForOff(const std::string event, const std::shared_ptr<TLSSocket> &tlsSocket)
 {
     if (event == EVENT_MESSAGE) {
         tlsSocket->OffMessage();
@@ -311,15 +316,19 @@ napi_value Monitor::Off(napi_env env, napi_callback_info info)
         NETSTACK_LOGE("manager is nullptr");
         return NapiUtils::GetUndefined(env);
     }
-    auto tlsSocket = reinterpret_cast<TLSSocket *>(manager->GetData());
+    auto tlsSocket = reinterpret_cast<std::shared_ptr<TLSSocket> *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("tlsSocket is null");
         return NapiUtils::GetUndefined(env);
     }
 
+    auto shared = *tlsSocket;
+    if (!shared) {
+        return NapiUtils::GetUndefined(env);
+    }
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
     manager->DeleteListener(event);
-    ParserEventForOff(event, tlsSocket);
+    ParserEventForOff(event, shared);
     return NapiUtils::GetUndefined(env);
 }
 } // namespace TlsSocket
