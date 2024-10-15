@@ -212,9 +212,6 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {
         auto context = static_cast<RequestContext *>(opaqueData);
         HttpExec::HandleCurlData(curlMessage, context);
-        if (curlMessage->easy_handle) {
-            (void)curl_easy_cleanup(curlMessage->easy_handle);
-        }
     };
 
     requestHandler.Process(handle, startedCallback, responseCallback, context);
@@ -456,6 +453,9 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
     FinishAsyncTrace(HITRACE_TAG_NET, context->GetTraceName(), context->GetTaskId());
 #endif
     context->SendNetworkProfiler();
+    if (handle) {
+        (void)curl_easy_cleanup(handle);
+    }
     if (context->IsRequestInStream()) {
         NapiUtils::CreateUvQueueWorkByModuleId(
             context->GetEnv(), std::bind(AsyncWorkRequestInStreamCallback, context->GetEnv(), napi_ok, context),
