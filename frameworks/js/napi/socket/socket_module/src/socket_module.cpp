@@ -419,6 +419,7 @@ static bool MakeLocalServerSocket(napi_env env, napi_value thisVal, LocalSocketS
         close(sock);
         close(pManager->epollFd_);
 #endif
+        delete pManager;
         return false;
     }
     context->SetExecOK(true);
