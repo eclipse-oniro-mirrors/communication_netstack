@@ -110,6 +110,7 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
 
     EventManager *manager = new (std::nothrow) EventManager();
     if (manager == nullptr) {
+        delete data;
         return result;
     }
     manager->SetData(reinterpret_cast<void *>(data));
@@ -143,10 +144,8 @@ napi_value ConstructLocalSocketConnection(napi_env env, napi_callback_info info,
     std::copy(properties.begin(), properties.end(), descriptors);
 
     napi_value jsConstructor = nullptr;
-    NAPI_CALL_BASE(env,
-                   napi_define_class(env, LOCAL_SOCKET_CONNECTION, NAPI_AUTO_LENGTH, constructor, nullptr,
-                                     properties.size(), descriptors, &jsConstructor),
-                   NapiUtils::GetUndefined(env));
+    napi_define_class(env, LOCAL_SOCKET_CONNECTION, NAPI_AUTO_LENGTH, constructor, nullptr, properties.size(),
+                      descriptors, &jsConstructor);
 
     if (jsConstructor != nullptr) {
         napi_value result = NewInstanceWithConstructor(env, info, jsConstructor, data);
@@ -154,6 +153,7 @@ napi_value ConstructLocalSocketConnection(napi_env env, napi_callback_info info,
                                     data->clientId_);
         return result;
     }
+    delete data;
     return NapiUtils::GetUndefined(env);
 }
 
