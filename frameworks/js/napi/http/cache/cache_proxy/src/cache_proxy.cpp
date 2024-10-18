@@ -28,7 +28,7 @@
 #include "netstack_log.h"
 #include "request_context.h"
 
-static constexpr const char *CACHE_FILE = "/data/storage/el2/base/cache/cache.json";
+static constexpr const char *CACHE_FILE = "/data/storage/el2/Database/cache/cache.json";
 static constexpr int32_t WRITE_INTERVAL = 60;
 
 namespace OHOS::NetStack::Http {
