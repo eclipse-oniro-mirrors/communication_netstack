@@ -299,6 +299,7 @@ bool TLSSocketServer::Send(const TLSServerSendOptions &data, const TlsSocket::Se
     auto res = connect->Send(info);
     if (!res) {
         int resErr = ConvertSSLError(connect->GetSSL());
+        NETSTACK_LOGE("send error is %{public}d %{public}d", resErr, errno);
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         CallSendCallback(resErr, callback);
         return false;
@@ -331,7 +332,7 @@ void TLSSocketServer::Close(const int socketFd, const TlsSocket::CloseCallback &
                 auto res = it->second->Close();
                 if (!res) {
                     int resErr = ConvertSSLError(it->second->GetSSL());
-                    NETSTACK_LOGE("close error is %{public}s %{public}d", MakeSSLErrorString(resErr).c_str(), resErr);
+                    NETSTACK_LOGE("close error is %{public}d %{public}d", resErr, errno);
                     CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
                     callback(resErr);
                     return;
@@ -501,7 +502,7 @@ void TLSSocketServer::GetRemoteCertificate(const int socketFd, const TlsSocket::
     const auto &remoteCert = connect->GetRemoteCertRawData();
     if (!remoteCert.data.Length()) {
         int resErr = ConvertSSLError(connect->GetSSL());
-        NETSTACK_LOGE("GetRemoteCertificate errno %{public}d, %{public}s", resErr, MakeSSLErrorString(resErr).c_str());
+        NETSTACK_LOGE("GetRemoteCertificate error is %{public}d %{public}d", resErr, errno);
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(resErr, {});
         return;
@@ -530,8 +531,8 @@ void TLSSocketServer::GetCipherSuite(const int socketFd, const TlsSocket::GetCip
     auto connect = connect_iterator->second;
     auto cipherSuite = connect->GetCipherSuite();
     if (cipherSuite.empty()) {
-        NETSTACK_LOGE("GetCipherSuite errno %{public}d", errno);
         int resErr = ConvertSSLError(connect->GetSSL());
+        NETSTACK_LOGE("GetCipherSuite error is %{public}d %{public}d", resErr, errno);
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(resErr, cipherSuite);
         return;
@@ -552,8 +553,8 @@ void TLSSocketServer::GetSignatureAlgorithms(const int socketFd,
     auto connect = connect_iterator->second;
     auto signatureAlgorithms = connect->GetSignatureAlgorithms();
     if (signatureAlgorithms.empty()) {
-        NETSTACK_LOGE("GetCipherSuite errno %{public}d", errno);
         int resErr = ConvertSSLError(connect->GetSSL());
+        NETSTACK_LOGE("GetSignatureAlgorithms error is %{public}d %{public}d", resErr, errno);
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(resErr, signatureAlgorithms);
         return;
@@ -796,8 +797,7 @@ bool TLSSocketServer::Connection::Send(const std::string &data)
     int len = SSL_write(ssl_, data.c_str(), data.length());
     if (len < 0) {
         int resErr = ConvertSSLError(GetSSL());
-        NETSTACK_LOGE("data send failed!The error code is %{public}d, The error message is'%{public}s'",
-                      resErr, MakeSSLErrorString(resErr).c_str());
+        NETSTACK_LOGE("data send failed! error is %{public}d %{public}d", resErr, errno);
         return false;
     }
     NETSTACK_LOGD("data Sent successfully,sent in total %{public}d bytes!", len);
@@ -822,8 +822,7 @@ bool TLSSocketServer::Connection::Close()
     int result = SSL_shutdown(ssl_);
     if (result < 0) {
         int resErr = ConvertSSLError(GetSSL());
-        NETSTACK_LOGE("Error in shutdown, errno is %{public}d, error info is %{public}s", resErr,
-                      MakeSSLErrorString(resErr).c_str());
+        NETSTACK_LOGE("Error in shutdown, error is %{public}d %{public}d", resErr, errno);
     }
     SSL_free(ssl_);
     ssl_ = nullptr;
@@ -864,8 +863,7 @@ bool TLSSocketServer::Connection::SetAlpnProtocols(const std::vector<std::string
     NETSTACK_LOGD("alpnProtocols after splicing %{public}s", result.get());
     if (SSL_set_alpn_protos(ssl_, result.get(), pos)) {
         int resErr = ConvertSSLError(GetSSL());
-        NETSTACK_LOGE("Failed to set negotiable protocol list, errno is %{public}d, error info is %{public}s", resErr,
-                      MakeSSLErrorString(resErr).c_str());
+        NETSTACK_LOGE("Failed to set negotiable protocol list, error is %{public}d %{public}d", resErr, errno);
         return false;
     }
     return true;
@@ -1421,6 +1419,7 @@ void TLSSocketServer::SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectO
     auto res = connection->TlsAcceptToHost(connectFD, tlsListenOptions);
     if (!res) {
         int resErr = ConvertSSLError(connection->GetSSL());
+        NETSTACK_LOGE("setTlsConnectionSecureOptions error is %{public}d %{public}d", resErr, errno);
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         return;
     }

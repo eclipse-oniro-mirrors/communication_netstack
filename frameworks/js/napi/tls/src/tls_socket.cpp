@@ -738,6 +738,7 @@ void TLSSocket::Connect(OHOS::NetStack::TlsSocket::TLSConnectOptions &tlsConnect
     auto res = tlsSocketInternal_.TlsConnectToHost(sockFd_, tlsConnectOptions, isExtSock_);
     if (!res) {
         int resErr = tlsSocketInternal_.ConvertSSLError();
+        NETSTACK_LOGE("connect error is %{public}d %{public}d", resErr, errno);
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(resErr);
         return;
@@ -761,6 +762,7 @@ void TLSSocket::Send(const OHOS::NetStack::Socket::TCPSendOptions &tcpSendOption
     auto res = tlsSocketInternal_.Send(tcpSendOptions.GetData());
     if (!res) {
         int resErr = tlsSocketInternal_.ConvertSSLError();
+        NETSTACK_LOGE("send error is %{public}d %{public}d", resErr, errno);
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         CallSendCallback(resErr, callback);
         return;
@@ -1007,6 +1009,7 @@ void TLSSocket::GetProtocol(const GetProtocolCallback &callback)
     if (protocol.empty()) {
         NETSTACK_LOGE("GetProtocol errno %{public}d", errno);
         int resErr = tlsSocketInternal_.ConvertSSLError();
+        NETSTACK_LOGE("getProtocol error is %{public}d %{public}d", resErr, errno);
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(resErr, "");
         return;
@@ -1018,8 +1021,8 @@ void TLSSocket::GetCipherSuite(const GetCipherSuiteCallback &callback)
 {
     const auto &cipherSuite = tlsSocketInternal_.GetCipherSuite();
     if (cipherSuite.empty()) {
-        NETSTACK_LOGE("GetCipherSuite errno %{public}d", errno);
         int resErr = tlsSocketInternal_.ConvertSSLError();
+        NETSTACK_LOGE("getCipherSuite error is %{public}d %{public}d", resErr, errno);
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(resErr, cipherSuite);
         return;
@@ -1031,8 +1034,8 @@ void TLSSocket::GetSignatureAlgorithms(const GetSignatureAlgorithmsCallback &cal
 {
     const auto &signatureAlgorithms = tlsSocketInternal_.GetSignatureAlgorithms();
     if (signatureAlgorithms.empty()) {
-        NETSTACK_LOGE("GetSignatureAlgorithms errno %{public}d", errno);
         int resErr = tlsSocketInternal_.ConvertSSLError();
+        NETSTACK_LOGE("getSignatureAlgorithms error is %{public}d %{public}d", resErr, errno);
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         callback(resErr, {});
         return;
@@ -1223,6 +1226,7 @@ bool TLSSocket::TLSSocketInternal::SendRetry(ssl_st *ssl, const char *curPos, si
         int len = SSL_write(ssl, curPos, curSendSize);
         if (len < 0) {
             int err = SSL_get_error(ssl, SSL_RET_CODE);
+            NETSTACK_LOGE("Error in PollSend, errno is %{public}d %{public}d", err, errno);
             if (err == SSL_ERROR_WANT_WRITE || errno == EAGAIN) {
                 NETSTACK_LOGI("write retry times: %{public}d err: %{public}d errno: %{public}d", i, err, errno);
                 continue;
@@ -1267,6 +1271,7 @@ bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, ssl_st *ssl, const char 
         int len = SSL_write(ssl, curPos, curSendSize);
         if (len < 0) {
             int err = SSL_get_error(ssl, SSL_RET_CODE);
+            NETSTACK_LOGE("Error in PollSend, errno is %{public}d %{public}d", err, errno);
             if (err != SSL_ERROR_WANT_WRITE || errno != EAGAIN) {
                 NETSTACK_LOGE("write failed, return, err: %{public}d errno: %{public}d", err, errno);
                 return false;
@@ -1316,7 +1321,7 @@ int TLSSocket::TLSSocketInternal::Recv(char *buffer, int maxBufferSize)
         int err = SSL_get_error(ssl_, SSL_RET_CODE);
         switch (err) {
             case SSL_ERROR_SSL:
-                NETSTACK_LOGE("An error occurred in the SSL library");
+                NETSTACK_LOGE("An error occurred in the SSL library %{public}d %{public}d", err, errno);
                 return SSL_ERROR_RETURN;
             case SSL_ERROR_ZERO_RETURN:
                 NETSTACK_LOGE("peer disconnected...");
@@ -1691,8 +1696,7 @@ bool TLSSocket::TLSSocketInternal::GetRemoteCertificateFromPeer()
     peerX509_ = SSL_get_peer_certificate(ssl_);
     if (peerX509_ == nullptr) {
         int resErr = ConvertSSLError();
-        NETSTACK_LOGE("open fail errno, errno is %{public}d, error info is %{public}s", resErr,
-                      MakeSSLErrorString(resErr).c_str());
+        NETSTACK_LOGE("open fail errno, errno is %{public}d %{public}d", resErr, errno);
         return false;
     }
     BIO *bio = BIO_new(BIO_s_mem());
