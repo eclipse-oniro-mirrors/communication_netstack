@@ -1972,8 +1972,9 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
         int32_t connectFD = accept(sock, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddrLength);
         if (connectFD < 0) {
             if (errno != EINTR) {
-                NETSTACK_LOGE("accept fail, sock: %{public}d, connectFD: %{public}d, errno: %{public}d", sock,
+                NETSTACK_LOGE("accept fail, close sock: %{public}d, connectFD: %{public}d, errno: %{public}d", sock,
                               connectFD, errno);
+                close(sock);
                 break;
             }
             NETSTACK_LOGI("accept fail, sock: %{public}d, connectFD: %{public}d, errno: %{public}d", sock, connectFD,

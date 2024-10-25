@@ -147,8 +147,8 @@ void FinalizeTcpSocketServer(napi_env, void *data, void *)
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
         if (sock != 0) {
             SocketExec::SingletonSocketConfig::GetInstance().RemoveServerSocket(sock);
-            NETSTACK_LOGI("tcp socket server close: %{public}d", sock);
-            close(sock);
+            NETSTACK_LOGI("tcp socket server shutdown: %{public}d", sock);
+            shutdown(sock, SHUT_RDWR);
             manager->SetData(reinterpret_cast<void *>(-1));
         }
         EventManager::SetInvalid(manager);
