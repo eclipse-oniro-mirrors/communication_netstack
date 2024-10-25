@@ -142,10 +142,10 @@ static napi_value MakeClose(napi_env env, void *data)
 
 void TcpServerConnectionFinalize(napi_env, void *data, void *)
 {
-    NETSTACK_LOGI("socket handle is finalized");
+    NETSTACK_LOGI("socket server connection handle is finalized");
     auto manager = static_cast<EventManager *>(data);
     if (manager != nullptr) {
-        NETSTACK_LOGI("manager != nullpt");
+        NETSTACK_LOGI("manager is not nullptr");
         int clientIndex = -1;
         std::lock_guard<std::mutex> lock(g_mutex);
         for (auto it = g_clientEventManagers.begin(); it != g_clientEventManagers.end(); ++it) {
@@ -158,7 +158,7 @@ void TcpServerConnectionFinalize(napi_env, void *data, void *)
         auto clientIter = g_clientFDs.find(clientIndex);
         if (clientIter != g_clientFDs.end()) {
             if (clientIter->second != -1) {
-                NETSTACK_LOGI("close socketfd %{public}d", clientIter->second);
+                NETSTACK_LOGI("close connection socketFd %{public}d", clientIter->second);
                 shutdown(clientIter->second, SHUT_RDWR);
                 clientIter->second = -1;
             }
@@ -724,7 +724,7 @@ static bool IsValidSock(int &currentFd, const MessageCallback &callback)
     if (EventManager::IsManagerValid(manager)) {
         currentFd = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
         if (currentFd <= 0) {
-            NETSTACK_LOGE("currentfd is error");
+            NETSTACK_LOGE("currentFd: %{public}d is error", currentFd);
             return false;
         }
     } else {
@@ -1785,12 +1785,12 @@ bool ExecTcpConnectionClose(TcpServerCloseContext *context)
         if (iter != g_clientFDs.end()) {
             fdValid = true;
         } else {
-            NETSTACK_LOGE("not find clientId");
+            NETSTACK_LOGE("not find clientId: %{public}d", context->clientId_);
         }
     }
 
     if (!fdValid) {
-        NETSTACK_LOGE("client fd is invalid");
+        NETSTACK_LOGE("client fd: %{public}d is invalid", context->clientId_);
         context->SetError(OTHER_ERROR, "client fd is invalid");
         return false;
     }
@@ -1846,10 +1846,10 @@ static void RemoveClientConnection(int32_t clientId)
     std::lock_guard<std::mutex> lock(g_mutex);
     for (auto it = g_clientFDs.begin(); it != g_clientFDs.end(); ++it) {
         if (it->first == clientId) {
-            NETSTACK_LOGI("remove clientfd and eventmanager clientid: %{public}d clientFd:%{public}d", it->second,
-                          it->first);
+            NETSTACK_LOGI("remove clientfd and eventmanager clientid: %{public}d clientFd:%{public}d", it->first,
+                          it->second);
             if (!IsClientFdClosed(it->second)) {
-                NETSTACK_LOGI("connectFD not close should close");
+                NETSTACK_LOGI("connectFD: %{public}d, not close should close", it->second);
                 shutdown(it->second, SHUT_RDWR);
                 close(it->second);
             }
@@ -1971,6 +1971,13 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
         socklen_t clientAddrLength = sizeof(clientAddress);
         int32_t connectFD = accept(sock, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddrLength);
         if (connectFD < 0) {
+            if (errno != EINTR) {
+                NETSTACK_LOGE("accept fail, sock: %{public}d, connectFD: %{public}d, errno: %{public}d", sock,
+                              connectFD, errno);
+                break;
+            }
+            NETSTACK_LOGI("accept fail, sock: %{public}d, connectFD: %{public}d, errno: %{public}d", sock, connectFD,
+                          errno);
             continue;
         }
         {

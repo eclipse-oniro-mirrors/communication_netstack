@@ -139,6 +139,22 @@ void Finalize(napi_env, void *data, void *)
     }
 }
 
+void FinalizeTcpSocketServer(napi_env, void *data, void *)
+{
+    NETSTACK_LOGI("tcp socket server handle is finalized");
+    auto manager = static_cast<EventManager *>(data);
+    if (manager != nullptr) {
+        int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
+        if (sock != 0) {
+            SocketExec::SingletonSocketConfig::GetInstance().RemoveServerSocket(sock);
+            NETSTACK_LOGI("tcp socket server close: %{public}d", sock);
+            close(sock);
+            manager->SetData(reinterpret_cast<void *>(-1));
+        }
+        EventManager::SetInvalid(manager);
+    }
+}
+
 void FinalizeLocalsocketServer(napi_env, void *data, void *)
 {
     EventManager *manager = reinterpret_cast<EventManager *>(data);
@@ -560,7 +576,7 @@ void SocketModuleExports::DefineLocalSocketServerClass(napi_env env, napi_value 
 
 napi_value SocketModuleExports::ConstructTCPSocketServerInstance(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::NewInstance(env, info, INTERFACE_TCP_SOCKET_SERVER, Finalize);
+    return ModuleTemplate::NewInstance(env, info, INTERFACE_TCP_SOCKET_SERVER, FinalizeTcpSocketServer);
 }
 
 void SocketModuleExports::DefineTCPServerSocketClass(napi_env env, napi_value exports)
