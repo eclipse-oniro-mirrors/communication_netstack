@@ -737,6 +737,34 @@ uint64_t CreateUvHandlerQueue(napi_env env)
             g_handlerQueueMap.erase(id);
         },
         nullptr, nullptr);
+    auto envWrapper = new (std::nothrow) napi_env;
+    if (envWrapper == nullptr) {
+        return newId;
+    }
+    *envWrapper = env;
+    napi_add_env_cleanup_hook(
+        env,
+        [](void *data) {
+            auto envWrapper = reinterpret_cast<napi_env *>(data);
+            if (envWrapper == nullptr) {
+                return;
+            }
+            auto env = *envWrapper;
+            delete envWrapper;
+            if (env == nullptr) {
+                return;
+            }
+            auto queueWrapper = NapiUtils::GetValueFromGlobal(env, HTTP_UV_SYNC_QUEUE_NAME);
+            if (queueWrapper == nullptr) {
+                return;
+            }
+            void *result = nullptr;
+            napi_remove_wrap(env, queueWrapper, &result);
+            auto id = reinterpret_cast<uint64_t>(result);
+            std::lock_guard lock(g_mutex);
+            g_handlerQueueMap.erase(id);
+        },
+        envWrapper);
     return newId;
 }
 
