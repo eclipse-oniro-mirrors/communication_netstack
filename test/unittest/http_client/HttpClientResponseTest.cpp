@@ -179,4 +179,17 @@ HWTEST_F(HttpClientResponseTest, ResponseSetRawHeader001, TestSize.Level1)
     auto header = req.GetHeader();
     EXPECT_EQ(realHead, header);
 }
+
+HWTEST_F(HttpClientResponseTest, GetPerformanceTimingTest001, TestSize.Level1)
+{
+    HttpClientResponse req;
+    PerformanceInfo performanceInfo = req.GetPerformanceTiming();
+    EXPECT_EQ(performanceInfo.dnsTiming, 0);
+    EXPECT_EQ(performanceInfo.connectTiming, 0);
+    EXPECT_EQ(performanceInfo.tlsTiming, 0);
+    EXPECT_EQ(performanceInfo.firstSendTiming, 0);
+    EXPECT_EQ(performanceInfo.firstReceiveTiming, 0);
+    EXPECT_EQ(performanceInfo.totalTiming, 0);
+    EXPECT_EQ(performanceInfo.redirectTiming, 0);
+}
 } // namespace
