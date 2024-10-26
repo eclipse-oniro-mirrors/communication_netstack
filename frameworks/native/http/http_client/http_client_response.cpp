@@ -128,6 +128,11 @@ const std::string &HttpClientResponse::GetResult() const
 {
     return result_;
 }
+
+PerformanceInfo HttpClientResponse::GetPerformanceTiming() const
+{
+    return performanceInfo_;
+}
 } // namespace HttpClient
 } // namespace NetStack
 } // namespace OHOS

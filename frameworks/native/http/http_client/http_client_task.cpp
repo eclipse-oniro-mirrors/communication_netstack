@@ -628,8 +628,12 @@ curl_off_t HttpClientTask::GetSizeFromCurl(CURL *handle) const
     return size;
 }
 
-void HttpClientTask::DumpHttpPerformance() const
+void HttpClientTask::DumpHttpPerformance()
 {
+    if (curlHandle_ == nullptr) {
+        NETSTACK_LOGE("Ignore dumping http performance, curlHandle_ == nullptr");
+        return;
+    }
     auto dnsTime = GetTimingFromCurl(curlHandle_, CURLINFO_NAMELOOKUP_TIME_T);
     auto connectTime = GetTimingFromCurl(curlHandle_, CURLINFO_CONNECT_TIME_T);
     auto tlsTime = GetTimingFromCurl(curlHandle_, CURLINFO_APPCONNECT_TIME_T);
@@ -637,6 +641,14 @@ void HttpClientTask::DumpHttpPerformance() const
     auto firstRecvTime = GetTimingFromCurl(curlHandle_, CURLINFO_STARTTRANSFER_TIME_T);
     auto totalTime = GetTimingFromCurl(curlHandle_, CURLINFO_TOTAL_TIME_T);
     auto redirectTime = GetTimingFromCurl(curlHandle_, CURLINFO_REDIRECT_TIME_T);
+
+    response_.performanceInfo_.dnsTiming = dnsTime;
+    response_.performanceInfo_.connectTiming = connectTime;
+    response_.performanceInfo_.tlsTiming = tlsTime;
+    response_.performanceInfo_.firstSendTiming = firstSendTime;
+    response_.performanceInfo_.firstReceiveTiming = firstRecvTime;
+    response_.performanceInfo_.totalTiming = totalTime;
+    response_.performanceInfo_.redirectTiming = redirectTime;
 
     int64_t responseCode = 0;
     (void)curl_easy_getinfo(curlHandle_,  CURLINFO_RESPONSE_CODE, &responseCode);

@@ -63,6 +63,26 @@ enum ResponseCode {
     VERSION,
 };
 
+/**
+ * Counting the time taken of various stages of HTTP request.
+ */
+struct PerformanceInfo {
+    /** Time taken from startup to DNS resolution completion, in milliseconds. */
+    double dnsTiming;
+    /** Time taken from startup to TCP connection completion, in milliseconds. */
+    double connectTiming;
+    /** Time taken from startup to TLS connection completion, in milliseconds. */
+    double tlsTiming;
+    /** Time taken from startup to start sending the first byte, in milliseconds. */
+    double firstSendTiming;
+    /** Time taken from startup to receiving the first byte, in milliseconds. */
+    double firstReceiveTiming;
+    /** Time taken from startup to the completion of the request, in milliseconds. */
+    double totalTiming;
+    /** Time taken from startup to completion of all redirection steps, in milliseconds. */
+    double redirectTiming;
+};
+
 class HttpClientResponse {
 public:
     /**
@@ -159,6 +179,12 @@ public:
      */
     [[nodiscard]] const std::string &GetResult() const;
 
+    /**
+     * Get the time taken of various stages of HTTP request.
+     * @return The performance info including the time taken of various stages of HTTP request.
+     */
+    [[nodiscard]] PerformanceInfo GetPerformanceTiming() const;
+
 private:
     friend class HttpClientTask;
 
@@ -184,6 +210,7 @@ private:
     std::string responseTime_;
     std::string requestTime_;
     std::string result_;
+    PerformanceInfo performanceInfo_;
 };
 } // namespace HttpClient
 } // namespace NetStack

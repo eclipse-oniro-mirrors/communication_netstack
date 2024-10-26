@@ -328,7 +328,7 @@ private:
     /**
      * dump http informations from curl
      */
-    void DumpHttpPerformance() const;
+    void DumpHttpPerformance();
 
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onSucceeded_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onCanceled_;
