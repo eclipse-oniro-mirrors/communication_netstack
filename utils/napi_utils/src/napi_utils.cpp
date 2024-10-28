@@ -685,6 +685,7 @@ void CreateUvQueueWorkEnhanced(napi_env env, void *data, void (*handler)(napi_en
 
     auto work = new (std::nothrow) uv_work_t;
     if (work == nullptr) {
+        delete workData;
         return;
     }
     work->data = reinterpret_cast<void *>(workData);
