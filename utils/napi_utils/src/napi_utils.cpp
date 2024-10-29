@@ -618,7 +618,11 @@ void CreateUvQueueWork(napi_env env, void *data, void(handler)(uv_work_t *, int 
         NETSTACK_LOGE("the env is invalid");
         return;
     }
-    NAPI_CALL_RETURN_VOID(env, napi_get_uv_event_loop(env, &loop));
+    napi_get_uv_event_loop(env, &loop);
+    if (!loop) {
+        NETSTACK_LOGE("napi get uv event loop is null");
+        return;
+    }
 
     auto work = new uv_work_t;
     work->data = data;
@@ -676,9 +680,10 @@ void CreateUvQueueWorkEnhanced(napi_env env, void *data, void (*handler)(napi_en
         NETSTACK_LOGE("the env is invalid");
         return;
     }
-    NAPI_CALL_RETURN_VOID(env, napi_get_uv_event_loop(env, &loop));
+    napi_get_uv_event_loop(env, &loop);
 
     if (loop == nullptr) {
+        NETSTACK_LOGE("napi get uv event loop is nullptr");
         return;
     }
 
