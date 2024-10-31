@@ -153,9 +153,13 @@ CURLcode HttpClientTask::SslCtxFunction(CURL *curl, void *sslCtx)
         return CURLE_SSL_CERTPROBLEM;
     }
     std::vector<std::string> certs;
-    certs.emplace_back(HttpConstant::USER_CERT_ROOT_PATH);
-    certs.emplace_back(
-        HttpConstant::USER_CERT_BASE_PATH + std::to_string(getuid() / HttpConstant::UID_TRANSFORM_DIVISOR));
+    if (NetManagerStandard::NetConnClient::GetInstance().TrustUser0Ca()) {
+        certs.emplace_back(HttpConstant::USER_CERT_ROOT_PATH);
+    }
+    if (NetManagerStandard::NetConnClient::GetInstance().TrustUserCa()) {
+        certs.emplace_back(HttpConstant::USER_CERT_BASE_PATH +
+                           std::to_string(getuid() / HttpConstant::UID_TRANSFORM_DIVISOR));
+    }
     certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
 
     for (const auto &path : certs) {

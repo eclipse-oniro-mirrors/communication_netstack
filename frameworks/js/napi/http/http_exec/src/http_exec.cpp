@@ -974,8 +974,12 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     }
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
     // add user cert path
-    certs.emplace_back(USER_CERT_ROOT_PATH);
-    certs.emplace_back(BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR));
+    if (NetManagerStandard::NetConnClient::GetInstance().TrustUser0Ca()) {
+        certs.emplace_back(USER_CERT_ROOT_PATH);
+    }
+    if (NetManagerStandard::NetConnClient::GetInstance().TrustUserCa()) {
+        certs.emplace_back(BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR));
+    }
     // add system cert path
     certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
     context->SetCertsPath(std::move(certs), context->options.GetCaPath());
