@@ -148,9 +148,10 @@ napi_value ConstructLocalSocketConnection(napi_env env, napi_callback_info info,
                       descriptors, &jsConstructor);
 
     if (jsConstructor != nullptr) {
+        auto clientId = data->clientId_;
         napi_value result = NewInstanceWithConstructor(env, info, jsConstructor, data);
         NapiUtils::SetInt32Property(env, result, SocketModuleExports::LocalSocketConnection::PROPERTY_CLIENT_ID,
-                                    data->clientId_);
+                                    clientId);
         return result;
     }
     delete data;
