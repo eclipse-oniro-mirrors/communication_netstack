@@ -197,7 +197,7 @@ CertContext::~CertContext()
 {
     if (certBlob_ != nullptr) {
         if (certBlob_->data != nullptr) {
-            delete certBlob_->data;
+            delete[] certBlob_->data;
             certBlob_->data = nullptr;
         }
         delete certBlob_;
@@ -206,7 +206,7 @@ CertContext::~CertContext()
 
     if (certBlobClient_ != nullptr) {
         if (certBlobClient_->data != nullptr) {
-            delete certBlobClient_->data;
+            delete[] certBlobClient_->data;
             certBlobClient_->data = nullptr;
         }
         delete certBlobClient_;
