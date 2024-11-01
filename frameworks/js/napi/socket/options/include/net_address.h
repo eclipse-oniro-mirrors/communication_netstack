@@ -58,6 +58,8 @@ public:
     NetAddress &operator=(const NetAddress &other);
 
 private:
+    void SetIpAddressInner(const std::string &address);
+
     std::string address_;
 
     Family family_;
