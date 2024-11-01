@@ -145,7 +145,7 @@ void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::str
     }
 }
 
-[[maybe_unused]] void TrustUser0AndUserCa(std::vectorstd::string &certs)
+[[maybe_unused]] void TrustUser0AndUserCa(std::vector<std::string> &certs)
 {
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
     if (NetManagerStandard::NetConnClient::GetInstance().TrustUser0Ca()) {

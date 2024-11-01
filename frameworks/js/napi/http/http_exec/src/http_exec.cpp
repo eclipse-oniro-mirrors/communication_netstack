@@ -960,7 +960,7 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *ssl_ctx, void *request_conte
     return CURLE_OK;
 }
 
-[[maybe_unused]] void TrustUser0AndUserCa(std::vectorstd::string &certs)
+[[maybe_unused]] void TrustUser0AndUserCa(std::vector<std::string> &certs)
 {
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
     if (NetManagerStandard::NetConnClient::GetInstance().TrustUser0Ca()) {
