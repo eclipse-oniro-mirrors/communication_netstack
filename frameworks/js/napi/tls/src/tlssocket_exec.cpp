@@ -374,6 +374,7 @@ bool TLSSocketExec::ExecBind(TLSBindContext *context)
     }
     auto shared = std::make_shared<TLSSocket>();
     if (!shared) {
+        delete tlsSocket;
         return false;
     }
     *tlsSocket = shared;

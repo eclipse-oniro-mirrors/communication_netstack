@@ -375,6 +375,7 @@ static bool MakeLocalSocketBind(napi_env env, napi_value thisVal, LocalSocketBin
         return false;
     }
     if (!SetSocketManager(env, thisVal, context, pManager)) {
+        delete pManager;
         return false;
     }
     context->SetExecOK(true);
@@ -399,6 +400,7 @@ static bool MakeLocalSocketConnect(napi_env env, napi_value thisVal, LocalSocket
         return false;
     }
     if (!SetSocketManager(env, thisVal, context, pManager)) {
+        delete pManager;
         return false;
     }
     context->SetExecOK(true);
