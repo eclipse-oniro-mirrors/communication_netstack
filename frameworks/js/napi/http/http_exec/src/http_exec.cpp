@@ -960,6 +960,18 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *ssl_ctx, void *request_conte
     return CURLE_OK;
 }
 
+[[maybe_unused]] void TrustUser0AndUserCa(std::vector<std::string> &certs)
+{
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+    if (NetManagerStandard::NetConnClient::GetInstance().TrustUser0Ca()) {
+        certs.emplace_back(USER_CERT_ROOT_PATH);
+    }
+    if (NetManagerStandard::NetConnClient::GetInstance().TrustUserCa()) {
+        certs.emplace_back(BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR));
+    }
+#endif
+}
+
 bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context)
 {
 #ifndef NO_SSL_CERTIFICATION
@@ -974,12 +986,7 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     }
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
     // add user cert path
-    if (NetManagerStandard::NetConnClient::GetInstance().TrustUser0Ca()) {
-        certs.emplace_back(USER_CERT_ROOT_PATH);
-    }
-    if (NetManagerStandard::NetConnClient::GetInstance().TrustUserCa()) {
-        certs.emplace_back(BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR));
-    }
+    TrustUser0AndUserCa(certs);
     // add system cert path
     certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
     context->SetCertsPath(std::move(certs), context->options.GetCaPath());
