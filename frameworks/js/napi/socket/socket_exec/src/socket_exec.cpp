@@ -531,6 +531,9 @@ static int ConfirmSocketTimeoutMs(int sock, int type, int defaultValue)
     socklen_t optlen = sizeof(timeout);
     if (getsockopt(sock, SOL_SOCKET, type, reinterpret_cast<void *>(&timeout), &optlen) < 0) {
         NETSTACK_LOGE("get timeout failed, type: %{public}d, sock: %{public}d, errno: %{public}d", type, sock, errno);
+        if (errno == ENOTSOCK && type == SO_RCVTIMEO) {
+            return -1;
+        }
         return defaultValue;
     }
     auto socketTimeoutMs = timeout.tv_sec * UNIT_CONVERSION_1000 + timeout.tv_usec / UNIT_CONVERSION_1000;
@@ -561,6 +564,9 @@ static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr
     fds[0].events = 0;
     fds[0].events |= POLLOUT;
     int sendTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_SNDTIMEO, DEFAULT_TIMEOUT_MS);
+    if (sendTimeoutMs < 0) {
+        return false;
+    }
     while (leftSize > 0) {
         if (!PollFd(fds, num, sendTimeoutMs)) {
             if (errno != EINTR) {
@@ -703,6 +709,9 @@ static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &call
     }
     if (!IsTCPSocket(sock) && errno != EBADF) {
         NETSTACK_LOGI("not tcpsocket, continue loop, recvLen: %{public}zd, err: %{public}d", recvLen, errno);
+        if (errno == ENOTSOCK) {
+            return -1;
+        }
         return 0;
     }
     if (errno == 0 && recvLen == 0) {
@@ -771,6 +780,9 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
 
     int recvTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT);
+    if (recvTimeoutMs < 0) {
+        return;
+    }
     while (true) {
         int currentFd = -1;
         if (!IsValidSock(currentFd, callback)) {
