@@ -81,6 +81,16 @@ struct PerformanceInfo {
     double totalTiming;
     /** Time taken from startup to completion of all redirection steps, in milliseconds. */
     double redirectTiming;
+
+    PerformanceInfo()
+        : dnsTiming(0.0),
+          connectTiming(0.0),
+          tlsTiming(0.0),
+          firstSendTiming(0.0),
+          firstReceiveTiming(0.0),
+          totalTiming(0.0),
+          redirectTiming(0.0)
+    {}
 };
 
 class HttpClientResponse {
