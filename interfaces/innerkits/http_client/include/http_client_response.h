@@ -68,29 +68,19 @@ enum ResponseCode {
  */
 struct PerformanceInfo {
     /** Time taken from startup to DNS resolution completion, in milliseconds. */
-    double dnsTiming;
+    double dnsTiming = 0.0;
     /** Time taken from startup to TCP connection completion, in milliseconds. */
-    double connectTiming;
+    double connectTiming = 0.0;
     /** Time taken from startup to TLS connection completion, in milliseconds. */
-    double tlsTiming;
+    double tlsTiming = 0.0;
     /** Time taken from startup to start sending the first byte, in milliseconds. */
-    double firstSendTiming;
+    double firstSendTiming = 0.0;
     /** Time taken from startup to receiving the first byte, in milliseconds. */
-    double firstReceiveTiming;
+    double firstReceiveTiming = 0.0;
     /** Time taken from startup to the completion of the request, in milliseconds. */
-    double totalTiming;
+    double totalTiming = 0.0;
     /** Time taken from startup to completion of all redirection steps, in milliseconds. */
-    double redirectTiming;
-
-    PerformanceInfo()
-        : dnsTiming(0.0),
-          connectTiming(0.0),
-          tlsTiming(0.0),
-          firstSendTiming(0.0),
-          firstReceiveTiming(0.0),
-          totalTiming(0.0),
-          redirectTiming(0.0)
-    {}
+    double redirectTiming = 0.0;
 };
 
 class HttpClientResponse {
