@@ -1385,7 +1385,6 @@ bool TLSSocketServer::GetTlsConnectionLocalAddress(int acceptSockFD, Socket::Net
 
 void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsListenOptions, int clientID)
 {
-#if !defined(CROSS_PLATFORM)
     struct sockaddr_in clientAddress;
     socklen_t clientAddrLength = sizeof(clientAddress);
     int connectFD = accept(listenSocketFd_, (struct sockaddr *)&clientAddress, &clientAddrLength);
@@ -1410,7 +1409,6 @@ void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsLi
         connection->SetLocalAddress(localAddress);
     }
     SetTlsConnectionSecureOptions(tlsListenOptions, clientID, connectFD, connection);
-#endif
 }
 void TLSSocketServer::SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectOptions &tlsListenOptions, int clientID,
                                                     int connectFD, std::shared_ptr<Connection> &connection)
