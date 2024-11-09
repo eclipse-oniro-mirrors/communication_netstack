@@ -1801,7 +1801,10 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
         }
 
         auto hostName = options.GetHostName();
-        LoadCachedCaCert(hostName, ssl_);
+        // indicates hostName is not ip address
+        if (hostName != options.GetNetAddress().GetAddress()) {
+            LoadCachedCaCert(hostName, ssl_);
+        }
 
         int result = SSL_connect(ssl_);
         if (result == -1) {
@@ -1815,7 +1818,10 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
             return false;
         }
 
-        CacheCertificates(hostName, ssl_);
+        // indicates hostName is not ip address
+        if (hostName != options.GetNetAddress().GetAddress()) {
+            CacheCertificates(hostName, ssl_);
+        }
 
         std::string list = SSL_get_cipher_list(ssl_, 0);
         NETSTACK_LOGI("cipher_list: %{public}s, Version: %{public}s, Cipher: %{public}s", list.c_str(),
