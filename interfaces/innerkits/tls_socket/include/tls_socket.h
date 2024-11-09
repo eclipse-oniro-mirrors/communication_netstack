@@ -273,12 +273,16 @@ public:
      */
     [[nodiscard]] bool GetSkipRemoteValidation() const;
 
+    void SetHostName(const std::string &hostName);
+    [[nodiscard]] std::string GetHostName() const;
+
 private:
     Socket::NetAddress address_;
     TLSSecureOptions tlsSecureOptions_;
     CheckServerIdentity checkServerIdentity_;
     std::vector<std::string> alpnProtocols_;
     bool skipRemoteValidation_ = false;
+    std::string hostName_;
 };
 
 /**
