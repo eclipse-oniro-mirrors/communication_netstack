@@ -18,10 +18,11 @@
 #include <chrono>
 #include <memory>
 #include <numeric>
+#include <poll.h>
 #include <regex>
 #include <securec.h>
+#include <set>
 #include <thread>
-#include <poll.h>
 
 #include <netinet/tcp.h>
 #include <openssl/err.h>
@@ -30,8 +31,8 @@
 #include "base_context.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
-#include "tls.h"
 #include "socket_exec_common.h"
+#include "tls.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -72,6 +73,40 @@ const std::regex JSON_STRING_PATTERN{R"(/^"(?:[^"\\\u0000-\u001f]|\\(?:["\\/bfnr
 const std::regex PATTERN{
     "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|"
     "2[0-4][0-9]|[01]?[0-9][0-9]?)"};
+
+class CaCertCache {
+public:
+    static CaCertCache &GetInstance()
+    {
+        static CaCertCache instance;
+        return instance;
+    }
+
+    std::set<std::string> Get(const std::string &key)
+    {
+        std::lock_guard l(mutex_);
+        auto it = map_.find(key);
+        if (it != map_.end()) {
+            return it->second;
+        }
+        return {};
+    }
+
+    void Set(const std::string &key, const std::string &val)
+    {
+        std::lock_guard l(mutex_);
+        map_[key].insert(val);
+    }
+
+private:
+    CaCertCache() = default;
+    ~CaCertCache() = default;
+    CaCertCache &operator=(const CaCertCache &) = delete;
+    CaCertCache(const CaCertCache &) = delete;
+
+    std::map<std::string, std::set<std::string>> map_;
+    std::mutex mutex_;
+};
 
 int ConvertErrno()
 {
@@ -346,6 +381,16 @@ bool TLSConnectOptions::GetSkipRemoteValidation() const
     return skipRemoteValidation_;
 }
 
+void TLSConnectOptions::SetHostName(const std::string &hostName)
+{
+    hostName_ = hostName;
+}
+
+std::string TLSConnectOptions::GetHostName() const
+{
+    return hostName_;
+}
+
 std::string TLSSocket::MakeAddressString(sockaddr *addr)
 {
     if (!addr) {
@@ -439,8 +484,8 @@ int TLSSocket::ReadMessage()
             return 0;
         }
         int resErr = tlsSocketInternal_.ConvertSSLError();
-        NETSTACK_LOGE("SSL_read function read error, errno is %{public}d, errno info is %{public}s",
-                      resErr, MakeSSLErrorString(resErr).c_str());
+        NETSTACK_LOGE("SSL_read function read error, errno is %{public}d, errno info is %{public}s", resErr,
+                      MakeSSLErrorString(resErr).c_str());
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         return len;
     } else if (len == 0) {
@@ -1648,6 +1693,104 @@ std::string TLSSocket::TLSSocketInternal::CheckServerIdentityLegal(const std::st
     return HOST_NAME + hostname + ". is cert's CN";
 }
 
+static void LoadCaCertFromMemory(X509_STORE *store, const std::string &pemCerts)
+{
+    if (!store || pemCerts.empty() || pemCerts.size() > static_cast<size_t>(INT_MAX)) {
+        return;
+    }
+
+    auto cbio = BIO_new_mem_buf(pemCerts.data(), static_cast<int>(pemCerts.size()));
+    if (!cbio) {
+        return;
+    }
+
+    auto inf = PEM_X509_INFO_read_bio(cbio, nullptr, nullptr, nullptr);
+    if (!inf) {
+        BIO_free(cbio);
+        return;
+    }
+
+    /* add each entry from PEM file to x509_store */
+    for (int i = 0; i < static_cast<int>(sk_X509_INFO_num(inf)); ++i) {
+        auto itmp = sk_X509_INFO_value(inf, i);
+        if (!itmp) {
+            continue;
+        }
+        if (itmp->x509) {
+            X509_STORE_add_cert(store, itmp->x509);
+        }
+        if (itmp->crl) {
+            X509_STORE_add_crl(store, itmp->crl);
+        }
+    }
+
+    sk_X509_INFO_pop_free(inf, X509_INFO_free);
+    BIO_free(cbio);
+}
+
+static std::string X509_to_PEM(X509 *cert)
+{
+    if (!cert) {
+        return {};
+    }
+    BIO *bio = BIO_new(BIO_s_mem());
+    if (!bio) {
+        return {};
+    }
+    if (!PEM_write_bio_X509(bio, cert)) {
+        BIO_free(bio);
+        return {};
+    }
+
+    char *data = nullptr;
+    auto pemStringLength = BIO_get_mem_data(bio, &data);
+    if (!data) {
+        BIO_free(bio);
+        return {};
+    }
+    std::string certificateInPEM(data, pemStringLength);
+    BIO_free(bio);
+    return certificateInPEM;
+}
+
+static void CacheCertificates(const std::string &hostName, SSL *ssl)
+{
+    if (!ssl || hostName.empty()) {
+        return;
+    }
+    auto certificatesStack = SSL_get_peer_cert_chain(ssl);
+    if (!certificatesStack) {
+        return;
+    }
+    auto numCertificates = sk_X509_num(certificatesStack);
+    for (auto i = 0; i < numCertificates; ++i) {
+        auto cert = sk_X509_value(certificatesStack, i);
+        auto certificateInPEM = X509_to_PEM(cert);
+        if (!certificateInPEM.empty()) {
+            CaCertCache::GetInstance().Set(hostName, certificateInPEM);
+        }
+    }
+}
+
+static void LoadCachedCaCert(const std::string &hostName, SSL *ssl)
+{
+    if (!ssl) {
+        return;
+    }
+    auto cachedPem = CaCertCache::GetInstance().Get(hostName);
+    auto sslCtx = SSL_get_SSL_CTX(ssl);
+    if (!sslCtx) {
+        return;
+    }
+    auto x509Store = SSL_CTX_get_cert_store(sslCtx);
+    if (!x509Store) {
+        return;
+    }
+    for (const auto &pem : cachedPem) {
+        LoadCaCertFromMemory(x509Store, pem);
+    }
+}
+
 bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &options)
 {
     {
@@ -1656,12 +1799,27 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
             NETSTACK_LOGE("ssl is null");
             return false;
         }
+
+        auto hostName = options.GetHostName();
+        // indicates hostName is not ip address
+        if (hostName != options.GetNetAddress().GetAddress()) {
+            LoadCachedCaCert(hostName, ssl_);
+        }
+
         int result = SSL_connect(ssl_);
         if (result == -1) {
+            char err[MAX_ERR_LEN] = {0};
+            auto code = ERR_get_error();
+            ERR_error_string_n(code, err, MAX_ERR_LEN);
             int errorStatus = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
-            NETSTACK_LOGE("SSL connect error, err: %{public}d, error info: %{public}s errno: %{public}d",
-                          errorStatus, MakeSSLErrorString(errorStatus).c_str(), errno);
+            NETSTACK_LOGE("SSLConnect fail %{public}d, error: %{public}s errno: %{public}d ERR_get_error %{public}s",
+                          errorStatus, MakeSSLErrorString(errorStatus).c_str(), errno, err);
             return false;
+        }
+
+        // indicates hostName is not ip address
+        if (hostName != options.GetNetAddress().GetAddress()) {
+            CacheCertificates(hostName, ssl_);
         }
 
         std::string list = SSL_get_cipher_list(ssl_, 0);
