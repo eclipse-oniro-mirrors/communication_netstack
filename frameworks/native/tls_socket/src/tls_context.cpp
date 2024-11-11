@@ -182,7 +182,6 @@ bool TLSContext::SetDefaultCa(TLSContext *tlsContext, const TLSConfiguration &co
             return false;
         }
     }
-#endif // HAS_NETMANAGER_BASE
     if (NetManagerStandard::NetConnClient::GetInstance().TrustUser0Ca() &&
         access(ROOT_CERT_PATH.c_str(), F_OK | R_OK) == 0) {
         NETSTACK_LOGD("root CA certificates folder exist and can read");
@@ -204,6 +203,7 @@ bool TLSContext::SetDefaultCa(TLSContext *tlsContext, const TLSConfiguration &co
     } else {
         NETSTACK_LOGD("user CA certificates folder not exist or can not read");
     }
+#endif // HAS_NETMANAGER_BASE
     if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), SYSTEM_REPLACE_CA_PATH.c_str())) {
         NETSTACK_LOGE("load system replace certificates failed");
         return false;
