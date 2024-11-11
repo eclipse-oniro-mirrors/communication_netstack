@@ -753,7 +753,7 @@ static inline void PollRecvFinish(const MessageCallback &callback)
     }
 }
 
-static void ProcessPollResult(const MessageCallback &callback)
+static void ProcessPollResult(int currentFd, const MessageCallback &callback)
 {
     if (EventManager::IsManagerValid(callback.GetEventManager()) &&
         static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
@@ -791,7 +791,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             if (errno == EINTR) {
                 continue;
             }
-            ProcessPollResult(callback);
+            ProcessPollResult(currentFd, callback);
             break;
         } else if (ret == 0) {
             continue;
