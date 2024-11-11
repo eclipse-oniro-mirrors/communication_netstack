@@ -55,6 +55,15 @@ ohos_unittest("websocket_unittest") {
 
   defines = [ "OHOS_LIBWEBSOCKETS=1" ]
 
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
+
   deps = [
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$THIRD_PARTY_ROOT/libwebsockets:websockets",
