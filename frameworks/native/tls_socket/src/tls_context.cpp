@@ -183,7 +183,8 @@ bool TLSContext::SetDefaultCa(TLSContext *tlsContext, const TLSConfiguration &co
         }
     }
 #endif // HAS_NETMANAGER_BASE
-    if (access(ROOT_CERT_PATH.c_str(), F_OK | R_OK) == 0) {
+    if (NetManagerStandard::NetConnClient::GetInstance().TrustUser0Ca() &&
+        access(ROOT_CERT_PATH.c_str(), F_OK | R_OK) == 0) {
         NETSTACK_LOGD("root CA certificates folder exist and can read");
         if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), ROOT_CERT_PATH.c_str())) {
             NETSTACK_LOGE("load root certificates failed");
@@ -193,7 +194,8 @@ bool TLSContext::SetDefaultCa(TLSContext *tlsContext, const TLSConfiguration &co
         NETSTACK_LOGD("root CA certificates folder not exist or can not read");
     }
     std::string userCertPath = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
-    if (access(userCertPath.c_str(), F_OK | R_OK) == 0) {
+    if (NetManagerStandard::NetConnClient::GetInstance().TrustUserCa() &&
+        access(userCertPath.c_str(), F_OK | R_OK) == 0) {
         NETSTACK_LOGD("user CA certificates folder exist and can read");
         if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), userCertPath.c_str())) {
             NETSTACK_LOGE("load user certificates failed");
