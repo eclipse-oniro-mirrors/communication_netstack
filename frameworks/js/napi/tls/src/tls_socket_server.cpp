@@ -1314,7 +1314,14 @@ void TLSSocketServer::Connection::CallOnMessageCallback(int32_t socketFd, const 
     }
 
     if (CallBackfunc) {
+        while (!dataCache_->IsEmpty()) {
+            CacheInfo cache = dataCache_->Get();
+            CallBackfunc(socketFd, cache.data, cache.remoteInfo);
+        }
         CallBackfunc(socketFd, data, remoteInfo);
+    } else {
+        CacheInfo cache = {data, remoteInfo};
+        dataCache_->Set(cache);
     }
 }
 
