@@ -672,6 +672,8 @@ void HttpClientTask::DumpHttpPerformance()
     */
     int64_t httpVer = CURL_HTTP_VERSION_NONE;
     (void)curl_easy_getinfo(curlHandle_,  CURLINFO_HTTP_VERSION, &httpVer);
+    long osErr = 0;
+    (void)curl_easy_getinfo(curlHandle_,  CURLINFO_OS_ERRNO, &osErr);
 
     curl_off_t size = GetSizeFromCurl(curlHandle_);
     NETSTACK_LOGI(
@@ -687,13 +689,14 @@ void HttpClientTask::DumpHttpPerformance()
         ", errCode:%{public}d"
         ", RespCode:%{public}s"
         ", httpVer:%{public}s"
-        ", method:%{public}s",
+        ", method:%{public}s"
+        ", osErr:%{public}ld",
         taskId_, size, dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
         error_.GetErrorCode(), std::to_string(responseCode).c_str(), std::to_string(httpVer).c_str(),
-        request_.GetMethod().c_str());
+        request_.GetMethod().c_str(), osErr);
 
     if (EventReport::GetInstance().IsValid()) {
         HttpPerfInfo httpPerfInfo;
