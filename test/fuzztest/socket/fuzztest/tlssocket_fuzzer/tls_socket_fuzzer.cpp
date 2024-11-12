@@ -119,7 +119,7 @@ void ConnectFuzzTest(const uint8_t *data, size_t size)
 
 void SendFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr)) {
+    if (data == nullptr) {
         return;
     }
     TLSSocket tlsSocket;
