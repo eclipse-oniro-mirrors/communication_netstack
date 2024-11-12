@@ -713,8 +713,12 @@ bool WebSocketExec::FillCaPath(ConnectContext *context, lws_context_creation_inf
         NETSTACK_LOGD("load customize CA: %{public}s", info.client_ssl_ca_filepath);
     } else {
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
-        context->userCertPath_ = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
-        info.client_ssl_ca_dirs[1] = context->userCertPath_.c_str();
+#ifdef HAS_NETMANAGER_BASE
+        if (NetManagerStandard::NetConnClient::GetInstance().TrustUserCa()) {
+            context->userCertPath_ = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
+            info.client_ssl_ca_dirs[1] = context->userCertPath_.c_str();
+        }
+#endif
         NETSTACK_LOGD("load system CA");
     }
     if (!context->clientCert_.empty()) {
