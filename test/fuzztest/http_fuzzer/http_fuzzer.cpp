@@ -279,7 +279,7 @@ void HttpSessionCreateTaskFuzzTest(const uint8_t *data, size_t size)
 
 void HttpClientTaskGetHttpVersionFuzzTest(const uint8_t *data, size_t size)
 {
-    if ((data == nullptr) || (size < 1)) {
+    if (data == nullptr) {
         return;
     }
 
