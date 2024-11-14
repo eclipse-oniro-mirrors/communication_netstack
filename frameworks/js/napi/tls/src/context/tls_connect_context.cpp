@@ -139,6 +139,7 @@ TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_va
     TLSConnectOptions options;
     Socket::NetAddress address = ReadNetAddress(GetEnv(), params);
     TLSSecureOptions secureOption = ReadTLSSecureOptions(GetEnv(), params);
+    options.SetHostName(address.GetAddress());
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], ALPN_PROTOCOLS)) {
