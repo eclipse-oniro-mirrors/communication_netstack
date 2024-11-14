@@ -780,6 +780,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
                 continue;
             }
             ProcessPollResult(currentFd, callback);
+            break;
         } else if (ret == 0) {
             continue;
         }
