@@ -80,7 +80,7 @@ uint32_t TlvUtils::Serialize(const TlvCommon *tlv, uint32_t tlvCount, uint8_t *b
         return TLV_ERR_INVALID_PARA;
     }
     uint8_t *curr = buff;
-    uint8_t *boundary = buff + maxBuffSize;
+    uint8_t *boundary = buff + maxBuffSize - 1;
 
     uint32_t retCode = TLV_OK;
     for (uint32_t index = 0; index < tlvCount; index++) {
