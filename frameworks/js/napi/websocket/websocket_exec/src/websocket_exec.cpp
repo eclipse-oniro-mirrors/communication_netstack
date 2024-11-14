@@ -403,7 +403,7 @@ int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reas
     free(sendData.data);
     NETSTACK_LOGD("lws send data length is %{public}d", sendLength);
     if (!userData->IsEmpty()) {
-        lws_callback_on_writable(wsi);
+        userData->TriggerWritable();
     }
     return HttpDummy(wsi, reason, user, in, len);
 }
