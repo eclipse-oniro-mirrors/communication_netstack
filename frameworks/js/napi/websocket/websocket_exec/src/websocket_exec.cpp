@@ -403,7 +403,7 @@ int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reas
     free(sendData.data);
     NETSTACK_LOGD("lws send data length is %{public}d", sendLength);
     if (!userData->IsEmpty()) {
-        lws_callback_on_writable(wsi);
+        userData->TriggerWritable();
     }
     return HttpDummy(wsi, reason, user, in, len);
 }
@@ -522,7 +522,7 @@ int WebSocketExec::LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons r
         NETSTACK_LOGE("user data is null");
         return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
-    lws_callback_on_writable(wsi);
+    userData->TriggerWritable();
     userData->SetLws(wsi);
     OnOpen(reinterpret_cast<EventManager *>(user), userData->openStatus, userData->openMessage);
     return HttpDummy(wsi, reason, user, in, len);
