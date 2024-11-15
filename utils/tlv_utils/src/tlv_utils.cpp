@@ -52,11 +52,11 @@ uint8_t *TlvUtils::ParseTlv(const uint8_t *buffer, TlvCommon *tlv, const uint8_t
 
 uint8_t *TlvUtils::AppendTlv(uint8_t *buffer, const TlvCommon *tlv, const uint8_t *boundary, uint32_t *retCode)
 {
-    if (buffer > boundary) {
+    if (buffer >= boundary) {
         *retCode = TLV_ERR_BUFF_NO_ENOUGH;
         return nullptr;
     }
-    if (buffer + (reinterpret_cast<TlvCommon *>(const_cast<uint8_t *>(buffer)))->len_ + TLV_TLV_HEAD_LEN > boundary) {
+    if (buffer + (reinterpret_cast<TlvCommon *>(const_cast<uint8_t *>(buffer)))->len_ + TLV_TLV_HEAD_LEN >= boundary) {
         *retCode = TLV_ERR_BUFF_NO_ENOUGH;
         return nullptr;
     }
