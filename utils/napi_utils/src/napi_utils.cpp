@@ -23,7 +23,7 @@
 #include <memory>
 #include <new>
 #include <string>
-#include <unordered_map>
+#include <map>
 #include <vector>
 
 #include "base_context.h"
@@ -46,7 +46,7 @@ static constexpr const char *CODE = "code";
 static constexpr const char *MSG = "message";
 
 static std::mutex g_mutex;
-static std::unordered_map<uint64_t, std::shared_ptr<UvHandlerQueue>> g_handlerQueueMap;
+static std::map<uint64_t, std::shared_ptr<UvHandlerQueue>> g_handlerQueueMap;
 static const char *const HTTP_UV_SYNC_QUEUE_NAME = "HTTP_UV_SYNC_QUEUE_NAME";
 
 static std::unordered_set<napi_env> unorderedSetEnv;
