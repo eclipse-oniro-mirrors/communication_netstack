@@ -398,7 +398,7 @@ bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURL
 
 double HttpExec::GetTimingFromCurl(CURL *handle, CURLINFO info)
 {
-    time_t timing;
+    curl_off_t timing;
     CURLcode result = curl_easy_getinfo(handle, info, &timing);
     if (result != CURLE_OK) {
         NETSTACK_LOGE("Failed to get timing: %{public}d, %{public}s", info, curl_easy_strerror(result));
