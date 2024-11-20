@@ -471,18 +471,30 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         std::to_string(httpVer).c_str(), context->options.GetMethod().c_str(), osErr);
 #if HAS_NETMANAGER_BASE
     if (EventReport::GetInstance().IsValid()) {
-        HttpPerfInfo httpPerfInfo;
-        httpPerfInfo.totalTime = totalTime;
-        httpPerfInfo.size = size;
+        httpPerfInfo.currentTime = static_cast<int64_t>(time(0));
+        httpPerfInfo.uid = getuid();
+        httpPerfInfo.connectTime = connectTime;
         httpPerfInfo.dnsTime = dnsTime;
         httpPerfInfo.tlsTime = tlsTime == 0 ? 0 : tlsTime - connectTime;
-        httpPerfInfo.tcpTime = connectTime == 0 ? 0 : connectTime - dnsTime;
-        httpPerfInfo.firstRecvTime = firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime;
-        httpPerfInfo.responseCode = responseCode;
-        httpPerfInfo.version = std::to_string(httpVer);
-        EventReport::GetInstance().ProcessHttpPerfHiSysevent(httpPerfInfo);
+        httpPerfInfo.method = context->options.GetMethod();
+        httpPerfInfo.errorCode = context->IsExecOK() ? 0 : context->GetErrorCode();
+        char *ip = nullptr;
+        curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &ip);
+        httpPerfInfo.ipType = (ip != nullptr) ? getIpType(std::string(ip)) : "UN_KNOWN_IP";
+        NETSTACK_LOGI("httpPerfInfo top APP currentTime:%{public}lld, ipType:%{public}s, uid:%{public}d",
+                      httpPerfInfo.currentTime, httpPerfInfo.ipType.c_str(), httpPerfInfo.uid);
+        
+        EventReport::GetInstance().ProcessEvents(httpPerfInfo);
     }
 #endif
+}
+
+std::string HttpExec::getIpType(const std::string &ip)
+{
+    if (ip.empty()) {
+        return "UN_KNOWN_IP";
+    }
+    return ip.find(':') != std::string::npos ? "IPv6" : "IPv4";
 }
 
 #if HAS_NETMANAGER_BASE

@@ -46,8 +46,21 @@ struct HttpPerfInfo {
     curl_off_t size;
     int64_t responseCode;
     std::string version;
+    int64_t currentTime;
+    uint32_t uid;
+    std::string packageName;
+    std::string method;
+    std::string ipType;
+    int32_t errorCode;
+    double connectTime;
 public:
     bool IsSuccess() const;
+    bool IsError() const;
+};
+ 
+struct NetStackEventInfo {
+    uint32_t totalCount;
+    uint32_t totalErrorCount;
 };
 
 class EventReport {
@@ -56,6 +69,7 @@ public:
     void SendHttpPerfEvent(const EventInfo &eventInfo);
     static EventReport &GetInstance();
     bool IsValid();
+    void ProcessEvents(HttpPerfInfo &httpPerfInfo);
 
 private:
     EventReport();
@@ -66,14 +80,30 @@ private:
     void ResetCounters();
     std::string GetPackageName();
     std::string MapToJsonString(const std::map<std::string, uint32_t> mapPara);
+    void SendHttpNetStackEvent(std::deque<HttpPerfInfo>& netStackInfoQueue);
+    void HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo);
+    void HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo);
+    void ResetNetStackCounters();
+    std::string HttpNetStackInfoToJson(const HttpPerfInfo &info);
 
 private:
     time_t reportTime = 0;
+    time_t reportTime_ = 0;
     std::string packageName_;
     EventInfo eventInfo;
     std::map<std::string, uint32_t> versionMap;
     bool validFlag = true;
     std::recursive_mutex mutex;
+    EventInfo eventInfo_;
+    NetStackEventInfo netStackEventInfo_;
+    std::map<std::string, uint32_t> versionMap_;
+    std::deque<HttpPerfInfo> netStackInfoQue_;
+    const unsigned int maxQueueSize_ = 10;
+    const unsigned int errorCountThreshold_ = 10;
+    bool validFlag_ = true;
+    bool httpPerfEventSwitch_ = true;
+    bool netStackEventSwitch_ = true;
+    std::recursive_mutex mutex_;
 };
 }
 #endif

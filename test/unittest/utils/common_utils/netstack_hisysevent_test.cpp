@@ -59,7 +59,7 @@ HWTEST_F(NetStackHiSysEventTest, IsSuccess_ShouldReturnFalse_WhenResponseCodeIsG
 
 HWTEST_F(NetStackHiSysEventTest, IsValid_ShouldReturnTrue_WhenValidFlagIsTrue, TestSize.Level0)
 {
-    EventReport::GetInstance().validFlag = true;
+    EventReport::GetInstance().validFlag_ = true;
     ASSERT_EQ(EventReport::GetInstance().IsValid(), true);
 }
 

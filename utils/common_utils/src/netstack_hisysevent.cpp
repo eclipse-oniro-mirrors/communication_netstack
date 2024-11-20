@@ -14,6 +14,8 @@
  */
 
 #include <sstream>
+#include <iostream>
+#include <iomanip>
 
 #include "hisysevent.h"
 #include "netstack_log.h"
@@ -25,8 +27,10 @@ namespace OHOS::NetStack {
 namespace {
 using HiSysEvent = OHOS::HiviewDFX::HiSysEvent;
 const uint32_t REPORT_INTERVAL = 3 * 60;
+const uint32_t REPORT_NET_STACK_INTERVAL = 60;
 // event_name
 constexpr const char *HTTP_PERF_ENAME = "HTTP_PERF";
+constexpr const char *NET_STACK_HTTP_FAULT = "NET_STACK_HTTP_FAULT";
 // event params
 constexpr const char *PACKAGE_NAME_EPARA = "PACKAGE_NAME";
 constexpr const char *TOTAL_TIME_EPARA = "TOTAL_TIME";
@@ -38,8 +42,17 @@ constexpr const char *TOTAL_DNS_TIME_EPARA = "TOTAL_DNS_TIME";
 constexpr const char *TOTAL_TLS_TIME_EPARA = "TOTAL_TLS_TIME";
 constexpr const char *TOTAL_TCP_TIME_EPARA = "TOTAL_TCP_TIME";
 constexpr const char *TOTAL_FIRST_RECVIVE_TIME_EPARA = "TOTAL_FIRST_RECEIVE_TIME";
+constexpr const char *HTTP_NET_STACK_FAULT_QUEUE = "NET_STACK_FAULT_QUEUE";
 const int64_t VALIAD_RESP_CODE_START = 200;
 const int64_t VALIAD_RESP_CODE_END = 399;
+const int64_t ERROR_HTTP_CODE_START = 400;
+const int64_t ERROR_HTTP_CODE_START = 600;
+const int64_t HTTP_SUCCEED_CODE = 0;
+const int64_t REPORT_HIVIEW_INTERVAL = 10 * 60;
+const int64_t HTTP_APP_UID_THRESHOLD = 20000;
+const int64_t HTTP_SEND_CHR_THRESHOLD = 5;
+const unsigned int MAX_QUEUE_SIZE = 10;
+const unsigned int ERROR_COUNT_THRESHOLD = 10;
 }
 
 bool HttpPerfInfo::IsSuccess() const
@@ -47,9 +60,20 @@ bool HttpPerfInfo::IsSuccess() const
     return responseCode >= VALIAD_RESP_CODE_START && responseCode <= VALIAD_RESP_CODE_END;
 }
 
+bool HttpPerfInfo::IsError() const
+{
+    return (responseCode >= ERROR_HTTP_CODE_START && responseCode < ERROR_HTTP_CODE_END)
+            || errorCode != HTTP_SUCCEED_CODE;
+}
+
 EventReport::EventReport()
 {
     InitPackageName();
+    reportHiviewInterval_ = GEtParameterInt("const.telephony.netstack.interval", REPORT_HIVIEW_INTERVAL);
+    errorCountThreshold_ = GEtParameterInt("const.telephony.netstack.interval", ERROR_COUNT_THRESHOLD);
+    maxQueueSize_ = GEtParameterInt("const.telephony.netstack.interval", MAX_QUEUE_SIZE);
+    httpPerfEventSwitch_ = GEtParameterInt("const.telephony.netstack.interval", REPORT_HIVIEW_INTERVAL);
+    netStackEventSwitch_ = GEtParameterInt("const.telephony.netstack.interval", REPORT_HIVIEW_INTERVAL);
 }
 
 void EventReport::InitPackageName()
@@ -57,7 +81,7 @@ void EventReport::InitPackageName()
     if (CommonUtils::GetBundleName().has_value()) {
         packageName_ = CommonUtils::GetBundleName().value();
     } else {
-        validFlag = false;
+        validFlag_ = false;
     }
     // init eventInfo
     ResetCounters();
@@ -65,7 +89,7 @@ void EventReport::InitPackageName()
 
 bool EventReport::IsValid()
 {
-    return validFlag;
+    return validFlag_;
 }
 
 EventReport &EventReport::GetInstance()
@@ -74,35 +98,18 @@ EventReport &EventReport::GetInstance()
     return instance;
 }
 
-void EventReport::ProcessHttpPerfHiSysevent(const HttpPerfInfo &httpPerfInfo)
+void EventReport::ProcessEvents(HttpPerfInfo &httpPerfInfo)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    time_t currentTime = time(0);
+    if (reportTime_ == 0) {
+        reportTime_ = time(0);
+    }
 
-    if (reportTime == 0) {
-        reportTime = currentTime;
+    if (httpPerfInfo.uid > HTTP_APP_UID_THRESHOLD && netStackEventSwitch_) {
+        HandleHttpNetStackEvents(httpPerfInfo);
     }
-    eventInfo.totalCount += 1;
-    if (httpPerfInfo.IsSuccess() && httpPerfInfo.totalTime != 0) {
-        eventInfo.successCount += 1;
-        eventInfo.totalTime += httpPerfInfo.totalTime;
-        eventInfo.totalRate += httpPerfInfo.size / httpPerfInfo.totalTime;
-        eventInfo.totalDnsTime += httpPerfInfo.dnsTime;
-        eventInfo.totalTlsTime += httpPerfInfo.tlsTime;
-        eventInfo.totalFirstRecvTime += httpPerfInfo.firstRecvTime;
-        eventInfo.totalTcpTime += httpPerfInfo.tcpTime;
-        auto result = versionMap.emplace(httpPerfInfo.version, 1);
-        if (!result.second) {
-            ++(result.first->second);
-        }
-    }
-    if (currentTime - reportTime >= REPORT_INTERVAL) {
-        eventInfo.packageName = packageName_;
-        eventInfo.version = MapToJsonString(versionMap);
-        NETSTACK_LOGD("Sending HTTP_PERF event");
-        SendHttpPerfEvent(eventInfo);
-        ResetCounters();
-        reportTime = currentTime;
+    if (httpPerfEventSwitch_) {
+        HandleHttpPerfEvents(httpPerfInfo);
     }
 }
 
