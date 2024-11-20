@@ -279,7 +279,7 @@ void HttpSessionCreateTaskFuzzTest(const uint8_t *data, size_t size)
 
 void HttpClientTaskGetHttpVersionFuzzTest(const uint8_t *data, size_t size)
 {
-    if (data == nullptr) {
+    if ((data == nullptr) || (size < 1)) {
         return;
     }
 
@@ -309,6 +309,10 @@ void HttpClientTaskGetHttpVersionFuzzTest(const uint8_t *data, size_t size)
     request.SetRequestTime(testData);
     result = request.GetRequestTime();
     task->GetHttpVersion(ptcl);
+
+    request = CreateHttpClientRequest(data, size);
+    task = HttpSession::GetInstance().CreateTask(request);
+    task->SetOtherCurlOption(task->curlHandle_);
 }
 
 void HttpClientTaskSetHttpProtocolFuzzTest(const uint8_t *data, size_t size)
