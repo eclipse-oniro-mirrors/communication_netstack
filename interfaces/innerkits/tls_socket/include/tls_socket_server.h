@@ -46,6 +46,10 @@ namespace OHOS {
 namespace NetStack {
 namespace TlsSocketServer {
 constexpr int USER_LIMIT = 10;
+struct CacheInfo {
+    std::string data;
+    Socket::SocketRemoteInfo remoteInfo;
+};
 using OnMessageCallback =
     std::function<void(const int &socketFd, const std::string &data, const Socket::SocketRemoteInfo &remoteInfo)>;
 using OnCloseCallback = std::function<void(const int &socketFd)>;
@@ -400,6 +404,31 @@ public:
 
         void CallOnErrorCallback(int32_t err, const std::string &errString);
 
+        class DataCache {
+        public:
+            CacheInfo Get()
+            {
+                std::lock_guard l(mutex_);
+                CacheInfo cache = cacheDeque_.front();
+                cacheDeque_.pop_front();
+                return cache;
+            }
+            void Set(const CacheInfo &data)
+            {
+                std::lock_guard l(mutex_);
+                cacheDeque_.emplace_back(data);
+            }
+            bool IsEmpty()
+            {
+                std::lock_guard l(mutex_);
+                return cacheDeque_.empty();
+            }
+
+        private:
+            std::deque<CacheInfo> cacheDeque_;
+            std::mutex mutex_;
+        };
+
         TlsSocket::OnErrorCallback onErrorCallback_;
 
     private:
@@ -433,6 +462,7 @@ public:
         std::shared_ptr<EventManager> eventManager_ = nullptr;
         int32_t clientID_ = 0;
         OnMessageCallback onMessageCallback_;
+        std::shared_ptr<DataCache> dataCache_ = std::make_shared<DataCache>();
     };
 
 private:
