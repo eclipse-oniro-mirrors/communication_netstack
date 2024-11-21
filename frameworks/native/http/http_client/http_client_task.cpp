@@ -706,7 +706,7 @@ void HttpClientTask::DumpHttpPerformance()
         ", httpVer:%{public}s"
         ", method:%{public}s"
         ", osErr:%{public}ld"
-        "currentTime:%{public}s, ipType:%{public}s, uid:%{public}d",
+        ", currentTime:%{public}s, ipType:%{public}s, uid:%{public}d",
         taskId_, size, dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
