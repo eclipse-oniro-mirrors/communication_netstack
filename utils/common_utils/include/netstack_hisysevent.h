@@ -59,11 +59,6 @@ public:
     bool IsSuccess() const;
     bool IsError() const;
 };
- 
-struct NetStackEventInfo {
-    uint32_t totalCount;
-    uint32_t totalErrorCount;
-};
 
 class EventReport {
 public:
