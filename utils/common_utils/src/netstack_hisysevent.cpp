@@ -72,9 +72,9 @@ bool HttpPerfInfo::IsError() const
 EventReport::EventReport()
 {
     InitPackageName();
-    reportHiviewInterval_ = GetParameterInt("const.telephony.netstack.interval", REPORT_HIVIEW_INTERVAL);
-    errorCountThreshold_ = GetParameterInt("const.telephony.netstack.errorCount",	ERROR_COUNT_THRESHOLD);
-    maxQueueSize_ = GetParameterInt("const.telephony.netstack.queueSize",	MAX_QUEUE_SIZE);
+    reportHiviewInterval_ = GetIntParameter("const.telephony.netstack.interval", REPORT_HIVIEW_INTERVAL);
+    errorCountThreshold_ = GetIntParameter("const.telephony.netstack.errorCount",	ERROR_COUNT_THRESHOLD);
+    maxQueueSize_ = GetIntParameter("const.telephony.netstack.queueSize",	MAX_QUEUE_SIZE);
     httpPerfEventsSwitch_ = IsParameterTrue("const.telephony.netstack.perfEventsSwitch", "true");
     netStackEventsSwitch_ = IsParameterTrue("const.telephony.netstack.netStackEventsSwitch", "true");
 }
