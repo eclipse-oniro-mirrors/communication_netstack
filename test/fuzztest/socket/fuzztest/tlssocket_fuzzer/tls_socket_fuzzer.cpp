@@ -119,9 +119,12 @@ void ConnectFuzzTest(const uint8_t *data, size_t size)
 
 void SendFuzzTest(const uint8_t *data, size_t size)
 {
-    if (data == nullptr) {
+    if ((data == nullptr) || (size == 0)) {
         return;
     }
+    g_baseFuzzData = data;
+    g_baseFuzzSize = size;
+    g_baseFuzzPos = 0;
     TLSSocket tlsSocket;
     Socket::TCPSendOptions options;
     std::string str = GetStringFromData(STR_LEN);
