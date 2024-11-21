@@ -238,6 +238,11 @@ std::string EventReport::HttpNetStackInfoToJson(const HttpPerfInfo &info)
  
 void EventReport::SendHttpNetStackEvent(std::deque<HttpPerfInfo> &netStackInfoQue_)
 {
+    if (firstReportHttpTime_ == 0) {
+        firstReportHttpTime_ = time(0);
+        sendHttpNetStackEventCount_ = 0;
+    }
+
     std::vector<std::string> eventQueue;
     for (const auto &info : netStackInfoQue_) {
         eventQueue.push_back(HttpNetStackInfoToJson(info));
@@ -248,9 +253,7 @@ void EventReport::SendHttpNetStackEvent(std::deque<HttpPerfInfo> &netStackInfoQu
     if (ret != 0) {
         NETSTACK_LOGE("Send EventReport::SendHttpNetStackEvent HTTP_REQUEST_ERROR_QUEUE event failed");
     }
-    firstReportHttpTime_ = time(0);
     sendHttpNetStackEventCount_++;
-    netStackInfoQue_.clear();
 }
 
 bool EventReport::IsParameterTrue(const char* key, const std::string &defValue)
