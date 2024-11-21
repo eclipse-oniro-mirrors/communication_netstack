@@ -674,29 +674,7 @@ void HttpClientTask::DumpHttpPerformance()
     (void)curl_easy_getinfo(curlHandle_,  CURLINFO_HTTP_VERSION, &httpVer);
     long osErr = 0;
     (void)curl_easy_getinfo(curlHandle_,  CURLINFO_OS_ERRNO, &osErr);
-
     curl_off_t size = GetSizeFromCurl(curlHandle_);
-    NETSTACK_LOGI(
-        "taskid=%{public}d"
-        ", size:%{public}" CURL_FORMAT_CURL_OFF_T
-        ", dns:%{public}.3f"
-        ", connect:%{public}.3f"
-        ", tls:%{public}.3f"
-        ", firstSend:%{public}.3f"
-        ", firstRecv:%{public}.3f"
-        ", total:%{public}.3f"
-        ", redirect:%{public}.3f"
-        ", errCode:%{public}d"
-        ", RespCode:%{public}s"
-        ", httpVer:%{public}s"
-        ", method:%{public}s"
-        ", osErr:%{public}ld",
-        taskId_, size, dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
-        tlsTime == 0 ? 0 : tlsTime - connectTime,
-        firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
-        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
-        error_.GetErrorCode(), std::to_string(responseCode).c_str(), std::to_string(httpVer).c_str(),
-        request_.GetMethod().c_str(), osErr);
 
     if (EventReport::GetInstance().IsValid()) {
         HttpPerfInfo httpPerfInfo;
@@ -708,8 +686,45 @@ void HttpClientTask::DumpHttpPerformance()
         httpPerfInfo.firstRecvTime = firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime;
         httpPerfInfo.responseCode = responseCode;
         httpPerfInfo.version = std::to_string(httpVer);
+ 
+        httpPerfInfo.currentTime = time(0);
+        httpPerfInfo.uid = getuid();
+        httpPerfInfo.connectTime = connectTime;
+        httpPerfInfo.dnsTime = dnsTime;
+        httpPerfInfo.tlsTime = tlsTime == 0 ? 0 : tlsTime - connectTime;
+        httpPerfInfo.method = request_.GetMethod();
+        httpPerfInfo.errorCode = error_.GetErrorCode();
+        char *ip = nullptr;
+        curl_easy_getinfo(curlHandle_, CURLINFO_PRIMARY_IP, &ip);
+        httpPerfInfo.ipType = (ip != nullptr) ? getIpType(std::string(ip)) : "UN_KNOWN_IP";
+ 
+        NETSTACK_LOGI(
+        "taskid=%{public}d"
+        ", size:%{public}" CURL_FORMAT_CURL_OFF_T
+        ", dns:%{public}.3f"
+        ", RespCode:%{public}s"
+        ", httpVer:%{public}s"
+        ", method:%{public}s"
+        ", osErr:%{public}ld"
+        "currentTime:%{public}s, ipType:%{public}s, uid:%{public}d",
+        taskId_, size, dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
+        tlsTime == 0 ? 0 : tlsTime - connectTime,
+        firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
+        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
+        error_.GetErrorCode(), std::to_string(responseCode).c_str(), std::to_string(httpVer).c_str(),
+        request_.GetMethod().c_str(), osErr, std::to_string(httpPerfInfo.currentTime).c_str(),
+        httpPerfInfo.ipType.c_str(), httpPerfInfo.uid);
+ 
         EventReport::GetInstance().ProcessEvents(httpPerfInfo);
     }
+}
+
+std::string HttpClientTask::getIpType(const std::string &ip)
+{
+    if (ip.empty()) {
+        return "UN_KNOWN_IP";
+    }
+    return ip.find(':') != std::string::npos ? "IPv6" : "IPv4";
 }
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
