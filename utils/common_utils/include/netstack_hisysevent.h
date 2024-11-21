@@ -99,8 +99,8 @@ private:
     unsigned int errorCountThreshold_;
     uint32_t reportHiviewInterval_;
     bool validFlag_ = true;
-    bool httpPerfEventsSwitch_;
-    bool netStackEventsSwitch_;
+    bool httpPerfEventSwitch_;
+    bool netStackEventSwitch_;
     std::recursive_mutex mutex_;
 };
 }
