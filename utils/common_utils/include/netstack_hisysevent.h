@@ -80,10 +80,7 @@ private:
     void HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo);
     void HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo);
     std::string HttpNetStackInfoToJson(const HttpPerfInfo &info);
-    std::string GetParameterString(const char* key, const std::string &defValue = "");
-    int GetParameterInt(const char* key, const int &defValue = INVALID_INT);
     bool IsParameterTrue(const char* key, const std::string &defValue);
-    int32_t StrToInt(const std::string &str, int32_t defaultValue);
 
 private:
     static constexpr const int INVALID_INT = -1;
