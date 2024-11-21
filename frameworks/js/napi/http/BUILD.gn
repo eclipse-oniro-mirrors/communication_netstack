@@ -141,6 +141,7 @@ ohos_shared_library("http") {
       "hiprofiler:libnetwork_profiler",
       "hitrace:hitrace_meter",
       "napi:ace_napi",
+      "samgr:samgr_proxy",
       "time_service:time_client",
     ]
     if (netstack_http_boringssl) {

@@ -51,7 +51,8 @@
                 "openssl",
                 "hiprofiler",
                 "time_service",
-                "ability_runtime"
+                "ability_runtime",
+                "samgr"
             ],
             "third_party": [
                 "libwebsockets",
