@@ -33,7 +33,7 @@ const uint32_t REPORT_NET_STACK_INTERVAL = 60;
 inline const int32_t PROP_SYSPARA_SIZE = 128;
 // event_name
 constexpr const char *HTTP_PERF_ENAME = "HTTP_PERF";
-constexpr const char *NET_STACK_HTTP_FAULT = "NET_STACK_HTTP_FAULT";
+constexpr const char *HTTP_REQUEST_ERROR = "NET_STACK_HTTP_ERROR";
 // event params
 constexpr const char *PACKAGE_NAME_EPARA = "PACKAGE_NAME";
 constexpr const char *TOTAL_TIME_EPARA = "TOTAL_TIME";
@@ -45,7 +45,7 @@ constexpr const char *TOTAL_DNS_TIME_EPARA = "TOTAL_DNS_TIME";
 constexpr const char *TOTAL_TLS_TIME_EPARA = "TOTAL_TLS_TIME";
 constexpr const char *TOTAL_TCP_TIME_EPARA = "TOTAL_TCP_TIME";
 constexpr const char *TOTAL_FIRST_RECVIVE_TIME_EPARA = "TOTAL_FIRST_RECEIVE_TIME";
-constexpr const char *NET_STACK_HTTP_FAULT_QUEUE = "NET_STACK_FAULT_QUEUE";
+constexpr const char *HTTP_REQUEST_ERROR_QUEUE = "NET_STACK_ERROR_QUEUE";
 const int64_t VALIAD_RESP_CODE_START = 200;
 const int64_t VALIAD_RESP_CODE_END = 399;
 const int64_t ERROR_HTTP_CODE_START = 400;
@@ -147,6 +147,7 @@ void EventReport::HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo)
 {
     if (sendHttpNetStackEventCount_ >= HTTP_SEND_CHR_THRESHOLD &&
         time(0) - firstReportHttpTime_ <= reportHiviewInterval_) {
+        NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event already over.");
         return;
     }
  
@@ -154,6 +155,7 @@ void EventReport::HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo)
         time(0) - firstReportHttpTime_ >= reportHiviewInterval_) {
         sendHttpNetStackEventCount_ = 0;
         firstReportHttpTime_ = 0;
+        NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event reopen.");
     }
     httpPerfInfo.packageName = packageName_;
  
@@ -241,10 +243,10 @@ void EventReport::SendHttpNetStackEvent(std::deque<HttpPerfInfo> &netStackInfoQu
         eventQueue.push_back(HttpNetStackInfoToJson(info));
     }
  
-    int ret = HiSysEventWrite(HiSysEvent::Domain::NETMANAGER_STANDARD, NET_STACK_HTTP_FAULT,
-                              HiSysEvent::EventType::STATISTIC, NET_STACK_HTTP_FAULT_QUEUE, eventQueue);
+    int ret = HiSysEventWrite(HiSysEvent::Domain::NETMANAGER_STANDARD, HTTP_REQUEST_ERROR,
+                              HiSysEvent::EventType::STATISTIC, HTTP_REQUEST_ERROR_QUEUE, eventQueue);
     if (ret != 0) {
-        NETSTACK_LOGE("Send EventReport::SendHttpNetStackEvent NET_STACK_HTTP_FAULT event failed");
+        NETSTACK_LOGE("Send EventReport::SendHttpNetStackEvent HTTP_REQUEST_ERROR_QUEUE event failed");
     }
     firstReportHttpTime_ = time(0);
     sendHttpNetStackEventCount_++;
