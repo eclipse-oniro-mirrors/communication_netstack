@@ -702,6 +702,13 @@ void HttpClientTask::DumpHttpPerformance()
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
         ", dns:%{public}.3f"
+        ", connect:%{public}.3f"
+        ", tls:%{public}.3f"
+        ", firstSend:%{public}.3f"
+        ", firstRecv:%{public}.3f"
+        ", total:%{public}.3f"
+        ", redirect:%{public}.3f"
+        ", errCode:%{public}d"
         ", RespCode:%{public}s"
         ", httpVer:%{public}s"
         ", method:%{public}s"
