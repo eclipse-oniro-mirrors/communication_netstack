@@ -478,7 +478,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         httpPerfInfo.errorCode = context->IsExecOK() ? 0 : context->GetErrorCode();
         char *ip = nullptr;
         curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &ip);
-        httpPerfInfo.ipType = (ip != nullptr) ? getIpType(std::string(ip)) : "UN_KNOWN_IP";
+        httpPerfInfo.ipType = getIpType(std::string(ip));
  
         NETSTACK_LOGI(
         "taskid=%{public}d, size:%{public}" CURL_FORMAT_CURL_OFF_T
