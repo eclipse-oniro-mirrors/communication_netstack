@@ -73,11 +73,11 @@ bool HttpPerfInfo::IsError() const
 EventReport::EventReport()
 {
     InitPackageName();
-    reportHiviewInterval_ = GEtParameterInt("const.telephony.netstack.interval", REPORT_HIVIEW_INTERVAL);
-    errorCountThreshold_ = GEtParameterInt("const.telephony.netstack.interval", ERROR_COUNT_THRESHOLD);
-    maxQueueSize_ = GEtParameterInt("const.telephony.netstack.interval", MAX_QUEUE_SIZE);
-    httpPerfEventSwitch_ = GEtParameterInt("const.telephony.netstack.interval", REPORT_HIVIEW_INTERVAL);
-    netStackEventSwitch_ = GEtParameterInt("const.telephony.netstack.interval", REPORT_HIVIEW_INTERVAL);
+    reportHiviewInterval_ = GetParameterInt("const.telephony.netstack.interval", REPORT_HIVIEW_INTERVAL);
+    errorCountThreshold_ = GetParameterInt("const.telephony.netstack.errorCount",	ERROR_COUNT_THRESHOLD);
+    maxQueueSize_ = GetParameterInt("const.telephony.netstack.queueSize",	MAX_QUEUE_SIZE);
+    httpPerfEventsSwitch_ = IsParameterTrue("const.telephony.netstack.perfEventsSwitch", "true");
+    netStackEventsSwitch_ = IsParameterTrue("const.telephony.netstack.netStackEventsSwitch", "true");
 }
 
 void EventReport::InitPackageName()
@@ -109,10 +109,10 @@ void EventReport::ProcessEvents(HttpPerfInfo &httpPerfInfo)
         reportTime_ = time(0);
     }
 
-    if (httpPerfInfo.uid > HTTP_APP_UID_THRESHOLD && netStackEventSwitch_) {
+    if (httpPerfInfo.uid > HTTP_APP_UID_THRESHOLD && netStackEventsSwitch_) {
         HandleHttpNetStackEvents(httpPerfInfo);
     }
-    if (httpPerfEventSwitch_) {
+    if (httpPerfEventsSwitch_) {
         HandleHttpPerfEvents(httpPerfInfo);
     }
 }
