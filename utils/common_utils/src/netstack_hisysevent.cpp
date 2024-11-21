@@ -31,7 +31,6 @@ using HiSysEvent = OHOS::HiviewDFX::HiSysEvent;
 const uint32_t REPORT_INTERVAL = 3 * 60;
 const uint32_t REPORT_NET_STACK_INTERVAL = 60;
 inline const int32_t PROP_SYSPARA_SIZE = 128;
-constexpr int32_t DECIMAL_BASE = 10;
 // event_name
 constexpr const char *HTTP_PERF_ENAME = "HTTP_PERF";
 constexpr const char *NET_STACK_HTTP_FAULT = "NET_STACK_HTTP_FAULT";
@@ -104,7 +103,7 @@ EventReport &EventReport::GetInstance()
 
 void EventReport::ProcessEvents(HttpPerfInfo &httpPerfInfo)
 {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (reportTime_ == 0) {
         reportTime_ = time(0);
     }
@@ -251,42 +250,11 @@ void EventReport::SendHttpNetStackEvent(std::deque<HttpPerfInfo> &netStackInfoQu
     sendHttpNetStackEventCount_++;
     netStackInfoQue_.clear();
 }
- 
-std::string EventReport::GetParameterString(const char* key, const std::string &defValue)
-{
-    char valueStr[PROP_SYSPARA_SIZE] = { 0 };
-    GetParameter(key, defValue.c_str(), valueStr, PROP_SYSPARA_SIZE);
-    return valueStr;
-}
- 
-int EventReport::GetParameterInt(const char* key, const int &defValue)
-{
-    std::string valueStr = GetParameterString(key);
-    int value = defValue;
-    StrToInt(valueStr, value);
-    return value;
-}
- 
+
 bool EventReport::IsParameterTrue(const char* key, const std::string &defValue)
 {
     char valueStr[PROP_SYSPARA_SIZE] = { 0 };
     GetParameter(key, defValue.c_str(), valueStr, PROP_SYSPARA_SIZE);
     return (strcmp(valueStr, "true") == 0);
-}
- 
-int32_t EventReport::StrToInt(const std::string &str, int32_t defaultValue)
-{
-    char *end = nullptr;
-    const char *ptr = str.c_str();
-    errno = 0;
-    int64_t num = std::strtol(ptr, &end, DECIMAL_BASE);
-    if (errno == ERANGE || end == ptr || *end != '\0') {
-        return defaultValue;
-    }
-    if (num >= std::numeric_limits<int32_t>::min() && num <= std::numeric_limits<int32_t>::max()) {
-        return static_cast<int32_t>(num);
-    } else {
-        return defaultValue;
-    }
 }
 }
