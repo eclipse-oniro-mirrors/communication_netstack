@@ -696,7 +696,7 @@ void HttpClientTask::DumpHttpPerformance()
         httpPerfInfo.errorCode = error_.GetErrorCode();
         char *ip = nullptr;
         curl_easy_getinfo(curlHandle_, CURLINFO_PRIMARY_IP, &ip);
-        httpPerfInfo.ipType = (ip != nullptr) ? getIpType(std::string(ip)) : "UN_KNOWN_IP";
+        httpPerfInfo.ipType = getIpType(std::string(ip));
  
         NETSTACK_LOGI(
         "taskid=%{public}d"
