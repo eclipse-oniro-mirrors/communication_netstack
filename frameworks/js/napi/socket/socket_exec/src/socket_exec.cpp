@@ -744,6 +744,15 @@ static inline void PollRecvFinish(const MessageCallback &callback)
     }
 }
 
+static void ProcessPollResult(int currentFd, const MessageCallback &callback)
+{
+    if (EventManager::IsManagerValid(callback.GetEventManager()) &&
+        static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
+        NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", currentFd, errno);
+        callback.OnError(errno);
+    }
+}
+
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
 {
     int bufferSize = ConfirmBufferSize(sock);
@@ -767,11 +776,10 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         pollfd fds[1] = {{currentFd, POLLIN, 0}};
         int ret = poll(fds, 1, recvTimeoutMs);
         if (ret < 0) {
-            if (EventManager::IsManagerValid(callback.GetEventManager()) && static_cast<int>(
-                reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
-                NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", currentFd, errno);
-                callback.OnError(errno);
+            if (errno == EINTR) {
+                continue;
             }
+            ProcessPollResult(currentFd, callback);
             break;
         } else if (ret == 0) {
             continue;
