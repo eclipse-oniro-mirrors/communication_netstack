@@ -19,8 +19,10 @@
 #include <string>
 #include <map>
 #include <mutex>
+#include <queue>
 
 #include "curl/curl.h"
+#include "parameter.h"
 
 namespace OHOS::NetStack {
 
@@ -65,7 +67,6 @@ struct NetStackEventInfo {
 
 class EventReport {
 public:
-    void ProcessHttpPerfHiSysevent(const HttpPerfInfo &httpPerfInfo);
     void SendHttpPerfEvent(const EventInfo &eventInfo);
     static EventReport &GetInstance();
     bool IsValid();
@@ -83,26 +84,28 @@ private:
     void SendHttpNetStackEvent(std::deque<HttpPerfInfo>& netStackInfoQueue);
     void HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo);
     void HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo);
-    void ResetNetStackCounters();
     std::string HttpNetStackInfoToJson(const HttpPerfInfo &info);
+    std::string GetParameterString(const char* key, const std::string &defValue = "");
+    int GetParameterInt(const char* key, const int &defValue = INVALID_INT);
+    bool IsParameterTrue(const char* key, const std::string &defValue);
+    int32_t StrToInt(const std::string &str, int32_t defaultValue);
 
 private:
-    time_t reportTime = 0;
+    static constexpr const int INVALID_INT = -1;
     time_t reportTime_ = 0;
+    time_t firstReportHttpTime_ = 0;
+    int sendHttpNetStackEventCount_ = 0;
+    unsigned int totalErrorCount_ = 0;
     std::string packageName_;
-    EventInfo eventInfo;
-    std::map<std::string, uint32_t> versionMap;
-    bool validFlag = true;
-    std::recursive_mutex mutex;
     EventInfo eventInfo_;
-    NetStackEventInfo netStackEventInfo_;
     std::map<std::string, uint32_t> versionMap_;
     std::deque<HttpPerfInfo> netStackInfoQue_;
-    const unsigned int maxQueueSize_ = 10;
-    const unsigned int errorCountThreshold_ = 10;
+    unsigned int maxQueueSize_;
+    unsigned int errorCountThreshold_;
+    uint32_t reportHiviewInterval_;
     bool validFlag_ = true;
-    bool httpPerfEventSwitch_ = true;
-    bool netStackEventSwitch_ = true;
+    bool httpPerfEventsSwitch_;
+    bool netStackEventsSwitch_;
     std::recursive_mutex mutex_;
 };
 }
