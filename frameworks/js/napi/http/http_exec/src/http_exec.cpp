@@ -458,16 +458,17 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     (void)curl_easy_getinfo(handle, CURLINFO_HTTP_VERSION, &httpVer);
     curl_off_t size = GetSizeFromCurl(handle, context);
     NETSTACK_LOGI(
-    "taskid=%{public}d, size:%{public}" CURL_FORMAT_CURL_OFF_T
-    ", dns:%{public}.3f, connect:%{public}.3f, tls:%{public}.3f, firstSend:%{public}.3f"
-    ", firstRecv:%{public}.3f, total:%{public}.3f, redirect:%{public}.3f"
-    ", errCode:%{public}d, RespCode:%{public}s, httpVer:%{public}s, method:%{public}s",
-    context->GetTaskId(), size, dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
-    tlsTime == 0 ? 0 : tlsTime - connectTime,
-    firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
-    firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
-    context->IsExecOK() ? 0 : context->GetErrorCode(), std::to_string(responseCode).c_str(),
-    std::to_string(httpVer).c_str(), context->options.GetMethod().c_str());
+        "taskid=%{public}d"
+        ", size:%{public}" CURL_FORMAT_CURL_OFF_T
+        ", dns:%{public}.3f, connect:%{public}.3f, tls:%{public}.3f, firstSend:%{public}.3f"
+        ", firstRecv:%{public}.3f, total:%{public}.3f, redirect:%{public}.3f"
+        ", errCode:%{public}d, RespCode:%{public}s, httpVer:%{public}s, method:%{public}s, osErr:%{public}ld",
+        context->GetTaskId(), size, dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
+        tlsTime == 0 ? 0 : tlsTime - connectTime,
+        firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
+        firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
+        context->IsExecOK() ? 0 : context->GetErrorCode(), std::to_string(responseCode).c_str(),
+        std::to_string(httpVer).c_str(), context->options.GetMethod().c_str(), osErr);
 #if HAS_NETMANAGER_BASE
     if (EventReport::GetInstance().IsValid()) {
         HttpPerfInfo httpPerfInfo;
