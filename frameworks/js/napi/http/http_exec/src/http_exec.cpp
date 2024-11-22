@@ -481,29 +481,44 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         httpPerfInfo.responseCode = responseCode;
         httpPerfInfo.version = std::to_string(httpVer);
  
-        httpPerfInfo.currentTime = time(0);
+        auto now = std::chrono::steady_clock::now();
+        httpPerfInfo.currentTime = std::chrono::duration_cast<std::chrono::milliseconds>
+                                   (now.time_since_epoch()).count();
         httpPerfInfo.uid = getuid();
         httpPerfInfo.connectTime = connectTime;
         httpPerfInfo.dnsTime = dnsTime;
+        httpPerfInfo.osErr = osErr;
         httpPerfInfo.tlsTime = tlsTime == 0 ? 0 : tlsTime - connectTime;
         httpPerfInfo.method = context->options.GetMethod();
-        httpPerfInfo.errorCode = context->IsExecOK() ? 0 : context->GetErrorCode();
+        httpPerfInfo.errCode = context->IsExecOK() ? 0 : context->GetErrorCode();
         char *ip = nullptr;
         curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &ip);
-        httpPerfInfo.ipType = getIpType(std::string(ip));
+
+        std::string ipStr = (ip != nullptr) ? std::string(ip) : "";
+        httpPerfInfo.ipType = DetectIPType(ipStr);
 
         EventReport::GetInstance().ProcessEvents(httpPerfInfo);
     }
 #endif
 }
 
-std::string HttpExec::getIpType(const std::string &ip)
+#if HAS_NETMANAGER_BASE
+std::string HttpClientTask::DetectIPType(const std::string &ip)
 {
     if (ip.empty()) {
         return "UN_KNOWN_IP";
     }
-    return ip.find(':') != std::string::npos ? "IPv6" : "IPv4";
+
+    if (CommonUtils::IsValidIPV4(ip)) {
+        return "IPv4";
+    }
+
+    if (CommonUtils::IsValidIPV6(ip)) {
+        return "IPv6";
+    }
+    return "UN_KNOWN_IP";
 }
+#endif // HAS_NETMANAGER_BASE
 
 #if HAS_NETMANAGER_BASE
 void HttpExec::HandleCurlData(CURLMsg *msg, RequestContext *context)
