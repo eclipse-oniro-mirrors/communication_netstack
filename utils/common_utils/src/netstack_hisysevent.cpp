@@ -53,9 +53,6 @@ const int64_t ERROR_HTTP_CODE_END = 600;
 const int64_t HTTP_SUCCEED_CODE = 0;
 const int64_t HTTP_APP_UID_THRESHOLD = 20000;
 const int64_t HTTP_SEND_CHR_THRESHOLD = 5;
-const unsigned int MAX_QUEUE_SIZE = 10;
-const unsigned int ERROR_COUNT_THRESHOLD = 10;
-const uint32_t REPORT_HIVIEW_INTERVAL = 10 * 60;
 }
 
 bool HttpPerfInfo::IsSuccess() const
@@ -66,15 +63,12 @@ bool HttpPerfInfo::IsSuccess() const
 bool HttpPerfInfo::IsError() const
 {
     return (responseCode >= ERROR_HTTP_CODE_START && responseCode < ERROR_HTTP_CODE_END)
-            || errorCode != HTTP_SUCCEED_CODE;
+            || errCode != HTTP_SUCCEED_CODE;
 }
 
 EventReport::EventReport()
 {
     InitPackageName();
-    reportHiviewInterval_ = GetIntParameter("const.telephony.netstack.interval", REPORT_HIVIEW_INTERVAL);
-    errorCountThreshold_ = GetIntParameter("const.telephony.netstack.errorCount",	ERROR_COUNT_THRESHOLD);
-    maxQueueSize_ = GetIntParameter("const.telephony.netstack.queueSize",	MAX_QUEUE_SIZE);
     httpPerfEventsSwitch_ = IsParameterTrue("const.telephony.netstack.perfEventsSwitch", "true");
     netStackEventsSwitch_ = IsParameterTrue("const.telephony.netstack.netStackEventsSwitch", "true");
 }
@@ -106,7 +100,7 @@ void EventReport::ProcessEvents(HttpPerfInfo &httpPerfInfo)
     std::lock_guard<std::recursive_mutex> lock(mutex_);
 
     if (httpPerfInfo.uid > HTTP_APP_UID_THRESHOLD && netStackEventsSwitch_) {
-        HandleHttpNetStackEvents(httpPerfInfo);
+        HandleHttpResponseErrorEvents(httpPerfInfo);
     }
     if (httpPerfEventsSwitch_) {
         HandleHttpPerfEvents(httpPerfInfo);
@@ -143,7 +137,7 @@ void EventReport::HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo)
     }
 }
 
-void EventReport::HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo)
+void EventReport::HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo)
 {
     time_t currentTime = time(0);
     if (topAppReportTime_ == 0) {
@@ -161,7 +155,7 @@ void EventReport::HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo)
     netStackInfoQue_.push_back(httpPerfInfo);
     if (totalErrorCount_ >= errorCountThreshold_) {
         if (netStackInfoQue_.size() >= maxQueueSize_ || currentTime - topAppReportTime_ >= REPORT_NET_STACK_INTERVAL) {
-            SendHttpNetStackEvent(netStackInfoQue_);
+            SendHttpResponseErrorEvent(netStackInfoQue_);
             totalErrorCount_ = 0;
             netStackInfoQue_.clear();
         }
@@ -215,21 +209,22 @@ std::string EventReport::HttpNetStackInfoToJson(const HttpPerfInfo &info)
 {
     std::stringstream ss;
     ss << "{"
-       << "\"packageName\": " << std::quoted(info.packageName) << ", "
+       << "\"packName\": " << std::quoted(info.packageName) << ", "
        << "\"method\": " << std::quoted(info.method) << ", "
        << "\"ipType\": " << std::quoted(info.ipType) << ", "
-       << "\"responseCode\": " << info.responseCode << ", "
-       << "\"errorCode\": " << info.errorCode << ", "
-       << "\"connectTime\": " << info.connectTime << ", "
+       << "\"respCode\": " << info.responseCode << ", "
+       << "\"errCode\": " << info.errorCode << ", "
+       << "\"osErr\": " << info.osErr<< ", "
        << "\"dnsTime\": " << info.dnsTime << ", "
        << "\"tlsTime\": " << info.tlsTime
        << "}";
     return ss.str();
 }
- 
-void EventReport::SendHttpNetStackEvent(std::deque<HttpPerfInfo> &netStackInfoQue_)
+
+void EventReport::SendHttpResponseErrorEvent(std::deque<HttpPerfInfo> &netStackInfoQue_)
 {
-    time_t currentTime = time(0);
+    auto now = std::chrono::steady_clock::now();
+    double currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
     if (sendHttpNetStackEventCount_ >= HTTP_SEND_CHR_THRESHOLD &&
         currentTime - topAppReportTime_ <= reportHiviewInterval_) {
         NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event already over.");
