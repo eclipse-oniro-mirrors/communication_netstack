@@ -31,7 +31,7 @@
 #ifdef HTTP_CACHE_FILE_PATH_USE_BASE
 static constexpr const char *CACHE_FILE = "/data/storage/el2/base/cache/cache.json";
 #else
-static constexpr const char *CACHE_FILE = "/data/storage/el2/Database/cache/cache.json";
+static constexpr const char *CACHE_FILE = "/data/storage/el2/database/cache.json";
 #endif
 static constexpr int32_t WRITE_INTERVAL = 60;
 
