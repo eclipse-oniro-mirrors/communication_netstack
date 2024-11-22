@@ -104,9 +104,6 @@ EventReport &EventReport::GetInstance()
 void EventReport::ProcessEvents(HttpPerfInfo &httpPerfInfo)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
-    if (reportTime_ == 0) {
-        reportTime_ = time(0);
-    }
 
     if (httpPerfInfo.uid > HTTP_APP_UID_THRESHOLD && netStackEventsSwitch_) {
         HandleHttpNetStackEvents(httpPerfInfo);
@@ -132,6 +129,9 @@ void EventReport::HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo)
             ++(result.first->second);
         }
     }
+    if (reportTime_ == 0) {
+        reportTime_ = time(0);
+    }
     time_t currentTime = time(0);
     if (currentTime - reportTime_ >= REPORT_INTERVAL) {
         eventInfo_.packageName = packageName_;
@@ -146,18 +146,6 @@ void EventReport::HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo)
 void EventReport::HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo)
 {
     time_t currentTime = time(0);
-    if (sendHttpNetStackEventCount_ >= HTTP_SEND_CHR_THRESHOLD &&
-        currentTime - firstReportHttpTime_ <= reportHiviewInterval_) {
-        NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event already over.");
-        return;
-    }
- 
-    if (sendHttpNetStackEventCount_ >= HTTP_SEND_CHR_THRESHOLD &&
-        currentTime - firstReportHttpTime_ >= reportHiviewInterval_) {
-        sendHttpNetStackEventCount_ = 0;
-        firstReportHttpTime_ = 0;
-        NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event reopen.");
-    }
     httpPerfInfo.packageName = packageName_;
  
     if (!httpPerfInfo.IsError()) {
@@ -170,7 +158,7 @@ void EventReport::HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo)
     netStackInfoQue_.push_back(httpPerfInfo);
  
     if (totalErrorCount_ >= errorCountThreshold_) {
-        if (netStackInfoQue_.size() >= maxQueueSize_ || currentTime - reportTime_ >= REPORT_NET_STACK_INTERVAL) {
+        if (netStackInfoQue_.size() >= maxQueueSize_ || currentTime - topAppReportTime_ >= REPORT_NET_STACK_INTERVAL) {
             SendHttpNetStackEvent(netStackInfoQue_);
             totalErrorCount_ = 0;
             netStackInfoQue_.clear();
@@ -239,16 +227,29 @@ std::string EventReport::HttpNetStackInfoToJson(const HttpPerfInfo &info)
  
 void EventReport::SendHttpNetStackEvent(std::deque<HttpPerfInfo> &netStackInfoQue_)
 {
-    if (firstReportHttpTime_ == 0) {
-        firstReportHttpTime_ = time(0);
+    time_t currentTime = time(0);
+    if (topAppReportTime_ == 0) {
+        topAppReportTime_ = currentTime;
+    }
+
+    if (sendHttpNetStackEventCount_ >= HTTP_SEND_CHR_THRESHOLD &&
+        currentTime - topAppReportTime_ <= reportHiviewInterval_) {
+        NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event already over.");
+        return;
+    }
+
+    if (sendHttpNetStackEventCount_ >= HTTP_SEND_CHR_THRESHOLD &&
+        currentTime - topAppReportTime_ >= reportHiviewInterval_) {
         sendHttpNetStackEventCount_ = 0;
+        topAppReportTime_ = currentTime;
+        NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event reopen.");
     }
 
     std::vector<std::string> eventQueue;
     for (const auto &info : netStackInfoQue_) {
         eventQueue.push_back(HttpNetStackInfoToJson(info));
     }
- 
+
     int ret = HiSysEventWrite(HiSysEvent::Domain::NETMANAGER_STANDARD, HTTP_REQUEST_ERROR,
                               HiSysEvent::EventType::STATISTIC, HTTP_REQUEST_ERROR_QUEUE, eventQueue);
     if (ret != 0) {
