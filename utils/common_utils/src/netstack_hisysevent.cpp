@@ -145,14 +145,15 @@ void EventReport::HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo)
 
 void EventReport::HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo)
 {
+    time_t currentTime = time(0);
     if (sendHttpNetStackEventCount_ >= HTTP_SEND_CHR_THRESHOLD &&
-        time(0) - firstReportHttpTime_ <= reportHiviewInterval_) {
+        currentTime - firstReportHttpTime_ <= reportHiviewInterval_) {
         NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event already over.");
         return;
     }
  
     if (sendHttpNetStackEventCount_ >= HTTP_SEND_CHR_THRESHOLD &&
-        time(0) - firstReportHttpTime_ >= reportHiviewInterval_) {
+        currentTime - firstReportHttpTime_ >= reportHiviewInterval_) {
         sendHttpNetStackEventCount_ = 0;
         firstReportHttpTime_ = 0;
         NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event reopen.");
@@ -169,7 +170,7 @@ void EventReport::HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo)
     netStackInfoQue_.push_back(httpPerfInfo);
  
     if (totalErrorCount_ >= errorCountThreshold_) {
-        if (netStackInfoQue_.size() >= maxQueueSize_ || time(0) - reportTime_ >= REPORT_NET_STACK_INTERVAL) {
+        if (netStackInfoQue_.size() >= maxQueueSize_ || currentTime - reportTime_ >= REPORT_NET_STACK_INTERVAL) {
             SendHttpNetStackEvent(netStackInfoQue_);
             totalErrorCount_ = 0;
             netStackInfoQue_.clear();
