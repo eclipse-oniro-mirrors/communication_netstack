@@ -48,12 +48,11 @@ struct HttpPerfInfo {
     curl_off_t size;
     int64_t responseCode;
     std::string version;
-    int64_t currentTime;
     uint32_t uid;
-    std::string packageName;
+    long osErr;
     std::string method;
     std::string ipType;
-    int32_t errorCode;
+    int32_t errCode;
     double connectTime;
 public:
     bool IsSuccess() const;
@@ -76,16 +75,15 @@ private:
     void ResetCounters();
     std::string GetPackageName();
     std::string MapToJsonString(const std::map<std::string, uint32_t> mapPara);
-    void SendHttpNetStackEvent(std::deque<HttpPerfInfo>& netStackInfoQueue);
+    void SendHttpResponseErrorEvent(std::deque<HttpPerfInfo>& netStackInfoQueue);
     void HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo);
-    void HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo);
+    void HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo);
     std::string HttpNetStackInfoToJson(const HttpPerfInfo &info);
     bool IsParameterTrue(const char* key, const std::string &defValue);
 
 private:
-    static constexpr const int INVALID_INT = -1;
     time_t reportTime_ = 0;
-    time_t topAppReportTime_ = 0;
+    double topAppReportTime_ = 0;
     int sendHttpNetStackEventCount_ = 0;
     unsigned int totalErrorCount_ = 0;
     std::string packageName_;
