@@ -85,7 +85,7 @@ private:
 private:
     static constexpr const int INVALID_INT = -1;
     time_t reportTime_ = 0;
-    time_t topAppreportTime_ = 0;
+    time_t topAppReportTime_ = 0;
     int sendHttpNetStackEventCount_ = 0;
     unsigned int totalErrorCount_ = 0;
     std::string packageName_;
