@@ -674,6 +674,7 @@ void HttpClientTask::DumpHttpPerformance()
     (void)curl_easy_getinfo(curlHandle_,  CURLINFO_HTTP_VERSION, &httpVer);
     long osErr = 0;
     (void)curl_easy_getinfo(curlHandle_,  CURLINFO_OS_ERRNO, &osErr);
+
     curl_off_t size = GetSizeFromCurl(curlHandle_);
     NETSTACK_LOGI(
         "taskid=%{public}d"
@@ -696,6 +697,7 @@ void HttpClientTask::DumpHttpPerformance()
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
         error_.GetErrorCode(), std::to_string(responseCode).c_str(), std::to_string(httpVer).c_str(),
         request_.GetMethod().c_str(), osErr);
+
     if (EventReport::GetInstance().IsValid()) {
         HttpPerfInfo httpPerfInfo;
         httpPerfInfo.totalTime = totalTime;
@@ -709,25 +711,33 @@ void HttpClientTask::DumpHttpPerformance()
  
         httpPerfInfo.currentTime = time(0);
         httpPerfInfo.uid = getuid();
-        httpPerfInfo.connectTime = connectTime;
         httpPerfInfo.dnsTime = dnsTime;
         httpPerfInfo.tlsTime = tlsTime == 0 ? 0 : tlsTime - connectTime;
         httpPerfInfo.method = request_.GetMethod();
-        httpPerfInfo.errorCode = error_.GetErrorCode();
+        httpPerfInfo.errCode = error_.GetErrorCode();
         char *ip = nullptr;
         curl_easy_getinfo(curlHandle_, CURLINFO_PRIMARY_IP, &ip);
-        httpPerfInfo.ipType = getIpType(std::string(ip));
+        std::string ipStr = (ip != nullptr) ? std::string(ip) : "";
+        httpPerfInfo.ipType = DetectIPType(ip);
 
         EventReport::GetInstance().ProcessEvents(httpPerfInfo);
     }
 }
 
-std::string HttpClientTask::getIpType(const std::string &ip)
+std::string HttpClientTask::DetectIPType(const std::string &ip)
 {
     if (ip.empty()) {
         return "UN_KNOWN_IP";
     }
-    return ip.find(':') != std::string::npos ? "IPv6" : "IPv4";
+
+    if (CommonUtils::IsValidIPV4(ip)) {
+        return "IPv4";
+    }
+
+    if (CommonUtils::IsValidIPV6(ip)) {
+        return "IPv6";
+    }
+    return "UN_KNOWN_IP";
 }
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
