@@ -158,7 +158,7 @@ void EventReport::HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo)
     }
 
     totalErrorCount_ += 1;
-    netStackInfoQue_.push_back(httpPerfInfo); 
+    netStackInfoQue_.push_back(httpPerfInfo);
     if (totalErrorCount_ >= errorCountThreshold_) {
         if (netStackInfoQue_.size() >= maxQueueSize_ || currentTime - topAppReportTime_ >= REPORT_NET_STACK_INTERVAL) {
             SendHttpNetStackEvent(netStackInfoQue_);
