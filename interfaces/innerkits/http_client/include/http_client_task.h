@@ -330,7 +330,7 @@ private:
      */
     void DumpHttpPerformance();
 
-    static std::string getIpType(const std::string &ip);
+    static std::string DetectIPType(const std::string &ip);
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onSucceeded_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onCanceled_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response,
