@@ -17,6 +17,7 @@
 #define COMMUNICATIONNETSTACK_HTTP_REQUEST_EXEC_H
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -117,10 +118,9 @@ private:
     static bool ProcByExpectDataType(napi_value object, RequestContext *context);
 
     static bool AddCurlHandle(CURL *handle, RequestContext *context);
-
-    static std::string getIpType(const std::string &ip);
 #if HAS_NETMANAGER_BASE
     static void HandleCurlData(CURLMsg *msg, RequestContext *context);
+    static std::string DetectIPType(const std::string &ip);
 #else
     static void HandleCurlData(CURLMsg *msg);
 #endif
