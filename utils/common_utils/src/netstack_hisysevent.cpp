@@ -129,10 +129,10 @@ void EventReport::HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo)
             ++(result.first->second);
         }
     }
-    if (reportTime_ == 0) {
-        reportTime_ = time(0);
-    }
     time_t currentTime = time(0);
+    if (reportTime_ == 0) {
+        reportTime_ = currentTime;
+    }
     if (currentTime - reportTime_ >= REPORT_INTERVAL) {
         eventInfo_.packageName = packageName_;
         eventInfo_.version = MapToJsonString(versionMap_);
@@ -146,17 +146,19 @@ void EventReport::HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo)
 void EventReport::HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo)
 {
     time_t currentTime = time(0);
+    if (topAppReportTime_ == 0) {
+        topAppReportTime_ = currentTime;
+    }
+
     httpPerfInfo.packageName = packageName_;
- 
     if (!httpPerfInfo.IsError()) {
         totalErrorCount_ = 0;
         netStackInfoQue_.clear();
         return;
     }
- 
+
     totalErrorCount_ += 1;
-    netStackInfoQue_.push_back(httpPerfInfo);
- 
+    netStackInfoQue_.push_back(httpPerfInfo); 
     if (totalErrorCount_ >= errorCountThreshold_) {
         if (netStackInfoQue_.size() >= maxQueueSize_ || currentTime - topAppReportTime_ >= REPORT_NET_STACK_INTERVAL) {
             SendHttpNetStackEvent(netStackInfoQue_);
@@ -228,10 +230,6 @@ std::string EventReport::HttpNetStackInfoToJson(const HttpPerfInfo &info)
 void EventReport::SendHttpNetStackEvent(std::deque<HttpPerfInfo> &netStackInfoQue_)
 {
     time_t currentTime = time(0);
-    if (topAppReportTime_ == 0) {
-        topAppReportTime_ = currentTime;
-    }
-
     if (sendHttpNetStackEventCount_ >= HTTP_SEND_CHR_THRESHOLD &&
         currentTime - topAppReportTime_ <= reportHiviewInterval_) {
         NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event already over.");
