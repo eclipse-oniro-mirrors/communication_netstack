@@ -33,7 +33,7 @@ const uint32_t REPORT_NET_STACK_INTERVAL = 60;
 inline const int32_t PROP_SYSPARA_SIZE = 128;
 // event_name
 constexpr const char *HTTP_PERF_ENAME = "HTTP_PERF";
-constexpr const char *HTTP_REQUEST_ERROR = "NET_STACK_HTTP_ERROR";
+constexpr const char *HTTP_RESPONSE_ERROR = "NET_STACK_HTTP_RESPONSE_ERROR";
 // event params
 constexpr const char *PACKAGE_NAME_EPARA = "PACKAGE_NAME";
 constexpr const char *TOTAL_TIME_EPARA = "TOTAL_TIME";
@@ -248,7 +248,7 @@ void EventReport::SendHttpNetStackEvent(std::deque<HttpPerfInfo> &netStackInfoQu
         eventQueue.push_back(HttpNetStackInfoToJson(info));
     }
 
-    int ret = HiSysEventWrite(HiSysEvent::Domain::NETMANAGER_STANDARD, HTTP_REQUEST_ERROR,
+    int ret = HiSysEventWrite(HiSysEvent::Domain::NETMANAGER_STANDARD, HTTP_RESPONSE_ERROR,
                               HiSysEvent::EventType::STATISTIC, HTTP_REQUEST_ERROR_QUEUE, eventQueue);
     if (ret != 0) {
         NETSTACK_LOGE("Send EventReport::SendHttpNetStackEvent HTTP_REQUEST_ERROR_QUEUE event failed");
