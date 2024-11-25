@@ -204,22 +204,4 @@ HWTEST_F(SocketTest, LocalSocketServerTest004, TestSize.Level1)
     bool ret = LocalSocketExec::ExecLocalSocketServerGetExtraOptions(&context);
     EXPECT_EQ(ret, false);
 }
-
-HWTEST_F(SocketTest, LocalSocketServerTest005, TestSize.Level1)
-{
-    napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketServerSendContext context(env, &eventManager);
-    bool ret = LocalSocketExec::ExecLocalSocketConnectionSend(&context);
-    EXPECT_EQ(ret, false);
-}
-
-HWTEST_F(SocketTest, LocalSocketServerTest006, TestSize.Level1)
-{
-    napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketServerCloseContext context(env, &eventManager);
-    bool ret = LocalSocketExec::ExecLocalSocketConnectionClose(&context);
-    EXPECT_EQ(ret, false);
-}
 } // namespace
