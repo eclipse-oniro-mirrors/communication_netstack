@@ -48,7 +48,6 @@ struct HttpPerfInfo {
     curl_off_t size;
     int64_t responseCode;
     std::string version;
-    uint32_t uid;
     long osErr;
     std::string method;
     std::string ipType;
