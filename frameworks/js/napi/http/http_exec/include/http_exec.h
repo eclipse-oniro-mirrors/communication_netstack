@@ -119,10 +119,6 @@ private:
     static bool AddCurlHandle(CURL *handle, RequestContext *context);
 
 #if HAS_NETMANAGER_BASE
-    static std::string DetectIPType(const std::string &ip);
-#endif
-
-#if HAS_NETMANAGER_BASE
     static void HandleCurlData(CURLMsg *msg, RequestContext *context);
 #else
     static void HandleCurlData(CURLMsg *msg);
