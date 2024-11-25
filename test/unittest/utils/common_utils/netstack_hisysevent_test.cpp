@@ -17,7 +17,6 @@
 
 #include <gtest/gtest.h>
 #include "netstack_hisysevent.h"
-#include "parameters.h"
 
 namespace OHOS::NetStack {
 
