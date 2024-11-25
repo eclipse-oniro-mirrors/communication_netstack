@@ -717,26 +717,10 @@ void HttpClientTask::DumpHttpPerformance()
         char *ip = nullptr;
         curl_easy_getinfo(curlHandle_, CURLINFO_PRIMARY_IP, &ip);
         std::string ipStr = (ip != nullptr) ? std::string(ip) : "";
-        httpPerfInfo.ipType = DetectIPType(ip);
+        httpPerfInfo.ipType = CommonUtils::DetectIPType(ip);
 
         EventReport::GetInstance().ProcessEvents(httpPerfInfo);
     }
-}
-
-std::string HttpClientTask::DetectIPType(const std::string &ip)
-{
-    if (ip.empty()) {
-        return "UN_KNOWN_IP";
-    }
-
-    if (CommonUtils::IsValidIPV4(ip)) {
-        return "IPv4";
-    }
-
-    if (CommonUtils::IsValidIPV6(ip)) {
-        return "IPv6";
-    }
-    return "UN_KNOWN_IP";
 }
 
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
