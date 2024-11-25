@@ -708,8 +708,7 @@ void HttpClientTask::DumpHttpPerformance()
         httpPerfInfo.firstRecvTime = firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime;
         httpPerfInfo.responseCode = responseCode;
         httpPerfInfo.version = std::to_string(httpVer);
- 
-        httpPerfInfo.currentTime = time(0);
+
         httpPerfInfo.dnsTime = dnsTime;
         httpPerfInfo.tlsTime = tlsTime == 0 ? 0 : tlsTime - connectTime;
         httpPerfInfo.method = request_.GetMethod();
