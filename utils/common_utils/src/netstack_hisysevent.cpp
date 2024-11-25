@@ -145,7 +145,6 @@ void EventReport::HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo)
         topAppReportTime_ = currentTime;
     }
 
-    httpPerfInfo.packageName = packageName_;
     if (!httpPerfInfo.IsError()) {
         totalErrorCount_ = 0;
         netStackInfoQue_.clear();
