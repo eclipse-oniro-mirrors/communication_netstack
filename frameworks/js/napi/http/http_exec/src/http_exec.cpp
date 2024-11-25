@@ -18,6 +18,7 @@
 #include "request_context.h"
 
 #include <cstddef>
+#include <chrono>
 #include <cstring>
 #include <memory>
 #include <pthread.h>
@@ -484,7 +485,6 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         auto now = std::chrono::steady_clock::now();
         httpPerfInfo.currentTime = std::chrono::duration_cast<std::chrono::milliseconds>
                                    (now.time_since_epoch()).count();
-        httpPerfInfo.connectTime = connectTime;
         httpPerfInfo.dnsTime = dnsTime;
         httpPerfInfo.osErr = osErr;
         httpPerfInfo.tlsTime = tlsTime == 0 ? 0 : tlsTime - connectTime;
@@ -492,26 +492,26 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         httpPerfInfo.errCode = context->IsExecOK() ? 0 : context->GetErrorCode();
         char *ip = nullptr;
         curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &ip);
-
+ 
         std::string ipStr = (ip != nullptr) ? std::string(ip) : "";
         httpPerfInfo.ipType = DetectIPType(ipStr);
-
+ 
         EventReport::GetInstance().ProcessEvents(httpPerfInfo);
     }
 #endif
 }
 
 #if HAS_NETMANAGER_BASE
-std::string HttpClientTask::DetectIPType(const std::string &ip)
+std::string HttpExec::DetectIPType(const std::string &ip)
 {
     if (ip.empty()) {
         return "UN_KNOWN_IP";
     }
-
+ 
     if (CommonUtils::IsValidIPV4(ip)) {
         return "IPv4";
     }
-
+ 
     if (CommonUtils::IsValidIPV6(ip)) {
         return "IPv6";
     }
