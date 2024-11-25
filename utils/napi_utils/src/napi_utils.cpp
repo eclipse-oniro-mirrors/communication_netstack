@@ -24,7 +24,7 @@
 #include <new>
 #include <string>
 #include <vector>
-#include <unordered_map>
+#include <map>
 
 #include "securec.h"
 #include "napi/native_api.h"
@@ -47,7 +47,7 @@ static constexpr const char *MSG = "message";
 
 static std::mutex g_mutex;
 static std::mutex g_mutexForModuleId;
-static std::unordered_map<uint64_t, std::shared_ptr<UvHandlerQueue>> g_handlerQueueMap;
+static std::map<uint64_t, std::shared_ptr<UvHandlerQueue>> g_handlerQueueMap;
 static const char *const HTTP_UV_SYNC_QUEUE_NAME = "HTTP_UV_SYNC_QUEUE_NAME";
 
 static std::unordered_set<napi_env> unorderedSetEnv;
