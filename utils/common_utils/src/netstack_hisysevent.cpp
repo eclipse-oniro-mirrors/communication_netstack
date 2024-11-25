@@ -210,11 +210,11 @@ std::string EventReport::HttpNetStackInfoToJson(const HttpPerfInfo &info)
 {
     std::stringstream ss;
     ss << "{"
-       << "\"packName\": " << std::quoted(info.packageName) << ", "
+       << "\"packName\": " << std::quoted(packageName_) << ", "
        << "\"method\": " << std::quoted(info.method) << ", "
        << "\"ipType\": " << std::quoted(info.ipType) << ", "
        << "\"respCode\": " << info.responseCode << ", "
-       << "\"errCode\": " << info.errorCode << ", "
+       << "\"errCode\": " << info.errCode << ", "
        << "\"osErr\": " << info.osErr<< ", "
        << "\"dnsTime\": " << info.dnsTime << ", "
        << "\"tlsTime\": " << info.tlsTime
