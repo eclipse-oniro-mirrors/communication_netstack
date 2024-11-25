@@ -490,30 +490,12 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &ip);
  
         std::string ipStr = (ip != nullptr) ? std::string(ip) : "";
-        httpPerfInfo.ipType = DetectIPType(ipStr);
+        httpPerfInfo.ipType = CommonUtils::DetectIPType(ipStr);
  
         EventReport::GetInstance().ProcessEvents(httpPerfInfo);
     }
 #endif
 }
-
-#if HAS_NETMANAGER_BASE
-std::string HttpExec::DetectIPType(const std::string &ip)
-{
-    if (ip.empty()) {
-        return "UN_KNOWN_IP";
-    }
- 
-    if (CommonUtils::IsValidIPV4(ip)) {
-        return "IPv4";
-    }
- 
-    if (CommonUtils::IsValidIPV6(ip)) {
-        return "IPv6";
-    }
-    return "UN_KNOWN_IP";
-}
-#endif // HAS_NETMANAGER_BASE
 
 #if HAS_NETMANAGER_BASE
 void HttpExec::HandleCurlData(CURLMsg *msg, RequestContext *context)
