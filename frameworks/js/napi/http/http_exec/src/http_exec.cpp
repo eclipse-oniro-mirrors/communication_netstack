@@ -18,7 +18,6 @@
 #include "request_context.h"
 
 #include <cstddef>
-#include <chrono>
 #include <cstring>
 #include <memory>
 #include <pthread.h>
@@ -482,9 +481,6 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         httpPerfInfo.responseCode = responseCode;
         httpPerfInfo.version = std::to_string(httpVer);
  
-        auto now = std::chrono::steady_clock::now();
-        httpPerfInfo.currentTime = std::chrono::duration_cast<std::chrono::milliseconds>
-                                   (now.time_since_epoch()).count();
         httpPerfInfo.dnsTime = dnsTime;
         httpPerfInfo.osErr = osErr;
         httpPerfInfo.tlsTime = tlsTime == 0 ? 0 : tlsTime - connectTime;
