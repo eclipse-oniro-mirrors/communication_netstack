@@ -89,12 +89,12 @@ HWTEST_F(WebSocketTest, WebSocketSend003, TestSize.Level1)
 
 HWTEST_F(WebSocketTest, WebSocketClose004, TestSize.Level1)
 {
-    const int32_t WEBSOCKET_NO_CONNECTION = 1017;
+    const int32_t websocketNoConnection = 1017;
     CloseOption CloseOptions;
     CloseOptions.code = LWS_CLOSE_STATUS_NORMAL;
     CloseOptions.reason = "";
     int32_t ret = client->Close(CloseOptions);
-    EXPECT_EQ(ret, WEBSOCKET_NO_CONNECTION);
+    EXPECT_EQ(ret, websocketNoConnection);
 }
 
 HWTEST_F(WebSocketTest, WebSocketDestroy005, TestSize.Level1)
