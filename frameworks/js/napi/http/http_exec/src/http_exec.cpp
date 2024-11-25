@@ -484,7 +484,6 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         auto now = std::chrono::steady_clock::now();
         httpPerfInfo.currentTime = std::chrono::duration_cast<std::chrono::milliseconds>
                                    (now.time_since_epoch()).count();
-        httpPerfInfo.uid = getuid();
         httpPerfInfo.connectTime = connectTime;
         httpPerfInfo.dnsTime = dnsTime;
         httpPerfInfo.osErr = osErr;
