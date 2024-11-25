@@ -140,7 +140,8 @@ void EventReport::HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo)
 
 void EventReport::HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo)
 {
-    time_t currentTime = time(0);
+    auto now = std::chrono::steady_clock::now();
+    double currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
     if (topAppReportTime_ == 0) {
         topAppReportTime_ = currentTime;
     }
