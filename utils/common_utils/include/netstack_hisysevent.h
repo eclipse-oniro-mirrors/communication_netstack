@@ -20,9 +20,10 @@
 #include <map>
 #include <mutex>
 #include <queue>
+#include <tuple>
+#include <unordered_set>
 
 #include "curl/curl.h"
-#include "parameter.h"
 
 namespace OHOS::NetStack {
 
@@ -49,13 +50,14 @@ struct HttpPerfInfo {
     int64_t responseCode;
     std::string version;
     long osErr;
-    std::string method;
-    std::string ipType;
+    int ipType;
     int32_t errCode;
-    double connectTime;
+    std::string method;
 public:
     bool IsSuccess() const;
     bool IsError() const;
+    auto key() const -> std::tuple<int64_t, long, int32_t>;
+    size_t operator()(const std::tuple<int64_t, long, int32_t>& key) const;
 };
 
 class EventReport {
@@ -89,6 +91,7 @@ private:
     EventInfo eventInfo_;
     std::map<std::string, uint32_t> versionMap_;
     std::deque<HttpPerfInfo> netStackInfoQue_;
+    std::unordered_set<std::tuple<int64_t, long, int32_t>, HttpPerfInfo> netStackInfoHashSet;
     unsigned int maxQueueSize_;
     unsigned int errorCountThreshold_;
     uint32_t reportHiviewInterval_;
