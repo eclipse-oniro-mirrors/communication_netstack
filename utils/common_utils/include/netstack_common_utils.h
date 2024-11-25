@@ -76,6 +76,8 @@ bool IsExcluded(const std::string &str, const std::string &exclusions, const std
 
 bool IsHostNameExcluded(const std::string &url, const std::string &exclusions, const std::string &split);
 
+int DetectIPType(const std::string &ip);
+
 bool IsValidIP(const std::string& ip, int af);
 
 bool IsValidIPV4(const std::string &ip);
