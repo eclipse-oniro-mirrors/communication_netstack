@@ -18,6 +18,7 @@
 #include <iomanip>
 #include <chrono>
 #include <cerrno>
+#include <unistd.h>
 
 #include "hisysevent.h"
 #include "netstack_log.h"
