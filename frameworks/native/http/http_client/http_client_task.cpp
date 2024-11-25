@@ -713,6 +713,7 @@ void HttpClientTask::DumpHttpPerformance()
         httpPerfInfo.tlsTime = tlsTime == 0 ? 0 : tlsTime - connectTime;
         httpPerfInfo.method = request_.GetMethod();
         httpPerfInfo.errCode = error_.GetErrorCode();
+        httpPerfInfo.osErr = osErr;
         char *ip = nullptr;
         curl_easy_getinfo(curlHandle_, CURLINFO_PRIMARY_IP, &ip);
         std::string ipStr = (ip != nullptr) ? std::string(ip) : "";
