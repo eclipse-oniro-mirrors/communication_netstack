@@ -118,7 +118,6 @@ private:
 
     static bool AddCurlHandle(CURL *handle, RequestContext *context);
 
-    static std::string getIpType(const std::string &ip);
 #if HAS_NETMANAGER_BASE
     static void HandleCurlData(CURLMsg *msg, RequestContext *context);
 #else

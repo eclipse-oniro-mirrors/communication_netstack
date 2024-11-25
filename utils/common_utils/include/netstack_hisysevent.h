@@ -19,6 +19,9 @@
 #include <string>
 #include <map>
 #include <mutex>
+#include <queue>
+#include <tuple>
+#include <unordered_set>
 
 #include "curl/curl.h"
 
@@ -46,26 +49,19 @@ struct HttpPerfInfo {
     curl_off_t size;
     int64_t responseCode;
     std::string version;
-    int64_t currentTime;
-    uint32_t uid;
-    std::string packageName;
+    long osErr;
+    int ipType;
+    int32_t errCode;
     std::string method;
-    std::string ipType;
-    int32_t errorCode;
-    double connectTime;
 public:
     bool IsSuccess() const;
     bool IsError() const;
-};
- 
-struct NetStackEventInfo {
-    uint32_t totalCount;
-    uint32_t totalErrorCount;
+    auto key() const -> std::tuple<int64_t, long, int32_t>;
+    size_t operator()(const std::tuple<int64_t, long, int32_t>& key) const;
 };
 
 class EventReport {
 public:
-    void ProcessHttpPerfHiSysevent(const HttpPerfInfo &httpPerfInfo);
     void SendHttpPerfEvent(const EventInfo &eventInfo);
     static EventReport &GetInstance();
     bool IsValid();
@@ -80,29 +76,28 @@ private:
     void ResetCounters();
     std::string GetPackageName();
     std::string MapToJsonString(const std::map<std::string, uint32_t> mapPara);
-    void SendHttpNetStackEvent(std::deque<HttpPerfInfo>& netStackInfoQueue);
+    void SendHttpResponseErrorEvent(std::deque<HttpPerfInfo>& netStackInfoQueue);
     void HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo);
-    void HandleHttpNetStackEvents(HttpPerfInfo &httpPerfInfo);
-    void ResetNetStackCounters();
+    void HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo);
     std::string HttpNetStackInfoToJson(const HttpPerfInfo &info);
+    bool IsParameterTrue(const char* key, const std::string &defValue);
 
 private:
-    time_t reportTime = 0;
     time_t reportTime_ = 0;
+    double topAppReportTime_ = 0;
+    int sendHttpNetStackEventCount_ = 0;
+    unsigned int totalErrorCount_ = 0;
     std::string packageName_;
-    EventInfo eventInfo;
-    std::map<std::string, uint32_t> versionMap;
-    bool validFlag = true;
-    std::recursive_mutex mutex;
     EventInfo eventInfo_;
-    NetStackEventInfo netStackEventInfo_;
     std::map<std::string, uint32_t> versionMap_;
     std::deque<HttpPerfInfo> netStackInfoQue_;
-    const unsigned int maxQueueSize_ = 10;
-    const unsigned int errorCountThreshold_ = 10;
+    std::unordered_set<std::tuple<int64_t, long, int32_t>, HttpPerfInfo> netStackInfoHashSet;
+    unsigned int maxQueueSize_;
+    unsigned int errorCountThreshold_;
+    uint32_t reportHiviewInterval_;
     bool validFlag_ = true;
-    bool httpPerfEventSwitch_ = true;
-    bool netStackEventSwitch_ = true;
+    bool httpPerfEventsSwitch_;
+    bool netStackEventsSwitch_;
     std::recursive_mutex mutex_;
 };
 }
