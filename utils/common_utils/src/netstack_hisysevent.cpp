@@ -57,6 +57,9 @@ const int64_t ERROR_HTTP_CODE_END = 600;
 const int64_t HTTP_SUCCEED_CODE = 0;
 const int64_t HTTP_APP_UID_THRESHOLD = 20000;
 const int64_t HTTP_SEND_CHR_THRESHOLD = 5;
+const unsigned int MAX_QUEUE_SIZE = 10;
+const unsigned int ERR_COUNT_THRESHOLD = 10;
+const uint32_t REP_HIVIEW_INTERVAL = 10 * 60 * 1000;
 }
 
 bool HttpPerfInfo::IsSuccess() const
@@ -150,6 +153,9 @@ void EventReport::HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo)
     auto now = std::chrono::steady_clock::now();
     double currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
 
+    if (topAppReportTime_ == 0) {
+        topAppReportTime_ = currentTime;
+    }
     if (totalErrorCount_ >= errorCountThreshold_) {
         if (netStackInfoQue_.size() >= maxQueueSize_ || currentTime - topAppReportTime_ >= REPORT_NET_STACK_INTERVAL) {
             SendHttpResponseErrorEvent(netStackInfoQue_, currentTime);
@@ -202,22 +208,6 @@ void EventReport::SendHttpPerfEvent(const EventInfo &eventInfo)
     }
 }
 
-std::string EventReport::HttpNetStackInfoToJson(const HttpPerfInfo &info)
-{
-    std::stringstream ss;
-    ss << "{"
-       << "\"packName\": " << std::quoted(packageName_) << ", "
-       << "\"method\": " << std::quoted(info.method) << ", "
-       << "\"ipType\": " << std::quoted(info.ipType) << ", "
-       << "\"respCode\": " << info.responseCode << ", "
-       << "\"errCode\": " << info.errCode << ", "
-       << "\"osErr\": " << info.osErr<< ", "
-       << "\"dnsTime\": " << info.dnsTime << ", "
-       << "\"tlsTime\": " << info.tlsTime
-       << "}";
-    return ss.str();
-}
-
 void EventReport::extractFieldsToArrays(std::deque<HttpPerfInfo> &netStackInfoQue_,
                                         std::vector<std::string> &dnsTimeArr,
                                         std::vector<std::string> &tlsTimeArr,
@@ -240,7 +230,7 @@ void EventReport::extractFieldsToArrays(std::deque<HttpPerfInfo> &netStackInfoQu
     }
 }
 
-void EventReport::SendHttpResponseErrorEvent(std::deque<HttpPerfInfo> &netStackInfoQue_, double currentTime)
+void EventReport::SendHttpResponseErrorEvent(std::deque<HttpPerfInfo> &netStackInfoQue_, const double currentTime)
 {
     if (sendHttpNetStackEventCount_ >= HTTP_SEND_CHR_THRESHOLD &&
         currentTime - topAppReportTime_ <= reportHiviewInterval_) {
