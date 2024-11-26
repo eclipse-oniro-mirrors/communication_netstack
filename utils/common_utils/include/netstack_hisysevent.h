@@ -72,11 +72,19 @@ private:
     void ResetCounters();
     std::string GetPackageName();
     std::string MapToJsonString(const std::map<std::string, uint32_t> mapPara);
-    void SendHttpResponseErrorEvent(std::deque<HttpPerfInfo>& netStackInfoQueue);
     void HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo);
     void HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo);
+    void SendHttpResponseErrorEvent(std::deque<HttpPerfInfo>& netStackInfoQueue);
     std::vector<std::string> convertDequeToVector(const std::deque<HttpPerfInfo>& netStackInfoQue_);
-
+    void extractFieldsToArrays(std::deque<HttpPerfInfo> &netStackInfoQue_,
+                               std::vector<std::string> &dnsTimeArr,
+                               std::vector<std::string> &tlsTimeArr,
+                               std::vector<std::string> &respCodeArr,
+                               std::vector<std::string> &ipTypeArr,
+                               std::vector<std::string> &osErrArr,
+                               std::vector<std::string> &errCodeArr,
+                               std::vector<std::string> &methodArr,
+                               std::vector<std::string> &packageNameArr);
 private:
     time_t reportTime_ = 0;
     double topAppReportTime_ = 0;
