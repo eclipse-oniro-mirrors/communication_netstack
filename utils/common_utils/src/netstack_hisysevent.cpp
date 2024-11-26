@@ -140,7 +140,7 @@ void EventReport::HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo)
     }
 }
 
-void EventReport::HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo)
+void EventReport::HandleHttpResponseErrorEvents(const HttpPerfInfo &httpPerfInfo)
 {
     if (!httpPerfInfo.IsError()) {
         totalErrorCount_ = 0;
@@ -156,8 +156,8 @@ void EventReport::HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo)
     if (topAppReportTime_ == 0) {
         topAppReportTime_ = currentTime;
     }
-    if (totalErrorCount_ >= errorCountThreshold_) {
-        if (netStackInfoQue_.size() >= maxQueueSize_ || currentTime - topAppReportTime_ >= REPORT_NET_STACK_INTERVAL) {
+    if (totalErrorCount_ >= ERR_COUNT_THRESHOLD) {
+        if (netStackInfoQue_.size() >= MAX_QUEUE_SIZE || currentTime - topAppReportTime_ >= REPORT_NET_STACK_INTERVAL) {
             SendHttpResponseErrorEvent(netStackInfoQue_, currentTime);
             totalErrorCount_ = 0;
             netStackInfoQue_.clear();
@@ -233,13 +233,13 @@ void EventReport::extractFieldsToArrays(std::deque<HttpPerfInfo> &netStackInfoQu
 void EventReport::SendHttpResponseErrorEvent(std::deque<HttpPerfInfo> &netStackInfoQue_, const double currentTime)
 {
     if (sendHttpNetStackEventCount_ >= HTTP_SEND_CHR_THRESHOLD &&
-        currentTime - topAppReportTime_ <= reportHiviewInterval_) {
+        currentTime - topAppReportTime_ <= REP_HIVIEW_INTERVAL) {
         NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event already over.");
         return;
     }
 
     if (sendHttpNetStackEventCount_ >= HTTP_SEND_CHR_THRESHOLD &&
-        currentTime - topAppReportTime_ >= reportHiviewInterval_) {
+        currentTime - topAppReportTime_ >= REP_HIVIEW_INTERVAL) {
         sendHttpNetStackEventCount_ = 0;
         topAppReportTime_ = currentTime;
         NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event reopen.");
