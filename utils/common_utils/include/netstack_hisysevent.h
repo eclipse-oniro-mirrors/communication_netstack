@@ -20,8 +20,6 @@
 #include <map>
 #include <mutex>
 #include <queue>
-#include <tuple>
-#include <unordered_set>
 
 #include "curl/curl.h"
 
