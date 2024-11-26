@@ -45,7 +45,11 @@ constexpr const char *TOTAL_DNS_TIME_EPARA = "TOTAL_DNS_TIME";
 constexpr const char *TOTAL_TLS_TIME_EPARA = "TOTAL_TLS_TIME";
 constexpr const char *TOTAL_TCP_TIME_EPARA = "TOTAL_TCP_TIME";
 constexpr const char *TOTAL_FIRST_RECVIVE_TIME_EPARA = "TOTAL_FIRST_RECEIVE_TIME";
-constexpr const char *HTTP_REQUEST_ERROR_ARR = "NET_STACK_ERROR_ARR";
+constexpr const char *METHOD_EPARA = "METHOD";
+constexpr const char *IP_TYPE_EPARA = "IP_TYPE";
+constexpr const char *OS_ERR_EPARA = "OS_ERR";
+constexpr const char *ERROR_CODE_EPARA = "ERROR_CODE";
+constexpr const char *RESPONSE_CODE_EPARA = "RESPONSE_CODE";
 const int64_t VALIAD_RESP_CODE_START = 200;
 const int64_t VALIAD_RESP_CODE_END = 399;
 const int64_t ERROR_HTTP_CODE_START = 400;
@@ -135,12 +139,6 @@ void EventReport::HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo)
 
 void EventReport::HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo)
 {
-    auto now = std::chrono::steady_clock::now();
-    double currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-    if (topAppReportTime_ == 0) {
-        topAppReportTime_ = currentTime;
-    }
-
     if (!httpPerfInfo.IsError()) {
         totalErrorCount_ = 0;
         netStackInfoQue_.clear();
@@ -149,9 +147,12 @@ void EventReport::HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo)
 
     totalErrorCount_ += 1;
     netStackInfoQue_.push_back(httpPerfInfo);
+    auto now = std::chrono::steady_clock::now();
+    double currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+
     if (totalErrorCount_ >= errorCountThreshold_) {
         if (netStackInfoQue_.size() >= maxQueueSize_ || currentTime - topAppReportTime_ >= REPORT_NET_STACK_INTERVAL) {
-            SendHttpResponseErrorEvent(netStackInfoQue_);
+            SendHttpResponseErrorEvent(netStackInfoQue_, currentTime);
             totalErrorCount_ = 0;
             netStackInfoQue_.clear();
         }
@@ -217,22 +218,30 @@ std::string EventReport::HttpNetStackInfoToJson(const HttpPerfInfo &info)
     return ss.str();
 }
 
-std::vector<std::string> EventReport::convertDequeToVector(const std::deque<HttpPerfInfo>& netStackInfoQue_)
+void EventReport::extractFieldsToArrays(std::deque<HttpPerfInfo> &netStackInfoQue_,
+                                        std::vector<std::string> &dnsTimeArr,
+                                        std::vector<std::string> &tlsTimeArr,
+                                        std::vector<std::string> &respCodeArr,
+                                        std::vector<std::string> &ipTypeArr,
+                                        std::vector<std::string> &osErrArr,
+                                        std::vector<std::string> &errCodeArr,
+                                        std::vector<std::string> &methodArr,
+                                        std::vector<std::string> &packageNameArr)
 {
-    std::vector<std::string> eventArr;
-    for (const auto& info : netStackInfoQue_) {
-        std::stringstream ss;
-        ss << info.dnsTime << "," << info.tlsTime << "," << info.responseCode << ","
-           << info.ipType << "," << info.osErr << "," << info.errCode << "," << info.method;
-        eventArr.push_back(ss.str());
+    for (const auto &info : netStackInfoQue_) {
+        dnsTimeArr.push_back(std::to_string(info.dnsTime));
+        tlsTimeArr.push_back(std::to_string(info.tlsTime));
+        respCodeArr.push_back(std::to_string(info.responseCode));
+        ipTypeArr.push_back(std::to_string(info.ipType));
+        osErrArr.push_back(std::to_string(info.osErr));
+        errCodeArr.push_back(std::to_string(info.errCode));
+        methodArr.push_back(info.method);
+        packageNameArr.push_back(packageName_);
     }
-    return eventArr;
 }
 
-void EventReport::SendHttpResponseErrorEvent(std::deque<HttpPerfInfo> &netStackInfoQue_)
+void EventReport::SendHttpResponseErrorEvent(std::deque<HttpPerfInfo> &netStackInfoQue_, double currentTime)
 {
-    auto now = std::chrono::steady_clock::now();
-    double currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
     if (sendHttpNetStackEventCount_ >= HTTP_SEND_CHR_THRESHOLD &&
         currentTime - topAppReportTime_ <= reportHiviewInterval_) {
         NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event already over.");
@@ -246,11 +255,24 @@ void EventReport::SendHttpResponseErrorEvent(std::deque<HttpPerfInfo> &netStackI
         NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event reopen.");
     }
 
-    std::vector<std::string> eventArr = convertDequeToVector(netStackInfoQue_);
+    std::vector<std::string> dnsTimeArr;
+    std::vector<std::string> tlsTimeArr;
+    std::vector<std::string> respCodeArr;
+    std::vector<std::string> ipTypeArr;
+    std::vector<std::string> osErrArr;
+    std::vector<std::string> errCodeArr;
+    std::vector<std::string> methodArr;
+    std::vector<std::string> packageNameArr;
+    extractFieldsToArrays(netStackInfoQue_, dnsTimeArr, tlsTimeArr, respCodeArr,
+                          ipTypeArr, osErrArr, errCodeArr, methodArr, packageNameArr);
+
     int ret = HiSysEventWrite(HiSysEvent::Domain::NETMANAGER_STANDARD, HTTP_RESPONSE_ERROR,
-                              HiSysEvent::EventType::STATISTIC, HTTP_REQUEST_ERROR_ARR, eventArr);
+                              HiSysEvent::EventType::STATISTIC, PACKAGE_NAME_EPARA, packageNameArr,
+                              TOTAL_DNS_TIME_EPARA, dnsTimeArr, TOTAL_TLS_TIME_EPARA, tlsTimeArr,
+                              RESPONSE_CODE_EPARA, respCodeArr, ERROR_CODE_EPARA, errCodeArr,
+                              OS_ERR_EPARA, osErrArr, IP_TYPE_EPARA, ipTypeArr, METHOD_EPARA, methodArr);
     if (ret != 0) {
-        NETSTACK_LOGE("Send EventReport::SendHttpNetStackEvent HTTP_REQUEST_ERROR event failed");
+        NETSTACK_LOGE("Send EventReport::SendHttpNetStackEvent HTTP_RESPONSE_ERROR event failed");
     }
     sendHttpNetStackEventCount_++;
 }
