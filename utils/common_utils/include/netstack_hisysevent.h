@@ -56,8 +56,6 @@ struct HttpPerfInfo {
 public:
     bool IsSuccess() const;
     bool IsError() const;
-    auto key() const -> std::tuple<int64_t, long, int32_t>;
-    size_t operator()(const std::tuple<int64_t, long, int32_t>& key) const;
 };
 
 class EventReport {
@@ -79,8 +77,7 @@ private:
     void SendHttpResponseErrorEvent(std::deque<HttpPerfInfo>& netStackInfoQueue);
     void HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo);
     void HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo);
-    std::string HttpNetStackInfoToJson(const HttpPerfInfo &info);
-    bool IsParameterTrue(const char* key, const std::string &defValue);
+    std::vector<std::string> convertDequeToVector(const std::deque<HttpPerfInfo>& netStackInfoQue_);
 
 private:
     time_t reportTime_ = 0;
@@ -91,13 +88,10 @@ private:
     EventInfo eventInfo_;
     std::map<std::string, uint32_t> versionMap_;
     std::deque<HttpPerfInfo> netStackInfoQue_;
-    std::unordered_set<std::tuple<int64_t, long, int32_t>, HttpPerfInfo> netStackInfoHashSet;
     unsigned int maxQueueSize_;
     unsigned int errorCountThreshold_;
     uint32_t reportHiviewInterval_;
     bool validFlag_ = true;
-    bool httpPerfEventsSwitch_;
-    bool netStackEventsSwitch_;
     std::recursive_mutex mutex_;
 };
 }
