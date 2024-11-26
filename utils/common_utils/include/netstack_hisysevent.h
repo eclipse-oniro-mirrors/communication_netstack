@@ -75,7 +75,6 @@ private:
     void HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo);
     void HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo);
     void SendHttpResponseErrorEvent(std::deque<HttpPerfInfo>& netStackInfoQueue);
-    std::vector<std::string> convertDequeToVector(const std::deque<HttpPerfInfo>& netStackInfoQue_);
     void extractFieldsToArrays(std::deque<HttpPerfInfo> &netStackInfoQue_,
                                std::vector<std::string> &dnsTimeArr,
                                std::vector<std::string> &tlsTimeArr,
