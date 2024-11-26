@@ -31,7 +31,6 @@ namespace {
 using HiSysEvent = OHOS::HiviewDFX::HiSysEvent;
 const uint32_t REPORT_INTERVAL = 3 * 60;
 const uint32_t REPORT_NET_STACK_INTERVAL = 60;
-inline const int32_t PROP_SYSPARA_SIZE = 128;
 // event_name
 constexpr const char *HTTP_PERF_ENAME = "HTTP_PERF";
 constexpr const char *HTTP_RESPONSE_ERROR = "NET_STACK_HTTP_RESPONSE_ERROR";
@@ -46,7 +45,7 @@ constexpr const char *TOTAL_DNS_TIME_EPARA = "TOTAL_DNS_TIME";
 constexpr const char *TOTAL_TLS_TIME_EPARA = "TOTAL_TLS_TIME";
 constexpr const char *TOTAL_TCP_TIME_EPARA = "TOTAL_TCP_TIME";
 constexpr const char *TOTAL_FIRST_RECVIVE_TIME_EPARA = "TOTAL_FIRST_RECEIVE_TIME";
-constexpr const char *HTTP_REQUEST_ERROR_QUEUE = "NET_STACK_ERROR_QUEUE";
+constexpr const char *HTTP_REQUEST_ERROR_ARR = "NET_STACK_ERROR_ARR";
 const int64_t VALIAD_RESP_CODE_START = 200;
 const int64_t VALIAD_RESP_CODE_END = 399;
 const int64_t ERROR_HTTP_CODE_START = 400;
@@ -222,6 +221,18 @@ std::string EventReport::HttpNetStackInfoToJson(const HttpPerfInfo &info)
     return ss.str();
 }
 
+std::vector<std::string> EventReport::convertDequeToVector(const std::deque<HttpPerfInfo>& netStackInfoQue_)
+{
+    std::vector<std::string> eventArr;
+    for (const auto& info : netStackInfoQue_) {
+        std::stringstream ss;
+        ss << info.dnsTime << "," << info.tlsTime << "," << info.responseCode << ","
+           << info.ipType << "," << info.osErr << "," << info.errCode << "," << info.method;
+        eventArr.push_back(ss.str());
+    }
+    return eventArr;
+}
+
 void EventReport::SendHttpResponseErrorEvent(std::deque<HttpPerfInfo> &netStackInfoQue_)
 {
     auto now = std::chrono::steady_clock::now();
@@ -239,23 +250,12 @@ void EventReport::SendHttpResponseErrorEvent(std::deque<HttpPerfInfo> &netStackI
         NETSTACK_LOGI("Sending HTTP_REQUEST_ERROR event reopen.");
     }
 
-    std::vector<std::string> eventQueue;
-    for (const auto &info : netStackInfoQue_) {
-        eventQueue.push_back(HttpNetStackInfoToJson(info));
-    }
-
+    std::vector<std::string> eventArr = convertDequeToVector(netStackInfoQue_);
     int ret = HiSysEventWrite(HiSysEvent::Domain::NETMANAGER_STANDARD, HTTP_RESPONSE_ERROR,
-                              HiSysEvent::EventType::STATISTIC, HTTP_REQUEST_ERROR_QUEUE, eventQueue);
+                              HiSysEvent::EventType::STATISTIC, HTTP_REQUEST_ERROR_ARR, eventArr);
     if (ret != 0) {
-        NETSTACK_LOGE("Send EventReport::SendHttpNetStackEvent HTTP_REQUEST_ERROR_QUEUE event failed");
+        NETSTACK_LOGE("Send EventReport::SendHttpNetStackEvent HTTP_REQUEST_ERROR event failed");
     }
     sendHttpNetStackEventCount_++;
-}
-
-bool EventReport::IsParameterTrue(const char* key, const std::string &defValue)
-{
-    char valueStr[PROP_SYSPARA_SIZE] = { 0 };
-    GetParameter(key, defValue.c_str(), valueStr, PROP_SYSPARA_SIZE);
-    return (strcmp(valueStr, "true") == 0);
 }
 }
