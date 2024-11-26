@@ -73,8 +73,8 @@ private:
     std::string GetPackageName();
     std::string MapToJsonString(const std::map<std::string, uint32_t> mapPara);
     void HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo);
-    void HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo);
-    void SendHttpResponseErrorEvent(std::deque<HttpPerfInfo>& netStackInfoQueue, double currentTime);
+    void HandleHttpResponseErrorEvents(const HttpPerfInfo &httpPerfInfo);
+    void SendHttpResponseErrorEvent(std::deque<HttpPerfInfo>& netStackInfoQueue, const double currentTime);
     void extractFieldsToArrays(std::deque<HttpPerfInfo> &netStackInfoQue_,
                                std::vector<std::string> &dnsTimeArr,
                                std::vector<std::string> &tlsTimeArr,
@@ -93,9 +93,6 @@ private:
     EventInfo eventInfo_;
     std::map<std::string, uint32_t> versionMap_;
     std::deque<HttpPerfInfo> netStackInfoQue_;
-    unsigned int maxQueueSize_;
-    unsigned int errorCountThreshold_;
-    uint32_t reportHiviewInterval_;
     bool validFlag_ = true;
     std::recursive_mutex mutex_;
 };
