@@ -710,15 +710,13 @@ void HttpClientTask::DumpHttpPerformance()
         httpPerfInfo.version = std::to_string(httpVer);
 
         httpPerfInfo.osErr = osErr;
-        httpPerfInfo.dnsTime = dnsTime;
-        httpPerfInfo.tlsTime = tlsTime == 0 ? 0 : tlsTime - connectTime;
         httpPerfInfo.method = request_.GetMethod();
         httpPerfInfo.errCode = error_.GetErrorCode();
-
         char *ip = nullptr;
         curl_easy_getinfo(curlHandle_, CURLINFO_PRIMARY_IP, &ip);
         std::string ipStr = (ip != nullptr) ? std::string(ip) : "";
         httpPerfInfo.ipType = CommonUtils::DetectIPType(ip);
+
         EventReport::GetInstance().ProcessEvents(httpPerfInfo);
     }
 }
