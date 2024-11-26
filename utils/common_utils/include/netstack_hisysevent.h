@@ -74,7 +74,7 @@ private:
     std::string MapToJsonString(const std::map<std::string, uint32_t> mapPara);
     void HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo);
     void HandleHttpResponseErrorEvents(HttpPerfInfo &httpPerfInfo);
-    void SendHttpResponseErrorEvent(std::deque<HttpPerfInfo>& netStackInfoQueue);
+    void SendHttpResponseErrorEvent(std::deque<HttpPerfInfo>& netStackInfoQueue, double currentTime);
     void extractFieldsToArrays(std::deque<HttpPerfInfo> &netStackInfoQue_,
                                std::vector<std::string> &dnsTimeArr,
                                std::vector<std::string> &tlsTimeArr,
