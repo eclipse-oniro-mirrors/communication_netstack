@@ -69,8 +69,6 @@ bool HttpPerfInfo::IsError() const
 EventReport::EventReport()
 {
     InitPackageName();
-    httpPerfEventsSwitch_ = IsParameterTrue("const.telephony.netstack.perfEventsSwitch", "true");
-    netStackEventsSwitch_ = IsParameterTrue("const.telephony.netstack.netStackEventsSwitch", "true");
 }
 
 void EventReport::InitPackageName()
@@ -99,12 +97,10 @@ void EventReport::ProcessEvents(HttpPerfInfo &httpPerfInfo)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
 
-    if (getuid() > HTTP_APP_UID_THRESHOLD && netStackEventsSwitch_) {
+    if (getuid() > HTTP_APP_UID_THRESHOLD) {
         HandleHttpResponseErrorEvents(httpPerfInfo);
     }
-    if (httpPerfEventsSwitch_) {
-        HandleHttpPerfEvents(httpPerfInfo);
-    }
+    HandleHttpPerfEvents(httpPerfInfo);
 }
 
 void EventReport::HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo)
