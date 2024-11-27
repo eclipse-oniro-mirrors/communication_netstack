@@ -419,6 +419,7 @@ bool HttpClientTask::SetCurlOptions()
     if (!SetOtherCurlOption(curlHandle_)) {
         return false;
     }
+    SetDnsCacheOption(curlHandle_);
 
     return true;
 }
@@ -763,6 +764,15 @@ RequestTracer::Trace &HttpClientTask::GetTrace()
     return *trace_;
 }
 
+
+bool HttpClientTask::SetDnsCacheOption(CURL *handle)
+{
+#if HAS_NETMANAGER_BASE
+    if (!NetManagerStandard::NetConnClient::GetInstance().IsUserDnsCache()) {
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_DNS_CACHE_TIMEOUT, 0);
+    }
+#endif
+}
 } // namespace HttpClient
 } // namespace NetStack
 } // namespace OHOS
