@@ -486,7 +486,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         httpPerfInfo.errCode = context->IsExecOK() ? 0 : context->GetErrorCode();
         char *ip = nullptr;
         curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &ip);
-        std::string ipStr = (ip != nullptr) ? std::string(ip) : "";
+        std::string ipStr = (ip != nullptr) ? ip : "";
         httpPerfInfo.ipType = CommonUtils::DetectIPType(ipStr);
 
         EventReport::GetInstance().ProcessEvents(httpPerfInfo);
