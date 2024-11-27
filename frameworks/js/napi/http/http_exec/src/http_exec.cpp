@@ -1158,6 +1158,7 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
     SetSSLCertOption(curl, context);
     SetMultiPartOption(curl, context);
     SetDnsResolvOption(curl, context);
+    SetDnsCacheOption(curl, context);
     return true;
 }
 
@@ -1665,5 +1666,13 @@ void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *pa
             NETSTACK_LOGE("Failed to set file data error: %{public}s", curl_easy_strerror(result));
         }
     }
+}
+
+bool HttpExec::SetDnsCacheOption(CURL *curl, RequestContext *context)
+{
+    if (!NetManagerStandard::NetConnClient::GetInstance().IsUserDnsCache()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DNS_CACHE_TIMEOUT, 0, context);
+    }
+    return true;
 }
 } // namespace OHOS::NetStack::Http

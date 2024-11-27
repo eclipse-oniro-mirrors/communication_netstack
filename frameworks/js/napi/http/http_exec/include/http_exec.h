@@ -164,6 +164,8 @@ private:
 
     static CURLcode SslCtxFunction(void *curl, void *ssl_ctx, void *parm);
 
+    static bool SetDnsCacheOption(CURL *curl, RequestContext *context);
+
     struct RequestInfo {
         RequestInfo() = delete;
         ~RequestInfo() = default;
