@@ -257,7 +257,7 @@ void EventReport::SendHttpResponseErrorEvent(std::deque<HttpPerfInfo> &netStackI
                           ipTypeArr, osErrArr, errCodeArr, methodArr, packageNameArr);
 
     int ret = HiSysEventWrite(HiSysEvent::Domain::NETMANAGER_STANDARD, HTTP_RESPONSE_ERROR,
-                              HiSysEvent::EventType::STATISTIC, PACKAGE_NAME_EPARA, packageNameArr,
+                              HiSysEvent::EventType::FAULT, PACKAGE_NAME_EPARA, packageNameArr,
                               TOTAL_DNS_TIME_EPARA, dnsTimeArr, TOTAL_TLS_TIME_EPARA, tlsTimeArr,
                               RESPONSE_CODE_EPARA, respCodeArr, ERROR_CODE_EPARA, errCodeArr,
                               OS_ERR_EPARA, osErrArr, IP_TYPE_EPARA, ipTypeArr, METHOD_EPARA, methodArr);
