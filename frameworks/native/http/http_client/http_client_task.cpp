@@ -51,7 +51,7 @@ namespace HttpClient {
 
 static const size_t MAX_LIMIT = HttpConstant::MAX_DATA_LIMIT;
 
-std::atomic<uint32_t> HttpClientTask::nextTaskId_(0);(ip != nullptr) ?
+std::atomic<uint32_t> HttpClientTask::nextTaskId_(0);
 
 bool CheckFilePath(const std::string &fileName, std::string &realPath)
 {
