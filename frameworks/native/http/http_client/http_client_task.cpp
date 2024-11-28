@@ -238,6 +238,7 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
     }
 
     SetSSLCertOption(handle);
+    SetDnsCacheOption(curlHandle_);
 
 #ifdef HTTP_CURL_PRINT_VERBOSE
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_VERBOSE, 1L);
@@ -419,7 +420,6 @@ bool HttpClientTask::SetCurlOptions()
     if (!SetOtherCurlOption(curlHandle_)) {
         return false;
     }
-    SetDnsCacheOption(curlHandle_);
 
     return true;
 }
