@@ -42,6 +42,7 @@ struct HttpPerfInfo {
     double totalTime;
     double dnsTime;
     double tlsTime;
+    double firstSendTime;
     double firstRecvTime;
     double tcpTime;
     curl_off_t size;
@@ -74,25 +75,18 @@ private:
     std::string MapToJsonString(const std::map<std::string, uint32_t> mapPara);
     void HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo);
     void HandleHttpResponseErrorEvents(const HttpPerfInfo &httpPerfInfo);
-    void SendHttpResponseErrorEvent(std::deque<HttpPerfInfo>& netStackInfoQueue, const double currentTime);
-    void extractFieldsToArrays(std::deque<HttpPerfInfo> &netStackInfoQue_,
-                               std::vector<std::string> &dnsTimeArr,
-                               std::vector<std::string> &tlsTimeArr,
-                               std::vector<std::string> &respCodeArr,
-                               std::vector<std::string> &ipTypeArr,
-                               std::vector<std::string> &osErrArr,
-                               std::vector<std::string> &errCodeArr,
-                               std::vector<std::string> &methodArr,
-                               std::vector<std::string> &packageNameArr);
+    void SendHttpResponseErrorEvent(std::deque<HttpPerfInfo>& netStackInfoQueue,
+                                    const std::chrono::steady_clock::time_point now);
+    std::string HttpPerInfoToJson(const HttpPerfInfo &info);
 private:
     time_t reportTime_ = 0;
-    double topAppReportTime_ = 0;
+    std::chrono::steady_clock::time_point topAppReportTime_ = std::chrono::steady_clock::time_point::min();
     int sendHttpNetStackEventCount_ = 0;
     unsigned int totalErrorCount_ = 0;
     std::string packageName_;
     EventInfo eventInfo_;
     std::map<std::string, uint32_t> versionMap_;
-    std::deque<HttpPerfInfo> netStackInfoQue_;
+    std::deque<HttpPerfInfo> httpPerfInfoQueue_;
     bool validFlag_ = true;
     std::recursive_mutex mutex_;
 };
