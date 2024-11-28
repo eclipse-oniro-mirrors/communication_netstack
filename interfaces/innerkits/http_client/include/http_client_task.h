@@ -330,6 +330,12 @@ private:
      */
     void DumpHttpPerformance();
 
+    /**
+     * Sets the DNS cache options for the HTTP request.
+     * @return Returns true if the Curl options are set successfully, false otherwise.
+     */
+    bool SetDnsCacheOption(CURL *handle);
+
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onSucceeded_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onCanceled_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response,

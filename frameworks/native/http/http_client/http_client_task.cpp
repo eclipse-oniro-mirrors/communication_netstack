@@ -238,6 +238,7 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
     }
 
     SetSSLCertOption(handle);
+    SetDnsCacheOption(handle);
 
 #ifdef HTTP_CURL_PRINT_VERBOSE
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_VERBOSE, 1L);
@@ -763,6 +764,16 @@ RequestTracer::Trace &HttpClientTask::GetTrace()
     return *trace_;
 }
 
+
+bool HttpClientTask::SetDnsCacheOption(CURL *handle)
+{
+#if HAS_NETMANAGER_BASE
+    if (!NetManagerStandard::NetConnClient::GetInstance().IsUserDnsCache()) {
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_DNS_CACHE_TIMEOUT, 0);
+    }
+#endif
+    return true;
+}
 } // namespace HttpClient
 } // namespace NetStack
 } // namespace OHOS
