@@ -51,7 +51,7 @@ namespace HttpClient {
 
 static const size_t MAX_LIMIT = HttpConstant::MAX_DATA_LIMIT;
 
-std::atomic<uint32_t> HttpClientTask::nextTaskId_(0);
+std::atomic<uint32_t> HttpClientTask::nextTaskId_(0);(ip != nullptr) ?
 
 bool CheckFilePath(const std::string &fileName, std::string &realPath)
 {
@@ -714,7 +714,7 @@ void HttpClientTask::DumpHttpPerformance()
         httpPerfInfo.errCode = error_.GetErrorCode();
         char *ip = nullptr;
         curl_easy_getinfo(curlHandle_, CURLINFO_PRIMARY_IP, &ip);
-        std::string ipStr = (ip != nullptr) ? std::string(ip) : "";
+        std::string ipStr = (ip != nullptr) ? ip : "";
         httpPerfInfo.ipType = CommonUtils::DetectIPType(ip);
 
         EventReport::GetInstance().ProcessEvents(httpPerfInfo);
