@@ -25,7 +25,7 @@
 namespace OHOS::NetStack::CommonUtils {
 static const std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
 static const std::string DOMAIN_TYPE_WEBSOCKET_REQUEST = "webSocket";
-const int IN_VALID_IP = -1;
+const int INVALID_IP_TYPE = -1;
 enum SdkVersion {
     FIVE = 5,
     SIX,
