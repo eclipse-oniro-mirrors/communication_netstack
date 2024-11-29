@@ -24,6 +24,14 @@
 
 #define KEY_TIMEOUT "timeout"
 
+#define KEY_PROXY "proxy"
+
+#define KEY_TYPE "type"
+
+#define KEY_USERNAME "username"
+
+#define KEY_PASSWORD "password"
+
 #define KEY_ENCODING "encoding"
 
 #define KEY_DATA "data"

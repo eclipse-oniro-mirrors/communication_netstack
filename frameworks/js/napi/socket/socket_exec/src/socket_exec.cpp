@@ -34,10 +34,12 @@
 #include "napi_utils.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
+#include "proxy_options.h"
 #include "securec.h"
 #include "socket_async_work.h"
 #include "socket_module.h"
 #include "socket_exec_common.h"
+#include "socks5_utils.h"
 
 #ifdef IOS_PLATFORM
 #define SO_PROTOCOL 38
@@ -54,6 +56,14 @@ static constexpr const int DEFAULT_POLL_TIMEOUT = 500; // 0.5 Seconds
 static constexpr const int ADDRESS_INVALID = 99;
 
 static constexpr const int OTHER_ERROR = 100;
+
+static constexpr const int SOCKS5_ERROR = 205;
+
+static constexpr const int SOCKS5_CONNECT_PROXY_ERROR = 206;
+
+static constexpr const int SOCKS5_USER_PASS_ERROR = 207;
+
+static constexpr const int SOCKS5_CONNECT_REMOTE_ERROR = 208;
 
 static constexpr const int UNKNOW_ERROR = -1;
 
@@ -78,6 +88,8 @@ static constexpr const char *SOCKET_EXEC_UDP_BIND = "OS_NET_SockUPRD";
 static constexpr const char *SOCKET_EXEC_CONNECT = "OS_NET_SockTPRD";
 
 static constexpr const char *SOCKET_RECV_FROM_MULTI_CAST = "OS_NET_SockMPRD";
+
+static constexpr const char *WILD_ADDRESS = "0.0.0.0";
 
 namespace OHOS::NetStack::Socket::SocketExec {
 #define ERROR_RETURN(context, ...) \
@@ -335,6 +347,11 @@ static bool OnRecvMessage(EventManager *manager, void *data, size_t len, sockadd
         auto *addr6 = reinterpret_cast<sockaddr_in6 *>(addr);
         remoteInfo.SetPort(ntohs(addr6->sin6_port));
     }
+
+    if (manager->GetProxyData() != nullptr &&
+        !manager->GetProxyData()->RemoveHeader(data, len, addr->sa_family)) {
+            NETSTACK_LOGE("remove socks5 udp header failed");
+    }
     remoteInfo.SetSize(len);
 
     auto *messageStruct = new MessageData(data, len, remoteInfo);
@@ -525,78 +542,6 @@ static bool PollFd(pollfd *fds, nfds_t num, int timeout)
     return true;
 }
 
-static int ConfirmSocketTimeoutMs(int sock, int type, int defaultValue)
-{
-    timeval timeout;
-    socklen_t optlen = sizeof(timeout);
-    if (getsockopt(sock, SOL_SOCKET, type, reinterpret_cast<void *>(&timeout), &optlen) < 0) {
-        NETSTACK_LOGE("get timeout failed, type: %{public}d, sock: %{public}d, errno: %{public}d", type, sock, errno);
-        if (errno == ENOTSOCK && type == SO_RCVTIMEO) {
-            return -1;
-        }
-        return defaultValue;
-    }
-    auto socketTimeoutMs = timeout.tv_sec * UNIT_CONVERSION_1000 + timeout.tv_usec / UNIT_CONVERSION_1000;
-    return socketTimeoutMs == 0 ? defaultValue : socketTimeoutMs;
-}
-
-static bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr, socklen_t addrLen)
-{
-    NETSTACK_LOGD("js send RawSize: %{public}zu", size);
-    int bufferSize = DEFAULT_BUFFER_SIZE;
-    int opt = 0;
-    socklen_t optLen = sizeof(opt);
-    if (getsockopt(sock, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<void *>(&opt), &optLen) >= 0 && opt > 0) {
-        bufferSize = opt;
-    }
-    int sockType = 0;
-    optLen = sizeof(sockType);
-    if (getsockopt(sock, SOL_SOCKET, SO_TYPE, reinterpret_cast<void *>(&sockType), &optLen) < 0) {
-        NETSTACK_LOGI("get sock opt sock type failed, socket is %{public}d, errno is %{public}d", sock, errno);
-        return false;
-    }
-
-    auto curPos = data;
-    auto leftSize = size;
-    nfds_t num = 1;
-    pollfd fds[1] = {{0}};
-    fds[0].fd = sock;
-    fds[0].events = 0;
-    fds[0].events |= POLLOUT;
-    int sendTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_SNDTIMEO, DEFAULT_TIMEOUT_MS);
-    if (sendTimeoutMs < 0) {
-        return false;
-    }
-    while (leftSize > 0) {
-        if (!PollFd(fds, num, sendTimeoutMs)) {
-            if (errno != EINTR) {
-                return false;
-            }
-        }
-        size_t sendSize = (sockType == SOCK_STREAM ? leftSize : std::min<size_t>(leftSize, bufferSize));
-        auto sendLen = sendto(sock, curPos, sendSize, 0, addr, addrLen);
-        NETSTACK_LOGD("socketFD: %{public}d, send len: %{public}zu", sock, sendLen);
-        if (sendLen < 0) {
-            if (errno == EAGAIN || errno == EINTR) {
-                continue;
-            }
-            NETSTACK_LOGE("send failed, socket is %{public}d, errno is %{public}d", sock, errno);
-            return false;
-        }
-        if (sendLen == 0) {
-            break;
-        }
-        curPos += sendLen;
-        leftSize -= sendLen;
-    }
-
-    if (leftSize != 0) {
-        NETSTACK_LOGE("send not complete, socket is %{public}d, errno is %{public}d", sock, errno);
-        return false;
-    }
-    return true;
-}
-
 static bool TcpSendEvent(TcpSendContext *context)
 {
     std::string encoding = context->options.GetEncoding();
@@ -660,17 +605,6 @@ static bool UdpSendEvent(UdpSendContext *context)
         ERROR_RETURN(context, "send failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
     }
     return true;
-}
-
-static int ConfirmBufferSize(int sock)
-{
-    int bufferSize = DEFAULT_BUFFER_SIZE;
-    int opt = 0;
-    socklen_t optLen = sizeof(opt);
-    if (getsockopt(sock, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<void *>(&opt), &optLen) >= 0 && opt > 0) {
-        bufferSize = opt;
-    }
-    return bufferSize;
 }
 
 static bool IsTCPSocket(int sockfd)
@@ -821,54 +755,6 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     PollRecvFinish(callback);
 }
 
-static bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeoutMSec)
-{
-    int ret = connect(sock, addr, addrLen);
-    if (ret >= 0) {
-        return true;
-    }
-    if (errno != EINPROGRESS) {
-        return false;
-    }
-    struct pollfd fds[1] = {{.fd = sock, .events = POLLOUT}};
-    int timeoutMs = (timeoutMSec == 0) ? DEFAULT_CONNECT_TIMEOUT : timeoutMSec;
-    while (true) {
-        auto startTime = std::chrono::steady_clock::now();
-        ret = poll(fds, 1, timeoutMs);
-        if (ret > 0) {
-            break;
-        } else if (ret == 0) {
-            NETSTACK_LOGE("connect poll timeout, socket is %{public}d", sock);
-            return false;
-        }
-
-        if (errno == EINTR) {
-            auto endTime = std::chrono::steady_clock::now();
-            auto intervalMs = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-            timeoutMs -= static_cast<int>(intervalMs.count());
-            if (timeoutMs <= 0) {
-                NETSTACK_LOGE("invalid timeout");
-                return false;
-            }
-            continue;
-        }
-        NETSTACK_LOGE("connect poll failed, socket is %{public}d, errno is %{public}d", sock, errno);
-        return false;
-    }
-
-    int err = 0;
-    socklen_t optLen = sizeof(err);
-    ret = getsockopt(sock, SOL_SOCKET, SO_ERROR, reinterpret_cast<void *>(&err), &optLen);
-    if (ret < 0) {
-        return false;
-    }
-    if (err != 0) {
-        NETSTACK_LOGE("NonBlockConnect exec failed, socket is %{public}d, err is %{public}d", sock, err);
-        return false;
-    }
-    return true;
-}
-
 static bool SetBaseOptions(int sock, ExtraOptionsBase *option)
 {
     if (option->AlreadySetRecvBufSize()) {
@@ -1011,6 +897,86 @@ bool ExecUdpBind(BindContext *context)
     return true;
 }
 
+static std::shared_ptr<Socks5::Socks5UdpInstance> InitSocks5UdpInstance(UdpSendContext *context)
+{
+    const std::shared_ptr<Socks5::Socks5Option> opt{std::make_shared<Socks5::Socks5Option>()};
+    opt->username = context->proxyOptions->username;
+    opt->password = context->proxyOptions->password;
+    opt->proxyAddress.netAddress = context->proxyOptions->address;
+    socklen_t len;
+    GetAddr(&opt->proxyAddress.netAddress, &opt->proxyAddress.addrV4, &opt->proxyAddress.addrV6,
+        &opt->proxyAddress.addr, &len);
+    if (opt->proxyAddress.addr == nullptr) {
+        NETSTACK_LOGE("addr family error, address invalid");
+        context->SetErrorCode(ADDRESS_INVALID);
+        return nullptr;
+    }
+
+    auto socks5Udp = std::make_shared<Socks5::Socks5UdpInstance>();
+    socks5Udp->SetDestAddress(context->options.address);
+    socks5Udp->AddHeader();
+    socks5Udp->SetSocks5Option(opt);
+    return socks5Udp;
+}
+
+static void SetProxyAuthError(BaseContext *context, std::shared_ptr<Socks5::Socks5Instance> &socks5Inst)
+{
+    const int32_t errCode = socks5Inst->GetErrorCode();
+    const std::string errMsg = socks5Inst->GetErrorMessage();
+    NETSTACK_LOGE("socks5 auth failed, errCode:%{public}d, errMsg::%{public}s", errCode, errMsg.c_str());
+    if (errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_USER_PASS_INVALID)) {
+        context->SetError(SOCKS5_USER_PASS_ERROR, errMsg);
+    } else if (errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY)) {
+        context->SetError(SOCKS5_CONNECT_PROXY_ERROR, errMsg);
+    } else if (errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_REMOTE)) {
+        context->SetError(SOCKS5_CONNECT_REMOTE_ERROR, errMsg);
+    } else {
+        context->SetError(SOCKS5_ERROR, "Socks5 auth failed");
+    }
+}
+
+static int HandleUdpProxyOptions(UdpSendContext *context)
+{
+    EventManager *eventMgr = context->GetManager();
+    if (eventMgr == nullptr) {
+        NETSTACK_LOGE("event manager is null");
+        return -1;
+    }
+
+    if (context->proxyOptions->type != ProxyType::SOCKS5) {
+        NETSTACK_LOGE("unsupport proxy type");
+        return 0;
+    }
+
+    auto socks5Udp = eventMgr->GetProxyData();
+    if (socks5Udp == nullptr) {
+        socks5Udp = InitSocks5UdpInstance(context);
+        if (socks5Udp == nullptr) {
+            return -1;
+        }
+        eventMgr->SetProxyData(socks5Udp);
+    }
+
+    if (!socks5Udp->IsConnected()) {
+        if (!socks5Udp->Connect()) {
+            SetProxyAuthError(context, socks5Udp);
+            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
+            return -1;
+        }
+    }
+
+    Socket::NetAddress bindAddr = socks5Udp->GetProxyBindAddress();
+    context->options.SetData(socks5Udp->GetHeader() + context->options.GetData());
+
+    // process wild address from some socks5 server
+    if (bindAddr.GetAddress() == WILD_ADDRESS) {
+        bindAddr.SetAddress(context->proxyOptions->address.GetAddress());
+    }
+    context->options.address = bindAddr;
+
+    return 0;
+}
+
 bool ExecUdpSend(UdpSendContext *context)
 {
 #ifdef FUZZ_TEST
@@ -1031,6 +997,10 @@ bool ExecUdpSend(UdpSendContext *context)
         return false;
     }
 
+    if (context->proxyOptions != nullptr && HandleUdpProxyOptions(context) != 0) {
+        return false;
+    }
+
     bool result = UdpSendEvent(context);
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
     return result;
@@ -1039,6 +1009,60 @@ bool ExecUdpSend(UdpSendContext *context)
 bool ExecTcpBind(BindContext *context)
 {
     return ExecBind(context);
+}
+
+static std::shared_ptr<Socks5::Socks5TcpInstance> InitSocks5TcpInstance(ConnectContext *context)
+{
+    const std::shared_ptr<Socks5::Socks5Option> opt{std::make_shared<Socks5::Socks5Option>()};
+    opt->username = context->proxyOptions->username;
+    opt->password = context->proxyOptions->password;
+    opt->proxyAddress.netAddress = context->proxyOptions->address;
+    socklen_t len;
+    GetAddr(&opt->proxyAddress.netAddress, &opt->proxyAddress.addrV4, &opt->proxyAddress.addrV6,
+        &opt->proxyAddress.addr, &len);
+    if (opt->proxyAddress.addr == nullptr) {
+        NETSTACK_LOGE("addr family error, address invalid");
+        context->SetErrorCode(ADDRESS_INVALID);
+        return nullptr;
+    }
+
+    auto socks5Tcp = std::make_shared<Socks5::Socks5TcpInstance>(context->GetSocketFd());
+    socks5Tcp->SetDestAddress(context->options.address);
+    socks5Tcp->SetSocks5Option(opt);
+    return socks5Tcp;
+}
+
+static int HandleTcpProxyOptions(ConnectContext *context)
+{
+    EventManager *eventMgr = context->GetManager();
+    if (eventMgr == nullptr) {
+        NETSTACK_LOGE("event manager is null");
+        return -1;
+    }
+
+    if (context->proxyOptions->type != ProxyType::SOCKS5) {
+        NETSTACK_LOGE("unsupport proxy type");
+        return 0;
+    }
+
+    auto socks5Tcp = eventMgr->GetProxyData();
+    if (socks5Tcp == nullptr) {
+        socks5Tcp = InitSocks5TcpInstance(context);
+        if (socks5Tcp == nullptr) {
+            return -1;
+        }
+        eventMgr->SetProxyData(socks5Tcp);
+    }
+
+    if (!socks5Tcp->IsConnected()) {
+        if (!socks5Tcp->Connect()) {
+            SetProxyAuthError(context, socks5Tcp);
+            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::ConnectCallback);
+            return -1;
+        }
+    }
+
+    return 0;
 }
 
 bool ExecConnect(ConnectContext *context)
@@ -1054,7 +1078,12 @@ bool ExecConnect(ConnectContext *context)
     socklen_t len;
     context->options.address.SetRawAddress(
         ConvertAddressToIp(context->options.address.GetAddress(), context->options.address.GetSaFamily()));
-    GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
+    if ((context->proxyOptions != nullptr)) {
+        GetAddr(&context->proxyOptions->address, &addr4, &addr6, &addr, &len);
+    } else {
+        GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
+    }
+
     if (addr == nullptr) {
         NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
@@ -1062,10 +1091,25 @@ bool ExecConnect(ConnectContext *context)
     }
 
     if (!NonBlockConnect(context->GetSocketFd(), addr, len, context->options.GetTimeout())) {
+        if (context->proxyOptions != nullptr) {
+            const int32_t errCode = static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY);
+            std::string errMsg =
+                Socks5::Socks5Utils::GetStatusMessage(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY);
+            context->SetError(SOCKS5_CONNECT_PROXY_ERROR, errMsg);
+            context->SetExecOK(false);
+            NETSTACK_LOGE("socks5 connect failed, errCode:%{public}d, errMsg:%{public}s", errCode, errMsg.c_str());
+            return false;
+        }
         ERROR_RETURN(context, "connect errno %{public}d", errno);
     }
 
     NETSTACK_LOGI("connect success, sock:%{public}d", context->GetSocketFd());
+    if (context->proxyOptions != nullptr && HandleTcpProxyOptions(context) != 0) {
+        close(context->GetSocketFd());
+        context->SetExecOK(false);
+        return false;
+    }
+
     std::thread serviceThread(PollRecvData, context->GetSocketFd(), nullptr, 0,
                               TcpMessageCallback(context->GetManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
@@ -2368,4 +2412,136 @@ bool IpMatchFamily(const std::string &address, sa_family_t family)
         }
     }
     return true;
+}
+
+
+bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeoutMSec)
+{
+    int ret = connect(sock, addr, addrLen);
+    if (ret >= 0) {
+        return true;
+    }
+    if (errno != EINPROGRESS) {
+        return false;
+    }
+    struct pollfd fds[1] = {{.fd = sock, .events = POLLOUT}};
+    int timeoutMs = (timeoutMSec == 0) ? DEFAULT_CONNECT_TIMEOUT : timeoutMSec;
+    while (true) {
+        auto startTime = std::chrono::steady_clock::now();
+        ret = poll(fds, 1, timeoutMs);
+        if (ret > 0) {
+            break;
+        } else if (ret == 0) {
+            NETSTACK_LOGE("connect poll timeout, socket is %{public}d", sock);
+            return false;
+        }
+
+        if (errno == EINTR) {
+            auto endTime = std::chrono::steady_clock::now();
+            auto intervalMs = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+            timeoutMs -= static_cast<int>(intervalMs.count());
+            if (timeoutMs <= 0) {
+                NETSTACK_LOGE("invalid timeout");
+                return false;
+            }
+            continue;
+        }
+        NETSTACK_LOGE("connect poll failed, socket is %{public}d, errno is %{public}d", sock, errno);
+        return false;
+    }
+
+    int err = 0;
+    socklen_t optLen = sizeof(err);
+    ret = getsockopt(sock, SOL_SOCKET, SO_ERROR, reinterpret_cast<void *>(&err), &optLen);
+    if (ret < 0) {
+        return false;
+    }
+    if (err != 0) {
+        NETSTACK_LOGE("NonBlockConnect exec failed, socket is %{public}d, err is %{public}d", sock, err);
+        return false;
+    }
+    return true;
+}
+
+bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr, socklen_t addrLen)
+{
+    NETSTACK_LOGD("js send RawSize: %{public}zu", size);
+    int bufferSize = DEFAULT_BUFFER_SIZE;
+    int opt = 0;
+    socklen_t optLen = sizeof(opt);
+    if (getsockopt(sock, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<void *>(&opt), &optLen) >= 0 && opt > 0) {
+        bufferSize = opt;
+    }
+    int sockType = 0;
+    optLen = sizeof(sockType);
+    if (getsockopt(sock, SOL_SOCKET, SO_TYPE, reinterpret_cast<void *>(&sockType), &optLen) < 0) {
+        NETSTACK_LOGI("get sock opt sock type failed, socket is %{public}d, errno is %{public}d", sock, errno);
+        return false;
+    }
+
+    auto curPos = data;
+    auto leftSize = size;
+    nfds_t num = 1;
+    pollfd fds[1] = {{0}};
+    fds[0].fd = sock;
+    fds[0].events = 0;
+    fds[0].events |= POLLOUT;
+    int sendTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_SNDTIMEO, DEFAULT_TIMEOUT_MS);
+    if (sendTimeoutMs < 0) {
+        return false;
+    }
+    while (leftSize > 0) {
+        if (!OHOS::NetStack::Socket::SocketExec::PollFd(fds, num, sendTimeoutMs)) {
+            if (errno != EINTR) {
+                return false;
+            }
+        }
+        size_t sendSize = (sockType == SOCK_STREAM ? leftSize : std::min<size_t>(leftSize, bufferSize));
+        auto sendLen = sendto(sock, curPos, sendSize, 0, addr, addrLen);
+        NETSTACK_LOGD("socketFD: %{public}d, send len: %{public}zu", sock, sendLen);
+        if (sendLen < 0) {
+            if (errno == EAGAIN || errno == EINTR) {
+                continue;
+            }
+            NETSTACK_LOGE("send failed, socket is %{public}d, errno is %{public}d", sock, errno);
+            return false;
+        }
+        if (sendLen == 0) {
+            break;
+        }
+        curPos += sendLen;
+        leftSize -= sendLen;
+    }
+
+    if (leftSize != 0) {
+        NETSTACK_LOGE("send not complete, socket is %{public}d, errno is %{public}d", sock, errno);
+        return false;
+    }
+    return true;
+}
+
+int ConfirmSocketTimeoutMs(int sock, int type, int defaultValue)
+{
+    timeval timeout;
+    socklen_t optlen = sizeof(timeout);
+    if (getsockopt(sock, SOL_SOCKET, type, reinterpret_cast<void *>(&timeout), &optlen) < 0) {
+        NETSTACK_LOGE("get timeout failed, type: %{public}d, sock: %{public}d, errno: %{public}d", type, sock, errno);
+        if (errno == ENOTSOCK && type == SO_RCVTIMEO) {
+            return -1;
+        }
+        return defaultValue;
+    }
+    auto socketTimeoutMs = timeout.tv_sec * UNIT_CONVERSION_1000 + timeout.tv_usec / UNIT_CONVERSION_1000;
+    return socketTimeoutMs == 0 ? defaultValue : socketTimeoutMs;
+}
+
+int ConfirmBufferSize(int sock)
+{
+    int bufferSize = DEFAULT_BUFFER_SIZE;
+    int opt = 0;
+    socklen_t optLen = sizeof(opt);
+    if (getsockopt(sock, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<void *>(&opt), &optLen) >= 0 && opt > 0) {
+        bufferSize = opt;
+    }
+    return bufferSize;
 }

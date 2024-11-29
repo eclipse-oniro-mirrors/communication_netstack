@@ -143,10 +143,25 @@ void NetAddress::SetAddress(const std::string &address)
     freeaddrinfo(res);
 }
 
+void NetAddress::SetAddress(const std::string &address, bool resolveDns)
+{
+    if (!resolveDns && family_ == Family::DOMAIN) {
+        address_ = address;
+    } else {
+        SetAddress(address);
+    }
+}
+
 void NetAddress::SetFamilyByJsValue(uint32_t family)
 {
-    if (static_cast<Family>(family) == Family::IPv6) {
+    if (static_cast<Family>(family) == Family::IPv4) {
+        family_ = Family::IPv4;
+    } else if (static_cast<Family>(family) == Family::IPv6) {
         family_ = Family::IPv6;
+    } else if (static_cast<Family>(family) == Family::DOMAIN) {
+        family_ = Family::DOMAIN;
+    } else {
+        // do nothing
     }
 }
 

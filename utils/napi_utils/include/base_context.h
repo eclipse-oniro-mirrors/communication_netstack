@@ -35,6 +35,7 @@ static constexpr size_t PERMISSION_DENIED_CODE = 201;
 static constexpr const char *PERMISSION_DENIED_MSG = "Permission denied";
 static constexpr size_t PARSE_ERROR_CODE = 401;
 static constexpr const char *PARSE_ERROR_MSG = "Parameter error";
+static constexpr size_t SOCKS5_ERROR_CODE = 205;
 
 class BaseContext {
 public:

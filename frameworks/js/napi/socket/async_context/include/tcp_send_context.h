@@ -17,11 +17,13 @@
 #define COMMUNICATIONNETSTACK_TCP_SEND_CONTEXT_H
 
 #include <cstddef>
+#include <memory>
 
 #include "base_context.h"
 #include "napi/native_api.h"
 #include "nocopyable.h"
 #include "tcp_send_options.h"
+#include "proxy_options.h"
 
 namespace OHOS::NetStack::Socket {
 class TcpSendContext final : public BaseContext {

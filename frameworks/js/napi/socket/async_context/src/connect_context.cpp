@@ -30,18 +30,7 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     bool valid = CheckParamsType(params, paramsCount);
     if (!valid) {
-        if (paramsCount == PARAM_JUST_CALLBACK) {
-            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
-                SetCallback(params[0]);
-            }
-            return;
-        }
-        if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
-            if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
-                SetCallback(params[1]);
-            }
-            return;
-        }
+        HandleCallback(params, paramsCount);
         return;
     }
 
@@ -76,7 +65,17 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
     if (timeout != 0) {
         options.SetTimeout(timeout);
     }
-
+    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_PROXY)) {
+        NETSTACK_LOGD("handle proxy options");
+        auto opts = std::make_shared<ProxyOptions>();
+        if (opts->ParseOptions(GetEnv(), params[0]) != 0) {
+            NETSTACK_LOGE("parse proxy options failed");
+            return;
+        }
+        if (opts->type != ProxyType::NONE) {
+            proxyOptions = opts;
+        }
+    }
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
         SetParseOK(SetCallback(params[1]) == napi_ok);
         return;
@@ -106,6 +105,22 @@ bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
     return false;
 }
 
+void ConnectContext::HandleCallback(napi_value *params, size_t paramsCount)
+{
+    if (paramsCount == PARAM_JUST_CALLBACK) {
+        if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
+            SetCallback(params[0]);
+        }
+        return;
+    }
+    if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
+        if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
+            SetCallback(params[1]);
+        }
+        return;
+    }
+}
+
 int32_t ConnectContext::GetErrorCode() const
 {
     if (BaseContext::IsPermissionDenied()) {
@@ -131,6 +146,10 @@ std::string ConnectContext::GetErrorMessage() const
     auto errCode = BaseContext::GetErrorCode();
     if (errCode == PARSE_ERROR_CODE) {
         return PARSE_ERROR_MSG;
+    }
+
+    if (errCode >= SOCKS5_ERROR_CODE) {
+        return BaseContext::GetErrorMessage();
     }
 #if defined(IOS_PLATFORM)
     std::string errMessage;

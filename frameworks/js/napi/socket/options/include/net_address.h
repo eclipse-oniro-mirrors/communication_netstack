@@ -25,6 +25,7 @@ public:
     enum class Family : uint32_t {
         IPv4 = 1,
         IPv6 = 2,
+        DOMAIN = 3,
     };
 
     NetAddress();
@@ -38,6 +39,8 @@ public:
     void SetIpAddress(const std::string &address);
 
     void SetAddress(const std::string &address);
+
+    void SetAddress(const std::string &address, bool resolveDns);
 
     void SetFamilyByJsValue(uint32_t family);
 

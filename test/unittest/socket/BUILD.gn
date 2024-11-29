@@ -42,6 +42,7 @@ ohos_unittest("socket_unittest") {
   module_out_path = "netstack/socket_unittest"
 
   include_dirs = [
+    "$NETSTACK_DIR/frameworks/js/napi/proxy/include",
     "$NETSTACK_DIR/utils/napi_utils/include",
     "$NETSTACK_INNERKITS_DIR/tls_socket/include",
     "$NETSTACK_NATIVE_ROOT/tls_socket/include",
@@ -57,6 +58,11 @@ ohos_unittest("socket_unittest") {
   include_dirs += utils_include
 
   sources = [
+    "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_instance.cpp",
+    "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_none_method.cpp",
+    "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_package.cpp",
+    "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_passwd_method.cpp",
+    "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_utils.cpp",
     "$NETSTACK_NATIVE_ROOT/tls_socket/src/secure_data.cpp",
     "$NETSTACK_NATIVE_ROOT/tls_socket/src/socket_error.cpp",
     "$NETSTACK_NATIVE_ROOT/tls_socket/src/tls_certificate.cpp",
@@ -86,6 +92,7 @@ ohos_unittest("socket_unittest") {
     "$SOCKET_NAPI/options/src/extra_options_base.cpp",
     "$SOCKET_NAPI/options/src/local_socket_options.cpp",
     "$SOCKET_NAPI/options/src/net_address.cpp",
+    "$SOCKET_NAPI/options/src/proxy_options.cpp",
     "$SOCKET_NAPI/options/src/socket_remote_info.cpp",
     "$SOCKET_NAPI/options/src/socket_state_base.cpp",
     "$SOCKET_NAPI/options/src/tcp_connect_options.cpp",

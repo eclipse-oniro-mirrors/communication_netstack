@@ -18,6 +18,7 @@
 
 #include <cerrno>
 #include <fcntl.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "netstack_log.h"
@@ -98,6 +99,17 @@ static int MakeLocalSocket(int socketType, bool needNonblock = true)
 }
 };
 }
+
 std::string ConvertAddressToIp(const std::string &address, sa_family_t family);
+
 bool IpMatchFamily(const std::string &address, sa_family_t family);
+
+bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeoutMSec);
+
+bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr, socklen_t addrLen);
+
+int ConfirmSocketTimeoutMs(int sock, int type, int defaultValue);
+
+int ConfirmBufferSize(int sock);
+
 #endif

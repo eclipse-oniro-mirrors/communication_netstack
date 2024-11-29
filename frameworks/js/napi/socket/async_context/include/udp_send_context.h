@@ -17,11 +17,13 @@
 #define COMMUNICATIONNETSTACK_UDP_SEND_CONTEXT_H
 
 #include <cstddef>
+#include <memory>
 
 #include "napi/native_api.h"
 #include "base_context.h"
 #include "nocopyable.h"
 #include "udp_send_options.h"
+#include "proxy_options.h"
 
 namespace OHOS::NetStack::Socket {
 class UdpSendContext final : public BaseContext {
@@ -42,10 +44,14 @@ public:
 
     UDPSendOptions options;
 
+    std::shared_ptr<ProxyOptions> proxyOptions{nullptr};
+
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 
     bool GetData(napi_value udpSendOptions);
+
+    void HandleCallback(napi_value *params, size_t paramsCount);
 };
 } // namespace OHOS::NetStack::Socket
 

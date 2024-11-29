@@ -16,6 +16,7 @@
 #include "udp_send_context.h"
 
 #include "context_key.h"
+#include "connect_context.h"
 #include "socket_constant.h"
 #include "net_address.h"
 #include "event_manager.h"
@@ -30,18 +31,7 @@ void UdpSendContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     bool valid = CheckParamsType(params, paramsCount);
     if (!valid) {
-        if (paramsCount == PARAM_JUST_CALLBACK) {
-            if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
-                SetCallback(params[0]);
-            }
-            return;
-        }
-        if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
-            if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
-                SetCallback(params[1]);
-            }
-            return;
-        }
+        HandleCallback(params, paramsCount);
         return;
     }
 
@@ -73,7 +63,17 @@ void UdpSendContext::ParseParams(napi_value *params, size_t paramsCount)
         }
         return;
     }
-
+    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_PROXY)) {
+        NETSTACK_LOGD("handle proxy options");
+        auto opts = std::make_shared<ProxyOptions>();
+        if (opts->ParseOptions(GetEnv(), params[0]) != 0) {
+            NETSTACK_LOGE("parse proxy options failed");
+            return;
+        }
+        if (opts->type != ProxyType::NONE) {
+            proxyOptions = opts;
+        }
+    }
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
         SetParseOK(SetCallback(params[1]) == napi_ok);
         return;
@@ -129,6 +129,22 @@ bool UdpSendContext::GetData(napi_value udpSendOptions)
     return false;
 }
 
+void UdpSendContext::HandleCallback(napi_value *params, size_t paramsCount)
+{
+    if (paramsCount == PARAM_JUST_CALLBACK) {
+        if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_function) {
+            SetCallback(params[0]);
+        }
+        return;
+    }
+    if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
+        if (NapiUtils::GetValueType(GetEnv(), params[1]) == napi_function) {
+            SetCallback(params[1]);
+        }
+        return;
+    }
+}
+
 int32_t UdpSendContext::GetErrorCode() const
 {
     if (BaseContext::IsPermissionDenied()) {
@@ -154,6 +170,10 @@ std::string UdpSendContext::GetErrorMessage() const
     auto errCode = BaseContext::GetErrorCode();
     if (errCode == PARSE_ERROR_CODE) {
         return PARSE_ERROR_MSG;
+    }
+
+    if (errCode >= SOCKS5_ERROR_CODE) {
+        return BaseContext::GetErrorMessage();
     }
 #if defined(IOS_PLATFORM)
     std::string errMessage;
