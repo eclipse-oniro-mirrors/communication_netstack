@@ -51,7 +51,6 @@ struct HttpPerfInfo {
     long osErr;
     int ipType;
     int32_t errCode;
-    std::string method;
 public:
     bool IsSuccess() const;
     bool IsError() const;
@@ -59,10 +58,10 @@ public:
 
 class EventReport {
 public:
+    void ProcessHttpPerfHiSysevent(const HttpPerfInfo &httpPerfInfo);
     void SendHttpPerfEvent(const EventInfo &eventInfo);
     static EventReport &GetInstance();
     bool IsValid();
-    void ProcessEvents(HttpPerfInfo &httpPerfInfo);
 
 private:
     EventReport();
@@ -75,17 +74,19 @@ private:
     std::string MapToJsonString(const std::map<std::string, uint32_t> mapPara);
     void HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo);
     void HandleHttpResponseErrorEvents(const HttpPerfInfo &httpPerfInfo);
-    void SendHttpResponseErrorEvent(std::deque<HttpPerfInfo>& netStackInfoQueue,
+    void SendHttpResponseErrorEvent(const std::deque<HttpPerfInfo> &httpPerfInfoQueue_,
                                     const std::chrono::steady_clock::time_point now);
-    std::string HttpPerInfoToJson(const HttpPerfInfo &info);
+    void ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerfInfoQueue_);
 private:
-    time_t reportTime_ = 0;
-    std::chrono::steady_clock::time_point topAppReportTime_ = std::chrono::steady_clock::time_point::min();
+    time_t reportTime = 0;
+    std::chrono::steady_clock::time_point httpReponseRecordTime_ = std::chrono::steady_clock::time_point::min();
+    std::chrono::steady_clock::time_point hiviewReportFirstTime_ = std::chrono::steady_clock::time_point::min();
     int sendHttpNetStackEventCount_ = 0;
     unsigned int totalErrorCount_ = 0;
+    unsigned int totalErrorCount_ = 0;
     std::string packageName_;
-    EventInfo eventInfo_;
-    std::map<std::string, uint32_t> versionMap_;
+    EventInfo eventInfo;
+    std::map<std::string, uint32_t> versionMap;
     std::deque<HttpPerfInfo> httpPerfInfoQueue_;
     bool validFlag_ = true;
     std::recursive_mutex mutex_;
