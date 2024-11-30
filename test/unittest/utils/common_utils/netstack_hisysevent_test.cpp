@@ -59,79 +59,79 @@ HWTEST_F(NetStackHiSysEventTest, IsSuccess_ShouldReturnFalse_WhenResponseCodeIsG
 
 HWTEST_F(NetStackHiSysEventTest, IsValid_ShouldReturnTrue_WhenValidFlagIsTrue, TestSize.Level0)
 {
-    EventReport::GetInstance().validFlag_ = true;
+    EventReport::GetInstance().validFlag = true;
     ASSERT_EQ(EventReport::GetInstance().IsValid(), true);
 }
- 
+
 HWTEST_F(NetStackHiSysEventTest, IsValid_ShouldReturnFalse_WhenValidFlagIsFalse, TestSize.Level0)
 {
-    EventReport::GetInstance().validFlag_ = false;
+    EventReport::GetInstance().validFlag = false;
     ASSERT_EQ(EventReport::GetInstance().IsValid(), false);
 }
- 
-HWTEST_F(NetStackHiSysEventTest, ProcessHttpHiSysevent_01, TestSize.Level0)
+
+HWTEST_F(NetStackHiSysEventTest, ProcessHttpPerfHiSysevent_01, TestSize.Level0)
 {
     HttpPerfInfo httpPerfInfo;
     httpPerfInfo.responseCode = 200;
     httpPerfInfo.totalTime = 0.0;
-    EventReport::GetInstance().ProcessEvents(httpPerfInfo);
-    EXPECT_EQ(EventReport::GetInstance().eventInfo_.successCount, 0);
+    EventReport::GetInstance().ProcessHttpPerfHiSysevent(httpPerfInfo);
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.successCount, 0);
 }
- 
-HWTEST_F(NetStackHiSysEventTest, ProcessHttpHiSysevent_02, TestSize.Level0)
+
+HWTEST_F(NetStackHiSysEventTest, ProcessHttpPerfHiSysevent_02, TestSize.Level0)
 {
     HttpPerfInfo httpPerfInfo;
     httpPerfInfo.responseCode = 200;
     httpPerfInfo.totalTime = 100.0;
-    EventReport::GetInstance().ProcessEvents(httpPerfInfo);
-    EXPECT_EQ(EventReport::GetInstance().eventInfo_.successCount, 1);
+    EventReport::GetInstance().ProcessHttpPerfHiSysevent(httpPerfInfo);
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.successCount, 1);
 }
- 
-HWTEST_F(NetStackHiSysEventTest, ProcessHttpHiSysevent_03, TestSize.Level0)
+
+HWTEST_F(NetStackHiSysEventTest, ProcessHttpPerfHiSysevent_03, TestSize.Level0)
 {
     HttpPerfInfo httpPerfInfo;
     httpPerfInfo.responseCode = 200;
     httpPerfInfo.totalTime = 100.0;
-    EventReport::GetInstance().reportTime_ = time(0) - REPORT_INTERVAL - 1;
-    EventReport::GetInstance().ProcessEvents(httpPerfInfo);
-    EXPECT_EQ(EventReport::GetInstance().eventInfo_.totalTime, 0);
+    EventReport::GetInstance().reportTime = time(0) - REPORT_INTERVAL - 1;
+    EventReport::GetInstance().ProcessHttpPerfHiSysevent(httpPerfInfo);
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.totalTime, 0);
 }
- 
-HWTEST_F(NetStackHiSysEventTest, ProcessHttpHiSysevent_04, TestSize.Level0)
+
+HWTEST_F(NetStackHiSysEventTest, ProcessHttpPerfHiSysevent_04, TestSize.Level0)
 {
     HttpPerfInfo httpPerfInfo;
     httpPerfInfo.responseCode = 200;
     httpPerfInfo.totalTime = 100.0;
     httpPerfInfo.version = "1";
-    uint32_t preSuccessCount = EventReport::GetInstance().eventInfo_.successCount;
-    EventReport::GetInstance().reportTime_ = time(0) - REPORT_INTERVAL + 1;
-    EventReport::GetInstance().ProcessEvents(httpPerfInfo);
-    EXPECT_EQ(EventReport::GetInstance().eventInfo_.successCount, preSuccessCount + 1);
+    uint32_t preSuccessCount = EventReport::GetInstance().eventInfo.successCount;
+    EventReport::GetInstance().reportTime = time(0) - REPORT_INTERVAL + 1;
+    EventReport::GetInstance().ProcessHttpPerfHiSysevent(httpPerfInfo);
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.successCount, preSuccessCount + 1);
 }
- 
+
 HWTEST_F(NetStackHiSysEventTest, ResetCounters_ShouldResetAllCountersToZero_WhenCalled, TestSize.Level0)
 {
-    EventReport::GetInstance().eventInfo_.totalCount = 10;
-    EventReport::GetInstance().eventInfo_.successCount = 5;
-    EventReport::GetInstance().eventInfo_.totalTime = 10.0;
-    EventReport::GetInstance().eventInfo_.totalRate = 5.0;
-    EventReport::GetInstance().eventInfo_.totalDnsTime = 2.0;
-    EventReport::GetInstance().eventInfo_.totalTlsTime = 3.0;
-    EventReport::GetInstance().eventInfo_.totalTcpTime = 4.0;
-    EventReport::GetInstance().eventInfo_.totalFirstRecvTime = 1.0;
-    EventReport::GetInstance().versionMap_.insert(std::make_pair("1.0", 1));
- 
+    EventReport::GetInstance().eventInfo.totalCount = 10;
+    EventReport::GetInstance().eventInfo.successCount = 5;
+    EventReport::GetInstance().eventInfo.totalTime = 10.0;
+    EventReport::GetInstance().eventInfo.totalRate = 5.0;
+    EventReport::GetInstance().eventInfo.totalDnsTime = 2.0;
+    EventReport::GetInstance().eventInfo.totalTlsTime = 3.0;
+    EventReport::GetInstance().eventInfo.totalTcpTime = 4.0;
+    EventReport::GetInstance().eventInfo.totalFirstRecvTime = 1.0;
+    EventReport::GetInstance().versionMap.insert(std::make_pair("1.0", 1));
+
     EventReport::GetInstance().ResetCounters();
- 
-    EXPECT_EQ(EventReport::GetInstance().eventInfo_.totalCount, 0);
-    EXPECT_EQ(EventReport::GetInstance().eventInfo_.successCount, 0);
-    EXPECT_EQ(EventReport::GetInstance().eventInfo_.totalTime, 0.0);
-    EXPECT_EQ(EventReport::GetInstance().eventInfo_.totalRate, 0.0);
-    EXPECT_EQ(EventReport::GetInstance().eventInfo_.totalDnsTime, 0.0);
-    EXPECT_EQ(EventReport::GetInstance().eventInfo_.totalTlsTime, 0.0);
-    EXPECT_EQ(EventReport::GetInstance().eventInfo_.totalTcpTime, 0.0);
-    EXPECT_EQ(EventReport::GetInstance().eventInfo_.totalFirstRecvTime, 0.0);
-    EXPECT_TRUE(EventReport::GetInstance().versionMap_.empty());
+
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.totalCount, 0);
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.successCount, 0);
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.totalTime, 0.0);
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.totalRate, 0.0);
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.totalDnsTime, 0.0);
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.totalTlsTime, 0.0);
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.totalTcpTime, 0.0);
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.totalFirstRecvTime, 0.0);
+    EXPECT_TRUE(EventReport::GetInstance().versionMap.empty());
 }
 
 HWTEST_F(NetStackHiSysEventTest, MapToJsonString_ShouldReturnEmptyJson_WhenMapIsEmpty, TestSize.Level0)
