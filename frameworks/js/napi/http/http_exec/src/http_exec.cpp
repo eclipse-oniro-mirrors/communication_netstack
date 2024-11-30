@@ -480,16 +480,14 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         httpPerfInfo.firstRecvTime = firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime;
         httpPerfInfo.responseCode = responseCode;
         httpPerfInfo.version = std::to_string(httpVer);
-
-        httpPerfInfo.osErr = osErr;
-        httpPerfInfo.method = context->options.GetMethod();
+        httpPerfInfo.osErr = static_cast<int64_t>(osErr);
         httpPerfInfo.errCode = context->IsExecOK() ? 0 : context->GetErrorCode();
+        httpPerfInfo.firstSendTime = firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime});
         char *ip = nullptr;
         curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &ip);
         std::string ipStr = (ip != nullptr) ? ip : "";
         httpPerfInfo.ipType = CommonUtils::DetectIPType(ipStr);
-
-        EventReport::GetInstance().ProcessEvents(httpPerfInfo);
+        EventReport::GetInstance().ProcessHttpPerfHiSysevent(httpPerfInfo);
     }
 #endif
 }
