@@ -209,6 +209,9 @@ void EventReport::SendHttpPerfEvent(const EventInfo &eventInfo)
 
 void EventReport::ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerfInfoQueue_)
 {
+    if (httpPerfInfoQueue_.empty()) {
+        return;
+    }   
     std::vector<double> dnsTimeArr;
     std::vector<double> tcpTimeArr;
     std::vector<double> tlsTimeArr;
