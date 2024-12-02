@@ -208,9 +208,6 @@ void EventReport::SendHttpPerfEvent(const EventInfo &eventInfo)
 
 void EventReport::ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerfInfoQueue_)
 {
-    if (httpPerfInfoQueue_.empty()) {
-        return;
-    }   
     std::vector<double> dnsTimeArr;
     std::vector<double> tcpTimeArr;
     std::vector<double> tlsTimeArr;
@@ -262,7 +259,6 @@ void EventReport::SendHttpResponseErrorEvent(const std::deque<HttpPerfInfo> &htt
     if (httpPerfInfoQueue_.empty()) {
         return;
     }
-
     if (hiviewReportFirstTime_ == std::chrono::steady_clock::time_point::min()) {
         hiviewReportFirstTime_ = now;
     }
