@@ -677,7 +677,7 @@ void HttpClientTask::DumpHttpPerformance()
 
     curl_off_t size = GetSizeFromCurl(curlHandle_);
     char *ip = nullptr;
-    curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &ip);
+    curl_easy_getinfo(curlHandle_, CURLINFO_PRIMARY_IP, &ip);
     NETSTACK_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
