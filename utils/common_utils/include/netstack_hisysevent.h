@@ -77,6 +77,7 @@ private:
     void SendHttpResponseErrorEvent(const std::deque<HttpPerfInfo> &httpPerfInfoQueue_,
                                     const std::chrono::steady_clock::time_point now);
     void ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerfInfoQueue_);
+
 private:
     time_t reportTime = 0;
     std::chrono::steady_clock::time_point httpReponseRecordTime_ = std::chrono::steady_clock::time_point::min();
@@ -88,8 +89,8 @@ private:
     EventInfo eventInfo;
     std::map<std::string, uint32_t> versionMap;
     std::deque<HttpPerfInfo> httpPerfInfoQueue_;
-    bool validFlag_ = true;
-    std::recursive_mutex mutex_;
+    bool validFlag = true;
+    std::recursive_mutex mutex;
 };
 }
 #endif
