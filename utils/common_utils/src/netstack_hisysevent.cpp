@@ -54,7 +54,7 @@ const int64_t HTTP_SUCCEED_CODE = 0;
 const int64_t HTTP_APP_UID_THRESHOLD = 200000 * 100;
 const int64_t HTTP_SEND_CHR_THRESHOLD = 5;
 const unsigned int MAX_QUEUE_SIZE = 10;
-const unsigned int ERR_COUNT_THRESHOLD = 10;
+const unsigned int ERROR_COUNT_THRESHOLD = 10;
 const uint32_t REPORT_HIVIEW_INTERVAL = 10 * 60 * 1000;
 }
 
@@ -154,7 +154,7 @@ void EventReport::HandleHttpResponseErrorEvents(const HttpPerfInfo &httpPerfInfo
     }
     httpReponseRecordTime_ = now;
 
-    if (totalErrorCount_ >= ERR_COUNT_THRESHOLD) {
+    if (totalErrorCount_ >= ERROR_COUNT_THRESHOLD) {
         if (httpPerfInfoQueue_.size() >= MAX_QUEUE_SIZE || httpReportInterval_ >= REPORT_NET_STACK_INTERVAL) {
             SendHttpResponseErrorEvent(httpPerfInfoQueue_, now);
             totalErrorCount_ = 0;
