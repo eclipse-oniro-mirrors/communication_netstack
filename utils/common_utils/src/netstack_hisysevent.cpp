@@ -56,7 +56,7 @@ const int64_t HTTP_APP_UID_THRESHOLD = 200000 * 100;
 const int64_t HTTP_SEND_CHR_THRESHOLD = 5;
 const unsigned int MAX_QUEUE_SIZE = 10;
 const unsigned int ERR_COUNT_THRESHOLD = 10;
-const uint32_t REP_HIVIEW_INTERVAL = 10 * 60 * 1000;
+const uint32_t REPORT_HIVIEW_INTERVAL = 10 * 60 * 1000;
 }
 
 bool HttpPerfInfo::IsSuccess() const
@@ -251,7 +251,7 @@ void EventReport::ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerf
     }
 }
 
-void EventReport::SendHttpResponseErrorEvent(std::deque<HttpPerfInfo> &httpPerfInfoQueue_,
+void EventReport::SendHttpResponseErrorEvent(const std::deque<HttpPerfInfo> &httpPerfInfoQueue_,
                                              const std::chrono::steady_clock::time_point now)
 {
     if (httpPerfInfoQueue_.empty()) {
