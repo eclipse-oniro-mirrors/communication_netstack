@@ -447,6 +447,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     (void)curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responseCode);
     long osErr = 0;
     (void)curl_easy_getinfo(handle, CURLINFO_OS_ERRNO, &osErr);
+    int32_t errCode = context->IsExecOK() ? 0 : context->GetErrorCode();
 
     /*
     CURL_HTTP_VERSION_NONE         0
@@ -481,7 +482,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         httpPerfInfo.responseCode = responseCode;
         httpPerfInfo.version = std::to_string(httpVer);
         httpPerfInfo.osErr = static_cast<int64_t>(osErr);
-        httpPerfInfo.errCode = context->IsExecOK() ? 0 : context->GetErrorCode();
+        httpPerfInfo.errCode = errCode;
         httpPerfInfo.firstSendTime = firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime});
         char *ip = nullptr;
         curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &ip);
