@@ -207,25 +207,6 @@ void EventReport::SendHttpPerfEvent(const EventInfo &eventInfo)
     }
 }
 
-std::string EventReport::HttpPerInfoToJson(const HttpPerfInfo &info)
-{
-    std::stringstream ss;
-    ss << "{"
-       << "\"firstSendTime\": " << info.firstSendTime << ", "
-       << "\"firstRecvTime\": " << info.firstRecvTime << ", "
-       << "\"packName\": " << std::quoted(packageName_) << ", "
-       << "\"method\": " << std::quoted(info.method) << ", "
-       << "\"ipType\": " << info.ipType << ", "
-       << "\"respCode\": " << info.responseCode << ", "
-       << "\"errCode\": " << info.errCode << ", "
-       << "\"osErr\": " << info.osErr << ", "
-       << "\"tcpTime\": " << info.tcpTime << ", "
-       << "\"dnsTime\": " << info.dnsTime << ", "
-       << "\"tlsTime\": " << info.tlsTime
-       << "}";
-    return ss.str();
-}
-
 void EventReport::ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerfInfoQueue_)
 {
     std::vector<double> dnsTimeArr;
