@@ -447,7 +447,6 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     (void)curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responseCode);
     long osErr = 0;
     (void)curl_easy_getinfo(handle, CURLINFO_OS_ERRNO, &osErr);
-    int32_t errCode = context->IsExecOK() ? 0 : context->GetErrorCode();
 
     /*
     CURL_HTTP_VERSION_NONE         0
@@ -458,6 +457,9 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     int64_t httpVer = CURL_HTTP_VERSION_NONE;
     (void)curl_easy_getinfo(handle, CURLINFO_HTTP_VERSION, &httpVer);
     curl_off_t size = GetSizeFromCurl(handle, context);
+    char *ip = nullptr;
+    curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &ip);
+    int32_t errCode = context->IsExecOK() ? 0 : context->GetErrorCode();
     NETSTACK_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
@@ -484,8 +486,6 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         httpPerfInfo.osErr = static_cast<int64_t>(osErr);
         httpPerfInfo.errCode = errCode;
         httpPerfInfo.firstSendTime = firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime});
-        char *ip = nullptr;
-        curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &ip);
         std::string ipStr = (ip != nullptr) ? ip : "";
         httpPerfInfo.ipType = CommonUtils::DetectIPType(ipStr);
         EventReport::GetInstance().ProcessHttpPerfHiSysevent(httpPerfInfo);
