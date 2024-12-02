@@ -84,7 +84,6 @@ private:
     std::chrono::steady_clock::time_point hiviewReportFirstTime_ = std::chrono::steady_clock::time_point::min();
     int sendHttpNetStackEventCount_ = 0;
     unsigned int totalErrorCount_ = 0;
-    unsigned int totalErrorCount_ = 0;
     std::string packageName_;
     EventInfo eventInfo;
     std::map<std::string, uint32_t> versionMap;
