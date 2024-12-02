@@ -240,6 +240,9 @@ void EventReport::ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerf
     double receiveAverTime;
     double sendAverTime;
     size_t count = httpPerfInfoQueue_.size();
+    if (count == 0) {
+        return;
+    }
     receiveAverTime = totalRecvTime / count;
     sendAverTime = totalSendTime / count;
     int ret = HiSysEventWrite(HiSysEvent::Domain::NETMANAGER_STANDARD, HTTP_RESPONSE_ERROR,
