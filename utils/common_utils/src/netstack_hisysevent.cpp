@@ -99,9 +99,7 @@ void EventReport::ProcessHttpPerfHiSysevent(const HttpPerfInfo &httpPerfInfo)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
-    if (getuid() > HTTP_APP_UID_THRESHOLD) {
-        HandleHttpResponseErrorEvents(httpPerfInfo);
-    }
+    HandleHttpResponseErrorEvents(httpPerfInfo);
     HandleHttpPerfEvents(httpPerfInfo);
 }
 
