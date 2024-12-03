@@ -53,7 +53,6 @@ const int64_t ERROR_HTTP_CODE_END = 600;
 const int64_t HTTP_SUCCEED_CODE = 0;
 const int64_t HTTP_APP_UID_THRESHOLD = 200000 * 100;
 const int64_t HTTP_SEND_CHR_THRESHOLD = 5;
-const unsigned int MAX_QUEUE_SIZE = 10;
 const unsigned int ERROR_COUNT_THRESHOLD = 10;
 const uint32_t REPORT_HIVIEW_INTERVAL = 10 * 60 * 1000;
 }
@@ -108,6 +107,11 @@ void EventReport::ProcessHttpPerfHiSysevent(const HttpPerfInfo &httpPerfInfo)
 
 void EventReport::HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo)
 {
+    time_t currentTime = time(0);
+
+    if (reportTime == 0) {
+        reportTime = currentTime;
+    }
     eventInfo.totalCount += 1;
     if (httpPerfInfo.IsSuccess() && httpPerfInfo.totalTime != 0) {
         eventInfo.successCount += 1;
@@ -122,10 +126,7 @@ void EventReport::HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo)
             ++(result.first->second);
         }
     }
-    time_t currentTime = time(0);
-    if (reportTime == 0) {
-        reportTime = currentTime;
-    }
+
     if (currentTime - reportTime >= REPORT_INTERVAL) {
         eventInfo.packageName = packageName_;
         eventInfo.version = MapToJsonString(versionMap);
@@ -141,6 +142,7 @@ void EventReport::HandleHttpResponseErrorEvents(const HttpPerfInfo &httpPerfInfo
     if (!httpPerfInfo.IsError()) {
         totalErrorCount_ = 0;
         httpPerfInfoQueue_.clear();
+        httpReponseRecordTime_ = std::chrono::steady_clock::time_point::min();
         return;
     }
     totalErrorCount_ += 1;
@@ -148,18 +150,17 @@ void EventReport::HandleHttpResponseErrorEvents(const HttpPerfInfo &httpPerfInfo
 
     auto now = std::chrono::steady_clock::now();
     int32_t httpReportInterval_ = 0;
-    if (httpReponseRecordTime_  != std::chrono::steady_clock::time_point::min()) {
+    if (httpReponseRecordTime_ != std::chrono::steady_clock::time_point::min()) {
         httpReportInterval_ = static_cast<int32_t>(std::chrono::duration_cast<std::chrono::milliseconds>
                               (now - httpReponseRecordTime_).count());
     }
     httpReponseRecordTime_ = now;
 
-    if (totalErrorCount_ >= ERROR_COUNT_THRESHOLD) {
-        if (httpPerfInfoQueue_.size() >= MAX_QUEUE_SIZE || httpReportInterval_ >= REPORT_NET_STACK_INTERVAL) {
-            SendHttpResponseErrorEvent(httpPerfInfoQueue_, now);
-            totalErrorCount_ = 0;
-            httpPerfInfoQueue_.clear();
-        }
+    if (totalErrorCount_ >= ERROR_COUNT_THRESHOLD || httpReportInterval_ >= REPORT_NET_STACK_INTERVAL) {
+        SendHttpResponseErrorEvent(httpPerfInfoQueue_, now);
+        totalErrorCount_ = 0;
+        httpPerfInfoQueue_.clear();
+        httpReponseRecordTime_ = std::chrono::steady_clock::time_point::min();
     }
 }
 
@@ -208,6 +209,10 @@ void EventReport::SendHttpPerfEvent(const EventInfo &eventInfo)
 
 void EventReport::ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerfInfoQueue_)
 {
+    size_t count = httpPerfInfoQueue_.size();
+    if (count == 0) {
+        return;
+    }
     std::vector<double> dnsTimeArr;
     std::vector<double> tcpTimeArr;
     std::vector<double> tlsTimeArr;
@@ -224,22 +229,13 @@ void EventReport::ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerf
         osErrArr.push_back(info.osErr);
         ipTypeArr.push_back(info.ipType);
 
-        if (info.errCode != 0) {
-            errCodeArr.push_back(info.errCode);
-        } else {
-            errCodeArr.push_back(info.responseCode);
-        }
-
+        errCodeArr.push_back(info.errCode != 0 ? info.errCode : info.responseCode);
         totalRecvTime += info.firstRecvTime;
         totalSendTime += info.firstSendTime;
     }
 
     double receiveAverTime;
     double sendAverTime;
-    size_t count = httpPerfInfoQueue_.size();
-    if (count == 0) {
-        return;
-    }
     receiveAverTime = totalRecvTime / count;
     sendAverTime = totalSendTime / count;
     int ret = HiSysEventWrite(HiSysEvent::Domain::NETMANAGER_STANDARD, HTTP_RESPONSE_ERROR,
