@@ -137,6 +137,9 @@ void EventReport::HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo)
 
 void EventReport::HandleHttpResponseErrorEvents(const HttpPerfInfo &httpPerfInfo)
 {
+    if (getuid() <= HTTP_APP_UID_THRESHOLD) {
+        return;
+    }
     if (!httpPerfInfo.IsError()) {
         totalErrorCount_ = 0;
         httpPerfInfoQueue_.clear();
