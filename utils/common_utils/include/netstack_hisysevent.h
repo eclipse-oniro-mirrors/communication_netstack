@@ -39,18 +39,18 @@ struct EventInfo {
 };
 
 struct HttpPerfInfo {
-    double totalTime;
-    double dnsTime;
-    double tlsTime;
-    double firstSendTime;
-    double firstRecvTime;
-    double tcpTime;
-    curl_off_t size;
-    int64_t responseCode;
-    std::string version;
-    long osErr;
-    int ipType;
-    int32_t errCode;
+    double totalTime = 0.0;
+    double dnsTime = 0.0;
+    double tlsTime = 0.0;
+    double firstRecvTime = 0.0;
+    double firstSendTime = 0.0;
+    double tcpTime = 0.0;
+    curl_off_t size = 0;
+    int64_t responseCode = 0;
+    std::string version = "";
+    int ipType = 0;
+    int64_t osErr = 0;
+    int32_t errCode = 0;
 public:
     bool IsSuccess() const;
     bool IsError() const;
