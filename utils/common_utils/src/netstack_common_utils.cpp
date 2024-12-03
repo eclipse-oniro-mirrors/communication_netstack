@@ -371,6 +371,20 @@ bool IsHostNameExcluded(const std::string &url, const std::string &exclusions, c
     return IsExcluded(hostName, exclusions, split);
 }
 
+int DetectIPType(const std::string &ip)
+{
+    if (ip.empty()) {
+        return INVALID_IP_TYPE;
+    }
+    if (IsValidIPV4(ip)) {
+        return AF_INET;
+    }
+    if (IsValidIPV6(ip)) {
+        return AF_INET6;
+    }
+    return INVALID_IP_TYPE;
+}
+
 bool IsValidIPV4(const std::string &ip)
 {
     return IsValidIP(ip, AF_INET);

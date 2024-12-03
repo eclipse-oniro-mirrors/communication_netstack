@@ -25,6 +25,7 @@
 namespace OHOS::NetStack::CommonUtils {
 static const std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
 static const std::string DOMAIN_TYPE_WEBSOCKET_REQUEST = "webSocket";
+const int INVALID_IP_TYPE = -1;
 enum SdkVersion {
     FIVE = 5,
     SIX,
@@ -75,6 +76,8 @@ std::string GetHostnameWithProtocolAndPortFromURL(const std::string& url);
 bool IsExcluded(const std::string &str, const std::string &exclusions, const std::string &split);
 
 bool IsHostNameExcluded(const std::string &url, const std::string &exclusions, const std::string &split);
+
+int DetectIPType(const std::string &ip);
 
 bool IsValidIP(const std::string& ip, int af);
 

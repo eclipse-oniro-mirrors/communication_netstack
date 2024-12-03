@@ -19,6 +19,7 @@
 #include <string>
 #include <map>
 #include <mutex>
+#include <queue>
 
 #include "curl/curl.h"
 
@@ -41,13 +42,18 @@ struct HttpPerfInfo {
     double totalTime;
     double dnsTime;
     double tlsTime;
+    double firstSendTime;
     double firstRecvTime;
     double tcpTime;
     curl_off_t size;
     int64_t responseCode;
     std::string version;
+    long osErr;
+    int ipType;
+    int32_t errCode;
 public:
     bool IsSuccess() const;
+    bool IsError() const;
 };
 
 class EventReport {
@@ -66,12 +72,22 @@ private:
     void ResetCounters();
     std::string GetPackageName();
     std::string MapToJsonString(const std::map<std::string, uint32_t> mapPara);
+    void HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo);
+    void HandleHttpResponseErrorEvents(const HttpPerfInfo &httpPerfInfo);
+    void SendHttpResponseErrorEvent(const std::deque<HttpPerfInfo> &httpPerfInfoQueue_,
+                                    const std::chrono::steady_clock::time_point now);
+    void ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerfInfoQueue_);
 
 private:
     time_t reportTime = 0;
+    std::chrono::steady_clock::time_point httpReponseRecordTime_ = std::chrono::steady_clock::time_point::min();
+    std::chrono::steady_clock::time_point hiviewReportFirstTime_ = std::chrono::steady_clock::time_point::min();
+    int sendHttpNetStackEventCount_ = 0;
+    unsigned int totalErrorCount_ = 0;
     std::string packageName_;
     EventInfo eventInfo;
     std::map<std::string, uint32_t> versionMap;
+    std::deque<HttpPerfInfo> httpPerfInfoQueue_;
     bool validFlag = true;
     std::recursive_mutex mutex;
 };

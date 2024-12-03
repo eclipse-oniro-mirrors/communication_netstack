@@ -677,6 +677,8 @@ void HttpClientTask::DumpHttpPerformance()
     (void)curl_easy_getinfo(curlHandle_,  CURLINFO_OS_ERRNO, &osErr);
 
     curl_off_t size = GetSizeFromCurl(curlHandle_);
+    char *ip = nullptr;
+    curl_easy_getinfo(curlHandle_, CURLINFO_PRIMARY_IP, &ip);
     NETSTACK_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
@@ -709,6 +711,10 @@ void HttpClientTask::DumpHttpPerformance()
         httpPerfInfo.firstRecvTime = firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime;
         httpPerfInfo.responseCode = responseCode;
         httpPerfInfo.version = std::to_string(httpVer);
+        httpPerfInfo.osErr = static_cast<int64_t>(osErr);
+        httpPerfInfo.errCode = error_.GetErrorCode();
+        httpPerfInfo.firstSendTime = firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime});
+        httpPerfInfo.ipType = CommonUtils::DetectIPType((ip != nullptr) ? ip : "");
         EventReport::GetInstance().ProcessHttpPerfHiSysevent(httpPerfInfo);
     }
 }
