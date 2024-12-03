@@ -470,7 +470,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
-        context->IsExecOK() ? 0 : context->GetErrorCode(), std::to_string(responseCode).c_str(),
+        errCode, std::to_string(responseCode).c_str(),
         std::to_string(httpVer).c_str(), context->options.GetMethod().c_str(), osErr);
 #if HAS_NETMANAGER_BASE
     if (EventReport::GetInstance().IsValid()) {
