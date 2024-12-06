@@ -32,6 +32,7 @@ config("http_ffi_config") {
     defines += [
       "HTTP_PROXY_ENABLE",
       "HTTP_MULTIPATH_CERT_ENABLE",
+      "HTTP_ONLY_VERIFY_ROOT_CA_ENABLE",
     ]
     cflags_cc += [
       "-fstack-protector-strong",
