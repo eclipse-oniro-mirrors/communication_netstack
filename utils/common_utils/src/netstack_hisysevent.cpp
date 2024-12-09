@@ -42,7 +42,6 @@ constexpr const char *TOTAL_DNS_TIME_EPARA = "TOTAL_DNS_TIME";
 constexpr const char *TOTAL_TLS_TIME_EPARA = "TOTAL_TLS_TIME";
 constexpr const char *TOTAL_TCP_TIME_EPARA = "TOTAL_TCP_TIME";
 constexpr const char *TOTAL_FIRST_RECVIVE_TIME_EPARA = "TOTAL_FIRST_RECEIVE_TIME";
-constexpr const char *TOTAL_FIRST_SEND_TIME_EPARA = "TOTAL_FIRST_SEND_TIME";
 constexpr const char *IP_TYPE_EPARA = "IP_TYPE";
 constexpr const char *OS_ERR_EPARA = "OS_ERR";
 constexpr const char *ERROR_CODE_EPARA = "ERROR_CODE";
