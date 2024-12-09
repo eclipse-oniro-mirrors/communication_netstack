@@ -210,8 +210,7 @@ void EventReport::SendHttpPerfEvent(const EventInfo &eventInfo)
 
 void EventReport::ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerfInfoQueue_)
 {
-    size_t count = httpPerfInfoQueue_.size();
-    if (count == 0) {
+    if (httpPerfInfoQueue_.empty()) {
         return;
     }
     std::vector<double> dnsTimeArr;
@@ -229,16 +228,9 @@ void EventReport::ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerf
         tlsTimeArr.push_back(info.tlsTime);
         osErrArr.push_back(info.osErr);
         ipTypeArr.push_back(info.ipType);
-
         errCodeArr.push_back(info.errCode != 0 ? info.errCode : info.responseCode);
-        totalRecvTime += info.firstRecvTime;
-        totalSendTime += info.firstSendTime;
     }
 
-    double receiveAverTime;
-    double sendAverTime;
-    receiveAverTime = totalRecvTime / count;
-    sendAverTime = totalSendTime / count;
     int ret = HiSysEventWrite(HiSysEvent::Domain::NETMANAGER_STANDARD, HTTP_RESPONSE_ERROR,
                               HiSysEvent::EventType::FAULT, PACKAGE_NAME_EPARA, packageName_,
                               TOTAL_DNS_TIME_EPARA, dnsTimeArr, TOTAL_TCP_TIME_EPARA, tcpTimeArr,
