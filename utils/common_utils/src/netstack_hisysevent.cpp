@@ -218,8 +218,6 @@ void EventReport::ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerf
     std::vector<int32_t> errCodeArr;
     std::vector<int64_t> osErrArr;
     std::vector<int> ipTypeArr;
-    double totalRecvTime = 0.0;
-    double totalSendTime = 0.0;
 
     for (const auto& info : httpPerfInfoQueue_) {
         dnsTimeArr.push_back(info.dnsTime);
@@ -233,9 +231,8 @@ void EventReport::ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerf
     int ret = HiSysEventWrite(HiSysEvent::Domain::NETMANAGER_STANDARD, HTTP_RESPONSE_ERROR,
                               HiSysEvent::EventType::FAULT, PACKAGE_NAME_EPARA, packageName_,
                               TOTAL_DNS_TIME_EPARA, dnsTimeArr, TOTAL_TCP_TIME_EPARA, tcpTimeArr,
-                              TOTAL_TLS_TIME_EPARA, tlsTimeArr, ERROR_CODE_EPARA, errCodeArr, OS_ERR_EPARA, osErrArr,
-                              IP_TYPE_EPARA, ipTypeArr, TOTAL_FIRST_RECVIVE_TIME_EPARA, receiveAverTime,
-                              TOTAL_FIRST_SEND_TIME_EPARA, sendAverTime);
+                              TOTAL_TLS_TIME_EPARA, tlsTimeArr, ERROR_CODE_EPARA, errCodeArr,
+                              OS_ERR_EPARA, osErrArr, IP_TYPE_EPARA, ipTypeArr);
     if (ret != 0) {
         NETSTACK_LOGE("Send EventReport::ReportHiSysEventWrite event failed");
     }
