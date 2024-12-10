@@ -76,6 +76,8 @@ public:
 
     static void SetInvalid(EventManager *manager);
 
+    static void SetInvalidWithoutDelete(EventManager *manager);
+
     static bool IsManagerValid(EventManager *manager);
 
     static void SetValid(EventManager *manager);
