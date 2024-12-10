@@ -43,7 +43,6 @@ struct HttpPerfInfo {
     double dnsTime = 0.0;
     double tlsTime = 0.0;
     double firstRecvTime = 0.0;
-    double firstSendTime = 0.0;
     double tcpTime = 0.0;
     curl_off_t size = 0;
     int64_t responseCode = 0;

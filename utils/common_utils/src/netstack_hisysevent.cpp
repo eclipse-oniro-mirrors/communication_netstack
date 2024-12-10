@@ -42,7 +42,6 @@ constexpr const char *TOTAL_DNS_TIME_EPARA = "TOTAL_DNS_TIME";
 constexpr const char *TOTAL_TLS_TIME_EPARA = "TOTAL_TLS_TIME";
 constexpr const char *TOTAL_TCP_TIME_EPARA = "TOTAL_TCP_TIME";
 constexpr const char *TOTAL_FIRST_RECVIVE_TIME_EPARA = "TOTAL_FIRST_RECEIVE_TIME";
-constexpr const char *TOTAL_FIRST_SEND_TIME_EPARA = "TOTAL_FIRST_SEND_TIME";
 constexpr const char *IP_TYPE_EPARA = "IP_TYPE";
 constexpr const char *OS_ERR_EPARA = "OS_ERR";
 constexpr const char *ERROR_CODE_EPARA = "ERROR_CODE";
@@ -210,8 +209,7 @@ void EventReport::SendHttpPerfEvent(const EventInfo &eventInfo)
 
 void EventReport::ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerfInfoQueue_)
 {
-    size_t count = httpPerfInfoQueue_.size();
-    if (count == 0) {
+    if (httpPerfInfoQueue_.empty()) {
         return;
     }
     std::vector<double> dnsTimeArr;
@@ -220,8 +218,6 @@ void EventReport::ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerf
     std::vector<int32_t> errCodeArr;
     std::vector<int64_t> osErrArr;
     std::vector<int> ipTypeArr;
-    double totalRecvTime = 0.0;
-    double totalSendTime = 0.0;
 
     for (const auto& info : httpPerfInfoQueue_) {
         dnsTimeArr.push_back(info.dnsTime);
@@ -229,22 +225,14 @@ void EventReport::ReportHiSysEventWrite(const std::deque<HttpPerfInfo> &httpPerf
         tlsTimeArr.push_back(info.tlsTime);
         osErrArr.push_back(info.osErr);
         ipTypeArr.push_back(info.ipType);
-
         errCodeArr.push_back(info.errCode != 0 ? info.errCode : info.responseCode);
-        totalRecvTime += info.firstRecvTime;
-        totalSendTime += info.firstSendTime;
     }
 
-    double receiveAverTime;
-    double sendAverTime;
-    receiveAverTime = totalRecvTime / count;
-    sendAverTime = totalSendTime / count;
     int ret = HiSysEventWrite(HiSysEvent::Domain::NETMANAGER_STANDARD, HTTP_RESPONSE_ERROR,
                               HiSysEvent::EventType::FAULT, PACKAGE_NAME_EPARA, packageName_,
                               TOTAL_DNS_TIME_EPARA, dnsTimeArr, TOTAL_TCP_TIME_EPARA, tcpTimeArr,
-                              TOTAL_TLS_TIME_EPARA, tlsTimeArr, ERROR_CODE_EPARA, errCodeArr, OS_ERR_EPARA, osErrArr,
-                              IP_TYPE_EPARA, ipTypeArr, TOTAL_FIRST_RECVIVE_TIME_EPARA, receiveAverTime,
-                              TOTAL_FIRST_SEND_TIME_EPARA, sendAverTime);
+                              TOTAL_TLS_TIME_EPARA, tlsTimeArr, ERROR_CODE_EPARA, errCodeArr,
+                              OS_ERR_EPARA, osErrArr, IP_TYPE_EPARA, ipTypeArr);
     if (ret != 0) {
         NETSTACK_LOGE("Send EventReport::ReportHiSysEventWrite event failed");
     }
