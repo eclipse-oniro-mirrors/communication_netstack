@@ -333,6 +333,7 @@ bool TLSSocketExec::ExecClose(TLSNapiContext *context)
         NETSTACK_LOGE("ExecGetRemoteCertificate tlsSocket is null");
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         delete tlsSocket;
+        manager->SetData(nullptr);
         return false;
     }
     {
@@ -340,6 +341,7 @@ bool TLSSocketExec::ExecClose(TLSNapiContext *context)
         if (shared->GetCloseState()) {
             NETSTACK_LOGE("Socket is closing");
             delete tlsSocket;
+            manager->SetData(nullptr);
             return true;
         }
         shared->SetCloseState(true);
