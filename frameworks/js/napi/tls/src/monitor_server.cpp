@@ -67,7 +67,7 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
                     tlsServer->CloseConnectionByEventManager(manager);
                     tlsServer->DeleteConnectionByEventManager(manager);
                 }
-                EventManager::SetInvalid(manager);
+                EventManager::SetInvalidWithoutDelete(manager);
             }
         },
         nullptr, nullptr);

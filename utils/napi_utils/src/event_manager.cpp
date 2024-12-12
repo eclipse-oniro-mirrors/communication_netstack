@@ -252,6 +252,20 @@ void EventManager::SetInvalid(EventManager *manager)
     manager = nullptr;
 }
 
+void EventManager::SetInvalidWithoutDelete(EventManager *manager)
+{
+    if (magic_.magicNumber_ != EVENT_MANAGER_MAGIC_NUMBER) {
+        return;
+    }
+    std::lock_guard lock(mutexForManager_);
+    auto pos = validManager_.find(manager);
+    if (pos == validManager_.end()) {
+        NETSTACK_LOGE("The manager is not in the unordered_set");
+        return;
+    }
+    validManager_.erase(pos);
+}
+
 bool EventManager::IsManagerValid(EventManager *manager)
 {
     if (magic_.magicNumber_ != EVENT_MANAGER_MAGIC_NUMBER) {
