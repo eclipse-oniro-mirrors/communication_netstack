@@ -332,12 +332,14 @@ bool TLSSocketExec::ExecClose(TLSNapiContext *context)
     if (!shared) {
         NETSTACK_LOGE("ExecGetRemoteCertificate tlsSocket is null");
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
+        delete tlsSocket;
         return false;
     }
     {
         std::lock_guard<std::mutex> lock(shared->GetCloseLock());
         if (shared->GetCloseState()) {
             NETSTACK_LOGE("Socket is closing");
+            delete tlsSocket;
             return true;
         }
         shared->SetCloseState(true);
