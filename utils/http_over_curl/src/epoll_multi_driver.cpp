@@ -72,7 +72,9 @@ void EpollMultiDriver::Step(int waitEventsTimeoutMs)
         return;
     }
     if (eventsToHandle == 0) {
-        NETSTACK_LOGE("epoll wait event 0 err: %{public}d", errno);
+        if (errno != EINTR && errno != EAGAIN) {
+            NETSTACK_LOGE("epoll wait event 0 err: %{public}d", errno);
+        }
     }
     for (int idx = 0; idx < eventsToHandle; ++idx) {
         if (incomingQueue_->GetSyncEvent().IsItYours(events[idx].data.fd)) {
