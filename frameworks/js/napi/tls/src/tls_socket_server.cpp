@@ -1433,7 +1433,9 @@ void TLSSocketServer::SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectO
         connection->Send(info);
         connection->Close();
         NETSTACK_LOGE("Too many users");
-        close(connectFD);
+        if (connection->GetSocketFd() != -1) {
+            close(connectFD);
+        }
         CallOnErrorCallback(-1, "Too many users");
         return;
     }
