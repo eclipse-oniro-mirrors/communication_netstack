@@ -166,6 +166,9 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
     int bytesSent = lws_write(wsi, buffer.get() + LWS_PRE, messageLen, sendData.protocol);
     NETSTACK_LOGD("ClientId:%{public}d,Client Writable send data length = %{public}d",
                   client->GetClientContext()->GetClientId(), bytesSent);
+    if (!client->GetClientContext()->IsEmpty()) {
+        client->GetClientContext()->TriggerWritable();
+    }
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -243,6 +246,8 @@ int LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons reason, void *us
         return -1;
     }
     NETSTACK_LOGI("ClientId:%{public}d,Callback ClientEstablished", client->GetClientContext()->GetClientId());
+    client->GetClientContext()->TriggerWritable();
+    client->GetClientContext()->SetLws(wsi);
     OpenResult openResult;
     openResult.status = client->GetClientContext()->openStatus;
     openResult.message = client->GetClientContext()->openMessage.c_str();
@@ -454,6 +459,7 @@ int WebSocketClient::Send(char *data, size_t length)
         return WEBSOCKET_SEND_NO_MEMOERY_ERROR;
     }
     this->GetClientContext()->Push(dataCopy, length, protocol);
+    this->GetClientContext()->TriggerWritable();
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
@@ -471,6 +477,7 @@ int WebSocketClient::Close(CloseOption options)
         options.code = CLOSE_RESULT_FROM_CLIENT_CODE;
     }
     this->GetClientContext()->Close(static_cast<lws_close_status>(options.code), options.reason);
+    this->GetClientContext()->TriggerWritable();
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 

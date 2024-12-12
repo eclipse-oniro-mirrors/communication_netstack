@@ -105,6 +105,34 @@ public:
         return context_;
     }
 
+    bool IsEmpty()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (dataQueue_.empty()) {
+            return true;
+        }
+        return false;
+    }
+
+    void SetLws(lws *wsi)
+    {
+        std::lock_guard<std::mutex> lock(mutexForLws_);
+        if (wsi == nullptr) {
+            NETSTACK_LOGD("set wsi nullptr");
+        }
+        wsi_ = wsi;
+    }
+
+    void TriggerWritable()
+    {
+        std::lock_guard<std::mutex> lock(mutexForLws_);
+        if (wsi_ == nullptr) {
+            NETSTACK_LOGE("wsi is nullptr, can not trigger");
+            return;
+        }
+        lws_callback_on_writable(wsi_);
+    }
+
     void SetClientId(int id)
     {
         clientId = id;
@@ -137,6 +165,10 @@ private:
     lws_context *context_;
 
     std::queue<SendData> dataQueue_;
+
+    std::mutex mutexForLws_;
+
+    lws *wsi_ = nullptr;
 
     int clientId;
 };
