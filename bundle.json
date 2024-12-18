@@ -47,6 +47,7 @@
                 "init",
                 "napi",
                 "netmanager_base",
+                "libwebsockets",
                 "ylong_http",
                 "openssl",
                 "hiprofiler",
@@ -62,6 +63,7 @@
             "group_type": {
                 "base_group": [
                     "//foundation/communication/netstack/frameworks/cj/http:cj_net_http_ffi",
+                    "//foundation/communication/netstack/frameworks/cj/websocket:cj_net_websocket_ffi",
                     "//foundation/communication/netstack/frameworks/js/napi/http:http",
                     "//foundation/communication/netstack/frameworks/js/napi/socket:socket",
                     "//foundation/communication/netstack/frameworks/js/napi/websocket:websocket",
