@@ -549,7 +549,8 @@ void MonitorServer::TLSConnectionRegEvent(std::string event, TLSSocketServer *tl
     }
 }
 
-void MonitorServer::InsertEventMessage(TLSSocketServer *tlsSocketServer, int clientId, EventManager *eventManager) {
+void MonitorServer::InsertEventMessage(TLSSocketServer *tlsSocketServer, int clientId, EventManager *eventManager)
+{
     if (tlsSocketServer == nullptr) {
         return;
     }
