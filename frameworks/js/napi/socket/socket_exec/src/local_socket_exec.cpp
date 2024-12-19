@@ -226,12 +226,12 @@ static bool OnRecvLocalSocketMessage(EventManager *manager, void *data, size_t l
         NETSTACK_LOGE("manager or data or len is invalid");
         return false;
     }
-    MsgWithLocalRemoteInfo *msg = new (std::nothrow) MsgWithLocalRemoteInfo(data, len, path);
-    if (msg == nullptr) {
-        NETSTACK_LOGE("MsgWithLocalRemoteInfo construct error");
-        return false;
-    }
-    if (EventManager::IsManagerValid(manager)) {
+    if (EventManager::IsManagerValid(manager) && manager->HasEventListener(EVENT_MESSAGE)) {
+        MsgWithLocalRemoteInfo *msg = new (std::nothrow) MsgWithLocalRemoteInfo(data, len, path);
+        if (msg == nullptr) {
+            NETSTACK_LOGE("MsgWithLocalRemoteInfo construct error");
+            return false;
+        }
         manager->SetQueueData(reinterpret_cast<void *>(msg));
         manager->EmitByUv(EVENT_MESSAGE, manager, CallbackTemplate<MakeLocalSocketMessage>);
     }
@@ -368,7 +368,7 @@ public:
 
     void OnError(int err) const
     {
-        if (EventManager::IsManagerValid(manager_)) {
+        if (EventManager::IsManagerValid(manager_) && manager_->HasEventListener(EVENT_ERROR)) {
             manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
         }
     }
@@ -394,11 +394,14 @@ public:
 
     void OnLocalSocketConnectionMessage(int clientId, LocalSocketServerManager *serverManager) const
     {
-        LocalSocketConnectionData *data = new (std::nothrow) LocalSocketConnectionData(clientId, serverManager);
-        if (data != nullptr && EventManager::IsManagerValid(manager_)) {
-            manager_->EmitByUv(EVENT_CONNECT, data, CallbackTemplate<MakeLocalSocketConnectionMessage>);
+        if (EventManager::IsManagerValid(manager_) && manager_->HasEventListener(EVENT_CONNECT)) {
+            LocalSocketConnectionData *data = new (std::nothrow) LocalSocketConnectionData(clientId, serverManager);
+            if (data != nullptr) {
+                manager_->EmitByUv(EVENT_CONNECT, data, CallbackTemplate<MakeLocalSocketConnectionMessage>);
+            }
         }
     }
+
     EventManager *GetEventManager() const
     {
         return manager_;
