@@ -73,6 +73,8 @@ public:
 
 private:
     std::set<std::string_view> monitors_;
+
+    void InsertEventMessage(TLSSocketServer *tlsSocketServer, int clientId, EventManager *eventManager);
 };
 } // namespace TlsSocketServer
 } // namespace NetStack
