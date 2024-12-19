@@ -322,7 +322,7 @@ static bool OnRecvMessage(EventManager *manager, void *data, size_t len, sockadd
 
     SocketRemoteInfo remoteInfo;
     std::string address = MakeAddressString(addr);
-    if (address.empty()) {
+    if (address.empty() && manager->HasEventListener(EVENT_ERROR)) {
         manager->EmitByUv(EVENT_ERROR, new int32_t(ADDRESS_INVALID), CallbackTemplate<MakeError>);
         return false;
     }
@@ -337,8 +337,8 @@ static bool OnRecvMessage(EventManager *manager, void *data, size_t len, sockadd
     }
     remoteInfo.SetSize(len);
 
-    auto *messageStruct = new MessageData(data, len, remoteInfo);
-    if (EventManager::IsManagerValid(manager)) {
+    if (EventManager::IsManagerValid(manager) && manager->HasEventListener(EVENT_MESSAGE)) {
+        auto *messageStruct = new MessageData(data, len, remoteInfo);
         manager->SetQueueData(reinterpret_cast<void *>(messageStruct));
         manager->EmitByUv(EVENT_MESSAGE, manager, CallbackTemplate<MakeMessage>);
         return true;
@@ -361,11 +361,11 @@ public:
 
     void OnError(int err) const override
     {
-        if (EventManager::IsManagerValid(manager_)) {
+        if (EventManager::IsManagerValid(manager_) && manager_->HasEventListener(EVENT_ERROR)) {
             manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
             return;
         }
-        NETSTACK_LOGI("tcp socket handle has been finalized, manager is invalid");
+        NETSTACK_LOGI("tcp socket handle has been finalized, manager is invalid or ERROR listener is not registered");
     }
 
     void OnCloseMessage(EventManager *manager) const override
@@ -450,7 +450,9 @@ public:
 
     void OnTcpConnectionMessage(int32_t id) const override
     {
-        manager_->EmitByUv(EVENT_CONNECT, new TcpConnection(id), CallbackTemplate<MakeTcpConnectionMessage>);
+        if (manager_->HasEventListener(EVENT_CONNECT)) {
+            manager_->EmitByUv(EVENT_CONNECT, new TcpConnection(id), CallbackTemplate<MakeTcpConnectionMessage>);
+        }
     }
 };
 
@@ -464,11 +466,11 @@ public:
 
     void OnError(int err) const override
     {
-        if (EventManager::IsManagerValid(manager_)) {
+        if (EventManager::IsManagerValid(manager_) && manager_->HasEventListener(EVENT_ERROR)) {
             manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
             return;
         }
-        NETSTACK_LOGI("udp socket handle has been finalized, manager is invalid");
+        NETSTACK_LOGI("udp socket handle has been finalized, manager is invalid or ERROR listener is not registered");
     }
 
     void OnCloseMessage(EventManager *manager) const override {}
