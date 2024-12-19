@@ -27,12 +27,11 @@ const int MAX_CLIENT_SIZE = 100;
 void OH_NetStack_OnMessageCallback(WebSocketClient *ptrInner, const std::string &data, size_t length)
 {
     NETSTACK_LOGD("websocket CAPI Message Callback");
-    char *data1 = const_cast<char *>(data.c_str());
     WebSocket *OH_client = GetNdkClientAdapter(ptrInner);
     if (OH_client == nullptr) {
         return;
     }
-    OH_client->onMessage(OH_client, data1, length);
+    OH_client->onMessage(OH_client, const_cast<char *>(data.c_str()), length);
 }
 
 void OH_NetStack_OnCloseCallback(WebSocketClient *ptrInner, CloseResult closeResult)

@@ -108,8 +108,7 @@ void SetConnectUrlTest(const uint8_t *data, size_t size)
     SetGlobalFuzzData(data, size);
     std::string str = GetStringFromData(STR_LEN);
     struct WebSocket *client = new WebSocket();
-    const char *url1 = str.c_str();
-    OH_WebSocketClient_Connect(client, url1, client->requestOptions);
+    OH_WebSocketClient_Connect(client, str.c_str(), client->requestOptions);
 }
 
 void SetSendDataTest(const uint8_t *data, size_t size)
