@@ -149,7 +149,7 @@ void EventReport::HandleHttpResponseErrorEvents(const HttpPerfInfo &httpPerfInfo
     httpPerfInfoQueue_.push_back(httpPerfInfo);
 
     auto now = std::chrono::steady_clock::now();
-    int32_t httpReportInterval_ = 0;
+    uint32_t httpReportInterval_ = 0;
     if (httpReponseRecordTime_ != std::chrono::steady_clock::time_point::min()) {
         httpReportInterval_ = static_cast<int32_t>(std::chrono::duration_cast<std::chrono::milliseconds>
                               (now - httpReponseRecordTime_).count());
