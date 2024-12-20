@@ -247,7 +247,7 @@ void EventReport::SendHttpResponseErrorEvent(const std::deque<HttpPerfInfo> &htt
     if (hiviewReportFirstTime_ == std::chrono::steady_clock::time_point::min()) {
         hiviewReportFirstTime_ = now;
     }
-    int32_t hiviewReportInterval_ = static_cast<int32_t>(
+    uint32_t hiviewReportInterval_ = static_cast<int32_t>(
         std::chrono::duration_cast<std::chrono::milliseconds>(now - hiviewReportFirstTime_).count());
     if (hiviewReportInterval_ >= REPORT_HIVIEW_INTERVAL) {
         sendHttpNetStackEventCount_ = 0;
