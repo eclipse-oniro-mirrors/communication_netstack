@@ -151,7 +151,7 @@ void EventReport::HandleHttpResponseErrorEvents(const HttpPerfInfo &httpPerfInfo
     auto now = std::chrono::steady_clock::now();
     uint32_t httpReportInterval_ = 0;
     if (httpReponseRecordTime_ != std::chrono::steady_clock::time_point::min()) {
-        httpReportInterval_ = static_cast<int32_t>(std::chrono::duration_cast<std::chrono::milliseconds>
+        httpReportInterval_ = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>
                               (now - httpReponseRecordTime_).count());
     }
     httpReponseRecordTime_ = now;
@@ -247,7 +247,7 @@ void EventReport::SendHttpResponseErrorEvent(const std::deque<HttpPerfInfo> &htt
     if (hiviewReportFirstTime_ == std::chrono::steady_clock::time_point::min()) {
         hiviewReportFirstTime_ = now;
     }
-    uint32_t hiviewReportInterval_ = static_cast<int32_t>(
+    uint32_t hiviewReportInterval_ = static_cast<uint32_t>(
         std::chrono::duration_cast<std::chrono::milliseconds>(now - hiviewReportFirstTime_).count());
     if (hiviewReportInterval_ >= REPORT_HIVIEW_INTERVAL) {
         sendHttpNetStackEventCount_ = 0;
