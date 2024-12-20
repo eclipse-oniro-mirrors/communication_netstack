@@ -172,7 +172,6 @@ ohos_unittest("tls_socket_server_mock_branch_test") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "//third_party/googletest:gmock_main",
   ]
   external_deps = [
     "c_utils:utils",
@@ -180,6 +179,7 @@ ohos_unittest("tls_socket_server_mock_branch_test") {
     "napi:ace_napi",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
+    "googletest:gmock_main",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]

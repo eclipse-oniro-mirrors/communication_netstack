@@ -17,7 +17,6 @@ import("//foundation/communication/netstack/netstack_config.gni")
 config("napi_utils_public_config") {
   include_dirs = [
     "include",
-    "$THIRD_PARTY_ROOT/node/src",
     "$NETSTACK_DIR/utils/log/include",
   ]
   if (current_os != "ohos") {
@@ -56,6 +55,10 @@ ohos_static_library("napi_utils") {
     "napi:ace_napi",
   ]
 
+  public_external_deps = [
+    "node:node_header_notice",
+  ]
+
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base && is_ohos &&
@@ -89,6 +92,10 @@ ohos_static_library("napi_utils_static") {
   public_configs = [ ":napi_utils_public_config" ]
 
   external_deps = [ "cJSON:cjson" ]
+
+  public_external_deps = [
+    "node:node_header_notice",
+  ]
 
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&

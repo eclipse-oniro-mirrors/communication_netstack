@@ -33,7 +33,6 @@ ohos_unittest("websocket_unittest") {
 
   include_dirs = [
     "$NETSTACK_DIR/utils/napi_utils/include",
-    "$THIRD_PARTY_ROOT/libwebsockets/include",
     "$WEBSOCKET_NAPI/async_context/include",
     "$WEBSOCKET_NAPI/async_work/include",
     "$WEBSOCKET_NAPI/constant/include",
@@ -57,11 +56,13 @@ ohos_unittest("websocket_unittest") {
 
   deps = [
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/libwebsockets:websockets",
   ]
 
   external_deps = common_external_deps
-  external_deps += [ "openssl:libssl_shared" ]
+  external_deps += [
+    "openssl:libssl_shared",
+    "libwebsockets:websockets",
+  ]
 
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&

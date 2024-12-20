@@ -33,8 +33,6 @@ config("http_config") {
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
     include_dirs += [
-      "$NETMANAGER_BASE_INNERKITS_DIR/include",
-      "$NETMANAGER_BASE_INNERKITS_DIR/netconnclient/include",
       "$NETSTACK_DIR/utils/http_over_curl/include",
     ]
   }
@@ -119,19 +117,18 @@ ohos_shared_library("http") {
     deps = [
       "$ARKUI_ROOT/napi:ace_napi",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
-      "$THIRD_PARTY_ROOT/bounds_checking_function:libsec_static",
-      "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp_static",
     ]
     external_deps = [
       "cJSON:cjson",
       "curl:curl_shared",
+      "jsoncpp:jsoncpp_static",
+      "bounds_checking_function:libsec_shared",
     ]
     ldflags = [ "-lpthread" ]
   } else {
     deps = [
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-      "$THIRD_PARTY_ROOT/jsoncpp:jsoncpp",
     ]
     external_deps = [
       "ability_runtime:wantagent_innerkits",
@@ -145,9 +142,9 @@ ohos_shared_library("http") {
       "time_service:time_client",
     ]
     if (netstack_http_boringssl) {
-      deps += [
-        "//vendor/open_source/boringssl:crypto_boringssl",
-        "//vendor/open_source/boringssl:ssl_boringssl",
+      external_deps += [
+        "netmanager_enhanced:crypto_boringssl",
+        "netmanager_enhanced:ssl_boringssl",
       ]
     } else {
       external_deps += [

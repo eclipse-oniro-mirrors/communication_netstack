@@ -23,12 +23,12 @@ NETSTACK_NAPI_ROOT = "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/"
 utils_include = [
   "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
   "$SUBSYSTEM_DIR/netstack/utils/log/include",
-  "$THIRD_PARTY_ROOT/curl/include",
 ]
 
 common_external_deps = [
   "c_utils:utils",
   "hilog:libhilog",
+  "curl:curl_shared",
 ]
 
 ohos_fuzztest("HttpFuzzTest") {

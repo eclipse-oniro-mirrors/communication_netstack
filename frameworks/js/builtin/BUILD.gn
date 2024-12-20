@@ -54,9 +54,11 @@ lite_library("http_lite_shared") {
   output_name = "http_lite"
   deps = [
     "$ARKUI_ROOT/ace_engine_lite/frameworks/common:ace_common_lite",
-    "$THIRD_PARTY_ROOT/bounds_checking_function:libsec_shared",
   ]
-  external_deps = [ "curl:libcurl_shared" ]
+  public_external_deps = [
+    "curl:libcurl_shared",
+    "bounds_checking_function:libsec_shared",
+  ]
 }
 
 ndk_lib("http_lite_ndk") {

@@ -17,7 +17,6 @@ import("//foundation/communication/netstack/netstack_config.gni")
 config("websocket_client_config") {
   # header file path
   include_dirs = [
-    "$THIRD_PARTY_ROOT/libwebsockets/include",
     "$NETSTACK_DIR/interfaces/innerkits/websocket_client/include",
   ]
 
@@ -79,9 +78,16 @@ ohos_shared_library("websocket_client") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/libwebsockets:websockets",
   ]
-  external_deps = [ "openssl:libssl_shared" ]
+
+  external_deps = [
+    "openssl:libssl_shared",
+  ]
+
+  public_external_deps = [
+    "libwebsockets:websockets",
+  ]
+
   if (is_mingw || is_mac) {
     sources +=
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]

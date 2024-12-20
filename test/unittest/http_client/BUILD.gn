@@ -18,7 +18,6 @@ import("//foundation/communication/netstack/netstack_config.gni")
 utils_include = [
   "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
   "$SUBSYSTEM_DIR/netstack/utils/log/include",
-  "$THIRD_PARTY_ROOT/curl/include",
 ]
 
 common_external_deps = [
@@ -50,7 +49,6 @@ ohos_unittest("http_client_unittest") {
 
   deps = [
     "$NETSTACK_INNERKITS_DIR/http_client:http_client",
-    "//third_party/googletest:gmock_main",
   ]
 
   defines = []
@@ -59,6 +57,7 @@ ohos_unittest("http_client_unittest") {
     "cJSON:cjson",
     "curl:curl_shared",
     "openssl:libssl_shared",
+    "googletest:gmock_main",
   ]
 
   if (defined(global_parts_info) &&

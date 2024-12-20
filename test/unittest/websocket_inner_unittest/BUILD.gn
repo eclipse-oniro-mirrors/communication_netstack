@@ -22,12 +22,12 @@ utils_include = [
   "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
   "$SUBSYSTEM_DIR/netstack/utils/log/include",
   "$SUBSYSTEM_DIR/netstack/utils/napi_utils/include",
-  "$THIRD_PARTY_ROOT/libwebsockets/include",
 ]
 
 common_external_deps = [
   "hilog:libhilog",
   "napi:ace_napi",
+  "libwebsockets:websockets",
 ]
 
 ohos_unittest("websocket_inner_unittest") {

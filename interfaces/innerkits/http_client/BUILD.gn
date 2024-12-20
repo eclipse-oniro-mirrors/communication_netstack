@@ -17,7 +17,6 @@ import("//foundation/communication/netstack/netstack_config.gni")
 config("http_client_config") {
   # header file path
   include_dirs = [
-    "$THIRD_PARTY_ROOT/curl/include",
     "$NETSTACK_DIR/interfaces/innerkits/http_client/include",
     "$NETSTACK_DIR/utils/profiler_utils/include",
     "$NETSTACK_DIR/utils/tlv_utils/include",
@@ -102,6 +101,9 @@ ohos_shared_library("http_client") {
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
   ]
 
+  public_external_deps = [
+    "curl:curl_shared",
+  ]
   if (is_mingw || is_mac) {
     sources += [
       "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
