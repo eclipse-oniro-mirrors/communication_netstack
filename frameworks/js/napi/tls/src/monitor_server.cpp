@@ -355,8 +355,8 @@ napi_value MonitorServer::ConnectionOn(napi_env env, napi_callback_info info)
     napi_value params[MAX_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
 
-    if (false == NapiUtils::HasNamedProperty(env, thisVal,
-                                             TLSSocketServerModuleExports::TLSSocketConnection::PROPERTY_CLIENT_ID)) {
+    if (!NapiUtils::HasNamedProperty(env, thisVal,
+                                     TLSSocketServerModuleExports::TLSSocketConnection::PROPERTY_CLIENT_ID)) {
         NETSTACK_LOGI("not found Property clientId");
         return NapiUtils::GetUndefined(env);
     }
@@ -426,21 +426,23 @@ napi_value MonitorServer::Off(napi_env env, napi_callback_info info)
         NETSTACK_LOGE("monitor is off %{public}s", event.c_str());
         return NapiUtils::GetUndefined(env);
     }
+
+    if (event == EVENT_CONNECT) {
+        monitors_.erase(EVENT_CONNECT);
+        tlsSocketServer->OffConnect();
+    }
+
+    if (event == EVENT_ERROR) {
+        monitors_.erase(EVENT_ERROR);
+        tlsSocketServer->OffError();
+    }
+
     if (manager_ != nullptr) {
         if (paramsCount == PARAM_OPTION_CALLBACK) {
             manager_->DeleteListener(event, params[1]);
         } else {
             manager_->DeleteListener(event);
         }
-    }
-
-    if (event == EVENT_CONNECT) {
-        monitors_.erase(EVENT_CONNECT);
-        tlsSocketServer->OffConnect();
-    }
-    if (event == EVENT_ERROR) {
-        monitors_.erase(EVENT_ERROR);
-        tlsSocketServer->OffError();
     }
     return NapiUtils::GetUndefined(env);
 }
@@ -485,6 +487,7 @@ napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
         NETSTACK_LOGE("monitor is off %{public}s", event.c_str());
         return NapiUtils::GetUndefined(env);
     }
+    TLSConnectionUnRegEvent(event, tlsSocketServer, clientid);
     if (manager_ != nullptr) {
         if (paramsCount == PARAM_OPTION_CALLBACK) {
             manager_->DeleteListener(event, params[1]);
@@ -492,7 +495,6 @@ napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
             manager_->DeleteListener(event);
         }
     }
-    TLSConnectionUnRegEvent(event, tlsSocketServer, clientid);
     return NapiUtils::GetUndefined(env);
 }
 
@@ -503,10 +505,12 @@ void MonitorServer::TLSServerRegEvent(std::string event, TLSSocketServer *tlsSoc
         monitors_.insert(EVENT_CONNECT);
         tlsSocketServer->OnConnect(
             [this, ServerEventManager](auto clientFd, std::shared_ptr<EventManager> eventManager) {
-                auto messageParma = new MonitorServer::MessageParma();
-                messageParma->clientID = clientFd;
-                messageParma->eventManager = eventManager;
-                ServerEventManager->EmitByUv(std::string(EVENT_CONNECT), messageParma, EventConnectCallback);
+                if (ServerEventManager->HasEventListener(std::string(EVENT_CONNECT))) {
+                    auto messageParma = new MonitorServer::MessageParma();
+                    messageParma->clientID = clientFd;
+                    messageParma->eventManager = eventManager;
+                    ServerEventManager->EmitByUv(std::string(EVENT_CONNECT), messageParma, EventConnectCallback);
+                }
             });
     }
     if (event == EVENT_ERROR) {
@@ -523,20 +527,7 @@ void MonitorServer::TLSConnectionRegEvent(std::string event, TLSSocketServer *tl
                                           EventManager *eventManager)
 {
     if (event == EVENT_MESSAGE) {
-        monitors_.insert(EVENT_MESSAGE);
-        auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientId);
-        if (ptrConnection != nullptr) {
-            ptrConnection->OnMessage([this, eventManager](auto clientFd, auto data, auto remoteInfo) {
-                auto messageRecvParma = new MessageRecvParma();
-                messageRecvParma->clientID = clientFd;
-                messageRecvParma->data = data;
-                messageRecvParma->remoteInfo_.SetAddress(remoteInfo.GetAddress());
-                messageRecvParma->remoteInfo_.SetFamilyByStr(remoteInfo.GetFamily());
-                messageRecvParma->remoteInfo_.SetPort(remoteInfo.GetPort());
-                messageRecvParma->remoteInfo_.SetSize(remoteInfo.GetSize());
-                eventManager->EmitByUv(std::string(EVENT_MESSAGE), messageRecvParma, EventMessageCallback);
-            });
-        }
+        InsertEventMessage(tlsSocketServer, clientId, eventManager);
     }
     if (event == EVENT_CLOSE) {
         monitors_.insert(EVENT_CLOSE);
@@ -555,6 +546,29 @@ void MonitorServer::TLSConnectionRegEvent(std::string event, TLSSocketServer *tl
                 eventManager->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(this), EventErrorCallback);
             });
         }
+    }
+}
+
+void MonitorServer::InsertEventMessage(TLSSocketServer *tlsSocketServer, int clientId, EventManager *eventManager)
+{
+    if (tlsSocketServer == nullptr) {
+        return;
+    }
+    monitors_.insert(EVENT_MESSAGE);
+    auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientId);
+    if (ptrConnection != nullptr) {
+        ptrConnection->OnMessage([this, eventManager](auto clientFd, auto data, auto remoteInfo) {
+            if (eventManager->HasEventListener(std::string(EVENT_MESSAGE))) {
+                auto messageRecvParma = new MessageRecvParma();
+                messageRecvParma->clientID = clientFd;
+                messageRecvParma->data = data;
+                messageRecvParma->remoteInfo_.SetAddress(remoteInfo.GetAddress());
+                messageRecvParma->remoteInfo_.SetFamilyByStr(remoteInfo.GetFamily());
+                messageRecvParma->remoteInfo_.SetPort(remoteInfo.GetPort());
+                messageRecvParma->remoteInfo_.SetSize(remoteInfo.GetSize());
+                eventManager->EmitByUv(std::string(EVENT_MESSAGE), messageRecvParma, EventMessageCallback);
+            }
+        });
     }
 }
 

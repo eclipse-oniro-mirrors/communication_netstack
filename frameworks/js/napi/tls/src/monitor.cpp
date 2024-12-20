@@ -197,15 +197,7 @@ void Monitor::ParserEventForOn(const std::string event, const std::shared_ptr<TL
                                EventManager *manager)
 {
     if (event == EVENT_MESSAGE) {
-        tlsSocket->OnMessage([this, manager](auto data, auto remoteInfo) {
-            MessageRecvParma *messageRecvParma = new MessageRecvParma();
-            messageRecvParma->data_ = data;
-            messageRecvParma->remoteInfo_ = remoteInfo;
-            if (EventManager::IsManagerValid(manager)) {
-                manager->SetQueueData(reinterpret_cast<void *>(messageRecvParma));
-                manager->EmitByUv(std::string(EVENT_MESSAGE), reinterpret_cast<void *>(manager), EventMessageCallback);
-            }
-        });
+        AddEventMessage(tlsSocket, manager);
     }
     if (event == EVENT_CLOSE) {
         tlsSocket->OnClose([this, manager]() {
@@ -223,14 +215,33 @@ void Monitor::ParserEventForOn(const std::string event, const std::shared_ptr<TL
     }
     if (event == EVENT_ERROR) {
         tlsSocket->OnError([this, manager](auto errorNumber, auto errorString) {
-            ErrorRecvParma *errorRecvParma = new ErrorRecvParma();
-            errorRecvParma->errorNumber_ = errorNumber;
-            errorRecvParma->errorString_ = errorString;
-            if (EventManager::IsManagerValid(manager)) {
+            if (EventManager::IsManagerValid(manager) && manager->HasEventListener(std::string(EVENT_ERROR))) {
+                ErrorRecvParma *errorRecvParma = new ErrorRecvParma();
+                errorRecvParma->errorNumber_ = errorNumber;
+                errorRecvParma->errorString_ = errorString;
                 manager->EmitByUv(std::string(EVENT_ERROR), static_cast<void *>(errorRecvParma), EventErrorCallback);
             }
         });
     }
+}
+
+void Monitor::AddEventMessage(const std::shared_ptr<TLSSocket> &tlsSocket, EventManager *manager) const
+{
+    if (tlsSocket == nullptr) {
+        return;
+    }
+    tlsSocket->OnMessage([this, manager](auto data, auto remoteInfo) {
+        if (EventManager::IsManagerValid(manager) && manager->HasEventListener(std::string(EVENT_MESSAGE))) {
+            auto messageRecvParma = new (std::nothrow) MessageRecvParma();
+            if (messageRecvParma == nullptr) {
+                return;
+            }
+            messageRecvParma->data_ = data;
+            messageRecvParma->remoteInfo_ = remoteInfo;
+            manager->SetQueueData(reinterpret_cast<void *>(messageRecvParma));
+            manager->EmitByUv(std::string(EVENT_MESSAGE), reinterpret_cast<void *>(manager), EventMessageCallback);
+        }
+    });
 }
 
 napi_value Monitor::On(napi_env env, napi_callback_info info)
@@ -327,8 +338,8 @@ napi_value Monitor::Off(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    manager->DeleteListener(event);
     ParserEventForOff(event, shared);
+    manager->DeleteListener(event);
     return NapiUtils::GetUndefined(env);
 }
 } // namespace TlsSocket
