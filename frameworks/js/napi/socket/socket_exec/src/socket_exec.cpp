@@ -993,7 +993,7 @@ bool ExecUdpBind(BindContext *context)
 #endif
         serviceThread.detach();
     } else if (addr->sa_family == AF_INET6) {
-        void *pTmpAddr = malloc(len);
+        void *pTmpAddr = malloc(sizeof(addr6));
         auto pAddr6 = reinterpret_cast<sockaddr *>(pTmpAddr);
         if (pAddr6 == nullptr) {
             NETSTACK_LOGE("no memory!");
