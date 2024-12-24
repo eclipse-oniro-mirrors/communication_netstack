@@ -101,9 +101,8 @@ ohos_shared_library("http_client") {
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
   ]
 
-  public_external_deps = [
-    "curl:curl_shared",
-  ]
+  public_external_deps = [ "curl:curl_shared" ]
+
   if (is_mingw || is_mac) {
     sources += [
       "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
