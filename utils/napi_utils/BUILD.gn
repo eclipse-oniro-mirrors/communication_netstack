@@ -55,9 +55,7 @@ ohos_static_library("napi_utils") {
     "napi:ace_napi",
   ]
 
-  public_external_deps = [
-    "node:node_header_notice",
-  ]
+  public_external_deps = [ "node:node_header_notice" ]
 
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
@@ -93,9 +91,7 @@ ohos_static_library("napi_utils_static") {
 
   external_deps = [ "cJSON:cjson" ]
 
-  public_external_deps = [
-    "node:node_header_notice",
-  ]
+  public_external_deps = [ "node:node_header_notice" ]
 
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
