@@ -52,9 +52,7 @@ lite_library("http_lite_shared") {
   sources = http_lite_sources
   public_configs = [ ":http_lite_config" ]
   output_name = "http_lite"
-  deps = [
-    "$ARKUI_ROOT/ace_engine_lite/frameworks/common:ace_common_lite",
-  ]
+  deps = [ "$ARKUI_ROOT/ace_engine_lite/frameworks/common:ace_common_lite" ]
   public_external_deps = [
     "bounds_checking_function:libsec_shared",
     "curl:libcurl_shared",
