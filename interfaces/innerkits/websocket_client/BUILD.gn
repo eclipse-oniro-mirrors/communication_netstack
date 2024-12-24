@@ -80,13 +80,9 @@ ohos_shared_library("websocket_client") {
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
   ]
 
-  external_deps = [
-    "openssl:libssl_shared",
-  ]
+  external_deps = [ "openssl:libssl_shared" ]
 
-  public_external_deps = [
-    "libwebsockets:websockets",
-  ]
+  public_external_deps = [ "libwebsockets:websockets" ]
 
   if (is_mingw || is_mac) {
     sources +=
