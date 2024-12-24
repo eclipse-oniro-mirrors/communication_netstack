@@ -60,8 +60,8 @@ ohos_unittest("websocket_unittest") {
 
   external_deps = common_external_deps
   external_deps += [
-    "openssl:libssl_shared",
     "libwebsockets:websockets",
+    "openssl:libssl_shared",
   ]
 
   if (defined(global_parts_info) &&
