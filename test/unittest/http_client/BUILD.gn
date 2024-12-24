@@ -56,8 +56,8 @@ ohos_unittest("http_client_unittest") {
   external_deps += [
     "cJSON:cjson",
     "curl:curl_shared",
-    "openssl:libssl_shared",
     "googletest:gmock_main",
+    "openssl:libssl_shared",
   ]
 
   if (defined(global_parts_info) &&
