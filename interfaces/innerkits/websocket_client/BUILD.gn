@@ -16,9 +16,7 @@ import("//foundation/communication/netstack/netstack_config.gni")
 
 config("websocket_client_config") {
   # header file path
-  include_dirs = [
-    "$NETSTACK_DIR/interfaces/innerkits/websocket_client/include",
-  ]
+  include_dirs = [ "$NETSTACK_DIR/interfaces/innerkits/websocket_client/include" ]
 
   cflags = []
   if (is_double_framework) {
