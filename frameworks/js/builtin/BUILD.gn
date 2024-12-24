@@ -56,8 +56,8 @@ lite_library("http_lite_shared") {
     "$ARKUI_ROOT/ace_engine_lite/frameworks/common:ace_common_lite",
   ]
   public_external_deps = [
-    "curl:libcurl_shared",
     "bounds_checking_function:libsec_shared",
+    "curl:libcurl_shared",
   ]
 }
 
