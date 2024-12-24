@@ -56,9 +56,7 @@ ohos_fuzztest("WebSocketExecFuzzTest") {
 
   sources += [ "websocket_exec_fuzzer.cpp" ]
 
-  deps = [
-    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-  ]
+  deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
 
   external_deps = [
     "c_utils:utils",
