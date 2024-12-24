@@ -175,11 +175,11 @@ ohos_unittest("tls_socket_server_mock_branch_test") {
   ]
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
     "hilog:libhilog",
     "napi:ace_napi",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
-    "googletest:gmock_main",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
