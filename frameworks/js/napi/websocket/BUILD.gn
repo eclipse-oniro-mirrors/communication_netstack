@@ -61,9 +61,9 @@ ohos_shared_library("websocket") {
 
   external_deps = [
     "hilog:libhilog",
+    "libwebsockets:websockets",
     "napi:ace_napi",
     "openssl:libssl_shared",
-    "libwebsockets:websockets",
   ]
 
   if (defined(global_parts_info) &&
