@@ -119,10 +119,10 @@ ohos_shared_library("http") {
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
     ]
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "cJSON:cjson",
       "curl:curl_shared",
       "jsoncpp:jsoncpp_static",
-      "bounds_checking_function:libsec_shared",
     ]
     ldflags = [ "-lpthread" ]
   } else {
