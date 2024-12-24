@@ -64,9 +64,9 @@ ohos_fuzztest("WebSocketExecFuzzTest") {
     "c_utils:utils",
     "eventhandler:libeventhandler",
     "hilog:libhilog",
+    "libwebsockets:websockets",
     "napi:ace_napi",
     "openssl:libssl_shared",
-    "libwebsockets:websockets",
   ]
 
   defines = [
