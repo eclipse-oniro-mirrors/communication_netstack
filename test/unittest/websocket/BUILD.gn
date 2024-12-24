@@ -54,9 +54,7 @@ ohos_unittest("websocket_unittest") {
 
   defines = [ "OHOS_LIBWEBSOCKETS=1" ]
 
-  deps = [
-    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-  ]
+  deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
 
   external_deps = common_external_deps
   external_deps += [
