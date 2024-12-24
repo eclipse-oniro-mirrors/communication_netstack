@@ -32,9 +32,7 @@ config("http_config") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    include_dirs += [
-      "$NETSTACK_DIR/utils/http_over_curl/include",
-    ]
+    include_dirs += [ "$NETSTACK_DIR/utils/http_over_curl/include" ]
   }
   defines = []
 
