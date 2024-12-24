@@ -59,9 +59,9 @@ ohos_unittest("netssl_unittest") {
 
   external_deps = common_external_deps
   external_deps += [
+    "curl:curl_shared",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
-    "curl:curl_shared",
   ]
 
   part_name = "netstack"
