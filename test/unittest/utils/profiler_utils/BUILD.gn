@@ -52,8 +52,8 @@ ohos_unittest("netstack_network_profiler_utils_test") {
     "ability_runtime:wantagent_innerkits",
     "curl:curl_shared",
     "hiprofiler:libnetwork_profiler",
-    "time_service:time_client",
     "init:libbegetutil",
+    "time_service:time_client",
   ]
 
   deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
