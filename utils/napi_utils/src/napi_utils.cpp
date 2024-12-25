@@ -350,7 +350,7 @@ std::string NapiValueToString(napi_env env, napi_value value)
             status = napi_get_value_double(env, value, &doubleValue);
             if (status == napi_ok) {
                 if (doubleValue == std::floor(doubleValue)) {
-                    return std::to_string(static_cast<int>(doubleValue));
+                    return std::to_string(static_cast<int64_t>(doubleValue));
                 }
                 return std::to_string(doubleValue);
             }
