@@ -26,8 +26,8 @@ utils_include = [
 
 common_external_deps = [
   "hilog:libhilog",
-  "napi:ace_napi",
   "libwebsockets:websockets",
+  "napi:ace_napi",
 ]
 
 ohos_unittest("websocket_inner_unittest") {
