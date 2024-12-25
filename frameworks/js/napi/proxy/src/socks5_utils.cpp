@@ -27,26 +27,6 @@
 namespace OHOS {
 namespace NetStack {
 namespace Socks5 {
-thread_local int32_t Socks5Utils::errorCode{0};
-thread_local std::string Socks5Utils::errorMessage{};
-
-void Socks5Utils::UpdateErrorInfo(Socks5Status status)
-{
-    errorCode = static_cast<int32_t>(status);
-    auto iter = g_errStatusMap.find(status);
-    if (iter != g_errStatusMap.end()) {
-        errorMessage = iter->second;
-    } else {
-        errorMessage.clear();
-    }
-}
-
-void Socks5Utils::UpdateErrorInfo(int32_t errCode, const std::string &errMessage)
-{
-    errorCode = errCode;
-    errorMessage = errMessage;
-}
-
 socklen_t Socks5Utils::GetAddressLen(const Socket::NetAddress &netAddress)
 {
     const bool isIpv4{Socket::NetAddress::Family::IPv4 == netAddress.GetFamily()};
@@ -153,38 +133,38 @@ void Socks5Utils::TcpKeepAliveThread(int32_t socketId, sockaddr *addr, socklen_t
     }
 }
 
-bool Socks5Utils::RequestProxyServer(std::int32_t socketId, const std::pair<sockaddr *, socklen_t> &addrInfo,
-    Socks5Request *req, Socks5Response *rsp, const std::string &tag)
+bool Socks5Utils::RequestProxyServer(std::shared_ptr<Socks5Instance> &socks5Inst, std::int32_t socketId,
+    const std::pair<sockaddr *, socklen_t> &addrInfo, Socks5Request *req, Socks5Response *rsp)
 {
     if ((req == nullptr) || (rsp == nullptr)) {
-        NETSTACK_LOGE("socks5 req or rsp is null [%{public}s], socket is %{public}d", tag.c_str(), socketId);
+        NETSTACK_LOGE("socks5 req or rsp is null, socket is %{public}d", socketId);
         return false;
     }
     const Socks5Buffer msg{req->Serialize()};
     const size_t msgSize{msg.size()};
     if (msgSize == 0U) {
-        Socks5Utils::UpdateErrorInfo(Socks5Status::SOCKS5_SERIALIZE_ERROR);
-        NETSTACK_LOGE("socks5 fail to serialize [%{public}s], socket is %{public}d", tag.c_str(), socketId);
+        socks5Inst->UpdateErrorInfo(Socks5Status::SOCKS5_SERIALIZE_ERROR);
+        NETSTACK_LOGE("socks5 fail to serialize, socket is %{public}d", socketId);
         return false;
     }
     sockaddr *addr{addrInfo.first};
     const socklen_t addrLen{addrInfo.second};
     if (!Socks5Utils::Send(socketId, msg.data(), msgSize, addr, addrLen)) {
-        Socks5Utils::UpdateErrorInfo(Socks5Status::SOCKS5_FAIL_TO_SEND_MSG);
-        NETSTACK_LOGE("socks5 fail to send message [%{public}s], socket is %{public}d", tag.c_str(), socketId);
+        socks5Inst->UpdateErrorInfo(Socks5Status::SOCKS5_FAIL_TO_SEND_MSG);
+        NETSTACK_LOGE("socks5 fail to send message, socket is %{public}d", socketId);
         return false;
     }
 
     std::pair<bool, Socks5Buffer> result = Socks5Utils::Recv(socketId, addr, addrLen);
     if (!result.first) {
-        Socks5Utils::UpdateErrorInfo(Socks5Status::SOCKS5_FAIL_TO_RECV_MSG);
-        NETSTACK_LOGE("socks5 fail to recv message [%{public}s], socket is %{public}d", tag.c_str(), socketId);
+        socks5Inst->UpdateErrorInfo(Socks5Status::SOCKS5_FAIL_TO_RECV_MSG);
+        NETSTACK_LOGE("socks5 fail to recv message, socket is %{public}d", socketId);
         return false;
     }
 
     if (!rsp->Deserialize(result.second.data(), result.second.size())) {
-        Socks5Utils::UpdateErrorInfo(Socks5Status::SOCKS5_DESERIALIZE_ERROR);
-        NETSTACK_LOGE("socks5 fail to deserialize [%{public}s], socket is %{public}d", tag.c_str(), socketId);
+        socks5Inst->UpdateErrorInfo(Socks5Status::SOCKS5_DESERIALIZE_ERROR);
+        NETSTACK_LOGE("socks5 fail to deserialize, socket is %{public}d", socketId);
         return false;
     }
     return true;

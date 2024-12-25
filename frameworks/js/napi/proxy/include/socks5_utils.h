@@ -31,18 +31,13 @@ namespace NetStack {
 namespace Socks5 {
 class Socks5Utils {
 public:
-    static thread_local int32_t errorCode;
-    static thread_local std::string errorMessage;
-
-    static void UpdateErrorInfo(Socks5Status status);
-    static void UpdateErrorInfo(int32_t errCode, const std::string &errMessage);
     static socklen_t GetAddressLen(const Socket::NetAddress &netAddress);
     static bool Send(int32_t socketId, const char *data, size_t size, sockaddr *addr, socklen_t addrLen);
     static std::pair<bool, Socks5Buffer> Recv(int32_t socketId, sockaddr *addr, socklen_t addrLen);
     static void TcpKeepAliveThread(int32_t socketId, sockaddr *addr, socklen_t addrLen,
                                    const std::weak_ptr<Socks5UdpInstance> &instance);
-    static bool RequestProxyServer(std::int32_t socketId, const std::pair<sockaddr *, socklen_t> &addrInfo,
-                                   Socks5Request *req, Socks5Response *rsp, const std::string &tag);
+    static bool RequestProxyServer(std::shared_ptr<Socks5Instance> &socks5Inst, std::int32_t socketId,
+        const std::pair<sockaddr *, socklen_t> &addrInfo, Socks5Request *req, Socks5Response *rsp);
     static std::string GetStatusMessage(Socks5Status status);
 
 private:

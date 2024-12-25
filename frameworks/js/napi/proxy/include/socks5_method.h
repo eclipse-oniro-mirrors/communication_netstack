@@ -16,6 +16,7 @@
 #ifndef COMMUNICATION_NETSTACK_SOCKS5_METHOD_H
 #define COMMUNICATION_NETSTACK_SOCKS5_METHOD_H
 
+#include <memory>
 #include <string>
 #include <sys/types.h>
 
@@ -26,15 +27,24 @@
 namespace OHOS {
 namespace NetStack {
 namespace Socks5 {
+class Socks5Instance;
 class Socks5Method {
 public:
-    Socks5Method() = default;
+    Socks5Method(std::shared_ptr<Socks5Instance> socks5Inst) : socks5Inst_(socks5Inst){};
     virtual ~Socks5Method() = default;
 
     virtual bool RequestAuth(std::int32_t socketId, const std::string &userName, const std::string &password,
         const Socks5ProxyAddress &proxy) = 0;
     virtual std::pair<bool, Socks5ProxyResponse> RequestProxy(std::int32_t socketId, Socks5Command command,
         const Socket::NetAddress &destAddr, const Socks5ProxyAddress &proxy) = 0;
+
+    std::shared_ptr<Socks5Instance> &GetSocks5Instance()
+    {
+        return socks5Inst_;
+    }
+
+private:
+    std::shared_ptr<Socks5Instance> socks5Inst_{nullptr};
 };
 } // Socks5
 } // NetStack

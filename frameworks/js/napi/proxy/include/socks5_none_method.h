@@ -24,7 +24,7 @@ namespace NetStack {
 namespace Socks5 {
 class Socks5NoneMethod : public Socks5Method {
 public:
-    Socks5NoneMethod() = default;
+    Socks5NoneMethod(std::shared_ptr<Socks5Instance> socks5Inst) : Socks5Method(socks5Inst){};
     virtual ~Socks5NoneMethod() override = default;
 
     bool RequestAuth(std::int32_t socketId, const std::string &userName, const std::string &password,

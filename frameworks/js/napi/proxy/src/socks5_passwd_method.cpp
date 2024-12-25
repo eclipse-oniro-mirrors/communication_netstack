@@ -25,7 +25,7 @@ bool Socks5PasswdMethod::RequestAuth(std::int32_t socketId, const std::string &u
     const std::string &password, const Socks5ProxyAddress &proxy)
 {
     if (username.empty() || password.empty()) {
-        Socks5Utils::UpdateErrorInfo(Socks5Status::SOCKS5_USER_PASS_INVALID);
+        GetSocks5Instance()->UpdateErrorInfo(Socks5Status::SOCKS5_USER_PASS_INVALID);
         NETSTACK_LOGE("socks5 username or password is empty, socket is %{public}d", socketId);
         return false;
     }
@@ -38,11 +38,12 @@ bool Socks5PasswdMethod::RequestAuth(std::int32_t socketId, const std::string &u
     const socklen_t addrLen{Socks5Utils::GetAddressLen(proxy.netAddress)};
     const std::pair<sockaddr *, socklen_t> addrInfo{proxy.addr, addrLen};
     Socks5AuthResponse response{};
-    if (!Socks5Utils::RequestProxyServer(socketId, addrInfo, &request, &response, "RequestAuth")) {
+    if (!Socks5Utils::RequestProxyServer(GetSocks5Instance(), socketId, addrInfo, &request, &response)) {
+        NETSTACK_LOGE("RequestProxy failed, socket is %{public}d", socketId);
         return false;
     }
     if (response.status != static_cast<uint8_t>(Socks5Status::SUCCESS)) {
-        Socks5Utils::UpdateErrorInfo(Socks5Status::SOCKS5_USER_PASS_INVALID);
+        GetSocks5Instance()->UpdateErrorInfo(Socks5Status::SOCKS5_USER_PASS_INVALID);
         NETSTACK_LOGE("socks5 fail to request auth, socket is %{public}d", socketId);
         return false;
     }

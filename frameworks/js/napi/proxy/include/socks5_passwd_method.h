@@ -23,7 +23,7 @@ namespace NetStack {
 namespace Socks5 {
 class Socks5PasswdMethod : public Socks5NoneMethod {
 public:
-    Socks5PasswdMethod() = default;
+    Socks5PasswdMethod(std::shared_ptr<Socks5Instance> socks5Inst) : Socks5NoneMethod(socks5Inst){};
     ~Socks5PasswdMethod() override = default;
 
     bool RequestAuth(std::int32_t socketId, const std::string &userName, const std::string &password,

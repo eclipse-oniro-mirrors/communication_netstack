@@ -44,10 +44,12 @@ public:
     void SetSocks5Option(const std::shared_ptr<Socks5Option> &opt);
     void SetDestAddress(const Socket::NetAddress &dest);
     bool IsConnected() const;
+    void UpdateErrorInfo(Socks5Status status);
+    void UpdateErrorInfo(int32_t errCode, const std::string &errMessage);
     int32_t GetErrorCode() const;
     std::string GetErrorMessage() const;
     void OnSocks5TcpError();
-    
+    void SetSocks5Instance(const std::shared_ptr<Socks5Instance> &socks5Inst);
     Socket::NetAddress GetProxyBindAddress() const;
 
 protected:
@@ -63,6 +65,11 @@ protected:
     Socket::NetAddress proxyBindAddr_{};
     std::mutex mutex_;
     int32_t doConnectCount_{};
+
+private:
+    int32_t errorCode_{};
+    std::string errorMessage_{};
+    std::shared_ptr<Socks5Instance> socks5Instance_;
 };
 
 class Socks5TcpInstance final : public Socks5Instance {

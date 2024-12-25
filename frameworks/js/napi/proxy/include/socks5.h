@@ -61,16 +61,22 @@ enum class Socks5Status : uint8_t {
     TTL_EXPIRED = 0x06,
     COMMAND_NOT_SUPPORTED = 0x07,
     ADDRESS_TYPE_NOT_SUPPORTED = 0x08,
+
     SOCKS5_NOT_ACTIVE = 0xA1,
-    SOCKS5_METHOD_ERROR = 0xA2,
-    SOCKS5_MAKE_SOCKET_ERROR = 0xA3,
-    SOCKS5_FAIL_TO_CONNECT_PROXY = 0xA4,
-    SOCKS5_FAIL_TO_SEND_MSG = 0xA5,
-    SOCKS5_FAIL_TO_RECV_MSG = 0xA6,
-    SOCKS5_SERIALIZE_ERROR = 0xA7,
-    SOCKS5_DESERIALIZE_ERROR = 0xA8,
+    SOCKS5_METHOD_ERROR,
+    SOCKS5_MAKE_SOCKET_ERROR,
+    SOCKS5_FAIL_TO_SEND_MSG,
+    SOCKS5_FAIL_TO_RECV_MSG,
+    SOCKS5_SERIALIZE_ERROR,
+    SOCKS5_DESERIALIZE_ERROR,
+
+    // throw error
+    SOCKS5_OTHER_ERROR = 205,
+    SOCKS5_FAIL_TO_CONNECT_PROXY,
     SOCKS5_USER_PASS_INVALID,
     SOCKS5_FAIL_TO_CONNECT_REMOTE,
+    SOCKS5_METHOD_NEGO_ERROR,
+
     OTHER_STATUS
 };
 
@@ -92,13 +98,15 @@ static const std::map<Socks5Status, std::string> g_errStatusMap = {
     {Socks5Status::SOCKS5_NOT_ACTIVE, "Socks5 is not active"},
     {Socks5Status::SOCKS5_METHOD_ERROR, "Socks5 method request error"},
     {Socks5Status::SOCKS5_MAKE_SOCKET_ERROR, "Socks5 make tcp socket error"},
-    {Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY, "Socks5 fail to connect proxy server"},
     {Socks5Status::SOCKS5_FAIL_TO_SEND_MSG, "Socks5 fail to send message"},
     {Socks5Status::SOCKS5_FAIL_TO_RECV_MSG, "Socks5 fail to recv message"},
     {Socks5Status::SOCKS5_SERIALIZE_ERROR, "Socks5 serialize error"},
     {Socks5Status::SOCKS5_DESERIALIZE_ERROR, "Socks5 deserialize error"},
+    {Socks5Status::SOCKS5_OTHER_ERROR, "Socks5 proxy error occured"},
+    {Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY, "Socks5 failed to connect proxy server"},
     {Socks5Status::SOCKS5_USER_PASS_INVALID, "Socks5 username or password invalid"},
-    {Socks5Status::SOCKS5_FAIL_TO_CONNECT_REMOTE, "Socks5 fail to connect remote server"},
+    {Socks5Status::SOCKS5_FAIL_TO_CONNECT_REMOTE, "Socks5 failed to connect remote server"},
+    {Socks5Status::SOCKS5_METHOD_NEGO_ERROR, "Socks5 failed to negotiate auth method"},
     {Socks5Status::OTHER_STATUS, "Socks5 unassigned status"}
 };
 

@@ -55,11 +55,12 @@ std::pair<bool, Socks5ProxyResponse> Socks5NoneMethod::RequestProxy(std::int32_t
     const socklen_t addrLen{Socks5Utils::GetAddressLen(proxy.netAddress)};
     const std::pair<sockaddr *, socklen_t> addrInfo{proxy.addr, addrLen};
     Socks5ProxyResponse response{};
-    if (!Socks5Utils::RequestProxyServer(socketId, addrInfo, &request, &response, "RequestProxy")) {
+    if (!Socks5Utils::RequestProxyServer(GetSocks5Instance(), socketId, addrInfo, &request, &response)) {
+        NETSTACK_LOGE("RequestProxy failed, socket is %{public}d", socketId);
         return {false, response};
     }
     if (response.status != static_cast<uint8_t>(Socks5Status::SUCCESS)) {
-        Socks5Utils::UpdateErrorInfo(Socks5Status::SOCKS5_FAIL_TO_CONNECT_REMOTE);
+        GetSocks5Instance()->UpdateErrorInfo(Socks5Status::SOCKS5_FAIL_TO_CONNECT_REMOTE);
         NETSTACK_LOGE("socks5 fail to request proxy, socket is %{public}d", socketId);
         return {false, response};
     }

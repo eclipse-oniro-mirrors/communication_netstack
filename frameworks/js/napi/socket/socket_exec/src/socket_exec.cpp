@@ -57,14 +57,6 @@ static constexpr const int ADDRESS_INVALID = 99;
 
 static constexpr const int OTHER_ERROR = 100;
 
-static constexpr const int SOCKS5_ERROR = 205;
-
-static constexpr const int SOCKS5_CONNECT_PROXY_ERROR = 206;
-
-static constexpr const int SOCKS5_USER_PASS_ERROR = 207;
-
-static constexpr const int SOCKS5_CONNECT_REMOTE_ERROR = 208;
-
 static constexpr const int UNKNOW_ERROR = -1;
 
 static constexpr const int NO_MEMORY = -2;
@@ -924,14 +916,14 @@ static void SetProxyAuthError(BaseContext *context, std::shared_ptr<Socks5::Sock
     const int32_t errCode = socks5Inst->GetErrorCode();
     const std::string errMsg = socks5Inst->GetErrorMessage();
     NETSTACK_LOGE("socks5 auth failed, errCode:%{public}d, errMsg::%{public}s", errCode, errMsg.c_str());
-    if (errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_USER_PASS_INVALID)) {
-        context->SetError(SOCKS5_USER_PASS_ERROR, errMsg);
-    } else if (errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY)) {
-        context->SetError(SOCKS5_CONNECT_PROXY_ERROR, errMsg);
-    } else if (errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_REMOTE)) {
-        context->SetError(SOCKS5_CONNECT_REMOTE_ERROR, errMsg);
+    if (errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_USER_PASS_INVALID) ||
+        errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY) ||
+        errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_REMOTE) ||
+        errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_METHOD_NEGO_ERROR)) {
+        context->SetError(errCode, errMsg);
     } else {
-        context->SetError(SOCKS5_ERROR, "Socks5 auth failed");
+        context->SetError(static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_OTHER_ERROR),
+            Socks5::Socks5Utils::GetStatusMessage(Socks5::Socks5Status::SOCKS5_OTHER_ERROR));
     }
 }
 
@@ -954,6 +946,7 @@ static int HandleUdpProxyOptions(UdpSendContext *context)
         if (socks5Udp == nullptr) {
             return -1;
         }
+        socks5Udp->SetSocks5Instance(socks5Udp);
         eventMgr->SetProxyData(socks5Udp);
     }
 
@@ -1051,6 +1044,7 @@ static int HandleTcpProxyOptions(ConnectContext *context)
         if (socks5Tcp == nullptr) {
             return -1;
         }
+        socks5Tcp->SetSocks5Instance(socks5Tcp);
         eventMgr->SetProxyData(socks5Tcp);
     }
 
@@ -1095,7 +1089,7 @@ bool ExecConnect(ConnectContext *context)
             const int32_t errCode = static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY);
             std::string errMsg =
                 Socks5::Socks5Utils::GetStatusMessage(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY);
-            context->SetError(SOCKS5_CONNECT_PROXY_ERROR, errMsg);
+            context->SetError(static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY), errMsg);
             context->SetExecOK(false);
             NETSTACK_LOGE("socks5 connect failed, errCode:%{public}d, errMsg:%{public}s", errCode, errMsg.c_str());
             return false;
@@ -2463,18 +2457,30 @@ bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeo
     return true;
 }
 
+static bool GetSendBufferSize(int sock, int &bufferSize, int &sockType)
+{
+    int opt = 0;
+    socklen_t optLen = sizeof(opt);
+    bufferSize = DEFAULT_BUFFER_SIZE;
+
+    if (getsockopt(sock, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<void *>(&opt), &optLen) >= 0 && opt > 0) {
+        bufferSize = opt;
+    }
+
+    sockType = 0;
+    optLen = sizeof(sockType);
+    if (getsockopt(sock, SOL_SOCKET, SO_TYPE, reinterpret_cast<void *>(&sockType), &optLen) < 0) {
+        return false;
+    }
+    return true;
+}
+
 bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr, socklen_t addrLen)
 {
     NETSTACK_LOGD("js send RawSize: %{public}zu", size);
     int bufferSize = DEFAULT_BUFFER_SIZE;
-    int opt = 0;
-    socklen_t optLen = sizeof(opt);
-    if (getsockopt(sock, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<void *>(&opt), &optLen) >= 0 && opt > 0) {
-        bufferSize = opt;
-    }
     int sockType = 0;
-    optLen = sizeof(sockType);
-    if (getsockopt(sock, SOL_SOCKET, SO_TYPE, reinterpret_cast<void *>(&sockType), &optLen) < 0) {
+    if (!GetSendBufferSize(sock, bufferSize, sockType)) {
         NETSTACK_LOGI("get sock opt sock type failed, socket is %{public}d, errno is %{public}d", sock, errno);
         return false;
     }

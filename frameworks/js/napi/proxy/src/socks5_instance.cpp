@@ -38,6 +38,23 @@ namespace OHOS {
 namespace NetStack {
 namespace Socks5 {
 
+void Socks5Instance::UpdateErrorInfo(Socks5Status status)
+{
+    errorCode_ = static_cast<int32_t>(status);
+    auto iter = g_errStatusMap.find(status);
+    if (iter != g_errStatusMap.end()) {
+        errorMessage_ = iter->second;
+    } else {
+        errorMessage_.clear();
+    }
+}
+
+void Socks5Instance::UpdateErrorInfo(int32_t errCode, const std::string &errMessage)
+{
+    errorCode_ = errCode;
+    errorMessage_ = errMessage;
+}
+
 void Socks5Instance::SetSocks5Option(const std::shared_ptr<Socks5Option> &opt)
 {
     options_ = opt;
@@ -67,7 +84,7 @@ bool Socks5Instance::DoConnect(Socks5Command command)
     }
     if (method_ == nullptr) {
         NETSTACK_LOGE("socks5 instance method is null socket:%{public}d", socketId_);
-        Socks5Utils::UpdateErrorInfo(Socks5Status::SOCKS5_METHOD_ERROR);
+        UpdateErrorInfo(Socks5Status::SOCKS5_METHOD_ERROR);
         return false;
     }
     if (!method_->RequestAuth(socketId_, options_->username, options_->password, options_->proxyAddress)) {
@@ -98,12 +115,12 @@ bool Socks5Instance::DoConnect(Socks5Command command)
 
 int32_t Socks5Instance::GetErrorCode() const
 {
-    return Socks5Utils::errorCode;
+    return errorCode_;
 }
 
 std::string Socks5Instance::GetErrorMessage() const
 {
-    return Socks5Utils::errorMessage;
+    return errorMessage_;
 }
 
 void Socks5Instance::OnSocks5TcpError()
@@ -111,6 +128,11 @@ void Socks5Instance::OnSocks5TcpError()
     NETSTACK_LOGE("socks5 instance tcp error socket:%{public}d", socketId_);
     std::lock_guard<std::mutex> lock{mutex_};
     state_ = Socks5AuthState::FAIL;
+}
+
+void Socks5Instance::SetSocks5Instance(const std::shared_ptr<Socks5Instance> &socks5Inst)
+{
+    socks5Instance_ = socks5Inst;
 }
 
 Socket::NetAddress Socks5Instance::GetProxyBindAddress() const
@@ -127,7 +149,8 @@ bool Socks5Instance::RequestMethod(const std::vector<Socks5MethodType> &methods)
     const socklen_t addrLen{Socks5Utils::GetAddressLen(options_->proxyAddress.netAddress)};
     const std::pair<sockaddr *, socklen_t> addrInfo{options_->proxyAddress.addr, addrLen};
     Socks5MethodResponse response{};
-    if (!Socks5Utils::RequestProxyServer(socketId_, addrInfo, &request, &response, "RequestMethod")) {
+    if (!Socks5Utils::RequestProxyServer(socks5Instance_, socketId_, addrInfo, &request, &response)) {
+        NETSTACK_LOGE("RequestMethod failed, socket: %{public}d", socketId_);
         return false;
     }
     Socks5MethodType methodType{static_cast<Socks5MethodType>(response.method)};
@@ -138,9 +161,9 @@ bool Socks5Instance::RequestMethod(const std::vector<Socks5MethodType> &methods)
 std::shared_ptr<Socks5Method> Socks5Instance::CreateSocks5MethodByType(Socks5MethodType type) const
 {
     if (type == Socks5MethodType::NO_AUTH) {
-        return std::make_shared<Socks5NoneMethod>();
+        return std::make_shared<Socks5NoneMethod>(socks5Instance_);
     } else if (type == Socks5MethodType::PASSWORD) {
-        return std::make_shared<Socks5PasswdMethod>();
+        return std::make_shared<Socks5PasswdMethod>(socks5Instance_);
     } else if (type == Socks5MethodType::GSSAPI) {
         NETSTACK_LOGE("socks5 instance not support GSSAPI now");
         return nullptr;
@@ -158,7 +181,7 @@ Socks5TcpInstance::Socks5TcpInstance(int32_t socketId)
 bool Socks5TcpInstance::Connect()
 {
     NETSTACK_LOGD("socks5 tcp instance auth socket:%{public}d", socketId_);
-    Socks5Utils::UpdateErrorInfo(0, "");
+    UpdateErrorInfo(0, "");
     std::lock_guard<std::mutex> lock{mutex_};
     if (state_ == Socks5AuthState::SUCCESS) {
         NETSTACK_LOGD("socks5 tcp instance auth already socket:%{public}d", socketId_);
@@ -207,7 +230,7 @@ void Socks5UdpInstance::CloseSocket()
 bool Socks5UdpInstance::Connect()
 {
     NETSTACK_LOGD("socks5 udp instance auth");
-    Socks5Utils::UpdateErrorInfo(0, "");
+    UpdateErrorInfo(0, "");
 
     std::lock_guard<std::mutex> lock{mutex_};
     if (state_ == Socks5AuthState::SUCCESS) {
@@ -245,7 +268,7 @@ bool Socks5UdpInstance::CreateSocket()
     socketId_ = Socket::ExecCommonUtils::MakeTcpSocket(options_->proxyAddress.netAddress.GetSaFamily());
     if (socketId_ == SOCKS5_INVALID_SOCKET_FD) {
         NETSTACK_LOGE("socks5 udp instance fail to make tcp socket");
-        Socks5Utils::UpdateErrorInfo(Socks5Status::SOCKS5_MAKE_SOCKET_ERROR);
+        UpdateErrorInfo(Socks5Status::SOCKS5_MAKE_SOCKET_ERROR);
         return false;
     }
 
@@ -265,7 +288,7 @@ bool Socks5UdpInstance::ConnectProxy()
     const uint32_t timeoutMSec{0U};
     if (!NonBlockConnect(socketId_, options_->proxyAddress.addr, addrLen, timeoutMSec)) {
         NETSTACK_LOGE("socks5 udp instance fail to connect proxy");
-        Socks5Utils::UpdateErrorInfo(Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY);
+        UpdateErrorInfo(Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY);
         return false;
     }
     return true;
