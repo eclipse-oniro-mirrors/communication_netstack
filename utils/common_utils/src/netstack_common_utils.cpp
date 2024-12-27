@@ -554,17 +554,17 @@ int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey)
 {
     if (pinnedPubkey.empty()) {
         // if no pinned pubkey specified, don't pin (Curl default)
-        return CURLE_OK;
+        return 0;
     }
     if (cert == nullptr) {
         NETSTACK_LOGE("no cert specified.");
-        return CURLE_BAD_FUNCTION_ARGUMENT;
+        return -1;
     }
     unsigned char *certPubkey = NULL;
     int pubkeyLen = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(cert), &certPubkey);
     unsigned char certPubKeyDigest[SHA256_BASE64_LEN + 1] = {0};
     if (!Sha256sum(certPubkey, pubkeyLen, certPubKeyDigest, SHA256_BASE64_LEN + 1)) {
-        return CURLE_BAD_FUNCTION_ARGUMENT;
+        return -1;
     }
     NETSTACK_LOGI("pubkey sha256: %{public}s", certPubKeyDigest);
     std::string certPubKeyDigestStr(reinterpret_cast<const char*>(certPubKeyDigest), SHA256_BASE64_LEN);
@@ -572,25 +572,25 @@ int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey)
     while (begin < pinnedPubkey.size()) {
         if (pinnedPubkey.find("sha256//", begin) != begin) {
             NETSTACK_LOGE("pinnedPubkey format invalid, should be like sha256//[hash1];sha256//[hash2]");
-            return CURLE_BAD_FUNCTION_ARGUMENT;
+            return -1;
         }
         std::string candidate = pinnedPubkey.substr(begin + PINNED_PREFIX_LEN, SHA256_BASE64_LEN);
         if (candidate.size() != SHA256_BASE64_LEN) {
             NETSTACK_LOGE("pinnedPubkey format length invalid.");
-            return CURLE_BAD_FUNCTION_ARGUMENT;
+            return -1;
         }
         if (candidate == certPubKeyDigestStr) {
-            return CURLE_OK;
+            return 0;
         }
         begin += PINNED_PREFIX_LEN + SHA256_BASE64_LEN;
         // check semicolon
         if (begin < pinnedPubkey.size() && pinnedPubkey[begin] != ';') {
             NETSTACK_LOGE("pinnedPubkey format invalid, should have semicolon separated.");
-            return CURLE_BAD_FUNCTION_ARGUMENT;
+            return -1;
         }
         // else: begin == pinnedPubkey, end of string, nothing to do.
         begin++;
     }
-    return CURLE_SSL_PINNEDPUBKEYNOTMATCH;
+    return 1;
 }
 } // namespace OHOS::NetStack::CommonUtils

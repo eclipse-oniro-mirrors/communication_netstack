@@ -606,10 +606,10 @@ static int VerifyCallback(int preverifyOk, X509_STORE_CTX *ctx)
     if (!requestContext->IsRootCaVerified()) {
         // not verified yet, so this is the root CA verifying.
         NETSTACK_LOGD("Verifying Root CA.");
-        requestContext->SetRootCaVerifiedOk(verifyResult == CURLE_OK);
+        requestContext->SetRootCaVerifiedOk(verifyResult == 0);
         requestContext->SetRootCaVerified();
     }
-    if (verifyResult != CURLE_OK && depth == 0) {
+    if (verifyResult != 0 && depth == 0) {
         // peer site certificate, since root ca verify not ok, and peer site is also not ok
         // return failed.
         return 0;
