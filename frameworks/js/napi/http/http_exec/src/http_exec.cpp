@@ -1003,7 +1003,7 @@ CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *ssl_ctx, void *requ
 
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
 
-static bool sha256sum(unsigned char *buf, size_t buflen, unsigned char *out, size_t outlen)
+static bool Sha256sum(unsigned char *buf, size_t buflen, unsigned char *out, size_t outlen)
 {
     if (out == nullptr || outlen < SHA256_BASE64_LEN) {
         NETSTACK_LOGE("output buffer length too short.");
@@ -1041,7 +1041,7 @@ static bool sha256sum(unsigned char *buf, size_t buflen, unsigned char *out, siz
     return true;
 }
 
-static int verify_cert_pubkey(X509 *cert, const std::string &pinnedPubkey)
+static int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey)
 {
     if (pinnedPubkey.empty()) {
         // if no pinned pubkey specified, don't pin (Curl default)
@@ -1051,10 +1051,10 @@ static int verify_cert_pubkey(X509 *cert, const std::string &pinnedPubkey)
         NETSTACK_LOGE("no cert specified.");
         return CURLE_BAD_FUNCTION_ARGUMENT;
     }
-    unsigned char *certPubkey = NULL;
+    unsigned char *certPubkey = nullptr;
     int pubkeyLen = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(cert), &certPubkey);
     unsigned char certPubKeyDigest[SHA256_BASE64_LEN + 1] = {0};
-    if (!sha256sum(certPubkey, pubkeyLen, certPubKeyDigest, SHA256_BASE64_LEN + 1)) {
+    if (!Sha256sum(certPubkey, pubkeyLen, certPubKeyDigest, SHA256_BASE64_LEN + 1)) {
         return CURLE_BAD_FUNCTION_ARGUMENT;
     }
     NETSTACK_LOGI("pubkey sha256: %{public}s", certPubKeyDigest);
@@ -1085,7 +1085,7 @@ static int verify_cert_pubkey(X509 *cert, const std::string &pinnedPubkey)
     return CURLE_SSL_PINNEDPUBKEYNOTMATCH;
 }
 
-static int verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
+static int VerifyCallback(int preverify_ok, X509_STORE_CTX *ctx)
 {
     X509 *cert;
     int err, depth;
@@ -1105,7 +1105,7 @@ static int verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
         // root CA hash verified, normal procedure.
         return preverify_ok;
     }
-    int verifyResult = verify_cert_pubkey(cert, requestContext->GetPinnedPubkey());
+    int verifyResult = VerifyCertPubkey(cert, requestContext->GetPinnedPubkey());
     if (!requestContext->IsRootCaVerified()) {
         // not verified yet, so this is the root CA verifying.
         NETSTACK_LOGD("Verifying Root CA.");
@@ -1125,7 +1125,7 @@ CURLcode HttpExec::VerifyRootCaSslCtxFunction(CURL *curl, void *ssl_ctx, void *c
 {
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
     SSL_CTX *ctx = static_cast<SSL_CTX *>(ssl_ctx);
-    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, verify_callback);
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, VerifyCallback);
     SSL_CTX_set_ex_data(ctx, SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX, context);
 #endif
     return CURLE_OK;
