@@ -404,7 +404,7 @@ HWTEST_F(SocketTest, NoAuthMethodTest001, TestSize.Level1)
     EXPECT_FALSE(noAuthMethod->RequestProxy(socketId, Socks5Command::TCP_CONNECTION, dest, proxyAddr).first);
 
     dest.family_ = NetAddress::Family::DOMAIN;
-    EXPECT_FALSE(noAuthMethod->RequestProxy(socketId, Socks5Command::TCP_CONNECTION, dest, proxyAddr).first);    
+    EXPECT_FALSE(noAuthMethod->RequestProxy(socketId, Socks5Command::TCP_CONNECTION, dest, proxyAddr).first);
 }
 
 HWTEST_F(SocketTest, passWdMethodTest001, TestSize.Level1)
