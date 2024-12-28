@@ -21,11 +21,11 @@ utils_include = [
   "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
   "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/include",
   "$SUBSYSTEM_DIR/netstack/utils/log/include",
-  "$THIRD_PARTY_ROOT/curl/include",
 ]
 
 common_external_deps = [
   "c_utils:utils",
+  "curl:curl_shared",
   "hilog:libhilog",
 ]
 
@@ -54,7 +54,6 @@ ohos_unittest("http_unittest") {
     "$NETSTACK_NAPI_ROOT/http/options/include",
     "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/include",
     "$SUBSYSTEM_DIR/netstack/utils/tlv_utils/include",
-    "$THIRD_PARTY_ROOT/curl/include",
   ]
   include_dirs += utils_include
 
@@ -68,7 +67,7 @@ ohos_unittest("http_unittest") {
   }
 
   external_deps = common_external_deps
-  external_deps += [ "curl:curl_shared" ]
+
   sources = [
     "$NETSTACK_NAPI_ROOT/http/async_context/src/request_context.cpp",
     "$NETSTACK_NAPI_ROOT/http/constant/src/constant.cpp",
@@ -106,9 +105,9 @@ ohos_unittest("http_unittest") {
       "time_service:time_client",
     ]
     if (netstack_http_boringssl) {
-      deps += [
-        "//vendor/open_source/boringssl:crypto_boringssl",
-        "//vendor/open_source/boringssl:ssl_boringssl",
+      external_deps += [
+        "crypto_boring:crypto_boring",
+        "crypto_boring:ssl_boring",
       ]
     } else {
       external_deps += [

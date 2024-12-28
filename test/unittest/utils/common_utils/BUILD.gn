@@ -36,10 +36,8 @@ ohos_unittest("netstack_common_utils_test") {
 
   module_out_path = "netstack/utils_unittest"
 
-  include_dirs = [
-    "$NETSTACK_UTILS_ROOT/common_utils/include",
-    "$THIRD_PARTY_ROOT/curl/include",
-  ]
+  include_dirs = [ "$NETSTACK_UTILS_ROOT/common_utils/include" ]
+
   include_dirs += utils_include
 
   external_deps = common_external_deps

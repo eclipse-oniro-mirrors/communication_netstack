@@ -43,9 +43,7 @@ ohos_unittest("netstack_network_profiler_utils_test") {
     "$NETSTACK_NAPI_ROOT/http/options/include",
     "$NETSTACK_UTILS_ROOT/profiler_utils/include",
     "$NETSTACK_UTILS_ROOT/tlv_utils/include",
-    "$THIRD_PARTY_ROOT/curl/include",
     "$NETSTACK_DIR/utils/common_utils/include",
-    "//base/startup/init/interfaces/innerkits/include/",
   ]
   include_dirs += utils_include
 
@@ -54,6 +52,7 @@ ohos_unittest("netstack_network_profiler_utils_test") {
     "ability_runtime:wantagent_innerkits",
     "curl:curl_shared",
     "hiprofiler:libnetwork_profiler",
+    "init:libbegetutil",
     "time_service:time_client",
   ]
 

@@ -22,7 +22,6 @@ utils_include = [
   "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
   "$SUBSYSTEM_DIR/netstack/utils/log/include",
   "$SUBSYSTEM_DIR/netstack/utils/napi_utils/include",
-  "$THIRD_PARTY_ROOT/curl/include",
 ]
 
 common_external_deps = [
@@ -35,7 +34,6 @@ ohos_unittest("netssl_unittest") {
 
   include_dirs = [
     "$NETSTACK_DIR/utils/napi_utils/include",
-    "$THIRD_PARTY_ROOT/openssl/include",
     "$NETSSL_INNERAPI/include",
     "$NETSTACK_DIR/frameworks/native/net_ssl/include",
     "$NETSSL_NAPI/async_context/include",
@@ -61,6 +59,7 @@ ohos_unittest("netssl_unittest") {
 
   external_deps = common_external_deps
   external_deps += [
+    "curl:curl_shared",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
   ]

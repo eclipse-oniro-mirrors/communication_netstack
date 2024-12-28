@@ -52,11 +52,11 @@
                 "hiprofiler",
                 "time_service",
                 "ability_runtime",
-                "samgr"
-            ],
-            "third_party": [
+                "samgr",
                 "libwebsockets",
-                "node"
+                "node",
+                "jsoncpp",
+                "netmanager_enhanced"
             ]
         },
         "build": {

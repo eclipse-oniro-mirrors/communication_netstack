@@ -32,7 +32,6 @@ ohos_fuzztest("WebSocketExecFuzzTest") {
     "$NETSTACK_NAPI_ROOT/websocket/constant/include",
     "$NETSTACK_NAPI_ROOT/websocket/websocket_exec/include",
     "$NETSTACK_NAPI_ROOT/websocket/websocket_module/include",
-    "$THIRD_PARTY_ROOT/libwebsockets/include",
     "$NETSTACK_DIR/utils/log/include",
     "$NETSTACK_DIR/utils/common_utils/include",
   ]
@@ -57,15 +56,13 @@ ohos_fuzztest("WebSocketExecFuzzTest") {
 
   sources += [ "websocket_exec_fuzzer.cpp" ]
 
-  deps = [
-    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$THIRD_PARTY_ROOT/libwebsockets:websockets",
-  ]
+  deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
 
   external_deps = [
     "c_utils:utils",
     "eventhandler:libeventhandler",
     "hilog:libhilog",
+    "libwebsockets:websockets",
     "napi:ace_napi",
     "openssl:libssl_shared",
   ]

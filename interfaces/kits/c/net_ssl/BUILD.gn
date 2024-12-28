@@ -26,7 +26,6 @@ ohos_shared_library("net_ssl_ndk") {
   output_name = "net_ssl"
   output_extension = "so"
   include_dirs = [
-    "$THIRD_PARTY_ROOT/openssl/include",
     "$NETSTACK_DIR/interfaces/kits/c/net_ssl/include",
     "$NETSTACK_DIR/interfaces/innerkits/net_ssl/include",
     "$NETSTACK_DIR/frameworks/native/net_ssl/include",

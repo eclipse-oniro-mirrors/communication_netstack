@@ -24,13 +24,13 @@ utils_include = [
   "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
   "$SUBSYSTEM_DIR/netstack/utils/log/include",
   "$SUBSYSTEM_DIR/netstack/utils/napi_utils/include",
-  "$THIRD_PARTY_ROOT/libwebsockets/include",
 ]
 
 common_external_deps = [
   "c_utils:utils",
   "eventhandler:libeventhandler",
   "hilog:libhilog",
+  "libwebsockets:websockets",
 ]
 
 ohos_fuzztest("WebSocketInnerApiFuzzTest") {
