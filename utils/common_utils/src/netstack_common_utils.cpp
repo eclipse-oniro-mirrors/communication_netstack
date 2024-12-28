@@ -560,7 +560,7 @@ int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey)
         NETSTACK_LOGE("no cert specified.");
         return CURLE_BAD_FUNCTION_ARGUMENT;
     }
-    unsigned char *certPubkey = NULL;
+    unsigned char *certPubkey = nullptr;
     int pubkeyLen = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(cert), &certPubkey);
     unsigned char certPubKeyDigest[SHA256_BASE64_LEN + 1] = {0};
     if (!Sha256sum(certPubkey, pubkeyLen, certPubKeyDigest, SHA256_BASE64_LEN + 1)) {
