@@ -144,7 +144,7 @@ ohos_unittest("socket_unittest") {
   defines = [
     "private = public",
     "protected = public",
-    "DT_TEST"
+    "DT_TEST",
   ]
 
   if (defined(global_parts_info) &&

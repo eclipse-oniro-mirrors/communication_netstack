@@ -262,6 +262,7 @@ HWTEST_F(SocketTest, Socks5SocketTest002, TestSize.Level1)
     eventManager.data_ = &data;
     shared_ptr<Socks5Instance> socks5Udp = make_shared<Socks5UdpInstance>();
     socks5Udp->options_ = make_shared<Socks5Option>();
+    socks5Udp->SetSocks5Instance(socks5Udp);
     eventManager.proxyData_ = socks5Udp;
     context.proxyOptions = make_shared<ProxyOptions>();
     context.proxyOptions->type = ProxyType::NONE;
@@ -277,6 +278,7 @@ HWTEST_F(SocketTest, SetSocks5OptionTest001, TestSize.Level1)
 {
     int32_t socketId = 1;
     auto socks5Inst = make_shared<Socks5TcpInstance>(socketId);
+    socks5Inst->SetSocks5Instance(socks5Inst);
     shared_ptr<Socks5Option> opt = make_shared<Socks5Option>();
     socks5Inst->SetSocks5Option(opt);
     EXPECT_FALSE(socks5Inst->options_ == nullptr);
@@ -287,6 +289,7 @@ HWTEST_F(SocketTest, DoConnectTest001, TestSize.Level1)
     int32_t socketId = 1;
     auto socks5Inst = make_shared<Socks5TcpInstance>(socketId);
     socks5Inst->options_ = make_shared<Socks5Option>();
+    socks5Inst->SetSocks5Instance(socks5Inst);
     auto ret = socks5Inst->DoConnect(Socks5Command::TCP_CONNECTION);
     EXPECT_FALSE(ret);
     EXPECT_FALSE(socks5Inst->IsConnected());
@@ -298,6 +301,7 @@ HWTEST_F(SocketTest, RequestMethodTest001, TestSize.Level1)
     vector<Socks5MethodType> methods = {Socks5MethodType::NO_AUTH, Socks5MethodType::PASSWORD};
     auto socks5Inst = make_shared<Socks5TcpInstance>(socketId);
     socks5Inst->options_ = make_shared<Socks5Option>();
+    socks5Inst->SetSocks5Instance(socks5Inst);
     auto ret = socks5Inst->RequestMethod(methods);
     EXPECT_FALSE(ret);
 }
@@ -306,6 +310,7 @@ HWTEST_F(SocketTest, CreateSocks5MethodByTypeTest001, TestSize.Level1)
 {
     int32_t socketId = 1;
     auto socks5Inst = make_shared<Socks5TcpInstance>(socketId);
+    socks5Inst->SetSocks5Instance(socks5Inst);
     auto ret = socks5Inst->CreateSocks5MethodByType(Socks5MethodType::NO_AUTH);
     EXPECT_FALSE(ret == nullptr);
 
@@ -323,6 +328,7 @@ HWTEST_F(SocketTest, ConnectTest001, TestSize.Level1)
 {
     int32_t socketId = 1;
     auto socks5TcpInst = make_shared<Socks5TcpInstance>(socketId);
+    socks5TcpInst->SetSocks5Instance(socks5TcpInst);
     socks5TcpInst->options_ = make_shared<Socks5Option>();
     socks5TcpInst->state_ = Socks5AuthState::SUCCESS;
     EXPECT_TRUE(socks5TcpInst->Connect());
@@ -333,6 +339,7 @@ HWTEST_F(SocketTest, ConnectTest001, TestSize.Level1)
 HWTEST_F(SocketTest, ConnectTest002, TestSize.Level1)
 {
     auto socks5UdpInst = make_shared<Socks5UdpInstance>();
+    socks5UdpInst->SetSocks5Instance(socks5UdpInst);
     socks5UdpInst->options_ = make_shared<Socks5Option>();
     socks5UdpInst->state_ = Socks5AuthState::SUCCESS;
     EXPECT_TRUE(socks5UdpInst->Connect());
@@ -343,6 +350,7 @@ HWTEST_F(SocketTest, ConnectTest002, TestSize.Level1)
 HWTEST_F(SocketTest, ConnectProxyTest001, TestSize.Level1)
 {
     auto socks5UdpInst = make_shared<Socks5UdpInstance>();
+    socks5UdpInst->SetSocks5Instance(socks5UdpInst);
     socks5UdpInst->options_ = make_shared<Socks5Option>();
     EXPECT_FALSE(socks5UdpInst->ConnectProxy());
 }
@@ -350,6 +358,7 @@ HWTEST_F(SocketTest, ConnectProxyTest001, TestSize.Level1)
 HWTEST_F(SocketTest, RemoveHeaderTest001, TestSize.Level1)
 {
     auto socks5UdpInst = make_shared<Socks5UdpInstance>();
+    socks5UdpInst->SetSocks5Instance(socks5UdpInst);
     void *data = nullptr;
     size_t len = 2;
     int af = AF_INET;
@@ -359,6 +368,7 @@ HWTEST_F(SocketTest, RemoveHeaderTest001, TestSize.Level1)
 HWTEST_F(SocketTest, AddHeaderTest001, TestSize.Level1)
 {
     auto socks5UdpInst = make_shared<Socks5UdpInstance>();
+    socks5UdpInst->SetSocks5Instance(socks5UdpInst);
     NetAddress dest;
     dest.SetFamilyByJsValue(static_cast<uint32_t>(NetAddress::Family::IPv4));
     socks5UdpInst->dest_ = dest;
@@ -369,6 +379,7 @@ HWTEST_F(SocketTest, AddHeaderTest001, TestSize.Level1)
 HWTEST_F(SocketTest, AddHeaderTest002, TestSize.Level1)
 {
     auto socks5UdpInst = make_shared<Socks5UdpInstance>();
+    socks5UdpInst->SetSocks5Instance(socks5UdpInst);
     NetAddress dest;
     dest.SetFamilyByJsValue(static_cast<uint32_t>(NetAddress::Family::IPv6));
     socks5UdpInst->dest_ = dest;
@@ -379,6 +390,7 @@ HWTEST_F(SocketTest, AddHeaderTest002, TestSize.Level1)
 HWTEST_F(SocketTest, AddHeaderTest003, TestSize.Level1)
 {
     auto socks5UdpInst = make_shared<Socks5UdpInstance>();
+    socks5UdpInst->SetSocks5Instance(socks5UdpInst);
     NetAddress dest;
     dest.SetFamilyByJsValue(static_cast<uint32_t>(NetAddress::Family::DOMAIN));
     socks5UdpInst->dest_ = dest;
@@ -390,7 +402,9 @@ HWTEST_F(SocketTest, NoAuthMethodTest001, TestSize.Level1)
 {
     int32_t socketId = 1;
     auto socks5Inst = make_shared<Socks5TcpInstance>(socketId);
+    socks5Inst->SetSocks5Instance(socks5Inst);
     auto noAuthMethod = socks5Inst->CreateSocks5MethodByType(Socks5MethodType::NO_AUTH);
+    noAuthMethod->socks5Inst_ = socks5Inst;
     Socks5ProxyAddress proxyAddr;
     EXPECT_TRUE(noAuthMethod->RequestAuth(socketId, "", "", proxyAddr));
 
@@ -411,7 +425,9 @@ HWTEST_F(SocketTest, passWdMethodTest001, TestSize.Level1)
 {
     int32_t socketId = 1;
     auto socks5Inst = make_shared<Socks5TcpInstance>(socketId);
+    socks5Inst->SetSocks5Instance(socks5Inst);
     auto passWdMethod = socks5Inst->CreateSocks5MethodByType(Socks5MethodType::PASSWORD);
+    passWdMethod->socks5Inst_ = socks5Inst;
     Socks5ProxyAddress proxyAddr;
     EXPECT_FALSE(passWdMethod->RequestAuth(socketId, "", "pass", proxyAddr));
     EXPECT_FALSE(passWdMethod->RequestAuth(socketId, "user", "", proxyAddr));
