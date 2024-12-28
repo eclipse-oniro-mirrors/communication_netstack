@@ -138,6 +138,9 @@ bool HasInternetPermission()
 #ifdef FUZZ_TEST
     return true;
 #endif
+#ifdef DT_TEST
+    return true;
+#endif
     int testSock = socket(AF_INET, SOCK_STREAM, 0);
     if (testSock < 0 && errno == EPERM) {
         NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));

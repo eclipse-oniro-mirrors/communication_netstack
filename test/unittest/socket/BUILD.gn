@@ -131,13 +131,26 @@ ohos_unittest("socket_unittest") {
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
   ]
 
+  cflags_cc = [
+    "--coverage",
+  ]
+
+  ldflags = [
+    "--coverage",
+  ]
+
   external_deps = common_external_deps
   external_deps += [
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
   ]
 
-  defines = []
+  defines = [
+    "private = public",
+    "protected = public",
+    "DT_TEST"
+  ]
+  
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
