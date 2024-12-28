@@ -113,6 +113,8 @@ static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_bas
 
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
 static constexpr const int SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX = 1;
+static constexpr const unsigned int SHA256_LEN = 32;
+static constexpr const int SHA256_BASE64_LEN = 44;  // 32-byte base64 -> 44 bytes
 static constexpr const int PINNED_PREFIX_LEN = 8; // strlen("sha256//")
 #endif
 
@@ -1001,7 +1003,89 @@ CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *ssl_ctx, void *requ
 
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
 
-static int VerifyCallback(int preverifyOk, X509_STORE_CTX *ctx)
+static bool sha256sum(unsigned char *buf, size_t buflen, unsigned char *out, size_t outlen)
+{
+    if (out == nullptr || outlen < SHA256_BASE64_LEN) {
+        NETSTACK_LOGE("output buffer length too short.");
+        return false;
+    }
+    EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
+    unsigned int digestLen = 0;
+    unsigned char digest[SHA256_LEN];
+    if (!mdctx) {
+        NETSTACK_LOGE("create MD_CTX failed.");
+        return false;
+    }
+    if (!EVP_DigestInit(mdctx, EVP_sha256())) {
+        NETSTACK_LOGE("EVP_DigestInit failed.");
+        return false;
+    }
+    if (!EVP_DigestUpdate(mdctx, buf, buflen)) {
+        NETSTACK_LOGE("EVP_DigestUpdate failed.");
+        return false;
+    }
+    if (!EVP_DigestFinal_ex(mdctx, digest, &digestLen)) {
+        NETSTACK_LOGE("EVP_DigestFinal_ex failed.");
+        return false;
+    }
+    EVP_MD_CTX_free(mdctx);
+    if (digestLen != SHA256_LEN) {
+        NETSTACK_LOGE("SHA256 length invalid");
+        return false;
+    }
+    int base64Len = EVP_EncodeBlock(out, digest, SHA256_LEN);
+    if (base64Len != SHA256_BASE64_LEN) {
+        NETSTACK_LOGE("SHA256-Base64 length invalid.");
+        return false;
+    }
+    return true;
+}
+
+static int verify_cert_pubkey(X509 *cert, const std::string &pinnedPubkey)
+{
+    if (pinnedPubkey.empty()) {
+        // if no pinned pubkey specified, don't pin (Curl default)
+        return CURLE_OK;
+    }
+    if (cert == nullptr) {
+        NETSTACK_LOGE("no cert specified.");
+        return CURLE_BAD_FUNCTION_ARGUMENT;
+    }
+    unsigned char *certPubkey = NULL;
+    int pubkeyLen = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(cert), &certPubkey);
+    unsigned char certPubKeyDigest[SHA256_BASE64_LEN + 1] = {0};
+    if (!sha256sum(certPubkey, pubkeyLen, certPubKeyDigest, SHA256_BASE64_LEN + 1)) {
+        return CURLE_BAD_FUNCTION_ARGUMENT;
+    }
+    NETSTACK_LOGI("pubkey sha256: %{public}s", certPubKeyDigest);
+    std::string certPubKeyDigestStr(reinterpret_cast<const char*>(certPubKeyDigest), SHA256_BASE64_LEN);
+    unsigned int begin = 0;
+    while (begin < pinnedPubkey.size()) {
+        if (pinnedPubkey.find("sha256//", begin) != begin) {
+            NETSTACK_LOGE("pinnedPubkey format invalid, should be like sha256//[hash1];sha256//[hash2]");
+            return CURLE_BAD_FUNCTION_ARGUMENT;
+        }
+        std::string candidate = pinnedPubkey.substr(begin + PINNED_PREFIX_LEN, SHA256_BASE64_LEN);
+        if (candidate.size() != SHA256_BASE64_LEN) {
+            NETSTACK_LOGE("pinnedPubkey format length invalid.");
+            return CURLE_BAD_FUNCTION_ARGUMENT;
+        }
+        if (candidate == certPubKeyDigestStr) {
+            return CURLE_OK;
+        }
+        begin += PINNED_PREFIX_LEN + SHA256_BASE64_LEN;
+        // check semicolon
+        if (begin < pinnedPubkey.size() && pinnedPubkey[begin] != ';') {
+            NETSTACK_LOGE("pinnedPubkey format invalid, should have semicolon separated.");
+            return CURLE_BAD_FUNCTION_ARGUMENT;
+        }
+        // else: begin == pinnedPubkey, end of string, nothing to do.
+        begin++;
+    }
+    return CURLE_SSL_PINNEDPUBKEYNOTMATCH;
+}
+
+static int verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 {
     X509 *cert;
     int err, depth;
@@ -1019,21 +1103,21 @@ static int VerifyCallback(int preverifyOk, X509_STORE_CTX *ctx)
         SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX));
     if (requestContext->IsRootCaVerifiedOk()) {
         // root CA hash verified, normal procedure.
-        return preverifyOk;
+        return preverify_ok;
     }
-    int verifyResult = CommonUtils::VerifyCertPubkey(cert, requestContext->GetPinnedPubkey());
+    int verifyResult = verify_cert_pubkey(cert, requestContext->GetPinnedPubkey());
     if (!requestContext->IsRootCaVerified()) {
         // not verified yet, so this is the root CA verifying.
         NETSTACK_LOGD("Verifying Root CA.");
-        requestContext->SetRootCaVerifiedOk(verifyResult == 0);
+        requestContext->SetRootCaVerifiedOk(verifyResult == CURLE_OK);
         requestContext->SetRootCaVerified();
     }
-    if (verifyResult != 0 && depth == 0) {
+    if (verifyResult != CURLE_OK && depth == 0) {
         // peer site certificate, since root ca verify not ok, and peer site is also not ok
         // return failed.
         return 0;
     }
-    return preverifyOk;
+    return preverify_ok;
 }
 #endif
 
@@ -1041,7 +1125,7 @@ CURLcode HttpExec::VerifyRootCaSslCtxFunction(CURL *curl, void *ssl_ctx, void *c
 {
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
     SSL_CTX *ctx = static_cast<SSL_CTX *>(ssl_ctx);
-    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, VerifyCallback);
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, verify_callback);
     SSL_CTX_set_ex_data(ctx, SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX, context);
 #endif
     return CURLE_OK;
