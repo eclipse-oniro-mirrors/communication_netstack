@@ -23,6 +23,7 @@ common_external_deps = [
   "c_utils:utils",
   "hilog:libhilog",
   "hisysevent:libhisysevent",
+  "openssl:libcrypto_shared",
 ]
 
 ohos_unittest("netstack_common_utils_test") {

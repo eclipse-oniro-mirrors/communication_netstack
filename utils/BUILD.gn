@@ -26,6 +26,7 @@ config("stack_utils_common_public_config") {
     "common_utils/include",
     "log/include",
     "$THIRD_PARTY_ROOT/curl/include",
+    "$THIRD_PARTY_ROOT/openssl/include",
   ]
   if (product_name == "ohcore") {
     defines = [ "OH_CORE_NETSTACK_PERMISSION_CHECK" ]
@@ -70,7 +71,6 @@ ohos_shared_library("stack_utils_common") {
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "openssl:libcrypto_shared",
-    "openssl:libssl_shared",
   ]
 
   if (defined(global_parts_info) &&
