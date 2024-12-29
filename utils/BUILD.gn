@@ -26,7 +26,6 @@ config("stack_utils_common_public_config") {
     "common_utils/include",
     "log/include",
     "$THIRD_PARTY_ROOT/curl/include",
-    "$THIRD_PARTY_ROOT/openssl/include",
   ]
   if (product_name == "ohcore") {
     defines = [ "OH_CORE_NETSTACK_PERMISSION_CHECK" ]
