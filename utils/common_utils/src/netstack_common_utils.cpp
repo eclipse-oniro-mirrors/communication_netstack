@@ -51,6 +51,7 @@ constexpr int32_t INET_OPTION_SUC = 1;
 constexpr size_t MAX_DISPLAY_NUM = 2;
 constexpr unsigned int SHA256_LEN = 32;
 constexpr int SHA256_BASE64_LEN = 44;  // 32-byte base64 -> 44 bytes
+constexpr int PINNED_PREFIX_LEN = 8; // strlen("sha256//")
 
 namespace OHOS::NetStack::CommonUtils {
 const std::regex IP_PATTERN{
@@ -512,7 +513,7 @@ bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData)
     }
 }
 
-bool Sha256sum(unsigned char *buf, size_t buflen, unsigned char *out, size_t outlen)
+bool Sha256sum(unsigned char *buf, size_t buflen, std::string &digestStr)
 {
     if (out == nullptr || outlen < SHA256_BASE64_LEN) {
         NETSTACK_LOGE("output buffer length too short.");
@@ -547,50 +548,35 @@ bool Sha256sum(unsigned char *buf, size_t buflen, unsigned char *out, size_t out
         NETSTACK_LOGE("SHA256-Base64 length invalid.");
         return false;
     }
+    digestStr = std::string(out, SHA256_BASE64_LEN);
     return true;
 }
 
-int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey)
+bool IsCertPubKeyInPinned(const std::string &certPubKeyDigest, const std::string &pinnedPubkey)
 {
-    if (pinnedPubkey.empty()) {
-        // if no pinned pubkey specified, don't pin (Curl default)
-        return CURLE_OK;
-    }
-    if (cert == nullptr) {
-        NETSTACK_LOGE("no cert specified.");
-        return CURLE_BAD_FUNCTION_ARGUMENT;
-    }
-    unsigned char *certPubkey = nullptr;
-    int pubkeyLen = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(cert), &certPubkey);
-    unsigned char certPubKeyDigest[SHA256_BASE64_LEN + 1] = {0};
-    if (!Sha256sum(certPubkey, pubkeyLen, certPubKeyDigest, SHA256_BASE64_LEN + 1)) {
-        return CURLE_BAD_FUNCTION_ARGUMENT;
-    }
-    NETSTACK_LOGI("pubkey sha256: %{public}s", certPubKeyDigest);
-    std::string certPubKeyDigestStr(reinterpret_cast<const char*>(certPubKeyDigest), SHA256_BASE64_LEN);
     unsigned int begin = 0;
     while (begin < pinnedPubkey.size()) {
         if (pinnedPubkey.find("sha256//", begin) != begin) {
             NETSTACK_LOGE("pinnedPubkey format invalid, should be like sha256//[hash1];sha256//[hash2]");
-            return CURLE_BAD_FUNCTION_ARGUMENT;
+            return false;
         }
         std::string candidate = pinnedPubkey.substr(begin + PINNED_PREFIX_LEN, SHA256_BASE64_LEN);
         if (candidate.size() != SHA256_BASE64_LEN) {
             NETSTACK_LOGE("pinnedPubkey format length invalid.");
-            return CURLE_BAD_FUNCTION_ARGUMENT;
+            return false;
         }
-        if (candidate == certPubKeyDigestStr) {
-            return CURLE_OK;
+        if (candidate == certPubKeyDigest) {
+            return true;
         }
         begin += PINNED_PREFIX_LEN + SHA256_BASE64_LEN;
         // check semicolon
         if (begin < pinnedPubkey.size() && pinnedPubkey[begin] != ';') {
             NETSTACK_LOGE("pinnedPubkey format invalid, should have semicolon separated.");
-            return CURLE_BAD_FUNCTION_ARGUMENT;
+            return false;
         }
         // else: begin == pinnedPubkey, end of string, nothing to do.
         begin++;
     }
-    return CURLE_SSL_PINNEDPUBKEYNOTMATCH;
+    return false;
 }
 } // namespace OHOS::NetStack::CommonUtils

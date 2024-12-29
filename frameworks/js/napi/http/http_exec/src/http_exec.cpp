@@ -113,7 +113,6 @@ static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_bas
 
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
 static constexpr const int SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX = 1;
-static constexpr const int PINNED_PREFIX_LEN = 8; // strlen("sha256//")
 #endif
 
 static void RequestContextDeleter(RequestContext *context)
@@ -1000,6 +999,29 @@ CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *ssl_ctx, void *requ
 }
 
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+static int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey)
+{
+    if (pinnedPubkey.empty()) {
+        // if no pinned pubkey specified, don't pin (Curl default)
+        return CURLE_OK;
+    }
+    if (cert == nullptr) {
+        NETSTACK_LOGE("no cert specified.");
+        return CURLE_BAD_FUNCTION_ARGUMENT;
+    }
+    unsigned char *certPubkey = nullptr;
+    int pubkeyLen = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(cert), &certPubkey);
+    std::string certPubKeyDigest;
+    if (!CommonUtils::Sha256sum(certPubkey, pubkeyLen, certPubKeyDigest)) {
+        return CURLE_BAD_FUNCTION_ARGUMENT;
+    }
+    NETSTACK_LOGI("pubkey sha256: %{public}s", certPubKeyDigest.c_str());
+    if (CommonUtils::IsCertPubKeyInPinned(certPubkey, pinnedPubkey)) {
+        return CURLE_OK;
+    }
+    return CURLE_SSL_PINNEDPUBKEYNOTMATCH;
+}
+
 static int VerifyCallback(int preverify_ok, X509_STORE_CTX *ctx)
 {
     X509 *cert;
@@ -1020,7 +1042,7 @@ static int VerifyCallback(int preverify_ok, X509_STORE_CTX *ctx)
         // root CA hash verified, normal procedure.
         return preverify_ok;
     }
-    int verifyResult = CommonUtils::VerifyCertPubkey(cert, requestContext->GetPinnedPubkey());
+    int verifyResult = VerifyCertPubkey(cert, requestContext->GetPinnedPubkey());
     if (!requestContext->IsRootCaVerified()) {
         // not verified yet, so this is the root CA verifying.
         NETSTACK_LOGD("Verifying Root CA.");

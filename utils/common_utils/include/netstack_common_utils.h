@@ -99,6 +99,6 @@ bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData)
 
 bool Sha256sum(unsigned char *buf, size_t buflen, unsigned char *out, size_t outlen);
 
-int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey);
+bool IsCertPubKeyInPinned(const std::string &certPubKeyDigest, const std::string &pinnedPubkey);
 } // namespace OHOS::NetStack::CommonUtils
 #endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */
