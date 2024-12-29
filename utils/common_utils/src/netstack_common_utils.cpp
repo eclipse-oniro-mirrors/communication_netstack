@@ -515,13 +515,10 @@ bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData)
 
 bool Sha256sum(unsigned char *buf, size_t buflen, std::string &digestStr)
 {
-    if (out == nullptr || outlen < SHA256_BASE64_LEN) {
-        NETSTACK_LOGE("output buffer length too short.");
-        return false;
-    }
     EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
     unsigned int digestLen = 0;
     unsigned char digest[SHA256_LEN];
+    unsigned char out[SHA256_BASE64_LEN + 1] = {0};
     if (!mdctx) {
         NETSTACK_LOGE("create MD_CTX failed.");
         return false;

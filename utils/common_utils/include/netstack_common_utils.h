@@ -22,8 +22,6 @@
 #include <string>
 #include <optional>
 
-#include <openssl/x509.h>
-
 namespace OHOS::NetStack::CommonUtils {
 static const std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
 static const std::string DOMAIN_TYPE_WEBSOCKET_REQUEST = "webSocket";
@@ -97,7 +95,7 @@ std::optional<std::string> GetBundleName();
 
 bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData);
 
-bool Sha256sum(unsigned char *buf, size_t buflen, unsigned char *out, size_t outlen);
+bool Sha256sum(unsigned char *buf, size_t buflen, std::string &digestStr);
 
 bool IsCertPubKeyInPinned(const std::string &certPubKeyDigest, const std::string &pinnedPubkey);
 } // namespace OHOS::NetStack::CommonUtils
