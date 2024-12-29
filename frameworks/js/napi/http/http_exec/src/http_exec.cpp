@@ -947,24 +947,24 @@ bool HttpExec::SetSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext
     return true;
 }
 
-CURLcode HttpExec::SslCtxFunction(CURL *curl, void *ssl_ctx, void *request_context)
+CURLcode HttpExec::SslCtxFunction(CURL *curl, void *sslCtx, void *request_context)
 {
     auto requestContext = static_cast<RequestContext *>(request_context);
     if (requestContext == nullptr) {
         NETSTACK_LOGE("requestContext is null");
         return CURLE_SSL_CERTPROBLEM;
     }
-    CURLcode result = MultiPathSslCtxFunction(curl, ssl_ctx, requestContext);
+    CURLcode result = MultiPathSslCtxFunction(curl, sslCtx, requestContext);
     if (result != CURLE_OK) {
         return result;
     }
     if (!requestContext->GetPinnedPubkey().empty()) {
-        return VerifyRootCaSslCtxFunction(curl, ssl_ctx, requestContext);
+        return VerifyRootCaSslCtxFunction(curl, sslCtx, requestContext);
     }
     return CURLE_OK;
 }
 
-CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *ssl_ctx, void *request_context)
+CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *sslCtx, void *request_context)
 {
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
     auto requestContext = static_cast<RequestContext *>(request_context);
@@ -974,7 +974,7 @@ CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *ssl_ctx, void *requ
     }
     requestContext->GetTrace().Tracepoint(TraceEvents::TLS);
     auto &certsPath = requestContext->GetCertsPath();
-    if (ssl_ctx == nullptr) {
+    if (sslCtx == nullptr) {
         NETSTACK_LOGE("ssl_ctx is null");
         return CURLE_SSL_CERTPROBLEM;
     }
@@ -984,14 +984,14 @@ CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *ssl_ctx, void *requ
             NETSTACK_LOGD("certificate directory path is not exist");
             continue;
         }
-        if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(ssl_ctx), nullptr, path.c_str())) {
+        if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), nullptr, path.c_str())) {
             NETSTACK_LOGE("loading certificates from directory error.");
             continue;
         }
     }
     if (access(certsPath.certFile.c_str(), F_OK) != 0) {
         NETSTACK_LOGD("certificate directory path is not exist");
-    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(ssl_ctx), certsPath.certFile.c_str(), nullptr)) {
+    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), certsPath.certFile.c_str(), nullptr)) {
         NETSTACK_LOGE("loading certificates from context cert error.");
     }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
@@ -1022,7 +1022,7 @@ static int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey)
     return CURLE_SSL_PINNEDPUBKEYNOTMATCH;
 }
 
-static int VerifyCallback(int preverify_ok, X509_STORE_CTX *ctx)
+static int VerifyCallback(int preverifyOk, X509_STORE_CTX *ctx)
 {
     X509 *cert;
     int err, depth;
@@ -1035,12 +1035,12 @@ static int VerifyCallback(int preverify_ok, X509_STORE_CTX *ctx)
     NETSTACK_LOGI("X509_STORE_CTX error code %{public}d, depth %{public}d", err, depth);
 
     ssl = static_cast<SSL *>(X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx()));
-    SSL_CTX *sslctx = SSL_get_SSL_CTX(ssl);
-    RequestContext *requestContext = static_cast<RequestContext *>(SSL_CTX_get_ex_data(sslctx,
+    SSL_CTX *sslCtx = SSL_get_SSL_CTX(ssl);
+    RequestContext *requestContext = static_cast<RequestContext *>(SSL_CTX_get_ex_data(sslCtx,
         SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX));
     if (requestContext->IsRootCaVerifiedOk()) {
         // root CA hash verified, normal procedure.
-        return preverify_ok;
+        return preverifyOk;
     }
     int verifyResult = VerifyCertPubkey(cert, requestContext->GetPinnedPubkey());
     if (!requestContext->IsRootCaVerified()) {
@@ -1054,14 +1054,14 @@ static int VerifyCallback(int preverify_ok, X509_STORE_CTX *ctx)
         // return failed.
         return 0;
     }
-    return preverify_ok;
+    return preverifyOk;
 }
 #endif
 
-CURLcode HttpExec::VerifyRootCaSslCtxFunction(CURL *curl, void *ssl_ctx, void *context)
+CURLcode HttpExec::VerifyRootCaSslCtxFunction(CURL *curl, void *sslCtx, void *context)
 {
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
-    SSL_CTX *ctx = static_cast<SSL_CTX *>(ssl_ctx);
+    SSL_CTX *ctx = static_cast<SSL_CTX *>(sslCtx);
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, VerifyCallback);
     SSL_CTX_set_ex_data(ctx, SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX, context);
 #endif

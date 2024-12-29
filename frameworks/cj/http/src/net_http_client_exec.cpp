@@ -550,14 +550,14 @@ bool NetHttpClientExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::Request
     return true;
 }
 
-CURLcode MultiPathSslCtxFunction(CURL *curl, void *ssl_ctx, const CertsPath *certsPath)
+CURLcode MultiPathSslCtxFunction(CURL *curl, void *sslCtx, const CertsPath *certsPath)
 {
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
     if (certsPath == nullptr) {
         NETSTACK_LOGE("certsPath is null");
         return CURLE_SSL_CERTPROBLEM;
     }
-    if (ssl_ctx == nullptr) {
+    if (sslCtx == nullptr) {
         NETSTACK_LOGE("ssl_ctx is null");
         return CURLE_SSL_CERTPROBLEM;
     }
@@ -567,14 +567,14 @@ CURLcode MultiPathSslCtxFunction(CURL *curl, void *ssl_ctx, const CertsPath *cer
             NETSTACK_LOGD("certificate directory path is not exist");
             continue;
         }
-        if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(ssl_ctx), nullptr, path.c_str())) {
+        if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), nullptr, path.c_str())) {
             NETSTACK_LOGE("loading certificates from directory error.");
             continue;
         }
     }
     if (access(certsPath->certFile.c_str(), F_OK) != 0) {
         NETSTACK_LOGD("certificate directory path is not exist");
-    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(ssl_ctx), certsPath->certFile.c_str(), nullptr)) {
+    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), certsPath->certFile.c_str(), nullptr)) {
         NETSTACK_LOGE("loading certificates from context cert error.");
     }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
@@ -638,29 +638,29 @@ static int VerifyCallback(int preverifyOk, X509_STORE_CTX *ctx)
 }
 #endif  // HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
 
-CURLcode VerifyRootCaSslCtxFunction(CURL *curl, void *ssl_ctx, void *context)
+CURLcode VerifyRootCaSslCtxFunction(CURL *curl, void *sslCtx, void *context)
 {
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
-    SSL_CTX *ctx = static_cast<SSL_CTX *>(ssl_ctx);
+    SSL_CTX *ctx = static_cast<SSL_CTX *>(sslCtx);
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, VerifyCallback);
     SSL_CTX_set_ex_data(ctx, SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX, context);
 #endif
     return CURLE_OK;
 }
 
-CURLcode SslCtxFunction(CURL *curl, void *ssl_ctx, void *parm)
+CURLcode SslCtxFunction(CURL *curl, void *sslCtx, void *parm)
 {
     auto requestContext = static_cast<RequestContext *>(parm);
     if (requestContext == nullptr) {
         NETSTACK_LOGE("requestContext is null");
         return CURLE_SSL_CERTPROBLEM;
     }
-    CURLcode result = MultiPathSslCtxFunction(curl, ssl_ctx, &requestContext->GetCertsPath());
+    CURLcode result = MultiPathSslCtxFunction(curl, sslCtx, &requestContext->GetCertsPath());
     if (result != CURLE_OK) {
         return result;
     }
     if (!requestContext->GetPinnedPubkey().empty()) {
-        return VerifyRootCaSslCtxFunction(curl, ssl_ctx, requestContext);
+        return VerifyRootCaSslCtxFunction(curl, sslCtx, requestContext);
     }
     return CURLE_OK;
 }
