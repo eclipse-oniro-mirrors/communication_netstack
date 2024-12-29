@@ -545,7 +545,7 @@ bool Sha256sum(unsigned char *buf, size_t buflen, std::string &digestStr)
         NETSTACK_LOGE("SHA256-Base64 length invalid.");
         return false;
     }
-    digestStr = std::string(out, SHA256_BASE64_LEN);
+    digestStr = std::string(reinterpret_cast<const char *>(out), SHA256_BASE64_LEN);
     return true;
 }
 

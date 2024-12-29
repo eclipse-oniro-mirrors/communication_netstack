@@ -599,7 +599,7 @@ static int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey)
         return CURLE_BAD_FUNCTION_ARGUMENT;
     }
     NETSTACK_LOGI("pubkey sha256: %{public}s", certPubKeyDigest.c_str());
-    if (CommonUtils::IsCertPubKeyInPinned(certPubkey, pinnedPubkey)) {
+    if (CommonUtils::IsCertPubKeyInPinned(certPubKeyDigest, pinnedPubkey)) {
         return CURLE_OK;
     }
     return CURLE_SSL_PINNEDPUBKEYNOTMATCH;
