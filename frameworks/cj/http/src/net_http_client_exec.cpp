@@ -87,7 +87,6 @@ static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_bas
 static constexpr const int SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX = 1;
 #endif
 
-
 bool NetHttpClientExec::AddCurlHandle(CURL *handle, RequestContext *context)
 {
     if (handle == nullptr || staticVariable_.curlMulti == nullptr) {
