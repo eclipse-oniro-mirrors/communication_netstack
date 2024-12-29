@@ -51,7 +51,9 @@
 
 constexpr int32_t INET_OPTION_SUC = 1;
 constexpr size_t MAX_DISPLAY_NUM = 2;
+#if HAS_NETMANAGER_BASE
 constexpr unsigned int SHA256_LEN = 32;
+#endif
 constexpr int SHA256_BASE64_LEN = 44;  // 32-byte base64 -> 44 bytes
 constexpr int PINNED_PREFIX_LEN = 8; // strlen("sha256//")
 
@@ -549,8 +551,10 @@ bool Sha256sum(unsigned char *buf, size_t buflen, std::string &digestStr)
         return false;
     }
     digestStr = std::string(reinterpret_cast<const char *>(out), SHA256_BASE64_LEN);
-#endif
     return true;
+#else
+    return false;
+#endif
 }
 
 bool IsCertPubKeyInPinned(const std::string &certPubKeyDigest, const std::string &pinnedPubkey)

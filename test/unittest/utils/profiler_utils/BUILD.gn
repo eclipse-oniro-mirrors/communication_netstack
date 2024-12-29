@@ -24,7 +24,6 @@ utils_include = [ "$NETSTACK_UTILS_ROOT/log/include" ]
 common_external_deps = [
   "c_utils:utils",
   "hilog:libhilog",
-  "openssl:libcrypto_shared",
 ]
 
 ohos_unittest("netstack_network_profiler_utils_test") {
