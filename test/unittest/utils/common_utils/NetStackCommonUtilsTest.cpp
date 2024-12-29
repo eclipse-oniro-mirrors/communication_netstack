@@ -861,7 +861,7 @@ HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned04, TestSize.Level2)
     EXPECT_TRUE(IsCertPubKeyInPinned(pubkey, pinnedPubkey));
 }
 
-HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned04, TestSize.Level2)
+HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned05, TestSize.Level2)
 {
     std::string pubkey("YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3tvRMwE=;");
     std::string pinnedPubkey("sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3"

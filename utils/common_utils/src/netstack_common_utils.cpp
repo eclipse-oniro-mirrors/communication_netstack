@@ -36,7 +36,9 @@
 #include <filesystem>
 #endif
 
+#if HAS_NETMANAGER_BASE
 #include <openssl/evp.h>
+#endif // HAS_NETMANAGER_BASE
 
 #include "netstack_log.h"
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -515,6 +517,7 @@ bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData)
 
 bool Sha256sum(unsigned char *buf, size_t buflen, std::string &digestStr)
 {
+#ifdef HAS_NETMANAGER_BASE
     EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
     unsigned int digestLen = 0;
     unsigned char digest[SHA256_LEN];
@@ -546,6 +549,7 @@ bool Sha256sum(unsigned char *buf, size_t buflen, std::string &digestStr)
         return false;
     }
     digestStr = std::string(reinterpret_cast<const char *>(out), SHA256_BASE64_LEN);
+#endif
     return true;
 }
 
