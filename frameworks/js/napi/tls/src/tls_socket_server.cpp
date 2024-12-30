@@ -565,6 +565,7 @@ void TLSSocketServer::GetSignatureAlgorithms(const int socketFd,
 void TLSSocketServer::Connection::OnMessage(const OnMessageCallback &onMessageCallback)
 {
     onMessageCallback_ = onMessageCallback;
+    CachedMessageCallback();
 }
 
 void TLSSocketServer::Connection::OnClose(const OnCloseCallback &onCloseCallback)
@@ -1303,6 +1304,22 @@ int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
     return -1;
 }
 
+void TLSSocketServer::Connection::CachedMessageCallback()
+{
+    int32_t socketFd = GetSocketFd();
+    if (socketFd < 0) {
+        NETSTACK_LOGE("socketFd is invalid to recv message");
+        return;
+    }
+    if (onMessageCallback_) {
+        while (!dataCache_->IsEmpty()) {
+            CacheInfo cache = dataCache_->Get();
+            onMessageCallback_(socketFd, cache.data, cache.remoteInfo);
+        }
+    }
+    NETSTACK_LOGD("Cached message is callbacked for socket %{public}d", socketFd);
+}
+
 void TLSSocketServer::Connection::CallOnMessageCallback(int32_t socketFd, const std::string &data,
                                                         const Socket::SocketRemoteInfo &remoteInfo)
 {
@@ -1320,6 +1337,7 @@ void TLSSocketServer::Connection::CallOnMessageCallback(int32_t socketFd, const 
         }
         CallBackfunc(socketFd, data, remoteInfo);
     } else {
+        NETSTACK_LOGD("message callback is not registered");
         CacheInfo cache = {data, remoteInfo};
         dataCache_->Set(cache);
     }
