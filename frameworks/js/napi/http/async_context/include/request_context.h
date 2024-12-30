@@ -139,6 +139,18 @@ public:
     void SendNetworkProfiler();
 
     RequestTracer::Trace &GetTrace();
+
+    bool IsRootCaVerified() const;
+
+    void SetRootCaVerified();
+
+    bool IsRootCaVerifiedOk() const;
+
+    void SetRootCaVerifiedOk(bool ok);
+
+    void SetPinnedPubkey(std::string &pubkey);
+
+    std::string GetPinnedPubkey() const;
 private:
     uint32_t magicNumber_ = MAGIC_NUMBER;
     int32_t taskId_ = -1;
@@ -160,6 +172,9 @@ private:
     curl_slist *curlHostList_ = nullptr;
     bool isAtomicService_ = false;
     std::string bundleName_;
+    bool isRootCaVerified_ = false;
+    bool isRootCaVerifiedOk_ = false;
+    std::string pinnedPubkey_;
 #if HAS_NETMANAGER_BASE
     std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
 #endif

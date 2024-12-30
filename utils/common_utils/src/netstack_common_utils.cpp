@@ -36,6 +36,10 @@
 #include <filesystem>
 #endif
 
+#if HAS_NETMANAGER_BASE
+#include <openssl/evp.h>
+#endif // HAS_NETMANAGER_BASE
+
 #include "netstack_log.h"
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "netstack_apipolicy_utils.h"
@@ -47,6 +51,11 @@
 
 constexpr int32_t INET_OPTION_SUC = 1;
 constexpr size_t MAX_DISPLAY_NUM = 2;
+#if HAS_NETMANAGER_BASE
+constexpr unsigned int SHA256_LEN = 32;
+#endif
+constexpr int SHA256_BASE64_LEN = 44;  // 32-byte base64 -> 44 bytes
+constexpr int PINNED_PREFIX_LEN = 8; // strlen("sha256//")
 
 namespace OHOS::NetStack::CommonUtils {
 const std::regex IP_PATTERN{
@@ -506,5 +515,73 @@ bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData)
         NETSTACK_LOGE("Failed to obtain the file data stream.");
         return false;
     }
+}
+
+bool Sha256sum(unsigned char *buf, size_t buflen, std::string &digestStr)
+{
+#ifdef HAS_NETMANAGER_BASE
+    EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
+    unsigned int digestLen = 0;
+    unsigned char digest[SHA256_LEN];
+    unsigned char out[SHA256_BASE64_LEN + 1] = {0};
+    if (!mdctx) {
+        NETSTACK_LOGE("create MD_CTX failed.");
+        return false;
+    }
+    if (!EVP_DigestInit(mdctx, EVP_sha256())) {
+        NETSTACK_LOGE("EVP_DigestInit failed.");
+        return false;
+    }
+    if (!EVP_DigestUpdate(mdctx, buf, buflen)) {
+        NETSTACK_LOGE("EVP_DigestUpdate failed.");
+        return false;
+    }
+    if (!EVP_DigestFinal_ex(mdctx, digest, &digestLen)) {
+        NETSTACK_LOGE("EVP_DigestFinal_ex failed.");
+        return false;
+    }
+    EVP_MD_CTX_free(mdctx);
+    if (digestLen != SHA256_LEN) {
+        NETSTACK_LOGE("SHA256 length invalid");
+        return false;
+    }
+    int base64Len = EVP_EncodeBlock(out, digest, SHA256_LEN);
+    if (base64Len != SHA256_BASE64_LEN) {
+        NETSTACK_LOGE("SHA256-Base64 length invalid.");
+        return false;
+    }
+    digestStr = std::string(reinterpret_cast<const char *>(out), SHA256_BASE64_LEN);
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool IsCertPubKeyInPinned(const std::string &certPubKeyDigest, const std::string &pinnedPubkey)
+{
+    unsigned int begin = 0;
+    while (begin < pinnedPubkey.size()) {
+        if (pinnedPubkey.find("sha256//", begin) != begin) {
+            NETSTACK_LOGE("pinnedPubkey format invalid, should be like sha256//[hash1];sha256//[hash2]");
+            return false;
+        }
+        std::string candidate = pinnedPubkey.substr(begin + PINNED_PREFIX_LEN, SHA256_BASE64_LEN);
+        if (candidate.size() != SHA256_BASE64_LEN) {
+            NETSTACK_LOGE("pinnedPubkey format length invalid.");
+            return false;
+        }
+        if (candidate == certPubKeyDigest) {
+            return true;
+        }
+        begin += PINNED_PREFIX_LEN + SHA256_BASE64_LEN;
+        // check semicolon
+        if (begin < pinnedPubkey.size() && pinnedPubkey[begin] != ';') {
+            NETSTACK_LOGE("pinnedPubkey format invalid, should have semicolon separated.");
+            return false;
+        }
+        // else: begin == pinnedPubkey, end of string, nothing to do.
+        begin++;
+    }
+    return false;
 }
 } // namespace OHOS::NetStack::CommonUtils

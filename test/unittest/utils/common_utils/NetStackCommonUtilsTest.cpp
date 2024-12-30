@@ -753,6 +753,49 @@ HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL50, TestSize.Level2)
     std::string hostname = GetHostnameFromURL(url);
     EXPECT_STREQ(hostname.c_str(), "（）“”{}P{0%%%VVV{}");
 }
+
+HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned01, TestSize.Level2)
+{
+    std::string pubkey;
+    std::string pinnedPubkey;
+    EXPECT_FALSE(IsCertPubKeyInPinned(pubkey, pinnedPubkey));
+}
+
+HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned02, TestSize.Level2)
+{
+    std::string pubkey;
+    std::string pinnedPubkey("sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3"
+                     "tvRMwE=;sha256//t62CeU2tQiqkexU74Gxa2eg7fRbEg"
+                     "oChTociMee9wno=");
+    EXPECT_FALSE(IsCertPubKeyInPinned(pubkey, pinnedPubkey));
+}
+
+HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned03, TestSize.Level2)
+{
+    std::string pubkey("YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3tvRMwE=");
+    std::string pinnedPubkey("sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3"
+                     "tvRMwE=;sha256//t62CeU2tQiqkexU74Gxa2eg7fRbEg"
+                     "oChTociMee9wno=");
+    EXPECT_TRUE(IsCertPubKeyInPinned(pubkey, pinnedPubkey));
+}
+
+HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned04, TestSize.Level2)
+{
+    std::string pubkey("t62CeU2tQiqkexU74Gxa2eg7fRbEgoChTociMee9wno=");
+    std::string pinnedPubkey("sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3"
+                     "tvRMwE=;sha256//t62CeU2tQiqkexU74Gxa2eg7fRbEg"
+                     "oChTociMee9wno=");
+    EXPECT_TRUE(IsCertPubKeyInPinned(pubkey, pinnedPubkey));
+}
+
+HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned05, TestSize.Level2)
+{
+    std::string pubkey("YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3tvRMwE=;");
+    std::string pinnedPubkey("sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3"
+                     "tvRMwE=;sha256//t62CeU2tQiqkexU74Gxa2eg7fRbEg"
+                     "oChTociMee9wno=");
+    EXPECT_FALSE(IsCertPubKeyInPinned(pubkey, pinnedPubkey));
+}
 } // namespace CommonUtils
 } // namespace NetStack
 } // namespace OHOS
