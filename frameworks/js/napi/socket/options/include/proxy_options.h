@@ -35,10 +35,10 @@ public:
 
     int ParseOptions(napi_env env, napi_value value);
 
-    ProxyType type{ProxyType::NONE};
-    NetAddress address;
-    std::string username;
-    std::string password;
+    ProxyType type_{ProxyType::NONE};
+    NetAddress address_;
+    std::string username_;
+    std::string password_;
 };
 } // namespace OHOS::NetStack::Socket
 

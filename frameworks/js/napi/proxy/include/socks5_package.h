@@ -51,68 +51,68 @@ public:
 
 class Socks5MethodRequest : public Socks5Request {
 public:
-    uint8_t version;
-    std::vector<Socks5MethodType> methods;
+    uint8_t version_;
+    std::vector<Socks5MethodType> methods_;
 
     std::string Serialize();
 };
 
 class Socks5MethodResponse : public Socks5Response {
 public:
-    uint8_t version;
-    uint8_t method;
+    uint8_t version_;
+    uint8_t method_;
 
     bool Deserialize(const void *data, size_t len);
 };
 
 class Socks5AuthRequest : public Socks5Request {
 public:
-    uint8_t version;
-    std::string username;
-    std::string password;
+    uint8_t version_;
+    std::string username_;
+    std::string password_;
 
     std::string Serialize();
 };
 
 class Socks5AuthResponse : public Socks5Response {
 public:
-    uint8_t version;
-    uint8_t status;
+    uint8_t version_;
+    uint8_t status_;
 
     bool Deserialize(const void *data, size_t len);
 };
 
 class Socks5ProxyRequest : public Socks5Request {
 public:
-    uint8_t version;
-    Socks5Command cmd;
-    uint8_t reserved;
-    Socks5AddrType addrType;
-    std::string destAddr;
-    uint16_t destPort;
+    uint8_t version_;
+    Socks5Command cmd_;
+    uint8_t reserved_;
+    Socks5AddrType addrType_;
+    std::string destAddr_;
+    uint16_t destPort_;
 
     std::string Serialize();
 };
 
 class Socks5ProxyResponse : public Socks5Response {
 public:
-    uint8_t version;
-    uint8_t status;
-    uint8_t reserved;
-    Socks5AddrType addrType;
-    std::string destAddr;
-    uint16_t destPort;
+    uint8_t version_;
+    uint8_t status_;
+    uint8_t reserved_;
+    Socks5AddrType addrType_;
+    std::string destAddr_;
+    uint16_t destPort_;
 
     bool Deserialize(const void *data, size_t len);
 };
 
 class Socks5UdpHeader : public Socks5Request {
 public:
-    uint16_t reserved;
-    uint8_t frag;
-    Socks5AddrType addrType;
-    std::string destAddr;
-    uint16_t dstPort;
+    uint16_t reserved_;
+    uint8_t frag_;
+    Socks5AddrType addrType_;
+    std::string destAddr_;
+    uint16_t dstPort_;
 
     std::string Serialize();
     bool Deserialize(const void *data, size_t len);

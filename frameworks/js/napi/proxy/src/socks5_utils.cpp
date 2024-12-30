@@ -58,8 +58,7 @@ std::pair<bool, Socks5Buffer> Socks5Utils::Recv(int32_t socketId, sockaddr *addr
         const int32_t recvLen = recvfrom(socketId, buf.get(), bufferSize, 0, addr, &tempAddrLen);
         if (recvLen > 0) {
             Socks5Buffer msg{};
-            msg.resize(recvLen);
-            (void)memcpy_s(&msg[0], recvLen, buf.get(), recvLen);
+            msg.assign(buf.get(), recvLen);
             return {true, msg};
         }
         const int32_t errCode{errno};

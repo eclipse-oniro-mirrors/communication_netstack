@@ -892,13 +892,13 @@ bool ExecUdpBind(BindContext *context)
 static std::shared_ptr<Socks5::Socks5UdpInstance> InitSocks5UdpInstance(UdpSendContext *context)
 {
     const std::shared_ptr<Socks5::Socks5Option> opt{std::make_shared<Socks5::Socks5Option>()};
-    opt->username = context->proxyOptions->username;
-    opt->password = context->proxyOptions->password;
-    opt->proxyAddress.netAddress = context->proxyOptions->address;
+    opt->username_ = context->proxyOptions->username_;
+    opt->password_ = context->proxyOptions->password_;
+    opt->proxyAddress_.netAddress_ = context->proxyOptions->address_;
     socklen_t len;
-    GetAddr(&opt->proxyAddress.netAddress, &opt->proxyAddress.addrV4, &opt->proxyAddress.addrV6,
-        &opt->proxyAddress.addr, &len);
-    if (opt->proxyAddress.addr == nullptr) {
+    GetAddr(&opt->proxyAddress_.netAddress_, &opt->proxyAddress_.addrV4_, &opt->proxyAddress_.addrV6_,
+        &opt->proxyAddress_.addr_, &len);
+    if (opt->proxyAddress_.addr_ == nullptr) {
         NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return nullptr;
@@ -935,7 +935,7 @@ static int HandleUdpProxyOptions(UdpSendContext *context)
         return -1;
     }
 
-    if (context->proxyOptions->type != ProxyType::SOCKS5) {
+    if (context->proxyOptions->type_ != ProxyType::SOCKS5) {
         NETSTACK_LOGE("unsupport proxy type");
         return 0;
     }
@@ -963,7 +963,7 @@ static int HandleUdpProxyOptions(UdpSendContext *context)
 
     // process wild address from some socks5 server
     if (bindAddr.GetAddress() == WILD_ADDRESS) {
-        bindAddr.SetAddress(context->proxyOptions->address.GetAddress());
+        bindAddr.SetAddress(context->proxyOptions->address_.GetAddress());
     }
     context->options.address = bindAddr;
 
@@ -1007,13 +1007,13 @@ bool ExecTcpBind(BindContext *context)
 static std::shared_ptr<Socks5::Socks5TcpInstance> InitSocks5TcpInstance(ConnectContext *context)
 {
     const std::shared_ptr<Socks5::Socks5Option> opt{std::make_shared<Socks5::Socks5Option>()};
-    opt->username = context->proxyOptions->username;
-    opt->password = context->proxyOptions->password;
-    opt->proxyAddress.netAddress = context->proxyOptions->address;
+    opt->username_ = context->proxyOptions->username_;
+    opt->password_ = context->proxyOptions->password_;
+    opt->proxyAddress_.netAddress_ = context->proxyOptions->address_;
     socklen_t len;
-    GetAddr(&opt->proxyAddress.netAddress, &opt->proxyAddress.addrV4, &opt->proxyAddress.addrV6,
-        &opt->proxyAddress.addr, &len);
-    if (opt->proxyAddress.addr == nullptr) {
+    GetAddr(&opt->proxyAddress_.netAddress_, &opt->proxyAddress_.addrV4_, &opt->proxyAddress_.addrV6_,
+        &opt->proxyAddress_.addr_, &len);
+    if (opt->proxyAddress_.addr_ == nullptr) {
         NETSTACK_LOGE("addr family error, address invalid");
         context->SetErrorCode(ADDRESS_INVALID);
         return nullptr;
@@ -1033,7 +1033,7 @@ static int HandleTcpProxyOptions(ConnectContext *context)
         return -1;
     }
 
-    if (context->proxyOptions->type != ProxyType::SOCKS5) {
+    if (context->proxyOptions->type_ != ProxyType::SOCKS5) {
         NETSTACK_LOGE("unsupport proxy type");
         return 0;
     }
@@ -1073,7 +1073,7 @@ bool ExecConnect(ConnectContext *context)
     context->options.address.SetRawAddress(
         ConvertAddressToIp(context->options.address.GetAddress(), context->options.address.GetSaFamily()));
     if ((context->proxyOptions != nullptr)) {
-        GetAddr(&context->proxyOptions->address, &addr4, &addr6, &addr, &len);
+        GetAddr(&context->proxyOptions->address_, &addr4, &addr6, &addr, &len);
     } else {
         GetAddr(&context->options.address, &addr4, &addr6, &addr, &len);
     }
@@ -2407,7 +2407,6 @@ bool IpMatchFamily(const std::string &address, sa_family_t family)
     }
     return true;
 }
-
 
 bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeoutMSec)
 {

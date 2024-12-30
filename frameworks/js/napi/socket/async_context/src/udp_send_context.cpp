@@ -70,7 +70,7 @@ void UdpSendContext::ParseParams(napi_value *params, size_t paramsCount)
             NETSTACK_LOGE("parse proxy options failed");
             return;
         }
-        if (opts->type != ProxyType::NONE) {
+        if (opts->type_ != ProxyType::NONE) {
             proxyOptions = opts;
         }
     }

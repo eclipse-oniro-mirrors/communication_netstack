@@ -87,27 +87,27 @@ bool Socks5Instance::DoConnect(Socks5Command command)
         UpdateErrorInfo(Socks5Status::SOCKS5_METHOD_ERROR);
         return false;
     }
-    if (!method_->RequestAuth(socketId_, options_->username, options_->password, options_->proxyAddress)) {
+    if (!method_->RequestAuth(socketId_, options_->username_, options_->password_, options_->proxyAddress_)) {
         NETSTACK_LOGE("socks5 instance fail to auth socket:%{public}d", socketId_);
         return false;
     }
     const std::pair<bool, Socks5ProxyResponse> result{method_->RequestProxy(socketId_, command, dest_,
-        options_->proxyAddress)};
+        options_->proxyAddress_)};
     if (!result.first) {
         NETSTACK_LOGE("socks5 instance fail to request proxy socket:%{public}d", socketId_);
         return false;
     }
-    proxyBindAddr_.SetAddress(result.second.destAddr, false);
-    proxyBindAddr_.SetPort(result.second.destPort);
-    if (result.second.addrType == Socks5AddrType::IPV4) {
+    proxyBindAddr_.SetAddress(result.second.destAddr_, false);
+    proxyBindAddr_.SetPort(result.second.destPort_);
+    if (result.second.addrType_ == Socks5AddrType::IPV4) {
         proxyBindAddr_.SetFamilyByJsValue(static_cast<uint32_t>(Socket::NetAddress::Family::IPv4));
-    } else if (result.second.addrType == Socks5AddrType::IPV6) {
+    } else if (result.second.addrType_ == Socks5AddrType::IPV6) {
         proxyBindAddr_.SetFamilyByJsValue(static_cast<uint32_t>(Socket::NetAddress::Family::IPv6));
-    } else if (result.second.addrType == Socks5AddrType::DOMAIN) {
+    } else if (result.second.addrType_ == Socks5AddrType::DOMAIN) {
         proxyBindAddr_.SetFamilyByJsValue(static_cast<uint32_t>(Socket::NetAddress::Family::DOMAIN));
     } else {
         NETSTACK_LOGE("socks5 instance get unknow addrType:%{public}d socket:%{public}d",
-            static_cast<uint32_t>(result.second.addrType), socketId_);
+            static_cast<uint32_t>(result.second.addrType_), socketId_);
     }
     state_ = Socks5AuthState::SUCCESS;
     return true;
@@ -143,17 +143,17 @@ Socket::NetAddress Socks5Instance::GetProxyBindAddress() const
 bool Socks5Instance::RequestMethod(const std::vector<Socks5MethodType> &methods)
 {
     Socks5MethodRequest request{};
-    request.version = SOCKS5_VERSION;
-    request.methods = methods;
+    request.version_ = SOCKS5_VERSION;
+    request.methods_ = methods;
 
-    const socklen_t addrLen{Socks5Utils::GetAddressLen(options_->proxyAddress.netAddress)};
-    const std::pair<sockaddr *, socklen_t> addrInfo{options_->proxyAddress.addr, addrLen};
+    const socklen_t addrLen{Socks5Utils::GetAddressLen(options_->proxyAddress_.netAddress_)};
+    const std::pair<sockaddr *, socklen_t> addrInfo{options_->proxyAddress_.addr_, addrLen};
     Socks5MethodResponse response{};
     if (!Socks5Utils::RequestProxyServer(socks5Instance_, socketId_, addrInfo, &request, &response)) {
         NETSTACK_LOGE("RequestMethod failed, socket: %{public}d", socketId_);
         return false;
     }
-    Socks5MethodType methodType{static_cast<Socks5MethodType>(response.method)};
+    Socks5MethodType methodType{static_cast<Socks5MethodType>(response.method_)};
     method_ = CreateSocks5MethodByType(methodType);
     return true;
 }
@@ -248,10 +248,10 @@ bool Socks5UdpInstance::Connect()
         CloseSocket();
         return false;
     }
-    const socklen_t addrLen{Socks5Utils::GetAddressLen(options_->proxyAddress.netAddress)};
+    const socklen_t addrLen{Socks5Utils::GetAddressLen(options_->proxyAddress_.netAddress_)};
     const std::shared_ptr<Socks5UdpInstance> ptr = std::make_shared<Socks5UdpInstance>();
     const std::weak_ptr<Socks5UdpInstance> wp{ptr};
-    std::thread serviceThread(Socks5Utils::TcpKeepAliveThread, socketId_, options_->proxyAddress.addr,
+    std::thread serviceThread(Socks5Utils::TcpKeepAliveThread, socketId_, options_->proxyAddress_.addr_,
         addrLen, wp);
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(SOCKS5_TCP_KEEP_ALIVE_THREAD_NAME);
@@ -265,7 +265,7 @@ bool Socks5UdpInstance::Connect()
 
 bool Socks5UdpInstance::CreateSocket()
 {
-    socketId_ = Socket::ExecCommonUtils::MakeTcpSocket(options_->proxyAddress.netAddress.GetSaFamily());
+    socketId_ = Socket::ExecCommonUtils::MakeTcpSocket(options_->proxyAddress_.netAddress_.GetSaFamily());
     if (socketId_ == SOCKS5_INVALID_SOCKET_FD) {
         NETSTACK_LOGE("socks5 udp instance fail to make tcp socket");
         UpdateErrorInfo(Socks5Status::SOCKS5_MAKE_SOCKET_ERROR);
@@ -283,10 +283,10 @@ bool Socks5UdpInstance::CreateSocket()
 
 bool Socks5UdpInstance::ConnectProxy()
 {
-    const socklen_t addrLen{Socks5Utils::GetAddressLen(options_->proxyAddress.netAddress)};
+    const socklen_t addrLen{Socks5Utils::GetAddressLen(options_->proxyAddress_.netAddress_)};
     // use default value
     const uint32_t timeoutMSec{0U};
-    if (!NonBlockConnect(socketId_, options_->proxyAddress.addr, addrLen, timeoutMSec)) {
+    if (!NonBlockConnect(socketId_, options_->proxyAddress_.addr_, addrLen, timeoutMSec)) {
         NETSTACK_LOGE("socks5 udp instance fail to connect proxy");
         UpdateErrorInfo(Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY);
         return false;
@@ -336,9 +336,9 @@ void Socks5UdpInstance::AddHeader()
     }
 
     Socks5::Socks5UdpHeader header{};
-    header.addrType = addrType;
-    header.destAddr = dest_.GetAddress();
-    header.dstPort = dest_.GetPort();
+    header.addrType_ = addrType;
+    header.destAddr_ = dest_.GetAddress();
+    header.dstPort_ = dest_.GetPort();
 
     SetHeader(header.Serialize());
 }

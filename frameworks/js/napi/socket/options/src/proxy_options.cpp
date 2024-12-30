@@ -38,10 +38,10 @@ int ProxyOptions::ParseOptions(napi_env env, napi_value value)
         auto typeId = NapiUtils::GetUint32Property(env, options, KEY_TYPE);
         NETSTACK_LOGI("handle proxy type: %{public}d", typeId);
 
-        type = GetProxyType(typeId);
-        if (type == ProxyType::NONE) {
+        type_ = GetProxyType(typeId);
+        if (type_ == ProxyType::NONE) {
             return 0;
-        } else if (type == ProxyType::UNKNOWN) {
+        } else if (type_ == ProxyType::UNKNOWN) {
             NETSTACK_LOGE("invalid proxy type");
             return -1;
         }
@@ -53,10 +53,10 @@ int ProxyOptions::ParseOptions(napi_env env, napi_value value)
     }
 
     if (NapiUtils::HasNamedProperty(env, options, KEY_USERNAME)) {
-        username = NapiUtils::GetStringPropertyUtf8(env, options, KEY_USERNAME);
+        username_ = NapiUtils::GetStringPropertyUtf8(env, options, KEY_USERNAME);
     }
     if (NapiUtils::HasNamedProperty(env, options, KEY_PASSWORD)) {
-        password = NapiUtils::GetStringPropertyUtf8(env, options, KEY_PASSWORD);
+        password_ = NapiUtils::GetStringPropertyUtf8(env, options, KEY_PASSWORD);
     }
 
     napi_value netAddress = NapiUtils::GetNamedProperty(env, options, KEY_ADDRESS);
@@ -73,17 +73,17 @@ int ProxyOptions::ParseOptions(napi_env env, napi_value value)
 
     if (NapiUtils::HasNamedProperty(env, netAddress, KEY_FAMILY)) {
         uint32_t family = NapiUtils::GetUint32Property(env, netAddress, KEY_FAMILY);
-        address.SetFamilyByJsValue(family);
+        address_.SetFamilyByJsValue(family);
     }
 
-    address.SetAddress(addr, false);
-    if (address.GetAddress().empty()) {
+    address_.SetAddress(addr, false);
+    if (address_.GetAddress().empty()) {
         NETSTACK_LOGE("proxy options address is invalid");
         return -1;
     }
 
     uint16_t port = static_cast<uint16_t>(NapiUtils::GetUint32Property(env, netAddress, KEY_PORT));
-    address.SetPort(port);
+    address_.SetPort(port);
     return 0;
 }
 } // namespace OHOS::NetStack::Socket

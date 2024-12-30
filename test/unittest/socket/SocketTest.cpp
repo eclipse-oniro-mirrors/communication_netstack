@@ -233,6 +233,7 @@ HWTEST_F(SocketTest, LocalSocketServerTest006, TestSize.Level1)
     EXPECT_EQ(ret, false);
 }
 
+// socks5 proxy test start
 HWTEST_F(SocketTest, Socks5SocketTest001, TestSize.Level1)
 {
     napi_env env = nullptr;
@@ -242,7 +243,7 @@ HWTEST_F(SocketTest, Socks5SocketTest001, TestSize.Level1)
     EXPECT_EQ(ret, false);
 
     context.proxyOptions = make_shared<ProxyOptions>();
-    context.proxyOptions->type = ProxyType::SOCKS5;
+    context.proxyOptions->type_ = ProxyType::SOCKS5;
     ret = SocketExec::ExecConnect(&context);
     EXPECT_EQ(ret, false);
 }
@@ -265,14 +266,12 @@ HWTEST_F(SocketTest, Socks5SocketTest002, TestSize.Level1)
     socks5Udp->SetSocks5Instance(socks5Udp);
     eventManager.proxyData_ = socks5Udp;
     context.proxyOptions = make_shared<ProxyOptions>();
-    context.proxyOptions->type = ProxyType::NONE;
+    context.proxyOptions->type_ = ProxyType::NONE;
     EXPECT_FALSE(SocketExec::ExecUdpSend(&context));
 
-    context.proxyOptions->type = ProxyType::SOCKS5;
+    context.proxyOptions->type_ = ProxyType::SOCKS5;
     EXPECT_FALSE(SocketExec::ExecUdpSend(&context));
 }
-
-// socks5 proxy text
 
 HWTEST_F(SocketTest, SetSocks5OptionTest001, TestSize.Level1)
 {
@@ -439,7 +438,7 @@ HWTEST_F(SocketTest, Socks5PkgTest001, TestSize.Level1)
     Socks5MethodRequest request;
     Socks5MethodResponse response;
 
-    request.version = 1;
+    request.version_ = 1;
     string serialized = request.Serialize();
     EXPECT_NE(serialized, "");
 
@@ -453,9 +452,9 @@ HWTEST_F(SocketTest, Socks5PkgTest002, TestSize.Level1)
     Socks5AuthResponse response;
     EXPECT_EQ(request.Serialize(), "");
     
-    request.version = 1;
-    request.username = "user";
-    request.password = "pass";
+    request.version_ = 1;
+    request.username_ = "user";
+    request.password_ = "pass";
     string serialized = request.Serialize();
     EXPECT_NE(serialized, "");
 
@@ -469,25 +468,25 @@ HWTEST_F(SocketTest, Socks5PkgTest003, TestSize.Level1)
     Socks5ProxyResponse response;
     EXPECT_EQ(request.Serialize(), "");
 
-    request.version = 1;
-    request.cmd = Socks5Command::TCP_CONNECTION;
-    request.reserved = 1;
-    request.destPort = 1;
-    request.destAddr = "180.76.76.76";
-    request.addrType = Socks5AddrType::IPV4;
+    request.version_ = 1;
+    request.cmd_ = Socks5Command::TCP_CONNECTION;
+    request.reserved_ = 1;
+    request.destPort_ = 1;
+    request.destAddr_ = "192.168.1.10";
+    request.addrType_ = Socks5AddrType::IPV4;
     string serialized = request.Serialize();
     EXPECT_NE(serialized, "");
     EXPECT_FALSE(response.Deserialize((uint8_t*) serialized.c_str(), 1));
     EXPECT_TRUE(response.Deserialize((uint8_t*) serialized.c_str(), serialized.size()));
 
-    request.destAddr = "www.baidu.com";
-    request.addrType = Socks5AddrType::DOMAIN;
+    request.destAddr_ = "www.xxx.com";
+    request.addrType_ = Socks5AddrType::DOMAIN;
     string serialized2 = request.Serialize();
     EXPECT_NE(serialized2, "");
     EXPECT_TRUE(response.Deserialize((uint8_t*) serialized2.c_str(), serialized2.size()));
 
-    request.destAddr = "2400:da00::6666";
-    request.addrType = Socks5AddrType::IPV6;
+    request.destAddr_ = "fe80::100";
+    request.addrType_ = Socks5AddrType::IPV6;
     string serialized3 = request.Serialize();
     EXPECT_NE(serialized3, "");
     EXPECT_TRUE(response.Deserialize((uint8_t*) serialized3.c_str(), serialized3.size()));
@@ -498,25 +497,25 @@ HWTEST_F(SocketTest, Socks5PkgTest004, TestSize.Level1)
     Socks5UdpHeader header;
     EXPECT_EQ(header.Serialize(), "");
 
-    header.reserved = 0;
-    header.frag = 0;
-    header.dstPort = 1;
+    header.reserved_ = 0;
+    header.frag_ = 0;
+    header.dstPort_ = 1;
 
-    header.destAddr = "180.76.76.76";
-    header.addrType = Socks5AddrType::IPV4;
+    header.destAddr_ = "192.168.1.10";
+    header.addrType_ = Socks5AddrType::IPV4;
     string serialized = header.Serialize();
     EXPECT_NE(serialized, "");
     EXPECT_FALSE(header.Deserialize((uint8_t*) serialized.c_str(), 1));
     EXPECT_TRUE(header.Deserialize((uint8_t*) serialized.c_str(), serialized.size()));
 
-    header.destAddr = "www.baidu.com";
-    header.addrType = Socks5AddrType::DOMAIN;
+    header.destAddr_ = "www.xxx.com";
+    header.addrType_ = Socks5AddrType::DOMAIN;
     string serialized2 = header.Serialize();
     EXPECT_NE(serialized2, "");
     EXPECT_TRUE(header.Deserialize((uint8_t*) serialized2.c_str(), serialized2.size()));
 
-    header.destAddr = "2400:da00::6666";
-    header.addrType = Socks5AddrType::IPV6;
+    header.destAddr_ = "fe80::100";
+    header.addrType_ = Socks5AddrType::IPV6;
     string serialized3 = header.Serialize();
     EXPECT_NE(serialized3, "");
     EXPECT_TRUE(header.Deserialize((uint8_t*) serialized3.c_str(), serialized3.size()));

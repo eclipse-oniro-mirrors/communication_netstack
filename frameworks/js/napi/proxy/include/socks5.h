@@ -113,17 +113,17 @@ static const std::map<Socks5Status, std::string> g_errStatusMap = {
 using Socks5Buffer = std::string;
 class Socks5ProxyAddress {
 public:
-    Socket::NetAddress netAddress{};
-    sockaddr_in addrV4{};
-    sockaddr_in6 addrV6{};
-    sockaddr* addr{nullptr};
+    Socket::NetAddress netAddress_{};
+    sockaddr_in addrV4_{};
+    sockaddr_in6 addrV6_{};
+    sockaddr* addr_{nullptr};
 };
 
 class Socks5Option {
 public:
-    Socks5ProxyAddress proxyAddress{};
-    std::string username{};
-    std::string password{};
+    Socks5ProxyAddress proxyAddress_{};
+    std::string username_{};
+    std::string password_{};
 };
 } // Socks5
 } // NetStack

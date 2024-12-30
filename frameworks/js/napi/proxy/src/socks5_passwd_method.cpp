@@ -31,18 +31,18 @@ bool Socks5PasswdMethod::RequestAuth(std::int32_t socketId, const std::string &u
     }
 
     Socks5AuthRequest request{};
-    request.version = SOCKS5_SUBVERSION;
-    request.username = username;
-    request.password = password;
+    request.version_ = SOCKS5_SUBVERSION;
+    request.username_ = username;
+    request.password_ = password;
 
-    const socklen_t addrLen{Socks5Utils::GetAddressLen(proxy.netAddress)};
-    const std::pair<sockaddr *, socklen_t> addrInfo{proxy.addr, addrLen};
+    const socklen_t addrLen{Socks5Utils::GetAddressLen(proxy.netAddress_)};
+    const std::pair<sockaddr *, socklen_t> addrInfo{proxy.addr_, addrLen};
     Socks5AuthResponse response{};
     if (!Socks5Utils::RequestProxyServer(GetSocks5Instance(), socketId, addrInfo, &request, &response)) {
         NETSTACK_LOGE("RequestProxy failed, socket is %{public}d", socketId);
         return false;
     }
-    if (response.status != static_cast<uint8_t>(Socks5Status::SUCCESS)) {
+    if (response.status_ != static_cast<uint8_t>(Socks5Status::SUCCESS)) {
         GetSocks5Instance()->UpdateErrorInfo(Socks5Status::SOCKS5_USER_PASS_INVALID);
         NETSTACK_LOGE("socks5 fail to request auth, socket is %{public}d", socketId);
         return false;

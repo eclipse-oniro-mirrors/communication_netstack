@@ -37,12 +37,12 @@ namespace Socks5 {
 std::string Socks5MethodRequest::Serialize()
 {
     std::string serialized;
-    serialized.resize(2 + methods.size()); // 2 = VER + NMETHODS
-    serialized[0] = version;
-    serialized[1] = static_cast<uint8_t>(methods.size());
+    serialized.resize(2 + methods_.size()); // 2 = VER + NMETHODS
+    serialized[0] = version_;
+    serialized[1] = static_cast<uint8_t>(methods_.size());
 
     size_t pos = 2;
-    for (const auto& method : methods) {
+    for (const auto& method : methods_) {
         serialized[pos++] = static_cast<uint8_t>(method);
     }
 
@@ -62,8 +62,8 @@ bool Socks5MethodResponse::Deserialize(const void *data, size_t len)
     }
 
     const uint8_t *buffer = static_cast<const uint8_t*>(data);
-    version = buffer[0];
-    method = buffer[1];
+    version_ = buffer[0];
+    method_ = buffer[1];
 
     return true;
 }
@@ -77,19 +77,19 @@ bool Socks5MethodResponse::Deserialize(const void *data, size_t len)
 std::string Socks5AuthRequest::Serialize()
 {
     std::string serialized;
-    serialized.resize(3 + username.length() + password.length()); // 3 = VER + ULEN + PLEN
-    serialized[0] = version;
-    serialized[1] = static_cast<uint8_t>(username.length());
+    serialized.resize(3 + username_.length() + password_.length()); // 3 = VER + ULEN + PLEN
+    serialized[0] = version_;
+    serialized[1] = static_cast<uint8_t>(username_.length());
 
     size_t pos = 2;
-    if (memcpy_s(&serialized[pos], serialized.size() - pos, username.c_str(), username.length()) != EOK) {
+    if (memcpy_s(&serialized[pos], serialized.size() - pos, username_.c_str(), username_.length()) != EOK) {
         NETSTACK_LOGE("memcpy_s failed!");
         return "";
     }
 
-    pos += username.length();
-    serialized[pos++] = static_cast<uint8_t>(password.length());
-    if (memcpy_s(&serialized[pos], serialized.size() - pos, password.c_str(), password.length()) != EOK) {
+    pos += username_.length();
+    serialized[pos++] = static_cast<uint8_t>(password_.length());
+    if (memcpy_s(&serialized[pos], serialized.size() - pos, password_.c_str(), password_.length()) != EOK) {
         NETSTACK_LOGE("memcpy_s failed!");
         return "";
     }
@@ -110,8 +110,8 @@ bool Socks5AuthResponse::Deserialize(const void *data, size_t len)
     }
 
     const uint8_t *buffer = static_cast<const uint8_t*>(data);
-    version = buffer[0];
-    status = buffer[1];
+    version_ = buffer[0];
+    status_ = buffer[1];
 
     return true;
 }
@@ -183,19 +183,19 @@ std::string Socks5ProxyRequest::Serialize()
     int excludeStrLen = 6; // 6 = VER + CMD + RSV + ATYP + DST.PORT
     std::string serialized;
 
-    resizeStrByAType(addrType, destAddr, excludeStrLen, serialized);
+    resizeStrByAType(addrType_, destAddr_, excludeStrLen, serialized);
 
-    serialized[0] = version;
-    serialized[1] = static_cast<uint8_t>(cmd);
-    serialized[2] = reserved; // 2: RSV
-    serialized[3] = static_cast<uint8_t>(addrType); // 3: ATYP
+    serialized[0] = version_;
+    serialized[1] = static_cast<uint8_t>(cmd_);
+    serialized[2] = reserved_; // 2: RSV
+    serialized[3] = static_cast<uint8_t>(addrType_); // 3: ATYP
 
-    int pos = copyAddrToStr(addrType, destAddr, serialized, 4); // 4: DST.ADDR
+    int pos = copyAddrToStr(addrType_, destAddr_, serialized, 4); // 4: DST.ADDR
     if (pos < 0) {
         return "";
     }
 
-    uint16_t netPort = htons(destPort);
+    uint16_t netPort = htons(destPort_);
     if (memcpy_s(&serialized[pos], serialized.size() - pos, &netPort, sizeof(netPort)) != EOK) {
         NETSTACK_LOGE("memcpy_s failed!");
         return "";
@@ -256,18 +256,18 @@ bool Socks5ProxyResponse::Deserialize(const void *data, size_t len)
 
     const uint8_t *buffer = static_cast<const uint8_t*>(data);
 
-    version = buffer[0];
-    status = buffer[1];
-    reserved = buffer[2]; // 2: index of RSV
-    addrType = static_cast<Socks5AddrType>(buffer[3]); // 3: index of ATYP
+    version_ = buffer[0];
+    status_ = buffer[1];
+    reserved_ = buffer[2]; // 2: index of RSV
+    addrType_ = static_cast<Socks5AddrType>(buffer[3]); // 3: index of ATYP
 
-    size_t addrLen = getAddrLen(addrType, buffer, 4); // 4: index of domain len
+    size_t addrLen = getAddrLen(addrType_, buffer, 4); // 4: index of domain len
     if (addrLen == 0 || len < hdrLen + addrLen + 2) { // 2: PORT size
         return false;
     }
 
-    getAddrStr(addrType, buffer, hdrLen, 5, destAddr); // 5: index of DOMAIN
-    destPort = (buffer[len - 2] << 8) | buffer[len - 1]; // 8: char bits, 2: port size
+    getAddrStr(addrType_, buffer, hdrLen, 5, destAddr_); // 5: index of DOMAIN
+    destPort_ = (buffer[len - 2] << 8) | buffer[len - 1]; // 8: char bits, 2: port size
     return true;
 }
 
@@ -281,21 +281,21 @@ std::string Socks5UdpHeader::Serialize()
 {
     int excludeStrLen = 6; // 6 = RSV + FRAG + ATYP + DST.PORT
     std::string serialized;
-    resizeStrByAType(addrType, destAddr, excludeStrLen, serialized);
+    resizeStrByAType(addrType_, destAddr_, excludeStrLen, serialized);
 
-    if (memcpy_s(&serialized[0], serialized.size(), &reserved, sizeof(reserved)) != EOK) {
+    if (memcpy_s(&serialized[0], serialized.size(), &reserved_, sizeof(reserved_)) != EOK) {
         NETSTACK_LOGE("memcpy_s failed!");
         return "";
     }
-    serialized[2] = frag;  // 2: FRAG
-    serialized[3] = static_cast<uint8_t>(addrType); // 3: ATYP
+    serialized[2] = frag_;  // 2: FRAG
+    serialized[3] = static_cast<uint8_t>(addrType_); // 3: ATYP
 
-    int pos = copyAddrToStr(addrType, destAddr, serialized, 4); // 4: DST.ADDR
+    int pos = copyAddrToStr(addrType_, destAddr_, serialized, 4); // 4: DST.ADDR
     if (pos < 0) {
         return "";
     }
 
-    uint16_t netPort = htons(dstPort);
+    uint16_t netPort = htons(dstPort_);
     if (memcpy_s(&serialized[pos], serialized.size() - pos, &netPort, sizeof(netPort)) != EOK) {
         NETSTACK_LOGE("memcpy_s failed!");
         return "";
@@ -318,15 +318,15 @@ bool Socks5UdpHeader::Deserialize(const void *data, size_t len)
         return false;
     }
 
-    addrType = static_cast<Socks5AddrType>(buffer[3]);  // 3: index of ATYP
+    addrType_ = static_cast<Socks5AddrType>(buffer[3]);  // 3: index of ATYP
 
-    size_t addrLen = getAddrLen(addrType, buffer, 4); // 4: index of domain len
+    size_t addrLen = getAddrLen(addrType_, buffer, 4); // 4: index of domain len
     if (addrLen == 0 || len < hdrLen + addrLen + 2) { // 2: port size
         return false;
     }
 
-    getAddrStr(addrType, buffer, hdrLen, 5, destAddr); // 5: index of DOMAIN
-    dstPort = (buffer[len - 2] << 8) | buffer[len - 1]; // 8: char bits, 2: port size
+    getAddrStr(addrType_, buffer, hdrLen, 5, destAddr_); // 5: index of DOMAIN
+    dstPort_ = (buffer[len - 2] << 8) | buffer[len - 1]; // 8: char bits, 2: port size
     return true;
 }
 
