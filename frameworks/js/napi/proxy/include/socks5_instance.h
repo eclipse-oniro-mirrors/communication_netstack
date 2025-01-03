@@ -21,11 +21,11 @@
 #include <mutex>
 #include <string>
 
-#include "event_manager.h"
 #include "net_address.h"
 #include "proxy_options.h"
 #include "socks5.h"
 #include "socks5_method.h"
+#include "socket_exec.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -40,6 +40,7 @@ public:
     virtual void AddHeader() = 0;
     virtual std::string GetHeader() = 0;
     virtual void SetHeader(std::string header) = 0;
+    virtual void Close() = 0;
 
     void SetSocks5Option(const std::shared_ptr<Socks5Option> &opt);
     void SetDestAddress(const Socket::NetAddress &dest);
@@ -48,9 +49,11 @@ public:
     void UpdateErrorInfo(int32_t errCode, const std::string &errMessage);
     int32_t GetErrorCode() const;
     std::string GetErrorMessage() const;
-    void OnSocks5TcpError();
+    void OnProxySocketError();
     void SetSocks5Instance(const std::shared_ptr<Socks5Instance> &socks5Inst);
     Socket::NetAddress GetProxyBindAddress() const;
+    int GetSocketId() const;
+    Socket::SocketExec::SocketRecvCallback GetProxySocketRecvCallback() const;
 
 protected:
     bool RequestMethod(const std::vector<Socks5MethodType> &methods);
@@ -63,7 +66,6 @@ protected:
     std::shared_ptr<Socks5Method> method_{nullptr};
     Socks5AuthState state_{Socks5AuthState::INIT};
     Socket::NetAddress proxyBindAddr_{};
-    std::mutex mutex_;
     int32_t doConnectCount_{};
 
 private:
@@ -83,6 +85,7 @@ public:
     void AddHeader();
     std::string GetHeader();
     void SetHeader(std::string header);
+    void Close();
 };
 
 class Socks5UdpInstance final : public Socks5Instance, std::enable_shared_from_this<Socks5UdpInstance> {
@@ -95,6 +98,7 @@ public:
     void AddHeader();
     std::string GetHeader();
     void SetHeader(std::string header);
+    void Close();
 
 private:
     bool CreateSocket();

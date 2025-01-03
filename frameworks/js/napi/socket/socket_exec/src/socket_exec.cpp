@@ -28,6 +28,7 @@
 #include <sys/socket.h>
 #include <thread>
 #include <unistd.h>
+#include <unordered_map>
 
 #include "context_key.h"
 #include "event_list.h"
@@ -653,22 +654,6 @@ static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &call
     return -1;
 }
 
-static bool IsValidSock(int &currentFd, const MessageCallback &callback)
-{
-    auto manager = callback.GetEventManager();
-    if (EventManager::IsManagerValid(manager)) {
-        currentFd = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
-        if (currentFd <= 0) {
-            NETSTACK_LOGE("currentFd: %{public}d is error", currentFd);
-            return false;
-        }
-    } else {
-        NETSTACK_LOGE("manager is error");
-        return false;
-    }
-    return true;
-}
-
 static inline void PollRecvFinish(const MessageCallback &callback)
 {
     auto manager = callback.GetEventManager();
@@ -681,23 +666,101 @@ static inline void PollRecvFinish(const MessageCallback &callback)
 
 static void ProcessPollResult(int currentFd, const MessageCallback &callback)
 {
-    if (EventManager::IsManagerValid(callback.GetEventManager()) &&
-        static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
-        NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", currentFd, errno);
-        callback.OnError(errno);
+    if (EventManager::IsManagerValid(callback.GetEventManager())) {
+        if (static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
+            NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", currentFd, errno);
+            callback.OnError(errno);
+        }
+        auto inst = callback.GetEventManager()->GetProxyData();
+        if (inst != nullptr) {
+            inst->OnProxySocketError();
+        }
     }
+}
+
+static bool SocketRecvHandle(int socketId, std::pair<std::unique_ptr<char[]> &, int> &bufInfo,
+    std::pair<sockaddr *, socklen_t> &addrInfo, const MessageCallback &callback)
+{
+    if (UpdateRecvBuffer(socketId, bufInfo.second, bufInfo.first, callback) < 0) {
+        return false;
+    }
+
+    socklen_t tempAddrLen = addrInfo.second;
+    auto recvLen = recvfrom(socketId, bufInfo.first.get(), bufInfo.second, 0, addrInfo.first, &tempAddrLen);
+    if (recvLen <= 0) {
+        if (ExitOrAbnormal(socketId, recvLen, callback) < 0) {
+            return false;
+        }
+        return true;
+    }
+
+    void *data = malloc(recvLen);
+    if (data == nullptr) {
+        callback.OnError(NO_MEMORY);
+        return false;
+    }
+    if (memcpy_s(data, recvLen, bufInfo.first.get(), recvLen) != EOK ||
+        !callback.OnMessage(data, recvLen, addrInfo.first)) {
+        free(data);
+    }
+    return true;
+}
+
+static bool ProcessRecvFds(std::pair<std::unique_ptr<char[]> &, int> &bufInfo,
+    std::pair<sockaddr *, socklen_t> &addrInfo, const MessageCallback &callback, std::vector<pollfd> &fds,
+    std::unordered_map<int, SocketRecvCallback> &socketCallbackMap)
+{
+    for (auto &fd : fds) {
+        if ((fd.revents & POLLIN) == 0) {
+            continue;
+        }
+        auto it = socketCallbackMap.find(fd.fd);
+        if (it != socketCallbackMap.end()) {
+            auto cb = it->second;
+            if (cb != nullptr && !cb(fd.fd, bufInfo, addrInfo, callback)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+static bool PreparePollFds(int &currentFd, std::vector<pollfd> &fds,
+                           std::unordered_map<int, SocketRecvCallback> &socketCallbackMap,
+                           const MessageCallback &callback)
+{
+    socketCallbackMap.clear();
+    fds.clear();
+
+    auto manager = callback.GetEventManager();
+    if (!EventManager::IsManagerValid(manager)) {
+        NETSTACK_LOGE("manager is error");
+        return false;
+    }
+
+    currentFd = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
+    if (currentFd <= 0) {
+        NETSTACK_LOGE("currentFd: %{public}d is error", currentFd);
+        return false;
+    }
+
+    socketCallbackMap[currentFd] = SocketRecvHandle;
+    fds.push_back({currentFd, POLLIN, 0});
+
+    auto inst = manager->GetProxyData();
+    if (inst != nullptr && inst->IsConnected()) {
+        if (inst->GetSocketId() != -1 && inst->GetSocketId() != currentFd) {
+            socketCallbackMap[inst->GetSocketId()] = inst->GetProxySocketRecvCallback();
+            fds.push_back({inst->GetSocketId(), POLLIN, 0});
+        }
+    }
+    return true;
 }
 
 static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
 {
     int bufferSize = ConfirmBufferSize(sock);
     auto buf = std::make_unique<char[]>(bufferSize);
-    if (buf == nullptr) {
-        callback.OnError(NO_MEMORY);
-        PollRecvFinish(callback);
-        return;
-    }
-
     auto addrDeleter = [](sockaddr *a) { free(reinterpret_cast<void *>(a)); };
     std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
 
@@ -705,14 +768,19 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     if (recvTimeoutMs < 0) {
         return;
     }
+
+    std::pair<std::unique_ptr<char[]> &, int> bufInfo{buf, bufferSize};
+    std::pair<sockaddr *, socklen_t> addrInfo{addr, addrLen};
+    std::unordered_map<int, SocketRecvCallback> socketCallbackMap{};
+    std::vector<pollfd> fds{};
+
     while (true) {
         int currentFd = -1;
-        if (!IsValidSock(currentFd, callback)) {
+        if (!PreparePollFds(currentFd, fds, socketCallbackMap, callback)) {
             break;
         }
 
-        pollfd fds[1] = {{currentFd, POLLIN, 0}};
-        int ret = poll(fds, 1, recvTimeoutMs);
+        int ret = poll(fds.data(), fds.size(), recvTimeoutMs);
         if (ret < 0) {
             if (errno == EINTR) {
                 continue;
@@ -722,25 +790,9 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         } else if (ret == 0) {
             continue;
         }
-        if (UpdateRecvBuffer(currentFd, bufferSize, buf, callback) < 0) {
-            break;
-        }
-        socklen_t tempAddrLen = addrLen;
-        auto recvLen = recvfrom(currentFd, buf.get(), bufferSize, 0, addr, &tempAddrLen);
-        if (recvLen <= 0) {
-            if (ExitOrAbnormal(currentFd, recvLen, callback) < 0) {
-                break;
-            }
-            continue;
-        }
 
-        void *data = malloc(recvLen);
-        if (data == nullptr) {
-            callback.OnError(NO_MEMORY);
+        if (!ProcessRecvFds(bufInfo, addrInfo, callback, fds, socketCallbackMap)) {
             break;
-        }
-        if (memcpy_s(data, recvLen, buf.get(), recvLen) != EOK || !callback.OnMessage(data, recvLen, addr)) {
-            free(data);
         }
     }
 
@@ -1145,6 +1197,14 @@ bool ExecClose(CloseContext *context)
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
+    }
+
+    EventManager *manager = context->GetManager();
+    if (EventManager::IsManagerValid(manager)) {
+        auto inst = manager->GetProxyData();
+        if (inst != nullptr) {
+            inst->Close();
+        }
     }
 
     int ret = close(context->GetSocketFd());

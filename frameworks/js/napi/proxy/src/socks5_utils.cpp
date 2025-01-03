@@ -65,70 +65,21 @@ std::pair<bool, Socks5Buffer> Socks5Utils::Recv(int32_t socketId, sockaddr *addr
         if ((errCode == EAGAIN) || (errCode == EINTR)) {
             continue;
         }
-        PrintRecvErrMsg(socketId, errCode, recvLen);
+        PrintRecvErrMsg(socketId, errCode, recvLen, "Recv");
         break;
     }
     return {false, ""};
 }
 
-void Socks5Utils::PrintRecvErrMsg(int32_t socketId, const int32_t errCode, const int32_t recvLen)
+void Socks5Utils::PrintRecvErrMsg(int32_t socketId, const int32_t errCode, const int32_t recvLen,
+    const std::string &tag)
 {
     if ((errCode == 0) && (recvLen == 0)) {
-        NETSTACK_LOGI("socks5 closed by peer, socket:%{public}d, recvLen:%{public}d", socketId, recvLen);
+        NETSTACK_LOGI("[%{public}s] socks5 closed by peer, socket:%{public}d, recvLen:%{public}d", tag.c_str(),
+            socketId, recvLen);
     } else {
-        NETSTACK_LOGE("socks5 recv fail, socket:%{public}d, recvLen:%{public}d, errno:%{public}d",
-                      socketId, recvLen, errCode);
-    }
-}
-
-void Socks5Utils::TcpKeepAliveThread(int32_t socketId, sockaddr *addr, socklen_t addrLen,
-    const std::weak_ptr<Socks5UdpInstance> &instance)
-{
-    const int32_t bufferSize = ConfirmBufferSize(socketId);
-    auto buf = std::make_unique<char[]>(bufferSize);
-    if (buf == nullptr) {
-        NETSTACK_LOGE("socks5 KeepAlive fail to create buff, socket is %{public}d", socketId);
-        return;
-    }
-    constexpr int32_t pollTimeout{500};
-    const int32_t timeoutMs = ConfirmSocketTimeoutMs(socketId, SO_RCVTIMEO, pollTimeout);
-    while (true) {
-        const std::shared_ptr<Socks5UdpInstance> ptr{instance.lock()};
-        if (ptr == nullptr) {
-            NETSTACK_LOGD("socks5 udp instance is null, socket is %{public}d", socketId);
-            break;
-        }
-        if (!ptr->IsConnected()) {
-            NETSTACK_LOGD("socks5 udp instance need auth, socket is %{public}d", socketId);
-            break;
-        }
-        pollfd fds[1] = {{socketId, POLLIN, 0}};
-        const int ret = poll(fds, 1, timeoutMs);
-        if (ret < 0) {
-            NETSTACK_LOGE("socks5 KeepAlive poll failed, socketFd: %{public}d, errno: %{public}d", socketId, errno);
-            ptr->OnSocks5TcpError();
-            break;
-        } else if (ret == 0) {
-            continue;
-        }
-        socklen_t tempAddrLen{addrLen};
-        const int32_t recvLen = recvfrom(socketId, buf.get(), bufferSize, 0, addr, &tempAddrLen);
-        if (recvLen > 0) {
-            continue;
-        }
-        const int32_t errCode{errno};
-        if ((errCode == EAGAIN) || (errCode == EINTR)) {
-            continue;
-        }
-        if ((errCode == 0) && (recvLen == 0)) {
-            NETSTACK_LOGI(
-                "socks5 KeepAlive closed by peer, socket:%{public}d, recvLen:%{public}d", socketId, recvLen);
-        } else {
-            NETSTACK_LOGE("socks5 KeepAlive recv fail, socket:%{public}d, recvLen:%{public}d, errno:%{public}d",
-                socketId, recvLen, errCode);
-        }
-        ptr->OnSocks5TcpError();
-        break;
+        NETSTACK_LOGE("[%{public}s] socks5 recv fail, socket:%{public}d, recvLen:%{public}d, errno:%{public}d",
+                      tag.c_str(), socketId, recvLen, errCode);
     }
 }
 

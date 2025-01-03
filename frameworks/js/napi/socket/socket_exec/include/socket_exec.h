@@ -279,5 +279,9 @@ public:
 protected:
     EventManager *manager_;
 };
+
+using SocketRecvCallback = std::function<bool(int socketId, std::pair<std::unique_ptr<char[]> &, int> &bufInfo,
+    std::pair<sockaddr *, socklen_t> &addrInfo, const MessageCallback &callback)>;
+
 } // namespace OHOS::NetStack::Socket::SocketExec
 #endif /* COMMUNICATIONNETSTACK_SOCKET_EXEC_H */

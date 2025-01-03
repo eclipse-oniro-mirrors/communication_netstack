@@ -123,10 +123,9 @@ std::string Socks5Instance::GetErrorMessage() const
     return errorMessage_;
 }
 
-void Socks5Instance::OnSocks5TcpError()
+void Socks5Instance::OnProxySocketError()
 {
     NETSTACK_LOGE("socks5 instance tcp error socket:%{public}d", socketId_);
-    std::lock_guard<std::mutex> lock{mutex_};
     state_ = Socks5AuthState::FAIL;
 }
 
@@ -138,6 +137,38 @@ void Socks5Instance::SetSocks5Instance(const std::shared_ptr<Socks5Instance> &so
 Socket::NetAddress Socks5Instance::GetProxyBindAddress() const
 {
     return proxyBindAddr_;
+}
+
+int Socks5Instance::GetSocketId() const
+{
+    return socketId_;
+}
+
+static bool SocketRecvHandle(int socketId, std::pair<std::unique_ptr<char[]> &, int> &bufInfo,
+    std::pair<sockaddr *, socklen_t> &addrInfo, const Socket::SocketExec::MessageCallback &callback)
+{
+    const auto recvLen = recv(socketId, bufInfo.first.get(), bufInfo.second, 0);
+    if (recvLen > 0) {
+        return true;
+    }
+    const int32_t errCode{errno};
+    if ((errCode == EAGAIN) || (errCode == EINTR)) {
+        return true;
+    }
+    Socks5::Socks5Utils::PrintRecvErrMsg(socketId, errCode, recvLen, "SocketRecvHandle");
+
+    auto manager = callback.GetEventManager();
+    if (EventManager::IsManagerValid(manager)) {
+        manager->GetProxyData()->OnProxySocketError();
+    } else {
+        NETSTACK_LOGE("manager is error");
+    }
+    return false;
+}
+
+Socket::SocketExec::SocketRecvCallback Socks5Instance::GetProxySocketRecvCallback() const
+{
+    return SocketRecvHandle;
 }
 
 bool Socks5Instance::RequestMethod(const std::vector<Socks5MethodType> &methods)
@@ -182,7 +213,6 @@ bool Socks5TcpInstance::Connect()
 {
     NETSTACK_LOGD("socks5 tcp instance auth socket:%{public}d", socketId_);
     UpdateErrorInfo(0, "");
-    std::lock_guard<std::mutex> lock{mutex_};
     if (state_ == Socks5AuthState::SUCCESS) {
         NETSTACK_LOGD("socks5 tcp instance auth already socket:%{public}d", socketId_);
         return true;
@@ -213,6 +243,10 @@ void Socks5TcpInstance::SetHeader(std::string header)
 {
 }
 
+void Socks5TcpInstance::Close()
+{
+}
+
 Socks5UdpInstance::~Socks5UdpInstance()
 {
     CloseSocket();
@@ -232,7 +266,6 @@ bool Socks5UdpInstance::Connect()
     NETSTACK_LOGD("socks5 udp instance auth");
     UpdateErrorInfo(0, "");
 
-    std::lock_guard<std::mutex> lock{mutex_};
     if (state_ == Socks5AuthState::SUCCESS) {
         NETSTACK_LOGD("socks5 udp instance auth already");
         return true;
@@ -248,17 +281,6 @@ bool Socks5UdpInstance::Connect()
         CloseSocket();
         return false;
     }
-    const socklen_t addrLen{Socks5Utils::GetAddressLen(options_->proxyAddress_.netAddress_)};
-    const std::shared_ptr<Socks5UdpInstance> ptr = std::make_shared<Socks5UdpInstance>();
-    const std::weak_ptr<Socks5UdpInstance> wp{ptr};
-    std::thread serviceThread(Socks5Utils::TcpKeepAliveThread, socketId_, options_->proxyAddress_.addr_,
-        addrLen, wp);
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-    pthread_setname_np(SOCKS5_TCP_KEEP_ALIVE_THREAD_NAME);
-#else
-    pthread_setname_np(serviceThread.native_handle(), SOCKS5_TCP_KEEP_ALIVE_THREAD_NAME);
-#endif
-    serviceThread.detach();
     NETSTACK_LOGI("socks5 udp instance auth successfully socket:%{public}d", socketId_);
     return true;
 }
@@ -346,6 +368,11 @@ void Socks5UdpInstance::AddHeader()
 void Socks5UdpInstance::SetHeader(std::string header)
 {
     header_ = header;
+}
+
+void Socks5UdpInstance::Close()
+{
+    CloseSocket();
 }
 
 std::string Socks5UdpInstance::GetHeader()
