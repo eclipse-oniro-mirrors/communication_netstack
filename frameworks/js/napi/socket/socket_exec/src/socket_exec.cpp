@@ -92,6 +92,7 @@ std::map<int32_t, int32_t> g_clientFDs;
 std::map<int32_t, EventManager *> g_clientEventManagers;
 std::condition_variable g_cv;
 std::mutex g_mutex;
+std::mutex g_fdMutex;
 std::atomic_int g_userCounter = 0;
 
 static void SetIsBound(sa_family_t family, GetStateContext *context, const sockaddr_in *addr4,
@@ -1860,6 +1861,7 @@ static void RemoveClientConnection(int32_t clientId)
                           it->second);
             if (!IsClientFdClosed(it->second)) {
                 NETSTACK_LOGI("connectFD: %{public}d, not close should close", it->second);
+                std::lock_guard<std::mutex> lock(g_fdMutex);
                 shutdown(it->second, SHUT_RDWR);
                 close(it->second);
             }
@@ -1906,6 +1908,51 @@ static inline void CloseClientHandler(int clientId, int connectFD,
     SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
 }
 
+static int PoolSocket(int clientId, int connectFD, EventManager *manager, const TcpMessageCallback &callback)
+{
+    pollfd fds[1] = {{connectFD, POLLIN, 0}};
+    int ret = poll(fds, 1, DEFAULT_POLL_TIMEOUT);
+    if (ret < 0) {
+        NETSTACK_LOGE("Client poll to recv failed, socket is %{public}d, errno is %{public}d", connectFD, errno);
+        callback.OnCloseMessage(manager);
+        CloseClientHandler(clientId, connectFD, manager, callback);
+        return -1;
+    } else if (ret == 0) {
+        return 0;
+    }
+    return 1;
+}
+
+static bool IsValidSock(int &currentFd, EventManager *manager)
+{
+    if (EventManager::IsManagerValid(manager)) {
+        currentFd = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
+        if (currentFd <= 0) {
+            NETSTACK_LOGE("currentFd: %{public}d is error", currentFd);
+            return false;
+        }
+    } else {
+        NETSTACK_LOGE("manager is error");
+        return false;
+    }
+    return true;
+}
+
+static int RecvWithSockCheck(int connectFD, char *buffer, uint32_t recvBufferSize, EventManager *manager,
+                            int &recvSize)
+{
+    std::lock_guard<std::mutex> lock(g_fdMutex);
+    if (buffer == nullptr) {
+        return -1;
+    }
+    int currentFd = -1;
+    if (!IsValidSock(currentFd, manager)) {
+        return -1;
+    }
+    recvSize = recv(connectFD, buffer, recvBufferSize, 0);
+    return 0;
+}
+
 static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize, EventManager *manager,
                            const TcpMessageCallback &callback)
 {
@@ -1919,18 +1966,16 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
             RecvInErrorCondition(UNKNOW_ERROR, clientId, connectFD, callback);
             break;
         }
-        pollfd fds[1] = {{connectFD, POLLIN, 0}};
-        int ret = poll(fds, 1, DEFAULT_POLL_TIMEOUT);
+        int ret = PoolSocket(clientId, connectFD, manager, callback);
         if (ret < 0) {
-            NETSTACK_LOGE("Client poll to recv failed, socket is %{public}d, errno is %{public}d", connectFD, errno);
-            callback.OnCloseMessage(manager);
-            CloseClientHandler(clientId, connectFD, manager, callback);
             break;
         } else if (ret == 0) {
             continue;
         }
-
-        int32_t recvSize = recv(connectFD, buffer.get(), recvBufferSize, 0);
+        int recvSize = 0;
+        if (RecvWithSockCheck(connectFD, buffer.get(), recvBufferSize, manager, recvSize) < 0) {
+            break;
+        }
         int flags = fcntl(connectFD, F_GETFL, 0);
         if (flags == -1) {
             CloseClientHandler(clientId, connectFD, manager, callback);

@@ -522,8 +522,8 @@ int WebSocketExec::LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons r
         NETSTACK_LOGE("user data is null");
         return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
-    userData->SetLws(wsi);
     userData->TriggerWritable();
+    userData->SetLws(wsi);
     OnOpen(reinterpret_cast<EventManager *>(user), userData->openStatus, userData->openMessage);
     return HttpDummy(wsi, reason, user, in, len);
 }
