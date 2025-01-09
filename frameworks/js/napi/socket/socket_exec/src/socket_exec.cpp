@@ -1103,7 +1103,6 @@ static int HandleTcpProxyOptions(ConnectContext *context)
     if (!socks5Tcp->IsConnected()) {
         if (!socks5Tcp->Connect()) {
             SetProxyAuthError(context, socks5Tcp);
-            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::ConnectCallback);
             return -1;
         }
     }
