@@ -45,9 +45,9 @@ void EpollMultiDriver::Initialize()
     curl_multi_setopt(multi_, CURLMOPT_SOCKETDATA, this);
     curl_multi_setopt(multi_, CURLMOPT_SOCKETFUNCTION, socketCallback);
 
-    static auto timerCallback = +[](CURLM *multi, long timeout_ms, void *userp) {
+    static auto timerCallback = +[](CURLM *multi, long timeout_ms, void *userp) -> int {
         auto instance = static_cast<EpollMultiDriver *>(userp);
-        instance->MultiTimeoutCallback(timeout_ms);
+        return instance->MultiTimeoutCallback(timeout_ms);
     };
     curl_multi_setopt(multi_, CURLMOPT_TIMERDATA, this);
     curl_multi_setopt(multi_, CURLMOPT_TIMERFUNCTION, timerCallback);
@@ -75,6 +75,7 @@ void EpollMultiDriver::Step(int waitEventsTimeoutMs)
         if (errno != EINTR && errno != EAGAIN && errno != 0) {
             NETSTACK_LOGE("epoll wait event 0 err: %{public}d", errno);
         }
+        CheckMultiInfo();
     }
     for (int idx = 0; idx < eventsToHandle; ++idx) {
         if (incomingQueue_->GetSyncEvent().IsItYours(events[idx].data.fd)) {
@@ -128,9 +129,8 @@ void EpollMultiDriver::EpollTimerCallback()
     auto rc = curl_multi_socket_action(multi_, CURL_SOCKET_TIMEOUT, 0, &stillRunning);
     if (rc != CURLM_OK) {
         NETSTACK_LOGE("curl_multi returned error = %{public}d", rc);
-    } else {
-        CheckMultiInfo();
     }
+    CheckMultiInfo();
 }
 
 __attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
@@ -219,9 +219,8 @@ void EpollMultiDriver::EpollSocketCallback(int fd)
     auto rc = curl_multi_socket_action(multi_, fd, action, &stillRunning);
     if (rc != CURLM_OK) {
         NETSTACK_LOGE("curl_multi returned error = %{public}d", rc);
-    } else {
-        CheckMultiInfo();
     }
+    CheckMultiInfo();
 
     if (stillRunning <= 0) {
         timeoutTimer_.Stop();
