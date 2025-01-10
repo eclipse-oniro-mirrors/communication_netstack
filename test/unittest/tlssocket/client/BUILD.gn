@@ -53,6 +53,11 @@ tls_napi_sources = [
 ]
 
 socket_sources = [
+  "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_instance.cpp",
+  "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_none_method.cpp",
+  "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_package.cpp",
+  "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_passwd_method.cpp",
+  "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_utils.cpp",
   "$SOCKET/async_context/src/bind_context.cpp",
   "$SOCKET/async_context/src/common_context.cpp",
   "$SOCKET/async_context/src/connect_context.cpp",
@@ -75,6 +80,7 @@ socket_sources = [
   "$SOCKET/options/src/extra_options_base.cpp",
   "$SOCKET/options/src/local_socket_options.cpp",
   "$SOCKET/options/src/net_address.cpp",
+  "$SOCKET/options/src/proxy_options.cpp",
   "$SOCKET/options/src/socket_remote_info.cpp",
   "$SOCKET/options/src/socket_state_base.cpp",
   "$SOCKET/options/src/tcp_connect_options.cpp",
@@ -96,6 +102,7 @@ config("tls_test_config") {
     "$TLS_NAPI/include",
     "$TLS_NAPI/include/context",
     "$NETSTACK_INNERKITS_DIR/tls_socket/include",
+    "$NETSTACK_DIR/frameworks/js/napi/proxy/include",
     "$NETSTACK_DIR/utils/napi_utils/include",
     "$SOCKET/async_context/include",
     "$SOCKET/async_work/include",

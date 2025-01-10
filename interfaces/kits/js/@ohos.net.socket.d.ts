@@ -213,6 +213,39 @@ declare namespace socket {
      * @since 10
      */
     address: NetAddress;
+
+    /**
+     * Destination proxy.
+     * @type {ProxyOptions}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 16
+     */
+    proxy?: ProxyOptions;
+  }
+
+  /**
+   * Deposit proxy types
+   * @syscap SystemCapability.Communication.NetStack
+   * @crossplatform
+   * @since 16
+   */
+  export enum ProxyTypes {
+    NONE = 0,
+    SOCKS5 = 1,
+  }
+
+  /**
+   * @interface Socks5Proxy
+   * @syscap SystemCapability.Communication.NetStack
+   * @crossplatform
+   * @since 16
+   */
+  export interface ProxyOptions {
+    type: ProxyTypes;
+    address: NetAddress;
+    username?: string;
+    password?: string;
   }
 
   /**
@@ -2038,6 +2071,15 @@ declare namespace socket {
      * @since 10
      */
     timeout?: number;
+
+    /**
+     * Destination proxy.
+     * @type {ProxyOptions}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 16
+     */
+    proxy?: ProxyOptions;
   }
 
   /**
@@ -3636,6 +3678,15 @@ declare namespace socket {
      * @since 12
      */
     skipRemoteValidation?: boolean;
+
+    /**
+     * Destination proxy.
+     * @type {ProxyOptions}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 16
+     */
+    proxy?: ProxyOptions;
   }
 
   /**

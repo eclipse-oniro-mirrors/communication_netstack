@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -143,10 +143,25 @@ void NetAddress::SetAddress(const std::string &address)
     freeaddrinfo(res);
 }
 
+void NetAddress::SetAddress(const std::string &address, bool resolveDns)
+{
+    if (!resolveDns && family_ == Family::DOMAIN) {
+        address_ = address;
+    } else {
+        SetAddress(address);
+    }
+}
+
 void NetAddress::SetFamilyByJsValue(uint32_t family)
 {
-    if (static_cast<Family>(family) == Family::IPv6) {
+    if (static_cast<Family>(family) == Family::IPv4) {
+        family_ = Family::IPv4;
+    } else if (static_cast<Family>(family) == Family::IPv6) {
         family_ = Family::IPv6;
+    } else if (static_cast<Family>(family) == Family::DOMAIN) {
+        family_ = Family::DOMAIN;
+    } else {
+        // do nothing
     }
 }
 

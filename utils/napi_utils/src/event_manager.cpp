@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,7 +27,7 @@ static constexpr const int ASYNC_CALLBACK_PARAM_NUM = 2;
 static constexpr const char *ON_HEADER_RECEIVE = "headerReceive";
 static constexpr const char *ON_HEADERS_RECEIVE = "headersReceive";
 
-EventManager::EventManager() : data_(nullptr), eventRef_(nullptr), isDestroy_(false) {}
+EventManager::EventManager() : data_(nullptr), eventRef_(nullptr), isDestroy_(false), proxyData_{nullptr} {}
 
 EventManager::~EventManager()
 {
@@ -360,6 +360,18 @@ void EventManager::SetReuseAddr(bool reuse)
 bool EventManager::GetReuseAddr()
 {
     return isReuseAddr_.load();
+}
+
+std::shared_ptr<Socks5::Socks5Instance> EventManager::GetProxyData()
+{
+    std::lock_guard<std::mutex> lock(dataMutex_);
+    return proxyData_;
+}
+
+void EventManager::SetProxyData(std::shared_ptr<Socks5::Socks5Instance> data)
+{
+    std::lock_guard<std::mutex> lock(dataMutex_);
+    proxyData_ = data;
 }
 
 void EventManager::SetWebSocketUserData(const std::shared_ptr<Websocket::UserData> &userData)

@@ -50,6 +50,15 @@ tls_napi_sources = [
   "$TLS_NAPI/src/tlssocketserver_module.cpp",
 ]
 
+PROXY_NAPI = "$NETSTACK_DIR/frameworks/js/napi/proxy"
+proxy_sources = [
+  "$PROXY_NAPI/src/socks5_instance.cpp",
+  "$PROXY_NAPI/src/socks5_none_method.cpp",
+  "$PROXY_NAPI/src/socks5_package.cpp",
+  "$PROXY_NAPI/src/socks5_passwd_method.cpp",
+  "$PROXY_NAPI/src/socks5_utils.cpp",
+]
+
 ohos_shared_library("socket") {
   sanitize = {
     cfi = true
@@ -63,6 +72,7 @@ ohos_shared_library("socket") {
     "$TLS/include",
     "$TLS_NAPI/include",
     "$TLS_NAPI/include/context",
+    "$PROXY_NAPI/include",
     "$NETSTACK_INNERKITS_DIR/tls_socket/include",
     "$NETSTACK_DIR/utils/napi_utils/include",
     "async_context/include",
@@ -97,6 +107,7 @@ ohos_shared_library("socket") {
     "options/src/extra_options_base.cpp",
     "options/src/local_socket_options.cpp",
     "options/src/net_address.cpp",
+    "options/src/proxy_options.cpp",
     "options/src/socket_remote_info.cpp",
     "options/src/socket_state_base.cpp",
     "options/src/tcp_connect_options.cpp",
@@ -111,6 +122,7 @@ ohos_shared_library("socket") {
   ]
   sources += tls_sources
   sources += tls_napi_sources
+  sources += proxy_sources
 
   cflags = [
     "-fstack-protector-strong",

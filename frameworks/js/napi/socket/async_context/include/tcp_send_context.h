@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +17,13 @@
 #define COMMUNICATIONNETSTACK_TCP_SEND_CONTEXT_H
 
 #include <cstddef>
+#include <memory>
 
 #include "base_context.h"
 #include "napi/native_api.h"
 #include "nocopyable.h"
 #include "tcp_send_options.h"
+#include "proxy_options.h"
 
 namespace OHOS::NetStack::Socket {
 class TcpSendContext final : public BaseContext {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +17,13 @@
 #define COMMUNICATIONNETSTACK_CONNECT_CONTEXT_H
 
 #include <cstddef>
+#include <memory>
 
 #include "napi/native_api.h"
 #include "base_context.h"
 #include "nocopyable.h"
 #include "tcp_connect_options.h"
+#include "proxy_options.h"
 
 namespace OHOS::NetStack::Socket {
 class ConnectContext final : public BaseContext {
@@ -42,8 +44,12 @@ public:
 
     TcpConnectOptions options;
 
+    std::shared_ptr<ProxyOptions> proxyOptions{nullptr};
+
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
+
+    void HandleCallback(napi_value *params, size_t paramsCount);
 };
 } // namespace OHOS::NetStack::Socket
 

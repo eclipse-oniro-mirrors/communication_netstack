@@ -26,6 +26,7 @@ ohos_fuzztest("TlsSocketFuzzTest") {
   module_out_path = fuzz_test_path
   fuzz_config_file = "//foundation/communication/netstack/test/fuzztest/socket/fuzztest/tlssocket_fuzzer"
   include_dirs = [
+    "$NETSTACK_DIR/frameworks/js/napi/proxy/include",
     "$NETSTACK_DIR/utils/napi_utils/include",
     "$NETSTACK_NAPI_ROOT/async_context/include",
     "$NETSTACK_NAPI_ROOT/async_work/include",
@@ -60,6 +61,11 @@ ohos_fuzztest("TlsSocketFuzzTest") {
   ]
 
   sources = [
+    "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_instance.cpp",
+    "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_none_method.cpp",
+    "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_package.cpp",
+    "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_passwd_method.cpp",
+    "$NETSTACK_DIR/frameworks/js/napi/proxy/src/socks5_utils.cpp",
     "$NETSTACK_NAPI_ROOT/async_context/src/bind_context.cpp",
     "$NETSTACK_NAPI_ROOT/async_context/src/common_context.cpp",
     "$NETSTACK_NAPI_ROOT/async_context/src/connect_context.cpp",
@@ -82,6 +88,7 @@ ohos_fuzztest("TlsSocketFuzzTest") {
     "$NETSTACK_NAPI_ROOT/options/src/extra_options_base.cpp",
     "$NETSTACK_NAPI_ROOT/options/src/local_socket_options.cpp",
     "$NETSTACK_NAPI_ROOT/options/src/net_address.cpp",
+    "$NETSTACK_NAPI_ROOT/options/src/proxy_options.cpp",
     "$NETSTACK_NAPI_ROOT/options/src/socket_remote_info.cpp",
     "$NETSTACK_NAPI_ROOT/options/src/socket_state_base.cpp",
     "$NETSTACK_NAPI_ROOT/options/src/tcp_connect_options.cpp",

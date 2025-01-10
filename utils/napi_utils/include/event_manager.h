@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -43,6 +43,10 @@ struct EventManagerMagic {
 
 namespace Websocket {
 class UserData;
+}
+
+namespace Socks5 {
+    class Socks5Instance;
 }
 
 class EventManager : public std::enable_shared_from_this<EventManager> {
@@ -118,6 +122,10 @@ public:
 
     bool GetReuseAddr();
 
+    std::shared_ptr<Socks5::Socks5Instance> GetProxyData();
+
+    void SetProxyData(std::shared_ptr<Socks5::Socks5Instance> data);
+
 private:
     std::mutex mutexForListenersAndEmitByUv_;
     std::mutex mutexForEmitAndEmitByUv_;
@@ -138,6 +146,7 @@ private:
     bool sockRcvExit_ = false;
     std::atomic_bool isReuseAddr_ = false;
     std::shared_ptr<Websocket::UserData> webSocketUserData_;
+    std::shared_ptr<Socks5::Socks5Instance> proxyData_;
 
 public:
     struct {

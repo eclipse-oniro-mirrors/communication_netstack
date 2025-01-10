@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -35,6 +35,7 @@ static constexpr size_t PERMISSION_DENIED_CODE = 201;
 static constexpr const char *PERMISSION_DENIED_MSG = "Permission denied";
 static constexpr size_t PARSE_ERROR_CODE = 401;
 static constexpr const char *PARSE_ERROR_MSG = "Parameter error";
+static constexpr size_t SOCKS5_ERROR_CODE = 205;
 
 class BaseContext {
 public:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -279,5 +279,9 @@ public:
 protected:
     EventManager *manager_;
 };
+
+using SocketRecvCallback = std::function<bool(int socketId, std::pair<std::unique_ptr<char[]> &, int> &bufInfo,
+    std::pair<sockaddr *, socklen_t> &addrInfo, const MessageCallback &callback)>;
+
 } // namespace OHOS::NetStack::Socket::SocketExec
 #endif /* COMMUNICATIONNETSTACK_SOCKET_EXEC_H */

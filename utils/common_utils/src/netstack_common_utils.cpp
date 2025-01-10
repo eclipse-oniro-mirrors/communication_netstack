@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -145,6 +145,9 @@ bool HasInternetPermission()
 {
 #ifndef OH_CORE_NETSTACK_PERMISSION_CHECK
 #ifdef FUZZ_TEST
+    return true;
+#endif
+#ifdef DT_TEST
     return true;
 #endif
     int testSock = socket(AF_INET, SOCK_STREAM, 0);

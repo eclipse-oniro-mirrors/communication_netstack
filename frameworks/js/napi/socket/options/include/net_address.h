@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,6 +25,7 @@ public:
     enum class Family : uint32_t {
         IPv4 = 1,
         IPv6 = 2,
+        DOMAIN = 3,
     };
 
     NetAddress();
@@ -38,6 +39,8 @@ public:
     void SetIpAddress(const std::string &address);
 
     void SetAddress(const std::string &address);
+
+    void SetAddress(const std::string &address, bool resolveDns);
 
     void SetFamilyByJsValue(uint32_t family);
 
