@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -116,7 +116,7 @@ bool Socks5AuthResponse::Deserialize(const void *data, size_t len)
     return true;
 }
 
-static int copyAddrToStr(Socks5AddrType addrType, std::string &destAddr, std::string &serialized, size_t pos)
+static int CopyAddrToStr(Socks5AddrType addrType, std::string &destAddr, std::string &serialized, size_t pos)
 {
     switch (addrType) {
         case Socks5AddrType::IPV4: {
@@ -156,7 +156,7 @@ static int copyAddrToStr(Socks5AddrType addrType, std::string &destAddr, std::st
     return -1;
 }
 
-static void resizeStrByAType(Socks5AddrType addrType, std::string &destAddr, size_t otherLen,
+static void ResizeStrByAType(Socks5AddrType addrType, std::string &destAddr, size_t otherLen,
     std::string &serialized)
 {
     switch (addrType) {
@@ -183,14 +183,14 @@ std::string Socks5ProxyRequest::Serialize()
     int excludeStrLen = 6; // 6 = VER + CMD + RSV + ATYP + DST.PORT
     std::string serialized;
 
-    resizeStrByAType(addrType_, destAddr_, excludeStrLen, serialized);
+    ResizeStrByAType(addrType_, destAddr_, excludeStrLen, serialized);
 
     serialized[0] = version_;
     serialized[1] = static_cast<uint8_t>(cmd_);
     serialized[2] = reserved_; // 2: RSV
     serialized[3] = static_cast<uint8_t>(addrType_); // 3: ATYP
 
-    int pos = copyAddrToStr(addrType_, destAddr_, serialized, 4); // 4: DST.ADDR
+    int pos = CopyAddrToStr(addrType_, destAddr_, serialized, 4); // 4: DST.ADDR
     if (pos < 0) {
         return "";
     }
@@ -204,7 +204,7 @@ std::string Socks5ProxyRequest::Serialize()
     return serialized;
 }
 
-static size_t getAddrLen(Socks5AddrType addrType, const uint8_t *buffer, size_t domainLenIdx)
+static size_t GetAddrLen(Socks5AddrType addrType, const uint8_t *buffer, size_t domainLenIdx)
 {
     switch (addrType) {
         case Socks5AddrType::IPV4:
@@ -217,7 +217,7 @@ static size_t getAddrLen(Socks5AddrType addrType, const uint8_t *buffer, size_t 
     return 0;
 }
 
-static void getAddrStr(Socks5AddrType addrType, const uint8_t *buffer, size_t hdrLen,
+static void GetAddrStr(Socks5AddrType addrType, const uint8_t *buffer, size_t hdrLen,
     size_t domainIdx, std::string &destAddr)
 {
     switch (addrType) {
@@ -261,12 +261,12 @@ bool Socks5ProxyResponse::Deserialize(const void *data, size_t len)
     reserved_ = buffer[2]; // 2: index of RSV
     addrType_ = static_cast<Socks5AddrType>(buffer[3]); // 3: index of ATYP
 
-    size_t addrLen = getAddrLen(addrType_, buffer, 4); // 4: index of domain len
+    size_t addrLen = GetAddrLen(addrType_, buffer, 4); // 4: index of domain len
     if (addrLen == 0 || len < hdrLen + addrLen + 2) { // 2: PORT size
         return false;
     }
 
-    getAddrStr(addrType_, buffer, hdrLen, 5, destAddr_); // 5: index of DOMAIN
+    GetAddrStr(addrType_, buffer, hdrLen, 5, destAddr_); // 5: index of DOMAIN
     destPort_ = (buffer[len - 2] << 8) | buffer[len - 1]; // 8: char bits, 2: port size
     return true;
 }
@@ -281,7 +281,7 @@ std::string Socks5UdpHeader::Serialize()
 {
     int excludeStrLen = 6; // 6 = RSV + FRAG + ATYP + DST.PORT
     std::string serialized;
-    resizeStrByAType(addrType_, destAddr_, excludeStrLen, serialized);
+    ResizeStrByAType(addrType_, destAddr_, excludeStrLen, serialized);
 
     if (memcpy_s(&serialized[0], serialized.size(), &reserved_, sizeof(reserved_)) != EOK) {
         NETSTACK_LOGE("memcpy_s failed!");
@@ -290,7 +290,7 @@ std::string Socks5UdpHeader::Serialize()
     serialized[2] = frag_;  // 2: FRAG
     serialized[3] = static_cast<uint8_t>(addrType_); // 3: ATYP
 
-    int pos = copyAddrToStr(addrType_, destAddr_, serialized, 4); // 4: DST.ADDR
+    int pos = CopyAddrToStr(addrType_, destAddr_, serialized, 4); // 4: DST.ADDR
     if (pos < 0) {
         return "";
     }
@@ -320,12 +320,12 @@ bool Socks5UdpHeader::Deserialize(const void *data, size_t len)
 
     addrType_ = static_cast<Socks5AddrType>(buffer[3]);  // 3: index of ATYP
 
-    size_t addrLen = getAddrLen(addrType_, buffer, 4); // 4: index of domain len
+    size_t addrLen = GetAddrLen(addrType_, buffer, 4); // 4: index of domain len
     if (addrLen == 0 || len < hdrLen + addrLen + 2) { // 2: port size
         return false;
     }
 
-    getAddrStr(addrType_, buffer, hdrLen, 5, destAddr_); // 5: index of DOMAIN
+    GetAddrStr(addrType_, buffer, hdrLen, 5, destAddr_); // 5: index of DOMAIN
     dstPort_ = (buffer[len - 2] << 8) | buffer[len - 1]; // 8: char bits, 2: port size
     return true;
 }
