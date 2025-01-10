@@ -1939,7 +1939,7 @@ static bool IsValidSock(int &currentFd, EventManager *manager)
 }
 
 static int RecvWithSockCheck(int connectFD, char *buffer, uint32_t recvBufferSize, EventManager *manager,
-                            int &recvSize)
+                             int &recvSize)
 {
     std::lock_guard<std::mutex> lock(g_fdMutex);
     if (buffer == nullptr) {
