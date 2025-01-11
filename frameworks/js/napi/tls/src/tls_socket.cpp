@@ -436,6 +436,22 @@ void TLSSocket::GetAddr(const Socket::NetAddress &address, sockaddr_in *addr4, s
     }
 }
 
+bool TLSSocket::ExecTlsSetSockBlockFlag(int sock, bool noneBlock)
+{
+    return SetSockBlockFlag(sock, noneBlock);
+}
+
+void TLSSocket::ExecTlsGetAddr(
+    const Socket::NetAddress &address, sockaddr_in *addr4, sockaddr_in6 *addr6, sockaddr **addr, socklen_t *len)
+{
+    GetAddr(address, addr4, addr6, addr, len);
+}
+
+bool TLSSocket::IsExtSock() const
+{
+    return isExtSock_;
+}
+
 void TLSSocket::MakeIpSocket(sa_family_t family)
 {
     if (family != AF_INET && family != AF_INET6) {
@@ -1238,8 +1254,9 @@ bool TLSSocket::TLSSocketInternal::TlsConnectToHost(int sock, const TLSConnectOp
     port_ = options.GetNetAddress().GetPort();
     family_ = options.GetNetAddress().GetSaFamily();
     socketDescriptor_ = sock;
-    if (!isExtSock && !ExecSocketConnect(options.GetNetAddress().GetAddress(), options.GetNetAddress().GetPort(),
-                                         options.GetNetAddress().GetSaFamily(), socketDescriptor_)) {
+    if (options.proxyOptions_ == nullptr && !isExtSock &&
+        !ExecSocketConnect(options.GetNetAddress().GetAddress(), options.GetNetAddress().GetPort(),
+        options.GetNetAddress().GetSaFamily(), socketDescriptor_)) {
         return false;
     }
     return StartTlsConnected(options);

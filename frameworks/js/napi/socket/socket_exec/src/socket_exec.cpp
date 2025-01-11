@@ -966,22 +966,6 @@ static std::shared_ptr<Socks5::Socks5UdpInstance> InitSocks5UdpInstance(UdpSendC
     return socks5Udp;
 }
 
-static void SetProxyAuthError(BaseContext *context, std::shared_ptr<Socks5::Socks5Instance> &socks5Inst)
-{
-    const int32_t errCode = socks5Inst->GetErrorCode();
-    const std::string errMsg = socks5Inst->GetErrorMessage();
-    NETSTACK_LOGE("socks5 auth failed, errCode:%{public}d, errMsg::%{public}s", errCode, errMsg.c_str());
-    if (errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_USER_PASS_INVALID) ||
-        errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY) ||
-        errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_REMOTE) ||
-        errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_METHOD_NEGO_ERROR)) {
-        context->SetError(errCode, errMsg);
-    } else {
-        context->SetError(static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_OTHER_ERROR),
-            Socks5::Socks5Utils::GetStatusMessage(Socks5::Socks5Status::SOCKS5_OTHER_ERROR));
-    }
-}
-
 static int HandleUdpProxyOptions(UdpSendContext *context)
 {
     EventManager *eventMgr = context->GetManager();
@@ -1007,7 +991,7 @@ static int HandleUdpProxyOptions(UdpSendContext *context)
 
     if (!socks5Udp->IsConnected()) {
         if (!socks5Udp->Connect()) {
-            SetProxyAuthError(context, socks5Udp);
+            Socks5::Socks5Utils::SetProxyAuthError(context, socks5Udp);
             NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
             return -1;
         }
@@ -1105,7 +1089,7 @@ static int HandleTcpProxyOptions(ConnectContext *context)
 
     if (!socks5Tcp->IsConnected()) {
         if (!socks5Tcp->Connect()) {
-            SetProxyAuthError(context, socks5Tcp);
+            Socks5::Socks5Utils::SetProxyAuthError(context, socks5Tcp);
             return -1;
         }
     }
@@ -1138,25 +1122,18 @@ bool ExecConnect(ConnectContext *context)
         return false;
     }
 
-    if (!NonBlockConnect(context->GetSocketFd(), addr, len, context->options.GetTimeout())) {
-        if (context->proxyOptions != nullptr) {
-            const int32_t errCode = static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY);
-            std::string errMsg =
-                Socks5::Socks5Utils::GetStatusMessage(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY);
-            context->SetError(static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY), errMsg);
+    if (context->proxyOptions == nullptr) {
+        if (!NonBlockConnect(context->GetSocketFd(), addr, len, context->options.GetTimeout())) {
+            ERROR_RETURN(context, "connect errno %{public}d", errno);
+        }
+    } else {
+        if (HandleTcpProxyOptions(context) != 0) {
             context->SetExecOK(false);
-            NETSTACK_LOGE("socks5 connect failed, errCode:%{public}d, errMsg:%{public}s", errCode, errMsg.c_str());
             return false;
         }
-        ERROR_RETURN(context, "connect errno %{public}d", errno);
     }
 
     NETSTACK_LOGI("connect success, sock:%{public}d", context->GetSocketFd());
-    if (context->proxyOptions != nullptr && HandleTcpProxyOptions(context) != 0) {
-        close(context->GetSocketFd());
-        context->SetExecOK(false);
-        return false;
-    }
 
     std::thread serviceThread(PollRecvData, context->GetSocketFd(), nullptr, 0,
                               TcpMessageCallback(context->GetManager()));

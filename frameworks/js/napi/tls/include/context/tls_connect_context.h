@@ -23,6 +23,7 @@
 
 #include "base_context.h"
 #include "event_manager.h"
+#include "proxy_options.h"
 #include "tls.h"
 #include "tls_socket.h"
 
@@ -34,21 +35,24 @@ public:
     friend class TLSSocketExec;
     TLSConnectContext() = delete;
     explicit TLSConnectContext(napi_env env, EventManager *manager);
+    [[nodiscard]]int32_t GetErrorCode() const override;
 
 public:
     TLSConnectOptions connectOptions_;
     int32_t errorNumber_ = 0;
     std::string hostName_;
     std::vector<std::string> x509Certificates_;
+    std::shared_ptr<Socket::ProxyOptions> proxyOptions_{nullptr};
 
 public:
-    void ParseParams(napi_value *params, size_t paramsCount);
+    void ParseParams(napi_value *params, size_t paramsCount) override;
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
     TLSConnectOptions ReadTLSConnectOptions(napi_env env, napi_value *params);
     TLSSecureOptions ReadTLSSecureOptions(napi_env env, napi_value *params);
     Socket::NetAddress ReadNetAddress(napi_env env, napi_value *params);
+    std::shared_ptr<Socket::ProxyOptions> ReadTLSProxyOptions(napi_env env, napi_value *params);
 };
 using TLSListenContext = TLSConnectContext;
 } // namespace TlsSocket

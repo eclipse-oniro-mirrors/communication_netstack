@@ -23,6 +23,7 @@
 #include "constant.h"
 #include "napi_utils.h"
 #include "netstack_log.h"
+#include "socket_constant.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -43,6 +44,7 @@ constexpr const char *FAMILY_NAME = "family";
 constexpr const char *PORT_NAME = "port";
 constexpr const char *VERIFY_MODE_NAME = "isBidirectionalAuthentication";
 constexpr const char *SKIP_REMOTE_VALIDATION = "skipRemoteValidation";
+constexpr const char *KEY_PROXY = "proxy";
 constexpr uint32_t CA_CHAIN_LENGTH = 1000;
 constexpr uint32_t PROTOCOLS_SIZE = 10;
 constexpr std::string_view PARSE_ERROR = "options is not type of TLSConnectOptions";
@@ -106,6 +108,31 @@ void TLSConnectContext::ParseParams(napi_value *params, size_t paramsCount)
     SetParseOK(true);
 }
 
+int32_t TLSConnectContext::GetErrorCode() const
+{
+    auto err = BaseContext::GetErrorCode();
+    if (proxyOptions_ != nullptr) {
+        err += Socket::SOCKET_ERROR_CODE_BASE;
+    }
+    return err;
+}
+
+std::shared_ptr<Socket::ProxyOptions> TLSConnectContext::ReadTLSProxyOptions(napi_env env, napi_value *params)
+{
+    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_PROXY)) {
+        NETSTACK_LOGD("handle proxy options");
+        auto opts = std::make_shared<Socket::ProxyOptions>();
+        if (opts->ParseOptions(GetEnv(), params[0]) != 0) {
+            NETSTACK_LOGE("parse proxy options failed");
+            return nullptr;
+        }
+        if (opts->type_ != Socket::ProxyType::NONE) {
+            proxyOptions_ = opts;
+        }
+    }
+    return proxyOptions_;
+}
+
 bool TLSConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
     if (paramsCount == PARAM_JUST_OPTIONS) {
@@ -142,6 +169,7 @@ TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_va
     options.SetHostName(address.GetAddress());
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
+    options.proxyOptions_ = ReadTLSProxyOptions(GetEnv(), params);
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], ALPN_PROTOCOLS)) {
         napi_value alpnProtocols = NapiUtils::GetNamedProperty(GetEnv(), params[0], ALPN_PROTOCOLS);
         uint32_t arrayLength = NapiUtils::GetArrayLength(GetEnv(), alpnProtocols);

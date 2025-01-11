@@ -39,6 +39,7 @@ public:
     static std::string GetStatusMessage(Socks5Status status);
     static void PrintRecvErrMsg(int32_t socketId, const int32_t errCode, const int32_t recvLen,
         const std::string &tag);
+    static void SetProxyAuthError(BaseContext *context, std::shared_ptr<Socks5::Socks5Instance> &socks5Inst);
 };
 }  // Socks5
 }  // NetStack
