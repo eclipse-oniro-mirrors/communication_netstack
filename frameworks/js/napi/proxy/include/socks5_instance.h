@@ -36,11 +36,11 @@ public:
     virtual ~Socks5Instance() = default;
 
     virtual bool Connect() = 0;
-    virtual bool RemoveHeader(void *data, size_t &len, int af) = 0;
-    virtual void AddHeader() = 0;
-    virtual std::string GetHeader() = 0;
-    virtual void SetHeader(std::string header) = 0;
-    virtual void Close() = 0;
+    virtual bool RemoveHeader(void *data, size_t &len, int af);
+    virtual void AddHeader();
+    virtual std::string GetHeader();
+    virtual void SetHeader(std::string header);
+    virtual void Close();
 
     void SetSocks5Option(const std::shared_ptr<Socks5Option> &opt);
     void SetDestAddress(const Socket::NetAddress &dest);
@@ -54,6 +54,8 @@ public:
     Socket::NetAddress GetProxyBindAddress() const;
     int GetSocketId() const;
     Socket::SocketExec::SocketRecvCallback GetProxySocketRecvCallback() const;
+    bool ConnectProxy();
+    void CloseSocket();
 
 protected:
     bool RequestMethod(const std::vector<Socks5MethodType> &methods);
@@ -81,11 +83,6 @@ public:
     ~Socks5TcpInstance() = default;
 
     bool Connect();
-    bool RemoveHeader(void *data, size_t &len, int af);
-    void AddHeader();
-    std::string GetHeader();
-    void SetHeader(std::string header);
-    void Close();
 };
 
 class Socks5UdpInstance final : public Socks5Instance, std::enable_shared_from_this<Socks5UdpInstance> {
@@ -93,19 +90,26 @@ public:
     Socks5UdpInstance() = default;
     ~Socks5UdpInstance();
 
-    bool Connect();
-    bool RemoveHeader(void *data, size_t &len, int af);
-    void AddHeader();
-    std::string GetHeader();
-    void SetHeader(std::string header);
-    void Close();
+    bool Connect() override;
+    bool RemoveHeader(void *data, size_t &len, int af) override;
+    void AddHeader() override;
+    std::string GetHeader() override;
+    void SetHeader(std::string header) override;
+    void Close() override;
 
 private:
     bool CreateSocket();
-    bool ConnectProxy();
-    void CloseSocket();
 
     std::string header_;
+};
+
+class Socks5TlsInstance final : public Socks5Instance {
+public:
+    Socks5TlsInstance() = delete;
+    explicit Socks5TlsInstance(int32_t socketId);
+    ~Socks5TlsInstance() = default;
+
+    bool Connect();
 };
 } // Socks5
 } // NetStack

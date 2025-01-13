@@ -28,6 +28,7 @@
 
 #include "extra_options_base.h"
 #include "net_address.h"
+#include "proxy_options.h"
 #include "socket_error.h"
 #include "socket_remote_info.h"
 #include "socket_state_base.h"
@@ -276,6 +277,8 @@ public:
     void SetHostName(const std::string &hostName);
     [[nodiscard]] std::string GetHostName() const;
 
+    std::shared_ptr<Socket::ProxyOptions> proxyOptions_{nullptr};
+
 private:
     Socket::NetAddress address_;
     TLSSecureOptions tlsSecureOptions_;
@@ -442,6 +445,14 @@ public:
     void SetCloseState(bool flag);
 
     std::mutex &GetCloseLock();
+
+    void ExecTlsGetAddr(
+        const Socket::NetAddress &address, sockaddr_in *addr4, sockaddr_in6 *addr6, sockaddr **addr, socklen_t *len);
+
+    bool ExecTlsSetSockBlockFlag(int sock, bool noneBlock);
+
+    bool IsExtSock() const;
+
 private:
     class TLSSocketInternal final {
     public:

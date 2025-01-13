@@ -84,7 +84,7 @@ bool Socks5Instance::DoConnect(Socks5Command command)
     }
     if (method_ == nullptr) {
         NETSTACK_LOGE("socks5 instance method is null socket:%{public}d", socketId_);
-        UpdateErrorInfo(Socks5Status::SOCKS5_METHOD_ERROR);
+        UpdateErrorInfo(Socks5Status::SOCKS5_METHOD_NEGO_ERROR);
         return false;
     }
     if (!method_->RequestAuth(socketId_, options_->username_, options_->password_, options_->proxyAddress_)) {
@@ -142,6 +142,28 @@ Socket::NetAddress Socks5Instance::GetProxyBindAddress() const
 int Socks5Instance::GetSocketId() const
 {
     return socketId_;
+}
+
+bool Socks5Instance::ConnectProxy()
+{
+    const socklen_t addrLen{Socks5Utils::GetAddressLen(options_->proxyAddress_.netAddress_)};
+    // use default value
+    const uint32_t timeoutMSec{0U};
+    if (!NonBlockConnect(socketId_, options_->proxyAddress_.addr_, addrLen, timeoutMSec)) {
+        NETSTACK_LOGE("socks5 instance fail to connect proxy");
+        UpdateErrorInfo(Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY);
+        return false;
+    }
+    return true;
+}
+
+void Socks5Instance::CloseSocket()
+{
+    if (socketId_ != SOCKS5_INVALID_SOCKET_FD) {
+        NETSTACK_LOGI("socks5 instance close socket:%{public}d", socketId_);
+        static_cast<void>(::close(socketId_));
+        socketId_ = SOCKS5_INVALID_SOCKET_FD;
+    }
 }
 
 static bool SocketRecvHandle(int socketId, std::pair<std::unique_ptr<char[]> &, int> &bufInfo,
@@ -217,48 +239,43 @@ bool Socks5TcpInstance::Connect()
         NETSTACK_LOGD("socks5 tcp instance auth already socket:%{public}d", socketId_);
         return true;
     }
-    if (DoConnect(Socks5Command::TCP_CONNECTION)) {
-        NETSTACK_LOGI("socks5 tcp instance auth successfully socket:%{public}d", socketId_);
-        return true;
-    } else {
+    if (!ConnectProxy()) {
+        CloseSocket();
         return false;
     }
+    if (!DoConnect(Socks5Command::TCP_CONNECTION)) {
+        CloseSocket();
+        return false;
+    }
+    NETSTACK_LOGI("socks5 tcp instance auth successfully socket:%{public}d", socketId_);
+    return true;
 }
 
-bool Socks5TcpInstance::RemoveHeader(void *data, size_t &len, int af)
+bool Socks5Instance::RemoveHeader(void *data, size_t &len, int af)
 {
     return false;
 }
 
-void Socks5TcpInstance::AddHeader()
+void Socks5Instance::AddHeader()
 {
 }
 
-std::string Socks5TcpInstance::GetHeader()
+std::string Socks5Instance::GetHeader()
 {
     return std::string();
 }
 
-void Socks5TcpInstance::SetHeader(std::string header)
+void Socks5Instance::SetHeader(std::string header)
 {
 }
 
-void Socks5TcpInstance::Close()
+void Socks5Instance::Close()
 {
 }
 
 Socks5UdpInstance::~Socks5UdpInstance()
 {
     CloseSocket();
-}
-
-void Socks5UdpInstance::CloseSocket()
-{
-    if (socketId_ != SOCKS5_INVALID_SOCKET_FD) {
-        NETSTACK_LOGI("socks5 udp instance close socket:%{public}d", socketId_);
-        static_cast<void>(::close(socketId_));
-        socketId_ = SOCKS5_INVALID_SOCKET_FD;
-    }
 }
 
 bool Socks5UdpInstance::Connect()
@@ -300,19 +317,6 @@ bool Socks5UdpInstance::CreateSocket()
         return false;
     }
 
-    return true;
-}
-
-bool Socks5UdpInstance::ConnectProxy()
-{
-    const socklen_t addrLen{Socks5Utils::GetAddressLen(options_->proxyAddress_.netAddress_)};
-    // use default value
-    const uint32_t timeoutMSec{0U};
-    if (!NonBlockConnect(socketId_, options_->proxyAddress_.addr_, addrLen, timeoutMSec)) {
-        NETSTACK_LOGE("socks5 udp instance fail to connect proxy");
-        UpdateErrorInfo(Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY);
-        return false;
-    }
     return true;
 }
 
@@ -380,6 +384,31 @@ std::string Socks5UdpInstance::GetHeader()
     return header_;
 }
 
+Socks5TlsInstance::Socks5TlsInstance(int32_t socketId)
+{
+    socketId_ = socketId;
+}
+
+bool Socks5TlsInstance::Connect()
+{
+    NETSTACK_LOGD("socks5 tls instance auth socket:%{public}d", socketId_);
+    UpdateErrorInfo(0, "");
+    if (state_ == Socks5AuthState::SUCCESS) {
+        NETSTACK_LOGD("socks5 tls instance auth already socket:%{public}d", socketId_);
+        return true;
+    }
+    Socket::ExecCommonUtils::MakeNonBlock(socketId_);
+    if (!ConnectProxy()) {
+        CloseSocket();
+        return false;
+    }
+    if (!DoConnect(Socks5Command::TCP_CONNECTION)) {
+        CloseSocket();
+        return false;
+    }
+    NETSTACK_LOGI("socks5 tls instance auth successfully socket:%{public}d", socketId_);
+    return true;
+}
 } // Socks5
 } // NetStack
 } // OHOS

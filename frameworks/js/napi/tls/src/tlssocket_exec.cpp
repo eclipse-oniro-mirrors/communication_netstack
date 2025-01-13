@@ -27,6 +27,7 @@
 #include "netstack_log.h"
 #include "socket_error.h"
 #include "socket_exec_common.h"
+#include "socks5_utils.h"
 #include "tls_socket.h"
 
 #ifdef IOS_PLATFORM
@@ -135,6 +136,62 @@ bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
+static std::shared_ptr<Socks5::Socks5TlsInstance> InitSocks5TlsInstance(
+    TLSConnectContext *context, std::shared_ptr<TLSSocket> shared)
+{
+    const std::shared_ptr<Socks5::Socks5Option> opt{std::make_shared<Socks5::Socks5Option>()};
+    opt->username_ = context->proxyOptions_->username_;
+    opt->password_ = context->proxyOptions_->password_;
+    opt->proxyAddress_.netAddress_ = context->proxyOptions_->address_;
+    socklen_t len;
+    shared->ExecTlsGetAddr(opt->proxyAddress_.netAddress_, &opt->proxyAddress_.addrV4_, &opt->proxyAddress_.addrV6_,
+        &opt->proxyAddress_.addr_, &len);
+    if (opt->proxyAddress_.addr_ == nullptr) {
+        NETSTACK_LOGE("addr family error, address invalid");
+        const int ADDRESS_INVALID = 99;
+        context->SetError(ADDRESS_INVALID, "addr family error, address invalid");
+        return nullptr;
+    }
+
+    auto socks5Tls = std::make_shared<Socks5::Socks5TlsInstance>(shared->GetSocketFd());
+    socks5Tls->SetDestAddress(context->connectOptions_.GetNetAddress());
+    socks5Tls->SetSocks5Option(opt);
+    return socks5Tls;
+}
+
+static int HandleTcpProxyOptions(TLSConnectContext *context, std::shared_ptr<TLSSocket> shared)
+{
+    EventManager *eventMgr = context->GetManager();
+    if (eventMgr == nullptr) {
+        NETSTACK_LOGE("event manager is null");
+        return -1;
+    }
+
+    if (context->proxyOptions_->type_ != Socket::ProxyType::SOCKS5) {
+        NETSTACK_LOGE("unsupport proxy type");
+        return 0;
+    }
+
+    auto socks5Tls = eventMgr->GetProxyData();
+    if (socks5Tls == nullptr) {
+        socks5Tls = InitSocks5TlsInstance(context, shared);
+        if (socks5Tls == nullptr) {
+            return -1;
+        }
+        socks5Tls->SetSocks5Instance(socks5Tls);
+        eventMgr->SetProxyData(socks5Tls);
+    }
+
+    if (!socks5Tls->IsConnected()) {
+        if (!socks5Tls->Connect()) {
+            Socks5::Socks5Utils::SetProxyAuthError(context, socks5Tls);
+            return -1;
+        }
+    }
+    shared->ExecTlsSetSockBlockFlag(shared->GetSocketFd(), false);
+    return 0;
+}
+
 bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
 {
     if (context == nullptr) {
@@ -159,6 +216,12 @@ bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
         NETSTACK_LOGE("ExecConnect tlsSocket is null");
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
+    }
+
+    if (!shared->IsExtSock() && context->proxyOptions_ != nullptr) {
+        if (HandleTcpProxyOptions(context, shared) != 0) {
+            return false;
+        }
     }
     shared->Connect(context->connectOptions_, [&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
