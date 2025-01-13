@@ -127,8 +127,8 @@ public:
     void SetProxyData(std::shared_ptr<Socks5::Socks5Instance> data);
 
 private:
-    std::mutex mutexForListenersAndEmitByUv_;
-    std::mutex mutexForEmitAndEmitByUv_;
+    std::recursive_mutex mutexForListenersAndEmitByUv_;
+    std::recursive_mutex mutexForEmitAndEmitByUv_;
     std::mutex dataMutex_;
     std::mutex dataQueueMutex_;
     std::list<EventListener> listeners_;
