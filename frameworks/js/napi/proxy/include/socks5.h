@@ -20,6 +20,7 @@
 #include <sys/socket.h>
 #include <map>
 #include <string>
+#include <vector>
 
 #include "net_address.h"
 
