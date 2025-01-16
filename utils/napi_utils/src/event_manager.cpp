@@ -37,7 +37,7 @@ EventManager::~EventManager()
 void EventManager::AddListener(napi_env env, const std::string &type, napi_value callback, bool once,
                                bool asyncCallback)
 {
-    std::shared_lock lock(mutexForListenersAndEmitByUv_);
+    std::unique_lock lock(mutexForListenersAndEmitByUv_);
     auto it = std::remove_if(listeners_.begin(), listeners_.end(),
                              [type](const EventListener &listener) -> bool { return listener.MatchType(type); });
     if (it != listeners_.end()) {
@@ -49,7 +49,7 @@ void EventManager::AddListener(napi_env env, const std::string &type, napi_value
 
 void EventManager::DeleteListener(const std::string &type, napi_value callback)
 {
-    std::shared_lock lock(mutexForListenersAndEmitByUv_);
+    std::unique_lock lock(mutexForListenersAndEmitByUv_);
     auto it =
         std::remove_if(listeners_.begin(), listeners_.end(), [type, callback](const EventListener &listener) -> bool {
             return listener.Match(type, callback);
@@ -59,7 +59,7 @@ void EventManager::DeleteListener(const std::string &type, napi_value callback)
 
 void EventManager::Emit(const std::string &type, const std::pair<napi_value, napi_value> &argv)
 {
-    std::shared_lock lock(mutexForEmitAndEmitByUv_);
+    std::lock_guard lock(mutexForEmitAndEmitByUv_);
     auto listeners = listeners_;
     std::for_each(listeners.begin(), listeners.end(), [type, argv](const EventListener &listener) {
         if (listener.IsAsyncCallback()) {
@@ -92,7 +92,7 @@ void *EventManager::GetData()
 
 void EventManager::EmitByUvWithoutCheckShared(const std::string &type, void *data, void (*Handler)(uv_work_t *, int))
 {
-    std::shared_lock lock1(mutexForEmitAndEmitByUv_);
+    std::lock_guard lock1(mutexForEmitAndEmitByUv_);
     std::shared_lock lock2(mutexForListenersAndEmitByUv_);
     bool foundHeader = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
         return listener.MatchType(ON_HEADER_RECEIVE);
@@ -146,7 +146,7 @@ void *EventManager::GetQueueData()
 
 void EventManager::EmitByUvWithoutCheck(const std::string &type, void *data, void(Handler)(uv_work_t *, int status))
 {
-    std::shared_lock lock1(mutexForEmitAndEmitByUv_);
+    std::lock_guard lock1(mutexForEmitAndEmitByUv_);
     std::shared_lock lock2(mutexForListenersAndEmitByUv_);
     bool foundHeader = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
                            return listener.MatchType(ON_HEADER_RECEIVE);
@@ -181,7 +181,7 @@ void EventManager::EmitByUvWithoutCheck(const std::string &type, void *data, voi
 
 void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status))
 {
-    std::shared_lock lock1(mutexForEmitAndEmitByUv_);
+    std::lock_guard lock1(mutexForEmitAndEmitByUv_);
     std::shared_lock lock2(mutexForListenersAndEmitByUv_);
     if (!EventManager::IsManagerValid(this)) {
         return;
@@ -226,7 +226,7 @@ bool EventManager::HasEventListener(const std::string &type)
 
 void EventManager::DeleteListener(const std::string &type)
 {
-    std::shared_lock lock(mutexForListenersAndEmitByUv_);
+    std::unique_lock lock(mutexForListenersAndEmitByUv_);
     auto it = std::remove_if(listeners_.begin(), listeners_.end(),
                              [type](const EventListener &listener) -> bool { return listener.MatchType(type); });
     listeners_.erase(it, listeners_.end());
