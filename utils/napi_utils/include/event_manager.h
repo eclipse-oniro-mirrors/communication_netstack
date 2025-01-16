@@ -129,7 +129,7 @@ public:
 
 private:
     std::shared_mutex mutexForListenersAndEmitByUv_;
-    std::shared_mutex mutexForEmitAndEmitByUv_;
+    std::mutex mutexForEmitAndEmitByUv_;
     std::mutex dataMutex_;
     std::mutex dataQueueMutex_;
     std::list<EventListener> listeners_;
