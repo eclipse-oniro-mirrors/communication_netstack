@@ -42,7 +42,7 @@ enum class Socks5MethodType : uint8_t {
 
 enum class Socks5AddrType : uint8_t {
     IPV4 = 0x01,
-    DOMAIN = 0x03,
+    DOMAIN_NAME = 0x03,
     IPV6 = 0x04
 };
 
@@ -66,10 +66,6 @@ enum class Socks5Status : uint8_t {
     SOCKS5_NOT_ACTIVE = 0xA1,
     SOCKS5_METHOD_ERROR,
     SOCKS5_MAKE_SOCKET_ERROR,
-    SOCKS5_FAIL_TO_SEND_MSG,
-    SOCKS5_FAIL_TO_RECV_MSG,
-    SOCKS5_SERIALIZE_ERROR,
-    SOCKS5_DESERIALIZE_ERROR,
 
     // throw error
     SOCKS5_OTHER_ERROR = 205,
@@ -77,6 +73,10 @@ enum class Socks5Status : uint8_t {
     SOCKS5_USER_PASS_INVALID,
     SOCKS5_FAIL_TO_CONNECT_REMOTE,
     SOCKS5_METHOD_NEGO_ERROR,
+    SOCKS5_FAIL_TO_SEND_MSG,
+    SOCKS5_FAIL_TO_RECV_MSG,
+    SOCKS5_SERIALIZE_ERROR,
+    SOCKS5_DESERIALIZE_ERROR,
 
     OTHER_STATUS
 };

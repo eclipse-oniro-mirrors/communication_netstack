@@ -131,7 +131,7 @@ static int CopyAddrToStr(Socks5AddrType addrType, std::string &destAddr, std::st
             }
             return pos + sizeof(ipv4Address);
         }
-        case Socks5AddrType::DOMAIN: {
+        case Socks5AddrType::DOMAIN_NAME: {
             uint8_t domainLength = static_cast<uint8_t>(destAddr.length());
             serialized[pos] = domainLength;
             if (memcpy_s(&serialized[pos + 1], serialized.size() - pos - 1, destAddr.c_str(), domainLength) != EOK) {
@@ -163,7 +163,7 @@ static void ResizeStrByAType(Socks5AddrType addrType, std::string &destAddr, siz
         case Socks5AddrType::IPV4:
             serialized.resize(otherLen + IPV4_LEN);
             break;
-        case Socks5AddrType::DOMAIN:
+        case Socks5AddrType::DOMAIN_NAME:
             serialized.resize(otherLen + destAddr.length() + 1); // 1: size of DOMAIN_LEN
             break;
         case Socks5AddrType::IPV6:
@@ -209,7 +209,7 @@ static size_t GetAddrLen(Socks5AddrType addrType, const uint8_t *buffer, size_t 
     switch (addrType) {
         case Socks5AddrType::IPV4:
             return IPV4_LEN;
-        case Socks5AddrType::DOMAIN:
+        case Socks5AddrType::DOMAIN_NAME:
             return buffer[domainLenIdx] + 1;  // DOMAIN_LEN + DOMAIN
         case Socks5AddrType::IPV6:
             return IPV6_LEN;
@@ -227,7 +227,7 @@ static void GetAddrStr(Socks5AddrType addrType, const uint8_t *buffer, size_t hd
             destAddr = ipv4Str;
             break;
         }
-        case Socks5AddrType::DOMAIN: {
+        case Socks5AddrType::DOMAIN_NAME: {
             uint8_t domainLength = buffer[hdrLen];
             destAddr.assign(reinterpret_cast<const char *>(&buffer[domainIdx]), domainLength);
             break;
