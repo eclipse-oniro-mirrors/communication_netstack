@@ -25,7 +25,7 @@ public:
     enum class Family : uint32_t {
         IPv4 = 1,
         IPv6 = 2,
-        DOMAIN = 3,
+        DOMAIN_NAME = 3,
     };
 
     NetAddress();

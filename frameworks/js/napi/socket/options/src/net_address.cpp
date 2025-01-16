@@ -145,7 +145,7 @@ void NetAddress::SetAddress(const std::string &address)
 
 void NetAddress::SetAddress(const std::string &address, bool resolveDns)
 {
-    if (!resolveDns && family_ == Family::DOMAIN) {
+    if (!resolveDns && family_ == Family::DOMAIN_NAME) {
         address_ = address;
     } else {
         SetAddress(address);
@@ -158,8 +158,8 @@ void NetAddress::SetFamilyByJsValue(uint32_t family)
         family_ = Family::IPv4;
     } else if (static_cast<Family>(family) == Family::IPv6) {
         family_ = Family::IPv6;
-    } else if (static_cast<Family>(family) == Family::DOMAIN) {
-        family_ = Family::DOMAIN;
+    } else if (static_cast<Family>(family) == Family::DOMAIN_NAME) {
+        family_ = Family::DOMAIN_NAME;
     } else {
         // do nothing
     }

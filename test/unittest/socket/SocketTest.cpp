@@ -391,10 +391,10 @@ HWTEST_F(SocketTest, AddHeaderTest003, TestSize.Level1)
     auto socks5UdpInst = make_shared<Socks5UdpInstance>();
     socks5UdpInst->SetSocks5Instance(socks5UdpInst);
     NetAddress dest;
-    dest.SetFamilyByJsValue(static_cast<uint32_t>(NetAddress::Family::DOMAIN));
+    dest.SetFamilyByJsValue(static_cast<uint32_t>(NetAddress::Family::DOMAIN_NAME));
     socks5UdpInst->dest_ = dest;
     socks5UdpInst->AddHeader();
-    EXPECT_EQ(socks5UdpInst->dest_.GetFamily(), NetAddress::Family::DOMAIN);
+    EXPECT_EQ(socks5UdpInst->dest_.GetFamily(), NetAddress::Family::DOMAIN_NAME);
 }
 
 HWTEST_F(SocketTest, NoAuthMethodTest001, TestSize.Level1)
@@ -416,7 +416,7 @@ HWTEST_F(SocketTest, NoAuthMethodTest001, TestSize.Level1)
     dest.family_ = NetAddress::Family::IPv6;
     EXPECT_FALSE(noAuthMethod->RequestProxy(socketId, Socks5Command::TCP_CONNECTION, dest, proxyAddr).first);
 
-    dest.family_ = NetAddress::Family::DOMAIN;
+    dest.family_ = NetAddress::Family::DOMAIN_NAME;
     EXPECT_FALSE(noAuthMethod->RequestProxy(socketId, Socks5Command::TCP_CONNECTION, dest, proxyAddr).first);
 }
 
@@ -480,7 +480,7 @@ HWTEST_F(SocketTest, Socks5PkgTest003, TestSize.Level1)
     EXPECT_TRUE(response.Deserialize((uint8_t*) serialized.c_str(), serialized.size()));
 
     request.destAddr_ = "www.xxx.com";
-    request.addrType_ = Socks5AddrType::DOMAIN;
+    request.addrType_ = Socks5AddrType::DOMAIN_NAME;
     string serialized2 = request.Serialize();
     EXPECT_NE(serialized2, "");
     EXPECT_TRUE(response.Deserialize((uint8_t*) serialized2.c_str(), serialized2.size()));
@@ -509,7 +509,7 @@ HWTEST_F(SocketTest, Socks5PkgTest004, TestSize.Level1)
     EXPECT_TRUE(header.Deserialize((uint8_t*) serialized.c_str(), serialized.size()));
 
     header.destAddr_ = "www.xxx.com";
-    header.addrType_ = Socks5AddrType::DOMAIN;
+    header.addrType_ = Socks5AddrType::DOMAIN_NAME;
     string serialized2 = header.Serialize();
     EXPECT_NE(serialized2, "");
     EXPECT_TRUE(header.Deserialize((uint8_t*) serialized2.c_str(), serialized2.size()));
