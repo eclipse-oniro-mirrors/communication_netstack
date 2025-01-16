@@ -22,6 +22,7 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <queue>
 #include <string>
 #include <unordered_set>
