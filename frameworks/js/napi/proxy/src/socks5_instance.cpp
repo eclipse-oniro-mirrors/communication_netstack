@@ -103,8 +103,8 @@ bool Socks5Instance::DoConnect(Socks5Command command)
         proxyBindAddr_.SetFamilyByJsValue(static_cast<uint32_t>(Socket::NetAddress::Family::IPv4));
     } else if (result.second.addrType_ == Socks5AddrType::IPV6) {
         proxyBindAddr_.SetFamilyByJsValue(static_cast<uint32_t>(Socket::NetAddress::Family::IPv6));
-    } else if (result.second.addrType_ == Socks5AddrType::DOMAIN) {
-        proxyBindAddr_.SetFamilyByJsValue(static_cast<uint32_t>(Socket::NetAddress::Family::DOMAIN));
+    } else if (result.second.addrType_ == Socks5AddrType::DOMAIN_NAME) {
+        proxyBindAddr_.SetFamilyByJsValue(static_cast<uint32_t>(Socket::NetAddress::Family::DOMAIN_NAME));
     } else {
         NETSTACK_LOGE("socks5 instance get unknow addrType:%{public}d socket:%{public}d",
             static_cast<uint32_t>(result.second.addrType_), socketId_);
@@ -350,8 +350,8 @@ void Socks5UdpInstance::AddHeader()
         addrType = Socks5::Socks5AddrType::IPV4;
     } else if (family == Socket::NetAddress::Family::IPv6) {
         addrType = Socks5::Socks5AddrType::IPV6;
-    } else if (family == Socket::NetAddress::Family::DOMAIN) {
-        addrType = Socks5::Socks5AddrType::DOMAIN;
+    } else if (family == Socket::NetAddress::Family::DOMAIN_NAME) {
+        addrType = Socks5::Socks5AddrType::DOMAIN_NAME;
     } else {
         NETSTACK_LOGE("socks5 udp protocol address type error");
         return ;
