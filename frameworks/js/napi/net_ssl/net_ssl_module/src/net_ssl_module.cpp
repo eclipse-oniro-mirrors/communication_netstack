@@ -41,7 +41,7 @@ napi_value NetSslModuleExports::InitNetSslModule(napi_env env, napi_value export
 {
     InitSslProperties(env, exports);
     NapiUtils::SetEnvValid(env);
-    auto envWrapper = new(std::nothrow)napi_env;
+    auto envWrapper = new (std::nothrow)napi_env;
     if (envWrapper == nullptr) {
         return exports;
     }

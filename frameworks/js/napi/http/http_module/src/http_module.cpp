@@ -62,7 +62,7 @@ napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
         NETSTACK_LOGI("IsAtomicService bundleName is %{public}s, isAtomicService is %{public}d",
                       g_appBundleName.c_str(), g_appIsAtomicService);
     });
-    auto envWrapper = new(std::nothrow)napi_env;
+    auto envWrapper = new (std::nothrow)napi_env;
     if (envWrapper == nullptr) {
         return exports;
     }

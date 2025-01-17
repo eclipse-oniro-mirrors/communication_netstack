@@ -454,7 +454,7 @@ napi_value SocketModuleExports::InitSocketModule(napi_env env, napi_value export
     DefineLocalSocketServerClass(env, exports);
     InitSocketProperties(env, exports);
     NapiUtils::SetEnvValid(env);
-    auto envWrapper = new(std::nothrow)napi_env;
+    auto envWrapper = new (std::nothrow)napi_env;
     if (envWrapper == nullptr) {
         return exports;
     }

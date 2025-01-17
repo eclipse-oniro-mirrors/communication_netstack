@@ -881,7 +881,7 @@ void UvHandlerQueue::Push(const UvHandler &handler)
 void HookForEnvCleanup(void *data)
 {
     std::lock_guard<std::mutex> lock(mutexForEnv);
-    auto env = reinterpret_cast<napi_env*>(data);
+    auto envWrapper = reinterpret_cast<napi_env*>(data);
     if (envWrapper == nullptr) {
         return;
     }
