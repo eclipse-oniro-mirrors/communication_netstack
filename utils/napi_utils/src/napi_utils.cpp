@@ -881,7 +881,15 @@ void UvHandlerQueue::Push(const UvHandler &handler)
 void HookForEnvCleanup(void *data)
 {
     std::lock_guard<std::mutex> lock(mutexForEnv);
-    auto env = static_cast<napi_env>(data);
+    auto env = reinterpret_cast<napi_env*>(data);
+    if (envWrapper == nullptr) {
+        return;
+    }
+    auto env = *envWrapper;
+    delete envWrapper;
+    if (env == nullptr) {
+        return;
+    }
     auto pos = unorderedSetEnv.find(env);
     if (pos == unorderedSetEnv.end()) {
         NETSTACK_LOGE("The env is not in the unordered set");
