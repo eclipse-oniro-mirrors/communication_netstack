@@ -41,7 +41,7 @@ std::pair<bool, Socks5ProxyResponse> Socks5NoneMethod::RequestProxy(std::int32_t
     } else if (family == Socket::NetAddress::Family::IPv6) {
         addrType = Socks5AddrType::IPV6;
     } else {
-        addrType = Socks5AddrType::DOMAIN;
+        addrType = Socks5AddrType::DOMAIN_NAME;
     }
 
     Socks5ProxyRequest request{};

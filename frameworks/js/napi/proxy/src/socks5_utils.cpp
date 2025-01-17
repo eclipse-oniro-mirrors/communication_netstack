@@ -134,15 +134,7 @@ void Socks5Utils::SetProxyAuthError(BaseContext *context, std::shared_ptr<Socks5
     const int32_t errCode = socks5Inst->GetErrorCode();
     const std::string errMsg = socks5Inst->GetErrorMessage();
     NETSTACK_LOGE("socks5 auth failed, errCode:%{public}d, errMsg::%{public}s", errCode, errMsg.c_str());
-    if (errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_USER_PASS_INVALID) ||
-        errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY) ||
-        errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_REMOTE) ||
-        errCode == static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_METHOD_NEGO_ERROR)) {
-        context->SetError(errCode, errMsg);
-    } else {
-        context->SetError(static_cast<int32_t>(Socks5::Socks5Status::SOCKS5_OTHER_ERROR),
-            Socks5::Socks5Utils::GetStatusMessage(Socks5::Socks5Status::SOCKS5_OTHER_ERROR));
-    }
+    context->SetError(errCode, errMsg);
 }
 }  // Socks5
 }  // NetStack
