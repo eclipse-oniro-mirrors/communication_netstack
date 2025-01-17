@@ -22,6 +22,7 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <queue>
 #include <string>
 #include <unordered_set>
@@ -127,7 +128,7 @@ public:
     void SetProxyData(std::shared_ptr<Socks5::Socks5Instance> data);
 
 private:
-    std::mutex mutexForListenersAndEmitByUv_;
+    std::shared_mutex mutexForListenersAndEmitByUv_;
     std::mutex mutexForEmitAndEmitByUv_;
     std::mutex dataMutex_;
     std::mutex dataQueueMutex_;
