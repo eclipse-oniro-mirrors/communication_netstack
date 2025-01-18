@@ -1014,7 +1014,7 @@ bool HttpExec::SetAuthOptions(CURL *curl, OHOS::NetStack::Http::RequestContext *
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PASSWORD, password.c_str(), context);
     }
 
-   return true;
+    return true;
 }
 
 bool HttpExec::SetSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context)
