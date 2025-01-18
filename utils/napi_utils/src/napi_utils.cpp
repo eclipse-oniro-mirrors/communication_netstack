@@ -309,7 +309,7 @@ void GetSecureDataFromValueUtf8(napi_env env, napi_value value, CommonUtils::Sec
 
     size_t stringLength = 0;
     NAPI_CALL_RETURN_VOID(env, napi_get_value_string_utf8(env, value, nullptr, 0, &stringLength));
-    if (stringLength == 0) {
+    if (stringLength == 0 || stringLength > SIZE_MAX - 1) {
         return;
     }
 
