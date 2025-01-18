@@ -67,8 +67,8 @@ struct Credential {
 };
 
 struct ServerAuthentication {
-   Credential credential;
-   AuthenticationType authenticationType = AuthenticationType::AUTO;
+    Credential credential;
+    AuthenticationType authenticationType = AuthenticationType::AUTO;
 };
 
 struct TlsOption {
