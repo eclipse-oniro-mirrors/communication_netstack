@@ -23,7 +23,7 @@
 #include "constant.h"
 #include "secure_char.h"
 #include "http_tls_config.h"
-#include "netstack_common_utils.h"
+#include "napi_utils.h"
 
 namespace OHOS::NetStack::Http {
 enum class HttpProtocol {
@@ -62,8 +62,8 @@ enum class AuthenticationType {
 };
 
 struct Credential {
-    CommonUtils::SecureData username;
-    CommonUtils::SecureData password;
+    NapiUtils::SecureData username;
+    NapiUtils::SecureData password;
 };
 
 struct ServerAuthentication {
