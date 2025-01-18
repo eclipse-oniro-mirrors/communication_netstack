@@ -22,8 +22,6 @@
 #include <string>
 #include <optional>
 
-#include "securec.h"
-
 namespace OHOS::NetStack::CommonUtils {
 static const std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
 static const std::string DOMAIN_TYPE_WEBSOCKET_REQUEST = "webSocket";
@@ -37,14 +35,6 @@ enum SdkVersion {
     TEN,
     ELEVEN,
     TWELVE
-};
-
-struct SecureData : public std::string {
-    ~SecureData()
-    {
-        // Clear Data, to keep the memory safe
-        (void)memset_s(data(), size(), 0, size());
-    }
 };
 
 std::vector<std::string> Split(const std::string &str, const std::string &sep);
