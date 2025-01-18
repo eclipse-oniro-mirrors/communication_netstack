@@ -32,7 +32,6 @@
 #include "napi/native_common.h"
 #include "netstack_log.h"
 #include "node_api.h"
-#include "securec.h"
 
 namespace OHOS::NetStack::NapiUtils {
 static constexpr const char *GLOBAL_JSON = "JSON";
@@ -292,7 +291,7 @@ napi_value CreateStringUtf8(napi_env env, const std::string &str)
 }
 
 void GetSecureDataPropertyUtf8(napi_env env, napi_value object, const std::string &propertyName,
-                               CommonUtils::SecureData &data)
+                               SecureData &data)
 {
     if (!HasNamedProperty(env, object, propertyName)) {
         return;
@@ -301,7 +300,7 @@ void GetSecureDataPropertyUtf8(napi_env env, napi_value object, const std::strin
     GetSecureDataFromValueUtf8(env, value, data);
 }
 
-void GetSecureDataFromValueUtf8(napi_env env, napi_value value, CommonUtils::SecureData &data)
+void GetSecureDataFromValueUtf8(napi_env env, napi_value value, SecureData &data)
 {
     if (GetValueType(env, value) != napi_string) {
         return;
