@@ -56,6 +56,7 @@ public:
     static constexpr const char *INTERFACE_CERT_TYPE = "CertType";
     static constexpr const char *INTERFACE_HTTP_RESPONSE_CACHE = "OHOS_NET_HTTP_HttpResponseCache";
     static constexpr const char *INTERFACE_HTTP_DATA_TYPE = "HttpDataType";
+    static constexpr const char *INTERFACE_TLS_VERSION = "TlsVersion";
 
     static napi_value InitHttpModule(napi_env env, napi_value exports);
 
@@ -73,6 +74,8 @@ private:
     static void InitRequestMethod(napi_env env, napi_value exports);
 
     static void InitResponseCode(napi_env env, napi_value exports);
+
+    static void InitTlsVersion(napi_env env, napi_value exports);
 
     static void InitHttpProtocol(napi_env env, napi_value exports);
 

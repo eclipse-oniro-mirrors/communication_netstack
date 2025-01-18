@@ -54,6 +54,10 @@ const char *const HttpConstant::PARAM_KEY_MULTI_FORM_DATA_LIST = "multiFormDataL
 
 const char *const HttpConstant::PARAM_KEY_CERTIFICATE_PINNING = "certificatePinning";
 
+const char *const HttpConstant::PARAM_KEY_REMOTE_VALIDATION = "remoteValidation";
+const char *const HttpConstant::PARAM_KEY_TLS_OPTION = "tlsOptions";
+const char *const HttpConstant::PARAM_KEY_SERVER_AUTH = "serverAuthentication";
+
 const char *const HttpConstant::HTTP_PROXY_KEY_HOST = "host";
 const char *const HttpConstant::HTTP_PROXY_KEY_PORT = "port";
 const char *const HttpConstant::HTTP_PROXY_KEY_EXCLUSION_LIST = "exclusionList";
@@ -69,6 +73,11 @@ const char *const HttpConstant::HTTP_HASH_ALGORITHM = "hashAlgorithm";
 const char *const HttpConstant::HTTP_CERT_TYPE_PEM = "PEM";
 const char *const HttpConstant::HTTP_CERT_TYPE_DER = "DER";
 const char *const HttpConstant::HTTP_CERT_TYPE_P12 = "P12";
+
+const char *const HttpConstant::TLS_VERSION_1_0 = "TLS_V_1_0";
+const char *const HttpConstant::TLS_VERSION_1_1 = "TLS_V_1_1";
+const char *const HttpConstant::TLS_VERSION_1_2 = "TLS_V_1_2";
+const char *const HttpConstant::TLS_VERSION_1_3 = "TLS_V_1_3";
 
 const char *const HttpConstant::HTTP_PROXY_EXCLUSIONS_SEPARATOR = ",";
 

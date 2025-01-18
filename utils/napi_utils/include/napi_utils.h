@@ -28,6 +28,8 @@
 #include "napi/native_api.h"
 #include "uv.h"
 
+#include "netstack_common_utils.h"
+
 namespace OHOS::NetStack::NapiUtils {
 static constexpr int NETSTACK_NAPI_INTERNAL_ERROR = 2300002;
 using UvHandler = std::function<void()>;
@@ -85,6 +87,11 @@ napi_value CreateStringUtf8(napi_env env, const std::string &str);
 std::string GetStringFromValueUtf8(napi_env env, napi_value value);
 
 std::string GetStringPropertyUtf8(napi_env env, napi_value object, const std::string &propertyName);
+
+void GetSecureDataFromValueUtf8(napi_env env, napi_value value, CommonUtils::SecureData &data);
+
+void GetSecureDataPropertyUtf8(
+    napi_env env, napi_value object, const std::string &propertyName, CommonUtils::SecureData &data);
 
 std::string NapiValueToString(napi_env env, napi_value value);
 

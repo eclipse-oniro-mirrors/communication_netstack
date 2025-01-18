@@ -104,6 +104,12 @@ public:
 
     void ParseClientCert(napi_value optionsValue);
 
+    void ParseRemoteValidationMode(napi_value optionsValue);
+
+    void ParseTlsOption(napi_value optionsValue);
+
+    void ParseServerAuthentication(napi_value optionsValue);
+
     void CachePerformanceTimingItem(const std::string &key, double value);
 
     void StopAndCacheNapiPerformanceTiming(const char *key);

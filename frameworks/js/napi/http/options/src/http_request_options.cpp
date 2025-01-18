@@ -177,6 +177,15 @@ uint32_t HttpRequestOptions::GetPriority() const
     return priority_;
 }
 
+void HttpRequestOptions::SetCanSkipCertVerifyFlag(bool canCertVerify)
+{
+    canSkipCertVerify_ = canCertVerify;
+}
+
+bool HttpRequestOptions::GetCanSkipCertVerifyFlag() const
+{
+    return canSkipCertVerify_;
+}
 void HttpRequestOptions::SetUsingHttpProxyType(UsingHttpProxyType type)
 {
     usingHttpProxyType_ = type;
@@ -236,6 +245,30 @@ void HttpRequestOptions::SetCaPath(const std::string &path)
 const std::string &HttpRequestOptions::GetCaPath() const
 {
     return caPath_;
+}
+
+void HttpRequestOptions::SetTlsOption(const TlsOption &tlsOption)
+{
+    tlsOption_.tlsVersionMax = tlsOption.tlsVersionMax;
+    tlsOption_.tlsVersionMin = tlsOption.tlsVersionMin;
+    tlsOption_.cipherSuite = tlsOption.cipherSuite;
+}
+
+TlsOption HttpRequestOptions::GetTlsOption()
+{
+    return tlsOption_;
+}
+
+void HttpRequestOptions::SetServerAuthentication(const ServerAuthentication &serverAuthentication)
+{
+    serverAuthentication_.authenticationType = serverAuthentication.authenticationType;
+    serverAuthentication_.credential.password = serverAuthentication.credential.password;
+    serverAuthentication_.credential.username = serverAuthentication.credential.username;
+}
+
+ServerAuthentication HttpRequestOptions::GetServerAuthentication()
+{
+    return serverAuthentication_;
 }
 
 void HttpRequestOptions::SetDohUrl(const std::string &dohUrl)
