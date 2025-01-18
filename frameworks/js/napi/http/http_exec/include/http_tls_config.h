@@ -18,7 +18,6 @@
 
 #include <functional>
 #include <map>
-#include <netdb.h>
 #include <string>
 #include <vector>
 #include <optional>
