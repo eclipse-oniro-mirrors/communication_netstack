@@ -182,7 +182,7 @@ napi_value InterfaceWithOutAsyncWorkWithManagerWrapper(napi_env env, napi_callba
         }
     }
     if (!context->IsParseOK() || context->IsPermissionDenied() || context->IsNoAllowedHost() ||
-        context->GetSharedManager()->IsEventDestroy()) {
+        context->IsCleartextNotPermitted() || context->GetSharedManager()->IsEventDestroy()) {
         context->CreateAsyncWork(asyncWorkName, executor, callback);
     }
     return ret;
@@ -231,7 +231,7 @@ napi_value InterfaceWithOutAsyncWorkWithSharedManager(napi_env env, napi_callbac
         }
     }
     if (!context->IsParseOK() || context->IsPermissionDenied() || context->IsNoAllowedHost() ||
-        context->GetSharedManager()->IsEventDestroy()) {
+        context->IsCleartextNotPermitted() || context->GetSharedManager()->IsEventDestroy()) {
         context->CreateAsyncWork(asyncWorkName, executor, callback);
     }
     return ret;
@@ -323,7 +323,7 @@ napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
         }
     }
     if (!context->IsParseOK() || context->IsPermissionDenied() || context->IsNoAllowedHost() ||
-        context->GetManager()->IsEventDestroy()) {
+        context->IsCleartextNotPermitted() || context->GetManager()->IsEventDestroy()) {
         context->CreateAsyncWork(asyncWorkName, executor, callback);
     }
     return ret;

@@ -76,6 +76,10 @@ int32_t OH_NetStack_GetCertificatesForHostName(const char *hostname, NetStack_Ce
 
 void OH_Netstack_DestroyCertificatesContent(NetStack_Certificates *certs);
 
+int32_t OH_Netstack_IsCleartextPermitted(bool *isCleartextPermitted);
+
+int32_t OH_Netstack_IsCleartextPermittedByHostName(const char *hostname, bool *isCleartextPermitted);
+
 #ifdef __cplusplus
 }
 #endif

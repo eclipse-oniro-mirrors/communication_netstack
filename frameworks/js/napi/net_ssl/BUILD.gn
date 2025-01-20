@@ -50,6 +50,7 @@ ohos_shared_library("networksecurity_napi") {
 
   sources = [
     "async_context/src/cert_context.cpp",
+    "async_context/src/cleartext_context.cpp",
     "async_work/src/net_ssl_async_work.cpp",
     "net_ssl_exec/src/net_ssl_exec.cpp",
     "net_ssl_module/src/net_ssl_module.cpp",

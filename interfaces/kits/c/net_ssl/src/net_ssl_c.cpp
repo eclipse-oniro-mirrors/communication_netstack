@@ -187,3 +187,22 @@ void OH_Netstack_DestroyCertificatesContent(NetStack_Certificates *certs)
     certs->content = nullptr;
     certs->length = 0;
 }
+
+int32_t OH_Netstack_IsCleartextPermitted(bool *isCleartextPermitted)
+{
+    if (isCleartextPermitted == nullptr) {
+        NETSTACK_LOGE("OH_Netstack_IsCleartextPermitted received invalid parameters");
+        return OHOS::NetManagerStandard::NETMANAGER_ERR_PARAMETER_ERROR;
+    }
+    return OHOS::NetManagerStandard::NetConnClient::GetInstance().IsCleartextPermitted(*isCleartextPermitted);
+}
+
+int32_t OH_Netstack_IsCleartextPermittedByHostName(const char *hostname, bool *isCleartextPermitted)
+{
+    if (hostname == nullptr || isCleartextPermitted == nullptr) {
+        NETSTACK_LOGE("OH_Netstack_IsCleartextPermittedByHostName received invalid parameters");
+        return OHOS::NetManagerStandard::NETMANAGER_ERR_PARAMETER_ERROR;
+    }
+    return OHOS::NetManagerStandard::NetConnClient::GetInstance()
+        .IsCleartextPermitted(std::string(hostname), *isCleartextPermitted);
+}

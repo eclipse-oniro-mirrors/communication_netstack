@@ -74,6 +74,7 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_REMOTE_FILE_NOT_FOUND, "Remote file not found"},
     {HTTP_AUTH_ERROR, "An authentication function returned an error"},
     {HTTP_SSL_PINNEDPUBKEYNOTMATCH, "Specified pinned public key did not match"},
+    {HTTP_CLEARTEXT_NOT_PERMITTED, "Cleartext traffic is not permitted"},
     {HTTP_NOT_ALLOWED_HOST, "It is not allowed to access this domain"},
     {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
 };
@@ -517,6 +518,10 @@ int32_t RequestContext::GetErrorCode() const
         return HTTP_NOT_ALLOWED_HOST;
     }
 
+    if (BaseContext::IsCleartextNotPermitted()) {
+        return HTTP_CLEARTEXT_NOT_PERMITTED;
+    }
+
     if (HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE) != HTTP_ERR_MAP.end()) {
         return err + HTTP_ERROR_CODE_BASE;
     }
@@ -536,6 +541,10 @@ std::string RequestContext::GetErrorMessage() const
 
     if (BaseContext::IsNoAllowedHost()) {
         return HTTP_ERR_MAP.at(HTTP_NOT_ALLOWED_HOST);
+    }
+
+    if (BaseContext::IsCleartextNotPermitted()) {
+        return HTTP_ERR_MAP.at(HTTP_CLEARTEXT_NOT_PERMITTED);
     }
 
     auto pos = HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE);

@@ -14,5 +14,13 @@
     {
         "first_introduced":"11",
         "name": "OH_Netstack_DestroyCertificatesContent"
+    },
+    {
+        "first_introduced":"16",
+        "name": "OH_Netstack_IsCleartextPermitted"
+    },
+    {
+        "first_introduced":"16",
+        "name": "OH_Netstack_IsCleartextPermittedByHostName"
     }
 ]

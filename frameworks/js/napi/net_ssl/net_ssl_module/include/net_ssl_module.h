@@ -25,6 +25,10 @@ public:
 
     static napi_value VerifyCertificationSync(napi_env env, napi_callback_info info);
 
+    static napi_value IsCleartextPermitted(napi_env env, napi_callback_info info);
+
+    static napi_value IsCleartextPermittedByHostName(napi_env env, napi_callback_info info);
+
     static napi_value InitNetSslModule(napi_env env, napi_value exports);
 
     static void InitSslProperties(napi_env env, napi_value exports);

@@ -45,6 +45,7 @@ ohos_unittest("netssl_unittest") {
 
   sources = [
     "$NETSSL_NAPI/async_context/src/cert_context.cpp",
+    "$NETSSL_NAPI/async_context/src/cleartext_context.cpp",
     "$NETSSL_NAPI/async_work/src/net_ssl_async_work.cpp",
     "$NETSSL_NAPI/net_ssl_exec/src/net_ssl_exec.cpp",
     "$NETSSL_NAPI/net_ssl_module/src/net_ssl_module.cpp",

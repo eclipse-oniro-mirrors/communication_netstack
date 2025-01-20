@@ -57,6 +57,7 @@ ohos_fuzztest("NetsslExecFuzzTest") {
   sources = [
     "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
     "$NETSTACK_NAPI_ROOT/net_ssl/async_context/src/cert_context.cpp",
+    "$NETSTACK_NAPI_ROOT/net_ssl/async_context/src/cleartext_context.cpp",
     "$NETSTACK_NAPI_ROOT/net_ssl/async_work/src/net_ssl_async_work.cpp",
     "$NETSTACK_NAPI_ROOT/net_ssl/net_ssl_exec/src/net_ssl_exec.cpp",
     "$NETSTACK_NAPI_ROOT/net_ssl/net_ssl_module/src/net_ssl_module.cpp",
