@@ -24,6 +24,7 @@
 
 #include "constant.h"
 #include "http_exec.h"
+#include "http_tls_config.h"
 #include "napi_utils.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
