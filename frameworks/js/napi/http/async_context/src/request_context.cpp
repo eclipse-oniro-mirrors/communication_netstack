@@ -284,7 +284,7 @@ void RequestContext::ParseTlsOption(napi_value optionsValue)
     auto length = NapiUtils::GetArrayLength(GetEnv(), cipherSuiteNapi);
     for (uint32_t i = 0; i < length; ++i) {
         auto standardNameNapi = NapiUtils::GetArrayElement(GetEnv(), cipherSuiteNapi, i);
-        auto cipherSuite = GetCipherSuiteFromStandardName(
+        auto cipherSuite = GetTlsCipherSuiteFromStandardName(
             NapiUtils::GetStringFromValueUtf8(GetEnv(), standardNameNapi));
         if (cipherSuite != CipherSuite::INVALID) {
             tlsOption.cipherSuite.emplace(cipherSuite);
