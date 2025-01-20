@@ -115,7 +115,7 @@ static constexpr const CipherSuiteConvertor CIPHER_SUITE_CONVERTOR[] = {
     },
 };
 
-CipherSuite GetCipherSuiteFromStandardName(const std::string &standardName)
+CipherSuite GetTlsCipherSuiteFromStandardName(const std::string &standardName)
 {
     for (const auto &suite : CIPHER_SUITE_CONVERTOR) {
         if (suite.standardName == standardName) {
