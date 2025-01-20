@@ -50,9 +50,7 @@ ohos_unittest("http_cache_unittest") {
   include_dirs += utils_include
 
   external_deps = common_external_deps
-  external_deps += [
-    "napi:ace_napi",
-  ]
+  external_deps += [ "napi:ace_napi" ]
 
   deps = [ "$SUBSYSTEM_DIR/netstack/utils/napi_utils:napi_utils" ]
 
