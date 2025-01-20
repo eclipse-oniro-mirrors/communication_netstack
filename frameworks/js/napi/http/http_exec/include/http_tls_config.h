@@ -62,7 +62,7 @@ struct TlsCipherString {
     std::string tlsV13CiperSuiteString;
 };
 
-[[nodiscard]] CipherSuite GetCipherSuiteFromStandardName(const std::string &standardName);
+[[nodiscard]] CipherSuite GetTlsCipherSuiteFromStandardName(const std::string &standardName);
 [[nodiscard]] std::string GetInnerNameFromCipherSuite(CipherSuite cipherSuite);
 [[nodiscard]] TlsCipherString ConvertCipherSuiteToCipherString(const std::unordered_set<CipherSuite> &cipherSuite);
 
