@@ -174,9 +174,9 @@ public:
 
     std::vector<MultiFormData> GetMultiPartDataList();
 
-    [[nodiscard]] TlsOption GetTlsOption() const;
+    [[nodiscard]] const TlsOption GetTlsOption() const;
 
-    [[nodiscard]] ServerAuthentication GetServerAuthentication() const;
+    [[nodiscard]] const ServerAuthentication GetServerAuthentication() const;
 private:
     std::string url_;
 
