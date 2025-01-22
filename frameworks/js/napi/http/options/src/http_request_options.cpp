@@ -254,7 +254,7 @@ void HttpRequestOptions::SetTlsOption(const TlsOption &tlsOption)
     tlsOption_.cipherSuite = tlsOption.cipherSuite;
 }
 
-TlsOption HttpRequestOptions::GetTlsOption()
+const TlsOption HttpRequestOptions::GetTlsOption() const
 {
     return tlsOption_;
 }
@@ -266,7 +266,7 @@ void HttpRequestOptions::SetServerAuthentication(const ServerAuthentication &ser
     serverAuthentication_.credential.username = serverAuthentication.credential.username;
 }
 
-ServerAuthentication HttpRequestOptions::GetServerAuthentication()
+const ServerAuthentication HttpRequestOptions::GetServerAuthentication() const
 {
     return serverAuthentication_;
 }
