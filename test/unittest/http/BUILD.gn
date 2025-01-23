@@ -52,7 +52,6 @@ ohos_unittest("http_unittest") {
     "$NETSTACK_NAPI_ROOT/http/http_exec/include",
     "$NETSTACK_NAPI_ROOT/http/http_module/include",
     "$NETSTACK_NAPI_ROOT/http/options/include",
-    "$NETSTACK_NAPI_ROOT/http/http_exec/include",
     "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/include",
     "$SUBSYSTEM_DIR/netstack/utils/tlv_utils/include",
   ]
