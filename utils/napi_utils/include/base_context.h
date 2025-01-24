@@ -101,7 +101,11 @@ public:
 
     void SetNoAllowedHost(bool needThrowException);
 
+    void SetCleartextNotPermitted(bool notPermitted);
+
     [[nodiscard]] bool IsNoAllowedHost() const;
+
+    [[nodiscard]] bool IsCleartextNotPermitted() const;
 
     [[nodiscard]] EventManager *GetManager() const;
 
@@ -155,6 +159,8 @@ private:
     bool permissionDenied_;
 
     bool noAllowedHost_;
+
+    bool cleartextNotPermitted_;
 
     std::string asyncWorkName_;
 

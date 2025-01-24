@@ -36,7 +36,8 @@ BaseContext::BaseContext(napi_env env, EventManager *manager)
       needPromise_(true),
       needThrowException_(false),
       permissionDenied_(false),
-      noAllowedHost_(false)
+      noAllowedHost_(false),
+      cleartextNotPermitted_(false)
 {
 }
 
@@ -55,6 +56,7 @@ BaseContext::BaseContext(napi_env env, const std::shared_ptr<EventManager> &shar
       needThrowException_(false),
       permissionDenied_(false),
       noAllowedHost_(false),
+      cleartextNotPermitted_(false),
       sharedManager_(sharedManager)
 {
 }
@@ -289,6 +291,16 @@ void BaseContext::SetNoAllowedHost(bool noAllowed)
 bool BaseContext::IsNoAllowedHost() const
 {
     return noAllowedHost_;
+}
+
+void BaseContext::SetCleartextNotPermitted(bool notPermitted)
+{
+    cleartextNotPermitted_ = notPermitted;
+}
+
+bool BaseContext::IsCleartextNotPermitted() const
+{
+    return cleartextNotPermitted_;
 }
 
 void BaseContext::CreateReference(napi_value value)

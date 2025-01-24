@@ -16,6 +16,7 @@
 #include <string>
 
 #include "cert_context.h"
+#include "cleartext_context.h"
 #include "net_ssl_async_work.h"
 #include "net_ssl_exec.h"
 #include "net_ssl_module.h"
@@ -23,6 +24,9 @@
 #include "js_native_api.h"
 #include "module_template.h"
 #include "netstack_log.h"
+#if HAS_NETMANAGER_BASE
+#include "net_conn_client.h"
+#endif // HAS_NETMANAGER_BASE
 
 namespace OHOS::NetStack::Ssl {
 static constexpr const char *NET_SSL_MODULE_NAME = "net.networkSecurity";
@@ -54,7 +58,9 @@ void NetSslModuleExports::InitSslProperties(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
         DECLARE_NAPI_FUNCTION("certVerification", VerifyCertification),
-        DECLARE_NAPI_FUNCTION("certVerificationSync", VerifyCertificationSync)};
+        DECLARE_NAPI_FUNCTION("certVerificationSync", VerifyCertificationSync),
+        DECLARE_NAPI_FUNCTION("isCleartextPermitted", IsCleartextPermitted),
+        DECLARE_NAPI_FUNCTION("isCleartextPermittedByHostName", IsCleartextPermittedByHostName)};
     NapiUtils::DefineProperties(env, exports, properties);
 
     InitCertType(env, exports);
@@ -122,5 +128,71 @@ static napi_module g_sslModule = {
 extern "C" __attribute__((constructor)) void RegisterSslModule(void)
 {
     napi_module_register(&g_sslModule);
+}
+
+napi_value NetSslModuleExports::IsCleartextPermitted(napi_env env, napi_callback_info info)
+{
+    napi_value thisVal = nullptr;
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
+    EventManager *manager = nullptr;
+    auto context = std::make_unique<CleartextContext>(env, manager);
+    if (!context) {
+        return NapiUtils::GetUndefined(env);
+    }
+    context->ParseParams(params, paramsCount);
+    if (context->IsParseOK()) {
+#if HAS_NETMANAGER_BASE
+        using namespace OHOS::NetManagerStandard;
+        int32_t ret = NetConnClient::GetInstance().IsCleartextPermitted(context->isCleartextPermitted_);
+        if (ret != NETMANAGER_SUCCESS) {
+            context->SetErrorCode(ret);
+            napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
+            return NapiUtils::GetUndefined(env);
+        }
+#else
+        context->isCleartextPermitted_ = true;
+#endif
+        NETSTACK_LOGD("isCleartextPermitted is %{public}d\n", context->isCleartextPermitted_);
+    } else {
+        napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
+        return NapiUtils::GetUndefined(env);
+    }
+    return NapiUtils::GetBoolean(context->GetEnv(), context->isCleartextPermitted_);
+}
+
+napi_value NetSslModuleExports::IsCleartextPermittedByHostName(napi_env env, napi_callback_info info)
+{
+    napi_value thisVal = nullptr;
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
+    EventManager *manager = nullptr;
+    auto context = std::make_unique<CleartextForHostContext>(env, manager);
+    if (!context) {
+        return NapiUtils::GetUndefined(env);
+    }
+    context->ParseParams(params, paramsCount);
+    if (context->IsParseOK()) {
+#if HAS_NETMANAGER_BASE
+        using namespace OHOS::NetManagerStandard;
+        int32_t ret = NetConnClient::GetInstance().IsCleartextPermitted(context->hostname_,
+            context->isCleartextPermitted_);
+        if (ret != NETMANAGER_SUCCESS) {
+            context->SetErrorCode(ret);
+            napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
+            return NapiUtils::GetUndefined(env);
+        }
+#else
+        context->isCleartextPermitted_ = true;
+#endif
+        NETSTACK_LOGD("isCleartextPermitted is %{public}d\n", context->isCleartextPermitted_);
+    } else {
+        napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
+        return NapiUtils::GetUndefined(env);
+    }
+
+    return NapiUtils::GetBoolean(context->GetEnv(), context->isCleartextPermitted_);
 }
 } // namespace OHOS::NetStack::Ssl

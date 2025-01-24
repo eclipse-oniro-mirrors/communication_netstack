@@ -587,4 +587,17 @@ bool IsCertPubKeyInPinned(const std::string &certPubKeyDigest, const std::string
     }
     return false;
 }
+
+bool IsCleartextPermitted(const std::string &url, const std::string &protocol)
+{
+    bool isCleartextPermitted = true;
+#if HAS_NETMANAGER_BASE
+    using namespace OHOS::NetManagerStandard;
+    if (url.find(protocol) != std::string::npos) {
+        std::string hostName = GetHostnameFromURL(url);
+        NetConnClient::GetInstance().IsCleartextPermitted(hostName, isCleartextPermitted);
+    }
+#endif
+    return isCleartextPermitted;
+}
 } // namespace OHOS::NetStack::CommonUtils

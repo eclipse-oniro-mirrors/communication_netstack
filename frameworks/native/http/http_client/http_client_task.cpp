@@ -437,6 +437,12 @@ bool HttpClientTask::Start()
         return false;
     }
 
+    if (!CommonUtils::IsCleartextPermitted(request_.GetURL(), "http://")) {
+        NETSTACK_LOGE("Cleartext not permitted");
+        error_.SetErrorCode(HttpErrorCode::HTTP_CLEARTEXT_NOT_PERMITTED);
+        return false;
+    }
+
     if (error_.GetErrorCode() != HttpErrorCode::HTTP_NONE_ERR) {
         NETSTACK_LOGE("error_.GetErrorCode()=%{public}d", error_.GetErrorCode());
         return false;

@@ -570,6 +570,10 @@ bool HttpExec::ExecRequest(RequestContext *context)
         context->SetNoAllowedHost(true);
         return false;
     }
+    if (!CommonUtils::IsCleartextPermitted(context->options.GetUrl(), "http://")) {
+        context->SetCleartextNotPermitted(true);
+        return false;
+    }
     if (context->GetSharedManager()->IsEventDestroy()) {
         return false;
     }
@@ -589,7 +593,6 @@ bool HttpExec::ExecRequest(RequestContext *context)
         }
         return true;
     }
-
     if (!RequestWithoutCache(context)) {
         context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
         if (context->GetSharedManager()) {
@@ -605,7 +608,6 @@ bool HttpExec::ExecRequest(RequestContext *context)
         }
         return false;
     }
-
     return true;
 }
 

@@ -58,6 +58,7 @@ static const std::map<int32_t, const std::string> HTTP_ERR_MAP = {
     {HTTP_REMOTE_FILE_NOT_FOUND, "Remote file not found"},
     {HTTP_AUTH_ERROR, "An authentication function returned an error"},
     {HTTP_SSL_PINNEDPUBKEYNOTMATCH, "Specified pinned public key did not match"},
+    {HTTP_CLEARTEXT_NOT_PERMITTED, "Cleartext traffic is not permitted"},
     {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
 };
 
