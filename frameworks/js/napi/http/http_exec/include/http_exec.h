@@ -92,6 +92,8 @@ private:
 
     static bool SetOtherOption(CURL *curl, RequestContext *context);
 
+    static bool SetAuthOptions(CURL *curl, OHOS::NetStack::Http::RequestContext *context);
+
     static bool SetRequestOption(void *curl, RequestContext *context);
 
     static bool SetSSLCertOption(CURL *curl, RequestContext *context);
@@ -157,6 +159,8 @@ private:
 
     static void SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *part,
                                   void *curl, RequestContext *context);
+
+    static bool IsBuiltWithOpenSSL();
 
 #if !HAS_NETMANAGER_BASE
     static void AddRequestInfo();

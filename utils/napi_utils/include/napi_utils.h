@@ -28,6 +28,8 @@
 #include "napi/native_api.h"
 #include "uv.h"
 
+#include "securec.h"
+
 namespace OHOS::NetStack::NapiUtils {
 static constexpr int NETSTACK_NAPI_INTERNAL_ERROR = 2300002;
 using UvHandler = std::function<void()>;
@@ -36,6 +38,14 @@ struct UvHandlerQueue : public std::queue<UvHandler> {
     void Push(const UvHandler &handler);
 private:
     std::mutex mutex;
+};
+
+struct SecureData : public std::string {
+    ~SecureData()
+    {
+        // Clear Data, to keep the memory safe
+        (void)memset_s(data(), size(), 0, size());
+    }
 };
 
 napi_valuetype GetValueType(napi_env env, napi_value value);
@@ -85,6 +95,11 @@ napi_value CreateStringUtf8(napi_env env, const std::string &str);
 std::string GetStringFromValueUtf8(napi_env env, napi_value value);
 
 std::string GetStringPropertyUtf8(napi_env env, napi_value object, const std::string &propertyName);
+
+void GetSecureDataFromValueUtf8(napi_env env, napi_value value, SecureData &data);
+
+void GetSecureDataPropertyUtf8(
+    napi_env env, napi_value object, const std::string &propertyName, SecureData &data);
 
 std::string NapiValueToString(napi_env env, napi_value value);
 

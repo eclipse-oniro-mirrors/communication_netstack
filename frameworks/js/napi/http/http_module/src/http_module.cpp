@@ -134,6 +134,7 @@ void HttpModuleExports::InitHttpProperties(napi_env env, napi_value exports)
     InitCertType(env, exports);
     InitHttpProtocol(env, exports);
     InitHttpDataType(env, exports);
+    InitTlsVersion(env, exports);
 }
 
 void HttpModuleExports::InitRequestMethod(napi_env env, napi_value exports)
@@ -196,6 +197,25 @@ void HttpModuleExports::InitResponseCode(napi_env env, napi_value exports)
     NapiUtils::DefineProperties(env, responseCode, properties);
 
     NapiUtils::SetNamedProperty(env, exports, INTERFACE_RESPONSE_CODE, responseCode);
+}
+
+void HttpModuleExports::InitTlsVersion(napi_env env, napi_value exports)
+{
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::TLS_VERSION_1_0,
+            NapiUtils::CreateUint32(env, static_cast<uint32_t>(TlsVersion::TLSv1_0))),
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::TLS_VERSION_1_1,
+            NapiUtils::CreateUint32(env, static_cast<uint32_t>(TlsVersion::TLSv1_1))),
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::TLS_VERSION_1_2,
+            NapiUtils::CreateUint32(env, static_cast<uint32_t>(TlsVersion::TLSv1_2))),
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::TLS_VERSION_1_3,
+            NapiUtils::CreateUint32(env, static_cast<uint32_t>(TlsVersion::TLSv1_3))),
+    };
+
+    napi_value tlsVersion = NapiUtils::CreateObject(env);
+    NapiUtils::DefineProperties(env, tlsVersion, properties);
+
+    NapiUtils::SetNamedProperty(env, exports, INTERFACE_TLS_VERSION, tlsVersion);
 }
 
 void HttpModuleExports::InitHttpProtocol(napi_env env, napi_value exports)

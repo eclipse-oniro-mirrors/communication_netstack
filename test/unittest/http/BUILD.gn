@@ -67,11 +67,13 @@ ohos_unittest("http_unittest") {
   }
 
   external_deps = common_external_deps
+  external_deps += [ "napi:ace_napi" ]
 
   sources = [
     "$NETSTACK_NAPI_ROOT/http/async_context/src/request_context.cpp",
     "$NETSTACK_NAPI_ROOT/http/constant/src/constant.cpp",
     "$NETSTACK_NAPI_ROOT/http/http_exec/src/http_exec.cpp",
+    "$NETSTACK_NAPI_ROOT/http/http_exec/src/http_tls_config.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_request_options.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_response.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",

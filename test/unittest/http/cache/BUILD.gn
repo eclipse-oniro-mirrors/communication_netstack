@@ -45,10 +45,12 @@ ohos_unittest("http_cache_unittest") {
     "$NETSTACK_NAPI_ROOT/http/constant/include",
     "$NETSTACK_NAPI_ROOT/http/options/include",
     "$NETSTACK_NAPI_ROOT/http/cache/base64/include",
+    "$NETSTACK_NAPI_ROOT/http/http_exec/include",
   ]
   include_dirs += utils_include
 
   external_deps = common_external_deps
+  external_deps += [ "napi:ace_napi" ]
 
   deps = [ "$SUBSYSTEM_DIR/netstack/utils/napi_utils:napi_utils" ]
 

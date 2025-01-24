@@ -44,6 +44,7 @@ ohos_unittest("netstack_network_profiler_utils_test") {
     "$NETSTACK_UTILS_ROOT/profiler_utils/include",
     "$NETSTACK_UTILS_ROOT/tlv_utils/include",
     "$NETSTACK_DIR/utils/common_utils/include",
+    "$NETSTACK_NAPI_ROOT/http/http_exec/include",
   ]
   include_dirs += utils_include
 
@@ -53,6 +54,7 @@ ohos_unittest("netstack_network_profiler_utils_test") {
     "curl:curl_shared",
     "hiprofiler:libnetwork_profiler",
     "init:libbegetutil",
+    "napi:ace_napi",
     "time_service:time_client",
   ]
 

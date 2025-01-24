@@ -103,6 +103,7 @@ ohos_shared_library("http") {
     "cache/lru_cache/src/lru_cache_disk_handler.cpp",
     "constant/src/constant.cpp",
     "http_exec/src/http_exec.cpp",
+    "http_exec/src/http_tls_config.cpp",
     "http_module/src/http_module.cpp",
     "options/src/http_request_options.cpp",
     "options/src/http_response.cpp",

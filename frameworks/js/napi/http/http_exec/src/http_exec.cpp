@@ -891,6 +891,49 @@ bool HttpExec::Initialize()
 }
 #endif
 
+bool HttpExec::IsBuiltWithOpenSSL()
+{
+    const auto data = curl_version_info(CURLVERSION_NOW);
+    if (!data || !data->ssl_version) {
+        return false;
+    }
+
+    const auto sslVersion = CommonUtils::ToLower(data->ssl_version);
+    return sslVersion.find("openssl") != std::string::npos;
+}
+
+unsigned long GetTlsVersion(TlsVersion tlsVersionMin, TlsVersion tlsVersionMax)
+{
+    unsigned long tlsVersion = CURL_SSLVERSION_DEFAULT;
+    if (tlsVersionMin == TlsVersion::DEFAULT || tlsVersionMax == TlsVersion::DEFAULT) {
+        return tlsVersion;
+    }
+    if (tlsVersionMin > tlsVersionMax) {
+        return tlsVersion;
+    }
+    if (tlsVersionMin == TlsVersion::TLSv1_0) {
+        tlsVersion |= static_cast<unsigned long>(CURL_SSLVERSION_TLSv1_0);
+    } else if (tlsVersionMin == TlsVersion::TLSv1_1) {
+        tlsVersion |= static_cast<unsigned long>(CURL_SSLVERSION_TLSv1_1);
+    }  else if (tlsVersionMin == TlsVersion::TLSv1_2) {
+        tlsVersion |= static_cast<unsigned long>(CURL_SSLVERSION_TLSv1_2);
+    }  else if (tlsVersionMin == TlsVersion::TLSv1_3) {
+        tlsVersion |= static_cast<unsigned long>(CURL_SSLVERSION_TLSv1_3);
+    }
+
+    if (tlsVersionMax == TlsVersion::TLSv1_0) {
+        tlsVersion |= static_cast<unsigned long>(CURL_SSLVERSION_MAX_TLSv1_0);
+    } else if (tlsVersionMax == TlsVersion::TLSv1_1) {
+        tlsVersion |= static_cast<unsigned long>(CURL_SSLVERSION_MAX_TLSv1_1);
+    } else if (tlsVersionMax == TlsVersion::TLSv1_2) {
+        tlsVersion |= static_cast<unsigned long>(CURL_SSLVERSION_MAX_TLSv1_2);
+    } else if (tlsVersionMax == TlsVersion::TLSv1_3) {
+        tlsVersion |= static_cast<unsigned long>(CURL_SSLVERSION_MAX_TLSv1_3);
+    }
+
+    return tlsVersion;
+}
+
 bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context)
 {
     std::string url = context->options.GetUrl();
@@ -905,8 +948,29 @@ bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *
         auto proxyType = (host.find("https://") != std::string::npos) ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYTYPE, proxyType, context);
     }
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2, context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CIPHER_LIST, TLS12_SECURITY_CIPHER_SUITE, context);
+    const auto &tlsOption = context->options.GetTlsOption();
+    unsigned long tlsVersion = GetTlsVersion(tlsOption.tlsVersionMin, tlsOption.tlsVersionMax);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLVERSION, static_cast<long>(tlsVersion), context);
+    const auto &cipherSuite = tlsOption.cipherSuite;
+    const auto &cipherSuiteString = ConvertCipherSuiteToCipherString(cipherSuite);
+    const auto &normalString = cipherSuiteString.ciperSuiteString;
+    const auto &tlsV13String = cipherSuiteString.tlsV13CiperSuiteString;
+    if (tlsVersion == CURL_SSLVERSION_DEFAULT) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CIPHER_LIST, TLS12_SECURITY_CIPHER_SUITE, context);
+    } else if (normalString.empty() && tlsV13String.empty()) {
+        NETSTACK_LOGD("no cipherSuite config");
+    } else if (!normalString.empty()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CIPHER_LIST, normalString.c_str(), context);
+        if (!tlsV13String.empty() && IsBuiltWithOpenSSL()) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_TLS13_CIPHERS, tlsV13String.c_str(), context);
+        }
+    } else if (!tlsV13String.empty() && IsBuiltWithOpenSSL()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_TLS13_CIPHERS, tlsV13String.c_str(), context);
+    } else {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CIPHER_LIST, TLS12_SECURITY_CIPHER_SUITE, context);
+    }
 
 #ifdef NETSTACK_PROXY_PASS
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYUSERPWD, NETSTACK_PROXY_PASS, context);
@@ -919,6 +983,37 @@ bool HttpExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::RequestContext *
 #ifndef WINDOWS_PLATFORM
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_ACCEPT_ENCODING, "", context);
 #endif
+    return true;
+}
+
+bool HttpExec::SetAuthOptions(CURL *curl, OHOS::NetStack::Http::RequestContext *context)
+{
+    long authType = CURLAUTH_ANY;
+    auto authentication = context->options.GetServerAuthentication();;
+    switch (authentication.authenticationType) {
+        case AuthenticationType::BASIC:
+            authType = CURLAUTH_BASIC;
+            break;
+        case AuthenticationType::NTLM:
+            authType = CURLAUTH_NTLM;
+            break;
+        case AuthenticationType::DIGEST:
+            authType = CURLAUTH_DIGEST;
+            break;
+        case AuthenticationType::AUTO:
+        default:
+            break;
+    }
+    auto username = authentication.credential.username;
+    auto password = authentication.credential.password;
+    if (!username.empty()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTPAUTH, authType, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_USERNAME, username.c_str(), context);
+    }
+    if (!password.empty()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PASSWORD, password.c_str(), context);
+    }
+
     return true;
 }
 
@@ -1092,13 +1187,18 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
         NETSTACK_LOGE("GetTrustAnchorsForHostName error. ret [%{public}d]", ret);
     }
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
-    // add user cert path
-    TrustUser0AndUserCa(certs);
-    // add system cert path
-    certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
-    context->SetCertsPath(std::move(certs), context->options.GetCaPath());
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 1L, context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 2L, context);
+    if (context->options.GetCanSkipCertVerifyFlag()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
+    } else {
+        // add user cert path
+        TrustUser0AndUserCa(certs);
+        // add system cert path
+        certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
+        context->SetCertsPath(std::move(certs), context->options.GetCaPath());
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 1L, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 2L, context);
+    }
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
 #else
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
@@ -1323,6 +1423,10 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     }
 
     if (!SetOtherOption(curl, context)) {
+        return false;
+    }
+
+    if (!SetAuthOptions(curl, context)) {
         return false;
     }
     return true;

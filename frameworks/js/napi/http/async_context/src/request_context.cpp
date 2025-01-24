@@ -24,6 +24,7 @@
 
 #include "constant.h"
 #include "http_exec.h"
+#include "http_tls_config.h"
 #include "napi_utils.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
@@ -232,6 +233,97 @@ void RequestContext::ParseNumberOptions(napi_value optionsValue)
             options.SetPriority(priority);
         }
     }
+}
+
+void RequestContext::ParseRemoteValidationMode(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_REMOTE_VALIDATION)) {
+        NETSTACK_LOGD("no remote validation mode config");
+        return;
+    }
+    napi_value value = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_REMOTE_VALIDATION);
+    if (NapiUtils::GetValueType(GetEnv(), value) == napi_string) {
+        auto remoteValidationMode = NapiUtils::GetStringFromValueUtf8(GetEnv(), value);
+        if (remoteValidationMode == "skip") {
+            NETSTACK_LOGI("ParseRemoteValidationMode remoteValidationMode skip");
+            options.SetCanSkipCertVerifyFlag(true);
+        } else if (remoteValidationMode != "system") {
+            NETSTACK_LOGE("RemoteValidationMode config error");
+        }
+    }
+}
+
+void RequestContext::ParseTlsOption(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_TLS_OPTION)) {
+        NETSTACK_LOGD("no tls config");
+        return;
+    }
+    napi_value tlsVersionValue = NapiUtils::GetNamedProperty(
+        GetEnv(), optionsValue, HttpConstant::PARAM_KEY_TLS_OPTION);
+    napi_valuetype type = NapiUtils::GetValueType(GetEnv(), tlsVersionValue);
+    if (type != napi_object && type != napi_string) {
+        NETSTACK_LOGE("tlsVersionValue type error");
+        return;
+    }
+    uint32_t tlsVersionMin = NapiUtils::GetUint32Property(GetEnv(), tlsVersionValue, "tlsVersionMin");
+    uint32_t tlsVersionMax = NapiUtils::GetUint32Property(GetEnv(), tlsVersionValue, "tlsVersionMax");
+    NETSTACK_LOGD("tlsVersionMin = %{public}d, tlsVersionMax = %{public}d", tlsVersionMin, tlsVersionMax);
+    TlsOption tlsOption;
+    tlsOption.tlsVersionMin = static_cast<TlsVersion>(tlsVersionMin);
+    tlsOption.tlsVersionMax = static_cast<TlsVersion>(tlsVersionMax);
+    if (!NapiUtils::HasNamedProperty(GetEnv(), tlsVersionValue, "cipherSuites")) {
+        NETSTACK_LOGD("no cipherSuites");
+        options.SetTlsOption(tlsOption);
+        return;
+    }
+    auto cipherSuiteNapi = NapiUtils::GetNamedProperty(GetEnv(), tlsVersionValue, "cipherSuites");
+    if (!NapiUtils::IsArray(GetEnv(), cipherSuiteNapi)) {
+        options.SetTlsOption(tlsOption);
+        return;
+    }
+    auto length = NapiUtils::GetArrayLength(GetEnv(), cipherSuiteNapi);
+    for (uint32_t i = 0; i < length; ++i) {
+        auto standardNameNapi = NapiUtils::GetArrayElement(GetEnv(), cipherSuiteNapi, i);
+        auto cipherSuite = GetTlsCipherSuiteFromStandardName(
+            NapiUtils::GetStringFromValueUtf8(GetEnv(), standardNameNapi));
+        if (cipherSuite != CipherSuite::INVALID) {
+            tlsOption.cipherSuite.emplace(cipherSuite);
+        }
+    }
+
+    options.SetTlsOption(tlsOption);
+}
+
+void RequestContext::ParseServerAuthentication(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_SERVER_AUTH)) {
+        NETSTACK_LOGD("no server authentication config");
+        return;
+    }
+    napi_value serverAuthenticationValue = NapiUtils::GetNamedProperty(
+        GetEnv(), optionsValue, HttpConstant::PARAM_KEY_SERVER_AUTH);
+    napi_valuetype type = NapiUtils::GetValueType(GetEnv(), serverAuthenticationValue);
+    if (type != napi_object) {
+        NETSTACK_LOGE("server authentication type error");
+        return;
+    }
+    ServerAuthentication serverAuthentication;
+    auto credentialNapi = NapiUtils::GetNamedProperty(GetEnv(), serverAuthenticationValue, "credential");
+    NapiUtils::GetSecureDataPropertyUtf8(GetEnv(),
+        credentialNapi, "username", serverAuthentication.credential.username);
+    NapiUtils::GetSecureDataPropertyUtf8(GetEnv(),
+        credentialNapi, "password", serverAuthentication.credential.password);
+    auto authenticationType = NapiUtils::GetStringPropertyUtf8(GetEnv(),
+        serverAuthenticationValue, "authenticationType");
+    if (authenticationType == "basic") {
+        serverAuthentication.authenticationType = AuthenticationType::BASIC;
+    } else if (authenticationType == "ntlm") {
+        serverAuthentication.authenticationType = AuthenticationType::NTLM;
+    } else if (authenticationType == "digest") {
+        serverAuthentication.authenticationType = AuthenticationType::DIGEST;
+    }
+    options.SetServerAuthentication(serverAuthentication);
 }
 
 void RequestContext::ParseHeader(napi_value optionsValue)
@@ -449,6 +541,9 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParseDnsServers(optionsValue);
     ParseMultiFormData(optionsValue);
     ParseCertificatePinning(optionsValue);
+    ParseRemoteValidationMode(optionsValue);
+    ParseTlsOption(optionsValue);
+    ParseServerAuthentication(optionsValue);
     SetParseOK(true);
 }
 

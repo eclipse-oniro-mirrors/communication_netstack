@@ -156,6 +156,9 @@ public:
     static const char *const PARAM_KEY_CLIENT_CERT;
     static const char *const PARAM_KEY_MULTI_FORM_DATA_LIST;
     static const char *const PARAM_KEY_CERTIFICATE_PINNING;
+    static const char *const PARAM_KEY_REMOTE_VALIDATION;
+    static const char *const PARAM_KEY_TLS_OPTION;
+    static const char *const PARAM_KEY_SERVER_AUTH;
 
     static const char *const HTTP_PROXY_KEY_HOST;
     static const char *const HTTP_PROXY_KEY_PORT;
@@ -173,6 +176,11 @@ public:
     static const char *const HTTP_CERT_TYPE_PEM;
     static const char *const HTTP_CERT_TYPE_DER;
     static const char *const HTTP_CERT_TYPE_P12;
+
+    static const char *const TLS_VERSION_1_0;
+    static const char *const TLS_VERSION_1_1;
+    static const char *const TLS_VERSION_1_2;
+    static const char *const TLS_VERSION_1_3;
 
     static const char *const HTTP_MULTI_FORM_DATA_NAME;
     static const char *const HTTP_MULTI_FORM_DATA_CONTENT_TYPE;

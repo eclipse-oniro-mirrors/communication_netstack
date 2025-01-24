@@ -22,6 +22,8 @@
 
 #include "constant.h"
 #include "secure_char.h"
+#include "http_tls_config.h"
+#include "napi_utils.h"
 
 namespace OHOS::NetStack::Http {
 enum class HttpProtocol {
@@ -50,6 +52,29 @@ struct MultiFormData {
 enum class HashAlgorithm {
     SHA256,
     INVALID,
+};
+
+enum class AuthenticationType {
+    AUTO,
+    BASIC,
+    NTLM,
+    DIGEST,
+};
+
+struct Credential {
+    NapiUtils::SecureData username;
+    NapiUtils::SecureData password;
+};
+
+struct ServerAuthentication {
+    Credential credential;
+    AuthenticationType authenticationType = AuthenticationType::AUTO;
+};
+
+struct TlsOption {
+    std::unordered_set<CipherSuite> cipherSuite;
+    TlsVersion tlsVersionMin = TlsVersion::DEFAULT;
+    TlsVersion tlsVersionMax = TlsVersion::DEFAULT;
 };
 
 struct CertificatePinning {
@@ -95,7 +120,13 @@ public:
 
     void AddMultiFormData(const MultiFormData &multiFormData);
 
+    void SetTlsOption(const TlsOption &tlsOption);
+
+    void SetServerAuthentication(const ServerAuthentication &serverAuthentication);
+
     void SetCertificatePinning(std::string certPIN);
+
+    void SetCanSkipCertVerifyFlag(bool canCertVerify);
 
     [[nodiscard]] std::string GetCertificatePinning() const;
 
@@ -137,9 +168,15 @@ public:
 
     [[nodiscard]] const std::vector<std::string> &GetDnsServers() const;
 
+    [[nodiscard]] bool GetCanSkipCertVerifyFlag() const;
+
     void GetClientCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
 
     std::vector<MultiFormData> GetMultiPartDataList();
+
+    [[nodiscard]] const TlsOption GetTlsOption() const;
+
+    [[nodiscard]] const ServerAuthentication GetServerAuthentication() const;
 private:
     std::string url_;
 
@@ -189,9 +226,15 @@ private:
 
     Secure::SecureChar keyPasswd_;
 
+    bool canSkipCertVerify_ = false;
+
     std::vector<MultiFormData> multiFormDataList_;
 
     std::string certificatePinning_;
+
+    TlsOption tlsOption_;
+
+    ServerAuthentication serverAuthentication_;
 };
 } // namespace OHOS::NetStack::Http
 
