@@ -1030,12 +1030,12 @@ std::string RequestContext::GetPinnedPubkey() const
     return pinnedPubkey_;
 }
 
-+void RequestContext::ParseAddressFamily(napi_value optionsValue)
-+{
-+    std::string addressFamily = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue,
-+        HttpConstant::PARAM_KEY_ADDRESS_FAMILY);
-+    if (!addressFamily.empty()) {
-+        options.SetAddressFamily(addressFamily);
-+    }
-+}
+void RequestContext::ParseAddressFamily(napi_value optionsValue)
+{
+    std::string addressFamily = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue,
+        HttpConstant::PARAM_KEY_ADDRESS_FAMILY);
+    if (!addressFamily.empty()) {
+        options.SetAddressFamily(addressFamily);
+    }
+}
 } // namespace OHOS::NetStack::Http
