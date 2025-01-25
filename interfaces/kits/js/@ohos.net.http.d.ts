@@ -85,6 +85,38 @@ declare namespace http {
   function createHttp(): HttpRequest;
 
   /**
+   * Enum for Address Family
+   * @enum {string}
+   * @syscap SystemCapability.Communication.NetStack
+   * @since 16
+   */
+  export enum AddressFamily {
+    /**
+     * Default, can use addresses of all IP versions that your system allows.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 16
+     */
+    DEFAULT = 'CURL_IPRESOLVE_WHATEVER',
+ 
+    /**
+     * ONLYV4 Uses only IPv4 addresses.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 16
+     */
+    ONLYV4 = 'CURL_IPRESOLVE_V4',
+ 
+    /**
+     * ONLYV6 Uses only IPv6 addresses.
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 16
+     */
+    ONLYV6 = 'CURL_IPRESOLVE_V6'
+  }
+
+  /**
    * Specifies the type and value range of the optional parameters in the HTTP request.
    * @interface HttpRequestOptions
    * @syscap SystemCapability.Communication.NetStack
@@ -500,6 +532,15 @@ declare namespace http {
      * @since 12
      */
     certificatePinning?: CertificatePinning | CertificatePinning[];
+
+    /**
+     * Address family option.
+     * @type {AddressFamily}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 16
+     */
+    addressFamily?: AddressFamily;
   }
 
   /**

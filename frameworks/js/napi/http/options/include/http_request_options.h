@@ -177,6 +177,10 @@ public:
     [[nodiscard]] const TlsOption GetTlsOption() const;
 
     [[nodiscard]] const ServerAuthentication GetServerAuthentication() const;
+
+    void SetAddressFamily(std::string addressFamily);
+
+    [[nodiscard]] std::string GetAddressFamily() const;
 private:
     std::string url_;
 
@@ -235,6 +239,8 @@ private:
     TlsOption tlsOption_;
 
     ServerAuthentication serverAuthentication_;
+
+    std::string addressFamily_;
 };
 } // namespace OHOS::NetStack::Http
 

@@ -128,4 +128,9 @@ const char *const HttpConstant::RESPONSE_REDIRECT_TIMING = "redirectTiming";
 const char *const HttpConstant::RESPONSE_HEADER_TIMING = "responseHeaderTiming";
 const char *const HttpConstant::RESPONSE_BODY_TIMING = "responseBodyTiming";
 const char *const HttpConstant::RESPONSE_TOTAL_TIMING = "totalTiming";
+
+const char *const HttpConstant::PARAM_KEY_ADDRESS_FAMILY = "addressFamily";
+const char *const HttpConstant::HTTP_ADDRESS_FAMILY_UNSPEC = "DEFAULT";
+const char *const HttpConstant::HTTP_ADDRESS_FAMILY_ONLYV4 = "ONLYV4";
+const char *const HttpConstant::HTTP_ADDRESS_FAMILY_ONLYV6 = "ONLYV6";
 } // namespace OHOS::NetStack::Http
