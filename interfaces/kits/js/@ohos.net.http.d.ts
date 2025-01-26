@@ -105,7 +105,7 @@ declare namespace http {
      * @crossplatform
      * @since 16
      */
-    ONLYV4 = 'CURL_IPRESOLVE_V4',
+    ONLY_V4 = 'CURL_IPRESOLVE_V4',
  
     /**
      * ONLYV6 Uses only IPv6 addresses.
@@ -113,7 +113,7 @@ declare namespace http {
      * @crossplatform
      * @since 16
      */
-    ONLYV6 = 'CURL_IPRESOLVE_V6'
+    ONLY_V6 = 'CURL_IPRESOLVE_V6'
   }
 
   /**
