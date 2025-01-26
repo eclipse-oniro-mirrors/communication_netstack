@@ -115,8 +115,8 @@ static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_bas
 static constexpr const int SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX = 1;
 #endif
 
-static constexpr const char *HTTP_AF_ONLYV4 = "ONLYV4";
-static constexpr const char *HTTP_AF_ONLYV6 = "ONLYV6";
+static constexpr const char *HTTP_AF_ONLYV4 = "ONLY_V4";
+static constexpr const char *HTTP_AF_ONLYV6 = "ONLY_V6";
 
 static void RequestContextDeleter(RequestContext *context)
 {
