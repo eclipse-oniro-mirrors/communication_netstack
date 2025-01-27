@@ -298,6 +298,7 @@ void RequestContext::ParseTlsOption(napi_value optionsValue)
 
 void RequestContext::ParseServerAuthentication(napi_value optionsValue)
 {
+#if !defined(IOS_PLATFORM)
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_SERVER_AUTH)) {
         NETSTACK_LOGD("no server authentication config");
         return;
@@ -325,6 +326,7 @@ void RequestContext::ParseServerAuthentication(napi_value optionsValue)
         serverAuthentication.authenticationType = AuthenticationType::DIGEST;
     }
     options.SetServerAuthentication(serverAuthentication);
+#endif
 }
 
 void RequestContext::ParseHeader(napi_value optionsValue)
