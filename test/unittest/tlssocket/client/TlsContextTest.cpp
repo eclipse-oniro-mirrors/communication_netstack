@@ -145,7 +145,6 @@ HWTEST_F(TlsContextTest, ContextNullTest, TestSize.Level2)
     configuration.SetSignatureAlgorithms(SIGNATURE_ALGORITHMS);
     configuration.SetLocalCertificate(CLIENT_FILE);
     std::unique_ptr<TLSContext> tlsContext = nullptr;
-    EXPECT_EQ(tlsContext, nullptr);
     TLSContext::SetMinAndMaxProtocol(tlsContext.get());
     bool isInitTlsContext = TLSContext::InitTlsContext(tlsContext.get(), configuration);
     EXPECT_FALSE(isInitTlsContext);
