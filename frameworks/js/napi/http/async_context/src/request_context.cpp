@@ -546,6 +546,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParseTlsOption(optionsValue);
     ParseServerAuthentication(optionsValue);
     SetParseOK(true);
+    ParseAddressFamily(optionsValue);
 }
 
 bool RequestContext::IsUsingCache() const
@@ -1027,5 +1028,14 @@ void RequestContext::SetPinnedPubkey(std::string &pubkey)
 std::string RequestContext::GetPinnedPubkey() const
 {
     return pinnedPubkey_;
+}
+
+void RequestContext::ParseAddressFamily(napi_value optionsValue)
+{
+    std::string addressFamily = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue,
+        HttpConstant::PARAM_KEY_ADDRESS_FAMILY);
+    if (!addressFamily.empty()) {
+        options.SetAddressFamily(addressFamily);
+    }
 }
 } // namespace OHOS::NetStack::Http

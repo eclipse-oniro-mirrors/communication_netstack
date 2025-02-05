@@ -115,6 +115,9 @@ static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_bas
 static constexpr const int SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX = 1;
 #endif
 
+static constexpr const char *HTTP_AF_ONLYV4 = "ONLY_V4";
+static constexpr const char *HTTP_AF_ONLYV6 = "ONLY_V6";
+
 static void RequestContextDeleter(RequestContext *context)
 {
     context->DeleteReference();
@@ -1371,6 +1374,7 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
     SetMultiPartOption(curl, context);
     SetDnsResolvOption(curl, context);
     SetDnsCacheOption(curl, context);
+    SetIpResolve(curl, context);
     return true;
 }
 
@@ -1889,6 +1893,20 @@ bool HttpExec::SetDnsCacheOption(CURL *curl, RequestContext *context)
 #ifdef HAS_NETMANAGER_BASE
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DNS_CACHE_TIMEOUT, 0, context);
 #endif
+    return true;
+}
+
+bool HttpExec::SetIpResolve(CURL *curl, RequestContext *context)
+{
+    std::string addressFamily = context->options.GetAddressFamily();
+    if (addressFamily.empty()) {
+        return true;
+    }
+    if (addressFamily.compare(HTTP_AF_ONLYV4) == 0) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4, context);
+    } else if (addressFamily.compare(HTTP_AF_ONLYV6) == 0) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6, context);
+    }
     return true;
 }
 } // namespace OHOS::NetStack::Http

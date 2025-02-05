@@ -172,6 +172,8 @@ private:
 
     static bool SetDnsCacheOption(CURL *curl, RequestContext *context);
 
+    static bool SetIpResolve(CURL *curl, RequestContext *context);
+
     struct RequestInfo {
         RequestInfo() = delete;
         ~RequestInfo() = default;

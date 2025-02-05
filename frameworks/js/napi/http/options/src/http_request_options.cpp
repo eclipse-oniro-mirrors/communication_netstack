@@ -335,4 +335,14 @@ std::string HttpRequestOptions::GetCertificatePinning() const
 {
     return certificatePinning_;
 }
+
+void HttpRequestOptions::SetAddressFamily(std::string addressFamily)
+{
+    addressFamily_ = std::move(addressFamily);
+}
+
+std::string HttpRequestOptions::GetAddressFamily() const
+{
+    return addressFamily_;
+}
 } // namespace OHOS::NetStack::Http
