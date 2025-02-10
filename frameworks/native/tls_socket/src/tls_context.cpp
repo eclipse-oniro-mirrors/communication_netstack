@@ -367,7 +367,10 @@ SSL *TLSContext::CreateSsl()
 
 void TLSContext::CloseCtx()
 {
-    SSL_CTX_free(ctx_);
+    if (ctx_ != nullptr) {
+        SSL_CTX_free(ctx_);
+        ctx_ = nullptr;
+    }
 }
 } // namespace TlsSocket
 } // namespace NetStack
