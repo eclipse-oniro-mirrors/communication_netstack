@@ -44,6 +44,8 @@
 
 constexpr int32_t INET_OPTION_SUC = 1;
 constexpr size_t MAX_DISPLAY_NUM = 2;
+constexpr int SHA256_BASE64_LEN = 44;  // 32-byte base64 -> 44 bytes
+constexpr int PINNED_PREFIX_LEN = 8; // strlen("sha256//")
 
 namespace OHOS::NetStack::CommonUtils {
 const std::regex IP_PATTERN{
@@ -481,5 +483,36 @@ bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData)
         NETSTACK_LOGE("Failed to obtain the file data stream.");
         return false;
     }
+}
+
+bool IsCertPubKeyInPinned(const std::string &certPubKeyDigest, const std::string &pinnedPubkey)
+{
+    auto begin = pinnedPubkey.find("sha256//");
+    if (begin != 0) {
+        NETSTACK_LOGE("pinnedPubkey format invalid, should start with sha256//");
+        return false;
+    }
+    while (begin < pinnedPubkey.size()) {
+        auto end = pinnedPubkey.find(";", begin);
+        if (end == std::string::npos) {
+            end = pinnedPubkey.size();
+        }
+        if (pinnedPubkey.find("sha256//", begin) != begin) {
+            NETSTACK_LOGE("pinnedPubkey format invalid, should be like sha256//[hash1];sha256//[hash2]");
+            begin = end + 1;
+            continue;
+        }
+        if (end - begin != PINNED_PREFIX_LEN + SHA256_BASE64_LEN) {
+            NETSTACK_LOGE("pinnedPubkey format invalid, hash length not match");
+            begin = end + 1;
+            continue;
+        }
+        std::string candidate = pinnedPubkey.substr(begin + PINNED_PREFIX_LEN, SHA256_BASE64_LEN);
+        if (candidate == certPubKeyDigest) {
+            return true;
+        }
+        begin = end + 1;
+    }
+    return false;
 }
 } // namespace OHOS::NetStack::CommonUtils

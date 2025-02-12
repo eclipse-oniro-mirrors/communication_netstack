@@ -161,6 +161,8 @@ private:
 #endif
 
     static CURLcode SslCtxFunction(void *curl, void *ssl_ctx, void *parm);
+    static CURLcode MultiPathSslCtxFunction(CURL *curl, void *ssl_ctx, void *request_context);
+    static CURLcode VerifyRootCaSslCtxFunction(CURL *curl, void *ssl_ctx, void *context);
 
     struct RequestInfo {
         RequestInfo() = delete;
