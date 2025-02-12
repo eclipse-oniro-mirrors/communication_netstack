@@ -46,7 +46,7 @@ static constexpr const char *PREFIX_WSS = "wss";
 
 static constexpr const char *PREFIX_WS = "ws";
 
-static constexpr const int MAX_URI_LENGTH = 1024;
+static constexpr const int MAX_URI_LENGTH = 2048;
 
 static constexpr const int MAX_HDR_LENGTH = 1024;
 
