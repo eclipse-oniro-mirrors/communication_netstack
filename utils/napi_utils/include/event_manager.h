@@ -105,6 +105,8 @@ public:
 
     const std::string &GetWebSocketBinaryData();
 
+    std::mutex &GetDataMutex();
+
     void AppendWebSocketBinaryData(void *data, size_t length);
 
     void ClearWebSocketTextData();

@@ -440,12 +440,6 @@ public:
      */
     Socket::NetAddress GetLocalAddress();
 
-    bool GetCloseState();
-
-    void SetCloseState(bool flag);
-
-    std::mutex &GetCloseLock();
-
     void ExecTlsGetAddr(
         const Socket::NetAddress &address, sockaddr_in *addr4, sockaddr_in6 *addr6, sockaddr **addr, socklen_t *len);
 
@@ -675,8 +669,6 @@ private:
     int sockFd_ = -1;
     bool isExtSock_ = false;
     Socket::NetAddress localAddress_;
-    bool isClosed = false;
-    std::mutex mutexForClose_;
 };
 } // namespace TlsSocket
 } // namespace NetStack

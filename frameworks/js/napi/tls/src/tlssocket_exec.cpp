@@ -385,6 +385,7 @@ bool TLSSocketExec::ExecClose(TLSNapiContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    std::lock_guard<std::mutex> lock(manager->GetDataMutex());
     auto tlsSocket = reinterpret_cast<std::shared_ptr<TLSSocket> *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("ExecClose tlsSocket is null");
@@ -398,16 +399,6 @@ bool TLSSocketExec::ExecClose(TLSNapiContext *context)
         delete tlsSocket;
         manager->SetData(nullptr);
         return false;
-    }
-    {
-        std::lock_guard<std::mutex> lock(shared->GetCloseLock());
-        if (shared->GetCloseState()) {
-            NETSTACK_LOGE("Socket is closing");
-            delete tlsSocket;
-            manager->SetData(nullptr);
-            return true;
-        }
-        shared->SetCloseState(true);
     }
     shared->Close([&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
