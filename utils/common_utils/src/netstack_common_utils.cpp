@@ -562,28 +562,31 @@ bool Sha256sum(unsigned char *buf, size_t buflen, std::string &digestStr)
 
 bool IsCertPubKeyInPinned(const std::string &certPubKeyDigest, const std::string &pinnedPubkey)
 {
-    unsigned int begin = 0;
+    auto begin = pinnedPubkey.find("sha256//");
+    if (begin != 0) {
+        NETSTACK_LOGE("pinnedPubkey format invalid, should start with sha256//");
+        return false;
+    }
     while (begin < pinnedPubkey.size()) {
+        auto end = pinnedPubkey.find(";", begin);
+        if (end == std::string::npos) {
+            end = pinnedPubkey.size();
+        }
         if (pinnedPubkey.find("sha256//", begin) != begin) {
             NETSTACK_LOGE("pinnedPubkey format invalid, should be like sha256//[hash1];sha256//[hash2]");
-            return false;
+            begin = end + 1;
+            continue;
+        }
+        if (end - begin != PINNED_PREFIX_LEN + SHA256_BASE64_LEN) {
+            NETSTACK_LOGE("pinnedPubkey format invalid, hash length not match");
+            begin = end + 1;
+            continue;
         }
         std::string candidate = pinnedPubkey.substr(begin + PINNED_PREFIX_LEN, SHA256_BASE64_LEN);
-        if (candidate.size() != SHA256_BASE64_LEN) {
-            NETSTACK_LOGE("pinnedPubkey format length invalid.");
-            return false;
-        }
         if (candidate == certPubKeyDigest) {
             return true;
         }
-        begin += PINNED_PREFIX_LEN + SHA256_BASE64_LEN;
-        // check semicolon
-        if (begin < pinnedPubkey.size() && pinnedPubkey[begin] != ';') {
-            NETSTACK_LOGE("pinnedPubkey format invalid, should have semicolon separated.");
-            return false;
-        }
-        // else: begin == pinnedPubkey, end of string, nothing to do.
-        begin++;
+        begin = end + 1;
     }
     return false;
 }
