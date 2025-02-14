@@ -105,7 +105,7 @@ public:
 
     const std::string &GetWebSocketBinaryData();
 
-    std::recursive_mutex &GetDataMutex();
+    std::mutex &GetDataMutex();
 
     void AppendWebSocketBinaryData(void *data, size_t length);
 
