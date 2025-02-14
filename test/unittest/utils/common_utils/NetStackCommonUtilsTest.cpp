@@ -796,6 +796,42 @@ HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned05, TestSize.Level2)
                      "oChTociMee9wno=");
     EXPECT_FALSE(IsCertPubKeyInPinned(pubkey, pinnedPubkey));
 }
+
+HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned06, TestSize.Level2)
+{
+    std::string pubkey("t62CeU2tQiqkexU74Gxa2eg7fRbEgoChTociMee9wno=");
+    std::string pinnedPubkey("sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3"
+                     "tvRMwE;sha256//t62CeU2tQiqkexU74Gxa2eg7fRbEg"
+                     "oChTociMee9wno=");
+    EXPECT_TRUE(IsCertPubKeyInPinned(pubkey, pinnedPubkey));
+}
+
+HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned07, TestSize.Level2)
+{
+    std::string pubkey("t62CeU2tQiqkexU74Gxa2eg7fRbEgoChTociMee9wno=");
+    std::string pinnedPubkey("sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3"
+                     "tvRMwE=123456;sha256//t62CeU2tQiqkexU74Gxa2eg7fRbEg"
+                     "oChTociMee9wno=");
+    EXPECT_TRUE(IsCertPubKeyInPinned(pubkey, pinnedPubkey));
+}
+
+HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned08, TestSize.Level2)
+{
+    std::string pubkey("t62CeU2tQiqkexU74Gxa2eg7fRbEgoChTociMee9wno=");
+    std::string pinnedPubkey("sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3"
+                     "tvRMwE=123456;sha256//t62CeU2tQiqkexU74Gxa2eg7fRbEg"
+                     "oChTociMee9wno==");
+    EXPECT_FALSE(IsCertPubKeyInPinned(pubkey, pinnedPubkey));
+}
+
+HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned09, TestSize.Level2)
+{
+    std::string pubkey("t62CeU2tQiqkexU74Gxa2eg7fRbEgoChTociMee9wno=");
+    std::string pinnedPubkey("sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3"
+                     "tvRMwE=;;sha256//t62CeU2tQiqkexU74Gxa2eg7fRbEg"
+                     "oChTociMee9wno=");
+    EXPECT_TRUE(IsCertPubKeyInPinned(pubkey, pinnedPubkey));
+}
 } // namespace CommonUtils
 } // namespace NetStack
 } // namespace OHOS
