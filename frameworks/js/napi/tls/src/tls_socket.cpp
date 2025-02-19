@@ -520,22 +520,27 @@ int TLSSocket::ReadMessage()
 
 void TLSSocket::StartReadMessage()
 {
-    std::thread thread([this]() {
-        isRunning_ = true;
-        isRunOver_ = false;
+    auto wp = std::weak_ptr<TLSSocket>(shared_from_this());
+    std::thread thread([wp]() {
+        auto tlsSocket = wp.lock();
+        if (tlsSocket == nullptr) {
+            return;
+        }
+        tlsSocket->isRunning_ = true;
+        tlsSocket->isRunOver_ = false;
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(TLS_SOCKET_CLIENT_READ);
 #else
         pthread_setname_np(pthread_self(), TLS_SOCKET_CLIENT_READ);
 #endif
-        while (isRunning_) {
-            int ret = ReadMessage();
+        while (tlsSocket->isRunning_) {
+            int ret = tlsSocket->ReadMessage();
             if (ret < 0) {
                 break;
             }
         }
-        isRunOver_ = true;
-        cvSslFree_.notify_one();
+        tlsSocket->isRunOver_ = true;
+        tlsSocket->cvSslFree_.notify_one();
     });
     thread.detach();
 }
@@ -835,7 +840,14 @@ void TLSSocket::Close(const CloseCallback &callback)
 {
     isRunning_ = false;
     std::unique_lock<std::mutex> cvLock(cvMutex_);
-    cvSslFree_.wait(cvLock, [this]() -> bool { return isRunOver_; });
+    auto wp = std::weak_ptr<TLSSocket>(shared_from_this());
+    cvSslFree_.wait(cvLock, [wp]() -> bool {
+        auto tlsSocket = wp.lock();
+        if (tlsSocket == nullptr) {
+            return true;
+        }
+        return tlsSocket->isRunOver_;
+    });
 
     std::lock_guard<std::mutex> lock(recvMutex_);
     auto res = tlsSocketInternal_.Close();
