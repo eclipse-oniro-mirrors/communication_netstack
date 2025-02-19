@@ -88,5 +88,7 @@ std::string MaskIpv6(std::string &maskedResult);
 std::string AnonymizeIp(std::string &input);
 
 bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData);
+
+bool IsCertPubKeyInPinned(const std::string &certPubKeyDigest, const std::string &pinnedPubkey);
 } // namespace OHOS::NetStack::CommonUtils
 #endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */

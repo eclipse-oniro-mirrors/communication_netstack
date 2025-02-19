@@ -134,6 +134,18 @@ public:
 
     void SendResponse();
 
+    bool IsRootCaVerified() const;
+
+    void SetRootCaVerified();
+
+    bool IsRootCaVerifiedOk() const;
+
+    void SetRootCaVerifiedOk(bool ok);
+
+    void SetPinnedPubkey(std::string &pubkey);
+
+    std::string GetPinnedPubkey() const;
+
     std::function<void(CHttpResponse)> respCallback;
 
     std::shared_ptr<RequestCallback> streamingCallback{nullptr};
@@ -158,6 +170,9 @@ private:
     bool requestOK_ = false;
     bool permissionDenied_ = false;
     bool isDestroyed_ = false;
+    bool isRootCaVerified_ = false;
+    bool isRootCaVerifiedOk_ = false;
+    std::string pinnedPubkey_;
 
     bool GetRequestBody(CArrUI8 extraData);
     void HandleMethodForGet(CArrUI8 extraData);

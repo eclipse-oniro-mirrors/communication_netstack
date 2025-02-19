@@ -895,4 +895,34 @@ void RequestContext::SendNetworkProfiler()
     networkProfilerUtils_->NetworkProfiling(networkMessage);
 #endif
 }
+
+bool RequestContext::IsRootCaVerified() const
+{
+    return isRootCaVerified_;
+}
+
+void RequestContext::SetRootCaVerified()
+{
+    isRootCaVerified_ = true;
+}
+
+bool RequestContext::IsRootCaVerifiedOk() const
+{
+    return isRootCaVerifiedOk_;
+}
+
+void RequestContext::SetRootCaVerifiedOk(bool ok)
+{
+    isRootCaVerifiedOk_ = ok;
+}
+
+void RequestContext::SetPinnedPubkey(std::string &pubkey)
+{
+    pinnedPubkey_ = pubkey;
+}
+
+std::string RequestContext::GetPinnedPubkey() const
+{
+    return pinnedPubkey_;
+}
 } // namespace OHOS::NetStack::Http

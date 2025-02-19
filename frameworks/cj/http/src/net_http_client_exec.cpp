@@ -24,6 +24,14 @@
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
 #endif
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+#ifndef HTTP_MULTIPATH_CERT_ENABLE
+#include <openssl/ssl.h>
+#endif
+#include <openssl/pem.h>
+#include <openssl/sha.h>
+#include <openssl/x509.h>
+#endif
 #if HAS_NETMANAGER_BASE
 #include <netdb.h>
 #endif
@@ -73,6 +81,12 @@ static constexpr const char *DEFAULT_HTTP_PROXY_EXCLUSION_LIST = "NONE";
 static constexpr const char *HTTP_PROXY_HOST_KEY = "persist.netmanager_base.http_proxy.host";
 static constexpr const char *HTTP_PROXY_PORT_KEY = "persist.netmanager_base.http_proxy.port";
 static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_base.http_proxy.exclusion_list";
+#endif
+
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+static constexpr const int SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX = 1;
+static constexpr unsigned int SHA256_LEN = 32;
+static constexpr int SHA256_BASE64_LEN = 44;  // 32-byte base64 -> 44 bytes
 #endif
 
 bool NetHttpClientExec::AddCurlHandle(CURL *handle, RequestContext *context)
@@ -538,15 +552,14 @@ bool NetHttpClientExec::SetOtherOption(CURL *curl, OHOS::NetStack::Http::Request
     return true;
 }
 
-CURLcode SslCtxFunction(CURL *curl, void *ssl_ctx, void *parm)
+CURLcode MultiPathSslCtxFunction(CURL *curl, void *sslCtx, const CertsPath *certsPath)
 {
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
-    auto certsPath = static_cast<CertsPath *>(parm);
     if (certsPath == nullptr) {
         NETSTACK_LOGE("certsPath is null");
         return CURLE_SSL_CERTPROBLEM;
     }
-    if (ssl_ctx == nullptr) {
+    if (sslCtx == nullptr) {
         NETSTACK_LOGE("ssl_ctx is null");
         return CURLE_SSL_CERTPROBLEM;
     }
@@ -556,17 +569,137 @@ CURLcode SslCtxFunction(CURL *curl, void *ssl_ctx, void *parm)
             NETSTACK_LOGD("certificate directory path is not exist");
             continue;
         }
-        if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(ssl_ctx), nullptr, path.c_str())) {
+        if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), nullptr, path.c_str())) {
             NETSTACK_LOGE("loading certificates from directory error.");
             continue;
         }
     }
     if (access(certsPath->certFile.c_str(), F_OK) != 0) {
         NETSTACK_LOGD("certificate directory path is not exist");
-    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(ssl_ctx), certsPath->certFile.c_str(), nullptr)) {
+    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), certsPath->certFile.c_str(), nullptr)) {
         NETSTACK_LOGE("loading certificates from context cert error.");
     }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
+    return CURLE_OK;
+}
+
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+bool Sha256sum(unsigned char *buf, size_t buflen, std::string &digestStr)
+{
+    EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
+    unsigned int digestLen = 0;
+    unsigned char digest[SHA256_LEN];
+    unsigned char out[SHA256_BASE64_LEN + 1] = {0};
+    if (!mdctx) {
+        NETSTACK_LOGE("create MD_CTX failed.");
+        return false;
+    }
+    if (!EVP_DigestInit(mdctx, EVP_sha256())) {
+        NETSTACK_LOGE("EVP_DigestInit failed.");
+        return false;
+    }
+    if (!EVP_DigestUpdate(mdctx, buf, buflen)) {
+        NETSTACK_LOGE("EVP_DigestUpdate failed.");
+        return false;
+    }
+    if (!EVP_DigestFinal_ex(mdctx, digest, &digestLen)) {
+        NETSTACK_LOGE("EVP_DigestFinal_ex failed.");
+        return false;
+    }
+    EVP_MD_CTX_free(mdctx);
+    if (digestLen != SHA256_LEN) {
+        NETSTACK_LOGE("SHA256 length invalid");
+        return false;
+    }
+    int base64Len = EVP_EncodeBlock(out, digest, SHA256_LEN);
+    if (base64Len != SHA256_BASE64_LEN) {
+        NETSTACK_LOGE("SHA256-Base64 length invalid.");
+        return false;
+    }
+    digestStr = std::string(reinterpret_cast<const char *>(out), SHA256_BASE64_LEN);
+    return true;
+}
+
+static int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey)
+{
+    if (pinnedPubkey.empty()) {
+        // if no pinned pubkey specified, don't pin (Curl default)
+        return CURLE_OK;
+    }
+    if (cert == nullptr) {
+        NETSTACK_LOGE("no cert specified.");
+        return CURLE_BAD_FUNCTION_ARGUMENT;
+    }
+    unsigned char *certPubkey = nullptr;
+    int pubkeyLen = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(cert), &certPubkey);
+    std::string certPubKeyDigest;
+    if (!Sha256sum(certPubkey, pubkeyLen, certPubKeyDigest)) {
+        return CURLE_BAD_FUNCTION_ARGUMENT;
+    }
+    NETSTACK_LOGI("pubkey sha256: %{public}s", certPubKeyDigest.c_str());
+    if (CommonUtils::IsCertPubKeyInPinned(certPubKeyDigest, pinnedPubkey)) {
+        return CURLE_OK;
+    }
+    return CURLE_SSL_PINNEDPUBKEYNOTMATCH;
+}
+
+static int VerifyCallback(int preverifyOk, X509_STORE_CTX *ctx)
+{
+    X509 *cert = X509_STORE_CTX_get_current_cert(ctx);
+    int err = X509_STORE_CTX_get_error(ctx);
+    int depth = X509_STORE_CTX_get_error_depth(ctx);
+
+    NETSTACK_LOGI("X509_STORE_CTX error code %{public}d, depth %{public}d", err, depth);
+
+    SSL *ssl = static_cast<SSL *>(X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx()));
+    SSL_CTX *sslctx = SSL_get_SSL_CTX(ssl);
+    RequestContext *requestContext = static_cast<RequestContext *>(SSL_CTX_get_ex_data(sslctx,
+        SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX));
+    if (requestContext->IsRootCaVerifiedOk()) {
+        // root CA hash verified, normal procedure.
+        return preverifyOk;
+    }
+
+    int verifyResult = VerifyCertPubkey(cert, requestContext->GetPinnedPubkey());
+    if (!requestContext->IsRootCaVerified()) {
+        // not verified yet, so this is the root CA verifying.
+        NETSTACK_LOGD("Verifying Root CA.");
+        requestContext->SetRootCaVerifiedOk(verifyResult == CURLE_OK);
+        requestContext->SetRootCaVerified();
+    }
+    if (verifyResult != CURLE_OK && depth == 0) {
+        // peer site certificate, since root ca verify not ok, and peer site is also not ok
+        // return failed.
+        return 0;
+    }
+    return preverifyOk;
+}
+#endif  // HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+
+CURLcode VerifyRootCaSslCtxFunction(CURL *curl, void *sslCtx, void *context)
+{
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+    SSL_CTX *ctx = static_cast<SSL_CTX *>(sslCtx);
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, VerifyCallback);
+    SSL_CTX_set_ex_data(ctx, SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX, context);
+#endif
+    return CURLE_OK;
+}
+
+CURLcode SslCtxFunction(CURL *curl, void *sslCtx, void *parm)
+{
+    auto requestContext = static_cast<RequestContext *>(parm);
+    if (requestContext == nullptr) {
+        NETSTACK_LOGE("requestContext is null");
+        return CURLE_SSL_CERTPROBLEM;
+    }
+    CURLcode result = MultiPathSslCtxFunction(curl, sslCtx, &requestContext->GetCertsPath());
+    if (result != CURLE_OK) {
+        return result;
+    }
+    if (!requestContext->GetPinnedPubkey().empty()) {
+        return VerifyRootCaSslCtxFunction(curl, sslCtx, requestContext);
+    }
     return CURLE_OK;
 }
 
@@ -591,8 +724,6 @@ bool NetHttpClientExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http:
     context->SetCertsPath(std::move(certs), context->options.GetCaPath());
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 1L, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 2L, context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_FUNCTION, SslCtxFunction, context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, &context->GetCertsPath(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
 #else
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
@@ -605,12 +736,17 @@ bool NetHttpClientExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http:
 #endif //  !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     // pin trusted certifcate keys.
     std::string pins;
-    auto ret1 = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
-    if (ret1 != 0 || pins.empty()) {
+    if (NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins) != 0 || pins.empty()) {
         NETSTACK_LOGD("Get no pinset by host name");
+    } else if (NetManagerStandard::NetConnClient::GetInstance().IsPinOpenModeVerifyRootCa(hostname)) {
+        context->SetPinnedPubkey(pins);
     } else {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str(), context);
     }
+#if defined(HTTP_MULTIPATH_CERT_ENABLE) || defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE)
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_FUNCTION, SslCtxFunction, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, context, context);
+#endif
 #else
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
