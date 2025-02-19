@@ -291,7 +291,7 @@ private:
 /**
  * TLS socket interface class
  */
-class TLSSocket {
+class TLSSocket : public std::enable_shared_from_this<TLSSocket> {
 public:
     TLSSocket(const TLSSocket &) = delete;
     TLSSocket(TLSSocket &&) = delete;
