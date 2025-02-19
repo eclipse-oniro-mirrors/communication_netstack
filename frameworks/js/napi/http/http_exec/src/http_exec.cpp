@@ -112,6 +112,9 @@ static constexpr unsigned int SHA256_LEN = 32;
 static constexpr int SHA256_BASE64_LEN = 44;  // 32-byte base64 -> 44 bytes
 #endif
 
+static constexpr const char *HTTP_AF_ONLYV4 = "ONLY_V4";
+static constexpr const char *HTTP_AF_ONLYV6 = "ONLY_V6";
+
 static void RequestContextDeleter(RequestContext *context)
 {
     context->DeleteReference();
@@ -1212,6 +1215,7 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
     SetSSLCertOption(curl, context);
     SetMultiPartOption(curl, context);
     SetDnsResolvOption(curl, context);
+    SetIpResolve(curl, context);
     return true;
 }
 
@@ -1716,5 +1720,19 @@ void HttpExec::SetFormDataOption(MultiFormData &multiFormData, curl_mimepart *pa
             NETSTACK_LOGE("Failed to set file data error: %{public}s", curl_easy_strerror(result));
         }
     }
+}
+
+bool HttpExec::SetIpResolve(CURL *curl, RequestContext *context)
+{
+    std::string addressFamily = context->options.GetAddressFamily();
+    if (addressFamily.empty()) {
+        return true;
+    }
+    if (addressFamily.compare(HTTP_AF_ONLYV4) == 0) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4, context);
+    } else if (addressFamily.compare(HTTP_AF_ONLYV6) == 0) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6, context);
+    }
+    return true;
 }
 } // namespace OHOS::NetStack::Http

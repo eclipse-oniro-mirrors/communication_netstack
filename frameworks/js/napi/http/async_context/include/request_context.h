@@ -213,6 +213,8 @@ private:
     CertificatePinning NapiValue2CertPinning(napi_value certPIN);
 
     void SaveFormData(napi_env env, napi_value dataValue, MultiFormData &multiFormData);
+
+    void ParseAddressFamily(napi_value optionsValue);
 };
 } // namespace OHOS::NetStack::Http
 

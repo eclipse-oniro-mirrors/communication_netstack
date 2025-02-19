@@ -56,6 +56,7 @@ public:
     static constexpr const char *INTERFACE_CERT_TYPE = "CertType";
     static constexpr const char *INTERFACE_HTTP_RESPONSE_CACHE = "OHOS_NET_HTTP_HttpResponseCache";
     static constexpr const char *INTERFACE_HTTP_DATA_TYPE = "HttpDataType";
+    static constexpr const char *INTERFACE_ADDRESS_FAMILY = "AddressFamily";
 
     static napi_value InitHttpModule(napi_env env, napi_value exports);
 
@@ -79,6 +80,8 @@ private:
     static void InitCertType(napi_env env, napi_value exports);
 
     static void InitHttpDataType(napi_env env, napi_value exports);
+
+    static void InitAddressFamily(napi_env env, napi_value exports);
 };
 } // namespace OHOS::NetStack::Http
 #endif // COMMUNICATIONNETSTACK_HTTP_MODULE_H

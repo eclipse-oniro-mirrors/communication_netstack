@@ -156,6 +156,7 @@ public:
     static const char *const PARAM_KEY_CLIENT_CERT;
     static const char *const PARAM_KEY_MULTI_FORM_DATA_LIST;
     static const char *const PARAM_KEY_CERTIFICATE_PINNING;
+    static const char *const PARAM_KEY_ADDRESS_FAMILY;
 
     static const char *const HTTP_PROXY_KEY_HOST;
     static const char *const HTTP_PROXY_KEY_PORT;
@@ -222,6 +223,10 @@ public:
 
     static const char *const REQUEST_TIME;
     static const char *const RESPONSE_TIME;
+
+    static const char *const HTTP_ADDRESS_FAMILY_UNSPEC;
+    static const char *const HTTP_ADDRESS_FAMILY_ONLYV4;
+    static const char *const HTTP_ADDRESS_FAMILY_ONLYV6;
 };
 } // namespace OHOS::NetStack::Http
 

@@ -128,6 +128,7 @@ void HttpModuleExports::InitHttpProperties(napi_env env, napi_value exports)
     InitCertType(env, exports);
     InitHttpProtocol(env, exports);
     InitHttpDataType(env, exports);
+    InitAddressFamily(env, exports);
 }
 
 void HttpModuleExports::InitRequestMethod(napi_env env, napi_value exports)
@@ -347,5 +348,20 @@ static napi_module g_httpModule = {
 extern "C" __attribute__((constructor)) void RegisterHttpModule(void)
 {
     napi_module_register(&g_httpModule);
+}
+
+void HttpModuleExports::InitAddressFamily(napi_env env, napi_value exports)
+{
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::HTTP_ADDRESS_FAMILY_UNSPEC,
+                                     NapiUtils::CreateStringUtf8(env, HttpConstant::HTTP_ADDRESS_FAMILY_UNSPEC)),
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::HTTP_ADDRESS_FAMILY_ONLYV4,
+                                     NapiUtils::CreateStringUtf8(env, HttpConstant::HTTP_ADDRESS_FAMILY_ONLYV4)),
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::HTTP_ADDRESS_FAMILY_ONLYV6,
+                                     NapiUtils::CreateStringUtf8(env, HttpConstant::HTTP_ADDRESS_FAMILY_ONLYV6)),
+    };
+    napi_value httpAddressFamily = NapiUtils::CreateObject(env);
+    NapiUtils::DefineProperties(env, httpAddressFamily, properties);
+    NapiUtils::SetNamedProperty(env, exports, INTERFACE_ADDRESS_FAMILY, httpAddressFamily);
 }
 } // namespace OHOS::NetStack::Http
