@@ -164,6 +164,8 @@ private:
     static CURLcode MultiPathSslCtxFunction(CURL *curl, void *ssl_ctx, void *request_context);
     static CURLcode VerifyRootCaSslCtxFunction(CURL *curl, void *ssl_ctx, void *context);
 
+    static bool SetIpResolve(CURL *curl, RequestContext *context);
+
     struct RequestInfo {
         RequestInfo() = delete;
         ~RequestInfo() = default;

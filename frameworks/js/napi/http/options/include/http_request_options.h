@@ -140,6 +140,10 @@ public:
     void GetClientCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
 
     std::vector<MultiFormData> GetMultiPartDataList();
+
+    void SetAddressFamily(std::string addressFamily);
+
+    [[nodiscard]] std::string GetAddressFamily() const;
 private:
     std::string url_;
 
@@ -192,6 +196,8 @@ private:
     std::vector<MultiFormData> multiFormDataList_;
 
     std::string certificatePinning_;
+
+    std::string addressFamily_;
 };
 } // namespace OHOS::NetStack::Http
 
