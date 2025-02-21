@@ -132,6 +132,7 @@ void Finalize(napi_env, void *data, void *)
         if (sock != -1) {
             SocketExec::SingletonSocketConfig::GetInstance().RemoveServerSocket(sock);
             close(sock);
+            manager->SetData(reinterpret_cast<void *>(-1));
         }
         EventManager::SetInvalid(manager);
     }
