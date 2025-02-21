@@ -286,6 +286,7 @@ int LwsCallbackWsiDestroy(lws *wsi, lws_callback_reasons reason, void *user, voi
         return -1;
     }
     NETSTACK_LOGI("Lws Callback LwsCallbackWsiDestroy");
+    client->GetClientContext()->SetLws(nullptr);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
