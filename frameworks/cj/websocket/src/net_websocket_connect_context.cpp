@@ -73,7 +73,7 @@ void WebSocketConnectContext::ParseParams(std::string url, CWebSocketRequestOpti
             SetClientCert(certPath, keySecure, keyPasswd);
         }
         if (opt->protocol != nullptr) {
-            SetProtocol(std::string{opt->caPath});
+            SetProtocol(std::string{opt->protocol});
         }
         ParseProxy(opt->httpProxy, opt->usingSystemProxy);
     }

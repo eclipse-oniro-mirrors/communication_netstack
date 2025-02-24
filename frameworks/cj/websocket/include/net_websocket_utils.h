@@ -31,6 +31,7 @@ namespace OHOS::NetStack::NetWebSocket {
 uint8_t* MallocUInt8(const std::string& origin);
 char* MallocCString(const std::string& origin);
 CArrString Map2CArrString(std::map<std::string, std::string> map);
+void FreeCArrString(CArrString& arrStr);
 
 class SecureChar {
 public:

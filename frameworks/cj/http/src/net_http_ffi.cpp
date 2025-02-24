@@ -95,6 +95,7 @@ EXTERN_C_START
         if (context->IsPermissionDenied() || !context->IsParseOK()) {
             ret.code = context->GetErrorCode();
             ret.data = MallocCString(context->GetErrorMessage());
+            delete context;
             return ret;
         }
 
