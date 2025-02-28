@@ -883,4 +883,45 @@ HWTEST_F(HttpClientTaskTest, HttpClientTask_ShouldNotCreate_WhenCurlInitFails, T
     auto httpClientTask2 = session.CreateTask(request, UPLOAD, "testFakePath");
     ASSERT_EQ(httpClientTask2->GetType(), UPLOAD);
 }
+
+HWTEST_F(HttpClientTaskTest, ProcessRequestTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/get";
+    httpReq.SetURL(url);
+    httpReq.SetHeader("content-type", "application/json");
+    
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    task->Start();
+
+    while (task->GetStatus() != TaskStatus::IDLE) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+
+    // 验证请求对象是否正确
+    const HttpClientRequest &request = task->GetRequest();
+    EXPECT_EQ(request.GetURL(), url);
+}
+
+HWTEST_F(HttpClientTaskTest, ProcessErrorTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://nonexistenturl:8080";
+    httpReq.SetURL(url);
+    httpReq.SetHeader("content-type", "text/plain");
+    
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    task->Start();
+
+    while (task->GetStatus() != TaskStatus::IDLE) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+
+    // 验证错误对象是否正确
+    const HttpClientError &error = task->GetError();
+    EXPECT_NE(error.GetErrorCode(), 0);
+    EXPECT_FALSE(error.GetErrorMessage().empty());
+}
 } // namespace
