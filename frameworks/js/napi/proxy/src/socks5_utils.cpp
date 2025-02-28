@@ -49,6 +49,9 @@ std::pair<bool, Socks5Buffer> Socks5Utils::Recv(int32_t socketId, sockaddr *addr
         pollfd fds[1] = {{socketId, POLLIN, 0}};
         const int ret = poll(fds, 1, timeoutMs);
         if (ret < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
             NETSTACK_LOGE("socks5 poll to recv failed, socket is %{public}d, errno is %{public}d", socketId, errno);
             break;
         } else if (ret == 0) {
