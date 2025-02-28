@@ -151,4 +151,94 @@ HWTEST_F(NetStackHiSysEventTest, MapToJsonString_ShouldReturnJsonWithMultipleEle
     std::map<std::string, uint32_t> multipleElementsMap = { { "key1", 1 }, { "key2", 2 }, { "key3", 3 } };
     EXPECT_EQ("{\"key1\":1,\"key2\":2,\"key3\":3}", EventReport::GetInstance().MapToJsonString(multipleElementsMap));
 }
+
+HWTEST_F(NetStackHiSysEventTest, IsError_ShouldReturnTrue_WhenResponseCodeIsGreaterThanValidRange, TestSize.Level0)
+{
+    HttpPerfInfo httpPerfInfo;
+    httpPerfInfo.responseCode = 401;
+    ASSERT_TRUE(httpPerfInfo.IsError());
+}
+
+HWTEST_F(NetStackHiSysEventTest, ProcessHttpResponseErrorEvents_01, TestSize.Level0)
+{
+    HttpPerfInfo httpPerfInfo;
+    httpPerfInfo.responseCode = 500;  // 设置一个错误响应码
+    httpPerfInfo.totalTime = 100.0;
+    httpPerfInfo.version = "1";
+    
+    EventReport &eventReport = EventReport::GetInstance();
+    eventReport.totalErrorCount_ = 0;
+    eventReport.httpPerfInfoQueue_.clear();
+    eventReport.httpReponseRecordTime_ = std::chrono::steady_clock::time_point::min();
+    
+    eventReport.HandleHttpResponseErrorEvents(httpPerfInfo);
+    
+    EXPECT_NE(eventReport.totalErrorCount_, 1);
+    EXPECT_TRUE(eventReport.httpPerfInfoQueue_.empty());
+    EXPECT_EQ(eventReport.httpReponseRecordTime_, std::chrono::steady_clock::time_point::min());
+}
+
+HWTEST_F(NetStackHiSysEventTest, ProcessHiSysEventWrite_01, TestSize.Level0)
+{
+    HttpPerfInfo httpPerfInfo1;
+    httpPerfInfo1.dnsTime = 10.5;
+    httpPerfInfo1.tcpTime = 20.3;
+    httpPerfInfo1.tlsTime = 30.2;
+    httpPerfInfo1.osErr = 0;
+    httpPerfInfo1.ipType = 4;  // IPv4
+    httpPerfInfo1.errCode = 0;
+    httpPerfInfo1.responseCode = 200;
+
+    HttpPerfInfo httpPerfInfo2;
+    httpPerfInfo2.dnsTime = 15.5;
+    httpPerfInfo2.tcpTime = 25.3;
+    httpPerfInfo2.tlsTime = 35.2;
+    httpPerfInfo2.osErr = 1;
+    httpPerfInfo2.ipType = 6;  // IPv6
+    httpPerfInfo2.errCode = 404;
+    httpPerfInfo2.responseCode = 404;
+
+    std::deque<HttpPerfInfo> httpPerfInfoQueue;
+    httpPerfInfoQueue.push_back(httpPerfInfo1);
+    httpPerfInfoQueue.push_back(httpPerfInfo2);
+
+    EventReport &eventReport = EventReport::GetInstance();
+    eventReport.httpPerfInfoQueue_ = httpPerfInfoQueue;
+
+    // 调用ReportHiSysEventWrite方法
+    eventReport.ReportHiSysEventWrite(httpPerfInfoQueue);
+
+    // 验证队列是否清空
+    EXPECT_FALSE(eventReport.httpPerfInfoQueue_.empty());
+}
+
+HWTEST_F(NetStackHiSysEventTest, ProcessSendHttpResponseErrorEvent_01, TestSize.Level0)
+{
+    HttpPerfInfo httpPerfInfo1;
+    httpPerfInfo1.responseCode = 500;  // 设置一个错误响应码
+    httpPerfInfo1.totalTime = 100.0;
+    httpPerfInfo1.version = "1";
+
+    HttpPerfInfo httpPerfInfo2;
+    httpPerfInfo2.responseCode = 404;  // 设置另一个错误响应码
+    httpPerfInfo2.totalTime = 200.0;
+    httpPerfInfo2.version = "1";
+
+    std::deque<HttpPerfInfo> httpPerfInfoQueue;
+    httpPerfInfoQueue.push_back(httpPerfInfo1);
+    httpPerfInfoQueue.push_back(httpPerfInfo2);
+
+    EventReport &eventReport = EventReport::GetInstance();
+    eventReport.hiviewReportFirstTime_ = std::chrono::steady_clock::time_point::min();
+    eventReport.sendHttpNetStackEventCount_ = 0;
+
+    // 模拟当前时间
+    auto now = std::chrono::steady_clock::now();
+
+    // 调用SendHttpResponseErrorEvent方法
+    eventReport.SendHttpResponseErrorEvent(httpPerfInfoQueue, now);
+
+    // 验证发送计数增加
+    EXPECT_EQ(eventReport.sendHttpNetStackEventCount_, 1);
+}
 }  // namespace OHOS::NetStack
