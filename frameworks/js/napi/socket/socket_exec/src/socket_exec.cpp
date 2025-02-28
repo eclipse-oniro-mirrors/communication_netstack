@@ -714,7 +714,11 @@ static bool ProcessRecvFds(std::pair<std::unique_ptr<char[]> &, int> &bufInfo,
     std::unordered_map<int, SocketRecvCallback> &socketCallbackMap)
 {
     for (auto &fd : fds) {
-        if ((fd.revents & POLLIN) == 0) {
+        if ((static_cast<uint16_t>(fd.revents) & POLLRDHUP) || (static_cast<uint16_t>(fd.revents) & POLLERR) ||
+            (static_cast<uint16_t>(fd.revents) & POLLNVAL)) {
+            return false;
+        }
+        if ((static_cast<uint16_t>(fd.revents) & POLLIN) == 0) {
             continue;
         }
         auto it = socketCallbackMap.find(fd.fd);
