@@ -105,7 +105,7 @@ public:
 
     const std::string &GetWebSocketBinaryData();
 
-    std::mutex &GetDataMutex();
+    std::shared_mutex &GetDataMutex();
 
     void AppendWebSocketBinaryData(void *data, size_t length);
 
@@ -132,7 +132,7 @@ public:
 private:
     std::shared_mutex mutexForListenersAndEmitByUv_;
     std::mutex mutexForEmitAndEmitByUv_;
-    std::mutex dataMutex_;
+    std::shared_mutex dataMutex_;
     std::mutex dataQueueMutex_;
     std::list<EventListener> listeners_;
     void *data_;

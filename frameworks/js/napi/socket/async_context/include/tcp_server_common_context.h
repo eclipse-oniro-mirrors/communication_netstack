@@ -57,7 +57,17 @@ typedef TcpServerCommonContext TcpServerGetStateContext;
 typedef TcpServerCommonContext TcpServerGetLocalAddressContext;
 typedef TcpServerCommonContext TcpConnectionGetLocalAddressContext;
 typedef TcpServerCommonContext TcpServerGetRemoteAddressContext;
-typedef TcpServerCommonContext TcpServerCloseContext;
+
+class TcpServerCloseContext final : public TcpServerCommonContext {
+public:
+    DISALLOW_COPY_AND_MOVE(TcpServerCloseContext);
+
+    TcpServerCloseContext() = delete;
+
+    explicit TcpServerCloseContext(napi_env env, EventManager *manager);
+
+    void SetSocketFd(int sock);
+};
 } // namespace OHOS::NetStack::Socket
 
 #endif /* COMMUNICATIONNETSTACK_TCP_SERVER_COMMON_CONTEXT_H */

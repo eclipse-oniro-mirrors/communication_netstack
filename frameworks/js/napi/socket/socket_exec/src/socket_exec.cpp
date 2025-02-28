@@ -23,6 +23,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <netinet/tcp.h>
 #include <poll.h>
 #include <sys/socket.h>
@@ -97,7 +98,7 @@ std::map<int32_t, int32_t> g_clientFDs;
 std::map<int32_t, EventManager *> g_clientEventManagers;
 std::condition_variable g_cv;
 std::mutex g_mutex;
-std::mutex g_fdMutex;
+std::shared_mutex g_fdMutex;
 std::atomic_int g_userCounter = 0;
 
 static void SetIsBound(sa_family_t family, GetStateContext *context, const sockaddr_in *addr4,
@@ -1177,7 +1178,7 @@ bool ExecClose(CloseContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-
+    
     EventManager *manager = context->GetManager();
     if (EventManager::IsManagerValid(manager)) {
         auto inst = manager->GetProxyData();
@@ -1186,6 +1187,11 @@ bool ExecClose(CloseContext *context)
         }
     }
 
+    std::unique_lock<std::shared_mutex> lock(g_fdMutex);
+    if (context->GetSocketFd() < 0) {
+        NETSTACK_LOGE("sock %{public}d is previous closed", context->GetSocketFd());
+        return false;
+    }
     int ret = close(context->GetSocketFd());
     if (ret < 0) {
         NETSTACK_LOGE("sock closed failed , socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
@@ -1926,6 +1932,27 @@ static bool IsClientFdClosed(int32_t clientFd)
     return (fcntl(clientFd, F_GETFL) == -1 && errno == EBADF);
 }
 
+static void RemoveClientConnection(int32_t clientId, TcpServerCloseContext *context)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    for (auto it = g_clientFDs.begin(); it != g_clientFDs.end(); ++it) {
+        if (it->first == clientId) {
+            NETSTACK_LOGI("remove clientfd and eventmanager clientid: %{public}d clientFd:%{public}d", it->first,
+                          it->second);
+            if (!IsClientFdClosed(it->second)) {
+                std::unique_lock<std::shared_mutex> lock(g_fdMutex);
+                NETSTACK_LOGI("connectFD: %{public}d, not close should close", it->second);
+                shutdown(it->second, SHUT_RDWR);
+                close(it->second);
+                context->SetSocketFd(-1);
+            }
+
+            g_clientFDs.erase(it->first);
+            break;
+        }
+    }
+}
+
 static void RemoveClientConnection(int32_t clientId)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
@@ -1935,7 +1962,6 @@ static void RemoveClientConnection(int32_t clientId)
                           it->second);
             if (!IsClientFdClosed(it->second)) {
                 NETSTACK_LOGI("connectFD: %{public}d, not close should close", it->second);
-                std::lock_guard<std::mutex> lock(g_fdMutex);
                 shutdown(it->second, SHUT_RDWR);
                 close(it->second);
             }
@@ -1982,7 +2008,7 @@ static inline void CloseClientHandler(int clientId, int connectFD,
     SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
 }
 
-static int PoolSocket(int clientId, int connectFD, EventManager *manager, const TcpMessageCallback &callback)
+static int PollSocket(int clientId, int connectFD, EventManager *manager, const TcpMessageCallback &callback)
 {
     pollfd fds[1] = {{connectFD, POLLIN, 0}};
     int ret = poll(fds, 1, DEFAULT_POLL_TIMEOUT);
@@ -2015,7 +2041,7 @@ static bool IsValidSock(int &currentFd, EventManager *manager)
 static int RecvWithSockCheck(int connectFD, char *buffer, uint32_t recvBufferSize, EventManager *manager,
                              int &recvSize)
 {
-    std::lock_guard<std::mutex> lock(g_fdMutex);
+    std::shared_lock<std::shared_mutex> lock(g_fdMutex);
     if (buffer == nullptr) {
         return -1;
     }
@@ -2040,7 +2066,7 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
             RecvInErrorCondition(UNKNOW_ERROR, clientId, connectFD, callback);
             break;
         }
-        int ret = PoolSocket(clientId, connectFD, manager, callback);
+        int ret = PollSocket(clientId, connectFD, manager, callback);
         if (ret < 0) {
             break;
         } else if (ret == 0) {
@@ -2055,7 +2081,6 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
             CloseClientHandler(clientId, connectFD, manager, callback);
             break;
         }
-
         if (recvSize <= 0) {
             NETSTACK_LOGI("ClientRecv: fd:%{public}d, size:%{public}d, errno:%{public}d, is non blocking:%{public}s",
                           connectFD, recvSize, errno, static_cast<uint32_t>(flags) & O_NONBLOCK ? "true" : "false");
@@ -2403,7 +2428,7 @@ napi_value TcpConnectionSendCallback(TcpServerSendContext *context)
 napi_value TcpConnectionCloseCallback(TcpServerCloseContext *context)
 {
     NETSTACK_LOGI("Close tcp socket, clientId:%{public}d", context->clientId_);
-    RemoveClientConnection(context->clientId_);
+    RemoveClientConnection(context->clientId_, context);
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 

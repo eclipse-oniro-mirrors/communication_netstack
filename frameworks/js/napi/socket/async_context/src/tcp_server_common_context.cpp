@@ -49,6 +49,14 @@ int TcpServerCommonContext::GetSocketFd() const
     return manager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) : -1;
 }
 
+TcpServerCloseContext::TcpServerCloseContext(napi_env env, EventManager *manager)
+    :TcpServerCommonContext(env, manager) {}
+
+void TcpServerCloseContext::SetSocketFd(int sock)
+{
+    manager_->SetData(reinterpret_cast<void *>(sock));
+}
+
 bool TcpServerCommonContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
     if (paramsCount == PARAM_NONE) {

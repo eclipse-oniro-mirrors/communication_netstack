@@ -337,7 +337,7 @@ void EventManager::ClearWebSocketBinaryData()
     webSocketBinaryData_.clear();
 }
 
-std::mutex &EventManager::GetDataMutex()
+std::shared_mutex &EventManager::GetDataMutex()
 {
     return dataMutex_;
 }
@@ -367,25 +367,25 @@ bool EventManager::GetReuseAddr()
 
 std::shared_ptr<Socks5::Socks5Instance> EventManager::GetProxyData()
 {
-    std::lock_guard<std::mutex> lock(dataMutex_);
+    std::unique_lock<std::shared_mutex> lock(dataMutex_);
     return proxyData_;
 }
 
 void EventManager::SetProxyData(std::shared_ptr<Socks5::Socks5Instance> data)
 {
-    std::lock_guard<std::mutex> lock(dataMutex_);
+    std::unique_lock<std::shared_mutex> lock(dataMutex_);
     proxyData_ = data;
 }
 
 void EventManager::SetWebSocketUserData(const std::shared_ptr<Websocket::UserData> &userData)
 {
-    std::lock_guard<std::mutex> lock(dataMutex_);
+    std::unique_lock<std::shared_mutex> lock(dataMutex_);
     webSocketUserData_ = userData;
 }
 
 std::shared_ptr<Websocket::UserData> EventManager::GetWebSocketUserData()
 {
-    std::lock_guard<std::mutex> lock(dataMutex_);
+    std::unique_lock<std::shared_mutex> lock(dataMutex_);
     return webSocketUserData_;
 }
 
