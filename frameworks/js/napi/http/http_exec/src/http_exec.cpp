@@ -1137,6 +1137,10 @@ static int VerifyCallback(int preverifyOk, X509_STORE_CTX *ctx)
     SSL_CTX *sslCtx = SSL_get_SSL_CTX(ssl);
     RequestContext *requestContext = static_cast<RequestContext *>(SSL_CTX_get_ex_data(sslCtx,
         SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX));
+    if (requestContext == nullptr) {
+        NETSTACK_LOGE("requestContext is null, fail");
+        return 0;
+    }
     if (requestContext->IsRootCaVerifiedOk()) {
         // root CA hash verified, normal procedure.
         return preverifyOk;
