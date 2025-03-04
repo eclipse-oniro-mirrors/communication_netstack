@@ -56,9 +56,11 @@ EXTERN_C_START
         if (context->IsPermissionDenied() || !context->IsParseOK()) {
             NETSTACK_LOGE("CJWebSocket FfiOHOSWebSocketConnect failed. Permission denied.");
             ret.code = context->GetErrorCode();
+            delete context;
             return ret;
         }
         ret.data = true;
+        delete context;
         return ret;
     }
     
@@ -85,9 +87,11 @@ EXTERN_C_START
         }
         if (context->IsPermissionDenied() || !context->IsParseOK()) {
             ret.code = context->GetErrorCode();
+            delete context;
             return ret;
         }
         ret.data = true;
+        delete context;
         return ret;
     }
     
@@ -110,9 +114,11 @@ EXTERN_C_START
         }
         if (context->IsPermissionDenied() || !context->IsParseOK()) {
             ret.code = context->GetErrorCode();
+            delete context;
             return ret;
         }
         ret.data = true;
+        delete context;
         return ret;
     }
 

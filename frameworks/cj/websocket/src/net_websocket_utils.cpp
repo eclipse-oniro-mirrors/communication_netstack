@@ -67,6 +67,18 @@ CArrString Map2CArrString(std::map<std::string, std::string> map)
     return ret;
 }
 
+void FreeCArrString(CArrString& arrStr)
+{
+    if (arrStr.head == nullptr) {
+        return;
+    }
+    for (int64_t i = 0; i < arrStr.size; i++) {
+        free(arrStr.head[i]);
+    }
+    free(arrStr.head);
+    arrStr.head = nullptr;
+}
+
 SecureChar::SecureChar() : data_(std::make_unique<char[]>(0)) {}
 
 SecureChar::~SecureChar()

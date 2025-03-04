@@ -276,7 +276,7 @@ void OnConnectError(CJWebsocketProxy *websocketProxy, int32_t code, uint32_t htt
     para->data = CreateError(code, httpResponse);
     para->dataLen = sizeof(CErrorResponse);
     websocketProxy->EmitCallBack(para);
-    delete[] para->data;
+    delete reinterpret_cast<CErrorResponse*>(para->data);
     delete para;
 }
 
@@ -882,7 +882,9 @@ void NetWebSocketExec::OnOpen(CJWebsocketProxy *websocketProxy, uint32_t status,
     para->data = CreateOpenPara(status, message);
     para->dataLen = sizeof(COpenResponse);
     websocketProxy->EmitCallBack(para);
-    delete[] para->data;
+    auto openResponse = reinterpret_cast<COpenResponse*>(para->data);
+    free(openResponse->message);
+    delete openResponse;
     delete para;
 }
 
@@ -904,7 +906,7 @@ void NetWebSocketExec::OnError(CJWebsocketProxy *websocketProxy, int32_t code, u
     para->data = CreateError(code, httpResponse);
     para->dataLen = sizeof(CErrorResponse);
     websocketProxy->EmitCallBack(para);
-    delete[] para->data;
+    delete reinterpret_cast<CErrorResponse*>(para->data);
     delete para;
 }
 
@@ -946,7 +948,9 @@ void NetWebSocketExec::OnClose(CJWebsocketProxy *websocketProxy,
     para->data = CreateClosePara(closeStatus, closeReason);
     para->dataLen = sizeof(CCloseResponse);
     websocketProxy->EmitCallBack(para);
-    delete[] para->data;
+    auto closeResponse = reinterpret_cast<CCloseResponse*>(para->data);
+    free(closeResponse->reason);
+    delete closeResponse;
     delete para;
 }
 
@@ -985,7 +989,9 @@ void NetWebSocketExec::OnHeaderReceive(CJWebsocketProxy *websocketProxy,
     para->data = CreateResponseHeader(headers);
     para->dataLen = sizeof(CReceiveResponse);
     websocketProxy->EmitCallBack(para);
-    delete[] para->data;
+    auto receiveResponse = reinterpret_cast<CReceiveResponse*>(para->data);
+    FreeCArrString(receiveResponse->header);
+    delete receiveResponse;
     delete para;
 }
 
@@ -1005,7 +1011,9 @@ void NetWebSocketExec::HandleRcvMessage(CJWebsocketProxy *websocketProxy,
             para->data = CreateMessagePara(websocketProxy, isBinary);
             para->dataLen = sizeof(CMessageResponse);
             websocketProxy->EmitCallBack(para);
-            delete[] para->data;
+            auto msgResponse = reinterpret_cast<CMessageResponse*>(para->data);
+            free(msgResponse->result.head);
+            delete msgResponse;
             delete para;
             websocketProxy->ClearWebSocketTextData();
             OnDataEnd(websocketProxy);
@@ -1026,7 +1034,9 @@ void NetWebSocketExec::HandleRcvMessage(CJWebsocketProxy *websocketProxy,
             para->data = CreateMessagePara(websocketProxy, isBinary);
             para->dataLen = sizeof(CMessageResponse);
             websocketProxy->EmitCallBack(para);
-            delete[] para->data;
+            auto msgResponse = reinterpret_cast<CMessageResponse*>(para->data);
+            free(msgResponse->result.head);
+            delete msgResponse;
             delete para;
             websocketProxy->ClearWebSocketTextData();
             OnDataEnd(websocketProxy);
