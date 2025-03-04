@@ -241,103 +241,99 @@ HWTEST_F(TlsSocketBranchTest, BranchTest5, TestSize.Level2)
     TLSConnectOptions tlsConnectOptions = BaseOption();
 
     AccessToken token;
-    TLSSocket tlsSocket;
-    tlsSocket.OnError(
+    std::shared_ptr<TLSSocket> tlsSocket = std::make_shared<TLSSocket>();
+    tlsSocket->OnError(
         [](int32_t errorNumber, const std::string &errorString) { EXPECT_NE(TLSSOCKET_SUCCESS, errorNumber); });
-    tlsSocket.Connect(tlsConnectOptions, [](int32_t errCode) { EXPECT_NE(TLSSOCKET_SUCCESS, errCode); });
+    tlsSocket->Connect(tlsConnectOptions, [](int32_t errCode) { EXPECT_NE(TLSSOCKET_SUCCESS, errCode); });
     std::string getData;
-    tlsSocket.OnMessage([&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {
+    tlsSocket->OnMessage([&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {
         EXPECT_STREQ(getData.data(), nullptr);
     });
     const std::string data = "how do you do?";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
-    tlsSocket.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_EQ(errCode, TLS_ERR_SSL_NULL); });
-    tlsSocket.GetSignatureAlgorithms(
+    tlsSocket->Send(tcpSendOptions, [](int32_t errCode) { EXPECT_EQ(errCode, TLS_ERR_SSL_NULL); });
+    tlsSocket->GetSignatureAlgorithms(
         [](int32_t errCode, const std::vector<std::string> &algorithms) { EXPECT_EQ(errCode, TLS_ERR_SSL_NULL); });
-    tlsSocket.GetCertificate(
+    tlsSocket->GetCertificate(
         [](int32_t errCode, const X509CertRawData &cert) { EXPECT_NE(errCode, TLSSOCKET_SUCCESS); });
-    tlsSocket.GetCipherSuite(
+    tlsSocket->GetCipherSuite(
         [](int32_t errCode, const std::vector<std::string> &suite) { EXPECT_EQ(errCode, TLS_ERR_SSL_NULL); });
-    tlsSocket.GetProtocol([](int32_t errCode, const std::string &protocol) { EXPECT_EQ(errCode, TLSSOCKET_SUCCESS); });
-    tlsSocket.GetRemoteCertificate(
+    tlsSocket->GetProtocol([](int32_t errCode, const std::string &protocol) { EXPECT_EQ(errCode, TLSSOCKET_SUCCESS); });
+    tlsSocket->GetRemoteCertificate(
         [](int32_t errCode, const X509CertRawData &cert) { EXPECT_EQ(errCode, TLS_ERR_SSL_NULL); });
-    (void)tlsSocket.Close([](int32_t errCode) { EXPECT_FALSE(errCode == TLSSOCKET_SUCCESS); });
+    (void)tlsSocket->Close([](int32_t errCode) { EXPECT_FALSE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketBranchTest, BranchTest6, TestSize.Level2)
 {
     TLSConnectOptions connectOptions = BaseOption();
 
-    TLSSocket tlsSocket;
-    TLSSocket::TLSSocketInternal *tlsSocketInternal = new TLSSocket::TLSSocketInternal();
-    bool isConnectToHost = tlsSocketInternal->TlsConnectToHost(SOCKET_FD, connectOptions, false);
+    TLSSocket::TLSSocketInternal tlsSocketInternal;
+    bool isConnectToHost = tlsSocketInternal.TlsConnectToHost(SOCKET_FD, connectOptions, false);
     EXPECT_FALSE(isConnectToHost);
-    tlsSocketInternal->SetTlsConfiguration(connectOptions);
+    tlsSocketInternal.SetTlsConfiguration(connectOptions);
 
-    bool sendSslNull = tlsSocketInternal->Send(SEND_DATA);
+    bool sendSslNull = tlsSocketInternal.Send(SEND_DATA);
     EXPECT_FALSE(sendSslNull);
     char buffer[MAX_BUFFER_SIZE];
     bzero(buffer, MAX_BUFFER_SIZE);
-    int recvSslNull = tlsSocketInternal->Recv(buffer, MAX_BUFFER_SIZE);
+    int recvSslNull = tlsSocketInternal.Recv(buffer, MAX_BUFFER_SIZE);
     EXPECT_EQ(recvSslNull, SSL_ERROR_RETURN);
-    bool closeSslNull = tlsSocketInternal->Close();
+    bool closeSslNull = tlsSocketInternal.Close();
     EXPECT_FALSE(closeSslNull);
-    tlsSocketInternal->ssl_ = SSL_new(SSL_CTX_new(TLS_client_method()));
-    bool sendEmpty = tlsSocketInternal->Send(SEND_DATA_EMPTY);
+    tlsSocketInternal.ssl_ = SSL_new(SSL_CTX_new(TLS_client_method()));
+    bool sendEmpty = tlsSocketInternal.Send(SEND_DATA_EMPTY);
     EXPECT_TRUE(sendEmpty);
-    int recv = tlsSocketInternal->Recv(buffer, MAX_BUFFER_SIZE);
+    int recv = tlsSocketInternal.Recv(buffer, MAX_BUFFER_SIZE);
     EXPECT_EQ(recv, SSL_ERROR_RETURN);
-    bool close = tlsSocketInternal->Close();
+    bool close = tlsSocketInternal.Close();
     EXPECT_FALSE(close);
-    delete tlsSocketInternal;
 }
 
 HWTEST_F(TlsSocketBranchTest, BranchTest7, TestSize.Level2)
 {
-    TLSSocket tlsSocket;
-    TLSSocket::TLSSocketInternal *tlsSocketInternal = new TLSSocket::TLSSocketInternal();
+    TLSSocket::TLSSocketInternal tlsSocketInternal;
 
     std::vector<std::string> alpnProtocols;
     alpnProtocols.push_back(ALPN_PROTOCOL);
-    bool alpnProSslNull = tlsSocketInternal->SetAlpnProtocols(alpnProtocols);
+    bool alpnProSslNull = tlsSocketInternal.SetAlpnProtocols(alpnProtocols);
     EXPECT_FALSE(alpnProSslNull);
-    std::vector<std::string> getCipherSuite = tlsSocketInternal->GetCipherSuite();
+    std::vector<std::string> getCipherSuite = tlsSocketInternal.GetCipherSuite();
     EXPECT_EQ(getCipherSuite.size(), 0);
-    bool setSharedSigals = tlsSocketInternal->SetSharedSigals();
+    bool setSharedSigals = tlsSocketInternal.SetSharedSigals();
     EXPECT_FALSE(setSharedSigals);
-    tlsSocketInternal->ssl_ = SSL_new(SSL_CTX_new(TLS_client_method()));
-    getCipherSuite = tlsSocketInternal->GetCipherSuite();
+    tlsSocketInternal.ssl_ = SSL_new(SSL_CTX_new(TLS_client_method()));
+    getCipherSuite = tlsSocketInternal.GetCipherSuite();
     EXPECT_NE(getCipherSuite.size(), 0);
-    setSharedSigals = tlsSocketInternal->SetSharedSigals();
+    setSharedSigals = tlsSocketInternal.SetSharedSigals();
     EXPECT_FALSE(setSharedSigals);
     TLSConnectOptions connectOptions = BaseOption();
-    bool alpnPro = tlsSocketInternal->SetAlpnProtocols(alpnProtocols);
+    bool alpnPro = tlsSocketInternal.SetAlpnProtocols(alpnProtocols);
     EXPECT_TRUE(alpnPro);
 
     Socket::SocketRemoteInfo remoteInfo;
-    tlsSocketInternal->hostName_ = IP_ADDRESS;
-    tlsSocketInternal->port_ = PORT;
-    tlsSocketInternal->family_ = AF_INET;
-    tlsSocketInternal->MakeRemoteInfo(remoteInfo);
-    getCipherSuite = tlsSocketInternal->GetCipherSuite();
+    tlsSocketInternal.hostName_ = IP_ADDRESS;
+    tlsSocketInternal.port_ = PORT;
+    tlsSocketInternal.family_ = AF_INET;
+    tlsSocketInternal.MakeRemoteInfo(remoteInfo);
+    getCipherSuite = tlsSocketInternal.GetCipherSuite();
     EXPECT_NE(getCipherSuite.size(), 0);
 
-    std::string getRemoteCert = tlsSocketInternal->GetRemoteCertificate();
+    std::string getRemoteCert = tlsSocketInternal.GetRemoteCertificate();
     EXPECT_EQ(getRemoteCert, "");
 
-    std::vector<std::string> getSignatureAlgorithms = tlsSocketInternal->GetSignatureAlgorithms();
+    std::vector<std::string> getSignatureAlgorithms = tlsSocketInternal.GetSignatureAlgorithms();
     EXPECT_EQ(getSignatureAlgorithms.size(), 0);
 
-    std::string getProtocol = tlsSocketInternal->GetProtocol();
+    std::string getProtocol = tlsSocketInternal.GetProtocol();
     EXPECT_NE(getProtocol, "");
 
-    setSharedSigals = tlsSocketInternal->SetSharedSigals();
+    setSharedSigals = tlsSocketInternal.SetSharedSigals();
     EXPECT_FALSE(setSharedSigals);
 
-    ssl_st *ssl = tlsSocketInternal->GetSSL();
+    ssl_st *ssl = tlsSocketInternal.GetSSL();
     EXPECT_NE(ssl, nullptr);
-    delete tlsSocketInternal;
 }
 } // namespace TlsSocket
 } // namespace NetStack
