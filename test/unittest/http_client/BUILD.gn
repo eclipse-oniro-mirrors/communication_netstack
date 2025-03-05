@@ -18,6 +18,7 @@ import("//foundation/communication/netstack/netstack_config.gni")
 utils_include = [
   "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
   "$SUBSYSTEM_DIR/netstack/utils/log/include",
+  "//foundation/communication/netstack/frameworks/native/http/http_client/include",
 ]
 
 common_external_deps = [

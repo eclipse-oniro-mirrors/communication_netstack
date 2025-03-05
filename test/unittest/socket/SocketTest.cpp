@@ -271,6 +271,7 @@ HWTEST_F(SocketTest, Socks5SocketTest002, TestSize.Level1)
 
     context.proxyOptions->type_ = ProxyType::SOCKS5;
     EXPECT_FALSE(SocketExec::ExecUdpSend(&context));
+    sleep(2);
 }
 
 HWTEST_F(SocketTest, SetSocks5OptionTest001, TestSize.Level1)

@@ -320,6 +320,7 @@ HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest006, TestSize.Level1)
     auto task = session.CreateTask(httpReq);
 
     task->curlHandle_ = nullptr;
+    task->curlHeaderList_ = nullptr;
     std::string headerStr = "Connection:keep-alive";
     task->curlHeaderList_ = curl_slist_append(task->curlHeaderList_, headerStr.c_str());
 
@@ -731,6 +732,27 @@ HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoTest002, TestSize.Level1)
     EXPECT_FALSE(tunnel);
 }
 
+HWTEST_F(HttpClientTaskTest, SslCtxFunctionTest001, TestSize.Level1)
+{
+    CURL *curl = nullptr;
+    SSL_CTX *sslCtx = nullptr;
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    EXPECT_EQ(task->SslCtxFunction(curl, sslCtx), CURLE_SSL_CERTPROBLEM);
+}
+
+HWTEST_F(HttpClientTaskTest, SslCtxFunctionTest002, TestSize.Level1)
+{
+    CURL *curl = nullptr;
+    SSL_CTX *sslCtx = SSL_CTX_new(TLS_client_method());
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    EXPECT_EQ(task->SslCtxFunction(curl, sslCtx), CURLE_OK);
+    SSL_CTX_free(sslCtx);
+}
+
 HWTEST_F(HttpClientTaskTest, SetStatus001, TestSize.Level1)
 {
     HttpClientRequest httpReq;
@@ -798,6 +820,33 @@ HWTEST_F(HttpClientTaskTest, StartTest002, TestSize.Level1)
     EXPECT_FALSE(result);
 }
 
+HWTEST_F(HttpClientTaskTest, StartTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.baidu.com";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    bool result = task->Start();
+    EXPECT_TRUE(result);
+}
+
+HWTEST_F(HttpClientTaskTest, StartTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "https://www.baidu.com";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    task->error_.SetErrorCode(HttpErrorCode::HTTP_UNSUPPORTED_PROTOCOL);
+    bool result = task->Start();
+    EXPECT_FALSE(result);
+}
+
 HWTEST_F(HttpClientTaskTest, ProcessCookieTest001, TestSize.Level1)
 {
     HttpClientRequest httpReq;
@@ -812,6 +861,35 @@ HWTEST_F(HttpClientTaskTest, ProcessCookieTest001, TestSize.Level1)
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     EXPECT_EQ(task->GetResponse().GetResponseCode(), ResponseCode::NONE);
+}
+
+HWTEST_F(HttpClientTaskTest, ProcessCookieTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    task->ProcessCookie(task->curlHandle_);
+    EXPECT_NE(task->curlHandle_, nullptr);
+}
+
+HWTEST_F(HttpClientTaskTest, GetTimingFromCurlTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    task->curlHandle_ = nullptr;
+    // CURLINFO info;
+    auto ret = task->GetTimingFromCurl(task->curlHandle_, CURLINFO_TOTAL_TIME_T);
+    EXPECT_EQ(ret, 0);
+}
+
+HWTEST_F(HttpClientTaskTest, DumpHttpPerformanceTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    task->DumpHttpPerformance();
+    EXPECT_NE(task->curlHandle_, nullptr);
 }
 
 HWTEST_F(HttpClientTaskTest, CancelTest001, TestSize.Level1)
@@ -831,6 +909,19 @@ HWTEST_F(HttpClientTaskTest, SetServerSSLCertOption001, TestSize.Level1)
 {
     HttpClientRequest httpReq;
     std::string url = "https://www.baidu.com";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    bool result = task->SetServerSSLCertOption(task->curlHandle_);
+    EXPECT_TRUE(result);
+}
+
+HWTEST_F(HttpClientTaskTest, SetServerSSLCertOption002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "";
     httpReq.SetURL(url);
 
     HttpSession &session = HttpSession::GetInstance();
