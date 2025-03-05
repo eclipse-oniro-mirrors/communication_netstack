@@ -715,19 +715,24 @@ static bool ProcessRecvFds(std::pair<std::unique_ptr<char[]> &, int> &bufInfo,
     std::unordered_map<int, SocketRecvCallback> &socketCallbackMap)
 {
     for (auto &fd : fds) {
+#if !defined(CROSS_PLATFORM)
         if ((static_cast<uint16_t>(fd.revents) & POLLRDHUP) || (static_cast<uint16_t>(fd.revents) & POLLERR) ||
             (static_cast<uint16_t>(fd.revents) & POLLNVAL)) {
+#else
+        if ((static_cast<uint16_t>(fd.revents) & POLLERR) || (static_cast<uint16_t>(fd.revents) & POLLNVAL)) {
+#endif
             return false;
         }
         if ((static_cast<uint16_t>(fd.revents) & POLLIN) == 0) {
             continue;
         }
         auto it = socketCallbackMap.find(fd.fd);
-        if (it != socketCallbackMap.end()) {
-            auto cb = it->second;
-            if (cb != nullptr && !cb(fd.fd, bufInfo, addrInfo, callback)) {
-                return false;
-            }
+        if (it == socketCallbackMap.end()) {
+            continue;
+        }
+        auto cb = it->second;
+        if (cb != nullptr && !cb(fd.fd, bufInfo, addrInfo, callback)) {
+            return false;
         }
     }
     return true;
