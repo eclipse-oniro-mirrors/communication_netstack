@@ -310,16 +310,8 @@ bool TLSSocketServer::Send(const TLSServerSendOptions &data, const TlsSocket::Se
 
 void TLSSocketServer::CallSendCallback(int32_t err, TlsSocket::SendCallback callback)
 {
-    TlsSocket::SendCallback CallBackfunc = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            CallBackfunc = callback;
-        }
-    }
-
-    if (CallBackfunc) {
-        CallBackfunc(err);
+    if (callback) {
+        callback(err);
     }
 }
 
@@ -416,16 +408,8 @@ void TLSSocketServer::GetState(const TlsSocket::GetStateCallback &callback)
 void TLSSocketServer::CallGetStateCallback(int32_t err, const Socket::SocketStateBase &state,
                                            TlsSocket::GetStateCallback callback)
 {
-    TlsSocket::GetStateCallback CallBackfunc = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            CallBackfunc = callback;
-        }
-    }
-
-    if (CallBackfunc) {
-        CallBackfunc(err, state);
+    if (callback) {
+        callback(err, state);
     }
 }
 bool TLSSocketServer::SetExtraOptions(const Socket::TCPExtraOptions &tcpExtraOptions,
@@ -723,16 +707,8 @@ int TLSSocketServer::GetConnectionClientCount()
 
 void TLSSocketServer::CallListenCallback(int32_t err, ListenCallback callback)
 {
-    ListenCallback CallBackfunc = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            CallBackfunc = callback;
-        }
-    }
-
-    if (CallBackfunc) {
-        CallBackfunc(err);
+    if (callback) {
+        callback(err);
     }
 }
 
