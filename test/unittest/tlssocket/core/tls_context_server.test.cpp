@@ -166,4 +166,12 @@ HWTEST_F(TLSContextServerTest, TLSContextServerTest007, testing::ext::TestSize.L
     configuration.signatureAlgorithms_ = "AAAA";
     EXPECT_FALSE(TLSContextServer::InitTlsContext(&context, configuration));
 }
+
+HWTEST_F(TLSContextServerTest, TLSContextServerTest008, testing::ext::TestSize.Level1)
+{
+    TLSContextServer context;
+    SSL *ssl = context.CreateSsl();
+    EXPECT_EQ(ssl, nullptr);
+    context.CloseCtx();
+}
 } // namespace OHOS::NetStack::TlsSocket

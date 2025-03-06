@@ -27,6 +27,7 @@ namespace TlsSocket {
 namespace {
 using namespace testing::ext;
 constexpr int FILE_READ_KEY_LEN = 4096;
+constexpr int RSA_KEY_LEN = 2048;
 static char g_keyFile[] =
     "-----BEGIN RSA PRIVATE KEY-----\r\n"
     "MIIEowIBAAKCAQEAqVzrf6PkLu0uhp5yl2HPNm0vLyI1KLqgsdz5s+JvVdbPXNxD\r\n"
@@ -227,7 +228,7 @@ HWTEST_F(TlsKeyTest, ClearTest, TestSize.Level2)
     tlsKeyEc.ec_ = EC_KEY_new();
     tlsKeyEc.Clear(true);
     TLSKey tlsKeyOpaque = TLSKey(structureData, OPAQUE, keyPass);
-    tlsKeyOpaque.genericKey_ = EVP_PKEY_new();
+    tlsKeyOpaque.opaque_ = EVP_PKEY_new();
     tlsKeyOpaque.Clear(true);
     EXPECT_EQ(tlsKeyOpaque.keyIsNull_, true);
 }
@@ -241,6 +242,180 @@ HWTEST_F(TlsKeyTest, DecodeDataTest, TestSize.Level2)
     tlsKey.DecodeData(data, ALGORITHM_DSA, keyPass);
     SecureData getKeyData = tlsKey.GetKeyData();
     EXPECT_EQ(getKeyData.Length(), data.Length());
+}
+
+std::string GenerateRSAKeyPEM()
+{
+    RSA *rsa = RSA_new();
+    if (rsa == nullptr) {
+        return "";
+    }
+    if (RSA_generate_key_ex(rsa, RSA_KEY_LEN, nullptr, nullptr) != 1) {
+        RSA_free(rsa);
+        return "";
+    }
+    BIO *bio = BIO_new(BIO_s_mem());
+    if (bio == nullptr) {
+        RSA_free(rsa);
+        return "";
+    }
+    if (PEM_write_bio_RSAPrivateKey(bio, rsa, nullptr, nullptr, 0, nullptr, nullptr) != 1) {
+        BIO_free(bio);
+        RSA_free(rsa);
+        return "";
+    }
+    char *buffer;
+    long len = BIO_get_mem_data(bio, &buffer);
+    std::string pemKey(buffer, len);
+
+    BIO_free(bio);
+    RSA_free(rsa);
+    return pemKey;
+}
+
+HWTEST_F(TlsKeyTest, DecodeDataTest002, TestSize.Level2)
+{
+    std::string rsaPem = GenerateRSAKeyPEM();
+    SecureData data(rsaPem);
+    SecureData passPhrase;
+    TLSKey tlsKey = TLSKey(data, passPhrase);
+    tlsKey.DecodeData(data, passPhrase);
+    EXPECT_NE(tlsKey.rsa_, nullptr);
+    EXPECT_EQ(tlsKey.keyAlgorithm_, ALGORITHM_RSA);
+}
+
+std::string GenerateECKeyPEM()
+{
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_X9_62_prime256v1);
+    if (group == nullptr) {
+        return "";
+    }
+    EC_KEY *ecKey = EC_KEY_new();
+    if (ecKey == nullptr) {
+        EC_GROUP_free((EC_GROUP*)group);
+        return "";
+    }
+    if (EC_KEY_set_group(ecKey, group) != 1) {
+        EC_KEY_free(ecKey);
+        EC_GROUP_free((EC_GROUP*)group);
+        return "";
+    }
+    if (EC_KEY_generate_key(ecKey) != 1) {
+        EC_KEY_free(ecKey);
+        EC_GROUP_free((EC_GROUP*)group);
+        return "";
+    }
+    BIO *bio = BIO_new(BIO_s_mem());
+    if (bio == nullptr) {
+        EC_KEY_free(ecKey);
+        EC_GROUP_free((EC_GROUP*)group);
+        return "";
+    }
+    if (PEM_write_bio_ECPrivateKey(bio, ecKey, nullptr, nullptr, 0, nullptr, nullptr) != 1) {
+        BIO_free(bio);
+        EC_KEY_free(ecKey);
+        EC_GROUP_free((EC_GROUP*)group);
+        return "";
+    }
+    char *buffer;
+    long len = BIO_get_mem_data(bio, &buffer);
+    std::string pemKey(buffer, len);
+
+    BIO_free(bio);
+    EC_KEY_free(ecKey);
+    EC_GROUP_free((EC_GROUP*)group);
+    return pemKey;
+}
+
+HWTEST_F(TlsKeyTest, DecodeDataTest003, TestSize.Level2)
+{
+    std::string ecPem = GenerateECKeyPEM();
+    SecureData data(ecPem);
+    SecureData passPhrase;
+    TLSKey tlsKey = TLSKey(data, passPhrase);
+    tlsKey.DecodeData(data, passPhrase);
+    EXPECT_NE(tlsKey.ec_, nullptr);
+    EXPECT_EQ(tlsKey.keyAlgorithm_, ALGORITHM_EC);
+}
+
+std::string GenerateUnsupportedKeyPEM()
+{
+    EVP_PKEY *evpPkey = EVP_PKEY_new();
+    if (evpPkey == nullptr) {
+        return "";
+    }
+    EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, NULL);
+    if (EVP_PKEY_generate(ctx, &evpPkey) != 1) {
+        EVP_PKEY_CTX_free(ctx);
+        EVP_PKEY_free(evpPkey);
+        return "";
+    }
+    EVP_PKEY_CTX_free(ctx);
+    BIO *bio = BIO_new(BIO_s_mem());
+    if (bio == nullptr) {
+        EVP_PKEY_free(evpPkey);
+        return "";
+    }
+    if (PEM_write_bio_PrivateKey(bio, evpPkey, nullptr, nullptr, 0, nullptr, nullptr) != 1) {
+        BIO_free(bio);
+        EVP_PKEY_free(evpPkey);
+        return "";
+    }
+    char *buffer;
+    long len = BIO_get_mem_data(bio, &buffer);
+    std::string pemKey(buffer, len);
+
+    BIO_free(bio);
+    EVP_PKEY_free(evpPkey);
+    return pemKey;
+}
+
+HWTEST_F(TlsKeyTest, DecodeDataTest004, TestSize.Level2)
+{
+    std::string unsupportedPem = GenerateUnsupportedKeyPEM();
+    SecureData data(unsupportedPem);
+    SecureData passPhrase;
+    TLSKey tlsKey = TLSKey(data, passPhrase);
+    tlsKey.DecodeData(data, passPhrase);
+    EXPECT_TRUE(tlsKey.keyIsNull_);
+}
+
+HWTEST_F(TlsKeyTest, SwitchAlgorithmTest002, TestSize.Level2)
+{
+    std::string rsaPem = GenerateRSAKeyPEM();
+    SecureData data(rsaPem);
+    SecureData passPhrase;
+    BIO *bio = BIO_new_mem_buf(data.Data(), -1);
+    TLSKey tlsKey = TLSKey(data, passPhrase);
+    tlsKey.SwitchAlgorithm(KeyType::PRIVATE_KEY, ALGORITHM_RSA, bio);
+    EXPECT_NE(tlsKey.rsa_, nullptr);
+    EXPECT_FALSE(tlsKey.keyIsNull_);
+    BIO_free(bio);
+}
+
+HWTEST_F(TlsKeyTest, SwitchAlgorithmTest003, TestSize.Level2)
+{
+    std::string ecPem = GenerateECKeyPEM();
+    SecureData data(ecPem);
+    SecureData passPhrase;
+    BIO *bio = BIO_new_mem_buf(data.Data(), -1);
+    TLSKey tlsKey = TLSKey(data, passPhrase);
+    tlsKey.SwitchAlgorithm(KeyType::PRIVATE_KEY, ALGORITHM_RSA, bio);
+    EXPECT_NE(tlsKey.ec_, nullptr);
+    EXPECT_FALSE(tlsKey.keyIsNull_);
+    BIO_free(bio);
+}
+
+HWTEST_F(TlsKeyTest, SwitchAlgorithmTest004, TestSize.Level2)
+{
+    std::string unsupportedPem = GenerateUnsupportedKeyPEM();
+    SecureData data(unsupportedPem);
+    SecureData passPhrase;
+    BIO *bio = BIO_new_mem_buf(data.Data(), -1);
+    TLSKey tlsKey = TLSKey(data, passPhrase);
+    tlsKey.SwitchAlgorithm(KeyType::PRIVATE_KEY, OPAQUE, bio);
+    EXPECT_TRUE(tlsKey.keyIsNull_);
+    BIO_free(bio);
 }
 } // namespace TlsSocket
 } // namespace NetStack

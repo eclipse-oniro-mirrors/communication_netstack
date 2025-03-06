@@ -23,6 +23,7 @@
 #include "http_client.h"
 #include "http_client_task.h"
 #include <curl/curl.h>
+#include "http_client_time.h"
 
 using namespace OHOS::NetStack::HttpClient;
 
@@ -57,4 +58,18 @@ HWTEST_F(HttpClientTest, AddRequestInfoTest001, TestSize.Level1)
     EXPECT_EQ(task->GetStatus(), IDLE);
 }
 
+HWTEST_F(HttpClientTest, GetNowTimeSecondsTest001, TestSize.Level1)
+{
+    HttpTime httpTime;
+    time_t currentTime = httpTime.GetNowTimeSeconds();
+    EXPECT_NE(currentTime, 0);
+}
+
+HWTEST_F(HttpClientTest, StrTimeToTimestampTest001, TestSize.Level1)
+{
+    std::string validTimeStr = "Sat, 01 Jan 2000 00:00:00 GMT";
+    HttpTime httpTime;
+    time_t expectedTimestamp = 946656000;
+    EXPECT_EQ(httpTime.StrTimeToTimestamp(validTimeStr), expectedTimestamp);
+}
 } // namespace
