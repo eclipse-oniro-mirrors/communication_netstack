@@ -628,31 +628,15 @@ void TLSSocket::CallCloseCallback(int32_t err, CloseCallback callback)
 void TLSSocket::CallGetRemoteAddressCallback(int32_t err, const Socket::NetAddress &address,
                                              GetRemoteAddressCallback callback)
 {
-    GetRemoteAddressCallback func = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            func = callback;
-        }
-    }
-
-    if (func) {
-        func(err, address);
+    if (callback) {
+        callback(err, address);
     }
 }
 
 void TLSSocket::CallGetStateCallback(int32_t err, const Socket::SocketStateBase &state, GetStateCallback callback)
 {
-    GetStateCallback func = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            func = callback;
-        }
-    }
-
-    if (func) {
-        func(err, state);
+    if (callback) {
+        callback(err, state);
     }
 }
 
@@ -663,79 +647,39 @@ void TLSSocket::CallSetExtraOptionsCallback(int32_t err, SetExtraOptionsCallback
 
 void TLSSocket::CallGetCertificateCallback(int32_t err, const X509CertRawData &cert, GetCertificateCallback callback)
 {
-    GetCertificateCallback func = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            func = callback;
-        }
-    }
-
-    if (func) {
-        func(err, cert);
+    if (callback) {
+        callback(err, cert);
     }
 }
 
 void TLSSocket::CallGetRemoteCertificateCallback(int32_t err, const X509CertRawData &cert,
                                                  GetRemoteCertificateCallback callback)
 {
-    GetRemoteCertificateCallback func = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            func = callback;
-        }
-    }
-
-    if (func) {
-        func(err, cert);
+    if (callback) {
+        callback(err, cert);
     }
 }
 
 void TLSSocket::CallGetProtocolCallback(int32_t err, const std::string &protocol, GetProtocolCallback callback)
 {
-    GetProtocolCallback func = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            func = callback;
-        }
-    }
-
-    if (func) {
-        func(err, protocol);
+    if (callback) {
+        callback(err, protocol);
     }
 }
 
 void TLSSocket::CallGetCipherSuiteCallback(int32_t err, const std::vector<std::string> &suite,
                                            GetCipherSuiteCallback callback)
 {
-    GetCipherSuiteCallback func = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            func = callback;
-        }
-    }
-
-    if (func) {
-        func(err, suite);
+    if (callback) {
+        callback(err, suite);
     }
 }
 
 void TLSSocket::CallGetSignatureAlgorithmsCallback(int32_t err, const std::vector<std::string> &algorithms,
                                                    GetSignatureAlgorithmsCallback callback)
 {
-    GetSignatureAlgorithmsCallback func = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (callback) {
-            func = callback;
-        }
-    }
-
-    if (func) {
-        func(err, algorithms);
+    if (callback) {
+        callback(err, algorithms);
     }
 }
 
