@@ -60,7 +60,7 @@ void EventManager::DeleteListener(const std::string &type, napi_value callback)
 void EventManager::Emit(const std::string &type, const std::pair<napi_value, napi_value> &argv)
 {
     std::lock_guard lock(mutexForEmitAndEmitByUv_);
-    std::shared_guard lock2(mutexForListenersAndEmitEmitByUv_);
+    std::shared_lock lock2(mutexForListenersAndEmitByUv_);
     auto listeners = listeners_;
     lock2.unlock();
     std::for_each(listeners.begin(), listeners.end(), [type, argv](const EventListener &listener) {
