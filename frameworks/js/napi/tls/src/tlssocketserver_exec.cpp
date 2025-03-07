@@ -68,7 +68,7 @@ bool TLSSocketServerExec::ExecListen(TlsSocket::TLSListenContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    std::unique_lock<std::mutex> lock(manager->GetDataMutex());
+    std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         tlsSocketServer = new TLSSocketServer();
