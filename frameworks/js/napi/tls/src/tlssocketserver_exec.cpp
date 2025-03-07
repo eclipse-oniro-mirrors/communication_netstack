@@ -44,6 +44,7 @@ bool TLSSocketServerExec::ExecGetCertificate(TlsSocket::GetCertificateContext *c
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetCertificate tlsSocketServer is null");
@@ -93,6 +94,7 @@ bool TLSSocketServerExec::ExecGetCipherSuites(ServerGetCipherSuitesContext *cont
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetCipherSuites tlsSocketServer is null");
@@ -118,6 +120,7 @@ bool TLSSocketServerExec::ExecGetRemoteCertificate(ServerGetRemoteCertificateCon
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetRemoteCertificate tlsSocketServer is null");
@@ -143,6 +146,7 @@ bool TLSSocketServerExec::ExecGetProtocol(TlsSocket::GetProtocolContext *context
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetProtocol tlsSocketServer is null");
@@ -167,6 +171,7 @@ bool TLSSocketServerExec::ExecGetSignatureAlgorithms(ServerGetSignatureAlgorithm
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetSignatureAlgorithms tlsSocketServer is null");
@@ -192,6 +197,7 @@ bool TLSSocketServerExec::ExecSend(TLSServerSendContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecSend tlsSocketServer is null");
@@ -219,6 +225,7 @@ bool TLSSocketServerExec::ExecClose(TLSServerCloseContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecClose tlsSocketServer is null");
@@ -242,6 +249,7 @@ bool TLSSocketServerExec::ExecStop(TlsSocket::TLSNapiContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecClose tlsSocketServer is null");
@@ -267,6 +275,7 @@ bool TLSSocketServerExec::ExecGetRemoteAddress(ServerTLSGetRemoteAddressContext 
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetRemoteAddress tlsSocketServer is null");
@@ -298,6 +307,7 @@ bool TLSSocketServerExec::ExecGetLocalAddress(TLSServerGetLocalAddressContext *c
         context->SetError(SYSTEM_INTERNAL_ERROR_CODE, SYSTEM_INTERNAL_ERROR_MESSAGE);
         return false;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetRemoteAddress tlsSocketServer is null");
@@ -345,6 +355,7 @@ bool TLSSocketServerExec::ExecConnectionGetLocalAddress(TLSConnectionGetLocalAdd
         context->SetError(SYSTEM_INTERNAL_ERROR_CODE, SYSTEM_INTERNAL_ERROR_MESSAGE);
         return false;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetRemoteAddress tlsSocketServer is null");
@@ -371,6 +382,7 @@ bool TLSSocketServerExec::ExecGetState(TlsSocket::TLSGetStateContext *context)
         context->state_.SetIsClose(true);
         return true;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetState tlsSocketServer is null");
@@ -393,6 +405,7 @@ bool TLSSocketServerExec::ExecSetExtraOptions(TlsSocket::TLSSetExtraOptionsConte
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecSetExtraOptions tlsSocketServer is null");
@@ -551,6 +564,7 @@ napi_value TLSSocketServerExec::GetLocalAddressCallback(TLSServerGetLocalAddress
         NETSTACK_LOGE("manager is nullptr");
         return obj;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("get localAddress callback tlsSocketServer is null");
@@ -588,6 +602,7 @@ bool TLSSocketServerExec::ExecConnectionSend(TLSServerSendContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecSend tlsSocketServer is null");
