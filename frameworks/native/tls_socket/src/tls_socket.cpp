@@ -828,6 +828,7 @@ void TLSSocket::Close(const CloseCallback &callback)
         callback(resErr);
         return;
     }
+    sockFd_ = -1;
     CallOnCloseCallback();
     callback(TLSSOCKET_SUCCESS);
 }

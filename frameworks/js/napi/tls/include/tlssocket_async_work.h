@@ -40,6 +40,7 @@ public:
     static void ExecGetRemoteAddress(napi_env env, void *data);
     static void ExecGetLocalAddress(napi_env env, void *data);
     static void ExecSetExtraOptions(napi_env env, void *data);
+    static void ExecGetSocketFd(napi_env env, void *data);
 
     static void GetCertificateCallback(napi_env env, napi_status status, void *data);
     static void ConnectCallback(napi_env env, napi_status status, void *data);
@@ -54,6 +55,7 @@ public:
     static void GetRemoteAddressCallback(napi_env env, napi_status status, void *data);
     static void GetLocalAddressCallback(napi_env env, napi_status status, void *data);
     static void SetExtraOptionsCallback(napi_env env, napi_status status, void *data);
+    static void GetSocketFdCallback(napi_env env, napi_status status, void *data);
 };
 } // namespace TlsSocket
 } // namespace NetStack

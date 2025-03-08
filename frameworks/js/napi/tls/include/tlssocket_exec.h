@@ -48,6 +48,7 @@ public:
     static bool ExecGetRemoteAddress(TLSGetRemoteAddressContext *context);
     static bool ExecGetLocalAddress(TLSGetLocalAddressContext *context);
     static bool ExecSetExtraOptions(TLSSetExtraOptionsContext *context);
+    static bool ExecGetSocketFd(TLSGetSocketFdContext *context);
 
     static napi_value GetCertificateCallback(GetCertificateContext *context);
     static napi_value ConnectCallback(TLSConnectContext *context);
@@ -62,6 +63,7 @@ public:
     static napi_value GetRemoteAddressCallback(TLSGetRemoteAddressContext *context);
     static napi_value GetLocalAddressCallback(TLSGetLocalAddressContext *context);
     static napi_value SetExtraOptionsCallback(TLSSetExtraOptionsContext *context);
+    static napi_value GetSocketFdCallback(TLSGetSocketFdContext *context);
 };
 } // namespace TlsSocket
 } // namespace NetStack
