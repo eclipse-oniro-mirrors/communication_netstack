@@ -45,6 +45,7 @@ public:
     int32_t errorNumber_ = 0;
     Socket::SocketStateBase state_;
     Socket::NetAddress address_;
+    int32_t sockFd_ = -1;
 
 public:
     void ParseParams(napi_value *params, size_t paramsCount);
@@ -61,6 +62,7 @@ using GetCertificateContext = TLSNapiContext;
 using TLSGetStateContext = TLSNapiContext;
 using TLSGetRemoteAddressContext = TLSNapiContext;
 using TLSGetLocalAddressContext = TLSNapiContext;
+using TLSGetSocketFdContext = TLSNapiContext;
 } // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
