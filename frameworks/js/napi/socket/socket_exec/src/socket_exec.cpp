@@ -714,8 +714,14 @@ static bool ProcessRecvFds(std::pair<std::unique_ptr<char[]> &, int> &bufInfo,
     std::unordered_map<int, SocketRecvCallback> &socketCallbackMap)
 {
     for (auto &fd : fds) {
+#if !defined(CROSS_PLATFORM)
         if ((static_cast<uint16_t>(fd.revents) & POLLRDHUP) || (static_cast<uint16_t>(fd.revents) & POLLERR) ||
-            (static_cast<uint16_t>(fd.revents) & POLLNVAL)) {
+            (static_cast<uint16_t>(fd.revents) & POLLNVAL))
+        {
+#else
+        if ((static_cast<uint16_t>(fd.revents) & POLLERR) || (static_cast<uint16_t>(fd.revents) & POLLNVAL))
+        {
+#endif
             return false;
         }
         if ((static_cast<uint16_t>(fd.revents) & POLLIN) == 0) {
