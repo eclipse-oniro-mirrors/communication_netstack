@@ -900,7 +900,7 @@ CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *sslCtx, void *parm)
         NETSTACK_LOGE("ssl_ctx is null");
         return CURLE_SSL_CERTPROBLEM;
     }
- 
+
     for (const auto &path : certsPath.certPathList) {
         if (path.empty() || access(path.c_str(), F_OK) != 0) {
             NETSTACK_LOGD("certificate directory path is not exist");
