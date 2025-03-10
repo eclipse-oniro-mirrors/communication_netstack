@@ -890,17 +890,18 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *sslCtx, void *request_contex
 CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *sslCtx, void *parm)
 {
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
-    auto certsPath = static_cast<CertsPath *>(parm);
-    if (certsPath == nullptr) {
-        NETSTACK_LOGE("certsPath is null");
+    auto requestContext = static_cast<RequestContext *>(parm);
+    if (requestContext == nullptr) {
+        NETSTACK_LOGE("requestContext is null");
         return CURLE_SSL_CERTPROBLEM;
     }
+    auto &certsPath = requestContext->GetCertsPath();
     if (sslCtx == nullptr) {
         NETSTACK_LOGE("ssl_ctx is null");
         return CURLE_SSL_CERTPROBLEM;
     }
-
-    for (const auto &path : certsPath->certPathList) {
+ 
+    for (const auto &path : certsPath.certPathList) {
         if (path.empty() || access(path.c_str(), F_OK) != 0) {
             NETSTACK_LOGD("certificate directory path is not exist");
             continue;
@@ -910,9 +911,9 @@ CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *sslCtx, void *parm)
             continue;
         }
     }
-    if (access(certsPath->certFile.c_str(), F_OK) != 0) {
+    if (access(certsPath.certFile.c_str(), F_OK) != 0) {
         NETSTACK_LOGD("certificate directory path is not exist");
-    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), certsPath->certFile.c_str(), nullptr)) {
+    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), certsPath.certFile.c_str(), nullptr)) {
         NETSTACK_LOGE("loading certificates from context cert error.");
     }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
