@@ -88,6 +88,11 @@ void TLSSocketAsyncWork::ExecGetLocalAddress(napi_env env, void *data)
     BaseAsyncWork::ExecAsyncWork<TLSGetLocalAddressContext, TLSSocketExec::ExecGetLocalAddress>(env, data);
 }
 
+void TLSSocketAsyncWork::ExecGetSocketFd(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<TLSGetSocketFdContext, TLSSocketExec::ExecGetSocketFd>(env, data);
+}
+
 void TLSSocketAsyncWork::ExecSetExtraOptions(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<TLSSetExtraOptionsContext, TLSSocketExec::ExecSetExtraOptions>(env, data);
@@ -166,6 +171,11 @@ void TLSSocketAsyncWork::SetExtraOptionsCallback(napi_env env, napi_status statu
 {
     BaseAsyncWork::AsyncWorkCallback<TLSSetExtraOptionsContext, TLSSocketExec::SetExtraOptionsCallback>(env, status,
                                                                                                         data);
+}
+
+void TLSSocketAsyncWork::GetSocketFdCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<TLSGetSocketFdContext, TLSSocketExec::GetSocketFdCallback>(env, status, data);
 }
 } // namespace TlsSocket
 } // namespace NetStack
