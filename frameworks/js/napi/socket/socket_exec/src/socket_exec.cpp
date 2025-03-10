@@ -1199,6 +1199,7 @@ bool ExecClose(CloseContext *context)
     std::unique_lock<std::shared_mutex> lock(g_fdMutex);
     if (context->GetSocketFd() < 0) {
         NETSTACK_LOGE("sock %{public}d is previous closed", context->GetSocketFd());
+        context->SetErrorCode(UNKNOW_ERROR);
         return false;
     }
     int ret = close(context->GetSocketFd());
@@ -2022,6 +2023,9 @@ static int PollSocket(int clientId, int connectFD, EventManager *manager, const 
     pollfd fds[1] = {{connectFD, POLLIN, 0}};
     int ret = poll(fds, 1, DEFAULT_POLL_TIMEOUT);
     if (ret < 0) {
+        if (errno == EINTR) {
+            return 0;
+        }
         NETSTACK_LOGE("Client poll to recv failed, socket is %{public}d, errno is %{public}d", connectFD, errno);
         callback.OnCloseMessage(manager);
         CloseClientHandler(clientId, connectFD, manager, callback);
@@ -2083,6 +2087,7 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
         }
         int recvSize = 0;
         if (RecvWithSockCheck(connectFD, buffer.get(), recvBufferSize, manager, recvSize) < 0) {
+            CloseClientHandler(clientId, connectFD, manager, callback);
             break;
         }
         int flags = fcntl(connectFD, F_GETFL, 0);
