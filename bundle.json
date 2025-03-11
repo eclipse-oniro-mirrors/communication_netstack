@@ -122,24 +122,7 @@
                 }
             ],
             "test": [
-                "//foundation/communication/netstack/test/fuzztest/socket:fuzztest",
-                "//foundation/communication/netstack/test/fuzztest/http_fuzzer:fuzztest",
-                "//foundation/communication/netstack/test/fuzztest/netssl:fuzztest",
-                "//foundation/communication/netstack/test/fuzztest/websocket:fuzztest",
-                "//foundation/communication/netstack/test/unittest/http:unittest",
-                "//foundation/communication/netstack/test/unittest/http/cache:unittest",
-                "//foundation/communication/netstack/test/unittest/http_client:unittest",
-                "//foundation/communication/netstack/test/unittest/socket:unittest",
-                "//foundation/communication/netstack/test/unittest/tlssocket:unittest",
-                "//foundation/communication/netstack/test/unittest/netssl:unittest",
-                "//foundation/communication/netstack/test/unittest/websocket:unittest",
-                "//foundation/communication/netstack/test/unittest/websocket_inner_unittest:unittest",
-                "//foundation/communication/netstack/test/unittest/websocket_capi_unittest:unittest",
-                "//foundation/communication/netstack/test/fuzztest/websocketinnerapi_fuzzer:fuzztest",
-                "//foundation/communication/netstack/test/fuzztest/websocketcapi_fuzzer:fuzztest",
-                "//foundation/communication/netstack/test/fuzztest/netsslinner_fuzzer:fuzztest",
-                "//foundation/communication/netstack/test/unittest/utils/common_utils:unittest",
-                "//foundation/communication/netstack/test/unittest/utils/profiler_utils:unittest"
+                "//foundation/communication/netstack/test:netstack_test"
             ]
         }
     }

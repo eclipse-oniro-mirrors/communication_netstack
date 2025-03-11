@@ -65,28 +65,28 @@ void BindFuzzTest(const uint8_t *data, size_t size)
     g_baseFuzzSize = size;
     g_baseFuzzPos = 0;
 
-    TLSSocket tlsSocket;
+    auto tlsSocket = std::make_shared<TLSSocket>();
     Socket::NetAddress netAddress;
     std::string str = GetStringFromData(STR_LEN);
     netAddress.SetAddress(str);
     netAddress.SetFamilyByJsValue(GetData<uint32_t>());
     netAddress.SetFamilyBySaFamily(GetData<sa_family_t>());
     netAddress.SetPort(GetData<uint16_t>());
-    tlsSocket.Close([](int32_t errorNumber) {});
-    tlsSocket.GetRemoteAddress([](int32_t errorNumber, const Socket::NetAddress &address) {});
-    tlsSocket.GetCertificate([](int32_t errorNumber, const X509CertRawData &cert) {});
-    tlsSocket.GetRemoteCertificate([](int32_t errorNumber, const X509CertRawData &cert) {});
-    tlsSocket.GetProtocol([](int32_t errorNumber, const std::string &protocol) {});
-    tlsSocket.GetCipherSuite([](int32_t errorNumber, const std::vector<std::string> &suite) {});
-    tlsSocket.GetSignatureAlgorithms([](int32_t errorNumber, const std::vector<std::string> &algorithms) {});
-    tlsSocket.OnMessage([](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {});
-    tlsSocket.OnConnect([]() {});
-    tlsSocket.OnClose([]() {});
-    tlsSocket.OnError([](int32_t errorNumber, const std::string &errorString) {});
-    tlsSocket.OffMessage();
-    tlsSocket.OffConnect();
-    tlsSocket.OffClose();
-    tlsSocket.OffError();
+    tlsSocket->Close([](int32_t errorNumber) {});
+    tlsSocket->GetRemoteAddress([](int32_t errorNumber, const Socket::NetAddress &address) {});
+    tlsSocket->GetCertificate([](int32_t errorNumber, const X509CertRawData &cert) {});
+    tlsSocket->GetRemoteCertificate([](int32_t errorNumber, const X509CertRawData &cert) {});
+    tlsSocket->GetProtocol([](int32_t errorNumber, const std::string &protocol) {});
+    tlsSocket->GetCipherSuite([](int32_t errorNumber, const std::vector<std::string> &suite) {});
+    tlsSocket->GetSignatureAlgorithms([](int32_t errorNumber, const std::vector<std::string> &algorithms) {});
+    tlsSocket->OnMessage([](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {});
+    tlsSocket->OnConnect([]() {});
+    tlsSocket->OnClose([]() {});
+    tlsSocket->OnError([](int32_t errorNumber, const std::string &errorString) {});
+    tlsSocket->OffMessage();
+    tlsSocket->OffConnect();
+    tlsSocket->OffClose();
+    tlsSocket->OffError();
 }
 
 void ConnectFuzzTest(const uint8_t *data, size_t size)
@@ -100,7 +100,7 @@ void ConnectFuzzTest(const uint8_t *data, size_t size)
     g_baseFuzzSize = size;
     g_baseFuzzPos = 0;
 
-    TLSSocket tlsSocket;
+    auto tlsSocket = std::make_shared<TLSSocket>();
     Socket::NetAddress netAddress;
     std::string str = GetStringFromData(STR_LEN);
     netAddress.SetAddress(str);
@@ -114,7 +114,7 @@ void ConnectFuzzTest(const uint8_t *data, size_t size)
     });
     std::vector<std::string> alpnProtocols(STR_LEN, str);
     options.SetAlpnProtocols(alpnProtocols);
-    tlsSocket.Connect(options, [](bool ok) { NETSTACK_LOGD("Calback received"); });
+    tlsSocket->Connect(options, [](bool ok) { NETSTACK_LOGD("Calback received"); });
 }
 
 void SendFuzzTest(const uint8_t *data, size_t size)
@@ -125,12 +125,12 @@ void SendFuzzTest(const uint8_t *data, size_t size)
     g_baseFuzzData = data;
     g_baseFuzzSize = size;
     g_baseFuzzPos = 0;
-    TLSSocket tlsSocket;
+    auto tlsSocket = std::make_shared<TLSSocket>();
     Socket::TCPSendOptions options;
     std::string str = GetStringFromData(STR_LEN);
     options.SetData(str);
     options.SetEncoding(str);
-    tlsSocket.Send(options, [](bool ok) { NETSTACK_LOGD("Calback received"); });
+    tlsSocket->Send(options, [](bool ok) { NETSTACK_LOGD("Calback received"); });
 }
 
 void SetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
@@ -138,12 +138,12 @@ void SetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size == 0)) {
         return;
     }
-    TLSSocket tlsSocket;
+    auto tlsSocket = std::make_shared<TLSSocket>();
     Socket::TCPExtraOptions options;
     options.SetKeepAlive(*(reinterpret_cast<const bool *>(data)));
     options.SetOOBInline(*(reinterpret_cast<const bool *>(data)));
     options.SetTCPNoDelay(*(reinterpret_cast<const bool *>(data)));
-    tlsSocket.SetExtraOptions(options, [](bool ok) { NETSTACK_LOGD("Calback received"); });
+    tlsSocket->SetExtraOptions(options, [](bool ok) { NETSTACK_LOGD("Calback received"); });
 }
 
 void SetCaChainFuzzTest(const uint8_t *data, size_t size)

@@ -50,7 +50,8 @@ class LocalSocketBaseContext : public BaseContext {
 public:
     DISALLOW_COPY_AND_MOVE(LocalSocketBaseContext);
     virtual ~LocalSocketBaseContext() {}
-    LocalSocketBaseContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
+    LocalSocketBaseContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+        : BaseContext(env, manager) {}
     [[nodiscard]] virtual int GetSocketFd() const;
     virtual void SetSocketFd(int sock);
     [[nodiscard]] int32_t GetErrorCode() const override;
@@ -63,7 +64,8 @@ protected:
 
 class LocalSocketBindContext final : public LocalSocketBaseContext {
 public:
-    LocalSocketBindContext(napi_env env, EventManager *manager) : LocalSocketBaseContext(env, manager) {}
+    LocalSocketBindContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+        : LocalSocketBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
     const std::string &GetSocketPath() const;
 
@@ -73,7 +75,8 @@ private:
 
 class LocalSocketGetLocalAddressContext final : public LocalSocketBaseContext {
 public:
-    LocalSocketGetLocalAddressContext(napi_env env, EventManager *manager) : LocalSocketBaseContext(env, manager) {}
+    LocalSocketGetLocalAddressContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+        : LocalSocketBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
     void SetSocketPath(const std::string socketPath);
     std::string GetSocketPath();
@@ -84,7 +87,8 @@ private:
 
 class LocalSocketConnectContext final : public LocalSocketBaseContext {
 public:
-    LocalSocketConnectContext(napi_env env, EventManager *manager) : LocalSocketBaseContext(env, manager) {}
+    LocalSocketConnectContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+        : LocalSocketBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
     const std::string &GetSocketPath() const;
     int GetTimeoutMs() const;
@@ -96,7 +100,8 @@ private:
 
 class LocalSocketSendContext final : public LocalSocketBaseContext {
 public:
-    LocalSocketSendContext(napi_env env, EventManager *manager) : LocalSocketBaseContext(env, manager) {}
+    LocalSocketSendContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+        : LocalSocketBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
     LocalSocketOptions &GetOptionsRef();
 
@@ -107,13 +112,15 @@ private:
 
 class LocalSocketCloseContext final : public LocalSocketBaseContext {
 public:
-    LocalSocketCloseContext(napi_env env, EventManager *manager) : LocalSocketBaseContext(env, manager) {}
+    LocalSocketCloseContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+        : LocalSocketBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
 };
 
 class LocalSocketGetStateContext final : public LocalSocketBaseContext {
 public:
-    LocalSocketGetStateContext(napi_env env, EventManager *manager) : LocalSocketBaseContext(env, manager) {}
+    LocalSocketGetStateContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+        : LocalSocketBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
     SocketStateBase &GetStateRef();
 
@@ -123,13 +130,15 @@ private:
 
 class LocalSocketGetSocketFdContext final : public LocalSocketBaseContext {
 public:
-    LocalSocketGetSocketFdContext(napi_env env, EventManager *manager) : LocalSocketBaseContext(env, manager) {}
+    LocalSocketGetSocketFdContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+        : LocalSocketBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
 };
 
 class LocalSocketSetExtraOptionsContext final : public LocalSocketBaseContext {
 public:
-    LocalSocketSetExtraOptionsContext(napi_env env, EventManager *manager) : LocalSocketBaseContext(env, manager) {}
+    LocalSocketSetExtraOptionsContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+        : LocalSocketBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
     LocalExtraOptions &GetOptionsRef();
 
@@ -139,7 +148,8 @@ private:
 
 class LocalSocketGetExtraOptionsContext final : public LocalSocketBaseContext {
 public:
-    LocalSocketGetExtraOptionsContext(napi_env env, EventManager *manager) : LocalSocketBaseContext(env, manager) {}
+    LocalSocketGetExtraOptionsContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+        : LocalSocketBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
     LocalExtraOptions &GetOptionsRef();
 

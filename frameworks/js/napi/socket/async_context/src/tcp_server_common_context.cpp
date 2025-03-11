@@ -22,7 +22,8 @@
 #include "socket_constant.h"
 
 namespace OHOS::NetStack::Socket {
-TcpServerCommonContext::TcpServerCommonContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
+TcpServerCommonContext::TcpServerCommonContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+    : BaseContext(env, manager) {}
 
 void TcpServerCommonContext::ParseParams(napi_value *params, size_t paramsCount)
 {
@@ -46,15 +47,15 @@ void TcpServerCommonContext::ParseParams(napi_value *params, size_t paramsCount)
 
 int TcpServerCommonContext::GetSocketFd() const
 {
-    return manager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) : -1;
+    return sharedManager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(sharedManager_->GetData())) : -1;
 }
 
-TcpServerCloseContext::TcpServerCloseContext(napi_env env, EventManager *manager)
+TcpServerCloseContext::TcpServerCloseContext(napi_env env, const std::shared_ptr<EventManager> &manager)
     :TcpServerCommonContext(env, manager) {}
 
 void TcpServerCloseContext::SetSocketFd(int sock)
 {
-    manager_->SetData(reinterpret_cast<void *>(sock));
+    sharedManager_->SetData(reinterpret_cast<void *>(sock));
 }
 
 bool TcpServerCommonContext::CheckParamsType(napi_value *params, size_t paramsCount)

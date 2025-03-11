@@ -22,9 +22,8 @@
 #include <utility>
 
 namespace OHOS::NetStack::Websocket {
-ConnectContext::ConnectContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
-ConnectContext::ConnectContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager)
-    : BaseContext(env, sharedManager)
+ConnectContext::ConnectContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+    : BaseContext(env, manager)
 {
 }
 

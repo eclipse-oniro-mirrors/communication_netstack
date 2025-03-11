@@ -119,7 +119,6 @@ HWTEST_F(WebSocketTest, WebSocketBranchTest001, TestSize.Level1)
     CloseOption options;
     options.reason = "";
     options.code = 0;
-    WebSocketClient *client = new WebSocketClient();
     EXPECT_TRUE(client->GetClientContext() != nullptr);
     client->GetClientContext()->openStatus = TEST_LENGTH;
     ret = client->Close(options);

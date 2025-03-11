@@ -34,7 +34,7 @@ class TLSConnectContext final : public BaseContext {
 public:
     friend class TLSSocketExec;
     TLSConnectContext() = delete;
-    explicit TLSConnectContext(napi_env env, EventManager *manager);
+    explicit TLSConnectContext(napi_env env, const std::shared_ptr<EventManager> &manager);
     [[nodiscard]]int32_t GetErrorCode() const override;
 
 public:

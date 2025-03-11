@@ -73,7 +73,8 @@ void ExecConnectFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    ConnectContext context(env, nullptr);
+    std::shared_ptr<EventManager> eventManager = nullptr;
+    ConnectContext context(env, eventManager);
 
     WebSocketExec::ExecConnect(&context);
 }
@@ -97,7 +98,8 @@ void ExecCloseFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    CloseContext context(env, nullptr);
+    std::shared_ptr<EventManager> eventManager = nullptr;
+    CloseContext context(env, eventManager);
 
     WebSocketExec::ExecClose(&context);
 }
@@ -109,7 +111,7 @@ void SetWebsocketProxyTypeFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    EventManager *manager(GetData<EventManager *>());
+    auto manager = std::make_shared<EventManager>();
     ConnectContext context(env, manager);
     WebsocketProxyType proxyType(GetData<WebsocketProxyType>());
     context.SetWebsocketProxyType(proxyType);
@@ -122,7 +124,7 @@ void SetSpecifiedWebsocketProxyFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    EventManager *manager(GetData<EventManager *>());
+    auto manager = std::make_shared<EventManager>();
     ConnectContext context(env, manager);
     std::string str = GetStringFromData(STR_LEN);
     context.SetSpecifiedWebsocketProxy(str, size, str);
@@ -135,7 +137,7 @@ void SetWebsocketProtocolFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    EventManager *manager(GetData<EventManager *>());
+    auto manager = std::make_shared<EventManager>();
     ConnectContext context(env, manager);
     std::string str = GetStringFromData(STR_LEN);
     context.SetProtocol(str);

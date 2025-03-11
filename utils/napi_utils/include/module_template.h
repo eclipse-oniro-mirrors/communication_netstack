@@ -59,13 +59,14 @@ napi_value InterfaceWithManagerWrapper(napi_env env, napi_callback_info info, co
         return NapiUtils::GetUndefined(env);
     }
 
-    auto context = new (std::nothrow) Context(env, nullptr);
+    std::shared_ptr<EventManager> sharedManager = nullptr;
+    if (wrapper) {
+        sharedManager = wrapper->sharedManager;
+    }
+    auto context = new (std::nothrow) Context(env, sharedManager);
     if (!context) {
         NETSTACK_LOGE("new context is nullptr");
         return NapiUtils::GetUndefined(env);
-    }
-    if (wrapper) {
-        context->SetSharedManager(wrapper->sharedManager);
     }
     context->ParseParams(params, paramsCount);
     if (context->IsNeedThrowException()) { // only api9 or later need throw exception.
@@ -109,13 +110,10 @@ napi_value InterfaceWithSharedManager(napi_env env, napi_callback_info info, con
         return NapiUtils::GetUndefined(env);
     }
 
-    auto context = new (std::nothrow) Context(env, nullptr);
+    auto context = new (std::nothrow) Context(env, *sharedManager);
     if (!context) {
         NETSTACK_LOGE("new context is nullptr");
         return NapiUtils::GetUndefined(env);
-    }
-    if (sharedManager) {
-        context->SetSharedManager(*sharedManager);
     }
     context->ParseParams(params, paramsCount);
     if (context->IsNeedThrowException()) { // only api9 or later need throw exception.
@@ -159,13 +157,14 @@ napi_value InterfaceWithOutAsyncWorkWithManagerWrapper(napi_env env, napi_callba
         return NapiUtils::GetUndefined(env);
     }
 
-    auto context = new (std::nothrow) Context(env, nullptr);
+    std::shared_ptr<EventManager> sharedManager = nullptr;
+    if (wrapper) {
+        sharedManager = wrapper->sharedManager;
+    }
+    auto context = new (std::nothrow) Context(env, sharedManager);
     if (!context) {
         NETSTACK_LOGE("new context is nullptr");
         return NapiUtils::GetUndefined(env);
-    }
-    if (wrapper) {
-        context->SetSharedManager(wrapper->sharedManager);
     }
     context->ParseParams(params, paramsCount);
     napi_value ret = NapiUtils::GetUndefined(env);
@@ -208,13 +207,10 @@ napi_value InterfaceWithOutAsyncWorkWithSharedManager(napi_env env, napi_callbac
         return NapiUtils::GetUndefined(env);
     }
 
-    auto context = new (std::nothrow) Context(env, nullptr);
+    auto context = new (std::nothrow) Context(env, *sharedManager);
     if (!context) {
         NETSTACK_LOGE("new context is nullptr");
         return NapiUtils::GetUndefined(env);
-    }
-    if (sharedManager) {
-        context->SetSharedManager(*sharedManager);
     }
     context->ParseParams(params, paramsCount);
     napi_value ret = NapiUtils::GetUndefined(env);
@@ -237,110 +233,45 @@ napi_value InterfaceWithOutAsyncWorkWithSharedManager(napi_env env, napi_callbac
     return ret;
 }
 
-template <class Context>
-napi_value Interface(napi_env env, napi_callback_info info, const std::string &asyncWorkName,
-                     bool (*Work)(napi_env, napi_value, Context *), AsyncWorkExecutor executor,
-                     AsyncWorkCallback callback)
+template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)
 {
-    NETSTACK_LOGI("js invoke %{public}s", asyncWorkName.c_str());
-    static_assert(std::is_base_of<BaseContext, Context>::value);
+    (void)status;
 
-    napi_value thisVal = nullptr;
-    size_t paramsCount = MAX_PARAM_NUM;
-    napi_value params[MAX_PARAM_NUM] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
+    auto workWrapper = static_cast<UvWorkWrapperShared *>(work->data);
+    napi_env env = workWrapper->env;
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
 
-    EventManager *manager = nullptr;
-    auto napi_ret = napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager));
-    if (napi_ret != napi_ok) {
-        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
-        return NapiUtils::GetUndefined(env);
-    }
+    napi_value obj = MakeJsValue(env, workWrapper->data);
 
-    auto context = new (std::nothrow) Context(env, manager);
-    if (!context) {
-        NETSTACK_LOGE("new context is nullptr");
-        return NapiUtils::GetUndefined(env);
-    }
-    context->ParseParams(params, paramsCount);
-    if (context->IsNeedThrowException()) { // only api9 or later need throw exception.
-        napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
-        delete context;
-        context = nullptr;
-        return NapiUtils::GetUndefined(env);
-    }
-    if (Work != nullptr) {
-        if (!Work(env, thisVal, context)) {
-            NETSTACK_LOGE("work failed error code = %{public}d", context->GetErrorCode());
-        }
-    }
+    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
+    workWrapper->manager->Emit(workWrapper->type, arg);
 
-    context->CreateReference(thisVal);
-    context->CreateAsyncWork(asyncWorkName, executor, callback);
-    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
-        NETSTACK_LOGD("%{public}s create promise", asyncWorkName.c_str());
-        return context->CreatePromise();
-    }
-    return NapiUtils::GetUndefined(env);
+    delete workWrapper;
+    delete work;
 }
 
-template <class Context>
-napi_value InterfaceWithOutAsyncWork(napi_env env, napi_callback_info info,
-                                     bool (*Work)(napi_env, napi_value, Context *), const std::string &asyncWorkName,
-                                     AsyncWorkExecutor executor, AsyncWorkCallback callback)
+template <napi_value (*MakeJsValue)(napi_env, const std::shared_ptr<EventManager> &)>
+static void CallbackTemplateWithSharedManager(uv_work_t *work, int status)
 {
-    static_assert(std::is_base_of<BaseContext, Context>::value);
+    (void)status;
 
-    napi_value thisVal = nullptr;
-    size_t paramsCount = MAX_PARAM_NUM;
-    napi_value params[MAX_PARAM_NUM] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
+    auto workWrapper = static_cast<UvWorkWrapperShared *>(work->data);
+    napi_env env = workWrapper->env;
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
 
-    EventManager *manager = nullptr;
-    auto napi_ret = napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager));
-    if (napi_ret != napi_ok) {
-        NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
-        return NapiUtils::GetUndefined(env);
-    }
+    napi_value obj = MakeJsValue(env, workWrapper->manager);
 
-    auto context = new (std::nothrow) Context(env, manager);
-    if (!context) {
-        NETSTACK_LOGE("new context is nullptr");
-        return NapiUtils::GetUndefined(env);
-    }
-    context->ParseParams(params, paramsCount);
-    napi_value ret = NapiUtils::GetUndefined(env);
-    if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
-        NETSTACK_LOGD("%{public}s is invoked in promise mode", asyncWorkName.c_str());
-        ret = context->CreatePromise();
-    } else {
-        NETSTACK_LOGD("%{public}s is invoked in callback mode", asyncWorkName.c_str());
-    }
-    context->CreateReference(thisVal);
-    if (Work != nullptr) {
-        if (!Work(env, thisVal, context)) {
-            NETSTACK_LOGE("work failed error code = %{public}d", context->GetErrorCode());
-        }
-    }
-    if (!context->IsParseOK() || context->IsPermissionDenied() || context->IsNoAllowedHost() ||
-        context->IsCleartextNotPermitted() || context->GetManager()->IsEventDestroy()) {
-        context->CreateAsyncWork(asyncWorkName, executor, callback);
-    }
-    return ret;
+    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
+    workWrapper->manager->Emit(workWrapper->type, arg);
+
+    delete workWrapper;
+    delete work;
 }
-
-napi_value On(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
-              bool asyncCallback);
-
-napi_value Once(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
-                bool asyncCallback);
-
-napi_value Off(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events);
 
 void DefineClass(napi_env env, napi_value exports, const std::initializer_list<napi_property_descriptor> &properties,
                  const std::string &className);
-
-napi_value NewInstance(napi_env env, napi_callback_info info, const std::string &className, Finalizer finalizer);
 
 napi_value NewInstanceNoManager(napi_env env, napi_callback_info info, const std::string &name, Finalizer finalizer);
 

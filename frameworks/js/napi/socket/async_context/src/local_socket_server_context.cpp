@@ -24,19 +24,19 @@
 namespace OHOS::NetStack::Socket {
 int LocalSocketServerBaseContext::GetSocketFd() const
 {
-    if (manager_ == nullptr) {
+    if (sharedManager_ == nullptr) {
         return -1;
     }
-    LocalSocketServerManager *pManagerInfo = reinterpret_cast<LocalSocketServerManager *>(manager_->GetData());
+    LocalSocketServerManager *pManagerInfo = reinterpret_cast<LocalSocketServerManager *>(sharedManager_->GetData());
     return (pManagerInfo != nullptr) ? pManagerInfo->sockfd_ : -1;
 }
 
 void LocalSocketServerBaseContext::SetSocketFd(int sock)
 {
-    if (manager_ == nullptr) {
+    if (sharedManager_ == nullptr) {
         return;
     }
-    LocalSocketServerManager *pManagerInfo = reinterpret_cast<LocalSocketServerManager *>(manager_->GetData());
+    LocalSocketServerManager *pManagerInfo = reinterpret_cast<LocalSocketServerManager *>(sharedManager_->GetData());
     if (pManagerInfo != nullptr) {
         pManagerInfo->sockfd_ = sock;
     }
@@ -190,10 +190,10 @@ void LocalSocketServerSendContext::ParseParams(napi_value *params, size_t params
 
 int LocalSocketServerSendContext::GetAcceptFd()
 {
-    if (manager_ == nullptr) {
+    if (sharedManager_ == nullptr) {
         return -1;
     }
-    LocalSocketServerManager *pManagerInfo = reinterpret_cast<LocalSocketServerManager *>(manager_->GetData());
+    LocalSocketServerManager *pManagerInfo = reinterpret_cast<LocalSocketServerManager *>(sharedManager_->GetData());
     return (pManagerInfo != nullptr) ? pManagerInfo->GetAcceptFd(clientId_) : -1;
 }
 

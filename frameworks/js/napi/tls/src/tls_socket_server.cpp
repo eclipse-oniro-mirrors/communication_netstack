@@ -1443,7 +1443,6 @@ void TLSSocketServer::SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectO
     fds_[g_userCounter].revents = 0;
     AddConnect(connectFD, connection);
     auto ptrEventManager = std::make_shared<EventManager>();
-    EventManager::SetValid(ptrEventManager.get());
     ptrEventManager->SetData(this);
     connection->SetEventManager(ptrEventManager);
     CallOnConnectCallback(clientID, ptrEventManager);
@@ -1523,11 +1522,11 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
 }
 
 std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionByClientEventManager(
-    const EventManager *eventManager)
+    const std::shared_ptr<EventManager> &eventManager)
 {
     std::lock_guard<std::mutex> its_lock(connectMutex_);
     auto it = std::find_if(clientIdConnections_.begin(), clientIdConnections_.end(), [eventManager](const auto& pair) {
-        return pair.second->GetEventManager().get() == eventManager;
+        return pair.second->GetEventManager() == eventManager;
     });
     if (it == clientIdConnections_.end()) {
         return nullptr;
@@ -1535,7 +1534,7 @@ std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionByCli
     return it->second;
 }
 
-void TLSSocketServer::CloseConnectionByEventManager(EventManager *eventManager)
+void TLSSocketServer::CloseConnectionByEventManager(const std::shared_ptr<EventManager> &eventManager)
 {
     std::shared_ptr<Connection> ptrConnection = GetConnectionByClientEventManager(eventManager);
 
@@ -1544,11 +1543,11 @@ void TLSSocketServer::CloseConnectionByEventManager(EventManager *eventManager)
     }
 }
 
-void TLSSocketServer::DeleteConnectionByEventManager(EventManager *eventManager)
+void TLSSocketServer::DeleteConnectionByEventManager(const std::shared_ptr<EventManager> &eventManager)
 {
     std::lock_guard<std::mutex> its_lock(connectMutex_);
     for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end(); ++it) {
-        if (it->second->GetEventManager().get() == eventManager) {
+        if (it->second->GetEventManager() == eventManager) {
             it = clientIdConnections_.erase(it);
             break;
         }

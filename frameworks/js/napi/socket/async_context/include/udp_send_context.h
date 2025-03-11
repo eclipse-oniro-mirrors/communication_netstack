@@ -32,7 +32,7 @@ public:
 
     UdpSendContext() = delete;
 
-    explicit UdpSendContext(napi_env env, EventManager *manager);
+    explicit UdpSendContext(napi_env env, const std::shared_ptr<EventManager> &manager);
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 

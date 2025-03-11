@@ -241,35 +241,35 @@ HWTEST_F(TlsSocketBranchTest, BranchTest5, TestSize.Level2)
     TLSConnectOptions tlsConnectOptions = BaseOption();
 
     AccessToken token;
-    TLSSocket tlsSocket;
-    tlsSocket.OnError(
+    auto tlsSocket = std::make_shared<TLSSocket>();
+    tlsSocket->OnError(
         [](int32_t errorNumber, const std::string &errorString) { EXPECT_NE(TLSSOCKET_SUCCESS, errorNumber); });
-    tlsSocket.Connect(tlsConnectOptions, [](int32_t errCode) { EXPECT_NE(TLSSOCKET_SUCCESS, errCode); });
+    tlsSocket->Connect(tlsConnectOptions, [](int32_t errCode) { EXPECT_NE(TLSSOCKET_SUCCESS, errCode); });
     std::string getData;
-    tlsSocket.OnMessage([&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {
+    tlsSocket->OnMessage([&getData](const std::string &data, const Socket::SocketRemoteInfo &remoteInfo) {
         EXPECT_STREQ(getData.data(), nullptr);
     });
     const std::string data = "how do you do?";
     Socket::TCPSendOptions tcpSendOptions;
     tcpSendOptions.SetData(data);
-    tlsSocket.Send(tcpSendOptions, [](int32_t errCode) { EXPECT_EQ(errCode, TLS_ERR_SSL_NULL); });
-    tlsSocket.GetSignatureAlgorithms(
+    tlsSocket->Send(tcpSendOptions, [](int32_t errCode) { EXPECT_EQ(errCode, TLS_ERR_SSL_NULL); });
+    tlsSocket->GetSignatureAlgorithms(
         [](int32_t errCode, const std::vector<std::string> &algorithms) { EXPECT_EQ(errCode, TLS_ERR_SSL_NULL); });
-    tlsSocket.GetCertificate(
+    tlsSocket->GetCertificate(
         [](int32_t errCode, const X509CertRawData &cert) { EXPECT_NE(errCode, TLSSOCKET_SUCCESS); });
-    tlsSocket.GetCipherSuite(
+    tlsSocket->GetCipherSuite(
         [](int32_t errCode, const std::vector<std::string> &suite) { EXPECT_EQ(errCode, TLS_ERR_SSL_NULL); });
-    tlsSocket.GetProtocol([](int32_t errCode, const std::string &protocol) { EXPECT_EQ(errCode, TLSSOCKET_SUCCESS); });
-    tlsSocket.GetRemoteCertificate(
+    tlsSocket->GetProtocol([](int32_t errCode, const std::string &protocol) { EXPECT_EQ(errCode, TLSSOCKET_SUCCESS); });
+    tlsSocket->GetRemoteCertificate(
         [](int32_t errCode, const X509CertRawData &cert) { EXPECT_EQ(errCode, TLS_ERR_SSL_NULL); });
-    (void)tlsSocket.Close([](int32_t errCode) { EXPECT_FALSE(errCode == TLSSOCKET_SUCCESS); });
+    (void)tlsSocket->Close([](int32_t errCode) { EXPECT_FALSE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketBranchTest, BranchTest6, TestSize.Level2)
 {
     TLSConnectOptions connectOptions = BaseOption();
 
-    TLSSocket tlsSocket;
+    auto tlsSocket = std::make_shared<TLSSocket>();
     TLSSocket::TLSSocketInternal *tlsSocketInternal = new TLSSocket::TLSSocketInternal();
     bool isConnectToHost = tlsSocketInternal->TlsConnectToHost(SOCKET_FD, connectOptions, false);
     EXPECT_FALSE(isConnectToHost);
@@ -295,7 +295,7 @@ HWTEST_F(TlsSocketBranchTest, BranchTest6, TestSize.Level2)
 
 HWTEST_F(TlsSocketBranchTest, BranchTest7, TestSize.Level2)
 {
-    TLSSocket tlsSocket;
+    auto tlsSocket = std::make_shared<TLSSocket>();
     TLSSocket::TLSSocketInternal *tlsSocketInternal = new TLSSocket::TLSSocketInternal();
 
     std::vector<std::string> alpnProtocols;

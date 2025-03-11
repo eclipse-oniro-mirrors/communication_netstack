@@ -41,8 +41,6 @@ class BaseContext {
 public:
     BaseContext() = delete;
 
-    BaseContext(napi_env env, EventManager *manager);
-
     BaseContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager);
 
     virtual ~BaseContext();
@@ -83,8 +81,6 @@ public:
 
     [[nodiscard]] const std::string &GetAsyncWorkName() const;
 
-    void Emit(const std::string &type, const std::pair<napi_value, napi_value> &argv);
-
     void EmitSharedManager(const std::string &type, const std::pair<napi_value, napi_value> &argv);
 
     void SetNeedPromise(bool needPromise);
@@ -107,8 +103,6 @@ public:
 
     [[nodiscard]] bool IsCleartextNotPermitted() const;
 
-    [[nodiscard]] EventManager *GetManager() const;
-
     [[nodiscard]] std::shared_ptr<EventManager> GetSharedManager() const;
 
     void SetSharedManager(const std::shared_ptr<EventManager> &sharedManager);
@@ -129,9 +123,6 @@ public:
     napi_async_work asyncWorkBack2_ = nullptr;
     napi_async_work asyncWorkBack3_ = nullptr;
     napi_async_work asyncWorkBack4_ = nullptr;
-
-protected:
-    EventManager *manager_ = nullptr;
 
 private:
     napi_env env_ = nullptr;

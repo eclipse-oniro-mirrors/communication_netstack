@@ -1,0 +1,36 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+group("netstack_test") {
+  testonly = true
+  deps = [
+    "fuzztest/http_fuzzer:fuzztest",
+    "fuzztest/netssl:fuzztest",
+    "fuzztest/netsslinner_fuzzer:fuzztest",
+    "fuzztest/socket:fuzztest",
+    "fuzztest/websocket:fuzztest",
+    "fuzztest/websocketcapi_fuzzer:fuzztest",
+    "fuzztest/websocketinnerapi_fuzzer:fuzztest",
+    "unittest/http:unittest",
+    "unittest/http/cache:unittest",
+    "unittest/http_client:unittest",
+    "unittest/netssl:unittest",
+    "unittest/socket:unittest",
+    "unittest/tlssocket:unittest",
+    "unittest/utils/common_utils:unittest",
+    "unittest/utils/profiler_utils:unittest",
+    "unittest/websocket:unittest",
+    "unittest/websocket_capi_unittest:unittest",
+    "unittest/websocket_inner_unittest:unittest",
+  ]
+}

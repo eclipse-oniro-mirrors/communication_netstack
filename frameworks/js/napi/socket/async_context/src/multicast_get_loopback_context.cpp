@@ -22,7 +22,8 @@
 #include "socket_constant.h"
 
 namespace OHOS::NetStack::Socket {
-MulticastGetLoopbackContext::MulticastGetLoopbackContext(napi_env env, EventManager *manager)
+MulticastGetLoopbackContext::MulticastGetLoopbackContext(
+    napi_env env, const std::shared_ptr<EventManager> &manager)
     : BaseContext(env, manager)
 {
 }
@@ -70,7 +71,7 @@ bool MulticastGetLoopbackContext::GetLoopbackMode() const
 
 int MulticastGetLoopbackContext::GetSocketFd() const
 {
-    return manager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) : -1;
+    return sharedManager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(sharedManager_->GetData())) : -1;
 }
 
 int32_t MulticastGetLoopbackContext::GetErrorCode() const

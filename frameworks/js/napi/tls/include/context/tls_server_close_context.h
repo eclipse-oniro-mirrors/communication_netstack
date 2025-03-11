@@ -32,7 +32,7 @@ namespace TlsSocketServer {
 class TLSServerCloseContext final : public BaseContext {
 public:
     TLSServerCloseContext() = delete;
-    explicit TLSServerCloseContext(napi_env env, EventManager *manager);
+    explicit TLSServerCloseContext(napi_env env, const std::shared_ptr<EventManager> &manager);
 
 public:
     int32_t clientId_ = 0;
