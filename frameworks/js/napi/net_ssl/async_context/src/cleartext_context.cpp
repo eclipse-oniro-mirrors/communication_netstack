@@ -21,7 +21,8 @@
 #endif // HAS_NETMANAGER_BASE
 
 namespace OHOS::NetStack::Ssl {
-CleartextContext::CleartextContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
+CleartextContext::CleartextContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+    : BaseContext(env, manager) {}
 
 void CleartextContext::ParseParams(napi_value *params, size_t paramsCount)
 {
@@ -48,8 +49,8 @@ std::string CleartextContext::GetErrorMessage() const
     return err;
 }
 
-CleartextForHostContext::CleartextForHostContext(napi_env env,
-    EventManager *manager) : BaseContext(env, manager) {}
+CleartextForHostContext::CleartextForHostContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+    : BaseContext(env, manager) {}
 
 
 void CleartextForHostContext::ParseParams(napi_value *params, size_t paramsCount)

@@ -21,7 +21,8 @@
 #include "napi_utils.h"
 
 namespace OHOS::NetStack::Socket {
-CommonContext::CommonContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
+CommonContext::CommonContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+    : BaseContext(env, manager) {}
 
 void CommonContext::ParseParams(napi_value *params, size_t paramsCount)
 {
@@ -45,7 +46,7 @@ void CommonContext::ParseParams(napi_value *params, size_t paramsCount)
 
 int CommonContext::GetSocketFd() const
 {
-    return manager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) : -1;
+    return sharedManager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(sharedManager_->GetData())) : -1;
 }
 
 bool CommonContext::CheckParamsType(napi_value *params, size_t paramsCount)
@@ -60,11 +61,12 @@ bool CommonContext::CheckParamsType(napi_value *params, size_t paramsCount)
     return false;
 }
 
-CloseContext::CloseContext(napi_env env, EventManager *manager) : CommonContext(env, manager) {}
+CloseContext::CloseContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+    : CommonContext(env, manager) {}
 
 void CloseContext::SetSocketFd(int sock)
 {
-    manager_->SetData(reinterpret_cast<void *>(sock));
+    sharedManager_->SetData(reinterpret_cast<void *>(sock));
 }
 
 int32_t CommonContext::GetErrorCode() const

@@ -50,14 +50,15 @@ public:
 namespace {
 using namespace std;
 using namespace testing::ext;
+using namespace OHOS::NetStack;
 using namespace OHOS::NetStack::Socket;
 using namespace OHOS::NetStack::Socks5;
 
 HWTEST_F(SocketTest, MulticastTest001, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    MulticastMembershipContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    MulticastMembershipContext context(env, eventManager);
     bool ret = SocketExec::ExecUdpAddMembership(&context);
     EXPECT_EQ(ret, false);
 }
@@ -65,8 +66,8 @@ HWTEST_F(SocketTest, MulticastTest001, TestSize.Level1)
 HWTEST_F(SocketTest, MulticastTest002, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    MulticastMembershipContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    MulticastMembershipContext context(env, eventManager);
     bool ret = SocketExec::ExecUdpDropMembership(&context);
     EXPECT_EQ(ret, false);
 }
@@ -74,8 +75,8 @@ HWTEST_F(SocketTest, MulticastTest002, TestSize.Level1)
 HWTEST_F(SocketTest, MulticastTest003, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    MulticastSetTTLContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    MulticastSetTTLContext context(env, eventManager);
     bool ret = SocketExec::ExecSetMulticastTTL(&context);
     EXPECT_EQ(ret, false);
 }
@@ -83,8 +84,8 @@ HWTEST_F(SocketTest, MulticastTest003, TestSize.Level1)
 HWTEST_F(SocketTest, MulticastTest004, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    MulticastGetTTLContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    MulticastGetTTLContext context(env, eventManager);
     bool ret = SocketExec::ExecGetMulticastTTL(&context);
     EXPECT_EQ(ret, false);
 }
@@ -92,8 +93,8 @@ HWTEST_F(SocketTest, MulticastTest004, TestSize.Level1)
 HWTEST_F(SocketTest, MulticastTest005, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    MulticastSetLoopbackContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    MulticastSetLoopbackContext context(env, eventManager);
     bool ret = SocketExec::ExecSetLoopbackMode(&context);
     EXPECT_EQ(ret, false);
 }
@@ -101,8 +102,8 @@ HWTEST_F(SocketTest, MulticastTest005, TestSize.Level1)
 HWTEST_F(SocketTest, MulticastTest006, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    MulticastGetLoopbackContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    MulticastGetLoopbackContext context(env, eventManager);
     bool ret = SocketExec::ExecGetLoopbackMode(&context);
     EXPECT_EQ(ret, false);
 }
@@ -110,8 +111,8 @@ HWTEST_F(SocketTest, MulticastTest006, TestSize.Level1)
 HWTEST_F(SocketTest, LocalSocketTest001, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketBindContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketBindContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketBind(&context);
     EXPECT_EQ(ret, false);
 }
@@ -119,8 +120,8 @@ HWTEST_F(SocketTest, LocalSocketTest001, TestSize.Level1)
 HWTEST_F(SocketTest, LocalSocketTest002, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketConnectContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketConnectContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketConnect(&context);
     EXPECT_EQ(ret, false);
 }
@@ -128,8 +129,8 @@ HWTEST_F(SocketTest, LocalSocketTest002, TestSize.Level1)
 HWTEST_F(SocketTest, LocalSocketTest003, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketSendContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketSendContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketSend(&context);
     EXPECT_EQ(ret, false);
 }
@@ -137,8 +138,8 @@ HWTEST_F(SocketTest, LocalSocketTest003, TestSize.Level1)
 HWTEST_F(SocketTest, LocalSocketTest004, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketCloseContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketCloseContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketClose(&context);
     EXPECT_EQ(ret, false);
 }
@@ -146,8 +147,8 @@ HWTEST_F(SocketTest, LocalSocketTest004, TestSize.Level1)
 HWTEST_F(SocketTest, LocalSocketTest005, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketGetStateContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketGetStateContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketGetState(&context);
     EXPECT_EQ(ret, true);
 }
@@ -155,8 +156,8 @@ HWTEST_F(SocketTest, LocalSocketTest005, TestSize.Level1)
 HWTEST_F(SocketTest, LocalSocketTest006, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketGetSocketFdContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketGetSocketFdContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketGetSocketFd(&context);
     EXPECT_EQ(ret, true);
 }
@@ -164,8 +165,8 @@ HWTEST_F(SocketTest, LocalSocketTest006, TestSize.Level1)
 HWTEST_F(SocketTest, LocalSocketTest007, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketSetExtraOptionsContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketSetExtraOptionsContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketSetExtraOptions(&context);
     EXPECT_EQ(ret, true);
 }
@@ -173,8 +174,8 @@ HWTEST_F(SocketTest, LocalSocketTest007, TestSize.Level1)
 HWTEST_F(SocketTest, LocalSocketTest008, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketGetExtraOptionsContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketGetExtraOptionsContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketGetExtraOptions(&context);
     EXPECT_EQ(ret, false);
 }
@@ -182,8 +183,8 @@ HWTEST_F(SocketTest, LocalSocketTest008, TestSize.Level1)
 HWTEST_F(SocketTest, LocalSocketServerTest001, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketServerListenContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketServerListenContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketServerListen(&context);
     EXPECT_EQ(ret, false);
 }
@@ -191,8 +192,8 @@ HWTEST_F(SocketTest, LocalSocketServerTest001, TestSize.Level1)
 HWTEST_F(SocketTest, LocalSocketServerTest002, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketServerGetStateContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketServerGetStateContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketServerGetState(&context);
     EXPECT_EQ(ret, true);
 }
@@ -200,8 +201,8 @@ HWTEST_F(SocketTest, LocalSocketServerTest002, TestSize.Level1)
 HWTEST_F(SocketTest, LocalSocketServerTest003, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketServerSetExtraOptionsContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketServerSetExtraOptionsContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketServerSetExtraOptions(&context);
     EXPECT_EQ(ret, false);
 }
@@ -209,8 +210,8 @@ HWTEST_F(SocketTest, LocalSocketServerTest003, TestSize.Level1)
 HWTEST_F(SocketTest, LocalSocketServerTest004, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketServerGetExtraOptionsContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketServerGetExtraOptionsContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketServerGetExtraOptions(&context);
     EXPECT_EQ(ret, false);
 }
@@ -218,8 +219,8 @@ HWTEST_F(SocketTest, LocalSocketServerTest004, TestSize.Level1)
 HWTEST_F(SocketTest, LocalSocketServerTest005, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketServerSendContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketServerSendContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketConnectionSend(&context);
     EXPECT_EQ(ret, false);
 }
@@ -227,8 +228,8 @@ HWTEST_F(SocketTest, LocalSocketServerTest005, TestSize.Level1)
 HWTEST_F(SocketTest, LocalSocketServerTest006, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    LocalSocketServerCloseContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketServerCloseContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketConnectionClose(&context);
     EXPECT_EQ(ret, false);
 }
@@ -237,8 +238,8 @@ HWTEST_F(SocketTest, LocalSocketServerTest006, TestSize.Level1)
 HWTEST_F(SocketTest, Socks5SocketTest001, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    ConnectContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    ConnectContext context(env, eventManager);
     bool ret = SocketExec::ExecConnect(&context);
     EXPECT_EQ(ret, false);
 
@@ -251,8 +252,8 @@ HWTEST_F(SocketTest, Socks5SocketTest001, TestSize.Level1)
 HWTEST_F(SocketTest, Socks5SocketTest002, TestSize.Level1)
 {
     napi_env env = nullptr;
-    OHOS::NetStack::EventManager eventManager;
-    UdpSendContext context(env, &eventManager);
+    auto eventManager = std::make_shared<EventManager>();
+    UdpSendContext context(env, eventManager);
     context.parseOK_ = false;
     EXPECT_FALSE(SocketExec::ExecUdpSend(&context));
 
@@ -260,11 +261,11 @@ HWTEST_F(SocketTest, Socks5SocketTest002, TestSize.Level1)
     EXPECT_FALSE(SocketExec::ExecUdpSend(&context));
 
     int data = 1;
-    eventManager.data_ = &data;
+    eventManager->data_ = &data;
     shared_ptr<Socks5Instance> socks5Udp = make_shared<Socks5UdpInstance>();
     socks5Udp->options_ = make_shared<Socks5Option>();
     socks5Udp->SetSocks5Instance(socks5Udp);
-    eventManager.proxyData_ = socks5Udp;
+    eventManager->proxyData_ = socks5Udp;
     context.proxyOptions = make_shared<ProxyOptions>();
     context.proxyOptions->type_ = ProxyType::NONE;
     EXPECT_FALSE(SocketExec::ExecUdpSend(&context));

@@ -22,28 +22,8 @@
 #include "node_api.h"
 
 namespace OHOS::NetStack {
-BaseContext::BaseContext(napi_env env, EventManager *manager)
-    : manager_(manager),
-      env_(env),
-      ref_(nullptr),
-      parseOK_(false),
-      requestOK_(false),
-      errorCode_(0),
-      callback_(nullptr),
-      promiseRef_(nullptr),
-      asyncWork_(nullptr),
-      deferred_(nullptr),
-      needPromise_(true),
-      needThrowException_(false),
-      permissionDenied_(false),
-      noAllowedHost_(false),
-      cleartextNotPermitted_(false)
-{
-}
-
 BaseContext::BaseContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager)
-    : manager_(nullptr),
-      env_(env),
+    : env_(env),
       ref_(nullptr),
       parseOK_(false),
       requestOK_(false),
@@ -214,13 +194,6 @@ void BaseContext::EmitSharedManager(const std::string &type, const std::pair<nap
     }
 }
 
-void BaseContext::Emit(const std::string &type, const std::pair<napi_value, napi_value> &argv)
-{
-    if (manager_ != nullptr) {
-        manager_->Emit(type, argv);
-    }
-}
-
 void BaseContext::SetNeedPromise(bool needPromise)
 {
     needPromise_ = needPromise;
@@ -229,11 +202,6 @@ void BaseContext::SetNeedPromise(bool needPromise)
 bool BaseContext::IsNeedPromise() const
 {
     return needPromise_;
-}
-
-EventManager *BaseContext::GetManager() const
-{
-    return manager_;
 }
 
 std::shared_ptr<EventManager> BaseContext::GetSharedManager() const

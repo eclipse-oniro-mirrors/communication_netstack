@@ -36,7 +36,6 @@ public:
 
 namespace {
 using namespace testing::ext;
-constexpr const uint32_t NO_CONNECT_CONTEXT_ERROR = 1018;
 
 static void OnOpen(struct WebSocket *client, WebSocket_OpenResult openResult) {}
 
@@ -140,7 +139,7 @@ HWTEST_F(WebSocketTest, WebSocketSendTest007, TestSize.Level1)
     ret = OH_WebSocketClient_Send(client, const_cast<char *>(senddata2), sizeof(senddata2));
     EXPECT_EQ(ret, WebSocket_ErrCode::WEBSOCKET_OK);
     ret = OH_WebSocketClient_Destroy(client);
-    EXPECT_EQ(ret, NO_CONNECT_CONTEXT_ERROR);
+    EXPECT_EQ(ret, WebSocket_ErrCode::WEBSOCKET_OK);
 }
 
 } // namespace

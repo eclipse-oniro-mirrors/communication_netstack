@@ -28,7 +28,7 @@ public:
 
     FetchContext() = delete;
 
-    explicit FetchContext(napi_env env, EventManager *manager);
+    explicit FetchContext(napi_env env, const std::shared_ptr<EventManager> &manager);
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 

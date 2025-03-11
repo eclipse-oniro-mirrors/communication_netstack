@@ -46,9 +46,10 @@ public:
 
     napi_value ConnectionOn(napi_env env, napi_callback_info info);
     napi_value ConnectionOff(napi_env env, napi_callback_info info);
-    void TLSServerRegEvent(std::string event, TLSSocketServer *tlsSocketServer, EventManager *eventManager);
+    void TLSServerRegEvent(std::string event, TLSSocketServer *tlsSocketServer,
+        const std::shared_ptr<EventManager> &eventManager);
     void TLSConnectionRegEvent(std::string event, TLSSocketServer *tlsSocketServer, int clientId,
-                               EventManager *eventManager);
+                               const std::shared_ptr<EventManager> &eventManager);
     void TLSConnectionUnRegEvent(std::string event, TLSSocketServer *tlsSocketServer, int clientId);
     class MessageParma {
     public:
@@ -74,7 +75,8 @@ public:
 private:
     std::set<std::string_view> monitors_;
 
-    void InsertEventMessage(TLSSocketServer *tlsSocketServer, int clientId, EventManager *eventManager);
+    void InsertEventMessage(TLSSocketServer *tlsSocketServer, int clientId,
+        const std::shared_ptr<EventManager> &eventManager);
 };
 } // namespace TlsSocketServer
 } // namespace NetStack

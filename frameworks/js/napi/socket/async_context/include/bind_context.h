@@ -30,7 +30,7 @@ public:
 
     BindContext() = delete;
 
-    explicit BindContext(napi_env env, EventManager *manager);
+    explicit BindContext(napi_env env, const std::shared_ptr<EventManager> &manager);
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 

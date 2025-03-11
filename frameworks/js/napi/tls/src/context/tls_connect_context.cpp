@@ -92,7 +92,8 @@ bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptio
 }
 } // namespace
 
-TLSConnectContext::TLSConnectContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
+TLSConnectContext::TLSConnectContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+    : BaseContext(env, manager) {}
 
 void TLSConnectContext::ParseParams(napi_value *params, size_t paramsCount)
 {

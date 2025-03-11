@@ -28,13 +28,13 @@ namespace OHOS::NetStack::TlsSocket {
 class TLSInitContext final : public BaseContext {
 public:
     TLSInitContext() = delete;
-    explicit TLSInitContext(napi_env env, EventManager *manager);
+    explicit TLSInitContext(napi_env env, const std::shared_ptr<EventManager> &manager);
 
 public:
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
 public:
-    EventManager *extManager_ = nullptr;
+    std::shared_ptr<EventManager> extManager_ = nullptr;
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);

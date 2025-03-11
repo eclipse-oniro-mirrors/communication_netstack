@@ -180,7 +180,7 @@ static bool SocketRecvHandle(int socketId, std::pair<std::unique_ptr<char[]> &, 
     Socks5::Socks5Utils::PrintRecvErrMsg(socketId, errCode, recvLen, "SocketRecvHandle");
 
     auto manager = callback.GetEventManager();
-    if (EventManager::IsManagerValid(manager)) {
+    if (manager != nullptr) {
         manager->GetProxyData()->OnProxySocketError();
     } else {
         NETSTACK_LOGE("manager is error");

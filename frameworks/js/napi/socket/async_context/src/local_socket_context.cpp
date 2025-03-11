@@ -23,19 +23,19 @@
 namespace OHOS::NetStack::Socket {
 int LocalSocketBaseContext::GetSocketFd() const
 {
-    if (manager_ == nullptr) {
+    if (sharedManager_ == nullptr) {
         return -1;
     }
-    LocalSocketManager *pMgr = reinterpret_cast<LocalSocketManager *>(manager_->GetData());
+    LocalSocketManager *pMgr = reinterpret_cast<LocalSocketManager *>(sharedManager_->GetData());
     return (pMgr != nullptr) ? pMgr->sockfd_ : -1;
 }
 
 void LocalSocketBaseContext::SetSocketFd(int sock)
 {
-    if (manager_ == nullptr) {
+    if (sharedManager_ == nullptr) {
         return;
     }
-    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(manager_->GetData()); pMgr != nullptr) {
+    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(sharedManager_->GetData()); pMgr != nullptr) {
         pMgr->sockfd_ = sock;
     }
 }

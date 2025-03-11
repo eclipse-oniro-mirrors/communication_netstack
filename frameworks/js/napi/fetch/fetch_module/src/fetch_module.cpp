@@ -34,7 +34,7 @@ napi_value FetchModule::InitFetchModule(napi_env env, napi_value exports)
 napi_value FetchModule::Fetch(napi_env env, napi_callback_info info)
 {
     NETSTACK_LOGI("FetchModule::Fetch is called");
-    return ModuleTemplate::Interface<FetchContext>(
+    return ModuleTemplate::InterfaceWithSharedManager<FetchContext>(
         env, info, FUNCTION_FETCH, [](napi_env, napi_value, FetchContext *) -> bool { return FetchExec::Initialize(); },
         FetchAsyncWork::ExecFetch, FetchAsyncWork::FetchCallback);
 }

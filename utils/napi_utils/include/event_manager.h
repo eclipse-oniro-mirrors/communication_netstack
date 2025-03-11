@@ -69,23 +69,11 @@ public:
 
     [[nodiscard]] void *GetData();
 
-    void EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
-
-    void EmitByUvWithoutCheck(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
-
     void EmitByUvWithoutCheckShared(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
 
     bool HasEventListener(const std::string &type);
 
     void DeleteListener(const std::string &type);
-
-    static void SetInvalid(EventManager *manager);
-
-    static void SetInvalidWithoutDelete(EventManager *manager);
-
-    static bool IsManagerValid(EventManager *manager);
-
-    static void SetValid(EventManager *manager);
 
     void SetQueueData(void *data);
 
@@ -139,7 +127,6 @@ private:
     std::queue<void *> dataQueue_;
     static EventManagerMagic magic_;
     static std::mutex mutexForManager_;
-    static std::unordered_set<EventManager *> validManager_;
     napi_ref eventRef_;
     std::atomic_bool isDestroy_;
     std::string webSocketTextData_;
@@ -155,17 +142,6 @@ public:
     struct {
         uint32_t magicNumber = EVENT_MANAGER_MAGIC_NUMBER;
     } innerMagic_;
-};
-
-struct UvWorkWrapper {
-    UvWorkWrapper() = delete;
-
-    UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager);
-
-    void *data = nullptr;
-    napi_env env = nullptr;
-    std::string type;
-    EventManager *manager = nullptr;
 };
 
 class EventManagerForHttp {

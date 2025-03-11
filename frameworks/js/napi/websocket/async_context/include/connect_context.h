@@ -33,9 +33,7 @@ public:
 
     ConnectContext() = delete;
 
-    ConnectContext(napi_env env, EventManager *manager);
-
-    ConnectContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager);
+    ConnectContext(napi_env env, const std::shared_ptr<EventManager> &manager);
 
     ~ConnectContext() override;
 

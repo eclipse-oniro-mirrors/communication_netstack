@@ -32,7 +32,7 @@ public:
 
     CommonContext() = delete;
 
-    explicit CommonContext(napi_env env, EventManager *manager);
+    explicit CommonContext(napi_env env, const std::shared_ptr<EventManager> &manager);
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
@@ -68,7 +68,7 @@ public:
 
     CloseContext() = delete;
 
-    explicit CloseContext(napi_env env, EventManager *manager);
+    explicit CloseContext(napi_env env, const std::shared_ptr<EventManager> &manager);
 
     void SetSocketFd(int sock);
 };

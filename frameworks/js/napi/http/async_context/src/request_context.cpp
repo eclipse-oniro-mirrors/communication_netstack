@@ -80,7 +80,7 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_UNKNOWN_OTHER_ERROR, "Unknown Other Error"},
 };
 static std::atomic<int32_t> g_currentTaskId = std::numeric_limits<int32_t>::min();
-RequestContext::RequestContext(napi_env env, EventManager *manager)
+RequestContext::RequestContext(napi_env env, const std::shared_ptr<EventManager> &manager)
     : BaseContext(env, manager),
       taskId_(g_currentTaskId++),
       usingCache_(true),

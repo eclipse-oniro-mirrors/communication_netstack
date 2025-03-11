@@ -43,7 +43,8 @@ using namespace OHOS::NetStack::Ssl;
 HWTEST_F(NetsslTest, CertVerifyTest001, TestSize.Level1)
 {
     napi_env env = nullptr;
-    CertContext context(env, nullptr);
+    std::shared_ptr<EventManager> manager = nullptr;
+    CertContext context(env, manager);
 
     bool ret = SslExec::ExecVerify(&context);
     EXPECT_EQ(ret, false);

@@ -22,7 +22,7 @@
 #include "napi_utils.h"
 
 namespace OHOS::NetStack::Fetch {
-FetchContext::FetchContext(napi_env env, EventManager *manager)
+FetchContext::FetchContext(napi_env env, const std::shared_ptr<EventManager> &manager)
     : BaseContext(env, manager), successCallback_(nullptr), failCallback_(nullptr), completeCallback_(nullptr)
 {
 }

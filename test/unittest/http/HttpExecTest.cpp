@@ -52,8 +52,8 @@ HWTEST_F(HttpExecTest, SetOption001, TestSize.Level1)
     auto handle = curl_easy_init();
 
     napi_env env = nullptr;
-    EventManager manager;
-    OHOS::NetStack::Http::RequestContext context(env, &manager);
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
 
     EXPECT_TRUE(HttpExec::SetOption(handle, &context, context.GetCurlHeaderList()));
 }
@@ -63,8 +63,8 @@ HWTEST_F(HttpExecTest, SetServerSSLCertOption001, TestSize.Level1)
     auto handle = curl_easy_init();
 
     napi_env env = nullptr;
-    EventManager manager;
-    OHOS::NetStack::Http::RequestContext context(env, &manager);
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
 
     EXPECT_TRUE(HttpExec::SetServerSSLCertOption(handle, &context));
 }

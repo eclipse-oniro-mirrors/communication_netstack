@@ -22,7 +22,8 @@
 #include "netstack_log.h"
 
 namespace OHOS::NetStack::Socket {
-TcpSetExtraOptionsContext::TcpSetExtraOptionsContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
+TcpSetExtraOptionsContext::TcpSetExtraOptionsContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+    : BaseContext(env, manager) {}
 
 void TcpSetExtraOptionsContext::ParseContextKey(napi_value *params)
 {
@@ -107,7 +108,7 @@ void TcpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCou
 
 int TcpSetExtraOptionsContext::GetSocketFd() const
 {
-    return manager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) : -1;
+    return sharedManager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(sharedManager_->GetData())) : -1;
 }
 
 bool TcpSetExtraOptionsContext::CheckParamsType(napi_value *params, size_t paramsCount)

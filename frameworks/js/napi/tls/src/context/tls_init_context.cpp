@@ -26,7 +26,8 @@ namespace OHOS::NetStack::TlsSocket {
 static constexpr std::string_view PARSE_ERROR = "Parameter error";
 static constexpr const char *INTERFACE_TCP_SOCKET = "TCPSocket";
 
-TLSInitContext::TLSInitContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
+TLSInitContext::TLSInitContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+    : BaseContext(env, manager) {}
 
 void TLSInitContext::ParseParams(napi_value *params, size_t paramsCount)
 {
@@ -34,13 +35,15 @@ void TLSInitContext::ParseParams(napi_value *params, size_t paramsCount)
     if (!valid) {
         return;
     }
-
-    auto napiRet = napi_unwrap(GetEnv(), params[0], reinterpret_cast<void **>(&extManager_));
+    std::shared_ptr<EventManager> *sharedManager = nullptr;
+    auto napiRet = napi_unwrap(GetEnv(), params[0], reinterpret_cast<void **>(&sharedManager));
     if (napiRet != napi_ok) {
         NETSTACK_LOGE("get event manager in napi_unwrap failed, napiRet is %{public}d", napiRet);
         return;
     }
-
+    if (sharedManager != nullptr) {
+        extManager_ = *sharedManager;
+    }
     SetParseOK(true);
 }
 

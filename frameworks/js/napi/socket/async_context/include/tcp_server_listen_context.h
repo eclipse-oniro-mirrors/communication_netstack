@@ -30,7 +30,7 @@ public:
 
     TcpServerListenContext() = delete;
 
-    explicit TcpServerListenContext(napi_env env, EventManager *manager);
+    explicit TcpServerListenContext(napi_env env, const std::shared_ptr<EventManager> &manager);
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
