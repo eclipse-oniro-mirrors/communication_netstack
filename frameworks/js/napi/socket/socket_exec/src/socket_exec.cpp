@@ -760,7 +760,7 @@ static bool PreparePollFds(int &currentFd, std::vector<pollfd> &fds,
     fds.clear();
 
     auto manager = callback.GetEventManager();
-    if (manager != nullptr) {
+    if (manager == nullptr) {
         NETSTACK_LOGE("manager is error");
         return false;
     }
