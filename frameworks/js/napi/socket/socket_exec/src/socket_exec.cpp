@@ -2149,6 +2149,7 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
 
 static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const TcpMessageCallback &callback)
 {
+    std::vector<std::shared_ptr<std::thread>> clientThreads;
     while (true) {
         sockaddr_in clientAddress;
         socklen_t clientAddrLength = sizeof(clientAddress);
@@ -2182,13 +2183,16 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
         if (TCPExtraOptions option; SingletonSocketConfig::GetInstance().GetTcpExtraOptions(sock, option)) {
             SocketSetTcpExtraOptions(connectFD, option);
         }
-        std::thread handlerThread(ClientHandler, sock, clientId, callback);
+        auto handlerThread = std::make_shared<std::thread>(ClientHandler, sock, clientId, callback);
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(TCP_SERVER_HANDLE_CLIENT);
 #else
-        pthread_setname_np(handlerThread.native_handle(), TCP_SERVER_HANDLE_CLIENT);
+        pthread_setname_np(handlerThread->native_handle(), TCP_SERVER_HANDLE_CLIENT);
 #endif
-        handlerThread.detach();
+        clientThreads.push_back(handlerThread);
+    }
+    for (auto handlerThread : clientThreads) {
+        handlerThread->join();
     }
 }
 
