@@ -898,8 +898,6 @@ HWTEST_F(HttpClientTaskTest, ProcessRequestTest001, TestSize.Level1)
     while (task->GetStatus() != TaskStatus::IDLE) {
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
-
-    // 验证请求对象是否正确
     const HttpClientRequest &request = task->GetRequest();
     EXPECT_EQ(request.GetURL(), url);
 }
@@ -918,8 +916,6 @@ HWTEST_F(HttpClientTaskTest, ProcessErrorTest001, TestSize.Level1)
     while (task->GetStatus() != TaskStatus::IDLE) {
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
-
-    // 验证错误对象是否正确
     const HttpClientError &error = task->GetError();
     EXPECT_NE(error.GetErrorCode(), 0);
     EXPECT_FALSE(error.GetErrorMessage().empty());
