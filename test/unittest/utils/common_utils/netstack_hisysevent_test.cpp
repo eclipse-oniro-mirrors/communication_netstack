@@ -162,7 +162,7 @@ HWTEST_F(NetStackHiSysEventTest, IsError_ShouldReturnTrue_WhenResponseCodeIsGrea
 HWTEST_F(NetStackHiSysEventTest, ProcessHttpResponseErrorEvents_01, TestSize.Level0)
 {
     HttpPerfInfo httpPerfInfo;
-    httpPerfInfo.responseCode = 500;  // 设置一个错误响应码
+    httpPerfInfo.responseCode = 500;
     httpPerfInfo.totalTime = 100.0;
     httpPerfInfo.version = "1";
     
@@ -204,23 +204,19 @@ HWTEST_F(NetStackHiSysEventTest, ProcessHiSysEventWrite_01, TestSize.Level0)
 
     EventReport &eventReport = EventReport::GetInstance();
     eventReport.httpPerfInfoQueue_ = httpPerfInfoQueue;
-
-    // 调用ReportHiSysEventWrite方法
     eventReport.ReportHiSysEventWrite(httpPerfInfoQueue);
-
-    // 验证队列是否清空
     EXPECT_FALSE(eventReport.httpPerfInfoQueue_.empty());
 }
 
 HWTEST_F(NetStackHiSysEventTest, ProcessSendHttpResponseErrorEvent_01, TestSize.Level0)
 {
     HttpPerfInfo httpPerfInfo1;
-    httpPerfInfo1.responseCode = 500;  // 设置一个错误响应码
+    httpPerfInfo1.responseCode = 500;
     httpPerfInfo1.totalTime = 100.0;
     httpPerfInfo1.version = "1";
 
     HttpPerfInfo httpPerfInfo2;
-    httpPerfInfo2.responseCode = 404;  // 设置另一个错误响应码
+    httpPerfInfo2.responseCode = 404;
     httpPerfInfo2.totalTime = 200.0;
     httpPerfInfo2.version = "1";
 
@@ -232,13 +228,8 @@ HWTEST_F(NetStackHiSysEventTest, ProcessSendHttpResponseErrorEvent_01, TestSize.
     eventReport.hiviewReportFirstTime_ = std::chrono::steady_clock::time_point::min();
     eventReport.sendHttpNetStackEventCount_ = 0;
 
-    // 模拟当前时间
     auto now = std::chrono::steady_clock::now();
-
-    // 调用SendHttpResponseErrorEvent方法
     eventReport.SendHttpResponseErrorEvent(httpPerfInfoQueue, now);
-
-    // 验证发送计数增加
     EXPECT_EQ(eventReport.sendHttpNetStackEventCount_, 1);
 }
 }  // namespace OHOS::NetStack
