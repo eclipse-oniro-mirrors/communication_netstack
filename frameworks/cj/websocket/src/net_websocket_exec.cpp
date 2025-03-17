@@ -1011,9 +1011,11 @@ void NetWebSocketExec::HandleRcvMessage(CJWebsocketProxy *websocketProxy,
             para->data = CreateMessagePara(websocketProxy, isBinary);
             para->dataLen = sizeof(CMessageResponse);
             websocketProxy->EmitCallBack(para);
-            auto msgResponse = reinterpret_cast<CMessageResponse*>(para->data);
-            free(msgResponse->result.head);
-            delete msgResponse;
+            if (para->data) {
+                auto msgResponse = reinterpret_cast<CMessageResponse*>(para->data);
+                free(msgResponse->result.head);
+                delete msgResponse;
+            }
             delete para;
             websocketProxy->ClearWebSocketTextData();
             OnDataEnd(websocketProxy);
@@ -1034,9 +1036,11 @@ void NetWebSocketExec::HandleRcvMessage(CJWebsocketProxy *websocketProxy,
             para->data = CreateMessagePara(websocketProxy, isBinary);
             para->dataLen = sizeof(CMessageResponse);
             websocketProxy->EmitCallBack(para);
-            auto msgResponse = reinterpret_cast<CMessageResponse*>(para->data);
-            free(msgResponse->result.head);
-            delete msgResponse;
+            if (para->data) {
+                auto msgResponse = reinterpret_cast<CMessageResponse*>(para->data);
+                free(msgResponse->result.head);
+                delete msgResponse;
+            }
             delete para;
             websocketProxy->ClearWebSocketTextData();
             OnDataEnd(websocketProxy);
