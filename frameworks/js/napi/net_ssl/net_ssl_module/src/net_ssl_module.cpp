@@ -79,7 +79,7 @@ void NetSslModuleExports::InitCertType(napi_env env, napi_value exports)
 
 napi_value NetSslModuleExports::VerifyCertification(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithOutAsyncWorkWithSharedManager<CertContext>(
+    return ModuleTemplate::InterfaceWithOutAsyncWork<CertContext>(
         env, info,
         [](napi_env, napi_value, CertContext *context) -> bool {
             SslExec::AsyncRunVerify(context);
@@ -94,7 +94,7 @@ napi_value NetSslModuleExports::VerifyCertificationSync(napi_env env, napi_callb
     size_t paramsCount = MAX_PARAM_NUM;
     napi_value params[MAX_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
-    std::shared_ptr<EventManager> manager = nullptr;
+    EventManager *manager = nullptr;
     auto context = std::make_unique<CertContext>(env, manager);
     context->ParseParams(params, paramsCount);
     if (context->GetErrorCode() != PARSE_ERROR_CODE) {
@@ -136,7 +136,7 @@ napi_value NetSslModuleExports::IsCleartextPermitted(napi_env env, napi_callback
     size_t paramsCount = MAX_PARAM_NUM;
     napi_value params[MAX_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
-    std::shared_ptr<EventManager> manager = nullptr;
+    EventManager *manager = nullptr;
     auto context = std::make_unique<CleartextContext>(env, manager);
     if (!context) {
         return NapiUtils::GetUndefined(env);
@@ -168,7 +168,7 @@ napi_value NetSslModuleExports::IsCleartextPermittedByHostName(napi_env env, nap
     size_t paramsCount = MAX_PARAM_NUM;
     napi_value params[MAX_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
-    std::shared_ptr<EventManager> manager = nullptr;
+    EventManager *manager = nullptr;
     auto context = std::make_unique<CleartextForHostContext>(env, manager);
     if (!context) {
         return NapiUtils::GetUndefined(env);

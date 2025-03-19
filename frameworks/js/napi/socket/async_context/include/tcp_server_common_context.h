@@ -32,7 +32,7 @@ public:
 
     TcpServerCommonContext() = delete;
 
-    explicit TcpServerCommonContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    explicit TcpServerCommonContext(napi_env env, EventManager *manager);
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
@@ -64,7 +64,7 @@ public:
 
     TcpServerCloseContext() = delete;
 
-    explicit TcpServerCloseContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    explicit TcpServerCloseContext(napi_env env, EventManager *manager);
 
     void SetSocketFd(int sock);
 };

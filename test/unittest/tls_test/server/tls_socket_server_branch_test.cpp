@@ -305,10 +305,10 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest006, testing::ext::
     Socket::SocketRemoteInfo remoteInfo;
     connection->CallOnMessageCallback(socketFd, testString, remoteInfo);
 
-    auto manager = std::make_shared<EventManager>();
-    tlsSocketServer->CloseConnectionByEventManager(manager);
-    tlsSocketServer->DeleteConnectionByEventManager(manager);
-    auto connections = tlsSocketServer->GetConnectionByClientEventManager(manager);
+    EventManager manager;
+    tlsSocketServer->CloseConnectionByEventManager(&manager);
+    tlsSocketServer->DeleteConnectionByEventManager(&manager);
+    auto connections = tlsSocketServer->GetConnectionByClientEventManager(&manager);
     EXPECT_TRUE(connections == nullptr);
 }
 

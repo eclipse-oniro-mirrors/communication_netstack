@@ -31,8 +31,7 @@ namespace {
 constexpr std::string_view PARSE_ERROR = "options is not type of TLSServerSendOptions";
 } // namespace
 
-TLSServerSendContext::TLSServerSendContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-    : BaseContext(env, manager) {}
+TLSServerSendContext::TLSServerSendContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void TLSServerSendContext::ParseParams(napi_value *params, size_t paramsCount)
 {

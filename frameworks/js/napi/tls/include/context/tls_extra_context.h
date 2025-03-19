@@ -28,7 +28,7 @@ namespace OHOS::NetStack::TlsSocket {
 class TLSSetExtraOptionsContext : public BaseContext {
 public:
     TLSSetExtraOptionsContext() = delete;
-    explicit TLSSetExtraOptionsContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    explicit TLSSetExtraOptionsContext(napi_env env, EventManager *manager);
 
 public:
     void ParseParams(napi_value *params, size_t paramsCount) override;

@@ -28,7 +28,7 @@ static constexpr const size_t MAX_ERR_NUM = 256;
 class CleartextContext final : public BaseContext {
 public:
     CleartextContext() = delete;
-    explicit CleartextContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    explicit CleartextContext(napi_env env, EventManager *manager);
     void ParseParams(napi_value *params, size_t paramsCount) override;
     [[nodiscard]] std::string GetErrorMessage() const override;
 
@@ -39,7 +39,7 @@ public:
 class CleartextForHostContext final : public BaseContext {
 public:
     CleartextForHostContext() = delete;
-    explicit CleartextForHostContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    explicit CleartextForHostContext(napi_env env, EventManager *manager);
     void ParseParams(napi_value *params, size_t paramsCount) override;
     [[nodiscard]] std::string GetErrorMessage() const override;
 
