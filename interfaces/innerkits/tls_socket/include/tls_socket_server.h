@@ -514,9 +514,9 @@ public:
     std::shared_ptr<Connection> GetConnectionByClientID(int clientid);
     int GetConnectionClientCount();
 
-    std::shared_ptr<Connection> GetConnectionByClientEventManager(const std::shared_ptr<EventManager> &eventManager);
-    void CloseConnectionByEventManager(const std::shared_ptr<EventManager> &eventManager);
-    void DeleteConnectionByEventManager(const std::shared_ptr<EventManager> &eventManager);
+    std::shared_ptr<Connection> GetConnectionByClientEventManager(const EventManager *eventManager);
+    void CloseConnectionByEventManager(EventManager *eventManager);
+    void DeleteConnectionByEventManager(EventManager *eventManager);
     void SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectOptions &tlsListenOptions, int clientID,
                                        int connectFD, std::shared_ptr<Connection> &connection);
 };
