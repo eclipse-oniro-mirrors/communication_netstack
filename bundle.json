@@ -62,8 +62,6 @@
         "build": {
             "group_type": {
                 "base_group": [
-                    "//foundation/communication/netstack/frameworks/cj/http:cj_net_http_ffi",
-                    "//foundation/communication/netstack/frameworks/cj/websocket:cj_net_websocket_ffi",
                     "//foundation/communication/netstack/frameworks/js/napi/http:http",
                     "//foundation/communication/netstack/frameworks/js/napi/socket:socket",
                     "//foundation/communication/netstack/frameworks/js/napi/websocket:websocket",
@@ -119,6 +117,20 @@
                         "header_files": []
                     },
                     "name": "//foundation/communication/netstack/interfaces/innerkits/rust/ylong_http_client:ylong_http_client"
+                },
+                {
+                    "header": {
+                        "header_base": "//foundation/communication/netstack/frameworks/cj/websocket/include",
+                        "header_files": []
+                    },
+                    "name": "//foundation/communication/netstack/frameworks/cj/websocket:cj_net_websocket_ffi"
+                },
+                {
+                    "header": {
+                        "header_base": "//foundation/communication/netstack/frameworks/cj/http/include",
+                        "header_files": []
+                    },
+                    "name": "//foundation/communication/netstack/frameworks/cj/http:cj_net_http_ffi"
                 }
             ],
             "test": [
