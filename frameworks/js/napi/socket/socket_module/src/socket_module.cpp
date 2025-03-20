@@ -117,6 +117,10 @@ static constexpr const char *TCP_CONNECTION_GET_LOCAL_ADDRESS = "TcpConnectionGe
 
 static constexpr const char *KEY_SOCKET_FD = "socketFd";
 
+static constexpr const char *SOCKETPROXYTYPE = "ProxyTypes";
+static constexpr const char *SOCKETPROXYTYPE_NONE = "NONE";
+static constexpr const char *SOCKETPROXYTYPE_SOCKS5 = "SOCKS5";
+
 static constexpr int PARAM_COUNT_TWO = 2;
 
 #define SOCKET_INTERFACE(Context, executor, callback, work, name) \
@@ -465,6 +469,7 @@ napi_value SocketModuleExports::InitSocketModule(napi_env env, napi_value export
     DefineTCPSocketClass(env, exports);
     DefineLocalSocketClass(env, exports);
     DefineLocalSocketServerClass(env, exports);
+    InitSocketProxyProperties(env, exports);
     InitSocketProperties(env, exports);
     NapiUtils::SetEnvValid(env);
     auto envWrapper = new (std::nothrow)napi_env;
@@ -630,6 +635,28 @@ void SocketModuleExports::DefineTCPServerSocketClass(napi_env env, napi_value ex
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_OFF, TCPServerSocket::Off),
     };
     ModuleTemplate::DefineClass(env, exports, properties, INTERFACE_TCP_SOCKET_SERVER);
+}
+
+void SocketModuleExports::InitSocketProxyProperties(napi_env env, napi_value exports)
+{
+    NapiUtils::DefineProperties(env, exports, {
+        DECLARE_NAPI_STATIC_PROPERTY(SOCKETPROXYTYPE_NONE,
+            NapiUtils::CreateUint32(env, static_cast<uint32_t>(ProxyType::NONE))),
+        DECLARE_NAPI_STATIC_PROPERTY(SOCKETPROXYTYPE_SOCKS5,
+            NapiUtils::CreateUint32(env, static_cast<uint32_t>(ProxyType::SOCKS5))),
+    });
+
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_STATIC_PROPERTY(SOCKETPROXYTYPE_NONE,
+            NapiUtils::CreateUint32(env, static_cast<uint32_t>(ProxyType::NONE))),
+        DECLARE_NAPI_STATIC_PROPERTY(SOCKETPROXYTYPE_SOCKS5,
+            NapiUtils::CreateUint32(env, static_cast<uint32_t>(ProxyType::SOCKS5))),
+    };
+
+    napi_value socks5Properties = NapiUtils::CreateObject(env);
+    NapiUtils::DefineProperties(env, socks5Properties, properties);
+
+    NapiUtils::SetNamedProperty(env, exports, SOCKETPROXYTYPE, socks5Properties);
 }
 
 void SocketModuleExports::InitSocketProperties(napi_env env, napi_value exports)

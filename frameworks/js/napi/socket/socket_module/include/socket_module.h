@@ -229,6 +229,8 @@ private:
     static void DefineLocalSocketServerClass(napi_env env, napi_value exports);
 
     static void InitSocketProperties(napi_env env, napi_value exports);
+
+    static void InitSocketProxyProperties(napi_env env, napi_value exports);
 };
 } // namespace OHOS::NetStack::Socket
 #endif // COMMUNICATIONNETSTACK_SOCKET_MODULE_H
