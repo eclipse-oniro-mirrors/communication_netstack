@@ -452,6 +452,37 @@ bool TLSSocketExec::ExecSetExtraOptions(TLSSetExtraOptionsContext *context)
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
+bool TLSSocketExec::ExecGetSocketFd(TLSGetSocketFdContext *context)
+{
+    auto manager = context->GetManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    auto tlsSocket = reinterpret_cast<std::shared_ptr<TLSSocket> *>(manager->GetData());
+    if (tlsSocket == nullptr) {
+        NETSTACK_LOGE("ExecGetSocketFd tlsSocket is null");
+        context->sockFd_= -1;
+        return true;
+    }
+    auto shared = *tlsSocket;
+    if (!shared) {
+        NETSTACK_LOGE("ExecGetSocketFd tlsSocket is null");
+        context->sockFd_= -1;
+        return true;
+    }
+    context->sockFd_= shared->GetSocketFd();
+    return true;
+}
+
+napi_value TLSSocketExec::GetSocketFdCallback(TLSGetSocketFdContext *context)
+{
+    if (context->sockFd_ < 0) {
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+    return NapiUtils::CreateInt32(context->GetEnv(), context->sockFd_);
+}
+
 napi_value TLSSocketExec::GetCertificateCallback(GetCertificateContext *context)
 {
     void *data = nullptr;

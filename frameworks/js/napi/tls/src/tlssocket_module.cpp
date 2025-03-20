@@ -146,6 +146,13 @@ napi_value TLSSocketModuleExports::TLSSocket::Off(napi_env env, napi_callback_in
     return DelayedSingleton<Monitor>::GetInstance()->Off(env, info);
 }
 
+napi_value TLSSocketModuleExports::TLSSocket::GetSocketFd(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::Interface<TLSGetSocketFdContext>(env, info, FUNCTION_GET_SOCKET_FD, nullptr,
+                                                            TLSSocketAsyncWork::ExecGetSocketFd,
+                                                            TLSSocketAsyncWork::GetSocketFdCallback);
+}
+
 void TLSSocketModuleExports::DefineTLSSocketClass(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> functions = {
@@ -164,6 +171,7 @@ void TLSSocketModuleExports::DefineTLSSocketClass(napi_env env, napi_value expor
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_SET_EXTRA_OPTIONS, TLSSocket::SetExtraOptions),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_ON, TLSSocket::On),
         DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_OFF, TLSSocket::Off),
+        DECLARE_NAPI_FUNCTION(TLSSocket::FUNCTION_GET_SOCKET_FD, TLSSocket::GetSocketFd),
     };
     ModuleTemplate::DefineClass(env, exports, functions, INTERFACE_TLS_SOCKET);
 }

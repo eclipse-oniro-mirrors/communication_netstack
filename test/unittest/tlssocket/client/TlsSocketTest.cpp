@@ -452,6 +452,19 @@ HWTEST_F(TlsSocketTest, upgradeInterface, testing::ext::TestSize.Level2)
     (void)testService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
     sleep(2);
 }
+
+HWTEST_F(TlsSocketTest, getSocketFdInterface, testing::ext::TestSize.Level2)
+{
+    if (!TlsUtilsTest::CheckCaFileExistence("getSocketFdInterface")) {
+        return;
+    }
+    TLSSocket testService;
+    SetSocketHwTestShortParam(testService);
+    EXPECT_TRUE(testService.GetSocketFd() != -1);
+
+    sleep(2);
+    (void)testService.Close([](int32_t errCode) { EXPECT_TRUE(errCode == TLSSOCKET_SUCCESS); });
+}
 } // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS
