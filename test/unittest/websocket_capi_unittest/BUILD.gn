@@ -28,7 +28,7 @@ common_external_deps = [
 ]
 
 ohos_unittest("websocket_capi_unittest") {
-  module_out_path = "netstack/websocket_capi_unittest"
+  module_out_path = "netstack/netstack/websocket_capi_unittest"
 
   include_dirs = [
     "$NETSTACK_DIR/interfaces/kits/c/net_websocket/include",
