@@ -34,7 +34,7 @@ ohos_unittest("netstack_common_utils_test") {
 
   branch_protector_ret = "pac_ret"
 
-  module_out_path = "netstack/utils_unittest"
+  module_out_path = "netstack/netstack/utils_unittest"
 
   include_dirs = [ "$NETSTACK_UTILS_ROOT/common_utils/include" ]
 
