@@ -153,7 +153,7 @@ ohos_unittest("two_way_tls_socket_unittest") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
-  module_out_path = "netstack/tls_socket_unittest"
+  module_out_path = "netstack/netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
 }
@@ -197,7 +197,7 @@ ohos_unittest("one_way_tls_socket_unittest") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
-  module_out_path = "netstack/tls_socket_unittest"
+  module_out_path = "netstack/netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
 }
@@ -241,7 +241,7 @@ ohos_unittest("two_way_tls_socket_certchain_unittest") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
-  module_out_path = "netstack/tls_socket_unittest"
+  module_out_path = "netstack/netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
 }
@@ -285,7 +285,7 @@ ohos_unittest("one_way_tls_socket_certchain_unittest") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
-  module_out_path = "netstack/tls_socket_unittest"
+  module_out_path = "netstack/netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
 }
@@ -332,7 +332,7 @@ ohos_unittest("tls_socket_unilateral_connection") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
-  module_out_path = "netstack/tls_socket_unittest"
+  module_out_path = "netstack/netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
 }
@@ -359,7 +359,7 @@ ohos_unittest("secure_data_unittest") {
     "hilog:libhilog",
   ]
 
-  module_out_path = "netstack/tls_socket_unittest"
+  module_out_path = "netstack/netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
 }
@@ -402,7 +402,7 @@ ohos_unittest("tls_key_test") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
-  module_out_path = "netstack/tls_socket_unittest"
+  module_out_path = "netstack/netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
 }
@@ -445,7 +445,7 @@ ohos_unittest("tls_cert_test") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
-  module_out_path = "netstack/tls_socket_unittest"
+  module_out_path = "netstack/netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
 }
@@ -488,7 +488,7 @@ ohos_unittest("tls_configuration_test") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
-  module_out_path = "netstack/tls_socket_unittest"
+  module_out_path = "netstack/netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
 }
@@ -531,7 +531,7 @@ ohos_unittest("tls_context_test") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
-  module_out_path = "netstack/tls_socket_unittest"
+  module_out_path = "netstack/netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
 }
@@ -574,7 +574,7 @@ ohos_unittest("socket_error_unittest") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
-  module_out_path = "netstack/tls_socket_unittest"
+  module_out_path = "netstack/netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
 }
@@ -620,7 +620,7 @@ ohos_unittest("tls_socket_branch_test") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
-  module_out_path = "netstack/tls_socket_unittest"
+  module_out_path = "netstack/netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
 }
