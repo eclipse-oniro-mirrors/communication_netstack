@@ -35,7 +35,7 @@ ohos_unittest("netstack_network_profiler_utils_test") {
 
   branch_protector_ret = "pac_ret"
 
-  module_out_path = "netstack/netstack_network_profiler_utils_test"
+  module_out_path = "netstack/netstack/netstack_network_profiler_utils_test"
 
   include_dirs = [
     "$NETSTACK_INNERKITS_DIR/http_client/include",

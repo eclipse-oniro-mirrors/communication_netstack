@@ -39,7 +39,7 @@ ohos_unittest("socket_unittest") {
 
   branch_protector_ret = "pac_ret"
 
-  module_out_path = "netstack/socket_unittest"
+  module_out_path = "netstack/netstack/socket_unittest"
 
   include_dirs = [
     "$NETSTACK_DIR/frameworks/js/napi/proxy/include",

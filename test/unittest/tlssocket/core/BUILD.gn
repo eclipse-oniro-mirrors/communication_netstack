@@ -159,7 +159,7 @@ ohos_unittest("tls_socket_core_test") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
-  module_out_path = "netstack/tls_socket_unittest"
+  module_out_path = "netstack/netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
 }

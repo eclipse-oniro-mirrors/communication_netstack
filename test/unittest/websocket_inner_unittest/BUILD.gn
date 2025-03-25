@@ -31,7 +31,7 @@ common_external_deps = [
 ]
 
 ohos_unittest("websocket_inner_unittest") {
-  module_out_path = "netstack/websocket_inner_unittest"
+  module_out_path = "netstack/netstack/websocket_inner_unittest"
 
   include_dirs = [
     "$NETSTACK_DIR/utils/napi_utils/include",

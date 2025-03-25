@@ -38,7 +38,7 @@ ohos_unittest("http_unittest") {
 
   branch_protector_ret = "pac_ret"
 
-  module_out_path = "netstack/http_unittest"
+  module_out_path = "netstack/netstack/http_unittest"
 
   include_dirs = [
     "$NETSTACK_NAPI_ROOT/http/async_context/include",

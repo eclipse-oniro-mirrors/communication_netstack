@@ -30,7 +30,7 @@ common_external_deps = [
 ]
 
 ohos_unittest("netssl_unittest") {
-  module_out_path = "netstack/netssl_unittest"
+  module_out_path = "netstack/netstack/netssl_unittest"
 
   include_dirs = [
     "$NETSTACK_DIR/utils/napi_utils/include",
