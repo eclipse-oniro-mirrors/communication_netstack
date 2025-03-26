@@ -56,7 +56,12 @@ static const std::map<int32_t, const char *> SSL_ERR_MAP = {
 };
 
 CertContext::CertContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-    : BaseContext(env, manager), certBlob_(nullptr), certBlobClient_(nullptr) {}
+    : BaseContext(env, manager), certBlob_(nullptr), certBlobClient_(nullptr)
+{
+    if (sharedManager_ == nullptr) {
+        sharedManager_ = std::make_shared<EventManager>();
+    }
+}
 
 void CertContext::ParseParams(napi_value *params, size_t paramsCount)
 {
