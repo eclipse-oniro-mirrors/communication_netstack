@@ -55,8 +55,11 @@ static const std::map<int32_t, const char *> SSL_ERR_MAP = {
     {SslErrorCode::SSL_X509_V_ERR_INVALID_CALL, "invalid certificate verification context."}
 };
 
-CertContext::CertContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-    : BaseContext(env, manager), certBlob_(nullptr), certBlobClient_(nullptr) {}
+CertContext::CertContext(napi_env env, EventManager *manager)
+    : BaseContext(env, manager), certBlob_(nullptr), certBlobClient_(nullptr)
+{
+    manager_ = new EventManager;
+}
 
 void CertContext::ParseParams(napi_value *params, size_t paramsCount)
 {
@@ -208,6 +211,10 @@ CertContext::~CertContext()
         }
         delete certBlobClient_;
         certBlobClient_ = nullptr;
+    }
+    if (manager_ != nullptr) {
+        delete manager_;
+        manager_ = nullptr;
     }
     NETSTACK_LOGD("CertContext is destructed by the destructor");
 }

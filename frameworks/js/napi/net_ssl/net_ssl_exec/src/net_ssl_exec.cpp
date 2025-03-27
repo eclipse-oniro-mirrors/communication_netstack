@@ -21,11 +21,29 @@
 #include "netstack_log.h"
 
 namespace OHOS::NetStack::Ssl {
+template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)
+{
+    (void)status;
+
+    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
+    napi_env env = workWrapper->env;
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
+
+    napi_value obj = MakeJsValue(env, workWrapper->data);
+
+    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
+    workWrapper->manager->Emit(workWrapper->type, arg);
+
+    delete workWrapper;
+    delete work;
+}
+
 bool SslExec::ExecVerify(CertContext *context)
 {
     context->SetPermissionDenied(true);
-    auto sharedManager = context->GetSharedManager();
-    if (sharedManager == nullptr || sharedManager->IsEventDestroy()) {
+
+    if (context->GetManager()->IsEventDestroy()) {
         return false;
     }
 
@@ -42,14 +60,18 @@ bool SslExec::ExecVerify(CertContext *context)
         NETSTACK_LOGD("verifyResult is %{public}d\n", context->GetErrorCode());
 
         if (context->GetErrorCode() != 0) {
-            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, NetSslAsyncWork::VerifyCallback);
+            if (EventManager::IsManagerValid(context->GetManager())) {
+                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, NetSslAsyncWork::VerifyCallback);
+            }
             return false;
         }
     } else {
         context->SetErrorCode(NetStackVerifyCertification(context->GetCertBlob(), context->GetCertBlobClient()));
         NETSTACK_LOGD("verifyResult is %{public}d\n", context->GetErrorCode());
         if (context->GetErrorCode() != 0) {
-            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, NetSslAsyncWork::VerifyCallback);
+            if (EventManager::IsManagerValid(context->GetManager())) {
+                NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, NetSslAsyncWork::VerifyCallback);
+            }
             return false;
         }
     }

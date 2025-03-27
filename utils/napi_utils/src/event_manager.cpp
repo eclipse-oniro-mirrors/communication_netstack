@@ -143,6 +143,77 @@ void *EventManager::GetQueueData()
     return nullptr;
 }
 
+void EventManager::EmitByUvWithoutCheck(const std::string &type, void *data, void(Handler)(uv_work_t *, int status))
+{
+    std::shared_lock lock2(mutexForListenersAndEmitByUv_);
+    bool foundHeader = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
+                           return listener.MatchType(ON_HEADER_RECEIVE);
+                       }) != listeners_.end();
+    bool foundHeaders = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
+                            return listener.MatchType(ON_HEADERS_RECEIVE);
+                        }) != listeners_.end();
+    if (!foundHeader && !foundHeaders) {
+        if (type == ON_HEADER_RECEIVE || type == ON_HEADERS_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
+    } else if (foundHeader && !foundHeaders) {
+        if (type == ON_HEADERS_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
+    } else if (!foundHeader) {
+        if (type == ON_HEADER_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
+    }
+
+    std::for_each(listeners_.begin(), listeners_.end(), [type, data, Handler, this](const EventListener &listener) {
+        if (listener.MatchType(type)) {
+            auto workWrapper = new UvWorkWrapper(data, listener.GetEnv(), type, this);
+            listener.EmitByUv(type, workWrapper, Handler);
+        }
+    });
+}
+
+void EventManager::EmitByUv(const std::string &type, void *data, void(Handler)(uv_work_t *, int status))
+{
+    std::shared_lock lock2(mutexForListenersAndEmitByUv_);
+    if (!EventManager::IsManagerValid(this)) {
+        return;
+    }
+    bool foundHeader = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
+                           return listener.MatchType(ON_HEADER_RECEIVE);
+                       }) != listeners_.end();
+    bool foundHeaders = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
+                            return listener.MatchType(ON_HEADERS_RECEIVE);
+                        }) != listeners_.end();
+    if (!foundHeader && !foundHeaders) {
+        if (type == ON_HEADER_RECEIVE || type == ON_HEADERS_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
+    } else if (foundHeader && !foundHeaders) {
+        if (type == ON_HEADERS_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
+    } else if (!foundHeader) {
+        if (type == ON_HEADER_RECEIVE) {
+            auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
+            delete tempMap;
+        }
+    }
+
+    std::for_each(listeners_.begin(), listeners_.end(), [type, data, Handler, this](const EventListener &listener) {
+        if (listener.MatchType(type)) {
+            auto workWrapper = new UvWorkWrapper(data, listener.GetEnv(), type, this);
+            listener.EmitByUv(type, workWrapper, Handler);
+        }
+    });
+}
+
 bool EventManager::HasEventListener(const std::string &type)
 {
     std::shared_lock lock(mutexForListenersAndEmitByUv_);
@@ -158,8 +229,57 @@ void EventManager::DeleteListener(const std::string &type)
     listeners_.erase(it, listeners_.end());
 }
 
+std::unordered_set<EventManager *> EventManager::validManager_;
 std::mutex EventManager::mutexForManager_;
 EventManagerMagic EventManager::magic_;
+
+void EventManager::SetInvalid(EventManager *manager)
+{
+    if (magic_.magicNumber_ != EVENT_MANAGER_MAGIC_NUMBER) {
+        return;
+    }
+    std::lock_guard lock(mutexForManager_);
+    auto pos = validManager_.find(manager);
+    if (pos == validManager_.end()) {
+        NETSTACK_LOGE("The manager is not in the unordered_set");
+        return;
+    }
+    validManager_.erase(pos);
+    delete manager;
+    manager = nullptr;
+}
+
+void EventManager::SetInvalidWithoutDelete(EventManager *manager)
+{
+    if (magic_.magicNumber_ != EVENT_MANAGER_MAGIC_NUMBER) {
+        return;
+    }
+    std::lock_guard lock(mutexForManager_);
+    auto pos = validManager_.find(manager);
+    if (pos == validManager_.end()) {
+        NETSTACK_LOGE("The manager is not in the unordered_set");
+        return;
+    }
+    validManager_.erase(pos);
+}
+
+bool EventManager::IsManagerValid(EventManager *manager)
+{
+    if (magic_.magicNumber_ != EVENT_MANAGER_MAGIC_NUMBER) {
+        return false;
+    }
+    std::lock_guard lock(mutexForManager_);
+    return validManager_.find(manager) != validManager_.end();
+}
+
+void EventManager::SetValid(EventManager *manager)
+{
+    if (magic_.magicNumber_ != EVENT_MANAGER_MAGIC_NUMBER) {
+        return;
+    }
+    std::lock_guard lock(mutexForManager_);
+    validManager_.emplace(manager);
+}
 
 void EventManager::CreateEventReference(napi_env env, napi_value value)
 {
@@ -266,6 +386,11 @@ std::shared_ptr<Websocket::UserData> EventManager::GetWebSocketUserData()
 {
     std::unique_lock<std::shared_mutex> lock(dataMutex_);
     return webSocketUserData_;
+}
+
+UvWorkWrapper::UvWorkWrapper(void *theData, napi_env theEnv, std::string eventType, EventManager *eventManager)
+    : data(theData), env(theEnv), type(std::move(eventType)), manager(eventManager)
+{
 }
 
 UvWorkWrapperShared::UvWorkWrapperShared(void *theData, napi_env theEnv, std::string eventType,
