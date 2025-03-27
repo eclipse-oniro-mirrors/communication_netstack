@@ -87,8 +87,8 @@ void ExecUdpBindFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    BindContext context(env, eventManager);
+    EventManager eventManager;
+    BindContext context(env, &eventManager);
 
     SocketExec::ExecUdpBind(&context);
 }
@@ -100,8 +100,8 @@ void ExecTcpBindFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    BindContext context(env, eventManager);
+    EventManager eventManager;
+    BindContext context(env, &eventManager);
 
     SocketExec::ExecTcpBind(&context);
 }
@@ -113,8 +113,8 @@ void ExecUdpSendFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    UdpSendContext context(env, eventManager);
+    EventManager eventManager;
+    UdpSendContext context(env, &eventManager);
 
     SocketExec::ExecUdpSend(&context);
 }
@@ -126,8 +126,8 @@ void ExecTcpSendFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    TcpSendContext context(env, eventManager);
+    EventManager eventManager;
+    TcpSendContext context(env, &eventManager);
 
     SocketExec::ExecTcpSend(&context);
 }
@@ -139,8 +139,8 @@ void ExecConnectFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    ConnectContext context(env, eventManager);
+    EventManager eventManager;
+    ConnectContext context(env, &eventManager);
 
     SocketExec::ExecConnect(&context);
 }
@@ -152,8 +152,8 @@ void ExecCloseFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    CloseContext context(env, eventManager);
+    EventManager eventManager;
+    CloseContext context(env, &eventManager);
 
     SocketExec::ExecClose(&context);
 }
@@ -165,8 +165,8 @@ void ExecGetStateFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    GetStateContext context(env, eventManager);
+    EventManager eventManager;
+    GetStateContext context(env, &eventManager);
 
     SocketExec::ExecGetState(&context);
 }
@@ -178,8 +178,8 @@ void ExecGetRemoteAddressFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    GetRemoteAddressContext context(env, eventManager);
+    EventManager eventManager;
+    GetRemoteAddressContext context(env, &eventManager);
 
     SocketExec::ExecGetRemoteAddress(&context);
 }
@@ -191,8 +191,8 @@ void ExecTcpSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    TcpSetExtraOptionsContext context(env, eventManager);
+    EventManager eventManager;
+    TcpSetExtraOptionsContext context(env, &eventManager);
 
     SocketExec::ExecTcpSetExtraOptions(&context);
 }
@@ -204,8 +204,8 @@ void ExecUdpSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    UdpSetExtraOptionsContext context(env, eventManager);
+    EventManager eventManager;
+    UdpSetExtraOptionsContext context(env, &eventManager);
 
     SocketExec::ExecUdpSetExtraOptions(&context);
 }
@@ -217,8 +217,8 @@ void ExecTcpServerListenFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    TcpServerListenContext context(env, eventManager);
+    EventManager eventManager;
+    TcpServerListenContext context(env, &eventManager);
 
     SocketExec::ExecTcpServerListen(&context);
 }
@@ -230,8 +230,8 @@ void ExecTcpServerSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    TcpServerSetExtraOptionsContext context(env, eventManager);
+    EventManager eventManager;
+    TcpServerSetExtraOptionsContext context(env, &eventManager);
 
     SocketExec::ExecTcpServerSetExtraOptions(&context);
 }
@@ -243,8 +243,8 @@ void ExecTcpServerGetStateFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    TcpServerGetStateContext context(env, eventManager);
+    EventManager eventManager;
+    TcpServerGetStateContext context(env, &eventManager);
 
     SocketExec::ExecTcpServerGetState(&context);
 }
@@ -256,8 +256,8 @@ void ExecTcpConnectionSendFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    TcpServerSendContext context(env, eventManager);
+    EventManager eventManager;
+    TcpServerSendContext context(env, &eventManager);
 
     SocketExec::ExecTcpConnectionSend(&context);
 }
@@ -269,8 +269,8 @@ void ExecTcpConnectionGetRemoteAddressFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    TcpServerGetRemoteAddressContext context(env, eventManager);
+    EventManager eventManager;
+    TcpServerGetRemoteAddressContext context(env, &eventManager);
 
     SocketExec::ExecTcpConnectionGetRemoteAddress(&context);
 }
@@ -282,8 +282,8 @@ void ExecTcpConnectionCloseFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    TcpServerCloseContext context(env, eventManager);
+    EventManager eventManager;
+    TcpServerCloseContext context(env, &eventManager);
 
     SocketExec::ExecTcpConnectionClose(&context);
 }
@@ -295,8 +295,8 @@ void ExecUdpAddMembershipFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    MulticastMembershipContext context(env, eventManager);
+    EventManager eventManager;
+    MulticastMembershipContext context(env, &eventManager);
 
     SocketExec::ExecUdpAddMembership(&context);
 }
@@ -308,8 +308,8 @@ void ExecUdpDropMembershipFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    MulticastMembershipContext context(env, eventManager);
+    EventManager eventManager;
+    MulticastMembershipContext context(env, &eventManager);
 
     SocketExec::ExecUdpDropMembership(&context);
 }
@@ -321,8 +321,8 @@ void ExecSetMulticastTTLFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    MulticastSetTTLContext context(env, eventManager);
+    EventManager eventManager;
+    MulticastSetTTLContext context(env, &eventManager);
 
     SocketExec::ExecSetMulticastTTL(&context);
 }
@@ -334,8 +334,8 @@ void ExecGetMulticastTTLFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    MulticastGetTTLContext context(env, eventManager);
+    EventManager eventManager;
+    MulticastGetTTLContext context(env, &eventManager);
 
     SocketExec::ExecGetMulticastTTL(&context);
 }
@@ -347,8 +347,8 @@ void ExecSetLoopbackModeFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    MulticastSetLoopbackContext context(env, eventManager);
+    EventManager eventManager;
+    MulticastSetLoopbackContext context(env, &eventManager);
 
     SocketExec::ExecSetLoopbackMode(&context);
 }
@@ -360,8 +360,8 @@ void ExecGetLoopbackModeFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    MulticastGetLoopbackContext context(env, eventManager);
+    EventManager eventManager;
+    MulticastGetLoopbackContext context(env, &eventManager);
 
     SocketExec::ExecGetLoopbackMode(&context);
 }
@@ -383,8 +383,8 @@ void ExecLocalSocketBindFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    LocalSocketBindContext context(env, eventManager);
+    EventManager eventManager;
+    LocalSocketBindContext context(env, &eventManager);
 
     LocalSocketExec::ExecLocalSocketBind(&context);
 }
@@ -396,8 +396,8 @@ void ExecLocalSocketConnectFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    LocalSocketConnectContext context(env, eventManager);
+    EventManager eventManager;
+    LocalSocketConnectContext context(env, &eventManager);
 
     LocalSocketExec::ExecLocalSocketConnect(&context);
 }
@@ -409,8 +409,8 @@ void ExecLocalSocketSendFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    LocalSocketSendContext context(env, eventManager);
+    EventManager eventManager;
+    LocalSocketSendContext context(env, &eventManager);
 
     LocalSocketExec::ExecLocalSocketSend(&context);
 }
@@ -422,8 +422,8 @@ void ExecLocalSocketCloseFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    LocalSocketCloseContext context(env, eventManager);
+    EventManager eventManager;
+    LocalSocketCloseContext context(env, &eventManager);
 
     LocalSocketExec::ExecLocalSocketClose(&context);
 }
@@ -435,8 +435,8 @@ void ExecLocalSocketGetStateFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    LocalSocketGetStateContext context(env, eventManager);
+    EventManager eventManager;
+    LocalSocketGetStateContext context(env, &eventManager);
 
     LocalSocketExec::ExecLocalSocketGetState(&context);
 }
@@ -448,8 +448,8 @@ void ExecLocalSocketGetSocketFdFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    LocalSocketGetSocketFdContext context(env, eventManager);
+    EventManager eventManager;
+    LocalSocketGetSocketFdContext context(env, &eventManager);
 
     LocalSocketExec::ExecLocalSocketGetSocketFd(&context);
 }
@@ -461,8 +461,8 @@ void ExecLocalSocketSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    LocalSocketSetExtraOptionsContext context(env, eventManager);
+    EventManager eventManager;
+    LocalSocketSetExtraOptionsContext context(env, &eventManager);
 
     LocalSocketExec::ExecLocalSocketSetExtraOptions(&context);
 }
@@ -474,8 +474,8 @@ void ExecLocalSocketGetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    LocalSocketGetExtraOptionsContext context(env, eventManager);
+    EventManager eventManager;
+    LocalSocketGetExtraOptionsContext context(env, &eventManager);
 
     LocalSocketExec::ExecLocalSocketGetExtraOptions(&context);
 }
@@ -487,8 +487,8 @@ void ExecLocalSocketServerListenFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    LocalSocketServerListenContext context(env, eventManager);
+    EventManager eventManager;
+    LocalSocketServerListenContext context(env, &eventManager);
 
     LocalSocketExec::ExecLocalSocketServerListen(&context);
 }
@@ -500,8 +500,8 @@ void ExecLocalSocketServerGetStateFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    LocalSocketServerGetStateContext context(env, eventManager);
+    EventManager eventManager;
+    LocalSocketServerGetStateContext context(env, &eventManager);
 
     LocalSocketExec::ExecLocalSocketServerGetState(&context);
 }
@@ -513,8 +513,8 @@ void ExecLocalSocketServerSetExtraOptionsFuzzTest(const uint8_t *data, size_t si
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    LocalSocketServerSetExtraOptionsContext context(env, eventManager);
+    EventManager eventManager;
+    LocalSocketServerSetExtraOptionsContext context(env, &eventManager);
 
     LocalSocketExec::ExecLocalSocketServerSetExtraOptions(&context);
 }
@@ -526,8 +526,8 @@ void ExecLocalSocketServerGetExtraOptionsFuzzTest(const uint8_t *data, size_t si
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    LocalSocketServerGetExtraOptionsContext context(env, eventManager);
+    EventManager eventManager;
+    LocalSocketServerGetExtraOptionsContext context(env, &eventManager);
 
     LocalSocketExec::ExecLocalSocketServerGetExtraOptions(&context);
 }
@@ -539,8 +539,8 @@ void ExecLocalSocketConnectionSendFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    LocalSocketServerSendContext context(env, eventManager);
+    EventManager eventManager;
+    LocalSocketServerSendContext context(env, &eventManager);
 
     LocalSocketExec::ExecLocalSocketConnectionSend(&context);
 }
@@ -552,8 +552,8 @@ void ExecLocalSocketConnectionCloseFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    auto eventManager = std::make_shared<EventManager>();
-    LocalSocketServerCloseContext context(env, eventManager);
+    EventManager eventManager;
+    LocalSocketServerCloseContext context(env, &eventManager);
 
     LocalSocketExec::ExecLocalSocketConnectionClose(&context);
 }

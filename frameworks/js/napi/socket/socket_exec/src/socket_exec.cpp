@@ -42,7 +42,6 @@
 #include "socket_module.h"
 #include "socket_exec_common.h"
 #include "socks5_utils.h"
-#include "module_template.h"
 
 #ifdef IOS_PLATFORM
 #define SO_PROTOCOL 38
@@ -96,7 +95,7 @@ namespace OHOS::NetStack::Socket::SocketExec {
     } while (0)
 
 std::map<int32_t, int32_t> g_clientFDs;
-std::map<int32_t, std::shared_ptr<EventManager>> g_clientEventManagers;
+std::map<int32_t, EventManager *> g_clientEventManagers;
 std::condition_variable g_cv;
 std::mutex g_mutex;
 std::shared_mutex g_fdMutex;
@@ -151,9 +150,8 @@ static napi_value MakeClose(napi_env env, void *data)
 void TcpServerConnectionFinalize(napi_env, void *data, void *)
 {
     NETSTACK_LOGI("socket server connection handle is finalized");
-    auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
-    if (sharedManager != nullptr) {
-        auto manager = *sharedManager;
+    auto manager = static_cast<EventManager *>(data);
+    if (manager != nullptr) {
         NETSTACK_LOGI("manager is not nullptr");
         int clientIndex = -1;
         std::lock_guard<std::mutex> lock(g_mutex);
@@ -173,7 +171,7 @@ void TcpServerConnectionFinalize(napi_env, void *data, void *)
             }
         }
     }
-    delete sharedManager;
+    EventManager::SetInvalid(manager);
 }
 
 void NotifyRegisterEvent()
@@ -187,20 +185,16 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, jsConstructor, 0, nullptr, &result));
 
-    auto sharedManager = new (std::nothrow) std::shared_ptr<EventManager>();
-    if (sharedManager == nullptr) {
-        return result;
-    }
-    auto manager = std::make_shared<EventManager>();
-    *sharedManager = manager;
+    EventManager *manager = new EventManager();
     {
         std::lock_guard<std::mutex> lock(g_mutex);
-        g_clientEventManagers.insert(std::pair<int32_t, std::shared_ptr<EventManager>>(counter, manager));
+        g_clientEventManagers.insert(std::pair<int32_t, EventManager *>(counter, manager));
         g_cv.notify_one();
     }
 
     manager->SetData(reinterpret_cast<void *>(counter));
-    napi_wrap(env, result, reinterpret_cast<void *>(sharedManager), TcpServerConnectionFinalize, nullptr, nullptr);
+    EventManager::SetValid(manager);
+    napi_wrap(env, result, reinterpret_cast<void *>(manager), TcpServerConnectionFinalize, nullptr, nullptr);
     return result;
 } // namespace OHOS::NetStack::Socket::SocketExec
 
@@ -296,8 +290,9 @@ static napi_value MakeJsMessageParam(napi_env env, napi_value msgBuffer, SocketR
     return obj;
 }
 
-static napi_value MakeMessage(napi_env env, const std::shared_ptr<EventManager> &manager)
+static napi_value MakeMessage(napi_env env, void *para)
 {
+    auto manager = reinterpret_cast<EventManager *>(para);
     auto messageData = reinterpret_cast<MessageData *>(manager->GetQueueData());
     auto deleter = [](const MessageData *p) { delete p; };
     std::unique_ptr<MessageData, decltype(deleter)> handler(messageData, deleter);
@@ -326,7 +321,7 @@ static napi_value MakeMessage(napi_env env, const std::shared_ptr<EventManager> 
     return MakeJsMessageParam(env, msgBuffer, &messageData->remoteInfo);
 }
 
-static bool OnRecvMessage(const std::shared_ptr<EventManager> &manager, void *data, size_t len, sockaddr *addr)
+static bool OnRecvMessage(EventManager *manager, void *data, size_t len, sockaddr *addr)
 {
     if (data == nullptr || len == 0) {
         return false;
@@ -335,8 +330,7 @@ static bool OnRecvMessage(const std::shared_ptr<EventManager> &manager, void *da
     SocketRemoteInfo remoteInfo;
     std::string address = MakeAddressString(addr);
     if (address.empty() && manager->HasEventListener(EVENT_ERROR)) {
-        manager->EmitByUvWithoutCheckShared(EVENT_ERROR, new int32_t(ADDRESS_INVALID),
-            ModuleTemplate::CallbackTemplate<MakeError>);
+        manager->EmitByUv(EVENT_ERROR, new int32_t(ADDRESS_INVALID), CallbackTemplate<MakeError>);
         return false;
     }
     remoteInfo.SetAddress(address);
@@ -355,17 +349,16 @@ static bool OnRecvMessage(const std::shared_ptr<EventManager> &manager, void *da
     }
     remoteInfo.SetSize(len);
 
-    if (manager->HasEventListener(EVENT_MESSAGE)) {
+    if (EventManager::IsManagerValid(manager) && manager->HasEventListener(EVENT_MESSAGE)) {
         auto *messageStruct = new MessageData(data, len, remoteInfo);
         manager->SetQueueData(reinterpret_cast<void *>(messageStruct));
-        manager->EmitByUvWithoutCheckShared(EVENT_MESSAGE, nullptr,
-            ModuleTemplate::CallbackTemplateWithSharedManager<MakeMessage>);
+        manager->EmitByUv(EVENT_MESSAGE, manager, CallbackTemplate<MakeMessage>);
         return true;
     }
     return false;
 }
 
-std::shared_ptr<EventManager> MessageCallback::GetEventManager() const
+EventManager *MessageCallback::GetEventManager() const
 {
     return manager_;
 }
@@ -376,29 +369,26 @@ public:
 
     ~TcpMessageCallback() override = default;
 
-    explicit TcpMessageCallback(const std::shared_ptr<EventManager> &manager) : MessageCallback(manager) {}
+    explicit TcpMessageCallback(EventManager *manager) : MessageCallback(manager) {}
 
     void OnError(int err) const override
     {
-        if (manager_ != nullptr && manager_->HasEventListener(EVENT_ERROR)) {
-            manager_->EmitByUvWithoutCheckShared(EVENT_ERROR, new int(err),
-                ModuleTemplate::CallbackTemplate<MakeError>);
+        if (EventManager::IsManagerValid(manager_) && manager_->HasEventListener(EVENT_ERROR)) {
+            manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
             return;
         }
         NETSTACK_LOGI("tcp socket handle has been finalized, manager is invalid or ERROR listener is not registered");
     }
 
-    void OnCloseMessage(const std::shared_ptr<EventManager> &manager) const override
+    void OnCloseMessage(EventManager *manager) const override
     {
-        if (manager != nullptr) {
-            manager->EmitByUvWithoutCheckShared(EVENT_CLOSE, nullptr, ModuleTemplate::CallbackTemplate<MakeClose>);
-        }
+        manager->EmitByUv(EVENT_CLOSE, nullptr, CallbackTemplate<MakeClose>);
     }
 
     bool OnMessage(void *data, size_t dataLen, sockaddr *addr) const override
     {
         (void)addr;
-        if (manager_ == nullptr) {
+        if (!EventManager::IsManagerValid(manager_)) {
             NETSTACK_LOGE("invalid manager");
             return false;
         }
@@ -435,8 +425,7 @@ public:
         return false;
     }
 
-    bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr,
-        const std::shared_ptr<EventManager> &manager) const override
+    bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr, EventManager *manager) const override
     {
         (void)addr;
         if (static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) == 0) {
@@ -474,8 +463,7 @@ public:
     void OnTcpConnectionMessage(int32_t id) const override
     {
         if (manager_->HasEventListener(EVENT_CONNECT)) {
-            manager_->EmitByUvWithoutCheckShared(EVENT_CONNECT, new TcpConnection(id),
-                ModuleTemplate::CallbackTemplate<MakeTcpConnectionMessage>);
+            manager_->EmitByUv(EVENT_CONNECT, new TcpConnection(id), CallbackTemplate<MakeTcpConnectionMessage>);
         }
     }
 };
@@ -486,19 +474,18 @@ public:
 
     ~UdpMessageCallback() override = default;
 
-    explicit UdpMessageCallback(const std::shared_ptr<EventManager> &manager) : MessageCallback(manager) {}
+    explicit UdpMessageCallback(EventManager *manager) : MessageCallback(manager) {}
 
     void OnError(int err) const override
     {
-        if (manager_ != nullptr && manager_->HasEventListener(EVENT_ERROR)) {
-            manager_->EmitByUvWithoutCheckShared(EVENT_ERROR, new int(err),
-                ModuleTemplate::CallbackTemplate<MakeError>);
+        if (EventManager::IsManagerValid(manager_) && manager_->HasEventListener(EVENT_ERROR)) {
+            manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
             return;
         }
         NETSTACK_LOGI("udp socket handle has been finalized, manager is invalid or ERROR listener is not registered");
     }
 
-    void OnCloseMessage(const std::shared_ptr<EventManager> &manager) const override {}
+    void OnCloseMessage(EventManager *manager) const override {}
 
     bool OnMessage(void *data, size_t dataLen, sockaddr *addr) const override
     {
@@ -509,8 +496,7 @@ public:
         return OnRecvMessage(manager_, data, dataLen, addr);
     }
 
-    bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr,
-        const std::shared_ptr<EventManager> &manager) const override
+    bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr, EventManager *manager) const override
     {
         if (static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) == 0) {
             return false;
@@ -663,7 +649,7 @@ static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &call
         NETSTACK_LOGI("closed by peer, socket:%{public}d, recvLen:%{public}zd", sock, recvLen);
         callback.OnCloseMessage(callback.GetEventManager());
     } else {
-        if (callback.GetEventManager() != nullptr && static_cast<int>(
+        if (EventManager::IsManagerValid(callback.GetEventManager()) && static_cast<int>(
             reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
             NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
             callback.OnError(errno);
@@ -675,7 +661,7 @@ static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &call
 static inline void PollRecvFinish(const MessageCallback &callback)
 {
     auto manager = callback.GetEventManager();
-    if (manager != nullptr) {
+    if (EventManager::IsManagerValid(manager)) {
         manager->NotifyRcvThdExit();
     } else {
         NETSTACK_LOGE("manager is error");
@@ -684,7 +670,7 @@ static inline void PollRecvFinish(const MessageCallback &callback)
 
 static void ProcessPollResult(int currentFd, const MessageCallback &callback)
 {
-    if (callback.GetEventManager() != nullptr) {
+    if (EventManager::IsManagerValid(callback.GetEventManager())) {
         if (static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
             NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", currentFd, errno);
             callback.OnError(errno);
@@ -882,7 +868,7 @@ bool ExecBind(BindContext *context)
     }
 
     int reuse = 0;
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager != nullptr) {
         reuse = manager->GetReuseAddr();
         if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<void *>(&reuse),
@@ -940,7 +926,7 @@ bool ExecUdpBind(BindContext *context)
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
-                                  UdpMessageCallback(context->GetSharedManager()));
+                                  UdpMessageCallback(context->GetManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(SOCKET_EXEC_UDP_BIND);
 #else
@@ -956,7 +942,7 @@ bool ExecUdpBind(BindContext *context)
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
-                                  UdpMessageCallback(context->GetSharedManager()));
+                                  UdpMessageCallback(context->GetManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(SOCKET_EXEC_UDP_BIND);
 #else
@@ -992,7 +978,7 @@ static std::shared_ptr<Socks5::Socks5UdpInstance> InitSocks5UdpInstance(UdpSendC
 
 static int HandleUdpProxyOptions(UdpSendContext *context)
 {
-    auto eventMgr = context->GetSharedManager();
+    EventManager *eventMgr = context->GetManager();
     if (eventMgr == nullptr) {
         NETSTACK_LOGE("event manager is null");
         return -1;
@@ -1090,7 +1076,7 @@ static std::shared_ptr<Socks5::Socks5TcpInstance> InitSocks5TcpInstance(ConnectC
 
 static int HandleTcpProxyOptions(ConnectContext *context)
 {
-    auto eventMgr = context->GetSharedManager();
+    EventManager *eventMgr = context->GetManager();
     if (eventMgr == nullptr) {
         NETSTACK_LOGE("event manager is null");
         return -1;
@@ -1160,7 +1146,7 @@ bool ExecConnect(ConnectContext *context)
     NETSTACK_LOGI("connect success, sock:%{public}d", context->GetSocketFd());
 
     std::thread serviceThread(PollRecvData, context->GetSocketFd(), nullptr, 0,
-                              TcpMessageCallback(context->GetSharedManager()));
+                              TcpMessageCallback(context->GetManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(SOCKET_EXEC_CONNECT);
 #else
@@ -1202,8 +1188,8 @@ bool ExecClose(CloseContext *context)
         return false;
     }
     
-    auto manager = context->GetSharedManager();
-    if (manager != nullptr) {
+    EventManager *manager = context->GetManager();
+    if (EventManager::IsManagerValid(manager)) {
         auto inst = manager->GetProxyData();
         if (inst != nullptr) {
             inst->Close();
@@ -1309,7 +1295,7 @@ bool ExecGetState(GetStateContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGI("manager is nullptr");
         return false;
@@ -1503,7 +1489,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
-                                  UdpMessageCallback(context->GetSharedManager()));
+                                  UdpMessageCallback(context->GetManager()));
         RecvfromMulticastSetThreadName(serviceThread.native_handle());
         serviceThread.detach();
     } else if (addr->sa_family == AF_INET6) {
@@ -1519,7 +1505,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
         std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
-                                  UdpMessageCallback(context->GetSharedManager()));
+                                  UdpMessageCallback(context->GetManager()));
         RecvfromMulticastSetThreadName(serviceThread.native_handle());
         serviceThread.detach();
     }
@@ -1996,9 +1982,9 @@ static void RemoveClientConnection(int32_t clientId)
     }
 }
 
-static std::shared_ptr<EventManager> WaitForManagerReady(int32_t clientId, int &connectFd)
+static EventManager *WaitForManagerReady(int32_t clientId, int &connectFd)
 {
-    std::shared_ptr<EventManager> manager = nullptr;
+    EventManager *manager = nullptr;
     std::unique_lock<std::mutex> lock(g_mutex);
     g_cv.wait(lock, [&manager, &clientId]() {
         auto iter = g_clientEventManagers.find(clientId);
@@ -2024,16 +2010,15 @@ static inline void RecvInErrorCondition(int reason, int clientId, int connectFD,
     callback.OnError(reason);
 }
 
-static inline void CloseClientHandler(int clientId, int connectFD, const std::shared_ptr<EventManager> &manager,
-    const TcpMessageCallback &callback)
+static inline void CloseClientHandler(int clientId, int connectFD,
+                                      EventManager *manager, const TcpMessageCallback &callback)
 {
     callback.OnCloseMessage(manager);
     RemoveClientConnection(clientId);
     SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
 }
 
-static int PollSocket(int clientId, int connectFD, const std::shared_ptr<EventManager> &manager,
-    const TcpMessageCallback &callback)
+static int PollSocket(int clientId, int connectFD, EventManager *manager, const TcpMessageCallback &callback)
 {
     pollfd fds[1] = {{connectFD, POLLIN, 0}};
     int ret = poll(fds, 1, DEFAULT_POLL_TIMEOUT);
@@ -2051,9 +2036,9 @@ static int PollSocket(int clientId, int connectFD, const std::shared_ptr<EventMa
     return 1;
 }
 
-static bool IsValidSock(int &currentFd, const std::shared_ptr<EventManager> &manager)
+static bool IsValidSock(int &currentFd, EventManager *manager)
 {
-    if (manager != nullptr) {
+    if (EventManager::IsManagerValid(manager)) {
         currentFd = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
         if (currentFd <= 0) {
             NETSTACK_LOGE("currentFd: %{public}d is error", currentFd);
@@ -2066,8 +2051,8 @@ static bool IsValidSock(int &currentFd, const std::shared_ptr<EventManager> &man
     return true;
 }
 
-static int RecvWithSockCheck(int connectFD, char *buffer, uint32_t recvBufferSize,
-    const std::shared_ptr<EventManager> &manager, int &recvSize)
+static int RecvWithSockCheck(int connectFD, char *buffer, uint32_t recvBufferSize, EventManager *manager,
+                             int &recvSize)
 {
     std::shared_lock<std::shared_mutex> lock(g_fdMutex);
     if (buffer == nullptr) {
@@ -2081,8 +2066,8 @@ static int RecvWithSockCheck(int connectFD, char *buffer, uint32_t recvBufferSiz
     return 0;
 }
 
-static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
-    const std::shared_ptr<EventManager> &manager, const TcpMessageCallback &callback)
+static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize, EventManager *manager,
+                           const TcpMessageCallback &callback)
 {
     auto buffer = std::make_unique<char[]>(recvBufferSize);
     if (buffer == nullptr) {
@@ -2135,7 +2120,7 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
 static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallback &callback)
 {
     int32_t connectFD = 0;
-    auto manager = WaitForManagerReady(clientId, connectFD);
+    EventManager *manager = WaitForManagerReady(clientId, connectFD);
 
     uint32_t recvBufferSize = DEFAULT_BUFFER_SIZE;
     TCPExtraOptions option;
@@ -2211,7 +2196,7 @@ bool ExecTcpServerListen(TcpServerListenContext *context)
     SingletonSocketConfig::GetInstance().AddNewListenSocket(context->GetSocketFd());
     NETSTACK_LOGI("listen success");
     std::thread serviceThread(AcceptRecvData, context->GetSocketFd(), nullptr, 0,
-                              TcpMessageCallback(context->GetSharedManager()));
+                              TcpMessageCallback(context->GetManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(TCP_SERVER_ACCEPT_RECV_DATA);
 #else
@@ -2322,7 +2307,7 @@ bool ExecTcpServerGetState(TcpServerGetStateContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return false;
@@ -2336,8 +2321,8 @@ bool ExecTcpServerGetState(TcpServerGetStateContext *context)
 
 napi_value BindCallback(BindContext *context)
 {
-    context->EmitSharedManager(EVENT_LISTENING, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
-        NapiUtils::GetUndefined(context->GetEnv())));
+    context->Emit(EVENT_LISTENING, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                                  NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
@@ -2353,8 +2338,8 @@ napi_value UdpAddMembershipCallback(MulticastMembershipContext *context)
 
 napi_value UdpDropMembershipCallback(MulticastMembershipContext *context)
 {
-    context->EmitSharedManager(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
-        NapiUtils::GetUndefined(context->GetEnv())));
+    context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                              NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
@@ -2380,8 +2365,8 @@ napi_value UdpGetLoopbackModeCallback(MulticastGetLoopbackContext *context)
 
 napi_value ConnectCallback(ConnectContext *context)
 {
-    context->EmitSharedManager(EVENT_CONNECT, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
-        NapiUtils::GetUndefined(context->GetEnv())));
+    context->Emit(EVENT_CONNECT, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                                NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
@@ -2392,8 +2377,8 @@ napi_value TcpSendCallback(TcpSendContext *context)
 
 napi_value CloseCallback(CloseContext *context)
 {
-    context->EmitSharedManager(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
-        NapiUtils::GetUndefined(context->GetEnv())));
+    context->Emit(EVENT_CLOSE, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                              NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
