@@ -24,10 +24,6 @@ namespace OHOS::NetStack::Ssl {
 bool SslExec::ExecVerify(CertContext *context)
 {
     context->SetPermissionDenied(true);
-    auto sharedManager = context->GetSharedManager();
-    if (sharedManager == nullptr || sharedManager->IsEventDestroy()) {
-        return false;
-    }
 
     if (context->GetErrorCode() == PARSE_ERROR_CODE) {
         return false;
@@ -42,14 +38,12 @@ bool SslExec::ExecVerify(CertContext *context)
         NETSTACK_LOGD("verifyResult is %{public}d\n", context->GetErrorCode());
 
         if (context->GetErrorCode() != 0) {
-            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, NetSslAsyncWork::VerifyCallback);
             return false;
         }
     } else {
         context->SetErrorCode(NetStackVerifyCertification(context->GetCertBlob(), context->GetCertBlobClient()));
         NETSTACK_LOGD("verifyResult is %{public}d\n", context->GetErrorCode());
         if (context->GetErrorCode() != 0) {
-            NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, NetSslAsyncWork::VerifyCallback);
             return false;
         }
     }
