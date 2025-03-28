@@ -731,7 +731,8 @@ static bool ProcessRecvFds(std::pair<std::unique_ptr<char[]> &, int> &bufInfo,
 {
     for (auto &fd : fds) {
         if ((static_cast<uint16_t>(fd.revents) & POLLERR) || (static_cast<uint16_t>(fd.revents) & POLLNVAL)) {
-            NETSTACK_LOGE("recv fail, socket:%{public}d, errno:%{public}d, revent:%{public}x", fd.fd, errno, fd.revents);
+            NETSTACK_LOGE("recv fail, socket:%{public}d, errno:%{public}d, revent:%{public}x",
+                fd.fd, errno, fd.revents);
             if (callback.GetEventManager() != nullptr && static_cast<int>(
                 reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
                 callback.OnError(errno);
