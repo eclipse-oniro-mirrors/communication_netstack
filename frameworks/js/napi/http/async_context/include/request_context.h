@@ -56,7 +56,7 @@ public:
 
     RequestContext() = delete;
 
-    RequestContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    RequestContext(napi_env env, EventManager *manager);
 
     ~RequestContext() override;
 

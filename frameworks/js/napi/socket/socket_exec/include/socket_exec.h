@@ -148,6 +148,24 @@ napi_value TcpServerGetLocalAddressCallback(TcpServerGetLocalAddressContext *con
 
 napi_value UdpGetSocketFdCallback(GetSocketFdContext *context);
 
+template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)
+{
+    (void)status;
+
+    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
+    napi_env env = workWrapper->env;
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
+
+    napi_value obj = MakeJsValue(env, workWrapper->data);
+
+    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
+    workWrapper->manager->Emit(workWrapper->type, arg);
+
+    delete workWrapper;
+    delete work;
+}
+
 struct MessageData {
     MessageData() = delete;
     MessageData(void *d, size_t l, const SocketRemoteInfo &info) : data(d), len(l), remoteInfo(info) {}
@@ -244,23 +262,22 @@ public:
 
     virtual ~MessageCallback() = default;
 
-    explicit MessageCallback(const std::shared_ptr<EventManager> &manager) : manager_(manager) {}
+    explicit MessageCallback(EventManager *manager) : manager_(manager) {}
 
     virtual void OnError(int err) const = 0;
 
-    virtual void OnCloseMessage(const std::shared_ptr<EventManager> &manager) const = 0;
+    virtual void OnCloseMessage(EventManager *manager) const = 0;
 
     virtual bool OnMessage(void *data, size_t dataLen, sockaddr *addr) const = 0;
 
-    virtual bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr,
-        const std::shared_ptr<EventManager> &manager) const = 0;
+    virtual bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr, EventManager *manager) const = 0;
 
     virtual void OnTcpConnectionMessage(int32_t id) const = 0;
 
-    [[nodiscard]] std::shared_ptr<EventManager> GetEventManager() const;
+    [[nodiscard]] EventManager *GetEventManager() const;
 
 protected:
-    std::shared_ptr<EventManager> manager_ = nullptr;
+    EventManager *manager_;
 };
 
 using SocketRecvCallback = std::function<bool(int socketId, std::pair<std::unique_ptr<char[]> &, int> &bufInfo,
