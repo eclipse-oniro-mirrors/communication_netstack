@@ -22,8 +22,7 @@
 #include "socket_constant.h"
 
 namespace OHOS::NetStack::Socket {
-MulticastSetTTLContext::MulticastSetTTLContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-    : BaseContext(env, manager) {}
+MulticastSetTTLContext::MulticastSetTTLContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void MulticastSetTTLContext::ParseParams(napi_value *params, size_t paramsCount)
 {
@@ -79,7 +78,7 @@ int MulticastSetTTLContext::GetMulticastTTL() const
 
 int MulticastSetTTLContext::GetSocketFd() const
 {
-    return sharedManager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(sharedManager_->GetData())) : -1;
+    return manager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) : -1;
 }
 
 int32_t MulticastSetTTLContext::GetErrorCode() const

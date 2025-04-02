@@ -29,7 +29,9 @@ public:
 
     SendContext() = delete;
 
-    SendContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    SendContext(napi_env env, EventManager *manager);
+
+    SendContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager);
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 

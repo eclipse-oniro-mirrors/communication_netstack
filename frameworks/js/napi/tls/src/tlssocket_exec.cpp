@@ -68,7 +68,7 @@ static inline bool IsConnected(int sockFD)
 
 bool TLSSocketExec::ExecInit(TLSInitContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         TLSSocketThrowException(context, SYSTEM_INTERNAL_ERROR);
@@ -109,7 +109,7 @@ bool TLSSocketExec::ExecInit(TLSInitContext *context)
 
 bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return false;
@@ -161,7 +161,7 @@ static std::shared_ptr<Socks5::Socks5TlsInstance> InitSocks5TlsInstance(
 
 static int HandleTcpProxyOptions(TLSConnectContext *context, std::shared_ptr<TLSSocket> shared)
 {
-    auto eventMgr = context->GetSharedManager();
+    EventManager *eventMgr = context->GetManager();
     if (eventMgr == nullptr) {
         NETSTACK_LOGE("event manager is null");
         return -1;
@@ -200,7 +200,7 @@ bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
     }
     context->connectOptions_.address_.SetRawAddress(ConvertAddressToIp(
         context->connectOptions_.address_.GetAddress(), context->connectOptions_.address_.GetSaFamily()));
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return false;
@@ -234,7 +234,7 @@ bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
 
 bool TLSSocketExec::ExecGetCipherSuites(GetCipherSuitesContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return false;
@@ -263,7 +263,7 @@ bool TLSSocketExec::ExecGetCipherSuites(GetCipherSuitesContext *context)
 
 bool TLSSocketExec::ExecGetRemoteCertificate(GetRemoteCertificateContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return false;
@@ -292,7 +292,7 @@ bool TLSSocketExec::ExecGetRemoteCertificate(GetRemoteCertificateContext *contex
 
 bool TLSSocketExec::ExecGetProtocol(GetProtocolContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return false;
@@ -321,7 +321,7 @@ bool TLSSocketExec::ExecGetProtocol(GetProtocolContext *context)
 
 bool TLSSocketExec::ExecGetSignatureAlgorithms(GetSignatureAlgorithmsContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return false;
@@ -350,7 +350,7 @@ bool TLSSocketExec::ExecGetSignatureAlgorithms(GetSignatureAlgorithmsContext *co
 
 bool TLSSocketExec::ExecSend(TLSSendContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return false;
@@ -381,7 +381,7 @@ bool TLSSocketExec::ExecSend(TLSSendContext *context)
 
 bool TLSSocketExec::ExecClose(TLSNapiContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return false;
@@ -414,7 +414,7 @@ bool TLSSocketExec::ExecClose(TLSNapiContext *context)
 
 bool TLSSocketExec::ExecBind(TLSBindContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return false;
@@ -450,7 +450,7 @@ bool TLSSocketExec::ExecBind(TLSBindContext *context)
 
 bool TLSSocketExec::ExecGetRemoteAddress(TLSGetRemoteAddressContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return false;
@@ -482,7 +482,7 @@ bool TLSSocketExec::ExecGetLocalAddress(TLSGetLocalAddressContext *context)
     if (context == nullptr) {
         return false;
     }
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         context->SetNeedThrowException(true);
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
@@ -532,7 +532,7 @@ bool TLSSocketExec::ExecGetLocalAddress(TLSGetLocalAddressContext *context)
 
 bool TLSSocketExec::ExecGetState(TLSGetStateContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         context->SetError(TLS_ERR_SYS_EINVAL, MakeErrorMessage(TLS_ERR_SYS_EINVAL));
@@ -559,7 +559,7 @@ bool TLSSocketExec::ExecGetState(TLSGetStateContext *context)
 
 bool TLSSocketExec::ExecSetExtraOptions(TLSSetExtraOptionsContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return false;
@@ -587,7 +587,7 @@ bool TLSSocketExec::ExecSetExtraOptions(TLSSetExtraOptionsContext *context)
 
 bool TLSSocketExec::ExecGetSocketFd(TLSGetSocketFdContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return false;
@@ -705,7 +705,7 @@ napi_value TLSSocketExec::SendCallback(TLSSendContext *context)
 
 napi_value TLSSocketExec::CloseCallback(TLSNapiContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager != nullptr) {
         NETSTACK_LOGD("tls socket close, delete js ref");
         manager->DeleteEventReference(context->GetEnv());
@@ -715,8 +715,8 @@ napi_value TLSSocketExec::CloseCallback(TLSNapiContext *context)
 
 napi_value TLSSocketExec::BindCallback(TLSBindContext *context)
 {
-    context->EmitSharedManager(EVENT_LISTENING, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
-        NapiUtils::GetUndefined(context->GetEnv())));
+    context->Emit(EVENT_LISTENING, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                                  NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
@@ -750,7 +750,7 @@ napi_value TLSSocketExec::GetLocalAddressCallback(TLSGetLocalAddressContext *con
     if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
         return NapiUtils::GetUndefined(context->GetEnv());
     }
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         return obj;

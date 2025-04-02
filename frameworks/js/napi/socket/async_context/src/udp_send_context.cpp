@@ -25,8 +25,7 @@
 #include "socket_exec_common.h"
 
 namespace OHOS::NetStack::Socket {
-UdpSendContext::UdpSendContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-    : BaseContext(env, manager) {}
+UdpSendContext::UdpSendContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void UdpSendContext::ParseParams(napi_value *params, size_t paramsCount)
 {
@@ -84,7 +83,7 @@ void UdpSendContext::ParseParams(napi_value *params, size_t paramsCount)
 
 int UdpSendContext::GetSocketFd() const
 {
-    return sharedManager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(sharedManager_->GetData())) : -1;
+    return manager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) : -1;
 }
 
 bool UdpSendContext::CheckParamsType(napi_value *params, size_t paramsCount)

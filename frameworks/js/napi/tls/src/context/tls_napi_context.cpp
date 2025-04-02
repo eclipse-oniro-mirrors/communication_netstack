@@ -22,8 +22,7 @@
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
-TLSNapiContext::TLSNapiContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-    : BaseContext(env, manager)
+TLSNapiContext::TLSNapiContext(napi_env env, EventManager *manager) : BaseContext(env, manager)
 {
     localCert_.encodingFormat = PEM;
     remoteCert_.encodingFormat = PEM;
