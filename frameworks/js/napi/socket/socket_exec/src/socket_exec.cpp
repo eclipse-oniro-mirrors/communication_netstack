@@ -649,9 +649,6 @@ static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &
 
 static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &callback)
 {
-    if (errno == EAGAIN || errno == EINTR) {
-        return 0;
-    }
     if (!IsTCPSocket(sock) && errno != EBADF) {
         NETSTACK_LOGI("not tcpsocket, continue loop, recvLen: %{public}zd, err: %{public}d", recvLen, errno);
         if (errno == ENOTSOCK) {
@@ -659,15 +656,19 @@ static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &call
         }
         return 0;
     }
-    if (errno == 0 && recvLen == 0) {
+    if (recvLen == 0) {
         NETSTACK_LOGI("closed by peer, socket:%{public}d, recvLen:%{public}zd", sock, recvLen);
         callback.OnCloseMessage(callback.GetEventManager());
-    } else {
-        if (callback.GetEventManager() != nullptr && static_cast<int>(
-            reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
-            NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
-            callback.OnError(errno);
-        }
+        return -1;
+    }
+    if (errno == EAGAIN || errno == EINTR) {
+        return 0;
+    }
+    
+    if (callback.GetEventManager() != nullptr && static_cast<int>(
+        reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
+        NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
+        callback.OnError(errno);
     }
     return -1;
 }
@@ -729,12 +730,13 @@ static bool ProcessRecvFds(std::pair<std::unique_ptr<char[]> &, int> &bufInfo,
     std::unordered_map<int, SocketRecvCallback> &socketCallbackMap)
 {
     for (auto &fd : fds) {
-#if !defined(CROSS_PLATFORM)
-        if ((static_cast<uint16_t>(fd.revents) & POLLRDHUP) || (static_cast<uint16_t>(fd.revents) & POLLERR) ||
-            (static_cast<uint16_t>(fd.revents) & POLLNVAL)) {
-#else
         if ((static_cast<uint16_t>(fd.revents) & POLLERR) || (static_cast<uint16_t>(fd.revents) & POLLNVAL)) {
-#endif
+            NETSTACK_LOGE("recv fail, socket:%{public}d, errno:%{public}d, revent:%{public}x",
+                fd.fd, errno, fd.revents);
+            if (callback.GetEventManager() != nullptr && static_cast<int>(
+                reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
+                callback.OnError(errno);
+            }
             return false;
         }
         if ((static_cast<uint16_t>(fd.revents) & POLLIN) == 0) {
