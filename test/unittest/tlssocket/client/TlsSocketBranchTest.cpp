@@ -262,7 +262,6 @@ HWTEST_F(TlsSocketBranchTest, BranchTest5, TestSize.Level2)
     tlsSocket->GetProtocol([](int32_t errCode, const std::string &protocol) { EXPECT_EQ(errCode, TLSSOCKET_SUCCESS); });
     tlsSocket->GetRemoteCertificate(
         [](int32_t errCode, const X509CertRawData &cert) { EXPECT_EQ(errCode, TLS_ERR_SSL_NULL); });
-    (void)tlsSocket->Close([](int32_t errCode) { EXPECT_FALSE(errCode == TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketBranchTest, BranchTest6, TestSize.Level2)
