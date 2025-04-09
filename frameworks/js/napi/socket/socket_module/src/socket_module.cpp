@@ -124,32 +124,29 @@ static constexpr const char *SOCKETPROXYTYPE_SOCKS5 = "SOCKS5";
 static constexpr int PARAM_COUNT_TWO = 2;
 
 #define SOCKET_INTERFACE(Context, executor, callback, work, name) \
-    ModuleTemplate::InterfaceWithSharedManager<Context>(env, info, name, work, \
-        SocketAsyncWork::executor, SocketAsyncWork::callback)
+    ModuleTemplate::Interface<Context>(env, info, name, work, SocketAsyncWork::executor, SocketAsyncWork::callback)
 
 namespace OHOS::NetStack::Socket {
 void Finalize(napi_env, void *data, void *)
 {
     NETSTACK_LOGD("socket handle is finalized");
-    auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
-    if (sharedManager != nullptr && *sharedManager != nullptr) {
-        auto manager = *sharedManager;
+    auto manager = static_cast<EventManager *>(data);
+    if (manager != nullptr) {
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
         if (sock != -1) {
             SocketExec::SingletonSocketConfig::GetInstance().RemoveServerSocket(sock);
             close(sock);
             manager->SetData(reinterpret_cast<void *>(-1));
         }
-        delete sharedManager;
+        EventManager::SetInvalid(manager);
     }
 }
 
 void FinalizeTcpSocketServer(napi_env, void *data, void *)
 {
     NETSTACK_LOGI("tcp socket server handle is finalized");
-    auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
-    if (sharedManager != nullptr && *sharedManager != nullptr) {
-        auto manager = *sharedManager;
+    auto manager = static_cast<EventManager *>(data);
+    if (manager != nullptr) {
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
         if (sock != -1) {
             SocketExec::SingletonSocketConfig::GetInstance().RemoveServerSocket(sock);
@@ -157,15 +154,14 @@ void FinalizeTcpSocketServer(napi_env, void *data, void *)
             shutdown(sock, SHUT_RDWR);
             manager->SetData(reinterpret_cast<void *>(-1));
         }
-        delete sharedManager;
+        EventManager::SetInvalid(manager);
     }
 }
 
 void FinalizeLocalsocketServer(napi_env, void *data, void *)
 {
-    auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
-    if (sharedManager != nullptr && *sharedManager != nullptr) {
-        auto manager = *sharedManager;
+    EventManager *manager = reinterpret_cast<EventManager *>(data);
+    if (manager != nullptr) {
         if (auto serverMgr = reinterpret_cast<LocalSocketServerManager *>(manager->GetData()); serverMgr != nullptr) {
             NETSTACK_LOGI("localsocket server handle is finalized, fd: %{public}d", serverMgr->sockfd_);
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
@@ -185,15 +181,14 @@ void FinalizeLocalsocketServer(napi_env, void *data, void *)
             serverMgr->WaitForEndingLoop();
             delete serverMgr;
         }
-        delete sharedManager;
+        EventManager::SetInvalid(manager);
     }
 }
 
 void FinalizeLocalSocket(napi_env, void *data, void *)
 {
-    auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
-    if (sharedManager != nullptr && *sharedManager != nullptr) {
-        auto manager = *sharedManager;
+    auto manager = static_cast<EventManager *>(data);
+    if (manager != nullptr) {
         if (auto pMgr = reinterpret_cast<LocalSocketManager *>(manager->GetData()); pMgr != nullptr) {
             NETSTACK_LOGI("localsocket handle is finalized, fd: %{public}d", pMgr->sockfd_);
             if (pMgr->sockfd_ > 0) {
@@ -202,7 +197,7 @@ void FinalizeLocalSocket(napi_env, void *data, void *)
             }
             delete pMgr;
         }
-        delete sharedManager;
+        EventManager::SetInvalid(manager);
     }
 }
 
@@ -214,18 +209,15 @@ static bool SetSocket(napi_env env, napi_value thisVal, BaseContext *context, in
             return false;
         }
         NapiUtils::SetUint32Property(env, error, KEY_ERROR_CODE, errno);
-        context->EmitSharedManager(EVENT_ERROR, std::make_pair(NapiUtils::GetUndefined(env), error));
+        context->Emit(EVENT_ERROR, std::make_pair(NapiUtils::GetUndefined(env), error));
         return false;
     }
 
-    std::shared_ptr<EventManager> *sharedManager = nullptr;
-    if (napi_unwrap(env, thisVal, reinterpret_cast<void **>(&sharedManager)) != napi_ok || sharedManager == nullptr) {
+    EventManager *manager = nullptr;
+    if (napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager)) != napi_ok || manager == nullptr) {
         return false;
     }
-    auto manager = *sharedManager;
-    if (manager == nullptr) {
-        return false;
-    }
+
     manager->SetData(reinterpret_cast<void *>(sock));
     NapiUtils::SetInt32Property(env, thisVal, KEY_SOCKET_FD, sock);
     return true;
@@ -242,7 +234,7 @@ static bool MakeTcpClientBindSocket(napi_env env, napi_value thisVal, BindContex
         return false;
     }
     NETSTACK_LOGD("bind ip family is %{public}d", context->address_.GetSaFamily());
-    if (context->GetSharedManager()->GetData() != nullptr) {
+    if (context->GetManager()->GetData() != nullptr) {
         NETSTACK_LOGE("tcp connect has been called");
         return true;
     }
@@ -266,7 +258,7 @@ static bool MakeTcpClientConnectSocket(napi_env env, napi_value thisVal, Connect
     }
     NETSTACK_LOGD("connect ip family is %{public}d", context->options.address.GetSaFamily());
 
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager != nullptr &&
         manager->GetData() != nullptr &&
         static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) != -1) {
@@ -355,16 +347,12 @@ static bool SetSocketManager(napi_env env, napi_value thisVal, BaseContext *cont
             return false;
         }
         NapiUtils::SetUint32Property(env, error, KEY_ERROR_CODE, errno);
-        context->EmitSharedManager(EVENT_ERROR, std::make_pair(NapiUtils::GetUndefined(env), error));
+        context->Emit(EVENT_ERROR, std::make_pair(NapiUtils::GetUndefined(env), error));
         return false;
     }
-    std::shared_ptr<EventManager> *sharedManager = nullptr;
-    if (napi_unwrap(env, thisVal, reinterpret_cast<void **>(&sharedManager)) != napi_ok || sharedManager == nullptr) {
+    EventManager *manager = nullptr;
+    if (napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager)) != napi_ok || manager == nullptr) {
         NETSTACK_LOGE("SetSocketManager unwrap err");
-        return false;
-    }
-    auto manager = *sharedManager;
-    if (manager == nullptr) {
         return false;
     }
     manager->SetData(reinterpret_cast<void *>(mgr));
@@ -483,23 +471,22 @@ napi_value SocketModuleExports::InitSocketModule(napi_env env, napi_value export
 
 napi_value SocketModuleExports::ConstructUDPSocketInstance(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::NewInstanceWithSharedManager(env, info, INTERFACE_UDP_SOCKET, Finalize);
+    return ModuleTemplate::NewInstance(env, info, INTERFACE_UDP_SOCKET, Finalize);
 }
 
 napi_value SocketModuleExports::ConstructMulticastSocketInstance(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::NewInstanceWithSharedManager(env, info, INTERFACE_MULTICAST_SOCKET, Finalize);
+    return ModuleTemplate::NewInstance(env, info, INTERFACE_MULTICAST_SOCKET, Finalize);
 }
 
 napi_value SocketModuleExports::ConstructLocalSocketInstance(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::NewInstanceWithSharedManager(env, info, INTERFACE_LOCAL_SOCKET, FinalizeLocalSocket);
+    return ModuleTemplate::NewInstance(env, info, INTERFACE_LOCAL_SOCKET, FinalizeLocalSocket);
 }
 
 napi_value SocketModuleExports::ConstructLocalSocketServerInstance(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::NewInstanceWithSharedManager(env, info, INTERFACE_LOCAL_SOCKET_SERVER,
-        FinalizeLocalsocketServer);
+    return ModuleTemplate::NewInstance(env, info, INTERFACE_LOCAL_SOCKET_SERVER, FinalizeLocalsocketServer);
 }
 
 void SocketModuleExports::DefineUDPSocketClass(napi_env env, napi_value exports)
@@ -542,7 +529,7 @@ void SocketModuleExports::DefineMulticastSocketClass(napi_env env, napi_value ex
 
 napi_value SocketModuleExports::ConstructTCPSocketInstance(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::NewInstanceWithSharedManager(env, info, INTERFACE_TCP_SOCKET, Finalize);
+    return ModuleTemplate::NewInstance(env, info, INTERFACE_TCP_SOCKET, Finalize);
 }
 
 void SocketModuleExports::DefineTCPSocketClass(napi_env env, napi_value exports)
@@ -598,8 +585,7 @@ void SocketModuleExports::DefineLocalSocketServerClass(napi_env env, napi_value 
 
 napi_value SocketModuleExports::ConstructTCPSocketServerInstance(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::NewInstanceWithSharedManager(env, info, INTERFACE_TCP_SOCKET_SERVER,
-        FinalizeTcpSocketServer);
+    return ModuleTemplate::NewInstance(env, info, INTERFACE_TCP_SOCKET_SERVER, FinalizeTcpSocketServer);
 }
 
 static napi_value CloseServer(napi_env env, napi_callback_info info)
@@ -608,10 +594,9 @@ static napi_value CloseServer(napi_env env, napi_callback_info info)
     if (napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr) != napi_ok) {
         return NapiUtils::GetUndefined(env);
     }
-    std::shared_ptr<EventManager> *sharedManager = nullptr;
-    napi_unwrap(env, thisVal, reinterpret_cast<void**>(&sharedManager));
-    if (sharedManager != nullptr && *sharedManager != nullptr) {
-        auto manager = *sharedManager;
+    EventManager *manager = nullptr;
+    napi_unwrap(env, thisVal, reinterpret_cast<void**>(&manager));
+    if (manager != nullptr) {
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
         if (sock != -1) {
             SocketExec::SingletonSocketConfig::GetInstance().RemoveServerSocket(sock);
@@ -680,7 +665,7 @@ napi_value SocketModuleExports::UDPSocket::Bind(napi_env env, napi_callback_info
 
 napi_value SocketModuleExports::UDPSocket::Send(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithOutAsyncWorkWithSharedManager<UdpSendContext>(
+    return ModuleTemplate::InterfaceWithOutAsyncWork<UdpSendContext>(
         env, info,
         [](napi_env, napi_value, UdpSendContext *context) -> bool {
             SocketAsyncWork::ExecUdpSend(context->GetEnv(), context);
@@ -718,13 +703,12 @@ napi_value SocketModuleExports::UDPSocket::GetSocketFd(napi_env env, napi_callba
 
 napi_value SocketModuleExports::UDPSocket::On(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::OnSharedManager(env, info,
-        {EVENT_MESSAGE, EVENT_LISTENING, EVENT_ERROR, EVENT_CLOSE}, false);
+    return ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_LISTENING, EVENT_ERROR, EVENT_CLOSE}, false);
 }
 
 napi_value SocketModuleExports::UDPSocket::Off(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::OffSharedManager(env, info, {EVENT_MESSAGE, EVENT_LISTENING, EVENT_ERROR, EVENT_CLOSE});
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_LISTENING, EVENT_ERROR, EVENT_CLOSE});
 }
 
 /* udp multicast */
@@ -783,7 +767,7 @@ napi_value SocketModuleExports::TCPSocket::Connect(napi_env env, napi_callback_i
 
 napi_value SocketModuleExports::TCPSocket::Send(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithOutAsyncWorkWithSharedManager<TcpSendContext>(
+    return ModuleTemplate::InterfaceWithOutAsyncWork<TcpSendContext>(
         env, info,
         [](napi_env, napi_value, TcpSendContext *context) -> bool {
             SocketAsyncWork::ExecTcpSend(context->GetEnv(), context);
@@ -827,12 +811,12 @@ napi_value SocketModuleExports::TCPSocket::GetSocketFd(napi_env env, napi_callba
 
 napi_value SocketModuleExports::TCPSocket::On(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::OnSharedManager(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
+    return ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
 }
 
 napi_value SocketModuleExports::TCPSocket::Off(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::OffSharedManager(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
 }
 
 /* tcp connection async works */
@@ -882,15 +866,14 @@ napi_value SocketModuleExports::TCPConnection::GetLocalAddress(napi_env env, nap
 
 napi_value SocketModuleExports::TCPConnection::On(napi_env env, napi_callback_info info)
 {
-    napi_value ret = ModuleTemplate::OnSharedManager(env, info,
-        {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
+    napi_value ret = ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
     SocketExec::NotifyRegisterEvent();
     return ret;
 }
 
 napi_value SocketModuleExports::TCPConnection::Off(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::OffSharedManager(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
 }
 
 /* tcp server async works */
@@ -920,12 +903,12 @@ napi_value SocketModuleExports::TCPServerSocket::SetExtraOptions(napi_env env, n
 
 napi_value SocketModuleExports::TCPServerSocket::On(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::OnSharedManager(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
+    return ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
 }
 
 napi_value SocketModuleExports::TCPServerSocket::Off(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::OffSharedManager(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
 }
 
 /* local socket */
@@ -943,7 +926,7 @@ napi_value SocketModuleExports::LocalSocket::Connect(napi_env env, napi_callback
 
 napi_value SocketModuleExports::LocalSocket::Send(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithOutAsyncWorkWithSharedManager<LocalSocketSendContext>(
+    return ModuleTemplate::InterfaceWithOutAsyncWork<LocalSocketSendContext>(
         env, info,
         [](napi_env, napi_value, LocalSocketSendContext *context) -> bool {
             SocketAsyncWork::ExecLocalSocketSend(context->GetEnv(), context);
@@ -990,12 +973,12 @@ napi_value SocketModuleExports::LocalSocket::GetExtraOptions(napi_env env, napi_
 
 napi_value SocketModuleExports::LocalSocket::On(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::OnSharedManager(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
+    return ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
 }
 
 napi_value SocketModuleExports::LocalSocket::Off(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::OffSharedManager(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
 }
 
 /* local socket server */
@@ -1037,12 +1020,12 @@ napi_value SocketModuleExports::LocalSocketServer::GetExtraOptions(napi_env env,
 
 napi_value SocketModuleExports::LocalSocketServer::On(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::OnSharedManager(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
+    return ModuleTemplate::On(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
 }
 
 napi_value SocketModuleExports::LocalSocketServer::Off(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::OffSharedManager(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
 }
 
 /* localsocket connection */
@@ -1097,13 +1080,12 @@ napi_value SocketModuleExports::LocalSocketConnection::On(napi_env env, napi_cal
     if (std::find(events.begin(), events.end(), event) == events.end()) {
         return NapiUtils::GetUndefined(env);
     }
-    std::shared_ptr<EventManager> *sharedManager = nullptr;
-    napi_unwrap(env, thisVal, reinterpret_cast<void **>(&sharedManager));
-    if (sharedManager == nullptr || *sharedManager == nullptr) {
+    EventManager *manager = nullptr;
+    napi_unwrap(env, thisVal, reinterpret_cast<void **>(&manager));
+    if (manager == nullptr) {
         NETSTACK_LOGE("failed to unwrap");
         return NapiUtils::GetUndefined(env);
     }
-    auto manager = *sharedManager;
     manager->AddListener(env, event, params[PARAM_COUNT_TWO - 1], false, false);
     if (event == EVENT_MESSAGE) {
         if (auto mgr = reinterpret_cast<LocalSocketExec::LocalSocketConnectionData *>(manager->GetData());
@@ -1116,7 +1098,7 @@ napi_value SocketModuleExports::LocalSocketConnection::On(napi_env env, napi_cal
 
 napi_value SocketModuleExports::LocalSocketConnection::Off(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::OffSharedManager(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
+    return ModuleTemplate::Off(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE});
 }
 
 static napi_module g_socketModule = {

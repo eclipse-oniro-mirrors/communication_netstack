@@ -34,7 +34,7 @@ namespace TlsSocketServer {
 class TLSServerNapiContext final : public BaseContext {
 public:
     TLSServerNapiContext() = delete;
-    explicit TLSServerNapiContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    explicit TLSServerNapiContext(napi_env env, EventManager *manager);
 
 public:
     int32_t clientId_ = 0;

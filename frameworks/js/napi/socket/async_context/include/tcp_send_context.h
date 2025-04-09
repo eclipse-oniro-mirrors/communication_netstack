@@ -32,7 +32,7 @@ public:
 
     TcpSendContext() = delete;
 
-    explicit TcpSendContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    explicit TcpSendContext(napi_env env, EventManager *manager);
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 

@@ -30,7 +30,7 @@ public:
 
     MulticastMembershipContext() = delete;
 
-    MulticastMembershipContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    MulticastMembershipContext(napi_env env, EventManager *manager);
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 

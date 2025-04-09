@@ -24,7 +24,7 @@ class CertContext final : public BaseContext {
 public:
     CertContext() = delete;
 
-    CertContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    CertContext(napi_env env, EventManager *manager);
 
     ~CertContext() override;
 

@@ -5,5 +5,5 @@ cmake-build-debug
 basic.d.ts
 .vscode
 CMakeLists.txt
-*.diff
+# *.diff
 .clang-format
