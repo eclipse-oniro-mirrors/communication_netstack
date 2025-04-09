@@ -22,8 +22,7 @@
 #include "socket_constant.h"
 
 namespace OHOS::NetStack::Socket {
-TcpServerSetExtraOptionsContext::TcpServerSetExtraOptionsContext(
-    napi_env env, const std::shared_ptr<EventManager> &manager)
+TcpServerSetExtraOptionsContext::TcpServerSetExtraOptionsContext(napi_env env, EventManager *manager)
     : BaseContext(env, manager)
 {
 }
@@ -103,7 +102,7 @@ void TcpServerSetExtraOptionsContext::ParseParams(napi_value *params, size_t par
 
 int TcpServerSetExtraOptionsContext::GetSocketFd() const
 {
-    return sharedManager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(sharedManager_->GetData())) : -1;
+    return manager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) : -1;
 }
 
 bool TcpServerSetExtraOptionsContext::CheckParamsType(napi_value *params, size_t paramsCount)

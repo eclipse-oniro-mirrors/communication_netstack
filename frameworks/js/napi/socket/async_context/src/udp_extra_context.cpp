@@ -22,8 +22,7 @@
 #include "netstack_log.h"
 
 namespace OHOS::NetStack::Socket {
-UdpSetExtraOptionsContext::UdpSetExtraOptionsContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-    : BaseContext(env, manager) {}
+UdpSetExtraOptionsContext::UdpSetExtraOptionsContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void UdpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCount)
 {
@@ -58,7 +57,7 @@ void UdpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCou
         auto reuseAddr = NapiUtils::GetBooleanProperty(GetEnv(), params[0], KEY_REUSE_ADDRESS);
         options.SetReuseAddress(reuseAddr);
         options.SetReuseaddrFlag(true);
-        auto manager = GetSharedManager();
+        auto manager = this->GetManager();
         if (manager != nullptr) {
             manager->SetReuseAddr(reuseAddr);
         }
@@ -83,7 +82,7 @@ void UdpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCou
 
 int UdpSetExtraOptionsContext::GetSocketFd() const
 {
-    return sharedManager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(sharedManager_->GetData())) : -1;
+    return manager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) : -1;
 }
 
 bool UdpSetExtraOptionsContext::CheckParamsType(napi_value *params, size_t paramsCount)
