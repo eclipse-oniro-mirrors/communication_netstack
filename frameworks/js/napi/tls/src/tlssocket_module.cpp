@@ -203,8 +203,12 @@ napi_value TLSSocketModuleExports::ConstructTLSSocketInstance(napi_env env, napi
         NETSTACK_LOGE("get event manager in napi_unwrap failed, napiRet is %{public}d", napiRet);
         return nullptr;
     }
+    std::shared_ptr<EventManager> manager = nullptr;
+    if (sharedManager != nullptr && *sharedManager != nullptr) {
+        manager = *sharedManager;
+    }
 
-    auto context = new TLSInitContext(env, *sharedManager);
+    auto context = new TLSInitContext(env, manager);
     if (context == nullptr) {
         NETSTACK_LOGE("new TLSInitContext failed, no enough memory");
         return nullptr;
