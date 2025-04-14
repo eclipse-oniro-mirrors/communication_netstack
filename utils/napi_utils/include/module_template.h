@@ -109,8 +109,12 @@ napi_value InterfaceWithSharedManager(napi_env env, napi_callback_info info, con
         NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
         return NapiUtils::GetUndefined(env);
     }
+    std::shared_ptr<EventManager> manager = nullptr;
+    if (sharedManager != nullptr && *sharedManager != nullptr) {
+        manager = *sharedManager;
+    }
 
-    auto context = new (std::nothrow) Context(env, *sharedManager);
+    auto context = new (std::nothrow) Context(env, manager);
     if (!context) {
         NETSTACK_LOGE("new context is nullptr");
         return NapiUtils::GetUndefined(env);
@@ -206,8 +210,12 @@ napi_value InterfaceWithOutAsyncWorkWithSharedManager(napi_env env, napi_callbac
         NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
         return NapiUtils::GetUndefined(env);
     }
+    std::shared_ptr<EventManager> manager = nullptr;
+    if (sharedManager != nullptr && *sharedManager != nullptr) {
+        manager = *sharedManager;
+    }
 
-    auto context = new (std::nothrow) Context(env, *sharedManager);
+    auto context = new (std::nothrow) Context(env, manager);
     if (!context) {
         NETSTACK_LOGE("new context is nullptr");
         return NapiUtils::GetUndefined(env);
