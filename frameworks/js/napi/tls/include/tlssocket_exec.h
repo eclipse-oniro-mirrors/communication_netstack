@@ -64,6 +64,8 @@ public:
     static napi_value GetLocalAddressCallback(TLSGetLocalAddressContext *context);
     static napi_value SetExtraOptionsCallback(TLSSetExtraOptionsContext *context);
     static napi_value GetSocketFdCallback(TLSGetSocketFdContext *context);
+private:
+    static void SetContext(TLSGetLocalAddressContext *context);
 };
 } // namespace TlsSocket
 } // namespace NetStack
