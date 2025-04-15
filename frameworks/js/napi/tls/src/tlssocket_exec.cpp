@@ -484,6 +484,13 @@ bool TLSSocketExec::ExecGetRemoteAddress(TLSGetRemoteAddressContext *context)
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 
+void TLSSocketExec::SetContext(TLSGetLocalAddressContext *context)
+{
+    context->SetNeedThrowException(true);
+    context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
+        TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
+}
+
 bool TLSSocketExec::ExecGetLocalAddress(TLSGetLocalAddressContext *context)
 {
     if (context == nullptr) {
@@ -491,9 +498,7 @@ bool TLSSocketExec::ExecGetLocalAddress(TLSGetLocalAddressContext *context)
     }
     auto manager = context->GetSharedManager();
     if (manager == nullptr) {
-        context->SetNeedThrowException(true);
-        context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
-                          TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
+        SetContext(context);
         return false;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
