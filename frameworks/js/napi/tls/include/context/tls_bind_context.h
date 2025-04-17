@@ -29,7 +29,7 @@ namespace OHOS::NetStack::TlsSocket {
 class TLSBindContext final : public BaseContext {
 public:
     TLSBindContext() = delete;
-    explicit TLSBindContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    explicit TLSBindContext(napi_env env, EventManager *manager);
 
 public:
     void ParseParams(napi_value *params, size_t paramsCount) override;
