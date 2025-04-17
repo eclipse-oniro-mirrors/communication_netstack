@@ -87,6 +87,7 @@ ohos_shared_library("networksecurity_napi") {
       "napi:ace_napi",
       "openssl:libcrypto_shared",
       "openssl:libssl_shared",
+      "samgr:samgr_proxy",
     ]
   }
   defines = []
