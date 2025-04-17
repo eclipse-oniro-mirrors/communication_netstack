@@ -62,6 +62,7 @@ ohos_shared_library("cj_net_websocket_ffi") {
     "napi:cj_bind_ffi",
     "napi:cj_bind_native",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   if (defined(global_parts_info) &&

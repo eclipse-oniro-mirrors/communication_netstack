@@ -43,6 +43,7 @@ ohos_shared_library("net_ssl_ndk") {
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   cflags_cc = [

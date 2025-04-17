@@ -82,6 +82,7 @@ ohos_shared_library("cj_net_http_ffi") {
     "napi:cj_bind_native",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   if (build_ohos_sdk) {

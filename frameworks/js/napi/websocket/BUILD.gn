@@ -62,6 +62,7 @@ ohos_shared_library("websocket") {
     "libwebsockets:websockets",
     "napi:ace_napi",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   if (defined(global_parts_info) &&
