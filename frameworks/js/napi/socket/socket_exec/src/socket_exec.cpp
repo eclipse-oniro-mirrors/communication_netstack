@@ -767,6 +767,7 @@ static bool PreparePollFds(int &currentFd, std::vector<pollfd> &fds,
         return false;
     }
 
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     currentFd = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
     if (currentFd <= 0) {
         NETSTACK_LOGE("currentFd: %{public}d is error", currentFd);
