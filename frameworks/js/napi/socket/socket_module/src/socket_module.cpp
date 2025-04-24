@@ -135,7 +135,9 @@ void Finalize(napi_env, void *data, void *)
     if (sharedManager != nullptr && *sharedManager != nullptr) {
         auto manager = *sharedManager;
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
-        if (sock != -1) {
+        if (sock == 0) {
+            NETSTACK_LOGE("manager->GetData() got nullptr, Finalize() called before creating socket?");
+        } else if (sock != -1) {
             SocketExec::SingletonSocketConfig::GetInstance().RemoveServerSocket(sock);
             close(sock);
             manager->SetData(reinterpret_cast<void *>(-1));
@@ -226,6 +228,7 @@ static bool SetSocket(napi_env env, napi_value thisVal, BaseContext *context, in
     if (manager == nullptr) {
         return false;
     }
+    NETSTACK_LOGD("SetSocket: sock %{public}d", sock);
     manager->SetData(reinterpret_cast<void *>(sock));
     NapiUtils::SetInt32Property(env, thisVal, KEY_SOCKET_FD, sock);
     return true;
@@ -367,6 +370,7 @@ static bool SetSocketManager(napi_env env, napi_value thisVal, BaseContext *cont
     if (manager == nullptr) {
         return false;
     }
+    NETSTACK_LOGD("SetSocketManager setData");
     manager->SetData(reinterpret_cast<void *>(mgr));
     NapiUtils::SetInt32Property(env, thisVal, KEY_SOCKET_FD, mgr->sockfd_);
     return true;
