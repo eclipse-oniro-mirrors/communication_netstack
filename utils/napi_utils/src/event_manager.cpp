@@ -39,41 +39,43 @@ void EventManager::AddListener(napi_env env, const std::string &type, napi_value
 {
     std::unique_lock<std::shared_mutex> lock(mutexForListenersAndEmitByUv_);
     auto it = std::remove_if(listeners_.begin(), listeners_.end(),
-                             [type](const EventListener &listener) -> bool { return listener.MatchType(type); });
+        [type](const std::shared_ptr<EventListener> &listener) -> bool { return listener->MatchType(type); });
     if (it != listeners_.end()) {
         listeners_.erase(it, listeners_.end());
     }
-
-    listeners_.emplace_back(GetCurrentThreadId(), env, type, callback, once, asyncCallback);
+    auto listener = std::make_shared<EventListener>(GetCurrentThreadId(), env, type, callback, once, asyncCallback);
+    listeners_.emplace_back(std::move(listener));
 }
 
 void EventManager::DeleteListener(const std::string &type, napi_value callback)
 {
     std::unique_lock<std::shared_mutex> lock(mutexForListenersAndEmitByUv_);
-    auto it =
-        std::remove_if(listeners_.begin(), listeners_.end(), [type, callback](const EventListener &listener) -> bool {
-            return listener.Match(type, callback);
+    auto it = std::remove_if(listeners_.begin(), listeners_.end(),
+        [type, callback] (const std::shared_ptr<EventListener> &listener) -> bool {
+            return listener->Match(type, callback);
         });
     listeners_.erase(it, listeners_.end());
 }
 
 void EventManager::Emit(const std::string &type, const std::pair<napi_value, napi_value> &argv)
 {
-    std::unique_lock<std::shared_mutex> lock(mutexForListenersAndEmitByUv_);
-    std::for_each(listeners_.begin(), listeners_.end(), [type, argv](const EventListener &listener) {
-        if (listener.IsAsyncCallback()) {
+    std::shared_lock<std::shared_mutex> lock(mutexForListenersAndEmitByUv_);
+    auto listeners = listeners_;
+    mutexForListenersAndEmitByUv_.lock();
+    std::for_each(listeners.begin(), listeners.end(), [type, argv] (const std::shared_ptr<EventListener> &listener) {
+        if (listener->IsAsyncCallback()) {
             /* AsyncCallback(BusinessError error, T data) */
             napi_value arg[ASYNC_CALLBACK_PARAM_NUM] = {argv.first, argv.second};
-            listener.Emit(type, ASYNC_CALLBACK_PARAM_NUM, arg);
+            listener->Emit(type, ASYNC_CALLBACK_PARAM_NUM, arg);
         } else {
             /* Callback(T data) */
             napi_value arg[CALLBACK_PARAM_NUM] = {argv.second};
-            listener.Emit(type, CALLBACK_PARAM_NUM, arg);
+            listener->Emit(type, CALLBACK_PARAM_NUM, arg);
         }
     });
-
+    std::unique_lock<std::shared_mutex> lock2(mutexForListenersAndEmitByUv_);
     auto it = std::remove_if(listeners_.begin(), listeners_.end(),
-                             [type](const EventListener &listener) -> bool { return listener.MatchOnce(type); });
+        [type] (const std::shared_ptr<EventListener> &listener) -> bool { return listener->MatchOnce(type); });
     listeners_.erase(it, listeners_.end());
 }
 
@@ -90,13 +92,14 @@ void *EventManager::GetData()
 void EventManager::EmitByUvWithoutCheckShared(const std::string &type, void *data, void (*Handler)(uv_work_t *, int))
 {
     std::shared_lock<std::shared_mutex> lock(mutexForListenersAndEmitByUv_);
-    bool foundHeader = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
-        return listener.MatchType(ON_HEADER_RECEIVE);
-    }) != listeners_.end();
+    bool foundHeader = std::find_if(listeners_.begin(), listeners_.end(),
+        [] (const std::shared_ptr<EventListener> &listener) { return listener->MatchType(ON_HEADER_RECEIVE); }) !=
+        listeners_.end();
 
-    bool foundHeaders = std::find_if(listeners_.begin(), listeners_.end(), [](const EventListener &listener) {
-        return listener.MatchType(ON_HEADERS_RECEIVE);
-    }) != listeners_.end();
+    bool foundHeaders = std::find_if(listeners_.begin(), listeners_.end(),
+        [] (const std::shared_ptr<EventListener> &listener) { return listener->MatchType(ON_HEADERS_RECEIVE);}) !=
+        listeners_.end();
+
     if (!foundHeader && !foundHeaders) {
         if (type == ON_HEADER_RECEIVE || type == ON_HEADERS_RECEIVE) {
             auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
@@ -114,12 +117,13 @@ void EventManager::EmitByUvWithoutCheckShared(const std::string &type, void *dat
         }
     }
 
-    std::for_each(listeners_.begin(), listeners_.end(), [type, data, Handler, this](const EventListener &listener) {
-        if (listener.MatchType(type)) {
-            auto workWrapper = new UvWorkWrapperShared(data, listener.GetEnv(), type, shared_from_this());
-            listener.EmitByUv(type, workWrapper, Handler);
-        }
-    });
+    std::for_each(listeners_.begin(), listeners_.end(),
+        [type, data, Handler, this] (const std::shared_ptr<EventListener> &listener) {
+            if (listener->MatchType(type)) {
+                auto workWrapper = new UvWorkWrapperShared(data, listener->GetEnv(), type, shared_from_this());
+                listener->EmitByUv(type, workWrapper, Handler);
+            }
+        });
 }
 
 void EventManager::SetQueueData(void *data)
@@ -144,14 +148,14 @@ bool EventManager::HasEventListener(const std::string &type)
 {
     std::shared_lock<std::shared_mutex> lock(mutexForListenersAndEmitByUv_);
     return std::any_of(listeners_.begin(), listeners_.end(),
-                       [&type](const EventListener &listener) -> bool { return listener.MatchType(type); });
+        [&type] (const std::shared_ptr<EventListener> &listener) -> bool { return listener->MatchType(type); });
 }
 
 void EventManager::DeleteListener(const std::string &type)
 {
     std::unique_lock<std::shared_mutex> lock(mutexForListenersAndEmitByUv_);
     auto it = std::remove_if(listeners_.begin(), listeners_.end(),
-                             [type](const EventListener &listener) -> bool { return listener.MatchType(type); });
+        [type] (const std::shared_ptr<EventListener> &listener) -> bool { return listener->MatchType(type); });
     listeners_.erase(it, listeners_.end());
 }
 
