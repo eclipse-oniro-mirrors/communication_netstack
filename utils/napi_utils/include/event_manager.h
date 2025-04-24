@@ -121,7 +121,7 @@ private:
     std::shared_mutex mutexForListenersAndEmitByUv_;
     std::shared_mutex dataMutex_;
     std::mutex dataQueueMutex_;
-    std::list<EventListener> listeners_;
+    std::list<std::shared_ptr<EventListener>> listeners_;
     void *data_;
     std::queue<void *> dataQueue_;
     static EventManagerMagic magic_;
