@@ -61,7 +61,7 @@ void EventManager::Emit(const std::string &type, const std::pair<napi_value, nap
 {
     std::shared_lock<std::shared_mutex> lock(mutexForListenersAndEmitByUv_);
     auto listeners = listeners_;
-    mutexForListenersAndEmitByUv_.lock();
+    mutexForListenersAndEmitByUv_.unlock();
     std::for_each(listeners.begin(), listeners.end(), [type, argv] (const std::shared_ptr<EventListener> &listener) {
         if (listener->IsAsyncCallback()) {
             /* AsyncCallback(BusinessError error, T data) */
