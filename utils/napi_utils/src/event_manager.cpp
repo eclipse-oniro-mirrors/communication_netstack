@@ -61,7 +61,7 @@ void EventManager::Emit(const std::string &type, const std::pair<napi_value, nap
 {
     std::shared_lock<std::shared_mutex> lock(mutexForListenersAndEmitByUv_);
     auto listeners = listeners_;
-    mutexForListenersAndEmitByUv_.unlock();
+    lock.unlock();
     std::for_each(listeners.begin(), listeners.end(), [type, argv] (const std::shared_ptr<EventListener> &listener) {
         if (listener->IsAsyncCallback()) {
             /* AsyncCallback(BusinessError error, T data) */
@@ -247,25 +247,21 @@ bool EventManager::GetReuseAddr()
 
 std::shared_ptr<Socks5::Socks5Instance> EventManager::GetProxyData()
 {
-    std::unique_lock<std::shared_mutex> lock(dataMutex_);
     return proxyData_;
 }
 
 void EventManager::SetProxyData(std::shared_ptr<Socks5::Socks5Instance> data)
 {
-    std::unique_lock<std::shared_mutex> lock(dataMutex_);
     proxyData_ = data;
 }
 
 void EventManager::SetWebSocketUserData(const std::shared_ptr<Websocket::UserData> &userData)
 {
-    std::unique_lock<std::shared_mutex> lock(dataMutex_);
     webSocketUserData_ = userData;
 }
 
 std::shared_ptr<Websocket::UserData> EventManager::GetWebSocketUserData()
 {
-    std::unique_lock<std::shared_mutex> lock(dataMutex_);
     return webSocketUserData_;
 }
 
