@@ -25,8 +25,7 @@
 namespace OHOS::NetStack::TlsSocket {
 static constexpr std::string_view PARSE_ERROR = "address is not type of Socket::NetAddress";
 
-TLSBindContext::TLSBindContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-    : BaseContext(env, manager) {}
+TLSBindContext::TLSBindContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void TLSBindContext::ParseParams(napi_value *params, size_t paramsCount)
 {
