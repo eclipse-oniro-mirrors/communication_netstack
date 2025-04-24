@@ -30,7 +30,7 @@ public:
 
     TcpServerSetExtraOptionsContext() = delete;
 
-    explicit TcpServerSetExtraOptionsContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    explicit TcpServerSetExtraOptionsContext(napi_env env, EventManager *manager);
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 

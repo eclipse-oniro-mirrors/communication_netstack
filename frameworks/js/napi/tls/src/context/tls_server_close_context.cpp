@@ -27,8 +27,7 @@ namespace NetStack {
 namespace TlsSocketServer {
 static constexpr std::string_view PARSE_ERROR = "data is not int";
 
-TLSServerCloseContext::TLSServerCloseContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-    : BaseContext(env, manager) {}
+TLSServerCloseContext::TLSServerCloseContext(napi_env env, EventManager *manager) : BaseContext(env, manager) {}
 
 void TLSServerCloseContext::ParseParams(napi_value *params, size_t paramsCount)
 {

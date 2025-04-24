@@ -34,7 +34,7 @@ namespace TlsSocket {
 class TLSNapiContext final : public BaseContext {
 public:
     TLSNapiContext() = delete;
-    explicit TLSNapiContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    explicit TLSNapiContext(napi_env env, EventManager *manager);
 
 public:
     std::string protocol_;
