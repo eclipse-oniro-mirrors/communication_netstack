@@ -57,6 +57,7 @@ ohos_unittest("http_client_unittest") {
     "curl:curl_shared",
     "googletest:gmock_main",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   if (defined(global_parts_info) &&
