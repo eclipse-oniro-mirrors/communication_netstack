@@ -141,6 +141,7 @@ ohos_unittest("two_way_tls_socket_unittest") {
     "napi:ace_napi",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -230,6 +231,7 @@ ohos_unittest("two_way_tls_socket_certchain_unittest") {
     "napi:ace_napi",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -322,6 +324,7 @@ ohos_unittest("tls_socket_unilateral_connection") {
     "napi:ace_napi",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -392,6 +395,7 @@ ohos_unittest("tls_key_test") {
     "napi:ace_napi",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -435,6 +439,7 @@ ohos_unittest("tls_cert_test") {
     "napi:ace_napi",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -478,6 +483,7 @@ ohos_unittest("tls_configuration_test") {
     "napi:ace_napi",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -521,6 +527,7 @@ ohos_unittest("tls_context_test") {
     "napi:ace_napi",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -611,6 +618,7 @@ ohos_unittest("tls_socket_branch_test") {
     "napi:ace_napi",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
