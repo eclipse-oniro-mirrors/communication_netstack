@@ -65,6 +65,7 @@ ohos_fuzztest("WebSocketExecFuzzTest") {
     "libwebsockets:websockets",
     "napi:ace_napi",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   defines = [
