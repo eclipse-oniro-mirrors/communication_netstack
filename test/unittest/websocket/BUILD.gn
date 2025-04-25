@@ -60,6 +60,7 @@ ohos_unittest("websocket_unittest") {
   external_deps += [
     "libwebsockets:websockets",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   if (defined(global_parts_info) &&
