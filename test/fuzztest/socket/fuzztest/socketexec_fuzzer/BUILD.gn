@@ -139,6 +139,7 @@ ohos_fuzztest("SocketExecFuzzTest") {
     "napi:ace_napi",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   defines = [
