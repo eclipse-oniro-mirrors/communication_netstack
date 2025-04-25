@@ -147,6 +147,7 @@ ohos_unittest("tls_socket_core_test") {
     "napi:ace_napi",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
+    "samgr:samgr_proxy",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
