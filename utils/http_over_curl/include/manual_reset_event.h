@@ -31,6 +31,15 @@ struct ManualResetEvent {
         underlying_ = eventfd(0, 0);
     }
 
+    explicit ManualResetEvent(bool isSemaphore)
+    {
+        if (isSemaphore) {
+            underlying_ = eventfd(0, EFD_SEMAPHORE);
+        } else {
+            underlying_ = eventfd(0, 0);
+        }
+    }
+
     ~ManualResetEvent()
     {
         close(underlying_);
