@@ -20,6 +20,9 @@
 #include "epoll_multi_driver.h"
 #include "netstack_log.h"
 #include "request_info.h"
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_handover_handler.h"
+#endif
 
 namespace OHOS::NetStack::HttpOverCurl {
 static constexpr const char *HTTP_WORK_THREAD = "OS_NET_HttpWork";
@@ -62,7 +65,18 @@ void EpollRequestHandler::Process(CURL *easyHandle, const TransferStartedCallbac
 
 void EpollRequestHandler::WorkingThread()
 {
+#ifdef HTTP_HANDOVER_FEATURE
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    if (netHandoverHandler->InitSuccess()) {
+        NETSTACK_LOGI("NetHandover enabled");
+    } else {
+        netHandoverHandler = nullptr;
+        NETSTACK_LOGI("NetHandover disabled!!!");
+    }
+    EpollMultiDriver requestHandler(incomingQueue_, netHandoverHandler);
+#else
     EpollMultiDriver requestHandler(incomingQueue_);
+#endif
 
     while (!stop_) {
         requestHandler.Step(sleepTimeoutMs_);

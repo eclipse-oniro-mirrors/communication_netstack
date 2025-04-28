@@ -17,6 +17,9 @@
 
 #include "netstack_log.h"
 #include "request_info.h"
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_handover_handler.h"
+#endif
 
 namespace OHOS::NetStack::HttpOverCurl {
 
@@ -28,8 +31,22 @@ EpollMultiDriver::EpollMultiDriver(const std::shared_ptr<HttpOverCurl::ThreadSaf
     Initialize();
 }
 
+#ifdef HTTP_HANDOVER_FEATURE
+EpollMultiDriver::EpollMultiDriver(const std::shared_ptr<HttpOverCurl::ThreadSafeStorage<RequestInfo *>> &incomingQueue,
+    std::shared_ptr<HttpHandoverHandler> &netHandoverHandler)
+    : incomingQueue_(incomingQueue), netHandoverHandler_(netHandoverHandler)
+{
+    Initialize();
+}
+#endif
+
 void EpollMultiDriver::Initialize()
 {
+#ifdef HTTP_HANDOVER_FEATURE
+    if (netHandoverHandler_) {
+        netHandoverHandler_->RegisterForPolling(poller_);
+    }
+#endif
     timeoutTimer_.RegisterForPolling(poller_);
     incomingQueue_->GetSyncEvent().RegisterForPolling(poller_);
     multi_ = curl_multi_init();
@@ -82,6 +99,10 @@ void EpollMultiDriver::Step(int waitEventsTimeoutMs)
             IncomingRequestCallback();
         } else if (timeoutTimer_.IsItYours(events[idx].data.fd)) {
             EpollTimerCallback();
+#ifdef HTTP_HANDOVER_FEATURE
+        } else if (netHandoverHandler_ && netHandoverHandler_->IsItYours(events[idx].data.fd)) {
+            HandOverRequestCallback();
+#endif
         } else { // curl socket event
             EpollSocketCallback(events[idx].data.fd);
         }
@@ -91,6 +112,14 @@ void EpollMultiDriver::Step(int waitEventsTimeoutMs)
 void EpollMultiDriver::IncomingRequestCallback()
 {
     auto requestsToAdd = incomingQueue_->Flush();
+#ifdef HTTP_HANDOVER_FEATURE
+    if (netHandoverHandler_ && netHandoverHandler_->NeedFlowControl()) {
+        for (auto &request : requestsToAdd) {
+            netHandoverHandler_->FlowControl(request);
+        }
+        return;
+    }
+#endif
     for (auto &request : requestsToAdd) {
         ongoingRequests_[request->easyHandle] = request;
         auto ret = curl_multi_add_handle(multi_, request->easyHandle);
@@ -104,6 +133,33 @@ void EpollMultiDriver::IncomingRequestCallback()
         }
     }
 }
+
+#ifdef HTTP_HANDOVER_FEATURE
+void EpollMultiDriver::HandOverRequestCallback()
+{
+    netHandoverHandler_->Reset();
+    NETSTACK_LOGI("Enter HandOverRequestCallback");
+    int32_t status = -1;
+    int32_t netId = -1;
+    netHandoverHandler_->HandOverQuery(status, netId);
+    NETSTACK_LOGI("HandOverRequestCallback status %{public}d", status);
+    if (status == HttpHandoverHandler::END || status == HttpHandoverHandler::FATAL) {
+        std::set<RequestInfo *> &requestsToAdd = netHandoverHandler_->GetFlowControlQueue();
+        for (auto &request : requestsToAdd) {
+            ongoingRequests_[request->easyHandle] = request;
+            auto ret = curl_multi_add_handle(multi_, request->easyHandle);
+            if (ret != CURLM_OK) {
+                NETSTACK_LOGE("curl_multi_add_handle err, ret = %{public}d %{public}s", ret, curl_multi_strerror(ret));
+                continue;
+            }
+            if (request->startedCallback) {
+                request->startedCallback(request->easyHandle, request->opaqueData);
+            }
+        }
+        requestsToAdd.clear();
+    }
+}
+#endif
 
 // Update the timer after curl_multi library does its thing. Curl will
 // inform us through this callback what it wants the new timeout to be,

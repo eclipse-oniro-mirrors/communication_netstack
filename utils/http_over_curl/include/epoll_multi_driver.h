@@ -24,6 +24,9 @@
 #include "epoller.h"
 #include "thread_safe_storage.h"
 #include "timeout_timer.h"
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_handover_handler.h"
+#endif
 
 namespace OHOS::NetStack::HttpOverCurl {
 
@@ -33,6 +36,10 @@ class EpollMultiDriver {
 public:
     EpollMultiDriver() = delete;
     explicit EpollMultiDriver(const std::shared_ptr<HttpOverCurl::ThreadSafeStorage<RequestInfo *>> &incomingQueue);
+#ifdef HTTP_HANDOVER_FEATURE
+    EpollMultiDriver(const std::shared_ptr<HttpOverCurl::ThreadSafeStorage<RequestInfo *>> &incomingQueue,
+        std::shared_ptr<HttpHandoverHandler> &netHandoverHandler);
+#endif
     ~EpollMultiDriver();
 
     void Step(int waitEventsTimeoutMs);
@@ -59,8 +66,15 @@ private:
 
     void Initialize();
     void IncomingRequestCallback();
+#ifdef HTTP_HANDOVER_FEATURE
+    void HandOverRequestCallback();
+#endif
 
     std::shared_ptr<HttpOverCurl::ThreadSafeStorage<RequestInfo *>> incomingQueue_;
+
+#ifdef HTTP_HANDOVER_FEATURE
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler_;
+#endif
 
     HttpOverCurl::Epoller poller_;
     HttpOverCurl::TimeoutTimer timeoutTimer_;
