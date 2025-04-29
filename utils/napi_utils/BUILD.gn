@@ -55,6 +55,8 @@ ohos_static_library("napi_utils") {
     "napi:ace_napi",
   ]
 
+  public_external_deps = [ "libwebsockets:websockets" ]
+
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base && is_ohos &&
@@ -63,6 +65,10 @@ ohos_static_library("napi_utils") {
     external_deps += [ "ffrt:libffrt" ]
   } else {
     defines = [ "HAS_NETMANAGER_BASE=0" ]
+  }
+
+  if (netstack_websocket_server_enable) {
+    defines += [ "NETSTACK_WEBSOCKETSERVER" ]
   }
 }
 
@@ -97,6 +103,10 @@ ohos_static_library("napi_utils_static") {
     external_deps += [ "ffrt:libffrt" ]
   } else {
     defines = [ "HAS_NETMANAGER_BASE=0" ]
+  }
+
+  if (netstack_websocket_server_enable) {
+    defines += [ "NETSTACK_WEBSOCKETSERVER" ]
   }
 
   if (current_os == "ohos") {

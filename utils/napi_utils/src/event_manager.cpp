@@ -144,6 +144,32 @@ void *EventManager::GetQueueData()
     return nullptr;
 }
 
+#ifdef NETSTACK_WEBSOCKETSERVER
+void EventManager::SetServerQueueData(lws *wsi, void *data)
+{
+    std::unique_lock<std::shared_mutex> lock(dataServerQueueMutex_);
+    serverDataQueue_[wsi].push(data);
+}
+
+void *EventManager::GetServerQueueData(lws *wsi)
+{
+    if (wsi == nullptr) {
+        NETSTACK_LOGE("wsi is nullptr");
+        return nullptr;
+    }
+    {
+        std::shared_lock<std::shared_mutex> lock(dataServerQueueMutex_);
+        if (serverDataQueue_.empty() || serverDataQueue_.find(wsi) == serverDataQueue_.end()) {
+            NETSTACK_LOGE("eventManager server data queue is empty");
+            return nullptr;
+        }
+        auto data = serverDataQueue_[wsi].front();
+        serverDataQueue_[wsi].pop();
+        return data;
+    }
+}
+#endif
+
 bool EventManager::HasEventListener(const std::string &type)
 {
     std::shared_lock<std::shared_mutex> lock(mutexForListenersAndEmitByUv_);
@@ -206,6 +232,58 @@ void EventManager::AppendWebSocketBinaryData(void *data, size_t length)
 {
     webSocketBinaryData_.append(reinterpret_cast<char *>(data), length);
 }
+
+#ifdef NETSTACK_WEBSOCKETSERVER
+const std::string &EventManager::GetWsServerBinaryData(lws *wsi)
+{
+    return wsServerBinaryData_[wsi];
+}
+
+const std::string &EventManager::GetWsServerTextData(lws *wsi)
+{
+    return wsServerTextData_[wsi];
+}
+
+void EventManager::AppendWsServerBinaryData(lws *wsi, void *data, size_t length)
+{
+    wsServerBinaryData_[wsi].append(reinterpret_cast<char *>(data), length);
+}
+
+void EventManager::AppendWsServerTextData(lws *wsi, void *data, size_t length)
+{
+    wsServerTextData_[wsi].append(reinterpret_cast<char *>(data), length);
+}
+
+void EventManager::ClearWsServerBinaryData(lws *wsi)
+{
+    wsServerBinaryData_[wsi].clear();
+}
+
+void EventManager::ClearWsServerTextData(lws *wsi)
+{
+    wsServerTextData_[wsi].clear();
+}
+
+void EventManager::SetMaxConnClientCnt(const uint32_t &cnt)
+{
+    maxConnClientCnt_ = cnt;
+}
+
+void EventManager::SetMaxConnForOneClient(const uint32_t &cnt)
+{
+    maxConnForOneClient_ = cnt;
+}
+
+uint32_t EventManager::GetMaxConnClientCnt() const
+{
+    return maxConnClientCnt_;
+}
+
+uint32_t EventManager::GetMaxConnForOneClient() const
+{
+    return maxConnForOneClient_;
+}
+#endif
 
 void EventManager::ClearWebSocketTextData()
 {

@@ -27,6 +27,7 @@ ohos_shared_library("websocket") {
     "async_context/include",
     "async_work/include",
     "constant/include",
+    "utils/include",
     "websocket_exec/include",
     "websocket_module/include",
   ]
@@ -72,6 +73,17 @@ ohos_shared_library("websocket") {
     defines += [ "HAS_NETMANAGER_BASE=1" ]
   } else {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
+
+  if (netstack_websocket_server_enable) {
+    defines += [ "NETSTACK_WEBSOCKETSERVER" ]
+    sources += [
+      "async_context/src/list_all_connections_context.cpp",
+      "async_context/src/server_close_context.cpp",
+      "async_context/src/server_send_context.cpp",
+      "async_context/src/server_start_context.cpp",
+      "async_context/src/server_stop_context.cpp",
+    ]
   }
 
   if (product_name != "ohos-sdk") {

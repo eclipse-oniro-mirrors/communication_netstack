@@ -26,6 +26,7 @@ namespace OHOS::NetStack::CommonUtils {
 static const std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
 static const std::string DOMAIN_TYPE_WEBSOCKET_REQUEST = "webSocket";
 const int INVALID_IP_TYPE = -1;
+const int MAX_PORT = 65535;
 enum SdkVersion {
     FIVE = 5,
     SIX,
@@ -100,5 +101,7 @@ bool Sha256sum(unsigned char *buf, size_t buflen, std::string &digestStr);
 bool IsCertPubKeyInPinned(const std::string &certPubKeyDigest, const std::string &pinnedPubkey);
 
 bool IsCleartextPermitted(const std::string &url, const std::string &protocol);
+
+bool IsValidPort(const uint32_t &Port);
 } // namespace OHOS::NetStack::CommonUtils
 #endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */

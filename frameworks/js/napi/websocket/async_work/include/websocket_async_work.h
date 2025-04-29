@@ -30,12 +30,36 @@ public:
 
     static void ExecClose(napi_env env, void *data);
 
+#ifdef NETSTACK_WEBSOCKETSERVER
+    static void ExecServerStart(napi_env env, void *data);
+ 
+    static void ExecListAllConnections(napi_env env, void *data);
+ 
+    static void ExecServerClose(napi_env env, void *data);
+ 
+    static void ExecServerSend(napi_env env, void *data);
+    
+    static void ExecServerStop(napi_env env, void *data);
+#endif
+
     /* callback */
     static void ConnectCallback(napi_env env, napi_status status, void *data);
 
     static void SendCallback(napi_env env, napi_status status, void *data);
 
     static void CloseCallback(napi_env env, napi_status status, void *data);
+
+#ifdef NETSTACK_WEBSOCKETSERVER
+    static void ServerStartCallback(napi_env env, napi_status status, void *data);
+ 
+    static void ListAllConnectionsCallback(napi_env env, napi_status status, void *data);
+ 
+    static void ServerCloseCallback(napi_env env, napi_status status, void *data);
+ 
+    static void ServerSendCallback(napi_env env, napi_status status, void *data);
+ 
+    static void ServerStopCallback(napi_env env, napi_status status, void *data);
+#endif
 };
 } // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_WEBSOCKET_ASYNC_WORK_H */

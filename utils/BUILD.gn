@@ -69,6 +69,7 @@ ohos_shared_library("stack_utils_common") {
     "bounds_checking_function:libsec_shared",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
+    "libwebsockets:websockets",
     "samgr:samgr_proxy",
   ]
 
@@ -83,6 +84,10 @@ ohos_shared_library("stack_utils_common") {
     external_deps += [ "openssl:libcrypto_shared" ]
   } else {
     defines = [ "HAS_NETMANAGER_BASE=0" ]
+  }
+
+  if (netstack_websocket_server_enable) {
+    defines += [ "NETSTACK_WEBSOCKETSERVER" ]
   }
 
   innerapi_tags = [ "platformsdk" ]

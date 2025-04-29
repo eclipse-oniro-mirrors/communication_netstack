@@ -130,4 +130,4 @@ HWTEST_F(WebSocketTest, WebSocketTest008, TestSize.Level1)
     EXPECT_EQ(getExclusions, "www.httpbin.org");
     EXPECT_EQ(ret, false);
 }
-} // namespace
+}   // namespace

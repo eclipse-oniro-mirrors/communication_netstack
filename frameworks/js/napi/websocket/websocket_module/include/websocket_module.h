@@ -40,9 +40,31 @@ public:
         static napi_value Off(napi_env env, napi_callback_info info);
     };
 
+#ifdef NETSTACK_WEBSOCKETSERVER
+    class WebSocketServer {
+    public:
+        static constexpr const char *FUNCTION_START = "start";
+        static constexpr const char *FUNCTION_LISTALLCONNECTIONS = "listAllConnections";
+        static constexpr const char *FUNCTION_CLOSE = "close";
+        static constexpr const char *FUNCTION_ON = "on";
+        static constexpr const char *FUNCTION_OFF = "off";
+        static constexpr const char *FUNCTION_SEND = "send";
+        static constexpr const char *FUNCTION_STOP = "stop";
+ 
+        static napi_value Start(napi_env env, napi_callback_info info);
+        static napi_value ListAllConnections(napi_env env, napi_callback_info info);
+        static napi_value Close(napi_env env, napi_callback_info info);
+        static napi_value On(napi_env env, napi_callback_info info);
+        static napi_value Off(napi_env env, napi_callback_info info);
+        static napi_value Send(napi_env env, napi_callback_info info);
+        static napi_value Stop(napi_env env, napi_callback_info info);
+    };
+#endif
+ 
     static constexpr const char *FUNCTION_CREATE_WEB_SOCKET = "createWebSocket";
     static constexpr const char *INTERFACE_WEB_SOCKET = "WebSocket";
-
+    static constexpr const char *FUNCTION_CREATE_WEB_SOCKET_SERVER = "createWebSocketServer";
+    static constexpr const char *INTERFACE_WEB_SOCKET_SERVER = "WebSocketServer";
     static napi_value InitWebSocketModule(napi_env env, napi_value exports);
 
 private:
@@ -53,6 +75,12 @@ private:
     static void FinalizeWebSocketInstance(napi_env env, void *data, void *hint);
 
     static void InitWebSocketProperties(napi_env env, napi_value exports);
+
+#ifdef NETSTACK_WEBSOCKETSERVER
+    static napi_value CreateWebSocketServer(napi_env env, napi_callback_info info);
+
+    static void DefineWebSocketServerClass(napi_env env, napi_value exports);
+#endif
 };
 } // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_WEBSOCKET_MODULE_H */

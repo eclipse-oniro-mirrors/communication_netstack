@@ -33,6 +33,9 @@ enum WebsocketErrorCode {
     WEBSOCKET_ERROR_CODE_URL_ERROR = WEBSOCKET_ERROR_CODE_BASE + 1,
     WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST = WEBSOCKET_ERROR_CODE_BASE + 2,
     WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST = WEBSOCKET_ERROR_CODE_BASE + 3,
+    WEBSOCKET_ERROR_CODE_INVALID_NIC = WEBSOCKET_ERROR_CODE_BASE + 4,
+    WEBSOCKET_ERROR_CODE_INVALID_PORT = WEBSOCKET_ERROR_CODE_BASE + 5,
+    WEBSOCKET_ERROR_CODE_CONNECTION_NOT_EXIST = WEBSOCKET_ERROR_CODE_BASE + 6,
     WEBSOCKET_NOT_ALLOWED_HOST = 2302998,
     WEBSOCKET_UNKNOWN_OTHER_ERROR = 2302999
 };
@@ -42,6 +45,9 @@ static const std::map<int32_t, std::string> WEBSOCKET_ERR_MAP = {
     {WEBSOCKET_ERROR_CODE_URL_ERROR, "Websocket url error"},
     {WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST, "Websocket file not exist"},
     {WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST, "Websocket connection exist"},
+    {WEBSOCKET_ERROR_CODE_INVALID_NIC, "Can't listen to the given NIC"},
+    {WEBSOCKET_ERROR_CODE_INVALID_PORT, "Can't listen to the given Port"},
+    {WEBSOCKET_ERROR_CODE_CONNECTION_NOT_EXIST, "websocket connection does not exist"},
     {WEBSOCKET_NOT_ALLOWED_HOST, "It is not allowed to access this domain"},
     {WEBSOCKET_UNKNOWN_OTHER_ERROR, "Websocket Unknown Other Error"}};
 
@@ -92,6 +98,17 @@ public:
 
     static const char *CODE;
     static const char *REASON;
+/* WebSocketConnection */
+    static const char *CLIENT_PORT;
+    static const char *CLIENT_IP;
+
+/* WebSocketServerConfig */
+    static const char *SERVER_PORT;
+    static const char *MAX_CLIENT_NUMBER;
+    static const char *MAX_CONNECTIONS_FOR_ONE_CLIENT;
+    static const char *SERVER_IP;
+    static const char *SERVER_CERT;
+    static const char *PROTOCOL;
 };
 
 class EventName final {
@@ -102,6 +119,12 @@ public:
     static const char *EVENT_ERROR;
     static const char *EVENT_DATA_END;
     static const char *EVENT_HEADER_RECEIVE;
+
+/* websocketServer */
+    static const char *EVENT_SERVER_ERROR;
+    static const char *EVENT_SERVER_CONNECT;
+    static const char *EVENT_SERVER_MESSAGE_RECEIVE;
+    static const char *EVENT_SERVER_CLOSE;
 };
 } // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_CONSTANT_H */

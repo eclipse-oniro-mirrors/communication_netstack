@@ -33,6 +33,33 @@ void WebSocketAsyncWork::ExecClose(napi_env env, void *data)
     BaseAsyncWork::ExecAsyncWork<CloseContext, WebSocketExec::ExecClose>(env, data);
 }
 
+#ifdef NETSTACK_WEBSOCKETSERVER
+void WebSocketAsyncWork::ExecServerStart(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<ServerStartContext, WebSocketExec::ExecServerStart>(env, data);
+}
+ 
+void WebSocketAsyncWork::ExecListAllConnections(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<ListAllConnectionsContext, WebSocketExec::ExecListAllConnections>(env, data);
+}
+ 
+void WebSocketAsyncWork::ExecServerClose(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<ServerCloseContext, WebSocketExec::ExecServerClose>(env, data);
+}
+ 
+void WebSocketAsyncWork::ExecServerSend(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<ServerSendContext, WebSocketExec::ExecServerSend>(env, data);
+}
+ 
+void WebSocketAsyncWork::ExecServerStop(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<ServerStopContext, WebSocketExec::ExecServerStop>(env, data);
+}
+#endif
+
 void WebSocketAsyncWork::ConnectCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<ConnectContext, WebSocketExec::ConnectCallback>(env, status, data);
@@ -47,4 +74,32 @@ void WebSocketAsyncWork::CloseCallback(napi_env env, napi_status status, void *d
 {
     BaseAsyncWork::AsyncWorkCallback<CloseContext, WebSocketExec::CloseCallback>(env, status, data);
 }
+
+#ifdef NETSTACK_WEBSOCKETSERVER
+void WebSocketAsyncWork::ServerStartCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<ServerStartContext, WebSocketExec::ServerStartCallback>(env, status, data);
+}
+ 
+void WebSocketAsyncWork::ListAllConnectionsCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<ListAllConnectionsContext,
+        WebSocketExec::ListAllConnectionsCallback>(env, status, data);
+}
+ 
+void WebSocketAsyncWork::ServerCloseCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<ServerCloseContext, WebSocketExec::ServerCloseCallback>(env, status, data);
+}
+ 
+void WebSocketAsyncWork::ServerSendCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<ServerSendContext, WebSocketExec::ServerSendCallback>(env, status, data);
+}
+ 
+void WebSocketAsyncWork::ServerStopCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<ServerStopContext, WebSocketExec::ServerStopCallback>(env, status, data);
+}
+#endif
 } // namespace OHOS::NetStack::Websocket

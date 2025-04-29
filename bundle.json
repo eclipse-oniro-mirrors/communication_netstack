@@ -25,7 +25,8 @@
         "features": [
             "netstack_feature_http3",
             "netstack_http_boringssl",
-            "netstack_feature_communication_http3"
+            "netstack_feature_communication_http3",
+            "netstack_websocket_server_enable"
         ],
         "adapted_system_type": [
             "standard"
