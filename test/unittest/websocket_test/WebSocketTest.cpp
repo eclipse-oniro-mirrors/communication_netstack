@@ -43,8 +43,8 @@ using namespace OHOS::NetStack::Websocket;
 HWTEST_F(WebSocketTest, WebSocketTest001, TestSize.Level1)
 {
     napi_env env = nullptr;
-    auto eventManager = std::make_shared<EventManager>();
-    ConnectContext context(env, eventManager);
+    OHOS::NetStack::EventManager eventManager;
+    ConnectContext context(env, &eventManager);
     bool ret = WebSocketExec::ExecConnect(&context);
     EXPECT_EQ(ret, false);
 }
@@ -52,8 +52,8 @@ HWTEST_F(WebSocketTest, WebSocketTest001, TestSize.Level1)
 HWTEST_F(WebSocketTest, WebSocketTest002, TestSize.Level1)
 {
     napi_env env = nullptr;
-    auto eventManager = std::make_shared<EventManager>();
-    SendContext context(env, eventManager);
+    OHOS::NetStack::EventManager eventManager;
+    SendContext context(env, &eventManager);
     bool ret = WebSocketExec::ExecSend(&context);
     EXPECT_EQ(ret, false);
 }
@@ -61,8 +61,8 @@ HWTEST_F(WebSocketTest, WebSocketTest002, TestSize.Level1)
 HWTEST_F(WebSocketTest, WebSocketTest003, TestSize.Level1)
 {
     napi_env env = nullptr;
-    auto eventManager = std::make_shared<EventManager>();
-    CloseContext context(env, eventManager);
+    OHOS::NetStack::EventManager eventManager;
+    CloseContext context(env, &eventManager);
     bool ret = WebSocketExec::ExecClose(&context);
     EXPECT_EQ(ret, false);
 }
@@ -76,8 +76,8 @@ HWTEST_F(WebSocketTest, WebSocketTest004, TestSize.Level1)
 HWTEST_F(WebSocketTest, WebSocketTest005, TestSize.Level1)
 {
     napi_env env = nullptr;
-    auto eventManager = std::make_shared<EventManager>();
-    ConnectContext context(env, eventManager);
+    OHOS::NetStack::EventManager eventManager;
+    ConnectContext context(env, &eventManager);
     context.caPath_ = "/etc/ssl/certs/test_ca.crt";
     bool ret = WebSocketExec::ExecConnect(&context);
     EXPECT_EQ(ret, false);
@@ -86,8 +86,8 @@ HWTEST_F(WebSocketTest, WebSocketTest005, TestSize.Level1)
 HWTEST_F(WebSocketTest, WebSocketTest006, TestSize.Level1)
 {
     napi_env env = nullptr;
-    auto eventManager = std::make_shared<EventManager>();
-    ConnectContext context(env, eventManager);
+    OHOS::NetStack::EventManager eventManager;
+    ConnectContext context(env, &eventManager);
     context.caPath_ = "";
     bool ret = WebSocketExec::ExecConnect(&context);
     EXPECT_EQ(ret, false);
@@ -96,8 +96,8 @@ HWTEST_F(WebSocketTest, WebSocketTest006, TestSize.Level1)
 HWTEST_F(WebSocketTest, WebSocketTest007, TestSize.Level1)
 {
     napi_env env = nullptr;
-    auto eventManager = std::make_shared<EventManager>();
-    ConnectContext context(env, eventManager);
+    OHOS::NetStack::EventManager eventManager;
+    ConnectContext context(env, &eventManager);
 
     context.url = "ws://123.123.123.123:9000";
     std::string myProtocol = "my-protocol";
@@ -111,8 +111,8 @@ HWTEST_F(WebSocketTest, WebSocketTest007, TestSize.Level1)
 HWTEST_F(WebSocketTest, WebSocketTest008, TestSize.Level1)
 {
     napi_env env = nullptr;
-    auto eventManager = std::make_shared<EventManager>();
-    ConnectContext context(env, eventManager);
+    OHOS::NetStack::EventManager eventManager;
+    ConnectContext context(env, &eventManager);
 
     context.url = "ws://123.123.123.123:9000";
     context.SetWebsocketProxyType(WebsocketProxyType::USE_SPECIFIED);

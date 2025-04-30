@@ -32,7 +32,7 @@ namespace TlsSocketServer {
 class TLSServerSendContext final : public BaseContext {
 public:
     TLSServerSendContext() = delete;
-    explicit TLSServerSendContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    explicit TLSServerSendContext(napi_env env, EventManager *manager);
 
 public:
     std::string m_sendData = "";
