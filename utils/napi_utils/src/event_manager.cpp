@@ -145,13 +145,13 @@ void *EventManager::GetQueueData()
 }
 
 #ifdef NETSTACK_WEBSOCKETSERVER
-void EventManager::SetServerQueueData(lws *wsi, void *data)
+void EventManager::SetServerQueueData(void *wsi, void *data)
 {
     std::unique_lock<std::shared_mutex> lock(dataServerQueueMutex_);
     serverDataQueue_[wsi].push(data);
 }
 
-void *EventManager::GetServerQueueData(lws *wsi)
+void *EventManager::GetServerQueueData(void *wsi)
 {
     if (wsi == nullptr) {
         NETSTACK_LOGE("wsi is nullptr");
@@ -234,32 +234,32 @@ void EventManager::AppendWebSocketBinaryData(void *data, size_t length)
 }
 
 #ifdef NETSTACK_WEBSOCKETSERVER
-const std::string &EventManager::GetWsServerBinaryData(lws *wsi)
+const std::string &EventManager::GetWsServerBinaryData(void *wsi)
 {
     return wsServerBinaryData_[wsi];
 }
 
-const std::string &EventManager::GetWsServerTextData(lws *wsi)
+const std::string &EventManager::GetWsServerTextData(void *wsi)
 {
     return wsServerTextData_[wsi];
 }
 
-void EventManager::AppendWsServerBinaryData(lws *wsi, void *data, size_t length)
+void EventManager::AppendWsServerBinaryData(void *wsi, void *data, size_t length)
 {
     wsServerBinaryData_[wsi].append(reinterpret_cast<char *>(data), length);
 }
 
-void EventManager::AppendWsServerTextData(lws *wsi, void *data, size_t length)
+void EventManager::AppendWsServerTextData(void *wsi, void *data, size_t length)
 {
     wsServerTextData_[wsi].append(reinterpret_cast<char *>(data), length);
 }
 
-void EventManager::ClearWsServerBinaryData(lws *wsi)
+void EventManager::ClearWsServerBinaryData(void *wsi)
 {
     wsServerBinaryData_[wsi].clear();
 }
 
-void EventManager::ClearWsServerTextData(lws *wsi)
+void EventManager::ClearWsServerTextData(void *wsi)
 {
     wsServerTextData_[wsi].clear();
 }

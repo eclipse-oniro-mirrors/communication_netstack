@@ -118,7 +118,7 @@ namespace OHOS::NetStack::Websocket
             return false;
         }
         if (memcpy_s(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(data) + LWS_SEND_BUFFER_PRE_PADDING),
-                     str.length(), str.c_str(), str.length()) < 0)
+            str.length(), str.c_str(), str.length()) < 0)
         {
             NETSTACK_LOGE("copy failed");
             free(data);

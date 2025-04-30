@@ -24,6 +24,13 @@
 #include "websocket_async_work.h"
 #include "websocket_exec.h"
 #include "websocket_module.h"
+#ifdef NETSTACK_WEBSOCKETSERVER
+#include "server_start_context.h"
+#include "server_close_context.h"
+#include "server_send_context.h"
+#include "server_stop_context.h"
+#include "list_all_connections_context.h"
+#endif // NETSTACK_WEBSOCKETSERVER
 
 class WebSocketTest : public testing::Test {
 public:
@@ -130,4 +137,241 @@ HWTEST_F(WebSocketTest, WebSocketTest008, TestSize.Level1)
     EXPECT_EQ(getExclusions, "www.httpbin.org");
     EXPECT_EQ(ret, false);
 }
+
+#ifdef NETSTACK_WEBSOCKETSERVER
+HWTEST_F(WebSocketTest, WebSocketTest009, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ServerStartContext context(env, eventManager);
+    bool ret = WebSocketExec::ExecServerStart(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest010, TestSize.Level1)
+{
+    bool ret = WebSocketExec::ExecServerStart(nullptr);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest011, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ServerStartContext context(env, eventManager);
+    context.SetPermissionDenied(true);
+    bool ret = WebSocketExec::ExecServerStart(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest012, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ServerSendContext context(env, eventManager);
+    bool ret = WebSocketExec::ExecServerSend(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest013, TestSize.Level1)
+{
+    bool ret = WebSocketExec::ExecServerSend(nullptr);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest014, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ServerSendContext context(env, eventManager);
+    context.SetPermissionDenied(true);
+    bool ret = WebSocketExec::ExecServerSend(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest015, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ServerCloseContext context(env, eventManager);
+    bool ret = WebSocketExec::ExecServerClose(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest016, TestSize.Level1)
+{
+    bool ret = WebSocketExec::ExecServerClose(nullptr);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest017, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ServerCloseContext context(env, eventManager);
+    context.SetPermissionDenied(true);
+    bool ret = WebSocketExec::ExecServerClose(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest018, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ServerStopContext context(env, eventManager);
+    bool ret = WebSocketExec::ExecServerStop(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest019, TestSize.Level1)
+{
+    bool ret = WebSocketExec::ExecServerStop(nullptr);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest020, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ServerStopContext context(env, eventManager);
+    context.SetPermissionDenied(true);
+    bool ret = WebSocketExec::ExecServerStop(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest021, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ListAllConnectionsContext context(env, eventManager);
+    bool ret = WebSocketExec::ExecListAllConnections(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest022, TestSize.Level1)
+{
+    bool ret = WebSocketExec::ExecListAllConnections(nullptr);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest023, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ListAllConnectionsContext context(env, eventManager);
+    context.SetPermissionDenied(true);
+    bool ret = WebSocketExec::ExecListAllConnections(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest024, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ConnectContext context(env, eventManager);
+    context.SetPermissionDenied(true);
+    bool ret = WebSocketExec::ExecConnect(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest025, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    SendContext context(env, eventManager);
+    context.SetPermissionDenied(true);
+    bool ret = WebSocketExec::ExecSend(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest026, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    CloseContext context(env, eventManager);
+    context.SetPermissionDenied(true);
+    bool ret = WebSocketExec::ExecClose(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest027, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ServerStartContext context(env, eventManager);
+    context.SetPermissionDenied(false);
+    bool ret = WebSocketExec::ExecServerStart(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest028, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ServerSendContext context(env, eventManager);
+    context.SetPermissionDenied(false);
+    bool ret = WebSocketExec::ExecServerSend(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest029, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ServerCloseContext context(env, eventManager);
+    context.SetPermissionDenied(false);
+    bool ret = WebSocketExec::ExecServerClose(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest030, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ServerStopContext context(env, eventManager);
+    context.SetPermissionDenied(false);
+    bool ret = WebSocketExec::ExecServerStop(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest031, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ListAllConnectionsContext context(env, eventManager);
+    context.SetPermissionDenied(false);
+    bool ret = WebSocketExec::ExecListAllConnections(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest032, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ConnectContext context(env, eventManager);
+    context.SetPermissionDenied(false);
+    bool ret = WebSocketExec::ExecConnect(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest033, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    SendContext context(env, eventManager);
+    context.SetPermissionDenied(false);
+    bool ret = WebSocketExec::ExecSend(&context);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(WebSocketTest, WebSocketTest034, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    CloseContext context(env, eventManager);
+    context.SetPermissionDenied(false);
+    bool ret = WebSocketExec::ExecClose(&context);
+    EXPECT_EQ(ret, false);
+}
+#endif
 }   // namespace

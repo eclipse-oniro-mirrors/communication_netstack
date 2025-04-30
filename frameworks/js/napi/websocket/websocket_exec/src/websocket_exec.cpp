@@ -109,9 +109,9 @@ static std::shared_mutex wsMutex_;
 
 static std::shared_mutex connListMutex_;
 
-static std::shared_mutex blackListMutex_;
+static std::shared_mutex banListMutex_;
 
-static std::unordered_map<std::string, uint64_t> blackList;
+static std::unordered_map<std::string, uint64_t> banList;
 
 static std::unordered_map<std::string, ClientInfo> clientList;
 
@@ -1028,13 +1028,13 @@ int WebSocketExec::LwsCallbackFilterProtocolConnection(lws *wsi, lws_callback_re
 
 bool WebSocketExec::IsAllowConnection(const std::string &clientId)
 {
-    if (IsIpInBlacklist(clientId)) {
-        NETSTACK_LOGE("clientid is in blacklist");
+    if (IsIpInBanList(clientId)) {
+        NETSTACK_LOGE("clientid is in banList");
         return false;
     }
     if (IsHighFreqConnection(clientId)) {
         NETSTACK_LOGE("clientid reach high frequency connection");
-        AddBlackList(clientId);
+        AddBanList(clientId);
         return false;
     }
     UpdataClientList(clientId);
@@ -1046,7 +1046,7 @@ void WebSocketExec::UpdataClientList(const std::string &id)
     std::shared_lock<std::shared_mutex> lock(connListMutex_);
     auto it = clientList.find(id);
     if (it == clientList.end()) {
-        NETSTACK_LOGI("add clientid to blacklist");
+        NETSTACK_LOGI("add clientid to banList");
         clientList[id] = {1, GetCurrentSecond()};
     } else {
         auto now = GetCurrentSecond() - it->second.lastConnectionTime;
@@ -1059,22 +1059,22 @@ void WebSocketExec::UpdataClientList(const std::string &id)
     }
 }
 
-void WebSocketExec::AddBlackList(const std::string &id)
+void WebSocketExec::AddBanList(const std::string &id)
 {
-    std::shared_lock<std::shared_mutex> lock(blackListMutex_);
-    blackList[id] = GetCurrentSecond() + ONE_MINUTE_IN_SEC;
+    std::shared_lock<std::shared_mutex> lock(banListMutex_);
+    banList[id] = GetCurrentSecond() + ONE_MINUTE_IN_SEC;
 }
 
-bool WebSocketExec::IsIpInBlacklist(const std::string &id)
+bool WebSocketExec::IsIpInBanlist(const std::string &id)
 {
-    std::shared_lock<std::shared_mutex> lock(blackListMutex_);
-    auto it = blackList.find(id);
-    if (it != blackList.end()) {
+    std::shared_lock<std::shared_mutex> lock(banListMutex_);
+    auto it = banList.find(id);
+    if (it != banList.end()) {
         auto now = GetCurrentSecond();
         if (now < it->second) {
             return true;
         } else {
-            blackList.erase(it);
+            banList.erase(it);
         }
     }
     return false;

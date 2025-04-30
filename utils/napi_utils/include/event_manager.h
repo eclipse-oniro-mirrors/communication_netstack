@@ -31,7 +31,6 @@
 #include "event_listener.h"
 #include "napi/native_api.h"
 #include "uv.h"
-#include "libwebsockets.h"
 
 namespace OHOS::NetStack {
 static constexpr const uint32_t EVENT_MANAGER_MAGIC_NUMBER = 0x86161616;
@@ -81,9 +80,9 @@ public:
     void *GetQueueData();
 
 #ifdef NETSTACK_WEBSOCKETSERVER
-    void SetServerQueueData(lws *wsi, void *data);
+    void SetServerQueueData(void *wsi, void *data);
 
-    void *GetServerQueueData(lws *wsi);
+    void *GetServerQueueData(void *wsi);
 #endif
 
     void CreateEventReference(napi_env env, napi_value value);
@@ -125,17 +124,17 @@ public:
     void SetProxyData(std::shared_ptr<Socks5::Socks5Instance> data);
 
 #ifdef NETSTACK_WEBSOCKETSERVER
-    const std::string &GetWsServerBinaryData(lws *wsi);
+    const std::string &GetWsServerBinaryData(void *wsi);
 
-    const std::string &GetWsServerTextData(lws *wsi);
+    const std::string &GetWsServerTextData(void *wsi);
 
-    void AppendWsServerBinaryData(lws *wsi, void *data, size_t length);
+    void AppendWsServerBinaryData(void *wsi, void *data, size_t length);
 
-    void AppendWsServerTextData(lws *wsi, void *data, size_t length);
+    void AppendWsServerTextData(void *wsi, void *data, size_t length);
 
-    void ClearWsServerBinaryData(lws *wsi);
+    void ClearWsServerBinaryData(void *wsi);
 
-    void ClearWsServerTextData(lws *wsi);
+    void ClearWsServerTextData(void *wsi);
 
     void SetMaxConnClientCnt(const uint32_t &cnt);
 
@@ -166,9 +165,9 @@ private:
     std::shared_ptr<Socks5::Socks5Instance> proxyData_;
 #ifdef NETSTACK_WEBSOCKETSERVER
     std::shared_mutex dataServerQueueMutex_;
-    std::unordered_map<lws*, std::queue<void *>> serverDataQueue_;
-    std::unordered_map<lws*, std::string> wsServerBinaryData_;
-    std::unordered_map<lws*, std::string> wsServerTextData_;
+    std::unordered_map<void *, std::queue<void *>> serverDataQueue_;
+    std::unordered_map<void *, std::string> wsServerBinaryData_;
+    std::unordered_map<void *, std::string> wsServerTextData_;
     uint32_t maxConnClientCnt_;
     uint32_t maxConnForOneClient_;
 #endif
