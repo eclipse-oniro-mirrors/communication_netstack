@@ -30,6 +30,7 @@
 #include "server_send_context.h"
 #include "server_stop_context.h"
 #include "list_all_connections_context.h"
+#include "websocket_server_exec.h"
 #endif // NETSTACK_WEBSOCKETSERVER
 
 class WebSocketTest : public testing::Test {

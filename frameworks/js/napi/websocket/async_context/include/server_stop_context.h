@@ -20,28 +20,26 @@
 #include "base_context.h"
 #include "nocopyable.h"
 
-namespace OHOS::NetStack::Websocket
-{
-    class ServerStopContext final : public BaseContext
-    {
-    public:
-        DISALLOW_COPY_AND_MOVE(ServerStopContext);
+namespace OHOS::NetStack::Websocket {
+class ServerStopContext final : public BaseContext{
+public:
+    DISALLOW_COPY_AND_MOVE(ServerStopContext);
 
-        ServerStopContext() = delete;
+    ServerStopContext() = delete;
 
-        ServerStopContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    ServerStopContext(napi_env env, const std::shared_ptr<EventManager> &manager);
 
-        ~ServerStopContext() override;
+    ~ServerStopContext() override;
 
-        void ParseParams(napi_value *params, size_t paramsCount) override;
+    void ParseParams(napi_value *params, size_t paramsCount) override;
 
-        [[nodiscard]] int32_t GetErrorCode() const override;
+    [[nodiscard]] int32_t GetErrorCode() const override;
 
-        [[nodiscard]] std::string GetErrorMessage() const override;
+    [[nodiscard]] std::string GetErrorMessage() const override;
 
-    private:
-        bool CheckParamsType(napi_value *params, size_t paramsCount);
-    };
+private:
+    bool CheckParamsType(napi_value *params, size_t paramsCount);
+};
 } // namespace OHOS::NetStack::Websocket
 
 #endif /* COMMUNICATIONNETSTACK_SERVER_STOP_CONTEXT_H */

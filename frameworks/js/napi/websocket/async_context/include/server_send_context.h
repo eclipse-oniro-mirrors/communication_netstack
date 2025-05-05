@@ -22,48 +22,46 @@
 #include "websocket_utils.h"
 #include "nocopyable.h"
 
-namespace OHOS::NetStack::Websocket
-{
-    class ServerSendContext final : public BaseContext
-    {
-    public:
-        DISALLOW_COPY_AND_MOVE(ServerSendContext);
+namespace OHOS::NetStack::Websocket {
+class ServerSendContext final : public BaseContext {
+public:
+    DISALLOW_COPY_AND_MOVE(ServerSendContext);
 
-        ServerSendContext() = delete;
+    ServerSendContext() = delete;
 
-        ServerSendContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    ServerSendContext(napi_env env, const std::shared_ptr<EventManager> &manager);
 
-        ~ServerSendContext() override;
+    ~ServerSendContext() override;
 
-        void ParseParams(napi_value *params, size_t paramsCount) override;
+    void ParseParams(napi_value *params, size_t paramsCount) override;
 
-        bool HandleParseString(napi_value *params);
+    bool HandleParseString(napi_value *params);
 
-        bool HandleParseArrayBuffer(napi_value *params);
+    bool HandleParseArrayBuffer(napi_value *params);
 
-        bool HandleParseConnection(napi_env env, napi_value params);
+    bool HandleParseConnection(napi_env env, napi_value params);
 
-        void SetClientWebSocketConn(uint32_t &port, std::string &ip);
+    void SetClientWebSocketConn(uint32_t &port, std::string &ip);
 
-        [[nodiscard]] int32_t GetErrorCode() const override;
+    [[nodiscard]] int32_t GetErrorCode() const override;
 
-        [[nodiscard]] std::string GetErrorMessage() const override;
+    [[nodiscard]] std::string GetErrorMessage() const override;
 
-        [[nodiscard]] OHOS::NetStack::Websocket::WebSocketConnection GetConnection() const;
+    [[nodiscard]] OHOS::NetStack::Websocket::WebSocketConnection GetConnection() const;
 
-        void *data;
+    void *data;
 
-        size_t length;
+    size_t length;
 
-        lws_write_protocol protocol;
+    lws_write_protocol protocol;
 
-        OHOS::NetStack::Websocket::WebSocketConnection connection;
+    OHOS::NetStack::Websocket::WebSocketConnection connection;
 
-    private:
-        bool CheckParamsType(napi_value *params, size_t paramsCount);
+private:
+    bool CheckParamsType(napi_value *params, size_t paramsCount);
 
-        bool IsValidWebsocketConnection(napi_env env, napi_value params);
-    };
+    bool IsValidWebsocketConnection(napi_env env, napi_value params);
+};
 } // namespace OHOS::NetStack::Websocket
 
 #endif

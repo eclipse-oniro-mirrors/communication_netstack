@@ -21,44 +21,42 @@
 #include "websocket_utils.h"
 #include "nocopyable.h"
 
-namespace OHOS::NetStack::Websocket
-{
-    class ServerCloseContext final : public BaseContext
-    {
-    public:
-        DISALLOW_COPY_AND_MOVE(ServerCloseContext);
+namespace OHOS::NetStack::Websocket {
+class ServerCloseContext final : public BaseContext {
+public:
+    DISALLOW_COPY_AND_MOVE(ServerCloseContext);
 
-        ServerCloseContext() = delete;
+    ServerCloseContext() = delete;
 
-        ServerCloseContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    ServerCloseContext(napi_env env, const std::shared_ptr<EventManager> &manager);
 
-        ~ServerCloseContext() override;
+    ~ServerCloseContext() override;
 
-        void ParseParams(napi_value *params, size_t paramsCount) override;
+    void ParseParams(napi_value *params, size_t paramsCount) override;
 
-        bool HandleParseConnection(napi_env env, napi_value params);
+    bool HandleParseConnection(napi_env env, napi_value params);
 
-        bool HandleParseCloseOption(napi_env env, napi_value params);
+    bool HandleParseCloseOption(napi_env env, napi_value params);
 
-        [[nodiscard]] OHOS::NetStack::Websocket::WebSocketConnection GetConnection() const;
+    [[nodiscard]] OHOS::NetStack::Websocket::WebSocketConnection GetConnection() const;
 
-        [[nodiscard]] int32_t GetErrorCode() const override;
+    [[nodiscard]] int32_t GetErrorCode() const override;
 
-        [[nodiscard]] std::string GetErrorMessage() const override;
+    [[nodiscard]] std::string GetErrorMessage() const override;
 
-        uint32_t code;
+    uint32_t code;
 
-        std::string reason;
+    std::string reason;
 
-        WebSocketConnection connection;
+    WebSocketConnection connection;
 
-    private:
-        bool CheckParamsType(napi_value *params, size_t paramsCount);
+private:
+    bool CheckParamsType(napi_value *params, size_t paramsCount);
 
-        bool IsValidWebsocketConnection(napi_env env, napi_value params);
+    bool IsValidWebsocketConnection(napi_env env, napi_value params);
 
-        bool IsValidCloseOptions(napi_env env, napi_value params);
-    };
+    bool IsValidCloseOptions(napi_env env, napi_value params);
+};
 } // namespace OHOS::NetStack::Websocket
 
 #endif /* COMMUNICATIONNETSTACK_SERVER_CLOSE_CONTEXT_H */

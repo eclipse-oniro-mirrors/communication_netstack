@@ -18,247 +18,218 @@
 #include "netstack_log.h"
 #include "napi_utils.h"
 
-namespace OHOS::NetStack::Websocket
+namespace OHOS::NetStack::Websocket {
+ServerStartContext::ServerStartContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager)
+    : BaseContext(env, sharedManager) {}
+
+ServerStartContext::~ServerStartContext() = default;
+
+void ServerStartContext::ParseParams(napi_value *params, size_t paramsCount)
 {
-    ServerStartContext::ServerStartContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager)
-        : BaseContext(env, sharedManager) {}
-
-    ServerStartContext::~ServerStartContext() = default;
-
-    void ServerStartContext::ParseParams(napi_value *params, size_t paramsCount)
-    {
-        if (!CheckParamsType(params, paramsCount))
-        {
-            ParseCallback(params, paramsCount);
-            return;
-        }
-
-        if (paramsCount != FUNCTION_PARAM_ONE)
-        {
-            SetParseOK(SetCallback(params[0]) == napi_ok);
-            return;
-        }
-
-        napi_env env = GetEnv();
-        if (!ParseRequiredParams(env, params[0]))
-        {
-            return;
-        }
-        ParseOptionalParams(env, params[0]);
-        SetParseOK(true);
+    if (!CheckParamsType(params, paramsCount)) {
+        ParseCallback(params, paramsCount);
+        return;
     }
 
-    bool ServerStartContext::CheckParamsType(napi_value *params, size_t paramsCount)
-    {
-        if (paramsCount == FUNCTION_PARAM_ZERO)
-        {
-            return true;
-        }
-
-        if (paramsCount == FUNCTION_PARAM_ONE)
-        {
-            return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_object;
-        }
-
-        return false;
+    if (paramsCount != FUNCTION_PARAM_ONE) {
+        SetParseOK(SetCallback(params[0]) == napi_ok);
+        return;
     }
 
-    void ServerStartContext::ParseCallback(napi_value const *params, size_t paramsCount)
-    {
-        if (paramsCount == FUNCTION_PARAM_ZERO)
-        {
-            return;
-        }
-        if (paramsCount == FUNCTION_PARAM_ONE)
-        {
-            if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_ONE - 1]) == napi_object)
-            {
-                SetCallback(params[FUNCTION_PARAM_ONE - 1]);
-            }
-            return;
-        }
+    napi_env env = GetEnv();
+    if (!ParseRequiredParams(env, params[0])) {
+        return;
     }
+    ParseOptionalParams(env, params[0]);
+    SetParseOK(true);
+}
 
-    bool ServerStartContext::ParseRequiredParams(napi_env env, napi_value params)
-    {
-        if (NapiUtils::GetValueType(env, params) != napi_object)
-        {
-            NETSTACK_LOGE("js type error");
-            return false;
-        }
-        uint32_t serverPort = NapiUtils::GetUint32Property(env, params, ContextKey::SERVER_PORT);
-        if (serverPort == 0)
-        {
-            NETSTACK_LOGE("%{public}s not found", ContextKey::SERVER_PORT);
-        }
-        SetServerPort(serverPort);
-        uint32_t maxClientCnt = NapiUtils::GetUint32Property(env, params, ContextKey::MAX_CLIENT_NUMBER);
-        if (maxClientCnt == 0)
-        {
-            NETSTACK_LOGE("max concurrent clients number is %{public}d", maxClientCnt);
-        }
-        SetMaxConcurrentClientsNumber(maxClientCnt);
-        uint32_t maxConn = NapiUtils::GetUint32Property(env, params, ContextKey::MAX_CONNECTIONS_FOR_ONE_CLIENT);
-        if (maxConn == 0)
-        {
-            NETSTACK_LOGE("max connections for one clients:%{public}d", maxConn);
-        }
-        SetMaxConnectionsForOneClient(maxConn);
+bool ServerStartContext::CheckParamsType(napi_value *params, size_t paramsCount)
+{
+    if (paramsCount == FUNCTION_PARAM_ZERO) {
         return true;
     }
 
-    void ServerStartContext::ParseOptionalParams(napi_env env, napi_value params)
-    {
-        if (NapiUtils::GetValueType(env, params) != napi_object)
-        {
-            NETSTACK_LOGE("js type error");
-            return;
+    if (paramsCount == FUNCTION_PARAM_ONE) {
+        return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_object;
+    }
+
+    return false;
+}
+
+void ServerStartContext::ParseCallback(napi_value const *params, size_t paramsCount)
+{
+    if (paramsCount == FUNCTION_PARAM_ZERO) {
+        return;
+    }
+    if (paramsCount == FUNCTION_PARAM_ONE) {
+        if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_ONE - 1]) == napi_object) {
+            SetCallback(params[FUNCTION_PARAM_ONE - 1]);
         }
-        NETSTACK_LOGE("SERVER_IP:%{public}s", ContextKey::SERVER_IP);
-        std::string ip = NapiUtils::GetStringPropertyUtf8(env, params, ContextKey::SERVER_IP);
-        if (ip != "")
-        {
-            SetServerIP(ip);
-        }
-        else
-        {
-            NETSTACK_LOGE("ip is null");
-            std::string ipTmp = "0.0.0.0";
-            SetServerIP(ipTmp);
-        }
-        std::string protocol = NapiUtils::GetStringPropertyUtf8(env, params, ContextKey::PROTOCOL);
-        if (protocol != "")
-        {
-            SetServerProtocol(protocol);
-        }
-        else
-        {
-            NETSTACK_LOGE("protocol is null");
-            std::string ipTmp = "lws_server";
-            SetServerProtocol(ipTmp);
-        }
-        napi_value jsServerCert = NapiUtils::GetNamedProperty(env, params, ContextKey::SERVER_CERT);
-        if (NapiUtils::GetValueType(env, jsServerCert) != napi_object)
-        {
-            NETSTACK_LOGE("jsServerCert type error");
-            return;
-        }
-        ParseServerCert(env, jsServerCert);
+        return;
     }
+}
 
-    void ServerStartContext::ParseServerCert(napi_env env, napi_value params)
-    {
-        if (NapiUtils::GetValueType(env, params) != napi_object)
-        {
-            NETSTACK_LOGE("js type error");
-            return;
-        }
-        std::string certPath = NapiUtils::GetStringPropertyUtf8(env, params, ContextKey::CERT_PATH);
-        std::string keyPath = NapiUtils::GetStringPropertyUtf8(env, params, ContextKey::KEY_PATH);
-        SetServerCert(certPath, keyPath);
+bool ServerStartContext::ParseRequiredParams(napi_env env, napi_value params)
+{
+    if (NapiUtils::GetValueType(env, params) != napi_object) {
+        NETSTACK_LOGE("js type error");
+        return false;
     }
+    uint32_t serverPort = NapiUtils::GetUint32Property(env, params, ContextKey::SERVER_PORT);
+    if (serverPort == 0) {
+        NETSTACK_LOGE("%{public}s not found", ContextKey::SERVER_PORT);
+    }
+    SetServerPort(serverPort);
+    uint32_t maxClientCnt = NapiUtils::GetUint32Property(env, params, ContextKey::MAX_CLIENT_NUMBER);
+    if (maxClientCnt == 0) {
+        NETSTACK_LOGE("max concurrent clients number is %{public}d", maxClientCnt);
+    }
+    SetMaxConcurrentClientsNumber(maxClientCnt);
+    uint32_t maxConn = NapiUtils::GetUint32Property(env, params, ContextKey::MAX_CONNECTIONS_FOR_ONE_CLIENT);
+    if (maxConn == 0) {
+        NETSTACK_LOGE("max connections for one clients:%{public}d", maxConn);
+    }
+    SetMaxConnectionsForOneClient(maxConn);
+    return true;
+}
 
-    void ServerStartContext::SetServerIP(std::string &ip)
-    {
-        serverIp_ = ip;
+void ServerStartContext::ParseOptionalParams(napi_env env, napi_value params)
+{
+    if (NapiUtils::GetValueType(env, params) != napi_object) {
+        NETSTACK_LOGE("js type error");
+        return;
     }
+    NETSTACK_LOGE("SERVER_IP:%{public}s", ContextKey::SERVER_IP);
+    std::string ip = NapiUtils::GetStringPropertyUtf8(env, params, ContextKey::SERVER_IP);
+    if (ip != "") {
+        SetServerIP(ip);
+    } else {
+        NETSTACK_LOGE("ip is null");
+        std::string ipTmp = "0.0.0.0";
+        SetServerIP(ipTmp);
+    }
+    std::string protocol = NapiUtils::GetStringPropertyUtf8(env, params, ContextKey::PROTOCOL);
+    if (protocol != "") {
+        SetServerProtocol(protocol);
+    } else {
+        NETSTACK_LOGE("protocol is null");
+        std::string ipTmp = "lws_server";
+        SetServerProtocol(ipTmp);
+    }
+    napi_value jsServerCert = NapiUtils::GetNamedProperty(env, params, ContextKey::SERVER_CERT);
+    if (NapiUtils::GetValueType(env, jsServerCert) != napi_object) {
+        NETSTACK_LOGE("jsServerCert type error");
+        return;
+    }
+    ParseServerCert(env, jsServerCert);
+}
 
-    void ServerStartContext::SetServerPort(uint32_t &serverPort)
-    {
-        serverPort_ = serverPort;
+void ServerStartContext::ParseServerCert(napi_env env, napi_value params)
+{
+    if (NapiUtils::GetValueType(env, params) != napi_object) {
+        NETSTACK_LOGE("js type error");
+        return;
     }
+    std::string certPath = NapiUtils::GetStringPropertyUtf8(env, params, ContextKey::CERT_PATH);
+    std::string keyPath = NapiUtils::GetStringPropertyUtf8(env, params, ContextKey::KEY_PATH);
+    SetServerCert(certPath, keyPath);
+}
 
-    void ServerStartContext::SetServerCert(std::string &certPath, std::string &keyPath)
-    {
-        certPath_ = certPath;
-        keyPath_ = keyPath;
-    }
+void ServerStartContext::SetServerIP(std::string &ip)
+{
+    serverIp_ = ip;
+}
 
-    void ServerStartContext::SetMaxConcurrentClientsNumber(uint32_t &clientsNumber)
-    {
-        maxClientsNumber_ = clientsNumber;
-    }
+void ServerStartContext::SetServerPort(uint32_t &serverPort)
+{
+    serverPort_ = serverPort;
+}
 
-    void ServerStartContext::SetServerProtocol(std::string &protocol)
-    {
-        websocketServerProtocol_ = protocol;
-    }
+void ServerStartContext::SetServerCert(std::string &certPath, std::string &keyPath)
+{
+    certPath_ = certPath;
+    keyPath_ = keyPath;
+}
 
-    void ServerStartContext::SetMaxConnectionsForOneClient(uint32_t &count)
-    {
-        maxCountForOneClient_ = count;
-    }
+void ServerStartContext::SetMaxConcurrentClientsNumber(uint32_t &clientsNumber)
+{
+    maxClientsNumber_ = clientsNumber;
+}
 
-    std::string ServerStartContext::GetServerIP() const
-    {
-        return serverIp_;
-    }
+void ServerStartContext::SetServerProtocol(std::string &protocol)
+{
+    websocketServerProtocol_ = protocol;
+}
 
-    uint32_t ServerStartContext::GetServerPort() const
-    {
-        return serverPort_;
-    }
+void ServerStartContext::SetMaxConnectionsForOneClient(uint32_t &count)
+{
+    maxCountForOneClient_ = count;
+}
 
-    void ServerStartContext::GetServerCert(std::string &certPath, std::string &keyPath) const
-    {
-        certPath = certPath_;
-        keyPath = keyPath_;
-    }
+std::string ServerStartContext::GetServerIP() const
+{
+    return serverIp_;
+}
 
-    uint32_t ServerStartContext::GetMaxConcurrentClientsNumber() const
-    {
-        return maxClientsNumber_;
-    }
+uint32_t ServerStartContext::GetServerPort() const
+{
+    return serverPort_;
+}
 
-    std::string ServerStartContext::GetServerProtocol() const
-    {
-        return websocketServerProtocol_;
-    }
+void ServerStartContext::GetServerCert(std::string &certPath, std::string &keyPath) const
+{
+    certPath = certPath_;
+    keyPath = keyPath_;
+}
 
-    uint32_t ServerStartContext::GetMaxConnectionsForOneClient() const
-    {
-        return maxCountForOneClient_;
-    }
+uint32_t ServerStartContext::GetMaxConcurrentClientsNumber() const
+{
+    return maxClientsNumber_;
+}
 
-    int32_t ServerStartContext::GetErrorCode() const
-    {
-        if (BaseContext::IsPermissionDenied())
-        {
-            return PERMISSION_DENIED_CODE;
-        }
-        auto err = BaseContext::GetErrorCode();
-        if (err == PARSE_ERROR_CODE)
-        {
-            return PARSE_ERROR_CODE;
-        }
-        if (WEBSOCKET_ERR_MAP.find(err) != WEBSOCKET_ERR_MAP.end())
-        {
-            return err;
-        }
-        return WEBSOCKET_UNKNOWN_OTHER_ERROR;
-    }
+std::string ServerStartContext::GetServerProtocol() const
+{
+    return websocketServerProtocol_;
+}
 
-    std::string ServerStartContext::GetErrorMessage() const
-    {
-        if (BaseContext::IsPermissionDenied())
-        {
-            return PERMISSION_DENIED_MSG;
-        }
-        auto err = BaseContext::GetErrorCode();
-        if (err == PARSE_ERROR_CODE)
-        {
-            return PARSE_ERROR_MSG;
-        }
-        auto it = WEBSOCKET_ERR_MAP.find(err);
-        if (it != WEBSOCKET_ERR_MAP.end())
-        {
-            return it->second;
-        }
-        it = WEBSOCKET_ERR_MAP.find(WEBSOCKET_UNKNOWN_OTHER_ERROR);
-        if (it != WEBSOCKET_ERR_MAP.end())
-        {
-            return it->second;
-        }
-        return {};
+uint32_t ServerStartContext::GetMaxConnectionsForOneClient() const
+{
+    return maxCountForOneClient_;
+}
+
+int32_t ServerStartContext::GetErrorCode() const
+{
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_CODE;
     }
+    auto err = BaseContext::GetErrorCode();
+    if (err == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_CODE;
+    }
+    if (WEBSOCKET_ERR_MAP.find(err) != WEBSOCKET_ERR_MAP.end()) {
+        return err;
+    }
+    return WEBSOCKET_UNKNOWN_OTHER_ERROR;
+}
+
+std::string ServerStartContext::GetErrorMessage() const
+{
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_MSG;
+    }
+    auto err = BaseContext::GetErrorCode();
+    if (err == PARSE_ERROR_CODE) {
+        return PARSE_ERROR_MSG;
+    }
+    auto it = WEBSOCKET_ERR_MAP.find(err);
+    if (it != WEBSOCKET_ERR_MAP.end()) {
+        return it->second;
+    }
+    it = WEBSOCKET_ERR_MAP.find(WEBSOCKET_UNKNOWN_OTHER_ERROR);
+    if (it != WEBSOCKET_ERR_MAP.end()) {
+        return it->second;
+    }
+    return {};
+}
 } // namespace OHOS::NetStack::Websocket

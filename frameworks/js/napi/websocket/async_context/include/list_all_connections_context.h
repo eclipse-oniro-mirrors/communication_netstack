@@ -21,34 +21,32 @@
 #include "websocket_utils.h"
 #include "nocopyable.h"
 
-namespace OHOS::NetStack::Websocket
-{
-    class ListAllConnectionsContext final : public BaseContext
-    {
-    public:
-        DISALLOW_COPY_AND_MOVE(ListAllConnectionsContext);
+namespace OHOS::NetStack::Websocket {
+class ListAllConnectionsContext final : public BaseContext {
+public:
+    DISALLOW_COPY_AND_MOVE(ListAllConnectionsContext);
 
-        ListAllConnectionsContext() = delete;
+    ListAllConnectionsContext() = delete;
 
-        ListAllConnectionsContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager);
+    ListAllConnectionsContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager);
 
-        ~ListAllConnectionsContext() override;
+    ~ListAllConnectionsContext() override;
 
-        void ParseParams(napi_value *params, size_t paramsCount) override;
+    void ParseParams(napi_value *params, size_t paramsCount) override;
 
-        void SetAllConnections(std::vector<OHOS::NetStack::Websocket::WebSocketConnection> &connections);
+    void SetAllConnections(std::vector<OHOS::NetStack::Websocket::WebSocketConnection> &connections);
 
-        [[nodiscard]] std::vector<OHOS::NetStack::Websocket::WebSocketConnection> GetAllConnections() const;
+    [[nodiscard]] std::vector<OHOS::NetStack::Websocket::WebSocketConnection> GetAllConnections() const;
 
-        [[nodiscard]] int32_t GetErrorCode() const override;
+    [[nodiscard]] int32_t GetErrorCode() const override;
 
-        [[nodiscard]] std::string GetErrorMessage() const override;
+    [[nodiscard]] std::string GetErrorMessage() const override;
 
-    private:
-        bool CheckParamsType(napi_value *params, size_t paramsCount);
+private:
+    bool CheckParamsType(napi_value *params, size_t paramsCount);
 
-        std::vector<OHOS::NetStack::Websocket::WebSocketConnection> webSocketConnections_;
-    };
+    std::vector<OHOS::NetStack::Websocket::WebSocketConnection> webSocketConnections_;
+};
 } // namespace OHOS::NetStack::Websocket
 
 #endif /* COMMUNICATIONNETSTACK_LISTALLCONNECTIONS_CONTEXT_H */

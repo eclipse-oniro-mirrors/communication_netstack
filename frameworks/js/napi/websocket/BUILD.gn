@@ -83,6 +83,7 @@ ohos_shared_library("websocket") {
       "async_context/src/server_send_context.cpp",
       "async_context/src/server_start_context.cpp",
       "async_context/src/server_stop_context.cpp",
+      "websocket_exec/src/websocket_server_exec.cpp",
     ]
   }
 

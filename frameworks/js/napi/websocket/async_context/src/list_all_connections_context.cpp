@@ -18,67 +18,60 @@
 #include "netstack_log.h"
 #include "napi_utils.h"
 
-namespace OHOS::NetStack::Websocket
+namespace OHOS::NetStack::Websocket {
+ListAllConnectionsContext::ListAllConnectionsContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager)
+    : BaseContext(env, sharedManager) {}
+
+ListAllConnectionsContext::~ListAllConnectionsContext() = default;
+
+void ListAllConnectionsContext::ParseParams(napi_value *params, size_t paramsCount)
 {
-    ListAllConnectionsContext::ListAllConnectionsContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager)
-        : BaseContext(env, sharedManager) {}
-
-    ListAllConnectionsContext::~ListAllConnectionsContext() = default;
-
-    void ListAllConnectionsContext::ParseParams(napi_value *params, size_t paramsCount)
-    {
-        if (!CheckParamsType(params, paramsCount))
-        {
-            return;
-        }
-        if (paramsCount != FUNCTION_PARAM_ZERO)
-        {
-            SetParseOK(SetCallback(params[0]) == napi_ok);
-            return;
-        }
-        SetParseOK(true);
+    if (!CheckParamsType(params, paramsCount)) {
+        return;
     }
-
-    bool ListAllConnectionsContext::CheckParamsType(napi_value *params, size_t paramsCount)
-    {
-        if (paramsCount == FUNCTION_PARAM_ZERO)
-        {
-            return true;
-        }
-        return false;
+    if (paramsCount != FUNCTION_PARAM_ZERO) {
+        SetParseOK(SetCallback(params[0]) == napi_ok);
+        return;
     }
+    SetParseOK(true);
+}
 
-    void ListAllConnectionsContext::SetAllConnections(std::vector<OHOS::NetStack::Websocket::WebSocketConnection>
-                                                          &connections)
-    {
-        webSocketConnections_ = connections;
+bool ListAllConnectionsContext::CheckParamsType(napi_value *params, size_t paramsCount)
+{
+    if (paramsCount == FUNCTION_PARAM_ZERO) {
+        return true;
     }
+    return false;
+}
 
-    std::vector<OHOS::NetStack::Websocket::WebSocketConnection> ListAllConnectionsContext::GetAllConnections() const
-    {
-        return webSocketConnections_;
-    }
+void ListAllConnectionsContext::SetAllConnections(std::vector<OHOS::NetStack::Websocket::WebSocketConnection>
+    &connections)
+{
+    webSocketConnections_ = connections;
+}
 
-    int32_t ListAllConnectionsContext::GetErrorCode() const
-    {
-        if (BaseContext::IsPermissionDenied())
-        {
-            return PERMISSION_DENIED_CODE;
-        }
-        return WEBSOCKET_UNKNOWN_OTHER_ERROR;
-    }
+std::vector<OHOS::NetStack::Websocket::WebSocketConnection> ListAllConnectionsContext::GetAllConnections() const
+{
+    return webSocketConnections_;
+}
 
-    std::string ListAllConnectionsContext::GetErrorMessage() const
-    {
-        if (BaseContext::IsPermissionDenied())
-        {
-            return PERMISSION_DENIED_MSG;
-        }
-        auto it = WEBSOCKET_ERR_MAP.find(WEBSOCKET_UNKNOWN_OTHER_ERROR);
-        if (it != WEBSOCKET_ERR_MAP.end())
-        {
-            return it->second;
-        }
-        return {};
+int32_t ListAllConnectionsContext::GetErrorCode() const
+{
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_CODE;
     }
+    return WEBSOCKET_UNKNOWN_OTHER_ERROR;
+}
+
+std::string ListAllConnectionsContext::GetErrorMessage() const
+{
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_MSG;
+    }
+    auto it = WEBSOCKET_ERR_MAP.find(WEBSOCKET_UNKNOWN_OTHER_ERROR);
+    if (it != WEBSOCKET_ERR_MAP.end()) {
+        return it->second;
+    }
+    return {};
+}
 } // namespace OHOS::NetStack::Websocket

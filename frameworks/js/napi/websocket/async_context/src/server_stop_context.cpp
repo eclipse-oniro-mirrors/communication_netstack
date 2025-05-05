@@ -20,57 +20,49 @@
 #include "netstack_log.h"
 #include "napi_utils.h"
 
-namespace OHOS::NetStack::Websocket
+namespace OHOS::NetStack::Websocket {
+ServerStopContext::ServerStopContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager)
+    : BaseContext(env, sharedManager) {}
+
+ServerStopContext::~ServerStopContext() = default;
+
+void ServerStopContext::ParseParams(napi_value *params, size_t paramsCount)
 {
-    ServerStopContext::ServerStopContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager)
-        : BaseContext(env, sharedManager) {}
-
-    ServerStopContext::~ServerStopContext() = default;
-
-    void ServerStopContext::ParseParams(napi_value *params, size_t paramsCount)
-    {
-        if (!CheckParamsType(params, paramsCount))
-        {
-            return;
-        }
-        if (paramsCount != FUNCTION_PARAM_ZERO)
-        {
-            SetParseOK(SetCallback(params[0]) == napi_ok);
-            return;
-        }
-        SetParseOK(true);
+    if (!CheckParamsType(params, paramsCount)) {
+        return;
     }
-
-    bool ServerStopContext::CheckParamsType(napi_value *params, size_t paramsCount)
-    {
-        if (paramsCount == FUNCTION_PARAM_ZERO)
-        {
-            return true;
-        }
-        return false;
+    if (paramsCount != FUNCTION_PARAM_ZERO) {
+        SetParseOK(SetCallback(params[0]) == napi_ok);
+        return;
     }
+    SetParseOK(true);
+}
 
-    int32_t ServerStopContext::GetErrorCode() const
-    {
-        if (BaseContext::IsPermissionDenied())
-        {
-            return PERMISSION_DENIED_CODE;
-        }
-        return WEBSOCKET_UNKNOWN_OTHER_ERROR;
+bool ServerStopContext::CheckParamsType(napi_value *params, size_t paramsCount)
+{
+    if (paramsCount == FUNCTION_PARAM_ZERO) {
+        return true;
     }
+    return false;
+}
 
-    std::string ServerStopContext::GetErrorMessage() const
-    {
-        if (BaseContext::IsPermissionDenied())
-        {
-            return PERMISSION_DENIED_MSG;
-        }
-        auto it = WEBSOCKET_ERR_MAP.find(WEBSOCKET_UNKNOWN_OTHER_ERROR);
-        if (it != WEBSOCKET_ERR_MAP.end())
-        {
-            return it->second;
-        }
-        return {};
+int32_t ServerStopContext::GetErrorCode() const
+{
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_CODE;
     }
+    return WEBSOCKET_UNKNOWN_OTHER_ERROR;
+}
 
+std::string ServerStopContext::GetErrorMessage() const
+{
+    if (BaseContext::IsPermissionDenied()) {
+        return PERMISSION_DENIED_MSG;
+    }
+    auto it = WEBSOCKET_ERR_MAP.find(WEBSOCKET_UNKNOWN_OTHER_ERROR);
+    if (it != WEBSOCKET_ERR_MAP.end()) {
+        return it->second;
+    }
+    return {};
+}
 } // namespace OHOS::NetStack::Websocket

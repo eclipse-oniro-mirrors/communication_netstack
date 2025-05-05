@@ -81,6 +81,7 @@ ohos_unittest("websocket_unittest") {
       "$WEBSOCKET_NAPI/async_context/src/server_send_context.cpp",
       "$WEBSOCKET_NAPI/async_context/src/server_start_context.cpp",
       "$WEBSOCKET_NAPI/async_context/src/server_stop_context.cpp",
+      "$WEBSOCKET_NAPI/websocket_exec/src/websocket_server_exec.cpp",
     ]
   }
 

@@ -17,6 +17,9 @@
 #define COMMUNICATIONNETSTACK_WEBSOCKET_ASYNC_WORK_H
 
 #include "websocket_exec.h"
+#ifdef NETSTACK_WEBSOCKETSERVER
+#include "websocket_server_exec.h"
+#endif
 
 namespace OHOS::NetStack::Websocket {
 class WebSocketAsyncWork final {
