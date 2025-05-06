@@ -206,6 +206,11 @@ void NetStackChrClient::GetDfxInfoFromCurlHandleAndReport(CURL *handle, int32_t 
     if (!GetTcpInfoFromSock(sockfd, dataTransChrStats.tcpInfo)) {
         NETSTACK_LOGD("Chr client get tcp info from socket failed, sockfd: %{public}d", dataTransChrStats.sockfd);
     }
+
+    int ret = netstackChrReport.ReportCommonEvent(dataTransChrStats);
+    if (ret > 0) {
+        NETSTACK_LOGE("Send to CHR failed.");
+    }
 }
 
 }  // namespace OHOS::NetStack::ChrClient

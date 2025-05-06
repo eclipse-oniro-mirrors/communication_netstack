@@ -63,6 +63,7 @@ ohos_shared_library("http_client") {
     "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",
     "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
     "$NETSTACK_DIR/utils/netstack_chr_client/src/netstack_chr_client.cpp",
+    "$NETSTACK_DIR/utils/netstack_chr_client/src/netstack_chr_report.cpp",
     "$NETSTACK_DIR/utils/profiler_utils/src/http_client_network_message.cpp",
     "$NETSTACK_DIR/utils/profiler_utils/src/i_network_message.cpp",
     "$NETSTACK_DIR/utils/profiler_utils/src/netstack_network_profiler.cpp",

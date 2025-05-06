@@ -77,5 +77,51 @@ typedef struct DataTransChrStats {
     DataTransTcpInfo tcpInfo;
 } DataTransChrStats;
 
+constexpr int REPORT_CHR_RESULT_SUCCESS = 0;
+constexpr int REPORT_CHR_RESULT_TIME_LIMIT_ERROR = 1;
+constexpr int REPORT_CHR_RESULT_SET_DATA_FAIL = 2;
+constexpr int REPORT_CHR_RESULT_REPORT_FAIL = 3;
+
+constexpr char UID_KEY[] = "uid";
+constexpr char SOCKFD_KEY[] = "sockfd";
+
+constexpr char HTTP_INFO_KEY[] = "http_info";
+constexpr char CURL_CODE_KEY[] = "curl_code";
+constexpr char RESPONSE_CODE_KEY[] = "response_code";
+constexpr char TOTAL_TIME_KEY[] = "total_time";
+constexpr char NAMELOOKUP_TIME_KEY[] = "namelookup_time";
+constexpr char CONNECT_TIME_KEY[] = "connect_time";
+constexpr char APPCONNECT_TIME_KEY[] = "appconnect_time";
+constexpr char PRETRANSFER_TIME_KEY[] = "pretransfer_time";
+constexpr char STARTTRANSFER_TIME_KEY[] = "starttransfer_time";
+constexpr char QUEUE_TIME_KEY[] = "queue_time";
+constexpr char RETRY_AFTER_KEY[] = "retry_after";
+constexpr char SIZE_UPLOAD_KEY[] = "size_upload";
+constexpr char SIZE_DOWNLOAD_KEY[] = "size_download";
+constexpr char SPEED_DOWNLOAD_KEY[] = "speed_download";
+constexpr char SPEED_UPLOAD_KEY[] = "speed_upload";
+constexpr char EFFECTIVE_METHOD_KEY[] = "effective_method";
+constexpr char CONTENT_TYPE_KEY[] = "content_type";
+constexpr char REDIRECT_TIME_KEY[] = "redirect_time";
+constexpr char REDIRECT_COUNT_KEY[] = "redirect_count";
+constexpr char PROXY_ERROR_KEY[] = "proxy_error";
+constexpr char OS_ERRNO_KEY[] = "os_errno";
+constexpr char SSL_VERIFYRESULT_KEY[] = "ssl_verifyresult";
+
+constexpr char TCP_INFO_KEY[] = "tcp_info";
+constexpr char TCPI_RETRANSMITS_KEY[] = "tcpi_retransmits";
+constexpr char TCPI_UNACKED_KEY[] = "tcpi_unacked";
+constexpr char TCPI_LAST_DATA_SENT_KEY[] = "tcpi_last_data_sent";
+constexpr char TCPI_LAST_ACK_SENT_KEY[] = "tcpi_last_ack_sent";
+constexpr char TCPI_LAST_DATA_RECV_KEY[] = "tcpi_last_data_recv";
+constexpr char TCPI_LAST_ACK_RECV_KEY[] = "tcpi_last_ack_recv";
+constexpr char TCPI_RTT_KEY[] = "tcpi_rtt";
+constexpr char TCPI_RTTVAR_KEY[] = "tcpi_rttvar";
+constexpr char TCPI_TOTAL_RETRANS_KEY[] = "tcpi_total_retrans";
+constexpr char SRC_IP_KEY[] = "src_ip";
+constexpr char DST_IP_KEY[] = "dst_ip";
+constexpr char SRC_PORT_KEY[] = "src_port";
+constexpr char DST_PORT_KEY[] = "dst_port";
+
 }  // namespace OHOS::NetStack
 #endif  // COMMUNICATIONNETSTACK_I_NETSTACK_CHR_CLIENT_H

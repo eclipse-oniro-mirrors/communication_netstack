@@ -21,7 +21,7 @@
 #include <string>
 
 #include "curl/curl.h"
-
+#include "netstack_chr_report.h"
 #include "i_netstack_chr_client.h"
 
 namespace OHOS::NetStack::ChrClient {
@@ -44,7 +44,7 @@ private:
     static DataType GetNumericAttributeFromCurl(CURL *handle, CURLINFO info);
     static std::string GetStringAttributeFromCurl(CURL *handle, CURLINFO info);
     static bool shouldReportHttpAbnormalEvent(const DataTransHttpInfo &httpInfo);
-    // HttpChrReport httpReport;
+    NetstackChrReport netstackChrReport;
 };
 
 }  // namespace OHOS::NetStack::ChrClient
