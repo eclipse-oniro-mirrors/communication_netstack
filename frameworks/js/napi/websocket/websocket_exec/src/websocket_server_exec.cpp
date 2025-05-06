@@ -14,13 +14,13 @@
 */
 
 #include "websocket_server_exec.h"
-#include<atomic>
-#include<memory>
-#include<queue>
-#include<thread>
-#include<unistd.h>
-#include<sstream>
-#include<algorithm>
+#include <atomic>
+#include <memory>
+#include <queue>
+#include <thread>
+#include <unistd.h>
+#include <sstream>
+#include <algorithm>
 #include<shared_mutex>
 #include "constant.h"
 #include "napi_utils.h"
@@ -63,9 +63,9 @@ static std::shared_mutex wsMutex_;
 
 static std::shared_mutex connListMutex_;
 
-static std::shared_mutex blackListMutex_;
+static std::shared_mutex banListMutex_;
 
-static std::unordered_map<std::string, uint64_t> blackList;
+static std::unordered_map<std::string, uint64_t> banList;
 
 static std::unordered_map<std::string, ClientInfo> clientList;
 
@@ -354,7 +354,8 @@ int WebSocketServerExec::LwsCallbackEstablished(lws *wsi, lws_callback_reasons r
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-bool WebSocketServerExec::GetPeerConnMsg(lws *wsi, EventManager *manager, std::string &clientId, WebSocketConnection &conn)
+bool WebSocketServerExec::GetPeerConnMsg(lws *wsi, EventManager *manager, std::string &clientId,
+    WebSocketConnection &conn)
 {
     struct sockaddr_storage addr{};
     socklen_t addrLen = sizeof(addr);
@@ -437,7 +438,7 @@ int WebSocketServerExec::LwsCallbackClosed(lws *wsi, lws_callback_reasons reason
     }
     clientUserData->SetThreadStop(true);
     if ((clientUserData->closeReason).empty()) {
-        clientUserData->Close(clientUserData->closeStatus, LINK_DOWN); 
+        clientUserData->Close(clientUserData->closeStatus, LINK_DOWN);
     }
     if (clientUserData->closeStatus == LWS_CLOSE_STATUS_NOSTATUS) {
         NETSTACK_LOGE("The link is down, onError");
@@ -557,8 +558,8 @@ int WebSocketServerExec::LwsCallbackServerWriteable(lws *wsi, lws_callback_reaso
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-int WebSocketServerExec::LwsCallbackWsPeerInitiatedCloseServer(lws *wsi, lws_callback_reasons reason, void *user, void *in,
-    size_t len)
+int WebSocketServerExec::LwsCallbackWsPeerInitiatedCloseServer(lws *wsi, lws_callback_reasons reason,
+    void *user, void *in, size_t len)
 {
     NETSTACK_LOGD("lws server callback ws peer initiated close");
     if (wsi == nullptr) {
@@ -585,8 +586,8 @@ int WebSocketServerExec::LwsCallbackWsPeerInitiatedCloseServer(lws *wsi, lws_cal
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-int WebSocketServerExec::LwsCallbackFilterProtocolConnection(lws *wsi, lws_callback_reasons reason, void *user, void *in,
-    size_t len)
+int WebSocketServerExec::LwsCallbackFilterProtocolConnection(lws *wsi, lws_callback_reasons reason,
+    void *user, void *in, size_t len)
 {
     NETSTACK_LOGD("lws server callback filter ProtocolConnection");
     lws_context *context = lws_get_context(wsi);
@@ -630,13 +631,13 @@ int WebSocketServerExec::LwsCallbackFilterProtocolConnection(lws *wsi, lws_callb
 
 bool WebSocketServerExec::IsAllowConnection(const std::string &clientId)
 {
-    if (IsIpInBlacklist(clientId)) {
-        NETSTACK_LOGE("clientid is in blacklist");
+    if (IsIpInBanlist(clientId)) {
+        NETSTACK_LOGE("clientid is in banlist");
         return false;
     }
     if (IsHighFreqConnection(clientId)) {
         NETSTACK_LOGE("clientid reach high frequency connection");
-        AddBlackList(clientId);
+        AddBanList(clientId);
         return false;
     }
     UpdataClientList(clientId);
@@ -648,7 +649,7 @@ void WebSocketServerExec::UpdataClientList(const std::string &id)
     std::shared_lock<std::shared_mutex> lock(connListMutex_);
     auto it = clientList.find(id);
     if (it == clientList.end()) {
-        NETSTACK_LOGI("add clientid to blacklist");
+        NETSTACK_LOGI("add clientid to banlist");
         clientList[id] = {1, GetCurrentSecond()};
     } else {
         auto now = GetCurrentSecond() - it->second.lastConnectionTime;
@@ -661,22 +662,22 @@ void WebSocketServerExec::UpdataClientList(const std::string &id)
     }
 }
 
-void WebSocketServerExec::AddBlackList(const std::string &id)
+void WebSocketServerExec::AddBanList(const std::string &id)
 {
-    std::shared_lock<std::shared_mutex> lock(blackListMutex_);
-    blackList[id] = GetCurrentSecond() + ONE_MINUTE_IN_SEC;
+    std::shared_lock<std::shared_mutex> lock(banListMutex_);
+    banList[id] = GetCurrentSecond() + ONE_MINUTE_IN_SEC;
 }
 
-bool WebSocketServerExec::IsIpInBlacklist(const std::string &id)
+bool WebSocketServerExec::IsIpInBanList(const std::string &id)
 {
-    std::shared_lock<std::shared_mutex> lock(blackListMutex_);
-    auto it = blackList.find(id);
-    if (it != blackList.end()) {
+    std::shared_lock<std::shared_mutex> lock(banListMutex_);
+    auto it = banList.find(id);
+    if (it != banList.end()) {
         auto now = GetCurrentSecond();
         if (now < it->second) {
             return true;
         } else {
-            blackList.erase(it);
+            banList.erase(it);
         }
     }
     return false;
@@ -895,12 +896,12 @@ void WebSocketServerExec::OnServerError(EventManager *manager, int32_t code)
         return;
     }
     bool hasServerEventListener = manager->HasEventListener(EventName::EVENT_SERVER_ERROR);
-    if (!hasServerEventListener){
+    if (!hasServerEventListener) {
         NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_SERVER_ERROR);
         return;
     }
     auto para = new int32_t(code);
-    manager->EmitByUvWithoutCheckShared(EventName::EVENT_SERVER_ERROR, para, CallbackTemplate<CreateServerError>); 
+    manager->EmitByUvWithoutCheckShared(EventName::EVENT_SERVER_ERROR, para, CallbackTemplate<CreateServerError>);
 }
 
 void WebSocketServerExec::OnConnect(lws *wsi, EventManager *manager)
@@ -1117,11 +1118,11 @@ void WebSocketServerExec::StartService(lws_context_creation_info &info, std::sha
     userData = std::make_shared<UserData>(lwsContext);
     manager->SetWebSocketUserData(userData);
     std::thread serviceThread(RunServerService, userData, manager);
-    #if defined (MAC_PLATFORM) || defined(IOS_PLATFORM)  
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(WEBSOCKET_SERVER_THREAD_RUN);
-    #else  
+#else
     pthread_setname_np(serviceThread.native_handle(), WEBSOCKET_SERVER_THREAD_RUN);
-    #endif  
+#endif
     serviceThread.detach();
 }
 
@@ -1213,7 +1214,6 @@ bool WebSocketServerExec::ExecServerClose(ServerCloseContext *context)
     if (context == nullptr) {
         NETSTACK_LOGE("context is nullptr");
         return false;
-        
     }
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
