@@ -12,11 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
-    
+
 #ifndef COMMUNICATIONNETSTACK_WEBSOCKET_SERVER_EXEC_H
 #define COMMUNICATIONNETSTACK_WEBSOCKET_SERVER_EXEC_H
 
-#include "server_start_context.h" 
+#include "server_start_context.h"
 #include "list_all_connections_context.h"
 #include "server_send_context.h"
 #include "server_close_context.h"
@@ -139,4 +139,4 @@ private:
     static std::vector<WebSocketConnection> GetConnections();
 };
 } // namespace OHOS::NetStack::Websocket
- #endif /* COMMUNICATIONNETSTACK_WEBSOCKET_EXEC_H */
+#endif /* COMMUNICATIONNETSTACK_WEBSOCKET_EXEC_H */
