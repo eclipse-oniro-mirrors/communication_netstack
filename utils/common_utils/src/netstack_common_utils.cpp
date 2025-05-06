@@ -606,8 +606,7 @@ bool IsCleartextPermitted(const std::string &url, const std::string &protocol)
 
 bool IsValidPort(const uint32_t &port)
 {
-    if (port < 0 || port > MAX_PORT)
-    {
+    if (port < 0 || port > MAX_PORT) {
         return false;
     }
     return true;
