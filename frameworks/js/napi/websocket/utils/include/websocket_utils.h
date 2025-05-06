@@ -19,10 +19,8 @@
 #include <cstdint>
 #include <string>
 
-namespace OHOS::NetStack::Websocket
-{
-    struct WebSocketConnection
-    {
+namespace OHOS::NetStack::Websocket {
+    struct WebSocketConnection {
         std::string clientIP;
         uint32_t clientPort;
     };
