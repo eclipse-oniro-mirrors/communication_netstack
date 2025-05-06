@@ -631,7 +631,7 @@ int WebSocketServerExec::LwsCallbackFilterProtocolConnection(lws *wsi, lws_callb
 
 bool WebSocketServerExec::IsAllowConnection(const std::string &clientId)
 {
-    if (IsIpInBanlist(clientId)) {
+    if (IsIpInBanList(clientId)) {
         NETSTACK_LOGE("clientid is in banlist");
         return false;
     }
