@@ -21,7 +21,7 @@
 #include "nocopyable.h"
 
 namespace OHOS::NetStack::Websocket {
-class ServerStopContext final : public BaseContext{
+class ServerStopContext final : public BaseContext {
 public:
     DISALLOW_COPY_AND_MOVE(ServerStopContext);
 
