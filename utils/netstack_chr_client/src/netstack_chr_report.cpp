@@ -15,7 +15,7 @@
 #include <string>
 #include <chrono>
 #include "i_netstack_chr_client.h"
-#include "netstack_chr_client.h"
+#include "netstack_chr_report.h"
 #include "netstack_log.h"
 #include "common_event_manager.h"
 #include "want.h"
