@@ -146,13 +146,13 @@ HWTEST_F(WebSocketTest, WebSocketTest009, TestSize.Level1)
     napi_env env = nullptr;
     auto eventManager = std::make_shared<EventManager>();
     ServerStartContext context(env, eventManager);
-    bool ret = WebSocketExec::ExecServerStart(&context);
+    bool ret = WebSocketServerExec::ExecServerStart(&context);
     EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest010, TestSize.Level1)
 {
-    bool ret = WebSocketExec::ExecServerStart(nullptr);
+    bool ret = WebSocketServerExec::ExecServerStart(nullptr);
     EXPECT_EQ(ret, false);
 }
 
@@ -162,7 +162,7 @@ HWTEST_F(WebSocketTest, WebSocketTest011, TestSize.Level1)
     auto eventManager = std::make_shared<EventManager>();
     ServerStartContext context(env, eventManager);
     context.SetPermissionDenied(true);
-    bool ret = WebSocketExec::ExecServerStart(&context);
+    bool ret = WebSocketServerExec::ExecServerStart(&context);
     EXPECT_EQ(ret, false);
 }
 
@@ -171,13 +171,13 @@ HWTEST_F(WebSocketTest, WebSocketTest012, TestSize.Level1)
     napi_env env = nullptr;
     auto eventManager = std::make_shared<EventManager>();
     ServerSendContext context(env, eventManager);
-    bool ret = WebSocketExec::ExecServerSend(&context);
+    bool ret = WebSocketServerExec::ExecServerSend(&context);
     EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest013, TestSize.Level1)
 {
-    bool ret = WebSocketExec::ExecServerSend(nullptr);
+    bool ret = WebSocketServerExec::ExecServerSend(nullptr);
     EXPECT_EQ(ret, false);
 }
 
@@ -187,7 +187,7 @@ HWTEST_F(WebSocketTest, WebSocketTest014, TestSize.Level1)
     auto eventManager = std::make_shared<EventManager>();
     ServerSendContext context(env, eventManager);
     context.SetPermissionDenied(true);
-    bool ret = WebSocketExec::ExecServerSend(&context);
+    bool ret = WebSocketServerExec::ExecServerSend(&context);
     EXPECT_EQ(ret, false);
 }
 
@@ -196,13 +196,13 @@ HWTEST_F(WebSocketTest, WebSocketTest015, TestSize.Level1)
     napi_env env = nullptr;
     auto eventManager = std::make_shared<EventManager>();
     ServerCloseContext context(env, eventManager);
-    bool ret = WebSocketExec::ExecServerClose(&context);
+    bool ret = WebSocketServerExec::ExecServerClose(&context);
     EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest016, TestSize.Level1)
 {
-    bool ret = WebSocketExec::ExecServerClose(nullptr);
+    bool ret = WebSocketServerExec::ExecServerClose(nullptr);
     EXPECT_EQ(ret, false);
 }
 
@@ -212,7 +212,7 @@ HWTEST_F(WebSocketTest, WebSocketTest017, TestSize.Level1)
     auto eventManager = std::make_shared<EventManager>();
     ServerCloseContext context(env, eventManager);
     context.SetPermissionDenied(true);
-    bool ret = WebSocketExec::ExecServerClose(&context);
+    bool ret = WebSocketServerExec::ExecServerClose(&context);
     EXPECT_EQ(ret, false);
 }
 
@@ -221,13 +221,13 @@ HWTEST_F(WebSocketTest, WebSocketTest018, TestSize.Level1)
     napi_env env = nullptr;
     auto eventManager = std::make_shared<EventManager>();
     ServerStopContext context(env, eventManager);
-    bool ret = WebSocketExec::ExecServerStop(&context);
+    bool ret = WebSocketServerExec::ExecServerStop(&context);
     EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest019, TestSize.Level1)
 {
-    bool ret = WebSocketExec::ExecServerStop(nullptr);
+    bool ret = WebSocketServerExec::ExecServerStop(nullptr);
     EXPECT_EQ(ret, false);
 }
 
@@ -237,7 +237,7 @@ HWTEST_F(WebSocketTest, WebSocketTest020, TestSize.Level1)
     auto eventManager = std::make_shared<EventManager>();
     ServerStopContext context(env, eventManager);
     context.SetPermissionDenied(true);
-    bool ret = WebSocketExec::ExecServerStop(&context);
+    bool ret = WebSocketServerExec::ExecServerStop(&context);
     EXPECT_EQ(ret, false);
 }
 
@@ -246,13 +246,13 @@ HWTEST_F(WebSocketTest, WebSocketTest021, TestSize.Level1)
     napi_env env = nullptr;
     auto eventManager = std::make_shared<EventManager>();
     ListAllConnectionsContext context(env, eventManager);
-    bool ret = WebSocketExec::ExecListAllConnections(&context);
+    bool ret = WebSocketServerExec::ExecListAllConnections(&context);
     EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest022, TestSize.Level1)
 {
-    bool ret = WebSocketExec::ExecListAllConnections(nullptr);
+    bool ret = WebSocketServerExec::ExecListAllConnections(nullptr);
     EXPECT_EQ(ret, false);
 }
 
@@ -262,7 +262,7 @@ HWTEST_F(WebSocketTest, WebSocketTest023, TestSize.Level1)
     auto eventManager = std::make_shared<EventManager>();
     ListAllConnectionsContext context(env, eventManager);
     context.SetPermissionDenied(true);
-    bool ret = WebSocketExec::ExecListAllConnections(&context);
+    bool ret = WebSocketServerExec::ExecListAllConnections(&context);
     EXPECT_EQ(ret, false);
 }
 
@@ -302,7 +302,7 @@ HWTEST_F(WebSocketTest, WebSocketTest027, TestSize.Level1)
     auto eventManager = std::make_shared<EventManager>();
     ServerStartContext context(env, eventManager);
     context.SetPermissionDenied(false);
-    bool ret = WebSocketExec::ExecServerStart(&context);
+    bool ret = WebSocketServerExec::ExecServerStart(&context);
     EXPECT_EQ(ret, false);
 }
 
@@ -312,7 +312,7 @@ HWTEST_F(WebSocketTest, WebSocketTest028, TestSize.Level1)
     auto eventManager = std::make_shared<EventManager>();
     ServerSendContext context(env, eventManager);
     context.SetPermissionDenied(false);
-    bool ret = WebSocketExec::ExecServerSend(&context);
+    bool ret = WebSocketServerExec::ExecServerSend(&context);
     EXPECT_EQ(ret, false);
 }
 
@@ -322,7 +322,7 @@ HWTEST_F(WebSocketTest, WebSocketTest029, TestSize.Level1)
     auto eventManager = std::make_shared<EventManager>();
     ServerCloseContext context(env, eventManager);
     context.SetPermissionDenied(false);
-    bool ret = WebSocketExec::ExecServerClose(&context);
+    bool ret = WebSocketServerExec::ExecServerClose(&context);
     EXPECT_EQ(ret, false);
 }
 
@@ -332,7 +332,7 @@ HWTEST_F(WebSocketTest, WebSocketTest030, TestSize.Level1)
     auto eventManager = std::make_shared<EventManager>();
     ServerStopContext context(env, eventManager);
     context.SetPermissionDenied(false);
-    bool ret = WebSocketExec::ExecServerStop(&context);
+    bool ret = WebSocketServerExec::ExecServerStop(&context);
     EXPECT_EQ(ret, false);
 }
 
@@ -342,7 +342,7 @@ HWTEST_F(WebSocketTest, WebSocketTest031, TestSize.Level1)
     auto eventManager = std::make_shared<EventManager>();
     ListAllConnectionsContext context(env, eventManager);
     context.SetPermissionDenied(false);
-    bool ret = WebSocketExec::ExecListAllConnections(&context);
+    bool ret = WebSocketServerExec::ExecListAllConnections(&context);
     EXPECT_EQ(ret, false);
 }
 
