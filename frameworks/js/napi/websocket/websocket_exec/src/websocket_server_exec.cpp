@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
-    
-#include "websocket_server_exec.h" 
+
+#include "websocket_server_exec.h"
 #include<atomic>
 #include<memory>
 #include<queue>
@@ -21,13 +21,13 @@
 #include<unistd.h>
 #include<sstream>
 #include<algorithm>
-#include<shared_mutex> 
+#include<shared_mutex>
 #include "constant.h"
 #include "napi_utils.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "securec.h"
-#define LWS_PLUGIN_STATIC 
+#define LWS_PLUGIN_STATIC
 
 static constexpr const char *EVENT_KEY_CLIENT_PORT = "clientPort";
 
@@ -79,12 +79,12 @@ static const lws_protocols LWS_SERVER_PROTOCOLS[] = {
 
 struct CloseResult {
     uint32_t code;
-    std::string reason; 
+    std::string reason;
 };
 
 struct ClientConnectionCloseCallback {
     WebSocketConnection connection;
-    CloseResult closeResult; 
+    CloseResult closeResult;
 };
 
 struct CallbackDispatcher {
@@ -116,10 +116,10 @@ class UserData {
 public:
     struct SendData {
         SendData(void *paraData, size_t paraLength, lws_write_protocol paraProtocol)
-            :data(paraData), length(paraLength), protocol(paraProtocol) 
-        {  
+            :data(paraData), length(paraLength), protocol(paraProtocol)
+        {
         }
-    
+
         SendData() = delete;
 
         ~SendData() = default;
@@ -130,27 +130,27 @@ public:
     };
 
     explicit UserData(lws_context *context)
-        :closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), closed_(false), threadStop_(false), context_(context) 
+        :closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), closed_(false), threadStop_(false), context_(context)
     {
     }
 
-    bool IsClosed() 
+    bool IsClosed()
     {
         std::lock_guard<std::mutex> lock(mutex_);
         return closed_;
     }
 
-    bool IsThreadStop() 
+    bool IsThreadStop()
     {
         return threadStop_.load();
     }
 
-    void SetThreadStop(bool threadStop) 
+    void SetThreadStop(bool threadStop)
     {
         threadStop_.store(threadStop);
     }
 
-    void Close(lws_close_status status, const std::string &reason) 
+    void Close(lws_close_status status, const std::string &reason)
     {
         std::lock_guard<std::mutex> lock(mutex_);
         closeStatus = status;
@@ -158,36 +158,34 @@ public:
         closed_ = true;
     }
 
-    void Push(void *data, size_t length, lws_write_protocol protocol) 
+    void Push(void *data, size_t length, lws_write_protocol protocol)
     {
         std::lock_guard<std::mutex> lock(mutex_);
         dataQueue_.emplace(data, length, protocol);
     }
 
-    SendData Pop() 
+    SendData Pop()
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (dataQueue_.empty()) {
             return {nullptr, 0, LWS_WRITE_TEXT};
-            
         }
         SendData data = dataQueue_.front();
         dataQueue_.pop();
         return data;
-        
     }
 
-    void SetContext(lws_context *context) 
+    void SetContext(lws_context *context)
     {
         context_ = context;
     }
 
-    lws_context *GetContext() 
+    lws_context *GetContext()
     {
         return context_;
     }
 
-    bool IsEmpty() 
+    bool IsEmpty()
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (dataQueue_.empty()) {
@@ -196,7 +194,7 @@ public:
         return false;
     }
 
-    void SetLws(lws *wsi) 
+    void SetLws(lws *wsi)
     {
         std::lock_guard<std::mutex> lock(mutexForLws_);
         if (wsi == nullptr) {
@@ -205,12 +203,12 @@ public:
         wsi_ = wsi;
     }
 
-    void TriggerWritable() 
+    void TriggerWritable()
     {
         std::lock_guard<std::mutex> lock(mutexForLws_);
         if (wsi_ == nullptr) {
             NETSTACK_LOGE("wsi is nullptr, can not trigger");
-            return; 
+            return;
         }
         lws_callback_on_writable(wsi_);
     }
@@ -225,7 +223,6 @@ public:
 
     std::string openMessage;
 
-    
 private:
     volatile bool closed_;
 
@@ -266,7 +263,7 @@ template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTempl
 }
 
 
-void RunServerService(std::shared_ptr<UserData> userData, std::shared_ptr<EventManager> manager) 
+void RunServerService(std::shared_ptr<UserData> userData, std::shared_ptr<EventManager> manager)
 {
     NETSTACK_LOGI("websocket run service start");
     int res = 0;
@@ -274,11 +271,9 @@ void RunServerService(std::shared_ptr<UserData> userData, std::shared_ptr<EventM
     if (context == nullptr) {
         NETSTACK_LOGE("context is null");
         return;
-        
     }
     while (res >= 0 && !userData->IsThreadStop()) {
         res = lws_service(context, 0);
-        
     }
     NETSTACK_LOGE("lws_service stop");
     lws_context_destroy(context);
@@ -287,13 +282,13 @@ void RunServerService(std::shared_ptr<UserData> userData, std::shared_ptr<EventM
     NETSTACK_LOGI("websocket run service end");
 }
 
-int WebSocketServerExec::RaiseServerError(EventManager * manager) 
+int WebSocketServerExec::RaiseServerError(EventManager *manager)
 {
     OnServerError(manager, COMMON_ERROR_CODE);
     return -1;
 }
 
-int WebSocketServerExec::HttpDummy(lws * wsi, lws_callback_reasons reason, void *user, void *in, size_t len) 
+int WebSocketServerExec::HttpDummy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     int ret = lws_callback_http_dummy(wsi, reason, user, in, len);
     if (ret < 0) {
@@ -302,7 +297,7 @@ int WebSocketServerExec::HttpDummy(lws * wsi, lws_callback_reasons reason, void 
     return 0;
 }
 
-int WebSocketServerExec::lwsServerCallback(lws * wsi, lws_callback_reasons reason, void *user, void *in, size_t len) 
+int WebSocketServerExec::lwsServerCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     NETSTACK_LOGI("lws server callback reason is %{public}d", reason);
     CallbackDispatcher dispatchers[] = {
@@ -323,8 +318,8 @@ int WebSocketServerExec::lwsServerCallback(lws * wsi, lws_callback_reasons reaso
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-int WebSocketServerExec::LwsCallbackEstablished(lws * wsi, lws_callback_reasons reason, void *user, void *in,
-    size_t len) 
+int WebSocketServerExec::LwsCallbackEstablished(lws *wsi, lws_callback_reasons reason, void *user, void *in,
+    size_t len)
 {
     NETSTACK_LOGD("lws callback server established");
     lws_context *context = lws_get_context(wsi);
@@ -359,7 +354,7 @@ int WebSocketServerExec::LwsCallbackEstablished(lws * wsi, lws_callback_reasons 
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-bool WebSocketServerExec::GetPeerConnMsg(lws * wsi, EventManager * manager, std::string & clientId, WebSocketConnection & conn) 
+bool WebSocketServerExec::GetPeerConnMsg(lws *wsi, EventManager *manager, std::string &clientId, WebSocketConnection &conn)
 {
     struct sockaddr_storage addr{};
     socklen_t addrLen = sizeof(addr);
@@ -376,7 +371,7 @@ bool WebSocketServerExec::GetPeerConnMsg(lws * wsi, EventManager * manager, std:
         uint16_t port = ntohs(addrIn->sin_port);
         conn.clientPort = static_cast<uint32_t>(port);
         conn.clientIP = ipStr;
-        clientId = std::string(ipStr)  ":"  std::to_string(port);
+        clientId = std::string(ipStr) + ":" + std::to_string(port);
     } else if (addr.ss_family == AF_INET6) {
         NETSTACK_LOGI("family is ipv6");
         auto *addrIn6 = reinterpret_cast<struct sockaddr_in6 *>(&addr);
@@ -384,7 +379,7 @@ bool WebSocketServerExec::GetPeerConnMsg(lws * wsi, EventManager * manager, std:
         uint16_t port = ntohs(addrIn6->sin6_port);
         conn.clientPort = static_cast<uint32_t>(port);
         conn.clientIP = ipStr;
-        clientId = std::string(ipStr)  ":"  std::to_string(port);
+        clientId = std::string(ipStr) + ":" + std::to_string(port);
     } else {
         NETSTACK_LOGE("getpeer Ipv4 or Ipv6 failed");
         return false;
@@ -392,7 +387,7 @@ bool WebSocketServerExec::GetPeerConnMsg(lws * wsi, EventManager * manager, std:
     return true;
 }
 
-bool WebSocketServerExec::IsOverMaxClientConns(EventManager * manager) 
+bool WebSocketServerExec::IsOverMaxClientConns(EventManager *manager)
 {
     std::vector<WebSocketConnection> connection = GetConnections();
     if (connection.size() >= manager->GetMaxConnClientCnt() * manager->GetMaxConnForOneClient()) {
@@ -403,7 +398,7 @@ bool WebSocketServerExec::IsOverMaxClientConns(EventManager * manager)
 }
 
 void WebSocketServerExec::AddConnections(const std::string &Id, lws *wsi,
-    std::shared_ptr<UserData> &userData, WebSocketConnection &conn) 
+    std::shared_ptr<UserData> &userData, WebSocketConnection &conn)
 {
     if (userData->IsClosed() || userData->IsThreadStop()) {
         NETSTACK_LOGE("AddConnections failed: session %s", userData->IsClosed() ? "closed" : "thread stopped");
@@ -417,7 +412,7 @@ void WebSocketServerExec::AddConnections(const std::string &Id, lws *wsi,
     }
 }
 
-int WebSocketServerExec::LwsCallbackClosed(lws * wsi, lws_callback_reasons reason, void *user, void *in, size_t len) 
+int WebSocketServerExec::LwsCallbackClosed(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     NETSTACK_LOGD("lws callback server closed");
     if (wsi == nullptr) {
@@ -451,7 +446,7 @@ int WebSocketServerExec::LwsCallbackClosed(lws * wsi, lws_callback_reasons reaso
     std::string clientId;
     {
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
-        for (auto it = webSocketConnection_.begin(); it != webSocketConnection_.end(); it) {
+        for (auto it = webSocketConnection_.begin(); it != webSocketConnection_.end(); ++it) {
             if (it->second.first == wsi) {
                 clientId = it->first;
             }
@@ -466,7 +461,7 @@ int WebSocketServerExec::LwsCallbackClosed(lws * wsi, lws_callback_reasons reaso
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-void WebSocketServerExec::RemoveConnections(const std::string &id, UserData &userData) 
+void WebSocketServerExec::RemoveConnections(const std::string &id, UserData &userData)
 {
     if (webSocketConnection_.empty()) {
         NETSTACK_LOGE("connection list is empty");
@@ -483,8 +478,8 @@ void WebSocketServerExec::RemoveConnections(const std::string &id, UserData &use
     }
 }
 
-int WebSocketServerExec::LwsCallbackWsiDestroyServer(lws * wsi, lws_callback_reasons reason, void *user, void *in,
-    size_t len) 
+int WebSocketServerExec::LwsCallbackWsiDestroyServer(lws *wsi, lws_callback_reasons reason, void *user, void *in,
+    size_t len)
 {
     NETSTACK_LOGD("lws server callback wsi destroy");
     if (wsi == nullptr) {
@@ -506,15 +501,15 @@ int WebSocketServerExec::LwsCallbackWsiDestroyServer(lws * wsi, lws_callback_rea
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-int WebSocketServerExec::LwsCallbackProtocolDestroyServer(lws * wsi, lws_callback_reasons reason, void *user, void *in,
-    size_t len) 
+int WebSocketServerExec::LwsCallbackProtocolDestroyServer(lws *wsi, lws_callback_reasons reason, void *user, void *in,
+    size_t len)
 {
     NETSTACK_LOGD("lws server callback protocol destroy");
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-int WebSocketServerExec::LwsCallbackServerWriteable(lws * wsi, lws_callback_reasons reason, void *user, void *in,
-    size_t len) 
+int WebSocketServerExec::LwsCallbackServerWriteable(lws *wsi, lws_callback_reasons reason, void *user, void *in,
+    size_t len)
 {
     NETSTACK_LOGD("lws callback Server writable");
     lws_context *context = lws_get_context(wsi);
@@ -551,7 +546,7 @@ int WebSocketServerExec::LwsCallbackServerWriteable(lws * wsi, lws_callback_reas
         NETSTACK_LOGE("send data is empty");
         return HttpDummy(wsi, reason, user, in, len);
     }
-    int sendLength = lws_write(wsi, reinterpret_cast<unsigned char *>(sendData.data)  LWS_SEND_BUFFER_PRE_PADDING,
+    int sendLength = lws_write(wsi, reinterpret_cast<unsigned char *>(sendData.data) + LWS_SEND_BUFFER_PRE_PADDING,
         sendData.length, sendData.protocol);
     free(sendData.data);
     NETSTACK_LOGD("lws send data length is %{public}d", sendLength);
@@ -562,8 +557,8 @@ int WebSocketServerExec::LwsCallbackServerWriteable(lws * wsi, lws_callback_reas
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-int WebSocketServerExec::LwsCallbackWsPeerInitiatedCloseServer(lws * wsi, lws_callback_reasons reason, void *user, void *in,
-    size_t len) 
+int WebSocketServerExec::LwsCallbackWsPeerInitiatedCloseServer(lws *wsi, lws_callback_reasons reason, void *user, void *in,
+    size_t len)
 {
     NETSTACK_LOGD("lws server callback ws peer initiated close");
     if (wsi == nullptr) {
@@ -584,14 +579,14 @@ int WebSocketServerExec::LwsCallbackWsPeerInitiatedCloseServer(lws * wsi, lws_ca
     }
     uint16_t closeStatus = ntohs(*reinterpret_cast<uint16_t *>(in));
     std::string closeReason;
-    closeReason.append(reinterpret_cast<char *>(in)  sizeof(uint16_t), len - sizeof(uint16_t));
+    closeReason.append(reinterpret_cast<char *>(in) + sizeof(uint16_t), len - sizeof(uint16_t));
     auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(wsi));
     clientUserData->Close(static_cast<lws_close_status>(closeStatus), closeReason);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-int WebSocketServerExec::LwsCallbackFilterProtocolConnection(lws * wsi, lws_callback_reasons reason, void *user, void *in,
-    size_t len) 
+int WebSocketServerExec::LwsCallbackFilterProtocolConnection(lws *wsi, lws_callback_reasons reason, void *user, void *in,
+    size_t len)
 {
     NETSTACK_LOGD("lws server callback filter ProtocolConnection");
     lws_context *context = lws_get_context(wsi);
@@ -633,7 +628,7 @@ int WebSocketServerExec::LwsCallbackFilterProtocolConnection(lws * wsi, lws_call
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-bool WebSocketServerExec::IsAllowConnection(const std::string &clientId) 
+bool WebSocketServerExec::IsAllowConnection(const std::string &clientId)
 {
     if (IsIpInBlacklist(clientId)) {
         NETSTACK_LOGE("clientid is in blacklist");
@@ -648,7 +643,7 @@ bool WebSocketServerExec::IsAllowConnection(const std::string &clientId)
     return true;
 }
 
-void WebSocketServerExec::UpdataClientList(const std::string &id) 
+void WebSocketServerExec::UpdataClientList(const std::string &id)
 {
     std::shared_lock<std::shared_mutex> lock(connListMutex_);
     auto it = clientList.find(id);
@@ -661,18 +656,18 @@ void WebSocketServerExec::UpdataClientList(const std::string &id)
             NETSTACK_LOGI("reset clientid connections cnt");
             it->second = {1, GetCurrentSecond()};
         } else {
-            it->second.cnt;
+            it->second.cnt++;
         }
     }
 }
 
-void WebSocketServerExec::AddBlackList(const std::string &id) 
+void WebSocketServerExec::AddBlackList(const std::string &id)
 {
     std::shared_lock<std::shared_mutex> lock(blackListMutex_);
-    blackList[id] = GetCurrentSecond()  ONE_MINUTE_IN_SEC;
+    blackList[id] = GetCurrentSecond() + ONE_MINUTE_IN_SEC;
 }
 
-bool WebSocketServerExec::IsIpInBlacklist(const std::string &id) 
+bool WebSocketServerExec::IsIpInBlacklist(const std::string &id)
 {
     std::shared_lock<std::shared_mutex> lock(blackListMutex_);
     auto it = blackList.find(id);
@@ -687,12 +682,13 @@ bool WebSocketServerExec::IsIpInBlacklist(const std::string &id)
     return false;
 }
 
-uint64_t WebSocketServerExec::GetCurrentSecond() 
+uint64_t WebSocketServerExec::GetCurrentSecond()
 {
-    return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
+        .count();
 }
 
-bool WebSocketServerExec::IsHighFreqConnection(const std::string &id) 
+bool WebSocketServerExec::IsHighFreqConnection(const std::string &id)
 {
     std::shared_lock<std::shared_mutex> lock(connListMutex_);
     auto it = clientList.find(id);
@@ -705,7 +701,7 @@ bool WebSocketServerExec::IsHighFreqConnection(const std::string &id)
     return false;
 }
 
-bool WebSocketServerExec::IsAllowedProtocol(lws * wsi) 
+bool WebSocketServerExec::IsAllowedProtocol(lws *wsi)
 {
     char requested_protocol[128] = {0};
     int32_t res = lws_hdr_copy(wsi, requested_protocol, sizeof(requested_protocol), WSI_TOKEN_PROTOCOL);
@@ -720,8 +716,8 @@ bool WebSocketServerExec::IsAllowedProtocol(lws * wsi)
     return true;
 }
 
-int WebSocketServerExec::LwsCallbackReceive(lws * wsi, lws_callback_reasons reason, void *user, void *in,
-    size_t len) 
+int WebSocketServerExec::LwsCallbackReceive(lws *wsi, lws_callback_reasons reason, void *user, void *in,
+    size_t len)
 {
     NETSTACK_LOGD("lws callback server receive");
     lws_context *context = lws_get_context(wsi);
@@ -731,7 +727,7 @@ int WebSocketServerExec::LwsCallbackReceive(lws * wsi, lws_callback_reasons reas
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-static napi_value CreateServerClosePara(napi_env env, void *callbackPara) 
+static napi_value CreateServerClosePara(napi_env env, void *callbackPara)
 {
     auto para = reinterpret_cast<ClientConnectionCloseCallback *>(callbackPara);
     auto deleter = [](const ClientConnectionCloseCallback *p) { delete p; };
@@ -757,7 +753,7 @@ static napi_value CreateServerClosePara(napi_env env, void *callbackPara)
     return obj;
 }
 
-static napi_value ConvertWsBinaryMessageToJs(napi_env env, const WebSocketMessage *msg) 
+static napi_value ConvertWsBinaryMessageToJs(napi_env env, const WebSocketMessage *msg)
 {
     napi_value jsMsg = NapiUtils::CreateObject(env);
     if (NapiUtils::GetValueType(env, jsMsg) != napi_object) {
@@ -780,7 +776,7 @@ static napi_value ConvertWsBinaryMessageToJs(napi_env env, const WebSocketMessag
     return NapiUtils::GetUndefined(env);
 }
 
-static napi_value CreateServerBinaryMessagePara(napi_env env, void *callbackPara) 
+static napi_value CreateServerBinaryMessagePara(napi_env env, void *callbackPara)
 {
     auto pair = reinterpret_cast<std::pair<lws *, std::shared_ptr<EventManager>> *>(callbackPara);
     if (pair == nullptr) {
@@ -811,7 +807,7 @@ static napi_value CreateServerBinaryMessagePara(napi_env env, void *callbackPara
     return jsMsg;
 }
 
-static napi_value ConvertWsTextMessageToJs(napi_env env, const WebSocketMessage *msg) 
+static napi_value ConvertWsTextMessageToJs(napi_env env, const WebSocketMessage *msg)
 {
     napi_value jsMsg = NapiUtils::CreateObject(env);
     if (NapiUtils::GetValueType(env, jsMsg) != napi_object) {
@@ -828,7 +824,7 @@ static napi_value ConvertWsTextMessageToJs(napi_env env, const WebSocketMessage 
     return jsMsg;
 }
 
-static napi_value CreateServerTextMessagePara(napi_env env, void *callbackPara) 
+static napi_value CreateServerTextMessagePara(napi_env env, void *callbackPara)
 {
     auto pair = reinterpret_cast<std::pair<lws *, std::shared_ptr<EventManager>> *>(callbackPara);
     if (pair == nullptr) {
@@ -860,7 +856,7 @@ static napi_value CreateServerTextMessagePara(napi_env env, void *callbackPara)
     return jsMsg;
 }
 
-static napi_value CreateConnectPara(napi_env env, void *callbackPara) 
+static napi_value CreateConnectPara(napi_env env, void *callbackPara)
 {
     auto para = reinterpret_cast<WebSocketConnection *>(callbackPara);
     auto deleter = [](const WebSocketConnection *p) { delete p; };
@@ -875,7 +871,7 @@ static napi_value CreateConnectPara(napi_env env, void *callbackPara)
     return obj;
 }
 
-static napi_value CreateServerError(napi_env env, void *callbackPara) 
+static napi_value CreateServerError(napi_env env, void *callbackPara)
 {
     auto code = reinterpret_cast<int32_t *>(callbackPara);
     if (code == nullptr) {
@@ -891,7 +887,7 @@ static napi_value CreateServerError(napi_env env, void *callbackPara)
     return err;
 }
    
-void WebSocketServerExec::OnServerError(EventManager * manager, int32_t code) 
+void WebSocketServerExec::OnServerError(EventManager *manager, int32_t code)
 {
     NETSTACK_LOGI("OnServerError %{public}d", code);
     if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
@@ -907,7 +903,7 @@ void WebSocketServerExec::OnServerError(EventManager * manager, int32_t code)
     manager->EmitByUvWithoutCheckShared(EventName::EVENT_SERVER_ERROR, para, CallbackTemplate<CreateServerError>); 
 }
 
-void WebSocketServerExec::OnConnect(lws * wsi, EventManager * manager) 
+void WebSocketServerExec::OnConnect(lws *wsi, EventManager *manager)
 {
     NETSTACK_LOGI("OnConnect enter");
     if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
@@ -936,8 +932,8 @@ void WebSocketServerExec::OnConnect(lws * wsi, EventManager * manager)
     NETSTACK_LOGE("not found client msg");
 }
 
-void WebSocketServerExec::OnServerClose(lws * wsi, EventManager * manager, lws_close_status closeStatus,
-    const std::string &closeReason) 
+void WebSocketServerExec::OnServerClose(lws *wsi, EventManager *manager, lws_close_status closeStatus,
+    const std::string &closeReason)
 {
     NETSTACK_LOGI("OnServerClose %{public}u %{public}s", closeStatus, closeReason.c_str());
     if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
@@ -974,8 +970,8 @@ void WebSocketServerExec::OnServerClose(lws * wsi, EventManager * manager, lws_c
     NETSTACK_LOGE("not found client msg");
 }
 
-void WebSocketServerExec::OnServerMessage(lws * wsi, EventManager * manager, void *data,
-    size_t length, bool isBinary, bool isFinal) 
+void WebSocketServerExec::OnServerMessage(lws *wsi, EventManager *manager, void *data,
+    size_t length, bool isBinary, bool isFinal)
 {
     NETSTACK_LOGD("server OnMessage %{public}d", isBinary);
     if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
@@ -994,8 +990,8 @@ void WebSocketServerExec::OnServerMessage(lws * wsi, EventManager * manager, voi
     HandleServerRcvMessage(wsi, manager, data, length, isBinary, isFinal);
 }
 
-void WebSocketServerExec::HandleServerRcvMessage(lws * wsi, EventManager * manager, void *data,
-    size_t length, bool isBinary, bool isFinal) 
+void WebSocketServerExec::HandleServerRcvMessage(lws *wsi, EventManager *manager, void *data,
+    size_t length, bool isBinary, bool isFinal)
 {
     if (isBinary) {
         manager->AppendWsServerBinaryData(wsi, data, length);
@@ -1036,8 +1032,8 @@ void WebSocketServerExec::HandleServerRcvMessage(lws * wsi, EventManager * manag
     }
 }
 
-void WebSocketServerExec::SetWebsocketMessage(lws * wsi, EventManager * manager,
-    const std::string &msgFromManager, void *dataMsg) 
+void WebSocketServerExec::SetWebsocketMessage(lws *wsi, EventManager *manager,
+    const std::string &msgFromManager, void *dataMsg)
 {
     NETSTACK_LOGD("SetWebsocketMessage enter");
     if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
@@ -1067,7 +1063,7 @@ void WebSocketServerExec::SetWebsocketMessage(lws * wsi, EventManager * manager,
     NETSTACK_LOGE("not found client msgFromManager");
 }
 
-bool WebSocketServerExec::ExecServerStart(ServerStartContext * context) 
+bool WebSocketServerExec::ExecServerStart(ServerStartContext *context)
 {
     NETSTACK_LOGD("websocket server start exec");
     if (context == nullptr) {
@@ -1113,7 +1109,7 @@ bool WebSocketServerExec::ExecServerStart(ServerStartContext * context)
     return true;
 }
 
-void WebSocketServerExec::StartService(lws_context_creation_info & info, std::shared_ptr<EventManager> & manager) 
+void WebSocketServerExec::StartService(lws_context_creation_info &info, std::shared_ptr<EventManager> &manager)
 {
     lws_context *lwsContext = nullptr;
     std::shared_ptr<UserData> userData;
@@ -1129,8 +1125,8 @@ void WebSocketServerExec::StartService(lws_context_creation_info & info, std::sh
     serviceThread.detach();
 }
 
-void WebSocketServerExec::FillServerContextInfo(ServerStartContext * context, std::shared_ptr<EventManager> & manager,
-    lws_context_creation_info & info) 
+void WebSocketServerExec::FillServerContextInfo(ServerStartContext *context, std::shared_ptr<EventManager> &manager,
+    lws_context_creation_info &info)
 {
     info.options = LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
     info.port = context->GetServerPort();
@@ -1144,7 +1140,7 @@ void WebSocketServerExec::FillServerContextInfo(ServerStartContext * context, st
     info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 }
 
-static bool CheckFilePath(std::string & path) 
+static bool CheckFilePath(std::string &path)
 {
     char tmpPath[PATH_MAX] = {0};
     if (!realpath(static_cast<const char *>(path.c_str()), tmpPath)) {
@@ -1155,7 +1151,7 @@ static bool CheckFilePath(std::string & path)
     return true;
 }
 
-bool WebSocketServerExec::FillServerCertPath(ServerStartContext * context, lws_context_creation_info & info) 
+bool WebSocketServerExec::FillServerCertPath(ServerStartContext *context, lws_context_creation_info &info)
 {
     if (!context->certPath_.empty()) {
         if (!CheckFilePath(context->certPath_) || !CheckFilePath(context->keyPath_)) {
@@ -1169,7 +1165,7 @@ bool WebSocketServerExec::FillServerCertPath(ServerStartContext * context, lws_c
     return true;
 }
 
-bool WebSocketServerExec::ExecListAllConnections(ListAllConnectionsContext * context) 
+bool WebSocketServerExec::ExecListAllConnections(ListAllConnectionsContext *context)
 {
     NETSTACK_LOGD("ListAllConnections start exec");
     if (context == nullptr) {
@@ -1200,7 +1196,7 @@ bool WebSocketServerExec::ExecListAllConnections(ListAllConnectionsContext * con
     return true;
 }
 
-std::vector<WebSocketConnection> WebSocketServerExec::GetConnections() 
+std::vector<WebSocketConnection> WebSocketServerExec::GetConnections()
 {
     std::shared_lock<std::shared_mutex> lock(wsMutex_);
     std::vector<WebSocketConnection> conn;
@@ -1212,7 +1208,7 @@ std::vector<WebSocketConnection> WebSocketServerExec::GetConnections()
     return conn;
 }
 
-bool WebSocketServerExec::ExecServerClose(ServerCloseContext * context) 
+bool WebSocketServerExec::ExecServerClose(ServerCloseContext *context)
 {
     if (context == nullptr) {
         NETSTACK_LOGE("context is nullptr");
@@ -1232,7 +1228,7 @@ bool WebSocketServerExec::ExecServerClose(ServerCloseContext * context)
         NETSTACK_LOGE("connection is empty");
         return false;
     }
-    std::string clientId = conn.clientIP  ":"  std::to_string(conn.clientPort);
+    std::string clientId = conn.clientIP + ":" + std::to_string(conn.clientPort);
     NETSTACK_LOGI("ExecServerClose, clientID:%{public}s", clientId.c_str());
     auto wsi = GetClientWsi(clientId);
     if (wsi == nullptr) {
@@ -1255,7 +1251,7 @@ bool WebSocketServerExec::ExecServerClose(ServerCloseContext * context)
     return true;
 }
 
-bool WebSocketServerExec::ExecServerSend(ServerSendContext * context) 
+bool WebSocketServerExec::ExecServerSend(ServerSendContext *context)
 {
     if (context == nullptr) {
         NETSTACK_LOGE("context is nullptr");
@@ -1270,7 +1266,7 @@ bool WebSocketServerExec::ExecServerSend(ServerSendContext * context)
         NETSTACK_LOGE("connection is empty");
         return false;
     }
-    std::string clientId = conn.clientIP  ":"  std::to_string(conn.clientPort);
+    std::string clientId = conn.clientIP + ":" + std::to_string(conn.clientPort);
     NETSTACK_LOGI("connection clientid:%{public}s", clientId.c_str());
     auto wsi = GetClientWsi(clientId);
     if (wsi == nullptr) {
@@ -1293,7 +1289,7 @@ bool WebSocketServerExec::ExecServerSend(ServerSendContext * context)
     return true;
 }
 
-lws *WebSocketServerExec::GetClientWsi(const std::string clientId) 
+lws *WebSocketServerExec::GetClientWsi(const std::string clientId)
 {
     std::shared_lock<std::shared_mutex> lock(wsMutex_);
     if (webSocketConnection_.empty()) {
@@ -1308,7 +1304,7 @@ lws *WebSocketServerExec::GetClientWsi(const std::string clientId)
     return it->second.first;
 }
 
-bool WebSocketServerExec::ExecServerStop(ServerStopContext * context) 
+bool WebSocketServerExec::ExecServerStop(ServerStopContext *context)
 {
     if (context == nullptr) {
         NETSTACK_LOGE("context is nullptr");
@@ -1338,7 +1334,7 @@ bool WebSocketServerExec::ExecServerStop(ServerStopContext * context)
     return true;
 }
 
-void WebSocketServerExec::CloseAllConnection(const std::shared_ptr<UserData> &userData) 
+void WebSocketServerExec::CloseAllConnection(const std::shared_ptr<UserData> &userData)
 {
     decltype(webSocketConnection_) connListTmp;
     {
@@ -1366,12 +1362,12 @@ void WebSocketServerExec::CloseAllConnection(const std::shared_ptr<UserData> &us
     NETSTACK_LOGI("CloseAllConnection OK");
 }
 
-napi_value WebSocketServerExec::ServerStartCallback(ServerStartContext * context) 
+napi_value WebSocketServerExec::ServerStartCallback(ServerStartContext *context)
 {
     return NapiUtils::GetBoolean(context->GetEnv(), true);
 }
 
-napi_value WebSocketServerExec::ListAllConnectionsCallback(ListAllConnectionsContext * context) 
+napi_value WebSocketServerExec::ListAllConnectionsCallback(ListAllConnectionsContext *context)
 {
     if (context == nullptr) {
         NETSTACK_LOGE("Context is null");
@@ -1394,17 +1390,17 @@ napi_value WebSocketServerExec::ListAllConnectionsCallback(ListAllConnectionsCon
     return connectionsArray;
 }
 
-napi_value WebSocketServerExec::ServerSendCallback(ServerSendContext * context) 
+napi_value WebSocketServerExec::ServerSendCallback(ServerSendContext *context)
 {
     return NapiUtils::GetBoolean(context->GetEnv(), true);
 }
 
-napi_value WebSocketServerExec::ServerCloseCallback(ServerCloseContext * context) 
+napi_value WebSocketServerExec::ServerCloseCallback(ServerCloseContext *context)
 {
     return NapiUtils::GetBoolean(context->GetEnv(), true);
 }
 
-napi_value WebSocketServerExec::ServerStopCallback(ServerStopContext * context) 
+napi_value WebSocketServerExec::ServerStopCallback(ServerStopContext *context)
 {
     auto manager = context->GetSharedManager();
     if (manager != nullptr) {
