@@ -69,7 +69,6 @@ ohos_shared_library("stack_utils_common") {
     "bounds_checking_function:libsec_shared",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
-    "libwebsockets:websockets",
     "samgr:samgr_proxy",
   ]
 
