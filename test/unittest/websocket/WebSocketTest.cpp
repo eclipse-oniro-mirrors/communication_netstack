@@ -374,7 +374,6 @@ HWTEST_F(WebSocketTest, WebSocketTest034, TestSize.Level1)
     context.SetPermissionDenied(false);
     bool ret = WebSocketExec::ExecClose(&context);
     EXPECT_EQ(ret, false);
-
 }
 #endif
 } // namespace
