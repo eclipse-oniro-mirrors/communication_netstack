@@ -85,6 +85,10 @@ ohos_shared_library("stack_utils_common") {
     defines = [ "HAS_NETMANAGER_BASE=0" ]
   }
 
+  if (netstack_websocket_server_enable) {
+    defines += [ "NETSTACK_WEBSOCKETSERVER" ]
+  }
+
   innerapi_tags = [ "platformsdk" ]
   part_name = "netstack"
   subsystem_name = "communication"

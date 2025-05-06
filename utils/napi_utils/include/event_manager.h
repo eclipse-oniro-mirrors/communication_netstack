@@ -79,6 +79,12 @@ public:
 
     void *GetQueueData();
 
+#ifdef NETSTACK_WEBSOCKETSERVER
+    void SetServerQueueData(void *wsi, void *data);
+
+    void *GetServerQueueData(void *wsi);
+#endif
+
     void CreateEventReference(napi_env env, napi_value value);
 
     void DeleteEventReference(napi_env env);
@@ -117,6 +123,27 @@ public:
 
     void SetProxyData(std::shared_ptr<Socks5::Socks5Instance> data);
 
+#ifdef NETSTACK_WEBSOCKETSERVER
+    const std::string &GetWsServerBinaryData(void *wsi);
+
+    const std::string &GetWsServerTextData(void *wsi);
+
+    void AppendWsServerBinaryData(void *wsi, void *data, size_t length);
+
+    void AppendWsServerTextData(void *wsi, void *data, size_t length);
+
+    void ClearWsServerBinaryData(void *wsi);
+
+    void ClearWsServerTextData(void *wsi);
+
+    void SetMaxConnClientCnt(const uint32_t &cnt);
+
+    void SetMaxConnForOneClient(const uint32_t &cnt);
+
+    [[nodiscard]] uint32_t GetMaxConnClientCnt() const;
+
+    [[nodiscard]] uint32_t GetMaxConnForOneClient() const;
+#endif
 private:
     std::shared_mutex mutexForListenersAndEmitByUv_;
     std::shared_mutex dataMutex_;
@@ -136,6 +163,14 @@ private:
     std::atomic_bool isReuseAddr_ = false;
     std::shared_ptr<Websocket::UserData> webSocketUserData_;
     std::shared_ptr<Socks5::Socks5Instance> proxyData_;
+#ifdef NETSTACK_WEBSOCKETSERVER
+    std::shared_mutex dataServerQueueMutex_;
+    std::unordered_map<void *, std::queue<void *>> serverDataQueue_;
+    std::unordered_map<void *, std::string> wsServerBinaryData_;
+    std::unordered_map<void *, std::string> wsServerTextData_;
+    uint32_t maxConnClientCnt_;
+    uint32_t maxConnForOneClient_;
+#endif
 
 public:
     struct {
@@ -149,6 +184,7 @@ private:
     [[maybe_unused]] std::mutex mutexForEmitAndEmitByUv_;
     [[maybe_unused]] std::mutex dataMutex_;
     [[maybe_unused]] std::mutex dataQueueMutex_;
+    [[maybe_unused]] std::shared_mutex dataServerQueueMutex_;
     [[maybe_unused]] std::list<EventListener> listeners_;
     [[maybe_unused]] void *data_ = nullptr;
     [[maybe_unused]] std::queue<void *> dataQueue_;

@@ -31,6 +31,7 @@ static constexpr const char *INTERFACE_LOCAL_SOCKET = "LocalSocket";
 static constexpr const char *INTERFACE_TLS_SOCKET = "TLSSocket";
 static constexpr const char *INTERFACE_WEB_SOCKET = "WebSocket";
 static constexpr const char *INTERFACE_HTTP_REQUEST = "OHOS_NET_HTTP_HttpRequest";
+static constexpr const char *INTERFACE_WEB_SOCKET_SERVER = "WebSocketServer";
 
 napi_value OnManagerWrapper(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
                             bool asyncCallback)
@@ -334,7 +335,8 @@ napi_value NewInstanceWithManagerWrapper(napi_env env, napi_callback_info info, 
     auto manager = std::make_shared<EventManager>();
     wrapper->sharedManager = manager;
     if (className == INTERFACE_HTTP_REQUEST || className == INTERFACE_LOCAL_SOCKET ||
-        className == INTERFACE_TLS_SOCKET || className == INTERFACE_WEB_SOCKET) {
+        className == INTERFACE_TLS_SOCKET || className == INTERFACE_WEB_SOCKET ||
+        className == INTERFACE_WEB_SOCKET_SERVER) {
         NETSTACK_LOGD("create reference for %{public}s", className.c_str());
         manager->CreateEventReference(env, thisVal);
     }
@@ -366,7 +368,8 @@ napi_value NewInstanceWithSharedManager(napi_env env, napi_callback_info info, c
     auto manager = std::make_shared<EventManager>();
     *sharedManager = manager;
     if (className == INTERFACE_HTTP_REQUEST || className == INTERFACE_LOCAL_SOCKET ||
-        className == INTERFACE_TLS_SOCKET || className == INTERFACE_WEB_SOCKET) {
+        className == INTERFACE_TLS_SOCKET || className == INTERFACE_WEB_SOCKET ||
+        className == INTERFACE_WEB_SOCKET_SERVER) {
         NETSTACK_LOGD("create reference for %{public}s", className.c_str());
         manager->CreateEventReference(env, thisVal);
     }

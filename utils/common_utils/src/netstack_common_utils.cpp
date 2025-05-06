@@ -603,4 +603,12 @@ bool IsCleartextPermitted(const std::string &url, const std::string &protocol)
 #endif
     return isCleartextPermitted;
 }
+
+bool IsValidPort(const uint32_t &port)
+{
+    if (port < 0 || port > MAX_PORT) {
+        return false;
+    }
+    return true;
+}
 } // namespace OHOS::NetStack::CommonUtils

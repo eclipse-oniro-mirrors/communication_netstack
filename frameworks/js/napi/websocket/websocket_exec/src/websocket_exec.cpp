@@ -32,6 +32,7 @@
 #include "net_conn_client.h"
 #endif
 
+
 static constexpr const char *PROTOCOL_DELIMITER = "//";
 
 static constexpr const char *NAME_END = ":";
@@ -77,6 +78,7 @@ static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/c
 static constexpr const char *WEBSOCKET_CLIENT_THREAD_RUN = "OS_NET_WSJsCli";
 
 namespace OHOS::NetStack::Websocket {
+
 static const lws_protocols LWS_PROTOCOLS[] = {
     {"lws-minimal-client", WebSocketExec::LwsCallback, 0, 0},
     {nullptr, nullptr, 0, 0}, // this line is needed
@@ -294,6 +296,7 @@ void RunService(std::shared_ptr<UserData> userData, std::shared_ptr<EventManager
     while (res >= 0 && !userData->IsThreadStop()) {
         res = lws_service(context, 0);
     }
+    NETSTACK_LOGE("lws_service stop");
     lws_context_destroy(context);
     userData->SetContext(nullptr);
     manager->SetWebSocketUserData(nullptr);
@@ -446,7 +449,6 @@ void OnConnectError(EventManager *manager, int32_t code, uint32_t httpResponse)
 int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                     size_t len)
 {
-    NETSTACK_LOGD("lws callback client connection error");
     NETSTACK_LOGI("Lws client connection error %{public}s", (in == nullptr) ? "null" : reinterpret_cast<char *>(in));
     // 200 means connect failed
     OnConnectError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE, GetHttpResponseFromWsi(wsi));
@@ -595,13 +597,11 @@ int WebSocketExec::LwsCallback(lws *wsi, lws_callback_reasons reason, void *user
         {LWS_CALLBACK_PROTOCOL_DESTROY, LwsCallbackProtocolDestroy},
         {LWS_CALLBACK_VHOST_CERT_AGING, LwsCallbackVhostCertAging},
     };
-
     for (const auto dispatcher : dispatchers) {
         if (dispatcher.reason == reason) {
             return dispatcher.callback(wsi, reason, user, in, len);
         }
     }
-
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -1052,7 +1052,10 @@ void WebSocketExec::HandleRcvMessage(EventManager *manager, void *data, size_t l
         manager->AppendWebSocketBinaryData(data, length);
         if (isFinal) {
             const std::string &msgFromManager = manager->GetWebSocketBinaryData();
-            auto msg = new std::string;
+            auto msg = new (std::nothrow) std::string;
+            if (msg == nullptr) {
+                return;
+            }
             msg->append(msgFromManager.data(), msgFromManager.size());
             manager->SetQueueData(msg);
             manager->EmitByUvWithoutCheckShared(EventName::EVENT_MESSAGE, manager,

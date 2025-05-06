@@ -21,6 +21,7 @@
 #include "send_context.h"
 
 namespace OHOS::NetStack::Websocket {
+
 class WebSocketExec final {
 public:
     static bool CreatConnectInfo(ConnectContext *context, lws_context *lwsContext,

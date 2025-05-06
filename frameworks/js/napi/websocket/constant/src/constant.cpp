@@ -23,6 +23,17 @@ const char *ContextKey::CLIENT_CERT = "clientCert";
 const char *ContextKey::CERT_PATH = "certPath";
 const char *ContextKey::KEY_PATH = "keyPath";
 const char *ContextKey::KEY_PASSWD = "keyPassword";
+/* WebSocketConnection */
+const char *ContextKey::CLIENT_PORT = "clientPort";
+const char *ContextKey::CLIENT_IP = "clientIP";
+
+/* WebSocketServerConfig */
+const char *ContextKey::SERVER_PORT = "serverPort";
+const char *ContextKey::MAX_CLIENT_NUMBER = "maxConcurrentClientsNumber";
+const char *ContextKey::MAX_CONNECTIONS_FOR_ONE_CLIENT = "maxConnectionsForOneClient";
+const char *ContextKey::SERVER_IP = "serverIP";
+const char *ContextKey::SERVER_CERT = "serverCert";
+const char *ContextKey::PROTOCOL = "protocol";
 
 const char *ContextKey::PROXY = "proxy";
 const char *ContextKey::PROTCOL = "protocol";
@@ -43,4 +54,9 @@ const char *EventName::EVENT_CLOSE = "close";
 const char *EventName::EVENT_ERROR = "error";
 const char *EventName::EVENT_DATA_END = "dataEnd";
 const char *EventName::EVENT_HEADER_RECEIVE = "headerReceive";
+/* websocketServer */
+const char *EventName::EVENT_SERVER_ERROR = "error";
+const char *EventName::EVENT_SERVER_CONNECT = "connect";
+const char *EventName::EVENT_SERVER_MESSAGE_RECEIVE = "messageReceive";
+const char *EventName::EVENT_SERVER_CLOSE = "close";
 } // namespace OHOS::NetStack::Websocket
