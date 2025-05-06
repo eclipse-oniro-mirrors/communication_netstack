@@ -108,11 +108,11 @@ private:
 
     static bool IsAllowConnection(const std::string &clientId);
 
-    static bool IsIpInBlacklist(const std::string &id);
+    static bool IsIpInBanList(const std::string &id);
 
     static bool IsHighFreqConnection(const std::string &id);
 
-    static void AddBlackList(const std::string &id);
+    static void AddBanList(const std::string &id);
 
     static void UpdataClientList(const std::string &id);
 
