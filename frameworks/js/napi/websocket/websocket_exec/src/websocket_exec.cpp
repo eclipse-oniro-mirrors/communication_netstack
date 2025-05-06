@@ -20,9 +20,6 @@
 #include <queue>
 #include <thread>
 #include <unistd.h>
-#include <sstream>
-#include <algorithm>
-#include <shared_mutex>
 
 #include "constant.h"
 #include "napi_utils.h"
@@ -452,7 +449,6 @@ void OnConnectError(EventManager *manager, int32_t code, uint32_t httpResponse)
 int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                     size_t len)
 {
-    NETSTACK_LOGD("lws callback client connection error");
     NETSTACK_LOGI("Lws client connection error %{public}s", (in == nullptr) ? "null" : reinterpret_cast<char *>(in));
     // 200 means connect failed
     OnConnectError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE, GetHttpResponseFromWsi(wsi));
@@ -1056,7 +1052,10 @@ void WebSocketExec::HandleRcvMessage(EventManager *manager, void *data, size_t l
         manager->AppendWebSocketBinaryData(data, length);
         if (isFinal) {
             const std::string &msgFromManager = manager->GetWebSocketBinaryData();
-            auto msg = new std::string;
+            auto msg = new (std::nothrow) std::string;
+            if (msg == nullptr) {
+                return;
+            }
             msg->append(msgFromManager.data(), msgFromManager.size());
             manager->SetQueueData(msg);
             manager->EmitByUvWithoutCheckShared(EventName::EVENT_MESSAGE, manager,
