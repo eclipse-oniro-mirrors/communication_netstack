@@ -129,10 +129,10 @@ void InforLog(DataTransChrStats chrStats)
         %{public}lld, %{public}lld, %{public}lld, \
         %{public}lld, %{public}lld, %{public}lld, \
         %{public}lld, %{public}s, %{public}lld, \
-        %{public}s, %{public}lld, %{public}lld, \
-        %{public}lld, %{public}lld, %{public}lld, \
+        %{public}s, %{public}lld, %{public}ld, \
+        %{public}ld, %{public}ld, %{public}lld, \
         %{public}lld, %{public}d, %{public}lld, \
-        %{public}lld, \
+        %{public}ld, \
         TCP Info{%{public}d, %{public}d, %{public}d, \
         %{public}d, %{public}d, %{public}d, \
         %{public}d, %{public}d, %{public}d, \
