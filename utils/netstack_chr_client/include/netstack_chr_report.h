@@ -24,6 +24,8 @@
  
 namespace OHOS::NatStack::ChrClient {
 
+using namespace OHOS::NatStack::ChrClient;
+
 class NetstackChrReport {
 public:
     NetstackChrReport();
