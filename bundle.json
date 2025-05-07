@@ -18,7 +18,7 @@
     },
     "component": {
         "name": "netstack",
-        "subsystem": "communication",
+        "subsystem": "communication_netstack",
         "syscap": [
             "SystemCapability.Communication.NetStack"
         ],
