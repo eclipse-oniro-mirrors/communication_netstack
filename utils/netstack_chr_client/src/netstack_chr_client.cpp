@@ -203,7 +203,7 @@ void NetStackChrClient::GetDfxInfoFromCurlHandleAndReport(CURL *handle, int32_t 
     curl_easy_getinfo(handle, CURLINFO_ACTIVESOCKET, &sockfd);
 
     if (GetTcpInfoFromSock(sockfd, dataTransChrStats.tcpInfo) != 0) {
-        NETSTACK_LOGD("Chr client get tcp info from socket failed, sockfd: %{public}d", sockfd);
+        NETSTACK_LOGD("Chr client get tcp info from socket failed, sockfd: %{public}lld", sockfd);
     }
 
     int ret = netstackChrReport.ReportCommonEvent(dataTransChrStats);
