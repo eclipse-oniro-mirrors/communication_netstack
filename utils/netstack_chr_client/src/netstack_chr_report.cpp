@@ -125,14 +125,14 @@ std::string NetstackChrReport::ConvertTcpInfoToJsonStr(DataTransChrStats chrStat
 void InforLog(DataTransChrStats chrStats)
 {
     NETSTACK_LOGI("[Netstack CHR Service] Process Name:%{public}s, \
-        HTTP Info{%{public}d, %{public}d, %{public}ld, \
-        %{public}ld, %{public}ld, %{public}ld, \
-        %{public}ld, %{public}ld, %{public}ld, \
-        %{public}ld, %{public}s, %{public}ld, \
-        %{public}s, %{public}ld, %{public}ld, \
-        %{public}ld, %{public}ld, %{public}ld, \
-        %{public}ld, %{public}d, %{public}ld, \
-        %{public}ld, \
+        HTTP Info{%{public}d, %{public}d, %{public}lld, \
+        %{public}lld, %{public}lld, %{public}lld, \
+        %{public}lld, %{public}lld, %{public}lld, \
+        %{public}lld, %{public}s, %{public}lld, \
+        %{public}s, %{public}lld, %{public}lld, \
+        %{public}lld, %{public}lld, %{public}lld, \
+        %{public}lld, %{public}d, %{public}lld, \
+        %{public}lld, \
         TCP Info{%{public}d, %{public}d, %{public}d, \
         %{public}d, %{public}d, %{public}d, \
         %{public}d, %{public}d, %{public}d, \
