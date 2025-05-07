@@ -137,7 +137,7 @@ void InforLog(DataTransChrStats chrStats)
         %{public}d, %{public}d, %{public}d, \
         %{public}d, %{public}d, %{public}d, \
         %{public}s, %{public}s, %{public}d}, \
-        %{public}d,",
+        %{public}d",
         chrStats.processName.c_str(),
         chrStats.httpInfo.uid, chrStats.httpInfo.responseCode, chrStats.httpInfo.totalTime,
         chrStats.httpInfo.nameLookUpTime, chrStats.httpInfo.connectTime, chrStats.httpInfo.preTransferTime,
