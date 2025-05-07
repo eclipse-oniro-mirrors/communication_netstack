@@ -69,8 +69,7 @@ int NetstackChrReport::ConvertWantParam(AAFwk::Want& want, DataTransChrStats chr
     if (httpInfoJsonStr == "" or tcpInfoJsonStr == "") {
         return -1;
     }
-    want.SetParam(UID_KEY, chrStats.uid);
-    want.SetParam(SOCKFD_KEY, chrStats.sockfd);
+    want.SetParam(PROCESS_NAME, chrStats.processName);
     want.SetParam(HTTP_INFO_KEY, httpInfoJsonStr);
     want.SetParam(TCP_INFO_KEY, tcpInfoJsonStr);
     return 0;
