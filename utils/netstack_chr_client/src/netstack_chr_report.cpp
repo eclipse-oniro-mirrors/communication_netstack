@@ -20,7 +20,7 @@
 #include "common_event_manager.h"
 #include "want.h"
 
-namespace OHOS::NetStack::ChrClient {
+using namespace OHOS::NetStack::ChrClient;
 
 constexpr char REPORT_HTTP_EVENT_NAME[] = "custom.event.CHR_REPORT_HTTP";
 constexpr int REPORT_TIME_LIMIT_MINUTE = 5;
@@ -118,5 +118,4 @@ std::string NetstackChrReport::ConvertTcpInfoToJsonStr(DataTransChrStats chrStat
     want.SetParam(DST_PORT_KEY, static_cast<int>(chrStats.tcpInfo.dstPort));
     std::string paramStr = want.ToString();
     return paramStr;
-}
 }
