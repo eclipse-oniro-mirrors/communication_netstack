@@ -22,12 +22,6 @@
 
 namespace OHOS::NetStack::ChrClient {
 
-typedef struct DataTransChrStats {
-    std::string processName;
-    DataTransHttpInfo httpInfo;
-    DataTransTcpInfo tcpInfo;
-} DataTransChrStats;
-
 typedef struct DataTransHttpInfo {
     int uid;
     int responseCode;
@@ -68,6 +62,12 @@ typedef struct DataTransTcpInfo {
     uint16_t srcPort;
     uint16_t dstPort;
 } DataTransTcpInfo;
+
+typedef struct DataTransChrStats {
+    std::string processName;
+    DataTransHttpInfo httpInfo;
+    DataTransTcpInfo tcpInfo;
+} DataTransChrStats;
 
 constexpr int REPORT_CHR_RESULT_SUCCESS = 0;
 constexpr int REPORT_CHR_RESULT_TIME_LIMIT_ERROR = 1;
