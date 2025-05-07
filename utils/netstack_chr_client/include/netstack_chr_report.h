@@ -22,9 +22,9 @@
 #include "i_netstack_chr_client.h"
 #include "want.h"
  
-namespace OHOS::NatStack::ChrClient {
+namespace OHOS::NetStack::ChrClient {
 
-using namespace OHOS::NatStack::ChrClient;
+using namespace OHOS::NetStack::ChrClient;
 
 class NetstackChrReport {
 public:
@@ -40,6 +40,5 @@ private:
     std::string ConvertHttpInfoToJsonStr(DataTransChrStats chrStats);
     std::string ConvertTcpInfoToJsonStr(DataTransChrStats chrStats);
 };
- 
 }  // namespace OHOS::NatStack::ChrClient
 #endif // COMMUNICATIONNETSTACK_NETSTACK_CHR_REPORT_H
