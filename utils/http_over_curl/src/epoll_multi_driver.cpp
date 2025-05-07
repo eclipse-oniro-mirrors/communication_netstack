@@ -142,12 +142,15 @@ __attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
         switch (message->msg) {
             case CURLMSG_DONE: {
                 auto easyHandle = message->easy_handle;
-                curl_multi_remove_handle(multi_, easyHandle);
                 auto requestInfo = ongoingRequests_[easyHandle];
                 ongoingRequests_.erase(easyHandle);
                 if (requestInfo != nullptr && requestInfo->doneCallback) {
                     requestInfo->doneCallback(message, requestInfo->opaqueData);
                 }
+                if (message->easy_handle) {
+                    (void)curl_multi_remove_handle(multi_, easyHandle);
+                }
+                curl_multi_remove_handle(multi_, easyHandle);
                 delete requestInfo;
                 break;
             }

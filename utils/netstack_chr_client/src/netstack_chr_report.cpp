@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include <string>
+#include <sstream>
 #include <chrono>
 #include "i_netstack_chr_client.h"
 #include "netstack_chr_report.h"
@@ -37,12 +38,12 @@ int NetstackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
     auto currentTime = std::chrono::system_clock::now();
     auto timeDifference = std::chrono::duration_cast<std::chrono::minutes>(currentTime - lastReceivedTime_);
     if (timeDifference.count() < REPORT_TIME_LIMIT_MINUTE) {
-        NETSTACK_LOGE("From last report %{public}ld minutes, ignore this report.", timeDifference.count());
+        ignoreReportTimes_ += 1;
         return REPORT_CHR_RESULT_TIME_LIMIT_ERROR;
     }
     AAFwk::Want want;
     want.SetAction(REPORT_HTTP_EVENT_NAME);
-    if (!ConvertWantParam(want, chrStats)) {
+    if (ConvertWantParam(want, chrStats) != 0) {
         return REPORT_CHR_RESULT_SET_DATA_FAIL;
     }
 
@@ -50,11 +51,14 @@ int NetstackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
     common_event_data.SetWant(want);
     EventFwk::CommonEventPublishInfo publish_info;
     if (!EventFwk::CommonEventManager::PublishCommonEvent(common_event_data, publish_info)) {
-        NETSTACK_LOGE("Report to CHR failed.");
+        NETSTACK_LOGE("Subscriber is nullptr, report to CHR failed.");
         return REPORT_CHR_RESULT_REPORT_FAIL;
     }
+    NETSTACK_LOGI("Report to CHR success, %{public}d reports are ignore before this.", ignoreReportTimes_);
+    InforLog(chrStats);
     lastReceivedTime_ = currentTime;
-    NETSTACK_LOGI("Report to CHR success.");
+    ignoreReportTimes_ = 0;
+
     return REPORT_CHR_RESULT_SUCCESS;
 }
 
@@ -118,4 +122,29 @@ std::string NetstackChrReport::ConvertTcpInfoToJsonStr(DataTransChrStats chrStat
     want.SetParam(DST_PORT_KEY, static_cast<int>(chrStats.tcpInfo.dstPort));
     std::string paramStr = want.ToString();
     return paramStr;
+}
+
+void InforLog(DataTransChrStats chrStats)
+{
+    std::stringstream logString;
+    logString << "[Netstack CHR Service] process_name:" << dataTransChrStats.processName << " "
+              << "HTTP Info:" << chrStats.httpInfo.uid << "," << chrStats.httpInfo.responseCode << "," 
+              << chrStats.httpInfo.totalTime << "," << chrStats.httpInfo.nameLookUpTime << "," 
+              << chrStats.httpInfo.preTransferTime << "," << chrStats.httpInfo.sizeUpload << "," 
+              << chrStats.httpInfo.sizeDownload << "," << chrStats.httpInfo.speedDownload << "," 
+              << chrStats.httpInfo.speedUpload << "," << chrStats.httpInfo.effectiveMethod << "," 
+              << chrStats.httpInfo.startTransferTime << "," << chrStats.httpInfo.contentType << "," 
+              << chrStats.httpInfo.redirectTime << "," << chrStats.httpInfo.redirectCount << "," 
+              << chrStats.httpInfo.osError << "," << chrStats.httpInfo.sslVerifyResult << "," 
+              << chrStats.httpInfo.appconnectTime << "," << chrStats.httpInfo.retryAfter << "," 
+              << chrStats.httpInfo.proxyError << "," << chrStats.httpInfo.queueTime << "," 
+              << chrStats.httpInfo.curlCode << " "
+              << "TCP Info:" << chrStats.tcpInfo.unacked << "," << chrStats.tcpInfo.lastDataSent << "," 
+              << chrStats.tcpInfo.lastAckSent << "," << chrStats.tcpInfo.lastDataRecv << "," 
+              << chrStats.tcpInfo.lastAckRecv << "," << chrStats.tcpInfo.rtt << ","
+              << chrStats.tcpInfo.rttvar << "," << chrStats.tcpInfo.retransmits << "," 
+              << chrStats.tcpInfo.totalRetrans << "," << chrStats.tcpInfo.srcIp << "," 
+              << chrStats.tcpInfo.dstIp << "," << chrStats.tcpInfo.srcPort << "," 
+              << chrStats.tcpInfo.dstPort << ".";
+    NETSTACK_LOGI("%{public}s", logString.str().c_str());
 }

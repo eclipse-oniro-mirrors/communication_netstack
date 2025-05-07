@@ -35,10 +35,12 @@ public:
 private:
     std::chrono::system_clock::time_point lastReceivedTime_;
     std::mutex agentMutex_;
+    int ignoreReportTimes_ = 0;
  
     int ConvertWantParam(AAFwk::Want& want, DataTransChrStats chrStats);
     std::string ConvertHttpInfoToJsonStr(DataTransChrStats chrStats);
     std::string ConvertTcpInfoToJsonStr(DataTransChrStats chrStats);
+    void InforLog(DataTransChrStats chrStats);
 };
 }  // namespace OHOS::NatStack::ChrClient
 #endif // COMMUNICATIONNETSTACK_NETSTACK_CHR_REPORT_H

@@ -17,9 +17,7 @@
 #define COMMUNICATIONNETSTACK_NETSTACK_CHR_CLIENT_H
 
 #include <cstdint>
-#include <cstdbool>
 #include <string>
-
 #include "curl/curl.h"
 #include "netstack_chr_report.h"
 #include "i_netstack_chr_client.h"
@@ -35,15 +33,15 @@ private:
     NetStackChrClient() = default;
     ~NetStackChrClient() = default;
 
-    static bool GetAddrFromSock(
+    static int GetAddrFromSock(
         int sockfd, std::string &srcIp, std::string &dstIp, uint16_t &srcPort, uint16_t &dstPort);
-    static bool GetTcpInfoFromSock(const curl_socket_t sockfd, DataTransTcpInfo &httpTcpInfo);
+    static int GetTcpInfoFromSock(const curl_socket_t sockfd, DataTransTcpInfo &httpTcpInfo);
     static void GetHttpInfoFromCurl(CURL *handle, DataTransHttpInfo &httpInfo);
 
     template <typename DataType>
     static DataType GetNumericAttributeFromCurl(CURL *handle, CURLINFO info);
     static std::string GetStringAttributeFromCurl(CURL *handle, CURLINFO info);
-    static bool shouldReportHttpAbnormalEvent(const DataTransHttpInfo &httpInfo);
+    static int shouldReportHttpAbnormalEvent(const DataTransHttpInfo &httpInfo);
     NetstackChrReport netstackChrReport;
 };
 

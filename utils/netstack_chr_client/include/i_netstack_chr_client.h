@@ -18,7 +18,6 @@
 
 #include <cstdint>
 #include <string>
-
 #include "curl/curl.h"
 
 namespace OHOS::NetStack::ChrClient {
@@ -43,6 +42,7 @@ typedef struct DataTransTcpInfo {
 } DataTransTcpInfo;
 
 typedef struct DataTransHttpInfo {
+    int uid;
     long curlCode;
     int responseCode;
 
@@ -71,8 +71,7 @@ typedef struct DataTransHttpInfo {
 } DataTransHttpInfo;
 
 typedef struct DataTransChrStats {
-    int uid;
-    int sockfd;
+    std::string processName;
     DataTransHttpInfo httpInfo;
     DataTransTcpInfo tcpInfo;
 } DataTransChrStats;
