@@ -103,8 +103,8 @@ std::string NetstackChrReport::ConvertHttpInfoToJsonStr(DataTransChrStats chrSta
 std::string NetstackChrReport::ConvertTcpInfoToJsonStr(DataTransChrStats chrStats)
 {
     AAFwk::Want want;
-    want.SetParam(TCPI_RETRANSMITS_KEY, static_cast<int>(chrStats.tcpInfo.tcpi_retransmits));
-    want.SetParam(TCPI_UNACKED_KEY, static_cast<int>(chrStats.tcpInfo.tcpi_unacked));
+    want.SetParam(TCPI_RETRANSMITS_KEY, static_cast<int>(chrStats.tcpInfo.retransmits));
+    want.SetParam(TCPI_UNACKED_KEY, static_cast<int>(chrStats.tcpInfo.unacked));
     want.SetParam(TCPI_LAST_DATA_SENT_KEY, static_cast<int>(chrStats.tcpInfo.lastDataSent));
     want.SetParam(TCPI_LAST_ACK_SENT_KEY, static_cast<int>(chrStats.tcpInfo.lastAckSent));
     want.SetParam(TCPI_LAST_DATA_RECV_KEY, static_cast<int>(chrStats.tcpInfo.lastDataRecv));
