@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 #include <string>
-#include <sstream>
 #include <chrono>
 #include "i_netstack_chr_client.h"
 #include "netstack_chr_report.h"
@@ -125,25 +124,32 @@ std::string NetstackChrReport::ConvertTcpInfoToJsonStr(DataTransChrStats chrStat
 
 void InforLog(DataTransChrStats chrStats)
 {
-    std::stringstream logString;
-    logString << "[Netstack CHR Service] process_name:" << dataTransChrStats.processName << " "
-              << "HTTP Info:" << chrStats.httpInfo.uid << "," << chrStats.httpInfo.responseCode << "," 
-              << chrStats.httpInfo.totalTime << "," << chrStats.httpInfo.nameLookUpTime << "," 
-              << chrStats.httpInfo.preTransferTime << "," << chrStats.httpInfo.sizeUpload << "," 
-              << chrStats.httpInfo.sizeDownload << "," << chrStats.httpInfo.speedDownload << "," 
-              << chrStats.httpInfo.speedUpload << "," << chrStats.httpInfo.effectiveMethod << "," 
-              << chrStats.httpInfo.startTransferTime << "," << chrStats.httpInfo.contentType << "," 
-              << chrStats.httpInfo.redirectTime << "," << chrStats.httpInfo.redirectCount << "," 
-              << chrStats.httpInfo.osError << "," << chrStats.httpInfo.sslVerifyResult << "," 
-              << chrStats.httpInfo.appconnectTime << "," << chrStats.httpInfo.retryAfter << "," 
-              << chrStats.httpInfo.proxyError << "," << chrStats.httpInfo.queueTime << "," 
-              << chrStats.httpInfo.curlCode << " "
-              << "TCP Info:" << chrStats.tcpInfo.unacked << "," << chrStats.tcpInfo.lastDataSent << "," 
-              << chrStats.tcpInfo.lastAckSent << "," << chrStats.tcpInfo.lastDataRecv << "," 
-              << chrStats.tcpInfo.lastAckRecv << "," << chrStats.tcpInfo.rtt << ","
-              << chrStats.tcpInfo.rttvar << "," << chrStats.tcpInfo.retransmits << "," 
-              << chrStats.tcpInfo.totalRetrans << "," << chrStats.tcpInfo.srcIp << "," 
-              << chrStats.tcpInfo.dstIp << "," << chrStats.tcpInfo.srcPort << "," 
-              << chrStats.tcpInfo.dstPort << ".";
-    NETSTACK_LOGI("%{public}s", logString.str().c_str());
+    NETSTACK_LOGI("[Netstack CHR Service] Process Name:%{public}s, \
+    HTTP Info{%{public}d, %{public}d, %{public}ld, \
+    %{public}ld, %{public}ld, %{public}ld, \
+    %{public}ld, %{public}ld, %{public}ld, \
+    %{public}ld, %{public}s, %{public}ld, \
+    %{public}s, %{public}ld, %{public}ld, \
+    %{public}ld, %{public}ld, %{public}ld, \
+    %{public}ld, %{public}d, %{public}ld, \
+    %{public}ld, \
+    TCP Info{%{public}d, %{public}d, %{public}d, \
+    %{public}d, %{public}d, %{public}d, \
+    %{public}d, %{public}d, %{public}d, \
+    %{public}s, %{public}s, %{public}d}, \
+    %{public}d,",
+    dataTransChrStats.processName.c_str(),
+    chrStats.httpInfo.uid, chrStats.httpInfo.responseCode, chrStats.httpInfo.totalTime, 
+    chrStats.httpInfo.nameLookUpTime, chrStats.httpInfo.connectTime, chrStats.httpInfo.preTransferTime, 
+    chrStats.httpInfo.sizeUpload, chrStats.httpInfo.sizeDownload, chrStats.httpInfo.speedDownload, 
+    chrStats.httpInfo.speedUpload, chrStats.httpInfo.effectiveMethod.c_str(), chrStats.httpInfo.startTransferTime, 
+    chrStats.httpInfo.contentType.c_str(), chrStats.httpInfo.redirectTime, chrStats.httpInfo.redirectCount, 
+    chrStats.httpInfo.osError, chrStats.httpInfo.sslVerifyResult, chrStats.httpInfo.appconnectTime, 
+    chrStats.httpInfo.retryAfter, chrStats.httpInfo.proxyError, chrStats.httpInfo.queueTime, 
+    chrStats.httpInfo.curlCode, 
+    chrStats.tcpInfo.unacked, chrStats.tcpInfo.lastDataSent, chrStats.tcpInfo.lastAckSent, 
+    chrStats.tcpInfo.lastDataRecv, chrStats.tcpInfo.lastAckRecv, chrStats.tcpInfo.rtt, 
+    chrStats.tcpInfo.rttvar, chrStats.tcpInfo.retransmits, chrStats.tcpInfo.totalRetrans, 
+    chrStats.tcpInfo.srcIp.c_str(), chrStats.tcpInfo.dstIp.c_str(), chrStats.tcpInfo.srcPort, 
+    chrStats.tcpInfo.dstPort);
 }

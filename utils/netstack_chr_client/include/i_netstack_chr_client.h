@@ -22,65 +22,57 @@
 
 namespace OHOS::NetStack::ChrClient {
 
-typedef struct DataTransTcpInfo {
-    uint8_t retransmits;
-    uint32_t unacked;
-
-    uint32_t lastDataSent;
-    uint32_t lastAckSent;
-    uint32_t lastDataRecv;
-    uint32_t lastAckRecv;
-
-    uint32_t rtt;
-    uint32_t rttvar;
-    uint32_t totalRetrans;
-
-    std::string srcIp;
-    std::string dstIp;
-    uint16_t srcPort;
-    uint16_t dstPort;
-} DataTransTcpInfo;
-
-typedef struct DataTransHttpInfo {
-    int uid;
-    long curlCode;
-    int responseCode;
-
-    curl_off_t totalTime;
-    curl_off_t nameLookUpTime;
-    curl_off_t connectTime;
-    curl_off_t appconnectTime;
-    curl_off_t preTransferTime;
-    curl_off_t startTransferTime;
-    curl_off_t queueTime;
-    curl_off_t retryAfter;
-
-    curl_off_t sizeUpload;
-    curl_off_t sizeDownload;
-    curl_off_t speedDownload;
-    curl_off_t speedUpload;
-    std::string effectiveMethod;
-    std::string contentType;
-
-    curl_off_t redirectTime;
-    long redirectCount;
-
-    int proxyError;
-    long osError;
-    long sslVerifyResult;
-} DataTransHttpInfo;
-
 typedef struct DataTransChrStats {
     std::string processName;
     DataTransHttpInfo httpInfo;
     DataTransTcpInfo tcpInfo;
 } DataTransChrStats;
 
+typedef struct DataTransHttpInfo {
+    int uid;
+    int responseCode;
+    curl_off_t totalTime;
+    curl_off_t nameLookUpTime;
+    curl_off_t connectTime;
+    curl_off_t preTransferTime;
+    curl_off_t sizeUpload;
+    curl_off_t sizeDownload;
+    curl_off_t speedDownload;
+    curl_off_t speedUpload;
+    std::string effectiveMethod;
+    curl_off_t startTransferTime;
+    std::string contentType;
+    curl_off_t redirectTime;
+    long redirectCount;
+    long osError;
+    long sslVerifyResult;
+    curl_off_t appconnectTime;
+    curl_off_t retryAfter;
+    int proxyError;
+    curl_off_t queueTime;
+    long curlCode;
+} DataTransHttpInfo;
+
+typedef struct DataTransTcpInfo {
+    uint32_t unacked;
+    uint32_t lastDataSent;
+    uint32_t lastAckSent;
+    uint32_t lastDataRecv;
+    uint32_t lastAckRecv;
+    uint32_t rtt;
+    uint32_t rttvar;
+    uint8_t retransmits;
+    uint32_t totalRetrans;
+    std::string srcIp;
+    std::string dstIp;
+    uint16_t srcPort;
+    uint16_t dstPort;
+} DataTransTcpInfo;
+
 constexpr int REPORT_CHR_RESULT_SUCCESS = 0;
 constexpr int REPORT_CHR_RESULT_TIME_LIMIT_ERROR = 1;
 constexpr int REPORT_CHR_RESULT_SET_DATA_FAIL = 2;
 constexpr int REPORT_CHR_RESULT_REPORT_FAIL = 3;
-
 
 constexpr char PROCESS_NAME[] = "PROCESS_NAME";
 
