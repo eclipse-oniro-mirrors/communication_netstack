@@ -122,7 +122,7 @@ std::string NetstackChrReport::ConvertTcpInfoToJsonStr(DataTransChrStats chrStat
     return paramStr;
 }
 
-void InforLog(DataTransChrStats chrStats)
+void NetstackChrReport::InforLog(DataTransChrStats chrStats)
 {
     NETSTACK_LOGI("[Netstack CHR Service] Process Name:%{public}s, \
         HTTP Info{%{public}d, %{public}d, %{public}lld, \
