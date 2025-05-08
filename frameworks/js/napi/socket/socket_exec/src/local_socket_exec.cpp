@@ -29,7 +29,6 @@
 #include "securec.h"
 #include "socket_async_work.h"
 #include "socket_module.h"
-#include "module_template.h"
 
 #ifndef EPOLLIN
 #define EPOLLIN 0x001
@@ -88,9 +87,8 @@ struct MsgWithLocalRemoteInfo {
 void LocalSocketServerConnectionFinalize(napi_env, void *data, void *)
 {
     NETSTACK_LOGI("localsocket connection is finalized");
-    auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
-    if (sharedManager != nullptr && *sharedManager != nullptr) {
-        auto manager = *sharedManager;
+    EventManager *manager = reinterpret_cast<EventManager *>(data);
+    if (manager != nullptr) {
         LocalSocketConnectionData *connectData = reinterpret_cast<LocalSocketConnectionData *>(manager->GetData());
         if (connectData != nullptr) {
             auto serverManager = connectData->serverManager_;
@@ -101,7 +99,6 @@ void LocalSocketServerConnectionFinalize(napi_env, void *data, void *)
             delete connectData;
             connectData = nullptr;
         }
-        delete sharedManager;
     }
 }
 
@@ -111,17 +108,16 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, jsConstructor, 0, nullptr, &result));
 
-    auto sharedManager = new (std::nothrow) std::shared_ptr<EventManager>();
-    if (sharedManager == nullptr) {
+    EventManager *manager = new (std::nothrow) EventManager();
+    if (manager == nullptr) {
+        delete data;
         return result;
     }
-    auto manager = std::make_shared<EventManager>();
-    *sharedManager = manager;
     manager->SetData(reinterpret_cast<void *>(data));
+    EventManager::SetValid(manager);
     data->serverManager_->AddEventManager(data->clientId_, manager);
     manager->CreateEventReference(env, result);
-    napi_wrap(env, result, reinterpret_cast<void *>(sharedManager),
-        LocalSocketServerConnectionFinalize, nullptr, nullptr);
+    napi_wrap(env, result, reinterpret_cast<void *>(manager), LocalSocketServerConnectionFinalize, nullptr, nullptr);
     return result;
 }
 
@@ -183,8 +179,9 @@ static napi_value MakeJsLocalSocketMessageParam(napi_env env, napi_value msgBuff
     return obj;
 }
 
-static napi_value MakeLocalSocketMessage(napi_env env, const std::shared_ptr<EventManager> &manager)
+static napi_value MakeLocalSocketMessage(napi_env env, void *param)
 {
+    auto *manager = reinterpret_cast<EventManager *>(param);
     auto *msg = reinterpret_cast<MsgWithLocalRemoteInfo *>(manager->GetQueueData());
     auto deleter = [](const MsgWithLocalRemoteInfo *p) { delete p; };
     std::unique_ptr<MsgWithLocalRemoteInfo, decltype(deleter)> handler(msg, deleter);
@@ -205,22 +202,38 @@ static napi_value MakeLocalSocketMessage(napi_env env, const std::shared_ptr<Eve
     return MakeJsLocalSocketMessageParam(env, msgBuffer, msg);
 }
 
-static bool OnRecvLocalSocketMessage(const std::shared_ptr<EventManager> &manager,
-    void *data, size_t len, const std::string &path)
+template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)
+{
+    (void)status;
+
+    auto workWrapper = static_cast<UvWorkWrapper *>(work->data);
+    napi_env env = workWrapper->env;
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
+
+    napi_value obj = MakeJsValue(env, workWrapper->data);
+
+    std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
+    workWrapper->manager->Emit(workWrapper->type, arg);
+
+    delete workWrapper;
+    delete work;
+}
+
+static bool OnRecvLocalSocketMessage(EventManager *manager, void *data, size_t len, const std::string &path)
 {
     if (manager == nullptr || data == nullptr || len == 0) {
         NETSTACK_LOGE("manager or data or len is invalid");
         return false;
     }
-    if (manager->HasEventListener(EVENT_MESSAGE)) {
+    if (EventManager::IsManagerValid(manager) && manager->HasEventListener(EVENT_MESSAGE)) {
         MsgWithLocalRemoteInfo *msg = new (std::nothrow) MsgWithLocalRemoteInfo(data, len, path);
         if (msg == nullptr) {
             NETSTACK_LOGE("MsgWithLocalRemoteInfo construct error");
             return false;
         }
         manager->SetQueueData(reinterpret_cast<void *>(msg));
-        manager->EmitByUvWithoutCheckShared(EVENT_MESSAGE, nullptr,
-            ModuleTemplate::CallbackTemplateWithSharedManager<MakeLocalSocketMessage>);
+        manager->EmitByUv(EVENT_MESSAGE, manager, CallbackTemplate<MakeLocalSocketMessage>);
     }
     return true;
 }
@@ -348,25 +361,24 @@ public:
 
     ~LocalSocketMessageCallback() = default;
 
-    explicit LocalSocketMessageCallback(const std::shared_ptr<EventManager> &manager, const std::string &path = "")
+    explicit LocalSocketMessageCallback(EventManager *manager, const std::string &path = "")
         : manager_(manager), socketPath_(path)
     {
     }
 
     void OnError(int err) const
     {
-        if (manager_ != nullptr && manager_->HasEventListener(EVENT_ERROR)) {
-            manager_->EmitByUvWithoutCheckShared(EVENT_ERROR, new int(err),
-                ModuleTemplate::CallbackTemplate<MakeError>);
+        if (EventManager::IsManagerValid(manager_) && manager_->HasEventListener(EVENT_ERROR)) {
+            manager_->EmitByUv(EVENT_ERROR, new int(err), CallbackTemplate<MakeError>);
         }
     }
 
-    void OnCloseMessage(const std::shared_ptr<EventManager> &manager) const
+    void OnCloseMessage(EventManager *manager = nullptr) const
     {
-        if (manager == nullptr && manager_ != nullptr) {
-            manager_->EmitByUvWithoutCheckShared(EVENT_CLOSE, nullptr, ModuleTemplate::CallbackTemplate<MakeClose>);
-        } else if (manager != nullptr) {
-            manager->EmitByUvWithoutCheckShared(EVENT_CLOSE, nullptr, ModuleTemplate::CallbackTemplate<MakeClose>);
+        if (manager == nullptr && EventManager::IsManagerValid(manager_)) {
+            manager_->EmitByUv(EVENT_CLOSE, nullptr, CallbackTemplate<MakeClose>);
+        } else if (manager != nullptr && EventManager::IsManagerValid(manager)) {
+            manager->EmitByUv(EVENT_CLOSE, nullptr, CallbackTemplate<MakeClose>);
         }
     }
 
@@ -375,28 +387,27 @@ public:
         return OnRecvLocalSocketMessage(manager_, data, dataLen, socketPath_);
     }
 
-    bool OnMessage(const std::shared_ptr<EventManager> &manager, void *data, size_t len) const
+    bool OnMessage(EventManager *manager, void *data, size_t len) const
     {
         return OnRecvLocalSocketMessage(manager, data, len, socketPath_);
     }
 
     void OnLocalSocketConnectionMessage(int clientId, LocalSocketServerManager *serverManager) const
     {
-        if (manager_ != nullptr && manager_->HasEventListener(EVENT_CONNECT)) {
+        if (EventManager::IsManagerValid(manager_) && manager_->HasEventListener(EVENT_CONNECT)) {
             LocalSocketConnectionData *data = new (std::nothrow) LocalSocketConnectionData(clientId, serverManager);
             if (data != nullptr) {
-                manager_->EmitByUvWithoutCheckShared(EVENT_CONNECT, data,
-                    ModuleTemplate::CallbackTemplate<MakeLocalSocketConnectionMessage>);
+                manager_->EmitByUv(EVENT_CONNECT, data, CallbackTemplate<MakeLocalSocketConnectionMessage>);
             }
         }
     }
 
-    std::shared_ptr<EventManager> GetSharedEventManager() const
+    EventManager *GetEventManager() const
     {
         return manager_;
     }
 
-    std::shared_ptr<EventManager> manager_ = nullptr;
+    EventManager *manager_;
 
 private:
     std::string socketPath_;
@@ -488,7 +499,7 @@ static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager
     }
     NETSTACK_LOGI("local socket server accept new, fd: %{public}d, id: %{public}d", connectFd, clientId);
     callback.OnLocalSocketConnectionMessage(clientId, serverManager);
-    auto eventManager = serverManager->WaitForSharedManager(clientId);
+    EventManager *eventManager = serverManager->WaitForManager(clientId);
     int sockRecvSize = ConfirmBufferSize(connectFd);
     auto buffer = std::make_unique<char[]>(sockRecvSize);
     if (buffer == nullptr) {
@@ -573,7 +584,7 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
 static void RecvHandler(int connectFd, const LocalSocketMessageCallback &callback, LocalSocketServerManager *mgr)
 {
     int clientId = mgr->GetClientId(connectFd);
-    auto eventManager = mgr->GetSharedManager(clientId);
+    EventManager *eventManager = mgr->GetManager(clientId);
     if (eventManager == nullptr) {
         NETSTACK_LOGI("manager is null");
         callback.OnError(UNKNOW_ERROR);
@@ -733,11 +744,11 @@ static void PollRecvData(int sock, const LocalSocketMessageCallback &callback)
             }
             NETSTACK_LOGE("recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
             if (auto mgr = reinterpret_cast<LocalSocketManager *>(callback.manager_->GetData()); mgr != nullptr) {
-                mgr->GetSocketCloseStatus() ? callback.OnCloseMessage(nullptr) : callback.OnError(errno);
+                mgr->GetSocketCloseStatus() ? callback.OnCloseMessage() : callback.OnError(errno);
             }
             return;
         } else if (recvLen == 0) {
-            callback.OnCloseMessage(nullptr);
+            callback.OnCloseMessage();
             break;
         }
         void *data = malloc(recvLen);
@@ -818,10 +829,10 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
         context->SetErrorCode(errno);
         return false;
     }
-    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetSharedManager()->GetData()); pMgr != nullptr) {
+    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetManager()->GetData()); pMgr != nullptr) {
         pMgr->isConnected_ = true;
     }
-    std::thread serviceThread(PollRecvData, sockfd, LocalSocketMessageCallback(context->GetSharedManager(), context->
+    std::thread serviceThread(PollRecvData, sockfd, LocalSocketMessageCallback(context->GetManager(), context->
                               GetSocketPath()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(LOCAL_SOCKET_CONNECT);
@@ -859,7 +870,7 @@ bool ExecLocalSocketClose(LocalSocketCloseContext *context)
         return false;
     }
     context->SetSocketFd(-1);
-    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetSharedManager()->GetData()); pMgr != nullptr) {
+    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetManager()->GetData()); pMgr != nullptr) {
         pMgr->isConnected_ = false;
         pMgr->SetSocketCloseStatus(true);
     }
@@ -880,7 +891,7 @@ bool ExecLocalSocketGetState(LocalSocketGetStateContext *context)
     } else {
         state.SetIsBound(strlen(unAddr.sun_path) > 0);
     }
-    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetSharedManager()->GetData()); pMgr != nullptr) {
+    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetManager()->GetData()); pMgr != nullptr) {
         state.SetIsConnected(pMgr->isConnected_);
     }
     return true;
@@ -995,18 +1006,18 @@ bool ExecLocalSocketServerListen(LocalSocketServerListenContext *context)
         return false;
     }
     NETSTACK_LOGI("local socket server listen success");
-    auto mgr = reinterpret_cast<LocalSocketServerManager *>(context->GetSharedManager()->GetData());
+    LocalSocketServerManager *mgr = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData());
     if (mgr == nullptr) {
         NETSTACK_LOGE("LocalSocketServerManager reinterpret cast failed");
         context->SetErrorCode(UNKNOW_ERROR);
         return false;
     }
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-    std::thread serviceThread(LocalSocketServerAccept, mgr, LocalSocketMessageCallback(context->GetSharedManager()),
+    std::thread serviceThread(LocalSocketServerAccept, mgr, LocalSocketMessageCallback(context->GetManager()),
                                                                                        context->GetSocketPath());
     pthread_setname_np(LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
 #else
-    std::thread serviceThread(LocalSocketServerAccept, mgr, LocalSocketMessageCallback(context->GetSharedManager(),
+    std::thread serviceThread(LocalSocketServerAccept, mgr, LocalSocketMessageCallback(context->GetManager(),
                                                                                        context->GetSocketPath()));
 #endif
     serviceThread.detach();
@@ -1015,10 +1026,10 @@ bool ExecLocalSocketServerListen(LocalSocketServerListenContext *context)
 
 bool ExecLocalSocketServerEnd(LocalSocketServerEndContext *context)
 {
-    if (context == nullptr || context->GetSharedManager() == nullptr) {
+    if (context == nullptr || context->GetManager() == nullptr) {
         return false;
     }
-    auto mgr = reinterpret_cast<LocalSocketServerManager *>(context->GetSharedManager()->GetData());
+    LocalSocketServerManager *mgr = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData());
     if (mgr == nullptr) {
         NETSTACK_LOGE("LocalSocketServerManager reinterpret cast failed");
         context->SetErrorCode(UNKNOW_ERROR);
@@ -1036,7 +1047,7 @@ bool ExecLocalSocketServerEnd(LocalSocketServerEndContext *context)
     }
     mgr->WaitForEndingLoop();
     delete mgr;
-    context->GetSharedManager()->SetData(nullptr);
+    context->GetManager()->SetData(nullptr);
     return true;
 }
 
@@ -1051,7 +1062,7 @@ bool ExecLocalSocketServerGetState(LocalSocketServerGetStateContext *context)
     if (getsockname(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&unAddr), &len) == 0) {
         state.SetIsBound(true);
     }
-    auto pMgr = reinterpret_cast<LocalSocketServerManager *>(context->GetSharedManager()->GetData());
+    auto pMgr = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData());
     if (pMgr != nullptr) {
         state.SetIsConnected(pMgr->GetClientCounts() > 0);
     }
@@ -1082,7 +1093,7 @@ bool ExecLocalSocketServerSetExtraOptions(LocalSocketServerSetExtraOptionsContex
     if (context == nullptr) {
         return false;
     }
-    auto serverManager = reinterpret_cast<LocalSocketServerManager *>(context->GetSharedManager()->GetData());
+    auto serverManager = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData());
     if (serverManager == nullptr) {
         return false;
     }
@@ -1102,8 +1113,7 @@ bool ExecLocalSocketServerGetExtraOptions(LocalSocketServerGetExtraOptionsContex
     if (context == nullptr) {
         return false;
     }
-    auto pMgr = reinterpret_cast<LocalSocketServerManager *>(context->GetSharedManager()->GetData());
-    if (pMgr != nullptr) {
+    if (auto pMgr = reinterpret_cast<LocalSocketServerManager *>(context->GetManager()->GetData()); pMgr != nullptr) {
         LocalExtraOptions &options = context->GetOptionsRef();
         if (pMgr->alreadySetExtraOptions_) {
             options = pMgr->extraOptions_;
@@ -1127,7 +1137,7 @@ bool ExecLocalSocketConnectionSend(LocalSocketServerSendContext *context)
         return false;
     }
     int clientId = context->GetClientId();
-    auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetSharedManager()->GetData());
+    auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetManager()->GetData());
     if (data == nullptr || data->serverManager_ == nullptr) {
         NETSTACK_LOGE("localsocket connection send, data or manager is nullptr, id: %{public}d", clientId);
         return false;
@@ -1153,7 +1163,7 @@ bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
     if (context == nullptr) {
         return false;
     }
-    auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetSharedManager()->GetData());
+    auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetManager()->GetData());
     if (data == nullptr || data->serverManager_ == nullptr) {
         NETSTACK_LOGE("connection close callback reinterpret cast failed");
         return false;
@@ -1185,8 +1195,7 @@ bool ExecLocalSocketConnectionGetLocalAddress(LocalSocketServerGetLocalAddressCo
         return false;
     }
     int socketFD = -1;
-    auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetSharedManager()->GetData());
-    if (data != nullptr) {
+    if (auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetManager()->GetData()); data != nullptr) {
         if (data->serverManager_ == nullptr) {
             NETSTACK_LOGE("invalid serverManager or socket has closed");
             context->SetNeedThrowException(true);
@@ -1221,8 +1230,8 @@ napi_value LocalSocketBindCallback(LocalSocketBindContext *context)
 
 napi_value LocalSocketConnectCallback(LocalSocketConnectContext *context)
 {
-    context->EmitSharedManager(EVENT_CONNECT, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
-        NapiUtils::GetUndefined(context->GetEnv())));
+    context->Emit(EVENT_CONNECT, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                                NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
@@ -1233,7 +1242,7 @@ napi_value LocalSocketSendCallback(LocalSocketSendContext *context)
 
 napi_value LocalSocketCloseCallback(LocalSocketCloseContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager != nullptr) {
         NETSTACK_LOGD("local socket close, delete js ref");
         manager->DeleteEventReference(context->GetEnv());
@@ -1294,8 +1303,8 @@ napi_value LocalSocketGetExtraOptionsCallback(LocalSocketGetExtraOptionsContext 
 
 napi_value LocalSocketServerListenCallback(LocalSocketServerListenContext *context)
 {
-    context->EmitSharedManager(EVENT_LISTENING, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
-        NapiUtils::GetUndefined(context->GetEnv())));
+    context->Emit(EVENT_LISTENING, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
+                                                  NapiUtils::GetUndefined(context->GetEnv())));
     return NapiUtils::GetUndefined(context->GetEnv());
 }
 
@@ -1353,7 +1362,7 @@ napi_value LocalSocketConnectionSendCallback(LocalSocketServerSendContext *conte
 
 napi_value LocalSocketConnectionCloseCallback(LocalSocketServerCloseContext *context)
 {
-    auto manager = context->GetSharedManager();
+    auto manager = context->GetManager();
     if (manager != nullptr) {
         NETSTACK_LOGD("local socket connection close, delete js ref");
         manager->DeleteEventReference(context->GetEnv());

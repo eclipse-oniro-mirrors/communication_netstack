@@ -21,8 +21,13 @@
 #include "napi_utils.h"
 
 namespace OHOS::NetStack::Websocket {
-CloseContext::CloseContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+CloseContext::CloseContext(napi_env env, EventManager *manager)
     : BaseContext(env, manager), code(CLOSE_REASON_NORMAL_CLOSE), reason("CLOSE_NORMAL")
+{
+}
+
+CloseContext::CloseContext(napi_env env, const std::shared_ptr<EventManager> &sharedManager)
+    : BaseContext(env, sharedManager), code(CLOSE_REASON_NORMAL_CLOSE), reason("CLOSE_NORMAL")
 {
 }
 

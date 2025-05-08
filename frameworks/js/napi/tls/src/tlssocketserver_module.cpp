@@ -44,34 +44,37 @@ static constexpr const char *PROTOCOL_TLSV12 = "TLSv12";
 void Finalize(napi_env, void *data, void *)
 {
     NETSTACK_LOGI("tls socket server is finalized");
-    auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
-    delete sharedManager;
+    auto manager = reinterpret_cast<EventManager *>(data);
+    if (manager != nullptr) {
+        EventManager::SetInvalid(manager);
+    }
 }
 } // namespace
 
 napi_value TLSSocketServerModuleExports::TLSSocketServer::GetCertificate(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::GetCertificateContext>(
+    return ModuleTemplate::Interface<TlsSocket::GetCertificateContext>(
         env, info, FUNCTION_GET_CERTIFICATE, nullptr, TLSSocketServerAsyncWork::ExecGetCertificate,
         TLSSocketServerAsyncWork::GetCertificateCallback);
 }
 
 napi_value TLSSocketServerModuleExports::TLSSocketServer::GetProtocol(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::GetProtocolContext>(env, info, FUNCTION_GET_PROTOCOL,
-        nullptr, TLSSocketServerAsyncWork::ExecGetProtocol, TLSSocketServerAsyncWork::GetProtocolCallback);
+    return ModuleTemplate::Interface<TlsSocket::GetProtocolContext>(env, info, FUNCTION_GET_PROTOCOL, nullptr,
+                                                                    TLSSocketServerAsyncWork::ExecGetProtocol,
+                                                                    TLSSocketServerAsyncWork::GetProtocolCallback);
 }
 
 napi_value TLSSocketServerModuleExports::TLSSocketServer::Listen(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::TLSListenContext>(env, info, FUNCTION_LISTEN, nullptr,
+    return ModuleTemplate::Interface<TlsSocket::TLSListenContext>(env, info, FUNCTION_LISTEN, nullptr,
                                                                   TLSSocketServerAsyncWork::ExecListen,
                                                                   TLSSocketServerAsyncWork::ListenCallback);
 }
 
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::Send(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithSharedManager<TLSServerSendContext>(
+    return ModuleTemplate::Interface<TLSServerSendContext>(
         env, info, FUNCTION_SEND,
         [](napi_env theEnv, napi_value thisVal, TLSServerSendContext *context) -> bool {
             context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
@@ -82,7 +85,7 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::Send(napi_env env,
 
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::Close(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithSharedManager<TLSServerCloseContext>(
+    return ModuleTemplate::Interface<TLSServerCloseContext>(
         env, info, FUNCTION_CLOSE,
         [](napi_env theEnv, napi_value thisVal, TLSServerCloseContext *context) -> bool {
             context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
@@ -93,7 +96,7 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::Close(napi_env env
 
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetRemoteAddress(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithSharedManager<ServerTLSGetRemoteAddressContext>(
+    return ModuleTemplate::Interface<ServerTLSGetRemoteAddressContext>(
         env, info, FUNCTION_GET_REMOTE_ADDRESS,
         [](napi_env theEnv, napi_value thisVal, ServerTLSGetRemoteAddressContext *context) -> bool {
             context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
@@ -104,7 +107,7 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetRemoteAddress(n
 
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetLocalAddress(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithSharedManager<TLSServerGetLocalAddressContext>(
+    return ModuleTemplate::Interface<TLSServerGetLocalAddressContext>(
         env, info, FUNCTION_GET_LOCAL_ADDRESS,
         [](napi_env theEnv, napi_value thisVal, TLSServerGetLocalAddressContext *context) -> bool {
             context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
@@ -117,7 +120,7 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetLocalAddress(na
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetRemoteCertificate(napi_env env,
                                                                                    napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithSharedManager<ServerGetRemoteCertificateContext>(
+    return ModuleTemplate::Interface<ServerGetRemoteCertificateContext>(
         env, info, FUNCTION_GET_REMOTE_CERTIFICATE,
         [](napi_env theEnv, napi_value thisVal, ServerGetRemoteCertificateContext *context) -> bool {
             context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
@@ -128,7 +131,7 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetRemoteCertifica
 
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetCipherSuites(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithSharedManager<ServerGetCipherSuitesContext>(
+    return ModuleTemplate::Interface<ServerGetCipherSuitesContext>(
         env, info, FUNCTION_GET_CIPHER_SUITE,
         [](napi_env theEnv, napi_value thisVal, ServerGetCipherSuitesContext *context) -> bool {
             context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
@@ -140,7 +143,7 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetCipherSuites(na
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetSignatureAlgorithms(napi_env env,
                                                                                      napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithSharedManager<ServerGetSignatureAlgorithmsContext>(
+    return ModuleTemplate::Interface<ServerGetSignatureAlgorithmsContext>(
         env, info, FUNCTION_GET_SIGNATURE_ALGORITHMS,
         [](napi_env theEnv, napi_value thisVal, ServerGetSignatureAlgorithmsContext *context) -> bool {
             context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
@@ -161,27 +164,28 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::Off(napi_env env, 
 
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetCertificate(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::GetCertificateContext>(
+    return ModuleTemplate::Interface<TlsSocket::GetCertificateContext>(
         env, info, FUNCTION_GET_CERTIFICATE, nullptr, TLSSocketServerAsyncWork::ExecGetCertificate,
         TLSSocketServerAsyncWork::GetCertificateCallback);
 }
 
 napi_value TLSSocketServerModuleExports::TLSSocketServer::GetState(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::TLSGetStateContext>(env, info, FUNCTION_GET_STATE,
-        nullptr, TLSSocketServerAsyncWork::ExecGetState, TLSSocketServerAsyncWork::GetStateCallback);
+    return ModuleTemplate::Interface<TlsSocket::TLSGetStateContext>(env, info, FUNCTION_GET_STATE, nullptr,
+                                                                    TLSSocketServerAsyncWork::ExecGetState,
+                                                                    TLSSocketServerAsyncWork::GetStateCallback);
 }
 
 napi_value TLSSocketServerModuleExports::TLSSocketServer::GetLocalAddress(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithSharedManager<TLSServerGetLocalAddressContext>(
+    return ModuleTemplate::Interface<TLSServerGetLocalAddressContext>(
         env, info, FUNCTION_GET_LOCAL_ADDRESS, nullptr, TLSSocketServerAsyncWork::ExecGetLocalAddress,
         TLSSocketServerAsyncWork::GetLocalAddressCallback);
 }
 
 napi_value TLSSocketServerModuleExports::TLSSocketServer::SetExtraOptions(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::TLSSetExtraOptionsContext>(
+    return ModuleTemplate::Interface<TlsSocket::TLSSetExtraOptionsContext>(
         env, info, FUNCTION_SET_EXTRA_OPTIONS, nullptr, TLSSocketServerAsyncWork::ExecSetExtraOptions,
         TLSSocketServerAsyncWork::SetExtraOptionsCallback);
 }
@@ -244,7 +248,7 @@ void TlsSocketServer::TLSSocketServerModuleExports::DefineTLSSocketConnectionCla
 
 napi_value TLSSocketServerModuleExports::ConstructTLSSocketServerInstance(napi_env env, napi_callback_info info)
 {
-    return ModuleTemplate::NewInstanceWithSharedManager(env, info, INTERFACE_TLS_SOCKET_SERVER, Finalize);
+    return ModuleTemplate::NewInstance(env, info, INTERFACE_TLS_SOCKET_SERVER, Finalize);
 }
 
 void TLSSocketServerModuleExports::InitTLSSocketServerProperties(napi_env env, napi_value exports)

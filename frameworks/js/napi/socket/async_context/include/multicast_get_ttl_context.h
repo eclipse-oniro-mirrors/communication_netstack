@@ -29,7 +29,7 @@ public:
 
     MulticastGetTTLContext() = delete;
 
-    MulticastGetTTLContext(napi_env env, const std::shared_ptr<EventManager> &manager);
+    MulticastGetTTLContext(napi_env env, EventManager *manager);
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
