@@ -150,7 +150,6 @@ __attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
                 if (message->easy_handle) {
                     (void)curl_multi_remove_handle(multi_, easyHandle);
                 }
-                curl_multi_remove_handle(multi_, easyHandle);
                 delete requestInfo;
                 break;
             }
