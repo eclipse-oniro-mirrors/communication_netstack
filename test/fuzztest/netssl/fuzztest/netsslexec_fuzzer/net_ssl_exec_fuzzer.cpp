@@ -56,8 +56,7 @@ void ExecVerifyFuzzTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
     napi_env env(GetData<napi_env>());
-    std::shared_ptr<EventManager> manager = nullptr;
-    CertContext context(env, manager);
+    CertContext context(env, nullptr);
 
     SslExec::ExecVerify(&context);
 }

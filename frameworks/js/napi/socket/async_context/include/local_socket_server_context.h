@@ -54,7 +54,7 @@ struct LocalSocketServerManager : public SocketBaseManager {
     std::mutex clientMutex_;
     std::condition_variable cond_;
     std::map<int, int> acceptFds_;                      // id & fd
-    std::map<int, std::shared_ptr<EventManager>> clientEventManagers_; // id & EventManager*
+    std::map<int, EventManager *> clientEventManagers_; // id & EventManager*
     explicit LocalSocketServerManager(int sockfd) : SocketBaseManager(sockfd) {}
 
     void SetServerDestructStatus(bool flag)
@@ -104,7 +104,7 @@ struct LocalSocketServerManager : public SocketBaseManager {
         }
         return -1;
     }
-    std::shared_ptr<EventManager> GetSharedManager(int id)
+    EventManager *GetManager(int id)
     {
         std::lock_guard<std::mutex> lock(clientMutex_);
         if (auto ite = clientEventManagers_.find(id); ite != clientEventManagers_.end()) {
@@ -154,9 +154,9 @@ struct LocalSocketServerManager : public SocketBaseManager {
         return acceptFds_.size();
     }
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-    std::shared_ptr<EventManager> WaitForSharedManager(int clientId)
+    EventManager *WaitForManager(int clientId)
     {
-        std::shared_ptr<EventManager> manager = nullptr;
+        EventManager *manager = nullptr;
         std::unique_lock<std::mutex> lock(clientMutex_);
         cond_.wait(lock, [&manager, &clientId, this]() {
             if (auto iter = clientEventManagers_.find(clientId); iter != clientEventManagers_.end()) {
@@ -175,7 +175,7 @@ struct LocalSocketServerManager : public SocketBaseManager {
         std::lock_guard<std::mutex> lock(clientMutex_);
         cond_.notify_one();
     }
-    void AddEventManager(int clientId, std::shared_ptr<EventManager> &manager)
+    void AddEventManager(int clientId, EventManager *manager)
     {
         std::lock_guard<std::mutex> lock(clientMutex_);
         clientEventManagers_.insert(std::make_pair(clientId, manager));
@@ -185,12 +185,16 @@ struct LocalSocketServerManager : public SocketBaseManager {
     {
         std::lock_guard<std::mutex> lock(clientMutex_);
         if (auto ite = clientEventManagers_.find(clientId); ite != clientEventManagers_.end()) {
+            EventManager::SetInvalid(ite->second);
             clientEventManagers_.erase(ite);
         }
     }
     void RemoveAllEventManager()
     {
         std::lock_guard<std::mutex> lock(clientMutex_);
+        for (const auto &[id, manager] : clientEventManagers_) {
+            EventManager::SetInvalid(manager);
+        }
         clientEventManagers_.clear();
     }
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
@@ -217,16 +221,14 @@ struct LocalSocketServerManager : public SocketBaseManager {
 
 class LocalSocketServerBaseContext : public LocalSocketBaseContext {
 public:
-    LocalSocketServerBaseContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-        : LocalSocketBaseContext(env, manager) {}
+    LocalSocketServerBaseContext(napi_env env, EventManager *manager) : LocalSocketBaseContext(env, manager) {}
     [[nodiscard]] int GetSocketFd() const override;
     void SetSocketFd(int sock) override;
 };
 
 class LocalSocketServerListenContext final : public LocalSocketServerBaseContext {
 public:
-    LocalSocketServerListenContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-        : LocalSocketServerBaseContext(env, manager) {}
+    LocalSocketServerListenContext(napi_env env, EventManager *manager) : LocalSocketServerBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
     const std::string &GetSocketPath() const;
 
@@ -236,15 +238,13 @@ private:
 
 class LocalSocketServerEndContext final : public LocalSocketServerBaseContext {
 public:
-    LocalSocketServerEndContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-        : LocalSocketServerBaseContext(env, manager) {}
+    LocalSocketServerEndContext(napi_env env, EventManager *manager) : LocalSocketServerBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
 };
 
 class LocalSocketServerGetStateContext final : public LocalSocketServerBaseContext {
 public:
-    LocalSocketServerGetStateContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-        : LocalSocketServerBaseContext(env, manager)
+    LocalSocketServerGetStateContext(napi_env env, EventManager *manager) : LocalSocketServerBaseContext(env, manager)
     {
     }
     void ParseParams(napi_value *params, size_t paramsCount) override;
@@ -256,7 +256,7 @@ private:
 
 class LocalSocketServerGetLocalAddressContext final : public LocalSocketServerBaseContext {
 public:
-    LocalSocketServerGetLocalAddressContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+    LocalSocketServerGetLocalAddressContext(napi_env env, EventManager *manager)
         : LocalSocketServerBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
     void SetSocketPath(const std::string socketPath);
@@ -271,7 +271,7 @@ private:
 
 class LocalSocketServerSetExtraOptionsContext final : public LocalSocketServerBaseContext {
 public:
-    LocalSocketServerSetExtraOptionsContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+    LocalSocketServerSetExtraOptionsContext(napi_env env, EventManager *manager)
         : LocalSocketServerBaseContext(env, manager)
     {
     }
@@ -284,7 +284,7 @@ private:
 
 class LocalSocketServerGetExtraOptionsContext final : public LocalSocketServerBaseContext {
 public:
-    LocalSocketServerGetExtraOptionsContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+    LocalSocketServerGetExtraOptionsContext(napi_env env, EventManager *manager)
         : LocalSocketServerBaseContext(env, manager)
     {
     }
@@ -297,8 +297,7 @@ private:
 
 class LocalSocketServerSendContext final : public LocalSocketServerBaseContext {
 public:
-    LocalSocketServerSendContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-        : LocalSocketServerBaseContext(env, manager) {}
+    LocalSocketServerSendContext(napi_env env, EventManager *manager) : LocalSocketServerBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
     int GetAcceptFd();
     LocalSocketOptions &GetOptionsRef();
@@ -313,8 +312,7 @@ private:
 
 class LocalSocketServerCloseContext final : public LocalSocketServerBaseContext {
 public:
-    LocalSocketServerCloseContext(napi_env env, const std::shared_ptr<EventManager> &manager)
-        : LocalSocketServerBaseContext(env, manager) {}
+    LocalSocketServerCloseContext(napi_env env, EventManager *manager) : LocalSocketServerBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
     int GetClientId() const;
     void SetClientId(int clientId);
