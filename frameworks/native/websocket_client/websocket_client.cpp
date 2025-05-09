@@ -373,12 +373,12 @@ int CreatConnectInfo(const std::string url, lws_context *lwsContext, WebSocketCl
         return WebSocketErrorCode::WEBSOCKET_CONNECTION_PARSEURL_ERROR;
     }
     std::string path = PATH_START + std::string(pathWithoutStart);
-
+    std::string tempHost = std::string(address) + NAME_END + std::to_string(port);
     connectInfo.context = lwsContext;
     connectInfo.address = address;
     connectInfo.port = port;
     connectInfo.path = path.c_str();
-    connectInfo.host = address;
+    connectInfo.host = tempHost.c_str();
     connectInfo.origin = address;
 
     connectInfo.local_protocol_name = "lws-minimal-client1";
