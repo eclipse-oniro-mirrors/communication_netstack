@@ -98,7 +98,7 @@ void NetStackChrReport::SetHttpInfo(AAFwk::Want& want, DataTransHttpInfo httpInf
     want.SetParam("DATA_TRANS_HTTP_INFO", wantHttp.ToString());
 }
 
-std::string NetStackChrReport::ConvertTcpInfoToJsonStr(AAFwk::Want& want, DataTransTcpInfo tcpInfo)
+std::string NetStackChrReport::SetTcpInfo(AAFwk::Want& want, DataTransTcpInfo tcpInfo)
 {
     AAFwk::Want wantTcp;
     wantTcp.SetParam("tcpi_unacked", static_cast<int>(tcpInfo.unacked));
