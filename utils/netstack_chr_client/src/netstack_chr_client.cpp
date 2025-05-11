@@ -42,51 +42,39 @@ int NetStackChrClient::GetAddrFromSock(
 
     // Get local addr
     addrLen = sizeof(localss);
-    if (getsockname(sockfd, reinterpret_cast<sockaddr *>(&localss), &addrLen) < 0) {
-        return -1;
-    }
+    (void)getsockname(sockfd, reinterpret_cast<sockaddr *>(&localss), &addrLen);
 
     // Get peer addr
     addrLen = sizeof(peerss);
-    if (getsockname(sockfd, reinterpret_cast<sockaddr *>(&peerss), &addrLen) < 0) {
-        return -1;
-    }
+   (void)getsockname(sockfd, reinterpret_cast<sockaddr *>(&peerss), &addrLen);
 
-    char buf[INET6_ADDRSTRLEN];
+    char buf[INET6_ADDRSTRLEN] = {0};
     if (localss.ss_family == AF_INET && peerss.ss_family == AF_INET) {
         auto *l4 = reinterpret_cast<sockaddr_in *>(&localss);
         auto *p4 = reinterpret_cast<sockaddr_in *>(&peerss);
-
-        if (inet_ntop(AF_INET, &l4->sin_addr, buf, sizeof(buf)) == nullptr) {
-            return -1;
+        if (inet_ntop(AF_INET, &l4->sin_addr, buf, sizeof(buf)) != nullptr) {
+            srcIp = buf;
+            srcPort = ntohs(l4->sin_port);
         }
-        srcIp = buf;
-        srcPort = ntohs(l4->sin_port);
-
-        if (inet_ntop(AF_INET, &p4->sin_addr, buf, sizeof(buf)) == nullptr) {
-            return -1;
+        if (inet_ntop(AF_INET, &p4->sin_addr, buf, sizeof(buf)) != nullptr) {
+            dstIp = buf;
+            dstPort = ntohs(p4->sin_port);
         }
-
-        dstIp = buf;
-        dstPort = ntohs(p4->sin_port);
     } else if (localss.ss_family == AF_INET6 && peerss.ss_family == AF_INET6) {
         auto *l6 = reinterpret_cast<sockaddr_in6 *>(&localss);
         auto *p6 = reinterpret_cast<sockaddr_in6 *>(&peerss);
-
-        if (inet_ntop(AF_INET6, &l6->sin6_addr, buf, sizeof(buf)) == nullptr) {
-            return -1;
+        if (inet_ntop(AF_INET6, &l6->sin6_addr, buf, sizeof(buf)) != nullptr) {
+            srcIp = buf;
+            srcPort = ntohs(l6->sin6_port);
         }
-        srcIp = buf;
-        srcPort = ntohs(l6->sin6_port);
-        if (inet_ntop(AF_INET6, &p6->sin6_addr, buf, sizeof(buf)) == nullptr) {
-            return -1;
+        if (inet_ntop(AF_INET6, &p6->sin6_addr, buf, sizeof(buf)) != nullptr) {
+            dstIp = buf;
+            dstPort = ntohs(p6->sin6_port);
         }
-        dstIp = buf;
-        dstPort = ntohs(p6->sin6_port);
     } else {
         return -1;
     }
-
+    
     return 0;
 }
 

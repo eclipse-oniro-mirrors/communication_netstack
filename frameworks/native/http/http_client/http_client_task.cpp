@@ -734,9 +734,7 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
     response_.SetResponseTime(HttpTime::GetNowTimeGMT());
 
     DumpHttpPerformance();
-#if HAS_NETMANAGER_BASE
     ChrClient::NetStackChrClient::GetInstance().GetDfxInfoFromCurlHandleAndReport(curlHandle_, code);
-#endif
 
     if (CURLE_ABORTED_BY_CALLBACK == code) {
         (void)ProcessResponseCode();

@@ -22,18 +22,22 @@
 
 using namespace OHOS::NetStack::ChrClient;
 
-constexpr char REPORT_HTTP_EVENT_NAME[] = "custom.event.CHR_REPORT_HTTP";
-constexpr int REPORT_TIME_LIMIT_MINUTE = 5;
+static constexpr const char* REPORT_HTTP_EVENT_NAME = "custom.event.CHR_REPORT_HTTP";
+static constexpr const std::int32_t CHR_UID = 1201;
+static constexpr const int REPORT_TIME_LIMIT_MINUTE = 5;
 
-NetstackChrReport::NetstackChrReport()
+static constexpr const int REPORT_CHR_RESULT_SUCCESS = 0;
+static constexpr const int REPORT_CHR_RESULT_TIME_LIMIT_ERROR = 1;
+static constexpr const int REPORT_CHR_RESULT_REPORT_FAIL = 2;
+
+NetStackChrReport::NetStackChrReport()
 {}
 
-NetstackChrReport::~NetstackChrReport()
+NetStackChrReport::~NetStackChrReport()
 {}
 
-int NetstackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
+int NetStackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
 {
-    std::lock_guard<std::mutex> lock(agentMutex_);
     auto currentTime = std::chrono::system_clock::now();
     auto timeDifference = std::chrono::duration_cast<std::chrono::minutes>(currentTime - lastReceivedTime_);
     if (timeDifference.count() < REPORT_TIME_LIMIT_MINUTE) {
@@ -42,114 +46,73 @@ int NetstackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
     }
     AAFwk::Want want;
     want.SetAction(REPORT_HTTP_EVENT_NAME);
-    if (ConvertWantParam(want, chrStats) != 0) {
-        return REPORT_CHR_RESULT_SET_DATA_FAIL;
-    }
+    SetWantParam(want, chrStats);
 
-    EventFwk::CommonEventData common_event_data;
-    common_event_data.SetWant(want);
-    EventFwk::CommonEventPublishInfo publish_info;
-    if (!EventFwk::CommonEventManager::PublishCommonEvent(common_event_data, publish_info)) {
+    EventFwk::CommonEventData commonEventData;
+    commonEventData.SetWant(want);
+    EventFwk::CommonEventPublishInfo publishInfo;
+    publishInfo.SetSubscriberUid({CHR_UID});
+    if (!EventFwk::CommonEventManager::PublishCommonEvent(commonEventData, publishInfo)) {
         NETSTACK_LOGE("Subscriber is nullptr, report to CHR failed.");
         return REPORT_CHR_RESULT_REPORT_FAIL;
     }
     NETSTACK_LOGI("Report to CHR success, %{public}d reports are ignore before this.", ignoreReportTimes_);
-    InforLog(chrStats);
     lastReceivedTime_ = currentTime;
     ignoreReportTimes_ = 0;
 
     return REPORT_CHR_RESULT_SUCCESS;
 }
 
-int NetstackChrReport::ConvertWantParam(AAFwk::Want& want, DataTransChrStats chrStats)
+void NetStackChrReport::SetWantParam(AAFwk::Want& want, DataTransChrStats chrStats)
 {
-    std::string httpInfoJsonStr = ConvertHttpInfoToJsonStr(chrStats);
-    std::string tcpInfoJsonStr = ConvertTcpInfoToJsonStr(chrStats);
-    if (httpInfoJsonStr == "" or tcpInfoJsonStr == "") {
-        return -1;
-    }
-    want.SetParam(PROCESS_NAME, chrStats.processName);
-    want.SetParam(HTTP_INFO_KEY, httpInfoJsonStr);
-    want.SetParam(TCP_INFO_KEY, tcpInfoJsonStr);
-    return 0;
+    want.SetParam("PROCESS_NAME", chrStats.processName);
+    SetHttpInfo(want, chrStats.httpInfo);
+    SetTcpInfo(want, chrStats.tcpInfo);
 }
 
-std::string NetstackChrReport::ConvertHttpInfoToJsonStr(DataTransChrStats chrStats)
+void NetStackChrReport::SetHttpInfo(AAFwk::Want& want, DataTransHttpInfo httpInfo)
 {
-    AAFwk::Want want;
-    want.SetParam(CURL_CODE_KEY, static_cast<long>(chrStats.httpInfo.curlCode));
-    want.SetParam(RESPONSE_CODE_KEY, static_cast<int>(chrStats.httpInfo.responseCode));
-    want.SetParam(TOTAL_TIME_KEY, static_cast<long>(chrStats.httpInfo.totalTime));
-    want.SetParam(NAMELOOKUP_TIME_KEY, static_cast<long>(chrStats.httpInfo.nameLookUpTime));
-    want.SetParam(CONNECT_TIME_KEY, static_cast<long>(chrStats.httpInfo.connectTime));
-    want.SetParam(APPCONNECT_TIME_KEY, static_cast<long>(chrStats.httpInfo.appconnectTime));
-    want.SetParam(PRETRANSFER_TIME_KEY, static_cast<long>(chrStats.httpInfo.preTransferTime));
-    want.SetParam(STARTTRANSFER_TIME_KEY, static_cast<long>(chrStats.httpInfo.startTransferTime));
-    want.SetParam(QUEUE_TIME_KEY, static_cast<long>(chrStats.httpInfo.queueTime));
-    want.SetParam(RETRY_AFTER_KEY, static_cast<long>(chrStats.httpInfo.retryAfter));
-    want.SetParam(SIZE_UPLOAD_KEY, static_cast<long>(chrStats.httpInfo.sizeUpload));
-    want.SetParam(SIZE_DOWNLOAD_KEY, static_cast<long>(chrStats.httpInfo.sizeDownload));
-    want.SetParam(SPEED_DOWNLOAD_KEY, static_cast<long>(chrStats.httpInfo.speedDownload));
-    want.SetParam(SPEED_UPLOAD_KEY, static_cast<long>(chrStats.httpInfo.speedUpload));
-    want.SetParam(EFFECTIVE_METHOD_KEY, std::string(chrStats.httpInfo.effectiveMethod));
-    want.SetParam(CONTENT_TYPE_KEY, std::string(chrStats.httpInfo.contentType));
-    want.SetParam(REDIRECT_TIME_KEY, static_cast<long>(chrStats.httpInfo.redirectTime));
-    want.SetParam(REDIRECT_COUNT_KEY, static_cast<long>(chrStats.httpInfo.redirectCount));
-    want.SetParam(PROXY_ERROR_KEY, static_cast<int>(chrStats.httpInfo.proxyError));
-    want.SetParam(OS_ERRNO_KEY, static_cast<long>(chrStats.httpInfo.osError));
-    want.SetParam(SSL_VERIFYRESULT_KEY, static_cast<long>(chrStats.httpInfo.sslVerifyResult));
-    std::string paramStr = want.ToString();
-    return paramStr;
+    AAFwk::Want wantHttp;
+    wantHttp.SetParam("uid", static_cast<int>(httpInfo.uid));
+    wantHttp.SetParam("response_code", static_cast<int>(httpInfo.responseCode));
+    wantHttp.SetParam("total_time", static_cast<long>(httpInfo.totalTime));
+    wantHttp.SetParam("namelookup_time", static_cast<long>(httpInfo.nameLookUpTime));
+    wantHttp.SetParam("connect_time", static_cast<long>(httpInfo.connectTime));
+    wantHttp.SetParam("pretransfer_time", static_cast<long>(httpInfo.preTransferTime));    
+    wantHttp.SetParam("size_upload", static_cast<long>(httpInfo.sizeUpload));
+    wantHttp.SetParam("size_download", static_cast<long>(httpInfo.sizeDownload));
+    wantHttp.SetParam("speed_download", static_cast<long>(httpInfo.speedDownload));
+    wantHttp.SetParam("speed_upload", static_cast<long>(httpInfo.speedUpload));    
+    wantHttp.SetParam("effective_method", std::string(httpInfo.effectiveMethod));
+    wantHttp.SetParam("starttransfer_time", static_cast<long>(httpInfo.startTransferTime));
+    wantHttp.SetParam("content_type", std::string(httpInfo.contentType));
+    wantHttp.SetParam("redirect_time", static_cast<long>(httpInfo.redirectTime));
+    wantHttp.SetParam("redirect_count", static_cast<long>(httpInfo.redirectCount));
+    wantHttp.SetParam("os_errno", static_cast<long>(httpInfo.osError));
+    wantHttp.SetParam("ssl_verifyresult", static_cast<long>(httpInfo.sslVerifyResult));
+    wantHttp.SetParam("appconnect_time", static_cast<long>(httpInfo.appconnectTime));
+    wantHttp.SetParam("retry_after", static_cast<long>(httpInfo.retryAfter));
+    wantHttp.SetParam("proxy_error", static_cast<int>(httpInfo.proxyError));
+    wantHttp.SetParam("queue_time", static_cast<long>(httpInfo.queueTime));
+    wantHttp.SetParam("curl_code", static_cast<long>(httpInfo.curlCode));
+    want.SetParam("DATA_TRANS_HTTP_INFO", wantHttp.ToString());
 }
 
-std::string NetstackChrReport::ConvertTcpInfoToJsonStr(DataTransChrStats chrStats)
+std::string NetStackChrReport::ConvertTcpInfoToJsonStr(AAFwk::Want& want, DataTransTcpInfo tcpInfo)
 {
-    AAFwk::Want want;
-    want.SetParam(TCPI_RETRANSMITS_KEY, static_cast<int>(chrStats.tcpInfo.retransmits));
-    want.SetParam(TCPI_UNACKED_KEY, static_cast<int>(chrStats.tcpInfo.unacked));
-    want.SetParam(TCPI_LAST_DATA_SENT_KEY, static_cast<int>(chrStats.tcpInfo.lastDataSent));
-    want.SetParam(TCPI_LAST_ACK_SENT_KEY, static_cast<int>(chrStats.tcpInfo.lastAckSent));
-    want.SetParam(TCPI_LAST_DATA_RECV_KEY, static_cast<int>(chrStats.tcpInfo.lastDataRecv));
-    want.SetParam(TCPI_LAST_ACK_RECV_KEY, static_cast<int>(chrStats.tcpInfo.lastAckRecv));
-    want.SetParam(TCPI_RTT_KEY, static_cast<int>(chrStats.tcpInfo.rtt));
-    want.SetParam(TCPI_RTTVAR_KEY, static_cast<int>(chrStats.tcpInfo.rttvar));
-    want.SetParam(TCPI_TOTAL_RETRANS_KEY, static_cast<int>(chrStats.tcpInfo.totalRetrans));
-    want.SetParam(SRC_IP_KEY, std::string(chrStats.tcpInfo.srcIp));
-    want.SetParam(DST_IP_KEY, std::string(chrStats.tcpInfo.dstIp));
-    want.SetParam(SRC_PORT_KEY, static_cast<int>(chrStats.tcpInfo.srcPort));
-    want.SetParam(DST_PORT_KEY, static_cast<int>(chrStats.tcpInfo.dstPort));
-    std::string paramStr = want.ToString();
-    return paramStr;
-}
-
-void NetstackChrReport::InforLog(DataTransChrStats chrStats)
-{
-    NETSTACK_LOGI("[Netstack CHR Service] Process Name:%{public}s, \
-        HTTP Info{%{public}d, %{public}d, %{public}lld, \
-        %{public}lld, %{public}lld, %{public}lld, \
-        %{public}lld, %{public}lld, %{public}lld, \
-        %{public}lld, %{public}s, %{public}lld, \
-        %{public}s, %{public}lld, %{public}ld, \
-        %{public}ld, %{public}ld, %{public}lld, \
-        %{public}lld, %{public}d, %{public}lld, \
-        %{public}ld, \
-        TCP Info{%{public}d, %{public}d, %{public}d, \
-        %{public}d, %{public}d, %{public}d, \
-        %{public}d, %{public}d, %{public}d, \
-        %{public}s, %{public}s, %{public}d}, \
-        %{public}d",
-        chrStats.processName.c_str(),
-        chrStats.httpInfo.uid, chrStats.httpInfo.responseCode, chrStats.httpInfo.totalTime,
-        chrStats.httpInfo.nameLookUpTime, chrStats.httpInfo.connectTime, chrStats.httpInfo.preTransferTime,
-        chrStats.httpInfo.sizeUpload, chrStats.httpInfo.sizeDownload, chrStats.httpInfo.speedDownload,
-        chrStats.httpInfo.speedUpload, chrStats.httpInfo.effectiveMethod.c_str(), chrStats.httpInfo.startTransferTime,
-        chrStats.httpInfo.contentType.c_str(), chrStats.httpInfo.redirectTime, chrStats.httpInfo.redirectCount,
-        chrStats.httpInfo.osError, chrStats.httpInfo.sslVerifyResult, chrStats.httpInfo.appconnectTime,
-        chrStats.httpInfo.retryAfter, chrStats.httpInfo.proxyError, chrStats.httpInfo.queueTime,
-        chrStats.httpInfo.curlCode,
-        chrStats.tcpInfo.unacked, chrStats.tcpInfo.lastDataSent, chrStats.tcpInfo.lastAckSent,
-        chrStats.tcpInfo.lastDataRecv, chrStats.tcpInfo.lastAckRecv, chrStats.tcpInfo.rtt,
-        chrStats.tcpInfo.rttvar, chrStats.tcpInfo.retransmits, chrStats.tcpInfo.totalRetrans,
-        chrStats.tcpInfo.srcIp.c_str(), chrStats.tcpInfo.dstIp.c_str(), chrStats.tcpInfo.srcPort,
-        chrStats.tcpInfo.dstPort);
+    AAFwk::Want wantTcp;
+    wantTcp.SetParam("tcpi_unacked", static_cast<int>(tcpInfo.unacked));
+    wantTcp.SetParam("tcpi_last_data_sent", static_cast<int>(tcpInfo.lastDataSent));
+    wantTcp.SetParam("tcpi_last_ack_sent", static_cast<int>(tcpInfo.lastAckSent));
+    wantTcp.SetParam("tcpi_last_data_recv", static_cast<int>(tcpInfo.lastDataRecv));
+    wantTcp.SetParam("tcpi_last_ack_recv", static_cast<int>(tcpInfo.lastAckRecv));
+    wantTcp.SetParam("tcpi_rtt", static_cast<int>(tcpInfo.rtt));
+    wantTcp.SetParam("tcpi_rttvar", static_cast<int>(tcpInfo.rttvar));
+    wantTcp.SetParam("tcpi_retransmits", static_cast<int>(tcpInfo.retransmits));
+    wantTcp.SetParam("tcpi_total_retrans", static_cast<int>(tcpInfo.totalRetrans));
+    wantTcp.SetParam("src_ip", std::string(tcpInfo.srcIp));
+    wantTcp.SetParam("dst_ip", std::string(tcpInfo.dstIp));
+    wantTcp.SetParam("src_port", static_cast<int>(tcpInfo.srcPort));
+    wantTcp.SetParam("dst_port", static_cast<int>(tcpInfo.dstPort));
+    want.SetParam("DATA_TRANS_TCP_INFO", wantTcp.ToString());
 }

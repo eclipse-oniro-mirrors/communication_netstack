@@ -26,21 +26,19 @@ namespace OHOS::NetStack::ChrClient {
 
 using namespace OHOS::NetStack::ChrClient;
 
-class NetstackChrReport {
+class NetStackChrReport {
 public:
-    NetstackChrReport();
-    ~NetstackChrReport();
+    NetStackChrReport();
+    ~NetStackChrReport();
  
     int ReportCommonEvent(DataTransChrStats chrStats);
 private:
     std::chrono::system_clock::time_point lastReceivedTime_;
-    std::mutex agentMutex_;
     int ignoreReportTimes_ = 0;
  
-    int ConvertWantParam(AAFwk::Want& want, DataTransChrStats chrStats);
-    std::string ConvertHttpInfoToJsonStr(DataTransChrStats chrStats);
-    std::string ConvertTcpInfoToJsonStr(DataTransChrStats chrStats);
-    void InforLog(DataTransChrStats chrStats);
+    void SetWantParam(AAFwk::Want& want, DataTransChrStats chrStats);
+    void SetHttpInfo(AAFwk::Want& want, DataTransHttpInfo httpInfo);
+    void SetTcpInfo(AAFwk::Want& want, DataTransTcpInfo tcpInfo);
 };
 }  // namespace OHOS::NatStack::ChrClient
 #endif // COMMUNICATIONNETSTACK_NETSTACK_CHR_REPORT_H

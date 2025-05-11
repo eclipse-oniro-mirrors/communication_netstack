@@ -42,7 +42,7 @@ private:
     static DataType GetNumericAttributeFromCurl(CURL *handle, CURLINFO info);
     static std::string GetStringAttributeFromCurl(CURL *handle, CURLINFO info);
     static int shouldReportHttpAbnormalEvent(const DataTransHttpInfo &httpInfo);
-    NetstackChrReport netstackChrReport;
+    NetStackChrReport netstackChrReport;
 };
 
 }  // namespace OHOS::NetStack::ChrClient
