@@ -38,6 +38,7 @@ NetStackChrReport::~NetStackChrReport()
 
 int NetStackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
 {
+    std::lock_guard<std::mutex> lock(report_mutex_);
     auto currentTime = std::chrono::system_clock::now();
     auto timeDifference = std::chrono::duration_cast<std::chrono::minutes>(currentTime - lastReceivedTime_);
     if (timeDifference.count() < REPORT_TIME_LIMIT_MINUTE) {

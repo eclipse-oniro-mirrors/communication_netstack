@@ -35,6 +35,7 @@ public:
 private:
     std::chrono::system_clock::time_point lastReceivedTime_;
     int ignoreReportTimes_ = 0;
+    std::mutex report_mutex_;
  
     void SetWantParam(AAFwk::Want& want, DataTransChrStats chrStats);
     void SetHttpInfo(AAFwk::Want& want, DataTransHttpInfo httpInfo);
