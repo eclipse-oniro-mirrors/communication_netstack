@@ -31,6 +31,7 @@
 #include "timing.h"
 #if HAS_NETMANAGER_BASE
 #include "http_client_network_message.h"
+#include "netstack_chr_client.h"
 #endif
 #include "netstack_hisysevent.h"
 
@@ -733,7 +734,9 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
     response_.SetResponseTime(HttpTime::GetNowTimeGMT());
 
     DumpHttpPerformance();
-
+#if HAS_NETMANAGER_BASE
+    ChrClient::NetStackChrClient::GetInstance().GetDfxInfoFromCurlHandleAndReport(curlHandle_, code);
+#endif
     if (CURLE_ABORTED_BY_CALLBACK == code) {
         (void)ProcessResponseCode();
         if (onCanceled_) {

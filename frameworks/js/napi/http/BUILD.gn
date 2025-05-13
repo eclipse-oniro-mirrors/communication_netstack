@@ -32,7 +32,10 @@ config("http_config") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    include_dirs += [ "$NETSTACK_DIR/utils/http_over_curl/include" ]
+    include_dirs += [
+      "$NETSTACK_DIR/utils/http_over_curl/include",
+      "$NETSTACK_DIR/utils/netstack_chr_client/include",
+    ]
   }
   defines = []
 
@@ -161,6 +164,8 @@ ohos_shared_library("http") {
       external_deps += [ "netmanager_base:netsys_client" ]
       defines = [ "HAS_NETMANAGER_BASE=1" ]
       sources += [
+        "$NETSTACK_DIR/utils/netstack_chr_client/src/netstack_chr_client.cpp",
+        "$NETSTACK_DIR/utils/netstack_chr_client/src/netstack_chr_report.cpp",
         "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",
         "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
       ]

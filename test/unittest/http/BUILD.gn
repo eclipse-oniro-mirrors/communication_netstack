@@ -63,6 +63,7 @@ ohos_unittest("http_unittest") {
     include_dirs += [
       "$NETMANAGER_BASE_INNERKITS_DIR/include",
       "$NETMANAGER_BASE_INNERKITS_DIR/netconnclient/include",
+      "$SUBSYSTEM_DIR/netstack/utils/netstack_chr_client/include",
     ]
   }
 
@@ -77,6 +78,8 @@ ohos_unittest("http_unittest") {
     "$NETSTACK_NAPI_ROOT/http/options/src/http_request_options.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_response.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/netstack_chr_client/src/netstack_chr_client.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/netstack_chr_client/src/netstack_chr_report.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/src/epoll_request_handler.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/src/netstack_network_profiler.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/tlv_utils/src/tlv_utils.cpp",
