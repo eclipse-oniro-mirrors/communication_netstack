@@ -365,7 +365,7 @@ int WebSocketServerExec::LwsCallbackClosed(lws *wsi, lws_callback_reasons reason
     manager->RemoveClientUserData(wsi);
     lws_set_wsi_user(wsi, nullptr);
 
-    if (userData->IsClosed() && webSocketConnection_.empty() && !userData->IsThreadStop()) {
+    if (userData->IsClosed() && !userData->IsThreadStop()) {
         NETSTACK_LOGI("server service is stopped");
         userData->SetThreadStop(true);
     }

@@ -26,7 +26,7 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "securec.h"
-
+#include "websocket_exec_common.h"
 #ifdef HAS_NETMANAGER_BASE
 #include "http_proxy.h"
 #include "net_conn_client.h"
@@ -102,133 +102,6 @@ struct OnOpenClosePara {
 };
 
 static const std::vector<std::string> WS_PREFIX = {PREFIX_WSS, PREFIX_WS};
-
-class UserData {
-public:
-    struct SendData {
-        SendData(void *paraData, size_t paraLength, lws_write_protocol paraProtocol)
-            : data(paraData), length(paraLength), protocol(paraProtocol)
-        {
-        }
-
-        SendData() = delete;
-
-        ~SendData() = default;
-
-        void *data;
-        size_t length;
-        lws_write_protocol protocol;
-    };
-
-    explicit UserData(lws_context *context)
-        : closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), closed_(false), threadStop_(false), context_(context)
-    {
-    }
-
-    bool IsClosed()
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        return closed_;
-    }
-
-    bool IsThreadStop()
-    {
-        return threadStop_.load();
-    }
-
-    void SetThreadStop(bool threadStop)
-    {
-        threadStop_.store(threadStop);
-    }
-
-    void Close(lws_close_status status, const std::string &reason)
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        closeStatus = status;
-        closeReason = reason;
-        closed_ = true;
-    }
-
-    void Push(void *data, size_t length, lws_write_protocol protocol)
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        dataQueue_.emplace(data, length, protocol);
-    }
-
-    SendData Pop()
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (dataQueue_.empty()) {
-            return {nullptr, 0, LWS_WRITE_TEXT};
-        }
-        SendData data = dataQueue_.front();
-        dataQueue_.pop();
-        return data;
-    }
-
-    void SetContext(lws_context *context)
-    {
-        context_ = context;
-    }
-
-    lws_context *GetContext()
-    {
-        return context_;
-    }
-
-    bool IsEmpty()
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (dataQueue_.empty()) {
-            return true;
-        }
-        return false;
-    }
-
-    void SetLws(lws *wsi)
-    {
-        std::lock_guard<std::mutex> lock(mutexForLws_);
-        if (wsi == nullptr) {
-            NETSTACK_LOGD("set wsi nullptr");
-        }
-        wsi_ = wsi;
-    }
-
-    void TriggerWritable()
-    {
-        std::lock_guard<std::mutex> lock(mutexForLws_);
-        if (wsi_ == nullptr) {
-            NETSTACK_LOGE("wsi is nullptr, can not trigger");
-            return;
-        }
-        lws_callback_on_writable(wsi_);
-    }
-
-    std::map<std::string, std::string> header;
-
-    lws_close_status closeStatus;
-
-    std::string closeReason;
-
-    uint32_t openStatus;
-
-    std::string openMessage;
-
-private:
-    volatile bool closed_;
-
-    std::atomic_bool threadStop_;
-
-    std::mutex mutex_;
-
-    std::mutex mutexForLws_;
-
-    lws_context *context_;
-
-    std::queue<SendData> dataQueue_;
-
-    lws *wsi_ = nullptr;
-};
 
 template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)
 {

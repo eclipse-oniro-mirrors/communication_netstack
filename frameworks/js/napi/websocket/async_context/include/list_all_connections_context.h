@@ -17,8 +17,7 @@
 #define COMMUNICATIONNETSTACK_LISTALLCONNECTIONS_CONTEXT_H
 
 #include "base_context.h"
-#include "libwebsockets.h"
-#include "websocket_utils.h"
+#include "websocket_exec_common.h"
 #include "nocopyable.h"
 
 namespace OHOS::NetStack::Websocket {

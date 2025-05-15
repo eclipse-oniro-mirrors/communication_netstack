@@ -36,7 +36,6 @@ ohos_unittest("websocket_unittest") {
     "$WEBSOCKET_NAPI/async_context/include",
     "$WEBSOCKET_NAPI/async_work/include",
     "$WEBSOCKET_NAPI/constant/include",
-    "$WEBSOCKET_NAPI/utils/include",
     "$WEBSOCKET_NAPI/websocket_exec/include",
     "$WEBSOCKET_NAPI/websocket_module/include",
   ]

@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include "netstack_log.h"
 #include "gtest/gtest.h"
 #include <cstring>
 #include <iostream>
