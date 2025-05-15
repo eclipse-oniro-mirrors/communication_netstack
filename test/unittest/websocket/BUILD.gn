@@ -74,7 +74,8 @@ ohos_unittest("websocket_unittest") {
   }
 
   if (netstack_websocket_server_enable) {
-    defines += [ "NETSTACK_WEBSOCKETSERVER" ]
+    defines += [ "NETSTACK_WEBSOCKETSERVER",
+                "private = public",]
     sources += [
       "$WEBSOCKET_NAPI/async_context/src/list_all_connections_context.cpp",
       "$WEBSOCKET_NAPI/async_context/src/server_close_context.cpp",

@@ -274,7 +274,7 @@ void EventManager::SetMaxConnForOneClient(const uint32_t &cnt)
     maxConnForOneClient_ = cnt;
 }
 
-uint32_t EventManager::GetMaxConnClientCnt() const
+uint32_t EventManager::GetMaxConcurrentClientCnt() const
 {
     return maxConnClientCnt_;
 }
@@ -282,6 +282,21 @@ uint32_t EventManager::GetMaxConnClientCnt() const
 uint32_t EventManager::GetMaxConnForOneClient() const
 {
     return maxConnForOneClient_;
+}
+
+void EventManager::AddClientUserData(void *wsi, std::shared_ptr<Websocket::UserData> &data)
+{
+    std::lock_guard<std::mutex> lock(mapMutex_);
+    userDataMap_[wsi] = data;
+}
+
+void EventManager::RemoveClientUserData(void *wsi)
+{
+    std::lock_guard<std::mutex> lock(mapMutex_);
+    auto it = userDataMap_.find(wsi);
+    if (it != userDataMap_.end()) {
+        userDataMap_.erase(it);
+    }
 }
 #endif
 
