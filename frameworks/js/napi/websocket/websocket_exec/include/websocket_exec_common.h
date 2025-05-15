@@ -154,4 +154,5 @@ private:
 
     lws *wsi_ = nullptr;
 };
-}
+} // namespace OHOS::NetStack::Websocket
+#endif
