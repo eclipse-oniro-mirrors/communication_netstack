@@ -18,7 +18,7 @@
 
 #include <string>
 #include "base_context.h"
-#include "websocket_utils.h"
+#include "websocket_exec_common.h"
 #include "nocopyable.h"
 
 namespace OHOS::NetStack::Websocket {

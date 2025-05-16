@@ -17,9 +17,8 @@
 #define COMMUNICATIONNETSTACK_SERVER_SEND_CONTEXT_H
 
 #include <string>
-#include "libwebsockets.h"
 #include "base_context.h"
-#include "websocket_utils.h"
+#include "websocket_exec_common.h"
 #include "nocopyable.h"
 
 namespace OHOS::NetStack::Websocket {

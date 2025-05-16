@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,7 +11,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 #ifndef COMMUNICATIONNETSTACK_WEBSOCKET_SERVER_EXEC_H
 #define COMMUNICATIONNETSTACK_WEBSOCKET_SERVER_EXEC_H
@@ -21,7 +21,6 @@
 #include "server_send_context.h"
 #include "server_close_context.h"
 #include "server_stop_context.h"
-#include "websocket_utils.h"
 
 namespace OHOS::NetStack::Websocket {
 
@@ -62,8 +61,6 @@ public:
     static napi_value ServerStopCallback(ServerStopContext *context);
 
 private:
-    static uint32_t GetHttpResponseFromWsi(lws *wsi);
-
     static int HttpDummy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
 
     static int RaiseServerError(EventManager *manager);
@@ -102,9 +99,13 @@ private:
 
     static void SetWebsocketMessage(lws *wsi, EventManager *manager, const std::string &msg, void *dataMsg);
 
-    static bool IsOverMaxClientConns(EventManager *manager);
+    static bool IsOverMaxClientConns(EventManager *manager, const std::string ip);
 
-    static bool IsAllowedProtocol(lws *wsi);
+    static bool IsOverMaxConcurrentClientsCnt(EventManager *manager, const std::vector<WebSocketConnection> connections,
+        const std::string ip);
+
+    static bool IsOverMaxCntForOneClient(EventManager *manager, const std::vector<WebSocketConnection> connections,
+        const std::string ip);
 
     static bool IsAllowConnection(const std::string &clientId);
 

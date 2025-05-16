@@ -140,7 +140,11 @@ public:
 
     void SetMaxConnForOneClient(const uint32_t &cnt);
 
-    [[nodiscard]] uint32_t GetMaxConnClientCnt() const;
+    void AddClientUserData(void *wsi, std::shared_ptr<Websocket::UserData> &data);
+
+    void RemoveClientUserData(void *wsi);
+
+    [[nodiscard]] uint32_t GetMaxConcurrentClientCnt()const;
 
     [[nodiscard]] uint32_t GetMaxConnForOneClient() const;
 #endif
@@ -165,9 +169,11 @@ private:
     std::shared_ptr<Socks5::Socks5Instance> proxyData_;
 #ifdef NETSTACK_WEBSOCKETSERVER
     std::shared_mutex dataServerQueueMutex_;
+    std::mutex mapMutex_;
     std::unordered_map<void *, std::queue<void *>> serverDataQueue_;
     std::unordered_map<void *, std::string> wsServerBinaryData_;
     std::unordered_map<void *, std::string> wsServerTextData_;
+    std::unordered_map<void *, std::shared_ptr<Websocket::UserData>> userDataMap_;
     uint32_t maxConnClientCnt_;
     uint32_t maxConnForOneClient_;
 #endif

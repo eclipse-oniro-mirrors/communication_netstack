@@ -27,7 +27,6 @@ ohos_shared_library("websocket") {
     "async_context/include",
     "async_work/include",
     "constant/include",
-    "utils/include",
     "websocket_exec/include",
     "websocket_module/include",
   ]
