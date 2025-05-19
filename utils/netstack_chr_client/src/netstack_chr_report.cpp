@@ -106,18 +106,18 @@ void NetStackChrReport::SetHttpInfoJsonStr(DataTransHttpInfo httpInfo, std::stri
 void NetStackChrReport::SetTcpInfoJsonStr(DataTransTcpInfo tcpInfo, std::string& tcpInfoJsonStr)
 {
     std::stringstream ss;
-    tcpInfoJsonStr << "{\"tcpi_unacked\":" << tcpInfo.unacked
-        ",{\"tcpi_last_data_sent\":" << tcpInfo.lastDataSent
-        ",{\"tcpi_last_ack_sent\":" << tcpInfo.lastAckSent
-        ",{\"tcpi_last_data_recv\":" << tcpInfo.lastDataRecv
-        ",{\"tcpi_last_ack_recv\":" << tcpInfo.lastAckRecv
-        ",{\"tcpi_rtt\":" << tcpInfo.rtt
-        ",{\"tcpi_rttvar\":" << tcpInfo.rttvar
-        ",{\"tcpi_retransmits\":" << tcpInfo.retransmits
-        ",{\"tcpi_total_retrans\":" << tcpInfo.totalRetrans
-        ",{\"src_ip\":\"" << tcpInfo.srcIp
-        "\",{\"dst_ip\":\"" << tcpInfo.dstIp
-        "\",{\"src_port\":" << tcpInfo.srcPort
-        ",{\"dst_port\":" << tcpInfo.dstPort << "}";
+    ss << "{\"tcpi_unacked\":" << tcpInfo.unacked
+       << ",{\"tcpi_last_data_sent\":" << tcpInfo.lastDataSent
+       << ",{\"tcpi_last_ack_sent\":" << tcpInfo.lastAckSent
+       << ",{\"tcpi_last_data_recv\":" << tcpInfo.lastDataRecv
+       << ",{\"tcpi_last_ack_recv\":" << tcpInfo.lastAckRecv
+       << ",{\"tcpi_rtt\":" << tcpInfo.rtt
+       << ",{\"tcpi_rttvar\":" << tcpInfo.rttvar
+       << ",{\"tcpi_retransmits\":" << tcpInfo.retransmits
+       << ",{\"tcpi_total_retrans\":" << tcpInfo.totalRetrans
+       << ",{\"src_ip\":\"" << tcpInfo.srcIp
+       << "\",{\"dst_ip\":\"" << tcpInfo.dstIp
+       << "\",{\"src_port\":" << tcpInfo.srcPort
+       << ",{\"dst_port\":" << tcpInfo.dstPort << "}";
     tcpInfoJsonStr = ss.str()
 }
