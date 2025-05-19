@@ -51,6 +51,9 @@ void EpollMultiDriver::Initialize()
     };
     curl_multi_setopt(multi_, CURLMOPT_TIMERDATA, this);
     curl_multi_setopt(multi_, CURLMOPT_TIMERFUNCTION, timerCallback);
+    curl_multi_setopt(multi_, CURLMOPT_MAX_HOST_CONNECTIONS, 6); // 单个主机的最大连接数
+    curl_multi_setopt(multi_, CURLMOPT_MAX_TOTAL_CONNECTIONS, 64); // 最大同时打开连接数
+    curl_multi_setopt(multi_, CURLMOPT_MAXCONNECTS, 64); // 连接缓冲池的大小
 }
 
 EpollMultiDriver::~EpollMultiDriver()
