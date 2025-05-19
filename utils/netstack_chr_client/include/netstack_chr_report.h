@@ -36,8 +36,8 @@ private:
     std::mutex report_mutex_;
  
     void SetWantParam(AAFwk::Want& want, DataTransChrStats chrStats);
-    void SetHttpInfoJsonStr(DataTransHttpInfo httpInfo, std:string& httpInfoJsonStr);
-    void SetTcpInfoJsonStr(DataTransTcpInfo tcpInfo, std:string& tcpInfoJsonStr);
+    void SetHttpInfoJsonStr(DataTransHttpInfo httpInfo, std::string& httpInfoJsonStr);
+    void SetTcpInfoJsonStr(DataTransTcpInfo tcpInfo, std::string& tcpInfoJsonStr);
 };
 }  // namespace OHOS::NatStack::ChrClient
 #endif // COMMUNICATIONNETSTACK_NETSTACK_CHR_REPORT_H
