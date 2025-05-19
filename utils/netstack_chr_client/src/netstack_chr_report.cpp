@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <sstream>
 #include "i_netstack_chr_client.h"
 #include "netstack_chr_report.h"
 #include "netstack_log.h"
@@ -75,46 +76,48 @@ void NetStackChrReport::SetWantParam(AAFwk::Want& want, DataTransChrStats chrSta
 
 void NetStackChrReport::SetHttpInfoJsonStr(DataTransHttpInfo httpInfo, std::string& httpInfoJsonStr)
 {
-    httpInfoJsonStr =
-        "{\"uid\":" + std::to_string(httpInfo.uid) +
-        ",{\"response_code\":" + std::to_string(httpInfo.responseCode) +
-        ",{\"total_time\":" + std::to_string(httpInfo.totalTime) +
-        ",{\"namelookup_time\":" + std::to_string(httpInfo.nameLookUpTime) +
-        ",{\"connect_time\":" + std::to_string(httpInfo.connectTime) +
-        ",{\"pretransfer_time\":" + std::to_string(httpInfo.preTransferTime) +
-        ",{\"size_upload\":" + std::to_string(httpInfo.sizeUpload) +
-        ",{\"size_download\":" + std::to_string(httpInfo.sizeDownload) +
-        ",{\"speed_download\":" + std::to_string(httpInfo.speedDownload) +
-        ",{\"speed_upload\":" + std::to_string(httpInfo.speedUpload) +
-        ",{\"effective_method\":\"" + httpInfo.effectiveMethod +
-        "\",{\"starttransfer_time\":" + std::to_string(httpInfo.startTransferTime) +
-        ",{\"content_type\":\"" + httpInfo.contentType +
-        "\",{\"redirect_time\":" + std::to_string(httpInfo.redirectTime) +
-        ",{\"redirect_count\":" + std::to_string(httpInfo.redirectCount) +
-        ",{\"os_errno\":" + std::to_string(httpInfo.osError) +
-        ",{\"ssl_verifyresult\":" + std::to_string(httpInfo.sslVerifyResult) +
-        ",{\"appconnect_time\":" + std::to_string(httpInfo.appconnectTime) +
-        ",{\"retry_after\":" + std::to_string(httpInfo.uid) +
-        ",{\"proxy_error\":" + std::to_string(httpInfo.proxyError) +
-        ",{\"queue_time\":" + std::to_string(httpInfo.queueTime) +
-        ",{\"curl_code\":" + std::to_string(httpInfo.curlCode) +
-        ",{\"request_start_time\":" + std::to_string(httpInfo.requestStartTime) + "}";
+    std::stringstream ss;
+    ss << "{\"uid\":" << httpInfo.uid
+       << ",{\"response_code\":" << httpInfo.responseCode
+       << ",{\"total_time\":" << httpInfo.totalTime
+       << ",{\"namelookup_time\":" << httpInfo.nameLookUpTime
+       << ",{\"connect_time\":" << httpInfo.connectTime
+       << ",{\"pretransfer_time\":" << httpInfo.preTransferTime
+       << ",{\"size_upload\":" << httpInfo.sizeUpload
+       << ",{\"size_download\":" << httpInfo.sizeDownload
+       << ",{\"speed_download\":" << httpInfo.speedDownload
+       << ",{\"speed_upload\":" << httpInfo.speedUpload
+       << ",{\"effective_method\":\"" << httpInfo.effectiveMethod
+       << "\",{\"starttransfer_time\":" << httpInfo.startTransferTime
+       << ",{\"content_type\":\"" << httpInfo.contentType
+       << "\",{\"redirect_time\":" << httpInfo.redirectTime
+       << ",{\"redirect_count\":" << httpInfo.redirectCount
+       << ",{\"os_errno\":" << httpInfo.osError
+       << ",{\"ssl_verifyresult\":" << httpInfo.sslVerifyResult
+       << ",{\"appconnect_time\":" << httpInfo.appconnectTime
+       << ",{\"retry_after\":" << httpInfo.uid
+       << ",{\"proxy_error\":" << httpInfo.proxyError
+       << ",{\"queue_time\":" << httpInfo.queueTime
+       << ",{\"curl_code\":"<< httpInfo.curlCode
+       << ",{\"request_start_time\":" << httpInfo.requestStartTime << "}";
+    httpInfoJsonStr = ss.str();
 }
 
 void NetStackChrReport::SetTcpInfoJsonStr(DataTransTcpInfo tcpInfo, std::string& tcpInfoJsonStr)
 {
-    tcpInfoJsonStr =
-        "{\"tcpi_unacked\":" + std::to_string(tcpInfo.unacked) +
-        ",{\"tcpi_last_data_sent\":" + std::to_string(tcpInfo.lastDataSent) +
-        ",{\"tcpi_last_ack_sent\":" + std::to_string(tcpInfo.lastAckSent) +
-        ",{\"tcpi_last_data_recv\":" + std::to_string(tcpInfo.lastDataRecv) +
-        ",{\"tcpi_last_ack_recv\":" + std::to_string(tcpInfo.lastAckRecv) +
-        ",{\"tcpi_rtt\":" + std::to_string(tcpInfo.rtt) +
-        ",{\"tcpi_rttvar\":" + std::to_string(tcpInfo.rttvar) +
-        ",{\"tcpi_retransmits\":" + std::to_string(tcpInfo.retransmits) +
-        ",{\"tcpi_total_retrans\":" + std::to_string(tcpInfo.totalRetrans) +
-        ",{\"src_ip\":\"" + tcpInfo.srcIp +
-        "\",{\"dst_ip\":\"" + tcpInfo.dstIp +
-        "\",{\"src_port\":" + std::to_string(tcpInfo.srcPort) +
-        ",{\"dst_port\":" + std::to_string(tcpInfo.dstPort) + "}";
+    std::stringstream ss;
+    tcpInfoJsonStr << "{\"tcpi_unacked\":" << tcpInfo.unacked
+        ",{\"tcpi_last_data_sent\":" << tcpInfo.lastDataSent
+        ",{\"tcpi_last_ack_sent\":" << tcpInfo.lastAckSent
+        ",{\"tcpi_last_data_recv\":" << tcpInfo.lastDataRecv
+        ",{\"tcpi_last_ack_recv\":" << tcpInfo.lastAckRecv
+        ",{\"tcpi_rtt\":" << tcpInfo.rtt
+        ",{\"tcpi_rttvar\":" << tcpInfo.rttvar
+        ",{\"tcpi_retransmits\":" << tcpInfo.retransmits
+        ",{\"tcpi_total_retrans\":" << tcpInfo.totalRetrans
+        ",{\"src_ip\":\"" << tcpInfo.srcIp
+        "\",{\"dst_ip\":\"" << tcpInfo.dstIp
+        "\",{\"src_port\":" << tcpInfo.srcPort
+        ",{\"dst_port\":" << tcpInfo.dstPort << "}";
+    tcpInfoJsonStr = ss.str()
 }

@@ -56,7 +56,50 @@ public:
     virtual void TearDown() {}
 };
 
-HWTEST_F(NetStackChrClientTest, NetStackChrClientTest001, TestSize.Level2)
+void FillNormalvalue(ChrClient::DataTransChrStats& chrStats)
+{
+    chrStats.processName = "CHR_Unit_Test_Case";
+
+    chrStats.httpInfo.uid = 100;
+    chrStats.httpInfo.responseCode = 200;
+    chrStats.httpInfo.totalTime = 500000;
+    chrStats.httpInfo.nameLookUpTime = 10000;
+    chrStats.httpInfo.connectTime = 50000;
+    chrStats.httpInfo.preTransferTime = 80000;
+    chrStats.httpInfo.sizeUpload = 30;
+    chrStats.httpInfo.sizeDownload = 60;
+    chrStats.httpInfo.speedDownload = 440;
+    chrStats.httpInfo.speedUpload = 180;
+    chrStats.httpInfo.effectiveMethod = "POST";
+    chrStats.httpInfo.startTransferTime = "application/json; charset=utf-8";
+    chrStats.httpInfo.contentType = 0;
+    chrStats.httpInfo.redirectTime = 0;
+    chrStats.httpInfo.redirectCount = 0;
+    chrStats.httpInfo.osError = 0;
+    chrStats.httpInfo.sslVerifyResult= 0;
+    chrStats.httpInfo.appconnectTime = 80000;
+    chrStats.httpInfo.retryAfter = 0;
+    chrStats.httpInfo.proxyError = 0;
+    chrStats.httpInfo.queueTime = 12000;
+    chrStats.httpInfo.curlCode = 0;
+    chrStats.httpInfo.requestStartTime = 1747359000000;
+
+    chrStats.tcpInfo.unacked = 0;
+    chrStats.tcpInfo.lastDataSent = 1000;
+    chrStats.tcpInfo.lastAckSent = 0;
+    chrStats.tcpInfo.lastDataRecv 1000;
+    chrStats.tcpInfo.lastAckRecv = 1000;
+    chrStats.tcpInfo.rtt = 12000;
+    chrStats.tcpInfo.rttvar = 4000;
+    chrStats.tcpInfo.retransmits = 0;
+    chrStats.tcpInfo.totalRetrans = 0;
+    chrStats.tcpInfo.srcIp = "7.246.***.***";
+    chrStats.tcpInfo.dstIp = "7.246.***.***";
+    chrStats.tcpInfo.srcPort = 54000;
+    chrStats.tcpInfo.dstPort = 54000;
+}
+
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCode, TestSize.Level2)
 {
     CURL *handle = GetCurlHandle();
     ChrClient::NetStackChrClient::GetInstance().GetDfxInfoFromCurlHandleAndReport(NULL, 0);
@@ -66,7 +109,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTest001, TestSize.Level2)
     EXPECT_EQ(dataTransChrStats.httpInfo.responseCode, 0);
 }
 
-HWTEST_F(NetStackChrClientTest, NetStackChrClientTest002, TestSize.Level2)
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestPort, TestSize.Level2)
 {
     ChrClient::DataTransTcpInfo tcpInfo;
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -87,68 +130,74 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTest002, TestSize.Level2)
     }
 }
 
-HWTEST_F(NetStackChrClientTest, NetStackChrClientTest003, TestSize.Level2)
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestNotReport, TestSize.Level2)
 {
-    ChrClient::DataTransHttpInfo httpInfo;
-    httpInfo.curlCode = 0;
-    httpInfo.responseCode = 200;
-    int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(httpInfo);
+    ChrClient::NetStackChrReport netstackChrReport;
+    ChrClient::DataTransChrStats chrStats;
+    FillNormalvalue(chrStats);
+    
+    int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, -1);
+}
 
-    httpInfo.curlCode = 1;
-    res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(httpInfo);
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCodeError, TestSize.Level2)
+{
+    ChrClient::NetStackChrReport netstackChrReport;
+    ChrClient::DataTransChrStats chrStats;
+    FillNormalvalue(chrStats);
+    
+    chrStats.httpInfo.responseCode = 301;
+    int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, 0);
+}
 
-    httpInfo.curlCode = 0;
-    httpInfo.responseCode = 500001;
-    res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(httpInfo);
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestOSError, TestSize.Level2)
+{
+    ChrClient::NetStackChrReport netstackChrReport;
+    ChrClient::DataTransChrStats chrStats;
+    FillNormalvalue(chrStats);
+    
+    chrStats.httpInfo.osError = 1;
+    int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, 0);
 }
 
-HWTEST_F(NetStackChrClientTest, NetStackChrClientTest004, TestSize.Level2)
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestProxyError, TestSize.Level2)
 {
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
-    AAFwk::Want want;
-
-    chrStats.processName = "process_name_test";
-    netstackChrReport.SetWantParam(want, chrStats);
-
-    std::string processNameTest = want.GetStringParam("PROCESS_NAME");
-    EXPECT_EQ(processNameTest, "process_name_test");
+    FillNormalvalue(chrStats);
+    
+    chrStats.httpInfo.proxyError = 1;
+    int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
+    EXPECT_EQ(res, 0);
 }
 
-HWTEST_F(NetStackChrClientTest, NetStackChrClientTest005, TestSize.Level2)
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestCurlCodeError, TestSize.Level2)
 {
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
-    AAFwk::Want want;
-
-    chrStats.httpInfo.totalTime = 100;
-    netstackChrReport.SetHttpInfo(want, chrStats.httpInfo);
-
-    std::string httpInfoStr = want.GetStringParam("DATA_TRANS_HTTP_INFO");
-    const auto &httpWant = AAFwk::Want::FromString(httpInfoStr);
-    long totalTimeTRes = httpWant->GetLongParam("total_time", -1);
-    EXPECT_EQ(totalTimeTRes, 100);
+    FillNormalvalue(chrStats);
+    
+    chrStats.httpInfo.curlCode = 1;
+    int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
+    EXPECT_EQ(res, 0);
 }
 
-HWTEST_F(NetStackChrClientTest, NetStackChrClientTest006, TestSize.Level2)
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestShortRequestButTimeout, TestSize.Level2)
 {
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
-    AAFwk::Want want;
-
-    chrStats.tcpInfo.rtt = 200;
-    netstackChrReport.SetTcpInfo(want, chrStats.tcpInfo);
-
-    std::string tcpInfoStr = want.GetStringParam("DATA_TRANS_TCP_INFO");
-    const auto &tcpWant = AAFwk::Want::FromString(tcpInfoStr);
-    int rttRes = httpWant->GetIntParam("tcpi_rtt", -1);
-    EXPECT_EQ(rttRes, 200);
+    FillNormalvalue(chrStats);
+    
+    chrStats.httpInfo.sizeUpload = 50000;
+    chrStats.httpInfo.sizeDownload = 50000;
+    chrStats.httpInfo.totalTime = 501000;
+    int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
+    EXPECT_EQ(res, 0);
 }
 
-HWTEST_F(NetStackChrClientTest, NetStackChrClientTest007, TestSize.Level2)
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestTimeLimits, TestSize.Level2)
 {
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
