@@ -41,6 +41,7 @@ private:
     template <typename DataType>
     static DataType GetNumericAttributeFromCurl(CURL *handle, CURLINFO info);
     static std::string GetStringAttributeFromCurl(CURL *handle, CURLINFO info);
+    static long GetRequestStartTime(curl_off_t totalTime);
     static int shouldReportHttpAbnormalEvent(const DataTransHttpInfo &httpInfo);
     NetStackChrReport netstackChrReport;
 };

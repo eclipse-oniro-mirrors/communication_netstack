@@ -12,13 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <string>
-#include <chrono>
+#include <sstream>
 #include "i_netstack_chr_client.h"
 #include "netstack_chr_report.h"
 #include "netstack_log.h"
 #include "common_event_manager.h"
-#include "want.h"
 
 using namespace OHOS::NetStack::ChrClient;
 
@@ -66,54 +64,60 @@ int NetStackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
 
 void NetStackChrReport::SetWantParam(AAFwk::Want& want, DataTransChrStats chrStats)
 {
+    std::string httpInfoJsonStr;
+    std::string tcpInfoJsonStr;
+    SetHttpInfoJsonStr(chrStats.httpInfo, httpInfoJsonStr);
+    SetTcpInfoJsonStr(chrStats.tcpInfo, tcpInfoJsonStr);
+
     want.SetParam("PROCESS_NAME", chrStats.processName);
-    SetHttpInfo(want, chrStats.httpInfo);
-    SetTcpInfo(want, chrStats.tcpInfo);
+    want.SetParam("DATA_TRANS_HTTP_INFO", httpInfoJsonStr);
+    want.SetParam("DATA_TRANS_TCP_INFO", tcpInfoJsonStr);
 }
 
-void NetStackChrReport::SetHttpInfo(AAFwk::Want& want, DataTransHttpInfo httpInfo)
+void NetStackChrReport::SetHttpInfoJsonStr(DataTransHttpInfo httpInfo, std::string& httpInfoJsonStr)
 {
-    AAFwk::Want wantHttp;
-    wantHttp.SetParam("uid", static_cast<int>(httpInfo.uid));
-    wantHttp.SetParam("response_code", static_cast<int>(httpInfo.responseCode));
-    wantHttp.SetParam("total_time", static_cast<long>(httpInfo.totalTime));
-    wantHttp.SetParam("namelookup_time", static_cast<long>(httpInfo.nameLookUpTime));
-    wantHttp.SetParam("connect_time", static_cast<long>(httpInfo.connectTime));
-    wantHttp.SetParam("pretransfer_time", static_cast<long>(httpInfo.preTransferTime));    
-    wantHttp.SetParam("size_upload", static_cast<long>(httpInfo.sizeUpload));
-    wantHttp.SetParam("size_download", static_cast<long>(httpInfo.sizeDownload));
-    wantHttp.SetParam("speed_download", static_cast<long>(httpInfo.speedDownload));
-    wantHttp.SetParam("speed_upload", static_cast<long>(httpInfo.speedUpload));    
-    wantHttp.SetParam("effective_method", std::string(httpInfo.effectiveMethod));
-    wantHttp.SetParam("starttransfer_time", static_cast<long>(httpInfo.startTransferTime));
-    wantHttp.SetParam("content_type", std::string(httpInfo.contentType));
-    wantHttp.SetParam("redirect_time", static_cast<long>(httpInfo.redirectTime));
-    wantHttp.SetParam("redirect_count", static_cast<long>(httpInfo.redirectCount));
-    wantHttp.SetParam("os_errno", static_cast<long>(httpInfo.osError));
-    wantHttp.SetParam("ssl_verifyresult", static_cast<long>(httpInfo.sslVerifyResult));
-    wantHttp.SetParam("appconnect_time", static_cast<long>(httpInfo.appconnectTime));
-    wantHttp.SetParam("retry_after", static_cast<long>(httpInfo.retryAfter));
-    wantHttp.SetParam("proxy_error", static_cast<int>(httpInfo.proxyError));
-    wantHttp.SetParam("queue_time", static_cast<long>(httpInfo.queueTime));
-    wantHttp.SetParam("curl_code", static_cast<long>(httpInfo.curlCode));
-    want.SetParam("DATA_TRANS_HTTP_INFO", wantHttp.ToString());
+    std::stringstream ss;
+    ss << "{\"uid\":" << httpInfo.uid
+       << ",{\"response_code\":" << httpInfo.responseCode
+       << ",{\"total_time\":" << httpInfo.totalTime
+       << ",{\"namelookup_time\":" << httpInfo.nameLookUpTime
+       << ",{\"connect_time\":" << httpInfo.connectTime
+       << ",{\"pretransfer_time\":" << httpInfo.preTransferTime
+       << ",{\"size_upload\":" << httpInfo.sizeUpload
+       << ",{\"size_download\":" << httpInfo.sizeDownload
+       << ",{\"speed_download\":" << httpInfo.speedDownload
+       << ",{\"speed_upload\":" << httpInfo.speedUpload
+       << ",{\"effective_method\":\"" << httpInfo.effectiveMethod
+       << "\",{\"starttransfer_time\":" << httpInfo.startTransferTime
+       << ",{\"content_type\":\"" << httpInfo.contentType
+       << "\",{\"redirect_time\":" << httpInfo.redirectTime
+       << ",{\"redirect_count\":" << httpInfo.redirectCount
+       << ",{\"os_errno\":" << httpInfo.osError
+       << ",{\"ssl_verifyresult\":" << httpInfo.sslVerifyResult
+       << ",{\"appconnect_time\":" << httpInfo.appconnectTime
+       << ",{\"retry_after\":" << httpInfo.uid
+       << ",{\"proxy_error\":" << httpInfo.proxyError
+       << ",{\"queue_time\":" << httpInfo.queueTime
+       << ",{\"curl_code\":"<< httpInfo.curlCode
+       << ",{\"request_start_time\":" << httpInfo.requestStartTime << "}";
+    httpInfoJsonStr = ss.str();
 }
 
-void NetStackChrReport::SetTcpInfo(AAFwk::Want& want, DataTransTcpInfo tcpInfo)
+void NetStackChrReport::SetTcpInfoJsonStr(DataTransTcpInfo tcpInfo, std::string& tcpInfoJsonStr)
 {
-    AAFwk::Want wantTcp;
-    wantTcp.SetParam("tcpi_unacked", static_cast<int>(tcpInfo.unacked));
-    wantTcp.SetParam("tcpi_last_data_sent", static_cast<int>(tcpInfo.lastDataSent));
-    wantTcp.SetParam("tcpi_last_ack_sent", static_cast<int>(tcpInfo.lastAckSent));
-    wantTcp.SetParam("tcpi_last_data_recv", static_cast<int>(tcpInfo.lastDataRecv));
-    wantTcp.SetParam("tcpi_last_ack_recv", static_cast<int>(tcpInfo.lastAckRecv));
-    wantTcp.SetParam("tcpi_rtt", static_cast<int>(tcpInfo.rtt));
-    wantTcp.SetParam("tcpi_rttvar", static_cast<int>(tcpInfo.rttvar));
-    wantTcp.SetParam("tcpi_retransmits", static_cast<int>(tcpInfo.retransmits));
-    wantTcp.SetParam("tcpi_total_retrans", static_cast<int>(tcpInfo.totalRetrans));
-    wantTcp.SetParam("src_ip", std::string(tcpInfo.srcIp));
-    wantTcp.SetParam("dst_ip", std::string(tcpInfo.dstIp));
-    wantTcp.SetParam("src_port", static_cast<int>(tcpInfo.srcPort));
-    wantTcp.SetParam("dst_port", static_cast<int>(tcpInfo.dstPort));
-    want.SetParam("DATA_TRANS_TCP_INFO", wantTcp.ToString());
+    std::stringstream ss;
+    ss << "{\"tcpi_unacked\":" << tcpInfo.unacked
+       << ",{\"tcpi_last_data_sent\":" << tcpInfo.lastDataSent
+       << ",{\"tcpi_last_ack_sent\":" << tcpInfo.lastAckSent
+       << ",{\"tcpi_last_data_recv\":" << tcpInfo.lastDataRecv
+       << ",{\"tcpi_last_ack_recv\":" << tcpInfo.lastAckRecv
+       << ",{\"tcpi_rtt\":" << tcpInfo.rtt
+       << ",{\"tcpi_rttvar\":" << tcpInfo.rttvar
+       << ",{\"tcpi_retransmits\":" << tcpInfo.retransmits
+       << ",{\"tcpi_total_retrans\":" << tcpInfo.totalRetrans
+       << ",{\"src_ip\":\"" << tcpInfo.srcIp
+       << "\",{\"dst_ip\":\"" << tcpInfo.dstIp
+       << "\",{\"src_port\":" << tcpInfo.srcPort
+       << ",{\"dst_port\":" << tcpInfo.dstPort << "}";
+    tcpInfoJsonStr = ss.str();
 }
