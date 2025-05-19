@@ -56,7 +56,7 @@ typedef struct DataTransTcpInfo {
     uint32_t lastAckRecv;
     uint32_t rtt;
     uint32_t rttvar;
-    uint8_t retransmits;
+    uint16_t retransmits;
     uint32_t totalRetrans;
     std::string srcIp;
     std::string dstIp;
