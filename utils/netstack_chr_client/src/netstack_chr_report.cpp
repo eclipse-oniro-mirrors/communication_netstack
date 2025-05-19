@@ -119,5 +119,5 @@ void NetStackChrReport::SetTcpInfoJsonStr(DataTransTcpInfo tcpInfo, std::string&
        << "\",{\"dst_ip\":\"" << tcpInfo.dstIp
        << "\",{\"src_port\":" << tcpInfo.srcPort
        << ",{\"dst_port\":" << tcpInfo.dstPort << "}";
-    tcpInfoJsonStr = ss.str()
+    tcpInfoJsonStr = ss.str();
 }
