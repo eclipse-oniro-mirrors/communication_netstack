@@ -129,6 +129,13 @@ std::string NetStackChrClient::GetStringAttributeFromCurl(CURL *handle, CURLINFO
     return std::string(result);
 }
 
+long NetStackChrClient::GetRequestStartTime(curl_off_t totalTime)
+{
+    auto now = std::chrono::system_clock::now();
+    long msCount = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+    return msCount;
+}
+
 void NetStackChrClient::GetHttpInfoFromCurl(CURL *handle, DataTransHttpInfo &httpInfo)
 {
     (void)curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &httpInfo.responseCode);
@@ -141,6 +148,7 @@ void NetStackChrClient::GetHttpInfoFromCurl(CURL *handle, DataTransHttpInfo &htt
     httpInfo.appconnectTime = GetNumericAttributeFromCurl<curl_off_t>(handle, CURLINFO_APPCONNECT_TIME_T);
     httpInfo.queueTime = GetNumericAttributeFromCurl<curl_off_t>(handle, CURLINFO_QUEUE_TIME_T);
     httpInfo.retryAfter = GetNumericAttributeFromCurl<curl_off_t>(handle, CURLINFO_RETRY_AFTER);
+    httpInfo.requestStartTime = GetRequestStartTime(httpInfo.totalTime);
 
     httpInfo.sizeUpload = GetNumericAttributeFromCurl<curl_off_t>(handle, CURLINFO_SIZE_UPLOAD_T);
     httpInfo.sizeDownload = GetNumericAttributeFromCurl<curl_off_t>(handle, CURLINFO_SIZE_DOWNLOAD_T);
@@ -158,10 +166,11 @@ void NetStackChrClient::GetHttpInfoFromCurl(CURL *handle, DataTransHttpInfo &htt
 
 int NetStackChrClient::shouldReportHttpAbnormalEvent(const DataTransHttpInfo &httpInfo)
 {
-    if (httpInfo.curlCode != 0 || httpInfo.responseCode != HTTP_REQUEST_SUCCESS) {
+    if (httpInfo.curlCode != 0 || httpInfo.responseCode != HTTP_REQUEST_SUCCESS ||
+        httpInfo.osError != 0 || httpInfo.proxyError != 0) {
         return 0;
     }
-    if ((httpInfo.sizeDownload + httpInfo.sizeDownload <= HTTP_FILE_TRANSFER_SIZE_THRESHOLD) &&
+    if ((httpInfo.sizeUpload + httpInfo.sizeDownload <= HTTP_FILE_TRANSFER_SIZE_THRESHOLD) &&
         httpInfo.totalTime > HTTP_FILE_TRANSFER_TIME_THRESHOLD) {
         return 0;
     }
@@ -191,7 +200,7 @@ void NetStackChrClient::GetDfxInfoFromCurlHandleAndReport(CURL *handle, int32_t 
     curl_easy_getinfo(handle, CURLINFO_ACTIVESOCKET, &sockfd);
 
     if (GetTcpInfoFromSock(sockfd, dataTransChrStats.tcpInfo) != 0) {
-        NETSTACK_LOGD("Chr client get tcp info from socket failed, sockfd: %{public}lld", sockfd);
+        NETSTACK_LOGD("Chr client get tcp info from socket failed, sockfd: %{public}" PRId64, sockfd);
     }
 
     int ret = netstackChrReport.ReportCommonEvent(dataTransChrStats);

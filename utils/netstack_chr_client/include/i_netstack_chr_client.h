@@ -45,6 +45,7 @@ typedef struct DataTransHttpInfo {
     int proxyError;
     curl_off_t queueTime;
     long curlCode;
+    long requestStartTime;
 } DataTransHttpInfo;
 
 typedef struct DataTransTcpInfo {

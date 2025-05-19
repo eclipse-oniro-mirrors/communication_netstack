@@ -17,8 +17,6 @@
 #define COMMUNICATIONNETSTACK_NETSTACK_CHR_REPORT_H
  
 #include <chrono>
-#include <mutex>
-#include <string>
 #include "i_netstack_chr_client.h"
 #include "want.h"
  
@@ -38,8 +36,8 @@ private:
     std::mutex report_mutex_;
  
     void SetWantParam(AAFwk::Want& want, DataTransChrStats chrStats);
-    void SetHttpInfo(AAFwk::Want& want, DataTransHttpInfo httpInfo);
-    void SetTcpInfo(AAFwk::Want& want, DataTransTcpInfo tcpInfo);
+    void SetHttpInfoJsonStr(DataTransHttpInfo httpInfo, std:string& httpInfoJsonStr);
+    void SetTcpInfoJsonStr(DataTransTcpInfo tcpInfo, std:string& tcpInfoJsonStr);
 };
 }  // namespace OHOS::NatStack::ChrClient
 #endif // COMMUNICATIONNETSTACK_NETSTACK_CHR_REPORT_H
