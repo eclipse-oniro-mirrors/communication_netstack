@@ -179,7 +179,7 @@ void TcpServerConnectionFinalize(napi_env, void *data, void *)
 void NotifyRegisterEvent()
 {
     std::lock_guard<std::mutex> lock(g_mutex);
-    g_cv.notify_one();
+    g_cv.notify_all();
 }
 
 napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, napi_value jsConstructor, int32_t counter)
