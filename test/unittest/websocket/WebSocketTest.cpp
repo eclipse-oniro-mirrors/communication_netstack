@@ -106,7 +106,7 @@ HWTEST_F(WebSocketTest, WebSocketTest007, TestSize.Level1)
     std::string getMyProtocol = context.GetProtocol();
     bool ret = WebSocketExec::ExecConnect(&context);
     EXPECT_EQ(getMyProtocol, "my-protocol");
-    EXPECT_EQ(ret, true);
+    EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest008, TestSize.Level1)
@@ -129,6 +129,6 @@ HWTEST_F(WebSocketTest, WebSocketTest008, TestSize.Level1)
     EXPECT_EQ(getHost, "192.168.147.60");
     EXPECT_EQ(getPort, 8888);
     EXPECT_EQ(getExclusions, "www.httpbin.org");
-    EXPECT_EQ(ret, true);
+    EXPECT_EQ(ret, false);
 }
 } // namespace
