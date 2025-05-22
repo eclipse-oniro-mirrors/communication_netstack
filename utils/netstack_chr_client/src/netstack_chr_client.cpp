@@ -46,7 +46,7 @@ int NetStackChrClient::GetAddrFromSock(
 
     // Get peer addr
     addrLen = sizeof(peerss);
-   (void)getsockname(sockfd, reinterpret_cast<sockaddr *>(&peerss), &addrLen);
+   (void)getpeername(sockfd, reinterpret_cast<sockaddr *>(&peerss), &addrLen);
 
     char buf[INET6_ADDRSTRLEN] = {0};
     if (localss.ss_family == AF_INET && peerss.ss_family == AF_INET) {
