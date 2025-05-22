@@ -152,9 +152,6 @@ __attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
                 if (requestInfo != nullptr && requestInfo->doneCallback) {
                     requestInfo->doneCallback(message, requestInfo->opaqueData);
                 }
-                if (message->easy_handle) {
-                    (void)
-                }
                 delete requestInfo;
                 break;
             }
