@@ -79,11 +79,9 @@ public:
 
     void *GetQueueData();
 
-#ifdef NETSTACK_WEBSOCKETSERVER
     void SetServerQueueData(void *wsi, void *data);
 
     void *GetServerQueueData(void *wsi);
-#endif
 
     void CreateEventReference(napi_env env, napi_value value);
 
@@ -123,7 +121,6 @@ public:
 
     void SetProxyData(std::shared_ptr<Socks5::Socks5Instance> data);
 
-#ifdef NETSTACK_WEBSOCKETSERVER
     const std::string &GetWsServerBinaryData(void *wsi);
 
     const std::string &GetWsServerTextData(void *wsi);
@@ -147,7 +144,6 @@ public:
     [[nodiscard]] uint32_t GetMaxConcurrentClientCnt()const;
 
     [[nodiscard]] uint32_t GetMaxConnForOneClient() const;
-#endif
 private:
     std::shared_mutex mutexForListenersAndEmitByUv_;
     std::shared_mutex dataMutex_;
@@ -167,7 +163,6 @@ private:
     std::atomic_bool isReuseAddr_ = false;
     std::shared_ptr<Websocket::UserData> webSocketUserData_;
     std::shared_ptr<Socks5::Socks5Instance> proxyData_;
-#ifdef NETSTACK_WEBSOCKETSERVER
     std::shared_mutex dataServerQueueMutex_;
     std::mutex mapMutex_;
     std::unordered_map<void *, std::queue<void *>> serverDataQueue_;
@@ -176,7 +171,6 @@ private:
     std::unordered_map<void *, std::shared_ptr<Websocket::UserData>> userDataMap_;
     uint32_t maxConnClientCnt_;
     uint32_t maxConnForOneClient_;
-#endif
 
 public:
     struct {
