@@ -64,10 +64,6 @@ ohos_static_library("napi_utils") {
   } else {
     defines = [ "HAS_NETMANAGER_BASE=0" ]
   }
-
-  if (netstack_websocket_server_enable) {
-    defines += [ "NETSTACK_WEBSOCKETSERVER" ]
-  }
 }
 
 ohos_static_library("napi_utils_static") {
@@ -101,10 +97,6 @@ ohos_static_library("napi_utils_static") {
     external_deps += [ "ffrt:libffrt" ]
   } else {
     defines = [ "HAS_NETMANAGER_BASE=0" ]
-  }
-
-  if (netstack_websocket_server_enable) {
-    defines += [ "NETSTACK_WEBSOCKETSERVER" ]
   }
 
   if (current_os == "ohos") {

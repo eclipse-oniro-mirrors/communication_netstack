@@ -144,7 +144,6 @@ void *EventManager::GetQueueData()
     return nullptr;
 }
 
-#ifdef NETSTACK_WEBSOCKETSERVER
 void EventManager::SetServerQueueData(void *wsi, void *data)
 {
     std::unique_lock<std::shared_mutex> lock(dataServerQueueMutex_);
@@ -168,7 +167,6 @@ void *EventManager::GetServerQueueData(void *wsi)
         return data;
     }
 }
-#endif
 
 bool EventManager::HasEventListener(const std::string &type)
 {
@@ -233,7 +231,6 @@ void EventManager::AppendWebSocketBinaryData(void *data, size_t length)
     webSocketBinaryData_.append(reinterpret_cast<char *>(data), length);
 }
 
-#ifdef NETSTACK_WEBSOCKETSERVER
 const std::string &EventManager::GetWsServerBinaryData(void *wsi)
 {
     return wsServerBinaryData_[wsi];
@@ -298,7 +295,6 @@ void EventManager::RemoveClientUserData(void *wsi)
         userDataMap_.erase(it);
     }
 }
-#endif
 
 void EventManager::ClearWebSocketTextData()
 {
