@@ -162,7 +162,10 @@ ohos_shared_library("http") {
         global_parts_info.communication_netmanager_base) {
       external_deps += [ "netmanager_base:net_conn_manager_if" ]
       external_deps += [ "netmanager_base:netsys_client" ]
-      defines = [ "HAS_NETMANAGER_BASE=1" ]
+      defines = [
+        "HAS_NETMANAGER_BASE=1",
+        "HAS_NETSTACK_CHR=1",
+      ]
       sources += [
         "$NETSTACK_DIR/utils/netstack_chr_client/src/netstack_chr_client.cpp",
         "$NETSTACK_DIR/utils/netstack_chr_client/src/netstack_chr_report.cpp",
@@ -170,7 +173,10 @@ ohos_shared_library("http") {
         "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
       ]
     } else {
-      defines = [ "HAS_NETMANAGER_BASE=0" ]
+      defines = [
+        "HAS_NETMANAGER_BASE=0",
+        "HAS_NETSTACK_CHR=0",
+      ]
     }
     if (product_name != "ohos-sdk") {
       external_deps += [ "init:libbegetutil" ]

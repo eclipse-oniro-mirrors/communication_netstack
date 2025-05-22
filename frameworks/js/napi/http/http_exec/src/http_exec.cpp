@@ -550,9 +550,6 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
     NETSTACK_LOGD("priority = %{public}d", context->options.GetPriority());
     context->SetExecOK(GetCurlDataFromHandle(handle, context, msg->msg, msg->data.result));
     CacheCurlPerformanceTiming(handle, context);
-#if HAS_NETMANAGER_BASE
-    ChrClient::NetStackChrClient::GetInstance().GetDfxInfoFromCurlHandleAndReport(handle, msg->data.result);
-#endif
     if (context->IsExecOK()) {
         CacheProxy proxy(context->options);
         proxy.WriteResponseToCache(context->response);

@@ -46,7 +46,10 @@ config("http_client_config") {
   }
 
   if (product_name != "ohos-sdk") {
-    defines += [ "HTTP_MULTIPATH_CERT_ENABLE" ]
+    defines += [
+      "HTTP_MULTIPATH_CERT_ENABLE",
+      "HAS_NETSTACK_CHR",
+    ]
   }
 }
 
