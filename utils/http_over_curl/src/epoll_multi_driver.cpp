@@ -17,6 +17,9 @@
 
 #include "netstack_log.h"
 #include "request_info.h"
+#if HAS_NETSTACK_CHR
+#include "netstack_chr_client.h"
+#endif
 
 namespace OHOS::NetStack::HttpOverCurl {
 
