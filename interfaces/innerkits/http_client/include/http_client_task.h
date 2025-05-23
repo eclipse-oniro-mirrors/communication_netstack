@@ -183,7 +183,7 @@ public:
     void OnProgress(const std::function<void(const HttpClientRequest &request, u_long dlTotal, u_long dlNow,
                                              u_long ulTotal, u_long ulNow)> &onProgress);
 
-     /**
+    /**
      * Sets a callback function to be called when headers is received in the HTTP response.
      * @param onHeadersReceive The callback function to be called when headers is received.
      */

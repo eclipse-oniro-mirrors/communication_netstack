@@ -60,10 +60,10 @@ void HttpClientResponse::ParseHeaders()
             continue;
         }
         if (CommonUtils::ToLower(CommonUtils::Strip(header.substr(0, index))) ==
-             HttpConstant::RESPONSE_KEY_SET_COOKIE) {
-             setCookie_.push_back(CommonUtils::Strip(header.substr(index + 1)));
-             continue;
-         }
+            HttpConstant::RESPONSE_KEY_SET_COOKIE) {
+            setCookie_.push_back(CommonUtils::Strip(header.substr(index + 1)));
+            continue;
+        }
         headers_[CommonUtils::ToLower(CommonUtils::Strip(header.substr(0, index)))] =
             CommonUtils::Strip(header.substr(index + 1));
     }
