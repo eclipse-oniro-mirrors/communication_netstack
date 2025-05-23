@@ -803,9 +803,6 @@ uint64_t CreateUvHandlerQueue(napi_env env)
             }
             void *result = nullptr;
             napi_remove_wrap(env, queueWrapper, &result);
-            auto id = reinterpret_cast<uint64_t>(result);
-            std::lock_guard lock(g_mutex);
-            g_handlerQueueMap.erase(id);
         },
         envWrapper);
     return newId;

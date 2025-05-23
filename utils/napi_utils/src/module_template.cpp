@@ -32,6 +32,7 @@ static constexpr const char *INTERFACE_TLS_SOCKET = "TLSSocket";
 static constexpr const char *INTERFACE_WEB_SOCKET = "WebSocket";
 static constexpr const char *INTERFACE_HTTP_REQUEST = "OHOS_NET_HTTP_HttpRequest";
 static constexpr const char *INTERFACE_WEB_SOCKET_SERVER = "WebSocketServer";
+static constexpr const char *EVENT_MANAGER = "EVENT_MANAGER";
 
 napi_value OnManagerWrapper(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
                             bool asyncCallback)
@@ -293,6 +294,20 @@ napi_value OffSharedManager(napi_env env, napi_callback_info info, const std::in
     return NapiUtils::GetUndefined(env);
 }
 
+void CleanUpWithSharedManager(void* data)
+{
+    auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
+    if (sharedManager == nullptr || *sharedManager == nullptr) {
+        return;
+    }
+    auto manager = *sharedManager;
+    auto env = manager->env_;
+    napi_value obj = nullptr;
+    void* result = nullptr;
+    napi_get_named_property(env, NapiUtils::GetGlobal(env), manager->className_.c_str(), &obj);
+    napi_remove_wrap(env, obj, &result);
+}
+
 void DefineClass(napi_env env, napi_value exports, const std::initializer_list<napi_property_descriptor> &properties,
                  const std::string &className)
 {
@@ -366,6 +381,9 @@ napi_value NewInstanceWithSharedManager(napi_env env, napi_callback_info info, c
         return result;
     }
     auto manager = std::make_shared<EventManager>();
+    manager->env_ = env;
+    manager->className_ = className + EVENT_MANAGER;
+    manager->finalizer_ = finalizer;
     *sharedManager = manager;
     if (className == INTERFACE_HTTP_REQUEST || className == INTERFACE_LOCAL_SOCKET ||
         className == INTERFACE_TLS_SOCKET || className == INTERFACE_WEB_SOCKET ||
@@ -373,8 +391,19 @@ napi_value NewInstanceWithSharedManager(napi_env env, napi_callback_info info, c
         NETSTACK_LOGD("create reference for %{public}s", className.c_str());
         manager->CreateEventReference(env, thisVal);
     }
-    napi_wrap(env, result, reinterpret_cast<void *>(sharedManager), finalizer, nullptr, nullptr);
-
+    napi_wrap(env, result, reinterpret_cast<void *>(sharedManager),
+        [](napi_env env, void *data, void *hint) {
+            napi_remove_env_cleanup_hook(env, CleanUpWithSharedManager, data);
+            auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
+            if (sharedManager == nullptr || *sharedManager == nullptr || (*sharedManager)->finalizer_ == nullptr) {
+                return;
+            }
+            auto manager = *sharedManager;
+            manager->finalizer_(env, data, hint);
+        },
+        nullptr, nullptr);
+    napi_set_named_property(env, global, manager->className_.c_str(), result);
+    napi_add_env_cleanup_hook(env, CleanUpWithSharedManager, reinterpret_cast<void *>(sharedManager));
     return result;
 }
 
