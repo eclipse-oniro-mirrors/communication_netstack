@@ -42,11 +42,11 @@ template <class T> T GetData()
     if (g_baseFuzzData == nullptr || g_baseFuzzSize <= g_baseFuzzPos || objectSize > g_baseFuzzSize - g_baseFuzzPos) {
         return object;
     }
-    errno_t ret = memcpy_s(&object, objectSize, g_baseFuzzData  g_baseFuzzPos, objectSize);
+    errno_t ret = memcpy_s(&object, objectSize, g_baseFuzzData + g_baseFuzzPos, objectSize);
     if (ret != EOK) {
         return object;
     }
-    g_baseFuzzPos = objectSize;
+    g_baseFuzzPos += objectSize;
     return object;
 }
 
@@ -65,7 +65,7 @@ std::string GetStringFromData(int strlen)
 
     char cstr[strlen];
     cstr[strlen - 1] = '\0';
-    for (int i = 0; i < strlen - 1; i) {
+    for (int i = 0; i < strlen - 1; i++) {
         cstr[i] = GetData<char>();
     }
     std::string str(cstr);
