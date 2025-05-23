@@ -49,7 +49,7 @@ class UserData;
 namespace Socks5 {
     class Socks5Instance;
 }
-
+using Finalizer = void (*)(napi_env, void *data, void *);
 class EventManager : public std::enable_shared_from_this<EventManager> {
 public:
     EventManager();
@@ -176,6 +176,9 @@ public:
     struct {
         uint32_t magicNumber = EVENT_MANAGER_MAGIC_NUMBER;
     } innerMagic_;
+    napi_env env_ = nullptr;
+    std::string className_;
+    Finalizer finalizer_ = nullptr;
 };
 
 class EventManagerForHttp {

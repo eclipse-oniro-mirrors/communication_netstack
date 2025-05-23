@@ -37,7 +37,6 @@ struct EventManagerWrapper;
 #define MAX_PARAM_NUM 64
 
 namespace OHOS::NetStack::ModuleTemplate {
-typedef void (*Finalizer)(napi_env, void *data, void *);
 
 template <class Context>
 napi_value InterfaceWithManagerWrapper(napi_env env, napi_callback_info info, const std::string &asyncWorkName,
@@ -277,6 +276,8 @@ static void CallbackTemplateWithSharedManager(uv_work_t *work, int status)
     delete workWrapper;
     delete work;
 }
+
+void CleanUpWithSharedManager(void* data);
 
 void DefineClass(napi_env env, napi_value exports, const std::initializer_list<napi_property_descriptor> &properties,
                  const std::string &className);
