@@ -51,6 +51,8 @@ namespace NetStack {
 namespace HttpClient {
 
 static const size_t MAX_LIMIT = HttpConstant::MAX_DATA_LIMIT;
+static constexpr const char *HTTP_AF_ONLYV4 = "ONLY_V4";
+static constexpr const char *HTTP_AF_ONLYV6 = "ONLY_V6";
 
 std::atomic<uint32_t> HttpClientTask::nextTaskId_(0);
 
@@ -217,6 +219,44 @@ bool HttpClientTask::SetSSLCertOption(CURL *handle)
     NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_VERIFYHOST, 0L);
 #endif // WINDOWS_PLATFORM
     SetServerSSLCertOption(handle);
+
+    HttpClientCert clientCert = request_.GetClientCert();
+    if (clientCert.certPath.empty()) {
+        NETSTACK_LOGD("SetSSLCertOption param is empty.");
+        return false;
+    }
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSLCERT, clientCert.certPath.c_str());
+    if (!clientCert.keyPath.empty()) {
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSLKEY, clientCert.keyPath.c_str());
+    }
+    if (!clientCert.certType.empty()) {
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSLCERTTYPE, clientCert.certType.c_str());
+    }
+    if (clientCert.keyPassword.length() > 0) {
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_KEYPASSWD, clientCert.keyPassword.c_str());
+    }
+    return true;
+}
+
+bool HttpClientTask::SetRequestOption(CURL *handle)
+{
+    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_TIMEOUT_MS, request_.GetTimeout());
+    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_CONNECTTIMEOUT_MS, request_.GetConnectTimeout());
+    const std::string range = GetRangeString();
+    if (!range.empty()) {
+        if (request_.GetMethod() == HttpConstant::HTTP_METHOD_PUT) {
+            error_.SetErrorCode(HttpErrorCode::HTTP_CURLE_RANGE_ERROR);
+            NETSTACK_LOGE("For HTTP PUT uploads this option should not be used");
+            return false;
+        }
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_RANGE, range.c_str());
+    } else {
+        // Some servers don't like requests that are made without a user-agent field, so we provide one
+        NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_USERAGENT, HttpConstant::HTTP_DEFAULT_USER_AGENT);
+    }
+    SetSSLCertOption(handle);
+    SetDnsCacheOption(handle);
+    SetIpResolve(handle);
     return true;
 }
 
@@ -238,8 +278,22 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYTYPE, proxyType);
     }
 
+    const std::string range = GetRangeString();
+    if (!range.empty()) {
+        if (request_.GetMethod() == HttpConstant::HTTP_METHOD_PUT) {
+            error_.SetErrorCode(HttpErrorCode::HTTP_CURLE_RANGE_ERROR);
+            NETSTACK_LOGE("For HTTP PUT uploads this option should not be used");
+            return false;
+        }
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_RANGE, range.c_str());
+    } else {
+        // Some servers don't like requests that are made without a user-agent field, so we provide one
+        NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_USERAGENT, HttpConstant::HTTP_DEFAULT_USER_AGENT);
+    }
+
     SetSSLCertOption(handle);
     SetDnsCacheOption(handle);
+    SetIpResolve(handle);
 
 #ifdef HTTP_CURL_PRINT_VERBOSE
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_VERBOSE, 1L);
@@ -250,6 +304,38 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
 #endif
 
     return true;
+}
+
+bool HttpClientTask::SetIpResolve(CURL *handle)
+{
+    std::string addressFamily = request_.GetAddressFamily();
+    if (addressFamily.empty()) {
+        return true;
+    }
+    if (addressFamily.compare(HTTP_AF_ONLYV4) == 0) {
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+    }
+    if (addressFamily.compare(HTTP_AF_ONLYV6) == 0) {
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
+    }
+    return true;
+}
+
+std::string HttpClientTask::GetRangeString() const
+{
+    bool isSetFrom = request_.GetResumeFrom() >= MIN_RESUM_NUMBER;
+    bool isSetTo = request_.GetResumeTo() >= MIN_RESUM_NUMBER;
+    if (!isSetTo && !isSetFrom) {
+        return "";
+    } else if (!isSetTo && isSetFrom) {
+        return std::to_string(request_.GetResumeFrom()) + '-';
+    } else if (isSetTo && !isSetFrom) {
+        return '-' + std::to_string(request_.GetResumeTo());
+    } else if (request_.GetResumeTo() <= request_.GetResumeFrom()) {
+        return "";
+    } else {
+        return std::to_string(request_.GetResumeFrom()) + '-' + std::to_string(request_.GetResumeTo());
+    }
 }
 
 bool HttpClientTask::SetServerSSLCertOption(CURL *curl)
@@ -403,9 +489,6 @@ bool HttpClientTask::SetCurlOptions()
     }
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_HTTPHEADER, curlHeaderList_);
 
-    // Some servers don't like requests that are made without a user-agent field, so we provide one
-    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_USERAGENT, HttpConstant::HTTP_DEFAULT_USER_AGENT);
-
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_FOLLOWLOCATION, 1L);
 
     /* first #undef CURL_DISABLE_COOKIES in curl config */
@@ -413,10 +496,11 @@ bool HttpClientTask::SetCurlOptions()
 
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_NOSIGNAL, 1L);
 
-    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_TIMEOUT_MS, request_.GetTimeout());
-    NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_CONNECTTIMEOUT_MS, request_.GetConnectTimeout());
-
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_HTTP_VERSION, GetHttpVersion(request_.GetHttpProtocol()));
+
+    if (!SetRequestOption(curlHandle_)) {
+        return false;
+    }
 
     if (!SetOtherCurlOption(curlHandle_)) {
         return false;
@@ -523,6 +607,12 @@ void HttpClientTask::OnProgress(const std::function<void(const HttpClientRequest
     onProgress_ = onProgress;
 }
 
+void HttpClientTask::OnHeadersReceive(const std::function<void(const HttpClientRequest &request,
+        std::map<std::string, std::string> headersWithSetCookie)> &onHeadersReceive)
+{
+    onHeadersReceive_ = onHeadersReceive;
+}
+
 size_t HttpClientTask::DataReceiveCallback(const void *data, size_t size, size_t memBytes, void *userData)
 {
     auto task = static_cast<HttpClientTask *>(userData);
@@ -533,6 +623,11 @@ size_t HttpClientTask::DataReceiveCallback(const void *data, size_t size, size_t
         return 0;
     }
 
+    if ((task->request_.GetMaxLimit() != 0) && (task->response_.GetResult().size() > task->request_.GetMaxLimit() ||
+        size * memBytes > task->request_.GetMaxLimit())) {
+        NETSTACK_LOGE("response data exceeds the maximum limit");
+        return 0;
+    }
     if (task->onDataReceive_) {
         HttpClientRequest request = task->request_;
         task->onDataReceive_(request, static_cast<const uint8_t *>(data), size * memBytes);
@@ -577,6 +672,22 @@ size_t HttpClientTask::HeaderReceiveCallback(const void *data, size_t size, size
     }
 
     task->response_.AppendHeader(static_cast<const char *>(data), size * memBytes);
+    if (!task->canceled_ && task->onHeadersReceive_ &&
+        CommonUtils::EndsWith(task->response_.GetHeader(), HttpConstant::HTTP_RESPONSE_HEADER_SEPARATOR)) {
+        task->response_.ParseHeaders();
+        std::map<std::string, std::string> headerWithSetCookie = task->response_.GetHeaders();
+        std::string setCookies;
+        size_t loop = 0;
+        for (const auto &setCookie : task->response_.GetsetCookie()) {
+            setCookies += setCookie;
+            if (loop + 1 < task->response_.GetsetCookie().size()) {
+                setCookies += HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR;
+            }
+            ++loop;
+        }
+        headerWithSetCookie[HttpConstant::RESPONSE_KEY_SET_COOKIE] = setCookies;
+        task->onHeadersReceive_(task->request_, headerWithSetCookie);
+    }
 
     return size * memBytes;
 }

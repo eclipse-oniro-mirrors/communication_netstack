@@ -1,10 +1,10 @@
 /*
- * Copyright (c) Huawei Technologies Co., Ltd. 2024. All rights reserved.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,22 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef RCP_REQUEST_CONTENT_INNER_C_H
-#define RCP_REQUEST_CONTENT_INNER_C_H
+#ifndef HTTP_FUZZER_H
+#define HTTP_FUZZER_H
 
-#include "net_http.h"
-#include "netstack_hash_map.h"
+#define FUZZ_PROJECT_NAME "http_fuzzer"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct Http_Headers {
-    Netstack_HashMap *fields;
-} Http_Headers;
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+#endif // HTTP_FUZZER_H

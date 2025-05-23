@@ -20,6 +20,7 @@ group("netstack_test") {
     "fuzztest/socket:fuzztest",
     "fuzztest/websocket:fuzztest",
     "fuzztest/websocketcapi_fuzzer:fuzztest",
+    "fuzztest/httpcapi_fuzzer:fuzztest",
     "unittest/http:unittest",
     "unittest/http/cache:unittest",
     "unittest/http_client:unittest",
@@ -31,5 +32,6 @@ group("netstack_test") {
     "unittest/websocket:unittest",
     "unittest/websocket_capi_unittest:unittest",
     "unittest/websocket_inner_unittest:unittest",
+    "unittest/net_http:unittest",
   ]
 }

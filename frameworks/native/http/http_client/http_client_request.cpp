@@ -29,6 +29,7 @@ namespace HttpClient {
 static constexpr const uint32_t HTTP_MIN_PRIORITY = 1;
 static constexpr const uint32_t HTTP_DEFAULT_PRIORITY = 500;
 static constexpr const uint32_t HTTP_MAX_PRIORITY = 1000;
+static constexpr const uint32_t HTTP_DEFAULT_RANGE = 0;
 
 HttpClientRequest::HttpClientRequest()
     : method_(HttpConstant::HTTP_METHOD_GET),
@@ -36,7 +37,9 @@ HttpClientRequest::HttpClientRequest()
       connectTimeout_(HttpConstant::DEFAULT_CONNECT_TIMEOUT),
       protocol_(HttpProtocol::HTTP_NONE),
       proxyType_(HttpProxyType::NOT_USE),
-      priority_(HTTP_DEFAULT_PRIORITY)
+      priority_(HTTP_DEFAULT_PRIORITY),
+      resumeFrom_(HTTP_DEFAULT_RANGE),
+      resumeTo_(HTTP_DEFAULT_RANGE)
 {
 }
 
@@ -95,6 +98,11 @@ void HttpClientRequest::SetHttpProtocol(HttpProtocol protocol)
 void HttpClientRequest::SetHttpProxyType(HttpProxyType type)
 {
     proxyType_ = type;
+}
+
+void HttpClientRequest::SetMaxLimit(uint32_t maxLimit)
+{
+    maxLimit_ = maxLimit;
 }
 
 void HttpClientRequest::SetCaPath(const std::string &path)
@@ -165,6 +173,11 @@ uint32_t HttpClientRequest::GetPriority() const
     return priority_;
 }
 
+uint32_t HttpClientRequest::GetMaxLimit() const
+{
+    return maxLimit_;
+}
+
 void HttpClientRequest::SetHttpProxy(const HttpProxy &proxy)
 {
     proxy_ = proxy;
@@ -183,6 +196,50 @@ void HttpClientRequest::SetRequestTime(const std::string &time)
 const std::string &HttpClientRequest::GetRequestTime() const
 {
     return requestTime_;
+}
+
+void HttpClientRequest::SetResumeFrom(int64_t resumeFrom)
+{
+    if (resumeFrom >= MIN_RESUM_NUMBER && resumeFrom <= MAX_RESUM_NUMBER) {
+        resumeFrom_ = resumeFrom;
+    }
+}
+
+void HttpClientRequest::SetResumeTo(int64_t resumeTo)
+{
+    if (resumeTo >= MIN_RESUM_NUMBER && resumeTo <= MAX_RESUM_NUMBER) {
+        resumeTo_ = resumeTo;
+    }
+}
+
+int64_t HttpClientRequest::GetResumeFrom() const
+{
+    return resumeFrom_;
+}
+
+int64_t HttpClientRequest::GetResumeTo() const
+{
+    return resumeTo_;
+}
+
+void HttpClientRequest::SetClientCert(const HttpClientCert &clientCert)
+{
+    clientCert_ = clientCert;
+}
+
+const HttpClientCert &HttpClientRequest::GetClientCert() const
+{
+    return clientCert_;
+}
+
+void HttpClientRequest::SetAddressFamily(const std::string &addressFamily)
+{
+    addressFamily_ = addressFamily;
+}
+
+const std::string &HttpClientRequest::GetAddressFamily() const
+{
+    return addressFamily_;
 }
 } // namespace HttpClient
 } // namespace NetStack

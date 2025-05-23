@@ -54,6 +54,12 @@ namespace {
 using namespace std;
 using namespace testing::ext;
 
+static void testCallbackconst(const HttpClientRequest &request, std::map<std::string,
+    std::string> headerWithSetCookie)
+{
+    NETSTACK_LOGI("testCallbackconst function called!");
+}
+
 HWTEST_F(HttpClientTaskTest, GetHttpVersionTest001, TestSize.Level1)
 {
     HttpClientRequest httpReq;
@@ -327,6 +333,51 @@ HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest006, TestSize.Level1)
     EXPECT_FALSE(task->SetCurlOptions());
 }
 
+HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest007, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/get";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    task->request_.SetMethod(HttpConstant::HTTP_METHOD_PUT);
+    task->request_.SetResumeFrom(1000);
+
+    EXPECT_FALSE(task->SetCurlOptions());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest008, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/get";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    task->request_.SetMethod(HttpConstant::HTTP_METHOD_GET);
+    task->request_.SetResumeFrom(1000);
+
+    EXPECT_TRUE(task->SetCurlOptions());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest009, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/get";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    task->request_.SetResumeFrom(1000);
+    task->request_.SetResumeTo(100);
+
+    EXPECT_TRUE(task->SetCurlOptions());
+}
+
 HWTEST_F(HttpClientTaskTest, GetType001, TestSize.Level1)
 {
     HttpClientRequest httpReq;
@@ -495,6 +546,67 @@ HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest003, TestSize.Level1)
     task->canceled_ = false;
 }
 
+HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/get";
+    const char *data = "http://www.httpbin.org/get";
+    httpReq.SetURL(url);
+    httpReq.SetMaxLimit(5);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    auto *userData = task.get();
+    size_t size = 10;
+    size_t memBytes = 1;
+    size_t result = task->DataReceiveCallback(data, size, memBytes, userData);
+
+    EXPECT_EQ(result, 0);
+}
+
+HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest005, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/get";
+    const char *data = "http://www.httpbin.org/get";
+    httpReq.SetURL(url);
+    httpReq.SetMaxLimit(20);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    auto *userData = task.get();
+    size_t size = 10;
+    size_t memBytes = 1;
+    size_t result = task->DataReceiveCallback(data, size, memBytes, userData);
+
+    EXPECT_EQ(result, size * memBytes);
+}
+
+HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest006, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/get";
+    const char *data = "http://www.httpbin.org/get";
+    httpReq.SetURL(url);
+    httpReq.SetMaxLimit(3);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    HttpClientResponse resp;
+    resp.result_ = "result1";
+    task->SetResponse(resp);
+
+    auto *userData = task.get();
+    size_t size = 1;
+    size_t memBytes = 1;
+    size_t result = task->DataReceiveCallback(data, size, memBytes, userData);
+
+    EXPECT_EQ(result, 0);
+}
+
 HWTEST_F(HttpClientTaskTest, ProgressCallbackTest001, TestSize.Level1)
 {
     HttpClientRequest httpReq;
@@ -605,6 +717,77 @@ HWTEST_F(HttpClientTaskTest, HeaderReceiveCallbackTest003, TestSize.Level1)
     size_t size = 5;
     size_t memBytes = 2;
     size_t result = task->HeaderReceiveCallback(data, size, memBytes, userData);
+    EXPECT_EQ(result, size * memBytes);
+}
+
+HWTEST_F(HttpClientTaskTest, HeaderReceiveCallbackTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/get";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    task->canceled_  = true;
+
+    HttpClientResponse resp;
+    const char *realHead = "test:data\r\n\r\n";
+    resp.AppendHeader(realHead, strlen(realHead));
+    task->SetResponse(resp);
+    
+    auto *userData = task.get();
+    const char *data = "Test Header";
+    size_t size = 5;
+    size_t memBytes = 2;
+    size_t result = task->HeaderReceiveCallback(data, size, memBytes, userData);
+    EXPECT_TRUE(resp.headers_.empty());
+    EXPECT_EQ(result, size * memBytes);
+}
+
+HWTEST_F(HttpClientTaskTest, HeaderReceiveCallbackTest005, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/get";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    task->onHeadersReceive_ = testCallbackconst;
+
+    HttpClientResponse resp;
+    const char *errorHead = "test:data\r\n";
+    resp.AppendHeader(errorHead, strlen(errorHead));
+    task->SetResponse(resp);
+    
+    auto *userData = task.get();
+    const char *data = "Test Header";
+    size_t size = 5;
+    size_t memBytes = 2;
+    size_t result = task->HeaderReceiveCallback(data, size, memBytes, userData);
+    EXPECT_TRUE(resp.headers_.empty());
+    EXPECT_EQ(result, size * memBytes);
+}
+
+HWTEST_F(HttpClientTaskTest, HeaderReceiveCallbackTest006, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/get";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    HttpClientResponse resp;
+    const char *realHead = "test:data\r\n\r\n";
+    resp.AppendHeader(realHead, strlen(realHead));
+    task->SetResponse(resp);
+    
+    auto *userData = task.get();
+    const char *data = "Test Header";
+    size_t size = 5;
+    size_t memBytes = 2;
+    size_t result = task->HeaderReceiveCallback(data, size, memBytes, userData);
+    EXPECT_TRUE(resp.headers_.empty());
     EXPECT_EQ(result, size * memBytes);
 }
 

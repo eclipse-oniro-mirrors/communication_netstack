@@ -23,6 +23,8 @@
 namespace OHOS {
 namespace NetStack {
 namespace HttpClient {
+static constexpr const int64_t MIN_RESUM_NUMBER = 1;
+static constexpr const int64_t MAX_RESUM_NUMBER = 4294967296;
 enum HttpProxyType {
     NOT_USE,
     USE_SPECIFIED,
@@ -44,6 +46,13 @@ struct HttpProxy {
     bool tunnel;
 
     HttpProxy() : host(""), port(0), exclusions(""), tunnel(false) {}
+};
+
+struct HttpClientCert {
+    std::string certPath;
+    std::string certType;
+    std::string keyPath;
+    std::string keyPassword;
 };
 
 class HttpClientRequest {
@@ -104,6 +113,12 @@ public:
     void SetHttpProxy(const HttpProxy &proxy);
 
     /**
+     * Set max limit data for the request.
+     * @param maxLimit The HTTP max limit data to be set.
+     */
+    void SetMaxLimit(uint32_t maxLimit);
+
+    /**
      * Set the HTTP proxy type for the request.
      * @param type The HTTP proxy type to be set.
      */
@@ -120,6 +135,30 @@ public:
      * @param priority The priority value to be set.
      */
     void SetPriority(unsigned int priority);
+
+    /**
+     * Set the download start position. Only used in GET method.
+     * @param resumeFrom The resumeFrom value to be set.
+     */
+    void SetResumeFrom(int64_t resumeFrom);
+
+    /**
+     * Set the download end position. Only used in GET method.
+     * @param resumeTo The resumeTo value to be set.
+     */
+    void SetResumeTo(int64_t resumeTo);
+
+    /**
+     * Set the ClientCert for the HTTP request.
+     * @param clientCert The clientCert value to be set.
+     */
+    void SetClientCert(const HttpClientCert &clientCert);
+
+    /**
+     * Set the AddressFamily for the HTTP request.
+     * @param addressFamily The addressFamily value to be set.
+     */
+    void SetAddressFamily(const std::string &addressFamily);
 
     /**
      * Get the URL of the HTTP request.
@@ -170,6 +209,12 @@ public:
     [[nodiscard]] const HttpProxy &GetHttpProxy() const;
 
     /**
+     * Get the dns servers of the request.
+     * @return The max limit data of the request.
+     */
+    [[nodiscard]] uint32_t GetMaxLimit() const;
+
+    /**
      * Get the HTTP proxy type of the request.
      * @return The HTTP proxy type of the request.
      */
@@ -186,6 +231,30 @@ public:
      * @return The priority value of the request.
      */
     [[nodiscard]] uint32_t GetPriority() const;
+
+    /**
+     * Get the download start position of the HTTP request.
+     * @return The download start position of the request.
+     */
+    [[nodiscard]] int64_t GetResumeFrom() const;
+
+    /**
+     * Get the download end position of the HTTP request.
+     * @return The end start position of the request.
+     */
+    [[nodiscard]] int64_t GetResumeTo() const;
+
+    /**
+     * Get the ClientCert for the HTTP request.
+     * @param clientCert The clientCert value to be set.
+     */
+    [[nodiscard]] const HttpClientCert &GetClientCert() const;
+
+     /**
+     * Get the addressFamily of the HTTP request.
+     * @return The addressFamily of the request.
+     */
+    [[nodiscard]] const std::string &GetAddressFamily() const;
 
     /**
      * Check if the specified method is suitable for a GET request.
@@ -226,6 +295,11 @@ private:
     std::string caPath_;
     unsigned int priority_;
     std::string requestTime_;
+    int64_t resumeFrom_;
+    int64_t resumeTo_;
+    HttpClientCert clientCert_;
+    std::string addressFamily_;
+    uint32_t maxLimit_;
 };
 } // namespace HttpClient
 } // namespace NetStack

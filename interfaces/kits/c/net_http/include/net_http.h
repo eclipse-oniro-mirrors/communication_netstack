@@ -12,28 +12,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef NET_HTTP_H
-#define NET_HTTP_H
-#include <stdint.h>
-#include <string.h>
+
 /**
- * @file net_http.h
+ * @addtogroup netstack
+ * @{
  *
  * @brief Defines the APIs for http.
  *
+ * @syscap SystemCapability.Communication.NetStack
+ * @since 20
+ * @version 1.0
+ */
+
+/**
+ * @file net_http.h
+ * @brief Defines the APIs for http.
+ *
+ * @library libnet_http.so
  * @kit NetworkKit
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
+ * @version 1.0
  */
+
+#ifndef NET_HTTP_H
+#define NET_HTTP_H
+
+#include <stdint.h>
+#include <string.h>
+
 #include "net_http_type.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 /**
  * @brief Creates headers for a request or response.
  *
  * @return Http_Headers* Pointer to {@link Http_Headers}.
+ * @syscap SystemCapability.Communication.NetStack
  * @since 20
+ * @version 1.0
  */
 Http_Headers *OH_Http_CreateHeaders(void);
 
@@ -41,7 +61,9 @@ Http_Headers *OH_Http_CreateHeaders(void);
  * @brief Destroys the headers of a request or response.
  *
  * @param headers Pointer to the {@link Http_Headers} to be destroyed.
+ * @syscap SystemCapability.Communication.NetStack
  * @since 20
+ * @version 1.0
  */
 void OH_Http_DestroyHeaders(Http_Headers **headers);
 
@@ -52,7 +74,9 @@ void OH_Http_DestroyHeaders(Http_Headers **headers);
  * @param name Key.
  * @param value Value.
  * @return uint32_t 0 - success. 401 - Parameter error. 2300027 - Out of memory.
+ * @syscap SystemCapability.Communication.NetStack
  * @since 20
+ * @version 1.0
  */
 uint32_t OH_Http_SetHeaderValue(struct Http_Headers *headers, const char *name, const char *value);
 
@@ -62,7 +86,9 @@ uint32_t OH_Http_SetHeaderValue(struct Http_Headers *headers, const char *name, 
  * @param headers Pointer to {@link Http_Headers}.
  * @param name Key.
  * @return Http_HeaderValue* Pointer to the obtained {@link Http_HeaderValue}.
+ * @syscap SystemCapability.Communication.NetStack
  * @since 20
+ * @version 1.0
  */
 Http_HeaderValue *OH_Http_GetHeaderValue(Http_Headers *headers, const char *name);
 
@@ -71,7 +97,9 @@ Http_HeaderValue *OH_Http_GetHeaderValue(Http_Headers *headers, const char *name
  *
  * @param headers Pointer to {@link Http_Headersaders}.
  * @return Http_HeaderEntry* Pointers to all obtained key-value pairs {@link Http_HeaderEntry}.
+ * @syscap SystemCapability.Communication.NetStack
  * @since 20
+ * @version 1.0
  */
 Http_HeaderEntry *OH_Http_GetHeaderEntries(Http_Headers *headers);
 
@@ -79,7 +107,9 @@ Http_HeaderEntry *OH_Http_GetHeaderEntries(Http_Headers *headers);
  * @brief Destroys all key-value pairs obtained in {@link OH_Http_GetHeaderEntries}.
  *
  * @param headerEntry Pointer to the {@link Http_HeaderEntry} to be destroyed.
+ * @syscap SystemCapability.Communication.NetStack
  * @since 20
+ * @version 1.0
  */
 void OH_Http_DestroyHeaderEntries(Http_HeaderEntry **headerEntry);
 
@@ -90,6 +120,7 @@ void OH_Http_DestroyHeaderEntries(Http_HeaderEntry **headerEntry);
  * @return Pointer of HttpRequest if success; Null otherwise.
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
+ * @version 1.0
  */
 Http_Request *OH_Http_CreateRequest(const char *url);
  
@@ -103,6 +134,7 @@ Http_Request *OH_Http_CreateRequest(const char *url);
  * @permission ohos.permission.INTERNET
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
+ * @version 1.0
  */
 int OH_Http_Request(Http_Request *request, Http_ResponseCallback callback, Http_EventsHandler handler);
  
@@ -112,9 +144,12 @@ int OH_Http_Request(Http_Request *request, Http_ResponseCallback callback, Http_
  * @param request Pointer to the http request {@link Http_Request}.
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
+ * @version 1.0
  */
 void OH_Http_Destroy(struct Http_Request **request);
 #ifdef __cplusplus
 }
 #endif
 #endif // NET_HTTP_H
+
+/** @} */
