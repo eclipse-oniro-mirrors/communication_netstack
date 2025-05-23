@@ -1186,7 +1186,7 @@ bool ExecTcpSend(TcpSendContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-
+    std::shared_lock<std::shared_mutex> lock(g_fdMutex);
     if (context->GetSocketFd() <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
         NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
