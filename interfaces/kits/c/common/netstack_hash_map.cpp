@@ -14,7 +14,7 @@
  */
 
 #include "netstack_hash_map.h"
-#include "net_http_inner_type.h"
+#include "net_http_inner_types.h"
 #include "netstack_log.h"
 
 #define NETSTACK_HASH_FACTOR 31
