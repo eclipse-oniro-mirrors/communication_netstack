@@ -246,7 +246,7 @@ void Netstack_DestroyMap(Netstack_HashMap *map)
    Netstack_DestroyMapWithValue(map, nullptr);
 }
 
-+Netstack_MapIterator *Netstack_CreateMapIterator(Netstack_HashMap *map)
+Netstack_MapIterator *Netstack_CreateMapIterator(Netstack_HashMap *map)
 {
    if (NetstackInvalidMap(map)) {
        NETSTACK_LOGE("create map iterator failed: invalid map");
