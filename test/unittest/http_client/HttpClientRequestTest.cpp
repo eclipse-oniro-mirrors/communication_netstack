@@ -408,7 +408,6 @@ HWTEST_F(HttpClientRequestTest, SetClientCertTest002, TestSize.Level1)
     HttpClientCert clientCert;
     clientCert.certPath = "/path/to/client.pem";
     req.SetClientCert(clientCert);
-    req.SetClientCert(clientCert);
     HttpClientCert client = req.GetClientCert();
     EXPECT_EQ(client.keyPassword, "");
 }
