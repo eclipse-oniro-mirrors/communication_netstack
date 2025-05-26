@@ -298,25 +298,25 @@ void OH_Http_SetOtherOption(HttpClientRequest *httpReq, Http_Request *request)
         if (request->options->clientCert->keyPath != nullptr) {
             clientCert.keyPath = request->options->clientCert->keyPath;
         }
-        if (request->options->clientCert->type == Http_CertType::PEM) {
+        if (request->options->clientCert->type == Http_CertType::OH_HTTP_PEM) {
             clientCert.certType = "PEM";
         }
-        if (request->options->clientCert->type == Http_CertType::DER) {
+        if (request->options->clientCert->type == Http_CertType::OH_HTTP_DER) {
             clientCert.certType = "DER";
         }
-        if (request->options->clientCert->type == Http_CertType::P12) {
+        if (request->options->clientCert->type == Http_CertType::OH_HTTP_P12) {
             clientCert.certType = "P12";
         }
         httpReq->SetClientCert(clientCert);
     }
     //Http_AddressFamilyType
-    if (request->options->addressFamily == Http_AddressFamilyType::ONLY_V4) {
+    if (request->options->addressFamily == Http_AddressFamilyType::HTTP_ADDRESS_FAMILY_ONLY_V4) {
         httpReq->SetAddressFamily("ONLY_V4");
     }
-    if (request->options->addressFamily == Http_AddressFamilyType::ONLY_V6) {
+    if (request->options->addressFamily == Http_AddressFamilyType::HTTP_ADDRESS_FAMILY_ONLY_V6) {
         httpReq->SetAddressFamily("ONLY_V6");
     }
-    if (request->options->addressFamily == Http_AddressFamilyType::DEFAULT) {
+    if (request->options->addressFamily == Http_AddressFamilyType::HTTP_ADDRESS_FAMILY_DEFAULT) {
         httpReq->SetAddressFamily("DEFAULT");
     }
 }
