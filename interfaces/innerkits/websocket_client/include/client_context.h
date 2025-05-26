@@ -27,6 +27,7 @@
 #include <string>
 #include <thread>
 #include "netstack_log.h"
+#include "secure_char.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -45,6 +46,12 @@ struct SendData {
     char *data;
     size_t length;
     lws_write_protocol protocol;
+};
+
+enum class WebsocketProxyType {
+    NOT_USE,
+    USE_SYSTEM,
+    USE_SPECIFIED,
 };
 
 class ClientContext {
@@ -143,7 +150,43 @@ public:
         return clientId;
     }
 
+    void SetUserCertPath(std::string path)
+    {
+        userCertPath_ = path;
+    }
+
+    std::string GetUserCertPath()
+    {
+        return userCertPath_;
+    }
+
     std::map<std::string, std::string> header;
+
+    std::string caPath;
+
+    std::string clientCert;
+
+    Secure::SecureChar clientKey;
+
+    Secure::SecureChar keyPassword;
+
+    bool permissionDenied;
+
+    bool isAtomicService = false;
+
+    bool noAllowedHost;
+
+    std::string bundleName;
+
+    std::string url;
+
+    WebsocketProxyType usingWebsocketProxyType = WebsocketProxyType::USE_SYSTEM;
+
+    std::string websocketProxyHost;
+
+    int32_t websocketProxyPort = 0;
+
+    std::string websocketProxyExclusions;
 
     lws_close_status closeStatus;
 
@@ -157,6 +200,8 @@ public:
 
 private:
     bool closed_;
+
+    std::string userCertPath_;
 
     std::atomic_bool threadStop_;
 
