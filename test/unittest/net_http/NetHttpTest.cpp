@@ -403,7 +403,7 @@ HWTEST_F(NetHttpTest, HttpRequest002, TestSize.Level1)
     Http_ResponseCallback callback = testResponseCallback;
     Http_Request *req = OH_Http_CreateRequest("https://www.baidu.com");
     req->options = (Http_RequestOptions *)calloc(1, sizeof(Http_RequestOptions));
-    req->options->httpProtocol = Http_HttpProtocol::HTTP1_1;
+    req->options->httpProtocol = Http_HttpProtocol::OH_HTTP1_1;
     Http_EventsHandler handler;
     EXPECT_EQ(OH_Http_Request(req, callback, handler), 0);
     OH_Http_Destroy(&req);
