@@ -50,73 +50,73 @@ extern "C" {
  */
 typedef enum Http_ErrCode {
   /** Operation success. */
-  HTTP_NDK_RESULT_OK = 0,
+  OH_HTTP_RESULT_OK = 0,
   /** @brief Parameter error. */
-  HTTP_NDK_PARAMETER_ERROR = 401,
+  OH_HTTP_PARAMETER_ERROR = 401,
   /** @brief Permission denied. */
-  HTTP_NDK_PERMISSION_DENIED = 201,
+  OH_HTTP_PERMISSION_DENIED = 201,
   /** @brief Error code base. */
-  HTTP_NDK_NETSTACK_E_BASE = 2300000,
+  OH_HTTP_NETSTACK_E_BASE = 2300000,
   /** @brief Unsupported protocol. */
-  HTTP_NDK_UNSUPPORTED_PROTOCOL = (HTTP_NDK_NETSTACK_E_BASE + 1),
+  OH_HTTP_UNSUPPORTED_PROTOCOL = (OH_HTTP_NETSTACK_E_BASE + 1),
   /** @brief Invalid URL format or missing URL. */
-  HTTP_NDK_INVALID_URL = (HTTP_NDK_NETSTACK_E_BASE + 3),
+  OH_HTTP_INVALID_URL = (OH_HTTP_NETSTACK_E_BASE + 3),
   /** @brief Failed to resolve the proxy name. */
-  HTTP_NDK_RESOLVE_PROXY_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 5),
+  OH_HTTP_RESOLVE_PROXY_FAILED = (OH_HTTP_NETSTACK_E_BASE + 5),
   /** @brief Failed to resolve the host name. */
-  HTTP_NDK_RESOLVE_HOST_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 6),
+  OH_HTTP_RESOLVE_HOST_FAILED = (OH_HTTP_NETSTACK_E_BASE + 6),
   /** @brief Failed to connect to the server. */
-  HTTP_NDK_CONNECT_SERVER_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 7),
+  OH_HTTP_CONNECT_SERVER_FAILED = (OH_HTTP_NETSTACK_E_BASE + 7),
   /** @brief Invalid server response. */
-  HTTP_NDK_INVALID_SERVER_RESPONSE = (HTTP_NDK_NETSTACK_E_BASE + 8),
+  OH_HTTP_INVALID_SERVER_RESPONSE = (OH_HTTP_NETSTACK_E_BASE + 8),
   /** @brief Access to the remote resource denied. */
-  HTTP_NDK_ACCESS_REMOTE_DENIED = (HTTP_NDK_NETSTACK_E_BASE + 9),
+  OH_HTTP_ACCESS_REMOTE_DENIED = (OH_HTTP_NETSTACK_E_BASE + 9),
   /** @brief Error in the HTTP2 framing layer. */
-  HTTP_NDK_HTTP2_FRAMING_ERROR = (HTTP_NDK_NETSTACK_E_BASE + 16),
+  OH_HTTP_HTTP2_FRAMING_ERROR = (OH_HTTP_NETSTACK_E_BASE + 16),
   /** @brief Transferred a partial file. */
-  HTTP_NDK_TRANSFER_PARTIAL_FILE = (HTTP_NDK_NETSTACK_E_BASE + 18),
+  OH_HTTP_TRANSFER_PARTIAL_FILE = (OH_HTTP_NETSTACK_E_BASE + 18),
   /** @brief Failed to write the received data to the disk or application. */
-  HTTP_NDK_WRITE_DATA_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 23),
+  OH_HTTP_WRITE_DATA_FAILED = (OH_HTTP_NETSTACK_E_BASE + 23),
   /** @brief Upload failed. */
-  HTTP_NDK_UPLOAD_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 25),
+  OH_HTTP_UPLOAD_FAILED = (OH_HTTP_NETSTACK_E_BASE + 25),
   /** @brief Failed to open or read local data from the file or application. */
-  HTTP_NDK_OPEN_LOCAL_DATA_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 26),
+  OH_HTTP_OPEN_LOCAL_DATA_FAILED = (OH_HTTP_NETSTACK_E_BASE + 26),
   /** @brief Out of memory. */
-  HTTP_NDK_OUT_OF_MEMORY = (HTTP_NDK_NETSTACK_E_BASE + 27),
+  OH_HTTP_OUT_OF_MEMORY = (OH_HTTP_NETSTACK_E_BASE + 27),
   /** @brief Operation timeout. */
-  HTTP_NDK_OPERATION_TIMEOUT = (HTTP_NDK_NETSTACK_E_BASE + 28),
+  OH_HTTP_OPERATION_TIMEOUT = (OH_HTTP_NETSTACK_E_BASE + 28),
   /** @brief The number of redirections reaches the maximum allowed. */
-  HTTP_NDK_REDIRECTIONS_TOO_LARGE = (HTTP_NDK_NETSTACK_E_BASE + 47),
+  OH_HTTP_REDIRECTIONS_TOO_LARGE = (OH_HTTP_NETSTACK_E_BASE + 47),
   /** @brief The server returned nothing (no header or data). */
-  HTTP_NDK_SERVER_RETURNED_NOTHING = (HTTP_NDK_NETSTACK_E_BASE + 52),
+  OH_HTTP_SERVER_RETURNED_NOTHING = (OH_HTTP_NETSTACK_E_BASE + 52),
   /** @brief Failed to send data to the peer. */
-  HTTP_NDK_SEND_DATA_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 55),
+  OH_HTTP_SEND_DATA_FAILED = (OH_HTTP_NETSTACK_E_BASE + 55),
   /** @brief Failed to receive data from the peer. */
-  HTTP_NDK_RECEIVE_DATA_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 56),
+  OH_HTTP_RECEIVE_DATA_FAILED = (OH_HTTP_NETSTACK_E_BASE + 56),
   /** @brief Local SSL certificate error. */
-  HTTP_NDK_SSL_CERTIFICATE_ERROR = (HTTP_NDK_NETSTACK_E_BASE + 58),
+  OH_HTTP_SSL_CERTIFICATE_ERROR = (OH_HTTP_NETSTACK_E_BASE + 58),
   /** @brief The specified SSL cipher cannot be used. */
-  HTTP_NDK_SSL_CIPHER_USED_ERROR = (HTTP_NDK_NETSTACK_E_BASE + 59),
+  OH_HTTP_SSL_CIPHER_USED_ERROR = (OH_HTTP_NETSTACK_E_BASE + 59),
   /** @brief Invalid SSL peer certificate or SSH remote key. */
-  HTTP_NDK_INVALID_SSL_PEER_CERT = (HTTP_NDK_NETSTACK_E_BASE + 60),
+  OH_HTTP_INVALID_SSL_PEER_CERT = (OH_HTTP_NETSTACK_E_BASE + 60),
   /** @brief Invalid HTTP encoding format. */
-  HTTP_NDK_INVALID_ENCODING_FORMAT = (HTTP_NDK_NETSTACK_E_BASE + 61),
+  OH_HTTP_INVALID_ENCODING_FORMAT = (OH_HTTP_NETSTACK_E_BASE + 61),
   /** @brief Maximum file size exceeded. */
-  HTTP_NDK_FILE_TOO_LARGE = (HTTP_NDK_NETSTACK_E_BASE + 63),
+  OH_HTTP_FILE_TOO_LARGE = (OH_HTTP_NETSTACK_E_BASE + 63),
   /** @brief Remote disk full. */
-  HTTP_NDK_REMOTE_DISK_FULL = (HTTP_NDK_NETSTACK_E_BASE + 70),
+  OH_HTTP_REMOTE_DISK_FULL = (OH_HTTP_NETSTACK_E_BASE + 70),
   /** @brief Remote file already exists. */
-  HTTP_NDK_REMOTE_FILE_EXISTS = (HTTP_NDK_NETSTACK_E_BASE + 73),
+  OH_HTTP_REMOTE_FILE_EXISTS = (OH_HTTP_NETSTACK_E_BASE + 73),
   /** @brief The SSL CA certificate does not exist or is inaccessible. */
-  HTTP_NDK_SSL_CA_NOT_EXIST = (HTTP_NDK_NETSTACK_E_BASE + 77),
+  OH_HTTP_SSL_CA_NOT_EXIST = (OH_HTTP_NETSTACK_E_BASE + 77),
   /** @brief Remote file not found. */
-  HTTP_NDK_REMOTE_FILE_NOT_FOUND = (HTTP_NDK_NETSTACK_E_BASE + 78),
+  OH_HTTP_REMOTE_FILE_NOT_FOUND = (OH_HTTP_NETSTACK_E_BASE + 78),
   /** @brief Authentication error. */
-  HTTP_NDK_AUTHENTICATION_ERROR = (HTTP_NDK_NETSTACK_E_BASE + 94),
+  OH_HTTP_AUTHENTICATION_ERROR = (OH_HTTP_NETSTACK_E_BASE + 94),
   /** @brief It is not allowed to access this domain. */
-  HTTP_NDK_ACCESS_DOMAIN_NOT_ALLOWED = (HTTP_NDK_NETSTACK_E_BASE + 998),
+  OH_HTTP_ACCESS_DOMAIN_NOT_ALLOWED = (OH_HTTP_NETSTACK_E_BASE + 998),
   /** @brief Unknown error. */
-  HTTP_NDK_UNKNOWN_ERROR = (HTTP_NDK_NETSTACK_E_BASE + 999)
+  OH_HTTP_UNKNOWN_ERROR = (OH_HTTP_NETSTACK_E_BASE + 999)
 } Http_ErrCode;
 
 /**
@@ -126,83 +126,83 @@ typedef enum Http_ErrCode {
  */
 typedef enum Http_ResponseCode {
   /** @brief The request was successful. */
-  HTTP_NDK_OK = 200,
+  OH_HTTP_OK = 200,
   /** @brief Successfully requested and created a new resource. */
-  HTTP_NDK_CREATED = 201,
+  OH_HTTP_CREATED = 201,
   /** @brief The request has been accepted but has not been processed completely. */
-  HTTP_NDK_ACCEPTED = 202,
+  OH_HTTP_ACCEPTED = 202,
   /** @brief Unauthorized information. The request was successful. */
-  HTTP_NDK_NOT_AUTHORITATIVE = 203,
+  OH_HTTP_NOT_AUTHORITATIVE = 203,
   /** @brief No content. The server successfully processed, but did not return content. */
-  HTTP_NDK_NO_CONTENT = 204,
+  OH_HTTP_NO_CONTENT = 204,
   /** @brief Reset the content. */
-  HTTP_NDK_RESET = 205,
+  OH_HTTP_RESET = 205,
   /** @brief Partial content. The server successfully processed some GET requests. */
-  HTTP_NDK_PARTIAL = 206,
+  OH_HTTP_PARTIAL = 206,
   /** @brief Multiple options. */
-  HTTP_NDK_MULT_CHOICE = 300,
+  OH_HTTP_MULT_CHOICE = 300,
   /**
    * @brief Permanently move. The requested resource has been permanently moved to a new URI,
    * and the returned information will include the new URI. The browser will automatically redirect to the new URI.
    */
-  HTTP_NDK_MOVED_PERM = 301,
+  OH_HTTP_MOVED_PERM = 301,
   /** @brief Temporary movement. */
-  HTTP_NDK_MOVED_TEMP = 302,
+  OH_HTTP_MOVED_TEMP = 302,
   /** @brief View other addresses. */
-  HTTP_NDK_SEE_OTHER = 303,
+  OH_HTTP_SEE_OTHER = 303,
   /** @brief Not modified. */
-  HTTP_NDK_NOT_MODIFIED = 304,
+  OH_HTTP_NOT_MODIFIED = 304,
   /** @brief Using proxies. */
-  HTTP_NDK_USE_PROXY = 305,
+  OH_HTTP_USE_PROXY = 305,
   /** @brief The server cannot understand the syntax error error requested by the client. */
-  HTTP_NDK_BAD_REQUEST = 400,
+  OH_HTTP_BAD_REQUEST = 400,
   /** @brief Request for user authentication. */
-  HTTP_NDK_UNAUTHORIZED = 401,
+  OH_HTTP_UNAUTHORIZED = 401,
   /** @brief Reserved for future use. */
-  HTTP_NDK_PAYMENT_REQUIRED = 402,
+  OH_HTTP_PAYMENT_REQUIRED = 402,
   /** @brief The server understands the request from the requesting client, but refuses to execute it. */
-  HTTP_NDK_FORBIDDEN = 403,
+  OH_HTTP_FORBIDDEN = 403,
   /** @brief The server was unable to find resources (web pages) based on the client's request. */
-  HTTP_NDK_NOT_FOUND = 404,
+  OH_HTTP_NOT_FOUND = 404,
   /** @brief The method in the client request is prohibited. */
-  HTTP_NDK_BAD_METHOD = 405,
+  OH_HTTP_BAD_METHOD = 405,
   /** @brief The server unabled to complete request based on the content characteristics requested by the client. */
-  HTTP_NDK_NOT_ACCEPTABLE = 406,
+  OH_HTTP_NOT_ACCEPTABLE = 406,
   /** @brief Request authentication of the proxy's identity. */
-  HTTP_NDK_PROXY_AUTH = 407,
+  OH_HTTP_PROXY_AUTH = 407,
   /** @brief The request took too long and timed out. */
-  HTTP_NDK_CLIENT_TIMEOUT = 408,
+  OH_HTTP_CLIENT_TIMEOUT = 408,
   /**
    * @brief The server may have returned this code when completing the client's PUT request,
    * as there was a conflict when the server was processing the request.
    */
-  HTTP_NDK_CONFLICT = 409,
+  OH_HTTP_CONFLICT = 409,
   /** @brief The resource requested by the client no longer exists. */
-  HTTP_NDK_GONE = 410,
+  OH_HTTP_GONE = 410,
   /** @brief The server is unable to process request information sent by the client without Content Length. */
-  HTTP_NDK_LENGTH_REQUIRED = 411,
+  OH_HTTP_LENGTH_REQUIRED = 411,
   /** @brief The prerequisite for requesting information from the client is incorrect. */
-  HTTP_NDK_PRECON_FAILED = 412,
+  OH_HTTP_PRECON_FAILED = 412,
   /** @brief The request was rejected because the requested entity was too large for the server to process. */
-  HTTP_NDK_ENTITY_TOO_LARGE = 413,
+  OH_HTTP_ENTITY_TOO_LARGE = 413,
   /** @brief The requested URI is too long (usually a URL) and the server cannot process it. */
-  HTTP_NDK_REQ_TOO_LONG = 414,
+  OH_HTTP_REQ_TOO_LONG = 414,
   /** @brief The server is unable to process the requested format. */
-  HTTP_NDK_UNSUPPORTED_TYPE = 415,
+  OH_HTTP_UNSUPPORTED_TYPE = 415,
   /** @brief Requested Range not satisfiable. */
-  HTTP_NDK_RANGE_NOT_SATISFIABLE = 416,
+  OH_HTTP_RANGE_NOT_SATISFIABLE = 416,
   /** @brief Internal server error, unable to complete the request. */
-  HTTP_NDK_INTERNAL_ERROR = 500,
+  OH_HTTP_INTERNAL_ERROR = 500,
   /** @brief * The server does not support the requested functionality and cannot complete the request. */
-  HTTP_NDK_NOT_IMPLEMENTED = 501,
+  OH_HTTP_NOT_IMPLEMENTED = 501,
   /** @brief The server acting as a gateway or proxy received an invalid request from the remote server. */
-  HTTP_NDK_BAD_GATEWAY = 502,
+  OH_HTTP_BAD_GATEWAY = 502,
   /** @brief Due to overload or system maintenance, the server is temporarily unable to process client requests. */
-  HTTP_NDK_UNAVAILABLE = 503,
+  OH_HTTP_UNAVAILABLE = 503,
   /** @brief The server acting as gateway did not obtain requests from the remote server in a timely manner. */
-  HTTP_NDK_GATEWAY_TIMEOUT = 504,
+  OH_HTTP_GATEWAY_TIMEOUT = 504,
   /** @brief The version of the HTTP protocol requested by the server. */
-  HTTP_NDK_VERSION = 505
+  OH_HTTP_VERSION = 505
 } Http_ResponseCode;
 
 /**
