@@ -20,7 +20,6 @@
  * @brief Provides C APIs for the Http client module.
  *
  * @since 20
- * @version 1.0
  */
 
 /**
@@ -31,7 +30,6 @@
  * @kit NetworkKit
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
- * @version 1.0
  */
 
 #ifndef NET_HTTP_TYPE_H
@@ -49,171 +47,168 @@ extern "C" {
  * @brief Defines http error code.
  *
  * @since 20
- * @version 1.0
  */
 typedef enum Http_ErrCode {
   /** Operation success. */
-  RESULT_OK = 0,
+  HTTP_NDK_RESULT_OK = 0,
   /** @brief Parameter error. */
-  PARAMETER_ERROR = 401,
+  HTTP_NDK_PARAMETER_ERROR = 401,
   /** @brief Permission denied. */
-  PERMISSION_DENIED = 201,
+  HTTP_NDK_PERMISSION_DENIED = 201,
   /** @brief Error code base. */
-  NETSTACK_E_BASE = 2300000,
+  HTTP_NDK_NETSTACK_E_BASE = 2300000,
   /** @brief Unsupported protocol. */
-  UNSUPPORTED_PROTOCOL = (NETSTACK_E_BASE + 1),
+  HTTP_NDK_UNSUPPORTED_PROTOCOL = (HTTP_NDK_NETSTACK_E_BASE + 1),
   /** @brief Invalid URL format or missing URL. */
-  INVALID_URL = (NETSTACK_E_BASE + 3),
+  HTTP_NDK_INVALID_URL = (HTTP_NDK_NETSTACK_E_BASE + 3),
   /** @brief Failed to resolve the proxy name. */
-  RESOLVE_PROXY_FAILED = (NETSTACK_E_BASE + 5),
+  HTTP_NDK_RESOLVE_PROXY_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 5),
   /** @brief Failed to resolve the host name. */
-  RESOLVE_HOST_FAILED = (NETSTACK_E_BASE + 6),
+  HTTP_NDK_RESOLVE_HOST_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 6),
   /** @brief Failed to connect to the server. */
-  CONNECT_SERVER_FAILED = (NETSTACK_E_BASE + 7),
+  HTTP_NDK_CONNECT_SERVER_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 7),
   /** @brief Invalid server response. */
-  INVALID_SERVER_RESPONSE = (NETSTACK_E_BASE + 8),
+  HTTP_NDK_INVALID_SERVER_RESPONSE = (HTTP_NDK_NETSTACK_E_BASE + 8),
   /** @brief Access to the remote resource denied. */
-  ACCESS_REMOTE_DENIED = (NETSTACK_E_BASE + 9),
+  HTTP_NDK_ACCESS_REMOTE_DENIED = (HTTP_NDK_NETSTACK_E_BASE + 9),
   /** @brief Error in the HTTP2 framing layer. */
-  HTTP2_FRAMING_ERROR = (NETSTACK_E_BASE + 16),
+  HTTP_NDK_HTTP2_FRAMING_ERROR = (HTTP_NDK_NETSTACK_E_BASE + 16),
   /** @brief Transferred a partial file. */
-  TRANSFER_PARTIAL_FILE = (NETSTACK_E_BASE + 18),
+  HTTP_NDK_TRANSFER_PARTIAL_FILE = (HTTP_NDK_NETSTACK_E_BASE + 18),
   /** @brief Failed to write the received data to the disk or application. */
-  WRITE_DATA_FAILED = (NETSTACK_E_BASE + 23),
+  HTTP_NDK_WRITE_DATA_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 23),
   /** @brief Upload failed. */
-  UPLOAD_FAILED = (NETSTACK_E_BASE + 25),
+  HTTP_NDK_UPLOAD_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 25),
   /** @brief Failed to open or read local data from the file or application. */
-  OPEN_LOCAL_DATA_FAILED = (NETSTACK_E_BASE + 26),
+  HTTP_NDK_OPEN_LOCAL_DATA_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 26),
   /** @brief Out of memory. */
-  OUT_OF_MEMORY = (NETSTACK_E_BASE + 27),
+  HTTP_NDK_OUT_OF_MEMORY = (HTTP_NDK_NETSTACK_E_BASE + 27),
   /** @brief Operation timeout. */
-  OPERATION_TIMEOUT = (NETSTACK_E_BASE + 28),
+  HTTP_NDK_OPERATION_TIMEOUT = (HTTP_NDK_NETSTACK_E_BASE + 28),
   /** @brief The number of redirections reaches the maximum allowed. */
-  REDIRECTIONS_TOO_LARGE = (NETSTACK_E_BASE + 47),
+  HTTP_NDK_REDIRECTIONS_TOO_LARGE = (HTTP_NDK_NETSTACK_E_BASE + 47),
   /** @brief The server returned nothing (no header or data). */
-  SERVER_RETURNED_NOTHING = (NETSTACK_E_BASE + 52),
+  HTTP_NDK_SERVER_RETURNED_NOTHING = (HTTP_NDK_NETSTACK_E_BASE + 52),
   /** @brief Failed to send data to the peer. */
-  SEND_DATA_FAILED = (NETSTACK_E_BASE + 55),
+  HTTP_NDK_SEND_DATA_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 55),
   /** @brief Failed to receive data from the peer. */
-  RECEIVE_DATA_FAILED = (NETSTACK_E_BASE + 56),
+  HTTP_NDK_RECEIVE_DATA_FAILED = (HTTP_NDK_NETSTACK_E_BASE + 56),
   /** @brief Local SSL certificate error. */
-  SSL_CERTIFICATE_ERROR = (NETSTACK_E_BASE + 58),
+  HTTP_NDK_SSL_CERTIFICATE_ERROR = (HTTP_NDK_NETSTACK_E_BASE + 58),
   /** @brief The specified SSL cipher cannot be used. */
-  SSL_CIPHER_USED_ERROR = (NETSTACK_E_BASE + 59),
+  HTTP_NDK_SSL_CIPHER_USED_ERROR = (HTTP_NDK_NETSTACK_E_BASE + 59),
   /** @brief Invalid SSL peer certificate or SSH remote key. */
-  INVALID_SSL_PEER_CERT = (NETSTACK_E_BASE + 60),
+  HTTP_NDK_INVALID_SSL_PEER_CERT = (HTTP_NDK_NETSTACK_E_BASE + 60),
   /** @brief Invalid HTTP encoding format. */
-  INVALID_ENCODING_FORMAT = (NETSTACK_E_BASE + 61),
+  HTTP_NDK_INVALID_ENCODING_FORMAT = (HTTP_NDK_NETSTACK_E_BASE + 61),
   /** @brief Maximum file size exceeded. */
-  FILE_TOO_LARGE = (NETSTACK_E_BASE + 63),
+  HTTP_NDK_FILE_TOO_LARGE = (HTTP_NDK_NETSTACK_E_BASE + 63),
   /** @brief Remote disk full. */
-  REMOTE_DISK_FULL = (NETSTACK_E_BASE + 70),
+  HTTP_NDK_REMOTE_DISK_FULL = (HTTP_NDK_NETSTACK_E_BASE + 70),
   /** @brief Remote file already exists. */
-  REMOTE_FILE_EXISTS = (NETSTACK_E_BASE + 73),
+  HTTP_NDK_REMOTE_FILE_EXISTS = (HTTP_NDK_NETSTACK_E_BASE + 73),
   /** @brief The SSL CA certificate does not exist or is inaccessible. */
-  SSL_CA_NOT_EXIST = (NETSTACK_E_BASE + 77),
+  HTTP_NDK_SSL_CA_NOT_EXIST = (HTTP_NDK_NETSTACK_E_BASE + 77),
   /** @brief Remote file not found. */
-  REMOTE_FILE_NOT_FOUND = (NETSTACK_E_BASE + 78),
+  HTTP_NDK_REMOTE_FILE_NOT_FOUND = (HTTP_NDK_NETSTACK_E_BASE + 78),
   /** @brief Authentication error. */
-  AUTHENTICATION_ERROR = (NETSTACK_E_BASE + 94),
+  HTTP_NDK_AUTHENTICATION_ERROR = (HTTP_NDK_NETSTACK_E_BASE + 94),
   /** @brief It is not allowed to access this domain. */
-  ACCESS_DOMAIN_NOT_ALLOWED = (NETSTACK_E_BASE + 998),
+  HTTP_NDK_ACCESS_DOMAIN_NOT_ALLOWED = (HTTP_NDK_NETSTACK_E_BASE + 998),
   /** @brief Unknown error. */
-  UNKNOWN_ERROR = (NETSTACK_E_BASE + 999)
+  HTTP_NDK_UNKNOWN_ERROR = (HTTP_NDK_NETSTACK_E_BASE + 999)
 } Http_ErrCode;
 
 /**
  * @brief Defines http response code.
  *
  * @since 20
- * @version 1.0
  */
 typedef enum Http_ResponseCode {
   /** @brief The request was successful. */
   HTTP_OK = 200,
   /** @brief Successfully requested and created a new resource. */
-  CREATED = 201,
+  HTTP_CREATED = 201,
   /** @brief The request has been accepted but has not been processed completely. */
-  ACCEPTED = 202,
+  HTTP_ACCEPTED = 202,
   /** @brief Unauthorized information. The request was successful. */
-  NOT_AUTHORITATIVE = 203,
+  HTTP_NOT_AUTHORITATIVE = 203,
   /** @brief No content. The server successfully processed, but did not return content. */
-  NO_CONTENT = 204,
+  HTTP_NO_CONTENT = 204,
   /** @brief Reset the content. */
-  RESET = 205,
+  HTTP_RESET = 205,
   /** @brief Partial content. The server successfully processed some GET requests. */
-  PARTIAL = 206,
+  HTTP_PARTIAL = 206,
   /** @brief Multiple options. */
-  MULT_CHOICE = 300,
+  HTTP_MULT_CHOICE = 300,
   /**
    * @brief Permanently move. The requested resource has been permanently moved to a new URI,
    * and the returned information will include the new URI. The browser will automatically redirect to the new URI.
    */
-  MOVED_PERM = 301,
+  HTTP_MOVED_PERM = 301,
   /** @brief Temporary movement. */
-  MOVED_TEMP = 302,
+  HTTP_MOVED_TEMP = 302,
   /** @brief View other addresses. */
-  SEE_OTHER = 303,
+  HTTP_SEE_OTHER = 303,
   /** @brief Not modified. */
-  NOT_MODIFIED = 304,
+  HTTP_NOT_MODIFIED = 304,
   /** @brief Using proxies. */
-  USE_PROXY = 305,
+  HTTP_USE_PROXY = 305,
   /** @brief The server cannot understand the syntax error error requested by the client. */
-  BAD_REQUEST = 400,
+  HTTP_BAD_REQUEST = 400,
   /** @brief Request for user authentication. */
-  UNAUTHORIZED = 401,
+  HTTP_UNAUTHORIZED = 401,
   /** @brief Reserved for future use. */
-  PAYMENT_REQUIRED = 402,
+  HTTP_PAYMENT_REQUIRED = 402,
   /** @brief The server understands the request from the requesting client, but refuses to execute it. */
-  FORBIDDEN = 403,
+  HTTP_FORBIDDEN = 403,
   /** @brief The server was unable to find resources (web pages) based on the client's request. */
-  NOT_FOUND = 404,
+  HTTP_NOT_FOUND = 404,
   /** @brief The method in the client request is prohibited. */
-  BAD_METHOD = 405,
+  HTTP_BAD_METHOD = 405,
   /** @brief The server unabled to complete request based on the content characteristics requested by the client. */
-  NOT_ACCEPTABLE = 406,
+  HTTP_NOT_ACCEPTABLE = 406,
   /** @brief Request authentication of the proxy's identity. */
-  PROXY_AUTH = 407,
+  HTTP_PROXY_AUTH = 407,
   /** @brief The request took too long and timed out. */
-  CLIENT_TIMEOUT = 408,
+  HTTP_CLIENT_TIMEOUT = 408,
   /**
    * @brief The server may have returned this code when completing the client's PUT request,
    * as there was a conflict when the server was processing the request.
    */
-  CONFLICT = 409,
+  HTTP_CONFLICT = 409,
   /** @brief The resource requested by the client no longer exists. */
-  GONE = 410,
+  HTTP_GONE = 410,
   /** @brief The server is unable to process request information sent by the client without Content Length. */
-  LENGTH_REQUIRED = 411,
+  HTTP_LENGTH_REQUIRED = 411,
   /** @brief The prerequisite for requesting information from the client is incorrect. */
-  PRECON_FAILED = 412,
+  HTTP_PRECON_FAILED = 412,
   /** @brief The request was rejected because the requested entity was too large for the server to process. */
-  ENTITY_TOO_LARGE = 413,
+  HTTP_ENTITY_TOO_LARGE = 413,
   /** @brief The requested URI is too long (usually a URL) and the server cannot process it. */
-  REQ_TOO_LONG = 414,
+  HTTP_REQ_TOO_LONG = 414,
   /** @brief The server is unable to process the requested format. */
-  UNSUPPORTED_TYPE = 415,
+  HTTP_UNSUPPORTED_TYPE = 415,
   /** @brief Requested Range not satisfiable. */
-  RANGE_NOT_SATISFIABLE = 416,
+  HTTP_RANGE_NOT_SATISFIABLE = 416,
   /** @brief Internal server error, unable to complete the request. */
-  INTERNAL_ERROR = 500,
+  HTTP_INTERNAL_ERROR = 500,
   /** @brief * The server does not support the requested functionality and cannot complete the request. */
-  NOT_IMPLEMENTED = 501,
+  HTTP_NOT_IMPLEMENTED = 501,
   /** @brief The server acting as a gateway or proxy received an invalid request from the remote server. */
-  BAD_GATEWAY = 502,
+  HTTP_BAD_GATEWAY = 502,
   /** @brief Due to overload or system maintenance, the server is temporarily unable to process client requests. */
-  UNAVAILABLE = 503,
+  HTTP_UNAVAILABLE = 503,
   /** @brief The server acting as gateway did not obtain requests from the remote server in a timely manner. */
-  GATEWAY_TIMEOUT = 504,
+  HTTP_GATEWAY_TIMEOUT = 504,
   /** @brief The version of the HTTP protocol requested by the server. */
-  VERSION = 505
+  HTTP_VERSION = 505
 } Http_ResponseCode;
 
 /**
  * @brief Buffer.
  *
  * @since 20
- * @version 1.0
  */
 typedef struct Http_Buffer {
   /** Content. Buffer will not be copied. */
@@ -226,7 +221,6 @@ typedef struct Http_Buffer {
  * @brief Defines the address Family.
  *
  * @since 20
- * @version 1.0
  */
 typedef enum Http_AddressFamilyType {
   /** Default, The system automatically selects the IPv4 or IPv6 address of the domain name. */
@@ -241,7 +235,6 @@ typedef enum Http_AddressFamilyType {
  * @brief HTTP get method.
  *
  * @since 20
- * @version 1.0
  */
 #define NET_HTTP_METHOD_GET "GET"
 
@@ -249,7 +242,6 @@ typedef enum Http_AddressFamilyType {
  * @brief HTTP head method.
  *
  * @since 20
- * @version 1.0
  */
 #define NET_HTTPMETHOD_HEAD "HEAD"
 
@@ -257,7 +249,6 @@ typedef enum Http_AddressFamilyType {
  * @brief HTTP options method.
  *
  * @since 20
- * @version 1.0
  */
 #define NET_HTTPMETHOD_OPTIONS "OPTIONS"
 
@@ -265,13 +256,11 @@ typedef enum Http_AddressFamilyType {
  * @brief HTTP trace method.
  *
  * @since 20
- * @version 1.0
  */
 #define NET_HTTPMETHOD_TRACE "TRACE"
 /**
  * @brief HTTP delete method.
  * @since 20
- * @version 1.0
  */
 #define NET_HTTPMETHOD_DELETE "DELETE"
 
@@ -279,7 +268,6 @@ typedef enum Http_AddressFamilyType {
  * @brief HTTP post method.
  *
  * @since 20
- * @version 1.0
  */
 #define NET_HTTP_METHOD_POST "POST"
 
@@ -287,7 +275,6 @@ typedef enum Http_AddressFamilyType {
  * @brief HTTP put method.
  *
  * @since 20
- * @version 1.0
  */
 #define NET_HTTP_METHOD_PUT "PUT"
 
@@ -295,7 +282,6 @@ typedef enum Http_AddressFamilyType {
  * @brief HTTP connect method.
  *
  * @since 20
- * @version 1.0
  */
 #define NET_HTTP_METHOD_PATCH "CONNECT"
 
@@ -303,7 +289,6 @@ typedef enum Http_AddressFamilyType {
  * @brief Defines the HTTP version.
  *
  * @since 20
- * @version 1.0
  */
 typedef enum Http_HttpProtocol {
   /** Default choose by curl. */
@@ -320,7 +305,6 @@ typedef enum Http_HttpProtocol {
  * @brief Defines the Cert Type.
  *
  * @since 20
- * @version 1.0
  */
 typedef enum Http_CertType {
   /** PEM Cert Type. */
@@ -335,7 +319,6 @@ typedef enum Http_CertType {
  * @brief Headers of the request or response.
  *
  * @since 20
- * @version 1.0
  */
 typedef struct Http_Headers Http_Headers;
 
@@ -343,7 +326,6 @@ typedef struct Http_Headers Http_Headers;
  * @brief The value type of the header map of the request or response.
  *
  * @since 20
- * @version 1.0
  */
 typedef struct Http_HeaderValue {
   /** Value. */
@@ -356,7 +338,6 @@ typedef struct Http_HeaderValue {
  * @brief All key-value pairs of the headers of the request or response.
  *
  * @since 20
- * @version 1.0
  */
 typedef struct Http_HeaderEntry {
   /** Key. */
@@ -372,7 +353,6 @@ typedef struct Http_HeaderEntry {
  * client's identification.
  *
  * @since 20
- * @version 1.0
  */
 typedef struct Http_ClientCert {
   /** A path to a client certificate. */
@@ -389,7 +369,6 @@ typedef struct Http_ClientCert {
  * @brief Proxy type. Used to distinguish different proxy configurations.
  *
  * @since 20
- * @version 1.0
  */
 typedef enum Http_ProxyType {
   /** No proxy */
@@ -404,7 +383,6 @@ typedef enum Http_ProxyType {
  * @brief Custom proxy configuration.
  *
  * @since 20
- * @version 1.0
  */
 typedef struct Http_CustomProxy {
   /** Indicates the URL of the proxy server. If you do not set port explicitly, port will be 1080. */
@@ -417,7 +395,6 @@ typedef struct Http_CustomProxy {
  * @brief Proxy configuration.
  *
  * @since 20
- * @version 1.0
  */
 typedef struct Http_Proxy {
   /** Distinguish the proxy type used by the request, see {@link Http_ProxyType}. */
@@ -430,7 +407,6 @@ typedef struct Http_Proxy {
  * @brief Response timing information. It will be collected in {@link Http_Response.performanceTiming}.
  *
  * @since 20
- * @version 1.0
  */
 typedef struct Http_PerformanceTiming {
   /** The total time in milliseconds for the HTTP transfer, including name resolving, TCP connect etc. */
@@ -453,7 +429,6 @@ typedef struct Http_PerformanceTiming {
  * @brief Defines the parameters for http request options.
  *
  * @since 20
- * @version 1.0
  */
 typedef struct Http_RequestOptions {
   /** Request method. */
@@ -493,7 +468,6 @@ typedef struct Http_RequestOptions {
  * @brief Defines the parameters for http response.
  *
  * @since 20
- * @version 1.0
  */
 typedef struct Http_Response {
   /** Response body, see {@link Http_Buffer}. */
@@ -511,7 +485,6 @@ typedef struct Http_Response {
    *
    * @param response Indicates the response to be deleted. It is a pointer that points to {@link Http_Response}.
    * @since 20
-   * @version 1.0
    */
   void (*destroyResponse)(struct Http_Response **response);
 } Http_Response;
@@ -520,7 +493,6 @@ typedef struct Http_Response {
  * @brief Http request.
  *
  * @since 20
- * @version 1.0
  */
 typedef struct Http_Request {
   /** The request id for every single request. Generated by system. */
@@ -537,7 +509,6 @@ typedef struct Http_Request {
  * @param response Http response struct, see {@link Http_Response}.
  * @param errCode Response error code.
  * @since 20
- * @version 1.0
  */
 typedef void (*Http_ResponseCallback)(struct Http_Response *response, uint32_t errCode);
 
@@ -547,7 +518,6 @@ typedef void (*Http_ResponseCallback)(struct Http_Response *response, uint32_t e
  * @param data Response body.
  * @return size_t the length of response body.
  * @since 20
- * @version 1.0
  */
 typedef size_t (*Http_OnDataReceiveCallback)(const char *data);
 
@@ -557,7 +527,6 @@ typedef size_t (*Http_OnDataReceiveCallback)(const char *data);
  * @param totalSize total size.
  * @param transferredSize transferred size.
  * @since 20
- * @version 1.0
  */
 typedef void (*Http_OnProgressCallback)(uint64_t totalSize, uint64_t transferredSize);
 
@@ -566,15 +535,13 @@ typedef void (*Http_OnProgressCallback)(uint64_t totalSize, uint64_t transferred
  *
  * @param headers Headers of the received requests, which points to the pointer of {@link Http_Headers}.
  * @since 20
- * @version 1.0
  */
 typedef void (*Http_OnHeaderReceiveCallback)(Http_Headers *headers);
 
 /**
- * @brief Empty callback function for requested DataEnd or Canceled event callback。
+ * @brief Empty callback function for requested DataEnd or Canceled event callback
  *
  * @since 20
- * @version 1.0
  */
 typedef void (*Http_OnVoidCallback)(void);
 
@@ -582,7 +549,6 @@ typedef void (*Http_OnVoidCallback)(void);
  * @brief Callbacks to watch different events.
  *
  * @since 20
- * @version 1.0
  */
 typedef struct Http_EventsHandler {
   /** Callback function when the response body is received */

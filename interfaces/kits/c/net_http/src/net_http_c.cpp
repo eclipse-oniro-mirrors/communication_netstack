@@ -97,19 +97,19 @@ static char *OH_Http_ToLowerCase(const char *str)
 uint32_t OH_Http_SetHeaderValue(Http_Headers *headers, const char *name, const char *value)
 {
     if (headers == nullptr || headers->fields == nullptr || name == nullptr || value == nullptr) {
-        return PARAMETER_ERROR;
+        return HTTP_NDK_PARAMETER_ERROR;
     }
  
     char *lowerName = OH_Http_ToLowerCase(name);
     if (lowerName == nullptr) {
-        return OUT_OF_MEMORY;
+        return HTTP_NDK_OUT_OF_MEMORY;
     }
     Http_HeaderValue *existValue = (Http_HeaderValue *)Netstack_GetMapEntry(headers->fields, lowerName);
     Http_HeaderValue *previous = existValue;
     while (existValue != nullptr) {
         if (strcmp(existValue->value, value) == 0) {
             free(lowerName);
-            return RESULT_OK;
+            return HTTP_NDK_RESULT_OK;
         }
         previous = existValue;
         existValue = existValue->next;
@@ -119,18 +119,18 @@ uint32_t OH_Http_SetHeaderValue(Http_Headers *headers, const char *name, const c
     if (headerValue == nullptr) {
         NETSTACK_LOGE("failed to alloc memory for header value");
         free(lowerName);
-        return OUT_OF_MEMORY;
+        return HTTP_NDK_OUT_OF_MEMORY;
     }
     headerValue->value = strdup(value);
     if (headerValue->value == nullptr) {
         free(headerValue);
         free(lowerName);
-        return OUT_OF_MEMORY;
+        return HTTP_NDK_OUT_OF_MEMORY;
     }
  
     if (previous == nullptr) {
         uint32_t res = Netstack_PutMapEntry(headers->fields, lowerName, headerValue);
-        if (res != RESULT_OK) {
+        if (res != HTTP_NDK_RESULT_OK) {
             free(headerValue->value);
             free(headerValue);
         }
@@ -139,7 +139,7 @@ uint32_t OH_Http_SetHeaderValue(Http_Headers *headers, const char *name, const c
     }
     previous->next = headerValue;
     free(lowerName);
-    return RESULT_OK;
+    return HTTP_NDK_RESULT_OK;
 }
 
 Http_HeaderValue *OH_Http_GetHeaderValue(Http_Headers *headers, const char *name)
@@ -375,8 +375,8 @@ void OH_Http_RequestOnSuccess(std::shared_ptr<HttpClientTask> httpClientTask,
         NETSTACK_LOGI("OnSuccess. code=%{public}d", response.GetResponseCode());
         Http_Response *resp = (Http_Response *)calloc(1, sizeof(Http_Response));
         if (resp == nullptr) {
-           callback(nullptr, OUT_OF_MEMORY);
-           return OUT_OF_MEMORY;
+           callback(nullptr, HTTP_NDK_OUT_OF_MEMORY);
+           return HTTP_NDK_OUT_OF_MEMORY;
         }
         resp->responseCode =  static_cast<Http_ResponseCode>(response.GetResponseCode());
         resp->cookies = const_cast<char*>(response.GetCookies().data());
@@ -385,9 +385,9 @@ void OH_Http_RequestOnSuccess(std::shared_ptr<HttpClientTask> httpClientTask,
         Http_PerformanceTiming *performanceTiming = (Http_PerformanceTiming *)calloc(1,
             sizeof(Http_PerformanceTiming));
         if (performanceTiming == nullptr) {
-           callback(nullptr, OUT_OF_MEMORY);
+           callback(nullptr, HTTP_NDK_OUT_OF_MEMORY);
            free(resp);
-           return OUT_OF_MEMORY;
+           return HTTP_NDK_OUT_OF_MEMORY;
         }
         performanceTiming->dnsTiming = response.GetPerformanceTiming().dnsTiming;
         performanceTiming->tcpTiming = response.GetPerformanceTiming().connectTiming;
@@ -406,7 +406,7 @@ void OH_Http_RequestOnSuccess(std::shared_ptr<HttpClientTask> httpClientTask,
         if (handler.onDataEnd != nullptr) {
             handler.onDataEnd();
         }
-        return RESULT_OK;
+        return HTTP_NDK_RESULT_OK;
     });
 }
 
@@ -422,7 +422,7 @@ void OH_Http_RequestOnCancel(std::shared_ptr<HttpClientTask> httpClientTask, Htt
         if (handler.onCanceled != nullptr) {
             handler.onCanceled();
         }
-        return RESULT_OK;
+        return HTTP_NDK_RESULT_OK;
     });
 }
 
@@ -439,8 +439,8 @@ void OH_Http_RequestOnFail(std::shared_ptr<HttpClientTask> httpClientTask,
             response.GetResponseCode(), error.GetErrorCode());
         Http_Response *resp = (Http_Response *)calloc(1, sizeof(Http_Response));
         if (resp == nullptr) {
-           callback(nullptr, OUT_OF_MEMORY);
-           return OUT_OF_MEMORY;
+           callback(nullptr, HTTP_NDK_OUT_OF_MEMORY);
+           return HTTP_NDK_OUT_OF_MEMORY;
         }
         resp->responseCode =  static_cast<Http_ResponseCode>(response.GetResponseCode());
         resp->destroyResponse = OH_Http_DestroyResponse;
@@ -448,7 +448,7 @@ void OH_Http_RequestOnFail(std::shared_ptr<HttpClientTask> httpClientTask,
         if (handler.onDataEnd != nullptr) {
             handler.onDataEnd();
         }
-        return RESULT_OK;
+        return HTTP_NDK_RESULT_OK;
     });
 }
 
@@ -463,7 +463,7 @@ void OH_Http_RequestOnDataReceive(std::shared_ptr<HttpClientTask> httpClientTask
         if (handler.onDataReceive != nullptr) {
             handler.onDataReceive(reinterpret_cast<const char *>(data));
         }
-        return RESULT_OK;
+        return HTTP_NDK_RESULT_OK;
     });
 }
 
@@ -479,7 +479,7 @@ void OH_Http_RequestOnHeadersReceive(std::shared_ptr<HttpClientTask> httpClientT
             Http_Headers *headers = OH_Http_ToCHeaders(headerWithSetCookie);
             handler.onHeadersReceive(headers);
         }
-        return RESULT_OK;
+        return HTTP_NDK_RESULT_OK;
     });
 }
 
@@ -501,7 +501,7 @@ void OH_Http_RequestOnProgress(std::shared_ptr<HttpClientTask> httpClientTask, H
                 handler.onDownloadProgress(dlTotal, dlNow);
             }
         }
-        return RESULT_OK;
+        return HTTP_NDK_RESULT_OK;
     });
 }
 
@@ -510,7 +510,7 @@ int OH_Http_Request(Http_Request *request, Http_ResponseCallback callback, Http_
     NETSTACK_LOGI("OH_Http_Request enter");
     if (request == nullptr || callback == nullptr) {
         NETSTACK_LOGE("OH_Http_Request request or callback is nullptr");
-        return OUT_OF_MEMORY;
+        return HTTP_NDK_OUT_OF_MEMORY;
     }
     HttpClientRequest httpReq;
     httpReq.SetURL(request->url);
@@ -521,7 +521,7 @@ int OH_Http_Request(Http_Request *request, Http_ResponseCallback callback, Http_
     auto httpClientTask = session.CreateTask(httpReq);
     if (httpClientTask == nullptr) {
         NETSTACK_LOGE("OH_Http_Request httpClientTask is nullptr");
-        return OUT_OF_MEMORY;
+        return HTTP_NDK_OUT_OF_MEMORY;
     }
     OH_Http_RequestOnSuccess(httpClientTask, callback, handler);
     OH_Http_RequestOnCancel(httpClientTask, handler);

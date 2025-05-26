@@ -78,7 +78,7 @@ HWTEST_F(NetHttpTest, DestroyHeaders001, TestSize.Level1)
 {
     Http_Headers *header = OH_Http_CreateHeaders();
     EXPECT_TRUE(header != nullptr);
-    EXPECT_EQ(OH_Http_SetHeaderValue(header, "key", "value"), RESULT_OK);
+    EXPECT_EQ(OH_Http_SetHeaderValue(header, "key", "value"), HTTP_NDK_RESULT_OK);
     OH_Http_DestroyHeaders(&header);
 }
 
@@ -102,15 +102,15 @@ HWTEST_F(NetHttpTest, ToLowerCase001, TestSize.Level1)
 HWTEST_F(NetHttpTest, SetHeaderValue001, TestSize.Level1)
 {    
     uint32_t ret = OH_Http_SetHeaderValue(nullptr, "key", "test");
-    EXPECT_EQ(ret, PARAMETER_ERROR);
+    EXPECT_EQ(ret, HTTP_NDK_PARAMETER_ERROR);
 
     Http_Headers *header = OH_Http_CreateHeaders();
     EXPECT_TRUE(header != nullptr);
     ret = OH_Http_SetHeaderValue(header, nullptr, "test");
-    EXPECT_EQ(ret, PARAMETER_ERROR);
+    EXPECT_EQ(ret, HTTP_NDK_PARAMETER_ERROR);
 
     ret = OH_Http_SetHeaderValue(header, "key2", nullptr);
-    EXPECT_EQ(ret, PARAMETER_ERROR);
+    EXPECT_EQ(ret, HTTP_NDK_PARAMETER_ERROR);
     OH_Http_DestroyHeaders(&header);
 }
 
@@ -121,7 +121,7 @@ HWTEST_F(NetHttpTest, SetHeaderValue002, TestSize.Level1)
     OH_Http_SetHeaderValue(header, "key1", "test1");
 
     uint32_t ret = OH_Http_SetHeaderValue(header, "key2", "test2");
-    EXPECT_EQ(ret, RESULT_OK);
+    EXPECT_EQ(ret, HTTP_NDK_RESULT_OK);
     OH_Http_DestroyHeaders(&header);
 }
 
@@ -132,7 +132,7 @@ HWTEST_F(NetHttpTest, SetHeaderValue003, TestSize.Level1)
     OH_Http_SetHeaderValue(header, "key1", "test1");
 
     uint32_t ret = OH_Http_SetHeaderValue(header, "key1", "test1");
-    EXPECT_EQ(ret, RESULT_OK);
+    EXPECT_EQ(ret, HTTP_NDK_RESULT_OK);
     OH_Http_DestroyHeaders(&header);
 }
 
@@ -143,7 +143,7 @@ HWTEST_F(NetHttpTest, SetHeaderValue004, TestSize.Level1)
     OH_Http_SetHeaderValue(header, "key1", "test1");
 
     uint32_t ret = OH_Http_SetHeaderValue(header, "key1", "test2");
-    EXPECT_EQ(ret, RESULT_OK);
+    EXPECT_EQ(ret, HTTP_NDK_RESULT_OK);
     OH_Http_DestroyHeaders(&header);
 }
 
@@ -155,7 +155,7 @@ HWTEST_F(NetHttpTest, SetHeaderValue005, TestSize.Level1)
     OH_Http_SetHeaderValue(header, "key1", "test1");
     header->fields->capacity = MAX_MAP_CAPACITY + 1;
     uint32_t ret = OH_Http_SetHeaderValue(header, "key1", "test2");
-    EXPECT_EQ(ret, PARAMETER_ERROR);
+    EXPECT_EQ(ret, HTTP_NDK_PARAMETER_ERROR);
     OH_Http_DestroyHeaders(&header);
 }
 
@@ -393,8 +393,8 @@ HWTEST_F(NetHttpTest, HttpRequest001, TestSize.Level1)
     Http_ResponseCallback callback = testResponseCallback;
     Http_Request *request = OH_Http_CreateRequest("https://www.baidu.com");
     Http_EventsHandler handler;
-    EXPECT_EQ(OH_Http_Request(nullptr, callback, handler), OUT_OF_MEMORY);
-    EXPECT_EQ(OH_Http_Request(request, nullptr, handler), OUT_OF_MEMORY);
+    EXPECT_EQ(OH_Http_Request(nullptr, callback, handler), HTTP_OUT_OF_MEMORY);
+    EXPECT_EQ(OH_Http_Request(request, nullptr, handler), HTTP_OUT_OF_MEMORY);
     OH_Http_Destroy(&request);
 }
 
