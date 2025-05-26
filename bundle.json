@@ -60,12 +60,14 @@
                 "access_token",
                 "hiappevent",
                 "bundle_framework",
-                "safwk"
+                "safwk",
+                "runtime_core"
             ]
         },
         "build": {
             "group_type": {
                 "base_group": [
+                    "//foundation/communication/netstack/frameworks/ets/ani:ani_package",
                     "//foundation/communication/netstack/frameworks/js/napi/http:http",
                     "//foundation/communication/netstack/frameworks/js/napi/socket:socket",
                     "//foundation/communication/netstack/frameworks/js/napi/websocket:websocket",
@@ -143,6 +145,13 @@
                         "header_files": []
                     },
                     "name": "//foundation/communication/netstack/frameworks/cj/network_security:cj_net_network_security_ffi"
+                },
+                {
+                    "header": {
+                        "header_base": [],
+                        "header_files": []
+                    },
+                    "name": "//foundation/communication/netstack/interfaces/innerkits/rust/netstack_rs:netstack_rs"
                 }
             ],
             "test": [

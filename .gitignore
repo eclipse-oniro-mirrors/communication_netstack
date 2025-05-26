@@ -7,3 +7,5 @@ basic.d.ts
 CMakeLists.txt
 *.diff
 .clang-format
+target
+Cargo.lock
