@@ -380,6 +380,9 @@ HWTEST_F(NetHttpTest, SetOtherOption001, TestSize.Level1)
     request->options->addressFamily = Http_AddressFamilyType::DEFAULT;
     ret = OH_Http_Request(request, callback, handler);
     EXPECT_EQ(ret, 0);
+    free(request->options->clientCert->certPath);
+    free(request->options->clientCert->keyPassword);
+    free(request->options->clientCert->keyPath);
     free(request->options->clientCert);
     free(request->options);
     OH_Http_Destroy(&request);
