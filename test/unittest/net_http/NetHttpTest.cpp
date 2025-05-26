@@ -102,15 +102,15 @@ HWTEST_F(NetHttpTest, ToLowerCase001, TestSize.Level1)
 HWTEST_F(NetHttpTest, SetHeaderValue001, TestSize.Level1)
 {    
     uint32_t ret = OH_Http_SetHeaderValue(nullptr, "key", "test");
-    EXPECT_EQ(ret, OUT_OF_MEMORY);
+    EXPECT_EQ(ret, PARAMETER_ERROR);
 
     Http_Headers *header = OH_Http_CreateHeaders();
     EXPECT_TRUE(header != nullptr);
     ret = OH_Http_SetHeaderValue(header, nullptr, "test");
-    EXPECT_EQ(ret, OUT_OF_MEMORY);
+    EXPECT_EQ(ret, PARAMETER_ERROR);
 
     ret = OH_Http_SetHeaderValue(header, "key2", nullptr);
-    EXPECT_EQ(ret, OUT_OF_MEMORY);
+    EXPECT_EQ(ret, PARAMETER_ERROR);
     OH_Http_DestroyHeaders(&header);
 }
 
