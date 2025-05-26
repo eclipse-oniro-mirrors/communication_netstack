@@ -126,83 +126,83 @@ typedef enum Http_ErrCode {
  */
 typedef enum Http_ResponseCode {
   /** @brief The request was successful. */
-  HTTP_OK = 200,
+  HTTP_NDK_OK = 200,
   /** @brief Successfully requested and created a new resource. */
-  HTTP_CREATED = 201,
+  HTTP_NDK_CREATED = 201,
   /** @brief The request has been accepted but has not been processed completely. */
-  HTTP_ACCEPTED = 202,
+  HTTP_NDK_ACCEPTED = 202,
   /** @brief Unauthorized information. The request was successful. */
-  HTTP_NOT_AUTHORITATIVE = 203,
+  HTTP_NDK_NOT_AUTHORITATIVE = 203,
   /** @brief No content. The server successfully processed, but did not return content. */
-  HTTP_NO_CONTENT = 204,
+  HTTP_NDK_NO_CONTENT = 204,
   /** @brief Reset the content. */
-  HTTP_RESET = 205,
+  HTTP_NDK_RESET = 205,
   /** @brief Partial content. The server successfully processed some GET requests. */
-  HTTP_PARTIAL = 206,
+  HTTP_NDK_PARTIAL = 206,
   /** @brief Multiple options. */
-  HTTP_MULT_CHOICE = 300,
+  HTTP_NDK_MULT_CHOICE = 300,
   /**
    * @brief Permanently move. The requested resource has been permanently moved to a new URI,
    * and the returned information will include the new URI. The browser will automatically redirect to the new URI.
    */
-  HTTP_MOVED_PERM = 301,
+  HTTP_NDK_MOVED_PERM = 301,
   /** @brief Temporary movement. */
-  HTTP_MOVED_TEMP = 302,
+  HTTP_NDK_MOVED_TEMP = 302,
   /** @brief View other addresses. */
-  HTTP_SEE_OTHER = 303,
+  HTTP_NDK_SEE_OTHER = 303,
   /** @brief Not modified. */
-  HTTP_NOT_MODIFIED = 304,
+  HTTP_NDK_NOT_MODIFIED = 304,
   /** @brief Using proxies. */
-  HTTP_USE_PROXY = 305,
+  HTTP_NDK_USE_PROXY = 305,
   /** @brief The server cannot understand the syntax error error requested by the client. */
-  HTTP_BAD_REQUEST = 400,
+  HTTP_NDK_BAD_REQUEST = 400,
   /** @brief Request for user authentication. */
-  HTTP_UNAUTHORIZED = 401,
+  HTTP_NDK_UNAUTHORIZED = 401,
   /** @brief Reserved for future use. */
-  HTTP_PAYMENT_REQUIRED = 402,
+  HTTP_NDK_PAYMENT_REQUIRED = 402,
   /** @brief The server understands the request from the requesting client, but refuses to execute it. */
-  HTTP_FORBIDDEN = 403,
+  HTTP_NDK_FORBIDDEN = 403,
   /** @brief The server was unable to find resources (web pages) based on the client's request. */
-  HTTP_NOT_FOUND = 404,
+  HTTP_NDK_NOT_FOUND = 404,
   /** @brief The method in the client request is prohibited. */
-  HTTP_BAD_METHOD = 405,
+  HTTP_NDK_BAD_METHOD = 405,
   /** @brief The server unabled to complete request based on the content characteristics requested by the client. */
-  HTTP_NOT_ACCEPTABLE = 406,
+  HTTP_NDK_NOT_ACCEPTABLE = 406,
   /** @brief Request authentication of the proxy's identity. */
-  HTTP_PROXY_AUTH = 407,
+  HTTP_NDK_PROXY_AUTH = 407,
   /** @brief The request took too long and timed out. */
-  HTTP_CLIENT_TIMEOUT = 408,
+  HTTP_NDK_CLIENT_TIMEOUT = 408,
   /**
    * @brief The server may have returned this code when completing the client's PUT request,
    * as there was a conflict when the server was processing the request.
    */
-  HTTP_CONFLICT = 409,
+  HTTP_NDK_CONFLICT = 409,
   /** @brief The resource requested by the client no longer exists. */
-  HTTP_GONE = 410,
+  HTTP_NDK_GONE = 410,
   /** @brief The server is unable to process request information sent by the client without Content Length. */
-  HTTP_LENGTH_REQUIRED = 411,
+  HTTP_NDK_LENGTH_REQUIRED = 411,
   /** @brief The prerequisite for requesting information from the client is incorrect. */
-  HTTP_PRECON_FAILED = 412,
+  HTTP_NDK_PRECON_FAILED = 412,
   /** @brief The request was rejected because the requested entity was too large for the server to process. */
-  HTTP_ENTITY_TOO_LARGE = 413,
+  HTTP_NDK_ENTITY_TOO_LARGE = 413,
   /** @brief The requested URI is too long (usually a URL) and the server cannot process it. */
-  HTTP_REQ_TOO_LONG = 414,
+  HTTP_NDK_REQ_TOO_LONG = 414,
   /** @brief The server is unable to process the requested format. */
-  HTTP_UNSUPPORTED_TYPE = 415,
+  HTTP_NDK_UNSUPPORTED_TYPE = 415,
   /** @brief Requested Range not satisfiable. */
-  HTTP_RANGE_NOT_SATISFIABLE = 416,
+  HTTP_NDK_RANGE_NOT_SATISFIABLE = 416,
   /** @brief Internal server error, unable to complete the request. */
-  HTTP_INTERNAL_ERROR = 500,
+  HTTP_NDK_INTERNAL_ERROR = 500,
   /** @brief * The server does not support the requested functionality and cannot complete the request. */
-  HTTP_NOT_IMPLEMENTED = 501,
+  HTTP_NDK_NOT_IMPLEMENTED = 501,
   /** @brief The server acting as a gateway or proxy received an invalid request from the remote server. */
-  HTTP_BAD_GATEWAY = 502,
+  HTTP_NDK_BAD_GATEWAY = 502,
   /** @brief Due to overload or system maintenance, the server is temporarily unable to process client requests. */
-  HTTP_UNAVAILABLE = 503,
+  HTTP_NDK_UNAVAILABLE = 503,
   /** @brief The server acting as gateway did not obtain requests from the remote server in a timely manner. */
-  HTTP_GATEWAY_TIMEOUT = 504,
+  HTTP_NDK_GATEWAY_TIMEOUT = 504,
   /** @brief The version of the HTTP protocol requested by the server. */
-  HTTP_VERSION = 505
+  HTTP_NDK_VERSION = 505
 } Http_ResponseCode;
 
 /**
