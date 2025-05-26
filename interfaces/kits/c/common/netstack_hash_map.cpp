@@ -145,7 +145,7 @@ uint32_t Netstack_PutMapEntry(Netstack_HashMap *map, const char *key, void *valu
     // insert after first entry
     Netstack_HashMapEntry *entry = (Netstack_HashMapEntry *)malloc(sizeof(Netstack_HashMapEntry));
     if (entry == nullptr) {
-        return HOH_HTTP_OUT_OF_MEMORY;
+        return OH_HTTP_OUT_OF_MEMORY;
     }
     entry->key = strdup(key);
     if (entry->key == nullptr) {
