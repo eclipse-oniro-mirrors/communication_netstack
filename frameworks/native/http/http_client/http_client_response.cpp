@@ -59,6 +59,11 @@ void HttpClientResponse::ParseHeaders()
             NETSTACK_LOGD("HEAD: %{public}s", CommonUtils::Strip(header).c_str());
             continue;
         }
+        if (CommonUtils::ToLower(CommonUtils::Strip(header.substr(0, index))) ==
+            HttpConstant::RESPONSE_KEY_SET_COOKIE) {
+            setCookie_.push_back(CommonUtils::Strip(header.substr(index + 1)));
+            continue;
+        }
         headers_[CommonUtils::ToLower(CommonUtils::Strip(header.substr(0, index)))] =
             CommonUtils::Strip(header.substr(index + 1));
     }
@@ -72,6 +77,11 @@ const std::map<std::string, std::string> &HttpClientResponse::GetHeaders() const
 void HttpClientResponse::AppendCookies(const char *data, size_t length)
 {
     cookies_.append(static_cast<const char *>(data), length);
+}
+
+const std::vector<std::string> &HttpClientResponse::GetsetCookie() const
+{
+    return setCookie_;
 }
 
 const std::string &HttpClientResponse::GetCookies() const

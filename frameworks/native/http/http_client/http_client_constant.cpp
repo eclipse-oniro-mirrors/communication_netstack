@@ -57,6 +57,8 @@ const char *const HttpConstant::RESPONSE_KEY_RESULT = "result";
 const char *const HttpConstant::RESPONSE_KEY_RESPONSE_CODE = "responseCode";
 const char *const HttpConstant::RESPONSE_KEY_HEADER = "header";
 const char *const HttpConstant::RESPONSE_KEY_COOKIES = "cookies";
+const char *const HttpConstant::RESPONSE_KEY_SET_COOKIE = "set-cookie";
+const char *const HttpConstant::RESPONSE_KEY_SET_COOKIE_SEPARATOR = "\r\n";
 const char *const HttpConstant::RESPONSE_KEY_RESULT_TYPE = "resultType";
 
 const char *const HttpConstant::HTTP_URL_PARAM_START = "?";
@@ -64,6 +66,7 @@ const char *const HttpConstant::HTTP_URL_PARAM_SEPARATOR = "&";
 const char *const HttpConstant::HTTP_URL_NAME_VALUE_SEPARATOR = "=";
 const char *const HttpConstant::HTTP_HEADER_SEPARATOR = ":";
 const char *const HttpConstant::HTTP_LINE_SEPARATOR = "\r\n";
+const char *const HttpConstant::HTTP_RESPONSE_HEADER_SEPARATOR = "\r\n\r\n";
 
 const char *const HttpConstant::HTTP_DEFAULT_USER_AGENT = "libcurl-agent/1.0";
 

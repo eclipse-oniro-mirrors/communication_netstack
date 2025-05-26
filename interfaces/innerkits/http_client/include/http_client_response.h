@@ -109,6 +109,12 @@ public:
     [[nodiscard]] const std::string &GetCookies() const;
 
     /**
+     * Get the set-cookie of the HTTP response.
+     * @return The set-cookie of the response.
+     */
+    [[nodiscard]] const std::vector<std::string> &GetsetCookie() const;
+
+    /**
      * Get the request time of the HTTP response.
      * @return The request time of the response.
      */
@@ -211,6 +217,7 @@ private:
     std::string requestTime_;
     std::string result_;
     PerformanceInfo performanceInfo_;
+    std::vector<std::string> setCookie_;
 };
 } // namespace HttpClient
 } // namespace NetStack

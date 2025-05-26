@@ -127,7 +127,54 @@ HWTEST_F(HttpClientResponseTest, ResponseParseHeader001, TestSize.Level1)
     });
     EXPECT_EQ(realHead, ret);
 }
+
+HWTEST_F(HttpClientResponseTest, ResponseParseHeader002, TestSize.Level1)
+{
+    HttpClientResponse req;
+    const char *emptyHead = "\r\n";
+    const char *realCookie = "set-cookie:data\r\n";
+    req.AppendHeader(emptyHead, strlen(emptyHead));
+    req.AppendHeader(realCookie, strlen(realCookie));
  
+    req.ParseHeaders();
+    auto setCookie = req.GetsetCookie();
+    std::string result = "set-cookie:";
+    std::for_each(setCookie.begin(), setCookie.end(), [&result](const auto &item) {
+        if (!item.empty()) {
+            result += item + "\r\n";
+        }
+    });
+    
+    auto headers = req.GetHeaders();
+    EXPECT_EQ(realCookie, result);
+    EXPECT_TRUE(headers.empty());
+}
+
+HWTEST_F(HttpClientResponseTest, ResponseGetsetCookie001, TestSize.Level1)
+{
+    HttpClientResponse req;
+    
+    auto result = req.GetsetCookie();
+    EXPECT_TRUE(result.empty());
+}
+
+HWTEST_F(HttpClientResponseTest, ResponseGetsetCookie002, TestSize.Level1)
+{
+    HttpClientResponse req;
+    const char *realCookie = "set-cookie:data\r\n";
+    req.AppendHeader(realCookie, strlen(realCookie));
+ 
+    req.ParseHeaders();
+    auto setCookie = req.GetsetCookie();
+    std::string result = "set-cookie:";
+    std::for_each(setCookie.begin(), setCookie.end(), [&result](const auto &item) {
+        if (!item.empty()) {
+            result += item + "\r\n";
+        }
+    });
+    EXPECT_EQ(realCookie, result);
+}
+
 HWTEST_F(HttpClientResponseTest, ResponseAppendCookie001, TestSize.Level1)
 {
     HttpClientResponse req;

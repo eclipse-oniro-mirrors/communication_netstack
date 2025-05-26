@@ -292,4 +292,140 @@ HWTEST_F(HttpClientRequestTest, MethodForPostTest002, TestSize.Level1)
     EXPECT_EQ(method, true);
 }
 
+HWTEST_F(HttpClientRequestTest, GetResumeFromTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    int64_t resumeFrom = req.GetResumeFrom();
+    EXPECT_EQ(resumeFrom, 0);
+}
+
+HWTEST_F(HttpClientRequestTest, SetResumeFromTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    req.SetResumeFrom(1000);
+    int64_t resumeFrom = req.GetResumeFrom();
+    EXPECT_EQ(resumeFrom, 1000);
+}
+
+HWTEST_F(HttpClientRequestTest, SetResumeFromTest002, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    req.SetResumeFrom(-10);
+    int64_t resumeFrom = req.GetResumeFrom();
+    EXPECT_EQ(resumeFrom, 0);
+}
+
+HWTEST_F(HttpClientRequestTest, SetResumeFromTest003, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    req.SetResumeFrom(MAX_RESUM_NUMBER + 5);
+    int64_t resumeFrom = req.GetResumeFrom();
+    EXPECT_EQ(resumeFrom, 0);
+}
+
+HWTEST_F(HttpClientRequestTest, GetResumeToTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    int64_t resumeFrom = req.GetResumeTo();
+    EXPECT_EQ(resumeFrom, 0);
+}
+
+HWTEST_F(HttpClientRequestTest, SetResumeToTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    req.SetResumeTo(1000);
+    int64_t resumeTo = req.GetResumeTo();
+    EXPECT_EQ(resumeTo, 1000);
+}
+
+HWTEST_F(HttpClientRequestTest, SetResumeToTest002, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    req.SetResumeTo(-10);
+    int64_t resumeTo = req.GetResumeTo();
+    EXPECT_EQ(resumeTo, 0);
+}
+
+HWTEST_F(HttpClientRequestTest, SetResumeToTest003, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    req.SetResumeTo(MAX_RESUM_NUMBER + 5);
+    int64_t resumeTo = req.GetResumeTo();
+    EXPECT_EQ(resumeTo, 0);
+}
+
+HWTEST_F(HttpClientRequestTest, SetAddressFamilyTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    req.SetAddressFamily("DEFAULT");
+    std::string addressFamily = req.GetAddressFamily();
+    EXPECT_EQ(addressFamily, "DEFAULT");
+}
+
+HWTEST_F(HttpClientRequestTest, GetAddressFamilyTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    std::string addressFamily = req.GetAddressFamily();
+    EXPECT_EQ(addressFamily.empty(), true);
+}
+
+HWTEST_F(HttpClientRequestTest, GetClientCertTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    HttpClientCert clientCert = req.GetClientCert();
+    EXPECT_EQ(clientCert.certPath, "");
+}
+
+HWTEST_F(HttpClientRequestTest, SetClientCertTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    HttpClientCert clientCert;
+    clientCert.certPath = "/path/to/client.pem";
+    clientCert.certType = "PEM";
+    clientCert.keyPath = "/path/to/client.key";
+    clientCert.keyPassword = "passwordToKey";
+    req.SetClientCert(clientCert);
+    HttpClientCert client = req.GetClientCert();
+    EXPECT_EQ(client.keyPassword, "passwordToKey");
+}
+
+HWTEST_F(HttpClientRequestTest, SetClientCertTest002, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    HttpClientCert clientCert;
+    clientCert.certPath = "/path/to/client.pem";
+    req.SetClientCert(clientCert);
+    HttpClientCert client = req.GetClientCert();
+    EXPECT_EQ(client.keyPassword, "");
+}
+
+HWTEST_F(HttpClientRequestTest, SetMaxLimitTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    req.SetMaxLimit(100);
+    uint32_t maxLimit = req.GetMaxLimit();
+    EXPECT_EQ(maxLimit, 100);
+}
+
+HWTEST_F(HttpClientRequestTest, GetMaxLimitTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    uint32_t maxLimit = req.GetMaxLimit();
+    EXPECT_EQ(maxLimit, 0);
+}
 } // namespace

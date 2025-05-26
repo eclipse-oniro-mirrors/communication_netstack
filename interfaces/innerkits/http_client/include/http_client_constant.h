@@ -67,6 +67,8 @@ public:
     static const char *const RESPONSE_KEY_RESPONSE_CODE;
     static const char *const RESPONSE_KEY_HEADER;
     static const char *const RESPONSE_KEY_COOKIES;
+    static const char *const RESPONSE_KEY_SET_COOKIE;
+    static const char *const RESPONSE_KEY_SET_COOKIE_SEPARATOR;
     static const char *const RESPONSE_KEY_RESULT_TYPE;
 
     static const char *const HTTP_URL_PARAM_START;
@@ -74,6 +76,7 @@ public:
     static const char *const HTTP_URL_NAME_VALUE_SEPARATOR;
     static const char *const HTTP_HEADER_SEPARATOR;
     static const char *const HTTP_LINE_SEPARATOR;
+    static const char *const HTTP_RESPONSE_HEADER_SEPARATOR;
 
     static const char *const HTTP_DEFAULT_USER_AGENT;
 

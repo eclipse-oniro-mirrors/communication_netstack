@@ -182,6 +182,14 @@ public:
      */
     void OnProgress(const std::function<void(const HttpClientRequest &request, u_long dlTotal, u_long dlNow,
                                              u_long ulTotal, u_long ulNow)> &onProgress);
+
+    /**
+     * Sets a callback function to be called when headers is received in the HTTP response.
+     * @param onHeadersReceive The callback function to be called when headers is received.
+     */
+    void OnHeadersReceive(const std::function<void(const HttpClientRequest &request,
+        std::map<std::string, std::string> headersWithSetCookie)> &onHeadersReceive);
+
     /**
      * Sets the response received from the server for this HTTP request.
      * @param response The HttpClientResponse object representing the response from the server.
@@ -216,6 +224,13 @@ private:
      * @return Returns true if the Curl options are set successfully, false otherwise.
      */
     bool SetOtherCurlOption(CURL *handle);
+
+    /**
+     * Sets the range options for the HTTP request.
+     * @param handle The Curl handle.
+     * @return Returns true if the request options are set successfully, false otherwise.
+     */
+    bool SetRequestOption(CURL *handle);
 
     /**
      * Sets the server ssl cert options for the HTTP request.
@@ -336,6 +351,18 @@ private:
      */
     bool SetDnsCacheOption(CURL *handle);
 
+    /**
+     * Sets the addressFamily for the HTTP request.
+     * @return Returns the string of addressFamily.
+     */
+    bool SetIpResolve(CURL *handle);
+
+    /**
+    * Gets the start and end download position for the HTTP request.
+    * @return Returns the string of range. If the position is invallid, the string is empty.
+    */
+    std::string GetRangeString() const;
+
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onSucceeded_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onCanceled_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response,
@@ -344,6 +371,8 @@ private:
     std::function<void(const HttpClientRequest &request, const uint8_t *data, size_t length)> onDataReceive_;
     std::function<void(const HttpClientRequest &request, u_long dlTotal, u_long dlNow, u_long ulTotal, u_long ulNow)>
         onProgress_;
+    std::function<void(const HttpClientRequest &request, std::map<std::string, std::string> headerWithSetCookie)>
+        onHeadersReceive_;
 
     HttpClientRequest request_;
     HttpClientResponse response_;
