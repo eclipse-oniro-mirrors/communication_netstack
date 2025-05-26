@@ -86,7 +86,7 @@ typedef enum Http_ErrCode {
   /** @brief Operation timeout. */
   OH_HTTP_OPERATION_TIMEOUT = (OH_HTTP_NETSTACK_E_BASE + 28),
   /** @brief The number of redirections reaches the maximum allowed. */
-  OH_HTTP_REDIRECTIONS_TOO_LARGE = (OH_HTTP_NETSTACK_E_BASE + 47),
+  OH_HTTP_TOO_MANY_REDIRECTIONS = (OH_HTTP_NETSTACK_E_BASE + 47),
   /** @brief The server returned nothing (no header or data). */
   OH_HTTP_SERVER_RETURNED_NOTHING = (OH_HTTP_NETSTACK_E_BASE + 52),
   /** @brief Failed to send data to the peer. */
@@ -193,7 +193,7 @@ typedef enum Http_ResponseCode {
   OH_HTTP_RANGE_NOT_SATISFIABLE = 416,
   /** @brief Internal server error, unable to complete the request. */
   OH_HTTP_INTERNAL_ERROR = 500,
-  /** @brief * The server does not support the requested functionality and cannot complete the request. */
+  /** @brief The server does not support the requested functionality and cannot complete the request. */
   OH_HTTP_NOT_IMPLEMENTED = 501,
   /** @brief The server acting as a gateway or proxy received an invalid request from the remote server. */
   OH_HTTP_BAD_GATEWAY = 502,
