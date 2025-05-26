@@ -357,27 +357,27 @@ HWTEST_F(NetHttpTest, SetOtherOption001, TestSize.Level1)
     ret = OH_Http_Request(request, callback, handler);
     EXPECT_EQ(ret, 0);
 
-    request->options->clientCert->type = Http_CertType::PEM;
+    request->options->clientCert->type = Http_CertType::OH_HTTP_PEM;
     ret = OH_Http_Request(request, callback, handler);
     EXPECT_EQ(ret, 0);
 
-    request->options->clientCert->type = Http_CertType::DER;
+    request->options->clientCert->type = Http_CertType::OH_HTTP_DER;
     ret = OH_Http_Request(request, callback, handler);
     EXPECT_EQ(ret, 0);
 
-    request->options->clientCert->type = Http_CertType::P12;
+    request->options->clientCert->type = Http_CertType::OH_HTTP_P12;
     ret = OH_Http_Request(request, callback, handler);
     EXPECT_EQ(ret, 0);
 
-    request->options->addressFamily = Http_AddressFamilyType::ONLY_V4;
+    request->options->addressFamily = Http_AddressFamilyType::HTTP_ADDRESS_FAMILY_ONLY_V4;
     ret = OH_Http_Request(request, callback, handler);
     EXPECT_EQ(ret, 0);
 
-    request->options->addressFamily = Http_AddressFamilyType::ONLY_V6;
+    request->options->addressFamily = Http_AddressFamilyType::HTTP_ADDRESS_FAMILY_ONLY_V6;
     ret = OH_Http_Request(request, callback, handler);
     EXPECT_EQ(ret, 0);
 
-    request->options->addressFamily = Http_AddressFamilyType::DEFAULT;
+    request->options->addressFamily = Http_AddressFamilyType::HTTP_ADDRESS_FAMILY_DEFAULT;
     ret = OH_Http_Request(request, callback, handler);
     EXPECT_EQ(ret, 0);
     free(request->options->clientCert->certPath);
