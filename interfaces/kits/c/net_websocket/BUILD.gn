@@ -36,8 +36,10 @@ ohos_shared_library("net_websocket") {
     "src/net_websocket_adapter.cpp",
   ]
 
-  deps =
-      [ "$NETSTACK_DIR/interfaces/innerkits/websocket_client:websocket_client" ]
+  deps = [
+    "$NETSTACK_DIR/interfaces/innerkits/websocket_client:websocket_client",
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+  ]
 
   external_deps = [
     "c_utils:utils",

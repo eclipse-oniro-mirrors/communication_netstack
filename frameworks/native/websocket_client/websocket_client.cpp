@@ -20,6 +20,12 @@
 
 #include "netstack_log.h"
 #include "websocket_client_innerapi.h"
+#include "netstack_common_utils.h"
+
+#ifdef HAS_NETMANAGER_BASE
+#include "http_proxy.h"
+#include "net_conn_client.h"
+#endif
 
 static constexpr const char *PATH_START = "/";
 static constexpr const char *NAME_END = ":";
@@ -28,6 +34,7 @@ static constexpr const size_t STATUS_LINE_ELEM_NUM = 2;
 static constexpr const char *PREFIX_HTTPS = "https";
 static constexpr const char *PREFIX_WSS = "wss";
 static constexpr const int MAX_URI_LENGTH = 1024;
+static constexpr const int MAX_ADDRESS_LENGTH = 1024;
 static constexpr const int MAX_HDR_LENGTH = 1024;
 static constexpr const int MAX_HEADER_LENGTH = 8192;
 static constexpr const size_t MAX_DATA_LENGTH = 4 * 1024 * 1024;
@@ -38,6 +45,11 @@ static constexpr const char *LINK_DOWN = "The link is down";
 static constexpr const char *CLOSE_REASON_FORM_SERVER = "websocket close from server";
 static constexpr const int FUNCTION_PARAM_TWO = 2;
 static constexpr const char *WEBSOCKET_CLIENT_THREAD_RUN = "OS_NET_WSCli";
+static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
+#ifdef HAS_NETMANAGER_BASE
+static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
+static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
+#endif
 static std::atomic<int> g_clientID(0);
 namespace OHOS::NetStack::WebSocketClient {
 static const lws_retry_bo_t RETRY = {
@@ -328,12 +340,105 @@ int LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, siz
 static struct lws_protocols protocols[] = {{"lws-minimal-client1", LwsCallback, 0, 0, 0, NULL, 0},
                                            LWS_PROTOCOL_LIST_TERM};
 
-static void FillContextInfo(lws_context_creation_info &info)
+static void GetWebsocketProxyInfo(ClientContext *context, std::string &host, uint32_t &port,
+        std::string &exclusions)
+{
+    if (context->usingWebsocketProxyType == WebsocketProxyType::USE_SYSTEM) {
+#ifdef HAS_NETMANAGER_BASE
+        using namespace NetManagerStandard;
+        HttpProxy websocketProxy;
+        NetConnClient::GetInstance().GetDefaultHttpProxy(websocketProxy);
+        host = websocketProxy.GetHost();
+        port = websocketProxy.GetPort();
+        exclusions = CommonUtils::ToString(websocketProxy.GetExclusionList());
+#endif
+    } else if (context->usingWebsocketProxyType == WebsocketProxyType::USE_SPECIFIED) {
+        host = context->websocketProxyHost;
+        port = context->websocketProxyPort;
+        exclusions = context->websocketProxyExclusions;
+    }
+}
+
+static void FillContextInfo(ClientContext *context, lws_context_creation_info &info)
 {
     info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
     info.port = CONTEXT_PORT_NO_LISTEN;
     info.protocols = protocols;
     info.fd_limit_per_thread = FD_LIMIT_PER_THREAD;
+
+    char tempUri[MAX_URI_LENGTH] = {0};
+    char proxyAds[MAX_ADDRESS_LENGTH] = {0};
+    const char *tempProtocol = nullptr;
+    const char *tempAddress = nullptr;
+    const char *tempPath = nullptr;
+    int32_t tempPort = 0;
+
+    std::string host;
+    uint32_t port = 0;
+    std::string exclusions;
+
+    if (strcpy_s(tempUri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
+        NETSTACK_LOGE("strcpy_s failed");
+        return;
+    }
+    if (lws_parse_uri(tempUri, &tempProtocol, &tempAddress, &tempPort, &tempPath) != 0) {
+        NETSTACK_LOGE("get websocket hostname failed");
+        return;
+    }
+    GetWebsocketProxyInfo(context, host, port, exclusions);
+    if (!host.empty() && !CommonUtils::IsHostNameExcluded(tempAddress, exclusions, ",")) {
+        if (strcpy_s(proxyAds, host.length() + 1, host.c_str()) != EOK) {
+            NETSTACK_LOGE("memory copy failed");
+        }
+        info.http_proxy_address = proxyAds;
+        info.http_proxy_port = port;
+    }
+}
+
+static bool CheckFilePath(std::string &path)
+{
+    char tmpPath[PATH_MAX] = {0};
+    if (!realpath(static_cast<const char *>(path.c_str()), tmpPath)) {
+        NETSTACK_LOGE("path is error");
+        return false;
+    }
+    path = tmpPath;
+    return true;
+}
+
+static bool FillCaPath(ClientContext *context, lws_context_creation_info &info)
+{
+    if (!context->caPath.empty()) {
+        if (!CheckFilePath(context->caPath)) {
+            NETSTACK_LOGE("ca not exist");
+            context->errorCode = WebSocketErrorCode::WEBSOCKET_ERROR_FILE_NOT_EXIST;
+            return false;
+        }
+        info.client_ssl_ca_filepath = context->caPath.c_str();
+        NETSTACK_LOGD("load customize CA: %{public}s", info.client_ssl_ca_filepath);
+    } else {
+        info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
+#ifdef HAS_NETMANAGER_BASE
+        if (NetManagerStandard::NetConnClient::GetInstance().TrustUserCa()) {
+            context->SetUserCertPath(BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR));
+            info.client_ssl_ca_dirs[1] = context->GetUserCertPath().c_str();
+        }
+#endif
+        NETSTACK_LOGD("load system CA");
+    }
+    if (!context->clientCert.empty()) {
+        char realKeyPath[PATH_MAX] = {0};
+        if (!CheckFilePath(context->clientCert) || !realpath(context->clientKey.Data(), realKeyPath)) {
+            NETSTACK_LOGE("client cert not exist");
+            context->errorCode = WebSocketErrorCode::WEBSOCKET_ERROR_FILE_NOT_EXIST;
+            return false;
+        }
+        context->clientKey = Secure::SecureChar(realKeyPath);
+        info.client_ssl_cert_filepath = context->clientCert.c_str();
+        info.client_ssl_private_key_filepath = context->clientKey.Data();
+        info.client_ssl_private_key_password = context->keyPassword.Data();
+    }
+    return true;
 }
 
 bool ParseUrl(const std::string url, char *prefix, char *address, char *path, int *port)
@@ -400,6 +505,15 @@ int CreatConnectInfo(const std::string url, lws_context *lwsContext, WebSocketCl
 int WebSocketClient::Connect(std::string url, struct OpenOptions options)
 {
     NETSTACK_LOGI("ClientId:%{public}d, Connect start", this->GetClientContext()->GetClientId());
+    if (!CommonUtils::HasInternetPermission()) {
+        this->GetClientContext()->permissionDenied = true;
+        return WebSocketErrorCode::WEBSOCKET_ERROR_PERMISSION_DENIED;
+    }
+    if (this->GetClientContext()->isAtomicService && !CommonUtils::IsAllowedHostname(this->GetClientContext()->
+            bundleName, CommonUtils::DOMAIN_TYPE_WEBSOCKET_REQUEST, this->GetClientContext()->url)) {
+        this->GetClientContext()->noAllowedHost = true;
+        return WebSocketErrorCode::WEBSOCKET_ERROR_DISALLOW_HOST;
+    }
     if (!options.headers.empty()) {
         if (options.headers.size() > MAX_HEADER_LENGTH) {
             return WebSocketErrorCode::WEBSOCKET_ERROR_NO_HEADR_EXCEEDS;
@@ -411,7 +525,8 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
         }
     }
     lws_context_creation_info info = {};
-    FillContextInfo(info);
+    FillContextInfo(this->GetClientContext(), info);
+    FillCaPath(this->GetClientContext(), info);
     lws_context *lwsContext = lws_create_context(&info);
     if (lwsContext == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_CONNECTION_NO_MEMOERY;
