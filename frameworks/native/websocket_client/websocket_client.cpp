@@ -377,7 +377,7 @@ static void FillContextInfo(ClientContext *context, lws_context_creation_info &i
     uint32_t port = 0;
     std::string exclusions;
 
-    if (strcpy_s(tempUri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
+    if (strcpy_s(tempUri, sizeof tempUri, context->url.c_str()) < 0) {
         NETSTACK_LOGE("strcpy_s failed");
         return;
     }
