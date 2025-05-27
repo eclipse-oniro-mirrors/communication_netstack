@@ -420,12 +420,159 @@ HWTEST_F(HttpClientTaskTest, GetTaskIdTest001, TestSize.Level1)
 HWTEST_F(HttpClientTaskTest, OnSuccessTest001, TestSize.Level1)
 {
     HttpClientRequest httpReq;
-    std::string url = "https://www.baidu.com";
+    std::string url = "http://www.httpbin.org/delete";
+    std::string method = "DELETE";
     httpReq.SetURL(url);
+    httpReq.SetMethod(method);
 
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
     task->OnSuccess([task](const HttpClientRequest &request, const HttpClientResponse &response) {});
+    task->Start();
+
+    char *curlMethod = nullptr;
+    while (task->GetCurlHandle() == nullptr) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    curl_easy_getinfo(task->GetCurlHandle(), CURLINFO_EFFECTIVE_METHOD, &curlMethod);
+
+    while (task->GetStatus() != TaskStatus::IDLE) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    if (task->GetResponse().GetResponseCode() == 200) {
+        if (curlMethod == method) {
+            NETSTACK_LOGI("TestMethod() = %{public}s OK!", curlMethod);
+        }
+        const std::map<std::string, std::string> &headers = task->GetResponse().GetHeaders();
+        for (const auto &entry : headers) {
+            NETSTACK_LOGI("TestMethod() HEAD = %{public}s : %{public}s", entry.first.c_str(),  entry.second.c_str());
+        }
+    } else if (task->GetResponse().GetResponseCode() == 405) {
+        NETSTACK_LOGI("TestMethod() %{public}s don't support, response 405", curlMethod);
+    } else {
+        NETSTACK_LOGI("TestMethod() = failed %{public}s", curlMethod);
+    }
+
+    EXPECT_TRUE(task->onSucceeded_ != nullptr);
+}
+
+HWTEST_F(HttpClientTaskTest, OnSuccessTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/get";
+    std::string method = "GET";
+    httpReq.SetURL(url);
+    httpReq.SetMethod(method);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    task->OnSuccess([task](const HttpClientRequest &request, const HttpClientResponse &response) {});
+    task->Start();
+
+    char *curlMethod = nullptr;
+    while (task->GetCurlHandle() == nullptr) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    curl_easy_getinfo(task->GetCurlHandle(), CURLINFO_EFFECTIVE_METHOD, &curlMethod);
+
+    while (task->GetStatus() != TaskStatus::IDLE) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    if (task->GetResponse().GetResponseCode() == 200) {
+        if (curlMethod == method) {
+            NETSTACK_LOGI("TestMethod() = %{public}s OK!", curlMethod);
+        }
+        const std::map<std::string, std::string> &headers = task->GetResponse().GetHeaders();
+        for (const auto &entry : headers) {
+            NETSTACK_LOGI("TestMethod() HEAD = %{public}s : %{public}s", entry.first.c_str(),  entry.second.c_str());
+        }
+    } else if (task->GetResponse().GetResponseCode() == 405) {
+        NETSTACK_LOGI("TestMethod() %{public}s don't support, response 405", curlMethod);
+    } else {
+        NETSTACK_LOGI("TestMethod() = failed %{public}s", curlMethod);
+    }
+
+    EXPECT_TRUE(task->onSucceeded_ != nullptr);
+}
+
+HWTEST_F(HttpClientTaskTest, OnSuccessTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/post";
+    std::string method = "POST";
+    httpReq.SetURL(url);
+    httpReq.SetMethod(method);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    task->OnSuccess([task](const HttpClientRequest &request, const HttpClientResponse &response) {});
+    task->Start();
+
+    char *curlMethod = nullptr;
+    while (task->GetCurlHandle() == nullptr) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    curl_easy_getinfo(task->GetCurlHandle(), CURLINFO_EFFECTIVE_METHOD, &curlMethod);
+
+    while (task->GetStatus() != TaskStatus::IDLE) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    if (task->GetResponse().GetResponseCode() == 200) {
+        if (curlMethod == method) {
+            NETSTACK_LOGI("TestMethod() = %{public}s OK!", curlMethod);
+        }
+        const std::map<std::string, std::string> &headers = task->GetResponse().GetHeaders();
+        for (const auto &entry : headers) {
+            NETSTACK_LOGI("TestMethod() HEAD = %{public}s : %{public}s", entry.first.c_str(),  entry.second.c_str());
+        }
+    } else if (task->GetResponse().GetResponseCode() == 405) {
+        NETSTACK_LOGI("TestMethod() %{public}s don't support, response 405", curlMethod);
+    } else {
+        NETSTACK_LOGI("TestMethod() = failed %{public}s", curlMethod);
+    }
+
+    EXPECT_TRUE(task->onSucceeded_ != nullptr);
+}
+
+HWTEST_F(HttpClientTaskTest, OnSuccessTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/put";
+    std::string method = "PUT";
+    httpReq.SetURL(url);
+    httpReq.SetMethod(method);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    task->OnSuccess([task](const HttpClientRequest &request, const HttpClientResponse &response) {});
+    task->Start();
+
+    char *curlMethod = nullptr;
+    while (task->GetCurlHandle() == nullptr) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    curl_easy_getinfo(task->GetCurlHandle(), CURLINFO_EFFECTIVE_METHOD, &curlMethod);
+
+    while (task->GetStatus() != TaskStatus::IDLE) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    if (task->GetResponse().GetResponseCode() == 200) {
+        if (curlMethod == method) {
+            NETSTACK_LOGI("TestMethod() = %{public}s OK!", curlMethod);
+        }
+        const std::map<std::string, std::string> &headers = task->GetResponse().GetHeaders();
+        for (const auto &entry : headers) {
+            NETSTACK_LOGI("TestMethod() HEAD = %{public}s : %{public}s", entry.first.c_str(),  entry.second.c_str());
+        }
+    } else if (task->GetResponse().GetResponseCode() == 405) {
+        NETSTACK_LOGI("TestMethod() %{public}s don't support, response 405", curlMethod);
+    } else {
+        NETSTACK_LOGI("TestMethod() = failed %{public}s", curlMethod);
+    }
 
     EXPECT_TRUE(task->onSucceeded_ != nullptr);
 }
