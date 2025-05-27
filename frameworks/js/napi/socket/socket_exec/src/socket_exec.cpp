@@ -814,11 +814,7 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             }
 
             ret = poll(fds.data(), fds.size(), recvTimeoutMs);
-        }
-        if (ret < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
+    
             ProcessPollResult(currentFd, callback);
             break;
         } else if (ret == 0) {
