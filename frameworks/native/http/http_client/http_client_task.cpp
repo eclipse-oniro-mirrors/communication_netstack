@@ -622,13 +622,6 @@ size_t HttpClientTask::DataReceiveCallback(const void *data, size_t size, size_t
         NETSTACK_LOGD("canceled");
         return 0;
     }
-
-    if ((task->request_.GetMaxLimit() != 0 && task->request_.GetMaxLimit() != HttpConstant::DEFAULT_MAX_LIMIT) &&
-        (task->response_.GetResult().size() > task->request_.GetMaxLimit() ||
-        size * memBytes > task->request_.GetMaxLimit())) {
-        NETSTACK_LOGE("response data exceeds the maximum limit");
-        return 0;
-    }
     if (task->onDataReceive_) {
         HttpClientRequest request = task->request_;
         task->onDataReceive_(request, static_cast<const uint8_t *>(data), size * memBytes);
