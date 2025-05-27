@@ -53,8 +53,7 @@ static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
 static constexpr const int FUNCTION_PARAM_TWO = 2;
 static constexpr const char *WEBSOCKET_CLIENT_THREAD_RUN = "OS_NET_WSJsCli";
-static constexpr const int WS_DEFAULT_PORT = 80;
-static constexpr const int WSS_DEFAULT_PORT = 443;
+
 
 static const std::vector<std::string> WS_PREFIX = {PREFIX_WSS, PREFIX_WS};
 
