@@ -77,6 +77,10 @@ static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/c
 
 static constexpr const char *WEBSOCKET_CLIENT_THREAD_RUN = "OS_NET_WSJsCli";
 
+static constexpr const int WS_DEFAULT_PORT = 80;
+
+static constexpr const int WSS_DEFAULT_PORT = 443;
+
 namespace OHOS::NetStack::Websocket {
 
 static const lws_protocols LWS_PROTOCOLS[] = {
@@ -532,7 +536,13 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
         NETSTACK_LOGE("no memory");
         return false;
     }
-    std::string tempHost = std::string(address) + NAME_END + std::to_string(port);
+    std::string tempHost;
+    if ((strcmp(protocol, PREFIX_WS) == 0 && port == WS_DEFAULT_PORT) ||
+        (strcmp(protocol, PREFIX_WSS) == 0 && port == WSS_DEFAULT_PORT)) {
+        tempHost = std::string(address);
+    } else {
+        tempHost = std::string(address) + NAME_END + std::to_string(port);
+    }
     std::string tempOrigin = std::string(protocol) + NAME_END + PROTOCOL_DELIMITER + tempHost;
     NETSTACK_LOGD("tempHost: %{private}s, Origin = %{private}s", tempHost.c_str(), tempOrigin.c_str());
     if (strcpy_s(customizedProtocol, context->GetProtocol().length() + 1, context->GetProtocol().c_str()) != EOK) {
