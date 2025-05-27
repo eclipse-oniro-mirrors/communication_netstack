@@ -13,20 +13,20 @@
 
 use std::{collections::HashMap, sync::Mutex};
 
-use ani_rs::callback::GlobalCallback;
+use ani_rs::objects::GlobalRefCallback;
 use netstack_rs::request::RequestCallback;
 
 use crate::bridge::{DataReceiveProgressInfo, DataSendProgressInfo, HttpResponse};
 
 pub struct TaskCallback {
-    pub on_response: Mutex<Option<GlobalCallback<(HttpResponse,)>>>,
-    pub on_header_receive: Mutex<Option<GlobalCallback<(HashMap<String, String>,)>>>,
-    pub on_headers_receive: Mutex<Option<GlobalCallback<(HashMap<String, String>,)>>>,
-    pub on_data_receive: Mutex<Option<GlobalCallback<(Vec<u8>,)>>>,
+    pub on_response: Mutex<Option<GlobalRefCallback<(HttpResponse,)>>>,
+    pub on_header_receive: Mutex<Option<GlobalRefCallback<(HashMap<String, String>,)>>>,
+    pub on_headers_receive: Mutex<Option<GlobalRefCallback<(HashMap<String, String>,)>>>,
+    pub on_data_receive: Mutex<Option<GlobalRefCallback<(Vec<u8>,)>>>,
 
-    pub on_data_end: Mutex<Option<GlobalCallback<()>>>,
-    pub on_data_receive_progress: Mutex<Option<GlobalCallback<(DataReceiveProgressInfo,)>>>,
-    pub on_data_send_progress: Mutex<Option<GlobalCallback<(DataSendProgressInfo,)>>>,
+    pub on_data_end: Mutex<Option<GlobalRefCallback<()>>>,
+    pub on_data_receive_progress: Mutex<Option<GlobalRefCallback<(DataReceiveProgressInfo,)>>>,
+    pub on_data_send_progress: Mutex<Option<GlobalRefCallback<(DataSendProgressInfo,)>>>,
 }
 
 impl TaskCallback {
@@ -45,34 +45,34 @@ impl TaskCallback {
 }
 
 impl TaskCallback {
-    pub fn set_on_response(&self, callback: GlobalCallback<(HttpResponse,)>) {
+    pub fn set_on_response(&self, callback: GlobalRefCallback<(HttpResponse,)>) {
         *self.on_response.lock().unwrap() = Some(callback);
     }
 
-    pub fn set_on_header_receive(&self, callback: GlobalCallback<(HashMap<String, String>,)>) {
+    pub fn set_on_header_receive(&self, callback: GlobalRefCallback<(HashMap<String, String>,)>) {
         *self.on_header_receive.lock().unwrap() = Some(callback);
     }
 
-    pub fn set_on_headers_receive(&self, callback: GlobalCallback<(HashMap<String, String>,)>) {
+    pub fn set_on_headers_receive(&self, callback: GlobalRefCallback<(HashMap<String, String>,)>) {
         *self.on_headers_receive.lock().unwrap() = Some(callback);
     }
 
-    pub fn set_on_data_receive(&self, callback: GlobalCallback<(Vec<u8>,)>) {
+    pub fn set_on_data_receive(&self, callback: GlobalRefCallback<(Vec<u8>,)>) {
         *self.on_data_receive.lock().unwrap() = Some(callback);
     }
 
-    pub fn set_on_data_end(&self, callback: GlobalCallback<()>) {
+    pub fn set_on_data_end(&self, callback: GlobalRefCallback<()>) {
         *self.on_data_end.lock().unwrap() = Some(callback);
     }
 
     pub fn set_on_data_receive_progress(
         &self,
-        callback: GlobalCallback<(DataReceiveProgressInfo,)>,
+        callback: GlobalRefCallback<(DataReceiveProgressInfo,)>,
     ) {
         *self.on_data_receive_progress.lock().unwrap() = Some(callback);
     }
 
-    pub fn set_on_data_send_progress(&self, callback: GlobalCallback<(DataSendProgressInfo,)>) {
+    pub fn set_on_data_send_progress(&self, callback: GlobalRefCallback<(DataSendProgressInfo,)>) {
         *self.on_data_send_progress.lock().unwrap() = Some(callback);
     }
 }

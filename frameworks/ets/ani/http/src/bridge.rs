@@ -312,11 +312,13 @@ pub struct PerformanceTiming {
     pub total_timing: i32,
 }
 
+#[ani_rs::ani(path = "L@ohos/net/http/http/HttpResponse")]
 pub struct DataReceiveProgressInfo {
     pub receive_size: i32,
     pub total_size: i32,
 }
 
+#[ani_rs::ani(path = "L@ohos/net/http/http/HttpResponse")]
 pub struct DataSendProgressInfo {
     pub send_size: i32,
     pub total_size: i32,
