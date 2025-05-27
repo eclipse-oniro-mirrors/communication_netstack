@@ -42,6 +42,7 @@ ohos_static_library("websocket_ani_static") {
   deps = [
     ":websocket_ani_cxx",
     "//third_party/rust/crates/cxx:cxx_cppdeps",
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$NETSTACK_INNERKITS_DIR/websocket_client:websocket_client"
   ]
   external_deps = [
