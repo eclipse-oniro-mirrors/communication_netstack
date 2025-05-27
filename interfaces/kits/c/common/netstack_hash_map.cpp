@@ -78,13 +78,13 @@ static uint32_t NetstackResizeMap(Netstack_HashMap *map)
 {
     if (map->capacity >= MAX_MAP_CAPACITY) {
         NETSTACK_LOGE("map capacity reaches max, skip resize");
-        return PARAMETER_ERROR;
+        return OH_HTTP_PARAMETER_ERROR;
     }
     uint32_t newCapacity = map->capacity * 2;
     Netstack_HashMapEntry **newEntries = (Netstack_HashMapEntry **)calloc(newCapacity, sizeof(Netstack_HashMapEntry *));
     if (newEntries == nullptr) {
         NETSTACK_LOGE("failed to insert map: no memory for resize");
-        return OUT_OF_MEMORY;
+        return OH_HTTP_OUT_OF_MEMORY;
     }
 
     map->size = 0;
@@ -99,13 +99,13 @@ static uint32_t NetstackResizeMap(Netstack_HashMap *map)
     map->entries = newEntries;
     map->capacity = newCapacity;
 
-    return RESULT_OK;
+    return OH_HTTP_RESULT_OK;
 }
 
 uint32_t Netstack_PutMapEntry(Netstack_HashMap *map, const char *key, void *value)
 {
     if (NetstackInvalidMap(map) || key == nullptr) {
-        return PARAMETER_ERROR;
+        return OH_HTTP_PARAMETER_ERROR;
     }
 
     if (map->size >= map->capacity) {
@@ -118,18 +118,18 @@ uint32_t Netstack_PutMapEntry(Netstack_HashMap *map, const char *key, void *valu
         Netstack_HashMapEntry *entry = (Netstack_HashMapEntry *)malloc(sizeof(Netstack_HashMapEntry));
         if (entry == nullptr) {
             NETSTACK_LOGE("failed to alloc map entry");
-            return OUT_OF_MEMORY;
+            return OH_HTTP_OUT_OF_MEMORY;
         }
         entry->key = strdup(key);
         if (entry->key == nullptr) {
             free(entry);
-            return OUT_OF_MEMORY;
+            return OH_HTTP_OUT_OF_MEMORY;
         }
         entry->value = value;
         entry->next = nullptr;
         map->entries[idx] = entry;
         map->size++;
-        return RESULT_OK;
+        return OH_HTTP_RESULT_OK;
     }
 
     Netstack_HashMapEntry *ptr = map->entries[idx];
@@ -137,7 +137,7 @@ uint32_t Netstack_PutMapEntry(Netstack_HashMap *map, const char *key, void *valu
         // replace exist entry
         if (strcmp(ptr->key, key) == 0) {
             ptr->value = value;
-            return RESULT_OK;
+            return OH_HTTP_RESULT_OK;
         }
         ptr = ptr->next;
     }
@@ -145,18 +145,18 @@ uint32_t Netstack_PutMapEntry(Netstack_HashMap *map, const char *key, void *valu
     // insert after first entry
     Netstack_HashMapEntry *entry = (Netstack_HashMapEntry *)malloc(sizeof(Netstack_HashMapEntry));
     if (entry == nullptr) {
-        return OUT_OF_MEMORY;
+        return OH_HTTP_OUT_OF_MEMORY;
     }
     entry->key = strdup(key);
     if (entry->key == nullptr) {
         free(entry);
-        return OUT_OF_MEMORY;
+        return OH_HTTP_OUT_OF_MEMORY;
     }
     entry->value = value;
     entry->next = map->entries[idx]->next;
     map->entries[idx]->next = entry;
 
-    return RESULT_OK;
+    return OH_HTTP_RESULT_OK;
 }
 
 void *Netstack_GetMapEntry(Netstack_HashMap *map, const char *key)
@@ -179,12 +179,12 @@ void *Netstack_GetMapEntry(Netstack_HashMap *map, const char *key)
 uint32_t Netstack_DeleteMapEntry(Netstack_HashMap *map, const char *key)
 {
     if (NetstackInvalidMap(map) || key == nullptr) {
-        return PARAMETER_ERROR;
+        return OH_HTTP_PARAMETER_ERROR;
     }
 
     uint32_t idx = Netstack_Hash(key, map->capacity);
     if (map->entries[idx] == nullptr) {
-        return RESULT_OK;
+        return OH_HTTP_RESULT_OK;
     }
 
     if (strcmp(map->entries[idx]->key, key) == 0) {
@@ -195,7 +195,7 @@ uint32_t Netstack_DeleteMapEntry(Netstack_HashMap *map, const char *key)
         if (map->entries[idx] == nullptr) {
             map->size--;
         }
-        return RESULT_OK;
+        return OH_HTTP_RESULT_OK;
     }
 
     Netstack_HashMapEntry *prev = map->entries[idx];
@@ -205,12 +205,12 @@ uint32_t Netstack_DeleteMapEntry(Netstack_HashMap *map, const char *key)
             prev->next = entry->next;
             free(entry->key);
             free(entry);
-            return RESULT_OK;
+            return OH_HTTP_RESULT_OK;
         }
         prev = entry;
         entry = entry->next;
     }
-    return RESULT_OK;
+    return OH_HTTP_RESULT_OK;
 }
 
 void Netstack_DestroyMapWithValue(Netstack_HashMap *map, Netstack_DestroyValueFunction destroyFunction)
