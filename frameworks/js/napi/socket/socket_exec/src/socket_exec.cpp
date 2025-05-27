@@ -806,11 +806,14 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
 
     while (true) {
         int currentFd = -1;
-        if (!PreparePollFds(currentFd, fds, socketCallbackMap, callback)) {
-            break;
+        {
+            std::shared_lock<std::shared_mutex> lock(g_fdMutex);
+            if (!PreparePollFds(currentFd, fds, socketCallbackMap, callback)) {
+                break;
+            }
+    
+            int ret = poll(fds.data(), fds.size(), recvTimeoutMs);
         }
-
-        int ret = poll(fds.data(), fds.size(), recvTimeoutMs);
         if (ret < 0) {
             if (errno == EINTR) {
                 continue;
@@ -820,9 +823,11 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
         } else if (ret == 0) {
             continue;
         }
-
-        if (!ProcessRecvFds(bufInfo, addrInfo, callback, fds, socketCallbackMap)) {
-            break;
+        {
+            std::shared_lock<std::shared_mutex> lock(g_fdMutex);
+            if (!ProcessRecvFds(bufInfo, addrInfo, callback, fds, socketCallbackMap)) {
+                break;
+            }
         }
     }
 
