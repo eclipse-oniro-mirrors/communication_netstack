@@ -341,7 +341,7 @@ static struct lws_protocols protocols[] = {{"lws-minimal-client1", LwsCallback, 
                                            LWS_PROTOCOL_LIST_TERM};
 
 static void GetWebsocketProxyInfo(ClientContext *context, std::string &host, uint32_t &port,
-        std::string &exclusions)
+    std::string &exclusions)
 {
     if (context->usingWebsocketProxyType == WebsocketProxyType::USE_SYSTEM) {
 #ifdef HAS_NETMANAGER_BASE
