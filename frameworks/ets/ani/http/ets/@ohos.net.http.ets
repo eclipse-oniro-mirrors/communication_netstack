@@ -573,3 +573,7 @@ export default namespace http {
     }
   }
 }
+
+function main() {
+  let a = http.createHttp();
+}

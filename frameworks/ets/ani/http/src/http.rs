@@ -15,7 +15,6 @@ use std::{ffi::CStr, sync::Arc};
 
 use ani_rs::{
     business_error::BusinessError,
-    callback::Callback,
     objects::{AniFnObject, AniRef},
     AniEnv,
 };
@@ -66,8 +65,7 @@ pub(crate) fn request(
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
     let mut request = Request::<TaskCallback>::new();
     request.url(url.as_str());
-    *task.callback.on_response.lock().unwrap() =
-        Some(Callback::new(callback).into_global(env).unwrap());
+    *task.callback.on_response.lock().unwrap() = Some(callback.into_global_callback(env).unwrap());
 
     let mut request_task = request.build();
     request_task.start();
@@ -114,7 +112,7 @@ pub(crate) fn on_header_receive(
     callback: AniFnObject,
 ) -> Result<(), BusinessError> {
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
-    let callback = Callback::new(callback).into_global(env).unwrap();
+    let callback = callback.into_global_callback(env).unwrap();
     task.callback.set_on_header_receive(callback);
     Ok(())
 }
@@ -134,7 +132,7 @@ pub(crate) fn on_headers_receive(
     callback: AniFnObject,
 ) -> Result<(), BusinessError> {
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
-    let callback = Callback::new(callback).into_global(env).unwrap();
+    let callback = callback.into_global_callback(env).unwrap();
     task.callback.set_on_headers_receive(callback);
     Ok(())
 }
@@ -154,7 +152,7 @@ pub(crate) fn on_data_receive(
     callback: AniFnObject,
 ) -> Result<(), BusinessError> {
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
-    let callback = Callback::new(callback).into_global(env).unwrap();
+    let callback = callback.into_global_callback(env).unwrap();
     task.callback.set_on_data_receive(callback);
     Ok(())
 }
@@ -174,7 +172,7 @@ pub(crate) fn on_data_end(
     callback: AniFnObject,
 ) -> Result<(), BusinessError> {
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
-    let callback = Callback::new(callback).into_global(env).unwrap();
+    let callback = callback.into_global_callback(env).unwrap();
     task.callback.set_on_data_end(callback);
     Ok(())
 }
@@ -195,7 +193,7 @@ pub(crate) fn on_data_receive_progress(
     callback: AniFnObject,
 ) -> Result<(), BusinessError> {
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
-    let callback = Callback::new(callback).into_global(env).unwrap();
+    let callback = callback.into_global_callback(env).unwrap();
     task.callback.set_on_data_receive_progress(callback);
     Ok(())
 }
@@ -215,7 +213,7 @@ pub(crate) fn on_data_send_progress(
     callback: AniFnObject,
 ) -> Result<(), BusinessError> {
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
-    let callback = Callback::new(callback).into_global(env).unwrap();
+    let callback = callback.into_global_callback(env).unwrap();
     task.callback.set_on_data_send_progress(callback);
     Ok(())
 }
