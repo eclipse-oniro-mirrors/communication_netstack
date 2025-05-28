@@ -35,7 +35,7 @@ public:
 
     void Put(const std::string &key, const std::unordered_map<std::string, std::string> &value);
 
-    void MergeOtherCache(const LRUCache &other);
+    void MergeOtherCache(LRUCache &other);
 
     cJSON* WriteCacheToJsonValue();
 

@@ -122,12 +122,14 @@ void LRUCache::Put(const std::string &key, const std::unordered_map<std::string,
     }
 }
 
-void LRUCache::MergeOtherCache(const LRUCache &other)
+void LRUCache::MergeOtherCache(LRUCache &other)
 {
     std::list<Node> reverseList;
     {
         // set mutex in min scope
-        std::lock_guard<std::mutex> guard(mutex_);
+        std::unique_lock<std::mutex> thisLock(mutex_, std::defer_lock);
+        std::unique_lock<std::mutex> otherLock(other.mutex_, std::defer_lock);
+        std::lock(thisLock, otherLock);
         if (other.nodeList_.empty()) {
             return;
         }
