@@ -127,8 +127,9 @@ void LRUCache::MergeOtherCache(const LRUCache &other)
     std::list<Node> reverseList;
     {
         // set mutex in min scope
-        std::unique_lock<std::mutex> thisLock(mutex_);
-        std::unique_lock<std::mutex> guard(mutex_);
+        std::unique_lock<std::mutex> thisLock(mutex_. std::defer_lock);
+        std::unique_lock<std::mutex> otherLock(other.mutex_, std::defer_lock);
+        std::lock(thisLock, otherLock);
         if (other.nodeList_.empty()) {
             return;
         }
