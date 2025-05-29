@@ -53,13 +53,15 @@ napi_value WebSocketModule::CreateWebSocket(napi_env env, napi_callback_info inf
     return ModuleTemplate::NewInstanceWithSharedManager(env, info, INTERFACE_WEB_SOCKET, FinalizeWebSocketInstance);
 }
 
-#ifdef NETSTACK_WEBSOCKETSERVER
 napi_value WebSocketModule::CreateWebSocketServer(napi_env env, napi_callback_info info)
 {
+#ifdef NETSTACK_WEBSOCKETSERVER
     return ModuleTemplate::NewInstanceWithSharedManager(env, info, INTERFACE_WEB_SOCKET_SERVER,
         FinalizeWebSocketInstance);
-}
+#else
+    return nullptr;
 #endif
+}
 
 void WebSocketModule::DefineWebSocketClass(napi_env env, napi_value exports)
 {
@@ -93,9 +95,7 @@ void WebSocketModule::InitWebSocketProperties(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
         DECLARE_NAPI_FUNCTION(FUNCTION_CREATE_WEB_SOCKET, CreateWebSocket),
-#ifdef NETSTACK_WEBSOCKETSERVER
         DECLARE_NAPI_FUNCTION(FUNCTION_CREATE_WEB_SOCKET_SERVER, CreateWebSocketServer),
-#endif
     };
     NapiUtils::DefineProperties(env, exports, properties);
 }
