@@ -23,7 +23,7 @@
 
 namespace OHOS::NetStack::ChrClient {
 
-static constexpr const int HTTP_REQUEST_SUCCESS = 200;
+static constexpr const long HTTP_REQUEST_SUCCESS = 200;
 static constexpr const int HTTP_FILE_TRANSFER_SIZE_THRESHOLD = 100000;
 static constexpr const int HTTP_FILE_TRANSFER_TIME_THRESHOLD = 500000;
 
@@ -158,7 +158,7 @@ void NetStackChrClient::GetHttpInfoFromCurl(CURL *handle, DataTransHttpInfo &htt
     httpInfo.redirectCount = GetNumericAttributeFromCurl<long>(handle, CURLINFO_REDIRECT_COUNT);
     httpInfo.osError = GetNumericAttributeFromCurl<long>(handle, CURLINFO_OS_ERRNO);
     httpInfo.sslVerifyResult = GetNumericAttributeFromCurl<long>(handle, CURLINFO_PROXY_SSL_VERIFYRESULT);
-    httpInfo.proxyError = GetNumericAttributeFromCurl<int>(handle, CURLINFO_PROXY_ERROR);
+    httpInfo.proxyError = GetNumericAttributeFromCurl<long>(handle, CURLINFO_PROXY_ERROR);
 
     httpInfo.effectiveMethod = GetStringAttributeFromCurl(handle, CURLINFO_EFFECTIVE_METHOD);
     httpInfo.contentType = GetStringAttributeFromCurl(handle, CURLINFO_CONTENT_TYPE);
