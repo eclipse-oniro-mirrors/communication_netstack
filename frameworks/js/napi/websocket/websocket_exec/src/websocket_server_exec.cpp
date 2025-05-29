@@ -766,9 +766,6 @@ static napi_value CreateConnectPara(napi_env env, void *callbackPara)
 static napi_value CreateServerError(napi_env env, void *callbackPara)
 {
     auto code = reinterpret_cast<int32_t *>(callbackPara);
-    if (code == nullptr) {
-        NETSTACK_LOGE("code is nullptr");
-    }
     auto deleter = [](int32_t *p) { delete p; };
     std::unique_ptr<int32_t, decltype(deleter)> handler(code, deleter);
     napi_value err = NapiUtils::CreateObject(env);
@@ -809,9 +806,9 @@ void WebSocketServerExec::OnConnect(lws *wsi, EventManager *manager)
     }
     {
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
-        auto para = new WebSocketConnection;
         for (auto [id, connPair] : webSocketConnection_) {
             if (connPair.first == wsi) {
+                auto para = new WebSocketConnection;
                 para->clientIP = connPair.second.clientIP;
                 para->clientPort = connPair.second.clientPort;
                 NETSTACK_LOGI("connection find ok, clientId:%{public}s", id.c_str());
@@ -837,20 +834,20 @@ void WebSocketServerExec::OnServerClose(lws *wsi, EventManager *manager, lws_clo
         NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_SERVER_CLOSE);
         return;
     }
-    auto conn = new ClientConnectionCloseCallback;
-    if (conn == nullptr) {
-        return;
-    }
-    conn->closeResult.code = closeStatus;
-    conn->closeResult.reason = closeReason;
-    if (wsi == nullptr) {
-        NETSTACK_LOGE("wsi is nullptr");
-        return;
-    }
     {
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
         for (auto [id, connPair] : webSocketConnection_) {
             if (connPair.first == wsi) {
+                auto conn = new ClientConnectionCloseCallback;
+                if (conn == nullptr) {
+                    return;
+                }
+                conn->closeResult.code = closeStatus;
+                conn->closeResult.reason = closeReason;
+                if (wsi == nullptr) {
+                    NETSTACK_LOGE("wsi is nullptr");
+                    return;
+                }
                 conn->connection = connPair.second;
                 NETSTACK_LOGI("clientId: %{public}s", id.c_str());
                 manager->EmitByUvWithoutCheckShared(EventName::EVENT_SERVER_CLOSE,
