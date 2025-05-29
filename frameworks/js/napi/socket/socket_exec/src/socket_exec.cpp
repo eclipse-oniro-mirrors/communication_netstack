@@ -767,7 +767,6 @@ static bool PreparePollFds(int &currentFd, std::vector<pollfd> &fds,
         return false;
     }
 
-    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     currentFd = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
     if (currentFd <= 0) {
         NETSTACK_LOGE("currentFd: %{public}d is error", currentFd);
@@ -787,14 +786,25 @@ static bool PreparePollFds(int &currentFd, std::vector<pollfd> &fds,
     return true;
 }
 
-static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
+static void PollRecvData(sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
 {
-    int bufferSize = ConfirmBufferSize(sock);
+    std::shared_ptr<EventManager> manager = callback.GetEventManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    int socketfd = manager->GetData()? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
+    if (socketfd < 0) {
+        NETSTACK_LOGE("fd is nullptr or closed");
+        return;
+    }
+    int bufferSize = ConfirmBufferSize(socketfd);
     auto buf = std::make_unique<char[]>(bufferSize);
     auto addrDeleter = [](sockaddr *a) { free(reinterpret_cast<void *>(a)); };
     std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
 
-    int recvTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT);
+    int recvTimeoutMs = ConfirmSocketTimeoutMs(socketfd, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT);
     if (recvTimeoutMs < 0) {
         return;
     }
@@ -806,15 +816,11 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
 
     while (true) {
         int currentFd = -1;
-        int ret = -1;
-        {
-            std::shared_lock<std::shared_mutex> lock(g_fdMutex);
-            if (!PreparePollFds(currentFd, fds, socketCallbackMap, callback)) {
-                break;
-            }
-
-            ret = poll(fds.data(), fds.size(), recvTimeoutMs);
+        if (!PreparePollFds(currentFd, fds, socketCallbackMap, callback)) {
+            break;
         }
+
+        int ret = poll(fds.data(), fds.size(), recvTimeoutMs);
         if (ret < 0) {
             if (errno == EINTR) {
                 continue;
@@ -825,11 +831,8 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
             continue;
         }
 
-        {
-            std::shared_lock<std::shared_mutex> lock(g_fdMutex);
-            if (!ProcessRecvFds(bufInfo, addrInfo, callback, fds, socketCallbackMap)) {
-                break;
-            }
+        if (!ProcessRecvFds(bufInfo, addrInfo, callback, fds, socketCallbackMap)) {
+            break;
         }
     }
 
@@ -965,7 +968,7 @@ bool ExecUdpBind(BindContext *context)
             return false;
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
-        std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
+        std::thread serviceThread(PollRecvData, pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetSharedManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(SOCKET_EXEC_UDP_BIND);
@@ -1169,7 +1172,7 @@ bool ExecConnect(ConnectContext *context)
 
     NETSTACK_LOGI("connect success, sock:%{public}d", context->GetSocketFd());
 
-    std::thread serviceThread(PollRecvData, context->GetSocketFd(), nullptr, 0,
+    std::thread serviceThread(PollRecvData, nullptr, 0,
                               TcpMessageCallback(context->GetSharedManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(SOCKET_EXEC_CONNECT);
@@ -1185,6 +1188,10 @@ bool ExecTcpSend(TcpSendContext *context)
 #ifdef FUZZ_TEST
     return true;
 #endif
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
     if (!context->IsParseOK()) {
         return false;
     }
@@ -1193,7 +1200,12 @@ bool ExecTcpSend(TcpSendContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    std::shared_lock<std::shared_mutex> lock(g_fdMutex);
+    std::shared_ptr<EventManager> manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     if (context->GetSocketFd() <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
         NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
@@ -1219,8 +1231,7 @@ bool ExecClose(CloseContext *context)
             inst->Close();
         }
     }
-
-    std::unique_lock<std::shared_mutex> lock(g_fdMutex);
+    std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
     if (context->GetSocketFd() < 0) {
         NETSTACK_LOGE("sock %{public}d is previous closed", context->GetSocketFd());
         context->SetErrorCode(UNKNOW_ERROR);
@@ -1264,6 +1275,17 @@ static bool CheckSocketFd(GetStateContext *context, sockaddr &sockAddr)
 
 static bool GetSocketState(GetStateContext *context)
 {
+    std::shared_ptr<EventManager> manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    int socketfd = manager->GetData()? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
+    if (socketfd < 0) {
+        NETSTACK_LOGE("fd is nullptr or closed");
+        return false;
+    }
     int opt;
     if (CheckClosed(context, opt)) {
         return true;
@@ -1512,7 +1534,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
             ERROR_RETURN(context, "v4bind err, port:%{public}d, errno:%{public}d", context->address_.GetPort(), errno);
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
-        std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
+        std::thread serviceThread(PollRecvData, pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetSharedManager()));
         RecvfromMulticastSetThreadName(serviceThread.native_handle());
         serviceThread.detach();
@@ -1528,7 +1550,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
             ERROR_RETURN(context, "v6bind err, port:%{public}d, errno:%{public}d", context->address_.GetPort(), errno);
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
-        std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
+        std::thread serviceThread(PollRecvData, pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetSharedManager()));
         RecvfromMulticastSetThreadName(serviceThread.native_handle());
         serviceThread.detach();
@@ -1974,7 +1996,12 @@ static void RemoveClientConnection(int32_t clientId, TcpServerCloseContext *cont
             NETSTACK_LOGI("remove clientfd and eventmanager clientid: %{public}d clientFd:%{public}d", it->first,
                           it->second);
             if (!IsClientFdClosed(it->second)) {
-                std::unique_lock<std::shared_mutex> lock(g_fdMutex);
+                std::shared_ptr<EventManager> manager = context->GetSharedManager();
+                if (manager == nullptr) {
+                    NETSTACK_LOGE("manager is nullptr");
+                    return;
+                }
+                std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
                 NETSTACK_LOGI("connectFD: %{public}d, not close should close", it->second);
                 shutdown(it->second, SHUT_RDWR);
                 close(it->second);
@@ -2079,7 +2106,7 @@ static bool IsValidSock(int &currentFd, const std::shared_ptr<EventManager> &man
 static int RecvWithSockCheck(int connectFD, char *buffer, uint32_t recvBufferSize,
     const std::shared_ptr<EventManager> &manager, int &recvSize)
 {
-    std::shared_lock<std::shared_mutex> lock(g_fdMutex);
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     if (buffer == nullptr) {
         return -1;
     }
