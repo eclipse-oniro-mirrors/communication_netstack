@@ -37,8 +37,8 @@ export default namespace networkSecurity {
               return certVerificationSync(cert, caCert);
           }).then((content: NullishType) => {
               resolve(content as int);
-          }, (err: BusinessError): void => {
-              reject(err);
+          }, (err: Error): void => {
+              reject(err as BusinessError);
           });
       });
   }
@@ -46,7 +46,7 @@ export default namespace networkSecurity {
   export native function certVerificationSync(cert: CertBlob, caCert?: CertBlob): int;
 
   export native function isCleartextPermitted(): boolean;
- 
+
   export native function isCleartextPermittedByHostName(hostName: string): boolean;
 }
 
