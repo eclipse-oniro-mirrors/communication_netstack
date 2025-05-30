@@ -52,7 +52,7 @@ export default namespace webSocket {
 
   export interface ClientCert {
     certPath: string;
-    
+
     keyPath: string;
 
     keyPassword?: string;
@@ -141,8 +141,8 @@ export default namespace webSocket {
       })
       p1.then((content: NullishType) => {
           callback(new BusinessError(), content as boolean);
-      }, (err: BusinessError): void => {
-          callback(err, false);
+      }, (err: Error): void => {
+          callback(err as BusinessError, false);
       });
     }
 
@@ -152,8 +152,8 @@ export default namespace webSocket {
       })
       p1.then((content: NullishType) => {
           callback(new BusinessError(), content as boolean);
-      }, (err: BusinessError): void => {
-          callback(err, false);
+      }, (err: Error): void => {
+          callback(err as BusinessError, false);
       });
     }
 
@@ -163,10 +163,10 @@ export default namespace webSocket {
           return this.connectSync(url, options);
         }).then((content: NullishType) => {
             resolve(content as boolean);
-        }, (err: BusinessError): void => {
-            reject(err);
+        }, (err: Error): void => {
+            reject(err as BusinessError);
         });
-      });  
+      });
     }
 
     native sendSync(data: string | ArrayBuffer): boolean;
@@ -177,8 +177,8 @@ export default namespace webSocket {
       })
       p1.then((content: NullishType) => {
           callback(new BusinessError(), content as boolean);
-      }, (err: BusinessError): void => {
-          callback(err, false);
+      }, (err: Error): void => {
+          callback(err as BusinessError, false);
       });
     }
 
@@ -188,22 +188,22 @@ export default namespace webSocket {
           return this.sendSync(data);
         }).then((content: NullishType) => {
             resolve(content as boolean);
-        }, (err: BusinessError): void => {
-            reject(err);
+        }, (err: Error): void => {
+            reject(err as BusinessError);
         });
-      });  
+      });
     }
 
     native closeSync(options?: WebSocketCloseOptions): boolean;
-    
+
     close(callback: AsyncCallback<boolean>): void {
       let p1 = taskpool.execute((): boolean => {
         return this.closeSync();
       })
       p1.then((content: NullishType) => {
           callback(new BusinessError(), content as boolean);
-      }, (err: BusinessError): void => {
-          callback(err, false);
+      }, (err: Error): void => {
+          callback(err as BusinessError, false);
       });
     }
 
@@ -213,8 +213,8 @@ export default namespace webSocket {
       })
       p1.then((content: NullishType) => {
           callback(new BusinessError(), content as boolean);
-      }, (err: BusinessError): void => {
-          callback(err, false);
+      }, (err: Error): void => {
+          callback(err as BusinessError, false);
       });
     }
 
@@ -224,10 +224,10 @@ export default namespace webSocket {
           return this.closeSync(options);
         }).then((content: NullishType) => {
             resolve(content as boolean);
-        }, (err: BusinessError): void => {
-            reject(err);
+        }, (err: Error): void => {
+            reject(err as BusinessError);
         });
-      });  
+      });
     }
   }
 }
@@ -235,7 +235,7 @@ export default namespace webSocket {
 function main() {
   try {
     let options: webSocket.WebSocketRequestOptions = {
-      
+
     }
     let w = webSocket.createWebSocket();
     await w.connect("https://baidu.com", {
