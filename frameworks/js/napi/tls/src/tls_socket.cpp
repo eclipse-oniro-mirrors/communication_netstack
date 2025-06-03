@@ -1731,11 +1731,14 @@ static void CacheCertificates(const std::string &hostName, SSL *ssl)
     }
 }
 
-static void LoadCachedCaCert(const std::string &hostName, SSL *ssl)
+static void SetSNIandLoadCachedCaCert(const std::string &hostName, SSL *ssl)
 {
     if (!ssl) {
         return;
     }
+#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
+    SSL_set_tlsext_host_name(ssl, hostName.c_str());
+#endif
     auto cachedPem = CaCertCache::GetInstance().Get(hostName);
     auto sslCtx = SSL_get_SSL_CTX(ssl);
     if (!sslCtx) {
@@ -1762,7 +1765,7 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
         auto hostName = options.GetHostName();
         // indicates hostName is not ip address
         if (hostName != options.GetNetAddress().GetAddress()) {
-            LoadCachedCaCert(hostName, ssl_);
+            SetSNIandLoadCachedCaCert(hostName, ssl_);
         }
 
         int result = SSL_connect(ssl_);
