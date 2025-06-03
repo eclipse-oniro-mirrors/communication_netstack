@@ -39,9 +39,7 @@ void EventManager::AddListener(napi_env env, const std::string &type, napi_value
 {
     std::unique_lock<std::shared_mutex> lock(mutexForListenersAndEmitByUv_);
     auto it = std::remove_if(listeners_.begin(), listeners_.end(),
-        [type, callback](const std::shared_ptr<EventListener> &listener) -> bool {
-            return listener->Match(type, callback);
-        });
+        [type](const std::shared_ptr<EventListener> &listener) -> bool { return listener->MatchType(type); });
     if (it != listeners_.end()) {
         listeners_.erase(it, listeners_.end());
     }
