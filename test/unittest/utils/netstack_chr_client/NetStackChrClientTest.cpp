@@ -127,7 +127,7 @@ void FillNormalvalue(ChrClient::DataTransChrStats& chrStats)
     chrStats.tcpInfo.unacked = UNACKED_DEFAULT_VALUE;
     chrStats.tcpInfo.lastDataSent = LAST_DATA_SENT_DEFAULT_VALUE;
     chrStats.tcpInfo.lastAckSent = LAST_ACK_SENT_DEFAULT_VALUE;
-    chrStats.tcpInfo.lastDataRecv LAST_DATA_RECV_DEFAULT_VALUE;
+    chrStats.tcpInfo.lastDataRecv = LAST_DATA_RECV_DEFAULT_VALUE;
     chrStats.tcpInfo.lastAckRecv = LAST_ACK_RECV_DEFAULT_VALUE;
     chrStats.tcpInfo.rtt = RTT_DEFAULT_VALUE;
     chrStats.tcpInfo.rttvar = RTTVAR_DEFAULT_VALUE;
