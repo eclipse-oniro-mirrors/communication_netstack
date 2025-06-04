@@ -26,15 +26,55 @@
 namespace OHOS::NetStack {
 namespace {
 using namespace testing::ext;
-// static constexpr const char *REQUEST_ID = "123";
-// static constexpr const char *HTTP_VERSION_2 = "2";
 static constexpr const char *REQUEST_URL = "https://127.0.0.1";
-// static constexpr const char *REQUEST_ID_ADDRESS = "127.0.0.1";
-// static constexpr const char *REQUEST_STRING = "unused";
-// static constexpr const char *REQUEST_HEADERS = "HTTP/1.1 200 OK\r\nk:v";
-// static constexpr const char *REQUEST_REASON_PARSE = "OK";
-// static constexpr const uint64_t REQUEST_BEGIN_TIME = 100;
-// static constexpr const double REQUEST_DNS_TIME = 10;
+
+static constexpr const char *PROCESS_NAME_DEFAULT_VALUE = "CHR_UT";
+
+static constexpr const int UID_DEFAULT_VALUE = 100;
+static constexpr const long RESPONSE_CODE_DEFAULT_VALUE = 200;
+static constexpr const curl_off_t TOTAL_TIME_DEFAULT_VALUE = 500000;
+static constexpr const curl_off_t NAME_LOOK_UP_TIME_DEFAULT_VALUE = 10000;
+static constexpr const curl_off_t CONNECT_TIME_DEFAULT_VALUE = 50000;
+static constexpr const curl_off_t PRE_TRANSFER_TIME_DEFAULT_VALUE = 80000;
+static constexpr const curl_off_t SIZE_UPLOAD_DEFAULT_VALUE = 30;
+static constexpr const curl_off_t SIZE_DOWNLOAD_DEFAULT_VALUE = 60;
+static constexpr const curl_off_t SPEED_DOWNLOAD_DEFAULT_VALUE = 440;
+static constexpr const curl_off_t SPEED_UPLOAD_DEFAULT_VALUE = 180;
+static constexpr const char *EFFECTIVE_METHOD_DEFAULT_VALUE = "POST";
+static constexpr const curl_off_t START_TRANSFER_TIME_DEFAULT_VALUE = 500;
+static constexpr const char *CONTENT_TYPE_DEFAULT_VALUE ="application/json; charset=utf-8";
+static constexpr const curl_off_t REDIRECT_TIME_DEFAULT_VALUE = 0;
+static constexpr const long REDIRECT_COUNT_DEFAULT_VALUE = 0;
+static constexpr const long OS_ERROR_DEFAULT_VALUE = 0;
+static constexpr const long SSL_VERIFYRESULT_DEFAULT_VALUE = 0;
+static constexpr const curl_off_t APPCONNECT_TIME_DEFAULT_VALUE = 80000;
+static constexpr const curl_off_t RETRY_AFTER_DEFAULT_VALUE = 0;
+static constexpr const long PROXY_ERROR_DEFAULT_VALUE = 0;
+static constexpr const curl_off_t QUEUE_TIME_DEFAULT_VALUE = 12000;
+static constexpr const long CURL_CODE_DEFAULT_VALUE = 0;
+static constexpr const long REQUEST_START_TIME_DEFAULT_VALUE = 1747359000000;
+
+static constexpr const uint32_t UNACKED_DEFAULT_VALUE = 0;
+static constexpr const uint32_t LAST_DATA_SENT_DEFAULT_VALUE = 1000;
+static constexpr const uint32_t LAST_ACK_SENT_DEFAULT_VALUE = 0;
+static constexpr const uint32_t LAST_DATA_RECV_DEFAULT_VALUE 1000;
+static constexpr const uint32_t LAST_ACK_RECV_DEFAULT_VALUE = 1000;
+static constexpr const uint32_t RTT_DEFAULT_VALUE = 12000;
+static constexpr const uint32_t RTTVAR_DEFAULT_VALUE = 4000;
+static constexpr const uint16_t RETRANSMITS_DEFAULT_VALUE = 0;
+static constexpr const uint32_t TOTAL_RETRANS_DEFAULT_VALUE = 0;
+static constexpr const char *SRC_IP_DEFAULT_VALUE = "7.246.***.***";
+static constexpr const char *DST_IP_DEFAULT_VALUE = "7.246.***.***";
+static constexpr const uint16_t SRC_PORT_DEFAULT_VALUE = 54000;
+static constexpr const uint16_t DST_PORT_DEFAULT_VALUE = 54000;
+
+static constexpr const long RESPONSE_ERROR_CODE = 301;
+static constexpr const long OS_ERROR_CODE = 1;
+static constexpr const long PROXY_ERROR_CODE = 1;
+static constexpr const long CURL_ERROR_CODE = 1;
+static constexpr const curl_off_t SIZE_UPLOAD_TEST = 50000;
+static constexpr const curl_off_t SIZE_DOWNLOAD_TEST = 50000;
+static constexpr const curl_off_t TOTAL_TIME_TEST = 501000;
 
 CURL *GetCurlHandle()
 {
@@ -58,45 +98,45 @@ public:
 
 void FillNormalvalue(ChrClient::DataTransChrStats& chrStats)
 {
-    chrStats.processName = "CHR_Unit_Test_Case";
+    chrStats.processName = PROCESS_NAME_DEFAULT_VALUE;
 
-    chrStats.httpInfo.uid = 100;
-    chrStats.httpInfo.responseCode = 200;
-    chrStats.httpInfo.totalTime = 500000;
-    chrStats.httpInfo.nameLookUpTime = 10000;
-    chrStats.httpInfo.connectTime = 50000;
-    chrStats.httpInfo.preTransferTime = 80000;
-    chrStats.httpInfo.sizeUpload = 30;
-    chrStats.httpInfo.sizeDownload = 60;
-    chrStats.httpInfo.speedDownload = 440;
-    chrStats.httpInfo.speedUpload = 180;
-    chrStats.httpInfo.effectiveMethod = "POST";
-    chrStats.httpInfo.startTransferTime = "application/json; charset=utf-8";
-    chrStats.httpInfo.contentType = 0;
-    chrStats.httpInfo.redirectTime = 0;
-    chrStats.httpInfo.redirectCount = 0;
-    chrStats.httpInfo.osError = 0;
-    chrStats.httpInfo.sslVerifyResult= 0;
-    chrStats.httpInfo.appconnectTime = 80000;
-    chrStats.httpInfo.retryAfter = 0;
-    chrStats.httpInfo.proxyError = 0;
-    chrStats.httpInfo.queueTime = 12000;
-    chrStats.httpInfo.curlCode = 0;
-    chrStats.httpInfo.requestStartTime = 1747359000000;
+    chrStats.httpInfo.uid = UID_DEFAULT_VALUE;
+    chrStats.httpInfo.responseCode = RESPONSE_CODE_DEFAULT_VALUE;
+    chrStats.httpInfo.totalTime = TOTAL_TIME_DEFAULT_VALUE;
+    chrStats.httpInfo.nameLookUpTime = NAME_LOOK_UP_TIME_DEFAULT_VALUE;
+    chrStats.httpInfo.connectTime = CONNECT_TIME_DEFAULT_VALUE;
+    chrStats.httpInfo.preTransferTime = PRE_TRANSFER_TIME_DEFAULT_VALUE;
+    chrStats.httpInfo.sizeUpload = SIZE_UPLOAD_DEFAULT_VALUE;
+    chrStats.httpInfo.sizeDownload = SIZE_DOWNLOAD_DEFAULT_VALUE;
+    chrStats.httpInfo.speedDownload = SPEED_DOWNLOAD_DEFAULT_VALUE;
+    chrStats.httpInfo.speedUpload = SPEED_UPLOAD_DEFAULT_VALUE;
+    chrStats.httpInfo.effectiveMethod = EFFECTIVE_METHOD_DEFAULT_VALUE;
+    chrStats.httpInfo.startTransferTime = START_TRANSFER_TIME_DEFAULT_VALUE;
+    chrStats.httpInfo.contentType = CONTENT_TYPE_DEFAULT_VALUE;
+    chrStats.httpInfo.redirectTime = REDIRECT_TIME_DEFAULT_VALUE;
+    chrStats.httpInfo.redirectCount = REDIRECT_COUNT_DEFAULT_VALUE;
+    chrStats.httpInfo.osError = OS_ERROR_DEFAULT_VALUE;
+    chrStats.httpInfo.sslVerifyResult= SSL_VERIFYRESULT_DEFAULT_VALUE;
+    chrStats.httpInfo.appconnectTime = APPCONNECT_TIME_DEFAULT_VALUE;
+    chrStats.httpInfo.retryAfter = RETRY_AFTER_DEFAULT_VALUE;
+    chrStats.httpInfo.proxyError = PROXY_ERROR_DEFAULT_VALUE;
+    chrStats.httpInfo.queueTime = QUEUE_TIME_DEFAULT_VALUE;
+    chrStats.httpInfo.curlCode = CURL_CODE_DEFAULT_VALUE;
+    chrStats.httpInfo.requestStartTime = REQUEST_START_TIME_DEFAULT_VALUE;
 
-    chrStats.tcpInfo.unacked = 0;
-    chrStats.tcpInfo.lastDataSent = 1000;
-    chrStats.tcpInfo.lastAckSent = 0;
-    chrStats.tcpInfo.lastDataRecv 1000;
-    chrStats.tcpInfo.lastAckRecv = 1000;
-    chrStats.tcpInfo.rtt = 12000;
-    chrStats.tcpInfo.rttvar = 4000;
-    chrStats.tcpInfo.retransmits = 0;
-    chrStats.tcpInfo.totalRetrans = 0;
-    chrStats.tcpInfo.srcIp = "7.246.***.***";
-    chrStats.tcpInfo.dstIp = "7.246.***.***";
-    chrStats.tcpInfo.srcPort = 54000;
-    chrStats.tcpInfo.dstPort = 54000;
+    chrStats.tcpInfo.unacked = UNACKED_DEFAULT_VALUE;
+    chrStats.tcpInfo.lastDataSent = LAST_DATA_SENT_DEFAULT_VALUE;
+    chrStats.tcpInfo.lastAckSent = LAST_ACK_SENT_DEFAULT_VALUE;
+    chrStats.tcpInfo.lastDataRecv LAST_DATA_RECV_DEFAULT_VALUE;
+    chrStats.tcpInfo.lastAckRecv = LAST_ACK_RECV_DEFAULT_VALUE;
+    chrStats.tcpInfo.rtt = RTT_DEFAULT_VALUE;
+    chrStats.tcpInfo.rttvar = RTTVAR_DEFAULT_VALUE;
+    chrStats.tcpInfo.retransmits = RETRANSMITS_DEFAULT_VALUE;
+    chrStats.tcpInfo.totalRetrans = TOTAL_RETRANS_DEFAULT_VALUE;
+    chrStats.tcpInfo.srcIp = SRC_IP_DEFAULT_VALUE;
+    chrStats.tcpInfo.dstIp = DST_IP_DEFAULT_VALUE;
+    chrStats.tcpInfo.srcPort = SRC_PORT_DEFAULT_VALUE;
+    chrStats.tcpInfo.dstPort = DST_PORT_DEFAULT_VALUE;
 }
 
 HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCode, TestSize.Level2)
@@ -146,7 +186,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCodeError, TestSize
     ChrClient::DataTransChrStats chrStats;
     FillNormalvalue(chrStats);
     
-    chrStats.httpInfo.responseCode = 301;
+    chrStats.httpInfo.responseCode = RESPONSE_ERROR_CODE ;
     int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, 0);
 }
@@ -157,7 +197,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestOSError, TestSize.Level2)
     ChrClient::DataTransChrStats chrStats;
     FillNormalvalue(chrStats);
     
-    chrStats.httpInfo.osError = 1;
+    chrStats.httpInfo.osError = OS_ERROR_CODE;
     int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, 0);
 }
@@ -168,7 +208,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestProxyError, TestSize.Level2
     ChrClient::DataTransChrStats chrStats;
     FillNormalvalue(chrStats);
     
-    chrStats.httpInfo.proxyError = 1;
+    chrStats.httpInfo.proxyError = PROXY_ERROR_CODE;
     int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, 0);
 }
@@ -179,7 +219,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestCurlCodeError, TestSize.Lev
     ChrClient::DataTransChrStats chrStats;
     FillNormalvalue(chrStats);
     
-    chrStats.httpInfo.curlCode = 1;
+    chrStats.httpInfo.curlCode = CURL_ERROR_CODE;
     int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, 0);
 }
@@ -190,9 +230,9 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestShortRequestButTimeout, Tes
     ChrClient::DataTransChrStats chrStats;
     FillNormalvalue(chrStats);
     
-    chrStats.httpInfo.sizeUpload = 50000;
-    chrStats.httpInfo.sizeDownload = 50000;
-    chrStats.httpInfo.totalTime = 501000;
+    chrStats.httpInfo.sizeUpload = SIZE_UPLOAD_TEST;
+    chrStats.httpInfo.sizeDownload = SIZE_DOWNLOAD_TEST;
+    chrStats.httpInfo.totalTime = TOTAL_TIME_TEST;
     int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, 0);
 }
