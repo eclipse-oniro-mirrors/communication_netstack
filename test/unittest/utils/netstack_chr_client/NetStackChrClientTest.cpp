@@ -175,7 +175,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestNotReport, TestSize.Level2)
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
     FillNormalvalue(chrStats);
-    
+
     int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, -1);
 }
@@ -185,8 +185,8 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCodeError, TestSize
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
     FillNormalvalue(chrStats);
-    
-    chrStats.httpInfo.responseCode = RESPONSE_ERROR_CODE ;
+
+    chrStats.httpInfo.responseCode = RESPONSE_ERROR_CODE;
     int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, 0);
 }
@@ -196,7 +196,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestOSError, TestSize.Level2)
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
     FillNormalvalue(chrStats);
-    
+
     chrStats.httpInfo.osError = OS_ERROR_CODE;
     int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, 0);
@@ -207,7 +207,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestProxyError, TestSize.Level2
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
     FillNormalvalue(chrStats);
-    
+
     chrStats.httpInfo.proxyError = PROXY_ERROR_CODE;
     int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, 0);
@@ -218,7 +218,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestCurlCodeError, TestSize.Lev
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
     FillNormalvalue(chrStats);
-    
+
     chrStats.httpInfo.curlCode = CURL_ERROR_CODE;
     int res = ChrClient::NetStackChrClient::GetInstance().shouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, 0);
@@ -229,7 +229,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestShortRequestButTimeout, Tes
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
     FillNormalvalue(chrStats);
-    
+
     chrStats.httpInfo.sizeUpload = SIZE_UPLOAD_TEST;
     chrStats.httpInfo.sizeDownload = SIZE_DOWNLOAD_TEST;
     chrStats.httpInfo.totalTime = TOTAL_TIME_TEST;
@@ -241,7 +241,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestTimeLimits, TestSize.Level2
 {
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
-    
+
     netstackChrReport.ReportCommonEvent(chrStats);
     int second_ret = netstackChrReport.ReportCommonEvent(chrStats);
     EXPECT_EQ(second_ret, -1);
