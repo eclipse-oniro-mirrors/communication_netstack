@@ -57,7 +57,7 @@ static constexpr const long REQUEST_START_TIME_DEFAULT_VALUE = 1747359000000;
 static constexpr const uint32_t UNACKED_DEFAULT_VALUE = 0;
 static constexpr const uint32_t LAST_DATA_SENT_DEFAULT_VALUE = 1000;
 static constexpr const uint32_t LAST_ACK_SENT_DEFAULT_VALUE = 0;
-static constexpr const uint32_t LAST_DATA_RECV_DEFAULT_VALUE 1000;
+static constexpr const uint32_t LAST_DATA_RECV_DEFAULT_VALUE = 1000;
 static constexpr const uint32_t LAST_ACK_RECV_DEFAULT_VALUE = 1000;
 static constexpr const uint32_t RTT_DEFAULT_VALUE = 12000;
 static constexpr const uint32_t RTTVAR_DEFAULT_VALUE = 4000;
