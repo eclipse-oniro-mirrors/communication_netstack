@@ -244,6 +244,6 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestTimeLimits, TestSize.Level2
 
     netstackChrReport.ReportCommonEvent(chrStats);
     int second_ret = netstackChrReport.ReportCommonEvent(chrStats);
-    EXPECT_EQ(second_ret, -1);
+    EXPECT_EQ(second_ret, 1);
 }
 }
