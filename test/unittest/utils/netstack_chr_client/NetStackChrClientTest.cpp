@@ -42,7 +42,7 @@ static constexpr const curl_off_t SPEED_DOWNLOAD_DEFAULT_VALUE = 440;
 static constexpr const curl_off_t SPEED_UPLOAD_DEFAULT_VALUE = 180;
 static constexpr const char *EFFECTIVE_METHOD_DEFAULT_VALUE = "POST";
 static constexpr const curl_off_t START_TRANSFER_TIME_DEFAULT_VALUE = 500;
-static constexpr const char *CONTENT_TYPE_DEFAULT_VALUE ="application/json; charset=utf-8";
+static constexpr const char *CONTENT_TYPE_DEFAULT_VALUE = "application/json; charset=utf-8";
 static constexpr const curl_off_t REDIRECT_TIME_DEFAULT_VALUE = 0;
 static constexpr const long REDIRECT_COUNT_DEFAULT_VALUE = 0;
 static constexpr const long OS_ERROR_DEFAULT_VALUE = 0;
@@ -245,4 +245,5 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestTimeLimits, TestSize.Level2
     netstackChrReport.ReportCommonEvent(chrStats);
     int second_ret = netstackChrReport.ReportCommonEvent(chrStats);
     EXPECT_EQ(second_ret, -1);
+}
 }
