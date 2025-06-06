@@ -56,7 +56,9 @@ bool TLSContext::SetCipherList(TLSContext *tlsContext, const TLSConfiguration &c
         return false;
     }
     NETSTACK_LOGD("GetCipherSuite = %{public}s", configuration.GetCipherSuite().c_str());
-    if (SSL_CTX_set_cipher_list(tlsContext->ctx_, configuration.GetCipherSuite().c_str()) <= 0) {
+    int rc1 = SSL_CTX_set_cipher_list(tlsContext->ctx_, configuration.GetCipherSuite().c_str());
+    int rc2 = SSL_CTX_set_ciphersuites(tlsContext->ctx_, configuration.GetCipherSuite().c_str());
+    if (rc1 <= 0 && rc2 <= 0) {
         NETSTACK_LOGE("Error setting the cipher list");
         return false;
     }
