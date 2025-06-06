@@ -164,7 +164,7 @@ void NetStackChrClient::GetHttpInfoFromCurl(CURL *handle, DataTransHttpInfo &htt
     httpInfo.contentType = GetStringAttributeFromCurl(handle, CURLINFO_CONTENT_TYPE);
 }
 
-int NetStackChrClient::shouldReportHttpAbnormalEvent(const DataTransHttpInfo &httpInfo)
+int NetStackChrClient::ShouldReportHttpAbnormalEvent(const DataTransHttpInfo &httpInfo)
 {
     if (httpInfo.curlCode != 0 || httpInfo.responseCode != HTTP_REQUEST_SUCCESS ||
         httpInfo.osError != 0 || httpInfo.proxyError != 0) {
@@ -192,7 +192,7 @@ void NetStackChrClient::GetDfxInfoFromCurlHandleAndReport(CURL *handle, int32_t 
     }
 
     GetHttpInfoFromCurl(handle, dataTransChrStats.httpInfo);
-    if (shouldReportHttpAbnormalEvent(dataTransChrStats.httpInfo) != 0) {
+    if (ShouldReportHttpAbnormalEvent(dataTransChrStats.httpInfo) != 0) {
         return;
     }
 
@@ -203,7 +203,7 @@ void NetStackChrClient::GetDfxInfoFromCurlHandleAndReport(CURL *handle, int32_t 
         NETSTACK_LOGD("Chr client get tcp info from socket failed, sockfd: %{public}" PRId64, sockfd);
     }
 
-    int ret = netstackChrReport.ReportCommonEvent(dataTransChrStats);
+    int ret = netstackChrReport_.ReportCommonEvent(dataTransChrStats);
     if (ret > 0) {
         NETSTACK_LOGE("Send to CHR failed, error code %{public}d", ret);
     }
