@@ -110,6 +110,8 @@ public:
 
     void SetCaPath(const std::string &SetCaPath);
 
+    void SetCaData(const std::string &SetCaData);
+
     void SetDnsServers(const std::vector<std::string> &dnsServers);
 
     void SetDohUrl(const std::string &SetDohUrl);
@@ -162,6 +164,8 @@ public:
 
     [[nodiscard]] const std::string &GetCaPath() const;
 
+    [[nodiscard]] const std::string &GetCaData() const;
+
     [[nodiscard]] const std::string &GetDohUrl() const;
 
     [[nodiscard]] std::string GetRangeString() const;
@@ -213,6 +217,8 @@ private:
     std::string httpProxyExclusions_;
 
     std::string caPath_;
+
+    std::string caData_;
 
     std::string dohUrl_;
 

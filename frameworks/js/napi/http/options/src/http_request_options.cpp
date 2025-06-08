@@ -247,6 +247,20 @@ const std::string &HttpRequestOptions::GetCaPath() const
     return caPath_;
 }
 
+void HttpRequestOptions::SetCaData(const std::string &data)
+{
+    if (data.empty()) {
+        return;
+    }
+
+    caData_ = data;
+}
+
+const std::string &HttpRequestOptions::GetCaData() const
+{
+    return caData_;
+}
+
 void HttpRequestOptions::SetTlsOption(const TlsOption &tlsOption)
 {
     tlsOption_.tlsVersionMax = tlsOption.tlsVersionMax;

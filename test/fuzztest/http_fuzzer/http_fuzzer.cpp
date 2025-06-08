@@ -86,6 +86,18 @@ void SetCaPathFuzzTest(const uint8_t *data, size_t size)
     requestOptions.SetCaPath(str);
 }
 
+void SetCaDataFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    std::string str = GetStringFromData(STR_LEN);
+
+    HttpRequestOptions requestOptions;
+    requestOptions.SetCaData(str);
+}
+
 void SetUrlFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size < 1)) {
