@@ -199,6 +199,8 @@ private:
 
     void ParseCaPath(napi_value optionsValue);
 
+    void ParseCaData(napi_value optionsValue);
+
     void ParseDnsServers(napi_value optionsValue);
 
     void ParseMultiFormData(napi_value optionsValue);

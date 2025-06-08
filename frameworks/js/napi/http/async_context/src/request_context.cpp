@@ -499,6 +499,14 @@ void RequestContext::ParseCaPath(napi_value optionsValue)
     }
 }
 
+void RequestContext::ParseCaData(napi_value optionsValue)
+{
+    std::string caData = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CA_DATA);
+    if (!caData.empty()) {
+        options.SetCaData(caData);
+    }
+}
+
 void RequestContext::ParseDohUrl(napi_value optionsValue)
 {
     std::string dohUrl = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_DOH_URL);
@@ -537,6 +545,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
 
     ParseHeader(optionsValue);
     ParseCaPath(optionsValue);
+    ParseCaData(optionsValue);
     ParseDohUrl(optionsValue);
     ParseResumeFromToNumber(optionsValue);
     ParseDnsServers(optionsValue);
