@@ -31,6 +31,17 @@ struct ManualResetEvent {
         underlying_ = eventfd(0, 0);
     }
 
+#ifdef HTTP_HANDOVER_FEATURE
+    explicit ManualResetEvent(bool isSemaphore)
+    {
+        if (isSemaphore) {
+            underlying_ = eventfd(0, EFD_SEMAPHORE);
+        } else {
+            underlying_ = eventfd(0, 0);
+        }
+    }
+#endif
+
     ~ManualResetEvent()
     {
         close(underlying_);

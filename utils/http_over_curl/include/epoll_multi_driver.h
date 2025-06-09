@@ -24,6 +24,9 @@
 #include "epoller.h"
 #include "thread_safe_storage.h"
 #include "timeout_timer.h"
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_handover_handler.h"
+#endif
 
 namespace OHOS::NetStack::HttpOverCurl {
 
@@ -70,6 +73,9 @@ private:
     int stillRunning = 0;
 
     std::map<CURL *, RequestInfo *> ongoingRequests_;
+#ifdef HTTP_HANDOVER_FEATURE
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler_;
+#endif
 };
 
 } // namespace OHOS::NetStack::HttpOverCurl
