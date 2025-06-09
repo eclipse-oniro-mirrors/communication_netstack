@@ -65,6 +65,8 @@ public:
 
     void Emit(const std::string &type, const std::pair<napi_value, napi_value> &argv);
 
+    void EmitWithTwoPara(const std::string &type, const std::tuple<napi_value, napi_value, napi_value> &argv);
+
     void SetData(void *data);
 
     [[nodiscard]] void *GetData();
