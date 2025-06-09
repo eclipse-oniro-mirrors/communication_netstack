@@ -829,6 +829,10 @@ void WebSocketServerExec::OnServerClose(lws *wsi, EventManager *manager, lws_clo
         NETSTACK_LOGE("manager is null");
         return;
     }
+    if (wsi == nullptr) {
+        NETSTACK_LOGE("wsi is nullptr");
+        return;
+    }
     bool hasServerCloseListener = manager->HasEventListener(EventName::EVENT_SERVER_CLOSE);
     if (!hasServerCloseListener) {
         NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_SERVER_CLOSE);
@@ -844,10 +848,6 @@ void WebSocketServerExec::OnServerClose(lws *wsi, EventManager *manager, lws_clo
                 }
                 conn->closeResult.code = closeStatus;
                 conn->closeResult.reason = closeReason;
-                if (wsi == nullptr) {
-                    NETSTACK_LOGE("wsi is nullptr");
-                    return;
-                }
                 conn->connection = connPair.second;
                 NETSTACK_LOGI("clientId: %{public}s", id.c_str());
                 manager->EmitByUvWithoutCheckShared(EventName::EVENT_SERVER_CLOSE,

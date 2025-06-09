@@ -169,8 +169,8 @@ private:
     std::unordered_map<void *, std::string> wsServerBinaryData_;
     std::unordered_map<void *, std::string> wsServerTextData_;
     std::unordered_map<void *, std::shared_ptr<Websocket::UserData>> userDataMap_;
-    uint32_t maxConnClientCnt_;
-    uint32_t maxConnForOneClient_;
+    uint32_t maxConnClientCnt_ = 0;
+    uint32_t maxConnForOneClient_ = 0;
 
 public:
     struct {
