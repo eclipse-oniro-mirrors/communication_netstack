@@ -65,17 +65,17 @@ public:
 
     std::string serverIp_;
 
-    uint32_t serverPort_;
+    uint32_t serverPort_ = 0;
 
     std::string certPath_;
 
     std::string keyPath_;
 
-    uint32_t maxClientsNumber_;
+    uint32_t maxClientsNumber_ = 0;
 
     std::string websocketServerProtocol_;
 
-    uint32_t maxCountForOneClient_;
+    uint32_t maxCountForOneClient_ = 0;
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
