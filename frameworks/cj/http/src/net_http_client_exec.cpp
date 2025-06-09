@@ -42,6 +42,8 @@
 #ifdef HAS_NETMANAGER_BASE
 #include "http_proxy.h"
 #include "net_conn_client.h"
+#include "network_security_config.h"
+using NetworkSecurityConfig = OHOS::NetManagerStandard::NetworkSecurityConfig;
 #endif
 
 #include "net_http_utils.h"
@@ -677,7 +679,7 @@ bool NetHttpClientExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http:
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     std::vector<std::string> certs;
     // add app cert path
-    auto ret = NetManagerStandard::NetConnClient::GetInstance().GetTrustAnchorsForHostName(hostname, certs);
+    auto ret = NetworkSecurityConfig::GetInstance().GetTrustAnchorsForHostName(hostname, certs);
     if (ret != 0) {
         NETSTACK_LOGE("GetTrustAnchorsForHostName error. ret [%{public}d]", ret);
     }
@@ -702,9 +704,9 @@ bool NetHttpClientExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http:
 #endif //  !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     // pin trusted certifcate keys.
     std::string pins;
-    if (NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins) != 0 || pins.empty()) {
+    if (NetworkSecurityConfig::GetInstance().GetPinSetForHostName(hostname, pins) != 0 || pins.empty()) {
         NETSTACK_LOGD("Get no pinset by host name");
-    } else if (NetManagerStandard::NetConnClient::GetInstance().IsPinOpenModeVerifyRootCa(hostname)) {
+    } else if (NetworkSecurityConfig::GetInstance().IsPinOpenModeVerifyRootCa(hostname)) {
         context->SetPinnedPubkey(pins);
     } else {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str(), context);

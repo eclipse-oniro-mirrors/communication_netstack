@@ -15,6 +15,7 @@
 
 #include <iostream>
 #include <cstring>
+#include "openssl/ssl.h"
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 #include "http_client_constant.h"

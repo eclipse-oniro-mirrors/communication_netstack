@@ -24,7 +24,7 @@
 #include "netstack_common_utils.h"
 #include "tls_utils.h"
 #ifdef HAS_NETMANAGER_BASE
-#include "net_conn_client.h"
+#include "network_security_config.h"
 #endif
 
 namespace OHOS {
@@ -171,7 +171,8 @@ bool TLSContextServer::SetDefaultCa(TLSContextServer *tlsContext, const TLSConfi
     // customize trusted CAs.
     std::vector<std::string> cert_paths;
 
-    if (NetManagerStandard::NetConnClient::GetInstance().GetTrustAnchorsForHostName(hostname, cert_paths) != 0) {
+    if (NetManagerStandard::NetworkSecurityConfig::GetInstance().
+        GetTrustAnchorsForHostName(hostname, cert_paths) != 0) {
         NETSTACK_LOGE("get customize trusted CAs failed");
         return false;
     }

@@ -47,6 +47,7 @@
 #endif
 #if HAS_NETMANAGER_BASE
 #include "net_conn_client.h"
+#include "network_security_config.h"
 #endif // HAS_NETMANAGER_BASE
 
 constexpr int32_t INET_OPTION_SUC = 1;
@@ -598,7 +599,7 @@ bool IsCleartextPermitted(const std::string &url, const std::string &protocol)
     using namespace OHOS::NetManagerStandard;
     if (url.find(protocol) != std::string::npos) {
         std::string hostName = GetHostnameFromURL(url);
-        NetConnClient::GetInstance().IsCleartextPermitted(hostName, isCleartextPermitted);
+        NetworkSecurityConfig::GetInstance().IsCleartextPermitted(hostName, isCleartextPermitted);
     }
 #endif
     return isCleartextPermitted;
