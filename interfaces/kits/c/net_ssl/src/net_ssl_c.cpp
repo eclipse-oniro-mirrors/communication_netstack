@@ -27,7 +27,7 @@
 #include "netstack_log.h"
 #include "net_ssl_verify_cert.h"
 #include "net_manager_constants.h"
-#include "net_conn_client.h"
+#include "network_security_config.h"
 
 struct OHOS::NetStack::Ssl::CertBlob SwitchToCertBlob(const struct NetStack_CertBlob cert)
 {
@@ -89,7 +89,8 @@ int32_t OH_NetStack_GetPinSetForHostName(const char *hostname, NetStack_Certific
     std::string innerHostname = std::string(hostname);
     std::string innerPins;
 
-    int32_t ret = OHOS::NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(innerHostname, innerPins);
+    int32_t ret = OHOS::NetManagerStandard::NetworkSecurityConfig::GetInstance().
+        GetPinSetForHostName(innerHostname, innerPins);
     if (ret != OHOS::NetManagerStandard::NETMANAGER_SUCCESS) {
         return ret;
     }
@@ -130,7 +131,7 @@ int32_t OH_NetStack_GetCertificatesForHostName(const char *hostname, NetStack_Ce
     std::string innerHostname = std::string(hostname);
     std::vector<std::string> innerCerts;
 
-    int32_t ret = OHOS::NetManagerStandard::NetConnClient::GetInstance()
+    int32_t ret = OHOS::NetManagerStandard::NetworkSecurityConfig::GetInstance()
                   .GetTrustAnchorsForHostName(innerHostname, innerCerts);
     if (ret != OHOS::NetManagerStandard::NETMANAGER_SUCCESS) {
         return ret;
@@ -194,7 +195,7 @@ int32_t OH_Netstack_IsCleartextPermitted(bool *isCleartextPermitted)
         NETSTACK_LOGE("OH_Netstack_IsCleartextPermitted received invalid parameters");
         return OHOS::NetManagerStandard::NETMANAGER_ERR_PARAMETER_ERROR;
     }
-    return OHOS::NetManagerStandard::NetConnClient::GetInstance().IsCleartextPermitted(*isCleartextPermitted);
+    return OHOS::NetManagerStandard::NetworkSecurityConfig::GetInstance().IsCleartextPermitted(*isCleartextPermitted);
 }
 
 int32_t OH_Netstack_IsCleartextPermittedByHostName(const char *hostname, bool *isCleartextPermitted)
@@ -203,6 +204,6 @@ int32_t OH_Netstack_IsCleartextPermittedByHostName(const char *hostname, bool *i
         NETSTACK_LOGE("OH_Netstack_IsCleartextPermittedByHostName received invalid parameters");
         return OHOS::NetManagerStandard::NETMANAGER_ERR_PARAMETER_ERROR;
     }
-    return OHOS::NetManagerStandard::NetConnClient::GetInstance()
+    return OHOS::NetManagerStandard::NetworkSecurityConfig::GetInstance()
         .IsCleartextPermitted(std::string(hostname), *isCleartextPermitted);
 }

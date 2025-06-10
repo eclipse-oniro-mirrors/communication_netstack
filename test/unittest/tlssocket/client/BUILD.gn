@@ -148,7 +148,10 @@ ohos_unittest("two_way_tls_socket_unittest") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    external_deps += [
+      "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
+    ]
     defines += [ "HAS_NETMANAGER_BASE=1" ]
   } else {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
@@ -193,7 +196,10 @@ ohos_unittest("one_way_tls_socket_unittest") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    external_deps += [
+      "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
+    ]
     defines += [ "HAS_NETMANAGER_BASE=1" ]
   } else {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
@@ -238,7 +244,10 @@ ohos_unittest("two_way_tls_socket_certchain_unittest") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    external_deps += [
+      "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
+    ]
     defines += [ "HAS_NETMANAGER_BASE=1" ]
   } else {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
@@ -283,7 +292,10 @@ ohos_unittest("one_way_tls_socket_certchain_unittest") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    external_deps += [
+      "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
+    ]
     defines += [ "HAS_NETMANAGER_BASE=1" ]
   } else {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
@@ -331,7 +343,10 @@ ohos_unittest("tls_socket_unilateral_connection") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    external_deps += [
+      "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
+    ]
     defines += [ "HAS_NETMANAGER_BASE=1" ]
   } else {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
@@ -402,7 +417,10 @@ ohos_unittest("tls_key_test") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    external_deps += [
+      "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
+    ]
     defines += [ "HAS_NETMANAGER_BASE=1" ]
   } else {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
@@ -446,7 +464,10 @@ ohos_unittest("tls_cert_test") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    external_deps += [
+      "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
+    ]
     defines += [ "HAS_NETMANAGER_BASE=1" ]
   } else {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
@@ -490,7 +511,10 @@ ohos_unittest("tls_configuration_test") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    external_deps += [
+      "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
+    ]
     defines += [ "HAS_NETMANAGER_BASE=1" ]
   } else {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
@@ -534,7 +558,10 @@ ohos_unittest("tls_context_test") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    external_deps += [
+      "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
+    ]
     defines += [ "HAS_NETMANAGER_BASE=1" ]
   } else {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
@@ -578,7 +605,10 @@ ohos_unittest("socket_error_unittest") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    external_deps += [
+      "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
+    ]
     defines += [ "HAS_NETMANAGER_BASE=1" ]
   } else {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
@@ -625,7 +655,10 @@ ohos_unittest("tls_socket_branch_test") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    external_deps += [
+      "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
+    ]
     defines += [ "HAS_NETMANAGER_BASE=1" ]
   } else {
     defines += [ "HAS_NETMANAGER_BASE=0" ]

@@ -32,6 +32,7 @@
 #ifdef HAS_NETMANAGER_BASE
 #include "http_proxy.h"
 #include "net_conn_client.h"
+#include "network_security_config.h"
 #endif
 
 static constexpr const char *PROTOCOL_DELIMITER = "//";
@@ -817,7 +818,7 @@ bool NetWebSocketExec::FillCaPath(WebSocketConnectContext *context, lws_context_
     } else {
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
 #ifdef HAS_NETMANAGER_BASE
-        if (NetManagerStandard::NetConnClient::GetInstance().TrustUserCa()) {
+        if (NetManagerStandard::NetworkSecurityConfig::GetInstance().TrustUserCa()) {
             context->userCertPath_ = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
             info.client_ssl_ca_dirs[1] = context->userCertPath_.c_str();
         }

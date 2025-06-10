@@ -45,6 +45,7 @@
 #ifdef HAS_NETMANAGER_BASE
 #include "http_proxy.h"
 #include "net_conn_client.h"
+#include "network_security_config.h"
 #include "netsys_client.h"
 #endif
 #include "base64_utils.h"
@@ -1185,10 +1186,10 @@ CURLcode HttpExec::VerifyRootCaSslCtxFunction(CURL *curl, void *sslCtx, void *co
 [[maybe_unused]] void TrustUser0AndUserCa(std::vector<std::string> &certs)
 {
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
-    if (NetManagerStandard::NetConnClient::GetInstance().TrustUser0Ca()) {
+    if (NetManagerStandard::NetworkSecurityConfig::GetInstance().TrustUser0Ca()) {
         certs.emplace_back(USER_CERT_ROOT_PATH);
     }
-    if (NetManagerStandard::NetConnClient::GetInstance().TrustUserCa()) {
+    if (NetManagerStandard::NetworkSecurityConfig::GetInstance().TrustUserCa()) {
         certs.emplace_back(BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR));
     }
 #endif
@@ -1202,7 +1203,7 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     std::vector<std::string> certs;
     // add app cert path
-    auto ret = NetManagerStandard::NetConnClient::GetInstance().GetTrustAnchorsForHostName(hostname, certs);
+    auto ret = NetManagerStandard::NetworkSecurityConfig::GetInstance().GetTrustAnchorsForHostName(hostname, certs);
     if (ret != 0) {
         NETSTACK_LOGE("GetTrustAnchorsForHostName error. ret [%{public}d]", ret);
     }
@@ -1230,13 +1231,13 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
 #endif //  !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     // pin trusted certifcate keys.
-    if (!NetManagerStandard::NetConnClient::GetInstance().IsPinOpenMode(hostname) ||
-        NetManagerStandard::NetConnClient::GetInstance().IsPinOpenModeVerifyRootCa(hostname)) {
+    if (!NetManagerStandard::NetworkSecurityConfig::GetInstance().IsPinOpenMode(hostname) ||
+        NetManagerStandard::NetworkSecurityConfig::GetInstance().IsPinOpenModeVerifyRootCa(hostname)) {
         std::string pins;
-        auto ret1 = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
+        auto ret1 = NetManagerStandard::NetworkSecurityConfig::GetInstance().GetPinSetForHostName(hostname, pins);
         if (ret1 != 0 || pins.empty()) {
             NETSTACK_LOGD("Get no pinset by host name[%{public}s]", hostname.c_str());
-        } else if (NetManagerStandard::NetConnClient::GetInstance().IsPinOpenModeVerifyRootCa(hostname)) {
+        } else if (NetManagerStandard::NetworkSecurityConfig::GetInstance().IsPinOpenModeVerifyRootCa(hostname)) {
             context->SetPinnedPubkey(pins);
         } else {
             NETSTACK_LOGD("curl set pin =[%{public}s]", pins.c_str());
