@@ -32,6 +32,7 @@
 #include "timing.h"
 #if HAS_NETMANAGER_BASE
 #include "http_client_network_message.h"
+#include "netsys_client.h"
 #endif
 #include "netstack_hisysevent.h"
 
@@ -310,6 +311,11 @@ bool HttpClientTask::SetIpResolve(CURL *handle)
 {
     std::string addressFamily = request_.GetAddressFamily();
     if (addressFamily.empty()) {
+#if HAS_NETMANAGER_BASE
+        if (!NetSysIsIpv6Enable(0)) {
+            NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        }
+#endif
         return true;
     }
     if (addressFamily.compare(HTTP_AF_ONLYV4) == 0) {
