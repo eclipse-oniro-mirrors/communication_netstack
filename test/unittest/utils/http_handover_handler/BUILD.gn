@@ -36,36 +36,47 @@ ohos_unittest("http_handover_handler_test") {
   module_out_path = "netstack/http_handover_handler_test"
 
   include_dirs = [
-    "$NETSTACK_UTILS_ROOT/http_over_curl/include",
-    "$NETSTACK_DIR/utils/common_utils/include",
-    "$NETSTACK_DIR/utils/profiler_utils/include",
-    "$NETSTACK_DIR/utils/tlv_utils/include",
     "$NETSTACK_DIR/frameworks/js/napi/http/async_context/include",
+    "$NETSTACK_DIR/frameworks/js/napi/http/async_work/include",
+    "$NETSTACK_DIR/frameworks/js/napi/http/cache/base64/include",
+    "$NETSTACK_DIR/frameworks/js/napi/http/cache/cache_proxy/include",
+    "$NETSTACK_DIR/frameworks/js/napi/http/cache/cache_strategy/include",
     "$NETSTACK_DIR/frameworks/js/napi/http/constant/include",
     "$NETSTACK_DIR/frameworks/js/napi/http/http_exec/include",
     "$NETSTACK_DIR/frameworks/js/napi/http/options/include",
+    "$NETSTACK_DIR/utils/common_utils/include",
+    "$NETSTACK_DIR/utils/profiler_utils/include",
+    "$NETSTACK_DIR/utils/tlv_utils/include",
+    "$NETSTACK_UTILS_ROOT/http_over_curl/include",
   ]
   include_dirs += utils_include
 
   defines = [ "HTTP_HANDOVER_FEATURE" ]
 
   deps = [
+    "$NETSTACK_DIR/frameworks/js/napi/http:http",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
-    "$NETSTACK_DIR/frameworks/js/napi/http:http",
   ]
 
   external_deps = common_external_deps
-  external_deps += [ 
-    "curl:curl_shared",
+  external_deps += [
     "ability_runtime:wantagent_innerkits",
+    "curl:curl_shared",
+    "hiprofiler:libnetwork_profiler",
+    "init:libbegetutil",
     "napi:ace_napi",
+    "time_service:time_client",
   ]
 
   sources = [
-    "$NETSTACK_UTILS_ROOT/http_over_curl/src/http_handover_handler.cpp",
     "$NETSTACK_DIR/frameworks/js/napi/http/async_context/src/request_context.cpp",
+    "$NETSTACK_DIR/frameworks/js/napi/http/constant/src/constant.cpp",
+    "$NETSTACK_DIR/frameworks/js/napi/http/http_exec/src/http_exec.cpp",
+    "$NETSTACK_DIR/frameworks/js/napi/http/http_exec/src/http_tls_config.cpp",
     "$NETSTACK_DIR/frameworks/js/napi/http/options/src/http_request_options.cpp",
+    "$NETSTACK_DIR/utils/profiler_utils/src/netstack_network_profiler.cpp",
+    "$NETSTACK_UTILS_ROOT/http_over_curl/src/http_handover_handler.cpp",
     "http_handover_handler_test.cpp",
   ]
 
