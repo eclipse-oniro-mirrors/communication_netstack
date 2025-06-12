@@ -63,7 +63,10 @@ ohos_unittest("http_client_unittest") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    external_deps += [ "netmanager_base:net_conn_manager_if" ]
+    external_deps += [
+      "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
+    ]
     defines += [ "HAS_NETMANAGER_BASE=1" ]
   }
 

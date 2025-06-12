@@ -65,6 +65,8 @@ public:
 
     void Emit(const std::string &type, const std::pair<napi_value, napi_value> &argv);
 
+    void EmitWithTwoPara(const std::string &type, const std::tuple<napi_value, napi_value, napi_value> &argv);
+
     void SetData(void *data);
 
     [[nodiscard]] void *GetData();
@@ -169,8 +171,8 @@ private:
     std::unordered_map<void *, std::string> wsServerBinaryData_;
     std::unordered_map<void *, std::string> wsServerTextData_;
     std::unordered_map<void *, std::shared_ptr<Websocket::UserData>> userDataMap_;
-    uint32_t maxConnClientCnt_;
-    uint32_t maxConnForOneClient_;
+    uint32_t maxConnClientCnt_ = 0;
+    uint32_t maxConnForOneClient_ = 0;
 
 public:
     struct {

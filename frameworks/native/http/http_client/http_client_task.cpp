@@ -26,12 +26,12 @@
 #include "http_client_constant.h"
 #include "http_client_time.h"
 #include "net_conn_client.h"
+#include "network_security_config.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "timing.h"
 #if HAS_NETMANAGER_BASE
 #include "http_client_network_message.h"
-#include "netstack_chr_client.h"
 #endif
 #include "netstack_hisysevent.h"
 
@@ -151,10 +151,10 @@ void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::str
 [[maybe_unused]] void TrustUser0AndUserCa(std::vector<std::string> &certs)
 {
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
-    if (NetManagerStandard::NetConnClient::GetInstance().TrustUser0Ca()) {
+    if (NetManagerStandard::NetworkSecurityConfig::GetInstance().TrustUser0Ca()) {
         certs.emplace_back(HttpConstant::USER_CERT_ROOT_PATH);
     }
-    if (NetManagerStandard::NetConnClient::GetInstance().TrustUserCa()) {
+    if (NetManagerStandard::NetworkSecurityConfig::GetInstance().TrustUserCa()) {
         certs.emplace_back(HttpConstant::USER_CERT_BASE_PATH +
                            std::to_string(getuid() / HttpConstant::UID_TRANSFORM_DIVISOR));
     }
@@ -341,9 +341,9 @@ std::string HttpClientTask::GetRangeString() const
 bool HttpClientTask::SetServerSSLCertOption(CURL *curl)
 {
     auto hostname = CommonUtils::GetHostnameFromURL(request_.GetURL());
-    if (!NetManagerStandard::NetConnClient::GetInstance().IsPinOpenMode(hostname)) {
+    if (!NetManagerStandard::NetworkSecurityConfig::GetInstance().IsPinOpenMode(hostname)) {
         std::string pins;
-        auto ret = NetManagerStandard::NetConnClient::GetInstance().GetPinSetForHostName(hostname, pins);
+        auto ret = NetManagerStandard::NetworkSecurityConfig::GetInstance().GetPinSetForHostName(hostname, pins);
         if (ret != 0 || pins.empty()) {
             NETSTACK_LOGD("Get no pin set by host name invalid");
         } else {
@@ -620,12 +620,6 @@ size_t HttpClientTask::DataReceiveCallback(const void *data, size_t size, size_t
 
     if (task->canceled_) {
         NETSTACK_LOGD("canceled");
-        return 0;
-    }
-
-    if ((task->request_.GetMaxLimit() != 0) && (task->response_.GetResult().size() > task->request_.GetMaxLimit() ||
-        size * memBytes > task->request_.GetMaxLimit())) {
-        NETSTACK_LOGE("response data exceeds the maximum limit");
         return 0;
     }
     if (task->onDataReceive_) {

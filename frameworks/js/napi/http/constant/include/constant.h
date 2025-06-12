@@ -151,6 +151,7 @@ public:
     static const char *const PARAM_KEY_EXPECT_DATA_TYPE;
     static const char *const PARAM_KEY_PRIORITY;
     static const char *const PARAM_KEY_CA_PATH;
+    static const char *const PARAM_KEY_CA_DATA;
     static const char *const PARAM_KEY_DOH_URL;
 
     static const char *const PARAM_KEY_USING_HTTP_PROXY;

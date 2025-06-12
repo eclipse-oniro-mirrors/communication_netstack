@@ -115,7 +115,10 @@ ohos_shared_library("http_client") {
       "$NETSTACK_DIR/utils/common_utils/src/request_tracer.cpp",
     ]
 
-    external_deps = [ "netmanager_base:net_conn_manager_if" ]
+    external_deps = [
+      "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
+    ]
   } else {
     deps += [ "$NETSTACK_DIR/utils:stack_utils_common" ]
     external_deps = [
@@ -124,6 +127,7 @@ ohos_shared_library("http_client") {
       "hiprofiler:libnetwork_profiler",
       "hitrace:hitrace_meter",
       "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
       "time_service:time_client",
     ]
     if (product_name != "ohos-sdk") {

@@ -21,7 +21,6 @@
  *
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
- * @version 1.0
  */
 
 /**
@@ -32,7 +31,6 @@
  * @kit NetworkKit
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
- * @version 1.0
  */
 
 #ifndef NET_HTTP_H
@@ -53,17 +51,15 @@ extern "C" {
  * @return Http_Headers* Pointer to {@link Http_Headers}.
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
- * @version 1.0
  */
 Http_Headers *OH_Http_CreateHeaders(void);
 
 /**
  * @brief Destroys the headers of a request or response.
  *
- * @param headers Pointer to the {@link Http_Headers} to be destroyed.
+ * @param headers Pointer to the {@link Http_Headers} to be destroyed, headers ends with null.
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
- * @version 1.0
  */
 void OH_Http_DestroyHeaders(Http_Headers **headers);
 
@@ -76,7 +72,6 @@ void OH_Http_DestroyHeaders(Http_Headers **headers);
  * @return uint32_t 0 - success. 401 - Parameter error. 2300027 - Out of memory.
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
- * @version 1.0
  */
 uint32_t OH_Http_SetHeaderValue(struct Http_Headers *headers, const char *name, const char *value);
 
@@ -88,7 +83,6 @@ uint32_t OH_Http_SetHeaderValue(struct Http_Headers *headers, const char *name, 
  * @return Http_HeaderValue* Pointer to the obtained {@link Http_HeaderValue}.
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
- * @version 1.0
  */
 Http_HeaderValue *OH_Http_GetHeaderValue(Http_Headers *headers, const char *name);
 
@@ -99,17 +93,15 @@ Http_HeaderValue *OH_Http_GetHeaderValue(Http_Headers *headers, const char *name
  * @return Http_HeaderEntry* Pointers to all obtained key-value pairs {@link Http_HeaderEntry}.
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
- * @version 1.0
  */
 Http_HeaderEntry *OH_Http_GetHeaderEntries(Http_Headers *headers);
 
 /**
  * @brief Destroys all key-value pairs obtained in {@link OH_Http_GetHeaderEntries}.
  *
- * @param headerEntry Pointer to the {@link Http_HeaderEntry} to be destroyed.
+ * @param headerEntry Pointer to the {@link Http_HeaderEntry} to be destroyed, headerEntry ends with null.
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
- * @version 1.0
  */
 void OH_Http_DestroyHeaderEntries(Http_HeaderEntry **headerEntry);
 
@@ -120,7 +112,6 @@ void OH_Http_DestroyHeaderEntries(Http_HeaderEntry **headerEntry);
  * @return Pointer of HttpRequest if success; Null otherwise.
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
- * @version 1.0
  */
 Http_Request *OH_Http_CreateRequest(const char *url);
  
@@ -134,7 +125,6 @@ Http_Request *OH_Http_CreateRequest(const char *url);
  * @permission ohos.permission.INTERNET
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
- * @version 1.0
  */
 int OH_Http_Request(Http_Request *request, Http_ResponseCallback callback, Http_EventsHandler handler);
  
@@ -144,7 +134,6 @@ int OH_Http_Request(Http_Request *request, Http_ResponseCallback callback, Http_
  * @param request Pointer to the http request {@link Http_Request}.
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
- * @version 1.0
  */
 void OH_Http_Destroy(struct Http_Request **request);
 #ifdef __cplusplus

@@ -24,7 +24,7 @@ namespace OHOS::NetStack::ChrClient {
 
 typedef struct DataTransHttpInfo {
     int uid;
-    int responseCode;
+    long responseCode;
     curl_off_t totalTime;
     curl_off_t nameLookUpTime;
     curl_off_t connectTime;
@@ -42,7 +42,7 @@ typedef struct DataTransHttpInfo {
     long sslVerifyResult;
     curl_off_t appconnectTime;
     curl_off_t retryAfter;
-    int proxyError;
+    long proxyError;
     curl_off_t queueTime;
     long curlCode;
     long requestStartTime;

@@ -76,9 +76,9 @@ private:
 
     static void InitWebSocketProperties(napi_env env, napi_value exports);
 
-#ifdef NETSTACK_WEBSOCKETSERVER
     static napi_value CreateWebSocketServer(napi_env env, napi_callback_info info);
 
+#ifdef NETSTACK_WEBSOCKETSERVER
     static void DefineWebSocketServerClass(napi_env env, napi_value exports);
 #endif
 };

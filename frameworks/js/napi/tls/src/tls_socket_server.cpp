@@ -1406,9 +1406,11 @@ void TLSSocketServer::ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsLi
     netAddress.SetPort(clientPort);
     netAddress.SetFamilyBySaFamily(address_.GetSaFamily());
     connection->SetAddress(netAddress);
-    if (GetTlsConnectionLocalAddress(connectFD, localAddress)) {
-        connection->SetLocalAddress(localAddress);
+    if (!GetTlsConnectionLocalAddress(connectFD, localAddress)) {
+        NETSTACK_LOGE("GetTlsConnectionLocalAddress");
+        return;
     }
+    connection->SetLocalAddress(localAddress);
     SetTlsConnectionSecureOptions(tlsListenOptions, clientID, connectFD, connection);
 }
 void TLSSocketServer::SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectOptions &tlsListenOptions, int clientID,

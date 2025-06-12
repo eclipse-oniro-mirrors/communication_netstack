@@ -23,7 +23,7 @@
 
 namespace OHOS::NetStack::ChrClient {
 
-static constexpr const int HTTP_REQUEST_SUCCESS = 200;
+static constexpr const long HTTP_REQUEST_SUCCESS = 200;
 static constexpr const int HTTP_FILE_TRANSFER_SIZE_THRESHOLD = 100000;
 static constexpr const int HTTP_FILE_TRANSFER_TIME_THRESHOLD = 500000;
 
@@ -158,13 +158,13 @@ void NetStackChrClient::GetHttpInfoFromCurl(CURL *handle, DataTransHttpInfo &htt
     httpInfo.redirectCount = GetNumericAttributeFromCurl<long>(handle, CURLINFO_REDIRECT_COUNT);
     httpInfo.osError = GetNumericAttributeFromCurl<long>(handle, CURLINFO_OS_ERRNO);
     httpInfo.sslVerifyResult = GetNumericAttributeFromCurl<long>(handle, CURLINFO_PROXY_SSL_VERIFYRESULT);
-    httpInfo.proxyError = GetNumericAttributeFromCurl<int>(handle, CURLINFO_PROXY_ERROR);
+    httpInfo.proxyError = GetNumericAttributeFromCurl<long>(handle, CURLINFO_PROXY_ERROR);
 
     httpInfo.effectiveMethod = GetStringAttributeFromCurl(handle, CURLINFO_EFFECTIVE_METHOD);
     httpInfo.contentType = GetStringAttributeFromCurl(handle, CURLINFO_CONTENT_TYPE);
 }
 
-int NetStackChrClient::shouldReportHttpAbnormalEvent(const DataTransHttpInfo &httpInfo)
+int NetStackChrClient::ShouldReportHttpAbnormalEvent(const DataTransHttpInfo &httpInfo)
 {
     if (httpInfo.curlCode != 0 || httpInfo.responseCode != HTTP_REQUEST_SUCCESS ||
         httpInfo.osError != 0 || httpInfo.proxyError != 0) {
@@ -192,7 +192,7 @@ void NetStackChrClient::GetDfxInfoFromCurlHandleAndReport(CURL *handle, int32_t 
     }
 
     GetHttpInfoFromCurl(handle, dataTransChrStats.httpInfo);
-    if (shouldReportHttpAbnormalEvent(dataTransChrStats.httpInfo) != 0) {
+    if (ShouldReportHttpAbnormalEvent(dataTransChrStats.httpInfo) != 0) {
         return;
     }
 
@@ -203,7 +203,7 @@ void NetStackChrClient::GetDfxInfoFromCurlHandleAndReport(CURL *handle, int32_t 
         NETSTACK_LOGD("Chr client get tcp info from socket failed, sockfd: %{public}" PRId64, sockfd);
     }
 
-    int ret = netstackChrReport.ReportCommonEvent(dataTransChrStats);
+    int ret = netstackChrReport_.ReportCommonEvent(dataTransChrStats);
     if (ret > 0) {
         NETSTACK_LOGE("Send to CHR failed, error code %{public}d", ret);
     }

@@ -815,6 +815,12 @@ static void PollRecvData(sockaddr *addr, socklen_t addrLen, const MessageCallbac
     std::vector<pollfd> fds{};
 
     while (true) {
+        std::shared_ptr<EventManager> manager = callback.GetEventManager();
+        if (manager == nullptr) {
+            NETSTACK_LOGE("manager is nullptr");
+            return;
+        }
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
         int currentFd = -1;
         if (!PreparePollFds(currentFd, fds, socketCallbackMap, callback)) {
             break;

@@ -48,6 +48,7 @@ const char *const HttpConstant::PARAM_KEY_PRIORITY = "priority";
 
 const char *const HttpConstant::PARAM_KEY_USING_HTTP_PROXY = "usingProxy";
 const char *const HttpConstant::PARAM_KEY_CA_PATH = "caPath";
+const char *const HttpConstant::PARAM_KEY_CA_DATA = "caData";
 const char *const HttpConstant::PARAM_KEY_DOH_URL = "dnsOverHttps";
 const char *const HttpConstant::PARAM_KEY_CLIENT_CERT = "clientCert";
 const char *const HttpConstant::PARAM_KEY_MULTI_FORM_DATA_LIST = "multiFormDataList";

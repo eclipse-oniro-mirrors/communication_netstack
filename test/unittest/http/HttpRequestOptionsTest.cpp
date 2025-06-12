@@ -68,6 +68,23 @@ HWTEST_F(HttpRequestOptionsTest, CaPathTest003, TestSize.Level1)
     EXPECT_EQ(path, OTHER_CA_PATH);
 }
 
+HWTEST_F(HttpRequestOptionsTest, CaDataTest001, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    string data = requestOptions.GetCaData();
+    EXPECT_EQ(data, "");
+}
+
+HWTEST_F(HttpRequestOptionsTest, CaDataTest002, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    requestOptions.SetCaData("abc");
+    string data = requestOptions.GetCaData();
+    EXPECT_EQ(data, "abc");
+}
+
 HWTEST_F(HttpRequestOptionsTest, SetDnsServersTest, TestSize.Level1)
 {
     HttpRequestOptions requestOptions;

@@ -35,13 +35,11 @@ static constexpr const char *EVENT_KEY_CLIENT_IP = "clientIP";
 
 static constexpr const char *EVENT_KEY_CONNECTION = "clientConnection";
 
-static constexpr const char *EVENT_KEY_RESULT = "result";
-
 static constexpr const char *EVENT_KEY_DATA = "data";
 
 static constexpr const char *EVENT_KEY_CODE = "code";
 
-static constexpr const char *EVENT_KEY_REASON = "reason";
+static constexpr const char *EVENT_KEY_REASON = "closeReason";
 
 static constexpr const char *WEBSOCKET_SERVER_THREAD_RUN = "OS_NET_WSJsSer";
 
@@ -56,6 +54,8 @@ static constexpr const uint64_t ONE_MINUTE_IN_SEC = 60;
 static constexpr const int32_t MAX_CONNECTIONS_PER_MINUTE = 50;
 
 static constexpr const int32_t COMMON_ERROR_CODE = 200;
+
+static constexpr const int32_t ARRAY_LEN_TWO = 2;
 
 namespace OHOS::NetStack::Websocket {
 
@@ -135,6 +135,35 @@ template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTempl
     delete work;
 }
 
+template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplateWithTwoPara(uv_work_t *work,
+    int status)
+{
+    (void)status;
+
+    auto workWrapper = static_cast<UvWorkWrapperShared *>(work->data);
+    napi_env env = workWrapper->env;
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
+
+    napi_value obj = MakeJsValue(env, workWrapper->data);
+    auto undefined = NapiUtils::GetUndefined(workWrapper->env);
+    if (NapiUtils::GetArrayLength(env, obj) != ARRAY_LEN_TWO) {
+        NETSTACK_LOGE("array length is not 2");
+        delete workWrapper;
+        delete work;
+        return;
+    }
+
+    napi_value firstValue = NapiUtils::GetArrayElement(env, obj, 0);
+    napi_value secValue = NapiUtils::GetArrayElement(env, obj, 1);
+    std::tuple<napi_value, napi_value, napi_value> arg = {undefined, firstValue, secValue};
+
+    if (workWrapper->manager) {
+        workWrapper->manager->EmitWithTwoPara(workWrapper->type, arg);
+    }
+    delete workWrapper;
+    delete work;
+}
 
 void RunServerService(std::shared_ptr<UserData> userData, std::shared_ptr<EventManager> manager)
 {
@@ -219,8 +248,6 @@ int WebSocketServerExec::LwsCallbackEstablished(lws *wsi, lws_callback_reasons r
         NETSTACK_LOGE("GetPeerConnMsg failed");
         return RaiseServerError(manager);
     }
-    NETSTACK_LOGI("connection clientip=%{public}s, clientport=%{public}d",
-        connection.clientIP.c_str(), connection.clientPort);
     AddConnections(clientId, wsi, userData, connection);
     clientUserData->SetLws(wsi);
     clientUserData->TriggerWritable();
@@ -528,35 +555,35 @@ int WebSocketServerExec::LwsCallbackFilterProtocolConnection(lws *wsi, lws_callb
         return RaiseServerError(manager);
     }
     /* 添加防止恶意连接的业务逻辑 */
-    if (!IsAllowConnection(clientId)) {
+    if (!IsAllowConnection(connection.clientIP)) {
         NETSTACK_LOGE("Rejected malicious connection");
         return RaiseServerError(manager);
     }
     return HttpDummy(wsi, reason, user, in, len);
 }
 
-bool WebSocketServerExec::IsAllowConnection(const std::string &clientId)
+bool WebSocketServerExec::IsAllowConnection(const std::string &ip)
 {
-    if (IsIpInBanList(clientId)) {
-        NETSTACK_LOGE("clientid is in banlist");
+    if (IsIpInBanList(ip)) {
+        NETSTACK_LOGE("client is in banlist");
         return false;
     }
-    if (IsHighFreqConnection(clientId)) {
-        NETSTACK_LOGE("clientid reach high frequency connection");
-        AddBanList(clientId);
+    if (IsHighFreqConnection(ip)) {
+        NETSTACK_LOGE("client reach high frequency connection");
+        AddBanList(ip);
         return false;
     }
-    UpdataClientList(clientId);
+    UpdataClientList(ip);
     return true;
 }
 
-void WebSocketServerExec::UpdataClientList(const std::string &id)
+void WebSocketServerExec::UpdataClientList(const std::string &ip)
 {
     std::shared_lock<std::shared_mutex> lock(connListMutex_);
-    auto it = clientList.find(id);
+    auto it = clientList.find(ip);
     if (it == clientList.end()) {
-        NETSTACK_LOGI("add clientid to banlist");
-        clientList[id] = {1, GetCurrentSecond()};
+        NETSTACK_LOGI("add clientid to clientlist");
+        clientList[ip] = {1, GetCurrentSecond()};
     } else {
         auto now = GetCurrentSecond() - it->second.lastConnectionTime;
         if (now > ONE_MINUTE_IN_SEC) {
@@ -568,16 +595,16 @@ void WebSocketServerExec::UpdataClientList(const std::string &id)
     }
 }
 
-void WebSocketServerExec::AddBanList(const std::string &id)
+void WebSocketServerExec::AddBanList(const std::string &ip)
 {
     std::shared_lock<std::shared_mutex> lock(banListMutex_);
-    banList[id] = GetCurrentSecond() + ONE_MINUTE_IN_SEC;
+    banList[ip] = GetCurrentSecond() + ONE_MINUTE_IN_SEC;
 }
 
-bool WebSocketServerExec::IsIpInBanList(const std::string &id)
+bool WebSocketServerExec::IsIpInBanList(const std::string &ip)
 {
     std::shared_lock<std::shared_mutex> lock(banListMutex_);
-    auto it = banList.find(id);
+    auto it = banList.find(ip);
     if (it != banList.end()) {
         auto now = GetCurrentSecond();
         if (now < it->second) {
@@ -595,10 +622,10 @@ uint64_t WebSocketServerExec::GetCurrentSecond()
         .count();
 }
 
-bool WebSocketServerExec::IsHighFreqConnection(const std::string &id)
+bool WebSocketServerExec::IsHighFreqConnection(const std::string &ip)
 {
     std::shared_lock<std::shared_mutex> lock(connListMutex_);
-    auto it = clientList.find(id);
+    auto it = clientList.find(ip);
     if (it != clientList.end()) {
         auto duration = GetCurrentSecond() - it->second.lastConnectionTime;
         if (duration <= ONE_MINUTE_IN_SEC) {
@@ -624,7 +651,7 @@ static napi_value CreateServerClosePara(napi_env env, void *callbackPara)
     auto para = reinterpret_cast<ClientConnectionCloseCallback *>(callbackPara);
     auto deleter = [](const ClientConnectionCloseCallback *p) { delete p; };
     std::unique_ptr<ClientConnectionCloseCallback, decltype(deleter)> handler(para, deleter);
-    napi_value obj = NapiUtils::CreateObject(env);
+    napi_value obj = NapiUtils::CreateArray(env, ARRAY_LEN_TWO);
     if (NapiUtils::GetValueType(env, obj) != napi_object) {
         return NapiUtils::GetUndefined(env);
     }
@@ -634,14 +661,14 @@ static napi_value CreateServerClosePara(napi_env env, void *callbackPara)
     }
     NapiUtils::SetStringPropertyUtf8(env, jsConn, EVENT_KEY_CLIENT_IP, para->connection.clientIP);
     NapiUtils::SetUint32Property(env, jsConn, EVENT_KEY_CLIENT_PORT, para->connection.clientPort);
-    NapiUtils::SetNamedProperty(env, obj, EVENT_KEY_CONNECTION, jsConn);
+    NapiUtils::SetArrayElement(env, obj, 0, jsConn);
     napi_value jsRes = NapiUtils::CreateObject(env);
     if (NapiUtils::GetValueType(env, jsRes) != napi_object) {
         return NapiUtils::GetUndefined(env);
     }
     NapiUtils::SetUint32Property(env, jsRes, EVENT_KEY_CODE, para->closeResult.code);
     NapiUtils::SetStringPropertyUtf8(env, jsRes, EVENT_KEY_REASON, para->closeResult.reason);
-    NapiUtils::SetNamedProperty(env, obj, EVENT_KEY_RESULT, jsConn);
+    NapiUtils::SetArrayElement(env, obj, 1, jsRes);
     return obj;
 }
 
@@ -766,9 +793,6 @@ static napi_value CreateConnectPara(napi_env env, void *callbackPara)
 static napi_value CreateServerError(napi_env env, void *callbackPara)
 {
     auto code = reinterpret_cast<int32_t *>(callbackPara);
-    if (code == nullptr) {
-        NETSTACK_LOGE("code is nullptr");
-    }
     auto deleter = [](int32_t *p) { delete p; };
     std::unique_ptr<int32_t, decltype(deleter)> handler(code, deleter);
     napi_value err = NapiUtils::CreateObject(env);
@@ -809,9 +833,9 @@ void WebSocketServerExec::OnConnect(lws *wsi, EventManager *manager)
     }
     {
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
-        auto para = new WebSocketConnection;
         for (auto [id, connPair] : webSocketConnection_) {
             if (connPair.first == wsi) {
+                auto para = new WebSocketConnection;
                 para->clientIP = connPair.second.clientIP;
                 para->clientPort = connPair.second.clientPort;
                 NETSTACK_LOGI("connection find ok, clientId:%{public}s", id.c_str());
@@ -832,29 +856,29 @@ void WebSocketServerExec::OnServerClose(lws *wsi, EventManager *manager, lws_clo
         NETSTACK_LOGE("manager is null");
         return;
     }
+    if (wsi == nullptr) {
+        NETSTACK_LOGE("wsi is nullptr");
+        return;
+    }
     bool hasServerCloseListener = manager->HasEventListener(EventName::EVENT_SERVER_CLOSE);
     if (!hasServerCloseListener) {
         NETSTACK_LOGI("no event listener: %{public}s", EventName::EVENT_SERVER_CLOSE);
-        return;
-    }
-    auto conn = new ClientConnectionCloseCallback;
-    if (conn == nullptr) {
-        return;
-    }
-    conn->closeResult.code = closeStatus;
-    conn->closeResult.reason = closeReason;
-    if (wsi == nullptr) {
-        NETSTACK_LOGE("wsi is nullptr");
         return;
     }
     {
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
         for (auto [id, connPair] : webSocketConnection_) {
             if (connPair.first == wsi) {
+                auto conn = new ClientConnectionCloseCallback;
+                if (conn == nullptr) {
+                    return;
+                }
+                conn->closeResult.code = closeStatus;
+                conn->closeResult.reason = closeReason;
                 conn->connection = connPair.second;
                 NETSTACK_LOGI("clientId: %{public}s", id.c_str());
                 manager->EmitByUvWithoutCheckShared(EventName::EVENT_SERVER_CLOSE,
-                    conn, CallbackTemplate<CreateServerClosePara>);
+                    conn, CallbackTemplateWithTwoPara<CreateServerClosePara>);
                 return;
             }
         }
@@ -1027,7 +1051,7 @@ void WebSocketServerExec::FillServerContextInfo(ServerStartContext *context, std
     lws_context_creation_info &info)
 {
     info.options = LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
-    info.port = context->GetServerPort();
+    info.port = static_cast<int32_t>(context->GetServerPort());
     info.mounts = &mount;
     info.protocols = LWS_SERVER_PROTOCOLS;
     info.vhost_name = "localhost";

@@ -24,6 +24,8 @@
 namespace OHOS::NetStack {
 static constexpr const int CALLBACK_PARAM_NUM = 1;
 static constexpr const int ASYNC_CALLBACK_PARAM_NUM = 2;
+static constexpr const int CALLBACK_TWO_PARAM_NUM = 2;
+static constexpr const int ASYNC_CALLBACK_TWO_PARAM_NUM = 3;
 static constexpr const char *ON_HEADER_RECEIVE = "headerReceive";
 static constexpr const char *ON_HEADERS_RECEIVE = "headersReceive";
 
@@ -71,6 +73,28 @@ void EventManager::Emit(const std::string &type, const std::pair<napi_value, nap
             /* Callback(T data) */
             napi_value arg[CALLBACK_PARAM_NUM] = {argv.second};
             listener->Emit(type, CALLBACK_PARAM_NUM, arg);
+        }
+    });
+    std::unique_lock<std::shared_mutex> lock2(mutexForListenersAndEmitByUv_);
+    auto it = std::remove_if(listeners_.begin(), listeners_.end(),
+        [type] (const std::shared_ptr<EventListener> &listener) -> bool { return listener->MatchOnce(type); });
+    listeners_.erase(it, listeners_.end());
+}
+
+void EventManager::EmitWithTwoPara(const std::string &type, const std::tuple<napi_value, napi_value, napi_value> &argv)
+{
+    std::shared_lock<std::shared_mutex> lock(mutexForListenersAndEmitByUv_);
+    auto listeners = listeners_;
+    lock.unlock();
+    std::for_each(listeners.begin(), listeners.end(), [type, argv] (const std::shared_ptr<EventListener> &listener) {
+        if (listener->IsAsyncCallback()) {
+            /* AsyncCallback(BusinessError error, T data) */
+            napi_value arg[ASYNC_CALLBACK_TWO_PARAM_NUM] = {std::get<0>(argv), std::get<1>(argv), std::get<2>(argv)};
+            listener->Emit(type, ASYNC_CALLBACK_TWO_PARAM_NUM, arg);
+        } else {
+            /* Callback(T data) */
+            napi_value arg[CALLBACK_TWO_PARAM_NUM] = {std::get<1>(argv), std::get<2>(argv)};
+            listener->Emit(type, CALLBACK_TWO_PARAM_NUM, arg);
         }
     });
     std::unique_lock<std::shared_mutex> lock2(mutexForListenersAndEmitByUv_);

@@ -20,6 +20,9 @@
 #if HAS_NETSTACK_CHR
 #include "netstack_chr_client.h"
 #endif
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_handover_handler.h"
+#endif
 
 namespace OHOS::NetStack::HttpOverCurl {
 
@@ -33,6 +36,14 @@ EpollMultiDriver::EpollMultiDriver(const std::shared_ptr<HttpOverCurl::ThreadSaf
 
 void EpollMultiDriver::Initialize()
 {
+#ifdef HTTP_HANDOVER_FEATURE
+    netHandoverHandler_ = std::make_shared<HttpHandoverHandler>();
+    if (netHandoverHandler_->InitSuccess()) {
+        netHandoverHandler_->RegisterForPolling(poller_);
+    } else {
+        netHandoverHandler_ = nullptr;
+    }
+#endif
     timeoutTimer_.RegisterForPolling(poller_);
     incomingQueue_->GetSyncEvent().RegisterForPolling(poller_);
     multi_ = curl_multi_init();
@@ -88,6 +99,10 @@ void EpollMultiDriver::Step(int waitEventsTimeoutMs)
             IncomingRequestCallback();
         } else if (timeoutTimer_.IsItYours(events[idx].data.fd)) {
             EpollTimerCallback();
+#ifdef HTTP_HANDOVER_FEATURE
+        } else if (netHandoverHandler_ && netHandoverHandler_->IsItYours(events[idx].data.fd)) {
+            netHandoverHandler_->HandOverRequestCallback(ongoingRequests_, multi_);
+#endif
         } else { // curl socket event
             EpollSocketCallback(events[idx].data.fd);
         }
@@ -98,6 +113,12 @@ void EpollMultiDriver::IncomingRequestCallback()
 {
     auto requestsToAdd = incomingQueue_->Flush();
     for (auto &request : requestsToAdd) {
+#ifdef HTTP_HANDOVER_FEATURE
+        if (netHandoverHandler_ && netHandoverHandler_->TryFlowControl(request)) {
+            NETSTACK_LOGI("incoming request");
+            continue;
+        }
+#endif
         ongoingRequests_[request->easyHandle] = request;
         auto ret = curl_multi_add_handle(multi_, request->easyHandle);
         if (ret != CURLM_OK) {
@@ -155,6 +176,12 @@ __attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
                 curl_multi_remove_handle(multi_, easyHandle);
                 auto requestInfo = ongoingRequests_[easyHandle];
                 ongoingRequests_.erase(easyHandle);
+#ifdef HTTP_HANDOVER_FEATURE
+                if (netHandoverHandler_ &&
+                    netHandoverHandler_->CheckRequestNetError(ongoingRequests_, multi_, requestInfo, message)) {
+                    break;
+                }
+#endif
                 if (requestInfo != nullptr && requestInfo->doneCallback) {
                     requestInfo->doneCallback(message, requestInfo->opaqueData);
                 }

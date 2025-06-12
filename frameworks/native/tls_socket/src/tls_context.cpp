@@ -25,7 +25,7 @@
 #include "netstack_common_utils.h"
 #include "tls_utils.h"
 #ifdef HAS_NETMANAGER_BASE
-#include "net_conn_client.h"
+#include "network_security_config.h"
 #endif
 
 namespace OHOS {
@@ -56,7 +56,9 @@ bool TLSContext::SetCipherList(TLSContext *tlsContext, const TLSConfiguration &c
         return false;
     }
     NETSTACK_LOGD("GetCipherSuite = %{public}s", configuration.GetCipherSuite().c_str());
-    if (SSL_CTX_set_cipher_list(tlsContext->ctx_, configuration.GetCipherSuite().c_str()) <= 0) {
+    int rc1 = SSL_CTX_set_cipher_list(tlsContext->ctx_, configuration.GetCipherSuite().c_str());
+    int rc2 = SSL_CTX_set_ciphersuites(tlsContext->ctx_, configuration.GetCipherSuite().c_str());
+    if (rc1 <= 0 && rc2 <= 0) {
         NETSTACK_LOGE("Error setting the cipher list");
         return false;
     }
@@ -172,7 +174,8 @@ bool TLSContext::SetDefaultCa(TLSContext *tlsContext, const TLSConfiguration &co
     // customize trusted CAs.
     std::vector<std::string> cert_paths;
 
-    if (NetManagerStandard::NetConnClient::GetInstance().GetTrustAnchorsForHostName(hostname, cert_paths) != 0) {
+    if (NetManagerStandard::NetworkSecurityConfig::GetInstance().
+        GetTrustAnchorsForHostName(hostname, cert_paths) != 0) {
         NETSTACK_LOGE("get customize trusted CAs failed");
         return false;
     }
@@ -182,7 +185,7 @@ bool TLSContext::SetDefaultCa(TLSContext *tlsContext, const TLSConfiguration &co
             return false;
         }
     }
-    if (NetManagerStandard::NetConnClient::GetInstance().TrustUser0Ca() &&
+    if (NetManagerStandard::NetworkSecurityConfig::GetInstance().TrustUser0Ca() &&
         access(ROOT_CERT_PATH.c_str(), F_OK | R_OK) == 0) {
         NETSTACK_LOGD("root CA certificates folder exist and can read");
         if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), ROOT_CERT_PATH.c_str())) {
@@ -193,7 +196,7 @@ bool TLSContext::SetDefaultCa(TLSContext *tlsContext, const TLSConfiguration &co
         NETSTACK_LOGD("root CA certificates folder not exist or can not read");
     }
     std::string userCertPath = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
-    if (NetManagerStandard::NetConnClient::GetInstance().TrustUserCa() &&
+    if (NetManagerStandard::NetworkSecurityConfig::GetInstance().TrustUserCa() &&
         access(userCertPath.c_str(), F_OK | R_OK) == 0) {
         NETSTACK_LOGD("user CA certificates folder exist and can read");
         if (!X509_STORE_load_path(SSL_CTX_get_cert_store(tlsContext->ctx_), userCertPath.c_str())) {

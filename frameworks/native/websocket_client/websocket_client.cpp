@@ -26,6 +26,7 @@ static constexpr const char *NAME_END = ":";
 static constexpr const char *STATUS_LINE_SEP = " ";
 static constexpr const size_t STATUS_LINE_ELEM_NUM = 2;
 static constexpr const char *PREFIX_HTTPS = "https";
+static constexpr const char *PREFIX_WS = "ws";
 static constexpr const char *PREFIX_WSS = "wss";
 static constexpr const int MAX_URI_LENGTH = 1024;
 static constexpr const int MAX_HDR_LENGTH = 1024;
@@ -38,6 +39,8 @@ static constexpr const char *LINK_DOWN = "The link is down";
 static constexpr const char *CLOSE_REASON_FORM_SERVER = "websocket close from server";
 static constexpr const int FUNCTION_PARAM_TWO = 2;
 static constexpr const char *WEBSOCKET_CLIENT_THREAD_RUN = "OS_NET_WSCli";
+static constexpr const int WS_DEFAULT_PORT = 80;
+static constexpr const int WSS_DEFAULT_PORT = 443;
 static std::atomic<int> g_clientID(0);
 namespace OHOS::NetStack::WebSocketClient {
 static const lws_retry_bo_t RETRY = {
@@ -373,7 +376,13 @@ int CreatConnectInfo(const std::string url, lws_context *lwsContext, WebSocketCl
         return WebSocketErrorCode::WEBSOCKET_CONNECTION_PARSEURL_ERROR;
     }
     std::string path = PATH_START + std::string(pathWithoutStart);
-    std::string tempHost = std::string(address) + NAME_END + std::to_string(port);
+    std::string tempHost;
+    if ((strcmp(prefix, PREFIX_WS) == 0 && port == WS_DEFAULT_PORT) ||
+        (strcmp(prefix, PREFIX_WSS) == 0 && port == WSS_DEFAULT_PORT)) {
+        tempHost = std::string(address);
+    } else {
+        tempHost = std::string(address) + NAME_END + std::to_string(port);
+    }
     connectInfo.context = lwsContext;
     connectInfo.address = address;
     connectInfo.port = port;

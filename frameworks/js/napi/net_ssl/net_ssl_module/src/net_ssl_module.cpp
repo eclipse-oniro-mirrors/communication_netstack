@@ -26,6 +26,7 @@
 #include "netstack_log.h"
 #if HAS_NETMANAGER_BASE
 #include "net_conn_client.h"
+#include "network_security_config.h"
 #endif // HAS_NETMANAGER_BASE
 
 namespace OHOS::NetStack::Ssl {
@@ -145,7 +146,7 @@ napi_value NetSslModuleExports::IsCleartextPermitted(napi_env env, napi_callback
     if (context->IsParseOK()) {
 #if HAS_NETMANAGER_BASE
         using namespace OHOS::NetManagerStandard;
-        int32_t ret = NetConnClient::GetInstance().IsCleartextPermitted(context->isCleartextPermitted_);
+        int32_t ret = NetworkSecurityConfig::GetInstance().IsCleartextPermitted(context->isCleartextPermitted_);
         if (ret != NETMANAGER_SUCCESS) {
             context->SetErrorCode(ret);
             napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
@@ -177,7 +178,7 @@ napi_value NetSslModuleExports::IsCleartextPermittedByHostName(napi_env env, nap
     if (context->IsParseOK()) {
 #if HAS_NETMANAGER_BASE
         using namespace OHOS::NetManagerStandard;
-        int32_t ret = NetConnClient::GetInstance().IsCleartextPermitted(context->hostname_,
+        int32_t ret = NetworkSecurityConfig::GetInstance().IsCleartextPermitted(context->hostname_,
             context->isCleartextPermitted_);
         if (ret != NETMANAGER_SUCCESS) {
             context->SetErrorCode(ret);
