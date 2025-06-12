@@ -815,12 +815,6 @@ static void PollRecvData(sockaddr *addr, socklen_t addrLen, const MessageCallbac
     std::vector<pollfd> fds{};
 
     while (true) {
-        std::shared_ptr<EventManager> manager = callback.GetEventManager();
-        if (manager == nullptr) {
-            NETSTACK_LOGE("manager is nullptr");
-            return;
-        }
-        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
         int currentFd = -1;
         if (!PreparePollFds(currentFd, fds, socketCallbackMap, callback)) {
             break;
@@ -1257,17 +1251,6 @@ bool ExecClose(CloseContext *context)
     return true;
 }
 
-static bool CheckClosed(GetStateContext *context, int &opt)
-{
-    socklen_t optLen = sizeof(int);
-    int r = getsockopt(context->GetSocketFd(), SOL_SOCKET, SO_TYPE, &opt, &optLen);
-    if (r < 0) {
-        context->state_.SetIsClose(true);
-        return true;
-    }
-    return false;
-}
-
 static bool CheckSocketFd(GetStateContext *context, sockaddr &sockAddr)
 {
     socklen_t len = sizeof(sockaddr);
@@ -1291,10 +1274,6 @@ static bool GetSocketState(GetStateContext *context)
     if (socketfd < 0) {
         NETSTACK_LOGE("fd is nullptr or closed");
         return false;
-    }
-    int opt;
-    if (CheckClosed(context, opt)) {
-        return true;
     }
 
     sockaddr sockAddr = {0};
