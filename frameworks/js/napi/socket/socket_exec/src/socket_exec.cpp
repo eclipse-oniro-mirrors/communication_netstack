@@ -1262,6 +1262,18 @@ static bool CheckSocketFd(GetStateContext *context, sockaddr &sockAddr)
     return true;
 }
 
+static void SelectSockAddr(
+    const sockaddr &sockAddr, sockaddr_in &addr4, sockaddr_in6 &addr6, sockaddr* &addr, socklen_t &addrlen)
+{
+    if (sockAddr.sa_family == AF_INET) {
+        addr = reinterpret_cast<sockaddr *>(&addr4);
+        addrlen = sizeof(addr4);
+    } else if (sockAddr.sa_family == AF_INET6) {
+        addr = reinterpret_cast<sockaddr *>(&addr6);
+        addrlen = sizeof(addr6);
+    }
+}
+
 static bool GetSocketState(GetStateContext *context)
 {
     std::shared_ptr<EventManager> manager = context->GetSharedManager();
@@ -1275,6 +1287,10 @@ static bool GetSocketState(GetStateContext *context)
         NETSTACK_LOGE("fd is nullptr or closed");
         return false;
     }
+    int opt;
+    if (CheckClosed(context, opt)) {
+        return true;
+    }
 
     sockaddr sockAddr = {0};
     if (!CheckSocketFd(context, sockAddr)) {
@@ -1285,13 +1301,7 @@ static bool GetSocketState(GetStateContext *context)
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
     socklen_t addrLen;
-    if (sockAddr.sa_family == AF_INET) {
-        addr = reinterpret_cast<sockaddr *>(&addr4);
-        addrLen = sizeof(addr4);
-    } else if (sockAddr.sa_family == AF_INET6) {
-        addr = reinterpret_cast<sockaddr *>(&addr6);
-        addrLen = sizeof(addr6);
-    }
+    SelectSockAddr(sockAddr, addr4, addr6, addr ,addrLen);
 
     if (addr == nullptr) {
         NETSTACK_LOGE("addr family error, address invalid");
