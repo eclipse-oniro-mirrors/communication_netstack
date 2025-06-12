@@ -1251,6 +1251,17 @@ bool ExecClose(CloseContext *context)
     return true;
 }
 
+static bool CheckClosed(GetStateContext *context, int &opt)
+{
+    socklen_t optLen = sizeof(int);
+    int r = getsockopt(context->GetSocketFd(), SOL_SOCKET, SO_TYPE, &opt, &optLen);
+    if (r < 0) {
+        context->state_.SetIsClose(true);
+        return true;
+    }
+    return false;
+}
+
 static bool CheckSocketFd(GetStateContext *context, sockaddr &sockAddr)
 {
     socklen_t len = sizeof(sockaddr);
@@ -1301,7 +1312,7 @@ static bool GetSocketState(GetStateContext *context)
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
     socklen_t addrLen;
-    SelectSockAddr(sockAddr, addr4, addr6, addr ,addrLen);
+    SelectSockAddr(sockAddr, addr4, addr6, addr, addrLen);
 
     if (addr == nullptr) {
         NETSTACK_LOGE("addr family error, address invalid");
