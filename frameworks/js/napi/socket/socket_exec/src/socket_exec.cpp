@@ -952,7 +952,7 @@ bool ExecUdpBind(BindContext *context)
             return false;
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
-        std::thread serviceThread(PollRecvData, context, pAddr4, sizeof(addr4),
+        std::thread serviceThread(PollRecvData, pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetSharedManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(SOCKET_EXEC_UDP_BIND);
