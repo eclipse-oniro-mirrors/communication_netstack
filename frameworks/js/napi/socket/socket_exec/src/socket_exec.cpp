@@ -786,14 +786,25 @@ static bool PreparePollFds(int &currentFd, std::vector<pollfd> &fds,
     return true;
 }
 
-static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
+static void PollRecvData(sockaddr *addr, socklen_t addrLen, const MessageCallback &callback)
 {
-    int bufferSize = ConfirmBufferSize(sock);
+    std::shared_ptr<EventManager> manager = callback.GetEventManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    int socketfd = manager->GetData()? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
+    if (socketfd < 0) {
+        NETSTACK_LOGE("fd is nullptr or closed");
+        return;
+    }
+    int bufferSize = ConfirmBufferSize(socketfd);
     auto buf = std::make_unique<char[]>(bufferSize);
     auto addrDeleter = [](sockaddr *a) { free(reinterpret_cast<void *>(a)); };
     std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
 
-    int recvTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT);
+    int recvTimeoutMs = ConfirmSocketTimeoutMs(socketfd, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT);
     if (recvTimeoutMs < 0) {
         return;
     }
@@ -804,12 +815,6 @@ static void PollRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Mess
     std::vector<pollfd> fds{};
 
     while (true) {
-        std::shared_ptr<EventManager> manager = callback.GetEventManager();
-        if (manager == nullptr) {
-            NETSTACK_LOGE("manager is nullptr");
-            return;
-        }
-        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
         int currentFd = -1;
         if (!PreparePollFds(currentFd, fds, socketCallbackMap, callback)) {
             break;
@@ -947,7 +952,7 @@ bool ExecUdpBind(BindContext *context)
             return false;
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
-        std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
+        std::thread serviceThread(PollRecvData, pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetSharedManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(SOCKET_EXEC_UDP_BIND);
@@ -963,7 +968,7 @@ bool ExecUdpBind(BindContext *context)
             return false;
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
-        std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
+        std::thread serviceThread(PollRecvData, pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetSharedManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(SOCKET_EXEC_UDP_BIND);
@@ -1167,7 +1172,7 @@ bool ExecConnect(ConnectContext *context)
 
     NETSTACK_LOGI("connect success, sock:%{public}d", context->GetSocketFd());
 
-    std::thread serviceThread(PollRecvData, context->GetSocketFd(), nullptr, 0,
+    std::thread serviceThread(PollRecvData, nullptr, 0,
                               TcpMessageCallback(context->GetSharedManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(SOCKET_EXEC_CONNECT);
@@ -1268,8 +1273,31 @@ static bool CheckSocketFd(GetStateContext *context, sockaddr &sockAddr)
     return true;
 }
 
+static void SelectSockAddr(
+    const sockaddr &sockAddr, sockaddr_in &addr4, sockaddr_in6 &addr6, sockaddr* &addr, socklen_t &addrlen)
+{
+    if (sockAddr.sa_family == AF_INET) {
+        addr = reinterpret_cast<sockaddr *>(&addr4);
+        addrlen = sizeof(addr4);
+    } else if (sockAddr.sa_family == AF_INET6) {
+        addr = reinterpret_cast<sockaddr *>(&addr6);
+        addrlen = sizeof(addr6);
+    }
+}
+
 static bool GetSocketState(GetStateContext *context)
 {
+    std::shared_ptr<EventManager> manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    int socketfd = manager->GetData()? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
+    if (socketfd < 0) {
+        NETSTACK_LOGE("fd is nullptr or closed");
+        return false;
+    }
     int opt;
     if (CheckClosed(context, opt)) {
         return true;
@@ -1284,13 +1312,7 @@ static bool GetSocketState(GetStateContext *context)
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
     socklen_t addrLen;
-    if (sockAddr.sa_family == AF_INET) {
-        addr = reinterpret_cast<sockaddr *>(&addr4);
-        addrLen = sizeof(addr4);
-    } else if (sockAddr.sa_family == AF_INET6) {
-        addr = reinterpret_cast<sockaddr *>(&addr6);
-        addrLen = sizeof(addr6);
-    }
+    SelectSockAddr(sockAddr, addr4, addr6, addr, addrLen);
 
     if (addr == nullptr) {
         NETSTACK_LOGE("addr family error, address invalid");
@@ -1518,7 +1540,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
             ERROR_RETURN(context, "v4bind err, port:%{public}d, errno:%{public}d", context->address_.GetPort(), errno);
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
-        std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr4, sizeof(addr4),
+        std::thread serviceThread(PollRecvData, pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetSharedManager()));
         RecvfromMulticastSetThreadName(serviceThread.native_handle());
         serviceThread.detach();
@@ -1534,7 +1556,7 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
             ERROR_RETURN(context, "v6bind err, port:%{public}d, errno:%{public}d", context->address_.GetPort(), errno);
         }
         NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
-        std::thread serviceThread(PollRecvData, context->GetSocketFd(), pAddr6, sizeof(addr6),
+        std::thread serviceThread(PollRecvData, pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetSharedManager()));
         RecvfromMulticastSetThreadName(serviceThread.native_handle());
         serviceThread.detach();
