@@ -15,11 +15,11 @@
 
 
 import type { AsyncCallback, ErrorCallback, Callback } from '@ohos.base';
-// import type connection from '@ohos.net.connection';
+import type connection from '@ohos.net.connection';
 import { BusinessError }  from '@ohos.base';
 
 export default namespace webSocket {
-  // type HttpProxy = connection.HttpProxy;
+  type HttpProxy = connection.HttpProxy;
 
   loadLibrary("websocket_ani");
 
@@ -48,7 +48,7 @@ export default namespace webSocket {
     protocol?: string;
   }
 
-  export type ProxyConfiguration = 'system' | 'no-proxy' // | HttpProxy;
+  export type ProxyConfiguration = 'system' | 'no-proxy' | HttpProxy;
 
   export interface ClientCert {
     certPath: string;
@@ -229,20 +229,5 @@ export default namespace webSocket {
         });
       });
     }
-  }
-}
-
-function main() {
-  try {
-    let options: webSocket.WebSocketRequestOptions = {
-
-    }
-    let w = webSocket.createWebSocket();
-    await w.connect("https://baidu.com", {
-      caPath: "niaaani",
-    });
-    w.close();
-  } catch (e:BusinessError) {
-    console.log(e);
   }
 }

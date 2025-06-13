@@ -453,7 +453,21 @@ export default namespace http {
 
     responseCode: ResponseCode | int;
 
-    header: Object;
+    header: Record<String, String>;
+
+    cookies: string;
+
+    performanceTiming: PerformanceTiming;
+  }
+
+  class HttpResponseInner implements HttpResponse {
+    result: string | Object | ArrayBuffer;
+
+    resultType: HttpDataType;
+
+    responseCode: ResponseCode | int;
+
+    header: Record<String, String>;
 
     cookies: string;
 
@@ -461,6 +475,28 @@ export default namespace http {
   }
 
   export interface PerformanceTiming {
+    dnsTiming: int;
+
+    tcpTiming: int;
+
+    tlsTiming: int;
+
+    firstSendTiming: int;
+
+    firstReceiveTiming: int;
+
+    totalFinishTiming: int;
+
+    redirectTiming: int;
+
+    responseHeaderTiming: int;
+
+    responseBodyTiming: int;
+
+    totalTiming: int;
+  }
+
+  class PerformanceTimingInner implements PerformanceTiming {
     dnsTiming: int;
 
     tcpTiming: int;
@@ -572,8 +608,4 @@ export default namespace http {
       });
     }
   }
-}
-
-function main() {
-  let a = http.createHttp();
 }

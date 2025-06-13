@@ -13,6 +13,7 @@
 
 use std::collections::HashMap;
 
+use ani_rs::box_type::BoxI32;
 use serde::{Deserialize, Serialize};
 
 #[ani_rs::ani]
@@ -277,19 +278,28 @@ pub enum HttpDataType {
     ArrayBuffer = 2,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/HttpResponse")]
+#[derive(Serialize)]
+pub enum ResponseCodeOutput {
+    #[serde(rename = "L@ohos/net/http/http/ResponseCode")]
+    Code(ResponseCode),
+    I32(BoxI32),
+}
+
+#[ani_rs::ani(path = "L@ohos/net/http/http/HttpResponseInner", output = "only")]
 pub struct HttpResponse {
     // pub result: String | Object | VecBuffer,
+
     pub result_type: HttpDataType,
 
-    // pub response_code: ResponseCode | i32,
-    // pub header: Object,
+    pub response_code: ResponseCodeOutput,
+
+    pub header: HashMap<String, String>,
     pub cookies: String,
 
     pub performance_timing: PerformanceTiming,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/HttpResponse")]
+#[ani_rs::ani(path = "L@ohos/net/http/http/PerformanceTimingInner")]
 pub struct PerformanceTiming {
     pub dns_timing: i32,
 
@@ -310,6 +320,23 @@ pub struct PerformanceTiming {
     pub response_body_timing: i32,
 
     pub total_timing: i32,
+}
+
+impl PerformanceTiming {
+    pub fn new() -> Self {
+        Self {
+            dns_timing: 0,
+            tcp_timing: 0,
+            tls_timing: 0,
+            first_send_timing: 0,
+            first_receive_timing: 0,
+            total_finish_timing: 0,
+            redirect_timing: 0,
+            response_header_timing: 0,
+            response_body_timing: 0,
+            total_timing: 0,
+        }
+    }
 }
 
 #[ani_rs::ani(path = "L@ohos/net/http/http/HttpResponse")]

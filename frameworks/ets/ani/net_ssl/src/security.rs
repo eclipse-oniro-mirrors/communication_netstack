@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use ani_rs::{business_error::BusinessError, AniEnv};
+use ani_rs::business_error::BusinessError;
 
 use crate::{bridge::CertBlob, wrapper::NetworkSecurityClient};
 
@@ -28,10 +28,7 @@ pub fn is_cleartext_permitted() -> Result<bool, BusinessError> {
 }
 
 #[ani_rs::native]
-pub fn is_cleartext_permitted_by_host_name(
-    env: &AniEnv,
-    host_name: String,
-) -> Result<bool, BusinessError> {
+pub fn is_cleartext_permitted_by_host_name(host_name: String) -> Result<bool, BusinessError> {
     NetworkSecurityClient::is_cleartext_permitted_by_host_name(host_name)
         .map_err(|e| {
             BusinessError::new(
