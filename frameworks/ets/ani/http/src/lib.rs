@@ -11,6 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+const LOG_LABEL: hilog_rust::HiLogLabel = hilog_rust::HiLogLabel {
+    log_type: hilog_rust::LogType::LogCore,
+    domain: 0xD0015B0,
+    tag: "HttpAni",
+};
+
+#[macro_use]
+extern crate netstack_common;
+
 mod bridge;
 mod callback;
 mod http;
@@ -19,11 +28,6 @@ ani_rs::ani_constructor! {
     namespace "L@ohos/net/http/http"
     [
         "createHttp" : http::create_http
-    ]
-    class "L@ohos/net/http/http/Cleaner"
-    [
-        "cleanHttp" : http::clean_http_request,
-        "cleanCache" : http::clean_http_cache,
     ]
     class "L@ohos/net/http/http/HttpRequestInner"
     [
@@ -49,4 +53,21 @@ ani_rs::ani_constructor! {
         "flushSync" : http::flush,
         "deleteSync": http::delete,
     ]
+    class "L@ohos/net/http/http/Cleaner"
+    [
+        "cleanHttp" : http::clean_http_request,
+        "cleanCache" : http::clean_http_cache,
+    ]
 }
+
+#[used]
+#[link_section = ".init_array"]
+static A: extern "C" fn() = {
+    #[link_section = ".text.startup"]
+    extern "C" fn init() {
+        std::panic::set_hook(Box::new(|info| {
+            info!("Panic occurred: {:?}", info);
+        }));
+    }
+    init
+};

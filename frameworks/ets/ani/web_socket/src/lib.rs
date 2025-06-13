@@ -11,6 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+const LOG_LABEL: hilog_rust::HiLogLabel = hilog_rust::HiLogLabel {
+    log_type: hilog_rust::LogType::LogCore,
+    domain: 0xD0015B0,
+    tag: "WebSocketAni",
+};
+
+#[macro_use]
+extern crate netstack_common;
+
 mod bridge;
 mod web_socket;
 mod wrapper;
@@ -18,13 +27,13 @@ mod wrapper;
 ani_rs::ani_constructor! {
     namespace "L@ohos/net/webSocket/webSocket"
     [
-        "create_webSocket" : web_socket::create_web_socket
+        "createWebSocket" : web_socket::create_web_socket
     ]
     class "L@ohos/net/webSocket/webSocket/WebSocketInner"
     [
-        "connect_sync" : web_socket::connect_sync,
-        "send_sync" : web_socket::send_sync,
-        "close_sync" : web_socket::close_sync,
+        "connectSync" : web_socket::connect_sync,
+        "sendSync" : web_socket::send_sync,
+        "closeSync" : web_socket::close_sync,
     ]
     class "L@ohos/net/webSocket/webSocket/Cleaner"
     [

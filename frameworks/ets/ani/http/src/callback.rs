@@ -13,80 +13,75 @@
 
 use std::{collections::HashMap, sync::Mutex};
 
-use ani_rs::objects::GlobalRefCallback;
-use netstack_rs::request::RequestCallback;
+use ani_rs::{box_type::BoxI32, objects::GlobalRefAsyncCallback};
+use netstack_rs::{request::RequestCallback, response::Response};
 
-use crate::bridge::{DataReceiveProgressInfo, DataSendProgressInfo, HttpResponse};
+use crate::bridge::{
+    DataReceiveProgressInfo, DataSendProgressInfo, HttpDataType, HttpResponse, PerformanceTiming,
+    ResponseCode, ResponseCodeOutput,
+};
 
 pub struct TaskCallback {
-    pub on_response: Mutex<Option<GlobalRefCallback<(HttpResponse,)>>>,
-    pub on_header_receive: Mutex<Option<GlobalRefCallback<(HashMap<String, String>,)>>>,
-    pub on_headers_receive: Mutex<Option<GlobalRefCallback<(HashMap<String, String>,)>>>,
-    pub on_data_receive: Mutex<Option<GlobalRefCallback<(Vec<u8>,)>>>,
+    pub on_response: Option<GlobalRefAsyncCallback<(HttpResponse,)>>,
+    pub on_header_receive: Option<GlobalRefAsyncCallback<(HashMap<String, String>,)>>,
+    pub on_headers_receive: Option<GlobalRefAsyncCallback<(HashMap<String, String>,)>>,
+    pub on_data_receive: Option<GlobalRefAsyncCallback<(Vec<u8>,)>>,
 
-    pub on_data_end: Mutex<Option<GlobalRefCallback<()>>>,
-    pub on_data_receive_progress: Mutex<Option<GlobalRefCallback<(DataReceiveProgressInfo,)>>>,
-    pub on_data_send_progress: Mutex<Option<GlobalRefCallback<(DataSendProgressInfo,)>>>,
+    pub on_data_end: Option<GlobalRefAsyncCallback<()>>,
+    pub on_data_receive_progress: Option<GlobalRefAsyncCallback<(DataReceiveProgressInfo,)>>,
+    pub on_data_send_progress: Option<GlobalRefAsyncCallback<(DataSendProgressInfo,)>>,
 }
 
 impl TaskCallback {
     pub fn new() -> Self {
         Self {
-            on_response: Mutex::new(None),
-            on_header_receive: Mutex::new(None),
-            on_headers_receive: Mutex::new(None),
-            on_data_receive: Mutex::new(None),
+            on_response: None,
+            on_header_receive: None,
+            on_headers_receive: None,
+            on_data_receive: None,
 
-            on_data_end: Mutex::new(None),
-            on_data_receive_progress: Mutex::new(None),
-            on_data_send_progress: Mutex::new(None),
+            on_data_end: None,
+            on_data_receive_progress: None,
+            on_data_send_progress: None,
         }
-    }
-}
-
-impl TaskCallback {
-    pub fn set_on_response(&self, callback: GlobalRefCallback<(HttpResponse,)>) {
-        *self.on_response.lock().unwrap() = Some(callback);
-    }
-
-    pub fn set_on_header_receive(&self, callback: GlobalRefCallback<(HashMap<String, String>,)>) {
-        *self.on_header_receive.lock().unwrap() = Some(callback);
-    }
-
-    pub fn set_on_headers_receive(&self, callback: GlobalRefCallback<(HashMap<String, String>,)>) {
-        *self.on_headers_receive.lock().unwrap() = Some(callback);
-    }
-
-    pub fn set_on_data_receive(&self, callback: GlobalRefCallback<(Vec<u8>,)>) {
-        *self.on_data_receive.lock().unwrap() = Some(callback);
-    }
-
-    pub fn set_on_data_end(&self, callback: GlobalRefCallback<()>) {
-        *self.on_data_end.lock().unwrap() = Some(callback);
-    }
-
-    pub fn set_on_data_receive_progress(
-        &self,
-        callback: GlobalRefCallback<(DataReceiveProgressInfo,)>,
-    ) {
-        *self.on_data_receive_progress.lock().unwrap() = Some(callback);
-    }
-
-    pub fn set_on_data_send_progress(&self, callback: GlobalRefCallback<(DataSendProgressInfo,)>) {
-        *self.on_data_send_progress.lock().unwrap() = Some(callback);
     }
 }
 
 impl RequestCallback for TaskCallback {
     fn on_success(&mut self, response: netstack_rs::response::Response) {
-        panic!("Request succeeded with response");
+        let code = response.status() as i32;
+        info!("request success: {:?}", code);
+        if let Some(callback) = self.on_data_end.take() {
+            info!("on_data_end callback set");
+            callback.execute(None, ());
+        }
     }
 
     fn on_fail(&mut self, error: netstack_rs::error::HttpClientError) {
-        panic!("Request failed with error");
+        info!("request fail");
     }
 
     fn on_cancel(&mut self) {}
 
-    fn on_data_receive(&mut self, data: &[u8], task: netstack_rs::task::RequestTask) {}
+    fn on_data_receive(&mut self, data: &[u8], mut task: netstack_rs::task::RequestTask) {
+        let headers = task.headers();
+        if let Some(callback) = self.on_response.take() {
+            let response = task.response();
+            let code = response.status() as i32;
+            let response = HttpResponse {
+                result_type: HttpDataType::String,
+                response_code: ResponseCodeOutput::I32(BoxI32::new(code)),
+                header: response.headers(),
+                cookies: String::new(),
+                performance_timing: PerformanceTiming::new(),
+            };
+            info!("on_response callback set");
+            callback.execute(None, (response,));
+        }
+
+        if let Some(callback) = self.on_header_receive.as_ref() {
+            info!("on_header_receive callback set");
+            callback.execute(None, (headers.clone(),));
+        }
+    }
 }
