@@ -28,7 +28,9 @@ pub(crate) fn web_socket_clean(this: Cleaner) -> Result<(), BusinessError> {
     Ok(())
 }
 
-pub(crate) fn create_web_socket<'local>(env: AniEnv<'local>, _: AniRef<'local>) -> AniRef<'local> {
+#[ani_rs::native]
+pub fn create_web_socket<'local>(env: &AniEnv<'local>) -> Result<AniRef<'local>, BusinessError> {
+    info!("Creating WebSocket instance");
     static WEB_SOCKET_CLASS: &CStr = unsafe {
         CStr::from_bytes_with_nul_unchecked(b"L@ohos/net/webSocket/webSocket/WebSocketInner;\0")
     };
@@ -39,7 +41,7 @@ pub(crate) fn create_web_socket<'local>(env: AniEnv<'local>, _: AniRef<'local>) 
     let obj = env
         .new_object_with_signature(&class, CTOR_SIGNATURE, (ptr as i64,))
         .unwrap();
-    obj.into()
+    Ok(obj.into())
 }
 
 #[ani_rs::native]
@@ -48,15 +50,28 @@ pub(crate) fn connect_sync(
     url: String,
     options: Option<bridge::WebSocketRequestOptions>,
 ) -> Result<bool, BusinessError> {
+    info!("Connecting to WebSocket at URL: {}", url);
+
     let web_socket = unsafe { &mut *(this.native_ptr as *mut WebSocket) };
     let mut headers = HashMap::new();
+    let (mut ca_path, mut client_cert, mut protocol) = (None, None, None);
+
     if let Some(options) = options {
         if let Some(header) = options.header {
             headers = header;
         }
+        if let Some(path) = options.ca_path {
+            ca_path = Some(path);
+        }
+        if let Some(cert) = options.client_cert {
+            client_cert = Some(cert);
+        }
+        if let Some(p) = options.protocol {
+            protocol = Some(p);
+        }
     }
     web_socket
-        .connect(&url, headers)
+        .connect(&url, headers, ca_path, client_cert, protocol)
         .map(|_| true)
         .map_err(|e| BusinessError::new(e, format!("Failed to connect")))
 }

@@ -18,5 +18,5 @@ members = [
     "interfaces/innerkits/rust/netstack_rs",
     "interfaces/innerkits/rust/ffrt_rs",
     "frameworks/ets/ani/net_ssl",
-    "frameworks/ets/ani/web_socket",
+    "frameworks/ets/ani/web_socket", "frameworks/ets/ani/common",
 ]

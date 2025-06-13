@@ -13,6 +13,8 @@
 
 use std::collections::HashMap;
 
+use crate::bridge::ClientCert;
+
 pub struct WebSocket {
     client: cxx::UniquePtr<ffi::WebSocketClient>,
 }
@@ -23,7 +25,14 @@ impl WebSocket {
         WebSocket { client }
     }
 
-    pub fn connect(&mut self, url: &str, headers: HashMap<String, String>) -> Result<(), i32> {
+    pub fn connect(
+        &mut self,
+        url: &str,
+        headers: HashMap<String, String>,
+        ca_path: Option<String>,
+        client_cert: Option<ClientCert>,
+        protocol: Option<String>,
+    ) -> Result<(), i32> {
         let options = ffi::ConnectOptions {
             headers: headers
                 .iter()
@@ -31,6 +40,16 @@ impl WebSocket {
                 .flatten()
                 .collect(),
         };
+        if let Some(ca_path) = ca_path {
+            ffi::SetCaPath(self.client.pin_mut(), &ca_path);
+        }
+        if let Some(cert) = client_cert {
+            ffi::SetClientCert(self.client.pin_mut(), &cert.cert_path, &cert.key_path);
+            if let Some(password) = cert.key_password {
+                ffi::SetCertPassword(self.client.pin_mut(), &password);
+            }
+        }
+
         let ret = ffi::Connect(self.client.pin_mut(), url, options);
         if ret != 0 {
             return Err(ret);
@@ -60,7 +79,7 @@ impl WebSocket {
 mod ffi {
 
     pub struct ConnectOptions<'a> {
-        headers: Vec<&'a str>,
+        pub headers: Vec<&'a str>,
     }
 
     struct CloseOption<'a> {
@@ -77,6 +96,12 @@ mod ffi {
         fn CreateWebSocket() -> UniquePtr<WebSocketClient>;
 
         fn Connect(client: Pin<&mut WebSocketClient>, url: &str, options: ConnectOptions) -> i32;
+
+        fn SetCaPath(client: Pin<&mut WebSocketClient>, ca_path: &str);
+
+        fn SetClientCert(client: Pin<&mut WebSocketClient>, cert_path: &str, key: &str);
+
+        fn SetCertPassword(client: Pin<&mut WebSocketClient>, password: &str);
 
         fn Send(client: Pin<&mut WebSocketClient>, data: &str) -> i32;
 
