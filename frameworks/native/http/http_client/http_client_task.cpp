@@ -31,7 +31,6 @@
 #include "timing.h"
 #if HAS_NETMANAGER_BASE
 #include "http_client_network_message.h"
-#include "netstack_chr_client.h"
 #endif
 #include "netstack_hisysevent.h"
 

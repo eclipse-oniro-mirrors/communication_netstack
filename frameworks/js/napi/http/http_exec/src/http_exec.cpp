@@ -56,7 +56,6 @@
 #include "event_list.h"
 #if HAS_NETMANAGER_BASE
 #include "hitrace_meter.h"
-#include "netstack_chr_client.h"
 #include "netstack_hisysevent.h"
 #endif
 #include "http_async_work.h"
