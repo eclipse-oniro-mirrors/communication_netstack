@@ -73,6 +73,7 @@ ohos_rust_shared_library("websocket_ani") {
     "netmanager_base:ani_rs",
   ]
   deps = [
+    "../common:netstack_common",
     ":websocket_ani_static",
     "//third_party/rust/crates/cxx:lib",
     "//third_party/rust/crates/serde/serde:lib"

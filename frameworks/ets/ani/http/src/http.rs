@@ -11,42 +11,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{ffi::CStr, sync::Arc};
+use std::ffi::CStr;
 
 use ani_rs::{
     business_error::BusinessError,
-    objects::{AniFnObject, AniRef},
+    objects::{AniAsyncCallback, AniRef},
     AniEnv,
 };
 use netstack_rs::{request::Request, task::RequestTask};
 
 use crate::{
-    bridge::{Cleaner, HttpRequest, HttpRequestOptions, HttpResponse, HttpResponseCache},
+    bridge::{Cleaner, HttpRequest, HttpRequestOptions, HttpResponseCache},
     callback::TaskCallback,
 };
 
-static HTTP_REQUEST_CLASS: &CStr =
-    unsafe { CStr::from_bytes_with_nul_unchecked(b"L@ohos/net/http/http/HttpRequestInner;\0") };
-static CTOR_SIGNATURE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"J:V\0") };
-
 pub struct Task {
     pub request_task: Option<RequestTask>,
-    pub callback: Arc<TaskCallback>,
+    pub callback: Option<TaskCallback>,
 }
 
 impl Task {
     pub fn new() -> Self {
         Self {
             request_task: None,
-            callback: Arc::new(TaskCallback::new()),
+            callback: None,
         }
     }
 }
 
-pub(crate) fn create_http<'local>(env: &AniEnv<'local>) -> Result<AniRef<'local>, BusinessError> {
-    let request = Box::new(Task::new());
+#[ani_rs::native]
+pub fn create_http<'local>(env: &AniEnv<'local>) -> Result<AniRef<'local>, BusinessError> {
+    static HTTP_REQUEST_CLASS: &CStr =
+        unsafe { CStr::from_bytes_with_nul_unchecked(b"L@ohos/net/http/http/HttpRequestInner;\0") };
+    static CTOR_SIGNATURE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"J:V\0") };
 
+    let request = Box::new(Task::new());
     let ptr = Box::into_raw(request);
+
     let class = env.find_class(HTTP_REQUEST_CLASS).unwrap();
     let obj = env
         .new_object_with_signature(&class, CTOR_SIGNATURE, (ptr as i64,))
@@ -59,14 +60,18 @@ pub(crate) fn request(
     env: &AniEnv,
     this: HttpRequest,
     url: String,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
     options: Option<HttpRequestOptions>,
 ) -> Result<(), BusinessError> {
+    info!("request url :{}", url);
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
     let mut request = Request::<TaskCallback>::new();
-    request.url(url.as_str());
-    *task.callback.on_response.lock().unwrap() = Some(callback.into_global_callback(env).unwrap());
 
+    request.url(url.as_str());
+
+    let mut cb = task.callback.take().unwrap_or_else(TaskCallback::new);
+    cb.on_response = Some(async_callback.into_global_callback(env).unwrap());
+    request.callback(cb);
     let mut request_task = request.build();
     request_task.start();
     task.request_task = Some(request_task);
@@ -77,7 +82,7 @@ pub(crate) fn request(
 pub(crate) fn request_in_stream(
     this: HttpRequest,
     url: String,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
     options: Option<HttpRequestOptions>,
 ) -> Result<i32, BusinessError> {
     todo!()
@@ -109,18 +114,28 @@ pub(crate) fn clean_http_cache(this: Cleaner) -> Result<(), BusinessError> {
 pub(crate) fn on_header_receive(
     env: &AniEnv,
     this: HttpRequest,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
 ) -> Result<(), BusinessError> {
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
-    let callback = callback.into_global_callback(env).unwrap();
-    task.callback.set_on_header_receive(callback);
+    match task.callback {
+        Some(ref mut callback) => {
+            // Convert the async callback to a global reference
+            callback.on_header_receive = Some(async_callback.into_global_callback(env).unwrap());
+        }
+        None => {
+            let mut task_callback = TaskCallback::new();
+            task_callback.on_header_receive =
+                Some(async_callback.into_global_callback(env).unwrap());
+            task.callback = Some(task_callback);
+        }
+    }
     Ok(())
 }
 
 #[ani_rs::native]
 pub(crate) fn off_header_receive(
     this: HttpRequest,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
 ) -> Result<(), BusinessError> {
     todo!()
 }
@@ -129,18 +144,28 @@ pub(crate) fn off_header_receive(
 pub(crate) fn on_headers_receive(
     env: &AniEnv,
     this: HttpRequest,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
 ) -> Result<(), BusinessError> {
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
-    let callback = callback.into_global_callback(env).unwrap();
-    task.callback.set_on_headers_receive(callback);
+    match task.callback {
+        Some(ref mut callback) => {
+            // Convert the async callback to a global reference
+            callback.on_headers_receive = Some(async_callback.into_global_callback(env).unwrap());
+        }
+        None => {
+            let mut task_callback = TaskCallback::new();
+            task_callback.on_headers_receive =
+                Some(async_callback.into_global_callback(env).unwrap());
+            task.callback = Some(task_callback);
+        }
+    }
     Ok(())
 }
 
 #[ani_rs::native]
 pub(crate) fn off_headers_receive(
     this: HttpRequest,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
 ) -> Result<(), BusinessError> {
     todo!()
 }
@@ -149,18 +174,27 @@ pub(crate) fn off_headers_receive(
 pub(crate) fn on_data_receive(
     env: &AniEnv,
     this: HttpRequest,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
 ) -> Result<(), BusinessError> {
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
-    let callback = callback.into_global_callback(env).unwrap();
-    task.callback.set_on_data_receive(callback);
+    match task.callback {
+        Some(ref mut callback) => {
+            // Convert the async callback to a global reference
+            callback.on_data_receive = Some(async_callback.into_global_callback(env).unwrap());
+        }
+        None => {
+            let mut task_callback = TaskCallback::new();
+            task_callback.on_data_receive = Some(async_callback.into_global_callback(env).unwrap());
+            task.callback = Some(task_callback);
+        }
+    }
     Ok(())
 }
 
 #[ani_rs::native]
 pub(crate) fn off_data_receive(
     this: HttpRequest,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
 ) -> Result<(), BusinessError> {
     todo!()
 }
@@ -169,11 +203,20 @@ pub(crate) fn off_data_receive(
 pub(crate) fn on_data_end(
     env: &AniEnv,
     this: HttpRequest,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
 ) -> Result<(), BusinessError> {
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
-    let callback = callback.into_global_callback(env).unwrap();
-    task.callback.set_on_data_end(callback);
+    match task.callback {
+        Some(ref mut callback) => {
+            // Convert the async callback to a global reference
+            callback.on_data_end = Some(async_callback.into_global_callback(env).unwrap());
+        }
+        None => {
+            let mut task_callback = TaskCallback::new();
+            task_callback.on_data_end = Some(async_callback.into_global_callback(env).unwrap());
+            task.callback = Some(task_callback);
+        }
+    }
     Ok(())
 }
 
@@ -181,7 +224,7 @@ pub(crate) fn on_data_end(
 pub(crate) fn off_data_end(
     env: &AniEnv,
     this: HttpRequest,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
 ) -> Result<(), BusinessError> {
     todo!()
 }
@@ -190,18 +233,29 @@ pub(crate) fn off_data_end(
 pub(crate) fn on_data_receive_progress(
     env: &AniEnv,
     this: HttpRequest,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
 ) -> Result<(), BusinessError> {
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
-    let callback = callback.into_global_callback(env).unwrap();
-    task.callback.set_on_data_receive_progress(callback);
+    match task.callback {
+        Some(ref mut callback) => {
+            // Convert the async callback to a global reference
+            callback.on_data_receive_progress =
+                Some(async_callback.into_global_callback(env).unwrap());
+        }
+        None => {
+            let mut task_callback = TaskCallback::new();
+            task_callback.on_data_receive_progress =
+                Some(async_callback.into_global_callback(env).unwrap());
+            task.callback = Some(task_callback);
+        }
+    }
     Ok(())
 }
 
 #[ani_rs::native]
 pub(crate) fn off_data_receive_progress(
     this: HttpRequest,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
 ) -> Result<(), BusinessError> {
     todo!()
 }
@@ -210,18 +264,29 @@ pub(crate) fn off_data_receive_progress(
 pub(crate) fn on_data_send_progress(
     env: &AniEnv,
     this: HttpRequest,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
 ) -> Result<(), BusinessError> {
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
-    let callback = callback.into_global_callback(env).unwrap();
-    task.callback.set_on_data_send_progress(callback);
+    match task.callback {
+        Some(ref mut callback) => {
+            // Convert the async callback to a global reference
+            callback.on_data_send_progress =
+                Some(async_callback.into_global_callback(env).unwrap());
+        }
+        None => {
+            let mut task_callback = TaskCallback::new();
+            task_callback.on_data_send_progress =
+                Some(async_callback.into_global_callback(env).unwrap());
+            task.callback = Some(task_callback);
+        }
+    }
     Ok(())
 }
 
 #[ani_rs::native]
 pub(crate) fn off_data_send_progress(
     this: HttpRequest,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
 ) -> Result<(), BusinessError> {
     todo!()
 }
@@ -230,7 +295,7 @@ pub(crate) fn off_data_send_progress(
 pub(crate) fn once(
     this: HttpRequest,
     ty: String,
-    callback: AniFnObject,
+    async_callback: AniAsyncCallback,
 ) -> Result<(), BusinessError> {
     todo!()
 }

@@ -15,9 +15,10 @@
 
 #include "websocket_ani.h"
 
+#include "secure_char.h"
+#include "wrapper.rs.h"
 #include <memory>
 
-#include "wrapper.rs.h"
 namespace OHOS {
 namespace NetStackAni {
 
@@ -43,6 +44,26 @@ int32_t Connect(NetStack::WebSocketClient::WebSocketClient &client, const rust::
         }
     }
     return client.Connect(std::string(url), openOptions);
+}
+
+void SetCaPath(NetStack::WebSocketClient::WebSocketClient &client, const rust::str caPath)
+{
+    auto context = client.GetClientContext();
+    context->SetUserCertPath(std::string(caPath));
+}
+
+void SetClientCert(NetStack::WebSocketClient::WebSocketClient &client, const rust::str clientCert,
+                   const rust::str clientKey)
+{
+    auto context = client.GetClientContext();
+    context->clientCert = std::string(clientCert);
+    context->clientKey = NetStack::Secure::SecureChar(std::string(clientKey));
+}
+
+void SetCertPassword(NetStack::WebSocketClient::WebSocketClient &client, const rust::str password)
+{
+    auto context = client.GetClientContext();
+    context->keyPassword = NetStack::Secure::SecureChar(std::string(password));
 }
 
 int32_t Send(NetStack::WebSocketClient::WebSocketClient &client, const rust::str data)
