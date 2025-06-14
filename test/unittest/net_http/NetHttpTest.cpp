@@ -165,19 +165,19 @@ HWTEST_F(NetHttpTest, GetHeaderValue001, TestSize.Level1)
     EXPECT_TRUE(header != nullptr);
     header->fields = nullptr;
     Http_HeaderValue *value = OH_Http_GetHeaderValue(header, "key");
-    EXPECT_EQ(value, NULL);
+    EXPECT_EQ(value, nullptr);
     OH_Http_DestroyHeaders(&header);
 }
 
 HWTEST_F(NetHttpTest, GetHeaderValue002, TestSize.Level1)
 {    
     Http_HeaderValue *value = OH_Http_GetHeaderValue(nullptr, "key");
-    EXPECT_EQ(value, NULL);
+    EXPECT_EQ(value, nullptr);
 
     Http_Headers *header = OH_Http_CreateHeaders();
     EXPECT_TRUE(header != nullptr);
     value = OH_Http_GetHeaderValue(header, nullptr);
-    EXPECT_EQ(value, NULL);
+    EXPECT_EQ(value, nullptr);
     OH_Http_DestroyHeaders(&header);
 }
 
@@ -187,18 +187,18 @@ HWTEST_F(NetHttpTest, GetHeaderValue003, TestSize.Level1)
     EXPECT_TRUE(header != nullptr);
     OH_Http_SetHeaderValue(header, "key1", "test1");
     Http_HeaderValue *value = OH_Http_GetHeaderValue(header, "key1");
-    EXPECT_TRUE(value != NULL);
+    EXPECT_TRUE(value != nullptr);
     OH_Http_DestroyHeaders(&header);
 }
 
 HWTEST_F(NetHttpTest, GetHeaderEntries001, TestSize.Level1)
 {    
-    EXPECT_EQ(OH_Http_GetHeaderEntries(NULL), NULL);
+    EXPECT_EQ(OH_Http_GetHeaderEntries(nullptr), nullptr);
         
     Http_Headers *header = OH_Http_CreateHeaders();
     EXPECT_TRUE(header != nullptr);
     header->fields = nullptr;
-    EXPECT_EQ(OH_Http_GetHeaderEntries(header), NULL);
+    EXPECT_EQ(OH_Http_GetHeaderEntries(header), nullptr);
     OH_Http_DestroyHeaders(&header);
 }
 
@@ -207,7 +207,7 @@ HWTEST_F(NetHttpTest, GetHeaderEntries002, TestSize.Level1)
     Http_Headers *header = OH_Http_CreateHeaders();
     EXPECT_TRUE(header != nullptr);
     header->fields->capacity = MAX_MAP_CAPACITY + 1;
-    EXPECT_EQ(OH_Http_GetHeaderEntries(header), NULL);
+    EXPECT_EQ(OH_Http_GetHeaderEntries(header), nullptr);
     OH_Http_DestroyHeaders(&header);
 }
 
@@ -219,7 +219,7 @@ HWTEST_F(NetHttpTest, GetHeaderEntries003, TestSize.Level1)
     OH_Http_SetHeaderValue(header, "cc", "test2");
     OH_Http_SetHeaderValue(header, "b", "test3");
  
-    EXPECT_TRUE(OH_Http_GetHeaderEntries(header) != NULL);
+    EXPECT_TRUE(OH_Http_GetHeaderEntries(header) != nullptr);
     OH_Http_DestroyHeaders(&header);
 }
 

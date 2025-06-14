@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 
 #include "netstack_hash_map.h"
 #include "net_http_inner_types.h"
@@ -57,7 +57,7 @@ HWTEST_F(NetstackHashMapTest, CreateMapTest001, TestSize.Level1)
 HWTEST_F(NetstackHashMapTest, NetstackInvalidMapTest001, TestSize.Level1)
 {
     Netstack_HashMap *map = CreateMap();
-    map = NULL;
+    map = nullptr;
     const char *value = "value";
     uint32_t ret = Netstack_PutMapEntry(map, "key", (void *)value);
     EXPECT_EQ(ret, OH_HTTP_PARAMETER_ERROR);
@@ -67,7 +67,7 @@ HWTEST_F(NetstackHashMapTest, NetstackInvalidMapTest001, TestSize.Level1)
 HWTEST_F(NetstackHashMapTest, NetstackInvalidMapTest002, TestSize.Level1)
 {
     Netstack_HashMap *map = CreateMap();
-    map->entries = NULL;
+    map->entries = nullptr;
     char *value = strdup("value");
     uint32_t ret = Netstack_PutMapEntry(map, "key", value);
     EXPECT_EQ(ret, OH_HTTP_PARAMETER_ERROR);
@@ -98,7 +98,7 @@ HWTEST_F(NetstackHashMapTest, NetstackResizeMapTest001, TestSize.Level1)
 {
     Netstack_HashMap *map = CreateMap();
     EXPECT_TRUE(map != nullptr);
-    map->entries[0] = NULL;
+    map->entries[0] = nullptr;
     const char *value = "value";
     Netstack_PutMapEntry(map, "key", (void *)value);
     Netstack_DestroyMap(map);
@@ -109,7 +109,7 @@ HWTEST_F(NetstackHashMapTest, NetstackResizeMapTest002, TestSize.Level1)
     Netstack_HashMap *map = CreateMap();
     EXPECT_TRUE(map != nullptr);
     map->entries[0] = (Netstack_HashMapEntry *)calloc(1, sizeof(Netstack_HashMapEntry));
-    map->entries[0]->key = NULL;
+    map->entries[0]->key = nullptr;
     const char *value = "value";
     Netstack_PutMapEntry(map, "key", (void *)value);
     Netstack_DestroyMap(map);
@@ -119,7 +119,7 @@ HWTEST_F(NetstackHashMapTest, NetstackPutMapEntryTest001, TestSize.Level1)
 {
     Netstack_HashMap *map = CreateMap();
     EXPECT_TRUE(map != nullptr);
-    char *key = NULL;
+    char *key = nullptr;
     const char *value = "value";
     EXPECT_EQ(Netstack_PutMapEntry(map, key, (void *)value), OH_HTTP_PARAMETER_ERROR);
     Netstack_DestroyMap(map);
@@ -128,7 +128,7 @@ HWTEST_F(NetstackHashMapTest, NetstackPutMapEntryTest001, TestSize.Level1)
 HWTEST_F(NetstackHashMapTest, NetstackPutMapEntryTest002, TestSize.Level1)
 {
     Netstack_HashMap *map = CreateMap();
-    map = NULL;
+    map = nullptr;
     const char *key = "key";
     const char *value = "value";
     EXPECT_EQ(Netstack_PutMapEntry(map, key, (void *)value), OH_HTTP_PARAMETER_ERROR);
@@ -171,8 +171,8 @@ HWTEST_F(NetstackHashMapTest, NetstackPutMapEntryTest005, TestSize.Level1)
 HWTEST_F(NetstackHashMapTest, NetstackGetMapEntryTest001, TestSize.Level1)
 {
     Netstack_HashMap *map = CreateMap();
-    const char *key = NULL;
-    EXPECT_EQ(Netstack_GetMapEntry(map, key), NULL);
+    const char *key = nullptr;
+    EXPECT_EQ(Netstack_GetMapEntry(map, key), nullptr);
     Netstack_DestroyMap(map);
 }
 
@@ -190,7 +190,7 @@ HWTEST_F(NetstackHashMapTest, NetstackGetMapEntryTest003, TestSize.Level1)
 {
     Netstack_HashMap *map = CreateMap();
     const char *key = "a";
-    EXPECT_EQ(Netstack_GetMapEntry(map, key), NULL);
+    EXPECT_EQ(Netstack_GetMapEntry(map, key), nullptr);
     Netstack_DestroyMap(map);
 }
 
@@ -206,7 +206,7 @@ HWTEST_F(NetstackHashMapTest, NetstackDeleteMapEntryTest001, TestSize.Level1)
 HWTEST_F(NetstackHashMapTest, NetstackDeleteMapEntryTest002, TestSize.Level1)
 {
     Netstack_HashMap *map = CreateMap();
-    char *key = NULL;
+    char *key = nullptr;
     EXPECT_EQ(Netstack_DeleteMapEntry(map, key), OH_HTTP_PARAMETER_ERROR);
     Netstack_DestroyMap(map);
 }
@@ -245,7 +245,7 @@ HWTEST_F(NetstackHashMapTest, NetstackDestroyMapWithValueTest001, TestSize.Level
     Netstack_HashMap *map = CreateMap();
     EXPECT_TRUE(map != nullptr);
     map->capacity = MAX_MAP_CAPACITY + 1;
-    Netstack_DestroyMapWithValue(map, NULL);
+    Netstack_DestroyMapWithValue(map, nullptr);
 }
 
 HWTEST_F(NetstackHashMapTest, NetstackDestroyMapWithValueTest002, TestSize.Level1)
@@ -264,7 +264,7 @@ HWTEST_F(NetstackHashMapTest, NetstackDestroyMapWithValueTest002, TestSize.Level
     Netstack_HashMap *map = CreateMap();
     map->capacity = MAX_MAP_CAPACITY + 1;
     Netstack_MapIterator *iterator = Netstack_CreateMapIterator(map);
-    EXPECT_EQ(iterator, NULL);
+    EXPECT_EQ(iterator, nullptr);
     Netstack_DestroyMap(map);
 }
 
@@ -279,7 +279,7 @@ HWTEST_F(NetstackHashMapTest, NetstackCreateMapIteratorTest002, TestSize.Level1)
     Netstack_PutMapEntry(map, key2, (void *)value);
     Netstack_PutMapEntry(map, key3, (void *)value);
     Netstack_MapIterator *iterator = Netstack_CreateMapIterator(map);
-    EXPECT_FALSE(iterator == NULL);
+    EXPECT_FALSE(iterator == nullptr);
     Netstack_DestroyMapIterator(iterator);
     Netstack_DestroyMap(map);
 }
@@ -288,13 +288,13 @@ HWTEST_F(NetstackHashMapTest, NetstackCreateMapIteratorTest003, TestSize.Level1)
 {
     Netstack_HashMap *map = CreateMap();
     Netstack_MapIterator *iterator = Netstack_CreateMapIterator(map);
-    EXPECT_EQ(iterator, NULL);
+    EXPECT_EQ(iterator, nullptr);
     Netstack_DestroyMap(map);
 }
 
 HWTEST_F(NetstackHashMapTest, NetstackMapIterateNextTest001, TestSize.Level1)
 {
-    Netstack_MapIterateNext(NULL);
+    Netstack_MapIterateNext(nullptr);
 
     Netstack_HashMap *map = CreateMap();
     EXPECT_TRUE(map != nullptr);
