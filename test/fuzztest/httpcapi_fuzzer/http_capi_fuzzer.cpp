@@ -88,7 +88,7 @@ void CreateRequestTest(const uint8_t *data, size_t size)
 }
 
 void Http_SampleResponseCallback(Http_Response *response, uint32_t errCode) {
-    if (response == NULL) {
+    if (response == nullptr) {
         return;
     }
     if (errCode != 0) {
@@ -99,7 +99,7 @@ void Http_SampleResponseCallback(Http_Response *response, uint32_t errCode) {
 }
 
 size_t Http_SampleOnDataReceiveCallback(const char *data) {
-    if (data == NULL) {
+    if (data == nullptr) {
         return 0;
     }
     return 0;
@@ -112,7 +112,7 @@ void Http_SampleOnDownloadProgressCallback(uint64_t totalSize, uint64_t transfer
 }
 
 void Http_SampleOnHeaderReceiveCallback(Http_Headers *headers) {
-    if (headers != NULL) {
+    if (headers != nullptr) {
         Http_HeaderEntry *entries = OH_Http_GetHeaderEntries(headers);
         Http_HeaderValue *headerValue;
         Http_HeaderEntry *delEntries = entries;
@@ -144,12 +144,12 @@ void HttpRequestTest(const uint8_t *data, size_t size)
         return;
     }
     request->options = (Http_RequestOptions *)calloc(1, sizeof(Http_RequestOptions));
-    if (request->options == NULL) {
+    if (request->options == nullptr) {
         OH_Http_Destroy(&request);
         return;
     }
     Http_Headers *headers = OH_Http_CreateHeaders();
-    if (headers == NULL) {
+    if (headers == nullptr) {
         OH_Http_Destroy(&request);
         return;
     }
@@ -165,7 +165,7 @@ void HttpRequestTest(const uint8_t *data, size_t size)
         return;
     }
     Http_HeaderValue *headValue = OH_Http_GetHeaderValue(headers, key);
-    if (headValue == NULL) {
+    if (headValue == nullptr) {
         NETSTACK_LOGE("headValue is nullptr");
     }
     request->options->headers = headers;
