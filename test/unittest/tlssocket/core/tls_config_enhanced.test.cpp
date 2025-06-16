@@ -15,7 +15,6 @@
 
 #include <memory>
 
-#include "curl/curl.h"
 #include "gtest/gtest.h"
 
 #define private public

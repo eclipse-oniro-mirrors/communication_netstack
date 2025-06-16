@@ -25,7 +25,6 @@ config("stack_utils_common_public_config") {
   include_dirs = [
     "common_utils/include",
     "log/include",
-    "$THIRD_PARTY_ROOT/curl/include",
   ]
   if (product_name == "ohcore") {
     defines = [ "OH_CORE_NETSTACK_PERMISSION_CHECK" ]

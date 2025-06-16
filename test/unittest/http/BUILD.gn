@@ -61,8 +61,6 @@ ohos_unittest("http_unittest") {
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
     include_dirs += [
-      "$NETMANAGER_BASE_INNERKITS_DIR/include",
-      "$NETMANAGER_BASE_INNERKITS_DIR/netconnclient/include",
       "$SUBSYSTEM_DIR/netstack/utils/netstack_chr_client/include",
     ]
   }
@@ -92,9 +90,12 @@ ohos_unittest("http_unittest") {
     sources +=
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
     deps += [
-      "$ARKUI_ROOT/napi:ace_napi",
+      "napi:ace_napi",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
-      "$THIRD_PARTY_ROOT/bounds_checking_function:libsec_static",
+    ]
+    external_deps += [
+      "napi:ace_napi",
+      "bounds_checking_function:libsec_static",
     ]
   } else {
     deps += [
