@@ -53,7 +53,6 @@ ohos_shared_library("net_ssl") {
   ]
 
   include_dirs = [
-    "$SUBSYSTEM_DIR/ipc/interfaces/innerkits/ipc_core/include",
     "$NETSTACK_NATIVE_ROOT/net_ssl/include",
     "$NETSTACK_DIR/utils/log/include",
   ]

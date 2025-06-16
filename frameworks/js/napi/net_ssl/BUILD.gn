@@ -20,7 +20,6 @@ config("networksecurity_napi_config") {
     "async_work/include",
     "net_ssl_exec/include",
     "net_ssl_module/include",
-    "$THIRD_PARTY_ROOT/openssl/include",
     "$NETSTACK_DIR/frameworks/native/net_ssl/include",
     "$NETSTACK_DIR/interfaces/innerkits/net_ssl/include",
     "$NETSTACK_DIR/utils/common_utils/include",
@@ -73,8 +72,10 @@ ohos_shared_library("networksecurity_napi") {
     sources +=
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
     deps += [
-      "$ARKUI_ROOT/napi:ace_napi",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
+    ]
+    external_deps += [
+      "napi:ace_napi",
     ]
   } else {
     deps += [

@@ -17,14 +17,9 @@ NETSTACK_DIR = "$SUBSYSTEM_DIR/netstack"
 NETSTACK_NATIVE_ROOT = "$NETSTACK_DIR/frameworks/native"
 NETSTACK_INNERKITS_DIR = "$NETSTACK_DIR/interfaces/innerkits"
 
-# args of base module
-NETMANAGER_BASE_INNERKITS_DIR =
-    "$SUBSYSTEM_DIR/netmanager_base/interfaces/innerkits"
-
 # args of other module
 ARKUI_ROOT = "//foundation/arkui"
 THIRD_PARTY_ROOT = "//third_party"
-HILOG_ROOT = "//base/hiviewdfx/hilog"
 HILOG_LITE_ROOT = "//base/hiviewdfx/hilog_lite"
 fuzz_test_path = "netstack/netstack"
 

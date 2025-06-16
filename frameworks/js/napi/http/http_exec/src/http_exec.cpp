@@ -503,7 +503,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     if (EventReport::GetInstance().IsValid()) {
         HttpPerfInfo httpPerfInfo;
         httpPerfInfo.totalTime = totalTime;
-        httpPerfInfo.size = size;
+        httpPerfInfo.size = static_cast<int64_t>(size);
         httpPerfInfo.dnsTime = dnsTime;
         httpPerfInfo.tlsTime = tlsTime == 0 ? 0 : tlsTime - connectTime;
         httpPerfInfo.tcpTime = connectTime == 0 ? 0 : connectTime - dnsTime;

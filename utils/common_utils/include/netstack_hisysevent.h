@@ -21,8 +21,6 @@
 #include <mutex>
 #include <queue>
 
-#include "curl/curl.h"
-
 namespace OHOS::NetStack {
 
 struct EventInfo {
@@ -44,7 +42,7 @@ struct HttpPerfInfo {
     double tlsTime = 0.0;
     double firstRecvTime = 0.0;
     double tcpTime = 0.0;
-    curl_off_t size = 0;
+    int64_t size = 0;
     int64_t responseCode = 0;
     std::string version = "";
     int ipType = 0;
