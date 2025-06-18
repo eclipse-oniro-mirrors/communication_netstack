@@ -230,11 +230,11 @@ export default namespace http {
 
     request(url: string, options?: HttpRequestOptions): Promise<HttpResponse> {
       return new Promise<HttpResponse>((resolve, reject) => {
-        this.requestInner(url,  (err: BusinessError, data: HttpResponse) => {
-          if (err.code !=0 ) {
+        this.requestInner(url,  (err: BusinessError | null, data: HttpResponse| undefined) => {
+          if (err) {
             reject(err);
           } else {
-            resolve(data);
+            resolve(data as HttpResponse);
           }
         }, options);
       });
@@ -252,11 +252,11 @@ export default namespace http {
 
     requestInStream(url: string, options?: HttpRequestOptions): Promise<int> {
       return new Promise<int>((resolve, reject) => {
-        this.requestInStreamInner(url, (err: BusinessError, data: int) => {
-          if (err.code !=0 ) {
+        this.requestInStreamInner(url, (err: BusinessError | null, data: int | undefined) => {
+          if (err) {
             reject(err);
           } else {
-            resolve(data);
+            resolve(data as int);
           }
         }, options);
       });
