@@ -1296,6 +1296,7 @@ static bool GetSocketState(GetStateContext *context)
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     int socketfd = manager->GetData()? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
     if (socketfd < 0) {
+        NETSTACK_LOGE("fd is nullptr or closed");
         context->state_.SetIsClose(true);
         return true;
     }
