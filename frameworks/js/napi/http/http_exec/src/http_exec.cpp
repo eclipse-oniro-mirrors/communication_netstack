@@ -351,18 +351,6 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
                       }
                   });
     context->SetCurlHeaderList(MakeHeaders(vec));
-
-    static auto logCallback = +[](CURL *curl,
-        curl_infotype type,
-        char *data,
-        size_t size,
-        void *userptr) {
-        if (type == CURLINFO_STATE) {
-                NETSTACK_LOGI("CURL_TRACE: type = %{public}d, data = %{public}s", type, data);
-            }
-        };
-    curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
-    curl_easy_setopt(handle, CURLOPT_DEBUGFUNCTION, logCallback);
     if (!SetOption(handle, context, context->GetCurlHeaderList())) {
         NETSTACK_LOGE("set option failed");
         return false;
