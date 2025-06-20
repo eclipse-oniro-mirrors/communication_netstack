@@ -793,6 +793,7 @@ static void PollRecvData(sockaddr *addr, socklen_t addrLen, const MessageCallbac
         NETSTACK_LOGE("manager is nullptr");
         return;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     int socketfd = manager->GetData()? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
     if (socketfd < 0) {
         NETSTACK_LOGE("fd is nullptr or closed");
@@ -807,7 +808,7 @@ static void PollRecvData(sockaddr *addr, socklen_t addrLen, const MessageCallbac
     if (recvTimeoutMs < 0) {
         return;
     }
-
+    lock.unlock();
     std::pair<std::unique_ptr<char[]> &, int> bufInfo{buf, bufferSize};
     std::pair<sockaddr *, socklen_t> addrInfo{addr, addrLen};
     std::unordered_map<int, SocketRecvCallback> socketCallbackMap{};
@@ -815,7 +816,7 @@ static void PollRecvData(sockaddr *addr, socklen_t addrLen, const MessageCallbac
 
     while (true) {
         int currentFd = -1;
-        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        std::shared_lock<std::shared_mutex> lock2(manager->GetDataMutex());
         if (!PreparePollFds(currentFd, fds, socketCallbackMap, callback)) {
             break;
         }
@@ -1296,7 +1297,8 @@ static bool GetSocketState(GetStateContext *context)
     int socketfd = manager->GetData()? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
     if (socketfd < 0) {
         NETSTACK_LOGE("fd is nullptr or closed");
-        return false;
+        context->state_.SetIsClose(true);
+        return true;
     }
     int opt;
     if (CheckClosed(context, opt)) {
