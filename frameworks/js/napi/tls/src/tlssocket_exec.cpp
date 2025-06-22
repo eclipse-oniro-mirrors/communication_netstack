@@ -127,6 +127,7 @@ bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
+    lock.unlock();
     shared->GetCertificate([&context](int32_t errorNumber, const X509CertRawData &cert) {
         context->localCert_ = cert;
         context->errorNumber_ = errorNumber;
@@ -219,7 +220,7 @@ bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
-
+    lock.unlock();
     if (!shared->IsExtSock() && context->proxyOptions_ != nullptr) {
         if (HandleTcpProxyOptions(context, shared) != 0) {
             return false;
@@ -254,6 +255,7 @@ bool TLSSocketExec::ExecGetCipherSuites(GetCipherSuitesContext *context)
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
+    lock.unlock();
     shared->GetCipherSuite([&context](int32_t errorNumber, const std::vector<std::string> &suite) {
         context->cipherSuites_ = suite;
         context->errorNumber_ = errorNumber;
@@ -284,6 +286,7 @@ bool TLSSocketExec::ExecGetRemoteCertificate(GetRemoteCertificateContext *contex
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
+    lock.unlock();
     shared->GetRemoteCertificate([&context](int32_t errorNumber, const X509CertRawData &cert) {
         context->remoteCert_ = cert;
         context->errorNumber_ = errorNumber;
@@ -314,6 +317,7 @@ bool TLSSocketExec::ExecGetProtocol(GetProtocolContext *context)
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
+    lock.unlock();
     shared->GetProtocol([&context](int32_t errorNumber, const std::string &protocol) {
         context->protocol_ = protocol;
         context->errorNumber_ = errorNumber;
@@ -344,6 +348,7 @@ bool TLSSocketExec::ExecGetSignatureAlgorithms(GetSignatureAlgorithmsContext *co
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
+    lock.unlock();
     shared->GetSignatureAlgorithms([&context](int32_t errorNumber, const std::vector<std::string> &algorithms) {
         context->signatureAlgorithms_ = algorithms;
         context->errorNumber_ = errorNumber;
@@ -376,6 +381,7 @@ bool TLSSocketExec::ExecSend(TLSSendContext *context)
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
+    lock.unlock();
     shared->Send(tcpSendOptions, [&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
@@ -474,6 +480,7 @@ bool TLSSocketExec::ExecGetRemoteAddress(TLSGetRemoteAddressContext *context)
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
+    lock.unlock();
     shared->GetRemoteAddress([&context](int32_t errorNumber, const Socket::NetAddress address) {
         context->address_ = address;
         context->errorNumber_ = errorNumber;
@@ -514,6 +521,7 @@ bool TLSSocketExec::ExecGetLocalAddress(TLSGetLocalAddressContext *context)
                           TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
         return false;
     }
+    lock.unlock();
     auto listenSocketFD = shared->GetSocketFd();
     struct sockaddr_storage addr {};
     socklen_t addrLen = sizeof(addr);
@@ -561,6 +569,7 @@ bool TLSSocketExec::ExecGetState(TLSGetStateContext *context)
     if (!shared) {
         return true;
     }
+    lock.unlock();
     shared->GetState([&context](int32_t errorNumber, const Socket::SocketStateBase state) {
         context->state_ = state;
         context->errorNumber_ = errorNumber;
@@ -591,6 +600,7 @@ bool TLSSocketExec::ExecSetExtraOptions(TLSSetExtraOptionsContext *context)
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
         return false;
     }
+    lock.unlock();
     shared->SetExtraOptions(context->options_, [&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
         if (errorNumber != TLSSOCKET_SUCCESS) {
@@ -620,6 +630,7 @@ bool TLSSocketExec::ExecGetSocketFd(TLSGetSocketFdContext *context)
         context->sockFd_= -1;
         return true;
     }
+    lock.unlock();
     context->sockFd_= shared->GetSocketFd();
     return true;
 }
@@ -782,6 +793,7 @@ napi_value TLSSocketExec::GetLocalAddressCallback(TLSGetLocalAddressContext *con
     if (!shared) {
         return obj;
     }
+    lock.unlock();
     NapiUtils::SetStringPropertyUtf8(env, obj, KEY_ADDRESS, shared->GetLocalAddress().GetAddress());
     NapiUtils::SetUint32Property(env, obj, KEY_FAMILY, shared->GetLocalAddress().GetJsValueFamily());
     NapiUtils::SetUint32Property(env, obj, KEY_PORT, shared->GetLocalAddress().GetPort());
