@@ -197,7 +197,7 @@ void TLSSocketServer::Listen(const TlsSocket::TLSConnectOptions &tlsListenOption
         CallListenCallback(TlsSocket::TLSSOCKET_SUCCESS, callback);
         return;
     }
-    NETSTACK_LOGE("Listen 2 %{public}d", listenSocketFd_);
+    NETSTACK_LOGE("Listen 2 %{public}d, %{public}d", listenSocketFd_, g_userCounter);
     if (ExecBind(tlsListenOptions.GetNetAddress(), callback)) {
         NETSTACK_LOGE("Listen 3 %{public}d", listenSocketFd_);
         ExecAccept(tlsListenOptions, callback);
@@ -206,7 +206,10 @@ void TLSSocketServer::Listen(const TlsSocket::TLSConnectOptions &tlsListenOption
         close(listenSocketFd_);
         listenSocketFd_ = -1;
     }
-
+    if (isRunning_) {
+        isRunning_ = false;
+        WaitForRcvThdExit();
+    }
     PollThread(tlsListenOptions);
 }
 
@@ -230,6 +233,10 @@ bool TLSSocketServer::ExecBind(const Socket::NetAddress &address, const ListenCa
         CallOnErrorCallback(-1, "Address Is Invalid");
         CallListenCallback(ConvertErrno(), callback);
         return false;
+    }
+    int reuse = 1; // 1 means enable reuseaddr feature
+    if (setsockopt(listenSocketFd_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<void *>(&reuse), sizeof(reuse)) < 0) {
+        NETSTACK_LOGE("failed to set tls server listen socket reuseaddr on, sockfd: %{public}d", listenSocketFd_);
     }
     if (bind(listenSocketFd_, addr, len) < 0) {
         if (errno != EADDRINUSE) {
@@ -269,10 +276,6 @@ void TLSSocketServer::ExecAccept(const TlsSocket::TLSConnectOptions &tlsAcceptOp
     }
     SetLocalTlsConfiguration(tlsAcceptOptions);
     int ret = 0;
-
-    NETSTACK_LOGE(
-        "accept error is listenSocketFd_=  %{public}d LISETEN_COUNT =%{public}d .GetVerifyMode()  = %{public}d ",
-        listenSocketFd_, LISETEN_COUNT, tlsAcceptOptions.GetTlsSecureOptions().GetVerifyMode());
     ret = listen(listenSocketFd_, LISETEN_COUNT);
     if (ret < 0) {
         int resErr = ConvertErrno();
@@ -318,7 +321,7 @@ void TLSSocketServer::CallSendCallback(int32_t err, TlsSocket::SendCallback call
 void TLSSocketServer::Close(const int socketFd, const TlsSocket::CloseCallback &callback)
 {
     {
-        std::lock_guard<std::mutex> its_lock(connectMutex_);
+        std::shared_lock<std::shared_mutex> its_lock(connectMutex_);
         for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end();) {
             if (it->first == socketFd) {
                 auto res = it->second->Close();
@@ -343,13 +346,9 @@ void TLSSocketServer::Close(const int socketFd, const TlsSocket::CloseCallback &
 
 void TLSSocketServer::Stop(const TlsSocket::CloseCallback &callback)
 {
-    std::lock_guard<std::mutex> its_lock(connectMutex_);
-    for (const auto &c : clientIdConnections_) {
-        c.second->Close();
-    }
-    clientIdConnections_.clear();
     close(listenSocketFd_);
     listenSocketFd_ = -1;
+    NETSTACK_LOGE("g_userCounter = %{public}d", g_userCounter);
     callback(TlsSocket::TLSSOCKET_SUCCESS);
 }
 
@@ -729,6 +728,7 @@ const TlsSocket::X509CertRawData &TLSSocketServer::Connection::GetRemoteCertRawD
 
 TLSSocketServer::Connection::~Connection()
 {
+    NETSTACK_LOGI("TLSSocketServer ~conn");
     Close();
 }
 
@@ -806,6 +806,7 @@ bool TLSSocketServer::Connection::Close()
     if (socketFd_ != -1) {
         shutdown(socketFd_, SHUT_RDWR);
         close(socketFd_);
+        NETSTACK_LOGI("close connection socketFd %{public}d", socketFd_);
         socketFd_ = -1;
     }
     if (!tlsContextServerPointer_) {
@@ -1233,22 +1234,28 @@ std::string TLSSocketServer::Connection::CheckServerIdentityLegal(const std::str
 
 void TLSSocketServer::RemoveConnect(int socketFd)
 {
-    std::lock_guard<std::mutex> its_lock(connectMutex_);
-
-    for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end();) {
+    std::unique_lock<std::shared_mutex> its_lock(connectMutex_);
+    for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end(); ++it) {
+        if (it->second == nullptr) {
+            NETSTACK_LOGE("tlsconnection is nullptr");
+            continue;
+        }
         if (it->second->GetSocketFd() == socketFd) {
+            clientIdConnections_.erase(it);
             break;
-        } else {
-            ++it;
         }
     }
 }
 
-int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
+bool TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
 {
     {
-        std::lock_guard<std::mutex> its_lock(connectMutex_);
+        std::shared_lock<std::shared_mutex> its_lock(connectMutex_);
         for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end();) {
+            if (it->second == nullptr) {
+                NETSTACK_LOGE("tlsconnection is nullptr");
+                return false;
+            }
             if (it->second->GetSocketFd() == socketFd) {
                 char buffer[MAX_BUFFER_SIZE];
                 if (memset_s(buffer, MAX_BUFFER_SIZE, 0, MAX_BUFFER_SIZE) != EOK) {
@@ -1262,14 +1269,24 @@ int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
                     remoteInfo.SetSize(strlen(buffer));
                     it->second->MakeRemoteInfo(remoteInfo);
                     it->second->CallOnMessageCallback(socketFd, buffer, remoteInfo);
-                    return len;
+                    return false;
+                } else if (len == 0) {
+                    NETSTACK_LOGE("tls connection is closed by peer, clientId: %{public}d, Fd: %{public}d",
+                        it->second->GetClientID(), socketFd);
+                    it->second->CallOnCloseCallback(socketFd);
+                    break;
+                } else {
+                    int resErr = ConvertSSLError(it->second->GetSSL());
+                    NETSTACK_LOGE("recv fail, clientId: %{public}d, Fd: %{public}d, ssl error is %{public}d, error info is %{public}s",
+                        it->second->GetClientID(), socketFd, resErr, MakeSSLErrorString(resErr).c_str());
+                    it->second->CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
+                    break;
                 }
 #if defined(CROSS_PLATFORM)
                 if (len == 0 &&  errno == 0) {
                     NETSTACK_LOGI("A client left");
                 }
 #endif
-                break;
             } else {
                 ++it;
             }
@@ -1277,7 +1294,7 @@ int TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
     }
     RemoveConnect(socketFd);
     DropFdFromPollList(index);
-    return -1;
+    return DropFdFromPollList(index);
 }
 
 void TLSSocketServer::Connection::CachedMessageCallback()
@@ -1321,7 +1338,7 @@ void TLSSocketServer::Connection::CallOnMessageCallback(int32_t socketFd, const 
 
 void TLSSocketServer::AddConnect(int socketFd, std::shared_ptr<Connection> connection)
 {
-    std::lock_guard<std::mutex> its_lock(connectMutex_);
+    std::unique_lock<std::shared_mutex> its_lock(connectMutex_);
     clientIdConnections_[connection->GetClientID()] = connection;
 }
 
@@ -1451,30 +1468,52 @@ void TLSSocketServer::SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectO
     NETSTACK_LOGI("New client come in, fd is %{public}d", connectFD);
 }
 
-void TLSSocketServer::InitPollList(int &listendFd)
+void TLSSocketServer::InitPollList(const int &listendFd)
 {
-    for (int i = 1; i <= USER_LIMIT; ++i) {
-        fds_[i].fd = -1;
-        fds_[i].events = 0;
-    }
     fds_[0].fd = listendFd;
     fds_[0].events = POLLIN | POLLERR;
     fds_[0].revents = 0;
 }
 
-void TLSSocketServer::DropFdFromPollList(int &fd_index)
+bool TLSSocketServer::DropFdFromPollList(int &fd_index)
 {
     if (g_userCounter < 0) {
-        NETSTACK_LOGE("g_userCounter  = %{public}d", g_userCounter);
-        return;
+        NETSTACK_LOGE("g_userCounter = %{public}d", g_userCounter);
+        return true;
     }
-    fds_[fd_index].fd = fds_[g_userCounter].fd;
+    if (fd_index == 0) {
+        // index 0 is for listen only
+        fds_[0].fd = -1;
+        fds_[0].events = 0;
+        NETSTACK_LOGI("drop listenFd from poll List, g_userCounter = %{public}d", g_userCounter);
+    } else {
+        // remove the fd_index, and insert the last index
+        fds_[fd_index].fd = fds_[g_userCounter].fd;
+        fds_[g_userCounter].fd = -1;
+        fds_[g_userCounter].events = 0;
+        fd_index--;
+        g_userCounter--;
+        NETSTACK_LOGI("drop clientFd from poll List, g_userCounter = %{public}d", g_userCounter);
+    }
+    for (int i = 0; i < g_userCounter + 1; ++i) {
+        if (fds_[i].fd > 0) {
+            return false;
+        }
+    }
+    return true;
+}
+void TLSSocketServer::NotifyRcvThdExit()
+{
+    std::unique_lock<std::mutex> lock(sockRcvThdMtx_);
+    sockRcvExit_ = true;
+    sockRcvThdCon_.notify_one();
+    NETSTACK_LOGI("recv thread exit");
+}
 
-    fds_[g_userCounter].fd = -1;
-    fds_[g_userCounter].events = 0;
-    fd_index--;
-    g_userCounter--;
-    NETSTACK_LOGE("CallOnConnectCallback  g_userCounter  = %{public}d", g_userCounter);
+void TLSSocketServer::WaitForRcvThdExit()
+{
+    std::unique_lock<std::mutex> lock(sockRcvThdMtx_);
+    sockRcvThdCon_.wait(lock, [this]() { return sockRcvExit_; });
 }
 
 void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOptions)
@@ -1482,7 +1521,7 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
     int on = 1;
     isRunning_ = true;
     ioctl(listenSocketFd_, FIONBIO, (char *)&on);
-    NETSTACK_LOGE("PollThread  start working %{public}d", isRunning_);
+    NETSTACK_LOGI("PollThread  start working %{public}d", isRunning_);
     std::thread thread_([this, tlsOption = tlsListenOptions]() {
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(TLS_SOCKET_SERVER_READ);
@@ -1490,8 +1529,8 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
         pthread_setname_np(pthread_self(), TLS_SOCKET_SERVER_READ);
 #endif
         InitPollList(listenSocketFd_);
-        int clientId = 0;
-        while (isRunning_) {
+        bool exitLoop = false;
+        while (isRunning_ && !exitLoop) {
             int ret = poll(fds_, g_userCounter + 1, POLL_WAIT_TIME);
             if (ret < 0) {
                 int resErr = ConvertErrno();
@@ -1504,21 +1543,22 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
             }
             for (int i = 0; i < g_userCounter + 1; ++i) {
                 if ((fds_[i].fd == listenSocketFd_) && (static_cast<uint16_t>(fds_[i].revents) & POLLIN)) {
-                    ProcessTcpAccept(tlsOption, ++clientId);
+                    ProcessTcpAccept(tlsOption, g_userCounter + 1);
 #if !defined(CROSS_PLATFORM)
                 } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLRDHUP) ||
-                           (static_cast<uint16_t>(fds_[i].revents) & POLLERR)) {
+                           (static_cast<uint16_t>(fds_[i].revents) & (POLLERR | POLLNVAL))) {
 #else
-                } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLERR)) {
+                } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLERR | POLLNVAL)) {
 #endif
                     RemoveConnect(fds_[i].fd);
-                    DropFdFromPollList(i);
-                    NETSTACK_LOGI("A client left");
+                    exitLoop = DropFdFromPollList(i);
                 } else if (static_cast<uint16_t>(fds_[i].revents) & POLLIN) {
-                    RecvRemoteInfo(fds_[i].fd, i);
+                    exitLoop = RecvRemoteInfo(fds_[i].fd, i);
                 }
             }
         }
+        isRunning_ = false;
+        NotifyRcvThdExit();
     });
     thread_.detach();
 }
@@ -1526,7 +1566,7 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
 std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionByClientEventManager(
     const std::shared_ptr<EventManager> &eventManager)
 {
-    std::lock_guard<std::mutex> its_lock(connectMutex_);
+    std::shared_lock<std::shared_mutex> its_lock(connectMutex_);
     auto it = std::find_if(clientIdConnections_.begin(), clientIdConnections_.end(), [eventManager](const auto& pair) {
         return pair.second->GetEventManager() == eventManager;
     });
@@ -1547,7 +1587,7 @@ void TLSSocketServer::CloseConnectionByEventManager(const std::shared_ptr<EventM
 
 void TLSSocketServer::DeleteConnectionByEventManager(const std::shared_ptr<EventManager> &eventManager)
 {
-    std::lock_guard<std::mutex> its_lock(connectMutex_);
+    std::unique_lock<std::shared_mutex> its_lock(connectMutex_);
     for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end(); ++it) {
         if (it->second->GetEventManager() == eventManager) {
             it = clientIdConnections_.erase(it);

@@ -72,6 +72,8 @@ static constexpr const int ERRNO_BAD_FD = 9;
 
 static constexpr const int UNIT_CONVERSION_1000 = 1000;
 
+static constexpr const int SYSTEM_INTERNAL_ERROR = 2300002;
+
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
 static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "OS_NET_SockRD";
@@ -85,6 +87,8 @@ static constexpr const char *SOCKET_EXEC_CONNECT = "OS_NET_SockTPRD";
 static constexpr const char *SOCKET_RECV_FROM_MULTI_CAST = "OS_NET_SockMPRD";
 
 static constexpr const char *WILD_ADDRESS = "0.0.0.0";
+
+static constexpr const char *SYSTEM_INTERNAL_ERROR_MESSAGE = "System internal error";
 
 namespace OHOS::NetStack::Socket::SocketExec {
 #define ERROR_RETURN(context, ...) \
@@ -473,7 +477,7 @@ public:
 
     void OnTcpConnectionMessage(int32_t id) const override
     {
-        if (manager_->HasEventListener(EVENT_CONNECT)) {
+        if (manager_ != nullptr && manager_->HasEventListener(EVENT_CONNECT)) {
             manager_->EmitByUvWithoutCheckShared(EVENT_CONNECT, new TcpConnection(id),
                 ModuleTemplate::CallbackTemplate<MakeTcpConnectionMessage>);
         }
@@ -2266,6 +2270,30 @@ bool ExecTcpServerListen(TcpServerListenContext *context)
     return true;
 }
 
+bool ExecTcpServerClose(TcpServerCloseContext *context)
+{
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    int sock = context->GetSocketFd();
+    if (sock == -1) {
+        NETSTACK_LOGI("TCPServer socket was closed before");
+        return true;
+    }
+    auto listenFds = SocketExec::SingletonSocketConfig::GetInstance().RemoveAllSocket();
+    for (const int &fd : listenFds) {
+        if (shutdown(fd, SHUT_RDWR) < 0) {
+            NETSTACK_LOGE("close listenfd %{public}d fail, errno: %{public}d", fd, errno);
+            context->SetError(SYSTEM_INTERNAL_ERROR, SYSTEM_INTERNAL_ERROR_MESSAGE);
+            return false;
+        }
+        NETSTACK_LOGI("close listenfd: %{public}d", fd);
+    }
+    context->SetSocketFd(-1);
+    return true;
+}
+
 bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
@@ -2525,6 +2553,11 @@ napi_value TcpConnectionGetRemoteAddressCallback(TcpServerGetRemoteAddressContex
 }
 
 napi_value ListenCallback(TcpServerListenContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value TcpServerCloseCallback(TcpServerCloseContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
 }

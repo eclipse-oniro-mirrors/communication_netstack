@@ -89,6 +89,8 @@ bool ExecTcpConnectionClose(TcpServerCloseContext *context);
 
 bool ExecTcpServerListen(TcpServerListenContext *context);
 
+bool ExecTcpServerClose(TcpServerCloseContext *context);
+
 bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context);
 
 bool ExecTcpServerGetState(TcpServerGetStateContext *context);
@@ -139,6 +141,8 @@ napi_value TcpConnectionGetRemoteAddressCallback(TcpServerGetRemoteAddressContex
 napi_value TcpConnectionGetLocalAddressCallback(TcpServerGetLocalAddressContext *context);
 
 napi_value ListenCallback(TcpServerListenContext *context);
+
+napi_value TcpServerCloseCallback(TcpServerCloseContext *context);
 
 napi_value TcpServerSetExtraOptionsCallback(TcpServerSetExtraOptionsContext *context);
 
@@ -225,6 +229,15 @@ public:
     {
         tcpExtraOptions_.Erase(listenFd);
         tcpClients_.Erase(listenFd);
+    }
+
+    std::vector<int> RemoveAllSocket()
+    {
+        std::vector<int> listenFds;
+        tcpClients_.Iterate([&listenFds](const int key, std::set<int>&) { listenFds.push_back(key); });
+        tcpExtraOptions_.Clear();
+        tcpClients_.Clear();
+        return listenFds;
     }
 
 private:

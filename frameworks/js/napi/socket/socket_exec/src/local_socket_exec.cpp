@@ -1024,19 +1024,14 @@ bool ExecLocalSocketServerEnd(LocalSocketServerEndContext *context)
         context->SetErrorCode(UNKNOW_ERROR);
         return false;
     }
-    mgr->SetServerDestructStatus(true);
-    mgr->RemoveAllAccept();
-    if (mgr->sockfd_ > 0) {
-        close(mgr->sockfd_);
-        mgr->sockfd_ = -1;
+    if (mgr->sockfd_ < 0) {
+        NETSTACK_LOGE("LocalSocketServer is already closed");
+        context->SetErrorCode(EBADF);
+        return false;
     }
-    if (mgr->epollFd_ > 0) {
-        close(mgr->epollFd_);
-        mgr->epollFd_ = -1;
-    }
-    mgr->WaitForEndingLoop();
-    delete mgr;
-    context->GetSharedManager()->SetData(nullptr);
+    close(mgr->sockfd_);
+    mgr->sockfd_ = -1;
+    NETSTACK_LOGE("LocalSocketServer close listen success");
     return true;
 }
 

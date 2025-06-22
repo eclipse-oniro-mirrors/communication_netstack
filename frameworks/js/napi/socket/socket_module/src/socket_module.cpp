@@ -106,6 +106,7 @@ static const char *TCP_SET_EXTRA_OPTIONS_NAME = "TcpSetExtraOptions";
 static constexpr const char *TCP_GET_SOCKET_FD = "TcpGetSocketFd";
 
 static constexpr const char *TCP_SERVER_LISTEN_NAME = "TcpServerListen";
+static constexpr const char *TCP_SERVER_CLOSE_NAME = "TcpServerClose";
 static constexpr const char *TCP_SERVER_GET_STATE = "TcpServerGetState";
 static constexpr const char *TCP_SERVER_GET_LOCAL_ADDRESS = "TcpServerGetLocalAddress";
 static constexpr const char *TCP_SERVER_SET_EXTRA_OPTIONS_NAME = "TcpServerSetExtraOptions";
@@ -154,8 +155,11 @@ void FinalizeTcpSocketServer(napi_env, void *data, void *)
         auto manager = *sharedManager;
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
         if (sock != -1) {
-            SocketExec::SingletonSocketConfig::GetInstance().RemoveServerSocket(sock);
-            NETSTACK_LOGI("tcp socket server shutdown: %{public}d", sock);
+            auto listenFds = SocketExec::SingletonSocketConfig::GetInstance().RemoveAllSocket();
+            for (const int &fd : listenFds) {
+                shutdown(fd, SHUT_RDWR);
+                NETSTACK_LOGI("finalize close listenfd: %{public}d", fd);
+            }
             shutdown(sock, SHUT_RDWR);
             manager->SetData(reinterpret_cast<void *>(-1));
         }
@@ -606,32 +610,11 @@ napi_value SocketModuleExports::ConstructTCPSocketServerInstance(napi_env env, n
         FinalizeTcpSocketServer);
 }
 
-static napi_value CloseServer(napi_env env, napi_callback_info info)
-{
-    napi_value thisVal = nullptr;
-    if (napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr) != napi_ok) {
-        return NapiUtils::GetUndefined(env);
-    }
-    std::shared_ptr<EventManager> *sharedManager = nullptr;
-    napi_unwrap(env, thisVal, reinterpret_cast<void**>(&sharedManager));
-    if (sharedManager != nullptr && *sharedManager != nullptr) {
-        auto manager = *sharedManager;
-        int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
-        if (sock != -1) {
-            SocketExec::SingletonSocketConfig::GetInstance().RemoveServerSocket(sock);
-            NETSTACK_LOGI("Close TcpSocketServer");
-            shutdown(sock, SHUT_RDWR);
-            manager->SetData(reinterpret_cast<void *>(-1));
-        }
-    }
-    return NapiUtils::GetUndefined(env);
-}
-
 void SocketModuleExports::DefineTCPServerSocketClass(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_LISTEN, TCPServerSocket::Listen),
-        DECLARE_NAPI_FUNCTION("close", CloseServer),
+        DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_CLOSE, TCPServerSocket::Close),
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_GET_STATE, TCPServerSocket::GetState),
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_GET_LOCAL_ADDRESS, TCPServerSocket::GetLocalAddress),
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_SET_EXTRA_OPTIONS, TCPServerSocket::SetExtraOptions),
@@ -902,6 +885,12 @@ napi_value SocketModuleExports::TCPServerSocket::Listen(napi_env env, napi_callb
 {
     return SOCKET_INTERFACE(TcpServerListenContext, ExecTcpServerListen, ListenCallback, MakeTcpServerSocket,
                             TCP_SERVER_LISTEN_NAME);
+}
+
+napi_value SocketModuleExports::TCPServerSocket::Close(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(TcpServerCloseContext, ExecTcpServerClose, TcpServerCloseCallback, nullptr,
+                            TCP_SERVER_CLOSE_NAME);
 }
 
 napi_value SocketModuleExports::TCPServerSocket::GetState(napi_env env, napi_callback_info info)

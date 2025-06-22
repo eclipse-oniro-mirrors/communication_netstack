@@ -73,6 +73,8 @@ public:
 
     static void ExecTcpServerListen(napi_env env, void *data);
 
+    static void ExecTcpServerClose(napi_env env, void *data);
+
     static void ExecTcpServerSetExtraOptions(napi_env env, void *data);
 
     static void ExecTcpServerGetState(napi_env env, void *data);
@@ -161,6 +163,8 @@ public:
     static void TcpConnectionGetLocalAddressCallback(napi_env env, napi_status status, void *data);
 
     static void ListenCallback(napi_env env, napi_status status, void *data);
+
+    static void TcpServerCloseCallback(napi_env env, napi_status status, void *data);
 
     static void TcpServerSetExtraOptionsCallback(napi_env env, napi_status status, void *data);
 
