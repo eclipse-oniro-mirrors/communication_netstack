@@ -660,7 +660,7 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest033, testing::ext::
  
     int index = 1;
     tlsSocketServer->DropFdFromPollList(index);
-    int index = 2;
+    index = 2;
     bool res = tlsSocketServer->DropFdFromPollList(index);
     tlsSocketServer->NotifyRcvThdExit();
     tlsSocketServer->WaitForRcvThdExit();
