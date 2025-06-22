@@ -251,13 +251,6 @@ void EventCloseCallback(uv_work_t *work, int status)
         delete work;
         return;
     }
-    std::shared_ptr<int> ptrClientID(static_cast<int *>(workWrapper->data));
-    if (ptrClientID == nullptr) {
-        NETSTACK_LOGE("ptrClientID == nullptr");
-        delete workWrapper;
-        delete work;
-        return;
-    }
     if (workWrapper->manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
         delete workWrapper;
@@ -285,9 +278,10 @@ void EventErrorCallback(uv_work_t *work, int status)
         delete work;
         return;
     }
-    auto monitor = static_cast<MonitorServer *>(workWrapper->data);
-    if (monitor == nullptr) {
-        NETSTACK_LOGE("monitor is nullptr");
+    std::shared_ptr<std::pair<int32_t, std::string>> err(
+        static_cast<std::pair<int32_t, std::string> *>(workWrapper->data));
+    if (err == nullptr) {
+        NETSTACK_LOGE("err is nullptr");
         delete workWrapper;
         delete work;
         return;
@@ -300,8 +294,8 @@ void EventErrorCallback(uv_work_t *work, int status)
     }
     napi_handle_scope scope = NapiUtils::OpenScope(workWrapper->env);
     napi_value obj = NapiUtils::CreateObject(workWrapper->env);
-    napi_value errorNumber = NapiUtils::CreateInt32(workWrapper->env, monitor->errorNumber_);
-    napi_value errorString = NapiUtils::CreateStringUtf8(workWrapper->env, monitor->errorString_);
+    napi_value errorNumber = NapiUtils::CreateInt32(workWrapper->env, err->first);
+    napi_value errorString = NapiUtils::CreateStringUtf8(workWrapper->env, err->second);
     NapiUtils::SetNamedProperty(workWrapper->env, obj, "errorNumber", errorNumber);
     NapiUtils::SetNamedProperty(workWrapper->env, obj, "errorString", errorString);
     std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
@@ -343,8 +337,7 @@ napi_value MonitorServer::On(napi_env env, napi_callback_info info)
     }
 
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    auto itor = monitors_.find(event);
-    if (itor != monitors_.end()) {
+    if (monitors_.Find(event)) {
         NETSTACK_LOGE("monitor is exits %{public}s", event.c_str());
         return NapiUtils::GetUndefined(env);
     }
@@ -428,19 +421,18 @@ napi_value MonitorServer::Off(napi_env env, napi_callback_info info)
     }
 
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    auto itor = monitors_.find(event);
-    if (itor == monitors_.end()) {
+    if (!monitors_.Find(event)) {
         NETSTACK_LOGE("monitor is off %{public}s", event.c_str());
         return NapiUtils::GetUndefined(env);
     }
 
     if (event == EVENT_CONNECT) {
-        monitors_.erase(EVENT_CONNECT);
+        monitors_.Erase(EVENT_CONNECT);
         tlsSocketServer->OffConnect();
     }
 
     if (event == EVENT_ERROR) {
-        monitors_.erase(EVENT_ERROR);
+        monitors_.Erase(EVENT_ERROR);
         tlsSocketServer->OffError();
     }
 
@@ -488,8 +480,7 @@ napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
     }
 
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    auto itor = monitors_.find(event);
-    if (itor == monitors_.end()) {
+    if (!monitors_.Find(event)) {
         NETSTACK_LOGE("monitor is off %{public}s", event.c_str());
         return NapiUtils::GetUndefined(env);
     }
@@ -506,7 +497,7 @@ void MonitorServer::TLSServerRegEvent(std::string event, TLSSocketServer *tlsSoc
                                       const std::shared_ptr<EventManager> &ServerEventManager)
 {
     if (event == EVENT_CONNECT) {
-        monitors_.insert(EVENT_CONNECT);
+        monitors_.Insert(EVENT_CONNECT);
         tlsSocketServer->OnConnect(
             [this, ServerEventManager](auto clientFd, std::shared_ptr<EventManager> eventManager) {
                 if (ServerEventManager->HasEventListener(std::string(EVENT_CONNECT))) {
@@ -519,12 +510,12 @@ void MonitorServer::TLSServerRegEvent(std::string event, TLSSocketServer *tlsSoc
             });
     }
     if (event == EVENT_ERROR) {
-        monitors_.insert(EVENT_ERROR);
+        monitors_.Insert(EVENT_ERROR);
         tlsSocketServer->OnError([this, ServerEventManager](auto errorNumber, auto errorString) {
             errorNumber_ = errorNumber;
             errorString_ = errorString;
-            ServerEventManager->EmitByUvWithoutCheckShared(std::string(EVENT_ERROR), static_cast<void *>(this),
-                EventErrorCallback);
+            ServerEventManager->EmitByUvWithoutCheckShared(std::string(EVENT_ERROR),
+                new std::pair<int32_t, std::string>(errorNumber_, errorString_), EventErrorCallback);
         });
     }
 }
@@ -536,22 +527,22 @@ void MonitorServer::TLSConnectionRegEvent(std::string event, TLSSocketServer *tl
         InsertEventMessage(tlsSocketServer, clientId, eventManager);
     }
     if (event == EVENT_CLOSE) {
-        monitors_.insert(EVENT_CLOSE);
+        monitors_.Insert(EVENT_CLOSE);
         auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientId);
         if (ptrConnection != nullptr) {
             ptrConnection->OnClose([this, eventManager](auto clientFd) {
-                eventManager->EmitByUvWithoutCheckShared(std::string(EVENT_CLOSE), static_cast<void *>(this),
+                eventManager->EmitByUvWithoutCheckShared(std::string(EVENT_CLOSE), nullptr,
                     EventCloseCallback);
             });
         }
     }
     if (event == EVENT_ERROR) {
-        monitors_.insert(EVENT_ERROR);
+        monitors_.Insert(EVENT_ERROR);
         auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientId);
         if (ptrConnection != nullptr) {
             ptrConnection->OnError([this, eventManager](auto errorNumber, auto errorString) {
-                eventManager->EmitByUvWithoutCheckShared(std::string(EVENT_ERROR), static_cast<void *>(this),
-                    EventErrorCallback);
+                eventManager->EmitByUvWithoutCheckShared(std::string(EVENT_ERROR),
+                    new std::pair<int32_t, std::string>(errorNumber, errorString), EventErrorCallback);
             });
         }
     }
@@ -563,7 +554,8 @@ void MonitorServer::InsertEventMessage(TLSSocketServer *tlsSocketServer, int cli
     if (tlsSocketServer == nullptr) {
         return;
     }
-    monitors_.insert(EVENT_MESSAGE);
+
+    monitors_.Insert(EVENT_MESSAGE);
     auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientId);
     if (ptrConnection != nullptr) {
         ptrConnection->OnMessage([this, eventManager](auto clientFd, auto data, auto remoteInfo) {
@@ -585,21 +577,21 @@ void MonitorServer::InsertEventMessage(TLSSocketServer *tlsSocketServer, int cli
 void MonitorServer::TLSConnectionUnRegEvent(std::string event, TLSSocketServer *tlsSocketServer, int clientId)
 {
     if (event == EVENT_MESSAGE) {
-        monitors_.erase(EVENT_MESSAGE);
+        monitors_.Erase(EVENT_MESSAGE);
         auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientId);
         if (ptrConnection != nullptr) {
             ptrConnection->OffMessage();
         }
     }
     if (event == EVENT_CLOSE) {
-        monitors_.erase(EVENT_CLOSE);
+        monitors_.Erase(EVENT_CLOSE);
         auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientId);
         if (ptrConnection != nullptr) {
             ptrConnection->OffClose();
         }
     }
     if (event == EVENT_ERROR) {
-        monitors_.erase(EVENT_ERROR);
+        monitors_.Erase(EVENT_ERROR);
         auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientId);
         if (ptrConnection != nullptr) {
             ptrConnection->OffError();

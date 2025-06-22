@@ -40,6 +40,7 @@ namespace TlsSocketServer {
 namespace {
 static constexpr const char *PROTOCOL_TLSV13 = "TLSv13";
 static constexpr const char *PROTOCOL_TLSV12 = "TLSv12";
+static constexpr const char *NAME_STOP_SERVER = "closeTLSServer";
 
 void Finalize(napi_env, void *data, void *)
 {
@@ -67,6 +68,13 @@ napi_value TLSSocketServerModuleExports::TLSSocketServer::Listen(napi_env env, n
     return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::TLSListenContext>(env, info, FUNCTION_LISTEN, nullptr,
                                                                   TLSSocketServerAsyncWork::ExecListen,
                                                                   TLSSocketServerAsyncWork::ListenCallback);
+}
+
+napi_value TLSSocketServerModuleExports::TLSSocketServer::Stop(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::TLSNapiContext>(env, info, NAME_STOP_SERVER, nullptr,
+                                                                  TLSSocketServerAsyncWork::ExecStop,
+                                                                  TLSSocketServerAsyncWork::StopCallback);
 }
 
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::Send(napi_env env, napi_callback_info info)
@@ -200,6 +208,7 @@ void TLSSocketServerModuleExports::DefineTLSSocketServerClass(napi_env env, napi
 {
     std::initializer_list<napi_property_descriptor> functions = {
         DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_LISTEN, TLSSocketServer::Listen),
+        DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_STOP, TLSSocketServer::Stop),
         DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_GET_STATE, TLSSocketServer::GetState),
         DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_GET_LOCAL_ADDRESS, TLSSocketServer::GetLocalAddress),
         DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_SET_EXTRA_OPTIONS, TLSSocketServer::SetExtraOptions),

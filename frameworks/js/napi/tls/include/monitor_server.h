@@ -63,6 +63,27 @@ public:
         std::string data;
         Socket::SocketRemoteInfo remoteInfo_;
     };
+    class ThreadSafeSet {
+    public:
+        void Insert(const std::string_view &event)
+        {
+            std::unique_lock<std::shared_mutex> lock(mutex_);
+            set_.insert(event);
+        }
+        bool Find(const std::string_view &event)
+        {
+            std::shared_lock<std::shared_mutex> lock(mutex_);
+            return set_.find(event) != set_.end();
+        }
+        void Erase(const std::string_view &event)
+        {
+            std::unique_lock<std::shared_mutex> lock(mutex_);
+            set_.erase(event);
+        }
+    private:
+        std::set<std::string_view> set_;
+        mutable std::shared_mutex mutex_;
+    };
 
 public:
     int clientFd_ = -1;
@@ -73,7 +94,7 @@ public:
     std::string errorString_;
 
 private:
-    std::set<std::string_view> monitors_;
+    ThreadSafeSet monitors_;
 
     void InsertEventMessage(TLSSocketServer *tlsSocketServer, int clientId,
         const std::shared_ptr<EventManager> &eventManager);
