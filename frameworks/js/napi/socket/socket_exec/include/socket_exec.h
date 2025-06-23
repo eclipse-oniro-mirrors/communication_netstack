@@ -231,13 +231,11 @@ public:
         tcpClients_.Erase(listenFd);
     }
 
-    std::vector<int> RemoveAllSocket()
+    void ShutdownAllSockets()
     {
-        std::vector<int> listenFds;
-        tcpClients_.Iterate([&listenFds](const int key, std::set<int>&) { listenFds.push_back(key); });
+        tcpClients_.Iterate([&listenFds](const int key, std::set<int>&) { shutdown(key, SHUT_RDWR); });
         tcpExtraOptions_.Clear();
         tcpClients_.Clear();
-        return listenFds;
     }
 
 private:

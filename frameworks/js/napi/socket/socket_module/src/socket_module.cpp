@@ -155,11 +155,8 @@ void FinalizeTcpSocketServer(napi_env, void *data, void *)
         auto manager = *sharedManager;
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
         if (sock != -1) {
-            auto listenFds = SocketExec::SingletonSocketConfig::GetInstance().RemoveAllSocket();
-            for (const int &fd : listenFds) {
-                shutdown(fd, SHUT_RDWR);
-                NETSTACK_LOGI("finalize close listenfd: %{public}d", fd);
-            }
+            SocketExec::SingletonSocketConfig::GetInstance().ShutdownAllSockets();
+            NETSTACK_LOGI("finalize close all listenfd");
             shutdown(sock, SHUT_RDWR);
             manager->SetData(reinterpret_cast<void *>(-1));
         }

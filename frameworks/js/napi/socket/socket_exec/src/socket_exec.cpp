@@ -2281,15 +2281,8 @@ bool ExecTcpServerClose(TcpServerCloseContext *context)
         NETSTACK_LOGI("TCPServer socket was closed before");
         return true;
     }
-    auto listenFds = SocketExec::SingletonSocketConfig::GetInstance().RemoveAllSocket();
-    for (const int &fd : listenFds) {
-        if (shutdown(fd, SHUT_RDWR) < 0) {
-            NETSTACK_LOGE("close listenfd %{public}d fail, errno: %{public}d", fd, errno);
-            context->SetError(SYSTEM_INTERNAL_ERROR, SYSTEM_INTERNAL_ERROR_MESSAGE);
-            return false;
-        }
-        NETSTACK_LOGI("close listenfd: %{public}d", fd);
-    }
+    SocketExec::SingletonSocketConfig::GetInstance().ShutdownAllSockets();
+    NETSTACK_LOGI("close all listenfd");
     context->SetSocketFd(-1);
     return true;
 }
