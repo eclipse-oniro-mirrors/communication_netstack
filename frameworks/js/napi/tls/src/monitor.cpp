@@ -270,11 +270,17 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
     auto manager = *sharedManager;
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocket = reinterpret_cast<std::shared_ptr<TLSSocket> *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("tlsSocket is null");
         return NapiUtils::GetUndefined(env);
     }
+    auto shared = *tlsSocket;
+    if (!shared) {
+        return NapiUtils::GetUndefined(env);
+    }
+    lock.unlock();
 
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
     if (std::find(EVENTS.begin(), EVENTS.end(), event) == EVENTS.end()) {
@@ -282,10 +288,6 @@ napi_value Monitor::On(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
     manager->AddListener(env, event, params[1], false, false);
-    auto shared = *tlsSocket;
-    if (!shared) {
-        return NapiUtils::GetUndefined(env);
-    }
     ParserEventForOn(event, shared, manager);
     return NapiUtils::GetUndefined(env);
 }
@@ -331,6 +333,7 @@ napi_value Monitor::Off(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
     auto manager = *sharedManager;
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocket = reinterpret_cast<std::shared_ptr<TLSSocket> *>(manager->GetData());
     if (tlsSocket == nullptr) {
         NETSTACK_LOGE("tlsSocket is null");
@@ -341,6 +344,7 @@ napi_value Monitor::Off(napi_env env, napi_callback_info info)
     if (!shared) {
         return NapiUtils::GetUndefined(env);
     }
+    lock.unlock();
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
     ParserEventForOff(event, shared);
     manager->DeleteListener(event);
