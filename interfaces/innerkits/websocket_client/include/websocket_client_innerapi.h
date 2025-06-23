@@ -73,6 +73,9 @@ public:
     int Registcallback(OnOpenCallback OnOpen, OnMessageCallback onMessage, OnErrorCallback OnError,
                        OnCloseCallback onclose);
     int Destroy();
+    void AppendData(void *data, size_t length);
+    const std::string &GetData();
+    void ClearData();
 
     OnMessageCallback onMessageCallback_ = nullptr;
     OnCloseCallback onCloseCallback_ = nullptr;
@@ -82,6 +85,7 @@ public:
 
 private:
     ClientContext *clientContext;
+    std::string data_;
 };
 } // namespace WebSocketClient
 } // namespace NetStack
