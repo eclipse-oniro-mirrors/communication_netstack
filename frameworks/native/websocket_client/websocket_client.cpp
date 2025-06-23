@@ -193,11 +193,30 @@ int LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, 
 {
     WebSocketClient *client = static_cast<WebSocketClient *>(user);
     NETSTACK_LOGD("ClientId:%{public}d,Callback ClientReceive", client->GetClientContext()->GetClientId());
-    std::string buf;
-    char *data = static_cast<char *>(in);
-    buf.assign(data, len);
-    client->onMessageCallback_(client, data, len);
+    auto isFinal = lws_is_final_fragment(wsi);
+    client->AppendData(in, len);
+    if (!isFinal) {
+        return HttpDummy(wsi, reason, user, in, len);
+    }
+    std::string data = client->GetData();
+    client->onMessageCallback_(client, data.c_str(), len);
+    client->ClearData();
     return HttpDummy(wsi, reason, user, in, len);
+}
+ 
+void WebSocketClient::AppendData(void *data, size_t length)
+{
+    data_.append(reinterpret_cast<char *>(data), length);
+}
+ 
+const std::string &WebSocketClient::GetData()
+{
+    return data_;
+}
+ 
+void WebSocketClient::ClearData()
+{
+    data_.clear();
 }
 
 std::vector<std::string> Split(const std::string &str, const std::string &sep, size_t size)
