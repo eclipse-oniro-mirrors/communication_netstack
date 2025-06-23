@@ -223,6 +223,19 @@ void ExecTcpServerListenFuzzTest(const uint8_t *data, size_t size)
     SocketExec::ExecTcpServerListen(&context);
 }
 
+void ExecTcpServerCloseFuzzTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size == 0)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    napi_env env(GetData<napi_env>());
+    auto eventManager = std::make_shared<EventManager>();
+    TcpServerCloseContext context(env, eventManager);
+
+    SocketExec::ExecTcpServerClose(&context);
+}
+
 void ExecTcpServerSetExtraOptionsFuzzTest(const uint8_t *data, size_t size)
 {
     if ((data == nullptr) || (size == 0)) {
@@ -578,6 +591,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::NetStack::Socket::ExecTcpSetExtraOptionsFuzzTest(data, size);
     OHOS::NetStack::Socket::ExecUdpSetExtraOptionsFuzzTest(data, size);
     OHOS::NetStack::Socket::ExecTcpServerListenFuzzTest(data, size);
+    OHOS::NetStack::Socket::ExecTcpServerCloseFuzzTest(data, size);
     OHOS::NetStack::Socket::ExecTcpServerSetExtraOptionsFuzzTest(data, size);
     OHOS::NetStack::Socket::ExecTcpServerGetStateFuzzTest(data, size);
     OHOS::NetStack::Socket::ExecTcpConnectionSendFuzzTest(data, size);
