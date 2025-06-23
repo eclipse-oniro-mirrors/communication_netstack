@@ -233,7 +233,7 @@ public:
 
     void ShutdownAllSockets()
     {
-        tcpClients_.Iterate([&listenFds](const int key, std::set<int>&) { shutdown(key, SHUT_RDWR); });
+        tcpClients_.Iterate([](const int key, std::set<int>&) { shutdown(key, SHUT_RDWR); });
         tcpExtraOptions_.Clear();
         tcpClients_.Clear();
     }
