@@ -72,8 +72,6 @@ static constexpr const int ERRNO_BAD_FD = 9;
 
 static constexpr const int UNIT_CONVERSION_1000 = 1000;
 
-static constexpr const int SYSTEM_INTERNAL_ERROR = 2300002;
-
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
 static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "OS_NET_SockRD";
@@ -87,8 +85,6 @@ static constexpr const char *SOCKET_EXEC_CONNECT = "OS_NET_SockTPRD";
 static constexpr const char *SOCKET_RECV_FROM_MULTI_CAST = "OS_NET_SockMPRD";
 
 static constexpr const char *WILD_ADDRESS = "0.0.0.0";
-
-static constexpr const char *SYSTEM_INTERNAL_ERROR_MESSAGE = "System internal error";
 
 namespace OHOS::NetStack::Socket::SocketExec {
 #define ERROR_RETURN(context, ...) \
