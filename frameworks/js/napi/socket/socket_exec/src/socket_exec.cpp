@@ -473,7 +473,7 @@ public:
 
     void OnTcpConnectionMessage(int32_t id) const override
     {
-        if (manager_->HasEventListener(EVENT_CONNECT)) {
+        if (manager_ != nullptr && manager_->HasEventListener(EVENT_CONNECT)) {
             manager_->EmitByUvWithoutCheckShared(EVENT_CONNECT, new TcpConnection(id),
                 ModuleTemplate::CallbackTemplate<MakeTcpConnectionMessage>);
         }
@@ -2266,6 +2266,23 @@ bool ExecTcpServerListen(TcpServerListenContext *context)
     return true;
 }
 
+bool ExecTcpServerClose(TcpServerCloseContext *context)
+{
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    int sock = context->GetSocketFd();
+    if (sock == -1) {
+        NETSTACK_LOGI("TCPServer socket was closed before");
+        return true;
+    }
+    SocketExec::SingletonSocketConfig::GetInstance().ShutdownAllSockets();
+    NETSTACK_LOGI("close all listenfd");
+    context->SetSocketFd(-1);
+    return true;
+}
+
 bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
@@ -2525,6 +2542,11 @@ napi_value TcpConnectionGetRemoteAddressCallback(TcpServerGetRemoteAddressContex
 }
 
 napi_value ListenCallback(TcpServerListenContext *context)
+{
+    return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value TcpServerCloseCallback(TcpServerCloseContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
 }

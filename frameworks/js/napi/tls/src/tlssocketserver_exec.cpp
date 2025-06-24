@@ -263,8 +263,6 @@ bool TLSSocketServerExec::ExecStop(TlsSocket::TLSNapiContext *context)
             context->SetError(errorNumber, TlsSocket::MakeErrorMessage(errorNumber));
         }
     });
-    delete tlsSocketServer;
-    manager->SetData(nullptr);
     return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
 }
 

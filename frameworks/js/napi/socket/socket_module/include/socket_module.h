@@ -173,6 +173,7 @@ public:
     class TCPServerSocket {
     public:
         static constexpr const char *FUNCTION_LISTEN = "listen";
+        static constexpr const char *FUNCTION_CLOSE = "close";
         static constexpr const char *FUNCTION_GET_STATE = "getState";
         static constexpr const char *FUNCTION_GET_LOCAL_ADDRESS = "getLocalAddress";
         static constexpr const char *FUNCTION_SET_EXTRA_OPTIONS = "setExtraOptions";
@@ -180,6 +181,7 @@ public:
         static constexpr const char *FUNCTION_OFF = "off";
 
         static napi_value Listen(napi_env env, napi_callback_info info);
+        static napi_value Close(napi_env env, napi_callback_info info);
         static napi_value GetState(napi_env env, napi_callback_info info);
         static napi_value GetLocalAddress(napi_env env, napi_callback_info info);
         static napi_value SetExtraOptions(napi_env env, napi_callback_info info);

@@ -160,6 +160,11 @@ void SocketAsyncWork::ExecTcpServerListen(napi_env env, void *data)
     BaseAsyncWork::ExecAsyncWork<TcpServerListenContext, SocketExec::ExecTcpServerListen>(env, data);
 }
 
+void SocketAsyncWork::ExecTcpServerClose(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<TcpServerCloseContext, SocketExec::ExecTcpServerClose>(env, data);
+}
+
 void SocketAsyncWork::ExecTcpServerSetExtraOptions(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<TcpServerSetExtraOptionsContext, SocketExec::ExecTcpServerSetExtraOptions>(env, data);
@@ -397,6 +402,11 @@ void SocketAsyncWork::TcpConnectionGetLocalAddressCallback(napi_env env, napi_st
 void SocketAsyncWork::ListenCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<TcpServerListenContext, SocketExec::ListenCallback>(env, status, data);
+}
+
+void SocketAsyncWork::TcpServerCloseCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<TcpServerCloseContext, SocketExec::TcpServerCloseCallback>(env, status, data);
 }
 
 void SocketAsyncWork::TcpServerSetExtraOptionsCallback(napi_env env, napi_status status, void *data)

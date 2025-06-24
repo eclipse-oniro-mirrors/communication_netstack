@@ -469,7 +469,7 @@ public:
 
 private:
     void SetLocalTlsConfiguration(const TlsSocket::TLSConnectOptions &config);
-    int RecvRemoteInfo(int socketFd, int index);
+    bool RecvRemoteInfo(int socketFd, int index);
     void RemoveConnect(int socketFd);
     void AddConnect(int socketFd, std::shared_ptr<Connection> connection);
     void CallListenCallback(int32_t err, ListenCallback callback);
@@ -487,10 +487,14 @@ private:
     static constexpr const size_t MAX_BUFFER_SIZE = 8192;
 
     void PollThread(const TlsSocket::TLSConnectOptions &tlsListenOptions);
-
+    void NotifyRcvThdExit();
+    void WaitForRcvThdExit();
 private:
     std::mutex mutex_;
-    std::mutex connectMutex_;
+    std::shared_mutex connectMutex_;
+    std::mutex sockRcvThdMtx_;
+    std::condition_variable sockRcvThdCon_;
+    bool sockRcvExit_ = false;
     int listenSocketFd_ = -1;
     Socket::NetAddress address_;
     Socket::NetAddress localAddress_;
@@ -503,12 +507,11 @@ private:
 
     bool GetTlsConnectionLocalAddress(int acceptSockFD, Socket::NetAddress &localAddress);
     void ProcessTcpAccept(const TlsSocket::TLSConnectOptions &tlsListenOptions, int clientId);
-    void DropFdFromPollList(int &fd_index);
-    void InitPollList(int &listendFd);
+    bool DropFdFromPollList(int &fd_index);
+    void InitPollList(const int &listendFd);
 
-    struct pollfd fds_[USER_LIMIT + 1];
-
-    bool isRunning_;
+    pollfd fds_[USER_LIMIT + 1];
+    bool isRunning_ = false;
 
 public:
     std::shared_ptr<Connection> GetConnectionByClientID(int clientid);

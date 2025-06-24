@@ -234,6 +234,15 @@ HWTEST_F(SocketTest, LocalSocketServerTest006, TestSize.Level1)
     EXPECT_EQ(ret, false);
 }
 
+HWTEST_F(SocketTest, LocalSocketServerTest007, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    LocalSocketServerEndContext context(env, eventManager);
+    bool ret = LocalSocketExec::ExecLocalSocketServerEnd(&context);
+    EXPECT_EQ(ret, false);
+}
+
 // socks5 proxy test start
 HWTEST_F(SocketTest, Socks5SocketTest001, TestSize.Level1)
 {

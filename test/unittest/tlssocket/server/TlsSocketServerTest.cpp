@@ -90,6 +90,7 @@ HWTEST_F(TlsSocketServerTest, ListenInterface, testing::ext::TestSize.Level2)
     TlsSocket::TLSConnectOptions tlsListenOptions;
 	
     server.Listen(tlsListenOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
+    server.Listen(tlsListenOptions, [](int32_t errCode) { EXPECT_TRUE(errCode == TlsSocket::TLSSOCKET_SUCCESS); });
 }
 
 HWTEST_F(TlsSocketServerTest, sendInterface, testing::ext::TestSize.Level2)
