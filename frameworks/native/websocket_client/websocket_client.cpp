@@ -199,7 +199,7 @@ int LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, 
         return HttpDummy(wsi, reason, user, in, len);
     }
     std::string data = client->GetData();
-    client->onMessageCallback_(client, data.c_str(), len);
+    client->onMessageCallback_(client, data.c_str(), data.size());
     client->ClearData();
     return HttpDummy(wsi, reason, user, in, len);
 }
