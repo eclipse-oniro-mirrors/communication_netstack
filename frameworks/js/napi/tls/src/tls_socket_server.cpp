@@ -1294,7 +1294,6 @@ bool TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
         }
     }
     RemoveConnect(socketFd);
-    DropFdFromPollList(index);
     return DropFdFromPollList(index);
 }
 
