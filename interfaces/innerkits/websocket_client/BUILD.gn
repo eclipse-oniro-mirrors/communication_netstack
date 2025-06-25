@@ -49,7 +49,7 @@ ohos_shared_library("websocket_client") {
 
   branch_protector_ret = "pac_ret"
 
-  sources = [ "$NETSTACK_NATIVE_ROOT/websocket_client/websocket_client.cpp" ]
+  sources = [ "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/websocket/websocket_module/src/websocket_client.cpp" ]
 
   include_dirs = [
     "$NETSTACK_DIR/utils/common_utils/include",

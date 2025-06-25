@@ -56,7 +56,7 @@ ohos_fuzztest("NetsslInnerFuzzTest") {
 
   sources = [
     "$NETSTACK_DIR/frameworks/native/net_ssl/net_ssl_verify_cert.cpp",
-    "$NETSTACK_DIR/interfaces/kits/c/net_ssl/src/net_ssl_c.cpp",
+    "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/websocket/websocket_module/src/net_ssl_c.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
     "netssl_inner_fuzzer.cpp",
   ]

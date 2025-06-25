@@ -174,7 +174,7 @@ ohos_shared_library("http") {
         "$NETSTACK_DIR/utils/netstack_chr_client/src/netstack_chr_report.cpp",
         "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",
         "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
-        "$NETSTACK_DIR/utils/http_over_curl/src/http_handover_handler.cpp",
+        "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/websocket/websocket_module/src/http_handover_handler.cpp",
       ]
       defines += [ "HTTP_HANDOVER_FEATURE" ]
     } else {

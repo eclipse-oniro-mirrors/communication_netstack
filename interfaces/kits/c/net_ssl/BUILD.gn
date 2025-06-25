@@ -32,7 +32,7 @@ ohos_shared_library("net_ssl_ndk") {
     "$NETSTACK_DIR/utils/log/include",
   ]
 
-  sources = [ "src/net_ssl_c.cpp" ]
+  sources = [ "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/websocket/websocket_module/src/net_ssl_c.cpp" ]
 
   deps = [ "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl" ]
 
