@@ -27,11 +27,13 @@ ohos_rust_shared_library("http_ani") {
   sources = [ "src/lib.rs" ]
   
   external_deps = [
+    "hilog:hilog_rust",
     "runtime_core:ani",
     "netmanager_base:ani_rs",
   ]
 
   deps = [
+    "../common:netstack_common",
     "//third_party/rust/crates/serde/serde:lib",
     "$NETSTACK_INNERKITS_DIR/rust/netstack_rs:netstack_rs",
   ]

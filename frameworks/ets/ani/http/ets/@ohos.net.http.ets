@@ -40,9 +40,9 @@ export default namespace http {
 
   export enum AddressFamily {
     DEFAULT = 'CURL_IPRESOLVE_WHATEVER',
- 
+
     ONLY_V4 = 'CURL_IPRESOLVE_V4',
- 
+
     ONLY_V6 = 'CURL_IPRESOLVE_V6'
   }
 
@@ -86,9 +86,9 @@ export default namespace http {
     certificatePinning?: CertificatePinning | CertificatePinning[];
 
      remoteValidation?: RemoteValidation;
- 
+
      tlsOptions?: TlsOptions;
- 
+
      serverAuthentication?: ServerAuthentication;
 
     addressFamily?: AddressFamily;
@@ -98,40 +98,40 @@ export default namespace http {
      credential: Credential;
      authenticationType?: AuthenticationType;
    }
- 
+
    export type TlsOptions = 'system' | TlsConfig;
- 
+
    export type RemoteValidation = 'system' | 'skip';
- 
+
    export type AuthenticationType = 'basic' | 'ntlm' | 'digest';
- 
+
    export interface Credential {
      username: string;
      password: string;
    }
- 
+
    export interface TlsConfig {
        tlsVersionMin: TlsVersion;
        tlsVersionMax: TlsVersion;
        cipherSuites?: CipherSuite[];
    }
- 
+
    export type TlsV13SpecificCipherSuite = 'TLS_AES_128_GCM_SHA256' | 'TLS_AES_256_GCM_SHA384' | 'TLS_CHACHA20_POLY1305_SHA256';
- 
+
    export type TlsV12SpecificCipherSuite = 'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256' | 'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256' | 'TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384' | 'TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384' | 'TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256' | 'TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256' | 'TLS_RSA_WITH_AES_128_GCM_SHA256' | 'TLS_RSA_WITH_AES_256_GCM_SHA384';
-   
+
    export type TlsV10SpecificCipherSuite = 'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA' | 'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA' | 'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA' | 'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA' | 'TLS_RSA_WITH_AES_128_CBC_SHA' | 'TLS_RSA_WITH_AES_256_CBC_SHA' | 'TLS_RSA_WITH_3DES_EDE_CBC_SHA';
-  
+
   export type CipherSuite = TlsV13CipherSuite;
-  
+
   export type TlsV13CipherSuite = TlsV12CipherSuite | TlsV13SpecificCipherSuite;
-  
+
   export type TlsV12CipherSuite = TlsV11CipherSuite | TlsV12SpecificCipherSuite;
-  
+
   export type TlsV11CipherSuite = TlsV10CipherSuite;
-  
+
   export type TlsV10CipherSuite = TlsV10SpecificCipherSuite;
-  
+
   export enum TlsVersion {
     TLS_V_1_0 = 4,
 
@@ -230,11 +230,11 @@ export default namespace http {
 
     request(url: string, options?: HttpRequestOptions): Promise<HttpResponse> {
       return new Promise<HttpResponse>((resolve, reject) => {
-        this.requestInner(url,  (err: BusinessError, data: HttpResponse) => {
-          if (err.code !=0 ) {
+        this.requestInner(url,  (err: BusinessError | null, data: HttpResponse| undefined) => {
+          if (err) {
             reject(err);
           } else {
-            resolve(data);
+            resolve(data as HttpResponse);
           }
         }, options);
       });
@@ -252,11 +252,11 @@ export default namespace http {
 
     requestInStream(url: string, options?: HttpRequestOptions): Promise<int> {
       return new Promise<int>((resolve, reject) => {
-        this.requestInStreamInner(url, (err: BusinessError, data: int) => {
-          if (err.code !=0 ) {
+        this.requestInStreamInner(url, (err: BusinessError | null, data: int | undefined) => {
+          if (err) {
             reject(err);
           } else {
-            resolve(data);
+            resolve(data as int);
           }
         }, options);
       });
@@ -453,7 +453,21 @@ export default namespace http {
 
     responseCode: ResponseCode | int;
 
-    header: Object;
+    header: Record<String, String>;
+
+    cookies: string;
+
+    performanceTiming: PerformanceTiming;
+  }
+
+  class HttpResponseInner implements HttpResponse {
+    result: string | Object | ArrayBuffer;
+
+    resultType: HttpDataType;
+
+    responseCode: ResponseCode | int;
+
+    header: Record<String, String>;
 
     cookies: string;
 
@@ -461,6 +475,28 @@ export default namespace http {
   }
 
   export interface PerformanceTiming {
+    dnsTiming: int;
+
+    tcpTiming: int;
+
+    tlsTiming: int;
+
+    firstSendTiming: int;
+
+    firstReceiveTiming: int;
+
+    totalFinishTiming: int;
+
+    redirectTiming: int;
+
+    responseHeaderTiming: int;
+
+    responseBodyTiming: int;
+
+    totalTiming: int;
+  }
+
+  class PerformanceTimingInner implements PerformanceTiming {
     dnsTiming: int;
 
     tcpTiming: int;
@@ -530,8 +566,8 @@ export default namespace http {
       })
       p1.then(() => {
           callback(new BusinessError(), undefined);
-      }, (err: BusinessError): void => {
-          callback(err, undefined);
+      }, (err: Error): void => {
+          callback(err as BusinessError, undefined);
       });
     }
 
@@ -541,8 +577,8 @@ export default namespace http {
           return this.flushSync();
         }).then(() => {
             resolve(undefined);
-        }, (err: BusinessError): void => {
-            reject(err);
+        }, (err: Error): void => {
+            reject(err as BusinessError);
         });
       });
     }
@@ -555,8 +591,8 @@ export default namespace http {
       })
       p1.then(() => {
           callback(new BusinessError(), undefined);
-      }, (err: BusinessError): void => {
-          callback(err, undefined);
+      }, (err: Error): void => {
+          callback(err as BusinessError, undefined);
       });
     }
 
@@ -566,14 +602,10 @@ export default namespace http {
           return this.deleteSync();
         }).then(() => {
             resolve(undefined);
-        }, (err: BusinessError): void => {
-            reject(err);
+        }, (err: Error): void => {
+            reject(err as BusinessError);
         });
       });
     }
   }
-}
-
-function main() {
-  let a = http.createHttp();
 }

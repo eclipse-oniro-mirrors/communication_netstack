@@ -31,6 +31,12 @@ struct CloseOption;
 std::unique_ptr<NetStack::WebSocketClient::WebSocketClient> CreateWebSocket();
 
 int32_t Connect(NetStack::WebSocketClient::WebSocketClient &client, const rust::str url, ConnectOptions options);
+
+void SetCaPath(NetStack::WebSocketClient::WebSocketClient &client, const rust::str caPath);
+void SetClientCert(NetStack::WebSocketClient::WebSocketClient &client, const rust::str clientCert,
+                   const rust::str clientKey);
+void SetCertPassword(NetStack::WebSocketClient::WebSocketClient &client, const rust::str password);
+
 int32_t Send(NetStack::WebSocketClient::WebSocketClient &client, const rust::str data);
 int32_t Close(NetStack::WebSocketClient::WebSocketClient &client, CloseOption options);
 

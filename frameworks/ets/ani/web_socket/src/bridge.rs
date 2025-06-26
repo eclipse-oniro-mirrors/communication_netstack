@@ -13,6 +13,8 @@
 
 use std::collections::HashMap;
 
+use serde::Deserialize;
+
 #[ani_rs::ani]
 pub struct Cleaner {
     pub native_ptr: i64,
@@ -23,6 +25,25 @@ pub struct WebSocket {
     pub native_ptr: i64,
 }
 
+#[ani_rs::ani(path = "L@ohos/net/connection/connection/HttpProxyInner")]
+pub struct HttpProxy {
+    pub host: String,
+
+    pub port: i32,
+
+    pub username: Option<String>,
+
+    pub password: Option<String>,
+
+    pub exclusion_list: Vec<String>,
+}
+
+#[derive(Deserialize)]
+pub enum ProxyConfiguration {
+    S(String),
+    Proxy(HttpProxy),
+}
+
 #[ani_rs::ani]
 pub struct WebSocketRequestOptions {
     pub header: Option<HashMap<String, String>>,
@@ -31,7 +52,7 @@ pub struct WebSocketRequestOptions {
 
     pub client_cert: Option<ClientCert>,
 
-    // proxy: Option<ProxyConfiguration>,
+    pub proxy: Option<ProxyConfiguration>,
     pub protocol: Option<String>,
 }
 
