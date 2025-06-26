@@ -143,9 +143,9 @@ void EventManager::EmitByUvWithoutCheckShared(const std::string &type, void *dat
 
     std::for_each(listeners_.begin(), listeners_.end(),
         [type, data, Handler, this] (const std::shared_ptr<EventListener> &listener) {
-            if (listener->MatchType(type)) {
+            if (listener->MatchType(type) && listener->GetCallbackRef() != nullptr) {
                 auto workWrapper = new UvWorkWrapperShared(data, listener->GetEnv(), type, shared_from_this());
-                listener->EmitByUv(type, workWrapper, Handler);
+                NapiUtils::CreateUvQueueWork(listener->GetEnv(), workWrapper, Handler);
             }
         });
 }
