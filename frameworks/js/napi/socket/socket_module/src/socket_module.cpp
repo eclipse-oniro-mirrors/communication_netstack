@@ -157,7 +157,6 @@ void FinalizeTcpSocketServer(napi_env, void *data, void *)
         if (sock != -1) {
             SocketExec::SingletonSocketConfig::GetInstance().ShutdownAllSockets();
             NETSTACK_LOGI("finalize close all listenfd");
-            shutdown(sock, SHUT_RDWR);
             manager->SetData(reinterpret_cast<void *>(-1));
         }
         delete sharedManager;
