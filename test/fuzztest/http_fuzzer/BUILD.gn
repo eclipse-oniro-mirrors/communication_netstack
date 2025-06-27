@@ -73,7 +73,13 @@ ohos_fuzztest("HttpFuzzTest") {
   ]
 
   external_deps = common_external_deps
-  external_deps += [ "napi:ace_napi" ]
+  external_deps += [ 
+    "napi:ace_napi",
+    "netmanager_base:net_conn_manager_if",
+    "netmanager_base:net_security_config_if",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
+  ]
 }
 
 ###############################################################################

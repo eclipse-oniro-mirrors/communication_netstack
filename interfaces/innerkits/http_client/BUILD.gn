@@ -51,6 +51,11 @@ config("http_client_config") {
       "HAS_NETSTACK_CHR",
     ]
   }
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  }
 }
 
 ohos_shared_library("http_client") {
@@ -141,6 +146,11 @@ ohos_shared_library("http_client") {
     "openssl:libssl_shared",
   ]
 
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:netsys_client" ]
+  }
   innerapi_tags = [ "platformsdk" ]
   part_name = "netstack"
   subsystem_name = "communication"
