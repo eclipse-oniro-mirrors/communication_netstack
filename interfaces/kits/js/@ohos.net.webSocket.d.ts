@@ -134,6 +134,14 @@ declare namespace webSocket {
     caPath?: string;
 
     /**
+     * Wheter or not to skip the verification of the server's certification.
+     * @type { ?boolean }
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 20
+     */
+    skipServerCertVerification?: boolean;
+
+    /**
      * Client cert.
      * @type {?ClientCert}
      * @syscap SystemCapability.Communication.NetStack

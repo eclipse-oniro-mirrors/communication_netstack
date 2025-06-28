@@ -52,7 +52,10 @@ ohos_unittest("websocket_unittest") {
     "WebSocketTest.cpp",
   ]
 
-  defines = [ "OHOS_LIBWEBSOCKETS=1" ]
+  defines = [
+    "OHOS_LIBWEBSOCKETS=1",
+    "private = public",
+  ]
 
   deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
 

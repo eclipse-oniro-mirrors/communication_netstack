@@ -75,6 +75,8 @@ public:
 
     std::string clientCert_;
 
+    bool skipServerCertVerification_;
+
     Secure::SecureChar clientKey_;
 
     Secure::SecureChar keyPassword_;
@@ -99,6 +101,8 @@ private:
     void ParseHeader(napi_value optionsValue);
 
     void ParseCaPath(napi_value optionsValue);
+
+    void ParseSkipServerCertVerify(napi_value optionsValue);
 
     void ParseClientCert(napi_value optionsValue);
 

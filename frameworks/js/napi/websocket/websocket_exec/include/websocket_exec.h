@@ -43,8 +43,10 @@ public:
     static int LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
 
 private:
-    static bool ParseUrl(ConnectContext *context, char *prefix, size_t prefixLen, char *address, size_t addressLen,
-                         char *path, size_t pathLen, int *port);
+    static bool ParseUrl(ConnectContext *context, std::string &protocol, std::string &address, std::string &path,
+        int &port);
+
+    static void ParseHost(const std::string &protocol, const std::string &address, int port, std::string &host);
 
     static int RaiseError(EventManager *manager, uint32_t httpResponse);
 

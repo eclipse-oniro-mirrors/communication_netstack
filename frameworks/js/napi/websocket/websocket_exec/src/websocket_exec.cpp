@@ -131,8 +131,8 @@ template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTempl
     delete work;
 }
 
-bool WebSocketExec::ParseUrl(ConnectContext *context, char *protocol, size_t protocolLen, char *address,
-                             size_t addressLen, char *path, size_t pathLen, int *port)
+bool WebSocketExec::ParseUrl(ConnectContext *context, std::string &protocol, std::string &address, std::string &path,
+    int &port)
 {
     char uri[MAX_URI_LENGTH] = {0};
     if (strcpy_s(uri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
@@ -142,24 +142,27 @@ bool WebSocketExec::ParseUrl(ConnectContext *context, char *protocol, size_t pro
     const char *tempProt = nullptr;
     const char *tempAddress = nullptr;
     const char *tempPath = nullptr;
-    (void)lws_parse_uri(uri, &tempProt, &tempAddress, port, &tempPath);
-    if (strcpy_s(protocol, protocolLen, tempProt) < 0) {
-        NETSTACK_LOGE("strcpy_s failed");
-        return false;
-    }
+    (void)lws_parse_uri(uri, &tempProt, &tempAddress, &port, &tempPath);
+    protocol = std::string(tempProt);
     if (std::find(WS_PREFIX.begin(), WS_PREFIX.end(), protocol) == WS_PREFIX.end()) {
         NETSTACK_LOGE("protocol failed");
         return false;
     }
-    if (strcpy_s(address, addressLen, tempAddress) < 0) {
-        NETSTACK_LOGE("strcpy_s failed");
-        return false;
-    }
-    if (strcpy_s(path, pathLen, tempPath) < 0) {
-        NETSTACK_LOGE("strcpy_s failed");
-        return false;
-    }
+    address = std::string(tempAddress);
+    path = std::string(tempPath);
     return true;
+}
+
+void WebSocketExec::ParseHost(const std::string &protocol, const std::string &address, int port, std::string &host)
+{
+    if ((protocol == PREFIX_WS && port == WS_DEFAULT_PORT) ||
+        (protocol == PREFIX_WSS && port == WSS_DEFAULT_PORT)) {
+        host = address;
+    } else {
+        host = address + NAME_END + std::to_string(port);
+    }
+    std::string origin = protocol + NAME_END + PROTOCOL_DELIMITER + host;
+    NETSTACK_LOGD("host: %{private}s, Origin = %{private}s", host.c_str(), origin.c_str());
 }
 
 void RunService(std::shared_ptr<UserData> userData, std::shared_ptr<EventManager> manager)
@@ -519,16 +522,15 @@ void WebSocketExec::FillContextInfo(ConnectContext *context, lws_context_creatio
 }
 
 bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsContext,
-                                     const std::shared_ptr<EventManager> &manager)
+    const std::shared_ptr<EventManager> &manager)
 {
     lws_client_connect_info connectInfo = {};
-    char protocol[MAX_URI_LENGTH] = {0};
-    char address[MAX_URI_LENGTH] = {0};
-    char path[MAX_URI_LENGTH] = {0};
+    std::string protocol;
+    std::string address;
+    std::string path;
     char customizedProtocol[MAX_PROTOCOL_LENGTH] = {0};
     int port = 0;
-
-    if (!ParseUrl(context, protocol, MAX_URI_LENGTH, address, MAX_URI_LENGTH, path, MAX_URI_LENGTH, &port)) {
+    if (!ParseUrl(context, protocol, address, path, port)) {
         NETSTACK_LOGE("ParseUrl failed");
         context->SetErrorCode(WEBSOCKET_ERROR_CODE_URL_ERROR);
         return false;
@@ -538,28 +540,25 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
         return false;
     }
     std::string tempHost;
-    if ((strcmp(protocol, PREFIX_WS) == 0 && port == WS_DEFAULT_PORT) ||
-        (strcmp(protocol, PREFIX_WSS) == 0 && port == WSS_DEFAULT_PORT)) {
-        tempHost = std::string(address);
-    } else {
-        tempHost = std::string(address) + NAME_END + std::to_string(port);
-    }
-    std::string tempOrigin = std::string(protocol) + NAME_END + PROTOCOL_DELIMITER + tempHost;
-    NETSTACK_LOGD("tempHost: %{private}s, Origin = %{private}s", tempHost.c_str(), tempOrigin.c_str());
+    ParseHost(protocol, address, port, tempHost);
     if (strcpy_s(customizedProtocol, context->GetProtocol().length() + 1, context->GetProtocol().c_str()) != EOK) {
         NETSTACK_LOGE("memory copy failed");
     }
 
     connectInfo.context = lwsContext;
     connectInfo.port = port;
-    connectInfo.address = address;
-    connectInfo.path = path;
+    connectInfo.address = address.c_str();
+    connectInfo.path = path.c_str();
     connectInfo.host = tempHost.c_str();
-    connectInfo.origin = address;
+    connectInfo.origin = address.c_str();
     connectInfo.protocol = customizedProtocol;
 
-    if (strcmp(protocol, PREFIX_HTTPS) == 0 || strcmp(protocol, PREFIX_WSS) == 0) {
+    if (protocol == PREFIX_HTTPS || protocol == PREFIX_WSS) {
         connectInfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_SELFSIGNED;
+    }
+    if (context->skipServerCertVerification_) {
+        NETSTACK_LOGI("ExecConnect skip server cert verify");
+        connectInfo.ssl_connection |= LCCSCF_ALLOW_INSECURE;
     }
     lws *wsi = nullptr;
     connectInfo.pwsi = &wsi;

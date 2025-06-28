@@ -85,6 +85,7 @@ public:
     static const char *CERT_PATH;
     static const char *KEY_PATH;
     static const char *KEY_PASSWD;
+    static const char *KEY_SKIP_SERVER_CERT_VERIFY;
 
     static const char *PROXY;
     static const char *PROTCOL;

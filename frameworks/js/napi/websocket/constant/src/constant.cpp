@@ -23,6 +23,7 @@ const char *ContextKey::CLIENT_CERT = "clientCert";
 const char *ContextKey::CERT_PATH = "certPath";
 const char *ContextKey::KEY_PATH = "keyPath";
 const char *ContextKey::KEY_PASSWD = "keyPassword";
+const char *ContextKey::KEY_SKIP_SERVER_CERT_VERIFY = "skipServerCertVerification";
 /* WebSocketConnection */
 const char *ContextKey::CLIENT_PORT = "clientPort";
 const char *ContextKey::CLIENT_IP = "clientIP";
