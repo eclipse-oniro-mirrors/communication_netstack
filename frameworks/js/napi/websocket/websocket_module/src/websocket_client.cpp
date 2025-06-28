@@ -44,8 +44,8 @@ static constexpr const int WSS_DEFAULT_PORT = 443;
 static std::atomic<int> g_clientID(0);
 namespace OHOS::NetStack::WebSocketClient {
 static const lws_retry_bo_t RETRY = {
-    .secs_since_valid_ping = 0,    /* force PINGs after secs idle */
-    .secs_since_valid_hangup = 10, /* hangup after secs idle */
+    .secs_since_valid_ping = 30,    /* force PINGs after secs idle */
+    .secs_since_valid_hangup = 60, /* hangup after secs idle */
     .jitter_percent = 20,
 };
 
