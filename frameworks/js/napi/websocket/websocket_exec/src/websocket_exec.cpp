@@ -106,6 +106,11 @@ struct OnOpenClosePara {
     std::string message;
 };
 
+struct WebSocketRecvMessage {
+    std::string data;
+    bool isBinary;
+};
+
 static const std::vector<std::string> WS_PREFIX = {PREFIX_WSS, PREFIX_WS};
 
 template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)
@@ -805,39 +810,30 @@ static napi_value CreateClosePara(napi_env env, void *callbackPara)
     return obj;
 }
 
-static napi_value CreateTextMessagePara(napi_env env, void *callbackPara)
+static napi_value CreateMessagePara(napi_env env, void *callbackPara)
 {
     auto manager = reinterpret_cast<EventManager *>(callbackPara);
     if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
-        return NapiUtils::CreateStringUtf8(env, "");
+        return NapiUtils::GetUndefined(env);
     }
-    auto msg = reinterpret_cast<std::string *>(manager->GetQueueData());
+    auto msg = reinterpret_cast<WebSocketRecvMessage *>(manager->GetQueueData());
     if (!msg) {
         NETSTACK_LOGE("msg is nullptr");
         return NapiUtils::GetUndefined(env);
     }
-    auto text = NapiUtils::CreateStringUtf8(env, *msg);
-    delete msg;
-    return text;
-}
-
-static napi_value CreateBinaryMessagePara(napi_env env, void *callbackPara)
-{
-    auto manager = reinterpret_cast<EventManager *>(callbackPara);
-    auto msg = reinterpret_cast<std::string *>(manager->GetQueueData());
-    if (!msg) {
-        NETSTACK_LOGE("msg is nullptr");
-        return NapiUtils::GetUndefined(env);
-    }
-    void *data = nullptr;
-    napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(env, msg->size(), &data);
-    if (data != nullptr && NapiUtils::ValueIsArrayBuffer(env, arrayBuffer) &&
-        memcpy_s(data, msg->size(), msg->data(), msg->size()) >= 0) {
-        delete msg;
-        return arrayBuffer;
+    napi_value result = NapiUtils::GetUndefined(env);
+    if (msg->isBinary) {
+        void *data = nullptr;
+        auto arrayBuffer = NapiUtils::CreateArrayBuffer(env, msg->data.size(), &data);
+        if (data != nullptr && NapiUtils::ValueIsArrayBuffer(env, arrayBuffer) &&
+            memcpy_s(data, msg->data.size(), msg->data.data(), msg->data.size()) >= 0) {
+            result = arrayBuffer;
+        }
+    } else {
+        result = NapiUtils::CreateStringUtf8(env, msg->data);
     }
     delete msg;
-    return NapiUtils::GetUndefined(env);
+    return result;
 }
 
 void WebSocketExec::OnError(EventManager *manager, int32_t code, uint32_t httpResponse)
@@ -936,28 +932,30 @@ void WebSocketExec::HandleRcvMessage(EventManager *manager, void *data, size_t l
         manager->AppendWebSocketBinaryData(data, length);
         if (isFinal) {
             const std::string &msgFromManager = manager->GetWebSocketBinaryData();
-            auto msg = new (std::nothrow) std::string;
+            auto msg = new (std::nothrow) WebSocketRecvMessage();
             if (msg == nullptr) {
                 return;
             }
-            msg->append(msgFromManager.data(), msgFromManager.size());
+            msg->data.append(msgFromManager.data(), msgFromManager.size());
+            msg->isBinary = true;
             manager->SetQueueData(msg);
             manager->EmitByUvWithoutCheckShared(EventName::EVENT_MESSAGE, manager,
-                                                CallbackTemplate<CreateBinaryMessagePara>);
+                                                CallbackTemplate<CreateMessagePara>);
             manager->ClearWebSocketBinaryData();
         }
     } else {
         manager->AppendWebSocketTextData(data, length);
         if (isFinal) {
             const std::string &msgFromManager = manager->GetWebSocketTextData();
-            auto msg = new (std::nothrow) std::string;
+            auto msg = new (std::nothrow) WebSocketRecvMessage();
             if (msg == nullptr) {
                 return;
             }
-            msg->append(msgFromManager.data(), msgFromManager.size());
+            msg->data.append(msgFromManager.data(), msgFromManager.size());
+            msg->isBinary = false;
             manager->SetQueueData(msg);
             manager->EmitByUvWithoutCheckShared(EventName::EVENT_MESSAGE, manager,
-                                                CallbackTemplate<CreateTextMessagePara>);
+                                                CallbackTemplate<CreateMessagePara>);
             manager->ClearWebSocketTextData();
         }
     }
