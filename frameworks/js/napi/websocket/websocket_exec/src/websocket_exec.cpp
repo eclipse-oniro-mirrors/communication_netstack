@@ -107,7 +107,7 @@ struct OnOpenClosePara {
 };
 
 struct WebSocketRecvMessage {
-    std::string* data;
+    std::string data;
     bool isBinary;
 };
 
@@ -824,15 +824,14 @@ static napi_value CreateMessagePara(napi_env env, void *callbackPara)
     napi_value result = NapiUtils::GetUndefined(env);
     if (msg->isBinary) {
         void *data = nullptr;
-        auto arrayBuffer = NapiUtils::CreateArrayBuffer(env, msg->data->size(), &data);
+        auto arrayBuffer = NapiUtils::CreateArrayBuffer(env, msg->data.size(), &data);
         if (data != nullptr && NapiUtils::ValueIsArrayBuffer(env, arrayBuffer) &&
-            memcpy_s(data, msg->data->size(), msg->data->data(), msg->data->size()) >= 0) {
+            memcpy_s(data, msg->data.size(), msg->data.data(), msg->data.size()) >= 0) {
             result = arrayBuffer;
         }
     } else {
-        result = NapiUtils::CreateStringUtf8(env, *(msg->data));
+        result = NapiUtils::CreateStringUtf8(env, msg->data);
     }
-    delete msg->data;
     delete msg;
     return result;
 }
@@ -937,12 +936,7 @@ void WebSocketExec::HandleRcvMessage(EventManager *manager, void *data, size_t l
             if (msg == nullptr) {
                 return;
             }
-            msg->data = new (std::nothrow) std::string();
-            if (msg->data == nullptr) {
-                delete msg;
-                return;
-            }
-            msg->data->append(msgFromManager.data(), msgFromManager.size());
+            msg->data.append(msgFromManager.data(), msgFromManager.size());
             msg->isBinary = true;
             manager->SetQueueData(msg);
             manager->EmitByUvWithoutCheckShared(EventName::EVENT_MESSAGE, manager,
@@ -957,12 +951,7 @@ void WebSocketExec::HandleRcvMessage(EventManager *manager, void *data, size_t l
             if (msg == nullptr) {
                 return;
             }
-            msg->data = new (std::nothrow) std::string();
-            if (msg->data == nullptr) {
-                delete msg;
-                return;
-            }
-            msg->data->append(msgFromManager.data(), msgFromManager.size());
+            msg->data.append(msgFromManager.data(), msgFromManager.size());
             msg->isBinary = false;
             manager->SetQueueData(msg);
             manager->EmitByUvWithoutCheckShared(EventName::EVENT_MESSAGE, manager,
