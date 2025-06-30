@@ -18,7 +18,7 @@
 
 #include <cstdint>
 #include <string>
-
+#include "cxx.h"
 #include "net_conn_client.h"
 #include "net_ssl.h"
 
@@ -39,6 +39,7 @@ inline int32_t IsCleartextPermittedByHostName(std::string const &hostName, bool 
 
 uint32_t NetStackVerifyCertificationCa(const CertBlob &cert, const CertBlob &caCert);
 uint32_t NetStackVerifyCertification(const CertBlob &cert);
+rust::String GetErrorCodeAndMessage(int32_t &errorCode);
 
 } // namespace NetStackAni
 } // namespace OHOS

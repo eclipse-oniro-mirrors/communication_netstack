@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use ani_rs::business_error::BusinessError;
 use cxx::let_cxx_string;
 
 use crate::bridge::{self, CertBlob};
@@ -97,5 +98,12 @@ mod ffi {
 
         fn NetStackVerifyCertification(cert: &CertBlob) -> u32;
 
+        fn GetErrorCodeAndMessage(error_code: &mut i32) -> String;
+
     }
+}
+
+pub fn convert_to_business_error(code: &mut i32) -> BusinessError {
+    let error_msg = crate::wrapper::ffi::GetErrorCodeAndMessage(code);
+    BusinessError::new(*code, error_msg)
 }
