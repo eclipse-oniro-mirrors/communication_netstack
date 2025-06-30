@@ -19,6 +19,7 @@
 
 #include "close_context.h"
 #include "connect_context.h"
+#include "napi_utils.h"
 #include "send_context.h"
 #include "websocket_async_work.h"
 #include "websocket_exec.h"
@@ -30,7 +31,6 @@
 #include "server_stop_context.h"
 #include "list_all_connections_context.h"
 #include "websocket_server_exec.h"
-#include "napi_utils.h"
 #endif // NETSTACK_WEBSOCKETSERVER
 
 class WebSocketTest : public testing::Test {
@@ -883,4 +883,32 @@ HWTEST_F(WebSocketTest, WebSocketTest079, TestSize.Level1)
     EXPECT_NE(userData, nullptr);
 }
 #endif
+
+HWTEST_F(WebSocketTest, WebSocketTest080, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ConnectContext context(env, eventManager);
+    context.url = "wss://whale.tooly.top/ws";
+    context.skipServerCertVerification_ = true;
+    EXPECT_TRUE(WebSocketExec::ExecConnect(&context));
+    context.skipServerCertVerification_ = false;
+    EXPECT_FALSE(WebSocketExec::ExecConnect(&context));
+}
+ 
+HWTEST_F(WebSocketTest, WebSocketTest081, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ConnectContext context(env, eventManager);
+    std::string property = "skipServerCertVerification";
+    napi_value obj = NapiUtils::CreateObject(context.GetEnv());
+    context.ParseSkipServerCertVerify(obj);
+    NapiUtils::SetInt32Property(context.GetEnv(), obj, property, 0);
+    context.ParseSkipServerCertVerify(obj);
+    napi_value obj2 = NapiUtils::CreateObject(context.GetEnv());
+    NapiUtils::SetBooleanProperty(context.GetEnv(), obj2, property, true);
+    context.ParseSkipServerCertVerify(obj2);
+    EXPECT_FALSE(WebSocketExec::ExecConnect(&context));
+}
 } // namespace

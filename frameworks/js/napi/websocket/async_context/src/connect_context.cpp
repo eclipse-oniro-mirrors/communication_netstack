@@ -78,6 +78,7 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
             ParseHeader(params[1]);
             ParseCaPath(params[1]);
             ParseClientCert(params[1]);
+            ParseSkipServerCertVerify(params[1]);
             if (!ParseProxy(params[1]) || !ParseProtocol(params[1])) {
                 return;
             }
@@ -123,6 +124,7 @@ void ConnectContext::ParseParamsCountThree(napi_value const *params)
         ParseHeader(params[1]);
         ParseCaPath(params[1]);
         ParseClientCert(params[1]);
+        ParseSkipServerCertVerify(params[1]);
         if (!ParseProxy(params[1]) || !ParseProtocol(params[1])) {
             if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_THREE - 1]) == napi_function) {
                 SetCallback(params[FUNCTION_PARAM_THREE - 1]);
@@ -199,6 +201,19 @@ void ConnectContext::ParseClientCert(napi_value optionsValue)
     Secure::SecureChar keyPassword =
         Secure::SecureChar(NapiUtils::GetStringPropertyUtf8(GetEnv(), jsCert, ContextKey::KEY_PASSWD));
     SetClientCert(certPath, keyPath, keyPassword);
+}
+
+void ConnectContext::ParseSkipServerCertVerify(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::KEY_SKIP_SERVER_CERT_VERIFY)) {
+        return;
+    }
+    napi_value jsVal = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::KEY_SKIP_SERVER_CERT_VERIFY);
+    if (NapiUtils::GetValueType(GetEnv(), jsVal) != napi_boolean) {
+        return;
+    }
+    skipServerCertVerification_ = NapiUtils::GetBooleanProperty(GetEnv(), optionsValue,
+        ContextKey::KEY_SKIP_SERVER_CERT_VERIFY);
 }
 
 bool ConnectContext::ParseProxy(napi_value optionsValue)
