@@ -20,6 +20,7 @@ ani_rs::ani_constructor! {
     [
         "isCleartextPermitted" : security::is_cleartext_permitted ,
         "isCleartextPermittedByHostName" : security::is_cleartext_permitted_by_host_name ,
-        "certVerificationSync" : security::cert_verification
+        "certVerificationAsync" : security::cert_verification_async,
+        "certVerificationSync" : security::cert_verification_sync
     ]
 }
