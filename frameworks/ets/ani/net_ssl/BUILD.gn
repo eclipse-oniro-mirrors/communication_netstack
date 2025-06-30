@@ -32,6 +32,7 @@ ohos_static_library("network_security_ani_static") {
   include_dirs = [
     "include",
     "${target_gen_dir}/src",
+    "$NETSTACK_DIR/frameworks/native/net_ssl/include",
   ]
   sources = [ "src/cxx/network_security_ani.cpp" ]
   sources += get_target_outputs(":network_security_ani_cxx")
