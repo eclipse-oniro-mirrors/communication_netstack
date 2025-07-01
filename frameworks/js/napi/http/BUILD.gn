@@ -146,17 +146,12 @@ ohos_shared_library("http") {
       "samgr:samgr_proxy",
       "time_service:time_client",
     ]
-    if (netstack_http_boringssl) {
-      external_deps += [
-        "netmanager_enhanced:crypto_boringssl",
-        "netmanager_enhanced:ssl_boringssl",
-      ]
-    } else {
-      external_deps += [
-        "openssl:libcrypto_shared",
-        "openssl:libssl_shared",
-      ]
-    }
+
+    external_deps += [
+      "openssl:libcrypto_shared",
+      "openssl:libssl_shared",
+    ]
+
     if (defined(global_parts_info) &&
         defined(global_parts_info.communication_netmanager_base) &&
         global_parts_info.communication_netmanager_base) {

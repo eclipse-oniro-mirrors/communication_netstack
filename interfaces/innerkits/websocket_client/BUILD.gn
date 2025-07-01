@@ -79,7 +79,11 @@ ohos_shared_library("websocket_client") {
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
   ]
 
-  external_deps = [ "openssl:libssl_shared" ]
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
+  ]
 
   public_external_deps = [ "libwebsockets:websockets" ]
 

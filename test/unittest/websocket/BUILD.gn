@@ -62,6 +62,7 @@ ohos_unittest("websocket_unittest") {
   external_deps = common_external_deps
   external_deps += [
     "libwebsockets:websockets",
+    "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
   ]

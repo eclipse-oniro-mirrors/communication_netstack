@@ -57,7 +57,7 @@
                 "libwebsockets",
                 "node",
                 "jsoncpp",
-                "netmanager_enhanced"
+                "access_token"
             ]
         },
         "build": {

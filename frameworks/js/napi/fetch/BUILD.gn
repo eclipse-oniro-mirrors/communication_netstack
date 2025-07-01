@@ -60,6 +60,7 @@ ohos_shared_library("fetch") {
     "curl:curl_shared",
     "hilog:libhilog",
     "napi:ace_napi",
+    "c_utils:utils",
   ]
 
   relative_install_dir = "module"

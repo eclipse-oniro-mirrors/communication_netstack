@@ -61,6 +61,7 @@ ohos_shared_library("cj_net_websocket_ffi") {
     "napi:ace_napi",
     "napi:cj_bind_ffi",
     "napi:cj_bind_native",
+    "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
   ]
