@@ -20,6 +20,7 @@ NETSTACK_UTILS_ROOT = "$SUBSYSTEM_DIR/netstack/utils"
 utils_include = [ "$NETSTACK_UTILS_ROOT/log/include" ]
 
 common_external_deps = [
+  "bounds_checking_function:libsec_shared",
   "c_utils:utils",
   "hilog:libhilog",
   "hisysevent:libhisysevent",

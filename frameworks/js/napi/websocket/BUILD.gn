@@ -61,6 +61,7 @@ ohos_shared_library("websocket") {
     "hilog:libhilog",
     "libwebsockets:websockets",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
   ]
