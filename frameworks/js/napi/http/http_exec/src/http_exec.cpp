@@ -1379,6 +1379,7 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
     SetDnsResolvOption(curl, context);
     SetDnsCacheOption(curl, context);
     SetIpResolve(curl, context);
+    SetTCPOption(curl, context);
     return true;
 }
 
