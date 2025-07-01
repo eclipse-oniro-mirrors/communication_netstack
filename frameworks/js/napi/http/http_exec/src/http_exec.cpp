@@ -1900,6 +1900,29 @@ bool HttpExec::SetDnsCacheOption(CURL *curl, RequestContext *context)
     return true;
 }
 
+bool HttpExec::SetTCPOption(CURL *curl, RequestContext *context)
+{
+    if (!context) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SOCKOPTDATA, &context->options, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SOCKOPTFUNCTION,
+        +[](void *clientp, curl_socket_t sock, curlsocktype type) -> int {
+            if (!clientp) {
+                return CURL_SOCKOPT_OK;
+            }
+            auto resp = reinterpret_cast<HttpRequestOptions *>(clientp);
+            HttpRequestOptions::TcpConfiguration config = resp->GetTCPOption();
+            if (config.SetOptionToSocket(sock)) {
+                NETSTACK_LOGI("SetOptionToSocket userTimeout = %{public}d", config.userTimeout);
+            }
+
+            return CURL_SOCKOPT_OK;
+        }, context);
+    return true;
+}
+
 bool HttpExec::SetIpResolve(CURL *curl, RequestContext *context)
 {
     std::string addressFamily = context->options.GetAddressFamily();

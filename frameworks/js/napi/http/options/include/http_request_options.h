@@ -86,6 +86,67 @@ class HttpRequestOptions final {
 public:
     HttpRequestOptions();
 
+    // https://man7.org/linux/man-pages/man7/tcp.7.html
+    struct TcpConfiguration {
+        friend class HttpRequestOptions;
+        // TCP_KEEPIDLE (since Linux 2.4)
+        //               The time (in seconds) the connection needs to remain idle
+        //               before TCP starts sending keepalive probes, if the socket
+        //               option SO_KEEPALIVE has been set on this socket.  This
+        //               option should not be used in code intended to be portable.
+        // For example, if the server will send FIN packet after 60 seconds, we suggest that set <keepIdle> to 61.
+        int keepIdle = 60 * 5; // Default value according to <NetworkKit> Cloud Service.
+        // TCP_KEEPINTVL (since Linux 2.4)
+        //               The time (in seconds) between individual keepalive probes.
+        //               This option should not be used in code intended to be
+        //               portable.
+        // <keepCnt> == 1 means that we just probe once, if it fails, we close the connection.
+        int keepCnt = 1;
+        // TCP_KEEPINTVL (since Linux 2.4)
+        //               The time (in seconds) between individual keepalive probes.
+        //               This option should not be used in code intended to be
+        //               portable.
+        int keepInterval = 1;
+        // TCP_USER_TIMEOUT (since Linux 2.6.37)
+        //        This option takes an unsigned int as an argument.  When
+        //        the value is greater than 0, it specifies the maximum
+        //        amount of time in milliseconds that transmitted data may
+        //        remain unacknowledged, or buffered data may remain
+        //        untransmitted (due to zero window size) before TCP will
+        //        forcibly close the corresponding connection and return
+        //        ETIMEDOUT to the application.  If the option value is
+        //        specified as 0, TCP will use the system default.
+        //
+        //        Increasing user timeouts allows a TCP connection to
+        //        survive extended periods without end-to-end connectivity.
+        //        Decreasing user timeouts allows applications to "fail
+        //        fast", if so desired.  Otherwise, failure may take up to
+        //        20 minutes with the current system defaults in a normal
+        //        WAN environment.
+        //
+        //        This option can be set during any state of a TCP
+        //        connection, but is effective only during the synchronized
+        //        states of a connection (ESTABLISHED, FIN-WAIT-1, FIN-
+        //        WAIT-2, CLOSE-WAIT, CLOSING, and LAST-ACK).  Moreover,
+        //        when used with the TCP keepalive (SO_KEEPALIVE) option,
+        //        TCP_USER_TIMEOUT will override keepalive to determine when
+        //        to close a connection due to keepalive failure.
+        //
+        //        The option has no effect on when TCP retransmits a packet,
+        //        nor when a keepalive probe is sent.
+        //
+        //        This option, like many others, will be inherited by the
+        //        socket returned by accept(2), if it was set on the
+        //        listening socket.
+        //
+        //        Further details on the user timeout feature can be found
+        //        in RFC 793 and RFC 5482 ("TCP User Timeout Option").
+        int userTimeout = HttpConstant::DEFAULT_READ_TIMEOUT;
+        
+        bool SetOptionToSocket(int sock);
+        void SetTcpUserTimeout(const uint32_t &timeout);
+    };
+
     void SetUrl(const std::string &url);
 
     void SetMethod(const std::string &method);
@@ -179,6 +240,7 @@ public:
     std::vector<MultiFormData> GetMultiPartDataList();
 
     [[nodiscard]] const TlsOption GetTlsOption() const;
+    [[nodiscard]] const TcpConfiguration GetTCPOption() const;
 
     [[nodiscard]] const ServerAuthentication GetServerAuthentication() const;
 
@@ -247,6 +309,8 @@ private:
     ServerAuthentication serverAuthentication_;
 
     std::string addressFamily_;
+
+    TcpConfiguration tcpOption_;
 };
 } // namespace OHOS::NetStack::Http
 
