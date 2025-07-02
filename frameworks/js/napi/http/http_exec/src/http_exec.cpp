@@ -1916,7 +1916,7 @@ bool HttpExec::SetTCPOption(CURL *curl, RequestContext *context)
             auto resp = reinterpret_cast<HttpRequestOptions *>(clientp);
             HttpRequestOptions::TcpConfiguration config = resp->GetTCPOption();
             if (config.SetOptionToSocket(sock)) {
-                NETSTACK_LOGI("SetOptionToSocket userTimeout = %{public}d", config.userTimeout);
+                NETSTACK_LOGI("SetOptionToSocket userTimeout = %{public}d", config.userTimeout_);
             }
 
             return CURL_SOCKOPT_OK;
