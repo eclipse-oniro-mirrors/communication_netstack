@@ -370,14 +370,16 @@ bool HttpRequestOptions::TcpConfiguration::SetOptionToSocket(int sock)
 {
     int proto = -1;
     auto len = static_cast<socklen_t>(sizeof(proto));
-    // https://man7.org/linux/man-pages/man2/getsockopt.2.html
-    // RETURN VALUE         top
-    //        On success, zero is returned for the standard options.  On error,
-    //        -1 is returned, and errno is set to indicate the error.
-    //
-    //        Netfilter allows the programmer to define custom socket options
-    //        with associated handlers; for such options, the return value on
-    //        success is the value returned by the handler.
+    /*
+    https://man7.org/linux/man-pages/man2/getsockopt.2.html
+    RETURN VALUE         top
+        On success, zero is returned for the standard options.  On error,
+        -1 is returned, and errno is set to indicate the error.
+
+        Netfilter allows the programmer to define custom socket options
+        with associated handlers; for such options, the return value on
+        success is the value returned by the handler.
+    */
     auto res = getsockopt(sock, SOL_SOCKET, SO_PROTOCOL, &proto, &len);
     if (res != 0 || proto != IPPROTO_TCP) {
         return false;
@@ -389,16 +391,18 @@ bool HttpRequestOptions::TcpConfiguration::SetOptionToSocket(int sock)
     }
  
     int keepAlive = 1;
-    // https://man7.org/linux/man-pages/man7/socket.7.html
-    // SO_KEEPALIVE
-    //               Enable sending of keep-alive messages on connection-
-    //               oriented sockets.  Expects an integer boolean flag.
-    //
-    // https://man7.org/linux/man-pages/man3/setsockopt.3p.html
-    // RETURN VALUE         top
-    //        Upon successful completion, setsockopt() shall return 0.
-    //        Otherwise, -1 shall be returned and errno set to indicate the
-    //        error.
+    /*
+    https://man7.org/linux/man-pages/man7/socket.7.html
+    SO_KEEPALIVE
+        Enable sending of keep-alive messages on connection-
+        oriented sockets.  Expects an integer boolean flag.
+    
+    https://man7.org/linux/man-pages/man3/setsockopt.3p.html
+    RETURN VALUE         top
+        Upon successful completion, setsockopt() shall return 0.
+        Otherwise, -1 shall be returned and errno set to indicate the
+        error.
+    */
     if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &keepAlive, sizeof(keepAlive)) != 0) {
         NETSTACK_LOGE("set SO_KEEPALIVE failed, errno = %{public}d sock = %{public}d", errno, sock);
         return false;
