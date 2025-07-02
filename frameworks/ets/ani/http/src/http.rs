@@ -18,7 +18,7 @@ use ani_rs::{
     objects::{AniAsyncCallback, AniRef},
     AniEnv,
 };
-use netstack_rs::{request::Request, task::RequestTask};
+use netstack_rs::{request::{has_internet_permission, Request}, task::RequestTask};
 
 use crate::{
     bridge::{Cleaner, HttpRequest, HttpRequestOptions, HttpResponseCache},
@@ -64,6 +64,10 @@ pub(crate) fn request(
     options: Option<HttpRequestOptions>,
 ) -> Result<(), BusinessError> {
     info!("request url :{}", url);
+    if !has_internet_permission() {
+        return Err(BusinessError::PERMISSION);
+    }
+
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
     let mut request = Request::<TaskCallback>::new();
 

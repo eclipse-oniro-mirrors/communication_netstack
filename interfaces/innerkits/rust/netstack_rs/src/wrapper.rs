@@ -18,6 +18,7 @@ use std::sync::{Arc, Mutex, Weak};
 use cxx::{let_cxx_string, SharedPtr};
 use ffi::{HttpClientRequest, HttpClientTask, NewHttpClientTask, OnCallback};
 use ffrt_rs::{ffrt_sleep, ffrt_spawn};
+use netstack_common::debug;
 
 use crate::error::{HttpClientError, HttpErrorCode};
 use crate::request::RequestCallback;
@@ -51,19 +52,12 @@ impl CallbackWrapper {
 
 impl CallbackWrapper {
     fn on_success(&mut self, _request: &HttpClientRequest, response: &ffi::HttpClientResponse) {
+        debug!("on_success callback is called");
         let Some(mut callback) = self.inner.take() else {
             return;
         };
         let response = Response::from_ffi(response);
-        if (response.status().clone() as u32 >= 300) || (response.status().clone() as u32) < 200 {
-            let error = HttpClientError::new(
-                HttpErrorCode::HttpNoneErr,
-                (response.status() as u32).to_string(),
-            );
-            callback.on_fail(error);
-        } else {
-            callback.on_success(response);
-        }
+        callback.on_success(response);
     }
 
     fn on_fail(
@@ -251,6 +245,7 @@ pub(crate) mod ffi {
         include!("http_client_request.h");
         include!("wrapper.h");
         include!("http_client_task.h");
+        include!("netstack_common_utils.h");
 
         #[namespace = "OHOS::NetStack::HttpClient"]
         type TaskStatus;
@@ -293,6 +288,9 @@ pub(crate) mod ffi {
 
         fn GetErrorCode(self: &HttpClientError) -> HttpErrorCode;
         fn GetErrorMessage(self: &HttpClientError) -> &CxxString;
+
+        #[namespace = "OHOS::NetStack::CommonUtils"]
+        fn HasInternetPermission() -> bool;
     }
 
     #[repr(i32)]
