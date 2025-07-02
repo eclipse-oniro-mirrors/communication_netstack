@@ -98,22 +98,22 @@ public:
             option should not be used in code intended to be portable.
         For example, if the server will send FIN packet after 60 seconds, we suggest that set <keepIdle> to 61.
         */
-        int keepIdle = 60 * 5; // Default value according to <NetworkKit> Cloud Service.
+        int keepIdle_ = 60 * 5; // Default value according to <NetworkKit> Cloud Service.
         /*
         TCP_KEEPINTVL (since Linux 2.4)
             The time (in seconds) between individual keepalive probes.
             This option should not be used in code intended to be
             portable.
-        */
         <keepCnt> == 1 means that we just probe once, if it fails, we close the connection.
-        int keepCnt = 1;
+        */
+        int keepCnt_ = 1;
         /*
         TCP_KEEPINTVL (since Linux 2.4)
             The time (in seconds) between individual keepalive probes.
             This option should not be used in code intended to be
             portable.
         */
-        int keepInterval = 1;
+        int keepInterval_ = 1;
         
         /*
         TCP_USER_TIMEOUT (since Linux 2.6.37)
@@ -151,7 +151,7 @@ public:
             Further details on the user timeout feature can be found
             in RFC 793 and RFC 5482 ("TCP User Timeout Option").
         */
-        int userTimeout = HttpConstant::DEFAULT_READ_TIMEOUT;
+        int userTimeout_ = HttpConstant::DEFAULT_READ_TIMEOUT;
         
         bool SetOptionToSocket(int sock);
         void SetTcpUserTimeout(const uint32_t &timeout);
