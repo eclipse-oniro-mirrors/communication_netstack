@@ -16,6 +16,7 @@ use cxx::{let_cxx_string, UniquePtr};
 use crate::error::HttpClientError;
 use crate::response::Response;
 use crate::task::RequestTask;
+use crate::wrapper;
 use crate::wrapper::ffi::{HttpClientRequest, NewHttpClientRequest, SetBody};
 /// Builder for creating a Request.
 pub struct Request<C: RequestCallback + 'static> {
@@ -109,4 +110,8 @@ impl<C: RequestCallback> Default for Request<C> {
     fn default() -> Self {
         Self::new()
     }
+}
+
+pub fn has_internet_permission() -> bool {
+    wrapper::ffi::HasInternetPermission()
 }
