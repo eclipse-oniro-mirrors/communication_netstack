@@ -475,18 +475,30 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     char *ip = nullptr;
     curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &ip);
     int32_t errCode = context->IsExecOK() ? 0 : context->GetErrorCode();
+    char *daddr = nullptr;
+    char *saddr = nullptr;
+    long dport = 0;
+    long sport = 0;
+    curl_easy_getinfo(handle, CURLINFO_LOCAL_IP, &saddr);
+    std::string anomSaddr = CommonUtils::ToAnonymousIp(saddr);
+    curl_easy_getinfo(handle, CURLINFO_LOCAL_PORT, &sport);
+    curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &daddr);
+    std::string anomDaddr = CommonUtils::ToAnonymousIp(daddr);
+    curl_easy_getinfo(handle, CURLINFO_PRIMARY_PORT, &dport);
     NETSTACK_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
         ", dns:%{public}.3f, connect:%{public}.3f, tls:%{public}.3f, firstSend:%{public}.3f"
         ", firstRecv:%{public}.3f, total:%{public}.3f, redirect:%{public}.3f"
-        ", errCode:%{public}d, RespCode:%{public}s, httpVer:%{public}s, method:%{public}s, osErr:%{public}ld",
+        ", errCode:%{public}d, RespCode:%{public}s, httpVer:%{public}s, method:%{public}s, osErr:%{public}ld"
+        ", saddr:%{public}s, sport:%{public}ld, daddr:%{public}s, dport:%{public}ld",
         context->GetTaskId(), size, dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
         errCode, std::to_string(responseCode).c_str(),
-        std::to_string(httpVer).c_str(), context->options.GetMethod().c_str(), osErr);
+        std::to_string(httpVer).c_str(), context->options.GetMethod().c_str(), osErr,
+        anomSaddr.c_str(), sport, anomDaddr.c_str(), dport);
 #if HAS_NETMANAGER_BASE
     if (EventReport::GetInstance().IsValid()) {
         HttpPerfInfo httpPerfInfo;
@@ -1379,6 +1391,7 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
     SetDnsResolvOption(curl, context);
     SetDnsCacheOption(curl, context);
     SetIpResolve(curl, context);
+    SetTCPOption(curl, context);
     return true;
 }
 
@@ -1897,6 +1910,29 @@ bool HttpExec::SetDnsCacheOption(CURL *curl, RequestContext *context)
 #ifdef HAS_NETMANAGER_BASE
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DNS_CACHE_TIMEOUT, 0, context);
 #endif
+    return true;
+}
+
+bool HttpExec::SetTCPOption(CURL *curl, RequestContext *context)
+{
+    if (!context) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SOCKOPTDATA, &context->options, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SOCKOPTFUNCTION,
+        +[](void *clientp, curl_socket_t sock, curlsocktype type) -> int {
+            if (!clientp) {
+                return CURL_SOCKOPT_OK;
+            }
+            auto resp = reinterpret_cast<HttpRequestOptions *>(clientp);
+            HttpRequestOptions::TcpConfiguration config = resp->GetTCPOption();
+            if (config.SetOptionToSocket(sock)) {
+                NETSTACK_LOGI("SetOptionToSocket userTimeout = %{public}d", config.userTimeout_);
+            }
+
+            return CURL_SOCKOPT_OK;
+        }, context);
     return true;
 }
 

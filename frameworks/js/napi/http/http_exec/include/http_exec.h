@@ -104,6 +104,8 @@ private:
 
     static bool SetDnsResolvOption(CURL *curl, RequestContext *context);
 
+    static bool SetTCPOption(CURL *curl, RequestContext *context);
+
     static bool SetCertPinnerOption(CURL *curl, RequestContext *context);
 
     static size_t OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData);

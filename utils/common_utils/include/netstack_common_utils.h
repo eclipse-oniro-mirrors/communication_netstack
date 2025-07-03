@@ -103,5 +103,7 @@ bool IsCertPubKeyInPinned(const std::string &certPubKeyDigest, const std::string
 bool IsCleartextPermitted(const std::string &url, const std::string &protocol);
 
 bool IsValidPort(const uint32_t &Port);
+
+std::string ToAnonymousIp(const std::string &input);
 } // namespace OHOS::NetStack::CommonUtils
 #endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */

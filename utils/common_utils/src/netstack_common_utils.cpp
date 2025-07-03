@@ -612,4 +612,20 @@ bool IsValidPort(const uint32_t &port)
     }
     return true;
 }
+
+std::string ToAnonymousIp(const std::string &input)
+{
+    std::string maskedResult = input;
+    // Mask ipv4 address.
+    if (std::regex_match(maskedResult, IP_PATTERN) || std::regex_match(maskedResult, IP_MASK_PATTERN)) {
+        MaskIpv4(maskedResult);
+        return maskedResult;
+    }
+    // Mask ipv6 address.
+    if (std::regex_match(maskedResult, IPV6_PATTERN) || std::regex_match(maskedResult, IPV6_MASK_PATTERN)) {
+        MaskIpv6(maskedResult);
+        return maskedResult;
+    }
+    return input;
+}
 } // namespace OHOS::NetStack::CommonUtils
