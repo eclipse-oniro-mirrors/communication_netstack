@@ -19,3 +19,5 @@ edition = "2021"
 [dependencies]
 cxx = "1.0.115"
 ffrt_rs = { path = "../ffrt_rs" }
+hilog_rust = { git = "https://gitee.com/openharmony/hiviewdfx_hilog" }
+netstack_common = { path = "../../../../frameworks/ets/ani/common" }
