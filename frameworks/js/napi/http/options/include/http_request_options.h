@@ -20,7 +20,6 @@
 #include <string>
 #include <vector>
 
-#include <netinet/tcp.h>
 #include "constant.h"
 #include "secure_char.h"
 #include "http_tls_config.h"

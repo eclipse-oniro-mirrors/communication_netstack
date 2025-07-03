@@ -18,6 +18,7 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 
+#include <netinet/tcp.h>
 #include "http_request_options.h"
 #include "secure_char.h"
 
