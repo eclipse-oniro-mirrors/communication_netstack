@@ -18,7 +18,9 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
 #include <netinet/tcp.h>
+#endif
 #include "http_request_options.h"
 #include "secure_char.h"
 
