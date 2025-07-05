@@ -67,6 +67,7 @@
 #include "securec.h"
 #include "secure_char.h"
 #include "trace_events.h"
+#include "hi_app_event_report.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
@@ -573,7 +574,7 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
     }
 }
 
-bool HttpExec::ExecRequest(RequestContext *context)
+static bool ExecRequestCheck(RequestContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
@@ -589,7 +590,17 @@ bool HttpExec::ExecRequest(RequestContext *context)
         context->SetCleartextNotPermitted(true);
         return false;
     }
+    return true;
+}
+
+bool HttpExec::ExecRequest(RequestContext *context)
+{
+    HiAppEventReport hiAppEventReport("NetworkKit", "HttpRequest");
+    if (!ExecRequestCheck(context)) {
+        return false;
+    }
     if (context->GetSharedManager()->IsEventDestroy()) {
+        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, HTTP_UNKNOWN_OTHER_ERROR);
         return false;
     }
     context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
@@ -606,6 +617,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
                     context->GetModuleId());
             }
         }
+        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
         return true;
     }
     if (!RequestWithoutCache(context)) {
@@ -621,8 +633,10 @@ bool HttpExec::ExecRequest(RequestContext *context)
                     context->GetModuleId());
             }
         }
+        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
         return false;
     }
+    hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
     return true;
 }
 
