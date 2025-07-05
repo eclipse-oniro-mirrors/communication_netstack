@@ -25,6 +25,7 @@
 #include "netstack_log.h"
 #include "netstack_common_utils.h"
 #include "trace_events.h"
+#include "hi_app_event_report.h"
 
 #define DECLARE_RESPONSE_CODE(code) \
     DECLARE_NAPI_STATIC_PROPERTY(#code, NapiUtils::CreateUint32(env, static_cast<uint32_t>(ResponseCode::code)))
