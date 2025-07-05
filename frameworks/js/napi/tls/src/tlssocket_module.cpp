@@ -32,6 +32,7 @@
 #include "tls_send_context.h"
 #include "tls_init_context.h"
 #include "tlssocket_async_work.h"
+#include "hi_app_event_report.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -185,6 +186,7 @@ void TLSSocketModuleExports::InitProtocol(napi_env env, napi_value exports)
 
 napi_value TLSSocketModuleExports::ConstructTLSSocketInstance(napi_env env, napi_callback_info info)
 {
+    HiAppEventReport hiAppEventReport("NetworkKit", "TLSSocketConstructTLSSocketInstance");
     napi_value result = ModuleTemplate::NewInstanceWithSharedManager(env, info, INTERFACE_TLS_SOCKET, Finalize);
     if (result == nullptr) {
         return nullptr;
@@ -226,6 +228,7 @@ napi_value TLSSocketModuleExports::ConstructTLSSocketInstance(napi_env env, napi
     }
 
     delete context;
+    hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
     return result;
 }
 

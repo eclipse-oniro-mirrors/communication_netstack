@@ -148,6 +148,7 @@ ohos_unittest("tls_socket_core_test") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
+    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]

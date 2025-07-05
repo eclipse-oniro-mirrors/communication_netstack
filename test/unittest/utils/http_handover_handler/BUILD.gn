@@ -67,6 +67,7 @@ ohos_unittest("http_handover_handler_test") {
     "init:libbegetutil",
     "napi:ace_napi",
     "time_service:time_client",
+    "hiappevent:hiappevent_innerapi",
   ]
 
   sources = [
