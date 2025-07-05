@@ -129,9 +129,6 @@ ohos_shared_library("http") {
       "jsoncpp:jsoncpp_static",
       "napi:ace_napi",
     ]
-    if (!build_ohos_sdk) {
-    external_deps += [ "hiappevent:hiappevent_innerapi" ]
-    }
     ldflags = [ "-lpthread" ]
   } else {
     deps = [
@@ -150,9 +147,6 @@ ohos_shared_library("http") {
       "time_service:time_client",
     ]
     
-    if (!build_ohos_sdk) {
-    external_deps += [ "hiappevent:hiappevent_innerapi" ]
-    }
     external_deps += [
       "openssl:libcrypto_shared",
       "openssl:libssl_shared",
@@ -187,6 +181,9 @@ ohos_shared_library("http") {
     if (product_name != "ohos-sdk") {
       external_deps += [ "init:libbegetutil" ]
     }
+  }
+  if (!build_ohos_sdk) {
+    external_deps += [ "hiappevent:hiappevent_innerapi" ]
   }
   include_dirs += [
     "$NETSTACK_DIR/utils/profiler_utils/include",
