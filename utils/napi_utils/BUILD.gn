@@ -95,7 +95,6 @@ ohos_static_library("napi_utils_static") {
     "src/hi_app_event_report.cpp",
   ]
 
-
   public_configs = [ ":napi_utils_public_config" ]
 
   external_deps = [ "cJSON:cjson" ]
