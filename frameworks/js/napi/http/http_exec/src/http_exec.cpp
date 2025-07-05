@@ -574,9 +574,8 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
     }
 }
 
-bool HttpExec::ExecRequest(RequestContext *context)
+static bool ExecRequestCheck(RequestContext *context)
 {
-    HiAppEventReport hiAppEventReport("NetworkKit", "HttpRequest");
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
         return false;
@@ -589,6 +588,15 @@ bool HttpExec::ExecRequest(RequestContext *context)
     }
     if (!CommonUtils::IsCleartextPermitted(context->options.GetUrl(), "http://")) {
         context->SetCleartextNotPermitted(true);
+        return false;
+    }
+    return true;
+}
+
+bool HttpExec::ExecRequest(RequestContext *context)
+{
+    HiAppEventReport hiAppEventReport("NetworkKit", "HttpRequest");
+    if (!ExecRequestCheck(context)) {
         return false;
     }
     if (context->GetSharedManager()->IsEventDestroy()) {
