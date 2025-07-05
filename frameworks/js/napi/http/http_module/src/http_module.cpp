@@ -306,6 +306,7 @@ napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_ca
 
 napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_info info)
 {
+    HiAppEventReport hiAppEventReport("NetworkKit", "HttpDestroy");
     napi_value thisVal = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr));
     EventManagerWrapper *wrapper = nullptr;
@@ -324,10 +325,12 @@ napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_i
     }
     if (manager->IsEventDestroy()) {
         NETSTACK_LOGD("js object has been destroyed");
+        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, HTTP_UNKNOWN_OTHER_ERROR);
         return NapiUtils::GetUndefined(env);
     }
     manager->SetEventDestroy(true);
     manager->DeleteEventReference(env);
+    hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
     return NapiUtils::GetUndefined(env);
 }
 
