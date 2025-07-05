@@ -597,6 +597,12 @@ bool IsCleartextPermitted(const std::string &url, const std::string &protocol)
     bool isCleartextPermitted = true;
 #if HAS_NETMANAGER_BASE
     using namespace OHOS::NetManagerStandard;
+    bool isComponetCfg = true;
+    int32_t ret = NetworkSecurityConfig::GetInstance().IsCleartextCfgByComponent("Network Kit", isComponetCfg);
+    if (ret || !isComponetCfg) {
+        NETSTACK_LOGD("Network Kit Component Not Cfg or Cfg False");
+        return isCleartextPermitted;
+    }
     if (url.find(protocol) != std::string::npos) {
         std::string hostName = GetHostnameFromURL(url);
         NetworkSecurityConfig::GetInstance().IsCleartextPermitted(hostName, isCleartextPermitted);

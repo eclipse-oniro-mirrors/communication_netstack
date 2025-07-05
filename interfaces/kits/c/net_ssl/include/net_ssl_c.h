@@ -80,6 +80,7 @@ int32_t OH_Netstack_IsCleartextPermitted(bool *isCleartextPermitted);
 
 int32_t OH_Netstack_IsCleartextPermittedByHostName(const char *hostname, bool *isCleartextPermitted);
 
+int32_t OH_Netstack_IsCleartextCfgByComponent(const char *component, bool *componentCfg);
 #ifdef __cplusplus
 }
 #endif

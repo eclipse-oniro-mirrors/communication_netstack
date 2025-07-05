@@ -832,6 +832,13 @@ HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned09, TestSize.Level2)
                      "oChTociMee9wno=");
     EXPECT_TRUE(IsCertPubKeyInPinned(pubkey, pinnedPubkey));
 }
+
+HWTEST_F(NetStackCommonUtilsTest, IsCleartextPermitted01, TestSize.Level2)
+{
+    std::string url("http://text.com");
+    std::string protocol("http://");
+    EXPECT_TRUE(IsCleartextPermitted(url, protocol));
+}
 } // namespace CommonUtils
 } // namespace NetStack
 } // namespace OHOS
