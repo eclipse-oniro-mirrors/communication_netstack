@@ -129,7 +129,6 @@ ohos_shared_library("http") {
       "jsoncpp:jsoncpp_static",
       "napi:ace_napi",
     ]
-    
     if (!build_ohos_sdk) {
     external_deps += [ "hiappevent:hiappevent_innerapi" ]
     }
@@ -150,6 +149,7 @@ ohos_shared_library("http") {
       "samgr:samgr_proxy",
       "time_service:time_client",
     ]
+    
     if (!build_ohos_sdk) {
     external_deps += [ "hiappevent:hiappevent_innerapi" ]
     }
