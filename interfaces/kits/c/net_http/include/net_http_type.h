@@ -140,7 +140,7 @@ typedef enum Http_ResponseCode {
   /** @brief Partial content. The server successfully processed some GET requests. */
   OH_HTTP_PARTIAL = 206,
   /** @brief Multiple options. */
-  OH_HTTP_MULT_CHOICE = 300,
+  OH_HTTP_MULTI_CHOICE = 300,
   /**
    * @brief Permanently move. The requested resource has been permanently moved to a new URI,
    * and the returned information will include the new URI. The browser will automatically redirect to the new URI.
@@ -186,11 +186,11 @@ typedef enum Http_ResponseCode {
   /** @brief The request was rejected because the requested entity was too large for the server to process. */
   OH_HTTP_ENTITY_TOO_LARGE = 413,
   /** @brief The requested URI is too long (usually a URL) and the server cannot process it. */
-  OH_HTTP_REQ_TOO_LONG = 414,
+  OH_HTTP_REQUEST_TOO_LONG = 414,
   /** @brief The server is unable to process the requested format. */
   OH_HTTP_UNSUPPORTED_TYPE = 415,
   /** @brief Requested Range not satisfiable. */
-  OH_HTTP_RANGE_NOT_SATISFIABLE = 416,
+  OH_HTTP_RANGE_NOT_MET = 416,
   /** @brief Internal server error, unable to complete the request. */
   OH_HTTP_INTERNAL_ERROR = 500,
   /** @brief The server does not support the requested functionality and cannot complete the request. */
