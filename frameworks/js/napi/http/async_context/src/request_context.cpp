@@ -503,14 +503,6 @@ void RequestContext::ParseCaPath(napi_value optionsValue)
 
 void RequestContext::ParseCaData(napi_value optionsValue)
 {
-    std::string caData = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CA_DATA);
-    if (!caData.empty()) {
-        options.SetCaData(caData);
-    }
-}
-
-void RequestContext::ParseCaData(napi_value optionsValue)
-{
     std::string caPath = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CA_PATH);
     std::string caData = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CA_DATA);
     if (caPath.empty() && !caData.empty() && caData.size() < CADATA_STRING_MAX_LENGTH) {

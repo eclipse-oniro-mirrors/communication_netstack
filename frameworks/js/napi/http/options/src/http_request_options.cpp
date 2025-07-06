@@ -251,13 +251,13 @@ const std::string &HttpRequestOptions::GetCaPath() const
     return caPath_;
 }
 
-void HttpRequestOptions::SetCaData(const std::string &data)
+void HttpRequestOptions::SetCaData(const std::string &caData)
 {
-    if (data.empty()) {
+    if (caData.empty()) {
         return;
     }
 
-    caData_ = data;
+    caData_ = caData;
 }
 
 const std::string &HttpRequestOptions::GetCaData() const
