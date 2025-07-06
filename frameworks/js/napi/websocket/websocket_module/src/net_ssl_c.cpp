@@ -218,5 +218,6 @@ int32_t OH_Netstack_IsCleartextCfgByComponent(const char *component, bool *compo
         NETSTACK_LOGE("OH_Netstack_IsCleartextCfgByComponent received invalid parameters");
         return OHOS::NetManagerStandard::NETMANAGER_ERR_INVALID_PARAMETER;
     }
-    return OHOS::NetManagerStandard::NetworkSecurityConfig::GetInstance() +.IsCleartextCfgByComponent(std::string(component), *componentCfg);
+    return OHOS::NetManagerStandard::NetworkSecurityConfig::GetInstance()
+        .IsCleartextCfgByComponent(std::string(component), *componentCfg);
 }
