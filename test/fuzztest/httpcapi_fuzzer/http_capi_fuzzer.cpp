@@ -98,11 +98,11 @@ void Http_SampleResponseCallback(Http_Response *response, uint32_t errCode) {
     response->destroyResponse(&response);
 }
 
-size_t Http_SampleOnDataReceiveCallback(const char *data) {
-    if (data == nullptr) {
-        return 0;
+void Http_SampleOnDataReceiveCallback(const char *data, size_t length) {
+    if (data == nullptr || length == 0) {
+        return;
     }
-    return 0;
+    return;
 }
 
 void Http_SampleOnUploadProgressCallback(uint64_t totalSize, uint64_t transferredSize) {
