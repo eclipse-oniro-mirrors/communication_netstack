@@ -180,7 +180,7 @@ public:
 
     void SetCaPath(const std::string &SetCaPath);
 
-    void SetCaData(const std::string &SetCaData);
+    void SetCaData(const std::string &data);
 
     void SetDnsServers(const std::vector<std::string> &dnsServers);
 

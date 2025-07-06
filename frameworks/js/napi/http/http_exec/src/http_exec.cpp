@@ -1075,6 +1075,41 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *sslCtx, void *request_contex
     return CURLE_OK;
 }
 
+static void LoadCaCertFromString(X509_STORE *store, const std::string &certData)
+{
+    if (!store || certData.empty() || certData.size() > static_cast<size_t>(INT_MAX)) {
+        return;
+    }
+
+    auto cbio = BIO_new_mem_buf(certData.data(), static_cast<int>(certData.size()));
+    if (!cbio) {
+        return;
+    }
+
+    auto inf = PEM_X509_INFO_read_bio(cbio, nullptr, nullptr, nullptr);
+    if (!inf) {
+        BIO_free(cbio);
+        return;
+    }
+
+    /* add each entry from PEM file to x509_store */
+    for (int i = 0; i < static_cast<int>(sk_X509_INFO_num(inf)); ++i) {
+        auto itmp = sk_X509_INFO_value(inf, i);
+        if (!itmp) {
+            continue;
+        }
+        if (itmp->x509) {
+            X509_STORE_add_cert(store, itmp->x509);
+        }
+        if (itmp->crl) {
+            X509_STORE_add_crl(store, itmp->crl);
+        }
+    }
+
+    sk_X509_INFO_pop_free(inf, X509_INFO_free);
+    BIO_free(cbio);
+}
+
 CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *sslCtx, void *request_context)
 {
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
@@ -1104,6 +1139,13 @@ CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *sslCtx, void *reque
         NETSTACK_LOGD("certificate directory path is not exist");
     } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), certsPath.certFile.c_str(), nullptr)) {
         NETSTACK_LOGE("loading certificates from context cert error.");
+    }
+    if (!requestContext->options.GetCaData().empty()) {
+        auto x509Store = SSL_CTX_get_cert_store(static_cast<SSL_CTX *>(sslCtx));
+        if (!x509Store) {
+            return CURLE_SSL_CERTPROBLEM;
+        }
+        LoadCaCertFromString(x509Store, requestContext->options.GetCaData());
     }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
     return CURLE_OK;
