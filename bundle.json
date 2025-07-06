@@ -57,8 +57,7 @@
                 "libwebsockets",
                 "node",
                 "jsoncpp",
-                "access_token",
-                "hiappevent"
+                "access_token"
             ]
         },
         "build": {

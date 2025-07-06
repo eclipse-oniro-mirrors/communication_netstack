@@ -146,7 +146,7 @@ ohos_shared_library("http") {
       "samgr:samgr_proxy",
       "time_service:time_client",
     ]
-    
+
     external_deps += [
       "openssl:libcrypto_shared",
       "openssl:libssl_shared",
@@ -181,9 +181,6 @@ ohos_shared_library("http") {
     if (product_name != "ohos-sdk") {
       external_deps += [ "init:libbegetutil" ]
     }
-  }
-  if (!build_ohos_sdk) {
-    external_deps += [ "hiappevent:hiappevent_innerapi" ]
   }
   include_dirs += [
     "$NETSTACK_DIR/utils/profiler_utils/include",
