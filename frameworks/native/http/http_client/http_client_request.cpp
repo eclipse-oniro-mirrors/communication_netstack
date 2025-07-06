@@ -100,11 +100,6 @@ void HttpClientRequest::SetHttpProxyType(HttpProxyType type)
     proxyType_ = type;
 }
 
-void HttpClientRequest::SetMaxLimit(uint32_t maxLimit)
-{
-    maxLimit_ = maxLimit;
-}
-
 void HttpClientRequest::SetCaPath(const std::string &path)
 {
     if (path.empty()) {
@@ -171,11 +166,6 @@ const std::string &HttpClientRequest::GetCaPath()
 uint32_t HttpClientRequest::GetPriority() const
 {
     return priority_;
-}
-
-uint32_t HttpClientRequest::GetMaxLimit() const
-{
-    return maxLimit_;
 }
 
 void HttpClientRequest::SetHttpProxy(const HttpProxy &proxy)
