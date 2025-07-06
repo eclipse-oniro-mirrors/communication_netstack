@@ -142,7 +142,6 @@ ohos_unittest("two_way_tls_socket_unittest") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
-    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -191,7 +190,6 @@ ohos_unittest("one_way_tls_socket_unittest") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
-    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -240,7 +238,6 @@ ohos_unittest("two_way_tls_socket_certchain_unittest") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
-    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -289,7 +286,6 @@ ohos_unittest("one_way_tls_socket_certchain_unittest") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
-    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -341,7 +337,6 @@ ohos_unittest("tls_socket_unilateral_connection") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
-    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -416,7 +411,6 @@ ohos_unittest("tls_key_test") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
-    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -464,7 +458,6 @@ ohos_unittest("tls_cert_test") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
-    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -512,7 +505,6 @@ ohos_unittest("tls_configuration_test") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
-    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -560,7 +552,6 @@ ohos_unittest("tls_context_test") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
-    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -608,7 +599,6 @@ ohos_unittest("socket_error_unittest") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
-    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
@@ -659,7 +649,6 @@ ohos_unittest("tls_socket_branch_test") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
-    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]

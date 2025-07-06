@@ -140,7 +140,6 @@ ohos_unittest("socket_unittest") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
-    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = [
