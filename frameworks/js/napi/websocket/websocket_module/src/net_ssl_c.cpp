@@ -28,6 +28,7 @@
 #include "net_ssl_verify_cert.h"
 #include "net_manager_constants.h"
 #include "network_security_config.h"
+#include "netmanager_base_permission.h"
 
 struct OHOS::NetStack::Ssl::CertBlob SwitchToCertBlob(const struct NetStack_CertBlob cert)
 {
