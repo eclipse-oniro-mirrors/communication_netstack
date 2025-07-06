@@ -700,7 +700,6 @@ HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest004, TestSize.Level1)
     std::string url = "http://www.httpbin.org/get";
     const char *data = "http://www.httpbin.org/get";
     httpReq.SetURL(url);
-    httpReq.SetMaxLimit(5);
 
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
@@ -719,7 +718,6 @@ HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest005, TestSize.Level1)
     std::string url = "http://www.httpbin.org/get";
     const char *data = "http://www.httpbin.org/get";
     httpReq.SetURL(url);
-    httpReq.SetMaxLimit(20);
 
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
@@ -738,7 +736,6 @@ HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest006, TestSize.Level1)
     std::string url = "http://www.httpbin.org/get";
     const char *data = "http://www.httpbin.org/get";
     httpReq.SetURL(url);
-    httpReq.SetMaxLimit(3);
 
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
