@@ -35,6 +35,7 @@ common_external_deps = [
   "openssl:libcrypto_shared",
   "openssl:libssl_shared",
   "samgr:samgr_proxy",
+  "netmanager_base:net_manager_common",
 ]
 
 ohos_fuzztest("NetsslInnerFuzzTest") {
