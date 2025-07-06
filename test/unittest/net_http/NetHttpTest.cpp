@@ -56,10 +56,10 @@ static void testResponseCallback(struct Http_Response *response, uint32_t errCod
     NETSTACK_LOGI("testResponseCallback function called!");
 }
 
-static void testDataReceiveCallback(const char *data, size_t length)
+static void TestDataReceiveCallback(const char *data, size_t length)
 {
     NETSTACK_LOGI("testDataReceiveCallback function called!");
-    return 0;
+    return;
 }
 
 static void testHeaderReceiveCallback(Http_Headers *headers)
@@ -499,7 +499,7 @@ HWTEST_F(NetHttpTest, RequestOnDataReceive001, TestSize.Level1)
     
     Http_ResponseCallback callback = testResponseCallback;
     Http_EventsHandler handler;
-    Http_OnDataReceiveCallback onDataReceiveCallback = testDataReceiveCallback;
+    Http_OnDataReceiveCallback onDataReceiveCallback = TestDataReceiveCallback;
     handler.onDataReceive = onDataReceiveCallback; 
     OH_Http_Request(request, callback, handler);
     OH_Http_Destroy(&request);
