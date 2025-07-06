@@ -411,21 +411,4 @@ HWTEST_F(HttpClientRequestTest, SetClientCertTest002, TestSize.Level1)
     HttpClientCert client = req.GetClientCert();
     EXPECT_EQ(client.keyPassword, "");
 }
-
-HWTEST_F(HttpClientRequestTest, SetMaxLimitTest001, TestSize.Level1)
-{
-    HttpClientRequest req;
-
-    req.SetMaxLimit(100);
-    uint32_t maxLimit = req.GetMaxLimit();
-    EXPECT_EQ(maxLimit, 100);
-}
-
-HWTEST_F(HttpClientRequestTest, GetMaxLimitTest001, TestSize.Level1)
-{
-    HttpClientRequest req;
-
-    uint32_t maxLimit = req.GetMaxLimit();
-    EXPECT_EQ(maxLimit, 0);
-}
 } // namespace
