@@ -28,6 +28,7 @@
 #include "net_ssl_verify_cert.h"
 #include "net_manager_constants.h"
 #include "network_security_config.h"
+#include "netmanager_base_permission.h"
 
 struct OHOS::NetStack::Ssl::CertBlob SwitchToCertBlob(const struct NetStack_CertBlob cert)
 {
@@ -206,4 +207,18 @@ int32_t OH_Netstack_IsCleartextPermittedByHostName(const char *hostname, bool *i
     }
     return OHOS::NetManagerStandard::NetworkSecurityConfig::GetInstance()
         .IsCleartextPermitted(std::string(hostname), *isCleartextPermitted);
+}
+
+int32_t OH_Netstack_IsCleartextCfgByComponent(const char *component, bool *componentCfg)
+{
+    if (!OHOS::NetManagerStandard::NetManagerPermission::IsSystemCaller()) {
+        NETSTACK_LOGE("Caller not have sys permission");
+        return OHOS::NetManagerStandard::NETMANAGER_ERR_NOT_SYSTEM_CALL;
+    }
+    if (component == nullptr || componentCfg == nullptr) {
+        NETSTACK_LOGE("OH_Netstack_IsCleartextCfgByComponent received invalid parameters");
+        return OHOS::NetManagerStandard::NETMANAGER_ERR_INVALID_PARAMETER;
+    }
+    return OHOS::NetManagerStandard::NetworkSecurityConfig::GetInstance()
+        .IsCleartextCfgByComponent(std::string(component), *componentCfg);
 }
