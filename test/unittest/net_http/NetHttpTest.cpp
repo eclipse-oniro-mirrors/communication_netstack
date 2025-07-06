@@ -56,7 +56,7 @@ static void testResponseCallback(struct Http_Response *response, uint32_t errCod
     NETSTACK_LOGI("testResponseCallback function called!");
 }
 
-static size_t testDataReceiveCallback(const char *data, size_t length)
+static void testDataReceiveCallback(const char *data, size_t length)
 {
     NETSTACK_LOGI("testDataReceiveCallback function called!");
     return 0;
