@@ -41,6 +41,7 @@ ohos_static_library("napi_utils") {
     "src/napi_utils.cpp",
     "src/secure_char.cpp",
     "src/timing.cpp",
+    "src/hi_app_event_report.cpp",
   ]
 
   part_name = "netstack"
@@ -54,6 +55,14 @@ ohos_static_library("napi_utils") {
     "hilog:libhilog",
     "napi:ace_napi",
   ]
+
+  if (!build_ohos_sdk) {
+    external_deps += [
+      "hiappevent:hiappevent_innerapi",
+      "time_service:time_client",
+      "ability_runtime:wantagent_innerkits",
+    ]
+  }
 
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
@@ -83,11 +92,21 @@ ohos_static_library("napi_utils_static") {
     "src/napi_utils.cpp",
     "src/secure_char.cpp",
     "src/timing.cpp",
+    "src/hi_app_event_report.cpp",
   ]
+
 
   public_configs = [ ":napi_utils_public_config" ]
 
   external_deps = [ "cJSON:cjson" ]
+
+  if (!build_ohos_sdk) {
+    external_deps += [
+      "hiappevent:hiappevent_innerapi",
+      "time_service:time_client",
+      "ability_runtime:wantagent_innerkits",
+    ]
+  }
 
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
