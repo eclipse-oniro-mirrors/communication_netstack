@@ -24,13 +24,8 @@
 #include <sstream>
 #include <thread>
 #include <unistd.h>
-#ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
-#endif
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
-#ifndef HTTP_MULTIPATH_CERT_ENABLE
-#include <openssl/ssl.h>
-#endif
 #include <openssl/pem.h>
 #include <openssl/sha.h>
 #include <openssl/x509.h>
@@ -1077,6 +1072,7 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *sslCtx, void *request_contex
 
 static void LoadCaCertFromString(X509_STORE *store, const std::string &certData)
 {
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
     if (!store || certData.empty() || certData.size() > static_cast<size_t>(INT_MAX)) {
         return;
     }
@@ -1108,6 +1104,7 @@ static void LoadCaCertFromString(X509_STORE *store, const std::string &certData)
 
     sk_X509_INFO_pop_free(inf, X509_INFO_free);
     BIO_free(cbio);
+#endif // HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
 }
 
 CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *sslCtx, void *request_context)
