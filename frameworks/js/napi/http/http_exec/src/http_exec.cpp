@@ -1070,9 +1070,9 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *sslCtx, void *request_contex
     return CURLE_OK;
 }
 
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
 static void LoadCaCertFromString(X509_STORE *store, const std::string &certData)
 {
-#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
     if (!store || certData.empty() || certData.size() > static_cast<size_t>(INT_MAX)) {
         return;
     }
@@ -1104,8 +1104,8 @@ static void LoadCaCertFromString(X509_STORE *store, const std::string &certData)
 
     sk_X509_INFO_pop_free(inf, X509_INFO_free);
     BIO_free(cbio);
-#endif // HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
 }
+#endif // HTTP_MULTIPATH_CERT_ENABLE
 
 CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *sslCtx, void *request_context)
 {
