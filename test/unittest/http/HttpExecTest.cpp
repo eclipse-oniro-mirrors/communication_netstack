@@ -69,4 +69,35 @@ HWTEST_F(HttpExecTest, SetServerSSLCertOption001, TestSize.Level1)
     EXPECT_TRUE(HttpExec::SetServerSSLCertOption(handle, &context));
 }
 
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+HWTEST_F(HttpExecTest, LoadCaCertFromString001, TestSize.Level1)
+{
+    X509_STORE *store = X509_STORE_new();
+    std::string dummy_root_ca_pem = ""
+    LoadCaCertFromString(store, dummy_root_ca_pem);
+
+    // 从 PEM 读取证书用于验证
+    BIO *bio = BIO_new_mem_buf(dummy_root_ca_pem.data(), dummy_root_ca_pem.size());
+    X509 *cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
+
+    // 没有读取到证书，测试失败
+    ASSERT_NE(cert, nullptr);
+
+    // 配置 X509_STORE_CTX，执行验证
+    X509_STORE_CTX ctx;
+    X509_STORE_CTX_init(&ctx, store, cert, nullptr);
+
+    // 默认允许自签名证书验证
+    int verify_result = X509_verify_cert(&ctx);
+
+    // 清理
+    X509_STORE_CTX_cleanup(&ctx);
+    X509_free(cert);
+    X509_STORE_free(store);
+    BIO_free(bio);
+
+    // 预期验成功：1
+    EXPECT_EQ(verify_result, 1);
+}
+#endif
 } // namespace

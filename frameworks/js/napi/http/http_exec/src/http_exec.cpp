@@ -24,8 +24,13 @@
 #include <sstream>
 #include <thread>
 #include <unistd.h>
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
+#endif
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+#ifndef HTTP_MULTIPATH_CERT_ENABLE
+#include <openssl/ssl.h>
+#endif
 #include <openssl/pem.h>
 #include <openssl/sha.h>
 #include <openssl/x509.h>

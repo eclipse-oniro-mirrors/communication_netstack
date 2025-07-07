@@ -135,6 +135,7 @@ ohos_unittest("http_unittest") {
     }
     if (product_name != "ohos-sdk") {
       external_deps += [ "init:libbegetutil" ]
+      defines = [ "HTTP_MULTIPATH_CERT_ENABLE" ]
     }
   }
 
