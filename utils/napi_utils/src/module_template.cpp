@@ -24,6 +24,7 @@
 
 #include "event_manager.h"
 #include "netstack_log.h"
+#include "hi_app_event_report.h"
 
 namespace OHOS::NetStack::ModuleTemplate {
 static constexpr const int EVENT_PARAM_NUM = 2;
@@ -364,6 +365,7 @@ napi_value NewInstanceWithSharedManager(napi_env env, napi_callback_info info, c
                                         Finalizer finalizer)
 {
     NETSTACK_LOGD("create new instance for %{public}s", className.c_str());
+    HiAppEventReport hiAppEventReport("NetworkKit", "WebsocketConstructLocalSocketInstance");
     napi_value thisVal = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr));
 
@@ -404,6 +406,7 @@ napi_value NewInstanceWithSharedManager(napi_env env, napi_callback_info info, c
         nullptr, nullptr);
     napi_set_named_property(env, global, manager->className_.c_str(), result);
     napi_add_env_cleanup_hook(env, CleanUpWithSharedManager, reinterpret_cast<void *>(sharedManager));
+    hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
     return result;
 }
 

@@ -145,6 +145,11 @@ ohos_shared_library("socket") {
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
   ]
+
+  if (!build_ohos_sdk) {
+    external_deps += [ "hiappevent:hiappevent_innerapi" ]
+  }
+  
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
