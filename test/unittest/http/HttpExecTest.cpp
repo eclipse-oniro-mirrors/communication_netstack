@@ -27,6 +27,12 @@
 #include "constant.h"
 #include "secure_char.h"
 #include "curl/curl.h"
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+#include <openssl/ssl.h>
+#include <openssl/pem.h>
+#include <openssl/sha.h>
+#include <openssl/x509.h>
+#endif
 
 using namespace OHOS::NetStack;
 using namespace OHOS::NetStack::Http;
@@ -73,8 +79,28 @@ HWTEST_F(HttpExecTest, SetServerSSLCertOption001, TestSize.Level1)
 HWTEST_F(HttpExecTest, LoadCaCertFromString001, TestSize.Level1)
 {
     X509_STORE *store = X509_STORE_new();
-    std::string dummy_root_ca_pem = ""
-    LoadCaCertFromString(store, dummy_root_ca_pem);
+    std::string dummy_root_ca_pem = "-----BEGIN CERTIFICATE-----
+MIIDaTCCAlGgAwIBAgIICN29tj0e7AIwDQYJKoZIhvcNAQELBQAwgYoxCzAJBgNV
+BAYTAkNOMRMwEQYDVQQDDApleGFtcGxlLmNuMRAwDgYDVQQKDAdDb21wYW55MREw
+DwYDVQQLDAhEaXZpc2lvbjEOMAwGA1UECAwFQW5IdWkxDjAMBgNVBAcMBUhlRmVp
+MSEwHwYJKoZIhvcNAQkBFhJleGFtcGxlQGV4YW1wbGUuY24wHhcNMjUwNzA4MDAy
+NzIxWhcNMjgwNzA4MDAyNzIxWjBeMQswCQYDVQQGEwJDTjESMBAGA1UEAwwJMTI3
+LjAuMC4xMQkwBwYDVQQKDAAxCTAHBgNVBAsMADEJMAcGA1UECAwAMQkwBwYDVQQH
+DAAxDzANBgkqhkiG9w0BCQEWADCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC
+ggEBAMvlHdoeGVrU8iBJZZLtRSXmwiTay0HFC0T9OYbMO4yQ5nTtB1z8/2IRMvyD
+apsdUJ+zs1v0kX9R/NionqmivRi2n/w8ZnGrr096iAhvbKtonbzAnY3pN6GWr8R5
+EQXaCc+aAS1yuVwxsxD/2gpIul0V+HDzdqq88CF9Tf7Sqq010MH2QHpolitAicK5
+aNgz223RY5ZVD7I1UNrn8IK2f+VjgWex2H7VXSVpNbwx5qqLbZ9TsGjXioeanLSQ
+1Xeg+3t1Vm9mkYt9vENA29FdXsC42iUo2dlqQRYUgG0rX9zSFZ/GZTXfODGFtmEV
+VZjmcj9Jwuwr50c0x5DNxu1NaZMCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAQLym
+uMWI5yhAscuVd1p0SeNFDCmomzvxwq6WRsXD0y/BuZitB2oApAZt4Z5MkkJ6UgAd
+jJjKn34QoRZCmrt0imudbmz5G0EIOnVp9KHcfBj3oqDz6v7MLR4ts8+8hAqnS4R/
+HaM04AiC9VXT/JA3FsJQs+5gekx9GYOroI6AfFt0LiP5tkOOSx6rbW+hkCnrwxEC
+YkLkXv0BPZcabhfTO9yxcQn5bPOQH6+G7/byeCTI4+RXbKMjOsk3hB3zpp1hiOko
+P12OrbAl9UvZuzVft8x4ZT952EtDstdpLFLOgldgZEpLBdgyZLLhbgp/JcnQGB83
+zRxV2brJWJBfxFyaew==
+-----END CERTIFICATE-----";
+    HttpExec::LoadCaCertFromString(store, dummy_root_ca_pem);
 
     // 从 PEM 读取证书用于验证
     BIO *bio = BIO_new_mem_buf(dummy_root_ca_pem.data(), dummy_root_ca_pem.size());
