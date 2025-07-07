@@ -1,6 +1,16 @@
 /*
- * Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
- * Description: HiAppEvent report
+ * Copyright (c) 2025-2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "hi_app_event_report.h"
@@ -14,11 +24,13 @@
 
 namespace OHOS {
 namespace NetStack {
+#ifdef ENABLE_EVENT_HANDLER
 const int64_t TIMEOUT = 90;
 const int64_t ROW = 30;
 const int64_t MAXVALUE = 999999;
 const int64_t PROCESSOR_ID_NOT_CREATE = -1;
 static int64_t g_processorID = PROCESSOR_ID_NOT_CREATE;
+#endif
 
 HiAppEventReport::HiAppEventReport(std::string sdk, std::string api)
 {
@@ -55,7 +67,7 @@ void HiAppEventReport::ReportSdkEvent(const int result, const int errCode)
     event.AddParam("error_code", errCode);
     int ret = Write(event);
     NETSTACK_LOGD("transId:%{public}s, apiName:%{public}s, sdkName:%{public}s, "
-        "startTime:%ld, endTime:%ld, result:%{public}d, errCode:%{public}d, ret:%{public}d",
+        "startTime:%{public}ld, endTime:%{public}ld, result:%{public}d, errCode:%{public}d, ret:%{public}d",
         this->transId_.c_str(), this->apiName_.c_str(), this->sdkName_.c_str(),
         this->beginTime_, endTime, result, errCode, ret);
 #endif
@@ -97,4 +109,4 @@ int64_t HiAppEventReport::AddProcessor()
 }
 #endif
 } // namespace NetStack
-} // namespace OHOS
+} // namespace OHOS
