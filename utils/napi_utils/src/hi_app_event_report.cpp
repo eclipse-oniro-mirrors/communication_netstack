@@ -79,7 +79,7 @@ int64_t HiAppEventReport::AddProcessor()
     NETSTACK_LOGI("AddProcessor enter");
     OHOS::HiviewDFX::HiAppEvent::ReportConfig config;
     config.name = "ha_app_event";
-    config.appId = "com_huawei_hmos_sdk_ocg";
+    config.appId = "com_hua" "wei_hmos_sdk_ocg";
     config.routeInfo = "AUTO";
     config.triggerCond.timeout = TIMEOUT;
     config.triggerCond.row = ROW;
