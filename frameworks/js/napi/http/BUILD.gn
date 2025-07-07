@@ -182,6 +182,9 @@ ohos_shared_library("http") {
       external_deps += [ "init:libbegetutil" ]
     }
   }
+  if (!build_ohos_sdk) {
+    external_deps += [ "hiappevent:hiappevent_innerapi" ]
+  }
   include_dirs += [
     "$NETSTACK_DIR/utils/profiler_utils/include",
     "$NETSTACK_DIR/utils/tlv_utils/include",
