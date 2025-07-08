@@ -62,7 +62,8 @@ enum SslErrorCode {
     // The following error codes are added since API12
     SSL_X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT = SSL_ERROR_CODE_BASE + X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT,
     SSL_X509_V_ERR_INVALID_CALL = SSL_ERROR_CODE_BASE + X509_V_ERR_INVALID_CALL,
-    SSL_X509_V_ERR_OUT_OF_MEMORY = SSL_ERROR_CODE_BASE + 999
+    SSL_X509_V_ERR_OUT_OF_MEMORY = SSL_ERROR_CODE_BASE + 999,
+    SSL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY = SSL_ERROR_CODE_BASE + X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
 };
 
 static const std::multiset<uint32_t> SslErrorCodeSetBase{SSL_NONE_ERR,
@@ -103,7 +104,8 @@ static const std::multiset<uint32_t> SslErrorCodeSetSinceAPI12{SSL_NONE_ERR,
                                                                // New error code since API12.
                                                                SSL_X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT,
                                                                SSL_X509_V_ERR_INVALID_CALL,
-                                                               SSL_X509_V_ERR_OUT_OF_MEMORY};
+                                                               SSL_X509_V_ERR_OUT_OF_MEMORY,
+                                                               SSL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY};
 
 std::string GetUserInstalledCaPath();
 

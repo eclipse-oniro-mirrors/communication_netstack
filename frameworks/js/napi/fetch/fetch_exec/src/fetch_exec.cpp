@@ -63,7 +63,7 @@ static constexpr const int FAIL_CALLBACK_PARAM = 2;
 namespace OHOS::NetStack::Fetch {
 std::mutex FetchExec::mutex_;
 
-bool FetchExec::initialized_ = false;
+std::atomic<bool> FetchExec::initialized_ = false;
 
 bool FetchExec::ExecFetch(FetchContext *context)
 {

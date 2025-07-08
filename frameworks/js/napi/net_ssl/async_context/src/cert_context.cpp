@@ -52,7 +52,8 @@ static const std::map<int32_t, const char *> SSL_ERR_MAP = {
     {SslErrorCode::SSL_X509_V_ERR_INVALID_CA, "Invalid certificate authority (CA)."},
     {SslErrorCode::SSL_X509_V_ERR_CERT_UNTRUSTED, "Certificate is untrusted."},
     {SslErrorCode::SSL_X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT, "self-signed certificate."},
-    {SslErrorCode::SSL_X509_V_ERR_INVALID_CALL, "invalid certificate verification context."}
+    {SslErrorCode::SSL_X509_V_ERR_INVALID_CALL, "invalid certificate verification context."},
+    {SslErrorCode::SSL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY, "unable to get local issuer certificate."}
 };
 
 CertContext::CertContext(napi_env env, const std::shared_ptr<EventManager> &manager)

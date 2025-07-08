@@ -65,7 +65,7 @@ private:
 private:
     static std::mutex mutex_;
 
-    static bool initialized_;
+    static std::atomic<bool> initialized_;
 };
 } // namespace OHOS::NetStack::Fetch
 
