@@ -20,6 +20,7 @@
 #include <string>
 #include "cxx.h"
 #include "net_conn_client.h"
+#include "network_security_config.h"
 #include "net_ssl.h"
 
 namespace OHOS {
@@ -29,12 +30,12 @@ struct CertBlob;
 
 inline int32_t IsCleartextPermitted(bool &isCleartextPermitted)
 {
-    return NetManagerStandard::NetConnClient::GetInstance().IsCleartextPermitted(isCleartextPermitted);
+    return NetManagerStandard::NetworkSecurityConfig::GetInstance().IsCleartextPermitted(isCleartextPermitted);
 }
 
 inline int32_t IsCleartextPermittedByHostName(std::string const &hostName, bool &isCleartextPermitted)
 {
-    return NetManagerStandard::NetConnClient::GetInstance().IsCleartextPermitted(hostName, isCleartextPermitted);
+    return NetManagerStandard::NetworkSecurityConfig::GetInstance().IsCleartextPermitted(hostName, isCleartextPermitted);
 }
 
 uint32_t NetStackVerifyCertificationCa(const CertBlob &cert, const CertBlob &caCert);
