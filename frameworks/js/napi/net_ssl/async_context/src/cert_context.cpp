@@ -48,12 +48,12 @@ static const std::map<int32_t, const char *> SSL_ERR_MAP = {
     {SslErrorCode::SSL_X509_V_ERR_CERT_HAS_EXPIRED, "Certificate has expired."},
     {SslErrorCode::SSL_X509_V_ERR_CRL_NOT_YET_VALID, "CRL is not yet valid."},
     {SslErrorCode::SSL_X509_V_ERR_CRL_HAS_EXPIRED, "CRL has expired."},
+    {SslErrorCode::SSL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY, "unable to get local issuer certificate."},
     {SslErrorCode::SSL_X509_V_ERR_CERT_REVOKED, "Certificate has been revoked."},
     {SslErrorCode::SSL_X509_V_ERR_INVALID_CA, "Invalid certificate authority (CA)."},
     {SslErrorCode::SSL_X509_V_ERR_CERT_UNTRUSTED, "Certificate is untrusted."},
     {SslErrorCode::SSL_X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT, "self-signed certificate."},
-    {SslErrorCode::SSL_X509_V_ERR_INVALID_CALL, "invalid certificate verification context."},
-    {SslErrorCode::SSL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY, "unable to get local issuer certificate."}
+    {SslErrorCode::SSL_X509_V_ERR_INVALID_CALL, "invalid certificate verification context."}
 };
 
 CertContext::CertContext(napi_env env, const std::shared_ptr<EventManager> &manager)
