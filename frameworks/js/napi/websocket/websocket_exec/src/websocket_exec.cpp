@@ -527,7 +527,7 @@ void WebSocketExec::FillContextInfo(ConnectContext *context, lws_context_creatio
 }
 
 static bool WebSocketConnect(lws_client_connect_info &connectInfo, const std::shared_ptr<EventManager> &manager,
-                                                                                    ConnectContext *context) 
+    ConnectContext *context)
 {
     if (lws_client_connect_via_info(&connectInfo) == nullptr) {
         NETSTACK_LOGI("ExecConnect websocket connect failed");
@@ -561,7 +561,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     if (strcpy_s(customizedProtocol, context->GetProtocol().length() + 1, context->GetProtocol().c_str()) != EOK) {
         NETSTACK_LOGE("memory copy failed");
     }
- 
+
     connectInfo.context = lwsContext;
     connectInfo.port = port;
     connectInfo.address = address.c_str();
@@ -573,7 +573,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     connectInfo.host = tempHost.c_str();
     connectInfo.origin = address.c_str();
     connectInfo.protocol = customizedProtocol;
- 
+
     if (protocol == PREFIX_HTTPS || protocol == PREFIX_WSS) {
         connectInfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_SELFSIGNED;
     }
