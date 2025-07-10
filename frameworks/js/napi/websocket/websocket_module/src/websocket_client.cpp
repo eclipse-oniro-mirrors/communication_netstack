@@ -363,7 +363,7 @@ static struct lws_protocols protocols[] = {{"lws-minimal-client1", LwsCallback, 
                                            LWS_PROTOCOL_LIST_TERM};
 
 static void GetWebsocketProxyInfo(ClientContext *context, std::string &host, uint32_t &port,
-        std::string &exclusions)
+                                  std::string &exclusions)
 {
     if (context->usingWebsocketProxyType == WebsocketProxyType::USE_SYSTEM) {
 #ifdef HAS_NETMANAGER_BASE
@@ -399,7 +399,7 @@ static void FillContextInfo(ClientContext *context, lws_context_creation_info &i
     uint32_t port = 0;
     std::string exclusions;
 
-    if (strcpy_s(tempUri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
+    if (strcpy_s(tempUri, sizeof tempUri, context->url.c_str()) < 0) {
         NETSTACK_LOGE("strcpy_s failed");
         return;
     }
