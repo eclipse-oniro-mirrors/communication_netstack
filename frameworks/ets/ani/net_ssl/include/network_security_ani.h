@@ -35,7 +35,8 @@ inline int32_t IsCleartextPermitted(bool &isCleartextPermitted)
 
 inline int32_t IsCleartextPermittedByHostName(std::string const &hostName, bool &isCleartextPermitted)
 {
-    return NetManagerStandard::NetworkSecurityConfig::GetInstance().IsCleartextPermitted(hostName, isCleartextPermitted);
+    return NetManagerStandard::NetworkSecurityConfig::GetInstance()
+           .IsCleartextPermitted(hostName, isCleartextPermitted);
 }
 
 uint32_t NetStackVerifyCertificationCa(const CertBlob &cert, const CertBlob &caCert);
