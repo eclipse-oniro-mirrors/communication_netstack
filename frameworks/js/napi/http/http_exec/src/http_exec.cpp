@@ -1076,23 +1076,26 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *sslCtx, void *request_contex
 }
 
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
-static void LoadCaCertFromString(X509_STORE *store, const std::string &certData)
+static bool LoadCaCertFromString(X509_STORE *store, const std::string &certData)
 {
     if (!store || certData.empty() || certData.size() > static_cast<size_t>(INT_MAX)) {
-        return;
+        NETSTACK_LOGE("store or certData is empty, or cert size is over INT_MAX");
+        return false;
     }
 
     auto cbio = BIO_new_mem_buf(certData.data(), static_cast<int>(certData.size()));
     if (!cbio) {
-        return;
+        NETSTACK_LOGE("cbio is nullptr");
+        return false;
     }
 
     auto inf = PEM_X509_INFO_read_bio(cbio, nullptr, nullptr, nullptr);
     if (!inf) {
+        NETSTACK_LOGE("read cert failed.");
         BIO_free(cbio);
-        return;
+        return false;
     }
-
+    
     /* add each entry from PEM file to x509_store */
     for (int i = 0; i < static_cast<int>(sk_X509_INFO_num(inf)); ++i) {
         auto itmp = sk_X509_INFO_value(inf, i);
@@ -1100,15 +1103,24 @@ static void LoadCaCertFromString(X509_STORE *store, const std::string &certData)
             continue;
         }
         if (itmp->x509) {
-            X509_STORE_add_cert(store, itmp->x509);
+            if (X509_STORE_add_cert(store, itmp->x509) != 1) {
+                NETSTACK_LOGE("add caCert failed");
+                sk_X509_INFO_pop_free(inf, X509_INFO_free);
+                BIO_free(cbio);
+                return false;
+            }
         }
         if (itmp->crl) {
-            X509_STORE_add_crl(store, itmp->crl);
+            if (X509_STORE_add_crl(store, itmp->crl) != 1) {
+                NETSTACK_LOGE("add crl failed");
+                sk_X509_INFO_pop_free(inf, X509_INFO_free);
+                BIO_free(cbio);
+                return false;
+            }
         }
     }
-
-    sk_X509_INFO_pop_free(inf, X509_INFO_free);
-    BIO_free(cbio);
+    
+    return true;
 }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
 
@@ -1147,7 +1159,9 @@ CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *sslCtx, void *reque
         if (!x509Store) {
             return CURLE_SSL_CERTPROBLEM;
         }
-        LoadCaCertFromString(x509Store, requestContext->options.GetCaData());
+        if (!LoadCaCertFromString(x509Store, requestContext->options.GetCaData())) {
+            return CURLE_SSL_CERTPROBLEM;
+        }
     }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
     return CURLE_OK;
