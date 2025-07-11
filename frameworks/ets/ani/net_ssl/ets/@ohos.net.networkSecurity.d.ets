@@ -34,7 +34,7 @@ export default namespace networkSecurity {
   export function certVerification(cert: CertBlob, caCert?: CertBlob): Promise<int> {
     return new Promise<int>((resolve, reject) => {
           taskpool.execute((): int => {
-              return certVerificationSync(cert, caCert);
+              return certVerificationAsync(cert, caCert);
           }).then((content: NullishType) => {
               resolve(content as int);
           }, (err: Error): void => {
@@ -43,14 +43,11 @@ export default namespace networkSecurity {
       });
   }
 
+  export native function certVerificationAsync(cert: CertBlob, caCert?: CertBlob): int;
+
   export native function certVerificationSync(cert: CertBlob, caCert?: CertBlob): int;
 
   export native function isCleartextPermitted(): boolean;
 
   export native function isCleartextPermittedByHostName(hostName: string): boolean;
-}
-
-function main() {
-  let w = networkSecurity.isCleartextPermitted();
-  console.log(w);
 }

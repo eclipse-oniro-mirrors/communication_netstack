@@ -13,7 +13,10 @@
 
 use ani_rs::business_error::BusinessError;
 
-use crate::{bridge::CertBlob, wrapper::NetworkSecurityClient};
+use crate::{
+    bridge::CertBlob,
+    wrapper::{convert_to_business_error, NetworkSecurityClient},
+};
 
 #[ani_rs::native]
 pub fn is_cleartext_permitted() -> Result<bool, BusinessError> {
@@ -40,6 +43,24 @@ pub fn is_cleartext_permitted_by_host_name(host_name: String) -> Result<bool, Bu
 }
 
 #[ani_rs::native]
-pub fn cert_verification(cert: CertBlob, ca_cert: Option<CertBlob>) -> Result<i32, BusinessError> {
-    Ok(NetworkSecurityClient::cert_verification(cert, ca_cert))
+pub fn cert_verification_async(
+    cert: CertBlob,
+    ca_cert: Option<CertBlob>,
+) -> Result<i32, BusinessError> {
+    let mut res = NetworkSecurityClient::cert_verification(cert, ca_cert);
+    if res == 0 {
+        Ok(res)
+    } else {
+        Err(convert_to_business_error(&mut res))
+    }
+}
+
+#[ani_rs::native]
+pub fn cert_verification_sync(
+    cert: CertBlob,
+    ca_cert: Option<CertBlob>,
+) -> Result<i32, BusinessError> {
+    let mut res = NetworkSecurityClient::cert_verification(cert, ca_cert);
+    let _ = convert_to_business_error(&mut res);
+    Ok(res)
 }

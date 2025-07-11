@@ -49,10 +49,19 @@ impl TaskCallback {
 
 impl RequestCallback for TaskCallback {
     fn on_success(&mut self, response: netstack_rs::response::Response) {
-        let code = response.status() as i32;
-        info!("request success: {:?}", code);
+        if let Some(callback) = self.on_response.take() {
+            let code = response.status() as i32;
+            let response = HttpResponse {
+                result_type: HttpDataType::String,
+                response_code: ResponseCodeOutput::I32(BoxI32::new(code)),
+                header: response.headers(),
+                cookies: String::new(),
+                performance_timing: PerformanceTiming::new(),
+            };
+            callback.execute(None, (response,));
+        }
+
         if let Some(callback) = self.on_data_end.take() {
-            info!("on_data_end callback set");
             callback.execute(None, ());
         }
     }
@@ -65,20 +74,6 @@ impl RequestCallback for TaskCallback {
 
     fn on_data_receive(&mut self, data: &[u8], mut task: netstack_rs::task::RequestTask) {
         let headers = task.headers();
-        if let Some(callback) = self.on_response.take() {
-            let response = task.response();
-            let code = response.status() as i32;
-            let response = HttpResponse {
-                result_type: HttpDataType::String,
-                response_code: ResponseCodeOutput::I32(BoxI32::new(code)),
-                header: response.headers(),
-                cookies: String::new(),
-                performance_timing: PerformanceTiming::new(),
-            };
-            info!("on_response callback set");
-            callback.execute(None, (response,));
-        }
-
         if let Some(callback) = self.on_header_receive.as_ref() {
             info!("on_header_receive callback set");
             callback.execute(None, (headers.clone(),));
