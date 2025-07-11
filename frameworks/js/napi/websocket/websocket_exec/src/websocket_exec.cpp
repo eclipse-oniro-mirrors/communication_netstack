@@ -526,6 +526,18 @@ void WebSocketExec::FillContextInfo(ConnectContext *context, lws_context_creatio
     }
 }
 
+static bool WebSocketConnect(lws_client_connect_info &connectInfo, const std::shared_ptr<EventManager> &manager,
+    ConnectContext *context)
+{
+    if (lws_client_connect_via_info(&connectInfo) == nullptr) {
+        NETSTACK_LOGI("ExecConnect websocket connect failed");
+        context->SetErrorCode(-1);
+        OnConnectError(manager.get(), COMMON_ERROR_CODE, 0);
+        return false;
+    }
+    return true;
+}
+
 bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsContext,
     const std::shared_ptr<EventManager> &manager)
 {
@@ -553,6 +565,10 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     connectInfo.context = lwsContext;
     connectInfo.port = port;
     connectInfo.address = address.c_str();
+    if (std::strlen(path.c_str()) != path.length()) {
+        NETSTACK_LOGE("c_str() length does not match path length.");
+        return false;
+    }
     connectInfo.path = path.c_str();
     connectInfo.host = tempHost.c_str();
     connectInfo.origin = address.c_str();
@@ -563,16 +579,13 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     }
     if (context->skipServerCertVerification_) {
         NETSTACK_LOGI("ExecConnect skip server cert verify");
-        connectInfo.ssl_connection |= LCCSCF_ALLOW_INSECURE;
+        connectInfo.ssl_connection = ((unsigned int)connectInfo.ssl_connection) | LCCSCF_ALLOW_INSECURE;
     }
     lws *wsi = nullptr;
     connectInfo.pwsi = &wsi;
     connectInfo.retry_and_idle_policy = &RETRY;
     connectInfo.userdata = manager.get();
-    if (lws_client_connect_via_info(&connectInfo) == nullptr) {
-        NETSTACK_LOGI("ExecConnect websocket connect failed");
-        context->SetErrorCode(-1);
-        OnConnectError(manager.get(), COMMON_ERROR_CODE, 0);
+    if (!WebSocketConnect(connectInfo, manager, context)) {
         return false;
     }
     return true;

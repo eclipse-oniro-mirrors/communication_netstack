@@ -405,6 +405,10 @@ int CreatConnectInfo(const std::string url, lws_context *lwsContext, WebSocketCl
     connectInfo.context = lwsContext;
     connectInfo.address = address;
     connectInfo.port = port;
+    if (std::strlen(path.c_str()) != path.length()) {
+        NETSTACK_LOGE("c_str() length does not match path length.");
+        return -1;
+    }
     connectInfo.path = path.c_str();
     connectInfo.host = tempHost.c_str();
     connectInfo.origin = address;

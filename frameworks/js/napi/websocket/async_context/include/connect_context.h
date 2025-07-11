@@ -75,7 +75,7 @@ public:
 
     std::string clientCert_;
 
-    bool skipServerCertVerification_;
+    bool skipServerCertVerification_ = false;
 
     Secure::SecureChar clientKey_;
 
