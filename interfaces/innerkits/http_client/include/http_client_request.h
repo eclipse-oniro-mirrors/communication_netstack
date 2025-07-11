@@ -113,12 +113,6 @@ public:
     void SetHttpProxy(const HttpProxy &proxy);
 
     /**
-     * Set max limit data for the request.
-     * @param maxLimit The HTTP max limit data to be set.
-     */
-    void SetMaxLimit(uint32_t maxLimit);
-
-    /**
      * Set the HTTP proxy type for the request.
      * @param type The HTTP proxy type to be set.
      */
@@ -209,12 +203,6 @@ public:
     [[nodiscard]] const HttpProxy &GetHttpProxy() const;
 
     /**
-     * Get the dns servers of the request.
-     * @return The max limit data of the request.
-     */
-    [[nodiscard]] uint32_t GetMaxLimit() const;
-
-    /**
      * Get the HTTP proxy type of the request.
      * @return The HTTP proxy type of the request.
      */
@@ -299,7 +287,6 @@ private:
     int64_t resumeTo_;
     HttpClientCert clientCert_;
     std::string addressFamily_;
-    uint32_t maxLimit_;
 };
 } // namespace HttpClient
 } // namespace NetStack

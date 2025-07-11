@@ -98,11 +98,12 @@ void Http_SampleResponseCallback(Http_Response *response, uint32_t errCode) {
     response->destroyResponse(&response);
 }
 
-size_t Http_SampleOnDataReceiveCallback(const char *data) {
-    if (data == nullptr) {
-        return 0;
+void HttpSampleOnDataReceiveCallback(const char *data, size_t length)
+{
+    if (data == nullptr || length == 0) {
+        return;
     }
-    return 0;
+    return;
 }
 
 void Http_SampleOnUploadProgressCallback(uint64_t totalSize, uint64_t transferredSize) {
@@ -170,7 +171,7 @@ void HttpRequestTest(const uint8_t *data, size_t size)
     }
     request->options->headers = headers;
     Http_EventsHandler eventsHandler;
-    eventsHandler.onDataReceive = Http_SampleOnDataReceiveCallback;
+    eventsHandler.onDataReceive = HttpSampleOnDataReceiveCallback;
     eventsHandler.onCanceled = Http_SampleOnCancelCallback;
     eventsHandler.onDataEnd = Http_SampleOnEndCallback;
     eventsHandler.onDownloadProgress = Http_SampleOnDownloadProgressCallback;

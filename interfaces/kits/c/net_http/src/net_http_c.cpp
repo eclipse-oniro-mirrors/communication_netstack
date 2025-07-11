@@ -347,7 +347,6 @@ void OH_Http_SetOption(HttpClientRequest *httpReq, Http_Request *request)
             httpReq->SetHttpProxy(httpProxy);
         }
     }
-    httpReq->SetMaxLimit(request->options->maxLimit);
     //httpProtocol
     httpReq->SetHttpProtocol(static_cast<HttpProtocol>(request->options->httpProtocol));
     // caPath
@@ -461,7 +460,7 @@ void OH_Http_RequestOnDataReceive(std::shared_ptr<HttpClientTask> httpClientTask
     httpClientTask->OnDataReceive([handler] (const HttpClientRequest &request,
         const uint8_t *data, size_t length) {
         if (handler.onDataReceive != nullptr) {
-            handler.onDataReceive(reinterpret_cast<const char *>(data));
+            handler.onDataReceive(reinterpret_cast<const char *>(data), length);
         }
         return OH_HTTP_RESULT_OK;
     });

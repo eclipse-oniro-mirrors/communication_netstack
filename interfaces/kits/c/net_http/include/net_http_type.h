@@ -132,7 +132,7 @@ typedef enum Http_ResponseCode {
   /** @brief The request has been accepted but has not been processed completely. */
   OH_HTTP_ACCEPTED = 202,
   /** @brief Unauthorized information. The request was successful. */
-  OH_HTTP_NOT_AUTHORITATIVE = 203,
+  OH_HTTP_NON_AUTHORITATIVE_INFO = 203,
   /** @brief No content. The server successfully processed, but did not return content. */
   OH_HTTP_NO_CONTENT = 204,
   /** @brief Reset the content. */
@@ -140,7 +140,7 @@ typedef enum Http_ResponseCode {
   /** @brief Partial content. The server successfully processed some GET requests. */
   OH_HTTP_PARTIAL = 206,
   /** @brief Multiple options. */
-  OH_HTTP_MULT_CHOICE = 300,
+  OH_HTTP_MULTI_CHOICE = 300,
   /**
    * @brief Permanently move. The requested resource has been permanently moved to a new URI,
    * and the returned information will include the new URI. The browser will automatically redirect to the new URI.
@@ -186,11 +186,11 @@ typedef enum Http_ResponseCode {
   /** @brief The request was rejected because the requested entity was too large for the server to process. */
   OH_HTTP_ENTITY_TOO_LARGE = 413,
   /** @brief The requested URI is too long (usually a URL) and the server cannot process it. */
-  OH_HTTP_REQ_TOO_LONG = 414,
+  OH_HTTP_REQUEST_TOO_LONG = 414,
   /** @brief The server is unable to process the requested format. */
   OH_HTTP_UNSUPPORTED_TYPE = 415,
   /** @brief Requested Range not satisfiable. */
-  OH_HTTP_RANGE_NOT_SATISFIABLE = 416,
+  OH_HTTP_RANGE_NOT_MET = 416,
   /** @brief Internal server error, unable to complete the request. */
   OH_HTTP_INTERNAL_ERROR = 500,
   /** @brief The server does not support the requested functionality and cannot complete the request. */
@@ -458,8 +458,6 @@ typedef struct Http_RequestOptions {
   Http_ClientCert *clientCert;
   /** Set the DNS resolution for the https server. */
   const char *dnsOverHttps;
-  /** Maximum number of bytes in a response message. */
-  uint32_t maxLimit;
   /** The address family can be specified when target domain name is resolved, see {@link Http_AddressFamilyType}. */
   Http_AddressFamilyType addressFamily;
 } Http_RequestOptions;
@@ -516,10 +514,10 @@ typedef void (*Http_ResponseCallback)(struct Http_Response *response, uint32_t e
  * @brief Callback function that is invoked when a response body is received.
  *
  * @param data Response body.
- * @return size_t the length of response body.
+ * @param length Length of response body.
  * @since 20
  */
-typedef size_t (*Http_OnDataReceiveCallback)(const char *data);
+typedef void (*Http_OnDataReceiveCallback)(const char *data, size_t length);
 
 /**
  * @brief Callback function invoked during request/response data transmission.
