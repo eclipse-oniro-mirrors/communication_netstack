@@ -173,11 +173,12 @@ __attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
                 ChrClient::NetStackChrClient::GetInstance().GetDfxInfoFromCurlHandleAndReport(easyHandle,
                                                                                               message->data.result);
 #endif
-                if (easyHandle) {
-                    curl_multi_remove_handle(multi_, easyHandle);
-                    auto requestInfo = ongoingRequests_[easyHandle];
-                    ongoingRequests_.erase(easyHandle);
+                if (!easyHandle) {
+                    break;
                 }
+                curl_multi_remove_handle(multi_, easyHandle);
+                auto requestInfo = ongoingRequests_[easyHandle];
+                ongoingRequests_.erase(easyHandle);
 #ifdef HTTP_HANDOVER_FEATURE
                 if (netHandoverHandler_ &&
                     netHandoverHandler_->CheckRequestNetError(ongoingRequests_, multi_, requestInfo, message)) {
