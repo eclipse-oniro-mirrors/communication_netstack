@@ -58,11 +58,11 @@ impl RequestCallback for TaskCallback {
                 cookies: String::new(),
                 performance_timing: PerformanceTiming::new(),
             };
-            callback.execute_spawn_thread(None, (response,));
+            callback.execute(None, (response,));
         }
 
         if let Some(callback) = self.on_data_end.take() {
-            callback.execute_spawn_thread(None, ());
+            callback.execute(None, ());
         }
     }
 
@@ -76,7 +76,7 @@ impl RequestCallback for TaskCallback {
         let headers = task.headers();
         if let Some(callback) = self.on_header_receive.as_ref() {
             info!("on_header_receive callback set");
-            callback.execute_spawn_thread(None, (headers.clone(),));
+            callback.execute(None, (headers.clone(),));
         }
     }
 }
