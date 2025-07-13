@@ -54,6 +54,8 @@ constexpr int MAX_CLIENTS = 1024;
 
 constexpr int ERRNO_BAD_FD = 9;
 
+constexpr int SYSTEM_INTERNAL_ERROR = -998;
+
 constexpr int DEFAULT_TIMEOUT_MS = 20000;
 
 constexpr int UNIT_CONVERSION_1000 = 1000; // multiples of conversion between units
@@ -1021,13 +1023,12 @@ bool ExecLocalSocketServerEnd(LocalSocketServerEndContext *context)
     auto mgr = reinterpret_cast<LocalSocketServerManager *>(context->GetSharedManager()->GetData());
     if (mgr == nullptr) {
         NETSTACK_LOGE("LocalSocketServerManager reinterpret cast failed");
-        context->SetErrorCode(UNKNOW_ERROR);
+        context->SetErrorCode(SYSTEM_INTERNAL_ERROR);
         return false;
     }
     if (mgr->sockfd_ < 0) {
         NETSTACK_LOGE("LocalSocketServer is already closed");
-        context->SetErrorCode(EBADF);
-        return false;
+        return true;
     }
     close(mgr->sockfd_);
     mgr->sockfd_ = -1;

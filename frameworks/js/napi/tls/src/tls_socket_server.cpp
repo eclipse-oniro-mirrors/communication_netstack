@@ -346,6 +346,9 @@ void TLSSocketServer::Close(const int socketFd, const TlsSocket::CloseCallback &
 
 void TLSSocketServer::Stop(const TlsSocket::CloseCallback &callback)
 {
+    if (!CommonUtils::HasInternetPermission()) {
+        callback(PERMISSION_DENIED_CODE);
+    }
     close(listenSocketFd_);
     listenSocketFd_ = -1;
     NETSTACK_LOGE("g_userCounter = %{public}d", g_userCounter);
