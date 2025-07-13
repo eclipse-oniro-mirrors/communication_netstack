@@ -21,6 +21,10 @@
 #include "socket_constant.h"
 
 namespace OHOS::NetStack::Socket {
+
+constexpr int SYSTEM_INTERNAL_ERROR = -998;
+constexpr const char *SYSTEM_INTERNAL_ERROR_MSG = "System internal error";
+
 int LocalSocketBaseContext::GetSocketFd() const
 {
     if (sharedManager_ == nullptr) {
@@ -66,6 +70,9 @@ std::string LocalSocketBaseContext::GetErrorMessage() const
     auto errCode = BaseContext::GetErrorCode();
     if (errCode == PARSE_ERROR_CODE) {
         return PARSE_ERROR_MSG;
+    }
+    if (errCode == SYSTEM_INTERNAL_ERROR) {
+        return SYSTEM_INTERNAL_ERROR_MSG;
     }
 #if defined(IOS_PLATFORM)
     std::string errMessage;

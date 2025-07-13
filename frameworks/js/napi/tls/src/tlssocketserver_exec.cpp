@@ -24,6 +24,7 @@
 #include "context_key.h"
 #include "event_list.h"
 #include "napi_utils.h"
+#include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "socket_error.h"
 #include "tls_socket_server.h"
@@ -249,12 +250,17 @@ bool TLSSocketServerExec::ExecStop(TlsSocket::TLSNapiContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetError(PERMISSION_DENIED_CODE,
+                          TlsSocket::MakeErrorMessage(PERMISSION_DENIED_CODE));
+        return false;
+    }
     std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecClose tlsSocketServer is null");
-        context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
-                          TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
+        context->SetError(TlsSocket::TlsSocketError::SYSTEM_INTERNAL_ERROR,
+                          TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::SYSTEM_INTERNAL_ERROR));
         return false;
     }
     tlsSocketServer->Stop([&context](int32_t errorNumber) {
