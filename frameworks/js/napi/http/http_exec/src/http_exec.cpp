@@ -1157,10 +1157,10 @@ CURLcode HttpExec::MultiPathSslCtxFunction(CURL *curl, void *sslCtx, void *reque
     if (!requestContext->options.GetCaData().empty()) {
         auto x509Store = SSL_CTX_get_cert_store(static_cast<SSL_CTX *>(sslCtx));
         if (!x509Store) {
-            return CURLE_SSL_CERTPROBLEM;
+            return CURLE_SSL_CACERT_BADFILE;
         }
         if (!LoadCaCertFromString(x509Store, requestContext->options.GetCaData())) {
-            return CURLE_SSL_CERTPROBLEM;
+            return CURLE_SSL_CACERT_BADFILE;
         }
     }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
