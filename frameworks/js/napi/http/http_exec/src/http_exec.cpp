@@ -1102,8 +1102,8 @@ static bool LoadCaCertFromString(X509_STORE *store, const std::string &certData)
         if (!itmp) {
             continue;
         }
-        if (itmp->x509 && X509_STORE_add_cert(store, itmp->x509) != 1 ||
-            itmp->crl && X509_STORE_add_crl(store, itmp->crl) != 1) {
+        if ((itmp->x509 && X509_STORE_add_cert(store, itmp->x509) != 1) ||
+            (itmp->crl && X509_STORE_add_crl(store, itmp->crl) != 1)) {
             NETSTACK_LOGE("add caCert or crt failed");
             sk_X509_INFO_pop_free(inf, X509_INFO_free);
             BIO_free(cbio);
