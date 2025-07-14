@@ -44,6 +44,8 @@ static constexpr const int PARAM_URL_AND_OPTIONS_OR_CALLBACK = 2;
 static constexpr const int PARAM_URL_AND_OPTIONS_AND_CALLBACK = 3;
 
 static constexpr const uint32_t DNS_SERVER_SIZE = 3;
+
+static constexpr size_t CADATA_STRING_MAX_LENGTH = 8000;
 namespace OHOS::NetStack::Http {
 static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_UNSUPPORTED_PROTOCOL, "Unsupported protocol"},
@@ -501,8 +503,9 @@ void RequestContext::ParseCaPath(napi_value optionsValue)
 
 void RequestContext::ParseCaData(napi_value optionsValue)
 {
+    std::string caPath = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CA_PATH);
     std::string caData = NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CA_DATA);
-    if (!caData.empty()) {
+    if (caPath.empty() && !caData.empty() && caData.size() < CADATA_STRING_MAX_LENGTH) {
         options.SetCaData(caData);
     }
 }

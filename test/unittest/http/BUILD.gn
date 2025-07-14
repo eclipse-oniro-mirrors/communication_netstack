@@ -21,6 +21,8 @@ utils_include = [
   "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
   "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/include",
   "$SUBSYSTEM_DIR/netstack/utils/log/include",
+  "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/include",
+  "$SUBSYSTEM_DIR/netstack/utils/tlv_utils/include",
 ]
 
 common_external_deps = [
@@ -52,8 +54,6 @@ ohos_unittest("http_unittest") {
     "$NETSTACK_NAPI_ROOT/http/http_exec/include",
     "$NETSTACK_NAPI_ROOT/http/http_module/include",
     "$NETSTACK_NAPI_ROOT/http/options/include",
-    "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/include",
-    "$SUBSYSTEM_DIR/netstack/utils/tlv_utils/include",
   ]
   include_dirs += utils_include
 
@@ -135,6 +135,11 @@ ohos_unittest("http_unittest") {
     }
     if (product_name != "ohos-sdk") {
       external_deps += [ "init:libbegetutil" ]
+      defines += [ 
+        "HTTP_PROXY_ENABLE",
+        "HTTP_MULTIPATH_CERT_ENABLE",
+        "HTTP_ONLY_VERIFY_ROOT_CA_ENABLE",
+      ]
     }
   }
 
