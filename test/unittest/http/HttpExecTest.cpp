@@ -33,32 +33,32 @@
 #include <openssl/sha.h>
 #include <openssl/x509.h>
 
-struct SSL_CTX_deleter {
+struct SslCtxDeleter {
     void operator()(SSL_CTX* p) const { SSL_CTX_free(p); }
 };
-struct X509_STORE_CTX_deleter {
+struct X509SroreCtxDeleter {
     void operator()(X509_STORE_CTX* p) const { X509_STORE_CTX_cleanup(p); }
 };
-struct BIO_deleter {
+struct BioDeleter {
     void operator()(BIO* p) const { BIO_free(p); }
 };
-struct X509_deleter {
+struct X509Deleter {
     void operator()(X509* p) const { X509_free(p); }
 };
  
-using unique_SSL_CTX = std::unique_ptr<SSL_CTX, SSL_CTX_deleter>;
-using unique_X509_STORE_CTX = std::unique_ptr<X509_STORE_CTX, X509_STORE_CTX_deleter>;
-using unique_BIO = std::unique_ptr<BIO, BIO_deleter>;
-using unique_X509 = std::unique_ptr<X509, X509_deleter>;
+using unique_SSL_CTX = std::unique_ptr<SSL_CTX, SslCtxDeleter>;
+using unique_X509_STORE_CTX = std::unique_ptr<X509_STORE_CTX, X509SroreCtxDeleter>;
+using unique_BIO = std::unique_ptr<BIO, BioDeleter>;
+using unique_X509 = std::unique_ptr<X509, X509Deleter>;
 #endif
 
 using namespace OHOS::NetStack;
 using namespace OHOS::NetStack::Http;
 
-struct CURL_deleter {
+struct CurlDeleter {
     void operator()(CURL* p) const { curl_easy_cleanup(p); }
 };
-using unique_CURL = std::unique_ptr<CURL, CURL_deleter>;
+using unique_CURL = std::unique_ptr<CURL, CurlDeleter>;
 
 class HttpExecTest : public testing::Test {
 public:
