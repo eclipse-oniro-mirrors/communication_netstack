@@ -1143,6 +1143,24 @@ static int HandleTcpProxyOptions(ConnectContext *context)
     return 0;
 }
 
+bool HandleNonProxyConnection(ConnectContext *context, sockaddr *addr, socklen_t len)
+{
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        return false;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    int socketfd = manager->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
+    if (socketfd < 0) {
+        NETSTACK_LOGE("fd is nullptr or closed");
+        return false;
+    }
+    if(!NonBlockConnect(context->GetSocketFd(), addr, len, context->options.GetTimeout())) {
+        ERROR_RETURN(context, "connect errno %{public}d", errno);
+    }
+    return true;
+}
+
 bool ExecConnect(ConnectContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
@@ -1169,18 +1187,8 @@ bool ExecConnect(ConnectContext *context)
     }
 
     if (context->proxyOptions == nullptr) {
-        auto manager = context->GetSharedManager();
-        if (manager == nullptr) {
+        if(!HandleNonProxyConnection(context, addr, len)) {
             return false;
-        }
-        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-        int socketfd = manager->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
-        if (socketfd < 0) {
-            NETSTACK_LOGE("fd is nullptr or closed");
-            return false;
-        }
-        if (!NonBlockConnect(context->GetSocketFd(), addr, len, context->options.GetTimeout())) {
-            ERROR_RETURN(context, "connect errno %{public}d", errno);
         }
     } else {
         if (HandleTcpProxyOptions(context) != 0) {
