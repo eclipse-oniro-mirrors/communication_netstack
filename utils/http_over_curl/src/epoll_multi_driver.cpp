@@ -88,6 +88,7 @@ void EpollMultiDriver::Step(int waitEventsTimeoutMs)
         }
         return;
     }
+    std::lock_guard<std::mutex> guard(multiLock_);
     if (eventsToHandle == 0) {
         if (errno != EINTR && errno != EAGAIN && errno != 0) {
             NETSTACK_LOGE("epoll wait event 0 err: %{public}d", errno);
@@ -200,6 +201,7 @@ __attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
 
 int EpollMultiDriver::MultiSocketCallback(curl_socket_t socket, int action, CurlSocketContext *socketContext)
 {
+    std::lock_guard<std::mutex> guard(multiLock_);
     switch (action) {
         case CURL_POLL_IN:
         case CURL_POLL_OUT:
