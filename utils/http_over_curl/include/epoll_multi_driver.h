@@ -69,6 +69,7 @@ private:
     HttpOverCurl::TimeoutTimer timeoutTimer_;
 
     CURLM *multi_ = nullptr;
+    std::mutex multiLock_;
     // Number of running handles
     int stillRunning = 0;
 
