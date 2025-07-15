@@ -897,19 +897,27 @@ bool ExecBind(BindContext *context)
 
     int reuse = 0;
     auto manager = context->GetSharedManager();
-    if (manager != nullptr) {
-        reuse = manager->GetReuseAddr();
-        if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<void *>(&reuse),
-                       sizeof(reuse)) < 0) {
-            NETSTACK_LOGE("set SO_REUSEADDR failed, fd: %{public}d", context->GetSocketFd());
-            context->SetErrorCode(errno);
-            return false;
-        }
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    int socketfd = manager->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
+    if (socketfd < 0) {
+        NETSTACK_LOGE("fd is nullptr or closed");
+        return false;
     }
 
-    if (bind(context->GetSocketFd(), addr, len) < 0) {
+    reuse = manager->GetReuseAddr();
+    if (setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<void *>(&reuse), sizeof(reuse)) < 0) {
+        NETSTACK_LOGE("set SO_REUSEADDR failed, fd: %{public}d", socketfd);
+        context->SetErrorCode(errno);
+        return false;
+    }
+
+    if (bind(socketfd, addr, len) < 0) {
         if (errno != EADDRINUSE) {
-            ERROR_RETURN(context, "bind failed, socket:%{public}d, errno:%{public}d", context->GetSocketFd(), errno);
+            ERROR_RETURN(context, "bind failed, socket:%{public}d, errno:%{public}d", socketfd, errno);
         }
         if (addr->sa_family == AF_INET) {
             NETSTACK_LOGI("distribute a random port");
@@ -918,12 +926,12 @@ bool ExecBind(BindContext *context)
             NETSTACK_LOGI("distribute a random port");
             addr6.sin6_port = 0; /* distribute a random port */
         }
-        if (bind(context->GetSocketFd(), addr, len) < 0) {
-            ERROR_RETURN(context, "rebind failed, socket:%{public}d, errno:%{public}d", context->GetSocketFd(), errno);
+        if (bind(socketfd, addr, len) < 0) {
+            ERROR_RETURN(context, "rebind failed, socket:%{public}d, errno:%{public}d", socketfd, errno);
         }
         NETSTACK_LOGI("rebind success");
     }
-    NETSTACK_LOGI("bind success, sock:%{public}d", context->GetSocketFd());
+    NETSTACK_LOGI("bind success, sock:%{public}d", socketfd);
 
     return true;
 }
@@ -1161,6 +1169,17 @@ bool ExecConnect(ConnectContext *context)
     }
 
     if (context->proxyOptions == nullptr) {
+        auto manager = context->GetSharedManager();
+        if (manager == nullptr) {
+            NETSTACK_LOGE("manager is nullptr");
+            return false;
+        }
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        int socketfd = manager->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
+        if (socketfd < 0) {
+            NETSTACK_LOGE("fd is nullptr or closed");
+            return false;
+        }
         if (!NonBlockConnect(context->GetSocketFd(), addr, len, context->options.GetTimeout())) {
             ERROR_RETURN(context, "connect errno %{public}d", errno);
         }
