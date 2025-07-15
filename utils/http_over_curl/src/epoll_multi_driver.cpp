@@ -38,7 +38,7 @@ void EpollMultiDriver::Initialize()
 {
 #ifdef HTTP_HANDOVER_FEATURE
     netHandoverHandler_ = std::make_shared<HttpHandoverHandler>();
-    if (netHandoverHandler_->InitSuccess()) {
+    if (netHandoverHandler_->IsInitSuccess()) {
         netHandoverHandler_->RegisterForPolling(poller_);
     } else {
         netHandoverHandler_ = nullptr;
@@ -100,8 +100,10 @@ void EpollMultiDriver::Step(int waitEventsTimeoutMs)
         } else if (timeoutTimer_.IsItYours(events[idx].data.fd)) {
             EpollTimerCallback();
 #ifdef HTTP_HANDOVER_FEATURE
-        } else if (netHandoverHandler_ && netHandoverHandler_->IsItYours(events[idx].data.fd)) {
-            netHandoverHandler_->HandOverRequestCallback(ongoingRequests_, multi_);
+        } else if (netHandoverHandler_ && netHandoverHandler_->IsItHandoverEvent(events[idx].data.fd)) {
+            netHandoverHandler_->HandoverRequestCallback(ongoingRequests_, multi_);
+        } else if (netHandoverHandler_ && netHandoverHandler_->IsItHandoverTimeoutEvent(events[idx].data.fd)) {
+            netHandoverHandler_->HandoverTimeoutCallback();
 #endif
         } else { // curl socket event
             EpollSocketCallback(events[idx].data.fd);
@@ -114,8 +116,8 @@ void EpollMultiDriver::IncomingRequestCallback()
     auto requestsToAdd = incomingQueue_->Flush();
     for (auto &request : requestsToAdd) {
 #ifdef HTTP_HANDOVER_FEATURE
-        if (netHandoverHandler_ && netHandoverHandler_->TryFlowControl(request)) {
-            NETSTACK_LOGI("incoming request");
+        if (netHandoverHandler_ &&
+            netHandoverHandler_->TryFlowControl(request, HttpHandoverHandler::RequestType::INCOMING)) {
             continue;
         }
 #endif
@@ -181,7 +183,7 @@ __attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
                 ongoingRequests_.erase(easyHandle);
 #ifdef HTTP_HANDOVER_FEATURE
                 if (netHandoverHandler_ &&
-                    netHandoverHandler_->CheckRequestNetError(ongoingRequests_, multi_, requestInfo, message)) {
+                    netHandoverHandler_->ProcessRequestErr(ongoingRequests_, multi_, requestInfo, message)) {
                     break;
                 }
 #endif

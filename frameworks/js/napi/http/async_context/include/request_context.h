@@ -50,6 +50,17 @@ struct CertsPath {
     std::string certFile;
 };
 
+#ifdef HTTP_HANDOVER_FEATURE
+struct RequestHandoverInfo {
+    RequestHandoverInfo() = default;
+    ~RequestHandoverInfo() = default;
+    int32_t handoverNum = 0;
+    int32_t handoverReason = 0;
+    double flowControlTime = 0;
+    bool isRead = false;
+};
+#endif
+
 class RequestContext final : public BaseContext {
 public:
     friend class HttpExec;
@@ -157,6 +168,12 @@ public:
     void SetPinnedPubkey(std::string &pubkey);
 
     std::string GetPinnedPubkey() const;
+
+#ifdef HTTP_HANDOVER_FEATURE
+    void SetRequestHandoverInfo(int32_t handoverNum, int32_t handoverReason, double flowControlTime, bool isRead);
+
+    std::string GetRequestHandoverInfo();
+#endif
 private:
     uint32_t magicNumber_ = MAGIC_NUMBER;
     int32_t taskId_ = -1;
@@ -185,6 +202,9 @@ private:
     std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
 #endif
     CURL *curlHandle_;
+#ifdef HTTP_HANDOVER_FEATURE
+    RequestHandoverInfo requestHandoverInfo_;
+#endif
     RequestTracer::Trace trace_;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);

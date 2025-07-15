@@ -34,50 +34,82 @@
 namespace OHOS::NetStack::HttpOverCurl {
 
 struct RequestInfo;
+typedef void *(*HTTP_HAND_OVER_INIT)(void *user, void (*HMS_NetworkBoost_HandoverEventCallback)(void *),
+    void (*HMS_NetworkBoost_HandoverTimerCallback)(void *, long));
+typedef int32_t (*HTTP_HAND_OVER_UNINIT)(void *handle);
+typedef void (*HTTP_HAND_OVER_QUERY)(void *handle, int32_t *status, int32_t *netId);
+typedef void (*HTTP_HAND_OVER_ADD)(void *handle, void *userp, int32_t type, int32_t isRead);
+typedef void (*HTTP_HAND_OVER_DEL)(void *handle, void *userp, bool isSuccess);
+typedef int32_t (*HTTP_HAND_OVER_QUERY_REQUEST)(void *handle, void *userp, int32_t *handOverReason,
+    double *flowControlTime, int32_t *isRead);
+typedef void (*HTTP_HAND_OVER_REPORT_TIMEOUT)(void *handle);
+
+extern void HandoverCallback(void *user);
+extern void HandoverTimerCallback(void *user, long timeoutMs);
+extern bool IsNetworkErrorTypeCorrect(CURLcode result);
+bool CheckSocketTime(void *user, curl_socket_t fd);
+curl_socket_t OpenSocket(void *user, curlsocktype purpose, struct curl_sockaddr *addr);
+int CloseSocketCallback(void *user, curl_socket_t fd);
 
 class HttpHandoverHandler {
 public:
-    enum { INIT, START, CONTINUE, END, FATAL };
+    enum { INIT, START, CONTINUE, END, FATAL, TIMEOUT };
+    enum RequestType {
+        OLD,  // old request before network change
+        INCOMING,  // new request during network change
+        NETWORKERROR,  // old request of network error
+        UNDONE  // undone old request after network change
+    };
     explicit HttpHandoverHandler();
     ~HttpHandoverHandler();
 
-    bool InitSuccess();
-    void HandOverQuery(int32_t &status, int32_t &netId);
+    bool IsInitSuccess();
+    bool TryFlowControl(RequestInfo* requestInfo, int32_t requestType);
+    void HandoverRequestCallback(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi);
+    void HandoverTimeoutCallback();
+    void RegisterForPolling(Epoller &poller) const;
+    bool IsItHandoverEvent(FileDescriptor descriptor) const;
+    bool IsItHandoverTimeoutEvent(FileDescriptor descriptor) const;
+    void SetHandoverEvent();
+    void SetHandoverTimeoutEvent(long timeoutMs);
+    bool ProcessRequestErr(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi,
+        RequestInfo *requestInfo, CURLMsg *msg);
+    bool Initialize();
+    void SetCallback(RequestInfo *request);
+    void SetHandoverInfo(RequestInfo *requestInfo);
+    void HandoverQuery(int32_t &status, int32_t &netId);
     bool CheckSocketOpentimeLessThanEndTime(curl_socket_t fd);
     void SetSocketOpenTime(curl_socket_t fd);
     void EraseFd(curl_socket_t fd);
     bool RetransRequest(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi, RequestInfo *request);
-    bool CheckRequestCanRetrans(RequestInfo *request);
-    bool TryFlowControl(RequestInfo* requestInfo);
+    bool CheckRequestCanRetrans(RequestInfo *request, int32_t requestType);
     void UndoneRequestHandle(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi);
-    void HandOverRequestCallback(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi);
-
-    void RegisterForPolling(Epoller &poller) const;
-    bool IsItYours(FileDescriptor descriptor) const;
-    void Set();
+    int32_t IsRequestRead(CURL *easyHandle);
     int32_t IsRequestRead(CURL *easyHandle, time_t &recvtime, time_t &sendtime);
-    bool ProcessRequestErr(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi,
-                           RequestInfo *requestInfo, CURLMsg *msg);
     bool CheckRequestNetError(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi,
                               RequestInfo *requestInfo, CURLMsg *msg);
-
+    void AddRequest(void *userp, int32_t type, int32_t isRead);
+    void DelRequest(void *userp);
+    int32_t QueryRequest(void *userp, int32_t &handOverReason, double &flowControlTime, int32_t &isRead);
 private:
-    bool Initialize();
-    void SetCallback(RequestInfo *request);
     void *netHandoverHandler_ = nullptr;
-    void *httpHandOverManager_ = nullptr;
+    void *httpHandoverManager_ = nullptr;
     std::unique_ptr<ManualResetEvent> handOverEvent_;
-    typedef void *(*HTTP_HAND_OVER_INIT)(void *user, void (*HMS_NetworkBoost_HandoverEventCallback)(void *));
-    typedef int32_t (*HTTP_HAND_OVER_UNINIT)(void *handle);
-    typedef void (*HTTP_HAND_OVER_QUERY)(void *handle, int32_t *status, int32_t *netId);
-    HTTP_HAND_OVER_INIT httpHandOverInit_ = nullptr;
-    HTTP_HAND_OVER_UNINIT httpHandOverUninit_ = nullptr;
-    HTTP_HAND_OVER_QUERY httpHandOverQuery_ = nullptr;
+    std::unique_ptr<HttpOverCurl::TimeoutTimer> handOverTimerEvent_;
+
+    HTTP_HAND_OVER_INIT httpHandoverInit_ = nullptr;
+    HTTP_HAND_OVER_UNINIT httpHandoverUninit_ = nullptr;
+    HTTP_HAND_OVER_QUERY httpHandoverQuery_ = nullptr;
+    HTTP_HAND_OVER_ADD httpHandoverAddRequest_ = nullptr;
+    HTTP_HAND_OVER_DEL httpHandoverDelRequest_ = nullptr;
+    HTTP_HAND_OVER_QUERY_REQUEST httpHandoverQueryRequest_ = nullptr;
+    HTTP_HAND_OVER_REPORT_TIMEOUT httpHandoverReportTimeout_ = nullptr;
     std::set<RequestInfo *> handoverQueue_;
     std::map<curl_socket_t, int> socketopentime_;
     std::map<RequestInfo *, int> requestEndtime_;
     bool initsuccess_;
     int endTime_ = 0;
+    int timeoutTime_ = 0;
     int retrans_ = 0;
 };
 

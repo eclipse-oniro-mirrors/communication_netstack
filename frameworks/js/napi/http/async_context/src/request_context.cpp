@@ -34,6 +34,10 @@
 #if HAS_NETMANAGER_BASE
 #include "http_network_message.h"
 #endif
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_handover_handler.h"
+#endif
+
 
 static constexpr const int PARAM_JUST_URL = 1;
 
@@ -1041,6 +1045,49 @@ std::string RequestContext::GetPinnedPubkey() const
 {
     return pinnedPubkey_;
 }
+
+#ifdef HTTP_HANDOVER_FEATURE
+void RequestContext::SetRequestHandoverInfo(int32_t handoverNum, int32_t handoverReason, double flowControlTime,
+    bool isRead)
+{
+    requestHandoverInfo_.handoverNum = handoverNum;
+    requestHandoverInfo_.handoverReason = handoverReason;
+    requestHandoverInfo_.flowControlTime = flowControlTime;
+    requestHandoverInfo_.isRead = isRead;
+}
+
+std::string RequestContext::GetRequestHandoverInfo()
+{
+    std::string requestHandoverInfo;
+    if (requestHandoverInfo_.handoverNum <= 0) {
+        requestHandoverInfo = "no handover";
+        return requestHandoverInfo;
+    }
+    auto isRead = requestHandoverInfo_.isRead;
+    requestHandoverInfo += "HandoverNum:";
+    requestHandoverInfo += std::to_string(requestHandoverInfo_.handoverNum);
+    requestHandoverInfo += ", handoverReason:";
+    switch (requestHandoverInfo_.handoverReason) {
+        case HttpOverCurl::HttpHandoverHandler::RequestType::INCOMING:
+            requestHandoverInfo += "flowControl, flowControlTime:";
+            break;
+        case HttpOverCurl::HttpHandoverHandler::RequestType::NETWORKERROR:
+            requestHandoverInfo += "netErr, retransTime:";
+            break;
+        case HttpOverCurl::HttpHandoverHandler::RequestType::UNDONE:
+            requestHandoverInfo += "undone, retransTime:";
+            break;
+        default:
+            break;
+    }
+    requestHandoverInfo += std::to_string(requestHandoverInfo_.flowControlTime);
+    requestHandoverInfo += ", isRead:";
+    requestHandoverInfo += isRead == 1 ? "true" : (isRead == 0 ? "false" : "error");
+    requestHandoverInfo += ", isStream:";
+    requestHandoverInfo += this->IsRequestInStream() ? "true" : "false";
+    return requestHandoverInfo;
+}
+#endif
 
 void RequestContext::ParseAddressFamily(napi_value optionsValue)
 {
