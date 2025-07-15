@@ -1171,7 +1171,6 @@ bool ExecConnect(ConnectContext *context)
     if (context->proxyOptions == nullptr) {
         auto manager = context->GetSharedManager();
         if (manager == nullptr) {
-            NETSTACK_LOGE("manager is nullptr");
             return false;
         }
         std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
