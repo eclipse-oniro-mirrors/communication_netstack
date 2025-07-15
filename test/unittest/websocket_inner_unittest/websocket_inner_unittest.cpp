@@ -141,4 +141,16 @@ HWTEST_F(WebSocketTest, WebSocketBranchTest002, TestSize.Level1)
     ret = client->Close(options);
     EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX);
 }
+
+HWTEST_F(WebSocketTest, WebSocketBranchTest003, TestSize.Level1)
+{
+    client->clientContext = nullptr;
+    char str[] = "test";
+    char* data = str;
+    size_t length = 0;
+    client->AppendData(data, length);
+    std::string dataStr = client->GetData();
+    client->ClearData();
+    EXPECT_EQ(dataStr, std::string(data));
+}
 } // namespace
