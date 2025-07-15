@@ -1155,7 +1155,7 @@ bool HandleNonProxyConnection(ConnectContext *context, sockaddr *addr, socklen_t
         NETSTACK_LOGE("fd is nullptr or closed");
         return false;
     }
-    if(!NonBlockConnect(context->GetSocketFd(), addr, len, context->options.GetTimeout())) {
+    if (!NonBlockConnect(context->GetSocketFd(), addr, len, context->options.GetTimeout())) {
         ERROR_RETURN(context, "connect errno %{public}d", errno);
     }
     return true;
@@ -1187,7 +1187,7 @@ bool ExecConnect(ConnectContext *context)
     }
 
     if (context->proxyOptions == nullptr) {
-        if(!HandleNonProxyConnection(context, addr, len)) {
+        if (!HandleNonProxyConnection(context, addr, len)) {
             return false;
         }
     } else {
