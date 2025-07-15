@@ -18,6 +18,7 @@
 
 #include <map>
 #include <memory>
+#include <mutex>
 
 #include "curl/curl.h"
 
