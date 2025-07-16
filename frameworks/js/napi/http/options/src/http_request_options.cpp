@@ -371,7 +371,7 @@ std::string HttpRequestOptions::GetAddressFamily() const
 
 bool HttpRequestOptions::TcpConfiguration::SetOptionToSocket(int sock)
 {
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
     int proto = -1;
     auto len = static_cast<socklen_t>(sizeof(proto));
     /*
