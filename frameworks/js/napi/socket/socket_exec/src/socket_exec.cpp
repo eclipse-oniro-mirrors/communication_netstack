@@ -1252,12 +1252,16 @@ bool ExecClose(CloseContext *context)
     }
     
     auto manager = context->GetSharedManager();
-    if (manager != nullptr) {
-        auto inst = manager->GetProxyData();
-        if (inst != nullptr) {
-            inst->Close();
-        }
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
     }
+
+    auto inst = manager->GetProxyData();
+    if (inst != nullptr) {
+        inst->Close();
+    }
+    
     std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
     if (context->GetSocketFd() < 0) {
         NETSTACK_LOGE("sock %{public}d is previous closed", context->GetSocketFd());
