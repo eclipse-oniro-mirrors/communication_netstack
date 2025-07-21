@@ -280,7 +280,9 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 
 #if HAS_NETMANAGER_BASE
     std::stringstream name;
-    name << HTTP_REQ_TRACE_NAME << "_" << std::this_thread::get_id();
+    auto isDebugMode = NapiUtils::IsDebugMode();
+    auto urlWithoutParam = NapiUtils::RemoveUrlParameters(context->options.GetUrl());
+    name << HTTP_REQ_TRACE_NAME << "_" << std::this_thread::get_id() << (isDebugMode ? ("_" + urlWithoutParam) : "");
     SetTraceOptions(handle, context);
     SetServerSSLCertOption(handle, context);
 
