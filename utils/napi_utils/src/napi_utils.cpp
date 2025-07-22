@@ -990,7 +990,7 @@ bool IsDebugMode()
 #endif
 }
 
-std::string RemoveUrlParameters(const std::string& url) 
+std::string RemoveUrlParameters(const std::string& url)
 {
     size_t questionMarkPos = url.find('?');
     if (questionMarkPos == std::string::npos) {
