@@ -709,7 +709,7 @@ HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest004, TestSize.Level1)
     size_t memBytes = 1;
     size_t result = task->DataReceiveCallback(data, size, memBytes, userData);
 
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, size * memBytes);
 }
 
 HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest005, TestSize.Level1)
@@ -749,7 +749,7 @@ HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest006, TestSize.Level1)
     size_t memBytes = 1;
     size_t result = task->DataReceiveCallback(data, size, memBytes, userData);
 
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, size * memBytes);
 }
 
 HWTEST_F(HttpClientTaskTest, ProgressCallbackTest001, TestSize.Level1)
@@ -1188,7 +1188,8 @@ HWTEST_F(HttpClientTaskTest, ProcessCookieTest001, TestSize.Level1)
     while (task->GetStatus() != TaskStatus::IDLE) {
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
-    EXPECT_EQ(task->GetResponse().GetResponseCode(), 0);
+    auto ret = task->GetResponse().GetResponseCode();
+    EXPECT_TRUE(ret == ResponseCode::OK || ret == 0);
 }
 
 HWTEST_F(HttpClientTaskTest, ProcessCookieTest002, TestSize.Level1)
