@@ -11,10 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::HashMap;
-
-use ani_rs::box_type::BoxI32;
+use ani_rs::business_error::BusinessError;
+use netstack_rs::error::HttpClientError;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[ani_rs::ani]
 pub struct Cleaner {
@@ -38,8 +38,8 @@ pub enum AddressFamily {
 #[derive(Serialize, Deserialize)]
 pub enum Data<'a> {
     S(String),
-    VecBuffer(&'a [u8]),
-    // Object
+    Record(HashMap<String, String>),
+    ArrayBuffer(&'a [u8]),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -185,6 +185,21 @@ pub enum RequestMethod {
     Connect,
 }
 
+impl RequestMethod {
+    pub fn to_str(&self) -> &str {
+        match self {
+            RequestMethod::Options => "OPTIONS",
+            RequestMethod::Get => "GET",
+            RequestMethod::Head => "HEAD",
+            RequestMethod::Post => "POST",
+            RequestMethod::Put => "PUT",
+            RequestMethod::Delete => "DELETE",
+            RequestMethod::Trace => "TRACE",
+            RequestMethod::Connect => "CONNECT",
+        }
+    }
+}
+
 #[ani_rs::ani(path = "L@ohos/net/http/http/ResponseCode")]
 pub enum ResponseCode {
     Ok = 200,
@@ -261,12 +276,24 @@ pub enum ResponseCode {
 }
 
 #[ani_rs::ani(path = "L@ohos/net/http/http/HttpProtocol")]
+#[repr(i32)]
 pub enum HttpProtocol {
     Http1_1,
 
     Http2,
 
     Http3,
+}
+
+impl HttpProtocol {
+    pub fn to_i32(&self) -> i32 {
+        // 0 indicate HTTP_NONE in http_client_request.h
+        match self {
+            HttpProtocol::Http1_1 => 1,
+            HttpProtocol::Http2 => 2,
+            HttpProtocol::Http3 => 3,
+        }
+    }
 }
 
 #[ani_rs::ani(path = "L@ohos/net/http/http/HttpDataType")]
@@ -280,61 +307,65 @@ pub enum HttpDataType {
 
 #[derive(Serialize)]
 pub enum ResponseCodeOutput {
-    #[serde(rename = "L@ohos/net/http/http/ResponseCode")]
+    #[serde(rename = "L@ohos/net/http/http/ResponseCode;")]
     Code(ResponseCode),
-    I32(BoxI32),
+    I32(i32),
 }
 
 #[ani_rs::ani(path = "L@ohos/net/http/http/HttpResponseInner", output = "only")]
 pub struct HttpResponse {
-    // pub result: String | Object | VecBuffer,
-
+    pub result: String,
     pub result_type: HttpDataType,
-
     pub response_code: ResponseCodeOutput,
-
     pub header: HashMap<String, String>,
     pub cookies: String,
-
     pub performance_timing: PerformanceTiming,
 }
 
 #[ani_rs::ani(path = "L@ohos/net/http/http/PerformanceTimingInner")]
 pub struct PerformanceTiming {
-    pub dns_timing: i32,
-
-    pub tcp_timing: i32,
-
-    pub tls_timing: i32,
-
-    pub first_send_timing: i32,
-
-    pub first_receive_timing: i32,
-
-    pub total_finish_timing: i32,
-
-    pub redirect_timing: i32,
-
-    pub response_header_timing: i32,
-
-    pub response_body_timing: i32,
-
-    pub total_timing: i32,
+    pub dns_timing: f64,
+    pub tcp_timing: f64,
+    pub tls_timing: f64,
+    pub first_send_timing: f64,
+    pub first_receive_timing: f64,
+    pub total_finish_timing: f64,
+    pub redirect_timing: f64,
+    pub response_header_timing: f64,
+    pub response_body_timing: f64,
+    pub total_timing: f64,
 }
 
 impl PerformanceTiming {
     pub fn new() -> Self {
         Self {
-            dns_timing: 0,
-            tcp_timing: 0,
-            tls_timing: 0,
-            first_send_timing: 0,
-            first_receive_timing: 0,
-            total_finish_timing: 0,
-            redirect_timing: 0,
-            response_header_timing: 0,
-            response_body_timing: 0,
-            total_timing: 0,
+            dns_timing: 0.0,
+            tcp_timing: 0.0,
+            tls_timing: 0.0,
+            first_send_timing: 0.0,
+            first_receive_timing: 0.0,
+            total_finish_timing: 0.0,
+            redirect_timing: 0.0,
+            response_header_timing: 0.0,
+            response_body_timing: 0.0,
+            total_timing: 0.0,
+        }
+    }
+}
+
+impl From<netstack_rs::response::PerformanceInfo> for PerformanceTiming {
+    fn from(value: netstack_rs::response::PerformanceInfo) -> Self {
+        Self {
+            dns_timing: value.dns_timing,
+            tcp_timing: value.tcp_timing,
+            tls_timing: value.tls_timing,
+            first_send_timing: value.first_send_timing,
+            first_receive_timing: value.first_receive_timing,
+            total_finish_timing: 0.0,
+            redirect_timing: value.redirect_timing,
+            response_header_timing: 0.0,
+            response_body_timing: 0.0,
+            total_timing: value.total_timing,
         }
     }
 }
@@ -354,4 +385,10 @@ pub struct DataSendProgressInfo {
 #[ani_rs::ani]
 pub struct HttpResponseCache {
     pub native_ptr: i64,
+}
+
+pub fn convert_to_business_error(client_error: &HttpClientError) -> BusinessError {
+    let error_code = client_error.code() as i32;
+    let msg = client_error.msg().to_string();
+    BusinessError::new(error_code, msg)
 }

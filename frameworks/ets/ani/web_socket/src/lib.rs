@@ -40,3 +40,15 @@ ani_rs::ani_constructor! {
         "clean" : web_socket::web_socket_clean,
     ]
 }
+
+#[used]
+#[link_section = ".init_array"]
+static WEBSOCKET_PANIC_HOOK: extern "C" fn() = {
+    #[link_section = ".text.startup"]
+    extern "C" fn init() {
+        std::panic::set_hook(Box::new(|info| {
+            error!("Panic occurred: {:?}", info);
+        }));
+    }
+    init
+};

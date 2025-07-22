@@ -62,4 +62,18 @@ rust::vec<rust::string> GetHeaders(HttpClientResponse &response)
     return ret;
 };
 
+PerformanceInfoRust GetPerformanceTiming(HttpClientResponse &response)
+{
+    PerformanceInfoRust info = {
+        .dns_timing = response.GetPerformanceTiming().dnsTiming,
+        .tcp_timing = response.GetPerformanceTiming().connectTiming,
+        .tls_timing = response.GetPerformanceTiming().tlsTiming,
+        .first_send_timing = response.GetPerformanceTiming().firstSendTiming,
+        .first_receive_timing = response.GetPerformanceTiming().firstReceiveTiming,
+        .total_timing = response.GetPerformanceTiming().totalTiming,
+        .redirect_timing = response.GetPerformanceTiming().redirectTiming,
+    };
+    return info;
+}
+
 } // namespace OHOS::Request

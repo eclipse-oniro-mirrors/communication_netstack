@@ -22,9 +22,33 @@
 namespace OHOS {
 namespace NetStackAni {
 
+void OnMessageCallbackAni(NetStack::WebSocketClient::WebSocketClient *ptrInner,
+                          const std::string &data, size_t length)
+{
+}
+
+void OnCloseCallbackAni(NetStack::WebSocketClient::WebSocketClient *ptrInner,
+                        NetStack::WebSocketClient::CloseResult closeResult)
+{
+}
+
+void OnErrorCallbackAni(NetStack::WebSocketClient::WebSocketClient *ptrInner,
+                        NetStack::WebSocketClient::ErrorResult error)
+{
+}
+
+void OnOpenCallbackAni(NetStack::WebSocketClient::WebSocketClient *ptrInner,
+                       NetStack::WebSocketClient::OpenResult openResult)
+{
+}
+
 std::unique_ptr<NetStack::WebSocketClient::WebSocketClient> CreateWebSocket()
 {
-    return std::make_unique<NetStack::WebSocketClient::WebSocketClient>();
+    auto client = std::make_unique<NetStack::WebSocketClient::WebSocketClient>();
+    client->Registcallback(OnOpenCallbackAni, OnMessageCallbackAni,
+                           OnErrorCallbackAni, OnCloseCallbackAni);
+
+    return client;
 }
 
 int32_t Connect(NetStack::WebSocketClient::WebSocketClient &client, const rust::str url, ConnectOptions options)
