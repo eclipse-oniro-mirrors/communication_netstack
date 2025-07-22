@@ -11,23 +11,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::ffi::CStr;
+use std::{
+    ffi::CStr,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 use ani_rs::{
     business_error::BusinessError,
     objects::{AniAsyncCallback, AniRef},
     AniEnv,
 };
-use netstack_rs::{request::{has_internet_permission, Request}, task::RequestTask};
+use netstack_rs::{error::HttpErrorCode, request::Request, task::RequestTask};
 
 use crate::{
-    bridge::{Cleaner, HttpRequest, HttpRequestOptions, HttpResponseCache},
+    bridge::{
+        convert_to_business_error, Cleaner, HttpRequest, HttpRequestOptions, HttpResponseCache,
+    },
     callback::TaskCallback,
 };
 
 pub struct Task {
     pub request_task: Option<RequestTask>,
     pub callback: Option<TaskCallback>,
+    pub is_destroy: AtomicBool,
 }
 
 impl Task {
@@ -35,6 +41,7 @@ impl Task {
         Self {
             request_task: None,
             callback: None,
+            is_destroy: AtomicBool::new(false),
         }
     }
 }
@@ -55,6 +62,29 @@ pub fn create_http<'local>(env: &AniEnv<'local>) -> Result<AniRef<'local>, Busin
     Ok(obj.into())
 }
 
+pub fn http_set_options(request: &mut Request<TaskCallback>, options: HttpRequestOptions) {
+    if let Some(method) = options.method {
+        request.method(method.to_str());
+    }
+    if let Some(priority) = options.priority {
+        request.priority(priority as u32);
+    }
+    if let Some(read_timeout) = options.read_timeout {
+        request.timeout(read_timeout as u32);
+    }
+    if let Some(connect_timeout) = options.connect_timeout {
+        request.connect_timeout(connect_timeout as u32);
+    }
+    if let Some(headers) = options.header {
+        for (key, value) in &headers {
+            request.header(key.as_str(), value.as_str());
+        }
+    }
+    if let Some(protocol) = options.using_protocol {
+        request.protocol(protocol.to_i32());
+    }
+}
+
 #[ani_rs::native]
 pub(crate) fn request(
     env: &AniEnv,
@@ -63,21 +93,40 @@ pub(crate) fn request(
     async_callback: AniAsyncCallback,
     options: Option<HttpRequestOptions>,
 ) -> Result<(), BusinessError> {
-    info!("request url :{}", url);
-    if !has_internet_permission() {
-        return Err(BusinessError::PERMISSION);
-    }
-
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
+    if task.is_destroy.load(Ordering::Relaxed) {
+        error!("Request is already destroyed");
+        let business_error = BusinessError::new(
+            HttpErrorCode::HttpUnknownOtherError as i32,
+            "Request is already destroyed".to_string(),
+        );
+        let undefined: Option<bool> = None; //None will serialize arkts's undefined
+        async_callback
+            .execute_local(env, Some(business_error), (undefined,))
+            .unwrap();
+        return Ok(());
+    }
     let mut request = Request::<TaskCallback>::new();
 
     request.url(url.as_str());
+    if let Some(opts) = options {
+        http_set_options(&mut request, opts);
+    }
 
     let mut cb = task.callback.take().unwrap_or_else(TaskCallback::new);
-    cb.on_response = Some(async_callback.into_global_callback(env).unwrap());
+    cb.on_response = Some(async_callback.clone().into_global_callback(env).unwrap());
     request.callback(cb);
     let mut request_task = request.build();
-    request_task.start();
+    if !request_task.start() {
+        let error = request_task.get_error();
+        error!("request_task.start error = {:?}", error);
+        let business_error = convert_to_business_error(&error);
+        let undefined: Option<bool> = None; //None will serialize arkts's undefined
+        async_callback
+            .execute_local(env, Some(business_error), (undefined,))
+            .unwrap();
+        return Ok(());
+    }
     task.request_task = Some(request_task);
     Ok(())
 }
@@ -98,6 +147,7 @@ pub(crate) fn destroy(this: HttpRequest) -> Result<(), BusinessError> {
     if let Some(request_task) = task.request_task.take() {
         request_task.cancel();
     }
+    task.is_destroy.store(true, Ordering::Relaxed);
     Ok(())
 }
 

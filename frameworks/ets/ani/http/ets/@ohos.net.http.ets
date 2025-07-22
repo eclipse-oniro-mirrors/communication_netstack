@@ -231,8 +231,8 @@ export default namespace http {
     request(url: string, options?: HttpRequestOptions): Promise<HttpResponse> {
       return new Promise<HttpResponse>((resolve, reject) => {
         this.requestInner(url,  (err: BusinessError | null, data: HttpResponse| undefined) => {
-          if (err) {
-            reject(err);
+          if (err?.code != 0) {
+            reject(err as BusinessError);
           } else {
             resolve(data as HttpResponse);
           }
@@ -253,8 +253,8 @@ export default namespace http {
     requestInStream(url: string, options?: HttpRequestOptions): Promise<int> {
       return new Promise<int>((resolve, reject) => {
         this.requestInStreamInner(url, (err: BusinessError | null, data: int | undefined) => {
-          if (err) {
-            reject(err);
+          if (err?.code != 0) {
+            reject(err as BusinessError);
           } else {
             resolve(data as int);
           }
@@ -453,7 +453,7 @@ export default namespace http {
 
     responseCode: ResponseCode | int;
 
-    header: Record<String, String>;
+    header: Object;
 
     cookies: string;
 
@@ -467,7 +467,7 @@ export default namespace http {
 
     responseCode: ResponseCode | int;
 
-    header: Record<String, String>;
+    header: Object;
 
     cookies: string;
 
@@ -475,47 +475,47 @@ export default namespace http {
   }
 
   export interface PerformanceTiming {
-    dnsTiming: int;
+    dnsTiming: double;
 
-    tcpTiming: int;
+    tcpTiming: double;
 
-    tlsTiming: int;
+    tlsTiming: double;
 
-    firstSendTiming: int;
+    firstSendTiming: double;
 
-    firstReceiveTiming: int;
+    firstReceiveTiming: double;
 
-    totalFinishTiming: int;
+    totalFinishTiming: double;
 
-    redirectTiming: int;
+    redirectTiming: double;
 
-    responseHeaderTiming: int;
+    responseHeaderTiming: double;
 
-    responseBodyTiming: int;
+    responseBodyTiming: double;
 
-    totalTiming: int;
+    totalTiming: double;
   }
 
   class PerformanceTimingInner implements PerformanceTiming {
-    dnsTiming: int;
+    dnsTiming: double;
 
-    tcpTiming: int;
+    tcpTiming: double;
 
-    tlsTiming: int;
+    tlsTiming: double;
 
-    firstSendTiming: int;
+    firstSendTiming: double;
 
-    firstReceiveTiming: int;
+    firstReceiveTiming: double;
 
-    totalFinishTiming: int;
+    totalFinishTiming: double;
 
-    redirectTiming: int;
+    redirectTiming: double;
 
-    responseHeaderTiming: int;
+    responseHeaderTiming: double;
 
-    responseBodyTiming: int;
+    responseBodyTiming: double;
 
-    totalTiming: int;
+    totalTiming: double;
   }
 
   export interface DataReceiveProgressInfo {

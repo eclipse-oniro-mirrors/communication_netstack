@@ -26,6 +26,7 @@
 namespace OHOS::Request {
 using namespace OHOS::NetStack::HttpClient;
 struct CallbackWrapper;
+struct PerformanceInfoRust;
 
 void OnCallback(const std::shared_ptr<HttpClientTask> &task, rust::Box<CallbackWrapper> callback);
 
@@ -39,6 +40,11 @@ inline void SetBody(HttpClientRequest &request, const uint8_t *data, size_t size
     request.SetBody(data, size);
 }
 
+inline void SetHttpProtocol(HttpClientRequest &request, int32_t protocol)
+{
+    request.SetHttpProtocol(static_cast<HttpProtocol>(protocol));
+}
+
 inline std::shared_ptr<HttpClientTask> NewHttpClientTask(const HttpClientRequest &request)
 {
     auto &session = NetStack::HttpClient::HttpSession::GetInstance();
@@ -46,6 +52,8 @@ inline std::shared_ptr<HttpClientTask> NewHttpClientTask(const HttpClientRequest
 }
 
 rust::vec<rust::string> GetHeaders(HttpClientResponse &response);
+
+PerformanceInfoRust GetPerformanceTiming(HttpClientResponse &response);
 
 } // namespace OHOS::Request
 

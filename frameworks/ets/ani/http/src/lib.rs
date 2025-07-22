@@ -66,7 +66,7 @@ static A: extern "C" fn() = {
     #[link_section = ".text.startup"]
     extern "C" fn init() {
         std::panic::set_hook(Box::new(|info| {
-            info!("Panic occurred: {:?}", info);
+            error!("Panic occurred: {:?}", info);
         }));
     }
     init

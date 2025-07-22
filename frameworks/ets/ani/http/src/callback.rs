@@ -11,14 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{collections::HashMap, sync::Mutex};
+use std::collections::HashMap;
 
-use ani_rs::{box_type::BoxI32, objects::GlobalRefAsyncCallback};
-use netstack_rs::{request::RequestCallback, response::Response};
+use ani_rs::{business_error::BusinessError, objects::GlobalRefAsyncCallback};
+use netstack_rs::{error::HttpErrorCode, request::RequestCallback};
 
 use crate::bridge::{
-    DataReceiveProgressInfo, DataSendProgressInfo, HttpDataType, HttpResponse, PerformanceTiming,
-    ResponseCode, ResponseCodeOutput,
+    convert_to_business_error, DataReceiveProgressInfo, DataSendProgressInfo, HttpDataType,
+    HttpResponse, PerformanceTiming, ResponseCodeOutput,
 };
 
 pub struct TaskCallback {
@@ -53,10 +53,11 @@ impl RequestCallback for TaskCallback {
             let code = response.status() as i32;
             let response = HttpResponse {
                 result_type: HttpDataType::String,
-                response_code: ResponseCodeOutput::I32(BoxI32::new(code)),
+                response_code: ResponseCodeOutput::I32(code),
                 header: response.headers(),
-                cookies: String::new(),
-                performance_timing: PerformanceTiming::new(),
+                cookies: response.cookies(),
+                performance_timing: PerformanceTiming::from(response.performance_timing()),
+                result: response.get_result(),
             };
             callback.execute(None, (response,));
         }
@@ -66,11 +67,48 @@ impl RequestCallback for TaskCallback {
         }
     }
 
-    fn on_fail(&mut self, error: netstack_rs::error::HttpClientError) {
-        info!("request fail");
+    fn on_fail(
+        &mut self,
+        response: netstack_rs::response::Response,
+        error: netstack_rs::error::HttpClientError,
+    ) {
+        let code = response.status() as i32;
+        error!("OnFiled. response_code = {}, error = {:?}", code, error);
+        if let Some(callback) = self.on_response.take() {
+            let business_error = convert_to_business_error(&error);
+            let response = HttpResponse {
+                result_type: HttpDataType::String,
+                response_code: ResponseCodeOutput::I32(code),
+                header: HashMap::new(),
+                cookies: String::new(),
+                performance_timing: PerformanceTiming::new(),
+                result: String::new(),
+            };
+            callback.execute(Some(business_error), (response,));
+        }
+        if let Some(callback) = self.on_data_end.take() {
+            callback.execute(None, ());
+        }
     }
 
-    fn on_cancel(&mut self) {}
+    fn on_cancel(&mut self, response: netstack_rs::response::Response) {
+        let code = response.status() as i32;
+        if let Some(callback) = self.on_response.take() {
+            let business_error = BusinessError::new(
+                HttpErrorCode::HttpWriteError as i32,
+                "request canceled".to_string(),
+            );
+            let response = HttpResponse {
+                result_type: HttpDataType::String,
+                response_code: ResponseCodeOutput::I32(code),
+                header: HashMap::new(),
+                cookies: String::new(),
+                performance_timing: PerformanceTiming::new(),
+                result: String::new(),
+            };
+            callback.execute(Some(business_error), (response,));
+        }
+    }
 
     fn on_data_receive(&mut self, data: &[u8], mut task: netstack_rs::task::RequestTask) {
         let headers = task.headers();

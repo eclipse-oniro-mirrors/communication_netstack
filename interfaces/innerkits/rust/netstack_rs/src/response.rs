@@ -17,6 +17,7 @@ use std::pin::Pin;
 use cxx::SharedPtr;
 
 use crate::task::RequestTask;
+use crate::wrapper;
 use crate::wrapper::ffi::{GetHeaders, HttpClientResponse, HttpClientTask};
 
 /// http client response
@@ -47,6 +48,31 @@ impl<'a> Response<'a> {
             break;
         }
         ret
+    }
+
+    pub fn cookies(&self) -> String {
+        let response = self.inner.to_response();
+        response.GetCookies().to_string()
+    }
+
+    pub fn get_result(&self) -> String {
+        let response = self.inner.to_response();
+        response.GetResult().to_string()
+    }
+
+    pub fn performance_timing(&self) -> PerformanceInfo {
+        let ptr = self.inner.to_response() as *const HttpClientResponse as *mut HttpClientResponse;
+        let p = unsafe { Pin::new_unchecked(ptr.as_mut().unwrap()) };
+        let res = wrapper::ffi::GetPerformanceTiming(p);
+        PerformanceInfo {
+            dns_timing: res.dns_timing,
+            tcp_timing: res.tcp_timing,
+            tls_timing: res.tls_timing,
+            first_send_timing: res.first_send_timing,
+            first_receive_timing: res.first_receive_timing,
+            total_timing: res.total_timing,
+            redirect_timing: res.redirect_timing,
+        }
     }
 
     pub(crate) fn from_ffi(inner: &'a HttpClientResponse) -> Self {
@@ -118,4 +144,14 @@ pub enum ResponseCode {
     Unavailable,
     GatewayTimeout,
     Version,
+}
+
+pub struct PerformanceInfo {
+    pub dns_timing: f64,
+    pub tcp_timing: f64,
+    pub tls_timing: f64,
+    pub first_send_timing: f64,
+    pub first_receive_timing: f64,
+    pub total_timing: f64,
+    pub redirect_timing: f64,
 }

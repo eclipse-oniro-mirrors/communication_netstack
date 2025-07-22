@@ -17,7 +17,6 @@ use std::sync::{Arc, Mutex, Weak};
 
 use cxx::{let_cxx_string, SharedPtr};
 use ffi::{HttpClientRequest, HttpClientTask, NewHttpClientTask, OnCallback};
-use ffrt_rs::{ffrt_sleep, ffrt_spawn};
 use netstack_common::debug;
 
 use crate::error::{HttpClientError, HttpErrorCode};
@@ -29,7 +28,6 @@ pub struct CallbackWrapper {
     inner: Option<Box<dyn RequestCallback>>,
     reset: Arc<AtomicBool>,
     task: Weak<Mutex<SharedPtr<HttpClientTask>>>,
-    tries: usize,
     current: u64,
 }
 
@@ -44,7 +42,6 @@ impl CallbackWrapper {
             inner: Some(inner),
             reset,
             task,
-            tries: 0,
             current,
         }
     }
@@ -62,43 +59,21 @@ impl CallbackWrapper {
 
     fn on_fail(
         &mut self,
-        request: &HttpClientRequest,
+        _request: &HttpClientRequest,
         response: &ffi::HttpClientResponse,
         error: &ffi::HttpClientError,
     ) {
-        let error = HttpClientError::from_ffi(error);
-        if *error.code() == HttpErrorCode::HttpWriteError {
-            self.on_cancel(request, response);
-            return;
-        }
-        let Some(callback) = self.inner.take() else {
+        debug!("on_fail callback is called");
+        let Some(mut callback) = self.inner.take() else {
             return;
         };
-        let (new_task, mut new_callback) = self.create_new_task(callback, request, response);
-        if self.tries < 3 {
-            self.tries += 1;
-            new_callback.tries = self.tries;
-            Self::start_new_task(new_task, new_callback);
-            return;
-        }
-
-        let reset = self.reset.clone();
-        ffrt_spawn(move || {
-            for _ in 0..20 {
-                ffrt_sleep(1000);
-                if reset.load(Ordering::SeqCst) {
-                    Self::start_new_task(new_task, new_callback);
-                    reset.store(false, Ordering::SeqCst);
-                    return;
-                }
-            }
-            if let Some(mut callback) = new_callback.inner {
-                callback.on_fail(error);
-            }
-        });
+        let client_error = HttpClientError::from_ffi(error);
+        let response = Response::from_ffi(response);
+        callback.on_fail(response, client_error);
     }
 
     fn on_cancel(&mut self, request: &HttpClientRequest, response: &ffi::HttpClientResponse) {
+        debug!("on_cancel callback is called");
         let Some(mut callback) = self.inner.take() else {
             return;
         };
@@ -108,7 +83,8 @@ impl CallbackWrapper {
             Self::start_new_task(new_task, new_callback);
             self.reset.store(false, Ordering::SeqCst);
         } else {
-            callback.on_cancel();
+            let response = Response::from_ffi(response);
+            callback.on_cancel(response);
         }
     }
 
@@ -264,8 +240,10 @@ pub(crate) mod ffi {
         fn SetMethod(self: Pin<&mut HttpClientRequest>, method: &CxxString);
         fn SetHeader(self: Pin<&mut HttpClientRequest>, key: &CxxString, val: &CxxString);
         fn SetTimeout(self: Pin<&mut HttpClientRequest>, timeout: u32);
+        fn SetPriority(self: Pin<&mut HttpClientRequest>, priority: u32);
         fn SetConnectTimeout(self: Pin<&mut HttpClientRequest>, timeout: u32);
         unsafe fn SetBody(request: Pin<&mut HttpClientRequest>, data: *const u8, length: usize);
+        fn SetHttpProtocol(request: Pin<&mut HttpClientRequest>, protocol: i32);
 
         #[namespace = "OHOS::NetStack::HttpClient"]
         type HttpClientTask;
@@ -276,12 +254,16 @@ pub(crate) mod ffi {
         fn Cancel(self: Pin<&mut HttpClientTask>);
         fn GetStatus(self: Pin<&mut HttpClientTask>) -> TaskStatus;
         fn OnCallback(task: &SharedPtr<HttpClientTask>, callback: Box<CallbackWrapper>);
+        fn GetError(self: Pin<&mut HttpClientTask>) -> Pin<&mut HttpClientError>;
 
         #[namespace = "OHOS::NetStack::HttpClient"]
         type HttpClientResponse;
 
         fn GetResponseCode(self: &HttpClientResponse) -> ResponseCode;
         fn GetHeaders(response: Pin<&mut HttpClientResponse>) -> Vec<String>;
+        fn GetCookies(self: &HttpClientResponse) -> &CxxString;
+        fn GetResult(self: &HttpClientResponse) -> &CxxString;
+        fn GetPerformanceTiming(response: Pin<&mut HttpClientResponse>) -> PerformanceInfoRust;
 
         #[namespace = "OHOS::NetStack::HttpClient"]
         type HttpClientError;
@@ -377,6 +359,16 @@ pub(crate) mod ffi {
         HTTP_REMOTE_FILE_NOT_FOUND,
         HTTP_AUTH_ERROR = 2300094,
         HTTP_UNKNOWN_OTHER_ERROR = 2300999,
+    }
+
+    struct PerformanceInfoRust {
+        dns_timing: f64,
+        tcp_timing: f64,
+        tls_timing: f64,
+        first_send_timing: f64,
+        first_receive_timing: f64,
+        total_timing: f64,
+        redirect_timing: f64,
     }
 }
 
