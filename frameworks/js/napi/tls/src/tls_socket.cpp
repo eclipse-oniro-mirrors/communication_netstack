@@ -1443,6 +1443,7 @@ const X509CertRawData &TLSSocket::TLSSocketInternal::GetCertificate() const
 
 std::vector<std::string> TLSSocket::TLSSocketInternal::GetSignatureAlgorithms() const
 {
+    std::shared_lock<std::shared_mutex> lock(rw_mutex_);
     return signatureAlgorithms_;
 }
 
@@ -1469,6 +1470,7 @@ bool TLSSocket::TLSSocketInternal::SetSharedSigals()
         NETSTACK_LOGE("SSL_get_shared_sigalgs return value error");
         return false;
     }
+    std::unique_lock<std::shared_mutex> lock(rw_mutex_);
     for (int i = 0; i < number; i++) {
         int hash_nid;
         int sign_nid;

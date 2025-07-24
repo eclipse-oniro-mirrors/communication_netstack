@@ -21,6 +21,7 @@
 #include <cstring>
 #include <functional>
 #include <map>
+#include <shared_mutex>
 #include <thread>
 #include <tuple>
 #include <unistd.h>
@@ -576,6 +577,7 @@ private:
 
     private:
         std::mutex mutexForSsl_;
+        mutable std::shared_mutex rw_mutex_;
         ssl_st *ssl_ = nullptr;
         X509 *peerX509_ = nullptr;
         uint16_t port_ = 0;
