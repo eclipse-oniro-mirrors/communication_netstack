@@ -113,6 +113,10 @@ public:
 
     void SetReuseAddr(bool reuse);
 
+    void SetContextState(bool enable);
+
+    bool GetContextState();
+
     void SetWebSocketUserData(const std::shared_ptr<Websocket::UserData> &userData);
 
     std::shared_ptr<Websocket::UserData> GetWebSocketUserData();
@@ -173,6 +177,7 @@ private:
     std::unordered_map<void *, std::shared_ptr<Websocket::UserData>> userDataMap_;
     uint32_t maxConnClientCnt_ = 0;
     uint32_t maxConnForOneClient_ = 0;
+    bool isOpened_ = true;
 
 public:
     struct {
