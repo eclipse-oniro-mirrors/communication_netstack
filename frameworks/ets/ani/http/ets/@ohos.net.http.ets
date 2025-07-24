@@ -16,7 +16,7 @@
 
 import type { AsyncCallback, Callback } from '@ohos.base';
 import type connection from '@ohos.net.connection';
-import { BusinessError }  from '@ohos.base';
+import { BusinessError, RecordData }  from '@ohos.base';
 
 export default namespace http {
   loadLibrary("http_ani")
@@ -49,7 +49,7 @@ export default namespace http {
   export interface HttpRequestOptions {
     method?: RequestMethod;
 
-    extraData?: string | Object | ArrayBuffer;
+    extraData?: string | RecordData | ArrayBuffer;
 
     expectDataType?: HttpDataType;
 
@@ -57,7 +57,7 @@ export default namespace http {
 
     priority?: int;
 
-    header?: Object;
+    header?: Record<string, string>;
 
     readTimeout?: int;
 
@@ -149,7 +149,7 @@ export default namespace http {
 
     remoteFileName?: string;
 
-    data?: string | Object | ArrayBuffer;
+    data?: string | RecordData | ArrayBuffer;
 
     filePath?: string;
   }
@@ -447,13 +447,13 @@ export default namespace http {
   }
 
   export interface HttpResponse {
-    result: string | Object | ArrayBuffer;
+    result: string | RecordData | ArrayBuffer;
 
     resultType: HttpDataType;
 
     responseCode: ResponseCode | int;
 
-    header: Object;
+    header: Record<string, string>;
 
     cookies: string;
 
@@ -461,13 +461,13 @@ export default namespace http {
   }
 
   class HttpResponseInner implements HttpResponse {
-    result: string | Object | ArrayBuffer;
+    result: string | RecordData | ArrayBuffer;
 
     resultType: HttpDataType;
 
     responseCode: ResponseCode | int;
 
-    header: Object;
+    header: Record<string, string>;
 
     cookies: string;
 
