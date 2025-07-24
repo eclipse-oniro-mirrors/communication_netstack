@@ -161,8 +161,8 @@ void HttpRequestTest(const uint8_t *data, size_t size)
     uint32_t ret = OH_Http_SetHeaderValue(headers, key1, value1);
     ret = OH_Http_SetHeaderValue(headers, key, value2);
     if (ret == 0) {
-        OH_Http_Destroy(&request);
         OH_Http_DestroyHeaders(&headers);
+        OH_Http_Destroy(&request);
         return;
     }
     Http_HeaderValue *headValue = OH_Http_GetHeaderValue(headers, key);
@@ -179,9 +179,11 @@ void HttpRequestTest(const uint8_t *data, size_t size)
     eventsHandler.onHeadersReceive = Http_SampleOnHeaderReceiveCallback;
     ret = OH_Http_Request(request, Http_SampleResponseCallback, eventsHandler);
     if (ret != 0) {
+        OH_Http_DestroyHeaders(&headers);
         OH_Http_Destroy(&request);
         return;
     }
+    OH_Http_DestroyHeaders(&headers);
     OH_Http_Destroy(&request);
 }
 
