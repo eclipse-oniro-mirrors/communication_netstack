@@ -563,10 +563,6 @@ void OH_Http_Destroy(struct Http_Request **request)
         free((*request)->url);
         (*request)->url = nullptr;
     }
-    if ((*request)->options != nullptr) {
-        free((*request)->options);
-        (*request)->options = nullptr;
-    }
     free(*request);
     *request = nullptr;
 }
