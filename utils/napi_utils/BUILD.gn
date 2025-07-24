@@ -69,7 +69,13 @@ ohos_static_library("napi_utils") {
       global_parts_info.communication_netmanager_base && is_ohos &&
       is_standard_system && !is_arkui_x && product_name != "ohos-sdk") {
     defines = [ "HAS_NETMANAGER_BASE=1" ]
-    external_deps += [ "ffrt:libffrt" ]
+    external_deps += [ 
+      "ffrt:libffrt",
+      "samgr:samgr_proxy",
+      "bundle_framework:appexecfwk_base",
+      "bundle_framework:appexecfwk_core",
+      "safwk:system_ability_fwk",
+    ]
   } else {
     defines = [ "HAS_NETMANAGER_BASE=0" ]
   }

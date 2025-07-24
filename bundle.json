@@ -58,7 +58,9 @@
                 "node",
                 "jsoncpp",
                 "access_token",
-                "hiappevent"
+                "hiappevent",
+                "bundle_framework",
+                "safwk"
             ]
         },
         "build": {

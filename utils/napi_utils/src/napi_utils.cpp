@@ -33,6 +33,12 @@
 #include "netstack_log.h"
 #include "node_api.h"
 
+#if HAS_NETMANAGER_BASE
+#include "bundle_mgr_interface.h"
+#include "iservice_registry.h"
+#include "system_ability_definition.h"
+#endif
+
 namespace OHOS::NetStack::NapiUtils {
 static constexpr const char *GLOBAL_JSON = "JSON";
 
@@ -948,4 +954,49 @@ bool IsEnvValid(napi_env env)
     }
     return true;
 }
+
+bool IsDebugMode()
+{
+#if HAS_NETMANAGER_BASE
+    sptr<ISystemAbilityManager> systemAbilityManager =
+        SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (systemAbilityManager == nullptr) {
+        NETSTACK_LOGE("IsDebugMode failed to get system ability mgr.");
+        return false;
+    }
+
+    sptr<IRemoteObject> remoteObject = systemAbilityManager->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+    if (remoteObject == nullptr) {
+        NETSTACK_LOGE("IsDebugMode failed to get bundle manager proxy.");
+        return false;
+    }
+
+    sptr<AppExecFwk::IBundleMgr> bundleMgrProxy = iface_cast<AppExecFwk::IBundleMgr>(remoteObject);
+    if (bundleMgrProxy == nullptr) {
+        NETSTACK_LOGE("IsDebugMode failed to get bundle manager proxy.");
+        return false;
+    }
+
+    AppExecFwk::BundleInfo bundleInfo;
+    constexpr auto flag = static_cast<uint32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION);
+    const auto res = bundleMgrProxy->GetBundleInfoForSelf(flag, bundleInfo);
+    NETSTACK_LOGI("IsDebugMode GetBundleInfoForSelf res = %{public}d", res);
+
+    const auto appProvisionType = bundleInfo.applicationInfo.appProvisionType;
+    NETSTACK_LOGI("IsDebugMode appProvisionType = %{public}s", appProvisionType.c_str());
+    return (appProvisionType == "debug") ? true : false;
+#else
+    return true;
+#endif
+}
+
+std::string RemoveUrlParameters(const std::string& url)
+{
+    size_t questionMarkPos = url.find('?');
+    if (questionMarkPos == std::string::npos) {
+        return url;
+    }
+    return url.substr(0, questionMarkPos);
+}
+
 } // namespace OHOS::NetStack::NapiUtils
