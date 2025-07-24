@@ -712,7 +712,7 @@ static bool SocketRecvHandle(int socketId, std::pair<std::unique_ptr<char[]> &, 
         }
         return true;
     }
-    if (callback.GetEventManager && !callback.GetEventManager()->GetContextState()) {
+    if (callback.GetEventManager() && !callback.GetEventManager()->GetContextState()) {
         return false; // close fd 后 客户端socket read区被丢弃， 不走OnMessage处理
     }
     void *data = malloc(recvLen);
