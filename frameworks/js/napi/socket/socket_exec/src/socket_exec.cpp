@@ -712,7 +712,9 @@ static bool SocketRecvHandle(int socketId, std::pair<std::unique_ptr<char[]> &, 
         }
         return true;
     }
-
+    if (callback.GetEventManager && !callback.GetEventManager()->GetContextState()) {
+        return false; // close fd 后 客户端socket read区被丢弃， 不走OnMessage处理
+    }
     void *data = malloc(recvLen);
     if (data == nullptr) {
         callback.OnError(NO_MEMORY);
@@ -1262,6 +1264,7 @@ bool ExecClose(CloseContext *context)
         inst->Close();
     }
     
+    manager->SetContextState(false); // 加锁前先置close标志位，防止socket流发生close后仍在接收数据
     std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
     if (context->GetSocketFd() < 0) {
         NETSTACK_LOGE("sock %{public}d is previous closed", context->GetSocketFd());

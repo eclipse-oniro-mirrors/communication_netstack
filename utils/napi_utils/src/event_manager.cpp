@@ -358,6 +358,16 @@ bool EventManager::GetReuseAddr()
     return isReuseAddr_.load();
 }
 
+void EventManager::SetContextState(bool enable)
+{
+    isOpened_ = enable;
+}
+
+bool EventManager::GetContextState()
+{
+    return isOpened_;
+}
+
 std::shared_ptr<Socks5::Socks5Instance> EventManager::GetProxyData()
 {
     return proxyData_;

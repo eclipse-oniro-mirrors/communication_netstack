@@ -113,6 +113,10 @@ public:
 
     void SetReuseAddr(bool reuse);
 
+    void SetContextState(bool enable);
+
+    bool GetContextState();
+
     void SetWebSocketUserData(const std::shared_ptr<Websocket::UserData> &userData);
 
     std::shared_ptr<Websocket::UserData> GetWebSocketUserData();
