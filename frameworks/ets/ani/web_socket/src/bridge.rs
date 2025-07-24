@@ -13,6 +13,7 @@
 
 use std::collections::HashMap;
 
+use ani_rs::business_error::BusinessError;
 use serde::Deserialize;
 
 #[ani_rs::ani]
@@ -41,6 +42,7 @@ pub struct HttpProxy {
 #[derive(Deserialize)]
 pub enum ProxyConfiguration {
     S(String),
+    #[serde(rename = "L@ohos/net/connection/connection/HttpProxyInner;")]
     Proxy(HttpProxy),
 }
 
@@ -75,4 +77,12 @@ pub struct CloseResult {
 pub struct WebSocketCloseOptions {
     pub code: Option<i32>,
     pub reason: Option<String>,
+}
+
+pub const fn convert_to_business_error(code: i32) -> BusinessError {
+    match code {
+        1004 => BusinessError::new_static(2302001, "Websocket Parse url error."),
+        1020 => BusinessError::PERMISSION,
+        _ => BusinessError::new_static(code, "Unknown error"),
+    }
 }

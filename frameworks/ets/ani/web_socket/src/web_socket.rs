@@ -18,7 +18,7 @@ use ani_rs::{business_error::BusinessError, objects::AniRef, AniEnv};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    bridge::{self, Cleaner},
+    bridge::{self, convert_to_business_error, Cleaner},
     wrapper::WebSocket,
 };
 
@@ -73,7 +73,7 @@ pub(crate) fn connect_sync(
     web_socket
         .connect(&url, headers, ca_path, client_cert, protocol)
         .map(|_| true)
-        .map_err(|e| BusinessError::new(e, format!("Failed to connect")))
+        .map_err(|e| convert_to_business_error(e))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -93,7 +93,7 @@ pub(crate) fn send_sync(this: bridge::WebSocket, data: Data) -> Result<bool, Bus
     web_socket
         .send(&s)
         .map(|_| true)
-        .map_err(|e| BusinessError::new(e, format!("Failed to send data: {}", s)))
+        .map_err(|e| convert_to_business_error(e))
 }
 
 #[ani_rs::native]
@@ -113,5 +113,5 @@ pub(crate) fn close_sync(
     web_socket
         .close(code as u32, &reason)
         .map(|_| true)
-        .map_err(|e| BusinessError::new(e, format!("Failed to close: {}", reason)))
+        .map_err(|e| convert_to_business_error(e))
 }

@@ -17,7 +17,7 @@ use crate::error::HttpClientError;
 use crate::response::Response;
 use crate::task::RequestTask;
 use crate::wrapper;
-use crate::wrapper::ffi::{HttpClientRequest, NewHttpClientRequest, SetBody};
+use crate::wrapper::ffi::{HttpClientRequest, NewHttpClientRequest, SetBody, SetHttpProtocol};
 /// Builder for creating a Request.
 pub struct Request<C: RequestCallback + 'static> {
     inner: UniquePtr<HttpClientRequest>,
@@ -73,6 +73,18 @@ impl<C: RequestCallback> Request<C> {
         self
     }
 
+    /// Set a priority for the request.
+    pub fn priority(&mut self, priority: u32) -> &mut Self {
+        self.inner.pin_mut().SetPriority(priority);
+        self
+    }
+
+    /// Set a protocol for the request.
+    pub fn protocol(&mut self, protocol: i32) -> &mut Self {
+        SetHttpProtocol(self.inner.pin_mut(), protocol);
+        self
+    }
+
     /// Set a callback for the request.
     pub fn callback(&mut self, callback: C) -> &mut Self {
         self.callback = Some(callback);
@@ -95,9 +107,9 @@ pub trait RequestCallback {
     /// Called when the request is successful.
     fn on_success(&mut self, response: Response) {}
     /// Called when the request fails.
-    fn on_fail(&mut self, error: HttpClientError) {}
+    fn on_fail(&mut self, response: Response, error: HttpClientError) {}
     /// Called when the request is canceled.
-    fn on_cancel(&mut self) {}
+    fn on_cancel(&mut self, response: Response) {}
     /// Called when data is received.
     fn on_data_receive(&mut self, data: &[u8], task: RequestTask) {}
     /// Called when progress is made.

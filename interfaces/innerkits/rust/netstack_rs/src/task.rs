@@ -18,6 +18,7 @@ use std::sync::{Arc, Mutex};
 
 use cxx::SharedPtr;
 
+use crate::error::HttpClientError;
 use crate::request::RequestCallback;
 use crate::response::Response;
 use crate::wrapper::ffi::{HttpClientRequest, HttpClientTask, NewHttpClientTask, OnCallback};
@@ -100,6 +101,12 @@ impl RequestTask {
 
     pub fn headers(&mut self) -> HashMap<String, String> {
         self.response().headers()
+    }
+
+    pub fn get_error(&mut self) -> HttpClientError {
+        let task = self.inner.lock().unwrap().clone();
+        let client_error = Self::pin_mut(&task).GetError();
+        HttpClientError::from_ffi(&client_error)
     }
 
     pub(crate) fn set_callback(&mut self, callback: Box<dyn RequestCallback + 'static>) {

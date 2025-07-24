@@ -13,7 +13,7 @@
 
 use crate::wrapper::ffi;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct HttpClientError {
     code: HttpErrorCode,
     msg: String,
@@ -30,8 +30,8 @@ impl HttpClientError {
         Self { code, msg }
     }
 
-    pub fn code(&self) -> &HttpErrorCode {
-        &self.code
+    pub fn code(&self) -> HttpErrorCode {
+        self.code.clone()
     }
 
     pub fn msg(&self) -> &str {
@@ -39,7 +39,7 @@ impl HttpClientError {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq)]
+#[derive(Default, Clone, PartialEq, Eq, Debug)]
 #[repr(i32)]
 pub enum HttpErrorCode {
     HttpNoneErr,
