@@ -162,6 +162,7 @@ void HttpRequestTest(const uint8_t *data, size_t size)
     ret = OH_Http_SetHeaderValue(headers, key, value2);
     if (ret == 0) {
         OH_Http_DestroyHeaders(&headers);
+        free(request->options);
         OH_Http_Destroy(&request);
         return;
     }
@@ -180,10 +181,12 @@ void HttpRequestTest(const uint8_t *data, size_t size)
     ret = OH_Http_Request(request, Http_SampleResponseCallback, eventsHandler);
     if (ret != 0) {
         OH_Http_DestroyHeaders(&headers);
+        free(request->options);
         OH_Http_Destroy(&request);
         return;
     }
     OH_Http_DestroyHeaders(&headers);
+    free(request->options);
     OH_Http_Destroy(&request);
 }
 
