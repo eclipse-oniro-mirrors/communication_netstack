@@ -151,6 +151,7 @@ void HttpRequestTest(const uint8_t *data, size_t size)
     }
     Http_Headers *headers = OH_Http_CreateHeaders();
     if (headers == nullptr) {
+        free(request->options);
         OH_Http_Destroy(&request);
         return;
     }
