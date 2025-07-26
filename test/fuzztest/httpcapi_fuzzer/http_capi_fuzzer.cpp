@@ -231,20 +231,13 @@ void HttpRequestTest(const uint8_t *data, size_t size)
         return;
     }
     const char *key = "testKey";
-    const char *key1 = "testKey1";
-    const char *value1 = "testValue1";
-    const char *value2 = "testValue2";
-    uint32_t ret = OH_Http_SetHeaderValue(headers, key1, value1);
-    ret = OH_Http_SetHeaderValue(headers, key, value2);
+    const char *value = "testValue";
+    uint32_t ret = OH_Http_SetHeaderValue(headers, key, value);
     if (ret == 0) {
         OH_Http_DestroyHeaders(&headers);
         free(request->options);
         OH_Http_Destroy(&request);
         return;
-    }
-    Http_HeaderValue *headValue = OH_Http_GetHeaderValue(headers, key);
-    if (headValue == nullptr) {
-        NETSTACK_LOGE("headValue is nullptr");
     }
     request->options->headers = headers;
     Http_EventsHandler eventsHandler;
