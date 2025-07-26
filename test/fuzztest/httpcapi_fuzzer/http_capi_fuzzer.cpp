@@ -92,22 +92,17 @@ void CreateHeadersTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size < 1)) {
         return;
     }
-
+    SetGlobalFuzzData(data, size);
     std::string keyStr = GetStringFromData(STR_LEN);
     std::string key1Str = GetStringFromData(STR_LEN);
     std::string valueStr = GetStringFromData(STR_LEN);
     std::string value1Str = GetStringFromData(STR_LEN);
-
     Http_Headers *headers = OH_Http_CreateHeaders();
     if (headers == nullptr) {
         return;
     }
-    const char *key = keyStr.c_str();
-    const char *key1 = key1Str.c_str();
-    const char *value1 = valueStr.c_str();
-    const char *value2 = value1Str.c_str();
-    OH_Http_SetHeaderValue(headers, key1, value1);
-    OH_Http_SetHeaderValue(headers, key, value2);
+    OH_Http_SetHeaderValue(headers, keyStr.c_str(), valueStr.c_str());
+    OH_Http_SetHeaderValue(headers, key1Str.c_str(), value1Str.c_str());
     OH_Http_DestroyHeaders(&headers);
 }
 
@@ -116,23 +111,18 @@ void GetHeaderValueTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size < 1)) {
         return;
     }
-
+    SetGlobalFuzzData(data, size);
     std::string keyStr = GetStringFromData(STR_LEN);
     std::string key1Str = GetStringFromData(STR_LEN);
     std::string valueStr = GetStringFromData(STR_LEN);
     std::string value1Str = GetStringFromData(STR_LEN);
-
     Http_Headers *headers = OH_Http_CreateHeaders();
     if (headers == nullptr) {
         return;
     }
-    const char *key = keyStr.c_str();
-    const char *key1 = key1Str.c_str();
-    const char *value1 = valueStr.c_str();
-    const char *value2 = value1Str.c_str();
-    OH_Http_SetHeaderValue(headers, key1, value1);
-    OH_Http_SetHeaderValue(headers, key, value2);
-    OH_Http_GetHeaderValue(headers, key);
+    OH_Http_SetHeaderValue(headers, keyStr.c_str(), valueStr.c_str());
+    OH_Http_SetHeaderValue(headers, key1Str.c_str(), value1Str.c_str());
+    OH_Http_GetHeaderValue(headers, keyStr.c_str());
     OH_Http_DestroyHeaders(&headers);
 }
 
@@ -141,22 +131,17 @@ void GetHeaderEntriesTest(const uint8_t *data, size_t size)
     if ((data == nullptr) || (size < 1)) {
         return;
     }
-
+    SetGlobalFuzzData(data, size);
     std::string keyStr = GetStringFromData(STR_LEN);
     std::string key1Str = GetStringFromData(STR_LEN);
     std::string valueStr = GetStringFromData(STR_LEN);
     std::string value1Str = GetStringFromData(STR_LEN);
-
     Http_Headers *headers = OH_Http_CreateHeaders();
     if (headers == nullptr) {
         return;
     }
-    const char *key = keyStr.c_str();
-    const char *key1 = key1Str.c_str();
-    const char *value1 = valueStr.c_str();
-    const char *value2 = value1Str.c_str();
-    OH_Http_SetHeaderValue(headers, key1, value1);
-    OH_Http_SetHeaderValue(headers, key, value2);
+    OH_Http_SetHeaderValue(headers, keyStr.c_str(), valueStr.c_str());
+    OH_Http_SetHeaderValue(headers, key1Str.c_str(), value1Str.c_str());
     Http_HeaderEntry *entries = OH_Http_GetHeaderEntries(headers);
     OH_Http_DestroyHeaderEntries(&entries);
     OH_Http_DestroyHeaders(&headers);
