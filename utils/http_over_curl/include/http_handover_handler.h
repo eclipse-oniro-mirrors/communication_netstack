@@ -32,21 +32,19 @@
 #include "request_context.h"
 
 namespace OHOS::NetStack::HttpOverCurl {
-
 struct RequestInfo;
 typedef void *(*HTTP_HAND_OVER_INIT)(void *user, void (*HMS_NetworkBoost_HandoverEventCallback)(void *),
-    void (*HMS_NetworkBoost_HandoverTimerCallback)(void *, long));
+    void (*HMS_NetworkBoost_HandoverTimerCallback)(void *, long), const char* stackName);
 typedef int32_t (*HTTP_HAND_OVER_UNINIT)(void *handle);
 typedef void (*HTTP_HAND_OVER_QUERY)(void *handle, int32_t *status, int32_t *netId);
-typedef void (*HTTP_HAND_OVER_ADD)(void *handle, void *userp, int32_t type, int32_t isRead);
+typedef void (*HTTP_HAND_OVER_ADD)(void *handle, void *userp, int32_t type, int32_t readFlag);
 typedef void (*HTTP_HAND_OVER_DEL)(void *handle, void *userp, bool isSuccess);
 typedef int32_t (*HTTP_HAND_OVER_QUERY_REQUEST)(void *handle, void *userp, int32_t *handOverReason,
-    double *flowControlTime, int32_t *isRead);
+    double *flowControlTime, int32_t *readFlag);
 typedef void (*HTTP_HAND_OVER_REPORT_TIMEOUT)(void *handle);
 
-extern void HandoverCallback(void *user);
-extern void HandoverTimerCallback(void *user, long timeoutMs);
-extern bool IsNetworkErrorTypeCorrect(CURLcode result);
+void HandoverCallback(void *user);
+void HandoverTimerCallback(void *user, long timeoutMs);
 bool CheckSocketTime(void *user, curl_socket_t fd);
 curl_socket_t OpenSocket(void *user, curlsocktype purpose, struct curl_sockaddr *addr);
 int CloseSocketCallback(void *user, curl_socket_t fd);
@@ -54,12 +52,6 @@ int CloseSocketCallback(void *user, curl_socket_t fd);
 class HttpHandoverHandler {
 public:
     enum { INIT, START, CONTINUE, END, FATAL, TIMEOUT };
-    enum RequestType {
-        OLD,  // old request before network change
-        INCOMING,  // new request during network change
-        NETWORKERROR,  // old request of network error
-        UNDONE  // undone old request after network change
-    };
     explicit HttpHandoverHandler();
     ~HttpHandoverHandler();
 
@@ -77,20 +69,25 @@ public:
     bool Initialize();
     void SetCallback(RequestInfo *request);
     void SetHandoverInfo(RequestInfo *requestInfo);
-    void HandoverQuery(int32_t &status, int32_t &netId);
+    void HandoverQuery();
     bool CheckSocketOpentimeLessThanEndTime(curl_socket_t fd);
     void SetSocketOpenTime(curl_socket_t fd);
     void EraseFd(curl_socket_t fd);
     bool RetransRequest(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi, RequestInfo *request);
-    bool CheckRequestCanRetrans(RequestInfo *request, int32_t requestType);
+    bool CheckRequestCanRetrans(RequestInfo *request, int32_t requestType, CURLcode result);
     void UndoneRequestHandle(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi);
     int32_t IsRequestRead(CURL *easyHandle);
     int32_t IsRequestRead(CURL *easyHandle, time_t &recvtime, time_t &sendtime);
-    bool CheckRequestNetError(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi,
+    bool IsNetWorkErrorTypeCorret(CURLcode result);
+    bool ProcessRequestNetError(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi,
                               RequestInfo *requestInfo, CURLMsg *msg);
-    void AddRequest(void *userp, int32_t type, int32_t isRead);
-    void DelRequest(void *userp);
-    int32_t QueryRequest(void *userp, int32_t &handOverReason, double &flowControlTime, int32_t &isRead);
+    void AddRequest(RequestInfo *requestInfo, int32_t type);
+    void DelRequest(RequestInfo *requestInfo);
+    int32_t QueryRequest(void *userp, int32_t &handOverReason, double &flowControlTime, int32_t &readFlag);
+    int32_t GetStatus();
+    void SetStatus(int32_t status);
+    int32_t GetNetId();
+    void SetNetId(int32_t netId);
 private:
     void *netHandoverHandler_ = nullptr;
     void *httpHandoverManager_ = nullptr;
@@ -111,6 +108,8 @@ private:
     int endTime_ = 0;
     int timeoutTime_ = 0;
     int retrans_ = 0;
+    int32_t status_ = HttpHandoverHandler::INIT;
+    int32_t netId_ = 0;
 };
 
 }  // namespace OHOS::NetStack::HttpOverCurl

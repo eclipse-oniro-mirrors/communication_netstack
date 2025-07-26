@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# todo
 import("//build/ohos.gni")
 import("//build/test.gni")
 import("//foundation/communication/netstack/netstack_config.gni")
@@ -33,7 +34,7 @@ ohos_unittest("http_handover_handler_test") {
 
   branch_protector_ret = "pac_ret"
 
-  module_out_path = "netstack/http_handover_handler_test"
+  module_out_path = "netstack/netstack/http_handover_handler_test"
 
   include_dirs = [
     "$NETSTACK_DIR/frameworks/js/napi/http/async_context/include",
@@ -51,7 +52,10 @@ ohos_unittest("http_handover_handler_test") {
   ]
   include_dirs += utils_include
 
-  defines = [ "HTTP_HANDOVER_FEATURE" ]
+  defines = [
+    "HTTP_HANDOVER_FEATURE",
+    "HTTP_STACK_NAME=\"test\"",
+  ]
 
   deps = [
     "$NETSTACK_DIR/frameworks/js/napi/http:http",

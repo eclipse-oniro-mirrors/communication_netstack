@@ -35,6 +35,9 @@
 #include "netsys_client.h"
 #endif
 #include "netstack_hisysevent.h"
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_handover_info.h"
+#endif
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data)                                                 \
     do {                                                                                                 \
@@ -797,6 +800,9 @@ void HttpClientTask::DumpHttpPerformance()
     curl_off_t size = GetSizeFromCurl(curlHandle_);
     char *ip = nullptr;
     curl_easy_getinfo(curlHandle_, CURLINFO_PRIMARY_IP, &ip);
+#ifdef HTTP_HANDOVER_FEATURE
+    std::string handoverInfo = GetRequestHandoverInfo();
+#endif
     NETSTACK_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
@@ -807,6 +813,9 @@ void HttpClientTask::DumpHttpPerformance()
         ", firstRecv:%{public}.3f"
         ", total:%{public}.3f"
         ", redirect:%{public}.3f"
+#ifdef HTTP_HANDOVER_FEATURE
+        ", %{public}s"
+#endif
         ", errCode:%{public}d"
         ", RespCode:%{public}s"
         ", httpVer:%{public}s"
@@ -816,6 +825,9 @@ void HttpClientTask::DumpHttpPerformance()
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
+#ifdef HTTP_HANDOVER_FEATURE
+        handoverInfo.c_str(),
+#endif
         error_.GetErrorCode(), std::to_string(responseCode).c_str(), std::to_string(httpVer).c_str(),
         request_.GetMethod().c_str(), osErr);
 
@@ -850,6 +862,9 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
         if (onCanceled_) {
             onCanceled_(request_, response_);
         }
+#ifdef HTTP_HANDOVER_FEATURE
+        SetSuccess(false);
+#endif
         return;
     }
 
@@ -857,6 +872,9 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
         if (onFailed_) {
             onFailed_(request_, response_, error_);
         }
+#ifdef HTTP_HANDOVER_FEATURE
+        SetSuccess(false);
+#endif
         return;
     }
 
@@ -867,8 +885,14 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
         if (onSucceeded_) {
             onSucceeded_(request_, response_);
         }
+#ifdef HTTP_HANDOVER_FEATURE
+        SetSuccess(true);
+#endif
     } else if (onFailed_) {
         onFailed_(request_, response_, error_);
+#ifdef HTTP_HANDOVER_FEATURE
+        SetSuccess(false);
+#endif
     }
 #if HAS_NETMANAGER_BASE
     HttpClientNetworkMessage httpClientNetworkMessage(std::to_string(GetTaskId()), request_, response_, curlHandle_);
@@ -894,6 +918,54 @@ bool HttpClientTask::SetDnsCacheOption(CURL *handle)
 #endif
     return true;
 }
+
+#ifdef HTTP_HANDOVER_FEATURE
+void HttpClientTask::SetSuccess(bool isSuccess)
+{
+    isSuccess_ = isSuccess;
+}
+
+void HttpClientTask::SetRequestHandoverInfo(
+    int32_t handoverNum, int32_t handoverReason, double flowControlTime, int32_t readFlag)
+{
+    handoverNum_ = handoverNum;
+    handoverReason_ = handoverReason;
+    flowControlTime_ = flowControlTime;
+    readFlag_ = readFlag;
+}
+ 
+std::string HttpClientTask::GetRequestHandoverInfo()
+{
+    std::string requestHandoverInfo;
+    if (handoverNum_ <= 0) {
+        requestHandoverInfo = "no handover";
+        return requestHandoverInfo;
+    }
+    requestHandoverInfo += "HandoverNum:";
+    requestHandoverInfo += std::to_string(handoverNum_);
+    requestHandoverInfo += ", handoverReason:";
+    switch (handoverReason_) {
+        case HandoverRequestType::INCOMING:
+            requestHandoverInfo += "flowControl, flowControlTime:";
+            break;
+        case HandoverRequestType::NETWORKERROR:
+            requestHandoverInfo += "netErr, retransTime:";
+            break;
+        case HandoverRequestType::UNDONE:
+            requestHandoverInfo += "undone, retransTime:";
+            break;
+        default:
+            requestHandoverInfo += "unkown type";
+            break;
+    }
+    requestHandoverInfo += std::to_string(flowControlTime_);
+    requestHandoverInfo += ", isRead:";
+    requestHandoverInfo += readFlag_ == 1 ? "true" : (readFlag_ == 0 ? "false" : "error");
+    requestHandoverInfo += ", isStream:";
+    requestHandoverInfo += onDataReceive_ ? "true" : "false";
+    return requestHandoverInfo;
+}
+#endif
 } // namespace HttpClient
 } // namespace NetStack
 } // namespace OHOS

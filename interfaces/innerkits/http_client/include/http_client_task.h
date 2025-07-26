@@ -357,6 +357,34 @@ private:
      */
     bool SetIpResolve(CURL *handle);
 
+#ifdef HTTP_HANDOVER_FEATURE
+    /**
+     * Get the flag which indicating whether the request is success.
+     * @return Return flag indicating the request whether is success.
+     */
+    bool IsSuccess()
+    {
+        return isSuccess_;
+    }
+
+    /**
+     * Set the request whether is success.
+     */
+    void SetSuccess(bool isSuccess);
+
+    /**
+     * Get network switch information.
+     * @return Return String format for obtaining network sswitching information.
+     */
+    std::string GetRequestHandoverInfo();
+
+    /**
+     * Set the request information and print it to the log.
+     */
+    void SetRequestHandoverInfo(int32_t handoverNum, int32_t handoverReason, double flowControlTime,
+        int32_t readFlag);
+#endif
+
     /**
     * Gets the start and end download position for the HTTP request.
     * @return Returns the string of range. If the position is invallid, the string is empty.
@@ -377,6 +405,13 @@ private:
     HttpClientRequest request_;
     HttpClientResponse response_;
     HttpClientError error_;
+#ifdef HTTP_HANDOVER_FEATURE
+    bool isSuccess_ = false;
+    int32_t handoverNum_ = -1;
+    int32_t handoverReason_ = -1;
+    double flowControlTime_ = 0.0;
+    int32_t readFlag_ = -1;
+#endif
 
     TaskType type_;
     TaskStatus status_;

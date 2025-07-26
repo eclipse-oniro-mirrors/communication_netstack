@@ -68,6 +68,9 @@
 #include "secure_char.h"
 #include "trace_events.h"
 #include "hi_app_event_report.h"
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_handover_info.h"
+#endif
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
@@ -166,6 +169,56 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
     if (NapiUtils::GetValueType(env, func) == napi_function) {
         (void)NapiUtils::CallFunction(env, undefined, func, EVENT_PARAM_TWO, argv);
     }
+}
+
+void HttpExec::SetRequestInfoCallbacks(HttpOverCurl::TransferCallbacks &callbacks)
+{
+    static auto startedCallback = +[](CURL *easyHandle, void *opaqueData) {
+        char *url = nullptr;
+        curl_easy_getinfo(easyHandle, CURLINFO_EFFECTIVE_URL, &url);
+        auto context = static_cast<RequestContext *>(opaqueData);
+        context->GetTrace().Tracepoint(TraceEvents::QUEUE);
+    };
+
+    static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {
+        auto context = static_cast<RequestContext *>(opaqueData);
+        context->GetTrace().Tracepoint(TraceEvents::NAPI_QUEUE);
+        HttpExec::HandleCurlData(curlMessage, context);
+    };
+    callbacks.startedCallback = startedCallback;
+    callbacks.doneCallback = responseCallback;
+
+#ifdef HTTP_HANDOVER_FEATURE
+    static auto handoverInfoCallback = +[](void *opaqueData) {
+        HttpHandoverStackInfo httpHandoverStackInfo;
+        auto context = static_cast<RequestContext *>(opaqueData);
+        if (context == nullptr) {
+            NETSTACK_LOGE("handoverInfoCallback context is nullptr, error!");
+            return httpHandoverStackInfo;
+        }
+        httpHandoverStackInfo.taskId = context->GetTaskId();
+        httpHandoverStackInfo.readTimeout = context->options.GetReadTimeout();
+        httpHandoverStackInfo.connectTimeout = context->options.GetConnectTimeout();
+        httpHandoverStackInfo.method = context->options.GetMethod();
+        httpHandoverStackInfo.requestUrl = context->options.GetUrl();
+        httpHandoverStackInfo.isInStream = context->IsRequestInStream();
+        httpHandoverStackInfo.isSuccess = (context->IsParseOK() && context->IsExecOK());
+        return httpHandoverStackInfo;
+    };
+    static auto setHandoverInfoCallback = +[](HttpHandoverInfo httpHandoverInfo, void *opaqueData) {
+        auto context = static_cast<RequestContext *>(opaqueData);
+        if (context == nullptr) {
+            NETSTACK_LOGE("setHandoverInfoCallback context is nullptr, error!");
+            return;
+        }
+        context->SetRequestHandoverCallback(httpHandoverInfo.handoverNum,
+            httpHandoverInfo.handoverReason,
+            httpHandoverInfo.flowControlTime,
+            httpHandoverInfo.readFlag);
+    };
+    callbacks.handoverInfoCallback = handoverInfoCallback;
+    callbacks.setHandoverInfoCallback = setHandoverInfoCallback;
+#endif
 }
 
 void HttpExec::AsyncWorkRequestCallback(napi_env env, napi_status status, void *data)
@@ -291,21 +344,9 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     SetServerSSLCertOption(handle, context);
 
     static HttpOverCurl::EpollRequestHandler requestHandler;
-
-    static auto startedCallback = +[](CURL *easyHandle, void *opaqueData) {
-        char *url = nullptr;
-        curl_easy_getinfo(easyHandle, CURLINFO_EFFECTIVE_URL, &url);
-        auto context = static_cast<RequestContext *>(opaqueData);
-        context->GetTrace().Tracepoint(TraceEvents::QUEUE);
-    };
-
-    static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {
-        auto context = static_cast<RequestContext *>(opaqueData);
-        context->GetTrace().Tracepoint(TraceEvents::NAPI_QUEUE);
-        HttpExec::HandleCurlData(curlMessage, context);
-    };
-
-    requestHandler.Process(handle, startedCallback, responseCallback, context);
+    HttpOverCurl::TransferCallbacks callbacks;
+    SetRequestInfoCallbacks(callbacks);
+    requestHandler.Process(handle, callbacks, context);
     return true;
 #else
     std::thread([context, handle] {
@@ -497,12 +538,18 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
         ", dns:%{public}.3f, connect:%{public}.3f, tls:%{public}.3f, firstSend:%{public}.3f"
         ", firstRecv:%{public}.3f, total:%{public}.3f, redirect:%{public}.3f"
+#ifdef HTTP_HANDOVER_FEATURE
+        ", %{public}s"
+#endif
         ", errCode:%{public}d, RespCode:%{public}s, httpVer:%{public}s, method:%{public}s, osErr:%{public}ld"
         ", saddr:%{public}s, sport:%{public}ld, daddr:%{public}s, dport:%{public}ld",
         context->GetTaskId(), size, dnsTime, connectTime == 0 ? 0 : connectTime - dnsTime,
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
+#ifdef HTTP_HANDOVER_FEATURE
+        context->GetRequestHandoverInfo().c_str(),
+#endif
         errCode, std::to_string(responseCode).c_str(),
         std::to_string(httpVer).c_str(), context->options.GetMethod().c_str(), osErr,
         anomSaddr.c_str(), sport, anomDaddr.c_str(), dport);

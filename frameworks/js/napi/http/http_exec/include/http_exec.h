@@ -32,6 +32,9 @@
 #include "curl/curl.h"
 #include "napi/native_api.h"
 #include "request_context.h"
+#ifdef HTTP_HANDOVER_FEATURE
+#include "request_info.h"
+#endif
 
 namespace OHOS::NetStack::Http {
 class HttpResponseCacheExec final {
@@ -107,6 +110,8 @@ private:
     static bool SetTCPOption(CURL *curl, RequestContext *context);
 
     static bool SetCertPinnerOption(CURL *curl, RequestContext *context);
+
+    static void SetRequestInfoCallbacks(HttpOverCurl::TransferCallbacks &callbacks);
 
     static size_t OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData);
 
