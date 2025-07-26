@@ -87,6 +87,66 @@ void CreateRequestTest(const uint8_t *data, size_t size)
     OH_Http_Destroy(&request);
 }
 
+void CreateHeadersTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    std::string keyStr = GetStringFromData(STR_LEN);
+    std::string key1Str = GetStringFromData(STR_LEN);
+    std::string valueStr = GetStringFromData(STR_LEN);
+    std::string value1Str = GetStringFromData(STR_LEN);
+    Http_Headers *headers = OH_Http_CreateHeaders();
+    if (headers == nullptr) {
+        return;
+    }
+    OH_Http_SetHeaderValue(headers, keyStr.c_str(), valueStr.c_str());
+    OH_Http_SetHeaderValue(headers, key1Str.c_str(), value1Str.c_str());
+    OH_Http_DestroyHeaders(&headers);
+}
+
+void GetHeaderValueTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    std::string keyStr = GetStringFromData(STR_LEN);
+    std::string key1Str = GetStringFromData(STR_LEN);
+    std::string valueStr = GetStringFromData(STR_LEN);
+    std::string value1Str = GetStringFromData(STR_LEN);
+    Http_Headers *headers = OH_Http_CreateHeaders();
+    if (headers == nullptr) {
+        return;
+    }
+    OH_Http_SetHeaderValue(headers, keyStr.c_str(), valueStr.c_str());
+    OH_Http_SetHeaderValue(headers, key1Str.c_str(), value1Str.c_str());
+    OH_Http_GetHeaderValue(headers, keyStr.c_str());
+    OH_Http_DestroyHeaders(&headers);
+}
+
+void GetHeaderEntriesTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+    SetGlobalFuzzData(data, size);
+    std::string keyStr = GetStringFromData(STR_LEN);
+    std::string key1Str = GetStringFromData(STR_LEN);
+    std::string valueStr = GetStringFromData(STR_LEN);
+    std::string value1Str = GetStringFromData(STR_LEN);
+    Http_Headers *headers = OH_Http_CreateHeaders();
+    if (headers == nullptr) {
+        return;
+    }
+    OH_Http_SetHeaderValue(headers, keyStr.c_str(), valueStr.c_str());
+    OH_Http_SetHeaderValue(headers, key1Str.c_str(), value1Str.c_str());
+    Http_HeaderEntry *entries = OH_Http_GetHeaderEntries(headers);
+    OH_Http_DestroyHeaderEntries(&entries);
+    OH_Http_DestroyHeaders(&headers);
+}
+
 void Http_SampleResponseCallback(Http_Response *response, uint32_t errCode) {
     if (response == nullptr) {
         return;
@@ -151,23 +211,18 @@ void HttpRequestTest(const uint8_t *data, size_t size)
     }
     Http_Headers *headers = OH_Http_CreateHeaders();
     if (headers == nullptr) {
+        free(request->options);
         OH_Http_Destroy(&request);
         return;
     }
     const char *key = "testKey";
-    const char *key1 = "testKey1";
-    const char *value1 = "testValue1";
-    const char *value2 = "testValue2";
-    uint32_t ret = OH_Http_SetHeaderValue(headers, key1, value1);
-    ret = OH_Http_SetHeaderValue(headers, key, value2);
+    const char *value = "testValue";
+    uint32_t ret = OH_Http_SetHeaderValue(headers, key, value);
     if (ret == 0) {
-        OH_Http_Destroy(&request);
         OH_Http_DestroyHeaders(&headers);
+        free(request->options);
+        OH_Http_Destroy(&request);
         return;
-    }
-    Http_HeaderValue *headValue = OH_Http_GetHeaderValue(headers, key);
-    if (headValue == nullptr) {
-        NETSTACK_LOGE("headValue is nullptr");
     }
     request->options->headers = headers;
     Http_EventsHandler eventsHandler;
@@ -179,9 +234,13 @@ void HttpRequestTest(const uint8_t *data, size_t size)
     eventsHandler.onHeadersReceive = Http_SampleOnHeaderReceiveCallback;
     ret = OH_Http_Request(request, Http_SampleResponseCallback, eventsHandler);
     if (ret != 0) {
+        OH_Http_DestroyHeaders(&headers);
+        free(request->options);
         OH_Http_Destroy(&request);
         return;
     }
+    OH_Http_DestroyHeaders(&headers);
+    free(request->options);
     OH_Http_Destroy(&request);
 }
 
@@ -194,6 +253,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     OHOS::NetStack::HttpClient::CreateRequestTest(data, size);
+    OHOS::NetStack::HttpClient::CreateHeadersTest(data, size);
+    OHOS::NetStack::HttpClient::GetHeaderValueTest(data, size);
+    OHOS::NetStack::HttpClient::GetHeaderEntriesTest(data, size);
     OHOS::NetStack::HttpClient::HttpRequestTest(data, size);
     return 0;
 }
