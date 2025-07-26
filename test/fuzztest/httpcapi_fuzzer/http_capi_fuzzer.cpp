@@ -87,6 +87,81 @@ void CreateRequestTest(const uint8_t *data, size_t size)
     OH_Http_Destroy(&request);
 }
 
+void CreateHeadersTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+
+    std::string keyStr = GetStringFromData(STR_LEN);
+    std::string key1Str = GetStringFromData(STR_LEN);
+    std::string valueStr = GetStringFromData(STR_LEN);
+    std::string value1Str = GetStringFromData(STR_LEN);
+
+    Http_Headers *headers = OH_Http_CreateHeaders();
+    if (headers == nullptr) {
+        return;
+    }
+    const char *key = keyStr.c_str();
+    const char *key1 = key1Str.c_str();
+    const char *value1 = valueStr.c_str();
+    const char *value2 = value1Str.c_str();
+    OH_Http_SetHeaderValue(headers, key1, value1);
+    OH_Http_SetHeaderValue(headers, key, value2);
+    OH_Http_DestroyHeaders(&headers);
+}
+
+void GetHeaderValueTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+
+    std::string keyStr = GetStringFromData(STR_LEN);
+    std::string key1Str = GetStringFromData(STR_LEN);
+    std::string valueStr = GetStringFromData(STR_LEN);
+    std::string value1Str = GetStringFromData(STR_LEN);
+
+    Http_Headers *headers = OH_Http_CreateHeaders();
+    if (headers == nullptr) {
+        return;
+    }
+    const char *key = keyStr.c_str();
+    const char *key1 = key1Str.c_str();
+    const char *value1 = valueStr.c_str();
+    const char *value2 = value1Str.c_str();
+    OH_Http_SetHeaderValue(headers, key1, value1);
+    OH_Http_SetHeaderValue(headers, key, value2);
+    OH_Http_GetHeaderValue(headers, key);
+    OH_Http_DestroyHeaders(&headers);
+}
+
+void GetHeaderEntriesTest(const uint8_t *data, size_t size)
+{
+    if ((data == nullptr) || (size < 1)) {
+        return;
+    }
+
+    std::string keyStr = GetStringFromData(STR_LEN);
+    std::string key1Str = GetStringFromData(STR_LEN);
+    std::string valueStr = GetStringFromData(STR_LEN);
+    std::string value1Str = GetStringFromData(STR_LEN);
+
+    Http_Headers *headers = OH_Http_CreateHeaders();
+    if (headers == nullptr) {
+        return;
+    }
+    const char *key = keyStr.c_str();
+    const char *key1 = key1Str.c_str();
+    const char *value1 = valueStr.c_str();
+    const char *value2 = value1Str.c_str();
+    OH_Http_SetHeaderValue(headers, key1, value1);
+    OH_Http_SetHeaderValue(headers, key, value2);
+    Http_HeaderEntry *entries = OH_Http_GetHeaderEntries(headers);
+    OH_Http_DestroyHeaderEntries(&entries);
+    OH_Http_DestroyHeaders(&headers);
+}
+
 void Http_SampleResponseCallback(Http_Response *response, uint32_t errCode) {
     if (response == nullptr) {
         return;
@@ -200,6 +275,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     OHOS::NetStack::HttpClient::CreateRequestTest(data, size);
+    OHOS::NetStack::HttpClient::CreateHeadersTest(data, size);
+    OHOS::NetStack::HttpClient::GetHeaderValueTest(data, size);
+    OHOS::NetStack::HttpClient::GetHeaderEntriesTest(data, size);
     OHOS::NetStack::HttpClient::HttpRequestTest(data, size);
     return 0;
 }
