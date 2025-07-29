@@ -230,6 +230,9 @@ private:
     static StaticVariable staticVariable_;
 #endif
 };
+ 
+bool IsDebugMode();
+std::string RemoveUrlParameters(const std::string& url);
 } // namespace OHOS::NetStack::Http
 
 #endif /* COMMUNICATIONNETSTACK_HTTP_REQUEST_EXEC_H */

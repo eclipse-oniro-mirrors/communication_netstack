@@ -182,10 +182,6 @@ uint64_t CreateUvHandlerQueue(napi_env env);
 void HookForEnvCleanup(void *data);
 void SetEnvValid(napi_env env);
 bool IsEnvValid(napi_env env);
- 
-bool IsDebugMode();
-
-std::string RemoveUrlParameters(const std::string& url);
 } // namespace OHOS::NetStack::NapiUtils
 
 #endif /* COMMUNICATIONNETSTACK_NETSTACK_NAPI_UTILS_H */

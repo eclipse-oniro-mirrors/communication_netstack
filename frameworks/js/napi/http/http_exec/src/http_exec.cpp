@@ -69,6 +69,12 @@
 #include "trace_events.h"
 #include "hi_app_event_report.h"
 
+#if HAS_NETMANAGER_BASE
+#include "bundle_mgr_interface.h"
+#include "iservice_registry.h"
+#include "system_ability_definition.h"
+#endif
+
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
         CURLcode result = curl_easy_setopt(handle, opt, data);                                           \
@@ -280,12 +286,12 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 
 #if HAS_NETMANAGER_BASE
     std::stringstream name;
-    auto isDebugMode = NapiUtils::IsDebugMode();
+    auto isDebugMode = IsDebugMode();
     if (context == nullptr) {
         NETSTACK_LOGE("context nullptr");
         return false;
     }
-    auto urlWithoutParam = NapiUtils::RemoveUrlParameters(context->options.GetUrl());
+    auto urlWithoutParam = RemoveUrlParameters(context->options.GetUrl());
     name << HTTP_REQ_TRACE_NAME << "_" << std::this_thread::get_id() << (isDebugMode ? ("_" + urlWithoutParam) : "");
     SetTraceOptions(handle, context);
     SetServerSSLCertOption(handle, context);
@@ -2014,5 +2020,49 @@ bool HttpExec::SetIpResolve(CURL *curl, RequestContext *context)
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6, context);
     }
     return true;
+}
+
+bool IsDebugMode()
+{
+#if HAS_NETMANAGER_BASE
+    sptr<ISystemAbilityManager> systemAbilityManager =
+        SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (systemAbilityManager == nullptr) {
+        NETSTACK_LOGE("IsDebugMode failed to get system ability mgr.");
+        return false;
+    }
+
+    sptr<IRemoteObject> remoteObject = systemAbilityManager->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+    if (remoteObject == nullptr) {
+        NETSTACK_LOGE("IsDebugMode failed to get bundle manager proxy.");
+        return false;
+    }
+
+    sptr<AppExecFwk::IBundleMgr> bundleMgrProxy = iface_cast<AppExecFwk::IBundleMgr>(remoteObject);
+    if (bundleMgrProxy == nullptr) {
+        NETSTACK_LOGE("IsDebugMode failed to get bundle manager proxy.");
+        return false;
+    }
+
+    AppExecFwk::BundleInfo bundleInfo;
+    constexpr auto flag = static_cast<uint32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION);
+    const auto res = bundleMgrProxy->GetBundleInfoForSelf(flag, bundleInfo);
+    NETSTACK_LOGI("IsDebugMode GetBundleInfoForSelf res = %{public}d", res);
+
+    const auto appProvisionType = bundleInfo.applicationInfo.appProvisionType;
+    NETSTACK_LOGI("IsDebugMode appProvisionType = %{public}s", appProvisionType.c_str());
+    return (appProvisionType == "debug") ? true : false;
+#else
+    return true;
+#endif
+}
+
+std::string RemoveUrlParameters(const std::string& url)
+{
+    size_t questionMarkPos = url.find('?');
+    if (questionMarkPos == std::string::npos) {
+        return url;
+    }
+    return url.substr(0, questionMarkPos);
 }
 } // namespace OHOS::NetStack::Http
