@@ -165,7 +165,7 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestRetransRequest, TestSiz
     RequestInfo *requestInfo = new RequestInfo();
     requestInfo->easyHandle = handle;
 
-    EXPECT_TRUE(!netHandoverHandler->RetransRequest(ongoingRequests, multi, requestInfo));
+    EXPECT_TRUE(netHandoverHandler->RetransRequest(ongoingRequests, multi, requestInfo));
     delete requestInfo;
 }
 
