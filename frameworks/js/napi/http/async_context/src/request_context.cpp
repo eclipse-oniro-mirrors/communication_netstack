@@ -1054,7 +1054,6 @@ void RequestContext::SetRequestHandoverInfo(int32_t handoverNum, int32_t handove
     requestHandoverInfo_.handoverReason = handoverReason;
     requestHandoverInfo_.flowControlTime = flowControlTime;
     requestHandoverInfo_.isRead = isRead;
-    requestHandoverInfo_.isInQueue = isInQueue;
 }
 
 std::string RequestContext::GetRequestHandoverInfo()
