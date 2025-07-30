@@ -32,16 +32,15 @@
 #include "request_context.h"
 
 namespace OHOS::NetStack::HttpOverCurl {
-
 struct RequestInfo;
 typedef void *(*HTTP_HAND_OVER_INIT)(void *user, void (*HMS_NetworkBoost_HandoverEventCallback)(void *),
     void (*HMS_NetworkBoost_HandoverTimerCallback)(void *, long), const char* stackName);
 typedef int32_t (*HTTP_HAND_OVER_UNINIT)(void *handle);
 typedef void (*HTTP_HAND_OVER_QUERY)(void *handle, int32_t *status, int32_t *netId);
-typedef void (*HTTP_HAND_OVER_ADD)(void *handle, void *userp, int32_t type, int32_t isRead, int32_t isInQueue);
+typedef void (*HTTP_HAND_OVER_ADD)(void *handle, void *userp, int32_t type, int32_t isRead);
 typedef void (*HTTP_HAND_OVER_DEL)(void *handle, void *userp, bool isSuccess);
 typedef int32_t (*HTTP_HAND_OVER_QUERY_REQUEST)(void *handle, void *userp, int32_t *handOverReason,
-    double *flowControlTime, int32_t *isRead, int32_t *isInQueue);
+    double *flowControlTime, int32_t *isRead);
 typedef void (*HTTP_HAND_OVER_REPORT_TIMEOUT)(void *handle);
 
 void HandoverCallback(void *user);
@@ -83,15 +82,13 @@ public:
     bool RetransRequest(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi, RequestInfo *request);
     bool CheckRequestCanRetrans(RequestInfo *request, int32_t requestType, CURLcode result);
     void UndoneRequestHandle(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi);
-    int32_t IsRequestInQueue(CURL *easyHandle);
     int32_t IsRequestRead(CURL *easyHandle);
     int32_t IsRequestRead(CURL *easyHandle, time_t &recvtime, time_t &sendtime);
     bool ProcessRequestNetError(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi,
                               RequestInfo *requestInfo, CURLMsg *msg);
     void AddRequest(RequestInfo *requestInfo, int32_t type);
     void DelRequest(void *userp);
-    int32_t QueryRequest(void *userp, int32_t &handOverReason, double &flowControlTime,
-        int32_t &isRead, int32_t &isInQueue);
+    int32_t QueryRequest(void *userp, int32_t &handOverReason, double &flowControlTime, int32_t &isRead);
 private:
     void *netHandoverHandler_ = nullptr;
     void *httpHandoverManager_ = nullptr;
