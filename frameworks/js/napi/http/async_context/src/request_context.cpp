@@ -1048,7 +1048,7 @@ std::string RequestContext::GetPinnedPubkey() const
 
 #ifdef HTTP_HANDOVER_FEATURE
 void RequestContext::SetRequestHandoverInfo(int32_t handoverNum, int32_t handoverReason, double flowControlTime,
-    int32_t isRead, int32_t isInQueue)
+    int32_t isRead)
 {
     requestHandoverInfo_.handoverNum = handoverNum;
     requestHandoverInfo_.handoverReason = handoverReason;
@@ -1065,7 +1065,6 @@ std::string RequestContext::GetRequestHandoverInfo()
         return requestHandoverInfo;
     }
     int32_t isRead = requestHandoverInfo_.isRead;
-    int32_t isInQueue = requestHandoverInfo_.isInQueue;
     requestHandoverInfo += "HandoverNum:";
     requestHandoverInfo += std::to_string(requestHandoverInfo_.handoverNum);
     requestHandoverInfo += ", handoverReason:";
@@ -1087,8 +1086,6 @@ std::string RequestContext::GetRequestHandoverInfo()
     requestHandoverInfo += isRead == 1 ? "true" : (isRead == 0 ? "false" : "error");
     requestHandoverInfo += ", isStream:";
     requestHandoverInfo += this->IsRequestInStream() ? "true" : "false";
-    requestHandoverInfo += ", isInQueue:";
-    requestHandoverInfo += isInQueue == 1 ? "true" : (isInQueue == 0 ? "false" : "error");
     return requestHandoverInfo;
 }
 #endif
