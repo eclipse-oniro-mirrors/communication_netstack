@@ -15,6 +15,7 @@
  
 #include "http_utils.h"
 #include "netstack_log.h"
+#include "securec.h"
 
 #if HAS_NETMANAGER_BASE
 #include "bundle_mgr_interface.h"
