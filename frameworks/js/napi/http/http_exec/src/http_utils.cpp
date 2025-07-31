@@ -14,13 +14,12 @@
  */
  
 #include "http_utils.h"
-#include "netstack_log.h"
-#include "securec.h"
 
 #if HAS_NETMANAGER_BASE
 #include "bundle_mgr_interface.h"
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
+#include "netstack_log.h"
 #endif
 
 namespace OHOS::NetStack::HttpUtils {
