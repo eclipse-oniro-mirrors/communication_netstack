@@ -12,8 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef COMMUNICATIONNETSTACK_HTTP_UTILS_H
+#define COMMUNICATIONNETSTACK_HTTP_UTILS_H
 
-namespace OHOS::NetStack::HttpUtils{
+namespace OHOS::NetStack::HttpUtils {
     bool IsDebugMode();
     std::string RemoveUrlParameters(const std::string& url);
-}// namespace OHOS::NetStack::HttpUtils
+} // namespace OHOS::NetStack::HttpUtils
+
+#endif /* COMMUNICATIONNETSTACK_HTTP_UTILS_H */
