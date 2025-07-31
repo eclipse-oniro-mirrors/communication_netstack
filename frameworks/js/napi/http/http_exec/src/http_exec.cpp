@@ -69,9 +69,7 @@
 #include "trace_events.h"
 #include "hi_app_event_report.h"
 
-#if HAS_NETMANAGER_BASE
 #include "http_utils.h"
-#endif
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
