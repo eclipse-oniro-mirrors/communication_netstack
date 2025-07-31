@@ -15,6 +15,8 @@
 #ifndef COMMUNICATIONNETSTACK_HTTP_UTILS_H
 #define COMMUNICATIONNETSTACK_HTTP_UTILS_H
 
+#include <string>
+
 namespace OHOS::NetStack::HttpUtils {
     bool IsDebugMode();
     std::string RemoveUrlParameters(const std::string& url);
