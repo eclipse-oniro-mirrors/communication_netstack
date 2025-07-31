@@ -21,8 +21,7 @@
 #include "system_ability_definition.h"
 #endif
 
-namespace OHOS::NetStack::HttpUtils{
-
+namespace OHOS::NetStack::HttpUtils {
 bool IsDebugMode()
 {
 #if HAS_NETMANAGER_BASE
@@ -66,4 +65,4 @@ std::string RemoveUrlParameters(const std::string& url)
     }
     return url.substr(0, questionMarkPos);
 }
-}// namespace OHOS::NetStack::HttpUtils
+} // namespace OHOS::NetStack::HttpUtils
