@@ -1048,7 +1048,7 @@ std::string RequestContext::GetPinnedPubkey() const
 
 #ifdef HTTP_HANDOVER_FEATURE
 void RequestContext::SetRequestHandoverInfo(int32_t handoverNum, int32_t handoverReason, double flowControlTime,
-    bool isRead)
+    int32_t isRead)
 {
     requestHandoverInfo_.handoverNum = handoverNum;
     requestHandoverInfo_.handoverReason = handoverReason;
@@ -1063,7 +1063,7 @@ std::string RequestContext::GetRequestHandoverInfo()
         requestHandoverInfo = "no handover";
         return requestHandoverInfo;
     }
-    auto isRead = requestHandoverInfo_.isRead;
+    int32_t isRead = requestHandoverInfo_.isRead;
     requestHandoverInfo += "HandoverNum:";
     requestHandoverInfo += std::to_string(requestHandoverInfo_.handoverNum);
     requestHandoverInfo += ", handoverReason:";

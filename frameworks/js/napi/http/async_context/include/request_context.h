@@ -57,7 +57,7 @@ struct RequestHandoverInfo {
     int32_t handoverNum = 0;
     int32_t handoverReason = 0;
     double flowControlTime = 0;
-    bool isRead = false;
+    int32_t isRead = 0;
 };
 #endif
 
@@ -170,7 +170,7 @@ public:
     std::string GetPinnedPubkey() const;
 
 #ifdef HTTP_HANDOVER_FEATURE
-    void SetRequestHandoverInfo(int32_t handoverNum, int32_t handoverReason, double flowControlTime, bool isRead);
+    void SetRequestHandoverInfo(int32_t handoverNum, int32_t handoverReason, double flowControlTime, int32_t isRead);
 
     std::string GetRequestHandoverInfo();
 #endif

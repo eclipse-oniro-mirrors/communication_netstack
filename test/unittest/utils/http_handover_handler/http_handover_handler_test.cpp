@@ -178,11 +178,14 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestCheckRequestCanRetrans,
     requestInfo->easyHandle = handle;
     requestInfo->opaqueData = static_cast<void *>(malloc(sizeof(Http::RequestContext)));
 
-    EXPECT_TRUE(netHandoverHandler->CheckRequestCanRetrans(requestInfo, HttpHandoverHandler::RequestType::INCOMING));
-    EXPECT_TRUE(netHandoverHandler->CheckRequestCanRetrans(requestInfo,
-        HttpHandoverHandler::RequestType::NETWORKERROR));
-    EXPECT_TRUE(netHandoverHandler->CheckRequestCanRetrans(requestInfo, HttpHandoverHandler::RequestType::OLD));
-    EXPECT_TRUE(netHandoverHandler->CheckRequestCanRetrans(requestInfo, HttpHandoverHandler::RequestType::UNDONE));
+    EXPECT_TRUE(netHandoverHandler->CheckRequestCanRetrans(
+        requestInfo, HttpHandoverHandler::RequestType::INCOMING, CURLE_SEND_ERROR));
+    EXPECT_TRUE(netHandoverHandler->CheckRequestCanRetrans(
+        requestInfo, HttpHandoverHandler::RequestType::NETWORKERROR, CURLE_RECV_ERROR));
+    EXPECT_TRUE(netHandoverHandler->CheckRequestCanRetrans(
+        requestInfo, HttpHandoverHandler::RequestType::OLD, CURLE_COULDNT_RESOLVE_HOST));
+    EXPECT_TRUE(netHandoverHandler->CheckRequestCanRetrans(
+        requestInfo, HttpHandoverHandler::RequestType::UNDONE, CURLE_COULDNT_CONNECT));
     free(requestInfo->opaqueData);
     delete requestInfo;
 }
@@ -223,7 +226,7 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestProcessRequestErr, Test
     delete requestInfo;
 }
 
-HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestCheckRequestNetError, TestSize.Level2)
+HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestProcessRequestNetError, TestSize.Level2)
 {
     std::shared_ptr<HttpHandoverHandler> netHandoverHandler;
     netHandoverHandler = std::make_shared<HttpHandoverHandler>();
@@ -240,20 +243,8 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestCheckRequestNetError, T
 
     netHandoverHandler->SetHandoverEvent();
     netHandoverHandler->HandoverRequestCallback(ongoingRequests, multi);
-    netHandoverHandler->CheckRequestNetError(ongoingRequests, multi, requestInfo, &message);
+    netHandoverHandler->ProcessRequestNetError(ongoingRequests, multi, requestInfo, &message);
     free(requestInfo->opaqueData);
     delete requestInfo;
-}
-
-HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestIsNetworkErrorTypeCorrect, TestSize.Level2)
-{
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler;
-    netHandoverHandler = std::make_shared<HttpHandoverHandler>();
-    
-    EXPECT_TRUE(IsNetworkErrorTypeCorrect(CURLE_SEND_ERROR));
-    EXPECT_TRUE(IsNetworkErrorTypeCorrect(CURLE_RECV_ERROR));
-    EXPECT_TRUE(IsNetworkErrorTypeCorrect(CURLE_COULDNT_CONNECT));
-    EXPECT_TRUE(IsNetworkErrorTypeCorrect(CURLE_COULDNT_RESOLVE_HOST));
-    EXPECT_TRUE(!IsNetworkErrorTypeCorrect(CURLE_AUTH_ERROR));
 }
 }
