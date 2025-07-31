@@ -69,6 +69,8 @@
 #include "trace_events.h"
 #include "hi_app_event_report.h"
 
+#include "http_utils.h"
+
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
         CURLcode result = curl_easy_setopt(handle, opt, data);                                           \
@@ -280,12 +282,12 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 
 #if HAS_NETMANAGER_BASE
     std::stringstream name;
-    auto isDebugMode = NapiUtils::IsDebugMode();
+    auto isDebugMode = HttpUtils::IsDebugMode();
     if (context == nullptr) {
         NETSTACK_LOGE("context nullptr");
         return false;
     }
-    auto urlWithoutParam = NapiUtils::RemoveUrlParameters(context->options.GetUrl());
+    auto urlWithoutParam = HttpUtils::RemoveUrlParameters(context->options.GetUrl());
     name << HTTP_REQ_TRACE_NAME << "_" << std::this_thread::get_id() << (isDebugMode ? ("_" + urlWithoutParam) : "");
     SetTraceOptions(handle, context);
     SetServerSSLCertOption(handle, context);

@@ -107,6 +107,7 @@ ohos_shared_library("http") {
     "constant/src/constant.cpp",
     "http_exec/src/http_exec.cpp",
     "http_exec/src/http_tls_config.cpp",
+    "http_exec/src/http_utils.cpp",
     "http_module/src/http_module.cpp",
     "options/src/http_request_options.cpp",
     "options/src/http_response.cpp",
@@ -159,6 +160,10 @@ ohos_shared_library("http") {
         "netmanager_base:net_conn_manager_if",
         "netmanager_base:netsys_client",
         "netmanager_base:net_security_config_if",
+        "samgr:samgr_proxy",
+        "bundle_framework:appexecfwk_base",
+        "bundle_framework:appexecfwk_core",
+        "safwk:system_ability_fwk",
       ]
       defines = [
         "HAS_NETMANAGER_BASE=1",
