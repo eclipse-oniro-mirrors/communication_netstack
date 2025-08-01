@@ -807,7 +807,17 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
     struct sockaddr_un addr;
     memset_s(&addr, sizeof(addr), 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    int sockfd = context->GetSocketFd();
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    int sockfd = manager->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
+    if (sockfd < 0) {
+        NETSTACK_LOGE("fd is nullptr or closed");
+        return false;
+    }
     SetSocketBufferSize(sockfd, SO_RCVBUF, DEFAULT_BUFFER_SIZE);
     if (strcpy_s(addr.sun_path, sizeof(addr.sun_path) - 1, context->GetSocketPath().c_str()) != 0) {
         NETSTACK_LOGE("failed to copy local socket path, sockfd: %{public}d", sockfd);
