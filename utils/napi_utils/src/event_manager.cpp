@@ -128,16 +128,19 @@ void EventManager::EmitByUvWithoutCheckShared(const std::string &type, void *dat
         if (type == ON_HEADER_RECEIVE || type == ON_HEADERS_RECEIVE) {
             auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
             delete tempMap;
+            return;
         }
     } else if (foundHeader && !foundHeaders) {
         if (type == ON_HEADERS_RECEIVE) {
             auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
             delete tempMap;
+            return;
         }
     } else if (!foundHeader) {
         if (type == ON_HEADER_RECEIVE) {
             auto tempMap = static_cast<std::map<std::string, std::string> *>(data);
             delete tempMap;
+            return;
         }
     }
 
