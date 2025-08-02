@@ -865,6 +865,12 @@ bool ExecLocalSocketClose(LocalSocketCloseContext *context)
     if (context == nullptr) {
         return false;
     }
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
     if (close(context->GetSocketFd()) < 0) {
         NETSTACK_LOGE("failed to closed localsock, fd: %{public}d, errno: %{public}d", context->GetSocketFd(), errno);
         context->SetErrorCode(errno);
@@ -1030,6 +1036,7 @@ bool ExecLocalSocketServerEnd(LocalSocketServerEndContext *context)
     if (context == nullptr || context->GetSharedManager() == nullptr) {
         return false;
     }
+    std::unique_lock<std::shared_mutex> lock(context->GetSharedManager()->GetDataMutex());
     auto mgr = reinterpret_cast<LocalSocketServerManager *>(context->GetSharedManager()->GetData());
     if (mgr == nullptr) {
         NETSTACK_LOGE("LocalSocketServerManager reinterpret cast failed");
@@ -1159,6 +1166,12 @@ bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
     if (context == nullptr) {
         return false;
     }
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetSharedManager()->GetData());
     if (data == nullptr || data->serverManager_ == nullptr) {
         NETSTACK_LOGE("connection close callback reinterpret cast failed");
