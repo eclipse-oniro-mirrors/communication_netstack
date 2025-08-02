@@ -1486,20 +1486,26 @@ bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-
-    if (context->GetSocketFd() <= 0) {
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    int sockfd = context->GetSocketFd();
+    if (sockfd <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
         return false;
     }
 
-    if (!SetBaseOptions(context->GetSocketFd(), &context->options)) {
+    if (!SetBaseOptions(sockfd, &context->options)) {
         context->SetErrorCode(errno);
         return false;
     }
 
     if (context->options.AlreadySetBroadcast()) {
         int broadcast = static_cast<int>(context->options.IsBroadcast());
-        if (setsockopt(context->GetSocketFd(), SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast)) < 0) {
+        if (setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast)) < 0) {
             context->SetErrorCode(errno);
             return false;
         }
