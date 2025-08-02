@@ -18,7 +18,6 @@
 
 #include <map>
 #include <memory>
-#include <mutex>
 
 #include "curl/curl.h"
 
@@ -70,7 +69,6 @@ private:
     HttpOverCurl::TimeoutTimer timeoutTimer_;
 
     CURLM *multi_ = nullptr;
-    std::mutex multiLock_;
     // Number of running handles
     int stillRunning = 0;
 
