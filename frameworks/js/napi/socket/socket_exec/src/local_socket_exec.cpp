@@ -813,7 +813,7 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
         return false;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    int sockfd = manager->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
+    int sockfd = context->GetSocketFd();
     if (sockfd < 0) {
         NETSTACK_LOGE("fd is nullptr or closed");
         return false;
