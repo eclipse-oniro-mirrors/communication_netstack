@@ -88,7 +88,6 @@ void EpollMultiDriver::Step(int waitEventsTimeoutMs)
         }
         return;
     }
-    std::lock_guard<std::mutex> guard(multiLock_);
     if (eventsToHandle == 0) {
         if (errno != EINTR && errno != EAGAIN && errno != 0) {
             NETSTACK_LOGE("epoll wait event 0 err: %{public}d", errno);
