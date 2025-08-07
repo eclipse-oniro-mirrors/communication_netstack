@@ -59,36 +59,6 @@ TLSKey::TLSKey(const TLSKey &other)
     *this = other;
 }
 
-TLSKey &TLSKey::operator=(const TLSKey &other)
-{
-    if (other.rsa_ != nullptr) {
-        rsa_ = RSA_new();
-        rsa_ = other.rsa_;
-    }
-    if (other.dsa_ != nullptr) {
-        dsa_ = DSA_new();
-        dsa_ = other.dsa_;
-    }
-    if (other.dh_ != nullptr) {
-        dh_ = DH_new();
-        dh_ = other.dh_;
-    }
-    if (other.ec_ != nullptr) {
-        ec_ = EC_KEY_new();
-        ec_ = other.ec_;
-    }
-    if (other.genericKey_ != nullptr) {
-        genericKey_ = EVP_PKEY_new();
-        genericKey_ = other.genericKey_;
-    }
-    keyIsNull_ = other.keyIsNull_;
-    keyType_ = other.keyType_;
-    keyAlgorithm_ = other.keyAlgorithm_;
-    keyPass_ = other.keyPass_;
-    keyData_ = other.keyData_;
-    return *this;
-}
-
 void TLSKey::DecodeData(const SecureData &data, const SecureData &passPhrase)
 {
     if (data.Length() == 0) {
