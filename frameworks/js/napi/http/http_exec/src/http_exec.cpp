@@ -121,6 +121,7 @@ static constexpr const int SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX = 1;
 
 static constexpr const char *HTTP_AF_ONLYV4 = "ONLY_V4";
 static constexpr const char *HTTP_AF_ONLYV6 = "ONLY_V6";
+static int64_t limitSdkReport = 0;
 
 static void RequestContextDeleter(RequestContext *context)
 {
@@ -614,7 +615,6 @@ bool HttpExec::ExecRequest(RequestContext *context)
         return false;
     }
     if (context->GetSharedManager()->IsEventDestroy()) {
-        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, HTTP_UNKNOWN_OTHER_ERROR);
         return false;
     }
     context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
@@ -631,7 +631,6 @@ bool HttpExec::ExecRequest(RequestContext *context)
                     context->GetModuleId());
             }
         }
-        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
         return true;
     }
     if (!RequestWithoutCache(context)) {
@@ -647,10 +646,12 @@ bool HttpExec::ExecRequest(RequestContext *context)
                     context->GetModuleId());
             }
         }
-        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
         return false;
     }
-    hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
+    if (limitSdkReport == 0) {
+        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
+        limitSdkReport = 1;
+    }
     return true;
 }
 
