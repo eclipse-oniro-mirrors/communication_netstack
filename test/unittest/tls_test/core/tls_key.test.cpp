@@ -42,18 +42,15 @@ HWTEST_F(TLSKeyTest, TLSKeyTestt001, testing::ext::TestSize.Level1)
     EXPECT_EQ(key.dsa_, nullptr);
     EXPECT_EQ(key.dh_, nullptr);
     EXPECT_EQ(key.ec_, nullptr);
-    EXPECT_EQ(key.genericKey_, nullptr);
     other.rsa_ = RSA_new();
     other.dsa_ = DSA_new();
     other.dh_ = DH_new();
     other.ec_ = EC_KEY_new();
-    other.genericKey_ = EVP_PKEY_new();
     key = other;
     EXPECT_NE(key.rsa_, nullptr);
     EXPECT_NE(key.dsa_, nullptr);
     EXPECT_NE(key.dh_, nullptr);
     EXPECT_NE(key.ec_, nullptr);
-    EXPECT_NE(key.genericKey_, nullptr);
 }
 
 HWTEST_F(TLSKeyTest, TLSKeyTestt002, testing::ext::TestSize.Level1)
@@ -63,7 +60,6 @@ HWTEST_F(TLSKeyTest, TLSKeyTestt002, testing::ext::TestSize.Level1)
     key.dsa_ = DSA_new();
     key.dh_ = DH_new();
     key.ec_ = EC_KEY_new();
-    key.genericKey_ = EVP_PKEY_new();
     SecureData data;
     SecureData phrase;
     key.DecodeData(data, phrase);

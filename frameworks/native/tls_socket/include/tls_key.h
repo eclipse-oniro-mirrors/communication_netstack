@@ -44,7 +44,6 @@ public:
            EncodingFormat format = PEM, KeyType type = PRIVATE_KEY);
 
     TLSKey(const TLSKey &other);
-    TLSKey &operator=(const TLSKey &other);
 
     [[nodiscard]] KeyAlgorithm Algorithm() const;
     [[nodiscard]] Handle handle() const;
@@ -65,7 +64,6 @@ private:
     DSA *dsa_ = nullptr;
     DH *dh_ = nullptr;
     EC_KEY *ec_ = nullptr;
-    EVP_PKEY *genericKey_ = nullptr;
     SecureData keyPass_;
     SecureData keyData_;
     bool keyIsNull_ = true;
