@@ -121,7 +121,7 @@ static constexpr const int SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX = 1;
 
 static constexpr const char *HTTP_AF_ONLYV4 = "ONLY_V4";
 static constexpr const char *HTTP_AF_ONLYV6 = "ONLY_V6";
-static int64_t limitSdkReport = 0;
+static int64_t g_limitSdkReport = 0;
 
 static void RequestContextDeleter(RequestContext *context)
 {
@@ -648,9 +648,9 @@ bool HttpExec::ExecRequest(RequestContext *context)
         }
         return false;
     }
-    if (limitSdkReport == 0) {
+    if (g_limitSdkReport == 0) {
         hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
-        limitSdkReport = 1;
+        g_limitSdkReport = 1;
     }
     return true;
 }
