@@ -205,7 +205,7 @@ void NetStackChrClient::GetDfxInfoFromCurlHandleAndReport(CURL *handle, int32_t 
 
     int ret = netstackChrReport_.ReportCommonEvent(dataTransChrStats);
     if (ret > 0) {
-        NETSTACK_LOGE("Send to CHR failed, error code %{public}d", ret);
+        NETSTACK_LOGI("Send to CHR failed, error code %{public}d", ret);
     }
 }
 
