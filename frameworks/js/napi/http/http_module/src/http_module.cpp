@@ -50,7 +50,7 @@ static bool g_appIsAtomicService = false;
 static std::string g_appBundleName;
 
 static std::once_flag g_isAtomicServiceFlag;
-static int64_t limitSdkReport = 0;
+static int64_t g_limitSdkReport = 0;
 
 napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
 {
@@ -331,9 +331,9 @@ napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_i
     }
     manager->SetEventDestroy(true);
     manager->DeleteEventReference(env);
-    if (limitSdkReport == 0) {
+    if (g_limitSdkReport == 0) {
         hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
-        limitSdkReport = 1;
+        g_limitSdkReport = 1;
     }
     return NapiUtils::GetUndefined(env);
 }
