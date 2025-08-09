@@ -95,6 +95,14 @@ public:
 
     std::string bundleName_;
 
+    const static std::uint32_t defaultPingPongTime = 30;
+
+    const static std::uint32_t minPingPongTime = 0;
+
+    const static std::uint32_t maxPingPongTime = 30000;
+
+    std::uint32_t pingPongTime_ = defaultPingPongTime;
+
 private:
     std::string userCertPath_;
 
