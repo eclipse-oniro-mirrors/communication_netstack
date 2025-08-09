@@ -118,6 +118,8 @@ private:
 
     bool ParseProtocol(napi_value optionsValue);
 
+    void ParsePingPongTime(napi_value optionsValue);
+
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 
     void ParseCallback(napi_value const *params, size_t paramsCount);
