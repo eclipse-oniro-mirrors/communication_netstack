@@ -89,7 +89,7 @@ static const lws_protocols LWS_PROTOCOLS[] = {
     {nullptr, nullptr, 0, 0}, // this line is needed
 };
 
-static const lws_retry_bo_t RETRY = {
+static lws_retry_bo_t retry = {
     .secs_since_valid_ping = 30,
     .secs_since_valid_hangup = 60,
     .jitter_percent = 20,
@@ -538,6 +538,20 @@ static bool WebSocketConnect(lws_client_connect_info &connectInfo, const std::sh
     return true;
 }
 
+void SetRetry(lws_retry_bo_t &retry, ConnectContext *context)
+{
+    if (context == nullptr) {
+        return;
+    }
+    if (context->pingPongTime_ < context->minPingPongTime || context->pingPongTime_ > context->maxPingPongTime) {
+        NETSTACK_LOGE("PingPongTime is invalid: %{public}d", context->pingPongTime_);
+        context->pingPongTime_ = context->defaultPingPongTime;
+    }
+    NETSTACK_LOGI("PingPongTime is : %{public}d", context->pingPongTime_);
+    retry.secs_since_valid_ping = context->pingPongTime_;
+    retry.secs_since_valid_hangup = context->pingPongTime_ + context->pingPongTime_;
+}
+
 bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsContext,
     const std::shared_ptr<EventManager> &manager)
 {
@@ -583,7 +597,8 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     }
     lws *wsi = nullptr;
     connectInfo.pwsi = &wsi;
-    connectInfo.retry_and_idle_policy = &RETRY;
+    SetRetry(retry, context);
+    connectInfo.retry_and_idle_policy = &retry;
     connectInfo.userdata = manager.get();
     if (!WebSocketConnect(connectInfo, manager, context)) {
         return false;
