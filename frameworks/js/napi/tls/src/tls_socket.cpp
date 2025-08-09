@@ -1461,11 +1461,15 @@ std::string TLSSocket::TLSSocketInternal::GetProtocol() const
 
 bool TLSSocket::TLSSocketInternal::SetSharedSigals()
 {
-    if (!ssl_) {
-        NETSTACK_LOGE("ssl is null");
-        return false;
+    int number = 0;
+    {
+        std::lock_guard<std::mutex> lock(mutexForSsl_);
+        if (!ssl_) {
+            NETSTACK_LOGE("ssl is null");
+            return false;
+        }
+        number = SSL_get_shared_sigalgs(ssl_, 0, nullptr, nullptr, nullptr, nullptr, nullptr);
     }
-    int number = SSL_get_shared_sigalgs(ssl_, 0, nullptr, nullptr, nullptr, nullptr, nullptr);
     if (!number) {
         NETSTACK_LOGE("SSL_get_shared_sigalgs return value error");
         return false;
