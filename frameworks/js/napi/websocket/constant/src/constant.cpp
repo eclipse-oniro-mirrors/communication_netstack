@@ -35,6 +35,7 @@ const char *ContextKey::MAX_CONNECTIONS_FOR_ONE_CLIENT = "maxConnectionsForOneCl
 const char *ContextKey::SERVER_IP = "serverIP";
 const char *ContextKey::SERVER_CERT = "serverCert";
 const char *ContextKey::PROTOCOL = "protocol";
+const char *ContextKey::PINGPONG_TIME = "pingPongTime";
 
 const char *ContextKey::PROXY = "proxy";
 const char *ContextKey::PROTCOL = "protocol";
