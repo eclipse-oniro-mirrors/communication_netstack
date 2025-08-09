@@ -1294,12 +1294,10 @@ bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, ssl_st *ssl, const char 
 
 bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
 {
-    {
-        std::lock_guard<std::mutex> lock(mutexForSsl_);
-        if (!ssl_) {
-            NETSTACK_LOGE("ssl is null");
-            return false;
-        }
+    std::lock_guard<std::mutex> lock(mutexForSsl_);
+    if (!ssl_) {
+        NETSTACK_LOGE("ssl is null");
+        return false;
     }
 
     if (data.empty()) {
@@ -1369,6 +1367,7 @@ bool TLSSocket::TLSSocketInternal::Close()
 
 bool TLSSocket::TLSSocketInternal::SetAlpnProtocols(const std::vector<std::string> &alpnProtocols)
 {
+    std::lock_guard<std::mutex> lock(mutexForSsl_);
     if (!ssl_) {
         NETSTACK_LOGE("ssl is null");
         return false;
@@ -1412,6 +1411,7 @@ TLSConfiguration TLSSocket::TLSSocketInternal::GetTlsConfiguration() const
 
 std::vector<std::string> TLSSocket::TLSSocketInternal::GetCipherSuite() const
 {
+    std::lock_guard<std::mutex> lock(mutexForSsl_);
     if (!ssl_) {
         NETSTACK_LOGE("ssl in null");
         return {};
@@ -1449,6 +1449,7 @@ std::vector<std::string> TLSSocket::TLSSocketInternal::GetSignatureAlgorithms() 
 
 std::string TLSSocket::TLSSocketInternal::GetProtocol() const
 {
+    std::lock_guard<std::mutex> lock(mutexForSsl_);
     if (!ssl_) {
         NETSTACK_LOGE("ssl in null");
         return PROTOCOL_UNKNOW;
@@ -1479,7 +1480,10 @@ bool TLSSocket::TLSSocketInternal::SetSharedSigals()
         int hash_nid;
         int sign_nid;
         std::string sig_with_md;
-        SSL_get_shared_sigalgs(ssl_, i, &sign_nid, &hash_nid, nullptr, nullptr, nullptr);
+        {
+            std::lock_guard<std::mutex> lock(mutexForSsl_);
+            SSL_get_shared_sigalgs(ssl_, i, &sign_nid, &hash_nid, nullptr, nullptr, nullptr);
+        }
         switch (sign_nid) {
             case EVP_PKEY_RSA:
                 sig_with_md = SIGN_NID_RSA;
@@ -1819,6 +1823,7 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
 
 bool TLSSocket::TLSSocketInternal::GetRemoteCertificateFromPeer()
 {
+    std::lock_guard<std::mutex> lock(mutexForSsl_);
     peerX509_ = SSL_get_peer_certificate(ssl_);
     if (peerX509_ == nullptr) {
         int resErr = ConvertSSLError();
