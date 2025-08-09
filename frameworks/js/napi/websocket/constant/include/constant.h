@@ -110,6 +110,7 @@ public:
     static const char *SERVER_IP;
     static const char *SERVER_CERT;
     static const char *PROTOCOL;
+    static const char *PINGPONG_TIME;
 };
 
 class EventName final {
