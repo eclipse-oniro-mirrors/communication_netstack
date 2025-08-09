@@ -49,6 +49,7 @@ EXTERN_C_START
         char* protocol;
         bool usingSystemProxy;
         CHttpProxy* httpProxy;
+        uint32_t pingPongTime;
     };
 
     struct CWebSocketCloseOptions {
