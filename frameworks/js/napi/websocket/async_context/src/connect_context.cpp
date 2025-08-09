@@ -79,6 +79,7 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
             ParseCaPath(params[1]);
             ParseClientCert(params[1]);
             ParseSkipServerCertVerify(params[1]);
+            ParsePingPongTime(params[1]);
             if (!ParseProxy(params[1]) || !ParseProtocol(params[1])) {
                 return;
             }
@@ -125,6 +126,7 @@ void ConnectContext::ParseParamsCountThree(napi_value const *params)
         ParseCaPath(params[1]);
         ParseClientCert(params[1]);
         ParseSkipServerCertVerify(params[1]);
+        ParsePingPongTime(params[1]);
         if (!ParseProxy(params[1]) || !ParseProtocol(params[1])) {
             if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_THREE - 1]) == napi_function) {
                 SetCallback(params[FUNCTION_PARAM_THREE - 1]);
@@ -278,6 +280,20 @@ bool ConnectContext::ParseProtocol(napi_value optionsValue)
     }
     NETSTACK_LOGE("websocket connect protocol param parse failed");
     return false;
+}
+
+void ConnectContext::ParsePingPongTime(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::PINGPONG_TIME)) {
+        NETSTACK_LOGI("ConnectContext PINGPONG_TIME not found");
+        return;
+    }
+    napi_value jsPingPongTime = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::PINGPONG_TIME);
+    if (NapiUtils::GetValueType(GetEnv(), jsPingPongTime) != napi_number) {
+        NETSTACK_LOGE("ConnectContext PINGPONG_TIME is not napi_number");
+        return;
+    }
+    pingPongTime_ = NapiUtils::GetUint32FromValue(GetEnv(), jsPingPongTime);
 }
 
 bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
