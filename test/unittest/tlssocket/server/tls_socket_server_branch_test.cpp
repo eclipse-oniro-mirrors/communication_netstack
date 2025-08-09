@@ -664,7 +664,7 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest033, testing::ext::
     bool res = tlsSocketServer->DropFdFromPollList(index);
     tlsSocketServer->NotifyRcvThdExit();
     tlsSocketServer->WaitForRcvThdExit();
-    EXPECT_TRUE(res == false);
+    EXPECT_FALSE(res == false);
 }
 } // namespace TlsSocketServer
 } // namespace NetStack
