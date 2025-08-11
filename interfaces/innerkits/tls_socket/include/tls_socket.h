@@ -576,7 +576,7 @@ private:
                                              const X509 *x509Certificates);
 
     private:
-        std::mutex mutexForSsl_;
+        mutable std::mutex mutexForSsl_;
         mutable std::shared_mutex rw_mutex_;
         ssl_st *ssl_ = nullptr;
         X509 *peerX509_ = nullptr;
