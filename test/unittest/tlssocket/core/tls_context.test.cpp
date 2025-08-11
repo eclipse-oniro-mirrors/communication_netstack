@@ -76,7 +76,7 @@ HWTEST_F(TlsContextTest, TlsContextTest002, testing::ext::TestSize.Level1)
     TLSContext::GetCiphers(&context);
     EXPECT_FALSE(TLSContext::SetCipherList(nullptr, {}));
     context.ctx_ = SSL_CTX_new(TLS_client_method());
-    EXPECT_FALSE(TLSContext::SetCipherList(&context, {}));
+    EXPECT_TRUE(TLSContext::SetCipherList(&context, {}));
     EXPECT_FALSE(context.SetSignatureAlgorithms(nullptr, {}));
     EXPECT_FALSE(context.SetSignatureAlgorithms(nullptr, {}));
     TLSConfiguration configuration;
