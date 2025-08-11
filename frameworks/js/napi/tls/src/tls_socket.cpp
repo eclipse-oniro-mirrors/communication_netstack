@@ -1466,13 +1466,11 @@ bool TLSSocket::TLSSocketInternal::SetSharedSigals()
     {
         std::lock_guard<std::mutex> lock(mutexForSsl_);
         if (!ssl_) {
-            NETSTACK_LOGE("ssl is null");
             return false;
         }
         number = SSL_get_shared_sigalgs(ssl_, 0, nullptr, nullptr, nullptr, nullptr, nullptr);
     }
     if (!number) {
-        NETSTACK_LOGE("SSL_get_shared_sigalgs return value error");
         return false;
     }
     std::unique_lock<std::shared_mutex> lock(rw_mutex_);
