@@ -1294,12 +1294,13 @@ bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, ssl_st *ssl, const char 
 
 bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
 {
-    std::lock_guard<std::mutex> lock(mutexForSsl_);
-    if (!ssl_) {
-        NETSTACK_LOGE("ssl is null");
-        return false;
+    {
+        std::lock_guard<std::mutex> lock(mutexForSsl_);
+        if (!ssl_) {
+            NETSTACK_LOGE("ssl is null");
+            return false;
+        }
     }
-
     if (data.empty()) {
         NETSTACK_LOGE("data is empty");
         return true;
