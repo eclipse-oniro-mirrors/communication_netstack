@@ -548,6 +548,9 @@ static void SetRetry(lws_retry_bo_t *retry, ConnectContext *context)
         NETSTACK_LOGE("PongTimeout is invalid: %{public}d", context->pongTimeout_);
         context->pongTimeout_ = context->pingInterval_;
     }
+    if (context->pingInterval_ == context->minPingInterval) {
+        context->pongTimeout_ = context->pingInterval_;
+    }
     NETSTACK_LOGI("PingInterval is %{public}d,  PongTimeout is %{public}d",
         context->pingInterval_, context->pongTimeout_);
     retry->secs_since_valid_ping = context->pingInterval_;
