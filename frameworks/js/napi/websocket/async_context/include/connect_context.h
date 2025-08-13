@@ -95,6 +95,16 @@ public:
 
     std::string bundleName_;
 
+    constexpr static std::uint32_t defaultPingInterval = 30;
+ 
+    constexpr static std::uint32_t minPingInterval = 0;
+ 
+    constexpr static std::uint32_t maxPingInterval = 30000;
+ 
+    std::uint32_t pingInterval_ = defaultPingInterval;
+ 
+    std::uint32_t pongTimeout_ = defaultPingInterval;
+
 private:
     std::string userCertPath_;
 
@@ -109,6 +119,10 @@ private:
     bool ParseProxy(napi_value optionsValue);
 
     bool ParseProtocol(napi_value optionsValue);
+
+    void ParsePingInterval(napi_value optionsValue);
+ 
+    void ParsePongTimeout(napi_value optionsValue);
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 
