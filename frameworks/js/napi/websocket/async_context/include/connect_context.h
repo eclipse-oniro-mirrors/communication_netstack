@@ -95,11 +95,11 @@ public:
 
     std::string bundleName_;
 
-    const static std::uint32_t defaultPingInterval = 30;
+    constexpr static std::uint32_t defaultPingInterval = 30;
  
-    const static std::uint32_t minPingInterval = 0;
+    constexpr static std::uint32_t minPingInterval = 0;
  
-    const static std::uint32_t maxPingInterval = 30000;
+    constexpr static std::uint32_t maxPingInterval = 30000;
  
     std::uint32_t pingInterval_ = defaultPingInterval;
  
