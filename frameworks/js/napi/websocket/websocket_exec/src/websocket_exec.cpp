@@ -532,7 +532,8 @@ static bool WebSocketConnect(lws_client_connect_info &connectInfo, const std::sh
     return true;
 }
 
-static void SetRetry(lws_retry_bo_t *retry, ConnectContext *context){
+static void SetRetry(lws_retry_bo_t *retry, ConnectContext *context)
+{
     if (context == nullptr) {
         return;
     }
