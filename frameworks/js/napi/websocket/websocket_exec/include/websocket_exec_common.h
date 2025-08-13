@@ -139,6 +139,12 @@ public:
 
     std::string openMessage;
 
+    lws_retry_bo_t retry_policy {
+        .secs_since_valid_ping   = 30,
+        .secs_since_valid_hangup = 60,
+        .jitter_percent          = 20,
+    };
+
 private:
     volatile bool closed_;
 
