@@ -171,18 +171,28 @@ declare namespace webSocket {
      * @since 12
      */
     protocol?: string;
-
+ 
     /**
-     * Self defined ping pong time.
+     * Self defined interval of ping frame.
      * default: 30. disable: 0. max: 30000. unit: second.
-     * Ping is performed at every pingPongTime interval.
-     * If no pong is received within the pingPongTime period, the websocket connection will be disconnected.
-     * @type {?number}
+     * Ping is performed at every pingInterval.
+     * @type {?int}
      * @syscap SystemCapability.Communication.NetStack
      * @since 21
      * @arkts 1.2
      */
-    pingPongTime?: number;
+    pingInterval?: int;
+ 
+    /**
+     * Self defined timeout of pong frame.
+     * default: 30. max: 30000. unit: second. The value must be less than or equal to pingInterval.
+     * If no pong is received within the pongTimeout period, the websocket connection will be disconnected.
+     * @type {?int}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 21
+     * @arkts 1.2
+     */
+    pongTimeout?: int;
   }
 
   /**
