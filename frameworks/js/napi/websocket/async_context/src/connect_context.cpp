@@ -79,7 +79,8 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
             ParseCaPath(params[1]);
             ParseClientCert(params[1]);
             ParseSkipServerCertVerify(params[1]);
-            ParsePingPongTime(params[1]);
+            ParsePingInterval(params[1]);
+            ParsePongTimeout(params[1]);
             if (!ParseProxy(params[1]) || !ParseProtocol(params[1])) {
                 return;
             }
@@ -126,7 +127,8 @@ void ConnectContext::ParseParamsCountThree(napi_value const *params)
         ParseCaPath(params[1]);
         ParseClientCert(params[1]);
         ParseSkipServerCertVerify(params[1]);
-        ParsePingPongTime(params[1]);
+        ParsePingInterval(params[1]);
+        ParsePongTimeout(params[1]);
         if (!ParseProxy(params[1]) || !ParseProtocol(params[1])) {
             if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_THREE - 1]) == napi_function) {
                 SetCallback(params[FUNCTION_PARAM_THREE - 1]);
@@ -282,18 +284,32 @@ bool ConnectContext::ParseProtocol(napi_value optionsValue)
     return false;
 }
 
-void ConnectContext::ParsePingPongTime(napi_value optionsValue)
+void ConnectContext::ParsePingInterval(napi_value optionsValue)
 {
-    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::PINGPONG_TIME)) {
-        NETSTACK_LOGI("ConnectContext PINGPONG_TIME not found");
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::PING_INTERVAL)) {
+        NETSTACK_LOGI("ConnectContext PING_INTERVAL not found");
         return;
     }
-    napi_value jsPingPongTime = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::PINGPONG_TIME);
-    if (NapiUtils::GetValueType(GetEnv(), jsPingPongTime) != napi_number) {
-        NETSTACK_LOGE("ConnectContext PINGPONG_TIME is not napi_number");
+    napi_value jsPingInterval = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::PING_INTERVAL);
+    if (NapiUtils::GetValueType(GetEnv(), jsPingInterval) != napi_number) {
+        NETSTACK_LOGI("ConnectContext PING_INTERVAL is not napi_number");
         return;
     }
-    pingPongTime_ = NapiUtils::GetUint32FromValue(GetEnv(), jsPingPongTime);
+    pingInterval_ = NapiUtils::GetUint32FromValue(GetEnv(), jsPingInterval);
+}
+ 
+void ConnectContext::ParsePongTimeout(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::PONG_TIMEOUT)) {
+        NETSTACK_LOGI("ConnectContext PONG_TIMEOUT not found");
+        return;
+    }
+    napi_value jsPongTimeout = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::PONG_TIMEOUT);
+    if (NapiUtils::GetValueType(GetEnv(), jsPongTimeout) != napi_number) {
+        NETSTACK_LOGI("ConnectContext PONG_TIMEOUT is not napi_number");
+        return;
+    }
+    pongTimeout_ = NapiUtils::GetUint32FromValue(GetEnv(), jsPongTimeout);
 }
 
 bool ConnectContext::CheckParamsType(napi_value *params, size_t paramsCount)
