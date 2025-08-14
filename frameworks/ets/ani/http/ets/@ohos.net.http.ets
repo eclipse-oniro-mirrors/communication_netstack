@@ -561,8 +561,8 @@ export default namespace http {
     native flushSync(): void;
 
     flush(callback: AsyncCallback<void>): void {
-      let p1 = taskpool.execute((): undefined => {
-         return this.flushSync();
+      let p1 = taskpool.execute(() => {
+          this.flushSync();
       })
       p1.then(() => {
           callback(new BusinessError(), undefined);
@@ -573,8 +573,8 @@ export default namespace http {
 
     flush(): Promise<void> {
       return new Promise<void>((resolve, reject) => {
-        taskpool.execute((): undefined => {
-          return this.flushSync();
+        taskpool.execute(() => {
+            this.flushSync();
         }).then(() => {
             resolve(undefined);
         }, (err: Error): void => {
@@ -586,8 +586,8 @@ export default namespace http {
     native deleteSync():void;
 
     delete(callback: AsyncCallback<void>): void {
-      let p1 = taskpool.execute((): undefined => {
-         return this.deleteSync();
+      let p1 = taskpool.execute(() => {
+          this.deleteSync();
       })
       p1.then(() => {
           callback(new BusinessError(), undefined);
@@ -598,8 +598,8 @@ export default namespace http {
 
     delete(): Promise<void> {
       return new Promise<void>((resolve, reject) => {
-        taskpool.execute((): undefined => {
-          return this.deleteSync();
+        taskpool.execute(() => {
+            this.deleteSync();
         }).then(() => {
             resolve(undefined);
         }, (err: Error): void => {
