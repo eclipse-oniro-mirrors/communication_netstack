@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// todo
+
 #include <gtest/gtest.h>
 #include "curl/curl.h"
 #include "http_handover_handler.h"
@@ -40,18 +40,18 @@ RequestInfo *GetRequestInfo()
     CURL *handle = GetCurlHandle();
     RequestInfo *requestInfo = new RequestInfo();
     requestInfo->easyHandle = handle;
-    static auto startedCallback = +[](CURL *easyHandle, void *opaqueData) {};
-    static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {};
-    static auto handoverInfoCallback = +[](void *opaqueData) {
+    static auto startCallback = +[](CURL *easyHandle, void *opaqueData){};
+    static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData){};
+    static auto handoverInfoCallback = +[](void *opaqueData){
         HttpHandoverStackInfo httpHandoverStackInfo;
         return httpHandoverStackInfo;
     };
-    static auto setHandoverInfoCallback = +[](HttpHandoverInfo httpHandoverInfo, void *opaqueData) {};
+    static auto setHandoverInfoCallback = +[](HttpHandoverInfo httpHandoverInfo, void *opaqueData){};
     HttpOverCurl::TransferCallbacks callbacks = {
-        .startedCallback = startedCallback;
-        .doneCallback = responseCallback;
-        .handoverInfoCallback = handoverInfoCallback;
-        .setHandoverInfoCallback = setHandoverInfoCallback;
+        .startedCallback = startCallback,
+        .doneCallback = responseCallback,
+        .handoverInfoCallback = handoverInfoCallback,
+        .setHandoverInfoCallback = setHandoverInfoCallback,
     };
     requestInfo->callbacks = callbacks;
     requestInfo->opaqueData = static_cast<void *>(malloc(sizeof(Http::RequestContext)));
@@ -78,7 +78,7 @@ public:
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestSocketTime, TestSize.Level2)
 {
-    auto netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
     curl_socket_t fd = 0;
     EXPECT_TRUE(CheckSocketTime(netHandoverHandler.get(), fd));
     EXPECT_TRUE(CheckSocketTime(nullptr, fd));
@@ -86,7 +86,7 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestSocketTime, TestSize.Le
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestOpenSocket, TestSize.Level2)
 {
-    auto netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
     curl_sockaddr addr = {AF_INET, SOCK_STREAM, 0};
     curlsocktype purpose = CURLSOCKTYPE_IPCXN;
     curl_socket_t sockfd = OpenSocket(netHandoverHandler.get(), purpose, &addr);
@@ -115,8 +115,8 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestEvent, TestSize.Level2)
     netHandoverHandler->SetHandoverTimeoutEvent(TIMEOUT_STOP);
 
     FileDescriptor descriptor = FILE_DESCRIPTOR;
-    EXPECT_FALSE(netHandoverHandler->IsItHandoverEvent(descriptor));
-    EXPECT_FALSE(netHandoverHandler->IsItHandoverTimeoutEvent(descriptor));
+    EXPECT_TRUE(!netHandoverHandler->IsItHandoverEvent(descriptor));
+    EXPECT_TRUE(!netHandoverHandler->IsItHandoverTimeoutEvent(descriptor));
 }
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestCallbackEvent, TestSize.Level2)
@@ -137,7 +137,7 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestCallbackEvent, TestSize
     DeleteRequestInfo(requestInfo);
 
     CURL *handle = GetCurlHandle();
-    EXPECT_EQ(netHandoverHandler->IsRequestRead(handlle), 0);
+    EXPECT_EQ(netHandoverHandler->IsRequestRead(handle), 0);
 }
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestHandoverQuery, TestSize.Level2)
@@ -154,7 +154,6 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestHandoverQuery, TestSize
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestCheckSocket, TestSize.Level2)
 {
     std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
-
     curl_socket_t fd = 0;
     netHandoverHandler->SetSocketOpenTime(fd);
     netHandoverHandler->EraseFd(fd);
@@ -176,7 +175,7 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestTryFlowControl, TestSiz
     DeleteRequestInfo(requestInfo);
 }
 
-HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTesthandoverRequestCallback, TestSize.Level2)
+HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestHandoverRequestCallback, TestSize.Level2)
 {
     std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
     RequestInfo *requestInfo = GetRequestInfo();
@@ -196,7 +195,7 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTesthandoverRequestCallback
     netHandoverHandler->SetHandoverEvent();
     netHandoverHandler->SetStatus(HttpHandoverHandler::FATAL);
     netHandoverHandler->HandoverRequestCallback(ongoingRequests, multi);
-    EXPECT_eq(netHandoverHandler->getStatus(), HttpHandoverHandler::FATAL);
+    EXPECT_EQ(netHandoverHandler->GetStatus(), HttpHandoverHandler::FATAL);
     DeleteRequestInfo(requestInfo);
 }
 
@@ -264,20 +263,19 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestProcessRequestErr, Test
     DeleteRequestInfo(requestInfo);
 }
 
-HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestProcessRequestNetErrorType, TestSize.Level2)
+HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestProcessRequestNetErrorErrorType, TestSize.Level2)
 {
     std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
     std::map<CURL *, RequestInfo *> ongoingRequests;
     CURLM *multi = curl_multi_init();
     RequestInfo *requestInfo = GetRequestInfo();
-    ongoingRequests[requestInfo->easyHandle] = requestInfo;
     CURLMsg message;
 
     netHandoverHandler->SetHandoverEvent();
     netHandoverHandler->HandoverRequestCallback(ongoingRequests, multi);
     message.msg = CURLMSG_DONE;
     message.data.result = CURLE_SEND_ERROR;
-    EXPECT_FALLSE(netHandoverHandler->ProcessRequestNetError(ongoingRequests, multi, requestInfo, &message));
+    EXPECT_FALSE(netHandoverHandler->ProcessRequestNetError(ongoingRequests, multi, requestInfo, &message));
     DeleteRequestInfo(requestInfo);
 }
 }
