@@ -25,7 +25,6 @@ static constexpr const char *REQUEST_URL = "https://127.0.0.1";
 static constexpr const long TIMEOUT_MS = 6000;
 static constexpr const long TIMEOUT_IMMEDIATE = 0;
 static constexpr const long TIMEOUT_STOP = -1;
-static constexpr const int32_t INIT_NET_ID = -1;
 static constexpr const FileDescriptor FILE_DESCRIPTOR = 222;
 
 CURL *GetCurlHandle()
