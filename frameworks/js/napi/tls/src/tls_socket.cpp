@@ -1461,13 +1461,15 @@ std::string TLSSocket::TLSSocketInternal::GetProtocol() const
 
 bool TLSSocket::TLSSocketInternal::SetSharedSigals()
 {
-    if (!ssl_) {
-        NETSTACK_LOGE("ssl is null");
-        return false;
+    int number = 0;
+    {
+        std::lock_guard<std::mutex> lock(mutexForSsl_);
+        if (!ssl_) {
+            return false;
+        }
+        number = SSL_get_shared_sigalgs(ssl_, 0, nullptr, nullptr, nullptr, nullptr, nullptr);
     }
-    int number = SSL_get_shared_sigalgs(ssl_, 0, nullptr, nullptr, nullptr, nullptr, nullptr);
     if (!number) {
-        NETSTACK_LOGE("SSL_get_shared_sigalgs return value error");
         return false;
     }
     std::unique_lock<std::shared_mutex> lock(rw_mutex_);
@@ -1475,7 +1477,10 @@ bool TLSSocket::TLSSocketInternal::SetSharedSigals()
         int hash_nid;
         int sign_nid;
         std::string sig_with_md;
-        SSL_get_shared_sigalgs(ssl_, i, &sign_nid, &hash_nid, nullptr, nullptr, nullptr);
+        {
+            std::lock_guard<std::mutex> lock(mutexForSsl_);
+            SSL_get_shared_sigalgs(ssl_, i, &sign_nid, &hash_nid, nullptr, nullptr, nullptr);
+        }
         switch (sign_nid) {
             case EVP_PKEY_RSA:
                 sig_with_md = SIGN_NID_RSA;

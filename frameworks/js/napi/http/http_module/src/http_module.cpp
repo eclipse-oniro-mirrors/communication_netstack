@@ -50,6 +50,7 @@ static bool g_appIsAtomicService = false;
 static std::string g_appBundleName;
 
 static std::once_flag g_isAtomicServiceFlag;
+static int64_t g_limitSdkReport = 0;
 
 napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
 {
@@ -326,12 +327,14 @@ napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_i
     }
     if (manager->IsEventDestroy()) {
         NETSTACK_LOGD("js object has been destroyed");
-        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, HTTP_UNKNOWN_OTHER_ERROR);
         return NapiUtils::GetUndefined(env);
     }
     manager->SetEventDestroy(true);
     manager->DeleteEventReference(env);
-    hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
+    if (g_limitSdkReport == 0) {
+        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
+        g_limitSdkReport = 1;
+    }
     return NapiUtils::GetUndefined(env);
 }
 

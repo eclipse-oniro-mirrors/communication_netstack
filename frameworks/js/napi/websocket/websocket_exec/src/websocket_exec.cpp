@@ -89,12 +89,6 @@ static const lws_protocols LWS_PROTOCOLS[] = {
     {nullptr, nullptr, 0, 0}, // this line is needed
 };
 
-static const lws_retry_bo_t RETRY = {
-    .secs_since_valid_ping = 30,
-    .secs_since_valid_hangup = 60,
-    .jitter_percent = 20,
-};
-
 struct CallbackDispatcher {
     lws_callback_reasons reason;
     int (*callback)(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
@@ -538,6 +532,31 @@ static bool WebSocketConnect(lws_client_connect_info &connectInfo, const std::sh
     return true;
 }
 
+static void SetRetry(lws_retry_bo_t *retry, ConnectContext *context)
+{
+    if (context == nullptr) {
+        return;
+    }
+    if (retry == nullptr) {
+        return;
+    }
+    if (context->pingInterval_ < context->minPingInterval || context->pingInterval_ > context->maxPingInterval) {
+        NETSTACK_LOGE("PingInterval is invalid: %{public}d", context->pingInterval_);
+        context->pingInterval_ = context->defaultPingInterval;
+    }
+    if (context->pongTimeout_ > context->pingInterval_ && context->pongTimeout_ != context->defaultPingInterval) {
+        NETSTACK_LOGE("PongTimeout is invalid: %{public}d", context->pongTimeout_);
+        context->pongTimeout_ = context->pingInterval_;
+    }
+    if (context->pingInterval_ == context->minPingInterval) {
+        context->pongTimeout_ = context->pingInterval_;
+    }
+    NETSTACK_LOGI("PingInterval is %{public}d,  PongTimeout is %{public}d",
+        context->pingInterval_, context->pongTimeout_);
+    retry->secs_since_valid_ping = context->pingInterval_;
+    retry->secs_since_valid_hangup = context->pingInterval_ + context->pongTimeout_;
+}
+
 bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsContext,
     const std::shared_ptr<EventManager> &manager)
 {
@@ -583,7 +602,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     }
     lws *wsi = nullptr;
     connectInfo.pwsi = &wsi;
-    connectInfo.retry_and_idle_policy = &RETRY;
+    connectInfo.retry_and_idle_policy = &manager->GetWebSocketUserData()->retry_policy;
     connectInfo.userdata = manager.get();
     if (!WebSocketConnect(connectInfo, manager, context)) {
         return false;
@@ -676,6 +695,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
         context->SetErrorCode(WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST);
         return false;
     }
+    SetRetry(&userData->retry_policy, context);
     if (!CreatConnectInfo(context, lwsContext, manager)) {
         userData->SetContext(nullptr);
         lws_context_destroy(lwsContext);

@@ -80,7 +80,7 @@ private:
 
     /**
      * Set RequestInfo callbacks.
-     * @param callbacks A structure object of callback functions for RequestInfo. 
+     * @param callbacks A structure object of callback functions for RequestInfo.
      * @param ptr A shared pointer to the HttpClientTask object.
      */
     void SetRequestInfoCallbacks(

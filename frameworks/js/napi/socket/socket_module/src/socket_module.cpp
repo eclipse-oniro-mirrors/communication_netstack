@@ -245,7 +245,8 @@ static bool MakeTcpClientBindSocket(napi_env env, napi_value thisVal, BindContex
         return false;
     }
     NETSTACK_LOGD("bind ip family is %{public}d", context->address_.GetSaFamily());
-    if (context->GetSharedManager()->GetData() != nullptr) {
+    if (context->GetSharedManager()->GetData() != nullptr &&
+        static_cast<int>(reinterpret_cast<uint64_t>(context->GetSharedManager()->GetData())) >= 0) {
         NETSTACK_LOGE("tcp connect has been called");
         return true;
     }

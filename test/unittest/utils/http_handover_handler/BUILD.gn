@@ -106,7 +106,7 @@ ohos_unittest("http_handover_handler_test") {
     "$NETSTACK_DIR/frameworks/js/napi/http/http_exec/src/http_tls_config.cpp",
     "$NETSTACK_DIR/frameworks/js/napi/http/options/src/http_request_options.cpp",
     "$NETSTACK_DIR/utils/profiler_utils/src/netstack_network_profiler.cpp",
-    "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/websocket/websocket_module/src/http_handover_handler.cpp",
+    "$NETSTACK_DIR/utils/http_over_curl/src/http_handover_handler.cpp",
     "http_handover_handler_test.cpp",
   ]
 

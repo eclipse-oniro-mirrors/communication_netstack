@@ -37,5 +37,5 @@ enum HandoverRequestType {
     INCOMING,  // new request during network change
     NETWORKERROR,  // old request of network error
     UNDONE  // undone old request after network change
-}
+};
 #endif  // COMMUNICATIONNETSTACK_HTTP_HANDOVER_INFO_H

@@ -32,9 +32,10 @@
 #include "curl/curl.h"
 #include "napi/native_api.h"
 #include "request_context.h"
-#ifdef HTTP_HANDOVER_FEATURE
-#include "request_info.h"
-#endif
+
+namespace OHOS::NetStack::HttpOverCurl {
+    struct TransferCallbacks;
+}
 
 namespace OHOS::NetStack::Http {
 class HttpResponseCacheExec final {
@@ -111,7 +112,9 @@ private:
 
     static bool SetCertPinnerOption(CURL *curl, RequestContext *context);
 
+#if HAS_NETMANAGER_BASE
     static void SetRequestInfoCallbacks(HttpOverCurl::TransferCallbacks &callbacks);
+#endif
 
     static size_t OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData);
 

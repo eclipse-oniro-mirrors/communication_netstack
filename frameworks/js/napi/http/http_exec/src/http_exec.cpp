@@ -72,6 +72,8 @@
 #include "http_handover_info.h"
 #endif
 
+#include "http_utils.h"
+
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
         CURLcode result = curl_easy_setopt(handle, opt, data);                                           \
@@ -122,6 +124,7 @@ static constexpr const int SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX = 1;
 
 static constexpr const char *HTTP_AF_ONLYV4 = "ONLY_V4";
 static constexpr const char *HTTP_AF_ONLYV6 = "ONLY_V6";
+static int64_t g_limitSdkReport = 0;
 
 static void RequestContextDeleter(RequestContext *context)
 {
@@ -171,12 +174,13 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
     }
 }
 
+#if HAS_NETMANAGER_BASE
 void HttpExec::SetRequestInfoCallbacks(HttpOverCurl::TransferCallbacks &callbacks)
 {
     static auto startedCallback = +[](CURL *easyHandle, void *opaqueData) {
         char *url = nullptr;
         curl_easy_getinfo(easyHandle, CURLINFO_EFFECTIVE_URL, &url);
-        auto context = static_cast<RequestContext *>(opaqueData);
+        auto context = static_cast<RequestContext *>(opaqueData);  //
         context->GetTrace().Tracepoint(TraceEvents::QUEUE);
     };
 
@@ -211,7 +215,7 @@ void HttpExec::SetRequestInfoCallbacks(HttpOverCurl::TransferCallbacks &callback
             NETSTACK_LOGE("setHandoverInfoCallback context is nullptr, error!");
             return;
         }
-        context->SetRequestHandoverCallback(httpHandoverInfo.handoverNum,
+        context->SetRequestHandoverInfo(httpHandoverInfo.handoverNum,
             httpHandoverInfo.handoverReason,
             httpHandoverInfo.flowControlTime,
             httpHandoverInfo.readFlag);
@@ -220,6 +224,7 @@ void HttpExec::SetRequestInfoCallbacks(HttpOverCurl::TransferCallbacks &callback
     callbacks.setHandoverInfoCallback = setHandoverInfoCallback;
 #endif
 }
+#endif
 
 void HttpExec::AsyncWorkRequestCallback(napi_env env, napi_status status, void *data)
 {
@@ -333,12 +338,12 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 
 #if HAS_NETMANAGER_BASE
     std::stringstream name;
-    auto isDebugMode = NapiUtils::IsDebugMode();
+    auto isDebugMode = HttpUtils::IsDebugMode();
     if (context == nullptr) {
         NETSTACK_LOGE("context nullptr");
         return false;
     }
-    auto urlWithoutParam = NapiUtils::RemoveUrlParameters(context->options.GetUrl());
+    auto urlWithoutParam = HttpUtils::RemoveUrlParameters(context->options.GetUrl());
     name << HTTP_REQ_TRACE_NAME << "_" << std::this_thread::get_id() << (isDebugMode ? ("_" + urlWithoutParam) : "");
     SetTraceOptions(handle, context);
     SetServerSSLCertOption(handle, context);
@@ -653,7 +658,6 @@ bool HttpExec::ExecRequest(RequestContext *context)
         return false;
     }
     if (context->GetSharedManager()->IsEventDestroy()) {
-        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, HTTP_UNKNOWN_OTHER_ERROR);
         return false;
     }
     context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
@@ -670,7 +674,6 @@ bool HttpExec::ExecRequest(RequestContext *context)
                     context->GetModuleId());
             }
         }
-        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
         return true;
     }
     if (!RequestWithoutCache(context)) {
@@ -686,10 +689,12 @@ bool HttpExec::ExecRequest(RequestContext *context)
                     context->GetModuleId());
             }
         }
-        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
         return false;
     }
-    hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
+    if (g_limitSdkReport == 0) {
+        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
+        g_limitSdkReport = 1;
+    }
     return true;
 }
 

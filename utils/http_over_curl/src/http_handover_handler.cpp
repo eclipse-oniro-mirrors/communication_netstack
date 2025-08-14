@@ -313,8 +313,7 @@ bool HttpHandoverHandler::CheckRequestCanRetrans(RequestInfo *request, int32_t r
     if (readFlag == -1) {
         return false;
     }
-    HttpHandoverStackInfo httpHandoverStackInfo = 
-            requestInfo->callbacks.handoverInfoCallback(requestInfo->opaqueData);
+    HttpHandoverStackInfo httpHandoverStackInfo = request->callbacks.handoverInfoCallback(request->opaqueData);
     bool isSafe = (httpHandoverStackInfo.method == METHOD_GET || httpHandoverStackInfo.method == METHOD_HEAD ||
                    httpHandoverStackInfo.method == METHOD_OPTIONS || httpHandoverStackInfo.method == METHOD_TRACE);
     bool ret = false;

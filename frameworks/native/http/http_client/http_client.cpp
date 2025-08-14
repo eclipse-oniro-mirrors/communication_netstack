@@ -85,7 +85,7 @@ std::shared_ptr<HttpClientTask> HttpSession::CreateTask(const HttpClientRequest 
 void HttpSession::SetRequestInfoCallbacks(
     HttpOverCurl::TransferCallbacks &callbacks, const std::shared_ptr<HttpClientTask> &ptr)
 {
-    if (nullptr === ptr) {
+    if (nullptr == ptr) {
         return;
     }
     auto startedCallback = [ptr](CURL *, void *) {
@@ -112,7 +112,7 @@ void HttpSession::SetRequestInfoCallbacks(
         return httpHandoverStackInfo;
     };
     static auto setHandoverInfoCallback = [ptr](HttpHandoverInfo httpHandoverInfo, void *) {
-        ptr->SetRequestHandoverCallback(httpHandoverInfo.handoverNum,
+        ptr->SetRequestHandoverInfo(httpHandoverInfo.handoverNum,
             httpHandoverInfo.handoverReason,
             httpHandoverInfo.flowControlTime,
             httpHandoverInfo.readFlag);

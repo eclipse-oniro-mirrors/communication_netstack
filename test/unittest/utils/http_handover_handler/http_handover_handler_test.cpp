@@ -40,13 +40,13 @@ RequestInfo *GetRequestInfo()
     CURL *handle = GetCurlHandle();
     RequestInfo *requestInfo = new RequestInfo();
     requestInfo->easyHandle = handle;
-    static auto startCallback = +[](CURL *easyHandle, void *opaqueData){};
-    static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData){};
-    static auto handoverInfoCallback = +[](void *opaqueData){
+    static auto startCallback = +[](CURL *easyHandle, void *opaqueData) {};
+    static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {};
+    static auto handoverInfoCallback = +[](void *opaqueData) {
         HttpHandoverStackInfo httpHandoverStackInfo;
         return httpHandoverStackInfo;
     };
-    static auto setHandoverInfoCallback = +[](HttpHandoverInfo httpHandoverInfo, void *opaqueData){};
+    static auto setHandoverInfoCallback = +[](HttpHandoverInfo httpHandoverInfo, void *opaqueData) {};
     HttpOverCurl::TransferCallbacks callbacks = {
         .startedCallback = startCallback,
         .doneCallback = responseCallback,

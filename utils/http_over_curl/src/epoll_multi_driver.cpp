@@ -228,8 +228,8 @@ int EpollMultiDriver::MultiSocketCallback(curl_socket_t socket, int action, Curl
 
 static int CurlPollToEpoll(int action)
 {
-    int kind = ((action & CURL_POLL_IN) ? EPOLLIN : (EPOLLIN & ~EPOLLIN)) |
-               ((action & CURL_POLL_OUT) ? EPOLLOUT : (EPOLLOUT & ~EPOLLOUT));
+    int kind = (((static_cast<unsigned int>(action)) & CURL_POLL_IN) ? EPOLLIN : (EPOLLIN & ~EPOLLIN)) |
+               (((static_cast<unsigned int>(action)) & CURL_POLL_OUT) ? EPOLLOUT : (EPOLLOUT & ~EPOLLOUT));
     return kind;
 }
 

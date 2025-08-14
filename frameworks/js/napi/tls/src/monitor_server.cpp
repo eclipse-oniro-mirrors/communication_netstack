@@ -337,10 +337,6 @@ napi_value MonitorServer::On(napi_env env, napi_callback_info info)
     }
 
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    if (monitors_.Find(event)) {
-        NETSTACK_LOGE("monitor is exits %{public}s", event.c_str());
-        return NapiUtils::GetUndefined(env);
-    }
     manager->AddListener(env, event, params[1], false, false);
     TLSServerRegEvent(event, tlsSocketServer, manager);
     return NapiUtils::GetUndefined(env);
@@ -421,18 +417,10 @@ napi_value MonitorServer::Off(napi_env env, napi_callback_info info)
     }
 
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    if (!monitors_.Find(event)) {
-        NETSTACK_LOGE("monitor is off %{public}s", event.c_str());
-        return NapiUtils::GetUndefined(env);
-    }
-
     if (event == EVENT_CONNECT) {
-        monitors_.Erase(std::string(EVENT_CONNECT));
         tlsSocketServer->OffConnect();
     }
-
     if (event == EVENT_ERROR) {
-        monitors_.Erase(std::string(EVENT_ERROR));
         tlsSocketServer->OffError();
     }
 
@@ -480,10 +468,6 @@ napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
     }
 
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    if (!monitors_.Find(event)) {
-        NETSTACK_LOGE("monitor is off %{public}s", event.c_str());
-        return NapiUtils::GetUndefined(env);
-    }
     TLSConnectionUnRegEvent(event, tlsSocketServer, clientid);
     if (paramsCount == PARAM_OPTION_CALLBACK) {
         manager->DeleteListener(event, params[1]);
@@ -497,7 +481,6 @@ void MonitorServer::TLSServerRegEvent(std::string event, TLSSocketServer *tlsSoc
                                       const std::shared_ptr<EventManager> &ServerEventManager)
 {
     if (event == EVENT_CONNECT) {
-        monitors_.Insert(std::string(EVENT_CONNECT));
         tlsSocketServer->OnConnect(
             [this, ServerEventManager](auto clientFd, std::shared_ptr<EventManager> eventManager) {
                 if (ServerEventManager->HasEventListener(std::string(EVENT_CONNECT))) {
@@ -510,7 +493,6 @@ void MonitorServer::TLSServerRegEvent(std::string event, TLSSocketServer *tlsSoc
             });
     }
     if (event == EVENT_ERROR) {
-        monitors_.Insert(std::string(EVENT_ERROR));
         tlsSocketServer->OnError([this, ServerEventManager](auto errorNumber, auto errorString) {
             errorNumber_ = errorNumber;
             errorString_ = errorString;
@@ -527,7 +509,6 @@ void MonitorServer::TLSConnectionRegEvent(std::string event, TLSSocketServer *tl
         InsertEventMessage(tlsSocketServer, clientId, eventManager);
     }
     if (event == EVENT_CLOSE) {
-        monitors_.Insert(std::string(EVENT_CLOSE));
         auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientId);
         if (ptrConnection != nullptr) {
             ptrConnection->OnClose([this, eventManager](auto clientFd) {
@@ -537,7 +518,6 @@ void MonitorServer::TLSConnectionRegEvent(std::string event, TLSSocketServer *tl
         }
     }
     if (event == EVENT_ERROR) {
-        monitors_.Insert(std::string(EVENT_ERROR));
         auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientId);
         if (ptrConnection != nullptr) {
             ptrConnection->OnError([this, eventManager](auto errorNumber, auto errorString) {
@@ -555,7 +535,6 @@ void MonitorServer::InsertEventMessage(TLSSocketServer *tlsSocketServer, int cli
         return;
     }
 
-    monitors_.Insert(std::string(EVENT_MESSAGE));
     auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientId);
     if (ptrConnection != nullptr) {
         ptrConnection->OnMessage([this, eventManager](auto clientFd, auto data, auto remoteInfo) {
@@ -577,21 +556,18 @@ void MonitorServer::InsertEventMessage(TLSSocketServer *tlsSocketServer, int cli
 void MonitorServer::TLSConnectionUnRegEvent(std::string event, TLSSocketServer *tlsSocketServer, int clientId)
 {
     if (event == EVENT_MESSAGE) {
-        monitors_.Erase(std::string(EVENT_MESSAGE));
         auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientId);
         if (ptrConnection != nullptr) {
             ptrConnection->OffMessage();
         }
     }
     if (event == EVENT_CLOSE) {
-        monitors_.Erase(std::string(EVENT_CLOSE));
         auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientId);
         if (ptrConnection != nullptr) {
             ptrConnection->OffClose();
         }
     }
     if (event == EVENT_ERROR) {
-        monitors_.Erase(std::string(EVENT_ERROR));
         auto ptrConnection = tlsSocketServer->GetConnectionByClientID(clientId);
         if (ptrConnection != nullptr) {
             ptrConnection->OffError();
