@@ -31,6 +31,10 @@
 #include "http_client_request.h"
 #include "http_client_task.h"
 
+namespace OHOS::NetStack::HttpOverCurl {
+    struct TransferCallbacks;
+}
+
 namespace OHOS {
 namespace NetStack {
 namespace HttpClient {
@@ -73,6 +77,14 @@ private:
      * @param ptr A shared pointer to the HttpClientTask object.
      */
     void StartTask(const std::shared_ptr<HttpClientTask> &ptr);
+
+    /**
+     * Set RequestInfo callbacks.
+     * @param callbacks A structure object of callback functions for RequestInfo.
+     * @param ptr A shared pointer to the HttpClientTask object.
+     */
+    void SetRequestInfoCallbacks(
+        HttpOverCurl::TransferCallbacks &callbacks, const std::shared_ptr<HttpClientTask> &ptr);
 };
 } // namespace HttpClient
 } // namespace NetStack

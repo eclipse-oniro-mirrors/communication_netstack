@@ -19,11 +19,18 @@
 #include <functional>
 
 #include "curl/curl.h"
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_handover_info.h"
+#endif
 
 namespace OHOS::NetStack::HttpOverCurl {
 
 using TransferDoneCallback = std::function<void(CURLMsg *curlMessage, void *opaqueData)>;
 using TransferStartedCallback = std::function<void(CURL *easyHandle, void *opaqueData)>;
+#ifdef HTTP_HANDOVER_FEATURE
+using TransferHandoverInfoCallback = std::function<HttpHandoverStackInfo(void *opaqueData)>;
+using SetHandoverInfoCallback = std::function<void(HttpHandoverInfo httpHandoverInfo, void *opaqueData)>;
+#endif
 
 } // namespace OHOS::NetStack::HttpOverCurl
 

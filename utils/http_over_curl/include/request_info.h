@@ -21,11 +21,18 @@
 #include "transfer_callbacks.h"
 
 namespace OHOS::NetStack::HttpOverCurl {
+struct TransferCallbacks {
+    TransferStartedCallback startedCallback;
+    TransferDoneCallback doneCallback;
+#ifdef HTTP_HANDOVER_FEATURE
+    TransferHandoverInfoCallback handoverInfoCallback;
+    SetHandoverInfoCallback setHandoverInfoCallback;
+#endif
+};
 
 struct RequestInfo {
     CURL *easyHandle;
-    TransferStartedCallback startedCallback;
-    TransferDoneCallback doneCallback;
+    TransferCallbacks callbacks;
     void *opaqueData;
 };
 
