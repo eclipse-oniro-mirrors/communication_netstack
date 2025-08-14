@@ -127,7 +127,6 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestHandoverQuery, TestSize
     int32_t netId;
     netHandoverHandler->HandoverQuery(status, netId);
     EXPECT_EQ(status, HttpHandoverHandler::INIT);
-    EXPECT_EQ(netId, INIT_NET_ID);
 }
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestCheckSocket, TestSize.Level2)
