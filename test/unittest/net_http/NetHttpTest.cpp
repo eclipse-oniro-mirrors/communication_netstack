@@ -218,9 +218,11 @@ HWTEST_F(NetHttpTest, GetHeaderEntries003, TestSize.Level1)
     OH_Http_SetHeaderValue(header, "a", "test1");
     OH_Http_SetHeaderValue(header, "cc", "test2");
     OH_Http_SetHeaderValue(header, "b", "test3");
- 
-    EXPECT_TRUE(OH_Http_GetHeaderEntries(header) != nullptr);
+    Http_HeaderEntry *entries = OH_Http_GetHeaderEntries(header);
+    EXPECT_TRUE(entries != nullptr);
+    OH_Http_DestroyHeaderEntries(&entries);
     OH_Http_DestroyHeaders(&header);
+    OH_Http_DestroyHeaderEntries(nullptr);
 }
 
 HWTEST_F(NetHttpTest, CreateRequest001, TestSize.Level1)
