@@ -806,10 +806,6 @@ static void PollRecvData(sockaddr *addr, socklen_t addrLen, const MessageCallbac
     auto addrDeleter = [](sockaddr *a) { free(reinterpret_cast<void *>(a)); };
     std::unique_ptr<sockaddr, decltype(addrDeleter)> pAddr(addr, addrDeleter);
 
-    int recvTimeoutMs = ConfirmSocketTimeoutMs(socketfd, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT);
-    if (recvTimeoutMs < 0) {
-        return;
-    }
     lock.unlock();
     std::pair<std::unique_ptr<char[]> &, int> bufInfo{buf, bufferSize};
     std::pair<sockaddr *, socklen_t> addrInfo{addr, addrLen};
@@ -823,7 +819,7 @@ static void PollRecvData(sockaddr *addr, socklen_t addrLen, const MessageCallbac
             break;
         }
 
-        int ret = poll(fds.data(), fds.size(), recvTimeoutMs);
+        int ret = poll(fds.data(), fds.size(), DEFAULT_POLL_TIMEOUT);
         if (ret < 0) {
             if (errno == EINTR) {
                 continue;
