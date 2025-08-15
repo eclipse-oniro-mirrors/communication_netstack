@@ -38,9 +38,10 @@ EpollRequestHandler::~EpollRequestHandler()
     }
 }
 
-void EpollRequestHandler::Process(CURL *easyHandle, const TransferCallbacks callbacks, void *opaqueData)
+void EpollRequestHandler::Process(CURL *easyHandle, const TransferStartedCallback &startedCallback,
+                                  const TransferDoneCallback &responseCallback, void *opaqueData)
 {
-    auto requestInfo = new RequestInfo{easyHandle, callbacks, opaqueData};
+    auto requestInfo = new RequestInfo{easyHandle, startedCallback, responseCallback, opaqueData};
     incomingQueue_->Push(requestInfo);
 
     auto start = [this]() {

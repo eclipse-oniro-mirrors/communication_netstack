@@ -111,7 +111,7 @@ static bool IsConnectError(CURLcode result)
     return false;
 }
 
-bool HttpHandoverHandler::IsNetworkErrorTypeCorrect(CURLcode result)
+static bool IsNetworkErrorTypeCorrect(CURLcode result)
 {
     if (IsIoError(result) || IsConnectError(result)) {
         return true;
@@ -150,16 +150,13 @@ bool HttpHandoverHandler::Initialize()
         httpHandoverQueryRequest_ == nullptr || httpHandoverReportTimeout_ == nullptr);
     if (hasFuncNull) {
         NETSTACK_LOGE("http handover wrapper symbol failed, error: %{public}s", dlerror());
-        dlclose(netHandoverHandler_);
-        netHandoverHandler_ = nullptr;
         return false;
     }
     NETSTACK_LOGD("NetHandover enabled");
-    httpHandoverManager_ = httpHandoverInit_(this, HandoverCallback, HandoverTimerCallback, HTTP_STACK_NAME);
+    const char* stackName = "http";
+    httpHandoverManager_ = httpHandoverInit_(this, HandoverCallback, HandoverTimerCallback, stackName);
     if (httpHandoverManager_ == nullptr) {
         NETSTACK_LOGE("http handover manager init fail");
-        dlclose(netHandoverHandler_);
-        netHandoverHandler_ = nullptr;
         return false;
     }
     return true;
@@ -217,13 +214,13 @@ void HttpHandoverHandler::SetHandoverTimeoutEvent(long timeoutMs)
     }
 }
 
-void HttpHandoverHandler::HandoverQuery()
+void HttpHandoverHandler::HandoverQuery(int32_t &status, int32_t &netId)
 {
     if (httpHandoverQuery_ == nullptr || httpHandoverManager_ == nullptr) {
         NETSTACK_LOGE("nullptr param error");
         return;
     }
-    httpHandoverQuery_(httpHandoverManager_, &status_, &netId_);
+    httpHandoverQuery_(httpHandoverManager_, &status, &netId);
 }
 
 bool HttpHandoverHandler::CheckSocketOpentimeLessThanEndTime(curl_socket_t fd)
@@ -265,28 +262,29 @@ void HttpHandoverHandler::SetCallback(RequestInfo *request)
 
 bool HttpHandoverHandler::TryFlowControl(RequestInfo *requestInfo, int32_t requestType)
 {
-    HandoverQuery();
-    if (GetStatus() == HttpHandoverHandler::FATAL) {
+    int32_t status = -1;
+    int32_t netId = -1;
+    HandoverQuery(status, netId);
+    if (status == HttpHandoverHandler::FATAL) {
         NETSTACK_LOGE("Handover status fatal, feature disable.");
         return false;
     }
 
     SetCallback(requestInfo);
-    if (GetStatus() == HttpHandoverHandler::START) {
+    if (status == HttpHandoverHandler::START) {
         handoverQueue_.insert(requestInfo);
+        auto context = static_cast<Http::RequestContext *>(requestInfo->opaqueData);
         std::string reason;
-        if (requestType == HandoverRequestType::INCOMING) {
+        if (requestType == RequestType::INCOMING) {
             reason = "incoming request";
-        } else if (requestType == HandoverRequestType::NETWORKERROR) {
+        } else if (requestType == RequestType::NETWORKERROR) {
             reason = "network error";
         }
-        HttpHandoverStackInfo httpHandoverStackInfo =
-            requestInfo->callbacks.handoverInfoCallback(requestInfo->opaqueData);
-        NETSTACK_LOGD("taskid=%{public}d, FlowControl reason:%{public}s", httpHandoverStackInfo.taskId, reason.c_str());
+        NETSTACK_LOGD("taskid=%{public}d, FlowControl reason:%{public}s", context->GetTaskId(), reason.c_str());
         AddRequest(requestInfo, requestType);
         return true;
     }
-    AddRequest(requestInfo, HandoverRequestType::OLD);
+    AddRequest(requestInfo, RequestType::OLD);
     return false;
 }
 
@@ -304,38 +302,37 @@ bool HttpHandoverHandler::RetransRequest(std::map<CURL *, RequestInfo *> &ongoin
 
 bool HttpHandoverHandler::CheckRequestCanRetrans(RequestInfo *request, int32_t requestType, CURLcode result)
 {
-    if (request == nullptr) {
-        return false;
-    }
     time_t recvtime = 0;
     time_t sendtime = 0;
-    int32_t readFlag = IsRequestRead(request->easyHandle, recvtime, sendtime);
-    if (readFlag == -1) {
+    int32_t isRead = IsRequestRead(request->easyHandle, recvtime, sendtime);
+    if (isRead == -1) {
         return false;
     }
-    HttpHandoverStackInfo httpHandoverStackInfo = request->callbacks.handoverInfoCallback(request->opaqueData);
-    bool isSafe = (httpHandoverStackInfo.method == METHOD_GET || httpHandoverStackInfo.method == METHOD_HEAD ||
-                   httpHandoverStackInfo.method == METHOD_OPTIONS || httpHandoverStackInfo.method == METHOD_TRACE);
+    auto context = static_cast<Http::RequestContext *>(request->opaqueData);
+    auto method = context->options.GetMethod();
+    int isInstream = context->IsRequestInStream();
+    uint32_t readTimeout = context->options.GetReadTimeout();
+    uint32_t connecttimeout = context->options.GetConnectTimeout();
+    bool isSafe = (method == METHOD_GET || method == METHOD_HEAD || method == METHOD_OPTIONS || method == METHOD_TRACE);
     bool ret = false;
-    if (IsConnectError(result) || sendtime == 0 || (isSafe && (!httpHandoverStackInfo.isInStream || readFlag == 0))) {
+    if (IsConnectError(result) || sendtime == 0 || (isSafe && (!isInstream || isRead == 0))) {
         ret = true;
     }
-    if (requestType == HandoverRequestType::INCOMING || requestType == HandoverRequestType::NETWORKERROR) {
+    if (requestType == RequestType::INCOMING || requestType == RequestType::NETWORKERROR) {
         return ret;
     }
     std::string type;
-    if (requestType == HandoverRequestType::OLD) {
+    if (requestType == RequestType::OLD) {
         type = "old request";
     } else {
         type = "undone request";
     }
     NETSTACK_LOGI(
         "taskid=%{public}d,requestType:%{public}s,canRetrans:%{public}d,"
-        "method:%{public}s,isInStream:%{public}d,recvtime:%{public}d,sendtime:%{public}d,readTimeout:%{public}u,"
-        "connecttimeout:%{public}u,url:%{public}s ",
-        httpHandoverStackInfo.taskId, type.c_str(), (int)ret, httpHandoverStackInfo.method.c_str(),
-        httpHandoverStackInfo.isInStream, (int)recvtime, (int)sendtime, httpHandoverStackInfo.readTimeout,
-        httpHandoverStackInfo.connectTimeout, httpHandoverStackInfo.requestUrl.c_str());
+        "method:%{public}s,isInstream:%{public}d,recvtime:%{public}d,sendtime:%{public}d,readTimeout:%{public}u,"
+        "connecttimeout:%{public}u,url:%{public}s ", context->GetTaskId(), type.c_str(), (int)ret, method.c_str(),
+        isInstream, (int)recvtime, (int)sendtime, readTimeout, connecttimeout, context->options.GetUrl().c_str());
+
     return ret;
 }
 
@@ -344,19 +341,19 @@ void HttpHandoverHandler::UndoneRequestHandle(std::map<CURL *, RequestInfo *> &o
     for (auto it = ongoingRequests.begin(); it != ongoingRequests.end();) {
         auto handle = it->first;
         auto requestInfo = it->second;
-        if (CheckRequestCanRetrans(requestInfo, HandoverRequestType::UNDONE, CURLE_OK)) {
+        if (CheckRequestCanRetrans(requestInfo, RequestType::UNDONE, CURLE_OK)) {
             curl_multi_remove_handle(multi, handle);
             if (RetransRequest(ongoingRequests, multi, requestInfo)) {
                 ++retrans_;
-                AddRequest(requestInfo, HandoverRequestType::UNDONE);
+                AddRequest(requestInfo, RequestType::UNDONE);
                 ++it;
                 continue;
             }
-            if (requestInfo != nullptr && requestInfo->callbacks.doneCallback) {
+            if (requestInfo != nullptr && requestInfo->doneCallback) {
                 CURLMsg message;
                 message.msg = CURLMSG_DONE;
                 message.data.result = CURLE_SEND_ERROR;
-                requestInfo->callbacks.doneCallback(&message, requestInfo->opaqueData);
+                requestInfo->doneCallback(&message, requestInfo->opaqueData);
             }
             it = ongoingRequests.erase(it);
         } else {
@@ -368,18 +365,21 @@ void HttpHandoverHandler::UndoneRequestHandle(std::map<CURL *, RequestInfo *> &o
 void HttpHandoverHandler::HandoverRequestCallback(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi)
 {
     handOverEvent_->Reset();
-    HandoverQuery();
-    NETSTACK_LOGD("Enter HandoverRequestCallback status %{public}d", GetStatus());
-    if (GetStatus() == HttpHandoverHandler::START) {
+    int32_t status = -1;
+    int32_t netId = -1;
+    HandoverQuery(status, netId);
+
+    NETSTACK_LOGD("Enter HandoverRequestCallback status %{public}d", status);
+    if (status == HttpHandoverHandler::START) {
         NETSTACK_LOGD("start ongoingRequests:%{public}d", (int)ongoingRequests.size());
         for (auto &request : ongoingRequests) {
             if (requestEndtime_.count(request.second) == 0) {
                 requestEndtime_[request.second] = endTime_;
             }
-            (void)CheckRequestCanRetrans(request.second, HandoverRequestType::OLD, CURLE_OK);
+            (void)CheckRequestCanRetrans(request.second, RequestType::OLD, CURLE_OK);
         }
-    } else if (GetStatus() == HttpHandoverHandler::END || GetStatus() == HttpHandoverHandler::TIMEOUT) {
-        (GetStatus() == HttpHandoverHandler::END) ? ++endTime_ : ++timeoutTime_;
+    } else if (status == HttpHandoverHandler::END || status == HttpHandoverHandler::TIMEOUT) {
+        (status == HttpHandoverHandler::END) ? ++endTime_ : ++timeoutTime_;
         NETSTACK_LOGD("endTime:%{public}d, timeoutTime: %{public}d, ongoingRequests:%{public}d, retrans count before "
                       "end:%{public}d", endTime_, timeoutTime_, (int)ongoingRequests.size(), retrans_);
         UndoneRequestHandle(ongoingRequests, multi);
@@ -391,7 +391,7 @@ void HttpHandoverHandler::HandoverRequestCallback(std::map<CURL *, RequestInfo *
         }
         handoverQueue_.clear();
         retrans_ = 0;
-    } else if (GetStatus() == HttpHandoverHandler::FATAL) {
+    } else if (status == HttpHandoverHandler::FATAL) {
         NETSTACK_LOGE("Handover status is FATAL, feature disable.");
     }
     return;
@@ -401,8 +401,10 @@ void HttpHandoverHandler::HandoverTimeoutCallback()
 {
     handOverTimerEvent_->ResetEvent();
     handOverTimerEvent_->Stop();
-    HandoverQuery();
-    if (GetStatus() == HttpHandoverHandler::END) {
+    int32_t status = -1;
+    int32_t netId = -1;
+    HandoverQuery(status, netId);
+    if (status == HttpHandoverHandler::END) {
         return;
     }
     if (httpHandoverManager_ == nullptr) {
@@ -447,19 +449,17 @@ bool HttpHandoverHandler::ProcessRequestErr(std::map<CURL *, RequestInfo *> &ong
 void HttpHandoverHandler::SetHandoverInfo(RequestInfo *requestInfo)
 {
     if (requestInfo != nullptr) {
-        int32_t handoverReason = 0;
+        int32_t handOverReason = 0;
         double flowControlTime = 0;
-        int32_t readFlag = 0;
-        int32_t handOverNum =
-            QueryRequest(requestInfo->opaqueData, handoverReason, flowControlTime, readFlag);
-        HttpHandoverInfo httpHandoverInfo;
-        httpHandoverInfo.handoverNum = handOverNum;
-        httpHandoverInfo.handoverReason = handoverReason;
-        httpHandoverInfo.flowControlTime = flowControlTime;
-        httpHandoverInfo.readFlag = readFlag;
-        requestInfo->callbacks.setHandoverInfoCallback(httpHandoverInfo, requestInfo->opaqueData);
-        DelRequest(requestInfo);
+        int32_t isRead = 0;
+        int32_t handOverNum = QueryRequest(requestInfo->opaqueData, handOverReason, flowControlTime, isRead);
+        auto context = static_cast<Http::RequestContext *>(requestInfo->opaqueData);
+        if (context) {
+            context->SetRequestHandoverInfo(handOverNum, handOverReason, flowControlTime, isRead);
+        }
+        DelRequest(requestInfo->opaqueData);
     }
+    return;
 }
 
 bool HttpHandoverHandler::ProcessRequestNetError(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi,
@@ -473,16 +473,16 @@ bool HttpHandoverHandler::ProcessRequestNetError(std::map<CURL *, RequestInfo *>
     if (!msg || !IsNetworkErrorTypeCorrect(msg->data.result)) {
         return false;
     }
-    if (!CheckRequestCanRetrans(requestInfo, HandoverRequestType::NETWORKERROR, msg->data.result)) {
+    if (!CheckRequestCanRetrans(requestInfo, RequestType::NETWORKERROR, msg->data.result)) {
         return false;
     }
-    if (TryFlowControl(requestInfo, HandoverRequestType::NETWORKERROR)) {
+    if (TryFlowControl(requestInfo, RequestType::NETWORKERROR)) {
         ++retrans_;
         return true;
     }
     if (endTime == endTime_ - 1) {
         NETSTACK_LOGD("networkerror after end status");
-        AddRequest(requestInfo, HandoverRequestType::NETWORKERROR);
+        AddRequest(requestInfo, RequestType::NETWORKERROR);
         return RetransRequest(ongoingRequests, multi, requestInfo);
     }
     return false;
@@ -498,43 +498,27 @@ void HttpHandoverHandler::AddRequest(RequestInfo *requestInfo, int32_t type)
         IsRequestRead(requestInfo->easyHandle));
 }
 
-void HttpHandoverHandler::DelRequest(RequestInfo *requestInfo)
+void HttpHandoverHandler::DelRequest(void *userp)
 {
     if (httpHandoverManager_ == nullptr) {
         NETSTACK_LOGE("httpHandoverManager_ nullptr error");
         return;
     }
-    HttpHandoverStackInfo httpHandoverStackInfo = requestInfo->callbacks.handoverInfoCallback(requestInfo->opaqueData);
-    httpHandoverDelRequest_(httpHandoverManager_, requestInfo->opaqueData, httpHandoverStackInfo.isSuccess);
+    auto context = static_cast<Http::RequestContext *>(userp);
+    if (context->IsParseOK() && context->IsExecOK()) {
+        httpHandoverDelRequest_(httpHandoverManager_, userp, true);
+        return;
+    }
+    httpHandoverDelRequest_(httpHandoverManager_, userp, false);
 }
 
 int32_t HttpHandoverHandler::QueryRequest(void *userp, int32_t &handOverReason, double &flowControlTime,
-    int32_t &readFlag)
+    int32_t &isRead)
 {
     if (httpHandoverManager_ == nullptr) {
         NETSTACK_LOGE("httpHandoverManager_ nullptr error");
         return -1;
     }
-    return httpHandoverQueryRequest_(httpHandoverManager_, userp, &handOverReason, &flowControlTime, &readFlag);
-}
-
-int32_t HttpHandoverHandler::GetStatus()
-{
-    return status_;
-}
-
-void HttpHandoverHandler::SetStatus(int32_t status)
-{
-    status_ = status;
-}
-
-int32_t HttpHandoverHandler::GetNetId()
-{
-    return netId_;
-}
-
-void HttpHandoverHandler::SetNetId(int32_t netId)
-{
-    netId_ = netId;
+    return httpHandoverQueryRequest_(httpHandoverManager_, userp, &handOverReason, &flowControlTime, &isRead);
 }
 }

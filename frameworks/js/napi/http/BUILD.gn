@@ -176,13 +176,7 @@ ohos_shared_library("http") {
         "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
         "$NETSTACK_DIR/utils/http_over_curl/src/http_handover_handler.cpp",
       ]
-      defines += [
-        "HTTP_HANDOVER_FEATURE",
-        "HTTP_STACK_NAME=\"http\"",
-      ]
-      include_dirs += [
-        "$NETSTACK_DIR/interfaces/innerkits/http_client/include",
-      ]
+      defines += [ "HTTP_HANDOVER_FEATURE" ]
     } else {
       defines = [
         "HAS_NETMANAGER_BASE=0",

@@ -38,6 +38,7 @@
 #include "http_handover_handler.h"
 #endif
 
+
 static constexpr const int PARAM_JUST_URL = 1;
 
 static constexpr const int PARAM_JUST_URL_OR_CALLBACK = 1;
@@ -1047,14 +1048,14 @@ std::string RequestContext::GetPinnedPubkey() const
 
 #ifdef HTTP_HANDOVER_FEATURE
 void RequestContext::SetRequestHandoverInfo(int32_t handoverNum, int32_t handoverReason, double flowControlTime,
-    int32_t readFlag)
+    int32_t isRead)
 {
     requestHandoverInfo_.handoverNum = handoverNum;
     requestHandoverInfo_.handoverReason = handoverReason;
     requestHandoverInfo_.flowControlTime = flowControlTime;
-    requestHandoverInfo_.readFlag = readFlag;
+    requestHandoverInfo_.isRead = isRead;
 }
- 
+
 std::string RequestContext::GetRequestHandoverInfo()
 {
     std::string requestHandoverInfo;
@@ -1062,27 +1063,26 @@ std::string RequestContext::GetRequestHandoverInfo()
         requestHandoverInfo = "no handover";
         return requestHandoverInfo;
     }
-    int32_t readFlag = requestHandoverInfo_.readFlag;
+    int32_t isRead = requestHandoverInfo_.isRead;
     requestHandoverInfo += "HandoverNum:";
     requestHandoverInfo += std::to_string(requestHandoverInfo_.handoverNum);
     requestHandoverInfo += ", handoverReason:";
     switch (requestHandoverInfo_.handoverReason) {
-        case HandoverRequestType::INCOMING:
+        case HttpOverCurl::HttpHandoverHandler::RequestType::INCOMING:
             requestHandoverInfo += "flowControl, flowControlTime:";
             break;
-        case HandoverRequestType::NETWORKERROR:
+        case HttpOverCurl::HttpHandoverHandler::RequestType::NETWORKERROR:
             requestHandoverInfo += "netErr, retransTime:";
             break;
-        case HandoverRequestType::UNDONE:
+        case HttpOverCurl::HttpHandoverHandler::RequestType::UNDONE:
             requestHandoverInfo += "undone, retransTime:";
             break;
         default:
-            requestHandoverInfo += "unkown type";
             break;
     }
     requestHandoverInfo += std::to_string(requestHandoverInfo_.flowControlTime);
     requestHandoverInfo += ", isRead:";
-    requestHandoverInfo += readFlag == 1 ? "true" : (readFlag == 0 ? "false" : "error");
+    requestHandoverInfo += isRead == 1 ? "true" : (isRead == 0 ? "false" : "error");
     requestHandoverInfo += ", isStream:";
     requestHandoverInfo += this->IsRequestInStream() ? "true" : "false";
     return requestHandoverInfo;

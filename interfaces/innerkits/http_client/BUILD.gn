@@ -50,21 +50,11 @@ config("http_client_config") {
       "HTTP_MULTIPATH_CERT_ENABLE",
       "HAS_NETSTACK_CHR",
     ]
-    include_dirs += [
-      "$NETSTACK_DIR/frameworks/js/napi/http/async_context/include",
-      "$NETSTACK_DIR/frameworks/js/napi/http/constant/include",
-      "$NETSTACK_DIR/frameworks/js/napi/http/options/include",
-      "$NETSTACK_DIR/frameworks/js/napi/http/http_exec/include",
-    ]
   }
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    defines += [
-      "HAS_NETMANAGER_BASE=1",
-      "HTTP_HANDOVER_FEATURE",
-      "HTTP_STACK_NAME=\"HTTP_CLIEND\"",
-    ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
   }
 }
 
@@ -93,9 +83,6 @@ ohos_shared_library("http_client") {
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_response.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_task.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_time.cpp",
-    "$NETSTACK_DIR/frameworks/js/napi/http/async_context/src/request_context.cpp",
-    "$NETSTACK_DIR/frameworks/js/napi/http/options/src/http_request_options.cpp",
-    "$NETSTACK_DIR/utils/http_over_curl/src/http_handover_handler.cpp",
   ]
 
   include_dirs = [
@@ -147,7 +134,6 @@ ohos_shared_library("http_client") {
       "netmanager_base:net_conn_manager_if",
       "netmanager_base:net_security_config_if",
       "time_service:time_client",
-      "napi:ace_napi",
     ]
     if (product_name != "ohos-sdk") {
       external_deps += [ "init:libbegetutil" ]

@@ -117,7 +117,7 @@ void EpollMultiDriver::IncomingRequestCallback()
     for (auto &request : requestsToAdd) {
 #ifdef HTTP_HANDOVER_FEATURE
         if (netHandoverHandler_ &&
-            netHandoverHandler_->TryFlowControl(request, HandoverRequestType::INCOMING)) {
+            netHandoverHandler_->TryFlowControl(request, HttpHandoverHandler::RequestType::INCOMING)) {
             continue;
         }
 #endif
@@ -128,8 +128,8 @@ void EpollMultiDriver::IncomingRequestCallback()
             continue;
         }
 
-        if (request->callbacks.startedCallback) {
-            request->callbacks.startedCallback(request->easyHandle, request->opaqueData);
+        if (request->startedCallback) {
+            request->startedCallback(request->easyHandle, request->opaqueData);
         }
     }
 }
@@ -187,8 +187,8 @@ __attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
                     break;
                 }
 #endif
-                if (requestInfo != nullptr && requestInfo->callbacks.doneCallback) {
-                    requestInfo->callbacks.doneCallback(message, requestInfo->opaqueData);
+                if (requestInfo != nullptr && requestInfo->doneCallback) {
+                    requestInfo->doneCallback(message, requestInfo->opaqueData);
                 }
                 delete requestInfo;
                 break;

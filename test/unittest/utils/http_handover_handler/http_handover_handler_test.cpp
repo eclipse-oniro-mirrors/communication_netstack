@@ -34,35 +34,6 @@ CURL *GetCurlHandle()
     curl_easy_setopt(handle, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
     return handle;
 }
-
-RequestInfo *GetRequestInfo()
-{
-    CURL *handle = GetCurlHandle();
-    RequestInfo *requestInfo = new RequestInfo();
-    requestInfo->easyHandle = handle;
-    static auto startCallback = +[](CURL *easyHandle, void *opaqueData) {};
-    static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {};
-    static auto handoverInfoCallback = +[](void *opaqueData) {
-        HttpHandoverStackInfo httpHandoverStackInfo;
-        return httpHandoverStackInfo;
-    };
-    static auto setHandoverInfoCallback = +[](HttpHandoverInfo httpHandoverInfo, void *opaqueData) {};
-    HttpOverCurl::TransferCallbacks callbacks = {
-        .startedCallback = startCallback,
-        .doneCallback = responseCallback,
-        .handoverInfoCallback = handoverInfoCallback,
-        .setHandoverInfoCallback = setHandoverInfoCallback,
-    };
-    requestInfo->callbacks = callbacks;
-    requestInfo->opaqueData = static_cast<void *>(malloc(sizeof(Http::RequestContext)));
-    return requestInfo;
-}
-
-void DeleteRequestInfo(RequestInfo *requestInfo)
-{
-    free(requestInfo->opaqueData);
-    delete requestInfo;
-}
 }
 
 class HttpHandoverHandlerTest : public testing::Test {
@@ -76,34 +47,34 @@ public:
     virtual void TearDown() {}
 };
 
-HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestSocketTime, TestSize.Level2)
+HWTEST_F(HttpHandoverHandlerTest, TestSocketTime, TestSize.Level2)
 {
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    auto mockHandler = std::make_shared<HttpHandoverHandler>();
     curl_socket_t fd = 0;
-    EXPECT_TRUE(CheckSocketTime(netHandoverHandler.get(), fd));
-    EXPECT_TRUE(CheckSocketTime(nullptr, fd));
+    EXPECT_EQ(CheckSocketTime(mockHandler.get(), fd), true);
 }
 
-HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestOpenSocket, TestSize.Level2)
+HWTEST_F(HttpHandoverHandlerTest, TestOpenSocket, TestSize.Level2)
 {
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    auto mockHandler = std::make_shared<HttpHandoverHandler>();
     curl_sockaddr addr = {AF_INET, SOCK_STREAM, 0};
     curlsocktype purpose = CURLSOCKTYPE_IPCXN;
-    curl_socket_t sockfd = OpenSocket(netHandoverHandler.get(), purpose, &addr);
+    curl_socket_t sockfd = OpenSocket(mockHandler.get(), purpose, &addr);
     EXPECT_GE(sockfd, 0);
 }
 
-HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestCloseSocketCallback, TestSize.Level2)
+HWTEST_F(HttpHandoverHandlerTest, TestCloseSocketCallback, TestSize.Level2)
 {
-    auto netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    auto mockHandler = std::make_shared<HttpHandoverHandler>();
     curl_socket_t fd = 0;
-    int ret = CloseSocketCallback(netHandoverHandler.get(), fd);
+    int ret = CloseSocketCallback(mockHandler.get(), fd);
     EXPECT_EQ(ret, 0);
 }
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestEvent, TestSize.Level2)
 {
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler;
+    netHandoverHandler = std::make_shared<HttpHandoverHandler>();
     netHandoverHandler->Initialize();
     netHandoverHandler->IsInitSuccess();
 
@@ -119,41 +90,49 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestEvent, TestSize.Level2)
     EXPECT_TRUE(!netHandoverHandler->IsItHandoverTimeoutEvent(descriptor));
 }
 
-HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestCallbackEvent, TestSize.Level2)
+HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestTimeoutTimerEvent, TestSize.Level2)
 {
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler;
+    netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    
     HandoverCallback(static_cast<void*>(netHandoverHandler.get()));
     HandoverTimerCallback(static_cast<void*>(netHandoverHandler.get()), TIMEOUT_MS);
     HandoverCallback(nullptr);
     HandoverTimerCallback(nullptr, TIMEOUT_MS);
     netHandoverHandler->HandoverTimeoutCallback();
+}
 
-    RequestInfo *requestInfo = GetRequestInfo();
+HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestHandoverEvent, TestSize.Level2)
+{
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler;
+    netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    CURL *handle = GetCurlHandle();
+    RequestInfo *requestInfo = new RequestInfo();
+    requestInfo->easyHandle = handle;
     netHandoverHandler->SetCallback(requestInfo);
     std::map<CURL *, RequestInfo *> ongoingRequests;
     CURLM *multi = curl_multi_init();
+
     netHandoverHandler->SetHandoverEvent();
     netHandoverHandler->HandoverRequestCallback(ongoingRequests, multi);
-    DeleteRequestInfo(requestInfo);
-
-    CURL *handle = GetCurlHandle();
-    EXPECT_EQ(netHandoverHandler->IsRequestRead(handle), 0);
+    delete requestInfo;
 }
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestHandoverQuery, TestSize.Level2)
 {
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
-    netHandoverHandler->HandoverQuery();
-    EXPECT_EQ(netHandoverHandler->GetStatus(), HttpHandoverHandler::INIT);
-    EXPECT_EQ(netHandoverHandler->GetNetId(), 0);
-    int32_t netId = 100;
-    netHandoverHandler->SetNetId(netId);
-    EXPECT_EQ(netHandoverHandler->GetNetId(), netId);
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler;
+    netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    int32_t status;
+    int32_t netId;
+    netHandoverHandler->HandoverQuery(status, netId);
+    EXPECT_EQ(status, HttpHandoverHandler::INIT);
 }
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestCheckSocket, TestSize.Level2)
 {
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler;
+    netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+
     curl_socket_t fd = 0;
     netHandoverHandler->SetSocketOpenTime(fd);
     netHandoverHandler->EraseFd(fd);
@@ -162,120 +141,108 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestCheckSocket, TestSize.L
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestTryFlowControl, TestSize.Level2)
 {
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
-    RequestInfo *requestInfo = GetRequestInfo();
-    netHandoverHandler->SetStatus(HttpHandoverHandler::INIT);
-    EXPECT_FALSE(netHandoverHandler->TryFlowControl(requestInfo, HandoverRequestType::INCOMING));
-    netHandoverHandler->SetStatus(HttpHandoverHandler::START);
-    EXPECT_TRUE(netHandoverHandler->TryFlowControl(requestInfo, HandoverRequestType::INCOMING));
-    EXPECT_TRUE(netHandoverHandler->TryFlowControl(requestInfo, HandoverRequestType::NETWORKERROR));
-    EXPECT_TRUE(netHandoverHandler->TryFlowControl(requestInfo, HandoverRequestType::UNDONE));
-    netHandoverHandler->SetStatus(HttpHandoverHandler::FATAL);
-    EXPECT_FALSE(netHandoverHandler->TryFlowControl(requestInfo, HandoverRequestType::INCOMING));
-    DeleteRequestInfo(requestInfo);
-}
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler;
+    netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    CURL *handle = GetCurlHandle();
+    RequestInfo *requestInfo = new RequestInfo();
+    requestInfo->easyHandle = handle;
+    requestInfo->opaqueData = static_cast<void *>(malloc(sizeof(Http::RequestContext)));
 
-HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestHandoverRequestCallback, TestSize.Level2)
-{
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
-    RequestInfo *requestInfo = GetRequestInfo();
-    std::map<CURL *, RequestInfo *> ongoingRequests;
-    ongoingRequests[requestInfo->easyHandle] = requestInfo;
-    CURLM *multi = curl_multi_init();
-
-    netHandoverHandler->SetHandoverEvent();
-    netHandoverHandler->SetStatus(HttpHandoverHandler::START);
-    netHandoverHandler->HandoverRequestCallback(ongoingRequests, multi);
-    netHandoverHandler->SetHandoverEvent();
-    netHandoverHandler->SetStatus(HttpHandoverHandler::END);
-    netHandoverHandler->HandoverRequestCallback(ongoingRequests, multi);
-    netHandoverHandler->SetHandoverEvent();
-    netHandoverHandler->SetStatus(HttpHandoverHandler::TIMEOUT);
-    netHandoverHandler->HandoverRequestCallback(ongoingRequests, multi);
-    netHandoverHandler->SetHandoverEvent();
-    netHandoverHandler->SetStatus(HttpHandoverHandler::FATAL);
-    netHandoverHandler->HandoverRequestCallback(ongoingRequests, multi);
-    EXPECT_EQ(netHandoverHandler->GetStatus(), HttpHandoverHandler::FATAL);
-    DeleteRequestInfo(requestInfo);
+    EXPECT_TRUE(!netHandoverHandler->TryFlowControl(requestInfo, HttpHandoverHandler::RequestType::OLD));
+    free(requestInfo->opaqueData);
+    delete requestInfo;
 }
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestRetransRequest, TestSize.Level2)
 {
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler;
+    netHandoverHandler = std::make_shared<HttpHandoverHandler>();
     std::map<CURL *, RequestInfo *> ongoingRequests;
     CURLM *multi = curl_multi_init();
-    RequestInfo *requestInfo = GetRequestInfo();
+    CURL *handle = GetCurlHandle();
+    RequestInfo *requestInfo = new RequestInfo();
+    requestInfo->easyHandle = handle;
+
     EXPECT_TRUE(netHandoverHandler->RetransRequest(ongoingRequests, multi, requestInfo));
-    DeleteRequestInfo(requestInfo);
-}
-
-HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestIsNetworkErrorTypeCorrect, TestSize.Level2)
-{
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
-    EXPECT_TRUE(netHandoverHandler->IsNetworkErrorTypeCorrect(CURLE_SEND_ERROR));
-    EXPECT_TRUE(netHandoverHandler->IsNetworkErrorTypeCorrect(CURLE_RECV_ERROR));
-
-    EXPECT_TRUE(netHandoverHandler->IsNetworkErrorTypeCorrect(CURLE_COULDNT_RESOLVE_HOST));
-    EXPECT_TRUE(netHandoverHandler->IsNetworkErrorTypeCorrect(CURLE_COULDNT_CONNECT));
-    EXPECT_TRUE(netHandoverHandler->IsNetworkErrorTypeCorrect(CURLE_SSL_CONNECT_ERROR));
-    EXPECT_TRUE(netHandoverHandler->IsNetworkErrorTypeCorrect(CURLE_QUIC_CONNECT_ERROR));
-
-    EXPECT_FALSE(netHandoverHandler->IsNetworkErrorTypeCorrect(CURLE_OK));
+    delete requestInfo;
 }
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestCheckRequestCanRetrans, TestSize.Level2)
 {
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
-    RequestInfo *requestInfo = GetRequestInfo();
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler;
+    netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    CURL *handle = GetCurlHandle();
+    RequestInfo *requestInfo = new RequestInfo();
+    requestInfo->easyHandle = handle;
+    requestInfo->opaqueData = static_cast<void *>(malloc(sizeof(Http::RequestContext)));
 
     EXPECT_TRUE(netHandoverHandler->CheckRequestCanRetrans(
-        requestInfo, HandoverRequestType::INCOMING, CURLE_SEND_ERROR));
+        requestInfo, HttpHandoverHandler::RequestType::INCOMING, CURLE_SEND_ERROR));
     EXPECT_TRUE(netHandoverHandler->CheckRequestCanRetrans(
-        requestInfo, HandoverRequestType::NETWORKERROR, CURLE_RECV_ERROR));
+        requestInfo, HttpHandoverHandler::RequestType::NETWORKERROR, CURLE_RECV_ERROR));
     EXPECT_TRUE(netHandoverHandler->CheckRequestCanRetrans(
-        requestInfo, HandoverRequestType::OLD, CURLE_COULDNT_RESOLVE_HOST));
+        requestInfo, HttpHandoverHandler::RequestType::OLD, CURLE_COULDNT_RESOLVE_HOST));
     EXPECT_TRUE(netHandoverHandler->CheckRequestCanRetrans(
-        requestInfo, HandoverRequestType::UNDONE, CURLE_COULDNT_CONNECT));
-    DeleteRequestInfo(requestInfo);
+        requestInfo, HttpHandoverHandler::RequestType::UNDONE, CURLE_COULDNT_CONNECT));
+    free(requestInfo->opaqueData);
+    delete requestInfo;
 }
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestUndoneRequestHandle, TestSize.Level2)
 {
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
-    RequestInfo *requestInfo = GetRequestInfo();
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler;
+    netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    CURL *handle = GetCurlHandle();
+    RequestInfo *requestInfo = new RequestInfo();
+    requestInfo->easyHandle = handle;
+    requestInfo->opaqueData = static_cast<void *>(malloc(sizeof(Http::RequestContext)));
     std::map<CURL *, RequestInfo *> ongoingRequests;
     ongoingRequests[requestInfo->easyHandle] = requestInfo;
     CURLM *multi = curl_multi_init();
+
     netHandoverHandler->UndoneRequestHandle(ongoingRequests, multi);
-    DeleteRequestInfo(requestInfo);
+    free(requestInfo->opaqueData);
+    delete requestInfo;
 }
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestProcessRequestErr, TestSize.Level2)
 {
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler;
+    netHandoverHandler = std::make_shared<HttpHandoverHandler>();
     std::map<CURL *, RequestInfo *> ongoingRequests;
     CURLM *multi = curl_multi_init();
-    RequestInfo *requestInfo = GetRequestInfo();
+    CURL *handle = GetCurlHandle();
+    RequestInfo *requestInfo = new RequestInfo();
+    requestInfo->easyHandle = handle;
+    requestInfo->opaqueData = static_cast<void *>(malloc(sizeof(Http::RequestContext)));
     CURLMsg message;
     message.msg = CURLMSG_DONE;
     message.data.result = CURLE_SEND_ERROR;
+
     EXPECT_EQ(netHandoverHandler->ProcessRequestErr(ongoingRequests, multi, requestInfo, &message), 0);
-    DeleteRequestInfo(requestInfo);
+    free(requestInfo->opaqueData);
+    delete requestInfo;
 }
 
-HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestProcessRequestNetErrorErrorType, TestSize.Level2)
+HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestProcessRequestNetError, TestSize.Level2)
 {
-    std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
+    std::shared_ptr<HttpHandoverHandler> netHandoverHandler;
+    netHandoverHandler = std::make_shared<HttpHandoverHandler>();
     std::map<CURL *, RequestInfo *> ongoingRequests;
     CURLM *multi = curl_multi_init();
-    RequestInfo *requestInfo = GetRequestInfo();
+    CURL *handle = GetCurlHandle();
+    RequestInfo *requestInfo = new RequestInfo();
+    requestInfo->easyHandle = handle;
+    requestInfo->opaqueData = static_cast<void *>(malloc(sizeof(Http::RequestContext)));
+    ongoingRequests[requestInfo->easyHandle] = requestInfo;
     CURLMsg message;
+    message.msg = CURLMSG_DONE;
+    message.data.result = CURLE_SEND_ERROR;
 
     netHandoverHandler->SetHandoverEvent();
     netHandoverHandler->HandoverRequestCallback(ongoingRequests, multi);
-    message.msg = CURLMSG_DONE;
-    message.data.result = CURLE_SEND_ERROR;
-    EXPECT_FALSE(netHandoverHandler->ProcessRequestNetError(ongoingRequests, multi, requestInfo, &message));
-    DeleteRequestInfo(requestInfo);
+    netHandoverHandler->ProcessRequestNetError(ongoingRequests, multi, requestInfo, &message);
+    free(requestInfo->opaqueData);
+    delete requestInfo;
 }
 }

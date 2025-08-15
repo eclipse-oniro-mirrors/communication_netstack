@@ -25,7 +25,6 @@
 
 #include "thread_safe_storage.h"
 #include "transfer_callbacks.h"
-#include "request_info.h"
 
 namespace OHOS::NetStack::HttpOverCurl {
 
@@ -36,7 +35,8 @@ public:
     explicit EpollRequestHandler(int sleepTimeoutMs = 5000);
     ~EpollRequestHandler();
 
-    void Process(CURL *easyHandle, TransferCallbacks callbacks, void *opaqueData = nullptr);
+    void Process(CURL *easyHandle, const TransferStartedCallback &startedCallback,
+                 const TransferDoneCallback &responseCallback, void *opaqueData = nullptr);
 
 private:
     void WorkingThread();
