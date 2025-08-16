@@ -144,6 +144,7 @@ ohos_shared_library("http_client") {
       "hilog:libhilog",
       "hiprofiler:libnetwork_profiler",
       "hitrace:hitrace_meter",
+      "ipc:ipc_single",
       "netmanager_base:net_conn_manager_if",
       "netmanager_base:net_security_config_if",
       "time_service:time_client",

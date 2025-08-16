@@ -45,6 +45,7 @@ ohos_unittest("netstack_common_utils_test") {
   external_deps += [ 
     "curl:curl_shared",
     "ability_runtime:wantagent_innerkits",
+    "ipc:ipc_single",
   ]
 
   sources = [

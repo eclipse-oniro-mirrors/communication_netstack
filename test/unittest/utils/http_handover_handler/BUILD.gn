@@ -65,6 +65,7 @@ ohos_unittest("http_handover_handler_test") {
     "curl:curl_shared",
     "hiprofiler:libnetwork_profiler",
     "init:libbegetutil",
+    "ipc:ipc_single",
     "napi:ace_napi",
     "time_service:time_client",
     "hiappevent:hiappevent_innerapi",
