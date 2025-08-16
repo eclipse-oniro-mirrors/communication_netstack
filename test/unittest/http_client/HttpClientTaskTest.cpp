@@ -1341,4 +1341,36 @@ HWTEST_F(HttpClientTaskTest, ProcessErrorTest001, TestSize.Level1)
     EXPECT_NE(error.GetErrorCode(), 0);
     EXPECT_FALSE(error.GetErrorMessage().empty());
 }
+
+HWTEST_F(HttpClientTaskTest, HandoverInfoTest, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://nonexistenturl:8080";
+    httpReq.SetURL(url);
+    httpReq.SetHeader("content-type", "text/plain");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    
+    int32_t handoverNum = 1;
+    int32_t handoverReason = 0;
+    double flowControlTime = 1.0;
+    int32_t readFlag = 0;
+    task->SetRequestHandoverInfo(handoverNum, handoverReason, flowControlTime, readFlag);
+    std::string handoverInfo = task->GetRequestHandoverInfo();
+ 
+    handoverReason = 1;
+    readFlag = 1;
+    task->SetRequestHandoverInfo(handoverNum, handoverReason, flowControlTime, readFlag);
+    handoverInfo = task->GetRequestHandoverInfo();
+ 
+    handoverReason = 2;
+    readFlag = 2;
+    task->SetRequestHandoverInfo(handoverNum, handoverReason, flowControlTime, readFlag);
+    handoverInfo = task->GetRequestHandoverInfo();
+ 
+    handoverReason = 3;
+    task->SetRequestHandoverInfo(handoverNum, handoverReason, flowControlTime, readFlag);
+    handoverInfo = task->GetRequestHandoverInfo();
+    EXPECT_TRUE(task->Start());
+}
 } // namespace

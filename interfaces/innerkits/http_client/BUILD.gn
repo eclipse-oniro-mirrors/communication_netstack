@@ -93,8 +93,6 @@ ohos_shared_library("http_client") {
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_response.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_task.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_time.cpp",
-    "$NETSTACK_DIR/frameworks/js/napi/http/async_context/src/request_context.cpp",
-    "$NETSTACK_DIR/frameworks/js/napi/http/options/src/http_request_options.cpp",
     "$NETSTACK_DIR/utils/http_over_curl/src/http_handover_handler.cpp",
   ]
 

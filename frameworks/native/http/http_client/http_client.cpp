@@ -26,6 +26,7 @@
 #include "netstack_log.h"
 #ifdef HTTP_HANDOVER_FEATURE
 #include "http_handover_info.h"
+#include "request_info.h"
 #endif
 
 namespace OHOS {
