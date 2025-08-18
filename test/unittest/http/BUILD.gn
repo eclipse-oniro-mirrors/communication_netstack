@@ -107,6 +107,7 @@ ohos_unittest("http_unittest") {
       "hilog:libhilog",
       "hiprofiler:libnetwork_profiler",
       "hitrace:hitrace_meter",
+      "ipc:ipc_single",
       "napi:ace_napi",
       "time_service:time_client",
     ]

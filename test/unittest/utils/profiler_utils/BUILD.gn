@@ -54,6 +54,7 @@ ohos_unittest("netstack_network_profiler_utils_test") {
     "curl:curl_shared",
     "hiprofiler:libnetwork_profiler",
     "init:libbegetutil",
+    "ipc:ipc_single",
     "napi:ace_napi",
     "time_service:time_client",
   ]

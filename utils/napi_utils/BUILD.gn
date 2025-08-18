@@ -53,6 +53,7 @@ ohos_static_library("napi_utils") {
     "cJSON:cjson",
     "c_utils:utils",
     "hilog:libhilog",
+    "ipc:ipc_single",
     "napi:ace_napi",
   ]
 
@@ -107,6 +108,7 @@ ohos_static_library("napi_utils_static") {
       "hiappevent:hiappevent_innerapi",
       "time_service:time_client",
       "ability_runtime:wantagent_innerkits",
+      "ipc:ipc_single",
     ]
   }
 
