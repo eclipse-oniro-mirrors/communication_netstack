@@ -71,7 +71,7 @@ HWTEST_F(HttpClientTest, StrTimeToTimestampTest001, TestSize.Level1)
     HttpTime httpTime;
     time_t expectedTimestamp = 946656000;
     time_t expectedTimestamp2 = 946720800;
-    auto ret == httpTime.StrTimeToTimestamp(validTimeStr);
+    auto ret = httpTime.StrTimeToTimestamp(validTimeStr);
     EXPECT_TRUE(ret == expectedTimestamp || ret == expectedTimestamp2);
 }
 } // namespace
