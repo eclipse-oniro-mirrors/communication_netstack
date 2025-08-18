@@ -538,6 +538,9 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &daddr);
     std::string anomDaddr = CommonUtils::ToAnonymousIp(daddr);
     curl_easy_getinfo(handle, CURLINFO_PRIMARY_PORT, &dport);
+#ifdef HTTP_HANDOVER_FEATURE
+    std::string handoverInfo = context->GetRequestHandoverInfo();
+#endif
     NETSTACK_LOGI(
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
@@ -553,7 +556,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
 #ifdef HTTP_HANDOVER_FEATURE
-        context->GetRequestHandoverInfo().c_str(),
+        handoverInfo.c_str(),
 #endif
         errCode, std::to_string(responseCode).c_str(),
         std::to_string(httpVer).c_str(), context->options.GetMethod().c_str(), osErr,

@@ -1077,7 +1077,7 @@ std::string RequestContext::GetRequestHandoverInfo()
             requestHandoverInfo += "undone, retransTime:";
             break;
         default:
-            requestHandoverInfo += "unkown type";
+            requestHandoverInfo += "unknown type";
             break;
     }
     requestHandoverInfo += std::to_string(requestHandoverInfo_.flowControlTime);

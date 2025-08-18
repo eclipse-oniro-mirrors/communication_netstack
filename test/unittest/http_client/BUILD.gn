@@ -67,7 +67,10 @@ ohos_unittest("http_client_unittest") {
       "netmanager_base:net_conn_manager_if",
       "netmanager_base:net_security_config_if",
     ]
-    defines += [ "HAS_NETMANAGER_BASE=1" ]
+    defines += [
+      "HAS_NETMANAGER_BASE=1",
+      "HTTP_HANDOVER_FEATURE",
+    ]
   }
 
   part_name = "netstack"
