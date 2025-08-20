@@ -422,10 +422,6 @@ bool ValueIsArrayBuffer(napi_env env, napi_value value)
 
 void *GetInfoFromArrayBufferValue(napi_env env, napi_value value, size_t *length)
 {
-    if (length == nullptr) {
-        return nullptr;
-    }
-
     void *data = nullptr;
     NAPI_CALL(env, napi_get_arraybuffer_info(env, value, &data, length));
     return data;
@@ -433,9 +429,6 @@ void *GetInfoFromArrayBufferValue(napi_env env, napi_value value, size_t *length
 
 napi_value CreateArrayBuffer(napi_env env, size_t length, void **data)
 {
-    if (length == 0) {
-        return nullptr;
-    }
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_arraybuffer(env, length, data, &result));
     return result;
