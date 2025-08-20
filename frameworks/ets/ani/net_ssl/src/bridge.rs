@@ -11,24 +11,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use ani_rs::typed_array::ArrayBuffer;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
-pub enum Data<'local> {
+pub enum Data {
     S(String),
-    ArrayBuffer(&'local [u8]),
+    ArrayBuffer(ArrayBuffer),
 }
 
 #[ani_rs::ani(path = "L@ohos/net/networkSecurity/networkSecurity/CertType")]
 pub enum CertType {
     CertTypePem = 0,
-
     CertTypeDer = 1,
 }
 
 #[ani_rs::ani(path = "L@ohos/net/networkSecurity/networkSecurity/CertBlob")]
-pub struct CertBlob<'local> {
+pub struct CertBlob {
     pub type_: CertType,
-    #[serde(borrow)]
-    pub data: Data<'local>,
+    pub data: Data,
 }

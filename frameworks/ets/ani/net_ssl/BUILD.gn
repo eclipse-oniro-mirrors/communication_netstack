@@ -72,6 +72,7 @@ ohos_rust_shared_library("network_security_ani") {
   ]
   deps = [
     ":network_security_ani_static",
+    "../common:netstack_common",
     "//third_party/rust/crates/cxx:lib",
     "//third_party/rust/crates/serde/serde:lib"
   ]

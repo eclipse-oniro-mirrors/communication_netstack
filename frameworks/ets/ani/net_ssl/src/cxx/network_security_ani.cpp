@@ -79,11 +79,13 @@ uint32_t NetStackVerifyCertificationCa(const CertBlob &cert, const CertBlob &caC
     std::string a;
     NetStack::Ssl::CertBlob nativeCert{.type = cert.cert_type,
                                        .size = cert.data.size(),
-                                       .data = reinterpret_cast<uint8_t *>(const_cast<char *>(cert.data.data()))};
+                                       .data = const_cast<uint8_t *>(cert.data.data()),
+                                       };
 
     NetStack::Ssl::CertBlob nativeCaCert{.type = caCert.cert_type,
                                          .size = caCert.data.size(),
-                                         .data = reinterpret_cast<uint8_t *>(const_cast<char *>(caCert.data.data()))};
+                                         .data = const_cast<uint8_t *>(caCert.data.data()),
+                                         };
     return NetStack::Ssl::NetStackVerifyCertification(&nativeCert, &nativeCaCert);
 }
 
@@ -91,7 +93,8 @@ uint32_t NetStackVerifyCertification(const CertBlob &cert)
 {
     NetStack::Ssl::CertBlob nativeCert{.type = cert.cert_type,
                                        .size = cert.data.size(),
-                                       .data = reinterpret_cast<uint8_t *>(const_cast<char *>(cert.data.data()))};
+                                       .data = const_cast<uint8_t *>(cert.data.data()),
+                                       };
     return NetStack::Ssl::NetStackVerifyCertification(&nativeCert);
 }
 

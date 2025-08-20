@@ -47,11 +47,11 @@ impl NetworkSecurityClient {
     }
 }
 
-impl From<bridge::CertBlob<'_>> for ffi::CertBlob {
+impl From<bridge::CertBlob> for ffi::CertBlob {
     fn from(cert_blob: bridge::CertBlob) -> Self {
         let data = match cert_blob.data {
-            bridge::Data::S(s) => s,
-            bridge::Data::ArrayBuffer(a) => String::from_utf8_lossy(a).into(),
+            bridge::Data::S(s) => s.into_bytes(),
+            bridge::Data::ArrayBuffer(a) => a.to_vec(),
         };
 
         ffi::CertBlob {
@@ -82,7 +82,7 @@ mod ffi {
 
     struct CertBlob {
         cert_type: CertType,
-        data: String,
+        data: Vec<u8>,
     }
 
     unsafe extern "C++" {
