@@ -317,6 +317,11 @@ private:
     void ProcessResponse(CURLMsg *msg);
 
     /**
+     * Processes the net address.
+     */
+    void ProcessNetAddress();
+
+    /**
      * Processes the response code in the HTTP response.
      * @return Returns true if the response code is processed successfully, false otherwise.
      */
