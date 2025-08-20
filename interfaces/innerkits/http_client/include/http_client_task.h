@@ -396,6 +396,12 @@ private:
     */
     std::string GetRangeString() const;
 
+    /**
+    * convert safamily to AddressFamily
+    * @return AddressFamily.
+    */
+    AddressFamily ConvertSaFamily(int saFamily);
+
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onSucceeded_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onCanceled_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response,
