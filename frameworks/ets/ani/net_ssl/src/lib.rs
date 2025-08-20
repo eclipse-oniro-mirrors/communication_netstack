@@ -15,6 +15,9 @@ mod bridge;
 mod security;
 mod wrapper;
 
+#[macro_use]
+extern crate netstack_common;
+
 ani_rs::ani_constructor! {
     namespace "L@ohos/net/networkSecurity/networkSecurity"
     [
@@ -24,3 +27,21 @@ ani_rs::ani_constructor! {
         "certVerificationSync" : security::cert_verification_sync
     ]
 }
+
+const LOG_LABEL: hilog_rust::HiLogLabel = hilog_rust::HiLogLabel {
+    log_type: hilog_rust::LogType::LogCore,
+    domain: 0xD0015B0,
+    tag: "networkSecurityTag",
+};
+
+#[used]
+#[link_section = ".init_array"]
+static G_NET_SSL_PANIC_HOOK: extern "C" fn() = {
+    #[link_section = ".text.startup"]
+    extern "C" fn init() {
+        std::panic::set_hook(Box::new(|info| {
+            error!("Panic occurred: {:?}", info);
+        }));
+    }
+    init
+};
