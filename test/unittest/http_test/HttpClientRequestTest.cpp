@@ -292,4 +292,65 @@ HWTEST_F(HttpClientRequestTest, MethodForPostTest002, TestSize.Level1)
     EXPECT_EQ(method, true);
 }
 
+HWTEST_F(HttpClientRequestTest, SetSslTypeTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    req.SetSslType(SslType::TLS);
+    SslType sslType = req.GetSslType();
+    EXPECT_EQ(sslType, SslType::TLS);
+}
+
+HWTEST_F(HttpClientRequestTest, SetSslTypeTest002, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    req.SetSslType(SslType::TLCP);
+    SslType sslType = req.GetSslType();
+    EXPECT_EQ(sslType, SslType::TLCP);
+}
+
+HWTEST_F(HttpClientRequestTest, GetClientEncCertTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    HttpClientCert clientEncCert = req.GetClientEncCert();
+    EXPECT_EQ(clientEncCert.certPath, "");
+    EXPECT_EQ(clientEncCert.certType, "");
+    EXPECT_EQ(clientEncCert.keyPath, "");
+    EXPECT_EQ(clientEncCert.keyPassword.length(), 0);
+}
+
+HWTEST_F(HttpClientRequestTest, SetClientEncCertTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    
+    HttpClientCert client;
+    client.certPath = "/path/to/client.pem";
+    req.SetClientEncCert(client);
+
+    HttpClientCert clientRes = req.GetClientEncCert();
+    EXPECT_EQ(clientRes.certPath, "/path/to/client.pem");
+    EXPECT_EQ(clientRes.certType, "");
+    EXPECT_EQ(clientRes.keyPath, "");
+    EXPECT_EQ(clientRes.keyPassword.length(), 0);
+}
+
+HWTEST_F(HttpClientRequestTest, SetClientEncCertTest002, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    HttpClientCert client;
+    client.certPath = "/path/to/client.pem";
+    client.certType = "PEM";
+    client.keyPath = "/path/to/client.key";
+    client.keyPassword = "password";
+    req.SetClientEncCert(client);
+
+    HttpClientCert clientRes = req.GetClientEncCert();
+    EXPECT_EQ(clientRes.certPath, "/path/to/client.pem");
+    EXPECT_EQ(clientRes.certType, "PEM");
+    EXPECT_EQ(clientRes.keyPath, "/path/to/client.key");
+    EXPECT_EQ(clientRes.keyPassword, "password");
+}
 } // namespace

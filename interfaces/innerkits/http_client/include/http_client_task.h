@@ -402,6 +402,12 @@ private:
     */
     AddressFamily ConvertSaFamily(int saFamily);
 
+    /**
+    * Sets the ssl type and client encryption certificate for the HTTP request.
+    * @return Returns true if the set options are set successfully, false otherwise.
+    */
+    bool SetSslTypeAndClientEncCert(CURL *handle);
+    
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onSucceeded_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onCanceled_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response,

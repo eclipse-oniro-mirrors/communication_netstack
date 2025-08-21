@@ -541,7 +541,33 @@ declare namespace http {
      * @since 16
      */
     addressFamily?: AddressFamily;
+    
+    /**
+    * Which secure communication protocol is used, TLS (by defaul) or TLCP.
+    * If TLCP is used, all TLS related options, such as caPath, caData and clientCert, are ignored.
+    * @type { ?SslType }
+    * @syscap SystemCapability.Communication.NetStack
+    * @since 20
+    */
+    sslType?: SslType;
+    
+    /**
+     * Support the application to pass in client certificates, allowing the server to verify the
+     * client's encryption identity.
+     * @type {?ClientCert}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 20
+     */
+    clientEncCert?: ClientCert;
   }
+
+  /**
+  * Used to specify the protocol type for secure communication.
+  * @typedef {SslType}
+  * @syscap SystemCapability.Communication.NetStack
+  * @since 20
+  */
+  export type SslType = 'TLS' | 'TLCP';
 
   /**
    * Represents the properties of a form object.

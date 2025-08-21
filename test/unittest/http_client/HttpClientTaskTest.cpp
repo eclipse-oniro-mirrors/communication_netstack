@@ -1376,4 +1376,30 @@ HWTEST_F(HttpClientTaskTest, HandoverInfoTest, TestSize.Level1)
     handoverInfo = task->GetRequestHandoverInfo();
     EXPECT_TRUE(task->Start());
 }
+
+HWTEST_F(HttpClientTaskTest, SetSslTypeAndClientEncCertTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "https://www.baidu.com";
+    httpReq.SetURL(url);
+    httpReq.SetSslType(SslType::TLS);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    bool result = task->SetSslTypeAndClientEncCert(task->curlHandle_);
+    EXPECT_TRUE(result);
+}
+
+HWTEST_F(HttpClientTaskTest, SetSslTypeAndClientEncCertTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "https://www.baidu.com";
+    httpReq.SetURL(url);
+    httpReq.SetSslType(SslType::TLCP);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    bool result = task->SetSslTypeAndClientEncCert(task->curlHandle_);
+    EXPECT_TRUE(result);
+}
 } // namespace

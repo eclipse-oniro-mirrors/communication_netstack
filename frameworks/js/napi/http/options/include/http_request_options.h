@@ -82,6 +82,11 @@ struct CertificatePinning {
     std::string publicKeyHash;
 };
 
+enum class SslType {
+    TLS,
+    TLCP,
+};
+
 class HttpRequestOptions final {
 public:
     HttpRequestOptions();
@@ -256,6 +261,13 @@ public:
     void SetAddressFamily(std::string addressFamily);
 
     [[nodiscard]] std::string GetAddressFamily() const;
+
+    void SetSslType(SslType sslType);
+    [[nodiscard]] SslType GetSslType() const;
+
+    void SetClientEncCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
+    void GetClientEncCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
+
 private:
     std::string url_;
 
@@ -318,6 +330,12 @@ private:
     ServerAuthentication serverAuthentication_;
 
     std::string addressFamily_;
+
+    SslType sslTypeEnc_;
+    std::string certEnc_;
+    std::string certTypeEnc_;
+    std::string keyEnc_;
+    Secure::SecureChar keyPasswdEnc_;
 
     TcpConfiguration tcpOption_;
 };

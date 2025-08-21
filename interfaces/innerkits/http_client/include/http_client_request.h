@@ -55,6 +55,11 @@ struct HttpClientCert {
     std::string keyPassword;
 };
 
+enum SslType {
+    TLS,
+    TLCP
+};
+
 class HttpClientRequest {
 public:
     /**
@@ -269,6 +274,30 @@ public:
      * @return The request time.
      */
     const std::string &GetRequestTime() const;
+    
+    /**
+     * Set the sslType for the HTTP request.
+     * @param sslType The sslType value to be set.
+     */
+    void SetSslType(SslType sslType);
+
+    /**
+     * Retrieves the request time from the object.
+     * @return The SslType of the request.
+     */
+    const SslType &GetSslType() const;
+
+    /**
+     * Set the clientEncCert for the HTTP request.
+     * @param clientEncCert The clientEncCert value to be set.
+     */
+    void SetClientEncCert(const HttpClientCert &clientEncCert);
+
+    /**
+     * Get the clientEncCert for the HTTP request.
+     * @param clientEncCert The clientEncCert value to be set.
+     */
+    [[nodiscard]] const HttpClientCert &GetClientEncCert() const;
 
 private:
     std::string url_;
@@ -287,6 +316,8 @@ private:
     int64_t resumeTo_;
     HttpClientCert clientCert_;
     std::string addressFamily_;
+    SslType sslType_;
+    HttpClientCert clientEncCert_;
 };
 } // namespace HttpClient
 } // namespace NetStack
