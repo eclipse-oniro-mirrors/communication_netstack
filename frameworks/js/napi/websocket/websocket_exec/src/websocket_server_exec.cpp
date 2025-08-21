@@ -480,7 +480,7 @@ int WebSocketServerExec::LwsCallbackServerWriteable(lws *wsi, lws_callback_reaso
         return -1;
     }
     auto sendData = clientUserData->Pop();
-    if (sendData.data == nullptr || sendData.length == 0) {
+    if (sendData.data == nullptr) {
         NETSTACK_LOGE("send data is empty");
         return HttpDummy(wsi, reason, user, in, len);
     }
@@ -680,19 +680,26 @@ static napi_value ConvertWsBinaryMessageToJs(napi_env env, const WebSocketMessag
     }
     void *data = nullptr;
     napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(env, msg->data.size(), &data);
-    if (data != nullptr && NapiUtils::ValueIsArrayBuffer(env, arrayBuffer) &&
-        memcpy_s(data, msg->data.size(), msg->data.c_str(), msg->data.size()) >= 0) {
-        NapiUtils::SetNamedProperty(env, jsMsg, "data", arrayBuffer);
-        napi_value jsConn = NapiUtils::CreateObject(env);
-        if (NapiUtils::GetValueType(env, jsConn) != napi_object) {
+    if (!NapiUtils::ValueIsArrayBuffer(env, arrayBuffer)) {
+        return NapiUtils::GetUndefined(env);
+    }
+    if (msg->data.size() > 0) {
+        if (data == nullptr) {
             return NapiUtils::GetUndefined(env);
         }
-        NapiUtils::SetStringPropertyUtf8(env, jsConn, EVENT_KEY_CLIENT_IP, msg->connection.clientIP);
-        NapiUtils::SetUint32Property(env, jsConn, EVENT_KEY_CLIENT_PORT, msg->connection.clientPort);
-        NapiUtils::SetNamedProperty(env, jsMsg, EVENT_KEY_CONNECTION, jsConn);
-        return jsMsg;
+        if (memcpy_s(data, msg->data.size(), msg->data.c_str(), msg->data.size()) != EOK) {
+            return NapiUtils::GetUndefined(env);
+        }
     }
-    return NapiUtils::GetUndefined(env);
+    NapiUtils::SetNamedProperty(env, jsMsg, "data", arrayBuffer);
+    napi_value jsConn = NapiUtils::CreateObject(env);
+    if (NapiUtils::GetValueType(env, jsConn) != napi_object) {
+        return NapiUtils::GetUndefined(env);
+    }
+    NapiUtils::SetStringPropertyUtf8(env, jsConn, EVENT_KEY_CLIENT_IP, msg->connection.clientIP);
+    NapiUtils::SetUint32Property(env, jsConn, EVENT_KEY_CLIENT_PORT, msg->connection.clientPort);
+    NapiUtils::SetNamedProperty(env, jsMsg, EVENT_KEY_CONNECTION, jsConn);
+    return jsMsg;
 }
 
 static napi_value CreateServerBinaryMessagePara(napi_env env, void *callbackPara)
@@ -917,10 +924,6 @@ void WebSocketServerExec::HandleServerRcvMessage(lws *wsi, EventManager *manager
         manager->AppendWsServerBinaryData(wsi, data, length);
         if (isFinal) {
             const std::string &msgFromManager = manager->GetWsServerBinaryData(wsi);
-            if (msgFromManager.empty()) {
-                NETSTACK_LOGE("msgFromManager is empty");
-                return;
-            }
             auto msg = new WebSocketMessage;
             if (msg == nullptr) {
                 return;
@@ -936,10 +939,6 @@ void WebSocketServerExec::HandleServerRcvMessage(lws *wsi, EventManager *manager
         manager->AppendWsServerTextData(wsi, data, length);
         if (isFinal) {
             const std::string &msgFromManager = manager->GetWsServerTextData(wsi);
-            if (msgFromManager.empty()) {
-                NETSTACK_LOGE("msgFromManager is empty");
-                return;
-            }
             auto msg = new WebSocketMessage;
             if (msg == nullptr) {
                 return;
