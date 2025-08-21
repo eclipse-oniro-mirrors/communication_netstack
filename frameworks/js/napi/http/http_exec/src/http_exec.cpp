@@ -298,17 +298,19 @@ bool SetTraceOptions(CURL *curl, RequestContext *context)
     }, context);
 
     //this option may be overriden if HTTP_MULTIPATH_CERT_ENABLE enabled
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, context, context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_FUNCTION,
-                                  +[](CURL *, void *, void *clientp) {
-        if (!clientp) {
-            NETSTACK_LOGE("ssl_ctx func clientp pointer is null");
-            return 0;
-        }
-        auto ctx = reinterpret_cast<RequestContext *>(clientp);
-        ctx->GetTrace().Tracepoint(TraceEvents::TLS);
-        return CURL_SOCKOPT_OK;
-    }, context);
+    if (context->options.GetSslType() != SslType::TLCP) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, context, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_FUNCTION,
+                                    +[](CURL *, void *, void *clientp) {
+            if (!clientp) {
+                NETSTACK_LOGE("ssl_ctx func clientp pointer is null");
+                return 0;
+            }
+            auto ctx = reinterpret_cast<RequestContext *>(clientp);
+            ctx->GetTrace().Tracepoint(TraceEvents::TLS);
+            return CURL_SOCKOPT_OK;
+        }, context);
+    }
 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PREREQDATA, context, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PREREQFUNCTION,
@@ -1363,8 +1365,10 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
         }
     }
 #if defined(HTTP_MULTIPATH_CERT_ENABLE) || defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE)
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_FUNCTION, SslCtxFunction, context);
-    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, context, context);
+    if (context->options.GetSslType() != SslType::TLCP) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_FUNCTION, SslCtxFunction, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, context, context);
+    }
 #endif
 #else
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
@@ -1376,6 +1380,9 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
 #endif // NO_SSL_CERTIFICATION
+    if (!SetSslTypeAndClientEncCert(curl, context)) {
+        return false;
+    }
 
     return true;
 }
@@ -2067,4 +2074,40 @@ bool HttpExec::SetIpResolve(CURL *curl, RequestContext *context)
     }
     return true;
 }
+
+bool HttpExec::SetSslTypeAndClientEncCert(CURL *curl, RequestContext *context)
+{
+    auto sslType = context->options.GetSslType();
+    if (sslType != SslType::TLCP) {
+        return true;
+    } else {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLCPv1_1, context);
+
+        if (!context->options.GetCaPath().empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, context->options.GetCaPath().c_str(), context);
+        }
+
+        std::string encCert;
+        std::string encCertType;
+        std::string encKey;
+        Secure::SecureChar encKeyPasswd;
+        context->options.GetClientEncCert(encCert, encCertType, encKey, encKeyPasswd);
+
+        if (encCert.empty()) {
+            return false;
+        }
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLENCCERT, encCert.c_str(), context);
+        if (!encKey.empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLENCKEY, encKey.c_str(), context);
+        }
+        if (!encCertType.empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLCERTTYPE, encCertType.c_str(), context);
+        }
+        if (encKeyPasswd.Length() > 0) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_KEYPASSWD, encKeyPasswd.Data(), context);
+        }
+    }
+    return true;
+}
+
 } // namespace OHOS::NetStack::Http

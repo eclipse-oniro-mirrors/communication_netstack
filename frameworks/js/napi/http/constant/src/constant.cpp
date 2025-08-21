@@ -134,4 +134,7 @@ const char *const HttpConstant::PARAM_KEY_ADDRESS_FAMILY = "addressFamily";
 const char *const HttpConstant::HTTP_ADDRESS_FAMILY_UNSPEC = "DEFAULT";
 const char *const HttpConstant::HTTP_ADDRESS_FAMILY_ONLYV4 = "ONLY_V4";
 const char *const HttpConstant::HTTP_ADDRESS_FAMILY_ONLYV6 = "ONLY_V6";
+
+const char *const HttpConstant::SSL_TYPE_TLCP = "sslType";
+const char *const HttpConstant::PARAM_KEY_CLIENT_ENC_CERT = "clientEncCert";
 } // namespace OHOS::NetStack::Http

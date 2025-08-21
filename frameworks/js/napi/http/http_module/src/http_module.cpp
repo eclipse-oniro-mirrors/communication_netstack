@@ -138,6 +138,8 @@ void HttpModuleExports::InitHttpProperties(napi_env env, napi_value exports)
     InitHttpDataType(env, exports);
     InitTlsVersion(env, exports);
     InitAddressFamily(env, exports);
+    InitSslType(env, exports);
+    InitClientEncCert(env, exports);
 }
 
 void HttpModuleExports::InitRequestMethod(napi_env env, napi_value exports)
@@ -398,5 +400,32 @@ void HttpModuleExports::InitAddressFamily(napi_env env, napi_value exports)
     napi_value httpAddressFamily = NapiUtils::CreateObject(env);
     NapiUtils::DefineProperties(env, httpAddressFamily, properties);
     NapiUtils::SetNamedProperty(env, exports, INTERFACE_ADDRESS_FAMILY, httpAddressFamily);
+}
+
+void HttpModuleExports::InitSslType(napi_env env, napi_value exports)
+{
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_STATIC_PROPERTY("TLS", NapiUtils::CreateUint32(env, static_cast<uint32_t>(SslType::TLS))),
+        DECLARE_NAPI_STATIC_PROPERTY("TLCP", NapiUtils::CreateUint32(env, static_cast<uint32_t>(SslType::TLCP)))
+    };
+
+    napi_value sslType = NapiUtils::CreateObject(env);
+    NapiUtils::DefineProperties(env, sslType, properties);
+    NapiUtils::SetNamedProperty(env, exports, INTERFACE_SSL_TYPE, sslType);
+}
+
+void HttpModuleExports::InitClientEncCert(napi_env env, napi_value exports)
+{
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::HTTP_CERT_TYPE_PEM,
+                                     NapiUtils::CreateStringUtf8(env, HttpConstant::HTTP_CERT_TYPE_PEM)),
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::HTTP_CERT_TYPE_DER,
+                                     NapiUtils::CreateStringUtf8(env, HttpConstant::HTTP_CERT_TYPE_DER)),
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::HTTP_CERT_TYPE_P12,
+                                     NapiUtils::CreateStringUtf8(env, HttpConstant::HTTP_CERT_TYPE_P12)),
+    };
+    napi_value httpEncCertType = NapiUtils::CreateObject(env);
+    NapiUtils::DefineProperties(env, httpEncCertType, properties);
+    NapiUtils::SetNamedProperty(env, exports, INTERFACE_CLIENT_ENC_CERT, httpEncCertType);
 }
 } // namespace OHOS::NetStack::Http

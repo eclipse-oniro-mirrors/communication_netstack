@@ -411,4 +411,64 @@ HWTEST_F(HttpClientRequestTest, SetClientCertTest002, TestSize.Level1)
     HttpClientCert client = req.GetClientCert();
     EXPECT_EQ(client.keyPassword, "");
 }
+
+HWTEST_F(HttpClientRequestTest, SetSslTypeTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    req.SetSslType(SslType::TLS);
+    SslType sslType = req.GetSslType();
+    EXPECT_EQ(sslType, SslType::TLS);
+}
+
+HWTEST_F(HttpClientRequestTest, SetSslTypeTest002, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    req.SetSslType(SslType::TLCP);
+    SslType sslType = req.GetSslType();
+    EXPECT_EQ(sslType, SslType::TLCP);
+}
+
+HWTEST_F(HttpClientRequestTest, GetClientEncCertTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    HttpClientCert clientEncCert = req.GetClientEncCert();
+    EXPECT_EQ(clientEncCert.certPath, "");
+    EXPECT_EQ(clientEncCert.certType, "");
+    EXPECT_EQ(clientEncCert.keyPath, "");
+    EXPECT_EQ(clientEncCert.keyPassword, "");
+}
+
+HWTEST_F(HttpClientRequestTest, SetClientEncCertTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    HttpClientCert clientCert;
+    clientCert.certPath = "/path/to/client.pem";
+    clientCert.certType = "PEM";
+    clientCert.keyPath = "/path/to/client.key";
+    clientCert.keyPassword = "passwordToKey";
+    req.SetClientEncCert(clientCert);
+    HttpClientCert client = req.GetClientEncCert();
+    EXPECT_EQ(client.certPath, "/path/to/client.pem");
+    EXPECT_EQ(client.certType, "PEM");
+    EXPECT_EQ(client.keyPath, "/path/to/client.key");
+    EXPECT_EQ(client.keyPassword, "passwordToKey");
+}
+
+HWTEST_F(HttpClientRequestTest, SetClientEncCertTest002, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    HttpClientCert clientCert;
+    clientCert.certPath = "/path/to/client.pem";
+    req.SetClientEncCert(clientCert);
+    HttpClientCert client = req.GetClientEncCert();
+    EXPECT_EQ(client.certPath, "/path/to/client.pem");
+    EXPECT_EQ(client.certType, "");
+    EXPECT_EQ(client.keyPath, "");
+    EXPECT_EQ(client.keyPassword, "");
+}
 } // namespace
