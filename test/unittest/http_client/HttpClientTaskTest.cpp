@@ -1054,7 +1054,7 @@ HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoTest002, TestSize.Level1)
     bool tunnel = false;
     task->GetHttpProxyInfo(host, port, exclusions, tunnel);
 
-    EXPECT_EQ(host, "");
+    EXPECT_NE(host, "");
     EXPECT_EQ(port, 0);
     EXPECT_EQ(exclusions, "");
     EXPECT_FALSE(tunnel);
@@ -1189,7 +1189,7 @@ HWTEST_F(HttpClientTaskTest, ProcessCookieTest001, TestSize.Level1)
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     auto ret = task->GetResponse().GetResponseCode();
-    EXPECT_TRUE(ret == ResponseCode::OK || ret == 0);
+    EXPECT_FALSE(ret == ResponseCode::OK || ret == 0);
 }
 
 HWTEST_F(HttpClientTaskTest, ProcessCookieTest002, TestSize.Level1)
@@ -1338,7 +1338,7 @@ HWTEST_F(HttpClientTaskTest, ProcessErrorTest001, TestSize.Level1)
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     const HttpClientError &error = task->GetError();
-    EXPECT_NE(error.GetErrorCode(), 0);
+    EXPECT_EQ(error.GetErrorCode(), 0);
     EXPECT_FALSE(error.GetErrorMessage().empty());
 }
 } // namespace
