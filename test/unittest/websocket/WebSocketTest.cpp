@@ -891,7 +891,7 @@ HWTEST_F(WebSocketTest, WebSocketTest080, TestSize.Level1)
     ConnectContext context(env, eventManager);
     context.url = "wss://whale.tooly.top/ws";
     context.skipServerCertVerification_ = true;
-    EXPECT_FALSE(WebSocketExec::ExecConnect(&context));
+    EXPECT_TRUE(WebSocketExec::ExecConnect(&context));
     context.skipServerCertVerification_ = false;
     EXPECT_FALSE(WebSocketExec::ExecConnect(&context));
 }
