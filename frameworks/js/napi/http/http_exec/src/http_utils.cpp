@@ -23,9 +23,15 @@
 #endif
 
 namespace OHOS::NetStack::HttpUtils {
+
+static std::string g_appMode = "";
+
 bool IsDebugMode()
 {
 #if HAS_NETMANAGER_BASE
+    if (!g_appMode.empty()) {
+        return (g_appMode == "debug") ? true : false;
+    }
     sptr<ISystemAbilityManager> systemAbilityManager =
         SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (systemAbilityManager == nullptr) {
@@ -51,6 +57,7 @@ bool IsDebugMode()
     NETSTACK_LOGI("IsDebugMode GetBundleInfoForSelf res = %{public}d", res);
 
     const auto appProvisionType = bundleInfo.applicationInfo.appProvisionType;
+    g_appMode = appProvisionType;
     NETSTACK_LOGI("IsDebugMode appProvisionType = %{public}s", appProvisionType.c_str());
     return (appProvisionType == "debug") ? true : false;
 #else
