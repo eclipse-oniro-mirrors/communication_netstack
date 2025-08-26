@@ -142,6 +142,7 @@ void ExecFinalizeClose(napi_env env, void *data)
         NETSTACK_LOGE("ExecFinalizeClose manager is nullptr");
         return;
     }
+    std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
     int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
     NETSTACK_LOGI("ExecFinalizeClose socket is %{public}d", sock);
     if (sock < 0) {
