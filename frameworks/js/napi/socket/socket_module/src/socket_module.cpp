@@ -63,6 +63,7 @@ static const char *UDP_BIND_NAME = "UdpBind";
 static const char *UDP_SEND_NAME = "UdpSend";
 static const char *UDP_CLOSE_NAME = "UdpClose";
 static const char *UDP_GET_STATE = "UdpGetState";
+static const char *FINALIZE_CLOSE_NAME = "FinalizeClose";
 static const char *UDP_GET_LOCAL_ADDRESS = "UdpGetLocalAddress";
 static const char *UDP_SET_EXTRA_OPTIONS_NAME = "UdpSetExtraOptions";
 static constexpr const char *UDP_GET_SOCKET_FD = "UdpGetSocketFd";
@@ -129,19 +130,54 @@ static constexpr int PARAM_COUNT_TWO = 2;
         SocketAsyncWork::executor, SocketAsyncWork::callback)
 
 namespace OHOS::NetStack::Socket {
-void Finalize(napi_env, void *data, void *)
+void ExecFinalizeClose(napi_env env, void *data)
+{
+    auto context = reinterpret_cast<BaseContext *>(data);
+    if (context == nullptr) {
+        NETSTACK_LOGE("ExecFinalizeClose context is nullptr");
+        return;
+    }
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("ExecFinalizeClose manager is nullptr");
+        return;
+    }
+    std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
+    NETSTACK_LOGI("ExecFinalizeClose socket is %{public}d", sock);
+    if (sock < 0) {
+        NETSTACK_LOGE("sock %{public}d is previous closed", sock);
+        return;
+    }
+    close(sock);
+    manager->SetData(reinterpret_cast<void *>(-1));
+}
+ 
+void ExecFinalizeCloseCallback(napi_env env, napi_status status, void *data)
+{
+    auto context = reinterpret_cast<BaseContext *>(data);
+    if (context == nullptr) {
+        return;
+    }
+    context->DeleteReference();
+    delete context;
+    context = nullptr;
+}
+
+void Finalize(napi_env env, void *data, void *)
 {
     NETSTACK_LOGD("socket handle is finalized");
     auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
     if (sharedManager != nullptr && *sharedManager != nullptr) {
         auto manager = *sharedManager;
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
+        NETSTACK_LOGI("Finalize, sock %{public}d", sock);
         if (sock == 0) {
             NETSTACK_LOGE("manager->GetData() got nullptr, Finalize() called before creating socket?");
         } else if (sock != -1) {
             SocketExec::SingletonSocketConfig::GetInstance().RemoveServerSocket(sock);
-            close(sock);
-            manager->SetData(reinterpret_cast<void *>(-1));
+            auto context = new BaseContext(env, manager);
+            context->CreateAsyncWork(FINALIZE_CLOSE_NAME, ExecFinalizeClose, ExecFinalizeCloseCallback);
         }
         delete sharedManager;
     }
