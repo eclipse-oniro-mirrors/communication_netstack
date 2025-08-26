@@ -169,7 +169,7 @@ void Finalize(napi_env env, void *data, void *)
             NETSTACK_LOGE("manager->GetData() got nullptr, Finalize() called before creating socket?");
         } else if (sock != -1) {
             SocketExec::SingletonSocketConfig::GetInstance().RemoveServerSocket(sock);
-            auto context = new (std::nothrow) BaseContext(env, manager);
+            auto context = new BaseContext(env, manager);
             context->CreateAsyncWork(FINALIZE_CLOSE_NAME, ExecFinalizeClose, ExecFinalizeCloseCallback);
         }
         delete sharedManager;
