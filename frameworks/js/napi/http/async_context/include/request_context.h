@@ -201,7 +201,7 @@ private:
 #if HAS_NETMANAGER_BASE
     std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
 #endif
-    CURL *curlHandle_;
+    CURL *curlHandle_ = nullptr;
 #ifdef HTTP_HANDOVER_FEATURE
     RequestHandoverInfo requestHandoverInfo_;
 #endif
