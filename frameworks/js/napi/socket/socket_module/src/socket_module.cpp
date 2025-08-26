@@ -155,7 +155,13 @@ void ExecFinalizeClose(napi_env env, void *data)
  
 void ExecFinalizeCloseCallback(napi_env env, napi_status status, void *data)
 {
-    NETSTACK_LOGD("ExecFinalizeCloseCallback status %{public}d", status);
+    auto context = reinterpret_cast<BaseContext *>(data);
+    if (context == nullptr) {
+        return;
+    }
+    context->DeleteReference();
+    delete context;
+    context = nullptr;
 }
 
 void Finalize(napi_env env, void *data, void *)
