@@ -76,6 +76,27 @@ public:
     virtual void TearDown() {}
 };
 
+class SingletonHttpHandoverHandler {
+public:
+    SingletonHttpHandoverHandler(const SingletonHttpHandoverHandler&) = delete;
+    SingletonHttpHandoverHandler& operator=(const SingletonHttpHandoverHandler&) = delete;
+    static HttpHandoverHandler* GetInstance()
+    {
+        if (instance == nullptr) {
+            instance = std::make_unique<HttpHandoverHandler>();
+        }
+        return instance;
+    }
+
+    ~SingletonHttpHandoverHandler()
+    {
+        instance.reset();
+    }
+private:
+    static std::unique_ptr<HttpHandoverHandler> instance;
+    SingletonHttpHandoverHandler() {}
+}
+
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestSocketTime, TestSize.Level2)
 {
     std::shared_ptr<HttpHandoverHandler> netHandoverHandler = std::make_shared<HttpHandoverHandler>();
