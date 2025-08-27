@@ -968,7 +968,7 @@ HWTEST_F(HttpClientTaskTest, ProcessResponseTest001, TestSize.Level1)
     EXPECT_TRUE(task->onCanceled_);
 
     AddressFamily famliy = task->ConvertSaFamily(AF_INET6);
-    EXPECT_EQ(famliy, AddressFamily::IPV6);
+    EXPECT_EQ(famliy, AddressFamily::FAMILY_IPV6);
 
     msg.data.result = CURLE_FAILED_INIT;
     task->OnFail(
