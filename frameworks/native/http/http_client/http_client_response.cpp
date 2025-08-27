@@ -134,6 +134,16 @@ void HttpClientResponse::SetResult(const std::string &res)
     result_ = res;
 }
 
+void HttpClientResponse::SetNetAddress(NetAddress &netAddress)
+{
+    httpStatistics_.serverIpAddress = netAddress;
+}
+ 
+HttpStatistics HttpClientResponse::GetHttpStatistics()
+{
+    return httpStatistics_;
+}
+
 const std::string &HttpClientResponse::GetResult() const
 {
     return result_;

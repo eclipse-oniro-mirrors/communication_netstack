@@ -24,6 +24,22 @@ namespace NetStack {
 namespace HttpClient {
 static constexpr const char *WARNING = "Warning";
 
+enum AddressFamily {
+    FAMILY_INVALID = -1,
+    FAMILY_IPV4 = 1,
+    FAMILY_IPV6 = 2,
+};
+ 
+struct NetAddress {
+    std::string address_;
+    int8_t family_;
+    uint16_t port_;
+};
+ 
+struct HttpStatistics {
+    NetAddress serverIpAddress;
+};
+
 enum ResponseCode {
     NONE = 0,
     OK = 200,
@@ -191,6 +207,12 @@ public:
      */
     [[nodiscard]] PerformanceInfo GetPerformanceTiming() const;
 
+    /**
+     * Get the statistics of HTTP request
+     * @return The statistics including the information of HTTP request
+     */
+    [[nodiscard]] HttpStatistics GetHttpStatistics();
+
 private:
     friend class HttpClientTask;
 
@@ -208,6 +230,7 @@ private:
      */
     void AppendCookies(const char *data, size_t length);
     void AppendResult(const void *data, size_t length);
+    void SetNetAddress(NetAddress &netAddress);
 
     ResponseCode responseCode_;
     std::string rawHeader_;
@@ -216,6 +239,7 @@ private:
     std::string responseTime_;
     std::string requestTime_;
     std::string result_;
+    HttpStatistics httpStatistics_;
     PerformanceInfo performanceInfo_;
     std::vector<std::string> setCookie_;
 };

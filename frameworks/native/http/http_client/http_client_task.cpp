@@ -848,6 +848,35 @@ void HttpClientTask::DumpHttpPerformance()
     }
 }
 
+AddressFamily HttpClientTask::ConvertSaFamily(int saFamily)
+{
+    switch (saFamily) {
+        case AF_INET:
+            return AddressFamily::FAMILY_IPV4;
+        case AF_INET6:
+            return AddressFamily::FAMILY_IPV6;
+        default:
+            return AddressFamily::FAMILY_INVALID;
+    }
+}
+ 
+void HttpClientTask::ProcessNetAddress()
+{
+    char *ip = nullptr;
+    curl_easy_getinfo(curlHandle_, CURLINFO_PRIMARY_IP, &ip);
+    if (ip == nullptr) {
+        return;
+    }
+    std::string ipServer(ip);
+    long dport = 0;
+    curl_easy_getinfo(curlHandle_, CURLINFO_PRIMARY_PORT, &dport);
+    NetAddress netAddress;
+    netAddress.port_ = static_cast<uint16_t>(dport);
+    netAddress.address_ = ipServer;
+    netAddress.family_ = ConvertSaFamily(CommonUtils::DetectIPType(ipServer));
+    response_.SetNetAddress(netAddress);
+}
+
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
 {
     trace_->Finish();
@@ -855,7 +884,7 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
     NETSTACK_LOGD("taskid=%{public}d code=%{public}d", taskId_, code);
     error_.SetCURLResult(code);
     response_.SetResponseTime(HttpTime::GetNowTimeGMT());
-
+    ProcessNetAddress();
     DumpHttpPerformance();
     if (CURLE_ABORTED_BY_CALLBACK == code) {
         (void)ProcessResponseCode();

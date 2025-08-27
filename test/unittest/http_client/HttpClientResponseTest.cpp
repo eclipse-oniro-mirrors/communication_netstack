@@ -239,4 +239,24 @@ HWTEST_F(HttpClientResponseTest, GetPerformanceTimingTest001, TestSize.Level1)
     EXPECT_EQ(performanceInfo.totalTiming, 0);
     EXPECT_EQ(performanceInfo.redirectTiming, 0);
 }
+
+HWTEST_F(HttpClientResponseTest, ResponseSetResult, TestSize.Level1)
+{
+    HttpClientResponse req;
+    const char *testResult = "test:data\r\n";
+    req.SetResult(testResult);
+    auto result = req.GetResult();
+    EXPECT_EQ(testResult, result);
+}
+ 
+HWTEST_F(HttpClientResponseTest, ResponseGetHttpStatistics, TestSize.Level1)
+{
+    HttpClientResponse req;
+    NetAddress netAddr;
+    std::string testAddr = "test:address";
+    netAddr.address_ = testAddr;
+    req.SetNetAddress(netAddr);
+    HttpStatistics httpStatistics = req.GetHttpStatistics();
+    EXPECT_EQ(httpStatistics.serverIpAddress.address_, testAddr);
+}
 } // namespace

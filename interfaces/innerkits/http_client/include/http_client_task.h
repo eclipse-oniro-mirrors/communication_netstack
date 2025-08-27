@@ -317,6 +317,11 @@ private:
     void ProcessResponse(CURLMsg *msg);
 
     /**
+     * Processes the net address.
+     */
+    void ProcessNetAddress();
+
+    /**
      * Processes the response code in the HTTP response.
      * @return Returns true if the response code is processed successfully, false otherwise.
      */
@@ -390,6 +395,12 @@ private:
     * @return Returns the string of range. If the position is invallid, the string is empty.
     */
     std::string GetRangeString() const;
+
+    /**
+    * convert safamily to AddressFamily
+    * @return AddressFamily.
+    */
+    AddressFamily ConvertSaFamily(int saFamily);
 
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onSucceeded_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onCanceled_;
