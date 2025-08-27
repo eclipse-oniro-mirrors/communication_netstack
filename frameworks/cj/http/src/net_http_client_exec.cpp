@@ -786,7 +786,7 @@ void NetHttpClientExec::SetFormDataOption(MultiFormData &multiFormData, curl_mim
         }
     }
     if (!multiFormData.data.empty()) {
-        result = curl_mime_data(part, multiFormData.data.c_str(), CURL_ZERO_TERMINATED);
+        result = curl_mime_data(part, multiFormData.data.c_str(), multiFormData.data.length());
         if (result != CURLE_OK) {
             NETSTACK_LOGE("Failed to set data error: %{public}s", curl_easy_strerror(result));
         }
