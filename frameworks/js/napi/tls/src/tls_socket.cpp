@@ -391,6 +391,16 @@ std::string TLSConnectOptions::GetHostName() const
     return hostName_;
 }
 
+void TLSConnectOptions::SetTimeout(const uint32_t &timeout)
+{
+    timeout_ = timeout;
+}
+
+uint32_t TLSConnectOptions::GetTimeout() const
+{
+    return timeout_;
+}
+
 std::string TLSSocket::MakeAddressString(sockaddr *addr)
 {
     if (!addr) {
@@ -1760,6 +1770,18 @@ static void SetSNIandLoadCachedCaCert(const std::string &hostName, SSL *ssl)
     }
 }
 
+int TLSSocket::TLSSocketInternal::ShankingHandsTimeout(SSL* ssl, int fd, int timeout)
+{
+    if (timeout <= 0) {
+        NETSTACK_LOGI("No need to wait timeout, timeout is %{public}d, timeout");
+        return NO_TIMEOUT;
+    }
+    int blockFlag = fcntl(fd, F_GETFL, 0);
+    if (blockFlag < 0) {
+        return SET_NB_FAILED;
+    };
+    bool isBlock = (blockFlag & O_NONBLOCK) != 0;
+}
 bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &options)
 {
     {
