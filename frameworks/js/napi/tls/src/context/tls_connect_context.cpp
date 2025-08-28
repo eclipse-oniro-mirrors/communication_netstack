@@ -45,6 +45,7 @@ constexpr const char *PORT_NAME = "port";
 constexpr const char *VERIFY_MODE_NAME = "isBidirectionalAuthentication";
 constexpr const char *SKIP_REMOTE_VALIDATION = "skipRemoteValidation";
 constexpr const char *KEY_PROXY = "proxy";
+constexpr const char *TIMEOUT = "timeout";
 constexpr uint32_t CA_CHAIN_LENGTH = 1000;
 constexpr uint32_t PROTOCOLS_SIZE = 10;
 constexpr std::string_view PARSE_ERROR = "options is not type of TLSConnectOptions";
@@ -167,9 +168,11 @@ TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_va
     TLSConnectOptions options;
     Socket::NetAddress address = ReadNetAddress(GetEnv(), params);
     TLSSecureOptions secureOption = ReadTLSSecureOptions(GetEnv(), params);
+    uint32_t timeout = ReadTimeout(GetEnv(), params);
     options.SetHostName(address.GetAddress());
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
+    options.SetTimeout(timeout);
     options.proxyOptions_ = ReadTLSProxyOptions(GetEnv(), params);
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], ALPN_PROTOCOLS)) {
         napi_value alpnProtocols = NapiUtils::GetNamedProperty(GetEnv(), params[0], ALPN_PROTOCOLS);
@@ -264,6 +267,22 @@ Socket::NetAddress TLSConnectContext::ReadNetAddress(napi_env env, napi_value *p
         address.SetPort(port);
     }
     return address;
+}
+
+uint32_t TLSConnectContext::ReadTimeout(napi_env env, napi_value *params)
+{
+    uint32_t timeout;
+    if(!NapiUtils::HasNamedProperty(GetEnv(), params[0], TIMEOUT)) {
+        NETSTACK_LOGI("Context TIMEOUT not found");
+        return DEFAULT_TIMES_OUT_TLS;
+    }
+    napi_value jsTimeout = NapiUtils::GetNamedProperty(GetEnv(), params[0], TIMEOUT);
+    if(NapiUtils::GetValueType(GetEnv(), jsTimeout) != napi_number) {
+        NETSTACK_LOGI("Context TIMEOUT is not napi_number");
+        return DEFAULT_TIMES_OUT_TLS;
+    }
+    timeout = NapiUtils::GetUint32FromValue(GetEnv(), jsTimeout);
+    return timeout;
 }
 } // namespace TlsSocket
 } // namespace NetStack
