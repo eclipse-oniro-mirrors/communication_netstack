@@ -53,6 +53,7 @@ private:
     TLSSecureOptions ReadTLSSecureOptions(napi_env env, napi_value *params);
     Socket::NetAddress ReadNetAddress(napi_env env, napi_value *params);
     std::shared_ptr<Socket::ProxyOptions> ReadTLSProxyOptions(napi_env env, napi_value *params);
+    std::uint32_t ReadTimeout(napi_env env, napi_value *params);
 };
 using TLSListenContext = TLSConnectContext;
 } // namespace TlsSocket
