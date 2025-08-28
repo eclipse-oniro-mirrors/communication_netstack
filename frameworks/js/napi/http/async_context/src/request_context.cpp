@@ -562,6 +562,8 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParseServerAuthentication(optionsValue);
     SetParseOK(true);
     ParseAddressFamily(optionsValue);
+    ParseSslType(optionsValue);
+    ParseClientEncCert(optionsValue);
 }
 
 bool RequestContext::IsUsingCache() const
@@ -1097,4 +1099,38 @@ void RequestContext::ParseAddressFamily(napi_value optionsValue)
         options.SetAddressFamily(addressFamily);
     }
 }
+
+void RequestContext::ParseSslType(napi_value optionsValue)
+{
+    napi_env env = GetEnv();
+    SslType sslType;
+    auto sType = NapiUtils::GetStringPropertyUtf8(env, optionsValue, HttpConstant::SSL_TYPE_TLCP);
+    if (sType == "TLCP") {
+        sslType = SslType::TLCP;
+    } else {
+        sslType = SslType::TLS;
+    }
+    options.SetSslType(sslType);
+}
+
+void RequestContext::ParseClientEncCert(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CLIENT_ENC_CERT)) {
+        return;
+    }
+    napi_value clientCertValue =
+        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CLIENT_ENC_CERT);
+    napi_valuetype type = NapiUtils::GetValueType(GetEnv(), clientCertValue);
+    if (type != napi_object) {
+        return;
+    }
+    std::string cert = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_CERT);
+    std::string certType =
+        NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_CERT_TYPE);
+    std::string key = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_KEY);
+    Secure::SecureChar keyPasswd = Secure::SecureChar(
+        NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_KEY_PASSWD));
+    options.SetClientEncCert(cert, certType, key, keyPasswd);
+}
+
 } // namespace OHOS::NetStack::Http

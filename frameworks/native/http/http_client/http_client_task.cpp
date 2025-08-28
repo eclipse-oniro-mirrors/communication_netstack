@@ -306,7 +306,9 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
 #ifndef WINDOWS_PLATFORM
     NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_ACCEPT_ENCODING, "");
 #endif
-
+    if (!SetSslTypeAndClientEncCert(curlHandle_)) {
+        return false;
+    }
     return true;
 }
 
@@ -995,6 +997,34 @@ std::string HttpClientTask::GetRequestHandoverInfo()
     return requestHandoverInfo;
 }
 #endif
+
+bool HttpClientTask::SetSslTypeAndClientEncCert(CURL *handle)
+{
+    auto sslType = request_.GetSslType();
+    if (sslType != SslType::TLCP) {
+        return true;
+    } else {
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLCPv1_1);
+        if (!request_.GetCaPath().empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_CAINFO, request_.GetCaPath().c_str());
+        }
+        HttpClientCert clientEncCert = request_.GetClientEncCert();
+        if (!clientEncCert.certPath.empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSLENCCERT, clientEncCert.certPath.c_str());
+        }
+        if (!clientEncCert.keyPath.empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSLENCKEY, clientEncCert.keyPath.c_str());
+        }
+        if (!clientEncCert.certType.empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSLCERTTYPE, clientEncCert.certType.c_str());
+        }
+        if (clientEncCert.keyPassword.length() > 0) {
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_KEYPASSWD, clientEncCert.keyPassword.c_str());
+        }
+    }
+    return true;
+}
+
 } // namespace HttpClient
 } // namespace NetStack
 } // namespace OHOS

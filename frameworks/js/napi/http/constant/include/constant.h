@@ -237,6 +237,9 @@ public:
     static const char *const HTTP_ADDRESS_FAMILY_UNSPEC;
     static const char *const HTTP_ADDRESS_FAMILY_ONLYV4;
     static const char *const HTTP_ADDRESS_FAMILY_ONLYV6;
+
+    static const char *const SSL_TYPE_TLCP;
+    static const char *const PARAM_KEY_CLIENT_ENC_CERT;
 };
 } // namespace OHOS::NetStack::Http
 

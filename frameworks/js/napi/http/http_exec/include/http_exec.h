@@ -144,6 +144,8 @@ private:
 
     static curl_off_t GetSizeFromCurl(CURL *handle, RequestContext *context);
 
+    static bool SetSslTypeAndClientEncCert(CURL *curl, RequestContext *context);
+
 #if !HAS_NETMANAGER_BASE
     static void RunThread();
 

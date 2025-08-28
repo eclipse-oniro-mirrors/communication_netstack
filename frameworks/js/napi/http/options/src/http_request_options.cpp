@@ -42,7 +42,11 @@ HttpRequestOptions::HttpRequestOptions()
       usingHttpProxyType_(UsingHttpProxyType::USE_DEFAULT),
       httpProxyPort_(0),
       resumeFromNumber_(0),
-      resumeToNumber_(0)
+      resumeToNumber_(0),
+      sslTypeEnc_(SslType::TLS),
+      certEnc_(""),
+      certTypeEnc_(""),
+      keyEnc_("")
 {
 }
 
@@ -434,4 +438,33 @@ void HttpRequestOptions::TcpConfiguration::SetTcpUserTimeout(const uint32_t &tim
 {
     userTimeout_ = timeout;
 }
+
+void HttpRequestOptions::SetSslType(SslType sslType)
+{
+    sslTypeEnc_ = sslType;
+}
+
+SslType HttpRequestOptions::GetSslType() const
+{
+    return sslTypeEnc_;
+}
+
+void HttpRequestOptions::SetClientEncCert(
+    std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd)
+{
+    certEnc_ = cert;
+    certTypeEnc_ = certType;
+    keyEnc_ = key;
+    keyPasswdEnc_ = keyPasswd;
+}
+
+void HttpRequestOptions::GetClientEncCert(
+    std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd)
+{
+    cert = certEnc_;
+    certType = certTypeEnc_;
+    key = keyEnc_;
+    keyPasswd = keyPasswdEnc_;
+}
+
 } // namespace OHOS::NetStack::Http
