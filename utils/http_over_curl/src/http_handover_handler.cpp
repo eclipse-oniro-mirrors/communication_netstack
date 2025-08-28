@@ -150,16 +150,12 @@ bool HttpHandoverHandler::Initialize()
         httpHandoverQueryRequest_ == nullptr || httpHandoverReportTimeout_ == nullptr);
     if (hasFuncNull) {
         NETSTACK_LOGE("http handover wrapper symbol failed, error: %{public}s", dlerror());
-        dlclose(netHandoverHandler_);
-        netHandoverHandler_ = nullptr;
         return false;
     }
     NETSTACK_LOGD("NetHandover enabled");
     httpHandoverManager_ = httpHandoverInit_(this, HandoverCallback, HandoverTimerCallback, HTTP_STACK_NAME);
     if (httpHandoverManager_ == nullptr) {
         NETSTACK_LOGE("http handover manager init fail");
-        dlclose(netHandoverHandler_);
-        netHandoverHandler_ = nullptr;
         return false;
     }
     return true;
