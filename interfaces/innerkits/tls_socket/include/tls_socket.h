@@ -76,7 +76,7 @@ constexpr size_t MAX_ERR_LEN = 1024;
 constexpr uint32_t DEFAULT_TIMEOUT_TLS = 0;
 constexpr int NO_TIMEOUT = 1;
 constexpr int TLS_TIMEOUT = 2;
-constexpr int POLL_ERR = 3;
+constexpr int POLL_ERR_IN_TLS = 3;
 
 /**
  * Parameters required during communication
@@ -287,7 +287,7 @@ public:
 
     void SetHostName(const std::string &hostName);
     [[nodiscard]] std::string GetHostName() const;
-    [[nodiscard]] uint32_t GetTimeout() const;
+    uint32_t GetTimeout() const;
 
     std::shared_ptr<Socket::ProxyOptions> proxyOptions_{nullptr};
 
