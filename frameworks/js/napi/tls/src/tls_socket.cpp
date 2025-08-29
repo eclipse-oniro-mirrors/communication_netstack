@@ -391,6 +391,16 @@ std::string TLSConnectOptions::GetHostName() const
     return hostName_;
 }
 
+void TLSConnectOptions::SetTimeout(const uint32_t &timeout)
+{
+    timeout_ = timeout;
+}
+
+uint32_t TLSConnectOptions::GetTimeout() const
+{
+    return timeout_;
+}
+
 std::string TLSSocket::MakeAddressString(sockaddr *addr)
 {
     if (!addr) {
@@ -1760,6 +1770,46 @@ static void SetSNIandLoadCachedCaCert(const std::string &hostName, SSL *ssl)
     }
 }
 
+int TLSSocket::TLSSocketInternal::ShakingHandsTimeout(SSL* ssl, int fd, uint32_t timeout)
+{
+    if (timeout <= 0) {
+        NETSTACK_LOGI("No need to wait timeout, timeout is %{public}d", timeout);
+        return NO_TIMEOUT;
+    }
+    SetSockBlockFlag(fd, true);
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout);
+    while (true) {
+        int remain = (int)std::chrono::duration_cast<std::chrono::milliseconds>(
+            deadline - std::chrono::steady_clock::now()).count();
+        if (remain <= 0) {
+            return TLS_TIMEOUT;
+        }
+        int rc = SSL_connect(ssl);
+        int err = SSL_get_error(ssl, rc);
+        if (rc == 1) {
+            break;
+        }
+        if (err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE) {
+            return TlsSocketError::TLS_ERR_SSL_BASE + err;
+        }
+        short ev = (err == SSL_ERROR_WANT_READ) ? POLLIN : POLLOUT;
+        struct pollfd pfd{ fd, ev, 0};
+        int pr = poll(&pfd, 1, remain);
+        if (pr == 0) {
+            return TLS_TIMEOUT;
+        }
+        if (pr < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            return TLS_TIMEOUT;
+        }
+        if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+            return POLL_ERR_IN_TLS;
+        }
+    }
+    return TlsSocketError::TLSSOCKET_SUCCESS;
+}
 bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &options)
 {
     {
@@ -1774,15 +1824,22 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
         if (hostName != options.GetNetAddress().GetAddress()) {
             SetSNIandLoadCachedCaCert(hostName, ssl_);
         }
-
-        int result = SSL_connect(ssl_);
-        if (result == -1) {
-            char err[MAX_ERR_LEN] = {0};
-            auto code = ERR_get_error();
-            ERR_error_string_n(code, err, MAX_ERR_LEN);
-            int errorStatus = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
-            NETSTACK_LOGE("SSLConnect fail %{public}d, error: %{public}s errno: %{public}d ERR_get_error %{public}s",
-                          errorStatus, MakeSSLErrorString(errorStatus).c_str(), errno, err);
+        uint32_t timeout_ms = options.GetTimeout();
+        int TimeoutErr = ShakingHandsTimeout(ssl_, socketDescriptor_, timeout_ms);
+        if (TimeoutErr == NO_TIMEOUT) {
+            int result = SSL_connect(ssl_);
+            if (result == -1) {
+                char err[MAX_ERR_LEN] = {0};
+                auto code = ERR_get_error();
+                ERR_error_string_n(code, err, MAX_ERR_LEN);
+                int errorStatus = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
+                NETSTACK_LOGE("SSLConnect fail %{public}d, error: %{public}s errno: %{public}d "
+                    "ERR_get_error %{public}s", errorStatus, MakeSSLErrorString(errorStatus).c_str(), errno, err);
+                return false;
+            }
+        } else if (TimeoutErr != TlsSocketError::TLSSOCKET_SUCCESS) {
+            SetSockBlockFlag(socketDescriptor_, false);
+            NETSTACK_LOGE("TLS failed to shaking hands after %{public}d ms", timeout_ms);
             return false;
         }
 
@@ -1796,6 +1853,14 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
                       SSL_get_version(ssl_), SSL_get_cipher(ssl_));
         configuration_.SetCipherSuite(list);
     }
+    if (!CheckAfterShankingHands(options)) {
+        return false;
+    }
+    return true;
+}
+
+bool TLSSocket::TLSSocketInternal::CheckAfterShankingHands(const TLSConnectOptions &options)
+{
     if (!SetSharedSigals()) {
         NETSTACK_LOGE("Failed to set sharedSigalgs");
     }
