@@ -580,7 +580,7 @@ private:
         bool StartTlsConnected(const TLSConnectOptions &options);
         bool CreatTlsContext();
         bool StartShakingHands(const TLSConnectOptions &options);
-        int ShakingHandsTimeout(SSL* ssl, int fd, int timeout);
+        int ShakingHandsTimeout(SSL* ssl, int fd, uint32_t timeout);
         bool CheckAfterShankingHands(const TLSConnectOptions &options);
         bool GetRemoteCertificateFromPeer();
         bool SetRemoteCertRawData();
