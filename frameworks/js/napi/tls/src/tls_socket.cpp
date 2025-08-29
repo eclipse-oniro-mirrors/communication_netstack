@@ -1776,11 +1776,38 @@ int TLSSocket::TLSSocketInternal::ShankingHandsTimeout(SSL* ssl, int fd, int tim
         NETSTACK_LOGI("No need to wait timeout, timeout is %{public}d, timeout");
         return NO_TIMEOUT;
     }
-    int blockFlag = fcntl(fd, F_GETFL, 0);
-    if (blockFlag < 0) {
-        return SET_NB_FAILED;
-    };
-    bool isBlock = (blockFlag & O_NONBLOCK) != 0;
+    SetSockBlockFlag(fd, true);
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout);
+    while (true) {
+        int remain = (int)std::chrono::duration_cast<std::chrono::milliseconds>(
+            deadline - std::chrono::steady_clock::now()).count();
+        if (remain <= 0) {
+            return TLS_TIMEOUT;
+        }
+        int rc = SSL_connect(ssl);
+        int err = SSL_get_error(ssl, rc);
+        if (rc == 1) {
+            return TlsSocketError::TLSSOCKET_SUCCESS;
+        }
+        if (err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE) {
+            return TlsSocketError::TLS_ERR_SSL_BASE + err;
+        }
+        short ev = (err == SSL_ERROR_WANT_READ) ? POLLIN : POLLOUT;
+        struct pollfd pfd{ fd, ev, 0};
+        int pr = poll{&pfd, 1, remain};
+        if (pr == 0) {
+            return TLS_TIMEOUT;
+        }
+        if (pr < 0) {
+            if (error == EINTR) {
+                continue;
+            }
+            return TLS_TIMEOUT;
+        }
+        if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+            return POLL_ERR;
+        }
+    }
 }
 bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &options)
 {
@@ -1796,15 +1823,22 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
         if (hostName != options.GetNetAddress().GetAddress()) {
             SetSNIandLoadCachedCaCert(hostName, ssl_);
         }
-
-        int result = SSL_connect(ssl_);
-        if (result == -1) {
-            char err[MAX_ERR_LEN] = {0};
-            auto code = ERR_get_error();
-            ERR_error_string_n(code, err, MAX_ERR_LEN);
-            int errorStatus = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
-            NETSTACK_LOGE("SSLConnect fail %{public}d, error: %{public}s errno: %{public}d ERR_get_error %{public}s",
-                          errorStatus, MakeSSLErrorString(errorStatus).c_str(), errno, err);
+        int timeout_ms = options.GetTimeout();
+        int TimeoutErr = ShankingHandsTimeout(ssl_, socketDescriptor_, timeout_ms);
+        if (TimeoutErr == NO_TIMEOUT) {
+            int result = SSL_connect(ssl_);
+            if (result == -1) {
+                char err[MAX_ERR_LEN] = {0};
+                auto code = ERR_get_error();
+                ERR_error_string_n(code, err, MAX_ERR_LEN);
+                int errorStatus = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
+                NETSTACK_LOGE("SSLConnect fail %{public}d, error: %{public}s errno: %{public}d ERR_get_error %{public}s",
+                            errorStatus, MakeSSLErrorString(errorStatus).c_str(), errno, err);
+                return false;
+            }
+        } else if (TimeoutErr != TlsSocketError::TLSSOCKET_SUCCESS) {
+            SetSockBlockFlag(socketDescriptor_, false);
+            NETSTACK_LOGE("TLS failed to shaking hands after %{public}d ms", timeout_ms);
             return false;
         }
 
@@ -1818,6 +1852,14 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
                       SSL_get_version(ssl_), SSL_get_cipher(ssl_));
         configuration_.SetCipherSuite(list);
     }
+    if (!CheckAfterShankingHands(options)) {
+        return false;
+    }
+    return true;
+}
+
+bool TLSSocket::TLSSocketInternal::CheckAfterShankingHands(const TLSConnectOptions &options)
+{
     if (!SetSharedSigals()) {
         NETSTACK_LOGE("Failed to set sharedSigalgs");
     }
