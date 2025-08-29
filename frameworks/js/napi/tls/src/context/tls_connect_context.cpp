@@ -272,12 +272,12 @@ Socket::NetAddress TLSConnectContext::ReadNetAddress(napi_env env, napi_value *p
 uint32_t TLSConnectContext::ReadTimeout(napi_env env, napi_value *params)
 {
     uint32_t timeout;
-    if(!NapiUtils::HasNamedProperty(GetEnv(), params[0], TIMEOUT)) {
+    if (!NapiUtils::HasNamedProperty(GetEnv(), params[0], TIMEOUT)) {
         NETSTACK_LOGI("Context TIMEOUT not found");
         return DEFAULT_TIMEOUT_TLS;
     }
     napi_value jsTimeout = NapiUtils::GetNamedProperty(GetEnv(), params[0], TIMEOUT);
-    if(NapiUtils::GetValueType(GetEnv(), jsTimeout) != napi_number) {
+    if (NapiUtils::GetValueType(GetEnv(), jsTimeout) != napi_number) {
         NETSTACK_LOGI("Context TIMEOUT is not napi_number");
         return DEFAULT_TIMEOUT_TLS;
     }
