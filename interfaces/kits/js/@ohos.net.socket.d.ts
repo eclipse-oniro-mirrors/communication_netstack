@@ -3687,6 +3687,16 @@ declare namespace socket {
      * @since 16
      */
     proxy?: ProxyOptions;
+
+    /**
+     * Timeout duration of the TLSSocket connetion, in milliseconds.
+     * @type {?int}
+     * @syscap SystemCapability.Communication.NetStack
+     * @crossplatform
+     * @since 22
+     * @arkts 1.2
+     */
+    timeout?: int;
   }
 
   /**
