@@ -2034,16 +2034,16 @@ static bool IsClientFdClosed(int32_t clientFd)
 static void RemoveClientConnection(int32_t clientId, TcpServerCloseContext *context)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
+    std::shared_ptr<EventManager> manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return;
+    }
     for (auto it = g_clientFDs.begin(); it != g_clientFDs.end(); ++it) {
         if (it->first == clientId) {
             NETSTACK_LOGI("remove clientfd and eventmanager clientid: %{public}d clientFd:%{public}d", it->first,
                           it->second);
             if (!IsClientFdClosed(it->second)) {
-                std::shared_ptr<EventManager> manager = context->GetSharedManager();
-                if (manager == nullptr) {
-                    NETSTACK_LOGE("manager is nullptr");
-                    return;
-                }
                 std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
                 NETSTACK_LOGI("connectFD: %{public}d, not close should close", it->second);
                 shutdown(it->second, SHUT_RDWR);
