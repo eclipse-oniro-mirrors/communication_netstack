@@ -1770,7 +1770,7 @@ static void SetSNIandLoadCachedCaCert(const std::string &hostName, SSL *ssl)
     }
 }
 
-int TLSSocket::TLSSocketInternal::ShankingHandsTimeout(SSL* ssl, int fd, int timeout)
+int TLSSocket::TLSSocketInternal::ShakingHandsTimeout(SSL* ssl, int fd, uint32_t timeout)
 {
     if (timeout <= 0) {
         NETSTACK_LOGI("No need to wait timeout, timeout is %{public}d, timeout");
@@ -1823,7 +1823,7 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
         if (hostName != options.GetNetAddress().GetAddress()) {
             SetSNIandLoadCachedCaCert(hostName, ssl_);
         }
-        int timeout_ms = options.GetTimeout();
+        uint32_t timeout_ms = options.GetTimeout();
         int TimeoutErr = ShankingHandsTimeout(ssl_, socketDescriptor_, timeout_ms);
         if (TimeoutErr == NO_TIMEOUT) {
             int result = SSL_connect(ssl_);
