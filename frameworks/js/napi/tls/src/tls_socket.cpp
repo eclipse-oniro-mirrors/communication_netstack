@@ -1805,7 +1805,7 @@ int TLSSocket::TLSSocketInternal::ShankingHandsTimeout(SSL* ssl, int fd, int tim
             return TLS_TIMEOUT;
         }
         if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
-            return POLL_ERR;
+            return POLL_ERR_IN_TLS;
         }
     }
 }
