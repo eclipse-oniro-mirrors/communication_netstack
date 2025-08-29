@@ -1773,7 +1773,7 @@ static void SetSNIandLoadCachedCaCert(const std::string &hostName, SSL *ssl)
 int TLSSocket::TLSSocketInternal::ShakingHandsTimeout(SSL* ssl, int fd, uint32_t timeout)
 {
     if (timeout <= 0) {
-        NETSTACK_LOGI("No need to wait timeout, timeout is %{public}d, timeout");
+        NETSTACK_LOGI("No need to wait timeout, timeout is %{public}d", timeout);
         return NO_TIMEOUT;
     }
     SetSockBlockFlag(fd, true);
@@ -1794,12 +1794,12 @@ int TLSSocket::TLSSocketInternal::ShakingHandsTimeout(SSL* ssl, int fd, uint32_t
         }
         short ev = (err == SSL_ERROR_WANT_READ) ? POLLIN : POLLOUT;
         struct pollfd pfd{ fd, ev, 0};
-        int pr = poll{&pfd, 1, remain};
+        int pr = poll(&pfd, 1, remain);
         if (pr == 0) {
             return TLS_TIMEOUT;
         }
         if (pr < 0) {
-            if (error == EINTR) {
+            if (errno == EINTR) {
                 continue;
             }
             return TLS_TIMEOUT;
@@ -1825,7 +1825,7 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
             SetSNIandLoadCachedCaCert(hostName, ssl_);
         }
         uint32_t timeout_ms = options.GetTimeout();
-        int TimeoutErr = ShankingHandsTimeout(ssl_, socketDescriptor_, timeout_ms);
+        int TimeoutErr = ShakingHandsTimeout(ssl_, socketDescriptor_, timeout_ms);
         if (TimeoutErr == NO_TIMEOUT) {
             int result = SSL_connect(ssl_);
             if (result == -1) {
