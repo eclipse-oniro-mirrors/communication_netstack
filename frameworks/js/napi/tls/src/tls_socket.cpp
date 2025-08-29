@@ -1832,8 +1832,8 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
                 auto code = ERR_get_error();
                 ERR_error_string_n(code, err, MAX_ERR_LEN);
                 int errorStatus = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
-                NETSTACK_LOGE("SSLConnect fail %{public}d, error: %{public}s errno: %{public}d ERR_get_error %{public}s",
-                            errorStatus, MakeSSLErrorString(errorStatus).c_str(), errno, err);
+                NETSTACK_LOGE("SSLConnect fail %{public}d, error: %{public}s errno: %{public}d "
+                    "ERR_get_error %{public}s", errorStatus, MakeSSLErrorString(errorStatus).c_str(), errno, err);
                 return false;
             }
         } else if (TimeoutErr != TlsSocketError::TLSSOCKET_SUCCESS) {
