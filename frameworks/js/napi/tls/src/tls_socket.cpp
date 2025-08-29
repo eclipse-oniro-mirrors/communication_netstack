@@ -1787,7 +1787,7 @@ int TLSSocket::TLSSocketInternal::ShakingHandsTimeout(SSL* ssl, int fd, uint32_t
         int rc = SSL_connect(ssl);
         int err = SSL_get_error(ssl, rc);
         if (rc == 1) {
-            return TlsSocketError::TLSSOCKET_SUCCESS;
+            break;
         }
         if (err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE) {
             return TlsSocketError::TLS_ERR_SSL_BASE + err;
@@ -1808,6 +1808,7 @@ int TLSSocket::TLSSocketInternal::ShakingHandsTimeout(SSL* ssl, int fd, uint32_t
             return POLL_ERR_IN_TLS;
         }
     }
+    return TlsSocketError::TLSSOCKET_SUCCESS;
 }
 bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &options)
 {
