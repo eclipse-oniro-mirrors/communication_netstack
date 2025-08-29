@@ -16,7 +16,7 @@ import("//build/test.gni")
 import("//foundation/communication/netstack/netstack_config.gni")
 
 #SOCKET_NAPI = "$NETSTACK_DIR/frameworks/js/napi/socket"
-WEBSOCKET_INNERAPI = "$NETSTACK_DIR/frameworks/native/websocket_client"
+WEBSOCKET_INNERAPI = "$NETSTACK_DIR/frameworks/native/websocket_native"
 
 utils_include = [
   "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
@@ -43,7 +43,7 @@ ohos_unittest("websocket_inner_unittest") {
 
   deps = [
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$NETSTACK_INNERKITS_DIR/websocket_client:websocket_client",
+    "$NETSTACK_INNERKITS_DIR/websocket_native:websocket_native",
   ]
 
   external_deps = common_external_deps

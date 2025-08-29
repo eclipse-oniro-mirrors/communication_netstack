@@ -14,10 +14,10 @@
 import("//build/ohos.gni")
 import("//foundation/communication/netstack/netstack_config.gni")
 
-config("websocket_client_config") {
+config("websocket_native_config") {
   # header file path
   include_dirs =
-      [ "$NETSTACK_DIR/interfaces/innerkits/websocket_client/include" ]
+      [ "$NETSTACK_DIR/interfaces/innerkits/websocket_native/include" ]
 
   cflags = []
   if (is_double_framework) {
@@ -40,7 +40,7 @@ config("websocket_client_config") {
   }
 }
 
-ohos_shared_library("websocket_client") {
+ohos_shared_library("websocket_native") {
   sanitize = {
     cfi = true
     cfi_cross_dso = true
@@ -49,12 +49,13 @@ ohos_shared_library("websocket_client") {
 
   branch_protector_ret = "pac_ret"
 
-  sources = [ "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/websocket/websocket_module/src/websocket_client.cpp" ]
+  sources = [ "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/websocket/websocket_module/src/websocket_client.cpp",
+              "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/websocket/websocket_module/src/websocket_server.cpp" ]
 
   include_dirs = [
     "$NETSTACK_DIR/utils/common_utils/include",
     "$NETSTACK_DIR/utils/log/include",
-    "$NETSTACK_NATIVE_ROOT/websocket_client/include",
+    "$NETSTACK_NATIVE_ROOT/websocket_native/include",
   ]
 
   cflags = [
@@ -68,9 +69,9 @@ ohos_shared_library("websocket_client") {
     "-O2",
   ]
 
-  version_script = "libwebsocket_client.map"
+  version_script = "libwebsocket_native.map"
 
-  public_configs = [ ":websocket_client_config" ]
+  public_configs = [ ":websocket_native_config" ]
 
   defines = [ "OHOS_LIBWEBSOCKETS=1" ]
 
