@@ -34,7 +34,7 @@ ohos_static_library("websocket_ani_static") {
     "${target_gen_dir}/src",
     "$NETSTACK_DIR/utils/common_utils/include",
     "$NETSTACK_DIR/utils/log/include",
-    "$NETSTACK_NATIVE_ROOT/websocket_client/include",
+    "$NETSTACK_NATIVE_ROOT/websocket_native/include",
   ]
   sources = [ "src/cxx/websocket_ani.cpp" ]
   sources += get_target_outputs(":websocket_ani_cxx")
@@ -43,7 +43,7 @@ ohos_static_library("websocket_ani_static") {
     ":websocket_ani_cxx",
     "//third_party/rust/crates/cxx:cxx_cppdeps",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$NETSTACK_INNERKITS_DIR/websocket_client:websocket_client"
+    "$NETSTACK_INNERKITS_DIR/websocket_native:websocket_native"
   ]
   external_deps = [
     "c_utils:utils",
@@ -86,7 +86,7 @@ ohos_rust_shared_library("websocket_ani") {
 
 generate_static_abc("websocket") {
   base_url = "./ets"
-  files = [ "ets/@ohos.net.webSocket.d.ets" ]
+  files = [ "ets/@ohos.net.webSocket.ets" ]
   is_boot_abc = "True"
   device_dst_file = "/system/framework/websocket.abc"
 }

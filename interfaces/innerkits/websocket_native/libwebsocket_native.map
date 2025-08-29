@@ -1,0 +1,38 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{
+  global:
+    extern "C++" {
+      "OHOS::NetStack::WebSocketClient::WebSocketClient::WebSocketClient()";
+      "OHOS::NetStack::WebSocketClient::WebSocketClient::~WebSocketClient()";
+      "OHOS::NetStack::WebSocketClient::WebSocketClient::Connect(std::__h::basic_string<char, std::__h::char_traits<char>, std::__h::allocator<char>>, OHOS::NetStack::WebSocketClient::OpenOptions)";
+      "OHOS::NetStack::WebSocketClient::WebSocketClient::ConnectEx(std::__h::basic_string<char, std::__h::char_traits<char>, std::__h::allocator<char>>, OHOS::NetStack::WebSocketClient::OpenOptions)";
+      "OHOS::NetStack::WebSocketClient::WebSocketClient::GetClientContext() const";
+      "OHOS::NetStack::WebSocketClient::WebSocketClient::Send(char*, unsigned int)";
+      "OHOS::NetStack::WebSocketClient::WebSocketClient::SendEx(char*, unsigned int)";
+      "OHOS::NetStack::WebSocketClient::WebSocketClient::Close(OHOS::NetStack::WebSocketClient::CloseOption)";
+      "OHOS::NetStack::WebSocketClient::WebSocketClient::CloseEx(OHOS::NetStack::WebSocketClient::CloseOption)";
+      "OHOS::NetStack::WebSocketClient::WebSocketClient::Registcallback(void (*)(OHOS::NetStack::WebSocketClient::WebSocketClient*, OHOS::NetStack::WebSocketClient::OpenResult), void (*)(OHOS::NetStack::WebSocketClient::WebSocketClient*, std::__h::basic_string<char, std::__h::char_traits<char>, std::__h::allocator<char>> const&, unsigned int), void (*)(OHOS::NetStack::WebSocketClient::WebSocketClient*, OHOS::NetStack::WebSocketClient::ErrorResult), void (*)(OHOS::NetStack::WebSocketClient::WebSocketClient*, OHOS::NetStack::WebSocketClient::CloseResult))";
+      "OHOS::NetStack::WebSocketClient::WebSocketClient::Destroy()";
+      "OHOS::NetStack::WebSocketServer::WebSocketServer::WebSocketServer()";
+      "OHOS::NetStack::WebSocketServer::WebSocketServer::~WebSocketServer()";
+      "OHOS::NetStack::WebSocketServer::WebSocketServer::Start(OHOS::NetStack::WebSocketServer::ServerConfig const&)";
+      "OHOS::NetStack::WebSocketServer::WebSocketServer::Stop()";
+      "OHOS::NetStack::WebSocketServer::WebSocketServer::Close(OHOS::NetStack::WebSocketServer::SocketConnection const&, OHOS::NetStack::WebSocketServer::CloseOption const&)";
+      "OHOS::NetStack::WebSocketServer::WebSocketServer::Send(char const*, int, OHOS::NetStack::WebSocketServer::SocketConnection const&)";
+      "OHOS::NetStack::WebSocketServer::WebSocketServer::ListAllConnections(std::__h::vector<OHOS::NetStack::WebSocketServer::SocketConnection, std::__h::allocator<OHOS::NetStack::WebSocketServer::SocketConnection>>&) const";
+    };
+  local:
+    *;
+};

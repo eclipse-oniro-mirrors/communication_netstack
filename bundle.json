@@ -107,12 +107,13 @@
                 },
                 {
                     "type": "so",
-                    "name": "//foundation/communication/netstack/interfaces/innerkits/websocket_client:websocket_client",
+                    "name": "//foundation/communication/netstack/interfaces/innerkits/websocket_native:websocket_native",
                     "header": {
                         "header_files": [
-                            "websocket_client_innerapi.h"
+                            "websocket_client_innerapi.h",
+                            "websocket_server_innerapi.h"
                         ],
-                        "header_base": "//foundation/communication/netstack/interfaces/innerkits/websocket_client/include"
+                        "header_base": "//foundation/communication/netstack/interfaces/innerkits/websocket_native/include"
                     }
                 },
                 {

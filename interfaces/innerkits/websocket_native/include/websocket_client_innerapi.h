@@ -58,7 +58,7 @@ struct OpenOptions {
     std::map<std::string, std::string> headers;
 };
 
-class WebSocketClient {
+class WebSocketClient : public std::enable_shared_from_this<WebSocketClient> {
 public:
     WebSocketClient();
     ~WebSocketClient();
@@ -66,12 +66,17 @@ public:
     typedef void (*OnCloseCallback)(WebSocketClient *client, CloseResult closeResult);
     typedef void (*OnErrorCallback)(WebSocketClient *client, ErrorResult error);
     typedef void (*OnOpenCallback)(WebSocketClient *client, OpenResult openResult);
+    typedef void (*OnHeaderReceiveCallback)(WebSocketClient *client, const std::map<std::string, std::string> &headers);
+    typedef void (*OnDataEndCallback)(WebSocketClient *client);
 
     int Connect(std::string URL, OpenOptions Options);
+    int ConnectEx(std::string URL, OpenOptions Options);
     int Send(char *data, size_t length);
+    int SendEx(char *data, size_t length);
     int Close(CloseOption options);
+    int CloseEx(CloseOption options);
     int Registcallback(OnOpenCallback OnOpen, OnMessageCallback onMessage, OnErrorCallback OnError,
-                       OnCloseCallback onclose);
+                        OnCloseCallback onclose);
     int Destroy();
     void AppendData(void *data, size_t length);
     const std::string &GetData();
@@ -81,9 +86,12 @@ public:
     OnCloseCallback onCloseCallback_ = nullptr;
     OnErrorCallback onErrorCallback_ = nullptr;
     OnOpenCallback onOpenCallback_ = nullptr;
+    OnHeaderReceiveCallback onHeaderReceiveCallback_ = nullptr;
+    OnDataEndCallback onDataEndCallback_ = nullptr;
     ClientContext *GetClientContext() const;
 
 private:
+    void RunLwsThread();
     ClientContext *clientContext;
     std::string data_;
 };
