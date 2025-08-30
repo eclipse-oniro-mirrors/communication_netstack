@@ -147,7 +147,8 @@ void GetHeaderEntriesTest(const uint8_t *data, size_t size)
     OH_Http_DestroyHeaders(&headers);
 }
 
-void HttpSampleResponseCallback(Http_Response *response, uint32_t errCode) {
+void HttpSampleResponseCallback(Http_Response *response, uint32_t errCode)
+{
     if (response == nullptr) {
         return;
     }
@@ -166,13 +167,16 @@ void HttpSampleOnDataReceiveCallback(const char *data, size_t length)
     return;
 }
 
-void HttpSampleOnUploadProgressCallback(uint64_t totalSize, uint64_t transferredSize) {
+void HttpSampleOnUploadProgressCallback(uint64_t totalSize, uint64_t transferredSize)
+{
 }
 
-void HttpSampleOnDownloadProgressCallback(uint64_t totalSize, uint64_t transferredSize) {
+void HttpSampleOnDownloadProgressCallback(uint64_t totalSize, uint64_t transferredSize)
+{
 }
 
-void HttpSampleOnHeaderReceiveCallback(Http_Headers *headers) {
+void HttpSampleOnHeaderReceiveCallback(Http_Headers *headers)
+{
     if (headers != nullptr) {
         Http_HeaderEntry *entries = OH_Http_GetHeaderEntries(headers);
         Http_HeaderValue *headerValue;
@@ -189,9 +193,13 @@ void HttpSampleOnHeaderReceiveCallback(Http_Headers *headers) {
     }
 }
 
-void HttpSampleOnEndCallback() { }
+void HttpSampleOnEndCallback()
+{
+}
 
-void HttpSampleOnCancelCallback() { }
+void HttpSampleOnCancelCallback()
+{
+}
 
 void HttpRequestTest(const uint8_t *data, size_t size)
 {
