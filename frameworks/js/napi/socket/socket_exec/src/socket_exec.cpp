@@ -2136,7 +2136,7 @@ static bool IsValidSock(int &currentFd, const std::shared_ptr<EventManager> &man
     if (manager != nullptr) {
         currentFd = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
         if (currentFd <= 0) {
-            NETSTACK_LOGE("currentFd: %{public}d is error", currentFd);
+            NETSTACK_LOGD("currentFd: %{public}d is error", currentFd);
             return false;
         }
     } else {

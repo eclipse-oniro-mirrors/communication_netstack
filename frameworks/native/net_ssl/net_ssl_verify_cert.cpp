@@ -142,7 +142,7 @@ uint32_t VerifyCert(const CertBlob *cert)
             break;
         } else {
             verifyResult = X509_V_OK;
-            NETSTACK_LOGI("certificate validation succeeded.\n");
+            NETSTACK_LOGD("certificate validation succeeded.\n");
         }
     } while (false);
 
@@ -186,7 +186,7 @@ uint32_t VerifyCert(const CertBlob *cert, const CertBlob *caCert)
             break;
         } else {
             verifyResult = X509_V_OK;
-            NETSTACK_LOGI("certificate validation succeeded.\n");
+            NETSTACK_LOGD("certificate validation succeeded.\n");
         }
     } while (false);
 

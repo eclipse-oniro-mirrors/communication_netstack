@@ -54,11 +54,11 @@ bool IsDebugMode()
     AppExecFwk::BundleInfo bundleInfo;
     constexpr auto flag = static_cast<uint32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION);
     const auto res = bundleMgrProxy->GetBundleInfoForSelf(flag, bundleInfo);
-    NETSTACK_LOGI("IsDebugMode GetBundleInfoForSelf res = %{public}d", res);
+    NETSTACK_LOGD("IsDebugMode GetBundleInfoForSelf res = %{public}d", res);
 
     const auto appProvisionType = bundleInfo.applicationInfo.appProvisionType;
     g_appMode = appProvisionType;
-    NETSTACK_LOGI("IsDebugMode appProvisionType = %{public}s", appProvisionType.c_str());
+    NETSTACK_LOGD("IsDebugMode appProvisionType = %{public}s", appProvisionType.c_str());
     return (appProvisionType == "debug") ? true : false;
 #else
     return true;
