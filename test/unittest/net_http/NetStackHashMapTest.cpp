@@ -259,8 +259,8 @@ HWTEST_F(NetstackHashMapTest, NetstackDestroyMapWithValueTest002, TestSize.Level
     Netstack_DestroyMapWithValue(map, SimpleDestoryStub);
 }
 
- HWTEST_F(NetstackHashMapTest, NetstackCreateMapIteratorTest001, TestSize.Level1)
- { 
+HWTEST_F(NetstackHashMapTest, NetstackCreateMapIteratorTest001, TestSize.Level1)
+{
     Netstack_HashMap *map = CreateMap();
     map->capacity = MAX_MAP_CAPACITY + 1;
     Netstack_MapIterator *iterator = Netstack_CreateMapIterator(map);
