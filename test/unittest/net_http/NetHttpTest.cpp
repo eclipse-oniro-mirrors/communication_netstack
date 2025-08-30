@@ -46,14 +46,14 @@ namespace {
 using namespace std;
 using namespace testing::ext;
 
-static void myCallbackFunction()
+static void MyCallbackFunction()
 {
-    NETSTACK_LOGI("myCallbackFunction function called!");
+    NETSTACK_LOGI("MyCallbackFunction function called!");
 }
 
-static void testResponseCallback(struct Http_Response *response, uint32_t errCode)
+static void TestResponseCallback(struct Http_Response *response, uint32_t errCode)
 {
-    NETSTACK_LOGI("testResponseCallback function called!");
+    NETSTACK_LOGI("TestResponseCallback function called!");
 }
 
 static void TestDataReceiveCallback(const char *data, size_t length)
@@ -100,7 +100,7 @@ HWTEST_F(NetHttpTest, ToLowerCase001, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, SetHeaderValue001, TestSize.Level1)
-{    
+{
     uint32_t ret = OH_Http_SetHeaderValue(nullptr, "key", "test");
     EXPECT_EQ(ret, OH_HTTP_PARAMETER_ERROR);
 
@@ -115,7 +115,7 @@ HWTEST_F(NetHttpTest, SetHeaderValue001, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, SetHeaderValue002, TestSize.Level1)
-{    
+{
     Http_Headers *header = OH_Http_CreateHeaders();
     EXPECT_TRUE(header != nullptr);
     OH_Http_SetHeaderValue(header, "key1", "test1");
@@ -126,7 +126,7 @@ HWTEST_F(NetHttpTest, SetHeaderValue002, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, SetHeaderValue003, TestSize.Level1)
-{    
+{
     Http_Headers *header = OH_Http_CreateHeaders();
     EXPECT_TRUE(header != nullptr);
     OH_Http_SetHeaderValue(header, "key1", "test1");
@@ -137,7 +137,7 @@ HWTEST_F(NetHttpTest, SetHeaderValue003, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, SetHeaderValue004, TestSize.Level1)
-{    
+{
     Http_Headers *header = OH_Http_CreateHeaders();
     EXPECT_TRUE(header != nullptr);
     OH_Http_SetHeaderValue(header, "key1", "test1");
@@ -148,7 +148,7 @@ HWTEST_F(NetHttpTest, SetHeaderValue004, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, SetHeaderValue005, TestSize.Level1)
-{    
+{
     Http_Headers *header = OH_Http_CreateHeaders();
     
     EXPECT_TRUE(header != nullptr);
@@ -160,7 +160,7 @@ HWTEST_F(NetHttpTest, SetHeaderValue005, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, GetHeaderValue001, TestSize.Level1)
-{       
+{
     Http_Headers *header = OH_Http_CreateHeaders();
     EXPECT_TRUE(header != nullptr);
     header->fields = nullptr;
@@ -170,7 +170,7 @@ HWTEST_F(NetHttpTest, GetHeaderValue001, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, GetHeaderValue002, TestSize.Level1)
-{    
+{
     Http_HeaderValue *value = OH_Http_GetHeaderValue(nullptr, "key");
     EXPECT_EQ(value, nullptr);
 
@@ -182,7 +182,7 @@ HWTEST_F(NetHttpTest, GetHeaderValue002, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, GetHeaderValue003, TestSize.Level1)
-{    
+{
     Http_Headers *header = OH_Http_CreateHeaders();
     EXPECT_TRUE(header != nullptr);
     OH_Http_SetHeaderValue(header, "key1", "test1");
@@ -192,7 +192,7 @@ HWTEST_F(NetHttpTest, GetHeaderValue003, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, GetHeaderEntries001, TestSize.Level1)
-{    
+{
     EXPECT_EQ(OH_Http_GetHeaderEntries(nullptr), nullptr);
         
     Http_Headers *header = OH_Http_CreateHeaders();
@@ -203,7 +203,7 @@ HWTEST_F(NetHttpTest, GetHeaderEntries001, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, GetHeaderEntries002, TestSize.Level1)
-{    
+{
     Http_Headers *header = OH_Http_CreateHeaders();
     EXPECT_TRUE(header != nullptr);
     header->fields->capacity = MAX_MAP_CAPACITY + 1;
@@ -212,7 +212,7 @@ HWTEST_F(NetHttpTest, GetHeaderEntries002, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, GetHeaderEntries003, TestSize.Level1)
-{    
+{
     Http_Headers *header = OH_Http_CreateHeaders();
     EXPECT_TRUE(header != nullptr);
     OH_Http_SetHeaderValue(header, "a", "test1");
@@ -226,7 +226,7 @@ HWTEST_F(NetHttpTest, GetHeaderEntries003, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, CreateRequest001, TestSize.Level1)
-{ 
+{
     EXPECT_EQ(OH_Http_CreateRequest(nullptr), nullptr);
 
     const char *url = "https://www.baidu.com";
@@ -234,10 +234,10 @@ HWTEST_F(NetHttpTest, CreateRequest001, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, SetOption001, TestSize.Level1)
-{ 
+{
     Http_Request *request = OH_Http_CreateRequest("https://www.baidu.com");
     request->options = (Http_RequestOptions *)calloc(1, sizeof(Http_RequestOptions));
-    Http_ResponseCallback callback = testResponseCallback;
+    Http_ResponseCallback callback = TestResponseCallback;
     Http_EventsHandler handler;
     
     request->options->method = "GET";
@@ -251,7 +251,7 @@ HWTEST_F(NetHttpTest, SetOption002, TestSize.Level1)
 {
     Http_Request *request = OH_Http_CreateRequest("https://www.baidu.com");
     request->options = (Http_RequestOptions *)calloc(1, sizeof(Http_RequestOptions));
-    Http_ResponseCallback callback = testResponseCallback;
+    Http_ResponseCallback callback = TestResponseCallback;
     Http_EventsHandler handler;
     
     request->options->priority = -1;
@@ -288,7 +288,7 @@ HWTEST_F(NetHttpTest, SetOption002, TestSize.Level1)
 HWTEST_F(NetHttpTest, SetOption003, TestSize.Level1)
 {
     Http_Request *request = OH_Http_CreateRequest("https://www.baidu.com");
-    Http_ResponseCallback callback = testResponseCallback;
+    Http_ResponseCallback callback = TestResponseCallback;
     Http_EventsHandler handler;
     request->options = (Http_RequestOptions *)calloc(1, sizeof(Http_RequestOptions));
     
@@ -340,7 +340,7 @@ HWTEST_F(NetHttpTest, SetOtherOption001, TestSize.Level1)
 {
     Http_Request *request = OH_Http_CreateRequest("https://www.baidu.com");
     request->options = (Http_RequestOptions *)calloc(1, sizeof(Http_RequestOptions));
-    Http_ResponseCallback callback = testResponseCallback;
+    Http_ResponseCallback callback = TestResponseCallback;
     Http_EventsHandler handler;
     int ret = OH_Http_Request(request, callback, handler);
     EXPECT_EQ(ret, 0);
@@ -391,8 +391,8 @@ HWTEST_F(NetHttpTest, SetOtherOption001, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, HttpRequest001, TestSize.Level1)
-{ 
-    Http_ResponseCallback callback = testResponseCallback;
+{
+    Http_ResponseCallback callback = TestResponseCallback;
     Http_Request *request = OH_Http_CreateRequest("https://www.baidu.com");
     Http_EventsHandler handler;
     EXPECT_EQ(OH_Http_Request(nullptr, callback, handler), HTTP_OUT_OF_MEMORY);
@@ -401,8 +401,8 @@ HWTEST_F(NetHttpTest, HttpRequest001, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, HttpRequest002, TestSize.Level1)
-{ 
-    Http_ResponseCallback callback = testResponseCallback;
+{
+    Http_ResponseCallback callback = TestResponseCallback;
     Http_Request *req = OH_Http_CreateRequest("https://www.baidu.com");
     req->options = (Http_RequestOptions *)calloc(1, sizeof(Http_RequestOptions));
     req->options->httpProtocol = Http_HttpProtocol::OH_HTTP1_1;
@@ -412,14 +412,14 @@ HWTEST_F(NetHttpTest, HttpRequest002, TestSize.Level1)
 }
 
 HWTEST_F(NetHttpTest, HttpDestroy001, TestSize.Level1)
-{ 
+{
     OH_Http_Destroy(nullptr);
     
     Http_Request *req = OH_Http_CreateRequest("https://www.baidu.com");
     EXPECT_TRUE(req != nullptr);
     OH_Http_Destroy(&req);
     
-    Http_ResponseCallback callback = testResponseCallback;
+    Http_ResponseCallback callback = TestResponseCallback;
     Http_EventsHandler handler;
     req = OH_Http_CreateRequest("https://www.baidu.com");
     EXPECT_TRUE(req != nullptr);
@@ -438,7 +438,7 @@ HWTEST_F(NetHttpTest, RequestOnSuccess001, TestSize.Level1)
     Http_Request *req = OH_Http_CreateRequest("https://www.baidu.com");
     EXPECT_TRUE(req != nullptr);
     
-    Http_ResponseCallback callback = testResponseCallback;
+    Http_ResponseCallback callback = TestResponseCallback;
     Http_EventsHandler handler;
     OH_Http_Request(req, callback, handler);
     OH_Http_Destroy(&req);
@@ -449,9 +449,9 @@ HWTEST_F(NetHttpTest, RequestOnSuccess002, TestSize.Level1)
     Http_Request *request = OH_Http_CreateRequest("https://www.baidu.com");
     EXPECT_TRUE(request != nullptr);
     
-    Http_ResponseCallback callback = testResponseCallback;
+    Http_ResponseCallback callback = TestResponseCallback;
     Http_EventsHandler handler;
-    Http_OnVoidCallback onDataEndCallback = myCallbackFunction;
+    Http_OnVoidCallback onDataEndCallback = MyCallbackFunction;
     handler.onDataEnd = onDataEndCallback;
     OH_Http_Request(request, callback, handler);
     OH_Http_Destroy(&request);
@@ -462,7 +462,7 @@ HWTEST_F(NetHttpTest, RequestOnCancel001, TestSize.Level1)
     Http_Request *request = OH_Http_CreateRequest("https://www.baidu.com");
     EXPECT_TRUE(request != nullptr);
     
-    Http_ResponseCallback callback = testResponseCallback;
+    Http_ResponseCallback callback = TestResponseCallback;
     Http_EventsHandler handler;
     OH_Http_Request(request, callback, handler);
     OH_Http_Destroy(&request);
@@ -473,9 +473,9 @@ HWTEST_F(NetHttpTest, RequestOnCancel002, TestSize.Level1)
     Http_Request *request = OH_Http_CreateRequest("https://www.baidu.com");
     EXPECT_TRUE(request != nullptr);
     
-    Http_ResponseCallback callback = testResponseCallback;
+    Http_ResponseCallback callback = TestResponseCallback;
     Http_EventsHandler handler;
-    Http_OnVoidCallback onDataEndCallback = myCallbackFunction;
+    Http_OnVoidCallback onDataEndCallback = MyCallbackFunction;
     handler.onCanceled = onDataEndCallback;
     OH_Http_Request(request, callback, handler);
     OH_Http_Destroy(&request);
@@ -486,9 +486,9 @@ HWTEST_F(NetHttpTest, RequestOnFail001, TestSize.Level1)
     Http_Request *request = OH_Http_CreateRequest("https://www.baidu.com");
     EXPECT_TRUE(request != nullptr);
     
-    Http_ResponseCallback callback = testResponseCallback;
+    Http_ResponseCallback callback = TestResponseCallback;
     Http_EventsHandler handler;
-    Http_OnVoidCallback onDataEndCallback = myCallbackFunction;
+    Http_OnVoidCallback onDataEndCallback = MyCallbackFunction;
     handler.onDataEnd = onDataEndCallback;
     OH_Http_Request(request, callback, handler);
     OH_Http_Destroy(&request);
@@ -499,10 +499,10 @@ HWTEST_F(NetHttpTest, RequestOnDataReceive001, TestSize.Level1)
     Http_Request *request = OH_Http_CreateRequest("https://www.baidu.com");
     EXPECT_TRUE(request != nullptr);
     
-    Http_ResponseCallback callback = testResponseCallback;
+    Http_ResponseCallback callback = TestResponseCallback;
     Http_EventsHandler handler;
     Http_OnDataReceiveCallback onDataReceiveCallback = TestDataReceiveCallback;
-    handler.onDataReceive = onDataReceiveCallback; 
+    handler.onDataReceive = onDataReceiveCallback;
     OH_Http_Request(request, callback, handler);
     OH_Http_Destroy(&request);
 }
@@ -512,10 +512,10 @@ HWTEST_F(NetHttpTest, RequestOnHeadersReceive001, TestSize.Level1)
     Http_Request *request = OH_Http_CreateRequest("https://www.baidu.com");
     
     Http_EventsHandler handler;
-    Http_ResponseCallback callback = testResponseCallback;
+    Http_ResponseCallback callback = TestResponseCallback;
     Http_OnHeaderReceiveCallback onHeaderReceiveCallback = testHeaderReceiveCallback;
     handler.onHeadersReceive = onHeaderReceiveCallback;
-    OH_Http_Request(request, callback, handler); 
+    OH_Http_Request(request, callback, handler);
     OH_Http_Destroy(&request);
 }
 }

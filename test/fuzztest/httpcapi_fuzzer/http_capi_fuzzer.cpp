@@ -147,7 +147,8 @@ void GetHeaderEntriesTest(const uint8_t *data, size_t size)
     OH_Http_DestroyHeaders(&headers);
 }
 
-void Http_SampleResponseCallback(Http_Response *response, uint32_t errCode) {
+void HttpSampleResponseCallback(Http_Response *response, uint32_t errCode)
+{
     if (response == nullptr) {
         return;
     }
@@ -166,13 +167,16 @@ void HttpSampleOnDataReceiveCallback(const char *data, size_t length)
     return;
 }
 
-void Http_SampleOnUploadProgressCallback(uint64_t totalSize, uint64_t transferredSize) {
+void HttpSampleOnUploadProgressCallback(uint64_t totalSize, uint64_t transferredSize)
+{
 }
 
-void Http_SampleOnDownloadProgressCallback(uint64_t totalSize, uint64_t transferredSize) {
+void HttpSampleOnDownloadProgressCallback(uint64_t totalSize, uint64_t transferredSize)
+{
 }
 
-void Http_SampleOnHeaderReceiveCallback(Http_Headers *headers) {
+void HttpSampleOnHeaderReceiveCallback(Http_Headers *headers)
+{
     if (headers != nullptr) {
         Http_HeaderEntry *entries = OH_Http_GetHeaderEntries(headers);
         Http_HeaderValue *headerValue;
@@ -189,9 +193,13 @@ void Http_SampleOnHeaderReceiveCallback(Http_Headers *headers) {
     }
 }
 
-void Http_SampleOnEndCallback() { }
+void HttpSampleOnEndCallback()
+{
+}
 
-void Http_SampleOnCancelCallback() { }
+void HttpSampleOnCancelCallback()
+{
+}
 
 void HttpRequestTest(const uint8_t *data, size_t size)
 {
@@ -227,12 +235,12 @@ void HttpRequestTest(const uint8_t *data, size_t size)
     request->options->headers = headers;
     Http_EventsHandler eventsHandler;
     eventsHandler.onDataReceive = HttpSampleOnDataReceiveCallback;
-    eventsHandler.onCanceled = Http_SampleOnCancelCallback;
-    eventsHandler.onDataEnd = Http_SampleOnEndCallback;
-    eventsHandler.onDownloadProgress = Http_SampleOnDownloadProgressCallback;
-    eventsHandler.onUploadProgress = Http_SampleOnUploadProgressCallback;
-    eventsHandler.onHeadersReceive = Http_SampleOnHeaderReceiveCallback;
-    ret = OH_Http_Request(request, Http_SampleResponseCallback, eventsHandler);
+    eventsHandler.onCanceled = HttpSampleOnCancelCallback;
+    eventsHandler.onDataEnd = HttpSampleOnEndCallback;
+    eventsHandler.onDownloadProgress = HttpSampleOnDownloadProgressCallback;
+    eventsHandler.onUploadProgress = HttpSampleOnUploadProgressCallback;
+    eventsHandler.onHeadersReceive = HttpSampleOnHeaderReceiveCallback;
+    ret = OH_Http_Request(request, HttpSampleResponseCallback, eventsHandler);
     if (ret != 0) {
         OH_Http_DestroyHeaders(&headers);
         free(request->options);
