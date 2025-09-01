@@ -382,7 +382,7 @@ pub struct DataSendProgressInfo {
     pub total_size: i32,
 }
 
-#[ani_rs::ani]
+#[ani_rs::ani(path = "L@ohos/net/http/http/HttpResponseCacheInner")]
 pub struct HttpResponseCache {
     pub native_ptr: i64,
 }
