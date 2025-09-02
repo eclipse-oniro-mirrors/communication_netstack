@@ -27,6 +27,11 @@ namespace OHOS::Request {
 using namespace OHOS::NetStack::HttpClient;
 struct CallbackWrapper;
 struct PerformanceInfoRust;
+struct ClientCert;
+struct EscapedDataRust;
+struct MultiFormDataRust;
+struct ServerAuthentication;
+struct TlsConfigRust;
 
 void OnCallback(const std::shared_ptr<HttpClientTask> &task, rust::Box<CallbackWrapper> callback);
 
@@ -44,6 +49,25 @@ inline void SetHttpProtocol(HttpClientRequest &request, int32_t protocol)
 {
     request.SetHttpProtocol(static_cast<HttpProtocol>(protocol));
 }
+
+inline void SetHttpUsingProxy(HttpClientRequest &request, int32_t proxy)
+{
+    request.SetHttpProxyType(static_cast<HttpProxyType>(proxy));
+}
+
+void SetAddressFamily(HttpClientRequest &request, int32_t address_family);
+void SetExtraData(HttpClientRequest &request, const EscapedDataRust& extraData);
+void SetExpectDataType(HttpClientRequest &request, int32_t expect_data_type);
+
+void SetClientCert(HttpClientRequest &request, const ClientCert& cert);
+
+void SetDNSServers(HttpClientRequest &request, const rust::vec<rust::string>& cert);
+
+void AddMultiFormData(HttpClientRequest &request, const MultiFormDataRust &data);
+
+void SetServerAuthentication(HttpClientRequest &request, const ServerAuthentication& server_auth);
+
+void SetTLSOptions(HttpClientRequest &request, const TlsConfigRust &tls_options);
 
 inline std::shared_ptr<HttpClientTask> NewHttpClientTask(const HttpClientRequest &request)
 {
