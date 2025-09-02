@@ -86,52 +86,6 @@
     } while (0)
 
 namespace OHOS::NetStack::Http {
-#if !HAS_NETMANAGER_BASE
-static constexpr int CURL_TIMEOUT_MS = 20;
-static constexpr int CONDITION_TIMEOUT_S = 3600;
-static constexpr int CURL_MAX_WAIT_MSECS = 10;
-static constexpr int CURL_HANDLE_NUM = 10;
-#endif
-static constexpr const uint32_t EVENT_PARAM_ZERO = 0;
-static constexpr const uint32_t EVENT_PARAM_ONE = 1;
-static constexpr const uint32_t EVENT_PARAM_TWO = 2;
-static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!eNULL:!EXPORT)";
-#if !HAS_NETMANAGER_BASE
-static constexpr const char *HTTP_TASK_RUN_THREAD = "OS_NET_TaskHttp";
-static constexpr const char *HTTP_CLIENT_TASK_THREAD = "OS_NET_HttpJs";
-#endif
-
-#if HAS_NETMANAGER_BASE
-static constexpr const char *HTTP_REQ_TRACE_NAME = "HttpRequest";
-#endif
-
-#ifdef HTTP_MULTIPATH_CERT_ENABLE
-static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
-static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
-static constexpr const char *USER_CERT_ROOT_PATH = "/data/certificates/user_cacerts/0/";
-static constexpr int32_t SYSPARA_MAX_SIZE = 128;
-static constexpr const char *DEFAULT_HTTP_PROXY_HOST = "NONE";
-static constexpr const char *DEFAULT_HTTP_PROXY_PORT = "0";
-static constexpr const char *DEFAULT_HTTP_PROXY_EXCLUSION_LIST = "NONE";
-static constexpr const char *HTTP_PROXY_HOST_KEY = "persist.netmanager_base.http_proxy.host";
-static constexpr const char *HTTP_PROXY_PORT_KEY = "persist.netmanager_base.http_proxy.port";
-static constexpr const char *HTTP_PROXY_EXCLUSIONS_KEY = "persist.netmanager_base.http_proxy.exclusion_list";
-#endif
-
-#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
-static constexpr const int SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX = 1;
-#endif
-
-static constexpr const char *HTTP_AF_ONLYV4 = "ONLY_V4";
-static constexpr const char *HTTP_AF_ONLYV6 = "ONLY_V6";
-static int64_t g_limitSdkReport = 0;
-
-static void RequestContextDeleter(RequestContext *context)
-{
-    context->DeleteReference();
-    delete context;
-    context = nullptr;
-}
 
 static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, void *data)
 {
@@ -223,20 +177,11 @@ void HttpExec::SetRequestInfoCallbacks(HttpOverCurl::TransferCallbacks &callback
 }
 #endif
 
-void HttpExec::AsyncWorkRequestCallback(napi_env env, napi_status status, void *data)
+void HttpExec::FinalResponseProcessing(RequestContext *requestContext)
 {
-    if (status != napi_ok) {
-        return;
-    }
-    if (!data) {
-        return;
-    }
-    if (reinterpret_cast<RequestContext *>(data)->magicNumber_ != MAGIC_NUMBER) {
-        return;
-    }
-    std::unique_ptr<RequestContext, decltype(&RequestContextDeleter)> context(static_cast<RequestContext *>(data),
-                                                                              RequestContextDeleter);
-    napi_value argv[EVENT_PARAM_TWO] = {nullptr};
+    std::unique_ptr<RequestContext, decltype(&RequestContextDeleter)> context(requestContext, RequestContextDeleter);
+    napi_value argv[EVENT_PARAM_TWO] = { nullptr };
+    auto env = context->GetEnv();
     if (context->IsParseOK() && context->IsExecOK()) {
         argv[EVENT_PARAM_ZERO] = NapiUtils::GetUndefined(env);
         argv[EVENT_PARAM_ONE] = HttpExec::RequestCallback(context.get());
@@ -266,6 +211,31 @@ void HttpExec::AsyncWorkRequestCallback(napi_env env, napi_status status, void *
     if (NapiUtils::GetValueType(env, func) == napi_function) {
         (void)NapiUtils::CallFunction(env, undefined, func, EVENT_PARAM_TWO, argv);
     }
+}
+
+void HttpExec::AsyncWorkRequestCallback(napi_env env, napi_status status, void *data)
+{
+    if (status != napi_ok) {
+        return;
+    }
+    if (!data) {
+        return;
+    }
+    auto context = reinterpret_cast<RequestContext *>(data);
+    if (context->magicNumber_ != MAGIC_NUMBER) {
+        return;
+    }
+    auto handleFinalResponseProcessing = std::bind(FinalResponseProcessing, context);
+#if ENABLE_HTTP_INTERCEPT
+    auto interceptor = context->GetInterceptor();
+    if (interceptor != nullptr && interceptor->IsFinalResponseInterceptor()) {
+        auto interceptorCallback = interceptor->GetFinalResponseInterceptorCallback();
+        interceptorCallback(context, handleFinalResponseProcessing);
+        NETSTACK_LOGD("Final response interceptor callback invoked successfully.");
+        return;
+    }
+#endif
+    handleFinalResponseProcessing();
 }
 #if HAS_NETMANAGER_BASE
 bool SetTraceOptions(CURL *curl, RequestContext *context)
@@ -324,6 +294,17 @@ bool SetTraceOptions(CURL *curl, RequestContext *context)
 }
 #endif
 
+#if ENABLE_HTTP_INTERCEPT
+bool HttpExec::SetFollowLocation(CURL *curl, RequestContext *context)
+{
+    auto interceptor = context->GetInterceptor();
+    if (interceptor != nullptr && interceptor->IsRedirectionInterceptor()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FOLLOWLOCATION, 0L, context);
+    }
+    return true;
+}
+#endif
+
 bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
 {
 #if HAS_NETMANAGER_BASE
@@ -346,7 +327,9 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     name << HTTP_REQ_TRACE_NAME << "_" << std::this_thread::get_id() << (isDebugMode ? ("_" + urlWithoutParam) : "");
     SetTraceOptions(handle, context);
     SetServerSSLCertOption(handle, context);
-
+#if ENABLE_HTTP_INTERCEPT
+    SetFollowLocation(handle, context);
+#endif
     static HttpOverCurl::EpollRequestHandler requestHandler;
     HttpOverCurl::TransferCallbacks callbacks;
     SetRequestInfoCallbacks(callbacks);
@@ -435,14 +418,17 @@ bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURL
 
     context->response.SetResponseTime(HttpTime::GetNowTimeGMT());
 
-    int64_t responseCode;
-    CURLcode code = curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responseCode);
-    if (code != CURLE_OK) {
-        context->SetErrorCode(code);
-        return false;
+    CURLcode code;
+    if (!context->response.isApplyBlockRedirectionInterceptor_) {
+        int64_t responseCode;
+        code = curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responseCode);
+        if (code != CURLE_OK) {
+            context->SetErrorCode(code);
+            return false;
+        }
+        context->response.SetResponseCode(responseCode);
+        NETSTACK_LOGD("responseCode is %{public}s", std::to_string(responseCode).c_str());
     }
-    context->response.SetResponseCode(responseCode);
-    NETSTACK_LOGD("responseCode is %{public}s", std::to_string(responseCode).c_str());
 
     struct curl_slist *cookies = nullptr;
     code = curl_easy_getinfo(handle, CURLINFO_COOKIELIST, &cookies);
@@ -450,7 +436,12 @@ bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURL
         context->SetErrorCode(code);
         return false;
     }
-
+#if ENABLE_HTTP_INTERCEPT
+    auto interceptor = context->GetInterceptor();
+    if (interceptor != nullptr && interceptor->IsRedirectionInterceptor()) {
+        context->response.SetCookies("");
+    }
+#endif
     std::unique_ptr<struct curl_slist, decltype(&curl_slist_free_all)> cookiesHandle(cookies, curl_slist_free_all);
     while (cookies) {
         context->response.AppendCookies(cookies->data, strlen(cookies->data));
@@ -653,6 +644,103 @@ static bool ExecRequestCheck(RequestContext *context)
     return true;
 }
 
+void HttpExec::EnqueueCallback(RequestContext *context)
+{
+    if (context->GetSharedManager()) {
+        auto env = context->GetEnv();
+        auto moduleId = context->GetModuleId();
+        if (context->IsRequestInStream()) {
+            NapiUtils::CreateUvQueueWorkByModuleId(
+                env, std::bind(AsyncWorkRequestInStreamCallback, env, napi_ok, context), moduleId);
+        } else {
+            NapiUtils::CreateUvQueueWorkByModuleId(
+                env, std::bind(AsyncWorkRequestCallback, env, napi_ok, context), moduleId);
+        }
+    }
+}
+
+bool HttpExec::HandleInitialRequestPostProcessing(
+    RequestContext *context, HiAppEventReport hiAppEventReport, int64_t &limitSdkReport)
+{
+    context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
+    CacheProxy proxy(context->options);
+
+    if (context->IsUsingCache() && proxy.ReadResponseFromCache(context)) {
+        auto handleCacheCheckedPostProcessing [[maybe_unused]] = std::bind(
+            [](RequestContext *ctx) {
+                EnqueueCallback(ctx);
+                return true;
+            },
+            context);
+        auto blockCacheCheckedPostProcessing [[maybe_unused]] = std::bind(
+            [](RequestContext *ctx) {
+                EnqueueCallback(ctx);
+                return false;
+            },
+            context);
+#if ENABLE_HTTP_INTERCEPT
+        auto interceptor = context->GetInterceptor();
+        if (interceptor != nullptr && interceptor->IsCacheCheckedInterceptor()) {
+            auto interceptorCallback = interceptor->GetCacheCheckedInterceptorCallback();
+            interceptorCallback(context, handleCacheCheckedPostProcessing, blockCacheCheckedPostProcessing);
+            NETSTACK_LOGD("HttpExec: Cache checked interceptor callback executed successfully.");
+            return true;
+        }
+#endif
+        return handleCacheCheckedPostProcessing();
+    }
+
+    if (!RequestWithoutCache(context)) {
+        context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
+        EnqueueCallback(context);
+        return false;
+    }
+
+    if (limitSdkReport == 0) {
+        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
+        limitSdkReport = 1;
+    }
+
+    return true;
+}
+
+void HttpExec::ProcessResponseBodyAndEmitEvents(RequestContext *context)
+{
+    if (context == nullptr || !context->GetSharedManager()) {
+        return;
+    }
+    if (context->GetSharedManager()->IsEventDestroy()) {
+        context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
+        return;
+    }
+    if (context->IsRequestInStream()) {
+        NapiUtils::CreateUvQueueWorkByModuleId(
+            context->GetEnv(), std::bind(OnDataReceive, context->GetEnv(), napi_ok, context), context->GetModuleId());
+    }
+    context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
+}
+
+void HttpExec::ProcessResponseHeadersAndEmitEvents(RequestContext *context)
+{
+    context->GetTrace().Tracepoint(TraceEvents::RECEIVING);
+    if (context->GetSharedManager()->IsEventDestroy()) {
+        context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
+        return;
+    }
+    if (CommonUtils::EndsWith(context->response.GetRawHeader(), HttpConstant::HTTP_RESPONSE_HEADER_SEPARATOR)) {
+        context->response.ParseHeaders();
+        if (context->GetSharedManager()) {
+            auto headerMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
+            context->GetSharedManager()->EmitByUvWithoutCheckShared(
+                ON_HEADER_RECEIVE, headerMap, ResponseHeaderCallback);
+            auto headersMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
+            context->GetSharedManager()->EmitByUvWithoutCheckShared(
+                ON_HEADERS_RECEIVE, headersMap, ResponseHeaderCallback);
+        }
+    }
+    context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
+}
+
 bool HttpExec::ExecRequest(RequestContext *context)
 {
     HiAppEventReport hiAppEventReport("NetworkKit", "HttpRequest");
@@ -662,42 +750,25 @@ bool HttpExec::ExecRequest(RequestContext *context)
     if (context->GetSharedManager()->IsEventDestroy()) {
         return false;
     }
-    context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
-    CacheProxy proxy(context->options);
-    if (context->IsUsingCache() && proxy.ReadResponseFromCache(context)) {
-        if (context->GetSharedManager()) {
-            if (context->IsRequestInStream()) {
-                NapiUtils::CreateUvQueueWorkByModuleId(
-                    context->GetEnv(), std::bind(AsyncWorkRequestInStreamCallback, context->GetEnv(), napi_ok, context),
-                    context->GetModuleId());
-            } else {
-                NapiUtils::CreateUvQueueWorkByModuleId(
-                    context->GetEnv(), std::bind(AsyncWorkRequestCallback, context->GetEnv(), napi_ok, context),
-                    context->GetModuleId());
-            }
-        }
+    auto continueCallback =
+        std::bind(&HandleInitialRequestPostProcessing, context, hiAppEventReport, std::ref(g_limitSdkReport));
+    auto blockCallback [[maybe_unused]] = std::bind(
+        [](RequestContext *ctx) {
+            ProcessResponseHeadersAndEmitEvents(ctx);
+            ProcessResponseBodyAndEmitEvents(ctx);
+            EnqueueCallback(ctx);
+        },
+        context);
+#if ENABLE_HTTP_INTERCEPT
+    auto interceptor = context->GetInterceptor();
+    if (interceptor != nullptr && interceptor->IsInitialRequestInterceptor()) {
+        auto interceptorCallback = interceptor->GetInitialRequestInterceptorCallback();
+        interceptorCallback(context, continueCallback, blockCallback);
+        NETSTACK_LOGD("HttpExec: Initial request interceptor callback invoked successfully");
         return true;
     }
-    if (!RequestWithoutCache(context)) {
-        context->SetErrorCode(NapiUtils::NETSTACK_NAPI_INTERNAL_ERROR);
-        if (context->GetSharedManager()) {
-            if (context->IsRequestInStream()) {
-                NapiUtils::CreateUvQueueWorkByModuleId(
-                    context->GetEnv(), std::bind(AsyncWorkRequestInStreamCallback, context->GetEnv(), napi_ok, context),
-                    context->GetModuleId());
-            } else {
-                NapiUtils::CreateUvQueueWorkByModuleId(
-                    context->GetEnv(), std::bind(AsyncWorkRequestCallback, context->GetEnv(), napi_ok, context),
-                    context->GetModuleId());
-            }
-        }
-        return false;
-    }
-    if (g_limitSdkReport == 0) {
-        hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
-        g_limitSdkReport = 1;
-    }
-    return true;
+#endif
+    return continueCallback();
 }
 
 napi_value HttpExec::BuildRequestCallback(RequestContext *context)
@@ -1597,6 +1668,18 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
         return size * memBytes;
     }
+
+#if ENABLE_HTTP_INTERCEPT
+    auto interceptor = context->GetInterceptor();
+    if (interceptor != nullptr && interceptor->IsRedirectionInterceptor()) {
+        int statusCode = context->response.GetResponseCode();
+        if (statusCode >= HTTP_STATUS_REDIRECT_START && statusCode < HTTP_STATUS_CLIENT_ERROR_START) {
+            context->response.SetResult(const_cast<char *>(static_cast<const char *>(data)));
+            return size * memBytes;
+        }
+    }
+#endif
+
     if (context->response.GetResult().size() > context->options.GetMaxLimit() ||
         size * memBytes > context->options.GetMaxLimit()) {
         NETSTACK_LOGE("response data exceeds the maximum limit");
@@ -1637,7 +1720,7 @@ static void MakeHeaderWithSetCookieArray(napi_env env, napi_value header, std::m
     }
 }
 
-static void ResponseHeaderCallback(uv_work_t *work, int status)
+void HttpExec::ResponseHeaderCallback(uv_work_t *work, int status)
 {
     (void)status;
 
@@ -1660,7 +1743,7 @@ static void ResponseHeaderCallback(uv_work_t *work, int status)
     work = nullptr;
 }
 
-static std::map<std::string, std::string> MakeHeaderWithSetCookie(RequestContext * context)
+std::map<std::string, std::string> HttpExec::MakeHeaderWithSetCookie(RequestContext *context)
 {
     std::map<std::string, std::string> tempMap = context->response.GetHeader();
     std::string setCookies;

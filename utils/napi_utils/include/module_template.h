@@ -17,6 +17,7 @@
 #define COMMUNICATIONNETSTACK_NETSTACK_MODULE_TEMPLATE_H
 
 #include <cstddef>
+#include <map>
 #include <initializer_list>
 #include <iosfwd>
 #include <type_traits>
@@ -169,6 +170,9 @@ napi_value InterfaceWithOutAsyncWorkWithManagerWrapper(napi_env env, napi_callba
         NETSTACK_LOGE("new context is nullptr");
         return NapiUtils::GetUndefined(env);
     }
+#if ENABLE_HTTP_INTERCEPT
+    context->SetInterceptorRefs(wrapper->eventManager.interceptorRefs_);
+#endif
     context->ParseParams(params, paramsCount);
     napi_value ret = NapiUtils::GetUndefined(env);
     if (NapiUtils::GetValueType(env, context->GetCallback()) != napi_function && context->IsNeedPromise()) {
@@ -281,6 +285,12 @@ void CleanUpWithSharedManager(void* data);
 
 void DefineClass(napi_env env, napi_value exports, const std::initializer_list<napi_property_descriptor> &properties,
                  const std::string &className);
+
+void DefineClassNew(napi_env env, napi_value exports, const std::initializer_list<napi_property_descriptor> &properties,
+    const std::string &className, napi_callback constructor);
+
+napi_value InterceptorChainApply(
+    napi_env env, napi_callback_info info, const std::map<std::string, napi_ref> &interceptorReferences);
 
 napi_value NewInstanceNoManager(napi_env env, napi_callback_info info, const std::string &name, Finalizer finalizer);
 

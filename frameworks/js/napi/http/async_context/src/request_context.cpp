@@ -169,6 +169,20 @@ void RequestContext::ParseParams(napi_value *params, size_t paramsCount)
     }
 }
 
+#if ENABLE_HTTP_INTERCEPT
+void RequestContext::SetInterceptorRefs(const std::map<std::string, napi_ref> &interceptorRefs)
+{
+    interceptorRefs_.clear();
+    interceptorRefs_ = interceptorRefs;
+    interceptor_ = std::make_unique<HttpInterceptor>(interceptorRefs_);
+}
+
+HttpInterceptor *RequestContext::GetInterceptor()
+{
+    return interceptor_.get();
+}
+#endif
+
 bool RequestContext::CheckParamsType(napi_value *params, size_t paramsCount)
 {
     if (paramsCount == PARAM_JUST_URL) {
@@ -1003,6 +1017,11 @@ std::string RequestContext::GetBundleName() const
 void RequestContext::SetCurlHandle(CURL *handle)
 {
     curlHandle_ = handle;
+}
+
+CURL *RequestContext::GetCurlHandle()
+{
+    return curlHandle_;
 }
 
 void RequestContext::SendNetworkProfiler()

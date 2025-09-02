@@ -941,4 +941,16 @@ bool IsEnvValid(napi_env env)
     }
     return true;
 }
+
+//ThrowError
+void ThrowError(napi_env env, const std::string &errorCode, const std::string &errorMessage)
+{
+    napi_value code = nullptr;
+    napi_create_string_utf8(env, errorCode.c_str(), NAPI_AUTO_LENGTH, &code);
+    napi_value message = nullptr;
+    napi_create_string_utf8(env, errorMessage.c_str(), NAPI_AUTO_LENGTH, &message);
+    napi_value error = nullptr;
+    napi_create_error(env, code, message, &error);
+    napi_throw(env, error);
+}
 } // namespace OHOS::NetStack::NapiUtils

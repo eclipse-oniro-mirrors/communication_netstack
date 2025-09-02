@@ -22,12 +22,12 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <map>
 #include <shared_mutex>
 #include <queue>
 #include <string>
 #include <unordered_set>
 #include <utility>
-#include <unordered_map>
 #include "event_listener.h"
 #include "napi/native_api.h"
 #include "uv.h"
@@ -224,6 +224,7 @@ public:
     [[maybe_unused]] struct {
         uint32_t magicNumber = EVENT_MANAGER_MAGIC_NUMBER;
     } innerMagic_;
+    std::map<std::string, napi_ref> interceptorRefs_;
 };
 
 struct EventManagerWrapper {

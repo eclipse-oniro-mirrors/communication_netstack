@@ -36,6 +36,11 @@ struct RequestInfo {
     void *opaqueData;
 };
 
+struct RedirectionInterceptorInfo {
+    CURLMsg *message;
+    std::shared_ptr<std::string> location;
+};
+
 } // namespace OHOS::NetStack::HttpOverCurl
 
 #endif // COMMUNICATIONNETSTACK_REQUEST_INFO_H

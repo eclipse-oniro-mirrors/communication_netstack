@@ -333,6 +333,51 @@ void DefineClass(napi_env env, napi_value exports, const std::initializer_list<n
     NapiUtils::SetNamedProperty(env, global, className, jsConstructor);
 }
 
+void DefineClassNew(napi_env env, napi_value exports, const std::initializer_list<napi_property_descriptor> &properties,
+    const std::string &className, napi_callback constructor)
+{
+    napi_value jsConstructor = nullptr;
+
+    napi_property_descriptor descriptors[properties.size()];
+    std::copy(properties.begin(), properties.end(), descriptors);
+
+    NAPI_CALL_RETURN_VOID(env,
+        napi_define_class(env, className.c_str(), NAPI_AUTO_LENGTH, constructor, nullptr, properties.size(),
+            descriptors, &jsConstructor));
+    NapiUtils::SetNamedProperty(env, exports, className, jsConstructor);
+}
+
+napi_value InterceptorChainApply(
+    napi_env env, napi_callback_info info, const std::map<std::string, napi_ref> &interceptorReferences)
+{
+    size_t argCount = 1;
+    napi_value args[1];
+    napi_status status = napi_get_cb_info(env, info, &argCount, args, nullptr, nullptr);
+    if (status != napi_ok) {
+        NETSTACK_LOGE("InterceptorChainApply failed to get callback info, napi_status: %{public}d", status);
+        NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
+        return NapiUtils::GetBoolean(env, false);
+    }
+
+    EventManagerWrapper *wrapper = nullptr;
+    status = napi_unwrap(env, args[0], reinterpret_cast<void **>(&wrapper));
+    if (status != napi_ok) {
+        NETSTACK_LOGE("InterceptorChainApply failed to unwrap wrapper, napi_status: %{public}d", status);
+        NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
+        return NapiUtils::GetBoolean(env, false);
+    }
+
+    if (wrapper == nullptr) {
+        NETSTACK_LOGE("InterceptorChainApply unwrap succeeded but wrapper is nullptr");
+        NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
+        return NapiUtils::GetBoolean(env, false);
+    }
+
+    NETSTACK_LOGD("InterceptorChainApply interceptor reference count: %{public}zu", interceptorReferences.size());
+    wrapper->eventManager.interceptorRefs_ = interceptorReferences;
+    return NapiUtils::GetBoolean(env, true);
+}
+
 napi_value NewInstanceWithManagerWrapper(napi_env env, napi_callback_info info, const std::string &className,
                                          Finalizer finalizer)
 {

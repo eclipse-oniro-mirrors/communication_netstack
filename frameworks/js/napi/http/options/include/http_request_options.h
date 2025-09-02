@@ -167,6 +167,8 @@ public:
 
     void SetBody(const void *data, size_t length);
 
+    void ReplaceBody(const void *data, size_t length);
+
     void SetHeader(const std::string &key, const std::string &val);
 
     void SetReadTimeout(uint32_t readTimeout);
