@@ -26,8 +26,8 @@ ohos_shared_library("net_websocket") {
   output_extension = "so"
   include_dirs = [
     "$NETSTACK_DIR/interfaces/kits/c/net_websocket/include",
-    "$NETSTACK_DIR/interfaces/innerkits/websocket_client/include",
-    "$NETSTACK_DIR/frameworks/native/websocket_client/include",
+    "$NETSTACK_DIR/interfaces/innerkits/websocket_native/include",
+    "$NETSTACK_DIR/frameworks/native/websocket_native/include",
     "$NETSTACK_DIR/utils/log/include",
   ]
 
@@ -37,7 +37,7 @@ ohos_shared_library("net_websocket") {
   ]
 
   deps = [
-    "$NETSTACK_DIR/interfaces/innerkits/websocket_client:websocket_client",
+    "$NETSTACK_DIR/interfaces/innerkits/websocket_native:websocket_native",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
   ]
 
