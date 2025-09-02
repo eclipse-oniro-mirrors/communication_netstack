@@ -33,7 +33,10 @@ ohos_static_library("netstack_rs_cxx") {
     "include",
     "${target_gen_dir}/src",
   ]
-  sources = [ "src/cxx/wrapper.cpp" ]
+  sources = [
+    "src/cxx/wrapper.cpp",
+    "src/cxx/cache_proxy_ani.cpp",
+  ]
 
   sources += get_target_outputs(":netstack_rs_cxx_gen")
 
@@ -69,6 +72,8 @@ ohos_rust_shared_library("netstack_rs") {
 
   external_deps = [
     "hilog:hilog_rust",
+    "netmanager_base:ani_rs",
+    "bounds_checking_function:libsec_shared",
   ]
 
   part_name = "netstack"

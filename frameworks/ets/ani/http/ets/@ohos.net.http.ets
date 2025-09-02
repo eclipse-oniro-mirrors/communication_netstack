@@ -46,6 +46,8 @@ export default namespace http {
     ONLY_V6 = 'CURL_IPRESOLVE_V6'
   }
 
+  export type RecordData = undefined | null | Object | Record<string, RecordData> | Array<RecordData>;
+
   export interface HttpRequestOptions {
     method?: RequestMethod;
 
@@ -85,42 +87,66 @@ export default namespace http {
 
     certificatePinning?: CertificatePinning | CertificatePinning[];
 
-     remoteValidation?: RemoteValidation;
+    remoteValidation?: RemoteValidation;
 
-     tlsOptions?: TlsOptions;
+    tlsOptions?: TlsOptions;
 
-     serverAuthentication?: ServerAuthentication;
+    serverAuthentication?: ServerAuthentication;
 
     addressFamily?: AddressFamily;
   }
 
-   export interface ServerAuthentication {
-     credential: Credential;
-     authenticationType?: AuthenticationType;
-   }
+  export interface ServerAuthentication {
+    credential: Credential;
 
-   export type TlsOptions = 'system' | TlsConfig;
+    authenticationType?: AuthenticationType;
+  }
 
-   export type RemoteValidation = 'system' | 'skip';
+  class ServerAuthenticationInner implements ServerAuthentication {
+    credential: Credential;
 
-   export type AuthenticationType = 'basic' | 'ntlm' | 'digest';
+    authenticationType?: AuthenticationType;
+  }
 
-   export interface Credential {
-     username: string;
-     password: string;
-   }
+  export type TlsOptions = 'system' | TlsConfig;
 
-   export interface TlsConfig {
-       tlsVersionMin: TlsVersion;
-       tlsVersionMax: TlsVersion;
-       cipherSuites?: CipherSuite[];
-   }
+  export type RemoteValidation = 'system' | 'skip';
 
-   export type TlsV13SpecificCipherSuite = 'TLS_AES_128_GCM_SHA256' | 'TLS_AES_256_GCM_SHA384' | 'TLS_CHACHA20_POLY1305_SHA256';
+  export type AuthenticationType = 'basic' | 'ntlm' | 'digest';
 
-   export type TlsV12SpecificCipherSuite = 'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256' | 'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256' | 'TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384' | 'TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384' | 'TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256' | 'TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256' | 'TLS_RSA_WITH_AES_128_GCM_SHA256' | 'TLS_RSA_WITH_AES_256_GCM_SHA384';
+  export interface Credential {
+    username: string;
 
-   export type TlsV10SpecificCipherSuite = 'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA' | 'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA' | 'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA' | 'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA' | 'TLS_RSA_WITH_AES_128_CBC_SHA' | 'TLS_RSA_WITH_AES_256_CBC_SHA' | 'TLS_RSA_WITH_3DES_EDE_CBC_SHA';
+    password: string;
+  }
+
+  class CredentialInner implements Credential {
+    username: string;
+
+    password: string;
+  }
+
+  export interface TlsConfig {
+    tlsVersionMin: TlsVersion;
+
+    tlsVersionMax: TlsVersion;
+
+    cipherSuites?: CipherSuite[];
+  }
+
+  export class TlsConfigInner implements TlsConfig {
+    tlsVersionMin: TlsVersion;
+
+    tlsVersionMax: TlsVersion;
+
+    cipherSuites?: CipherSuite[];
+  }
+
+  export type TlsV13SpecificCipherSuite = 'TLS_AES_128_GCM_SHA256' | 'TLS_AES_256_GCM_SHA384' | 'TLS_CHACHA20_POLY1305_SHA256';
+
+  export type TlsV12SpecificCipherSuite = 'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256' | 'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256' | 'TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384' | 'TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384' | 'TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256' | 'TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256' | 'TLS_RSA_WITH_AES_128_GCM_SHA256' | 'TLS_RSA_WITH_AES_256_GCM_SHA384';
+
+  export type TlsV10SpecificCipherSuite = 'TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA' | 'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA' | 'TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA' | 'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA' | 'TLS_RSA_WITH_AES_128_CBC_SHA' | 'TLS_RSA_WITH_AES_256_CBC_SHA' | 'TLS_RSA_WITH_3DES_EDE_CBC_SHA';
 
   export type CipherSuite = TlsV13CipherSuite;
 
@@ -154,6 +180,18 @@ export default namespace http {
     filePath?: string;
   }
 
+  class MultiFormDataInner implements MultiFormData {
+    name: string;
+
+    contentType: string;
+
+    remoteFileName?: string;
+
+    data?: string | RecordData | ArrayBuffer;
+
+    filePath?: string;
+  }
+
   export enum CertType {
     PEM = 'PEM',
 
@@ -163,6 +201,16 @@ export default namespace http {
   }
 
   export interface ClientCert {
+    certPath: string;
+
+    certType?: CertType;
+
+    keyPath: string;
+
+    keyPassword?: string;
+  }
+
+  class ClientCertInner implements ClientCert {
     certPath: string;
 
     certType?: CertType;
@@ -264,7 +312,7 @@ export default namespace http {
 
     native destroy(): void;
 
-    native onHeaderReceive(callback: AsyncCallback<Record<String, String>>): void;
+    native onHeaderReceive(callback: AsyncCallback<String>): void;
     native onHeadersReceive(callback:  Callback<Record<String, String>>): void;
     native onDataReceive(callback: Callback<ArrayBuffer>): void;
     native onDataEnd(callback: Callback<void>): void;
@@ -280,7 +328,7 @@ export default namespace http {
 
     on(type: 'headerReceive' | 'headersReceive' | 'dataReceive' | 'dataEnd' | 'dataReceiveProgress' | 'dataSendProgress', callback: Object): void {
       if (type == 'headerReceive') {
-        this.onHeaderReceive(callback as AsyncCallback<Record<String, String>>)
+        this.onHeaderReceive(callback as AsyncCallback<String>)
       } else if (type == 'headersReceive') {
         this.onHeadersReceive(callback as Callback<Record<String, String>>)
       } else if (type == 'dataReceive') {
@@ -520,15 +568,29 @@ export default namespace http {
 
   export interface DataReceiveProgressInfo {
     receiveSize: int;
+
+    totalSize: int;
+  }
+
+  class DataReceiveProgressInfoInner implements DataReceiveProgressInfo {
+    receiveSize: int;
+
     totalSize: int;
   }
 
   export interface DataSendProgressInfo {
     sendSize: int;
+
     totalSize: int;
   }
 
-  native function createHttpResponseCache(cacheSize?: int): HttpResponseCache;
+  class DataSendProgressInfoInner implements DataSendProgressInfo {
+    sendSize: int;
+
+    totalSize: int;
+  }
+
+  export native function createHttpResponseCache(cacheSize?: int): HttpResponseCache;
 
   export interface HttpResponseCache {
     flush(callback: AsyncCallback<void>): void;

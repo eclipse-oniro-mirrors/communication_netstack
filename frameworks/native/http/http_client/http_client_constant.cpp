@@ -31,6 +31,8 @@ const char *const HttpConstant::HTTP_METHOD_CONNECT = "CONNECT";
 
 const uint32_t HttpConstant::DEFAULT_READ_TIMEOUT = 60000;
 const uint32_t HttpConstant::DEFAULT_CONNECT_TIMEOUT = 60000;
+const uint32_t HttpConstant::DEFAULT_MAX_LIMIT = 5 * 1024 * 1024;
+const uint32_t HttpConstant::MAX_LIMIT = 100 * 1024 * 1024;
 
 const size_t HttpConstant::MAX_JSON_PARSE_SIZE = 65536;
 const size_t HttpConstant::MAX_DATA_LIMIT = 100 * 1024 * 1024;
@@ -65,6 +67,7 @@ const char *const HttpConstant::HTTP_URL_PARAM_START = "?";
 const char *const HttpConstant::HTTP_URL_PARAM_SEPARATOR = "&";
 const char *const HttpConstant::HTTP_URL_NAME_VALUE_SEPARATOR = "=";
 const char *const HttpConstant::HTTP_HEADER_SEPARATOR = ":";
+const char *const HttpConstant::HTTP_HEADER_BLANK_SEPARATOR = ";";
 const char *const HttpConstant::HTTP_LINE_SEPARATOR = "\r\n";
 const char *const HttpConstant::HTTP_RESPONSE_HEADER_SEPARATOR = "\r\n\r\n";
 
@@ -81,6 +84,7 @@ const char *const HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE = "application/x-ww
 const char *const HttpConstant::HTTP_CONTENT_TYPE_JSON = "application/json";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM = "application/octet-stream";
 const char *const HttpConstant::HTTP_CONTENT_TYPE_IMAGE = "image";
+const char *const HttpConstant::HTTP_CONTENT_TYPE_MULTIPART = "multipart/form-data";
 const char *const HttpConstant::HTTP_PREPARE_CA_PATH = "/etc/security/certificates";
 
 const char *const HttpConstant::HTTP_CONTENT_ENCODING_GZIP = "gzip";

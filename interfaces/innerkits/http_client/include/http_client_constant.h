@@ -39,6 +39,8 @@ public:
     /* default options */
     static const uint32_t DEFAULT_READ_TIMEOUT;
     static const uint32_t DEFAULT_CONNECT_TIMEOUT;
+    static const uint32_t DEFAULT_MAX_LIMIT;
+    static const uint32_t MAX_LIMIT;
 
     static const size_t MAX_JSON_PARSE_SIZE;
     static const size_t MAX_DATA_LIMIT;
@@ -75,6 +77,7 @@ public:
     static const char *const HTTP_URL_PARAM_SEPARATOR;
     static const char *const HTTP_URL_NAME_VALUE_SEPARATOR;
     static const char *const HTTP_HEADER_SEPARATOR;
+    static const char *const HTTP_HEADER_BLANK_SEPARATOR;
     static const char *const HTTP_LINE_SEPARATOR;
     static const char *const HTTP_RESPONSE_HEADER_SEPARATOR;
 
@@ -91,6 +94,7 @@ public:
     static const char *const HTTP_CONTENT_TYPE_JSON;
     static const char *const HTTP_CONTENT_TYPE_OCTET_STREAM;
     static const char *const HTTP_CONTENT_TYPE_IMAGE;
+    static const char *const HTTP_CONTENT_TYPE_MULTIPART;
 
     static const char *const HTTP_CONTENT_ENCODING_GZIP;
 

@@ -31,6 +31,7 @@
 #include "netstack_network_profiler.h"
 #endif
 
+struct cJSON;
 namespace OHOS {
 namespace NetStack {
 namespace RequestTracer {
@@ -196,7 +197,21 @@ public:
      */
     void SetResponse(const HttpClientResponse &response);
 
+    void OnHeaderReceive(
+        const std::function<void(const HttpClientRequest &request, const std::string &)> &onHeaderReceive);
+    bool OffDataReceive();
+    bool OffProgress();
+    bool OffHeaderReceive();
+    bool OffHeadersReceive();
+    void SetIsHeaderOnce(bool isOnce);
+    bool IsHeaderOnce() const;
+    void SetIsHeadersOnce(bool isOnce);
+    bool IsHeadersOnce() const;
+    void SetIsRequestInStream(bool isRequestInStream);
+    bool IsRequestInStream();
+    bool ProcessUsingCache();
     RequestTracer::Trace &GetTrace();
+    static bool IsBuiltWithOpenSSL();
 private:
     friend class HttpSession;
 
@@ -224,6 +239,13 @@ private:
      * @return Returns true if the Curl options are set successfully, false otherwise.
      */
     bool SetOtherCurlOption(CURL *handle);
+
+    /**
+     * Sets the authentication options for the HTTP request.
+     * @param handle The Curl handle.
+     * @return Returns true if the authentication options are set successfully, false otherwise.
+     */
+    bool SetAuthOptions(CURL *handle);
 
     /**
      * Sets the range options for the HTTP request.
@@ -346,6 +368,12 @@ private:
     void DumpHttpPerformance();
 
     /**
+     * Sets the DNS servers options for the HTTP request.
+     * @return Returns true if the Curl options are set successfully, false otherwise.
+     */
+    bool SetDnsOption(CURL *handle);
+
+    /**
      * Sets the DNS cache options for the HTTP request.
      * @return Returns true if the Curl options are set successfully, false otherwise.
      */
@@ -358,10 +386,50 @@ private:
     bool SetIpResolve(CURL *handle);
 
     /**
+     * Sets the tls option for the HTTP request.
+     * @return Returns true if the tls option are set successfully, false otherwise.
+     */
+    bool SetTlsOption(CURL *handle);
+
+    /**
     * Gets the start and end download position for the HTTP request.
     * @return Returns the string of range. If the position is invallid, the string is empty.
     */
     std::string GetRangeString() const;
+
+    /**
+    * Determine whether the given HTTP method belongs to the GET class method.
+    * @return Returns true if it is a GET class method.
+    */
+    bool MethodForGet(const std::string &method);
+
+    /**
+    * Determine whether the given HTTP method belongs to the POST class method.
+    * @return Returns true if it is a POST class method.
+    */
+    bool MethodForPost(const std::string &method);
+
+    /**
+     * Sets the multipart/form-data for the HTTP request.
+     * @return Returns true if the set options are set successfully, false otherwise.
+     */
+    bool SetMultiPartOption(CURL *handle);
+
+    bool ReadResopnseFromCache();
+    void WriteResopnseToCache(const HttpClientResponse &response);
+
+    bool IsUnReserved(unsigned char in);
+    bool EncodeUrlParam(std::string &str);
+    std::string MakeUrl(const std::string &url, std::string param, const std::string &extraParam);
+    std::string GetJsonFieldValue(const cJSON* item);
+    void TraverseJson(const cJSON* item, std::string &output);
+    std::string ParseJsonValueToExtraParam(const std::string &jsonStr);
+    void HandleMethodForGet();
+    bool GetRequestBody();
+
+    bool SetCallbackFunctions();
+    bool SetHttpHeaders();
+    bool SetCurlMethod();
 
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onSucceeded_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onCanceled_;
@@ -373,7 +441,10 @@ private:
         onProgress_;
     std::function<void(const HttpClientRequest &request, std::map<std::string, std::string> headerWithSetCookie)>
         onHeadersReceive_;
-
+    std::function<void(const HttpClientRequest &request, const std::string &header)> onHeaderReceive_;
+    bool isHeaderOnce_;
+    bool isHeadersOnce_;
+    bool isRequestInStream_;
     HttpClientRequest request_;
     HttpClientResponse response_;
     HttpClientError error_;
@@ -381,7 +452,8 @@ private:
     TaskType type_;
     TaskStatus status_;
     unsigned int taskId_;
-    struct curl_slist *curlHeaderList_;
+    curl_slist *curlHeaderList_;
+    curl_mime *curMultiPart_;
     bool canceled_;
 
     std::mutex mutex_;
