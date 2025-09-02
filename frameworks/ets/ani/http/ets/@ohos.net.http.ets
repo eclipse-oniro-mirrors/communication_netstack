@@ -528,7 +528,7 @@ export default namespace http {
     totalSize: int;
   }
 
-  native function createHttpResponseCache(cacheSize?: int): HttpResponseCache;
+  export native function createHttpResponseCache(cacheSize?: int): HttpResponseCache;
 
   export interface HttpResponseCache {
     flush(callback: AsyncCallback<void>): void;

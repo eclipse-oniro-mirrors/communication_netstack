@@ -86,6 +86,20 @@ pub fn http_set_options(request: &mut Request<TaskCallback>, options: HttpReques
 }
 
 #[ani_rs::native]
+pub fn create_http_response_cache<'local>(
+    env: &AniEnv<'local>, cacheSize : Option<i32>) -> Result<AniRef<'local>, BusinessError> {
+    static HTTP_RESPONSE_CACHE_CLASS: &CStr =
+        unsafe { CStr::from_bytes_with_nul_unchecked(b"L@ohos/net/http/http/HttpResponseCacheInner;\0") };
+    static CTOR_SIGNATURE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"J:V\0") };
+
+    let class = env.find_class(HTTP_RESPONSE_CACHE_CLASS).unwrap();
+    let obj = env
+        .new_object_with_signature(&class, CTOR_SIGNATURE, (0,))
+        .unwrap();
+    Ok(obj.into())
+}
+
+#[ani_rs::native]
 pub(crate) fn request(
     env: &AniEnv,
     this: HttpRequest,
