@@ -1489,6 +1489,10 @@ bool TLSSocket::TLSSocketInternal::SetSharedSigals()
         std::string sig_with_md;
         {
             std::lock_guard<std::mutex> lock(mutexForSsl_);
+            if (!ssl_)
+            {
+                return false;
+            }
             SSL_get_shared_sigalgs(ssl_, i, &sign_nid, &hash_nid, nullptr, nullptr, nullptr);
         }
         switch (sign_nid) {
