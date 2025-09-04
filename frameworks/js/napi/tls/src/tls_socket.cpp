@@ -1804,7 +1804,7 @@ int TLSSocket::TLSSocketInternal::ShakingHandsTimeout(SSL* ssl, int fd, uint32_t
             }
             return TLS_TIMEOUT;
         }
-        if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+        if (static_cast<unsigned short>(pfd.revents) & (POLLERR | POLLHUP | POLLNVAL)) {
             return POLL_ERR_IN_TLS;
         }
     }
