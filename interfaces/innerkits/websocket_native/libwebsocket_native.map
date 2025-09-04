@@ -20,10 +20,13 @@
       "OHOS::NetStack::WebSocketClient::WebSocketClient::ConnectEx(std::__h::basic_string<char, std::__h::char_traits<char>, std::__h::allocator<char>>, OHOS::NetStack::WebSocketClient::OpenOptions)";
       "OHOS::NetStack::WebSocketClient::WebSocketClient::GetClientContext() const";
       "OHOS::NetStack::WebSocketClient::WebSocketClient::Send(char*, unsigned int)";
+      "OHOS::NetStack::WebSocketClient::WebSocketClient::Send(char*, unsigned long)";
       "OHOS::NetStack::WebSocketClient::WebSocketClient::SendEx(char*, unsigned int)";
+      "OHOS::NetStack::WebSocketClient::WebSocketClient::SendEx(char*, unsigned long)";
       "OHOS::NetStack::WebSocketClient::WebSocketClient::Close(OHOS::NetStack::WebSocketClient::CloseOption)";
       "OHOS::NetStack::WebSocketClient::WebSocketClient::CloseEx(OHOS::NetStack::WebSocketClient::CloseOption)";
       "OHOS::NetStack::WebSocketClient::WebSocketClient::Registcallback(void (*)(OHOS::NetStack::WebSocketClient::WebSocketClient*, OHOS::NetStack::WebSocketClient::OpenResult), void (*)(OHOS::NetStack::WebSocketClient::WebSocketClient*, std::__h::basic_string<char, std::__h::char_traits<char>, std::__h::allocator<char>> const&, unsigned int), void (*)(OHOS::NetStack::WebSocketClient::WebSocketClient*, OHOS::NetStack::WebSocketClient::ErrorResult), void (*)(OHOS::NetStack::WebSocketClient::WebSocketClient*, OHOS::NetStack::WebSocketClient::CloseResult))";
+      "OHOS::NetStack::WebSocketClient::WebSocketClient::Registcallback(void (*)(OHOS::NetStack::WebSocketClient::WebSocketClient*, OHOS::NetStack::WebSocketClient::OpenResult), void (*)(OHOS::NetStack::WebSocketClient::WebSocketClient*, std::__h::basic_string<char, std::__h::char_traits<char>, std::__h::allocator<char>> const&, unsigned long), void (*)(OHOS::NetStack::WebSocketClient::WebSocketClient*, OHOS::NetStack::WebSocketClient::ErrorResult), void (*)(OHOS::NetStack::WebSocketClient::WebSocketClient*, OHOS::NetStack::WebSocketClient::CloseResult))";
       "OHOS::NetStack::WebSocketClient::WebSocketClient::Destroy()";
       "OHOS::NetStack::WebSocketServer::WebSocketServer::WebSocketServer()";
       "OHOS::NetStack::WebSocketServer::WebSocketServer::~WebSocketServer()";
