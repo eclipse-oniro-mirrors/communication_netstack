@@ -794,7 +794,7 @@ int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
 
 int WebSocketClient::SendEx(char *data, size_t length)
 {
-    NETSTACK_LOGI("WebSocketClient::SendEx start %{public}s, %{public}d", data, length);
+    NETSTACK_LOGI("WebSocketClient::SendEx start %{public}s, %{public}zu", data, length);
     if (data == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_SEND_DATA_NULL;
     }
@@ -823,7 +823,7 @@ int WebSocketClient::SendEx(char *data, size_t length)
     }
     this->GetClientContext()->Push(dataCopy, length, protocol);
     this->GetClientContext()->TriggerWritable();
-    NETSTACK_LOGI("WebSocketClient::Send end %{public}s, %{public}s, %{public}d", dataCopy, data, length);
+    NETSTACK_LOGI("WebSocketClient::Send end %{public}s, %{public}s, %{public}zu", dataCopy, data, length);
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
