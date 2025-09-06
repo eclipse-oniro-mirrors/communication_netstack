@@ -340,4 +340,79 @@ HWTEST_F(HttpRequestOptionsTest, SetCertificatePinningTest, TestSize.Level1)
     std::string resultPIN = requestOptions.GetCertificatePinning();
     EXPECT_EQ(testPIN, resultPIN);
 }
+
+HWTEST_F(HttpRequestOptionsTest, SetSslTypeTest001, TestSize.Level1)
+{
+    HttpRequestOptions req;
+
+    req.SetSslType(SslType::TLS);
+    SslType sslType = req.GetSslType();
+    EXPECT_EQ(sslType, SslType::TLS);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetSslTypeTest002, TestSize.Level1)
+{
+    HttpRequestOptions req;
+
+    req.SetSslType(SslType::TLCP);
+    SslType sslType = req.GetSslType();
+    EXPECT_EQ(sslType, SslType::TLCP);
+}
+
+HWTEST_F(HttpRequestOptionsTest, GetClientEncCertTest001, TestSize.Level1)
+{
+    HttpRequestOptions req;
+
+    std::string certEnc_ = "";
+    std::string certTypeEnc_ = "";
+    std::string keyEnc_ = "";
+    Secure::SecureChar keyPasswdEnc_ ;
+    req.GetClientEncCert(certEnc_, certTypeEnc_, keyEnc_, keyPasswdEnc_);
+    EXPECT_EQ(certEnc_, "");
+    EXPECT_EQ(certTypeEnc_, "");
+    EXPECT_EQ(keyEnc_, "");
+    EXPECT_EQ(keyPasswdEnc_.Length(), 0);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetClientEncCertTest001, TestSize.Level1)
+{
+    HttpRequestOptions req;
+    
+    std::string certEnc = "/path/to/client.pem";
+    std::string certTypeEnc = "PEM";
+    std::string keyEnc = "/path/to/client.key";
+    Secure::SecureChar keyPasswdEnc("passwordToKey");
+    req.SetClientEncCert(certEnc, certTypeEnc, keyEnc, keyPasswdEnc);
+
+    std::string certEnc_ = "";
+    std::string certTypeEnc_ = "";
+    std::string keyEnc_ = "";
+    Secure::SecureChar keyPasswdEnc_ ;
+    req.GetClientEncCert(certEnc_, certTypeEnc_, keyEnc_, keyPasswdEnc_);
+    EXPECT_EQ(certEnc_, "/path/to/client.pem");
+    EXPECT_EQ(certTypeEnc_, "PEM");
+    EXPECT_EQ(keyEnc_, "/path/to/client.key");
+    EXPECT_EQ(strcmp(keyPasswdEnc_.Data(), keyPasswdEnc.Data()), 0);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetClientEncCertTest002, TestSize.Level1)
+{
+    HttpRequestOptions req;
+
+    std::string certEnc = "";
+    std::string certTypeEnc = "";
+    std::string keyEnc = "";
+    Secure::SecureChar keyPasswdEnc;
+    req.SetClientEncCert(certEnc, certTypeEnc, keyEnc, keyPasswdEnc);
+
+    std::string certEnc_ = "";
+    std::string certTypeEnc_ = "";
+    std::string keyEnc_ = "";
+    Secure::SecureChar keyPasswdEnc_ ;
+    req.GetClientEncCert(certEnc_, certTypeEnc_, keyEnc_, keyPasswdEnc_);
+    EXPECT_EQ(certEnc_, "");
+    EXPECT_EQ(certTypeEnc_, "");
+    EXPECT_EQ(keyEnc_, "");
+    EXPECT_EQ(keyPasswdEnc_.Length(), 0);
+}
 } // namespace
