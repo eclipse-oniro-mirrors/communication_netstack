@@ -175,7 +175,6 @@ void Finalize(napi_env env, void *data, void *)
         if (sock == 0) {
             NETSTACK_LOGE("manager->GetData() got nullptr, Finalize() called before creating socket?");
         } else if (sock != -1) {
-            SocketExec::SingletonSocketConfig::GetInstance().RemoveServerSocket(sock);
             auto context = new BaseContext(env, manager);
             context->CreateAsyncWork(FINALIZE_CLOSE_NAME, ExecFinalizeClose, ExecFinalizeCloseCallback);
         }
@@ -191,9 +190,13 @@ void FinalizeTcpSocketServer(napi_env, void *data, void *)
         auto manager = *sharedManager;
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
         if (sock != -1) {
-            SocketExec::SingletonSocketConfig::GetInstance().ShutdownAllSockets();
             NETSTACK_LOGI("finalize close all listenfd");
             manager->SetData(reinterpret_cast<void *>(-1));
+            auto config = SocketExec::GetSharedConfig(manager);
+            if (config == nullptr) {
+                return;
+            }
+            config->ShutdownAllSockets();
         }
         delete sharedManager;
     }
@@ -639,6 +642,7 @@ void SocketModuleExports::DefineLocalSocketServerClass(napi_env env, napi_value 
 
 napi_value SocketModuleExports::ConstructTCPSocketServerInstance(napi_env env, napi_callback_info info)
 {
+    NETSTACK_LOGI("create new instance for TCPSocketServer");
     return ModuleTemplate::NewInstanceWithSharedManager(env, info, INTERFACE_TCP_SOCKET_SERVER,
         FinalizeTcpSocketServer);
 }

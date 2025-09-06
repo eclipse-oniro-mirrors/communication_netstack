@@ -391,6 +391,16 @@ std::shared_ptr<Websocket::UserData> EventManager::GetWebSocketUserData()
     return webSocketUserData_;
 }
 
+void EventManager::SetSocketConfig(const std::shared_ptr<Socket::SocketExec::SocketConfig> &config)
+{
+    socketConfig_ = config;
+}
+
+std::shared_ptr<Socket::SocketExec::SocketConfig> EventManager::GetSocketConfig()
+{
+    return socketConfig_;
+}
+
 UvWorkWrapperShared::UvWorkWrapperShared(void *theData, napi_env theEnv, std::string eventType,
                                          const std::shared_ptr<EventManager> &eventManager)
     : data(theData), env(theEnv), type(std::move(eventType)), manager(eventManager)

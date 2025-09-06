@@ -125,6 +125,7 @@ static void SetIsConnected(sa_family_t family, GetStateContext *context, const s
 static napi_value MakeError(napi_env env, void *errCode)
 {
     auto code = reinterpret_cast<int32_t *>(errCode);
+    NETSTACK_LOGI("go to MakeError, err: %{public}d", *code);
     auto deleter = [](const int32_t *p) { delete p; };
     std::unique_ptr<int32_t, decltype(deleter)> handler(code, deleter);
 
@@ -2099,8 +2100,14 @@ static std::shared_ptr<EventManager> WaitForManagerReady(int32_t clientId, int &
 
 static inline void RecvInErrorCondition(int reason, int clientId, int connectFD, const TcpMessageCallback &callback)
 {
+    NETSTACK_LOGE("Recv Error, reason: %{public}d, clientId: %{public}d,"
+        "connectFD: %{public}d", reason, clientId, connectFD);
     RemoveClientConnection(clientId);
-    SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
+    auto config = GetSharedConfig(callback.GetEventManager());
+    if (config == nullptr) {
+        return;
+    }
+    config->RemoveAcceptSocket(connectFD);
     callback.OnError(reason);
 }
 
@@ -2109,7 +2116,11 @@ static inline void CloseClientHandler(int clientId, int connectFD, const std::sh
 {
     callback.OnCloseMessage(manager);
     RemoveClientConnection(clientId);
-    SingletonSocketConfig::GetInstance().RemoveAcceptSocket(connectFD);
+    auto config = GetSharedConfig(callback.GetEventManager());
+    if (config == nullptr) {
+        return;
+    }
+    config->RemoveAcceptSocket(connectFD);
 }
 
 static int PollSocket(int clientId, int connectFD, const std::shared_ptr<EventManager> &manager,
@@ -2185,15 +2196,16 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
             CloseClientHandler(clientId, connectFD, manager, callback);
             break;
         }
-        int flags = fcntl(connectFD, F_GETFL, 0);
-        if (flags == -1) {
+        if (fcntl(connectFD, F_GETFL, 0) == -1) {
+            NETSTACK_LOGE("Client socket %{public}d fcntl F_GETFL error, errno is %{public}d", connectFD, errno);
             CloseClientHandler(clientId, connectFD, manager, callback);
             break;
         }
         if (recvSize <= 0) {
-            NETSTACK_LOGI("ClientRecv: fd:%{public}d, size:%{public}d, errno:%{public}d, is non blocking:%{public}s",
-                          connectFD, recvSize, errno, static_cast<uint32_t>(flags) & O_NONBLOCK ? "true" : "false");
+            NETSTACK_LOGI("Recv: fd:%{public}d, size:%{public}d, err:%{public}d", connectFD, recvSize, errno);
             if ((recvSize == 0) || (recvSize < 0 && errno != EAGAIN && errno != EINTR)) {
+                recvSize == 0 ? NETSTACK_LOGE("connection closed by peer, socket is %{public}d", connectFD) :
+                    NETSTACK_LOGE("connection recv failed, socket: %{public}d, errno: %{public}d", connectFD, errno);
                 CloseClientHandler(clientId, connectFD, manager, callback);
                 break;
             }
@@ -2219,7 +2231,12 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
 
     uint32_t recvBufferSize = DEFAULT_BUFFER_SIZE;
     TCPExtraOptions option;
-    if (SingletonSocketConfig::GetInstance().GetTcpExtraOptions(sock, option)) {
+    auto config = GetSharedConfig(callback.GetEventManager());
+    if (config == nullptr) {
+        return;
+    }
+    config->RemoveAcceptSocket(connectFD);
+    if (config->GetTcpExtraOptions(sock, option)) {
         if (option.GetReceiveBufferSize() != 0) {
             recvBufferSize = option.GetReceiveBufferSize();
         }
@@ -2252,15 +2269,18 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
                 close(connectFD);
                 continue;
             }
-            NETSTACK_LOGI("Server accept new client SUCCESS, fd = %{public}d", connectFD);
+            NETSTACK_LOGI("Server accept new client, fd= %{public}d clientfd= %{public}d", sock, connectFD);
             g_userCounter++;
             g_clientFDs[g_userCounter] = connectFD;
         }
         callback.OnTcpConnectionMessage(g_userCounter);
         int clientId = g_userCounter;
-
-        SingletonSocketConfig::GetInstance().AddNewAcceptSocket(sock, connectFD);
-        if (TCPExtraOptions option; SingletonSocketConfig::GetInstance().GetTcpExtraOptions(sock, option)) {
+        auto config = GetSharedConfig(callback.GetEventManager());
+        if (config == nullptr) {
+            return;
+        }
+        config->AddNewAcceptSocket(sock, connectFD);
+        if (TCPExtraOptions option; config->GetTcpExtraOptions(sock, option)) {
             SocketSetTcpExtraOptions(connectFD, option);
         }
         auto handlerThread = std::make_shared<std::thread>(ClientHandler, sock, clientId, callback);
@@ -2288,7 +2308,16 @@ bool ExecTcpServerListen(TcpServerListenContext *context)
         NETSTACK_LOGE("tcp server listen error");
         return false;
     }
-    SingletonSocketConfig::GetInstance().AddNewListenSocket(context->GetSocketFd());
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is null");
+        return false;
+    }
+    if (!manager->GetSocketConfig()) {
+        auto config = std::make_shared<SocketConfig>();
+        manager->SetSocketConfig(config);
+    }
+    manager->GetSocketConfig()->AddNewListenSocket(context->GetSocketFd());
     NETSTACK_LOGI("listen success");
     std::thread serviceThread(AcceptRecvData, context->GetSocketFd(), nullptr, 0,
                               TcpMessageCallback(context->GetSharedManager()));
@@ -2299,6 +2328,19 @@ bool ExecTcpServerListen(TcpServerListenContext *context)
 #endif
     serviceThread.detach();
     return true;
+}
+
+std::shared_ptr<SocketConfig> GetSharedConfig(const std::shared_ptr<EventManager> &manager)
+{
+    if (manager == nullptr) {
+        NETSTACK_LOGE("GetSocketConfig manager is nullptr");
+        return nullptr;
+    }
+    if (manager->GetSocketConfig() == nullptr) {
+        NETSTACK_LOGE("GetSocketConfig socketConfig is nullptr");
+        return nullptr;
+    }
+    return manager->GetSocketConfig();
 }
 
 bool ExecTcpServerClose(TcpServerCloseContext *context)
@@ -2312,7 +2354,11 @@ bool ExecTcpServerClose(TcpServerCloseContext *context)
         NETSTACK_LOGI("TCPServer socket was closed before");
         return true;
     }
-    SocketExec::SingletonSocketConfig::GetInstance().ShutdownAllSockets();
+    auto config = GetSharedConfig(context->GetSharedManager());
+    if (config == nullptr) {
+        return false;
+    }
+    config->ShutdownAllSockets();
     NETSTACK_LOGI("close all listenfd");
     context->SetSocketFd(-1);
     return true;
@@ -2328,7 +2374,11 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
         return false;
     }
-    auto clients = SingletonSocketConfig::GetInstance().GetClients(context->GetSocketFd());
+    auto config = GetSharedConfig(context->GetSharedManager());
+    if (config == nullptr) {
+        return false;
+    }
+    auto clients = config->GetClients(context->GetSocketFd());
     if (std::any_of(clients.begin(), clients.end(), [&context](int32_t fd) {
             return !SocketSetTcpExtraOptions(fd, context->options_);
         })) {
@@ -2336,7 +2386,7 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
         return false;
     }
 
-    SingletonSocketConfig::GetInstance().SetTcpExtraOptions(context->GetSocketFd(), context->options_);
+    config->SetTcpExtraOptions(context->GetSocketFd(), context->options_);
     return true;
 }
 
