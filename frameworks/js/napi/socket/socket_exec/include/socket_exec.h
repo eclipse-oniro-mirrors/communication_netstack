@@ -38,7 +38,76 @@
 #include <set>
 
 namespace OHOS::NetStack::Socket::SocketExec {
+
+class SocketConfig {
+public:
+    SocketConfig() {}
+    ~SocketConfig() {}
+    void SetTcpExtraOptions(int listenFd, const TCPExtraOptions& option)
+    {
+        tcpExtraOptions_.EnsureInsert(listenFd, option);
+    }
+
+    bool GetTcpExtraOptions(int listenFd, TCPExtraOptions& option)
+    {
+        return tcpExtraOptions_.Find(listenFd, option);
+    }
+
+    void AddNewListenSocket(int listenFd)
+    {
+        tcpClients_.Insert(listenFd, {});
+    }
+
+    void AddNewAcceptSocket(int listenFd, int acceptFd)
+    {
+        std::set<int> fdSet;
+        auto fn = [&](std::set<int> &value) -> void {
+            value.emplace(acceptFd);
+        };
+        if (tcpClients_.Find(listenFd, fdSet)) {
+            tcpClients_.ChangeValueByLambda(listenFd, fn);
+        }
+    }
+
+    void RemoveAcceptSocket(int acceptFd)
+    {
+        tcpClients_.Iterate([acceptFd](int listenFd, std::set<int> fdSet) {
+            if (auto ite = fdSet.find(acceptFd); ite != fdSet.end()) {
+                fdSet.erase(ite);
+            }
+        });
+    }
+
+    std::set<int> GetClients(int listenFd)
+    {
+        std::set<int> fdSet;
+        tcpClients_.Find(listenFd, fdSet);
+        return fdSet;
+    }
+
+    void RemoveServerSocket(int listenFd)
+    {
+        tcpExtraOptions_.Erase(listenFd);
+        tcpClients_.Erase(listenFd);
+    }
+
+    void ShutdownAllSockets()
+    {
+        tcpClients_.Iterate([](const int key, std::set<int>&) { shutdown(key, SHUT_RDWR); });
+        tcpExtraOptions_.Clear();
+        tcpClients_.Clear();
+    }
+private:
+    SocketConfig(const SocketConfig& singleton) = delete;
+    SocketConfig& operator=(const SocketConfig& singleton) = delete;
+
+    SafeMap<int, TCPExtraOptions> tcpExtraOptions_;
+    SafeMap<int, std::set<int>> tcpClients_;
+};
+
 void NotifyRegisterEvent();
+
+std::shared_ptr<SocketConfig> GetSharedConfig(const std::shared_ptr<EventManager> &manager);
 
 /* async work execute */
 bool ExecUdpBind(BindContext *context);
@@ -173,80 +242,6 @@ struct TcpConnection {
     ~TcpConnection() = default;
 
     int32_t clientId;
-};
-
-class SingletonSocketConfig {
-public:
-    static SingletonSocketConfig& GetInstance()
-    {
-        static SingletonSocketConfig instance;
-        return instance;
-    }
-
-    void SetTcpExtraOptions(int listenFd, const TCPExtraOptions& option)
-    {
-        tcpExtraOptions_.EnsureInsert(listenFd, option);
-    }
-
-    bool GetTcpExtraOptions(int listenFd, TCPExtraOptions& option)
-    {
-        return tcpExtraOptions_.Find(listenFd, option);
-    }
-
-    void AddNewListenSocket(int listenFd)
-    {
-        tcpClients_.Insert(listenFd, {});
-    }
-
-    void AddNewAcceptSocket(int listenFd, int acceptFd)
-    {
-        std::set<int> fdSet;
-        auto fn = [&](std::set<int> &value) -> void {
-            value.emplace(acceptFd);
-        };
-        if (tcpClients_.Find(listenFd, fdSet)) {
-            tcpClients_.ChangeValueByLambda(listenFd, fn);
-        }
-    }
-
-    void RemoveAcceptSocket(int acceptFd)
-    {
-        tcpClients_.Iterate([acceptFd](int listenFd, std::set<int> fdSet) {
-            if (auto ite = fdSet.find(acceptFd); ite != fdSet.end()) {
-                fdSet.erase(ite);
-            }
-        });
-    }
-
-    std::set<int> GetClients(int listenFd)
-    {
-        std::set<int> fdSet;
-        tcpClients_.Find(listenFd, fdSet);
-        return fdSet;
-    }
-
-    void RemoveServerSocket(int listenFd)
-    {
-        tcpExtraOptions_.Erase(listenFd);
-        tcpClients_.Erase(listenFd);
-    }
-
-    void ShutdownAllSockets()
-    {
-        tcpClients_.Iterate([](const int key, std::set<int>&) { shutdown(key, SHUT_RDWR); });
-        tcpExtraOptions_.Clear();
-        tcpClients_.Clear();
-    }
-
-private:
-    SingletonSocketConfig() {}
-    ~SingletonSocketConfig() {}
-
-    SingletonSocketConfig(const SingletonSocketConfig& singleton) = delete;
-    SingletonSocketConfig& operator=(const SingletonSocketConfig& singleton) = delete;
-
-    SafeMap<int, TCPExtraOptions> tcpExtraOptions_;
-    SafeMap<int, std::set<int>> tcpClients_;
 };
 
 class MessageCallback {

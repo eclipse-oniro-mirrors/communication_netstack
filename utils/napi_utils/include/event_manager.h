@@ -49,6 +49,10 @@ class UserData;
 namespace Socks5 {
     class Socks5Instance;
 }
+
+namespace Socket::SocketExec {
+class SocketConfig;
+}
 using Finalizer = void (*)(napi_env, void *data, void *);
 class EventManager : public std::enable_shared_from_this<EventManager> {
 public:
@@ -121,6 +125,10 @@ public:
 
     std::shared_ptr<Websocket::UserData> GetWebSocketUserData();
 
+    void SetSocketConfig(const std::shared_ptr<Socket::SocketExec::SocketConfig> &config);
+
+    std::shared_ptr<Socket::SocketExec::SocketConfig> GetSocketConfig();
+
     bool GetReuseAddr();
 
     std::shared_ptr<Socks5::Socks5Instance> GetProxyData();
@@ -168,6 +176,7 @@ private:
     bool sockRcvExit_ = false;
     std::atomic_bool isReuseAddr_ = false;
     std::shared_ptr<Websocket::UserData> webSocketUserData_;
+    std::shared_ptr<Socket::SocketExec::SocketConfig> socketConfig_ = nullptr;
     std::shared_ptr<Socks5::Socks5Instance> proxyData_;
     std::shared_mutex dataServerQueueMutex_;
     std::mutex mapMutex_;
