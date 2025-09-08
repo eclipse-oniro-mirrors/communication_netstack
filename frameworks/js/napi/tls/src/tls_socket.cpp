@@ -1469,26 +1469,36 @@ std::string TLSSocket::TLSSocketInternal::GetProtocol() const
     return PROTOCOL_TLS_V12;
 }
 
-bool TLSSocket::TLSSocketInternal::SetSharedSigals()
+static bool IsNumberNotZero(int &number, std::mutex &mutexForSsl, ssl_st *ssl)
 {
-    int number = 0;
     {
-        std::lock_guard<std::mutex> lock(mutexForSsl_);
-        if (!ssl_) {
+        std::lock_guard<std::mutex> lock(mutexForSsl);
+        if (!ssl) {
             return false;
         }
-        number = SSL_get_shared_sigalgs(ssl_, 0, nullptr, nullptr, nullptr, nullptr, nullptr);
+        number = SSL_get_shared_sigalgs(ssl, 0, nullptr, nullptr, nullptr, nullptr, nullptr);
     }
     if (!number) {
         return false;
     }
-    std::unique_lock<std::shared_mutex> lock(rw_mutex_);
+    return true;
+}
+
+bool TLSSocket::TLSSocketInternal::SetSharedSigals()
+{
+    int number = 0;
+    if (!IsNumberNotZero(number, mutexForSsl_, ssl_)) {
+        return false;
+    }
     for (int i = 0; i < number; i++) {
         int hash_nid;
         int sign_nid;
         std::string sig_with_md;
         {
             std::lock_guard<std::mutex> lock(mutexForSsl_);
+            if (!ssl_) {
+                return false;
+            }
             SSL_get_shared_sigalgs(ssl_, i, &sign_nid, &hash_nid, nullptr, nullptr, nullptr);
         }
         switch (sign_nid) {
@@ -1516,6 +1526,7 @@ bool TLSSocket::TLSSocketInternal::SetSharedSigals()
         }
         const char *sn_hash = OBJ_nid2sn(hash_nid);
         sig_with_md += (sn_hash != nullptr) ? std::string(sn_hash) : SIGN_NID_UNDEF;
+        std::unique_lock<std::shared_mutex> lock(rw_mutex_);
         signatureAlgorithms_.push_back(sig_with_md);
     }
     return true;
