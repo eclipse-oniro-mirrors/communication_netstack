@@ -30,6 +30,9 @@
 #if HAS_NETMANAGER_BASE
 #include "netstack_network_profiler.h"
 #endif
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_handover_info.h"
+#endif
 
 namespace OHOS {
 namespace NetStack {
@@ -381,8 +384,7 @@ private:
     /**
      * Set the request information and print it to the log.
      */
-    void SetRequestHandoverInfo(int32_t handoverNum, int32_t handoverReason, double flowControlTime,
-        int32_t readFlag);
+    void SetRequestHandoverInfo(const HttpHandoverInfo &httpHandoverInfo);
 #endif
 
     /**
@@ -406,11 +408,7 @@ private:
     HttpClientResponse response_;
     HttpClientError error_;
 #ifdef HTTP_HANDOVER_FEATURE
-    bool isSuccess_ = false;
-    int32_t handoverNum_ = -1;
-    int32_t handoverReason_ = -1;
-    double flowControlTime_ = 0.0;
-    int32_t readFlag_ = -1;
+    HttpHandoverInfo httpHandoverInfo_;
 #endif
 
     TaskType type_;

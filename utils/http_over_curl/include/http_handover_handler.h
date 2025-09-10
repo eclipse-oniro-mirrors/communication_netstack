@@ -33,7 +33,7 @@
 
 namespace OHOS::NetStack::HttpOverCurl {
 struct RequestInfo;
-typedef void *(*HTTP_HAND_OVER_INIT)(void *user, void (*HMS_NetworkBoost_HandoverEventCallback)(void *),
+typedef void *(*HTTP_HAND_OVER_INIT)(const void *user, void (*HMS_NetworkBoost_HandoverEventCallback)(void *),
     void (*HMS_NetworkBoost_HandoverTimerCallback)(void *, long), const char* stackName);
 typedef int32_t (*HTTP_HAND_OVER_UNINIT)(void *handle);
 typedef void (*HTTP_HAND_OVER_QUERY)(void *handle, int32_t *status, int32_t *netId);

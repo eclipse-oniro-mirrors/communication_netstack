@@ -158,6 +158,7 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestCallbackEvent, TestSize
 
     CURL *handle = GetCurlHandle();
     EXPECT_EQ(SingletonHttpHandoverHandler::GetInstance()->IsRequestRead(handle), 0);
+    EXPECT_EQ(SingletonHttpHandoverHandler::GetInstance()->IsRequestInQueue(handle), 1);
 }
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestHandoverQuery, TestSize.Level2)

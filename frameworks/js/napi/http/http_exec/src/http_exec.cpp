@@ -215,10 +215,7 @@ void HttpExec::SetRequestInfoCallbacks(HttpOverCurl::TransferCallbacks &callback
             NETSTACK_LOGE("setHandoverInfoCallback context is nullptr, error!");
             return;
         }
-        context->SetRequestHandoverInfo(httpHandoverInfo.handoverNum,
-            httpHandoverInfo.handoverReason,
-            httpHandoverInfo.flowControlTime,
-            httpHandoverInfo.readFlag);
+        context->SetRequestHandoverInfo(httpHandoverInfo);
     };
     callbacks.handoverInfoCallback = handoverInfoCallback;
     callbacks.setHandoverInfoCallback = setHandoverInfoCallback;

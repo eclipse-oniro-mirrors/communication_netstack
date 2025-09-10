@@ -35,9 +35,6 @@
 #include "netsys_client.h"
 #endif
 #include "netstack_hisysevent.h"
-#ifdef HTTP_HANDOVER_FEATURE
-#include "http_handover_info.h"
-#endif
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data)                                                 \
     do {                                                                                                 \
@@ -925,26 +922,22 @@ void HttpClientTask::SetSuccess(bool isSuccess)
     isSuccess_ = isSuccess;
 }
 
-void HttpClientTask::SetRequestHandoverInfo(
-    int32_t handoverNum, int32_t handoverReason, double flowControlTime, int32_t readFlag)
+void HttpClientTask::SetRequestHandoverInfo(const HttpHandoverInfo &httpHandoverInfo)
 {
-    handoverNum_ = handoverNum;
-    handoverReason_ = handoverReason;
-    flowControlTime_ = flowControlTime;
-    readFlag_ = readFlag;
+    httpHandoverInfo_ = httpHandoverInfo;
 }
  
 std::string HttpClientTask::GetRequestHandoverInfo()
 {
     std::string requestHandoverInfo;
-    if (handoverNum_ <= 0) {
+    if (httpHandoverInfo_.handOverNum <= 0) {
         requestHandoverInfo = "no handover";
         return requestHandoverInfo;
     }
     requestHandoverInfo += "HandoverNum:";
-    requestHandoverInfo += std::to_string(handoverNum_);
+    requestHandoverInfo += std::to_string(httpHandoverInfo_.handOverNum);
     requestHandoverInfo += ", handoverReason:";
-    switch (handoverReason_) {
+    switch (httpHandoverInfo_.handOverReason) {
         case HandoverRequestType::INCOMING:
             requestHandoverInfo += "flowControl, flowControlTime:";
             break;
@@ -958,9 +951,13 @@ std::string HttpClientTask::GetRequestHandoverInfo()
             requestHandoverInfo += "unkown type";
             break;
     }
-    requestHandoverInfo += std::to_string(flowControlTime_);
+    requestHandoverInfo += std::to_string(httpHandoverInfo_.flowControlTime);
     requestHandoverInfo += ", isRead:";
-    requestHandoverInfo += readFlag_ == 1 ? "true" : (readFlag_ == 0 ? "false" : "error");
+    requestHandoverInfo +=
+        httpHandoverInfo_.readFlag == 1 ? "true" : (httpHandoverInfo_.readFlag == 0 ? "false" : "error");
+    requestHandoverInfo += ", isIInQueue:";
+    requestHandoverInfo +=
+        httpHandoverInfo_.inQueueFlag == 1 ? "true" : (httpHandoverInfo_.inQueueFlag == 0 ? "false" : "error");
     requestHandoverInfo += ", isStream:";
     requestHandoverInfo += onDataReceive_ ? "true" : "false";
     return requestHandoverInfo;

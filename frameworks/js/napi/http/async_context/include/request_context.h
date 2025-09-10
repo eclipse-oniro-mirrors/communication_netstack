@@ -28,6 +28,9 @@
 #include "netstack_network_profiler.h"
 #endif
 #include "request_tracer.h"
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_andover_info.h"
+#endif
 
 namespace OHOS::NetStack::Http {
 static constexpr const uint32_t MAGIC_NUMBER = 0x86161616;
@@ -49,17 +52,6 @@ struct CertsPath {
     std::vector<std::string> certPathList;
     std::string certFile;
 };
-
-#ifdef HTTP_HANDOVER_FEATURE
-struct RequestHandoverInfo {
-    RequestHandoverInfo() = default;
-    ~RequestHandoverInfo() = default;
-    int32_t handoverNum = 0;
-    int32_t handoverReason = 0;
-    double flowControlTime = 0;
-    int32_t readFlag = 0;
-};
-#endif
 
 class RequestContext final : public BaseContext {
 public:
@@ -170,7 +162,7 @@ public:
     std::string GetPinnedPubkey() const;
 
 #ifdef HTTP_HANDOVER_FEATURE
-    void SetRequestHandoverInfo(int32_t handoverNum, int32_t handoverReason, double flowControlTime, int32_t readFlag);
+    void SetRequestHandoverInfo(const HttpHandoverInfo &httpHandoverInfo);
  
     std::string GetRequestHandoverInfo();
 #endif
@@ -203,7 +195,7 @@ private:
 #endif
     CURL *curlHandle_;
 #ifdef HTTP_HANDOVER_FEATURE
-    RequestHandoverInfo requestHandoverInfo_;
+    HttpHandoverInfo httpHandoverInfo_;
 #endif
     RequestTracer::Trace trace_;
 

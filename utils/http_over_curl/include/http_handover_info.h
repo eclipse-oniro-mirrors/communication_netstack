@@ -26,10 +26,14 @@ struct HttpHandoverStackInfo {
 };
 
 struct HttpHandoverInfo {
-    int32_t handoverNum = 0;
-    int32_t handoverReason = 0;
+    uint32_t handOverId = 0;
+    uint32_t handOverNum = 0;  // 0 means no handover or query failed.
+    int32_t handOverReason = 0;
+    uint64_t startTime = 0;
     double flowControlTime = 0.0;
     int32_t readFlag = 0;
+    int32_t inQueueFlag = 0;
+    bool isHistory = false;
 };
 
 enum HandoverRequestType {

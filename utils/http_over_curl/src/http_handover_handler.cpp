@@ -34,7 +34,7 @@ HttpHandoverHandler::HttpHandoverHandler()
     initsuccess_ = Initialize();
 }
 
-void HandoverCallback(void *user)
+void HandoverCallback(const void *user)
 {
     if (user == nullptr) {
         NETSTACK_LOGE("handover callback user is nullptr");

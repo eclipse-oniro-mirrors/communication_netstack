@@ -34,9 +34,6 @@
 #if HAS_NETMANAGER_BASE
 #include "http_network_message.h"
 #endif
-#ifdef HTTP_HANDOVER_FEATURE
-#include "http_handover_handler.h"
-#endif
 
 static constexpr const int PARAM_JUST_URL = 1;
 
@@ -1046,27 +1043,23 @@ std::string RequestContext::GetPinnedPubkey() const
 }
 
 #ifdef HTTP_HANDOVER_FEATURE
-void RequestContext::SetRequestHandoverInfo(int32_t handoverNum, int32_t handoverReason, double flowControlTime,
-    int32_t readFlag)
+void RequestContext::SetRequestHandoverInfo(const HttpHandoverInfo &httpHandoverInfo)
 {
-    requestHandoverInfo_.handoverNum = handoverNum;
-    requestHandoverInfo_.handoverReason = handoverReason;
-    requestHandoverInfo_.flowControlTime = flowControlTime;
-    requestHandoverInfo_.readFlag = readFlag;
+    httpHandoverInfo_ = httpHandoverInfo;
 }
  
 std::string RequestContext::GetRequestHandoverInfo()
 {
     std::string requestHandoverInfo;
-    if (requestHandoverInfo_.handoverNum <= 0) {
+    if (httpHandoverInfo_.handoverNum <= 0) {
         requestHandoverInfo = "no handover";
         return requestHandoverInfo;
     }
-    int32_t readFlag = requestHandoverInfo_.readFlag;
+    int32_t readFlag = httpHandoverInfo_.readFlag;
     requestHandoverInfo += "HandoverNum:";
-    requestHandoverInfo += std::to_string(requestHandoverInfo_.handoverNum);
+    requestHandoverInfo += std::to_string(httpHandoverInfo_.handoverNum);
     requestHandoverInfo += ", handoverReason:";
-    switch (requestHandoverInfo_.handoverReason) {
+    switch (httpHandoverInfo_.handoverReason) {
         case HandoverRequestType::INCOMING:
             requestHandoverInfo += "flowControl, flowControlTime:";
             break;
@@ -1080,9 +1073,13 @@ std::string RequestContext::GetRequestHandoverInfo()
             requestHandoverInfo += "unknown type";
             break;
     }
-    requestHandoverInfo += std::to_string(requestHandoverInfo_.flowControlTime);
+    requestHandoverInfo += std::to_string(httpHandoverInfo_.flowControlTime);
     requestHandoverInfo += ", isRead:";
-    requestHandoverInfo += readFlag == 1 ? "true" : (readFlag == 0 ? "false" : "error");
+    requestHandoverInfo +=
+        httpHandoverInfo_.readFlag == 1 ? "true" : (httpHandoverInfo_.readFlag == 0 ? "false" : "error");
+    requestHandoverInfo += ", isInQueue:";
+    requestHandoverInfo +=
+        httpHandoverInfo_.inQueueFlag == 1 ? "true" : (httpHandoverInfo_.inQueueFlag == 0 ? "false" : "error");
     requestHandoverInfo += ", isStream:";
     requestHandoverInfo += this->IsRequestInStream() ? "true" : "false";
     return requestHandoverInfo;
