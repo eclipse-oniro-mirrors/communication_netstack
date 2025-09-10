@@ -443,7 +443,7 @@ void OH_Http_RequestOnFail(std::shared_ptr<HttpClientTask> httpClientTask,
         }
         resp->responseCode =  static_cast<Http_ResponseCode>(response.GetResponseCode());
         resp->destroyResponse = OH_Http_DestroyResponse;
-        callback(resp, 0);
+        callback(resp, static_cast<uint32_t>(error.GetErrorCode()));
         if (handler.onDataEnd != nullptr) {
             handler.onDataEnd();
         }

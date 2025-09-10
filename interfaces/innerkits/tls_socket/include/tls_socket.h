@@ -73,6 +73,10 @@ constexpr const char *ALPN_PROTOCOLS_HTTP_1_1 = "http1.1";
 constexpr const char *ALPN_PROTOCOLS_HTTP_2 = "h2";
 
 constexpr size_t MAX_ERR_LEN = 1024;
+constexpr uint32_t DEFAULT_TIMEOUT_TLS = 0;
+constexpr int NO_TIMEOUT = 1;
+constexpr int TLS_TIMEOUT = 2;
+constexpr int POLL_ERR_IN_TLS = 3;
 
 /**
  * Parameters required during communication
@@ -246,6 +250,12 @@ public:
     void SetSkipRemoteValidation(bool skipRemoteValidation);
 
     /**
+     * Set TLS connection timeout
+     * @param timeout disconnect the connection during timeout
+    */
+    void SetTimeout(const uint32_t &timeout);
+
+    /**
      * Obtain the network address of the communication process
      * @return network address
      */
@@ -277,6 +287,7 @@ public:
 
     void SetHostName(const std::string &hostName);
     [[nodiscard]] std::string GetHostName() const;
+    uint32_t GetTimeout() const;
 
     std::shared_ptr<Socket::ProxyOptions> proxyOptions_{nullptr};
 
@@ -287,6 +298,7 @@ private:
     std::vector<std::string> alpnProtocols_;
     bool skipRemoteValidation_ = false;
     std::string hostName_;
+    uint32_t timeout_ = DEFAULT_TIMEOUT_TLS;
 };
 
 /**
@@ -568,6 +580,8 @@ private:
         bool StartTlsConnected(const TLSConnectOptions &options);
         bool CreatTlsContext();
         bool StartShakingHands(const TLSConnectOptions &options);
+        int ShakingHandsTimeout(SSL* ssl, int fd, uint32_t timeout);
+        bool CheckAfterShankingHands(const TLSConnectOptions &options);
         bool GetRemoteCertificateFromPeer();
         bool SetRemoteCertRawData();
         bool PollSend(int sockfd, ssl_st *ssl, const char *pdata, int sendSize);

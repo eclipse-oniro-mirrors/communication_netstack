@@ -31,7 +31,7 @@
 #include "netstack_network_profiler.h"
 #endif
 #ifdef HTTP_HANDOVER_FEATURE
-#include "http_handover_info.h"
+struct HttpHandoverInfo;
 #endif
 
 namespace OHOS {
@@ -320,6 +320,11 @@ private:
     void ProcessResponse(CURLMsg *msg);
 
     /**
+     * Processes the net address.
+     */
+    void ProcessNetAddress();
+
+    /**
      * Processes the response code in the HTTP response.
      * @return Returns true if the response code is processed successfully, false otherwise.
      */
@@ -393,6 +398,18 @@ private:
     */
     std::string GetRangeString() const;
 
+    /**
+    * convert safamily to AddressFamily
+    * @return AddressFamily.
+    */
+    AddressFamily ConvertSaFamily(int saFamily);
+
+    /**
+    * Sets the ssl type and client encryption certificate for the HTTP request.
+    * @return Returns true if the set options are set successfully, false otherwise.
+    */
+    bool SetSslTypeAndClientEncCert(CURL *handle);
+    
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onSucceeded_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onCanceled_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response,
@@ -408,7 +425,8 @@ private:
     HttpClientResponse response_;
     HttpClientError error_;
 #ifdef HTTP_HANDOVER_FEATURE
-    HttpHandoverInfo httpHandoverInfo_;
+    bool isSuccess_ = false;
+    std::string httpHandoverInfoStr_ = "no handover";
 #endif
 
     TaskType type_;

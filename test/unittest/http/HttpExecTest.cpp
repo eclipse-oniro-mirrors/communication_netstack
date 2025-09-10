@@ -146,4 +146,29 @@ HWTEST_F(HttpExecTest, MultiPathSslCtxFunction001, TestSize.Level1)
     EXPECT_EQ(verify_result, 1);
 }
 #endif
+
+HWTEST_F(HttpExecTest, SetSslTypeAndClientEncCert001, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+    
+    context.options.SetSslType(SslType::TLS);
+    EXPECT_TRUE(HttpExec::SetSslTypeAndClientEncCert(handle.get(), &context));
+}
+
+HWTEST_F(HttpExecTest, SetSslTypeAndClientEncCert002, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+    
+    context.options.SetSslType(SslType::TLCP);
+    EXPECT_FALSE(HttpExec::SetSslTypeAndClientEncCert(handle.get(), &context));
+}
+
 } // namespace

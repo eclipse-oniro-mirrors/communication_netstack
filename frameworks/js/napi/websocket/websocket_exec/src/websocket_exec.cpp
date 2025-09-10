@@ -278,7 +278,7 @@ int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reas
         return -1;
     }
     auto sendData = userData->Pop();
-    if (sendData.data == nullptr || sendData.length == 0) {
+    if (sendData.data == nullptr) {
         return HttpDummy(wsi, reason, user, in, len);
     }
     int sendLength = lws_write(wsi, reinterpret_cast<unsigned char *>(sendData.data) + LWS_SEND_BUFFER_PRE_PADDING,
@@ -463,7 +463,7 @@ int WebSocketExec::LwsCallbackVhostCertAging(lws *wsi, lws_callback_reasons reas
 
 int WebSocketExec::LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGI("lws callback reason is %{public}d", reason);
+    NETSTACK_LOGD("lws callback reason is %{public}d", reason);
     CallbackDispatcher dispatchers[] = {
         {LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER, LwsCallbackClientAppendHandshakeHeader},
         {LWS_CALLBACK_WS_PEER_INITIATED_CLOSE, LwsCallbackWsPeerInitiatedClose},
@@ -598,7 +598,8 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     }
     if (context->skipServerCertVerification_) {
         NETSTACK_LOGI("ExecConnect skip server cert verify");
-        connectInfo.ssl_connection = ((unsigned int)connectInfo.ssl_connection) | LCCSCF_ALLOW_INSECURE;
+        connectInfo.ssl_connection = ((unsigned int)connectInfo.ssl_connection) | LCCSCF_ALLOW_INSECURE |
+            LCCSCF_ALLOW_EXPIRED;
     }
     lws *wsi = nullptr;
     connectInfo.pwsi = &wsi;

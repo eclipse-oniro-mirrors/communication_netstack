@@ -39,7 +39,8 @@ HttpClientRequest::HttpClientRequest()
       proxyType_(HttpProxyType::NOT_USE),
       priority_(HTTP_DEFAULT_PRIORITY),
       resumeFrom_(HTTP_DEFAULT_RANGE),
-      resumeTo_(HTTP_DEFAULT_RANGE)
+      resumeTo_(HTTP_DEFAULT_RANGE),
+      sslType_(SslType::TLS)
 {
 }
 
@@ -231,6 +232,27 @@ const std::string &HttpClientRequest::GetAddressFamily() const
 {
     return addressFamily_;
 }
+
+void HttpClientRequest::SetSslType(SslType sslType)
+{
+    sslType_ = sslType;
+}
+
+const SslType &HttpClientRequest::GetSslType() const
+{
+    return sslType_;
+}
+
+void HttpClientRequest::SetClientEncCert(const HttpClientCert &clientEncCert)
+{
+    clientEncCert_ = clientEncCert;
+}
+
+const HttpClientCert &HttpClientRequest::GetClientEncCert() const
+{
+    return clientEncCert_;
+}
+
 } // namespace HttpClient
 } // namespace NetStack
 } // namespace OHOS

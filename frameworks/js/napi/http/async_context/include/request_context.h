@@ -29,7 +29,7 @@
 #endif
 #include "request_tracer.h"
 #ifdef HTTP_HANDOVER_FEATURE
-#include "http_andover_info.h"
+struct HttpHandoverInfo;
 #endif
 
 namespace OHOS::NetStack::Http {
@@ -193,9 +193,9 @@ private:
 #if HAS_NETMANAGER_BASE
     std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
 #endif
-    CURL *curlHandle_;
+    CURL *curlHandle_ = nullptr;
 #ifdef HTTP_HANDOVER_FEATURE
-    HttpHandoverInfo httpHandoverInfo_;
+    std::string httpHandoverInfoStr_ = "no handover";
 #endif
     RequestTracer::Trace trace_;
 
@@ -236,6 +236,10 @@ private:
     void SaveFormData(napi_env env, napi_value dataValue, MultiFormData &multiFormData);
 
     void ParseAddressFamily(napi_value optionsValue);
+
+    void ParseSslType(napi_value optionsValue);
+
+    void ParseClientEncCert(napi_value optionsValue);
 };
 } // namespace OHOS::NetStack::Http
 

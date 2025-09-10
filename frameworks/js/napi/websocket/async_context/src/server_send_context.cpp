@@ -118,8 +118,8 @@ bool ServerSendContext::HandleParseArrayBuffer(napi_value *params)
     NETSTACK_LOGI("ServerSendContext data is ArrayBuffer");
     size_t len = 0;
     void *mem = NapiUtils::GetInfoFromArrayBufferValue(GetEnv(), params[0], &len);
-    if (mem == nullptr || len == 0) {
-        NETSTACK_LOGE("no memory");
+    if (mem == nullptr && len != 0) {
+        NETSTACK_LOGE("Get info error");
         return false;
     }
     // must have PRE and POST

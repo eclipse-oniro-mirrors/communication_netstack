@@ -34,6 +34,10 @@
 #if HAS_NETMANAGER_BASE
 #include "http_network_message.h"
 #endif
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_handover_handler.h"
+#include "http_handover_info.h"
+#endif
 
 static constexpr const int PARAM_JUST_URL = 1;
 
@@ -559,6 +563,8 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParseServerAuthentication(optionsValue);
     SetParseOK(true);
     ParseAddressFamily(optionsValue);
+    ParseSslType(optionsValue);
+    ParseClientEncCert(optionsValue);
 }
 
 bool RequestContext::IsUsingCache() const
@@ -1045,44 +1051,40 @@ std::string RequestContext::GetPinnedPubkey() const
 #ifdef HTTP_HANDOVER_FEATURE
 void RequestContext::SetRequestHandoverInfo(const HttpHandoverInfo &httpHandoverInfo)
 {
-    httpHandoverInfo_ = httpHandoverInfo;
+    if (httpHandoverInfo.handOverNum <= 0) {
+        httpHandoverInfoStr_ = "no handover";
+    }
+    httpHandoverInfoStr_ = "HandoverNum:";
+    httpHandoverInfoStr_ += std::to_string(httpHandoverInfo.handOverNum);
+    httpHandoverInfoStr_ += ", handverReason:";
+    switch (httpHandoverInfo.handOverReason) {
+        case HandoverRequestType::INCOMING:
+            httpHandoverInfoStr_ += "flowControl, flowControlTime:";
+            break;
+        case HandoverRequestType::NETWORKERROR:
+            httpHandoverInfoStr_ += "netErr, retransTime:";
+            break;
+        case HandoverRequestType::UNDONE:
+            httpHandoverInfoStr_ += "undone, retransTime:";
+            break;
+        default:
+            httpHandoverInfoStr_ += "unknown type";
+            break;
+    }
+    httpHandoverInfoStr_ += std::to_string(httpHandoverInfo.flowControlTime);
+    httpHandoverInfoStr_ += ", isRead:";
+    httpHandoverInfoStr_ +=
+        httpHandoverInfo.readFlag == 1 ? "true" : (httpHandoverInfo.readFlag == 0 ? "false" : "error");
+    httpHandoverInfoStr_ += ", isInQueue:";
+    httpHandoverInfoStr_ +=
+        httpHandoverInfo.inQueueFlag == 1 ? "true" : (httpHandoverInfo.inQueueFlag == 0 ? "false" : "error");
+    httpHandoverInfoStr_ += ", isStream:";
+    httpHandoverInfoStr_ += this->IsRequestInStream() ? "true" : "false";
 }
  
 std::string RequestContext::GetRequestHandoverInfo()
 {
-    std::string requestHandoverInfo;
-    if (httpHandoverInfo_.handOverNum <= 0) {
-        requestHandoverInfo = "no handover";
-        return requestHandoverInfo;
-    }
-    int32_t readFlag = httpHandoverInfo_.readFlag;
-    requestHandoverInfo += "HandoverNum:";
-    requestHandoverInfo += std::to_string(httpHandoverInfo_.handOverNum);
-    requestHandoverInfo += ", handverReason:";
-    switch (httpHandoverInfo_.handOverReason) {
-        case HandoverRequestType::INCOMING:
-            requestHandoverInfo += "flowControl, flowControlTime:";
-            break;
-        case HandoverRequestType::NETWORKERROR:
-            requestHandoverInfo += "netErr, retransTime:";
-            break;
-        case HandoverRequestType::UNDONE:
-            requestHandoverInfo += "undone, retransTime:";
-            break;
-        default:
-            requestHandoverInfo += "unknown type";
-            break;
-    }
-    requestHandoverInfo += std::to_string(httpHandoverInfo_.flowControlTime);
-    requestHandoverInfo += ", isRead:";
-    requestHandoverInfo +=
-        httpHandoverInfo_.readFlag == 1 ? "true" : (httpHandoverInfo_.readFlag == 0 ? "false" : "error");
-    requestHandoverInfo += ", isInQueue:";
-    requestHandoverInfo +=
-        httpHandoverInfo_.inQueueFlag == 1 ? "true" : (httpHandoverInfo_.inQueueFlag == 0 ? "false" : "error");
-    requestHandoverInfo += ", isStream:";
-    requestHandoverInfo += this->IsRequestInStream() ? "true" : "false";
-    return requestHandoverInfo;
+    return httpHandoverInfoStr_;
 }
 #endif
 
@@ -1094,4 +1096,38 @@ void RequestContext::ParseAddressFamily(napi_value optionsValue)
         options.SetAddressFamily(addressFamily);
     }
 }
+
+void RequestContext::ParseSslType(napi_value optionsValue)
+{
+    napi_env env = GetEnv();
+    SslType sslType;
+    auto sType = NapiUtils::GetStringPropertyUtf8(env, optionsValue, HttpConstant::SSL_TYPE_TLCP);
+    if (sType == "TLCP") {
+        sslType = SslType::TLCP;
+    } else {
+        sslType = SslType::TLS;
+    }
+    options.SetSslType(sslType);
+}
+
+void RequestContext::ParseClientEncCert(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CLIENT_ENC_CERT)) {
+        return;
+    }
+    napi_value clientCertValue =
+        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CLIENT_ENC_CERT);
+    napi_valuetype type = NapiUtils::GetValueType(GetEnv(), clientCertValue);
+    if (type != napi_object) {
+        return;
+    }
+    std::string cert = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_CERT);
+    std::string certType =
+        NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_CERT_TYPE);
+    std::string key = NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_KEY);
+    Secure::SecureChar keyPasswd = Secure::SecureChar(
+        NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_KEY_PASSWD));
+    options.SetClientEncCert(cert, certType, key, keyPasswd);
+}
+
 } // namespace OHOS::NetStack::Http

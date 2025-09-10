@@ -35,6 +35,9 @@
 #include "netsys_client.h"
 #endif
 #include "netstack_hisysevent.h"
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_handover_info.h"
+#endif
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data)                                                 \
     do {                                                                                                 \
@@ -303,7 +306,9 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
 #ifndef WINDOWS_PLATFORM
     NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_ACCEPT_ENCODING, "");
 #endif
-
+    if (!SetSslTypeAndClientEncCert(curlHandle_)) {
+        return false;
+    }
     return true;
 }
 
@@ -845,6 +850,35 @@ void HttpClientTask::DumpHttpPerformance()
     }
 }
 
+AddressFamily HttpClientTask::ConvertSaFamily(int saFamily)
+{
+    switch (saFamily) {
+        case AF_INET:
+            return AddressFamily::FAMILY_IPV4;
+        case AF_INET6:
+            return AddressFamily::FAMILY_IPV6;
+        default:
+            return AddressFamily::FAMILY_INVALID;
+    }
+}
+ 
+void HttpClientTask::ProcessNetAddress()
+{
+    char *ip = nullptr;
+    curl_easy_getinfo(curlHandle_, CURLINFO_PRIMARY_IP, &ip);
+    if (ip == nullptr) {
+        return;
+    }
+    std::string ipServer(ip);
+    long dport = 0;
+    curl_easy_getinfo(curlHandle_, CURLINFO_PRIMARY_PORT, &dport);
+    NetAddress netAddress;
+    netAddress.port_ = static_cast<uint16_t>(dport);
+    netAddress.address_ = ipServer;
+    netAddress.family_ = ConvertSaFamily(CommonUtils::DetectIPType(ipServer));
+    response_.SetNetAddress(netAddress);
+}
+
 void HttpClientTask::ProcessResponse(CURLMsg *msg)
 {
     trace_->Finish();
@@ -852,7 +886,7 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
     NETSTACK_LOGD("taskid=%{public}d code=%{public}d", taskId_, code);
     error_.SetCURLResult(code);
     response_.SetResponseTime(HttpTime::GetNowTimeGMT());
-
+    ProcessNetAddress();
     DumpHttpPerformance();
     if (CURLE_ABORTED_BY_CALLBACK == code) {
         (void)ProcessResponseCode();
@@ -924,45 +958,70 @@ void HttpClientTask::SetSuccess(bool isSuccess)
 
 void HttpClientTask::SetRequestHandoverInfo(const HttpHandoverInfo &httpHandoverInfo)
 {
-    httpHandoverInfo_ = httpHandoverInfo;
+    if (httpHandoverInfo.handOverNum <= 0) {
+        httpHandoverInfoStr_ = "no handover";
+    }
+    httpHandoverInfoStr_ = "HandoverNum:";
+    httpHandoverInfoStr_ += std::to_string(httpHandoverInfo.handOverNum);
+    httpHandoverInfoStr_ += ", handoverReason:";
+    switch (httpHandoverInfo.handOverReason) {
+        case HandoverRequestType::INCOMING:
+            httpHandoverInfoStr_ += "flowControl, flowControlTime:";
+            break;
+        case HandoverRequestType::NETWORKERROR:
+            httpHandoverInfoStr_ += "netErr, retransTime:";
+            break;
+        case HandoverRequestType::UNDONE:
+            httpHandoverInfoStr_ += "undone, retransTime:";
+            break;
+        default:
+            httpHandoverInfoStr_ += "unkown type";
+            break;
+    }
+    httpHandoverInfoStr_ += std::to_string(httpHandoverInfo.flowControlTime);
+    httpHandoverInfoStr_ += ", isRead:";
+    httpHandoverInfoStr_ +=
+        httpHandoverInfo.readFlag == 1 ? "true" : (httpHandoverInfo.readFlag == 0 ? "false" : "error");
+    httpHandoverInfoStr_ += ", isIInQueue:";
+    httpHandoverInfoStr_ +=
+        httpHandoverInfo.inQueueFlag == 1 ? "true" : (httpHandoverInfo.inQueueFlag == 0 ? "false" : "error");
+    httpHandoverInfoStr_ += ", isStream:";
+    httpHandoverInfoStr_ += onDataReceive_ ? "true" : "false";
 }
  
 std::string HttpClientTask::GetRequestHandoverInfo()
 {
-    std::string requestHandoverInfo;
-    if (httpHandoverInfo_.handOverNum <= 0) {
-        requestHandoverInfo = "no handover";
-        return requestHandoverInfo;
-    }
-    requestHandoverInfo += "HandoverNum:";
-    requestHandoverInfo += std::to_string(httpHandoverInfo_.handOverNum);
-    requestHandoverInfo += ", handoverReason:";
-    switch (httpHandoverInfo_.handOverReason) {
-        case HandoverRequestType::INCOMING:
-            requestHandoverInfo += "flowControl, flowControlTime:";
-            break;
-        case HandoverRequestType::NETWORKERROR:
-            requestHandoverInfo += "netErr, retransTime:";
-            break;
-        case HandoverRequestType::UNDONE:
-            requestHandoverInfo += "undone, retransTime:";
-            break;
-        default:
-            requestHandoverInfo += "unkown type";
-            break;
-    }
-    requestHandoverInfo += std::to_string(httpHandoverInfo_.flowControlTime);
-    requestHandoverInfo += ", isRead:";
-    requestHandoverInfo +=
-        httpHandoverInfo_.readFlag == 1 ? "true" : (httpHandoverInfo_.readFlag == 0 ? "false" : "error");
-    requestHandoverInfo += ", isIInQueue:";
-    requestHandoverInfo +=
-        httpHandoverInfo_.inQueueFlag == 1 ? "true" : (httpHandoverInfo_.inQueueFlag == 0 ? "false" : "error");
-    requestHandoverInfo += ", isStream:";
-    requestHandoverInfo += onDataReceive_ ? "true" : "false";
-    return requestHandoverInfo;
+    return httpHandoverInfoStr_;
 }
 #endif
+
+bool HttpClientTask::SetSslTypeAndClientEncCert(CURL *handle)
+{
+    auto sslType = request_.GetSslType();
+    if (sslType != SslType::TLCP) {
+        return true;
+    } else {
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLCPv1_1);
+        if (!request_.GetCaPath().empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_CAINFO, request_.GetCaPath().c_str());
+        }
+        HttpClientCert clientEncCert = request_.GetClientEncCert();
+        if (!clientEncCert.certPath.empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSLENCCERT, clientEncCert.certPath.c_str());
+        }
+        if (!clientEncCert.keyPath.empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSLENCKEY, clientEncCert.keyPath.c_str());
+        }
+        if (!clientEncCert.certType.empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSLCERTTYPE, clientEncCert.certType.c_str());
+        }
+        if (clientEncCert.keyPassword.length() > 0) {
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_KEYPASSWD, clientEncCert.keyPassword.c_str());
+        }
+    }
+    return true;
+}
+
 } // namespace HttpClient
 } // namespace NetStack
 } // namespace OHOS

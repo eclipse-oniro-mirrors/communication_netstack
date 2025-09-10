@@ -58,6 +58,8 @@ public:
     static constexpr const char *INTERFACE_HTTP_DATA_TYPE = "HttpDataType";
     static constexpr const char *INTERFACE_TLS_VERSION = "TlsVersion";
     static constexpr const char *INTERFACE_ADDRESS_FAMILY = "AddressFamily";
+    static constexpr const char *INTERFACE_SSL_TYPE = "SslType";
+    static constexpr const char *INTERFACE_CLIENT_ENC_CERT = "CertType";
 
     static napi_value InitHttpModule(napi_env env, napi_value exports);
 
@@ -85,6 +87,10 @@ private:
     static void InitHttpDataType(napi_env env, napi_value exports);
 
     static void InitAddressFamily(napi_env env, napi_value exports);
+
+    static void InitSslType(napi_env env, napi_value exports);
+
+    static void InitClientEncCert(napi_env env, napi_value exports);
 };
 } // namespace OHOS::NetStack::Http
 #endif // COMMUNICATIONNETSTACK_HTTP_MODULE_H

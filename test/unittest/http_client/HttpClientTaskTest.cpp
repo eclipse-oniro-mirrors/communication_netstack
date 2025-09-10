@@ -970,6 +970,9 @@ HWTEST_F(HttpClientTaskTest, ProcessResponseTest001, TestSize.Level1)
     task->ProcessResponse(&msg);
     EXPECT_TRUE(task->onCanceled_);
 
+    AddressFamily famliy = task->ConvertSaFamily(AF_INET6);
+    EXPECT_EQ(famliy, AddressFamily::FAMILY_IPV6);
+
     msg.data.result = CURLE_FAILED_INIT;
     task->OnFail(
         [](const HttpClientRequest &request, const HttpClientResponse &response, const HttpClientError &error) {});
@@ -1375,4 +1378,30 @@ HWTEST_F(HttpClientTaskTest, HandoverInfoTest, TestSize.Level1)
     EXPECT_TRUE(task->Start());
 }
 #endif
+
+HWTEST_F(HttpClientTaskTest, SetSslTypeAndClientEncCertTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "https://www.baidu.com";
+    httpReq.SetURL(url);
+    httpReq.SetSslType(SslType::TLS);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    bool result = task->SetSslTypeAndClientEncCert(task->curlHandle_);
+    EXPECT_TRUE(result);
+}
+
+HWTEST_F(HttpClientTaskTest, SetSslTypeAndClientEncCertTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "https://www.baidu.com";
+    httpReq.SetURL(url);
+    httpReq.SetSslType(SslType::TLCP);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+
+    bool result = task->SetSslTypeAndClientEncCert(task->curlHandle_);
+    EXPECT_TRUE(result);
+}
 } // namespace
