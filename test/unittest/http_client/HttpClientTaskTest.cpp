@@ -33,6 +33,9 @@
 #include "net_conn_client.h"
 #include "network_security_config.h"
 #endif
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_handover_info.h"
+#endif
 
 using namespace OHOS::NetStack::HttpClient;
 using namespace testing;
@@ -1342,6 +1345,7 @@ HWTEST_F(HttpClientTaskTest, ProcessErrorTest001, TestSize.Level1)
     EXPECT_FALSE(error.GetErrorMessage().empty());
 }
 
+#ifdef HTTP_HANDOVER_FEATURE
 HWTEST_F(HttpClientTaskTest, HandoverInfoTest, TestSize.Level1)
 {
     HttpClientRequest httpReq;
@@ -1370,4 +1374,5 @@ HWTEST_F(HttpClientTaskTest, HandoverInfoTest, TestSize.Level1)
     handoverInfo = task->GetRequestHandoverInfo();
     EXPECT_TRUE(task->Start());
 }
+#endif
 } // namespace

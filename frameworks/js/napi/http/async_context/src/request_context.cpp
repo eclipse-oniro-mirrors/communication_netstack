@@ -1051,15 +1051,15 @@ void RequestContext::SetRequestHandoverInfo(const HttpHandoverInfo &httpHandover
 std::string RequestContext::GetRequestHandoverInfo()
 {
     std::string requestHandoverInfo;
-    if (httpHandoverInfo_.handoverNum <= 0) {
+    if (httpHandoverInfo_.handOverNum <= 0) {
         requestHandoverInfo = "no handover";
         return requestHandoverInfo;
     }
     int32_t readFlag = httpHandoverInfo_.readFlag;
     requestHandoverInfo += "HandoverNum:";
-    requestHandoverInfo += std::to_string(httpHandoverInfo_.handoverNum);
-    requestHandoverInfo += ", handoverReason:";
-    switch (httpHandoverInfo_.handoverReason) {
+    requestHandoverInfo += std::to_string(httpHandoverInfo_.handOverNum);
+    requestHandoverInfo += ", handverReason:";
+    switch (httpHandoverInfo_.handOverReason) {
         case HandoverRequestType::INCOMING:
             requestHandoverInfo += "flowControl, flowControlTime:";
             break;
