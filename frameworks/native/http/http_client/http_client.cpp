@@ -113,10 +113,7 @@ void HttpSession::SetRequestInfoCallbacks(
         return httpHandoverStackInfo;
     };
     static auto setHandoverInfoCallback = [ptr](HttpHandoverInfo httpHandoverInfo, void *) {
-        ptr->SetRequestHandoverInfo(httpHandoverInfo.handoverNum,
-            httpHandoverInfo.handoverReason,
-            httpHandoverInfo.flowControlTime,
-            httpHandoverInfo.readFlag);
+        ptr->SetRequestHandoverInfo(httpHandoverInfo);
     };
     callbacks.handoverInfoCallback = handoverInfoCallback;
     callbacks.setHandoverInfoCallback = setHandoverInfoCallback;

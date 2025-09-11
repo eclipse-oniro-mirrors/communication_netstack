@@ -71,6 +71,7 @@ ohos_unittest("http_client_unittest") {
       "HAS_NETMANAGER_BASE=1",
       "HTTP_HANDOVER_FEATURE",
     ]
+    include_dirs += [ "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/include" ]
   }
 
   part_name = "netstack"

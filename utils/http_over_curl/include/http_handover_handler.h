@@ -33,18 +33,18 @@
 
 namespace OHOS::NetStack::HttpOverCurl {
 struct RequestInfo;
-typedef void *(*HTTP_HAND_OVER_INIT)(void *user, void (*HMS_NetworkBoost_HandoverEventCallback)(void *),
-    void (*HMS_NetworkBoost_HandoverTimerCallback)(void *, long), const char* stackName);
-typedef int32_t (*HTTP_HAND_OVER_UNINIT)(void *handle);
-typedef void (*HTTP_HAND_OVER_QUERY)(void *handle, int32_t *status, int32_t *netId);
-typedef void (*HTTP_HAND_OVER_ADD)(void *handle, void *userp, int32_t type, int32_t readFlag);
-typedef void (*HTTP_HAND_OVER_DEL)(void *handle, void *userp, bool isSuccess);
-typedef int32_t (*HTTP_HAND_OVER_QUERY_REQUEST)(void *handle, void *userp, int32_t *handOverReason,
-    double *flowControlTime, int32_t *readFlag);
-typedef void (*HTTP_HAND_OVER_REPORT_TIMEOUT)(void *handle);
+typedef void *(*HTTP_HAND_OVER_INIT)(const void *user,
+    void (*HMS_NetworkBoost_HandoverEventCallback)(const void *),
+    void (*HMS_NetworkBoost_HandoverTimerCallback)(const void *, long), const char *stackName);
+typedef int32_t (*HTTP_HAND_OVER_UNINIT)(const void *handle);
+typedef void (*HTTP_HAND_OVER_QUERY)(const void *handle, int32_t *status, int32_t *netId);
+typedef void (*HTTP_HAND_OVER_ADD)(const void *handle, const void *userp, HttpHandoverInfo httpHandoverInfo);
+typedef void (*HTTP_HAND_OVER_DEL)(const void *handle, const void *userp, bool isSuccess);
+typedef HttpHandoverInfo (*HTTP_HAND_OVER_QUERY_REQUEST)(const void *handle, const void *userp);
+typedef void (*HTTP_HAND_OVER_REPORT_TIMEOUT)(const void *handle);
 
-void HandoverCallback(void *user);
-void HandoverTimerCallback(void *user, long timeoutMs);
+void HandoverCallback(const void *user);
+void HandoverTimerCallback(const void *user, long timeoutMs);
 bool CheckSocketTime(void *user, curl_socket_t fd);
 curl_socket_t OpenSocket(void *user, curlsocktype purpose, struct curl_sockaddr *addr);
 int CloseSocketCallback(void *user, curl_socket_t fd);
@@ -76,18 +76,19 @@ public:
     bool RetransRequest(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi, RequestInfo *request);
     bool CheckRequestCanRetrans(RequestInfo *request, int32_t requestType, CURLcode result);
     void UndoneRequestHandle(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi);
+    int32_t IsRequestInQueue(CURL *easyHandle);
     int32_t IsRequestRead(CURL *easyHandle);
     int32_t IsRequestRead(CURL *easyHandle, time_t &recvtime, time_t &sendtime);
     bool IsNetworkErrorTypeCorrect(CURLcode result);
     bool ProcessRequestNetError(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi,
                               RequestInfo *requestInfo, CURLMsg *msg);
-    void AddRequest(RequestInfo *requestInfo, int32_t type);
+    void AddRequest(RequestInfo *requestInfo, int32_t handoverReason);
     void DelRequest(RequestInfo *requestInfo);
-    int32_t QueryRequest(void *userp, int32_t &handOverReason, double &flowControlTime, int32_t &readFlag);
     int32_t GetStatus();
     void SetStatus(int32_t status);
     int32_t GetNetId();
     void SetNetId(int32_t netId);
+
 private:
     void *netHandoverHandler_ = nullptr;
     void *httpHandoverManager_ = nullptr;

@@ -33,6 +33,9 @@
 #include "net_conn_client.h"
 #include "network_security_config.h"
 #endif
+#ifdef HTTP_HANDOVER_FEATURE
+#include "http_handover_info.h"
+#endif
 
 using namespace OHOS::NetStack::HttpClient;
 using namespace testing;
@@ -1345,6 +1348,7 @@ HWTEST_F(HttpClientTaskTest, ProcessErrorTest001, TestSize.Level1)
     EXPECT_FALSE(error.GetErrorMessage().empty());
 }
 
+#ifdef HTTP_HANDOVER_FEATURE
 HWTEST_F(HttpClientTaskTest, HandoverInfoTest, TestSize.Level1)
 {
     HttpClientRequest httpReq;
@@ -1354,28 +1358,26 @@ HWTEST_F(HttpClientTaskTest, HandoverInfoTest, TestSize.Level1)
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
     
-    int32_t handoverNum = 1;
-    int32_t handoverReason = 0;
-    double flowControlTime = 1.0;
-    int32_t readFlag = 0;
-    task->SetRequestHandoverInfo(handoverNum, handoverReason, flowControlTime, readFlag);
+    HttpHandoverInfo httpHandoverInfo;
+    task->SetRequestHandoverInfo(httpHandoverInfo);
     std::string handoverInfo = task->GetRequestHandoverInfo();
  
-    handoverReason = 1;
-    readFlag = 1;
-    task->SetRequestHandoverInfo(handoverNum, handoverReason, flowControlTime, readFlag);
+    httpHandoverInfo.handOverReason = 1;
+    httpHandoverInfo.readFlag = 1;
+    task->SetRequestHandoverInfo(httpHandoverInfo);
     handoverInfo = task->GetRequestHandoverInfo();
  
-    handoverReason = 2;
-    readFlag = 2;
-    task->SetRequestHandoverInfo(handoverNum, handoverReason, flowControlTime, readFlag);
+    httpHandoverInfo.handOverReason = 2;
+    httpHandoverInfo.readFlag = 2;
+    task->SetRequestHandoverInfo(httpHandoverInfo);
     handoverInfo = task->GetRequestHandoverInfo();
  
-    handoverReason = 3;
-    task->SetRequestHandoverInfo(handoverNum, handoverReason, flowControlTime, readFlag);
+    httpHandoverInfo.handOverReason = 3;
+    task->SetRequestHandoverInfo(httpHandoverInfo);
     handoverInfo = task->GetRequestHandoverInfo();
     EXPECT_TRUE(task->Start());
 }
+#endif
 
 HWTEST_F(HttpClientTaskTest, SetSslTypeAndClientEncCertTest001, TestSize.Level1)
 {

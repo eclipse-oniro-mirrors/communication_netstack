@@ -956,45 +956,42 @@ void HttpClientTask::SetSuccess(bool isSuccess)
     isSuccess_ = isSuccess;
 }
 
-void HttpClientTask::SetRequestHandoverInfo(
-    int32_t handoverNum, int32_t handoverReason, double flowControlTime, int32_t readFlag)
+void HttpClientTask::SetRequestHandoverInfo(const HttpHandoverInfo &httpHandoverInfo)
 {
-    handoverNum_ = handoverNum;
-    handoverReason_ = handoverReason;
-    flowControlTime_ = flowControlTime;
-    readFlag_ = readFlag;
+    if (httpHandoverInfo.handOverNum <= 0) {
+        httpHandoverInfoStr_ = "no handover";
+    }
+    httpHandoverInfoStr_ = "HandoverNum:";
+    httpHandoverInfoStr_ += std::to_string(httpHandoverInfo.handOverNum);
+    httpHandoverInfoStr_ += ", handoverReason:";
+    switch (httpHandoverInfo.handOverReason) {
+        case HandoverRequestType::INCOMING:
+            httpHandoverInfoStr_ += "flowControl, flowControlTime:";
+            break;
+        case HandoverRequestType::NETWORKERROR:
+            httpHandoverInfoStr_ += "netErr, retransTime:";
+            break;
+        case HandoverRequestType::UNDONE:
+            httpHandoverInfoStr_ += "undone, retransTime:";
+            break;
+        default:
+            httpHandoverInfoStr_ += "unkown type";
+            break;
+    }
+    httpHandoverInfoStr_ += std::to_string(httpHandoverInfo.flowControlTime);
+    httpHandoverInfoStr_ += ", isRead:";
+    httpHandoverInfoStr_ +=
+        httpHandoverInfo.readFlag == 1 ? "true" : (httpHandoverInfo.readFlag == 0 ? "false" : "error");
+    httpHandoverInfoStr_ += ", isIInQueue:";
+    httpHandoverInfoStr_ +=
+        httpHandoverInfo.inQueueFlag == 1 ? "true" : (httpHandoverInfo.inQueueFlag == 0 ? "false" : "error");
+    httpHandoverInfoStr_ += ", isStream:";
+    httpHandoverInfoStr_ += onDataReceive_ ? "true" : "false";
 }
  
 std::string HttpClientTask::GetRequestHandoverInfo()
 {
-    std::string requestHandoverInfo;
-    if (handoverNum_ <= 0) {
-        requestHandoverInfo = "no handover";
-        return requestHandoverInfo;
-    }
-    requestHandoverInfo += "HandoverNum:";
-    requestHandoverInfo += std::to_string(handoverNum_);
-    requestHandoverInfo += ", handoverReason:";
-    switch (handoverReason_) {
-        case HandoverRequestType::INCOMING:
-            requestHandoverInfo += "flowControl, flowControlTime:";
-            break;
-        case HandoverRequestType::NETWORKERROR:
-            requestHandoverInfo += "netErr, retransTime:";
-            break;
-        case HandoverRequestType::UNDONE:
-            requestHandoverInfo += "undone, retransTime:";
-            break;
-        default:
-            requestHandoverInfo += "unkown type";
-            break;
-    }
-    requestHandoverInfo += std::to_string(flowControlTime_);
-    requestHandoverInfo += ", isRead:";
-    requestHandoverInfo += readFlag_ == 1 ? "true" : (readFlag_ == 0 ? "false" : "error");
-    requestHandoverInfo += ", isStream:";
-    requestHandoverInfo += onDataReceive_ ? "true" : "false";
-    return requestHandoverInfo;
+    return httpHandoverInfoStr_;
 }
 #endif
 
