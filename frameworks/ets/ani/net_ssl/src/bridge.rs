@@ -20,13 +20,13 @@ pub enum Data {
     ArrayBuffer(ArrayBuffer),
 }
 
-#[ani_rs::ani(path = "L@ohos/net/networkSecurity/networkSecurity/CertType")]
+#[ani_rs::ani(path = "@ohos.net.networkSecurity.networkSecurity/CertType")]
 pub enum CertType {
     CertTypePem = 0,
     CertTypeDer = 1,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/networkSecurity/networkSecurity/CertBlob")]
+#[ani_rs::ani(path = "@ohos.net.networkSecurity.networkSecurity/CertBlob")]
 pub struct CertBlob {
     pub type_: CertType,
     pub data: Data,

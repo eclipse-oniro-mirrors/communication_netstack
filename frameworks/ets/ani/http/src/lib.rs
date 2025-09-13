@@ -25,12 +25,12 @@ mod callback;
 mod http;
 
 ani_rs::ani_constructor! {
-    namespace "L@ohos/net/http/http"
+    namespace "@ohos.net.http.http"
     [
         "createHttp" : http::create_http,
         "createHttpResponseCache" : http::create_http_response_cache
     ]
-    class "L@ohos/net/http/http/HttpRequestInner"
+    class "@ohos.net.http.http.HttpRequestInner"
     [
         "requestInner" : http::request,
         "requestInStreamInner" : http::request_in_stream,
@@ -49,12 +49,12 @@ ani_rs::ani_constructor! {
         "offDataSendProgress" : http::off_data_send_progress,
         "once" : http::once,
     ]
-    class "L@ohos/net/http/http/HttpResponseCacheInner"
+    class "@ohos.net.http.http.HttpResponseCacheInner"
     [
         "flushSync" : http::flush,
         "deleteSync": http::delete,
     ]
-    class "L@ohos/net/http/http/Cleaner"
+    class "@ohos.net.http.http.Cleaner"
     [
         "cleanHttp" : http::clean_http_request,
         "cleanCache" : http::clean_http_cache,
