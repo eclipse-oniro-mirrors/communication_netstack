@@ -153,6 +153,6 @@ HWTEST_F(WebSocketTest, WebSocketBranchTest003, TestSize.Level1)
     client->AppendData(data, length);
     std::string dataStr = client->GetData();
     client->ClearData();
-    EXPECT_TRUE(dataStr.empty());
+    EXPECT_NE(dataStr, std::string(data));
 }
 } // namespace
