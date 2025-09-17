@@ -87,7 +87,6 @@ HttpClientTask::HttpClientTask(const HttpClientRequest &request, TaskType type, 
       status_(IDLE),
       taskId_(nextTaskId_++),
       curlHeaderList_(nullptr),
-      curMultiPart_(nullptr),
       canceled_(false),
       filePath_(filePath),
       file_(nullptr),
@@ -111,10 +110,6 @@ HttpClientTask::~HttpClientTask()
     if (curlHeaderList_ != nullptr) {
         curl_slist_free_all(curlHeaderList_);
         curlHeaderList_ = nullptr;
-    }
-    if (curMultiPart_ != nullptr) {
-        curl_mime_free(curMultiPart_);
-        curMultiPart_ = nullptr;
     }
 
     if (curlHandle_) {
@@ -168,8 +163,8 @@ void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::str
         certs.emplace_back(HttpConstant::USER_CERT_ROOT_PATH);
     }
     if (NetManagerStandard::NetworkSecurityConfig::GetInstance().TrustUserCa()) {
-        certs.emplace_back(HttpConstant::USER_CERT_BASE_PATH +
-                           std::to_string(getuid() / HttpConstant::UID_TRANSFORM_DIVISOR));
+        certs.emplace_back(
+            HttpConstant::USER_CERT_BASE_PATH + std::to_string(getuid() / HttpConstant::UID_TRANSFORM_DIVISOR));
     }
 #endif
 }
@@ -418,9 +413,9 @@ unsigned long GetTlsVersion(TlsVersion tlsVersionMin, TlsVersion tlsVersionMax)
         tlsVersion |= static_cast<unsigned long>(CURL_SSLVERSION_TLSv1_0);
     } else if (tlsVersionMin == TlsVersion::TLSv1_1) {
         tlsVersion |= static_cast<unsigned long>(CURL_SSLVERSION_TLSv1_1);
-    }  else if (tlsVersionMin == TlsVersion::TLSv1_2) {
+    } else if (tlsVersionMin == TlsVersion::TLSv1_2) {
         tlsVersion |= static_cast<unsigned long>(CURL_SSLVERSION_TLSv1_2);
-    }  else if (tlsVersionMin == TlsVersion::TLSv1_3) {
+    } else if (tlsVersionMin == TlsVersion::TLSv1_3) {
         tlsVersion |= static_cast<unsigned long>(CURL_SSLVERSION_TLSv1_3);
     }
 
@@ -495,29 +490,36 @@ bool HttpClientTask::MethodForPost(const std::string &method)
             method == HttpConstant::HTTP_METHOD_DELETE || method.empty());
 }
 
-static void SetFormDataOption(HttpMultiFormData &multiFormData, curl_mimepart *part, CURL *curl)
+bool HttpClientTask::SetFormDataOption(const HttpMultiFormData &multiFormData, curl_mimepart *part, CURL *curl)
 {
     CURLcode result = curl_mime_name(part, multiFormData.name.c_str());
     if (result != CURLE_OK) {
         NETSTACK_LOGE("Failed to set name error: %{public}s", curl_easy_strerror(result));
-        return;
+        error_.SetCURLResult(result);
+        return false;
     }
     if (!multiFormData.contentType.empty()) {
         result = curl_mime_type(part, multiFormData.contentType.c_str());
         if (result != CURLE_OK) {
             NETSTACK_LOGE("Failed to set contentType error: %{public}s", curl_easy_strerror(result));
+            error_.SetCURLResult(result);
+            return false;
         }
     }
     if (!multiFormData.remoteFileName.empty()) {
         result = curl_mime_filename(part, multiFormData.remoteFileName.c_str());
         if (result != CURLE_OK) {
             NETSTACK_LOGE("Failed to set remoteFileName error: %{public}s", curl_easy_strerror(result));
+            error_.SetCURLResult(result);
+            return false;
         }
     }
     if (!multiFormData.data.empty()) {
         result = curl_mime_data(part, multiFormData.data.c_str(), multiFormData.data.length());
         if (result != CURLE_OK) {
             NETSTACK_LOGE("Failed to set data error: %{public}s", curl_easy_strerror(result));
+            error_.SetCURLResult(result);
+            return false;
         }
     } else {
         if (!multiFormData.remoteFileName.empty()) {
@@ -532,9 +534,12 @@ static void SetFormDataOption(HttpMultiFormData &multiFormData, curl_mimepart *p
             result = curl_mime_filedata(part, multiFormData.filePath.c_str());
         }
         if (result != CURLE_OK) {
-            NETSTACK_LOGE("Failed to set file data error: %{public}s", curl_easy_strerror(result));
+            error_.SetCURLResult(result);
+            return false;
         }
     }
+
+    return true;
 }
 
 bool HttpClientTask::SetMultiPartOption(CURL *handle)
@@ -548,8 +553,8 @@ bool HttpClientTask::SetMultiPartOption(CURL *handle)
     if (multiPartDataList.empty()) {
         return true;
     }
-    curMultiPart_ = curl_mime_init(handle);
-    if (curMultiPart_ == nullptr) {
+    auto *curMultiPart = curl_mime_init(handle);
+    if (curMultiPart == nullptr) {
         return false;
     }
     curl_mimepart *part = nullptr;
@@ -562,13 +567,19 @@ bool HttpClientTask::SetMultiPartOption(CURL *handle)
             NETSTACK_LOGE("Failed to set multiFormData error no data and filepath at the same time");
             continue;
         }
-        part = curl_mime_addpart(curMultiPart_);
-        SetFormDataOption(multiFormData, part, handle);
-        hasData = true;
+        part = curl_mime_addpart(curMultiPart);
+        if (SetFormDataOption(multiFormData, part, handle)) {
+            hasData = true;
+        }
     }
     if (hasData) {
-        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_MIMEPOST, curMultiPart_);
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_MIMEPOST, curMultiPart);
     }
+    if (curMultiPart != nullptr) {
+        curl_mime_free(curMultiPart);
+        curMultiPart = nullptr;
+    }
+
     return true;
 }
 
@@ -678,6 +689,9 @@ bool HttpClientTask::SetTraceOptions(CURL *curl)
 
 bool HttpClientTask::SetCurlOptions()
 {
+    if (!SetHttpHeaders()) {
+        return false;
+    }
     if (!SetCurlMethod()) {
         return false;
     }
@@ -686,12 +700,8 @@ bool HttpClientTask::SetCurlOptions()
         return false;
     }
 
-    if (!SetHttpHeaders()) {
-        return false;
-    }
-
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_FOLLOWLOCATION, 1L);
- 
+
     /* first #undef CURL_DISABLE_COOKIES in curl config */
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_COOKIEFILE, "");
 
@@ -702,11 +712,9 @@ bool HttpClientTask::SetCurlOptions()
     if (!SetRequestOption(curlHandle_)) {
         return false;
     }
-
     if (!SetOtherCurlOption(curlHandle_)) {
         return false;
     }
-
     if (!SetAuthOptions(curlHandle_)) {
         return false;
     }
@@ -777,11 +785,6 @@ bool HttpClientTask::SetHttpHeaders()
         curl_slist_free_all(curlHeaderList_);
         curlHeaderList_ = nullptr;
     }
-    if (curMultiPart_ != nullptr) {
-        curl_mime_free(curMultiPart_);
-        curMultiPart_ = nullptr;
-    }
-
     for (const auto &header : request_.GetHeaders()) {
         std::string headerStr;
         if (!header.second.empty()) {
@@ -816,6 +819,9 @@ bool HttpClientTask::Start()
 
     if (error_.GetErrorCode() != HttpErrorCode::HTTP_NONE_ERR) {
         NETSTACK_LOGE("error_.GetErrorCode()=%{public}d", error_.GetErrorCode());
+        if (request_.GetHttpProtocol() == HttpProtocol::HTTP3) {
+            error_.SetErrorCode(HttpErrorCode::HTTP_UNKNOWN_OTHER_ERROR);
+        }
         return false;
     }
 
@@ -874,9 +880,8 @@ void HttpClientTask::OnCancel(
     onCanceled_ = onCanceled;
 }
 
-void HttpClientTask::OnFail(
-    const std::function<void(const HttpClientRequest &request, const HttpClientResponse &response,
-                             const HttpClientError &error)> &onFailed)
+void HttpClientTask::OnFail(const std::function<void(
+    const HttpClientRequest &request, const HttpClientResponse &response, const HttpClientError &error)> &onFailed)
 {
     onFailed_ = onFailed;
 }
@@ -887,14 +892,15 @@ void HttpClientTask::OnDataReceive(
     onDataReceive_ = onDataReceive;
 }
 
-void HttpClientTask::OnProgress(const std::function<void(const HttpClientRequest &request, u_long dlTotal, u_long dlNow,
-                                                         u_long ulTotal, u_long ulNow)> &onProgress)
+void HttpClientTask::OnProgress(const std::function<void(
+    const HttpClientRequest &request, u_long dlTotal, u_long dlNow, u_long ulTotal, u_long ulNow)> &onProgress)
 {
     onProgress_ = onProgress;
 }
 
-void HttpClientTask::OnHeadersReceive(const std::function<void(const HttpClientRequest &request,
-        std::map<std::string, std::string> headersWithSetCookie)> &onHeadersReceive)
+void HttpClientTask::OnHeadersReceive(
+    const std::function<void(const HttpClientRequest &request, std::map<std::string, std::string> headersWithSetCookie)>
+        &onHeadersReceive)
 {
     onHeadersReceive_ = onHeadersReceive;
 }
@@ -1001,13 +1007,17 @@ size_t HttpClientTask::DataReceiveCallback(const void *data, size_t size, size_t
     return size * memBytes;
 }
 
-int HttpClientTask::ProgressCallback(void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
-                                     curl_off_t ulnow)
+int HttpClientTask::ProgressCallback(
+    void *userData, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
 {
     auto task = static_cast<HttpClientTask *>(userData);
     NETSTACK_LOGD("taskId=%{public}d dltotal=%{public}" CURL_FORMAT_CURL_OFF_T " dlnow=%{public}" CURL_FORMAT_CURL_OFF_T
                   " ultotal=%{public}" CURL_FORMAT_CURL_OFF_T " ulnow=%{public}" CURL_FORMAT_CURL_OFF_T,
-                  task->taskId_, dltotal, dlnow, ultotal, ulnow);
+        task->taskId_,
+        dltotal,
+        dlnow,
+        ultotal,
+        ulnow);
 
     if (task->canceled_) {
         NETSTACK_LOGD("canceled");
@@ -1240,10 +1250,9 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
         }
         return;
     }
-
     ProcessCookie(curlHandle_);
     response_.ParseHeaders();
-    response_.SetExpectDataType(request_.GetExpectDataType());
+    ProcessResponseExpectType();
     WriteResopnseToCache(response_);
     if (ProcessResponseCode()) {
         if (onSucceeded_) {
@@ -1421,13 +1430,13 @@ std::string HttpClientTask::GetJsonFieldValue(const cJSON* item)
     return result;
 }
 
-void HttpClientTask::TraverseJson(const cJSON* item, std::string &output)
+void HttpClientTask::TraverseJson(const cJSON *item, std::string &output)
 {
     if (item == nullptr) {
         return;
     }
     if (item->type == cJSON_Object) {
-        cJSON* child = item->child;
+        cJSON *child = item->child;
         while (child != nullptr) {
             if (child->type == cJSON_Object || child->type == cJSON_Array) {
                 TraverseJson(child, output);
@@ -1441,8 +1450,8 @@ void HttpClientTask::TraverseJson(const cJSON* item, std::string &output)
             bool encodeName = EncodeUrlParam(key);
             bool encodeValue = EncodeUrlParam(value);
             if (encodeName || encodeValue) {
-                request_.SetHeader(CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE),
-                    HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE);
+                request_.SetHeader(
+                    CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE), HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE);
             }
             output +=
                 key + HttpConstant::HTTP_URL_NAME_VALUE_SEPARATOR + value + HttpConstant::HTTP_URL_PARAM_SEPARATOR;
@@ -1451,7 +1460,7 @@ void HttpClientTask::TraverseJson(const cJSON* item, std::string &output)
     } else if (item->type == cJSON_Array) {
         auto size = cJSON_GetArraySize(item);
         for (int i = 0; i < size; ++i) {
-            cJSON* arrayItem = cJSON_GetArrayItem(item, i);
+            cJSON *arrayItem = cJSON_GetArrayItem(item, i);
             TraverseJson(arrayItem, output);
         }
     }
@@ -1460,7 +1469,7 @@ void HttpClientTask::TraverseJson(const cJSON* item, std::string &output)
 std::string HttpClientTask::ParseJsonValueToExtraParam(const std::string &jsonStr)
 {
     std::string extraParam;
-    cJSON* root = cJSON_Parse(jsonStr.c_str());
+    cJSON *root = cJSON_Parse(jsonStr.c_str());
     if (root == nullptr) {
         NETSTACK_LOGE("json parse failed");
         return extraParam;
@@ -1507,6 +1516,22 @@ bool HttpClientTask::GetRequestBody()
     }
     request_.SetBody(extraDataStr.c_str(), extraDataStr.size());
     return true;
+}
+
+void HttpClientTask::ProcessResponseExpectType()
+{
+    if (request_.GetExpectDataType() != HttpDataType::NO_DATA_TYPE) {
+        response_.SetExpectDataType(request_.GetExpectDataType());
+        return;
+    }
+    auto contentType = CommonUtils::ToLower(const_cast<std::map<std::string, std::string> &>(
+        response_.GetHeaders())[HttpConstant::HTTP_CONTENT_TYPE]);
+    if (contentType.find(HttpConstant::HTTP_CONTENT_TYPE_OCTET_STREAM) != std::string::npos ||
+        contentType.find(HttpConstant::HTTP_CONTENT_TYPE_IMAGE) != std::string::npos) {
+        response_.SetExpectDataType(HttpDataType::ARRAY_BUFFER);
+        return;
+    }
+    response_.SetExpectDataType(HttpDataType::STRING);
 }
 } // namespace HttpClient
 } // namespace NetStack

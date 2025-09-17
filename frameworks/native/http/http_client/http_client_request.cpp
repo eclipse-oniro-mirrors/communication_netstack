@@ -43,7 +43,7 @@ HttpClientRequest::HttpClientRequest()
       resumeTo_(HTTP_DEFAULT_RANGE),
       maxLimit_(HttpConstant::DEFAULT_MAX_LIMIT),
       usingCache_(false),
-      dataType_(HttpDataType::STRING)
+      dataType_(HttpDataType::NO_DATA_TYPE)
 {
     extraData_.dataType = HttpDataType::NO_DATA_TYPE;
 }
@@ -303,6 +303,10 @@ void HttpClientRequest::SetExtraData(const EscapedData& extraData)
 
 void HttpClientRequest::SetExpectDataType(HttpDataType dataType)
 {
+    if (dataType != HttpDataType::STRING && dataType != HttpDataType::ARRAY_BUFFER &&
+        dataType != HttpDataType::OBJECT) {
+        return;
+    }
     dataType_ = dataType;
 }
 

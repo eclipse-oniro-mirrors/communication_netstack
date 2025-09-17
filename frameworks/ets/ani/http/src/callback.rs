@@ -65,10 +65,10 @@ impl RequestCallback for TaskCallback {
         let cookies = response.cookies();
         let performance_timing = PerformanceTiming::from(response.performance_timing());
 
-        if (is_request_in_stream) {
+        if is_request_in_stream {
             if let Some(callback) = self.on_response_in_stream.take() {
                 ani_rs::send_event_from_closure(move || {
-                    let _ = callback.execute(None, (code,));
+                    callback.execute(None, (code,));
                 }, "http_response_instream_success_callback").unwrap();
             }
         } else {
@@ -116,25 +116,27 @@ impl RequestCallback for TaskCallback {
         is_request_in_stream: bool
     ) {
         let code = response.status() as i32;
-        let ets_response = HttpResponse {
-            result: GlobalRef(AniRef::<'static>::null()),
-            result_type: HttpDataType::String,
-            response_code: ResponseCodeOutput::I32(code),
-            header: HashMap::new(),
-            cookies: String::new(),
-            performance_timing: PerformanceTiming::new(),
-        };
         let business_error = convert_to_business_error(&error);
         error!("OnFiled. response_code = {}, error = {:?}", code, error);
-        if (is_request_in_stream) {
+        let string_data = response.get_result();
+        if is_request_in_stream {
             if let Some(callback) = self.on_response_in_stream.take() {
-                callback.execute(Some(business_error), (code,));
+                ani_rs::send_event_from_closure(move || {
+                    callback.execute(Some(business_error), (code,));
+                }, "http_response_instream_failed_callback").unwrap();
             }
         } else {
             if let Some(callback) = self.on_response.take() {
-                callback.execute(Some(business_error), (ets_response,));
+                ani_rs::send_event_from_closure(move || {
+                    let env = AniVm::get_instance().get_env().unwrap();
+                    let s_ref = env.serialize(&string_data).unwrap().into_global(&env).unwrap();
+                    let ets_response = HttpResponse::new(s_ref, HttpDataType::String,
+                        code, HashMap::new(),  String::new(), PerformanceTiming::new());
+                    callback.execute(Some(business_error), (ets_response,));
+                }, "http_response_failed_callback").unwrap();
             }
         }
+
         if let Some(callback) = self.on_data_end.take() {
             callback.execute(());
         }
@@ -142,25 +144,26 @@ impl RequestCallback for TaskCallback {
 
     fn on_cancel(&mut self, response: netstack_rs::response::Response, is_request_in_stream: bool) {
         let code = response.status() as i32;
-        let ets_response = HttpResponse {
-            result: GlobalRef(AniRef::<'static>::null()),
-            result_type: HttpDataType::String,
-            response_code: ResponseCodeOutput::I32(code),
-            header: HashMap::new(),
-            cookies: String::new(),
-            performance_timing: PerformanceTiming::new(),
-        };
         let business_error = BusinessError::new(
             HttpErrorCode::HttpWriteError as i32,
             "request canceled".to_string(),
         );
-        if (is_request_in_stream) {
+        let string_data = response.get_result();
+        if is_request_in_stream {
             if let Some(callback) = self.on_response_in_stream.take() {
-                callback.execute(Some(business_error), (code,));
+                ani_rs::send_event_from_closure(move || {
+                    callback.execute(Some(business_error), (code,));
+                }, "http_response_instream_cancel_callback").unwrap();
             }
         } else {
             if let Some(callback) = self.on_response.take() {
-                callback.execute(Some(business_error), (ets_response,));
+                ani_rs::send_event_from_closure(move || {
+                    let env = AniVm::get_instance().get_env().unwrap();
+                    let s_ref = env.serialize(&string_data).unwrap().into_global(&env).unwrap();
+                    let ets_response = HttpResponse::new(s_ref, HttpDataType::String,
+                        code, HashMap::new(),  String::new(), PerformanceTiming::new());
+                    callback.execute(Some(business_error), (ets_response,));
+                }, "http_response_cancel_callback").unwrap();
             }
         }
     }
