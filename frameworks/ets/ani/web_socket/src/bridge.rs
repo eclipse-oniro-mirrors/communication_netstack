@@ -16,27 +16,27 @@ use std::collections::HashMap;
 use ani_rs::{business_error::BusinessError, typed_array::ArrayBuffer};
 use serde::{Deserialize, Serialize};
 
-#[ani_rs::ani(path = "L@ohos/net/webSocket/webSocket/Cleaner")]
+#[ani_rs::ani(path = "@ohos.net.webSocket.webSocket.Cleaner")]
 pub struct AniCleaner {
     pub nativePtr: i64,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/webSocket/webSocket/CleanerServer")]
+#[ani_rs::ani(path = "@ohos.net.webSocket.webSocket.CleanerServer")]
 pub struct AniCleanerServer {
     pub nativePtr: i64,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/webSocket/webSocket/WebSocketInner")]
+#[ani_rs::ani(path = "@ohos.net.webSocket.webSocket.WebSocketInner")]
 pub struct AniWebSocket {
     pub nativePtr: i64,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/webSocket/webSocket/WebSocketServerInner")]
+#[ani_rs::ani(path = "@ohos.net.webSocket.webSocket.WebSocketServerInner")]
 pub struct AniWebSocketServer {
     pub nativePtr: i64,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/connection/connection/HttpProxyInner")]
+#[ani_rs::ani(path = "@ohos.net.connection.connection.HttpProxyInner")]
 pub struct AniHttpProxy {
     pub host: String,
 
@@ -52,11 +52,11 @@ pub struct AniHttpProxy {
 #[derive(Serialize, Deserialize)]
 pub enum AniProxyConfiguration {
     S(String),
-    #[serde(rename = "L@ohos/net/connection/connection/HttpProxyInner;")]
+    #[serde(rename = "@ohos.net.connection.connection.HttpProxyInner")]
     Proxy(AniHttpProxy),
 }
 
-#[ani_rs::ani(path = "L@ohos/net/webSocket/webSocket/WebSocketRequestOptionsInner")]
+#[ani_rs::ani(path = "@ohos.net.webSocket.webSocket.WebSocketRequestOptionsInner")]
 pub struct AniWebSocketRequestOptions {
     pub header: Option<HashMap<String, String>>,
 
@@ -80,7 +80,7 @@ impl AniWebSocketRequestOptions {
     }
 }
 
-#[ani_rs::ani(path = "L@ohos/net/webSocket/webSocket/ClientCertInner")]
+#[ani_rs::ani(path = "@ohos.net.webSocket.webSocket.ClientCertInner")]
 pub struct AniClientCert {
     pub certPath: String,
 
@@ -99,7 +99,7 @@ impl AniClientCert {
     }
 }
 
-#[ani_rs::ani(path = "L@ohos/net/webSocket/webSocket/CloseResultInner")]
+#[ani_rs::ani(path = "@ohos.net.webSocket.webSocket.CloseResultInner")]
 pub struct AniCloseResult {
     pub code: i32,
     pub reason: String,
@@ -114,13 +114,13 @@ impl AniCloseResult {
     }
 }
 
-#[ani_rs::ani(path = "L@ohos/net/webSocket/webSocket/OpenResultInner")]
+#[ani_rs::ani(path = "@ohos.net.webSocket.webSocket.OpenResultInner")]
 pub struct AniOpenResult {
     pub status: i32,
     pub message: String,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/webSocket/webSocket/WebSocketCloseOptionsInner")]
+#[ani_rs::ani(path = "@ohos.net.webSocket.webSocket.WebSocketCloseOptionsInner")]
 pub struct AniWebSocketCloseOptions {
     pub code: Option<i32>,
     pub reason: Option<String>,
@@ -135,7 +135,7 @@ impl AniWebSocketCloseOptions {
     }
 }
 
-#[ani_rs::ani(path = "L@ohos/net/webSocket/webSocket/ServerCertInner")]
+#[ani_rs::ani(path = "@ohos.net.webSocket.webSocket.ServerCertInner")]
 pub struct AniServerCert {
     pub certPath: String,
     pub keyPath: String,
@@ -150,7 +150,7 @@ impl AniServerCert {
     }
 }
 
-#[ani_rs::ani(path = "L@ohos/net/webSocket/webSocket/WebSocketServerConfigInner")]
+#[ani_rs::ani(path = "@ohos.net.webSocket.webSocket.WebSocketServerConfigInner")]
 pub struct AniWebSocketServerConfig {
     pub serverIP: Option<String>,
     pub serverPort: i32,
@@ -173,7 +173,7 @@ impl AniWebSocketServerConfig {
     }
 }
 
-#[ani_rs::ani(path = "L@ohos/net/webSocket/webSocket/WebSocketConnectionInner")]
+#[ani_rs::ani(path = "@ohos.net.webSocket.webSocket.WebSocketConnectionInner")]
 pub struct AniWebSocketConnection {
     pub clientIP: String,
     pub clientPort: i32,
@@ -205,7 +205,7 @@ pub fn socket_connection_push_data(
     connection_info_value.push(connection_info);
 }
 
-#[ani_rs::ani(path = "L@ohos/net/webSocket/webSocket/ResponseHeaders")]
+#[ani_rs::ani(path = "@ohos.net.webSocket.webSocket.ResponseHeaders")]
 pub enum AniResponseHeaders {
     MapBuffer(HashMap<String, String>),
     VecBuffer(Vec<String>),
@@ -218,7 +218,7 @@ pub enum AniData {
     ArrayBuffer(ArrayBuffer),
 }
 
-#[ani_rs::ani(path = "L@ohos/net/webSocket/webSocket/WebSocketMessageInner")]
+#[ani_rs::ani(path = "@ohos.net.webSocket.webSocket.WebSocketMessageInner")]
 pub struct AniWebSocketMessage {
     pub data: AniData,
     pub clientConnection: AniWebSocketConnection,

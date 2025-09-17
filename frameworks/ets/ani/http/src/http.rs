@@ -60,8 +60,8 @@ impl Task {
 #[ani_rs::native]
 pub fn create_http<'local>(env: &AniEnv<'local>) -> Result<AniRef<'local>, BusinessError> {
     static HTTP_REQUEST_CLASS: &CStr =
-        unsafe { CStr::from_bytes_with_nul_unchecked(b"L@ohos/net/http/http/HttpRequestInner;\0") };
-    static CTOR_SIGNATURE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"J:V\0") };
+        unsafe { CStr::from_bytes_with_nul_unchecked(b"@ohos.net.http.http.HttpRequestInner\0") };
+    static CTOR_SIGNATURE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"l:\0") };
 
     let request = Box::new(Task::new());
     let ptr = Box::into_raw(request);
@@ -193,8 +193,8 @@ pub fn http_set_options(
 pub fn create_http_response_cache<'local>(
     env: &AniEnv<'local>, cacheSize : Option<i32>) -> Result<AniRef<'local>, BusinessError> {
     static HTTP_RESPONSE_CACHE_CLASS: &CStr =
-        unsafe { CStr::from_bytes_with_nul_unchecked(b"L@ohos/net/http/http/HttpResponseCacheInner;\0") };
-    static CTOR_SIGNATURE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"J:V\0") };
+        unsafe { CStr::from_bytes_with_nul_unchecked(b"@ohos.net.http.http.HttpResponseCacheInner\0") };
+    static CTOR_SIGNATURE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"l:\0") };
 
     let class = env.find_class(HTTP_RESPONSE_CACHE_CLASS).unwrap();
     let obj = env

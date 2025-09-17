@@ -39,10 +39,10 @@ pub fn create_web_socket_server<'local>(
     info!("Creating WebSocket server instance");
     static WEB_SOCKET_SERVER_CLASS: &CStr = unsafe {
         CStr::from_bytes_with_nul_unchecked(
-            b"L@ohos/net/webSocket/webSocket/WebSocketServerInner;\0",
+            b"@ohos.net.webSocket.webSocket.WebSocketServerInner\0",
         )
     };
-    static CTOR_SIGNATURE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"J:V\0") };
+    static CTOR_SIGNATURE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"l:\0") };
     let ptr = AniServer::new();
     let class = env.find_class(WEB_SOCKET_SERVER_CLASS).unwrap();
     let obj = env

@@ -21,12 +21,12 @@ pub struct Cleaner {
     pub native_ptr: i64,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/HttpRequestInner")]
+#[ani_rs::ani(path = "@ohos.net.http.http.HttpRequestInner")]
 pub struct HttpRequest {
     pub native_ptr: i64,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/AddressFamily")]
+#[ani_rs::ani(path = "@ohos.net.http.http.AddressFamily")]
 #[repr(i32)]
 pub enum AddressFamily {
     Default,
@@ -116,21 +116,21 @@ pub struct HttpRequestOptions<'local> {
     pub address_family: Option<AddressFamily>,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/ServerAuthenticationInner")]
+#[ani_rs::ani(path = "@ohos.net.http.http.ServerAuthenticationInner")]
 #[repr(C)]
 pub struct ServerAuthentication {
     pub credential: Credential,
     pub authentication_type: Option<String>,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/CredentialInner")]
+#[ani_rs::ani(path = "@ohos.net.http.http.CredentialInner")]
 #[repr(C)]
 pub struct Credential {
     pub username: String,
     pub password: String,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/TlsConfigInner")]
+#[ani_rs::ani(path = "@ohos.net.http.http.TlsConfigInner")]
 #[repr(C)]
 pub struct TlsConfig {
     pub tls_version_min: TlsVersion,
@@ -139,7 +139,7 @@ pub struct TlsConfig {
 }
 
 #[allow(non_camel_case_types)]
-#[ani_rs::ani(path = "L@ohos/net/http/http/TlsVersion")]
+#[ani_rs::ani(path = "@ohos.net.http.http.TlsVersion")]
 #[repr(C)]
 pub enum TlsVersion {
     TlsV_1_0 = 4,
@@ -151,7 +151,7 @@ pub enum TlsVersion {
     TlsV_1_3 = 7,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/MultiFormDataInner")]
+#[ani_rs::ani(path = "@ohos.net.http.http.MultiFormDataInner")]
 #[repr(C)]
 pub struct MultiFormData<'local> {
     pub name: String,
@@ -165,7 +165,7 @@ pub struct MultiFormData<'local> {
     pub file_path: Option<String>,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/CertType")]
+#[ani_rs::ani(path = "@ohos.net.http.http.CertType")]
 #[repr(i32)]
 pub enum CertType {
     Pem,
@@ -175,7 +175,7 @@ pub enum CertType {
     P12,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/ClientCertInner")]
+#[ani_rs::ani(path = "@ohos.net.http.http.ClientCertInner")]
 #[repr(C)]
 pub struct ClientCert {
     pub cert_path: String,
@@ -192,7 +192,7 @@ pub struct CertificatePinning {
     //pub hash_algorithm: 'SHA-256',
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/RequestMethod")]
+#[ani_rs::ani(path = "@ohos.net.http.http.RequestMethod")]
 pub enum RequestMethod {
     Options,
 
@@ -226,7 +226,7 @@ impl RequestMethod {
     }
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/ResponseCode")]
+#[ani_rs::ani(path = "@ohos.net.http.http.ResponseCode")]
 #[derive(Clone)]
 pub enum ResponseCode {
     Ok = 200,
@@ -302,7 +302,7 @@ pub enum ResponseCode {
     Version,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/HttpProtocol")]
+#[ani_rs::ani(path = "@ohos.net.http.http.HttpProtocol")]
 #[repr(i32)]
 pub enum HttpProtocol {
     Http1_1,
@@ -323,7 +323,7 @@ impl HttpProtocol {
     }
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/HttpDataType")]
+#[ani_rs::ani(path = "@ohos.net.http.http.HttpDataType")]
 #[derive(Clone)]
 #[repr(i32)]
 pub enum HttpDataType {
@@ -346,12 +346,12 @@ impl HttpDataType {
 
 #[derive(Serialize, Clone)]
 pub enum ResponseCodeOutput {
-    #[serde(rename = "L@ohos/net/http/http/ResponseCode;")]
+    #[serde(rename = "@ohos.net.http.http.ResponseCode")]
     Code(ResponseCode),
     I32(i32),
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/HttpResponseInner", output = "only")]
+#[ani_rs::ani(path = "@ohos.net.http.http.HttpResponseInner", output = "only")]
 pub struct HttpResponse {
     pub result: GlobalRef<AniRef<'static>>,
     pub result_type: HttpDataType,
@@ -380,7 +380,7 @@ impl HttpResponse {
     }
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/PerformanceTimingInner")]
+#[ani_rs::ani(path = "@ohos.net.http.http.PerformanceTimingInner")]
 #[derive(Clone)]
 pub struct PerformanceTiming {
     pub dns_timing: f64,
@@ -429,21 +429,21 @@ impl From<netstack_rs::response::PerformanceInfo> for PerformanceTiming {
     }
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/DataReceiveProgressInfoInner")]
+#[ani_rs::ani(path = "@ohos.net.http.http.DataReceiveProgressInfoInner")]
 #[derive(Clone)]
 pub struct DataReceiveProgressInfo {
     pub receive_size: i32,
     pub total_size: i32,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/DataSendProgressInfoInner")]
+#[ani_rs::ani(path = "@ohos.net.http.http.DataSendProgressInfoInner")]
 #[derive(Clone)]
 pub struct DataSendProgressInfo {
     pub send_size: i32,
     pub total_size: i32,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/HttpResponseCacheInner")]
+#[ani_rs::ani(path = "@ohos.net.http.http.HttpResponseCacheInner")]
 pub struct HttpResponseCache {
     pub native_ptr: i64,
 }
