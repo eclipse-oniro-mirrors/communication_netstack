@@ -414,6 +414,7 @@ private:
      * @return Returns true if the set options are set successfully, false otherwise.
      */
     bool SetMultiPartOption(CURL *handle);
+    bool SetFormDataOption(const HttpMultiFormData &multiFormData, curl_mimepart *part, CURL *curl);
 
     bool ReadResopnseFromCache();
     void WriteResopnseToCache(const HttpClientResponse &response);
@@ -426,6 +427,7 @@ private:
     std::string ParseJsonValueToExtraParam(const std::string &jsonStr);
     void HandleMethodForGet();
     bool GetRequestBody();
+    void ProcessResponseExpectType();
 
     bool SetCallbackFunctions();
     bool SetHttpHeaders();
@@ -453,7 +455,6 @@ private:
     TaskStatus status_;
     unsigned int taskId_;
     curl_slist *curlHeaderList_;
-    curl_mime *curMultiPart_;
     bool canceled_;
 
     std::mutex mutex_;

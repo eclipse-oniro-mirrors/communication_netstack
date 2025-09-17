@@ -85,7 +85,6 @@ void HttpSession::StartTask(const std::shared_ptr<HttpClientTask> &ptr)
         NETSTACK_LOGE("HttpSession::StartTask  shared_ptr = nullptr! Error!");
         return;
     }
-
     static HttpOverCurl::EpollRequestHandler requestHandler;
 
     ptr->SetStatus(TaskStatus::RUNNING);
