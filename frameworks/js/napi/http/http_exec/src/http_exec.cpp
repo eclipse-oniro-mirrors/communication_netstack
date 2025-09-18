@@ -405,6 +405,7 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
     context->SetCurlHeaderList(MakeHeaders(vec));
     if (!SetOption(handle, context, context->GetCurlHeaderList())) {
         NETSTACK_LOGE("set option failed");
+        curl_easy_cleanup(handle);
         return false;
     }
 
@@ -413,6 +414,7 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
 
     if (!AddCurlHandle(handle, context)) {
         NETSTACK_LOGE("add handle failed");
+        curl_easy_cleanup(handle);
         return false;
     }
 
