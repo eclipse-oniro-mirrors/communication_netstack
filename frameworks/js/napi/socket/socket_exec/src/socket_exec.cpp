@@ -799,6 +799,7 @@ static void PollRecvData(sockaddr *addr, socklen_t addrLen, const MessageCallbac
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     int socketfd = manager->GetData()? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
     if (socketfd < 0) {
+        PollRecvFinish(callback);
         NETSTACK_LOGE("fd is nullptr or closed");
         return;
     }
