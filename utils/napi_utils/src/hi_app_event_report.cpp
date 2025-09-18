@@ -27,7 +27,6 @@ namespace NetStack {
 #ifdef ENABLE_EVENT_HANDLER
 const int64_t TIMEOUT = 90;
 const int64_t ROW = 30;
-const int64_t MAXVALUE = 999999;
 const int64_t PROCESSOR_ID_NOT_CREATE = -1;
 static int64_t g_processorID = PROCESSOR_ID_NOT_CREATE;
 #endif
@@ -37,10 +36,7 @@ HiAppEventReport::HiAppEventReport(std::string sdk, std::string api)
 #ifdef ENABLE_EVENT_HANDLER
     apiName_ = api;
     sdkName_ = sdk;
-    std::random_device randSeed;
-    std::mt19937 gen(randSeed());
-    std::uniform_int_distribution<> dis(0, MAXVALUE);
-    transId_ = std::string("transId_") + std::to_string(dis(gen));
+    transId_ = std::string("transId_") + std::to_string(std::rand());
 
     beginTime_ = OHOS::MiscServices::TimeServiceClient::GetInstance()->GetBootTimeMs();
     if (g_processorID == PROCESSOR_ID_NOT_CREATE) {
