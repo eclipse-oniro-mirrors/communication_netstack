@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use ani_rs::business_error::BusinessError;
+use ani_rs::{business_error::BusinessError, global::GlobalRef, objects::{AniObject, AniRef}};
 use netstack_rs::error::HttpClientError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -26,7 +26,8 @@ pub struct HttpRequest {
     pub native_ptr: i64,
 }
 
-#[ani_rs::ani]
+#[ani_rs::ani(path = "L@ohos/net/http/http/AddressFamily")]
+#[repr(i32)]
 pub enum AddressFamily {
     Default,
 
@@ -35,24 +36,43 @@ pub enum AddressFamily {
     OnlyV6,
 }
 
-#[derive(Serialize, Deserialize)]
-pub enum Data<'a> {
-    S(String),
-    Record(HashMap<String, String>),
-    ArrayBuffer(&'a [u8]),
+impl AddressFamily {
+    pub fn to_i32(&self) -> i32 {
+        match self {
+            AddressFamily::Default => 0,
+            AddressFamily::OnlyV4 => 1,
+            AddressFamily::OnlyV6 => 2,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[repr(C)]
+pub enum Data {
+    S(String)
 }
 
 #[derive(Serialize, Deserialize)]
+#[repr(i32)]
 pub enum UsingProxy {
     Boolean(bool),
     // HttpProxy
 }
 
+impl UsingProxy {
+    pub fn to_i32(&self) -> i32 {
+        match self {
+            UsingProxy::Boolean(false) => 0,
+            UsingProxy::Boolean(true) => 1,
+        }
+    }
+}
+
 #[ani_rs::ani]
-pub struct HttpRequestOptions<'a> {
+pub struct HttpRequestOptions<'local> {
     pub method: Option<RequestMethod>,
 
-    pub extra_data: Option<Data<'a>>,
+    pub extra_data: Option<AniObject<'local>>,
 
     pub expect_data_type: Option<HttpDataType>,
 
@@ -84,31 +104,34 @@ pub struct HttpRequestOptions<'a> {
 
     pub max_limit: Option<i32>,
 
-    #[serde(borrow)]
-    pub multi_form_data_list: Option<Vec<MultiFormData<'a>>>,
+    pub multi_form_data_list: Option<Vec<MultiFormData<'local>>>,
 
     // certificate_pinning:Option< CertificatePinning | CertificatePinning[]>,
     pub remote_validation: Option<String>,
 
-    pub tls_options: Option<String>,
+    pub tls_options: Option<AniObject<'local>>,
 
     pub server_authentication: Option<ServerAuthentication>,
 
     pub address_family: Option<AddressFamily>,
 }
 
-#[ani_rs::ani]
+#[ani_rs::ani(path = "L@ohos/net/http/http/ServerAuthenticationInner")]
+#[repr(C)]
 pub struct ServerAuthentication {
     pub credential: Credential,
     pub authentication_type: Option<String>,
 }
 
-#[ani_rs::ani]
+#[ani_rs::ani(path = "L@ohos/net/http/http/CredentialInner")]
+#[repr(C)]
 pub struct Credential {
     pub username: String,
     pub password: String,
 }
 
+#[ani_rs::ani(path = "L@ohos/net/http/http/TlsConfigInner")]
+#[repr(C)]
 pub struct TlsConfig {
     pub tls_version_min: TlsVersion,
     pub tls_version_max: TlsVersion,
@@ -116,7 +139,8 @@ pub struct TlsConfig {
 }
 
 #[allow(non_camel_case_types)]
-#[ani_rs::ani]
+#[ani_rs::ani(path = "L@ohos/net/http/http/TlsVersion")]
+#[repr(C)]
 pub enum TlsVersion {
     TlsV_1_0 = 4,
 
@@ -127,21 +151,22 @@ pub enum TlsVersion {
     TlsV_1_3 = 7,
 }
 
-#[ani_rs::ani]
-pub struct MultiFormData<'a> {
+#[ani_rs::ani(path = "L@ohos/net/http/http/MultiFormDataInner")]
+#[repr(C)]
+pub struct MultiFormData<'local> {
     pub name: String,
 
     pub content_type: String,
 
     pub remote_file_name: Option<String>,
 
-    #[serde(borrow)]
-    pub data: Option<Data<'a>>,
+    pub data: Option<AniObject<'local>>,
 
     pub file_path: Option<String>,
 }
 
 #[ani_rs::ani(path = "L@ohos/net/http/http/CertType")]
+#[repr(i32)]
 pub enum CertType {
     Pem,
 
@@ -150,7 +175,8 @@ pub enum CertType {
     P12,
 }
 
-#[ani_rs::ani]
+#[ani_rs::ani(path = "L@ohos/net/http/http/ClientCertInner")]
+#[repr(C)]
 pub struct ClientCert {
     pub cert_path: String,
 
@@ -201,6 +227,7 @@ impl RequestMethod {
 }
 
 #[ani_rs::ani(path = "L@ohos/net/http/http/ResponseCode")]
+#[derive(Clone)]
 pub enum ResponseCode {
     Ok = 200,
 
@@ -297,6 +324,8 @@ impl HttpProtocol {
 }
 
 #[ani_rs::ani(path = "L@ohos/net/http/http/HttpDataType")]
+#[derive(Clone)]
+#[repr(i32)]
 pub enum HttpDataType {
     String,
 
@@ -305,7 +334,17 @@ pub enum HttpDataType {
     ArrayBuffer = 2,
 }
 
-#[derive(Serialize)]
+impl HttpDataType {
+    pub fn to_i32(&self) -> i32 {
+        match self {
+            HttpDataType::String => 0,
+            HttpDataType::Object => 1,
+            HttpDataType::ArrayBuffer => 2,
+        }
+    }
+}
+
+#[derive(Serialize, Clone)]
 pub enum ResponseCodeOutput {
     #[serde(rename = "L@ohos/net/http/http/ResponseCode;")]
     Code(ResponseCode),
@@ -314,7 +353,7 @@ pub enum ResponseCodeOutput {
 
 #[ani_rs::ani(path = "L@ohos/net/http/http/HttpResponseInner", output = "only")]
 pub struct HttpResponse {
-    pub result: String,
+    pub result: GlobalRef<AniRef<'static>>,
     pub result_type: HttpDataType,
     pub response_code: ResponseCodeOutput,
     pub header: HashMap<String, String>,
@@ -322,7 +361,27 @@ pub struct HttpResponse {
     pub performance_timing: PerformanceTiming,
 }
 
+impl HttpResponse {
+    pub fn new(
+        result: GlobalRef<AniRef<'static>>,
+        result_type: HttpDataType,
+        code: i32,
+        header: HashMap<String, String>,
+        cookies: String,
+        performance_timing: PerformanceTiming) -> Self {
+        Self {
+            result,
+            result_type,
+            response_code: ResponseCodeOutput::I32(code),
+            header,
+            cookies,
+            performance_timing,
+        }
+    }
+}
+
 #[ani_rs::ani(path = "L@ohos/net/http/http/PerformanceTimingInner")]
+#[derive(Clone)]
 pub struct PerformanceTiming {
     pub dns_timing: f64,
     pub tcp_timing: f64,
@@ -370,13 +429,15 @@ impl From<netstack_rs::response::PerformanceInfo> for PerformanceTiming {
     }
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/HttpResponse")]
+#[ani_rs::ani(path = "L@ohos/net/http/http/DataReceiveProgressInfoInner")]
+#[derive(Clone)]
 pub struct DataReceiveProgressInfo {
     pub receive_size: i32,
     pub total_size: i32,
 }
 
-#[ani_rs::ani(path = "L@ohos/net/http/http/HttpResponse")]
+#[ani_rs::ani(path = "L@ohos/net/http/http/DataSendProgressInfoInner")]
+#[derive(Clone)]
 pub struct DataSendProgressInfo {
     pub send_size: i32,
     pub total_size: i32,
@@ -391,4 +452,34 @@ pub fn convert_to_business_error(client_error: &HttpClientError) -> BusinessErro
     let error_code = client_error.code() as i32;
     let msg = client_error.msg().to_string();
     BusinessError::new(error_code, msg)
+}
+
+impl From<ClientCert> for netstack_rs::request::ClientCert {
+    fn from(cert: ClientCert) -> Self {
+        unsafe { std::mem::transmute(cert) }
+    }
+}
+
+impl From<ServerAuthentication> for netstack_rs::request::ServerAuthentication {
+    fn from(auth: ServerAuthentication) -> Self {
+        unsafe { std::mem::transmute(auth) }
+    }
+}
+
+impl From<CertType> for netstack_rs::request::CertType {
+    fn from(ct: CertType) -> Self {
+        unsafe { std::mem::transmute(ct) }
+    }
+}
+
+impl From<TlsVersion> for netstack_rs::request::TlsVersion {
+    fn from(version: TlsVersion) -> Self {
+        unsafe { std::mem::transmute(version) }
+    }
+}
+
+impl From<TlsConfig> for netstack_rs::request::TlsConfig {
+    fn from(config: TlsConfig) -> Self {
+        unsafe { std::mem::transmute(config) }
+    }
 }

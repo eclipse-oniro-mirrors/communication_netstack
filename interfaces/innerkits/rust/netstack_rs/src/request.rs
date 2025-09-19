@@ -12,12 +12,28 @@
 // limitations under the License.
 
 use cxx::{let_cxx_string, UniquePtr};
+use std::collections::HashMap;
 
 use crate::error::HttpClientError;
 use crate::response::Response;
 use crate::task::RequestTask;
 use crate::wrapper;
-use crate::wrapper::ffi::{HttpClientRequest, NewHttpClientRequest, SetBody, SetHttpProtocol};
+use crate::wrapper::ffi::{
+    HttpClientRequest,
+    NewHttpClientRequest,
+    SetBody,
+    SetHttpProtocol,
+    SetHttpUsingProxy,
+    SetAddressFamily,
+    SetExtraData,
+    SetExpectDataType,
+    SetClientCert,
+    SetDNSServers,
+    AddMultiFormData,
+    SetServerAuthentication,
+    SetTLSOptions,
+};
+
 /// Builder for creating a Request.
 pub struct Request<C: RequestCallback + 'static> {
     inner: UniquePtr<HttpClientRequest>,
@@ -85,6 +101,105 @@ impl<C: RequestCallback> Request<C> {
         self
     }
 
+    /// Set a proxy for the request.
+    pub fn using_proxy(&mut self, proxy: i32) -> &mut Self {
+        SetHttpUsingProxy(self.inner.pin_mut(), proxy);
+        self
+    }
+    
+    /// Set a proxy for the request.
+    pub fn max_limit(&mut self, max_limit: u32) -> &mut Self {
+        self.inner.pin_mut().SetMaxLimit(max_limit);
+        self
+    }
+
+    /// Set a ca_path for the request.
+    pub fn ca_path(&mut self, path: &str) -> &mut Self {
+        let_cxx_string!(path = path);
+        self.inner.pin_mut().SetCaPath(&path);
+        self
+    }
+    
+    /// Set a resume_from for the request.
+    pub fn resume_from(&mut self, num: i32) -> &mut Self {
+        self.inner.pin_mut().SetResumeFrom(num as i64);
+        self
+    }
+    
+    /// Set a resume_to for the request.
+    pub fn resume_to(&mut self, num: i32) -> &mut Self {
+        self.inner.pin_mut().SetResumeTo(num as i64);
+        self
+    }
+    
+    /// Set a address_family for the request.
+    pub fn address_family(&mut self, family: i32) -> &mut Self {
+        SetAddressFamily(self.inner.pin_mut(), family);
+        self
+    }
+
+    /// Set a extra_data for the request.
+    pub fn extra_data(&mut self, extra_data: EscapedData) -> &mut Self {
+        SetExtraData(self.inner.pin_mut(), &extra_data.into());
+        self
+    }
+
+    /// Set a expect_data_type for the request.
+    pub fn expect_data_type(&mut self, expect_data_type: i32) -> &mut Self {
+        SetExpectDataType(self.inner.pin_mut(), expect_data_type);
+        self
+    }
+
+    /// Set a using_cache for the request.
+    pub fn using_cache(&mut self, using_cache: bool) -> &mut Self {        
+        self.inner.pin_mut().SetUsingCache(using_cache);
+        self
+    }
+
+    /// Set a client_cert for the request.
+    pub fn client_cert(&mut self, client_cert: ClientCert) -> &mut Self {        
+        SetClientCert(self.inner.pin_mut(), &client_cert.into());
+        self
+    }
+
+    /// Set a dns_over_https for the request.
+    pub fn dns_over_https(&mut self, dns_over_https: &str) -> &mut Self {
+        let_cxx_string!(dns_over_https = dns_over_https);
+        self.inner.pin_mut().SetDNSOverHttps(&dns_over_https);
+        self
+    }
+
+    /// Set a dns_servers for the request.
+    pub fn dns_servers(&mut self, dns_servers: Vec<String>) -> &mut Self {        
+        SetDNSServers(self.inner.pin_mut(), &dns_servers);
+        self
+    }
+       
+    /// add a multi_form_data to the multi_form_data_list for the request.
+    pub fn add_multi_form_data(&mut self, multi_form_data: MultiFormData) -> &mut Self {
+        AddMultiFormData(self.inner.pin_mut(), &multi_form_data.into());
+        self
+    }
+
+    /// Set a remote_validation for the request.
+    pub fn remote_validation(&mut self, remote_validation: &str) -> &mut Self {
+        let_cxx_string!(remote_validation = remote_validation);
+        self.inner.pin_mut().SetRemoteValidation(&remote_validation);
+        self
+    }
+
+    /// Set a tls_options for the request.
+    pub fn tls_options(&mut self, tls_options: TlsConfig) -> &mut Self {
+        SetTLSOptions(self.inner.pin_mut(), &tls_options.into());
+        self
+    }
+
+    /// Set a server_authentication for the request.
+    pub fn server_authentication(&mut self, server_authentication: ServerAuthentication) -> &mut Self {        
+        SetServerAuthentication(self.inner.pin_mut(), &server_authentication.into());
+        self
+    }
+
     /// Set a callback for the request.
     pub fn callback(&mut self, callback: C) -> &mut Self {
         self.callback = Some(callback);
@@ -105,17 +220,21 @@ impl<C: RequestCallback> Request<C> {
 #[allow(unused_variables)]
 pub trait RequestCallback {
     /// Called when the request is successful.
-    fn on_success(&mut self, response: Response) {}
+    fn on_success(&mut self, response: Response, is_request_in_stream: bool) {}
     /// Called when the request fails.
-    fn on_fail(&mut self, response: Response, error: HttpClientError) {}
+    fn on_fail(&mut self, response: Response, error: HttpClientError, is_request_in_stream: bool) {}
     /// Called when the request is canceled.
-    fn on_cancel(&mut self, response: Response) {}
+    fn on_cancel(&mut self, response: Response, is_request_in_stream: bool) {}
     /// Called when data is received.
     fn on_data_receive(&mut self, data: &[u8], task: RequestTask) {}
     /// Called when progress is made.
     fn on_progress(&mut self, dl_total: u64, dl_now: u64, ul_total: u64, ul_now: u64) {}
     /// Called when the task is restarted.
     fn on_restart(&mut self) {}
+    /// Called when header is received.
+    fn on_header_receive(&mut self, header: String) {}
+    /// Called when headers is received.
+    fn on_headers_receive(&mut self, headers: HashMap<String, String>) {}
 }
 
 impl<C: RequestCallback> Default for Request<C> {
@@ -126,4 +245,98 @@ impl<C: RequestCallback> Default for Request<C> {
 
 pub fn has_internet_permission() -> bool {
     wrapper::ffi::HasInternetPermission()
+}
+
+pub fn run_cache(capacity: Option<i32>) {
+    match capacity {
+        Some(value) => {
+            if value >= 0 {
+                wrapper::ffi::RunCacheWithSize(value as usize);
+            } else {
+                wrapper::ffi::RunCache();
+            }
+        }
+        None => {
+            wrapper::ffi::RunCache();
+        }
+    }
+}
+
+pub fn flush_cache() {
+    wrapper::ffi::FlushCache();
+}
+
+pub fn delete_cache() {
+    wrapper::ffi::StopCacheAndDelete();
+}
+#[repr(i32)]
+pub enum CertType {
+    Pem,
+    Der,
+    P12,
+}
+
+#[repr(C)]
+pub struct ClientCert {
+    pub cert_path: String,
+    pub cert_type: Option<CertType>,
+    pub key_path: String,
+    pub key_password: Option<String>,
+}
+
+#[derive(Clone, Default)]
+#[repr(C)]
+pub struct EscapedData {
+    // Benchmark HttpDataType. StringType is 0, ObjectType is 1, ArrayBuffer is 2.
+    pub data_type: u32,
+    pub data: String,
+}
+
+impl EscapedData {
+    pub fn new() -> Self {
+        Self {
+            data_type: 0,
+            data: String::new(),
+        }
+    }
+}
+
+#[repr(C)]
+pub struct MultiFormData {
+    pub name: String,
+    pub content_type: String,
+    pub remote_file_name: String,
+    pub data: String,
+    pub file_path: String,
+}
+
+#[repr(C)]
+pub struct ServerAuthentication {
+    pub credential: Credential,
+    pub authentication_type: Option<String>,
+}
+
+#[repr(C)]
+pub struct Credential {
+    pub username: String,
+    pub password: String,
+}
+
+#[repr(C)]
+pub struct TlsConfig {
+    pub tls_version_min: TlsVersion,
+    pub tls_version_max: TlsVersion,
+    pub cipher_suites: Option<Vec<String>>,
+}
+
+#[allow(non_camel_case_types)]
+#[repr(C)]
+pub enum TlsVersion {
+    TlsV_1_0 = 4,
+
+    TlsV_1_1 = 5,
+
+    TlsV_1_2 = 6,
+
+    TlsV_1_3 = 7,
 }
