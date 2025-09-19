@@ -40,7 +40,6 @@ ohos_static_library("network_security_ani_static") {
   deps = [
     ":network_security_ani_cxx",
     "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
-    "//third_party/rust/crates/cxx:cxx_cppdeps",
   ]
   external_deps = [
     "c_utils:utils",
@@ -48,6 +47,7 @@ ohos_static_library("network_security_ani_static") {
     "ipc:ipc_core",
     "netmanager_base:net_conn_manager_if",
     "netmanager_base:net_security_config_if",
+    "rust_cxx:cxx_cppdeps",
   ]
 
   part_name = "netstack"
@@ -69,11 +69,11 @@ ohos_rust_shared_library("network_security_ani") {
     "runtime_core:ani",
     "hilog:hilog_rust",
     "netmanager_base:ani_rs",
+    "rust_cxx:lib"
   ]
   deps = [
     ":network_security_ani_static",
     "../common:netstack_common",
-    "//third_party/rust/crates/cxx:lib",
     "//third_party/rust/crates/serde/serde:lib"
   ]
   clippy_lints = "none"

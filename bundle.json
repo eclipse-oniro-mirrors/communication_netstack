@@ -61,7 +61,8 @@
                 "hiappevent",
                 "bundle_framework",
                 "safwk",
-                "runtime_core"
+                "runtime_core",
+                "rust_cxx"
             ]
         },
         "build": {

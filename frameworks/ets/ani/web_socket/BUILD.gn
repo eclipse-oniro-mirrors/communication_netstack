@@ -41,7 +41,6 @@ ohos_static_library("websocket_ani_static") {
   
   deps = [
     ":websocket_ani_cxx",
-    "//third_party/rust/crates/cxx:cxx_cppdeps",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$NETSTACK_INNERKITS_DIR/websocket_client:websocket_client"
   ]
@@ -50,6 +49,7 @@ ohos_static_library("websocket_ani_static") {
     "hilog:libhilog",
     "ipc:ipc_core",
     "netmanager_base:net_conn_manager_if",
+    "rust_cxx:cxx_cppdeps",
   ]
 
   part_name = "netstack"
@@ -71,11 +71,11 @@ ohos_rust_shared_library("websocket_ani") {
     "runtime_core:ani",
     "hilog:hilog_rust",
     "netmanager_base:ani_rs",
+    "rust_cxx:lib"
   ]
   deps = [
     "../common:netstack_common",
     ":websocket_ani_static",
-    "//third_party/rust/crates/cxx:lib",
     "//third_party/rust/crates/serde/serde:lib"
   ]
   clippy_lints = "none"

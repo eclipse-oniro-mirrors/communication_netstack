@@ -39,9 +39,12 @@ ohos_static_library("netstack_rs_cxx") {
 
   deps = [
     ":netstack_rs_cxx_gen",
-    "//third_party/rust/crates/cxx:cxx_cppdeps",
     "$NETSTACK_INNERKITS_DIR/http_client:http_client",
     "$NETSTACK_DIR/utils:stack_utils_common",
+  ]
+
+  external_deps = [
+    "rust_cxx:cxx_cppdeps",
   ]
 
   part_name = "netstack"
@@ -64,11 +67,11 @@ ohos_rust_shared_library("netstack_rs") {
     ":netstack_rs_cxx",
     "../ffrt_rs:ffrt_rs",
     "$NETSTACK_DIR/frameworks/ets/ani/common:netstack_common",
-    "//third_party/rust/crates/cxx:lib",
   ]
 
   external_deps = [
     "hilog:hilog_rust",
+    "rust_cxx:lib"
   ]
 
   part_name = "netstack"
