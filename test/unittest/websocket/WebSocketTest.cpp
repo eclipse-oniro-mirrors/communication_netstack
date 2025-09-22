@@ -112,7 +112,7 @@ HWTEST_F(WebSocketTest, WebSocketTest007, TestSize.Level1)
     std::string myProtocol = "my-protocol";
     context.SetProtocol(myProtocol);
     std::string getMyProtocol = context.GetProtocol();
-    bool ret = WebSocketExec::ExecConnect(&context);
+    WebSocketExec::ExecConnect(&context);
     EXPECT_EQ(getMyProtocol, "my-protocol");
 }
 
@@ -132,7 +132,7 @@ HWTEST_F(WebSocketTest, WebSocketTest008, TestSize.Level1)
     uint32_t getPort;
     std::string getExclusions;
     context.GetSpecifiedWebsocketProxy(getHost, getPort, getExclusions);
-    bool ret = WebSocketExec::ExecConnect(&context);
+    WebSocketExec::ExecConnect(&context);
     EXPECT_EQ(getHost, "192.168.147.60");
     EXPECT_EQ(getPort, 8888);
     EXPECT_EQ(getExclusions, "www.httpbin.org");
