@@ -26,6 +26,8 @@ constexpr const char *const METHOD_HEAD = "HEAD";
 constexpr const char *const METHOD_OPTIONS = "OPTIONS";
 constexpr const char *const METHOD_TRACE = "TRACE";
 constexpr const long TIMEOUT_IMMEDIATE_NS = 1000;
+constexpr const int32_t UNINIT_RET_INITIAL = -1;
+constexpr const int32_t UNINIT_SUCCESS_CODE = 0;
 
 HttpHandoverHandler::HttpHandoverHandler()
     : handOverEvent_(std::make_unique<ManualResetEvent>(true)),
@@ -166,10 +168,11 @@ bool HttpHandoverHandler::Initialize()
 HttpHandoverHandler::~HttpHandoverHandler()
 {
     NETSTACK_LOGD("start httpHandoverUninit_");
+    int32_t ret = UNINIT_RET_INITIAL;
     if (httpHandoverManager_ != nullptr) {  // LCOV_EXCL_LINE
-        httpHandoverUninit_(httpHandoverManager_);
+        ret = httpHandoverUninit_(httpHandoverManager_);
     }
-    if (netHandoverHandler_ != nullptr) {  // LCOV_EXCL_LINE
+    if (netHandoverHandler_ != nullptr && ret == UNINIT_SUCCESS_CODE) {  // LCOV_EXCL_LINE
         dlclose(netHandoverHandler_);
     }
     httpHandoverManager_ = nullptr;
