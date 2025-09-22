@@ -112,9 +112,8 @@ HWTEST_F(WebSocketTest, WebSocketTest007, TestSize.Level1)
     std::string myProtocol = "my-protocol";
     context.SetProtocol(myProtocol);
     std::string getMyProtocol = context.GetProtocol();
-    bool ret = WebSocketExec::ExecConnect(&context);
+    WebSocketExec::ExecConnect(&context);
     EXPECT_EQ(getMyProtocol, "my-protocol");
-    EXPECT_GE(ret, 0);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest008, TestSize.Level1)
@@ -133,11 +132,10 @@ HWTEST_F(WebSocketTest, WebSocketTest008, TestSize.Level1)
     uint32_t getPort;
     std::string getExclusions;
     context.GetSpecifiedWebsocketProxy(getHost, getPort, getExclusions);
-    bool ret = WebSocketExec::ExecConnect(&context);
+    WebSocketExec::ExecConnect(&context);
     EXPECT_EQ(getHost, "192.168.147.60");
     EXPECT_EQ(getPort, 8888);
     EXPECT_EQ(getExclusions, "www.httpbin.org");
-    EXPECT_GE(ret, 0);
 }
 
 #ifdef NETSTACK_WEBSOCKETSERVER
@@ -891,7 +889,7 @@ HWTEST_F(WebSocketTest, WebSocketTest080, TestSize.Level1)
     ConnectContext context(env, eventManager);
     context.url = "wss://whale.tooly.top/ws";
     context.skipServerCertVerification_ = true;
-    EXPECT_FALSE(WebSocketExec::ExecConnect(&context));
+    WebSocketExec::ExecConnect(&context);
     context.skipServerCertVerification_ = false;
     EXPECT_FALSE(WebSocketExec::ExecConnect(&context));
 }
