@@ -16,10 +16,15 @@
 #include "wrapper.h"
 
 #include <memory>
-
+#include <sstream>
+#include "cJSON.h"
 #include "http_client_error.h"
 #include "wrapper.rs.h"
 #include "http_client_request.h"
+#include "http_client_constant.h"
+#include "netstack_common_utils.h"
+#include "netstack_log.h"
+
 namespace OHOS::Request {
 using namespace OHOS::NetStack::HttpClient;
 static const int32_t ADDRESS_FAMILY_DEFAULT = 0;
@@ -235,5 +240,98 @@ void SetTLSOptions(HttpClientRequest &request, const TlsConfigRust &tls_options)
         }
     }
     request.SetTLSOptions(tlsOption);
+}
+
+void SetUsingHttpProxyType(HttpClientRequest &request, int32_t type)
+{
+    if (type < HttpProxyType::NOT_USE || type > HttpProxyType::PROXY_TYPE_MAX) {
+        return;
+    }
+    request.SetHttpProxyType(static_cast<HttpProxyType>(type));
+}
+
+void SetSpecifiedHttpProxy(HttpClientRequest &request, const HttpProxyRust& proxy)
+{
+    HttpProxy nativeValue;
+    nativeValue.host = std::string(proxy.host.data(), proxy.host.size());
+    nativeValue.port = proxy.port;
+    nativeValue.exclusions = std::string(proxy.exclusions.data(), proxy.exclusions.size());
+    request.SetHttpProxy(nativeValue);
+}
+
+std::string GetJsonFieldValue(const cJSON* item)
+{
+    std::string result;
+    if (item == nullptr) {
+        return result;
+    }
+    std::stringstream ss;
+    switch (item->type) {
+        case cJSON_String:
+            ss << item->valuestring;
+            break;
+        case cJSON_Number:
+            ss << item->valuedouble;
+            break;
+        case cJSON_True:
+            ss << "true";
+            break;
+        case cJSON_False:
+            ss << "false";
+            break;
+        case cJSON_NULL:
+            ss << "null";
+            break;
+        default:
+            NETSTACK_LOGE("unknown type");
+    }
+    result = ss.str();
+    return result;
+}
+
+void ParseHeaderItems(const cJSON *item, HttpClientRequest &request)
+{
+    if (item == nullptr) {
+        return;
+    }
+    if (item->type == cJSON_Object) {
+        cJSON *child = item->child;
+        while (child != nullptr) {
+            if (child->type == cJSON_Object || child->type == cJSON_Array) {
+                ParseHeaderItems(child, request);
+            }
+            std::string key(child->string);
+            std::string value = GetJsonFieldValue(child);
+            if (!key.empty() && !value.empty()) {
+                request.SetHeader(NetStack::CommonUtils::ToLower(key), value);
+            }
+            child = child->next;
+        }
+    } else if (item->type == cJSON_Array) {
+        auto size = cJSON_GetArraySize(item);
+        for (int i = 0; i < size; ++i) {
+            cJSON *arrayItem = cJSON_GetArrayItem(item, i);
+            ParseHeaderItems(arrayItem, request);
+        }
+    }
+}
+
+void SetHeaderExt(HttpClientRequest &request, const EscapedDataRust& headersObj)
+{
+    if (request.MethodForPost(request.GetMethod())) {
+        request.SetHeader(NetStack::CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE),
+            HttpConstant::HTTP_CONTENT_TYPE_JSON);
+    }
+    if (headersObj.data_type != HttpDataType::OBJECT) {
+        return;
+    }
+    auto jsonStr = std::string(headersObj.data.data(), headersObj.data.size());
+    cJSON *root = cJSON_Parse(jsonStr.c_str());
+    if (root == nullptr) {
+        NETSTACK_LOGE("json parse failed");
+        return;
+    }
+    ParseHeaderItems(root, request);
+    cJSON_Delete(root);
 }
 } // namespace OHOS::Request

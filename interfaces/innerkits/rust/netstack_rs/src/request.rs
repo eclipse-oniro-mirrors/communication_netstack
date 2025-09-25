@@ -23,7 +23,8 @@ use crate::wrapper::ffi::{
     NewHttpClientRequest,
     SetBody,
     SetHttpProtocol,
-    SetHttpUsingProxy,
+    SetUsingHttpProxyType,
+    SetSpecifiedHttpProxy,
     SetAddressFamily,
     SetExtraData,
     SetExpectDataType,
@@ -32,6 +33,7 @@ use crate::wrapper::ffi::{
     AddMultiFormData,
     SetServerAuthentication,
     SetTLSOptions,
+    SetHeaderExt,
 };
 
 /// Builder for creating a Request.
@@ -71,6 +73,10 @@ impl<C: RequestCallback> Request<C> {
         self
     }
 
+    pub fn header_ext(&mut self, extra_data: EscapedData) -> &mut Self {
+        SetHeaderExt(self.inner.pin_mut(), &extra_data.into());
+        self
+    }
     /// Set the body for the request.
     pub fn body(&mut self, body: &[u8]) -> &mut Self {
         unsafe { SetBody(self.inner.pin_mut(), body.as_ptr(), body.len()) };
@@ -101,13 +107,19 @@ impl<C: RequestCallback> Request<C> {
         self
     }
 
-    /// Set a proxy for the request.
-    pub fn using_proxy(&mut self, proxy: i32) -> &mut Self {
-        SetHttpUsingProxy(self.inner.pin_mut(), proxy);
+    /// Set a proxy type for the request.
+    pub fn using_proxy_type(&mut self, proxy_type: i32) -> &mut Self {
+        SetUsingHttpProxyType(self.inner.pin_mut(), proxy_type);
         self
     }
-    
-    /// Set a proxy for the request.
+
+    /// Set a specified http proxy for the request.
+    pub fn specified_proxy(&mut self, proxy: HttpProxy) -> &mut Self {
+        SetSpecifiedHttpProxy(self.inner.pin_mut(), &proxy.into());
+        self
+    }
+
+    /// Set a max limit for the request.
     pub fn max_limit(&mut self, max_limit: u32) -> &mut Self {
         self.inner.pin_mut().SetMaxLimit(max_limit);
         self
@@ -151,7 +163,7 @@ impl<C: RequestCallback> Request<C> {
     }
 
     /// Set a using_cache for the request.
-    pub fn using_cache(&mut self, using_cache: bool) -> &mut Self {        
+    pub fn using_cache(&mut self, using_cache: bool) -> &mut Self {
         self.inner.pin_mut().SetUsingCache(using_cache);
         self
     }
@@ -339,4 +351,33 @@ pub enum TlsVersion {
     TlsV_1_2 = 6,
 
     TlsV_1_3 = 7,
+}
+
+#[allow(non_camel_case_types)]
+#[repr(C)]
+pub enum HttpProxyType {
+    NOT_USE = 0,
+
+    USE_SPECIFIED,
+
+    PROXY_TYPE_MAX,
+}
+
+impl HttpProxyType {
+    pub fn to_i32(&self) -> i32 {
+        match self {
+            HttpProxyType::NOT_USE => 0,
+            HttpProxyType::USE_SPECIFIED => 1,
+            HttpProxyType::PROXY_TYPE_MAX => 2,
+        }
+    }
+}
+
+#[repr(C)]
+pub struct HttpProxy {
+    pub host: String,
+
+    pub port: i32,
+
+    pub exclusions: String,
 }

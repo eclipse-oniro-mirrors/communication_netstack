@@ -1253,7 +1253,6 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
     ProcessCookie(curlHandle_);
     response_.ParseHeaders();
     ProcessResponseExpectType();
-    WriteResopnseToCache(response_);
     if (ProcessResponseCode()) {
         if (onSucceeded_) {
             onSucceeded_(request_, response_);
@@ -1261,6 +1260,7 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
     } else if (onFailed_) {
         onFailed_(request_, response_, error_);
     }
+    WriteResopnseToCache(response_);
 #if HAS_NETMANAGER_BASE
     HttpClientNetworkMessage httpClientNetworkMessage(std::to_string(GetTaskId()), request_, response_, curlHandle_);
     networkProfilerUtils_->NetworkProfiling(httpClientNetworkMessage);
@@ -1335,8 +1335,10 @@ bool HttpClientTask::ProcessUsingCache()
     if (!ReadResopnseFromCache()) {
         return false;
     }
-    if (onSucceeded_) {
-        onSucceeded_(request_, response_);
+    if (response_.GetResponseCode() == OK) {
+        if (onSucceeded_) {
+            onSucceeded_(request_, response_);
+        }
     } else if (onFailed_) {
         onFailed_(request_, response_, error_);
     }

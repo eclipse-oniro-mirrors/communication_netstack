@@ -32,6 +32,7 @@ struct EscapedDataRust;
 struct MultiFormDataRust;
 struct ServerAuthentication;
 struct TlsConfigRust;
+struct HttpProxyRust;
 
 void OnCallback(const std::shared_ptr<HttpClientTask> &task, rust::Box<CallbackWrapper> callback);
 
@@ -50,11 +51,8 @@ inline void SetHttpProtocol(HttpClientRequest &request, int32_t protocol)
     request.SetHttpProtocol(static_cast<HttpProtocol>(protocol));
 }
 
-inline void SetHttpUsingProxy(HttpClientRequest &request, int32_t proxy)
-{
-    request.SetHttpProxyType(static_cast<HttpProxyType>(proxy));
-}
-
+void SetUsingHttpProxyType(HttpClientRequest &request, int32_t type);
+void SetSpecifiedHttpProxy(HttpClientRequest &request, const HttpProxyRust& proxy);
 void SetAddressFamily(HttpClientRequest &request, int32_t address_family);
 void SetExtraData(HttpClientRequest &request, const EscapedDataRust& extraData);
 void SetExpectDataType(HttpClientRequest &request, int32_t expect_data_type);
@@ -78,6 +76,8 @@ inline std::shared_ptr<HttpClientTask> NewHttpClientTask(const HttpClientRequest
 rust::vec<rust::string> GetHeaders(HttpClientResponse &response);
 
 PerformanceInfoRust GetPerformanceTiming(HttpClientResponse &response);
+
+void SetHeaderExt(HttpClientRequest &request, const EscapedDataRust& extraData);
 
 } // namespace OHOS::Request
 
