@@ -167,6 +167,8 @@ public:
     static const char *const HTTP_PROXY_KEY_PORT;
     static const char *const HTTP_PROXY_KEY_EXCLUSION_LIST;
     static const char *const HTTP_PROXY_EXCLUSIONS_SEPARATOR;
+    static const char *const HTTP_PROXY_KEY_USERNAME;
+    static const char *const HTTP_PROXY_KEY_PASSWORD;
 
     static const char *const HTTP_CLIENT_CERT;
     static const char *const HTTP_CLIENT_CERT_TYPE;

@@ -181,7 +181,8 @@ public:
 
     void SetUsingHttpProxyType(UsingHttpProxyType type);
 
-    void SetSpecifiedHttpProxy(const std::string &host, int32_t port, const std::string &exclusionList);
+    void SetSpecifiedHttpProxy(const std::string &host, int32_t port, const std::string &exclusionList,
+        const NapiUtils::SecureData &userName, const NapiUtils::SecureData &password);
 
     void SetCaPath(const std::string &SetCaPath);
 
@@ -235,7 +236,8 @@ public:
 
     [[nodiscard]] UsingHttpProxyType GetUsingHttpProxyType() const;
 
-    void GetSpecifiedHttpProxy(std::string &host, int32_t &port, std::string &exclusionList);
+    void GetSpecifiedHttpProxy(std::string &host, int32_t &port, std::string &exclusionList,
+        NapiUtils::SecureData &username, NapiUtils::SecureData &password);
 
     [[nodiscard]] const std::string &GetCaPath() const;
 
@@ -298,6 +300,10 @@ private:
     int32_t httpProxyPort_;
 
     std::string httpProxyExclusions_;
+
+    NapiUtils::SecureData httpProxyUsername_;
+
+    NapiUtils::SecureData httpProxyPassword_;
 
     std::string caPath_;
 

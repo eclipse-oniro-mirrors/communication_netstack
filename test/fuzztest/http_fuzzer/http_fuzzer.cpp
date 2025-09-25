@@ -189,7 +189,11 @@ void SetSpecifiedHttpProxyFuzzTest(const uint8_t *data, size_t size)
     SetGlobalFuzzData(data, size);
     HttpRequestOptions requestOptions;
     std::string str = GetStringFromData(STR_LEN);
-    requestOptions.SetSpecifiedHttpProxy(str, size, str);
+    NapiUtils::SecureData username;
+    username.append(str.c_str(), size);
+    NapiUtils::SecureData password;
+    password.append(str.c_str(), size);
+    requestOptions.SetSpecifiedHttpProxy(str, size, str, username, password);
 }
 
 void SetDnsServersFuzzTest(const uint8_t *data, size_t size)

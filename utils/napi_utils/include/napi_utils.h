@@ -41,6 +41,10 @@ private:
 };
 
 struct SecureData : public std::string {
+    SecureData& operator=(const char* other) {
+        std::string::operator=(other);
+        return *this;
+    }
     ~SecureData()
     {
         // Clear Data, to keep the memory safe

@@ -204,18 +204,24 @@ UsingHttpProxyType HttpRequestOptions::GetUsingHttpProxyType() const
     return usingHttpProxyType_;
 }
 
-void HttpRequestOptions::SetSpecifiedHttpProxy(const std::string &host, int32_t port, const std::string &exclusionList)
+void HttpRequestOptions::SetSpecifiedHttpProxy(const std::string &host, int32_t port, const std::string &exclusionList,
+    const NapiUtils::SecureData &username, const NapiUtils::SecureData &password)
 {
     httpProxyHost_ = host;
     httpProxyPort_ = port;
     httpProxyExclusions_ = exclusionList;
+    httpProxyUsername_ = username;
+    httpProxyPassword_ = password;
 }
 
-void HttpRequestOptions::GetSpecifiedHttpProxy(std::string &host, int32_t &port, std::string &exclusionList)
+void HttpRequestOptions::GetSpecifiedHttpProxy(std::string &host, int32_t &port, std::string &exclusionList,
+    NapiUtils::SecureData &username, NapiUtils::SecureData &password)
 {
     host = httpProxyHost_;
     port = httpProxyPort_;
     exclusionList = httpProxyExclusions_;
+    username = httpProxyUsername_;
+    password = httpProxyPassword_;
 }
 
 void HttpRequestOptions::SetClientCert(

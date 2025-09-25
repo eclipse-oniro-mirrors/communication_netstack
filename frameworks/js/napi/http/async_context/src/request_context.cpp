@@ -456,7 +456,16 @@ void RequestContext::ParseUsingHttpProxy(napi_value optionsValue)
             exclusionList += exclusion;
         }
     }
-    options.SetSpecifiedHttpProxy(host, port, exclusionList);
+
+    NapiUtils::SecureData username;
+    NapiUtils::SecureData password;
+    if (NapiUtils::HasNamedProperty(GetEnv(), httpProxyValue, HttpConstant::HTTP_PROXY_KEY_USERNAME) &&
+        NapiUtils::HasNamedProperty(GetEnv(), httpProxyValue, HttpConstant::HTTP_PROXY_KEY_PASSWORD)) {
+        NapiUtils::GetSecureDataPropertyUtf8(GetEnv(), httpProxyValue, HttpConstant::HTTP_PROXY_KEY_PASSWORD, password);
+        NapiUtils::GetSecureDataPropertyUtf8(GetEnv(), httpProxyValue, HttpConstant::HTTP_PROXY_KEY_USERNAME, username);
+    }
+
+    options.SetSpecifiedHttpProxy(host, port, exclusionList, username, password);
     options.SetUsingHttpProxyType(UsingHttpProxyType::USE_SPECIFIED);
 }
 
