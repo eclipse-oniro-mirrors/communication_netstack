@@ -211,7 +211,7 @@ public:
      * Get the statistics of HTTP request
      * @return The statistics including the information of HTTP request
      */
-    [[nodiscard]] HttpStatistics GetHttpStatistics();
+    [[nodiscard]] HttpStatistics GetHttpStatistics() const;
 
 private:
     friend class HttpClientTask;

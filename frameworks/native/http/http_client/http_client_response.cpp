@@ -139,7 +139,7 @@ void HttpClientResponse::SetNetAddress(NetAddress &netAddress)
     httpStatistics_.serverIpAddress = netAddress;
 }
  
-HttpStatistics HttpClientResponse::GetHttpStatistics()
+HttpStatistics HttpClientResponse::GetHttpStatistics() const
 {
     return httpStatistics_;
 }
