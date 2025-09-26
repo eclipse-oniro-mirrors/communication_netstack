@@ -36,7 +36,7 @@ use netstack_rs::{
 
 use crate::{
     bridge::{
-        convert_to_business_error, Cleaner, HttpRequest, HttpRequestOptions, HttpResponseCache, TlsConfig
+        convert_to_business_error, Cleaner, HttpRequest, HttpRequestOptions, HttpResponseCache, TlsConfig, HttpProxy
     },
     callback::TaskCallback,
 };
@@ -112,15 +112,36 @@ pub fn http_set_options(
         request.connect_timeout(connect_timeout as u32);
     }
     if let Some(headers) = options.header {
-        for (key, value) in &headers {
-            request.header(key.as_str(), value.as_str());
-        }
+        request.header_ext(parse_escaped_data_from_original_data(env, headers));
     }
     if let Some(protocol) = options.using_protocol {
         request.protocol(protocol.to_i32());
     }
-    if let Some(proxy_type) = options.using_proxy {
-        request.using_proxy(proxy_type.to_i32());
+    if let Some(using_proxy) = options.using_proxy {
+        let obj_data = using_proxy;
+        let bool_class = env.find_class(signature::BOOLEAN).unwrap();
+        if env.instance_of(&obj_data, &bool_class).unwrap() {
+            let opt = env.deserialize::<bool>(obj_data).unwrap();
+            let using_type = if opt {
+                netstack_rs::request::HttpProxyType::PROXY_TYPE_MAX
+            } else {
+                netstack_rs::request::HttpProxyType::NOT_USE
+            };
+            request.using_proxy_type(using_type.to_i32());
+        } else {
+            let opt = env.deserialize::<HttpProxy>(obj_data).unwrap();
+            let mut exclusions = String::new();
+            for item in opt.exclusion_list {
+                exclusions.push_str(&item);
+            }
+            let mut http_proxy = netstack_rs::request::HttpProxy {
+                host: opt.host,
+                port: opt.port,
+                exclusions: exclusions,
+            };
+            request.using_proxy_type(netstack_rs::request::HttpProxyType::USE_SPECIFIED.to_i32());
+            request.specified_proxy(http_proxy);
+        }
     }
     if let Some(&max_limit) = options.max_limit.as_ref() {
         request.max_limit(max_limit as u32);
@@ -320,7 +341,6 @@ pub(crate) fn clean_http_cache(this: Cleaner) -> Result<(), BusinessError> {
     Ok(())
 }
 
-#[ani_rs::native]
 pub(crate) fn on_header_receive(
     env: &AniEnv,
     this: HttpRequest,
@@ -342,7 +362,6 @@ pub(crate) fn on_header_receive(
     Ok(())
 }
 
-#[ani_rs::native]
 pub(crate) fn off_header_receive(
     this: HttpRequest,
     async_callback: AniAsyncCallback,
@@ -596,10 +615,9 @@ pub(crate) fn off_data_send_progress(
 }
 
 #[ani_rs::native]
-pub(crate) fn once(
+pub(crate) fn once_headers_receive(
     env: &AniEnv,
     this: HttpRequest,
-    ty: String,
     callback: AniFnObject,
 ) -> Result<(), BusinessError> {
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
@@ -617,11 +635,7 @@ pub(crate) fn once(
     }
     match task.request_task {
         Some(ref mut request_task) => {
-            if (ty == "headersReceive") {
-                request_task.set_is_headers_once(true);
-            } else if (ty == "headerReceive") {
-                request_task.set_is_header_once(true);
-            }
+            request_task.set_is_headers_once(true);
         }
         None => {
             // noting todo

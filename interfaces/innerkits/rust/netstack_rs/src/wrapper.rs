@@ -21,7 +21,7 @@ use ffi::{HttpClientRequest, HttpClientTask, NewHttpClientTask, OnCallback};
 use netstack_common::debug;
 
 use crate::error::{HttpClientError, HttpErrorCode};
-use crate::request::{RequestCallback, CertType, ClientCert, MultiFormData, ServerAuthentication, TlsConfig, TlsVersion, EscapedData};
+use crate::request::{RequestCallback, CertType, ClientCert, MultiFormData, ServerAuthentication, TlsConfig, TlsVersion, EscapedData, HttpProxy};
 use crate::response::{Response, ResponseCode, HttpDataType};
 use crate::task::{RequestTask, TaskStatus};
 
@@ -312,6 +312,16 @@ impl From<crate::request::TlsConfig> for ffi::TlsConfigRust {
     }
 }
 
+impl From<crate::request::HttpProxy> for ffi::HttpProxyRust {
+    fn from(http_ptoxy: HttpProxy) -> Self {
+        ffi::HttpProxyRust {
+            host: http_ptoxy.host,
+            port: http_ptoxy.port,
+            exclusions: http_ptoxy.exclusions,
+        }
+    }
+}
+
 #[allow(unused_unsafe)]
 #[cxx::bridge(namespace = "OHOS::Request")]
 pub(crate) mod ffi {
@@ -362,6 +372,13 @@ pub(crate) mod ffi {
         pub cipher_suites: Vec<String>,
     }
 
+    struct HttpProxyRust {
+        pub host: String,
+
+        pub port: i32,
+
+        pub exclusions: String,
+    }
     extern "Rust" {
         type CallbackWrapper;
         fn on_success(
@@ -443,7 +460,8 @@ pub(crate) mod ffi {
         fn SetConnectTimeout(self: Pin<&mut HttpClientRequest>, timeout: u32);
         unsafe fn SetBody(request: Pin<&mut HttpClientRequest>, data: *const u8, length: usize);
         fn SetHttpProtocol(request: Pin<&mut HttpClientRequest>, protocol: i32);
-        fn SetHttpUsingProxy(request: Pin<&mut HttpClientRequest>, proxy: i32);
+        fn SetUsingHttpProxyType(request: Pin<&mut HttpClientRequest>, proxy_type: i32);
+        fn SetSpecifiedHttpProxy(request: Pin<&mut HttpClientRequest>, proxy: &HttpProxyRust);
         fn SetMaxLimit(self: Pin<&mut HttpClientRequest>, max_limit: u32);
         fn SetCaPath(self: Pin<&mut HttpClientRequest>, path: &CxxString);
         fn SetResumeFrom(self: Pin<&mut HttpClientRequest>, resume_from: i64);
@@ -459,6 +477,7 @@ pub(crate) mod ffi {
         fn SetRemoteValidation(self: Pin<&mut HttpClientRequest>, remote_validation: &CxxString);
         fn SetTLSOptions(request: Pin<&mut HttpClientRequest>, tls_options: &TlsConfigRust);
         fn SetServerAuthentication(request: Pin<&mut HttpClientRequest>, server_auth: &ServerAuthentication);
+        fn SetHeaderExt(request: Pin<&mut HttpClientRequest>, headers: &EscapedDataRust);
 
         #[namespace = "OHOS::NetStack::HttpClient"]
         type HttpClientTask;

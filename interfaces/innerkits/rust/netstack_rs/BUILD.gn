@@ -47,6 +47,10 @@ ohos_static_library("netstack_rs_cxx") {
     "$NETSTACK_DIR/utils:stack_utils_common",
   ]
 
+  external_deps = [
+    "cJSON:cjson",
+  ]
+
   part_name = "netstack"
   subsystem_name = "communication"
 }

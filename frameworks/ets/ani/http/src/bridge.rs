@@ -46,26 +46,17 @@ impl AddressFamily {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
-#[repr(C)]
-pub enum Data {
-    S(String)
-}
+#[ani_rs::ani(path = "L@ohos.net.connection.connection.HttpProxyInner")]
+pub struct HttpProxy {
+    pub host: String,
 
-#[derive(Serialize, Deserialize)]
-#[repr(i32)]
-pub enum UsingProxy {
-    Boolean(bool),
-    // HttpProxy
-}
+    pub port: i32,
 
-impl UsingProxy {
-    pub fn to_i32(&self) -> i32 {
-        match self {
-            UsingProxy::Boolean(false) => 0,
-            UsingProxy::Boolean(true) => 1,
-        }
-    }
+    pub username: Option<String>,
+
+    pub password: Option<String>,
+
+    pub exclusion_list: Vec<String>,
 }
 
 #[ani_rs::ani]
@@ -80,7 +71,7 @@ pub struct HttpRequestOptions<'local> {
 
     pub priority: Option<i32>,
 
-    pub header: Option<HashMap<String, String>>,
+    pub header: Option<AniObject<'local>>,
 
     pub read_timeout: Option<i32>,
 
@@ -88,7 +79,7 @@ pub struct HttpRequestOptions<'local> {
 
     pub using_protocol: Option<HttpProtocol>,
 
-    pub using_proxy: Option<UsingProxy>,
+    pub using_proxy: Option<AniObject<'local>>,
 
     pub ca_path: Option<String>,
 

@@ -25,7 +25,7 @@ use netstack_rs::{error::HttpErrorCode, request::RequestCallback};
 
 use crate::bridge::{
     convert_to_business_error, DataReceiveProgressInfo, DataSendProgressInfo, HttpDataType,
-    HttpResponse, PerformanceTiming, ResponseCodeOutput, Data
+    HttpResponse, PerformanceTiming, ResponseCodeOutput
 };
 
 pub struct TaskCallback {
