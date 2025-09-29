@@ -127,11 +127,29 @@ export default namespace webSocket {
 
     close(options?: WebSocketCloseOptions): Promise<boolean>;
 
-    on(type: 'open' | 'message' | 'close' | 'error' | 'dataEnd' | 'headerReceive',
-    callback: Object): void;
+    onOpen(callback: Callback<OpenResult>): void;
 
-    off(type: 'open' | 'message' | 'close' | 'error' | 'dataEnd' | 'headerReceive',
-    callback?: Object): void;
+    onMessage(callback: AsyncCallback<string | ArrayBuffer>): void;
+
+    onWebSocketClose(callback: AsyncCallback<CloseResult>): void;
+
+    onWebSocketError(callback: ErrorCallback): void;
+
+    onDataEnd(callback: Callback<void>): void;
+
+    onHeaderReceive(callback: Callback<ResponseHeaders>): void;
+
+    offOpen(callback?: Callback<OpenResult>): void;
+
+    offMessage(callback?: AsyncCallback<string | ArrayBuffer>): void;
+
+    offWebSocketClose(callback?: AsyncCallback<CloseResult>): void;
+
+    offWebSocketError(callback?: ErrorCallback): void;
+
+    offDataEnd(callback?: Callback<void>): void;
+
+    offHeaderReceive(callback?: Callback<ResponseHeaders>): void;
   }
 
   export class WebSocketInner implements WebSocket {
@@ -251,75 +269,89 @@ export default namespace webSocket {
       });
     }
 
-    native onOpen(callback: AsyncCallback<OpenResult>): void;
-    native onMessage(callback: AsyncCallback<string | ArrayBuffer>): void;
-    native onClose(callback: AsyncCallback<CloseResult>): void;
-    native onError(callback: ErrorCallback): void;
-    native onDataEnd(callback: Callback<void>): void;
-    native onHeaderReceive(callback: Callback<ResponseHeaders>): void;
+    native onOpenInner(callback: Callback<OpenResult>): void;
+    native onMessageInner(callback: AsyncCallback<string | ArrayBuffer>): void;
+    native onCloseInner(callback: AsyncCallback<CloseResult>): void;
+    native onErrorInner(callback: ErrorCallback): void;
+    native onDataEndInner(callback: Callback<void>): void;
+    native onHeaderReceiveInner(callback: Callback<ResponseHeaders>): void;
 
-    on(type: 'open' | 'message' | 'close' | 'error' | 'dataEnd' | 'headerReceive',
-    callback: Object): void {
-      if (type == 'open') {
-        this.onOpen(callback as AsyncCallback<OpenResult>)
-      } else if (type == 'message') {
-        this.onMessage(callback as AsyncCallback<string | ArrayBuffer>)
-      } else if (type == 'close') {
-        this.onClose(callback as AsyncCallback<CloseResult>)
-      } else if (type == 'error') {
-        this.onError(callback as ErrorCallback)
-      } else if (type == 'dataEnd') {
-        this.onDataEnd(callback as Callback<void>)
-      } else if (type == 'headerReceive') {
-        this.onHeaderReceive(callback as Callback<ResponseHeaders>)
+    onOpen(callback: Callback<OpenResult>): void {
+      this.onOpenInner(callback)
+    }
+
+    onMessage(callback: AsyncCallback<string | ArrayBuffer>): void {
+      this.onMessageInner(callback)
+    }
+
+    onWebSocketClose(callback: AsyncCallback<CloseResult>): void {
+      this.onCloseInner(callback)
+    }
+
+    onWebSocketError(callback: ErrorCallback): void {
+      this.onErrorInner(callback)
+    }
+
+    onDataEnd(callback: Callback<void>): void {
+      this.onDataEndInner(callback)
+    }
+
+    onHeaderReceive(callback: Callback<ResponseHeaders>): void {
+      this.onHeaderReceiveInner(callback)
+    }
+
+    native offOpenInner(callback?: Callback<OpenResult>): void;
+    native offMessageInner(callback?: AsyncCallback<string | ArrayBuffer>): void;
+    native offCloseInner(callback?: AsyncCallback<CloseResult>): void;
+    native offErrorInner(callback?: ErrorCallback): void;
+    native offDataEndInner(callback?: Callback<void>): void;
+    native offHeaderReceiveInner(callback?: Callback<ResponseHeaders>): void;
+
+    offOpen(callback?: Callback<OpenResult>): void {
+      if (callback === undefined) {
+        this.offOpenInner()
+      } else {
+        this.offOpenInner(callback)
       }
     }
 
-    native offOpen(callback?: AsyncCallback<Object>): void;
-    native offMessage(callback?: AsyncCallback<string | ArrayBuffer>): void;
-    native offClose(callback?: AsyncCallback<CloseResult>): void;
-    native offError(callback?: ErrorCallback): void;
-    native offDataEnd(callback?: Callback<void>): void;
-    native offHeaderReceive(callback?: Callback<ResponseHeaders>): void;
+    offMessage(callback?: AsyncCallback<string | ArrayBuffer>): void {
+      if (callback === undefined) {
+        this.offMessageInner()
+      } else {
+        this.offMessageInner(callback)
+      }
+    }
 
-    off(type: 'open' | 'message' | 'close' | 'error' | 'dataEnd' | 'headerReceive',
-    callback?: Object): void {
-      if (type == 'open') {
-        if (callback === undefined) {
-          this.offOpen()
-        } else {
-          this.offOpen(callback as AsyncCallback<Object>)
-        }
-      } else if (type == 'message') {
-        if (callback === undefined) {
-          this.offMessage()
-        } else {
-          this.offMessage(callback as AsyncCallback<string | ArrayBuffer>)
-        }
-      } else if (type == 'close') {
-        if (callback === undefined) {
-          this.offClose()
-        } else {
-          this.offClose(callback as AsyncCallback<CloseResult>)
-        }
-      } else if (type == 'error') {
-        if (callback === undefined) {
-          this.offError()
-        } else {
-          this.offError(callback as ErrorCallback)
-        }
-      } else if (type == 'dataEnd') {
-        if (callback === undefined) {
-          this.offDataEnd()
-        } else {
-          this.offDataEnd(callback as Callback<void>)
-        }
-      } else if (type == 'headerReceive') {
-        if (callback === undefined) {
-          this.offHeaderReceive()
-        } else {
-          this.offHeaderReceive(callback as Callback<ResponseHeaders>)
-        }
+    offWebSocketClose(callback?: AsyncCallback<CloseResult>): void {
+      if (callback === undefined) {
+        this.offCloseInner()
+      } else {
+        this.offCloseInner(callback)
+      }
+    }
+
+    offWebSocketError(callback?: ErrorCallback): void {
+      if (callback === undefined) {
+        this.offErrorInner()
+      } else {
+        this.offErrorInner(callback)
+      }
+    }
+
+    offDataEnd(callback?: Callback<void>): void {
+      if (callback === undefined) {
+        this.offDataEndInner()
+      } else {
+        this.offDataEndInner(callback)
+      }
+    }
+
+    offHeaderReceive(callback?: Callback<ResponseHeaders>): void {
+      if (callback === undefined) {
+        this.offHeaderReceiveInner()
+      } else {
+        this.offHeaderReceiveInner(callback)
       }
     }
   }
@@ -414,9 +446,21 @@ export default namespace webSocket {
 
     stop(): Promise<boolean>;
 
-    on(type: 'error' | 'connect' | 'close' | 'messageReceive', callback: Object): void;
+    onConnect(callback: Callback<WebSocketConnection>): void;
 
-    off(type: 'error' | 'connect' | 'close' | 'messageReceive', callback?: Object): void;
+    onMessageReceive(callback: Callback<WebSocketMessage>): void;
+
+    onWebSocketServerClose(callback: ClientConnectionCloseCallback): void;
+
+    onWebSocketServerError(callback: ErrorCallback): void;
+
+    offConnect(callback?: Callback<WebSocketConnection>): void;
+
+    offMessageReceive(callback?: Callback<WebSocketMessage>): void;
+
+    offWebSocketServerClose(callback?: ClientConnectionCloseCallback): void;
+
+    offWebSocketServerError(callback?: ErrorCallback): void;
   }
 
   export class WebSocketServerInner implements WebSocketServer {
@@ -501,53 +545,61 @@ export default namespace webSocket {
       });
     }
 
-    native onError(callback: ErrorCallback): void;
-    native onConnect(callback: Callback<WebSocketConnection>): void;
-    native onClose(callback: ClientConnectionCloseCallback): void;
-    native onMessageReceive(callback: Callback<WebSocketMessage>): void;
+    native onWebSocketServerErrorInner(callback: ErrorCallback): void;
+    native onConnectInner(callback: Callback<WebSocketConnection>): void;
+    native onWebSocketServerCloseInner(callback: ClientConnectionCloseCallback): void;
+    native onMessageReceiveInner(callback: Callback<WebSocketMessage>): void;
 
-    on(type: 'error' | 'connect' | 'close' | 'messageReceive', callback: Object): void {
-      if (type == 'error') {
-        this.onError(callback as ErrorCallback);
-      } else if (type == 'connect') {
-        this.onConnect(callback as Callback<WebSocketConnection>);
-      } else if (type == 'close') {
-        this.onClose(callback as ClientConnectionCloseCallback);
-      } else if (type == 'messageReceive') {
-        this.onMessageReceive(callback as Callback<WebSocketMessage>);
+    onWebSocketServerError(callback: ErrorCallback): void {
+      this.onWebSocketServerErrorInner(callback);
+    }
+
+    onConnect(callback: Callback<WebSocketConnection>): void {
+      this.onConnectInner(callback);
+    }
+
+    onWebSocketServerClose(callback: ClientConnectionCloseCallback): void {
+      this.onWebSocketServerCloseInner(callback);
+    }
+
+    onMessageReceive(callback: Callback<WebSocketMessage>): void {
+      this.onMessageReceiveInner(callback);
+    }
+
+    native offWebSocketServerErrorInner(callback?: ErrorCallback): void;
+    native offConnectInner(callback?: Callback<WebSocketConnection>): void;
+    native offWebSocketServerCloseInner(callback?: ClientConnectionCloseCallback): void;
+    native offMessageReceiveInner(callback?: Callback<WebSocketMessage>): void;
+
+    offWebSocketServerError(callback?: ErrorCallback): void {
+      if (callback === undefined) {
+        this.offWebSocketServerErrorInner();
+      } else {
+        this.offWebSocketServerErrorInner(callback);
       }
     }
 
-    native offError(callback?: ErrorCallback): void;
-    native offConnect(callback?: Callback<WebSocketConnection>): void;
-    native offClose(callback?: ClientConnectionCloseCallback): void;
-    native offMessageReceive(callback?: Callback<WebSocketMessage>): void;
+    offConnect(callback?: Callback<WebSocketConnection>): void {
+      if (callback === undefined) {
+        this.offConnectInner();
+      } else {
+        this.offConnectInner(callback);
+      }
+    }
 
-    off(type: 'error' | 'connect' | 'close' | 'messageReceive', callback?: Object): void {
-      if (type == 'error') {
-        if (callback === undefined) {
-          this.offError();
-        } else {
-          this.offError(callback as ErrorCallback);
-        }
-      } else if (type == 'connect') {
-        if (callback === undefined) {
-          this.offConnect();
-        } else {
-          this.offConnect(callback as Callback<WebSocketConnection>);
-        }
-      } else if (type == 'close') {
-        if (callback === undefined) {
-          this.offClose();
-        } else {
-          this.offClose(callback as ClientConnectionCloseCallback);
-        }
-      } else if (type == 'messageReceive') {
-        if (callback === undefined) {
-          this.offMessageReceive();
-        } else {
-          this.offMessageReceive(callback as Callback<WebSocketMessage>);
-        }
+    offWebSocketServerClose(callback?: ClientConnectionCloseCallback): void {
+      if (callback === undefined) {
+        this.offWebSocketServerCloseInner();
+      } else {
+        this.offWebSocketServerCloseInner(callback);
+      }
+    }
+
+    offMessageReceive(callback?: Callback<WebSocketMessage>): void {
+      if (callback === undefined) {
+        this.offMessageReceiveInner();
+      } else {
+        this.offMessageReceiveInner(callback);
       }
     }
   }

@@ -43,7 +43,7 @@ pub fn on_open_websocket_client(client: Pin<&mut ffi::WebSocketClientWrapper>, m
                 status: status as i32,
                 message: message,
             };
-            cb.execute(None, (cr,));
+            cb.execute((cr,));
         }
     }
 }
@@ -116,7 +116,7 @@ pub fn header_push_data(header: &mut Vec<String>, data: String)
 }
 
 pub struct CallBackWebSocketClient {
-    pub on_open: Option<GlobalRefAsyncCallback<(AniOpenResult,)>>,
+    pub on_open: Option<GlobalRefCallback<(AniOpenResult,)>>,
     pub on_message: Option<GlobalRefAsyncCallback<(AniData,)>>,
     pub on_close: Option<GlobalRefAsyncCallback<(AniCloseResult,)>>,
     pub on_error: Option<GlobalRefErrorCallback>,
