@@ -383,14 +383,14 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
     }
 #endif
 
-    std::unique_ptr<CURL, decltype(&curl_easy_cleanup)> handle(curl_easy_init(), curl_easy_cleanup);
+    auto handle = curl_easy_init();
     if (!handle) {
         NETSTACK_LOGE("Failed to create fetch task");
         return false;
     }
 
 #if HAS_NETMANAGER_BASE
-    NETSTACK_CURL_EASY_SET_OPTION(handle.get(), CURLOPT_PRIVATE, context, context);
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PRIVATE, context, context);
 #endif
 
     std::vector<std::string> vec;
@@ -403,18 +403,18 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
                       }
                   });
     context->SetCurlHeaderList(MakeHeaders(vec));
-    if (!SetOption(handle.get(), context, context->GetCurlHeaderList())) {
+    if (!SetOption(handle, context, context->GetCurlHeaderList())) {
         NETSTACK_LOGE("set option failed");
+        curl_easy_cleanup(handle);
         return false;
     }
 
     context->response.SetRequestTime(HttpTime::GetNowTimeGMT());
-    CURL* rawHandle = handle.release();
-    context->SetCurlHandle(rawHandle);
+    context->SetCurlHandle(handle);
 
-    if (!AddCurlHandle(rawHandle, context)) {
+    if (!AddCurlHandle(handle, context)) {
         NETSTACK_LOGE("add handle failed");
-        curl_easy_cleanup(rawHandle);
+        curl_easy_cleanup(handle);
         return false;
     }
 
@@ -623,6 +623,9 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
     if (context->GetSharedManager() == nullptr) {
         NETSTACK_LOGE("can not find context manager");
         return;
+    }
+    if (handle) {
+        (void)curl_easy_cleanup(handle);
     }
     context->SendNetworkProfiler();
     if (context->IsRequestInStream()) {
