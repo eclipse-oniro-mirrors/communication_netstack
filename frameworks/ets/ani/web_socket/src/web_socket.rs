@@ -118,10 +118,10 @@ pub(crate) fn close_sync(
 pub(crate) fn on_open(
     env: &AniEnv,
     this: bridge::AniWebSocket,
-    async_callback: AniAsyncCallback,
+    callback: AniFnObject,
 ) -> Result<(), BusinessError> {
     let web_socket = unsafe { &mut (*(this.nativePtr as *mut AniClient)) };
-    web_socket.callback.on_open = Some(async_callback.into_global_callback(env).unwrap());
+    web_socket.callback.on_open = Some(callback.into_global_callback(env).unwrap());
     web_socket.on_open_native();
     Ok(())
 }
@@ -130,7 +130,7 @@ pub(crate) fn on_open(
 pub(crate) fn off_open(
     env: &AniEnv,
     this: bridge::AniWebSocket,
-    async_callback: AniAsyncCallback,
+    callback: AniFnObject,
 ) -> Result<(), BusinessError> {
     let web_socket = unsafe { &mut (*(this.nativePtr as *mut AniClient)) };
     web_socket.callback.on_open = None;
