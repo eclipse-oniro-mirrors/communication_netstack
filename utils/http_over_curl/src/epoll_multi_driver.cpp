@@ -181,7 +181,6 @@ __attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
                 curl_multi_remove_handle(multi_, easyHandle);
                 auto requestInfo = ongoingRequests_[easyHandle];
                 ongoingRequests_.erase(easyHandle);
-                curl_easy_cleanup(easyHandle);
 #ifdef HTTP_HANDOVER_FEATURE
                 if (netHandoverHandler_ &&
                     netHandoverHandler_->ProcessRequestErr(ongoingRequests_, multi_, requestInfo, message)) {
