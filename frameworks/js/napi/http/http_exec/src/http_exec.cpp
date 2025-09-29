@@ -617,17 +617,14 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         CacheProxy proxy(context->options);
         proxy.WriteResponseToCache(context->response);
     }
-    if (handle) {
-        (void)curl_easy_cleanup(handle);
-    }
     if (context->GetSharedManager() == nullptr) {
         NETSTACK_LOGE("can not find context manager");
         return;
     }
+    context->SendNetworkProfiler();
     if (handle) {
         (void)curl_easy_cleanup(handle);
     }
-    context->SendNetworkProfiler();
     if (context->IsRequestInStream()) {
         NapiUtils::CreateUvQueueWorkByModuleId(
             context->GetEnv(), std::bind(AsyncWorkRequestInStreamCallback, context->GetEnv(), napi_ok, context),
