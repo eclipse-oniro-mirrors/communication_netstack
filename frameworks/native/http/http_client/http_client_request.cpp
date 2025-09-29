@@ -22,6 +22,7 @@
 #include "http_client_constant.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
+#include "curl/curl.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -39,8 +40,12 @@ HttpClientRequest::HttpClientRequest()
       proxyType_(HttpProxyType::NOT_USE),
       priority_(HTTP_DEFAULT_PRIORITY),
       resumeFrom_(HTTP_DEFAULT_RANGE),
-      resumeTo_(HTTP_DEFAULT_RANGE)
+      resumeTo_(HTTP_DEFAULT_RANGE),
+      maxLimit_(HttpConstant::DEFAULT_MAX_LIMIT),
+      usingCache_(false),
+      dataType_(HttpDataType::NO_DATA_TYPE)
 {
+    extraData_.dataType = HttpDataType::NO_DATA_TYPE;
 }
 
 void HttpClientRequest::SetURL(const std::string &url)
@@ -102,6 +107,11 @@ void HttpClientRequest::SetHttpProxyType(HttpProxyType type)
 
 void HttpClientRequest::SetMaxLimit(uint32_t maxLimit)
 {
+    if (maxLimit > HttpConstant::MAX_LIMIT) {
+        NETSTACK_LOGD("maxLimit setting exceeds the maximum limit, use max limit");
+        maxLimit_ = HttpConstant::MAX_LIMIT;
+        return;
+    }
     maxLimit_ = maxLimit;
 }
 
@@ -112,6 +122,12 @@ void HttpClientRequest::SetCaPath(const std::string &path)
         return;
     }
     caPath_ = path;
+}
+
+void HttpClientRequest::SetCertsPath(std::vector<std::string> &&certPathList, const std::string &certFile)
+{
+    certsPath_.certPathList = std::move(certPathList);
+    certsPath_.certFile = certFile;
 }
 
 void HttpClientRequest::SetPriority(unsigned int priority)
@@ -166,6 +182,11 @@ HttpProxyType HttpClientRequest::GetHttpProxyType()
 const std::string &HttpClientRequest::GetCaPath()
 {
     return caPath_;
+}
+
+const CertsPath &HttpClientRequest::GetCertsPath()
+{
+    return certsPath_;
 }
 
 uint32_t HttpClientRequest::GetPriority() const
@@ -240,6 +261,135 @@ void HttpClientRequest::SetAddressFamily(const std::string &addressFamily)
 const std::string &HttpClientRequest::GetAddressFamily() const
 {
     return addressFamily_;
+}
+
+void HttpClientRequest::SetUsingCache(bool usingCache)
+{
+    usingCache_ = usingCache;
+}
+
+void HttpClientRequest::SetDNSOverHttps(const std::string &dnsOverHttps)
+{
+    dnsOverHttps_ = dnsOverHttps;
+}
+
+void HttpClientRequest::SetRemoteValidation(const std::string &remoteValidation)
+{
+    remoteValidation_ = remoteValidation;
+
+    if (remoteValidation == "skip") {
+        NETSTACK_LOGI("set remoteValidation skip");
+        SetCanSkipCertVerifyFlag(true);
+    } else if (remoteValidation != "system") {
+        remoteValidation_ = "";
+        NETSTACK_LOGE("remoteValidation config error");
+    }
+}
+
+void HttpClientRequest::SetCanSkipCertVerifyFlag(bool canCertVerify)
+{
+    canSkipCertVerify_ = canCertVerify;
+}
+
+void HttpClientRequest::SetTLSOptions(const TlsOption &tlsOptions)
+{
+    tlsOptions_ = tlsOptions;
+}
+
+void HttpClientRequest::SetExtraData(const EscapedData& extraData)
+{
+    extraData_ = extraData;
+}
+
+void HttpClientRequest::SetExpectDataType(HttpDataType dataType)
+{
+    if (dataType != HttpDataType::STRING && dataType != HttpDataType::ARRAY_BUFFER &&
+        dataType != HttpDataType::OBJECT) {
+        return;
+    }
+    dataType_ = dataType;
+}
+
+void HttpClientRequest::SetDNSServers(const std::vector<std::string>& dnsServers)
+{
+    dnsServers_ = dnsServers;
+}
+
+void HttpClientRequest::AddMultiFormData(const HttpMultiFormData& data)
+{
+    multiFormDataList_.emplace_back(data);
+}
+
+void HttpClientRequest::SetServerAuthentication(const HttpServerAuthentication& server_auth)
+{
+    serverAuth_ = server_auth;
+}
+
+bool HttpClientRequest::GetUsingCache() const
+{
+    return usingCache_;
+}
+
+const std::string& HttpClientRequest::GetDNSOverHttps() const
+{
+    return dnsOverHttps_;
+}
+
+const std::string& HttpClientRequest::GetRemoteValidation() const
+{
+    return remoteValidation_;
+}
+
+bool HttpClientRequest::GetCanSkipCertVerifyFlag() const
+{
+    return canSkipCertVerify_;
+}
+
+const TlsOption& HttpClientRequest::GetTLSOptions() const
+{
+    return tlsOptions_;
+}
+
+const EscapedData& HttpClientRequest::GetExtraData() const
+{
+    return extraData_;
+}
+
+HttpDataType HttpClientRequest::GetExpectDataType() const
+{
+    return dataType_;
+}
+
+const std::vector<std::string>& HttpClientRequest::GetDNSServers() const
+{
+    return dnsServers_;
+}
+
+const std::vector<HttpMultiFormData>& HttpClientRequest::GetMultiFormDataList() const
+{
+    return multiFormDataList_;
+}
+
+const HttpServerAuthentication& HttpClientRequest::GetServerAuthentication() const
+{
+    return serverAuth_;
+}
+
+uint32_t HttpClientRequest::GetHttpVersion()
+{
+    if (protocol_ == HttpProtocol::HTTP3) {
+        NETSTACK_LOGD("CURL_HTTP_VERSION_3");
+        return CURL_HTTP_VERSION_3;
+    }
+    if (protocol_ == HttpProtocol::HTTP2) {
+        NETSTACK_LOGD("CURL_HTTP_VERSION_2_0");
+        return CURL_HTTP_VERSION_2_0;
+    }
+    if (protocol_ == HttpProtocol::HTTP1_1) {
+        NETSTACK_LOGD("CURL_HTTP_VERSION_1_1");
+        return CURL_HTTP_VERSION_1_1;
+    }
+    return CURL_HTTP_VERSION_NONE;
 }
 } // namespace HttpClient
 } // namespace NetStack

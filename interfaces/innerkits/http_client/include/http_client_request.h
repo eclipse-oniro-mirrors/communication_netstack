@@ -19,6 +19,9 @@
 #include <string>
 #include <map>
 #include <vector>
+#include "http_client_secure_data.h"
+#include "http_client_tls_config.h"
+#include "common.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -53,6 +56,52 @@ struct HttpClientCert {
     std::string certType;
     std::string keyPath;
     std::string keyPassword;
+};
+
+struct EscapedData {
+    HttpDataType dataType;
+    // If the type is object or arrayBuffer, the data format is required to be JSON.
+    std::string data;
+};
+
+struct HttpMultiFormData {
+    HttpMultiFormData() = default;
+    ~HttpMultiFormData() = default;
+    std::string name;
+    std::string contentType;
+    std::string remoteFileName;
+    std::string data;
+    std::string filePath;
+};
+
+enum class HttpAuthenticationType {
+    AUTO,
+    BASIC,
+    NTLM,
+    DIGEST,
+};
+
+struct HttpCredential {
+    HttpClient::SecureData username;
+    HttpClient::SecureData password;
+};
+
+struct HttpServerAuthentication {
+    HttpCredential credential;
+    HttpAuthenticationType authenticationType = HttpAuthenticationType::AUTO;
+};
+
+struct TlsOption {
+    std::unordered_set<CipherSuite> cipherSuite;
+    TlsVersion tlsVersionMin = TlsVersion::DEFAULT;
+    TlsVersion tlsVersionMax = TlsVersion::DEFAULT;
+};
+
+struct CertsPath {
+    CertsPath() = default;
+    ~CertsPath() = default;
+    std::vector<std::string> certPathList;
+    std::string certFile;
 };
 
 class HttpClientRequest {
@@ -161,6 +210,72 @@ public:
     void SetAddressFamily(const std::string &addressFamily);
 
     /**
+     * Set the UsingCache for the HTTP request.
+     * @param UsingCache The UsingCache value to be set.
+     */
+    void SetUsingCache(bool usingCache);
+
+    /**
+     * Set the DNSOverHttps for the HTTP request.
+     * @param DNSOverHttps The DNSOverHttps value to be set.
+     */
+    void SetDNSOverHttps(const std::string &dnsOverHttps);
+
+    /**
+     * Set the canCertVerify for the HTTP request.
+     * @param CanCertVerify The CanCertVerify value to be set.
+     */
+    void SetCanSkipCertVerifyFlag(bool canCertVerify);
+
+    /**
+     * Set the RemoteValidation for the HTTP request.
+     * @param RemoteValidation The RemoteValidation value to be set.
+     */
+    void SetRemoteValidation(const std::string &remoteValidation);
+
+    /**
+     * Set the TLSOptions for the HTTP request.
+     * @param TLSOptions The TLSOptions value to be set.
+     */
+    void SetTLSOptions(const TlsOption &tlsOptions);
+
+    /**
+     * Set the CertsPath for the HTTP request.
+     * @param certPathList, certFile The cert info to be set.
+     */
+    void SetCertsPath(std::vector<std::string> &&certPathList, const std::string &certFile);
+
+    /**
+     * Set the ExtraData for the HTTP request.
+     * @param ExtraData The ExtraData value to be set.
+     */
+    void SetExtraData(const EscapedData& extraData);
+
+    /**
+     * Set the ExpectDataType for the HTTP request.
+     * @param ExpectDataType The ExpectDataType value to be set.
+     */
+    void SetExpectDataType(HttpDataType dataType);
+
+    /**
+     * Set the DNSServers for the HTTP request.
+     * @param DNSServers The DNSServers value to be set.
+     */
+    void SetDNSServers(const std::vector<std::string>& dnsServers);
+
+    /**
+     * Add a HttpMultiFormData to the list for the HTTP request.
+     * @param HttpMultiFormData The HttpMultiFormData value to be set.
+     */
+    void AddMultiFormData(const HttpMultiFormData& data);
+
+    /**
+     * Set the HttpServerAuthentication for the HTTP request.
+     * @param HttpServerAuthentication The HttpServerAuthentication value to be set.
+     */
+    void SetServerAuthentication(const HttpServerAuthentication& server_auth);
+
+    /**
      * Get the URL of the HTTP request.
      * @return The URL of the request.
      */
@@ -257,6 +372,72 @@ public:
     [[nodiscard]] const std::string &GetAddressFamily() const;
 
     /**
+     * Get the UsingCache of the HTTP request.
+     * @return The UsingCache of the request.
+     */
+    [[nodiscard]] bool GetUsingCache() const;
+
+    /**
+     * Get the DNSOverHttps of the HTTP request.
+     * @return The DNSOverHttps of the request.
+     */
+    [[nodiscard]] const std::string& GetDNSOverHttps() const;
+
+    /**
+     * Get the CanSkipCertVerifyFlag of the HTTP request.
+     * @return The CanSkipCertVerifyFlag of the request.
+     */
+    [[nodiscard]] bool GetCanSkipCertVerifyFlag() const;
+
+    /**
+     * Get the RemoteValidation of the HTTP request.
+     * @return The RemoteValidation of the request.
+     */
+    [[nodiscard]] const std::string& GetRemoteValidation() const;
+
+    /**
+     * Get the TLSOptions of the HTTP request.
+     * @return The TLSOptions of the request.
+     */
+    [[nodiscard]] const TlsOption& GetTLSOptions() const;
+
+    /**
+     * Get the CertsPath of the HTTP request.
+     * @return The CertsPath of the request.
+     */
+    [[nodiscard]] const CertsPath &GetCertsPath();
+
+    /**
+     * Get the ExtraData of the HTTP request.
+     * @return The ExtraData of the request.
+     */
+    [[nodiscard]] const EscapedData& GetExtraData() const;
+
+    /**
+     * Get the ExpectDataType of the HTTP request.
+     * @return The ExpectDataType of the request.
+     */
+    [[nodiscard]] HttpDataType GetExpectDataType() const;
+
+    /**
+     * Get the DNSServers of the HTTP request.
+     * @return The DNSServers of the request.
+     */
+    [[nodiscard]] const std::vector<std::string>& GetDNSServers() const;
+
+    /**
+     * Get the MultiFormDataList of the HTTP request.
+     * @return The MultiFormDataList of the request.
+     */
+    [[nodiscard]] const std::vector<HttpMultiFormData>& GetMultiFormDataList() const;
+
+    /**
+     * Get the ServerAuthentication of the HTTP request.
+     * @return The ServerAuthentication of the request.
+     */
+    [[nodiscard]] const HttpServerAuthentication& GetServerAuthentication() const;
+
+    /**
      * Check if the specified method is suitable for a GET request.
      * @param method The method to check.
      * @return True if the method is suitable for a GET request, false otherwise.
@@ -282,6 +463,12 @@ public:
      */
     const std::string &GetRequestTime() const;
 
+    /**
+     * Retrieves the request time from the object.
+     * @return The request time.
+     */
+    uint32_t GetHttpVersion();
+
 private:
     std::string url_;
     std::string method_;
@@ -293,6 +480,7 @@ private:
     HttpProxy proxy_;
     HttpProxyType proxyType_;
     std::string caPath_;
+    CertsPath certsPath_;
     unsigned int priority_;
     std::string requestTime_;
     int64_t resumeFrom_;
@@ -300,6 +488,16 @@ private:
     HttpClientCert clientCert_;
     std::string addressFamily_;
     uint32_t maxLimit_;
+    bool usingCache_;
+    std::string dnsOverHttps_;
+    std::string remoteValidation_;
+    bool canSkipCertVerify_ = false;
+    TlsOption tlsOptions_;
+    EscapedData extraData_;
+    HttpDataType dataType_;
+    std::vector<std::string> dnsServers_;
+    std::vector<HttpMultiFormData> multiFormDataList_;
+    HttpServerAuthentication serverAuth_;
 };
 } // namespace HttpClient
 } // namespace NetStack

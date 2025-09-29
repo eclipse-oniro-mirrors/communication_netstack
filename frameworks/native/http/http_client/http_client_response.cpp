@@ -119,6 +119,11 @@ void HttpClientResponse::SetRawHeader(const std::string &header)
     rawHeader_ = header;
 }
 
+const std::string &HttpClientResponse::GetRawHeader() const
+{
+    return rawHeader_;
+}
+
 void HttpClientResponse::SetCookies(const std::string &cookies)
 {
     cookies_ = cookies;
@@ -142,6 +147,16 @@ const std::string &HttpClientResponse::GetResult() const
 PerformanceInfo HttpClientResponse::GetPerformanceTiming() const
 {
     return performanceInfo_;
+}
+
+void HttpClientResponse::SetExpectDataType(const HttpDataType &type)
+{
+    dataType_ = type;
+}
+
+HttpDataType HttpClientResponse::GetExpectDataType() const
+{
+    return dataType_;
 }
 } // namespace HttpClient
 } // namespace NetStack
