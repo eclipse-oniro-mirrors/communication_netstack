@@ -463,7 +463,7 @@ int WebSocketExec::LwsCallbackVhostCertAging(lws *wsi, lws_callback_reasons reas
 
 int WebSocketExec::LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    NETSTACK_LOGD("lws callback reason is %{public}d", reason);
+    NETSTACK_LOGI("lws callback reason is %{public}d", reason);
     CallbackDispatcher dispatchers[] = {
         {LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER, LwsCallbackClientAppendHandshakeHeader},
         {LWS_CALLBACK_WS_PEER_INITIATED_CLOSE, LwsCallbackWsPeerInitiatedClose},
