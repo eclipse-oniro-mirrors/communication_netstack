@@ -409,7 +409,7 @@ bool HttpExec::RequestWithoutCache(RequestContext *context)
     }
 
     context->response.SetRequestTime(HttpTime::GetNowTimeGMT());
-    CURL* rawHandle = handle.release();	
+    CURL* rawHandle = handle.release();
     context->SetCurlHandle(rawHandle);
 
     if (!AddCurlHandle(rawHandle, context)) {
