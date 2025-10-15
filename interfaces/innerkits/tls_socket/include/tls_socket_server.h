@@ -82,8 +82,8 @@ public:
     [[nodiscard]] const std::string &GetSendData() const;
 
 private:
-    int socketFd_;
-    std::string data_;
+    int socketFd_ = 0;
+    std::string data_ = "";
 };
 
 class TLSSocketServer {
