@@ -58,19 +58,10 @@ impl Task {
 }
 
 #[ani_rs::native]
-pub fn create_http<'local>(env: &AniEnv<'local>) -> Result<AniRef<'local>, BusinessError> {
-    static HTTP_REQUEST_CLASS: &CStr =
-        unsafe { CStr::from_bytes_with_nul_unchecked(b"@ohos.net.http.http.HttpRequestInner\0") };
-    static CTOR_SIGNATURE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"l:\0") };
-
+pub fn create_http_ptr() -> Result<i64, BusinessError> {
     let request = Box::new(Task::new());
     let ptr = Box::into_raw(request);
-
-    let class = env.find_class(HTTP_REQUEST_CLASS).unwrap();
-    let obj = env
-        .new_object_with_signature(&class, CTOR_SIGNATURE, (ptr as i64,))
-        .unwrap();
-    Ok(obj.into())
+    Ok(ptr as i64)
 }
 
 pub fn parse_escaped_data_from_original_data<'local>(env: &AniEnv, obj_data: AniObject<'local>) -> EscapedData {
