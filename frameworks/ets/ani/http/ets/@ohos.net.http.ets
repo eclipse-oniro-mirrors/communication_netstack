@@ -36,7 +36,12 @@ export default namespace http {
 
   let unregisterToken = new object()
 
-  export native function createHttp(): HttpRequest;
+  export native function createHttpPtr(): long;
+
+  export function createHttp(): HttpRequest {
+    let ptr = createHttpPtr();
+    return new HttpRequestInner(ptr);
+  }
 
   export enum AddressFamily {
     DEFAULT = 'CURL_IPRESOLVE_WHATEVER',
