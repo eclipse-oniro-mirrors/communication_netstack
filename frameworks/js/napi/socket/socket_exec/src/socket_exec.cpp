@@ -2702,6 +2702,30 @@ bool IpMatchFamily(const std::string &address, sa_family_t family)
     return true;
 }
 
+static bool HandlePollEvent(struct pollfd *fds)
+{
+    if (fds == nullptr) {
+        return false;
+    }
+    if (static_cast<uint16_t>(fds[0].revents) & (POLLNVAL | POLLHUP | POLLERR)) {
+        NETSTACK_LOGE("NonBlockConnect poll failed, socket is %{public}d, revents is %{public}x",
+            fds[0].fd, fds[0].revents);
+        return false;
+    }
+    
+    int err = 0;
+    socklen_t optLen = sizeof(err);
+    int ret = getsockopt(fds[0].fd, SOL_SOCKET, SO_ERROR, reinterpret_cast<void *>(&err), &optLen);
+    if (ret < 0) {
+        return false;
+    }
+    if (err != 0) {
+        NETSTACK_LOGE("NonBlockConnect exec failed, socket is %{public}d, err is %{public}d", fds[0].fd, err);
+        return false;
+    }
+    return true;
+}
+
 bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeoutMSec)
 {
     int ret = connect(sock, addr, addrLen);
@@ -2736,18 +2760,8 @@ bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeo
         NETSTACK_LOGE("connect poll failed, socket is %{public}d, errno is %{public}d", sock, errno);
         return false;
     }
-
-    int err = 0;
-    socklen_t optLen = sizeof(err);
-    ret = getsockopt(sock, SOL_SOCKET, SO_ERROR, reinterpret_cast<void *>(&err), &optLen);
-    if (ret < 0) {
-        return false;
-    }
-    if (err != 0) {
-        NETSTACK_LOGE("NonBlockConnect exec failed, socket is %{public}d, err is %{public}d", sock, err);
-        return false;
-    }
-    return true;
+    
+    return HandlePollEvent(fds);
 }
 
 static bool GetSendBufferSize(int sock, int &bufferSize, int &sockType)
