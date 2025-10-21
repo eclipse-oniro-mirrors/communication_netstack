@@ -426,6 +426,6 @@ HWTEST_F(HttpClientRequestTest, GetMaxLimitTest001, TestSize.Level1)
     HttpClientRequest req;
 
     uint32_t maxLimit = req.GetMaxLimit();
-    EXPECT_EQ(maxLimit, 0);
+    EXPECT_EQ(maxLimit, HttpConstant::DEFAULT_MAX_LIMIT);
 }
 } // namespace
