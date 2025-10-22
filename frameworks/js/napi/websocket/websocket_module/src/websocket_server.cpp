@@ -50,6 +50,7 @@ static constexpr const int32_t COMMON_ERROR_CODE = 200;
 namespace OHOS::NetStack::WebSocketServer {
 enum WebsocketErrorCode {
     WEBSOCKET_CONNECT_FAILED = -1,
+    WEBSOCKET_ERROR_PERMISSION_DENIED = 201,
     WEBSOCKET_ERROR_CODE_BASE = 2302000,
     WEBSOCKET_ERROR_CODE_URL_ERROR = WEBSOCKET_ERROR_CODE_BASE + 1,
     WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST = WEBSOCKET_ERROR_CODE_BASE + 2,
@@ -63,6 +64,7 @@ enum WebsocketErrorCode {
 
 static const std::map<int32_t, std::string> WEBSOCKET_ERR_MAP = { { WEBSOCKET_CONNECT_FAILED,
     "Websocket connect failed" },
+    { WEBSOCKET_ERROR_PERMISSION_DENIED, "Permission denied" },
     { WEBSOCKET_ERROR_CODE_URL_ERROR, "Websocket url error" },
     { WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST, "Websocket file not exist" },
     { WEBSOCKET_ERROR_CODE_CONNECT_ALREADY_EXIST, "Websocket connection exist" },
@@ -603,7 +605,8 @@ int WebSocketServer::Start(const ServerConfig &config)
     NETSTACK_LOGD("websocket server start exec");
     if (!CommonUtils::HasInternetPermission()) {
         serverContext_->SetPermissionDenied(true);
-        return -1;
+        NETSTACK_LOGE("Start: Permission denied");
+        return WEBSOCKET_ERROR_PERMISSION_DENIED;
     }
     if (!CommonUtils::IsValidIPV4(config.serverIP) && !CommonUtils::IsValidIPV6(config.serverIP)) {
         NETSTACK_LOGE("IPV4 and IPV6 are not valid");
@@ -753,6 +756,11 @@ int WebSocketServer::ListAllConnections(std::vector<SocketConnection> &connectio
     if (serverContext_->GetContext() == nullptr) {
         NETSTACK_LOGE("websocket server context is null");
         return -1;
+    }
+    if (!CommonUtils::HasInternetPermission()) {
+        serverContext_->SetPermissionDenied(true);
+        NETSTACK_LOGE("ListAllConnections: Permission denied");
+        return WEBSOCKET_ERROR_PERMISSION_DENIED;
     }
     serverContext_->ListAllConnections(connections);
     return 0;

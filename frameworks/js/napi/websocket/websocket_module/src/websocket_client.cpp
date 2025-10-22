@@ -73,6 +73,7 @@ static const lws_retry_bo_t RETRY = {
     .secs_since_valid_hangup = 60, /* hangup after secs idle */
     .jitter_percent = 20,
 };
+static const std::vector<std::string> WS_PREFIX = {PREFIX_WSS, PREFIX_WS};
 
 WebSocketClient::WebSocketClient()
 {
@@ -538,6 +539,10 @@ bool ParseUrl(const std::string url, char *prefix, char *address, char *path, in
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
+    if (std::find(WS_PREFIX.begin(), WS_PREFIX.end(), prefix) == WS_PREFIX.end()) {
+        NETSTACK_LOGE("protocol failed");
+        return false;
+    }
     if (strcpy_s(address, MAX_URI_LENGTH, tempAddress) < 0) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
@@ -714,7 +719,8 @@ int CreatConnectInfoEx(const std::string url, lws_context *lwsContext, WebSocket
     char pathWithoutStart[MAX_URI_LENGTH] = {0};
     int port = 0;
     if (!ParseUrl(url, prefix, address, pathWithoutStart, &port)) {
-        return WebSocketErrorCode::WEBSOCKET_CONNECTION_PARSEURL_ERROR;
+        NETSTACK_LOGI("websocket-log| ParseUrl error: %{public}s", url.c_str());
+        return WebsocketErrorCodeEx::WEBSOCKET_ERROR_CODE_URL_ERROR;
     }
     std::string path = PATH_START + std::string(pathWithoutStart);
     std::string tempHost;
@@ -769,9 +775,15 @@ int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
             this->GetClientContext()->header[key] = value;
         }
     }
+    if (!this->GetClientContext()->GetUserCertPath().empty()) {
+        this->GetClientContext()->caPath = this->GetClientContext()->GetUserCertPath();
+    }
+    
     lws_context_creation_info info = {};
     FillContextInfo(this->GetClientContext(), info);
-    FillCaPath(this->GetClientContext(), info);
+    if (!FillCaPath(this->GetClientContext(), info)) {
+        return WebsocketErrorCodeEx::WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST;
+    }
     if (this->GetClientContext()->GetContext() != nullptr) {
         NETSTACK_LOGE("Websocket connect already exist");
         return WebsocketErrorCodeEx::WEBSOCKET_ERROR_CODE_CONNECT_ALREADY_EXIST;
@@ -795,6 +807,10 @@ int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
 int WebSocketClient::SendEx(char *data, size_t length)
 {
     NETSTACK_LOGI("WebSocketClient::SendEx start %{public}s, %{public}zu", data, length);
+    if (!CommonUtils::HasInternetPermission()) {
+        this->GetClientContext()->permissionDenied = true;
+        return WebSocketErrorCode::WEBSOCKET_ERROR_PERMISSION_DENIED;
+    }
     if (data == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_SEND_DATA_NULL;
     }
@@ -829,6 +845,10 @@ int WebSocketClient::SendEx(char *data, size_t length)
 
 int WebSocketClient::CloseEx(CloseOption options)
 {
+    if (!CommonUtils::HasInternetPermission()) {
+        this->GetClientContext()->permissionDenied = true;
+        return WebSocketErrorCode::WEBSOCKET_ERROR_PERMISSION_DENIED;
+    }
     if (this->GetClientContext() == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
     }

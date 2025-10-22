@@ -235,8 +235,11 @@ impl AniWebSocketMessage {
 
 pub const fn convert_to_business_error(code: i32) -> BusinessError {
     match code {
-        1004 => BusinessError::new_static(2302001, "Websocket Parse url error."),
+        1004 => BusinessError::new_static(2302001, "Websocket url error"),
         1020 => BusinessError::PERMISSION,
+        2302001 => BusinessError::new_static(2302001, "Websocket url error"),
+        2302002 => BusinessError::new_static(2302002, "Websocket file not exist"),
+        2302003 => BusinessError::new_static(2302003, "Websocket connection exist"),
         _ => BusinessError::new_static(code, "Unknown error"),
     }
 }
