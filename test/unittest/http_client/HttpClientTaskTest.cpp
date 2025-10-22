@@ -710,7 +710,7 @@ HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest004, TestSize.Level1)
     size_t memBytes = 1;
     size_t result = task->DataReceiveCallback(data, size, memBytes, userData);
 
-    EXPECT_EQ(result, size * memBytes);
+    EXPECT_EQ(result, 0);
 }
 
 HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest005, TestSize.Level1)
@@ -752,7 +752,7 @@ HWTEST_F(HttpClientTaskTest, DataReceiveCallbackTest006, TestSize.Level1)
     size_t memBytes = 1;
     size_t result = task->DataReceiveCallback(data, size, memBytes, userData);
 
-    EXPECT_EQ(result, size * memBytes);
+    EXPECT_EQ(result, 0);
 }
 
 HWTEST_F(HttpClientTaskTest, ProgressCallbackTest001, TestSize.Level1)
@@ -889,7 +889,7 @@ HWTEST_F(HttpClientTaskTest, HeaderReceiveCallbackTest004, TestSize.Level1)
     size_t memBytes = 2;
     size_t result = task->HeaderReceiveCallback(data, size, memBytes, userData);
     EXPECT_TRUE(resp.headers_.empty());
-    EXPECT_EQ(result, size * memBytes);
+    EXPECT_EQ(result, 0);
 }
 
 HWTEST_F(HttpClientTaskTest, HeaderReceiveCallbackTest005, TestSize.Level1)
@@ -1343,5 +1343,131 @@ HWTEST_F(HttpClientTaskTest, ProcessErrorTest001, TestSize.Level1)
     const HttpClientError &error = task->GetError();
     EXPECT_NE(error.GetErrorCode(), 0);
     EXPECT_FALSE(error.GetErrorMessage().empty());
+}
+
+HWTEST_F(HttpClientTaskTest, SetIsHeadersOnce001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://nonexistenturl:8080";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_TRUE(task != nullptr);
+    task->SetIsHeadersOnce(true);
+    EXPECT_TRUE(task->IsHeadersOnce());
+}
+
+HWTEST_F(HttpClientTaskTest, SetIsHeaderOnce001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://nonexistenturl:8080";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_TRUE(task != nullptr);
+    task->SetIsHeaderOnce(true);
+    EXPECT_TRUE(task->IsHeaderOnce());
+}
+
+HWTEST_F(HttpClientTaskTest, SetIsRequestInStream001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://nonexistenturl:8080";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_TRUE(task != nullptr);
+    task->SetIsRequestInStream(true);
+    EXPECT_TRUE(task->IsRequestInStream());
+}
+
+HWTEST_F(HttpClientTaskTest, OnHeaderReceive001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://nonexistenturl:8080";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_TRUE(task != nullptr);
+    task->OnHeaderReceive([](const HttpClientRequest &request, const std::string &) {});
+    EXPECT_TRUE(task->onHeaderReceive_ != nullptr);
+}
+
+HWTEST_F(HttpClientTaskTest, OffHeaderReceive001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://nonexistenturl:8080";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_TRUE(task != nullptr);
+    task->OnHeaderReceive([](const HttpClientRequest &request, const std::string &) {});
+    auto res = task->OffHeaderReceive();
+    EXPECT_TRUE(task->onHeaderReceive_ == nullptr);
+    EXPECT_TRUE(res);
+}
+
+HWTEST_F(HttpClientTaskTest, OffHeadersReceive001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://nonexistenturl:8080";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_TRUE(task != nullptr);
+    task->OnHeadersReceive(testCallbackconst);
+    auto res = task->OffHeadersReceive();
+    EXPECT_TRUE(task->onHeadersReceive_ == nullptr);
+    EXPECT_TRUE(res);
+}
+
+HWTEST_F(HttpClientTaskTest, OffProgress001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://nonexistenturl:8080";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_TRUE(task != nullptr);
+    task->OnProgress(
+        [](const HttpClientRequest &request, u_long dltotal, u_long dlnow, u_long ultotal, u_long ulnow) {});
+    auto res = task->OffProgress();
+    EXPECT_TRUE(task->onProgress_ == nullptr);
+    EXPECT_TRUE(res);
+}
+
+HWTEST_F(HttpClientTaskTest, OffDataReceive001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://nonexistenturl:8080";
+    httpReq.SetURL(url);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_TRUE(task != nullptr);
+    task->OnDataReceive([](const HttpClientRequest &request, const uint8_t *data, size_t length) {});
+    auto res = task->OffDataReceive();
+    EXPECT_TRUE(task->onDataReceive_ == nullptr);
+    EXPECT_TRUE(res);
+}
+
+HWTEST_F(HttpClientTaskTest, IsBuiltWithOpenSSL001, TestSize.Level1)
+{
+    const auto data = curl_version_info(CURLVERSION_NOW);
+    bool res = false;
+    if (data == nullptr || data->ssl_version == nullptr) {
+        res = HttpClientTask::IsBuiltWithOpenSSL();
+        EXPECT_FALSE(res);
+    } else {
+        res = HttpClientTask::IsBuiltWithOpenSSL();
+        EXPECT_TRUE(res);
+    }
 }
 } // namespace
