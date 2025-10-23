@@ -1858,8 +1858,11 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
         if (hostName != options.GetNetAddress().GetAddress()) {
             CacheCertificates(hostName, ssl_);
         }
-
-        std::string list = SSL_get_cipher_list(ssl_, 0);
+        const char *cipherList = SSL_get_cipher_list(ssl_, 0);
+        if (cipherList == NULL) {
+            return false;
+        }
+        std::string list = cipherList;
         NETSTACK_LOGI("cipher_list: %{public}s, Version: %{public}s, Cipher: %{public}s", list.c_str(),
                       SSL_get_version(ssl_), SSL_get_cipher(ssl_));
         configuration_.SetCipherSuite(list);
