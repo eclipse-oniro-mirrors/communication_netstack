@@ -46,7 +46,7 @@ impl AddressFamily {
     }
 }
 
-#[ani_rs::ani(path = "L@ohos.net.connection.connection.HttpProxyInner")]
+#[ani_rs::ani(path = "@ohos.net.connection.connection.HttpProxyInner")]
 pub struct HttpProxy {
     pub host: String,
 
@@ -83,9 +83,9 @@ pub struct HttpRequestOptions<'local> {
 
     pub ca_path: Option<String>,
 
-    pub resume_from: Option<i32>,
+    pub resume_from: Option<i64>,
 
-    pub resume_to: Option<i32>,
+    pub resume_to: Option<i64>,
 
     pub client_cert: Option<ClientCert>,
 

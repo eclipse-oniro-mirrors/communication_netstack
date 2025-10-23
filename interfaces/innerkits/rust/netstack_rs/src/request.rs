@@ -133,14 +133,14 @@ impl<C: RequestCallback> Request<C> {
     }
     
     /// Set a resume_from for the request.
-    pub fn resume_from(&mut self, num: i32) -> &mut Self {
-        self.inner.pin_mut().SetResumeFrom(num as i64);
+    pub fn resume_from(&mut self, num: i64) -> &mut Self {
+        self.inner.pin_mut().SetResumeFrom(num);
         self
     }
     
     /// Set a resume_to for the request.
-    pub fn resume_to(&mut self, num: i32) -> &mut Self {
-        self.inner.pin_mut().SetResumeTo(num as i64);
+    pub fn resume_to(&mut self, num: i64) -> &mut Self {
+        self.inner.pin_mut().SetResumeTo(num);
         self
     }
     

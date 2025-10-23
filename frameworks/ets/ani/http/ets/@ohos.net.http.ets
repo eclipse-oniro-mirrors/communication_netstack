@@ -64,7 +64,7 @@ export default namespace http {
 
     priority?: int;
 
-    header?: Record<string, string> | Record<string, double>;
+    header?: Record<string, string>;
 
     readTimeout?: int;
 
@@ -76,9 +76,9 @@ export default namespace http {
 
     caPath?: string;
 
-    resumeFrom?: int;
+    resumeFrom?: long;
 
-    resumeTo?: int;
+    resumeTo?: long;
 
     clientCert?: ClientCert;
 
