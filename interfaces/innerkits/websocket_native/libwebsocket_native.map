@@ -35,6 +35,8 @@
       "OHOS::NetStack::WebSocketServer::WebSocketServer::Close(OHOS::NetStack::WebSocketServer::SocketConnection const&, OHOS::NetStack::WebSocketServer::CloseOption const&)";
       "OHOS::NetStack::WebSocketServer::WebSocketServer::Send(char const*, int, OHOS::NetStack::WebSocketServer::SocketConnection const&)";
       "OHOS::NetStack::WebSocketServer::WebSocketServer::ListAllConnections(std::__h::vector<OHOS::NetStack::WebSocketServer::SocketConnection, std::__h::allocator<OHOS::NetStack::WebSocketServer::SocketConnection>>&) const";
+      "OHOS::NetStack::WebSocketServer::WebSocketServer::Registcallback(void (*)(OHOS::NetStack::WebSocketServer::WebSocketServer*, OHOS::NetStack::WebSocketServer::ErrorResult), void (*)(OHOS::NetStack::WebSocketServer::WebSocketServer*, OHOS::NetStack::WebSocketServer::SocketConnection), void (*)(OHOS::NetStack::WebSocketServer::WebSocketServer*, OHOS::NetStack::WebSocketServer::CloseResult, OHOS::NetStack::WebSocketServer::SocketConnection), void (*)(OHOS::NetStack::WebSocketServer::WebSocketServer*, std::__h::basic_string<char, std::__h::char_traits<char>, std::__h::allocator<char>> const&, unsigned int, OHOS::NetStack::WebSocketServer::SocketConnection))";
+      "OHOS::NetStack::WebSocketServer::WebSocketServer::GetServerContext() const";
     };
   local:
     *;
