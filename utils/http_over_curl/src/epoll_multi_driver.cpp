@@ -122,14 +122,44 @@ void EpollMultiDriver::IncomingRequestCallback()
         }
 #endif
         ongoingRequests_[request->easyHandle] = request;
-        auto ret = curl_multi_add_handle(multi_, request->easyHandle);
-        if (ret != CURLM_OK) {
-            NETSTACK_LOGE("curl_multi_add_handle err, ret = %{public}d %{public}s", ret, curl_multi_strerror(ret));
+
+        std::function<bool()> addHandleCallback = std::bind(
+            [](CURLM *multi, RequestInfo *req) -> bool {
+                auto ret = curl_multi_add_handle(multi, req->easyHandle);
+                if (ret != CURLM_OK) {
+                    NETSTACK_LOGE(
+                        "curl_multi_add_handle err, ret = %{public}d %{public}s", ret, curl_multi_strerror(ret));
+                    return false;
+                }
+
+                if (req->callbacks.startedCallback) {
+                    req->callbacks.startedCallback(req->easyHandle, req->opaqueData);
+                }
+                return true;
+            },
+            multi_, request);
+
+#if ENABLE_HTTP_INTERCEPT
+        auto context = reinterpret_cast<OHOS::NetStack::Http::RequestContext *>(request->opaqueData);
+        std::function<void()> blockCallback = std::bind(
+            [](OHOS::NetStack::Http::RequestContext *context) {
+                Http::HttpExec::ProcessResponseHeadersAndEmitEvents(context);
+                Http::HttpExec::ProcessResponseBodyAndEmitEvents(context);
+                Http::HttpExec::EnqueueCallback(context);
+            },
+            context);
+        auto interceptor = context->GetInterceptor();
+        if (interceptor != nullptr && interceptor->IsConnectNetworkInterceptor()) {
+            auto interceptorCallback = interceptor->GetConnectNetworkInterceptorCallback();
+            auto interceptorWork = std::bind(interceptorCallback, context, addHandleCallback, blockCallback);
+            NapiUtils::CreateUvQueueWorkByModuleId(context->GetEnv(), interceptorWork, context->GetModuleId());
+            NETSTACK_LOGD("HttpExec: connectNetworkInterceptorCallback_ executed successfully");
             continue;
         }
+#endif
 
-        if (request->callbacks.startedCallback) {
-            request->callbacks.startedCallback(request->easyHandle, request->opaqueData);
+        if (!addHandleCallback()) {
+            continue;
         }
     }
 }
@@ -162,6 +192,27 @@ void EpollMultiDriver::EpollTimerCallback()
     CheckMultiInfo();
 }
 
+#if ENABLE_HTTP_INTERCEPT
+void EpollMultiDriver::HandleRedirect(CURL *easyHandle, std::shared_ptr<std::string> location, RequestInfo *requestInfo)
+{
+    if (easyHandle) {
+        (void)curl_easy_cleanup(easyHandle);
+    }
+    auto context = reinterpret_cast<OHOS::NetStack::Http::RequestContext *>(requestInfo->opaqueData);
+    context->options.SetUrl(location->c_str());
+    delete requestInfo;
+    Http::HttpExec::RequestWithoutCache(context);
+}
+#endif
+
+void EpollMultiDriver::HandleCompletion(CURLMsg *message, RequestInfo *requestInfo)
+{
+    if (requestInfo != nullptr && requestInfo->callbacks.doneCallback) {
+        requestInfo->callbacks.doneCallback(message, requestInfo->opaqueData);
+    }
+    delete requestInfo;
+}
+
 __attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
 {
     CURLMsg *message;
@@ -170,27 +221,7 @@ __attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
     while ((message = curl_multi_info_read(multi_, &pending))) {
         switch (message->msg) {
             case CURLMSG_DONE: {
-                auto easyHandle = message->easy_handle;
-#if HAS_NETSTACK_CHR
-                ChrClient::NetStackChrClient::GetInstance().GetDfxInfoFromCurlHandleAndReport(easyHandle,
-                                                                                              message->data.result);
-#endif
-                if (!easyHandle) {
-                    break;
-                }
-                curl_multi_remove_handle(multi_, easyHandle);
-                auto requestInfo = ongoingRequests_[easyHandle];
-                ongoingRequests_.erase(easyHandle);
-#ifdef HTTP_HANDOVER_FEATURE
-                if (netHandoverHandler_ &&
-                    netHandoverHandler_->ProcessRequestErr(ongoingRequests_, multi_, requestInfo, message)) {
-                    break;
-                }
-#endif
-                if (requestInfo != nullptr && requestInfo->callbacks.doneCallback) {
-                    requestInfo->callbacks.doneCallback(message, requestInfo->opaqueData);
-                }
-                delete requestInfo;
+                HandleCurlDoneMessage(message);
                 break;
             }
             default:
@@ -198,6 +229,58 @@ __attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
                 break;
         }
     }
+}
+
+void EpollMultiDriver::HandleCurlDoneMessage(CURLMsg *message)
+{
+    auto easyHandle = message->easy_handle;
+#ifdef HAS_NETSTACK_CHR
+#if ENABLE_HTTP_INTERCEPT
+    long responseCode = 0;
+    curl_easy_getinfo(easyHandle, CURLINFO_RESPONSE_CODE, &responseCode);
+    if (responseCode < HTTP_STATUS_REDIRECT_START || responseCode >= HTTP_STATUS_CLIENT_ERROR_START)
+#endif
+    {
+        ChrClient::NetStackChrClient::GetInstance().GetDfxInfoFromCurlHandleAndReport(easyHandle, message->data.result);
+    }
+#endif
+    if (!easyHandle) {
+        return;
+    }
+    curl_multi_remove_handle(multi_, easyHandle);
+    auto requestInfo = ongoingRequests_[easyHandle];
+    ongoingRequests_.erase(easyHandle);
+#ifdef HTTP_HANDOVER_FEATURE
+    if (netHandoverHandler_ && netHandoverHandler_->ProcessRequestErr(ongoingRequests_, multi_, requestInfo, message)) {
+        return;
+    }
+#endif
+    std::function<void()> handleCompletion = std::bind(&EpollMultiDriver::HandleCompletion, this, message, requestInfo);
+#if ENABLE_HTTP_INTERCEPT
+    char *location = nullptr;
+    curl_easy_getinfo(easyHandle, CURLINFO_REDIRECT_URL, &location);
+    NETSTACK_LOGD("Redirect responseCode: %{public}d", static_cast<int>(responseCode));
+    if (responseCode >= HTTP_STATUS_REDIRECT_START && responseCode < HTTP_STATUS_CLIENT_ERROR_START && location) {
+        NETSTACK_LOGD("Redirect detected: %{public}s, status=%{public}d", location, static_cast<int>(responseCode));
+        auto locationPtr = std::make_shared<std::string>(location);
+        std::function<void()> handleRedirect =
+            std::bind(&EpollMultiDriver::HandleRedirect, this, easyHandle, locationPtr, requestInfo);
+        auto context = reinterpret_cast<OHOS::NetStack::Http::RequestContext *>(requestInfo->opaqueData);
+        auto interceptor = context->GetInterceptor();
+        NETSTACK_LOGD("Redirect detected: %{public}s, status=%{public}d", location, static_cast<int>(responseCode));
+        if (interceptor != nullptr && interceptor->IsRedirectionInterceptor()) {
+            auto interceptorCallback = interceptor->GetRedirectionInterceptorCallback();
+            auto handleInfo = new RedirectionInterceptorInfo { message, locationPtr };
+            auto redirectCallback =
+                std::bind(interceptorCallback, context, handleRedirect, handleCompletion, handleInfo);
+            NapiUtils::CreateUvQueueWorkByModuleId(context->GetEnv(), redirectCallback, context->GetModuleId());
+            return;
+        }
+        handleRedirect();
+        return;
+    }
+#endif
+    handleCompletion();
 }
 
 int EpollMultiDriver::MultiSocketCallback(curl_socket_t socket, int action, CurlSocketContext *socketContext)

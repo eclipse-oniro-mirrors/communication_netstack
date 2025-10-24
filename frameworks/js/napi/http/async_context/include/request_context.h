@@ -23,11 +23,15 @@
 #include "base_context.h"
 #include "http_request_options.h"
 #include "http_response.h"
+#include "hi_app_event_report.h"
 #include "timing.h"
 #if HAS_NETMANAGER_BASE
 #include "netstack_network_profiler.h"
 #endif
 #include "request_tracer.h"
+#if ENABLE_HTTP_INTERCEPT
+#include "http_interceptor.h"
+#endif
 #ifdef HTTP_HANDOVER_FEATURE
 struct HttpHandoverInfo;
 #endif
@@ -53,6 +57,10 @@ struct CertsPath {
     std::string certFile;
 };
 
+#if ENABLE_HTTP_INTERCEPT
+class HttpInterceptor;
+#endif
+
 class RequestContext final : public BaseContext {
 public:
     friend class HttpExec;
@@ -66,6 +74,12 @@ public:
     void StartTiming();
 
     void ParseParams(napi_value *params, size_t paramsCount) override;
+
+#if ENABLE_HTTP_INTERCEPT
+    void SetInterceptorRefs(const std::map<std::string, napi_ref> &interceptorRefs);
+
+    HttpInterceptor *GetInterceptor();
+#endif
 
     HttpRequestOptions options;
 
@@ -145,6 +159,8 @@ public:
 
     void SetCurlHandle(CURL *handle);
 
+    CURL *GetCurlHandle();
+
     void SendNetworkProfiler();
 
     RequestTracer::Trace &GetTrace();
@@ -160,6 +176,8 @@ public:
     void SetPinnedPubkey(std::string &pubkey);
 
     std::string GetPinnedPubkey() const;
+
+    std::map<std::string, napi_ref> interceptorRefs_;
 
 #ifdef HTTP_HANDOVER_FEATURE
     void SetRequestHandoverInfo(const HttpHandoverInfo &httpHandoverInfo);
@@ -197,6 +215,10 @@ private:
 #ifdef HTTP_HANDOVER_FEATURE
     std::string httpHandoverInfoStr_ = "no handover";
 #endif
+#if ENABLE_HTTP_INTERCEPT
+    std::unique_ptr<HttpInterceptor> interceptor_ = nullptr;
+#endif
+
     RequestTracer::Trace trace_;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);

@@ -65,6 +65,11 @@ void HttpRequestOptions::SetBody(const void *data, size_t length)
     body_.append(static_cast<const char *>(data), length);
 }
 
+void HttpRequestOptions::ReplaceBody(const void *data, size_t length)
+{
+    body_.assign(static_cast<const char *>(data), length);
+}
+
 void HttpRequestOptions::SetHeader(const std::string &key, const std::string &val)
 {
     header_[key] = val;

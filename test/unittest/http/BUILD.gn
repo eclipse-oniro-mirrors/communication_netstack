@@ -54,15 +54,17 @@ ohos_unittest("http_unittest") {
     "$NETSTACK_NAPI_ROOT/http/http_exec/include",
     "$NETSTACK_NAPI_ROOT/http/http_module/include",
     "$NETSTACK_NAPI_ROOT/http/options/include",
+    "$NETSTACK_NAPI_ROOT/http/http_interceptor/include",
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_constant/include",
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/include",
   ]
   include_dirs += utils_include
 
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
-    include_dirs += [
-      "$SUBSYSTEM_DIR/netstack/utils/netstack_chr_client/include",
-    ]
+    include_dirs +=
+        [ "$SUBSYSTEM_DIR/netstack/utils/netstack_chr_client/include" ]
   }
 
   external_deps = common_external_deps
@@ -70,18 +72,21 @@ ohos_unittest("http_unittest") {
 
   sources = [
     "$NETSTACK_NAPI_ROOT/http/async_context/src/request_context.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_time.cpp",
     "$NETSTACK_NAPI_ROOT/http/constant/src/constant.cpp",
     "$NETSTACK_NAPI_ROOT/http/http_exec/src/http_exec.cpp",
     "$NETSTACK_NAPI_ROOT/http/http_exec/src/http_tls_config.cpp",
+    "$NETSTACK_NAPI_ROOT/http/http_interceptor/src/http_interceptor.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_request_options.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_response.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/src/epoll_request_handler.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/netstack_chr_client/src/netstack_chr_client.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/netstack_chr_client/src/netstack_chr_report.cpp",
-    "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/src/epoll_request_handler.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/src/netstack_network_profiler.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/tlv_utils/src/tlv_utils.cpp",
     "HttpExecTest.cpp",
+    "HttpInterceptorTest.cpp",
     "HttpRequestOptionsTest.cpp",
   ]
 
@@ -90,12 +95,12 @@ ohos_unittest("http_unittest") {
     sources +=
         [ "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp" ]
     deps += [
-      "napi:ace_napi",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
+      "napi:ace_napi",
     ]
     external_deps += [
-      "napi:ace_napi",
       "bounds_checking_function:libsec_static",
+      "napi:ace_napi",
     ]
   } else {
     deps += [
@@ -134,9 +139,10 @@ ohos_unittest("http_unittest") {
     } else {
       defines = [ "HAS_NETMANAGER_BASE=0" ]
     }
+    defines += [ "ENABLE_HTTP_INTERCEPT=1" ]
     if (product_name != "ohos-sdk") {
       external_deps += [ "init:libbegetutil" ]
-      defines += [ 
+      defines += [
         "HTTP_PROXY_ENABLE",
         "HTTP_MULTIPATH_CERT_ENABLE",
         "HTTP_ONLY_VERIFY_ROOT_CA_ENABLE",

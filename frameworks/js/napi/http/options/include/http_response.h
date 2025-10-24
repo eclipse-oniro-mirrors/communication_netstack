@@ -67,6 +67,8 @@ public:
 
     void SetWarning(const std::string &val);
 
+    bool isApplyBlockRedirectionInterceptor_ = false;
+
 private:
     std::string result_;
 

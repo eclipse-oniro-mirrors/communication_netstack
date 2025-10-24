@@ -16,6 +16,7 @@
 #ifndef COMMUNICATIONNETSTACK_HTTP_MODULE_H
 #define COMMUNICATIONNETSTACK_HTTP_MODULE_H
 
+#include <string>
 #include "napi/native_api.h"
 
 namespace OHOS::NetStack::Http {
@@ -47,6 +48,53 @@ public:
         static napi_value Off(napi_env env, napi_callback_info info);
     };
 
+    class HttpInterceptor {
+    public:
+        napi_env napi_env_ = nullptr;
+        std::string interceptorType_;
+        napi_ref interceptorRef_ = nullptr;
+
+        HttpInterceptor(napi_env env, const std::string &type, napi_value interceptorInstance)
+            : napi_env_(env), interceptorType_(type)
+        {
+            napi_create_reference(env, interceptorInstance, 1, &interceptorRef_);
+        }
+
+        ~HttpInterceptor()
+        {
+            if (interceptorRef_ != nullptr) {
+                napi_delete_reference(napi_env_, interceptorRef_);
+            }
+        }
+        napi_value GetInstance(napi_env env) const
+        {
+            napi_value instance;
+            napi_get_reference_value(env, interceptorRef_, &instance);
+            return instance;
+        }
+    };
+
+    class HttpInterceptorChain {
+    public:
+        std::vector<HttpInterceptor *> chain_;
+        napi_env env_ = nullptr;
+        HttpInterceptorChain(napi_env env) : env_(env) { }
+        ~HttpInterceptorChain()
+        {
+            for (auto *interceptor : chain_) {
+                delete interceptor;
+            }
+        }
+
+        static constexpr const char *FUNCTION_GETCHAIN = "getChain";
+        static constexpr const char *FUNCTION_ADDCHAIN = "addChain";
+        static constexpr const char *FUNCTION_APPLY = "apply";
+
+        static napi_value GetChain(napi_env env, napi_callback_info info);
+        static napi_value AddChain(napi_env env, napi_callback_info info);
+        static napi_value Apply(napi_env env, napi_callback_info info);
+    };
+
     static constexpr const char *FUNCTION_CREATE_HTTP = "createHttp";
     static constexpr const char *FUNCTION_CREATE_HTTP_RESPONSE_CACHE = "createHttpResponseCache";
     static constexpr const char *INTERFACE_REQUEST_METHOD = "RequestMethod";
@@ -60,6 +108,7 @@ public:
     static constexpr const char *INTERFACE_ADDRESS_FAMILY = "AddressFamily";
     static constexpr const char *INTERFACE_SSL_TYPE = "SslType";
     static constexpr const char *INTERFACE_CLIENT_ENC_CERT = "CertType";
+    static constexpr const char *INTERFACE_HTTP_INTERCEPTOR_CHAIN = "HttpInterceptorChain";
 
     static napi_value InitHttpModule(napi_env env, napi_value exports);
 
@@ -71,6 +120,8 @@ private:
     static void DefineHttpRequestClass(napi_env env, napi_value exports);
 
     static void DefineHttpResponseCacheClass(napi_env env, napi_value exports);
+
+    static void DefineHttpInterceptorChainClass(napi_env env, napi_value exports);
 
     static void InitHttpProperties(napi_env env, napi_value exports);
 

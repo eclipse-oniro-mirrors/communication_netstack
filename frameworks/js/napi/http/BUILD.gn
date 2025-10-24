@@ -120,9 +120,7 @@ ohos_shared_library("http") {
       "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
       "$NETSTACK_DIR/utils/common_utils/src/request_tracer.cpp",
     ]
-    deps = [
-      "$NETSTACK_DIR/utils/napi_utils:napi_utils_static",
-    ]
+    deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils_static" ]
     external_deps = [
       "bounds_checking_function:libsec_shared",
       "cJSON:cjson",
@@ -141,9 +139,9 @@ ohos_shared_library("http") {
       "cJSON:cjson",
       "curl:curl_shared_http3",
       "hilog:libhilog",
-      "ipc:ipc_single",
       "hiprofiler:libnetwork_profiler",
       "hitrace:hitrace_meter",
+      "ipc:ipc_single",
       "napi:ace_napi",
       "samgr:samgr_proxy",
       "time_service:time_client",
@@ -158,24 +156,26 @@ ohos_shared_library("http") {
         defined(global_parts_info.communication_netmanager_base) &&
         global_parts_info.communication_netmanager_base) {
       external_deps += [
-        "netmanager_base:net_conn_manager_if",
-        "netmanager_base:netsys_client",
-        "netmanager_base:net_security_config_if",
-        "samgr:samgr_proxy",
         "bundle_framework:appexecfwk_base",
         "bundle_framework:appexecfwk_core",
+        "netmanager_base:net_conn_manager_if",
+        "netmanager_base:net_security_config_if",
+        "netmanager_base:netsys_client",
         "safwk:system_ability_fwk",
+        "samgr:samgr_proxy",
       ]
       defines = [
         "HAS_NETMANAGER_BASE=1",
         "HAS_NETSTACK_CHR=1",
+        "ENABLE_HTTP_INTERCEPT=1",
       ]
       sources += [
-        "$NETSTACK_DIR/utils/netstack_chr_client/src/netstack_chr_client.cpp",
-        "$NETSTACK_DIR/utils/netstack_chr_client/src/netstack_chr_report.cpp",
         "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",
         "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
         "$NETSTACK_DIR/utils/http_over_curl/src/http_handover_handler.cpp",
+        "$NETSTACK_DIR/utils/netstack_chr_client/src/netstack_chr_client.cpp",
+        "$NETSTACK_DIR/utils/netstack_chr_client/src/netstack_chr_report.cpp",
+        "http_interceptor/src/http_interceptor.cpp",
       ]
       defines += [
         "HTTP_HANDOVER_FEATURE",
@@ -183,6 +183,7 @@ ohos_shared_library("http") {
       ]
       include_dirs += [
         "$NETSTACK_DIR/interfaces/innerkits/http_client/include",
+        "http_interceptor/include",
       ]
     } else {
       defines = [

@@ -50,12 +50,12 @@ static bool g_appIsAtomicService = false;
 static std::string g_appBundleName;
 
 static std::once_flag g_isAtomicServiceFlag;
-static int64_t g_limitSdkReport = 0;
 
 napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
 {
     DefineHttpRequestClass(env, exports);
     DefineHttpResponseCacheClass(env, exports);
+    DefineHttpInterceptorChainClass(env, exports);
     InitHttpProperties(env, exports);
     g_moduleId = NapiUtils::CreateUvHandlerQueue(env);
     NapiUtils::SetEnvValid(env);
@@ -121,6 +121,28 @@ void HttpModuleExports::DefineHttpResponseCacheClass(napi_env env, napi_value ex
         DECLARE_NAPI_FUNCTION(HttpResponseCache::FUNCTION_DELETE, HttpResponseCache::Delete),
     };
     ModuleTemplate::DefineClass(env, exports, properties, INTERFACE_HTTP_RESPONSE_CACHE);
+}
+
+void HttpModuleExports::DefineHttpInterceptorChainClass(napi_env env, napi_value exports)
+{
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_FUNCTION(HttpInterceptorChain::FUNCTION_GETCHAIN, HttpInterceptorChain::GetChain),
+        DECLARE_NAPI_FUNCTION(HttpInterceptorChain::FUNCTION_ADDCHAIN, HttpInterceptorChain::AddChain),
+        DECLARE_NAPI_FUNCTION(HttpInterceptorChain::FUNCTION_APPLY, HttpInterceptorChain::Apply),
+    };
+    ModuleTemplate::DefineClassNew(env, exports, properties, INTERFACE_HTTP_INTERCEPTOR_CHAIN,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            HttpInterceptorChain *chain = new HttpInterceptorChain(env);
+            napi_value thisVal;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr);
+            napi_wrap(
+                env, thisVal, reinterpret_cast<void *>(chain),
+                [](napi_env env, void *data, void *hint) {
+                    delete static_cast<HttpInterceptorChain *>(data);
+                },
+                nullptr, nullptr);
+            return thisVal;
+        });
 }
 
 void HttpModuleExports::InitHttpProperties(napi_env env, napi_value exports)
@@ -370,6 +392,134 @@ napi_value HttpModuleExports::HttpResponseCache::Delete(napi_env env, napi_callb
 {
     return ModuleTemplate::InterfaceWithManagerWrapper<BaseContext>(
         env, info, DELETE_ASYNC_WORK_NAME, nullptr, HttpAsyncWork::ExecDelete, HttpAsyncWork::DeleteCallback);
+}
+
+napi_value HttpModuleExports::HttpInterceptorChain::GetChain(napi_env env, napi_callback_info info)
+{
+    napi_value this_arg;
+    napi_status status = napi_get_cb_info(env, info, nullptr, nullptr, &this_arg, nullptr);
+    if (status != napi_ok) {
+        NETSTACK_LOGE("Failed to get cb info in GetChain");
+        return NapiUtils::CreateArray(env, 0);
+    }
+    HttpInterceptorChain *chain = nullptr;
+    status = napi_unwrap(env, this_arg, reinterpret_cast<void **>(&chain));
+    if (status != napi_ok || chain == nullptr) {
+        NETSTACK_LOGE("Failed to unwrap HttpInterceptorChain in GetChain");
+        return NapiUtils::CreateArray(env, 0);
+    }
+
+    if (chain->chain_.empty()) {
+        return NapiUtils::CreateArray(env, 0);
+    }
+
+    napi_value result = NapiUtils::CreateArray(env, chain->chain_.size());
+    for (size_t i = 0; i < chain->chain_.size(); ++i) {
+        HttpInterceptor *interceptor = chain->chain_[i];
+        if (interceptor == nullptr) {
+            NETSTACK_LOGE("Null interceptor in chain during GetChain");
+            NapiUtils::ThrowError(env, "2300801", "Interceptor internal parameter exception");
+        }
+        napi_value interceptorInstance = interceptor->GetInstance(env);
+        NapiUtils::SetArrayElement(env, result, i, interceptorInstance);
+    }
+    return result;
+}
+
+napi_value HttpModuleExports::HttpInterceptorChain::AddChain(napi_env env, napi_callback_info info)
+{
+    napi_value rs = NapiUtils::GetBoolean(env, false);
+    size_t argc = 1;
+    napi_value args[1];
+    napi_value this_arg;
+    napi_status status = napi_get_cb_info(env, info, &argc, args, &this_arg, nullptr);
+    if (status != napi_ok || argc != 1) {
+        NETSTACK_LOGE("Invalid args in AddChain");
+        NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
+        return rs;
+    }
+
+    HttpInterceptorChain *chain = nullptr;
+    status = napi_unwrap(env, this_arg, reinterpret_cast<void **>(&chain));
+    if (status != napi_ok || chain == nullptr) {
+        NETSTACK_LOGE("Failed to unwrap chain in AddChain");
+        NapiUtils::ThrowError(env, "2300801", "Interceptor internal parameter exception");
+        return rs;
+    }
+
+    if (!NapiUtils::IsArray(env, args[0])) {
+        NETSTACK_LOGE("Non-array argument in AddChain");
+        NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
+        return rs;
+    }
+
+    uint32_t length = NapiUtils::GetArrayLength(env, args[0]);
+    for (uint32_t i = 0; i < length; ++i) {
+        napi_value interceptor = NapiUtils::GetArrayElement(env, args[0], i);
+        std::string type = NapiUtils::GetStringPropertyUtf8(env, interceptor, "interceptorType");
+        if (type.empty()) {
+            NETSTACK_LOGE("Empty interceptor type in AddChain");
+            NapiUtils::ThrowError(env, "2300801", "Interceptor internal parameter exception");
+            return rs;
+        }
+        for (const auto &existing : chain->chain_) {
+            if (existing->interceptorType_ == type) {
+                NETSTACK_LOGE("Duplicate interceptor type: %{public}s in AddChain", type.c_str());
+                NapiUtils::ThrowError(env, "2300804", "Interceptor parameter duplication");
+                return rs;
+            }
+        }
+        HttpInterceptor *newInterceptor = new HttpInterceptor(env, type, interceptor);
+        chain->chain_.push_back(newInterceptor);
+    }
+    return NapiUtils::GetBoolean(env, true);
+}
+
+napi_value HttpModuleExports::HttpInterceptorChain::Apply(napi_env env, napi_callback_info info)
+{
+    napi_value rs = NapiUtils::GetBoolean(env, false);
+    size_t argc = 1;
+    napi_value args[1];
+    napi_value this_arg;
+    napi_status status = napi_get_cb_info(env, info, &argc, args, &this_arg, nullptr);
+    if (status != napi_ok) {
+        NETSTACK_LOGE("Failed to get cb info in Apply");
+        NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
+        return rs;
+    }
+    HttpInterceptorChain *chain = nullptr;
+    status = napi_unwrap(env, this_arg, reinterpret_cast<void **>(&chain));
+    if (status != napi_ok || chain == nullptr) {
+        NETSTACK_LOGE("Failed to unwrap chain in Apply");
+        NapiUtils::ThrowError(env, "2300801", "Interceptor internal parameter exception");
+        return rs;
+    }
+
+    if (chain->chain_.empty()) {
+        NETSTACK_LOGE("Empty chain in Apply");
+        return rs;
+    }
+
+    if (NapiUtils::GetValueType(env, args[0]) != napi_object) {
+        NETSTACK_LOGE("Non-object argument in Apply");
+        NapiUtils::ThrowError(env, "2300802", "Interceptor unsupported parameter type");
+        return rs;
+    }
+
+    std::map<std::string, napi_ref> interceptorRefs;
+    for (size_t i = 0; i < chain->chain_.size(); ++i) {
+        HttpInterceptor *interceptor = chain->chain_[i];
+        if (interceptor == nullptr) {
+            NETSTACK_LOGE("Null interceptor in chain during Apply");
+            NapiUtils::ThrowError(env, "2300801", "Interceptor internal parameter exception");
+        }
+        napi_value interceptorInstance = interceptor->GetInstance(env);
+        napi_ref ref;
+        if (napi_create_reference(env, interceptorInstance, 1, &ref) == napi_ok) {
+            interceptorRefs.insert({ interceptor->interceptorType_, ref });
+        }
+    }
+    return ModuleTemplate::InterceptorChainApply(env, info, interceptorRefs);
 }
 
 static napi_module g_httpModule = {

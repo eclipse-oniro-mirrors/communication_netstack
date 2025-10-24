@@ -21,6 +21,11 @@
 
 #include "curl/curl.h"
 
+#if ENABLE_HTTP_INTERCEPT
+#include "http_exec.h"
+#endif
+
+
 #include "epoller.h"
 #include "thread_safe_storage.h"
 #include "timeout_timer.h"
@@ -31,6 +36,9 @@
 namespace OHOS::NetStack::HttpOverCurl {
 
 struct RequestInfo;
+
+constexpr long HTTP_STATUS_REDIRECT_START = 300;
+constexpr long HTTP_STATUS_CLIENT_ERROR_START = 400;
 
 class EpollMultiDriver {
 public:
@@ -59,9 +67,15 @@ private:
     void EpollSocketCallback(int fd);
 
     void CheckMultiInfo();
+    void HandleCurlDoneMessage(CURLMsg *message);
 
     void Initialize();
     void IncomingRequestCallback();
+
+#if ENABLE_HTTP_INTERCEPT
+    void HandleRedirect(CURL *easyHandle, std::shared_ptr<std::string> location, RequestInfo *requestInfo);
+#endif
+    void HandleCompletion(CURLMsg *message, RequestInfo *requestInfo);
 
     std::shared_ptr<HttpOverCurl::ThreadSafeStorage<RequestInfo *>> incomingQueue_;
 
