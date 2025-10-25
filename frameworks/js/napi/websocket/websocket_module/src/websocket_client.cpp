@@ -539,6 +539,32 @@ bool ParseUrl(const std::string url, char *prefix, char *address, char *path, in
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
+    if (strcpy_s(address, MAX_URI_LENGTH, tempAddress) < 0) {
+        NETSTACK_LOGE("strcpy_s failed");
+        return false;
+    }
+    if (strcpy_s(path, MAX_URI_LENGTH, tempPath) < 0) {
+        NETSTACK_LOGE("strcpy_s failed");
+        return false;
+    }
+    return true;
+}
+
+bool ParseUrlEx(const std::string url, char *prefix, char *address, char *path, int *port)
+{
+    char uri[MAX_URI_LENGTH] = {0};
+    if (strcpy_s(uri, sizeof(uri), url.c_str()) < 0) {
+        NETSTACK_LOGE("strcpy_s failed");
+        return false;
+    }
+    const char *tempPrefix = nullptr;
+    const char *tempAddress = nullptr;
+    const char *tempPath = nullptr;
+    (void)lws_parse_uri(uri, &tempPrefix, &tempAddress, port, &tempPath);
+    if (strcpy_s(prefix, MAX_URI_LENGTH, tempPrefix) < 0) {
+        NETSTACK_LOGE("strcpy_s failed");
+        return false;
+    }
     if (std::find(WS_PREFIX.begin(), WS_PREFIX.end(), prefix) == WS_PREFIX.end()) {
         NETSTACK_LOGE("protocol failed");
         return false;
@@ -718,7 +744,7 @@ int CreatConnectInfoEx(const std::string url, lws_context *lwsContext, WebSocket
     char address[MAX_URI_LENGTH] = {0};
     char pathWithoutStart[MAX_URI_LENGTH] = {0};
     int port = 0;
-    if (!ParseUrl(url, prefix, address, pathWithoutStart, &port)) {
+    if (!ParseUrlEx(url, prefix, address, pathWithoutStart, &port)) {
         NETSTACK_LOGI("websocket-log| ParseUrl error: %{public}s", url.c_str());
         return WebsocketErrorCodeEx::WEBSOCKET_ERROR_CODE_URL_ERROR;
     }
@@ -795,7 +821,7 @@ int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
     this->GetClientContext()->SetContext(lwsContext);
     int ret = CreatConnectInfoEx(url, lwsContext, this);
     if (ret != WEBSOCKET_NONE_ERR) {
-        NETSTACK_LOGE("websocket CreatConnectInfo error");
+        NETSTACK_LOGE("websocket CreatConnectInfoEx error");
         GetClientContext()->SetContext(nullptr);
         lws_context_destroy(lwsContext);
         return ret;

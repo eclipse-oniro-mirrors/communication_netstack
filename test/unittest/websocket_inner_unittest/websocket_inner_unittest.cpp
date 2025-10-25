@@ -73,25 +73,25 @@ namespace {
 
     HWTEST_F(WebSocketTest, WebSocketRegistcallback001, TestSize.Level1)
     {
-        const int32_t websocketConnectionParseurlError = 1004;
         openOptions.headers["Content-Type"] = "application/json";
         openOptions.headers["Authorization"] = "Bearer your_token_here";
         closeOptions.code = LWS_CLOSE_STATUS_NORMAL;
         closeOptions.reason = "";
         client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
         int32_t ret = client->Connect("www.baidu.com", openOptions);
-        EXPECT_EQ(ret, websocketConnectionParseurlError);
+        EXPECT_TRUE(ret == WebSocketErrorCode::WEBSOCKET_CONNECTION_TO_SERVER_FAIL ||
+                    ret == WebSocketErrorCode::WEBSOCKET_NONE_ERR);
     }
 
     HWTEST_F(WebSocketTest, WebSocketConnect002, TestSize.Level1)
     {
         int32_t ret = 0;
-        const int32_t websocketConnectionParseurlError = 1004;
         openOptions.headers["Content-Type"] = "application/json";
         openOptions.headers["Authorization"] = "Bearer your_token_here";
         client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
         ret = client->Connect("www.baidu.com", openOptions);
-        EXPECT_EQ(ret, websocketConnectionParseurlError);
+        EXPECT_TRUE(ret == WebSocketErrorCode::WEBSOCKET_CONNECTION_TO_SERVER_FAIL ||
+                    ret == WebSocketErrorCode::WEBSOCKET_NONE_ERR);
     }
 
     HWTEST_F(WebSocketTest, WebSocketSend003, TestSize.Level1)
