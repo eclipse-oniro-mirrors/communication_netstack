@@ -1042,7 +1042,8 @@ bool TLSSocketServer::Connection::StartShakingHands(const TlsSocket::TLSConnectO
     std::vector<std::string> SslProtocolVer({SSL_get_version(ssl_)});
     connectionConfiguration_.SetProtocol({SslProtocolVer});
 
-    std::string list = SSL_get_cipher_list(ssl_, 0);
+    const char *cipherList = SSL_get_cipher_list(ssl_, 0);
+    std::string list = (cipherList == NULL) ? "" : cipherList;
     NETSTACK_LOGI("SSL_get_cipher_list: %{public}s", list.c_str());
     connectionConfiguration_.SetCipherSuite(list);
     if (!SetSharedSigals()) {
