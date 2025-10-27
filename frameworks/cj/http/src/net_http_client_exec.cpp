@@ -278,7 +278,6 @@ void NetHttpClientExec::HandleCurlData(CURLMsg *msg)
     NETSTACK_LOGI("priority = %{public}d", context->options.GetPriority());
     context->SetExecOK(GetCurlDataFromHandle(handle, context, msg->msg, msg->data.result));
     CacheCurlPerformanceTiming(handle, context);
-    curl_easy_cleanup(handle);
     if (context->IsExecOK()) {
         CacheProxy proxy(context->options);
         proxy.WriteResponseToCache(context->response);
