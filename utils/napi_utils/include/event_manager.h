@@ -28,6 +28,7 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
+#include <unordered_map>
 #include "event_listener.h"
 #include "napi/native_api.h"
 #include "uv.h"

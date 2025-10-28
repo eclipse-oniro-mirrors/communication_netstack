@@ -17,6 +17,7 @@
 #define COMMUNICATIONNETSTACK_HTTP_MODULE_H
 
 #include <string>
+#include <vector>
 #include "napi/native_api.h"
 
 namespace OHOS::NetStack::Http {
