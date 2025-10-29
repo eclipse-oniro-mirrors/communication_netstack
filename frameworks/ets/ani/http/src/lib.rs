@@ -27,7 +27,8 @@ mod http;
 ani_rs::ani_constructor! {
     namespace "L@ohos/net/http/http"
     [
-        "createHttpPtr" : http::create_http_ptr
+        "createHttpPtr" : http::create_http_ptr,
+        "createHttpResponseCache" : http::create_http_response_cache
     ]
     class "L@ohos/net/http/http/HttpRequestInner"
     [
