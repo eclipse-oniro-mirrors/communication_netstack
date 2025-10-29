@@ -418,7 +418,6 @@ napi_value HttpModuleExports::HttpInterceptorChain::GetChain(napi_env env, napi_
         HttpInterceptor *interceptor = chain->chain_[i];
         if (interceptor == nullptr) {
             NETSTACK_LOGE("Null interceptor in chain during GetChain");
-            NapiUtils::ThrowError(env, "2300801", "Interceptor internal parameter exception");
         }
         napi_value interceptorInstance = interceptor->GetInstance(env);
         NapiUtils::SetArrayElement(env, result, i, interceptorInstance);
@@ -435,7 +434,7 @@ napi_value HttpModuleExports::HttpInterceptorChain::AddChain(napi_env env, napi_
     napi_status status = napi_get_cb_info(env, info, &argc, args, &this_arg, nullptr);
     if (status != napi_ok || argc != 1) {
         NETSTACK_LOGE("Invalid args in AddChain");
-        NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
+        NapiUtils::ThrowError(env, "2300802", "Interceptor unsupported parameter type");
         return rs;
     }
 
@@ -443,13 +442,13 @@ napi_value HttpModuleExports::HttpInterceptorChain::AddChain(napi_env env, napi_
     status = napi_unwrap(env, this_arg, reinterpret_cast<void **>(&chain));
     if (status != napi_ok || chain == nullptr) {
         NETSTACK_LOGE("Failed to unwrap chain in AddChain");
-        NapiUtils::ThrowError(env, "2300801", "Interceptor internal parameter exception");
+        NapiUtils::ThrowError(env, "2300999", "Internal error");
         return rs;
     }
 
     if (!NapiUtils::IsArray(env, args[0])) {
         NETSTACK_LOGE("Non-array argument in AddChain");
-        NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
+        NapiUtils::ThrowError(env, "2300802", "Interceptor unsupported parameter type");
         return rs;
     }
 
@@ -459,13 +458,13 @@ napi_value HttpModuleExports::HttpInterceptorChain::AddChain(napi_env env, napi_
         std::string type = NapiUtils::GetStringPropertyUtf8(env, interceptor, "interceptorType");
         if (type.empty()) {
             NETSTACK_LOGE("Empty interceptor type in AddChain");
-            NapiUtils::ThrowError(env, "2300801", "Interceptor internal parameter exception");
+            NapiUtils::ThrowError(env, "2300999", "Internal error");
             return rs;
         }
         for (const auto &existing : chain->chain_) {
             if (existing->interceptorType_ == type) {
                 NETSTACK_LOGE("Duplicate interceptor type: %{public}s in AddChain", type.c_str());
-                NapiUtils::ThrowError(env, "2300804", "Interceptor parameter duplication");
+                NapiUtils::ThrowError(env, "2300803", "Duplicated interceptor type in the chain");
                 return rs;
             }
         }
@@ -482,16 +481,16 @@ napi_value HttpModuleExports::HttpInterceptorChain::Apply(napi_env env, napi_cal
     napi_value args[1];
     napi_value this_arg;
     napi_status status = napi_get_cb_info(env, info, &argc, args, &this_arg, nullptr);
-    if (status != napi_ok) {
+    if (status != napi_ok || argc != 1) {
         NETSTACK_LOGE("Failed to get cb info in Apply");
-        NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
+        NapiUtils::ThrowError(env, "2300802", "Interceptor unsupported parameter type");
         return rs;
     }
     HttpInterceptorChain *chain = nullptr;
     status = napi_unwrap(env, this_arg, reinterpret_cast<void **>(&chain));
     if (status != napi_ok || chain == nullptr) {
         NETSTACK_LOGE("Failed to unwrap chain in Apply");
-        NapiUtils::ThrowError(env, "2300801", "Interceptor internal parameter exception");
+        NapiUtils::ThrowError(env, "2300999", "Internal error");
         return rs;
     }
 
@@ -511,7 +510,7 @@ napi_value HttpModuleExports::HttpInterceptorChain::Apply(napi_env env, napi_cal
         HttpInterceptor *interceptor = chain->chain_[i];
         if (interceptor == nullptr) {
             NETSTACK_LOGE("Null interceptor in chain during Apply");
-            NapiUtils::ThrowError(env, "2300801", "Interceptor internal parameter exception");
+            NapiUtils::ThrowError(env, "2300999", "Internal error");
         }
         napi_value interceptorInstance = interceptor->GetInstance(env);
         napi_ref ref;
