@@ -889,7 +889,7 @@ HWTEST_F(HttpClientTaskTest, HeaderReceiveCallbackTest004, TestSize.Level1)
     size_t memBytes = 2;
     size_t result = task->HeaderReceiveCallback(data, size, memBytes, userData);
     EXPECT_TRUE(resp.headers_.empty());
-    EXPECT_EQ(result, size * memBytes);
+    EXPECT_EQ(result, 0);
 }
 
 HWTEST_F(HttpClientTaskTest, HeaderReceiveCallbackTest005, TestSize.Level1)
