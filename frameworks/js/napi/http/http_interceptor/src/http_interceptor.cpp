@@ -157,11 +157,9 @@ void HttpInterceptor::ApplyContinueInitialRequestInterceptor(napi_env env, Initi
                 NETSTACK_LOGD("Updated array buffer body, length=%{public}zu", bufferLength);
             } else {
                 INTERCEPTOR_TRACE_ERROR("INITIAL_REQUEST", "Invalid array buffer data or length");
-                NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
             }
         } else {
             INTERCEPTOR_TRACE_ERROR("INITIAL_REQUEST", "Unsupported body type");
-            NapiUtils::ThrowError(env, "2300802", "Interceptor unsupported parameter type");
         }
     }
 
@@ -395,11 +393,9 @@ void HttpInterceptor::ApplyContinueRedirectionInterceptor(napi_env env, Redirect
                 NETSTACK_LOGD("updated array buffer body, length=%{public}zu", bufferLength);
             } else {
                 INTERCEPTOR_TRACE_ERROR("REDIRECTION", "invalid array buffer data or length");
-                NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
             }
         } else {
             INTERCEPTOR_TRACE_ERROR("REDIRECTION", "unsupported body type");
-            NapiUtils::ThrowError(env, "2300802", "Interceptor unsupported parameter type");
         }
     } else {
         NETSTACK_LOGD("body is null, using empty body");
@@ -651,11 +647,9 @@ void HttpInterceptor::ApplyContinueFinalResponseInterceptor(napi_env env, FinalR
                 NETSTACK_LOGD("updated array buffer body, length=%{public}zu", bufferLength);
             } else {
                 INTERCEPTOR_TRACE_ERROR("FINAL_RESPONSE", "invalid array buffer data or length");
-                NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
             }
         } else {
             INTERCEPTOR_TRACE_ERROR("FINAL_RESPONSE", "unsupported body type");
-            NapiUtils::ThrowError(env, "2300802", "Interceptor unsupported parameter type");
         }
     } else {
         NETSTACK_LOGD("body is null, using empty body");
@@ -866,11 +860,9 @@ void HttpInterceptor::ApplyContinueCacheCheckedInterceptor(napi_env env, CacheCh
                 NETSTACK_LOGD("updated array buffer body, length=%{public}zu", bufferLength);
             } else {
                 INTERCEPTOR_TRACE_ERROR("READ_CACHE", "invalid array buffer data or length");
-                NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
             }
         } else {
             INTERCEPTOR_TRACE_ERROR("READ_CACHE", "unsupported body type");
-            NapiUtils::ThrowError(env, "2300802", "Interceptor unsupported parameter type");
         }
     } else {
         NETSTACK_LOGD("body is null, using empty body");
@@ -1094,11 +1086,9 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
                 NETSTACK_LOGD("updated array buffer body, length=%{public}zu", bufferLength);
             } else {
                 INTERCEPTOR_TRACE_ERROR("CONNECT_NETWORK", "invalid array buffer data or length");
-                NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
             }
         } else {
             INTERCEPTOR_TRACE_ERROR("CONNECT_NETWORK", "unsupported body type");
-            NapiUtils::ThrowError(env, "2300802", "Interceptor unsupported parameter type");
         }
     } else {
         NETSTACK_LOGD("body is null, using empty body");

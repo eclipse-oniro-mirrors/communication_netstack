@@ -355,7 +355,7 @@ napi_value InterceptorChainApply(
     napi_status status = napi_get_cb_info(env, info, &argCount, args, nullptr, nullptr);
     if (status != napi_ok) {
         NETSTACK_LOGE("InterceptorChainApply failed to get callback info, napi_status: %{public}d", status);
-        NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
+        NapiUtils::ThrowError(env, "2300999", "Internal error");
         return NapiUtils::GetBoolean(env, false);
     }
 
@@ -363,13 +363,13 @@ napi_value InterceptorChainApply(
     status = napi_unwrap(env, args[0], reinterpret_cast<void **>(&wrapper));
     if (status != napi_ok) {
         NETSTACK_LOGE("InterceptorChainApply failed to unwrap wrapper, napi_status: %{public}d", status);
-        NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
+        NapiUtils::ThrowError(env, "2300999", "Internal error");
         return NapiUtils::GetBoolean(env, false);
     }
 
     if (wrapper == nullptr) {
         NETSTACK_LOGE("InterceptorChainApply unwrap succeeded but wrapper is nullptr");
-        NapiUtils::ThrowError(env, "2300803", "Interceptor parameter error");
+        NapiUtils::ThrowError(env, "2300999", "Internal error");
         return NapiUtils::GetBoolean(env, false);
     }
 
