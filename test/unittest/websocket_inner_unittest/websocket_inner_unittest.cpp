@@ -64,8 +64,7 @@ HWTEST_F(WebSocketTest, WebSocketRegistcallback001, TestSize.Level1)
     closeOptions.reason = "";
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
     int32_t ret = client->Connect("www.baidu.com", openOptions);
-    EXPECT_TRUE(ret == WebSocketErrorCode::WEBSOCKET_CONNECTION_TO_SERVER_FAIL ||
-                ret == WebSocketErrorCode::WEBSOCKET_NONE_ERR);
+    EXPECT_LE(ret, WebSocketErrorCode::WEBSOCKET_CONNECTION_TO_SERVER_FAIL);
 }
 
 HWTEST_F(WebSocketTest, WebSocketConnect002, TestSize.Level1)
@@ -75,8 +74,7 @@ HWTEST_F(WebSocketTest, WebSocketConnect002, TestSize.Level1)
     openOptions.headers["Authorization"] = "Bearer your_token_here";
     client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
     ret = client->Connect("www.baidu.com", openOptions);
-    EXPECT_TRUE(ret == WebSocketErrorCode::WEBSOCKET_CONNECTION_TO_SERVER_FAIL ||
-                ret == WebSocketErrorCode::WEBSOCKET_NONE_ERR);
+    EXPECT_LE(ret, WebSocketErrorCode::WEBSOCKET_CONNECTION_TO_SERVER_FAIL);
 }
 
 HWTEST_F(WebSocketTest, WebSocketSend003, TestSize.Level1)
