@@ -242,6 +242,13 @@ public:
 
     static const char *const SSL_TYPE_TLCP;
     static const char *const PARAM_KEY_CLIENT_ENC_CERT;
+
+    static const char *const INTERCEPTOR_INITIAL_REQUEST;
+    static const char *const INTERCEPTOR_REDIRECTION;
+    static const char *const INTERCEPTOR_READ_CACHE;
+    static const char *const INTERCEPTOR_CONNECT_NETWORK;
+    static const char *const INTERCEPTOR_FINAL_RESPONSE;
+    static const char *const INTERCEPTOR_TYPE;
 };
 } // namespace OHOS::NetStack::Http
 

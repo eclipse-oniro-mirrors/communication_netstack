@@ -122,44 +122,14 @@ void EpollMultiDriver::IncomingRequestCallback()
         }
 #endif
         ongoingRequests_[request->easyHandle] = request;
-
-        std::function<bool()> addHandleCallback = std::bind(
-            [](CURLM *multi, RequestInfo *req) -> bool {
-                auto ret = curl_multi_add_handle(multi, req->easyHandle);
-                if (ret != CURLM_OK) {
-                    NETSTACK_LOGE(
-                        "curl_multi_add_handle err, ret = %{public}d %{public}s", ret, curl_multi_strerror(ret));
-                    return false;
-                }
-
-                if (req->callbacks.startedCallback) {
-                    req->callbacks.startedCallback(req->easyHandle, req->opaqueData);
-                }
-                return true;
-            },
-            multi_, request);
-
-#if ENABLE_HTTP_INTERCEPT
-        auto context = reinterpret_cast<OHOS::NetStack::Http::RequestContext *>(request->opaqueData);
-        std::function<void()> blockCallback = std::bind(
-            [](OHOS::NetStack::Http::RequestContext *context) {
-                Http::HttpExec::ProcessResponseHeadersAndEmitEvents(context);
-                Http::HttpExec::ProcessResponseBodyAndEmitEvents(context);
-                Http::HttpExec::EnqueueCallback(context);
-            },
-            context);
-        auto interceptor = context->GetInterceptor();
-        if (interceptor != nullptr && interceptor->IsConnectNetworkInterceptor()) {
-            auto interceptorCallback = interceptor->GetConnectNetworkInterceptorCallback();
-            auto interceptorWork = std::bind(interceptorCallback, context, addHandleCallback, blockCallback);
-            NapiUtils::CreateUvQueueWorkByModuleId(context->GetEnv(), interceptorWork, context->GetModuleId());
-            NETSTACK_LOGD("HttpExec: connectNetworkInterceptorCallback_ executed successfully");
+        auto ret = curl_multi_add_handle(multi_, request->easyHandle);
+        if (ret != CURLM_OK) {
+            NETSTACK_LOGE("curl_multi_add_handle err, ret = %{public}d %{public}s", ret, curl_multi_strerror(ret));
             continue;
         }
-#endif
-
-        if (!addHandleCallback()) {
-            continue;
+        
+        if (request->callbacks.startedCallback) {
+            request->callbacks.startedCallback(request->easyHandle, request->opaqueData);
         }
     }
 }

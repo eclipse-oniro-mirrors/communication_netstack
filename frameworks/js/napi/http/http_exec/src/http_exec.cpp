@@ -227,11 +227,7 @@ void HttpExec::AsyncWorkRequestCallback(napi_env env, napi_status status, void *
     }
     auto handleFinalResponseProcessing = std::bind(FinalResponseProcessing, context);
 #if ENABLE_HTTP_INTERCEPT
-    auto interceptor = context->GetInterceptor();
-    if (interceptor != nullptr && interceptor->IsFinalResponseInterceptor()) {
-        auto interceptorCallback = interceptor->GetFinalResponseInterceptorCallback();
-        interceptorCallback(context, handleFinalResponseProcessing);
-        NETSTACK_LOGD("Final response interceptor callback invoked successfully.");
+    if (HttpInterceptor::FinalResponseInterceptorCallback(context, handleFinalResponseProcessing)) {
         return;
     }
 #endif
@@ -328,13 +324,11 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     SetTraceOptions(handle, context);
     SetServerSSLCertOption(handle, context);
 #if ENABLE_HTTP_INTERCEPT
-    SetFollowLocation(handle, context);
+    HttpInterceptor::SetFollowLocation(handle, context);
 #endif
-    static HttpOverCurl::EpollRequestHandler requestHandler;
     HttpOverCurl::TransferCallbacks callbacks;
     SetRequestInfoCallbacks(callbacks);
-    requestHandler.Process(handle, callbacks, context);
-    return true;
+    return HttpInterceptor::ExecuteConnectNetworkInterceptor(context, handle, callbacks);
 #else
     std::thread([context, handle] {
         std::lock_guard guard(staticVariable_.curlMultiMutex);
@@ -681,11 +675,8 @@ bool HttpExec::HandleInitialRequestPostProcessing(
             },
             context);
 #if ENABLE_HTTP_INTERCEPT
-        auto interceptor = context->GetInterceptor();
-        if (interceptor != nullptr && interceptor->IsCacheCheckedInterceptor()) {
-            auto interceptorCallback = interceptor->GetCacheCheckedInterceptorCallback();
-            interceptorCallback(context, handleCacheCheckedPostProcessing, blockCacheCheckedPostProcessing);
-            NETSTACK_LOGD("HttpExec: Cache checked interceptor callback executed successfully.");
+        if (HttpInterceptor::CacheCheckedInterceptorCallback(context, handleCacheCheckedPostProcessing,
+                                                             blockCacheCheckedPostProcessing)) {
             return true;
         }
 #endif
@@ -762,11 +753,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
         },
         context);
 #if ENABLE_HTTP_INTERCEPT
-    auto interceptor = context->GetInterceptor();
-    if (interceptor != nullptr && interceptor->IsInitialRequestInterceptor()) {
-        auto interceptorCallback = interceptor->GetInitialRequestInterceptorCallback();
-        interceptorCallback(context, continueCallback, blockCallback);
-        NETSTACK_LOGD("HttpExec: Initial request interceptor callback invoked successfully");
+    if (HttpInterceptor::InitialRequestInterceptorCallback(context, continueCallback, blockCallback)) {
         return true;
     }
 #endif
@@ -1692,13 +1679,8 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
     }
 
 #if ENABLE_HTTP_INTERCEPT
-    auto interceptor = context->GetInterceptor();
-    if (interceptor != nullptr && interceptor->IsRedirectionInterceptor()) {
-        int statusCode = context->response.GetResponseCode();
-        if (statusCode >= HTTP_STATUS_REDIRECT_START && statusCode < HTTP_STATUS_CLIENT_ERROR_START) {
-            context->response.SetResult(const_cast<char *>(static_cast<const char *>(data)));
-            return size * memBytes;
-        }
+    if (HttpInterceptor::RedirectionInterceptorBodyCallback(context, data, size, memBytes)) {
+        return size * memBytes;
     }
 #endif
 

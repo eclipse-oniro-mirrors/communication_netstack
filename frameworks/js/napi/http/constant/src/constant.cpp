@@ -139,4 +139,11 @@ const char *const HttpConstant::HTTP_ADDRESS_FAMILY_ONLYV6 = "ONLY_V6";
 
 const char *const HttpConstant::SSL_TYPE_TLCP = "sslType";
 const char *const HttpConstant::PARAM_KEY_CLIENT_ENC_CERT = "clientEncCert";
+
+const char *const HttpConstant::INTERCEPTOR_INITIAL_REQUEST = "INITIAL_REQUEST";
+const char *const HttpConstant::INTERCEPTOR_REDIRECTION = "REDIRECTION";
+const char *const HttpConstant::INTERCEPTOR_READ_CACHE = "READ_CACHE";
+const char *const HttpConstant::INTERCEPTOR_CONNECT_NETWORK = "CONNECT_NETWORK";
+const char *const HttpConstant::INTERCEPTOR_FINAL_RESPONSE = "FINAL_RESPONSE";
+const char *const HttpConstant::INTERCEPTOR_TYPE = "InterceptorType";
 } // namespace OHOS::NetStack::Http

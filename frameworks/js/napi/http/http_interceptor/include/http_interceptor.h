@@ -27,6 +27,10 @@
 #include "timing.h"
 #include "request_info.h"
 #include "request_context.h"
+#if HAS_NETMANAGER_BASE
+#include "epoll_request_handler.h"
+#include "netstack_log.h"
+#endif
 
 namespace OHOS::NetStack::Http {
 
@@ -60,6 +64,25 @@ public:
     const FinalResponseInterceptor &GetFinalResponseInterceptorCallback() const;
     const RequestInterceptor &GetCacheCheckedInterceptorCallback() const;
     const RequestInterceptor &GetConnectNetworkInterceptorCallback() const;
+
+#if HAS_NETMANAGER_BASE
+    static bool ExecuteConnectNetworkInterceptor(RequestContext *context, CURL *handle,
+                                                 HttpOverCurl::TransferCallbacks callbacks);
+#endif
+    static bool SetFollowLocation(CURL *handle, RequestContext *context);
+
+    static bool FinalResponseInterceptorCallback(RequestContext *context,
+                                                 std::function<void()> handleFinalResponseProcessing);
+
+    static bool CacheCheckedInterceptorCallback(RequestContext *context,
+                                                std::function<bool()> handleCacheCheckedPostProcessing,
+                                                std::function<void()> blockCacheCheckedPostProcessing);
+
+    static bool InitialRequestInterceptorCallback(RequestContext *context, std::function<bool()> continueCallback,
+                                                  std::function<void()> blockCallback);
+
+    static bool RedirectionInterceptorBodyCallback(RequestContext *context, const void *data, size_t size,
+                                                   size_t memBytes);
 
 private:
     struct InitialRequestInterceptorHandle {
@@ -150,6 +173,7 @@ private:
     static void HandlePromiseCacheCheckedInterceptor(napi_env env, CacheCheckedInterceptorHandle *handle);
 
     static void ApplyContinueConnectNetworkInterceptor(napi_env env, InitialRequestInterceptorHandle *handle);
+    static void SetCurlPostFields(CURL *easyHander, const void *data, size_t length);
     static void ApplyBlockConnectNetworkInterceptor(napi_env env, InitialRequestInterceptorHandle *handle);
     static napi_value CreateRequestContextConnectNetworkInterceptor(napi_env env, RequestContext *context);
     static napi_value CreateResponseContextConnectNetworkInterceptor(napi_env env, RequestContext *context);

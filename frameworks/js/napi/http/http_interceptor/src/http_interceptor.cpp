@@ -47,6 +47,20 @@ inline void INTERCEPTOR_TRACE_ERROR(const std::string &interceptorType, const st
     NETSTACK_LOGE("Interceptor [%{public}s] ERROR, error: %{public}s", interceptorType.c_str(), error.c_str());
 }
 
+inline bool NetStackCurlEasySetOption(CURL *handle, CURLoption opt, void *data,
+                                      OHOS::NetStack::Http::RequestContext *asyncContext)
+{
+    CURLcode result = curl_easy_setopt(handle, opt, data);
+    if (result != CURLE_OK) {
+        const char *err = curl_easy_strerror(result);
+        NETSTACK_LOGE("Failed to set option: %{public}d, %{public}s %{public}d", static_cast<int>(opt), err,
+                      static_cast<int>(result));
+        asyncContext->SetErrorCode(result);
+        return false;
+    }
+    return true;
+}
+
 namespace OHOS::NetStack::Http {
 
 HttpInterceptor::~HttpInterceptor() { }
@@ -82,15 +96,15 @@ void HttpInterceptor::SetInterceptorRefs(std::map<std::string, napi_ref> interce
         if (ref == nullptr) {
             continue;
         }
-        if (key == "INITIAL_REQUEST") {
+        if (key == HttpConstant::INTERCEPTOR_INITIAL_REQUEST) {
             SetInitialRequestInterceptor();
-        } else if (key == "REDIRECTION") {
+        } else if (key == HttpConstant::INTERCEPTOR_REDIRECTION) {
             SetRedirectionInterceptor();
-        } else if (key == "FINAL_RESPONSE") {
+        } else if (key == HttpConstant::INTERCEPTOR_FINAL_RESPONSE) {
             SetFinalResponseInterceptor();
-        } else if (key == "READ_CACHE") {
+        } else if (key == HttpConstant::INTERCEPTOR_READ_CACHE) {
             SetCacheCheckedInterceptor();
-        } else if (key == "CONNECT_NETWORK") {
+        } else if (key == HttpConstant::INTERCEPTOR_CONNECT_NETWORK) {
             SetConnectNetworkInterceptor();
         }
     }
@@ -129,7 +143,7 @@ void HttpInterceptor::ApplyContinueInitialRequestInterceptor(napi_env env, Initi
     handle->context->options.SetUrl(newUrl);
     NETSTACK_LOGD("RequestContext::ApplyRequest: updated URL = %{public}s", newUrl.c_str());
 
-    napi_value newHeadObj = NapiUtils::GetNamedProperty(env, handle->reqContext, "head");
+    napi_value newHeadObj = NapiUtils::GetNamedProperty(env, handle->reqContext, "header");
     if (newHeadObj != nullptr) {
         for (const auto &key : NapiUtils::GetPropertyNames(env, newHeadObj)) {
             std::string value =
@@ -230,7 +244,7 @@ napi_value HttpInterceptor::CreateRequestContextInitialRequestInterceptor(napi_e
         napi_value val = NapiUtils::CreateStringUtf8(env, value);
         NapiUtils::SetNamedProperty(env, headerObj, key, val);
     }
-    NapiUtils::SetNamedProperty(env, reqContext, "head", headerObj);
+    NapiUtils::SetNamedProperty(env, reqContext, "header", headerObj);
 
     std::string body = context->options.GetBody();
     NapiUtils::SetNamedProperty(env, reqContext, "body", NapiUtils::CreateStringUtf8(env, body));
@@ -369,7 +383,7 @@ void HttpInterceptor::ApplyContinueRedirectionInterceptor(napi_env env, Redirect
             handleInfo->location ? handleInfo->location->c_str() : "null", newUrl.c_str());
     }
 
-    if (napi_value newHeadObj = NapiUtils::GetNamedProperty(env, handle->reqContext, "head")) {
+    if (napi_value newHeadObj = NapiUtils::GetNamedProperty(env, handle->reqContext, "header")) {
         for (const auto &key : NapiUtils::GetPropertyNames(env, newHeadObj)) {
             std::string value =
                 NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, newHeadObj, key.c_str()));
@@ -462,7 +476,7 @@ napi_value HttpInterceptor::CreateRequestContextRedirectionInterceptor(
             NapiUtils::SetNamedProperty(env, headerObj, key, headerValue);
         }
     }
-    NapiUtils::SetNamedProperty(env, reqContext, "head", headerObj);
+    NapiUtils::SetNamedProperty(env, reqContext, "header", headerObj);
 
     std::string body = context->options.GetBody();
     napi_value bodyValue = NapiUtils::CreateStringUtf8(env, body);
@@ -484,7 +498,7 @@ napi_value HttpInterceptor::CreateResponseContextRedirectionInterceptor(
             NapiUtils::SetNamedProperty(env, responseHeaderObj, key, val);
         }
     }
-    NapiUtils::SetNamedProperty(env, resContext, "head", responseHeaderObj);
+    NapiUtils::SetNamedProperty(env, resContext, "header", responseHeaderObj);
 
     std::string responseResult = context->response.GetResult();
     NapiUtils::SetNamedProperty(env, resContext, "result", NapiUtils::CreateStringUtf8(env, responseResult));
@@ -621,7 +635,7 @@ void HttpInterceptor::ApplyContinueFinalResponseInterceptor(napi_env env, FinalR
     NETSTACK_LOGD("finalResponseInterceptor updated url:%{public}s", newUrl.c_str());
     handle->context->options.SetUrl(newUrl);
 
-    napi_value newHeadObj = NapiUtils::GetNamedProperty(env, handle->reqContext, "head");
+    napi_value newHeadObj = NapiUtils::GetNamedProperty(env, handle->reqContext, "header");
     if (newHeadObj != nullptr) {
         std::vector<std::string> headerKeys = NapiUtils::GetPropertyNames(env, newHeadObj);
         for (const auto &key : headerKeys) {
@@ -708,7 +722,7 @@ napi_value HttpInterceptor::CreateRequestContextFinalResponseInterceptor(napi_en
             NapiUtils::SetNamedProperty(env, headerObj, key.c_str(), val);
         }
     }
-    NapiUtils::SetNamedProperty(env, reqContext, "head", headerObj);
+    NapiUtils::SetNamedProperty(env, reqContext, "header", headerObj);
     std::string body = context->options.GetBody();
     NapiUtils::SetNamedProperty(env, reqContext, "body", NapiUtils::CreateStringUtf8(env, body));
     return reqContext;
@@ -834,7 +848,7 @@ void HttpInterceptor::ApplyContinueCacheCheckedInterceptor(napi_env env, CacheCh
     NETSTACK_LOGD("cacheCheckedInterceptor updated url:%{public}s", newUrl.c_str());
     handle->context->options.SetUrl(newUrl);
 
-    napi_value newHeadObj = NapiUtils::GetNamedProperty(env, handle->reqContext, "head");
+    napi_value newHeadObj = NapiUtils::GetNamedProperty(env, handle->reqContext, "header");
     if (newHeadObj != nullptr) {
         std::vector<std::string> headerKeys = NapiUtils::GetPropertyNames(env, newHeadObj);
         for (const auto &key : headerKeys) {
@@ -926,7 +940,7 @@ napi_value HttpInterceptor::CreateRequestContextCacheCheckedInterceptor(napi_env
                 NapiUtils::SetNamedProperty(context->GetEnv(), headerObj, p.first, value);
             });
     }
-    NapiUtils::SetNamedProperty(context->GetEnv(), reqContext, "head", headerObj);
+    NapiUtils::SetNamedProperty(context->GetEnv(), reqContext, "header", headerObj);
     std::string body = context->options.GetBody();
     NapiUtils::SetNamedProperty(
         context->GetEnv(), reqContext, "body", NapiUtils::CreateStringUtf8(context->GetEnv(), body));
@@ -1045,6 +1059,12 @@ void HttpInterceptor::SetCacheCheckedInterceptor()
     };
 }
 
+void HttpInterceptor::SetCurlPostFields(CURL *easyHander, const void *data, size_t length)
+{
+    curl_easy_setopt(easyHander, CURLOPT_POSTFIELDS, data);
+    curl_easy_setopt(easyHander, CURLOPT_POSTFIELDSIZE, length);
+}
+
 // ConnectNetworkInterceptor
 void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, InitialRequestInterceptorHandle *handle)
 {
@@ -1054,8 +1074,9 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
     auto newUrl = NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, handle->reqContext, "url"));
     NETSTACK_LOGD("connectNetworkInterceptor updated url:%{public}s", newUrl.c_str());
     curl_easy_setopt(easyHander, CURLOPT_URL, newUrl.c_str());
+    handle->context->options.SetUrl(newUrl);
 
-    napi_value newHeadObj = NapiUtils::GetNamedProperty(env, handle->reqContext, "head");
+    napi_value newHeadObj = NapiUtils::GetNamedProperty(env, handle->reqContext, "header");
     if (newHeadObj != nullptr) {
         std::vector<std::string> headerKeys = NapiUtils::GetPropertyNames(env, newHeadObj);
         curl_slist *headers = nullptr;
@@ -1064,6 +1085,7 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
                 NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, newHeadObj, key.c_str()));
             std::string headerLine = key + ": " + value;
             headers = curl_slist_append(headers, headerLine.c_str());
+            handle->context->options.SetHeader(key, value);
             NETSTACK_LOGD("Updated header: %{public}s = %{public}s", key.c_str(), value.c_str());
         }
         curl_easy_setopt(easyHander, CURLOPT_HTTPHEADER, headers);
@@ -1074,15 +1096,15 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
         napi_valuetype bodyType = NapiUtils::GetValueType(env, bodyValue);
         if (bodyType == napi_string) {
             std::string bodyStr = NapiUtils::GetStringFromValueUtf8(env, bodyValue);
-            curl_easy_setopt(easyHander, CURLOPT_POSTFIELDS, bodyStr.c_str());
-            curl_easy_setopt(easyHander, CURLOPT_POSTFIELDSIZE, bodyStr.size());
+            SetCurlPostFields(easyHander, bodyStr.c_str(), bodyStr.size());
+            handle->context->options.ReplaceBody(bodyStr.data(), bodyStr.size());
             NETSTACK_LOGD("updated string body, length=%{public}zu", bodyStr.size());
         } else if (NapiUtils::ValueIsArrayBuffer(env, bodyValue)) {
             size_t bufferLength = 0;
             void *bufferData = NapiUtils::GetInfoFromArrayBufferValue(env, bodyValue, &bufferLength);
             if (bufferData != nullptr && bufferLength > 0) {
-                curl_easy_setopt(easyHander, CURLOPT_POSTFIELDS, bufferData);
-                curl_easy_setopt(easyHander, CURLOPT_POSTFIELDSIZE, bufferLength);
+                SetCurlPostFields(easyHander, bufferData, bufferLength);
+                handle->context->options.ReplaceBody(bufferData, bufferLength);
                 NETSTACK_LOGD("updated array buffer body, length=%{public}zu", bufferLength);
             } else {
                 INTERCEPTOR_TRACE_ERROR("CONNECT_NETWORK", "invalid array buffer data or length");
@@ -1092,8 +1114,8 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
         }
     } else {
         NETSTACK_LOGD("body is null, using empty body");
-        curl_easy_setopt(easyHander, CURLOPT_POSTFIELDS, "");
-        curl_easy_setopt(easyHander, CURLOPT_POSTFIELDSIZE, 0);
+        SetCurlPostFields(easyHander, "", 0);
+        handle->context->options.ReplaceBody("", 0);
     }
     INTERCEPTOR_TRACE_END("CONNECT_NETWORK", "CONTINUE");
     handle->after();
@@ -1154,7 +1176,7 @@ napi_value HttpInterceptor::CreateRequestContextConnectNetworkInterceptor(napi_e
                 NapiUtils::SetNamedProperty(context->GetEnv(), headerObj, p.first, value);
             });
     }
-    NapiUtils::SetNamedProperty(context->GetEnv(), reqContext, "head", headerObj);
+    NapiUtils::SetNamedProperty(context->GetEnv(), reqContext, "header", headerObj);
     std::string body = context->options.GetBody();
     NapiUtils::SetNamedProperty(
         context->GetEnv(), reqContext, "body", NapiUtils::CreateStringUtf8(context->GetEnv(), body));
@@ -1271,6 +1293,101 @@ void HttpInterceptor::SetConnectNetworkInterceptor()
 
         HandlePromiseConnectNetworkInterceptor(env, handle);
     };
+}
+
+#if HAS_NETMANAGER_BASE
+bool HttpInterceptor::ExecuteConnectNetworkInterceptor(Http::RequestContext *context, CURL *handle,
+                                                       HttpOverCurl::TransferCallbacks callbacks)
+{
+    std::function<bool()> continueCallback = std::bind(
+        [](CURL *handle, HttpOverCurl::TransferCallbacks callbacks, Http::RequestContext *context) -> bool {
+            static HttpOverCurl::EpollRequestHandler requestHandler;
+            requestHandler.Process(handle, callbacks, context);
+            return true;
+        },
+        handle, callbacks, context);
+#if ENABLE_HTTP_INTERCEPT
+    std::function<void()> blockCallback = std::bind(
+        [](Http::RequestContext *context) {
+            Http::HttpExec::ProcessResponseHeadersAndEmitEvents(context);
+            Http::HttpExec::ProcessResponseBodyAndEmitEvents(context);
+            Http::HttpExec::EnqueueCallback(context);
+        },
+        context);
+    auto interceptor = context->GetInterceptor();
+    if (interceptor != nullptr && interceptor->IsConnectNetworkInterceptor()) {
+        auto interceptorCallback = interceptor->GetConnectNetworkInterceptorCallback();
+        auto interceptorWork = std::bind(interceptorCallback, context, continueCallback, blockCallback);
+        NapiUtils::CreateUvQueueWorkByModuleId(context->GetEnv(), interceptorWork, context->GetModuleId());
+        NETSTACK_LOGD("HttpExec: connectNetworkInterceptorCallback_ executed successfully");
+        return true;
+    }
+#endif
+    return continueCallback();
+}
+#endif
+
+bool HttpInterceptor::FinalResponseInterceptorCallback(RequestContext *context,
+                                                       std::function<void()> handleFinalResponseProcessing)
+{
+    auto interceptor = context->GetInterceptor();
+    if (interceptor != nullptr && interceptor->IsFinalResponseInterceptor()) {
+        auto interceptorCallback = interceptor->GetFinalResponseInterceptorCallback();
+        interceptorCallback(context, handleFinalResponseProcessing);
+        NETSTACK_LOGD("Final response interceptor callback invoked successfully.");
+        return true;
+    }
+    return false;
+}
+
+bool HttpInterceptor::CacheCheckedInterceptorCallback(RequestContext *context,
+                                                      std::function<bool()> handleCacheCheckedPostProcessing,
+                                                      std::function<void()> blockCacheCheckedPostProcessing)
+{
+    auto interceptor = context->GetInterceptor();
+    if (interceptor != nullptr && interceptor->IsCacheCheckedInterceptor()) {
+        auto interceptorCallback = interceptor->GetCacheCheckedInterceptorCallback();
+        interceptorCallback(context, handleCacheCheckedPostProcessing, blockCacheCheckedPostProcessing);
+        NETSTACK_LOGD("HttpInterceptor: Cache checked interceptor callback executed successfully.");
+        return true;
+    }
+    return false;
+}
+
+bool HttpInterceptor::InitialRequestInterceptorCallback(RequestContext *context, std::function<bool()> continueCallback,
+                                                        std::function<void()> blockCallback)
+{
+    auto interceptor = context->GetInterceptor();
+    if (interceptor != nullptr && interceptor->IsInitialRequestInterceptor()) {
+        auto interceptorCallback = interceptor->GetInitialRequestInterceptorCallback();
+        interceptorCallback(context, continueCallback, blockCallback);
+        NETSTACK_LOGD("HttpInterceptor: Initial request interceptor callback invoked successfully");
+        return true;
+    }
+    return false;
+}
+
+bool HttpInterceptor::RedirectionInterceptorBodyCallback(RequestContext *context, const void *data, size_t size,
+                                                         size_t memBytes)
+{
+    auto interceptor = context->GetInterceptor();
+    if (interceptor != nullptr && interceptor->IsRedirectionInterceptor()) {
+        int statusCode = context->response.GetResponseCode();
+        if (statusCode >= HTTP_STATUS_REDIRECT_START && statusCode < HTTP_STATUS_CLIENT_ERROR_START) {
+            context->response.SetResult(const_cast<char *>(static_cast<const char *>(data)));
+            return true;
+        }
+    }
+    return false;
+}
+
+bool HttpInterceptor::SetFollowLocation(CURL *handle, RequestContext *context)
+{
+    auto interceptor = context->GetInterceptor();
+    if (interceptor != nullptr && interceptor->IsRedirectionInterceptor()) {
+        return NetStackCurlEasySetOption(handle, CURLOPT_FOLLOWLOCATION, 0L, context);
+    }
+    return true;
 }
 
 } // namespace OHOS::NetStack::Http
