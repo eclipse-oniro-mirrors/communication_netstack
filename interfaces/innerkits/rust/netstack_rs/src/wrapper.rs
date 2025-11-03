@@ -14,14 +14,15 @@
 use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, Weak};
+use std::collections::HashMap;
 
 use cxx::{let_cxx_string, SharedPtr};
 use ffi::{HttpClientRequest, HttpClientTask, NewHttpClientTask, OnCallback};
 use netstack_common::debug;
 
 use crate::error::{HttpClientError, HttpErrorCode};
-use crate::request::RequestCallback;
-use crate::response::{Response, ResponseCode};
+use crate::request::{RequestCallback, CertType, ClientCert, MultiFormData, ServerAuthentication, TlsConfig, TlsVersion, EscapedData, HttpProxy};
+use crate::response::{Response, ResponseCode, HttpDataType};
 use crate::task::{RequestTask, TaskStatus};
 
 pub struct CallbackWrapper {
@@ -48,13 +49,17 @@ impl CallbackWrapper {
 }
 
 impl CallbackWrapper {
-    fn on_success(&mut self, _request: &HttpClientRequest, response: &ffi::HttpClientResponse) {
+    fn on_success(
+        &mut self,
+        _request: &HttpClientRequest,
+        response: &ffi::HttpClientResponse,
+        is_request_in_stream: bool) {
         debug!("on_success callback is called");
         let Some(mut callback) = self.inner.take() else {
             return;
         };
         let response = Response::from_ffi(response);
-        callback.on_success(response);
+        callback.on_success(response, is_request_in_stream);
     }
 
     fn on_fail(
@@ -62,6 +67,7 @@ impl CallbackWrapper {
         _request: &HttpClientRequest,
         response: &ffi::HttpClientResponse,
         error: &ffi::HttpClientError,
+        is_request_in_stream: bool
     ) {
         debug!("on_fail callback is called");
         let Some(mut callback) = self.inner.take() else {
@@ -69,10 +75,15 @@ impl CallbackWrapper {
         };
         let client_error = HttpClientError::from_ffi(error);
         let response = Response::from_ffi(response);
-        callback.on_fail(response, client_error);
+        callback.on_fail(response, client_error, is_request_in_stream);
     }
 
-    fn on_cancel(&mut self, request: &HttpClientRequest, response: &ffi::HttpClientResponse) {
+    fn on_cancel(
+        &mut self,
+        request: &HttpClientRequest,
+        response: &ffi::HttpClientResponse,
+        is_request_in_stream: bool
+    ) {
         debug!("on_cancel callback is called");
         let Some(mut callback) = self.inner.take() else {
             return;
@@ -84,7 +95,7 @@ impl CallbackWrapper {
             self.reset.store(false, Ordering::SeqCst);
         } else {
             let response = Response::from_ffi(response);
-            callback.on_cancel(response);
+            callback.on_cancel(response, is_request_in_stream);
         }
     }
 
@@ -108,6 +119,37 @@ impl CallbackWrapper {
             return;
         };
         callback.on_progress(dl_total, dl_now, ul_total, ul_now);
+    }
+
+    fn on_header_receive(
+        &mut self,
+        header: String,
+    ) {
+        let Some(callback) = self.inner.as_mut() else {
+            return;
+        };
+        callback.on_header_receive(header);
+    }
+
+    fn on_headers_receive(
+        &mut self,
+        headers_conversion: Vec<String>,
+    ) {
+        let Some(callback) = self.inner.as_mut() else {
+            return;
+        };
+        let mut ret = HashMap::new();
+        let mut headers_iter = headers_conversion.into_iter();
+        loop {
+            if let Some(key) = headers_iter.next() {
+                if let Some(value) = headers_iter.next() {
+                    ret.insert(key.to_lowercase(), value);
+                    continue;
+                }
+            }
+            break;
+        }
+        callback.on_headers_receive(ret);
     }
 
     fn create_new_task(
@@ -181,26 +223,182 @@ fn set_range(
 unsafe impl Send for HttpClientTask {}
 unsafe impl Sync for HttpClientTask {}
 
+impl From<crate::request::ClientCert> for ffi::ClientCert {
+    fn from(client_cert: ClientCert) -> Self {
+        let cert_type = match client_cert.cert_type {
+            Some(ct) => match ct {
+                CertType::Pem => ffi::CertType::Pem,
+                CertType::Der => ffi::CertType::Der,
+                CertType::P12 => ffi::CertType::P12,
+            },
+            None => ffi::CertType::Pem
+        };
+        
+        let key_password = match client_cert.key_password {
+            Some(kp) => kp,
+            None => "".to_string()
+        };
+
+        ffi::ClientCert {
+            cert_path: client_cert.cert_path,
+            cert_type,
+            key_path: client_cert.key_path,
+            key_password,
+        }
+    }
+}
+
+impl From<crate::request::EscapedData> for ffi::EscapedDataRust {
+    fn from(value: EscapedData) -> Self {
+        let escaped_type = match value.data_type {
+            0 => ffi::HttpDataType::STRING,
+            1 => ffi::HttpDataType::OBJECT,
+            2 => ffi::HttpDataType::ARRAY_BUFFER,
+            _ => ffi::HttpDataType::NO_DATA_TYPE,
+        };
+        ffi::EscapedDataRust {
+            data_type: escaped_type,
+            data: value.data,
+        }
+    }
+}
+
+impl From<crate::request::MultiFormData> for ffi::MultiFormDataRust {
+    fn from(multi_form_data: MultiFormData) -> Self {
+        ffi::MultiFormDataRust {
+            name: multi_form_data.name,
+            content_type: multi_form_data.content_type,
+            remote_file_name: multi_form_data.remote_file_name,
+            data: multi_form_data.data,
+            file_path: multi_form_data.file_path,
+        }
+    }
+}
+
+impl From<crate::request::ServerAuthentication> for ffi::ServerAuthentication {
+    fn from(server_auth: ServerAuthentication) -> Self {
+        let auth_type = match server_auth.authentication_type {
+            Some(ty) => ty,
+            None => "".to_string()
+        };
+        
+        ffi::ServerAuthentication {
+            username: server_auth.credential.username,
+            password: server_auth.credential.password,
+            authentication_type: auth_type,
+        }
+    }
+}
+
+impl From<crate::request::TlsConfig> for ffi::TlsConfigRust {
+    fn from(tls_config: TlsConfig) -> Self {
+        let min = match tls_config.tls_version_min {
+            TlsVersion::TlsV_1_0 => ffi::TlsVersionRust::TlsV_1_0,
+            TlsVersion::TlsV_1_1 => ffi::TlsVersionRust::TlsV_1_1,
+            TlsVersion::TlsV_1_2 => ffi::TlsVersionRust::TlsV_1_2,
+            TlsVersion::TlsV_1_3 => ffi::TlsVersionRust::TlsV_1_3
+        };
+        let max = match tls_config.tls_version_max {
+            TlsVersion::TlsV_1_0 => ffi::TlsVersionRust::TlsV_1_0,
+            TlsVersion::TlsV_1_1 => ffi::TlsVersionRust::TlsV_1_1,
+            TlsVersion::TlsV_1_2 => ffi::TlsVersionRust::TlsV_1_2,
+            TlsVersion::TlsV_1_3 => ffi::TlsVersionRust::TlsV_1_3
+        };
+        ffi::TlsConfigRust {
+            tls_version_min: min,
+            tls_version_max: max,
+            cipher_suites: tls_config.cipher_suites.unwrap_or_default(),
+        }
+    }
+}
+
+impl From<crate::request::HttpProxy> for ffi::HttpProxyRust {
+    fn from(http_ptoxy: HttpProxy) -> Self {
+        ffi::HttpProxyRust {
+            host: http_ptoxy.host,
+            port: http_ptoxy.port,
+            exclusions: http_ptoxy.exclusions,
+        }
+    }
+}
+
 #[allow(unused_unsafe)]
 #[cxx::bridge(namespace = "OHOS::Request")]
 pub(crate) mod ffi {
+
+    enum CertType {
+        Pem,
+        Der,
+        P12,
+    }
+
+    struct EscapedDataRust {
+        data_type: HttpDataType,
+        data: String,
+    }
+
+    struct ClientCert {
+        cert_path: String,
+        cert_type: CertType,
+        key_path: String,
+        key_password: String,
+    }
+
+    struct MultiFormDataRust {
+        name: String,
+        content_type: String,
+        remote_file_name: String,
+        data: String,
+        file_path: String,
+    }
+
+    struct ServerAuthentication {
+        username : String,
+        password: String,
+        authentication_type: String,
+    }
+
+    enum TlsVersionRust {
+        DEFAULT = 0,
+        TlsV_1_0 = 4,
+        TlsV_1_1 = 5,
+        TlsV_1_2 = 6,
+        TlsV_1_3 = 7,
+    }
+
+    struct TlsConfigRust {
+        pub tls_version_min: TlsVersionRust,
+        pub tls_version_max: TlsVersionRust,
+        pub cipher_suites: Vec<String>,
+    }
+
+    struct HttpProxyRust {
+        pub host: String,
+
+        pub port: i32,
+
+        pub exclusions: String,
+    }
     extern "Rust" {
         type CallbackWrapper;
         fn on_success(
             self: &mut CallbackWrapper,
             request: &HttpClientRequest,
             response: &HttpClientResponse,
+            is_request_in_stream: bool
         );
         fn on_fail(
             self: &mut CallbackWrapper,
             request: &HttpClientRequest,
             response: &HttpClientResponse,
             error: &HttpClientError,
+            is_request_in_stream: bool
         );
         fn on_cancel(
             self: &mut CallbackWrapper,
             request: &HttpClientRequest,
             response: &HttpClientResponse,
+            is_request_in_stream: bool
         );
         unsafe fn on_data_receive(
             self: &mut CallbackWrapper,
@@ -215,6 +413,14 @@ pub(crate) mod ffi {
             ul_total: u64,
             ul_now: u64,
         );
+        unsafe fn on_headers_receive(
+            self: &mut CallbackWrapper,
+            headers: Vec<String>,
+        );
+        unsafe fn on_header_receive(
+            self: &mut CallbackWrapper,
+            header: String,
+        );
     }
 
     unsafe extern "C++" {
@@ -222,6 +428,13 @@ pub(crate) mod ffi {
         include!("wrapper.h");
         include!("http_client_task.h");
         include!("netstack_common_utils.h");
+        include!("cache_proxy_ani.h");
+
+        fn RunCache();
+        fn RunCacheWithSize(capacity: usize);
+
+        fn FlushCache();
+        fn StopCacheAndDelete();
 
         #[namespace = "OHOS::NetStack::HttpClient"]
         type TaskStatus;
@@ -235,6 +448,9 @@ pub(crate) mod ffi {
         #[namespace = "OHOS::NetStack::HttpClient"]
         type HttpErrorCode;
 
+        #[namespace = "OHOS::NetStack::HttpClient"]
+        type HttpDataType;
+
         fn NewHttpClientRequest() -> UniquePtr<HttpClientRequest>;
         fn SetURL(self: Pin<&mut HttpClientRequest>, url: &CxxString);
         fn SetMethod(self: Pin<&mut HttpClientRequest>, method: &CxxString);
@@ -244,6 +460,24 @@ pub(crate) mod ffi {
         fn SetConnectTimeout(self: Pin<&mut HttpClientRequest>, timeout: u32);
         unsafe fn SetBody(request: Pin<&mut HttpClientRequest>, data: *const u8, length: usize);
         fn SetHttpProtocol(request: Pin<&mut HttpClientRequest>, protocol: i32);
+        fn SetUsingHttpProxyType(request: Pin<&mut HttpClientRequest>, proxy_type: i32);
+        fn SetSpecifiedHttpProxy(request: Pin<&mut HttpClientRequest>, proxy: &HttpProxyRust);
+        fn SetMaxLimit(self: Pin<&mut HttpClientRequest>, max_limit: u32);
+        fn SetCaPath(self: Pin<&mut HttpClientRequest>, path: &CxxString);
+        fn SetResumeFrom(self: Pin<&mut HttpClientRequest>, resume_from: i64);
+        fn SetResumeTo(self: Pin<&mut HttpClientRequest>, resume_from: i64);
+        fn SetAddressFamily(request: Pin<&mut HttpClientRequest>, address_family: i32);
+        fn SetExtraData(request: Pin<&mut HttpClientRequest>, extra_data: &EscapedDataRust);
+        fn SetExpectDataType(request: Pin<&mut HttpClientRequest>, expect_data_type: i32);
+        fn SetUsingCache(self: Pin<&mut HttpClientRequest>, using_cache: bool);
+        fn SetClientCert(request: Pin<&mut HttpClientRequest>, client_cert: &ClientCert);
+        fn SetDNSOverHttps(self: Pin<&mut HttpClientRequest>, dns_over_https: &CxxString);
+        fn SetDNSServers(request: Pin<&mut HttpClientRequest>, dns_servers: &Vec<String>);
+        fn AddMultiFormData(request: Pin<&mut HttpClientRequest>, data: &MultiFormDataRust);
+        fn SetRemoteValidation(self: Pin<&mut HttpClientRequest>, remote_validation: &CxxString);
+        fn SetTLSOptions(request: Pin<&mut HttpClientRequest>, tls_options: &TlsConfigRust);
+        fn SetServerAuthentication(request: Pin<&mut HttpClientRequest>, server_auth: &ServerAuthentication);
+        fn SetHeaderExt(request: Pin<&mut HttpClientRequest>, headers: &EscapedDataRust);
 
         #[namespace = "OHOS::NetStack::HttpClient"]
         type HttpClientTask;
@@ -255,6 +489,14 @@ pub(crate) mod ffi {
         fn GetStatus(self: Pin<&mut HttpClientTask>) -> TaskStatus;
         fn OnCallback(task: &SharedPtr<HttpClientTask>, callback: Box<CallbackWrapper>);
         fn GetError(self: Pin<&mut HttpClientTask>) -> Pin<&mut HttpClientError>;
+        fn OffDataReceive(self: Pin<&mut HttpClientTask>) -> bool;
+        fn OffProgress(self: Pin<&mut HttpClientTask>) -> bool;
+        fn OffHeaderReceive(self: Pin<&mut HttpClientTask>) -> bool;
+        fn OffHeadersReceive(self: Pin<&mut HttpClientTask>) -> bool;
+        fn SetIsHeaderOnce(self: Pin<&mut HttpClientTask>, isOnce: bool);
+        fn SetIsHeadersOnce(self: Pin<&mut HttpClientTask>, isOnce: bool);
+        fn SetIsRequestInStream(self: Pin<&mut HttpClientTask>, isRequestInStream: bool);
+        fn IsRequestInStream(self: Pin<&mut HttpClientTask>) -> bool;
 
         #[namespace = "OHOS::NetStack::HttpClient"]
         type HttpClientResponse;
@@ -264,6 +506,7 @@ pub(crate) mod ffi {
         fn GetCookies(self: &HttpClientResponse) -> &CxxString;
         fn GetResult(self: &HttpClientResponse) -> &CxxString;
         fn GetPerformanceTiming(response: Pin<&mut HttpClientResponse>) -> PerformanceInfoRust;
+        fn GetExpectDataType(self: &HttpClientResponse) -> HttpDataType;
 
         #[namespace = "OHOS::NetStack::HttpClient"]
         type HttpClientError;
@@ -359,6 +602,14 @@ pub(crate) mod ffi {
         HTTP_REMOTE_FILE_NOT_FOUND,
         HTTP_AUTH_ERROR = 2300094,
         HTTP_UNKNOWN_OTHER_ERROR = 2300999,
+    }
+
+    #[repr(i32)]
+    enum HttpDataType {
+        STRING = 0,
+        OBJECT,
+        ARRAY_BUFFER,
+        NO_DATA_TYPE,
     }
 
     struct PerformanceInfoRust {
@@ -487,3 +738,20 @@ impl TryFrom<ffi::HttpErrorCode> for HttpErrorCode {
         Ok(ret)
     }
 }
+
+impl TryFrom<ffi::HttpDataType> for HttpDataType {
+    type Error = ffi::HttpDataType;
+    fn try_from(value: ffi::HttpDataType) -> Result<Self, Self::Error> {
+        let ret = match value {
+            ffi::HttpDataType::STRING => HttpDataType::StringType,
+            ffi::HttpDataType::OBJECT => HttpDataType::ObjectType,
+            ffi::HttpDataType::ARRAY_BUFFER => HttpDataType::ArrayBuffer,
+            ffi::HttpDataType::NO_DATA_TYPE => HttpDataType::None,
+            _ => {
+                return Err(value);
+            }
+        };
+        Ok(ret)
+    }
+}
+

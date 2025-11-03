@@ -126,6 +126,51 @@ impl RequestTask {
         let ptr = ptr.as_ref().unwrap() as *const HttpClientTask as *mut HttpClientTask;
         unsafe { Pin::new_unchecked(ptr.as_mut().unwrap()) }
     }
+
+    pub fn off_data_receive(&mut self) ->bool {
+        let task = self.inner.lock().unwrap().clone();
+        let result = Self::pin_mut(&task).OffDataReceive();
+        result
+    }
+
+    pub fn off_progress(&mut self) ->bool {
+        let task = self.inner.lock().unwrap().clone();
+        let result = Self::pin_mut(&task).OffProgress();
+        result
+    }
+
+    pub fn off_header_receive(&mut self) ->bool {
+        let task = self.inner.lock().unwrap().clone();
+        let result = Self::pin_mut(&task).OffHeaderReceive();
+        result
+    }
+
+    pub fn off_headers_receive(&mut self) ->bool {
+        let task = self.inner.lock().unwrap().clone();
+        let result = Self::pin_mut(&task).OffHeadersReceive();
+        result
+    }
+
+    pub fn set_is_header_once(&mut self, is_once: bool) {
+        let task = self.inner.lock().unwrap().clone();
+        Self::pin_mut(&task).SetIsHeaderOnce(is_once);
+    }
+
+    pub fn set_is_headers_once(&mut self, is_once: bool) {
+        let task = self.inner.lock().unwrap().clone();
+        Self::pin_mut(&task).SetIsHeadersOnce(is_once);
+    }
+
+    pub fn set_is_request_in_stream(&mut self, is_request_in_stream: bool) {
+        let task = self.inner.lock().unwrap().clone();
+        Self::pin_mut(&task).SetIsRequestInStream(is_request_in_stream);
+    }
+
+    pub fn is_request_in_stream(& self) -> bool {
+        let task = self.inner.lock().unwrap().clone();
+        let result = Self::pin_mut(&task).IsRequestInStream();
+        result
+    }
 }
 
 #[cfg(test)]

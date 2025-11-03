@@ -75,6 +75,12 @@ impl<'a> Response<'a> {
         }
     }
 
+    pub fn get_expect_data_type(&self) -> HttpDataType {
+        let response = self.inner.to_response();
+        let data_type = HttpDataType::try_from(response.GetExpectDataType()).unwrap_or_default();
+        data_type
+    }
+
     pub(crate) fn from_ffi(inner: &'a HttpClientResponse) -> Self {
         Self {
             inner: ResponseInner::Ref(inner),
@@ -154,4 +160,25 @@ pub struct PerformanceInfo {
     pub first_receive_timing: f64,
     pub total_timing: f64,
     pub redirect_timing: f64,
+}
+
+/// http data type
+#[derive(Debug, Default)]
+pub enum HttpDataType {
+    StringType = 0,
+    ObjectType,
+    ArrayBuffer,
+    #[default]
+    None,
+}
+
+impl HttpDataType {
+    pub fn to_i32(&self) -> i32 {
+        match self {
+            HttpDataType::StringType => 0,
+            HttpDataType::ObjectType => 1,
+            HttpDataType::ArrayBuffer => 2,
+            _=> -1,
+        }
+    }
 }

@@ -18,6 +18,7 @@
 
 #include <map>
 #include <string>
+#include "common.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -184,6 +185,12 @@ public:
     void SetRawHeader(const std::string &header);
 
     /**
+     * Get the raw header of the HTTP response.
+     * @return The raw header of the response.
+     */
+    const std::string &GetRawHeader() const;
+
+    /**
      * Sets the cookies for the HTTP response.
      * @param cookies The cookie string.
      */
@@ -212,6 +219,18 @@ public:
      * @return The statistics including the information of HTTP request
      */
     [[nodiscard]] HttpStatistics GetHttpStatistics() const;
+
+    /**
+     * Sets the expect type of the HTTP response.
+     * @param type The expect type.
+     */
+    void SetExpectDataType(const HttpDataType &type);
+
+    /**
+     * Get the time taken of various stages of HTTP request.
+     * @return Expected types of the response result.
+     */
+    [[nodiscard]] HttpDataType GetExpectDataType() const;
 
 private:
     friend class HttpClientTask;
@@ -242,6 +261,7 @@ private:
     HttpStatistics httpStatistics_;
     PerformanceInfo performanceInfo_;
     std::vector<std::string> setCookie_;
+    HttpDataType dataType_ = HttpDataType::NO_DATA_TYPE;
 };
 } // namespace HttpClient
 } // namespace NetStack

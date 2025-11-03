@@ -52,6 +52,7 @@ ohos_unittest("netstack_network_profiler_utils_test") {
   external_deps += [
     "ability_runtime:wantagent_innerkits",
     "curl:curl_shared",
+    "bounds_checking_function:libsec_shared",
     "hiprofiler:libnetwork_profiler",
     "init:libbegetutil",
     "ipc:ipc_single",
@@ -68,6 +69,7 @@ ohos_unittest("netstack_network_profiler_utils_test") {
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_constant.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_request.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_response.cpp",
+    "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_secure_data.cpp",
     "$NETSTACK_UTILS_ROOT/profiler_utils/src/http_client_network_message.cpp",
     "$NETSTACK_UTILS_ROOT/profiler_utils/src/http_network_message.cpp",
     "$NETSTACK_UTILS_ROOT/profiler_utils/src/i_network_message.cpp",

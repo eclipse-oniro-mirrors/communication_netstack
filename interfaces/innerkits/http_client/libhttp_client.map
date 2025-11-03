@@ -22,6 +22,7 @@
     *NetworkProfilerUtils*;
     *NetworkMessage*;
     *TlvUtils*;
+    *CacheProxy*;
   local:
     *;
 };
