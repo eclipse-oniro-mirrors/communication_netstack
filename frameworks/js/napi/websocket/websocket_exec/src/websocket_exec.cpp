@@ -54,7 +54,7 @@ static constexpr const int MAX_HDR_LENGTH = 1024;
 
 static constexpr const int MAX_PROTOCOL_LENGTH = 1024;
 
-static constexpr const int MAX_ADDRESS_LENGTH = 1024;
+static constexpr const int MAX_ADDRESS_LENGTH = 2048;
 
 static constexpr const int FD_LIMIT_PER_THREAD = 1 + 1 + 1;
 
