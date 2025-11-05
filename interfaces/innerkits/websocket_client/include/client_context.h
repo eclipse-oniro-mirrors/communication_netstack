@@ -170,11 +170,11 @@ public:
 
     Secure::SecureChar keyPassword;
 
-    bool permissionDenied;
+    bool permissionDenied = false;
 
     bool isAtomicService = false;
 
-    bool noAllowedHost;
+    bool noAllowedHost = false;
 
     std::string bundleName;
 
@@ -192,14 +192,14 @@ public:
 
     std::string closeReason;
 
-    uint32_t openStatus;
+    uint32_t openStatus = 0;
 
-    uint32_t errorCode;
+    uint32_t errorCode = 0;
 
     std::string openMessage;
 
 private:
-    bool closed_;
+    bool closed_ = false;
 
     std::string userCertPath_;
 
@@ -215,7 +215,7 @@ private:
 
     lws *wsi_ = nullptr;
 
-    int clientId;
+    int clientId = 0;
 };
 }; // namespace WebSocketClient
 } // namespace NetStack

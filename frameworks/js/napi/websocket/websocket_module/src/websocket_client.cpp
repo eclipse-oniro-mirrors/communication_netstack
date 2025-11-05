@@ -376,12 +376,12 @@ static void GetWebsocketProxyInfo(ClientContext *context, std::string &host, uin
 #endif
     } else if (context->usingWebsocketProxyType == WebsocketProxyType::USE_SPECIFIED) {
         host = context->websocketProxyHost;
-        port = context->websocketProxyPort;
+        port = static_cast<uint32_t>(context->websocketProxyPort);
         exclusions = context->websocketProxyExclusions;
     }
 }
 
-static void FillContextInfo(ClientContext *context, lws_context_creation_info &info)
+static void FillContextInfo(ClientContext *context, lws_context_creation_info &info, char *proxyAds)
 {
     info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
     info.port = CONTEXT_PORT_NO_LISTEN;
@@ -389,7 +389,6 @@ static void FillContextInfo(ClientContext *context, lws_context_creation_info &i
     info.fd_limit_per_thread = FD_LIMIT_PER_THREAD;
 
     char tempUri[MAX_URI_LENGTH] = {0};
-    char proxyAds[MAX_ADDRESS_LENGTH] = {0};
     const char *tempProtocol = nullptr;
     const char *tempAddress = nullptr;
     const char *tempPath = nullptr;
@@ -557,7 +556,8 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
         }
     }
     lws_context_creation_info info = {};
-    FillContextInfo(this->GetClientContext(), info);
+    char proxyAds[MAX_ADDRESS_LENGTH] = {0};
+    FillContextInfo(this->GetClientContext(), info, proxyAds);
     FillCaPath(this->GetClientContext(), info);
     lws_context *lwsContext = lws_create_context(&info);
     if (lwsContext == nullptr) {
