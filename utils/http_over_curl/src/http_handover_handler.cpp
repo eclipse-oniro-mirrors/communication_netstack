@@ -336,10 +336,10 @@ bool HttpHandoverHandler::CheckRequestCanRetrans(RequestInfo *request, int32_t r
     NETSTACK_LOGI(
         "taskid=%{public}d,requestType:%{public}s,canRetrans:%{public}d,"
         "method:%{public}s,isInStream:%{public}d,recvtime:%{public}d,sendtime:%{public}d,readTimeout:%{public}u,"
-        "connecttimeout:%{public}u,url:%{public}s ",
+        "connecttimeout:%{public}u",
         httpHandoverStackInfo.taskId, type.c_str(), (int)ret, httpHandoverStackInfo.method.c_str(),
         httpHandoverStackInfo.isInStream, (int)recvtime, (int)sendtime, httpHandoverStackInfo.readTimeout,
-        httpHandoverStackInfo.connectTimeout, httpHandoverStackInfo.requestUrl.c_str());
+        httpHandoverStackInfo.connectTimeout);
     return ret;
 }
 
