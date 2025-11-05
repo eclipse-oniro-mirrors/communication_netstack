@@ -381,7 +381,7 @@ static void GetWebsocketProxyInfo(ClientContext *context, std::string &host, uin
     }
 }
 
-static void FillContextInfo(ClientContext *context, lws_context_creation_info &info)
+static void FillContextInfo(ClientContext *context, lws_context_creation_info &info, char *proxyAds)
 {
     info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
     info.port = CONTEXT_PORT_NO_LISTEN;
@@ -389,7 +389,6 @@ static void FillContextInfo(ClientContext *context, lws_context_creation_info &i
     info.fd_limit_per_thread = FD_LIMIT_PER_THREAD;
 
     char tempUri[MAX_URI_LENGTH] = {0};
-    char *proxyAds = new char[MAX_ADDRESS_LENGTH];
     const char *tempProtocol = nullptr;
     const char *tempAddress = nullptr;
     const char *tempPath = nullptr;
@@ -557,11 +556,11 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
         }
     }
     lws_context_creation_info info = {};
-    FillContextInfo(this->GetClientContext(), info);
+    char proxyAds[MAX_ADDRESS_LENGTH] = {0};
+    FillContextInfo(this->GetClientContext(), info, proxyAds);
     FillCaPath(this->GetClientContext(), info);
     lws_context *lwsContext = lws_create_context(&info);
     if (lwsContext == nullptr) {
-        delete[] info.http_proxy_address;
         return WebSocketErrorCode::WEBSOCKET_CONNECTION_NO_MEMOERY;
     }
     this->GetClientContext()->SetContext(lwsContext);
@@ -570,7 +569,6 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
         NETSTACK_LOGE("websocket CreatConnectInfo error");
         GetClientContext()->SetContext(nullptr);
         lws_context_destroy(lwsContext);
-        delete[] info.http_proxy_address;
         return ret;
     }
     std::thread serviceThread(RunService, this);
@@ -580,7 +578,6 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
     pthread_setname_np(serviceThread.native_handle(), WEBSOCKET_CLIENT_THREAD_RUN);
 #endif
     serviceThread.detach();
-    delete[] info.http_proxy_address;
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
