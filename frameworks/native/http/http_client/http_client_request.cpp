@@ -42,7 +42,7 @@ HttpClientRequest::HttpClientRequest()
       resumeFrom_(HTTP_DEFAULT_RANGE),
       resumeTo_(HTTP_DEFAULT_RANGE),
       sslType_(SslType::TLS),
-      maxLimit_(HttpConstant::DEFAULT_MAX_LIMIT),
+      maxLimit_(HttpConstant::MAX_DATA_LIMIT),
       usingCache_(false),
       dataType_(HttpDataType::NO_DATA_TYPE)
 {

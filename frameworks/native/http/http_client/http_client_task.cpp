@@ -1000,14 +1000,10 @@ size_t HttpClientTask::DataReceiveCallback(const void *data, size_t size, size_t
     if (task->IsRequestInStream()) {
         return size * memBytes;
     }
-
-    if (task->response_.GetResult().size() > task->request_.GetMaxLimit() ||
-        size * memBytes > task->request_.GetMaxLimit()) {
-        NETSTACK_LOGE("response data exceeds the maximum limit");
-        return 0;
+    if (task->response_.GetResult().size() < task->request_.GetMaxLimit()) {
+        task->response_.AppendResult(data, size * memBytes);
     }
 
-    task->response_.AppendResult(data, size * memBytes);
     return size * memBytes;
 }
 
