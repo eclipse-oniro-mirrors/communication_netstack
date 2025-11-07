@@ -549,15 +549,15 @@ napi_value SocketModuleExports::ConstructLocalSocketServerInstance(napi_env env,
 void SocketModuleExports::DefineUDPSocketClass(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
-        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_BIND, UDPSocket::Bind),
-        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_SEND, UDPSocket::Send),
-        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_CLOSE, UDPSocket::Close),
-        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_GET_STATE, UDPSocket::GetState),
-        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_GET_LOCAL_ADDRESS, UDPSocket::GetLocalAddress),
-        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_SET_EXTRA_OPTIONS, UDPSocket::SetExtraOptions),
-        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_GET_SOCKET_FD, UDPSocket::GetSocketFd),
-        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_ON, UDPSocket::On),
-        DECLARE_NAPI_FUNCTION(UDPSocket::FUNCTION_OFF, UDPSocket::Off),
+        DECLARE_NAPI_WRITABLE_FUNCTION(UDPSocket::FUNCTION_BIND, UDPSocket::Bind),
+        DECLARE_NAPI_WRITABLE_FUNCTION(UDPSocket::FUNCTION_SEND, UDPSocket::Send),
+        DECLARE_NAPI_WRITABLE_FUNCTION(UDPSocket::FUNCTION_CLOSE, UDPSocket::Close),
+        DECLARE_NAPI_WRITABLE_FUNCTION(UDPSocket::FUNCTION_GET_STATE, UDPSocket::GetState),
+        DECLARE_NAPI_WRITABLE_FUNCTION(UDPSocket::FUNCTION_GET_LOCAL_ADDRESS, UDPSocket::GetLocalAddress),
+        DECLARE_NAPI_WRITABLE_FUNCTION(UDPSocket::FUNCTION_SET_EXTRA_OPTIONS, UDPSocket::SetExtraOptions),
+        DECLARE_NAPI_WRITABLE_FUNCTION(UDPSocket::FUNCTION_GET_SOCKET_FD, UDPSocket::GetSocketFd),
+        DECLARE_NAPI_WRITABLE_FUNCTION(UDPSocket::FUNCTION_ON, UDPSocket::On),
+        DECLARE_NAPI_WRITABLE_FUNCTION(UDPSocket::FUNCTION_OFF, UDPSocket::Off),
     };
     ModuleTemplate::DefineClass(env, exports, properties, INTERFACE_UDP_SOCKET);
 }
