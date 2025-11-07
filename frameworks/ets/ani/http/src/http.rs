@@ -36,7 +36,7 @@ use netstack_rs::{
 
 use crate::{
     bridge::{
-        convert_to_business_error, Cleaner, HttpRequest, HttpRequestOptions, HttpResponseCache, TlsConfig, HttpProxy
+        convert_to_business_error, Cleaner, HttpRequest, HttpRequestOptions, HttpResponseCache, TlsConfig, HttpProxy, CertificatePinning
     },
     callback::TaskCallback,
 };
@@ -198,6 +198,28 @@ pub fn http_set_options(
     }
     if let Some(server_authentication) = options.server_authentication {
         request.server_authentication(server_authentication.into());
+    }
+    if let Some(certificate_pinning) = options.certificate_pinning {
+        let obj_data = certificate_pinning;
+        let array_class = env.find_class(signature::ARRAY).unwrap();
+        let mut pinRes = String::new();
+        if env.instance_of(&obj_data, &array_class).unwrap() {
+            let opt = env.deserialize::<Vec<CertificatePinning>>(obj_data).unwrap();
+            for item in opt {
+                if (item.hash_algorithm == "SHA-256") {
+                    pinRes.push_str(&format!("sha256//{};", item.public_key_hash));
+                }
+            }
+        } else {
+            let opt = env.deserialize::<CertificatePinning>(obj_data).unwrap();
+            if (opt.hash_algorithm == "SHA-256") {
+                pinRes.push_str(&format!("sha256//{};", opt.public_key_hash));
+            }
+        }
+        if !pinRes.is_empty() {
+            pinRes.pop();
+            request.certificate_pinning(&pinRes);
+        }
     }
 }
 
