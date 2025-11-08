@@ -418,6 +418,7 @@ napi_value HttpModuleExports::HttpInterceptorChain::GetChain(napi_env env, napi_
         HttpInterceptor *interceptor = chain->chain_[i];
         if (interceptor == nullptr) {
             NETSTACK_LOGE("Null interceptor in chain during GetChain");
+            return NapiUtils::CreateArray(env, 0);
         }
         napi_value interceptorInstance = interceptor->GetInstance(env);
         NapiUtils::SetArrayElement(env, result, i, interceptorInstance);
@@ -511,6 +512,7 @@ napi_value HttpModuleExports::HttpInterceptorChain::Apply(napi_env env, napi_cal
         if (interceptor == nullptr) {
             NETSTACK_LOGE("Null interceptor in chain during Apply");
             NapiUtils::ThrowError(env, "2300999", "Internal error");
+            return rs;
         }
         napi_value interceptorInstance = interceptor->GetInstance(env);
         napi_ref ref;
