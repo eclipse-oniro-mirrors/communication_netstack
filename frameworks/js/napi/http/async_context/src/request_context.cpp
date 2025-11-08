@@ -362,7 +362,7 @@ void RequestContext::ParseHeader(napi_value optionsValue)
     }
     auto names = NapiUtils::GetPropertyNames(GetEnv(), header);
     if (names.size() == 0) {
-        NETSTACK_LOGE("ParseHeader set fail");
+        NETSTACK_LOGD("ParseHeader set fail");
         return;
     }
     std::for_each(names.begin(), names.end(), [header, this](const std::string &name) {
@@ -396,7 +396,7 @@ bool RequestContext::HandleMethodForGet(napi_value extraData)
     std::string extraParam;
     auto names = NapiUtils::GetPropertyNames(GetEnv(), extraData);
     if (names.size() == 0) {
-        NETSTACK_LOGE("HandleMethodForGet extraData invalid");
+        NETSTACK_LOGD("HandleMethodForGet extraData invalid");
     }
     std::for_each(names.begin(), names.end(), [this, extraData, &extraParam](std::string name) {
         auto value = NapiUtils::GetStringPropertyUtf8(GetEnv(), extraData, name);
@@ -517,7 +517,7 @@ bool RequestContext::GetRequestBody(napi_value extraData)
     if (type == napi_object) {
         std::string body = NapiUtils::GetStringFromValueUtf8(GetEnv(), NapiUtils::JsonStringify(GetEnv(), extraData));
         if (body.empty()) {
-            NETSTACK_LOGE("GetRequestBody extraData null for post method");
+            NETSTACK_LOGD("GetRequestBody extraData null for post method");
             return false;
         }
         options.SetBody(body.c_str(), body.length());
