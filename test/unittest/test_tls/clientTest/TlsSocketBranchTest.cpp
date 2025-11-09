@@ -44,7 +44,6 @@ static constexpr const char *SEND_DATA = "How do you do";
 static constexpr const char *SEND_DATA_EMPTY = "";
 static constexpr const size_t MAX_BUFFER_SIZE = 8192;
 const int PORT = 7838;
-const int SOCKET_FD = 5;
 const int SSL_ERROR_RETURN = -1;
 
 TLSConnectOptions BaseOption()
@@ -271,7 +270,9 @@ HWTEST_F(TlsSocketBranchTest, BranchTest6, TestSize.Level2)
 
     auto tlsSocket = std::make_shared<TLSSocket>();
     TLSSocket::TLSSocketInternal *tlsSocketInternal = new TLSSocket::TLSSocketInternal();
-    bool isConnectToHost = tlsSocketInternal->TlsConnectToHost(SOCKET_FD, connectOptions, false);
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    ASSERT_GT(sockfd, 0);
+    bool isConnectToHost = tlsSocketInternal->TlsConnectToHost(sockfd, connectOptions, false);
     EXPECT_FALSE(isConnectToHost);
     tlsSocketInternal->SetTlsConfiguration(connectOptions);
 
@@ -283,7 +284,13 @@ HWTEST_F(TlsSocketBranchTest, BranchTest6, TestSize.Level2)
     EXPECT_EQ(recvSslNull, SSL_ERROR_RETURN);
     bool closeSslNull = tlsSocketInternal->Close();
     EXPECT_FALSE(closeSslNull);
-    tlsSocketInternal->ssl_ = SSL_new(SSL_CTX_new(TLS_client_method()));
+    tlsSocketInternal->ssl_ = std::shared_ptr<ssl_st>(SSL_new(SSL_CTX_new(TLS_client_method())), [](ssl_st* ssl) {
+        if (ssl == nullptr) {
+            return;
+        }
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
+    });
     bool sendEmpty = tlsSocketInternal->Send(SEND_DATA_EMPTY);
     EXPECT_FALSE(sendEmpty);
     int recv = tlsSocketInternal->Recv(buffer, MAX_BUFFER_SIZE);
@@ -306,7 +313,13 @@ HWTEST_F(TlsSocketBranchTest, BranchTest7, TestSize.Level2)
     EXPECT_EQ(getCipherSuite.size(), 0);
     bool setSharedSigals = tlsSocketInternal->SetSharedSigals();
     EXPECT_FALSE(setSharedSigals);
-    tlsSocketInternal->ssl_ = SSL_new(SSL_CTX_new(TLS_client_method()));
+    tlsSocketInternal->ssl_ = std::shared_ptr<ssl_st>(SSL_new(SSL_CTX_new(TLS_client_method())), [](ssl_st* ssl) {
+        if (ssl == nullptr) {
+            return;
+        }
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
+    });
     getCipherSuite = tlsSocketInternal->GetCipherSuite();
     EXPECT_NE(getCipherSuite.size(), 0);
     setSharedSigals = tlsSocketInternal->SetSharedSigals();
@@ -334,9 +347,6 @@ HWTEST_F(TlsSocketBranchTest, BranchTest7, TestSize.Level2)
 
     setSharedSigals = tlsSocketInternal->SetSharedSigals();
     EXPECT_FALSE(setSharedSigals);
-
-    ssl_st *ssl = tlsSocketInternal->GetSSL();
-    EXPECT_NE(ssl, nullptr);
     delete tlsSocketInternal;
 }
 } // namespace TlsSocket
