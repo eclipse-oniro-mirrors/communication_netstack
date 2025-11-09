@@ -1788,21 +1788,18 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
         return 0;
     }
     context->GetTrace().Tracepoint(TraceEvents::RECEIVING);
-    if (context->GetSharedManager()->IsEventDestroy()) {
+    auto sharedManager = context->GetSharedManager();
+    if (sharedManager == nullptr || sharedManager->IsEventDestroy()) {
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
         return 0;
     }
     context->response.AppendRawHeader(data, size * memBytes);
     if (CommonUtils::EndsWith(context->response.GetRawHeader(), HttpConstant::HTTP_RESPONSE_HEADER_SEPARATOR)) {
         context->response.ParseHeaders();
-        if (context->GetSharedManager()) {
-            auto headerMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
-            context->GetSharedManager()->EmitByUvWithoutCheckShared(ON_HEADER_RECEIVE, headerMap,
-                                                                    ResponseHeaderCallback);
-            auto headersMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
-            context->GetSharedManager()->EmitByUvWithoutCheckShared(ON_HEADERS_RECEIVE, headersMap,
-                                                                    ResponseHeaderCallback);
-        }
+        auto headerMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
+        sharedManager->EmitByUvWithoutCheckShared(ON_HEADER_RECEIVE, headerMap, ResponseHeaderCallback);
+        auto headersMap = new std::map<std::string, std::string>(MakeHeaderWithSetCookie(context));
+        sharedManager->EmitByUvWithoutCheckShared(ON_HEADERS_RECEIVE, headersMap, ResponseHeaderCallback);
     }
     context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
     return size * memBytes;

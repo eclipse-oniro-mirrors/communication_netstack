@@ -46,7 +46,11 @@ static void AddSlashBeforeQuery(std::string &url)
         posStart = notSlash;
     }
     auto queryPos = url.find('?', posStart);
-    if (url.find('/', posStart) > queryPos) {
+    if (queryPos == std::string::npos) {
+        return;
+    }
+    auto posSlash = url.find('/', posStart);
+    if (posSlash == std::string::npos || posSlash > queryPos) {
         url.insert(queryPos, 1, '/');
     }
 }

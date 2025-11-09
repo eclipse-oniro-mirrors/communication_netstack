@@ -53,7 +53,6 @@ constexpr int SEND_POLL_TIMEOUT_MS = 1000;
 constexpr int MAX_RECV_BUFFER_SIZE = 1024 * 16;
 constexpr const char *SPLIT_ALT_NAMES = ",";
 constexpr const char *SPLIT_HOST_NAME = ".";
-constexpr const char *PROTOCOL_UNKNOW = "UNKNOW_PROTOCOL";
 constexpr const char *UNKNOW_REASON = "Unknown reason";
 constexpr const char *IP = "IP: ";
 constexpr const char *HOST_NAME = "hostname: ";
@@ -777,8 +776,6 @@ void TLSSocket::Connect(OHOS::NetStack::TlsSocket::TLSConnectOptions &tlsConnect
 
 void TLSSocket::Send(const OHOS::NetStack::Socket::TCPSendOptions &tcpSendOptions, const SendCallback &callback)
 {
-    (void)tcpSendOptions;
-
     auto res = tlsSocketInternal_.Send(tcpSendOptions.GetData());
     if (!res) {
         int resErr = tlsSocketInternal_.ConvertSSLError();
@@ -812,6 +809,8 @@ void TLSSocket::Close(const CloseCallback &callback)
         callback(resErr);
         return;
     }
+    NETSTACK_LOGI("tls socket close, fd =%{public}d", sockFd_);
+    close(sockFd_);
     sockFd_ = -1;
     CallOnCloseCallback();
     callback(TLSSOCKET_SUCCESS);
@@ -1179,11 +1178,10 @@ bool ExecSocketConnect(const std::string &host, int port, sa_family_t family, in
 
 int TLSSocket::TLSSocketInternal::ConvertSSLError(void)
 {
-    std::lock_guard<std::mutex> lock(mutexForSsl_);
     if (!ssl_) {
         return TLS_ERR_SSL_NULL;
     }
-    return TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
+    return TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_.get(), SSL_RET_CODE);
 }
 
 bool TLSSocket::TLSSocketInternal::TlsConnectToHost(int sock, const TLSConnectOptions &options, bool isExtSock)
@@ -1258,8 +1256,12 @@ bool TLSSocket::TLSSocketInternal::SendRetry(ssl_st *ssl, const char *curPos, si
     return false;
 }
 
-bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, ssl_st *ssl, const char *pdata, int sendSize)
+bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, const char *pdata, int sendSize)
 {
+    if (!ssl_) {
+        NETSTACK_LOGE("ssl is null");
+        return false;
+    }
     int bufferSize = DEFAULT_BUFFER_SIZE;
     auto curPos = pdata;
     nfds_t num = 1;
@@ -1276,20 +1278,15 @@ bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, ssl_st *ssl, const char 
             NETSTACK_LOGI("send poll timeout, fd: %{public}d, errno: %{public}d", sockfd, errno);
             continue;
         }
-        std::lock_guard<std::mutex> lock(mutexForSsl_);
-        if (!ssl) {
-            NETSTACK_LOGE("ssl is null");
-            return false;
-        }
         size_t curSendSize = std::min<size_t>(sendSize, bufferSize);
-        int len = SSL_write(ssl, curPos, curSendSize);
+        int len = SSL_write(ssl_.get(), curPos, curSendSize);
         if (len < 0) {
-            int err = SSL_get_error(ssl, SSL_RET_CODE);
+            int err = SSL_get_error(ssl_.get(), SSL_RET_CODE);
             NETSTACK_LOGE("Error in PollSend, errno is %{public}d %{public}d", err, errno);
             if (err != SSL_ERROR_WANT_WRITE || errno != EAGAIN) {
                 NETSTACK_LOGE("write failed, return, err: %{public}d errno: %{public}d", err, errno);
                 return false;
-            } else if (!SendRetry(ssl, curPos, curSendSize, sockfd)) {
+            } else if (!SendRetry(ssl_.get(), curPos, curSendSize, sockfd)) {
                 return false;
             }
         } else if (len == 0) {
@@ -1304,35 +1301,26 @@ bool TLSSocket::TLSSocketInternal::PollSend(int sockfd, ssl_st *ssl, const char 
 
 bool TLSSocket::TLSSocketInternal::Send(const std::string &data)
 {
-    {
-        std::lock_guard<std::mutex> lock(mutexForSsl_);
-        if (!ssl_) {
-            NETSTACK_LOGE("ssl is null");
-            return false;
-        }
-    }
-
     if (data.empty()) {
         NETSTACK_LOGE("data is empty");
         return true;
     }
 
-    if (!PollSend(socketDescriptor_, ssl_, data.c_str(), data.size())) {
+    if (!PollSend(socketDescriptor_, data.c_str(), data.size())) {
         return false;
     }
     return true;
 }
 int TLSSocket::TLSSocketInternal::Recv(char *buffer, int maxBufferSize)
 {
-    std::lock_guard<std::mutex> lock(mutexForSsl_);
     if (!ssl_) {
         NETSTACK_LOGE("ssl is null");
         return SSL_ERROR_RETURN;
     }
 
-    int ret = SSL_read(ssl_, buffer, maxBufferSize);
+    int ret = SSL_read(ssl_.get(), buffer, maxBufferSize);
     if (ret < 0) {
-        int err = SSL_get_error(ssl_, SSL_RET_CODE);
+        int err = SSL_get_error(ssl_.get(), SSL_RET_CODE);
         switch (err) {
             case SSL_ERROR_SSL:
                 NETSTACK_LOGE("An error occurred in the SSL library %{public}d %{public}d", err, errno);
@@ -1353,22 +1341,6 @@ int TLSSocket::TLSSocketInternal::Recv(char *buffer, int maxBufferSize)
 
 bool TLSSocket::TLSSocketInternal::Close()
 {
-    std::lock_guard<std::mutex> lock(mutexForSsl_);
-    if (!ssl_) {
-        NETSTACK_LOGE("ssl is null, fd =%{public}d", socketDescriptor_);
-        return false;
-    }
-    int result = SSL_shutdown(ssl_);
-    if (result < 0) {
-        int resErr = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
-        NETSTACK_LOGE("Error in shutdown, errno is %{public}d, error info is %{public}s", resErr,
-                      MakeSSLErrorString(resErr).c_str());
-    }
-    NETSTACK_LOGI("tls socket close, fd =%{public}d", socketDescriptor_);
-    SSL_free(ssl_);
-    ssl_ = nullptr;
-    close(socketDescriptor_);
-    socketDescriptor_ = -1;
     if (!tlsContextPointer_) {
         NETSTACK_LOGE("Tls context pointer is null");
         return false;
@@ -1399,7 +1371,7 @@ bool TLSSocket::TLSSocketInternal::SetAlpnProtocols(const std::vector<std::strin
     result[pos] = '\0';
 
     NETSTACK_LOGD("alpnProtocols after splicing %{public}s", result.get());
-    if (SSL_set_alpn_protos(ssl_, result.get(), pos)) {
+    if (SSL_set_alpn_protos(ssl_.get(), result.get(), pos)) {
         int resErr = ConvertSSLError();
         NETSTACK_LOGE("Failed to set negotiable protocol list, errno is %{public}d, error info is %{public}s", resErr,
                       MakeSSLErrorString(resErr).c_str());
@@ -1426,7 +1398,7 @@ std::vector<std::string> TLSSocket::TLSSocketInternal::GetCipherSuite() const
         NETSTACK_LOGE("ssl in null");
         return {};
     }
-    STACK_OF(SSL_CIPHER) *sk = SSL_get_ciphers(ssl_);
+    STACK_OF(SSL_CIPHER) *sk = SSL_get_ciphers(ssl_.get());
     if (!sk) {
         NETSTACK_LOGE("get ciphers failed");
         return {};
@@ -1459,48 +1431,23 @@ std::vector<std::string> TLSSocket::TLSSocketInternal::GetSignatureAlgorithms() 
 
 std::string TLSSocket::TLSSocketInternal::GetProtocol() const
 {
-    if (!ssl_) {
-        NETSTACK_LOGE("ssl in null");
-        return PROTOCOL_UNKNOW;
-    }
     if (configuration_.GetProtocol() == TLS_V1_3) {
         return PROTOCOL_TLS_V13;
     }
     return PROTOCOL_TLS_V12;
 }
 
-static bool IsNumberNotZero(int &number, std::mutex &mutexForSsl, ssl_st *ssl)
-{
-    {
-        std::lock_guard<std::mutex> lock(mutexForSsl);
-        if (!ssl) {
-            return false;
-        }
-        number = SSL_get_shared_sigalgs(ssl, 0, nullptr, nullptr, nullptr, nullptr, nullptr);
-    }
-    if (!number) {
-        return false;
-    }
-    return true;
-}
-
 bool TLSSocket::TLSSocketInternal::SetSharedSigals()
 {
-    int number = 0;
-    if (!IsNumberNotZero(number, mutexForSsl_, ssl_)) {
+    if (!ssl_) {
         return false;
     }
+    int number = SSL_get_shared_sigalgs(ssl_.get(), 0, nullptr, nullptr, nullptr, nullptr, nullptr);
     for (int i = 0; i < number; i++) {
         int hash_nid;
         int sign_nid;
         std::string sig_with_md;
-        {
-            std::lock_guard<std::mutex> lock(mutexForSsl_);
-            if (!ssl_) {
-                return false;
-            }
-            SSL_get_shared_sigalgs(ssl_, i, &sign_nid, &hash_nid, nullptr, nullptr, nullptr);
-        }
+        SSL_get_shared_sigalgs(ssl_.get(), i, &sign_nid, &hash_nid, nullptr, nullptr, nullptr);
         switch (sign_nid) {
             case EVP_PKEY_RSA:
                 sig_with_md = SIGN_NID_RSA;
@@ -1553,14 +1500,27 @@ bool TLSSocket::TLSSocketInternal::CreatTlsContext()
         return false;
     }
 
-    std::lock_guard<std::mutex> lock(mutexForSsl_);
-    if (!(ssl_ = tlsContextPointer_->CreateSsl())) {
+    ssl_st* ssl = tlsContextPointer_->CreateSsl();
+    if (ssl == nullptr) {
         NETSTACK_LOGE("failed to create ssl session");
         return false;
     }
-
-    SSL_set_fd(ssl_, socketDescriptor_);
-    SSL_set_connect_state(ssl_);
+    auto deleter = [](ssl_st* ssl) {
+        if (ssl == nullptr) {
+            NETSTACK_LOGE("ssl is null");
+            return;
+        }
+        int result = SSL_shutdown(ssl);
+        if (result < 0) {
+            int resErr = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl, SSL_RET_CODE);
+            NETSTACK_LOGE("Error in shutdown, errno is %{public}d, error info is %{public}s", resErr,
+                          MakeSSLErrorString(resErr).c_str());
+        }
+        SSL_free(ssl);
+    };
+    SSL_set_fd(ssl, socketDescriptor_);
+    SSL_set_connect_state(ssl);
+    ssl_ = std::shared_ptr<ssl_st>(ssl, deleter);
     return true;
 }
 
@@ -1740,12 +1700,12 @@ static std::string X509_to_PEM(X509 *cert)
     return certificateInPEM;
 }
 
-static void CacheCertificates(const std::string &hostName, SSL *ssl)
+void TLSSocket::TLSSocketInternal::CacheCertificates(const std::string &hostName)
 {
-    if (!ssl || hostName.empty()) {
+    if (ssl_ == nullptr || hostName.empty()) {
         return;
     }
-    auto certificatesStack = SSL_get_peer_cert_chain(ssl);
+    auto certificatesStack = SSL_get_peer_cert_chain(ssl_.get());
     if (!certificatesStack) {
         return;
     }
@@ -1759,16 +1719,16 @@ static void CacheCertificates(const std::string &hostName, SSL *ssl)
     }
 }
 
-static void SetSNIandLoadCachedCaCert(const std::string &hostName, SSL *ssl)
+void TLSSocket::TLSSocketInternal::SetSNIandLoadCachedCaCert(const std::string &hostName)
 {
-    if (!ssl) {
+    if (!ssl_) {
         return;
     }
 #ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
-    SSL_set_tlsext_host_name(ssl, hostName.c_str());
+    SSL_set_tlsext_host_name(ssl_.get(), hostName.c_str());
 #endif
     auto cachedPem = CaCertCache::GetInstance().Get(hostName);
-    auto sslCtx = SSL_get_SSL_CTX(ssl);
+    auto sslCtx = SSL_get_SSL_CTX(ssl_.get());
     if (!sslCtx) {
         return;
     }
@@ -1781,7 +1741,7 @@ static void SetSNIandLoadCachedCaCert(const std::string &hostName, SSL *ssl)
     }
 }
 
-int TLSSocket::TLSSocketInternal::ShakingHandsTimeout(SSL* ssl, int fd, uint32_t timeout)
+int TLSSocket::TLSSocketInternal::ShakingHandsTimeout(int fd, uint32_t timeout)
 {
     if (timeout <= 0) {
         NETSTACK_LOGI("No need to wait timeout, timeout is %{public}d", timeout);
@@ -1795,8 +1755,8 @@ int TLSSocket::TLSSocketInternal::ShakingHandsTimeout(SSL* ssl, int fd, uint32_t
         if (remain <= 0) {
             return TLS_TIMEOUT;
         }
-        int rc = SSL_connect(ssl);
-        int err = SSL_get_error(ssl, rc);
+        int rc = SSL_connect(ssl_.get());
+        int err = SSL_get_error(ssl_.get(), rc);
         if (rc == 1) {
             break;
         }
@@ -1823,47 +1783,44 @@ int TLSSocket::TLSSocketInternal::ShakingHandsTimeout(SSL* ssl, int fd, uint32_t
 }
 bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &options)
 {
-    {
-        std::lock_guard<std::mutex> lock(mutexForSsl_);
-        if (!ssl_) {
-            NETSTACK_LOGE("ssl is null");
-            return false;
-        }
-
-        auto hostName = options.GetHostName();
-        // indicates hostName is not ip address
-        if (hostName != options.GetNetAddress().GetAddress()) {
-            SetSNIandLoadCachedCaCert(hostName, ssl_);
-        }
-        uint32_t timeout_ms = options.GetTimeout();
-        int TimeoutErr = ShakingHandsTimeout(ssl_, socketDescriptor_, timeout_ms);
-        if (TimeoutErr == NO_TIMEOUT) {
-            int result = SSL_connect(ssl_);
-            if (result == -1) {
-                char err[MAX_ERR_LEN] = {0};
-                auto code = ERR_get_error();
-                ERR_error_string_n(code, err, MAX_ERR_LEN);
-                int errorStatus = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
-                NETSTACK_LOGE("SSLConnect fail %{public}d, error: %{public}s errno: %{public}d "
-                    "ERR_get_error %{public}s", errorStatus, MakeSSLErrorString(errorStatus).c_str(), errno, err);
-                return false;
-            }
-        } else if (TimeoutErr != TlsSocketError::TLSSOCKET_SUCCESS) {
-            SetSockBlockFlag(socketDescriptor_, false);
-            NETSTACK_LOGE("TLS failed to shaking hands after %{public}d ms", timeout_ms);
-            return false;
-        }
-
-        // indicates hostName is not ip address
-        if (hostName != options.GetNetAddress().GetAddress()) {
-            CacheCertificates(hostName, ssl_);
-        }
-        const char *cipherList = SSL_get_cipher_list(ssl_, 0);
-        std::string list = (cipherList == NULL) ? "" : cipherList;
-        NETSTACK_LOGI("cipher_list: %{public}s, Version: %{public}s, Cipher: %{public}s", list.c_str(),
-                      SSL_get_version(ssl_), SSL_get_cipher(ssl_));
-        configuration_.SetCipherSuite(list);
+    if (!ssl_) {
+        NETSTACK_LOGE("ssl is null");
+        return false;
     }
+
+    auto hostName = options.GetHostName();
+    // indicates hostName is not ip address
+    if (hostName != options.GetNetAddress().GetAddress()) {
+        SetSNIandLoadCachedCaCert(hostName);
+    }
+    uint32_t timeout_ms = options.GetTimeout();
+    int TimeoutErr = ShakingHandsTimeout(socketDescriptor_, timeout_ms);
+    if (TimeoutErr == NO_TIMEOUT) {
+        int result = SSL_connect(ssl_.get());
+        if (result == -1) {
+            char err[MAX_ERR_LEN] = {0};
+            auto code = ERR_get_error();
+            ERR_error_string_n(code, err, MAX_ERR_LEN);
+            int errorStatus = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_.get(), SSL_RET_CODE);
+            NETSTACK_LOGE("SSLConnect fail %{public}d, error: %{public}s errno: %{public}d "
+                "ERR_get_error %{public}s", errorStatus, MakeSSLErrorString(errorStatus).c_str(), errno, err);
+            return false;
+        }
+    } else if (TimeoutErr != TlsSocketError::TLSSOCKET_SUCCESS) {
+        SetSockBlockFlag(socketDescriptor_, false);
+        NETSTACK_LOGE("TLS failed to shaking hands after %{public}d ms", timeout_ms);
+        return false;
+    }
+
+    // indicates hostName is not ip address
+    if (hostName != options.GetNetAddress().GetAddress()) {
+        CacheCertificates(hostName);
+    }
+    const char *cipherList = SSL_get_cipher_list(ssl_.get(), 0);
+    std::string list = (cipherList == NULL) ? "" : cipherList;
+    NETSTACK_LOGI("cipher_list: %{public}s, Version: %{public}s, Cipher: %{public}s", list.c_str(),
+                  SSL_get_version(ssl_.get()), SSL_get_cipher(ssl_.get()));
+    configuration_.SetCipherSuite(list);
     if (!CheckAfterShankingHands(options)) {
         return false;
     }
@@ -1896,7 +1853,7 @@ bool TLSSocket::TLSSocketInternal::CheckAfterShankingHands(const TLSConnectOptio
 
 bool TLSSocket::TLSSocketInternal::GetRemoteCertificateFromPeer()
 {
-    peerX509_ = SSL_get_peer_certificate(ssl_);
+    peerX509_ = SSL_get_peer_certificate(ssl_.get());
     if (peerX509_ == nullptr) {
         int resErr = ConvertSSLError();
         NETSTACK_LOGE("open fail errno, errno is %{public}d %{public}d", resErr, errno);
@@ -1942,12 +1899,6 @@ bool TLSSocket::TLSSocketInternal::SetRemoteCertRawData()
 const X509CertRawData &TLSSocket::TLSSocketInternal::GetRemoteCertRawData() const
 {
     return remoteRawData_;
-}
-
-ssl_st *TLSSocket::TLSSocketInternal::GetSSL()
-{
-    std::lock_guard<std::mutex> lock(mutexForSsl_);
-    return ssl_;
 }
 } // namespace TlsSocket
 } // namespace NetStack
