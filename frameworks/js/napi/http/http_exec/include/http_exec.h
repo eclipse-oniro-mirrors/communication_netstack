@@ -197,7 +197,9 @@ private:
 
     static bool AddCurlHandle(CURL *handle, RequestContext *context);
 
+#if ENABLE_HTTP_INTERCEPT
     static bool SetFollowLocation(CURL *handle, RequestContext *context);
+#endif
 
 #if HAS_NETMANAGER_BASE
     static void HandleCurlData(CURLMsg *msg, RequestContext *context);

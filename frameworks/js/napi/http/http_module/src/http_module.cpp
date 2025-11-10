@@ -130,19 +130,33 @@ void HttpModuleExports::DefineHttpInterceptorChainClass(napi_env env, napi_value
         DECLARE_NAPI_FUNCTION(HttpInterceptorChain::FUNCTION_ADDCHAIN, HttpInterceptorChain::AddChain),
         DECLARE_NAPI_FUNCTION(HttpInterceptorChain::FUNCTION_APPLY, HttpInterceptorChain::Apply),
     };
-    ModuleTemplate::DefineClassNew(env, exports, properties, INTERFACE_HTTP_INTERCEPTOR_CHAIN,
+    ModuleTemplate::DefineClassNew(
+        env, exports, properties, INTERFACE_HTTP_INTERCEPTOR_CHAIN,
         [](napi_env env, napi_callback_info info) -> napi_value {
             HttpInterceptorChain *chain = new HttpInterceptorChain(env);
             napi_value thisVal;
             napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr);
             napi_wrap(
                 env, thisVal, reinterpret_cast<void *>(chain),
-                [](napi_env env, void *data, void *hint) {
-                    delete static_cast<HttpInterceptorChain *>(data);
-                },
-                nullptr, nullptr);
+                [](napi_env env, void *data, void *hint) { delete static_cast<HttpInterceptorChain *>(data); }, nullptr,
+                nullptr);
             return thisVal;
         });
+    std::initializer_list<napi_property_descriptor> typeProperties = {
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::INTERCEPTOR_INITIAL_REQUEST,
+            NapiUtils::CreateStringUtf8(env, HttpConstant::INTERCEPTOR_INITIAL_REQUEST)),
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::INTERCEPTOR_REDIRECTION,
+            NapiUtils::CreateStringUtf8(env, HttpConstant::INTERCEPTOR_REDIRECTION)),
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::INTERCEPTOR_READ_CACHE,
+            NapiUtils::CreateStringUtf8(env, HttpConstant::INTERCEPTOR_READ_CACHE)),
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::INTERCEPTOR_CONNECT_NETWORK,
+            NapiUtils::CreateStringUtf8(env, HttpConstant::INTERCEPTOR_CONNECT_NETWORK)),
+        DECLARE_NAPI_STATIC_PROPERTY(HttpConstant::INTERCEPTOR_FINAL_RESPONSE,
+            NapiUtils::CreateStringUtf8(env, HttpConstant::INTERCEPTOR_FINAL_RESPONSE)),
+    };
+    napi_value interceptorType = NapiUtils::CreateObject(env);
+    NapiUtils::DefineProperties(env, interceptorType, typeProperties);
+    NapiUtils::SetNamedProperty(env, exports, HttpConstant::INTERCEPTOR_TYPE, interceptorType);
 }
 
 void HttpModuleExports::InitHttpProperties(napi_env env, napi_value exports)
@@ -435,7 +449,7 @@ napi_value HttpModuleExports::HttpInterceptorChain::AddChain(napi_env env, napi_
     napi_status status = napi_get_cb_info(env, info, &argc, args, &this_arg, nullptr);
     if (status != napi_ok || argc != 1) {
         NETSTACK_LOGE("Invalid args in AddChain");
-        NapiUtils::ThrowError(env, "2300802", "Interceptor unsupported parameter type");
+        NapiUtils::ThrowError(env, "2300801", "Parameter type not supported by the interceptor");
         return rs;
     }
 
@@ -449,7 +463,7 @@ napi_value HttpModuleExports::HttpInterceptorChain::AddChain(napi_env env, napi_
 
     if (!NapiUtils::IsArray(env, args[0])) {
         NETSTACK_LOGE("Non-array argument in AddChain");
-        NapiUtils::ThrowError(env, "2300802", "Interceptor unsupported parameter type");
+        NapiUtils::ThrowError(env, "2300801", "Parameter type not supported by the interceptor");
         return rs;
     }
 
@@ -465,7 +479,7 @@ napi_value HttpModuleExports::HttpInterceptorChain::AddChain(napi_env env, napi_
         for (const auto &existing : chain->chain_) {
             if (existing->interceptorType_ == type) {
                 NETSTACK_LOGE("Duplicate interceptor type: %{public}s in AddChain", type.c_str());
-                NapiUtils::ThrowError(env, "2300803", "Duplicated interceptor type in the chain");
+                NapiUtils::ThrowError(env, "2300802", "Duplicated interceptor type in the chain");
                 return rs;
             }
         }
@@ -484,7 +498,7 @@ napi_value HttpModuleExports::HttpInterceptorChain::Apply(napi_env env, napi_cal
     napi_status status = napi_get_cb_info(env, info, &argc, args, &this_arg, nullptr);
     if (status != napi_ok || argc != 1) {
         NETSTACK_LOGE("Failed to get cb info in Apply");
-        NapiUtils::ThrowError(env, "2300802", "Interceptor unsupported parameter type");
+        NapiUtils::ThrowError(env, "2300801", "Parameter type not supported by the interceptor");
         return rs;
     }
     HttpInterceptorChain *chain = nullptr;
@@ -502,7 +516,7 @@ napi_value HttpModuleExports::HttpInterceptorChain::Apply(napi_env env, napi_cal
 
     if (NapiUtils::GetValueType(env, args[0]) != napi_object) {
         NETSTACK_LOGE("Non-object argument in Apply");
-        NapiUtils::ThrowError(env, "2300802", "Interceptor unsupported parameter type");
+        NapiUtils::ThrowError(env, "2300801", "Parameter type not supported by the interceptor");
         return rs;
     }
 
