@@ -432,6 +432,7 @@ private:
     bool SetCallbackFunctions();
     bool SetHttpHeaders();
     bool SetCurlMethod();
+    bool SetCertPinnerOption(CURL *handle);
 
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onSucceeded_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onCanceled_;

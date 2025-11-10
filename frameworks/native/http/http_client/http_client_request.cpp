@@ -391,6 +391,16 @@ uint32_t HttpClientRequest::GetHttpVersion()
     }
     return CURL_HTTP_VERSION_NONE;
 }
+
+void HttpClientRequest::SetCertificatePinning(const std::string &certPIN)
+{
+    certificatePinning_ = certPIN;
+}
+
+const std::string& HttpClientRequest::GetCertificatePinning() const
+{
+    return certificatePinning_;
+}
 } // namespace HttpClient
 } // namespace NetStack
 } // namespace OHOS

@@ -225,8 +225,15 @@ export default namespace http {
     keyPassword?: string;
   }
 
-  interface CertificatePinning {
+  export interface CertificatePinning {
     publicKeyHash: string;
+
+    hashAlgorithm: 'SHA-256';
+  }
+
+  class CertificatePinningInner implements CertificatePinning {
+    publicKeyHash: string;
+
     hashAlgorithm: 'SHA-256';
   }
 

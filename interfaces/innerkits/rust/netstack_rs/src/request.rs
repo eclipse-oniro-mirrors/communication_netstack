@@ -212,6 +212,13 @@ impl<C: RequestCallback> Request<C> {
         self
     }
 
+    /// Set a certificate_pinning for the request.
+    pub fn certificate_pinning(&mut self, pin: &str) -> &mut Self {
+        let_cxx_string!(pin = pin);
+        self.inner.pin_mut().SetCertificatePinning(&pin);
+        self
+    }
+
     /// Set a callback for the request.
     pub fn callback(&mut self, callback: C) -> &mut Self {
         self.callback = Some(callback);

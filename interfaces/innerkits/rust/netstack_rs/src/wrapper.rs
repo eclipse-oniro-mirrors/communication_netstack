@@ -478,6 +478,7 @@ pub(crate) mod ffi {
         fn SetTLSOptions(request: Pin<&mut HttpClientRequest>, tls_options: &TlsConfigRust);
         fn SetServerAuthentication(request: Pin<&mut HttpClientRequest>, server_auth: &ServerAuthentication);
         fn SetHeaderExt(request: Pin<&mut HttpClientRequest>, headers: &EscapedDataRust);
+        fn SetCertificatePinning(self: Pin<&mut HttpClientRequest>, certPIN: &CxxString);
 
         #[namespace = "OHOS::NetStack::HttpClient"]
         type HttpClientTask;
