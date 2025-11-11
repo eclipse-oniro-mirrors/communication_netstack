@@ -190,9 +190,9 @@ void SetSpecifiedHttpProxyFuzzTest(const uint8_t *data, size_t size)
     HttpRequestOptions requestOptions;
     std::string str = GetStringFromData(STR_LEN);
     NapiUtils::SecureData username;
-    username.append(str.c_str(), size);
+    username.append(str.c_str(), STR_LEN);
     NapiUtils::SecureData password;
-    password.append(str.c_str(), size);
+    password.append(str.c_str(), STR_LEN);
     requestOptions.SetSpecifiedHttpProxy(str, size, str, username, password);
 }
 
