@@ -408,7 +408,7 @@ static void FillContextInfo(ClientContext *context, lws_context_creation_info &i
     }
     GetWebsocketProxyInfo(context, host, port, exclusions);
     if (!host.empty() && !CommonUtils::IsHostNameExcluded(tempAddress, exclusions, ",")) {
-        if ((host.length() + 1 > proxyAdsLen) || (strcpy_s(proxyAds, host.length() + 1, host.c_str()) != EOK)) {
+        if (strcpy_s(proxyAds, proxyAdsLen, host.c_str()) != EOK) {
             NETSTACK_LOGE("memory copy failed");
         }
         info.http_proxy_address = proxyAds;
