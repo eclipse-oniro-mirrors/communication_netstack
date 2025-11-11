@@ -381,7 +381,7 @@ static void GetWebsocketProxyInfo(ClientContext *context, std::string &host, uin
     }
 }
 
-static void FillContextInfo(ClientContext *context, lws_context_creation_info &info, char *proxyAds)
+static void FillContextInfo(ClientContext *context, lws_context_creation_info &info, char *proxyAds, int proxyAdsLen)
 {
     info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
     info.port = CONTEXT_PORT_NO_LISTEN;
@@ -408,7 +408,7 @@ static void FillContextInfo(ClientContext *context, lws_context_creation_info &i
     }
     GetWebsocketProxyInfo(context, host, port, exclusions);
     if (!host.empty() && !CommonUtils::IsHostNameExcluded(tempAddress, exclusions, ",")) {
-        if (strcpy_s(proxyAds, host.length() + 1, host.c_str()) != EOK) {
+        if (strcpy_s(proxyAds, proxyAdsLen, host.c_str()) != EOK) {
             NETSTACK_LOGE("memory copy failed");
         }
         info.http_proxy_address = proxyAds;
@@ -557,7 +557,7 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
     }
     lws_context_creation_info info = {};
     char proxyAds[MAX_ADDRESS_LENGTH] = {0};
-    FillContextInfo(this->GetClientContext(), info, proxyAds);
+    FillContextInfo(this->GetClientContext(), info, proxyAds, MAX_ADDRESS_LENGTH);
     FillCaPath(this->GetClientContext(), info);
     lws_context *lwsContext = lws_create_context(&info);
     if (lwsContext == nullptr) {
