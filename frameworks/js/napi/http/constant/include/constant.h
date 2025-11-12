@@ -245,7 +245,9 @@ public:
 
     static const char *const INTERCEPTOR_INITIAL_REQUEST;
     static const char *const INTERCEPTOR_REDIRECTION;
+    static const char *const INTERCEPTOR_CACHE_CHECKED;
     static const char *const INTERCEPTOR_READ_CACHE;
+    static const char *const INTERCEPTOR_NETWORK_CONNECT;
     static const char *const INTERCEPTOR_CONNECT_NETWORK;
     static const char *const INTERCEPTOR_FINAL_RESPONSE;
     static const char *const INTERCEPTOR_TYPE;

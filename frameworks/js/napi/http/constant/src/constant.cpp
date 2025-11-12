@@ -142,7 +142,9 @@ const char *const HttpConstant::PARAM_KEY_CLIENT_ENC_CERT = "clientEncCert";
 
 const char *const HttpConstant::INTERCEPTOR_INITIAL_REQUEST = "INITIAL_REQUEST";
 const char *const HttpConstant::INTERCEPTOR_REDIRECTION = "REDIRECTION";
+const char *const HttpConstant::INTERCEPTOR_CACHE_CHECKED = "CACHE_CHECKED";
 const char *const HttpConstant::INTERCEPTOR_READ_CACHE = "READ_CACHE";
+const char *const HttpConstant::INTERCEPTOR_NETWORK_CONNECT = "NETWORK_CONNECT";
 const char *const HttpConstant::INTERCEPTOR_CONNECT_NETWORK = "CONNECT_NETWORK";
 const char *const HttpConstant::INTERCEPTOR_FINAL_RESPONSE = "FINAL_RESPONSE";
 const char *const HttpConstant::INTERCEPTOR_TYPE = "InterceptorType";
