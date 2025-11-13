@@ -36,16 +36,27 @@ NetStackChrReport::~NetStackChrReport()
 
 int NetStackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
 {
+#ifdef HTTP_STACK_NAME
+    std::string stackName = HTTP_STACK_NAME;
+#else 
+    std::string stackName = "undefine";
+#endif 
     std::lock_guard<std::mutex> lock(report_mutex_);
+    int32_t ipType = chrStats.tcpInfo.ipType;
     auto currentTime = std::chrono::system_clock::now();
-    auto timeDifference = std::chrono::duration_cast<std::chrono::minutes>(currentTime - lastReceivedTime_);
-    if (timeDifference.count() < REPORT_TIME_LIMIT_MINUTE) {
-        ignoreReportTimes_ += 1;
-        return REPORT_CHR_RESULT_TIME_LIMIT_ERROR;
-    }
+    auto timeDifference =
+        std::chrono::duration_cast<std::chrono::minutes>(currentTime - ipTypeLastReceiveTime_[ipType]);
     AAFwk::Want want;
     want.SetAction(REPORT_HTTP_EVENT_NAME);
     SetWantParam(want, chrStats);
+    if (timeDifference.count() < REPORT_TIME_LIMIT_MINUTE)
+    {
+        ipTypeIgnores_[ipType] += 1;
+        NETSTACK_LOGE("Stack name: %{public}s, event report failed, iptype: %{public}d, ignores: %{public}d",
+                        stackName.c_str(), ipType, ipTypeIgnores_[ipType]);
+        return REPORT_CHR_RESULT_TIME_LIMIT_ERROR;
+        
+    }
 
     EventFwk::CommonEventData commonEventData;
     commonEventData.SetWant(want);
@@ -55,9 +66,10 @@ int NetStackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
         NETSTACK_LOGE("Subscriber is nullptr, report to CHR failed.");
         return REPORT_CHR_RESULT_REPORT_FAIL;
     }
-    NETSTACK_LOGI("Report to CHR success, %{public}d reports are ignore before this.", ignoreReportTimes_);
-    lastReceivedTime_ = currentTime;
-    ignoreReportTimes_ = 0;
+    NETSTACK_LOGI("Stack name: %{public}s, event report success iptype: %{public}d, %{public}d are ignores.",
+                    stackName.c_str(), ipType, ipTypeIgnores_[ipType]);
+    ipTypeLastReceiveTime_[ipType] = currentTime;
+    ipTypeIgnores_[ipType] = 0;
 
     return REPORT_CHR_RESULT_SUCCESS;
 }
@@ -72,6 +84,8 @@ void NetStackChrReport::SetWantParam(AAFwk::Want& want, DataTransChrStats chrSta
     want.SetParam("PROCESS_NAME", chrStats.processName);
     want.SetParam("DATA_TRANS_HTTP_INFO", httpInfoJsonStr);
     want.SetParam("DATA_TRANS_TCP_INFO", tcpInfoJsonStr);
+    NETSTACK_LOGI("BUSSINESS_ISSUE_HTTP: {PROCESS_NAME: %{public}s, HTTP_INFO: %{public}s, TCP_INFO: %{public}s}",
+                    chrStats.processName.c_str(), httpInfoJsonStr.c_str(), tcpInfoJsonStr.c_str());
 }
 
 void NetStackChrReport::SetHttpInfoJsonStr(DataTransHttpInfo httpInfo, std::string& httpInfoJsonStr)
@@ -113,6 +127,7 @@ void NetStackChrReport::SetTcpInfoJsonStr(DataTransTcpInfo tcpInfo, std::string&
        << ",{\"tcpi_last_ack_recv\":" << tcpInfo.lastAckRecv
        << ",{\"tcpi_rtt\":" << tcpInfo.rtt
        << ",{\"tcpi_rttvar\":" << tcpInfo.rttvar
+       << ",\"ip_type\":" << tcpInfo.ipType
        << ",{\"tcpi_retransmits\":" << tcpInfo.retransmits
        << ",{\"tcpi_total_retrans\":" << tcpInfo.totalRetrans
        << ",{\"src_ip\":\"" << tcpInfo.srcIp

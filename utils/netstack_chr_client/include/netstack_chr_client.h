@@ -33,8 +33,7 @@ private:
     NetStackChrClient() = default;
     ~NetStackChrClient() = default;
 
-    static int GetAddrFromSock(
-        int sockfd, std::string &srcIp, std::string &dstIp, uint16_t &srcPort, uint16_t &dstPort);
+    static int GetAddrFromSock(int sockfd, struct DataTransTcpInfo &httpTcpInfo);
     static int GetTcpInfoFromSock(const curl_socket_t sockfd, DataTransTcpInfo &httpTcpInfo);
     static void GetHttpInfoFromCurl(CURL *handle, DataTransHttpInfo &httpInfo);
 
