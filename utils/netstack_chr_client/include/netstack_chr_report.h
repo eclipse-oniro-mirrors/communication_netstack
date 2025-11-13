@@ -32,14 +32,6 @@ public:
     int ReportCommonEvent(DataTransChrStats chrStats);
 private:
     std::mutex report_mutex_;
-    std::map<int32_t, int32_t> ipTypeIgnores_ = {
-        {AF_INET, 0}, // IPv4，value: 2
-        {AF_INET6, 0} // IPv6，value: 10
-    };
-    std::map<int32_t, std::chrono::system_clock::time_point> ipTypeLastReceiveTime_ = {
-        {AF_INET, std::chrono::system_clock::time_point{}}, // IPv4
-        {AF_INET6, std::chrono::system_clock::time_point{}} // IPv6
-    };
     void SetWantParam(AAFwk::Want& want, DataTransChrStats chrStats);
     void SetHttpInfoJsonStr(DataTransHttpInfo httpInfo, std::string& httpInfoJsonStr);
     void SetTcpInfoJsonStr(DataTransTcpInfo tcpInfo, std::string& tcpInfoJsonStr);
