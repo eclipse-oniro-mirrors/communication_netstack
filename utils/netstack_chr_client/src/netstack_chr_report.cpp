@@ -49,13 +49,11 @@ int NetStackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
     AAFwk::Want want;
     want.SetAction(REPORT_HTTP_EVENT_NAME);
     SetWantParam(want, chrStats);
-    if (timeDifference.count() < REPORT_TIME_LIMIT_MINUTE)
-    {
+    if (timeDifference.count() < REPORT_TIME_LIMIT_MINUTE) {
         ipTypeIgnores_[ipType] += 1;
         NETSTACK_LOGE("Stack name: %{public}s, event report failed, iptype: %{public}d, ignores: %{public}d",
                         stackName.c_str(), ipType, ipTypeIgnores_[ipType]);
-        return REPORT_CHR_RESULT_TIME_LIMIT_ERROR;
-        
+        return REPORT_CHR_RESULT_TIME_LIMIT_ERROR; 
     }
 
     EventFwk::CommonEventData commonEventData;
