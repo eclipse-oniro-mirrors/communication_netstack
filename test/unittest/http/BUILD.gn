@@ -26,6 +26,7 @@ utils_include = [
 ]
 
 common_external_deps = [
+  "ability_base:configuration",
   "c_utils:utils",
   "curl:curl_shared",
   "hilog:libhilog",

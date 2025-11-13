@@ -135,6 +135,7 @@ ohos_shared_library("http") {
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     ]
     external_deps = [
+      "ability_base:configuration",
       "ability_runtime:wantagent_innerkits",
       "cJSON:cjson",
       "curl:curl_shared_http3",
