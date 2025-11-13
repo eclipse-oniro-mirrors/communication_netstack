@@ -28,6 +28,16 @@ static constexpr const int REPORT_CHR_RESULT_SUCCESS = 0;
 static constexpr const int REPORT_CHR_RESULT_TIME_LIMIT_ERROR = 1;
 static constexpr const int REPORT_CHR_RESULT_REPORT_FAIL = 2;
 
+static std::map<int32_t, int32_t> ipTypeIgnores = {
+    {AF_INET, 0}, // IPv4，value: 2
+    {AF_INET6, 0} // IPv6，value: 10
+};
+
+static std::map<int32_t, std::chrono::system_clock::time_point> ipTypeLastReceiveTime = {
+    {AF_INET, std::chrono::system_clock::time_point{}}, // IPv4
+    {AF_INET6, std::chrono::system_clock::time_point{}} // IPv6
+};
+
 NetStackChrReport::NetStackChrReport()
 {}
 
@@ -45,14 +55,14 @@ int NetStackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
     int32_t ipType = chrStats.tcpInfo.ipType;
     auto currentTime = std::chrono::system_clock::now();
     auto timeDifference =
-        std::chrono::duration_cast<std::chrono::minutes>(currentTime - ipTypeLastReceiveTime_[ipType]);
+        std::chrono::duration_cast<std::chrono::minutes>(currentTime - ipTypeLastReceiveTime[ipType]);
     AAFwk::Want want;
     want.SetAction(REPORT_HTTP_EVENT_NAME);
     SetWantParam(want, chrStats);
     if (timeDifference.count() < REPORT_TIME_LIMIT_MINUTE) {
-        ipTypeIgnores_[ipType] += 1;
+        ipTypeIgnores[ipType] += 1;
         NETSTACK_LOGE("Stack name: %{public}s, event report failed, iptype: %{public}d, ignores: %{public}d",
-            stackName.c_str(), ipType, ipTypeIgnores_[ipType]);
+            stackName.c_str(), ipType, ipTypeIgnores[ipType]);
         return REPORT_CHR_RESULT_TIME_LIMIT_ERROR;
     }
 
@@ -65,9 +75,9 @@ int NetStackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
         return REPORT_CHR_RESULT_REPORT_FAIL;
     }
     NETSTACK_LOGI("Stack name: %{public}s, event report success iptype: %{public}d, %{public}d are ignores.",
-        stackName.c_str(), ipType, ipTypeIgnores_[ipType]);
-    ipTypeLastReceiveTime_[ipType] = currentTime;
-    ipTypeIgnores_[ipType] = 0;
+        stackName.c_str(), ipType, ipTypeIgnores[ipType]);
+    ipTypeLastReceiveTime[ipType] = currentTime;
+    ipTypeIgnores[ipType] = 0;
     return REPORT_CHR_RESULT_SUCCESS;
 }
 
