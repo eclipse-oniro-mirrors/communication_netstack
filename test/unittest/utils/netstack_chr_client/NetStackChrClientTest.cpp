@@ -193,7 +193,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCodeError1, TestSiz
     
 }
 
-HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCodeError2, TestSize.Level2) +
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCodeError2, TestSize.Level2)
 {
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
