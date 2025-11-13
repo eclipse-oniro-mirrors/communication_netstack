@@ -68,7 +68,8 @@ static constexpr const char *DST_IP_DEFAULT_VALUE = "7.246.***.***";
 static constexpr const uint16_t SRC_PORT_DEFAULT_VALUE = 54000;
 static constexpr const uint16_t DST_PORT_DEFAULT_VALUE = 54000;
 
-static constexpr const long RESPONSE_ERROR_CODE = 301;
+static constexpr const long RESPONSE_ERROR_CODE_BELOW = 101;
+static constexpr const long RESPONSE_ERROR_CODE_BEYOND = 301;
 static constexpr const long OS_ERROR_CODE = 1;
 static constexpr const long PROXY_ERROR_CODE = 1;
 static constexpr const long CURL_ERROR_CODE = 1;
@@ -180,13 +181,23 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestNotReport, TestSize.Level2)
     EXPECT_EQ(res, -1);
 }
 
-HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCodeError, TestSize.Level2)
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCodeError1, TestSize.Level2)
 {
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
     FillNormalvalue(chrStats);
 
-    chrStats.httpInfo.responseCode = RESPONSE_ERROR_CODE;
+    chrStats.httpInfo.responseCode = RESPONSE_ERROR_CODE_BELOW;
+    int res = ChrClient::NetStackChrClient::GetInstance().ShouldReportHttpAbnormalEvent(chrStats.httpInfo);
+    EXPECT_EQ(res, 0);
+}
+
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCodeError2, TestSize.Level2)
+{
+    ChrClient::NetStackChrReport netstackChrReport;
+    ChrClient::DataTransChrStats chrStats;
+    FillNormalValue(chrStats);
+    chrStats.httpInfo.responseCode = RESPONSE_ERROR_CODE_BEYOND;
     int res = ChrClient::NetStackChrClient::GetInstance().ShouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, 0);
 }

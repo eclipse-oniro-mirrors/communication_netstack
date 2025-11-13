@@ -58,6 +58,7 @@ typedef struct DataTransTcpInfo {
     uint32_t rttvar;
     uint16_t retransmits;
     uint32_t totalRetrans;
+    int ipType;
     std::string srcIp;
     std::string dstIp;
     uint16_t srcPort;

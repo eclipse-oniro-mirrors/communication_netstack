@@ -23,7 +23,8 @@
 
 namespace OHOS::NetStack::ChrClient {
 
-static constexpr const long HTTP_REQUEST_SUCCESS = 200;
+static constexpr const long HTTP_REQUEST_SUCCESS_MIN = 200;
+static constexpr const long HTTP_REQUEST_SUCCESS_MAX = 299;
 static constexpr const int HTTP_FILE_TRANSFER_SIZE_THRESHOLD = 100000;
 static constexpr const int HTTP_FILE_TRANSFER_TIME_THRESHOLD = 500000;
 
@@ -33,8 +34,7 @@ NetStackChrClient &NetStackChrClient::GetInstance()
     return instance;
 }
 
-int NetStackChrClient::GetAddrFromSock(
-    int sockfd, std::string &srcIp, std::string &dstIp, uint16_t &srcPort, uint16_t &dstPort)
+int NetStackChrClient::GetAddrFromSock(int sockfd, struct DataTransTcpInfo &httpTcpInfo)
 {
     sockaddr_storage localss{};
     sockaddr_storage peerss{};
@@ -49,27 +49,28 @@ int NetStackChrClient::GetAddrFromSock(
    (void)getpeername(sockfd, reinterpret_cast<sockaddr *>(&peerss), &addrLen);
 
     char buf[INET6_ADDRSTRLEN] = {0};
+    httpTcpInfo.ipType = localss.ss_family;
     if (localss.ss_family == AF_INET && peerss.ss_family == AF_INET) {
         auto *l4 = reinterpret_cast<sockaddr_in *>(&localss);
         auto *p4 = reinterpret_cast<sockaddr_in *>(&peerss);
         if (inet_ntop(AF_INET, &l4->sin_addr, buf, sizeof(buf)) != nullptr) {
-            srcIp = buf;
-            srcPort = ntohs(l4->sin_port);
+            httpTcpInfo.srcIp = buf;
+            httpTcpInfo.srcPort = ntohs(l4->sin_port);
         }
         if (inet_ntop(AF_INET, &p4->sin_addr, buf, sizeof(buf)) != nullptr) {
-            dstIp = buf;
-            dstPort = ntohs(p4->sin_port);
+            httpTcpInfo.dstIp = buf;
+            httpTcpInfo.dstPort = ntohs(p4->sin_port);
         }
     } else if (localss.ss_family == AF_INET6 && peerss.ss_family == AF_INET6) {
         auto *l6 = reinterpret_cast<sockaddr_in6 *>(&localss);
         auto *p6 = reinterpret_cast<sockaddr_in6 *>(&peerss);
         if (inet_ntop(AF_INET6, &l6->sin6_addr, buf, sizeof(buf)) != nullptr) {
-            srcIp = buf;
-            srcPort = ntohs(l6->sin6_port);
+            httpTcpInfo.srcIp = buf;
+            httpTcpInfo.srcPort = ntohs(l6->sin6_port);
         }
         if (inet_ntop(AF_INET6, &p6->sin6_addr, buf, sizeof(buf)) != nullptr) {
-            dstIp = buf;
-            dstPort = ntohs(p6->sin6_port);
+            httpTcpInfo.dstIp = buf;
+            httpTcpInfo.dstPort = ntohs(p6->sin6_port);
         }
     } else {
         return -1;
@@ -100,7 +101,7 @@ int NetStackChrClient::GetTcpInfoFromSock(const curl_socket_t sockfd, DataTransT
     httpTcpInfo.totalRetrans = tcpInfo.tcpi_total_retrans;
     httpTcpInfo.retransmits = tcpInfo.tcpi_retransmits;
 
-    if (GetAddrFromSock(sockfd, httpTcpInfo.srcIp, httpTcpInfo.dstIp, httpTcpInfo.srcPort, httpTcpInfo.dstPort) == 0) {
+    if (GetAddrFromSock(sockfd, httpTcpInfo) == 0) {
         httpTcpInfo.srcIp = CommonUtils::AnonymizeIp(httpTcpInfo.srcIp);
         httpTcpInfo.dstIp = CommonUtils::AnonymizeIp(httpTcpInfo.dstIp);
     }
@@ -166,8 +167,8 @@ void NetStackChrClient::GetHttpInfoFromCurl(CURL *handle, DataTransHttpInfo &htt
 
 int NetStackChrClient::ShouldReportHttpAbnormalEvent(const DataTransHttpInfo &httpInfo)
 {
-    if (httpInfo.curlCode != 0 || httpInfo.responseCode != HTTP_REQUEST_SUCCESS ||
-        httpInfo.osError != 0 || httpInfo.proxyError != 0) {
+    if (httpInfo.responseCode < HTTP_REQUEST_SUCCESS_MIN || httpInfo.responseCode > HTTP_REQUEST_SUCCESS_MAX ||
+        httpInfo.curlCode != 0 || httpInfo.osError != 0 || httpInfo.proxyError != 0) {
         return 0;
     }
     if ((httpInfo.sizeUpload + httpInfo.sizeDownload <= HTTP_FILE_TRANSFER_SIZE_THRESHOLD) &&
@@ -200,12 +201,13 @@ void NetStackChrClient::GetDfxInfoFromCurlHandleAndReport(CURL *handle, int32_t 
     curl_easy_getinfo(handle, CURLINFO_ACTIVESOCKET, &sockfd);
 
     if (GetTcpInfoFromSock(sockfd, dataTransChrStats.tcpInfo) != 0) {
-        NETSTACK_LOGD("Chr client get tcp info from socket failed, sockfd: %{public}" PRId64, sockfd);
+        NETSTACK_LOGE("Chr client get tcp info from socket failed, sockfd: %{public} " PRId64, sockfd);
+        return;
     }
 
     int ret = netstackChrReport_.ReportCommonEvent(dataTransChrStats);
     if (ret > 0) {
-        NETSTACK_LOGI("Send to CHR failed, error code %{public}d", ret);
+        NETSTACK_LOGE("Send to CHR failed, error code %{public}d", ret);
     }
 }
 
