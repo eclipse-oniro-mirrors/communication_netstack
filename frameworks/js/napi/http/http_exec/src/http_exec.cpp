@@ -602,6 +602,7 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         CacheProxy proxy(context->options);
         proxy.WriteResponseToCache(context->response);
     }
+    context->SendNetworkProfiler();
     if (handle) {
         (void)curl_easy_cleanup(handle);
     }
@@ -609,7 +610,6 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         NETSTACK_LOGE("can not find context manager");
         return;
     }
-    context->SendNetworkProfiler();
     if (context->IsRequestInStream()) {
         NapiUtils::CreateUvQueueWorkByModuleId(
             context->GetEnv(), std::bind(AsyncWorkRequestInStreamCallback, context->GetEnv(), napi_ok, context),
