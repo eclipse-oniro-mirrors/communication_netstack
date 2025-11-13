@@ -190,7 +190,6 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCodeError1, TestSiz
     chrStats.httpInfo.responseCode = RESPONSE_ERROR_CODE_BELOW;
     int res = ChrClient::NetStackChrClient::GetInstance().ShouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, 0);
-    
 }
 
 HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCodeError2, TestSize.Level2)
