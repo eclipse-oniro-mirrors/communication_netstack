@@ -116,7 +116,7 @@ HWTEST_F(HttpClientResponseTest, ResponseParseHeader001, TestSize.Level1)
     req.AppendHeader(emptyHead, strlen(emptyHead));
     req.AppendHeader(errHead, strlen(errHead));
     req.AppendHeader(realHead, strlen(realHead));
- 
+
     req.ParseHeaders();
     auto headers = req.GetHeaders();
     std::string ret;
@@ -135,7 +135,7 @@ HWTEST_F(HttpClientResponseTest, ResponseParseHeader002, TestSize.Level1)
     const char *realCookie = "set-cookie:data\r\n";
     req.AppendHeader(emptyHead, strlen(emptyHead));
     req.AppendHeader(realCookie, strlen(realCookie));
- 
+
     req.ParseHeaders();
     auto setCookie = req.GetsetCookie();
     std::string result = "set-cookie:";
@@ -144,7 +144,7 @@ HWTEST_F(HttpClientResponseTest, ResponseParseHeader002, TestSize.Level1)
             result += item + "\r\n";
         }
     });
-    
+
     auto headers = req.GetHeaders();
     EXPECT_EQ(realCookie, result);
     EXPECT_TRUE(headers.empty());
@@ -153,7 +153,7 @@ HWTEST_F(HttpClientResponseTest, ResponseParseHeader002, TestSize.Level1)
 HWTEST_F(HttpClientResponseTest, ResponseGetsetCookie001, TestSize.Level1)
 {
     HttpClientResponse req;
-    
+
     auto result = req.GetsetCookie();
     EXPECT_TRUE(result.empty());
 }
@@ -163,7 +163,7 @@ HWTEST_F(HttpClientResponseTest, ResponseGetsetCookie002, TestSize.Level1)
     HttpClientResponse req;
     const char *realCookie = "set-cookie:data\r\n";
     req.AppendHeader(realCookie, strlen(realCookie));
- 
+
     req.ParseHeaders();
     auto setCookie = req.GetsetCookie();
     std::string result = "set-cookie:";
@@ -191,7 +191,7 @@ HWTEST_F(HttpClientResponseTest, ResponseAppendCookie001, TestSize.Level1)
     auto ret = req.GetCookies();
     EXPECT_EQ(cookies, ret);
 }
- 
+
 HWTEST_F(HttpClientResponseTest, ResponseSetCookie001, TestSize.Level1)
 {
     HttpClientResponse req;
@@ -200,7 +200,7 @@ HWTEST_F(HttpClientResponseTest, ResponseSetCookie001, TestSize.Level1)
     auto result = req.GetCookies();
     EXPECT_EQ(realHead, result);
 }
- 
+
 HWTEST_F(HttpClientResponseTest, ResponseSetWarning001, TestSize.Level1)
 {
     HttpClientResponse req;
@@ -208,7 +208,7 @@ HWTEST_F(HttpClientResponseTest, ResponseSetWarning001, TestSize.Level1)
     const char *warningText = "Warning";
     req.SetWarning(realHead);
     auto headers = req.GetHeaders();
-    for (auto &item: headers) {
+    for (auto &item : headers) {
         auto key = item.first.c_str();
         if (strcmp(warningText, key) == 0) {
             EXPECT_EQ(realHead, item.second);
@@ -217,7 +217,7 @@ HWTEST_F(HttpClientResponseTest, ResponseSetWarning001, TestSize.Level1)
     }
     EXPECT_FALSE(true);
 }
- 
+
 HWTEST_F(HttpClientResponseTest, ResponseSetRawHeader001, TestSize.Level1)
 {
     HttpClientResponse req;
@@ -248,7 +248,7 @@ HWTEST_F(HttpClientResponseTest, ResponseSetResult, TestSize.Level1)
     auto result = req.GetResult();
     EXPECT_EQ(testResult, result);
 }
- 
+
 HWTEST_F(HttpClientResponseTest, ResponseGetHttpStatistics, TestSize.Level1)
 {
     HttpClientResponse req;
@@ -258,5 +258,22 @@ HWTEST_F(HttpClientResponseTest, ResponseGetHttpStatistics, TestSize.Level1)
     req.SetNetAddress(netAddr);
     HttpStatistics httpStatistics = req.GetHttpStatistics();
     EXPECT_EQ(httpStatistics.serverIpAddress.address_, testAddr);
+}
+
+HWTEST_F(HttpClientResponseTest, ResponseGetRawHeader, TestSize.Level1)
+{
+    HttpClientResponse req;
+    std::string testAddr = "test:rawHeader_";
+    req.rawHeader_ = testAddr;
+    auto ret = req.GetRawHeader();
+    EXPECT_EQ(ret, testAddr);
+}
+
+HWTEST_F(HttpClientResponseTest, ResponseGetExpectDataType, TestSize.Level1)
+{
+    HttpClientResponse req;
+    req.dataType_ = HttpDataType::STRING;
+    auto ret = req.GetExpectDataType();
+    EXPECT_EQ(ret, HttpDataType::STRING);
 }
 } // namespace
