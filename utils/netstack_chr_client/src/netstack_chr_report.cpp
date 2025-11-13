@@ -52,7 +52,7 @@ int NetStackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
     if (timeDifference.count() < REPORT_TIME_LIMIT_MINUTE) {
         ipTypeIgnores_[ipType] += 1;
         NETSTACK_LOGE("Stack name: %{public}s, event report failed, iptype: %{public}d, ignores: %{public}d",
-                        stackName.c_str(), ipType, ipTypeIgnores_[ipType]);
+            stackName.c_str(), ipType, ipTypeIgnores_[ipType]);
         return REPORT_CHR_RESULT_TIME_LIMIT_ERROR;
     }
 
