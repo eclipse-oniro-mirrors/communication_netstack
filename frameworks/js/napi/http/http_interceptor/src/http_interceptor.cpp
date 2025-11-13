@@ -455,7 +455,7 @@ napi_value HttpInterceptor::CreateRequestContextRedirectionInterceptor(
 
     napi_value headerObj = NapiUtils::CreateObject(env);
     const std::map<std::string, std::string> &headers = context->options.GetHeader();
-    NETSTACK_LOGD("redirectionInterceptorRunner_ run headers.size %{public}lu", headers.size());
+    NETSTACK_LOGD("redirectionInterceptorRunner_ run headers.size %{public}zu", headers.size());
     for (const auto &[key, value] : headers) {
         napi_value headerValue = NapiUtils::CreateStringUtf8(env, value);
         if (headerValue != nullptr) {
@@ -701,7 +701,7 @@ napi_value HttpInterceptor::CreateRequestContextFinalResponseInterceptor(napi_en
     NapiUtils::SetNamedProperty(env, reqContext, "url", NapiUtils::CreateStringUtf8(env, url));
     napi_value headerObj = NapiUtils::CreateObject(env);
     const std::map<std::string, std::string> &headers = context->options.GetHeader();
-    NETSTACK_LOGD("finalResponseInterceptorRunner_ run headers.size %{public}lu", headers.size());
+    NETSTACK_LOGD("finalResponseInterceptorRunner_ run headers.size %{public}zu", headers.size());
     if (!headers.empty()) {
         for (const auto &[key, value] : headers) {
             napi_value val = NapiUtils::CreateStringUtf8(env, value);
@@ -918,7 +918,7 @@ napi_value HttpInterceptor::CreateRequestContextCacheCheckedInterceptor(napi_env
 
     napi_value headerObj = NapiUtils::CreateObject(context->GetEnv());
     const std::map<std::string, std::string> &headers = context->options.GetHeader();
-    NETSTACK_LOGD("cacheCheckedInterceptorRunner_ run headers.size %{public}lu", headers.size());
+    NETSTACK_LOGD("cacheCheckedInterceptorRunner_ run headers.size %{public}zu", headers.size());
     if (!headers.empty()) {
         std::for_each(
             headers.begin(), headers.end(), [&context, &headerObj](const std::pair<std::string, std::string> &p) {
@@ -1146,7 +1146,7 @@ napi_value HttpInterceptor::CreateRequestContextConnectNetworkInterceptor(napi_e
 
     napi_value headerObj = NapiUtils::CreateObject(context->GetEnv());
     const std::map<std::string, std::string> &headers = context->options.GetHeader();
-    NETSTACK_LOGD("connectNetworkInterceptorRunner_ run headers.size %{public}lu", headers.size());
+    NETSTACK_LOGD("connectNetworkInterceptorRunner_ run headers.size %{public}zu", headers.size());
     if (!headers.empty()) {
         std::for_each(
             headers.begin(), headers.end(), [&context, &headerObj](const std::pair<std::string, std::string> &p) {
