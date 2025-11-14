@@ -40,6 +40,11 @@ EXTERN_C_START
     FFI_EXPORT void CJ_OffDataReceiveProgress(int64_t id);
     FFI_EXPORT void CJ_OnDataSendProgress(int64_t id, void (*callback)(CDataSendProgressInfo));
     FFI_EXPORT void CJ_OffDataSendProgress(int64_t id);
+
+    // c free
+    FFI_EXPORT void FFiOHOSNetHttpFreeCString(char* p);
+    FFI_EXPORT void FFiOHOSNetHttpFreeCArrString(CArrString arr);
+    FFI_EXPORT void FFiOHOSNetHttpFreeCArrUI8(CArrUI8 arr);
 EXTERN_C_END
 
 #endif

@@ -33,4 +33,8 @@ FFI_EXPORT int CJ_OnDataReceiveProgress = 0;
 FFI_EXPORT int CJ_OffDataReceiveProgress = 0;
 FFI_EXPORT int CJ_OnDataSendProgress = 0;
 FFI_EXPORT int CJ_OffDataSendProgress = 0;
+
+FFI_EXPORT int FFiOHOSNetHttpFreeCString = 0;
+FFI_EXPORT int FFiOHOSNetHttpFreeCArrString = 0;
+FFI_EXPORT int FFiOHOSNetHttpFreeCArrUI8 = 0;
 }
