@@ -26,6 +26,7 @@
 
 #include "initializer_list"
 #include "napi/native_api.h"
+#include "napi/native_node_api.h"
 #include "uv.h"
 
 #include "securec.h"

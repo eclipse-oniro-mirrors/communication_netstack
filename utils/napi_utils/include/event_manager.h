@@ -78,6 +78,9 @@ public:
 
     void EmitByUvWithoutCheckShared(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
 
+    void EmitWithoutUV(const std::string &type, void *data,
+        napi_value (*MakeJsValue)(napi_env, const std::shared_ptr<EventManager> &));
+
     bool HasEventListener(const std::string &type);
 
     void DeleteListener(const std::string &type);

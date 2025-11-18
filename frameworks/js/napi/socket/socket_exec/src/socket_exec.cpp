@@ -359,8 +359,7 @@ static bool OnRecvMessage(const std::shared_ptr<EventManager> &manager, void *da
     if (manager->HasEventListener(EVENT_MESSAGE)) {
         auto *messageStruct = new MessageData(data, len, remoteInfo);
         manager->SetQueueData(reinterpret_cast<void *>(messageStruct));
-        manager->EmitByUvWithoutCheckShared(EVENT_MESSAGE, nullptr,
-            ModuleTemplate::CallbackTemplateWithSharedManager<MakeMessage>);
+        manager->EmitWithoutUV(EVENT_MESSAGE, nullptr, MakeMessage);
         return true;
     }
     return false;
