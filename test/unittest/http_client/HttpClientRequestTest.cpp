@@ -14,10 +14,12 @@
  */
 
 #include <cstring>
-#include "gtest/gtest.h"
-#include "http_client_request.h"
-#include "http_client_constant.h"
+#include "curl/curl.h"
 #include "netstack_log.h"
+#include "gtest/gtest.h"
+#define private public
+#include "http_client_constant.h"
+#include "http_client_request.h"
 
 using namespace OHOS::NetStack::HttpClient;
 
@@ -470,5 +472,146 @@ HWTEST_F(HttpClientRequestTest, SetClientEncCertTest002, TestSize.Level1)
     EXPECT_EQ(client.certType, "");
     EXPECT_EQ(client.keyPath, "");
     EXPECT_EQ(client.keyPassword, "");
+}
+
+HWTEST_F(HttpClientRequestTest, SetMaxLimitTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    req.maxLimit_ = 0;
+    req.SetMaxLimit(HttpConstant::MAX_LIMIT - 1);
+    EXPECT_EQ(req.maxLimit_, HttpConstant::MAX_LIMIT - 1);
+    req.maxLimit_ = 0;
+    req.SetMaxLimit(HttpConstant::MAX_LIMIT + 1);
+    EXPECT_EQ(req.maxLimit_, HttpConstant::MAX_LIMIT);
+}
+
+HWTEST_F(HttpClientRequestTest, SetUsingCacheTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    req.usingCache_ = false;
+    req.SetUsingCache(true);
+    EXPECT_EQ(req.usingCache_, true);
+}
+
+HWTEST_F(HttpClientRequestTest, SetDNSOverHttpsTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    std::string dnsOverHttps = "dnsOverHttps";
+    req.SetDNSOverHttps(dnsOverHttps);
+    EXPECT_EQ(req.dnsOverHttps_, dnsOverHttps);
+}
+
+HWTEST_F(HttpClientRequestTest, SetRemoteValidationTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    req.remoteValidation_ = "";
+    req.SetRemoteValidation("skip");
+    EXPECT_EQ(req.remoteValidation_, "skip");
+    req.remoteValidation_ = "";
+    req.SetRemoteValidation("system123");
+    EXPECT_EQ(req.remoteValidation_, "");
+}
+
+HWTEST_F(HttpClientRequestTest, SetCanSkipCertVerifyFlagTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    req.canSkipCertVerify_ = false;
+    req.SetCanSkipCertVerifyFlag(true);
+    EXPECT_EQ(req.canSkipCertVerify_, true);
+}
+
+HWTEST_F(HttpClientRequestTest, SetTLSOptionsTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    TlsOption tlsOption;
+    tlsOption.tlsVersionMin = TlsVersion::TLSv1_3;
+    req.SetTLSOptions(tlsOption);
+    EXPECT_EQ(req.tlsOptions_.tlsVersionMin, TlsVersion::TLSv1_3);
+}
+
+HWTEST_F(HttpClientRequestTest, SetExtraDataTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    EscapedData data;
+    data.dataType = HttpDataType::STRING;
+    data.data = "extraData";
+    req.SetExtraData(data);
+    EXPECT_EQ(req.extraData_.dataType, HttpDataType::STRING);
+    EXPECT_EQ(req.extraData_.data, "extraData");
+}
+
+HWTEST_F(HttpClientRequestTest, SetExpectDataTypeTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    req.dataType_ = HttpDataType::NO_DATA_TYPE;
+    req.SetExpectDataType(HttpDataType::STRING);
+    EXPECT_EQ(req.dataType_, HttpDataType::STRING);
+    req.SetExpectDataType(HttpDataType::NO_DATA_TYPE);
+    EXPECT_EQ(req.dataType_, HttpDataType::STRING);
+}
+
+HWTEST_F(HttpClientRequestTest, SetDNSServersTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    req.dnsServers_.clear();
+    std::vector<std::string> vec;
+    vec.push_back("192.168.1.1");
+    req.SetDNSServers(vec);
+    EXPECT_EQ(req.dnsServers_.size(), vec.size());
+}
+
+HWTEST_F(HttpClientRequestTest, AddMultiFormDataTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    req.multiFormDataList_.clear();
+    HttpMultiFormData data;
+    req.AddMultiFormData(data);
+    EXPECT_EQ(req.multiFormDataList_.size(), 1);
+}
+
+HWTEST_F(HttpClientRequestTest, SetServerAuthenticationTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    HttpServerAuthentication data;
+    data.authenticationType = HttpAuthenticationType::DIGEST;
+    req.SetServerAuthentication(data);
+    EXPECT_EQ(req.serverAuth_.authenticationType, HttpAuthenticationType::DIGEST);
+}
+
+HWTEST_F(HttpClientRequestTest, GetRemoteValidationTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    req.remoteValidation_ = "system";
+    std::string str = req.GetRemoteValidation();
+    EXPECT_EQ(str, "system");
+}
+
+HWTEST_F(HttpClientRequestTest, GetMultiFormDataListTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    req.multiFormDataList_.clear();
+    req.multiFormDataList_.emplace_back(HttpMultiFormData());
+    auto ret = req.GetMultiFormDataList();
+    EXPECT_EQ(ret.size(), req.multiFormDataList_.size());
+}
+
+HWTEST_F(HttpClientRequestTest, GetHttpVersionTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    req.protocol_ = HttpProtocol::HTTP1_1;
+    auto ret = req.GetHttpVersion();
+    EXPECT_EQ(ret, CURL_HTTP_VERSION_1_1);
+
+    req.protocol_ = HttpProtocol::HTTP2;
+    ret = req.GetHttpVersion();
+    EXPECT_EQ(ret, CURL_HTTP_VERSION_2_0);
+
+    req.protocol_ = HttpProtocol::HTTP3;
+    ret = req.GetHttpVersion();
+    EXPECT_EQ(ret, CURL_HTTP_VERSION_3);
+
+    req.protocol_ = HttpProtocol::HTTP_NONE;
+    ret = req.GetHttpVersion();
+    EXPECT_EQ(ret, CURL_HTTP_VERSION_NONE);
 }
 } // namespace

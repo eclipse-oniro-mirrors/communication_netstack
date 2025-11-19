@@ -37,15 +37,26 @@ ohos_unittest("http_client_unittest") {
 
   module_out_path = "netstack/netstack/http_client_unittest"
 
-  include_dirs = [ "$NETSTACK_INNERKITS_DIR/http_client/include" ]
+  include_dirs = [
+    "$NETSTACK_INNERKITS_DIR/http_client/include",
+    "$NETSTACK_INNERKITS_DIR/http_client/cache/base64/include",
+    "$NETSTACK_INNERKITS_DIR/http_client/cache/cache_strategy/include",
+    "$NETSTACK_INNERKITS_DIR/http_client/cache/lru_cache/include",
+  ]
   include_dirs += utils_include
 
   sources = [
+    "$NETSTACK_INNERKITS_DIR/http_client/cache/base64/src/base64_utils.cpp",
     "HttpClientErrorTest.cpp",
     "HttpClientRequestTest.cpp",
     "HttpClientResponseTest.cpp",
     "HttpClientTaskTest.cpp",
     "HttpClientTest.cpp",
+    "HttpClientTlsConfigTest.cpp",
+    "cache/Base64Test.cpp",
+    "cache/CacheProxyTest.cpp",
+    "cache/HttpCacheStrategyTest.cpp",
+    "cache/HttpClientLruCacheTest.cpp",
   ]
 
   deps = [ "$NETSTACK_INNERKITS_DIR/http_client:http_client" ]
