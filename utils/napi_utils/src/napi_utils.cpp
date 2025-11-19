@@ -28,8 +28,6 @@
 
 #include "base_context.h"
 #include "cJSON.h"
-#include "napi/native_api.h"
-#include "napi/native_common.h"
 #include "netstack_log.h"
 #include "node_api.h"
 

@@ -153,6 +153,40 @@ void EventManager::EmitByUvWithoutCheckShared(const std::string &type, void *dat
         });
 }
 
+void EventManager::EmitWithoutUV(const std::string &type, void *data,
+    napi_value (*MakeJsValue)(napi_env, const std::shared_ptr<EventManager> &))
+{
+    std::shared_lock<std::shared_mutex> lock(mutexForListenersAndEmitByUv_);
+    std::for_each(listeners_.begin(), listeners_.end(),
+        [type, data, MakeJsValue, this] (const std::shared_ptr<EventListener> &listener) {
+            if (!listener->MatchType(type) || listener->GetCallbackRef() == nullptr) {
+                return;
+            }
+            napi_env env = listener->GetEnv();
+            if (!NapiUtils::IsEnvValid(env)) {
+                NETSTACK_LOGE("the env is invalid");
+                return;
+            }
+            
+            auto manager = shared_from_this();
+            auto task = [env, data, MakeJsValue, type, manager]() {
+                if (!manager || !MakeJsValue) {
+                    NETSTACK_LOGE("manager or handler is null");
+                    return;
+                }
+                auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+                std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
+                napi_value obj = MakeJsValue(env, manager);
+                std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(env), obj};
+                manager->Emit(type, arg);
+            };
+            napi_status ret = napi_send_event(env, task, napi_eprio_immediate, type.c_str());
+            if (ret != napi_ok) {
+                NETSTACK_LOGE("napi_send_event error = %{public}d, manual delete", ret);
+            }
+        });
+}
+
 void EventManager::SetQueueData(void *data)
 {
     std::lock_guard<std::mutex> lock(dataQueueMutex_);
