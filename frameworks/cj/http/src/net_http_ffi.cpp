@@ -206,6 +206,27 @@ EXTERN_C_START
         }
         req->callbacks->dataSendProgress.clear();
     }
+
+    void FFiOHOSNetHttpFreeCString(char* p)
+    {
+        free(p);
+    }
+
+    void FFiOHOSNetHttpFreeCArrString(CArrString arr)
+    {
+        if (arr.head == nullptr) {
+            return;
+        }
+        for (auto i = 0; i < arr.size; i++) {
+            free(arr.head[i]);
+        }
+        free(arr.head);
+    }
+
+    void FFiOHOSNetHttpFreeCArrUI8(CArrUI8 arr)
+    {
+        free(arr.head);
+    }
 EXTERN_C_END
 }
 

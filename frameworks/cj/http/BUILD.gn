@@ -28,7 +28,22 @@ config("http_ffi_config") {
 
   cflags_cc = [ "-fvisibility=hidden" ]
 
-  if (!build_ohos_sdk) {
+  if (is_mingw || is_mac) {
+    cflags = [
+      "-std=c++17",
+      "-stdlib=libc++",
+    ]
+  }
+  if (is_mingw) {
+    defines += [ "WINDOWS_PLATFORM" ]
+  } else if (is_mac) {
+    defines += [ "MAC_PLATFORM" ]
+    cflags_cc = [
+      "-fstack-protector-strong",
+      "-D_FORTIFY_SOURCE=2",
+      "-O2",
+    ]
+  } else if (!build_ohos_sdk) {
     defines += [
       "HTTP_PROXY_ENABLE",
       "HTTP_MULTIPATH_CERT_ENABLE",
@@ -72,42 +87,59 @@ ohos_shared_library("cj_net_http_ffi") {
 
   configs = [ ":http_ffi_config" ]
 
-  external_deps = [
-    "cJSON:cjson",
-    "c_utils:utils",
-    "curl:curl_shared",
-    "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "napi:cj_bind_ffi",
-    "napi:cj_bind_native",
-    "openssl:libcrypto_shared",
-    "openssl:libssl_shared",
-    "samgr:samgr_proxy",
-  ]
-
-  if (build_ohos_sdk) {
-    defines += [ "PREVIEWER" ]
-    sources = [ "src/net_http_mock.cpp" ]
-  } else {
-    external_deps += [ "init:libbegetutil" ]
-  }
-
-  deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
-
-  if (defined(global_parts_info) &&
-      defined(global_parts_info.communication_netmanager_base) &&
-      global_parts_info.communication_netmanager_base) {
-    external_deps += [
-      "netmanager_base:net_conn_manager_if",
-      "netmanager_base:net_security_config_if",
-    ]
-    defines = [ "HAS_NETMANAGER_BASE=1" ]
+  if (is_mingw || is_mac){
     sources += [
-      "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",
-      "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
+      "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
     ]
-  } else {
-    defines = [ "HAS_NETMANAGER_BASE=0" ]
+    deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils_static" ]
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "cJSON:cjson",
+      "curl:curl_shared",
+      "jsoncpp:jsoncpp_static",
+      "napi:ace_napi",
+      "napi:cj_bind_ffi",
+      "napi:cj_bind_native",
+    ]
+    ldflags = [ "-lpthread" ]
+  } else{
+    external_deps = [
+      "cJSON:cjson",
+      "c_utils:utils",
+      "curl:curl_shared",
+      "hilog:libhilog",
+      "hitrace:hitrace_meter",
+      "napi:cj_bind_ffi",
+      "napi:cj_bind_native",
+      "openssl:libcrypto_shared",
+      "openssl:libssl_shared",
+      "samgr:samgr_proxy",
+    ]
+
+    if (build_ohos_sdk) {
+      defines += [ "PREVIEWER" ]
+      sources = [ "src/net_http_mock.cpp" ]
+    } else {
+      external_deps += [ "init:libbegetutil" ]
+    }
+
+    deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
+
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.communication_netmanager_base) &&
+        global_parts_info.communication_netmanager_base) {
+      external_deps += [
+        "netmanager_base:net_conn_manager_if",
+        "netmanager_base:net_security_config_if",
+      ]
+      defines = [ "HAS_NETMANAGER_BASE=1" ]
+      sources += [
+        "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",
+        "$NETSTACK_DIR/utils/http_over_curl/src/epoll_request_handler.cpp",
+      ]
+    } else {
+      defines = [ "HAS_NETMANAGER_BASE=0" ]
+    }
   }
 
   cflags = [
