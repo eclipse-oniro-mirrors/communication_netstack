@@ -35,6 +35,7 @@
         "ram": "5MB",
         "deps": {
             "components": [
+                "ability_base",
                 "bounds_checking_function",
                 "curl",
                 "ffrt",

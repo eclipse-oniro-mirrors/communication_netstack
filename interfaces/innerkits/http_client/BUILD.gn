@@ -153,6 +153,7 @@ ohos_shared_library("http_client") {
   } else {
     deps += [ "$NETSTACK_DIR/utils:stack_utils_common" ]
     external_deps = [
+      "ability_base:configuration",
       "ability_runtime:wantagent_innerkits",
       "hilog:libhilog",
       "hiprofiler:libnetwork_profiler",

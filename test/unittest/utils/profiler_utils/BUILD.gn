@@ -22,6 +22,7 @@ NETSTACK_NAPI_ROOT = "$SUBSYSTEM_DIR/netstack/frameworks/js/napi/"
 utils_include = [ "$NETSTACK_UTILS_ROOT/log/include" ]
 
 common_external_deps = [
+  "ability_base:configuration",
   "c_utils:utils",
   "hilog:libhilog",
 ]

@@ -61,6 +61,7 @@ ohos_static_library("napi_utils") {
     external_deps += [
       "hiappevent:hiappevent_innerapi",
       "time_service:time_client",
+      "ability_base:configuration",
       "ability_runtime:wantagent_innerkits",
     ]
   }
@@ -107,6 +108,7 @@ ohos_static_library("napi_utils_static") {
     external_deps += [
       "hiappevent:hiappevent_innerapi",
       "time_service:time_client",
+      "ability_base:configuration",
       "ability_runtime:wantagent_innerkits",
       "ipc:ipc_single",
     ]
