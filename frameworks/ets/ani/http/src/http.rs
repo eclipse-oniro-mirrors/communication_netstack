@@ -36,7 +36,7 @@ use netstack_rs::{
 
 use crate::{
     bridge::{
-        convert_to_business_error, Cleaner, HttpRequest, HttpRequestOptions, HttpResponseCache, TlsConfig, HttpProxy
+        convert_to_business_error, Cleaner, HttpRequest, HttpRequestOptions, HttpResponseCache, TlsConfig, HttpProxy, CertificatePinning
     },
     callback::TaskCallback,
 };
@@ -199,6 +199,32 @@ pub fn http_set_options(
     if let Some(server_authentication) = options.server_authentication {
         request.server_authentication(server_authentication.into());
     }
+    if let Some(certificate_pinning) = options.certificate_pinning {
+        let obj_data = certificate_pinning;
+        let array_class = env.find_class(signature::ARRAY).unwrap();
+        let mut pinRes = String::new();
+        if env.instance_of(&obj_data, &array_class).unwrap() {
+            let opt = env.deserialize::<Vec<CertificatePinning>>(obj_data).unwrap();
+            for item in opt {
+                if (item.hash_algorithm == "SHA-256") {
+                    pinRes.push_str(&format!("sha256//{};", item.public_key_hash));
+                }
+            }
+        } else {
+            let opt = env.deserialize::<CertificatePinning>(obj_data).unwrap();
+            if (opt.hash_algorithm == "SHA-256") {
+                pinRes.push_str(&format!("sha256//{};", opt.public_key_hash));
+            }
+        }
+        if !pinRes.is_empty() {
+            pinRes.pop();
+            request.certificate_pinning(&pinRes);
+        }
+        let mut bytes = pinRes.into_bytes();
+        for byte in &mut bytes {
+            *byte = 0;
+        }
+    }
 }
 
 #[ani_rs::native]
@@ -332,7 +358,6 @@ pub(crate) fn clean_http_cache(this: Cleaner) -> Result<(), BusinessError> {
     Ok(())
 }
 
-#[ani_rs::native]
 pub(crate) fn on_header_receive(
     env: &AniEnv,
     this: HttpRequest,
@@ -354,7 +379,6 @@ pub(crate) fn on_header_receive(
     Ok(())
 }
 
-#[ani_rs::native]
 pub(crate) fn off_header_receive(
     this: HttpRequest,
     async_callback: AniAsyncCallback,
@@ -608,10 +632,9 @@ pub(crate) fn off_data_send_progress(
 }
 
 #[ani_rs::native]
-pub(crate) fn once(
+pub(crate) fn once_headers_receive(
     env: &AniEnv,
     this: HttpRequest,
-    ty: String,
     callback: AniFnObject,
 ) -> Result<(), BusinessError> {
     let task = unsafe { &mut (*(this.native_ptr as *mut Task)) };
@@ -629,11 +652,7 @@ pub(crate) fn once(
     }
     match task.request_task {
         Some(ref mut request_task) => {
-            if (ty == "headersReceive") {
-                request_task.set_is_headers_once(true);
-            } else if (ty == "headerReceive") {
-                request_task.set_is_header_once(true);
-            }
+            request_task.set_is_headers_once(true);
         }
         None => {
             // noting todo

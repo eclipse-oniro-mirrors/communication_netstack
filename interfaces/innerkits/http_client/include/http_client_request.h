@@ -498,6 +498,17 @@ public:
      */
     uint32_t GetHttpVersion();
 
+    /**
+     * Set the Certificate pin the HTTP request.
+     * @param certPIN The certPIN value to be set.
+     */
+    void SetCertificatePinning(const HttpClient::SecureData &certPIN);
+
+    /**
+     * Get the Certificate pin of the HTTP request.
+     * @return The Certificate pin of the request.
+     */
+    const HttpClient::SecureData &GetCertificatePinning() const;
 private:
     std::string url_;
     std::string method_;
@@ -529,6 +540,7 @@ private:
     std::vector<std::string> dnsServers_;
     std::vector<HttpMultiFormData> multiFormDataList_;
     HttpServerAuthentication serverAuth_;
+    HttpClient::SecureData certificatePinning_;
 };
 } // namespace HttpClient
 } // namespace NetStack

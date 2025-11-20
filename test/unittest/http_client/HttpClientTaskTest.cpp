@@ -1858,4 +1858,17 @@ HWTEST_F(HttpClientTaskTest, SetTlsOption002, TestSize.Level2)
     auto task = session.CreateTask(httpReq);
     ASSERT_TRUE(task != nullptr);
 }
+
+HWTEST_F(HttpClientTaskTest, SetCertPinnerOption001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/get";
+    httpReq.SetURL(url);
+    SecureData certPIN;
+    certPIN.append("Q6TCQAWqP4t+eq41xnKaUgJdrPWqyG5L+Ni2YzMhqdY=");
+    httpReq.SetCertificatePinning(certPIN);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_TRUE(task != nullptr);
+}
 } // namespace

@@ -285,6 +285,7 @@ bool HttpClientTask::SetRequestOption(CURL *handle)
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_DOH_URL, request_.GetDNSOverHttps().c_str());
     }
 
+    SetCertPinnerOption(handle);
     SetDnsOption(handle);
     SetSSLCertOption(handle);
     SetMultiPartOption(handle);
@@ -1649,6 +1650,16 @@ void HttpClientTask::ProcessResponseExpectType()
     response_.SetExpectDataType(HttpDataType::STRING);
 }
 
+bool HttpClientTask::SetCertPinnerOption(CURL *handle)
+{
+    auto certPIN = request_.GetCertificatePinning();
+    if (certPIN.empty()) {
+        NETSTACK_LOGD("CertificatePinning is empty");
+        return true;
+    }
+    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PINNEDPUBLICKEY, certPIN.c_str());
+    return true;
+}
 } // namespace HttpClient
 } // namespace NetStack
 } // namespace OHOS

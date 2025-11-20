@@ -34,6 +34,7 @@ use crate::wrapper::ffi::{
     SetServerAuthentication,
     SetTLSOptions,
     SetHeaderExt,
+    SetCertificatePinning,
 };
 
 /// Builder for creating a Request.
@@ -209,6 +210,13 @@ impl<C: RequestCallback> Request<C> {
     /// Set a server_authentication for the request.
     pub fn server_authentication(&mut self, server_authentication: ServerAuthentication) -> &mut Self {        
         SetServerAuthentication(self.inner.pin_mut(), &server_authentication.into());
+        self
+    }
+
+    /// Set a certificate_pinning for the request.
+    pub fn certificate_pinning(&mut self, pin: &str) -> &mut Self {
+        let_cxx_string!(pin = pin);
+        SetCertificatePinning(self.inner.pin_mut(), &pin);
         self
     }
 

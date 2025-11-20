@@ -97,7 +97,8 @@ pub struct HttpRequestOptions<'local> {
 
     pub multi_form_data_list: Option<Vec<MultiFormData<'local>>>,
 
-    // certificate_pinning:Option< CertificatePinning | CertificatePinning[]>,
+    pub certificate_pinning: Option<AniObject<'local>>,
+
     pub remote_validation: Option<String>,
 
     pub tls_options: Option<AniObject<'local>>,
@@ -178,9 +179,12 @@ pub struct ClientCert {
     pub key_password: Option<String>,
 }
 
+#[ani_rs::ani(path = "L@ohos/net/http/http/CertificatePinningInner")]
+#[repr(C)]
 pub struct CertificatePinning {
     pub public_key_hash: String,
-    //pub hash_algorithm: 'SHA-256',
+
+    pub hash_algorithm: String,
 }
 
 #[ani_rs::ani(path = "L@ohos/net/http/http/RequestMethod")]

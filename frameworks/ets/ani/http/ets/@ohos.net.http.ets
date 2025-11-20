@@ -223,8 +223,15 @@ export default namespace http {
     keyPassword?: string;
   }
 
-  interface CertificatePinning {
+  export interface CertificatePinning {
     publicKeyHash: string;
+
+    hashAlgorithm: 'SHA-256';
+  }
+
+  class CertificatePinningInner implements CertificatePinning {
+    publicKeyHash: string;
+
     hashAlgorithm: 'SHA-256';
   }
 
@@ -243,11 +250,19 @@ export default namespace http {
 
     destroy(): void;
 
-    on(type: "headerReceive" | "headersReceive" | "dataReceive" | "dataEnd" | 'dataReceiveProgress' | 'dataSendProgress', callback: Object): void ;
+    onHeadersReceive(callback: Callback<Record<string, string>>): void;
+    onDataReceive(callback: Callback<ArrayBuffer>): void;
+    onDataEnd(callback: Callback<void>): void;
+    onDataReceiveProgress(callback: Callback<DataReceiveProgressInfo>): void;
+    onDataSendProgress(callback: Callback<DataSendProgressInfo>): void;
 
-    off(type: "headerReceive" | "headersReceive" | "dataReceive" | "dataEnd" | 'dataReceiveProgress' | 'dataSendProgress', callback?: Object): void;
+    offHeadersReceive(callback?: Callback<Record<string, string>>): void;
+    offDataReceive(callback?: Callback<ArrayBuffer>): void;
+    offDataEnd(callback?: Callback<void>): void;
+    offDataReceiveProgress(callback?: Callback<DataReceiveProgressInfo>): void;
+    offDataSendProgress(callback?: Callback<DataSendProgressInfo>): void;
 
-    once(type: "headersReceive", callback: Callback<Object>): void;
+    onceHeadersReceive(callback: Callback<Record<string, string>>): void;
   }
 
   export class HttpRequestInner implements HttpRequest {
@@ -315,77 +330,83 @@ export default namespace http {
 
     native destroy(): void;
 
-    native onHeaderReceive(callback: AsyncCallback<String>): void;
-    native onHeadersReceive(callback:  Callback<Record<String, String>>): void;
-    native onDataReceive(callback: Callback<ArrayBuffer>): void;
-    native onDataEnd(callback: Callback<void>): void;
-    native onDataReceiveProgress(callback: Callback<DataReceiveProgressInfo>): void;
-    native onDataSendProgress(callback: Callback<DataSendProgressInfo>): void;
+    native onHeadersReceiveInner(callback: Callback<Record<string, string>>): void;
+    native onDataReceiveInner(callback: Callback<ArrayBuffer>): void;
+    native onDataEndInner(callback: Callback<void>): void;
+    native onDataReceiveProgressInner(callback: Callback<DataReceiveProgressInfo>): void;
+    native onDataSendProgressInner(callback: Callback<DataSendProgressInfo>): void;
 
-    native offHeaderReceive(callback?: AsyncCallback<Record<String, String>>): void;
-    native offHeadersReceive(callback?:  Callback<Record<String, String>>): void;
-    native offDataReceive(callback?: Callback<ArrayBuffer>): void;
-    native offDataEnd(callback?: Callback<void>): void;
-    native offDataReceiveProgress(callback?: Callback<DataReceiveProgressInfo>): void;
-    native offDataSendProgress(callback?: Callback<DataSendProgressInfo>): void;
+    native offHeadersReceiveInner(callback?: Callback<Record<string, string>>): void;
+    native offDataReceiveInner(callback?: Callback<ArrayBuffer>): void;
+    native offDataEndInner(callback?: Callback<void>): void;
+    native offDataReceiveProgressInner(callback?: Callback<DataReceiveProgressInfo>): void;
+    native offDataSendProgressInner(callback?: Callback<DataSendProgressInfo>): void;
 
-    on(type: 'headerReceive' | 'headersReceive' | 'dataReceive' | 'dataEnd' | 'dataReceiveProgress' | 'dataSendProgress', callback: Object): void {
-      if (type == 'headerReceive') {
-        this.onHeaderReceive(callback as AsyncCallback<String>)
-      } else if (type == 'headersReceive') {
-        this.onHeadersReceive(callback as Callback<Record<String, String>>)
-      } else if (type == 'dataReceive') {
-        this.onDataReceive(callback as Callback<ArrayBuffer>)
-      } else if (type == 'dataEnd') {
-        this.onDataEnd(callback as Callback<void>)
-      } else if (type == 'dataReceiveProgress') {
-        this.onDataReceiveProgress(callback as Callback<DataReceiveProgressInfo>)
-      } else if (type == 'dataSendProgress') {
-        this.onDataSendProgress(callback as Callback<DataSendProgressInfo>)
+    native onceHeadersReceiveInner(callback: Callback<Record<string, string>>): void;
+
+    onHeadersReceive(callback: Callback<Record<string, string>>): void {
+      this.onHeadersReceiveInner(callback);
+    }
+
+    onDataReceive(callback: Callback<ArrayBuffer>): void {
+      this.onDataReceiveInner(callback);
+    }
+
+    onDataEnd(callback: Callback<void>): void {
+      this.onDataEndInner(callback);
+    }
+
+    onDataReceiveProgress(callback: Callback<DataReceiveProgressInfo>): void {
+      this.onDataReceiveProgressInner(callback);
+    }
+
+    onDataSendProgress(callback: Callback<DataSendProgressInfo>): void {
+      this.onDataSendProgressInner(callback);
+    }
+
+    offHeadersReceive(callback?: Callback<Record<string, string>>): void {
+      if (callback === undefined) {
+        this.offHeadersReceiveInner()
+      } else {
+        this.offHeadersReceiveInner(callback)
       }
     }
 
-    off(type: "headerReceive" | "headersReceive" | "dataReceive" | "dataEnd" | 'dataReceiveProgress' | 'dataSendProgress', callback?: Object): void {
-      if (type == 'headerReceive') {
-        if (callback === undefined) {
-          this.offHeaderReceive()
-        } else {
-          this.offHeaderReceive(callback as AsyncCallback<Record<String, String>>)
-        }
-      } else if (type == 'headersReceive') {
-        if (callback === undefined) {
-          this.offHeadersReceive()
-        } else {
-          this.offHeadersReceive(callback as Callback<Record<String, String>>)
-        }
-      } else if (type == 'dataReceive') {
-        if (callback === undefined) {
-          this.offDataReceive()
-        } else {
-          this.offDataReceive(callback as Callback<ArrayBuffer>)
-        }
-      } else if (type == 'dataEnd') {
-        if (callback === undefined) {
-          this.offDataEnd()
-        } else {
-          this.offDataEnd(callback as Callback<void>)
-        }
-      } else if (type == 'dataReceiveProgress') {
-        if (callback === undefined) {
-          this.offDataReceiveProgress()
-        } else {
-          this.offDataReceiveProgress(callback as Callback<DataReceiveProgressInfo>)
-        }
-      } else if (type == 'dataSendProgress') {
-        if (callback === undefined) {
-          this.offDataSendProgress()
-        } else {
-          this.offDataSendProgress(callback as Callback<DataSendProgressInfo>)
-        }
+    offDataReceive(callback?: Callback<ArrayBuffer>): void {
+      if (callback === undefined) {
+        this.offDataReceiveInner()
+      } else {
+        this.offDataReceiveInner(callback)
       }
     }
 
-    native once(type: "headersReceive", callback: Callback<Object>): void;
+    offDataEnd(callback?: Callback<void>): void {
+      if (callback === undefined) {
+        this.offDataEndInner()
+      } else {
+        this.offDataEndInner(callback)
+      }
+    }
+
+    offDataReceiveProgress(callback?: Callback<DataReceiveProgressInfo>): void {
+      if (callback === undefined) {
+        this.offDataReceiveProgressInner()
+      } else {
+        this.offDataReceiveProgressInner(callback)
+      }
+    }
+
+    offDataSendProgress(callback?: Callback<DataSendProgressInfo>): void {
+      if (callback === undefined) {
+        this.offDataSendProgressInner()
+      } else {
+        this.offDataSendProgressInner(callback)
+      }
+    }
+
+    onceHeadersReceive(callback: Callback<Record<string, string>>): void {
+      this.onceHeadersReceiveInner(callback);
+    }
   }
 
   export enum RequestMethod {
