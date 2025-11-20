@@ -79,6 +79,8 @@ PerformanceInfoRust GetPerformanceTiming(HttpClientResponse &response);
 
 void SetHeaderExt(HttpClientRequest &request, const EscapedDataRust& extraData);
 
+void SetCertificatePinning(HttpClientRequest &request, const std::string& certPIN);
+
 } // namespace OHOS::Request
 
 #endif

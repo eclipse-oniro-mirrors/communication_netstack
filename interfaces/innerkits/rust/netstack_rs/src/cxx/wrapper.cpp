@@ -334,4 +334,15 @@ void SetHeaderExt(HttpClientRequest &request, const EscapedDataRust& headersObj)
     ParseHeaderItems(root, request);
     cJSON_Delete(root);
 }
+
+void SetCertificatePinning(HttpClientRequest &request, const std::string& certPIN)
+{
+    if (certPIN.empty()) {
+        return;
+    }
+
+    SecureData certificatePinningNative;
+    certificatePinningNative.append(certPIN.c_str());
+    request.SetCertificatePinning(certificatePinningNative);
+}
 } // namespace OHOS::Request
