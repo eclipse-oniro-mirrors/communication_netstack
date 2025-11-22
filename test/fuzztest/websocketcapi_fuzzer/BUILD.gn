@@ -18,7 +18,7 @@ import("//build/test.gni")
 import("//foundation/communication/netstack/netstack_config.gni")
 
 ##############################fuzztest##########################################
-WEBSOCKET_INNERAPI = "$NETSTACK_DIR/frameworks/native/websocket_client"
+WEBSOCKET_INNERAPI = "$NETSTACK_DIR/frameworks/native/websocket_native"
 
 utils_include = [
   "$SUBSYSTEM_DIR/netstack/utils/common_utils/include",
