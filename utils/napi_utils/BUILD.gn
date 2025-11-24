@@ -137,4 +137,6 @@ ohos_static_library("napi_utils_static") {
       "bounds_checking_function:libsec_static",
     ]
   }
+  part_name = "netstack"
+  subsystem_name = "communication"
 }
