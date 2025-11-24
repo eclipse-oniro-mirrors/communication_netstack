@@ -576,8 +576,8 @@ private:
         bool StartShakingHands(const TLSConnectOptions &options);
         int ShakingHandsTimeout(int fd, uint32_t timeout);
         bool CheckAfterShankingHands(const TLSConnectOptions &options);
-        bool GetRemoteCertificateFromPeer();
-        bool SetRemoteCertRawData();
+        bool GetRemoteCertificateFromPeer(X509 *peerX509);
+        bool SetRemoteCertRawData(X509 *peerX509);
         bool PollSend(int sockfd, const char *pdata, int sendSize);
         void SetSNIandLoadCachedCaCert(const std::string &hostName);
         void CacheCertificates(const std::string &hostName);
@@ -588,7 +588,6 @@ private:
     private:
         mutable std::shared_mutex rw_mutex_;
         std::shared_ptr<ssl_st> ssl_ = nullptr;
-        X509 *peerX509_ = nullptr;
         uint16_t port_ = 0;
         sa_family_t family_ = 0;
         int32_t socketDescriptor_ = 0;

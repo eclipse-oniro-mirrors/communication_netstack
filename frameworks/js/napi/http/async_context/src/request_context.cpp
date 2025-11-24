@@ -984,10 +984,10 @@ void RequestContext::ParseCertificatePinning(napi_value optionsValue)
         }
     }
 
-    std::string pinRes = certPinBuilder.str();
-    if (!pinRes.empty()) {
-        pinRes.pop_back();
-        options.SetCertificatePinning(pinRes);
+    if (!certPinBuilder.str().empty()) {
+        NapiUtils::SecureData securePin(certPinBuilder.str());
+        securePin.pop_back();
+        options.SetCertificatePinning(securePin);
     }
 }
 

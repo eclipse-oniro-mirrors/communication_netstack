@@ -364,12 +364,12 @@ std::vector<MultiFormData> HttpRequestOptions::GetMultiPartDataList()
     return multiFormDataList_;
 }
 
-void HttpRequestOptions::SetCertificatePinning(std::string certPIN)
+void HttpRequestOptions::SetCertificatePinning(const NapiUtils::SecureData &certPIN)
 {
     certificatePinning_ = std::move(certPIN);
 }
 
-std::string HttpRequestOptions::GetCertificatePinning() const
+NapiUtils::SecureData HttpRequestOptions::GetCertificatePinning() const
 {
     return certificatePinning_;
 }

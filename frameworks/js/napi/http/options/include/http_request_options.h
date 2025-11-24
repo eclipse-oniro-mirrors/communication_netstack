@@ -204,11 +204,11 @@ public:
 
     void SetServerAuthentication(const ServerAuthentication &serverAuthentication);
 
-    void SetCertificatePinning(std::string certPIN);
+    void SetCertificatePinning(const NapiUtils::SecureData &certPIN);
 
     void SetCanSkipCertVerifyFlag(bool canCertVerify);
 
-    [[nodiscard]] std::string GetCertificatePinning() const;
+    [[nodiscard]] NapiUtils::SecureData GetCertificatePinning() const;
 
     [[nodiscard]] const std::string &GetUrl() const;
 
@@ -331,7 +331,7 @@ private:
 
     std::vector<MultiFormData> multiFormDataList_;
 
-    std::string certificatePinning_;
+    NapiUtils::SecureData certificatePinning_;
 
     TlsOption tlsOption_;
 
