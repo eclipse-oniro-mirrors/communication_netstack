@@ -22,22 +22,56 @@ extern crate netstack_common;
 
 mod bridge;
 mod web_socket;
+mod web_socket_server;
 mod wrapper;
 
 ani_rs::ani_constructor! {
     namespace "L@ohos/net/webSocket/webSocket"
     [
-        "createWebSocket" : web_socket::create_web_socket
+        "createWebSocket" : web_socket::create_web_socket,
+        "createWebSocketServer" : web_socket_server::create_web_socket_server,
     ]
     class "L@ohos/net/webSocket/webSocket/WebSocketInner"
     [
         "connectSync" : web_socket::connect_sync,
         "sendSync" : web_socket::send_sync,
         "closeSync" : web_socket::close_sync,
+        "onOpenInner" : web_socket::on_open,
+        "onMessageInner" : web_socket::on_message,
+        "onCloseInner" : web_socket::on_close,
+        "onErrorInner" : web_socket::on_error,
+        "onDataEndInner" : web_socket::on_data_end,
+        "onHeaderReceiveInner" : web_socket::on_header_receive,
+        "offOpenInner" : web_socket::off_open,
+        "offMessageInner" : web_socket::off_message,
+        "offCloseInner" : web_socket::off_close,
+        "offErrorInner" : web_socket::off_error,
+        "offDataEndInner" : web_socket::off_data_end,
+        "offHeaderReceiveInner" : web_socket::off_header_receive,
+    ]
+    class "L@ohos/net/webSocket/webSocket/WebSocketServerInner"
+    [
+        "startSync" : web_socket_server::start_sync,
+        "stopSync" : web_socket_server::stop_sync,
+        "sendSync" : web_socket_server::send_sync,
+        "closeSync" : web_socket_server::close_sync,
+        "listAllConnectionsSync" : web_socket_server::list_all_connections_sync,
+        "onWebSocketServerErrorInner" : web_socket_server::on_error,
+        "onConnectInner" : web_socket_server::on_connect,
+        "onWebSocketServerCloseInner" : web_socket_server::on_close,
+        "onMessageReceiveInner" : web_socket_server::on_message_receive,
+        "offWebSocketServerErrorInner" : web_socket_server::off_error,
+        "offConnectInner" : web_socket_server::off_connect,
+        "offWebSocketServerCloseInner" : web_socket_server::off_close,
+        "offMessageReceiveInner" : web_socket_server::off_message_receive,
     ]
     class "L@ohos/net/webSocket/webSocket/Cleaner"
     [
         "clean" : web_socket::web_socket_clean,
+    ]
+    class "L@ohos/net/webSocket/webSocket/CleanerServer"
+    [
+        "clean" : web_socket_server::web_socket_server_clean,
     ]
 }
 
