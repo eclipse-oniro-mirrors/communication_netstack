@@ -138,6 +138,7 @@ public:
 
     /* options key */
     static const char *const PARAM_KEY_METHOD;
+    static const char *const PARAM_KEY_CUSTOM_METHOD;
     static const char *const PARAM_KEY_EXTRA_DATA;
     static const char *const PARAM_KEY_HEADER;
     static const char *const PARAM_KEY_MAX_LIMIT;

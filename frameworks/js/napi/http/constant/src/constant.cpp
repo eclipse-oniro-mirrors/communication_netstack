@@ -33,6 +33,7 @@ const uint32_t HttpConstant::DEFAULT_CONNECT_TIMEOUT = 60000;
 const size_t HttpConstant::MAX_JSON_PARSE_SIZE = 65536;
 
 const char *const HttpConstant::PARAM_KEY_METHOD = "method";
+const char *const HttpConstant::PARAM_KEY_CUSTOM_METHOD = "customMethod";
 const char *const HttpConstant::PARAM_KEY_EXTRA_DATA = "extraData";
 const char *const HttpConstant::PARAM_KEY_HEADER = "header";
 const char *const HttpConstant::PARAM_KEY_MAX_LIMIT = "maxLimit";

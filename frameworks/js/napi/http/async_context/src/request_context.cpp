@@ -440,6 +440,10 @@ bool RequestContext::ParseExtraData(napi_value optionsValue)
     if (HttpExec::MethodForPost(options.GetMethod())) {
         return GetRequestBody(extraData);
     }
+    
+    if (!options.GetMethod().empty()) {
+        return GetRequestBody(extraData);
+    }
     return false;
 }
 
@@ -564,8 +568,17 @@ void RequestContext::ParseResumeFromToNumber(napi_value optionsValue)
 void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
 {
     options.SetUrl(NapiUtils::GetStringFromValueUtf8(GetEnv(), urlValue));
-
-    if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_METHOD)) {
+    std::string customMethod;
+    if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CUSTOM_METHOD)) {
+        napi_value requestMethod =
+            NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CUSTOM_METHOD);
+        if (NapiUtils::GetValueType(GetEnv(), requestMethod) == napi_string) {
+            customMethod =
+                NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CUSTOM_METHOD);
+            options.SetMethod(customMethod);
+        }
+    }
+    if (customMethod.empty() && NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_METHOD)) {
         napi_value requestMethod = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_METHOD);
         if (NapiUtils::GetValueType(GetEnv(), requestMethod) == napi_string) {
             options.SetMethod(NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_METHOD));
