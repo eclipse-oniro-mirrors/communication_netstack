@@ -25,9 +25,9 @@
 namespace OHOS::NetStack::Websocket {
 
 using WebSocketConnMap = std::unordered_map<
-    std::string, 
+    std::string,
     std::pair<lws*, OHOS::NetStack::Websocket::WebSocketConnection>
->;    
+>;
 
 struct ClientInfo {
     int32_t cnt;
