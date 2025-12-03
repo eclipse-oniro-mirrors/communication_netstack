@@ -24,7 +24,7 @@
 
 namespace OHOS::NetStack::Websocket {
 
-using WebSocketConnMap = std::unordered_map<
+using WebSocketConnMap = std::map<
     std::string,
     std::pair<lws*, OHOS::NetStack::Websocket::WebSocketConnection>
 >;
