@@ -188,6 +188,8 @@ void RunServerService(std::shared_ptr<UserData> userData, std::shared_ptr<EventM
         return;
     }
     delete realMap;
+    std::unique_lock<std::shared_mutex> lock_set(manager->GetDataMutex());
+    manager->SetData(static_cast<void*>(nullptr));  
     NETSTACK_LOGI("websocket run service end");
 }
 
