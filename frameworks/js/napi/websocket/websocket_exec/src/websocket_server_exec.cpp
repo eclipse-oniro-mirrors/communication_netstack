@@ -89,7 +89,7 @@ struct CallbackDispatcher {
 };
 
 using WebSocketConnMap = std::unordered_map<
-    std::string, 
+    std::string,
     std::pair<lws*, OHOS::NetStack::Websocket::WebSocketConnection>
 >;
 
@@ -320,7 +320,7 @@ void WebSocketServerExec::AddConnections(const std::string &id, lws *wsi,
         auto realMap = reinterpret_cast<WebSocketConnMap*>(manager->GetData());
         if (realMap == nullptr) {
             return;
-        }        
+        }
         auto& webSocketConnection_ = *realMap; 
         std::unique_lock<std::shared_mutex> lock(wsMutex_);
         webSocketConnection_[id].first = wsi;
@@ -910,7 +910,7 @@ void WebSocketServerExec::OnServerClose(lws *wsi, EventManager *manager, lws_clo
         auto realMap = reinterpret_cast<WebSocketConnMap*>(manager->GetData());
         if (realMap == nullptr) {
             return;
-        }               
+        }
         auto& webSocketConnection_ = *realMap; 
         for (auto [id, connPair] : webSocketConnection_) {
             if (connPair.first == wsi) {
