@@ -1089,6 +1089,7 @@ bool WebSocketServerExec::StartService(lws_context_creation_info &info, std::sha
     std::shared_ptr<UserData> userData;
     lwsContext = lws_create_context(&info);
     if (needNewErrorCode_ && lwsContext == nullptr) {
+        delete connMapPtr;
         return false;
     }
     userData = std::make_shared<UserData>(lwsContext);
