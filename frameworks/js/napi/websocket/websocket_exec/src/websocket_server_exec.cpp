@@ -189,7 +189,7 @@ void RunServerService(std::shared_ptr<UserData> userData, std::shared_ptr<EventM
     }
     delete realMap;
     std::unique_lock<std::shared_mutex> lock_set(manager->GetDataMutex());
-    manager->SetData(static_cast<void*>(nullptr));  
+    manager->SetData(static_cast<void*>(nullptr));
     NETSTACK_LOGI("websocket run service end");
 }
 
@@ -365,6 +365,7 @@ bool WebSocketServerExec::IsOverMaxCntForOneClient(EventManager *manager,
 void WebSocketServerExec::ClearWebSocketConnection(WebSocketConnMap &webSocketConnection_,
                                                    lws *wsi, std::string &clientId)
 {
+    std::shared_lock<std::shared_mutex> lock(wsMutex_);
     for (auto it = webSocketConnection_.begin(); it != webSocketConnection_.end(); ++it) {
         if (it->second.first == wsi) {
             clientId = it->first;
@@ -412,7 +413,6 @@ int WebSocketServerExec::LwsCallbackClosed(lws *wsi, lws_callback_reasons reason
             return -1;
         }
         auto& webSocketConnection_ = *realMap;
-        std::shared_lock<std::shared_mutex> lock(wsMutex_);
         ClearWebSocketConnection(webSocketConnection_, wsi, clientId);
     }
     OnServerClose(wsi, manager, clientUserData->closeStatus, clientUserData->closeReason);
