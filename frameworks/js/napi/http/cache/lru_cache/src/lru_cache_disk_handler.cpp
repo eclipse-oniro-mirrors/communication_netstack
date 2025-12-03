@@ -58,7 +58,7 @@ void LRUCacheDiskHandler::WriteJsonValueToFile(const cJSON *root)
     }
     std::string s = jsonStr;
     diskHandler_.Write(s);
-    free(jsonStr);
+    cJSON_free(jsonStr);
 }
 
 void LRUCacheDiskHandler::WriteCacheToJsonFile()
