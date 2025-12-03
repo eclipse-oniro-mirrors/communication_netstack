@@ -52,8 +52,6 @@ void ServerStartContext::ParseParams(napi_value *params, size_t paramsCount)
         return;
     }
     SetParseOK(false);
-
-
 }
 
 void ServerStartContext::ParseNewBoolParam(napi_value boolParam)
