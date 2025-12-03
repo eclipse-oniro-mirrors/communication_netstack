@@ -88,7 +88,7 @@ struct CallbackDispatcher {
     int (*callback)(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
 };
 
-using WebSocketConnMap = std::unordered_map<
+using WebSocketConnMap = std::map<
     std::string,
     std::pair<lws*, OHOS::NetStack::Websocket::WebSocketConnection>
 >;
