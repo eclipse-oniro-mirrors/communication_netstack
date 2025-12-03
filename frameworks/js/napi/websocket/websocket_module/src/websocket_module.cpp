@@ -110,7 +110,6 @@ void WebSocketModule::FinalizeWebSocketInstance(napi_env env, void *data, void *
     }
     auto userData = manager->GetWebSocketUserData();
     userData->SetThreadStop(true);
-    NETSTACK_LOGI("gdjd SetThreadStop is stop");
     delete sharedManager;
 }
 
