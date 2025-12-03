@@ -321,7 +321,7 @@ void WebSocketServerExec::AddConnections(const std::string &id, lws *wsi,
         if (realMap == nullptr) {
             return;
         }
-        auto& webSocketConnection_ = *realMap; 
+        auto& webSocketConnection_ = *realMap;
         std::unique_lock<std::shared_mutex> lock(wsMutex_);
         webSocketConnection_[id].first = wsi;
         webSocketConnection_[id].second = conn;
@@ -405,7 +405,7 @@ int WebSocketServerExec::LwsCallbackClosed(lws *wsi, lws_callback_reasons reason
         auto realMap = reinterpret_cast<WebSocketConnMap*>(manager->GetData());
         if (realMap == nullptr) {
             return -1;
-        }        
+        }
         auto& webSocketConnection_ = *realMap;
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
         ClearWebSocketConnection(webSocketConnection_, wsi, clientId);
@@ -870,7 +870,7 @@ void WebSocketServerExec::OnConnect(lws *wsi, EventManager *manager)
         auto realMap = reinterpret_cast<WebSocketConnMap*>(manager->GetData());
         if (realMap == nullptr) {
             return;
-        }               
+        }    
         auto& webSocketConnection_ = *realMap;
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
         for (auto [id, connPair] : webSocketConnection_) {
@@ -1011,7 +1011,7 @@ void WebSocketServerExec::SetWebsocketMessage(lws *wsi, EventManager *manager,
         if (realMap == nullptr) {
             return;
         }   
-        auto& webSocketConnection_ = *realMap; 
+        auto& webSocketConnection_ = *realMap;
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
         if (webSocketConnection_.empty()) {
             NETSTACK_LOGE("webSocketConnection_ is empty");
@@ -1182,7 +1182,7 @@ std::vector<WebSocketConnection> WebSocketServerExec::GetConnections(EventManage
     if (realMap == nullptr) {
         return conn;
     }           
-    auto& webSocketConnection_ = *realMap;     
+    auto& webSocketConnection_ = *realMap;
     if (!webSocketConnection_.empty()) {
         for (auto [_, connPair] : webSocketConnection_) {
             conn.emplace_back(connPair.second);
