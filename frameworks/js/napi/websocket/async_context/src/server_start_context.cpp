@@ -177,7 +177,8 @@ void ServerStartContext::ParseServerCert(napi_env env, napi_value params)
     SetServerCert(certPath, keyPath);
 }
 
-void ServerStartContext::SetNeedNewErrorCode(bool needNewErrorCode) {
+void ServerStartContext::SetNeedNewErrorCode(bool needNewErrorCode)
+{
     needNewErrorCode_ = needNewErrorCode;
 }
 
@@ -217,7 +218,8 @@ std::string ServerStartContext::GetServerIP() const
     return serverIp_;
 }
 
-bool ServerStartContext::GetNeedNewErrorCode() const {
+bool ServerStartContext::GetNeedNewErrorCode() const
+{
     return needNewErrorCode_;
 }
 
