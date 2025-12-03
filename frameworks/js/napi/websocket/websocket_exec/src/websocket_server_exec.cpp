@@ -406,7 +406,7 @@ int WebSocketServerExec::LwsCallbackClosed(lws *wsi, lws_callback_reasons reason
         if (realMap == nullptr) {
             return -1;
         }        
-        auto& webSocketConnection_ = *realMap;             
+        auto& webSocketConnection_ = *realMap;
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
         ClearWebSocketConnection(webSocketConnection_, wsi, clientId);
     }
@@ -428,7 +428,7 @@ void WebSocketServerExec::RemoveConnections(const std::string &id, UserData &use
     if (realMap == nullptr) {
         return;
     }           
-    auto& webSocketConnection_ = *realMap; 
+    auto& webSocketConnection_ = *realMap;
     if (webSocketConnection_.empty()) {
         NETSTACK_LOGE("connection list is empty");
         return;
@@ -1252,7 +1252,7 @@ bool WebSocketServerExec::ExecServerSend(ServerSendContext *context)
     std::string clientId = conn.clientIP + ":" + std::to_string(conn.clientPort);
     NETSTACK_LOGI("connection clientid:%{public}s", clientId.c_str());
     auto manager = context->GetSharedManager();
-    if (manager ==nullptr){
+    if (manager ==nullptr) {
         return false;
     }
     auto wsi = GetClientWsi(clientId, manager);
@@ -1283,7 +1283,7 @@ lws *WebSocketServerExec::GetClientWsi(const std::string clientId, std::shared_p
     if (realMap == nullptr) {
         return nullptr;
     }
-    auto& webSocketConnection_ = *realMap; 
+    auto& webSocketConnection_ = *realMap;
     if (webSocketConnection_.empty()) {
         NETSTACK_LOGE("webSocketConnection is empty");
         return nullptr;
