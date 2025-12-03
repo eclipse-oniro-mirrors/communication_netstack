@@ -427,7 +427,7 @@ void WebSocketServerExec::RemoveConnections(const std::string &id, UserData &use
     auto realMap = reinterpret_cast<WebSocketConnMap*>(manager->GetData());
     if (realMap == nullptr) {
         return;
-    }           
+    }
     auto& webSocketConnection_ = *realMap;
     if (webSocketConnection_.empty()) {
         NETSTACK_LOGE("connection list is empty");
@@ -871,7 +871,7 @@ void WebSocketServerExec::OnConnect(lws *wsi, EventManager *manager)
         if (realMap == nullptr) {
             return;
         }               
-        auto& webSocketConnection_ = *realMap; 
+        auto& webSocketConnection_ = *realMap;
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
         for (auto [id, connPair] : webSocketConnection_) {
             if (connPair.first == wsi) {
@@ -911,7 +911,7 @@ void WebSocketServerExec::OnServerClose(lws *wsi, EventManager *manager, lws_clo
         if (realMap == nullptr) {
             return;
         }
-        auto& webSocketConnection_ = *realMap; 
+        auto& webSocketConnection_ = *realMap;
         for (auto [id, connPair] : webSocketConnection_) {
             if (connPair.first == wsi) {
                 auto conn = new ClientConnectionCloseCallback;
@@ -1010,7 +1010,7 @@ void WebSocketServerExec::SetWebsocketMessage(lws *wsi, EventManager *manager,
         auto realMap = reinterpret_cast<WebSocketConnMap*>(manager->GetData());
         if (realMap == nullptr) {
             return;
-        }               
+        }   
         auto& webSocketConnection_ = *realMap; 
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
         if (webSocketConnection_.empty()) {
@@ -1082,7 +1082,7 @@ bool WebSocketServerExec::ExecServerStart(ServerStartContext *context)
 bool WebSocketServerExec::StartService(lws_context_creation_info &info, std::shared_ptr<EventManager> &manager,
                                        bool &needNewErrorCode_)
 {
-    WebSocketConnMap* connMapPtr = new WebSocketConnMap(); 
+    WebSocketConnMap* connMapPtr = new WebSocketConnMap();
     manager->SetData(static_cast<void*>(connMapPtr));
 
     lws_context *lwsContext = nullptr;
@@ -1252,7 +1252,7 @@ bool WebSocketServerExec::ExecServerSend(ServerSendContext *context)
     std::string clientId = conn.clientIP + ":" + std::to_string(conn.clientPort);
     NETSTACK_LOGI("connection clientid:%{public}s", clientId.c_str());
     auto manager = context->GetSharedManager();
-    if (manager ==nullptr) {
+    if (manager == nullptr) {
         return false;
     }
     auto wsi = GetClientWsi(clientId, manager);
@@ -1326,7 +1326,7 @@ bool WebSocketServerExec::ExecServerStop(ServerStopContext *context)
     return true;
 }
 
-void WebSocketServerExec::CloseAllConnection(const std::shared_ptr<UserData> &userData, 
+void WebSocketServerExec::CloseAllConnection(const std::shared_ptr<UserData> &userData,
                                              std::shared_ptr<EventManager> &manager)
 {
     if (userData == nullptr) {
@@ -1337,7 +1337,7 @@ void WebSocketServerExec::CloseAllConnection(const std::shared_ptr<UserData> &us
     if (realMap == nullptr) {
         return;
     }
-    auto& webSocketConnection_ = *realMap; 
+    auto& webSocketConnection_ = *realMap;
     WebSocketConnMap connListTmp;
     {
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
