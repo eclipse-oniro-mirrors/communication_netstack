@@ -104,8 +104,11 @@ void WebSocketModule::FinalizeWebSocketInstance(napi_env env, void *data, void *
 {
     NETSTACK_LOGI("websocket handle is finalized");
     auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
+    if (sharedManager == nullptr) {
+        return;
+    }
     auto manager = *sharedManager;
-    if (manager->GetWebSocketUserData()==nullptr) {
+    if (manager->GetWebSocketUserData() == nullptr) {
         return;
     }
     auto userData = manager->GetWebSocketUserData();
