@@ -870,7 +870,7 @@ void WebSocketServerExec::OnConnect(lws *wsi, EventManager *manager)
         auto realMap = reinterpret_cast<WebSocketConnMap*>(manager->GetData());
         if (realMap == nullptr) {
             return;
-        }    
+        }
         auto& webSocketConnection_ = *realMap;
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
         for (auto [id, connPair] : webSocketConnection_) {
@@ -1010,7 +1010,7 @@ void WebSocketServerExec::SetWebsocketMessage(lws *wsi, EventManager *manager,
         auto realMap = reinterpret_cast<WebSocketConnMap*>(manager->GetData());
         if (realMap == nullptr) {
             return;
-        }   
+        }
         auto& webSocketConnection_ = *realMap;
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
         if (webSocketConnection_.empty()) {
@@ -1181,7 +1181,7 @@ std::vector<WebSocketConnection> WebSocketServerExec::GetConnections(EventManage
     auto realMap = reinterpret_cast<WebSocketConnMap*>(manager->GetData());
     if (realMap == nullptr) {
         return conn;
-    }           
+    }
     auto& webSocketConnection_ = *realMap;
     if (!webSocketConnection_.empty()) {
         for (auto [_, connPair] : webSocketConnection_) {
