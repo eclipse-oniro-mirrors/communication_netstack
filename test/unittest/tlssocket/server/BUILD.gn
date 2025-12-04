@@ -142,7 +142,7 @@ ohos_unittest("two_way_tls_socket_server_unittest") {
     "hilog:libhilog",
     "napi:ace_napi",
     "openssl:libcrypto_shared",
-    "openssl:libssl_shared",
+    "openssl:libssl_shared", 
     "samgr:samgr_proxy",
     "hiappevent:hiappevent_innerapi",
   ]

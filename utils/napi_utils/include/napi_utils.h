@@ -42,6 +42,12 @@ private:
 };
 
 struct SecureData : public std::string {
+    SecureData() : std::string()
+    {
+    }
+    SecureData(const std::string& other) : std::string(other)
+    {
+    }
     SecureData& operator=(const char* other)
     {
         std::string::operator=(other);

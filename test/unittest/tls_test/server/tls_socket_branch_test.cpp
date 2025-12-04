@@ -32,6 +32,7 @@
 #include "tls_key.h"
 #include "tls_socket.h"
 #include "tls_socket_server.h"
+#include <openssl/ssl.h>
 
 namespace OHOS {
 namespace NetStack {
@@ -220,12 +221,14 @@ HWTEST_F(TLSSecureOptionsBranchTest, TLSSecureOptionsBranchTest004, testing::ext
     ret = internal.StartShakingHands(connectOptions);
     EXPECT_FALSE(ret);
 
-    ret = internal.GetRemoteCertificateFromPeer();
+    X509 *peerX509 = SSL_get_peer_certificate(internal.ssl_.get());
+    ret = internal.GetRemoteCertificateFromPeer(peerX509);
     EXPECT_FALSE(ret);
 
-    ret = internal.SetRemoteCertRawData();
+    ret = internal.SetRemoteCertRawData(peerX509);
     EXPECT_FALSE(ret);
-
+    X509_free(peerX509);
+    
     OnCloseCallback onCloseCallback;
     server.OnClose(onCloseCallback);
     server.OffClose();

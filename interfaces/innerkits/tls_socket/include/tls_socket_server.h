@@ -436,8 +436,8 @@ public:
         bool StartTlsAccept(const TlsSocket::TLSConnectOptions &options);
         bool CreatTlsContext();
         bool StartShakingHands(const TlsSocket::TLSConnectOptions &options);
-        bool GetRemoteCertificateFromPeer();
-        bool SetRemoteCertRawData();
+        bool GetRemoteCertificateFromPeer(X509 *peerX509);
+        bool SetRemoteCertRawData(X509 *peerX509);
         std::string CheckServerIdentityLegal(const std::string &hostName, const X509 *x509Certificates);
         std::string CheckServerIdentityLegal(const std::string &hostName, X509_EXTENSION *ext,
                                              const X509 *x509Certificates);
@@ -445,7 +445,6 @@ public:
 
     private:
         ssl_st *ssl_ = nullptr;
-        X509 *peerX509_ = nullptr;
         int32_t socketFd_ = 0;
 
         TlsSocket::TLSContextServer tlsContext_;

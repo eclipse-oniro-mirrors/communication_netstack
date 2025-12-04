@@ -1049,35 +1049,34 @@ bool TLSSocketServer::Connection::StartShakingHands(const TlsSocket::TLSConnectO
     if (!SetSharedSigals()) {
         NETSTACK_LOGE("Failed to set sharedSigalgs");
     }
-
-    if (!GetRemoteCertificateFromPeer()) {
+    X509 *peerX509 = SSL_get_peer_certificate(ssl_);
+    if (!GetRemoteCertificateFromPeer(peerX509)) {
         NETSTACK_LOGE("Failed to get remote certificate");
     }
-    if (peerX509_ != nullptr) {
+    if (peerX509 != nullptr) {
         NETSTACK_LOGE("peer x509Certificates is null");
 
-        if (!SetRemoteCertRawData()) {
+        if (!SetRemoteCertRawData(peerX509)) {
             NETSTACK_LOGE("Failed to set remote x509 certificata Serialization data");
         }
         TlsSocket::CheckServerIdentity checkServerIdentity = options.GetCheckServerIdentity();
         if (!checkServerIdentity) {
-            CheckServerIdentityLegal(hostName_, peerX509_);
+            CheckServerIdentityLegal(hostName_, peerX509);
         } else {
             checkServerIdentity(hostName_, {remoteCert_});
         }
     }
+    X509_free(peerX509);
     return true;
 }
 
-bool TLSSocketServer::Connection::GetRemoteCertificateFromPeer()
+bool TLSSocketServer::Connection::GetRemoteCertificateFromPeer(X509 *peerX509)
 {
-    peerX509_ = SSL_get_peer_certificate(ssl_);
-
     if (SSL_get_verify_result(ssl_) == X509_V_OK) {
         NETSTACK_LOGE("SSL_get_verify_result ==X509_V_OK");
     }
 
-    if (peerX509_ == nullptr) {
+    if (peerX509 == nullptr) {
         int resErr = ConvertSSLError(GetSSL());
         NETSTACK_LOGE("open fail errno, errno is %{public}d, error info is %{public}s", resErr,
                       MakeSSLErrorString(resErr).c_str());
@@ -1088,7 +1087,7 @@ bool TLSSocketServer::Connection::GetRemoteCertificateFromPeer()
         NETSTACK_LOGE("TlsSocket::SetRemoteCertificate bio is null");
         return false;
     }
-    X509_print(bio, peerX509_);
+    X509_print(bio, peerX509);
     char data[REMOTE_CERT_LEN] = {0};
     if (!BIO_read(bio, data, REMOTE_CERT_LEN)) {
         NETSTACK_LOGE("BIO_read function returns error");
@@ -1100,19 +1099,19 @@ bool TLSSocketServer::Connection::GetRemoteCertificateFromPeer()
     return true;
 }
 
-bool TLSSocketServer::Connection::SetRemoteCertRawData()
+bool TLSSocketServer::Connection::SetRemoteCertRawData(X509 *peerX509)
 {
-    if (peerX509_ == nullptr) {
+    if (peerX509 == nullptr) {
         NETSTACK_LOGE("peerX509 is null");
         return false;
     }
-    int32_t length = i2d_X509(peerX509_, nullptr);
+    int32_t length = i2d_X509(peerX509, nullptr);
     if (length <= 0) {
         NETSTACK_LOGE("Failed to convert peerX509 to der format");
         return false;
     }
     unsigned char *der = nullptr;
-    (void)i2d_X509(peerX509_, &der);
+    (void)i2d_X509(peerX509, &der);
     TlsSocket::SecureData data(der, length);
     remoteRawData_.data = data;
     OPENSSL_free(der);
