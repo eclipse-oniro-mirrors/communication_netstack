@@ -417,11 +417,13 @@ void EventManager::SetProxyData(std::shared_ptr<Socks5::Socks5Instance> data)
 
 void EventManager::SetWebSocketUserData(const std::shared_ptr<Websocket::UserData> &userData)
 {
+    std::unique_lock<std::shared_mutex> lock(webSocketUserDataMutex_);
     webSocketUserData_ = userData;
 }
 
 std::shared_ptr<Websocket::UserData> EventManager::GetWebSocketUserData()
 {
+    std::shared_lock<std::shared_mutex> lock(webSocketUserDataMutex_);
     return webSocketUserData_;
 }
 
