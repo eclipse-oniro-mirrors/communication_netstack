@@ -182,13 +182,12 @@ void RunServerService(std::shared_ptr<UserData> userData, std::shared_ptr<EventM
     lws_context_destroy(context);
     userData->SetContext(nullptr);
     manager->SetWebSocketUserData(nullptr);
-    std::shared_lock<std::shared_mutex> lock_get(manager->GetDataMutex());
+    std::unique_lock<std::shared_mutex> lock_set(manager->GetDataMutex());
     auto realMap = reinterpret_cast<WebSocketConnMap*>(manager->GetData());
     if (realMap == nullptr) {
         return;
     }
     delete realMap;
-    std::unique_lock<std::shared_mutex> lock_set(manager->GetDataMutex());
     manager->SetData(static_cast<void*>(nullptr));
     NETSTACK_LOGI("websocket run service end");
 }
