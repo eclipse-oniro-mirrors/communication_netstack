@@ -79,16 +79,18 @@ ohos_unittest("websocket_unittest") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
-  defines += [ "NETSTACK_WEBSOCKETSERVER",
-              "private = public",]
-  sources += [
-    "$WEBSOCKET_NAPI/async_context/src/list_all_connections_context.cpp",
-    "$WEBSOCKET_NAPI/async_context/src/server_close_context.cpp",
-    "$WEBSOCKET_NAPI/async_context/src/server_send_context.cpp",
-    "$WEBSOCKET_NAPI/async_context/src/server_start_context.cpp",
-    "$WEBSOCKET_NAPI/async_context/src/server_stop_context.cpp",
-    "$WEBSOCKET_NAPI/websocket_exec/src/websocket_server_exec.cpp",
-  ]
+  if (netstack_websocket_server_enable) {
+    defines += [ "NETSTACK_WEBSOCKETSERVER",
+                "private = public",]
+    sources += [
+      "$WEBSOCKET_NAPI/async_context/src/list_all_connections_context.cpp",
+      "$WEBSOCKET_NAPI/async_context/src/server_close_context.cpp",
+      "$WEBSOCKET_NAPI/async_context/src/server_send_context.cpp",
+      "$WEBSOCKET_NAPI/async_context/src/server_start_context.cpp",
+      "$WEBSOCKET_NAPI/async_context/src/server_stop_context.cpp",
+      "$WEBSOCKET_NAPI/websocket_exec/src/websocket_server_exec.cpp",
+    ]
+  }
 
   part_name = "netstack"
   subsystem_name = "communication"

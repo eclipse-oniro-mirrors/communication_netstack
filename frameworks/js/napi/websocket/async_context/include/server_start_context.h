@@ -63,12 +63,6 @@ public:
 
     [[nodiscard]] std::string GetErrorMessage() const override;
 
-    void SetNeedNewErrorCode(bool needNewErrorCode);
-
-    [[nodiscard]] bool GetNeedNewErrorCode() const;
-    
-    void ParseNewBoolParam(napi_value boolParam);
-
     std::string serverIp_;
 
     uint32_t serverPort_ = 0;
@@ -82,8 +76,6 @@ public:
     std::string websocketServerProtocol_;
 
     uint32_t maxCountForOneClient_ = 0;
-
-    bool needNewErrorCode_ = false;
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);

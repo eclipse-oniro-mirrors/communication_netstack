@@ -31,46 +31,17 @@ void ServerStartContext::ParseParams(napi_value *params, size_t paramsCount)
         return;
     }
 
-    if (paramsCount == FUNCTION_PARAM_ONE) {
-        napi_env env = GetEnv();
-        if (ParseRequiredParams(env, params[0])) {
-            ParseOptionalParams(env, params[0]);
-            SetParseOK(true);
-            return;
-        }
-        SetParseOK(false);
-        return;
-    }
-
-    if (paramsCount == FUNCTION_PARAM_TWO) {
-        napi_env env = GetEnv();
-        if (ParseRequiredParams(env, params[0])) {
-            ParseOptionalParams(env, params[0]);
-        }
-        ParseNewBoolParam(params[1]);
-        SetParseOK(true);
-        return;
-    }
-    SetParseOK(false);
-}
-
-void ServerStartContext::ParseNewBoolParam(napi_value boolParam)
-{
-    if (boolParam == nullptr) {
-        NETSTACK_LOGE("new bool param is null, use default: false");
-        ServerStartContext::SetNeedNewErrorCode(false);
+    if (paramsCount != FUNCTION_PARAM_ONE) {
+        SetParseOK(SetCallback(params[0]) == napi_ok);
         return;
     }
 
     napi_env env = GetEnv();
-    napi_valuetype type = NapiUtils::GetValueType(env, boolParam);
-    if (type == napi_boolean) {
-        bool value = false;
-        napi_get_value_bool(env, boolParam, &value);
-        ServerStartContext::SetNeedNewErrorCode(value);
-        NETSTACK_LOGD("parse new bool param success: %d", value);
+    if (!ParseRequiredParams(env, params[0])) {
+        return;
     }
-    return;
+    ParseOptionalParams(env, params[0]);
+    SetParseOK(true);
 }
 
 bool ServerStartContext::CheckParamsType(napi_value *params, size_t paramsCount)
@@ -81,12 +52,6 @@ bool ServerStartContext::CheckParamsType(napi_value *params, size_t paramsCount)
 
     if (paramsCount == FUNCTION_PARAM_ONE) {
         return NapiUtils::GetValueType(GetEnv(), params[0]) == napi_object;
-    }
-
-    if (paramsCount == FUNCTION_PARAM_TWO) {
-        bool param_1 = NapiUtils::GetValueType(GetEnv(), params[0]) == napi_object;
-        bool param_2 = NapiUtils::GetValueType(GetEnv(), params[1]) == napi_boolean;
-        return param_1 && param_2;
     }
 
     return false;
@@ -171,11 +136,6 @@ void ServerStartContext::ParseServerCert(napi_env env, napi_value params)
     SetServerCert(certPath, keyPath);
 }
 
-void ServerStartContext::SetNeedNewErrorCode(bool needNewErrorCode)
-{
-    needNewErrorCode_ = needNewErrorCode;
-}
-
 void ServerStartContext::SetServerIP(std::string &ip)
 {
     serverIp_ = ip;
@@ -210,11 +170,6 @@ void ServerStartContext::SetMaxConnectionsForOneClient(uint32_t &count)
 std::string ServerStartContext::GetServerIP() const
 {
     return serverIp_;
-}
-
-bool ServerStartContext::GetNeedNewErrorCode() const
-{
-    return needNewErrorCode_;
 }
 
 uint32_t ServerStartContext::GetServerPort() const

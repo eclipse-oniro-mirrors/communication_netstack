@@ -798,16 +798,14 @@ HWTEST_F(WebSocketTest, WebSocketTest070, TestSize.Level1)
 HWTEST_F(WebSocketTest, WebSocketTest071, TestSize.Level1)
 {
     std::string clientId = "0.0.0.0:444";
-    auto eventManager = std::make_shared<EventManager>();
-    auto ret = WebSocketServerExec::GetClientWsi(clientId, eventManager);
+    auto ret = WebSocketServerExec::GetClientWsi(clientId);
     EXPECT_EQ(ret, nullptr);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest072, TestSize.Level1)
 {
     std::shared_ptr<UserData> userData = nullptr;
-    auto eventManager = std::make_shared<EventManager>();
-    WebSocketServerExec::CloseAllConnection(userData, eventManager);
+    WebSocketServerExec::CloseAllConnection(userData);
     EXPECT_EQ(userData, nullptr);
 }
 
@@ -815,8 +813,7 @@ HWTEST_F(WebSocketTest, WebSocketTest073, TestSize.Level1)
 {
     lws_context *context = nullptr;
     std::shared_ptr<UserData> userData = std::make_shared<UserData>(context);
-    auto eventManager = std::make_shared<EventManager>();
-    WebSocketServerExec::CloseAllConnection(userData, eventManager);
+    WebSocketServerExec::CloseAllConnection(userData);
     EXPECT_NE(userData, nullptr);
 }
 
@@ -847,8 +844,7 @@ HWTEST_F(WebSocketTest, WebSocketTest076, TestSize.Level1)
     lws_context *context = nullptr;
     std::shared_ptr<UserData> userData = std::make_shared<UserData>(context);
     WebSocketConnection conn;
-    auto eventManager = std::make_shared<EventManager>();
-    WebSocketServerExec::AddConnections(id, nullptr, userData, conn, eventManager.get());
+    WebSocketServerExec::AddConnections(id, nullptr, userData, conn);
     EXPECT_NE(userData, nullptr);
 }
 
@@ -859,8 +855,7 @@ HWTEST_F(WebSocketTest, WebSocketTest077, TestSize.Level1)
     std::shared_ptr<UserData> userData = std::make_shared<UserData>(context);
     WebSocketConnection conn;
     userData->SetThreadStop(true);
-    auto eventManager = std::make_shared<EventManager>();
-    WebSocketServerExec::AddConnections(id, nullptr, userData, conn, eventManager.get());
+    WebSocketServerExec::AddConnections(id, nullptr, userData, conn);
     EXPECT_EQ(userData->IsThreadStop(), true);
 }
 
@@ -873,8 +868,7 @@ HWTEST_F(WebSocketTest, WebSocketTest078, TestSize.Level1)
     lws_close_status status = LWS_CLOSE_STATUS_NOSTATUS;
     std::string reason = "The link is down, onError";
     userData->Close(status, reason);
-    auto eventManager = std::make_shared<EventManager>();
-    WebSocketServerExec::AddConnections(id, nullptr, userData, conn, eventManager.get());
+    WebSocketServerExec::AddConnections(id, nullptr, userData, conn);
     EXPECT_EQ(userData->IsClosed(), true);
 }
 
@@ -883,8 +877,7 @@ HWTEST_F(WebSocketTest, WebSocketTest079, TestSize.Level1)
     std::string id = "0.0.0.0:444";
     lws_context *context = nullptr;
     std::shared_ptr<UserData> userData = std::make_shared<UserData>(context);
-    auto eventManager = std::make_shared<EventManager>();
-    WebSocketServerExec::RemoveConnections(id, *userData, eventManager.get());
+    WebSocketServerExec::RemoveConnections(id, *userData);
     EXPECT_NE(userData, nullptr);
 }
 #endif

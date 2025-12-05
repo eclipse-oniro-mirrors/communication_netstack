@@ -25,4 +25,5 @@ fuzz_test_path = "netstack/netstack"
 
 declare_args() {
   netstack_http_boringssl = false
+  netstack_websocket_server_enable = false
 }
