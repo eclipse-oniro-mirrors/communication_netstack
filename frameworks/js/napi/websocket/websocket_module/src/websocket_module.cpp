@@ -20,6 +20,7 @@
 #include "module_template.h"
 #include "netstack_common_utils.h"
 #include "websocket_async_work.h"
+#include "websocket_exec_common.h"
 
 namespace OHOS::NetStack::Websocket {
 static bool g_appIsAtomicService = false;
