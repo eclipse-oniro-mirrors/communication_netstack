@@ -24,6 +24,11 @@
 
 namespace OHOS::NetStack::Websocket {
 
+using WebSocketConnMap = std::map<
+    std::string,
+    std::pair<lws*, OHOS::NetStack::Websocket::WebSocketConnection>
+>;
+
 struct ClientInfo {
     int32_t cnt;
     uint64_t lastConnectionTime;
@@ -117,27 +122,30 @@ private:
 
     static void UpdataClientList(const std::string &id);
 
-    static lws *GetClientWsi(const std::string clientId);
+    static lws *GetClientWsi(const std::string clientId, std::shared_ptr<EventManager> &manager);
 
     static uint64_t GetCurrentSecond();
 
-    static void CloseAllConnection(const std::shared_ptr<UserData> &userData);
+    static void CloseAllConnection(const std::shared_ptr<UserData> &userData, std::shared_ptr<EventManager> &manager);
 
     static void FillServerContextInfo(ServerStartContext *context, std::shared_ptr<EventManager> &manager,
         lws_context_creation_info &info);
 
     static bool FillServerCertPath(ServerStartContext *context, lws_context_creation_info &info);
 
-    static void StartService(lws_context_creation_info &info, std::shared_ptr<EventManager> &manager);
+    static bool StartService(lws_context_creation_info &info, std::shared_ptr<EventManager> &manager,
+        bool &needNewErrorCode);
 
     static void AddConnections(const std::string &Id, lws *wsi, std::shared_ptr<UserData> &userData,
-        WebSocketConnection &conn);
+        WebSocketConnection &conn, EventManager *manager);
 
-    static void RemoveConnections(const std::string &Id, UserData &userData);
+    static void RemoveConnections(const std::string &Id, UserData &userData, EventManager *manager);
 
     static bool GetPeerConnMsg(lws *wsi, EventManager *manager, std::string &clientId, WebSocketConnection &conn);
 
-    static std::vector<WebSocketConnection> GetConnections();
+    static std::vector<WebSocketConnection> GetConnections(EventManager *manager);
+
+    static void ClearWebSocketConnection(WebSocketConnMap &webSocketConnection_, lws *wsi, std::string &clientId);
 };
 } // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_WEBSOCKET_EXEC_H */
