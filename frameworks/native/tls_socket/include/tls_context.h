@@ -27,7 +27,7 @@ namespace TlsSocket {
 class TLSContext {
 public:
     TLSContext() = default;
-    ~TLSContext() = default;
+    ~TLSContext();
     static std::unique_ptr<TLSContext> CreateConfiguration(const TLSConfiguration &configuration);
     SSL *CreateSsl();
     void CloseCtx();

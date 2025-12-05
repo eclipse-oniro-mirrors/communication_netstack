@@ -221,7 +221,7 @@ HWTEST_F(TLSSecureOptionsBranchTest, TLSSecureOptionsBranchTest004, testing::ext
     ret = internal.StartShakingHands(connectOptions);
     EXPECT_FALSE(ret);
 
-    X509 *peerX509 = SSL_get_peer_certificate(internal.ssl_.get());
+    X509 *peerX509 = SSL_get_peer_certificate(internal.ssl_);
     ret = internal.GetRemoteCertificateFromPeer(peerX509);
     EXPECT_FALSE(ret);
 

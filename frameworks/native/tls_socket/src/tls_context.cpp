@@ -24,6 +24,7 @@
 #include "netstack_log.h"
 #include "netstack_common_utils.h"
 #include "tls_utils.h"
+#include "socket_error.h"
 #ifdef HAS_NETMANAGER_BASE
 #include "network_security_config.h"
 #endif
@@ -32,6 +33,11 @@ namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
 VerifyMode TLSContext::verifyMode_ = TWO_WAY_MODE;
+TLSContext::~TLSContext()
+{
+    CloseCtx();
+}
+
 std::unique_ptr<TLSContext> TLSContext::CreateConfiguration(const TLSConfiguration &configuration)
 {
     auto tlsContext = std::make_unique<TLSContext>();
@@ -364,12 +370,24 @@ bool TLSContext::InitTlsContext(TLSContext *tlsContext, const TLSConfiguration &
 }
 SSL *TLSContext::CreateSsl()
 {
-    ctxSsl_ = SSL_new(ctx_);
+    if (ctxSsl_ == nullptr) {
+        ctxSsl_ = SSL_new(ctx_);
+    }
     return ctxSsl_;
 }
 
 void TLSContext::CloseCtx()
 {
+    if (ctxSsl_ != nullptr) {
+        int result = SSL_shutdown(ctxSsl_);
+        if (result < 0) {
+            int resErr = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ctxSsl_, 0);
+            NETSTACK_LOGE("Error in shutdown, errno is %{public}d, error info is %{public}s", resErr,
+                          MakeSSLErrorString(resErr).c_str());
+        }
+        SSL_free(ctxSsl_);
+        ctxSsl_ = nullptr;
+    }
     if (ctx_ != nullptr) {
         SSL_CTX_free(ctx_);
         ctx_ = nullptr;
