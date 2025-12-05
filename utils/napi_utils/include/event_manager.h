@@ -179,6 +179,7 @@ private:
     std::condition_variable sockRcvThdCon_;
     bool sockRcvExit_ = false;
     std::atomic_bool isReuseAddr_ = false;
+    std::shared_mutex webSocketUserDataMutex_;
     std::shared_ptr<Websocket::UserData> webSocketUserData_;
     std::shared_ptr<Socket::SocketExec::SocketConfig> socketConfig_ = nullptr;
     std::shared_ptr<Socks5::Socks5Instance> proxyData_;
