@@ -262,4 +262,27 @@ HWTEST_F(HttpExecTest, IsReachRedirectLimitTest005, TestSize.Level1)
     context.redirects_ = 10;
     EXPECT_TRUE(context.IsReachRedirectLimit());
 }
+
+HWTEST_F(HttpExecTest, SetSniHostNameOption001, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+    context.options.SetSniHostName("example.com");
+    EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context,
+                                    context.GetCurlHeaderList()));
+}
+
+HWTEST_F(HttpExecTest, SetSniHostNameOption002, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+    EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context,
+                                    context.GetCurlHeaderList()));
+}
 } // namespace

@@ -489,4 +489,13 @@ HWTEST_F(HttpRequestOptionsTest, SetMaxRedirectsTest004, TestSize.Level1)
     uint32_t maxRedirects = requestOptions.GetMaxRedirects();
     EXPECT_EQ(maxRedirects, 1);
 }
+
+HWTEST_F(HttpRequestOptionsTest, SniHostNameTest001, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+    string testHostName = "example.com";
+    requestOptions.SetSniHostName(testHostName);
+    string sniHostName = requestOptions.GetSniHostName();
+    EXPECT_EQ(sniHostName, testHostName);
+}
 } // namespace
