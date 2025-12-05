@@ -76,6 +76,13 @@ std::string MakeErrorMessage(int error)
     ERR_error_string_n(error - TLS_ERR_SYS_BASE, err, sizeof(err));
     return err;
 }
+
+std::string MakeSSLErrorString(int error)
+{
+    char err[MAX_ERR_LEN] = {0};
+    ERR_error_string_n(error - TlsSocketError::TLS_ERR_SYS_BASE, err, sizeof(err));
+    return err;
+}
 } // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

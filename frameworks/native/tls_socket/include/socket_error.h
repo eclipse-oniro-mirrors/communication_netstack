@@ -57,6 +57,7 @@ enum TlsSocketError {
 };
 
 std::string MakeErrorMessage(int error);
+std::string MakeSSLErrorString(int error);
 } // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

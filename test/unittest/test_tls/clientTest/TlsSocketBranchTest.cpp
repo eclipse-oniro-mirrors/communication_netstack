@@ -282,21 +282,11 @@ HWTEST_F(TlsSocketBranchTest, BranchTest6, TestSize.Level2)
     bzero(buffer, MAX_BUFFER_SIZE);
     int recvSslNull = tlsSocketInternal->Recv(buffer, MAX_BUFFER_SIZE);
     EXPECT_EQ(recvSslNull, SSL_ERROR_RETURN);
-    bool closeSslNull = tlsSocketInternal->Close();
-    EXPECT_FALSE(closeSslNull);
-    tlsSocketInternal->ssl_ = std::shared_ptr<ssl_st>(SSL_new(SSL_CTX_new(TLS_client_method())), [](ssl_st* ssl) {
-        if (ssl == nullptr) {
-            return;
-        }
-        SSL_shutdown(ssl);
-        SSL_free(ssl);
-    });
+    tlsSocketInternal->CreatTlsContext();
     bool sendEmpty = tlsSocketInternal->Send(SEND_DATA_EMPTY);
     EXPECT_FALSE(sendEmpty);
     int recv = tlsSocketInternal->Recv(buffer, MAX_BUFFER_SIZE);
     EXPECT_EQ(recv, SSL_ERROR_RETURN);
-    bool close = tlsSocketInternal->Close();
-    EXPECT_FALSE(close);
     delete tlsSocketInternal;
 }
 
@@ -313,13 +303,7 @@ HWTEST_F(TlsSocketBranchTest, BranchTest7, TestSize.Level2)
     EXPECT_EQ(getCipherSuite.size(), 0);
     bool setSharedSigals = tlsSocketInternal->SetSharedSigals();
     EXPECT_FALSE(setSharedSigals);
-    tlsSocketInternal->ssl_ = std::shared_ptr<ssl_st>(SSL_new(SSL_CTX_new(TLS_client_method())), [](ssl_st* ssl) {
-        if (ssl == nullptr) {
-            return;
-        }
-        SSL_shutdown(ssl);
-        SSL_free(ssl);
-    });
+    tlsSocketInternal->CreatTlsContext();
     getCipherSuite = tlsSocketInternal->GetCipherSuite();
     EXPECT_NE(getCipherSuite.size(), 0);
     setSharedSigals = tlsSocketInternal->SetSharedSigals();

@@ -497,12 +497,6 @@ private:
         int Recv(char *buffer, int maxBufferSize);
 
         /**
-         * Disconnect encrypted connection
-         * @return whether the encrypted connection was successfully disconnected
-         */
-        bool Close();
-
-        /**
          * Set the application layer negotiation protocol in the encrypted communication process
          * @param alpnProtocols application layer negotiation protocol
          * @return set whether the application layer negotiation protocol is successful during encrypted communication
@@ -587,7 +581,7 @@ private:
 
     private:
         mutable std::shared_mutex rw_mutex_;
-        std::shared_ptr<ssl_st> ssl_ = nullptr;
+        SSL *ssl_ = nullptr;
         uint16_t port_ = 0;
         sa_family_t family_ = 0;
         int32_t socketDescriptor_ = 0;
@@ -601,6 +595,7 @@ private:
         std::string remoteCert_;
 
         std::vector<std::string> signatureAlgorithms_;
+        std::mutex tlsCtexMutex_;
         std::unique_ptr<TLSContext> tlsContextPointer_ = nullptr;
     };
 
