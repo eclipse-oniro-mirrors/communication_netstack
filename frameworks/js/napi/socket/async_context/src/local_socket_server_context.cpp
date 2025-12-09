@@ -234,6 +234,38 @@ void LocalSocketServerCloseContext::SetClientId(int clientId)
     clientId_ = clientId;
 }
 
+void LocalSocketServerGetSocketFdContext::ParseParams(napi_value *params, size_t paramsCount)
+{
+    if (!CheckParamsWithoutOptions(params, paramsCount)) {
+        return;
+    }
+    if (paramsCount != PARAM_NONE) {
+        SetParseOK(SetCallback(params[0]) == napi_ok);
+        return;
+    }
+    SetParseOK(true);
+}
+
+int LocalSocketServerGetSocketFdContext::GetClientId() const
+{
+    return clientId_;
+}
+
+void LocalSocketServerGetSocketFdContext::SetClientId(int clientId)
+{
+    clientId_ = clientId;
+}
+
+int LocalSocketServerGetSocketFdContext::GetConnectionSocketFd() const
+{
+    return socketFd_;
+}
+
+void LocalSocketServerGetSocketFdContext::SetConnectionSocketFd(int socketFd)
+{
+    socketFd_ = socketFd;
+}
+
 void LocalSocketServerGetLocalAddressContext::ParseParams(napi_value *params, size_t paramsCount)
 {
     if (paramsCount != PARAM_NONE) {

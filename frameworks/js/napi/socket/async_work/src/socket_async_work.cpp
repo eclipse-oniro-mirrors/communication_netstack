@@ -150,6 +150,11 @@ void SocketAsyncWork::ExecTcpConnectionGetLocalAddress(napi_env env, void *data)
         env, data);
 }
 
+void SocketAsyncWork::ExecTcpConnectionGetSocketFd(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<TcpServerGetSocketFdContext, SocketExec::ExecTcpConnectionGetSocketFd>(env, data);
+}
+
 void SocketAsyncWork::ExecTcpConnectionClose(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<TcpServerCloseContext, SocketExec::ExecTcpConnectionClose>(env, data);
@@ -168,6 +173,11 @@ void SocketAsyncWork::ExecTcpServerClose(napi_env env, void *data)
 void SocketAsyncWork::ExecTcpServerSetExtraOptions(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<TcpServerSetExtraOptionsContext, SocketExec::ExecTcpServerSetExtraOptions>(env, data);
+}
+
+void SocketAsyncWork::ExecTcpServerGetSocketFd(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<TcpServerGetSocketFdContext, SocketExec::ExecTcpServerGetSocketFd>(env, data);
 }
 
 void SocketAsyncWork::ExecTcpServerGetState(napi_env env, void *data)
@@ -263,6 +273,12 @@ void SocketAsyncWork::ExecLocalSocketServerGetExtraOptions(napi_env env, void *d
                                  LocalSocketExec::ExecLocalSocketServerGetExtraOptions>(env, data);
 }
 
+void SocketAsyncWork::ExecLocalSocketServerGetSocketFd(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<LocalSocketServerGetSocketFdContext,
+                                 LocalSocketExec::ExecLocalSocketServerGetSocketFd>(env, data);
+}
+
 void SocketAsyncWork::ExecLocalSocketConnectionSend(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<LocalSocketServerSendContext, LocalSocketExec::ExecLocalSocketConnectionSend>(env,
@@ -279,6 +295,12 @@ void SocketAsyncWork::ExecLocalSocketConnectionGetLocalAddress(napi_env env, voi
 {
     BaseAsyncWork::ExecAsyncWork<LocalSocketServerGetLocalAddressContext,
                                  LocalSocketExec::ExecLocalSocketConnectionGetLocalAddress>(env, data);
+}
+
+void SocketAsyncWork::ExecLocalSocketConnectionGetSocketFd(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<LocalSocketServerGetSocketFdContext,
+                                 LocalSocketExec::ExecLocalSocketConnectionGetSocketFd>(env, data);
 }
 
 void SocketAsyncWork::BindCallback(napi_env env, napi_status status, void *data)
@@ -399,6 +421,12 @@ void SocketAsyncWork::TcpConnectionGetLocalAddressCallback(napi_env env, napi_st
                                      SocketExec::TcpConnectionGetLocalAddressCallback>(env, status, data);
 }
 
+void SocketAsyncWork::TcpConnectionGetSocketFdCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<TcpServerGetSocketFdContext,
+                                     SocketExec::TcpConnectionGetSocketFdCallback>(env, status, data);
+}
+
 void SocketAsyncWork::ListenCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<TcpServerListenContext, SocketExec::ListenCallback>(env, status, data);
@@ -412,6 +440,12 @@ void SocketAsyncWork::TcpServerCloseCallback(napi_env env, napi_status status, v
 void SocketAsyncWork::TcpServerSetExtraOptionsCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<TcpServerSetExtraOptionsContext, SocketExec::TcpServerSetExtraOptionsCallback>(
+        env, status, data);
+}
+
+void SocketAsyncWork::TcpServerGetSocketFdCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<TcpServerGetSocketFdContext, SocketExec::TcpServerGetSocketFdCallback>(
         env, status, data);
 }
 
@@ -517,6 +551,12 @@ void SocketAsyncWork::LocalSocketServerGetExtraOptionsCallback(napi_env env, nap
                                      LocalSocketExec::LocalSocketServerGetExtraOptionsCallback>(env, status, data);
 }
 
+void SocketAsyncWork::LocalSocketServerGetSocketFdCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<LocalSocketServerGetSocketFdContext,
+                                     LocalSocketExec::LocalSocketServerGetSocketFdCallback>(env, status, data);
+}
+
 void SocketAsyncWork::LocalSocketConnectionSendCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<LocalSocketServerSendContext, LocalSocketExec::LocalSocketConnectionSendCallback>(
@@ -533,5 +573,11 @@ void SocketAsyncWork::LocalSocketConnectionGetLocalAddressCallback(napi_env env,
 {
     BaseAsyncWork::AsyncWorkCallback<LocalSocketServerGetLocalAddressContext,
                                      LocalSocketExec::LocalSocketConnectionGetLocalAddressCallback>(env, status, data);
+}
+
+void SocketAsyncWork::LocalSocketConnectionGetSocketFdCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<LocalSocketServerGetSocketFdContext,
+                                     LocalSocketExec::LocalSocketConnectionGetSocketFdCallback>(env, status, data);
 }
 } // namespace OHOS::NetStack::Socket

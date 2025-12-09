@@ -154,6 +154,8 @@ bool ExecTcpConnectionGetRemoteAddress(TcpServerGetRemoteAddressContext *context
 
 bool ExecTcpConnectionGetLocalAddress(TcpServerGetLocalAddressContext *context);
 
+bool ExecTcpConnectionGetSocketFd(TcpServerGetSocketFdContext *context);
+
 bool ExecTcpConnectionClose(TcpServerCloseContext *context);
 
 bool ExecTcpServerListen(TcpServerListenContext *context);
@@ -161,6 +163,8 @@ bool ExecTcpServerListen(TcpServerListenContext *context);
 bool ExecTcpServerClose(TcpServerCloseContext *context);
 
 bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context);
+
+bool ExecTcpServerGetSocketFd(TcpServerGetSocketFdContext *context);
 
 bool ExecTcpServerGetState(TcpServerGetStateContext *context);
 
@@ -209,11 +213,15 @@ napi_value TcpConnectionGetRemoteAddressCallback(TcpServerGetRemoteAddressContex
 
 napi_value TcpConnectionGetLocalAddressCallback(TcpServerGetLocalAddressContext *context);
 
+napi_value TcpConnectionGetSocketFdCallback(TcpServerGetSocketFdContext *context);
+
 napi_value ListenCallback(TcpServerListenContext *context);
 
 napi_value TcpServerCloseCallback(TcpServerCloseContext *context);
 
 napi_value TcpServerSetExtraOptionsCallback(TcpServerSetExtraOptionsContext *context);
+
+napi_value TcpServerGetSocketFdCallback(TcpServerGetSocketFdContext *context);
 
 napi_value TcpServerGetStateCallback(TcpServerGetStateContext *context);
 

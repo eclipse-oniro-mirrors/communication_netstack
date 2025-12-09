@@ -39,6 +39,7 @@ public:
 public:
     int32_t clientId_ = 0;
     int32_t errorNumber_ = 0;
+    int32_t socketFd_ = -1;
     Socket::NetAddress address_;
     Socket::NetAddress localAddress_;
     TlsSocket::X509CertRawData remoteCert_;
@@ -58,6 +59,7 @@ using TLSConnectionGetLocalAddressContext = TLSServerNapiContext;
 using ServerGetRemoteCertificateContext = TLSServerNapiContext;
 using ServerGetCipherSuitesContext = TLSServerNapiContext;
 using ServerGetSignatureAlgorithmsContext = TLSServerNapiContext;
+using TLSServerGetSocketFdContext = TLSServerNapiContext;
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS

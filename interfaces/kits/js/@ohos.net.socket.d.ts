@@ -906,6 +906,16 @@ declare namespace socket {
     setExtraOptions(options: UDPExtraOptions): Promise<void>;
 
     /**
+     * Obtains the file descriptor of the UDPSocket.
+     * @permission ohos.permission.INTERNET
+     * @returns { Promise<int> } The promise returns the file descriptor of the UDP socket.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 23 dynamic&static
+     */
+    getSocketFd(): Promise<int>;
+
+    /**
      * Listens for message receiving events of the UDPSocket connection.
      * @param { 'message' } type - Indicates Event name.
      * @param { Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }> } callback - the callback used to return the result.
@@ -1311,6 +1321,15 @@ declare namespace socket {
      * @since 12
      */
     getLoopbackMode(): Promise<boolean>;
+    /**
+     * Obtains the file descriptor of the MulticastSocket.
+     * @permission ohos.permission.INTERNET
+     * @returns { Promise<int> } The promise returns the file descriptor of the Multicast socket.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 23 dynamic&static
+     */
+    getSocketFd(): Promise<int>;
   }
 
   /**
@@ -1728,6 +1747,14 @@ declare namespace socket {
     getLocalAddress(): Promise<string>;
 
     /**
+     * Obtains the file descriptor of the LocalSocketConnection.
+     * @returns { Promise<int> } The promise returns the file descriptor of the local socket connection.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 23 dynamic&static
+     */
+    getSocketFd(): Promise<int>;
+
+    /**
      * Listens for message receiving events of the LocalSocketConnection.
      * @param { 'message' } type - Indicates Event name.
      * @param { Callback<LocalSocketMessageInfo> } callback - The callback of on.
@@ -1950,6 +1977,14 @@ declare namespace socket {
      * @since 12
      */
     getLocalAddress(): Promise<string>;
+
+    /**
+     * Obtains the file descriptor of the LocalSocketServer.
+     * @returns { Promise<int> } The promise returns the file descriptor of the local socket server.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 23 dynamic&static
+     */
+    getSocketFd(): Promise<int>;
 
     /**
      * Listens for connect events of the LocalSocketServer connection.
@@ -3841,6 +3876,16 @@ declare namespace socket {
     getLocalAddress(): Promise<NetAddress>;
 
     /**
+     * Obtains the file descriptor of the TCPSocketConnection.
+     * @permission ohos.permission.INTERNET
+     * @returns { Promise<int> } The promise returns the file descriptor of the TCP socket connection.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 23 dynamic&static
+     */
+    getSocketFd(): Promise<int>;
+
+    /**
      * Listens for message receiving events of the TCPSocketConnection.
      * @param { 'message' } type - Indicates Event name.
      * @param { Callback<{ message: ArrayBuffer, remoteInfo: SocketRemoteInfo }> } callback - The callback of on.
@@ -4043,6 +4088,16 @@ declare namespace socket {
      * @since 12
      */
     getLocalAddress(): Promise<NetAddress>;
+
+    /**
+     * Obtains the file descriptor of the TCPSocketServer.
+     * @permission ohos.permission.INTERNET
+     * @returns { Promise<int> } The promise returns the file descriptor of the TCP socket server.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 23 dynamic&static
+     */
+    getSocketFd(): Promise<int>;
 
     /**
      * Listens for connect events of the TCPSocketServer connection.
@@ -4287,6 +4342,16 @@ declare namespace socket {
      * @since 12
      */
     getLocalAddress(): Promise<NetAddress>;
+
+    /**
+     * Obtains the file descriptor of the TLSSocketConnection.
+     * @permission ohos.permission.INTERNET
+     * @returns { Promise<int> } The promise returns the file descriptor of the TLS socket connection.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 23 dynamic&static
+     */
+    getSocketFd(): Promise<int>;
 
     /**
      * Listens for message receiving events of the TLSSocketConnection.
@@ -4569,6 +4634,16 @@ declare namespace socket {
      * @since 12
      */
     getLocalAddress(): Promise<NetAddress>;
+
+    /**
+     * Obtains the file descriptor of the TLSSocketServer.
+     * @permission ohos.permission.INTERNET
+     * @returns { Promise<int> } The promise returns the file descriptor of the TLS socket server.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 23 dynamic&static
+     */
+    getSocketFd(): Promise<int>;
 
     /**
      * Listens for connect events of the TLSSocketServer connection.

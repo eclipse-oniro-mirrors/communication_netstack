@@ -63,6 +63,34 @@ bool TLSSocketServerExec::ExecGetCertificate(TlsSocket::GetCertificateContext *c
     return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
 }
 
+bool TLSSocketServerExec::ExecTLSConnectionGetSocketFd(TLSServerGetSocketFdContext *context)
+{
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetError(PERMISSION_DENIED_CODE,
+                          TlsSocket::MakeErrorMessage(PERMISSION_DENIED_CODE));
+        return false;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    if (tlsSocketServer == nullptr) {
+        NETSTACK_LOGE("ExecTLSConnectionGetSocketFd TLSSocketServer is null");
+        return false;
+    }
+    int32_t socketFd = tlsSocketServer->GetClientSocketFd(context->clientId_);
+    context->socketFd_ = socketFd;
+    if (socketFd == -1) {
+        NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", context->clientId_);
+    } else {
+        NETSTACK_LOGI("get TLS client socketfd success: %d for clientId: %d", socketFd, context->clientId_);
+    }
+    return true;
+}
+
 bool TLSSocketServerExec::ExecListen(TlsSocket::TLSListenContext *context)
 {
     auto manager = context->GetSharedManager();
@@ -426,6 +454,33 @@ bool TLSSocketServerExec::ExecSetExtraOptions(TlsSocket::TLSSetExtraOptionsConte
     return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
 }
 
+bool TLSSocketServerExec::ExecGetSocketFd(TlsSocket::TLSGetSocketFdContext *context)
+{
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetError(PERMISSION_DENIED_CODE,
+                          TlsSocket::MakeErrorMessage(PERMISSION_DENIED_CODE));
+        return false;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    if (tlsSocketServer == nullptr) {
+        NETSTACK_LOGE("ExecGetSocketFd TLSSocketServer is null");
+        context->sockFd_= -1;
+        return false;
+    }
+    context->sockFd_= tlsSocketServer->GetListenSocketFd();
+    return true;
+}
+
 napi_value TLSSocketServerExec::GetCertificateCallback(TlsSocket::GetCertificateContext *context)
 {
     void *data = nullptr;
@@ -449,6 +504,11 @@ napi_value TLSSocketServerExec::GetCertificateCallback(TlsSocket::GetCertificate
     NapiUtils::SetInt32Property(context->GetEnv(), obj, CERTIFICATA_ENCODING_FORMAT,
                                 context->localCert_.encodingFormat);
     return obj;
+}
+
+napi_value TLSSocketServerExec::TLSConnectionGetSocketFdCallback(TLSServerGetSocketFdContext *context)
+{
+    return NapiUtils::CreateInt32(context->GetEnv(), context->socketFd_);
 }
 
 napi_value TLSSocketServerExec::ListenCallback(TlsSocket::TLSListenContext *context)
@@ -597,6 +657,11 @@ napi_value TLSSocketServerExec::GetConnectionLocalAddressCallback(TLSConnectionG
 napi_value TLSSocketServerExec::SetExtraOptionsCallback(TlsSocket::TLSSetExtraOptionsContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value TLSSocketServerExec::TLSSocketServerGetSocketFdCallback(TlsSocket::TLSGetSocketFdContext *context)
+{
+    return NapiUtils::CreateInt32(context->GetEnv(), context->sockFd_);
 }
 
 bool TLSSocketServerExec::ExecConnectionSend(TLSServerSendContext *context)

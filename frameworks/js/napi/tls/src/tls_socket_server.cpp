@@ -383,6 +383,18 @@ void TLSSocketServer::GetLocalAddress(const int socketFd, const TlsSocket::GetLo
     callback(TlsSocket::TLSSOCKET_SUCCESS, localAddress);
 }
 
+int32_t TLSSocketServer::GetClientSocketFd(int32_t clientId)
+{
+    std::shared_lock<std::shared_mutex> its_lock(connectMutex_);
+    auto connect_iterator = clientIdConnections_.find(clientId);
+    if (connect_iterator == clientIdConnections_.end()) {
+        NETSTACK_LOGE("getClientSocketFd: clientId = %{public}d, connection not found", clientId);
+        return -1;
+    }
+    auto connection = connect_iterator->second;
+    return connection->GetSocketFd();
+}
+
 void TLSSocketServer::GetState(const TlsSocket::GetStateCallback &callback)
 {
     int opt;

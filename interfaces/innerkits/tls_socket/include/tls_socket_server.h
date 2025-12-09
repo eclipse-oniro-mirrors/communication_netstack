@@ -228,6 +228,11 @@ public:
      */
     Socket::NetAddress GetLocalAddress();
 
+    /**
+     * Get the socketFd of the connection
+     */
+    int32_t GetClientSocketFd(int32_t clientId);
+
 public:
     class Connection : public std::enable_shared_from_this<Connection> {
     public:
@@ -445,7 +450,7 @@ public:
 
     private:
         ssl_st *ssl_ = nullptr;
-        int32_t socketFd_ = 0;
+        int32_t socketFd_ = -1;
 
         TlsSocket::TLSContextServer tlsContext_;
         TlsSocket::TLSConfiguration connectionConfiguration_;
