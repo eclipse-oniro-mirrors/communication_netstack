@@ -1603,10 +1603,6 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
 bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader)
 {
     const std::string &method = context->options.GetMethod();
-    if (!MethodForGet(method) && !MethodForPost(method)) {
-        NETSTACK_LOGE("method %{public}s not supported", method.c_str());
-        return false;
-    }
 
     if (context->options.GetMethod() == HttpConstant::HTTP_METHOD_HEAD) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOBODY, 1L, context);
@@ -1622,7 +1618,7 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CUSTOMREQUEST, method.c_str(), context);
     }
 
-    if (MethodForPost(method) && !context->options.GetBody().empty()) {
+    if (!MethodForGet(method) && !context->options.GetBody().empty()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POST, 1L, context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->options.GetBody().c_str(), context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->options.GetBody().size(), context);
