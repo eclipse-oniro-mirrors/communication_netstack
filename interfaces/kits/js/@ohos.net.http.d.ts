@@ -564,7 +564,6 @@ declare namespace http {
      * Supports specifying the user custom defined http request method
      * @type {?string}
      * @syscap SystemCapability.Communication.NetStack
-     * @atomicservice
      * @since 23 dynamic&static
      */
     customMethod?: string;
