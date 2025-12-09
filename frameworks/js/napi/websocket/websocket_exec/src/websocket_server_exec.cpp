@@ -1183,9 +1183,9 @@ bool WebSocketServerExec::ExecListAllConnections(ListAllConnectionsContext *cont
 
 std::vector<WebSocketConnection> WebSocketServerExec::GetConnections(EventManager *manager)
 {
-    std::shared_lock<std::shared_mutex> lock(wsMutex_);
     std::vector<WebSocketConnection> conn;
     std::shared_lock<std::shared_mutex> lock_get(manager->GetDataMutex());
+    std::shared_lock<std::shared_mutex> lock(wsMutex_);
     auto realMap = reinterpret_cast<WebSocketConnMap*>(manager->GetData());
     if (realMap == nullptr) {
         return conn;
