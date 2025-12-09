@@ -44,9 +44,11 @@ void ServerStartContext::ParseParams(napi_value *params, size_t paramsCount)
 
     if (paramsCount == FUNCTION_PARAM_TWO) {
         napi_env env = GetEnv();
-        if (ParseRequiredParams(env, params[0])) {
-            ParseOptionalParams(env, params[0]);
+        if (!ParseRequiredParams(env, params[0])) {
+            SetParseOK(false);
+            return;
         }
+        ParseOptionalParams(env, params[0]);
         ParseNewBoolParam(params[1]);
         SetParseOK(true);
         return;
