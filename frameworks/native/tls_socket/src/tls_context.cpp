@@ -252,7 +252,7 @@ bool TLSContext::SetLocalCertificate(TLSContext *tlsContext, const TLSConfigurat
     const auto& certificate = configuration.GetLocalCertificate();
     if (certificate.empty()) {
         NETSTACK_LOGE("Certificate list is empty");
-         return false;
+        return false;
      }
     
     if (!SSL_CTX_use_certificate(tlsContext->ctx_, static_cast<X509*>(certificate.front().handle()))) {
