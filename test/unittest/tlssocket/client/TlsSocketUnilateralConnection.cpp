@@ -45,8 +45,8 @@ void MockConnectionParamOptions(Socket::NetAddress &address, TLSSecureOptions &s
 {
     secureOption.SetKey(SecureData(TlsUtilsTest::ChangeToFile(PRIVATE_KEY_PEM_CHAIN)));
     std::vector<std::string> certVec = {TlsUtilsTest::ChangeToFile(CLIENT_CRT)};
-    secureOption.SetCert(certVec);
-    
+    secureOption.SetCertChain(certVec);
+
     MockConnectionNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
     options.SetNetAddress(address);

@@ -81,6 +81,7 @@ void TLSConfiguration::SetPrivateKey(const SecureData &key, const SecureData &ke
 
 void TLSConfiguration::SetLocalCertificate(const std::vector<std::string> &certificate)
 {
+    std::unique_lock<std::shared_mutex> lock(certMutex_);
     for (const auto &cert : certificate) {
         TLSCertificate localCert(cert, LOCAL_CERT);
         localCertificateChain_.push_back(localCert);
@@ -142,6 +143,7 @@ std::vector<CipherSuite> TLSConfiguration::GetCipherSuiteVec() const
 
 const X509CertRawData &TLSConfiguration::GetCertificate() const
 {
+    std::shared_lock<std::shared_mutex> lock(certMutex_);
     if (localCertificateChain_.empty()) {
         return localCertificate_.GetLocalCertRawData();
     }
@@ -180,6 +182,7 @@ std::vector<std::string> TLSConfiguration::GetCaCertificate() const
 
 std::vector<TLSCertificate> TLSConfiguration::GetLocalCertificate() const
 {
+    std::shared_lock<std::shared_mutex> lock(certMutex_);
     return localCertificateChain_;
 }
 

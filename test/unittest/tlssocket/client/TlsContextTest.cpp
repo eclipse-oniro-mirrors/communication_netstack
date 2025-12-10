@@ -71,7 +71,7 @@ HWTEST_F(TlsContextTest, ContextTest2, TestSize.Level2)
     configuration.SetCipherSuite(CIPHER_SUITE);
     configuration.SetSignatureAlgorithms(SIGNATURE_ALGORITHMS);
     std::vector<std::string> certVec = {CLIENT_FILE};
-    configuration.SetLocalCertificate(certVec)
+    configuration.SetLocalCertificate(certVec);
     std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
     EXPECT_NE(tlsContext, nullptr);
     TLSContext::SetMinAndMaxProtocol(tlsContext.get());
@@ -145,7 +145,7 @@ HWTEST_F(TlsContextTest, ContextNullTest, TestSize.Level2)
     configuration.SetCipherSuite(CIPHER_SUITE);
     configuration.SetSignatureAlgorithms(SIGNATURE_ALGORITHMS);
     std::vector<std::string> certVec = {CLIENT_FILE};
-    configuration.SetLocalCertificate(certVec)
+    configuration.SetLocalCertificate(certVec);
     std::unique_ptr<TLSContext> tlsContext = nullptr;
     TLSContext::SetMinAndMaxProtocol(tlsContext.get());
     bool isInitTlsContext = TLSContext::InitTlsContext(tlsContext.get(), configuration);

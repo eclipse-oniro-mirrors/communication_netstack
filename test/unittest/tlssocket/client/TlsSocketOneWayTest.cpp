@@ -38,8 +38,8 @@ void MockOneWayParamOptions(Socket::NetAddress &address, TLSSecureOptions &secur
 {
     secureOption.SetKey(SecureData(TlsUtilsTest::ChangeToFile(PRIVATE_KEY_PEM)));
     std::vector<std::string> certVec = {TlsUtilsTest::ChangeToFile(CLIENT_CRT)};
-    secureOption.SetCert(certVec);
-    
+    secureOption.SetCertChain(certVec);
+
     MockOneWayNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
     options.SetNetAddress(address);

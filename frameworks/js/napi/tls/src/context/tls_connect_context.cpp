@@ -73,7 +73,7 @@ bool ReadCertOptions(napi_env &env, napi_value &secureOptions, TLSSecureOptions 
                 certVec.push_back(certificate);
             }
         }
-        secureOption.SetCert(certVec);
+        secureOption.SetCertChain(certVec);
     }
     return true;
 }
@@ -110,7 +110,7 @@ bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptio
     if (!ReadCertOptions(env, secureOptions, secureOption)) {
         return false;
     }
-    
+
     if (NapiUtils::HasNamedProperty(env, secureOptions, VERIFY_MODE_NAME)) {
         VerifyMode tempVerifyMode = !NapiUtils::GetBooleanProperty(env, secureOptions, VERIFY_MODE_NAME)
                                         ? VerifyMode::ONE_WAY_MODE

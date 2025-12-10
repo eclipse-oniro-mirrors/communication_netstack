@@ -56,7 +56,7 @@ TLSConnectOptions BaseOption()
     secureOption.SetCaChain(caChain);
     std::vector<std::string> certChain;
     certChain.push_back(CLIENT_FILE);
-    secureOption.SetCert(certChain);
+    secureOption.SetCertChain(certChain);
     secureOption.SetCipherSuite(CIPHER_SUITE);
     secureOption.SetSignatureAlgorithms(SIGNATURE_ALGORITHM);
     std::vector<std::string> protocol;
@@ -157,8 +157,8 @@ HWTEST_F(TlsSocketBranchTest, BranchTest1, TestSize.Level2)
 
     std::vector<std::string> certChain;
     certChain.push_back(CLIENT_FILE);
-    secureOption.SetCert(certChain);
-    std::vector<std::string> getCert = secureOption.GetCert();
+    secureOption.SetCertChain(certChain);
+    std::vector<std::string> getCert = secureOption.GetCertChain();
     EXPECT_NE(getCert.data(), nullptr);
 
     std::vector<std::string> protocolVec = {PROTOCOL12, PROTOCOL13};
@@ -229,7 +229,7 @@ HWTEST_F(TlsSocketBranchTest, BranchTest4, TestSize.Level2)
     secureOption.SetCaChain(caChain);
     std::vector<std::string> certChain;
     certChain.push_back(CLIENT_FILE);
-    secureOption.SetCert(certChain);
+    secureOption.SetCertChain(certChain);
 
     TLSConnectOptions connectOptions;
     connectOptions.SetTlsSecureOptions(secureOption);

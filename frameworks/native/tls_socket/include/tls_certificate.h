@@ -32,7 +32,8 @@ public:
     TLSCertificate() = default;
     TLSCertificate(const std::string &data, EncodingFormat format = PEM, CertType certType = CA_CERT);
     TLSCertificate(const std::string &data, CertType certType);
-    ~TLSCertificate() = default;
+    ~TLSCertificate();
+    void CloseX509();
 
     TLSCertificate(const TLSCertificate &other);
     TLSCertificate &operator=(const TLSCertificate &other);

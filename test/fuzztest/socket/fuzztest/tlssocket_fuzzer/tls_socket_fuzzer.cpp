@@ -179,8 +179,8 @@ void SetCertFuzzTest(const uint8_t *data, size_t size)
     std::string cert = GetStringFromData(STR_LEN);
     TLSSecureOptions option;
     std::vector<std::string> certVec = {cert};
-    option.SetCert(certVec);
-    auto ret = option.GetCert();
+    option.SetCertChain(certVec);
+    auto ret = option.GetCertChain();
 }
 
 void SetKeyFuzzTest(const uint8_t *data, size_t size)
@@ -337,7 +337,7 @@ void SetTlsSecureOptionsFuzzTest(const uint8_t *data, size_t size)
     tls.SetCipherSuite(str);
     tls.SetSignatureAlgorithms(str);
     std::vector<std::string> certVec = {str};
-    tls.SetCert(certVec);
+    tls.SetCertChain(certVec);
     TLSConnectOptions option;
     option.SetTlsSecureOptions(tls);
     auto ret = option.GetTlsSecureOptions();

@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <shared_mutex>
 
 #include "tls.h"
 #include "tls_certificate.h"
@@ -95,6 +96,7 @@ private:
     VerifyMode tlsVerifyMode_;
     Socket::NetAddress netAddress_;
     bool whetherToSkip_ = false;
+    mutable std::shared_mutex certMutex_;
 };
 } // namespace TlsSocket
 } // namespace NetStack
