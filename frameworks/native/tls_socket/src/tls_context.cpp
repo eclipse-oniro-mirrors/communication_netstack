@@ -253,7 +253,7 @@ bool TLSContext::SetLocalCertificate(TLSContext *tlsContext, const TLSConfigurat
     if (certificate.empty()) {
         NETSTACK_LOGE("Certificate list is empty");
         return false;
-     }
+    }
     
     if (!SSL_CTX_use_certificate(tlsContext->ctx_, static_cast<X509*>(certificate.front().handle()))) {
         NETSTACK_LOGE("Failed to set main certificate");
