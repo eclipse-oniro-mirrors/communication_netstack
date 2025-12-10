@@ -248,10 +248,25 @@ bool TLSContext::SetLocalCertificate(TLSContext *tlsContext, const TLSConfigurat
         NETSTACK_LOGE("tlsContext is null");
         return false;
     }
-    if (!SSL_CTX_use_certificate(tlsContext->ctx_, static_cast<X509 *>(configuration.GetLocalCertificate().handle()))) {
-        NETSTACK_LOGD("The local certificate is unavailable");
+        
+    const auto& certificate = configuration.GetLocalCertificate();
+    if (certificate.empty()) {
+        NETSTACK_LOGE("Certificate list is empty");
+         return false;
+     }
+    
+    if (!SSL_CTX_use_certificate(tlsContext->ctx_, static_cast<X509*>(certificate.front().handle()))) {
+        NETSTACK_LOGE("Failed to set main certificate");
         return false;
     }
+    
+    for (uint32_t i = 1; i < certificate.size(); ++i) {
+        if (!SSL_CTX_add_extra_chain_cert(tlsContext->ctx_, static_cast<X509*>(certificate[i].handle()))) {
+            NETSTACK_LOGE("Failed to add chain certificate");
+            return false;
+        }
+    }
+
     return true;
 }
 

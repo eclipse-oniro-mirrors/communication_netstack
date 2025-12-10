@@ -226,7 +226,7 @@ void TLSSecureOptions::SetCaChain(const std::vector<std::string> &caChain)
     caChain_ = caChain;
 }
 
-void TLSSecureOptions::SetCert(const std::string &cert)
+void TLSSecureOptions::SetCert(const std::vector<std::string> &cert)
 {
     cert_ = cert;
 }
@@ -271,7 +271,7 @@ const std::vector<std::string> &TLSSecureOptions::GetCaChain() const
     return caChain_;
 }
 
-const std::string &TLSSecureOptions::GetCert() const
+const std::vector<std::string> &TLSSecureOptions::GetCert() const
 {
     return cert_;
 }

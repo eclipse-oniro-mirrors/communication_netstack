@@ -48,7 +48,34 @@ constexpr const char *KEY_PROXY = "proxy";
 constexpr const char *TIMEOUT = "timeout";
 constexpr uint32_t CA_CHAIN_LENGTH = 1000;
 constexpr uint32_t PROTOCOLS_SIZE = 10;
+constexpr uint32_t CERT_CHAIN_LENGTH = 1000;
 constexpr std::string_view PARSE_ERROR = "options is not type of TLSConnectOptions";
+
++bool ReadCertOptions(napi_env &env, napi_value &secureOptions, TLSSecureOptions &secureOption){
++    if (NapiUtils::HasNamedProperty(env, secureOptions, CERT_NAME)) {
++        napi_value cert = NapiUtils::GetNamedProperty(env, secureOptions, CERT_NAME);
++        std::vector<std::string> certVec;
++        if (NapiUtils::GetValueType(env, cert) == napi_string) {
++            std::string certificate = NapiUtils::GetStringPropertyUtf8(env, secureOptions, CERT_NAME);
++            certVec.push_back(certificate);
++        }
++        if (NapiUtils::GetValueType(env, cert) == napi_object) {
++            uint32_t arrayLength = NapiUtils::GetArrayLength(env, cert);
++            if (arrayLength > CERT_CHAIN_LENGTH) {
++                NETSTACK_LOGE("The length of the certificate array is too long");
++                return false;
++            }
++            napi_value element = nullptr;
++            for (uint32_t i = 0; i < arrayLength; i++) {
++                element = NapiUtils::GetArrayElement(env, cert, i);
++                std::string certificate = NapiUtils::GetStringFromValueUtf8(env, element);
++                certVec.push_back(certificate);
++            }
++        }
++        secureOption.SetCert(certVec);
++    }
++    return true;
++}
 
 bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptions &secureOption)
 {
@@ -78,9 +105,11 @@ bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptio
     if (NapiUtils::HasNamedProperty(env, secureOptions, KEY_NAME)) {
         secureOption.SetKey(SecureData(NapiUtils::GetStringPropertyUtf8(env, secureOptions, KEY_NAME)));
     }
-    if (NapiUtils::HasNamedProperty(env, secureOptions, CERT_NAME)) {
-        secureOption.SetCert(NapiUtils::GetStringPropertyUtf8(env, secureOptions, CERT_NAME));
+
+    if (!ReadCertOptions(env, secureOptions, secureOption)) {
+        return false;
     }
+    
     if (NapiUtils::HasNamedProperty(env, secureOptions, VERIFY_MODE_NAME)) {
         VerifyMode tempVerifyMode = !NapiUtils::GetBooleanProperty(env, secureOptions, VERIFY_MODE_NAME)
                                         ? VerifyMode::ONE_WAY_MODE

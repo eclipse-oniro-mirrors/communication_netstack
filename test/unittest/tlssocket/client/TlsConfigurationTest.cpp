@@ -43,9 +43,11 @@ HWTEST_F(TlsConfigurationTest, AssignmentConstruction, TestSize.Level2)
 {
     TLSConfiguration tlsConfiguration;
     TLSConfiguration configuration = tlsConfiguration;
-    configuration.SetLocalCertificate(CLIENT_FILE);
-    TLSCertificate tlsCertificate = configuration.GetLocalCertificate();
-    EXPECT_NE(tlsCertificate.handle(), nullptr);
+    std::vector<std::string> certVec;
+    certVec.push_back(CLIENT_FILE);
+    configuration.SetLocalCertificate(certVec);
+    std::vector<TLSCertificate> tlsCertificate = configuration.GetLocalCertificate();
+    EXPECT_NE(tlsCertificate.front().handle(), nullptr);
     X509CertRawData x509CertRawData = configuration.GetCertificate();
     EXPECT_NE(x509CertRawData.data.Length(), 0);
 }
@@ -53,16 +55,20 @@ HWTEST_F(TlsConfigurationTest, AssignmentConstruction, TestSize.Level2)
 HWTEST_F(TlsConfigurationTest, CopyConstruction, TestSize.Level2)
 {
     TLSConfiguration tlsConfiguration;
-    tlsConfiguration.SetLocalCertificate(CLIENT_FILE);
+    std::vector<std::string> certVec;
+    certVec.push_back(CLIENT_FILE);
+    tlsConfiguration.SetLocalCertificate(certVec);
     TLSConfiguration configuration = TLSConfiguration(tlsConfiguration);
-    TLSCertificate tlsCertificate = configuration.GetLocalCertificate();
-    EXPECT_NE(tlsCertificate.handle(), nullptr);
+    std::vector<TLSCertificate> tlsCertificate = configuration.GetLocalCertificate();
+    EXPECT_NE(tlsCertificate.empty(), false);
 }
 
 HWTEST_F(TlsConfigurationTest, SetAndGetCa, TestSize.Level2)
 {
     TLSConfiguration tlsConfiguration;
-    tlsConfiguration.SetLocalCertificate(CLIENT_FILE);
+    std::vector<std::string> certVec;
+    certVec.push_back(CLIENT_FILE);
+    tlsConfiguration.SetLocalCertificate(certVec);
     std::vector<std::string> certificate;
     certificate.push_back(CA_CRT_FILE);
     tlsConfiguration.SetCaCertificate(certificate);
@@ -74,7 +80,9 @@ HWTEST_F(TlsConfigurationTest, SetAndGetCa, TestSize.Level2)
 HWTEST_F(TlsConfigurationTest, SetPrivateKey, TestSize.Level2)
 {
     TLSConfiguration tlsConfiguration;
-    tlsConfiguration.SetLocalCertificate(CLIENT_FILE);
+    std::vector<std::string> certVec;
+    certVec.push_back(CLIENT_FILE);
+    tlsConfiguration.SetLocalCertificate(certVec);
     SecureData structureData(PRI_KEY_FILE);
     std::string keyPassStr = "";
     SecureData keyPass(keyPassStr);

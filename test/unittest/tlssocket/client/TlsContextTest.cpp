@@ -70,7 +70,8 @@ HWTEST_F(TlsContextTest, ContextTest2, TestSize.Level2)
     configuration.SetProtocol(protocol);
     configuration.SetCipherSuite(CIPHER_SUITE);
     configuration.SetSignatureAlgorithms(SIGNATURE_ALGORITHMS);
-    configuration.SetLocalCertificate(CLIENT_FILE);
+    std::vector<std::string> certVec = {CLIENT_FILE};
+    configuration.SetLocalCertificate(certVec)
     std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
     EXPECT_NE(tlsContext, nullptr);
     TLSContext::SetMinAndMaxProtocol(tlsContext.get());
@@ -143,7 +144,8 @@ HWTEST_F(TlsContextTest, ContextNullTest, TestSize.Level2)
     configuration.SetProtocol(protocol);
     configuration.SetCipherSuite(CIPHER_SUITE);
     configuration.SetSignatureAlgorithms(SIGNATURE_ALGORITHMS);
-    configuration.SetLocalCertificate(CLIENT_FILE);
+    std::vector<std::string> certVec = {CLIENT_FILE};
+    configuration.SetLocalCertificate(certVec)
     std::unique_ptr<TLSContext> tlsContext = nullptr;
     TLSContext::SetMinAndMaxProtocol(tlsContext.get());
     bool isInitTlsContext = TLSContext::InitTlsContext(tlsContext.get(), configuration);
@@ -174,12 +176,46 @@ HWTEST_F(TlsContextTest, ContextFailTest1, TestSize.Level2)
     configuration.SetProtocol(protocol);
     configuration.SetCipherSuite(CIPHER_SUITE);
     configuration.SetSignatureAlgorithms(SIGNATURE_ALGORITHMS);
-    configuration.SetLocalCertificate("certificate");
+    std::vector<std::string> certVec = {"certificate"};
+    configuration.SetLocalCertificate(certVec);
     SecureData key("key");
     SecureData keyPass("123456");
     configuration.SetPrivateKey(key, keyPass);
     std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
     EXPECT_NE(tlsContext, nullptr);
+}
+
+HWTEST_F(TlsContextTest, SetLocalCertificateTest, TestSize.Level2)
+{
+    TLSConfiguration configuration1;
+    std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration1);
+    EXPECT_NE(tlsContext, nullptr);
+    //正常cert，用两个证书
+    std::vector<std::string> certVec;
+    certVec.push_back(CERTIFICATCHAIN1);
+    certVec.push_back(CERTIFICATCHAIN2);
+    configuration1.SetLocalCertificate(certVec);
+    bool setLocalCertChain = TLSContext::SetLocalCertificate(tlsContext.get(), configuration1);
+    EXPECT_TRUE(setLocalCertChain);
+    //空cert
+    TLSConfiguration configuration2;
+    std::vector<std::string> certificate;
+    configuration2.SetLocalCertificate(certificate);
+    bool setLocalCertNull = TLSContext::SetLocalCertificate(tlsContext.get(), configuration2);
+    EXPECT_FALSE(setLocalCertNull);
+    //第一个cert格式不对
+    TLSConfiguration configuration3;
+    std::vector<std::string> certVecFirstInvalid = {"abc"};
+    configuration3.SetLocalCertificate(certVecFirstInvalid);
+    bool setLocalCertFirstInvalid = TLSContext::SetLocalCertificate(tlsContext.get(), configuration3);
+    EXPECT_FALSE(setLocalCertFirstInvalid);
+    //第二个cert格式不对
+    TLSConfiguration configuration4;
+    std::vector<std::string> certVecSecondInvalid = {CERTIFICATCHAIN1};
+    certVecSecondInvalid.push_back("abc");
+    configuration4.SetLocalCertificate(certVecSecondInvalid);
+    bool setLocalCertSecondInvalid = TLSContext::SetLocalCertificate(tlsContext.get(), configuration4);
+    EXPECT_FALSE(setLocalCertSecondInvalid);
 }
 } // namespace TlsSocket
 } // namespace NetStack
