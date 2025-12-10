@@ -51,7 +51,8 @@ constexpr uint32_t PROTOCOLS_SIZE = 10;
 constexpr uint32_t CERT_CHAIN_LENGTH = 1000;
 constexpr std::string_view PARSE_ERROR = "options is not type of TLSConnectOptions";
 
-bool ReadCertOptions(napi_env &env, napi_value &secureOptions, TLSSecureOptions &secureOption) {
+bool ReadCertOptions(napi_env &env, napi_value &secureOptions, TLSSecureOptions &secureOption)
+{
     if (NapiUtils::HasNamedProperty(env, secureOptions, CERT_NAME)) {
         napi_value cert = NapiUtils::GetNamedProperty(env, secureOptions, CERT_NAME);
         std::vector<std::string> certVec;
