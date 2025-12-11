@@ -192,7 +192,7 @@ ohos_unittest("tls_socket_server_mock_branch_test") {
     "napi:ace_napi",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
-    "hiappevent::hiappevent_innerapi",
+    "hiappevent:hiappevent_innerapi",
   ]
 
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
