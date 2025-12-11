@@ -94,11 +94,6 @@ TLSCertificate &TLSCertificate::operator=(const TLSCertificate &other)
     return *this;
 }
 
-TLSCertificate::~TLSCertificate()
-{
-    CloseX509();
-}
-
 bool TLSCertificate::CertificateFromData(const std::string &data, CertType certType)
 {
     if (data.empty()) {
@@ -396,14 +391,6 @@ Handle TLSCertificate::handle() const
 const X509CertRawData &TLSCertificate::GetLocalCertRawData() const
 {
     return rawData_;
-}
-
-void TLSCertificate::CloseX509()
-{
-    if (x509_ != nullptr) {
-        X509_free(x509_);
-        x509_ = nullptr;
-    }
 }
 } // namespace TlsSocket
 } // namespace NetStack

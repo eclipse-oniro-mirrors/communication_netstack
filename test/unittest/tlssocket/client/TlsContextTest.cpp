@@ -55,7 +55,6 @@ HWTEST_F(TlsContextTest, ContextTest1, TestSize.Level2)
     std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
 
     EXPECT_NE(tlsContext, nullptr);
-    tlsContext->CloseCtx();
 }
 
 HWTEST_F(TlsContextTest, ContextTest2, TestSize.Level2)
@@ -92,9 +91,6 @@ HWTEST_F(TlsContextTest, ContextTest2, TestSize.Level2)
     TLSContext::SetVerify(tlsContext.get());
     SSL *ssl = tlsContext->CreateSsl();
     EXPECT_NE(ssl, nullptr);
-    SSL_free(ssl);
-    ssl = nullptr;
-    tlsContext->CloseCtx();
 }
 
 HWTEST_F(TlsContextTest, ContextTest3, TestSize.Level2)
@@ -105,7 +101,6 @@ HWTEST_F(TlsContextTest, ContextTest3, TestSize.Level2)
     std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
     EXPECT_NE(tlsContext, nullptr);
     bool setCaAndVerify = TLSContext::SetCaAndVerify(tlsContext.get(), configuration);
-    tlsContext->CloseCtx();
     EXPECT_TRUE(setCaAndVerify);
 }
 
@@ -117,7 +112,6 @@ HWTEST_F(TlsContextTest, InitTlsContext3, TestSize.Level2)
     std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
 
     EXPECT_NE(tlsContext, nullptr);
-    tlsContext->CloseCtx();
 }
 
 HWTEST_F(TlsContextTest, InitTlsContext4, TestSize.Level2)
@@ -129,7 +123,6 @@ HWTEST_F(TlsContextTest, InitTlsContext4, TestSize.Level2)
     std::unique_ptr<TLSContext> tlsContext = TLSContext::CreateConfiguration(configuration);
 
     EXPECT_NE(tlsContext, nullptr);
-    tlsContext->CloseCtx();
 }
 
 HWTEST_F(TlsContextTest, ContextNullTest, TestSize.Level2)
