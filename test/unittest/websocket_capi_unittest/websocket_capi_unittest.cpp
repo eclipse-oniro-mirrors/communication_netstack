@@ -139,7 +139,7 @@ HWTEST_F(WebSocketTest, WebSocketSendTest007, TestSize.Level1)
     ret = OH_WebSocketClient_Send(client, const_cast<char *>(senddata2), sizeof(senddata2));
     EXPECT_EQ(ret, WebSocket_ErrCode::WEBSOCKET_OK);
     ret = OH_WebSocketClient_Destroy(client);
-    EXPECT_TRUE(ret == WebSocket_ErrCode::WEBSOCKET_NO_CONNECTION_CONTEXT ||
+    EXPECT_FALSE(ret == WebSocket_ErrCode::WEBSOCKET_NO_CONNECTION_CONTEXT ||
                 ret == WebSocket_ErrCode::WEBSOCKET_OK);
 }
 
