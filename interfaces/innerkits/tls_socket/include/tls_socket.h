@@ -525,7 +525,7 @@ private:
          * Obtain the cipher suite during encrypted communication
          * @return crypto suite used in encrypted communication
          */
-        [[nodiscard]] std::vector<std::string> GetCipherSuite() const;
+        [[nodiscard]] std::vector<std::string> GetCipherSuite();
 
         /**
          * Obtain the peer certificate used in encrypted communication
@@ -581,6 +581,7 @@ private:
 
     private:
         mutable std::shared_mutex rw_mutex_;
+        std::shared_mutex mutexForSsl_;
         SSL *ssl_ = nullptr;
         uint16_t port_ = 0;
         sa_family_t family_ = 0;
@@ -595,7 +596,6 @@ private:
         std::string remoteCert_;
 
         std::vector<std::string> signatureAlgorithms_;
-        std::mutex tlsCtexMutex_;
         std::unique_ptr<TLSContext> tlsContextPointer_ = nullptr;
     };
 
