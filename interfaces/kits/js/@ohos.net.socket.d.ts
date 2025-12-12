@@ -3509,7 +3509,7 @@ declare namespace socket {
      * @crossplatform
      * @since 10
      */
-    cert?: string;
+    cert?: string | Array<string>;
 
     /**
      * Private key of client certificate

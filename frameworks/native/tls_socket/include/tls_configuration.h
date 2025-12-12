@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <shared_mutex>
 
 #include "tls.h"
 #include "tls_certificate.h"
@@ -36,8 +37,8 @@ public:
     TLSConfiguration &operator=(const TLSConfiguration &other);
 
     void SetLocalCertificate(const TLSCertificate &certificate);
-    void SetLocalCertificate(const std::string &certificate);
-    [[nodiscard]] TLSCertificate GetLocalCertificate() const;
+    void SetLocalCertificate(const std::vector<std::string> &certificate);
+    [[nodiscard]] std::vector<TLSCertificate> GetLocalCertificate() const;
 
     void SetCaCertificate(const TLSCertificate &certificate);
     void SetCaCertificate(const std::vector<std::string> &certificate);
@@ -90,10 +91,12 @@ private:
     TLSKey privateKey_;
     TLSCertificate localCertificate_;
     TLSCertificate caCertificate_;
+    std::vector<TLSCertificate> localCertificateChain_;
     std::vector<std::string> caCertificateChain_;
     VerifyMode tlsVerifyMode_;
     Socket::NetAddress netAddress_;
     bool whetherToSkip_ = false;
+    mutable std::shared_mutex certMutex_;
 };
 } // namespace TlsSocket
 } // namespace NetStack

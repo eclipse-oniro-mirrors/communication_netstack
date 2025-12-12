@@ -209,7 +209,7 @@ TLSSecureOptions &TLSSecureOptions::operator=(const TLSSecureOptions &tlsSecureO
 {
     key_ = tlsSecureOptions.GetKey();
     caChain_ = tlsSecureOptions.GetCaChain();
-    cert_ = tlsSecureOptions.GetCert();
+    certChain_ = tlsSecureOptions.GetCertChain();
     protocolChain_ = tlsSecureOptions.GetProtocolChain();
     crlChain_ = tlsSecureOptions.GetCrlChain();
     keyPass_ = tlsSecureOptions.GetKeyPass();
@@ -226,9 +226,9 @@ void TLSSecureOptions::SetCaChain(const std::vector<std::string> &caChain)
     caChain_ = caChain;
 }
 
-void TLSSecureOptions::SetCert(const std::string &cert)
+void TLSSecureOptions::SetCertChain(const std::vector<std::string> &certChain)
 {
-    cert_ = cert;
+    certChain_ = certChain;
 }
 
 void TLSSecureOptions::SetKey(const SecureData &key)
@@ -271,9 +271,9 @@ const std::vector<std::string> &TLSSecureOptions::GetCaChain() const
     return caChain_;
 }
 
-const std::string &TLSSecureOptions::GetCert() const
+const std::vector<std::string> &TLSSecureOptions::GetCertChain() const
 {
-    return cert_;
+    return certChain_;
 }
 
 const SecureData &TLSSecureOptions::GetKey() const
@@ -1200,7 +1200,7 @@ bool TLSSocket::TLSSocketInternal::TlsConnectToHost(int sock, const TLSConnectOp
 void TLSSocket::TLSSocketInternal::SetTlsConfiguration(const TLSConnectOptions &config)
 {
     configuration_.SetPrivateKey(config.GetTlsSecureOptions().GetKey(), config.GetTlsSecureOptions().GetKeyPass());
-    configuration_.SetLocalCertificate(config.GetTlsSecureOptions().GetCert());
+    configuration_.SetLocalCertificate(config.GetTlsSecureOptions().GetCertChain());
     configuration_.SetCaCertificate(config.GetTlsSecureOptions().GetCaChain());
     configuration_.SetNetAddress(config.GetNetAddress());
 }

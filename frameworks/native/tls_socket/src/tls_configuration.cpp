@@ -32,6 +32,9 @@ TLSConfiguration::TLSConfiguration(const TLSConfiguration &other)
     minProtocol_ = other.minProtocol_;
     maxProtocol_ = other.maxProtocol_;
     cipherSuite_ = other.cipherSuite_;
+    localCertificateChain_ = other.localCertificateChain_;
+    caCertificateChain_ = other.caCertificateChain_;
+    signatureAlgorithms_ = other.signatureAlgorithms_;
     tlsVerifyMode_ = other.tlsVerifyMode_;
     whetherToSkip_ = other.whetherToSkip_;
 }
@@ -49,9 +52,9 @@ TLSConfiguration &TLSConfiguration::operator=(const TLSConfiguration &other)
     minProtocol_ = other.minProtocol_;
     maxProtocol_ = other.maxProtocol_;
     cipherSuite_ = other.cipherSuite_;
+    localCertificateChain_ = other.localCertificateChain_;
     caCertificateChain_ = other.caCertificateChain_;
     signatureAlgorithms_ = other.signatureAlgorithms_;
-    privateKey_ = other.privateKey_;
     tlsVerifyMode_ = other.tlsVerifyMode_;
     whetherToSkip_ = other.whetherToSkip_;
     return *this;
@@ -78,10 +81,13 @@ void TLSConfiguration::SetPrivateKey(const SecureData &key, const SecureData &ke
     privateKey_ = pkey;
 }
 
-void TLSConfiguration::SetLocalCertificate(const std::string &certificate)
+void TLSConfiguration::SetLocalCertificate(const std::vector<std::string> &certificate)
 {
-    TLSCertificate local(certificate, LOCAL_CERT);
-    localCertificate_ = local;
+    std::unique_lock<std::shared_mutex> lock(certMutex_);
+    for (const auto &cert : certificate) {
+        TLSCertificate localCert(cert, LOCAL_CERT);
+        localCertificateChain_.push_back(localCert);
+    }
 }
 
 void TLSConfiguration::SetCaCertificate(const std::vector<std::string> &certificate)
@@ -139,7 +145,11 @@ std::vector<CipherSuite> TLSConfiguration::GetCipherSuiteVec() const
 
 const X509CertRawData &TLSConfiguration::GetCertificate() const
 {
-    return localCertificate_.GetLocalCertRawData();
+    std::shared_lock<std::shared_mutex> lock(certMutex_);
+    if (localCertificateChain_.empty()) {
+        return localCertificate_.GetLocalCertRawData();
+    }
+    return localCertificateChain_.front().GetLocalCertRawData();
 }
 
 void TLSConfiguration::SetCipherSuite(const std::string &cipherSuite)
@@ -172,9 +182,10 @@ std::vector<std::string> TLSConfiguration::GetCaCertificate() const
     return caCertificateChain_;
 }
 
-TLSCertificate TLSConfiguration::GetLocalCertificate() const
+std::vector<TLSCertificate> TLSConfiguration::GetLocalCertificate() const
 {
-    return localCertificate_;
+    std::shared_lock<std::shared_mutex> lock(certMutex_);
+    return localCertificateChain_;
 }
 
 TLSKey TLSConfiguration::GetPrivateKey() const

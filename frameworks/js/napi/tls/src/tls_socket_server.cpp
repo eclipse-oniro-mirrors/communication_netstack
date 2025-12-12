@@ -452,7 +452,7 @@ void TLSSocketServer::SetLocalTlsConfiguration(const TlsSocket::TLSConnectOption
 {
     TLSServerConfiguration_.SetPrivateKey(config.GetTlsSecureOptions().GetKey(),
                                           config.GetTlsSecureOptions().GetKeyPass());
-    TLSServerConfiguration_.SetLocalCertificate(config.GetTlsSecureOptions().GetCert());
+    TLSServerConfiguration_.SetLocalCertificate(config.GetTlsSecureOptions().GetCertChain());
     TLSServerConfiguration_.SetCaCertificate(config.GetTlsSecureOptions().GetCaChain());
 
     TLSServerConfiguration_.SetVerifyMode(config.GetTlsSecureOptions().GetVerifyMode());
@@ -759,7 +759,7 @@ void TLSSocketServer::Connection::SetTlsConfiguration(const TlsSocket::TLSConnec
 {
     connectionConfiguration_.SetPrivateKey(config.GetTlsSecureOptions().GetKey(),
                                            config.GetTlsSecureOptions().GetKeyPass());
-    connectionConfiguration_.SetLocalCertificate(config.GetTlsSecureOptions().GetCert());
+    connectionConfiguration_.SetLocalCertificate(config.GetTlsSecureOptions().GetCertChain());
     connectionConfiguration_.SetCaCertificate(config.GetTlsSecureOptions().GetCaChain());
     connectionConfiguration_.SetNetAddress(config.GetNetAddress());
 }

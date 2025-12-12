@@ -98,7 +98,7 @@ public:
      * Set digital certificate for server verification
      * @param cert digital certificate sent to the server to verify validity
      */
-    void SetCert(const std::string &cert);
+    void SetCertChain(const std::vector<std::string> &certChain);
 
     /**
      * Set key to decrypt server data
@@ -152,7 +152,7 @@ public:
      * Obtain a certificate to send to the server for checking
      * @return digital certificate obtained
      */
-    [[nodiscard]] const std::string &GetCert() const;
+    [[nodiscard]] const std::vector<std::string> &GetCertChain() const;
 
     /**
      * Obtain the private key in the communication process
@@ -202,7 +202,7 @@ public:
 
 private:
     std::vector<std::string> caChain_;
-    std::string cert_;
+    std::vector<std::string> certChain_;
     SecureData key_;
     SecureData keyPass_;
     std::vector<std::string> protocolChain_;
