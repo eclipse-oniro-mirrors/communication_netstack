@@ -19,7 +19,7 @@ mod wrapper;
 extern crate netstack_common;
 
 ani_rs::ani_constructor! {
-    namespace "L@ohos/net/networkSecurity/networkSecurity"
+    namespace "@ohos.net.networkSecurity.networkSecurity"
     [
         "isCleartextPermitted" : security::is_cleartext_permitted ,
         "isCleartextPermittedByHostName" : security::is_cleartext_permitted_by_host_name ,
