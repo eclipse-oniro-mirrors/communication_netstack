@@ -99,6 +99,8 @@ napi_async_work BaseContext::GetAsyncWork()
 
 void BaseContext::CreateAsyncWork(const std::string &name, AsyncWorkExecutor executor, AsyncWorkCallback callback)
 {
+    auto closeScope = [this](napi_handle_scope scope) { NapiUtils::CloseScope(env_, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env_), closeScope);
     napi_status ret = napi_create_async_work(env_, nullptr, NapiUtils::CreateStringUtf8(env_, name), executor, callback,
                                              this, &asyncWork_);
     asyncWorkBack1_ = asyncWork_;
