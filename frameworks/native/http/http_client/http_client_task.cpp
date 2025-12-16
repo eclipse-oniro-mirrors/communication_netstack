@@ -380,8 +380,12 @@ bool HttpClientTask::SetIpResolve(CURL *handle)
     std::string addressFamily = request_.GetAddressFamily();
     if (addressFamily.empty()) {
 #if HAS_NETMANAGER_BASE
-        if (!NetSysIsIpv6Enable(0)) {
+        bool ipv6Enable = NetSysIsIpv6Enable(0);
+        bool ipv4Enable = NetSysIsIpv4Enable(0);
+        if (!ipv6Enable) {
             NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        } else if (!ipv4Enable) {
+            NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
         }
 #endif
         return true;
