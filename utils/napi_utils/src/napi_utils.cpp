@@ -788,6 +788,8 @@ uint64_t CreateUvHandlerQueue(napi_env env)
             if (env == nullptr) {
                 return;
             }
+            auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+            std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
             auto queueWrapper = NapiUtils::GetValueFromGlobal(env, HTTP_UV_SYNC_QUEUE_NAME);
             if (queueWrapper == nullptr) {
                 return;
