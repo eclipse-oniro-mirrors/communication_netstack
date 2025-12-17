@@ -946,4 +946,17 @@ HWTEST_F(HttpClientTaskTest, SetSslTypeAndClientEncCertTest002, TestSize.Level1)
     bool result = task->SetSslTypeAndClientEncCert(task->curlHandle_);
     EXPECT_TRUE(result);
 }
+
+HWTEST_F(HttpClientTaskTest, SetIpResolve001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "https://www.baidu.com";
+    httpReq.SetURL(url);
+    httpReq.SetSslType(SslType::TLCP);
+    httpReq.SetAddressFamily("")
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    bool result = task->SetIpResolve();
+    EXPECT_TRUE(result);
+}
 } // namespace
