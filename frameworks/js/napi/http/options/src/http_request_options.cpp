@@ -30,6 +30,7 @@ static constexpr const uint32_t MAX_PRIORITY = 1000;
 
 static constexpr const int64_t MIN_RESUM_NUMBER = 1;
 static constexpr const int64_t MAX_RESUM_NUMBER = 4294967296;
+static constexpr const int32_t DEFAULT_MAX_REDIRECTS = 30;
 
 HttpRequestOptions::HttpRequestOptions()
     : method_(HttpConstant::HTTP_METHOD_GET),
@@ -39,6 +40,7 @@ HttpRequestOptions::HttpRequestOptions()
       usingProtocol_(HttpProtocol::HTTP_NONE),
       dataType_(HttpDataType::NO_DATA_TYPE),
       priority_(MIN_PRIORITY),
+      maxRedirects_(DEFAULT_MAX_REDIRECTS),
       usingHttpProxyType_(UsingHttpProxyType::USE_DEFAULT),
       httpProxyPort_(0),
       resumeFromNumber_(0),
@@ -175,6 +177,16 @@ void HttpRequestOptions::SetHttpDataType(HttpDataType dataType)
 HttpDataType HttpRequestOptions::GetHttpDataType() const
 {
     return dataType_;
+}
+
+void HttpRequestOptions::SetMaxRedirects(uint32_t maxRedirects)
+{
+    maxRedirects_ = maxRedirects;
+}
+
+uint32_t HttpRequestOptions::GetMaxRedirects() const
+{
+    return maxRedirects_;
 }
 
 void HttpRequestOptions::SetPriority(uint32_t priority)

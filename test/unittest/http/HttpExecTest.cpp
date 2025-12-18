@@ -171,4 +171,95 @@ HWTEST_F(HttpExecTest, SetSslTypeAndClientEncCert002, TestSize.Level1)
     EXPECT_FALSE(HttpExec::SetSslTypeAndClientEncCert(handle.get(), &context));
 }
 
+HWTEST_F(HttpExecTest, SetOptionWithMaxRedirects001, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+    ASSERT_NE(handle, nullptr);
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    // Test when maxRedirects is set to 0 (disable redirect)
+    context.options.SetMaxRedirects(0);
+    EXPECT_EQ(context.options.GetMaxRedirects(), 0);
+}
+
+HWTEST_F(HttpExecTest, SetOptionWithMaxRedirects002, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+    ASSERT_NE(handle, nullptr);
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    // Test when maxRedirects is set to a normal value
+    context.options.SetMaxRedirects(5);
+    EXPECT_EQ(context.options.GetMaxRedirects(), 5);
+}
+
+HWTEST_F(HttpExecTest, IsReachRedirectLimitTest001, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    // Test when maxRedirects is not set (undefined)
+    // IsReachRedirectLimit should return false
+    context.redirects_ = 10;
+    EXPECT_FALSE(context.IsReachRedirectLimit());
+}
+
+HWTEST_F(HttpExecTest, IsReachRedirectLimitTest002, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    // Test when maxRedirects is set to 0 and redirects_ is 0
+    // IsReachRedirectLimit should return true (0 >= 0)
+    context.options.SetMaxRedirects(0);
+    context.redirects_ = 0;
+    EXPECT_TRUE(context.IsReachRedirectLimit());
+}
+
+HWTEST_F(HttpExecTest, IsReachRedirectLimitTest003, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    // Test when maxRedirects is set to 5 and redirects_ is 3
+    // IsReachRedirectLimit should return false (3 < 5)
+    context.options.SetMaxRedirects(5);
+    context.redirects_ = 3;
+    EXPECT_FALSE(context.IsReachRedirectLimit());
+}
+
+HWTEST_F(HttpExecTest, IsReachRedirectLimitTest004, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    // Test when maxRedirects is set to 5 and redirects_ is 5
+    // IsReachRedirectLimit should return true (5 >= 5)
+    context.options.SetMaxRedirects(5);
+    context.redirects_ = 5;
+    EXPECT_TRUE(context.IsReachRedirectLimit());
+}
+
+HWTEST_F(HttpExecTest, IsReachRedirectLimitTest005, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    // Test when maxRedirects is set to 5 and redirects_ is 10
+    // IsReachRedirectLimit should return true (10 >= 5)
+    context.options.SetMaxRedirects(5);
+    context.redirects_ = 10;
+    EXPECT_TRUE(context.IsReachRedirectLimit());
+}
 } // namespace

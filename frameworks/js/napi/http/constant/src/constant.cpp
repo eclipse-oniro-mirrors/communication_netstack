@@ -46,6 +46,7 @@ const char *const HttpConstant::PARAM_KEY_USING_PROTOCOL = "usingProtocol";
 const char *const HttpConstant::PARAM_KEY_USING_CACHE = "usingCache";
 const char *const HttpConstant::PARAM_KEY_EXPECT_DATA_TYPE = "expectDataType";
 const char *const HttpConstant::PARAM_KEY_PRIORITY = "priority";
+const char *const HttpConstant::PARAM_KEY_MAX_REDIRECTS = "maxRedirects";
 
 const char *const HttpConstant::PARAM_KEY_USING_HTTP_PROXY = "usingProxy";
 const char *const HttpConstant::PARAM_KEY_CA_PATH = "caPath";

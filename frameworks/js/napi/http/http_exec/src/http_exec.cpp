@@ -1635,6 +1635,7 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HEADERDATA, context, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_HTTPHEADER, requestHeader, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FOLLOWLOCATION, 1L, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_MAXREDIRS, context->options.GetMaxRedirects(), context);
 
     /* first #undef CURL_DISABLE_COOKIES in curl config */
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_COOKIEFILE, "", context);

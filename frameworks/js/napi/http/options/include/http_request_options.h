@@ -232,6 +232,10 @@ public:
 
     [[nodiscard]] HttpDataType GetHttpDataType() const;
 
+    void SetMaxRedirects(uint32_t maxRedirects);
+
+    [[nodiscard]] uint32_t GetMaxRedirects() const;
+
     void SetPriority(uint32_t priority);
 
     [[nodiscard]] uint32_t GetPriority() const;
@@ -294,6 +298,8 @@ private:
     HttpDataType dataType_;
 
     uint32_t priority_;
+
+    uint32_t maxRedirects_;
 
     UsingHttpProxyType usingHttpProxyType_;
 

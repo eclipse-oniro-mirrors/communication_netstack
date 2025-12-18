@@ -171,6 +171,7 @@ void EpollMultiDriver::HandleRedirect(CURL *easyHandle, std::shared_ptr<std::str
     auto context = reinterpret_cast<OHOS::NetStack::Http::RequestContext *>(requestInfo->opaqueData);
     context->options.SetUrl(location->c_str());
     delete requestInfo;
+    context->IncreaseRedirectCount();
     Http::HttpExec::RequestWithoutCache(context);
 }
 #endif
@@ -239,6 +240,11 @@ void EpollMultiDriver::HandleCurlDoneMessage(CURLMsg *message)
         auto interceptor = context->GetInterceptor();
         NETSTACK_LOGD("Redirect detected: %{public}s, status=%{public}d", location, static_cast<int>(responseCode));
         if (interceptor != nullptr && interceptor->IsRedirectionInterceptor()) {
+            if (context->IsReachRedirectLimit()) {
+                context->SetErrorCode(Http::HttpErrorCode::HTTP_TOO_MANY_REDIRECTS);
+                handleCompletion();
+                return;
+            }
             auto interceptorCallback = interceptor->GetRedirectionInterceptorCallback();
             auto handleInfo = new RedirectionInterceptorInfo { message, locationPtr };
             auto redirectCallback =
@@ -246,8 +252,6 @@ void EpollMultiDriver::HandleCurlDoneMessage(CURLMsg *message)
             NapiUtils::CreateUvQueueWorkByModuleId(context->GetEnv(), redirectCallback, context->GetModuleId());
             return;
         }
-        handleRedirect();
-        return;
     }
 #endif
     handleCompletion();

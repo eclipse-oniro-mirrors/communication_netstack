@@ -177,6 +177,10 @@ public:
 
     std::string GetPinnedPubkey() const;
 
+    void IncreaseRedirectCount();
+
+    [[nodiscard]] bool IsReachRedirectLimit();
+
     std::map<std::string, napi_ref> interceptorRefs_;
 
 #ifdef HTTP_HANDOVER_FEATURE
@@ -208,6 +212,7 @@ private:
     bool isRootCaVerified_ = false;
     bool isRootCaVerifiedOk_ = false;
     std::string pinnedPubkey_;
+    uint32_t redirects_ = 0;
 #if HAS_NETMANAGER_BASE
     std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
 #endif
@@ -262,6 +267,8 @@ private:
     void ParseSslType(napi_value optionsValue);
 
     void ParseClientEncCert(napi_value optionsValue);
+
+    bool ParseMaxRedirects(napi_value optionsValue);
 };
 } // namespace OHOS::NetStack::Http
 
