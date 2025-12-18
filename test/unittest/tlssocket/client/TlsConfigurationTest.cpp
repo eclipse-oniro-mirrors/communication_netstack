@@ -60,7 +60,7 @@ HWTEST_F(TlsConfigurationTest, CopyConstruction, TestSize.Level2)
     tlsConfiguration.SetLocalCertificate(certVec);
     TLSConfiguration configuration = TLSConfiguration(tlsConfiguration);
     std::vector<TLSCertificate> tlsCertificate = configuration.GetLocalCertificate();
-    EXPECT_NE(tlsCertificate.empty(), false);
+    EXPECT_NE(tlsCertificate.empty(), true);
 }
 
 HWTEST_F(TlsConfigurationTest, SetAndGetCa, TestSize.Level2)

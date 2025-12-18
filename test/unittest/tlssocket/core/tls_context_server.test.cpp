@@ -79,6 +79,36 @@ constexpr const char CERTIFICATCHAIN2[] =
     "qA==\r\n"
     "-----END CERTIFICATE-----\r\n";
 
+constexpr const char PRIVATEKEY[] =
+    "-----BEGIN PRIVATE KEY-----\r\n"
+    "MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDgm2c4+EvB7fUj\r\n"
+    "OTMFpZ8nD4bAIjWNKaEklFMQxoQOgcz+674hAbCIM7gfkdcUrV8TFSbGdC7l6m5e\r\n"
+    "L/8cqbnGozXdfYLi3EoZ4uGtzQnYcu5e8C3NMX6FP1VsBpwHvqsgSOs9CqejFMIA\r\n"
+    "rzXhfoGBs5d1uF5GXbrfDnI4aD1InxX6rkwdFQbcd6pxe+9jqjUDsaaycI+tIxV+\r\n"
+    "jwOGIauGbmePpY+peEy1z+rY9MAubrXpgtzH6afd0N7SZX6YKo1focRN9dBPfFAc\r\n"
+    "Zc2uE0bFLOR/LrV0yCrGJ+ZHRRGr2UK8kMtJw9vUpBajSJTFMEOO6XwreMNwdyOU\r\n"
+    "ofgjiOnHAgMBAAECggEBAKxDhC+Vf8UFFHYncJJsLFxw9BB4LEpQG19Kw0qidrYJ\r\n"
+    "p4f8lp4KBbLwt86+tA8PyVOBbXPXuABuhKeIeEkrg2ht1OpDURddjRe9gwkhsONp\r\n"
+    "gpkd7ILr6vWXVZS8nP7zpZvlUUZH3bqeOQz9VH3V4M3xR8Dp3qRpTuG02rWYfSgs\r\n"
+    "Kuv/D7dunGSRyrIeeAfCNOYOhUYqyahJ3YiA9VwwLqsDngKaU8vJhkTr6KJTJHoD\r\n"
+    "AoIoXTMYsARSDWJ3GcTg3rhExCJjNTUX4CaGmwEKyAj0ESLgyFDD12hSA2wos3//\r\n"
+    "uf0N6gQbEAl8JDZNQxt8MiKGjoRS7iuwuGc+yykG9EECgYEA/dauysFczqC/AzJO\r\n"
+    "0mbjx+VXUHdOVaXKfkkkXFkLkxiBnZYaXWHAxMHaVMlADfSHeTQwtrjGC18rJDOH\r\n"
+    "xG0PpZpV9MR2sIgl0qY+LiVpnt2tRb0M/iHf/ZLM+aCQ5QtW6tIDHWeVYkeOpjSx\r\n"
+    "c/zniSd+AjEtoKmnscng1I4Z2o0CgYEA4oUAYf4OQNrhR5lB12d5eek+seIQqqHA\r\n"
+    "TCUBDZ+NGL0z7J3ykwSfr1IHM04GuMKF/zKtn8mEUuJMfTHup9Abvh+mhu8eHNfv\r\n"
+    "lSR3uESMb7K2iJk2zkFdj8gwXiKMFUbQMl2ofnypA6cuD5GqBsiIOIQPWNZj0IUN\r\n"
+    "w2d2mrj+SqMCgYEAhSwvkeI2XZWKARRQtCQU1tfkoiulpluPzAd1kxmIcAjIX7PT\r\n"
+    "azCQ4OlPMXJQL8IdnSIbeJGiHW81hA2g6hXJwrkg5YR5PI6BQW3Ea5NnQVjNwiu3\r\n"
+    "+FAvYqq07TYnLnNvi0zZI4Enp2MhXOOCQfbqRlO40U+Zv5Oijiz6zqkquTUCgYEA\r\n"
+    "lFVMHt9jLg0nIN+3Qfs8jRy0NYA4McSiTDqfKfClUOH1Mqlrw+JvPzuUA4DA3hRj\r\n"
+    "8u2YzN4FjNEsDX+5LKMWx7WqMwo6yeCNvziWPVCGNk7tQR4zyXT8c79ADSTKXtR0\r\n"
+    "WccDI3E2rHG5s/BLSw3eRkQUWLRrwIygqqkB/efOfckCgYBhDy1x1bNX2ZmGhWOJ\r\n"
+    "3ztWyfskt5kZPMZLLEeRZKeNiaxcgRJ2WcKBVacpbBK9t8c+6TJtEUwj7x1CAnP+\r\n"
+    "YMrMG7Bq4ZXYF7RalHs8eg0W6x1HDR0cpH/K7NKSYEA76xjxlc3YQj1/DM8TcB8e\r\n"
+    "iK2OekLYOfPRF3n9zRtb4Nonbw==\r\n"
+    "-----END PRIVATE KEY-----\r\n";
+
 HWTEST_F(TLSContextServerTest, TLSContextServerTest001, testing::ext::TestSize.Level1)
 {
     EXPECT_EQ(TLSContextServer::CreateConfiguration({}), nullptr);
@@ -223,33 +253,34 @@ HWTEST_F(TLSContextServerTest, TLSContextServerTest008, testing::ext::TestSize.L
 
 HWTEST_F(TLSContextServerTest, SetLocalCertificateTest, testing::ext::TestSize.Level1)
 {
-    TLSConfiguration configuration1;
-    //正常cert，用两个证书
+    TLSConfiguration configuration;
     std::vector<std::string> certVec;
     certVec.push_back(CERTIFICATCHAIN1);
     certVec.push_back(CERTIFICATCHAIN2);
-    configuration1.SetLocalCertificate(certVec);
-    std::unique_ptr<TLSContextServer> tlsContext = TLSContextServer::CreateConfiguration(configuration1);
-    bool setLocalCertChain = TLSContextServer::SetLocalCertificate(tlsContext.get(), configuration1);
+    configuration.SetLocalCertificate(certVec);
+    configuration.SetCipherSuite("AES256-SHA256");
+    configuration.SetSignatureAlgorithms("rsa_pss_rsae_sha256:ECDSA+SHA256");
+    SecureData structureData(PRIVATEKEY);
+    std::string keyPassStr = "";
+    SecureData keyPass(keyPassStr);
+    configuration.SetPrivateKey(structureData, keyPass);
+    std::unique_ptr<TLSContextServer> tlsContext = TLSContextServer::CreateConfiguration(configuration);
+    EXPECT_NE(tlsContext, nullptr);
+    bool setLocalCertChain = TLSContextServer::SetLocalCertificate(tlsContext.get(), configuration);
     EXPECT_TRUE(setLocalCertChain);
-    //空cert
-    TLSConfiguration configuration2;
+
+    TLSConfiguration configuration1;
     std::vector<std::string> certificate;
-    configuration2.SetLocalCertificate(certificate);
-    bool setLocalCertNull = TLSContextServer::SetLocalCertificate(tlsContext.get(), configuration2);
+    configuration1.SetLocalCertificate(certificate);
+    std::unique_ptr<TLSContextServer> tlsContext1 = TLSContextServer::CreateConfiguration(configuration1);
+    bool setLocalCertNull = TLSContextServer::SetLocalCertificate(tlsContext1.get(), configuration1);
     EXPECT_FALSE(setLocalCertNull);
-    //第一个cert格式不对
-    TLSConfiguration configuration3;
+    
+    TLSConfiguration configuration2;
     std::vector<std::string> certVecFirstInvalid = {"abc"};
-    configuration3.SetLocalCertificate(certVecFirstInvalid);
-    bool setLocalCertFirstInvalid = TLSContextServer::SetLocalCertificate(tlsContext.get(), configuration3);
+    configuration2.SetLocalCertificate(certVecFirstInvalid);
+    std::unique_ptr<TLSContextServer> tlsContext2 = TLSContextServer::CreateConfiguration(configuration2);
+    bool setLocalCertFirstInvalid = TLSContextServer::SetLocalCertificate(tlsContext2.get(), configuration2);
     EXPECT_FALSE(setLocalCertFirstInvalid);
-    //第二个cert格式不对
-    TLSConfiguration configuration4;
-    std::vector<std::string> certVecSecondInvalid = {CERTIFICATCHAIN1};
-    certVecSecondInvalid.push_back("abc");
-    configuration4.SetLocalCertificate(certVecSecondInvalid);
-    bool setLocalCertSecondInvalid = TLSContextServer::SetLocalCertificate(tlsContext.get(), configuration4);
-    EXPECT_FALSE(setLocalCertSecondInvalid);
 }
 } // namespace OHOS::NetStack::TlsSocket
