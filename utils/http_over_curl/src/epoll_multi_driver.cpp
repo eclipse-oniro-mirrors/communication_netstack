@@ -241,7 +241,7 @@ void EpollMultiDriver::HandleCurlDoneMessage(CURLMsg *message)
         NETSTACK_LOGD("Redirect detected: %{public}s, status=%{public}d", location, static_cast<int>(responseCode));
         if (interceptor != nullptr && interceptor->IsRedirectionInterceptor()) {
             if (context->IsReachRedirectLimit()) {
-                context->SetErrorCode(Http::HttpErrorCode::HTTP_TOO_MANY_REDIRECTS);
+                message->data.result = CURLE_TOO_MANY_REDIRECTS;
                 handleCompletion();
                 return;
             }
