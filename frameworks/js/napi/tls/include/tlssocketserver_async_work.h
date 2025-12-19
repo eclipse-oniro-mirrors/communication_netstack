@@ -27,6 +27,7 @@ public:
     ~TLSSocketServerAsyncWork() = delete;
 
     static void ExecGetCertificate(napi_env env, void *data);
+    static void ExecTLSConnectionGetSocketFd(napi_env env, void *data);
     static void ExecListen(napi_env env, void *data);
     static void ExecGetCipherSuites(napi_env env, void *data);
     static void ExecGetRemoteCertificate(napi_env env, void *data);
@@ -40,8 +41,10 @@ public:
     static void ExecGetLocalAddress(napi_env env, void *data);
     static void ExecConnectionGetLocalAddress(napi_env env, void *data);
     static void ExecSetExtraOptions(napi_env env, void *data);
+    static void ExecTLSSocketServerGetSocketFd(napi_env env, void *data);
 
     static void GetCertificateCallback(napi_env env, napi_status status, void *data);
+    static void TLSConnectionGetSocketFdCallback(napi_env env, napi_status status, void *data);
     static void ListenCallback(napi_env env, napi_status status, void *data);
     static void GetCipherSuitesCallback(napi_env env, napi_status status, void *data);
     static void GetRemoteCertificateCallback(napi_env env, napi_status status, void *data);
@@ -55,6 +58,7 @@ public:
     static void GetLocalAddressCallback(napi_env env, napi_status status, void *data);
     static void GetConnectionLocalAddressCallback(napi_env env, napi_status status, void *data);
     static void SetExtraOptionsCallback(napi_env env, napi_status status, void *data);
+    static void TLSSocketServerGetSocketFdCallback(napi_env env, napi_status status, void *data);
 };
 } // namespace TlsSocketServer
 } // namespace NetStack

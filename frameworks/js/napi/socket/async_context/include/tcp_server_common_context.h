@@ -48,6 +48,7 @@ public:
     NetAddress localAddress_;
     int32_t errorNumber_ = 0;
     int32_t clientId_ = 0;
+    int32_t socketFd_ = -1;
 
 private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
@@ -57,6 +58,7 @@ typedef TcpServerCommonContext TcpServerGetStateContext;
 typedef TcpServerCommonContext TcpServerGetLocalAddressContext;
 typedef TcpServerCommonContext TcpConnectionGetLocalAddressContext;
 typedef TcpServerCommonContext TcpServerGetRemoteAddressContext;
+typedef TcpServerCommonContext TcpServerGetSocketFdContext;
 
 class TcpServerCloseContext final : public TcpServerCommonContext {
 public:

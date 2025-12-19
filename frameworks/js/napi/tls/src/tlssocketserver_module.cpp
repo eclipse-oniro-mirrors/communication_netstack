@@ -174,6 +174,18 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetCertificate(nap
         TLSSocketServerAsyncWork::GetCertificateCallback);
 }
 
+napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetSocketFd(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::InterfaceWithSharedManager<TLSServerGetSocketFdContext>(
+        env, info, FUNCTION_GET_SOCKET_FD,
+        [](napi_env theEnv, napi_value thisVal, TLSServerGetSocketFdContext *context) -> bool {
+            context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
+            return true;
+        },
+        TLSSocketServerAsyncWork::ExecTLSConnectionGetSocketFd,
+            TLSSocketServerAsyncWork::TLSConnectionGetSocketFdCallback);
+}
+
 napi_value TLSSocketServerModuleExports::TLSSocketServer::GetState(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::TLSGetStateContext>(env, info, FUNCTION_GET_STATE,
@@ -204,6 +216,13 @@ napi_value TLSSocketServerModuleExports::TLSSocketServer::Off(napi_env env, napi
     return DelayedSingleton<MonitorServer>::GetInstance()->Off(env, info);
 }
 
+napi_value TLSSocketServerModuleExports::TLSSocketServer::GetSocketFd(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::TLSGetSocketFdContext>(
+        env, info, FUNCTION_GET_SOCKET_FD, nullptr, TLSSocketServerAsyncWork::ExecTLSSocketServerGetSocketFd,
+        TLSSocketServerAsyncWork::TLSSocketServerGetSocketFdCallback);
+}
+
 void TLSSocketServerModuleExports::DefineTLSSocketServerClass(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> functions = {
@@ -214,6 +233,7 @@ void TLSSocketServerModuleExports::DefineTLSSocketServerClass(napi_env env, napi
         DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_SET_EXTRA_OPTIONS, TLSSocketServer::SetExtraOptions),
         DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_ON, TLSSocketServer::On),
         DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_OFF, TLSSocketServer::Off),
+        DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_GET_SOCKET_FD, TLSSocketServer::GetSocketFd),
         DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_GET_CERTIFICATE, TLSSocketServer::GetCertificate),
         DECLARE_NAPI_FUNCTION(TLSSocketServer::FUNCTION_GET_PROTOCOL, TLSSocketServer::GetProtocol),
     };
@@ -236,6 +256,7 @@ void TlsSocketServer::TLSSocketServerModuleExports::DefineTLSSocketConnectionCla
 {
     std::initializer_list<napi_property_descriptor> functions = {
         DECLARE_NAPI_FUNCTION(TLSSocketConnection::FUNCTION_GET_CERTIFICATE, TLSSocketConnection::GetCertificate),
+        DECLARE_NAPI_FUNCTION(TLSSocketConnection::FUNCTION_GET_SOCKET_FD, TLSSocketConnection::GetSocketFd),
         DECLARE_NAPI_FUNCTION(TLSSocketConnection::FUNCTION_GET_REMOTE_CERTIFICATE,
                               TLSSocketConnection::GetRemoteCertificate),
         DECLARE_NAPI_FUNCTION(TLSSocketConnection::FUNCTION_GET_SIGNATURE_ALGORITHMS,

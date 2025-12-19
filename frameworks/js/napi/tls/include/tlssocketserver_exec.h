@@ -36,6 +36,7 @@ public:
     ~TLSSocketServerExec() = delete;
 
     static bool ExecGetCertificate(TlsSocket::GetCertificateContext *context);
+    static bool ExecTLSConnectionGetSocketFd(TLSServerGetSocketFdContext *context);
     static bool ExecListen(TlsSocket::TLSListenContext *context);
     static bool ExecGetCipherSuites(ServerGetCipherSuitesContext *context);
     static bool ExecGetRemoteCertificate(ServerGetRemoteCertificateContext *context);
@@ -49,8 +50,10 @@ public:
     static bool ExecGetLocalAddress(TLSServerGetLocalAddressContext *context);
     static bool ExecConnectionGetLocalAddress(TLSConnectionGetLocalAddressContext *context);
     static bool ExecSetExtraOptions(TlsSocket::TLSSetExtraOptionsContext *context);
+    static bool ExecGetSocketFd(TlsSocket::TLSGetSocketFdContext *context);
 
     static napi_value GetCertificateCallback(TlsSocket::GetCertificateContext *context);
+    static napi_value TLSConnectionGetSocketFdCallback(TLSServerGetSocketFdContext *context);
     static napi_value ListenCallback(TlsSocket::TLSListenContext *context);
     static napi_value GetCipherSuitesCallback(ServerGetCipherSuitesContext *context);
     static napi_value GetRemoteCertificateCallback(ServerGetRemoteCertificateContext *context);
@@ -64,6 +67,7 @@ public:
     static napi_value GetLocalAddressCallback(TLSServerGetLocalAddressContext *context);
     static napi_value GetConnectionLocalAddressCallback(TLSConnectionGetLocalAddressContext *context);
     static napi_value SetExtraOptionsCallback(TlsSocket::TLSSetExtraOptionsContext *context);
+    static napi_value TLSSocketServerGetSocketFdCallback(TlsSocket::TLSGetSocketFdContext *context);
 
     static bool ExecConnectionSend(TLSServerSendContext *context);
     static napi_value ConnectionSendCallback(TLSServerSendContext *context);

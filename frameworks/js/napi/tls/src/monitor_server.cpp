@@ -100,6 +100,8 @@ napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, i
                               TLSSocketServerModuleExports::TLSSocketConnection::GetRemoteAddress),
         DECLARE_NAPI_FUNCTION(TLSSocketServerModuleExports::TLSSocketConnection::FUNCTION_GET_LOCAL_ADDRESS,
                               TLSSocketServerModuleExports::TLSSocketConnection::GetLocalAddress),
+        DECLARE_NAPI_FUNCTION(TLSSocketServerModuleExports::TLSSocketConnection::FUNCTION_GET_SOCKET_FD,
+                              TLSSocketServerModuleExports::TLSSocketConnection::GetSocketFd),
         DECLARE_NAPI_FUNCTION(TLSSocketServerModuleExports::TLSSocketConnection::FUNCTION_ON,
                               TLSSocketServerModuleExports::TLSSocketConnection::On),
         DECLARE_NAPI_FUNCTION(TLSSocketServerModuleExports::TLSSocketConnection::FUNCTION_OFF,

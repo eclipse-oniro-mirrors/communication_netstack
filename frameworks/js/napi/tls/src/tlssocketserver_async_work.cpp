@@ -35,6 +35,12 @@ void TLSSocketServerAsyncWork::ExecGetCertificate(napi_env env, void *data)
     BaseAsyncWork::ExecAsyncWork<TlsSocket::GetCertificateContext, TLSSocketServerExec::ExecGetCertificate>(env, data);
 }
 
+void TLSSocketServerAsyncWork::ExecTLSConnectionGetSocketFd(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<TLSServerGetSocketFdContext,
+        TLSSocketServerExec::ExecTLSConnectionGetSocketFd>(env, data);
+}
+
 void TLSSocketServerAsyncWork::ExecListen(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<TlsSocket::TLSListenContext, TLSSocketServerExec::ExecListen>(env, data);
@@ -106,10 +112,21 @@ void TLSSocketServerAsyncWork::ExecSetExtraOptions(napi_env env, void *data)
                                                                                                                  data);
 }
 
+void TLSSocketServerAsyncWork::ExecTLSSocketServerGetSocketFd(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<TlsSocket::TLSGetSocketFdContext, TLSSocketServerExec::ExecGetSocketFd>(env, data);
+}
+
 void TLSSocketServerAsyncWork::GetCertificateCallback(napi_env env, napi_status status, void *data)
 {
     BaseAsyncWork::AsyncWorkCallback<TlsSocket::GetCertificateContext, TLSSocketServerExec::GetCertificateCallback>(
         env, status, data);
+}
+
+void TLSSocketServerAsyncWork::TLSConnectionGetSocketFdCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<TLSServerGetSocketFdContext,
+        TLSSocketServerExec::TLSConnectionGetSocketFdCallback>(env, status, data);
 }
 
 void TLSSocketServerAsyncWork::ListenCallback(napi_env env, napi_status status, void *data)
@@ -186,6 +203,13 @@ void TLSSocketServerAsyncWork::SetExtraOptionsCallback(napi_env env, napi_status
     BaseAsyncWork::AsyncWorkCallback<TlsSocket::TLSSetExtraOptionsContext,
                                      TLSSocketServerExec::SetExtraOptionsCallback>(env, status, data);
 }
+
+void TLSSocketServerAsyncWork::TLSSocketServerGetSocketFdCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<TlsSocket::TLSGetSocketFdContext,
+                                     TLSSocketServerExec::TLSSocketServerGetSocketFdCallback>(env, status, data);
+}
+
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS

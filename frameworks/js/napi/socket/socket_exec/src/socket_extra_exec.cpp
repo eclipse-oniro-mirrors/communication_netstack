@@ -135,6 +135,16 @@ napi_value TcpConnectionGetLocalAddressCallback(TcpConnectionGetLocalAddressCont
     return obj;
 }
 
+napi_value TcpConnectionGetSocketFdCallback(TcpServerGetSocketFdContext *context)
+{
+    napi_value obj = NapiUtils::CreateObject(context->GetEnv());
+    if (NapiUtils::GetValueType(context->GetEnv(), obj) != napi_object) {
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+    int socketFd = context->socketFd_;
+    return NapiUtils::CreateInt32(context->GetEnv(), socketFd);
+}
+
 napi_value TcpServerGetLocalAddressCallback(TcpServerGetLocalAddressContext *context)
 {
     napi_value obj = NapiUtils::CreateObject(context->GetEnv());

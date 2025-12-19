@@ -91,9 +91,11 @@ static constexpr const char *LOCAL_SOCKET_SERVER_GET_STATE = "LocalSocketServerG
 static constexpr const char *LOCAL_SOCKET_SERVER_GET_LOCAL_ADDRESS = "LocalSocketServerGetState";
 static constexpr const char *LOCAL_SOCKET_SERVER_SET_EXTRA_OPTIONS = "LocalSocketServerSetExtraOptions";
 static constexpr const char *LOCAL_SOCKET_SERVER_GET_EXTRA_OPTIONS = "LocalSocketServerGetExtraOptions";
+static constexpr const char *LOCAL_SOCKET_SERVER_GET_SOCKET_FD = "LocalSocketServerGetSocketFd";
 
 static constexpr const char *LOCAL_SOCKET_CONNECTION_SEND = "LocalSocketConnectionSend";
 static constexpr const char *LOCAL_SOCKET_CONNECTION_GET_LOCAL_ADDRESS = "LocalSocketConnectionGetLocalAddress";
+static constexpr const char *LOCAL_SOCKET_CONNECTION_GET_SOCKET_FD = "LocalSocketConnectionGetSocketFd";
 static constexpr const char *LOCAL_SOCKET_CONNECTION_CLOSE = "LocalSocketConnectionClose";
 
 static const char *TCP_BIND_NAME = "TcpBind";
@@ -111,11 +113,13 @@ static constexpr const char *TCP_SERVER_CLOSE_NAME = "TcpServerClose";
 static constexpr const char *TCP_SERVER_GET_STATE = "TcpServerGetState";
 static constexpr const char *TCP_SERVER_GET_LOCAL_ADDRESS = "TcpServerGetLocalAddress";
 static constexpr const char *TCP_SERVER_SET_EXTRA_OPTIONS_NAME = "TcpServerSetExtraOptions";
+static constexpr const char *TCP_SERVER_GET_SOCKET_FD = "TcpServerGetSocketFd";
 
 static constexpr const char *TCP_CONNECTION_SEND_NAME = "TcpConnectionSend";
 static constexpr const char *TCP_CONNECTION_CLOSE_NAME = "TcpConnectionClose";
 static constexpr const char *TCP_CONNECTION_GET_REMOTE_ADDRESS = "TcpConnectionGetRemoteAddress";
 static constexpr const char *TCP_CONNECTION_GET_LOCAL_ADDRESS = "TcpConnectionGetLocalAddress";
+static constexpr const char *TCP_CONNECTION_GET_SOCKET_FD = "TcpConnectionGetSocketFd";
 
 static constexpr const char *KEY_SOCKET_FD = "socketFd";
 
@@ -634,6 +638,7 @@ void SocketModuleExports::DefineLocalSocketServerClass(napi_env env, napi_value 
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_GET_LOCAL_ADDRESS, LocalSocketServer::GetLocalAddress),
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_SET_EXTRA_OPTIONS, LocalSocketServer::SetExtraOptions),
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_GET_EXTRA_OPTIONS, LocalSocketServer::GetExtraOptions),
+        DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_GET_SOCKET_FD, LocalSocketServer::GetSocketFd),
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_ON, LocalSocketServer::On),
         DECLARE_NAPI_FUNCTION(LocalSocketServer::FUNCTION_OFF, LocalSocketServer::Off),
     };
@@ -655,6 +660,7 @@ void SocketModuleExports::DefineTCPServerSocketClass(napi_env env, napi_value ex
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_GET_STATE, TCPServerSocket::GetState),
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_GET_LOCAL_ADDRESS, TCPServerSocket::GetLocalAddress),
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_SET_EXTRA_OPTIONS, TCPServerSocket::SetExtraOptions),
+        DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_GET_SOCKET_FD, TCPServerSocket::GetSocketFd),
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_ON, TCPServerSocket::On),
         DECLARE_NAPI_FUNCTION(TCPServerSocket::FUNCTION_OFF, TCPServerSocket::Off),
     };
@@ -904,6 +910,15 @@ napi_value SocketModuleExports::TCPConnection::GetLocalAddress(napi_env env, nap
         TCP_CONNECTION_GET_LOCAL_ADDRESS);
 }
 
+napi_value SocketModuleExports::TCPConnection::GetSocketFd(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(TcpServerGetSocketFdContext, ExecTcpConnectionGetSocketFd, TcpConnectionGetSocketFdCallback,
+        [](napi_env theEnv, napi_value thisVal, TcpServerGetSocketFdContext *context) -> bool {
+            context->clientId_ = NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID);
+            return true;
+        }, TCP_CONNECTION_GET_SOCKET_FD);
+}
+
 napi_value SocketModuleExports::TCPConnection::On(napi_env env, napi_callback_info info)
 {
     napi_value ret = ModuleTemplate::OnSharedManager(env, info,
@@ -946,6 +961,12 @@ napi_value SocketModuleExports::TCPServerSocket::SetExtraOptions(napi_env env, n
 {
     return SOCKET_INTERFACE(TcpServerSetExtraOptionsContext, ExecTcpServerSetExtraOptions,
                             TcpServerSetExtraOptionsCallback, nullptr, TCP_SERVER_SET_EXTRA_OPTIONS_NAME);
+}
+
+napi_value SocketModuleExports::TCPServerSocket::GetSocketFd(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(TcpServerGetSocketFdContext, ExecTcpServerGetSocketFd,
+                            TcpServerGetSocketFdCallback, nullptr, TCP_SERVER_GET_SOCKET_FD);
 }
 
 napi_value SocketModuleExports::TCPServerSocket::On(napi_env env, napi_callback_info info)
@@ -1065,6 +1086,12 @@ napi_value SocketModuleExports::LocalSocketServer::GetExtraOptions(napi_env env,
                             LocalSocketServerGetExtraOptionsCallback, nullptr, LOCAL_SOCKET_SERVER_GET_EXTRA_OPTIONS);
 }
 
+napi_value SocketModuleExports::LocalSocketServer::GetSocketFd(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(LocalSocketServerGetSocketFdContext, ExecLocalSocketServerGetSocketFd,
+                            LocalSocketServerGetSocketFdCallback, nullptr, LOCAL_SOCKET_SERVER_GET_SOCKET_FD);
+}
+
 napi_value SocketModuleExports::LocalSocketServer::On(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::OnSharedManager(env, info, {EVENT_MESSAGE, EVENT_CONNECT, EVENT_ERROR, EVENT_CLOSE}, false);
@@ -1107,6 +1134,17 @@ napi_value SocketModuleExports::LocalSocketConnection::GetLocalAddress(napi_env 
             context->SetClientId(NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID));
             return true;
         }, LOCAL_SOCKET_CONNECTION_GET_LOCAL_ADDRESS);
+}
+
+napi_value SocketModuleExports::LocalSocketConnection::GetSocketFd(napi_env env, napi_callback_info info)
+{
+    return SOCKET_INTERFACE(
+        LocalSocketServerGetSocketFdContext, ExecLocalSocketConnectionGetSocketFd,
+        LocalSocketConnectionGetSocketFdCallback,
+        [](napi_env theEnv, napi_value thisVal, LocalSocketServerGetSocketFdContext *context) -> bool {
+            context->SetClientId(NapiUtils::GetInt32Property(theEnv, thisVal, PROPERTY_CLIENT_ID));
+            return true;
+        }, LOCAL_SOCKET_CONNECTION_GET_SOCKET_FD);
 }
 
 napi_value SocketModuleExports::LocalSocketConnection::On(napi_env env, napi_callback_info info)

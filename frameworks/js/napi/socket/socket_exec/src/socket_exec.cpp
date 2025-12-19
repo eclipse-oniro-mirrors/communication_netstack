@@ -217,6 +217,8 @@ napi_value ConstructTCPSocketConnection(napi_env env, napi_callback_info info, i
                               SocketModuleExports::TCPConnection::GetRemoteAddress),
         DECLARE_NAPI_FUNCTION(SocketModuleExports::TCPConnection::FUNCTION_GET_LOCAL_ADDRESS,
                               SocketModuleExports::TCPConnection::GetLocalAddress),
+        DECLARE_NAPI_FUNCTION(SocketModuleExports::TCPConnection::FUNCTION_GET_SOCKET_FD,
+                              SocketModuleExports::TCPConnection::GetSocketFd),
         DECLARE_NAPI_FUNCTION(SocketModuleExports::TCPConnection::FUNCTION_ON, SocketModuleExports::TCPConnection::On),
         DECLARE_NAPI_FUNCTION(SocketModuleExports::TCPConnection::FUNCTION_OFF,
                               SocketModuleExports::TCPConnection::Off),
@@ -1750,6 +1752,10 @@ bool ExecTcpGetSocketFd(GetSocketFdContext *context)
 
 bool ExecUdpGetSocketFd(GetSocketFdContext *context)
 {
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
     return true;
 }
 
@@ -1883,6 +1889,38 @@ bool ExecTcpConnectionGetLocalAddress(TcpConnectionGetLocalAddressContext *conte
         localAddress.SetRawAddress(ipStr);
         localAddress.SetPort(ntohs(addrIn6->sin6_port));
         context->localAddress_ = localAddress;
+    }
+    return true;
+}
+
+bool ExecTcpConnectionGetSocketFd(TcpServerGetSocketFdContext *context)
+{
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    int32_t clientFd = -1;
+    bool fdValid = false;
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        auto iter = g_clientFDs.find(context->clientId_);
+        if (iter != g_clientFDs.end()) {
+            fdValid = true;
+            clientFd = iter->second;
+        } else {
+            NETSTACK_LOGE("not find clientId: %d in g_clientFDs", context->clientId_);
+            clientFd = -1;
+        }
+    }
+    context->socketFd_ = clientFd;
+    if (!fdValid || clientFd < 0) {
+        NETSTACK_LOGE("client fd is invalid (fd: %d)", clientFd);
+    } else {
+        NETSTACK_LOGI("get socketfd success: %d for clientId: %d", clientFd, context->clientId_);
     }
     return true;
 }
@@ -2390,6 +2428,15 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
     return true;
 }
 
+bool ExecTcpServerGetSocketFd(TcpServerGetSocketFdContext *context)
+{
+    if (!CommonUtils::HasInternetPermission()) {
+        context->SetPermissionDenied(true);
+        return false;
+    }
+    return true;
+}
+
 static void SetIsConnected(TcpServerGetStateContext *context)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
@@ -2584,20 +2631,17 @@ napi_value UdpSetExtraOptionsCallback(UdpSetExtraOptionsContext *context)
 
 napi_value TcpGetSocketFdCallback(GetSocketFdContext *context)
 {
-    int sockFd = context->GetSocketFd();
-    if (sockFd == -1) {
+    int socketFd = context->GetSocketFd();
+    if (socketFd == -1) {
         return NapiUtils::GetUndefined(context->GetEnv());
     }
-    return NapiUtils::CreateUint32(context->GetEnv(), sockFd);
+    return NapiUtils::CreateUint32(context->GetEnv(), socketFd);
 }
 
 napi_value UdpGetSocketFdCallback(GetSocketFdContext *context)
 {
-    int sockFd = context->GetSocketFd();
-    if (sockFd == -1) {
-        return NapiUtils::GetUndefined(context->GetEnv());
-    }
-    return NapiUtils::CreateUint32(context->GetEnv(), sockFd);
+    int socketFd = context->GetSocketFd();
+    return NapiUtils::CreateInt32(context->GetEnv(), socketFd);
 }
 
 napi_value TcpConnectionSendCallback(TcpServerSendContext *context)
@@ -2639,6 +2683,12 @@ napi_value TcpServerCloseCallback(TcpServerCloseContext *context)
 napi_value TcpServerSetExtraOptionsCallback(TcpServerSetExtraOptionsContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
+}
+
+napi_value TcpServerGetSocketFdCallback(TcpServerGetSocketFdContext *context)
+{
+    int socketFd = context->GetSocketFd();
+    return NapiUtils::CreateInt32(context->GetEnv(), socketFd);
 }
 
 napi_value TcpServerGetStateCallback(TcpServerGetStateContext *context)

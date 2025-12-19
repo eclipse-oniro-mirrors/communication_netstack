@@ -134,6 +134,8 @@ napi_value ConstructLocalSocketConnection(napi_env env, napi_callback_info info,
                               SocketModuleExports::LocalSocketConnection::Send),
         DECLARE_NAPI_FUNCTION(SocketModuleExports::LocalSocketConnection::FUNCTION_CLOSE,
                               SocketModuleExports::LocalSocketConnection::Close),
+        DECLARE_NAPI_FUNCTION(SocketModuleExports::LocalSocketConnection::FUNCTION_GET_SOCKET_FD,
+                              SocketModuleExports::LocalSocketConnection::GetSocketFd),
         DECLARE_NAPI_FUNCTION(SocketModuleExports::LocalSocketConnection::FUNCTION_ON,
                               SocketModuleExports::LocalSocketConnection::On),
         DECLARE_NAPI_FUNCTION(SocketModuleExports::LocalSocketConnection::FUNCTION_OFF,
@@ -1134,6 +1136,14 @@ bool ExecLocalSocketServerGetExtraOptions(LocalSocketServerGetExtraOptionsContex
     return false;
 }
 
+bool ExecLocalSocketServerGetSocketFd(LocalSocketServerGetSocketFdContext *context)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    return true;
+}
+
 bool ExecLocalSocketConnectionSend(LocalSocketServerSendContext *context)
 {
     if (context == nullptr) {
@@ -1233,6 +1243,32 @@ bool ExecLocalSocketConnectionGetLocalAddress(LocalSocketServerGetLocalAddressCo
     return false;
 }
 
+bool ExecLocalSocketConnectionGetSocketFd(LocalSocketServerGetSocketFdContext *context)
+{
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    int socketFd = -1;
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    auto data = reinterpret_cast<LocalSocketConnectionData *>(manager->GetData());
+    if (data != nullptr && data->serverManager_ != nullptr) {
+        socketFd = data->serverManager_->GetAcceptFd(context->GetClientId());
+    }
+    context->SetConnectionSocketFd(socketFd);
+    if (socketFd > 0) {
+        NETSTACK_LOGI("get local socketfd success: %d for clientId: %d", socketFd, context->GetClientId());
+    } else {
+        NETSTACK_LOGE("invalid serverManager or socket has closed");
+    }
+    return true;
+}
+
 napi_value LocalSocketBindCallback(LocalSocketBindContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
@@ -1284,11 +1320,11 @@ napi_value LocalSocketGetLocalAddressCallback(LocalSocketGetLocalAddressContext 
 
 napi_value LocalSocketGetSocketFdCallback(LocalSocketGetSocketFdContext *context)
 {
-    int sockFd = context->GetSocketFd();
-    if (sockFd <= 0) {
+    int socketFd = context->GetSocketFd();
+    if (socketFd <= 0) {
         return NapiUtils::GetUndefined(context->GetEnv());
     }
-    return NapiUtils::CreateUint32(context->GetEnv(), sockFd);
+    return NapiUtils::CreateUint32(context->GetEnv(), socketFd);
 }
 
 napi_value LocalSocketSetExtraOptionsCallback(LocalSocketSetExtraOptionsContext *context)
@@ -1365,6 +1401,12 @@ napi_value LocalSocketServerGetExtraOptionsCallback(LocalSocketServerGetExtraOpt
     return obj;
 }
 
+napi_value LocalSocketServerGetSocketFdCallback(LocalSocketServerGetSocketFdContext *context)
+{
+    int socketFd = context->GetSocketFd();
+    return NapiUtils::CreateInt32(context->GetEnv(), socketFd);
+}
+
 napi_value LocalSocketConnectionSendCallback(LocalSocketServerSendContext *context)
 {
     return NapiUtils::GetUndefined(context->GetEnv());
@@ -1388,5 +1430,11 @@ napi_value LocalSocketConnectionGetLocalAddressCallback(LocalSocketServerGetLoca
         return NapiUtils::GetUndefined(context->GetEnv());
     }
     return strRes;
+}
+
+napi_value LocalSocketConnectionGetSocketFdCallback(LocalSocketServerGetSocketFdContext *context)
+{
+    int socketFd = context->GetConnectionSocketFd();
+    return NapiUtils::CreateInt32(context->GetEnv(), socketFd);
 }
 } // namespace OHOS::NetStack::Socket::LocalSocketExec

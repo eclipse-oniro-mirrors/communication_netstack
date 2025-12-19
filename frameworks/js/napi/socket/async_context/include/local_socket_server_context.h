@@ -322,5 +322,19 @@ public:
 private:
     int clientId_ = 0;
 };
+
+class LocalSocketServerGetSocketFdContext final : public LocalSocketServerBaseContext {
+public:
+    LocalSocketServerGetSocketFdContext(napi_env env, const std::shared_ptr<EventManager> &manager)
+        : LocalSocketServerBaseContext(env, manager) {}
+    void ParseParams(napi_value *params, size_t paramsCount) override;
+    int GetClientId() const;
+    void SetClientId(int clientId);
+    int GetConnectionSocketFd() const;
+    void SetConnectionSocketFd(int socketFd);
+private:
+    int clientId_ = 0;
+    int socketFd_ = -1;
+};
 } // namespace OHOS::NetStack::Socket
 #endif
