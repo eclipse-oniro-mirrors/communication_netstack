@@ -231,20 +231,15 @@ void EpollMultiDriver::HandleCurlDoneMessage(CURLMsg *message)
     char *location = nullptr;
     curl_easy_getinfo(easyHandle, CURLINFO_REDIRECT_URL, &location);
     NETSTACK_LOGD("Redirect responseCode: %{public}d", static_cast<int>(responseCode));
-    if (responseCode >= HTTP_STATUS_REDIRECT_START && responseCode < HTTP_STATUS_CLIENT_ERROR_START && location) {
+    auto context = reinterpret_cast<OHOS::NetStack::Http::RequestContext *>(requestInfo->opaqueData);
+    auto interceptor = context->GetInterceptor();
+    if (responseCode >= HTTP_STATUS_REDIRECT_START && responseCode < HTTP_STATUS_CLIENT_ERROR_START && location &&
+        interceptor != nullptr && interceptor->IsRedirectionInterceptor()) {
         NETSTACK_LOGD("Redirect detected: %{public}s, status=%{public}d", location, static_cast<int>(responseCode));
-        auto locationPtr = std::make_shared<std::string>(location);
-        std::function<void()> handleRedirect =
-            std::bind(&EpollMultiDriver::HandleRedirect, this, easyHandle, locationPtr, requestInfo);
-        auto context = reinterpret_cast<OHOS::NetStack::Http::RequestContext *>(requestInfo->opaqueData);
-        auto interceptor = context->GetInterceptor();
-        NETSTACK_LOGD("Redirect detected: %{public}s, status=%{public}d", location, static_cast<int>(responseCode));
-        if (interceptor != nullptr && interceptor->IsRedirectionInterceptor()) {
-            if (context->IsReachRedirectLimit()) {
-                message->data.result = CURLE_TOO_MANY_REDIRECTS;
-                handleCompletion();
-                return;
-            }
+        if (!context->IsReachRedirectLimit()) {
+            auto locationPtr = std::make_shared<std::string>(location);
+            std::function<void()> handleRedirect =
+                std::bind(&EpollMultiDriver::HandleRedirect, this, easyHandle, locationPtr, requestInfo);
             auto interceptorCallback = interceptor->GetRedirectionInterceptorCallback();
             auto handleInfo = new RedirectionInterceptorInfo { message, locationPtr };
             auto redirectCallback =
@@ -252,6 +247,7 @@ void EpollMultiDriver::HandleCurlDoneMessage(CURLMsg *message)
             NapiUtils::CreateUvQueueWorkByModuleId(context->GetEnv(), redirectCallback, context->GetModuleId());
             return;
         }
+        message->data.result = CURLE_TOO_MANY_REDIRECTS;
     }
 #endif
     handleCompletion();
