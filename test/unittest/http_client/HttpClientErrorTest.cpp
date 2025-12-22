@@ -91,4 +91,30 @@ HWTEST_F(HttpClientErrorTest, SetCURLResultTest002, TestSize.Level1)
     EXPECT_EQ(errorCode, HttpErrorCode::HTTP_UNSUPPORTED_PROTOCOL);
 }
 
+HWTEST_F(HttpClientErrorTest, GetErrorMessageInvalidMaxAutoRedirTest001, TestSize.Level1)
+{
+    HttpClientError req;
+
+    req.SetErrorCode(HttpErrorCode::HTTP_PARSE_ERROR_CODE);
+    string errorMsg = req.GetErrorMessage();
+    EXPECT_EQ(errorMsg, "Invalid number of maxRedirects");
+}
+
+HWTEST_F(HttpClientErrorTest, SetCURLResultTooManyRedirectsTest001, TestSize.Level1)
+{
+    HttpClientError req;
+
+    req.SetCURLResult(CURLE_TOO_MANY_REDIRECTS);
+    int errorCode = req.GetErrorCode();
+    EXPECT_EQ(errorCode, HttpErrorCode::HTTP_TOO_MANY_REDIRECTS);
+}
+
+HWTEST_F(HttpClientErrorTest, GetErrorMessageTooManyRedirectsTest001, TestSize.Level1)
+{
+    HttpClientError req;
+
+    req.SetCURLResult(CURLE_TOO_MANY_REDIRECTS);
+    string errorMsg = req.GetErrorMessage();
+    EXPECT_EQ(errorMsg, "The number of redirections reaches the maximum allowed");
+}
 } // namespace

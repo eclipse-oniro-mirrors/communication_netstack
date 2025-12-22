@@ -256,6 +256,28 @@ void RequestContext::ParseNumberOptions(napi_value optionsValue)
     }
 }
 
+void RequestContext::ParseMaxRedirects(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_MAX_REDIRECTS)) {
+        return;
+    }
+    napi_value value = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_MAX_REDIRECTS);
+    if (NapiUtils::GetValueType(GetEnv(), value) != napi_number) {
+        NETSTACK_LOGE("ParseMaxRedirects: maxRedirects not number");
+        return;
+    }
+    int64_t maxRedirects = 0;
+    if (napi_get_value_int64(GetEnv(), value, &maxRedirects) != napi_ok) {
+        NETSTACK_LOGE("ParseMaxRedirects: napi_get_value_int64 error");
+        return;
+    }
+    if (maxRedirects > INT32_MAX || maxRedirects < 0) {
+        NETSTACK_LOGE("ParseMaxRedirects: invalid maxRedirects value");
+        return;
+    }
+    options.SetMaxRedirects(static_cast<uint32_t>(maxRedirects));
+}
+
 void RequestContext::ParseRemoteValidationMode(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_REMOTE_VALIDATION)) {
@@ -588,6 +610,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParseNumberOptions(optionsValue);
     ParseUsingHttpProxy(optionsValue);
     ParseClientCert(optionsValue);
+    ParseMaxRedirects(optionsValue);
 
     /* parse extra data here to recover header */
     if (!ParseExtraData(optionsValue)) {
@@ -1095,6 +1118,16 @@ void RequestContext::SetPinnedPubkey(std::string &pubkey)
 std::string RequestContext::GetPinnedPubkey() const
 {
     return pinnedPubkey_;
+}
+
+void RequestContext::IncreaseRedirectCount()
+{
+    redirects_ += 1;
+}
+
+bool RequestContext::IsReachRedirectLimit()
+{
+    return redirects_ >= options.GetMaxRedirects();
 }
 
 #ifdef HTTP_HANDOVER_FEATURE
