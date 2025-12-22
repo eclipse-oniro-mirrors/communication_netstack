@@ -46,7 +46,7 @@ ohos_unittest("http_client_unittest") {
   include_dirs += utils_include
 
   sources = [
-    "$NETSTACK_INNERKITS_DIR/http_client/cache/base64/src/base64_utils.cpp",
+    "$NETSTACK_INNERKITS_DIR/http_client/cache/base64/src/http_client_base64_utils.cpp",
     "HttpClientErrorTest.cpp",
     "HttpClientRequestTest.cpp",
     "HttpClientResponseTest.cpp",

@@ -101,7 +101,7 @@ ohos_shared_library("http_client") {
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_time.cpp",
     "$NETSTACK_DIR/utils/http_over_curl/src/http_handover_handler.cpp",
     "$NETSTACK_NATIVE_ROOT/http/http_client/http_client_tls_config.cpp",
-    "$NETSTACK_INNERKITS_DIR/http_client/cache/base64/src/base64_utils.cpp",
+    "$NETSTACK_INNERKITS_DIR/http_client/cache/base64/src/http_client_base64_utils.cpp",
     "$NETSTACK_INNERKITS_DIR/http_client/cache/cache_proxy/src/cache_proxy.cpp",
     "$NETSTACK_INNERKITS_DIR/http_client/cache/cache_strategy/src/http_cache_request.cpp",
     "$NETSTACK_INNERKITS_DIR/http_client/cache/cache_strategy/src/http_cache_response.cpp",
