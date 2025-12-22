@@ -268,7 +268,7 @@ private:
 
     void ParseClientEncCert(napi_value optionsValue);
 
-    bool ParseMaxRedirects(napi_value optionsValue);
+    void ParseMaxRedirects(napi_value optionsValue);
 };
 } // namespace OHOS::NetStack::Http
 
