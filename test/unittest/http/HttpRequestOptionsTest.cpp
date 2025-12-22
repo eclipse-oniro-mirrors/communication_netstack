@@ -440,4 +440,53 @@ HWTEST_F(HttpRequestOptionsTest, SetClientEncCertTest002, TestSize.Level1)
     EXPECT_EQ(keyEnc_, "");
     EXPECT_EQ(keyPasswdEnc_.Length(), 0);
 }
+
+HWTEST_F(HttpRequestOptionsTest, GetMaxRedirectsTest001, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    // When not set (undefined), GetMaxRedirects returns 0 via value_or(0)
+    uint32_t maxRedirects = requestOptions.GetMaxRedirects();
+    EXPECT_EQ(maxRedirects, 0);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetMaxRedirectsTest001, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    // Set maxRedirects to 0 (disable auto redirect, different from undefined)
+    requestOptions.SetMaxRedirects(0);
+    uint32_t maxRedirects = requestOptions.GetMaxRedirects();
+    EXPECT_EQ(maxRedirects, 0);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetMaxRedirectsTest002, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    // Set maxRedirects to a normal value
+    requestOptions.SetMaxRedirects(5);
+    uint32_t maxRedirects = requestOptions.GetMaxRedirects();
+    EXPECT_EQ(maxRedirects, 5);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetMaxRedirectsTest003, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    // Set maxRedirects to INT32_MAX (maximum valid value)
+    requestOptions.SetMaxRedirects(INT32_MAX);
+    uint32_t maxRedirects = requestOptions.GetMaxRedirects();
+    EXPECT_EQ(maxRedirects, static_cast<uint32_t>(INT32_MAX));
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetMaxRedirectsTest004, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    // Set maxRedirects to 1 (allow only one redirect)
+    requestOptions.SetMaxRedirects(1);
+    uint32_t maxRedirects = requestOptions.GetMaxRedirects();
+    EXPECT_EQ(maxRedirects, 1);
+}
 } // namespace

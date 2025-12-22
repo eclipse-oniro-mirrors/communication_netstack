@@ -567,6 +567,14 @@ declare namespace http {
      * @since 23 dynamic&static
      */
     customMethod?: string;
+
+    /**
+     * Supports specifying the configuration of maximum redirect count.
+     * @type {?int}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 23 dynamic&static
+     */
+    maxRedirects?: int;
   }
 
   /**
