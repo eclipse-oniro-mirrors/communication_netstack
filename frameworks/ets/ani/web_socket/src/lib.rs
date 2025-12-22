@@ -26,12 +26,12 @@ mod web_socket_server;
 mod wrapper;
 
 ani_rs::ani_constructor! {
-    namespace "L@ohos/net/webSocket/webSocket"
+    namespace "@ohos.net.webSocket.webSocket"
     [
         "createWebSocket" : web_socket::create_web_socket,
         "createWebSocketServer" : web_socket_server::create_web_socket_server,
     ]
-    class "L@ohos/net/webSocket/webSocket/WebSocketInner"
+    class "@ohos.net.webSocket.webSocket.WebSocketInner"
     [
         "connectSync" : web_socket::connect_sync,
         "sendSync" : web_socket::send_sync,
@@ -49,7 +49,7 @@ ani_rs::ani_constructor! {
         "offDataEndInner" : web_socket::off_data_end,
         "offHeaderReceiveInner" : web_socket::off_header_receive,
     ]
-    class "L@ohos/net/webSocket/webSocket/WebSocketServerInner"
+    class "@ohos.net.webSocket.webSocket.WebSocketServerInner"
     [
         "startSync" : web_socket_server::start_sync,
         "stopSync" : web_socket_server::stop_sync,
@@ -65,11 +65,11 @@ ani_rs::ani_constructor! {
         "offWebSocketServerCloseInner" : web_socket_server::off_close,
         "offMessageReceiveInner" : web_socket_server::off_message_receive,
     ]
-    class "L@ohos/net/webSocket/webSocket/Cleaner"
+    class "@ohos.net.webSocket.webSocket.Cleaner"
     [
         "clean" : web_socket::web_socket_clean,
     ]
-    class "L@ohos/net/webSocket/webSocket/CleanerServer"
+    class "@ohos.net.webSocket.webSocket.CleanerServer"
     [
         "clean" : web_socket_server::web_socket_server_clean,
     ]

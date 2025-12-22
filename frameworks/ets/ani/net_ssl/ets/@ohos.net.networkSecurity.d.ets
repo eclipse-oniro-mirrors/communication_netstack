@@ -35,7 +35,7 @@ export default namespace networkSecurity {
     return new Promise<int>((resolve, reject) => {
           taskpool.execute((): int => {
               return certVerificationAsync(cert, caCert);
-          }).then((content: NullishType) => {
+          }).then((content: Any) => {
               resolve(content as int);
           }, (err: Error): void => {
               reject(err as BusinessError);

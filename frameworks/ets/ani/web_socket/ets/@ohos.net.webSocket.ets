@@ -177,7 +177,7 @@ export default namespace webSocket {
       let p1 = taskpool.execute((): boolean => {
         return this.connectSync(url);
       })
-      p1.then((content: NullishType) => {
+      p1.then((content: Any) => {
           callback(new BusinessError(), content as boolean);
       }, (err: Error): void => {
           callback(err as BusinessError, false);
@@ -188,7 +188,7 @@ export default namespace webSocket {
       let p1 = taskpool.execute((): boolean => {
         return this.connectSync(url, options);
       })
-      p1.then((content: NullishType) => {
+      p1.then((content: Any) => {
           callback(new BusinessError(), content as boolean);
       }, (err: Error): void => {
           callback(err as BusinessError, false);
@@ -199,7 +199,7 @@ export default namespace webSocket {
       return new Promise<boolean>((resolve, reject) => {
       taskpool.execute((): boolean => {
           return this.connectSync(url, options);
-        }).then((content: NullishType) => {
+        }).then((content: Any) => {
             resolve(content as boolean);
         }, (err: Error): void => {
             reject(err as BusinessError);
@@ -213,7 +213,7 @@ export default namespace webSocket {
       let p1 = taskpool.execute((): boolean => {
         return this.sendSync(data);
       })
-      p1.then((content: NullishType) => {
+      p1.then((content: Any) => {
           callback(new BusinessError(), content as boolean);
       }, (err: Error): void => {
           callback(err as BusinessError, false);
@@ -224,7 +224,7 @@ export default namespace webSocket {
       return new Promise<boolean>((resolve, reject) => {
       taskpool.execute((): boolean => {
           return this.sendSync(data);
-        }).then((content: NullishType) => {
+        }).then((content: Any) => {
             resolve(content as boolean);
         }, (err: Error): void => {
             reject(err as BusinessError);
@@ -238,7 +238,7 @@ export default namespace webSocket {
       let p1 = taskpool.execute((): boolean => {
         return this.closeSync();
       })
-      p1.then((content: NullishType) => {
+      p1.then((content: Any) => {
           callback(new BusinessError(), content as boolean);
       }, (err: Error): void => {
           callback(err as BusinessError, false);
@@ -249,7 +249,7 @@ export default namespace webSocket {
       let p1 = taskpool.execute((): boolean => {
         return this.closeSync(options);
       })
-      p1.then((content: NullishType) => {
+      p1.then((content: Any) => {
           callback(new BusinessError(), content as boolean);
       }, (err: Error): void => {
           callback(err as BusinessError, false);
@@ -260,7 +260,7 @@ export default namespace webSocket {
       return new Promise<boolean>((resolve, reject) => {
       taskpool.execute((): boolean => {
           return this.closeSync(options);
-        }).then((content: NullishType) => {
+        }).then((content: Any) => {
             resolve(content as boolean);
         }, (err: Error): void => {
             reject(err as BusinessError);

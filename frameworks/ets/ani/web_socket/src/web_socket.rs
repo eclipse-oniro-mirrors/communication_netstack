@@ -35,9 +35,9 @@ pub(crate) fn web_socket_clean(this: AniCleaner) -> Result<(), BusinessError> {
 pub fn create_web_socket<'local>(env: &AniEnv<'local>) -> Result<AniRef<'local>, BusinessError> {
     info!("Creating WebSocket instance");
     static WEB_SOCKET_CLASS: &CStr = unsafe {
-        CStr::from_bytes_with_nul_unchecked(b"L@ohos/net/webSocket/webSocket/WebSocketInner;\0")
+        CStr::from_bytes_with_nul_unchecked(b"@ohos.net.webSocket.webSocket.WebSocketInner\0")
     };
-    static CTOR_SIGNATURE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"J:V\0") };
+    static CTOR_SIGNATURE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"l:\0") };
     let ptr = AniClient::new();
     let class = env.find_class(WEB_SOCKET_CLASS).unwrap();
     let obj = env
