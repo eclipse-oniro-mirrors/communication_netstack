@@ -266,6 +266,7 @@ HWTEST_F(HttpExecTest, IsReachRedirectLimitTest005, TestSize.Level1)
 HWTEST_F(HttpExecTest, SetSniHostNameOption001, TestSize.Level1)
 {
     unique_CURL handle(curl_easy_init());
+    ASSERT_NE(handle, nullptr);
 
     napi_env env = nullptr;
     auto manager = std::make_shared<EventManager>();
@@ -278,6 +279,7 @@ HWTEST_F(HttpExecTest, SetSniHostNameOption001, TestSize.Level1)
 HWTEST_F(HttpExecTest, SetSniHostNameOption002, TestSize.Level1)
 {
     unique_CURL handle(curl_easy_init());
+    ASSERT_NE(handle, nullptr);
 
     napi_env env = nullptr;
     auto manager = std::make_shared<EventManager>();
