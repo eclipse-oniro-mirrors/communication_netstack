@@ -113,7 +113,7 @@ void OnServerError(WebSocketServer *server, int32_t code)
         return;
     }
     ErrorResult errorResult;
-    errorResult.errorCode = code;
+    errorResult.errorCode = static_cast<unsigned int>(code);
     auto it = WEBSOCKET_ERR_MAP.find(code);
     if (it != WEBSOCKET_ERR_MAP.end()) {
         errorResult.errorMessage = it->second.c_str();
@@ -233,9 +233,11 @@ bool IsOverMaxConcurrentClientsCnt(WebSocketServer *server, const std::vector<So
         uniqueIp.insert(conn.clientIP);
     }
     if (uniqueIp.find(ip) != uniqueIp.end()) {
-        return uniqueIp.size() > server->GetServerContext()->startServerConfig_.maxConcurrentClientsNumber;
+        return uniqueIp.size() > static_cast<size_t>(
+            server->GetServerContext()->startServerConfig_.maxConcurrentClientsNumber);
     } else {
-        return (uniqueIp.size() + 1) > server->GetServerContext()->startServerConfig_.maxConcurrentClientsNumber;
+        return (uniqueIp.size() + 1) > static_cast<size_t>(
+            server->GetServerContext()->startServerConfig_.maxConcurrentClientsNumber);
     }
 }
 
@@ -248,7 +250,7 @@ bool IsOverMaxCntForOneClient(WebSocketServer *server, const std::vector<SocketC
             ++cnt;
         }
     }
-    if (cnt + 1 > server->GetServerContext()->startServerConfig_.maxConnectionsForOneClient) {
+    if (cnt + 1 > static_cast<uint32_t>(server->GetServerContext()->startServerConfig_.maxConnectionsForOneClient)) {
         return true;
     }
     return false;
@@ -622,11 +624,11 @@ int WebSocketServer::Start(const ServerConfig &config)
         NETSTACK_LOGE("Port is not valid");
         return WEBSOCKET_ERROR_CODE_INVALID_PORT;
     }
-    if (config.maxConcurrentClientsNumber > MAX_CONCURRENT_CLIENTS_NUMBER) {
+    if (config.maxConcurrentClientsNumber > static_cast<int>(MAX_CONCURRENT_CLIENTS_NUMBER)) {
         NETSTACK_LOGE("max concurrent clients number is set over limit");
         return WEBSOCKET_UNKNOWN_OTHER_ERROR;
     }
-    if (config.maxConnectionsForOneClient > MAX_CONNECTIONS_FOR_ONE_CLIENT) {
+    if (config.maxConnectionsForOneClient > static_cast<int>(MAX_CONNECTIONS_FOR_ONE_CLIENT)) {
         NETSTACK_LOGE("max connection number for one client is set over limit");
         return WEBSOCKET_UNKNOWN_OTHER_ERROR;
     }
@@ -737,8 +739,8 @@ int WebSocketServer::Send(const char *data, int length, const SocketConnection &
         NETSTACK_LOGE("session is closed or stopped");
         return -1;
     }
-    lws_write_protocol protocol = (strlen(data) == length) ? LWS_WRITE_TEXT : LWS_WRITE_BINARY;
-    size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + length + LWS_SEND_BUFFER_POST_PADDING;
+    lws_write_protocol protocol = (strlen(data) == static_cast<size_t>(length)) ? LWS_WRITE_TEXT : LWS_WRITE_BINARY;
+    size_t dataLen = static_cast<size_t>(LWS_SEND_BUFFER_PRE_PADDING + length + LWS_SEND_BUFFER_POST_PADDING);
     char *tmpData = (char *)malloc(dataLen);
     if (tmpData == nullptr) {
         NETSTACK_LOGE("malloc failed");
