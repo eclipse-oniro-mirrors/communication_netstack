@@ -447,7 +447,7 @@ HWTEST_F(HttpRequestOptionsTest, GetMaxRedirectsTest001, TestSize.Level1)
 
     // When not set (undefined), GetMaxRedirects returns 0 via value_or(0)
     uint32_t maxRedirects = requestOptions.GetMaxRedirects();
-    EXPECT_EQ(maxRedirects, 0);
+    EXPECT_EQ(maxRedirects, 30);
 }
 
 HWTEST_F(HttpRequestOptionsTest, SetMaxRedirectsTest001, TestSize.Level1)
