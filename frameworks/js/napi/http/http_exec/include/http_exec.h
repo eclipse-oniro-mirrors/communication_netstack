@@ -32,6 +32,9 @@
 #include "curl/curl.h"
 #include "napi/native_api.h"
 #include "request_context.h"
+#ifdef HAS_NETMANAGER_BASE
+#include "net_conn_client.h"
+#endif
 
 namespace OHOS::NetStack::HttpOverCurl {
     struct TransferCallbacks;
@@ -178,6 +181,17 @@ private:
     static bool SetTCPOption(CURL *curl, RequestContext *context);
 
     static bool SetCertPinnerOption(CURL *curl, RequestContext *context);
+
+#ifdef HAS_NETMANAGER_BASE
+    static bool SetInterface(CURL *curl, RequestContext *context);
+    static bool GetInterfaceName(CURL *curl, RequestContext *context, std::string &interfaceName, int32_t &netId);
+    static bool GetPrimaryCellularInterface(CURL *curl, RequestContext *context, 
+        std::list<sptr<NetManagerStandard::NetHandle>> netList, std::string &interfaceName, int32_t &netId);
+    static bool GetSecondaryCellularInterface(CURL *curl, RequestContext *context, 
+        std::list<sptr<NetManagerStandard::NetHandle>> netList, std::string &interfaceName, int32_t &netId);
+    static bool GetNetStatus(std::list<sptr<NetManagerStandard::NetHandle>> netList, 
+        std::list<sptr<NetManagerStandard::NetHandle>> &cellularNetworks, uint8_t &cellCount, uint8_t &wifiCount);
+#endif
 
 #if HAS_NETMANAGER_BASE
     static void SetRequestInfoCallbacks(HttpOverCurl::TransferCallbacks &callbacks);

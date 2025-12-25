@@ -632,6 +632,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParseAddressFamily(optionsValue);
     ParseSslType(optionsValue);
     ParseClientEncCert(optionsValue);
+    ParsePathPreference(optionsValue);
 }
 
 bool RequestContext::IsUsingCache() const
@@ -1212,4 +1213,23 @@ void RequestContext::ParseClientEncCert(napi_value optionsValue)
     options.SetClientEncCert(cert, certType, key, keyPasswd);
 }
 
+void RequestContext::ParsePathPreference(napi_value optionsValue)
+{
+    napi_env env = GetEnv();
+    if (!NapiUtils::HasNamedProperty(env, optionsValue, HttpConstant::PATH_PREFERENCE)) {
+        PathPreference pathPre = PathPreference::autoPath;
+        options.SetPathPreference(pathPre);
+        return;
+    }    
+    PathPreference pathPre;
+    auto pathType = NapiUtils::GetStringPropertyUtf8(env, optionsValue, HttpConstant::PATH_PREFERENCE);
+    if (pathType == "primaryCellular") {
+        pathPre = PathPreference::primaryCellular;
+    } else if (pathType == "secondaryCellular") {
+        pathPre = PathPreference::secondaryCellular;
+    } else {
+        pathPre = PathPreference::autoPath;
+    }
+    options.SetPathPreference(pathPre);
+}
 } // namespace OHOS::NetStack::Http
