@@ -87,6 +87,12 @@ enum class SslType {
     TLCP,
 };
 
+enum class PathPreference {
+    autoPath,
+    primaryCellular,
+    secondaryCellular,
+};
+
 class HttpRequestOptions final {
 public:
     HttpRequestOptions();
@@ -276,6 +282,9 @@ public:
     void SetClientEncCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
     void GetClientEncCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
 
+    void SetPathPreference(PathPreference &pathPreference);
+    [[nodiscard]] const PathPreference &GetPathPreference() const;
+
 private:
     std::string url_;
 
@@ -352,6 +361,7 @@ private:
     Secure::SecureChar keyPasswdEnc_;
 
     TcpConfiguration tcpOption_;
+    PathPreference pathPreference_;
 };
 } // namespace OHOS::NetStack::Http
 

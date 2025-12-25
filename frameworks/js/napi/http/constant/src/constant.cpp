@@ -150,4 +150,5 @@ const char *const HttpConstant::INTERCEPTOR_NETWORK_CONNECT = "NETWORK_CONNECT";
 const char *const HttpConstant::INTERCEPTOR_CONNECT_NETWORK = "CONNECT_NETWORK";
 const char *const HttpConstant::INTERCEPTOR_FINAL_RESPONSE = "FINAL_RESPONSE";
 const char *const HttpConstant::INTERCEPTOR_TYPE = "InterceptorType";
+const char *const HttpConstant::PATH_PREFERENCE = "pathPreference";
 } // namespace OHOS::NetStack::Http
