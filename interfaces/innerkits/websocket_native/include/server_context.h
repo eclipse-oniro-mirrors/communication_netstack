@@ -45,11 +45,11 @@ struct ServerCert {
 
 struct ServerConfig {
     std::string serverIP;
-    int serverPort;
+    int serverPort = 0;
     ServerCert serverCert;
-    int maxConcurrentClientsNumber;
+    int maxConcurrentClientsNumber = 0;
     std::string protocol;
-    int maxConnectionsForOneClient;
+    int maxConnectionsForOneClient = 0;
 };
 
 struct SocketConnection {

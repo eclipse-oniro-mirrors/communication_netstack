@@ -362,9 +362,9 @@ int LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason, void *user, v
     CloseResult closeResult;
     auto ctx = client->GetClientContext();
     if (ctx != nullptr && ctx->closeStatus != LWS_CLOSE_STATUS_NOSTATUS) {
-        closeResult.code = static_cast<int>(ctx->closeStatus);
+        closeResult.code = static_cast<unsigned int>(ctx->closeStatus);
     } else {
-        closeResult.code = CLOSE_RESULT_FROM_SERVER_CODE;
+        closeResult.code = static_cast<unsigned int>(CLOSE_RESULT_FROM_SERVER_CODE);
     }
     if (ctx != nullptr && !ctx->closeReason.empty()) {
         closeResult.reason = ctx->closeReason.c_str();
@@ -445,7 +445,7 @@ static void GetWebsocketProxyInfo(ClientContext *context, std::string &host, uin
 #endif
     } else if (context->usingWebsocketProxyType == WebsocketProxyType::USE_SPECIFIED) {
         host = context->websocketProxyHost;
-        port = context->websocketProxyPort;
+        port = static_cast<uint32_t>(context->websocketProxyPort);
         exclusions = context->websocketProxyExclusions;
     }
 }
@@ -772,6 +772,10 @@ int CreatConnectInfoEx(const std::string url, lws_context *lwsContext, WebSocket
     connectInfo.context = lwsContext;
     connectInfo.address = address;
     connectInfo.port = port;
+    if (std::strlen(path.c_str()) != path.length()) {
+        NETSTACK_LOGE("c_str() length does not match path length");
+        return -1;
+    }
     connectInfo.path = path.c_str();
     connectInfo.host = tempHost.c_str();
     connectInfo.origin = address;
