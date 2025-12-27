@@ -185,11 +185,11 @@ private:
 #ifdef HAS_NETMANAGER_BASE
     static bool SetInterface(CURL *curl, RequestContext *context);
     static bool GetInterfaceName(CURL *curl, RequestContext *context, std::string &interfaceName, int32_t &netId);
-    static bool GetPrimaryCellularInterface(CURL *curl, RequestContext *context, 
+    static bool GetPrimaryCellularInterface(CURL *curl, RequestContext *context,
         std::list<sptr<NetManagerStandard::NetHandle>> netList, std::string &interfaceName, int32_t &netId);
-    static bool GetSecondaryCellularInterface(CURL *curl, RequestContext *context, 
+    static bool GetSecondaryCellularInterface(CURL *curl, RequestContext *context,
         std::list<sptr<NetManagerStandard::NetHandle>> netList, std::string &interfaceName, int32_t &netId);
-    static bool GetNetStatus(std::list<sptr<NetManagerStandard::NetHandle>> netList, 
+    static bool GetNetStatus(std::list<sptr<NetManagerStandard::NetHandle>> netList,
         std::list<sptr<NetManagerStandard::NetHandle>> &cellularNetworks, uint8_t &cellCount, uint8_t &wifiCount);
 #endif
 

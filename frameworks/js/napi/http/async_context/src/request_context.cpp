@@ -1220,7 +1220,7 @@ void RequestContext::ParsePathPreference(napi_value optionsValue)
         PathPreference pathPre = PathPreference::autoPath;
         options.SetPathPreference(pathPre);
         return;
-    }    
+    }
     PathPreference pathPre;
     auto pathType = NapiUtils::GetStringPropertyUtf8(env, optionsValue, HttpConstant::PATH_PREFERENCE);
     if (pathType == "primaryCellular") {

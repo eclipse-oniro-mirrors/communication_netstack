@@ -62,7 +62,6 @@
 #include "http_time.h"
 #include "napi_utils.h"
 #include "netstack_common_utils.h"
-
 #include "secure_char.h"
 #include "securec.h"
 
@@ -122,6 +121,9 @@ bool HttpExec::SetInterface(CURL *curl, RequestContext *context)
 bool HttpExec::GetInterfaceName(CURL *curl, RequestContext *context, std::string &interfaceName, int32_t &netId)
 {
     if (curl == nullptr || context == nullptr) {
+        return false;
+    }
+    if (context->options.GetPathPreference() == PathPreference::autoPath) {
         return false;
     }
     std::list<sptr<NetManagerStandard::NetHandle>> netList;
