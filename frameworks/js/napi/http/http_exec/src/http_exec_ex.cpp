@@ -62,7 +62,6 @@
 #include "http_time.h"
 #include "napi_utils.h"
 #include "netstack_common_utils.h"
-
 #include "secure_char.h"
 #include "securec.h"
 
