@@ -38,7 +38,7 @@ uint32_t TCPExtraOptions::SocketLinger::GetLinger() const
     return linger_;
 }
 
-TCPExtraOptions::TCPExtraOptions() : keepAlive_(false), OOBInline_(false), TCPNoDelay_(false) {}
+TCPExtraOptions::TCPExtraOptions() : keepAlive_(false), OOBInline_(false), TCPNoDelay_(false), TCPFastOpen_(false) {}
 
 void TCPExtraOptions::SetKeepAlive(bool keepAlive)
 {
@@ -55,6 +55,11 @@ void TCPExtraOptions::SetTCPNoDelay(bool TCPNoDelay)
     TCPNoDelay_ = TCPNoDelay;
 }
 
+void TCPExtraOptions::SetTCPFastOpen(bool TCPFastOpen)
+{
+    TCPFastOpen_ = TCPFastOpen;
+}
+
 bool TCPExtraOptions::IsKeepAlive() const
 {
     return keepAlive_;
@@ -68,6 +73,11 @@ bool TCPExtraOptions::IsOOBInline() const
 bool TCPExtraOptions::IsTCPNoDelay() const
 {
     return TCPNoDelay_;
+}
+
+bool TCPExtraOptions::IsTCPFastOpen() const
+{
+    return TCPFastOpen_;
 }
 
 bool TCPExtraOptions::AlreadySetKeepAlive() const
@@ -95,9 +105,19 @@ bool TCPExtraOptions::AlreadySetTcpNoDelay() const
     return tcpNoDelayFlag_;
 }
 
+bool TCPExtraOptions::AlreadySetTCPFastOpen() const
+{
+    return tcpFastOpenFlag_;
+}
+
 void TCPExtraOptions::SetTcpNoDelayFlag(bool flag)
 {
     tcpNoDelayFlag_ = flag;
+}
+
+void TCPExtraOptions::SetTcpFastOpenFlag(bool flag)
+{
+    tcpFastOpenFlag_ = flag;
 }
 
 bool TCPExtraOptions::AlreadySetLinger() const

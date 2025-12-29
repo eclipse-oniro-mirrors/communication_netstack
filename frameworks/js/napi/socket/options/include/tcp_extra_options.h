@@ -53,11 +53,15 @@ public:
 
     void SetTCPNoDelay(bool TCPNoDelay);
 
+    void SetTCPFastOpen(bool TCPFastOpen);
+
     [[nodiscard]] bool IsKeepAlive() const;
 
     [[nodiscard]] bool IsOOBInline() const;
 
     [[nodiscard]] bool IsTCPNoDelay() const;
+
+    [[nodiscard]] bool IsTCPFastOpen() const;
 
     [[nodiscard]] bool AlreadySetKeepAlive() const;
 
@@ -70,6 +74,10 @@ public:
     [[nodiscard]] bool AlreadySetTcpNoDelay() const;
 
     void SetTcpNoDelayFlag(bool flag);
+
+    [[nodiscard]] bool AlreadySetTCPFastOpen() const;
+
+    void SetTcpFastOpenFlag(bool flag);
 
     [[nodiscard]] bool AlreadySetLinger() const;
 
@@ -84,11 +92,15 @@ private:
 
     bool TCPNoDelay_;
 
+    bool TCPFastOpen_;
+
     bool keepAliveFlag_ = false;
 
     bool oobInlineFlag_ = false;
 
     bool tcpNoDelayFlag_ = false;
+
+    bool tcpFastOpenFlag_ = false;
 
     bool lingerFlag_ = false;
 };
