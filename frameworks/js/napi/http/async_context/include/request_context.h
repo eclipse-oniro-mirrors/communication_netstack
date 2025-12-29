@@ -181,6 +181,8 @@ public:
 
     [[nodiscard]] bool IsReachRedirectLimit();
 
+    void ParseSniHostName(napi_value optionsValue);
+
     std::map<std::string, napi_ref> interceptorRefs_;
 
 #ifdef HTTP_HANDOVER_FEATURE

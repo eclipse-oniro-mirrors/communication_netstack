@@ -135,6 +135,7 @@ public:
     static const uint32_t DEFAULT_CONNECT_TIMEOUT;
 
     static const size_t MAX_JSON_PARSE_SIZE;
+    static const uint32_t MAX_SNI_HOSTNAME_LEN;
 
     /* options key */
     static const char *const PARAM_KEY_METHOD;
@@ -155,6 +156,7 @@ public:
     static const char *const PARAM_KEY_CA_DATA;
     static const char *const PARAM_KEY_DOH_URL;
     static const char *const PARAM_KEY_MAX_REDIRECTS;
+    static const char *const PARAM_KEY_SNI_HOSTNAME;
 
     static const char *const PARAM_KEY_USING_HTTP_PROXY;
     static const char *const PARAM_KEY_CLIENT_CERT;

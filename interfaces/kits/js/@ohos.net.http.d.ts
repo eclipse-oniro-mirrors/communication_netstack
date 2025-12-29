@@ -575,6 +575,14 @@ declare namespace http {
      * @since 23 dynamic&static
      */
     maxRedirects?: int;
+
+    /**
+     * Supports specifying an SNI domain name to include the SNI field during the TLS connection process.
+     * @type {?string}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 23 dynamic&static
+     */
+    sniHostName?: string;
   }
 
   /**

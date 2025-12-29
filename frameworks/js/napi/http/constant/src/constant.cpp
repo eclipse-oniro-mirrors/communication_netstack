@@ -29,6 +29,7 @@ const uint32_t HttpConstant::DEFAULT_MAX_LIMIT = 5 * 1024 * 1024;
 const uint32_t HttpConstant::MAX_LIMIT = 100 * 1024 * 1024;
 const uint32_t HttpConstant::DEFAULT_READ_TIMEOUT = 60000;
 const uint32_t HttpConstant::DEFAULT_CONNECT_TIMEOUT = 60000;
+const uint32_t HttpConstant::MAX_SNI_HOSTNAME_LEN = 65535;
 
 const size_t HttpConstant::MAX_JSON_PARSE_SIZE = 65536;
 
@@ -47,6 +48,7 @@ const char *const HttpConstant::PARAM_KEY_USING_CACHE = "usingCache";
 const char *const HttpConstant::PARAM_KEY_EXPECT_DATA_TYPE = "expectDataType";
 const char *const HttpConstant::PARAM_KEY_PRIORITY = "priority";
 const char *const HttpConstant::PARAM_KEY_MAX_REDIRECTS = "maxRedirects";
+const char *const HttpConstant::PARAM_KEY_SNI_HOSTNAME = "sniHostName";
 
 const char *const HttpConstant::PARAM_KEY_USING_HTTP_PROXY = "usingProxy";
 const char *const HttpConstant::PARAM_KEY_CA_PATH = "caPath";

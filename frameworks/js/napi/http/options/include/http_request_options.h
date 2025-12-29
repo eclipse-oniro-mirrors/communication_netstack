@@ -17,6 +17,7 @@
 #define COMMUNICATIONNETSTACK_HTTP_REQUEST_OPTIONS_H
 
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -276,6 +277,12 @@ public:
     void SetClientEncCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
     void GetClientEncCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
 
+    void SetSniHostName(const std::string &sniHostName);
+
+    [[nodiscard]] const std::string &GetSniHostName() const;
+
+    [[nodiscard]] bool HasSniHostName() const;
+
 private:
     std::string url_;
 
@@ -352,6 +359,8 @@ private:
     Secure::SecureChar keyPasswdEnc_;
 
     TcpConfiguration tcpOption_;
+
+    std::optional<std::string> sniHostName_;
 };
 } // namespace OHOS::NetStack::Http
 
