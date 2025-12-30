@@ -140,7 +140,7 @@ bool HttpExec::GetInterfaceName(CURL *curl, RequestContext *context, std::string
         } else if (context->options.GetPathPreference() == PathPreference::secondaryCellular) {
             bool ret = GetSecondaryCellularInterface(curl, context, netList, interfaceName, netId);
             return ret;
-        } else if (context->options.GetPathPreference() == PathPreference::autoPath) {
+        } else {
             return false;
         }
     }
@@ -240,7 +240,7 @@ bool HttpExec::GetNetStatus(std::list<sptr<NetManagerStandard::NetHandle>> netLi
         return false;
     }
     
-    for (auto net : netList) {
+    for (auto &net : netList) {
         NetManagerStandard::NetAllCapabilities netAllCap;
         if (net != nullptr && NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(*net, netAllCap) ==
             NetManagerStandard::NETMANAGER_SUCCESS) {
