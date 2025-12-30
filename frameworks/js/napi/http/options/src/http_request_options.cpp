@@ -49,7 +49,7 @@ HttpRequestOptions::HttpRequestOptions()
       certEnc_(""),
       certTypeEnc_(""),
       keyEnc_(""),
-      sniHostName_(std::nullopt)
+      sniHostName_("")
 {
 }
 
@@ -498,12 +498,6 @@ void HttpRequestOptions::SetSniHostName(const std::string &sniHostName)
 
 const std::string &HttpRequestOptions::GetSniHostName() const
 {
-    return sniHostName_.value_or("");
+    return sniHostName_;
 }
-
-bool HttpRequestOptions::HasSniHostName() const
-{
-    return sniHostName_.has_value();
-}
-
 } // namespace OHOS::NetStack::Http

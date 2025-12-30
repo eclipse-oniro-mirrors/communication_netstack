@@ -281,8 +281,6 @@ public:
 
     [[nodiscard]] const std::string &GetSniHostName() const;
 
-    [[nodiscard]] bool HasSniHostName() const;
-
 private:
     std::string url_;
 
@@ -360,7 +358,7 @@ private:
 
     TcpConfiguration tcpOption_;
 
-    std::optional<std::string> sniHostName_;
+    std::string sniHostName_;
 };
 } // namespace OHOS::NetStack::Http
 
