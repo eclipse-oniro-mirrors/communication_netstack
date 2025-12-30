@@ -369,6 +369,27 @@ void RequestContext::ParseServerAuthentication(napi_value optionsValue)
     options.SetServerAuthentication(serverAuthentication);
 }
 
+void RequestContext::ParseSniHostName(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_SNI_HOSTNAME)) {
+        return;
+    }
+    napi_value sniHostName =
+        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_SNI_HOSTNAME);
+    napi_valuetype type = NapiUtils::GetValueType(GetEnv(), sniHostName);
+    if (type != napi_string) {
+        NETSTACK_LOGE("sniHostName type error");
+        return;
+    }
+    auto sniHostNameString = NapiUtils::GetStringFromValueUtf8(GetEnv(), sniHostName);
+    if (sniHostNameString.length() < HttpConstant::MAX_SNI_HOSTNAME_LEN) {
+        options.SetSniHostName(sniHostNameString);
+    } else {
+        NETSTACK_LOGE("sniHostName length error");
+        return;
+    }
+}
+
 void RequestContext::ParseHeader(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_HEADER)) {
@@ -617,6 +638,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
         return;
     }
 
+    ParseSniHostName(optionsValue);
     ParseHeader(optionsValue);
     ParseCaPath(optionsValue);
     ParseCaData(optionsValue);

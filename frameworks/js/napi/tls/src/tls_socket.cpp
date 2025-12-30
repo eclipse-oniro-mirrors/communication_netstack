@@ -957,6 +957,11 @@ bool TLSSocket::SetExtraOptions(const Socket::TCPExtraOptions &option) const
         }
     }
 
+    if (option.IsTCPFastOpen()) {
+        int tcpFastOpen = 1;
+        NETSTACK_LOGE("set TCP_FastOpen %{public}d", tcpFastOpen);
+    }
+
     linger soLinger = {0};
     soLinger.l_onoff = option.socketLinger.IsOn();
     soLinger.l_linger = (int)option.socketLinger.GetLinger();

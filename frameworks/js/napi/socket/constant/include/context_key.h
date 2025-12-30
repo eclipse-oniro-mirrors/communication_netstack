@@ -62,6 +62,8 @@
 
 #define KEY_SOCKET_LINGER "socketLinger"
 
+#define KEY_TCP_FAST_OPEN "tcpFastOpen"
+
 #define KEY_SOCKET_LINGER_ON "on"
 
 #define KEY_SOCKET_LINGER_LINGER "linger"

@@ -76,7 +76,6 @@ ohos_unittest("http_unittest") {
     "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_time.cpp",
     "$NETSTACK_NAPI_ROOT/http/constant/src/constant.cpp",
     "$NETSTACK_NAPI_ROOT/http/http_exec/src/http_exec.cpp",
-    "$NETSTACK_NAPI_ROOT/http/http_exec/src/http_exec_ex.cpp",
     "$NETSTACK_NAPI_ROOT/http/http_exec/src/http_tls_config.cpp",
     "$NETSTACK_NAPI_ROOT/http/http_interceptor/src/http_interceptor.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_request_options.cpp",

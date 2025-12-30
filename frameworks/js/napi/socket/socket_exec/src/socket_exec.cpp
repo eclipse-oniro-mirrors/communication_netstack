@@ -1482,6 +1482,11 @@ static bool SocketSetTcpExtraOptions(int sockfd, TCPExtraOptions& option)
         }
     }
 
+    if (option.AlreadySetTCPFastOpen()) {
+        int fastOpen = static_cast<int>(option.IsTCPFastOpen());
+        NETSTACK_LOGE("set TCP_FastOpen %{public}d", fastOpen);
+    }
+
     if (option.AlreadySetLinger()) {
         linger soLinger = {.l_onoff = option.socketLinger.IsOn(),
                            .l_linger = static_cast<int>(option.socketLinger.GetLinger())};

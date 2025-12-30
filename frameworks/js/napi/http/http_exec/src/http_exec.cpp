@@ -74,6 +74,7 @@
 
 #include "http_utils.h"
 
+
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
         CURLcode result = curl_easy_setopt(handle, opt, data);                                           \
@@ -1646,9 +1647,14 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_NOSIGNAL, 1L, context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_TIMEOUT_MS, context->options.GetReadTimeout(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SNI_HOSTNAME,
+        context->options.HasSniHostName() ? context->options.GetSniHostName().c_str() : nullptr, context);
 
 #ifdef HAS_NETMANAGER_BASE
-    SetInterface(curl, context);
+    if (context->options.GetPathPreference() == PathPreference::primaryCellular ||
+        context->options.GetPathPreference() == PathPreference::secondaryCellular) {
+        SetInterface(curl, context);
+    }
 #endif
 
     if (!SetRequestOption(curl, context)) {
@@ -2198,5 +2204,168 @@ bool HttpExec::SetSslTypeAndClientEncCert(CURL *curl, RequestContext *context)
     }
     return true;
 }
+
+#ifdef HAS_NETMANAGER_BASE
+bool HttpExec::SetInterface(CURL *curl, RequestContext *context)
+{
+    if (curl == nullptr || context == nullptr) {
+        return false;
+    }
+    std::string interfaceName;
+    int32_t netId;
+    bool ret = GetInterfaceName(curl, context, interfaceName, netId);
+    if (ret && !interfaceName.empty() && netId >= MIN_NON_SYSTEM_NETID) {
+        bool ipv6Enable = NetSysIsIpv6Enable(netId);
+        bool ipv4Enable = NetSysIsIpv4Enable(netId);
+        if (!ipv6Enable) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4, context);
+        } else if (!ipv4Enable) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6, context);
+        }
+#ifdef HTTP_HANDOVER_FEATURE
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_OHOS_SOCKET_BIND_NET_ID, netId, context);
+#endif
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_INTERFACE, interfaceName.c_str(), context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DNS_INTERFACE, interfaceName.c_str(), context);
+        return true;
+    }
+    return false;
+}
+
+bool HttpExec::GetInterfaceName(CURL *curl, RequestContext *context, std::string &interfaceName, int32_t &netId)
+{
+    if (curl == nullptr || context == nullptr) {
+        return false;
+    }
+    std::list<sptr<NetManagerStandard::NetHandle>> netList;
+    if (NetManagerStandard::NetConnClient::GetInstance().GetAllNets(netList)
+        == NetManagerStandard::NetConnResultCode::NET_CONN_SUCCESS) {
+        netList.remove_if([](const sptr<NetManagerStandard::NetHandle>& net) {
+            return net->GetNetId() < MIN_NON_SYSTEM_NETID;
+        });
+    }
+    if (netList.size() == DUAL_NETWORK_BOOT_COUNT) {
+        if (context->options.GetPathPreference() == PathPreference::primaryCellular) {
+            bool ret = GetPrimaryCellularInterface(curl, context, netList, interfaceName, netId);
+            return ret;
+        } else if (context->options.GetPathPreference() == PathPreference::secondaryCellular) {
+            bool ret = GetSecondaryCellularInterface(curl, context, netList, interfaceName, netId);
+            return ret;
+        }
+    }
+    return false;
+}
+
+bool HttpExec::GetPrimaryCellularInterface(CURL *curl, RequestContext *context,
+    std::list<sptr<NetManagerStandard::NetHandle>> netList, std::string &interfaceName, int32_t &netId)
+{
+    if (curl == nullptr || context == nullptr) {
+        return false;
+    }
+    if (netList.size() != DUAL_NETWORK_BOOT_COUNT) {
+        return false;
+    }
+
+    NetManagerStandard::NetHandle defaultHandle;
+    if (NetManagerStandard::NetConnClient::GetInstance().GetDefaultNet(defaultHandle) !=
+        NetManagerStandard::NETMANAGER_SUCCESS) {
+        return false;
+    }
+    NetManagerStandard::NetAllCapabilities netAllCap;
+    if (NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(defaultHandle, netAllCap) ==
+        NetManagerStandard::NETMANAGER_SUCCESS) {
+        if (netAllCap.bearerTypes_.find(NetManagerStandard::NetBearType::BEARER_CELLULAR) !=
+            netAllCap.bearerTypes_.end()) {
+            return false;
+        }
+    }
+
+    uint8_t cellCount = 0;
+    uint8_t wifiCount = 0;
+    std::list<sptr<NetManagerStandard::NetHandle>> cellularNetworks;
+    if (!GetNetStatus(netList, cellularNetworks, cellCount, wifiCount)) {
+        return false;
+    }
+
+    if (cellCount == SINGLE_CELLULAR_NETWORK_COUNT && netList.size() == DUAL_NETWORK_BOOT_COUNT) {
+        NetManagerStandard::NetLinkInfo info;
+        if (cellularNetworks.size() == SINGLE_CELLULAR_NETWORK_COUNT &&
+            NetManagerStandard::NetConnClient::GetInstance().GetConnectionProperties(*(cellularNetworks.front()),
+            info) == NetManagerStandard::NETMANAGER_SUCCESS) {
+            interfaceName = info.ifaceName_;
+            netId = cellularNetworks.front()->GetNetId();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool HttpExec::GetSecondaryCellularInterface(CURL *curl, RequestContext *context,
+    std::list<sptr<NetManagerStandard::NetHandle>> netList, std::string &interfaceName, int32_t &netId)
+{
+    if (curl == nullptr || context == nullptr) {
+        return false;
+    }
+    if (netList.size() != DUAL_NETWORK_BOOT_COUNT) {
+        return false;
+    }
+    uint8_t cellCount = 0;
+    uint8_t wifiCount = 0;
+    std::list<sptr<NetManagerStandard::NetHandle>> cellularNetworks;
+    
+    if (!GetNetStatus(netList, cellularNetworks, cellCount, wifiCount)) {
+        return false;
+    }
+    
+    if (cellCount == SINGLE_CELLULAR_NETWORK_COUNT) {
+        return false;
+    } else if (cellCount == DUAL_NETWORK_BOOT_COUNT) {
+        NetManagerStandard::NetHandle defaultHandle;
+        if (NetManagerStandard::NetConnClient::GetInstance().GetDefaultNet(defaultHandle) !=
+            NetManagerStandard::NETMANAGER_SUCCESS) {
+            return false;
+        }
+        for (auto net : cellularNetworks) {
+            if (defaultHandle.GetNetId() == net->GetNetId()) {
+                continue;
+            }
+            NetManagerStandard::NetLinkInfo info;
+            if (NetManagerStandard::NetConnClient::GetInstance().GetConnectionProperties(*net, info) ==
+                NetManagerStandard::NETMANAGER_SUCCESS) {
+                interfaceName = info.ifaceName_;
+                netId = net->GetNetId();
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool HttpExec::GetNetStatus(std::list<sptr<NetManagerStandard::NetHandle>> netList,
+    std::list<sptr<NetManagerStandard::NetHandle>> &cellularNetworks, uint8_t &cellCount, uint8_t &wifiCount)
+{
+    if (netList.size() != DUAL_NETWORK_BOOT_COUNT) {
+        return false;
+    }
+    
+    for (auto &net : netList) {
+        NetManagerStandard::NetAllCapabilities netAllCap;
+        if (net != nullptr && NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(*net, netAllCap) ==
+            NetManagerStandard::NETMANAGER_SUCCESS) {
+            if (netAllCap.bearerTypes_.find(NetManagerStandard::NetBearType::BEARER_CELLULAR) !=
+                netAllCap.bearerTypes_.end()) {
+                cellCount++;
+                cellularNetworks.push_back(net);
+            }
+            if (netAllCap.bearerTypes_.find(NetManagerStandard::NetBearType::BEARER_WIFI) !=
+                netAllCap.bearerTypes_.end()) {
+                wifiCount++;
+            }
+        }
+    }
+    return true;
+}
+#endif
 
 } // namespace OHOS::NetStack::Http

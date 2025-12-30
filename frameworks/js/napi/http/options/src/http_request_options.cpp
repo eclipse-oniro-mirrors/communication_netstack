@@ -48,7 +48,8 @@ HttpRequestOptions::HttpRequestOptions()
       sslTypeEnc_(SslType::TLS),
       certEnc_(""),
       certTypeEnc_(""),
-      keyEnc_("")
+      keyEnc_(""),
+      sniHostName_(std::nullopt)
 {
 }
 
@@ -499,4 +500,19 @@ const PathPreference &HttpRequestOptions::GetPathPreference() const
 {
     return pathPreference_;
 }
+void HttpRequestOptions::SetSniHostName(const std::string &sniHostName)
+{
+    sniHostName_ = sniHostName;
+}
+
+const std::string &HttpRequestOptions::GetSniHostName() const
+{
+    return sniHostName_.value_or("");
+}
+
+bool HttpRequestOptions::HasSniHostName() const
+{
+    return sniHostName_.has_value();
+}
+
 } // namespace OHOS::NetStack::Http

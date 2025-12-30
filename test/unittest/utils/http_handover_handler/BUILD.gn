@@ -107,7 +107,6 @@ ohos_unittest("http_handover_handler_test") {
     "$NETSTACK_DIR/frameworks/js/napi/http/async_context/src/request_context.cpp",
     "$NETSTACK_DIR/frameworks/js/napi/http/constant/src/constant.cpp",
     "$NETSTACK_DIR/frameworks/js/napi/http/http_exec/src/http_exec.cpp",
-    "$NETSTACK_DIR/frameworks/js/napi/http/http_exec/src/http_exec_ex.cpp",
     "$NETSTACK_DIR/frameworks/js/napi/http/http_exec/src/http_tls_config.cpp",
     "$NETSTACK_DIR/frameworks/js/napi/http/http_interceptor/src/http_interceptor.cpp",
     "$NETSTACK_DIR/frameworks/js/napi/http/options/src/http_request_options.cpp",

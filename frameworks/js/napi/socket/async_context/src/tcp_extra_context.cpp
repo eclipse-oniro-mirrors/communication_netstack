@@ -62,6 +62,11 @@ void TcpSetExtraOptionsContext::ParseContextKey(napi_value *params)
         options_.SetTcpNoDelayFlag(true);
     }
 
+    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_TCP_FAST_OPEN)) {
+        options_.SetTCPFastOpen(NapiUtils::GetBooleanProperty(GetEnv(), params[0], KEY_TCP_FAST_OPEN));
+        options_.SetTcpFastOpenFlag(true);
+    }
+
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_SOCKET_LINGER)) {
         napi_value socketLinger = NapiUtils::GetNamedProperty(GetEnv(), params[0], KEY_SOCKET_LINGER);
         if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_object) {

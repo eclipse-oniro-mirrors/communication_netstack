@@ -17,6 +17,7 @@
 #define COMMUNICATIONNETSTACK_HTTP_REQUEST_OPTIONS_H
 
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -284,6 +285,11 @@ public:
 
     void SetPathPreference(PathPreference &pathPreference);
     [[nodiscard]] const PathPreference &GetPathPreference() const;
+    void SetSniHostName(const std::string &sniHostName);
+
+    [[nodiscard]] const std::string &GetSniHostName() const;
+
+    [[nodiscard]] bool HasSniHostName() const;
 
 private:
     std::string url_;
@@ -362,6 +368,8 @@ private:
 
     TcpConfiguration tcpOption_;
     PathPreference pathPreference_;
+
+    std::optional<std::string> sniHostName_;
 };
 } // namespace OHOS::NetStack::Http
 

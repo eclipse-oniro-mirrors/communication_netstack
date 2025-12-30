@@ -84,6 +84,12 @@ static int64_t g_limitSdkReport = 0;
 constexpr long HTTP_STATUS_REDIRECT_START = 300;
 constexpr long HTTP_STATUS_CLIENT_ERROR_START = 400;
 
+#ifdef HAS_NETMANAGER_BASE
+static constexpr uint32_t MIN_NON_SYSTEM_NETID = 100;
+static constexpr uint32_t DUAL_NETWORK_BOOT_COUNT = 2;
+static constexpr uint32_t SINGLE_CELLULAR_NETWORK_COUNT = 1;
+#endif
+
 [[maybe_unused]] static void RequestContextDeleter(RequestContext *context)
 {
     context->DeleteReference();
