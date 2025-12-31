@@ -80,9 +80,7 @@ void SetCertChainOneWayHwTestLongParam(TLSSocket &server)
 
 HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("bindInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("bindInterface"), false);
 
     TLSSocket srv;
     Socket::NetAddress address;
@@ -92,9 +90,7 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("connectInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("connectInterface"), false);
     TLSSocket certChainOneWayService;
     SetCertChainOneWayHwTestShortParam(certChainOneWayService);
 
@@ -110,9 +106,7 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("closeInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("closeInterface"), false);
     TLSSocket certChainOneWayService;
     SetCertChainOneWayHwTestShortParam(certChainOneWayService);
 
@@ -128,9 +122,7 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("sendInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("sendInterface"), false);
     TLSSocket certChainOneWayService;
     SetCertChainOneWayHwTestShortParam(certChainOneWayService);
 
@@ -146,9 +138,7 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("getRemoteAddressInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("getRemoteAddressInterface"), false);
     TLSSocket certChainOneWayService;
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
@@ -186,9 +176,7 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
 
 HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("getRemoteAddressInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("getRemoteAddressInterface"), false);
     TLSSocket certChainOneWayService;
     SetCertChainOneWayHwTestShortParam(certChainOneWayService);
 
@@ -214,9 +202,7 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("getRemoteCertificateInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("getRemoteCertificateInterface"), false);
     TLSSocket certChainOneWayService;
     SetCertChainOneWayHwTestShortParam(certChainOneWayService);
     Socket::TCPSendOptions tcpSendOptions;
@@ -234,9 +220,7 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
 
 HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("protocolInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("protocolInterface"), false);
     TLSSocket certChainOneWayService;
     SetCertChainOneWayHwTestLongParam(certChainOneWayService);
 
@@ -258,9 +242,7 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("getCipherSuiteInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("getCipherSuiteInterface"), false);
     TLSSocket certChainOneWayService;
     SetCertChainOneWayHwTestLongParam(certChainOneWayService);
 
@@ -290,9 +272,7 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("tlsSocketOnMessageData")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("tlsSocketOnMessageData"), false);
     std::string getData = "server->client";
     TLSSocket certChainOneWayService;
     SetCertChainOneWayHwTestLongParam(certChainOneWayService);

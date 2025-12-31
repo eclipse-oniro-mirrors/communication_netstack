@@ -77,9 +77,7 @@ void SetSocketHwTestLongParam(TLSSocket &server)
 
 HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("bindInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("bindInterface"), false);
 
     Socket::NetAddress address;
     TLSSocket bindTestServer;
@@ -89,9 +87,7 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("connectInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("connectInterface"), false);
     TLSSocket testService;
     SetSocketHwTestShortParam(testService);
 
@@ -107,9 +103,7 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, startReadMessageInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("startReadMessageInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("startReadMessageInterface"), false);
     TLSSocket testService;
     SetSocketHwTestShortParam(testService);
 
@@ -124,9 +118,7 @@ HWTEST_F(TlsSocketTest, startReadMessageInterface, testing::ext::TestSize.Level2
 
 HWTEST_F(TlsSocketTest, readMessageInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("readMessageInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("readMessageInterface"), false);
     TLSSocket testService;
     SetSocketHwTestShortParam(testService);
 
@@ -141,9 +133,7 @@ HWTEST_F(TlsSocketTest, readMessageInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("closeInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("closeInterface"), false);
 
     TLSSocket testService;
     SetSocketHwTestShortParam(testService);
@@ -160,9 +150,7 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("sendInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("sendInterface"), false);
     TLSSocket testService;
     SetSocketHwTestShortParam(testService);
 
@@ -178,9 +166,7 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("getRemoteAddressInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("getRemoteAddressInterface"), false);
 
     TLSConnectOptions options;
     TLSSocket testService;
@@ -215,9 +201,7 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
 
 HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("getRemoteAddressInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("getRemoteAddressInterface"), false);
 
     TLSSocket testService;
     SetSocketHwTestShortParam(testService);
@@ -244,9 +228,7 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getCertificateInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("getCertificateInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("getCertificateInterface"), false);
     TLSSocket testService;
     SetSocketHwTestShortParam(testService);
 
@@ -264,9 +246,7 @@ HWTEST_F(TlsSocketTest, getCertificateInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("getRemoteCertificateInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("getRemoteCertificateInterface"), false);
     TLSSocket testService;
     SetSocketHwTestShortParam(testService);
 
@@ -285,9 +265,7 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
 
 HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("protocolInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("protocolInterface"), false);
     TLSSocket testService;
     SetSocketHwTestLongParam(testService);
 
@@ -320,9 +298,7 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("getCipherSuiteInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("getCipherSuiteInterface"), false);
     TLSSocket testService;
     SetSocketHwTestLongParam(testService);
 
@@ -353,9 +329,7 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getSignatureAlgorithmsInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("getSignatureAlgorithmsInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("getSignatureAlgorithmsInterface"), false);
     TLSSocket testService;
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
@@ -398,9 +372,7 @@ HWTEST_F(TlsSocketTest, getSignatureAlgorithmsInterface, testing::ext::TestSize.
 
 HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("tlsSocketOnMessageData")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("tlsSocketOnMessageData"), false);
     std::string getData = "server->client";
     TLSSocket testService;
     SetSocketHwTestLongParam(testService);
@@ -424,9 +396,7 @@ HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, upgradeInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("upgradeInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("upgradeInterface"), false);
 
     int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     EXPECT_TRUE(sock > 0);
@@ -456,9 +426,7 @@ HWTEST_F(TlsSocketTest, upgradeInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getSocketFdInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaFileExistence("getSocketFdInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("getSocketFdInterface"), false);
     TLSSocket testService;
     SetSocketHwTestShortParam(testService);
     EXPECT_TRUE(testService.GetSocketFd() != -1);
