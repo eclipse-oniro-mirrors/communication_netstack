@@ -130,9 +130,7 @@ public:
 
 HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("bindInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("bindInterface"), false);
 
     TLSSocket tlsService;
     Socket::NetAddress address;
@@ -144,9 +142,7 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("connectInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("connectInterface"), false);
     TLSSocket tlsService;
     SetUnilateralHwTestShortParam(tlsService);
 
@@ -161,9 +157,7 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("closeInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("closeInterface"), false);
     TLSSocket tlsService;
     SetUnilateralHwTestShortParam(tlsService);
 
@@ -180,9 +174,7 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("sendInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("sendInterface"), false);
     TLSSocket tlsService;
     SetUnilateralHwTestShortParam(tlsService);
 
@@ -198,9 +190,7 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("getRemoteAddressInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("getRemoteAddressInterface"), false);
     TLSSocket tlsService;
     TLSConnectOptions options;
     TLSSecureOptions secureOption;
@@ -236,9 +226,7 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
 
 HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("getRemoteAddressInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("getRemoteAddressInterface"), false);
 
     TLSSocket tlsService;
     SetUnilateralHwTestShortParam(tlsService);
@@ -264,9 +252,7 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("getRemoteCertificateInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("getRemoteCertificateInterface"), false);
     TLSSocket tlsService;
     SetUnilateralHwTestShortParam(tlsService);
     Socket::TCPSendOptions tcpSendOptions;
@@ -285,9 +271,7 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
 
 HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("protocolInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("protocolInterface"), false);
 
     TLSSocket tlsService;
     TLSConnectOptions options;
@@ -323,9 +307,7 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
 {
-    if (!TlsUtilsTest::CheckCaPathChainExistence("getCipherSuiteInterface")) {
-        return;
-    }
+    ASSERT_NE(TlsUtilsTest::CheckCaPathChainExistence("getCipherSuiteInterface"), false);
 
     TLSConnectOptions options;
     TLSSocket tlsService;

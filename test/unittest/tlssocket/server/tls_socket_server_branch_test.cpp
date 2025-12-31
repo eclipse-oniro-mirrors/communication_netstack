@@ -52,9 +52,6 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest001, testing::ext::
 {
     auto tlsSocketServer = new TLSSocketServer();
     EXPECT_TRUE(tlsSocketServer != nullptr);
-    if (tlsSocketServer == nullptr) {
-        return;
-    }
 
     TLSServerSendOptions data;
     TlsSocket::SendCallback sendCallback;
@@ -83,9 +80,6 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest002, testing::ext::
 {
     auto tlsSocketServer = new TLSSocketServer();
     EXPECT_TRUE(tlsSocketServer != nullptr);
-    if (tlsSocketServer == nullptr) {
-        return;
-    }
 
     TlsSocket::TLSConnectOptions config;
     tlsSocketServer->SetLocalTlsConfiguration(config);
@@ -165,9 +159,6 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest004, testing::ext::
 {
     auto tlsSocketServer = new TLSSocketServer();
     EXPECT_TRUE(tlsSocketServer != nullptr);
-    if (tlsSocketServer == nullptr) {
-        return;
-    }
 
     int socketFd = 0;
     TlsSocket::CloseCallback closeCallback;
@@ -254,9 +245,6 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest006, testing::ext::
 {
     auto tlsSocketServer = new TLSSocketServer();
     EXPECT_TRUE(tlsSocketServer != nullptr);
-    if (tlsSocketServer == nullptr) {
-        return;
-    }
     std::shared_ptr<TLSSocketServer::Connection> connection = std::make_shared<TLSSocketServer::Connection>();
     EXPECT_TRUE(connection != nullptr);
 
@@ -655,9 +643,6 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest033, testing::ext::
 {
     auto tlsSocketServer = new TLSSocketServer();
     EXPECT_TRUE(tlsSocketServer != nullptr);
-    if (tlsSocketServer == nullptr) {
-        return;
-    }
     std::shared_ptr<TLSSocketServer::Connection> connection = std::make_shared<TLSSocketServer::Connection>();
     EXPECT_TRUE(connection != nullptr);
  
