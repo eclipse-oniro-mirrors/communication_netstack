@@ -29,7 +29,7 @@ const uint32_t HttpConstant::DEFAULT_MAX_LIMIT = 5 * 1024 * 1024;
 const uint32_t HttpConstant::MAX_LIMIT = 100 * 1024 * 1024;
 const uint32_t HttpConstant::DEFAULT_READ_TIMEOUT = 60000;
 const uint32_t HttpConstant::DEFAULT_CONNECT_TIMEOUT = 60000;
-const uint32_t HttpConstant::MAX_SNI_HOSTNAME_LEN = 65535;
+const uint32_t HttpConstant::MAX_SNI_HOSTNAME_LEN = 255;
 
 const size_t HttpConstant::MAX_JSON_PARSE_SIZE = 65536;
 

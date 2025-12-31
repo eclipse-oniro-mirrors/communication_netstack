@@ -382,7 +382,7 @@ void RequestContext::ParseSniHostName(napi_value optionsValue)
         return;
     }
     auto sniHostNameString = NapiUtils::GetStringFromValueUtf8(GetEnv(), sniHostName);
-    if (sniHostNameString.length() < HttpConstant::MAX_SNI_HOSTNAME_LEN) {
+    if (sniHostNameString.length() <= HttpConstant::MAX_SNI_HOSTNAME_LEN) {
         options.SetSniHostName(sniHostNameString);
     } else {
         NETSTACK_LOGE("sniHostName length error");
