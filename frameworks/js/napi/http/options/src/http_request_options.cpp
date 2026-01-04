@@ -491,6 +491,15 @@ void HttpRequestOptions::GetClientEncCert(
     keyPasswd = keyPasswdEnc_;
 }
 
+void HttpRequestOptions::SetPathPreference(PathPreference &pathPreference)
+{
+    pathPreference_ = pathPreference;
+}
+
+const PathPreference &HttpRequestOptions::GetPathPreference() const
+{
+    return pathPreference_;
+}
 void HttpRequestOptions::SetSniHostName(const std::string &sniHostName)
 {
     sniHostName_ = sniHostName;

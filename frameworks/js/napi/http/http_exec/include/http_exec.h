@@ -32,6 +32,9 @@
 #include "curl/curl.h"
 #include "napi/native_api.h"
 #include "request_context.h"
+#ifdef HAS_NETMANAGER_BASE
+#include "net_conn_client.h"
+#endif
 
 namespace OHOS::NetStack::HttpOverCurl {
     struct TransferCallbacks;
@@ -80,6 +83,12 @@ static constexpr const char *HTTP_AF_ONLYV6 = "ONLY_V6";
 static int64_t g_limitSdkReport = 0;
 constexpr long HTTP_STATUS_REDIRECT_START = 300;
 constexpr long HTTP_STATUS_CLIENT_ERROR_START = 400;
+
+#ifdef HAS_NETMANAGER_BASE
+static constexpr uint32_t MIN_NON_SYSTEM_NETID = 100;
+static constexpr uint32_t DUAL_NETWORK_BOOT_COUNT = 2;
+static constexpr uint32_t SINGLE_CELLULAR_NETWORK_COUNT = 1;
+#endif
 
 [[maybe_unused]] static void RequestContextDeleter(RequestContext *context)
 {
@@ -178,6 +187,17 @@ private:
     static bool SetTCPOption(CURL *curl, RequestContext *context);
 
     static bool SetCertPinnerOption(CURL *curl, RequestContext *context);
+
+#ifdef HAS_NETMANAGER_BASE
+    static bool SetInterface(CURL *curl, RequestContext *context);
+    static bool GetInterfaceName(CURL *curl, RequestContext *context, std::string &interfaceName, int32_t &netId);
+    static bool GetPrimaryCellularInterface(CURL *curl, RequestContext *context,
+        std::list<sptr<NetManagerStandard::NetHandle>> netList, std::string &interfaceName, int32_t &netId);
+    static bool GetSecondaryCellularInterface(CURL *curl, RequestContext *context,
+        std::list<sptr<NetManagerStandard::NetHandle>> netList, std::string &interfaceName, int32_t &netId);
+    static bool GetNetStatus(std::list<sptr<NetManagerStandard::NetHandle>> netList,
+        std::list<sptr<NetManagerStandard::NetHandle>> &cellularNetworks, uint8_t &cellCount, uint8_t &wifiCount);
+#endif
 
 #if HAS_NETMANAGER_BASE
     static void SetRequestInfoCallbacks(HttpOverCurl::TransferCallbacks &callbacks);

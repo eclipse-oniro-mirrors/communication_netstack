@@ -88,6 +88,12 @@ enum class SslType {
     TLCP,
 };
 
+enum class PathPreference {
+    autoPath,
+    primaryCellular,
+    secondaryCellular,
+};
+
 class HttpRequestOptions final {
 public:
     HttpRequestOptions();
@@ -277,6 +283,8 @@ public:
     void SetClientEncCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
     void GetClientEncCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
 
+    void SetPathPreference(PathPreference &pathPreference);
+    [[nodiscard]] const PathPreference &GetPathPreference() const;
     void SetSniHostName(const std::string &sniHostName);
 
     [[nodiscard]] const std::string &GetSniHostName() const;
@@ -359,6 +367,7 @@ private:
     Secure::SecureChar keyPasswdEnc_;
 
     TcpConfiguration tcpOption_;
+    PathPreference pathPreference_;
 
     std::optional<std::string> sniHostName_;
 };
