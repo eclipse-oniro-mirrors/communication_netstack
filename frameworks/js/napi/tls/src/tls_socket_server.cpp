@@ -1568,7 +1568,7 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
                 } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLRDHUP) ||
                            (static_cast<uint16_t>(fds_[i].revents) & (POLLERR | POLLNVAL))) {
 #else
-                } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLERR | POLLNVAL)) {
+                } else if ((static_cast<uint16_t>(fds_[i].revents) & (POLLERR | POLLNVAL))) {
 #endif
                     RemoveConnect(fds_[i].fd);
                     exitLoop = DropFdFromPollList(i);
