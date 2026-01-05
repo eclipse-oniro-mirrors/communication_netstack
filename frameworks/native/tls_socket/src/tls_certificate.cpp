@@ -404,7 +404,7 @@ void TLSCertificate::CloseX509()
 {
     if (x509_ != nullptr) {
         X509_free(x509_);
-        x509_ == nullptr;
+        x509_ = nullptr;
     }
 }
 } // namespace TlsSocket
