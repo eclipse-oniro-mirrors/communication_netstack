@@ -266,7 +266,7 @@ bool TLSContext::SetLocalCertificate(TLSContext *tlsContext, const TLSConfigurat
     }
     
     for (uint32_t i = 1; i < certificate.size(); ++i) {
-        X509 *chainCert = static_cast<X509*>(certificate.[i].handle());
+        X509 *chainCert = static_cast<X509*>(certificate[i].handle());
         if (!chainCert) {
             NETSTACK_LOGE("chainCert is null");
             return false;
