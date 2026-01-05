@@ -254,24 +254,14 @@ bool TLSContext::SetLocalCertificate(TLSContext *tlsContext, const TLSConfigurat
         NETSTACK_LOGE("Certificate list is empty");
         return false;
     }
-    
-    X509 *mainCert = static_cast<X509*>(certificate.front().handle());
-    if (!mainCert) {
-        NETSTACK_LOGE("mainCert is null");
-        return false;
-    }
-    if (!SSL_CTX_use_certificate(tlsContext->ctx_, mainCert)) {
+
+    if (!SSL_CTX_use_certificate(tlsContext->ctx_, static_cast<X509*>(certificate.front().handle()))) {
         NETSTACK_LOGE("Failed to set main certificate");
         return false;
     }
-    
+
     for (uint32_t i = 1; i < certificate.size(); ++i) {
-        X509 *chainCert = static_cast<X509*>(certificate[i].handle());
-        if (!chainCert) {
-            NETSTACK_LOGE("chainCert is null");
-            return false;
-        }
-        if (!SSL_CTX_add_extra_chain_cert(tlsContext->ctx_, chainCert)) {
+        if (!SSL_CTX_add_extra_chain_cert(tlsContext->ctx_, static_cast<X509*>(certificate[i].handle()))) {
             NETSTACK_LOGE("Failed to add chain certificate");
             return false;
         }
