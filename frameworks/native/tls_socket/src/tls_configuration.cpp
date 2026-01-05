@@ -183,6 +183,7 @@ std::vector<std::string> TLSConfiguration::GetCaCertificate() const
 
 const std::vector<TLSCertificate> &TLSConfiguration::GetLocalCertificate() const
 {
+    std::shared_lock<std::shared_mutex> lock(certMutex_);
     return localCertificateChain_;
 }
 
