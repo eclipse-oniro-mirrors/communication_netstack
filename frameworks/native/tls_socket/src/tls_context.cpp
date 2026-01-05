@@ -248,7 +248,7 @@ bool TLSContext::SetLocalCertificate(TLSContext *tlsContext, const TLSConfigurat
         NETSTACK_LOGE("tlsContext is null");
         return false;
     }
-        
+
     const auto &certificate = configuration.GetLocalCertificate();
     if (certificate.empty()) {
         NETSTACK_LOGE("Certificate list is empty");
