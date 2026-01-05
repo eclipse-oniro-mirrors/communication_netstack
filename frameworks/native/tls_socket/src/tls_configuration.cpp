@@ -85,8 +85,7 @@ void TLSConfiguration::SetLocalCertificate(const std::vector<std::string> &certi
 {
     std::unique_lock<std::shared_mutex> lock(certMutex_);
     for (const auto &cert : certificate) {
-        TLSCertificate localCert(cert, LOCAL_CERT);
-        localCertificateChain_.push_back(localCert);
+        localCertificateChain_.emplace_back(cert, LOCAL_CERT);
     }
 }
 
@@ -143,7 +142,7 @@ std::vector<CipherSuite> TLSConfiguration::GetCipherSuiteVec() const
     return cipherSuiteVec_;
 }
 
-const X509CertRawData &TLSConfiguration::GetCertificate() const
+X509CertRawData TLSConfiguration::GetCertificate() const
 {
     std::shared_lock<std::shared_mutex> lock(certMutex_);
     if (localCertificateChain_.empty()) {
@@ -182,7 +181,7 @@ std::vector<std::string> TLSConfiguration::GetCaCertificate() const
     return caCertificateChain_;
 }
 
-std::vector<TLSCertificate> TLSConfiguration::GetLocalCertificate() const
+const std::vector<TLSCertificate> &TLSConfiguration::GetLocalCertificate() const
 {
     std::shared_lock<std::shared_mutex> lock(certMutex_);
     return localCertificateChain_;

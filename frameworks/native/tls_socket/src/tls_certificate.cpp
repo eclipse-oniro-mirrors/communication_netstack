@@ -81,8 +81,10 @@ TLSCertificate::TLSCertificate(const TLSCertificate &other)
 TLSCertificate &TLSCertificate::operator=(const TLSCertificate &other)
 {
     if (other.x509_ != nullptr) {
-        x509_ = X509_new();
-        x509_ = other.x509_;
+        x509_ = X509_dup(other.x509_);
+        if (x509_ == nullptr) {
+            NETSTACK_LOGE("X509_dup failed");
+        }
     }
     version_ = other.version_;
     serialNumber_ = other.serialNumber_;
@@ -92,6 +94,11 @@ TLSCertificate &TLSCertificate::operator=(const TLSCertificate &other)
     rawData_.data = other.rawData_.data;
     rawData_.encodingFormat = other.rawData_.encodingFormat;
     return *this;
+}
+
+TLSCertificate::~TLSCertificate()
+{
+    CloseX509();
 }
 
 bool TLSCertificate::CertificateFromData(const std::string &data, CertType certType)
@@ -391,6 +398,14 @@ Handle TLSCertificate::handle() const
 const X509CertRawData &TLSCertificate::GetLocalCertRawData() const
 {
     return rawData_;
+}
+
+void TLSCertificate::CloseX509()
+{
+    if (x509_ != nullptr) {
+        X509_free(x509_);
+        x509_ = nullptr;
+    }
 }
 } // namespace TlsSocket
 } // namespace NetStack
