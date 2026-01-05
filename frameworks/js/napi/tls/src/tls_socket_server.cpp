@@ -482,7 +482,7 @@ void TLSSocketServer::SetLocalTlsConfiguration(const TlsSocket::TLSConnectOption
 
 void TLSSocketServer::GetCertificate(const TlsSocket::GetCertificateCallback &callback)
 {
-    const auto &cert = TLSServerConfiguration_.GetCertificate();
+    const auto cert = TLSServerConfiguration_.GetCertificate();
     NETSTACK_LOGI("cert der is %{public}d", cert.encodingFormat);
     if (!cert.data.Length()) {
         CallOnErrorCallback(-1, "cert not data Length");

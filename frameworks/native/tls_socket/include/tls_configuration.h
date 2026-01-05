@@ -38,7 +38,7 @@ public:
 
     void SetLocalCertificate(const TLSCertificate &certificate);
     void SetLocalCertificate(const std::vector<std::string> &certificate);
-    [[nodiscard]] std::vector<TLSCertificate> GetLocalCertificate() const;
+    [[nodiscard]] const std::vector<TLSCertificate> &GetLocalCertificate() const;
 
     void SetCaCertificate(const TLSCertificate &certificate);
     void SetCaCertificate(const std::vector<std::string> &certificate);
@@ -61,7 +61,7 @@ public:
     void SetCipherSuite(const std::string &cipherSuite);
     [[nodiscard]] std::string GetCipherSuite() const;
 
-    [[nodiscard]] const X509CertRawData &GetCertificate() const;
+    [[nodiscard]] X509CertRawData GetCertificate() const;
     void SetSignatureAlgorithms(const std::string &signatureAlgorithms);
     [[nodiscard]] const std::string &GetSignatureAlgorithms() const;
     [[nodiscard]] std::vector<CipherSuite> GetCipherSuiteVec() const;

@@ -994,7 +994,7 @@ void TLSSocket::SetExtraOptions(const OHOS::NetStack::Socket::TCPExtraOptions &t
 
 void TLSSocket::GetCertificate(const GetCertificateCallback &callback)
 {
-    const auto &cert = tlsSocketInternal_.GetCertificate();
+    const auto cert = tlsSocketInternal_.GetCertificate();
     NETSTACK_LOGI("cert der is %{public}d", cert.encodingFormat);
 
     if (!cert.data.Length()) {
@@ -1405,7 +1405,7 @@ std::string TLSSocket::TLSSocketInternal::GetRemoteCertificate() const
     return remoteCert_;
 }
 
-const X509CertRawData &TLSSocket::TLSSocketInternal::GetCertificate() const
+X509CertRawData TLSSocket::TLSSocketInternal::GetCertificate() const
 {
     return configuration_.GetCertificate();
 }
