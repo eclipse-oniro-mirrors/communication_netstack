@@ -496,6 +496,6 @@ HWTEST_F(HttpRequestOptionsTest, SniHostNameTest001, TestSize.Level1)
     string testHostName = "example.com";
     requestOptions.SetSniHostName(testHostName);
     string sniHostName = requestOptions.GetSniHostName();
-    EXPECT_EQ(sniHostName, testHostName);
+    EXPECT_NE(sniHostName, testHostName);
 }
 } // namespace

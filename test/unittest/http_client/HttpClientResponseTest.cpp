@@ -210,7 +210,10 @@ HWTEST_F(HttpClientResponseTest, ResponseSetWarning001, TestSize.Level1)
     auto headers = req.GetHeaders();
     for (auto &item : headers) {
         auto key = item.first.c_str();
-        ASSERT_NE(strcmp(warningText, key), 0);
+        if (strcmp(warningText, key) == 0) {
+            EXPECT_EQ(realHead, item.second);
+            return;
+        }
     }
     EXPECT_FALSE(true);
 }
