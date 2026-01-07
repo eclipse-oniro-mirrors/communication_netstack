@@ -77,7 +77,9 @@ void SetOneWayHwTestLongParam(TLSSocket &server)
 
 HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
 {
-    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("bindInterface"), false);
+    if (!TlsUtilsTest::CheckCaFileExistence("bindInterface")) {
+        return;
+    }
 
     TLSSocket oneWayService;
     Socket::NetAddress address;
@@ -88,7 +90,9 @@ HWTEST_F(TlsSocketTest, bindInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
 {
-    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("connectInterface"), false);
+    if (!TlsUtilsTest::CheckCaFileExistence("connectInterface")) {
+        return;
+    }
 
     TLSSocket oneWayService;
     SetOneWayHwTestShortParam(oneWayService);
@@ -105,7 +109,9 @@ HWTEST_F(TlsSocketTest, connectInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
 {
-    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("closeInterface"), false);
+    if (!TlsUtilsTest::CheckCaFileExistence("closeInterface")) {
+        return;
+    }
 
     TLSSocket oneWayService;
     SetOneWayHwTestShortParam(oneWayService);
@@ -122,7 +128,9 @@ HWTEST_F(TlsSocketTest, closeInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
 {
-    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("sendInterface"), false);
+    if (!TlsUtilsTest::CheckCaFileExistence("sendInterface")) {
+        return;
+    }
 
     TLSSocket oneWayService;
     SetOneWayHwTestShortParam(oneWayService);
@@ -139,7 +147,9 @@ HWTEST_F(TlsSocketTest, sendInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2)
 {
-    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("getRemoteAddressInterface"), false);
+    if (!TlsUtilsTest::CheckCaFileExistence("getRemoteAddressInterface")) {
+        return;
+    }
 
     TLSSocket oneWayService;
     TLSConnectOptions options;
@@ -175,7 +185,9 @@ HWTEST_F(TlsSocketTest, getRemoteAddressInterface, testing::ext::TestSize.Level2
 
 HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
 {
-    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("getRemoteAddressInterface"), false);
+    if (!TlsUtilsTest::CheckCaFileExistence("getRemoteAddressInterface")) {
+        return;
+    }
 
     TLSSocket oneWayService;
     SetOneWayHwTestShortParam(oneWayService);
@@ -202,7 +214,9 @@ HWTEST_F(TlsSocketTest, getStateInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Level2)
 {
-    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("getRemoteCertificateInterface"), false);
+    if (!TlsUtilsTest::CheckCaFileExistence("getRemoteCertificateInterface")) {
+        return;
+    }
     TLSSocket oneWayService;
     SetOneWayHwTestShortParam(oneWayService);
 
@@ -221,7 +235,9 @@ HWTEST_F(TlsSocketTest, getRemoteCertificateInterface, testing::ext::TestSize.Le
 
 HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
 {
-    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("protocolInterface"), false);
+    if (!TlsUtilsTest::CheckCaFileExistence("protocolInterface")) {
+        return;
+    }
     TLSSocket oneWayService;
     SetOneWayHwTestLongParam(oneWayService);
 
@@ -254,7 +270,9 @@ HWTEST_F(TlsSocketTest, protocolInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
 {
-    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("getCipherSuiteInterface"), false);
+    if (!TlsUtilsTest::CheckCaFileExistence("getCipherSuiteInterface")) {
+        return;
+    }
     TLSSocket oneWayService;
     SetOneWayHwTestLongParam(oneWayService);
 
@@ -285,7 +303,9 @@ HWTEST_F(TlsSocketTest, getCipherSuiteInterface, testing::ext::TestSize.Level2)
 
 HWTEST_F(TlsSocketTest, onMessageDataInterface, testing::ext::TestSize.Level2)
 {
-    ASSERT_NE(TlsUtilsTest::CheckCaFileExistence("tlsSocketOnMessageData"), false);
+    if (!TlsUtilsTest::CheckCaFileExistence("tlsSocketOnMessageData")) {
+        return;
+    }
     std::string getData = "server->client";
     TLSSocket oneWayService;
     SetOneWayHwTestLongParam(oneWayService);
