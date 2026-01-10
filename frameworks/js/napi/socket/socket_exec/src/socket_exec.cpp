@@ -45,7 +45,7 @@
 #include "module_template.h"
 
 #ifdef IOS_PLATFORM
-#define SO_PROTOCOL 38
+#include <sys/socket.h>
 #endif
 
 static constexpr const int DEFAULT_BUFFER_SIZE = 8192;
@@ -625,10 +625,17 @@ static bool IsTCPSocket(int sockfd)
     int optval;
     socklen_t optlen = sizeof(optval);
 
+#if defined(IOS_PLATFORM)
+    if (getsockopt(sockfd, SOL_SOCKET, SO_TYPE, &optval, &optlen) != 0) {
+        return false;
+    }
+    return optval == SOCK_STREAM;
+#else
     if (getsockopt(sockfd, SOL_SOCKET, SO_PROTOCOL, &optval, &optlen) != 0) {
         return false;
     }
     return optval == IPPROTO_TCP;
+#endif
 }
 
 static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &buf, const MessageCallback &callback)
