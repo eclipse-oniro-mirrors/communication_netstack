@@ -44,14 +44,14 @@ enum WebsocketErrorCode {
 static const std::map<int32_t, std::string> WEBSOCKET_ERR_MAP = {
     {WEBSOCKET_CONNECT_FAILED, "Websocket connect failed"},
     {WEBSOCKET_ERROR_CODE_URL_ERROR, "Websocket url error"},
-    {WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST, "Websocket file not exist"},
-    {WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST, "Websocket connection exist"},
+    {WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST, "Websocket  certificate file does not exist"},
+    {WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST, "Websocket connection  already exist"},
     {WEBSOCKET_ERROR_CODE_INVALID_NIC, "Can't listen to the given NIC"},
     {WEBSOCKET_ERROR_CODE_INVALID_PORT, "Can't listen to the given Port"},
     {WEBSOCKET_ERROR_CODE_CONNECTION_NOT_EXIST, "websocket connection does not exist"},
     {WEBSOCKET_ERROR_CODE_PORT_ALREADY_OCCUPIED, "Websocket port already occupied"},
     {WEBSOCKET_NOT_ALLOWED_HOST, "It is not allowed to access this domain"},
-    {WEBSOCKET_UNKNOWN_OTHER_ERROR, "Websocket Unknown Other Error"}};
+    {WEBSOCKET_UNKNOWN_OTHER_ERROR, "Internal error"}};
 
 enum {
     CLOSE_REASON_NORMAL_CLOSE [[maybe_unused]] = 1000,
