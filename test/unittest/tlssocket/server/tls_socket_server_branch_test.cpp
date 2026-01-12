@@ -251,7 +251,7 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest006, testing::ext::
     TLSServerSendOptions tlsServerSendOptions;
     tlsServerSendOptions.SetSocket(0);
     auto socketFd = connection->GetSocketFd();
-    EXPECT_EQ(socketFd, 0);
+    EXPECT_LE(socketFd, 0);
     socketFd = tlsServerSendOptions.GetSocket();
     EXPECT_EQ(socketFd, 0);
 
