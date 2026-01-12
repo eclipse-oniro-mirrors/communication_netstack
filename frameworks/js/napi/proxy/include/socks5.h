@@ -99,15 +99,15 @@ static const std::map<Socks5Status, std::string> g_errStatusMap = {
     {Socks5Status::SOCKS5_NOT_ACTIVE, "Socks5 is not active"},
     {Socks5Status::SOCKS5_METHOD_ERROR, "Socks5 method request error"},
     {Socks5Status::SOCKS5_MAKE_SOCKET_ERROR, "Socks5 make tcp socket error"},
-    {Socks5Status::SOCKS5_FAIL_TO_SEND_MSG, "Socks5 fail to send message"},
-    {Socks5Status::SOCKS5_FAIL_TO_RECV_MSG, "Socks5 fail to recv message"},
-    {Socks5Status::SOCKS5_SERIALIZE_ERROR, "Socks5 serialize error"},
-    {Socks5Status::SOCKS5_DESERIALIZE_ERROR, "Socks5 deserialize error"},
+    {Socks5Status::SOCKS5_FAIL_TO_SEND_MSG, "Socks5 failed to send the message"},
+    {Socks5Status::SOCKS5_FAIL_TO_RECV_MSG, "Socks5 failed to receive the message"},
+    {Socks5Status::SOCKS5_SERIALIZE_ERROR, "Socks5 serialization error"},
+    {Socks5Status::SOCKS5_DESERIALIZE_ERROR, "Socks5 deserialization error"},
     {Socks5Status::SOCKS5_OTHER_ERROR, "Socks5 proxy error occured"},
-    {Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY, "Socks5 failed to connect proxy server"},
-    {Socks5Status::SOCKS5_USER_PASS_INVALID, "Socks5 username or password invalid"},
-    {Socks5Status::SOCKS5_FAIL_TO_CONNECT_REMOTE, "Socks5 failed to connect remote server"},
-    {Socks5Status::SOCKS5_METHOD_NEGO_ERROR, "Socks5 failed to negotiate auth method"},
+    {Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY, "Socks5 failed to connect to the proxy server"},
+    {Socks5Status::SOCKS5_USER_PASS_INVALID, "Socks5 username or password is invalid"},
+    {Socks5Status::SOCKS5_FAIL_TO_CONNECT_REMOTE, "Socks5 failed to connect to the remote server"},
+    {Socks5Status::SOCKS5_METHOD_NEGO_ERROR, "Socks5 failed to negotiate the authentication method"},
     {Socks5Status::OTHER_STATUS, "Socks5 unassigned status"}
 };
 
