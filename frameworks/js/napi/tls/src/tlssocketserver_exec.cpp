@@ -475,9 +475,12 @@ bool TLSSocketServerExec::ExecGetSocketFd(TlsSocket::TLSGetSocketFdContext *cont
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetSocketFd TLSSocketServer is null");
         context->sockFd_= -1;
-        return false;
+        return true;
     }
     context->sockFd_= tlsSocketServer->GetListenSocketFd();
+    if (context->sockFd_ == -1) {
+        NETSTACK_LOGE("ExecGetSocketFd TLSSocketServer not listen");
+    }
     return true;
 }
 
