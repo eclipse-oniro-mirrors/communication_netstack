@@ -122,6 +122,16 @@
                     }
                 },
                 {
+                    "type": "so",
+                    "name": "//foundation/communication/netstack/interfaces/innerkits/http_interceptor:http_interceptor",
+                    "header": {
+                        "header_files": [
+                            "http_interceptor_mgr.h"
+                        ],
+                        "header_base": "//foundation/communication/netstack/interfaces/innerkits/http_interceptor/include"
+                    }
+                },
+                {
                     "header": {
                         "header_base": [],
                         "header_files": []
