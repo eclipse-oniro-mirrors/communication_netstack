@@ -555,11 +555,23 @@ static bool PollFd(pollfd *fds, nfds_t num, int timeout)
     return true;
 }
 
+static bool IsTfoEnabled(int sock)
+{
+    int tfoEnabled = 0;
+    socklen_t tfoLen = sizeof(tfoEnabled);
+    if (getsockopt(sock, SOL_TCP, TCP_FASTOPEN_CONNECT, &tfoEnabled, &tfoLen) != 0) {
+        NETSTACK_LOGE("get TFO failed, fd=%{public}d, errno=%{public}d", sock, errno);
+        tfoEnabled = 0;
+    }
+    return tfoEnabled != 0;
+}
+
 static bool TcpSendEvent(TcpSendContext *context)
 {
     std::string encoding = context->options.GetEncoding();
     (void)encoding;
     /* no use for now */
+    bool tfoEnabled = OHOS::NetStack::Socket::SocketExec::IsTfoEnabled(context->GetSocketFd());
 
     sockaddr sockAddr = {0};
     socklen_t len = sizeof(sockaddr);
@@ -583,7 +595,7 @@ static bool TcpSendEvent(TcpSendContext *context)
         }
     }
 
-    if (!connected) {
+    if (!connected && !tfoEnabled) {
         NETSTACK_LOGE("sock is not connect to remote, socket is %{public}d, errno is %{public}d",
                       context->GetSocketFd(), errno);
         context->SetErrorCode(errno);
@@ -1482,9 +1494,12 @@ static bool SocketSetTcpExtraOptions(int sockfd, TCPExtraOptions& option)
         }
     }
 
-    if (option.AlreadySetTCPFastOpen()) {
-        int fastOpen = static_cast<int>(option.IsTCPFastOpen());
-        NETSTACK_LOGE("set TCP_FastOpen %{public}d", fastOpen);
+    if (option.IsTCPFastOpen()) {
+        int fastOpen = 1;
+        if (setsockopt(sockfd, SOL_TCP, TCP_FASTOPEN_CONNECT, &fastOpen, sizeof(fastOpen)) < 0) {
+            NETSTACK_LOGE("set SOL_TCP TFO failed! fd=%{public}d, errno=%{public}d", sockfd, errno);
+            return false;
+        }
     }
 
     if (option.AlreadySetLinger()) {
@@ -2857,6 +2872,9 @@ bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr, sockl
     if (sendTimeoutMs < 0) {
         return false;
     }
+
+    bool tfoEnabled = OHOS::NetStack::Socket::SocketExec::IsTfoEnabled(sock);
+
     while (leftSize > 0) {
         if (!OHOS::NetStack::Socket::SocketExec::PollFd(fds, num, sendTimeoutMs)) {
             if (errno != EINTR) {
@@ -2864,7 +2882,8 @@ bool PollSendData(int sock, const char *data, size_t size, sockaddr *addr, sockl
             }
         }
         size_t sendSize = (sockType == SOCK_STREAM ? leftSize : std::min<size_t>(leftSize, bufferSize));
-        auto sendLen = sendto(sock, curPos, sendSize, 0, addr, addrLen);
+        ssize_t sendLen = tfoEnabled ? send(sock, curPos, sendSize, 0)
+            : sendto(sock, curPos, sendSize, 0, addr, addrLen);
         NETSTACK_LOGD("socketFD: %{public}d, send len: %{public}zu", sock, sendLen);
         if (sendLen < 0) {
             if (errno == EAGAIN || errno == EINTR) {
