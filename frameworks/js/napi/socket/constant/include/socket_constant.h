@@ -132,7 +132,7 @@ static const std::map<int32_t, std::pair<OHOSErrorCode, std::string>> errCodeMap
     {ENXIO, {OHOSErrorCode::OHOS_ERR_ENXIO, "No such device or address"}},
     {E2BIG, {OHOSErrorCode::OHOS_ERR_E2BIG, "Argument list too long"}},
     {ENOEXEC, {OHOSErrorCode::OHOS_ERR_ENOEXEC, "Exec format error"}},
-    {EBADF, {OHOSErrorCode::OHOS_ERR_EBADF, "Bad file descriptor"}},
+    {EBADF, {OHOSErrorCode::OHOS_ERR_EBADF, "Bad file number"}},
     {ECHILD, {OHOSErrorCode::OHOS_ERR_ECHILD, "No child processes"}},
     {EDEADLK, {OHOSErrorCode::OHOS_ERR_EDEADLK, "Resource deadlock avoided"}},
     {ENOMEM, {OHOSErrorCode::OHOS_ERR_ENOMEM, "Cannot allocate memory"}},
