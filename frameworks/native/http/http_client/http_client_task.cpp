@@ -57,6 +57,7 @@ namespace OHOS {
 namespace NetStack {
 namespace HttpClient {
 
+static const double MAX_HTTP_PERF_TOTAL_TIME = 60 * 1000;
 static const size_t MAX_LIMIT = HttpConstant::MAX_DATA_LIMIT;
 static constexpr const char *HTTP_AF_ONLYV4 = "ONLY_V4";
 static constexpr const char *HTTP_AF_ONLYV6 = "ONLY_V6";
@@ -1216,7 +1217,11 @@ void HttpClientTask::DumpHttpPerformance()
 #endif
         error_.GetErrorCode(), std::to_string(responseCode).c_str(), std::to_string(httpVer).c_str(),
         request_.GetMethod().c_str(), osErr);
-
+    // LCOV_EXCL_START
+    if (totalTime > MAX_HTTP_PERF_TOTAL_TIME) {
+        return;
+    }
+    // LCOV_EXCL_STOP
     if (EventReport::GetInstance().IsValid()) {
         HttpPerfInfo httpPerfInfo;
         httpPerfInfo.totalTime = totalTime;
