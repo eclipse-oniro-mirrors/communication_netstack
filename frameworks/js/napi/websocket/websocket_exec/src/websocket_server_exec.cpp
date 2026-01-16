@@ -1093,7 +1093,7 @@ bool WebSocketServerExec::StartService(lws_context_creation_info &info, std::sha
     lws_context *lwsContext = nullptr;
     std::shared_ptr<UserData> userData;
     lwsContext = lws_create_context(&info);
-    if (needNewErrorCode_ && lwsContext == nullptr) {
+    if (lwsContext == nullptr) {
         return false;
     }
     WebSocketConnMap* connMapPtr = new WebSocketConnMap();
