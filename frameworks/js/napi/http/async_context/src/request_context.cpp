@@ -39,6 +39,8 @@
 #include "http_handover_info.h"
 #endif
 
+static constexpr const int MAX_CUSTOMMETHOD_LENGTH = 128;
+
 static constexpr const int PARAM_JUST_URL = 1;
 
 static constexpr const int PARAM_JUST_URL_OR_CALLBACK = 1;
@@ -618,10 +620,14 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CUSTOM_METHOD)) {
         napi_value requestMethod =
             NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CUSTOM_METHOD);
-        if (NapiUtils::GetValueType(GetEnv(), requestMethod) == napi_string) {
+        if (NapiUtils::GetValueType(GetEnv(), requestMethod) == napi_string &&
+            NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CUSTOM_METHOD).length() <=
+            MAX_CUSTOMMETHOD_LENGTH) {
             customMethod =
-                NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CUSTOM_METHOD);
+                 NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CUSTOM_METHOD);
             options.SetMethod(customMethod);
+        } else {
+            NETSTACK_LOGE("ParseCustomMethod: invalid customMethod value");
         }
     }
     if (customMethod.empty() && NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_METHOD)) {
