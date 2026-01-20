@@ -65,6 +65,9 @@ void LRUCacheDiskHandler::WriteCacheToJsonFile()
 {
     LRUCache oldCache(capacity_);
     cJSON *readRoot = ReadJsonValueFromFile();
+    if (readRoot == nullptr) {
+        return;
+    }
     oldCache.ReadCacheFromJsonValue(readRoot);
     cJSON_Delete(readRoot);
     oldCache.MergeOtherCache(cache_);
@@ -77,6 +80,9 @@ void LRUCacheDiskHandler::WriteCacheToJsonFile()
 void LRUCacheDiskHandler::ReadCacheFromJsonFile()
 {
     cJSON *root = ReadJsonValueFromFile();
+    if (root == nullptr) {
+        return;
+    }
     cache_.ReadCacheFromJsonValue(root);
     cJSON_Delete(root);
 }
@@ -90,6 +96,9 @@ std::unordered_map<std::string, std::string> LRUCacheDiskHandler::Get(const std:
 
     LRUCache diskCache(capacity_);
     cJSON *root = ReadJsonValueFromFile();
+    if (root == nullptr) {
+        return valueFromMemory;
+    }
     diskCache.ReadCacheFromJsonValue(root);
     cJSON_Delete(root);
     auto valueFromDisk = diskCache.Get(key);
