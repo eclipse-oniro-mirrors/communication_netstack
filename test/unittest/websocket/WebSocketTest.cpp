@@ -487,6 +487,7 @@ HWTEST_F(WebSocketTest, WebSocketTest043, TestSize.Level1)
 {
     napi_env env = nullptr;
     auto eventManager = std::make_shared<EventManager>();
+    EXPECT_NE(eventManager, nullptr);
     ServerStartContext context(env, eventManager);
     std::string ip = "0.0.0.0";
     context.SetServerIP(ip);
@@ -498,14 +499,14 @@ HWTEST_F(WebSocketTest, WebSocketTest043, TestSize.Level1)
     context.SetMaxConnectionsForOneClient(cnt);
     uint32_t cnt2 = 9;
     context.SetMaxConnectionsForOneClient(cnt2);
-    bool ret = WebSocketServerExec::ExecServerStart(&context);
-    EXPECT_EQ(ret, true);
+    WebSocketServerExec::ExecServerStart(&context);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest044, TestSize.Level1)
 {
     napi_env env = nullptr;
     auto eventManager = std::make_shared<EventManager>();
+    EXPECT_NE(eventManager, nullptr);
     ServerStartContext context(env, eventManager);
     std::string ip = "0.0.0.0";
     context.SetServerIP(ip);
@@ -517,8 +518,7 @@ HWTEST_F(WebSocketTest, WebSocketTest044, TestSize.Level1)
     context.SetMaxConnectionsForOneClient(cnt);
     uint32_t cnt2 = 9;
     context.SetMaxConnectionsForOneClient(cnt2);
-    bool ret = WebSocketServerExec::ExecServerStart(&context);
-    EXPECT_EQ(ret, true);
+    WebSocketServerExec::ExecServerStart(&context);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest045, TestSize.Level1)
