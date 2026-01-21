@@ -35,5 +35,6 @@ group("netstack_test") {
     "unittest/net_http:unittest",
     "unittest/utils/http_handover_handler:unittest",
     "unittest/websocket:unittest",
+    "unittest/http_interceptor:unittest",
   ]
 }

@@ -1,0 +1,85 @@
+# Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/communication/netstack/netstack_config.gni")
+
+config("http_interceptor_config") {
+  include_dirs =
+      [ "$NETSTACK_DIR/interfaces/innerkits/http_interceptor/include" ]
+
+  cflags = []
+  if (is_double_framework) {
+    cflags += [ "-DCONFIG_DUAL_FRAMEWORK" ]
+  }
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+  if (is_standard_system) {
+    cflags += [ "-DCONFIG_STANDARD_SYSTEM" ]
+  }
+  if (defined(build_public_version) && build_public_version) {
+    cflags += [ "-DBUILD_PUBLIC_VERSION" ]
+  }
+
+  if (is_mingw) {
+    defines = [ "WINDOWS_PLATFORM" ]
+  } else if (is_mac) {
+    defines = [ "MAC_PLATFORM" ]
+  }
+}
+
+ohos_shared_library("http_interceptor") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
+  sources =
+      [ "$NETSTACK_NATIVE_ROOT/http_interceptor/http_interceptor_mgr.cpp" ]
+
+  include_dirs = [ "$NETSTACK_DIR/utils/log/include" ]
+  cflags = [
+    "-D_FORTIFY_SOURCE=2",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-O2",
+  ]
+  cflags_cc = [
+    "-D_FORTIFY_SOURCE=2",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-O2",
+  ]
+
+  ldflags = [
+    "-Wl,--exclude-libs=ALL",
+    "-Wl,--gc-sections",
+  ]
+
+  version_script = "libhttp_interceptor.map"
+
+  public_configs = [ ":http_interceptor_config" ]
+
+  external_deps = [
+    "ffrt:libffrt",
+    "hilog:libhilog",
+  ]
+
+  innerapi_tags = [ "platformsdk" ]
+  part_name = "netstack"
+  subsystem_name = "communication"
+}
