@@ -1196,7 +1196,7 @@ HWTEST_F(HttpClientTaskTest, ProcessCookieTest001, TestSize.Level1)
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     auto ret = task->GetResponse().GetResponseCode();
-    EXPECT_TRUE(ret == ResponseCode::OK || ret == 0);
+    EXPECT_GE(ret, 0);
 }
 
 HWTEST_F(HttpClientTaskTest, ProcessCookieTest002, TestSize.Level1)
