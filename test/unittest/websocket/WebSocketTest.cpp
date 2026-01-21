@@ -499,7 +499,7 @@ HWTEST_F(WebSocketTest, WebSocketTest043, TestSize.Level1)
     context.SetMaxConnectionsForOneClient(cnt);
     uint32_t cnt2 = 9;
     context.SetMaxConnectionsForOneClient(cnt2);
-    ret = WebSocketServerExec::ExecServerStart(&context);
+    WebSocketServerExec::ExecServerStart(&context);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest044, TestSize.Level1)
@@ -518,7 +518,7 @@ HWTEST_F(WebSocketTest, WebSocketTest044, TestSize.Level1)
     context.SetMaxConnectionsForOneClient(cnt);
     uint32_t cnt2 = 9;
     context.SetMaxConnectionsForOneClient(cnt2);
-    ret = WebSocketServerExec::ExecServerStart(&context);
+    WebSocketServerExec::ExecServerStart(&context);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest045, TestSize.Level1)
