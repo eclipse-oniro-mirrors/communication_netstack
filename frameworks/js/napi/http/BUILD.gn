@@ -133,6 +133,7 @@ ohos_shared_library("http") {
     deps = [
       "$NETSTACK_DIR/utils:stack_utils_common",
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+      "$NETSTACK_DIR/interfaces/innerkits/http_interceptor:http_interceptor",
     ]
     external_deps = [
       "ability_base:configuration",
@@ -169,6 +170,7 @@ ohos_shared_library("http") {
         "HAS_NETMANAGER_BASE=1",
         "HAS_NETSTACK_CHR=1",
         "ENABLE_HTTP_INTERCEPT=1",
+        "ENABLE_HTTP_GLOBAL_INTERCEPT=1",
       ]
       sources += [
         "$NETSTACK_DIR/utils/http_over_curl/src/epoll_multi_driver.cpp",

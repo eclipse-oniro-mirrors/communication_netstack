@@ -25,7 +25,45 @@ HttpInterceptorMgr &HttpInterceptorMgr::GetInstance()
     return *instance;
 }
 
-int HttpInterceptorMgr::AddInterceptor(struct Http_Interceptor *interceptor)
+std::shared_ptr<Http_Interceptor_Request> HttpInterceptorMgr::CreateHttpInterceptorRequest()
+{
+    // LCOV_EXCL_START
+    Http_Interceptor_Request *ptr = static_cast<Http_Interceptor_Request *>(malloc(sizeof(Http_Interceptor_Request)));
+    if (ptr == nullptr) {
+        return nullptr;
+    }
+    // LCOV_EXCL_STOP
+    std::shared_ptr<Http_Interceptor_Request> req =
+        std::shared_ptr<Http_Interceptor_Request>(ptr, [](Http_Interceptor_Request *r) {
+            DestroyHttpInterceptorRequest(r);
+        });
+    InitHttpBuffer(&req->url);
+    InitHttpBuffer(&req->method);
+    InitHttpBuffer(&req->body);
+    req->headers = nullptr;
+    return req;
+}
+std::shared_ptr<Http_Interceptor_Response> HttpInterceptorMgr::CreateHttpInterceptorResponse()
+{
+    // LCOV_EXCL_START
+    Http_Interceptor_Response *ptr =
+        static_cast<Http_Interceptor_Response *>(malloc(sizeof(Http_Interceptor_Response)));
+    if (ptr == nullptr) {
+        return nullptr;
+    }
+    // LCOV_EXCL_STOP
+    std::shared_ptr<Http_Interceptor_Response> resp =
+        std::shared_ptr<Http_Interceptor_Response>(ptr, [](Http_Interceptor_Response *r) {
+            DestroyHttpInterceptorResponse(r);
+        });
+    InitHttpBuffer(&resp->body);
+    resp->headers = nullptr;
+    resp->responseCode = OH_HTTP_OK;
+    resp->performanceTiming = { 0 };
+    return resp;
+}
+
+int32_t HttpInterceptorMgr::AddInterceptor(struct Http_Interceptor *interceptor)
 {
     if (interceptor == nullptr) {
         NETSTACK_LOGE("AddInterceptor failed, interceptor ptr is nullptr");
@@ -37,6 +75,7 @@ int HttpInterceptorMgr::AddInterceptor(struct Http_Interceptor *interceptor)
         return item == interceptor;
     });
     if (iter != targetList.end()) {
+        NETSTACK_LOGI("AddInterceptor success, interceptor exist, stage=%{public}d", interceptor->stage);
         return OH_HTTP_RESULT_OK;
     }
     targetList.emplace_back(interceptor);
@@ -45,7 +84,7 @@ int HttpInterceptorMgr::AddInterceptor(struct Http_Interceptor *interceptor)
     return OH_HTTP_RESULT_OK;
 }
 
-int HttpInterceptorMgr::DeleteInterceptor(struct Http_Interceptor *interceptor)
+int32_t HttpInterceptorMgr::DeleteInterceptor(struct Http_Interceptor *interceptor)
 {
     if (interceptor == nullptr) {
         NETSTACK_LOGE("DeleteInterceptor failed, interceptor ptr is nullptr");
@@ -66,48 +105,58 @@ int HttpInterceptorMgr::DeleteInterceptor(struct Http_Interceptor *interceptor)
     return OH_HTTP_RESULT_OK;
 }
 
-int HttpInterceptorMgr::DeleteAllInterceptor()
+int32_t HttpInterceptorMgr::DeleteAllInterceptor(int32_t groupId)
 {
     std::unique_lock<std::shared_mutex> reqLock(reqMutex_);
+    requestInterceptorList_.remove_if([groupId](const Http_Interceptor *interceptor) {
+        return interceptor->groupId == groupId;
+    });
     std::unique_lock<std::shared_mutex> respLock(respMutex_);
-    requestInterceptorList_.clear();
-    responseInterceptorList_.clear();
-    NETSTACK_LOGI("DeleteAllInterceptor success");
+    responseInterceptorList_.remove_if([groupId](const Http_Interceptor *interceptor) {
+        return interceptor->groupId == groupId;
+    });
+    NETSTACK_LOGI("DeleteAllInterceptor for groupId %{public}d success", groupId);
     return OH_HTTP_RESULT_OK;
 }
 
-int HttpInterceptorMgr::StartAllInterceptor()
+int32_t HttpInterceptorMgr::SetAllInterceptorEnabled(int32_t groupId, int32_t enabled)
 {
-    isRunning_.store(true);
-    return OH_HTTP_RESULT_OK;
-}
-
-int HttpInterceptorMgr::StopAllInterceptor()
-{
-    isRunning_.store(false);
-    return OH_HTTP_RESULT_OK;
-}
-
-bool HttpInterceptorMgr::GetInterceptorMgrStatus()
-{
-    return isRunning_.load();
-}
-
-Interceptor_Result HttpInterceptorMgr::IteratorRequestInterceptor(
-    std::shared_ptr<Http_Interceptor_Request> req, bool &isModified)
-{
-    NETSTACK_LOGI("Enter IteratorRequestInterceptor, isRunning_=%{public}s", isRunning_ ? "true" : "false");
-    if (isRunning_ == false) {
-        NETSTACK_LOGI("IteratorRequestInterceptor skip, interceptor manager is stop");
-        return CONTINUE;
+    std::unique_lock<std::shared_mutex> reqLock(reqMutex_);
+    for (const auto &interceptor : requestInterceptorList_) {
+        if (interceptor->groupId == groupId) {
+            interceptor->enabled = enabled;
+        }
     }
-    if (req == nullptr) {
-        NETSTACK_LOGI("IteratorRequestInterceptor failed, req ptr is nullptr");
-        return CONTINUE;
+    std::unique_lock<std::shared_mutex> respLock(respMutex_);
+    for (const auto &interceptor : responseInterceptorList_) {
+        if (interceptor->groupId == groupId) {
+            interceptor->enabled = enabled;
+        }
     }
+    NETSTACK_LOGI("SetAllInterceptorEnabled for groupId=%{public}d, enabled=%{public}d success", groupId, enabled);
+    return OH_HTTP_RESULT_OK;
+}
 
+void HttpInterceptorMgr::CopyHttpInterceRequest(
+    std::shared_ptr<Http_Interceptor_Request> &dst, std::shared_ptr<Http_Interceptor_Request> &src)
+{
+    if (dst == nullptr || src == nullptr) {
+        return;
+    }
+    DeepCopyBuffer(&dst->url, &src->url);
+    DeepCopyBuffer(&dst->method, &src->method);
+    DeepCopyBuffer(&dst->body, &src->body);
+    dst->headers = DeepCopyHeaders(src->headers);
+}
+
+void HttpInterceptorMgr::IteratorReadRequestInterceptor(std::shared_ptr<Http_Interceptor_Request> &readReq)
+{
+    if (readReq == nullptr) {
+        NETSTACK_LOGI("IteratorReadRequestInterceptor failed, readReq ptr is nullptr");
+        return;
+    }
     std::weak_ptr<HttpInterceptorMgr> self = shared_from_this();
-    ffrt::submit([self, req]() {
+    ffrt::submit([self, readReq]() {
         auto manage = self.lock();
         if (manage == nullptr) {
             NETSTACK_LOGI("manage ptr is nullptr");
@@ -115,20 +164,30 @@ Interceptor_Result HttpInterceptorMgr::IteratorRequestInterceptor(
         }
         std::shared_lock<std::shared_mutex> lock(manage->reqMutex_);
         for (const auto &interceptor : manage->requestInterceptorList_) {
-            if (manage->isRunning_ == false) {
-                NETSTACK_LOGI("ReadOnlyRequestThread exit, manager stop running");
-                return;
-            }
-            if (interceptor && interceptor->type == TYPE_READ_ONLY && interceptor->handler != nullptr) {
-                (void)interceptor->handler(req.get(), nullptr, nullptr);
+            if (interceptor && interceptor->type == TYPE_READ_ONLY && interceptor->handler != nullptr &&
+                interceptor->enabled) {
+                (void)interceptor->handler(readReq.get(), nullptr, nullptr);
             }
         }
-        NETSTACK_LOGI("ReadOnlyRequestThread exec finish");
+        NETSTACK_LOGD("ReadOnlyRequestThread exec finish");
     });
+}
 
+Interceptor_Result HttpInterceptorMgr::IteratorRequestInterceptor(
+    std::shared_ptr<Http_Interceptor_Request> &req, bool &isModified)
+{
+    NETSTACK_LOGD("Enter IteratorRequestInterceptor");
+    if (req == nullptr) {
+        NETSTACK_LOGI("IteratorRequestInterceptor failed, req ptr is nullptr");
+        return CONTINUE;
+    }
+
+    std::shared_ptr<Http_Interceptor_Request> readReq = CreateHttpInterceptorRequest();
+    CopyHttpInterceRequest(readReq, req);
+    IteratorReadRequestInterceptor(readReq);
     std::shared_lock<std::shared_mutex> lock(reqMutex_);
     for (const auto &interceptor : requestInterceptorList_) {
-        if (interceptor->type == TYPE_MODIFY && interceptor->handler != nullptr) {
+        if (interceptor->type == TYPE_MODIFY && interceptor->handler != nullptr && interceptor->enabled) {
             int32_t isModifiedFlag = 0;
             auto ret = interceptor->handler(req.get(), nullptr, &isModifiedFlag);
             if (isModifiedFlag) {
@@ -140,25 +199,30 @@ Interceptor_Result HttpInterceptorMgr::IteratorRequestInterceptor(
             }
         }
     }
-    NETSTACK_LOGI("Exit IteratorRequestInterceptor");
+    NETSTACK_LOGD("Exit IteratorRequestInterceptor");
     return CONTINUE;
 }
 
-Interceptor_Result HttpInterceptorMgr::IteratorResponseInterceptor(
-    std::shared_ptr<Http_Response> resp, bool &isModified)
+void HttpInterceptorMgr::CopyHttpInterceResponse(
+    std::shared_ptr<Http_Interceptor_Response> &dst, std::shared_ptr<Http_Interceptor_Response> &src)
 {
-    NETSTACK_LOGI("Enter IteratorResponseInterceptor, isRunning_=%{public}s", isRunning_ ? "true" : "false");
-    if (isRunning_ == false) {
-        NETSTACK_LOGI("IteratorResponseInterceptor skip, interceptor manager is stop");
-        return CONTINUE;
+    if (dst == nullptr || src == nullptr) {
+        return;
     }
-    if (resp == nullptr) {
-        NETSTACK_LOGI("IteratorResponseInterceptor failed, resp ptr is nullptr");
-        return CONTINUE;
-    }
+    DeepCopyBuffer(&dst->body, &src->body);
+    dst->responseCode = src->responseCode;
+    dst->headers = DeepCopyHeaders(src->headers);
+    dst->performanceTiming = src->performanceTiming;
+}
 
+void HttpInterceptorMgr::IteratorReadResponseInterceptor(std::shared_ptr<Http_Interceptor_Response> &readResp)
+{
+    if (readResp == nullptr) {
+        NETSTACK_LOGI("IteratorReadResponseInterceptor failed, readResp ptr is nullptr");
+        return;
+    }
     std::weak_ptr<HttpInterceptorMgr> self = shared_from_this();
-    ffrt::submit([self, resp]() {
+    ffrt::submit([self, readResp]() {
         auto manage = self.lock();
         if (manage == nullptr) {
             NETSTACK_LOGI("manage ptr is nullptr");
@@ -166,20 +230,29 @@ Interceptor_Result HttpInterceptorMgr::IteratorResponseInterceptor(
         }
         std::shared_lock<std::shared_mutex> lock(manage->respMutex_);
         for (const auto &interceptor : manage->responseInterceptorList_) {
-            if (!manage->isRunning_) {
-                NETSTACK_LOGI("ReadOnlyResponseThread exit, manager stop running");
-                return;
-            }
-            if (interceptor->type == TYPE_READ_ONLY && interceptor->handler != nullptr) {
-                (void)interceptor->handler(nullptr, resp.get(), nullptr);
+            if (interceptor->type == TYPE_READ_ONLY && interceptor->handler != nullptr && interceptor->enabled) {
+                (void)interceptor->handler(nullptr, readResp.get(), nullptr);
             }
         }
         NETSTACK_LOGD("ReadOnlyResponseThread exec finish");
     });
+}
 
+Interceptor_Result HttpInterceptorMgr::IteratorResponseInterceptor(
+    std::shared_ptr<Http_Interceptor_Response> &resp, bool &isModified)
+{
+    NETSTACK_LOGD("Enter IteratorResponseInterceptor");
+    if (resp == nullptr) {
+        NETSTACK_LOGI("IteratorResponseInterceptor failed, resp ptr is nullptr");
+        return CONTINUE;
+    }
+
+    std::shared_ptr<Http_Interceptor_Response> readResp = CreateHttpInterceptorResponse();
+    CopyHttpInterceResponse(readResp, resp);
+    IteratorReadResponseInterceptor(readResp);
     std::shared_lock<std::shared_mutex> lock(respMutex_);
     for (const auto &interceptor : responseInterceptorList_) {
-        if (interceptor->type == TYPE_MODIFY && interceptor->handler != nullptr) {
+        if (interceptor->type == TYPE_MODIFY && interceptor->handler != nullptr && interceptor->enabled) {
             int32_t isModifiedFlag = 0;
             Interceptor_Result ret = interceptor->handler(nullptr, resp.get(), &isModifiedFlag);
             if (isModifiedFlag) {
@@ -191,7 +264,7 @@ Interceptor_Result HttpInterceptorMgr::IteratorResponseInterceptor(
             }
         }
     }
-    NETSTACK_LOGI("Exit IteratorResponseInterceptor");
+    NETSTACK_LOGD("Exit IteratorResponseInterceptor");
     return CONTINUE;
 }
 } // namespace OHOS::NetStack::HttpInterceptor
