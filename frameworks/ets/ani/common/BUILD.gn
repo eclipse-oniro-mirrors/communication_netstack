@@ -23,6 +23,8 @@ ohos_rust_static_library("netstack_common") {
   }
 
   sources = [ "src/lib.rs" ]
+
+  rustflags = [ "-Clto=off" ]
   
   external_deps = [
     "hilog:hilog_rust",
