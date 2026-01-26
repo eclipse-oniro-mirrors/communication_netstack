@@ -922,7 +922,7 @@ std::string TLSSocketServer::Connection::GetRemoteCertificate() const
     return remoteCert_;
 }
 
-const TlsSocket::X509CertRawData &TLSSocketServer::Connection::GetCertificate() const
+TlsSocket::X509CertRawData TLSSocketServer::Connection::GetCertificate() const
 {
     return connectionConfiguration_.GetCertificate();
 }

@@ -323,7 +323,7 @@ public:
          * Obtain the certificate used in encrypted communication
          * @return certificate serialization data used in encrypted communication
          */
-        [[nodiscard]] const TlsSocket::X509CertRawData &GetCertificate() const;
+        [[nodiscard]] TlsSocket::X509CertRawData GetCertificate() const;
 
         /**
          * Get the encryption algorithm used in encrypted communication
