@@ -38,7 +38,7 @@ ohos_static_library("websocket_ani_static") {
   ]
   sources = [ "src/cxx/websocket_ani.cpp" ]
   sources += get_target_outputs(":websocket_ani_cxx")
-  
+
   deps = [
     ":websocket_ani_cxx",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
@@ -67,6 +67,8 @@ ohos_rust_shared_library("websocket_ani") {
   }
 
   sources = [ "src/lib.rs" ]
+
+  rustflags = [ "-Clto=off" ]
   
   external_deps = [
     "runtime_core:ani",
