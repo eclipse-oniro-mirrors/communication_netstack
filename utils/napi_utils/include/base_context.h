@@ -107,6 +107,10 @@ public:
 
     void SetSharedManager(const std::shared_ptr<EventManager> &sharedManager);
 
+    [[nodiscard]] uint32_t GetReleaseVersion() const;
+
+    void SetReleaseVersion(uint32_t version);
+
     void CreateReference(napi_value value);
 
     void DeleteReference();
@@ -156,6 +160,8 @@ private:
     std::string asyncWorkName_;
 
     std::string errorMessage_;
+
+    uint32_t releaseVersion_;
 
 protected:
     std::shared_ptr<EventManager> sharedManager_;

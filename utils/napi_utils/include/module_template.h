@@ -36,6 +36,7 @@ struct EventManagerWrapper;
 } // namespace OHOS::NetStack
 
 #define MAX_PARAM_NUM 64
+#define API_VERSION_THROW_BUSINESS_EXCEPTION 24
 
 namespace OHOS::NetStack::ModuleTemplate {
 
@@ -70,7 +71,11 @@ napi_value InterfaceWithManagerWrapper(napi_env env, napi_callback_info info, co
     }
     context->ParseParams(params, paramsCount);
     if (context->IsNeedThrowException()) { // only api9 or later need throw exception.
-        napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
+        if (context->GetReleaseVersion() >= API_VERSION_THROW_BUSINESS_EXCEPTION) {
+            napi_throw_business_error(env, context->GetErrorCode(), context->GetErrorMessage().c_str());
+        } else {
+            napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
+        }
         delete context;
         context = nullptr;
         return NapiUtils::GetUndefined(env);
@@ -121,7 +126,11 @@ napi_value InterfaceWithSharedManager(napi_env env, napi_callback_info info, con
     }
     context->ParseParams(params, paramsCount);
     if (context->IsNeedThrowException()) { // only api9 or later need throw exception.
-        napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
+        if (context->GetReleaseVersion() >= API_VERSION_THROW_BUSINESS_EXCEPTION) {
+            napi_throw_business_error(env, context->GetErrorCode(), context->GetErrorMessage().c_str());
+        } else {
+            napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
+        }
         delete context;
         context = nullptr;
         return NapiUtils::GetUndefined(env);
@@ -301,19 +310,21 @@ napi_value NewInstanceWithManagerWrapper(napi_env env, napi_callback_info info, 
                                          Finalizer finalizer);
 
 napi_value OnSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
-                           bool asyncCallback);
+                           bool asyncCallback, bool isThrowBusinessError = false);
 
 napi_value OnceSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
-                             bool asyncCallback);
+                             bool asyncCallback, bool isThrowBusinessError = false);
 
-napi_value OffSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events);
+napi_value OffSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
+                            bool isThrowBusinessError = false);
 
 napi_value OnManagerWrapper(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
-                            bool asyncCallback);
+                            bool asyncCallback, bool isThrowBusinessError = false);
 
 napi_value OnceManagerWrapper(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
-                              bool asyncCallback);
+                              bool asyncCallback, bool isThrowBusinessError = false);
 
-napi_value OffManagerWrapper(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events);
+napi_value OffManagerWrapper(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
+                             bool isThrowBusinessError = false);
 } // namespace OHOS::NetStack::ModuleTemplate
 #endif /* COMMUNICATIONNETSTACK_NETSTACK_MODULE_TEMPLATE_H */

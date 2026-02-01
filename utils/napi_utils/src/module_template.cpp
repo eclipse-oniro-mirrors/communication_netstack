@@ -37,8 +37,17 @@ static constexpr const char *INTERFACE_HTTP_REQUEST = "OHOS_NET_HTTP_HttpRequest
 static constexpr const char *INTERFACE_WEB_SOCKET_SERVER = "WebSocketServer";
 static constexpr const char *EVENT_MANAGER = "EVENT_MANAGER";
 
+static void ThrowParseCodeError(napi_env env, bool isThrowBusinessError)
+{
+    if (isThrowBusinessError) {
+        napi_throw_business_error(env, PARSE_ERROR_CODE, PARSE_ERROR_MSG);
+    } else {
+        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
+    }
+}
+
 napi_value OnManagerWrapper(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
-                            bool asyncCallback)
+                            bool asyncCallback, bool isThrowBusinessError)
 {
     napi_value thisVal = nullptr;
     size_t paramsCount = MAX_PARAM_NUM;
@@ -48,7 +57,7 @@ napi_value OnManagerWrapper(napi_env env, napi_callback_info info, const std::in
     if (paramsCount != EVENT_PARAM_NUM || NapiUtils::GetValueType(env, params[0]) != napi_string ||
         NapiUtils::GetValueType(env, params[1]) != napi_function) {
         NETSTACK_LOGE("on off once interface para: [string, function]");
-        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
+        ThrowParseCodeError(env, isThrowBusinessError);
         return NapiUtils::GetUndefined(env);
     }
 
@@ -116,7 +125,8 @@ napi_value OnceManagerWrapper(napi_env env, napi_callback_info info, const std::
     return NapiUtils::GetUndefined(env);
 }
 
-napi_value OffManagerWrapper(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events)
+napi_value OffManagerWrapper(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
+                             bool isThrowBusinessError)
 {
     napi_value thisVal = nullptr;
     size_t paramsCount = MAX_PARAM_NUM;
@@ -126,13 +136,13 @@ napi_value OffManagerWrapper(napi_env env, napi_callback_info info, const std::i
     if ((paramsCount != 1 && paramsCount != EVENT_PARAM_NUM) ||
         NapiUtils::GetValueType(env, params[0]) != napi_string) {
         NETSTACK_LOGE("on off once interface para: [string, function?]");
-        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
+        ThrowParseCodeError(env, isThrowBusinessError);
         return NapiUtils::GetUndefined(env);
     }
 
     if (paramsCount == EVENT_PARAM_NUM && NapiUtils::GetValueType(env, params[1]) != napi_function) {
         NETSTACK_LOGE("on off once interface para: [string, function]");
-        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
+        ThrowParseCodeError(env, isThrowBusinessError);
         return NapiUtils::GetUndefined(env);
     }
 
@@ -168,7 +178,7 @@ napi_value OffManagerWrapper(napi_env env, napi_callback_info info, const std::i
 }
 
 napi_value OnSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
-                           bool asyncCallback)
+                           bool asyncCallback, bool isThrowBusinessError)
 {
     napi_value thisVal = nullptr;
     size_t paramsCount = MAX_PARAM_NUM;
@@ -178,7 +188,7 @@ napi_value OnSharedManager(napi_env env, napi_callback_info info, const std::ini
     if (paramsCount != EVENT_PARAM_NUM || NapiUtils::GetValueType(env, params[0]) != napi_string ||
         NapiUtils::GetValueType(env, params[1]) != napi_function) {
         NETSTACK_LOGE("on off once interface para: [string, function]");
-        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
+        ThrowParseCodeError(env, isThrowBusinessError);
         return NapiUtils::GetUndefined(env);
     }
 
@@ -246,7 +256,8 @@ napi_value OnceSharedManager(napi_env env, napi_callback_info info, const std::i
     return NapiUtils::GetUndefined(env);
 }
 
-napi_value OffSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events)
+napi_value OffSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
+                            bool isThrowBusinessError)
 {
     napi_value thisVal = nullptr;
     size_t paramsCount = MAX_PARAM_NUM;
@@ -256,13 +267,13 @@ napi_value OffSharedManager(napi_env env, napi_callback_info info, const std::in
     if ((paramsCount != 1 && paramsCount != EVENT_PARAM_NUM) ||
         NapiUtils::GetValueType(env, params[0]) != napi_string) {
         NETSTACK_LOGE("on off once interface para: [string, function?]");
-        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
+        ThrowParseCodeError(env, isThrowBusinessError);
         return NapiUtils::GetUndefined(env);
     }
 
     if (paramsCount == EVENT_PARAM_NUM && NapiUtils::GetValueType(env, params[1]) != napi_function) {
         NETSTACK_LOGE("on off once interface para: [string, function]");
-        napi_throw_error(env, std::to_string(PARSE_ERROR_CODE).c_str(), PARSE_ERROR_MSG);
+        ThrowParseCodeError(env, isThrowBusinessError);
         return NapiUtils::GetUndefined(env);
     }
 
