@@ -88,7 +88,7 @@ void NetStackChrReport::LogHttpInfo(const DataTransChrStats& chrStats)
     SetHttpInfoJsonStr(chrStats.httpInfo, httpInfoJsonStr);
     SetTcpInfoJsonStr(chrStats.tcpInfo, tcpInfoJsonStr);
     NETSTACK_LOGD("LogHttpInfo: {PROCESS_NAME: %{public}s, HTTP_INFO: %{public}s, TCP_INFO: %{public}s}",
-    chrStats.processName.c_str(), httpInfoJsonStr.c_str(), tcpInfoJsonStr.c_str());
+        chrStats.processName.c_str(), httpInfoJsonStr.c_str(), tcpInfoJsonStr.c_str());
 }
 
 void NetStackChrReport::SetWantParam(AAFwk::Want& want, DataTransChrStats chrStats)
