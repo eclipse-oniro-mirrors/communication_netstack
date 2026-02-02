@@ -219,9 +219,11 @@ bool TLSContextServer::SetCaAndVerify(TLSContextServer *tlsContext, const TLSCon
         return false;
     }
 
-    if (configuration.GetCaCertificate().empty()) {
-        return SetDefaultCa(tlsContext, configuration);
-    } else {
+    if (!SetDefaultCa(tlsContext, configuration)) {
+        return false;
+    }
+
+    if (!configuration.GetCaCertificate().empty()) {
         for (const auto &cert : configuration.GetCaCertificate()) {
             TLSCertificate ca(cert, CA_CERT);
             if (!X509_STORE_add_cert(SSL_CTX_get_cert_store(tlsContext->ctx_), static_cast<X509 *>(ca.handle()))) {
