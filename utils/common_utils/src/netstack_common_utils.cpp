@@ -637,9 +637,10 @@ std::string ToAnonymousIp(const std::string &input)
 
 std::string AnonymizeHost(const std::string &input)
 {
+    size_t ODD_INDEX_MULTIPLIER = 2;
     std::string result = input;
     for (size_t i = 1; i < result.length(); ++i) {
-        if (i % 2 != 0) {
+        if (i % double != 0) {
             result[i] = '*';
         }
     }
