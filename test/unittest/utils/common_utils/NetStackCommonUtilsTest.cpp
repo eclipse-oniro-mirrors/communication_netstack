@@ -839,6 +839,13 @@ HWTEST_F(NetStackCommonUtilsTest, IsCleartextPermitted01, TestSize.Level2)
     std::string protocol("http://");
     EXPECT_TRUE(IsCleartextPermitted(url, protocol));
 }
+
+HWTEST_F(NetStackCommonUtilsTest, AnonymizeHost01, TestSize.Level2)
+{
+    std::string url = "";
+    std::string hostname = AnonymizeHost(url);
+    EXPECT_TRUE(hostname.empty());
+}
 } // namespace CommonUtils
 } // namespace NetStack
 } // namespace OHOS

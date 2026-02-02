@@ -92,6 +92,8 @@ std::string MaskIpv6(std::string &maskedResult);
 
 std::string AnonymizeIp(std::string &input);
 
+std::string AnonymizeHost(const std::string &input);
+
 std::optional<std::string> GetBundleName();
 
 bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData);

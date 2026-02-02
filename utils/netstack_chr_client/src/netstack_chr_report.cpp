@@ -81,6 +81,16 @@ int NetStackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
     return REPORT_CHR_RESULT_SUCCESS;
 }
 
+void NetStackChrReport::LogHttpInfo(const DataTransChrStats& chrStats)
+{
+    std::string httpInfoJsonStr;
+    std::string tcpInfoJsonStr;
+    SetHttpInfoJsonStr(chrStats.httpInfo, httpInfoJsonStr);
+    SetTcpInfoJsonStr(chrStats.tcpInfo, tcpInfoJsonStr);
+    NETSTACK_LOGD("LogHttpInfo: {PROCESS_NAME: %{public}s, HTTP_INFO: %{public}s, TCP_INFO: %{public}s}",
+        chrStats.processName.c_str(), httpInfoJsonStr.c_str(), tcpInfoJsonStr.c_str());
+}
+
 void NetStackChrReport::SetWantParam(AAFwk::Want& want, DataTransChrStats chrStats)
 {
     std::string httpInfoJsonStr;
@@ -120,6 +130,7 @@ void NetStackChrReport::SetHttpInfoJsonStr(DataTransHttpInfo httpInfo, std::stri
        << ",{\"proxy_error\":" << httpInfo.proxyError
        << ",{\"queue_time\":" << httpInfo.queueTime
        << ",{\"curl_code\":"<< httpInfo.curlCode
+       << ",{\"host_name\":"<< httpInfo.hostName
        << ",{\"request_start_time\":" << httpInfo.requestStartTime << "}";
     httpInfoJsonStr = ss.str();
 }

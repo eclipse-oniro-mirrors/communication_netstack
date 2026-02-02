@@ -634,4 +634,16 @@ std::string ToAnonymousIp(const std::string &input)
     }
     return input;
 }
+
+std::string AnonymizeHost(const std::string &input)
+{
+    const size_t kOddIndexMultiplier = 2;
+    std::string result = input;
+    for (size_t i = 1; i < result.length(); ++i) {
+        if (i % kOddIndexMultiplier != 0) {
+            result[i] = '*';
+        }
+    }
+    return result;
+}
 } // namespace OHOS::NetStack::CommonUtils

@@ -46,6 +46,7 @@ typedef struct DataTransHttpInfo {
     curl_off_t queueTime;
     long curlCode;
     long requestStartTime;
+    std::string hostName;
 } DataTransHttpInfo;
 
 typedef struct DataTransTcpInfo {
