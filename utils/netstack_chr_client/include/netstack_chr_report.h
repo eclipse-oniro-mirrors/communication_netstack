@@ -30,6 +30,7 @@ public:
     ~NetStackChrReport();
  
     int ReportCommonEvent(DataTransChrStats chrStats);
+    void LogHttpInfo(const DataTransChrStats& chrStats);
 private:
     std::mutex report_mutex_;
     void SetWantParam(AAFwk::Want& want, DataTransChrStats chrStats);
