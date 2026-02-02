@@ -549,6 +549,11 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         std::to_string(httpVer).c_str(), context->options.GetMethod().c_str(), osErr,
         anomSaddr.c_str(), sport, anomDaddr.c_str(), dport);
 #if HAS_NETMANAGER_BASE
+    // LCOV_EXCL_START
+    if (totalTime > MAX_HTTP_PERF_TOTAL_TIME) {
+        return;
+    }
+    // LCOV_EXCL_STOP
     if (EventReport::GetInstance().IsValid()) {
         HttpPerfInfo httpPerfInfo;
         httpPerfInfo.totalTime = totalTime;
