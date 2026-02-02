@@ -145,6 +145,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCode, TestSize.Leve
     CURL *handle = GetCurlHandle();
     ChrClient::NetStackChrClient::GetInstance().GetDfxInfoFromCurlHandleAndReport(NULL, 0);
     ChrClient::NetStackChrClient::GetInstance().GetDfxInfoFromCurlHandleAndReport(handle, 0);
+    ChrClient::NetStackChrClient::GetInstance().GetDfxInfoFromCurlHandleAndReport(handle, 1);
     ChrClient::DataTransChrStats dataTransChrStats{};
     ChrClient::NetStackChrClient::GetInstance().GetHttpInfoFromCurl(handle, dataTransChrStats.httpInfo);
     EXPECT_EQ(dataTransChrStats.httpInfo.responseCode, 0);
