@@ -37,6 +37,7 @@ BaseContext::BaseContext(napi_env env, const std::shared_ptr<EventManager> &shar
       permissionDenied_(false),
       noAllowedHost_(false),
       cleartextNotPermitted_(false),
+      releaseVersion_(0),
       sharedManager_(sharedManager)
 {
 }
@@ -285,5 +286,15 @@ void BaseContext::DeleteReference()
     if (env_ != nullptr && ref_ != nullptr) {
         NapiUtils::DeleteReference(env_, ref_);
     }
+}
+
+void BaseContext::SetReleaseVersion(uint32_t version)
+{
+    releaseVersion_ = version;
+}
+
+uint32_t BaseContext::GetReleaseVersion() const
+{
+    return releaseVersion_;
 }
 } // namespace OHOS::NetStack
