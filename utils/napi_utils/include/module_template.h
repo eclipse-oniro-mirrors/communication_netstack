@@ -322,7 +322,7 @@ napi_value OnManagerWrapper(napi_env env, napi_callback_info info, const std::in
                             bool asyncCallback, bool isThrowBusinessError = false);
 
 napi_value OnceManagerWrapper(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
-                              bool asyncCallback, bool isThrowBusinessError = false);
+                              bool asyncCallback);
 
 napi_value OffManagerWrapper(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
                              bool isThrowBusinessError = false);

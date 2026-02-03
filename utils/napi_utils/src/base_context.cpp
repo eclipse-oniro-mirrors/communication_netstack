@@ -37,8 +37,8 @@ BaseContext::BaseContext(napi_env env, const std::shared_ptr<EventManager> &shar
       permissionDenied_(false),
       noAllowedHost_(false),
       cleartextNotPermitted_(false),
-      sharedManager_(sharedManager),
-      releaseVersion_(0)
+      releaseVersion_(0),
+      sharedManager_(sharedManager)
 {
 }
 
