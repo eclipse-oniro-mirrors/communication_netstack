@@ -313,7 +313,7 @@ napi_value OnSharedManager(napi_env env, napi_callback_info info, const std::ini
                            bool asyncCallback, bool isThrowBusinessError = false);
 
 napi_value OnceSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
-                             bool asyncCallback, bool isThrowBusinessError = false);
+                             bool asyncCallback);
 
 napi_value OffSharedManager(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
                             bool isThrowBusinessError = false);
