@@ -26,6 +26,7 @@ namespace NetStack {
 namespace TlsSocket {
 TLSConfiguration::TLSConfiguration(const TLSConfiguration &other)
 {
+    std::unique_lock<std::shared_mutex> lock(certMutex_);
     privateKey_ = other.privateKey_;
     localCertificate_ = other.localCertificate_;
     caCertificate_ = other.caCertificate_;
