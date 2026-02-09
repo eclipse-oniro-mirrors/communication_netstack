@@ -248,7 +248,9 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestProcessRequestErr, Test
 {
     std::map<CURL *, RequestInfo *> ongoingRequests;
     CURLM *multi = curl_multi_init();
+    ASSERT_NE(multi, nullptr);
     RequestInfo *requestInfo = GetRequestInfo();
+    ASSERT_NE(requestInfo, nullptr);
     CURLMsg message;
     message.msg = CURLMSG_DONE;
     message.data.result = CURLE_SEND_ERROR;
