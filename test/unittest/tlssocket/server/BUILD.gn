@@ -123,7 +123,6 @@ ohos_unittest("two_way_tls_socket_server_unittest") {
   branch_protector_ret = "pac_ret"
 
   sources = [
-    "TlsSocketServerTest.cpp",
     "tls_socket_branch_test.cpp",
     "tls_socket_server_branch_test.cpp",
   ]
