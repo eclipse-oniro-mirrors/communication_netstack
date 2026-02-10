@@ -29,9 +29,6 @@
 #include "base_context.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
-#if defined(IOS_PLATFORM)
-#include "socket_constant.h"
-#endif
 #include "tls.h"
 
 namespace OHOS {
@@ -98,11 +95,7 @@ bool SeekIntersection(std::vector<std::string> &vecA, std::vector<std::string> &
 
 int ConvertErrno()
 {
-#if defined(IOS_PLATFORM)
-    return TlsSocket::TlsSocketError::TLS_ERR_SYS_BASE + Socket::ErrCodePlatformAdapter::GetOHOSErrCode(errno);
-#else
     return TlsSocket::TlsSocketError::TLS_ERR_SYS_BASE + errno;
-#endif
 }
 
 int ConvertSSLError(ssl_st *ssl)
@@ -245,16 +238,6 @@ bool TLSSocketServer::ExecBind(const Socket::NetAddress &address, const ListenCa
     if (setsockopt(listenSocketFd_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<void *>(&reuse), sizeof(reuse)) < 0) {
         NETSTACK_LOGE("failed to set tls server listen socket reuseaddr on, sockfd: %{public}d", listenSocketFd_);
     }
-#if defined(IOS_PLATFORM)
-        constexpr int SSL_PERMISSION_DENIED_ERROR_CODE = 2303113;
-        constexpr int WELL_KNOWN_PORT_THRESHOLD = 1024;
-        uint16_t port = address.GetPort();
-        if (port > 0 && port < WELL_KNOWN_PORT_THRESHOLD) {
-            CallOnErrorCallback(-1, "Address binding failed");
-            CallListenCallback(SSL_PERMISSION_DENIED_ERROR_CODE, callback);
-            return false;
-        }
-#endif
     if (bind(listenSocketFd_, addr, len) < 0) {
         if (errno != EADDRINUSE) {
             NETSTACK_LOGE("bind error is %{public}s %{public}d", strerror(errno), errno);
@@ -1059,52 +1042,13 @@ bool TLSSocketServer::Connection::CreatTlsContext()
     return true;
 }
 
-#if defined(IOS_PLATFORM)
-int SSL_accept_with_retry(SSL* ssl)
-{
-    if (ssl == nullptr) {
-        NETSTACK_LOGE("SSL_accept_with_retry: ssl pointer is null");
-        return SSL_ERROR_RETURN;
-    }
-
-    constexpr int MAX_RETRY = 3;
-    constexpr int TIME_OUT_USEC = 300000;
-    int retryCount = 0;
-    int result = -1;
-    while (retryCount < MAX_RETRY) {
-        result = SSL_accept(ssl);
-        if (result == -1) {
-            int errorStatus = ConvertSSLError(ssl);
-            int ssl_error = SSL_get_error(ssl, result);
-            if (ssl_error == SSL_ERROR_WANT_READ || ssl_error == SSL_ERROR_WANT_WRITE) {
-                retryCount++;
-                struct timeval timeOut = {0, TIME_OUT_USEC};
-                select(0, nullptr, nullptr, nullptr, &timeOut);
-                continue;
-            } else {
-                NETSTACK_LOGE("SSL connect is error, errno is %{public}d, error info is %{public}s", errorStatus,
-                    MakeSSLErrorString(errorStatus).c_str());
-                return result;
-            }
-        } else {
-            break;
-        }
-    }
-    return result;
-}
-#endif
-
 bool TLSSocketServer::Connection::StartShakingHands(const TlsSocket::TLSConnectOptions &options)
 {
     if (!ssl_) {
         NETSTACK_LOGE("ssl is null");
         return false;
     }
-#if defined(IOS_PLATFORM)
-    int result = SSL_accept_with_retry(ssl_);
-#else
     int result = SSL_accept(ssl_);
-#endif
     if (result == -1) {
         int errorStatus = ConvertSSLError(ssl_);
         NETSTACK_LOGE("SSL connect is error, errno is %{public}d, error info is %{public}s", errorStatus,
@@ -1624,7 +1568,7 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
                 } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLRDHUP) ||
                            (static_cast<uint16_t>(fds_[i].revents) & (POLLERR | POLLNVAL))) {
 #else
-                } else if ((static_cast<uint16_t>(fds_[i].revents) & (POLLERR | POLLNVAL))) {
+                } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLERR | POLLNVAL)) {
 #endif
                     RemoveConnect(fds_[i].fd);
                     exitLoop = DropFdFromPollList(i);

@@ -31,7 +31,7 @@
 #include "tls_socket.h"
 
 #ifdef IOS_PLATFORM
-#include <sys/socket.h>
+#define SO_PROTOCOL 38
 #endif
 
 namespace OHOS {
@@ -53,17 +53,10 @@ static inline bool IsTCPSocket(int sockFD)
     int optval;
     socklen_t optlen = sizeof(optval);
 
-#if defined(IOS_PLATFORM)
-    if (getsockopt(sockFD, SOL_SOCKET, SO_TYPE, &optval, &optlen) != 0) {
-        return false;
-    }
-    return optval == SOCK_STREAM;
-#else
     if (getsockopt(sockFD, SOL_SOCKET, SO_PROTOCOL, &optval, &optlen) != 0) {
         return false;
     }
     return optval == IPPROTO_TCP;
-#endif
 }
 
 static inline bool IsConnected(int sockFD)
