@@ -61,6 +61,9 @@ void HandoverTimerCallback(const void *user, long timeoutMs)
 
 bool CheckSocketTime(void *user, curl_socket_t fd)
 {
+    if (user == nullptr) {
+        return false;
+    }
     auto handover = static_cast<HttpHandoverHandler *>(user);
     if (handover && handover->CheckSocketOpentimeLessThanEndTime(fd)) {  // LCOV_EXCL_LINE
         return false;
