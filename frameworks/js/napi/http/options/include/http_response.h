@@ -67,6 +67,8 @@ public:
 
     void SetWarning(const std::string &val);
 
+    void ClearHeaderCache();
+
     bool isApplyBlockRedirectionInterceptor_ = false;
 
 private:

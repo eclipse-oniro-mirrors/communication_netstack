@@ -22,6 +22,7 @@ utils_include = [
 ]
 
 common_external_deps = [
+  "curl:curl_shared",
   "c_utils:utils",
   "hilog:libhilog",
   "napi:ace_napi",
@@ -43,12 +44,17 @@ ohos_unittest("http_interceptor_unittest") {
 
   deps = [
     "$NETSTACK_DIR/interfaces/innerkits/http_interceptor:http_interceptor",
-    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "$NETSTACK_DIR/interfaces/kits/c/http_interceptor:http_interceptor_ndk",
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",    
   ]
 
   external_deps = common_external_deps
 
-  sources = [ "HttpInterceptorTest.cpp" ]
+  sources = [
+    "HttpInterceptorInterfaceTest.cpp",
+    "HttpInterceptorTest.cpp",
+    "HttpInterceptorTypeTest.cpp",
+  ]
 
   part_name = "netstack"
   subsystem_name = "communication"

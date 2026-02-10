@@ -21,10 +21,10 @@
 #include <functional>
 #include <mutex>
 #include <queue>
+#include <set>
 #include <thread>
 #include <utility>
 #include <vector>
-#include <set>
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
 #endif
@@ -34,6 +34,9 @@
 #include "request_context.h"
 #ifdef HAS_NETMANAGER_BASE
 #include "net_conn_client.h"
+#endif
+#ifdef ENABLE_HTTP_GLOBAL_INTERCEPT
+#include "http_interceptor_type.h"
 #endif
 
 namespace OHOS::NetStack::HttpOverCurl {
@@ -331,6 +334,19 @@ private:
 #endif
     };
     static StaticVariable staticVariable_;
+#endif
+#if ENABLE_HTTP_GLOBAL_INTERCEPT
+    static bool ConvertRequestContextToInterceptorReq(
+        RequestContext *context, std::shared_ptr<Http_Interceptor_Request> &req);
+    static bool ConvertInterceptorReqToRequestContext(
+        std::shared_ptr<Http_Interceptor_Request> &req, RequestContext *context);
+    static bool GlobalRequestInterceptorCheck(RequestContext *context);
+    static bool ConvertResponseContextToInterceptorResp(
+        RequestContext *context, std::shared_ptr<Http_Interceptor_Response> &resp);
+    static bool ConvertInterceptorRespToResponseContext(
+        std::shared_ptr<Http_Interceptor_Response> &resp, RequestContext *context);
+    static bool GlobalResponseInterceptorCheck(RequestContext *context);
+
 #endif
 };
 } // namespace OHOS::NetStack::Http

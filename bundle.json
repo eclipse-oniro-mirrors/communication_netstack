@@ -77,7 +77,8 @@
                     "//foundation/communication/netstack/interfaces/kits/c/net_ssl:net_ssl_ndk",
                     "//foundation/communication/netstack/frameworks/js/napi/fetch:fetch",
                     "//foundation/communication/netstack/utils:common_utils",
-                    "//foundation/communication/netstack/interfaces/kits/c/net_http:net_http_ndk"
+                    "//foundation/communication/netstack/interfaces/kits/c/net_http:net_http_ndk",
+                    "//foundation/communication/netstack/interfaces/kits/c/http_interceptor:http_interceptor_ndk"
                 ],
                 "fwk_group": [],
                 "service_group": []

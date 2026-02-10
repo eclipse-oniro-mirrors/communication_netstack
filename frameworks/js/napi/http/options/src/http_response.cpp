@@ -133,4 +133,10 @@ void HttpResponse::SetWarning(const std::string &val)
 {
     header_[WARNING] = val;
 }
+
+void HttpResponse::ClearHeaderCache()
+{
+    setCookie_.clear();
+    header_.clear();
+}
 } // namespace OHOS::NetStack::Http

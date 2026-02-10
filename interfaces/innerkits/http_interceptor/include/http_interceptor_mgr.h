@@ -30,21 +30,20 @@ class HttpInterceptorMgr : public std::enable_shared_from_this<HttpInterceptorMg
 public:
     static HttpInterceptorMgr &GetInstance();
 
-    int AddInterceptor(struct Http_Interceptor *interceptor);
+    int32_t AddInterceptor(struct Http_Interceptor *interceptor);
 
-    int DeleteInterceptor(struct Http_Interceptor *interceptor);
+    int32_t DeleteInterceptor(struct Http_Interceptor *interceptor);
 
-    int DeleteAllInterceptor();
+    int32_t DeleteAllInterceptor(int32_t groupId);
 
-    int StartAllInterceptor();
+    int32_t SetAllInterceptorEnabled(int32_t groupId, int32_t enabled);
 
-    int StopAllInterceptor();
+    Interceptor_Result IteratorRequestInterceptor(std::shared_ptr<Http_Interceptor_Request> &req, bool &isModified);
 
-    bool GetInterceptorMgrStatus();
+    Interceptor_Result IteratorResponseInterceptor(std::shared_ptr<Http_Interceptor_Response> &resp, bool &isModified);
 
-    Interceptor_Result IteratorRequestInterceptor(std::shared_ptr<Http_Interceptor_Request> req, bool &isModified);
-
-    Interceptor_Result IteratorResponseInterceptor(std::shared_ptr<Http_Response> resp, bool &isModified);
+    std::shared_ptr<Http_Interceptor_Request> CreateHttpInterceptorRequest();
+    std::shared_ptr<Http_Interceptor_Response> CreateHttpInterceptorResponse();
 
     HttpInterceptorMgr() = default;
     ~HttpInterceptorMgr() = default;
@@ -52,13 +51,18 @@ public:
 private:
     HttpInterceptorMgr(const HttpInterceptorMgr &) = delete;
     HttpInterceptorMgr &operator=(const HttpInterceptorMgr &) = delete;
+    void CopyHttpInterceRequest(
+        std::shared_ptr<Http_Interceptor_Request> &dst, std::shared_ptr<Http_Interceptor_Request> &src);
+    void CopyHttpInterceResponse(
+        std::shared_ptr<Http_Interceptor_Response> &dst, std::shared_ptr<Http_Interceptor_Response> &src);
+    void IteratorReadRequestInterceptor(std::shared_ptr<Http_Interceptor_Request> &readReq);
+    void IteratorReadResponseInterceptor(std::shared_ptr<Http_Interceptor_Response> &readResp);
 
 private:
     std::list<Http_Interceptor *> requestInterceptorList_;
     std::list<Http_Interceptor *> responseInterceptorList_;
     std::shared_mutex reqMutex_;
     std::shared_mutex respMutex_;
-    std::atomic<bool> isRunning_ { false };
 };
 } // namespace HttpInterceptor
 } // namespace NetStack

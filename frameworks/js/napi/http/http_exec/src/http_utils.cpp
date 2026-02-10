@@ -12,14 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "http_utils.h"
 
 #if HAS_NETMANAGER_BASE
 #include "bundle_mgr_interface.h"
 #include "iservice_registry.h"
-#include "system_ability_definition.h"
 #include "netstack_log.h"
+#include "system_ability_definition.h"
 #endif
 
 namespace OHOS::NetStack::HttpUtils {
@@ -72,5 +72,18 @@ std::string RemoveUrlParameters(const std::string& url)
         return url;
     }
     return url.substr(0, questionMarkPos);
+}
+
+char *MallocCString(const std::string &origin)
+{
+    if (origin.empty()) {
+        return nullptr;
+    }
+    auto len = origin.length() + 1;
+    char *res = static_cast<char *>(malloc(sizeof(char) * len));
+    if (res == nullptr) {
+        return nullptr;
+    }
+    return std::char_traits<char>::copy(res, origin.c_str(), len);
 }
 } // namespace OHOS::NetStack::HttpUtils

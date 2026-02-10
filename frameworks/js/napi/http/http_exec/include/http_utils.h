@@ -20,6 +20,7 @@
 namespace OHOS::NetStack::HttpUtils {
     bool IsDebugMode();
     std::string RemoveUrlParameters(const std::string& url);
+    char* MallocCString(const std::string& origin);
 } // namespace OHOS::NetStack::HttpUtils
 
 #endif /* COMMUNICATIONNETSTACK_HTTP_UTILS_H */
