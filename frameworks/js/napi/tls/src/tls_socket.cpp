@@ -32,9 +32,6 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "socket_exec_common.h"
-#if defined(IOS_PLATFORM)
-#include "socket_constant.h"
-#endif
 #include "tls.h"
 
 namespace OHOS {
@@ -112,11 +109,7 @@ private:
 
 int ConvertErrno()
 {
-#if defined(IOS_PLATFORM)
-    return TlsSocketError::TLS_ERR_SYS_BASE + Socket::ErrCodePlatformAdapter::GetOHOSErrCode(errno);
-#else
     return TlsSocketError::TLS_ERR_SYS_BASE + errno;
-#endif
 }
 
 std::string MakeErrnoString()
