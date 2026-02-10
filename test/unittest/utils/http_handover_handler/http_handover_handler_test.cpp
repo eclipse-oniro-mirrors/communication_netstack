@@ -256,7 +256,16 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestProcessRequestErr, Test
     message.data.result = CURLE_SEND_ERROR;
     EXPECT_EQ(
         SingletonHttpHandoverHandler::GetInstance()->ProcessRequestErr(ongoingRequests, multi, requestInfo, &message),
-        0);
+        false);
+    EXPECT_EQ(
+        SingletonHttpHandoverHandler::GetInstance()->ProcessRequestErr(ongoingRequests, nullptr, requestInfo, &message),
+        false);
+    EXPECT_EQ(
+        SingletonHttpHandoverHandler::GetInstance()->ProcessRequestErr(ongoingRequests, multi, nullptr, &message),
+        false);
+    EXPECT_EQ(
+        SingletonHttpHandoverHandler::GetInstance()->ProcessRequestErr(ongoingRequests, multi, requestInfo, nullptr),
+        false);
     DeleteRequestInfo(requestInfo);
 }
 
