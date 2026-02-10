@@ -454,7 +454,7 @@ int32_t HttpHandoverHandler::IsRequestRead(CURL *easyHandle, time_t &recvtime, t
 bool HttpHandoverHandler::ProcessRequestErr(std::map<CURL *, RequestInfo *> &ongoingRequests,
     CURLM *multi, RequestInfo *requestInfo, CURLMsg *msg)
 {
-    if (!multi || requestInfo || !msg) {
+    if (!multi || !requestInfo || !msg) {
         return false;
     }
     if (ProcessRequestNetError(ongoingRequests, multi, requestInfo, msg)) {
