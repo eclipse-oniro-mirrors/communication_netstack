@@ -846,6 +846,13 @@ HWTEST_F(NetStackCommonUtilsTest, AnonymizeHost01, TestSize.Level2)
     std::string hostname = AnonymizeHost(url);
     EXPECT_TRUE(hostname.empty());
 }
+
+HWTEST_F(NetStackCommonUtilsTest, MallocCString01, TestSize.Level2)
+{
+    std::string url = "";
+    auto ret = MallocCString(url);
+    EXPECT_TRUE(ret == nullptr);
+}
 } // namespace CommonUtils
 } // namespace NetStack
 } // namespace OHOS

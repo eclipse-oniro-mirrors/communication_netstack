@@ -42,6 +42,10 @@ public:
 
     Interceptor_Result IteratorResponseInterceptor(std::shared_ptr<Http_Interceptor_Response> &resp, bool &isModified);
 
+    bool HasEnabledRequestInterceptor();
+
+    bool HasEnabledResponseInterceptor();
+
     std::shared_ptr<Http_Interceptor_Request> CreateHttpInterceptorRequest();
     std::shared_ptr<Http_Interceptor_Response> CreateHttpInterceptorResponse();
 
@@ -57,6 +61,7 @@ private:
         std::shared_ptr<Http_Interceptor_Response> &dst, std::shared_ptr<Http_Interceptor_Response> &src);
     void IteratorReadRequestInterceptor(std::shared_ptr<Http_Interceptor_Request> &readReq);
     void IteratorReadResponseInterceptor(std::shared_ptr<Http_Interceptor_Response> &readResp);
+    bool HasEnabledInterceptor(Interceptor_Stage stage);
 
 private:
     std::list<Http_Interceptor *> requestInterceptorList_;

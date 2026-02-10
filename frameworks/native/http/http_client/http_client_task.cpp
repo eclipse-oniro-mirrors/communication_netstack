@@ -835,7 +835,13 @@ bool HttpClientTask::Start()
         }
         return false;
     }
-
+#if ENABLE_HTTP_GLOBAL_INTERCEPT
+    if (!GlobalRequestInterceptorCheck()) {
+        NETSTACK_LOGI("GlobalRequestInterceptorCheck fail taskId = %{public}d", taskId_);
+        error_.SetErrorCode(HttpErrorCode::HTTP_UNKNOWN_OTHER_ERROR);
+        return false;
+    }
+#endif
     request_.SetRequestTime(HttpTime::GetNowTimeGMT());
 
     HttpSession &session = HttpSession::GetInstance();
@@ -1268,39 +1274,56 @@ void HttpClientTask::ProcessNetAddress()
     response_.SetNetAddress(netAddress);
 }
 
-void HttpClientTask::ProcessResponse(CURLMsg *msg)
+void HttpClientTask::LogResponseInfo(CURLcode code)
 {
-    trace_->Finish();
-    CURLcode code = msg->data.result;
     NETSTACK_LOGD("taskid=%{public}d code=%{public}d", taskId_, code);
     error_.SetCURLResult(code);
     response_.SetResponseTime(HttpTime::GetNowTimeGMT());
-    ProcessNetAddress();
-    DumpHttpPerformance();
-    if (ProcessUsingCache()) {
-        return;
-    }
-    if (CURLE_ABORTED_BY_CALLBACK == code) {
-        (void)ProcessResponseCode();
-        if (onCanceled_) {
-            onCanceled_(request_, response_);
-        }
-        SetSuccess(false);
-        return;
-    }
+}
 
-    if (code != CURLE_OK) {
-        if (onFailed_) {
-            onFailed_(request_, response_, error_);
-        }
-        SetSuccess(false);
-        return;
+bool HttpClientTask::HandleCancelCallback(CURLcode code)
+{
+    if (CURLE_ABORTED_BY_CALLBACK != code) {
+        return false;
     }
+    (void)ProcessResponseCode();
+    if (onCanceled_) {
+        onCanceled_(request_, response_);
+    }
+    SetSuccess(false);
+    return true;
+}
 
+bool HttpClientTask::HandleErrorCallback(CURLcode code)
+{
+    if (code == CURLE_OK) {
+        return false;
+    }
+    if (onFailed_) {
+        onFailed_(request_, response_, error_);
+    }
+    SetSuccess(false);
+    return true;
+}
+
+bool HttpClientTask::ProcessResponseCoreLogic()
+{
     ProcessCookie(curlHandle_);
     response_.ParseHeaders();
     ProcessResponseExpectType();
-    if (ProcessResponseCode()) {
+    auto ret = ProcessResponseCode();
+
+#if ENABLE_HTTP_GLOBAL_INTERCEPT
+    if (!GlobalResponseInterceptorCheck()) {
+        NETSTACK_LOGI("GlobalResponseInterceptorCheck fail taskId = %{public}d", taskId_);
+    }
+#endif
+    return ret;
+}
+
+void HttpClientTask::HandleResultCallback(bool isResponseOk)
+{
+    if (isResponseOk) {
         if (onSucceeded_) {
             onSucceeded_(request_, response_);
         }
@@ -1309,11 +1332,40 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
         onFailed_(request_, response_, error_);
         SetSuccess(false);
     }
-    WriteResopnseToCache(response_);
+}
+
+void HttpClientTask::HandleNetworkProfiling()
+{
 #if HAS_NETMANAGER_BASE
+    if (networkProfilerUtils_ == nullptr) {
+        NETSTACK_LOGE("networkProfilerUtils_ is nullptr");
+        return;
+    }
     HttpClientNetworkMessage httpClientNetworkMessage(std::to_string(GetTaskId()), request_, response_, curlHandle_);
     networkProfilerUtils_->NetworkProfiling(httpClientNetworkMessage);
 #endif
+}
+
+void HttpClientTask::ProcessResponse(CURLMsg *msg)
+{
+    trace_->Finish();
+    CURLcode code = msg->data.result;
+    LogResponseInfo(code);
+    ProcessNetAddress();
+    DumpHttpPerformance();
+    if (ProcessUsingCache()) {
+        return;
+    }
+    if (HandleCancelCallback(code)) {
+        return;
+    }
+    if (HandleErrorCallback(code)) {
+        return;
+    }
+    bool ret = ProcessResponseCoreLogic();
+    HandleResultCallback(ret);
+    WriteResopnseToCache(response_);
+    HandleNetworkProfiling();
 }
 
 void HttpClientTask::SetResponse(const HttpClientResponse &response)
@@ -1669,6 +1721,189 @@ bool HttpClientTask::SetCertPinnerOption(CURL *handle)
     NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PINNEDPUBLICKEY, certPIN.c_str());
     return true;
 }
+
+#if ENABLE_HTTP_GLOBAL_INTERCEPT
+bool HttpClientTask::ConvertRequestContextToInterceptorReq(std::shared_ptr<Http_Interceptor_Request> &req)
+{
+    if (req == nullptr) {
+        NETSTACK_LOGE("Convert failed: req is null");
+        return false;
+    }
+
+    if (!request_.GetURL().empty()) {
+        req->url.buffer = CommonUtils::MallocCString(request_.GetURL());
+        req->url.length = request_.GetURL().length();
+    }
+    if (!request_.GetMethod().empty()) {
+        req->method.buffer = CommonUtils::MallocCString(request_.GetMethod());
+        req->method.length = request_.GetMethod().length();
+    }
+    if (!request_.GetBody().empty()) {
+        req->body.buffer = CommonUtils::MallocCString(request_.GetBody());
+        req->body.length = request_.GetBody().length();
+    }
+    if (!request_.GetHeaders().empty()) {
+        curl_slist *curlHeaderList_ = nullptr;
+        for (const auto &header : request_.GetHeaders()) {
+            std::string headerStr;
+            if (!header.second.empty()) {
+                headerStr = header.first + HttpConstant::HTTP_HEADER_SEPARATOR + header.second;
+            } else {
+                headerStr = header.first + HttpConstant::HTTP_HEADER_BLANK_SEPARATOR;
+            }
+            curlHeaderList_ = curl_slist_append(curlHeaderList_, headerStr.c_str());
+        }
+        req->headers = curlHeaderList_;
+    }
+    return true;
+}
+
+bool HttpClientTask::ConvertInterceptorReqToRequestContext(std::shared_ptr<Http_Interceptor_Request> &req)
+{
+    if (req == nullptr) {
+        NETSTACK_LOGE("Convert failed: req is null");
+        return false;
+    }
+    if (req->url.buffer != nullptr && req->url.length > 0) {
+        request_.SetURL(std::string(req->url.buffer, req->url.length));
+    }
+    if (req->method.buffer != nullptr && req->method.length > 0) {
+        request_.SetMethod(std::string(req->method.buffer, req->method.length));
+    }
+    if (req->body.buffer != nullptr && req->body.length > 0) {
+        request_.ReplaceBody(req->body.buffer, req->body.length);
+    }
+    std::string rawHeader;
+    Http_Interceptor_Headers *headers = req->headers;
+    while (headers != nullptr) {
+        if (headers->data) {
+            rawHeader += headers->data;
+            rawHeader += HttpConstant::HTTP_LINE_SEPARATOR;
+        }
+        headers = headers->next;
+    }
+    request_.SetRawHeader(rawHeader);
+    request_.ClearHeaderCache();
+    request_.ParseHeaders();
+    SetCurlOptions();
+    return true;
+}
+
+bool HttpClientTask::GlobalRequestInterceptorCheck()
+{
+    if (!OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().HasEnabledRequestInterceptor()) {
+        return true;
+    }
+
+    std::shared_ptr<Http_Interceptor_Request> req =
+        OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().CreateHttpInterceptorRequest();
+    bool isModified = false;
+    if (!ConvertRequestContextToInterceptorReq(req)) {
+        NETSTACK_LOGE("Convert RequestContext to InterceptorReq failed taskId = %{public}d", taskId_);
+        return false;
+    }
+    if (OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().IteratorRequestInterceptor(
+        req, isModified) == ABORT) {
+        NETSTACK_LOGI("IteratorRequestInterceptor return ABORT taskId = %{public}d", taskId_);
+        return false;
+    }
+    if (isModified) {
+        NETSTACK_LOGI("Request interceptor modified the request, taskId = %{public}d", taskId_);
+        if (!ConvertInterceptorReqToRequestContext(req)) {
+            NETSTACK_LOGE("Restore InterceptorReq to RequestContext failed taskId = %{public}d", taskId_);
+            return false;
+        }
+    }
+    return true;
+}
+
+bool HttpClientTask::ConvertResponseContextToInterceptorResp(std::shared_ptr<Http_Interceptor_Response> &resp)
+{
+    if (resp == nullptr) {
+        NETSTACK_LOGE("Convert failed: resp is null");
+        return false;
+    }
+
+    if (!response_.GetResult().empty()) {
+        resp->body.buffer = CommonUtils::MallocCString(response_.GetResult());
+        resp->body.length = response_.GetResult().length();
+    }
+
+    resp->responseCode = static_cast<Http_ResponseCode>(response_.GetResponseCode());
+    if (!response_.GetHeader().empty() || !response_.GetCookies().empty()) {
+        struct curl_slist *header = nullptr;
+        auto vec = CommonUtils::Split(response_.GetRawHeader(), HttpConstant::HTTP_LINE_SEPARATOR);
+        std::for_each(vec.begin(), vec.end(), [&header](const std::string &s) {
+            if (!s.empty()) {
+                header = curl_slist_append(header, s.c_str());
+            }
+        });
+        resp->headers = reinterpret_cast<Http_Interceptor_Headers *>(header);
+    }
+
+    auto performanceInfo = response_.GetPerformanceTiming();
+    resp->performanceTiming = {
+        .dnsTiming = performanceInfo.dnsTiming,
+        .tcpTiming = performanceInfo.connectTiming,
+        .tlsTiming = performanceInfo.tlsTiming,
+        .firstSendTiming = performanceInfo.firstSendTiming,
+        .firstReceiveTiming = performanceInfo.firstReceiveTiming,
+        .totalFinishTiming = performanceInfo.totalTiming,
+        .redirectTiming = performanceInfo.redirectTiming,
+    };
+    return true;
+}
+
+bool HttpClientTask::ConvertInterceptorRespToResponseContext(std::shared_ptr<Http_Interceptor_Response> &resp)
+{
+    if (resp == nullptr) {
+        NETSTACK_LOGE("Convert failed: resp is null");
+        return false;
+    }
+
+    if (resp->body.buffer != NULL && resp->body.length > 0) {
+        response_.SetResult(std::string(resp->body.buffer, resp->body.length));
+    }
+    response_.SetResponseCode(static_cast<ResponseCode>(resp->responseCode));
+    std::string rawHeader;
+    Http_Interceptor_Headers *headers = resp->headers;
+    while (headers != nullptr) {
+        if (headers->data) {
+            rawHeader += headers->data;
+            rawHeader += HttpConstant::HTTP_LINE_SEPARATOR;
+        }
+        headers = headers->next;
+    }
+    response_.SetRawHeader(rawHeader);
+    response_.ClearHeaderCache();
+    response_.ParseHeaders();
+    return true;
+}
+
+bool HttpClientTask::GlobalResponseInterceptorCheck()
+{
+    if (!OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().HasEnabledResponseInterceptor()) {
+        return true;
+    }
+    std::shared_ptr<Http_Interceptor_Response> resp =
+        OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().CreateHttpInterceptorResponse();
+    if (!ConvertResponseContextToInterceptorResp(resp)) {
+        NETSTACK_LOGE("Convert RequestContext to InterceptorReq failed taskId = %{public}d", taskId_);
+        return false;
+    }
+    bool isModified = false;
+    auto result = OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().IteratorResponseInterceptor(
+        resp, isModified);
+    if (isModified) {
+        NETSTACK_LOGI("Response interceptor modified the response, taskId = %{public}d", taskId_);
+        if (!ConvertInterceptorRespToResponseContext(resp)) {
+            NETSTACK_LOGE("Restore InterceptorReq to RequestContext failed taskId = %{public}d", taskId_);
+            return false;
+        }
+    }
+    return result == CONTINUE ? true : false;
+}
+#endif
 } // namespace HttpClient
 } // namespace NetStack
 } // namespace OHOS

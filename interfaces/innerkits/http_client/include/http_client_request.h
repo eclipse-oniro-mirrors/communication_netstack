@@ -136,11 +136,40 @@ public:
     void SetBody(const void *data, size_t length);
 
     /**
+     * Replace the body data for the HTTP request.
+     * @param data Pointer to the data.
+     * @param length Length of the data.
+     */
+    void ReplaceBody(const void *data, size_t length);
+
+    /**
      * Set a header field for the HTTP request.
      * @param key The header field key.
      * @param val The header field value.
      */
     void SetHeader(const std::string &key, const std::string &val);
+
+    /**
+     * Sets a raw header for the HTTP request.
+     * @param header The raw header string.
+     */
+    void SetRawHeader(const std::string &header);
+
+    /**
+     * Get the raw header of the HTTP request.
+     * @return The raw header of the request.
+     */
+    const std::string &GetRawHeader() const;
+
+    /**
+     * Parses the headers of the HTTP request.
+     */
+    void ParseHeaders();
+
+    /**
+     * Clear the headers cache of the HTTP request.
+     */
+    void ClearHeaderCache();
 
     /**
      * Set the timeout for the HTTP request.
@@ -513,6 +542,7 @@ private:
     std::string url_;
     std::string method_;
     std::string body_;
+    std::string rawHeader_;
     std::map<std::string, std::string> headers_;
     unsigned int timeout_;
     unsigned int connectTimeout_;

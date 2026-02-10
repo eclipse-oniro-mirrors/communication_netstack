@@ -124,6 +124,12 @@ const std::string &HttpClientResponse::GetRawHeader() const
     return rawHeader_;
 }
 
+void HttpClientResponse::ClearHeaderCache()
+{
+    headers_.clear();
+    setCookie_.clear();
+}
+
 void HttpClientResponse::SetCookies(const std::string &cookies)
 {
     cookies_ = cookies;

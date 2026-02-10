@@ -87,6 +87,11 @@ void HttpClientRequest::SetBody(const void *data, size_t length)
     body_.append(static_cast<const char *>(data), length);
 }
 
+void HttpClientRequest::ReplaceBody(const void *data, size_t length)
+{
+    body_.assign(static_cast<const char *>(data), length);
+}
+
 void HttpClientRequest::SetTimeout(unsigned int timeout)
 {
     timeout_ = timeout;
@@ -159,6 +164,39 @@ const std::string &HttpClientRequest::GetBody() const
 const std::map<std::string, std::string> &HttpClientRequest::GetHeaders() const
 {
     return headers_;
+}
+
+void HttpClientRequest::SetRawHeader(const std::string &header)
+{
+    rawHeader_ = header;
+}
+
+const std::string &HttpClientRequest::GetRawHeader() const
+{
+    return rawHeader_;
+}
+
+void HttpClientRequest::ParseHeaders()
+{
+    std::vector<std::string> vec = CommonUtils::Split(rawHeader_, HttpConstant::HTTP_LINE_SEPARATOR);
+    for (const auto &header : vec) {
+        if (CommonUtils::Strip(header).empty()) {
+            continue;
+        }
+        auto index = header.find(HttpConstant::HTTP_HEADER_SEPARATOR);
+        if (index == std::string::npos) {
+            headers_[CommonUtils::Strip(header)] = "";
+            NETSTACK_LOGD("HEAD: %{public}s", CommonUtils::Strip(header).c_str());
+            continue;
+        }
+        headers_[CommonUtils::ToLower(CommonUtils::Strip(header.substr(0, index)))] =
+            CommonUtils::Strip(header.substr(index + 1));
+    }
+}
+
+void HttpClientRequest::ClearHeaderCache()
+{
+    headers_.clear();
 }
 
 unsigned int HttpClientRequest::GetTimeout()

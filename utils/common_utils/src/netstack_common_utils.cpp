@@ -646,4 +646,19 @@ std::string AnonymizeHost(const std::string &input)
     }
     return result;
 }
+
+char *MallocCString(const std::string &origin)
+{
+    if (origin.empty()) {
+        return nullptr;
+    }
+    auto len = origin.length() + 1;
+    // LCOV_EXCL_START
+    char *res = static_cast<char *>(malloc(sizeof(char) * len));
+    if (res == nullptr) {
+        return nullptr;
+    }
+    // LCOV_EXCL_STOP
+    return std::char_traits<char>::copy(res, origin.c_str(), len);
+}
 } // namespace OHOS::NetStack::CommonUtils

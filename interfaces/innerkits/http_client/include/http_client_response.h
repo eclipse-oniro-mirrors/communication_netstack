@@ -191,6 +191,11 @@ public:
     const std::string &GetRawHeader() const;
 
     /**
+     * Clear the headers cache of the HTTP response.
+     */
+    void ClearHeaderCache();
+
+    /**
      * Sets the cookies for the HTTP response.
      * @param cookies The cookie string.
      */
