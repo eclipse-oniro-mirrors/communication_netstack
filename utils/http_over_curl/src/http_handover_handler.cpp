@@ -457,7 +457,7 @@ int32_t HttpHandoverHandler::IsRequestRead(CURL *easyHandle, time_t &recvtime, t
 bool HttpHandoverHandler::ProcessRequestErr(std::map<CURL *, RequestInfo *> &ongoingRequests,
     CURLM *multi, RequestInfo *requestInfo, CURLMsg *msg)
 {
-    if (!multi || !requestInfo || !msg) {
+    if (multi == nullptr || requestInfo == nullptr || msg == nullptr) {
         return false;
     }
     if (ProcessRequestNetError(ongoingRequests, multi, requestInfo, msg)) {
@@ -469,6 +469,7 @@ bool HttpHandoverHandler::ProcessRequestErr(std::map<CURL *, RequestInfo *> &ong
 
 void HttpHandoverHandler::SetHandoverInfo(RequestInfo *requestInfo)
 {
+    std::lock_guard<std::mutex> lock(handoverInfoMutex_);
     if (requestInfo == nullptr || requestInfo->opaqueData == nullptr) {
         NETSTACK_LOGE("handover requestInfo nullptr error");
         return;

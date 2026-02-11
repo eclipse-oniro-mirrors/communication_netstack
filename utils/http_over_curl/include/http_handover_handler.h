@@ -105,6 +105,7 @@ private:
     std::set<RequestInfo *> handoverQueue_;
     std::map<curl_socket_t, int> socketopentime_;
     std::map<RequestInfo *, int> requestEndtime_;
+    std::mutex handoverInfoMutex_;
     bool initsuccess_;
     int endTime_ = 0;
     int timeoutTime_ = 0;
