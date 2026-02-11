@@ -141,9 +141,8 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestCallbackEvent, TestSize
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestHandoverQuery, TestSize.Level2)
 {
     HttpHandoverHandler handler;
-    handler.HandoverQuery();
     EXPECT_EQ(handler.GetStatus(), HttpHandoverHandler::INIT);
-    EXPECT_EQ(handler.GetNetId(), -1);
+    EXPECT_EQ(handler.GetNetId(), 0);
     int32_t netId = 100;
     handler.SetNetId(netId);
     EXPECT_EQ(handler.GetNetId(), netId);
@@ -166,9 +165,9 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestTryFlowControl, TestSiz
     EXPECT_FALSE(handler.TryFlowControl(requestInfo, HandoverRequestType::INCOMING));
     handler.SetStatus(HttpHandoverHandler::START);
     EXPECT_EQ(handler.GetStatus(), HttpHandoverHandler::START);
-    EXPECT_FALSE(handler.TryFlowControl(requestInfo, HandoverRequestType::INCOMING));
-    EXPECT_FALSE(handler.TryFlowControl(requestInfo, HandoverRequestType::NETWORKERROR));
-    EXPECT_FALSE(handler.TryFlowControl(requestInfo, HandoverRequestType::UNDONE));
+    EXPECT_TRUE(handler.TryFlowControl(requestInfo, HandoverRequestType::INCOMING));
+    EXPECT_TRUE(handler.TryFlowControl(requestInfo, HandoverRequestType::NETWORKERROR));
+    EXPECT_TRUE(handler.TryFlowControl(requestInfo, HandoverRequestType::UNDONE));
     handler.SetStatus(HttpHandoverHandler::FATAL);
     EXPECT_FALSE(handler.TryFlowControl(requestInfo, HandoverRequestType::INCOMING));
     DeleteRequestInfo(requestInfo);

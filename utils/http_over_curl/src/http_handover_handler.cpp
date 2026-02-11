@@ -469,6 +469,7 @@ bool HttpHandoverHandler::ProcessRequestErr(std::map<CURL *, RequestInfo *> &ong
 
 void HttpHandoverHandler::SetHandoverInfo(RequestInfo *requestInfo)
 {
+    std::lock_guard<std::mutex> lock(handoverInfoMutex_);
     if (requestInfo == nullptr || requestInfo->opaqueData == nullptr) {
         NETSTACK_LOGE("handover requestInfo nullptr error");
         return;
