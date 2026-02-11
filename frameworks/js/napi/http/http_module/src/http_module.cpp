@@ -104,12 +104,12 @@ napi_value HttpModuleExports::CreateHttpResponseCache(napi_env env, napi_callbac
 void HttpModuleExports::DefineHttpRequestClass(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
-        DECLARE_NAPI_FUNCTION(HttpRequest::FUNCTION_REQUEST, HttpRequest::Request),
-        DECLARE_NAPI_FUNCTION(HttpRequest::FUNCTION_REQUEST_IN_STREAM, HttpRequest::RequestInStream),
-        DECLARE_NAPI_FUNCTION(HttpRequest::FUNCTION_DESTROY, HttpRequest::Destroy),
-        DECLARE_NAPI_FUNCTION(HttpRequest::FUNCTION_ON, HttpRequest::On),
-        DECLARE_NAPI_FUNCTION(HttpRequest::FUNCTION_ONCE, HttpRequest::Once),
-        DECLARE_NAPI_FUNCTION(HttpRequest::FUNCTION_OFF, HttpRequest::Off),
+        DECLARE_NAPI_WRITABLE_FUNCTION(HttpRequest::FUNCTION_REQUEST, HttpRequest::Request),
+        DECLARE_NAPI_WRITABLE_FUNCTION(HttpRequest::FUNCTION_REQUEST_IN_STREAM, HttpRequest::RequestInStream),
+        DECLARE_NAPI_WRITABLE_FUNCTION(HttpRequest::FUNCTION_DESTROY, HttpRequest::Destroy),
+        DECLARE_NAPI_WRITABLE_FUNCTION(HttpRequest::FUNCTION_ON, HttpRequest::On),
+        DECLARE_NAPI_WRITABLE_FUNCTION(HttpRequest::FUNCTION_ONCE, HttpRequest::Once),
+        DECLARE_NAPI_WRITABLE_FUNCTION(HttpRequest::FUNCTION_OFF, HttpRequest::Off),
     };
     ModuleTemplate::DefineClass(env, exports, properties, INTERFACE_HTTP_REQUEST);
 }
@@ -117,8 +117,8 @@ void HttpModuleExports::DefineHttpRequestClass(napi_env env, napi_value exports)
 void HttpModuleExports::DefineHttpResponseCacheClass(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
-        DECLARE_NAPI_FUNCTION(HttpResponseCache::FUNCTION_FLUSH, HttpResponseCache::Flush),
-        DECLARE_NAPI_FUNCTION(HttpResponseCache::FUNCTION_DELETE, HttpResponseCache::Delete),
+        DECLARE_NAPI_WRITABLE_FUNCTION(HttpResponseCache::FUNCTION_FLUSH, HttpResponseCache::Flush),
+        DECLARE_NAPI_WRITABLE_FUNCTION(HttpResponseCache::FUNCTION_DELETE, HttpResponseCache::Delete),
     };
     ModuleTemplate::DefineClass(env, exports, properties, INTERFACE_HTTP_RESPONSE_CACHE);
 }
@@ -126,9 +126,9 @@ void HttpModuleExports::DefineHttpResponseCacheClass(napi_env env, napi_value ex
 void HttpModuleExports::DefineHttpInterceptorChainClass(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
-        DECLARE_NAPI_FUNCTION(HttpInterceptorChain::FUNCTION_GETCHAIN, HttpInterceptorChain::GetChain),
-        DECLARE_NAPI_FUNCTION(HttpInterceptorChain::FUNCTION_ADDCHAIN, HttpInterceptorChain::AddChain),
-        DECLARE_NAPI_FUNCTION(HttpInterceptorChain::FUNCTION_APPLY, HttpInterceptorChain::Apply),
+        DECLARE_NAPI_WRITABLE_FUNCTION(HttpInterceptorChain::FUNCTION_GETCHAIN, HttpInterceptorChain::GetChain),
+        DECLARE_NAPI_WRITABLE_FUNCTION(HttpInterceptorChain::FUNCTION_ADDCHAIN, HttpInterceptorChain::AddChain),
+        DECLARE_NAPI_WRITABLE_FUNCTION(HttpInterceptorChain::FUNCTION_APPLY, HttpInterceptorChain::Apply),
     };
     ModuleTemplate::DefineClassNew(
         env, exports, properties, INTERFACE_HTTP_INTERCEPTOR_CHAIN,
@@ -162,8 +162,8 @@ void HttpModuleExports::DefineHttpInterceptorChainClass(napi_env env, napi_value
 void HttpModuleExports::InitHttpProperties(napi_env env, napi_value exports)
 {
     std::initializer_list<napi_property_descriptor> properties = {
-        DECLARE_NAPI_FUNCTION(FUNCTION_CREATE_HTTP, CreateHttp),
-        DECLARE_NAPI_FUNCTION(FUNCTION_CREATE_HTTP_RESPONSE_CACHE, CreateHttpResponseCache),
+        DECLARE_NAPI_WRITABLE_FUNCTION(FUNCTION_CREATE_HTTP, CreateHttp),
+        DECLARE_NAPI_WRITABLE_FUNCTION(FUNCTION_CREATE_HTTP_RESPONSE_CACHE, CreateHttpResponseCache),
     };
     NapiUtils::DefineProperties(env, exports, properties);
 
