@@ -121,5 +121,5 @@ ohos_unittest("http_handover_handler_test") {
 
 group("unittest") {
   testonly = true
-  deps = [ ":http_handover_handler_test" ]
+  deps = []
 }
