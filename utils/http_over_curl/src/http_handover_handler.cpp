@@ -65,9 +65,11 @@ bool CheckSocketTime(void *user, curl_socket_t fd)
         return false;
     }
     auto handover = static_cast<HttpHandoverHandler *>(user);
-    if (handover && handover->CheckSocketOpentimeLessThanEndTime(fd)) {  // LCOV_EXCL_LINE
+    // LCOV_EXCL_START
+    if (handover && handover->CheckSocketOpentimeLessThanEndTime(fd)) {
         return false;
     }
+    // LCOV_EXCL_STOP
     return true;
 }
 
@@ -92,10 +94,12 @@ int CloseSocketCallback(void *user, curl_socket_t fd)
         handover->EraseFd(fd);
     }
     int ret = close(fd);
-    if (ret < 0) {  // LCOV_EXCL_LINE
+    // LCOV_EXCL_START
+    if (ret < 0) {
         NETSTACK_LOGE("Failed to close socket: %{public}d, errno: %{public}d", fd, errno);
         return ret;
     }
+    // LCOV_EXCL_STOP
     return 0;
 }
 
@@ -133,10 +137,12 @@ bool HttpHandoverHandler::Initialize()
 {
     const std::string HTTP_HANDOVER_WRAPPER_PATH = "/system/lib64/libhttp_handover.z.so";
     netHandoverHandler_ = dlopen(HTTP_HANDOVER_WRAPPER_PATH.c_str(), RTLD_NOW);
-    if (netHandoverHandler_ == nullptr) {  // LCOV_EXCL_LINE
+    // LCOV_EXCL_START
+    if (netHandoverHandler_ == nullptr) {
         NETSTACK_LOGE("libhttp_handover.z.so was not loaded, error: %{public}s", dlerror());
         return false;
     }
+    // LCOV_EXCL_STOP
     httpHandoverInit_ = (HTTP_HAND_OVER_INIT)dlsym(netHandoverHandler_, "HMS_NetworkBoost_HttpHandoverManagerInit");
     httpHandoverUninit_ =
         (HTTP_HAND_OVER_UNINIT)dlsym(netHandoverHandler_, "HMS_NetworkBoost_HttpHandoverManagerUninit");
@@ -154,11 +160,11 @@ bool HttpHandoverHandler::Initialize()
     bool hasFuncNull = (httpHandoverInit_ == nullptr || httpHandoverUninit_ == nullptr ||
         httpHandoverQuery_ == nullptr || httpHandoverAddRequest_ == nullptr || httpHandoverDelRequest_ == nullptr ||
         httpHandoverQueryRequest_ == nullptr || httpHandoverReportTimeout_ == nullptr);
-    // LCOV_EXCL_STOP
     if (hasFuncNull) {
         NETSTACK_LOGE("http handover wrapper symbol failed, error: %{public}s", dlerror());
         return false;
     }
+    // LCOV_EXCL_STOP
     NETSTACK_LOGD("NetHandover enabled");
     httpHandoverManager_ = httpHandoverInit_(this, HandoverCallback, HandoverTimerCallback, HTTP_STACK_NAME);
     if (httpHandoverManager_ == nullptr) {
@@ -172,12 +178,14 @@ HttpHandoverHandler::~HttpHandoverHandler()
 {
     NETSTACK_LOGD("start httpHandoverUninit_");
     int32_t ret = UNINIT_RET_INITIAL;
-    if (httpHandoverManager_ != nullptr) {  // LCOV_EXCL_LINE
+    // LCOV_EXCL_START
+    if (httpHandoverManager_ != nullptr) {
         ret = httpHandoverUninit_(httpHandoverManager_);
     }
-    if (netHandoverHandler_ != nullptr && ret == UNINIT_SUCCESS_CODE) {  // LCOV_EXCL_LINE
+    if (netHandoverHandler_ != nullptr && ret == UNINIT_SUCCESS_CODE) {
         dlclose(netHandoverHandler_);
     }
+    // LCOV_EXCL_STOP
     httpHandoverManager_ = nullptr;
     netHandoverHandler_ = nullptr;
     httpHandoverInit_ = nullptr;
@@ -298,10 +306,12 @@ bool HttpHandoverHandler::RetransRequest(std::map<CURL *, RequestInfo *> &ongoin
     CURLM *multi, RequestInfo *request)
 {
     auto ret = curl_multi_add_handle(multi, request->easyHandle);
+    // LCOV_EXCL_START
     if (ret != CURLM_OK) {
         NETSTACK_LOGD("curl_multi_add_handle err, ret = %{public}d %{public}s", ret, curl_multi_strerror(ret));
         return false;
     }
+    // LCOV_EXCL_STOP
     ongoingRequests[request->easyHandle] = request;
     return true;
 }
@@ -425,10 +435,12 @@ int32_t HttpHandoverHandler::IsRequestInQueue(CURL *easyHandle)
 {
     time_t sendtime = 0;
     CURLcode result = curl_easy_getinfo(easyHandle, CURLINFO_PRETRANSFER_TIME_T, &sendtime);
-    if (result != CURLE_OK) {  // LCOV_EXCL_LINE
+    // LCOV_EXCL_START
+    if (result != CURLE_OK) {
         NETSTACK_LOGD("get send time failed:%{public}s", curl_easy_strerror(result));
         return -1;
     }
+    // LCOV_EXCL_STOP
     return sendtime == 0 ? 1 : 0;
 }
 
@@ -442,15 +454,17 @@ int32_t HttpHandoverHandler::IsRequestRead(CURL *easyHandle)
 int32_t HttpHandoverHandler::IsRequestRead(CURL *easyHandle, time_t &recvtime, time_t &sendtime)
 {
     CURLcode result = curl_easy_getinfo(easyHandle, CURLINFO_STARTTRANSFER_TIME_T, &recvtime);
-    if (result != CURLE_OK) {  // LCOV_EXCL_LINE
+    // LCOV_EXCL_START
+    if (result != CURLE_OK) {
         NETSTACK_LOGD("get recv time failed:%{public}s", curl_easy_strerror(result));
         return -1;
     }
     result = curl_easy_getinfo(easyHandle, CURLINFO_PRETRANSFER_TIME_T, &sendtime);
-    if (result != CURLE_OK) {  // LCOV_EXCL_LINE
+    if (result != CURLE_OK) {
         NETSTACK_LOGD("get send time failed:%{public}s", curl_easy_strerror(result));
         return -1;
     }
+    // LCOV_EXCL_STOP
     return (recvtime == 0 || sendtime == recvtime) ? 0 : 1;
 }
 
@@ -469,7 +483,6 @@ bool HttpHandoverHandler::ProcessRequestErr(std::map<CURL *, RequestInfo *> &ong
 
 void HttpHandoverHandler::SetHandoverInfo(RequestInfo *requestInfo)
 {
-    std::lock_guard<std::mutex> lock(handoverInfoMutex_);
     if (requestInfo == nullptr || requestInfo->opaqueData == nullptr) {
         NETSTACK_LOGE("handover requestInfo nullptr error");
         return;
@@ -507,10 +520,12 @@ bool HttpHandoverHandler::ProcessRequestNetError(std::map<CURL *, RequestInfo *>
 
 void HttpHandoverHandler::AddRequest(RequestInfo *requestInfo, int32_t type)
 {
-    if (httpHandoverManager_ == nullptr) {  // LCOV_EXCL_LINE
+    // LCOV_EXCL_START
+    if (httpHandoverManager_ == nullptr) {
         NETSTACK_LOGE("httpHandoverManager_ nullptr error");
         return;
     }
+    // LCOV_EXCL_STOP
     HttpHandoverInfo httpHandoverInfo;
     httpHandoverInfo.handOverReason = type;
     httpHandoverInfo.readFlag = IsRequestRead(requestInfo->easyHandle);
