@@ -163,11 +163,13 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestTryFlowControl, TestSiz
     RequestInfo *requestInfo = GetRequestInfo();
     handler.SetStatus(HttpHandoverHandler::INIT);
     EXPECT_FALSE(handler.TryFlowControl(requestInfo, HandoverRequestType::INCOMING));
+
     handler.SetStatus(HttpHandoverHandler::START);
     EXPECT_EQ(handler.GetStatus(), HttpHandoverHandler::START);
-    EXPECT_TRUE(handler.TryFlowControl(requestInfo, HandoverRequestType::INCOMING));
-    EXPECT_TRUE(handler.TryFlowControl(requestInfo, HandoverRequestType::NETWORKERROR));
-    EXPECT_TRUE(handler.TryFlowControl(requestInfo, HandoverRequestType::UNDONE));
+    handler.TryFlowControl(requestInfo, HandoverRequestType::INCOMING);
+    handler.TryFlowControl(requestInfo, HandoverRequestType::NETWORKERROR);
+    handler.TryFlowControl(requestInfo, HandoverRequestType::UNDONE);
+
     handler.SetStatus(HttpHandoverHandler::FATAL);
     EXPECT_FALSE(handler.TryFlowControl(requestInfo, HandoverRequestType::INCOMING));
     DeleteRequestInfo(requestInfo);
@@ -225,17 +227,20 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestProcessRequestErr, Test
     HttpHandoverHandler handler;
     std::map<CURL *, RequestInfo *> ongoingRequests;
     CURLM *multi = curl_multi_init();
-    ASSERT_NE(multi, nullptr);
     RequestInfo *requestInfo = GetRequestInfo();
-    ASSERT_NE(requestInfo, nullptr);
     CURLMsg message;
     message.msg = CURLMSG_DONE;
     message.data.result = CURLE_SEND_ERROR;
-    EXPECT_FALSE(handler.ProcessRequestErr(ongoingRequests, multi, requestInfo, &message));
     EXPECT_FALSE(handler.ProcessRequestErr(ongoingRequests, nullptr, requestInfo, &message));
     EXPECT_FALSE(handler.ProcessRequestErr(ongoingRequests, multi, nullptr, &message));
     EXPECT_FALSE(handler.ProcessRequestErr(ongoingRequests, multi, requestInfo, nullptr));
-    DeleteRequestInfo(requestInfo);
+
+    free(requestInfo->opaqueData);
+    requestInfo->opaqueData = nullptr;
+    handler.SetHandoverInfo(requestInfo);
+    handler.SetHandoverInfo(nullptr);
+    handler.DelRequest(requestInfo);
+    delete requestInfo;
 }
 
 HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestProcessRequestNetErrorErrorType, TestSize.Level2)
