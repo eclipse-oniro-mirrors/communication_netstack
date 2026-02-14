@@ -32,6 +32,16 @@ ohos_rust_shared_library("ylong_http_client") {
   sources = [ "src/lib.rs" ]
   edition = "2021"
   clippy_lints = "none"
+
+  sanitize = {
+    integer_overflow = true
+    ubsan = true
+    boundary_sanitize = true
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+  
   if (has_commonlibrary_ylong_http) {
     external_deps = [ "ylong_http:ylong_http_client_inner" ]
   }
