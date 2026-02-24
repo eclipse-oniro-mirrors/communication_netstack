@@ -33,7 +33,7 @@ ohos_unittest("netstack_common_utils_test") {
 
   branch_protector_ret = "pac_ret"
 
-  module_out_path = "netstack/netstack_chr_client_test"
+  module_out_path = "netstack/netstack/netstack_chr_client_test"
 
   include_dirs = [
     "$NETSTACK_UTILS_ROOT/netstack_chr_client/include",
