@@ -67,7 +67,7 @@ namespace {
     using namespace OHOS::NetStack::WebSocketClient;
     static constexpr const size_t TEST_MAX_DATA_LENGTH = 5 * 1024 * 1024;
     static constexpr const size_t TEST_LENGTH = 1;
-    static constexpr const int MAX_URI_LENGTH = 1024;
+    static constexpr const int MAX_URI_LENGTH = 8196;
 
     OpenOptions openOptions;
 
