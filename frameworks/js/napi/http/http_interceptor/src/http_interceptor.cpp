@@ -1168,7 +1168,7 @@ napi_value HttpInterceptor::CreateRequestContextConnectNetworkInterceptor(napi_e
 
     napi_value headerObj = NapiUtils::CreateObject(context->GetEnv());
     const std::map<std::string, std::string> &headers = context->options.GetHeader();
-    NETSTACK_LOGD("connectNetworkInterceptorRunner_ run headers.size %{public}d", headers.size());
+    NETSTACK_LOGD("connectNetworkInterceptorRunner_ run headers.size %{public}zu", headers.size());
     if (!headers.empty()) {
         std::for_each(
             headers.begin(), headers.end(), [&context, &headerObj](const std::pair<std::string, std::string> &p) {
