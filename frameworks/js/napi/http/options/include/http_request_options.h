@@ -289,6 +289,9 @@ public:
 
     [[nodiscard]] const std::string &GetSniHostName() const;
 
+    void SetReuseConnectionsFlag(bool reuseConnectionsFlag);
+    [[nodiscard]] const bool &GetReuseConnectionsFlag() const;
+
 private:
     std::string url_;
 
@@ -368,6 +371,8 @@ private:
     PathPreference pathPreference_;
 
     std::string sniHostName_;
+
+    bool reuseConnectionsFlag_ = true;
 };
 } // namespace OHOS::NetStack::Http
 

@@ -509,4 +509,14 @@ const std::string &HttpRequestOptions::GetSniHostName() const
 {
     return sniHostName_;
 }
+
+void HttpRequestOptions::SetReuseConnectionsFlag(bool reuseConnectionsFlag)
+{
+    reuseConnectionsFlag_ = reuseConnectionsFlag;
+}
+
+const bool &HttpRequestOptions::GetReuseConnectionsFlag() const
+{
+    return reuseConnectionsFlag_;
+}
 } // namespace OHOS::NetStack::Http

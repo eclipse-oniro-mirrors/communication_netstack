@@ -153,4 +153,5 @@ const char *const HttpConstant::INTERCEPTOR_CONNECT_NETWORK = "CONNECT_NETWORK";
 const char *const HttpConstant::INTERCEPTOR_FINAL_RESPONSE = "FINAL_RESPONSE";
 const char *const HttpConstant::INTERCEPTOR_TYPE = "InterceptorType";
 const char *const HttpConstant::PATH_PREFERENCE = "pathPreference";
+const char *const HttpConstant::REUSE_CONNECTIONS = "reuseConnections";
 } // namespace OHOS::NetStack::Http
