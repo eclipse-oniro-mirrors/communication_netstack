@@ -85,9 +85,9 @@ HWTEST_F(NetHttpTest, DestroyHeaders001, TestSize.Level1)
 HWTEST_F(NetHttpTest, DestroyHeaders002, TestSize.Level1)
 {
     Http_Headers *header = nullptr;
-    OH_Http_DestroyHeaders(&header);
+    ASSERT_NO_THROW(OH_Http_DestroyHeaders(&header));
 
-    OH_Http_DestroyHeaders(nullptr);
+    ASSERT_NO_THROW(OH_Http_DestroyHeaders(nullptr));
 }
 
 HWTEST_F(NetHttpTest, ToLowerCase001, TestSize.Level1)
