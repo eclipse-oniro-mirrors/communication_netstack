@@ -96,6 +96,7 @@ ohos_fuzztest("TlsSocketFuzzTest") {
     "$NETSTACK_NAPI_ROOT/options/src/tcp_send_options.cpp",
     "$NETSTACK_NAPI_ROOT/options/src/udp_extra_options.cpp",
     "$NETSTACK_NAPI_ROOT/options/src/udp_send_options.cpp",
+    "$NETSTACK_NAPI_ROOT/socket_exec/src/connect_monitor.cpp",
     "$NETSTACK_NAPI_ROOT/socket_exec/src/local_socket_exec.cpp",
     "$NETSTACK_NAPI_ROOT/socket_exec/src/socket_exec.cpp",
     "$NETSTACK_NAPI_ROOT/socket_exec/src/socket_extra_exec.cpp",

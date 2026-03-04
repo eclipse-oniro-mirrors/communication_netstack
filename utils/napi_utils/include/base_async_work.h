@@ -85,9 +85,8 @@ public:
         std::unique_ptr<Context, decltype(deleter)> context(static_cast<Context *>(data), deleter);
         size_t argc = 2;
         napi_value argv[2] = {nullptr};
+        bool needError = !context->IsParseOK() || !context->IsExecOK();
         if (context->IsParseOK() && context->IsExecOK()) {
-            argv[0] = NapiUtils::GetUndefined(env);
-
             if (Callback != nullptr) {
                 argv[1] = Callback(context.get());
             } else {
@@ -96,17 +95,25 @@ public:
             if (argv[1] == nullptr) {
                 return;
             }
-        } else {
-            argv[0] = NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
+            if (context->IsManualAsyncCompletion()) {
+                (void)context.release();
+                return;
+            }
+            needError = !context->IsParseOK() || !context->IsExecOK();
+        }
+
+        if (needError) {
+            argv[0] = context->BuildBusinessError(env);
             if (argv[0] == nullptr) {
                 return;
             }
-
             argv[1] = NapiUtils::GetUndefined(env);
+        } else {
+            argv[0] = NapiUtils::GetUndefined(env);
         }
 
         if (context->GetDeferred() != nullptr) {
-            if (context->IsExecOK()) {
+            if (!needError) {
                 napi_resolve_deferred(env, context->GetDeferred(), argv[1]);
             } else {
                 napi_reject_deferred(env, context->GetDeferred(), argv[0]);
