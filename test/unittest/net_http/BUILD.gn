@@ -28,6 +28,8 @@ common_external_deps = [
 ohos_unittest("nethttp_unittest") {
   module_out_path = "netstack/netstack/nethttp_unittest"
 
+  use_exceptions= true
+
   include_dirs = [
     "$NETSTACK_DIR/interfaces/kits/c/net_http/include",
     "$NETSTACK_DIR/interfaces/kits/c/common",
