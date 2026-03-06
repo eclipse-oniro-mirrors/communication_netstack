@@ -42,10 +42,10 @@ using namespace testing::ext;
 
 bool g_isModified = false;
 int32_t g_groupId = 0;
-Interceptor_Result g_Interceptor_Result = CONTINUE;
+OH_Interceptor_Result g_Interceptor_Result = OH_CONTINUE;
 
-Interceptor_Result OH_Http_InterceptorHandler(
-    Http_Interceptor_Request *request, Http_Interceptor_Response *response, int32_t *isModified)
+OH_Interceptor_Result OH_Http_InterceptorHandler(
+    OH_Http_Interceptor_Request *request, OH_Http_Interceptor_Response *response, int32_t *isModified)
 {
     (void)request;
     (void)response;
@@ -55,10 +55,10 @@ Interceptor_Result OH_Http_InterceptorHandler(
     return g_Interceptor_Result;
 }
 
-Http_Interceptor g_response_readonly_interceptor = {
+OH_Http_Interceptor g_response_readonly_interceptor = {
     .groupId = g_groupId,
-    .stage = STAGE_RESPONSE,
-    .type = TYPE_READ_ONLY,
+    .stage = OH_STAGE_RESPONSE,
+    .type = OH_TYPE_READ_ONLY,
     .enabled = 0,
     .handler = OH_Http_InterceptorHandler,
 };
@@ -75,15 +75,15 @@ HWTEST_F(HttpInterceptorInterfaceTest, OH_Http_AddInterceptor001, TestSize.Level
     EXPECT_EQ(ret, OH_HTTP_PARAMETER_ERROR);
 }
 
-HWTEST_F(HttpInterceptorInterfaceTest, OH_Http_DeleteInterceptor001, TestSize.Level1)
+HWTEST_F(HttpInterceptorInterfaceTest, OH_Http_RemoveInterceptor001, TestSize.Level1)
 {
     g_hasInternetPermission = false;
-    auto ret = OH_Http_DeleteInterceptor(&g_response_readonly_interceptor);
+    auto ret = OH_Http_RemoveInterceptor(&g_response_readonly_interceptor);
     EXPECT_EQ(ret, OH_HTTP_PERMISSION_DENIED);
     g_hasInternetPermission = true;
-    ret = OH_Http_DeleteInterceptor(&g_response_readonly_interceptor);
+    ret = OH_Http_RemoveInterceptor(&g_response_readonly_interceptor);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
-    ret = OH_Http_DeleteInterceptor(nullptr);
+    ret = OH_Http_RemoveInterceptor(nullptr);
     EXPECT_EQ(ret, OH_HTTP_PARAMETER_ERROR);
 }
 
@@ -94,14 +94,14 @@ HWTEST_F(HttpInterceptorInterfaceTest, OH_Http_StartStopDeleteAllInterceptors001
     EXPECT_EQ(ret, OH_HTTP_PERMISSION_DENIED);
     ret = OH_Http_StopAllInterceptors(g_groupId);
     EXPECT_EQ(ret, OH_HTTP_PERMISSION_DENIED);
-    ret = OH_Http_DeleteAllInterceptors(g_groupId);
+    ret = OH_Http_RemoveAllInterceptors(g_groupId);
     EXPECT_EQ(ret, OH_HTTP_PERMISSION_DENIED);
     g_hasInternetPermission = true;
     ret = OH_Http_StartAllInterceptors(g_groupId);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
     ret = OH_Http_StopAllInterceptors(g_groupId);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
-    ret = OH_Http_DeleteAllInterceptors(g_groupId);
+    ret = OH_Http_RemoveAllInterceptors(g_groupId);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
 }
 

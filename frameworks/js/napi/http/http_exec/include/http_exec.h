@@ -337,14 +337,14 @@ private:
 #endif
 #if ENABLE_HTTP_GLOBAL_INTERCEPT
     static bool ConvertRequestContextToInterceptorReq(
-        RequestContext *context, std::shared_ptr<Http_Interceptor_Request> &req);
+        RequestContext *context, std::shared_ptr<OH_Http_Interceptor_Request> &req);
     static bool ConvertInterceptorReqToRequestContext(
-        std::shared_ptr<Http_Interceptor_Request> &req, RequestContext *context);
+        std::shared_ptr<OH_Http_Interceptor_Request> &req, RequestContext *context);
     static bool GlobalRequestInterceptorCheck(RequestContext *context);
     static bool ConvertResponseContextToInterceptorResp(
-        RequestContext *context, std::shared_ptr<Http_Interceptor_Response> &resp);
+        RequestContext *context, std::shared_ptr<OH_Http_Interceptor_Response> &resp);
     static bool ConvertInterceptorRespToResponseContext(
-        std::shared_ptr<Http_Interceptor_Response> &resp, RequestContext *context);
+        std::shared_ptr<OH_Http_Interceptor_Response> &resp, RequestContext *context);
     static bool GlobalResponseInterceptorCheck(RequestContext *context);
 
 #endif

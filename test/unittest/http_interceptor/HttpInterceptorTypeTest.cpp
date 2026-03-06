@@ -66,7 +66,7 @@ HWTEST_F(HttpInterceptorTypeTest, DeepCopy001, TestSize.Level1)
     EXPECT_EQ(dst.buffer, nullptr);
     auto ret = DeepCopyHeaders(nullptr);
     EXPECT_EQ(ret, nullptr);
-    Http_Interceptor_Headers headsTmp = { 0 };
+    OH_Http_Interceptor_Headers headsTmp = { 0 };
     ret = DeepCopyHeaders(&headsTmp);
     EXPECT_EQ(ret, nullptr);
 }

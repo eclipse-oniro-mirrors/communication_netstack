@@ -18,7 +18,7 @@
 #include "http_interceptor_mgr.h"
 #include "netstack_common_utils.h"
 
-int32_t OH_Http_AddInterceptor(struct Http_Interceptor *interceptor)
+int32_t OH_Http_AddInterceptor(struct OH_Http_Interceptor *interceptor)
 {
     if (!OHOS::NetStack::CommonUtils::HasInternetPermission()) {
         return OH_HTTP_PERMISSION_DENIED;
@@ -26,7 +26,7 @@ int32_t OH_Http_AddInterceptor(struct Http_Interceptor *interceptor)
     return OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().AddInterceptor(interceptor);
 }
 
-int32_t OH_Http_DeleteInterceptor(struct Http_Interceptor *interceptor)
+int32_t OH_Http_RemoveInterceptor(struct OH_Http_Interceptor *interceptor)
 {
     if (!OHOS::NetStack::CommonUtils::HasInternetPermission()) {
         return OH_HTTP_PERMISSION_DENIED;
@@ -34,7 +34,7 @@ int32_t OH_Http_DeleteInterceptor(struct Http_Interceptor *interceptor)
     return OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().DeleteInterceptor(interceptor);
 }
 
-int32_t OH_Http_DeleteAllInterceptors(int32_t groupId)
+int32_t OH_Http_RemoveAllInterceptors(int32_t groupId)
 {
     if (!OHOS::NetStack::CommonUtils::HasInternetPermission()) {
         return OH_HTTP_PERMISSION_DENIED;

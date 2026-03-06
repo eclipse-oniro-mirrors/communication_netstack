@@ -1723,7 +1723,7 @@ bool HttpClientTask::SetCertPinnerOption(CURL *handle)
 }
 
 #if ENABLE_HTTP_GLOBAL_INTERCEPT
-bool HttpClientTask::ConvertRequestContextToInterceptorReq(std::shared_ptr<Http_Interceptor_Request> &req)
+bool HttpClientTask::ConvertRequestContextToInterceptorReq(std::shared_ptr<OH_Http_Interceptor_Request> &req)
 {
     if (req == nullptr) {
         NETSTACK_LOGE("Convert failed: req is null");
@@ -1758,7 +1758,7 @@ bool HttpClientTask::ConvertRequestContextToInterceptorReq(std::shared_ptr<Http_
     return true;
 }
 
-bool HttpClientTask::ConvertInterceptorReqToRequestContext(std::shared_ptr<Http_Interceptor_Request> &req)
+bool HttpClientTask::ConvertInterceptorReqToRequestContext(std::shared_ptr<OH_Http_Interceptor_Request> &req)
 {
     if (req == nullptr) {
         NETSTACK_LOGE("Convert failed: req is null");
@@ -1774,7 +1774,7 @@ bool HttpClientTask::ConvertInterceptorReqToRequestContext(std::shared_ptr<Http_
         request_.ReplaceBody(req->body.buffer, req->body.length);
     }
     std::string rawHeader;
-    Http_Interceptor_Headers *headers = req->headers;
+    OH_Http_Interceptor_Headers *headers = req->headers;
     while (headers != nullptr) {
         if (headers->data) {
             rawHeader += headers->data;
@@ -1795,7 +1795,7 @@ bool HttpClientTask::GlobalRequestInterceptorCheck()
         return true;
     }
 
-    std::shared_ptr<Http_Interceptor_Request> req =
+    std::shared_ptr<OH_Http_Interceptor_Request> req =
         OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().CreateHttpInterceptorRequest();
     bool isModified = false;
     if (!ConvertRequestContextToInterceptorReq(req)) {
@@ -1803,7 +1803,7 @@ bool HttpClientTask::GlobalRequestInterceptorCheck()
         return false;
     }
     if (OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().IteratorRequestInterceptor(
-        req, isModified) == ABORT) {
+        req, isModified) == OH_ABORT) {
         NETSTACK_LOGI("IteratorRequestInterceptor return ABORT taskId = %{public}d", taskId_);
         return false;
     }
@@ -1817,7 +1817,7 @@ bool HttpClientTask::GlobalRequestInterceptorCheck()
     return true;
 }
 
-bool HttpClientTask::ConvertResponseContextToInterceptorResp(std::shared_ptr<Http_Interceptor_Response> &resp)
+bool HttpClientTask::ConvertResponseContextToInterceptorResp(std::shared_ptr<OH_Http_Interceptor_Response> &resp)
 {
     if (resp == nullptr) {
         NETSTACK_LOGE("Convert failed: resp is null");
@@ -1838,7 +1838,7 @@ bool HttpClientTask::ConvertResponseContextToInterceptorResp(std::shared_ptr<Htt
                 header = curl_slist_append(header, s.c_str());
             }
         });
-        resp->headers = reinterpret_cast<Http_Interceptor_Headers *>(header);
+        resp->headers = reinterpret_cast<OH_Http_Interceptor_Headers *>(header);
     }
 
     auto performanceInfo = response_.GetPerformanceTiming();
@@ -1854,7 +1854,7 @@ bool HttpClientTask::ConvertResponseContextToInterceptorResp(std::shared_ptr<Htt
     return true;
 }
 
-bool HttpClientTask::ConvertInterceptorRespToResponseContext(std::shared_ptr<Http_Interceptor_Response> &resp)
+bool HttpClientTask::ConvertInterceptorRespToResponseContext(std::shared_ptr<OH_Http_Interceptor_Response> &resp)
 {
     if (resp == nullptr) {
         NETSTACK_LOGE("Convert failed: resp is null");
@@ -1866,7 +1866,7 @@ bool HttpClientTask::ConvertInterceptorRespToResponseContext(std::shared_ptr<Htt
     }
     response_.SetResponseCode(static_cast<ResponseCode>(resp->responseCode));
     std::string rawHeader;
-    Http_Interceptor_Headers *headers = resp->headers;
+    OH_Http_Interceptor_Headers *headers = resp->headers;
     while (headers != nullptr) {
         if (headers->data) {
             rawHeader += headers->data;
@@ -1885,7 +1885,7 @@ bool HttpClientTask::GlobalResponseInterceptorCheck()
     if (!OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().HasEnabledResponseInterceptor()) {
         return true;
     }
-    std::shared_ptr<Http_Interceptor_Response> resp =
+    std::shared_ptr<OH_Http_Interceptor_Response> resp =
         OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().CreateHttpInterceptorResponse();
     if (!ConvertResponseContextToInterceptorResp(resp)) {
         NETSTACK_LOGE("Convert RequestContext to InterceptorReq failed taskId = %{public}d", taskId_);
@@ -1901,7 +1901,7 @@ bool HttpClientTask::GlobalResponseInterceptorCheck()
             return false;
         }
     }
-    return result == CONTINUE ? true : false;
+    return result == OH_CONTINUE ? true : false;
 }
 #endif
 } // namespace HttpClient

@@ -69,11 +69,11 @@ static void testCallbackconst(const HttpClientRequest &request, std::map<std::st
     NETSTACK_LOGI("testCallbackconst function called!");
 }
 
-static Interceptor_Result g_Interceptor_Result = CONTINUE;
+static OH_Interceptor_Result g_Interceptor_Result = OH_CONTINUE;
 static bool g_IsModified = false;
 
-Interceptor_Result OH_Http_InterceptorHandler(
-    Http_Interceptor_Request *request, Http_Interceptor_Response *response, int32_t *isModified)
+OH_Interceptor_Result OH_Http_InterceptorHandler(
+    OH_Http_Interceptor_Request *request, OH_Http_Interceptor_Response *response, int32_t *isModified)
 {
     (void)request;
     (void)response;
@@ -81,18 +81,18 @@ Interceptor_Result OH_Http_InterceptorHandler(
     return g_Interceptor_Result;
 }
 
-Http_Interceptor g_request_interceptor = {
+OH_Http_Interceptor g_request_interceptor = {
     .groupId = 0,
-    .stage = STAGE_REQUEST,
-    .type = TYPE_MODIFY,
+    .stage = OH_STAGE_REQUEST,
+    .type = OH_TYPE_MODIFY,
     .enabled = 1,
     .handler = OH_Http_InterceptorHandler,
 };
 
-Http_Interceptor g_response_interceptor = {
+OH_Http_Interceptor g_response_interceptor = {
     .groupId = 0,
-    .stage = STAGE_RESPONSE,
-    .type = TYPE_MODIFY,
+    .stage = OH_STAGE_RESPONSE,
+    .type = OH_TYPE_MODIFY,
     .enabled = 1,
     .handler = OH_Http_InterceptorHandler,
 };
@@ -2005,12 +2005,12 @@ HWTEST_F(HttpClientTaskTest, ProcessResponseCoreLogicTest003, TestSize.Level1)
     auto task = session.CreateTask(httpReq);
     task->response_.SetResponseCode(ResponseCode::NOT_FOUND);
     HttpInterceptorMgr::GetInstance().AddInterceptor(&g_request_interceptor);
-    g_Interceptor_Result = ABORT;
+    g_Interceptor_Result = OH_ABORT;
     bool ret = task->ProcessResponseCoreLogic();
     task->networkProfilerUtils_.reset();
     task->HandleNetworkProfiling();
     HttpInterceptorMgr::GetInstance().DeleteInterceptor(&g_request_interceptor);
-    g_Interceptor_Result = CONTINUE;
+    g_Interceptor_Result = OH_CONTINUE;
     EXPECT_TRUE(ret);
 }
 
@@ -2047,7 +2047,7 @@ HWTEST_F(HttpClientTaskTest, ConvertRequestContextToInterceptorReqTest001, TestS
     HttpClientRequest httpReq;
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
-    std::shared_ptr<Http_Interceptor_Request> ctx =
+    std::shared_ptr<OH_Http_Interceptor_Request> ctx =
         OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().CreateHttpInterceptorRequest();
     bool ret = task->ConvertRequestContextToInterceptorReq(ctx);
     EXPECT_EQ(ret, true);
@@ -2062,7 +2062,7 @@ HWTEST_F(HttpClientTaskTest, ConvertRequestContextToInterceptorReqTest001, TestS
     task->request_.SetHeader("bbb", "");
     ret = task->ConvertRequestContextToInterceptorReq(ctx);
     EXPECT_EQ(ret, true);
-    std::shared_ptr<Http_Interceptor_Request> nullctx;
+    std::shared_ptr<OH_Http_Interceptor_Request> nullctx;
     ret = task->ConvertInterceptorReqToRequestContext(nullctx);
     EXPECT_EQ(ret, false);
     ret = task->ConvertRequestContextToInterceptorReq(nullctx);
@@ -2091,11 +2091,11 @@ HWTEST_F(HttpClientTaskTest, GlobalRequestInterceptorCheckTest002, TestSize.Leve
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
     HttpInterceptorMgr::GetInstance().AddInterceptor(&g_request_interceptor);
-    g_Interceptor_Result = ABORT;
+    g_Interceptor_Result = OH_ABORT;
     task->OnSuccess([task](const HttpClientRequest &request, const HttpClientResponse &response) {});
     auto ret = task->Start();
     HttpInterceptorMgr::GetInstance().DeleteInterceptor(&g_request_interceptor);
-    g_Interceptor_Result = CONTINUE;
+    g_Interceptor_Result = OH_CONTINUE;
     EXPECT_EQ(ret, false);
 }
 
@@ -2122,7 +2122,7 @@ HWTEST_F(HttpClientTaskTest, ConvertResponseContextToInterceptorRespTest001, Tes
     HttpClientRequest httpReq;
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
-    std::shared_ptr<Http_Interceptor_Response> ctx =
+    std::shared_ptr<OH_Http_Interceptor_Response> ctx =
         OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().CreateHttpInterceptorResponse();
     auto ret = task->ConvertResponseContextToInterceptorResp(ctx);
     EXPECT_EQ(ret, true);
@@ -2134,7 +2134,7 @@ HWTEST_F(HttpClientTaskTest, ConvertResponseContextToInterceptorRespTest001, Tes
     task->response_.ParseHeaders();
     ret = task->ConvertResponseContextToInterceptorResp(ctx);
     EXPECT_EQ(ret, true);
-    std::shared_ptr<Http_Interceptor_Response> nullctx;
+    std::shared_ptr<OH_Http_Interceptor_Response> nullctx;
     ret = task->ConvertResponseContextToInterceptorResp(nullctx);
     EXPECT_EQ(ret, false);
     ret = task->ConvertInterceptorRespToResponseContext(nullctx);
@@ -2161,13 +2161,13 @@ HWTEST_F(HttpClientTaskTest, GlobalResponseInterceptorCheckTest002, TestSize.Lev
     httpReq.SetMethod(method);
     HttpSession &session = HttpSession::GetInstance();
     auto task = session.CreateTask(httpReq);
-    g_Interceptor_Result = ABORT;
+    g_Interceptor_Result = OH_ABORT;
     g_IsModified = false;
     HttpInterceptorMgr::GetInstance().AddInterceptor(&g_response_interceptor);
     auto ret = task->GlobalResponseInterceptorCheck();
     EXPECT_EQ(ret, false);
     g_IsModified = true;
-    g_Interceptor_Result = CONTINUE;
+    g_Interceptor_Result = OH_CONTINUE;
     ret = task->GlobalResponseInterceptorCheck();
     (void)HttpInterceptorMgr::GetInstance().DeleteInterceptor(&g_response_interceptor);
     g_IsModified = false;

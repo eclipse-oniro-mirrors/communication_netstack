@@ -488,11 +488,11 @@ private:
     void HandleResultCallback(bool isResponseOk);
     void HandleNetworkProfiling();
 #if ENABLE_HTTP_GLOBAL_INTERCEPT
-    bool ConvertRequestContextToInterceptorReq(std::shared_ptr<Http_Interceptor_Request> &req);
-    bool ConvertInterceptorReqToRequestContext(std::shared_ptr<Http_Interceptor_Request> &req);
+    bool ConvertRequestContextToInterceptorReq(std::shared_ptr<OH_Http_Interceptor_Request> &req);
+    bool ConvertInterceptorReqToRequestContext(std::shared_ptr<OH_Http_Interceptor_Request> &req);
     bool GlobalRequestInterceptorCheck();
-    bool ConvertResponseContextToInterceptorResp(std::shared_ptr<Http_Interceptor_Response> &resp);
-    bool ConvertInterceptorRespToResponseContext(std::shared_ptr<Http_Interceptor_Response> &resp);
+    bool ConvertResponseContextToInterceptorResp(std::shared_ptr<OH_Http_Interceptor_Response> &resp);
+    bool ConvertInterceptorRespToResponseContext(std::shared_ptr<OH_Http_Interceptor_Response> &resp);
     bool GlobalResponseInterceptorCheck();
 #endif
 
