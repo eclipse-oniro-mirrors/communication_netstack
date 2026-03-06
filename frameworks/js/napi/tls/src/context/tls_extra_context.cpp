@@ -63,6 +63,11 @@ void TLSSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCou
         options_.SetTCPNoDelay(NapiUtils::GetBooleanProperty(GetEnv(), params[0], KEY_TCP_NO_DELAY));
     }
 
+    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_TCP_FAST_OPEN)) {
+        options_.SetTCPFastOpen(NapiUtils::GetBooleanProperty(GetEnv(), params[0], KEY_TCP_FAST_OPEN));
+        options_.SetTcpFastOpenFlag(true);
+    }
+
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_SOCKET_LINGER)) {
         napi_value socketLinger = NapiUtils::GetNamedProperty(GetEnv(), params[0], KEY_SOCKET_LINGER);
         if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_object) {

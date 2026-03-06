@@ -244,6 +244,48 @@ HWTEST_F(TLSSecureOptionsBranchTest, TLSSecureOptionsBranchTest005, testing::ext
     NETSTACK_LOGI("TLSSecureOptionsBranchTest005 StartShakingHands = %{public}s", std::to_string(ret).c_str());
     EXPECT_FALSE(ret);
 }
+
+HWTEST_F(TLSSecureOptionsBranchTest, TLSSetExtraOptionsTest001, testing::ext::TestSize.Level2)
+{
+    TLSSocket server;
+    int32_t err = 0;
+    std::vector<std::string> suite = {};
+    GetCipherSuiteCallback cipherSuiteCallback;
+    server.CallGetCipherSuiteCallback(err, suite, cipherSuiteCallback);
+
+    GetSignatureAlgorithmsCallback algorithmsCallback;
+    server.CallGetSignatureAlgorithmsCallback(err, suite, algorithmsCallback);
+
+    Socket::NetAddress address;
+    BindCallback bindCallback;
+    server.Bind(address, bindCallback);
+
+    GetRemoteAddressCallback addressCallback;
+    server.GetRemoteAddress(addressCallback);
+    server.GetIp4RemoteAddress(addressCallback);
+    server.GetIp6RemoteAddress(addressCallback);
+
+    GetStateCallback stateCallback;
+    server.GetState(stateCallback);
+
+    Socket::ExtraOptionsBase option;
+    bool ret = server.SetBaseOptions(option);
+    EXPECT_TRUE(ret);
+
+    TlsSocket::SetExtraOptionsCallback optionsCallback;
+    Socket::TCPExtraOptions tcpExtraOptions;
+    ret = server.SetExtraOptions(tcpExtraOptions);
+    EXPECT_TRUE(ret);
+
+    tcpExtraOptions.SetTCPFastOpen(true);
+    ret = server.SetExtraOptions(tcpExtraOptions);
+    EXPECT_TRUE(ret);
+
+    OnConnectCallback onConnectCallback;
+    server.OffConnect();
+    server.OnConnect(onConnectCallback);
+    EXPECT_TRUE(server.onConnectCallback_ == nullptr);
+}
 } // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

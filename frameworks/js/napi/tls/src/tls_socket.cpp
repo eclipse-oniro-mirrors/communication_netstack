@@ -966,7 +966,10 @@ bool TLSSocket::SetExtraOptions(const Socket::TCPExtraOptions &option) const
 
     if (option.IsTCPFastOpen()) {
         int tcpFastOpen = 1;
-        NETSTACK_LOGE("set TCP_FastOpen %{public}d", tcpFastOpen);
+        if (setsockopt(sockFd_, SOL_TCP, TCP_FASTOPEN_CONNECT, &tcpFastOpen, sizeof(tcpFastOpen)) < 0) {
+            NETSTACK_LOGE("set TCP_FASTOPEN_CONNECT failed! fd=%{public}d errno=%{public}d", sockFd_, errno);
+            return false;
+        }
     }
 
     linger soLinger = {0};
