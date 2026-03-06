@@ -33,6 +33,9 @@
 #ifdef HTTP_HANDOVER_FEATURE
 struct HttpHandoverInfo;
 #endif
+#if ENABLE_HTTP_GLOBAL_INTERCEPT
+#include "http_interceptor_mgr.h"
+#endif
 struct cJSON;
 namespace OHOS {
 namespace NetStack {
@@ -478,6 +481,20 @@ private:
     bool SetHttpHeaders();
     bool SetCurlMethod();
     bool SetCertPinnerOption(CURL *handle);
+    void LogResponseInfo(CURLcode code);
+    bool HandleCancelCallback(CURLcode code);
+    bool HandleErrorCallback(CURLcode code);
+    bool ProcessResponseCoreLogic();
+    void HandleResultCallback(bool isResponseOk);
+    void HandleNetworkProfiling();
+#if ENABLE_HTTP_GLOBAL_INTERCEPT
+    bool ConvertRequestContextToInterceptorReq(std::shared_ptr<Http_Interceptor_Request> &req);
+    bool ConvertInterceptorReqToRequestContext(std::shared_ptr<Http_Interceptor_Request> &req);
+    bool GlobalRequestInterceptorCheck();
+    bool ConvertResponseContextToInterceptorResp(std::shared_ptr<Http_Interceptor_Response> &resp);
+    bool ConvertInterceptorRespToResponseContext(std::shared_ptr<Http_Interceptor_Response> &resp);
+    bool GlobalResponseInterceptorCheck();
+#endif
 
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onSucceeded_;
     std::function<void(const HttpClientRequest &request, const HttpClientResponse &response)> onCanceled_;

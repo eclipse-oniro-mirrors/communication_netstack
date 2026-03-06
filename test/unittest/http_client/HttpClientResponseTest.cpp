@@ -276,4 +276,23 @@ HWTEST_F(HttpClientResponseTest, ResponseGetExpectDataType, TestSize.Level1)
     auto ret = req.GetExpectDataType();
     EXPECT_EQ(ret, HttpDataType::STRING);
 }
+
+HWTEST_F(HttpClientResponseTest, ResponseClearHeaderCache001, TestSize.Level1)
+{
+    HttpClientResponse response_;
+    const std::string rawHeader =
+        "Content-Type: application/json\r\n"
+        "Set-Cookie: sessionid=123456; Path=/\r\n"
+        "Set-Cookie: token=abcdef; HttpOnly\r\n"
+        "Accept: */*";
+    response_.SetRawHeader(rawHeader);
+    response_.ParseHeaders();
+    EXPECT_FALSE(response_.GetHeaders().empty());
+    EXPECT_EQ(response_.GetHeaders().size(), 2);
+    EXPECT_FALSE(response_.GetsetCookie().empty());
+    EXPECT_EQ(response_.GetsetCookie().size(), 2);
+    response_.ClearHeaderCache();
+    EXPECT_TRUE(response_.GetHeaders().empty());
+    EXPECT_TRUE(response_.GetsetCookie().empty());
+}
 } // namespace

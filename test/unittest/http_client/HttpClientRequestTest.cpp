@@ -614,4 +614,116 @@ HWTEST_F(HttpClientRequestTest, GetHttpVersionTest001, TestSize.Level1)
     ret = req.GetHttpVersion();
     EXPECT_EQ(ret, CURL_HTTP_VERSION_NONE);
 }
+
+HWTEST_F(HttpClientRequestTest, ReplaceBodyTest001, TestSize.Level1)
+{
+    const char *testData = "test replace body";
+    size_t testLen = strlen(testData);
+    HttpClientRequest request_;
+    EXPECT_EQ(request_.GetBody().empty(), true);
+    request_.ReplaceBody(testData, testLen);
+    EXPECT_EQ(request_.GetBody(), std::string(testData));
+    EXPECT_EQ(request_.GetBody().length(), testLen);
+}
+
+HWTEST_F(HttpClientRequestTest, ReplaceBodyTest002, TestSize.Level1)
+{
+    HttpClientRequest request_;
+    const char *initData = "initial body";
+    request_.SetBody(initData, strlen(initData));
+    EXPECT_EQ(request_.GetBody(), std::string(initData));
+    const char *newData = "new replaced body";
+    size_t newLen = strlen(newData);
+    request_.ReplaceBody(newData, newLen);
+    EXPECT_EQ(request_.GetBody(), std::string(newData));
+    EXPECT_EQ(request_.GetBody().length(), newLen);
+    EXPECT_NE(request_.GetBody(), std::string(initData));
+}
+
+HWTEST_F(HttpClientRequestTest, ReplaceBodyTest003, TestSize.Level1)
+{
+    HttpClientRequest request_;
+    const char *emptyData = "";
+    size_t emptyLen = 0;
+    request_.SetBody("test", 4);
+    EXPECT_EQ(request_.GetBody().empty(), false);
+    request_.ReplaceBody(emptyData, emptyLen);
+    EXPECT_EQ(request_.GetBody().empty(), true);
+    EXPECT_EQ(request_.GetBody().length(), 0);
+}
+
+HWTEST_F(HttpClientRequestTest, SetRawHeaderTest001, TestSize.Level1)
+{
+    HttpClientRequest request_;
+    const std::string rawHeader = "Content-Type: application/json\r\nAccept: */*";
+    request_.SetRawHeader(rawHeader);
+    EXPECT_EQ(request_.GetRawHeader(), rawHeader);
+}
+
+HWTEST_F(HttpClientRequestTest, SetRawHeaderTest002, TestSize.Level1)
+{
+    HttpClientRequest request_;
+    const std::string emptyHeader = "";
+    request_.SetRawHeader("test header");
+    EXPECT_NE(request_.GetRawHeader(), emptyHeader);
+    request_.SetRawHeader(emptyHeader);
+    EXPECT_EQ(request_.GetRawHeader(), emptyHeader);
+}
+
+HWTEST_F(HttpClientRequestTest, SetRawHeaderTest003, TestSize.Level1)
+{
+    HttpClientRequest request_;
+    const std::string header1 = "header1: value1";
+    const std::string header2 = "header2: value2";
+    request_.SetRawHeader(header1);
+    EXPECT_EQ(request_.GetRawHeader(), header1);
+    request_.SetRawHeader(header2);
+    EXPECT_EQ(request_.GetRawHeader(), header2);
+    EXPECT_NE(request_.GetRawHeader(), header1);
+}
+
+HWTEST_F(HttpClientRequestTest, ParseHeadersTest001, TestSize.Level1)
+{
+    HttpClientRequest request_;
+    const std::string rawHeader = "Content-Type: application/json\r\n"
+                                  "Accept: */*\r\n"
+                                  "User-Agent: test-client\r\n"
+                                  "X-Request-Id: 123456\r\n\r\n";
+    request_.SetRawHeader(rawHeader);
+    request_.ParseHeaders();
+    const auto &headers = request_.GetHeaders();
+    EXPECT_EQ(headers.at("content-type"), "application/json");
+    EXPECT_EQ(headers.at("accept"), "*/*");
+    EXPECT_EQ(headers.at("user-agent"), "test-client");
+    EXPECT_EQ(headers.at("x-request-id"), "123456");
+}
+
+HWTEST_F(HttpClientRequestTest, ParseHeadersTest002, TestSize.Level1)
+{
+    HttpClientRequest request_;
+    EXPECT_EQ(request_.GetHeaders().empty(), true);
+    request_.SetRawHeader("");
+    request_.ParseHeaders();
+    EXPECT_EQ(request_.GetHeaders().empty(), true);
+}
+
+HWTEST_F(HttpClientRequestTest, ClearHeaderCacheTest001, TestSize.Level1)
+{
+    HttpClientRequest request_;
+    const std::string rawHeader = "Content-Type: application/json\r\nAccept: */*";
+    request_.SetRawHeader(rawHeader);
+    request_.ParseHeaders();
+    EXPECT_EQ(request_.GetHeaders().empty(), false);
+    EXPECT_EQ(request_.GetHeaders().size(), 2);
+    request_.ClearHeaderCache();
+    EXPECT_EQ(request_.GetHeaders().empty(), true);
+}
+
+HWTEST_F(HttpClientRequestTest, ClearHeaderCacheTest002, TestSize.Level1)
+{
+    HttpClientRequest request_;
+    EXPECT_EQ(request_.GetHeaders().empty(), true);
+    request_.ClearHeaderCache();
+    EXPECT_EQ(request_.GetHeaders().empty(), true);
+}
 } // namespace

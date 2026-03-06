@@ -136,6 +136,7 @@ ohos_shared_library("http_client") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "$NETSTACK_DIR/interfaces/innerkits/http_interceptor:http_interceptor",
   ]
 
   public_external_deps = [ "curl:curl_shared" ]
@@ -180,6 +181,9 @@ ohos_shared_library("http_client") {
       defined(global_parts_info.communication_netmanager_base) &&
       global_parts_info.communication_netmanager_base) {
     external_deps += [ "netmanager_base:netsys_client" ]
+    defines = [
+      "ENABLE_HTTP_GLOBAL_INTERCEPT=1",
+    ]
   }
   innerapi_tags = [ "platformsdk" ]
   part_name = "netstack"

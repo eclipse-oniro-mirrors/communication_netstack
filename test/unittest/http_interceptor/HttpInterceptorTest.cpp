@@ -426,4 +426,25 @@ HWTEST_F(HttpInterceptorTest, IteratorResponseInterceptorTest002, TestSize.Level
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
 }
 
+HWTEST_F(HttpInterceptorTest, HasEnabledInterceptorTest001, TestSize.Level1)
+{
+    std::shared_ptr<HttpInterceptorMgr> mgr = std::make_shared<HttpInterceptorMgr>();
+    auto ret = mgr->HasEnabledInterceptor(STAGE_REQUEST);
+    EXPECT_EQ(ret, false);
+    ret = mgr->HasEnabledInterceptor(STAGE_RESPONSE);
+    EXPECT_EQ(ret, false);
+    ret = mgr->AddInterceptor(&g_response_modify_interceptor);
+    EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
+    ret = mgr->AddInterceptor(&g_response_readonly_interceptor);
+    EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
+    ret = mgr->SetAllInterceptorEnabled(g_groupId, 1);
+    EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
+    ret = mgr->HasEnabledInterceptor(STAGE_REQUEST);
+    EXPECT_EQ(ret, true);
+    ret = mgr->HasEnabledInterceptor(STAGE_RESPONSE);
+    EXPECT_EQ(ret, true);
+    ret = mgr->SetAllInterceptorEnabled(g_groupId, 0);
+    EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
+}
+
 } // namespace

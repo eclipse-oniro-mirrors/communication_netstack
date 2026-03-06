@@ -137,7 +137,7 @@ typedef struct Http_PerformanceTiming {
 /**
  * @brief HTTP header list, alias of libcurl's <tt>curl_slist</tt>.
  */
-typedef curl_slist Http_Headers;
+typedef curl_slist Http_Interceptor_Headers;
 
 /**
  * @brief Buffer.
@@ -157,8 +157,8 @@ typedef struct Http_Interceptor_Request {
     Http_Buffer url;
     /** Request method, see {@link Http_Buffer}. */
     Http_Buffer method;
-    /** Header of http Request, see {@link Http_Headers}. */
-    Http_Headers *headers;
+    /** Header of http Request, see {@link Http_Interceptor_Headers}. */
+    Http_Interceptor_Headers *headers;
     /** Request body, see {@link Http_Buffer}. */
     Http_Buffer body;
 } Http_Interceptor_Request;
@@ -168,8 +168,8 @@ typedef struct Http_Interceptor_Response {
     Http_Buffer body;
     /** Server status code, see {@link Http_ResponseCode}. */
     Http_ResponseCode responseCode;
-    /** Header of http response, see {@link Http_Headers}. */
-    Http_Headers *headers;
+    /** Header of http response, see {@link Http_Interceptor_Headers}. */
+    Http_Interceptor_Headers *headers;
     /** The time taken of various stages of HTTP request, see {@link Http_PerformanceTiming}. */
     Http_PerformanceTiming performanceTiming;
 } Http_Interceptor_Response;
@@ -251,7 +251,7 @@ void DeepCopyBuffer(Http_Buffer *dest, const Http_Buffer *src);
  * @return A new <tt>Http_Headers*</tt> containing a copy of all headers,
  *         or NULL if out of memory or input is NULL.
  */
-Http_Headers *DeepCopyHeaders(Http_Headers *src);
+Http_Interceptor_Headers *DeepCopyHeaders(Http_Interceptor_Headers *src);
 
 /**
  * @brief Safely destroys an Http_Interceptor_Request and releases all owned resources.

@@ -37,8 +37,12 @@
 #ifdef HTTP_HANDOVER_FEATURE
 #include "http_handover_info.h"
 #endif
+#if ENABLE_HTTP_GLOBAL_INTERCEPT
+#include "http_interceptor_mgr.h"
+#endif
 
 using namespace OHOS::NetStack::HttpClient;
+using namespace OHOS::NetStack::HttpInterceptor;
 using namespace testing;
 using namespace testing::ext;
 
@@ -64,6 +68,34 @@ static void testCallbackconst(const HttpClientRequest &request, std::map<std::st
 {
     NETSTACK_LOGI("testCallbackconst function called!");
 }
+
+static Interceptor_Result g_Interceptor_Result = CONTINUE;
+static bool g_IsModified = false;
+
+Interceptor_Result OH_Http_InterceptorHandler(
+    Http_Interceptor_Request *request, Http_Interceptor_Response *response, int32_t *isModified)
+{
+    (void)request;
+    (void)response;
+    *isModified = g_IsModified ? 1 : 0;
+    return g_Interceptor_Result;
+}
+
+Http_Interceptor g_request_interceptor = {
+    .groupId = 0,
+    .stage = STAGE_REQUEST,
+    .type = TYPE_MODIFY,
+    .enabled = 1,
+    .handler = OH_Http_InterceptorHandler,
+};
+
+Http_Interceptor g_response_interceptor = {
+    .groupId = 0,
+    .stage = STAGE_RESPONSE,
+    .type = TYPE_MODIFY,
+    .enabled = 1,
+    .handler = OH_Http_InterceptorHandler,
+};
 
 HWTEST_F(HttpClientTaskTest, GetHttpVersionTest001, TestSize.Level1)
 {
@@ -1871,4 +1903,275 @@ HWTEST_F(HttpClientTaskTest, SetCertPinnerOption001, TestSize.Level1)
     auto task = session.CreateTask(httpReq);
     ASSERT_TRUE(task != nullptr);
 }
+
+HWTEST_F(HttpClientTaskTest, LogResponseInfoTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.test.com");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    CURLcode code = CURLE_OK;
+    task->LogResponseInfo(code);
+    EXPECT_EQ(task->error_.GetErrorCode(), HTTP_NONE_ERR);
+}
+
+HWTEST_F(HttpClientTaskTest, LogResponseInfoTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    CURLcode code = CURLE_ABORTED_BY_CALLBACK;
+    task->LogResponseInfo(code);
+    EXPECT_NE(task->response_.GetResponseTime().empty(), true);
+}
+
+HWTEST_F(HttpClientTaskTest, HandleCancelCallbackTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    CURLcode code = CURLE_ABORTED_BY_CALLBACK;
+    bool called = false;
+    task->onCanceled_ = [&called](const HttpClientRequest &, const HttpClientResponse &) {
+        called = true;
+    };
+    bool ret = task->HandleCancelCallback(code);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(called);
+    EXPECT_FALSE(task->IsSuccess());
+}
+
+HWTEST_F(HttpClientTaskTest, HandleCancelCallbackTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    CURLcode code = CURLE_OK;
+    bool ret = task->HandleCancelCallback(code);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(HttpClientTaskTest, HandleCancelCallbackTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    CURLcode code = CURLE_ABORTED_BY_CALLBACK;
+    bool ret = task->HandleCancelCallback(code);
+    EXPECT_TRUE(ret);
+    EXPECT_FALSE(task->IsSuccess());
+}
+
+HWTEST_F(HttpClientTaskTest, HandleErrorCallbackTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    CURLcode code = CURLE_FAILED_INIT;
+    bool called = false;
+    task->onFailed_ = [&called](const HttpClientRequest &, const HttpClientResponse &, const HttpClientError &) {
+        called = true;
+    };
+    bool ret = task->HandleErrorCallback(code);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(called);
+    EXPECT_FALSE(task->IsSuccess());
+}
+
+HWTEST_F(HttpClientTaskTest, HandleErrorCallbackTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    CURLcode code = CURLE_OK;
+    bool ret = task->HandleErrorCallback(code);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(HttpClientTaskTest, ProcessResponseCoreLogicTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    task->response_.SetResponseCode(ResponseCode::NOT_FOUND);
+    bool ret = task->ProcessResponseCoreLogic();
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(HttpClientTaskTest, ProcessResponseCoreLogicTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    task->response_.SetResponseCode(ResponseCode::NOT_FOUND);
+    HttpInterceptorMgr::GetInstance().AddInterceptor(&g_request_interceptor);
+    g_Interceptor_Result = ABORT;
+    bool ret = task->ProcessResponseCoreLogic();
+    task->networkProfilerUtils_.reset();
+    task->HandleNetworkProfiling();
+    HttpInterceptorMgr::GetInstance().DeleteInterceptor(&g_request_interceptor);
+    g_Interceptor_Result = CONTINUE;
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(HttpClientTaskTest, HandleResultCallbackTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    bool successCalled = false;
+    task->onSucceeded_ = [&successCalled](const HttpClientRequest &, const HttpClientResponse &) {
+        successCalled = true;
+    };
+    task->HandleResultCallback(true);
+    EXPECT_TRUE(successCalled);
+    EXPECT_TRUE(task->IsSuccess());
+}
+
+HWTEST_F(HttpClientTaskTest, HandleResultCallbackTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    bool failCalled = false;
+    task->onFailed_ = [&failCalled](const HttpClientRequest &, const HttpClientResponse &, const HttpClientError &) {
+        failCalled = true;
+    };
+    task->HandleResultCallback(false);
+    EXPECT_TRUE(failCalled);
+    EXPECT_FALSE(task->IsSuccess());
+}
+
+HWTEST_F(HttpClientTaskTest, ConvertRequestContextToInterceptorReqTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    std::shared_ptr<Http_Interceptor_Request> ctx =
+        OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().CreateHttpInterceptorRequest();
+    bool ret = task->ConvertRequestContextToInterceptorReq(ctx);
+    EXPECT_EQ(ret, true);
+    ret = task->ConvertInterceptorReqToRequestContext(ctx);
+    EXPECT_EQ(ret, true);
+    task->request_.SetURL("http://test.com");
+    task->request_.SetMethod("GET");
+    std::string body = "111111";
+    size_t len = body.length();
+    task->request_.SetBody(body.c_str(), len);
+    task->request_.SetHeader("aaa", "1111");
+    task->request_.SetHeader("bbb", "");
+    ret = task->ConvertRequestContextToInterceptorReq(ctx);
+    EXPECT_EQ(ret, true);
+    std::shared_ptr<Http_Interceptor_Request> nullctx;
+    ret = task->ConvertInterceptorReqToRequestContext(nullctx);
+    EXPECT_EQ(ret, false);
+    ret = task->ConvertRequestContextToInterceptorReq(nullctx);
+    EXPECT_EQ(ret, false);
+    ret = task->ConvertInterceptorReqToRequestContext(ctx);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(HttpClientTaskTest, GlobalRequestInterceptorCheckTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://test.com");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    bool ret = task->GlobalRequestInterceptorCheck();
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(HttpClientTaskTest, GlobalRequestInterceptorCheckTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/delete";
+    std::string method = "DELETE";
+    httpReq.SetURL(url);
+    httpReq.SetMethod(method);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    HttpInterceptorMgr::GetInstance().AddInterceptor(&g_request_interceptor);
+    g_Interceptor_Result = ABORT;
+    task->OnSuccess([task](const HttpClientRequest &request, const HttpClientResponse &response) {});
+    auto ret = task->Start();
+    HttpInterceptorMgr::GetInstance().DeleteInterceptor(&g_request_interceptor);
+    g_Interceptor_Result = CONTINUE;
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(HttpClientTaskTest, GlobalRequestInterceptorCheckTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/delete";
+    std::string method = "DELETE";
+    httpReq.SetURL(url);
+    httpReq.SetMethod(method);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    HttpInterceptorMgr::GetInstance().AddInterceptor(&g_request_interceptor);
+    g_IsModified = true;
+    task->OnSuccess([task](const HttpClientRequest &request, const HttpClientResponse &response) {});
+    auto ret = task->Start();
+    HttpInterceptorMgr::GetInstance().DeleteInterceptor(&g_request_interceptor);
+    g_IsModified = false;
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(HttpClientTaskTest, ConvertResponseContextToInterceptorRespTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    std::shared_ptr<Http_Interceptor_Response> ctx =
+        OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().CreateHttpInterceptorResponse();
+    auto ret = task->ConvertResponseContextToInterceptorResp(ctx);
+    EXPECT_EQ(ret, true);
+    ret = task->ConvertInterceptorRespToResponseContext(ctx);
+    EXPECT_EQ(ret, true);
+    task->response_.SetResult("aaaaaaaaa");
+    task->response_.SetResponseCode(ResponseCode::OK);
+    task->response_.SetRawHeader("aaa:111\r\nbbb\r\nset-cookie:data\r\n\r\n");
+    task->response_.ParseHeaders();
+    ret = task->ConvertResponseContextToInterceptorResp(ctx);
+    EXPECT_EQ(ret, true);
+    std::shared_ptr<Http_Interceptor_Response> nullctx;
+    ret = task->ConvertResponseContextToInterceptorResp(nullctx);
+    EXPECT_EQ(ret, false);
+    ret = task->ConvertInterceptorRespToResponseContext(nullctx);
+    EXPECT_EQ(ret, false);
+    ret = task->ConvertInterceptorRespToResponseContext(ctx);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(HttpClientTaskTest, GlobalResponseInterceptorCheckTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    bool ret = task->GlobalResponseInterceptorCheck();
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(HttpClientTaskTest, GlobalResponseInterceptorCheckTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    std::string url = "http://www.httpbin.org/delete";
+    std::string method = "DELETE";
+    httpReq.SetURL(url);
+    httpReq.SetMethod(method);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    g_Interceptor_Result = ABORT;
+    g_IsModified = false;
+    HttpInterceptorMgr::GetInstance().AddInterceptor(&g_response_interceptor);
+    auto ret = task->GlobalResponseInterceptorCheck();
+    EXPECT_EQ(ret, false);
+    g_IsModified = true;
+    g_Interceptor_Result = CONTINUE;
+    ret = task->GlobalResponseInterceptorCheck();
+    (void)HttpInterceptorMgr::GetInstance().DeleteInterceptor(&g_response_interceptor);
+    g_IsModified = false;
+    EXPECT_EQ(ret, true);
+}
+
 } // namespace

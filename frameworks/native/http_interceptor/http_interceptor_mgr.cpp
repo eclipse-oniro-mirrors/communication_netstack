@@ -194,7 +194,7 @@ Interceptor_Result HttpInterceptorMgr::IteratorRequestInterceptor(
                 isModified = true;
             }
             if (ret == ABORT) {
-                NETSTACK_LOGE("IteratorRequestInterceptor abort, interceptor return ABORT");
+                NETSTACK_LOGI("IteratorRequestInterceptor abort, interceptor return ABORT");
                 return ABORT;
             }
         }
@@ -259,12 +259,36 @@ Interceptor_Result HttpInterceptorMgr::IteratorResponseInterceptor(
                 isModified = true;
             }
             if (ret == ABORT) {
-                NETSTACK_LOGE("IteratorResponseInterceptor abort, interceptor return ABORT");
+                NETSTACK_LOGI("IteratorResponseInterceptor abort, interceptor return ABORT");
                 return ABORT;
             }
         }
     }
     NETSTACK_LOGD("Exit IteratorResponseInterceptor");
     return CONTINUE;
+}
+
+
+bool HttpInterceptorMgr::HasEnabledInterceptor(Interceptor_Stage stage)
+{
+    std::shared_lock<std::shared_mutex> lock(stage == STAGE_REQUEST ? reqMutex_ : respMutex_);
+    auto &targetList = stage == STAGE_REQUEST ? requestInterceptorList_ : responseInterceptorList_;
+    auto iter = std::find_if(targetList.begin(), targetList.end(), [&](const Http_Interceptor *item) {
+        return item->enabled == 1;
+    });
+    if (iter == targetList.end()) {
+        NETSTACK_LOGD("interceptor not exist");
+        return false;
+    }
+    return true;
+}
+
+bool HttpInterceptorMgr::HasEnabledRequestInterceptor()
+{
+    return HasEnabledInterceptor(STAGE_REQUEST);
+}
+bool HttpInterceptorMgr::HasEnabledResponseInterceptor()
+{
+    return HasEnabledInterceptor(STAGE_RESPONSE);
 }
 } // namespace OHOS::NetStack::HttpInterceptor

@@ -597,7 +597,7 @@ bool HttpExec::ConvertResponseContextToInterceptorResp(
 
     resp->responseCode = static_cast<Http_ResponseCode>(context->response.GetResponseCode());
     if (!context->response.GetHeader().empty() || !context->response.GetCookies().empty()) {
-        resp->headers = reinterpret_cast<Http_Headers *>(
+        resp->headers = reinterpret_cast<Http_Interceptor_Headers *>(
             MakeHeaders(CommonUtils::Split(context->response.GetRawHeader(), HttpConstant::HTTP_LINE_SEPARATOR)));
     }
     resp->performanceTiming = {
@@ -625,7 +625,7 @@ bool HttpExec::ConvertInterceptorRespToResponseContext(
     }
     context->response.SetResponseCode(static_cast<uint32_t>(resp->responseCode));
     std::string rawHeader;
-    Http_Headers *headers = resp->headers;
+    Http_Interceptor_Headers *headers = resp->headers;
     while (headers != nullptr) {
         if (headers->data) {
             rawHeader += headers->data;
@@ -641,6 +641,10 @@ bool HttpExec::ConvertInterceptorRespToResponseContext(
 
 bool HttpExec::GlobalResponseInterceptorCheck(RequestContext *context)
 {
+    if (!OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().HasEnabledResponseInterceptor()) {
+        return true;
+    }
+
     if (context == nullptr) {
         NETSTACK_LOGE("GlobalResponseInterceptorCheck failed: context is null");
         return false;
@@ -655,6 +659,7 @@ bool HttpExec::GlobalResponseInterceptorCheck(RequestContext *context)
     auto result = OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().IteratorResponseInterceptor(
         resp, isModified);
     if (isModified) {
+        NETSTACK_LOGI("Response interceptor modified the response, taskId = %{public}d", context->GetTaskId());
         if (!ConvertInterceptorRespToResponseContext(resp, context)) {
             NETSTACK_LOGE("Restore InterceptorReq to RequestContext failed taskId = %{public}d", context->GetTaskId());
             return false;
@@ -716,6 +721,10 @@ bool HttpExec::ConvertInterceptorReqToRequestContext(
 
 bool HttpExec::GlobalRequestInterceptorCheck(RequestContext *context)
 {
+    if (!OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().HasEnabledRequestInterceptor()) {
+        return true;
+    }
+
     if (context == nullptr) {
         NETSTACK_LOGE("GlobalRequestInterceptorCheck failed: context is null");
         return false;
@@ -733,6 +742,7 @@ bool HttpExec::GlobalRequestInterceptorCheck(RequestContext *context)
         return false;
     }
     if (isModified) {
+        NETSTACK_LOGI("Request interceptor modified the request, taskId = %{public}d", context->GetTaskId());
         if (!ConvertInterceptorReqToRequestContext(req, context)) {
             NETSTACK_LOGE("Restore InterceptorReq to RequestContext failed taskId = %{public}d", context->GetTaskId());
             return false;

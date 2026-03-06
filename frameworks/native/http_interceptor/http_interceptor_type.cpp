@@ -48,13 +48,13 @@ void DeepCopyBuffer(Http_Buffer *dst, const Http_Buffer *src)
     // LCOV_EXCL_STOP
 }
 
-Http_Headers *DeepCopyHeaders(Http_Headers *src)
+Http_Interceptor_Headers *DeepCopyHeaders(Http_Interceptor_Headers *src)
 {
     if (src == nullptr) {
         return nullptr;
     }
-    Http_Headers *dst = nullptr;
-    Http_Headers *tmp = src;
+    Http_Interceptor_Headers *dst = nullptr;
+    Http_Interceptor_Headers *tmp = src;
     while (tmp != nullptr) {
         if (tmp->data != nullptr) {
             dst = curl_slist_append(dst, tmp->data);
@@ -64,7 +64,7 @@ Http_Headers *DeepCopyHeaders(Http_Headers *src)
     return dst;
 }
 
-static void DestroyHttpHeaders(Http_Headers *headers)
+static void DestroyHttpHeaders(Http_Interceptor_Headers *headers)
 {
     if (headers == nullptr) {
         return;
