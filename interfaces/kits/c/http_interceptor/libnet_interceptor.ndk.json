@@ -5,11 +5,11 @@
     },
     {
         "first_introduced": "24",
-        "name": "OH_Http_DeleteInterceptor"
+        "name": "OH_Http_RemoveInterceptor"
     },
     {
         "first_introduced": "24",
-        "name": "OH_Http_DeleteAllInterceptors"
+        "name": "OH_Http_RemoveAllInterceptors"
     },
     {
         "first_introduced": "24",

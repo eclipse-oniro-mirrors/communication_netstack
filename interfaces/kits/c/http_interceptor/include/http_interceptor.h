@@ -13,6 +13,25 @@
  * limitations under the License.
  */
 
+/**
+ * @addtogroup netstack
+ * @{
+ *
+ * @brief Defines the APIs for http global interceptor.
+ *
+ * @since 24
+ */
+
+/**
+ * @file http_interceptor.h
+ * @brief Defines the APIs for http global interceptor.
+ *
+ * @library libhttp_interceptor.so
+ * @kit NetworkKit
+ * @syscap SystemCapability.Communication.NetStack
+ * @since 24
+ */
+
 #ifndef HTTP_INTERCEPTOR_H
 #define HTTP_INTERCEPTOR_H
 
@@ -23,53 +42,64 @@ extern "C" {
 #endif
 
 /**
- * @brief add a http global interceptor
+ * @brief add a http global interceptor for HTTP requests.
  *
- * @param interceptor Http global interceptor configuration, Pointer to {@link Http_Interceptor}.
- * @return 0 if success; non-0 otherwise. For details about error codes, see {@link Http_ErrCode}.
+ * @param interceptor Http global interceptor configuration, Pointer to {@link OH_Http_Interceptor}.
+ * @return {@link OH_HTTP_RESULT_OK} 0 -if the operation is successful.
+ *         {@link OH_HTTP_PERMISSION_DENIED} 201 -if permission is denied.
  * @permission ohos.permission.INTERNET
- * @syscap SystemCapability.Communication.NetStack
+ * @note The interceptor remains active until it is explicitly removed by the developer.
+ *     you must call {@link OH_Http_RemoveInterceptor} to release a specific interceptor
+ *     or {@link OH_Http_RemoveAllInterceptors} to release a group of interceptors.
  * @since 24
  */
-int32_t OH_Http_AddInterceptor(struct Http_Interceptor *interceptor);
+int32_t OH_Http_AddInterceptor(struct OH_Http_Interceptor *interceptor);
 
 /**
- * @brief delete a http global interceptor
+ * @brief delete a specific http global interceptor
  *
- * @param interceptor Http global interceptor configuration, Pointer to {@link Http_Interceptor}.
- * @return 0 if success; non-0 otherwise. For details about error codes, see {@link Http_ErrCode}.
+ * @param interceptor Http global interceptor configuration, Pointer to {@link OH_Http_Interceptor}.
+ * @return {@link OH_HTTP_RESULT_OK} 0 -if the operation is successful.
+ *         {@link OH_HTTP_PERMISSION_DENIED} 201 -if permission is denied.
  * @permission ohos.permission.INTERNET
- * @syscap SystemCapability.Communication.NetStack
  * @since 24
  */
-int32_t OH_Http_DeleteInterceptor(struct Http_Interceptor *interceptor);
+int32_t OH_Http_RemoveInterceptor(struct OH_Http_Interceptor *interceptor);
 
 /**
- * @brief delete all http global interceptors
+ * @brief Deletes all HTTP interceptors matching the specified group ID.
  *
- * @return 0 if success; non-0 otherwise. For details about error codes, see {@link Http_ErrCode}.
+ * @param groupId http global interceptor group id
+ * @return {@link OH_HTTP_RESULT_OK} 0 -if the operation is successful.
+ *         {@link OH_HTTP_PERMISSION_DENIED} 201 -if permission is denied.
  * @permission ohos.permission.INTERNET
- * @syscap SystemCapability.Communication.NetStack
+ * @note The groupId is allocated and managed by the application itself when creating
+ *     interceptors. If multiple modules within the application need to use interceptors,
+ *     the application must properly allocate and manage groupId to avoid conflicts.
+ *     Conflicts in groupId between internal modules may lead to accidental deletion
+ *     of interceptors when calling this function.
  * @since 24
  */
-int32_t OH_Http_DeleteAllInterceptors(int32_t groupId);
+int32_t OH_Http_RemoveAllInterceptors(int32_t groupId);
 
 /**
- * @brief start all http global interceptors
+ * @brief start all http global interceptors by groupId
  *
- * @return 0 if success; non-0 otherwise. For details about error codes, see {@link Http_ErrCode}.
+ * @param groupId http global interceptor group id
+ * @return {@link OH_HTTP_RESULT_OK} 0 -if the operation is successful.
+ *         {@link OH_HTTP_PERMISSION_DENIED} 201 -if permission is denied.
  * @permission ohos.permission.INTERNET
- * @syscap SystemCapability.Communication.NetStack
  * @since 24
  */
 int32_t OH_Http_StartAllInterceptors(int32_t groupId);
 
 /**
- * @brief stop all http global interceptors
+ * @brief stop all http global interceptors by groupId
  *
- * @return 0 if success; non-0 otherwise. For details about error codes, see {@link Http_ErrCode}.
+ * @param groupId http global interceptor group id
+ * @return {@link OH_HTTP_RESULT_OK} 0 -if the operation is successful.
+ *         {@link OH_HTTP_PERMISSION_DENIED} 201 -if permission is denied.
  * @permission ohos.permission.INTERNET
- * @syscap SystemCapability.Communication.NetStack
  * @since 24
  */
 int32_t OH_Http_StopAllInterceptors(int32_t groupId);
@@ -77,5 +107,6 @@ int32_t OH_Http_StopAllInterceptors(int32_t groupId);
 #ifdef __cplusplus
 }
 #endif
-
 #endif // HTTP_INTERCEPTOR_H
+
+/** @} */

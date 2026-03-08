@@ -137,7 +137,7 @@ typedef struct Http_PerformanceTiming {
 /**
  * @brief HTTP header list, alias of libcurl's <tt>curl_slist</tt>.
  */
-typedef curl_slist Http_Interceptor_Headers;
+typedef curl_slist OH_Http_Interceptor_Headers;
 
 /**
  * @brief Buffer.
@@ -152,84 +152,84 @@ typedef struct Http_Buffer {
 /**
  * @brief Defines interceptor request
  */
-typedef struct Http_Interceptor_Request {
+typedef struct OH_Http_Interceptor_Request {
     /** Request url, see {@link Http_Buffer}. */
     Http_Buffer url;
     /** Request method, see {@link Http_Buffer}. */
     Http_Buffer method;
-    /** Header of http Request, see {@link Http_Interceptor_Headers}. */
-    Http_Interceptor_Headers *headers;
+    /** Header of http Request, see {@link OH_Http_Interceptor_Headers}. */
+    OH_Http_Interceptor_Headers *headers;
     /** Request body, see {@link Http_Buffer}. */
     Http_Buffer body;
-} Http_Interceptor_Request;
+} OH_Http_Interceptor_Request;
 
-typedef struct Http_Interceptor_Response {
+typedef struct OH_Http_Interceptor_Response {
     /** Response body, see {@link Http_Buffer}. */
     Http_Buffer body;
     /** Server status code, see {@link Http_ResponseCode}. */
     Http_ResponseCode responseCode;
-    /** Header of http response, see {@link Http_Interceptor_Headers}. */
-    Http_Interceptor_Headers *headers;
+    /** Header of http response, see {@link OH_Http_Interceptor_Headers}. */
+    OH_Http_Interceptor_Headers *headers;
     /** The time taken of various stages of HTTP request, see {@link Http_PerformanceTiming}. */
     Http_PerformanceTiming performanceTiming;
-} Http_Interceptor_Response;
+} OH_Http_Interceptor_Response;
 
 /**
  * @brief Defines interceptor stage
  */
-typedef enum Interceptor_Stage {
+typedef enum OH_Interceptor_Stage {
     /** http request hook */
-    STAGE_REQUEST,
+    OH_STAGE_REQUEST,
     /** http response hook */
-    STAGE_RESPONSE
-} Interceptor_Stage;
+    OH_STAGE_RESPONSE
+} OH_Interceptor_Stage;
 
 /**
  * @brief Defines interceptor type
  */
-typedef enum Interceptor_Type {
+typedef enum OH_Interceptor_Type {
     /** interceptor will not modify the packet */
-    TYPE_READ_ONLY,
+    OH_TYPE_READ_ONLY,
     /** interceptor will modify the packet */
-    TYPE_MODIFY
-} Interceptor_Type;
+    OH_TYPE_MODIFY
+} OH_Interceptor_Type;
 
 /**
  * @brief Defines interceptor process result
  */
-typedef enum Interceptor_Result {
+typedef enum OH_Interceptor_Result {
     /** interceptor result is continue */
-    CONTINUE,
+    OH_CONTINUE,
     /** interceptor result is abort this packet */
-    ABORT
-} Interceptor_Result;
+    OH_ABORT
+} OH_Interceptor_Result;
 
 /**
  * @brief Defines interceptor handler
  */
-typedef Interceptor_Result (*OH_Http_InterceptorHandler)(
+typedef OH_Interceptor_Result (*OH_Http_InterceptorHandler)(
     /** http request packet */
-    Http_Interceptor_Request *request,
+    OH_Http_Interceptor_Request *request,
     /** http response packet */
-    Http_Interceptor_Response *response,
+    OH_Http_Interceptor_Response *response,
     /** interceptor isModified */
     int32_t *isModified);
 
 /**
  * @brief Defines interceptor configuration
  */
-typedef struct Http_Interceptor {
+typedef struct OH_Http_Interceptor {
     /** group ID of interceptor */
     int32_t groupId;
     /** stage of interceptor */
-    Interceptor_Stage stage;
+    OH_Interceptor_Stage stage;
     /** type of interceptor */
-    Interceptor_Type type;
+    OH_Interceptor_Type type;
     /** handler of interceptor */
     OH_Http_InterceptorHandler handler;
     /** whether this interceptor is enabled */
     int32_t enabled;
-} Http_Interceptor;
+} OH_Http_Interceptor;
 
 /**
  * @brief Performs a deep copy of an Http_Buffer.
@@ -251,23 +251,23 @@ void DeepCopyBuffer(Http_Buffer *dest, const Http_Buffer *src);
  * @return A new <tt>Http_Headers*</tt> containing a copy of all headers,
  *         or NULL if out of memory or input is NULL.
  */
-Http_Interceptor_Headers *DeepCopyHeaders(Http_Interceptor_Headers *src);
+OH_Http_Interceptor_Headers *DeepCopyHeaders(OH_Http_Interceptor_Headers *src);
 
 /**
- * @brief Safely destroys an Http_Interceptor_Request and releases all owned resources.
+ * @brief Safely destroys an OH_Http_Interceptor_Request and releases all owned resources.
  *
  * After this call, the content of <tt>req</tt> is undefined; do not use it again.
  *
  * @param req Pointer to the request to destroy. Safe to pass NULL (no-op).
  */
-void DestroyHttpInterceptorRequest(Http_Interceptor_Request *req);
+void DestroyHttpInterceptorRequest(OH_Http_Interceptor_Request *req);
 
 /**
- * @brief Safely destroys an Http_Interceptor_Response and releases all owned resources.
+ * @brief Safely destroys an OH_Http_Interceptor_Response and releases all owned resources.
  *
  * @param resp Pointer to the response to destroy. Safe to pass NULL (no-op).
  */
-void DestroyHttpInterceptorResponse(Http_Interceptor_Response *resp);
+void DestroyHttpInterceptorResponse(OH_Http_Interceptor_Response *resp);
 
 /**
  * @brief Initializes an Http_Buffer structure to a safe empty state.

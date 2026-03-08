@@ -36,7 +36,7 @@ using namespace OHOS::NetStack::HttpInterceptor;
 
 bool g_IsModified = false;
 int32_t g_groupId = 0;
-Interceptor_Result g_Interceptor_Result = CONTINUE;
+OH_Interceptor_Result g_Interceptor_Result = OH_CONTINUE;
 
 char *MallocCString(const std::string &origin)
 {
@@ -60,7 +60,7 @@ struct curl_slist *MakeHeaders(const std::vector<std::string> &vec)
     return header;
 }
 
-void InitHttpRequestData(std::shared_ptr<Http_Interceptor_Request> req)
+void InitHttpRequestData(std::shared_ptr<OH_Http_Interceptor_Request> req)
 {
     std::vector<std::string> headersList = { "'Content-Type': 'application/x-www-form-urlencoded'",
         "'AAAAA': '1111111'", "'BBBBBB': '222222'" };
@@ -76,7 +76,7 @@ void InitHttpRequestData(std::shared_ptr<Http_Interceptor_Request> req)
     req->headers = MakeHeaders(headersList);
 }
 
-void InitHttpResponseData(std::shared_ptr<Http_Interceptor_Response> resp)
+void InitHttpResponseData(std::shared_ptr<OH_Http_Interceptor_Response> resp)
 {
     std::vector<std::string> headersList = { "'Content-Type': 'application/x-www-form-urlencoded'",
         "'AAAAA': '1111111'", "'BBBBBB': '222222'" };
@@ -95,8 +95,8 @@ void InitHttpResponseData(std::shared_ptr<Http_Interceptor_Response> resp)
     };
 }
 
-Interceptor_Result OH_Http_InterceptorHandler(
-    Http_Interceptor_Request *request, Http_Interceptor_Response *response, int32_t *isModified)
+OH_Interceptor_Result OH_Http_InterceptorHandler(
+    OH_Http_Interceptor_Request *request, OH_Http_Interceptor_Response *response, int32_t *isModified)
 {
     (void)request;
     (void)response;
@@ -106,98 +106,98 @@ Interceptor_Result OH_Http_InterceptorHandler(
     return g_Interceptor_Result;
 }
 
-Http_Interceptor g_request_modify_interceptor = {
+OH_Http_Interceptor g_request_modify_interceptor = {
     .groupId = g_groupId,
-    .stage = STAGE_REQUEST,
-    .type = TYPE_MODIFY,
+    .stage = OH_STAGE_REQUEST,
+    .type = OH_TYPE_MODIFY,
     .enabled = 0,
     .handler = OH_Http_InterceptorHandler,
 };
 
-Http_Interceptor g_request_modify_interceptor2 = {
+OH_Http_Interceptor g_request_modify_interceptor2 = {
     .groupId = g_groupId,
-    .stage = STAGE_REQUEST,
-    .type = TYPE_MODIFY,
+    .stage = OH_STAGE_REQUEST,
+    .type = OH_TYPE_MODIFY,
     .enabled = 0,
     .handler = nullptr,
 };
 
-Http_Interceptor g_request_modify_interceptor3 = {
+OH_Http_Interceptor g_request_modify_interceptor3 = {
     .groupId = g_groupId,
-    .stage = STAGE_REQUEST,
-    .type = TYPE_MODIFY,
+    .stage = OH_STAGE_REQUEST,
+    .type = OH_TYPE_MODIFY,
     .enabled = 0,
     .handler = OH_Http_InterceptorHandler,
 };
 
-Http_Interceptor g_request_readonly_interceptor = {
+OH_Http_Interceptor g_request_readonly_interceptor = {
     .groupId = g_groupId,
-    .stage = STAGE_REQUEST,
-    .type = TYPE_READ_ONLY,
+    .stage = OH_STAGE_REQUEST,
+    .type = OH_TYPE_READ_ONLY,
     .enabled = 0,
     .handler = OH_Http_InterceptorHandler,
 };
 
-Http_Interceptor g_request_readonly_interceptor2 = {
+OH_Http_Interceptor g_request_readonly_interceptor2 = {
     .groupId = g_groupId,
-    .stage = STAGE_REQUEST,
-    .type = TYPE_READ_ONLY,
+    .stage = OH_STAGE_REQUEST,
+    .type = OH_TYPE_READ_ONLY,
     .enabled = 0,
     .handler = nullptr,
 };
 
-Http_Interceptor g_request_readonly_interceptor3 = {
+OH_Http_Interceptor g_request_readonly_interceptor3 = {
     .groupId = g_groupId,
-    .stage = STAGE_REQUEST,
-    .type = TYPE_READ_ONLY,
+    .stage = OH_STAGE_REQUEST,
+    .type = OH_TYPE_READ_ONLY,
     .enabled = 0,
     .handler = OH_Http_InterceptorHandler,
 };
 
-Http_Interceptor g_response_modify_interceptor = {
+OH_Http_Interceptor g_response_modify_interceptor = {
     .groupId = g_groupId,
-    .stage = STAGE_RESPONSE,
-    .type = TYPE_MODIFY,
+    .stage = OH_STAGE_RESPONSE,
+    .type = OH_TYPE_MODIFY,
     .enabled = 0,
     .handler = OH_Http_InterceptorHandler,
 };
 
-Http_Interceptor g_response_modify_interceptor2 = {
+OH_Http_Interceptor g_response_modify_interceptor2 = {
     .groupId = g_groupId,
-    .stage = STAGE_RESPONSE,
-    .type = TYPE_MODIFY,
+    .stage = OH_STAGE_RESPONSE,
+    .type = OH_TYPE_MODIFY,
     .enabled = 0,
     .handler = nullptr,
 };
 
-Http_Interceptor g_response_modify_interceptor3 = {
+OH_Http_Interceptor g_response_modify_interceptor3 = {
     .groupId = g_groupId,
-    .stage = STAGE_RESPONSE,
-    .type = TYPE_MODIFY,
+    .stage = OH_STAGE_RESPONSE,
+    .type = OH_TYPE_MODIFY,
     .enabled = 0,
     .handler = OH_Http_InterceptorHandler,
 };
 
-Http_Interceptor g_response_readonly_interceptor = {
+OH_Http_Interceptor g_response_readonly_interceptor = {
     .groupId = g_groupId,
-    .stage = STAGE_RESPONSE,
-    .type = TYPE_READ_ONLY,
+    .stage = OH_STAGE_RESPONSE,
+    .type = OH_TYPE_READ_ONLY,
     .enabled = 0,
     .handler = OH_Http_InterceptorHandler,
 };
 
-Http_Interceptor g_response_readonly_interceptor2 = {
+OH_Http_Interceptor g_response_readonly_interceptor2 = {
     .groupId = g_groupId,
-    .stage = STAGE_RESPONSE,
-    .type = TYPE_READ_ONLY,
+    .stage = OH_STAGE_RESPONSE,
+    .type = OH_TYPE_READ_ONLY,
     .enabled = 0,
     .handler = nullptr,
 };
 
-Http_Interceptor g_response_readonly_interceptor3 = {
+OH_Http_Interceptor g_response_readonly_interceptor3 = {
     .groupId = g_groupId,
-    .stage = STAGE_RESPONSE,
-    .type = TYPE_READ_ONLY,
+    .stage = OH_STAGE_RESPONSE,
+    .type = OH_TYPE_READ_ONLY,
     .enabled = 0,
     .handler = OH_Http_InterceptorHandler,
 };
@@ -281,14 +281,14 @@ HWTEST_F(HttpInterceptorTest, IteratorRequestInterceptorTest001, TestSize.Level1
     auto ret = mgr->SetAllInterceptorEnabled(g_groupId, 0);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
     bool isModified = false;
-    std::shared_ptr<Http_Interceptor_Request> req = mgr->CreateHttpInterceptorRequest();
+    std::shared_ptr<OH_Http_Interceptor_Request> req = mgr->CreateHttpInterceptorRequest();
     InitHttpRequestData(req);
     ret = mgr->IteratorRequestInterceptor(req, isModified);
-    EXPECT_EQ(ret, CONTINUE);
-    std::shared_ptr<Http_Interceptor_Request> nullReq(nullptr);
+    EXPECT_EQ(ret, OH_CONTINUE);
+    std::shared_ptr<OH_Http_Interceptor_Request> nullReq(nullptr);
     mgr->IteratorReadRequestInterceptor(nullReq);
     ret = mgr->IteratorRequestInterceptor(nullReq, isModified);
-    EXPECT_EQ(ret, CONTINUE);
+    EXPECT_EQ(ret, OH_CONTINUE);
     ret = mgr->AddInterceptor(&g_request_modify_interceptor);
     ret = mgr->AddInterceptor(&g_request_modify_interceptor2);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
@@ -303,14 +303,14 @@ HWTEST_F(HttpInterceptorTest, IteratorRequestInterceptorTest001, TestSize.Level1
     ret = mgr->AddInterceptor(&g_request_readonly_interceptor3);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
     ret = mgr->IteratorRequestInterceptor(req, isModified);
-    EXPECT_EQ(ret, CONTINUE);
+    EXPECT_EQ(ret, OH_CONTINUE);
     g_IsModified = true;
-    g_Interceptor_Result = ABORT;
+    g_Interceptor_Result = OH_ABORT;
     ret = mgr->IteratorRequestInterceptor(req, isModified);
     EXPECT_EQ(isModified, true);
-    EXPECT_EQ(ret, ABORT);
+    EXPECT_EQ(ret, OH_ABORT);
     g_IsModified = false;
-    g_Interceptor_Result = CONTINUE;
+    g_Interceptor_Result = OH_CONTINUE;
     ret = mgr->SetAllInterceptorEnabled(g_groupId, 0);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
 }
@@ -321,15 +321,15 @@ HWTEST_F(HttpInterceptorTest, IteratorRequestInterceptorTest002, TestSize.Level1
     auto ret = mgr->SetAllInterceptorEnabled(g_groupId, 0);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
     bool isModified = false;
-    std::shared_ptr<Http_Interceptor_Request> req = mgr->CreateHttpInterceptorRequest();
+    std::shared_ptr<OH_Http_Interceptor_Request> req = mgr->CreateHttpInterceptorRequest();
     InitHttpRequestData(req);
     ret = mgr->IteratorRequestInterceptor(req, isModified);
-    EXPECT_EQ(ret, CONTINUE);
-    std::shared_ptr<Http_Interceptor_Request> nullReq(nullptr);
+    EXPECT_EQ(ret, OH_CONTINUE);
+    std::shared_ptr<OH_Http_Interceptor_Request> nullReq(nullptr);
     ret = mgr->IteratorRequestInterceptor(nullReq, isModified);
     mgr->CopyHttpInterceRequest(nullReq, req);
     mgr->CopyHttpInterceRequest(req, nullReq);
-    EXPECT_EQ(ret, CONTINUE);
+    EXPECT_EQ(ret, OH_CONTINUE);
     ret = mgr->AddInterceptor(&g_request_modify_interceptor);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
     ret = mgr->AddInterceptor(&g_request_readonly_interceptor);
@@ -337,15 +337,15 @@ HWTEST_F(HttpInterceptorTest, IteratorRequestInterceptorTest002, TestSize.Level1
     ret = mgr->SetAllInterceptorEnabled(g_groupId, 1);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
     ret = mgr->IteratorRequestInterceptor(req, isModified);
-    EXPECT_EQ(ret, CONTINUE);
+    EXPECT_EQ(ret, OH_CONTINUE);
     std::this_thread::sleep_for(std::chrono::seconds(1));
     g_IsModified = true;
-    g_Interceptor_Result = ABORT;
+    g_Interceptor_Result = OH_ABORT;
     ret = mgr->IteratorRequestInterceptor(req, isModified);
     EXPECT_EQ(isModified, true);
-    EXPECT_EQ(ret, ABORT);
+    EXPECT_EQ(ret, OH_ABORT);
     g_IsModified = false;
-    g_Interceptor_Result = CONTINUE;
+    g_Interceptor_Result = OH_CONTINUE;
     ret = mgr->SetAllInterceptorEnabled(g_groupId, 0);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
 }
@@ -355,13 +355,13 @@ HWTEST_F(HttpInterceptorTest, IteratorResponseInterceptorTest001, TestSize.Level
     std::shared_ptr<HttpInterceptorMgr> mgr = std::make_shared<HttpInterceptorMgr>();
     auto ret = mgr->SetAllInterceptorEnabled(g_groupId, 0);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
-    std::shared_ptr<Http_Interceptor_Response> resp = mgr->CreateHttpInterceptorResponse();
+    std::shared_ptr<OH_Http_Interceptor_Response> resp = mgr->CreateHttpInterceptorResponse();
     bool isModified = false;
-    std::shared_ptr<Http_Interceptor_Response> nullResp(nullptr);
+    std::shared_ptr<OH_Http_Interceptor_Response> nullResp(nullptr);
     ret = mgr->IteratorResponseInterceptor(nullResp, isModified);
     mgr->CopyHttpInterceResponse(nullResp, resp);
     mgr->CopyHttpInterceResponse(resp, nullResp);
-    EXPECT_EQ(ret, CONTINUE);
+    EXPECT_EQ(ret, OH_CONTINUE);
     ret = mgr->AddInterceptor(&g_response_modify_interceptor);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
     ret = mgr->AddInterceptor(&g_response_modify_interceptor2);
@@ -377,17 +377,17 @@ HWTEST_F(HttpInterceptorTest, IteratorResponseInterceptorTest001, TestSize.Level
     ret = mgr->AddInterceptor(&g_response_readonly_interceptor3);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
     ret = mgr->IteratorResponseInterceptor(resp, isModified);
-    EXPECT_EQ(ret, CONTINUE);
+    EXPECT_EQ(ret, OH_CONTINUE);
     InitHttpResponseData(resp);
     ret = mgr->IteratorResponseInterceptor(resp, isModified);
-    EXPECT_EQ(ret, CONTINUE);
+    EXPECT_EQ(ret, OH_CONTINUE);
     g_IsModified = true;
-    g_Interceptor_Result = ABORT;
+    g_Interceptor_Result = OH_ABORT;
     ret = mgr->IteratorResponseInterceptor(resp, isModified);
     EXPECT_EQ(isModified, true);
-    EXPECT_EQ(ret, ABORT);
+    EXPECT_EQ(ret, OH_ABORT);
     g_IsModified = false;
-    g_Interceptor_Result = CONTINUE;
+    g_Interceptor_Result = OH_CONTINUE;
     ret = mgr->SetAllInterceptorEnabled(g_groupId, 0);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
 }
@@ -397,12 +397,12 @@ HWTEST_F(HttpInterceptorTest, IteratorResponseInterceptorTest002, TestSize.Level
     std::shared_ptr<HttpInterceptorMgr> mgr = std::make_shared<HttpInterceptorMgr>();
     auto ret = mgr->SetAllInterceptorEnabled(g_groupId, 0);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
-    std::shared_ptr<Http_Interceptor_Response> resp = std::make_shared<Http_Interceptor_Response>();
+    std::shared_ptr<OH_Http_Interceptor_Response> resp = std::make_shared<OH_Http_Interceptor_Response>();
     bool isModified = false;
-    std::shared_ptr<Http_Interceptor_Response> nullResp(nullptr);
+    std::shared_ptr<OH_Http_Interceptor_Response> nullResp(nullptr);
     mgr->IteratorReadResponseInterceptor(nullResp);
     ret = mgr->IteratorResponseInterceptor(nullResp, isModified);
-    EXPECT_EQ(ret, CONTINUE);
+    EXPECT_EQ(ret, OH_CONTINUE);
     ret = mgr->AddInterceptor(&g_response_modify_interceptor);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
     ret = mgr->AddInterceptor(&g_response_readonly_interceptor);
@@ -410,17 +410,17 @@ HWTEST_F(HttpInterceptorTest, IteratorResponseInterceptorTest002, TestSize.Level
     ret = mgr->SetAllInterceptorEnabled(g_groupId, 1);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
     ret = mgr->IteratorResponseInterceptor(resp, isModified);
-    EXPECT_EQ(ret, CONTINUE);
+    EXPECT_EQ(ret, OH_CONTINUE);
     InitHttpResponseData(resp);
     ret = mgr->IteratorResponseInterceptor(resp, isModified);
-    EXPECT_EQ(ret, CONTINUE);
+    EXPECT_EQ(ret, OH_CONTINUE);
     g_IsModified = true;
-    g_Interceptor_Result = ABORT;
+    g_Interceptor_Result = OH_ABORT;
     ret = mgr->IteratorResponseInterceptor(resp, isModified);
     EXPECT_EQ(isModified, true);
-    EXPECT_EQ(ret, ABORT);
+    EXPECT_EQ(ret, OH_ABORT);
     g_IsModified = false;
-    g_Interceptor_Result = CONTINUE;
+    g_Interceptor_Result = OH_CONTINUE;
     std::this_thread::sleep_for(std::chrono::seconds(1));
     ret = mgr->SetAllInterceptorEnabled(g_groupId, 0);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
@@ -429,9 +429,9 @@ HWTEST_F(HttpInterceptorTest, IteratorResponseInterceptorTest002, TestSize.Level
 HWTEST_F(HttpInterceptorTest, HasEnabledInterceptorTest001, TestSize.Level1)
 {
     std::shared_ptr<HttpInterceptorMgr> mgr = std::make_shared<HttpInterceptorMgr>();
-    auto ret = mgr->HasEnabledInterceptor(STAGE_REQUEST);
+    auto ret = mgr->HasEnabledInterceptor(OH_STAGE_REQUEST);
     EXPECT_EQ(ret, false);
-    ret = mgr->HasEnabledInterceptor(STAGE_RESPONSE);
+    ret = mgr->HasEnabledInterceptor(OH_STAGE_RESPONSE);
     EXPECT_EQ(ret, false);
     ret = mgr->AddInterceptor(&g_response_modify_interceptor);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
@@ -439,9 +439,9 @@ HWTEST_F(HttpInterceptorTest, HasEnabledInterceptorTest001, TestSize.Level1)
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
     ret = mgr->SetAllInterceptorEnabled(g_groupId, 1);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
-    ret = mgr->HasEnabledInterceptor(STAGE_REQUEST);
+    ret = mgr->HasEnabledInterceptor(OH_STAGE_REQUEST);
     EXPECT_EQ(ret, true);
-    ret = mgr->HasEnabledInterceptor(STAGE_RESPONSE);
+    ret = mgr->HasEnabledInterceptor(OH_STAGE_RESPONSE);
     EXPECT_EQ(ret, true);
     ret = mgr->SetAllInterceptorEnabled(g_groupId, 0);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);

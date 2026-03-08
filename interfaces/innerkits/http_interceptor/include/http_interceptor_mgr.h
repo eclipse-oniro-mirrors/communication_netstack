@@ -30,24 +30,26 @@ class HttpInterceptorMgr : public std::enable_shared_from_this<HttpInterceptorMg
 public:
     static HttpInterceptorMgr &GetInstance();
 
-    int32_t AddInterceptor(struct Http_Interceptor *interceptor);
+    int32_t AddInterceptor(struct OH_Http_Interceptor *interceptor);
 
-    int32_t DeleteInterceptor(struct Http_Interceptor *interceptor);
+    int32_t DeleteInterceptor(struct OH_Http_Interceptor *interceptor);
 
     int32_t DeleteAllInterceptor(int32_t groupId);
 
     int32_t SetAllInterceptorEnabled(int32_t groupId, int32_t enabled);
 
-    Interceptor_Result IteratorRequestInterceptor(std::shared_ptr<Http_Interceptor_Request> &req, bool &isModified);
+    OH_Interceptor_Result IteratorRequestInterceptor(
+        std::shared_ptr<OH_Http_Interceptor_Request> &req, bool &isModified);
 
-    Interceptor_Result IteratorResponseInterceptor(std::shared_ptr<Http_Interceptor_Response> &resp, bool &isModified);
+    OH_Interceptor_Result IteratorResponseInterceptor(
+        std::shared_ptr<OH_Http_Interceptor_Response> &resp, bool &isModified);
 
     bool HasEnabledRequestInterceptor();
 
     bool HasEnabledResponseInterceptor();
 
-    std::shared_ptr<Http_Interceptor_Request> CreateHttpInterceptorRequest();
-    std::shared_ptr<Http_Interceptor_Response> CreateHttpInterceptorResponse();
+    std::shared_ptr<OH_Http_Interceptor_Request> CreateHttpInterceptorRequest();
+    std::shared_ptr<OH_Http_Interceptor_Response> CreateHttpInterceptorResponse();
 
     HttpInterceptorMgr() = default;
     ~HttpInterceptorMgr() = default;
@@ -56,16 +58,16 @@ private:
     HttpInterceptorMgr(const HttpInterceptorMgr &) = delete;
     HttpInterceptorMgr &operator=(const HttpInterceptorMgr &) = delete;
     void CopyHttpInterceRequest(
-        std::shared_ptr<Http_Interceptor_Request> &dst, std::shared_ptr<Http_Interceptor_Request> &src);
+        std::shared_ptr<OH_Http_Interceptor_Request> &dst, std::shared_ptr<OH_Http_Interceptor_Request> &src);
     void CopyHttpInterceResponse(
-        std::shared_ptr<Http_Interceptor_Response> &dst, std::shared_ptr<Http_Interceptor_Response> &src);
-    void IteratorReadRequestInterceptor(std::shared_ptr<Http_Interceptor_Request> &readReq);
-    void IteratorReadResponseInterceptor(std::shared_ptr<Http_Interceptor_Response> &readResp);
-    bool HasEnabledInterceptor(Interceptor_Stage stage);
+        std::shared_ptr<OH_Http_Interceptor_Response> &dst, std::shared_ptr<OH_Http_Interceptor_Response> &src);
+    void IteratorReadRequestInterceptor(std::shared_ptr<OH_Http_Interceptor_Request> &readReq);
+    void IteratorReadResponseInterceptor(std::shared_ptr<OH_Http_Interceptor_Response> &readResp);
+    bool HasEnabledInterceptor(OH_Interceptor_Stage stage);
 
 private:
-    std::list<Http_Interceptor *> requestInterceptorList_;
-    std::list<Http_Interceptor *> responseInterceptorList_;
+    std::list<OH_Http_Interceptor *> requestInterceptorList_;
+    std::list<OH_Http_Interceptor *> responseInterceptorList_;
     std::shared_mutex reqMutex_;
     std::shared_mutex respMutex_;
 };

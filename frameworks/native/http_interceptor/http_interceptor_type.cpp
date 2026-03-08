@@ -48,13 +48,13 @@ void DeepCopyBuffer(Http_Buffer *dst, const Http_Buffer *src)
     // LCOV_EXCL_STOP
 }
 
-Http_Interceptor_Headers *DeepCopyHeaders(Http_Interceptor_Headers *src)
+OH_Http_Interceptor_Headers *DeepCopyHeaders(OH_Http_Interceptor_Headers *src)
 {
     if (src == nullptr) {
         return nullptr;
     }
-    Http_Interceptor_Headers *dst = nullptr;
-    Http_Interceptor_Headers *tmp = src;
+    OH_Http_Interceptor_Headers *dst = nullptr;
+    OH_Http_Interceptor_Headers *tmp = src;
     while (tmp != nullptr) {
         if (tmp->data != nullptr) {
             dst = curl_slist_append(dst, tmp->data);
@@ -64,7 +64,7 @@ Http_Interceptor_Headers *DeepCopyHeaders(Http_Interceptor_Headers *src)
     return dst;
 }
 
-static void DestroyHttpHeaders(Http_Interceptor_Headers *headers)
+static void DestroyHttpHeaders(OH_Http_Interceptor_Headers *headers)
 {
     if (headers == nullptr) {
         return;
@@ -72,7 +72,7 @@ static void DestroyHttpHeaders(Http_Interceptor_Headers *headers)
     curl_slist_free_all(headers);
 }
 
-void DestroyHttpInterceptorRequest(Http_Interceptor_Request *req)
+void DestroyHttpInterceptorRequest(OH_Http_Interceptor_Request *req)
 {
     if (req == nullptr) {
         return;
@@ -93,7 +93,7 @@ void DestroyHttpInterceptorRequest(Http_Interceptor_Request *req)
     free(req);
 }
 
-void DestroyHttpInterceptorResponse(Http_Interceptor_Response *resp)
+void DestroyHttpInterceptorResponse(OH_Http_Interceptor_Response *resp)
 {
     if (resp == nullptr) {
         return;
