@@ -541,7 +541,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         "taskid=%{public}d"
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
         ", dns:%{public}.3f, connect:%{public}.3f, tls:%{public}.3f, firstSend:%{public}.3f"
-        ", firstRecv:%{public}.3f, total:%{public}.3f, redirect:%{public}.3f"
+        ", firstRecv:%{public}.3f, total:%{public}.3f, redirect:%{public}.3f, reuse:%{public}d"
 #ifdef HTTP_HANDOVER_FEATURE
         ", %{public}s"
 #endif
@@ -551,6 +551,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         tlsTime == 0 ? 0 : tlsTime - connectTime,
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
+        context->options.GetReuseConnectionsFlag(),
 #ifdef HTTP_HANDOVER_FEATURE
         handoverInfo.c_str(),
 #endif
@@ -1833,6 +1834,12 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
     if (!context->options.GetSniHostName().empty()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SNI_HOSTNAME, context->options.GetSniHostName().c_str(), context);
+    }
+
+    if (!context->options.GetReuseConnectionsFlag())
+    {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FORBID_REUSE, 1L, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FRESH_CONNECT, 1L, context);
     }
 
 #ifdef HAS_NETMANAGER_BASE

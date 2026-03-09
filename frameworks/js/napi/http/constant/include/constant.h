@@ -256,6 +256,7 @@ public:
     static const char *const INTERCEPTOR_FINAL_RESPONSE;
     static const char *const INTERCEPTOR_TYPE;
     static const char *const PATH_PREFERENCE;
+    static const char *const REUSE_CONNECTIONS;
 };
 } // namespace OHOS::NetStack::Http
 

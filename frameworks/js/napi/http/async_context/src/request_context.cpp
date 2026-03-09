@@ -664,6 +664,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParseSslType(optionsValue);
     ParseClientEncCert(optionsValue);
     ParsePathPreference(optionsValue);
+    ParseReuseConnections(optionsValue);
 }
 
 bool RequestContext::IsUsingCache() const
@@ -1262,5 +1263,24 @@ void RequestContext::ParsePathPreference(napi_value optionsValue)
         pathPre = PathPreference::autoPath;
     }
     options.SetPathPreference(pathPre);
+}
+
+void RequestContext::ParseReuseConnections(napi_value optionsValue)
+{
+    napi_env env = GetEnv();
+    if (!NapiUtils::HasNamedProperty(env, optionsValue, HttpConstant::REUSE_CONNECTIONS)) {
+        options.SetReuseConnectionsFlag(true);
+        return;
+    }
+
+    napi_value value = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::REUSE_CONNECTIONS);
+    if (NapiUtils::GetValueType(GetEnv(), value) == napi_boolean) {
+        bool reuseConnections = NapiUtils::GetBooleanFromValue(GetEnv(), value);
+        options.SetReuseConnectionsFlag(reuseConnections);
+        return;
+    } else {
+        options.SetReuseConnectionsFlag(true);
+        return;
+    }
 }
 } // namespace OHOS::NetStack::Http
