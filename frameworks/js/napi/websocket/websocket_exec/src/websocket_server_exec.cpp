@@ -1219,12 +1219,10 @@ bool WebSocketServerExec::ExecServerClose(ServerCloseContext *context)
         return false;
     }
     std::string clientId = conn.clientIP + ":" + std::to_string(conn.clientPort);
-    NETSTACK_LOGI("ExecServerClose, clientID:%{public}s", clientId.c_str());
     auto manager = context->GetSharedManager();
     auto wsi = GetClientWsi(clientId, manager);
     if (wsi == nullptr) {
         context->SetErrorCode(WEBSOCKET_ERROR_CODE_CONNECTION_NOT_EXIST);
-        NETSTACK_LOGE("clientId not found:%{public}s", clientId.c_str());
         return false;
     }
     auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(wsi));
@@ -1258,7 +1256,6 @@ bool WebSocketServerExec::ExecServerSend(ServerSendContext *context)
         return false;
     }
     std::string clientId = conn.clientIP + ":" + std::to_string(conn.clientPort);
-    NETSTACK_LOGI("connection clientid:%{public}s", clientId.c_str());
     auto manager = context->GetSharedManager();
     if (manager == nullptr) {
         return false;
@@ -1266,7 +1263,6 @@ bool WebSocketServerExec::ExecServerSend(ServerSendContext *context)
     auto wsi = GetClientWsi(clientId, manager);
     if (wsi == nullptr) {
         context->SetErrorCode(WEBSOCKET_ERROR_CODE_CONNECTION_NOT_EXIST);
-        NETSTACK_LOGE("clientId not found:%{public}s", clientId.c_str());
         return false;
     }
     auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(wsi));
