@@ -135,6 +135,7 @@ bool HttpHandoverHandler::IsInitSuccess()
 
 bool HttpHandoverHandler::Initialize()
 {
+    std::lock_guard<std::mutex> lock(soOpenCloseMutex_);
     const std::string HTTP_HANDOVER_WRAPPER_PATH = "/system/lib64/libhttp_handover.z.so";
     netHandoverHandler_ = dlopen(HTTP_HANDOVER_WRAPPER_PATH.c_str(), RTLD_NOW);
     // LCOV_EXCL_START
@@ -176,6 +177,7 @@ bool HttpHandoverHandler::Initialize()
 
 HttpHandoverHandler::~HttpHandoverHandler()
 {
+    std::lock_guard<std::mutex> lock(soOpenCloseMutex_);
     NETSTACK_LOGD("start httpHandoverUninit_");
     int32_t ret = UNINIT_RET_INITIAL;
     // LCOV_EXCL_START
