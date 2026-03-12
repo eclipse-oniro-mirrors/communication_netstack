@@ -90,6 +90,7 @@ public:
     void SetNetId(int32_t netId);
 
 private:
+    std::mutex soOpenCloseMutex_;
     void *netHandoverHandler_ = nullptr;
     void *httpHandoverManager_ = nullptr;
     std::unique_ptr<ManualResetEvent> handOverEvent_;
