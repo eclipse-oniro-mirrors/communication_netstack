@@ -85,6 +85,7 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
             ParseSkipServerCertVerify(params[1]);
             ParsePingInterval(params[1]);
             ParsePongTimeout(params[1]);
+            ParseMinSupportTlsProtocol(params[1]);
             if (!ParseProxy(params[1]) || !ParseProtocol(params[1])) {
                 return;
             }
@@ -133,6 +134,7 @@ void ConnectContext::ParseParamsCountThree(napi_value const *params)
         ParseSkipServerCertVerify(params[1]);
         ParsePingInterval(params[1]);
         ParsePongTimeout(params[1]);
+        ParseMinSupportTlsProtocol(params[1]);
         if (!ParseProxy(params[1]) || !ParseProtocol(params[1])) {
             if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_THREE - 1]) == napi_function) {
                 SetCallback(params[FUNCTION_PARAM_THREE - 1]);
@@ -429,5 +431,33 @@ void ConnectContext::SetBundleName(const std::string &bundleName)
 std::string ConnectContext::GetBundleName() const
 {
     return bundleName_;
+}
+
+void ConnectContext::SetMinSupportTlsProtocol(TlsProtocol protocol)
+{
+    minSupportTlsProtocol_ = protocol;
+}
+
+TlsProtocol ConnectContext::GetMinSupportTlsProtocol() const
+{
+    return minSupportTlsProtocol_;
+}
+
+void ConnectContext::ParseMinSupportTlsProtocol(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::MIN_SUPPORT_TLS_PROTOCOL)) {
+        NETSTACK_LOGE("ConnectContext MIN_SUPPORT_TLS_PROTOCOL not found");
+        return;
+    }
+    napi_value jsMinSupportTlsProtocol = NapiUtils::GetNamedProperty(GetEnv(), optionsValue,
+        ContextKey::MIN_SUPPORT_TLS_PROTOCOL);
+    if (NapiUtils::GetValueType(GetEnv(), jsMinSupportTlsProtocol) != napi_number) {
+        NETSTACK_LOGE("ConnectContext MIN_SUPPORT_TLS_PROTOCOL is not napi_number");
+        return;
+    }
+    uint32_t protocol = NapiUtils::GetUint32Property(GetEnv(), optionsValue, ContextKey::MIN_SUPPORT_TLS_PROTOCOL);
+    NETSTACK_LOGD("tls protocol version = %{public}d", protocol);
+    TlsProtocol proto = static_cast<TlsProtocol>(protocol);
+    SetMinSupportTlsProtocol(proto);
 }
 } // namespace OHOS::NetStack::Websocket

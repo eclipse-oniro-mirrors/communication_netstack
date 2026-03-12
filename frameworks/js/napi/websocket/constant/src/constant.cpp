@@ -62,4 +62,10 @@ const char *EventName::EVENT_SERVER_ERROR = "error";
 const char *EventName::EVENT_SERVER_CONNECT = "connect";
 const char *EventName::EVENT_SERVER_MESSAGE_RECEIVE = "messageReceive";
 const char *EventName::EVENT_SERVER_CLOSE = "close";
+
+const char *ContextKey::MIN_SUPPORT_TLS_PROTOCOL = "minSupportTlsProtocol";
+const char *ContextKey::TLS_V_1_0 = "TLS_V_1_0";
+const char *ContextKey::TLS_V_1_1 = "TLS_V_1_1";
+const char *ContextKey::TLS_V_1_2 = "TLS_V_1_2";
+const char *ContextKey::TLS_V_1_3 = "TLS_V_1_3";
 } // namespace OHOS::NetStack::Websocket

@@ -114,6 +114,12 @@ public:
     static const char *PROTOCOL;
     static const char *PING_INTERVAL;
     static const char *PONG_TIMEOUT;
+    static const char *MIN_SUPPORT_TLS_PROTOCOL;
+
+    static const char *TLS_V_1_0;
+    static const char *TLS_V_1_1;
+    static const char *TLS_V_1_2;
+    static const char *TLS_V_1_3;
 };
 
 class EventName final {
@@ -130,6 +136,14 @@ public:
     static const char *EVENT_SERVER_CONNECT;
     static const char *EVENT_SERVER_MESSAGE_RECEIVE;
     static const char *EVENT_SERVER_CLOSE;
+};
+
+enum class TlsProtocol {
+    DEFAULT = -1,
+    TLS_V_1_0 = 0,
+    TLS_V_1_1 = 1,
+    TLS_V_1_2 = 2,
+    TLS_V_1_3 = 3,
 };
 } // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_CONSTANT_H */

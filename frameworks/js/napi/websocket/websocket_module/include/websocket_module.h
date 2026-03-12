@@ -65,6 +65,7 @@ public:
     static constexpr const char *INTERFACE_WEB_SOCKET = "WebSocket";
     static constexpr const char *FUNCTION_CREATE_WEB_SOCKET_SERVER = "createWebSocketServer";
     static constexpr const char *INTERFACE_WEB_SOCKET_SERVER = "WebSocketServer";
+    static constexpr const char *INTERFACE_TLS_PROTOCOL = "TlsProtocol";
     static napi_value InitWebSocketModule(napi_env env, napi_value exports);
 
 private:
@@ -81,6 +82,10 @@ private:
 #ifdef NETSTACK_WEBSOCKETSERVER
     static void DefineWebSocketServerClass(napi_env env, napi_value exports);
 #endif
+
+    static void DeclareWebsocketProperties(napi_env env, napi_value exports);
+
+    static void InitWebSocketTlsProtocol(napi_env env, napi_value exports);
 };
 } // namespace OHOS::NetStack::Websocket
 #endif /* COMMUNICATIONNETSTACK_WEBSOCKET_MODULE_H */

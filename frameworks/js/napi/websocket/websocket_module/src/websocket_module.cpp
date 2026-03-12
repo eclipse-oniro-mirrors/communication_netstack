@@ -33,6 +33,7 @@ napi_value WebSocketModule::InitWebSocketModule(napi_env env, napi_value exports
 #ifdef NETSTACK_WEBSOCKETSERVER
     DefineWebSocketServerClass(env, exports);
 #endif
+    DeclareWebsocketProperties(env, exports);
     InitWebSocketProperties(env, exports);
     NapiUtils::SetEnvValid(env);
     std::call_once(g_isAtomicServiceFlag, []() {
@@ -91,6 +92,30 @@ void WebSocketModule::DefineWebSocketServerClass(napi_env env, napi_value export
     ModuleTemplate::DefineClass(env, exports, properties, INTERFACE_WEB_SOCKET_SERVER);
 }
 #endif
+
+void WebSocketModule::DeclareWebsocketProperties(napi_env env, napi_value exports)
+{
+    InitWebSocketTlsProtocol(env, exports);
+}
+
+void WebSocketModule::InitWebSocketTlsProtocol(napi_env env, napi_value exports)
+{
+    std::initializer_list<napi_property_descriptor> properties = {
+        DECLARE_NAPI_STATIC_PROPERTY(ContextKey::TLS_V_1_0,
+            NapiUtils::CreateUint32(env, static_cast<uint32_t>(TlsProtocol::TLS_V_1_0))),
+        DECLARE_NAPI_STATIC_PROPERTY(ContextKey::TLS_V_1_1,
+            NapiUtils::CreateUint32(env, static_cast<uint32_t>(TlsProtocol::TLS_V_1_1))),
+        DECLARE_NAPI_STATIC_PROPERTY(ContextKey::TLS_V_1_2,
+            NapiUtils::CreateUint32(env, static_cast<uint32_t>(TlsProtocol::TLS_V_1_2))),
+        DECLARE_NAPI_STATIC_PROPERTY(ContextKey::TLS_V_1_3,
+            NapiUtils::CreateUint32(env, static_cast<uint32_t>(TlsProtocol::TLS_V_1_3))),
+    };
+
+    napi_value tlsProtocol = NapiUtils::CreateObject(env);
+    NapiUtils::DefineProperties(env, tlsProtocol, properties);
+
+    NapiUtils::SetNamedProperty(env, exports, INTERFACE_TLS_PROTOCOL, tlsProtocol);
+}
 
 void WebSocketModule::InitWebSocketProperties(napi_env env, napi_value exports)
 {

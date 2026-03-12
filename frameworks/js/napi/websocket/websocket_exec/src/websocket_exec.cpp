@@ -518,6 +518,28 @@ void WebSocketExec::FillContextInfo(ConnectContext *context, lws_context_creatio
         info.http_proxy_address = proxyAds;
         info.http_proxy_port = port;
     }
+
+    TlsProtocol protocol = context->GetMinSupportTlsProtocol();
+    FillTlsSupportVersion(protocol, info);
+}
+
+void WebSocketExec::FillTlsSupportVersion(TlsProtocol &protocol, lws_context_creation_info &info)
+{
+    if (protocol == TlsProtocol::DEFAULT || protocol == TlsProtocol::TLS_V_1_0) {
+        return;
+    }
+    long tlsOptions = 0;
+    if (protocol == TlsProtocol::TLS_V_1_1) {
+        tlsOptions = SSL_OP_NO_TLSv1;
+    } else if (protocol == TlsProtocol::TLS_V_1_2) {
+        tlsOptions = SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1;
+    } else if (protocol == TlsProtocol::TLS_V_1_3) {
+        tlsOptions = SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 | SSL_OP_NO_TLSv1_2;
+    } else {
+        NETSTACK_LOGE("tls protocol version error");
+        return;
+    }
+    info.ssl_client_options_set = tlsOptions;
 }
 
 static bool WebSocketConnect(lws_client_connect_info &connectInfo, const std::shared_ptr<EventManager> &manager,
