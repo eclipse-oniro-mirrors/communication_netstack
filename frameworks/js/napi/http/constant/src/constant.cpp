@@ -24,6 +24,7 @@ const char *const HttpConstant::HTTP_METHOD_DELETE = "DELETE";
 const char *const HttpConstant::HTTP_METHOD_POST = "POST";
 const char *const HttpConstant::HTTP_METHOD_PUT = "PUT";
 const char *const HttpConstant::HTTP_METHOD_CONNECT = "CONNECT";
+const char *const HttpConstant::HTTP_METHOD_PATCH = "PATCH";
 
 const uint32_t HttpConstant::DEFAULT_MAX_LIMIT = 5 * 1024 * 1024;
 const uint32_t HttpConstant::MAX_LIMIT = 100 * 1024 * 1024;
@@ -154,4 +155,5 @@ const char *const HttpConstant::INTERCEPTOR_FINAL_RESPONSE = "FINAL_RESPONSE";
 const char *const HttpConstant::INTERCEPTOR_TYPE = "InterceptorType";
 const char *const HttpConstant::PATH_PREFERENCE = "pathPreference";
 const char *const HttpConstant::REUSE_CONNECTIONS = "reuseConnections";
+const char *const HttpConstant::INACTIVITY_MS = "inactivityMs";
 } // namespace OHOS::NetStack::Http

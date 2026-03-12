@@ -665,6 +665,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParseClientEncCert(optionsValue);
     ParsePathPreference(optionsValue);
     ParseReuseConnections(optionsValue);
+    ParseInactivityMs(optionsValue);
 }
 
 bool RequestContext::IsUsingCache() const
@@ -1282,5 +1283,49 @@ void RequestContext::ParseReuseConnections(napi_value optionsValue)
         options.SetReuseConnectionsFlag(true);
         return;
     }
+}
+
+void RequestContext::ParseInactivityMs(napi_value optionsValue)
+{
+    napi_env env = GetEnv();
+    if (!NapiUtils::HasNamedProperty(env, optionsValue, HttpConstant::INACTIVITY_MS)) {
+        options.SetInactivityMs(0);
+        return;
+    }
+
+    napi_value value = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::INACTIVITY_MS);
+    if (NapiUtils::GetValueType(GetEnv(), value) == napi_number) {
+        int inactivityMs = NapiUtils::GetInt32FromValue(GetEnv(), value);
+        if (inactivityMs > 0) {
+            options.SetInactivityMs(inactivityMs);
+        }
+        return;
+    } else {
+        options.SetInactivityMs(0);
+        return;
+    }
+}
+
+void RequestContext::SetSyncWait(bool isSync)
+{
+    isSyncWait_ = isSync;
+}
+
+bool RequestContext::IsSyncWait() const
+{
+    return isSyncWait_;
+}
+
+void RequestContext::NotifySyncComplete()
+{
+    std::lock_guard<std::mutex> lock(syncMutex_);
+    syncComplete_ = true;
+    syncCv_.notify_one();
+}
+
+void RequestContext::WaitForSyncComplete()
+{
+    std::unique_lock<std::mutex> lock(syncMutex_);
+    syncCv_.wait(lock, [this] { return syncComplete_; });
 }
 } // namespace OHOS::NetStack::Http

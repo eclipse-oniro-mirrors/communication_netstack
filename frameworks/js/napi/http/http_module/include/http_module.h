@@ -36,6 +36,7 @@ public:
     public:
         static constexpr const char *FUNCTION_REQUEST = "request";
         static constexpr const char *FUNCTION_REQUEST_IN_STREAM = "requestInStream";
+        static constexpr const char *FUNCTION_REQUEST_SYNC = "requestSync";
         static constexpr const char *FUNCTION_DESTROY = "destroy";
         static constexpr const char *FUNCTION_ON = "on";
         static constexpr const char *FUNCTION_ONCE = "once";
@@ -43,6 +44,8 @@ public:
 
         static napi_value Request(napi_env env, napi_callback_info info);
         static napi_value RequestInStream(napi_env env, napi_callback_info info);
+        static napi_value RequestSync(napi_env env, napi_callback_info info);
+
         static napi_value Destroy(napi_env env, napi_callback_info info);
         static napi_value On(napi_env env, napi_callback_info info);
         static napi_value Once(napi_env env, napi_callback_info info);

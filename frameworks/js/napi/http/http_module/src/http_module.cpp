@@ -106,6 +106,7 @@ void HttpModuleExports::DefineHttpRequestClass(napi_env env, napi_value exports)
     std::initializer_list<napi_property_descriptor> properties = {
         DECLARE_NAPI_WRITABLE_FUNCTION(HttpRequest::FUNCTION_REQUEST, HttpRequest::Request),
         DECLARE_NAPI_WRITABLE_FUNCTION(HttpRequest::FUNCTION_REQUEST_IN_STREAM, HttpRequest::RequestInStream),
+        DECLARE_NAPI_WRITABLE_FUNCTION(HttpRequest::FUNCTION_REQUEST_SYNC, HttpRequest::RequestSync),
         DECLARE_NAPI_WRITABLE_FUNCTION(HttpRequest::FUNCTION_DESTROY, HttpRequest::Destroy),
         DECLARE_NAPI_WRITABLE_FUNCTION(HttpRequest::FUNCTION_ON, HttpRequest::On),
         DECLARE_NAPI_WRITABLE_FUNCTION(HttpRequest::FUNCTION_ONCE, HttpRequest::Once),
@@ -185,6 +186,7 @@ void HttpModuleExports::InitRequestMethod(napi_env env, napi_value exports)
         DECLARE_REQUEST_METHOD(HTTP_METHOD_HEAD),    DECLARE_REQUEST_METHOD(HTTP_METHOD_POST),
         DECLARE_REQUEST_METHOD(HTTP_METHOD_PUT),     DECLARE_REQUEST_METHOD(HTTP_METHOD_DELETE),
         DECLARE_REQUEST_METHOD(HTTP_METHOD_TRACE),   DECLARE_REQUEST_METHOD(HTTP_METHOD_CONNECT),
+        DECLARE_REQUEST_METHOD(HTTP_METHOD_PATCH),
     };
 
     napi_value requestMethod = NapiUtils::CreateObject(env);
@@ -342,6 +344,31 @@ napi_value HttpModuleExports::HttpRequest::RequestInStream(napi_env env, napi_ca
             return true;
         },
         "RequestInStream", HttpAsyncWork::ExecRequest, HttpAsyncWork::RequestCallback);
+}
+
+napi_value HttpModuleExports::HttpRequest::RequestSync(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::SyncInterfaceWithManagerWrapper<RequestContext>(
+        env, info, nullptr,
+        [](RequestContext *context) -> bool {
+#if !HAS_NETMANAGER_BASE
+            if (!HttpExec::Initialize()) {
+                return false;
+            }
+#endif
+            context->GetTrace().Tracepoint(TraceEvents::FETCH);
+            context->SetModuleId(g_moduleId);
+            context->SetAtomicService(g_appIsAtomicService);
+            context->SetBundleName(g_appBundleName);
+            context->SetSyncWait(true);
+            bool execResult = HttpExec::ExecRequest(context);
+            if (execResult) {
+                context->WaitForSyncComplete();
+            }
+            context->SetExecOK(execResult);
+            return execResult;
+        },
+        HttpExec::RequestCallback);
 }
 
 napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_info info)

@@ -180,7 +180,9 @@ napi_value InterfaceWithOutAsyncWorkWithManagerWrapper(napi_env env, napi_callba
         return NapiUtils::GetUndefined(env);
     }
 #if ENABLE_HTTP_INTERCEPT
-    context->SetInterceptorRefs(wrapper->eventManager.interceptorRefs_);
+    if (wrapper) {
+        context->SetInterceptorRefs(wrapper->eventManager.interceptorRefs_);
+    }
 #endif
     context->ParseParams(params, paramsCount);
     napi_value ret = NapiUtils::GetUndefined(env);
@@ -326,5 +328,68 @@ napi_value OnceManagerWrapper(napi_env env, napi_callback_info info, const std::
 
 napi_value OffManagerWrapper(napi_env env, napi_callback_info info, const std::initializer_list<std::string> &events,
                              bool isThrowBusinessError = false);
+
+template <class Context>
+napi_value SyncInterfaceWithManagerWrapper(napi_env env, napi_callback_info info,
+                                           bool (*Work)(napi_env, napi_value, Context *), bool (*executor)(Context *),
+                                           napi_value (*callback)(Context *))
+{
+    static_assert(std::is_base_of<BaseContext, Context>::value);
+
+    napi_value thisVal = nullptr;
+    size_t paramsCount = MAX_PARAM_NUM;
+    napi_value params[MAX_PARAM_NUM] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
+    EventManagerWrapper *wrapper = nullptr;
+    auto napiRet = napi_unwrap(env, thisVal, reinterpret_cast<void **>(&wrapper));
+    if (napiRet != napi_ok) {
+        NETSTACK_LOGE("get event manager in napi_unwrap failed, napiRet is %{public}d", napiRet);
+        return NapiUtils::GetUndefined(env);
+    }
+    std::shared_ptr<EventManager> sharedManager = wrapper ? wrapper->sharedManager : nullptr;
+
+    auto deleter = [](Context *context) { delete context; };
+    auto text = new Context(env, sharedManager);
+    std::unique_ptr<Context, decltype(deleter)> context(text, deleter);
+    if (!context) {
+        return NapiUtils::GetUndefined(env);
+    }
+#if ENABLE_HTTP_INTERCEPT
+    if (wrapper) {
+        context->SetInterceptorRefs(wrapper->eventManager.interceptorRefs_);
+    }
+#endif
+
+    context->ParseParams(params, paramsCount);
+    if (!context->IsParseOK()) {
+        if (context->GetReleaseVersion() >= API_VERSION_THROW_BUSINESS_EXCEPTION) {
+            napi_throw_business_error(env, context->GetErrorCode(), context->GetErrorMessage().c_str());
+        } else {
+            napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
+        }
+        return NapiUtils::GetUndefined(env);
+    }
+    if (Work != nullptr) {
+        if (!Work(env, thisVal, context.get())) {
+            NETSTACK_LOGE("work failed error code = %{public}d", context->GetErrorCode());
+        }
+    }
+
+    if (!executor || !callback) {
+        NETSTACK_LOGE("executor or callback is null");
+        return NapiUtils::GetUndefined(context->GetEnv());
+    }
+
+    if (!executor(context.get())) {
+        NETSTACK_LOGE("executor is fail, errorcode= %{public}d", context->GetErrorCode());
+        if (context->GetReleaseVersion() >= API_VERSION_THROW_BUSINESS_EXCEPTION) {
+            napi_throw_business_error(env, context->GetErrorCode(), context->GetErrorMessage().c_str());
+        } else {
+            napi_throw_error(env, std::to_string(context->GetErrorCode()).c_str(), context->GetErrorMessage().c_str());
+        }
+        return NapiUtils::GetUndefined(env);
+    }
+    return callback(context.get());
+}
 } // namespace OHOS::NetStack::ModuleTemplate
 #endif /* COMMUNICATIONNETSTACK_NETSTACK_MODULE_TEMPLATE_H */

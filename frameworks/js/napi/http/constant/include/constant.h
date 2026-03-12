@@ -127,6 +127,7 @@ public:
     static const char *const HTTP_METHOD_POST;
     static const char *const HTTP_METHOD_PUT;
     static const char *const HTTP_METHOD_CONNECT;
+    static const char *const HTTP_METHOD_PATCH;
 
     /* default options */
     static const uint32_t DEFAULT_MAX_LIMIT;
@@ -257,6 +258,7 @@ public:
     static const char *const INTERCEPTOR_TYPE;
     static const char *const PATH_PREFERENCE;
     static const char *const REUSE_CONNECTIONS;
+    static const char *const INACTIVITY_MS;
 };
 } // namespace OHOS::NetStack::Http
 

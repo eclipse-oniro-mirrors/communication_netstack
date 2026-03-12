@@ -75,6 +75,7 @@
 #include "http_interceptor_mgr.h"
 #endif
 #include "http_utils.h"
+#include "event_manager.h"
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
@@ -542,6 +543,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         ", size:%{public}" CURL_FORMAT_CURL_OFF_T
         ", dns:%{public}.3f, connect:%{public}.3f, tls:%{public}.3f, firstSend:%{public}.3f"
         ", firstRecv:%{public}.3f, total:%{public}.3f, redirect:%{public}.3f, reuse:%{public}d"
+        ", inactivityMs:%{public}d"
 #ifdef HTTP_HANDOVER_FEATURE
         ", %{public}s"
 #endif
@@ -552,6 +554,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
         firstSendTime == 0 ? 0 : firstSendTime - std::max({dnsTime, connectTime, tlsTime}),
         firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime, totalTime, redirectTime,
         context->options.GetReuseConnectionsFlag(),
+        context->options.GetInactivityMs(),
 #ifdef HTTP_HANDOVER_FEATURE
         handoverInfo.c_str(),
 #endif
@@ -781,6 +784,10 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
     context->SendNetworkProfiler();
     if (handle) {
         (void)curl_easy_cleanup(handle);
+    }
+    if (context->IsSyncWait()) {
+        context->NotifySyncComplete();
+        return;
     }
     if (context->GetSharedManager() == nullptr) {
         NETSTACK_LOGE("can not find context manager");
@@ -1027,7 +1034,8 @@ bool HttpExec::MethodForGet(const std::string &method)
 bool HttpExec::MethodForPost(const std::string &method)
 {
     return (method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT ||
-            method == HttpConstant::HTTP_METHOD_DELETE || method.empty());
+            method == HttpConstant::HTTP_METHOD_DELETE || method == HttpConstant::HTTP_METHOD_PATCH ||
+            method.empty());
 }
 
 bool HttpExec::EncodeUrlParam(std::string &str)
@@ -1830,6 +1838,11 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FORBID_REUSE, 1L, context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FRESH_CONNECT, 1L, context);
+    }
+
+    int inactivityMs = context->options.GetInactivityMs();
+    if (inactivityMs > 0) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_MAXAGE_CONN, static_cast<long>(inactivityMs / 1000), context);
     }
 
 #ifdef HAS_NETMANAGER_BASE
