@@ -47,6 +47,10 @@ public:
 
     [[nodiscard]] std::string GetProtocol() const;
 
+    void SetMinSupportTlsProtocol(TlsProtocol protocol);
+
+    [[nodiscard]] TlsProtocol GetMinSupportTlsProtocol() const;
+
     void SetWebsocketProxyType(WebsocketProxyType type);
 
     [[nodiscard]] WebsocketProxyType GetUsingWebsocketProxyType() const;
@@ -105,6 +109,8 @@ public:
  
     std::uint32_t pongTimeout_ = defaultPingInterval;
 
+    TlsProtocol minSupportTlsProtocol_ = TlsProtocol::DEFAULT;
+
 private:
     std::string userCertPath_;
 
@@ -123,6 +129,8 @@ private:
     void ParsePingInterval(napi_value optionsValue);
  
     void ParsePongTimeout(napi_value optionsValue);
+
+    void ParseMinSupportTlsProtocol(napi_value optionsValue);
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 
