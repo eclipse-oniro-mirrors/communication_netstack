@@ -114,12 +114,12 @@ public:
     static const char *PROTOCOL;
     static const char *PING_INTERVAL;
     static const char *PONG_TIMEOUT;
-    static const char *MIN_SUPPORT_TLS_PROTOCOL;
 
-    static const char *TLS_V_1_0;
-    static const char *TLS_V_1_1;
-    static const char *TLS_V_1_2;
-    static const char *TLS_V_1_3;
+    static constexpr const char *MIN_SUPPORT_TLS_PROTOCOL = "minSupportTlsProtocol";
+    static constexpr const char *TLS_V_1_0 = "TLS_V_1_0";
+    static constexpr const char *TLS_V_1_1 = "TLS_V_1_1";
+    static constexpr const char *TLS_V_1_2 = "TLS_V_1_2";
+    static constexpr const char *TLS_V_1_3 = "TLS_V_1_3";
 };
 
 class EventName final {
