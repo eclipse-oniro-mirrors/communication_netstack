@@ -175,7 +175,7 @@ void HttpInterceptorMgr::IteratorReadRequestInterceptor(std::shared_ptr<OH_Http_
 }
 
 OH_Interceptor_Result HttpInterceptorMgr::IteratorRequestInterceptor(
-    std::shared_ptr<OH_Http_Interceptor_Request> &req, bool &isModified)
+    std::shared_ptr<OH_Http_Interceptor_Request> &req, bool &isModified, bool needDeepCopy)
 {
     NETSTACK_LOGD("Enter IteratorRequestInterceptor");
     if (req == nullptr) {
@@ -187,21 +187,37 @@ OH_Interceptor_Result HttpInterceptorMgr::IteratorRequestInterceptor(
     CopyHttpInterceRequest(readReq, req);
     IteratorReadRequestInterceptor(readReq);
     std::shared_lock<std::shared_mutex> lock(reqMutex_);
+    std::shared_ptr<OH_Http_Interceptor_Request> reqTmp = needDeepCopy ? CreateHttpInterceptorRequest() : req;
+    if (needDeepCopy) {
+        // LCOV_EXCL_START
+        if (reqTmp == nullptr) {
+            NETSTACK_LOGI("IteratorRequestInterceptor failed, reqTmp ptr is nullptr");
+            return OH_CONTINUE;
+        }
+        // LCOV_EXCL_STOP
+        CopyHttpInterceRequest(reqTmp, req);
+    }
+
+    OH_Interceptor_Result result = OH_CONTINUE;
     for (const auto &interceptor : requestInterceptorList_) {
         if (interceptor->type == OH_TYPE_MODIFY && interceptor->handler != nullptr && interceptor->enabled) {
             int32_t isModifiedFlag = 0;
-            auto ret = interceptor->handler(req.get(), nullptr, &isModifiedFlag);
+            auto ret = interceptor->handler(reqTmp.get(), nullptr, &isModifiedFlag);
             if (isModifiedFlag) {
                 isModified = true;
             }
             if (ret == OH_ABORT) {
                 NETSTACK_LOGI("IteratorRequestInterceptor abort, interceptor return OH_ABORT");
-                return OH_ABORT;
+                result = OH_ABORT;
+                break;
             }
         }
     }
+    if (isModified && needDeepCopy) {
+        req = reqTmp;
+    }
     NETSTACK_LOGD("Exit IteratorRequestInterceptor");
-    return OH_CONTINUE;
+    return result;
 }
 
 void HttpInterceptorMgr::CopyHttpInterceResponse(
@@ -240,7 +256,7 @@ void HttpInterceptorMgr::IteratorReadResponseInterceptor(std::shared_ptr<OH_Http
 }
 
 OH_Interceptor_Result HttpInterceptorMgr::IteratorResponseInterceptor(
-    std::shared_ptr<OH_Http_Interceptor_Response> &resp, bool &isModified)
+    std::shared_ptr<OH_Http_Interceptor_Response> &resp, bool &isModified, bool needDeepCopy)
 {
     NETSTACK_LOGD("Enter IteratorResponseInterceptor");
     if (resp == nullptr) {
@@ -252,21 +268,36 @@ OH_Interceptor_Result HttpInterceptorMgr::IteratorResponseInterceptor(
     CopyHttpInterceResponse(readResp, resp);
     IteratorReadResponseInterceptor(readResp);
     std::shared_lock<std::shared_mutex> lock(respMutex_);
+    std::shared_ptr<OH_Http_Interceptor_Response> respTmp = needDeepCopy ? CreateHttpInterceptorResponse() : resp;
+    if (needDeepCopy) {
+        // LCOV_EXCL_START
+        if (respTmp == nullptr) {
+            NETSTACK_LOGI("IteratorResponseInterceptor failed, respTmp ptr is nullptr");
+            return OH_CONTINUE;
+        }
+        // LCOV_EXCL_STOP
+        CopyHttpInterceResponse(respTmp, resp);
+    }
+    OH_Interceptor_Result result = OH_CONTINUE;
     for (const auto &interceptor : responseInterceptorList_) {
         if (interceptor->type == OH_TYPE_MODIFY && interceptor->handler != nullptr && interceptor->enabled) {
             int32_t isModifiedFlag = 0;
-            OH_Interceptor_Result ret = interceptor->handler(nullptr, resp.get(), &isModifiedFlag);
+            OH_Interceptor_Result ret = interceptor->handler(nullptr, respTmp.get(), &isModifiedFlag);
             if (isModifiedFlag) {
                 isModified = true;
             }
             if (ret == OH_ABORT) {
                 NETSTACK_LOGI("IteratorResponseInterceptor abort, interceptor return OH_ABORT");
-                return OH_ABORT;
+                result = OH_ABORT;
+                break;
             }
         }
     }
+    if (isModified && needDeepCopy) {
+        resp = respTmp;
+    }
     NETSTACK_LOGD("Exit IteratorResponseInterceptor");
-    return OH_CONTINUE;
+    return result;
 }
 
 bool HttpInterceptorMgr::HasEnabledInterceptor(OH_Interceptor_Stage stage)

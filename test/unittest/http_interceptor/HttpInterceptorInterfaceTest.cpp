@@ -63,16 +63,34 @@ OH_Http_Interceptor g_response_readonly_interceptor = {
     .handler = OH_Http_InterceptorHandler,
 };
 
+OH_Http_Interceptor g_response_modify_interceptor = {
+    .groupId = g_groupId,
+    .stage = OH_STAGE_RESPONSE,
+    .type = OH_TYPE_MODIFY,
+    .enabled = 0,
+    .handler = OH_Http_InterceptorHandler,
+};
+
 HWTEST_F(HttpInterceptorInterfaceTest, OH_Http_AddInterceptor001, TestSize.Level1)
 {
     g_hasInternetPermission = false;
-    auto ret = OH_Http_AddInterceptor(&g_response_readonly_interceptor);
+    auto ret = OH_Http_AddReadOnlyInterceptor(&g_response_readonly_interceptor);
     EXPECT_EQ(ret, OH_HTTP_PERMISSION_DENIED);
     g_hasInternetPermission = true;
-    ret = OH_Http_AddInterceptor(&g_response_readonly_interceptor);
+    ret = OH_Http_AddReadOnlyInterceptor(&g_response_readonly_interceptor);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
-    ret = OH_Http_AddInterceptor(nullptr);
+    ret = OH_Http_AddReadOnlyInterceptor(nullptr);
     EXPECT_EQ(ret, OH_HTTP_PARAMETER_ERROR);
+    ret = OH_Http_AddWritableInterceptor(nullptr);
+    EXPECT_EQ(ret, OH_HTTP_PARAMETER_ERROR);
+    ret = OH_Http_AddReadOnlyInterceptor(&g_response_modify_interceptor);
+    EXPECT_EQ(ret, OH_HTTP_PARAMETER_ERROR);
+    ret = OH_Http_AddReadOnlyInterceptor(&g_response_readonly_interceptor);
+    EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
+    ret = OH_Http_AddWritableInterceptor(&g_response_readonly_interceptor);
+    EXPECT_EQ(ret, OH_HTTP_PARAMETER_ERROR);
+    ret = OH_Http_AddWritableInterceptor(&g_response_modify_interceptor);
+    EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
 }
 
 HWTEST_F(HttpInterceptorInterfaceTest, OH_Http_RemoveInterceptor001, TestSize.Level1)

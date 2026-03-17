@@ -39,10 +39,10 @@ public:
     int32_t SetAllInterceptorEnabled(int32_t groupId, int32_t enabled);
 
     OH_Interceptor_Result IteratorRequestInterceptor(
-        std::shared_ptr<OH_Http_Interceptor_Request> &req, bool &isModified);
+        std::shared_ptr<OH_Http_Interceptor_Request> &req, bool &isModified, bool needDeepCopy = false);
 
     OH_Interceptor_Result IteratorResponseInterceptor(
-        std::shared_ptr<OH_Http_Interceptor_Response> &resp, bool &isModified);
+        std::shared_ptr<OH_Http_Interceptor_Response> &resp, bool &isModified, bool needDeepCopy = false);
 
     bool HasEnabledRequestInterceptor();
 
