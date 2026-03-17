@@ -717,6 +717,10 @@ bool HttpExec::ConvertInterceptorReqToRequestContext(
         }
         context->SetCurlHeaderList(DeepCopyHeaders(req->headers));
     }
+    if (!SetOption(context->GetCurlHandle(), context, context->GetCurlHeaderList())) {
+        NETSTACK_LOGE("set option failed");
+        return false;
+    }
     return true;
 }
 
