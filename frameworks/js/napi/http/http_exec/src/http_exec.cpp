@@ -529,10 +529,10 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     long dport = 0;
     long sport = 0;
     curl_easy_getinfo(handle, CURLINFO_LOCAL_IP, &saddr);
-    std::string anomSaddr = CommonUtils::ToAnonymousIp(saddr);
+    std::string anomSaddr = CommonUtils::ToAnonymousIp(saddr != nullptr ? saddr : "");
     curl_easy_getinfo(handle, CURLINFO_LOCAL_PORT, &sport);
     curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &daddr);
-    std::string anomDaddr = CommonUtils::ToAnonymousIp(daddr);
+    std::string anomDaddr = CommonUtils::ToAnonymousIp(daddr != nullptr ? daddr : "");
     curl_easy_getinfo(handle, CURLINFO_PRIMARY_PORT, &dport);
 #ifdef HTTP_HANDOVER_FEATURE
     std::string handoverInfo = context->GetRequestHandoverInfo();

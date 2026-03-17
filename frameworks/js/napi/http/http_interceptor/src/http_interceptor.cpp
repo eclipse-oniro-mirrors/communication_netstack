@@ -217,7 +217,6 @@ void HttpInterceptor::ApplyBlockInitialRequestInterceptor(napi_env env, InitialR
         std::string cookies =
             NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, resContext, "cookies"));
         handle->context->response.SetCookies(cookies);
-        NETSTACK_LOGD("Set cookies: %{public}s", cookies.c_str());
     }
 
     handle->context->response.ParseHeaders();
@@ -448,7 +447,6 @@ void HttpInterceptor::ApplyBlockRedirectionInterceptor(napi_env env, Redirection
         napi_value cookiesValue = NapiUtils::GetNamedProperty(env, handle->resContext, "cookies");
         std::string cookiesStr = NapiUtils::GetStringFromValueUtf8(env, cookiesValue);
         handle->context->response.SetCookies(cookiesStr);
-        NETSTACK_LOGD("Set cookies: %{public}s", cookiesStr.c_str());
     }
 
     handle->context->response.ParseHeaders();
@@ -700,7 +698,6 @@ void HttpInterceptor::ApplyBlockFinalResponseInterceptor(napi_env env, FinalResp
         napi_value cookiesValue = NapiUtils::GetNamedProperty(env, handle->resContext, "cookies");
         std::string cookiesStr = NapiUtils::GetStringFromValueUtf8(env, cookiesValue);
         handle->context->response.SetCookies(cookiesStr);
-        NETSTACK_LOGD("Set cookies: %{public}s", cookiesStr.c_str());
     }
 
     handle->context->response.ParseHeaders();
@@ -845,7 +842,6 @@ void HttpInterceptor::ApplyContinueCacheCheckedInterceptor(napi_env env, CacheCh
 {
     INTERCEPTOR_TRACE_START("READ_CACHE_CONTINUE");
     auto newUrl = NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, handle->reqContext, "url"));
-    NETSTACK_LOGD("cacheCheckedInterceptor updated url:%{public}s", newUrl.c_str());
     handle->context->options.SetUrl(newUrl);
 
     napi_value newHeadObj = NapiUtils::GetNamedProperty(env, handle->reqContext, "header");
@@ -914,7 +910,6 @@ void HttpInterceptor::ApplyBlockCacheCheckedInterceptor(napi_env env, CacheCheck
         napi_value cookiesValue = NapiUtils::GetNamedProperty(env, handle->resContext, "cookies");
         std::string cookiesStr = NapiUtils::GetStringFromValueUtf8(env, cookiesValue);
         handle->context->response.SetCookies(cookiesStr);
-        NETSTACK_LOGD("Set cookies: %{public}s", cookiesStr.c_str());
     }
 
     handle->context->response.ParseHeaders();
@@ -1072,7 +1067,6 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
     CURL *easyHander = handle->context->GetCurlHandle();
 
     auto newUrl = NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, handle->reqContext, "url"));
-    NETSTACK_LOGD("connectNetworkInterceptor updated url:%{public}s", newUrl.c_str());
     curl_easy_setopt(easyHander, CURLOPT_URL, newUrl.c_str());
     handle->context->options.SetUrl(newUrl);
 
@@ -1149,7 +1143,6 @@ void HttpInterceptor::ApplyBlockConnectNetworkInterceptor(napi_env env, InitialR
         napi_value cookiesValue = NapiUtils::GetNamedProperty(env, handle->resContext, "cookies");
         std::string cookiesStr = NapiUtils::GetStringFromValueUtf8(env, cookiesValue);
         handle->context->response.SetCookies(cookiesStr);
-        NETSTACK_LOGD("Set cookies: %{public}s", cookiesStr.c_str());
     }
 
     handle->context->response.ParseHeaders();
