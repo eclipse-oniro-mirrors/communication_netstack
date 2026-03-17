@@ -63,8 +63,12 @@ struct TlsCipherString {
 };
 
 [[nodiscard]] CipherSuite GetTlsCipherSuiteFromStandardName(const std::string &standardName);
+[[nodiscard]] std::string GetStandardNameFromCipherSuite(CipherSuite cipherSuite);
+[[nodiscard]] CipherSuite GetCipherSuiteFromInnerName(const std::string &innerName);
 [[nodiscard]] std::string GetInnerNameFromCipherSuite(CipherSuite cipherSuite);
 [[nodiscard]] TlsCipherString ConvertCipherSuiteToCipherString(const std::unordered_set<CipherSuite> &cipherSuite);
+[[nodiscard]] const std::string ConvertTlsVersionToString(TlsVersion tlsVersion);
+[[nodiscard]] TlsVersion ConvertStringToTlsVersion(const std::string& versionStr);
 
 } // namespace OHOS::NetStack::Http
 #endif // NETSTACK_HTTP_TLS_CONFIG_H

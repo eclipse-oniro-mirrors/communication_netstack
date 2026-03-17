@@ -134,6 +134,8 @@ public:
 
     void SetPerformanceTimingToResult(napi_value result);
 
+    void SetConnectionExtraInfoToResult(napi_value result);
+
     void SetMultipart(curl_mime *multipart);
 
     void SetCertsPath(std::vector<std::string> &&certPathList, const std::string &certFile);

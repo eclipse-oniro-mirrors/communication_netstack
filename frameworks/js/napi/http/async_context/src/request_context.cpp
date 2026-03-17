@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <charconv>
 #include <limits>
 #include <string>
 #include <utility>
@@ -1283,6 +1284,51 @@ void RequestContext::ParseReuseConnections(napi_value optionsValue)
         options.SetReuseConnectionsFlag(true);
         return;
     }
+}
+
+void RequestContext::SetConnectionExtraInfoToResult(napi_value result)
+{
+    auto readInt = [this](const std::string& key, int32_t defaultValue) -> int32_t {
+        std::string value = response.GetExtraInfoItem(key);
+        int32_t result;
+        auto [ptr, ec] = std::from_chars(value.data(), value.data() + value.size(), result);
+        return (ec == std::errc()) ? result : defaultValue;
+    };
+    napi_value extraInfoValue;
+    napi_env env = GetEnv();
+    napi_create_object(env, &extraInfoValue);
+    NapiUtils::SetStringPropertyUtf8(env, extraInfoValue, HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME,
+        response.GetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME));
+    auto tlsVersion = ConvertStringToTlsVersion(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_TLS_VERSION));
+    if (tlsVersion != TlsVersion::DEFAULT) {
+        NapiUtils::SetInt32Property(env, extraInfoValue, HttpConstant::PARAM_KEY_TLS_VERSION,
+            static_cast<uint32_t>(tlsVersion));
+    }
+    auto cipherSuite = response.GetExtraInfoItem(HttpConstant::PARAM_KEY_CIPHER_SUITE);
+    if (!cipherSuite.empty()) {
+        NapiUtils::SetStringPropertyUtf8(env, extraInfoValue, HttpConstant::PARAM_KEY_CIPHER_SUITE, cipherSuite);
+    }
+    NapiUtils::SetStringPropertyUtf8(env, extraInfoValue, HttpConstant::PARAM_KEY_LOCAL_ADDRESS,
+        response.GetExtraInfoItem(HttpConstant::PARAM_KEY_LOCAL_ADDRESS));
+    NapiUtils::SetStringPropertyUtf8(env, extraInfoValue, HttpConstant::PARAM_KEY_REMOTE_ADDRESS,
+        response.GetExtraInfoItem(HttpConstant::PARAM_KEY_REMOTE_ADDRESS));
+    NapiUtils::SetInt32Property(env, extraInfoValue, HttpConstant::PARAM_KEY_LOCAL_PORT,
+        readInt(HttpConstant::PARAM_KEY_LOCAL_PORT, -1));
+    NapiUtils::SetInt32Property(env, extraInfoValue, HttpConstant::PARAM_KEY_REMOTE_PORT,
+        readInt(HttpConstant::PARAM_KEY_REMOTE_PORT, -1));
+    auto connectNums = response.GetExtraInfoItem(HttpConstant::PARAM_KEY_IS_REUSED_CONNECTION);
+    NapiUtils::SetBooleanProperty(env, extraInfoValue, HttpConstant::PARAM_KEY_IS_REUSED_CONNECTION,
+        CommonUtils::ToLower(CommonUtils::Strip(connectNums)) == "true");
+    auto isProxy = response.GetExtraInfoItem(HttpConstant::PARAM_KEY_IS_PROXY_CONNECTION);
+    NapiUtils::SetBooleanProperty(env, extraInfoValue, HttpConstant::PARAM_KEY_IS_PROXY_CONNECTION,
+        CommonUtils::ToLower(CommonUtils::Strip(isProxy)) == "true");
+    auto isCacheHit = response.GetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT);
+    NapiUtils::SetBooleanProperty(env, extraInfoValue, HttpConstant::PARAM_KEY_IS_CACHE_HIT,
+        CommonUtils::ToLower(CommonUtils::Strip(isCacheHit)) == "true");
+    NapiUtils::SetInt32Property(env, extraInfoValue, HttpConstant::PARAM_KEY_REDIRECT_COUNT,
+        readInt(HttpConstant::PARAM_KEY_REDIRECT_COUNT, 0));
+
+    NapiUtils::SetNamedProperty(env, result, HttpConstant::PARAM_KEY_CONNECTION_EXTRA_INFO, extraInfoValue);
 }
 
 void RequestContext::ParseInactivityMs(napi_value optionsValue)

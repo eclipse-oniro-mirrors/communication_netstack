@@ -41,6 +41,10 @@ public:
     static void StopCacheAndDelete();
 
 private:
+    void ReadResponseExtraInfoFromCache(HttpResponse &response,
+        const std::unordered_map<std::string, std::string> &cache);
+    void WriteResponseExtraInfoToCache(const HttpResponse &response,
+        std::unordered_map<std::string, std::string> &cache);
     std::string key_;
     HttpCacheStrategy strategy_;
 };

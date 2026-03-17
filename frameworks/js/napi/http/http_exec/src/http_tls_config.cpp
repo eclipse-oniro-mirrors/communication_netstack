@@ -14,6 +14,7 @@
  */
 
 #include "http_tls_config.h"
+#include "constant.h"
 
 namespace OHOS::NetStack::Http {
 struct CipherSuiteConvertor {
@@ -125,6 +126,26 @@ CipherSuite GetTlsCipherSuiteFromStandardName(const std::string &standardName)
     return CipherSuite::INVALID;
 }
 
+std::string GetStandardNameFromCipherSuite(CipherSuite cipherSuite)
+{
+    for (const auto &suite : CIPHER_SUITE_CONVERTOR) {
+        if (suite.cipherSuite == cipherSuite) {
+            return suite.standardName;
+        }
+    }
+    return {};
+}
+
+CipherSuite GetCipherSuiteFromInnerName(const std::string &innerName)
+{
+    for (const auto &suite : CIPHER_SUITE_CONVERTOR) {
+        if (suite.innerName == innerName) {
+            return suite.cipherSuite;
+        }
+    }
+    return CipherSuite::INVALID;
+}
+
 std::string GetInnerNameFromCipherSuite(CipherSuite cipherSuite)
 {
     for (const auto &suite : CIPHER_SUITE_CONVERTOR) {
@@ -162,6 +183,37 @@ TlsCipherString ConvertCipherSuiteToCipherString(const std::unordered_set<Cipher
         cipherString.ciperSuiteString.pop_back();
     }
     return cipherString;
+}
+
+const std::string ConvertTlsVersionToString(TlsVersion tlsVersion)
+{
+    switch (tlsVersion) {
+        case TlsVersion::TLSv1_0:
+            return HttpConstant::TLS_VERSION_1_0;
+        case TlsVersion::TLSv1_1:
+            return HttpConstant::TLS_VERSION_1_1;
+        case TlsVersion::TLSv1_2:
+            return HttpConstant::TLS_VERSION_1_2;
+        case TlsVersion::TLSv1_3:
+            return HttpConstant::TLS_VERSION_1_3;
+        default:
+            return {};
+    }
+}
+
+TlsVersion ConvertStringToTlsVersion(const std::string& versionStr)
+{
+    if (versionStr == HttpConstant::TLS_VERSION_1_0) {
+        return TlsVersion::TLSv1_0;
+    } else if (versionStr == HttpConstant::TLS_VERSION_1_1) {
+        return TlsVersion::TLSv1_1;
+    } else if (versionStr == HttpConstant::TLS_VERSION_1_2) {
+        return TlsVersion::TLSv1_2;
+    } else if (versionStr == HttpConstant::TLS_VERSION_1_3) {
+        return TlsVersion::TLSv1_3;
+    } else {
+        return TlsVersion::DEFAULT;
+    }
 }
 
 } // namespace OHOS::NetStack::Http
