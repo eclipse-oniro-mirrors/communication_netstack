@@ -292,6 +292,9 @@ public:
     void SetReuseConnectionsFlag(bool reuseConnectionsFlag);
     [[nodiscard]] const bool &GetReuseConnectionsFlag() const;
 
+    void SetInactivityMs(int inactivityMs);
+    [[nodiscard]] int GetInactivityMs() const;
+
 private:
     std::string url_;
 
@@ -373,6 +376,8 @@ private:
     std::string sniHostName_;
 
     bool reuseConnectionsFlag_ = true;
+
+    int inactivityMs_ = 0;
 };
 } // namespace OHOS::NetStack::Http
 

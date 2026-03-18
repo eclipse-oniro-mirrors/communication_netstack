@@ -519,4 +519,14 @@ const bool &HttpRequestOptions::GetReuseConnectionsFlag() const
 {
     return reuseConnectionsFlag_;
 }
+
+void HttpRequestOptions::SetInactivityMs(int inactivityMs)
+{
+    inactivityMs_ = inactivityMs;
+}
+
+int HttpRequestOptions::GetInactivityMs() const
+{
+    return inactivityMs_;
+}
 } // namespace OHOS::NetStack::Http

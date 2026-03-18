@@ -19,6 +19,7 @@
 #include <queue>
 #include <mutex>
 #include <map>
+#include <condition_variable>
 #include "curl/curl.h"
 #include "base_context.h"
 #include "http_request_options.h"
@@ -183,6 +184,14 @@ public:
 
     void ParseSniHostName(napi_value optionsValue);
 
+    void SetSyncWait(bool isSync);
+
+    bool IsSyncWait() const;
+
+    void NotifySyncComplete();
+
+    void WaitForSyncComplete();
+
     std::map<std::string, napi_ref> interceptorRefs_;
 
 #ifdef HTTP_HANDOVER_FEATURE
@@ -275,6 +284,14 @@ private:
     void ParseMaxRedirects(napi_value optionsValue);
 
     void ParseReuseConnections(napi_value optionsValue);
+
+    void ParseInactivityMs(napi_value optionsValue);
+
+private:
+    std::mutex syncMutex_;
+    std::condition_variable syncCv_;
+    bool syncComplete_ = false;
+    bool isSyncWait_ = false;
 };
 } // namespace OHOS::NetStack::Http
 
