@@ -42,7 +42,7 @@ extern "C" {
 #endif
 
 /**
- * @brief add a http global interceptor for HTTP requests.
+ * @brief add a read-only http global interceptor for HTTP requests.
  *
  * @param interceptor Http global interceptor configuration, Pointer to {@link OH_Http_Interceptor}.
  * @return {@link OH_HTTP_RESULT_OK} 0 -if the operation is successful.
@@ -53,7 +53,21 @@ extern "C" {
  *     or {@link OH_Http_RemoveAllInterceptors} to release a group of interceptors.
  * @since 24
  */
-int32_t OH_Http_AddInterceptor(struct OH_Http_Interceptor *interceptor);
+int32_t OH_Http_AddReadOnlyInterceptor(struct OH_Http_Interceptor *interceptor);
+
+/**
+ * @brief add a writable http global interceptor for HTTP requests.
+ *
+ * @param interceptor Http global interceptor configuration, Pointer to {@link OH_Http_Interceptor}.
+ * @return {@link OH_HTTP_RESULT_OK} 0 -if the operation is successful.
+ *         {@link OH_HTTP_PERMISSION_DENIED} 201 -if permission is denied.
+ * @permission ohos.permission.INTERNET
+ * @note The interceptor remains active until it is explicitly removed by the developer.
+ *     you must call {@link OH_Http_RemoveInterceptor} to release a specific interceptor
+ *     or {@link OH_Http_RemoveAllInterceptors} to release a group of interceptors.
+ * @since 26.0.0
+ */
+int32_t OH_Http_AddWritableInterceptor(struct OH_Http_Interceptor *interceptor);
 
 /**
  * @brief delete a specific http global interceptor

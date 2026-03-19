@@ -20,10 +20,29 @@
 
 int32_t OH_Http_AddInterceptor(struct OH_Http_Interceptor *interceptor)
 {
+    return OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().AddInterceptor(interceptor);
+}
+
+int32_t OH_Http_AddReadOnlyInterceptor(struct OH_Http_Interceptor *interceptor)
+{
     if (!OHOS::NetStack::CommonUtils::HasInternetPermission()) {
         return OH_HTTP_PERMISSION_DENIED;
     }
-    return OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().AddInterceptor(interceptor);
+    if (interceptor == nullptr || interceptor->type != OH_TYPE_READ_ONLY) {
+        return OH_HTTP_PARAMETER_ERROR;
+    }
+    return OH_Http_AddInterceptor(interceptor);
+}
+
+int32_t OH_Http_AddWritableInterceptor(struct OH_Http_Interceptor *interceptor)
+{
+    if (!OHOS::NetStack::CommonUtils::HasInternetPermission()) {
+        return OH_HTTP_PERMISSION_DENIED;
+    }
+    if (interceptor == nullptr || interceptor->type != OH_TYPE_MODIFY) {
+        return OH_HTTP_PARAMETER_ERROR;
+    }
+    return OH_Http_AddInterceptor(interceptor);
 }
 
 int32_t OH_Http_RemoveInterceptor(struct OH_Http_Interceptor *interceptor)

@@ -1,7 +1,7 @@
 [
     {
         "first_introduced": "24",
-        "name": "OH_Http_AddInterceptor"
+        "name": "OH_Http_AddReadOnlyInterceptor"
     },
     {
         "first_introduced": "24",
@@ -18,5 +18,9 @@
     {
         "first_introduced": "24",
         "name": "OH_Http_StopAllInterceptors"
+    },
+    {
+        "first_introduced": "26.0.0",
+        "name": "OH_Http_AddWritableInterceptor"
     }
 ]
