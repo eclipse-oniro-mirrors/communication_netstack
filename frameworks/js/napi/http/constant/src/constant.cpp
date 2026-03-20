@@ -156,4 +156,17 @@ const char *const HttpConstant::INTERCEPTOR_TYPE = "InterceptorType";
 const char *const HttpConstant::PATH_PREFERENCE = "pathPreference";
 const char *const HttpConstant::REUSE_CONNECTIONS = "reuseConnections";
 const char *const HttpConstant::INACTIVITY_MS = "inactivityMs";
+
+const char *const HttpConstant::PARAM_KEY_CONNECTION_EXTRA_INFO = "connectionExtraInfo";
+const char *const HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME = "networkProtocolName";
+const char *const HttpConstant::PARAM_KEY_TLS_VERSION = "tlsVersion";
+const char *const HttpConstant::PARAM_KEY_CIPHER_SUITE = "cipherSuite";
+const char *const HttpConstant::PARAM_KEY_LOCAL_ADDRESS = "localAddress";
+const char *const HttpConstant::PARAM_KEY_REMOTE_ADDRESS = "remoteAddress";
+const char *const HttpConstant::PARAM_KEY_LOCAL_PORT = "localPort";
+const char *const HttpConstant::PARAM_KEY_REMOTE_PORT = "remotePort";
+const char *const HttpConstant::PARAM_KEY_IS_REUSED_CONNECTION = "isReusedConnection";
+const char *const HttpConstant::PARAM_KEY_IS_PROXY_CONNECTION = "isProxyConnection";
+const char *const HttpConstant::PARAM_KEY_IS_CACHE_HIT = "isCacheHit";
+const char *const HttpConstant::PARAM_KEY_REDIRECT_COUNT = "redirectCount";
 } // namespace OHOS::NetStack::Http

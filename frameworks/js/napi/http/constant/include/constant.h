@@ -259,6 +259,19 @@ public:
     static const char *const PATH_PREFERENCE;
     static const char *const REUSE_CONNECTIONS;
     static const char *const INACTIVITY_MS;
+
+    static const char *const PARAM_KEY_CONNECTION_EXTRA_INFO;
+    static const char *const PARAM_KEY_NETWORK_PROTOCOL_NAME;
+    static const char *const PARAM_KEY_TLS_VERSION;
+    static const char *const PARAM_KEY_CIPHER_SUITE;
+    static const char *const PARAM_KEY_LOCAL_ADDRESS;
+    static const char *const PARAM_KEY_REMOTE_ADDRESS;
+    static const char *const PARAM_KEY_LOCAL_PORT;
+    static const char *const PARAM_KEY_REMOTE_PORT;
+    static const char *const PARAM_KEY_IS_REUSED_CONNECTION;
+    static const char *const PARAM_KEY_IS_PROXY_CONNECTION;
+    static const char *const PARAM_KEY_IS_CACHE_HIT;
+    static const char *const PARAM_KEY_REDIRECT_COUNT;
 };
 } // namespace OHOS::NetStack::Http
 

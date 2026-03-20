@@ -192,6 +192,8 @@ private:
 
     static bool SetCertPinnerOption(CURL *curl, RequestContext *context);
 
+    static bool SetPreRequestOption(CURL *curl, RequestContext *context);
+
 #ifdef HAS_NETMANAGER_BASE
     static bool SetInterface(CURL *curl, RequestContext *context);
     static bool GetInterfaceName(CURL *curl, RequestContext *context, std::string &interfaceName, int32_t &netId);
@@ -238,6 +240,17 @@ private:
     static curl_off_t GetSizeFromCurl(CURL *handle, RequestContext *context);
 
     static bool SetSslTypeAndClientEncCert(CURL *curl, RequestContext *context);
+
+    static int CacheCurlPreRequestExtraInfo(void *userData, char *primaryIp, char *localIp,
+        int primaryPort, int localPort);
+
+    static void CacheCurlPostRequestExtraInfo(CURL *handle, RequestContext *context);
+
+    static std::string GetHttpVersion(CURL *handle);
+
+    static TlsVersion ConvertTlsVersionFromOpenSSL(const std::string &tlsVersion);
+
+    static std::pair<TlsVersion, CipherSuite> GetTlsVersionAndCipherSuite(CURL *handle);
 
 #if !HAS_NETMANAGER_BASE
     static void RunThread();

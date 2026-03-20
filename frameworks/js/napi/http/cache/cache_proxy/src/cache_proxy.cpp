@@ -58,6 +58,33 @@ CacheProxy::CacheProxy(HttpRequestOptions &requestOptions) : strategy_(requestOp
     key_ = Base64::Encode(str);
 }
 
+void CacheProxy::ReadResponseExtraInfoFromCache(HttpResponse &response,
+    const std::unordered_map<std::string, std::string> &cache)
+{
+    auto setFromCache = [&](const std::string& key) {
+        auto it = cache.find(key);
+        if (it != cache.end()) {
+            response.SetExtraInfoItem(key, Base64::Decode(it->second));
+        }
+    };
+
+    for (const auto& key : {
+        HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME,
+        HttpConstant::PARAM_KEY_TLS_VERSION,
+        HttpConstant::PARAM_KEY_CIPHER_SUITE,
+        HttpConstant::PARAM_KEY_LOCAL_ADDRESS,
+        HttpConstant::PARAM_KEY_REMOTE_ADDRESS,
+        HttpConstant::PARAM_KEY_LOCAL_PORT,
+        HttpConstant::PARAM_KEY_REMOTE_PORT,
+        HttpConstant::PARAM_KEY_IS_REUSED_CONNECTION,
+        HttpConstant::PARAM_KEY_IS_PROXY_CONNECTION,
+        HttpConstant::PARAM_KEY_REDIRECT_COUNT
+    }) {
+        setFromCache(key);
+    }
+    response.SetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT, "true");
+}
+
 bool CacheProxy::ReadResponseFromCache(RequestContext *context)
 {
     if (!g_cacheIsRunning.load()) {
@@ -82,6 +109,7 @@ bool CacheProxy::ReadResponseFromCache(RequestContext *context)
     cachedResponse.SetRequestTime(Base64::Decode(responseFromCache[HttpConstant::REQUEST_TIME]));
     cachedResponse.SetResponseCode(static_cast<uint32_t>(ResponseCode::OK));
     cachedResponse.ParseHeaders();
+    ReadResponseExtraInfoFromCache(cachedResponse, responseFromCache);
 
     CacheStatus status = strategy_.RunStrategy(cachedResponse);
     if (status == CacheStatus::FRESH) {
@@ -96,6 +124,30 @@ bool CacheProxy::ReadResponseFromCache(RequestContext *context)
     }
     NETSTACK_LOGD("cache should not be used");
     return false;
+}
+
+void CacheProxy::WriteResponseExtraInfoToCache(const HttpResponse &response,
+    std::unordered_map<std::string, std::string> &cache)
+{
+    auto encodeAndStore = [&](const std::string& key) {
+        cache[key] = Base64::Encode(response.GetExtraInfoItem(key));
+    };
+
+    for (const auto& key : {
+        HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME,
+        HttpConstant::PARAM_KEY_TLS_VERSION,
+        HttpConstant::PARAM_KEY_CIPHER_SUITE,
+        HttpConstant::PARAM_KEY_LOCAL_ADDRESS,
+        HttpConstant::PARAM_KEY_REMOTE_ADDRESS,
+        HttpConstant::PARAM_KEY_LOCAL_PORT,
+        HttpConstant::PARAM_KEY_REMOTE_PORT,
+        HttpConstant::PARAM_KEY_IS_REUSED_CONNECTION,
+        HttpConstant::PARAM_KEY_IS_PROXY_CONNECTION,
+        HttpConstant::PARAM_KEY_REDIRECT_COUNT,
+        HttpConstant::PARAM_KEY_IS_CACHE_HIT
+    }) {
+        encodeAndStore(key);
+    }
 }
 
 void CacheProxy::WriteResponseToCache(const HttpResponse &response)
@@ -114,6 +166,7 @@ void CacheProxy::WriteResponseToCache(const HttpResponse &response)
     cacheResponse[HttpConstant::RESPONSE_KEY_COOKIES] = Base64::Encode(response.GetCookies());
     cacheResponse[HttpConstant::RESPONSE_TIME] = Base64::Encode(response.GetResponseTime());
     cacheResponse[HttpConstant::REQUEST_TIME] = Base64::Encode(response.GetRequestTime());
+    WriteResponseExtraInfoToCache(response, cacheResponse);
 
     DISK_LRU_CACHE.Put(key_, cacheResponse);
 }

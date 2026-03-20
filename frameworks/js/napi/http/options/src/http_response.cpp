@@ -139,4 +139,18 @@ void HttpResponse::ClearHeaderCache()
     setCookie_.clear();
     header_.clear();
 }
+
+void HttpResponse::SetExtraInfoItem(const std::string &key, const std::string &value)
+{
+    extraInfo_[key] = value;
+}
+
+std::string HttpResponse::GetExtraInfoItem(const std::string &key, const std::string &defaultValue) const
+{
+    auto it = extraInfo_.find(key);
+    if (it != extraInfo_.end()) {
+        return it->second;
+    }
+    return defaultValue;
+}
 } // namespace OHOS::NetStack::Http

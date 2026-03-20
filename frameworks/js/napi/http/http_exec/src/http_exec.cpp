@@ -326,6 +326,7 @@ bool HttpExec::AddCurlHandle(CURL *handle, RequestContext *context)
     name << HTTP_REQ_TRACE_NAME << "_" << std::this_thread::get_id() << (isDebugMode ? ("_" + urlWithoutParam) : "");
     SetTraceOptions(handle, context);
     SetServerSSLCertOption(handle, context);
+    SetPreRequestOption(handle, context);
 #if ENABLE_HTTP_INTERCEPT
     HttpInterceptor::SetFollowLocation(handle, context);
 #endif
@@ -783,9 +784,9 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
         return;
     }
 #endif
-    NETSTACK_LOGD("priority = %{public}d", context->options.GetPriority());
     context->SetExecOK(GetCurlDataFromHandle(handle, context, msg->msg, msg->data.result));
     CacheCurlPerformanceTiming(handle, context);
+    CacheCurlPostRequestExtraInfo(handle, context);
 #if ENABLE_HTTP_GLOBAL_INTERCEPT
     if (!GlobalResponseInterceptorCheck(context)) {
         NETSTACK_LOGI("GlobalResponseInterceptorCheck fail taskId = %{public}d", context->GetTaskId());
@@ -1010,6 +1011,7 @@ napi_value HttpExec::RequestCallback(RequestContext *context)
     napi_value result = HttpExec::BuildRequestCallback(context);
     context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_TOTAL_TIMING);
     context->SetPerformanceTimingToResult(result);
+    context->SetConnectionExtraInfoToResult(result);
     return result;
 }
 
@@ -1690,6 +1692,13 @@ bool HttpExec::SetDnsOption(CURL *curl, RequestContext *context)
     }
     serverList.pop_back();
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DNS_SERVERS, serverList.c_str(), context);
+    return true;
+}
+
+bool HttpExec::SetPreRequestOption(CURL *curl, RequestContext *context)
+{
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PREREQFUNCTION, CacheCurlPreRequestExtraInfo, context);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PREREQDATA, context, context);
     return true;
 }
 
@@ -2577,4 +2586,128 @@ bool HttpExec::GetNetStatus(std::list<sptr<NetManagerStandard::NetHandle>> netLi
 }
 #endif
 
+std::string HttpExec::GetHttpVersion(CURL *handle)
+{
+    long httpVer = CURL_HTTP_VERSION_NONE;
+    if (handle == nullptr || curl_easy_getinfo(handle, CURLINFO_HTTP_VERSION, &httpVer) != CURLE_OK) {
+        return "Unknown/Non-HTTP";
+    }
+
+    switch (httpVer) {
+        case CURL_HTTP_VERSION_1_0:
+            return "HTTP/1.0";
+        case CURL_HTTP_VERSION_1_1:
+            return "HTTP/1.1";
+        case CURL_HTTP_VERSION_2_0:
+            return "HTTP/2";
+        case CURL_HTTP_VERSION_2TLS:
+            return "HTTP/2 over TLS";
+        case CURL_HTTP_VERSION_3:
+            return "HTTP/3";
+        default:
+            return "Unknown/Non-HTTP";
+    }
+}
+
+TlsVersion HttpExec::ConvertTlsVersionFromOpenSSL(const std::string &tlsVersion)
+{
+    if (tlsVersion == "TLSv1") {
+        return TlsVersion::TLSv1_0;
+    }
+    if (tlsVersion == "TLSv1.1") {
+        return TlsVersion::TLSv1_1;
+    }
+    if (tlsVersion == "TLSv1.2") {
+        return TlsVersion::TLSv1_2;
+    }
+    if (tlsVersion == "TLSv1.3") {
+        return TlsVersion::TLSv1_3;
+    }
+    return TlsVersion::DEFAULT;
+}
+
+std::pair<TlsVersion, CipherSuite> HttpExec::GetTlsVersionAndCipherSuite(CURL *handle)
+{
+    auto tlsVersion = TlsVersion::DEFAULT;
+    auto cipherSuite = CipherSuite::INVALID;
+    if (handle == nullptr) {
+        return std::make_pair(tlsVersion, cipherSuite);
+    }
+
+    const struct curl_tlssessioninfo *tlsInfo = NULL;
+    CURLcode res = curl_easy_getinfo(handle, CURLINFO_TLS_SSL_PTR, &tlsInfo);
+    if (res == CURLE_OK && tlsInfo && tlsInfo->internals) {
+#if defined(HTTP_MULTIPATH_CERT_ENABLE) || defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE)
+        // only support OpenSSL backend
+        if (tlsInfo->backend == CURLSSLBACKEND_OPENSSL) {
+            SSL *ssl = (SSL *)tlsInfo->internals;
+            auto version = SSL_get_version(ssl);
+            if (version) {
+                tlsVersion = ConvertTlsVersionFromOpenSSL(version);
+            }
+            auto cipher = SSL_get_cipher(ssl);
+            if (cipher) {
+                cipherSuite = GetCipherSuiteFromInnerName(cipher);
+            }
+        } else {
+            NETSTACK_LOGE("Cannot support this SSL backend %{public}d.", tlsInfo->backend);
+        }
+#endif
+    }
+
+    return std::make_pair(tlsVersion, cipherSuite);
+}
+
+int HttpExec::CacheCurlPreRequestExtraInfo(void *userData, char *primaryIp, char *localIp,
+    int primaryPort, int localPort)
+{
+    if (userData == nullptr) {
+        return CURL_PREREQFUNC_ABORT;
+    }
+    auto requestContext = static_cast<RequestContext *>(userData);
+    auto handle = requestContext->GetCurlHandle();
+    if (handle == nullptr) {
+        return CURL_PREREQFUNC_ABORT;
+    }
+
+    requestContext->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_REMOTE_ADDRESS, primaryIp ? primaryIp : "");
+    requestContext->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_LOCAL_ADDRESS, localIp ? localIp : "");
+    requestContext->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_REMOTE_PORT, std::to_string(primaryPort));
+    requestContext->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_LOCAL_PORT, std::to_string(localPort));
+    auto [tlsVersion, cipherSuite] = GetTlsVersionAndCipherSuite(handle);
+    requestContext->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_TLS_VERSION,
+        ConvertTlsVersionToString(tlsVersion));
+    requestContext->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_CIPHER_SUITE,
+        GetStandardNameFromCipherSuite(cipherSuite));
+
+    return CURL_PREREQFUNC_OK;
+}
+
+void HttpExec::CacheCurlPostRequestExtraInfo(CURL *handle, RequestContext *context)
+{
+    if (handle == nullptr || context == nullptr) {
+        return;
+    }
+
+    auto httpVersion = GetHttpVersion(handle);
+    auto getLongCurlInfo = [](CURL *handle, CURLINFO info) {
+        long value = 0;
+        if (curl_easy_getinfo(handle, info, &value) != CURLE_OK) {
+            NETSTACK_LOGE("Curl get info %{public}d failed", info);
+            value = 0;
+        }
+        return value;
+    };
+
+    long redirectCount = getLongCurlInfo(handle, CURLINFO_REDIRECT_COUNT);
+    long isUsedProxy = getLongCurlInfo(handle, CURLINFO_USED_PROXY);
+    long connections = getLongCurlInfo(handle, CURLINFO_NUM_CONNECTS);
+    context->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, httpVersion);
+    context->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_REDIRECT_COUNT, std::to_string(redirectCount));
+    context->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_IS_PROXY_CONNECTION,
+        isUsedProxy > 0 ? "true" : "false");
+    context->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_IS_REUSED_CONNECTION,
+        connections == 0 ? "true" : "false");
+    context->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT, "false");
+}
 } // namespace OHOS::NetStack::Http

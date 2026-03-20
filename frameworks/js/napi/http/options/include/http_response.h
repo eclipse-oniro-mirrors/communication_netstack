@@ -69,6 +69,10 @@ public:
 
     void ClearHeaderCache();
 
+    void SetExtraInfoItem(const std::string &key, const std::string &value);
+
+    std::string GetExtraInfoItem(const std::string &key, const std::string &defaultValue = "") const;
+
     bool isApplyBlockRedirectionInterceptor_ = false;
 
 private:
@@ -87,6 +91,8 @@ private:
     std::string responseTime_;
 
     std::string requestTime_;
+
+    std::map<std::string, std::string> extraInfo_;
 };
 } // namespace OHOS::NetStack::Http
 
