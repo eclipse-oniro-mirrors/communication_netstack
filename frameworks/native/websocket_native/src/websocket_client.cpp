@@ -884,7 +884,6 @@ int WebSocketClient::SendEx(char *data, size_t length)
     }
     this->GetClientContext()->Push(dataCopy, length, protocol);
     this->GetClientContext()->TriggerWritable();
-    NETSTACK_LOGI("WebSocketClient::Send end %{public}s, %{public}s, %{public}zu", dataCopy, data, length);
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
