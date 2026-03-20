@@ -150,6 +150,9 @@ bool Socks5Instance::ConnectProxy()
     // use default value
     const uint32_t timeoutMSec{0U};
     if (!NonBlockConnect(socketId_, options_->proxyAddress_.addr_, addrLen, timeoutMSec)) {
+        if (errno == EISCONN) {
+            return true;
+        }
         NETSTACK_LOGE("socks5 instance fail to connect proxy");
         UpdateErrorInfo(Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY);
         return false;

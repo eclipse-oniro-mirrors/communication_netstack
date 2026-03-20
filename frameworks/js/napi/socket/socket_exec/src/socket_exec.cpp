@@ -43,6 +43,7 @@
 #include "socket_exec_common.h"
 #include "socks5_utils.h"
 #include "module_template.h"
+#include "connect_monitor.h"
 
 #ifdef IOS_PLATFORM
 #include <sys/socket.h>
@@ -71,6 +72,8 @@ static constexpr const int MAX_CLIENTS = 1024;
 static constexpr const int ERRNO_BAD_FD = 9;
 
 static constexpr const int UNIT_CONVERSION_1000 = 1000;
+
+static constexpr const int ARGV_TWO = 2;
 
 static constexpr const char *TCP_SOCKET_CONNECTION = "TCPSocketConnection";
 
@@ -1132,7 +1135,7 @@ static std::shared_ptr<Socks5::Socks5TcpInstance> InitSocks5TcpInstance(ConnectC
     return socks5Tcp;
 }
 
-static int HandleTcpProxyOptions(ConnectContext *context)
+static int HandleTcpProxyOptions(ConnectContext *context, sockaddr *addr, socklen_t len)
 {
     auto eventMgr = context->GetSharedManager();
     if (eventMgr == nullptr) {
@@ -1154,18 +1157,58 @@ static int HandleTcpProxyOptions(ConnectContext *context)
         socks5Tcp->SetSocks5Instance(socks5Tcp);
         eventMgr->SetProxyData(socks5Tcp);
     }
+    socks5Tcp->SetDestAddress(context->options.address);
 
-    if (!socks5Tcp->IsConnected()) {
-        if (!socks5Tcp->Connect()) {
-            Socks5::Socks5Utils::SetProxyAuthError(context, socks5Tcp);
-            return -1;
-        }
+    std::shared_lock<std::shared_mutex> lock(eventMgr->GetDataMutex());
+    int socketfd = eventMgr->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(eventMgr->GetData())) : -1;
+    if (socketfd < 0) {
+        NETSTACK_LOGE("fd is nullptr or closed");
+        return -1;
     }
 
-    return 0;
+    int ret = connect(socketfd, addr, len);
+    if (ret == 0 || errno == EISCONN || errno == EINPROGRESS || errno == EALREADY) {
+        context->SetAsyncConnecting(true);
+        return 0;
+    }
+
+    NETSTACK_LOGE("proxy connect errno %{public}d", errno);
+    context->SetErrorCode(errno);
+    context->SetExecOK(false);
+    return -1;
 }
 
-bool HandleNonProxyConnection(ConnectContext *context, sockaddr *addr, socklen_t len)
+static void DeleteManualConnectContext(ConnectWatchData &watchData)
+{
+    if (watchData.context == nullptr) {
+        return;
+    }
+    watchData.context->DeleteReference();
+    delete watchData.context;
+    watchData.context = nullptr;
+}
+
+static void CompleteConnect(napi_env env, napi_deferred deferred, napi_ref callbackRef,
+    napi_value result, bool isError)
+{
+    napi_value undefined = NapiUtils::GetUndefined(env);
+    if (deferred != nullptr) {
+        if (isError) {
+            napi_reject_deferred(env, deferred, result);
+        } else {
+            napi_resolve_deferred(env, deferred, result);
+        }
+    } else if (callbackRef != nullptr) {
+        napi_value callback = nullptr;
+        if (napi_get_reference_value(env, callbackRef, &callback) == napi_ok) {
+            napi_value argv[ARGV_TWO] = {isError ? result : undefined, isError ? undefined : result};
+            NapiUtils::CallFunction(env, undefined, callback, ARGV_TWO, argv);
+        }
+        napi_delete_reference(env, callbackRef);
+    }
+}
+
+static bool HandleNonProxyConnection(ConnectContext *context, sockaddr *addr, socklen_t len)
 {
     auto manager = context->GetSharedManager();
     if (manager == nullptr) {
@@ -1177,10 +1220,16 @@ bool HandleNonProxyConnection(ConnectContext *context, sockaddr *addr, socklen_t
         NETSTACK_LOGE("fd is nullptr or closed");
         return false;
     }
-    if (!NonBlockConnect(context->GetSocketFd(), addr, len, context->options.GetTimeout())) {
-        ERROR_RETURN(context, "connect errno %{public}d", errno);
+    int ret = connect(socketfd, addr, len);
+    if (ret == 0) {
+        context->SetAsyncConnecting(false);
+        return true;
     }
-    return true;
+    if (errno == EINPROGRESS || errno == EALREADY) {
+        context->SetAsyncConnecting(true);
+        return true;
+    }
+    ERROR_RETURN(context, "connect errno %{public}d", errno);
 }
 
 bool ExecConnect(ConnectContext *context)
@@ -1213,10 +1262,14 @@ bool ExecConnect(ConnectContext *context)
             return false;
         }
     } else {
-        if (HandleTcpProxyOptions(context) != 0) {
+        if (HandleTcpProxyOptions(context, addr, len) != 0) {
             context->SetExecOK(false);
             return false;
         }
+    }
+
+    if (context->IsAsyncConnecting()) {
+        return true;
     }
 
     NETSTACK_LOGI("connect success, sock:%{public}d", context->GetSocketFd());
@@ -1291,7 +1344,9 @@ bool ExecClose(CloseContext *context)
         context->SetErrorCode(UNKNOW_ERROR);
         return false;
     }
-    int ret = close(context->GetSocketFd());
+    int sockfd = context->GetSocketFd();
+    ConnectMonitor::GetInstance().Unregister(sockfd);
+    int ret = close(sockfd);
     if (ret < 0) {
         NETSTACK_LOGE("sock closed failed , socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
         context->SetErrorCode(UNKNOW_ERROR);
@@ -2603,11 +2658,219 @@ napi_value UdpGetLoopbackModeCallback(MulticastGetLoopbackContext *context)
     return NapiUtils::GetBoolean(context->GetEnv(), context->GetLoopbackMode());
 }
 
+static bool HandleTcpProxyAuth(ConnectWatchData &watchData)
+{
+    auto proxyInst = watchData.manager != nullptr ? watchData.manager->GetProxyData() : nullptr;
+    if (proxyInst == nullptr || proxyInst->IsConnected()) {
+        return true;
+    }
+    if (proxyInst->Connect()) {
+        return true;
+    }
+    if (watchData.context != nullptr) {
+        Socks5::Socks5Utils::SetProxyAuthError(watchData.context, proxyInst);
+    }
+    return false;
+}
+
+static void SetConnectMonitorError(ConnectWatchData &watchData, int32_t errCode)
+{
+    if (watchData.context == nullptr) {
+        return;
+    }
+    auto proxyInst = watchData.manager != nullptr ? watchData.manager->GetProxyData() : nullptr;
+    if (proxyInst != nullptr && !proxyInst->IsConnected()) {
+        proxyInst->UpdateErrorInfo(Socks5::Socks5Status::SOCKS5_FAIL_TO_CONNECT_PROXY);
+        proxyInst->CloseSocket();
+        Socks5::Socks5Utils::SetProxyAuthError(watchData.context, proxyInst);
+        return;
+    }
+    watchData.context->SetErrorCode(errCode > 0 ? errCode : UNKNOW_ERROR);
+}
+
+static void CompleteTcpConnectError(napi_env env, const ConnectWatchData &watchData)
+{
+    if (watchData.context == nullptr) {
+        return;
+    }
+    napi_value errObj = watchData.context->BuildBusinessError(env);
+    CompleteConnect(env, watchData.deferred, watchData.callbackRef, errObj, true);
+}
+
+static void CompleteTcpConnectUnknownError(napi_env env, ConnectWatchData &watchData)
+{
+    if (watchData.context == nullptr) {
+        return;
+    }
+    watchData.context->SetErrorCode(UNKNOW_ERROR);
+    CompleteTcpConnectError(env, watchData);
+}
+
+static void FinalizeTcpConnect(napi_env env, ConnectWatchData &watchData, napi_handle_scope scope)
+{
+    if (scope != nullptr) {
+        napi_close_handle_scope(env, scope);
+    }
+    DeleteManualConnectContext(watchData);
+}
+
+static void EmitTcpConnectSuccess(napi_env env, const ConnectWatchData &watchData)
+{
+    auto manager = watchData.manager;
+    if (manager == nullptr) {
+        return;
+    }
+    std::thread t(PollRecvData, nullptr, 0, TcpMessageCallback(manager));
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(SOCKET_EXEC_CONNECT);
+#else
+    pthread_setname_np(t.native_handle(), SOCKET_EXEC_CONNECT);
+#endif
+    t.detach();
+    manager->Emit(EVENT_CONNECT, std::make_pair(NapiUtils::GetUndefined(env),
+        NapiUtils::GetUndefined(env)));
+}
+
+static void OnTcpConnectComplete(napi_env env, napi_value js_callback, void *context, void *data)
+{
+    (void)js_callback;
+    std::unique_ptr<int> errCodeHolder(static_cast<int *>(data));
+    auto *errCode = errCodeHolder.get();
+    auto *watchData = static_cast<sptr<ConnectWatchData> *>(context);
+    if (errCode == nullptr || watchData == nullptr || *watchData == nullptr) {
+        if (watchData != nullptr && *watchData != nullptr) {
+            auto &watch = *(*watchData);
+            CompleteTcpConnectUnknownError(env, watch);
+            FinalizeTcpConnect(env, watch, nullptr);
+        }
+        return;
+    }
+
+    auto wd = *watchData;
+    auto &watch = *wd;
+    napi_handle_scope scope = nullptr;
+    if (napi_open_handle_scope(env, &scope) != napi_ok) {
+        CompleteTcpConnectUnknownError(env, watch);
+        FinalizeTcpConnect(env, watch, nullptr);
+        return;
+    }
+    if (*errCode != 0) {
+        SetConnectMonitorError(watch, *errCode);
+        CompleteTcpConnectError(env, watch);
+        FinalizeTcpConnect(env, watch, scope);
+        return;
+    }
+    if (!HandleTcpProxyAuth(watch)) {
+        CompleteTcpConnectError(env, watch);
+        FinalizeTcpConnect(env, watch, scope);
+        return;
+    }
+
+    EmitTcpConnectSuccess(env, watch);
+    CompleteConnect(env, watch.deferred, watch.callbackRef, NapiUtils::GetUndefined(env), false);
+    FinalizeTcpConnect(env, watch, scope);
+}
+
+static bool SetupCallbackRef(napi_env env, ConnectContext &context, ConnectWatchData &watchData)
+{
+    napi_value callback = context.GetCallback();
+    if (NapiUtils::GetValueType(env, callback) == napi_function) {
+        if (napi_create_reference(env, callback, 1, &watchData.callbackRef) != napi_ok) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool CreateThreadsafeFunction(napi_env env, const sptr<ConnectWatchData> &watchData)
+{
+    auto tsfnContextHolder = std::make_unique<sptr<ConnectWatchData>>(watchData);
+    if (*tsfnContextHolder == nullptr) {
+        if (watchData->callbackRef != nullptr) {
+            napi_delete_reference(env, watchData->callbackRef);
+        }
+        return false;
+    }
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "TcpConnect", NAPI_AUTO_LENGTH, &resourceName);
+    if (napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1,
+        tsfnContextHolder.get(),
+        [](napi_env theEnv, void *finalizeData, void *finalizeHint) {
+            (void)theEnv;
+            (void)finalizeHint;
+            std::unique_ptr<sptr<ConnectWatchData>> tsfnContext(static_cast<sptr<ConnectWatchData> *>(finalizeData));
+            if (tsfnContext != nullptr && *tsfnContext != nullptr) {
+                DeleteManualConnectContext(**tsfnContext);
+            }
+        },
+        tsfnContextHolder.get(), OnTcpConnectComplete,
+        &watchData->tsfn) != napi_ok) {
+        if (watchData->callbackRef != nullptr) {
+            napi_delete_reference(env, watchData->callbackRef);
+        }
+        return false;
+    }
+    (void)tsfnContextHolder.release();
+    return true;
+}
+
 napi_value ConnectCallback(ConnectContext *context)
 {
-    context->EmitSharedManager(EVENT_CONNECT, std::make_pair(NapiUtils::GetUndefined(context->GetEnv()),
-        NapiUtils::GetUndefined(context->GetEnv())));
-    return NapiUtils::GetUndefined(context->GetEnv());
+    napi_env env = context->GetEnv();
+    if (!context->IsAsyncConnecting()) {
+        context->EmitSharedManager(EVENT_CONNECT, std::make_pair(NapiUtils::GetUndefined(env),
+            NapiUtils::GetUndefined(env)));
+        return NapiUtils::GetUndefined(env);
+    }
+    bool hasPromise = context->GetDeferred() != nullptr;
+
+    auto watchData = sptr<ConnectWatchData>::MakeSptr();
+    if (watchData == nullptr) {
+        context->SetErrorCode(UNKNOW_ERROR);
+        context->SetExecOK(false);
+        return NapiUtils::GetUndefined(env);
+    }
+    watchData->sockfd = context->GetSocketFd();
+    watchData->env = env;
+    watchData->deferred = context->GetDeferred();
+    watchData->manager = context->GetSharedManager();
+    watchData->context = context;
+
+    if (!hasPromise && !SetupCallbackRef(env, *context, *watchData)) {
+        context->SetErrorCode(UNKNOW_ERROR);
+        context->SetExecOK(false);
+        return NapiUtils::GetUndefined(env);
+    }
+
+    uint32_t timeoutMs = context->options.GetTimeout();
+    watchData->deadline = std::chrono::steady_clock::now() +
+        std::chrono::milliseconds(timeoutMs == 0 ? DEFAULT_CONNECT_TIMEOUT : timeoutMs);
+
+    if (!CreateThreadsafeFunction(env, watchData)) {
+        context->SetErrorCode(UNKNOW_ERROR);
+        context->SetExecOK(false);
+        return NapiUtils::GetUndefined(env);
+    }
+
+    if (!ConnectMonitor::GetInstance().Register(watchData->sockfd, watchData)) {
+        watchData->context = nullptr;
+        napi_release_threadsafe_function(watchData->tsfn, napi_tsfn_abort);
+        if (watchData->callbackRef != nullptr) {
+            napi_delete_reference(env, watchData->callbackRef);
+        }
+        context->SetErrorCode(UNKNOW_ERROR);
+        context->SetExecOK(false);
+        return NapiUtils::GetUndefined(env);
+    }
+
+    context->SetManualAsyncCompletion(true);
+
+    if (hasPromise) {
+        (void)context->StealDeferred();
+    } else {
+        context->DeleteCallback();
+    }
+    return NapiUtils::GetUndefined(env);
 }
 
 napi_value TcpSendCallback(TcpSendContext *context)

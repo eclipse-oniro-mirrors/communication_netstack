@@ -42,11 +42,16 @@ public:
 
     [[nodiscard]] std::string GetErrorMessage() const override;
 
+    void SetAsyncConnecting(bool v) { asyncConnecting_ = v; }
+    [[nodiscard]] bool IsAsyncConnecting() const { return asyncConnecting_; }
+
     TcpConnectOptions options;
 
     std::shared_ptr<ProxyOptions> proxyOptions{nullptr};
 
 private:
+    bool asyncConnecting_ = false;
+
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 
     void HandleCallback(napi_value *params, size_t paramsCount);
