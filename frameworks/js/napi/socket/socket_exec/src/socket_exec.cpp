@@ -558,11 +558,13 @@ static bool PollFd(pollfd *fds, nfds_t num, int timeout)
 static bool IsTfoEnabled(int sock)
 {
     int tfoEnabled = 0;
+#if !defined(IOS_PLATFORM)
     socklen_t tfoLen = sizeof(tfoEnabled);
     if (getsockopt(sock, SOL_TCP, TCP_FASTOPEN_CONNECT, &tfoEnabled, &tfoLen) != 0) {
         NETSTACK_LOGE("get TFO failed, fd=%{public}d, errno=%{public}d", sock, errno);
         tfoEnabled = 0;
     }
+#endif
     return tfoEnabled != 0;
 }
 
@@ -1501,6 +1503,7 @@ static bool SocketSetTcpExtraOptions(int sockfd, TCPExtraOptions& option)
         }
     }
 
+#if !defined(IOS_PLATFORM)
     if (option.IsTCPFastOpen()) {
         int fastOpen = 1;
         if (setsockopt(sockfd, SOL_TCP, TCP_FASTOPEN_CONNECT, &fastOpen, sizeof(fastOpen)) < 0) {
@@ -1508,6 +1511,7 @@ static bool SocketSetTcpExtraOptions(int sockfd, TCPExtraOptions& option)
             return false;
         }
     }
+#endif
 
     if (option.AlreadySetLinger()) {
         linger soLinger = {.l_onoff = option.socketLinger.IsOn(),

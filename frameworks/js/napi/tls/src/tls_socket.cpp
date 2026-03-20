@@ -964,6 +964,7 @@ bool TLSSocket::SetExtraOptions(const Socket::TCPExtraOptions &option) const
         }
     }
 
+#if !defined(IOS_PLATFORM)
     if (option.IsTCPFastOpen()) {
         int tcpFastOpen = 1;
         if (setsockopt(sockFd_, SOL_TCP, TCP_FASTOPEN_CONNECT, &tcpFastOpen, sizeof(tcpFastOpen)) < 0) {
@@ -971,6 +972,7 @@ bool TLSSocket::SetExtraOptions(const Socket::TCPExtraOptions &option) const
             return false;
         }
     }
+#endif
 
     linger soLinger = {0};
     soLinger.l_onoff = option.socketLinger.IsOn();
