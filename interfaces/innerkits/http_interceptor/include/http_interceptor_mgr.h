@@ -17,9 +17,13 @@
 #define COMMUNICATIONNETSTACK_HTTP_INTERCEPTOR_MGR_H
 #include <atomic>
 #include <list>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
+#include <string>
 #include <thread>
+#include <unordered_map>
+#include <vector>
 
 #include "http_interceptor_type.h"
 
@@ -44,6 +48,10 @@ public:
     OH_Interceptor_Result IteratorResponseInterceptor(
         std::shared_ptr<OH_Http_Interceptor_Response> &resp, bool &isModified, bool needDeepCopy = false);
 
+    void ReportHttpResponse(CURL *curl,
+        const std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> &headers,
+        const std::string &body);
+
     bool HasEnabledRequestInterceptor();
 
     bool HasEnabledResponseInterceptor();
@@ -64,6 +72,15 @@ private:
     void IteratorReadRequestInterceptor(std::shared_ptr<OH_Http_Interceptor_Request> &readReq);
     void IteratorReadResponseInterceptor(std::shared_ptr<OH_Http_Interceptor_Response> &readResp);
     bool HasEnabledInterceptor(OH_Interceptor_Stage stage);
+
+    void ConvertStringToRawPtr(const std::string &str, Http_Buffer &out);
+    curl_slist *CurlParseHeaderRawPtr(
+        const std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> &headers);
+    std::shared_ptr<OH_Http_Interceptor_Response> ConvertToNetStackResponse(CURL *curl,
+        const std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> &headers,
+        const std::string &body);
+    void GetTimeInfoFromCurl(CURL *curl, Http_PerformanceTiming &timeInfo);
+    double GetTimingFromCurl(CURL *handle, CURLINFO info) const;
 
 private:
     std::list<OH_Http_Interceptor *> requestInterceptorList_;

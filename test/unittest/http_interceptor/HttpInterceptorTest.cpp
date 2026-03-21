@@ -37,6 +37,7 @@ using namespace OHOS::NetStack::HttpInterceptor;
 bool g_IsModified = false;
 int32_t g_groupId = 0;
 OH_Interceptor_Result g_Interceptor_Result = OH_CONTINUE;
+static bool g_IsRunning = false;
 
 char *MallocCString(const std::string &origin)
 {
@@ -103,6 +104,7 @@ OH_Interceptor_Result OH_Http_InterceptorHandler(
     if (isModified) {
         *isModified = g_IsModified ? 1 : 0;
     }
+    g_IsRunning = true;
     return g_Interceptor_Result;
 }
 
@@ -449,4 +451,41 @@ HWTEST_F(HttpInterceptorTest, HasEnabledInterceptorTest001, TestSize.Level1)
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
 }
 
+HWTEST_F(HttpInterceptorTest, ReportHttpResponse001, TestSize.Level1)
+{
+    std::shared_ptr<HttpInterceptorMgr> mgr = std::make_shared<HttpInterceptorMgr>();
+    auto ret = mgr->AddInterceptor(&g_response_readonly_interceptor);
+    EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
+    g_response_readonly_interceptor.enabled = 1;
+    g_IsRunning = false;
+    std::string body;
+    mgr->ReportHttpResponse(nullptr, nullptr, body);
+    EXPECT_EQ(g_IsRunning, false);
+    std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> headers =
+        std::make_shared<std::unordered_map<std::string, std::vector<std::string>>>();
+    CURL *handle = curl_easy_init();
+    mgr->ReportHttpResponse(handle, nullptr, body);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    EXPECT_EQ(g_IsRunning, true);
+    (*headers)["key1"].push_back("aaaaa");
+    (*headers)["key1"].push_back("bbbbb");
+    (*headers)["key1"].push_back("ccccc");
+    g_IsRunning = false;
+    mgr->ReportHttpResponse(handle, headers, body);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    EXPECT_EQ(g_IsRunning, true);
+    g_IsRunning = false;
+    body = "hello world";
+    mgr->ReportHttpResponse(handle, headers, body);
+    curl_easy_cleanup(handle);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    EXPECT_EQ(g_IsRunning, true);
+}
+
+HWTEST_F(HttpInterceptorTest, GetTimingFromCurl001, TestSize.Level1)
+{
+    std::shared_ptr<HttpInterceptorMgr> mgr = std::make_shared<HttpInterceptorMgr>();
+    auto ret = mgr->GetTimingFromCurl(nullptr, CURLINFO_NAMELOOKUP_TIME_T);
+    EXPECT_EQ(ret, 0);
+}
 } // namespace
