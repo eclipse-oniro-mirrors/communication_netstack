@@ -411,6 +411,9 @@ std::shared_ptr<OH_Http_Interceptor_Response> HttpInterceptorMgr::ConvertToNetSt
 void HttpInterceptorMgr::ReportHttpResponse(CURL *curl,
     const std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> &headers, const std::string &body)
 {
+    if (!HasEnabledResponseInterceptor()) {
+        return;
+    }
     auto response = ConvertToNetStackResponse(curl, headers, body);
     if (response) {
         bool isModified = false;

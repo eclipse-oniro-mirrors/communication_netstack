@@ -60,7 +60,7 @@ ohos_unittest("http_client_unittest") {
   ]
 
   deps = [
-    "$NETSTACK_DIR/interfaces/innerkits/http_interceptor:http_interceptor",
+    "$NETSTACK_DIR/interfaces/innerkits/http_interceptor:http_interceptor_http",
     "$NETSTACK_INNERKITS_DIR/http_client:http_client",
   ]
 
