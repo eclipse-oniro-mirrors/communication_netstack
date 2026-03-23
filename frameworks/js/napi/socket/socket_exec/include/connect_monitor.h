@@ -68,6 +68,7 @@ private:
 
     int epollFd_ = -1;
     int eventFd_ = -1;
+    std::mutex lifecycleMutex_;
     std::mutex mutex_;
     std::map<int, sptr<ConnectWatchData>> pendings_;
     std::multimap<std::chrono::steady_clock::time_point, int> deadlines_;
