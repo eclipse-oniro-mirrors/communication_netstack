@@ -82,7 +82,7 @@ ohos_shared_library("http_interceptor") {
   ]
 
   external_deps = [
-    "curl:curl_shared",
+    "curl:curl_shared_http3",
     "ffrt:libffrt",
     "hilog:libhilog",
   ]

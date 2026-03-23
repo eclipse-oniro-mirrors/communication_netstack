@@ -16,6 +16,8 @@
 #include "http_interceptor_mgr.h"
 #include "ffrt.h"
 #include "netstack_log.h"
+#include "securec.h"
+#include "timing.h"
 
 namespace OHOS::NetStack::HttpInterceptor {
 
@@ -321,5 +323,98 @@ bool HttpInterceptorMgr::HasEnabledRequestInterceptor()
 bool HttpInterceptorMgr::HasEnabledResponseInterceptor()
 {
     return HasEnabledInterceptor(OH_STAGE_RESPONSE);
+}
+
+void HttpInterceptorMgr::ConvertStringToRawPtr(const std::string &str, Http_Buffer &out)
+{
+    if (str.empty()) {
+        return;
+    }
+    // LCOV_EXCL_START
+    auto buffer = static_cast<char *>(malloc(str.size() + 1));
+    if (buffer == nullptr) {
+        return;
+    }
+    buffer[str.size()] = '\0';
+    if (memcpy_s(buffer, str.size(), str.data(), str.size()) != EOK) {
+        free(buffer);
+        return;
+    }
+    // LCOV_EXCL_STOP
+    out.length = str.size();
+    out.buffer = buffer;
+}
+
+curl_slist *HttpInterceptorMgr::CurlParseHeaderRawPtr(
+    const std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> &headers)
+{
+    if (headers == nullptr) {
+        return nullptr;
+    }
+    curl_slist *curlHeader = nullptr;
+    for (const auto &[key, valueVec] : *headers) {
+        for (const auto &value : valueVec) {
+            std::string s;
+            s.append(key).append(": ").append(value);
+            curlHeader = curl_slist_append(curlHeader, s.c_str());
+        }
+    }
+    return curlHeader;
+}
+
+double HttpInterceptorMgr::GetTimingFromCurl(CURL *handle, CURLINFO info) const
+{
+    curl_off_t timing;
+    CURLcode result = curl_easy_getinfo(handle, info, &timing);
+    if (result != CURLE_OK) {
+        NETSTACK_LOGE("Failed to get timing: %{public}d, %{public}s", info, curl_easy_strerror(result));
+        return 0;
+    }
+    return Timing::TimeUtils::Microseconds2Milliseconds(timing);
+}
+
+void HttpInterceptorMgr::GetTimeInfoFromCurl(CURL *curl, Http_PerformanceTiming &timeInfo)
+{
+    timeInfo.dnsTiming = GetTimingFromCurl(curl, CURLINFO_NAMELOOKUP_TIME_T);
+    timeInfo.tcpTiming = GetTimingFromCurl(curl, CURLINFO_CONNECT_TIME_T);
+    timeInfo.tlsTiming = GetTimingFromCurl(curl, CURLINFO_APPCONNECT_TIME_T);
+    timeInfo.firstSendTiming = GetTimingFromCurl(curl, CURLINFO_PRETRANSFER_TIME_T);
+    timeInfo.firstReceiveTiming = GetTimingFromCurl(curl, CURLINFO_STARTTRANSFER_TIME_T);
+    timeInfo.totalFinishTiming = GetTimingFromCurl(curl, CURLINFO_TOTAL_TIME_T);
+    timeInfo.redirectTiming = GetTimingFromCurl(curl, CURLINFO_REDIRECT_TIME_T);
+}
+
+std::shared_ptr<OH_Http_Interceptor_Response> HttpInterceptorMgr::ConvertToNetStackResponse(CURL *curl,
+    const std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> &headers, const std::string &body)
+{
+    if (!curl) {
+        return nullptr;
+    }
+    auto response = CreateHttpInterceptorResponse();
+    // LCOV_EXCL_START
+    if (response == nullptr) {
+        return nullptr;
+    }
+    // LCOV_EXCL_STOP
+    long statusCode = 0;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &statusCode);
+    response->responseCode = static_cast<Http_ResponseCode>(statusCode);
+    ConvertStringToRawPtr(body, response->body);
+    auto tempHeaders = CurlParseHeaderRawPtr(headers);
+    if (tempHeaders) {
+        response->headers = tempHeaders;
+    }
+    GetTimeInfoFromCurl(curl, response->performanceTiming);
+    return response;
+}
+
+void HttpInterceptorMgr::ReportHttpResponse(CURL *curl,
+    const std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> &headers, const std::string &body)
+{
+    auto response = ConvertToNetStackResponse(curl, headers, body);
+    if (response) {
+        bool isModified = false;
+        IteratorResponseInterceptor(response, isModified);
+    }
 }
 } // namespace OHOS::NetStack::HttpInterceptor
