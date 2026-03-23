@@ -2433,6 +2433,8 @@ bool HttpExec::SetInterface(CURL *curl, RequestContext *context)
     int32_t netId;
     bool ret = GetInterfaceName(curl, context, interfaceName, netId);
     if (ret && !interfaceName.empty() && netId >= MIN_NON_SYSTEM_NETID) {
+        NETSTACK_LOGI("PathPreference: SetInterface, interfaceName:%{public}s, netId:%{public}d",
+                       interfaceName.c_str(), netId);
         bool ipv6Enable = NetSysIsIpv6Enable(netId);
         bool ipv4Enable = NetSysIsIpv4Enable(netId);
         if (!ipv6Enable) {
