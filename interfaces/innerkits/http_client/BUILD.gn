@@ -136,7 +136,7 @@ ohos_shared_library("http_client") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$NETSTACK_DIR/interfaces/innerkits/http_interceptor:http_interceptor",
+    "$NETSTACK_DIR/interfaces/innerkits/http_interceptor:http_interceptor_http",
   ]
 
   public_external_deps = [ "curl:curl_shared" ]

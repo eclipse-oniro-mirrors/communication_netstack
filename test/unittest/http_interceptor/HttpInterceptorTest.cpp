@@ -454,11 +454,14 @@ HWTEST_F(HttpInterceptorTest, HasEnabledInterceptorTest001, TestSize.Level1)
 HWTEST_F(HttpInterceptorTest, ReportHttpResponse001, TestSize.Level1)
 {
     std::shared_ptr<HttpInterceptorMgr> mgr = std::make_shared<HttpInterceptorMgr>();
+    std::string body;
+    g_IsRunning = false;
+    mgr->ReportHttpResponse(nullptr, nullptr, body);
+    EXPECT_EQ(g_IsRunning, false);
     auto ret = mgr->AddInterceptor(&g_response_readonly_interceptor);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
     g_response_readonly_interceptor.enabled = 1;
     g_IsRunning = false;
-    std::string body;
     mgr->ReportHttpResponse(nullptr, nullptr, body);
     EXPECT_EQ(g_IsRunning, false);
     std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> headers =
