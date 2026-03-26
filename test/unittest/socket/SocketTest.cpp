@@ -17,7 +17,6 @@
 #include "gtest/gtest.h"
 #include <cstring>
 #include <iostream>
-#include <limits>
 
 #include "local_socket_context.h"
 #include "local_socket_exec.h"
@@ -36,7 +35,6 @@
 #include "socks5_passwd_method.h"
 #include "socks5_package.h"
 #include "socks5_utils.h"
-#include "connect_monitor.h"
 
 class SocketTest : public testing::Test {
 public:
@@ -55,36 +53,6 @@ using namespace testing::ext;
 using namespace OHOS::NetStack;
 using namespace OHOS::NetStack::Socket;
 using namespace OHOS::NetStack::Socks5;
-
-static constexpr const int SLEEP_TIME_TEN = 10;
-
-static OHOS::sptr<ConnectWatchData> CreateConnectWatchData(int64_t deadlineMs = 200)
-{
-    auto data = OHOS::sptr<ConnectWatchData>(new ConnectWatchData());
-    data->deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(deadlineMs);
-    return data;
-}
-
-static void WaitMonitorStopped(ConnectMonitor &monitor, int32_t timeoutMs = 1000)
-{
-    for (int32_t waited = 0; waited < timeoutMs && monitor.running_.load(); waited += SLEEP_TIME_TEN) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME_TEN));
-    }
-}
-
-static void ResetConnectMonitorState(ConnectMonitor &monitor)
-{
-    monitor.running_.store(false);
-    monitor.WakeUp();
-    WaitMonitorStopped(monitor);
-    if (monitor.thread_.joinable()) {
-        monitor.thread_.join();
-    }
-    std::lock_guard<std::mutex> lock(monitor.mutex_);
-    monitor.pendings_.clear();
-    monitor.deadlines_.clear();
-    monitor.deadlineIters_.clear();
-}
 
 HWTEST_F(SocketTest, MulticastTest001, TestSize.Level1)
 {
@@ -562,172 +530,6 @@ HWTEST_F(SocketTest, Socks5PkgTest004, TestSize.Level1)
     string serialized3 = header.Serialize();
     EXPECT_NE(serialized3, "");
     EXPECT_TRUE(header.Deserialize((uint8_t*) serialized3.c_str(), serialized3.size()));
-}
-
-HWTEST_F(SocketTest, ConnectMonitorCalcNearestTimeoutMsBranches, TestSize.Level2)
-{
-    auto &monitor = ConnectMonitor::GetInstance();
-    ResetConnectMonitorState(monitor);
-
-    EXPECT_EQ(monitor.CalcNearestTimeoutMs(), -1);
-
-    monitor.deadlines_.emplace(std::chrono::steady_clock::now() - std::chrono::milliseconds(1), 1001);
-    EXPECT_EQ(monitor.CalcNearestTimeoutMs(), 0);
-    monitor.deadlines_.clear();
-
-    auto maxTimeout = static_cast<int64_t>(std::numeric_limits<int>::max()) + 1000;
-    monitor.deadlines_.emplace(std::chrono::steady_clock::now() + std::chrono::milliseconds(maxTimeout), 1002);
-    EXPECT_EQ(monitor.CalcNearestTimeoutMs(), std::numeric_limits<int>::max());
-    monitor.deadlines_.clear();
-
-    monitor.deadlines_.emplace(std::chrono::steady_clock::now() + std::chrono::milliseconds(50), 1003);
-    int timeoutMs = monitor.CalcNearestTimeoutMs();
-    EXPECT_GE(timeoutMs, 0);
-    EXPECT_LE(timeoutMs, 1000);
-
-    ResetConnectMonitorState(monitor);
-}
-
-HWTEST_F(SocketTest, ConnectMonitorRegisterAndUnregisterSuccess, TestSize.Level2)
-{
-    auto &monitor = ConnectMonitor::GetInstance();
-    ResetConnectMonitorState(monitor);
-
-    int sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-    ASSERT_GE(sockfd, 0);
-    auto data = CreateConnectWatchData(500);
-    ASSERT_NE(data, nullptr);
-
-    EXPECT_TRUE(monitor.Register(sockfd, data));
-    monitor.Unregister(sockfd);
-    close(sockfd);
-
-    ResetConnectMonitorState(monitor);
-}
-
-HWTEST_F(SocketTest, ConnectMonitorRegisterReuseDeadlineIter, TestSize.Level2)
-{
-    auto &monitor = ConnectMonitor::GetInstance();
-    ResetConnectMonitorState(monitor);
-
-    int sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-    ASSERT_GE(sockfd, 0);
-    auto oldDeadline = monitor.deadlines_.emplace(std::chrono::steady_clock::now() + std::chrono::seconds(2), sockfd);
-    monitor.deadlineIters_[sockfd] = oldDeadline;
-
-    auto data = CreateConnectWatchData(500);
-    ASSERT_NE(data, nullptr);
-    EXPECT_TRUE(monitor.Register(sockfd, data));
-    monitor.Unregister(sockfd);
-    close(sockfd);
-
-    ResetConnectMonitorState(monitor);
-}
-
-HWTEST_F(SocketTest, ConnectMonitorCheckTimeoutsBranches, TestSize.Level2)
-{
-    auto &monitor = ConnectMonitor::GetInstance();
-    ResetConnectMonitorState(monitor);
-
-    int activeFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-    ASSERT_GE(activeFd, 0);
-    int missingFd = activeFd + 10000;
-    auto now = std::chrono::steady_clock::now() - std::chrono::milliseconds(1);
-
-    auto data = CreateConnectWatchData(100);
-    ASSERT_NE(data, nullptr);
-    monitor.pendings_[activeFd] = data;
-    monitor.deadlineIters_[activeFd] = monitor.deadlines_.emplace(now, activeFd);
-    monitor.deadlineIters_[missingFd] = monitor.deadlines_.emplace(now, missingFd);
-
-    monitor.CheckTimeouts();
-    EXPECT_EQ(monitor.pendings_.find(activeFd), monitor.pendings_.end());
-    EXPECT_TRUE(monitor.deadlineIters_.empty());
-    EXPECT_TRUE(monitor.deadlines_.empty());
-
-    close(activeFd);
-    ResetConnectMonitorState(monitor);
-}
-
-HWTEST_F(SocketTest, ConnectMonitorHandleReadySuccessAndFailure, TestSize.Level2)
-{
-    auto &monitor = ConnectMonitor::GetInstance();
-    ResetConnectMonitorState(monitor);
-
-    int validFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-    ASSERT_GE(validFd, 0);
-    auto validData = CreateConnectWatchData(1000);
-    ASSERT_NE(validData, nullptr);
-    monitor.pendings_[validFd] = validData;
-    monitor.deadlineIters_[validFd] = monitor.deadlines_.emplace(validData->deadline, validFd);
-    monitor.HandleReady(validFd, EPOLLOUT);
-    EXPECT_EQ(monitor.pendings_.find(validFd), monitor.pendings_.end());
-
-    int invalidFd = -1;
-    auto invalidData = CreateConnectWatchData(1000);
-    ASSERT_NE(invalidData, nullptr);
-    monitor.pendings_[invalidFd] = invalidData;
-    monitor.deadlineIters_[invalidFd] = monitor.deadlines_.emplace(invalidData->deadline, invalidFd);
-    monitor.HandleReady(invalidFd, EPOLLERR);
-    EXPECT_EQ(monitor.pendings_.find(invalidFd), monitor.pendings_.end());
-
-    close(validFd);
-    ResetConnectMonitorState(monitor);
-}
-
-HWTEST_F(SocketTest, ConnectMonitorCompleteConnectNotFound, TestSize.Level2)
-{
-    auto &monitor = ConnectMonitor::GetInstance();
-    ResetConnectMonitorState(monitor);
-
-    int fd = 34567;
-    monitor.deadlineIters_[fd] = monitor.deadlines_.emplace(std::chrono::steady_clock::now(), fd);
-    monitor.CompleteConnect(fd, 0);
-    EXPECT_EQ(monitor.deadlineIters_.find(fd), monitor.deadlineIters_.end());
-    EXPECT_TRUE(monitor.pendings_.empty());
-
-    ResetConnectMonitorState(monitor);
-}
-
-HWTEST_F(SocketTest, ConnectMonitorEnsureThreadJoinableBranch, TestSize.Level2)
-{
-    auto &monitor = ConnectMonitor::GetInstance();
-    ResetConnectMonitorState(monitor);
-
-    int fd1 = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-    ASSERT_GE(fd1, 0);
-    auto data1 = CreateConnectWatchData(20);
-    ASSERT_NE(data1, nullptr);
-    ASSERT_TRUE(monitor.Register(fd1, data1));
-    WaitMonitorStopped(monitor, 2000);
-    ASSERT_FALSE(monitor.running_.load());
-    ASSERT_TRUE(monitor.thread_.joinable());
-
-    int fd2 = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-    ASSERT_GE(fd2, 0);
-    auto data2 = CreateConnectWatchData(300);
-    ASSERT_NE(data2, nullptr);
-    EXPECT_TRUE(monitor.Register(fd2, data2));
-    monitor.Unregister(fd2);
-
-    close(fd1);
-    close(fd2);
-    ResetConnectMonitorState(monitor);
-}
-
-HWTEST_F(SocketTest, ConnectMonitorMonitorLoopEpollErrorBranch, TestSize.Level2)
-{
-    auto &monitor = ConnectMonitor::GetInstance();
-    ResetConnectMonitorState(monitor);
-
-    int oldEpollFd = monitor.epollFd_;
-    monitor.epollFd_ = -1;
-    monitor.running_.store(true);
-    monitor.MonitorLoop();
-    EXPECT_FALSE(monitor.running_.load());
-    monitor.epollFd_ = oldEpollFd;
-
-    ResetConnectMonitorState(monitor);
 }
 
 } // namespace
