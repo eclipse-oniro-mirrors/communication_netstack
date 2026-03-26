@@ -43,7 +43,10 @@
 #include "socket_exec_common.h"
 #include "socks5_utils.h"
 #include "module_template.h"
+
+#ifdef OHOS_PLATFORM
 #include "connect_monitor.h"
+#endif
 
 #ifdef IOS_PLATFORM
 #include <sys/socket.h>
@@ -1135,6 +1138,7 @@ static std::shared_ptr<Socks5::Socks5TcpInstance> InitSocks5TcpInstance(ConnectC
     return socks5Tcp;
 }
 
+#ifdef OHOS_PLATFORM
 static int HandleTcpProxyOptions(ConnectContext *context, sockaddr *addr, socklen_t len)
 {
     auto eventMgr = context->GetSharedManager();
@@ -1177,7 +1181,42 @@ static int HandleTcpProxyOptions(ConnectContext *context, sockaddr *addr, sockle
     context->SetExecOK(false);
     return -1;
 }
+#else
+static int HandleTcpProxyOptions(ConnectContext *context)
+{
+    auto eventMgr = context->GetSharedManager();
+    if (eventMgr == nullptr) {
+        NETSTACK_LOGE("event manager is null");
+        return -1;
+    }
 
+    if (context->proxyOptions->type_ != ProxyType::SOCKS5) {
+        NETSTACK_LOGE("unsupport proxy type");
+        return 0;
+    }
+
+    auto socks5Tcp = eventMgr->GetProxyData();
+    if (socks5Tcp == nullptr) {
+        socks5Tcp = InitSocks5TcpInstance(context);
+        if (socks5Tcp == nullptr) {
+            return -1;
+        }
+        socks5Tcp->SetSocks5Instance(socks5Tcp);
+        eventMgr->SetProxyData(socks5Tcp);
+    }
+
+    if (!socks5Tcp->IsConnected()) {
+        if (!socks5Tcp->Connect()) {
+            Socks5::Socks5Utils::SetProxyAuthError(context, socks5Tcp);
+            return -1;
+        }
+    }
+
+    return 0;
+}
+#endif
+
+#ifdef OHOS_PLATFORM
 static void DeleteManualConnectContext(ConnectWatchData &watchData)
 {
     if (watchData.context == nullptr) {
@@ -1207,6 +1246,7 @@ static void CompleteConnect(napi_env env, napi_deferred deferred, napi_ref callb
         napi_delete_reference(env, callbackRef);
     }
 }
+#endif
 
 static bool HandleNonProxyConnection(ConnectContext *context, sockaddr *addr, socklen_t len)
 {
@@ -1220,6 +1260,7 @@ static bool HandleNonProxyConnection(ConnectContext *context, sockaddr *addr, so
         NETSTACK_LOGE("fd is nullptr or closed");
         return false;
     }
+#ifdef OHOS_PLATFORM
     int ret = connect(socketfd, addr, len);
     if (ret == 0) {
         context->SetAsyncConnecting(false);
@@ -1230,6 +1271,23 @@ static bool HandleNonProxyConnection(ConnectContext *context, sockaddr *addr, so
         return true;
     }
     ERROR_RETURN(context, "connect errno %{public}d", errno);
+#else
+    if (!NonBlockConnect(context->GetSocketFd(), addr, len, context->options.GetTimeout())) {
+        ERROR_RETURN(context, "connect errno %{public}d", errno);
+    }
+    return true;
+#endif
+}
+
+static void StartTcpConnectRecvThread(const std::shared_ptr<EventManager> &manager)
+{
+    std::thread serviceThread(PollRecvData, nullptr, 0, TcpMessageCallback(manager));
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(SOCKET_EXEC_CONNECT);
+#else
+    pthread_setname_np(serviceThread.native_handle(), SOCKET_EXEC_CONNECT);
+#endif
+    serviceThread.detach();
 }
 
 bool ExecConnect(ConnectContext *context)
@@ -1262,26 +1320,24 @@ bool ExecConnect(ConnectContext *context)
             return false;
         }
     } else {
+#ifdef OHOS_PLATFORM
         if (HandleTcpProxyOptions(context, addr, len) != 0) {
+#else
+        if (HandleTcpProxyOptions(context) != 0) {
+#endif
             context->SetExecOK(false);
             return false;
         }
     }
 
+#ifdef OHOS_PLATFORM
     if (context->IsAsyncConnecting()) {
         return true;
     }
+#endif
 
     NETSTACK_LOGI("connect success, sock:%{public}d", context->GetSocketFd());
-
-    std::thread serviceThread(PollRecvData, nullptr, 0,
-                              TcpMessageCallback(context->GetSharedManager()));
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-    pthread_setname_np(SOCKET_EXEC_CONNECT);
-#else
-    pthread_setname_np(serviceThread.native_handle(), SOCKET_EXEC_CONNECT);
-#endif
-    serviceThread.detach();
+    StartTcpConnectRecvThread(context->GetSharedManager());
     return true;
 }
 
@@ -1345,7 +1401,9 @@ bool ExecClose(CloseContext *context)
         return false;
     }
     int sockfd = context->GetSocketFd();
+#ifdef OHOS_PLATFORM
     ConnectMonitor::GetInstance().Unregister(sockfd);
+#endif
     int ret = close(sockfd);
     if (ret < 0) {
         NETSTACK_LOGE("sock closed failed , socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
@@ -2658,6 +2716,7 @@ napi_value UdpGetLoopbackModeCallback(MulticastGetLoopbackContext *context)
     return NapiUtils::GetBoolean(context->GetEnv(), context->GetLoopbackMode());
 }
 
+#ifdef OHOS_PLATFORM
 static bool HandleTcpProxyAuth(ConnectWatchData &watchData)
 {
     auto proxyInst = watchData.manager != nullptr ? watchData.manager->GetProxyData() : nullptr;
@@ -2720,13 +2779,7 @@ static void EmitTcpConnectSuccess(napi_env env, const ConnectWatchData &watchDat
     if (manager == nullptr) {
         return;
     }
-    std::thread t(PollRecvData, nullptr, 0, TcpMessageCallback(manager));
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-    pthread_setname_np(SOCKET_EXEC_CONNECT);
-#else
-    pthread_setname_np(t.native_handle(), SOCKET_EXEC_CONNECT);
-#endif
-    t.detach();
+    StartTcpConnectRecvThread(manager);
     manager->Emit(EVENT_CONNECT, std::make_pair(NapiUtils::GetUndefined(env),
         NapiUtils::GetUndefined(env)));
 }
@@ -2814,14 +2867,8 @@ static bool CreateThreadsafeFunction(napi_env env, const sptr<ConnectWatchData> 
     return true;
 }
 
-napi_value ConnectCallback(ConnectContext *context)
+static napi_value HandleAsyncConnectCallback(ConnectContext *context, napi_env env)
 {
-    napi_env env = context->GetEnv();
-    if (!context->IsAsyncConnecting()) {
-        context->EmitSharedManager(EVENT_CONNECT, std::make_pair(NapiUtils::GetUndefined(env),
-            NapiUtils::GetUndefined(env)));
-        return NapiUtils::GetUndefined(env);
-    }
     bool hasPromise = context->GetDeferred() != nullptr;
 
     auto watchData = sptr<ConnectWatchData>::MakeSptr();
@@ -2871,6 +2918,24 @@ napi_value ConnectCallback(ConnectContext *context)
         context->DeleteCallback();
     }
     return NapiUtils::GetUndefined(env);
+}
+#endif
+
+napi_value ConnectCallback(ConnectContext *context)
+{
+    napi_env env = context->GetEnv();
+#ifndef OHOS_PLATFORM
+    context->EmitSharedManager(EVENT_CONNECT, std::make_pair(NapiUtils::GetUndefined(env),
+        NapiUtils::GetUndefined(env)));
+    return NapiUtils::GetUndefined(env);
+#else
+    if (!context->IsAsyncConnecting()) {
+        context->EmitSharedManager(EVENT_CONNECT, std::make_pair(NapiUtils::GetUndefined(env),
+            NapiUtils::GetUndefined(env)));
+        return NapiUtils::GetUndefined(env);
+    }
+    return HandleAsyncConnectCallback(context, env);
+#endif
 }
 
 napi_value TcpSendCallback(TcpSendContext *context)
