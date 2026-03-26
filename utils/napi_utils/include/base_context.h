@@ -79,10 +79,6 @@ public:
 
     [[nodiscard]] napi_deferred GetDeferred() const;
 
-    napi_deferred StealDeferred();
-
-    napi_value BuildBusinessError(napi_env env) const;
-
     [[nodiscard]] const std::string &GetAsyncWorkName() const;
 
     void EmitSharedManager(const std::string &type, const std::pair<napi_value, napi_value> &argv);
@@ -94,10 +90,6 @@ public:
     void SetNeedThrowException(bool needThrowException);
 
     [[nodiscard]] bool IsNeedThrowException() const;
-
-    void SetManualAsyncCompletion(bool manual);
-
-    [[nodiscard]] bool IsManualAsyncCompletion() const;
 
     void SetPermissionDenied(bool needThrowException);
 
@@ -158,8 +150,6 @@ private:
     bool needPromise_;
 
     bool needThrowException_;
-
-    bool manualAsyncCompletion_;
 
     bool permissionDenied_;
 

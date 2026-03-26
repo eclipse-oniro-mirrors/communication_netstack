@@ -34,7 +34,6 @@ BaseContext::BaseContext(napi_env env, const std::shared_ptr<EventManager> &shar
       deferred_(nullptr),
       needPromise_(true),
       needThrowException_(false),
-      manualAsyncCompletion_(false),
       permissionDenied_(false),
       noAllowedHost_(false),
       cleartextNotPermitted_(false),
@@ -186,22 +185,6 @@ napi_deferred BaseContext::GetDeferred() const
     return deferred_;
 }
 
-napi_deferred BaseContext::StealDeferred()
-{
-    napi_deferred d = deferred_;
-    deferred_      = nullptr;
-    deferredBack1_ = nullptr;
-    deferredBack2_ = nullptr;
-    deferredBack3_ = nullptr;
-    deferredBack4_ = nullptr;
-    return d;
-}
-
-napi_value BaseContext::BuildBusinessError(napi_env env) const
-{
-    return NapiUtils::CreateErrorMessage(env, GetErrorCode(), GetErrorMessage());
-}
-
 const std::string &BaseContext::GetAsyncWorkName() const
 {
     return asyncWorkName_;
@@ -259,16 +242,6 @@ void BaseContext::SetNeedThrowException(bool needThrowException)
 bool BaseContext::IsNeedThrowException() const
 {
     return needThrowException_;
-}
-
-void BaseContext::SetManualAsyncCompletion(bool manual)
-{
-    manualAsyncCompletion_ = manual;
-}
-
-bool BaseContext::IsManualAsyncCompletion() const
-{
-    return manualAsyncCompletion_;
 }
 
 void BaseContext::SetPermissionDenied(bool permissionDenied)
