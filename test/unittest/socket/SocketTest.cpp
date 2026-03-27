@@ -15,6 +15,7 @@
 
 #include "netstack_log.h"
 #include "gtest/gtest.h"
+#include <atomic>
 #include <cstring>
 #include <iostream>
 #include <limits>
@@ -74,11 +75,13 @@ static void WaitMonitorStopped(ConnectMonitor &monitor, int32_t timeoutMs = 1000
 
 static void ResetConnectMonitorState(ConnectMonitor &monitor)
 {
-    monitor.running_.store(false);
-    monitor.WakeUp();
-    WaitMonitorStopped(monitor);
-    if (monitor.thread_.joinable()) {
-        monitor.thread_.join();
+    {
+        std::lock_guard<std::mutex> lifecycleLock(monitor.lifecycleMutex_);
+        monitor.running_.store(false);
+        monitor.WakeUp();
+        if (monitor.thread_.joinable()) {
+            monitor.thread_.join();
+        }
     }
     std::lock_guard<std::mutex> lock(monitor.mutex_);
     monitor.pendings_.clear();
@@ -712,6 +715,56 @@ HWTEST_F(SocketTest, ConnectMonitorEnsureThreadJoinableBranch, TestSize.Level2)
 
     close(fd1);
     close(fd2);
+    ResetConnectMonitorState(monitor);
+}
+
+HWTEST_F(SocketTest, ConnectMonitorEnsureThreadRunningConcurrentRestart, TestSize.Level2)
+{
+    auto &monitor = ConnectMonitor::GetInstance();
+    ResetConnectMonitorState(monitor);
+
+    std::atomic<bool> oldThreadRunning(false);
+    std::atomic<bool> stopOldThread(false);
+    monitor.thread_ = std::thread([&oldThreadRunning, &stopOldThread]() {
+        oldThreadRunning.store(true);
+        while (!stopOldThread.load()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    });
+    for (int32_t waited = 0; waited < 1000 && !oldThreadRunning.load(); waited += SLEEP_TIME_TEN) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME_TEN));
+    }
+    ASSERT_TRUE(oldThreadRunning.load());
+    monitor.running_.store(false);
+    auto pendingData = CreateConnectWatchData(5000);
+    ASSERT_NE(pendingData, nullptr);
+    std::unique_lock<std::mutex> lifecycleLock(monitor.lifecycleMutex_);
+    {
+        std::lock_guard<std::mutex> lock(monitor.mutex_);
+        monitor.pendings_[54321] = pendingData;
+        monitor.deadlineIters_[54321] = monitor.deadlines_.emplace(pendingData->deadline, 54321);
+    }
+
+    std::atomic<int32_t> callerReady(0);
+    std::thread callerA([&monitor, &callerReady]() {
+        callerReady.fetch_add(1);
+        monitor.EnsureThreadRunning();
+    });
+    std::thread callerB([&monitor, &callerReady]() {
+        callerReady.fetch_add(1);
+        monitor.EnsureThreadRunning();
+    });
+    for (int32_t waited = 0; waited < 1000 && callerReady.load() < 2; waited += SLEEP_TIME_TEN) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME_TEN));
+    }
+    stopOldThread.store(true);
+    lifecycleLock.unlock();
+    callerA.join();
+    callerB.join();
+    EXPECT_EQ(callerReady.load(), 2);
+    EXPECT_TRUE(monitor.running_.load());
+    EXPECT_TRUE(monitor.thread_.joinable());
+
     ResetConnectMonitorState(monitor);
 }
 

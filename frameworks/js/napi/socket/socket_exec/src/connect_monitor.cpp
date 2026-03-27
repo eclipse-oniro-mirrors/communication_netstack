@@ -42,7 +42,8 @@ ConnectMonitor::ConnectMonitor()
 
 ConnectMonitor::~ConnectMonitor()
 {
-    running_ = false;
+    std::lock_guard<std::mutex> lock(lifecycleMutex_);
+    running_.store(false);
     WakeUp();
     if (thread_.joinable()) {
         thread_.join();
@@ -57,14 +58,15 @@ ConnectMonitor::~ConnectMonitor()
 
 void ConnectMonitor::EnsureThreadRunning()
 {
+    std::lock_guard<std::mutex> lock(lifecycleMutex_);
     if (running_.load()) {
         return;
     }
     if (thread_.joinable()) {
         thread_.join();
     }
-    bool expected = false;
-    if (running_.compare_exchange_strong(expected, true)) {
+    if (!running_.load()) {
+        running_.store(true);
         NETSTACK_LOGI("connect monitor thread starting");
         thread_ = std::thread(&ConnectMonitor::MonitorLoop, this);
         pthread_setname_np(thread_.native_handle(), "ConnectMonitor");
