@@ -647,6 +647,34 @@ std::string AnonymizeHost(const std::string &input)
     return result;
 }
 
+std::string GetSimpleHost(std::string &input)
+{
+    std::string hostName;
+    size_t questionPos = input.find('?');
+    if (questionPos == std::string::npos) {
+        hostName = input;
+        return hostName;
+    }
+    std::string afterQuestion = input.substr(questionPos + 1);
+    // 查找 '__biz=' 是否存在
+    size_t bizStart = afterQuestion.find("__biz=");
+    if (bizStart != std::string::npos) {
+        // 有 '__biz=xxx'，截取到下一个 '&' 或结尾
+        std::string bizParam = afterQuestion.substr(bizStart);
+        size_t nextAmpersand = bizParam.find('&');
+        if (nextAmpersand != std::string::npos) {
+            bizParam = bizParam.substr(0, nextAmpersand);
+        }
+        // 拼接：host + '?' + __biz=xxx
+        std::string finalUrl = input.substr(0, questionPos + 1) + bizParam;
+        hostName = finalUrl;
+        return hostName;
+    }
+    // 没有biz，只保留 host
+    hostName = input.substr(0, questionPos);
+    return hostName;
+}
+
 char *MallocCString(const std::string &origin)
 {
     if (origin.empty()) {

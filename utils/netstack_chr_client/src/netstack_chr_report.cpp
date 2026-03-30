@@ -21,6 +21,7 @@
 using namespace OHOS::NetStack::ChrClient;
 
 static constexpr const char* REPORT_HTTP_EVENT_NAME = "custom.event.CHR_REPORT_HTTP";
+static constexpr const char* REPORT_URL_EVENT_NAME = "custom.event.CHR_REPORT_URL";
 static constexpr const std::int32_t CHR_UID = 1201;
 static constexpr const int REPORT_TIME_LIMIT_MINUTE = 5;
 
@@ -81,10 +82,26 @@ int NetStackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
     return REPORT_CHR_RESULT_SUCCESS;
 }
 
+int NetStackChrReport::ReportUrlCommonEvent(DataTransChrStats& chrStats)
+{
+    AAFwk::Want want;
+    want.SetAction(REPORT_URL_EVENT_NAME);
+    SetUrlWantParam(want, chrStats);
+    EventFwk::CommonEventData commonEventData;
+    commonEventData.SetWant(want);
+    EventFwk::CommonEventPublishInfo publishInfo;
+    publishInfo.SetSubscriberUid({CHR_UID});
+    if (!EventFwk::CommonEventManager::PublishCommonEvent(commonEventData, publishInfo)) {
+        return REPORT_CHR_RESULT_REPORT_FAIL;
+    }
+    return REPORT_CHR_RESULT_SUCCESS;
+}
+
 void NetStackChrReport::LogHttpInfo(const DataTransChrStats& chrStats)
 {
     std::string httpInfoJsonStr;
     std::string tcpInfoJsonStr;
+    std::string urlInfoJsonStr;
     SetHttpInfoJsonStr(chrStats.httpInfo, httpInfoJsonStr);
     SetTcpInfoJsonStr(chrStats.tcpInfo, tcpInfoJsonStr);
     NETSTACK_LOGD("LogHttpInfo: {PROCESS_NAME: %{public}s, HTTP_INFO: %{public}s, TCP_INFO: %{public}s}",
@@ -103,6 +120,30 @@ void NetStackChrReport::SetWantParam(AAFwk::Want& want, DataTransChrStats chrSta
     want.SetParam("DATA_TRANS_TCP_INFO", tcpInfoJsonStr);
     NETSTACK_LOGI("BUSSINESS_ISSUE_HTTP: {PROCESS_NAME: %{public}s, HTTP_INFO: %{public}s, TCP_INFO: %{public}s}",
         chrStats.processName.c_str(), httpInfoJsonStr.c_str(), tcpInfoJsonStr.c_str());
+}
+
+void NetStackChrReport::SetUrlWantParam(AAFwk::Want& want, DataTransChrStats& chrStats)
+{
+    chrStats.urlInfo.dstIp = chrStats.tcpInfo.dstIp;
+    std::string urlInfoJsonStr;
+    SetUrlInfoJsonStr(chrStats.urlInfo, urlInfoJsonStr);
+    want.SetParam("PROCESS_NAME", chrStats.processName);
+    want.SetParam("URL_INFO_NAME_INFO", urlInfoJsonStr);
+}
+ 
+void NetStackChrReport::SetUrlInfoJsonStr(
+    const DataTransUrlInfo &urlInfo, std::string &urlInfoJsonStr)
+{
+    std::stringstream ss;
+    ss << "{\"uid\":" << urlInfo.uid
+       << ",\"responseCode\":" << urlInfo.responseCode
+       << ",\"url\":\"" << urlInfo.hostName
+       << "\",\"totalTime\":" << urlInfo.totalTime
+       << ",\"osCode\":" << urlInfo.osError
+       << ",\"curlCode\":" << urlInfo.curlCode
+       << ",\"dstIp\":\"" << urlInfo.dstIp
+       << "\",\"request_start_time\":" << urlInfo.requestStartTime << "}";
+    urlInfoJsonStr = ss.str();
 }
 
 void NetStackChrReport::SetHttpInfoJsonStr(DataTransHttpInfo httpInfo, std::string& httpInfoJsonStr)

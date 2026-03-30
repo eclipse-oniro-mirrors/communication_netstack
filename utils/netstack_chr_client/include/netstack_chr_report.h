@@ -30,11 +30,14 @@ public:
     ~NetStackChrReport();
  
     int ReportCommonEvent(DataTransChrStats chrStats);
+    int ReportUrlCommonEvent(DataTransChrStats& chrStats);
     void LogHttpInfo(const DataTransChrStats& chrStats);
 private:
     std::mutex report_mutex_;
     void SetWantParam(AAFwk::Want& want, DataTransChrStats chrStats);
+    void SetUrlWantParam(AAFwk::Want& want, DataTransChrStats& chrStats);
     void SetHttpInfoJsonStr(DataTransHttpInfo httpInfo, std::string& httpInfoJsonStr);
+    void SetUrlInfoJsonStr(const DataTransUrlInfo &httpInfo, std::string &urlInfoJsonStr);
     void SetTcpInfoJsonStr(DataTransTcpInfo tcpInfo, std::string& tcpInfoJsonStr);
 };
 }  // namespace OHOS::NatStack::ChrClient

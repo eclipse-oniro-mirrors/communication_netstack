@@ -66,9 +66,21 @@ typedef struct DataTransTcpInfo {
     uint16_t dstPort;
 } DataTransTcpInfo;
 
+typedef struct DataTransUrlInfo {
+    int uid;
+    int responseCode;
+    curl_off_t totalTime;
+    int osError;
+    int curlCode;
+    std::string hostName;
+    std::string dstIp;
+    long requestStartTime;
+} DataTransUrlInfo;
+
 typedef struct DataTransChrStats {
     std::string processName;
     DataTransHttpInfo httpInfo;
+    DataTransUrlInfo urlInfo;
     DataTransTcpInfo tcpInfo;
 } DataTransChrStats;
 }  // namespace OHOS::NetStack

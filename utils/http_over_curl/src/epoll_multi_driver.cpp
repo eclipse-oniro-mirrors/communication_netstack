@@ -213,6 +213,7 @@ void EpollMultiDriver::HandleCurlDoneMessage(CURLMsg *message)
 #endif
     {
         ChrClient::NetStackChrClient::GetInstance().GetDfxInfoFromCurlHandleAndReport(easyHandle, message->data.result);
+        ChrClient::NetStackChrClient::GetInstance().GetDfxUrlInfoFromCurlHandleAndReport(easyHandle, message->data.result);
     }
 #endif
     if (!easyHandle) {
