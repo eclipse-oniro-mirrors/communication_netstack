@@ -129,6 +129,21 @@ public:
         lws_callback_on_writable(wsi_);
     }
 
+    void SetNegotiatedProtocol(const std::string& protocol)
+    {
+        if (protocol.length() >= MAX_PROTOCOL_LENGTH) {
+            NETSTACK_LOGE("Protocol too long: %{public}s", protocol.c_str());
+            negotiatedProtocol_ = protocol.substr(0, MAX_PROTOCOL_LENGTH - 1);
+        } else {
+            negotiatedProtocol_ = protocol;
+        }
+    }
+
+    std::string& GetNegotiatedProtocol()
+    {
+        return negotiatedProtocol_;
+    }
+
     std::map<std::string, std::string> header;
 
     lws_close_status closeStatus;
@@ -159,6 +174,10 @@ private:
     std::queue<SendData> dataQueue_;
 
     lws *wsi_ = nullptr;
+
+    std::string negotiatedProtocol_;
+
+    static constexpr size_t MAX_PROTOCOL_LENGTH = 1024;
 };
 } // namespace OHOS::NetStack::Websocket
 #endif

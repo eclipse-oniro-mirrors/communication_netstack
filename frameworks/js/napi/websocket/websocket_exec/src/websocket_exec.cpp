@@ -66,6 +66,8 @@ static constexpr const char *EVENT_KEY_STATUS = "status";
 
 static constexpr const char *EVENT_KEY_REASON = "reason";
 
+static constexpr const char *EVENT_KEY_PROTOCOL = "protocol";
+
 static constexpr const char *EVENT_KEY_MESSAGE = "message";
 
 static constexpr const char *LINK_DOWN = "The link is down";
@@ -98,6 +100,7 @@ struct OnOpenClosePara {
     OnOpenClosePara() : status(0) {}
     uint32_t status;
     std::string message;
+    std::string protocol;
 };
 
 struct WebSocketRecvMessage {
@@ -361,6 +364,12 @@ int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_re
         return HttpDummy(wsi, reason, user, in, len);
     }
 
+    char protocolChar[MAX_PROTOCOL_LENGTH] = {0};
+    if (lws_hdr_copy(wsi, protocolChar, MAX_PROTOCOL_LENGTH, WSI_TOKEN_PROTOCOL) > 0) {
+        std::string protocol = protocolChar;
+        userData->SetNegotiatedProtocol(protocol);
+    }
+
     auto vec = CommonUtils::Split(statusLine, STATUS_LINE_SEP, STATUS_LINE_ELEM_NUM);
     if (vec.size() >= FUNCTION_PARAM_TWO) {
         userData->openMessage = vec[1];
@@ -406,7 +415,8 @@ int WebSocketExec::LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons r
     }
     userData->TriggerWritable();
     userData->SetLws(wsi);
-    OnOpen(reinterpret_cast<EventManager *>(user), userData->openStatus, userData->openMessage);
+    std::string protocol = userData->GetNegotiatedProtocol();
+    OnOpen(reinterpret_cast<EventManager *>(user), userData->openStatus, userData->openMessage, protocol);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -848,6 +858,7 @@ static napi_value CreateOpenPara(napi_env env, void *callbackPara)
     }
     NapiUtils::SetUint32Property(env, obj, EVENT_KEY_STATUS, para->status);
     NapiUtils::SetStringPropertyUtf8(env, obj, EVENT_KEY_MESSAGE, para->message);
+    NapiUtils::SetStringPropertyUtf8(env, obj, EVENT_KEY_PROTOCOL, para->protocol);
     return obj;
 }
 
@@ -929,9 +940,10 @@ napi_value CreateResponseHeader(napi_env env, void *callbackPara)
     return header;
 }
 
-void WebSocketExec::OnOpen(EventManager *manager, uint32_t status, const std::string &message)
+void WebSocketExec::OnOpen(EventManager *manager, uint32_t status, const std::string &message,
+    const std::string &protocol)
 {
-    NETSTACK_LOGI("OnOpen %{public}u %{public}s", status, message.c_str());
+    NETSTACK_LOGI("OnOpen %{public}u %{public}s %{public}s", status, message.c_str(), protocol.c_str());
     if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
         NETSTACK_LOGE("manager is null");
         return;
@@ -943,6 +955,7 @@ void WebSocketExec::OnOpen(EventManager *manager, uint32_t status, const std::st
     auto para = new OnOpenClosePara;
     para->status = status;
     para->message = message;
+    para->protocol = protocol;
     manager->EmitByUvWithoutCheckShared(EventName::EVENT_OPEN, para, CallbackTemplate<CreateOpenPara>);
 }
 
