@@ -316,7 +316,7 @@ void CleanUpWithSharedManager(void* data)
     }
     auto manager = *sharedManager;
     auto env = manager->env_;
-    napi_handle_scope(env, &scope);
+    napi_handle_scope scope = nullptr;
     napi_open_handle_scope(env, &scope);
     napi_value obj = nullptr;
     void* result = nullptr;
