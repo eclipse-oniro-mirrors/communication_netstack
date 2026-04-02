@@ -754,6 +754,13 @@ HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL50, TestSize.Level2)
     EXPECT_STREQ(hostname.c_str(), "（）“”{}P{0%%%VVV{}");
 }
 
+HWTEST_F(NetStackCommonUtilsTest, AnonymousDomain01, TestSize.Level2)
+{
+    std::string url = "www.baidu.com";
+    std::string hostname = AnonymousDomain(url);
+    EXPECT_STREQ(hostname.c_str(), "w*w.*a*d*.*o*");
+}
+
 HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned01, TestSize.Level2)
 {
     std::string pubkey;
@@ -852,6 +859,42 @@ HWTEST_F(NetStackCommonUtilsTest, MallocCString01, TestSize.Level2)
     std::string url = "";
     auto ret = MallocCString(url);
     EXPECT_TRUE(ret == nullptr);
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetSimpleHostTest1, TestSize.Level2)
+{
+    std::string url = "http://www.example.com";
+    EXPECT_EQ(GetSimpleHost(url), "http://www.example.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetSimpleHostTest2, TestSize.Level2)
+{
+    std::string url = "http://www.example.com?__biz=xxx&asdasfdasfgasfasfsafasdf";
+    EXPECT_EQ(GetSimpleHost(url), "http://www.example.com?__biz=xxx");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetSimpleHostTest3, TestSize.Level2)
+{
+    std::string url = "http://www.example.com?abc=123";
+    EXPECT_NE(GetSimpleHost(url), "http://www.example.com?abc=123");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetSimpleHostTest4, TestSize.Level2)
+{
+    std::string url = "http://www.example.com?__biz=123";
+    EXPECT_EQ(GetSimpleHost(url), "http://www.example.com?__biz=123");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetSimpleHostTest5, TestSize.Level2)
+{
+    std::string url = "http://www.example.com?__biz=123&other=456";
+    EXPECT_EQ(GetSimpleHost(url), "http://www.example.com?__biz=123");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetSimpleHostTest6, TestSize.Level2)
+{
+    std::string url = "http://www.example.com?abc=123&__biz=456&def=789";
+    EXPECT_EQ(GetSimpleHost(url), "http://www.example.com?__biz=456");
 }
 } // namespace CommonUtils
 } // namespace NetStack

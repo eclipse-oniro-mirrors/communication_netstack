@@ -97,7 +97,7 @@ public:
     virtual void TearDown() {}
 };
 
-void FillNormalvalue(ChrClient::DataTransChrStats& chrStats)
+void FillNormalValue(ChrClient::DataTransChrStats& chrStats)
 {
     chrStats.processName = PROCESS_NAME_DEFAULT_VALUE;
 
@@ -155,7 +155,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestPort, TestSize.Level2)
 {
     ChrClient::DataTransTcpInfo tcpInfo;
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd >0) {
+    if (sockfd > 0) {
         ChrClient::NetStackChrClient::GetInstance().GetTcpInfoFromSock(sockfd, tcpInfo);
         EXPECT_EQ(tcpInfo.unacked, 0);
         EXPECT_EQ(tcpInfo.srcPort, 0);
@@ -176,7 +176,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestNotReport, TestSize.Level2)
 {
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
-    FillNormalvalue(chrStats);
+    FillNormalValue(chrStats);
 
     int res = ChrClient::NetStackChrClient::GetInstance().ShouldReportHttpAbnormalEvent(chrStats.httpInfo);
     EXPECT_EQ(res, -1);
@@ -186,7 +186,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestResponseCodeError1, TestSiz
 {
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
-    FillNormalvalue(chrStats);
+    FillNormalValue(chrStats);
 
     chrStats.httpInfo.responseCode = RESPONSE_ERROR_CODE_BELOW;
     int res = ChrClient::NetStackChrClient::GetInstance().ShouldReportHttpAbnormalEvent(chrStats.httpInfo);
@@ -207,7 +207,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestOSError, TestSize.Level2)
 {
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
-    FillNormalvalue(chrStats);
+    FillNormalValue(chrStats);
 
     chrStats.httpInfo.osError = OS_ERROR_CODE;
     int res = ChrClient::NetStackChrClient::GetInstance().ShouldReportHttpAbnormalEvent(chrStats.httpInfo);
@@ -218,7 +218,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestProxyError, TestSize.Level2
 {
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
-    FillNormalvalue(chrStats);
+    FillNormalValue(chrStats);
 
     chrStats.httpInfo.proxyError = PROXY_ERROR_CODE;
     int res = ChrClient::NetStackChrClient::GetInstance().ShouldReportHttpAbnormalEvent(chrStats.httpInfo);
@@ -229,7 +229,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestCurlCodeError, TestSize.Lev
 {
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
-    FillNormalvalue(chrStats);
+    FillNormalValue(chrStats);
 
     chrStats.httpInfo.curlCode = CURL_ERROR_CODE;
     int res = ChrClient::NetStackChrClient::GetInstance().ShouldReportHttpAbnormalEvent(chrStats.httpInfo);
@@ -240,7 +240,7 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestShortRequestButTimeout, Tes
 {
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
-    FillNormalvalue(chrStats);
+    FillNormalValue(chrStats);
 
     chrStats.httpInfo.sizeUpload = SIZE_UPLOAD_TEST;
     chrStats.httpInfo.sizeDownload = SIZE_DOWNLOAD_TEST;
@@ -249,13 +249,110 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestShortRequestButTimeout, Tes
     EXPECT_EQ(res, 0);
 }
 
-HWTEST_F(NetStackChrClientTest, NetStackChrClientTestTimeLimits, TestSize.Level2)
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestReportTimeLimits, TestSize.Level2)
 {
     ChrClient::NetStackChrReport netstackChrReport;
     ChrClient::DataTransChrStats chrStats;
 
     netstackChrReport.ReportCommonEvent(chrStats);
-    int second_ret = netstackChrReport.ReportCommonEvent(chrStats);
-    EXPECT_EQ(second_ret, 1);
+    int secondRet = netstackChrReport.ReportCommonEvent(chrStats);
+    EXPECT_EQ(secondRet, 1);
 }
+
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestReport1, TestSize.Level2)
+{
+    ChrClient::DataTransUrlInfo urlInfo;
+    urlInfo.responseCode = 100;
+    urlInfo.curlCode = 1;
+    urlInfo.osError = 1;
+    EXPECT_TRUE(ChrClient::NetStackChrClient::GetInstance().ShouldReportUrlAbnormalEvent(urlInfo));
+}
+
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestReport2, TestSize.Level2)
+{
+    ChrClient::DataTransUrlInfo urlInfo;
+    urlInfo.totalTime = 1000001;
+    EXPECT_TRUE(ChrClient::NetStackChrClient::GetInstance().ShouldReportUrlAbnormalEvent(urlInfo));
+}
+
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestReport3, TestSize.Level2)
+{
+    ChrClient::DataTransUrlInfo urlInfo;
+    urlInfo.responseCode = 255;
+    urlInfo.curlCode = 0;
+    urlInfo.osError = 0;
+    urlInfo.totalTime = 1000;
+    EXPECT_FALSE(ChrClient::NetStackChrClient::GetInstance().ShouldReportUrlAbnormalEvent(urlInfo));
+}
+
+HWTEST_F(NetStackChrClientTest, ShouldReportUrlAbnormalEvent_ResponseCodeTooLow, TestSize.Level2) {
+    ChrClient::DataTransUrlInfo urlInfo;
+    urlInfo.responseCode = 199;
+    EXPECT_TRUE(ChrClient::NetStackChrClient::GetInstance().ShouldReportUrlAbnormalEvent(urlInfo));
+}
+
+HWTEST_F(NetStackChrClientTest, ShouldReportUrlAbnormalEvent_ResponseCodeTooHigh, TestSize.Level2) {
+    ChrClient::DataTransUrlInfo urlInfo;
+    urlInfo.responseCode = 300;
+    EXPECT_TRUE(ChrClient::NetStackChrClient::GetInstance().ShouldReportUrlAbnormalEvent(urlInfo));
+}
+
+HWTEST_F(NetStackChrClientTest, ShouldReportUrlAbnormalEvent_CurlCodeError, TestSize.Level2) {
+    ChrClient::DataTransUrlInfo urlInfo;
+    urlInfo.curlCode = 1;
+    EXPECT_TRUE(ChrClient::NetStackChrClient::GetInstance().ShouldReportUrlAbnormalEvent(urlInfo));
+}
+
+HWTEST_F(NetStackChrClientTest, ShouldReportUrlAbnormalEvent_OsError, TestSize.Level2) {
+    ChrClient::DataTransUrlInfo urlInfo;
+    urlInfo.osError = 1;
+    EXPECT_TRUE(ChrClient::NetStackChrClient::GetInstance().ShouldReportUrlAbnormalEvent(urlInfo));
+}
+
+HWTEST_F(NetStackChrClientTest, ShouldReportUrlAbnormalEvent_HighLatency, TestSize.Level2) {
+    ChrClient::DataTransUrlInfo urlInfo;
+    urlInfo.totalTime = 1000001;
+    EXPECT_TRUE(ChrClient::NetStackChrClient::GetInstance().ShouldReportUrlAbnormalEvent(urlInfo));
+}
+
+HWTEST_F(NetStackChrClientTest, ShouldReportUrlAbnormalEvent_NormalCase, TestSize.Level2) {
+    ChrClient::DataTransUrlInfo urlInfo;
+    urlInfo.responseCode = 200;
+    urlInfo.curlCode = 0;
+    urlInfo.osError = 0;
+    urlInfo.totalTime = 99999;
+    EXPECT_FALSE(ChrClient::NetStackChrClient::GetInstance().ShouldReportUrlAbnormalEvent(urlInfo));
+}
+
+HWTEST_F(NetStackChrClientTest, GetDfxUrlInfoFromCurlHandleAndReport1, TestSize.Level2) {
+    CURL *handle = GetCurlHandle();
+    ChrClient::NetStackChrClient::GetInstance().GetDfxUrlInfoFromCurlHandleAndReport(NULL, 0);
+    ChrClient::NetStackChrClient::GetInstance().GetDfxUrlInfoFromCurlHandleAndReport(handle, 0);
+    ChrClient::NetStackChrClient::GetInstance().GetDfxUrlInfoFromCurlHandleAndReport(handle, 1);
+    ChrClient::DataTransChrStats dataTransChrStats{};
+    ChrClient::NetStackChrClient::GetInstance().GetHttpInfoFromCurl(handle, dataTransChrStats.httpInfo);
+    EXPECT_EQ(dataTransChrStats.httpInfo.responseCode, 0);
+}
+
+HWTEST_F(NetStackChrClientTest, GetDfxUrlInfoFromCurlHandleAndReport2, TestSize.Level2) {
+    CURL *handle = GetCurlHandle();
+    ChrClient::DataTransUrlInfo urlInfo;
+    urlInfo.responseCode = 255;
+    urlInfo.curlCode = 0;
+    urlInfo.osError = 0;
+    urlInfo.totalTime = 1000;
+    EXPECT_FALSE(ChrClient::NetStackChrClient::GetInstance().ShouldReportUrlAbnormalEvent(urlInfo));
+    ChrClient::NetStackChrClient::GetInstance().GetDfxUrlInfoFromCurlHandleAndReport(handle, 1);
+}
+
+HWTEST_F(NetStackChrClientTest, NetStackChrClientTestReportTimeLimits2, TestSize.Level2)
+{
+    ChrClient::NetStackChrReport netstackChrReport;
+    ChrClient::DataTransChrStats chrStats;
+
+    netstackChrReport.ReportCommonEvent(chrStats);
+    int secondRet = netstackChrReport.ReportUrlCommonEvent(chrStats);
+    EXPECT_NE(secondRet, 1);
+}
+
 }
