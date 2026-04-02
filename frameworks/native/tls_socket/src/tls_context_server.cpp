@@ -281,20 +281,12 @@ bool TLSContextServer::SetKeyAndCheck(TLSContextServer *tlsContext, const TLSCon
         }
     }
 
-    if (configuration.GetPrivateKey().Algorithm() == OPAQUE) {
-        tlsContext->pkey_ = nullptr;
-    }
     auto pkey_ = tlsContext->pkey_;
     if (!SSL_CTX_use_PrivateKey(tlsContext->ctx_, pkey_)) {
         NETSTACK_LOGE("SSL_CTX_use_PrivateKey is error");
         return false;
     }
 
-    if (!configuration.GetPrivateKey().GetKeyPass().Length()) {
-        SSL_CTX_set_default_passwd_cb_userdata(tlsContext->ctx_,
-                                               reinterpret_cast<void *>(const_cast<char *>(
-                                                   tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyPass().Data())));
-    }
     // Check if the certificate matches the private key.
     if (!SSL_CTX_check_private_key(tlsContext->ctx_)) {
         NETSTACK_LOGE("Check if the certificate matches the private key is error");
