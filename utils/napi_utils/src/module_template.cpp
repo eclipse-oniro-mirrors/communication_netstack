@@ -316,6 +316,10 @@ void CleanUpWithSharedManager(void* data)
     }
     auto manager = *sharedManager;
     auto env = manager->env_;
+    auto closeScope = [&env](napi_handle_scope scope) {
+        NapiUtils::CloseScope(env, scope);
+    };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     napi_value obj = nullptr;
     void* result = nullptr;
     napi_get_named_property(env, NapiUtils::GetGlobal(env), manager->className_.c_str(), &obj);
