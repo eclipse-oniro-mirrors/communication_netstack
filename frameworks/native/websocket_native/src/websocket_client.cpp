@@ -233,7 +233,7 @@ int LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, 
     }
     std::string data = client->GetData();
     if (client->onMessageCallback_) {
-        client->onMessageCallback_(client, data.c_str(), data.size());
+        client->onMessageCallback_(client, data, data.size());
     }
     if (client->onDataEndCallback_) {
         client->onDataEndCallback_(client);
