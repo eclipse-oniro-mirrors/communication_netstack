@@ -15,6 +15,7 @@
 
 #include "tls_key.h"
 
+#include <securec.h>
 #include "netstack_log.h"
 #include "tls_utils.h"
 
@@ -24,6 +25,25 @@ namespace TlsSocket {
 namespace {
 constexpr int FILE_READ_KEY_LEN = 4096;
 constexpr const char *FILE_OPEN_FLAG = "rb";
+
+static int PemPasswordCallback(char *buf, int size, int rwflag, void *userdata)
+{
+    if (userdata == nullptr) {
+        return 0;
+    }
+    auto *pwdData = static_cast<SecureData *>(userdata);
+    if (pwdData->Length() == 0) {
+        return 0;
+    }
+    int len = static_cast<int>(pwdData->Length());
+    if (len > size) {
+        return 0;
+    }
+    if (memcpy_s(buf, size, pwdData->Data(), len) != EOK) {
+        return 0;
+    }
+    return len;
+}
 } // namespace
 
 TLSKey::TLSKey(const std::string &fileName, KeyAlgorithm algorithm, const SecureData &passPhrase,
@@ -72,7 +92,8 @@ void TLSKey::DecodeData(const SecureData &data, const SecureData &passPhrase)
         NETSTACK_LOGE("Failed to create bio buffer");
         return;
     }
-    EVP_PKEY *evp_pkey = PEM_read_bio_PrivateKey(bio, nullptr, nullptr, nullptr);
+    EVP_PKEY *evp_pkey = PEM_read_bio_PrivateKey(bio, nullptr, PemPasswordCallback,
+                                                 const_cast<SecureData *>(&passPhrase));
     if (evp_pkey != nullptr) {
         int alg_id = EVP_PKEY_base_id(evp_pkey);
 
@@ -98,7 +119,8 @@ void TLSKey::DecodeData(const SecureData &data, const SecureData &passPhrase)
                 break;
         }
     } else {
-        rsa_ = PEM_read_bio_RSAPrivateKey(bio, nullptr, nullptr, nullptr);
+        rsa_ = PEM_read_bio_RSAPrivateKey(bio, nullptr, PemPasswordCallback,
+                                          const_cast<SecureData *>(&passPhrase));
     }
 
     EVP_PKEY_free(evp_pkey);
@@ -123,7 +145,8 @@ void TLSKey::DecodeData(const SecureData &data, KeyAlgorithm algorithm, const Se
         NETSTACK_LOGE("Failed to create bio buffer");
         return;
     }
-    rsa_ = PEM_read_bio_RSAPrivateKey(bio, nullptr, nullptr, nullptr);
+    rsa_ = PEM_read_bio_RSAPrivateKey(bio, nullptr, PemPasswordCallback,
+                                      const_cast<SecureData *>(&passPhrase));
     if (rsa_) {
         keyIsNull_ = false;
     }
@@ -175,21 +198,24 @@ void TLSKey::SwitchAlgorithm(KeyType type, KeyAlgorithm algorithm, BIO *bio)
     switch (algorithm) {
         case ALGORITHM_RSA:
             rsa_ = (type == PUBLIC_KEY) ? PEM_read_bio_RSA_PUBKEY(bio, nullptr, nullptr, nullptr)
-                                        : PEM_read_bio_RSAPrivateKey(bio, nullptr, nullptr, nullptr);
+                                        : PEM_read_bio_RSAPrivateKey(bio, nullptr, PemPasswordCallback,
+                                                                     const_cast<SecureData *>(&keyPass_));
             if (rsa_) {
                 keyIsNull_ = false;
             }
             break;
         case ALGORITHM_DSA:
             dsa_ = (type == PUBLIC_KEY) ? PEM_read_bio_DSA_PUBKEY(bio, nullptr, nullptr, nullptr)
-                                        : PEM_read_bio_DSAPrivateKey(bio, nullptr, nullptr, nullptr);
+                                        : PEM_read_bio_DSAPrivateKey(bio, nullptr, PemPasswordCallback,
+                                                                     const_cast<SecureData *>(&keyPass_));
             if (dsa_) {
                 keyIsNull_ = false;
             }
             break;
         case ALGORITHM_DH: {
             EVP_PKEY *result = (type == PUBLIC_KEY) ? PEM_read_bio_PUBKEY(bio, nullptr, nullptr, nullptr)
-                                                    : PEM_read_bio_PrivateKey(bio, nullptr, nullptr, nullptr);
+                                                    : PEM_read_bio_PrivateKey(bio, nullptr, PemPasswordCallback,
+                                                                              const_cast<SecureData *>(&keyPass_));
             if (result) {
                 dh_ = EVP_PKEY_get1_DH(result);
             }
@@ -201,7 +227,8 @@ void TLSKey::SwitchAlgorithm(KeyType type, KeyAlgorithm algorithm, BIO *bio)
         }
         case ALGORITHM_EC:
             ec_ = (type == PUBLIC_KEY) ? PEM_read_bio_EC_PUBKEY(bio, nullptr, nullptr, nullptr)
-                                       : PEM_read_bio_ECPrivateKey(bio, nullptr, nullptr, nullptr);
+                                       : PEM_read_bio_ECPrivateKey(bio, nullptr, PemPasswordCallback,
+                                                                   const_cast<SecureData *>(&keyPass_));
             if (ec_) {
                 keyIsNull_ = false;
             }
