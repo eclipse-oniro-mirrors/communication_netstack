@@ -28,6 +28,7 @@ class NetStackChrClient {
 public:
     static NetStackChrClient &GetInstance();
     void GetDfxInfoFromCurlHandleAndReport(CURL *handle, int32_t curlCode);
+    void GetDfxUrlInfoFromCurlHandleAndReport(CURL *handle, int32_t curlCode);
 
 private:
     NetStackChrClient() = default;
@@ -36,12 +37,14 @@ private:
     static int GetAddrFromSock(int sockfd, struct DataTransTcpInfo &httpTcpInfo);
     static int GetTcpInfoFromSock(const curl_socket_t sockfd, DataTransTcpInfo &httpTcpInfo);
     static void GetHttpInfoFromCurl(CURL *handle, DataTransHttpInfo &httpInfo);
+    static void GetUrlInfoFromCurl(CURL *handle, DataTransUrlInfo &urlInfo);
 
     template <typename DataType>
     static DataType GetNumericAttributeFromCurl(CURL *handle, CURLINFO info);
     static std::string GetStringAttributeFromCurl(CURL *handle, CURLINFO info);
     static long GetRequestStartTime(curl_off_t totalTime);
     static int ShouldReportHttpAbnormalEvent(const DataTransHttpInfo &httpInfo);
+    bool ShouldReportUrlAbnormalEvent(const DataTransUrlInfo &urlInfo);
     NetStackChrReport netstackChrReport_;
 };
 

@@ -27,6 +27,7 @@ static constexpr const long HTTP_REQUEST_SUCCESS_MIN = 200;
 static constexpr const long HTTP_REQUEST_SUCCESS_MAX = 299;
 static constexpr const int HTTP_FILE_TRANSFER_SIZE_THRESHOLD = 100000;
 static constexpr const int HTTP_FILE_TRANSFER_TIME_THRESHOLD = 500000;
+static constexpr const int HIGH_LATENCY_TRANSFER_TIME_THRESHOLD = 1000000;
 
 NetStackChrClient &NetStackChrClient::GetInstance()
 {
@@ -167,6 +168,16 @@ void NetStackChrClient::GetHttpInfoFromCurl(CURL *handle, DataTransHttpInfo &htt
     httpInfo.hostName = CommonUtils::AnonymizeHost(originUrl);
 }
 
+void NetStackChrClient::GetUrlInfoFromCurl(CURL *handle, DataTransUrlInfo &urlInfo)
+{
+    (void)curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &urlInfo.responseCode);
+    urlInfo.totalTime = GetNumericAttributeFromCurl<curl_off_t>(handle, CURLINFO_TOTAL_TIME_T);
+    urlInfo.requestStartTime = GetRequestStartTime(urlInfo.totalTime);
+    std::string originUrl = GetStringAttributeFromCurl(handle, CURLINFO_EFFECTIVE_URL);
+    std::string SimpleUrl = CommonUtils::GetSimpleHost(originUrl);
+    urlInfo.hostName = CommonUtils::AnonymizeHost(SimpleUrl);
+}
+
 int NetStackChrClient::ShouldReportHttpAbnormalEvent(const DataTransHttpInfo &httpInfo)
 {
     if (httpInfo.responseCode < HTTP_REQUEST_SUCCESS_MIN || httpInfo.responseCode > HTTP_REQUEST_SUCCESS_MAX ||
@@ -179,6 +190,18 @@ int NetStackChrClient::ShouldReportHttpAbnormalEvent(const DataTransHttpInfo &ht
     }
 
     return -1;
+}
+
+bool NetStackChrClient::ShouldReportUrlAbnormalEvent(const DataTransUrlInfo &urlInfo)
+{
+    if (urlInfo.responseCode < HTTP_REQUEST_SUCCESS_MIN || urlInfo.responseCode > HTTP_REQUEST_SUCCESS_MAX ||
+        urlInfo.curlCode != 0 || urlInfo.osError != 0) {
+        return true;
+    }
+    if (urlInfo.totalTime > HIGH_LATENCY_TRANSFER_TIME_THRESHOLD) {
+        return true;
+    }
+    return false;
 }
 
 void NetStackChrClient::GetDfxInfoFromCurlHandleAndReport(CURL *handle, int32_t curlCode)
@@ -199,17 +222,35 @@ void NetStackChrClient::GetDfxInfoFromCurlHandleAndReport(CURL *handle, int32_t 
     curl_off_t sockfd = 0;
     curl_easy_getinfo(handle, CURLINFO_ACTIVESOCKET, &sockfd);
 
-    if (GetTcpInfoFromSock(sockfd, dataTransChrStats.tcpInfo) != 0) {
-        NETSTACK_LOGE("Chr client get tcp info from socket failed, sockfd: %{public} " PRId64, sockfd);
-    }
+    GetTcpInfoFromSock(sockfd, dataTransChrStats.tcpInfo);
+
     netstackChrReport_.LogHttpInfo(dataTransChrStats);
     if (ShouldReportHttpAbnormalEvent(dataTransChrStats.httpInfo) != 0) {
         return;
     }
-    int ret = netstackChrReport_.ReportCommonEvent(dataTransChrStats);
-    if (ret > 0) {
-        NETSTACK_LOGE("Send to CHR failed, error code %{public}d", ret);
+    netstackChrReport_.ReportCommonEvent(dataTransChrStats);
+}
+
+void NetStackChrClient::GetDfxUrlInfoFromCurlHandleAndReport(CURL *handle, int32_t curlCode)
+{
+    if (handle == NULL) {
+        return;
     }
+ 
+    DataTransChrStats dataTransChrStats{};
+    dataTransChrStats.urlInfo.uid = static_cast<int>(getuid());
+    dataTransChrStats.urlInfo.curlCode = curlCode;
+    if (CommonUtils::GetBundleName().has_value()) {
+        dataTransChrStats.processName = CommonUtils::GetBundleName().value();
+    }
+    GetUrlInfoFromCurl(handle, dataTransChrStats.urlInfo);
+    curl_off_t sockfd = 0;
+    curl_easy_getinfo(handle, CURLINFO_ACTIVESOCKET, &sockfd);
+    GetTcpInfoFromSock(sockfd, dataTransChrStats.tcpInfo);
+    if (!ShouldReportUrlAbnormalEvent(dataTransChrStats.urlInfo)) {
+        return;
+    }
+    netstackChrReport_.ReportUrlCommonEvent(dataTransChrStats);
 }
 
 }  // namespace OHOS::NetStack::ChrClient
