@@ -222,17 +222,13 @@ void NetStackChrClient::GetDfxInfoFromCurlHandleAndReport(CURL *handle, int32_t 
     curl_off_t sockfd = 0;
     curl_easy_getinfo(handle, CURLINFO_ACTIVESOCKET, &sockfd);
 
-    if (GetTcpInfoFromSock(sockfd, dataTransChrStats.tcpInfo) != 0) {
-        NETSTACK_LOGE("Chr client get tcp info from socket failed, sockfd: %{public} " PRId64, sockfd);
-    }
+    GetTcpInfoFromSock(sockfd, dataTransChrStats.tcpInfo);
+
     netstackChrReport_.LogHttpInfo(dataTransChrStats);
     if (ShouldReportHttpAbnormalEvent(dataTransChrStats.httpInfo) != 0) {
         return;
     }
-    int ret = netstackChrReport_.ReportCommonEvent(dataTransChrStats);
-    if (ret > 0) {
-        NETSTACK_LOGE("Send to CHR failed, error code %{public}d", ret);
-    }
+    netstackChrReport_.ReportCommonEvent(dataTransChrStats);
 }
 
 void NetStackChrClient::GetDfxUrlInfoFromCurlHandleAndReport(CURL *handle, int32_t curlCode)
