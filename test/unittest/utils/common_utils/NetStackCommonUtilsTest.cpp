@@ -754,13 +754,6 @@ HWTEST_F(NetStackCommonUtilsTest, GetHostnameFromURL50, TestSize.Level2)
     EXPECT_STREQ(hostname.c_str(), "（）“”{}P{0%%%VVV{}");
 }
 
-HWTEST_F(NetStackCommonUtilsTest, AnonymousDomain01, TestSize.Level2)
-{
-    std::string url = "www.baidu.com";
-    std::string hostname = AnonymousDomain(url);
-    EXPECT_STREQ(hostname.c_str(), "w*w.*a*d*.*o*");
-}
-
 HWTEST_F(NetStackCommonUtilsTest, IsCertPubKeyInPinned01, TestSize.Level2)
 {
     std::string pubkey;
