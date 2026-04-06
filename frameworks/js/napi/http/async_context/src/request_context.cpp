@@ -1259,8 +1259,10 @@ void RequestContext::ParsePathPreference(napi_value optionsValue)
     auto pathType = NapiUtils::GetStringPropertyUtf8(env, optionsValue, HttpConstant::PATH_PREFERENCE);
     if (pathType == "primaryCellular") {
         pathPre = PathPreference::primaryCellular;
+        NETSTACK_LOGI("ParsePathPreference: parsed pathPreference primaryCellular");
     } else if (pathType == "secondaryCellular") {
         pathPre = PathPreference::secondaryCellular;
+        NETSTACK_LOGI("ParsePathPreference: parsed pathPreference secondaryCellular");
     } else {
         pathPre = PathPreference::autoPath;
     }
