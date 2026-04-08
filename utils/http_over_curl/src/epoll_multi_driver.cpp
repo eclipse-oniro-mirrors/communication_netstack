@@ -125,6 +125,8 @@ void EpollMultiDriver::IncomingRequestCallback()
         auto ret = curl_multi_add_handle(multi_, request->easyHandle);
         if (ret != CURLM_OK) {
             NETSTACK_LOGE("curl_multi_add_handle err, ret = %{public}d %{public}s", ret, curl_multi_strerror(ret));
+            ongoingRequests_.erase(request->easyHandle);
+            delete request;
             continue;
         }
         
