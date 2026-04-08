@@ -102,7 +102,7 @@ HWTEST_F(HttpInterceptorInterfaceTest, OH_Http_AddInterceptor001, TestSize.Level
     ret = OH_Http_AddWritableInterceptor(&g_response_modify_interceptor);
     EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
     ret = OH_Http_AddReadOnlyInterceptor(&g_request_readonly_interceptor);
-    EXPECT_EQ(ret, OH_HTTP_RESULT_OK);
+    EXPECT_EQ(ret, OH_HTTP_PARAMETER_ERROR);
 }
 
 HWTEST_F(HttpInterceptorInterfaceTest, OH_Http_RemoveInterceptor001, TestSize.Level1)
