@@ -28,7 +28,7 @@ int32_t OH_Http_AddReadOnlyInterceptor(struct OH_Http_Interceptor *interceptor)
     if (!OHOS::NetStack::CommonUtils::HasInternetPermission()) {
         return OH_HTTP_PERMISSION_DENIED;
     }
-    if (interceptor == nullptr || interceptor->type != OH_TYPE_READ_ONLY) {
+    if (interceptor == nullptr || interceptor->type != OH_TYPE_READ_ONLY || interceptor->stage != OH_STAGE_RESPONSE) {
         return OH_HTTP_PARAMETER_ERROR;
     }
     return OH_Http_AddInterceptor(interceptor);
