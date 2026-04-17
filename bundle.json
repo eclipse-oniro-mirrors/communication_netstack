@@ -147,6 +147,13 @@
                 },
                 {
                     "header": {
+                        "header_base": "//foundation/communication/netstack/frameworks/cj/socket/include",
+                        "header_files": []
+                    },
+                    "name": "//foundation/communication/netstack/frameworks/cj/socket:cj_net_socket_ffi"
+                },
+                {
+                    "header": {
                         "header_base": "//foundation/communication/netstack/frameworks/cj/http/include",
                         "header_files": []
                     },
