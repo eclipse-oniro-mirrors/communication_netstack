@@ -798,9 +798,8 @@ bool RequestContext::ParseBodyQueryParamsOrExtraData(napi_value optionsValue)
     return ParseExtraData(optionsValue);
 }
 
-void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
+void RequestContext::ParseMethod(napi_value optionsValue)
 {
-    options.SetUrl(NapiUtils::GetStringFromValueUtf8(GetEnv(), urlValue));
     std::string customMethod;
     if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CUSTOM_METHOD)) {
         napi_value requestMethod =
@@ -821,7 +820,12 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
             options.SetMethod(NapiUtils::GetStringPropertyUtf8(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_METHOD));
         }
     }
+}
 
+void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
+{
+    options.SetUrl(NapiUtils::GetStringFromValueUtf8(GetEnv(), urlValue));
+    ParseMethod(optionsValue);
     ParseNumberOptions(optionsValue);
     ParseUsingHttpProxy(optionsValue);
     ParseSocks5Proxy(optionsValue);
@@ -848,6 +852,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParseAddressFamily(optionsValue);
     ParseSslType(optionsValue);
     ParseClientEncCert(optionsValue);
+    ParsePartialChain(optionsValue);
     ParsePathPreference(optionsValue);
     ParseReuseConnections(optionsValue);
     ParseInactivityMs(optionsValue);
@@ -1475,6 +1480,22 @@ void RequestContext::ParseClientEncCert(napi_value optionsValue)
     Secure::SecureChar keyPasswd = Secure::SecureChar(
         NapiUtils::GetStringPropertyUtf8(GetEnv(), clientCertValue, HttpConstant::HTTP_CLIENT_KEY_PASSWD));
     options.SetClientEncCert(cert, certType, key, keyPasswd);
+}
+
+void RequestContext::ParsePartialChain(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::ENABLE_PARTIAL_CHAIN)) {
+        return;
+    }
+
+    napi_value partialChainValue =
+        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::ENABLE_PARTIAL_CHAIN);
+    napi_valuetype type = NapiUtils::GetValueType(GetEnv(), partialChainValue);
+    if (type != napi_boolean) {
+        return;
+    }
+    bool partialChain = NapiUtils::GetBooleanFromValue(GetEnv(), partialChainValue);
+    options.SetPartialChain(partialChain);
 }
 
 void RequestContext::ParsePathPreference(napi_value optionsValue)

@@ -1736,6 +1736,11 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     if (!SetSslTypeAndClientEncCert(curl, context)) {
         return false;
     }
+    if (context->options.GetPartialChain()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLPARTIALCHAIN, 1L, context);
+    } else {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLPARTIALCHAIN, 0L, context);
+    }
 
     return true;
 }

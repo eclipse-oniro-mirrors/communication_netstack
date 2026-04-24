@@ -266,6 +266,7 @@ public:
     static const char *const INTERCEPTOR_CONNECT_NETWORK;
     static const char *const INTERCEPTOR_FINAL_RESPONSE;
     static const char *const INTERCEPTOR_TYPE;
+    static const char *const ENABLE_PARTIAL_CHAIN;
     static const char *const PATH_PREFERENCE;
     static const char *const REUSE_CONNECTIONS;
     static const char *const INACTIVITY_MS;
