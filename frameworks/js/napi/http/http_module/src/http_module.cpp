@@ -46,6 +46,10 @@ static constexpr const char *DELETE_ASYNC_WORK_NAME = "ExecDelete";
 
 static constexpr const char *HTTP_MODULE_NAME = "net.http";
 
+#ifdef HTTP_DEADFLOWRESET_FEATURE
+static constexpr const char *ENABLE_DEAD_FLOW_KEY = "EnableDeadFlow";
+#endif
+
 static thread_local uint64_t g_moduleId;
 
 static bool g_appIsAtomicService = false;
@@ -72,8 +76,14 @@ napi_value HttpModuleExports::InitHttpModule(napi_env env, napi_value exports)
                       g_appBundleName.c_str(), g_appIsAtomicService);
 #if HAS_NETMANAGER_BASE
 #ifdef HTTP_DEADFLOWRESET_FEATURE
-        NetManagerStandard::NetConnClient::GetInstance().IsDeadFlowResetTargetBundle(g_appBundleName,
-            g_appIsDeadFlowResetTarget);
+        bool enableDeadFlow = false;
+        auto &netConnClient = NetManagerStandard::NetConnClient::GetInstance();
+        netConnClient.IsDeadFlowResetTargetBundle(ENABLE_DEAD_FLOW_KEY, enableDeadFlow);
+        if (enableDeadFlow) {
+            g_appIsDeadFlowResetTarget = true;
+        } else {
+            netConnClient.IsDeadFlowResetTargetBundle(g_appBundleName, g_appIsDeadFlowResetTarget);
+        }
 #endif
 #endif
     });
