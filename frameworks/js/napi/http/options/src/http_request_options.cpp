@@ -501,6 +501,16 @@ void HttpRequestOptions::GetClientEncCert(
     keyPasswd = keyPasswdEnc_;
 }
 
+void HttpRequestOptions::SetPartialChain(bool partialChain)
+{
+    partialChain_ = partialChain;
+}
+
+bool HttpRequestOptions::GetPartialChain() const
+{
+    return partialChain_;
+}
+
 void HttpRequestOptions::SetPathPreference(PathPreference &pathPreference)
 {
     pathPreference_ = pathPreference;

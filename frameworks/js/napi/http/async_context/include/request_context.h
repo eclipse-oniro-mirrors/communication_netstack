@@ -319,6 +319,10 @@ private:
 
     void ParseClientEncCert(napi_value optionsValue);
 
+    void ParsePartialChain(napi_value optionsValue);
+
+    void ParseMethod(napi_value optionsValue);
+
     void ParsePathPreference(napi_value optionsValue);
 
     void ParseMaxRedirects(napi_value optionsValue);

@@ -287,4 +287,30 @@ HWTEST_F(HttpExecTest, SetSniHostNameOption002, TestSize.Level1)
     EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context,
                                     context.GetCurlHeaderList()));
 }
+
+HWTEST_F(HttpExecTest, SetServerSSLCertOptionWithPartialChain001, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+    ASSERT_NE(handle, nullptr);
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    context.options.SetPartialChain(false);
+    EXPECT_TRUE(HttpExec::SetServerSSLCertOption(handle.get(), &context));
+}
+
+HWTEST_F(HttpExecTest, SetServerSSLCertOptionWithPartialChain002, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+    ASSERT_NE(handle, nullptr);
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    context.options.SetPartialChain(true);
+    EXPECT_TRUE(HttpExec::SetServerSSLCertOption(handle.get(), &context));
+}
 } // namespace

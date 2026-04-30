@@ -293,6 +293,9 @@ public:
     void SetClientEncCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
     void GetClientEncCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
 
+    void SetPartialChain(bool partialChain);
+    bool GetPartialChain() const;
+
     void SetPathPreference(PathPreference &pathPreference);
     [[nodiscard]] const PathPreference &GetPathPreference() const;
     void SetSniHostName(const std::string &sniHostName);
@@ -376,6 +379,8 @@ private:
     Secure::SecureChar keyPasswd_;
 
     bool canSkipCertVerify_ = false;
+
+    bool partialChain_ = false;
 
     std::vector<MultiFormData> multiFormDataList_;
 
