@@ -503,10 +503,10 @@ void HttpRequestOptions::GetClientEncCert(
 
 void HttpRequestOptions::SetPartialChain(bool partialChain)
 {
-    partialChain_ = partialChain;
+    partialChain_ = partialChain ? 1 : 0;
 }
 
-bool HttpRequestOptions::GetPartialChain() const
+int HttpRequestOptions::GetPartialChain() const
 {
     return partialChain_;
 }
