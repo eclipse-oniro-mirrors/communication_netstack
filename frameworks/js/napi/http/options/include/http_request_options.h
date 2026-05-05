@@ -294,7 +294,7 @@ public:
     void GetClientEncCert(std::string &cert, std::string &certType, std::string &key, Secure::SecureChar &keyPasswd);
 
     void SetPartialChain(bool partialChain);
-    bool GetPartialChain() const;
+    int GetPartialChain() const;
 
     void SetPathPreference(PathPreference &pathPreference);
     [[nodiscard]] const PathPreference &GetPathPreference() const;
@@ -380,7 +380,7 @@ private:
 
     bool canSkipCertVerify_ = false;
 
-    bool partialChain_ = false;
+    int partialChain_ = -1; // -1: 未配置, 0: false, 1: true
 
     std::vector<MultiFormData> multiFormDataList_;
 

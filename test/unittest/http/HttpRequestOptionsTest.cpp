@@ -503,8 +503,8 @@ HWTEST_F(HttpRequestOptionsTest, SetPartialChainTest001, TestSize.Level1)
 {
     HttpRequestOptions requestOptions;
 
-    bool partialChain = requestOptions.GetPartialChain();
-    EXPECT_FALSE(partialChain);
+    int partialChain = requestOptions.GetPartialChain();
+    EXPECT_EQ(partialChain, -1);
 }
 
 HWTEST_F(HttpRequestOptionsTest, SetPartialChainTest002, TestSize.Level1)
@@ -512,7 +512,7 @@ HWTEST_F(HttpRequestOptionsTest, SetPartialChainTest002, TestSize.Level1)
     HttpRequestOptions requestOptions;
 
     requestOptions.SetPartialChain(true);
-    bool partialChain = requestOptions.GetPartialChain();
-    EXPECT_TRUE(partialChain);
+    int partialChain = requestOptions.GetPartialChain();
+    EXPECT_EQ(partialChain, 1);
 }
 } // namespace
