@@ -378,8 +378,8 @@ void OH_Http_RequestOnSuccess(std::shared_ptr<HttpClientTask> httpClientTask,
            return OH_HTTP_OUT_OF_MEMORY;
         }
         resp->responseCode =  static_cast<Http_ResponseCode>(response.GetResponseCode());
-        resp->cookies = const_cast<char*>(response.GetCookies().data());
-        resp->body.buffer = response.GetResult().data();
+        resp->cookies = strdup(response.GetCookies().c_str());
+        resp->body.buffer = strdup(response.GetResult().c_str());
         resp->body.length = response.GetResult().size();
         Http_PerformanceTiming *performanceTiming = (Http_PerformanceTiming *)calloc(1,
             sizeof(Http_PerformanceTiming));
