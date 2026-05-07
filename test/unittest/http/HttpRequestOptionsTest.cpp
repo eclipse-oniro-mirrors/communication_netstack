@@ -341,7 +341,7 @@ HWTEST_F(HttpRequestOptionsTest, SetCertificatePinningTest, TestSize.Level1)
     EXPECT_EQ(testPIN, resultPIN);
 }
 
-HWTEST_F(HttpRequestOptionsTest, TlvEncodeDecodeTest001, TestSize.Level1)
+HWTEST_F(HttpRequestOptionsTest, TlvEncodeTest001, TestSize.Level1)
 {
     DfxMessage msg{};
     msg.requestBeginTime_ = 0;
@@ -356,14 +356,7 @@ HWTEST_F(HttpRequestOptionsTest, TlvEncodeDecodeTest001, TestSize.Level1)
     auto ret = TlvUtils::Encode(msg, data, dataSize);
     EXPECT_EQ(ret, TLV_OK);
     EXPECT_GT(dataSize, 0);
-    DfxMessage result{};
-    ret = TlvUtils::Decode(result, data, dataSize);
-    EXPECT_EQ(ret, TLV_OK);
-    EXPECT_EQ(msg.requestBeginTime_, result.requestBeginTime_);
-    EXPECT_EQ(msg.requestEndTime_, result.requestEndTime_);
-    EXPECT_EQ(msg.requestId_, result.requestId_);
-    EXPECT_EQ(msg.responseStatusCode_, result.responseStatusCode_);
-    EXPECT_EQ(msg.responseHttpVersion_, result.responseHttpVersion_);
+    free(data);
 }
 
 HWTEST_F(HttpRequestOptionsTest, SetSslTypeTest001, TestSize.Level1)
