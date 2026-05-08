@@ -27,6 +27,7 @@ enum SocketErrorCode {
 };
 
 #if defined(IOS_PLATFORM)
+constexpr int SYSTEM_INTERNAL = -998;
 enum OHOSErrorCode {
     OHOS_ERR_UNDEFINED = -1,
     OHOS_ERR_EPERM = 1,
@@ -118,6 +119,7 @@ enum OHOSErrorCode {
     OHOS_ERR_ECANCELED = 125,
     OHOS_ERR_EOWNERDEAD = 130,
     OHOS_ERR_ENOTRECOVERABLE = 131,
+    OHOS_ERR_SYSTEM_INTERNAL = -998,
     OHOS_ERR_EWOULDBLOCK = EAGAIN
 };
 
@@ -231,6 +233,7 @@ static const std::map<int32_t, std::pair<OHOSErrorCode, std::string>> errCodeMap
     {EOWNERDEAD, {OHOSErrorCode::OHOS_ERR_EOWNERDEAD, "Owner died"}},
     {EQFULL, {OHOSErrorCode::OHOS_ERR_UNDEFINED, "Unknown Other Error"}},
     {ELAST, {OHOSErrorCode::OHOS_ERR_UNDEFINED, "Unknown Other Error"}},
+    {SYSTEM_INTERNAL, {OHOSErrorCode::OHOS_ERR_SYSTEM_INTERNAL, "System internal error"}},
 };
 
 class ErrCodePlatformAdapter {
