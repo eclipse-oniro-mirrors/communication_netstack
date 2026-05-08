@@ -31,10 +31,10 @@ export default namespace http {
     native cleanCache(): void
   }
 
-  let httpRequestDestroyRegister = new FinalizationRegistry<Cleaner>((cleaner: Cleaner) => {cleaner.cleanHttp()})
-  let httpResponseCacheDestroyRegister = new FinalizationRegistry<Cleaner>((cleaner: Cleaner) => {cleaner.cleanCache()})
+  let httpRequestDestroyRegister: FinalizationRegistry<Cleaner> = new FinalizationRegistry<Cleaner>((cleaner: Cleaner) => {cleaner.cleanHttp()})
+  let httpResponseCacheDestroyRegister: FinalizationRegistry<Cleaner> = new FinalizationRegistry<Cleaner>((cleaner: Cleaner) => {cleaner.cleanCache()})
 
-  let unregisterToken = new object()
+  let unregisterToken: Object = new object()
 
   export native function createHttpPtr(): long;
 

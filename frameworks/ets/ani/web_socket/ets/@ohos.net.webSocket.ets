@@ -33,8 +33,8 @@ export default namespace webSocket {
 
   export native function createWebSocket(): WebSocket;
 
-  let destroyRegister = new FinalizationRegistry<Cleaner>((cleaner: Cleaner) => {cleaner.clean()})
-  let unregisterToken = new object()
+  let destroyRegister: FinalizationRegistry<Cleaner> = new FinalizationRegistry<Cleaner>((cleaner: Cleaner) => {cleaner.clean()})
+  let unregisterToken: Object = new object()
 
   export interface WebSocketRequestOptions {
     header?: Record<String, String>;
@@ -363,8 +363,8 @@ export default namespace webSocket {
     native clean(): void
   }
 
-  let destroyRegisterServer = new FinalizationRegistry<CleanerServer>((cleaner: CleanerServer) => {cleaner.clean()})
-  let unregisterTokenServer = new object()
+  let destroyRegisterServer: FinalizationRegistry<CleanerServer> = new FinalizationRegistry<CleanerServer>((cleaner: CleanerServer) => {cleaner.clean()})
+  let unregisterTokenServer: Object = new object()
 
   export native function createWebSocketServer(): WebSocketServer;
 
