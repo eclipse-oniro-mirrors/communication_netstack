@@ -78,6 +78,7 @@ typedef struct DataTransUrlInfo {
     std::string hostName;
     std::string dstIp;
     long requestStartTime;
+    uint32_t totalCnt;
 } DataTransUrlInfo;
 
 typedef struct DataTransChrStats {

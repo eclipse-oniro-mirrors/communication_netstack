@@ -263,6 +263,11 @@ void NetStackChrClient::GetDfxUrlInfoFromCurlHandleAndReport(CURL *handle, int32
     curl_off_t sockfd = 0;
     curl_easy_getinfo(handle, CURLINFO_ACTIVESOCKET, &sockfd);
     GetTcpInfoFromSock(sockfd, dataTransChrStats.tcpInfo);
+    std::lock_guard<std::mutex> lock(urlRequestListMutex);
+    if (!urlRequestList[dataTransChrStats.urlInfo.hostName]) {
+        urlRequestList[dataTransChrStats.urlInfo.hostName] = 0;
+    }
+    urlRequestList[dataTransChrStats.urlInfo.hostName]++;
     if (!ShouldReportUrlAbnormalEvent(dataTransChrStats.urlInfo)) {
         return;
     }
@@ -270,7 +275,9 @@ void NetStackChrClient::GetDfxUrlInfoFromCurlHandleAndReport(CURL *handle, int32
     curl_easy_getinfo(handle, CURLINFO_PRIMARY_IP, &ip);
     std::string dstIp = (ip == nullptr ? "" : ip);
     dataTransChrStats.urlInfo.dstIp = CommonUtils::AnonymizeIp(dstIp);
+    dataTransChrStats.urlInfo.totalCnt = urlRequestList[dataTransChrStats.urlInfo.hostName];
     netstackChrReport_.ReportUrlCommonEvent(dataTransChrStats);
+    urlRequestList.erase(dataTransChrStats.urlInfo.hostName);
 }
 
 }  // namespace OHOS::NetStack::ChrClient

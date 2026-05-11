@@ -50,6 +50,8 @@ private:
     bool ShouldReportUrlAbnormalEvent(const DataTransUrlInfo &urlInfo);
     int ShouldReportHttpAbnormalEvent(const DataTransChrStats &dataTransChrStats);
     NetStackChrReport netstackChrReport_;
+    std::map<std::string, uint32_t> urlRequestList;
+    std::mutex urlRequestListMutex;
 };
 
 }  // namespace OHOS::NetStack::ChrClient
