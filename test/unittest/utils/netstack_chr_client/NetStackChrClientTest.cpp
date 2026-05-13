@@ -477,15 +477,17 @@ HWTEST_F(NetStackChrClientTest, GetDfxUrlInfoFromCurlHandleAndReport1, TestSize.
 }
 
 HWTEST_F(NetStackChrClientTest, GetDfxUrlInfoFromCurlHandleAndReport2, TestSize.Level2) {
-    CURL *handle = GetCurlHandle();
+    CURL *handle1 = GetCurlHandle();
+    CURL *handle2 = GetCurlHandle();
     ChrClient::DataTransUrlInfo urlInfo;
     urlInfo.responseCode = 255;
     urlInfo.curlCode = 0;
     urlInfo.osError = 0;
     urlInfo.totalTime = 1000;
     EXPECT_FALSE(ChrClient::NetStackChrClient::GetInstance().ShouldReportUrlAbnormalEvent(urlInfo));
-    ChrClient::NetStackChrClient::GetInstance().GetDfxUrlInfoFromCurlHandleAndReport(handle, 1);
-    ChrClient::NetStackChrClient::GetInstance().GetDfxUrlInfoFromCurlHandleAndReport(handle, 1);
+    ChrClient::NetStackChrClient::GetInstance().GetDfxUrlInfoFromCurlHandleAndReport(handle1, 1);
+    ChrClient::NetStackChrClient::GetInstance().GetDfxUrlInfoFromCurlHandleAndReport(handle2, 1);
+    ChrClient::NetStackChrClient::GetInstance().GetDfxUrlInfoFromCurlHandleAndReport(handle1, 1);
 }
 
 HWTEST_F(NetStackChrClientTest, NetStackChrClientTestReportTimeLimits2, TestSize.Level2)
