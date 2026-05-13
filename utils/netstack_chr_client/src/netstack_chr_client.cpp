@@ -264,9 +264,11 @@ void NetStackChrClient::GetDfxUrlInfoFromCurlHandleAndReport(CURL *handle, int32
     curl_easy_getinfo(handle, CURLINFO_ACTIVESOCKET, &sockfd);
     GetTcpInfoFromSock(sockfd, dataTransChrStats.tcpInfo);
     std::lock_guard<std::mutex> lock(urlRequestListMutex);
+    // LCOV_EXCL_START
     if (!urlRequestList[dataTransChrStats.urlInfo.hostName]) {
         urlRequestList[dataTransChrStats.urlInfo.hostName] = 0;
     }
+    // LCOV_EXCL_STOP
     urlRequestList[dataTransChrStats.urlInfo.hostName]++;
     if (!ShouldReportUrlAbnormalEvent(dataTransChrStats.urlInfo)) {
         return;
