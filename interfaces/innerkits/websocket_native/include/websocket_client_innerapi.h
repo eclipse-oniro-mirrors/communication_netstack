@@ -56,6 +56,7 @@ struct OpenResult {
 
 struct OpenOptions {
     std::map<std::string, std::string> headers;
+    bool supportOriginPort = false;
 };
 
 class WebSocketClient : public std::enable_shared_from_this<WebSocketClient> {

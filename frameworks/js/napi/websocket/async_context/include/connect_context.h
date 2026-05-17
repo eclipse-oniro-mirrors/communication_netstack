@@ -81,6 +81,8 @@ public:
 
     bool skipServerCertVerification_ = false;
 
+    bool supportOriginPort_ = false;
+
     Secure::SecureChar clientKey_;
 
     Secure::SecureChar keyPassword_;
@@ -119,6 +121,8 @@ private:
     void ParseCaPath(napi_value optionsValue);
 
     void ParseSkipServerCertVerify(napi_value optionsValue);
+
+    void ParseSupportOriginPort(napi_value optionsValue);
 
     void ParseClientCert(napi_value optionsValue);
 

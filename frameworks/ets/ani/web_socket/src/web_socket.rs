@@ -56,7 +56,8 @@ pub(crate) fn connect_sync(
 
     let web_socket = unsafe { &mut *(this.nativePtr as *mut AniClient) };
     let mut headers = HashMap::new();
-    let (mut caPath, mut clientCert, mut protocol) = (None, None, None);
+    let (mut caPath, mut clientCert, mut protocol, mut support_origin_port) =
+        (None, None, None, false);
 
     if let Some(options) = options {
         if let Some(header) = options.header {
@@ -71,9 +72,12 @@ pub(crate) fn connect_sync(
         if let Some(p) = options.protocol {
             protocol = Some(p);
         }
+        if let Some(include) = options.supportOriginPort {
+            support_origin_port = include;
+        }
     }
     web_socket
-        .connect(&url, headers, caPath, clientCert, protocol)
+        .connect(&url, headers, caPath, clientCert, protocol, support_origin_port)
         .map(|_| true)
         .map_err(|e| convert_to_business_error(e))
 }

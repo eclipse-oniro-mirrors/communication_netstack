@@ -161,6 +161,7 @@ impl AniClient {
         caPath: Option<String>,
         clientCert: Option<AniClientCert>,
         protocol: Option<String>,
+        support_origin_port: bool,
     ) -> Result<(), i32> {
         let options = ffi::AniConnectOptions {
             headers: headers
@@ -168,6 +169,7 @@ impl AniClient {
                 .map(|(k, v)| [k.as_str(), v.as_str()])
                 .flatten()
                 .collect(),
+            supportOriginPort: support_origin_port,
         };
         if let Some(caPath) = caPath {
             ffi::SetCaPath(self.client.pin_mut(), &caPath);
@@ -577,6 +579,7 @@ impl Drop for AniServer {
 mod ffi {
     pub struct AniConnectOptions<'a> {
         pub headers: Vec<&'a str>,
+        pub supportOriginPort: bool,
     }
 
     struct AniCloseOption<'a> {

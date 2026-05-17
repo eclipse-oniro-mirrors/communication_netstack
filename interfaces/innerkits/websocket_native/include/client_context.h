@@ -179,7 +179,7 @@ public:
     std::string bundleName;
 
     std::string url;
-
+    bool supportOriginPort = false;
     WebsocketProxyType usingWebsocketProxyType = WebsocketProxyType::USE_SYSTEM;
 
     std::string websocketProxyHost;

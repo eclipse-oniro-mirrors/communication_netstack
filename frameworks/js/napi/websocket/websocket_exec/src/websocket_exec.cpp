@@ -160,7 +160,8 @@ bool WebSocketExec::ParseUrl(ConnectContext *context, std::string &protocol, std
     return true;
 }
 
-void WebSocketExec::ParseHost(const std::string &protocol, const std::string &address, int port, std::string &host)
+void WebSocketExec::ParseHost(const std::string &protocol, const std::string &address, int port,
+    bool supportOriginPort, std::string &host, std::string &origin)
 {
     if ((protocol == PREFIX_WS && port == WS_DEFAULT_PORT) ||
         (protocol == PREFIX_WSS && port == WSS_DEFAULT_PORT)) {
@@ -168,8 +169,9 @@ void WebSocketExec::ParseHost(const std::string &protocol, const std::string &ad
     } else {
         host = address + NAME_END + std::to_string(port);
     }
-    std::string origin = protocol + NAME_END + PROTOCOL_DELIMITER + host;
-    NETSTACK_LOGD("host: %{private}s, Origin = %{private}s", host.c_str(), origin.c_str());
+    origin = supportOriginPort ? host : address;
+    std::string originLog = protocol + NAME_END + PROTOCOL_DELIMITER + origin;
+    NETSTACK_LOGD("host: %{private}s, Origin = %{private}s", host.c_str(), originLog.c_str());
 }
 
 void RunService(std::shared_ptr<UserData> userData, std::shared_ptr<EventManager> manager)
@@ -614,7 +616,8 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
         return false;
     }
     std::string tempHost;
-    ParseHost(protocol, address, port, tempHost);
+    std::string origin;
+    ParseHost(protocol, address, port, context->supportOriginPort_, tempHost, origin);
     if (strcpy_s(customizedProtocol, context->GetProtocol().length() + 1, context->GetProtocol().c_str()) != EOK) {
         NETSTACK_LOGE("memory copy failed");
     }
@@ -628,7 +631,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     }
     connectInfo.path = path.c_str();
     connectInfo.host = tempHost.c_str();
-    connectInfo.origin = address.c_str();
+    connectInfo.origin = origin.c_str();
     connectInfo.protocol = customizedProtocol;
 
     if (protocol == PREFIX_HTTPS || protocol == PREFIX_WSS) {

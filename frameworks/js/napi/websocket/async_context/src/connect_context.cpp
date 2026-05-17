@@ -83,6 +83,7 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
             ParseCaPath(params[1]);
             ParseClientCert(params[1]);
             ParseSkipServerCertVerify(params[1]);
+            ParseSupportOriginPort(params[1]);
             ParsePingInterval(params[1]);
             ParsePongTimeout(params[1]);
             ParseMinSupportTlsProtocol(params[1]);
@@ -132,6 +133,7 @@ void ConnectContext::ParseParamsCountThree(napi_value const *params)
         ParseCaPath(params[1]);
         ParseClientCert(params[1]);
         ParseSkipServerCertVerify(params[1]);
+        ParseSupportOriginPort(params[1]);
         ParsePingInterval(params[1]);
         ParsePongTimeout(params[1]);
         ParseMinSupportTlsProtocol(params[1]);
@@ -224,6 +226,18 @@ void ConnectContext::ParseSkipServerCertVerify(napi_value optionsValue)
     }
     skipServerCertVerification_ = NapiUtils::GetBooleanProperty(GetEnv(), optionsValue,
         ContextKey::KEY_SKIP_SERVER_CERT_VERIFY);
+}
+
+void ConnectContext::ParseSupportOriginPort(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::KEY_SUPPORT_ORIGIN_PORT)) {
+        return;
+    }
+    napi_value jsVal = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::KEY_SUPPORT_ORIGIN_PORT);
+    if (NapiUtils::GetValueType(GetEnv(), jsVal) != napi_boolean) {
+        return;
+    }
+    supportOriginPort_ = NapiUtils::GetBooleanProperty(GetEnv(), optionsValue, ContextKey::KEY_SUPPORT_ORIGIN_PORT);
 }
 
 bool ConnectContext::ParseProxy(napi_value optionsValue)

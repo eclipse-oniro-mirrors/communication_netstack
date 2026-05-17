@@ -916,4 +916,22 @@ HWTEST_F(WebSocketTest, WebSocketTest081, TestSize.Level1)
     context.ParseSkipServerCertVerify(obj2);
     EXPECT_FALSE(WebSocketExec::ExecConnect(&context));
 }
+
+HWTEST_F(WebSocketTest, WebSocketTest082, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    ConnectContext context(env, eventManager);
+    std::string property = "supportOriginPort";
+    napi_value obj = NapiUtils::CreateObject(context.GetEnv());
+    context.ParseSupportOriginPort(obj);
+    EXPECT_FALSE(context.supportOriginPort_);
+    NapiUtils::SetInt32Property(context.GetEnv(), obj, property, 0);
+    context.ParseSupportOriginPort(obj);
+    EXPECT_FALSE(context.supportOriginPort_);
+    napi_value obj2 = NapiUtils::CreateObject(context.GetEnv());
+    NapiUtils::SetBooleanProperty(context.GetEnv(), obj2, property, true);
+    context.ParseSupportOriginPort(obj2);
+    EXPECT_TRUE(context.supportOriginPort_);
+}
 } // namespace

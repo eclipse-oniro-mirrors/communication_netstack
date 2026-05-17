@@ -46,7 +46,8 @@ private:
     static bool ParseUrl(ConnectContext *context, std::string &protocol, std::string &address, std::string &path,
         int &port);
 
-    static void ParseHost(const std::string &protocol, const std::string &address, int port, std::string &host);
+    static void ParseHost(const std::string &protocol, const std::string &address, int port,
+        bool supportOriginPort, std::string &host, std::string &origin);
 
     static int RaiseError(EventManager *manager, uint32_t httpResponse);
 

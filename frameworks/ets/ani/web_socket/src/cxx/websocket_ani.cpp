@@ -48,6 +48,7 @@ std::unique_ptr<WebSocketClientWrapper> CreateWebSocket()
 int32_t Connect(WebSocketClientWrapper &client, const rust::str url, AniConnectOptions options)
 {
     NetStack::WebSocketClient::OpenOptions openOptions;
+    openOptions.supportOriginPort = options.supportOriginPort;
     bool isValue = false;
     std::string key;
     std::string value;
