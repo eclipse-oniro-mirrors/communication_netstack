@@ -161,7 +161,7 @@ void WebSocketConnectContext::ParseHeader(CArrString header)
     if (header.head == nullptr || header.size == 0) {
         return;
     }
-    for (int i = 0; i + 1 < header.size; i += MAP_TUPLE_SIZE) {
+    for (int64_t i = 0; i + 1 < header.size; i += MAP_TUPLE_SIZE) {
         std::string key{header.head[i]};
         std::string value{header.head[i + 1]};
         this->header[key] = value;
@@ -174,7 +174,7 @@ void WebSocketConnectContext::ParseProxy(CHttpProxy* proxy, bool useDefault)
         SetWebsocketProxyType(WebsocketProxyType::USE_SPECIFIED);
         std::string host{proxy->host};
         std::string exclusionList;
-        for (int i = 0; i < proxy->exclusionListSize; i++) {
+        for (int64_t i = 0; i < proxy->exclusionListSize; i++) {
             if (i != 0) {
                 exclusionList = exclusionList + WEBSOCKET_PROXY_EXCLUSIONS_SEPARATOR;
             }

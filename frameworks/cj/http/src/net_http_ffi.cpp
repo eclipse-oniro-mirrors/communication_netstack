@@ -75,7 +75,7 @@ EXTERN_C_START
         NETSTACK_LOGI("request start");
         RetDataCString ret = { .code = 0, .data = nullptr};
         auto req = FFIData::GetData<HttpRequestProxy>(id);
-        if (req == nullptr || req->isDestroyed) {
+        if (url == nullptr || req == nullptr || req->isDestroyed) {
             // destroyed
             SetUnknowError(ret);
             return ret;
@@ -217,7 +217,7 @@ EXTERN_C_START
         if (arr.head == nullptr) {
             return;
         }
-        for (auto i = 0; i < arr.size; i++) {
+        for (int64_t i = 0; i < arr.size; i++) {
             free(arr.head[i]);
         }
         free(arr.head);
