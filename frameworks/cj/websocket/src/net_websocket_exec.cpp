@@ -467,7 +467,7 @@ bool NetWebSocketExec::ParseUrl(WebSocketConnectContext *context, char *protocol
                                 size_t addressLen, char *path, size_t pathLen, int *port)
 {
     char uri[MAX_URI_LENGTH] = {0};
-    if (strcpy_s(uri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
+    if (strcpy_s(uri, MAX_URI_LENGTH, context->url.c_str()) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
@@ -475,7 +475,7 @@ bool NetWebSocketExec::ParseUrl(WebSocketConnectContext *context, char *protocol
     const char *tempAddress = nullptr;
     const char *tempPath = nullptr;
     (void)lws_parse_uri(uri, &tempProt, &tempAddress, port, &tempPath);
-    if (strcpy_s(protocol, protocolLen, tempProt) < 0) {
+    if (strcpy_s(protocol, protocolLen, tempProt) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
@@ -483,11 +483,11 @@ bool NetWebSocketExec::ParseUrl(WebSocketConnectContext *context, char *protocol
         NETSTACK_LOGE("protocol failed");
         return false;
     }
-    if (strcpy_s(address, addressLen, tempAddress) < 0) {
+    if (strcpy_s(address, addressLen, tempAddress) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
-    if (strcpy_s(path, pathLen, tempPath) < 0) {
+    if (strcpy_s(path, pathLen, tempPath) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
@@ -776,7 +776,7 @@ void NetWebSocketExec::FillContextInfo(WebSocketConnectContext *context,
     uint32_t port = 0;
     std::string exclusions;
 
-    if (strcpy_s(tempUri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
+    if (strcpy_s(tempUri, MAX_URI_LENGTH, context->url.c_str()) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return;
     }
@@ -1018,17 +1018,14 @@ void NetWebSocketExec::HandleRcvMessage(CJWebsocketProxy *websocketProxy,
                 delete msgResponse;
             }
             delete para;
-            websocketProxy->ClearWebSocketTextData();
+            websocketProxy->ClearWebSocketBinaryData();
             OnDataEnd(websocketProxy);
         }
     } else {
         websocketProxy->AppendWebSocketTextData(data, length);
         if (isFinal) {
             const std::string &msgFromManager = websocketProxy->GetWebSocketTextData();
-            auto msg = new (std::nothrow) std::string;
-            if (msg == nullptr) {
-                return;
-            }
+            auto msg = new std::string;
             msg->append(msgFromManager.data(), msgFromManager.size());
             websocketProxy->SetQueueData(msg);
             CWebSocketCallbackData* para = new CWebSocketCallbackData;

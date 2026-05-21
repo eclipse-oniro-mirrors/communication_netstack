@@ -432,7 +432,7 @@ void RequestContext::ParseUsingHttpProxy(CHttpProxy* proxy, bool useDefault)
         options.SetUsingHttpProxyType(UsingHttpProxyType::USE_SPECIFIED);
         std::string host{proxy->host};
         std::string exclusionList;
-        for (int i = 0; i < proxy->exclusionListSize; i++) {
+        for (int64_t i = 0; i < proxy->exclusionListSize; i++) {
             if (i != 0) {
                 exclusionList = exclusionList + HTTP_PROXY_EXCLUSIONS_SEPARATOR;
             }
@@ -453,7 +453,7 @@ void RequestContext::ParseHeader(CArrString header)
     if (NetHttpClientExec::MethodForPost(options.GetMethod())) {
         options.SetHeader(CommonUtils::ToLower(HTTP_CONTENT_TYPE), HTTP_CONTENT_TYPE_JSON); // default
     }
-    for (int i = 0; i < header.size; i += MAP_TUPLE_SIZE) {
+    for (int64_t i = 0; i < header.size; i += MAP_TUPLE_SIZE) {
         std::string key{header.head[i]};
         std::string value{header.head[i + 1]};
         options.SetHeader(CommonUtils::ToLower(key), value);
@@ -462,12 +462,12 @@ void RequestContext::ParseHeader(CArrString header)
 
 void RequestContext::ParseDnsServers(CArrString dns)
 {
-    if (dns.size == 0) {
+    if (dns.size <= 0) {
         return;
     }
     std::vector<std::string> dnsServers;
     uint32_t dnsSize = 0;
-    for (uint32_t i = 0; i < dns.size && dnsSize < DNS_SERVER_SIZE; i++) {
+    for (int64_t i = 0; i < dns.size && dnsSize < DNS_SERVER_SIZE; i++) {
         std::string dnsServer{dns.head[i]};
         if (dnsServer.empty()) {
             continue;
@@ -503,7 +503,7 @@ void RequestContext::ParseMultiFormData(CArrMultiFormData multi)
         return;
     }
 
-    for (int i = 0; i < multi.size; i++) {
+    for (int64_t i = 0; i < multi.size; i++) {
         CMultiFormData from = multi.data[i];
         MultiFormData multiFormData;
         multiFormData.name = std::string{from.name};
@@ -593,10 +593,12 @@ RequestContext* HttpRequestProxy::Request(std::string url, CHttpRequestOptions *
     context->ParseParams(url, ops);
 
     if (!context->IsParseOK()) {
-        // context.setxxx
         return context;
     }
-    NetHttpClientExec::ExecRequest(context);
+    if (!NetHttpClientExec::ExecRequest(context)) {
+        delete context;
+        return nullptr;
+    }
     return context;
 }
 

@@ -38,7 +38,7 @@ public:
 
     static bool RequestWithoutCache(RequestContext *context);
 
-    static void ExecRequest(RequestContext *context);
+    static bool ExecRequest(RequestContext *context);
 
     static std::string MakeUrl(const std::string &url, std::string param, const std::string &extraParam);
 

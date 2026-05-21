@@ -114,23 +114,23 @@ bool NetHttpClientExec::AddCurlHandle(CURL *handle, RequestContext *context)
 NetHttpClientExec::StaticVariable NetHttpClientExec::staticVariable_; /* NOLINT */
 NetHttpClientExec::StaticContextVec NetHttpClientExec::staticContextSet_;
 
-void NetHttpClientExec::ExecRequest(RequestContext *context)
+bool NetHttpClientExec::ExecRequest(RequestContext *context)
 {
     if (!CommonUtils::HasInternetPermission()) {
         context->SetPermissionDenied(true);
-        return;
+        return true;
     }
     context->options.SetRequestTime(GetNowTimeGMT());
     CacheProxy proxy(context->options);
     if (context->IsUsingCache() && proxy.ReadResponseFromCache(context)) {
-        return;
+        return true;
     }
     if (!RequestWithoutCache(context)) {
         context->SetErrorCode(NETSTACK_NAPI_INTERNAL_ERROR);
         context->SendResponse();
-        delete context;
-        context = nullptr;
+        return false;
     }
+    return true;
 }
 
 bool NetHttpClientExec::RequestWithoutCache(RequestContext *context)
