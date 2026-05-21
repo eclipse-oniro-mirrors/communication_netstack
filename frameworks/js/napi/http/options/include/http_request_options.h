@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 
+#include <node_api.h>
+
 #include "constant.h"
 #include "secure_char.h"
 #include "http_tls_config.h"
@@ -223,7 +225,11 @@ public:
 
     void SetCanSkipCertVerifyFlag(bool canCertVerify);
 
+    void SetValidationCallback(napi_ref callback);
+
     [[nodiscard]] NapiUtils::SecureData GetCertificatePinning() const;
+
+    [[nodiscard]] napi_ref GetValidationCallback() const;
 
     [[nodiscard]] const std::string &GetUrl() const;
 
@@ -385,6 +391,8 @@ private:
     std::vector<MultiFormData> multiFormDataList_;
 
     NapiUtils::SecureData certificatePinning_;
+
+    napi_ref validationCallbackRef_ = nullptr;
 
     TlsOption tlsOption_;
 

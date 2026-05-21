@@ -288,14 +288,31 @@ void RequestContext::ParseRemoteValidationMode(napi_value optionsValue)
         return;
     }
     napi_value value = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_REMOTE_VALIDATION);
-    if (NapiUtils::GetValueType(GetEnv(), value) == napi_string) {
+    napi_valuetype type = NapiUtils::GetValueType(GetEnv(), value);
+
+    if (type == napi_string) {
         auto remoteValidationMode = NapiUtils::GetStringFromValueUtf8(GetEnv(), value);
         if (remoteValidationMode == "skip") {
             NETSTACK_LOGI("ParseRemoteValidationMode remoteValidationMode skip");
             options.SetCanSkipCertVerifyFlag(true);
         } else if (remoteValidationMode != "system") {
-            NETSTACK_LOGE("RemoteValidationMode config error");
+            NETSTACK_LOGE("RemoteValidationMode config error: invalid string value");
         }
+    } else if (type == napi_function) {
+        // Store the validation callback reference for later use
+        napi_ref callbackRef = nullptr;
+        napi_status status = napi_create_reference(GetEnv(), value, 1, &callbackRef);
+        if (status == napi_ok) {
+            if (options.GetValidationCallback() != nullptr) {
+                (void)napi_delete_reference(GetEnv(), options.GetValidationCallback());
+            }
+            options.SetValidationCallback(callbackRef);
+            NETSTACK_LOGI("ParseRemoteValidationMode validation callback registered");
+        } else {
+            NETSTACK_LOGE("Failed to create reference for validation callback");
+        }
+    } else {
+        NETSTACK_LOGE("RemoteValidationMode type error: expected string or function");
     }
 }
 
@@ -903,6 +920,14 @@ curl_slist *RequestContext::GetCurlHostList()
 RequestContext::~RequestContext()
 {
     trace_.Finish();
+    if (GetValidationCallbackTsfn() != nullptr) {
+        napi_release_threadsafe_function(GetValidationCallbackTsfn(), napi_tsfn_abort);
+        SetValidationCallbackTsfn(nullptr);
+    }
+    if (options.GetValidationCallback() != nullptr) {
+        NapiUtils::DeleteReference(GetEnv(), options.GetValidationCallback());
+        options.SetValidationCallback(nullptr);
+    }
     if (curlHeaderList_ != nullptr) {
         curl_slist_free_all(curlHeaderList_);
     }
@@ -1626,5 +1651,18 @@ void RequestContext::WaitForSyncComplete()
 {
     std::unique_lock<std::mutex> lock(syncMutex_);
     syncCv_.wait(lock, [this] { return syncComplete_; });
+}
+
+void RequestContext::SetValidationCallbackTsfn(napi_threadsafe_function tsfn)
+{
+    if (validationCallbackTsfn_ != nullptr) {
+        napi_release_threadsafe_function(validationCallbackTsfn_, napi_tsfn_abort);
+    }
+    validationCallbackTsfn_ = tsfn;
+}
+
+napi_threadsafe_function RequestContext::GetValidationCallbackTsfn() const
+{
+    return validationCallbackTsfn_;
 }
 } // namespace OHOS::NetStack::Http

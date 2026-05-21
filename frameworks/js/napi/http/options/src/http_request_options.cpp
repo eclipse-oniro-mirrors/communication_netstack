@@ -397,6 +397,16 @@ NapiUtils::SecureData HttpRequestOptions::GetCertificatePinning() const
     return certificatePinning_;
 }
 
+void HttpRequestOptions::SetValidationCallback(napi_ref callback)
+{
+    validationCallbackRef_ = callback;
+}
+
+napi_ref HttpRequestOptions::GetValidationCallback() const
+{
+    return validationCallbackRef_;
+}
+
 void HttpRequestOptions::SetAddressFamily(std::string addressFamily)
 {
     addressFamily_ = std::move(addressFamily);
