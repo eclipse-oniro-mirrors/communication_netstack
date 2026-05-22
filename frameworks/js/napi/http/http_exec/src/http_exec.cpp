@@ -2025,7 +2025,7 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
             }
         }
         NETSTACK_LOGI("SSL default verification disabled, custom validation callback will be used");
-     } else {
+    } else {
         // add user cert path
         TrustUser0AndUserCa(certs);
         // add system cert path
