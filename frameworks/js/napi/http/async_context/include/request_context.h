@@ -179,6 +179,10 @@ public:
 
     CURL *GetCurlHandle();
 
+    void SetValidationCallbackTsfn(napi_threadsafe_function tsfn);
+
+    napi_threadsafe_function GetValidationCallbackTsfn() const;
+
     void SendNetworkProfiler();
 
     RequestTracer::Trace &GetTrace();
@@ -250,6 +254,7 @@ private:
     std::unique_ptr<NetworkProfilerUtils> networkProfilerUtils_;
 #endif
     CURL *curlHandle_ = nullptr;
+    napi_threadsafe_function validationCallbackTsfn_ = nullptr;
 #ifdef HTTP_HANDOVER_FEATURE
     std::string httpHandoverInfoStr_ = "no handover";
 #endif

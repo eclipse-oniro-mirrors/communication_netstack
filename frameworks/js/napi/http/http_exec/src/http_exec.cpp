@@ -19,6 +19,7 @@
 
 #include <cstddef>
 #include <cstring>
+#include <future>
 #include <memory>
 #include <pthread.h>
 #include <sstream>
@@ -1485,6 +1486,321 @@ bool HttpExec::SetSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext
     return true;
 }
 
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+static std::string X509_to_PEM(X509 *cert)
+{
+    BIO *bio = BIO_new(BIO_s_mem());
+    if (!bio) {
+        return {};
+    }
+    if (!PEM_write_bio_X509(bio, cert)) {
+        BIO_free(bio);
+        return {};
+    }
+
+    char *data = nullptr;
+    auto pemStringLength = BIO_get_mem_data(bio, &data);
+    if (!data) {
+        BIO_free(bio);
+        return {};
+    }
+    std::string certificateInPEM(data, pemStringLength);
+    BIO_free(bio);
+    return certificateInPEM;
+}
+
+static std::vector<std::string> GetRemotePartyCertificates(X509_STORE_CTX *ctx)
+{
+    if (!ctx) {
+        return {};
+    }
+    auto ssl = reinterpret_cast<SSL *>(X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx()));
+    if (!ssl) {
+        return {};
+    }
+    auto certificatesStack = SSL_get_peer_cert_chain(ssl);
+    if (!certificatesStack) {
+        return {};
+    }
+    auto numCertificates = sk_X509_num(certificatesStack);
+    std::vector<std::string> remoteCertificates;
+    for (decltype(numCertificates) i = 0; i < numCertificates; ++i) {
+        auto cert = sk_X509_value(certificatesStack, i);
+        auto certificateInPEM = X509_to_PEM(cert);
+        if (!certificateInPEM.empty()) {
+            remoteCertificates.emplace_back(certificateInPEM);
+        }
+    }
+    return remoteCertificates;
+}
+
+struct ValidationCallbackData {
+    std::vector<std::string> pemCerts;
+    std::string host;
+    std::string ip;
+    std::shared_ptr<std::promise<bool>> resultPromise;
+};
+
+static napi_value ValidationCallbackThen(napi_env env, napi_callback_info info)
+{
+    napi_value thisVal = nullptr;
+    size_t paramsCount = 1;
+    napi_value params[1] = {};
+    void *data = nullptr;
+    napi_get_cb_info(env, info, &paramsCount, params, &thisVal, &data);
+    if (data == nullptr) {
+        return NapiUtils::GetUndefined(env);
+    }
+    auto promise = static_cast<std::promise<bool> *>(data);
+    if (paramsCount == 0 || NapiUtils::GetValueType(env, params[0]) != napi_boolean) {
+        promise->set_value(false);
+        return NapiUtils::GetUndefined(env);
+    }
+    promise->set_value(NapiUtils::GetBooleanFromValue(env, params[0]));
+    return NapiUtils::GetUndefined(env);
+}
+
+static napi_value ValidationCallbackCatch(napi_env env, napi_callback_info info)
+{
+    napi_value thisVal = nullptr;
+    size_t paramsCount = 0;
+    napi_value params[1] = {};
+    void *data = nullptr;
+    napi_get_cb_info(env, info, &paramsCount, params, &thisVal, &data);
+    (void)params;
+    (void)paramsCount;
+    if (data == nullptr) {
+        return NapiUtils::GetUndefined(env);
+    }
+    auto promise = static_cast<std::promise<bool> *>(data);
+    promise->set_value(false);
+    return NapiUtils::GetUndefined(env);
+}
+
+static napi_value CreateValidationContextJsObject(napi_env env,
+    const std::vector<std::string> &pemCerts, const std::string &host,
+    const std::string &ip)
+{
+    napi_value jsContext;
+    napi_create_object(env, &jsContext);
+
+    napi_value jsHost;
+    napi_create_string_utf8(env, host.c_str(), host.length(), &jsHost);
+    napi_set_named_property(env, jsContext, "host", jsHost);
+
+    napi_value jsIp;
+    napi_create_string_utf8(env, ip.c_str(), ip.length(), &jsIp);
+    napi_set_named_property(env, jsContext, "ip", jsIp);
+
+    napi_value jsPemCertsArray;
+    napi_create_array_with_length(env, pemCerts.size(), &jsPemCertsArray);
+    for (size_t i = 0; i < pemCerts.size(); i++) {
+        napi_value jsPemCert;
+        napi_create_string_utf8(env, pemCerts[i].c_str(), pemCerts[i].length(), &jsPemCert);
+        napi_set_element(env, jsPemCertsArray, i, jsPemCert);
+    }
+    napi_set_named_property(env, jsContext, "pemCerts", jsPemCertsArray);
+
+    napi_value jsX509CertsArray;
+    napi_create_array_with_length(env, 0, &jsX509CertsArray);
+    napi_set_named_property(env, jsContext, "x509Certs", jsX509CertsArray);
+
+    return jsContext;
+}
+
+static void HandlePromiseResult(napi_env env, napi_value jsResult,
+    std::shared_ptr<std::promise<bool>> resultPromise)
+{
+    napi_value thenFunc;
+    napi_get_named_property(env, jsResult, "then", &thenFunc);
+    napi_valuetype thenType;
+    napi_typeof(env, thenFunc, &thenType);
+    if (thenType != napi_function) {
+        NETSTACK_LOGE("HandlePromiseResult: result is not a Promise");
+        resultPromise->set_value(false);
+        return;
+    }
+
+    NETSTACK_LOGI("HandlePromiseResult: callback returned Promise, attaching then/catch");
+    auto *promisePtr = resultPromise.get();
+
+    napi_value thenCallback;
+    napi_create_function(env, "ValidationCallbackThen", NAPI_AUTO_LENGTH,
+        ValidationCallbackThen, promisePtr, &thenCallback);
+
+    napi_value catchCallback;
+    napi_create_function(env, "ValidationCallbackCatch", NAPI_AUTO_LENGTH,
+        ValidationCallbackCatch, promisePtr, &catchCallback);
+
+    napi_value promiseArgs[2] = {thenCallback, catchCallback};
+    napi_value promiseResult;
+    napi_call_function(env, jsResult, thenFunc, 2, promiseArgs, &promiseResult);
+}
+
+static ValidationCallbackData *GetAndValidateCallbackData(napi_env env, napi_value js_callback, void *data)
+{
+    auto *callbackData = static_cast<ValidationCallbackData *>(data);
+    if (!callbackData || !callbackData->resultPromise) {
+        NETSTACK_LOGE("GetAndValidateCallbackData: invalid callback data");
+        return nullptr;
+    }
+
+    if (js_callback == nullptr || NapiUtils::GetValueType(env, js_callback) != napi_function) {
+        NETSTACK_LOGE("GetAndValidateCallbackData: js_callback is not a valid function");
+        callbackData->resultPromise->set_value(false);
+        return nullptr;
+    }
+    return callbackData;
+}
+
+static void OnValidationCallbackJsThread(napi_env env, napi_value js_callback, void *context, void *data)
+{
+    (void)context;
+    ValidationCallbackData *callbackData = GetAndValidateCallbackData(env, js_callback, data);
+    if (callbackData == nullptr) {
+        return;
+    }
+
+    napi_handle_scope scope = nullptr;
+    if (napi_open_handle_scope(env, &scope) != napi_ok) {
+        NETSTACK_LOGE("OnValidationCallbackJsThread: failed to open handle scope");
+        callbackData->resultPromise->set_value(false);
+        return;
+    }
+
+    napi_value jsContext = CreateValidationContextJsObject(env, callbackData->pemCerts,
+        callbackData->host, callbackData->ip);
+
+    napi_value undefined = NapiUtils::GetUndefined(env);
+    napi_value jsResult;
+    napi_value argv[1] = {jsContext};
+    napi_status status = napi_call_function(env, undefined, js_callback, 1, argv, &jsResult);
+    if (status != napi_ok) {
+        NETSTACK_LOGE("OnValidationCallbackJsThread: failed to call validation callback");
+        callbackData->resultPromise->set_value(false);
+        napi_close_handle_scope(env, scope);
+        return;
+    }
+
+    napi_valuetype resultType;
+    napi_typeof(env, jsResult, &resultType);
+    if (resultType == napi_boolean) {
+        bool validationResult = false;
+        napi_get_value_bool(env, jsResult, &validationResult);
+        callbackData->resultPromise->set_value(validationResult);
+        napi_close_handle_scope(env, scope);
+        return;
+    }
+    if (resultType == napi_object) {
+        HandlePromiseResult(env, jsResult, callbackData->resultPromise);
+        napi_close_handle_scope(env, scope);
+        return;
+    }
+
+    NETSTACK_LOGE("OnValidationCallbackJsThread: callback returned invalid type");
+    callbackData->resultPromise->set_value(false);
+    napi_close_handle_scope(env, scope);
+}
+
+static void GetConnectionInfoFromCurl(RequestContext *context, std::string &hostname, std::string &ip)
+{
+    CURL *curl = context->GetCurlHandle();
+    if (curl) {
+        char *primaryIp = nullptr;
+        if (curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &primaryIp) == CURLE_OK && primaryIp) {
+            ip = primaryIp;
+        }
+    }
+
+    if (hostname.empty()) {
+        char *effectiveUrl = nullptr;
+        if (curl && curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &effectiveUrl) == CURLE_OK && effectiveUrl) {
+            hostname = CommonUtils::GetHostnameFromURL(effectiveUrl);
+        }
+    }
+}
+
+static ValidationCallbackData *CreateValidationCallbackData(std::vector<std::string> &pemCerts,
+    const std::string &host, const std::string &ip, std::shared_ptr<std::promise<bool>> resultPromise)
+{
+    auto *callbackData = new ValidationCallbackData();
+    callbackData->pemCerts = std::move(pemCerts);
+    callbackData->host = host;
+    callbackData->ip = ip;
+    callbackData->resultPromise = resultPromise;
+    return callbackData;
+}
+
+static int CustomValidationCallback(X509_STORE_CTX *x509StoreCtx, void *arg)
+{
+    auto context = reinterpret_cast<RequestContext *>(arg);
+    if (!context) {
+        NETSTACK_LOGE("CustomValidationCallback: RequestContext is null");
+        return 0;
+    }
+
+    napi_threadsafe_function tsfn = context->GetValidationCallbackTsfn();
+    if (!tsfn) {
+        NETSTACK_LOGE("CustomValidationCallback: threadsafe function is null");
+        return 0;
+    }
+
+    std::vector<std::string> pemCerts = GetRemotePartyCertificates(x509StoreCtx);
+    if (pemCerts.empty()) {
+        NETSTACK_LOGE("CustomValidationCallback: no certificates in chain");
+        return 0;
+    }
+
+    std::string hostname = CommonUtils::GetHostnameFromURL(context->options.GetUrl());
+    std::string ip;
+    GetConnectionInfoFromCurl(context, hostname, ip);
+
+    auto resultPromise = std::make_shared<std::promise<bool>>();
+    std::future<bool> future = resultPromise->get_future();
+    auto *callbackData = CreateValidationCallbackData(pemCerts, hostname, ip, resultPromise);
+
+    napi_status status = napi_call_threadsafe_function(tsfn, callbackData, napi_tsfn_blocking);
+    if (status != napi_ok) {
+        NETSTACK_LOGE("CustomValidationCallback: napi_call_threadsafe_function failed, status=%{public}d", status);
+        delete callbackData;
+        return 0;
+    }
+
+    auto waitStatus = future.wait_for(std::chrono::seconds(30));
+    if (waitStatus == std::future_status::timeout) {
+        NETSTACK_LOGE("CustomValidationCallback: validation callback timed out");
+        return 0;
+    }
+
+    bool validationResult = future.get();
+    NETSTACK_LOGI("CustomValidationCallback: validation result = %{public}d", validationResult);
+    return validationResult ? 1 : 0;
+}
+
+static bool CreateValidationCallbackTsfn(RequestContext *requestContext, napi_ref validationCallback)
+{
+    napi_env env = requestContext->GetEnv();
+    napi_value jsCallback;
+    napi_status status = napi_get_reference_value(env, validationCallback, &jsCallback);
+    if (status != napi_ok) {
+        NETSTACK_LOGE("CreateValidationCallbackTsfn: failed to get callback from reference");
+        return false;
+    }
+
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "ValidationCallback", NAPI_AUTO_LENGTH, &resourceName);
+    napi_threadsafe_function tsfn = nullptr;
+    status = napi_create_threadsafe_function(env, jsCallback, nullptr, resourceName, 0, 1,
+        nullptr, nullptr, nullptr, OnValidationCallbackJsThread, &tsfn);
+    if (status != napi_ok) {
+        NETSTACK_LOGE("CreateValidationCallbackTsfn: failed to create threadsafe function");
+        return false;
+    }
+    requestContext->SetValidationCallbackTsfn(tsfn);
+    return true;
+}
+#endif
+
 CURLcode HttpExec::SslCtxFunction(CURL *curl, void *sslCtx, void *request_context)
 {
     auto requestContext = static_cast<RequestContext *>(request_context);
@@ -1492,6 +1808,21 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *sslCtx, void *request_contex
         NETSTACK_LOGE("requestContext is null");
         return CURLE_SSL_CERTPROBLEM;
     }
+
+    napi_ref validationCallback = requestContext->options.GetValidationCallback();
+    if (validationCallback != nullptr) {
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+        SSL_CTX *ctx = static_cast<SSL_CTX *>(sslCtx);
+        if (!ctx) {
+            NETSTACK_LOGE("SslCtxFunction: SSL_CTX is null");
+            return CURLE_SSL_CERTPROBLEM;
+        }
+        SSL_CTX_set_cert_verify_callback(ctx, CustomValidationCallback, requestContext);
+        NETSTACK_LOGI("SslCtxFunction: custom validation callback registered via SSL_CTX_set_cert_verify_callback");
+#endif
+        return CURLE_OK;
+    }
+
     CURLcode result = MultiPathSslCtxFunction(curl, sslCtx, requestContext);
     if (result != CURLE_OK) {
         return result;
@@ -1684,6 +2015,16 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     if (context->options.GetCanSkipCertVerifyFlag()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
+    } else if (context->options.GetValidationCallback() != nullptr) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 0L, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 0L, context);
+        if (context->GetValidationCallbackTsfn() == nullptr) {
+            if (!CreateValidationCallbackTsfn(context, context->options.GetValidationCallback())) {
+                NETSTACK_LOGE("SetServerSSLCertOption: failed to create validation callback tsfn");
+                return false;
+            }
+        }
+        NETSTACK_LOGI("SSL default verification disabled, custom validation callback will be used");
     } else {
         // add user cert path
         TrustUser0AndUserCa(certs);
