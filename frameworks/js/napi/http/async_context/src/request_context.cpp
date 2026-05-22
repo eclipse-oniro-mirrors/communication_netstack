@@ -289,7 +289,6 @@ void RequestContext::ParseRemoteValidationMode(napi_value optionsValue)
     }
     napi_value value = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_REMOTE_VALIDATION);
     napi_valuetype type = NapiUtils::GetValueType(GetEnv(), value);
-
     if (type == napi_string) {
         auto remoteValidationMode = NapiUtils::GetStringFromValueUtf8(GetEnv(), value);
         if (remoteValidationMode == "skip") {
