@@ -587,6 +587,28 @@ bool ParseUrlEx(const std::string url, char *prefix, char *address, char *path, 
     return true;
 }
 
+bool IsDefaultWebSocketPort(const char *prefix, int port)
+{
+    return (strcmp(prefix, PREFIX_WS) == 0 && port == WS_DEFAULT_PORT) ||
+        (strcmp(prefix, PREFIX_WSS) == 0 && port == WSS_DEFAULT_PORT);
+}
+
+std::string BuildWebSocketHost(const char *prefix, const char *address, int port)
+{
+    if (IsDefaultWebSocketPort(prefix, port)) {
+        return std::string(address);
+    }
+    return std::string(address) + NAME_END + std::to_string(port);
+}
+
+std::string BuildWebSocketOrigin(const char *prefix, const char *address, int port, bool supportOriginPort)
+{
+    if (!supportOriginPort) {
+        return std::string(address);
+    }
+    return BuildWebSocketHost(prefix, address, port);
+}
+
 int CreatConnectInfo(const std::string url, lws_context *lwsContext, WebSocketClient *client)
 {
     lws_client_connect_info connectInfo = {};
@@ -598,13 +620,9 @@ int CreatConnectInfo(const std::string url, lws_context *lwsContext, WebSocketCl
         return WebSocketErrorCode::WEBSOCKET_CONNECTION_PARSEURL_ERROR;
     }
     std::string path = PATH_START + std::string(pathWithoutStart);
-    std::string tempHost;
-    if ((strcmp(prefix, PREFIX_WS) == 0 && port == WS_DEFAULT_PORT) ||
-        (strcmp(prefix, PREFIX_WSS) == 0 && port == WSS_DEFAULT_PORT)) {
-        tempHost = std::string(address);
-    } else {
-        tempHost = std::string(address) + NAME_END + std::to_string(port);
-    }
+    std::string tempHost = BuildWebSocketHost(prefix, address, port);
+    std::string origin =
+        BuildWebSocketOrigin(prefix, address, port, client->GetClientContext()->supportOriginPort);
     connectInfo.context = lwsContext;
     connectInfo.address = address;
     connectInfo.port = port;
@@ -614,7 +632,7 @@ int CreatConnectInfo(const std::string url, lws_context *lwsContext, WebSocketCl
     }
     connectInfo.path = path.c_str();
     connectInfo.host = tempHost.c_str();
-    connectInfo.origin = address;
+    connectInfo.origin = origin.c_str();
 
     connectInfo.local_protocol_name = "lws-minimal-client1";
     connectInfo.retry_and_idle_policy = &RETRY;
@@ -654,6 +672,7 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
             this->GetClientContext()->header[key] = value;
         }
     }
+    this->GetClientContext()->supportOriginPort = options.supportOriginPort;
     lws_context_creation_info info = {};
     char proxyAds[MAX_ADDRESS_LENGTH] = {0};
     FillContextInfo(this->GetClientContext(), info, proxyAds, MAX_ADDRESS_LENGTH);
@@ -761,14 +780,10 @@ int CreatConnectInfoEx(const std::string url, lws_context *lwsContext, WebSocket
         return WebsocketErrorCodeEx::WEBSOCKET_ERROR_CODE_URL_ERROR;
     }
     std::string path = PATH_START + std::string(pathWithoutStart);
-    std::string tempHost;
+    std::string tempHost = BuildWebSocketHost(prefix, address, port);
+    std::string origin =
+        BuildWebSocketOrigin(prefix, address, port, client->GetClientContext()->supportOriginPort);
     // LCOV_EXCL_START
-    if ((strcmp(prefix, PREFIX_WS) == 0 && port == WS_DEFAULT_PORT) ||
-        (strcmp(prefix, PREFIX_WSS) == 0 && port == WSS_DEFAULT_PORT)) {
-        tempHost = std::string(address);
-    } else {
-        tempHost = std::string(address) + NAME_END + std::to_string(port);
-    }
     connectInfo.context = lwsContext;
     connectInfo.address = address;
     connectInfo.port = port;
@@ -778,7 +793,7 @@ int CreatConnectInfoEx(const std::string url, lws_context *lwsContext, WebSocket
     }
     connectInfo.path = path.c_str();
     connectInfo.host = tempHost.c_str();
-    connectInfo.origin = address;
+    connectInfo.origin = origin.c_str();
 
     connectInfo.local_protocol_name = "lws-minimal-client1";
     connectInfo.retry_and_idle_policy = &RETRY;
@@ -819,6 +834,7 @@ int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
             this->GetClientContext()->header[key] = value;
         }
     }
+    this->GetClientContext()->supportOriginPort = options.supportOriginPort;
     if (!this->GetClientContext()->GetUserCertPath().empty()) {
         this->GetClientContext()->caPath = this->GetClientContext()->GetUserCertPath();
     }

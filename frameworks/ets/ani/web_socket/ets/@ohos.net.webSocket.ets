@@ -46,6 +46,8 @@ export default namespace webSocket {
     proxy?: ProxyConfiguration;
 
     protocol?: string;
+
+    supportOriginPort?: boolean;
   }
 
   export class WebSocketRequestOptionsInner implements WebSocketRequestOptions {
@@ -58,6 +60,8 @@ export default namespace webSocket {
     proxy?: ProxyConfiguration;
 
     protocol?: string;
+
+    supportOriginPort?: boolean;
   }
 
   export type ProxyConfiguration = 'system' | 'no-proxy' | HttpProxy;
