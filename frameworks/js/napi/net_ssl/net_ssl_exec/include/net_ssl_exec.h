@@ -17,6 +17,7 @@
 #define COMMUNICATIONNETSTACK_NET_SSL_EXEC_H
 
 #include "cert_context.h"
+#include "verify_cert_chain_context.h"
 #include "napi/native_api.h"
 
 namespace OHOS::NetStack::Ssl {
@@ -30,8 +31,14 @@ public:
 
     static napi_value VerifyCallback(CertContext *context);
 
+    static bool ExecVerifyCertChain(VerifyCertChainContext *context);
+
+    static napi_value VerifyCertChainCallback(VerifyCertChainContext *context);
+
 #ifndef MAC_PLATFORM
     static void AsyncRunVerify(CertContext *context);
+
+    static void AsyncRunVerifyCertChain(VerifyCertChainContext *context);
 #endif
 };
 } // namespace OHOS::NetStack::Ssl

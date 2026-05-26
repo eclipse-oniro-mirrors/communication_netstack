@@ -17,6 +17,7 @@
 #define COMMUNICATIONNET_SSL_ASYNC_WORK_H
 
 #include "cert_context.h"
+#include "verify_cert_chain_context.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 
@@ -26,6 +27,10 @@ public:
     static void ExecVerify(napi_env env, void *data);
 
     static void VerifyCallback(napi_env env, napi_status status, void *data);
+
+    static void ExecVerifyCertChain(napi_env env, void *data);
+
+    static void VerifyCertChainCallback(napi_env env, napi_status status, void *data);
 };
 } // namespace OHOS::NetStack::Ssl
 

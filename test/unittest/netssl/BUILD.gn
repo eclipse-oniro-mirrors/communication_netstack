@@ -36,6 +36,7 @@ ohos_unittest("netssl_unittest") {
     "$NETSTACK_DIR/utils/napi_utils/include",
     "$NETSSL_INNERAPI/include",
     "$NETSTACK_DIR/frameworks/native/net_ssl/include",
+    "$NETSTACK_DIR/interfaces/kits/c/net_ssl/include",
     "$NETSSL_NAPI/async_context/include",
     "$NETSSL_NAPI/async_work/include",
     "$NETSSL_NAPI/net_ssl_exec/include",
@@ -46,10 +47,14 @@ ohos_unittest("netssl_unittest") {
   sources = [
     "$NETSSL_NAPI/async_context/src/cert_context.cpp",
     "$NETSSL_NAPI/async_context/src/cleartext_context.cpp",
+    "$NETSSL_NAPI/async_context/src/verify_cert_chain_context.cpp",
     "$NETSSL_NAPI/async_work/src/net_ssl_async_work.cpp",
     "$NETSSL_NAPI/net_ssl_exec/src/net_ssl_exec.cpp",
     "$NETSSL_NAPI/net_ssl_module/src/net_ssl_module.cpp",
     "NetsslTest.cpp",
+    "VerifyCertChainTest.cpp",
+    "VerifyCertChainContextTest.cpp",
+    "NetSslCApiTest.cpp",
   ]
 
   deps = [

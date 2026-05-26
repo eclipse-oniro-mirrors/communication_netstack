@@ -17,6 +17,7 @@
 
 #include "cert_context.h"
 #include "cleartext_context.h"
+#include "verify_cert_chain_context.h"
 #include "net_ssl_async_work.h"
 #include "net_ssl_exec.h"
 #include "net_ssl_module.h"
@@ -60,6 +61,7 @@ void NetSslModuleExports::InitSslProperties(napi_env env, napi_value exports)
     std::initializer_list<napi_property_descriptor> properties = {
         DECLARE_NAPI_FUNCTION("certVerification", VerifyCertification),
         DECLARE_NAPI_FUNCTION("certVerificationSync", VerifyCertificationSync),
+        DECLARE_NAPI_FUNCTION("verifyCertChain", VerifyCertChain),
         DECLARE_NAPI_FUNCTION("isCleartextPermitted", IsCleartextPermitted),
         DECLARE_NAPI_FUNCTION("isCleartextPermittedByHostName", IsCleartextPermittedByHostName)};
     NapiUtils::DefineProperties(env, exports, properties);
@@ -196,4 +198,16 @@ napi_value NetSslModuleExports::IsCleartextPermittedByHostName(napi_env env, nap
 
     return NapiUtils::GetBoolean(context->GetEnv(), context->isCleartextPermitted_);
 }
+
+napi_value NetSslModuleExports::VerifyCertChain(napi_env env, napi_callback_info info)
+{
+    return ModuleTemplate::InterfaceWithOutAsyncWorkWithSharedManager<VerifyCertChainContext>(
+        env, info,
+        [](napi_env, napi_value, VerifyCertChainContext *context) -> bool {
+            SslExec::AsyncRunVerifyCertChain(context);
+            return context->IsExecOK();
+        },
+        "VerifyCertChain", NetSslAsyncWork::ExecVerifyCertChain, NetSslAsyncWork::VerifyCertChainCallback);
+}
+
 } // namespace OHOS::NetStack::Ssl
