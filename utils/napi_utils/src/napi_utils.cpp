@@ -882,7 +882,6 @@ void CreateUvQueueWorkByModuleId(napi_env env, const UvHandler &handler, uint64_
         int ret = uv_queue_work_with_qos(loop, work, [](uv_work_t *) {}, MakeUvCallback(), uv_qos_default);
         if (ret != 0) {
             NETSTACK_LOGE("uv_queue_work_with_qos MakeUvCallback error = %{public}d, manual delete", ret);
-            delete static_cast<UvWorkWrapperShared *>(work->data);
             delete work;
         }
     }
