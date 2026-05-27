@@ -25,6 +25,7 @@
 #include <regex>
 #include <securec.h>
 #include <sys/ioctl.h>
+#include <atomic>
 
 #include "base_context.h"
 #include "netstack_common_utils.h"
@@ -74,7 +75,7 @@ const std::regex JSON_STRING_PATTERN{R"(/^"(?:[^"\\\u0000-\u001f]|\\(?:["\\/bfnr
 const std::regex PATTERN{
     "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|"
     "2[0-4][0-9]|[01]?[0-9][0-9]?)"};
-int g_userCounter = 0;
+std::atomic<int> g_userCounter(0);
 
 bool IsIP(const std::string &ip)
 {
@@ -365,6 +366,7 @@ void TLSSocketServer::Stop(const TlsSocket::CloseCallback &callback)
 {
     if (!CommonUtils::HasInternetPermission()) {
         callback(PERMISSION_DENIED_CODE);
+        return;
     }
     close(listenSocketFd_);
     listenSocketFd_ = -1;
