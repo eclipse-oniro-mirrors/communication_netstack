@@ -25,7 +25,7 @@
 #include "napi_utils.h"
 #include "securec.h"
 
-#define MAX_DATA_SIZE (1024 * 1024 * 1024)
+constexpr const int MAX_DATA_SIZE = 1024 * 1024 * 1024;
 
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
