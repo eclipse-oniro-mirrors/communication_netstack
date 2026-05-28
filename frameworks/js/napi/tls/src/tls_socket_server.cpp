@@ -205,7 +205,7 @@ void TLSSocketServer::Listen(const TlsSocket::TLSConnectOptions &tlsListenOption
         CallListenCallback(TlsSocket::TLSSOCKET_SUCCESS, callback);
         return;
     }
-    NETSTACK_LOGE("Listen 2 %{public}d, %{public}d", listenSocketFd_, g_userCounter.load()
+    NETSTACK_LOGE("Listen 2 %{public}d, %{public}d", listenSocketFd_, g_userCounter.load());
     if (ExecBind(tlsListenOptions.GetNetAddress(), callback)) {
         NETSTACK_LOGE("Listen 3 %{public}d", listenSocketFd_);
         ExecAccept(tlsListenOptions, callback);
@@ -370,7 +370,7 @@ void TLSSocketServer::Stop(const TlsSocket::CloseCallback &callback)
     }
     close(listenSocketFd_);
     listenSocketFd_ = -1;
-    NETSTACK_LOGE("g_userCounter = %{public}d", g_userCounter.load()
+    NETSTACK_LOGE("g_userCounter = %{public}d", g_userCounter.load());
     callback(TlsSocket::TLSSOCKET_SUCCESS);
 }
 
@@ -1557,14 +1557,14 @@ void TLSSocketServer::InitPollList(const int &listendFd)
 bool TLSSocketServer::DropFdFromPollList(int &fd_index)
 {
     if (g_userCounter < 0) {
-        NETSTACK_LOGE("g_userCounter = %{public}d", g_userCounter.load()
+        NETSTACK_LOGE("g_userCounter = %{public}d", g_userCounter.load());
         return true;
     }
     if (fd_index == 0) {
         // index 0 is for listen only
         fds_[0].fd = -1;
         fds_[0].events = 0;
-        NETSTACK_LOGI("drop listenFd from poll List, g_userCounter = %{public}d", g_userCounter.load()
+        NETSTACK_LOGI("drop listenFd from poll List, g_userCounter = %{public}d", g_userCounter.load());
     } else {
         // remove the fd_index, and insert the last index
         fds_[fd_index].fd = fds_[g_userCounter].fd;
@@ -1572,7 +1572,7 @@ bool TLSSocketServer::DropFdFromPollList(int &fd_index)
         fds_[g_userCounter].events = 0;
         fd_index--;
         g_userCounter--;
-        NETSTACK_LOGI("drop clientFd from poll List, g_userCounter = %{public}d", g_userCounter.load()
+        NETSTACK_LOGI("drop clientFd from poll List, g_userCounter = %{public}d", g_userCounter.load());
     }
     for (int i = 0; i < g_userCounter + 1; ++i) {
         if (fds_[i].fd > 0) {
