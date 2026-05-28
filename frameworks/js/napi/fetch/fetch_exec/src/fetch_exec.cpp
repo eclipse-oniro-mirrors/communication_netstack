@@ -25,6 +25,8 @@
 #include "napi_utils.h"
 #include "securec.h"
 
+#define MAX_DATA_SIZE (1024 * 1024 * 1024)
+
 #define NETSTACK_CURL_EASY_SET_OPTION(handle, opt, data, asyncContext)                                   \
     do {                                                                                                 \
         CURLcode result = curl_easy_setopt(handle, opt, data);                                           \
@@ -295,6 +297,9 @@ bool FetchExec::SetOption(CURL *curl, FetchContext *context, struct curl_slist *
 
 size_t FetchExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData)
 {
+    if ((size * memBytes) > MAX_DATA_SIZE) {
+            return 0;
+    }
     auto context = static_cast<FetchContext *>(userData);
     context->response.AppendData(data, size * memBytes);
     return size * memBytes;
@@ -302,6 +307,9 @@ size_t FetchExec::OnWritingMemoryBody(const void *data, size_t size, size_t memB
 
 size_t FetchExec::OnWritingMemoryHeader(const void *data, size_t size, size_t memBytes, void *userData)
 {
+    if ((size * memBytes) > MAX_DATA_SIZE) {
+            return 0;
+    }
     auto context = static_cast<FetchContext *>(userData);
     context->response.AppendRawHeader(data, size * memBytes);
     return size * memBytes;
