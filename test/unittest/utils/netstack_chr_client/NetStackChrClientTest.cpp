@@ -514,7 +514,7 @@ HWTEST_F(NetStackChrClientTest, EncodeUrlParamTest02, TestSize.Level2) {
  
 HWTEST_F(NetStackChrClientTest, EncodeUrlParamTest03, TestSize.Level2) {
     std::string input = "Hello\nWorld";
-    std::string expected = "HelloWorld";
+    std::string expected = "Hello%0AWorld";
     EXPECT_EQ(expected, ChrClient::NetStackChrClient::GetInstance().EncodeUrlParam(input));
 }
  
@@ -525,7 +525,7 @@ HWTEST_F(NetStackChrClientTest, EncodeUrlParamTest04, TestSize.Level2) {
  
 HWTEST_F(NetStackChrClientTest, EncodeUrlParamTest05, TestSize.Level2) {
     std::string input = "~\x80";
-    std::string expected = "~";
+    std::string expected = "~%80";
     EXPECT_EQ(expected, ChrClient::NetStackChrClient::GetInstance().EncodeUrlParam(input));
 }
 }
