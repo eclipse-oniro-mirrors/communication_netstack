@@ -500,4 +500,32 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestReportTimeLimits2, TestSize
     EXPECT_NE(secondRet, 1);
 }
 
+HWTEST_F(NetStackChrClientTest, EncodeUrlParamTest01, TestSize.Level2) {
+    std::string input = "HelloWorld123";
+    std::string expected = "HelloWorld123";
+    EXPECT_EQ(expected, ChrClient::NetStackChrClient::GetInstance().EncodeUrlParam(input));
+}
+ 
+HWTEST_F(NetStackChrClientTest, EncodeUrlParamTest02, TestSize.Level2) {
+    std::string input = "a b";
+    std::string expected = "a b";
+    EXPECT_EQ(expected, ChrClient::NetStackChrClient::GetInstance().EncodeUrlParam(input));
+}
+ 
+HWTEST_F(NetStackChrClientTest, EncodeUrlParamTest03, TestSize.Level2) {
+    std::string input = "Hello\nWorld";
+    std::string expected = "HelloWorld";
+    EXPECT_EQ(expected, ChrClient::NetStackChrClient::GetInstance().EncodeUrlParam(input));
+}
+ 
+HWTEST_F(NetStackChrClientTest, EncodeUrlParamTest04, TestSize.Level2) {
+    std::string input = "";
+    EXPECT_EQ("", ChrClient::NetStackChrClient::GetInstance().EncodeUrlParam(input));
+}
+ 
+HWTEST_F(NetStackChrClientTest, EncodeUrlParamTest05, TestSize.Level2) {
+    std::string input = "~\x80";
+    std::string expected = "~";
+    EXPECT_EQ(expected, ChrClient::NetStackChrClient::GetInstance().EncodeUrlParam(input));
+}
 }

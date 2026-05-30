@@ -20,6 +20,7 @@
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #include "i_netstack_chr_client.h"
+#include "securec.h"
 
 namespace OHOS::NetStack::ChrClient {
 
@@ -28,6 +29,7 @@ static constexpr const long HTTP_REQUEST_SUCCESS_MAX = 299;
 static constexpr const int HTTP_FILE_TRANSFER_SIZE_THRESHOLD = 100000;
 static constexpr const int HTTP_FILE_TRANSFER_TIME_THRESHOLD = 500000;
 static constexpr const int HIGH_LATENCY_TRANSFER_TIME_THRESHOLD = 1000000;
+static constexpr const int MAX_LETTER_CODE = 128;
 
 NetStackChrClient &NetStackChrClient::GetInstance()
 {
@@ -168,13 +170,33 @@ void NetStackChrClient::GetHttpInfoFromCurl(CURL *handle, DataTransHttpInfo &htt
     httpInfo.hostName = CommonUtils::AnonymizeHost(originUrl);
 }
 
+std::string NetStackChrClient::EncodeUrlParam(const std::string &str)
+{
+    char encoded[4] = {0};
+    std::string encodeOut;
+    
+    size_t length = str.length();
+    
+    for (size_t i = 0; i < length; ++i) {
+        auto c = static_cast<uint8_t>(str[i]);
+        if (c >= MAX_LETTER_CODE || c == '\n' || c == '\r') {
+            sprintf_s(encoded, sizeof(encoded), "%%%02X", c);
+            encodeOut += encoded;
+        } else {
+            encodeOut += static_cast<char>(c);
+        }
+    }
+    return encodeOut;
+}
+
 void NetStackChrClient::GetUrlInfoFromCurl(CURL *handle, DataTransUrlInfo &urlInfo)
 {
     (void)curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &urlInfo.responseCode);
     urlInfo.totalTime = GetNumericAttributeFromCurl<curl_off_t>(handle, CURLINFO_TOTAL_TIME_T);
     urlInfo.requestStartTime = GetRequestStartTime(urlInfo.totalTime);
     std::string originUrl = GetStringAttributeFromCurl(handle, CURLINFO_EFFECTIVE_URL);
-    std::string SimpleUrl = CommonUtils::GetSimpleHost(originUrl);
+    std::string EncodeUrl = EncodeUrlParam(originUrl);
+    std::string SimpleUrl = CommonUtils::GetSimpleHost(EncodeUrl);
     urlInfo.hostName = CommonUtils::AnonymizeHost(SimpleUrl);
 }
 
