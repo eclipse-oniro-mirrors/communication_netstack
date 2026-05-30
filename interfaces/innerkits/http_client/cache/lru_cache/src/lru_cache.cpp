@@ -177,7 +177,7 @@ void LRUCache::ReadCacheFromJsonValue(const cJSON* root)
                 continue;
             }
             std::string valueKey = valueItem->string;
-            // LCOV_EXCL_START 
+            // LCOV_EXCL_START
             const char *strValue = cJSON_GetStringValue(valueItem);
             if (strValue == nullptr) {
                 continue;
