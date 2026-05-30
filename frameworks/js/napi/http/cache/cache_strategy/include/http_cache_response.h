@@ -80,6 +80,7 @@ public:
 
 private:
     void ParseCacheControl(const std::string &cacheControl);
+    [[nodiscard]] bool String2Time(const std::string &age, time_t &output) const;
 
     std::string date_;
     std::string expires_;

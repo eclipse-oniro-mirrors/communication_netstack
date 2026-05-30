@@ -17,6 +17,7 @@
 #include "curl/curl.h"
 #include "request_context.h"
 
+#include <charconv>
 #include <cstddef>
 #include <cstring>
 #include <future>
@@ -1213,8 +1214,14 @@ void HttpExec::GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::str
     if (exclusions == DEFAULT_HTTP_PROXY_EXCLUSION_LIST) {
         exclusions = std::string();
     }
-
-    port = std::atoi(httpProxyPort);
+    auto len = std::strlen(httpProxyPort);
+    int32_t parsed_port = 0;
+    auto [ptr, ec] = std::from_chars(httpProxyPort, httpProxyPort + len, parsed_port);
+    if (len > 0 && ec == std::errc() && ptr == httpProxyPort + len && parsed_port >= 1) {
+        port = parsed_port;
+    } else {
+        port = 0;
+    }
 #endif
 }
 
@@ -2632,7 +2639,7 @@ bool HttpExec::ProcByExpectDataType(napi_value object, RequestContext *context)
             auto body = context->response.GetResult();
             napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);
             if (data != nullptr && arrayBuffer != nullptr) {
-                if (memcpy_s(data, body.size(), body.c_str(), body.size()) < 0) {
+                if (memcpy_s(data, body.size(), body.c_str(), body.size()) != EOK) {
                     NETSTACK_LOGE("[ProcByExpectDataType] memory copy failed");
                     return true;
                 }

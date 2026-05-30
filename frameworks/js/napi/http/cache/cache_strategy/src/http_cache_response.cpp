@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include <charconv>
 #include "http_cache_response.h"
 
 #include "casche_constant.h"
@@ -124,28 +124,40 @@ std::string HttpCacheResponse::GetAge() const
     return age_;
 }
 
+bool HttpCacheResponse::String2Time(const std::string &age, time_t &output) const
+{
+    if (age.empty()) {
+        return false;
+    }
+    auto [ptr, ec] = std::from_chars(age.data(), age.data() + age.size(), output, DECIMAL);
+    return (ec == std::errc{}) && (ptr == age.data() + age.size());
+}
+
 time_t HttpCacheResponse::GetAgeSeconds() const
 {
-    if (age_.empty()) {
-        return INVALID_TIME;
+    time_t seconds = 0;
+    if (String2Time(age_, seconds)) {
+        return seconds;
     }
-    return std::strtol(age_.c_str(), nullptr, DECIMAL);
+    return INVALID_TIME;
 }
 
 time_t HttpCacheResponse::GetMaxAgeSeconds() const
 {
-    if (maxAge_.empty()) {
-        return INVALID_TIME;
+    time_t seconds = 0;
+    if (String2Time(maxAge_, seconds)) {
+        return seconds;
     }
-    return std::strtol(maxAge_.c_str(), nullptr, DECIMAL);
+    return INVALID_TIME;
 }
 
 time_t HttpCacheResponse::GetSMaxAgeSeconds() const
 {
-    if (sMaxAge_.empty()) {
-        return INVALID_TIME;
+    time_t seconds = 0;
+    if (String2Time(sMaxAge_, seconds)) {
+        return seconds;
     }
-    return std::strtol(sMaxAge_.c_str(), nullptr, DECIMAL);
+    return INVALID_TIME;
 }
 
 time_t HttpCacheResponse::GetResponseTime() const

@@ -1065,7 +1065,9 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
 {
     INTERCEPTOR_TRACE_START("CONNECT_NETWORK_CONTINUE");
     CURL *easyHander = handle->context->GetCurlHandle();
-
+    if (easyHander == nullptr) {
+        return;
+    }
     auto newUrl = NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, handle->reqContext, "url"));
     curl_easy_setopt(easyHander, CURLOPT_URL, newUrl.c_str());
     handle->context->options.SetUrl(newUrl);
@@ -1099,7 +1101,6 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
             if (bufferData != nullptr && bufferLength > 0) {
                 SetCurlPostFields(easyHander, bufferData, bufferLength);
                 handle->context->options.ReplaceBody(bufferData, bufferLength);
-                NETSTACK_LOGD("updated array buffer body, length=%{public}zu", bufferLength);
             } else {
                 INTERCEPTOR_TRACE_ERROR("CONNECT_NETWORK", "invalid array buffer data or length");
             }
@@ -1107,7 +1108,6 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
             INTERCEPTOR_TRACE_ERROR("CONNECT_NETWORK", "unsupported body type");
         }
     } else {
-        NETSTACK_LOGD("body is null, using empty body");
         SetCurlPostFields(easyHander, "", 0);
         handle->context->options.ReplaceBody("", 0);
     }
