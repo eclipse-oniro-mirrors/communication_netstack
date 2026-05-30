@@ -74,10 +74,10 @@ void LRUCache::EraseTailNode()
     if (nodeList_.empty()) {
         return;
     }
+    Node node = nodeList_.back();
     if (GetMapValueSize(node.value) == INVALID_SIZE) {
         return;
     }
-    Node node = nodeList_.back();
     nodeList_.pop_back();
     cache_.erase(node.key);
     size_ -= GetMapValueSize(node.value);
