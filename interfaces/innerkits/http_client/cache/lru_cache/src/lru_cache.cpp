@@ -177,7 +177,17 @@ void LRUCache::ReadCacheFromJsonValue(const cJSON* root)
                 continue;
             }
             std::string valueKey = valueItem->string;
-            m[valueKey] = cJSON_GetStringValue(valueItem);
+            // LCOV_EXCL_START
+            if (!cJSON_IsString(valueItem)) {
+                NETSTACK_LOGD("valueItem is not a string type");
+                continue;
+            }
+            const char *strValue = cJSON_GetStringValue(valueItem);
+            if (strValue == nullptr) {
+                continue;
+            }
+            // LCOV_EXCL_STOP
+            m[valueKey] = strValue;
         }
 
         if (m.find(LRU_INDEX) != m.end()) {

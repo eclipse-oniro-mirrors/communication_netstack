@@ -230,9 +230,11 @@ void EpollMultiDriver::HandleCurlDoneMessage(CURLMsg *message)
 #ifdef HAS_NETSTACK_CHR
     HandleDfx(message, easyHandle, requestInfo);
 #endif
-    if (!easyHandle) {
+    // LCOV_EXCL_START
+    if (!easyHandle || requestInfo == nullptr) {
         return;
     }
+    // LCOV_EXCL_STOP
     curl_multi_remove_handle(multi_, easyHandle);
     ongoingRequests_.erase(easyHandle);
 #ifdef HTTP_HANDOVER_FEATURE

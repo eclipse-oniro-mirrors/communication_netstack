@@ -75,6 +75,9 @@ void LRUCache::EraseTailNode()
         return;
     }
     Node node = nodeList_.back();
+    if (GetMapValueSize(node.value) == INVALID_SIZE) {
+        return;
+    }
     nodeList_.pop_back();
     cache_.erase(node.key);
     size_ -= GetMapValueSize(node.value);
@@ -179,7 +182,15 @@ void LRUCache::ReadCacheFromJsonValue(const cJSON* root)
                 continue;
             }
             std::string valueKey = valueItem->string;
-            m[valueKey] = cJSON_GetStringValue(valueItem);
+            if (!cJSON_IsString(valueItem)) {
+                NETSTACK_LOGD("valueItem is not a string type");
+                continue;
+            }
+            const char *strValue = cJSON_GetStringValue(valueItem);
+            if (strValue == nullptr) {
+                continue;
+            }
+            m[valueKey] = std::string(strValue);
         }
 
         if (m.find(LRU_INDEX) != m.end()) {
