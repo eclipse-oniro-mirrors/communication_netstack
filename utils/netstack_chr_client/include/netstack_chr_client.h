@@ -49,6 +49,7 @@ private:
     static long GetRequestStartTime(curl_off_t totalTime);
     bool ShouldReportUrlAbnormalEvent(const DataTransUrlInfo &urlInfo);
     int ShouldReportHttpAbnormalEvent(const DataTransChrStats &dataTransChrStats);
+    static std::string EncodeUrlParam(const std::string &str);
     NetStackChrReport netstackChrReport_;
     std::map<std::string, uint32_t> urlRequestList;
     std::mutex urlRequestListMutex;
