@@ -227,7 +227,16 @@ int LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, 
     WebSocketClient *client = static_cast<WebSocketClient *>(user);
     NETSTACK_LOGD("ClientId:%{public}d,Callback ClientReceive", client->GetClientContext()->GetClientId());
     auto isFinal = lws_is_final_fragment(wsi);
-    client->AppendData(in, len);
+    int ret = client->AppendData(in, len);
+    if (ret != WEBSOCKET_NONE_ERR) {
+        ErrorResult errorResult;
+        errorResult.errorCode = WebSocketErrorCode::WEBSOCKET_DATA_LENGTH_EXCEEDS;
+        errorResult.errorMessage = CommonUtils::WEBSOCKET_DATA_LENGTH_EXCEEDED_STR;
+        if (client->onErrorCallback_) {
+            client->onErrorCallback_(client, errorResult);
+        }
+        return HttpDummy(wsi, reason, user, in, len);
+    }
     if (!isFinal) {
         return HttpDummy(wsi, reason, user, in, len);
     }
@@ -243,9 +252,15 @@ int LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, 
 }
 // LCOV_EXCL_STOP
  
-void WebSocketClient::AppendData(void *data, size_t length)
+int WebSocketClient::AppendData(void *data, size_t length)
 {
+    if (data_.size() + length > CommonUtils::WEBSOCKET_PER_MESSAGE_MAX_SIZE) {
+        NETSTACK_LOGE("message size exceeds max limit");
+        data_.clear();
+        return WebSocketErrorCode::WEBSOCKET_DATA_LENGTH_EXCEEDS;
+    }
     data_.append(reinterpret_cast<char *>(data), length);
+    return WEBSOCKET_NONE_ERR;
 }
  
 const std::string &WebSocketClient::GetData()

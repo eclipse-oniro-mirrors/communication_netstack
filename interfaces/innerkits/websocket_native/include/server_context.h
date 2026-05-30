@@ -29,6 +29,8 @@
 #include <map>
 #include "netstack_log.h"
 #include "secure_char.h"
+#include "websocket_client_error.h"
+#include "netstack_common_utils.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -388,14 +390,44 @@ public:
         return wsServerTextData_[wsi];
     }
 
-    void AppendWsServerBinaryData(void *wsi, void *data, size_t length)
+    int AppendWsServerBinaryData(void *wsi, void *data, size_t length)
     {
-        wsServerBinaryData_[wsi].append(reinterpret_cast<char *>(data), length);
+        auto it = wsServerBinaryData_.find(wsi);
+        if (it != wsServerBinaryData_.end()) {
+            if (it->second.size() + length > CommonUtils::WEBSOCKET_PER_MESSAGE_MAX_SIZE) {
+                NETSTACK_LOGE("Append Server Binary Data exceeds max limit");
+                ClearWsServerBinaryData(wsi);
+                return WebSocketClient::WEBSOCKET_DATA_LENGTH_EXCEEDS;
+            }
+            it->second.append(reinterpret_cast<char *>(data), length);
+        } else {
+            if (length > CommonUtils::WEBSOCKET_PER_MESSAGE_MAX_SIZE) {
+                NETSTACK_LOGE("Append Server Binary Data exceeds max limit");
+                return WebSocketClient::WEBSOCKET_DATA_LENGTH_EXCEEDS;
+            }
+            wsServerBinaryData_[wsi].append(reinterpret_cast<char *>(data), length);
+        }
+        return WebSocketClient::WEBSOCKET_NONE_ERR;
     }
 
-    void AppendWsServerTextData(void *wsi, void *data, size_t length)
+    int AppendWsServerTextData(void *wsi, void *data, size_t length)
     {
-        wsServerTextData_[wsi].append(reinterpret_cast<char *>(data), length);
+        auto it = wsServerTextData_.find(wsi);
+        if (it != wsServerTextData_.end()) {
+            if (it->second.size() + length > CommonUtils::WEBSOCKET_PER_MESSAGE_MAX_SIZE) {
+                NETSTACK_LOGE("AppendWsServerTextData exceeds max limit");
+                ClearWsServerTextData(wsi);
+                return WebSocketClient::WEBSOCKET_DATA_LENGTH_EXCEEDS;
+            }
+            it->second.append(reinterpret_cast<char *>(data), length);
+        } else {
+            if (length > CommonUtils::WEBSOCKET_PER_MESSAGE_MAX_SIZE) {
+                NETSTACK_LOGE("AppendWsServerTextData exceeds max limit");
+                return WebSocketClient::WEBSOCKET_DATA_LENGTH_EXCEEDS;
+            }
+            wsServerTextData_[wsi].append(reinterpret_cast<char *>(data), length);
+        }
+        return WebSocketClient::WEBSOCKET_NONE_ERR;
     }
 
     void ClearWsServerBinaryData(void *wsi)

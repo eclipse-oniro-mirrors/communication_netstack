@@ -79,7 +79,7 @@ public:
     int Registcallback(OnOpenCallback OnOpen, OnMessageCallback onMessage, OnErrorCallback OnError,
                         OnCloseCallback onclose);
     int Destroy();
-    void AppendData(void *data, size_t length);
+    int AppendData(void *data, size_t length);
     const std::string &GetData();
     void ClearData();
 
