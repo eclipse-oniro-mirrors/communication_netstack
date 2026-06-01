@@ -157,6 +157,7 @@ void NetStackChrReport::SetUrlInfoJsonStr(
        << ",\"url\":\"" << urlInfo.hostName
        << "\",\"totalTime\":" << urlInfo.totalTime
        << ",\"osCode\":" << urlInfo.osError
+       << ",\"totalCount\":" << urlInfo.totalCnt
        << ",\"curlCode\":" << urlInfo.curlCode
        << ",\"dstIp\":\"" << urlInfo.dstIp
        << "\",\"request_start_time\":" << urlInfo.requestStartTime << "}";

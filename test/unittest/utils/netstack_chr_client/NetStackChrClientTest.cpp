@@ -477,14 +477,17 @@ HWTEST_F(NetStackChrClientTest, GetDfxUrlInfoFromCurlHandleAndReport1, TestSize.
 }
 
 HWTEST_F(NetStackChrClientTest, GetDfxUrlInfoFromCurlHandleAndReport2, TestSize.Level2) {
-    CURL *handle = GetCurlHandle();
+    CURL *handle1 = GetCurlHandle();
+    CURL *handle2 = GetCurlHandle();
     ChrClient::DataTransUrlInfo urlInfo;
     urlInfo.responseCode = 255;
     urlInfo.curlCode = 0;
     urlInfo.osError = 0;
     urlInfo.totalTime = 1000;
     EXPECT_FALSE(ChrClient::NetStackChrClient::GetInstance().ShouldReportUrlAbnormalEvent(urlInfo));
-    ChrClient::NetStackChrClient::GetInstance().GetDfxUrlInfoFromCurlHandleAndReport(handle, 1);
+    ChrClient::NetStackChrClient::GetInstance().GetDfxUrlInfoFromCurlHandleAndReport(handle1, 0);
+    ChrClient::NetStackChrClient::GetInstance().GetDfxUrlInfoFromCurlHandleAndReport(handle2, 0);
+    ChrClient::NetStackChrClient::GetInstance().GetDfxUrlInfoFromCurlHandleAndReport(handle1, 0);
 }
 
 HWTEST_F(NetStackChrClientTest, NetStackChrClientTestReportTimeLimits2, TestSize.Level2)
@@ -497,4 +500,32 @@ HWTEST_F(NetStackChrClientTest, NetStackChrClientTestReportTimeLimits2, TestSize
     EXPECT_NE(secondRet, 1);
 }
 
+HWTEST_F(NetStackChrClientTest, EncodeUrlParamTest01, TestSize.Level2) {
+    std::string input = "HelloWorld123";
+    std::string expected = "HelloWorld123";
+    EXPECT_EQ(expected, ChrClient::NetStackChrClient::GetInstance().EncodeUrlParam(input));
+}
+ 
+HWTEST_F(NetStackChrClientTest, EncodeUrlParamTest02, TestSize.Level2) {
+    std::string input = "a b";
+    std::string expected = "a b";
+    EXPECT_EQ(expected, ChrClient::NetStackChrClient::GetInstance().EncodeUrlParam(input));
+}
+ 
+HWTEST_F(NetStackChrClientTest, EncodeUrlParamTest03, TestSize.Level2) {
+    std::string input = "Hello\nWorld";
+    std::string expected = "Hello%0AWorld";
+    EXPECT_EQ(expected, ChrClient::NetStackChrClient::GetInstance().EncodeUrlParam(input));
+}
+ 
+HWTEST_F(NetStackChrClientTest, EncodeUrlParamTest04, TestSize.Level2) {
+    std::string input = "";
+    EXPECT_EQ("", ChrClient::NetStackChrClient::GetInstance().EncodeUrlParam(input));
+}
+ 
+HWTEST_F(NetStackChrClientTest, EncodeUrlParamTest05, TestSize.Level2) {
+    std::string input = "~\x80";
+    std::string expected = "~%80";
+    EXPECT_EQ(expected, ChrClient::NetStackChrClient::GetInstance().EncodeUrlParam(input));
+}
 }
