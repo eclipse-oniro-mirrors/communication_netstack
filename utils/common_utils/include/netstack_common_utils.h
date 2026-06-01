@@ -27,6 +27,8 @@ static const std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
 static const std::string DOMAIN_TYPE_WEBSOCKET_REQUEST = "webSocket";
 const int INVALID_IP_TYPE = -1;
 const int MAX_PORT = 65535;
+static constexpr const int WEBSOCKET_PER_MESSAGE_MAX_SIZE = 1024 * 1024 * 1024;
+static constexpr const char *WEBSOCKET_DATA_LENGTH_EXCEEDED_STR = "websocket data length exceeded";
 enum SdkVersion {
     FIVE = 5,
     SIX,

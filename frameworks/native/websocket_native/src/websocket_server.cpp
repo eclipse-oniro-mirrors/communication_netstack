@@ -32,7 +32,6 @@
 #include <securec.h>
 
 #include "netstack_log.h"
-#include "netstack_common_utils.h"
 #include "websocket_server_innerapi.h"
 
 #define LWS_PLUGIN_STATIC
@@ -59,7 +58,8 @@ enum WebsocketErrorCode {
     WEBSOCKET_ERROR_CODE_INVALID_PORT = WEBSOCKET_ERROR_CODE_BASE + 5,
     WEBSOCKET_ERROR_CODE_CONNECTION_NOT_EXIST = WEBSOCKET_ERROR_CODE_BASE + 6,
     WEBSOCKET_NOT_ALLOWED_HOST = 2302998,
-    WEBSOCKET_UNKNOWN_OTHER_ERROR = 2302999
+    WEBSOCKET_UNKNOWN_OTHER_ERROR = 2302999,
+    WEBSOCKET_DATA_LENGTH_EXCEEDS = 1012
 };
 
 static const std::map<int32_t, std::string> WEBSOCKET_ERR_MAP = { { WEBSOCKET_CONNECT_FAILED,
@@ -72,7 +72,8 @@ static const std::map<int32_t, std::string> WEBSOCKET_ERR_MAP = { { WEBSOCKET_CO
     { WEBSOCKET_ERROR_CODE_INVALID_PORT, "Can't listen to the given Port" },
     { WEBSOCKET_ERROR_CODE_CONNECTION_NOT_EXIST, "websocket connection does not exist" },
     { WEBSOCKET_NOT_ALLOWED_HOST, "It is not allowed to access this domain" },
-    { WEBSOCKET_UNKNOWN_OTHER_ERROR, "Websocket Unknown Other Error" } };
+    { WEBSOCKET_UNKNOWN_OTHER_ERROR, "Websocket Unknown Other Error" },
+    { WEBSOCKET_DATA_LENGTH_EXCEEDS, "websocket data length exceeded"} };
 
 enum {
     CLOSE_REASON_NORMAL_CLOSE [[maybe_unused]] = 1000,
@@ -480,9 +481,17 @@ int LwsCallbackReceive(lws *wsi, lws_callback_reasons reason, void *user, void *
     }
     bool isBinary = lws_frame_is_binary(wsi);
     if (isBinary) {
-        server->GetServerContext()->AppendWsServerBinaryData(wsi, in, len);
+        int addBinaryRes = server->GetServerContext()->AppendWsServerBinaryData(wsi, in, len);
+        if (addBinaryRes != WebSocketClient::WEBSOCKET_NONE_ERR) {
+            OnServerError(server, WebSocketClient::WEBSOCKET_DATA_LENGTH_EXCEEDS);
+            return HttpDummy(wsi, reason, user, in, len);
+        }
     } else {
-        server->GetServerContext()->AppendWsServerTextData(wsi, in, len);
+        int addTextRes = server->GetServerContext()->AppendWsServerTextData(wsi, in, len);
+        if (addTextRes != WebSocketClient::WEBSOCKET_NONE_ERR) {
+            OnServerError(server, WebSocketClient::WEBSOCKET_DATA_LENGTH_EXCEEDS);
+            return HttpDummy(wsi, reason, user, in, len);
+        }
     }
     auto isFinal = lws_is_final_fragment(wsi);
     if (!isFinal) {

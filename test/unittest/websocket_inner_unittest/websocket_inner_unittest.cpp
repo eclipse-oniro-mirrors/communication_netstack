@@ -385,7 +385,8 @@ namespace {
     HWTEST_F(WebSocketTest, WebSocketClientDataManipulation006, TestSize.Level1)
     {
         auto localClient = std::make_unique<OHOS::NetStack::WebSocketClient::WebSocketClient>();
-        localClient->AppendData(reinterpret_cast<void *>(const_cast<char *>("abc")), 3);
+        int ret = localClient->AppendData(reinterpret_cast<void *>(const_cast<char *>("abc")), 3);
+        EXPECT_EQ(ret, WEBSOCKET_NONE_ERR);
         EXPECT_STREQ(localClient->GetData().c_str(), "abc");
         localClient->ClearData();
         EXPECT_TRUE(localClient->GetData().empty());
