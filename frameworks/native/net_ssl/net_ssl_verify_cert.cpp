@@ -371,7 +371,7 @@ uint32_t BuildSortedChain(X509_STORE_CTX *ctx, CertBlob **outChain, size_t *outC
     CertBlob *certChain = new (std::nothrow) CertBlob[chainLen];
     if (certChain == nullptr) {
         NETSTACK_LOGE("Failed to allocate cert chain array\n");
-        return SSL_X509_V_ERR_OUT_OF_MEMORY_API26;
+        return SSL_X509_V_ERR_OUT_OF_MEMORY;
     }
 
     // Convert each X509 to CertBlob (chain is already sorted leaf to root)
@@ -491,14 +491,14 @@ uint32_t VerifyAndBuildCertChain(
 
         untrustedChain = BuildUntrustedChain(certs, certCount);
         if (certCount > 1 && untrustedChain == nullptr) {
-            verifyResult = SSL_X509_V_ERR_OUT_OF_MEMORY_API26;
+            verifyResult = SSL_X509_V_ERR_OUT_OF_MEMORY;
             break;
         }
 
         store = X509_STORE_new();
         if (store == nullptr) {
             NETSTACK_LOGE("Failed to create X509 store\n");
-            verifyResult = SSL_X509_V_ERR_OUT_OF_MEMORY_API26;
+            verifyResult = SSL_X509_V_ERR_OUT_OF_MEMORY;
             break;
         }
 
@@ -510,7 +510,7 @@ uint32_t VerifyAndBuildCertChain(
         ctx = X509_STORE_CTX_new();
         if (ctx == nullptr) {
             NETSTACK_LOGE("Failed to create X509 store context\n");
-            verifyResult = SSL_X509_V_ERR_OUT_OF_MEMORY_API26;
+            verifyResult = SSL_X509_V_ERR_OUT_OF_MEMORY;
             break;
         }
 

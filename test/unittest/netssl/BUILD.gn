@@ -52,12 +52,15 @@ ohos_unittest("netssl_unittest") {
     "$NETSSL_NAPI/net_ssl_exec/src/net_ssl_exec.cpp",
     "$NETSSL_NAPI/net_ssl_module/src/net_ssl_module.cpp",
     "NetsslTest.cpp",
+    "VerifyCertChainTest.cpp",
     "VerifyCertChainContextTest.cpp",
+    "NetSslCApiTest.cpp",
   ]
 
   deps = [
     "$NETSSL_INNERAPI:net_ssl",
     "$NETSSL_NAPI:networksecurity_napi",
+    "$NETSTACK_DIR/interfaces/kits/c/net_ssl:net_ssl_ndk",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
   ]
 

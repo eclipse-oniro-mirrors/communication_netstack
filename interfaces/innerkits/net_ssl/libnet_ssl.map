@@ -16,6 +16,10 @@
     *NetStackVerifyCertification*;
     *VerifyAndBuildCertChain*;
     *FreeCertChain*;
+    *CertBlobToX509*;
+    *X509ToCertBlob*;
+    *VerifyHostname*;
+    *BuildSortedChain*;
   local:
     *;
 };
