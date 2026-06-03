@@ -681,6 +681,8 @@ int WebSocketServerExec::LwsCallbackReceive(lws *wsi, lws_callback_reasons reaso
 
 static napi_value CreateServerClosePara(napi_env env, void *callbackPara)
 {
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     auto para = reinterpret_cast<ClientConnectionCloseCallback *>(callbackPara);
     auto deleter = [](const ClientConnectionCloseCallback *p) { delete p; };
     std::unique_ptr<ClientConnectionCloseCallback, decltype(deleter)> handler(para, deleter);
@@ -707,6 +709,8 @@ static napi_value CreateServerClosePara(napi_env env, void *callbackPara)
 
 static napi_value ConvertWsBinaryMessageToJs(napi_env env, const WebSocketMessage *msg)
 {
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     napi_value jsMsg = NapiUtils::CreateObject(env);
     if (NapiUtils::GetValueType(env, jsMsg) != napi_object) {
         return NapiUtils::GetUndefined(env);
@@ -737,6 +741,8 @@ static napi_value ConvertWsBinaryMessageToJs(napi_env env, const WebSocketMessag
 
 static napi_value CreateServerBinaryMessagePara(napi_env env, void *callbackPara)
 {
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     auto pair = reinterpret_cast<std::pair<lws *, EventManager *> *>(callbackPara);
     if (pair == nullptr) {
         NETSTACK_LOGE("pair is nullptr");
@@ -768,6 +774,8 @@ static napi_value CreateServerBinaryMessagePara(napi_env env, void *callbackPara
 
 static napi_value ConvertWsTextMessageToJs(napi_env env, const WebSocketMessage *msg)
 {
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     napi_value jsMsg = NapiUtils::CreateObject(env);
     if (NapiUtils::GetValueType(env, jsMsg) != napi_object) {
         return NapiUtils::GetUndefined(env);
@@ -785,6 +793,8 @@ static napi_value ConvertWsTextMessageToJs(napi_env env, const WebSocketMessage 
 
 static napi_value CreateServerTextMessagePara(napi_env env, void *callbackPara)
 {
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     auto pair = reinterpret_cast<std::pair<lws *, EventManager *> *>(callbackPara);
     if (pair == nullptr) {
         NETSTACK_LOGE("pair is nullptr");
@@ -817,6 +827,8 @@ static napi_value CreateServerTextMessagePara(napi_env env, void *callbackPara)
 
 static napi_value CreateConnectPara(napi_env env, void *callbackPara)
 {
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     auto para = reinterpret_cast<WebSocketConnection *>(callbackPara);
     auto deleter = [](const WebSocketConnection *p) { delete p; };
     std::unique_ptr<WebSocketConnection, decltype(deleter)> handler(para, deleter);
@@ -832,6 +844,8 @@ static napi_value CreateConnectPara(napi_env env, void *callbackPara)
 
 static napi_value CreateServerError(napi_env env, void *callbackPara)
 {
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     auto code = reinterpret_cast<int32_t *>(callbackPara);
     auto deleter = [](int32_t *p) { delete p; };
     std::unique_ptr<int32_t, decltype(deleter)> handler(code, deleter);
