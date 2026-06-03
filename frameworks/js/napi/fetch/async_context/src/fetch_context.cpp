@@ -37,10 +37,10 @@ void FetchContext::ParseParams(napi_value *params, size_t paramsCount)
         return;
     }
 
-    if (!ParseUrl(GetEnv(), params[0], FetchConstant::PARAM_KEY_URL)) {
-        NETSTACK_LOGE("Input url error");
-        return;
-    }
+    /*SSRF攻击，需要借助服务端转发，fetch是一个客户端的通用SDK，应用如果想要发起SSRF攻击，访问某个file://，
+    可以完全不用sdk，直接发包。在客户端进行拦截和校验url，完全没有必要。SSRF防御是要在服务端做防御的。
+    客户端防御没有任何意义。如果应用搭建了一个file服务器想要访问。sdk不应进行限制。*/
+    request.SetUrl(NapiUtils::GetStringPropertyUtf8(GetEnv(), params[0], FetchConstant::PARAM_KEY_URL));
     request.SetMethod(NapiUtils::GetStringPropertyUtf8(GetEnv(), params[0], FetchConstant::PARAM_KEY_METHOD));
     if (request.GetMethod().empty()) {
         request.SetMethod(FetchConstant::HTTP_METHOD_GET);
@@ -255,15 +255,5 @@ napi_value FetchContext::GetCompleteCallback() const
 std::string FetchContext::GetResponseType() const
 {
     return responseType_;
-}
-
-bool FetchContext::ParseUrl(napi_env env, napi_value object, const std::string &propertyName)
-{
-    std::string url = NapiUtils::GetStringPropertyUtf8(env, object, propertyName);
-    if (url.rfind("https://", 0) != 0 && url.rfind("http://", 0) != 0) {
-        url = "http://" + url;
-    }
-    request.SetUrl(url);
-    return true;
 }
 } // namespace OHOS::NetStack::Fetch

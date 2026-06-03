@@ -61,8 +61,6 @@ private:
 
     bool GetUrlParam(napi_value data);
 
-    bool ParseUrl(napi_env env, napi_value object, const std::string &propertyName);
-
     std::string responseType_;
 
     napi_ref successCallback_;
