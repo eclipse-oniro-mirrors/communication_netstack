@@ -52,6 +52,9 @@ int CJTcpSocketProxy::GetSocketFd() const
 void CJTcpSocketProxy::SetSocketFd(int fd)
 {
     sockFd_ = fd;
+    if (fd >= 0) {
+        everOpened_ = true;
+    }
 }
 
 sa_family_t CJTcpSocketProxy::GetFamily() const
@@ -87,6 +90,11 @@ void CJTcpSocketProxy::SetAsyncConnecting(bool asyncConnecting)
 bool CJTcpSocketProxy::IsClosed() const
 {
     return closed_.load();
+}
+
+bool CJTcpSocketProxy::IsEverOpened() const
+{
+    return everOpened_;
 }
 
 void CJTcpSocketProxy::AddCallback2Map(int32_t type, SocketCallback callback)
@@ -440,7 +448,9 @@ CGetStateResult CJTcpSocketImpl::GetState(CJTcpSocketProxy *proxy)
     }
     int sockFd = proxy->GetSocketFd();
     if (sockFd < 0) {
-        result.state.isClose = true;
+        if (proxy->IsEverOpened()) {
+            result.state.isClose = true;
+        }
         result.code = ERR_OK;
         return result;
     }

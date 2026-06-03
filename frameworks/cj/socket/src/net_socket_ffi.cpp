@@ -25,7 +25,7 @@ namespace OHOS::NetStack::Socket {
 
 EXTERN_C_START
 
-int64_t FfiOHOSTcpSocketCreate()
+FFI_EXPORT int64_t FfiOHOSTcpSocketCreate()
 {
     auto instance = FFI::FFIData::Create<CJTcpSocketProxy>();
     if (!instance) {
@@ -35,7 +35,7 @@ int64_t FfiOHOSTcpSocketCreate()
     return instance->GetID();
 }
 
-int32_t FfiOHOSTcpSocketBind(int64_t id, CNetAddress address)
+FFI_EXPORT int32_t FfiOHOSTcpSocketBind(int64_t id, CNetAddress address)
 {
     auto instance = FFIData::GetData<CJTcpSocketProxy>(id);
     if (instance == nullptr) {
@@ -45,7 +45,7 @@ int32_t FfiOHOSTcpSocketBind(int64_t id, CNetAddress address)
     return CJTcpSocketImpl::Bind(instance, address);
 }
 
-int32_t FfiOHOSTcpSocketConnect(int64_t id, CTcpConnectOptions options,
+FFI_EXPORT int32_t FfiOHOSTcpSocketConnect(int64_t id, CTcpConnectOptions options,
     int64_t callback)
 {
     auto instance = FFIData::GetData<CJTcpSocketProxy>(id);
@@ -56,7 +56,7 @@ int32_t FfiOHOSTcpSocketConnect(int64_t id, CTcpConnectOptions options,
     return CJTcpSocketImpl::Connect(instance, options, callback);
 }
 
-int32_t FfiOHOSTcpSocketSend(int64_t id, CTcpSendOptions options)
+FFI_EXPORT int32_t FfiOHOSTcpSocketSend(int64_t id, CTcpSendOptions options)
 {
     auto instance = FFIData::GetData<CJTcpSocketProxy>(id);
     if (instance == nullptr) {
@@ -66,7 +66,7 @@ int32_t FfiOHOSTcpSocketSend(int64_t id, CTcpSendOptions options)
     return CJTcpSocketImpl::Send(instance, options);
 }
 
-int32_t FfiOHOSTcpSocketClose(int64_t id)
+FFI_EXPORT int32_t FfiOHOSTcpSocketClose(int64_t id)
 {
     auto instance = FFIData::GetData<CJTcpSocketProxy>(id);
     if (instance == nullptr) {
@@ -76,7 +76,7 @@ int32_t FfiOHOSTcpSocketClose(int64_t id)
     return CJTcpSocketImpl::Close(instance);
 }
 
-CGetStateResult FfiOHOSTcpSocketGetState(int64_t id)
+FFI_EXPORT CGetStateResult FfiOHOSTcpSocketGetState(int64_t id)
 {
     CGetStateResult ret = {};
     auto instance = FFIData::GetData<CJTcpSocketProxy>(id);
@@ -88,7 +88,7 @@ CGetStateResult FfiOHOSTcpSocketGetState(int64_t id)
     return CJTcpSocketImpl::GetState(instance);
 }
 
-CGetAddressResult FfiOHOSTcpSocketGetRemoteAddress(int64_t id)
+FFI_EXPORT CGetAddressResult FfiOHOSTcpSocketGetRemoteAddress(int64_t id)
 {
     CGetAddressResult ret = {};
     auto instance = FFIData::GetData<CJTcpSocketProxy>(id);
@@ -100,7 +100,7 @@ CGetAddressResult FfiOHOSTcpSocketGetRemoteAddress(int64_t id)
     return CJTcpSocketImpl::GetRemoteAddress(instance);
 }
 
-CGetAddressResult FfiOHOSTcpSocketGetLocalAddress(int64_t id)
+FFI_EXPORT CGetAddressResult FfiOHOSTcpSocketGetLocalAddress(int64_t id)
 {
     CGetAddressResult ret = {};
     auto instance = FFIData::GetData<CJTcpSocketProxy>(id);
@@ -112,7 +112,7 @@ CGetAddressResult FfiOHOSTcpSocketGetLocalAddress(int64_t id)
     return CJTcpSocketImpl::GetLocalAddress(instance);
 }
 
-CGetSocketFdResult FfiOHOSTcpSocketGetSocketFd(int64_t id)
+FFI_EXPORT CGetSocketFdResult FfiOHOSTcpSocketGetSocketFd(int64_t id)
 {
     CGetSocketFdResult ret = {};
     auto instance = FFIData::GetData<CJTcpSocketProxy>(id);
@@ -124,7 +124,7 @@ CGetSocketFdResult FfiOHOSTcpSocketGetSocketFd(int64_t id)
     return CJTcpSocketImpl::GetSocketFd(instance);
 }
 
-int32_t FfiOHOSTcpSocketSetExtraOptions(int64_t id, CTcpExtraOptions options)
+FFI_EXPORT int32_t FfiOHOSTcpSocketSetExtraOptions(int64_t id, CTcpExtraOptions options)
 {
     auto instance = FFIData::GetData<CJTcpSocketProxy>(id);
     if (instance == nullptr) {
@@ -134,7 +134,7 @@ int32_t FfiOHOSTcpSocketSetExtraOptions(int64_t id, CTcpExtraOptions options)
     return CJTcpSocketImpl::SetExtraOptions(instance, options);
 }
 
-int32_t FfiOHOSTcpSocketOnController(int64_t id, int32_t typeId, void (*callback)(CCallbackData *))
+FFI_EXPORT int32_t FfiOHOSTcpSocketOnController(int64_t id, int32_t typeId, void (*callback)(CCallbackData *))
 {
     auto instance = FFIData::GetData<CJTcpSocketProxy>(id);
     if (instance == nullptr) {
@@ -144,7 +144,7 @@ int32_t FfiOHOSTcpSocketOnController(int64_t id, int32_t typeId, void (*callback
     return CJTcpSocketImpl::OnController(instance, typeId, CJLambda::Create(callback));
 }
 
-int32_t FfiOHOSTcpSocketOffController(int64_t id, int32_t typeId)
+FFI_EXPORT int32_t FfiOHOSTcpSocketOffController(int64_t id, int32_t typeId)
 {
     auto instance = FFIData::GetData<CJTcpSocketProxy>(id);
     if (instance == nullptr) {
