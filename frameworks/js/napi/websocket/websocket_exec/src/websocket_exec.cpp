@@ -872,8 +872,6 @@ static napi_value CreateOpenPara(napi_env env, void *callbackPara)
 
 static napi_value CreateOpenExPara(napi_env env, void *callbackPara)
 {
-    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
-    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     auto para = reinterpret_cast<WebSocketOpenInfo *>(callbackPara);
     auto deleter = [](const WebSocketOpenInfo *p) { delete p; };
     std::unique_ptr<WebSocketOpenInfo, decltype(deleter)> handler(para, deleter);
