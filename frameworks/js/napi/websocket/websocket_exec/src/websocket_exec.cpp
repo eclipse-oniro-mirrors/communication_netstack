@@ -121,7 +121,7 @@ template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTempl
 
     auto workWrapper = static_cast<UvWorkWrapperShared *>(work->data);
     napi_env env = workWrapper->env;
-    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); }; 
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
     std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
 
     napi_value obj = MakeJsValue(env, workWrapper->data);
