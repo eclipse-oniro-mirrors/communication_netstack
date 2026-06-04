@@ -81,6 +81,17 @@ int32_t OH_Netstack_IsCleartextPermitted(bool *isCleartextPermitted);
 int32_t OH_Netstack_IsCleartextPermittedByHostName(const char *hostname, bool *isCleartextPermitted);
 
 int32_t OH_Netstack_IsCleartextCfgByComponent(const char *component, bool *componentCfg);
+
+uint32_t OH_NetStack_CreateAndVerifySortedCertChain(
+    const struct NetStack_CertBlob *cert,
+    size_t certCount,
+    const struct NetStack_CertBlob *caCert,
+    const char *hostname,
+    struct NetStack_CertBlob **outSortedChain,
+    size_t *outSortedCount);
+
+void OH_NetStack_FreeCertChain(struct NetStack_CertBlob *certChain, size_t certCount);
+
 #ifdef __cplusplus
 }
 #endif

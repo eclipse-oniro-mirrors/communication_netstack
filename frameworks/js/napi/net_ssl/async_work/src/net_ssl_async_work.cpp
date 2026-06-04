@@ -29,4 +29,15 @@ void NetSslAsyncWork::VerifyCallback(napi_env env, napi_status status, void *dat
 {
     BaseAsyncWork::AsyncWorkCallback<CertContext, SslExec::VerifyCallback>(env, status, data);
 }
+
+void NetSslAsyncWork::ExecVerifyCertChain(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<VerifyCertChainContext, SslExec::ExecVerifyCertChain>(env, data);
+}
+
+void NetSslAsyncWork::VerifyCertChainCallback(napi_env env, napi_status status, void *data)
+{
+    BaseAsyncWork::AsyncWorkCallback<VerifyCertChainContext, SslExec::VerifyCertChainCallback>(env, status, data);
+}
+
 } // namespace OHOS::NetStack::Ssl
