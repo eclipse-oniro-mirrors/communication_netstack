@@ -842,8 +842,6 @@ napi_value WebSocketExec::CloseCallback(CloseContext *context)
 
 static napi_value CreateError(napi_env env, void *callbackPara)
 {
-    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
-    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     auto pair = reinterpret_cast<std::pair<int, uint32_t> *>(callbackPara);
     auto deleter = [](std::pair<int, uint32_t> *p) { delete p; };
     std::unique_ptr<std::pair<int, uint32_t>, decltype(deleter)> handler(pair, deleter);
@@ -858,8 +856,6 @@ static napi_value CreateError(napi_env env, void *callbackPara)
 
 static napi_value CreateOpenPara(napi_env env, void *callbackPara)
 {
-    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
-    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     auto para = reinterpret_cast<OnOpenClosePara *>(callbackPara);
     auto deleter = [](const OnOpenClosePara *p) { delete p; };
     std::unique_ptr<OnOpenClosePara, decltype(deleter)> handler(para, deleter);
@@ -893,8 +889,6 @@ static napi_value CreateOpenExPara(napi_env env, void *callbackPara)
 
 static napi_value CreateClosePara(napi_env env, void *callbackPara)
 {
-    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
-    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     auto para = reinterpret_cast<OnOpenClosePara *>(callbackPara);
     auto deleter = [](const OnOpenClosePara *p) { delete p; };
     std::unique_ptr<OnOpenClosePara, decltype(deleter)> handler(para, deleter);
@@ -909,8 +903,6 @@ static napi_value CreateClosePara(napi_env env, void *callbackPara)
 
 static napi_value CreateMessagePara(napi_env env, void *callbackPara)
 {
-    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
-    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     auto manager = reinterpret_cast<EventManager *>(callbackPara);
     if (manager == nullptr || manager->innerMagic_.magicNumber != EVENT_MANAGER_MAGIC_NUMBER) {
         return NapiUtils::GetUndefined(env);
@@ -954,8 +946,6 @@ void WebSocketExec::OnError(EventManager *manager, int32_t code, uint32_t httpRe
 
 napi_value CreateResponseHeader(napi_env env, void *callbackPara)
 {
-    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
-    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     auto para = reinterpret_cast<std::map<std::string, std::string> *>(callbackPara);
     if (para == nullptr) {
         return NapiUtils::GetUndefined(env);
