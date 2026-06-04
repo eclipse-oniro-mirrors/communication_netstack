@@ -121,8 +121,6 @@ template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTempl
 
     auto workWrapper = static_cast<UvWorkWrapperShared *>(work->data);
     napi_env env = workWrapper->env;
-    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
-    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
 
     napi_value obj = MakeJsValue(env, workWrapper->data);
     auto undefined = NapiUtils::GetUndefined(workWrapper->env);
@@ -303,8 +301,6 @@ int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reas
 
 static napi_value CreateConnectError(napi_env env, void *callbackPara)
 {
-    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
-    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     auto pair = reinterpret_cast<std::pair<int, uint32_t> *>(callbackPara);
     auto deleter = [](std::pair<int, uint32_t> *p) { delete p; };
     std::unique_ptr<std::pair<int, uint32_t>, decltype(deleter)> handler(pair, deleter);
