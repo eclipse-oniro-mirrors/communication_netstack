@@ -31,6 +31,10 @@ static constexpr const int PARAM_CERT_ARRAY = 1;
 static constexpr const int PARAM_CERT_ARRAY_AND_CA = 2;
 static constexpr const int PARAM_CERT_ARRAY_CA_HOSTNAME = 3;
 
+static constexpr size_t PARAM_INDEX_CERTS = 0;
+static constexpr size_t PARAM_INDEX_CA = 1;
+static constexpr size_t PARAM_INDEX_HOSTNAME = 2;
+
 namespace OHOS::NetStack::Ssl {
 
 static const std::map<int32_t, const char *> SSL_ERR_MAP_EXT = {
@@ -90,15 +94,15 @@ void VerifyCertChainContext::ParseParams(napi_value *params, size_t paramsCount)
 
             // Check if second param is undefined/null (optional caCert)
             napi_valuetype valueType;
-            napi_typeof(GetEnv(), params[1], &valueType);
+            napi_typeof(GetEnv(), params[PARAM_INDEX_CA], &valueType);
             if (valueType != napi_undefined && valueType != napi_null) {
-                caCert_ = ParseSingleCertBlob(GetEnv(), params[1]);
+                caCert_ = ParseSingleCertBlob(GetEnv(), params[PARAM_INDEX_CA]);
             }
 
             // Check if third param is undefined/null (optional hostname)
-            napi_typeof(GetEnv(), params[2], &valueType);
+            napi_typeof(GetEnv(), params[PARAM_INDEX_HOSTNAME], &valueType);
             if (valueType != napi_undefined && valueType != napi_null) {
-                hostname_ = ParseHostname(GetEnv(), params[2]);
+                hostname_ = ParseHostname(GetEnv(), params[PARAM_INDEX_HOSTNAME]);
             }
 
             SetParseOK(inputCerts_ != nullptr && inputCertCount_ > 0);
@@ -123,12 +127,12 @@ bool VerifyCertChainContext::CheckParamsType(napi_value *params, size_t paramsCo
         return isArray && (valueType == napi_object || valueType == napi_undefined || valueType == napi_null);
     } else if (paramsCount == PARAM_CERT_ARRAY_CA_HOSTNAME) {
         bool isArray = false;
-        napi_is_array(GetEnv(), params[0], &isArray);
+        napi_is_array(GetEnv(), params[PARAM_INDEX_CERTS], &isArray);
         // Second param can be object or undefined/null
         napi_valuetype valueType1;
         napi_valuetype valueType2;
-        napi_typeof(GetEnv(), params[1], &valueType1);
-        napi_typeof(GetEnv(), params[2], &valueType2);
+        napi_typeof(GetEnv(), params[PARAM_INDEX_CA], &valueType1);
+        napi_typeof(GetEnv(), params[PARAM_INDEX_HOSTNAME], &valueType2);
         return isArray &&
                (valueType1 == napi_object || valueType1 == napi_undefined || valueType1 == napi_null) &&
                (valueType2 == napi_string || valueType2 == napi_undefined || valueType2 == napi_null);
@@ -157,8 +161,15 @@ CertBlob *VerifyCertChainContext::ParseCertBlobArray(napi_env env, napi_value va
 
     uint32_t arrayLength = 0;
     napi_get_array_length(env, value, &arrayLength);
+    constexpr uint32_t maxCertCount = 100;
     if (arrayLength == 0) {
         NETSTACK_LOGE("Empty certificate array\n");
+        SetErrorCode(PARSE_ERROR_CODE);
+        return nullptr;
+    }
+
+    if (arrayLength > maxCertCount) {
+        NETSTACK_LOGE("Certificate array too large: %{public}u\n", arrayLength);
         SetErrorCode(PARSE_ERROR_CODE);
         return nullptr;
     }
@@ -204,63 +215,71 @@ CertBlob *VerifyCertChainContext::ParseSingleCertBlob(napi_env env, napi_value v
         return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
     }
 
-    return ParseCertBlobFromData(env, value, typeValue, dataValue);
+    return ParseCertBlobFromData(env, typeValue, dataValue);
+}
+
+CertBlob *VerifyCertChainContext::ParsePemCertBlob(napi_env env, napi_value dataValue)
+{
+    NETSTACK_LOGD("CERT_TYPE_PEM\n");
+    napi_valuetype valueType;
+    napi_typeof(env, dataValue, &valueType);
+    if (valueType != napi_string) {
+        NETSTACK_LOGE("PEM but not string\n");
+        return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
+    }
+
+    size_t dataSize = 0;
+    napi_get_value_string_utf8(env, dataValue, nullptr, 0, &dataSize);
+    if (dataSize + 1 >= SIZE_MAX / sizeof(uint8_t)) {
+        return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
+    }
+
+    uint8_t *data = new (std::nothrow) uint8_t[dataSize + 1];
+    if (data == nullptr) {
+        return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
+    }
+    napi_get_value_string_utf8(env, dataValue, reinterpret_cast<char *>(data), dataSize + 1, &dataSize);
+    uint32_t size = static_cast<uint32_t>(dataSize);
+    return new CertBlob{CERT_TYPE_PEM, size, data};
+}
+
+CertBlob *VerifyCertChainContext::ParseDerCertBlob(napi_env env, napi_value dataValue)
+{
+    NETSTACK_LOGD("CERT_TYPE_DER\n");
+    bool isArrayBuffer = false;
+    napi_is_arraybuffer(env, dataValue, &isArrayBuffer);
+    if (!isArrayBuffer) {
+        NETSTACK_LOGE("DER but not arraybuffer\n");
+        return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
+    }
+
+    void *dataArray = nullptr;
+    size_t dataSize = 0;
+    napi_get_arraybuffer_info(env, dataValue, &dataArray, &dataSize);
+    if (dataSize >= SIZE_MAX / sizeof(uint8_t)) {
+        return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
+    }
+
+    uint8_t *data = new uint8_t[dataSize];
+    std::copy(static_cast<uint8_t *>(dataArray), static_cast<uint8_t *>(dataArray) + dataSize, data);
+    uint32_t size = static_cast<uint32_t>(dataSize);
+    return new CertBlob{CERT_TYPE_DER, size, data};
 }
 
 CertBlob *VerifyCertChainContext::ParseCertBlobFromData(
-    napi_env env, napi_value value, napi_value typeValue, napi_value dataValue)
+    napi_env env, napi_value typeValue, napi_value dataValue)
 {
-    size_t dataSize = 0;
     uint32_t type;
-    uint32_t size = 0;
-    uint8_t *data = nullptr;
-
     napi_get_value_uint32(env, typeValue, &type);
     CertType certType = static_cast<CertType>(type);
 
     if (certType == CERT_TYPE_PEM) {
-        NETSTACK_LOGD("CERT_TYPE_PEM\n");
-        napi_valuetype valueType;
-        napi_typeof(env, dataValue, &valueType);
-        if (valueType != napi_string) {
-            NETSTACK_LOGE("PEM but not string\n");
-            return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
-        }
-
-        napi_get_value_string_utf8(env, dataValue, nullptr, 0, &dataSize);
-        if (dataSize + 1 < SIZE_MAX / sizeof(uint8_t)) {
-            data = new (std::nothrow) uint8_t[dataSize + 1];
-            if (data == nullptr) {
-                return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
-            }
-            napi_get_value_string_utf8(env, dataValue, reinterpret_cast<char *>(data), dataSize + 1, &dataSize);
-            size = static_cast<uint32_t>(dataSize);
-        } else {
-            return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
-        }
+        return ParsePemCertBlob(env, dataValue);
     } else if (certType == CERT_TYPE_DER) {
-        NETSTACK_LOGD("CERT_TYPE_DER\n");
-        bool isArrayBuffer = false;
-        napi_is_arraybuffer(env, dataValue, &isArrayBuffer);
-        if (!isArrayBuffer) {
-            NETSTACK_LOGE("DER but not arraybuffer\n");
-            return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
-        }
-
-        void *dataArray = nullptr;
-        napi_get_arraybuffer_info(env, dataValue, &dataArray, &dataSize);
-        if (dataSize < SIZE_MAX / sizeof(uint8_t)) {
-            data = new uint8_t[dataSize];
-            std::copy(static_cast<uint8_t *>(dataArray), static_cast<uint8_t *>(dataArray) + dataSize, data);
-            size = static_cast<uint32_t>(dataSize);
-        } else {
-            return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
-        }
+        return ParseDerCertBlob(env, dataValue);
     } else {
         return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
     }
-
-    return new CertBlob{static_cast<CertType>(type), static_cast<uint32_t>(size), static_cast<uint8_t *>(data)};
 }
 
 std::string VerifyCertChainContext::ParseHostname(napi_env env, napi_value value)

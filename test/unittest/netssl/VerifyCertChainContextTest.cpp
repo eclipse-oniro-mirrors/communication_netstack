@@ -23,6 +23,7 @@
 #include "napi/native_node_api.h"
 #include "verify_cert_chain_context.h"
 #include "net_ssl.h"
+#include "securec.h"
 #include "net_ssl_verify_cert.h"
 #include "netstack_log.h"
 
@@ -219,12 +220,23 @@ HWTEST_F(VerifyCertChainContextTest, SetGetSortedChain_012, testing::ext::TestSi
     chain[0].type = CERT_TYPE_PEM;
     chain[0].size = 100;
     chain[0].data = new uint8_t[100];
-    memset(chain[0].data, 0xAA, 100);
+    if (memset_s(chain[0].data, 100, 0xAA, 100) != EOK) {
+        delete[] chain[0].data;
+        delete[] chain;
+        FAIL() << "memset_s failed";
+        return;
+    }
 
     chain[1].type = CERT_TYPE_DER;
     chain[1].size = 200;
     chain[1].data = new uint8_t[200];
-    memset(chain[1].data, 0xBB, 200);
+    if (memset_s(chain[1].data, 200, 0xBB, 200) != EOK) {
+        delete[] chain[0].data;
+        delete[] chain[1].data;
+        delete[] chain;
+        FAIL() << "memset_s failed";
+        return;
+    }
 
     context.SetSortedChain(chain, 2);
     EXPECT_EQ(context.GetSortedChain(), chain);
@@ -365,7 +377,12 @@ HWTEST_F(VerifyCertChainContextTest, Destructor_FreesSortedChain_021, testing::e
         chain[0].type = CERT_TYPE_PEM;
         chain[0].size = 100;
         chain[0].data = new uint8_t[100];
-        memset(chain[0].data, 0xFF, 100);
+        if (memset_s(chain[0].data, 100, 0xFF, 100) != EOK) {
+            delete[] chain[0].data;
+            delete[] chain;
+            FAIL() << "memset_s failed";
+            return;
+        }
 
         context.SetSortedChain(chain, 1);
     }

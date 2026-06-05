@@ -239,11 +239,12 @@ void SetVerifyAndBuildCertChainTest(const uint8_t *data, size_t size)
     }
     SetGlobalFuzzData(data, size);
 
+    constexpr uint32_t certTypeModulo = 3;
     uint32_t certCount = GetData<uint32_t>() % 5 + 1;
     CertBlob *certs = new CertBlob[certCount];
     for (uint32_t i = 0; i < certCount; i++) {
         std::string str = GetStringFromData(STR_LEN);
-        certs[i].type = (GetData<uint32_t>() % 3 == 0) ? CERT_TYPE_DER : CERT_TYPE_PEM;
+        certs[i].type = (GetData<uint32_t>() % certTypeModulo == 0) ? CERT_TYPE_DER : CERT_TYPE_PEM;
         certs[i].size = static_cast<uint32_t>(str.size());
         certs[i].data = stringToUint8(str);
     }
@@ -402,7 +403,10 @@ void SetOHNetStackCreateAndVerifySortedCertChainTest(const uint8_t *data, size_t
         certs[i].size = static_cast<uint32_t>(str.size());
         certs[i].data = (uint8_t *)malloc(certs[i].size);
         if (certs[i].data != nullptr) {
-            memcpy(certs[i].data, str.c_str(), certs[i].size);
+            if (memcpy_s(certs[i].data, certs[i].size, str.c_str(), certs[i].size) != EOK) {
+                free(certs[i].data);
+                certs[i].data = nullptr;
+            }
         }
     }
 

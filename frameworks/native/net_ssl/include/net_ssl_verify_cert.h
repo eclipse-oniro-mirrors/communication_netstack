@@ -126,13 +126,11 @@ static const std::multiset<uint32_t> SslErrorCodeSetSinceAPI26{SSL_NONE_ERR,
                                                                SSL_X509_V_ERR_CERT_HAS_EXPIRED,
                                                                SSL_X509_V_ERR_CRL_NOT_YET_VALID,
                                                                SSL_X509_V_ERR_CRL_HAS_EXPIRED,
-                                                               SSL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY,
                                                                SSL_X509_V_ERR_CERT_REVOKED,
                                                                SSL_X509_V_ERR_INVALID_CA,
                                                                SSL_X509_V_ERR_CERT_UNTRUSTED,
                                                                SSL_X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT,
                                                                SSL_X509_V_ERR_INVALID_CALL,
-                                                               SSL_X509_V_ERR_OUT_OF_MEMORY,
                                                                // New error code since API26.
                                                                SSL_X509_V_ERR_HOSTNAME_MISMATCH};
 
