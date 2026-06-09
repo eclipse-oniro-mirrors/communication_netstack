@@ -802,6 +802,7 @@ bool RequestContext::ParseBodyQueryParamsOrExtraData(napi_value optionsValue)
     bool hasQueryParams = NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_QUERY_PARAMS);
     bodyOrQueryConfigured_ = hasBody || hasQueryParams;
     if (hasBody || hasQueryParams) {
+        options.SetBodyOrQueryConfigured(true);
         if (hasBody) {
             ParseBody(optionsValue);
         }
