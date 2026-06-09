@@ -124,6 +124,16 @@ const std::string &HttpRequestOptions::GetQueryParams() const
     return queryParams_;
 }
 
+void HttpRequestOptions::SetBodyOrQueryConfigured(bool bodyOrQueryConfigured)
+{
+    bodyOrQueryConfigured_ = bodyOrQueryConfigured;
+}
+
+bool HttpRequestOptions::GetBodyOrQueryConfigured() const
+{
+    return bodyOrQueryConfigured_;
+}
+
 const std::map<std::string, std::string> &HttpRequestOptions::GetHeader() const
 {
     return header_;
