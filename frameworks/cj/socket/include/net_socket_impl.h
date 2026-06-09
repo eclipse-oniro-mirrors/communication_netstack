@@ -51,6 +51,7 @@ public:
     bool IsAsyncConnecting() const;
     void SetAsyncConnecting(bool asyncConnecting);
     bool IsClosed() const;
+    bool IsEverOpened() const;
 
     void AddCallback2Map(int32_t type, SocketCallback callback);
     void DelCallback(int32_t type);
@@ -75,6 +76,7 @@ private:
     sa_family_t family_ = AF_INET;
     bool reuseAddr_ = false;
     bool asyncConnecting_ = false;
+    bool everOpened_ = false;
     std::atomic<bool> closed_ = {false};
 
     std::map<int32_t, SocketCallback> eventMap_;
