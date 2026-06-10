@@ -654,6 +654,7 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
     if (mgr->RegisterEpollEvent(mgr->sockfd_, EPOLLIN) == -1) {
         NETSTACK_LOGE("register listen fd err, fd:%{public}d, errno:%{public}d", mgr->sockfd_, errno);
         callback.OnError(errno);
+        mgr->NotifyLoopFinished();
         return;
     }
     mgr->SetServerDestructStatus(false);
