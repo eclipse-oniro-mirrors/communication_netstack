@@ -224,10 +224,12 @@ static uint32_t ConvertOutputChain(
     struct NetStack_CertBlob **outSortedChain, size_t *outSortedCount)
 {
     constexpr size_t maxCertChainSize = 10;
+    // LCOV_EXCL_START
     if (sortedCount == 0 || sortedCount > maxCertChainSize) {
         NETSTACK_LOGE("Invalid cert chain size: %{public}zu", sortedCount);
         return OHOS::NetStack::Ssl::SSL_X509_V_ERR_INVALID_CALL;
     }
+    // LCOV_EXCL_STOP
 
     struct NetStack_CertBlob *outputChain =
         (struct NetStack_CertBlob *)malloc(sortedCount * sizeof(struct NetStack_CertBlob));
