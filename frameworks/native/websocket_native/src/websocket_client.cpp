@@ -97,9 +97,13 @@ void RunService(WebSocketClient *Client)
     if (Client->GetClientContext()->GetContext() == nullptr) {
         return;
     }
+    lws_context *context = Client->GetClientContext()->GetContext();
     while (!Client->GetClientContext()->IsThreadStop()) {
-        lws_service(Client->GetClientContext()->GetContext(), 0);
+        lws_service(context, 0);
     }
+    NETSTACK_LOGI("websocket client service stop, destroying context");
+    Client->GetClientContext()->SetContext(nullptr);
+    lws_context_destroy(context);
 }
 
 int HttpDummy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
@@ -760,11 +764,10 @@ int WebSocketClient::Registcallback(OnOpenCallback onOpen, OnMessageCallback onM
 int WebSocketClient::Destroy()
 {
     NETSTACK_LOGI("Destroy start");
+    this->GetClientContext()->SetThreadStop(true);
     if (this->GetClientContext()->GetContext() == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT_CONTEXT;
     }
-    this->GetClientContext()->SetContext(nullptr);
-    lws_context_destroy(this->GetClientContext()->GetContext());
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
@@ -942,8 +945,8 @@ void WebSocketClient::RunLwsThread()
         while (res >= 0 && !client->GetClientContext()->IsThreadStop()) {
             res = lws_service(context, 0);
         }
-        lws_context_destroy(context);
         client->GetClientContext()->SetContext(nullptr);
+        lws_context_destroy(context);
         client = nullptr;
     });
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
