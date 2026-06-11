@@ -128,7 +128,7 @@ napi_value SslExec::VerifyCertChainCallback(VerifyCertChainContext *context)
                 continue;
             }
             napi_create_string_utf8(env, reinterpret_cast<char *>(chain[i].data),
-                                   NAPI_AUTO_LENGTH, &dataValue);
+                                    NAPI_AUTO_LENGTH, &dataValue);
         } else {
             // DER data is binary
             if (chain[i].data == nullptr || chain[i].size == 0) {

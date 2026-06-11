@@ -223,6 +223,14 @@ static uint32_t ConvertOutputChain(
     OHOS::NetStack::Ssl::CertBlob *sortedChain, size_t sortedCount,
     struct NetStack_CertBlob **outSortedChain, size_t *outSortedCount)
 {
+    constexpr size_t maxCertChainSize = 10;
+    // LCOV_EXCL_START
+    if (sortedCount == 0 || sortedCount > maxCertChainSize) {
+        NETSTACK_LOGE("Invalid cert chain size: %{public}zu", sortedCount);
+        return OHOS::NetStack::Ssl::SSL_X509_V_ERR_INVALID_CALL;
+    }
+    // LCOV_EXCL_STOP
+
     struct NetStack_CertBlob *outputChain =
         (struct NetStack_CertBlob *)malloc(sortedCount * sizeof(struct NetStack_CertBlob));
     if (outputChain == nullptr) {
@@ -280,7 +288,6 @@ uint32_t OH_NetStack_CreateAndVerifySortedCertChain(
     size_t sortedCount = 0;
     uint32_t result = OHOS::NetStack::Ssl::VerifyAndBuildCertChain(
         internalCerts.data(), certCount, internalCaCert, hostname, &sortedChain, &sortedCount);
-
     if (result != 0) {
         NETSTACK_LOGE("Certificate chain verification failed with error: %{public}u", result);
         *outSortedCount = 0;

@@ -51,7 +51,9 @@ public:
 private:
     CertBlob *ParseCertBlobArray(napi_env env, napi_value value, size_t *count);
     CertBlob *ParseSingleCertBlob(napi_env env, napi_value value);
-    CertBlob *ParseCertBlobFromData(napi_env env, napi_value value, napi_value typeValue, napi_value dataValue);
+    CertBlob *ParseCertBlobFromData(napi_env env, napi_value typeValue, napi_value dataValue);
+    CertBlob *ParsePemCertBlob(napi_env env, napi_value dataValue);
+    CertBlob *ParseDerCertBlob(napi_env env, napi_value dataValue);
     std::string ParseHostname(napi_env env, napi_value value);
 
     CertBlob *inputCerts_;

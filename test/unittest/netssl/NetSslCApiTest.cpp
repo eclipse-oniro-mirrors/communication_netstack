@@ -22,6 +22,7 @@
 #include "net_ssl_c_type.h"
 #include "net_ssl.h"
 #include "net_ssl_verify_cert.h"
+#include "securec.h"
 
 namespace {
 
@@ -110,7 +111,11 @@ public:
         blob.type = type;
         blob.size = static_cast<uint32_t>(strlen(pemStr));
         blob.data = new uint8_t[blob.size];
-        memcpy(blob.data, pemStr, blob.size);
+        if (memcpy_s(blob.data, blob.size, pemStr, blob.size) != EOK) {
+            delete[] blob.data;
+            blob.data = nullptr;
+            blob.size = 0;
+        }
         return blob;
     }
 
@@ -427,7 +432,11 @@ HWTEST_F(NetSslCApiTest, CreateAndVerify_ErrorCode_019, testing::ext::TestSize.L
     cert.type = NETSTACK_CERT_TYPE_PEM;
     cert.size = 5;
     cert.data = new uint8_t[5];
-    memcpy(cert.data, "ERROR", 5);
+    if (memcpy_s(cert.data, 5, "ERROR", 5) != EOK) {
+        delete[] cert.data;
+        FAIL() << "memcpy_s failed";
+        return;
+    }
 
     NetStack_CertBlob *outChain = nullptr;
     size_t outCount = 0;

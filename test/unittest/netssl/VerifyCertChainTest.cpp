@@ -25,6 +25,7 @@
 #include "verify_cert_chain_context.h"
 #include "net_ssl_exec.h"
 #include "netstack_log.h"
+#include "securec.h"
 
 namespace OHOS::NetStack::Ssl {
 namespace {
@@ -118,7 +119,11 @@ public:
         blob->type = type;
         blob->size = static_cast<uint32_t>(strlen(pemStr));
         blob->data = new uint8_t[blob->size];
-        memcpy(blob->data, pemStr, blob->size);
+        if (memcpy_s(blob->data, blob->size, pemStr, blob->size) != EOK) {
+            delete[] blob->data;
+            delete blob;
+            return nullptr;
+        }
         return blob;
     }
 
