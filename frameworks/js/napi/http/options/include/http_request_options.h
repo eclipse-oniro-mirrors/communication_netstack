@@ -186,6 +186,8 @@ public:
 
     void SetQueryParams(const std::string &queryParams);
 
+    void SetBodyOrQueryConfigured(bool bodyOrQueryConfigured);
+
     void SetHeader(const std::string &key, const std::string &val);
 
     void SetReadTimeout(uint32_t readTimeout);
@@ -238,6 +240,8 @@ public:
     [[nodiscard]] const std::string &GetBody() const;
 
     [[nodiscard]] const std::string &GetQueryParams() const;
+
+    [[nodiscard]] bool GetBodyOrQueryConfigured() const;
 
     [[nodiscard]] const std::map<std::string, std::string> &GetHeader() const;
 
@@ -331,6 +335,8 @@ private:
     std::string body_;
 
     std::string queryParams_;
+
+    bool bodyOrQueryConfigured_ = false;
 
     std::string method_;
 
