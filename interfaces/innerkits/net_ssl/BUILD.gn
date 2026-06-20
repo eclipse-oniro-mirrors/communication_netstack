@@ -55,6 +55,7 @@ ohos_shared_library("net_ssl") {
   include_dirs = [
     "$NETSTACK_NATIVE_ROOT/net_ssl/include",
     "$NETSTACK_DIR/utils/log/include",
+    "$NETSTACK_DIR/utils/common_utils/include",
   ]
   cflags = [
     "-fstack-protector-strong",
@@ -69,6 +70,9 @@ ohos_shared_library("net_ssl") {
 
   version_script = "libnet_ssl.map"
 
+  defines = []
+  deps = []
+
   public_configs = [ ":net_ssl_config" ]
 
   external_deps = [
@@ -78,6 +82,16 @@ ohos_shared_library("net_ssl") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
   ]
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [ "netmanager_base:net_security_config_if" ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+    deps += [ "$NETSTACK_DIR/utils:stack_utils_common" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
 
   public_external_deps = [
     "openssl:libcrypto_shared",

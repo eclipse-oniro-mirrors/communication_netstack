@@ -19,7 +19,12 @@
 
 #include "ipc_skeleton.h"
 #include "net_ssl_verify_cert.h"
+#include "netstack_common_utils.h"
 #include "netstack_log.h"
+#if HAS_NETMANAGER_BASE
+#include <vector>
+#include "network_security_config.h"
+#endif // HAS_NETMANAGER_BASE
 
 namespace OHOS {
 namespace NetStack {
@@ -441,8 +446,26 @@ static STACK_OF(X509) *BuildUntrustedChain(const CertBlob *certs, size_t certCou
     return chain;
 }
 
-static bool SetupVerificationStore(X509_STORE *store, const CertBlob *caCert)
+static bool SetupVerificationStore(X509_STORE *store, const CertBlob *caCert, const char *hostname)
 {
+    // 适配 NSC 选项1: domain-config[].trust-anchors + 选项2: base-config.trust-anchors
+    // GetTrustAnchorsForHostName() 内部先查按域名配置，无匹配则 fallback 到全局配置
+#if HAS_NETMANAGER_BASE
+    if (hostname != nullptr && strlen(hostname) > 0) {
+        std::vector<std::string> certPaths;
+        int32_t ret = NetManagerStandard::NetworkSecurityConfig::GetInstance()
+                       .GetTrustAnchorsForHostName(std::string(hostname), certPaths);
+        if (ret == 0 && !certPaths.empty()) {
+            for (const auto &path : certPaths) {
+                X509_STORE_load_path(store, path.c_str());
+            }
+            NETSTACK_LOGD("Loaded %{public}zu NSC trust anchor paths for hostname: %{public}s",
+                          certPaths.size(), hostname);
+            return true;
+        }
+    }
+#endif // HAS_NETMANAGER_BASE
+
     if (caCert != nullptr) {
         X509 *caX509 = CertBlobToX509(caCert);
         if (caX509 == nullptr) {
@@ -456,12 +479,58 @@ static bool SetupVerificationStore(X509_STORE *store, const CertBlob *caCert)
         }
         X509_free(caX509);
     } else {
+        // 适配 NSC 选项3: trust-global-user-ca + 选项4: trust-current-user-ca
+#if HAS_NETMANAGER_BASE
+        auto &nsc = NetManagerStandard::NetworkSecurityConfig::GetInstance();
+        if (nsc.TrustUser0Ca()) {
+            X509_STORE_load_locations(store, nullptr, SslConstant::SYSPRECAPATH);
+        }
+        if (nsc.TrustUserCa()) {
+            std::string userInstalledCaPath = GetUserInstalledCaPath();
+            X509_STORE_load_locations(store, nullptr, userInstalledCaPath.c_str());
+        }
+#else
         std::string userInstalledCaPath = GetUserInstalledCaPath();
         X509_STORE_load_locations(store, nullptr, SslConstant::SYSPRECAPATH);
         X509_STORE_load_locations(store, nullptr, userInstalledCaPath.c_str());
+#endif // HAS_NETMANAGER_BASE
     }
     return true;
 }
+
+// 适配 NSC 选项5: pin-set 公钥锁定验证
+#if HAS_NETMANAGER_BASE
+static uint32_t VerifyPinnedPublicKey(X509 *cert, const char *hostname)
+{
+    if (NetManagerStandard::NetworkSecurityConfig::GetInstance().IsPinOpenMode(hostname)) {
+        return X509_V_OK;
+    }
+
+    std::string pins;
+    int32_t ret = NetManagerStandard::NetworkSecurityConfig::GetInstance().GetPinSetForHostName(hostname, pins);
+    if (ret != 0 || pins.empty()) {
+        return X509_V_OK;
+    }
+
+    unsigned char *pubkey = nullptr;
+    int pubkeyLen = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(cert), &pubkey);
+    if (pubkeyLen <= 0) {
+        return SSL_X509_V_ERR_UNSPECIFIED;
+    }
+    std::string digest;
+    bool ok = OHOS::NetStack::CommonUtils::Sha256sum(pubkey, pubkeyLen, digest);
+    OPENSSL_free(pubkey);
+    if (!ok) {
+        return SSL_X509_V_ERR_UNSPECIFIED;
+    }
+
+    if (!OHOS::NetStack::CommonUtils::IsCertPubKeyInPinned(digest, pins)) {
+        NETSTACK_LOGE("Certificate pin mismatch for hostname: %{public}s", hostname);
+        return SSL_X509_V_ERR_CERT_UNTRUSTED;
+    }
+    return X509_V_OK;
+}
+#endif // HAS_NETMANAGER_BASE
 
 uint32_t VerifyAndBuildCertChain(
     const CertBlob *certs,
@@ -502,7 +571,7 @@ uint32_t VerifyAndBuildCertChain(
             break;
         }
 
-        if (!SetupVerificationStore(store, caCert)) {
+        if (!SetupVerificationStore(store, caCert, hostname)) {
             verifyResult = SSL_X509_V_ERR_INVALID_CA;
             break;
         }
@@ -535,6 +604,13 @@ uint32_t VerifyAndBuildCertChain(
                 NETSTACK_LOGE("Hostname verification failed\n");
                 break;
             }
+            // 适配 NSC 选项5: pin-set 公钥锁定验证
+#if HAS_NETMANAGER_BASE
+            verifyResult = VerifyPinnedPublicKey(leafCert, hostname);
+            if (verifyResult != X509_V_OK) {
+                break;
+            }
+#endif // HAS_NETMANAGER_BASE
         }
 
         if (outChain != nullptr) {
