@@ -16,6 +16,7 @@
 #include "websocket_exec.h"
 
 #include <atomic>
+#include <dirent.h>
 #include <memory>
 #include <queue>
 #include <thread>
@@ -31,6 +32,13 @@
 #include "http_proxy.h"
 #include "net_conn_client.h"
 #include "network_security_config.h"
+#endif
+#ifdef ANDROID_PLATFORM
+#include <openssl/ssl.h>
+#include <openssl/x509.h>
+#include <openssl/pem.h>
+#include <openssl/bio.h>
+#include <openssl/err.h>
 #endif
 
 
@@ -76,7 +84,11 @@ static constexpr const int32_t UID_TRANSFORM_DIVISOR = 200000;
 
 static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 
+#ifdef ANDROID_PLATFORM
+static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/system/etc/security/cacerts/";
+#else
 static constexpr const char *WEBSOCKET_SYSTEM_PREPARE_CA_PATH = "/etc/security/certificates";
+#endif
 
 static constexpr const char *WEBSOCKET_CLIENT_THREAD_RUN = "OS_NET_WSJsCli";
 
@@ -663,6 +675,69 @@ static bool CheckFilePath(std::string &path)
     return true;
 }
 
+#ifdef ANDROID_PLATFORM
+static int LoadCertsToStore(X509_STORE *store, const std::string &dirPath)
+{
+    DIR *dir = opendir(dirPath.c_str());
+    if (dir == nullptr) {
+        NETSTACK_LOGE("CA directory not exist: %{public}s", dirPath.c_str());
+        return 0;
+    }
+    int certCount = 0;
+    struct dirent *entry = nullptr;
+    while ((entry = readdir(dir)) != nullptr) {
+        if (entry->d_name[0] == '.') {
+            continue;
+        }
+        std::string filePath = dirPath + "/" + entry->d_name;
+        BIO *bio = BIO_new_file(filePath.c_str(), "r");
+        if (bio == nullptr) {
+            continue;
+        }
+        X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+        if (cert == nullptr) {
+            BIO_reset(bio);
+            cert = d2i_X509_bio(bio, nullptr);
+        }
+        if (cert != nullptr) {
+            X509_STORE_add_cert(store, cert);
+            certCount++;
+            X509_free(cert);
+        }
+        BIO_free(bio);
+    }
+    closedir(dir);
+    return certCount;
+}
+
+static bool FillCaPathForAndroid(ConnectContext *context, lws_context_creation_info &info)
+{
+    SSL_CTX *sslCtx = SSL_CTX_new(TLS_client_method());
+    if (sslCtx == nullptr) {
+        NETSTACK_LOGE("Failed to create SSL_CTX");
+        return false;
+    }
+    X509_STORE *store = SSL_CTX_get_cert_store(sslCtx);
+    if (store == nullptr) {
+        SSL_CTX_free(sslCtx);
+        NETSTACK_LOGE("Failed to get X509_STORE");
+        return false;
+    }
+    int certCount = LoadCertsToStore(store, WEBSOCKET_SYSTEM_PREPARE_CA_PATH);
+#ifdef HAS_NETMANAGER_BASE
+    if (NetManagerStandard::NetworkSecurityConfig::GetInstance().TrustUserCa()) {
+        context->userCertPath_ = BASE_PATH + std::to_string(getuid() / UID_TRANSFORM_DIVISOR);
+        certCount += LoadCertsToStore(store, context->userCertPath_);
+    }
+#endif
+    NETSTACK_LOGI("FillCaPath: loaded %{public}d CA certs into SSL_CTX", certCount);
+    SSL_CTX_set_verify(sslCtx, SSL_VERIFY_PEER, nullptr);
+    context->sslCtx_ = sslCtx;
+    info.provided_client_ssl_ctx = sslCtx;
+    return true;
+}
+#endif
+
 bool WebSocketExec::FillCaPath(ConnectContext *context, lws_context_creation_info &info)
 {
     if (!context->caPath_.empty()) {
@@ -674,6 +749,11 @@ bool WebSocketExec::FillCaPath(ConnectContext *context, lws_context_creation_inf
         info.client_ssl_ca_filepath = context->caPath_.c_str();
         NETSTACK_LOGD("load customize CA: %{public}s", info.client_ssl_ca_filepath);
     } else {
+#ifdef ANDROID_PLATFORM
+        if (!FillCaPathForAndroid(context, info)) {
+            return false;
+        }
+#else
         info.client_ssl_ca_dirs[0] = WEBSOCKET_SYSTEM_PREPARE_CA_PATH;
 #ifdef HAS_NETMANAGER_BASE
         if (NetManagerStandard::NetworkSecurityConfig::GetInstance().TrustUserCa()) {
@@ -682,6 +762,7 @@ bool WebSocketExec::FillCaPath(ConnectContext *context, lws_context_creation_inf
         }
 #endif
         NETSTACK_LOGD("load system CA");
+#endif
     }
     if (!context->clientCert_.empty()) {
         char realKeyPath[PATH_MAX] = {0};
@@ -735,8 +816,18 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     } else {
         NETSTACK_LOGE("Websocket connect already exist");
         context->SetErrorCode(WEBSOCKET_ERROR_CODE_CONNECT_AlREADY_EXIST);
+#ifdef ANDROID_PLATFORM
+        if (context->sslCtx_ != nullptr) {
+            SSL_CTX_free(static_cast<SSL_CTX *>(context->sslCtx_));
+            context->sslCtx_ = nullptr;
+        }
+#endif
         return false;
     }
+#ifdef ANDROID_PLATFORM
+    userData->sslCtx_ = context->sslCtx_;
+    context->sslCtx_ = nullptr;
+#endif
     SetRetry(&userData->retry_policy, context);
     if (!CreatConnectInfo(context, lwsContext, manager)) {
         userData->SetContext(nullptr);

@@ -20,6 +20,9 @@
 #include "netstack_log.h"
 #include "securec.h"
 #include <utility>
+#ifdef ANDROID_PLATFORM
+#include <openssl/ssl.h>
+#endif
 
 namespace OHOS::NetStack::Websocket {
 ConnectContext::ConnectContext(napi_env env, const std::shared_ptr<EventManager> &manager)
@@ -27,7 +30,15 @@ ConnectContext::ConnectContext(napi_env env, const std::shared_ptr<EventManager>
 {
 }
 
-ConnectContext::~ConnectContext() = default;
+ConnectContext::~ConnectContext()
+{
+#ifdef ANDROID_PLATFORM
+    if (sslCtx_ != nullptr) {
+        SSL_CTX_free(static_cast<SSL_CTX *>(sslCtx_));
+        sslCtx_ = nullptr;
+    }
+#endif
+}
 
 static void AddSlashBeforeQuery(std::string &url)
 {
