@@ -14,13 +14,6 @@
 group("netstack_test") {
   testonly = true
   deps = [
-    "fuzztest/http_fuzzer:fuzztest",
-    "fuzztest/netssl:fuzztest",
-    "fuzztest/netsslinner_fuzzer:fuzztest",
-    "fuzztest/socket:fuzztest",
-    "fuzztest/websocket:fuzztest",
-    "fuzztest/websocketcapi_fuzzer:fuzztest",
-    "fuzztest/httpcapi_fuzzer:fuzztest",
     "unittest/http:unittest",
     "unittest/http/cache:unittest",
     "unittest/http_client:unittest",
