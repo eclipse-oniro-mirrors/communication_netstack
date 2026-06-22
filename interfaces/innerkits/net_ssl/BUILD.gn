@@ -55,7 +55,6 @@ ohos_shared_library("net_ssl") {
   include_dirs = [
     "$NETSTACK_NATIVE_ROOT/net_ssl/include",
     "$NETSTACK_DIR/utils/log/include",
-    "$NETSTACK_DIR/utils/common_utils/include",
   ]
   cflags = [
     "-fstack-protector-strong",
