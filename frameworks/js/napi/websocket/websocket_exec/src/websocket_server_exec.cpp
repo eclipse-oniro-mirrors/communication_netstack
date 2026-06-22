@@ -108,9 +108,14 @@ static const lws_http_mount mount = {
     0,
     0,
     0,
+    0,
     LWSMPRO_FILE,
     1,
     NULL,
+    NULL,
+    NULL,
+    NULL,
+    0,
 };
 
 template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)

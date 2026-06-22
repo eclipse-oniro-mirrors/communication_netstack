@@ -100,7 +100,7 @@ struct CallbackDispatcher {
 };
 
 static const lws_http_mount mount = {
-    NULL, "/", "./mount-origin", "index.html", NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, LWSMPRO_FILE, 1, NULL,
+    NULL, "/", "./mount-origin", "index.html", NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, LWSMPRO_FILE, 1, NULL, NULL, NULL, NULL, 0,
 };
 
 void OnServerError(WebSocketServer *server, int32_t code)
