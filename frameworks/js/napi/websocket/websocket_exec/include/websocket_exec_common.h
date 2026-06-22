@@ -21,6 +21,9 @@
 #include <string>
 #include "libwebsockets.h"
 #include "netstack_log.h"
+#ifdef ANDROID_PLATFORM
+#include <openssl/ssl.h>
+#endif
 
 namespace OHOS::NetStack::Websocket {
 struct WebSocketConnection {
@@ -48,6 +51,16 @@ public:
     explicit UserData(lws_context *context)
         : closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), closed_(false), threadStop_(false), context_(context)
     {
+    }
+
+    ~UserData()
+    {
+#ifdef ANDROID_PLATFORM
+        if (sslCtx_ != nullptr) {
+            SSL_CTX_free(static_cast<SSL_CTX *>(sslCtx_));
+            sslCtx_ = nullptr;
+        }
+#endif
     }
 
     bool IsClosed()
@@ -159,6 +172,10 @@ public:
         .secs_since_valid_hangup = 60,
         .jitter_percent          = 20,
     };
+
+#ifdef ANDROID_PLATFORM
+    void *sslCtx_ = nullptr;
+#endif
 
 private:
     volatile bool closed_;

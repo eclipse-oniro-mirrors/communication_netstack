@@ -77,6 +77,10 @@ public:
 
     std::string caPath_;
 
+#ifdef ANDROID_PLATFORM
+    void *sslCtx_ = nullptr;
+#endif
+
     std::string clientCert_;
 
     bool skipServerCertVerification_ = false;
