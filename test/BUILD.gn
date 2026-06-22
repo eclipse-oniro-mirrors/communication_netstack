@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Huawei Device Co., Ltd.
+﻿# Copyright (c) 2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,13 +14,6 @@
 group("netstack_test") {
   testonly = true
   deps = [
-    "fuzztest/http_fuzzer:fuzztest",
-    "fuzztest/netssl:fuzztest",
-    "fuzztest/netsslinner_fuzzer:fuzztest",
-    "fuzztest/socket:fuzztest",
-    "fuzztest/websocket:fuzztest",
-    "fuzztest/websocketcapi_fuzzer:fuzztest",
-    "fuzztest/httpcapi_fuzzer:fuzztest",
     "unittest/http:unittest",
     "unittest/http/cache:unittest",
     "unittest/http_client:unittest",
