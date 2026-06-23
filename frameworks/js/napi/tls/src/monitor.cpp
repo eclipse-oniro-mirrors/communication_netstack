@@ -162,7 +162,7 @@ void EventErrorCallback(uv_work_t *work, int status)
         delete work;
         return;
     }
-    std::shared_ptr<Monitor::ErrorRecvParma> errorRecvParma(static_cast<Monitor::ErrorRecvParma *>(workWrapper->data));
+    auto errorRecvParma = static_cast<Monitor::ErrorRecvParma *>(workWrapper->data);
     if (errorRecvParma == nullptr) {
         NETSTACK_LOGE("monitor is nullptr");
         delete workWrapper;
@@ -184,6 +184,7 @@ void EventErrorCallback(uv_work_t *work, int status)
     std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(workWrapper->env), obj};
     workWrapper->manager->Emit(workWrapper->type, arg);
     NapiUtils::CloseScope(workWrapper->env, scope);
+    delete errorRecvParma;
     delete workWrapper;
     delete work;
 }

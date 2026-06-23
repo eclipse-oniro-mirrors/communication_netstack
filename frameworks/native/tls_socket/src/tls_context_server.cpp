@@ -282,6 +282,10 @@ bool TLSContextServer::SetKeyAndCheck(TLSContextServer *tlsContext, const TLSCon
     }
 
     auto pkey_ = tlsContext->pkey_;
+    if (pkey_ == nullptr) {
+        NETSTACK_LOGE("pkey_ is nullptr, cannot use private key");
+        return false;
+    }
     if (!SSL_CTX_use_PrivateKey(tlsContext->ctx_, pkey_)) {
         NETSTACK_LOGE("SSL_CTX_use_PrivateKey is error");
         return false;

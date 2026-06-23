@@ -116,6 +116,13 @@ napi_value HttpModuleExports::CreateHttpResponseCache(napi_env env, napi_callbac
         CacheProxy::RunCache();
     } else {
         size_t size = NapiUtils::GetUint32FromValue(env, params[0]);
+        constexpr size_t MIN_CACHE_SIZE = 1 * 1024 * 1024;  // 1 MB lower bound
+        constexpr size_t MAX_CACHE_SIZE = 10 * 1024 * 1024; // 10 MB upper bound
+        if (size < MIN_CACHE_SIZE) {
+            size = MIN_CACHE_SIZE;
+        } else if (size > MAX_CACHE_SIZE) {
+            size = MAX_CACHE_SIZE;
+        }
         CacheProxy::RunCacheWithSize(size);
     }
 

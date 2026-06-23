@@ -29,11 +29,16 @@ struct Epoller {
     Epoller()
     {
         underlying_ = epoll_create1(EPOLL_CLOEXEC);
+        if (underlying_ < 0) {
+            // epoll_create1 failed; underlying_ is invalid, all operations become no-ops
+        }
     }
 
     ~Epoller()
     {
-        close(underlying_);
+        if (underlying_ >= 0) {
+            close(underlying_);
+        }
     }
 
     Epoller(const Epoller &) = delete;
@@ -46,16 +51,21 @@ struct Epoller {
 
     void RegisterMe(FileDescriptor descriptor, uint32_t flags) const
     {
+        if (underlying_ < 0 || descriptor < 0) {
+            return;
+        }
         epoll_event ev{};
         ev.events = flags;
         ev.data.fd = descriptor;
-        epoll_ctl(underlying_, EPOLL_CTL_ADD, descriptor, &ev);
+        int unused = epoll_ctl(underlying_, EPOLL_CTL_ADD, descriptor, &ev);
+        (void)unused;
     }
 
     void UnregisterMe(FileDescriptor descriptor) const
     {
-        if (descriptor) {
-            epoll_ctl(underlying_, EPOLL_CTL_DEL, descriptor, nullptr);
+        if (descriptor && underlying_ >= 0) {
+            int unused = epoll_ctl(underlying_, EPOLL_CTL_DEL, descriptor, nullptr);
+            (void)unused;
         }
     }
 
