@@ -1,4 +1,4 @@
-/*
+﻿﻿/*
   * Copyright (c) 2025 Huawei Device Co., Ltd.
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
@@ -36,7 +36,8 @@ class UserData {
 public:
     struct SendData {
         SendData(void *paraData, size_t paraLength, lws_write_protocol paraProtocol)
-            : data(static_cast<uint8_t *>(paraData), static_cast<uint8_t *>(paraData) + paraLength),`r`n          length(paraLength), protocol(paraProtocol)
+            : data(static_cast<uint8_t *>(paraData), static_cast<uint8_t *>(paraData) + paraLength),
+              length(paraLength), protocol(paraProtocol)
         {
         }
 
