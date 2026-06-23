@@ -18,6 +18,7 @@
 
 #include <map>
 #include <cstdint>
+#include <vector>
 #include <string>
 #include "libwebsockets.h"
 #include "netstack_log.h"
@@ -35,15 +36,15 @@ class UserData {
 public:
     struct SendData {
         SendData(void *paraData, size_t paraLength, lws_write_protocol paraProtocol)
-            : data(paraData), length(paraLength), protocol(paraProtocol)
+            : data(static_cast<uint8_t *>(paraData), static_cast<uint8_t *>(paraData) + paraLength), length(paraLength), protocol(paraProtocol)
         {
         }
 
-        SendData() = delete;
+        SendData() : data(), length(0), protocol(LWS_WRITE_TEXT) {}
 
         ~SendData() = default;
 
-        void *data;
+        std::vector<uint8_t> data;
         size_t length;
         lws_write_protocol protocol;
     };
@@ -97,7 +98,7 @@ public:
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (dataQueue_.empty()) {
-            return {nullptr, 0, LWS_WRITE_TEXT};
+            return SendData{};
         }
         SendData data = dataQueue_.front();
         dataQueue_.pop();

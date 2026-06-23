@@ -513,14 +513,13 @@ int WebSocketServerExec::LwsCallbackServerWriteable(lws *wsi, lws_callback_reaso
         return -1;
     }
     auto sendData = clientUserData->Pop();
-    if (sendData.data == nullptr) {
+    if (sendData.data.empty()) {
         NETSTACK_LOGE("send data is empty");
         return HttpDummy(wsi, reason, user, in, len);
     }
-    int sendLength = lws_write(wsi, reinterpret_cast<unsigned char *>(sendData.data) + LWS_SEND_BUFFER_PRE_PADDING,
+    int sendLength = lws_write(wsi, sendData.data.data() + LWS_SEND_BUFFER_PRE_PADDING,
         sendData.length, sendData.protocol);
-    free(sendData.data);
-    NETSTACK_LOGD("lws send data length is %{public}d", sendLength);
+        NETSTACK_LOGD("lws send data length is %{public}d", sendLength);
     if (!clientUserData->IsEmpty()) {
         NETSTACK_LOGE("userData is not empty");
         userData->TriggerWritable();
