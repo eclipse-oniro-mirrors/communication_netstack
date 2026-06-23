@@ -36,7 +36,8 @@ class UserData {
 public:
     struct SendData {
         SendData(void *paraData, size_t paraLength, lws_write_protocol paraProtocol)
-            : data(static_cast<uint8_t *>(paraData), static_cast<uint8_t *>(paraData) + LWS_SEND_BUFFER_PRE_PADDING + paraLength),
+            : data(static_cast<uint8_t *>(paraData),
+              static_cast<uint8_t *>(paraData) + LWS_SEND_BUFFER_PRE_PADDING + paraLength),
               length(paraLength), protocol(paraProtocol)
         {
         }
