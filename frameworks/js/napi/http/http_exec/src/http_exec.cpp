@@ -2497,8 +2497,10 @@ void HttpExec::OnDataProgress(napi_env env, napi_status status, void *data)
     }
     auto dlLen = context->GetDlLen();
     if (dlLen.tLen && dlLen.nLen) {
-        NapiUtils::SetUint32Property(context->GetEnv(), progress, "receiveSize", static_cast<uint32_t>(dlLen.nLen > UINT32_MAX ? UINT32_MAX : dlLen.nLen));
-        NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize", static_cast<uint32_t>(dlLen.tLen > UINT32_MAX ? UINT32_MAX : dlLen.tLen));
+        NapiUtils::SetUint32Property(context->GetEnv(), progress, "receiveSize", static_cast<uint32_t>(
+            dlLen.nLen > UINT32_MAX ? UINT32_MAX : dlLen.nLen));
+        NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize", static_cast<uint32_t>(
+            dlLen.tLen > UINT32_MAX ? UINT32_MAX : dlLen.tLen));
 
         context->EmitSharedManager(ON_DATA_RECEIVE_PROGRESS,
                                    std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
@@ -2518,9 +2520,11 @@ __attribute__((no_sanitize("cfi"))) void HttpExec::OnDataUploadProgress(napi_env
         return;
     }
     NapiUtils::SetUint32Property(context->GetEnv(), progress, "sendSize",
-                                 static_cast<uint32_t>(context->GetUlLen().nLen > UINT32_MAX ? UINT32_MAX : context->GetUlLen().nLen));
+                                 static_cast<uint32_t>(
+            context->GetUlLen().nLen > UINT32_MAX ? UINT32_MAX : context->GetUlLen().nLen));
     NapiUtils::SetUint32Property(context->GetEnv(), progress, "totalSize",
-                                 static_cast<uint32_t>(context->GetUlLen().tLen > UINT32_MAX ? UINT32_MAX : context->GetUlLen().tLen));
+                                 static_cast<uint32_t>(
+            context->GetUlLen().tLen > UINT32_MAX ? UINT32_MAX : context->GetUlLen().tLen));
     context->EmitSharedManager(ON_DATA_SEND_PROGRESS,
                                std::make_pair(NapiUtils::GetUndefined(context->GetEnv()), progress));
 }

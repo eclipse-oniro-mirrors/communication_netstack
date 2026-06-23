@@ -94,7 +94,12 @@ time_t HttpCacheRequest::GetMaxAgeSeconds() const
         return INVALID_TIME;
     }
 
-    errno = 0; auto val = std::strtol(maxAge_.c_str(), nullptr, DECIMAL); if (errno == ERANGE || val < 0) { return INVALID_TIME; } return val;
+    errno = 0;
+    auto val = std::strtol(maxAge_.c_str(), nullptr, DECIMAL);
+    if (errno == ERANGE || val < 0) {
+        return INVALID_TIME;
+    }
+    return val;
 }
 
 time_t HttpCacheRequest::GetMaxStaleSeconds() const
@@ -103,7 +108,12 @@ time_t HttpCacheRequest::GetMaxStaleSeconds() const
         return INVALID_TIME;
     }
 
-    errno = 0; auto val = std::strtol(maxStale_.c_str(), nullptr, DECIMAL); if (errno == ERANGE || val < 0) { return INVALID_TIME; } return val;
+    errno = 0;
+    auto val = std::strtol(maxStale_.c_str(), nullptr, DECIMAL);
+    if (errno == ERANGE || val < 0) {
+        return INVALID_TIME;
+    }
+    return val;
 }
 
 time_t HttpCacheRequest::GetMinFreshSeconds() const
@@ -111,7 +121,12 @@ time_t HttpCacheRequest::GetMinFreshSeconds() const
     if (minFresh_.empty()) {
         return INVALID_TIME;
     }
-    errno = 0; auto val = std::strtol(minFresh_.c_str(), nullptr, DECIMAL); if (errno == ERANGE || val < 0) { return INVALID_TIME; } return val;
+    errno = 0;
+    auto val = std::strtol(minFresh_.c_str(), nullptr, DECIMAL);
+    if (errno == ERANGE || val < 0) {
+        return INVALID_TIME;
+    }
+    return val;
 }
 
 bool HttpCacheRequest::IsNoCache() const
