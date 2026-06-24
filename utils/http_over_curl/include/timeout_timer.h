@@ -35,16 +35,11 @@ struct TimeoutTimer {
     TimeoutTimer()
     {
         underlying_ = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-        if (underlying_ < 0) {
-            // timerfd_create failed; underlying_ is invalid, all operations become no-ops
-        }
     }
 
     ~TimeoutTimer()
     {
-        if (underlying_ >= 0) {
-            close(underlying_);
-        }
+        close(underlying_);
     }
 
     TimeoutTimer(const TimeoutTimer &) = delete;

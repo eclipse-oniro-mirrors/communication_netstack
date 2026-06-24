@@ -29,9 +29,6 @@ struct ManualResetEvent {
     ManualResetEvent()
     {
         underlying_ = eventfd(0, 0);
-        if (underlying_ < 0) {
-            // eventfd failed; underlying_ is invalid, all operations become no-ops
-        }
     }
 
 #ifdef HTTP_HANDOVER_FEATURE
@@ -42,17 +39,12 @@ struct ManualResetEvent {
         } else {
             underlying_ = eventfd(0, 0);
         }
-        if (underlying_ < 0) {
-            // eventfd failed; underlying_ is invalid, all operations become no-ops
-        }
     }
 #endif
 
     ~ManualResetEvent()
     {
-        if (underlying_ >= 0) {
-            close(underlying_);
-        }
+        close(underlying_);
     }
 
     ManualResetEvent(const ManualResetEvent &) = delete;
@@ -74,8 +66,7 @@ struct ManualResetEvent {
             return;
         }
         uint64_t u = 1;
-        ssize_t unused = write(underlying_, &u, sizeof(uint64_t));
-        (void)unused;
+        write(underlying_, &u, sizeof(uint64_t));
     }
 
     void Reset()
@@ -84,8 +75,7 @@ struct ManualResetEvent {
             return;
         }
         uint64_t u;
-        ssize_t unused = read(underlying_, &u, sizeof(uint64_t));
-        (void)unused;
+        read(underlying_, &u, sizeof(uint64_t));
     }
 
 private:

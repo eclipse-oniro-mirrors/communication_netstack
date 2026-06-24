@@ -82,8 +82,6 @@ void LRUCache::EraseTailNode()
     cache_.erase(node.key);
     size_t nodeSize = GetMapValueSize(node.value);
     size_ = (nodeSize <= size_) ? (size_ - nodeSize) : 0;
-        size_ = 0;
-    }
 }
 
 std::unordered_map<std::string, std::string> LRUCache::Get(const std::string &key)
