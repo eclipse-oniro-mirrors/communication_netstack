@@ -94,9 +94,9 @@ time_t HttpCacheRequest::GetMaxAgeSeconds() const
         return INVALID_TIME;
     }
 
-    time_t val = 0;
-    auto [ptr, ec] = std::from_chars(maxAge_.c_str(), maxAge_.c_str() + maxAge_.size(), val, DECIMAL);
-    if (ec != std::errc{} || ptr != maxAge_.c_str() + maxAge_.size() || val < 0) {
+    errno = 0;
+    auto val = std::strtol(maxAge_.c_str(), nullptr, DECIMAL);
+    if (errno == ERANGE || val < 0) {
         return INVALID_TIME;
     }
     return val;
@@ -108,9 +108,9 @@ time_t HttpCacheRequest::GetMaxStaleSeconds() const
         return INVALID_TIME;
     }
 
-    time_t val = 0;
-    auto [ptr, ec] = std::from_chars(maxStale_.c_str(), maxStale_.c_str() + maxStale_.size(), val, DECIMAL);
-    if (ec != std::errc{} || ptr != maxStale_.c_str() + maxStale_.size() || val < 0) {
+    errno = 0;
+    auto val = std::strtol(maxStale_.c_str(), nullptr, DECIMAL);
+    if (errno == ERANGE || val < 0) {
         return INVALID_TIME;
     }
     return val;
@@ -121,9 +121,9 @@ time_t HttpCacheRequest::GetMinFreshSeconds() const
     if (minFresh_.empty()) {
         return INVALID_TIME;
     }
-    time_t val = 0;
-    auto [ptr, ec] = std::from_chars(minFresh_.c_str(), minFresh_.c_str() + minFresh_.size(), val, DECIMAL);
-    if (ec != std::errc{} || ptr != minFresh_.c_str() + minFresh_.size() || val < 0) {
+    errno = 0;
+    auto val = std::strtol(minFresh_.c_str(), nullptr, DECIMAL);
+    if (errno == ERANGE || val < 0) {
         return INVALID_TIME;
     }
     return val;
