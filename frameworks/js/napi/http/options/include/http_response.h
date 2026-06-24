@@ -69,6 +69,8 @@ public:
 
     void ClearHeaderCache();
 
+    void Reset();
+
     void SetExtraInfoItem(const std::string &key, const std::string &value);
 
     std::string GetExtraInfoItem(const std::string &key, const std::string &defaultValue = "") const;

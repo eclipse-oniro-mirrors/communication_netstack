@@ -65,9 +65,9 @@ void EpollMultiDriver::Initialize()
     };
     curl_multi_setopt(multi_, CURLMOPT_TIMERDATA, this);
     curl_multi_setopt(multi_, CURLMOPT_TIMERFUNCTION, timerCallback);
-    curl_multi_setopt(multi_, CURLMOPT_MAX_HOST_CONNECTIONS, 6); // 单个主机的最大连接数
-    curl_multi_setopt(multi_, CURLMOPT_MAX_TOTAL_CONNECTIONS, 64); // 最大同时打开连接数
-    curl_multi_setopt(multi_, CURLMOPT_MAXCONNECTS, 64); // 连接缓冲池的大小
+    curl_multi_setopt(multi_, CURLMOPT_MAX_HOST_CONNECTIONS, 6); // 鍗曚釜涓绘満鐨勬渶澶ц繛鎺ユ暟
+    curl_multi_setopt(multi_, CURLMOPT_MAX_TOTAL_CONNECTIONS, 64); // 鏈€澶у悓鏃舵墦寮€杩炴帴鏁?
+    curl_multi_setopt(multi_, CURLMOPT_MAXCONNECTS, 64); // 杩炴帴缂撳啿姹犵殑澶у皬
 }
 
 EpollMultiDriver::~EpollMultiDriver()
@@ -174,6 +174,7 @@ void EpollMultiDriver::HandleRedirect(CURL *easyHandle, std::shared_ptr<std::str
     context->options.SetUrl(location->c_str());
     delete requestInfo;
     context->IncreaseRedirectCount();
+    context->response.Reset();
     Http::HttpExec::RequestWithoutCache(context);
 }
 #endif
