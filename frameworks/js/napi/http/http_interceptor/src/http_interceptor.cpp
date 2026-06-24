@@ -632,6 +632,7 @@ void HttpInterceptor::ApplyContinueFinalResponseInterceptor(napi_env env, FinalR
     auto newUrl = NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, handle->reqContext, "url"));
     NETSTACK_LOGD("finalResponseInterceptor updated url:%{public}s", newUrl.c_str());
     handle->context->options.SetUrl(newUrl);
+
     napi_value newHeadObj = NapiUtils::GetNamedProperty(env, handle->reqContext, "header");
     if (newHeadObj != nullptr) {
         std::vector<std::string> headerKeys = NapiUtils::GetPropertyNames(env, newHeadObj);
@@ -842,6 +843,7 @@ void HttpInterceptor::ApplyContinueCacheCheckedInterceptor(napi_env env, CacheCh
     INTERCEPTOR_TRACE_START("READ_CACHE_CONTINUE");
     auto newUrl = NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, handle->reqContext, "url"));
     handle->context->options.SetUrl(newUrl);
+
     napi_value newHeadObj = NapiUtils::GetNamedProperty(env, handle->reqContext, "header");
     if (newHeadObj != nullptr) {
         std::vector<std::string> headerKeys = NapiUtils::GetPropertyNames(env, newHeadObj);
@@ -1063,10 +1065,13 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
 {
     INTERCEPTOR_TRACE_START("CONNECT_NETWORK_CONTINUE");
     CURL *easyHander = handle->context->GetCurlHandle();
-    if (easyHander == nullptr) { return; }
+    if (easyHander == nullptr) {
+        return;
+    }
     auto newUrl = NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, handle->reqContext, "url"));
     curl_easy_setopt(easyHander, CURLOPT_URL, newUrl.c_str());
     handle->context->options.SetUrl(newUrl);
+
     napi_value newHeadObj = NapiUtils::GetNamedProperty(env, handle->reqContext, "header");
     if (newHeadObj != nullptr) {
         std::vector<std::string> headerKeys = NapiUtils::GetPropertyNames(env, newHeadObj);
@@ -1077,11 +1082,11 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
             std::string headerLine = key + ": " + value;
             headers = curl_slist_append(headers, headerLine.c_str());
             handle->context->options.SetHeader(key, value);
-            NETSTACK_LOGD("Updated header: %{public}s = %{public}s", key.c_str(), value.c_str());
         }
         curl_easy_setopt(easyHander, CURLOPT_HTTPHEADER, headers);
         curl_slist_free_all(headers);
     }
+
     napi_value bodyValue = NapiUtils::GetNamedProperty(env, handle->reqContext, "body");
     if (bodyValue != nullptr) {
         napi_valuetype bodyType = NapiUtils::GetValueType(env, bodyValue);

@@ -1,4 +1,4 @@
-﻿/*
+/*
   * Copyright (c) 2025 Huawei Device Co., Ltd.
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@
 
 #include <map>
 #include <cstdint>
-#include <vector>
 #include <string>
 #include "libwebsockets.h"
 #include "netstack_log.h"
@@ -36,17 +35,15 @@ class UserData {
 public:
     struct SendData {
         SendData(void *paraData, size_t paraLength, lws_write_protocol paraProtocol)
-            : data(static_cast<uint8_t *>(paraData),
-              static_cast<uint8_t *>(paraData) + LWS_SEND_BUFFER_PRE_PADDING + paraLength),
-              length(paraLength), protocol(paraProtocol)
+            : data(paraData), length(paraLength), protocol(paraProtocol)
         {
         }
 
-        SendData() : data(), length(0), protocol(LWS_WRITE_TEXT) {}
+        SendData() = delete;
 
         ~SendData() = default;
 
-        std::vector<uint8_t> data;
+        void *data;
         size_t length;
         lws_write_protocol protocol;
     };
@@ -100,7 +97,7 @@ public:
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (dataQueue_.empty()) {
-            return SendData{};
+            return {nullptr, 0, LWS_WRITE_TEXT};
         }
         SendData data = dataQueue_.front();
         dataQueue_.pop();
