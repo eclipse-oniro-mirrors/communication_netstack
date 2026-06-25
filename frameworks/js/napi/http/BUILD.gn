@@ -50,6 +50,7 @@ config("http_config") {
   } else if (is_mac) {
     defines += [ "MAC_PLATFORM" ]
     cflags_cc = [
+      "-std=c++17",
       "-fstack-protector-strong",
       "-D_FORTIFY_SOURCE=2",
       "-O2",
@@ -57,6 +58,7 @@ config("http_config") {
   } else if (product_name != "ohos-sdk") {
     defines += [ "HTTP_PROXY_ENABLE" ]
     cflags_cc = [
+      "-std=c++17",
       "-fstack-protector-strong",
       "-D_FORTIFY_SOURCE=2",
       "-O2",
