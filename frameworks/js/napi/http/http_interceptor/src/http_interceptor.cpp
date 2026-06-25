@@ -1367,7 +1367,7 @@ bool HttpInterceptor::RedirectionInterceptorBodyCallback(RequestContext *context
     if (interceptor != nullptr && interceptor->IsRedirectionInterceptor()) {
         int statusCode = context->response.GetResponseCode();
         if (statusCode >= HTTP_STATUS_REDIRECT_START && statusCode < HTTP_STATUS_CLIENT_ERROR_START) {
-            context->response.SetResult(const_cast<char *>(static_cast<const char *>(data)));
+            context->response.SetResult(std::string(static_cast<const char *>(data), size * memBytes));
             return true;
         }
     }
