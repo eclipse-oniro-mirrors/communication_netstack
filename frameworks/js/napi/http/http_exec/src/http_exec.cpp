@@ -2354,6 +2354,7 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
 #endif
 
     if (context->response.GetResult().size() > context->options.GetMaxLimit() ||
+        (memBytes > 0 && size > context->options.GetMaxLimit() / memBytes) ||
         size * memBytes > context->options.GetMaxLimit()) {
         NETSTACK_LOGE("response data exceeds the maximum limit");
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);

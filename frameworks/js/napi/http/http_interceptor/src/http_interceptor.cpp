@@ -1082,9 +1082,9 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
             std::string headerLine = key + ": " + value;
             headers = curl_slist_append(headers, headerLine.c_str());
             handle->context->options.SetHeader(key, value);
-            NETSTACK_LOGD("Updated header: %{public}s = %{public}s", key.c_str(), value.c_str());
         }
         curl_easy_setopt(easyHander, CURLOPT_HTTPHEADER, headers);
+        curl_slist_free_all(headers);
     }
 
     napi_value bodyValue = NapiUtils::GetNamedProperty(env, handle->reqContext, "body");
