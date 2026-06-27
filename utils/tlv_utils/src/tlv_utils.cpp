@@ -33,7 +33,7 @@ uint8_t *TlvUtils::AppendTlv(uint8_t *buffer, const TlvCommon *tlv, const uint8_
         *retCode = TLV_ERR_BUFF_NO_ENOUGH;
         return nullptr;
     }
-    if (buffer + (reinterpret_cast<TlvCommon *>(const_cast<uint8_t *>(buffer)))->len_ + TLV_TLV_HEAD_LEN >= boundary) {
+    if (buffer + tlv->len_ + TLV_TLV_HEAD_LEN > boundary) {
         *retCode = TLV_ERR_BUFF_NO_ENOUGH;
         return nullptr;
     }
