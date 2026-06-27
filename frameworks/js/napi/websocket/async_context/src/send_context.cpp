@@ -32,7 +32,7 @@ bool SendContext::HandleParseString(napi_value *params)
 {
     NETSTACK_LOGI("SendContext data is String");
     std::string str = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
-    if (len > MAX_LIMIT - LWS_SEND_BUFFER_PRE_PADDING - LWS_SEND_BUFFER_POST_PADDING) {
+    if (str.length() > MAX_LIMIT - LWS_SEND_BUFFER_PRE_PADDING - LWS_SEND_BUFFER_POST_PADDING) {
         return false;
     }
     // must have PRE and POST
