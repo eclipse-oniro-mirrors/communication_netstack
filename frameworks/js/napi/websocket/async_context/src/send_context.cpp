@@ -32,6 +32,9 @@ bool SendContext::HandleParseString(napi_value *params)
 {
     NETSTACK_LOGI("SendContext data is String");
     std::string str = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
+    if (len > MAX_LIMIT - LWS_SEND_BUFFER_PRE_PADDING - LWS_SEND_BUFFER_POST_PADDING) {
+        return false;
+    }
     // must have PRE and POST
     size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + str.length() + LWS_SEND_BUFFER_POST_PADDING;
     if (dataLen == 0 || dataLen > MAX_LIMIT) {
@@ -61,6 +64,9 @@ bool SendContext::HandleParseArrayBuffer(napi_value *params)
     void *mem = NapiUtils::GetInfoFromArrayBufferValue(GetEnv(), params[0], &len);
     if (mem == nullptr && len != 0) {
         NETSTACK_LOGE("Get Info error");
+        return false;
+    }
+    if (len > MAX_LIMIT - LWS_SEND_BUFFER_PRE_PADDING - LWS_SEND_BUFFER_POST_PADDING) {
         return false;
     }
     // must have PRE and POST

@@ -161,7 +161,9 @@ bool WebSocketExec::ParseUrl(ConnectContext *context, std::string &protocol, std
     const char *tempProt = nullptr;
     const char *tempAddress = nullptr;
     const char *tempPath = nullptr;
-    (void)lws_parse_uri(uri, &tempProt, &tempAddress, &port, &tempPath);
+    if (lws_parse_uri(uri, &tempProt, &tempAddress, &port, &tempPath) != 0) {
+        return false;
+    }
     protocol = std::string(tempProt);
     if (std::find(WS_PREFIX.begin(), WS_PREFIX.end(), protocol) == WS_PREFIX.end()) {
         NETSTACK_LOGE("protocol failed");

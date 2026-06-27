@@ -294,7 +294,7 @@ public:
     }
     void ListAllConnections(std::vector<SocketConnection> &connections)
     {
-        std::shared_lock<std::shared_mutex> lock(wsMutex_);
+        std::unique_lock<std::shared_mutex> lock(wsMutex_);
         connections.clear();
         for (const auto &pair : webSocketConnection_) {
             connections.push_back(pair.second.second);
@@ -319,13 +319,13 @@ public:
     }
     void AddBanList(const std::string &ip)
     {
-        std::shared_lock<std::shared_mutex> lock(banListMutex_);
+        std::unique_lock<std::shared_mutex> lock(banListMutex_);
         banList_[ip] = GetCurrentSecond() + ONE_MINUTE_IN_SEC;
     }
 
     bool IsIpInBanList(const std::string &ip)
     {
-        std::shared_lock<std::shared_mutex> lock(banListMutex_);
+        std::unique_lock<std::shared_mutex> lock(banListMutex_);
         auto it = banList_.find(ip);
         if (it != banList_.end()) {
             auto now = GetCurrentSecond();
@@ -339,7 +339,7 @@ public:
     }
     void UpdateClientList(const std::string &ip)
     {
-        std::shared_lock<std::shared_mutex> lock(connListMutex_);
+        std::unique_lock<std::shared_mutex> lock(connListMutex_);
         auto it = clientList_.find(ip);
         if (it == clientList_.end()) {
             NETSTACK_LOGI("add clientid to clientlist");
