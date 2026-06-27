@@ -21,6 +21,9 @@
 #include "netstack_log.h"
 #include "socket_constant.h"
 
+static constexpr const int32_t TTL_MAX = 255;
+static constexpr const int32_t TTL_MIN = 0;
+
 namespace OHOS::NetStack::Socket {
 MulticastSetTTLContext::MulticastSetTTLContext(napi_env env, const std::shared_ptr<EventManager> &manager)
     : BaseContext(env, manager) {}
@@ -31,7 +34,7 @@ void MulticastSetTTLContext::ParseParams(napi_value *params, size_t paramsCount)
         return;
     }
     int32_t ttl = NapiUtils::GetInt32FromValue(GetEnv(), params[0]);
-    if (ttl < 0 || ttl > 255) {
+    if (ttl < TTL_MIN || ttl > TTL_MAX) {
         SetParseOK(false);
         return;
     }
