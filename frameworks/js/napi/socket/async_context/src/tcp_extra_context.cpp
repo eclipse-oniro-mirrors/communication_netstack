@@ -69,7 +69,7 @@ void TcpSetExtraOptionsContext::ParseContextKey(napi_value *params)
 
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_SOCKET_LINGER)) {
         napi_value socketLinger = NapiUtils::GetNamedProperty(GetEnv(), params[0], KEY_SOCKET_LINGER);
-        if (NapiUtils::GetValueType(GetEnv(), params[0]) == napi_object) {
+        if (NapiUtils::GetValueType(GetEnv(), socketLinger) == napi_object) {
             if (NapiUtils::HasNamedProperty(GetEnv(), socketLinger, KEY_SOCKET_LINGER_ON)) {
                 options_.socketLinger.SetOn(
                     NapiUtils::GetBooleanProperty(GetEnv(), socketLinger, KEY_SOCKET_LINGER_ON));

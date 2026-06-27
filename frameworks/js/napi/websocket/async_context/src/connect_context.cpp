@@ -282,6 +282,10 @@ bool ConnectContext::ParseProxy(napi_value optionsValue)
     std::string host =
         NapiUtils::GetStringPropertyUtf8(GetEnv(), websocketProxyValue, ContextKey::WEBSOCKET_PROXY_HOST);
     int32_t port = NapiUtils::GetInt32Property(GetEnv(), websocketProxyValue, ContextKey::WEBSOCKET_PROXY_PORT);
+    if (port < 0 || port > 65535) {
+        NETSTACK_LOGE("invalid port");
+        return false;
+    }
     if (NapiUtils::HasNamedProperty(GetEnv(), websocketProxyValue, ContextKey::WEBSOCKET_PROXY_EXCLUSION_LIST)) {
         napi_value exclusionListValue =
             NapiUtils::GetNamedProperty(GetEnv(), websocketProxyValue, ContextKey::WEBSOCKET_PROXY_EXCLUSION_LIST);

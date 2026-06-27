@@ -763,7 +763,12 @@ bool ExecLocalSocketBind(LocalSocketBindContext *context)
     }
     struct sockaddr_un addr;
     addr.sun_family = AF_UNIX;
-    if (strcpy_s(addr.sun_path, sizeof(addr.sun_path) - 1, context->GetSocketPath().c_str()) != 0) {
+    if (context->GetSocketPath().length() >= sizeof(addr.sun_path)) {
+        NETSTACK_LOGE("socket path is too long, len: ");
+        context->SetErrorCode(UNKNOW_ERROR);
+        return false;
+    }
+    if (strcpy_s(addr.sun_path, sizeof(addr.sun_path), context->GetSocketPath().c_str()) != 0) {
         NETSTACK_LOGE("failed to copy socket path, sockfd: %{public}d", context->GetSocketFd());
         context->SetErrorCode(UNKNOW_ERROR);
         return false;

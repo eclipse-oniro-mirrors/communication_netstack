@@ -81,7 +81,10 @@ bool MulticastSetLoopbackContext::GetLoopbackMode() const
 
 int MulticastSetLoopbackContext::GetSocketFd() const
 {
-    return sharedManager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(sharedManager_->GetData())) : -1;
+    if (sharedManager_ == nullptr) {
+        return -1;
+    }
+    return sharedManager_->GetData() ? static_cast<int>(reinterpret_cast<intptr_t>(sharedManager_->GetData())) : -1;
 }
 
 int32_t MulticastSetLoopbackContext::GetErrorCode() const

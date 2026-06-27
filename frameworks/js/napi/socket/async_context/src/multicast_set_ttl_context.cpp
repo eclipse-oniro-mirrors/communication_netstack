@@ -30,8 +30,12 @@ void MulticastSetTTLContext::ParseParams(napi_value *params, size_t paramsCount)
     if (!CheckParamsType(params, paramsCount)) {
         return;
     }
-
-    ttl_ = NapiUtils::GetInt32FromValue(GetEnv(), params[0]);
+    int32_t ttl = NapiUtils::GetInt32FromValue(GetEnv(), params[0]);
+    if (ttl < 0 || ttl > 255) {
+        SetParseOK(false);
+        return;
+    }
+    ttl_ = static_cast<int>(ttl);
 
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
         SetParseOK(SetCallback(params[1]) == napi_ok);
