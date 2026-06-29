@@ -1084,7 +1084,6 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
             handle->context->options.SetHeader(key, value);
         }
         curl_easy_setopt(easyHander, CURLOPT_HTTPHEADER, headers);
-        curl_slist_free_all(headers);
     }
 
     napi_value bodyValue = NapiUtils::GetNamedProperty(env, handle->reqContext, "body");
