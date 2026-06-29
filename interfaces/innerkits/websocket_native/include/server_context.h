@@ -294,7 +294,7 @@ public:
     }
     void ListAllConnections(std::vector<SocketConnection> &connections)
     {
-        std::unique_lock<std::shared_mutex> lock(wsMutex_);
+        std::shared_lock<std::shared_mutex> lock(wsMutex_);
         connections.clear();
         for (const auto &pair : webSocketConnection_) {
             connections.push_back(pair.second.second);
