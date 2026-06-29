@@ -16,6 +16,7 @@
 #ifndef COMMUNICATIONNETSTACK_HTTP_INTERCEPTOR_MGR_H
 #define COMMUNICATIONNETSTACK_HTTP_INTERCEPTOR_MGR_H
 #include <atomic>
+#include <cstddef>
 #include <list>
 #include <memory>
 #include <mutex>
