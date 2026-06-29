@@ -37,10 +37,6 @@ bool SendContext::HandleParseString(napi_value *params)
     }
     // must have PRE and POST
     size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + str.length() + LWS_SEND_BUFFER_POST_PADDING;
-    if (dataLen == 0 || dataLen > MAX_LIMIT) {
-        NETSTACK_LOGE("SendContext data is exceeded the limit");
-        return false;
-    }
     data = malloc(dataLen);
     if (data == nullptr) {
         NETSTACK_LOGE("no memory");
@@ -71,10 +67,6 @@ bool SendContext::HandleParseArrayBuffer(napi_value *params)
     }
     // must have PRE and POST
     size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + len + LWS_SEND_BUFFER_POST_PADDING;
-    if (dataLen == 0 || dataLen > MAX_LIMIT) {
-        NETSTACK_LOGE("SendContext data is exceeded the limit");
-        return false;
-    }
     data = malloc(dataLen);
     if (data == nullptr) {
         NETSTACK_LOGE("no memory");
