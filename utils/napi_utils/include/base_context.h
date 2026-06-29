@@ -57,7 +57,7 @@ public:
 
     void DeleteCallback();
 
-    void CreateAsyncWork(const std::string &name, AsyncWorkExecutor executor, AsyncWorkCallback callback);
+    bool CreateAsyncWork(const std::string &name, AsyncWorkExecutor executor, AsyncWorkCallback callback);
 
     void DeleteAsyncWork();
 

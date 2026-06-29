@@ -2372,6 +2372,9 @@ static bool IsValidSock(int &currentFd, const std::shared_ptr<EventManager> &man
 static int RecvWithSockCheck(int connectFD, char *buffer, uint32_t recvBufferSize,
     const std::shared_ptr<EventManager> &manager, int &recvSize)
 {
+    if (manager == nullptr) {
+        return -1;
+    }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     if (buffer == nullptr) {
         return -1;
