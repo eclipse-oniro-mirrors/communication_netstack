@@ -35,7 +35,6 @@ WebSocketClientWrapper::WebSocketClientWrapper()
 {
     std::unique_lock<std::shared_mutex> lock(clientMapMutex);
     client = std::make_shared<NetStack::WebSocketClient::WebSocketClient>();
-    std::lock_guard<std::mutex> lock(clientMapMutex_);
     clientMap[client.get()] = this;
 }
 
@@ -120,7 +119,7 @@ void OnOpenCallbackC(NetStack::WebSocketClient::WebSocketClient *client,
         NETSTACK_LOGE("OnOpenCallbackC can not find client");
         return;
     }
-    on_open_websocket_client(*wrapper, std::string(openResult.message), openResult.status);
+    on_open_websocket_client(*(iter->second), std::string(openResult.message), openResult.status);
 }
 
 void OnMessageCallbackC(NetStack::WebSocketClient::WebSocketClient *client, const std::string &data, size_t length)
@@ -131,7 +130,7 @@ void OnMessageCallbackC(NetStack::WebSocketClient::WebSocketClient *client, cons
         NETSTACK_LOGE("OnOpenCallbackC can not find client");
         return;
     }
-    on_message_websocket_client(*wrapper, data, length);
+    on_message_websocket_client(*(iter->second), data, length);
 }
 
 void OnCloseCallbackC(NetStack::WebSocketClient::WebSocketClient *client,
@@ -143,7 +142,7 @@ void OnCloseCallbackC(NetStack::WebSocketClient::WebSocketClient *client,
         NETSTACK_LOGE("OnOpenCallbackC can not find client");
         return;
     }
-    on_close_websocket_client(*wrapper, std::string(closeResult.reason), closeResult.code);
+    on_close_websocket_client(*(iter->second), std::string(closeResult.reason), closeResult.code);
 }
 
 void OnErrorCallbackC(NetStack::WebSocketClient::WebSocketClient *client, NetStack::WebSocketClient::ErrorResult error)
@@ -157,7 +156,7 @@ void OnErrorCallbackC(NetStack::WebSocketClient::WebSocketClient *client, NetSta
     if (error.errorCode == WEBSOCKET_CONNECTION_ERROR) {
         error.errorCode = COMMON_ERROR_CODE;
     }
-    on_error_websocket_client(*wrapper, std::string(error.errorMessage), error.errorCode);
+    on_error_websocket_client(*(iter->second), std::string(error.errorMessage), error.errorCode);
 }
 
 void OnDataEndCallbackC(NetStack::WebSocketClient::WebSocketClient *client)
@@ -168,7 +167,7 @@ void OnDataEndCallbackC(NetStack::WebSocketClient::WebSocketClient *client)
         NETSTACK_LOGE("OnOpenCallbackC can not find client");
         return;
     }
-    on_data_end_websocket_client(*wrapper);
+    on_data_end_websocket_client(*(iter->second));
 }
 
 void OnHeaderReceiveCallbackC(NetStack::WebSocketClient::WebSocketClient *client,
@@ -186,7 +185,7 @@ void OnHeaderReceiveCallbackC(NetStack::WebSocketClient::WebSocketClient *client
         header_push_data(keys, rust::String(pair.first.c_str()));
         header_push_data(values, rust::String(pair.second.c_str()));
     }
-    on_header_receive_websocket_client(*wrapper, keys, values);
+    on_header_receive_websocket_client(*(iter->second), keys, values);
 }
 
 int32_t RegisterOpenCallback(WebSocketClientWrapper &client)
