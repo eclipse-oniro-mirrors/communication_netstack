@@ -83,6 +83,9 @@ void UdpSetExtraOptionsContext::ParseParams(napi_value *params, size_t paramsCou
 
 int UdpSetExtraOptionsContext::GetSocketFd() const
 {
+    if (sharedManager_ == nullptr) {
+        return -1;
+    }
     return sharedManager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(sharedManager_->GetData())) : -1;
 }
 

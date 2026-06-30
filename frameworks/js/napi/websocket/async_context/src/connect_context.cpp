@@ -24,6 +24,8 @@
 #include <openssl/ssl.h>
 #endif
 
+static constexpr const uint16_t NET_PORT_MAX = 65535;
+
 namespace OHOS::NetStack::Websocket {
 ConnectContext::ConnectContext(napi_env env, const std::shared_ptr<EventManager> &manager)
     : BaseContext(env, manager)
@@ -282,6 +284,10 @@ bool ConnectContext::ParseProxy(napi_value optionsValue)
     std::string host =
         NapiUtils::GetStringPropertyUtf8(GetEnv(), websocketProxyValue, ContextKey::WEBSOCKET_PROXY_HOST);
     int32_t port = NapiUtils::GetInt32Property(GetEnv(), websocketProxyValue, ContextKey::WEBSOCKET_PROXY_PORT);
+    if (port < 0 || port > NET_PORT_MAX) {
+        NETSTACK_LOGE("invalid port");
+        return false;
+    }
     if (NapiUtils::HasNamedProperty(GetEnv(), websocketProxyValue, ContextKey::WEBSOCKET_PROXY_EXCLUSION_LIST)) {
         napi_value exclusionListValue =
             NapiUtils::GetNamedProperty(GetEnv(), websocketProxyValue, ContextKey::WEBSOCKET_PROXY_EXCLUSION_LIST);
