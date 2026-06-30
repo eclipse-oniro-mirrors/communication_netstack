@@ -19,12 +19,13 @@
 #include "wrapper.rs.h"
 #include <memory>
 #include <map>
+#include <shared_mutex>
 
 namespace OHOS {
 namespace NetStackAni {
 
 static std::map<NetStack::WebSocketClient::WebSocketClient*, WebSocketClientWrapper*> clientMap;
-static std::mutex clientMapMutex_;
+static std::shared_mutex clientMapMutex;
 static constexpr const int COMMON_ERROR_CODE = 200;
 static constexpr const int PARSE_ERROR_CODE = 401;
 static constexpr const int WEBSOCKET_CONNECTION_ERROR = 1003;
@@ -32,6 +33,7 @@ static constexpr const int WEBSOCKET_UNKNOWN_OTHER_ERROR = 2302999;
 
 WebSocketClientWrapper::WebSocketClientWrapper()
 {
+    std::unique_lock<std::shared_mutex> lock(clientMapMutex);
     client = std::make_shared<NetStack::WebSocketClient::WebSocketClient>();
     std::lock_guard<std::mutex> lock(clientMapMutex_);
     clientMap[client.get()] = this;
@@ -39,7 +41,7 @@ WebSocketClientWrapper::WebSocketClientWrapper()
 
 WebSocketClientWrapper::~WebSocketClientWrapper()
 {
-    std::lock_guard<std::mutex> lock(clientMapMutex_);
+    std::unique_lock<std::shared_mutex> lock(clientMapMutex);
     clientMap.erase(client.get());
 }
 
@@ -112,30 +114,22 @@ int32_t Close(WebSocketClientWrapper &client, AniCloseOption options)
 void OnOpenCallbackC(NetStack::WebSocketClient::WebSocketClient *client,
     NetStack::WebSocketClient::OpenResult openResult)
 {
-    WebSocketClientWrapper *wrapper = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(clientMapMutex_);
-        auto iter = clientMap.find(client);
-        if (iter == clientMap.end()) {
-            NETSTACK_LOGE("OnOpenCallbackC can not find client");
-            return;
-        }
-        wrapper = iter->second;
+    std::shared_lock<std::shared_mutex> lock(clientMapMutex);
+    auto iter = clientMap.find(client);
+    if (iter == clientMap.end()) {
+        NETSTACK_LOGE("OnOpenCallbackC can not find client");
+        return;
     }
     on_open_websocket_client(*wrapper, std::string(openResult.message), openResult.status);
 }
 
 void OnMessageCallbackC(NetStack::WebSocketClient::WebSocketClient *client, const std::string &data, size_t length)
 {
-    WebSocketClientWrapper *wrapper = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(clientMapMutex_);
-        auto iter = clientMap.find(client);
-        if (iter == clientMap.end()) {
-            NETSTACK_LOGE("OnMessageCallbackC can not find client");
-            return;
-        }
-        wrapper = iter->second;
+    std::shared_lock<std::shared_mutex> lock(clientMapMutex);
+    auto iter = clientMap.find(client);
+    if (iter == clientMap.end()) {
+        NETSTACK_LOGE("OnOpenCallbackC can not find client");
+        return;
     }
     on_message_websocket_client(*wrapper, data, length);
 }
@@ -143,30 +137,22 @@ void OnMessageCallbackC(NetStack::WebSocketClient::WebSocketClient *client, cons
 void OnCloseCallbackC(NetStack::WebSocketClient::WebSocketClient *client,
     NetStack::WebSocketClient::CloseResult closeResult)
 {
-    WebSocketClientWrapper *wrapper = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(clientMapMutex_);
-        auto iter = clientMap.find(client);
-        if (iter == clientMap.end()) {
-            NETSTACK_LOGE("OnCloseCallbackC can not find client");
-            return;
-        }
-        wrapper = iter->second;
+    std::shared_lock<std::shared_mutex> lock(clientMapMutex);
+    auto iter = clientMap.find(client);
+    if (iter == clientMap.end()) {
+        NETSTACK_LOGE("OnOpenCallbackC can not find client");
+        return;
     }
     on_close_websocket_client(*wrapper, std::string(closeResult.reason), closeResult.code);
 }
 
 void OnErrorCallbackC(NetStack::WebSocketClient::WebSocketClient *client, NetStack::WebSocketClient::ErrorResult error)
 {
-    WebSocketClientWrapper *wrapper = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(clientMapMutex_);
-        auto iter = clientMap.find(client);
-        if (iter == clientMap.end()) {
-            NETSTACK_LOGE("OnErrorCallbackC can not find client");
-            return;
-        }
-        wrapper = iter->second;
+    std::shared_lock<std::shared_mutex> lock(clientMapMutex);
+    auto iter = clientMap.find(client);
+    if (iter == clientMap.end()) {
+        NETSTACK_LOGE("OnOpenCallbackC can not find client");
+        return;
     }
     if (error.errorCode == WEBSOCKET_CONNECTION_ERROR) {
         error.errorCode = COMMON_ERROR_CODE;
@@ -176,15 +162,11 @@ void OnErrorCallbackC(NetStack::WebSocketClient::WebSocketClient *client, NetSta
 
 void OnDataEndCallbackC(NetStack::WebSocketClient::WebSocketClient *client)
 {
-    WebSocketClientWrapper *wrapper = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(clientMapMutex_);
-        auto iter = clientMap.find(client);
-        if (iter == clientMap.end()) {
-            NETSTACK_LOGE("OnDataEndCallbackC can not find client");
-            return;
-        }
-        wrapper = iter->second;
+    std::shared_lock<std::shared_mutex> lock(clientMapMutex);
+    auto iter = clientMap.find(client);
+    if (iter == clientMap.end()) {
+        NETSTACK_LOGE("OnOpenCallbackC can not find client");
+        return;
     }
     on_data_end_websocket_client(*wrapper);
 }
@@ -192,15 +174,11 @@ void OnDataEndCallbackC(NetStack::WebSocketClient::WebSocketClient *client)
 void OnHeaderReceiveCallbackC(NetStack::WebSocketClient::WebSocketClient *client,
     const std::map<std::string, std::string> &headers)
 {
-    WebSocketClientWrapper *wrapper = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(clientMapMutex_);
-        auto iter = clientMap.find(client);
-        if (iter == clientMap.end()) {
-            NETSTACK_LOGE("OnHeaderReceiveCallbackC can not find client");
-            return;
-        }
-        wrapper = iter->second;
+    std::shared_lock<std::shared_mutex> lock(clientMapMutex);
+    auto iter = clientMap.find(client);
+    if (iter == clientMap.end()) {
+        NETSTACK_LOGE("OnOpenCallbackC can not find client");
+        return;
     }
     rust::Vec<rust::String> keys;
     rust::Vec<rust::String> values;
