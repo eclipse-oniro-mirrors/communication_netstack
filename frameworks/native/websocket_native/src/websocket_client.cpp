@@ -97,8 +97,9 @@ void RunService(WebSocketClient *Client)
     if (Client->GetClientContext()->GetContext() == nullptr) {
         return;
     }
+    auto context = Client->GetClientContext()->GetContextShared();
     while (!Client->GetClientContext()->IsThreadStop()) {
-        lws_service(Client->GetClientContext()->GetContext(), 0);
+        lws_service(context.get(), 0);
     }
 }
 
@@ -701,7 +702,6 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
     if (ret != WEBSOCKET_NONE_ERR) {
         NETSTACK_LOGE("websocket CreatConnectInfo error");
         GetClientContext()->SetContext(nullptr);
-        lws_context_destroy(lwsContext);
         return ret;
     }
     std::thread serviceThread(RunService, this);
@@ -750,8 +750,11 @@ int WebSocketClient::Close(CloseOption options)
     if (this->GetClientContext() == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
     }
-    if (this->GetClientContext()->openStatus == 0)
+    if (this->GetClientContext()->openStatus == 0) {
+        this->GetClientContext()->SetThreadStop(true);
+        this->GetClientContext()->SetContext(nullptr);
         return WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT;
+    }
 
     if (options.reason == nullptr || options.code == 0) {
         options.reason = "";
@@ -775,11 +778,10 @@ int WebSocketClient::Registcallback(OnOpenCallback onOpen, OnMessageCallback onM
 int WebSocketClient::Destroy()
 {
     NETSTACK_LOGI("Destroy start");
+    this->GetClientContext()->SetThreadStop(true);
     if (this->GetClientContext()->GetContext() == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT_CONTEXT;
     }
-    this->GetClientContext()->SetContext(nullptr);
-    lws_context_destroy(this->GetClientContext()->GetContext());
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
@@ -873,7 +875,6 @@ int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
     if (ret != WEBSOCKET_NONE_ERR) {
         NETSTACK_LOGE("websocket CreatConnectInfoEx error");
         GetClientContext()->SetContext(nullptr);
-        lws_context_destroy(lwsContext);
         return ret;
     }
     RunLwsThread();
@@ -949,15 +950,14 @@ void WebSocketClient::RunLwsThread()
             NETSTACK_LOGE("WebSocketClient instance has been destroyed");
             return;
         }
-        auto* context = client->GetClientContext()->GetContext();
+        auto context = client->GetClientContext()->GetContextShared();
         if (context == nullptr) {
             return;
         }
         int res = 0;
         while (res >= 0 && !client->GetClientContext()->IsThreadStop()) {
-            res = lws_service(context, 0);
+            res = lws_service(context.get(), 0);
         }
-        lws_context_destroy(context);
         client->GetClientContext()->SetContext(nullptr);
         client = nullptr;
     });

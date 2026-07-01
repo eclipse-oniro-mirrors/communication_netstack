@@ -104,10 +104,23 @@ public:
 
     void SetContext(lws_context *context)
     {
-        context_ = context;
+        if (context == nullptr) {
+            context_.reset();
+            return;
+        }
+        context_.reset(context, [](lws_context *value) {
+            if (value != nullptr) {
+                lws_context_destroy(value);
+            }
+        });
     }
 
     lws_context *GetContext()
+    {
+        return context_.get();
+    }
+
+    std::shared_ptr<lws_context> GetContextShared()
     {
         return context_;
     }
@@ -207,7 +220,7 @@ private:
 
     std::mutex mutex_;
 
-    lws_context *context_;
+    std::shared_ptr<lws_context> context_;
 
     std::queue<SendData> dataQueue_;
 
