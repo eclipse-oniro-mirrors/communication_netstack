@@ -30,6 +30,7 @@ void MulticastSetTTLContext::ParseParams(napi_value *params, size_t paramsCount)
     if (!CheckParamsType(params, paramsCount)) {
         return;
     }
+    
     ttl_ = NapiUtils::GetInt32FromValue(GetEnv(), params[0]);
 
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
