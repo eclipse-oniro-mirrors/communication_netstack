@@ -499,7 +499,6 @@ namespace {
     HWTEST_F(WebSocketTest, WebSocketClientSendBinary012, TestSize.Level1)
     {
         auto clients = std::make_unique<OHOS::NetStack::WebSocketClient::WebSocketClient>();
-        clients->GetClientContext()->SetContext(reinterpret_cast<lws_context *>(0x1));
 
         const char binaryData[] = {'a', '\0', 'b', '\0'};
         size_t length = 3;
@@ -520,10 +519,15 @@ namespace {
     HWTEST_F(WebSocketTest, WebSocketClientConnectExAlreadyExist014, TestSize.Level1)
     {
         auto clients = std::make_unique<OHOS::NetStack::WebSocketClient::WebSocketClient>();
-        clients->GetClientContext()->SetContext(reinterpret_cast<lws_context *>(0x1));
+        void *rawCtx = std::malloc(512);
+        ASSERT_NE(rawCtx, nullptr);
+        std::fill_n(static_cast<char*>(rawCtx), 512, 0);
+        clients->GetClientContext()->SetContext(reinterpret_cast<lws_context *>(rawCtx));
         OHOS::NetStack::WebSocketClient::OpenOptions option;
         int32_t ret = clients->ConnectEx("wss://example.com", option);
         EXPECT_EQ(ret, WebsocketErrorCode::WEBSOCKET_ERROR_CODE_CONNECT_ALREADY_EXIST);
+        clients->GetClientContext()->SetContext(nullptr);
+        std::free(rawCtx);
     }
 
     HWTEST_F(WebSocketTest, WebSocketServerCloseNotExist003, TestSize.Level1)
