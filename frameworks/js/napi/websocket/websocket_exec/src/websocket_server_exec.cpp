@@ -1115,6 +1115,9 @@ void WebSocketServerExec::FillServerContextInfo(ServerStartContext *context, std
     lws_context_creation_info &info)
 {
     info.options = LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
+    if (!context->certPath_.empty()) {
+        info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
+    }
     info.port = static_cast<int32_t>(context->GetServerPort());
     info.mounts = &mount;
     info.protocols = LWS_SERVER_PROTOCOLS;

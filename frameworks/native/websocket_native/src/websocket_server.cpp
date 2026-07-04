@@ -542,6 +542,9 @@ static const lws_protocols LWS_SERVER_PROTOCOLS[] = {
 void FillServerContextInfo(WebSocketServer *server, lws_context_creation_info &info)
 {
     info.options = LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
+    if (!server->GetServerContext()->startServerConfig_.serverCert.certPath.empty()) {
+        info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
+    }
     info.port = static_cast<int32_t>(server->GetServerContext()->startServerConfig_.serverPort);
     info.mounts = &mount;
     info.protocols = LWS_SERVER_PROTOCOLS;

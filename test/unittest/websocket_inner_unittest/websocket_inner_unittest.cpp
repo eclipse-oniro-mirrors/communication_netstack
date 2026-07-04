@@ -520,10 +520,15 @@ namespace {
     HWTEST_F(WebSocketTest, WebSocketClientConnectExAlreadyExist014, TestSize.Level1)
     {
         auto clients = std::make_unique<OHOS::NetStack::WebSocketClient::WebSocketClient>();
-        clients->GetClientContext()->SetContext(reinterpret_cast<lws_context *>(0x1));
+        void *rawCtx = std::malloc(512);
+        ASSERT_NE(rawCtx, nullptr);
+        std::fill_n(static_cast<char*>(rawCtx), 512, 0);
+        clients->GetClientContext()->context_.reset(reinterpret_cast<lws_context *>(rawCtx), [](lws_context *) {});
         OHOS::NetStack::WebSocketClient::OpenOptions option;
         int32_t ret = clients->ConnectEx("wss://example.com", option);
         EXPECT_EQ(ret, WebsocketErrorCode::WEBSOCKET_ERROR_CODE_CONNECT_ALREADY_EXIST);
+        clients->GetClientContext()->context_.reset();
+        std::free(rawCtx);
     }
 
     HWTEST_F(WebSocketTest, WebSocketServerCloseNotExist003, TestSize.Level1)
@@ -1165,12 +1170,12 @@ namespace {
         ASSERT_TRUE(rawCtx != nullptr);
         std::fill_n(static_cast<char*>(rawCtx), 512, 0);
         lws_context *tmpCtx = reinterpret_cast<lws_context *>(rawCtx);
-        client->GetClientContext()->SetContext(tmpCtx);
+        client->GetClientContext()->context_.reset(tmpCtx, [](lws_context *) {});
         char data[] = "hello";
         size_t dataLength = strlen(data);
 
         auto ret = client->SendEx(data, dataLength);
-        client->GetClientContext()->SetContext(nullptr);
+        client->GetClientContext()->context_.reset();
         std::free(rawCtx);
         rawCtx = nullptr;
         EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
@@ -1196,13 +1201,13 @@ namespace {
         ASSERT_TRUE(rawCtx != nullptr);
         std::fill_n(static_cast<char*>(rawCtx), 512, 0);
         lws_context *tmpCtx = reinterpret_cast<lws_context *>(rawCtx);
-        client->GetClientContext()->SetContext(tmpCtx);
+        client->GetClientContext()->context_.reset(tmpCtx, [](lws_context *) {});
 
         CloseOption Option;
         Option.code = LWS_CLOSE_STATUS_NOSTATUS;
         Option.reason = "request finish";
         auto ret = client->CloseEx(Option);
-        client->GetClientContext()->SetContext(nullptr);
+        client->GetClientContext()->context_.reset();
         std::free(rawCtx);
         rawCtx = nullptr;
         EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
@@ -1217,13 +1222,13 @@ namespace {
         ASSERT_TRUE(rawCtx != nullptr);
         std::fill_n(static_cast<char*>(rawCtx), 512, 0);
         lws_context *tmpCtx = reinterpret_cast<lws_context *>(rawCtx);
-        client->GetClientContext()->SetContext(tmpCtx);
+        client->GetClientContext()->context_.reset(tmpCtx, [](lws_context *) {});
 
         CloseOption Option;
         Option.code = LWS_CLOSE_STATUS_NOSTATUS;
         Option.reason = nullptr;
         auto ret = client->CloseEx(Option);
-        client->GetClientContext()->SetContext(nullptr);
+        client->GetClientContext()->context_.reset();
         std::free(rawCtx);
         rawCtx = nullptr;
         EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
@@ -1238,13 +1243,13 @@ namespace {
         ASSERT_TRUE(rawCtx != nullptr);
         std::fill_n(static_cast<char*>(rawCtx), 512, 0);
         lws_context *tmpCtx = reinterpret_cast<lws_context *>(rawCtx);
-        client->GetClientContext()->SetContext(tmpCtx);
+        client->GetClientContext()->context_.reset(tmpCtx, [](lws_context *) {});
 
         CloseOption Option;
         Option.code = LWS_CLOSE_STATUS_NORMAL;
         Option.reason = nullptr;
         auto ret = client->CloseEx(Option);
-        client->GetClientContext()->SetContext(nullptr);
+        client->GetClientContext()->context_.reset();
         std::free(rawCtx);
         rawCtx = nullptr;
         EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
@@ -1259,13 +1264,13 @@ namespace {
         ASSERT_TRUE(rawCtx != nullptr);
         std::fill_n(static_cast<char*>(rawCtx), 512, 0);
         lws_context *tmpCtx = reinterpret_cast<lws_context *>(rawCtx);
-        client->GetClientContext()->SetContext(tmpCtx);
+        client->GetClientContext()->context_.reset(tmpCtx, [](lws_context *) {});
 
         CloseOption Option;
         Option.code = LWS_CLOSE_STATUS_NORMAL;
         Option.reason = "request finish";;
         auto ret = client->CloseEx(Option);
-        client->GetClientContext()->SetContext(nullptr);
+        client->GetClientContext()->context_.reset();
         std::free(rawCtx);
         rawCtx = nullptr;
         EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
@@ -1423,7 +1428,27 @@ namespace {
         auto ret = server->Start(severCfg);
         EXPECT_EQ(ret, 0);
     }
-    
+
+    HWTEST_F(WebSocketTest, WebSocketServerFillServerContextInfoWithCertPath, TestSize.Level1)
+    {
+        auto server = std::make_unique<OHOS::NetStack::WebSocketServer::WebSocketServer>();
+        ASSERT_NE(server, nullptr);
+
+        OHOS::NetStack::WebSocketServer::ServerCert serverCert{
+            .certPath = "/path/to/cert.pem",
+            .keyPath = "/path/to/key.pem"};
+        OHOS::NetStack::WebSocketServer::ServerConfig severCfg{
+            .serverIP = "127.0.0.1",
+            .serverPort = 8888,
+            .serverCert = serverCert,
+            .maxConcurrentClientsNumber = 2,
+            .protocol = "",
+            .maxConnectionsForOneClient = 1};
+
+        auto ret = server->Start(severCfg);
+        EXPECT_TRUE(ret == 0 || ret == WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
+    }
+
     HWTEST_F(WebSocketTest, WebSocketServerConnectCallbackTest, TestSize.Level1)
     {
         auto server = std::make_unique<OHOS::NetStack::WebSocketServer::WebSocketServer>();
@@ -1750,7 +1775,7 @@ namespace {
         auto client = std::make_unique<WebSocketClient>();
         ASSERT_TRUE(client != nullptr);
         ASSERT_TRUE(client->GetClientContext() != nullptr);
-        client->GetClientContext()->SetContext(nullptr);
+        client->GetClientContext()->context_.reset();
         
         int32_t ret5 = OHOS::NetStack::WebSocketClient::CreatConnectInfoEx(
             "https://example.com", nullptr, client.get());
@@ -1762,7 +1787,7 @@ namespace {
         int32_t ret10 = OHOS::NetStack::WebSocketClient::CreatConnectInfoEx("invalid_url", nullptr, client.get());
         EXPECT_EQ(ret10, WebsocketErrorCode::WEBSOCKET_ERROR_CODE_URL_ERROR);
         
-        client->GetClientContext()->SetContext(nullptr);
+        client->GetClientContext()->context_.reset();
     }
 
     HWTEST_F(WebSocketTest, SplitTestEmptyString, TestSize.Level1)
