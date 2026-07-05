@@ -57,6 +57,7 @@ enum WebsocketErrorCode {
     WEBSOCKET_ERROR_CODE_INVALID_NIC = WEBSOCKET_ERROR_CODE_BASE + 4,
     WEBSOCKET_ERROR_CODE_INVALID_PORT = WEBSOCKET_ERROR_CODE_BASE + 5,
     WEBSOCKET_ERROR_CODE_CONNECTION_NOT_EXIST = WEBSOCKET_ERROR_CODE_BASE + 6,
+    WEBSOCKET_ERROR_CODE_PORT_ALREADY_OCCUPIED = WEBSOCKET_ERROR_CODE_BASE + 7,
     WEBSOCKET_NOT_ALLOWED_HOST = 2302998,
     WEBSOCKET_UNKNOWN_OTHER_ERROR = 2302999,
     WEBSOCKET_DATA_LENGTH_EXCEEDS = 1012
@@ -73,6 +74,7 @@ static const std::map<int32_t, std::string> WEBSOCKET_ERR_MAP = { { WEBSOCKET_CO
     { WEBSOCKET_ERROR_CODE_CONNECTION_NOT_EXIST, "websocket connection does not exist" },
     { WEBSOCKET_NOT_ALLOWED_HOST, "It is not allowed to access this domain" },
     { WEBSOCKET_UNKNOWN_OTHER_ERROR, "Websocket Unknown Other Error" },
+    { WEBSOCKET_ERROR_CODE_PORT_ALREADY_OCCUPIED, "Websocket port already occupied"},
     { WEBSOCKET_DATA_LENGTH_EXCEEDS, "websocket data length exceeded"} };
 
 enum {
@@ -652,6 +654,10 @@ int WebSocketServer::Start(const ServerConfig &config)
     lws_context *lwsContext = nullptr;
     std::shared_ptr<UserData> userData;
     lwsContext = lws_create_context(&info);
+    if (lwsContext == nullptr) {
+        NETSTACK_LOGE("Port already occupied");
+        return WEBSOCKET_ERROR_CODE_PORT_ALREADY_OCCUPIED;
+    }
     serverContext_->SetContext(lwsContext);
     std::thread serviceThread(RunServerService, this);
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
