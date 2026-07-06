@@ -61,6 +61,104 @@ struct CertsPath {
     std::string certFile;
 };
 
+static constexpr int PRECISION = 3;
+static constexpr int MSEC_BOUNDARY = 1000;
+
+struct ExtendInfoWrapper {
+    ExtendInfoWrapper(const ExtendInfoWrapper &) = delete;
+    ExtendInfoWrapper(ExtendInfoWrapper &&) = delete;
+    ExtendInfoWrapper &operator=(const ExtendInfoWrapper &) = delete;
+    ExtendInfoWrapper &operator=(ExtendInfoWrapper &&) = delete;
+    ExtendInfoWrapper() = default;
+    ~ExtendInfoWrapper() = default;
+    int errorCode = 0;
+    int osErr = 0;
+    long lastRecvErrno = 0;
+    long lastSendErrno = 0;
+    std::string sslErr;
+    long sslConnectErrno = 0;
+    TlsVersion minTlsVersion = TlsVersion::DEFAULT;
+    TlsVersion maxTlsVersion = TlsVersion::DEFAULT;
+    std::vector<std::string> ciphers;
+    std::string lastSslRecvErr;
+    std::string lastSslSendErr;
+    long lastPollinTimeUs = 0;
+    long lastOsPollinTimeUs = 0;
+    long lastPolloutTimeUs = 0;
+    long lastOsPolloutTimeUs = 0;
+    long lastSslRecvSize = -1;
+    long lastSslSendSize = -1;
+    long totalSslRecvSize = -1;
+    long totalSslSendSize = -1;
+    long dnsStatus = 0;
+    int dnsSockErr = 0;
+    int dnsCloseErr = 0;
+    int dnsConnErr = 0;
+    int dnsRecvErr = 0;
+    int dnsSendErr = 0;
+    long isDnsFromNetsysCache = 0;
+    long tcpConnectErrno = 0;
+    std::string srcAddr;
+    std::string dstAddr;
+    uint16_t srcPort = 0;
+    uint16_t dstPort = 0;
+    std::vector<std::string> tryConnectIp;
+    std::vector<std::string> tryConnectPort;
+    bool tryConnectIpv4 = false;
+    bool tryConnectIpv6 = false;
+    long dlSpeed = -1;
+    long ulSpeed = -1;
+    long dlSize = -1;
+    long ulSize = -1;
+    double dnsDur = 0.0;
+    double connectDur = 0.0;
+    double tlsDur = 0.0;
+    double firstSendDur = 0.0;
+    double firstRecvDur = 0.0;
+    double totalDur = 0.0;
+    double redirectDur = 0.0;
+    std::vector<std::string> certIssuerNames;
+    std::string proxyType = "none";
+};
+
+class ExtendResponseInfo {
+private:
+    std::shared_ptr<ExtendInfoWrapper> info_ = std::make_shared<ExtendInfoWrapper>();
+
+public:
+    std::shared_ptr<ExtendInfoWrapper> operator->() const;
+    [[nodiscard]] std::string ToStringForErrLog(int errorCode);
+    [[nodiscard]] std::string ToString();
+};
+
+class ExtResInfoParser {
+public:
+    void TraverseErrInfo(ExtendResponseInfo &extResInfo, int errorCode);
+    virtual void SetErrorInfo(const std::string &key, const std::string &value) = 0;
+    virtual ~ExtResInfoParser() = default;
+
+private:
+    std::string GetEpollTimeInfo(long timeStamp);
+    void AddSslTlsInfo(ExtendResponseInfo &extResInfo);
+    void AddDnsErrorInfo(ExtendResponseInfo &extResInfo);
+    void AddEpollInfo(ExtendResponseInfo &extResInfo);
+    void AddSpeedAndSizeInfo(ExtendResponseInfo &extResInfo);
+    void AddTcpConnInfo(ExtendResponseInfo &extResInfo);
+    void AddBasicInfo(ExtendResponseInfo &extResInfo);
+    void AddTimeConsumingInfo(ExtendResponseInfo &extResInfo);
+    void AddAllErrInfo(ExtendResponseInfo &extResInfo);
+    std::string DoubleToString(double num, int precision);
+};
+
+class ExtResInfoInnerParser : public ExtResInfoParser {
+public:
+    explicit ExtResInfoInnerParser(std::string &str) : extResInfoStr_(str) {}
+    std::string &extResInfoStr_;
+
+private:
+    void SetErrorInfo(const std::string &key, const std::string &value) override;
+};
+
 #if ENABLE_HTTP_INTERCEPT
 class HttpInterceptor;
 #endif
@@ -94,6 +192,8 @@ public:
     HttpRequestOptions options;
 
     HttpResponse response;
+
+    ExtendResponseInfo extendInfo_;
 
     [[nodiscard]] bool IsUsingCache() const;
 

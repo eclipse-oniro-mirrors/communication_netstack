@@ -149,6 +149,29 @@ public:
 
     static bool GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURLMSG curlMsg, CURLcode result);
 
+    static void GetTlsVersionFromOption(const HttpRequestOptions options, ExtendResponseInfo &extendInfo);
+
+    static void GetExtendInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo);
+
+    static void GetOsErrInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo);
+
+    static void GetTlsInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo);
+
+    static void GetDnsInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo);
+
+    static void GetSrcAndDstInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo);
+
+    static void GetTcpConnectInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo);
+
+    static void GetTcpInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo);
+
+    static void GetPerfInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo);
+
+    static void GetTimeInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo);
+
+    static napi_value CreateErrorMessageExt(napi_env env, int32_t errorCode, const std::string &errorMessage,
+        ExtendResponseInfo &info);
+
 #if !HAS_NETMANAGER_BASE
     static bool Initialize();
 

@@ -76,6 +76,7 @@ config("http_config") {
 }
 
 ohos_shared_library("http") {
+  defines = [ "USE_ARES" ]
   if (product_name != "ohos-sdk") {
     sanitize = {
       cfi = true
@@ -166,7 +167,7 @@ ohos_shared_library("http") {
         "safwk:system_ability_fwk",
         "samgr:samgr_proxy",
       ]
-      defines = [
+      defines += [
         "HAS_NETMANAGER_BASE=1",
         "HAS_NETSTACK_CHR=1",
         "ENABLE_HTTP_INTERCEPT=1",
@@ -189,7 +190,7 @@ ohos_shared_library("http") {
         "http_interceptor/include",
       ]
     } else {
-      defines = [
+      defines += [
         "HAS_NETMANAGER_BASE=0",
         "HAS_NETSTACK_CHR=0",
       ]
