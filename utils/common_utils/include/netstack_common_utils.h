@@ -112,10 +112,6 @@ bool IsValidPort(const uint32_t &Port);
 
 std::string ToAnonymousIp(const std::string &input);
 
-std::string CombineStrings(const std::vector<std::string> &strs, const std::string &spliter);
-
-std::string CombineStringsAnonymous(const std::vector<std::string> &strs, const std::string &spliter);
-
 char *MallocCString(const std::string &origin);
 } // namespace OHOS::NetStack::CommonUtils
 #endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */
