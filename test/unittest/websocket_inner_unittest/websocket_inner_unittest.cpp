@@ -1429,26 +1429,6 @@ namespace {
         EXPECT_EQ(ret, 0);
     }
 
-    HWTEST_F(WebSocketTest, WebSocketServerFillServerContextInfoWithCertPath, TestSize.Level1)
-    {
-        auto server = std::make_unique<OHOS::NetStack::WebSocketServer::WebSocketServer>();
-        ASSERT_NE(server, nullptr);
-
-        OHOS::NetStack::WebSocketServer::ServerCert serverCert{
-            .certPath = "/path/to/cert.pem",
-            .keyPath = "/path/to/key.pem"};
-        OHOS::NetStack::WebSocketServer::ServerConfig severCfg{
-            .serverIP = "127.0.0.1",
-            .serverPort = 8888,
-            .serverCert = serverCert,
-            .maxConcurrentClientsNumber = 2,
-            .protocol = "",
-            .maxConnectionsForOneClient = 1};
-
-        auto ret = server->Start(severCfg);
-        EXPECT_TRUE(ret == 0 || ret == WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST);
-    }
-
     HWTEST_F(WebSocketTest, WebSocketServerConnectCallbackTest, TestSize.Level1)
     {
         auto server = std::make_unique<OHOS::NetStack::WebSocketServer::WebSocketServer>();

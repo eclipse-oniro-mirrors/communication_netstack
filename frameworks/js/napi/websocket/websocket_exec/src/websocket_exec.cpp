@@ -233,10 +233,6 @@ int WebSocketExec::LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callback
 {
     NETSTACK_LOGD("lws callback client append handshake header");
     auto manager = reinterpret_cast<EventManager *>(user);
-    if (manager == nullptr) {
-        NETSTACK_LOGE("manager is null");
-        return -1;
-    }
     auto userData = manager->GetWebSocketUserData();
     if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
@@ -267,10 +263,6 @@ int WebSocketExec::LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reason
 {
     NETSTACK_LOGD("lws callback ws peer initiated close");
     auto manager = reinterpret_cast<EventManager *>(user);
-    if (manager == nullptr) {
-        NETSTACK_LOGE("manager is null");
-        return -1;
-    }
     auto userData = manager->GetWebSocketUserData();
     if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
@@ -294,10 +286,6 @@ int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reas
 {
     NETSTACK_LOGD("lws callback client writable");
     auto manager = reinterpret_cast<EventManager *>(user);
-    if (manager == nullptr) {
-        NETSTACK_LOGE("manager is null");
-        return -1;
-    }
     auto userData = manager->GetWebSocketUserData();
     if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
@@ -373,10 +361,6 @@ int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reaso
 {
     NETSTACK_LOGD("lws callback client receive");
     auto manager = reinterpret_cast<EventManager *>(user);
-    if (manager == nullptr) {
-        NETSTACK_LOGE("manager is null");
-        return -1;
-    }
     auto isFinal = lws_is_final_fragment(wsi);
     OnMessage(manager, in, len, lws_frame_is_binary(wsi), isFinal);
     return HttpDummy(wsi, reason, user, in, len);
@@ -387,10 +371,6 @@ int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_re
 {
     NETSTACK_LOGD("lws callback client filter preEstablish");
     auto manager = reinterpret_cast<EventManager *>(user);
-    if (manager == nullptr) {
-        NETSTACK_LOGE("manager is null");
-        return -1;
-    }
     auto userData = manager->GetWebSocketUserData();
     if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
@@ -447,10 +427,6 @@ int WebSocketExec::LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons r
 {
     NETSTACK_LOGD("lws callback client established");
     auto manager = reinterpret_cast<EventManager *>(user);
-    if (manager == nullptr) {
-        NETSTACK_LOGE("manager is null");
-        return -1;
-    }
     auto userData = manager->GetWebSocketUserData();
     if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
@@ -468,10 +444,6 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
 {
     NETSTACK_LOGD("lws callback client closed");
     auto manager = reinterpret_cast<EventManager *>(user);
-    if (manager == nullptr) {
-        NETSTACK_LOGE("manager is null");
-        return -1;
-    }
     auto userData = manager->GetWebSocketUserData();
     if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
