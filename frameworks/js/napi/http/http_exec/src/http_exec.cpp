@@ -131,8 +131,6 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
         }
     } else {
 #ifdef USE_ARES
-        HttpExec::GetTlsVersionFromOption(context->options, context->extendInfo_);
-        HttpExec::GetExtendInfoFromCurl(context->GetCurlHandle(), context->extendInfo_);
         ExtendResponseInfo info = context->extendInfo_;
         NETSTACK_LOGI(
         "extendInfo taskid=%{public}d, errCode:%{public}d, osErr:%{public}d, lastRecvErrno:%{public}ld"
@@ -257,8 +255,6 @@ void HttpExec::FinalResponseProcessing(RequestContext *requestContext)
         }
     } else {
 #ifdef USE_ARES
-        HttpExec::GetTlsVersionFromOption(context->options, context->extendInfo_);
-        HttpExec::GetExtendInfoFromCurl(context->GetCurlHandle(), context->extendInfo_);
         ExtendResponseInfo info = context->extendInfo_;
         NETSTACK_LOGI(
         "extendInfo taskid=%{public}d, errCode:%{public}d, osErr:%{public}d, lastRecvErrno:%{public}ld"
@@ -337,6 +333,9 @@ void HttpExec::GetTlsVersionFromOption(const HttpRequestOptions options, ExtendR
 
 void HttpExec::GetExtendInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 {
+    if (curl == nullptr) {
+        return;
+    }
     GetOsErrInfoFromCurl(curl, extendInfo);
     GetTlsInfoFromCurl(curl, extendInfo);
     GetDnsInfoFromCurl(curl, extendInfo);
@@ -349,6 +348,9 @@ void HttpExec::GetExtendInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 
 void HttpExec::GetOsErrInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 {
+    if (curl == nullptr) {
+        return;
+    }
     long osErr = 0;
     auto resultForOSerr = curl_easy_getinfo(curl, CURLINFO_OS_ERRNO, &osErr);
     if (resultForOSerr != CURLE_OK) {
@@ -368,6 +370,9 @@ void HttpExec::GetOsErrInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 
 void HttpExec::GetTlsInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 {
+    if (curl == nullptr) {
+        return;
+    }
     char *sslErr = nullptr;
     curl_easy_getinfo(curl, CURLINFO_SSL_ERROR, &sslErr);
     if (sslErr) {
@@ -402,6 +407,9 @@ void HttpExec::GetTlsInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 
 void HttpExec::GetDnsInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 {
+    if (curl == nullptr) {
+        return;
+    }
 #ifdef CURLINFO_DNS_STATUS
     auto dnsStatus = static_cast<long>(CURL_DNS_STATUS_INIT);
     curl_easy_getinfo(curl, CURLINFO_DNS_STATUS, &dnsStatus);
@@ -417,6 +425,9 @@ void HttpExec::GetDnsInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 
 void HttpExec::GetSrcAndDstInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 {
+    if (curl == nullptr) {
+        return;
+    }
     char *srcAddr = nullptr;
     char *dstAddr = nullptr;
     long srcPort = 0;
@@ -433,6 +444,9 @@ void HttpExec::GetSrcAndDstInfoFromCurl(CURL *curl, ExtendResponseInfo &extendIn
 
 void HttpExec::GetTcpConnectInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 {
+    if (curl == nullptr) {
+        return;
+    }
 #ifdef CURLINFO_CONNECTED_IP_NUM
     long connectedIpNum = 0;
     curl_easy_getinfo(curl, CURLINFO_CONNECTED_IP_NUM, &connectedIpNum);
@@ -463,6 +477,9 @@ void HttpExec::GetTcpConnectInfoFromCurl(CURL *curl, ExtendResponseInfo &extendI
 
 void HttpExec::GetTcpInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 {
+    if (curl == nullptr) {
+        return;
+    }
 #ifdef CURLINFO_TRY_CONN_IPV4
     long tryConnectIPv4 = 0;
     curl_easy_getinfo(curl, CURLINFO_TRY_CONN_IPV4, &tryConnectIPv4);
@@ -515,6 +532,9 @@ void HttpExec::GetTcpInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 
 void HttpExec::GetPerfInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 {
+    if (curl == nullptr) {
+        return;
+    }
     curl_off_t dlSpeed;
     auto resForDlSpeed = curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD_T, &dlSpeed);
     if (resForDlSpeed != CURLE_OK) {
@@ -559,6 +579,9 @@ void HttpExec::GetPerfInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 
 void HttpExec::GetTimeInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
 {
+    if (curl == nullptr) {
+        return;
+    }
     auto dnsTime = HttpExec::GetTimingFromCurl(curl, CURLINFO_NAMELOOKUP_TIME_T);
     auto connectTime = HttpExec::GetTimingFromCurl(curl, CURLINFO_CONNECT_TIME_T);
     auto tlsTime = HttpExec::GetTimingFromCurl(curl, CURLINFO_APPCONNECT_TIME_T);
@@ -1148,6 +1171,11 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
     if (context->IsExecOK()) {
         CacheProxy proxy(context->options);
         proxy.WriteResponseToCache(context->response);
+#ifdef USE_ARES
+    } else {
+        HttpExec::GetTlsVersionFromOption(context->options, context->extendInfo_);
+        HttpExec::GetExtendInfoFromCurl(context->GetCurlHandle(), context->extendInfo_);
+#endif
     }
     context->SendNetworkProfiler();
     if (handle) {
