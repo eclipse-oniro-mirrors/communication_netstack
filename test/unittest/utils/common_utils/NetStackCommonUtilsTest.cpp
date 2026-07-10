@@ -889,6 +889,101 @@ HWTEST_F(NetStackCommonUtilsTest, GetSimpleHostTest6, TestSize.Level2)
     std::string url = "http://www.example.com?abc=123&__biz=456&def=789";
     EXPECT_EQ(GetSimpleHost(url), "http://www.example.com?__biz=456");
 }
+
+HWTEST_F(NetStackCommonUtilsTest, CombineStrings001, TestSize.Level2)
+{
+    std::vector<std::string> strs = {"AES128-SHA", "AES256-SHA", "ECDHE-RSA-AES128-SHA"};
+    std::string result = CombineStrings(strs, "|");
+    EXPECT_EQ(result, "AES128-SHA|AES256-SHA|ECDHE-RSA-AES128-SHA");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CombineStrings002, TestSize.Level2)
+{
+    std::vector<std::string> strs = {"single"};
+    std::string result = CombineStrings(strs, "|");
+    EXPECT_EQ(result, "single");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CombineStrings003, TestSize.Level2)
+{
+    std::vector<std::string> strs;
+    std::string result = CombineStrings(strs, "|");
+    EXPECT_TRUE(result.empty());
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CombineStrings004, TestSize.Level2)
+{
+    std::vector<std::string> strs = {"a", "", "b"};
+    std::string result = CombineStrings(strs, ",");
+    EXPECT_EQ(result, "a,b");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CombineStrings005, TestSize.Level2)
+{
+    std::vector<std::string> strs = {"", "", ""};
+    std::string result = CombineStrings(strs, "|");
+    EXPECT_TRUE(result.empty());
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CombineStrings006, TestSize.Level2)
+{
+    std::vector<std::string> strs = {"a", "b", ""};
+    std::string result = CombineStrings(strs, "|");
+    EXPECT_EQ(result, "a|b|");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CombineStringsAnonymous001, TestSize.Level2)
+{
+    std::vector<std::string> strs = {"192.168.1.1", "10.0.0.1"};
+    std::string result = CombineStringsAnonymous(strs, "|");
+    EXPECT_NE(result.find("192."), std::string::npos);
+    EXPECT_NE(result.find("10."), std::string::npos);
+    EXPECT_NE(result.find("|"), std::string::npos);
+    EXPECT_EQ(result.find("192.168.1.1"), std::string::npos);
+    EXPECT_EQ(result.find("10.0.0.1"), std::string::npos);
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CombineStringsAnonymous002, TestSize.Level2)
+{
+    std::vector<std::string> strs = {"192.168.1.1"};
+    std::string result = CombineStringsAnonymous(strs, "|");
+    EXPECT_NE(result.find("192."), std::string::npos);
+    EXPECT_EQ(result.find("192.168.1.1"), std::string::npos);
+    EXPECT_EQ(result.find("|"), std::string::npos);
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CombineStringsAnonymous003, TestSize.Level2)
+{
+    std::vector<std::string> strs;
+    std::string result = CombineStringsAnonymous(strs, "|");
+    EXPECT_TRUE(result.empty());
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CombineStringsAnonymous004, TestSize.Level2)
+{
+    std::vector<std::string> strs = {"", ""};
+    std::string result = CombineStringsAnonymous(strs, "|");
+    EXPECT_TRUE(result.empty());
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CombineStringsAnonymous005, TestSize.Level2)
+{
+    std::vector<std::string> strs = {"192.168.1.1", "", "10.0.0.1"};
+    std::string result = CombineStringsAnonymous(strs, "|");
+    EXPECT_NE(result.find("192."), std::string::npos);
+    EXPECT_NE(result.find("10."), std::string::npos);
+    EXPECT_EQ(result.find("192.168.1.1"), std::string::npos);
+    EXPECT_EQ(result.find("10.0.0.1"), std::string::npos);
+}
+
+HWTEST_F(NetStackCommonUtilsTest, CombineStringsAnonymous006, TestSize.Level2)
+{
+    std::vector<std::string> strs = {"not_an_ip", "192.168.1.1"};
+    std::string result = CombineStringsAnonymous(strs, "|");
+    EXPECT_NE(result.find("not_an_ip"), std::string::npos);
+    EXPECT_EQ(result.find("192.168.1.1"), std::string::npos);
+}
+
 } // namespace CommonUtils
 } // namespace NetStack
 } // namespace OHOS

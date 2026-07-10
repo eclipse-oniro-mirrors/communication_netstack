@@ -638,6 +638,34 @@ std::string ToAnonymousIp(const std::string &input)
     return input;
 }
 
+std::string CombineStrings(const std::vector<std::string> &strs, const std::string &spliter)
+{
+    std::string res = "";
+    for (size_t i = 0; i < strs.size(); ++i) {
+        if (!strs[i].empty()) {
+            res += strs[i];
+            if (i < strs.size() - 1) {
+                res += spliter;
+            }
+        }
+    }
+    return res;
+}
+
+std::string CombineStringsAnonymous(const std::vector<std::string> &strs, const std::string &spliter)
+{
+    std::string res;
+    for (size_t i = 0; i < strs.size(); ++i) {
+        if (!strs[i].empty()) {
+            res += CommonUtils::ToAnonymousIp(strs[i]);
+            if (i < strs.size() - 1) {
+                res += spliter;
+            }
+        }
+    }
+    return res;
+}
+
 std::string AnonymizeHost(const std::string &input)
 {
     const size_t kOddIndexMultiplier = 2;
