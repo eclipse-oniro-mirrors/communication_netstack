@@ -101,6 +101,7 @@ void RunService(WebSocketClient *Client)
     while (!Client->GetClientContext()->IsThreadStop()) {
         lws_service(context.get(), 0);
     }
+    NETSTACK_LOGI("RunService stop");
 }
 
 int HttpDummy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
@@ -751,6 +752,7 @@ int WebSocketClient::Close(CloseOption options)
         return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
     }
     if (this->GetClientContext()->openStatus == 0) {
+        NETSTACK_LOGE("openStatus == 0");
         this->GetClientContext()->SetThreadStop(true);
         this->GetClientContext()->SetContext(nullptr);
         return WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT;
@@ -778,10 +780,13 @@ int WebSocketClient::Registcallback(OnOpenCallback onOpen, OnMessageCallback onM
 int WebSocketClient::Destroy()
 {
     NETSTACK_LOGI("Destroy start");
-    this->GetClientContext()->SetThreadStop(true);
+    if (this->GetClientContext() == nullptr) {
+        return WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT_CONTEXT;
+    }
     if (this->GetClientContext()->GetContext() == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT_CONTEXT;
     }
+    this->GetClientContext()->SetContext(nullptr);
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
