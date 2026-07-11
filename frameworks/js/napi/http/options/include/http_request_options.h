@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,7 +170,7 @@ public:
             Further details on the user timeout feature can be found
             in RFC 793 and RFC 5482 ("TCP User Timeout Option").
         */
-        int userTimeout_ = HttpConstant::DEFAULT_READ_TIMEOUT;
+        unsigned int userTimeout_ = HttpConstant::DEFAULT_READ_TIMEOUT;
         
         bool SetOptionToSocket(int sock);
         void SetTcpUserTimeout(const uint32_t &timeout);
@@ -392,7 +392,7 @@ private:
 
     bool canSkipCertVerify_ = false;
 
-    int partialChain_ = -1; // -1: 未配置, 0: false, 1: true
+    int partialChain_ = -1; // -1: not set, 0: false, 1: true
 
     std::vector<MultiFormData> multiFormDataList_;
 

@@ -174,6 +174,7 @@ void EpollMultiDriver::HandleRedirect(CURL *easyHandle, std::shared_ptr<std::str
     context->options.SetUrl(location->c_str());
     delete requestInfo;
     context->IncreaseRedirectCount();
+    context->response.Reset();
     Http::HttpExec::RequestWithoutCache(context);
 }
 #endif

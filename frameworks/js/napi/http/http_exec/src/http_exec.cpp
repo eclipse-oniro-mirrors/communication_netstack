@@ -94,6 +94,24 @@ static constexpr const long DEAD_FLOW_RESET_TIMEOUT = 20000; // ms
     } while (0)
 
 namespace OHOS::NetStack::Http {
+#ifdef USE_ARES
+static constexpr const char *EXTENDINFO = "extendInfo";
+
+class ExtResInfoNapiParser : public ExtResInfoParser {
+public:
+    ExtResInfoNapiParser(napi_env env, napi_value extendInfo) : env_(env), extendInfo_(extendInfo) {}
+
+private:
+    napi_env env_ = nullptr;
+    napi_value extendInfo_ = nullptr;
+    void SetErrorInfo(const std::string &key, const std::string &value) override;
+};
+
+void ExtResInfoNapiParser::SetErrorInfo(const std::string &key, const std::string &value)
+{
+    NapiUtils::SetStringPropertyUtf8(env_, extendInfo_, key, value);
+}
+#endif
 
 static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, void *data)
 {
@@ -112,8 +130,34 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
             return;
         }
     } else {
+#ifdef USE_ARES
+        HttpExec::GetTlsVersionFromOption(context->options, context->extendInfo_);
+        HttpExec::GetExtendInfoFromCurl(context->GetCurlHandle(), context->extendInfo_);
+        ExtendResponseInfo info = context->extendInfo_;
+        NETSTACK_LOGI(
+        "extendInfo taskid=%{public}d, errCode:%{public}d, osErr:%{public}d, lastRecvErrno:%{public}ld"
+        ", lastSendErrno:%{public}ld, sslErr:%{public}s, sslConnectErrno:%{public}ld, minTlsVersion:%{public}s"
+        ", maxTlsVersion:%{public}s, ciphers:%{public}s, lastSslRecvErr:%{public}s, lastSslSendErr:%{public}s"
+        ", dnsStatus:%{public}ld, dnsSockErr:%{public}d, dnsConnErr:%{public}d, tcpConnectErrno:%{public}ld"
+        ", srcAddr:%{public}s, dstAddr:%{public}s, srcPort:%{public}d, dstPort:%{public}d"
+        ", dlSpeed:%{public}ld, ulSpeed:%{public}ld, dlSize:%{public}ld, ulSize:%{public}ld"
+        ", dnsDur:%{public}.3f, connectDur:%{public}.3f, tlsDur:%{public}.3f, firstSendDur:%{public}.3f"
+        ", firstRecvDur:%{public}.3f, totalDur:%{public}.3f, redirectDur:%{public}.3f, certIssuerNames:%{public}s",
+        context->GetTaskId(), context->GetErrorCode(), info->osErr, info->lastRecvErrno, info->lastSendErrno,
+        info->sslErr.c_str(), info->sslConnectErrno, ConvertTlsVersionToString(info->minTlsVersion).c_str(),
+        ConvertTlsVersionToString(info->maxTlsVersion).c_str(), CommonUtils::CombineStrings(info->ciphers, "|").c_str(),
+        info->lastSslRecvErr.c_str(),info->lastSslSendErr.c_str(), info->dnsStatus, info->dnsSockErr,
+        info->dnsConnErr, info->tcpConnectErrno, info->srcAddr.c_str(), info->dstAddr.c_str(), info->srcPort,
+        info->dstPort, info->dlSpeed, info->ulSpeed, info->dlSize, info->ulSize, info->dnsDur, info->connectDur,
+        info->tlsDur, info->firstSendDur, info->firstRecvDur, info->totalDur, info->redirectDur,
+        CommonUtils::CombineStrings(info->certIssuerNames, "|").c_str());
+        argv[EVENT_PARAM_ZERO] =
+            HttpExec::CreateErrorMessageExt(env, context->GetErrorCode(), context->GetErrorMessage(),
+                context->extendInfo_);
+#else
         argv[EVENT_PARAM_ZERO] =
             NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
+#endif
         if (argv[EVENT_PARAM_ZERO] == nullptr) {
             return;
         }
@@ -212,8 +256,34 @@ void HttpExec::FinalResponseProcessing(RequestContext *requestContext)
             return;
         }
     } else {
+#ifdef USE_ARES
+        HttpExec::GetTlsVersionFromOption(context->options, context->extendInfo_);
+        HttpExec::GetExtendInfoFromCurl(context->GetCurlHandle(), context->extendInfo_);
+        ExtendResponseInfo info = context->extendInfo_;
+        NETSTACK_LOGI(
+        "extendInfo taskid=%{public}d, errCode:%{public}d, osErr:%{public}d, lastRecvErrno:%{public}ld"
+        ", lastSendErrno:%{public}ld, sslErr:%{public}s, sslConnectErrno:%{public}ld, minTlsVersion:%{public}s"
+        ", maxTlsVersion:%{public}s, ciphers:%{public}s, lastSslRecvErr:%{public}s, lastSslSendErr:%{public}s"
+        ", dnsStatus:%{public}ld, dnsSockErr:%{public}d, dnsConnErr:%{public}d, tcpConnectErrno:%{public}ld"
+        ", srcAddr:%{public}s, dstAddr:%{public}s, srcPort:%{public}d, dstPort:%{public}d"
+        ", dlSpeed:%{public}ld, ulSpeed:%{public}ld, dlSize:%{public}ld, ulSize:%{public}ld"
+        ", dnsDur:%{public}.3f, connectDur:%{public}.3f, tlsDur:%{public}.3f, firstSendDur:%{public}.3f"
+        ", firstRecvDur:%{public}.3f, totalDur:%{public}.3f, redirectDur:%{public}.3f, certIssuerNames:%{public}s",
+        context->GetTaskId(), context->GetErrorCode(), info->osErr, info->lastRecvErrno, info->lastSendErrno,
+        info->sslErr.c_str(), info->sslConnectErrno, ConvertTlsVersionToString(info->minTlsVersion).c_str(),
+        ConvertTlsVersionToString(info->maxTlsVersion).c_str(), CommonUtils::CombineStrings(info->ciphers, "|").c_str(),
+        info->lastSslRecvErr.c_str(),info->lastSslSendErr.c_str(), info->dnsStatus, info->dnsSockErr,
+        info->dnsConnErr, info->tcpConnectErrno, info->srcAddr.c_str(), info->dstAddr.c_str(), info->srcPort,
+        info->dstPort, info->dlSpeed, info->ulSpeed, info->dlSize, info->ulSize, info->dnsDur, info->connectDur,
+        info->tlsDur, info->firstSendDur, info->firstRecvDur, info->totalDur, info->redirectDur,
+        CommonUtils::CombineStrings(info->certIssuerNames, "|").c_str());
+        argv[EVENT_PARAM_ZERO] =
+            HttpExec::CreateErrorMessageExt(env, context->GetErrorCode(), context->GetErrorMessage(),
+                context->extendInfo_);
+#else
         argv[EVENT_PARAM_ZERO] =
             NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
+#endif
         if (argv[EVENT_PARAM_ZERO] == nullptr) {
             return;
         }
@@ -256,6 +326,269 @@ void HttpExec::AsyncWorkRequestCallback(napi_env env, napi_status status, void *
 #endif
     handleFinalResponseProcessing();
 }
+
+#ifdef USE_ARES
+void HttpExec::GetTlsVersionFromOption(const HttpRequestOptions options, ExtendResponseInfo &extendInfo)
+{
+    const auto &tlsOption = options.GetTlsOption();
+    extendInfo->minTlsVersion = tlsOption.tlsVersionMin;
+    extendInfo->maxTlsVersion = tlsOption.tlsVersionMax;
+}
+
+void HttpExec::GetExtendInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
+{
+    GetOsErrInfoFromCurl(curl, extendInfo);
+    GetTlsInfoFromCurl(curl, extendInfo);
+    GetDnsInfoFromCurl(curl, extendInfo);
+    GetSrcAndDstInfoFromCurl(curl, extendInfo);
+    GetTcpInfoFromCurl(curl, extendInfo);
+    GetTcpConnectInfoFromCurl(curl, extendInfo);
+    GetPerfInfoFromCurl(curl, extendInfo);
+    GetTimeInfoFromCurl(curl, extendInfo);
+}
+
+void HttpExec::GetOsErrInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
+{
+    long osErr = 0;
+    auto resultForOSerr = curl_easy_getinfo(curl, CURLINFO_OS_ERRNO, &osErr);
+    if (resultForOSerr != CURLE_OK) {
+        NETSTACK_LOGE("get curl kernel errno fail, result: %{public}d", resultForOSerr);
+    } else {
+        extendInfo->osErr = static_cast<int>(osErr);
+    }
+
+    long lastRecvErrno = 0;
+    curl_easy_getinfo(curl, CURLINFO_LAST_RECV_ERRNO, &lastRecvErrno);
+    extendInfo->lastRecvErrno = lastRecvErrno;
+
+    long lastSendErrno = 0;
+    curl_easy_getinfo(curl, CURLINFO_LAST_SEND_ERRNO, &lastSendErrno);
+    extendInfo->lastSendErrno = lastSendErrno;
+}
+
+void HttpExec::GetTlsInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
+{
+    char *sslErr = nullptr;
+    curl_easy_getinfo(curl, CURLINFO_SSL_ERROR, &sslErr);
+    if (sslErr) {
+        extendInfo->sslErr = sslErr;
+    }
+
+    long sslConnectErrno = 0;
+    curl_easy_getinfo(curl, CURLINFO_SSL_CONNECT_ERRNO, &sslConnectErrno);
+    extendInfo->sslConnectErrno = sslConnectErrno;
+
+    long cipherNum = 0;
+    curl_easy_getinfo(curl, CURLINFO_CIPHER_NUM, &cipherNum);
+    char **ciphers = nullptr;
+    curl_easy_getinfo(curl, CURLINFO_CIPHERS, &ciphers);
+    for (long i = 0; i < std::min<long>(cipherNum, CURL_MAX_CIPHER_NUM); ++i) {
+        if (ciphers && ciphers[i]) {
+            extendInfo->ciphers.emplace_back(ciphers[i]);
+        }
+    }
+
+    char *lastSslRecvErr = nullptr;
+    curl_easy_getinfo(curl, CURLINFO_LAST_RECV_SSL_ERROR, &lastSslRecvErr);
+    if (lastSslRecvErr) {
+        extendInfo->lastSslRecvErr = lastSslRecvErr;
+    }
+    char *lastSslSendErr = nullptr;
+    curl_easy_getinfo(curl, CURLINFO_LAST_SEND_SSL_ERROR, &lastSslSendErr);
+    if (lastSslSendErr) {
+        extendInfo->lastSslSendErr = lastSslSendErr;
+    }
+}
+
+void HttpExec::GetDnsInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
+{
+#ifdef CURLINFO_DNS_STATUS
+    auto dnsStatus = static_cast<long>(CURL_DNS_STATUS_INIT);
+    curl_easy_getinfo(curl, CURLINFO_DNS_STATUS, &dnsStatus);
+    extendInfo->dnsStatus = dnsStatus;
+#endif
+
+#ifdef CURLINFO_IS_DNS_FROM_NETSYS_CACHE
+    long isDnsFromNetsysCache = 0;
+    curl_easy_getinfo(curl, CURLINFO_IS_DNS_FROM_NETSYS_CACHE, &isDnsFromNetsysCache);
+    extendInfo->isDnsFromNetsysCache = isDnsFromNetsysCache;
+#endif
+}
+
+void HttpExec::GetSrcAndDstInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
+{
+    char *srcAddr = nullptr;
+    char *dstAddr = nullptr;
+    long srcPort = 0;
+    long dstPort = 0;
+    curl_easy_getinfo(curl, CURLINFO_LOCAL_IP, &srcAddr);
+    extendInfo->srcAddr = CommonUtils::ToAnonymousIp(srcAddr != nullptr ? srcAddr : "");
+    curl_easy_getinfo(curl, CURLINFO_LOCAL_PORT, &srcPort);
+    curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &dstAddr);
+    extendInfo->dstAddr = CommonUtils::ToAnonymousIp(dstAddr != nullptr ? dstAddr : "");
+    curl_easy_getinfo(curl, CURLINFO_PRIMARY_PORT, &dstPort);
+    extendInfo->srcPort = srcPort;
+    extendInfo->dstPort = dstPort;
+}
+
+void HttpExec::GetTcpConnectInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
+{
+#ifdef CURLINFO_CONNECTED_IP_NUM
+    long connectedIpNum = 0;
+    curl_easy_getinfo(curl, CURLINFO_CONNECTED_IP_NUM, &connectedIpNum);
+    if (connectedIpNum <= 0) {
+        return;
+    }
+
+    char connectedIp[CURL_MAX_CONNECTED_IP_NUM][CURL_MAX_IP_LENGTH]{};
+    if (memset_s(connectedIp, sizeof(connectedIp), 0, sizeof(connectedIp)) != EOK) {
+        return;
+    }
+    curl_easy_getinfo(curl, CURLINFO_CONNECTED_IP, connectedIp);
+
+    uint16_t *connectedPort = nullptr;
+    curl_easy_getinfo(curl, CURLINFO_CONNECTED_PORT, &connectedPort);
+    if (connectedPort == nullptr) {
+        return;
+    }
+
+    for (long i = 0; i < std::min<long>(connectedIpNum, CURL_MAX_CONNECTED_IP_NUM); ++i) {
+        if (connectedPort && connectedIp[i] && connectedIp[i][0]) {
+            extendInfo->tryConnectIp.emplace_back(CommonUtils::ToAnonymousIp(connectedIp[i]));
+            extendInfo->tryConnectPort.emplace_back(std::to_string(connectedPort[i]));
+        }
+    }
+#endif
+}
+
+void HttpExec::GetTcpInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
+{
+#ifdef CURLINFO_TRY_CONN_IPV4
+    long tryConnectIPv4 = 0;
+    curl_easy_getinfo(curl, CURLINFO_TRY_CONN_IPV4, &tryConnectIPv4);
+    if (tryConnectIPv4) {
+        extendInfo->tryConnectIpv4 = true;
+    }
+    long tryConnectIPv6 = 0;
+    curl_easy_getinfo(curl, CURLINFO_TRY_CONN_IPV6, &tryConnectIPv6);
+    if (tryConnectIPv6) {
+        extendInfo->tryConnectIpv6 = true;
+    }
+#endif
+
+    long lastPollinTime = 0;
+    curl_easy_getinfo(curl, CURLINFO_LAST_POLLIN_TIME, &lastPollinTime);
+    extendInfo->lastPollinTimeUs = lastPollinTime;
+
+    long lastOsPollinTime = 0;
+    curl_easy_getinfo(curl, CURLINFO_LAST_OS_POLLIN_TIME, &lastOsPollinTime);
+    extendInfo->lastOsPollinTimeUs = lastOsPollinTime;
+
+    long lastPolloutTime = 0;
+    curl_easy_getinfo(curl, CURLINFO_LAST_POLLOUT_TIME, &lastPolloutTime);
+    extendInfo->lastPolloutTimeUs = lastPolloutTime;
+
+    long lastOsPolloutTime = 0;
+    curl_easy_getinfo(curl, CURLINFO_LAST_OS_POLLOUT_TIME, &lastOsPolloutTime);
+    extendInfo->lastOsPolloutTimeUs = lastOsPolloutTime;
+
+    long lastSslRecvSize = 0;
+    curl_easy_getinfo(curl, CURLINFO_LAST_SSL_RECV_SIZE, &lastSslRecvSize);
+    extendInfo->lastSslRecvSize = lastSslRecvSize;
+
+    long lastSslSendSize = 0;
+    curl_easy_getinfo(curl, CURLINFO_LAST_SSL_SEND_SIZE, &lastSslSendSize);
+    extendInfo->lastSslSendSize = lastSslSendSize;
+
+    long totalSslRecvSize = 0;
+    curl_easy_getinfo(curl, CURLINFO_TOTAL_SSL_RECV_SIZE, &totalSslRecvSize);
+    extendInfo->totalSslRecvSize = totalSslRecvSize;
+
+    long totalSslSendSize = 0;
+    curl_easy_getinfo(curl, CURLINFO_TOTAL_SSL_SEND_SIZE, &totalSslSendSize);
+    extendInfo->totalSslSendSize = totalSslSendSize;
+
+    long tcpConnectErrno = 0;
+    curl_easy_getinfo(curl, CURLINFO_TCP_CONNECT_ERRNO, &tcpConnectErrno);
+    extendInfo->tcpConnectErrno = tcpConnectErrno;
+}
+
+void HttpExec::GetPerfInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
+{
+    curl_off_t dlSpeed;
+    auto resForDlSpeed = curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD_T, &dlSpeed);
+    if (resForDlSpeed != CURLE_OK) {
+        NETSTACK_LOGE("get curl download speed fail, result: %{public}d", resForDlSpeed);
+    }
+    extendInfo->dlSpeed = static_cast<long>(dlSpeed);
+
+    curl_off_t ulSpeed;
+    auto resForUlSpeed = curl_easy_getinfo(curl, CURLINFO_SPEED_UPLOAD_T, &ulSpeed);
+    if (resForUlSpeed != CURLE_OK) {
+        NETSTACK_LOGE("get curl upload speed fail, result: %{public}d", resForUlSpeed);
+    }
+    extendInfo->ulSpeed = static_cast<long>(ulSpeed);
+
+    curl_off_t dlSize;
+    auto resForDlSize = curl_easy_getinfo(curl, CURLINFO_SIZE_DOWNLOAD_T, &dlSize);
+    if (resForDlSize != CURLE_OK) {
+        NETSTACK_LOGE("get curl download size fail, result: %{public}d", resForDlSize);
+    }
+    extendInfo->dlSize = static_cast<long>(dlSize);
+
+    curl_off_t ulSize;
+    auto resForUlSize = curl_easy_getinfo(curl, CURLINFO_SIZE_UPLOAD_T, &ulSize);
+    if (resForUlSize != CURLE_OK) {
+        NETSTACK_LOGE("get curl upload size fail, result: %{public}d", resForUlSize);
+    }
+    extendInfo->ulSize = static_cast<long>(ulSize);
+
+#ifdef CURLINFO_ISSUER_NAMES
+    char certIssuerNames[CURL_MAX_CERT_NUM][CURL_MAX_ISSUER_NAME] = {{0}};
+    // curl will copy memory into certIssuerNames.
+    curl_easy_getinfo(curl, CURLINFO_ISSUER_NAMES, certIssuerNames);
+    long certNum = 0;
+    curl_easy_getinfo(curl, CURLINFO_CERT_NUM, &certNum);
+    for (long i = 0; i < std::min<long>(certNum, CURL_MAX_CERT_NUM); ++i) {
+        if (certIssuerNames[i][0] != '\0') {
+            extendInfo->certIssuerNames.emplace_back(certIssuerNames[i]);
+        }
+    }
+#endif
+}
+
+void HttpExec::GetTimeInfoFromCurl(CURL *curl, ExtendResponseInfo &extendInfo)
+{
+    auto dnsTime = HttpExec::GetTimingFromCurl(curl, CURLINFO_NAMELOOKUP_TIME_T);
+    auto connectTime = HttpExec::GetTimingFromCurl(curl, CURLINFO_CONNECT_TIME_T);
+    auto tlsTime = HttpExec::GetTimingFromCurl(curl, CURLINFO_APPCONNECT_TIME_T);
+    auto firstSendTime = HttpExec::GetTimingFromCurl(curl, CURLINFO_PRETRANSFER_TIME_T);
+    auto firstRecvTime = HttpExec::GetTimingFromCurl(curl, CURLINFO_STARTTRANSFER_TIME_T);
+    auto totalTime = HttpExec::GetTimingFromCurl(curl, CURLINFO_TOTAL_TIME_T);
+    auto redirectTime = HttpExec::GetTimingFromCurl(curl, CURLINFO_REDIRECT_TIME_T);
+
+    extendInfo->dnsDur = dnsTime;
+    extendInfo->connectDur = connectTime == 0 ? 0 : connectTime - dnsTime;
+    extendInfo->tlsDur = tlsTime == 0 ? 0 : tlsTime - connectTime;
+    extendInfo->firstSendDur = firstSendTime == 0 ? 0 :
+                firstSendTime - std::max({dnsTime, connectTime, tlsTime});
+    extendInfo->firstRecvDur = firstRecvTime == 0 ? 0 : firstRecvTime - firstSendTime;
+    extendInfo->totalDur = totalTime;
+    extendInfo->redirectDur = redirectTime;
+}
+
+napi_value HttpExec::CreateErrorMessageExt(napi_env env, int32_t errorCode, const std::string &errorMessage,
+    ExtendResponseInfo &info)
+{
+    napi_value result = NapiUtils::CreateErrorMessage(env, errorCode, errorMessage);
+    napi_value extendInfo = NapiUtils::CreateObject(env);
+    ExtResInfoNapiParser parser{env, extendInfo};
+    parser.TraverseErrInfo(info, errorCode);
+    NapiUtils::SetNamedProperty(env, result, EXTENDINFO, extendInfo);
+    return result;
+}
+#endif
+
 #if HAS_NETMANAGER_BASE
 bool SetTraceOptions(CURL *curl, RequestContext *context)
 {
@@ -2354,6 +2687,7 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
 #endif
 
     if (context->response.GetResult().size() > context->options.GetMaxLimit() ||
+        (memBytes > 0 && size > context->options.GetMaxLimit() / memBytes) ||
         size * memBytes > context->options.GetMaxLimit()) {
         NETSTACK_LOGE("response data exceeds the maximum limit");
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);

@@ -37,6 +37,9 @@ void DiskHandler::Write(const std::string &str)
 std::string DiskHandler::Read()
 {
     std::lock_guard<std::mutex> guard(mutex_);
+    if (fileName_.find("..") != std::string::npos) {
+        return {};
+    }
     std::ifstream r(fileName_);
     if (!r.is_open()) {
         return {};

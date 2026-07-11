@@ -46,6 +46,9 @@ struct Epoller {
 
     void RegisterMe(FileDescriptor descriptor, uint32_t flags) const
     {
+        if (underlying_ < 0 || descriptor < 0) {
+            return;
+        }
         epoll_event ev{};
         ev.events = flags;
         ev.data.fd = descriptor;

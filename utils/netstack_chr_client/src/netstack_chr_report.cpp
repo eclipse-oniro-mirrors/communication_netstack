@@ -54,6 +54,10 @@ int NetStackChrReport::ReportCommonEvent(DataTransChrStats chrStats)
 #endif
     std::lock_guard<std::mutex> lock(report_mutex_);
     int32_t ipType = chrStats.tcpInfo.ipType;
+    if (ipType != AF_INET && ipType != AF_INET6) {
+        NETSTACK_LOGE("Stack name: %{public}s, invalid ipType: %{public}d, skip report.", stackName.c_str(), ipType);
+        return REPORT_CHR_RESULT_TIME_LIMIT_ERROR;
+    }
     auto currentTime = std::chrono::system_clock::now();
     auto timeDifference =
         std::chrono::duration_cast<std::chrono::minutes>(currentTime - ipTypeLastReceiveTime[ipType]);

@@ -108,9 +108,14 @@ static const lws_http_mount mount = {
     0,
     0,
     0,
+    0,
     LWSMPRO_FILE,
     1,
     NULL,
+    NULL,
+    NULL,
+    NULL,
+    0,
 };
 
 template <napi_value (*MakeJsValue)(napi_env, void *)> static void CallbackTemplate(uv_work_t *work, int status)
@@ -552,6 +557,10 @@ int WebSocketServerExec::LwsCallbackWsPeerInitiatedCloseServer(lws *wsi, lws_cal
     std::string closeReason;
     closeReason.append(reinterpret_cast<char *>(in) + sizeof(uint16_t), len - sizeof(uint16_t));
     auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(wsi));
+    if (clientUserData == nullptr) {
+        userData->Close(LWS_CLOSE_STATUS_NORMAL, "");
+        return HttpDummy(wsi, reason, user, in, len);
+    }
     clientUserData->Close(static_cast<lws_close_status>(closeStatus), closeReason);
     return HttpDummy(wsi, reason, user, in, len);
 }
@@ -612,7 +621,7 @@ bool WebSocketServerExec::IsAllowConnection(const std::string &ip)
 
 void WebSocketServerExec::UpdataClientList(const std::string &ip)
 {
-    std::shared_lock<std::shared_mutex> lock(connListMutex_);
+    std::unique_lock<std::shared_mutex> lock(connListMutex_);
     auto it = clientList.find(ip);
     if (it == clientList.end()) {
         NETSTACK_LOGI("add clientid to clientlist");

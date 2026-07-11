@@ -32,12 +32,11 @@ bool SendContext::HandleParseString(napi_value *params)
 {
     NETSTACK_LOGI("SendContext data is String");
     std::string str = NapiUtils::GetStringFromValueUtf8(GetEnv(), params[0]);
-    // must have PRE and POST
-    size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + str.length() + LWS_SEND_BUFFER_POST_PADDING;
-    if (dataLen == 0 || dataLen > MAX_LIMIT) {
-        NETSTACK_LOGE("SendContext data is exceeded the limit");
+    if (str.length() > MAX_LIMIT - LWS_SEND_BUFFER_PRE_PADDING - LWS_SEND_BUFFER_POST_PADDING) {
         return false;
     }
+    // must have PRE and POST
+    size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + str.length() + LWS_SEND_BUFFER_POST_PADDING;
     data = malloc(dataLen);
     if (data == nullptr) {
         NETSTACK_LOGE("no memory");
@@ -63,12 +62,11 @@ bool SendContext::HandleParseArrayBuffer(napi_value *params)
         NETSTACK_LOGE("Get Info error");
         return false;
     }
-    // must have PRE and POST
-    size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + len + LWS_SEND_BUFFER_POST_PADDING;
-    if (dataLen == 0 || dataLen > MAX_LIMIT) {
-        NETSTACK_LOGE("SendContext data is exceeded the limit");
+    if (len > MAX_LIMIT - LWS_SEND_BUFFER_PRE_PADDING - LWS_SEND_BUFFER_POST_PADDING) {
         return false;
     }
+    // must have PRE and POST
+    size_t dataLen = LWS_SEND_BUFFER_PRE_PADDING + len + LWS_SEND_BUFFER_POST_PADDING;
     data = malloc(dataLen);
     if (data == nullptr) {
         NETSTACK_LOGE("no memory");

@@ -176,6 +176,7 @@ void TcpServerConnectionFinalize(napi_env, void *data, void *)
             if (clientIter->second != -1) {
                 NETSTACK_LOGI("close connection socketFd %{public}d", clientIter->second);
                 shutdown(clientIter->second, SHUT_RDWR);
+                close(clientIter->second);
                 clientIter->second = -1;
             }
         }
@@ -988,7 +989,10 @@ bool ExecUdpBind(BindContext *context)
             NETSTACK_LOGE("no memory!");
             return false;
         }
-        NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
+        if (memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)) != EOK) {
+            free(pAddr4);
+            ERROR_RETURN(context, "failed to copy ipv4 addr");
+        }
         std::thread serviceThread(PollRecvData, pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetSharedManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
@@ -1004,7 +1008,10 @@ bool ExecUdpBind(BindContext *context)
             NETSTACK_LOGE("no memory!");
             return false;
         }
-        NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
+        if (memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)) != EOK) {
+            free(pAddr6);
+            ERROR_RETURN(context, "failed to copy ipv6 addr");
+        }
         std::thread serviceThread(PollRecvData, pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetSharedManager()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
@@ -1723,7 +1730,10 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
             free(pTmpAddr);
             ERROR_RETURN(context, "v4bind err, port:%{public}d, errno:%{public}d", context->address_.GetPort(), errno);
         }
-        NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)));
+        if (memcpy_s(pAddr4, sizeof(addr4), &addr4, sizeof(addr4)) != EOK) {
+            free(pAddr4);
+            ERROR_RETURN(context, "failed to copy multicast ipv4 addr");
+        }
         std::thread serviceThread(PollRecvData, pAddr4, sizeof(addr4),
                                   UdpMessageCallback(context->GetSharedManager()));
         RecvfromMulticastSetThreadName(serviceThread.native_handle());
@@ -1739,7 +1749,10 @@ bool RecvfromMulticast(MulticastMembershipContext *context)
             free(pTmpAddr);
             ERROR_RETURN(context, "v6bind err, port:%{public}d, errno:%{public}d", context->address_.GetPort(), errno);
         }
-        NETSTACK_LOGI("copy ret = %{public}d", memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)));
+        if (memcpy_s(pAddr6, sizeof(addr6), &addr6, sizeof(addr6)) != EOK) {
+            free(pAddr6);
+            ERROR_RETURN(context, "failed to copy multicast ipv6 addr");
+        }
         std::thread serviceThread(PollRecvData, pAddr6, sizeof(addr6),
                                   UdpMessageCallback(context->GetSharedManager()));
         RecvfromMulticastSetThreadName(serviceThread.native_handle());

@@ -533,14 +533,17 @@ bool Sha256sum(unsigned char *buf, size_t buflen, std::string &digestStr)
         return false;
     }
     if (!EVP_DigestInit(mdctx, EVP_sha256())) {
+        EVP_MD_CTX_free(mdctx);
         NETSTACK_LOGE("EVP_DigestInit failed.");
         return false;
     }
     if (!EVP_DigestUpdate(mdctx, buf, buflen)) {
+        EVP_MD_CTX_free(mdctx);
         NETSTACK_LOGE("EVP_DigestUpdate failed.");
         return false;
     }
     if (!EVP_DigestFinal_ex(mdctx, digest, &digestLen)) {
+        EVP_MD_CTX_free(mdctx);
         NETSTACK_LOGE("EVP_DigestFinal_ex failed.");
         return false;
     }
@@ -633,6 +636,34 @@ std::string ToAnonymousIp(const std::string &input)
         return maskedResult;
     }
     return input;
+}
+
+std::string CombineStrings(const std::vector<std::string> &strs, const std::string &spliter)
+{
+    std::string res = "";
+    for (size_t i = 0; i < strs.size(); ++i) {
+        if (!strs[i].empty()) {
+            res += strs[i];
+            if (i < strs.size() - 1) {
+                res += spliter;
+            }
+        }
+    }
+    return res;
+}
+
+std::string CombineStringsAnonymous(const std::vector<std::string> &strs, const std::string &spliter)
+{
+    std::string res;
+    for (size_t i = 0; i < strs.size(); ++i) {
+        if (!strs[i].empty()) {
+            res += CommonUtils::ToAnonymousIp(strs[i]);
+            if (i < strs.size() - 1) {
+                res += spliter;
+            }
+        }
+    }
+    return res;
 }
 
 std::string AnonymizeHost(const std::string &input)

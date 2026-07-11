@@ -333,12 +333,16 @@ void HttpInterceptorMgr::ConvertStringToRawPtr(const std::string &str, Http_Buff
         return;
     }
     // LCOV_EXCL_START
-    auto buffer = static_cast<char *>(malloc(str.size() + 1));
+    size_t len = str.size();
+    if (len >= SIZE_MAX) {
+        return;
+    }
+    auto buffer = static_cast<char *>(malloc(len + 1));
     if (buffer == nullptr) {
         return;
     }
-    buffer[str.size()] = '\0';
-    if (memcpy_s(buffer, str.size(), str.data(), str.size()) != EOK) {
+    buffer[len] = '\0';
+    if (memcpy_s(buffer, len + 1, str.data(), len) != EOK) {
         free(buffer);
         return;
     }
@@ -358,7 +362,13 @@ curl_slist *HttpInterceptorMgr::CurlParseHeaderRawPtr(
         for (const auto &value : valueVec) {
             std::string s;
             s.append(key).append(": ").append(value);
-            curlHeader = curl_slist_append(curlHeader, s.c_str());
+            struct curl_slist *newEntry = curl_slist_append(curlHeader, s.c_str());
+            if (!newEntry) {
+                curl_slist_free_all(curlHeader);
+                NETSTACK_LOGE("curl_slist_append failed");
+                return nullptr;
+            }
+            curlHeader = newEntry;
         }
     }
     return curlHeader;
@@ -366,7 +376,7 @@ curl_slist *HttpInterceptorMgr::CurlParseHeaderRawPtr(
 
 double HttpInterceptorMgr::GetTimingFromCurl(CURL *handle, CURLINFO info) const
 {
-    curl_off_t timing;
+    curl_off_t timing = 0;
     CURLcode result = curl_easy_getinfo(handle, info, &timing);
     if (result != CURLE_OK) {
         NETSTACK_LOGE("Failed to get timing: %{public}d, %{public}s", info, curl_easy_strerror(result));

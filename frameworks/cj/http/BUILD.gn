@@ -87,30 +87,29 @@ ohos_shared_library("cj_net_http_ffi") {
 
   configs = [ ":http_ffi_config" ]
 
+  external_deps = [
+    "cJSON:cjson",
+    "c_utils:utils",
+    "curl:curl_shared",
+    "napi:cj_bind_ffi",
+    "napi:cj_bind_native",
+  ]
+
   if (is_mingw || is_mac){
     sources += [
       "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
     ]
     deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils_static" ]
-    external_deps = [
+    external_deps += [
       "bounds_checking_function:libsec_shared",
-      "cJSON:cjson",
-      "curl:curl_shared",
       "jsoncpp:jsoncpp_static",
       "napi:ace_napi",
-      "napi:cj_bind_ffi",
-      "napi:cj_bind_native",
     ]
     ldflags = [ "-lpthread" ]
   } else{
-    external_deps = [
-      "cJSON:cjson",
-      "c_utils:utils",
-      "curl:curl_shared",
+    external_deps += [
       "hilog:libhilog",
       "hitrace:hitrace_meter",
-      "napi:cj_bind_ffi",
-      "napi:cj_bind_native",
       "openssl:libcrypto_shared",
       "openssl:libssl_shared",
       "samgr:samgr_proxy",

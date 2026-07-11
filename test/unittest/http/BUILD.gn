@@ -86,6 +86,7 @@ ohos_unittest("http_unittest") {
     "$SUBSYSTEM_DIR/netstack/utils/netstack_chr_client/src/netstack_chr_report.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/src/netstack_network_profiler.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/tlv_utils/src/tlv_utils.cpp",
+    "ExtendInfoTest.cpp",
     "HttpExecTest.cpp",
     "HttpInterceptorTest.cpp",
     "HttpRequestOptionsTest.cpp",
@@ -139,6 +140,11 @@ ohos_unittest("http_unittest") {
       defines = [ "HAS_NETMANAGER_BASE=1" ]
     } else {
       defines = [ "HAS_NETMANAGER_BASE=0" ]
+    }
+    if (!is_mingw && !is_mac && current_os != "ios" && host_os != "mac" &&
+        current_os != "mac" && current_os != "android") {
+      external_deps += [ "curl:curl_shared_http3" ]
+      defines += [ "USE_ARES" ]
     }
     defines += [ "ENABLE_HTTP_INTERCEPT=1" ]
     if (product_name != "ohos-sdk") {

@@ -140,6 +140,16 @@ void HttpResponse::ClearHeaderCache()
     header_.clear();
 }
 
+
+void HttpResponse::Reset()
+{
+    result_.clear();
+    rawHeader_.clear();
+    header_.clear();
+    setCookie_.clear();
+    responseCode_ = 0;
+    isApplyBlockRedirectionInterceptor_ = false;
+}
 void HttpResponse::SetExtraInfoItem(const std::string &key, const std::string &value)
 {
     extraInfo_[key] = value;

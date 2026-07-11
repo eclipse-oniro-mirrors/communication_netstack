@@ -499,7 +499,6 @@ namespace {
     HWTEST_F(WebSocketTest, WebSocketClientSendBinary012, TestSize.Level1)
     {
         auto clients = std::make_unique<OHOS::NetStack::WebSocketClient::WebSocketClient>();
-        clients->GetClientContext()->SetContext(reinterpret_cast<lws_context *>(0x1));
 
         const char binaryData[] = {'a', '\0', 'b', '\0'};
         size_t length = 3;

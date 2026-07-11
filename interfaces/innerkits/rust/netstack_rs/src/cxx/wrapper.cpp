@@ -300,6 +300,9 @@ void ParseHeaderItems(const cJSON *item, HttpClientRequest &request)
             if (child->type == cJSON_Object || child->type == cJSON_Array) {
                 ParseHeaderItems(child, request);
             }
+            if (child->string == nullptr) {
+                return;
+            }
             std::string key(child->string);
             std::string value = GetJsonFieldValue(child);
             if (!key.empty() && !value.empty()) {

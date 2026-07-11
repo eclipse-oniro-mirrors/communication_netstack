@@ -62,12 +62,18 @@ struct ManualResetEvent {
 
     void Set()
     {
+        if (underlying_ < 0) {
+            return;
+        }
         uint64_t u = 1;
         write(underlying_, &u, sizeof(uint64_t));
     }
 
     void Reset()
     {
+        if (underlying_ < 0) {
+            return;
+        }
         uint64_t u;
         read(underlying_, &u, sizeof(uint64_t));
     }
