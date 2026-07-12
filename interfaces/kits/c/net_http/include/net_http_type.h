@@ -113,6 +113,8 @@ typedef enum Http_ErrCode {
   OH_HTTP_REMOTE_FILE_NOT_FOUND = (OH_HTTP_NETSTACK_E_BASE + 78),
   /** @brief Authentication error. */
   OH_HTTP_AUTHENTICATION_ERROR = (OH_HTTP_NETSTACK_E_BASE + 94),
+  /** @brief The request was intercepted by the HTTP global interceptor. */
+  OH_HTTP_REQUEST_INTERCEPTED = (OH_HTTP_NETSTACK_E_BASE + 996),
   /** @brief It is not allowed to access this domain. */
   OH_HTTP_ACCESS_DOMAIN_NOT_ALLOWED = (OH_HTTP_NETSTACK_E_BASE + 998),
   /** @brief Unknown error. */

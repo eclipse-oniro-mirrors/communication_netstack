@@ -111,6 +111,10 @@ public:
 
     [[nodiscard]] bool IsCleartextNotPermitted() const;
 
+    void SetRequestIntercepted(bool intercepted);
+
+    [[nodiscard]] bool IsRequestIntercepted() const;
+
     [[nodiscard]] std::shared_ptr<EventManager> GetSharedManager() const;
 
     void SetSharedManager(const std::shared_ptr<EventManager> &sharedManager);
@@ -166,6 +170,8 @@ private:
     bool noAllowedHost_;
 
     bool cleartextNotPermitted_;
+
+    bool requestIntercepted_;
 
     std::string asyncWorkName_;
 

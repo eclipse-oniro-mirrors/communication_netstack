@@ -19,6 +19,7 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <shared_mutex>
 #include <string>
 #include <thread>
@@ -30,6 +31,14 @@
 namespace OHOS {
 namespace NetStack {
 namespace HttpInterceptor {
+
+struct HttpRequestData {
+    const std::string &url;
+    const std::string &method;
+    const std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> &headers;
+    const std::shared_ptr<std::string> &body;
+};
+
 class HttpInterceptorMgr : public std::enable_shared_from_this<HttpInterceptorMgr> {
 public:
     static HttpInterceptorMgr &GetInstance();
@@ -46,11 +55,13 @@ public:
         bool &isModified, OH_Interceptor_Type type = OH_TYPE_MODIFY_NETWORK_KIT, bool needDeepCopy = false);
 
     OH_Interceptor_Result IteratorResponseInterceptor(std::shared_ptr<OH_Http_Interceptor_Response> &resp,
-        bool &isModified, OH_Interceptor_Type type = OH_TYPE_MODIFY_NETWORK_KIT, bool needDeepCopy = false);
+        bool &isModified, OH_Interceptor_Type type = OH_TYPE_MODIFY_NETWORK_KIT, bool needDeepCopy = false,
+        std::shared_ptr<OH_Http_Interceptor_Request> req = nullptr);
 
     void ReportHttpResponse(CURL *curl,
         const std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> &headers,
-        const std::string &body);
+        const std::string &body,
+        const std::optional<HttpRequestData> &requestData = std::nullopt);
 
     bool HasEnabledRequestInterceptor();
 
@@ -70,12 +81,18 @@ private:
     void CopyHttpInterceResponse(
         std::shared_ptr<OH_Http_Interceptor_Response> &dst, std::shared_ptr<OH_Http_Interceptor_Response> &src);
     void IteratorReadRequestInterceptor(std::shared_ptr<OH_Http_Interceptor_Request> &readReq);
-    void IteratorReadResponseInterceptor(std::shared_ptr<OH_Http_Interceptor_Response> &readResp);
+    void IteratorReadResponseInterceptor(std::shared_ptr<OH_Http_Interceptor_Response> &readResp,
+        std::shared_ptr<OH_Http_Interceptor_Request> readReq = nullptr);
     bool HasEnabledInterceptor(OH_Interceptor_Stage stage);
+    std::shared_ptr<OH_Http_Interceptor_Request> PrepareReadRequest(
+        std::shared_ptr<OH_Http_Interceptor_Request> &req);
+    std::shared_ptr<OH_Http_Interceptor_Response> PrepareResponseCopy(
+        std::shared_ptr<OH_Http_Interceptor_Response> &resp, bool needDeepCopy);
 
     void ConvertStringToRawPtr(const std::string &str, Http_Buffer &out);
     curl_slist *CurlParseHeaderRawPtr(
         const std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> &headers);
+    std::shared_ptr<OH_Http_Interceptor_Request> ConvertToNetStackRequest(const HttpRequestData &requestData);
     std::shared_ptr<OH_Http_Interceptor_Response> ConvertToNetStackResponse(CURL *curl,
         const std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> &headers,
         const std::string &body);

@@ -676,13 +676,19 @@ bool HttpExec::GlobalResponseInterceptorCheck(RequestContext *context)
     }
     std::shared_ptr<OH_Http_Interceptor_Response> resp =
         OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().CreateHttpInterceptorResponse();
+    std::shared_ptr<OH_Http_Interceptor_Request> req =
+        OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().CreateHttpInterceptorRequest();
     if (!ConvertResponseContextToInterceptorResp(context, resp)) {
         NETSTACK_LOGE("Convert RequestContext to InterceptorReq failed taskId = %{public}d", context->GetTaskId());
         return false;
     }
+    if (!ConvertRequestContextToInterceptorReq(context, req)) {
+        NETSTACK_LOGE("Convert RequestContext to request snapshot failed taskId = %{public}d", context->GetTaskId());
+        return false;
+    }
     bool isModified = false;
     auto result = OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().IteratorResponseInterceptor(
-        resp, isModified);
+        resp, isModified, OH_TYPE_MODIFY_NETWORK_KIT, false, req);
     if (isModified) {
         NETSTACK_LOGI("Response interceptor modified the response, taskId = %{public}d", context->GetTaskId());
         if (!ConvertInterceptorRespToResponseContext(resp, context)) {
@@ -768,6 +774,7 @@ bool HttpExec::GlobalRequestInterceptorCheck(RequestContext *context)
     if (OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().IteratorRequestInterceptor(
             req, isModified) == OH_ABORT) {
         NETSTACK_LOGE("IteratorRequestInterceptor return ABORT taskId = %{public}d", context->GetTaskId());
+        context->SetRequestIntercepted(true);
         return false;
     }
     if (isModified) {
