@@ -838,7 +838,7 @@ bool HttpClientTask::Start()
 #if ENABLE_HTTP_GLOBAL_INTERCEPT
     if (!GlobalRequestInterceptorCheck()) {
         NETSTACK_LOGI("GlobalRequestInterceptorCheck fail taskId = %{public}d", taskId_);
-        error_.SetErrorCode(HttpErrorCode::HTTP_UNKNOWN_OTHER_ERROR);
+        error_.SetErrorCode(HttpErrorCode::HTTP_REQUEST_INTERCEPTED);
         return false;
     }
 #endif
@@ -1742,9 +1742,11 @@ bool HttpClientTask::ConvertRequestContextToInterceptorReq(std::shared_ptr<OH_Ht
         req->body.buffer = CommonUtils::MallocCString(request_.GetBody());
         req->body.length = request_.GetBody().length();
     }
-    if (!request_.GetHeaders().empty()) {
+    std::map<std::string, std::string> headers;
+    headers = request_.GetHeaders();
+    if (!headers.empty()) {
         curl_slist *curlHeaderList_ = nullptr;
-        for (const auto &header : request_.GetHeaders()) {
+        for (const auto &header : headers) {
             std::string headerStr;
             if (!header.second.empty()) {
                 headerStr = header.first + HttpConstant::HTTP_HEADER_SEPARATOR + header.second;
@@ -1887,13 +1889,19 @@ bool HttpClientTask::GlobalResponseInterceptorCheck()
     }
     std::shared_ptr<OH_Http_Interceptor_Response> resp =
         OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().CreateHttpInterceptorResponse();
+    std::shared_ptr<OH_Http_Interceptor_Request> req =
+        OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().CreateHttpInterceptorRequest();
     if (!ConvertResponseContextToInterceptorResp(resp)) {
         NETSTACK_LOGE("Convert RequestContext to InterceptorReq failed taskId = %{public}d", taskId_);
         return false;
     }
+    if (!ConvertRequestContextToInterceptorReq(req)) {
+        NETSTACK_LOGE("Convert RequestContext to request snapshot failed taskId = %{public}d", taskId_);
+        return false;
+    }
     bool isModified = false;
     auto result = OHOS::NetStack::HttpInterceptor::HttpInterceptorMgr::GetInstance().IteratorResponseInterceptor(
-        resp, isModified);
+        resp, isModified, OH_TYPE_MODIFY_NETWORK_KIT, false, req);
     if (isModified) {
         NETSTACK_LOGI("Response interceptor modified the response, taskId = %{public}d", taskId_);
         if (!ConvertInterceptorRespToResponseContext(resp)) {

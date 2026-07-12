@@ -64,6 +64,8 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
         "The SSL CA certificate does not exist or is inaccessible."},
     {static_cast<int32_t>(HttpErrorCode::HTTP_REMOTE_FILE_NOT_FOUND), "Remote file not found."},
     {static_cast<int32_t>(HttpErrorCode::HTTP_AUTH_ERROR), "Authentication error."},
+    {static_cast<int32_t>(HttpErrorCode::HTTP_REQUEST_INTERCEPTED),
+        "The request was intercepted by the HTTP global interceptor."},
     {static_cast<int32_t>(HttpErrorCode::HTTP_UNKNOWN_OTHER_ERROR), "Internal error."},
 };
 RequestContext::RequestContext()

@@ -88,6 +88,7 @@ static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_SSL_PINNEDPUBKEYNOTMATCH, "Specified pinned public key did not match"},
     {HTTP_CLEARTEXT_NOT_PERMITTED, "Cleartext traffic not permitted"},
     {HTTP_NOT_ALLOWED_HOST, "It is not allowed to access this domain"},
+    {HTTP_REQUEST_INTERCEPTED, "The request was intercepted by the HTTP global interceptor"},
     {HTTP_UNKNOWN_OTHER_ERROR, "Internal error"},
 };
 static std::atomic<int32_t> g_currentTaskId = std::numeric_limits<int32_t>::min();
@@ -971,6 +972,10 @@ int32_t RequestContext::GetErrorCode() const
         return HTTP_CLEARTEXT_NOT_PERMITTED;
     }
 
+    if (BaseContext::IsRequestIntercepted()) {
+        return HTTP_REQUEST_INTERCEPTED;
+    }
+
     if (HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE) != HTTP_ERR_MAP.end()) {
         return err + HTTP_ERROR_CODE_BASE;
     }
@@ -994,6 +999,10 @@ std::string RequestContext::GetErrorMessage() const
 
     if (BaseContext::IsCleartextNotPermitted()) {
         return HTTP_ERR_MAP.at(HTTP_CLEARTEXT_NOT_PERMITTED);
+    }
+
+    if (BaseContext::IsRequestIntercepted()) {
+        return HTTP_ERR_MAP.at(HTTP_REQUEST_INTERCEPTED);
     }
 
     auto pos = HTTP_ERR_MAP.find(err + HTTP_ERROR_CODE_BASE);

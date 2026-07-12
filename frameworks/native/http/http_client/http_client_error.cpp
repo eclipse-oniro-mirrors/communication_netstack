@@ -59,6 +59,7 @@ static const std::map<int32_t, const std::string> HTTP_ERR_MAP = {
     {HTTP_AUTH_ERROR, "Authentication error"},
     {HTTP_SSL_PINNEDPUBKEYNOTMATCH, "Specified pinned public key did not match"},
     {HTTP_CLEARTEXT_NOT_PERMITTED, "Cleartext traffic not permitted"},
+    {HTTP_REQUEST_INTERCEPTED, "The request was intercepted by the HTTP global interceptor"},
     {HTTP_UNKNOWN_OTHER_ERROR, "Internal error"},
 };
 

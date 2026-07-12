@@ -2097,6 +2097,7 @@ HWTEST_F(HttpClientTaskTest, GlobalRequestInterceptorCheckTest002, TestSize.Leve
     HttpInterceptorMgr::GetInstance().DeleteInterceptor(&g_request_interceptor);
     g_Interceptor_Result = OH_CONTINUE;
     EXPECT_EQ(ret, false);
+    EXPECT_EQ(task->GetError().GetErrorCode(), HttpErrorCode::HTTP_REQUEST_INTERCEPTED);
 }
 
 HWTEST_F(HttpClientTaskTest, GlobalRequestInterceptorCheckTest003, TestSize.Level1)

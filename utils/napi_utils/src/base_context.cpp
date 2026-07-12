@@ -38,6 +38,7 @@ BaseContext::BaseContext(napi_env env, const std::shared_ptr<EventManager> &shar
       permissionDenied_(false),
       noAllowedHost_(false),
       cleartextNotPermitted_(false),
+      requestIntercepted_(false),
       releaseVersion_(0),
       sharedManager_(sharedManager)
 {
@@ -299,6 +300,16 @@ void BaseContext::SetCleartextNotPermitted(bool notPermitted)
 bool BaseContext::IsCleartextNotPermitted() const
 {
     return cleartextNotPermitted_;
+}
+
+void BaseContext::SetRequestIntercepted(bool intercepted)
+{
+    requestIntercepted_ = intercepted;
+}
+
+bool BaseContext::IsRequestIntercepted() const
+{
+    return requestIntercepted_;
 }
 
 void BaseContext::CreateReference(napi_value value)

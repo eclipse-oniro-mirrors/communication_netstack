@@ -122,6 +122,7 @@ Http_Request *OH_Http_CreateRequest(const char *url);
  * @param callback Http response info, pointer to {@link Http_ResponseCallback}
  * @param handler Callbacks to watch different events, pointer to {@link Http_EventsHandler}.
  * @return 0 if success; non-0 otherwise. For details about error codes, see {@link Http_ErrCode}.
+ *         If the request is aborted by a global interceptor, returns 2300996.
  * @permission ohos.permission.INTERNET
  * @syscap SystemCapability.Communication.NetStack
  * @since 20
