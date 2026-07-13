@@ -29,6 +29,8 @@ ohos_static_library("netstack_rs_cxx") {
     debug = false
   }
 
+  branch_protector_ret = "pac_ret"
+
   include_dirs = [
     "include",
     "${target_gen_dir}/src",
