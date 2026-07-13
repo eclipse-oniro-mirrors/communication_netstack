@@ -50,7 +50,6 @@ config("http_ffi_config") {
       "HTTP_ONLY_VERIFY_ROOT_CA_ENABLE",
     ]
     cflags_cc += [
-      "-fstack-protector-strong",
       "-D_FORTIFY_SOURCE=2",
       "-O2",
     ]
@@ -142,7 +141,6 @@ ohos_shared_library("cj_net_http_ffi") {
   }
 
   cflags = [
-    "-fstack-protector-strong",
     "-D_FORTIFY_SOURCE=2",
     "-O2",
   ]
