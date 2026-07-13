@@ -504,5 +504,89 @@ HWTEST_F(ExtendInfoTest, HttpExecGetTlsVersionFromOption002, TestSize.Level1)
     EXPECT_EQ(extendInfo->maxTlsVersion, TlsVersion::DEFAULT);
 }
 
+HWTEST_F(ExtendInfoTest, HttpExecGetExtendInfoFromCurlNullptr001, TestSize.Level1)
+{
+    ExtendResponseInfo extendInfo;
+    HttpExec::GetExtendInfoFromCurl(nullptr, extendInfo);
+    // Verify no crash and default values
+    EXPECT_EQ(extendInfo->osErr, 0);
+    EXPECT_EQ(extendInfo->lastRecvErrno, 0);
+}
+
+HWTEST_F(ExtendInfoTest, HttpExecGetOsErrInfoFromCurlNullptr001, TestSize.Level1)
+{
+    ExtendResponseInfo extendInfo;
+    HttpExec::GetOsErrInfoFromCurl(nullptr, extendInfo);
+    // Verify no crash and default values
+    EXPECT_EQ(extendInfo->osErr, 0);
+    EXPECT_EQ(extendInfo->lastRecvErrno, 0);
+    EXPECT_EQ(extendInfo->lastSendErrno, 0);
+}
+
+HWTEST_F(ExtendInfoTest, HttpExecGetTlsInfoFromCurlNullptr001, TestSize.Level1)
+{
+    ExtendResponseInfo extendInfo;
+    HttpExec::GetTlsInfoFromCurl(nullptr, extendInfo);
+    // Verify no crash and default values
+    EXPECT_EQ(extendInfo->sslConnectErrno, 0);
+    EXPECT_TRUE(extendInfo->sslErr.empty());
+    EXPECT_TRUE(extendInfo->ciphers.empty());
+}
+
+HWTEST_F(ExtendInfoTest, HttpExecGetDnsInfoFromCurlNullptr001, TestSize.Level1)
+{
+    ExtendResponseInfo extendInfo;
+    HttpExec::GetDnsInfoFromCurl(nullptr, extendInfo);
+    // Verify no crash and default values
+    EXPECT_EQ(extendInfo->dnsStatus, 0);
+    EXPECT_EQ(extendInfo->isDnsFromNetsysCache, 0);
+}
+
+HWTEST_F(ExtendInfoTest, HttpExecGetSrcAndDstInfoFromCurlNullptr001, TestSize.Level1)
+{
+    ExtendResponseInfo extendInfo;
+    HttpExec::GetSrcAndDstInfoFromCurl(nullptr, extendInfo);
+    // Verify no crash and default values
+    EXPECT_EQ(extendInfo->srcPort, 0);
+    EXPECT_EQ(extendInfo->dstPort, 0);
+}
+
+HWTEST_F(ExtendInfoTest, HttpExecGetTcpConnectInfoFromCurlNullptr001, TestSize.Level1)
+{
+    ExtendResponseInfo extendInfo;
+    HttpExec::GetTcpConnectInfoFromCurl(nullptr, extendInfo);
+    // Verify no crash and default values
+    EXPECT_TRUE(extendInfo->tryConnectIp.empty());
+    EXPECT_TRUE(extendInfo->tryConnectPort.empty());
+}
+
+HWTEST_F(ExtendInfoTest, HttpExecGetTcpInfoFromCurlNullptr001, TestSize.Level1)
+{
+    ExtendResponseInfo extendInfo;
+    HttpExec::GetTcpInfoFromCurl(nullptr, extendInfo);
+    // Verify no crash and default values
+    EXPECT_FALSE(extendInfo->tryConnectIpv4);
+    EXPECT_FALSE(extendInfo->tryConnectIpv6);
+    EXPECT_EQ(extendInfo->lastPollinTimeUs, 0);
+}
+
+HWTEST_F(ExtendInfoTest, HttpExecGetPerfInfoFromCurlNullptr001, TestSize.Level1)
+{
+    ExtendResponseInfo extendInfo;
+    HttpExec::GetPerfInfoFromCurl(nullptr, extendInfo);
+    // Verify no crash and default values
+    EXPECT_EQ(extendInfo->dlSpeed, -1);
+    EXPECT_EQ(extendInfo->ulSpeed, -1);
+}
+
+HWTEST_F(ExtendInfoTest, HttpExecGetTimeInfoFromCurlNullptr001, TestSize.Level1)
+{
+    ExtendResponseInfo extendInfo;
+    HttpExec::GetTimeInfoFromCurl(nullptr, extendInfo);
+    // Verify no crash and default values
+    EXPECT_DOUBLE_EQ(extendInfo->dnsDur, 0.0);
+    EXPECT_DOUBLE_EQ(extendInfo->totalDur, 0.0);
+}
+
 } // namespace
 #endif // USE_ARES
