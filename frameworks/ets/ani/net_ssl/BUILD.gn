@@ -29,6 +29,8 @@ ohos_static_library("network_security_ani_static") {
     debug = false
   }
 
+  branch_protector_ret = "pac_ret"
+
   include_dirs = [
     "include",
     "${target_gen_dir}/src",
