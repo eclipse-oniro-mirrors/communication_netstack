@@ -211,6 +211,17 @@ void HttpExec::SetRequestInfoCallbacks(HttpOverCurl::TransferCallbacks &callback
     callbacks.doneCallback = responseCallback;
 
 #ifdef HTTP_HANDOVER_FEATURE
+    SetHandoverCallbacks(callbacks);
+#endif
+#ifdef HTTP_DEADFLOWRESET_FEATURE
+    callbacks.getDeadFlowInfoCallback = GetDeadFlowInfoCallback;
+#endif
+}
+#endif
+
+#ifdef HTTP_HANDOVER_FEATURE
+void HttpExec::SetHandoverCallbacks(HttpOverCurl::TransferCallbacks &callbacks)
+{
     static auto handoverInfoCallback = +[](void *opaqueData) {
         HttpHandoverStackInfo httpHandoverStackInfo;
         auto context = static_cast<RequestContext *>(opaqueData);
@@ -235,12 +246,17 @@ void HttpExec::SetRequestInfoCallbacks(HttpOverCurl::TransferCallbacks &callback
         }
         context->SetRequestHandoverInfo(httpHandoverInfo);
     };
+    static auto resetResponseCallback = +[](void *opaqueData) {
+        auto context = static_cast<RequestContext *>(opaqueData);
+        if (context == nullptr) {
+            NETSTACK_LOGE("resetResponseCallback context is nullptr, error!");
+            return;
+        }
+        context->response.Reset();
+    };
     callbacks.handoverInfoCallback = handoverInfoCallback;
     callbacks.setHandoverInfoCallback = setHandoverInfoCallback;
-#endif
-#ifdef HTTP_DEADFLOWRESET_FEATURE
-    callbacks.getDeadFlowInfoCallback = GetDeadFlowInfoCallback;
-#endif
+    callbacks.resetResponseCallback = resetResponseCallback;
 }
 #endif
 

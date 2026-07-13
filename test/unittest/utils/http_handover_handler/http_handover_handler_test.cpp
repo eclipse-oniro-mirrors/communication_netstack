@@ -15,8 +15,8 @@
 
 #include <gtest/gtest.h>
 #include "curl/curl.h"
+
 #include "http_handover_handler.h"
-#include "request_context.h"
 
 namespace OHOS::NetStack::HttpOverCurl {
 namespace {
@@ -54,7 +54,7 @@ RequestInfo *GetRequestInfo()
         .setHandoverInfoCallback = setHandoverInfoCallback,
     };
     requestInfo->callbacks = callbacks;
-    requestInfo->opaqueData = static_cast<void *>(malloc(sizeof(Http::RequestContext)));
+    requestInfo->opaqueData = static_cast<void *>(malloc(sizeof(int)));
     return requestInfo;
 }
 
@@ -62,6 +62,33 @@ void DeleteRequestInfo(RequestInfo *requestInfo)
 {
     free(requestInfo->opaqueData);
     delete requestInfo;
+}
+
+RequestInfo *GetRequestInfoWithResetCallback(bool *callbackCalled)
+{
+    CURL *handle = GetCurlHandle();
+    RequestInfo *requestInfo = new RequestInfo();
+    requestInfo->easyHandle = handle;
+    static auto startCallback = +[](CURL *easyHandle, void *opaqueData) {};
+    static auto responseCallback = +[](CURLMsg *curlMessage, void *opaqueData) {};
+    static auto handoverInfoCallback = +[](void *opaqueData) {
+        HttpHandoverStackInfo httpHandoverStackInfo;
+        return httpHandoverStackInfo;
+    };
+    static auto setHandoverInfoCallback = +[](HttpHandoverInfo httpHandoverInfo, void *opaqueData) {};
+    auto resetCallback = [callbackCalled](void *opaqueData) {
+        *callbackCalled = true;
+    };
+    HttpOverCurl::TransferCallbacks callbacks = {
+        .startedCallback = startCallback,
+        .doneCallback = responseCallback,
+        .handoverInfoCallback = handoverInfoCallback,
+        .setHandoverInfoCallback = setHandoverInfoCallback,
+        .resetResponseCallback = resetCallback,
+    };
+    requestInfo->callbacks = callbacks;
+    requestInfo->opaqueData = static_cast<void *>(malloc(sizeof(int)));
+    return requestInfo;
 }
 }
 
@@ -257,5 +284,45 @@ HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestProcessRequestNetErrorE
     message.data.result = CURLE_SEND_ERROR;
     EXPECT_FALSE(handler.ProcessRequestNetError(ongoingRequests, multi, requestInfo, &message));
     DeleteRequestInfo(requestInfo);
+}
+
+HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestRetransRequestWithResetCallback, TestSize.Level2)
+{
+    HttpHandoverHandler handler;
+    std::map<CURL *, RequestInfo *> ongoingRequests;
+    CURLM *multi = curl_multi_init();
+    bool callbackCalled = false;
+    RequestInfo *requestInfo = GetRequestInfoWithResetCallback(&callbackCalled);
+    EXPECT_TRUE(handler.RetransRequest(ongoingRequests, multi, requestInfo));
+    EXPECT_TRUE(callbackCalled);
+    DeleteRequestInfo(requestInfo);
+}
+
+HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestRetransRequestWithoutResetCallback, TestSize.Level2)
+{
+    HttpHandoverHandler handler;
+    std::map<CURL *, RequestInfo *> ongoingRequests;
+    CURLM *multi = curl_multi_init();
+    RequestInfo *requestInfo = GetRequestInfo();
+    EXPECT_TRUE(handler.RetransRequest(ongoingRequests, multi, requestInfo));
+    DeleteRequestInfo(requestInfo);
+}
+
+HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestRetransRequestNullMulti, TestSize.Level2)
+{
+    HttpHandoverHandler handler;
+    std::map<CURL *, RequestInfo *> ongoingRequests;
+    RequestInfo *requestInfo = GetRequestInfo();
+    EXPECT_FALSE(handler.RetransRequest(ongoingRequests, nullptr, requestInfo));
+    DeleteRequestInfo(requestInfo);
+}
+
+HWTEST_F(HttpHandoverHandlerTest, HttpHandoverHandlerTestRetransRequestNullRequest, TestSize.Level2)
+{
+    HttpHandoverHandler handler;
+    std::map<CURL *, RequestInfo *> ongoingRequests;
+    CURLM *multi = curl_multi_init();
+    EXPECT_FALSE(handler.RetransRequest(ongoingRequests, multi, nullptr));
+    curl_multi_cleanup(multi);
 }
 }

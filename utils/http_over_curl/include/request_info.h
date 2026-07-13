@@ -27,6 +27,7 @@ struct TransferCallbacks {
 #ifdef HTTP_HANDOVER_FEATURE
     TransferHandoverInfoCallback handoverInfoCallback;
     SetHandoverInfoCallback setHandoverInfoCallback;
+    ResetResponseCallback resetResponseCallback;
 #endif
 #ifdef HTTP_DEADFLOWRESET_FEATURE
     GetDeadFlowInfoCallback getDeadFlowInfoCallback;

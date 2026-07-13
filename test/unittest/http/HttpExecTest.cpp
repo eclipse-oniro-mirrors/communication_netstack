@@ -313,4 +313,50 @@ HWTEST_F(HttpExecTest, SetServerSSLCertOptionWithPartialChain002, TestSize.Level
     context.options.SetPartialChain(true);
     EXPECT_TRUE(HttpExec::SetServerSSLCertOption(handle.get(), &context));
 }
+
+#ifdef HTTP_HANDOVER_FEATURE
+HWTEST_F(HttpExecTest, SetHandoverCallbacks, TestSize.Level1)
+{
+    HttpOverCurl::TransferCallbacks callbacks;
+    HttpExec::SetHandoverCallbacks(callbacks);
+    ASSERT_TRUE(callbacks.handoverInfoCallback);
+    ASSERT_TRUE(callbacks.setHandoverInfoCallback);
+    ASSERT_TRUE(callbacks.resetResponseCallback);
+}
+
+HWTEST_F(HttpExecTest, HandoverInfoCallbackNull, TestSize.Level1)
+{
+    HttpOverCurl::TransferCallbacks callbacks;
+    HttpExec::SetHandoverCallbacks(callbacks);
+    ASSERT_TRUE(callbacks.handoverInfoCallback);
+
+    auto info = callbacks.handoverInfoCallback(nullptr);
+    EXPECT_EQ(info.taskId, 0u);
+    EXPECT_EQ(info.method, "init");
+    EXPECT_EQ(info.requestUrl, "init");
+}
+
+HWTEST_F(HttpExecTest, SetHandoverInfoCallbackNull, TestSize.Level1)
+{
+    HttpOverCurl::TransferCallbacks callbacks;
+    HttpExec::SetHandoverCallbacks(callbacks);
+    ASSERT_TRUE(callbacks.setHandoverInfoCallback);
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+    EXPECT_EQ(context.GetRequestHandoverInfo(), "no handover");
+
+    HttpHandoverInfo handoverInfo;
+    handoverInfo.handOverId = 200;
+    handoverInfo.handOverNum = 5;
+    callbacks.setHandoverInfoCallback(handoverInfo, nullptr);
+    EXPECT_EQ(context.GetRequestHandoverInfo(), "no handover");
+
+    callbacks.setHandoverInfoCallback(handoverInfo, &context);
+    auto info = context.GetRequestHandoverInfo();
+    EXPECT_NE(info, "no handover");
+    EXPECT_NE(info.find("HandoverNum:5"), std::string::npos);
+}
+#endif // HTTP_HANDOVER_FEATURE
 } // namespace

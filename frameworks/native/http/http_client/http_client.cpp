@@ -117,6 +117,15 @@ void HttpSession::SetRequestInfoCallbacks(
     };
     callbacks.handoverInfoCallback = handoverInfoCallback;
     callbacks.setHandoverInfoCallback = setHandoverInfoCallback;
+
+    auto resetResponseCallback = [ptr](void *) {
+        if (ptr == nullptr) {
+            NETSTACK_LOGE("resetResponseCallback ptr is nullptr, error!");
+            return;
+        }
+        ptr->GetResponse().Reset();
+    };
+    callbacks.resetResponseCallback = resetResponseCallback;
 #endif
 }
 

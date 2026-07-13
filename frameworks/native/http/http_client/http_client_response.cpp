@@ -130,6 +130,20 @@ void HttpClientResponse::ClearHeaderCache()
     setCookie_.clear();
 }
 
+void HttpClientResponse::Reset()
+{
+    result_.clear();
+    rawHeader_.clear();
+    headers_.clear();
+    setCookie_.clear();
+    cookies_.clear();
+    responseCode_ = NONE;
+    requestTime_.clear();
+    responseTime_.clear();
+    httpStatistics_ = HttpStatistics{};
+    performanceInfo_ = PerformanceInfo{};
+}
+
 void HttpClientResponse::SetCookies(const std::string &cookies)
 {
     cookies_ = cookies;
