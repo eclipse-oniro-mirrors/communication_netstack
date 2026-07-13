@@ -57,12 +57,10 @@ ohos_shared_library("net_ssl") {
     "$NETSTACK_DIR/utils/log/include",
   ]
   cflags = [
-    "-fstack-protector-strong",
     "-D_FORTIFY_SOURCE=2",
     "-O2",
   ]
   cflags_cc = [
-    "-fstack-protector-strong",
     "-D_FORTIFY_SOURCE=2",
     "-O2",
   ]
