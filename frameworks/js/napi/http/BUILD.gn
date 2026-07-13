@@ -86,6 +86,7 @@ ohos_shared_library("http") {
       cfi = true
       cfi_cross_dso = true
       debug = false
+      blocklist = "block_list.txt"
     }
   }
 
