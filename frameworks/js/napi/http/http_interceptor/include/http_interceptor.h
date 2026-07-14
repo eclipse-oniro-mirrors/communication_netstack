@@ -87,7 +87,7 @@ public:
 private:
     struct InitialRequestInterceptorHandle {
         std::function<bool()> after;
-        RequestContext *context;
+        RequestContext *context = nullptr;
         std::function<void()> block;
         napi_value reqContext;
         napi_value resContext;
@@ -95,7 +95,7 @@ private:
     };
     struct CacheCheckedInterceptorHandle {
         std::function<bool()> after;
-        RequestContext *context;
+        RequestContext *context = nullptr;
         std::function<void()> block;
         napi_value reqContext;
         napi_value resContext;
@@ -103,7 +103,7 @@ private:
     };
     struct FinalResponseInterceptorHandle {
         std::function<void()> after;
-        RequestContext *context;
+        RequestContext *context = nullptr;
         napi_value reqContext;
         napi_value resContext;
         ~FinalResponseInterceptorHandle() = default;

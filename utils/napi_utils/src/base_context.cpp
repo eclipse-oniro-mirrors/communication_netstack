@@ -100,7 +100,7 @@ napi_async_work BaseContext::GetAsyncWork()
     return asyncWork_;
 }
 
-void BaseContext::CreateAsyncWork(const std::string &name, AsyncWorkExecutor executor, AsyncWorkCallback callback)
+bool BaseContext::CreateAsyncWork(const std::string &name, AsyncWorkExecutor executor, AsyncWorkCallback callback)
 {
     auto closeScope = [this](napi_handle_scope scope) { NapiUtils::CloseScope(env_, scope); };
     std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env_), closeScope);
@@ -111,10 +111,12 @@ void BaseContext::CreateAsyncWork(const std::string &name, AsyncWorkExecutor exe
     asyncWorkBack3_ = asyncWork_;
     asyncWorkBack4_ = asyncWork_;
     if (ret != napi_ok) {
-        return;
+        return false;
     }
     asyncWorkName_ = name;
     (void)napi_queue_async_work_with_qos(env_, asyncWork_, napi_qos_default);
+
+    return true;
 }
 
 void BaseContext::DeleteAsyncWork()
