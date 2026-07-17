@@ -129,7 +129,7 @@ private:
     static void CloseAllConnection(const std::shared_ptr<UserData> &userData, std::shared_ptr<EventManager> &manager);
 
     static void FillServerContextInfo(ServerStartContext *context, std::shared_ptr<EventManager> &manager,
-        lws_context_creation_info &info);
+        lws_context_creation_info &info, const std::string &serverIp);
 
     static bool FillServerCertPath(ServerStartContext *context, lws_context_creation_info &info);
 
