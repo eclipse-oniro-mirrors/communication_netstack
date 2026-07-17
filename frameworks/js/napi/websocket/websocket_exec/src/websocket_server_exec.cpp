@@ -1055,7 +1055,7 @@ bool WebSocketServerExec::ExecServerStart(ServerStartContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    if (!CommonUtils::IsValidIPV4(context->GetServerIP()) &&
+    if (!context->GetServerIP().empty() && !CommonUtils::IsValidIPV4(context->GetServerIP()) &&
         !CommonUtils::IsValidIPV6(context->GetServerIP())) {
         NETSTACK_LOGE("IPV4 and IPV6 are not valid");
         context->SetErrorCode(WEBSOCKET_ERROR_CODE_INVALID_NIC);
@@ -1080,8 +1080,9 @@ bool WebSocketServerExec::ExecServerStart(ServerStartContext *context)
         return false;
     }
     manager->SetMaxConnForOneClient(context->GetMaxConnectionsForOneClient());
+    std::string serverIp = context->GetServerIP();
     lws_context_creation_info info = {};
-    FillServerContextInfo(context, manager, info);
+    FillServerContextInfo(context, manager, info, serverIp);
     if (!FillServerCertPath(context, info)) {
         NETSTACK_LOGE("FillServerCertPath error");
         return false;
@@ -1121,10 +1122,13 @@ bool WebSocketServerExec::StartService(lws_context_creation_info &info, std::sha
 }
 
 void WebSocketServerExec::FillServerContextInfo(ServerStartContext *context, std::shared_ptr<EventManager> &manager,
-    lws_context_creation_info &info)
+    lws_context_creation_info &info, const std::string &serverIp)
 {
     info.options = LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
     info.port = static_cast<int32_t>(context->GetServerPort());
+    if (!serverIp.empty()) {
+        info.iface = serverIp.c_str();
+    }
     info.mounts = &mount;
     info.protocols = LWS_SERVER_PROTOCOLS;
     info.vhost_name = "localhost";

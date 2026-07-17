@@ -137,15 +137,8 @@ void ServerStartContext::ParseOptionalParams(napi_env env, napi_value params)
         NETSTACK_LOGE("js type error");
         return;
     }
-    NETSTACK_LOGE("SERVER_IP:%{public}s", ContextKey::SERVER_IP);
     std::string ip = NapiUtils::GetStringPropertyUtf8(env, params, ContextKey::SERVER_IP);
-    if (ip != "") {
-        SetServerIP(ip);
-    } else {
-        NETSTACK_LOGE("ip is null");
-        std::string ipTmp = "0.0.0.0";
-        SetServerIP(ipTmp);
-    }
+    SetServerIP(ip);
     std::string protocol = NapiUtils::GetStringPropertyUtf8(env, params, ContextKey::PROTOCOL);
     if (protocol != "") {
         SetServerProtocol(protocol);
