@@ -55,6 +55,7 @@
                 "ability_runtime",
                 "samgr",
                 "libwebsockets",
+                "libuv",
                 "node",
                 "jsoncpp",
                 "access_token",

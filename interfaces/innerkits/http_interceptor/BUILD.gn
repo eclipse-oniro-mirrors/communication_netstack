@@ -76,6 +76,8 @@ http_interceptor_common_deps = [
 http_interceptor_common_external_deps = [
   "ffrt:libffrt",
   "hilog:libhilog",
+  "libuv:uv",
+  "node:node_header_notice",
 ]
 
 ohos_shared_library("http_interceptor") {

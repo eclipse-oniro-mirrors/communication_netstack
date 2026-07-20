@@ -57,7 +57,9 @@ ohos_shared_library("fetch") {
   external_deps = [
     "curl:curl_shared",
     "hilog:libhilog",
+    "libuv:uv",
     "napi:ace_napi",
+    "node:node_header_notice",
     "c_utils:utils",
   ]
 

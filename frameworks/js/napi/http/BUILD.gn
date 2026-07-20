@@ -148,8 +148,10 @@ ohos_shared_library("http") {
       "hilog:libhilog",
       "hiprofiler:libnetwork_profiler",
       "hitrace:hitrace_meter",
+      "libuv:uv",
       "ipc:ipc_single",
       "napi:ace_napi",
+      "node:node_header_notice",
       "samgr:samgr_proxy",
       "time_service:time_client",
     ]

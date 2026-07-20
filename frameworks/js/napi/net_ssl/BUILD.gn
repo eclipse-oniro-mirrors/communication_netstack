@@ -84,7 +84,9 @@ ohos_shared_library("networksecurity_napi") {
     ]
     external_deps = [
       "hilog:libhilog",
+      "libuv:uv",
       "napi:ace_napi",
+      "node:node_header_notice",
       "openssl:libcrypto_shared",
       "openssl:libssl_shared",
       "samgr:samgr_proxy",

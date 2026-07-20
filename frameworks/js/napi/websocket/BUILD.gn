@@ -58,7 +58,9 @@ ohos_shared_library("websocket") {
   external_deps = [
     "hilog:libhilog",
     "libwebsockets:websockets",
+    "libuv:uv",
     "napi:ace_napi",
+    "node:node_header_notice",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
