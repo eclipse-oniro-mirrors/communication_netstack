@@ -75,6 +75,7 @@ void OH_Http_DestroyHeaders(Http_Headers **headers)
         (*headers)->fields = nullptr;
     }
     free(*headers);
+    *headers = nullptr;
 }
 
 static char *OH_Http_ToLowerCase(const char *str)
