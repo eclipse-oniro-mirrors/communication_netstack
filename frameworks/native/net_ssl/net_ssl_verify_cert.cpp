@@ -502,6 +502,11 @@ static bool SetupVerificationStore(X509_STORE *store, const CertBlob *caCert, co
 #if HAS_NETMANAGER_BASE
 static uint32_t VerifyPinnedPublicKey(X509 *cert, const char *hostname)
 {
+    if (cert == nullptr || hostname == nullptr) {
+        NETSTACK_LOGE("VerifyPinnedPublicKey: cert or hostname is null");
+        return SSL_X509_V_ERR_UNSPECIFIED;
+    }
+
     if (NetManagerStandard::NetworkSecurityConfig::GetInstance().IsPinOpenMode(hostname)) {
         return X509_V_OK;
     }
