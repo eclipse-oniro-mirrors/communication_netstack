@@ -162,34 +162,26 @@ napi_value InterfaceWithOutAsyncWorkWithManagerWrapper(napi_env env, napi_callba
                                                        AsyncWorkCallback callback)
 {
     static_assert(std::is_base_of<BaseContext, Context>::value);
-
     napi_value thisVal = nullptr;
     size_t paramsCount = MAX_PARAM_NUM;
     napi_value params[MAX_PARAM_NUM] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &paramsCount, params, &thisVal, nullptr));
-
     EventManagerWrapper *wrapper = nullptr;
     auto napi_ret = napi_unwrap(env, thisVal, reinterpret_cast<void **>(&wrapper));
     if (napi_ret != napi_ok) {
         NETSTACK_LOGE("get event manager in napi_unwrap failed, napi_ret is %{public}d", napi_ret);
         return NapiUtils::GetUndefined(env);
     }
-
-    std::shared_ptr<EventManager> sharedManager = nullptr;
-    if (wrapper) {
-        sharedManager = wrapper->sharedManager;
-    }
+    std::shared_ptr<EventManager> sharedManager = wrapper ? wrapper->sharedManager : nullptr;
     auto context = new (std::nothrow) Context(env, sharedManager);
     if (!context) {
         NETSTACK_LOGE("new context is nullptr");
         return NapiUtils::GetUndefined(env);
     }
+    if (wrapper) {
 #if ENABLE_HTTP_INTERCEPT
-    if (wrapper) {
         context->SetInterceptorRefs(wrapper->eventManager.interceptorRefs_);
-    }
 #endif
-    if (wrapper) {
         context->SetEnableAutoCookie(wrapper->eventManager.enableAutoCookie_);
         context->SetShareHandle(wrapper->eventManager.GetShareHandle());
     }
@@ -209,7 +201,9 @@ napi_value InterfaceWithOutAsyncWorkWithManagerWrapper(napi_env env, napi_callba
     }
     if (!context->IsParseOK() || context->IsPermissionDenied() || context->IsNoAllowedHost() ||
         context->IsCleartextNotPermitted() || context->GetSharedManager()->IsEventDestroy()) {
-        context->CreateAsyncWork(asyncWorkName, executor, callback);
+        if (!context->CreateAsyncWork(asyncWorkName, executor, callback)) {
+            delete context;
+        }
     }
     return ret;
 }
@@ -259,7 +253,9 @@ napi_value InterfaceWithOutAsyncWorkWithSharedManager(napi_env env, napi_callbac
     }
     if (!context->IsParseOK() || context->IsPermissionDenied() || context->IsNoAllowedHost() ||
         context->IsCleartextNotPermitted() || context->GetSharedManager()->IsEventDestroy()) {
-        context->CreateAsyncWork(asyncWorkName, executor, callback);
+        if (!context->CreateAsyncWork(asyncWorkName, executor, callback)) {
+            delete context;
+        }
     }
     return ret;
 }
