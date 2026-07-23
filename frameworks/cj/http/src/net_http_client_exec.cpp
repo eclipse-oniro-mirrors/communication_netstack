@@ -299,18 +299,15 @@ void NetHttpClientExec::HandleCurlData(CURLMsg *msg)
 
 std::string NetHttpClientExec::MakeUrl(const std::string &url, std::string param, const std::string &extraParam)
 {
-    if (extraParam.empty()) {
-        if (param.empty()) {
-            return url;
-        }
-        return url + HTTP_URL_PARAM_START + param;
-    }
-
     if (param.empty()) {
         param += extraParam;
     } else {
         param += HTTP_URL_PARAM_SEPARATOR;
         param += extraParam;
+    }
+
+    if (param.empty()) {
+        return url;
     }
 
     return url + HTTP_URL_PARAM_START + param;
@@ -424,10 +421,6 @@ void NetHttpClientExec::SendRequest()
         }
 
         auto ret = curl_multi_perform(staticVariable_.curlMulti, &runningHandle);
-        if (ret != CURLM_OK) {
-            NETSTACK_LOGE("curl_multi_perform failed: %{public}d", ret);
-            return;
-        }
 
         if (runningHandle > 0) {
             ret = curl_multi_poll(staticVariable_.curlMulti, nullptr, 0, CURL_MAX_WAIT_MSECS, nullptr);
@@ -526,19 +519,10 @@ bool NetHttpClientExec::Initialize()
     staticVariable_.curlMulti = curl_multi_init();
     if (staticVariable_.curlMulti == nullptr) {
         NETSTACK_LOGE("Failed to initialize 'curl_multi'");
-        curl_global_cleanup();
         return false;
     }
 
-    try {
-        staticVariable_.workThread = std::thread(RunThread);
-    } catch (const std::system_error &e) {
-        NETSTACK_LOGE("Failed to create work thread: %{public}s", e.what());
-        curl_multi_cleanup(staticVariable_.curlMulti);
-        staticVariable_.curlMulti = nullptr;
-        curl_global_cleanup();
-        return false;
-    }
+    staticVariable_.workThread = std::thread(RunThread);
 
     staticVariable_.initialized = true;
     return staticVariable_.initialized;
