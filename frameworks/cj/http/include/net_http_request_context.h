@@ -20,6 +20,7 @@
 #include <mutex>
 #include <map>
 #include <vector>
+#include <atomic>
 #include "curl/curl.h"
 #include "ffi_remote_data.h"
 #include "net_http_request.h"
@@ -169,7 +170,7 @@ private:
     bool parseok_ = false;
     bool requestOK_ = false;
     bool permissionDenied_ = false;
-    bool isDestroyed_ = false;
+    std::atomic<bool> isDestroyed_ { false };
     bool isRootCaVerified_ = false;
     bool isRootCaVerifiedOk_ = false;
     std::string pinnedPubkey_;
@@ -192,7 +193,7 @@ public:
 
     std::shared_ptr<RequestCallback> callbacks = std::make_shared<RequestCallback>();
 
-    bool isDestroyed = false;
+    std::atomic<bool> isDestroyed { false };
 };
 
 }

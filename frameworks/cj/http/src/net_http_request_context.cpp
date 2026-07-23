@@ -189,6 +189,9 @@ bool RequestContext::IsRequestInStream() const
 void RequestContext::SetDlLen(curl_off_t nowLen, curl_off_t totalLen)
 {
     std::lock_guard<std::mutex> lock(dlLenLock_);
+    if (!dlBytes_.empty()) {
+        dlBytes_.pop();
+    }
     LoadBytes dlBytes{nowLen, totalLen};
     dlBytes_.push(dlBytes);
 }
@@ -455,7 +458,7 @@ void RequestContext::ParseHeader(CArrString header)
     if (NetHttpClientExec::MethodForPost(options.GetMethod())) {
         options.SetHeader(CommonUtils::ToLower(HTTP_CONTENT_TYPE), HTTP_CONTENT_TYPE_JSON); // default
     }
-    for (int64_t i = 0; i < header.size; i += MAP_TUPLE_SIZE) {
+    for (int64_t i = 0; i + 1 < header.size; i += MAP_TUPLE_SIZE) {
         std::string key{header.head[i]};
         std::string value{header.head[i + 1]};
         options.SetHeader(CommonUtils::ToLower(key), value);
@@ -571,7 +574,25 @@ void RequestContext::SendResponse()
         resp.errCode = GetErrorCode();
         resp.errMsg = MallocCString(GetErrorMessage());
     }
-    respCallback(resp);
+    if (respCallback) {
+        respCallback(resp);
+    } else {
+        NETSTACK_LOGE("respCallback is not set, response dropped");
+        free(resp.errMsg);
+        free(resp.result.head);
+        if (resp.header.head != nullptr) {
+            for (int64_t i = 0; i < resp.header.size; i++) {
+                free(resp.header.head[i]);
+            }
+            free(resp.header.head);
+        }
+        if (resp.setCookie.head != nullptr) {
+            for (int64_t i = 0; i < resp.setCookie.size; i++) {
+                free(resp.setCookie.head[i]);
+            }
+            free(resp.setCookie.head);
+        }
+    }
 }
 
 RequestContext* HttpRequestProxy::Request(std::string url, CHttpRequestOptions *ops, bool isInStream)

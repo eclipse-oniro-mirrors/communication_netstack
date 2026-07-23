@@ -144,8 +144,8 @@ void CJTcpSocketProxy::StartRecvThread()
 
 void CJTcpSocketProxy::StopRecvThread()
 {
-    closed_.store(true);
     std::lock_guard<std::mutex> lock(recvMutex_);
+    closed_.store(true);
     if (recvThread_.joinable()) {
         recvThread_.join();
     }
@@ -251,10 +251,12 @@ void CJTcpSocketProxy::EmitMessageEvent(void *data, size_t dataLen, sockaddr *ad
         return;
     }
     cbData.data.head = static_cast<uint8_t *>(malloc(dataLen));
-    if (cbData.data.head != nullptr) {
-        memcpy_s(cbData.data.head, dataLen, data, dataLen);
-        cbData.data.size = static_cast<int64_t>(dataLen);
+    if (cbData.data.head == nullptr) {
+        NETSTACK_LOGE("malloc failed for message data");
+        return;
     }
+    memcpy_s(cbData.data.head, dataLen, data, dataLen);
+    cbData.data.size = static_cast<int64_t>(dataLen);
     std::string address = MakeAddressString(addr);
     cbData.remoteInfo.address = MallocCString(address);
     if (addr->sa_family == AF_INET) {
@@ -326,6 +328,8 @@ int32_t CJTcpSocketImpl::Bind(CJTcpSocketProxy *proxy, const CNetAddress &cAddr)
         proxy->SetSocketFd(sockFd);
         proxy->SetFamily(address.GetSaFamily());
         if (!ExecTcpBind(sockFd, address, proxy->GetReuseAddr())) {
+            close(sockFd);
+            proxy->SetSocketFd(-1);
             return ConvertErrCode(errno);
         }
     }
@@ -433,6 +437,7 @@ int32_t CJTcpSocketImpl::Close(CJTcpSocketProxy *proxy)
     CjConnectMonitor::GetInstance().Unregister(sockFd);
     proxy->StopRecvThread();
     if (!ExecClose(sockFd)) {
+        proxy->SetSocketFd(-1);
         return ConvertErrCode(errno);
     }
     proxy->SetSocketFd(-1);
@@ -530,6 +535,10 @@ int32_t CJTcpSocketImpl::SetExtraOptions(CJTcpSocketProxy *proxy, const CTcpExtr
 {
     if (proxy == nullptr) {
         return ERR_INVALID_INSTANCE_CODE;
+    }
+    if (!CommonUtils::HasInternetPermission()) {
+        NETSTACK_LOGE("INTERNET permission denied");
+        return PERMISSION_DENIED_CODE;
     }
     int sockFd = proxy->GetSocketFd();
     if (sockFd <= 0) {

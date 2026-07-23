@@ -59,9 +59,10 @@ void WebSocketSendContext::ParseParams(CArrUI8 params, bool stringType)
         return;
     }
     if (memcpy_s(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(data) + LWS_SEND_BUFFER_PRE_PADDING),
-                 len, params.head, len) < 0) {
+                 len, params.head, len) != EOK) {
         NETSTACK_LOGE("copy failed");
         free(data);
+        data = nullptr;
         return;
     }
     // set length

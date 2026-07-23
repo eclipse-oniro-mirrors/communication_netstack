@@ -19,6 +19,7 @@
 #include <cerrno>
 #include <chrono>
 #include <fcntl.h>
+#include <limits>
 #include <netdb.h>
 #include <netinet/tcp.h>
 #include <poll.h>
@@ -482,13 +483,21 @@ static void GetAddr(NetAddress *address, sockaddr_in *addr4, sockaddr_in6 *addr6
     if (family == AF_INET) {
         addr4->sin_family = AF_INET;
         addr4->sin_port = htons(address->GetPort());
-        addr4->sin_addr.s_addr = inet_addr(address->GetAddress().c_str());
+        in_addr_t result = inet_addr(address->GetAddress().c_str());
+        if (result == INADDR_NONE) {
+            NETSTACK_LOGE("invalid IPv4 address: %{public}s", address->GetAddress().c_str());
+            return;
+        }
+        addr4->sin_addr.s_addr = result;
         *addr = reinterpret_cast<sockaddr *>(addr4);
         *len = sizeof(sockaddr_in);
     } else if (family == AF_INET6) {
         addr6->sin6_family = AF_INET6;
         addr6->sin6_port = htons(address->GetPort());
-        inet_pton(AF_INET6, address->GetAddress().c_str(), &addr6->sin6_addr);
+        if (inet_pton(AF_INET6, address->GetAddress().c_str(), &addr6->sin6_addr) <= 0) {
+            NETSTACK_LOGE("invalid IPv6 address: %{public}s", address->GetAddress().c_str());
+            return;
+        }
         *addr = reinterpret_cast<sockaddr *>(addr6);
         *len = sizeof(sockaddr_in6);
     }
@@ -496,6 +505,10 @@ static void GetAddr(NetAddress *address, sockaddr_in *addr4, sockaddr_in6 *addr6
 
 static std::string MakeAddressString(sockaddr *addr)
 {
+    if (addr == nullptr) {
+        NETSTACK_LOGE("addr is nullptr");
+        return {};
+    }
     if (addr->sa_family == AF_INET) {
         auto *addr4 = reinterpret_cast<sockaddr_in *>(addr);
         const char *str = inet_ntoa(addr4->sin_addr);
@@ -674,16 +687,21 @@ std::string ConvertAddressToIp(const std::string &address, sa_family_t family)
         return {};
     }
     std::string ip;
-    if (res->ai_family == AF_INET) {
-        auto *ipv4 = reinterpret_cast<struct sockaddr_in *>(res->ai_addr);
-        auto addr = &(ipv4->sin_addr);
-        inet_ntop(res->ai_family, addr, ipStr, sizeof(ipStr));
-        ip = ipStr;
-    } else {
-        auto *ipv6 = reinterpret_cast<struct sockaddr_in6 *>(res->ai_addr);
-        auto addr = &(ipv6->sin6_addr);
-        inet_ntop(res->ai_family, addr, ipStr, sizeof(ipStr));
-        ip = ipStr;
+    try {
+        if (res->ai_family == AF_INET) {
+            auto *ipv4 = reinterpret_cast<struct sockaddr_in *>(res->ai_addr);
+            auto addr = &(ipv4->sin_addr);
+            inet_ntop(res->ai_family, addr, ipStr, sizeof(ipStr));
+            ip = ipStr;
+        } else {
+            auto *ipv6 = reinterpret_cast<struct sockaddr_in6 *>(res->ai_addr);
+            auto addr = &(ipv6->sin6_addr);
+            inet_ntop(res->ai_family, addr, ipStr, sizeof(ipStr));
+            ip = ipStr;
+        }
+    } catch (...) {
+        freeaddrinfo(res);
+        throw;
     }
     freeaddrinfo(res);
     return ip;
@@ -738,7 +756,15 @@ bool NonBlockConnect(int sock, sockaddr *addr, socklen_t addrLen, uint32_t timeo
         return false;
     }
     struct pollfd fds[1] = {{.fd = sock, .events = POLLOUT}};
-    int timeoutMs = (timeoutMSec == 0) ? DEFAULT_CONNECT_TIMEOUT : timeoutMSec;
+    int timeoutMs = 0;
+    if (timeoutMSec == 0) {
+        timeoutMs = DEFAULT_CONNECT_TIMEOUT;
+    } else if (timeoutMSec > static_cast<uint32_t>(std::numeric_limits<int>::max())) {
+        NETSTACK_LOGE("timeoutMSec too large, capping to INT_MAX");
+        timeoutMs = std::numeric_limits<int>::max();
+    } else {
+        timeoutMs = static_cast<int>(timeoutMSec);
+    }
     while (true) {
         auto startTime = std::chrono::steady_clock::now();
         ret = poll(fds, 1, timeoutMs);
@@ -836,8 +862,9 @@ int ConfirmSocketTimeoutMs(int sock, int type, int defaultValue)
     timeval timeout;
     socklen_t optlen = sizeof(timeout);
     if (getsockopt(sock, SOL_SOCKET, type, reinterpret_cast<void *>(&timeout), &optlen) < 0) {
-        NETSTACK_LOGE("get timeout failed, type: %{public}d, sock: %{public}d, errno: %{public}d", type, sock, errno);
-        if (errno == ENOTSOCK && type == SO_RCVTIMEO) {
+        int savedErrno = errno;
+        NETSTACK_LOGE("get timeout failed, type: %{public}d, sock: %{public}d, errno: %{public}d", type, sock, savedErrno);
+        if (savedErrno == ENOTSOCK && type == SO_RCVTIMEO) {
             return -1;
         }
         return defaultValue;
@@ -921,6 +948,11 @@ void ParseCTcpExtraOptions(const CTcpExtraOptions &cOpts, TCPExtraOptions &opts)
 
 static bool HandleNonProxyConnection(int sockFd, const TcpConnectOptions &options, bool &asyncConnecting, int &errCode)
 {
+    if (sockFd < 0) {
+        NETSTACK_LOGE("invalid sockFd: %{public}d", sockFd);
+        errCode = ADDRESS_INVALID;
+        return false;
+    }
     sockaddr_in addr4 = {0};
     sockaddr_in6 addr6 = {0};
     sockaddr *addr = nullptr;
@@ -1194,12 +1226,19 @@ bool ExecGetLocalAddress(int sockFd, NetAddress &address)
         address.SetFamilyBySaFamily(AF_INET6);
         address.SetRawAddress(ipStr);
         address.SetPort(ntohs(addrIn6->sin6_port));
+    } else {
+        NETSTACK_LOGE("unsupported address family: %{public}d", addr.ss_family);
+        return false;
     }
     return true;
 }
 
 bool ExecTcpSetExtraOptions(int sockFd, const TCPExtraOptions &options)
 {
+    if (!CommonUtils::HasInternetPermission()) {
+        NETSTACK_LOGE("no internet permission");
+        return false;
+    }
     if (sockFd <= 0) {
         NETSTACK_LOGE("bad fd, socket is %{public}d", sockFd);
         return false;

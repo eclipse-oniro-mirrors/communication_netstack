@@ -21,6 +21,7 @@
 #include <mutex>
 #include <string>
 
+#include "securec.h"
 #include "constant.h"
 #include "ffi_structs.h"
 
@@ -226,7 +227,13 @@ private:
 class ProxyOptions {
 public:
     ProxyOptions();
-    ~ProxyOptions() = default;
+    ~ProxyOptions()
+    {
+        if (!password_.empty()) {
+            memset_s(&password_[0], password_.size(), 0, password_.size());
+            password_.clear();
+        }
+    }
 
     NetAddress address_;
     uint32_t type_ = 0;

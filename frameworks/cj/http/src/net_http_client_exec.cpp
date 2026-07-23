@@ -91,7 +91,7 @@ static constexpr const int SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX = 1;
 
 bool NetHttpClientExec::AddCurlHandle(CURL *handle, RequestContext *context)
 {
-    if (handle == nullptr || staticVariable_.curlMulti == nullptr) {
+    if (handle == nullptr || context == nullptr || staticVariable_.curlMulti == nullptr) {
         NETSTACK_LOGE("handle nullptr");
         return false;
     }
@@ -225,7 +225,7 @@ bool NetHttpClientExec::GetCurlDataFromHandle(CURL *handle, RequestContext *cont
 
 double NetHttpClientExec::GetTimingFromCurl(CURL *handle, CURLINFO info)
 {
-    time_t timing;
+    curl_off_t timing;
     CURLcode result = curl_easy_getinfo(handle, info, &timing);
     if (result != CURLE_OK) {
         NETSTACK_LOGE("Failed to get timing: %{public}d, %{public}s", info, curl_easy_strerror(result));
@@ -299,15 +299,18 @@ void NetHttpClientExec::HandleCurlData(CURLMsg *msg)
 
 std::string NetHttpClientExec::MakeUrl(const std::string &url, std::string param, const std::string &extraParam)
 {
+    if (extraParam.empty()) {
+        if (param.empty()) {
+            return url;
+        }
+        return url + HTTP_URL_PARAM_START + param;
+    }
+
     if (param.empty()) {
         param += extraParam;
     } else {
         param += HTTP_URL_PARAM_SEPARATOR;
         param += extraParam;
-    }
-
-    if (param.empty()) {
-        return url;
     }
 
     return url + HTTP_URL_PARAM_START + param;
@@ -365,6 +368,10 @@ void NetHttpClientExec::AddRequestInfo()
         auto ret = curl_multi_add_handle(staticVariable_.curlMulti, info.handle);
         if (ret == CURLM_OK) {
             staticVariable_.contextMap[info.handle] = info.context;
+        } else {
+            NETSTACK_LOGE("curl_multi_add_handle failed: %{public}d", ret);
+            curl_easy_cleanup(info.handle);
+            delete info.context;
         }
 
         ++num;
@@ -417,6 +424,10 @@ void NetHttpClientExec::SendRequest()
         }
 
         auto ret = curl_multi_perform(staticVariable_.curlMulti, &runningHandle);
+        if (ret != CURLM_OK) {
+            NETSTACK_LOGE("curl_multi_perform failed: %{public}d", ret);
+            return;
+        }
 
         if (runningHandle > 0) {
             ret = curl_multi_poll(staticVariable_.curlMulti, nullptr, 0, CURL_MAX_WAIT_MSECS, nullptr);
@@ -449,6 +460,7 @@ void NetHttpClientExec::ReadResponse()
                 HandleCurlData(msg);
             }
             if (msg->easy_handle) {
+                staticVariable_.contextMap.erase(msg->easy_handle);
                 (void)curl_multi_remove_handle(staticVariable_.curlMulti, msg->easy_handle);
                 (void)curl_easy_cleanup(msg->easy_handle);
             }
@@ -514,10 +526,19 @@ bool NetHttpClientExec::Initialize()
     staticVariable_.curlMulti = curl_multi_init();
     if (staticVariable_.curlMulti == nullptr) {
         NETSTACK_LOGE("Failed to initialize 'curl_multi'");
+        curl_global_cleanup();
         return false;
     }
 
-    staticVariable_.workThread = std::thread(RunThread);
+    try {
+        staticVariable_.workThread = std::thread(RunThread);
+    } catch (const std::system_error &e) {
+        NETSTACK_LOGE("Failed to create work thread: %{public}s", e.what());
+        curl_multi_cleanup(staticVariable_.curlMulti);
+        staticVariable_.curlMulti = nullptr;
+        curl_global_cleanup();
+        return false;
+    }
 
     staticVariable_.initialized = true;
     return staticVariable_.initialized;
@@ -566,20 +587,28 @@ CURLcode MultiPathSslCtxFunction(CURL *curl, void *sslCtx, const CertsPath *cert
         return CURLE_SSL_CERTPROBLEM;
     }
 
+    bool loadedAny = false;
     for (const auto &path : certsPath->certPathList) {
         if (path.empty() || access(path.c_str(), F_OK) != 0) {
             NETSTACK_LOGD("certificate directory path is not exist");
             continue;
         }
-        if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), nullptr, path.c_str())) {
+        if (SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), nullptr, path.c_str())) {
+            loadedAny = true;
+        } else {
             NETSTACK_LOGE("loading certificates from directory error.");
-            continue;
         }
     }
-    if (access(certsPath->certFile.c_str(), F_OK) != 0) {
-        NETSTACK_LOGD("certificate directory path is not exist");
-    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), certsPath->certFile.c_str(), nullptr)) {
-        NETSTACK_LOGE("loading certificates from context cert error.");
+    if (access(certsPath->certFile.c_str(), F_OK) == 0) {
+        if (SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), certsPath->certFile.c_str(), nullptr)) {
+            loadedAny = true;
+        } else {
+            NETSTACK_LOGE("loading certificates from context cert error.");
+        }
+    }
+    if (!loadedAny) {
+        NETSTACK_LOGE("no CA certificates loaded, TLS verification will fail");
+        return CURLE_SSL_CERTPROBLEM;
     }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
     return CURLE_OK;
@@ -598,10 +627,16 @@ static int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey)
     }
     unsigned char *certPubkey = nullptr;
     int pubkeyLen = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(cert), &certPubkey);
-    std::string certPubKeyDigest;
-    if (!CommonUtils::Sha256sum(certPubkey, pubkeyLen, certPubKeyDigest)) {
+    if (pubkeyLen < 0 || certPubkey == nullptr) {
+        NETSTACK_LOGE("i2d_X509_PUBKEY failed");
         return CURLE_BAD_FUNCTION_ARGUMENT;
     }
+    std::string certPubKeyDigest;
+    if (!CommonUtils::Sha256sum(certPubkey, static_cast<size_t>(pubkeyLen), certPubKeyDigest)) {
+        OPENSSL_free(certPubkey);
+        return CURLE_BAD_FUNCTION_ARGUMENT;
+    }
+    OPENSSL_free(certPubkey);
     NETSTACK_LOGI("pubkey sha256: %{public}s", certPubKeyDigest.c_str());
     if (CommonUtils::IsCertPubKeyInPinned(certPubKeyDigest, pinnedPubkey)) {
         return CURLE_OK;
@@ -618,7 +653,15 @@ static int VerifyCallback(int preverifyOk, X509_STORE_CTX *ctx)
     NETSTACK_LOGI("X509_STORE_CTX error code %{public}d, depth %{public}d", err, depth);
 
     SSL *ssl = static_cast<SSL *>(X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx()));
+    if (ssl == nullptr) {
+        NETSTACK_LOGE("ssl is nullptr in VerifyCallback");
+        return preverifyOk;
+    }
     SSL_CTX *sslctx = SSL_get_SSL_CTX(ssl);
+    if (sslctx == nullptr) {
+        NETSTACK_LOGE("sslctx is nullptr in VerifyCallback");
+        return preverifyOk;
+    }
     RequestContext *requestContext = static_cast<RequestContext *>(SSL_CTX_get_ex_data(sslctx,
         SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX));
     if (requestContext == nullptr) {
@@ -758,6 +801,10 @@ bool NetHttpClientExec::SetMultiPartOption(CURL *curl, RequestContext *context)
             continue;
         }
         part = curl_mime_addpart(multipart);
+        if (part == nullptr) {
+            NETSTACK_LOGE("curl_mime_addpart failed");
+            continue;
+        }
         SetFormDataOption(multiFormData, part, curl, context);
         hasData = true;
     }
@@ -905,7 +952,9 @@ bool NetHttpClientExec::SetOption(CURL *curl, RequestContext *context, struct cu
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_TIMEOUT_MS, context->options.GetReadTimeout(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
 
-    SetRequestOption(curl, context);
+    if (!SetRequestOption(curl, context)) {
+        return false;
+    }
 
     if (!SetOtherOption(curl, context)) {
         return false;
@@ -928,7 +977,12 @@ size_t NetHttpClientExec::OnWritingMemoryBody(const void *data, size_t size, siz
         callbackSize = context->streamingCallback->dataReceive.size();
     }
     if (context->IsRequestInStream() && callbackSize > 0) {
-        context->SetTempData(data, size * memBytes);
+        size_t totalSize = size * memBytes;
+        if (totalSize / size != memBytes) {
+            NETSTACK_LOGE("integer overflow in size * memBytes");
+            return 0;
+        }
+        context->SetTempData(data, totalSize);
         // call OnDataReceive
         auto tmp = context->GetTempData();
         context->PopTempData();
@@ -1015,7 +1069,12 @@ struct curl_slist *NetHttpClientExec::MakeHeaders(const std::vector<std::string>
     struct curl_slist *header = nullptr;
     std::for_each(vec.begin(), vec.end(), [&header](const std::string &s) {
         if (!s.empty()) {
-            header = curl_slist_append(header, s.c_str());
+            struct curl_slist *tmp = curl_slist_append(header, s.c_str());
+            if (tmp == nullptr) {
+                NETSTACK_LOGE("curl_slist_append failed for header: %{public}s", s.c_str());
+            } else {
+                header = tmp;
+            }
         }
     });
     return header;
@@ -1089,14 +1148,18 @@ bool NetHttpClientExec::IsInitialized()
 
 void NetHttpClientExec::DeInitialize()
 {
-    std::lock_guard<std::mutex> lock(staticVariable_.curlMultiMutex);
-    staticVariable_.runThread = false;
-    staticVariable_.conditionVariable.notify_all();
+    {
+        std::lock_guard<std::mutex> lock(staticVariable_.curlMultiMutex);
+        staticVariable_.runThread = false;
+        staticVariable_.conditionVariable.notify_all();
+    }
     if (staticVariable_.workThread.joinable()) {
         staticVariable_.workThread.join();
     }
+    std::lock_guard<std::mutex> lock(staticVariable_.curlMultiMutex);
     if (staticVariable_.curlMulti) {
         curl_multi_cleanup(staticVariable_.curlMulti);
+        staticVariable_.curlMulti = nullptr;
     }
     staticVariable_.initialized = false;
 }

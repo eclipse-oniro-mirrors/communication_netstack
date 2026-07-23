@@ -126,11 +126,17 @@ private:
 
         bool operator<(const RequestInfo &info) const
         {
+            if (context == nullptr || info.context == nullptr) {
+                return false;
+            }
             return context->options.GetPriority() < info.context->options.GetPriority();
         }
 
         bool operator>(const RequestInfo &info) const
         {
+            if (context == nullptr || info.context == nullptr) {
+                return false;
+            }
             return context->options.GetPriority() > info.context->options.GetPriority();
         }
     };
