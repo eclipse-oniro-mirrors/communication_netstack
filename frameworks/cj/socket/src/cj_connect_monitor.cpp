@@ -35,18 +35,6 @@ CjConnectMonitor::CjConnectMonitor()
 {
     epollFd_ = epoll_create1(EPOLL_CLOEXEC);
     eventFd_ = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-    if (epollFd_ < 0 || eventFd_ < 0) {
-        NETSTACK_LOGE("cj connect monitor init failed, epollFd=%{public}d, eventFd=%{public}d", epollFd_, eventFd_);
-        if (eventFd_ >= 0) {
-            close(eventFd_);
-            eventFd_ = -1;
-        }
-        if (epollFd_ >= 0) {
-            close(epollFd_);
-            epollFd_ = -1;
-        }
-        return;
-    }
     epoll_event ev {};
     ev.events = EPOLLIN;
     ev.data.fd = eventFd_;
@@ -165,11 +153,8 @@ void CjConnectMonitor::MonitorLoop()
         }
         for (int i = 0; i < n; i++) {
             if (events[i].data.fd == eventFd_) {
-                uint64_t val = 0;
-                ssize_t bytesRead = read(eventFd_, &val, sizeof(val));
-                if (bytesRead < 0) {
-                    NETSTACK_LOGE("eventfd read failed: %{public}d", errno);
-                }
+                uint64_t val;
+                read(eventFd_, &val, sizeof(val));
                 continue;
             }
             HandleReady(events[i].data.fd, events[i].events);
@@ -232,9 +217,8 @@ void CjConnectMonitor::HandleReady(int fd, uint32_t events)
     socklen_t len = sizeof(err);
     int ret = getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len);
     if (ret < 0) {
-        int savedErrno = errno;
-        NETSTACK_LOGE("getsockopt SO_ERROR failed, fd:%{public}d, errno:%{public}d", fd, savedErrno);
-        err = savedErrno;
+        NETSTACK_LOGE("getsockopt SO_ERROR failed, fd:%{public}d, errno:%{public}d", fd, errno);
+        err = errno;
     } else {
         NETSTACK_LOGI("getsockopt SO_ERROR, fd:%{public}d, err:%{public}d", fd, err);
     }

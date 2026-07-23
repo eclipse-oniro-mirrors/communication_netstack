@@ -189,9 +189,6 @@ bool RequestContext::IsRequestInStream() const
 void RequestContext::SetDlLen(curl_off_t nowLen, curl_off_t totalLen)
 {
     std::lock_guard<std::mutex> lock(dlLenLock_);
-    if (!dlBytes_.empty()) {
-        dlBytes_.pop();
-    }
     LoadBytes dlBytes{nowLen, totalLen};
     dlBytes_.push(dlBytes);
 }

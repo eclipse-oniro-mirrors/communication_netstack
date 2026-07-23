@@ -571,28 +571,20 @@ CURLcode MultiPathSslCtxFunction(CURL *curl, void *sslCtx, const CertsPath *cert
         return CURLE_SSL_CERTPROBLEM;
     }
 
-    bool loadedAny = false;
     for (const auto &path : certsPath->certPathList) {
         if (path.empty() || access(path.c_str(), F_OK) != 0) {
             NETSTACK_LOGD("certificate directory path is not exist");
             continue;
         }
-        if (SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), nullptr, path.c_str())) {
-            loadedAny = true;
-        } else {
+        if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), nullptr, path.c_str())) {
             NETSTACK_LOGE("loading certificates from directory error.");
+            continue;
         }
     }
-    if (access(certsPath->certFile.c_str(), F_OK) == 0) {
-        if (SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), certsPath->certFile.c_str(), nullptr)) {
-            loadedAny = true;
-        } else {
-            NETSTACK_LOGE("loading certificates from context cert error.");
-        }
-    }
-    if (!loadedAny) {
-        NETSTACK_LOGE("no CA certificates loaded, TLS verification will fail");
-        return CURLE_SSL_CERTPROBLEM;
+    if (access(certsPath->certFile.c_str(), F_OK) != 0) {
+        NETSTACK_LOGD("certificate directory path is not exist");
+    } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), certsPath->certFile.c_str(), nullptr)) {
+        NETSTACK_LOGE("loading certificates from context cert error.");
     }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
     return CURLE_OK;
@@ -611,16 +603,10 @@ static int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey)
     }
     unsigned char *certPubkey = nullptr;
     int pubkeyLen = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(cert), &certPubkey);
-    if (pubkeyLen < 0 || certPubkey == nullptr) {
-        NETSTACK_LOGE("i2d_X509_PUBKEY failed");
-        return CURLE_BAD_FUNCTION_ARGUMENT;
-    }
     std::string certPubKeyDigest;
-    if (!CommonUtils::Sha256sum(certPubkey, static_cast<size_t>(pubkeyLen), certPubKeyDigest)) {
-        OPENSSL_free(certPubkey);
+    if (!CommonUtils::Sha256sum(certPubkey, pubkeyLen, certPubKeyDigest)) {
         return CURLE_BAD_FUNCTION_ARGUMENT;
     }
-    OPENSSL_free(certPubkey);
     NETSTACK_LOGI("pubkey sha256: %{public}s", certPubKeyDigest.c_str());
     if (CommonUtils::IsCertPubKeyInPinned(certPubKeyDigest, pinnedPubkey)) {
         return CURLE_OK;
@@ -637,15 +623,7 @@ static int VerifyCallback(int preverifyOk, X509_STORE_CTX *ctx)
     NETSTACK_LOGI("X509_STORE_CTX error code %{public}d, depth %{public}d", err, depth);
 
     SSL *ssl = static_cast<SSL *>(X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx()));
-    if (ssl == nullptr) {
-        NETSTACK_LOGE("ssl is nullptr in VerifyCallback");
-        return preverifyOk;
-    }
     SSL_CTX *sslctx = SSL_get_SSL_CTX(ssl);
-    if (sslctx == nullptr) {
-        NETSTACK_LOGE("sslctx is nullptr in VerifyCallback");
-        return preverifyOk;
-    }
     RequestContext *requestContext = static_cast<RequestContext *>(SSL_CTX_get_ex_data(sslctx,
         SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX));
     if (requestContext == nullptr) {
@@ -785,10 +763,6 @@ bool NetHttpClientExec::SetMultiPartOption(CURL *curl, RequestContext *context)
             continue;
         }
         part = curl_mime_addpart(multipart);
-        if (part == nullptr) {
-            NETSTACK_LOGE("curl_mime_addpart failed");
-            continue;
-        }
         SetFormDataOption(multiFormData, part, curl, context);
         hasData = true;
     }
@@ -961,12 +935,7 @@ size_t NetHttpClientExec::OnWritingMemoryBody(const void *data, size_t size, siz
         callbackSize = context->streamingCallback->dataReceive.size();
     }
     if (context->IsRequestInStream() && callbackSize > 0) {
-        size_t totalSize = size * memBytes;
-        if (totalSize / size != memBytes) {
-            NETSTACK_LOGE("integer overflow in size * memBytes");
-            return 0;
-        }
-        context->SetTempData(data, totalSize);
+        context->SetTempData(data, size * memBytes);
         // call OnDataReceive
         auto tmp = context->GetTempData();
         context->PopTempData();
@@ -1053,12 +1022,7 @@ struct curl_slist *NetHttpClientExec::MakeHeaders(const std::vector<std::string>
     struct curl_slist *header = nullptr;
     std::for_each(vec.begin(), vec.end(), [&header](const std::string &s) {
         if (!s.empty()) {
-            struct curl_slist *tmp = curl_slist_append(header, s.c_str());
-            if (tmp == nullptr) {
-                NETSTACK_LOGE("curl_slist_append failed for header: %{public}s", s.c_str());
-            } else {
-                header = tmp;
-            }
+            header = curl_slist_append(header, s.c_str());
         }
     });
     return header;

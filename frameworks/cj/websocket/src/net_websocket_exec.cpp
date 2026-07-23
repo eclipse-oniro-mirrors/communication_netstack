@@ -487,8 +487,7 @@ bool NetWebSocketExec::ParseUrl(WebSocketConnectContext *context, char *protocol
     const char *tempProt = nullptr;
     const char *tempAddress = nullptr;
     const char *tempPath = nullptr;
-    (void)lws_parse_uri(uri, &tempProt, &tempAddress, port, &tempPath);
-    if (tempProt == nullptr || tempAddress == nullptr || tempPath == nullptr) {
+    if (lws_parse_uri(uri, &tempProt, &tempAddress, port, &tempPath) != 0) {
         NETSTACK_LOGE("lws_parse_uri failed");
         return false;
     }
@@ -557,10 +556,6 @@ int NetWebSocketExec::LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callb
 {
     NETSTACK_LOGD("lws callback client append handshake header");
     auto websocketProxy = reinterpret_cast<CJWebsocketProxy *>(user);
-    if (websocketProxy == nullptr) {
-        NETSTACK_LOGE("websocketProxy is null");
-        return -1;
-    }
     auto webSocketContext = websocketProxy->GetWebSocketContext();
     if (webSocketContext == nullptr) {
         NETSTACK_LOGE("user data is null");
@@ -575,14 +570,9 @@ int NetWebSocketExec::LwsCallbackClientAppendHandshakeHeader(lws *wsi, lws_callb
     auto payloadEnd = (*payload) + len;
     for (const auto &pair : webSocketContext->header) {
         std::string name = pair.first + NAME_END;
-        size_t valueLen = strlen(pair.second.c_str());
-        if (valueLen > INT_MAX) {
-            NETSTACK_LOGE("header value too long");
-            continue;
-        }
         if (lws_add_http_header_by_name(wsi, reinterpret_cast<const unsigned char *>(name.c_str()),
                                         reinterpret_cast<const unsigned char *>(pair.second.c_str()),
-                                        static_cast<int>(valueLen), payload, payloadEnd)) {
+                                        static_cast<int>(strlen(pair.second.c_str())), payload, payloadEnd)) {
             NETSTACK_LOGE("add header failed");
             return RaiseError(websocketProxy, GetHttpResponseFromWsi(wsi));
         }
@@ -596,10 +586,6 @@ int NetWebSocketExec::LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_rea
 {
     NETSTACK_LOGD("lws callback ws peer initiated close");
     auto websocketProxy = reinterpret_cast<CJWebsocketProxy *>(user);
-    if (websocketProxy == nullptr) {
-        NETSTACK_LOGE("websocketProxy is null");
-        return -1;
-    }
     auto webSocketContext = websocketProxy->GetWebSocketContext();
     if (webSocketContext == nullptr) {
         NETSTACK_LOGE("user data is null");
@@ -678,10 +664,6 @@ int NetWebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback
 {
     NETSTACK_LOGD("lws callback client filter preEstablish");
     auto websocketProxy = reinterpret_cast<CJWebsocketProxy *>(user);
-    if (websocketProxy == nullptr) {
-        NETSTACK_LOGE("websocketProxy is null");
-        return -1;
-    }
     auto webSocketContext = websocketProxy->GetWebSocketContext();
     if (webSocketContext == nullptr) {
         NETSTACK_LOGE("user data is null");
@@ -703,7 +685,6 @@ int NetWebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback
     std::map<std::string, std::string> responseHeader;
     for (int i = 0; i < WSI_TOKEN_COUNT; i++) {
         if (lws_hdr_total_length(wsi, static_cast<lws_token_indexes>(i)) > 0) {
-            memset(buffer, 0, sizeof(buffer));
             lws_hdr_copy(wsi, buffer, sizeof(buffer), static_cast<lws_token_indexes>(i));
             std::string str;
             if (lws_token_to_string(static_cast<lws_token_indexes>(i))) {
@@ -734,10 +715,6 @@ int NetWebSocketExec::LwsCallbackClientEstablished(lws *wsi, lws_callback_reason
 {
     NETSTACK_LOGD("lws callback client established");
     auto websocketProxy = reinterpret_cast<CJWebsocketProxy *>(user);
-    if (websocketProxy == nullptr) {
-        NETSTACK_LOGE("websocketProxy is null");
-        return -1;
-    }
     auto webSocketContext = websocketProxy->GetWebSocketContext();
     if (webSocketContext == nullptr) {
         NETSTACK_LOGE("user data is null");
@@ -753,10 +730,6 @@ int NetWebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons rea
 {
     NETSTACK_LOGD("lws callback client closed");
     auto websocketProxy = reinterpret_cast<CJWebsocketProxy *>(user);
-    if (websocketProxy == nullptr) {
-        NETSTACK_LOGE("websocketProxy is null");
-        return -1;
-    }
     auto webSocketContext = websocketProxy->GetWebSocketContext();
     if (webSocketContext == nullptr) {
         NETSTACK_LOGE("user data is null");
@@ -842,10 +815,6 @@ void NetWebSocketExec::FillContextInfo(WebSocketConnectContext *context,
 
 static bool CheckFilePath(std::string &path)
 {
-    if (path.empty() || path.find("..") != std::string::npos) {
-        NETSTACK_LOGE("path is invalid or contains path traversal");
-        return false;
-    }
     char tmpPath[PATH_MAX] = {0};
     if (!realpath(static_cast<const char *>(path.c_str()), tmpPath)) {
         NETSTACK_LOGE("path is error");
@@ -967,10 +936,6 @@ void NetWebSocketExec::OnMessage(CJWebsocketProxy *websocketProxy, void *data,
     NETSTACK_LOGD("OnMessage %{public}d", isBinary);
     if (websocketProxy == nullptr) {
         NETSTACK_LOGE("websocketProxy is null");
-        return;
-    }
-    if (data == nullptr && length > 0) {
-        NETSTACK_LOGE("data is null but length > 0");
         return;
     }
     if (websocketProxy->FindCallback(EVENT_OPEN) == std::nullopt) {
