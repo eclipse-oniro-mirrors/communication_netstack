@@ -91,7 +91,7 @@ static constexpr const int SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX = 1;
 
 bool NetHttpClientExec::AddCurlHandle(CURL *handle, RequestContext *context)
 {
-    if (handle == nullptr || context == nullptr || staticVariable_.curlMulti == nullptr) {
+    if (handle == nullptr || staticVariable_.curlMulti == nullptr) {
         NETSTACK_LOGE("handle nullptr");
         return false;
     }

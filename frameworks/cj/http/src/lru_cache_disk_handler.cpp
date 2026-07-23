@@ -228,10 +228,6 @@ void DiskHandler::Write(const std::string &str)
 std::string DiskHandler::Read()
 {
     std::lock_guard<std::mutex> guard(mutex_);
-    if (fileName_.empty() || fileName_.find("..") != std::string::npos) {
-        NETSTACK_LOGE("invalid fileName_ for Read");
-        return {};
-    }
     std::ifstream r(fileName_);
     if (!r.is_open()) {
         return {};
@@ -245,10 +241,6 @@ std::string DiskHandler::Read()
 void DiskHandler::Delete()
 {
     std::lock_guard<std::mutex> guard(mutex_);
-    if (fileName_.empty() || fileName_.find("..") != std::string::npos) {
-        NETSTACK_LOGE("invalid fileName_ for Delete");
-        return;
-    }
     if (remove(fileName_.c_str()) < 0) {
         NETSTACK_LOGI("remove file error %{public}d", errno);
     }
