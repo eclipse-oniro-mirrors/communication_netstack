@@ -37,6 +37,7 @@
 #include <functional>
 #include <map>
 #include <poll.h>
+#include <shared_mutex>
 #include <thread>
 #include <tuple>
 #include <unistd.h>
@@ -409,6 +410,8 @@ public:
 
         void CallOnErrorCallback(int32_t err, const std::string &errString);
 
+        int GetSSLError();
+
         class DataCache {
         public:
             
@@ -449,6 +452,7 @@ public:
         void CachedMessageCallback();
 
     private:
+        mutable std::shared_mutex sslMutex_;
         ssl_st *ssl_ = nullptr;
         int32_t socketFd_ = -1;
 
