@@ -763,6 +763,10 @@ bool NetHttpClientExec::SetMultiPartOption(CURL *curl, RequestContext *context)
             continue;
         }
         part = curl_mime_addpart(multipart);
+        if (part == nullptr) {
+            NETSTACK_LOGE("curl_mime_addpart failed");
+            continue;
+        }
         SetFormDataOption(multiFormData, part, curl, context);
         hasData = true;
     }
@@ -1020,11 +1024,16 @@ size_t NetHttpClientExec::OnWritingMemoryHeader(const void *data, size_t size, s
 struct curl_slist *NetHttpClientExec::MakeHeaders(const std::vector<std::string> &vec)
 {
     struct curl_slist *header = nullptr;
-    std::for_each(vec.begin(), vec.end(), [&header](const std::string &s) {
+    for (const auto &s : vec) {
         if (!s.empty()) {
-            header = curl_slist_append(header, s.c_str());
+            struct curl_slist *tmp = curl_slist_append(header, s.c_str());
+            if (tmp == nullptr) {
+                NETSTACK_LOGE("curl_slist_append failed");
+                break;
+            }
+            header = tmp;
         }
-    });
+    }
     return header;
 }
 
