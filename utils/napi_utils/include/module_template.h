@@ -352,7 +352,6 @@ napi_value SyncInterfaceWithManagerWrapper(napi_env env, napi_callback_info info
         return NapiUtils::GetUndefined(env);
     }
     std::shared_ptr<EventManager> sharedManager = wrapper ? wrapper->sharedManager : nullptr;
-
     auto deleter = [](Context *context) { delete context; };
     auto text = new Context(env, sharedManager);
     std::unique_ptr<Context, decltype(deleter)> context(text, deleter);
