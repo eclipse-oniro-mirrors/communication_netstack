@@ -196,6 +196,11 @@ public:
     void ClearHeaderCache();
 
     /**
+     * Reset all response data, including result, headers, cookies, and response code.
+     */
+    void Reset();
+
+    /**
      * Sets the cookies for the HTTP response.
      * @param cookies The cookie string.
      */

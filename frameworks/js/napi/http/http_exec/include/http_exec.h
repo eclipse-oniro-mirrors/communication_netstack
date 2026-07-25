@@ -240,6 +240,9 @@ private:
 
 #if HAS_NETMANAGER_BASE
     static void SetRequestInfoCallbacks(HttpOverCurl::TransferCallbacks &callbacks);
+#ifdef HTTP_HANDOVER_FEATURE
+    static void SetHandoverCallbacks(HttpOverCurl::TransferCallbacks &callbacks);
+#endif
 #endif
 
     static size_t OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData);

@@ -295,4 +295,102 @@ HWTEST_F(HttpClientResponseTest, ResponseClearHeaderCache001, TestSize.Level1)
     EXPECT_TRUE(response_.GetHeaders().empty());
     EXPECT_TRUE(response_.GetsetCookie().empty());
 }
+
+HWTEST_F(HttpClientResponseTest, ResponseReset001, TestSize.Level1)
+{
+    HttpClientResponse response;
+    const char *header = "Content-Type: application/json\r\nSet-Cookie: sessionid=123456\r\n";
+    response.AppendHeader(header, strlen(header));
+    response.AppendResult("body data", 9);
+    response.AppendCookies("cookie1=val1; ", 14);
+    response.SetResponseCode(ResponseCode::OK);
+    response.SetRequestTime("2024-01-01 00:00:00");
+    response.SetResponseTime("2024-01-01 00:00:01");
+    NetAddress netAddress;
+    netAddress.address_ = "192.168.1.1";
+    netAddress.family_ = FAMILY_IPV4;
+    netAddress.port_ = 8080;
+    response.SetNetAddress(netAddress);
+    response.performanceInfo_.dnsTiming = 10.0;
+    response.performanceInfo_.connectTiming = 20.0;
+    response.performanceInfo_.tlsTiming = 30.0;
+    response.performanceInfo_.firstSendTiming = 40.0;
+    response.performanceInfo_.firstReceiveTiming = 50.0;
+    response.performanceInfo_.totalTiming = 60.0;
+    response.performanceInfo_.redirectTiming = 70.0;
+    response.ParseHeaders();
+
+    EXPECT_FALSE(response.GetResult().empty());
+    EXPECT_FALSE(response.GetHeader().empty());
+    EXPECT_FALSE(response.GetsetCookie().empty());
+    EXPECT_FALSE(response.GetCookies().empty());
+    EXPECT_EQ(response.GetResponseCode(), ResponseCode::OK);
+    EXPECT_FALSE(response.GetRequestTime().empty());
+    EXPECT_FALSE(response.GetResponseTime().empty());
+    EXPECT_FALSE(response.GetHttpStatistics().serverIpAddress.address_.empty());
+    EXPECT_NE(response.GetPerformanceTiming().dnsTiming, 0);
+
+    response.Reset();
+
+    EXPECT_TRUE(response.GetResult().empty());
+    EXPECT_TRUE(response.GetHeader().empty());
+    EXPECT_TRUE(response.GetsetCookie().empty());
+    EXPECT_TRUE(response.GetCookies().empty());
+    EXPECT_EQ(response.GetResponseCode(), ResponseCode::NONE);
+    EXPECT_TRUE(response.GetRequestTime().empty());
+    EXPECT_TRUE(response.GetResponseTime().empty());
+    EXPECT_TRUE(response.GetHttpStatistics().serverIpAddress.address_.empty());
+    PerformanceInfo performanceInfo = response.GetPerformanceTiming();
+    EXPECT_EQ(performanceInfo.dnsTiming, 0);
+    EXPECT_EQ(performanceInfo.connectTiming, 0);
+    EXPECT_EQ(performanceInfo.tlsTiming, 0);
+    EXPECT_EQ(performanceInfo.firstSendTiming, 0);
+    EXPECT_EQ(performanceInfo.firstReceiveTiming, 0);
+    EXPECT_EQ(performanceInfo.totalTiming, 0);
+    EXPECT_EQ(performanceInfo.redirectTiming, 0);
+}
+
+HWTEST_F(HttpClientResponseTest, ResponseReset002, TestSize.Level1)
+{
+    HttpClientResponse response;
+
+    // first round: populate then reset, verifying Reset clears populated state (not just ctor defaults)
+    response.SetResult("first body");
+    response.SetResponseCode(ResponseCode::OK);
+    response.SetRequestTime("2024-01-01 00:00:00");
+    response.performanceInfo_.dnsTiming = 12.5;
+    response.Reset();
+    EXPECT_TRUE(response.GetResult().empty());
+    EXPECT_TRUE(response.GetHeader().empty());
+    EXPECT_TRUE(response.GetsetCookie().empty());
+    EXPECT_TRUE(response.GetCookies().empty());
+    EXPECT_EQ(response.GetResponseCode(), ResponseCode::NONE);
+    EXPECT_TRUE(response.GetRequestTime().empty());
+    EXPECT_TRUE(response.GetResponseTime().empty());
+    EXPECT_TRUE(response.GetHttpStatistics().serverIpAddress.address_.empty());
+    EXPECT_EQ(response.GetPerformanceTiming().dnsTiming, 0);
+    EXPECT_EQ(response.GetPerformanceTiming().totalTiming, 0);
+
+    // second round: reuse the same object (redirect/handover scenario), populate with new values then reset
+    response.SetResult("redirected body");
+    response.SetResponseCode(ResponseCode::MOVED_PERM);
+    response.SetResponseTime("2024-01-01 00:00:05");
+    response.performanceInfo_.totalTiming = 88.8;
+    response.Reset();
+    EXPECT_TRUE(response.GetResult().empty());
+    EXPECT_EQ(response.GetResponseCode(), ResponseCode::NONE);
+    EXPECT_TRUE(response.GetResponseTime().empty());
+    EXPECT_EQ(response.GetPerformanceTiming().totalTiming, 0);
+}
+
+HWTEST_F(HttpClientResponseTest, ResponseReset003, TestSize.Level1)
+{
+    HttpClientResponse response;
+    response.SetExpectDataType(HttpDataType::STRING);
+    EXPECT_EQ(response.GetExpectDataType(), HttpDataType::STRING);
+
+    response.Reset();
+
+    EXPECT_EQ(response.GetExpectDataType(), HttpDataType::STRING);
+}
 } // namespace

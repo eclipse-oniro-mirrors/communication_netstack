@@ -137,7 +137,11 @@ ohos_unittest("http_unittest") {
         "netmanager_base:net_security_config_if",
         "netmanager_base:netsys_client",
       ]
-      defines = [ "HAS_NETMANAGER_BASE=1" ]
+      defines = [
+        "HAS_NETMANAGER_BASE=1",
+        "HTTP_HANDOVER_FEATURE",
+        "HTTP_STACK_NAME=\"http\"",
+      ]
     } else {
       defines = [ "HAS_NETMANAGER_BASE=0" ]
     }

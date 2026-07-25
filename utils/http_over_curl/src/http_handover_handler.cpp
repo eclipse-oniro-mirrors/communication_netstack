@@ -307,6 +307,12 @@ bool HttpHandoverHandler::TryFlowControl(RequestInfo *requestInfo, int32_t reque
 bool HttpHandoverHandler::RetransRequest(std::map<CURL *, RequestInfo *> &ongoingRequests,
     CURLM *multi, RequestInfo *request)
 {
+    if (multi == nullptr || request == nullptr) {
+        return false;
+    }
+    if (request->callbacks.resetResponseCallback) {
+        request->callbacks.resetResponseCallback(request->opaqueData);
+    }
     auto ret = curl_multi_add_handle(multi, request->easyHandle);
     // LCOV_EXCL_START
     if (ret != CURLM_OK) {
