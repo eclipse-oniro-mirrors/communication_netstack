@@ -586,6 +586,10 @@ int NetWebSocketExec::LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_rea
 {
     NETSTACK_LOGD("lws callback ws peer initiated close");
     auto websocketProxy = reinterpret_cast<CJWebsocketProxy *>(user);
+    if (websocketProxy == nullptr) {
+        NETSTACK_LOGE("websocket proxy is null");
+        return HttpDummy(wsi, reason, user, in, len);
+    }
     auto webSocketContext = websocketProxy->GetWebSocketContext();
     if (webSocketContext == nullptr) {
         NETSTACK_LOGE("user data is null");
@@ -599,7 +603,11 @@ int NetWebSocketExec::LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_rea
     }
 
     uint16_t closeStatus = 0;
-    memcpy(&closeStatus, in, sizeof(uint16_t));
+    if (memcpy_s(&closeStatus, sizeof(uint16_t), in, sizeof(uint16_t)) != EOK) {
+        NETSTACK_LOGE("memcpy_s failed");
+        webSocketContext->Close(LWS_CLOSE_STATUS_NORMAL, "");
+        return HttpDummy(wsi, reason, user, in, len);
+    }
     closeStatus = ntohs(closeStatus);
     std::string closeReason;
     closeReason.append(reinterpret_cast<char *>(in) + sizeof(uint16_t), len - sizeof(uint16_t));
