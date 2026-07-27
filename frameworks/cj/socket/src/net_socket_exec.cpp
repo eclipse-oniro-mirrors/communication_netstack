@@ -27,6 +27,7 @@
 #include <unistd.h>
 
 #include "netstack_log.h"
+#include "netstack_common_utils.h"
 #include "securec.h"
 
 namespace OHOS::NetStack::Socket {
