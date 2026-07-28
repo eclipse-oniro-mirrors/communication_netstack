@@ -455,7 +455,7 @@ void RequestContext::ParseHeader(CArrString header)
     if (NetHttpClientExec::MethodForPost(options.GetMethod())) {
         options.SetHeader(CommonUtils::ToLower(HTTP_CONTENT_TYPE), HTTP_CONTENT_TYPE_JSON); // default
     }
-    for (int64_t i = 0; i + 1 < header.size; i += MAP_TUPLE_SIZE) {
+    for (int64_t i = 0; i + MAP_TUPLE_SIZE <= header.size; i += MAP_TUPLE_SIZE) {
         std::string key{header.head[i]};
         std::string value{header.head[i + 1]};
         options.SetHeader(CommonUtils::ToLower(key), value);

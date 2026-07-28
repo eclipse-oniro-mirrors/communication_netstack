@@ -1029,7 +1029,8 @@ struct curl_slist *NetHttpClientExec::MakeHeaders(const std::vector<std::string>
             struct curl_slist *tmp = curl_slist_append(header, s.c_str());
             if (tmp == nullptr) {
                 NETSTACK_LOGE("curl_slist_append failed");
-                break;
+                curl_slist_free_all(header);
+                return nullptr;
             }
             header = tmp;
         }
