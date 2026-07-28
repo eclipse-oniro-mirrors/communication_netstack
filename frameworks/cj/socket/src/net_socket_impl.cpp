@@ -328,9 +328,10 @@ int32_t CJTcpSocketImpl::Bind(CJTcpSocketProxy *proxy, const CNetAddress &cAddr)
         proxy->SetSocketFd(sockFd);
         proxy->SetFamily(address.GetSaFamily());
         if (!ExecTcpBind(sockFd, address, proxy->GetReuseAddr())) {
+            int bindErr = errno;
             close(sockFd);
             proxy->SetSocketFd(-1);
-            return ConvertErrCode(errno);
+            return ConvertErrCode(bindErr);
         }
     }
     return ERR_OK;
