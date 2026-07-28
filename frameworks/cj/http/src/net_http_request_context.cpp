@@ -571,25 +571,7 @@ void RequestContext::SendResponse()
         resp.errCode = GetErrorCode();
         resp.errMsg = MallocCString(GetErrorMessage());
     }
-    if (respCallback) {
-        respCallback(resp);
-    } else {
-        NETSTACK_LOGE("respCallback is not set, response dropped");
-        free(resp.errMsg);
-        free(resp.result.head);
-        if (resp.header.head != nullptr) {
-            for (int64_t i = 0; i < resp.header.size; i++) {
-                free(resp.header.head[i]);
-            }
-            free(resp.header.head);
-        }
-        if (resp.setCookie.head != nullptr) {
-            for (int64_t i = 0; i < resp.setCookie.size; i++) {
-                free(resp.setCookie.head[i]);
-            }
-            free(resp.setCookie.head);
-        }
-    }
+    respCallback(resp);
 }
 
 RequestContext* HttpRequestProxy::Request(std::string url, CHttpRequestOptions *ops, bool isInStream)
