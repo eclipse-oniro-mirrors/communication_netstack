@@ -97,6 +97,17 @@ public:
     {
     }
 
+    ~WebSocketContext()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        while (!dataQueue_.empty()) {
+            if (dataQueue_.front().data != nullptr) {
+                free(dataQueue_.front().data);
+            }
+            dataQueue_.pop();
+        }
+    }
+
     bool IsClosed()
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -242,6 +253,7 @@ static uint8_t* CreateResponseHeader(const std::map<std::string, std::string> &h
         res->headerType = UNDEFINED;
         res->header.head = nullptr;
         res->header.size = 0;
+        return reinterpret_cast<uint8_t*>(res);
     }
     res->headerType = MAP;
     res->header = Map2CArrString(headers);
@@ -303,7 +315,7 @@ bool NetWebSocketExec::CreatConnectInfo(WebSocketConnectContext *context,
     std::string tempHost = std::string(address) + NAME_END + std::to_string(port);
     std::string tempOrigin = std::string(protocol) + NAME_END + PROTOCOL_DELIMITER + tempHost;
     NETSTACK_LOGD("tempOrigin = %{private}s", tempOrigin.c_str());
-    if (strcpy_s(customizedProtocol, context->GetProtocol().length() + 1, context->GetProtocol().c_str()) != ERR_OK) {
+    if (strcpy_s(customizedProtocol, MAX_PROTOCOL_LENGTH, context->GetProtocol().c_str()) != ERR_OK) {
         NETSTACK_LOGE("memory copy failed");
     }
 
@@ -426,6 +438,7 @@ bool NetWebSocketExec::ExecSend(WebSocketSendContext *context)
         return false;
     }
     webSocketContext->Push(context->data, context->length, context->protocol);
+    context->data = nullptr;
     webSocketContext->TriggerWritable();
     NETSTACK_LOGD("lws ts send success");
     return true;
@@ -474,7 +487,10 @@ bool NetWebSocketExec::ParseUrl(WebSocketConnectContext *context, char *protocol
     const char *tempProt = nullptr;
     const char *tempAddress = nullptr;
     const char *tempPath = nullptr;
-    (void)lws_parse_uri(uri, &tempProt, &tempAddress, port, &tempPath);
+    if (lws_parse_uri(uri, &tempProt, &tempAddress, port, &tempPath) != 0) {
+        NETSTACK_LOGE("lws_parse_uri failed");
+        return false;
+    }
     if (strcpy_s(protocol, protocolLen, tempProt) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
@@ -570,6 +586,10 @@ int NetWebSocketExec::LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_rea
 {
     NETSTACK_LOGD("lws callback ws peer initiated close");
     auto websocketProxy = reinterpret_cast<CJWebsocketProxy *>(user);
+    if (websocketProxy == nullptr) {
+        NETSTACK_LOGE("websocket proxy is null");
+        return HttpDummy(wsi, reason, user, in, len);
+    }
     auto webSocketContext = websocketProxy->GetWebSocketContext();
     if (webSocketContext == nullptr) {
         NETSTACK_LOGE("user data is null");
@@ -582,7 +602,13 @@ int NetWebSocketExec::LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_rea
         return HttpDummy(wsi, reason, user, in, len);
     }
 
-    uint16_t closeStatus = ntohs(*reinterpret_cast<uint16_t *>(in));
+    uint16_t closeStatus = 0;
+    if (memcpy_s(&closeStatus, sizeof(uint16_t), in, sizeof(uint16_t)) != EOK) {
+        NETSTACK_LOGE("memcpy_s failed");
+        webSocketContext->Close(LWS_CLOSE_STATUS_NORMAL, "");
+        return HttpDummy(wsi, reason, user, in, len);
+    }
+    closeStatus = ntohs(closeStatus);
     std::string closeReason;
     closeReason.append(reinterpret_cast<char *>(in) + sizeof(uint16_t), len - sizeof(uint16_t));
     webSocketContext->Close(static_cast<lws_close_status>(closeStatus), closeReason);
@@ -600,9 +626,10 @@ int NetWebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons r
     }
     if (webSocketContext->IsClosed()) {
         NETSTACK_LOGI("need to close");
+        std::string reasonCopy = webSocketContext->closeReason;
         lws_close_reason(wsi, webSocketContext->closeStatus,
-                         reinterpret_cast<unsigned char *>(const_cast<char *>(webSocketContext->closeReason.c_str())),
-                         strlen(webSocketContext->closeReason.c_str()));
+                         reinterpret_cast<unsigned char *>(const_cast<char *>(reasonCopy.c_str())),
+                         reasonCopy.length());
         // here do not emit error, because we close it
         return -1;
     }
@@ -624,7 +651,7 @@ int NetWebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_re
                                                        void *user, void *in, size_t len)
 {
     NETSTACK_LOGD("lws callback client connection error");
-    NETSTACK_LOGI("Lws client connection error %{public}s", (in == nullptr) ? "null" : reinterpret_cast<char *>(in));
+    NETSTACK_LOGI("Lws client connection error %{private}s", (in == nullptr) ? "null" : reinterpret_cast<char *>(in));
     // 200 means connect failed
     OnConnectError(reinterpret_cast<CJWebsocketProxy *>(user), COMMON_ERROR_CODE, GetHttpResponseFromWsi(wsi));
     return HttpDummy(wsi, reason, user, in, len);
@@ -786,7 +813,7 @@ void NetWebSocketExec::FillContextInfo(WebSocketConnectContext *context,
     }
     GetWebsocketProxyInfo(context, host, port, exclusions);
     if (!host.empty() && !CommonUtils::IsHostNameExcluded(tempAddress, exclusions, ",")) {
-        if (strcpy_s(proxyAds, host.length() + 1, host.c_str()) != ERR_OK) {
+        if (strcpy_s(proxyAds, MAX_ADDRESS_LENGTH, host.c_str()) != ERR_OK) {
             NETSTACK_LOGE("memory copy failed");
         }
         info.http_proxy_address = proxyAds;
@@ -1018,6 +1045,7 @@ void NetWebSocketExec::HandleRcvMessage(CJWebsocketProxy *websocketProxy,
                 delete msgResponse;
             }
             delete para;
+            delete msg;
             websocketProxy->ClearWebSocketBinaryData();
             OnDataEnd(websocketProxy);
         }
@@ -1040,6 +1068,7 @@ void NetWebSocketExec::HandleRcvMessage(CJWebsocketProxy *websocketProxy,
                 delete msgResponse;
             }
             delete para;
+            delete msg;
             websocketProxy->ClearWebSocketTextData();
             OnDataEnd(websocketProxy);
         }

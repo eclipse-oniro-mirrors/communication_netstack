@@ -19,6 +19,7 @@
 #include <cerrno>
 #include <chrono>
 #include <fcntl.h>
+#include <limits>
 #include <netdb.h>
 #include <netinet/tcp.h>
 #include <poll.h>
@@ -26,6 +27,7 @@
 #include <unistd.h>
 
 #include "netstack_log.h"
+#include "netstack_common_utils.h"
 #include "securec.h"
 
 namespace OHOS::NetStack::Socket {
@@ -1200,6 +1202,10 @@ bool ExecGetLocalAddress(int sockFd, NetAddress &address)
 
 bool ExecTcpSetExtraOptions(int sockFd, const TCPExtraOptions &options)
 {
+    if (!CommonUtils::HasInternetPermission()) {
+        NETSTACK_LOGE("no internet permission");
+        return false;
+    }
     if (sockFd <= 0) {
         NETSTACK_LOGE("bad fd, socket is %{public}d", sockFd);
         return false;

@@ -16,6 +16,7 @@
 #include "net_websocket_connect_context.h"
 
 #include "net_websocket_utils.h"
+#include "netstack_log.h"
 
 namespace OHOS::NetStack::NetWebSocket {
 WebSocketConnectContext::WebSocketConnectContext(CJWebsocketProxy* websocketProxy)
@@ -49,8 +50,8 @@ static void AddSlashBeforeQuery(std::string &url)
 
 void WebSocketConnectContext::ParseParams(std::string url, CWebSocketRequestOptions *opt)
 {
-    this->url = url;
     AddSlashBeforeQuery(url);
+    this->url = url;
     if (opt != nullptr) {
         ParseHeader(opt->header);
         if (opt->caPath != nullptr) {

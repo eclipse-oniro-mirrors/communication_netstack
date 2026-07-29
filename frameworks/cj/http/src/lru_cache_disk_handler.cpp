@@ -209,6 +209,7 @@ void LRUCache::Clear()
     std::lock_guard<std::mutex> guard(mutex_);
     cache_.clear();
     nodeList_.clear();
+    size_ = 0;
 }
 
 DiskHandler::DiskHandler(std::string fileName) : fileName_(std::move(fileName)) {}

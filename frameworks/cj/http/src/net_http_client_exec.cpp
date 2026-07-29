@@ -225,7 +225,7 @@ bool NetHttpClientExec::GetCurlDataFromHandle(CURL *handle, RequestContext *cont
 
 double NetHttpClientExec::GetTimingFromCurl(CURL *handle, CURLINFO info)
 {
-    time_t timing;
+    curl_off_t timing;
     CURLcode result = curl_easy_getinfo(handle, info, &timing);
     if (result != CURLE_OK) {
         NETSTACK_LOGE("Failed to get timing: %{public}d, %{public}s", info, curl_easy_strerror(result));
@@ -365,6 +365,10 @@ void NetHttpClientExec::AddRequestInfo()
         auto ret = curl_multi_add_handle(staticVariable_.curlMulti, info.handle);
         if (ret == CURLM_OK) {
             staticVariable_.contextMap[info.handle] = info.context;
+        } else {
+            NETSTACK_LOGE("curl_multi_add_handle failed: %{public}d", ret);
+            curl_easy_cleanup(info.handle);
+            delete info.context;
         }
 
         ++num;
@@ -449,6 +453,7 @@ void NetHttpClientExec::ReadResponse()
                 HandleCurlData(msg);
             }
             if (msg->easy_handle) {
+                staticVariable_.contextMap.erase(msg->easy_handle);
                 (void)curl_multi_remove_handle(staticVariable_.curlMulti, msg->easy_handle);
                 (void)curl_easy_cleanup(msg->easy_handle);
             }
@@ -758,6 +763,10 @@ bool NetHttpClientExec::SetMultiPartOption(CURL *curl, RequestContext *context)
             continue;
         }
         part = curl_mime_addpart(multipart);
+        if (part == nullptr) {
+            NETSTACK_LOGE("curl_mime_addpart failed");
+            continue;
+        }
         SetFormDataOption(multiFormData, part, curl, context);
         hasData = true;
     }
@@ -905,7 +914,9 @@ bool NetHttpClientExec::SetOption(CURL *curl, RequestContext *context, struct cu
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_TIMEOUT_MS, context->options.GetReadTimeout(), context);
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CONNECTTIMEOUT_MS, context->options.GetConnectTimeout(), context);
 
-    SetRequestOption(curl, context);
+    if (!SetRequestOption(curl, context)) {
+        return false;
+    }
 
     if (!SetOtherOption(curl, context)) {
         return false;
@@ -1013,11 +1024,17 @@ size_t NetHttpClientExec::OnWritingMemoryHeader(const void *data, size_t size, s
 struct curl_slist *NetHttpClientExec::MakeHeaders(const std::vector<std::string> &vec)
 {
     struct curl_slist *header = nullptr;
-    std::for_each(vec.begin(), vec.end(), [&header](const std::string &s) {
+    for (const auto &s : vec) {
         if (!s.empty()) {
-            header = curl_slist_append(header, s.c_str());
+            struct curl_slist *tmp = curl_slist_append(header, s.c_str());
+            if (tmp == nullptr) {
+                NETSTACK_LOGE("curl_slist_append failed");
+                curl_slist_free_all(header);
+                return nullptr;
+            }
+            header = tmp;
         }
-    });
+    }
     return header;
 }
 
@@ -1089,14 +1106,18 @@ bool NetHttpClientExec::IsInitialized()
 
 void NetHttpClientExec::DeInitialize()
 {
-    std::lock_guard<std::mutex> lock(staticVariable_.curlMultiMutex);
-    staticVariable_.runThread = false;
-    staticVariable_.conditionVariable.notify_all();
+    {
+        std::lock_guard<std::mutex> lock(staticVariable_.curlMultiMutex);
+        staticVariable_.runThread = false;
+        staticVariable_.conditionVariable.notify_all();
+    }
     if (staticVariable_.workThread.joinable()) {
         staticVariable_.workThread.join();
     }
+    std::lock_guard<std::mutex> lock(staticVariable_.curlMultiMutex);
     if (staticVariable_.curlMulti) {
         curl_multi_cleanup(staticVariable_.curlMulti);
+        staticVariable_.curlMulti = nullptr;
     }
     staticVariable_.initialized = false;
 }
