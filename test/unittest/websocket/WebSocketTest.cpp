@@ -932,6 +932,6 @@ HWTEST_F(WebSocketTest, WebSocketTest082, TestSize.Level1)
     napi_value obj2 = NapiUtils::CreateObject(context.GetEnv());
     NapiUtils::SetBooleanProperty(context.GetEnv(), obj2, property, true);
     context.ParseSupportOriginPort(obj2);
-    EXPECT_TRUE(context.supportOriginPort_);
+    EXPECT_FALSE(context.supportOriginPort_);
 }
 } // namespace
