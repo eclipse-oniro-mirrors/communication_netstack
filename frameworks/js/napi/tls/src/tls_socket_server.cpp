@@ -1206,14 +1206,17 @@ void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> &dn
     int index = X509_get_ext_by_NID(x509Certificates, NID_commonName, -1);
     if (IsIP(hostName)) {
         auto it = find(ips.begin(), ips.end(), hostName);
-        if (it == ips.end()) {
+        if (it != ips.end()) {
+            valid = true;
+            reason = IP + hostName + " is in the cert's list";
+        } else {
             reason = IP + hostName + " is not in the cert's list";
         }
         result = {valid, reason};
         return;
     }
     std::string tempHostName = "" + hostName;
-    if (!dnsNames.empty() || index > 0) {
+    if (!dnsNames.empty() || index >= 0) {
         std::vector<std::string> hostParts = SplitHostName(tempHostName);
         std::string tmpStr = "";
         if (!dnsNames.empty()) {
@@ -1221,7 +1224,12 @@ void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> &dn
             tmpStr = ". is not in the cert's altnames";
         } else {
             char commonNameBuf[COMMON_NAME_BUF_SIZE] = {0};
-            X509_NAME *pSubName = nullptr;
+            X509_NAME *pSubName = X509_get_subject_name(x509Certificates);
+            if (pSubName == nullptr) {
+                reason = "Failed to get subject name";
+                result = {valid, reason};
+                return;
+            }
             int len = X509_NAME_get_text_by_NID(pSubName, NID_commonName, commonNameBuf, COMMON_NAME_BUF_SIZE);
             if (len > 0) {
                 std::vector<std::string> commonNameVec;

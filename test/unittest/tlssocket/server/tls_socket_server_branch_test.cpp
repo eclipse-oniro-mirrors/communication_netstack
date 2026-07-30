@@ -584,7 +584,8 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest027, testing::ext::
     const X509 *x509Certificates = X509_new();
     std::tuple<bool, std::string> result;
     CheckIpAndDnsName(hostName, dnsNames, ips, x509Certificates, result);
-    EXPECT_FALSE(std::get<0>(result));
+    EXPECT_TRUE(std::get<0>(result));
+    EXPECT_EQ(std::get<1>(result), "IP: 192.168.1.1 is in the cert's list");
     delete tlsSocketServer;
 }
 
