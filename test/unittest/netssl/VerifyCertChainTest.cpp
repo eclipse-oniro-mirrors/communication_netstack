@@ -512,8 +512,15 @@ HWTEST_F(VerifyCertChainTest, FreeCertChain_ValidChain_022, testing::ext::TestSi
 
 // ==================== SslExec tests ====================
 
-// 023: ExecVerifyCertChain with PARSE_ERROR context → return false
-HWTEST_F(VerifyCertChainTest, ExecVerifyCertChain_ParseError_023, testing::ext::TestSize.Level1)
+// 023: ExecVerifyCertChain with null context → return false (defensive null check)
+HWTEST_F(VerifyCertChainTest, ExecVerifyCertChain_NullContext_023, testing::ext::TestSize.Level1)
+{
+    bool result = SslExec::ExecVerifyCertChain(nullptr);
+    EXPECT_EQ(result, false);
+}
+
+// 024: ExecVerifyCertChain with PARSE_ERROR context → return false
+HWTEST_F(VerifyCertChainTest, ExecVerifyCertChain_ParseError_024, testing::ext::TestSize.Level1)
 {
     auto manager = std::make_shared<EventManager>();
     VerifyCertChainContext context(nullptr, manager);
@@ -523,8 +530,8 @@ HWTEST_F(VerifyCertChainTest, ExecVerifyCertChain_ParseError_023, testing::ext::
     EXPECT_EQ(result, false);
 }
 
-// 024: ExecVerifyCertChain with empty certs → return false
-HWTEST_F(VerifyCertChainTest, ExecVerifyCertChain_EmptyCerts_024, testing::ext::TestSize.Level1)
+// 025: ExecVerifyCertChain with empty certs → return false
+HWTEST_F(VerifyCertChainTest, ExecVerifyCertChain_EmptyCerts_025, testing::ext::TestSize.Level1)
 {
     auto manager = std::make_shared<EventManager>();
     VerifyCertChainContext context(nullptr, manager);
@@ -533,8 +540,15 @@ HWTEST_F(VerifyCertChainTest, ExecVerifyCertChain_EmptyCerts_024, testing::ext::
     EXPECT_EQ(result, false);
 }
 
-// 025: VerifyCertChainCallback with error context → return nullptr
-HWTEST_F(VerifyCertChainTest, VerifyCertChainCallback_Error_025, testing::ext::TestSize.Level1)
+// 026: VerifyCertChainCallback with null context → return nullptr (defensive null check)
+HWTEST_F(VerifyCertChainTest, VerifyCertChainCallback_NullContext_026, testing::ext::TestSize.Level1)
+{
+    napi_value result = SslExec::VerifyCertChainCallback(nullptr);
+    EXPECT_EQ(result, nullptr);
+}
+
+// 027: VerifyCertChainCallback with error context → return nullptr
+HWTEST_F(VerifyCertChainTest, VerifyCertChainCallback_Error_027, testing::ext::TestSize.Level1)
 {
     auto manager = std::make_shared<EventManager>();
     VerifyCertChainContext context(nullptr, manager);
@@ -546,7 +560,7 @@ HWTEST_F(VerifyCertChainTest, VerifyCertChainCallback_Error_025, testing::ext::T
 
 // ==================== Error code tests ====================
 
-// 026: All defined error codes are non-zero (except success)
+// 028: All defined error codes are non-zero (except success)
 HWTEST_F(VerifyCertChainTest, ErrorCodeDefinitions_028, testing::ext::TestSize.Level1)
 {
     EXPECT_EQ(SSL_NONE_ERR, 0);

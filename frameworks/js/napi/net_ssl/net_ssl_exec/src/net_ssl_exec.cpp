@@ -62,6 +62,10 @@ napi_value SslExec::VerifyCallback(CertContext *context)
 
 bool SslExec::ExecVerifyCertChain(VerifyCertChainContext *context)
 {
+    if (context == nullptr) {
+        NETSTACK_LOGE("ExecVerifyCertChain context is nullptr");
+        return false;
+    }
     context->SetPermissionDenied(true);
 
     if (context->GetErrorCode() == PARSE_ERROR_CODE) {
@@ -95,6 +99,10 @@ bool SslExec::ExecVerifyCertChain(VerifyCertChainContext *context)
 
 napi_value SslExec::VerifyCertChainCallback(VerifyCertChainContext *context)
 {
+    if (context == nullptr) {
+        NETSTACK_LOGE("VerifyCertChainCallback context is nullptr");
+        return nullptr;
+    }
     napi_env env = context->GetEnv();
 
     if (context->GetErrorCode() != 0) {
