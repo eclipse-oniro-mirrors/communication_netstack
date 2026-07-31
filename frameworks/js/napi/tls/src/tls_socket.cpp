@@ -802,6 +802,7 @@ void TLSSocket::Close(const CloseCallback &callback)
 
     std::lock_guard<std::mutex> lock(recvMutex_);
     NETSTACK_LOGI("tls socket close, fd =%{public}d", sockFd_);
+    tlsSocketInternal_.CloseTlsContext();
     close(sockFd_);
     sockFd_ = -1;
     CallOnCloseCallback();
@@ -1490,6 +1491,16 @@ bool TLSSocket::TLSSocketInternal::StartTlsConnected(const TLSConnectOptions &op
         return false;
     }
     return true;
+}
+
+void TLSSocket::TLSSocketInternal::CloseTlsContext()
+{
+    std::unique_lock<std::shared_mutex> sslLock(mutexForSsl_);
+    ssl_ = nullptr;
+    if (tlsContextPointer_) {
+        tlsContextPointer_->CloseCtx();
+        tlsContextPointer_.reset();
+    }
 }
 
 bool TLSSocket::TLSSocketInternal::CreatTlsContext()

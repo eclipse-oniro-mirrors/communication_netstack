@@ -563,6 +563,8 @@ private:
          */
         [[nodiscard]] bool SetSharedSigals();
 
+        void CloseTlsContext();
+
     private:
         bool SendRetry(ssl_st *ssl, const char *curPos, size_t curSendSize, int sockfd);
         bool StartTlsConnected(const TLSConnectOptions &options);
