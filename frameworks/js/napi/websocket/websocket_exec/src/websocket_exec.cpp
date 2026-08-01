@@ -154,7 +154,7 @@ bool WebSocketExec::ParseUrl(ConnectContext *context, std::string &protocol, std
     int &port)
 {
     char uri[MAX_URI_LENGTH] = {0};
-    if (strcpy_s(uri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
+    if (strcpy_s(uri, MAX_URI_LENGTH, context->url.c_str()) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
@@ -201,9 +201,9 @@ void RunService(std::shared_ptr<UserData> userData, std::shared_ptr<EventManager
         res = lws_service(context, 0);
     }
     NETSTACK_LOGE("lws_service stop");
-    lws_context_destroy(context);
-    userData->SetContext(nullptr);
     manager->SetWebSocketUserData(nullptr);
+    userData->SetContext(nullptr);
+    lws_context_destroy(context);
     NETSTACK_LOGI("websocket run service end");
 }
 
@@ -265,6 +265,11 @@ int WebSocketExec::LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reason
 {
     NETSTACK_LOGD("lws callback ws peer initiated close");
     auto manager = reinterpret_cast<EventManager *>(user);
+    // LCOV_EXCL_START
+    if (manager == nullptr) {
+        return -1;
+    }
+    // LCOV_EXCL_STOP
     auto userData = manager->GetWebSocketUserData();
     if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
@@ -353,7 +358,7 @@ void OnConnectError(EventManager *manager, int32_t code, uint32_t httpResponse)
 int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                     size_t len)
 {
-    NETSTACK_LOGI("Lws client connection error %{public}s", (in == nullptr) ? "null" : reinterpret_cast<char *>(in));
+    NETSTACK_LOGI("Lws client connection error");
     // 200 means connect failed
     OnConnectError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE, GetHttpResponseFromWsi(wsi));
     return HttpDummy(wsi, reason, user, in, len);
@@ -534,7 +539,7 @@ void WebSocketExec::FillContextInfo(ConnectContext *context, lws_context_creatio
     uint32_t port = 0;
     std::string exclusions;
 
-    if (strcpy_s(tempUri, MAX_URI_LENGTH, context->url.c_str()) < 0) {
+    if (strcpy_s(tempUri, MAX_URI_LENGTH, context->url.c_str()) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return;
     }
@@ -938,6 +943,11 @@ napi_value WebSocketExec::CloseCallback(CloseContext *context)
 static napi_value CreateError(napi_env env, void *callbackPara)
 {
     auto pair = reinterpret_cast<std::pair<int, uint32_t> *>(callbackPara);
+    // LCOV_EXCL_START
+    if (pair == nullptr) {
+        return NapiUtils::GetUndefined(env);
+    }
+    // LCOV_EXCL_STOP
     auto deleter = [](std::pair<int, uint32_t> *p) { delete p; };
     std::unique_ptr<std::pair<int, uint32_t>, decltype(deleter)> handler(pair, deleter);
     napi_value err = NapiUtils::CreateObject(env);
