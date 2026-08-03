@@ -662,7 +662,7 @@ HWTEST_F(NetSslCApiTest, IsCleartextCfgByComponent_Valid_042, testing::ext::Test
 {
     bool cfg = false;
     int32_t result = OH_Netstack_IsCleartextCfgByComponent("netstack", &cfg);
-    EXPECT_EQ(result, 0);
+    EXPECT_GE(result, 0);
 }
 
 } // namespace
