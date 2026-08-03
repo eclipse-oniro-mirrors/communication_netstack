@@ -433,6 +433,11 @@ int WebSocketServerExec::LwsCallbackClosed(lws *wsi, lws_callback_reasons reason
 
 void WebSocketServerExec::RemoveConnections(const std::string &id, UserData &userData, EventManager *manager)
 {
+    // LCOV_EXCL_START
+    if (manager == nullptr) {
+        return;
+    }
+    // LCOV_EXCL_STOP
     std::shared_lock<std::shared_mutex> lock_get(manager->GetDataMutex());
     auto realMap = reinterpret_cast<WebSocketConnMap*>(manager->GetData());
     if (realMap == nullptr) {
@@ -543,6 +548,11 @@ int WebSocketServerExec::LwsCallbackWsPeerInitiatedCloseServer(lws *wsi, lws_cal
     }
     lws_context *context = lws_get_context(wsi);
     EventManager *manager = static_cast<EventManager *>(lws_context_user(context));
+    // LCOV_EXCL_START
+    if (manager == nullptr) {
+        return -1;
+    }
+    // LCOV_EXCL_STOP
     auto userData = manager->GetWebSocketUserData();
     if (userData == nullptr) {
         NETSTACK_LOGE("user data is null");
@@ -747,6 +757,8 @@ static napi_value ConvertWsBinaryMessageToJs(napi_env env, const WebSocketMessag
 static napi_value CreateServerBinaryMessagePara(napi_env env, void *callbackPara)
 {
     auto pair = reinterpret_cast<std::pair<lws *, EventManager *> *>(callbackPara);
+    auto deleter = [](const std::pair<lws *, EventManager *> *p) { delete p; };
+    std::unique_ptr<std::pair<lws *, EventManager *>, decltype(deleter)> handler(pair, deleter);
     if (pair == nullptr) {
         NETSTACK_LOGE("pair is nullptr");
         return NapiUtils::GetUndefined(env);
@@ -795,6 +807,8 @@ static napi_value ConvertWsTextMessageToJs(napi_env env, const WebSocketMessage 
 static napi_value CreateServerTextMessagePara(napi_env env, void *callbackPara)
 {
     auto pair = reinterpret_cast<std::pair<lws *, EventManager *> *>(callbackPara);
+    auto deleter = [](const std::pair<lws *, EventManager *> *p) { delete p; };
+    std::unique_ptr<std::pair<lws *, EventManager *>, decltype(deleter)> handler(pair, deleter);
     if (pair == nullptr) {
         NETSTACK_LOGE("pair is nullptr");
         return NapiUtils::GetUndefined(env);
@@ -829,6 +843,11 @@ static napi_value CreateConnectPara(napi_env env, void *callbackPara)
     auto para = reinterpret_cast<WebSocketConnection *>(callbackPara);
     auto deleter = [](const WebSocketConnection *p) { delete p; };
     std::unique_ptr<WebSocketConnection, decltype(deleter)> handler(para, deleter);
+    // LCOV_EXCL_START
+    if (para == nullptr) {
+        return NapiUtils::GetUndefined(env);
+    }
+    // LCOV_EXCL_STOP
     napi_value obj = NapiUtils::CreateObject(env);
     if (NapiUtils::GetValueType(env, obj) != napi_object) {
         NETSTACK_LOGE("napi_object not found");
@@ -1015,10 +1034,12 @@ void WebSocketServerExec::SetWebsocketMessage(lws *wsi, EventManager *manager,
         NETSTACK_LOGE("manager is null");
         return;
     }
-    if (wsi == nullptr) {
-        NETSTACK_LOGE("wsi is nullptr");
+    // LCOV_EXCL_START
+    if (wsi == nullptr || dataMsg == nullptr) {
+        NETSTACK_LOGE("wsi dataMsg null");
         return;
     }
+    // LCOV_EXCL_STOP
     auto webSocketMessage = static_cast<WebSocketMessage *>(dataMsg);
     webSocketMessage->data = msgFromManager;
 
@@ -1107,6 +1128,12 @@ bool WebSocketServerExec::StartService(lws_context_creation_info &info, std::sha
         return false;
     }
     WebSocketConnMap* connMapPtr = new WebSocketConnMap();
+    // LCOV_EXCL_START
+    if (connMapPtr == nullptr) {
+        lws_context_destroy(lwsContext);
+        return false;
+    }
+    // LCOV_EXCL_STOP
     std::unique_lock<std::shared_mutex> lock_set(manager->GetDataMutex());
     manager->SetData(static_cast<void*>(connMapPtr));
     userData = std::make_shared<UserData>(lwsContext);
@@ -1377,6 +1404,11 @@ void WebSocketServerExec::CloseAllConnection(const std::shared_ptr<UserData> &us
             continue;
         }
         auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(connPair.first));
+        // LCOV_EXCL_START
+        if (clientUserData == nullptr) {
+            continue;
+        }
+        // LCOV_EXCL_STOP
         clientUserData->Close(LWS_CLOSE_STATUS_GOINGAWAY, closeReason);
         clientUserData->TriggerWritable();
     }
