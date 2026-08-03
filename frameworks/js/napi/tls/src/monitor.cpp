@@ -347,6 +347,7 @@ napi_value Monitor::Off(napi_env env, napi_callback_info info)
     lock.unlock();
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
     ParserEventForOff(event, shared);
+    NETSTACK_LOGI("SubEvent op=off_all kit=networkKit event=%{public}s", event.c_str());
     manager->DeleteListener(event);
     return NapiUtils::GetUndefined(env);
 }

@@ -170,6 +170,7 @@ napi_value OffManagerWrapper(napi_env env, napi_callback_info info, const std::i
         if (paramsCount == EVENT_PARAM_NUM) {
             manager->DeleteListener(event, params[1]);
         } else {
+            NETSTACK_LOGI("SubEvent op=off_all kit=networkKit event=%{public}s", event.c_str());
             manager->DeleteListener(event);
         }
     }
@@ -301,6 +302,7 @@ napi_value OffSharedManager(napi_env env, napi_callback_info info, const std::in
         if (paramsCount == EVENT_PARAM_NUM) {
             manager->DeleteListener(event, params[1]);
         } else {
+            NETSTACK_LOGI("SubEvent op=off_all kit=networkKit event=%{public}s", event.c_str());
             manager->DeleteListener(event);
         }
     }
