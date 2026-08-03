@@ -2323,7 +2323,7 @@ static std::shared_ptr<EventManager> WaitForManagerReady(int32_t clientId, int &
     return manager;
 }
 
-static inline void RecvInErrorCondition(int reason, int clientId, int connectFD, const TcpMessageCallback &callback)
+static inline void RecvInErrorCondition(int reason, int clientId, int connectFD, TcpMessageCallback callback)
 {
     NETSTACK_LOGE("Recv Error, reason: %{public}d, clientId: %{public}d,"
         "connectFD: %{public}d", reason, clientId, connectFD);
@@ -2337,7 +2337,7 @@ static inline void RecvInErrorCondition(int reason, int clientId, int connectFD,
 }
 
 static inline void CloseClientHandler(int clientId, int connectFD, const std::shared_ptr<EventManager> &manager,
-    const TcpMessageCallback &callback)
+    TcpMessageCallback callback)
 {
     callback.OnCloseMessage(manager);
     RemoveClientConnection(clientId);
@@ -2349,7 +2349,7 @@ static inline void CloseClientHandler(int clientId, int connectFD, const std::sh
 }
 
 static int PollSocket(int clientId, int connectFD, const std::shared_ptr<EventManager> &manager,
-    const TcpMessageCallback &callback)
+    TcpMessageCallback callback)
 {
     pollfd fds[1] = {{connectFD, POLLIN, 0}};
     int ret = poll(fds, 1, DEFAULT_POLL_TIMEOUT);
@@ -2401,7 +2401,7 @@ static int RecvWithSockCheck(int connectFD, char *buffer, uint32_t recvBufferSiz
 }
 
 static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
-    const std::shared_ptr<EventManager> &manager, const TcpMessageCallback &callback)
+    const std::shared_ptr<EventManager> &manager, TcpMessageCallback callback)
 {
     auto buffer = std::make_unique<char[]>(recvBufferSize);
     if (buffer == nullptr) {
@@ -2452,7 +2452,7 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
     }
 }
 
-static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallback &callback)
+static void ClientHandler(int32_t sock, int32_t clientId, TcpMessageCallback callback)
 {
     int32_t connectFD = 0;
     auto manager = WaitForManagerReady(clientId, connectFD);
@@ -2461,6 +2461,18 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
     TCPExtraOptions option;
     auto config = GetSharedConfig(callback.GetEventManager());
     if (config == nullptr) {
+        NETSTACK_LOGE("config is nullptr in ClientHandler, cleaning up clientId=%{public}d", clientId);
+        {
+            std::lock_guard<std::mutex> lock(g_mutex);
+            auto iter = g_clientFDs.find(clientId);
+            if (iter != g_clientFDs.end()) {
+                if (!IsClientFdClosed(iter->second)) {
+                    shutdown(iter->second, SHUT_RDWR);
+                    close(iter->second);
+                }
+                g_clientFDs.erase(iter);
+            }
+        }
         return;
     }
     config->RemoveAcceptSocket(connectFD);
@@ -2472,9 +2484,8 @@ static void ClientHandler(int32_t sock, int32_t clientId, const TcpMessageCallba
     ClientPollRecv(clientId, connectFD, recvBufferSize, manager, callback);
 }
 
-static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const TcpMessageCallback &callback)
+static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, TcpMessageCallback callback)
 {
-    std::vector<std::shared_ptr<std::thread>> clientThreads;
     while (true) {
         sockaddr_in clientAddress;
         socklen_t clientAddrLength = sizeof(clientAddress);
@@ -2505,23 +2516,27 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, const Tc
         int clientId = g_userCounter;
         auto config = GetSharedConfig(callback.GetEventManager());
         if (config == nullptr) {
-            return;
+            NETSTACK_LOGE("config is nullptr, cleaning up connectFD=%{public}d and breaking", connectFD);
+            close(connectFD);
+            {
+                std::lock_guard<std::mutex> lock(g_mutex);
+                g_clientFDs.erase(clientId);
+            }
+            break;
         }
         config->AddNewAcceptSocket(sock, connectFD);
         if (TCPExtraOptions option; config->GetTcpExtraOptions(sock, option)) {
             SocketSetTcpExtraOptions(connectFD, option);
         }
-        auto handlerThread = std::make_shared<std::thread>(ClientHandler, sock, clientId, callback);
+        std::thread handlerThread(ClientHandler, sock, clientId, callback);
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(TCP_SERVER_HANDLE_CLIENT);
 #else
-        pthread_setname_np(handlerThread->native_handle(), TCP_SERVER_HANDLE_CLIENT);
+        pthread_setname_np(handlerThread.native_handle(), TCP_SERVER_HANDLE_CLIENT);
 #endif
-        clientThreads.push_back(handlerThread);
+        handlerThread.detach();
     }
-    for (auto handlerThread : clientThreads) {
-        handlerThread->join();
-    }
+    NETSTACK_LOGI("AcceptRecvData loop exited, sock=%{public}d", sock);
 }
 
 bool ExecTcpServerListen(TcpServerListenContext *context)
