@@ -397,7 +397,10 @@ HWTEST_F(HttpClientRequestTest, SetClientCertTest001, TestSize.Level1)
     clientCert.certPath = "/path/to/client.pem";
     clientCert.certType = "PEM";
     clientCert.keyPath = "/path/to/client.key";
-    clientCert.keyPassword = "passwordToKey";
+    SecureData keyPasswordData;
+    std::string pwd = "passwordToKey";
+    keyPasswordData.append(pwd.c_str());
+    clientCert.keyPassword = keyPasswordData;
     req.SetClientCert(clientCert);
     HttpClientCert client = req.GetClientCert();
     EXPECT_EQ(client.keyPassword, "passwordToKey");
@@ -451,7 +454,10 @@ HWTEST_F(HttpClientRequestTest, SetClientEncCertTest001, TestSize.Level1)
     clientCert.certPath = "/path/to/client.pem";
     clientCert.certType = "PEM";
     clientCert.keyPath = "/path/to/client.key";
-    clientCert.keyPassword = "passwordToKey";
+    SecureData keyPasswordData;
+    std::string pwd = "passwordToKey";
+    keyPasswordData.append(pwd.c_str());
+    clientCert.keyPassword = keyPasswordData;
     req.SetClientEncCert(clientCert);
     HttpClientCert client = req.GetClientEncCert();
     EXPECT_EQ(client.certPath, "/path/to/client.pem");
