@@ -55,7 +55,7 @@ struct HttpClientCert {
     std::string certPath;
     std::string certType;
     std::string keyPath;
-    std::string keyPassword;
+    HttpClient::SecureData keyPassword;
 };
 
 enum SslType {
