@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "net_address.h"
+#include "napi_utils.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -124,7 +125,7 @@ class Socks5Option {
 public:
     Socks5ProxyAddress proxyAddress_{};
     std::string username_{};
-    std::string password_{};
+    NapiUtils::SecureData password_{};
 };
 } // Socks5
 } // NetStack

@@ -20,6 +20,7 @@
 
 #include "napi/native_api.h"
 #include "net_address.h"
+#include "napi_utils.h"
 
 namespace OHOS::NetStack::Socket {
 enum class ProxyType {
@@ -38,7 +39,7 @@ public:
     ProxyType type_{ProxyType::NONE};
     NetAddress address_;
     std::string username_;
-    std::string password_;
+    NapiUtils::SecureData password_;
 };
 } // namespace OHOS::NetStack::Socket
 
