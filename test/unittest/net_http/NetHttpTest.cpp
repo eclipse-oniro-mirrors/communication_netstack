@@ -332,7 +332,6 @@ HWTEST_F(NetHttpTest, SetOption003, TestSize.Level1)
     request->options->resumeTo = 20;
     ret = OH_Http_Request(request, callback, handler);
     EXPECT_EQ(ret, 0);
-
     free(request->options);
     OH_Http_Destroy(&request);
 }
