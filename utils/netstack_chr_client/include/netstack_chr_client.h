@@ -46,7 +46,7 @@ private:
     template <typename DataType>
     static DataType GetNumericAttributeFromCurl(CURL *handle, CURLINFO info);
     static std::string GetStringAttributeFromCurl(CURL *handle, CURLINFO info);
-    static long GetRequestStartTime(curl_off_t totalTime);
+    static long long GetRequestStartTime(curl_off_t totalTime);
     bool ShouldReportUrlAbnormalEvent(const DataTransUrlInfo &urlInfo);
     int ShouldReportHttpAbnormalEvent(const DataTransChrStats &dataTransChrStats);
     static std::string EncodeUrlParam(const std::string &str);
