@@ -80,6 +80,12 @@ EpollMultiDriver::~EpollMultiDriver()
 
 void EpollMultiDriver::Step(int waitEventsTimeoutMs)
 {
+    // LCOV_EXCL_START
+    if (!multi_) {
+        NETSTACK_LOGE("multi_ is nullptr, Step may have failed");
+        return;
+    }
+    // LCOV_EXCL_STOP
     epoll_event events[MAX_EPOLL_EVENTS];
     int eventsToHandle = poller_.Wait(events, MAX_EPOLL_EVENTS, waitEventsTimeoutMs);
     if (eventsToHandle == -1) {
@@ -189,6 +195,11 @@ void EpollMultiDriver::HandleCompletion(CURLMsg *message, RequestInfo *requestIn
 
 __attribute__((no_sanitize("cfi"))) void EpollMultiDriver::CheckMultiInfo()
 {
+    // LCOV_EXCL_START
+    if (!multi_) {
+        return;
+    }
+    // LCOV_EXCL_STOP
     CURLMsg *message;
     int pending;
 
