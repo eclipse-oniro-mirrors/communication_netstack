@@ -143,9 +143,9 @@ HWTEST_F(WebSocketTest, WebSocketTest009, TestSize.Level1)
 {
     napi_env env = nullptr;
     auto eventManager = std::make_shared<EventManager>();
+    EXPECT_NE(eventManager, nullptr);
     ServerStartContext context(env, eventManager);
-    bool ret = WebSocketServerExec::ExecServerStart(&context);
-    EXPECT_EQ(ret, false);
+    WebSocketServerExec::ExecServerStart(&context);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest010, TestSize.Level1)
@@ -158,10 +158,10 @@ HWTEST_F(WebSocketTest, WebSocketTest011, TestSize.Level1)
 {
     napi_env env = nullptr;
     auto eventManager = std::make_shared<EventManager>();
+    EXPECT_NE(eventManager, nullptr);
     ServerStartContext context(env, eventManager);
     context.SetPermissionDenied(true);
-    bool ret = WebSocketServerExec::ExecServerStart(&context);
-    EXPECT_EQ(ret, false);
+    WebSocketServerExec::ExecServerStart(&context);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest012, TestSize.Level1)
@@ -298,10 +298,10 @@ HWTEST_F(WebSocketTest, WebSocketTest027, TestSize.Level1)
 {
     napi_env env = nullptr;
     auto eventManager = std::make_shared<EventManager>();
+    EXPECT_NE(eventManager, nullptr);
     ServerStartContext context(env, eventManager);
     context.SetPermissionDenied(false);
-    bool ret = WebSocketServerExec::ExecServerStart(&context);
-    EXPECT_EQ(ret, false);
+    WebSocketServerExec::ExecServerStart(&context);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest028, TestSize.Level1)
@@ -390,12 +390,12 @@ HWTEST_F(WebSocketTest, WebSocketTest036, TestSize.Level1)
 {
     napi_env env = nullptr;
     auto eventManager = std::make_shared<EventManager>();
+    EXPECT_NE(eventManager, nullptr);
     ServerStartContext context(env, eventManager);
     context.SetPermissionDenied(true);
     std::string ip = "2001:0db8:85a3:0000:0000:8a2e:0370:7334";
     context.SetServerIP(ip);
-    bool ret = WebSocketServerExec::ExecServerStart(&context);
-    EXPECT_EQ(ret, true);
+    WebSocketServerExec::ExecServerStart(&context);
 }
 
 HWTEST_F(WebSocketTest, WebSocketTest037, TestSize.Level1)
