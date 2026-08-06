@@ -886,7 +886,7 @@ int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
-int WebSocketClient::SendEx(char *data, size_t length)
+int WebSocketClient::SendEx(const char *data, size_t length)
 {
     NETSTACK_LOGI("WebSocketClient::SendEx start %{public}s, %{public}zu", data, length);
     if (!CommonUtils::HasInternetPermission()) {
