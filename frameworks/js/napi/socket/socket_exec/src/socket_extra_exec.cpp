@@ -48,7 +48,7 @@ bool ExecGetLocalAddress(GetLocalAddressContext *context)
     auto socketFD = context->GetSocketFd();
     struct sockaddr_storage addr{};
     socklen_t addrLen = sizeof(addr);
-    if (getsockname(socketFD, (struct sockaddr *)&addr, &addrLen) < 0) {
+    if (getsockname(socketFD, reinterpret_cast<struct sockaddr *>(&addr), &addrLen) < 0) {
         context->SetNeedThrowException(true);
         context->SetErrorCode(errno);
         return false;
@@ -83,7 +83,7 @@ bool ExecTcpServerGetLocalAddress(TcpServerGetLocalAddressContext *context)
     auto socketFD = context->GetSocketFd();
     struct sockaddr_storage addr{};
     socklen_t addrLen = sizeof(addr);
-    if (getsockname(socketFD, (struct sockaddr *)&addr, &addrLen) < 0) {
+    if (getsockname(socketFD, reinterpret_cast<struct sockaddr *>(&addr), &addrLen) < 0) {
         context->SetNeedThrowException(true);
         context->SetErrorCode(errno);
         return false;

@@ -920,7 +920,7 @@ bool ExecLocalSocketGetLocalAddress(LocalSocketGetLocalAddressContext *context)
     }
     struct sockaddr_un unAddr = {0};
     socklen_t len = sizeof(unAddr);
-    if (getsockname(context->GetSocketFd(), (struct sockaddr *)&unAddr, &len) == 0) {
+    if (getsockname(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&unAddr), &len) == 0) {
         context->SetSocketPath(unAddr.sun_path);
         return true;
     } else {
@@ -1087,7 +1087,7 @@ bool ExecLocalSocketServerGetLocalAddress(LocalSocketServerGetLocalAddressContex
     }
     struct sockaddr_un unAddr = {0};
     socklen_t len = sizeof(unAddr);
-    if (getsockname(context->GetSocketFd(), (struct sockaddr *)&unAddr, &len) == 0) {
+    if (getsockname(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&unAddr), &len) == 0) {
         context->SetSocketPath(unAddr.sun_path);
         return true;
     } else {
