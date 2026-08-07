@@ -352,7 +352,7 @@ void OH_Http_SetOption(HttpClientRequest *httpReq, Http_Request *request)
     httpReq->SetHttpProtocol(static_cast<HttpProtocol>(request->options->httpProtocol));
     // caPath
     if (request->options->caPath != nullptr) {
-        httpReq->SetCaPath((std::string)request->options->caPath);
+        httpReq->SetCaPath(request->options->caPath);
     }
     // resumeFrom  resumeTo
     if ((request->options->method != nullptr && strcmp(request->options->method, HttpConstant::HTTP_METHOD_GET) == 0) ||

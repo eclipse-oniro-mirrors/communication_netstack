@@ -280,6 +280,7 @@ HWTEST_F(NetHttpTest, SetOption002, TestSize.Level1)
     request->options->headers = header;
     ret = OH_Http_Request(request, callback, handler);
     EXPECT_EQ(ret, 0);
+
     free(request->options);
     OH_Http_DestroyHeaders(&header);
     OH_Http_Destroy(&request);
