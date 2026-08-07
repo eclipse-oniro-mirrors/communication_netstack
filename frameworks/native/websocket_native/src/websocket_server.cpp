@@ -764,7 +764,7 @@ int WebSocketServer::Send(const char *data, int length, const SocketConnection &
         free(tmpData);
         return -1;
     }
-    clientUserData->Push((void *)tmpData, length, protocol);
+    clientUserData->Push(static_cast<void *>(tmpData), length, protocol);
     clientUserData->TriggerWritable();
     NETSTACK_LOGD("lws ts send success");
     return 0;

@@ -72,8 +72,8 @@ public:
 
     int Connect(std::string URL, OpenOptions Options);
     int ConnectEx(std::string URL, OpenOptions Options);
-    int Send(char *data, size_t length);
-    int SendEx(char *data, size_t length);
+    int Send(const char *data, size_t length);
+    int SendEx(const char *data, size_t length);
     int Close(CloseOption options);
     int CloseEx(CloseOption options);
     int Registcallback(OnOpenCallback OnOpen, OnMessageCallback onMessage, OnErrorCallback OnError,
