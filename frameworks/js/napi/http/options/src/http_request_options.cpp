@@ -245,6 +245,11 @@ UsingHttpProxyType HttpRequestOptions::GetUsingHttpProxyType() const
 void HttpRequestOptions::SetSpecifiedHttpProxy(const std::string &host, int32_t port, const std::string &exclusionList,
     const NapiUtils::SecureData &username, const NapiUtils::SecureData &password)
 {
+    constexpr int32_t PORT_MAX = 65535;
+    if (port <= 0 || port > PORT_MAX) {
+        NETSTACK_LOGE("SetSpecifiedHttpProxy: invalid port");
+        return;
+    }
     httpProxyHost_ = host;
     httpProxyPort_ = port;
     httpProxyExclusions_ = exclusionList;

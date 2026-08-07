@@ -41,7 +41,7 @@ struct RequestInfo {
 };
 
 struct RedirectionInterceptorInfo {
-    CURLMsg *message;
+    CURLMsg message;
     std::shared_ptr<std::string> location;
 };
 

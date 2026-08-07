@@ -260,7 +260,7 @@ void EpollMultiDriver::HandleCurlDoneMessage(CURLMsg *message)
             std::function<void()> handleRedirect =
                 std::bind(&EpollMultiDriver::HandleRedirect, this, easyHandle, locationPtr, requestInfo);
             auto interceptorCallback = interceptor->GetRedirectionInterceptorCallback();
-            auto handleInfo = new RedirectionInterceptorInfo { message, locationPtr };
+            auto handleInfo = new RedirectionInterceptorInfo { *message, locationPtr };
             auto redirectCallback =
                 std::bind(interceptorCallback, context, handleRedirect, handleCompletion, handleInfo);
             NapiUtils::CreateUvQueueWorkByModuleId(context->GetEnv(), redirectCallback, context->GetModuleId());

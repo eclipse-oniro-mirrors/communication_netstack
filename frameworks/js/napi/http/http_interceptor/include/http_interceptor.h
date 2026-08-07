@@ -16,6 +16,7 @@
 #ifndef COMMUNICATIONNETSTACK_HTTP_INTERCEPTOR_H
 #define COMMUNICATIONNETSTACK_HTTP_INTERCEPTOR_H
 
+#include <atomic>
 #include <queue>
 #include <mutex>
 #include <map>
@@ -91,6 +92,7 @@ private:
         std::function<void()> block;
         napi_value reqContext;
         napi_value resContext;
+        std::atomic<bool> deleted_ = false;
         ~InitialRequestInterceptorHandle() = default;
     };
     struct CacheCheckedInterceptorHandle {
@@ -99,6 +101,7 @@ private:
         std::function<void()> block;
         napi_value reqContext;
         napi_value resContext;
+        std::atomic<bool> deleted_ = false;
         ~CacheCheckedInterceptorHandle() = default;
     };
     struct FinalResponseInterceptorHandle {
@@ -106,6 +109,7 @@ private:
         RequestContext *context = nullptr;
         napi_value reqContext;
         napi_value resContext;
+        std::atomic<bool> deleted_ = false;
         ~FinalResponseInterceptorHandle() = default;
     };
     struct RedirectionInterceptorHandle {
@@ -115,6 +119,7 @@ private:
         HttpOverCurl::RedirectionInterceptorInfo *handleInfo;
         napi_value reqContext;
         napi_value resContext;
+        std::atomic<bool> deleted_ = false;
         RedirectionInterceptorHandle(std::function<void()> redirect, std::function<void()> completion,
             HttpOverCurl::RedirectionInterceptorInfo *info, napi_value requestContext, napi_value responseContext)
             : handleRedirect(std::move(redirect)), handleCompletion(std::move(completion)), context(nullptr),
@@ -142,6 +147,8 @@ private:
     static void ApplyBlockInitialRequestInterceptor(napi_env env, InitialRequestInterceptorHandle *handle);
     static napi_value CreateRequestContextInitialRequestInterceptor(napi_env env, RequestContext *context);
     static napi_value CreateResponseContextInitialRequestInterceptor(napi_env env, RequestContext *context);
+    static napi_value OnResolveInitialRequestInterceptor(napi_env env, napi_callback_info info);
+    static napi_value OnRejectInitialRequestInterceptor(napi_env env, napi_callback_info info);
     static void HandlePromiseThenInitialRequestInterceptor(
         napi_env env, InitialRequestInterceptorHandle *handle, napi_value promise);
     static void HandlePromiseInitialRequestInterceptor(napi_env env, InitialRequestInterceptorHandle *handle);
@@ -152,6 +159,8 @@ private:
         napi_env env, RequestContext *context, HttpOverCurl::RedirectionInterceptorInfo *handleInfo);
     static napi_value CreateResponseContextRedirectionInterceptor(
         napi_env env, RequestContext *context, HttpOverCurl::RedirectionInterceptorInfo *handleInfo);
+    static napi_value OnResolveRedirectionInterceptor(napi_env env, napi_callback_info info);
+    static napi_value OnRejectRedirectionInterceptor(napi_env env, napi_callback_info info);
     static void HandlePromiseThenRedirectionInterceptor(
         napi_env env, RedirectionInterceptorHandle *handle, napi_value promise);
     static void HandlePromiseRedirectionInterceptor(napi_env env, RedirectionInterceptorHandle *handle);
@@ -160,6 +169,8 @@ private:
     static void ApplyBlockFinalResponseInterceptor(napi_env env, FinalResponseInterceptorHandle *handle);
     static napi_value CreateRequestContextFinalResponseInterceptor(napi_env env, RequestContext *context);
     static napi_value CreateResponseContextFinalResponseInterceptor(napi_env env, RequestContext *context);
+    static napi_value OnResolveFinalResponseInterceptor(napi_env env, napi_callback_info info);
+    static napi_value OnRejectFinalResponseInterceptor(napi_env env, napi_callback_info info);
     static void HandlePromiseThenFinalResponseInterceptor(
         napi_env env, FinalResponseInterceptorHandle *handle, napi_value promise);
     static void HandlePromiseFinalResponseInterceptor(napi_env env, FinalResponseInterceptorHandle *handle);
@@ -168,6 +179,8 @@ private:
     static void ApplyBlockCacheCheckedInterceptor(napi_env env, CacheCheckedInterceptorHandle *handle);
     static napi_value CreateRequestContextCacheCheckedInterceptor(napi_env env, RequestContext *context);
     static napi_value CreateResponseContextCacheCheckedInterceptor(napi_env env, RequestContext *context);
+    static napi_value OnResolveCacheCheckedInterceptor(napi_env env, napi_callback_info info);
+    static napi_value OnRejectCacheCheckedInterceptor(napi_env env, napi_callback_info info);
     static void HandlePromiseThenCacheCheckedInterceptor(
         napi_env env, CacheCheckedInterceptorHandle *handle, napi_value promise);
     static void HandlePromiseCacheCheckedInterceptor(napi_env env, CacheCheckedInterceptorHandle *handle);
@@ -177,6 +190,8 @@ private:
     static void ApplyBlockConnectNetworkInterceptor(napi_env env, InitialRequestInterceptorHandle *handle);
     static napi_value CreateRequestContextConnectNetworkInterceptor(napi_env env, RequestContext *context);
     static napi_value CreateResponseContextConnectNetworkInterceptor(napi_env env, RequestContext *context);
+    static napi_value OnResolveConnectNetworkInterceptor(napi_env env, napi_callback_info info);
+    static napi_value OnRejectConnectNetworkInterceptor(napi_env env, napi_callback_info info);
     static void HandlePromiseThenConnectNetworkInterceptor(
         napi_env env, InitialRequestInterceptorHandle *handle, napi_value promise);
     static void HandlePromiseConnectNetworkInterceptor(napi_env env, InitialRequestInterceptorHandle *handle);
