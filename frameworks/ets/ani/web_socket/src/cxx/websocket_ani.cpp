@@ -94,7 +94,7 @@ int32_t Send(WebSocketClientWrapper &client, const rust::Vec<uint8_t> data, int3
     if ((data.size() == 0 || data.data() == nullptr) && dataType == 1) {
         return PARSE_ERROR_CODE;
     }
-    return client.client->SendEx(static_cast<const char*>(data.data()), data.size());
+    return client.client->SendEx(reinterpret_cast<const char*>(data.data()), data.size());
 }
 
 int32_t Close(WebSocketClientWrapper &client, AniCloseOption options)
@@ -318,7 +318,7 @@ int32_t SendServerData(NetStack::WebSocketServer::WebSocketServer &server, const
         .clientIP = strIP,
         .clientPort = static_cast<uint32_t>(iPort),
     };
-    return server.Send(static_cast<const char*>(data.data()), data.size(), socketConn);
+    return server.Send(reinterpret_cast<const char*>(data.data()), data.size(), socketConn);
 }
 
 int32_t ListAllConnections(NetStack::WebSocketServer::WebSocketServer &server,
