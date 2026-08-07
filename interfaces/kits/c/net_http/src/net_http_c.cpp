@@ -294,7 +294,9 @@ void OH_Http_SetOtherOption(HttpClientRequest *httpReq, Http_Request *request)
             clientCert.certPath = request->options->clientCert->certPath;
         }
         if (request->options->clientCert->keyPassword != nullptr) {
-            clientCert.keyPassword = request->options->clientCert->keyPassword;
+            SecureData keyPasswordData;
+            keyPasswordData.append(request->options->clientCert->keyPassword);
+            clientCert.keyPassword = keyPasswordData;
         }
         if (request->options->clientCert->keyPath != nullptr) {
             clientCert.keyPath = request->options->clientCert->keyPath;

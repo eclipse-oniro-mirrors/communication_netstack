@@ -171,7 +171,9 @@ void SetClientCert(HttpClientRequest &request, const ClientCert& cert)
 
     clientCert.certPath = std::string(cert.cert_path.data(), cert.cert_path.size());
     clientCert.keyPath = std::string(cert.key_path.data(), cert.key_path.size());
-    clientCert.keyPassword = std::string(cert.key_password.data(), cert.key_password.size());
+    SecureData keyPassword;
+    keyPassword.append(std::string(cert.key_password.data(), cert.key_password.size()).c_str());
+    clientCert.keyPassword = keyPassword;
     
     switch (cert.cert_type) {
         case CertType::Pem:
