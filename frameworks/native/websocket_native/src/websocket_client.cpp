@@ -715,7 +715,7 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
-int WebSocketClient::Send(char *data, size_t length)
+int WebSocketClient::Send(const char *data, size_t length)
 {
     if (data == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_SEND_DATA_NULL;
