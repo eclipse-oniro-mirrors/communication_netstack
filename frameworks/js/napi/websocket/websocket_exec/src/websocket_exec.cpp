@@ -383,6 +383,16 @@ int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reaso
     return HttpDummy(wsi, reason, user, in, len);
 }
 
+void SetUserDataInfo(std::vector<std::string> &vec, std::shared_ptr<Websocket::UserData> &userData)
+{
+    if (vec.size() >= FUNCTION_PARAM_TWO) {
+        userData->openMessage = vec[1];
+    }
+    if (vec.size() >= FUNCTION_PARAM_ONE) {
+        userData->httpVersion = vec[0];
+    }
+}
+
 int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                        size_t len)
 {
@@ -406,12 +416,7 @@ int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_re
     }
 
     auto vec = CommonUtils::Split(statusLine, STATUS_LINE_SEP, STATUS_LINE_ELEM_NUM);
-    if (vec.size() >= FUNCTION_PARAM_TWO) {
-        userData->openMessage = vec[1];
-    }
-    if (vec.size() >= FUNCTION_PARAM_ONE) {
-        userData->httpVersion = vec[0];
-    }
+    SetUserDataInfo(vec, userData);
 
     char buffer[MAX_HDR_LENGTH] = {};
     std::map<std::string, std::string> responseHeader;
