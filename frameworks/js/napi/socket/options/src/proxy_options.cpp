@@ -56,7 +56,7 @@ int ProxyOptions::ParseOptions(napi_env env, napi_value value)
         username_ = NapiUtils::GetStringPropertyUtf8(env, options, KEY_USERNAME);
     }
     if (NapiUtils::HasNamedProperty(env, options, KEY_PASSWORD)) {
-        password_ = NapiUtils::GetStringPropertyUtf8(env, options, KEY_PASSWORD);
+        NapiUtils::GetSecureDataPropertyUtf8(env, options, KEY_PASSWORD, password_);
     }
 
     napi_value netAddress = NapiUtils::GetNamedProperty(env, options, KEY_ADDRESS);
