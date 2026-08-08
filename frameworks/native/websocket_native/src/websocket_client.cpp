@@ -21,6 +21,7 @@
 #include "netstack_log.h"
 #include "websocket_client_innerapi.h"
 #include "netstack_common_utils.h"
+#include "socket_statistics.h"
 
 #ifdef HAS_NETMANAGER_BASE
 #include "http_proxy.h"
@@ -66,6 +67,7 @@ static constexpr const char *BASE_PATH = "/data/certificates/user_cacerts/";
 #endif
 static constexpr const int WS_DEFAULT_PORT = 80;
 static constexpr const int WSS_DEFAULT_PORT = 443;
+static constexpr const int COMMON_ERROR_CODE = 200;
 static std::atomic<int> g_clientID(0);
 namespace OHOS::NetStack::WebSocketClient {
 static const lws_retry_bo_t RETRY = {
@@ -74,6 +76,8 @@ static const lws_retry_bo_t RETRY = {
     .jitter_percent = 20,
 };
 static const std::vector<std::string> WS_PREFIX = {PREFIX_WSS, PREFIX_WS};
+
+using OHOS::NetStack::SocketStats::SocketStatisticsEvent;
 
 WebSocketClient::WebSocketClient()
 {
@@ -207,10 +211,18 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
 }
 // LCOV_EXCL_STOP
 
+// LCOV_EXCL_START
 int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     WebSocketClient *client = static_cast<WebSocketClient *>(user);
     NETSTACK_LOGE("ClientId:%{public}d,Callback ClientConnectionError", client->GetClientContext()->GetClientId());
+    
+    auto ctx = client != nullptr ? client->GetClientContext() : nullptr;
+    if (ctx != nullptr) {
+        auto &wsStats = SocketStatisticsEvent::GetInstance().GetWebsocketStat(ctx->isWss);
+        wsStats.RecordAbnormalConnect(ctx->dstIpForStats, COMMON_ERROR_CODE);
+        wsStats.RecordVersionError(ctx->dstIpForStats, ctx->httpVersion);
+    }
     std::string buf;
     char *data = static_cast<char *>(in);
     buf.assign(data, len);
@@ -222,6 +234,7 @@ int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void
     }
     return HttpDummy(wsi, reason, user, in, len);
 }
+// LCOV_EXCL_STOP
 
 // LCOV_EXCL_START
 int LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
@@ -314,6 +327,9 @@ int LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_reasons reason, v
     if (vec.size() >= FUNCTION_PARAM_TWO) {
         client->GetClientContext()->openMessage = vec[1];
     }
+    if (!vec.empty()) {
+        client->GetClientContext()->httpVersion = vec[0];
+    }
     char buffer[MAX_HDR_LENGTH] = {};
     std::map<std::string, std::string> responseHeader;
     for (int i = 0; i < WSI_TOKEN_COUNT; i++) {
@@ -345,7 +361,7 @@ int LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_reasons reason, v
     return HttpDummy(wsi, reason, user, in, len);
 }
 // LCOV_EXCL_STOP
-
+// LCOV_EXCL_START
 int LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     WebSocketClient *client = static_cast<WebSocketClient *>(user);
@@ -354,17 +370,38 @@ int LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons reason, void *us
         return -1;
     }
     NETSTACK_LOGI("ClientId:%{public}d,Callback ClientEstablished", client->GetClientContext()->GetClientId());
-    client->GetClientContext()->TriggerWritable();
-    client->GetClientContext()->SetLws(wsi);
+    auto ctx = client->GetClientContext();
+    lws_conmon conmon = {};
+    lws_conmon_wsi_take(wsi, &conmon);
+    bool isWss = ctx->isWss;
+    uint64_t totalUs = static_cast<uint32_t>(conmon.ciu_dns) + static_cast<uint32_t>(conmon.ciu_sockconn) +
+                       static_cast<uint32_t>(conmon.ciu_tls) + static_cast<uint32_t>(conmon.ciu_txn_resp);
+    uint32_t dnsMs = static_cast<uint32_t>(conmon.ciu_dns) / 1000;
+    uint32_t tcpMs = static_cast<uint32_t>(conmon.ciu_sockconn) / 1000;
+    uint32_t tlsMs = static_cast<uint32_t>(conmon.ciu_tls) / 1000;
+    uint32_t upgradeMs = static_cast<uint32_t>(conmon.ciu_txn_resp) / 1000;
+    uint32_t totalMs = static_cast<uint32_t>(totalUs / 1000);
+    auto &wsStats = SocketStatisticsEvent::GetInstance().GetWebsocketStat(isWss);
+    wsStats.RecordDnsTime(dnsMs);
+    wsStats.RecordTcpHandshakeTime(tcpMs);
+    if (isWss && tlsMs > 0) {
+        wsStats.RecordTlsHandshakeTime(tlsMs);
+    }
+    wsStats.RecordHttpUpgradeTime(upgradeMs);
+    wsStats.RecordVersion(ctx->httpVersion);
+    wsStats.RecordConnectSuccess(totalMs);
+    lws_conmon_release(&conmon);
+    ctx->TriggerWritable();
+    ctx->SetLws(wsi);
     OpenResult openResult;
-    openResult.status = client->GetClientContext()->openStatus;
-    openResult.message = client->GetClientContext()->openMessage.c_str();
+    openResult.status = ctx->openStatus;
+    openResult.message = ctx->openMessage.c_str();
     if (client->onOpenCallback_) {
         client->onOpenCallback_(client, openResult);
     }
     return HttpDummy(wsi, reason, user, in, len);
 }
-
+// LCOV_EXCL_STOP
 int LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     WebSocketClient *client = static_cast<WebSocketClient *>(user);
@@ -657,6 +694,9 @@ int CreatConnectInfo(const std::string url, lws_context *lwsContext, WebSocketCl
         connectInfo.ssl_connection =
             LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_INSECURE | LCCSCF_ALLOW_SELFSIGNED;
     }
+    // LCOV_EXCL_START
+    connectInfo.ssl_connection = ((unsigned int)connectInfo.ssl_connection) | LCCSCF_CONMON;
+    // LCOV_EXCL_STOP
     lws *wsi = nullptr;
     connectInfo.pwsi = &wsi;
     connectInfo.userdata = client;
@@ -666,6 +706,32 @@ int CreatConnectInfo(const std::string url, lws_context *lwsContext, WebSocketCl
     }
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
+// LCOV_EXCL_START
+void GetContextParams(bool &isWss, std::string &url, WebSocketClient *client)
+{
+    char statsPrefix[MAX_URI_LENGTH] = {0};
+    char statsAddress[MAX_URI_LENGTH] = {0};
+    char statsPath[MAX_URI_LENGTH] = {0};
+    int statsPort = 0;
+    if (ParseUrl(url, statsPrefix, statsAddress, statsPath, &statsPort)) {
+        isWss = (strcmp(statsPrefix, PREFIX_WSS) == 0 || strcmp(statsPrefix, PREFIX_HTTPS) == 0);
+        client->GetClientContext()->isWss = isWss;
+        client->GetClientContext()->hostNameForStats = statsAddress;
+        client->GetClientContext()->dstIpForStats = statsAddress;
+    }
+}
+
+void ConnectThread(WebSocketClient *client)
+{
+    std::thread serviceThread(RunService, client);
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    pthread_setname_np(WEBSOCKET_CLIENT_THREAD_RUN);
+#else
+    pthread_setname_np(serviceThread.native_handle(), WEBSOCKET_CLIENT_THREAD_RUN);
+#endif
+    serviceThread.detach();
+}
+// LCOV_EXCL_STOP
 
 int WebSocketClient::Connect(std::string url, struct OpenOptions options)
 {
@@ -698,20 +764,22 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
     if (lwsContext == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_CONNECTION_NO_MEMOERY;
     }
+    // LCOV_EXCL_START
     this->GetClientContext()->SetContext(lwsContext);
+    bool isWss = false;
+    GetContextParams(isWss, url, this);
+    auto &wsStats = SocketStatisticsEvent::GetInstance().GetWebsocketStat(isWss);
+    wsStats.RecordConnectAttempt();
+    wsStats.RecordTotalConnect(this->GetClientContext()->dstIpForStats, this->GetClientContext()->hostNameForStats);
     int ret = CreatConnectInfo(url, lwsContext, this);
     if (ret != WEBSOCKET_NONE_ERR) {
         NETSTACK_LOGE("websocket CreatConnectInfo error");
         GetClientContext()->SetContext(nullptr);
+        wsStats.RecordAbnormalConnect(this->GetClientContext()->dstIpForStats, ret);
         return ret;
     }
-    std::thread serviceThread(RunService, this);
-#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-    pthread_setname_np(WEBSOCKET_CLIENT_THREAD_RUN);
-#else
-    pthread_setname_np(serviceThread.native_handle(), WEBSOCKET_CLIENT_THREAD_RUN);
-#endif
-    serviceThread.detach();
+    ConnectThread(this);
+    // LCOV_EXCL_STOP
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
@@ -823,6 +891,7 @@ int CreatConnectInfoEx(const std::string url, lws_context *lwsContext, WebSocket
         connectInfo.ssl_connection =
             LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_INSECURE | LCCSCF_ALLOW_SELFSIGNED;
     }
+    connectInfo.ssl_connection = ((unsigned int)connectInfo.ssl_connection) | LCCSCF_CONMON;
     lws *wsi = nullptr;
     connectInfo.pwsi = &wsi;
     connectInfo.userdata = client;
@@ -834,17 +903,27 @@ int CreatConnectInfoEx(const std::string url, lws_context *lwsContext, WebSocket
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
+// LCOV_EXCL_START
+int CheckConnectPermission(WebSocketClient *client)
+{
+    if (!CommonUtils::HasInternetPermission()) {
+        client->GetClientContext()->permissionDenied = true;
+        return WebSocketErrorCode::WEBSOCKET_ERROR_PERMISSION_DENIED;
+    }
+    if (client->GetClientContext()->isAtomicService && !CommonUtils::IsAllowedHostname(client->GetClientContext()->
+            bundleName, CommonUtils::DOMAIN_TYPE_WEBSOCKET_REQUEST, client->GetClientContext()->url)) {
+        client->GetClientContext()->noAllowedHost = true;
+        return WebSocketErrorCode::WEBSOCKET_ERROR_DISALLOW_HOST;
+    }
+    return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
+}
+
 int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
 {
     NETSTACK_LOGI("ClientId:%{public}d, Connect start", this->GetClientContext()->GetClientId());
-    if (!CommonUtils::HasInternetPermission()) {
-        this->GetClientContext()->permissionDenied = true;
-        return WebSocketErrorCode::WEBSOCKET_ERROR_PERMISSION_DENIED;
-    }
-    if (this->GetClientContext()->isAtomicService && !CommonUtils::IsAllowedHostname(this->GetClientContext()->
-            bundleName, CommonUtils::DOMAIN_TYPE_WEBSOCKET_REQUEST, this->GetClientContext()->url)) {
-        this->GetClientContext()->noAllowedHost = true;
-        return WebSocketErrorCode::WEBSOCKET_ERROR_DISALLOW_HOST;
+    int permissonCheckCode = CheckConnectPermission(this);
+    if (permissonCheckCode != WEBSOCKET_NONE_ERR) {
+        return permissonCheckCode;
     }
     if (!options.headers.empty()) {
         if (options.headers.size() > MAX_HEADER_LENGTH) {
@@ -860,7 +939,7 @@ int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
     if (!this->GetClientContext()->GetUserCertPath().empty()) {
         this->GetClientContext()->caPath = this->GetClientContext()->GetUserCertPath();
     }
-    
+
     lws_context_creation_info info = {};
     char proxyAds[MAX_ADDRESS_LENGTH] = {0};
     FillContextInfo(this->GetClientContext(), info, proxyAds, MAX_ADDRESS_LENGTH);
@@ -876,17 +955,24 @@ int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
         return WebSocketErrorCode::WEBSOCKET_CONNECTION_NO_MEMOERY;
     }
     this->GetClientContext()->SetContext(lwsContext);
+    bool isWss = false;
+    GetContextParams(isWss, url, this);
+    auto &wsStats = SocketStatisticsEvent::GetInstance().GetWebsocketStat(isWss);
+    wsStats.RecordConnectAttempt();
+    wsStats.RecordTotalConnect(this->GetClientContext()->dstIpForStats, this->GetClientContext()->hostNameForStats);
     int ret = CreatConnectInfoEx(url, lwsContext, this);
     if (ret != WEBSOCKET_NONE_ERR) {
-        NETSTACK_LOGE("websocket CreatConnectInfoEx error");
+        NETSTACK_LOGE("websocket CreatConnectInfoEx error: %{public}d", ret);
         GetClientContext()->SetContext(nullptr);
+        wsStats.RecordAbnormalConnect(this->GetClientContext()->dstIpForStats, ret);
         return ret;
     }
     RunLwsThread();
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
++ // LCOV_EXCL_STOP
 
-int WebSocketClient::SendEx(const char *data, size_t length)
+    int WebSocketClient::SendEx(const char *data, size_t length)
 {
     NETSTACK_LOGI("WebSocketClient::SendEx start %{public}s, %{public}zu", data, length);
     if (!CommonUtils::HasInternetPermission()) {

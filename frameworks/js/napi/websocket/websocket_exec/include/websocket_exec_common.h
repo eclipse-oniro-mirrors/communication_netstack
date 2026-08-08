@@ -167,6 +167,11 @@ public:
 
     std::string openMessage;
 
+    bool isWss = false;
+    std::string dstIpForStats;
+    std::string hostNameForStats;
+    std::string httpVersion = "HTTP/1.1";
+
     lws_retry_bo_t retry_policy {
         .secs_since_valid_ping   = 30,
         .secs_since_valid_hangup = 60,

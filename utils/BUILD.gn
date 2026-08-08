@@ -58,6 +58,7 @@ ohos_shared_library("stack_utils_common") {
     "common_utils/src/netstack_common_utils.cpp",
     "common_utils/src/netstack_hisysevent.cpp",
     "common_utils/src/request_tracer.cpp",
+    "common_utils/src/socket_statistics.cpp",
   ]
 
   public_configs = [ ":stack_utils_common_public_config" ]
@@ -65,6 +66,7 @@ ohos_shared_library("stack_utils_common") {
   external_deps = [
     "bounds_checking_function:libsec_shared",
     "hilog:libhilog",
+    "ability_runtime:wantagent_innerkits",
     "hisysevent:libhisysevent",
     "samgr:samgr_proxy",
   ]
