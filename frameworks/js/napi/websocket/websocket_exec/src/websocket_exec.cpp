@@ -359,7 +359,7 @@ void OnConnectError(EventManager *manager, int32_t code, uint32_t httpResponse)
 }
 
 int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in,
-                                                     size_t len)
+                                                    size_t len)
 {
     auto manager = reinterpret_cast<EventManager *>(user);
     auto userData = manager ? manager->GetWebSocketUserData() : nullptr;
@@ -386,7 +386,6 @@ int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reaso
 int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                        size_t len)
 {
-    NETSTACK_LOGD("lws callback client filter preEstablish");
     auto manager = reinterpret_cast<EventManager *>(user);
     auto userData = manager->GetWebSocketUserData();
     if (userData == nullptr) {
