@@ -61,7 +61,7 @@ public:
         napi_ref interceptorRef_ = nullptr;
 
         HttpInterceptor(napi_env env, const std::string &type, napi_value interceptorInstance)
-            : napi_env_(env), interceptorType_(type)
+            : napi_env_(env), interceptorType_(type), interceptorRef_(nullptr)
         {
             napi_create_reference(env, interceptorInstance, 1, &interceptorRef_);
         }
@@ -74,7 +74,10 @@ public:
         }
         napi_value GetInstance(napi_env env) const
         {
-            napi_value instance;
+            if (interceptorRef_ == nullptr) {
+                return nullptr;
+            }
+            napi_value instance = nullptr;
             napi_get_reference_value(env, interceptorRef_, &instance);
             return instance;
         }

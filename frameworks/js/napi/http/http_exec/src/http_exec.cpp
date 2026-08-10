@@ -1201,9 +1201,16 @@ void HttpExec::HandleCurlData(CURLMsg *msg)
 #endif
     }
     context->SendNetworkProfiler();
+#if !HAS_NETMANAGER_BASE
     if (handle) {
+        (void)curl_multi_remove_handle(staticVariable_.curlMulti, handle);
         (void)curl_easy_cleanup(handle);
     }
+#else
+     if (handle) {
+         (void)curl_easy_cleanup(handle);
+     }
+#endif
     if (context->IsSyncWait()) {
         context->NotifySyncComplete();
         return;
@@ -1569,10 +1576,6 @@ void HttpExec::ReadResponse()
         if (msg) {
             if (msg->msg == CURLMSG_DONE) {
                 HandleCurlData(msg);
-            }
-            if (msg->easy_handle) {
-                (void)curl_multi_remove_handle(staticVariable_.curlMulti, msg->easy_handle);
-                (void)curl_easy_cleanup(msg->easy_handle);
             }
         }
     } while (msg);

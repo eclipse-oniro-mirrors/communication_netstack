@@ -158,13 +158,25 @@ void HttpModuleExports::DefineHttpInterceptorChainClass(napi_env env, napi_value
     ModuleTemplate::DefineClassNew(
         env, exports, properties, INTERFACE_HTTP_INTERCEPTOR_CHAIN,
         [](napi_env env, napi_callback_info info) -> napi_value {
-            HttpInterceptorChain *chain = new HttpInterceptorChain(env);
-            napi_value thisVal;
-            napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr);
-            napi_wrap(
+            napi_value thisVal = nullptr;
+            napi_status status = napi_get_cb_info(env, info, nullptr, nullptr, &thisVal, nullptr);
+            if (status != napi_ok || thisVal == nullptr) {
+                NETSTACK_LOGE("Failed to get cb info in HttpInterceptorChain constructor");
+                return nullptr;
+            }
+            auto *chain = new (std::nothrow) HttpInterceptorChain(env);
+            if (chain == nullptr) {
+                NETSTACK_LOGE("Failed to allocate HttpInterceptorChain");
+                return thisVal;
+            }
+            status = napi_wrap(
                 env, thisVal, reinterpret_cast<void *>(chain),
                 [](napi_env env, void *data, void *hint) { delete static_cast<HttpInterceptorChain *>(data); }, nullptr,
                 nullptr);
+            if (status != napi_ok) {
+                NETSTACK_LOGE("Failed to wrap HttpInterceptorChain, status=%{public}d", status);
+                delete chain;
+            }
             return thisVal;
         });
     std::initializer_list<napi_property_descriptor> typeProperties = {
@@ -610,6 +622,10 @@ napi_value HttpModuleExports::HttpInterceptorChain::GetChain(napi_env env, napi_
             return NapiUtils::CreateArray(env, 0);
         }
         napi_value interceptorInstance = interceptor->GetInstance(env);
+        if (interceptorInstance == nullptr) {
+            NETSTACK_LOGE("Null interceptor instance in chain during GetChain");
+            return NapiUtils::CreateArray(env, 0);
+        }
         NapiUtils::SetArrayElement(env, result, i, interceptorInstance);
     }
     return result;

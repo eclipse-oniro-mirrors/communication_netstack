@@ -516,7 +516,7 @@ napi_value GetBoolean(napi_env env, bool value)
 bool GetBooleanFromValue(napi_env env, napi_value value)
 {
     if (GetValueType(env, value) != napi_boolean) {
-        return GetUndefined(env);
+        return false;
     }
 
     bool ret = false;

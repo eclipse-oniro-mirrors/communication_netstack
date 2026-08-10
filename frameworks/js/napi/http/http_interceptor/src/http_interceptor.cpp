@@ -261,6 +261,45 @@ napi_value HttpInterceptor::CreateResponseContextInitialRequestInterceptor(napi_
     return resContext;
 }
 
+napi_value HttpInterceptor::OnResolveInitialRequestInterceptor(napi_env env, napi_callback_info info)
+{
+    NETSTACK_LOGD("RequestContext::onResolve: start");
+
+    void *data;
+    napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
+    auto *handle = static_cast<InitialRequestInterceptorHandle *>(data);
+    if (handle == nullptr || handle->deleted_) {
+        return nullptr;
+    }
+    handle->deleted_ = true;
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    bool result = (argc > 0) ? NapiUtils::GetBooleanFromValue(env, args[0]) : false;
+    if (result) {
+        ApplyContinueInitialRequestInterceptor(env, handle);
+    } else {
+        ApplyBlockInitialRequestInterceptor(env, handle);
+    }
+    delete handle;
+    return nullptr;
+}
+
+napi_value HttpInterceptor::OnRejectInitialRequestInterceptor(napi_env env, napi_callback_info info)
+{
+    INTERCEPTOR_TRACE_ERROR("INITIAL_REQUEST", "interceptor promise rejected");
+    void *data;
+    napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
+    auto *handle = static_cast<InitialRequestInterceptorHandle *>(data);
+    if (handle == nullptr || handle->deleted_) {
+        return nullptr;
+    }
+    handle->deleted_ = true;
+    handle->after();
+    delete handle;
+    return nullptr;
+}
+
 void HttpInterceptor::HandlePromiseThenInitialRequestInterceptor(
     napi_env env, InitialRequestInterceptorHandle *handle, napi_value promise)
 {
@@ -271,55 +310,33 @@ void HttpInterceptor::HandlePromiseThenInitialRequestInterceptor(
         return;
     }
 
-    napi_value onResolve = NapiUtils::CreateFunction(
-        env, "onResolve",
-        [](napi_env env, napi_callback_info info) -> napi_value {
-            NETSTACK_LOGD("RequestContext::onResolve: start");
-
-            size_t argc = 1;
-            napi_value args[1];
-            napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-            bool result = NapiUtils::GetBooleanFromValue(env, args[0]);
-
-            void *data;
-            napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
-            auto *handle = static_cast<InitialRequestInterceptorHandle *>(data);
-
-            if (result) {
-                ApplyContinueInitialRequestInterceptor(env, handle);
-            } else {
-                ApplyBlockInitialRequestInterceptor(env, handle);
-            }
-
-            delete handle;
-            return nullptr;
-        },
-        handle);
-
-    napi_value onReject = NapiUtils::CreateFunction(
-        env, "onReject",
-        [](napi_env env, napi_callback_info info) -> napi_value {
-            INTERCEPTOR_TRACE_ERROR("INITIAL_REQUEST", "interceptor promise rejected");
-            void *data;
-            napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
-            auto *handle = static_cast<InitialRequestInterceptorHandle *>(data);
-            delete handle;
-            return nullptr;
-        },
-        handle);
-
+    napi_value onResolve = NapiUtils::CreateFunction(env, "onResolve", OnResolveInitialRequestInterceptor, handle);
+    napi_value onReject = NapiUtils::CreateFunction(env, "onReject", OnRejectInitialRequestInterceptor, handle);
     napi_value argv1[] = { onResolve, onReject };
     constexpr size_t thenCallArgc = 2;
-    NapiUtils::CallFunction(env, promise, thenFunc, thenCallArgc, argv1);
+    napi_value thenResult = NapiUtils::CallFunction(env, promise, thenFunc, thenCallArgc, argv1);
+    if (thenResult == nullptr && !handle->deleted_) {
+        handle->deleted_ = true;
+        handle->after();
+        delete handle;
+    }
 }
 
 void HttpInterceptor::HandlePromiseInitialRequestInterceptor(napi_env env, InitialRequestInterceptorHandle *handle)
 {
     auto context = handle->context;
 
-    napi_value interceptorRef = NapiUtils::GetReference(env, context->interceptorRefs_["INITIAL_REQUEST"]);
+    auto refIt = context->interceptorRefs_.find("INITIAL_REQUEST");
+    if (refIt == context->interceptorRefs_.end()) {
+        INTERCEPTOR_TRACE_ERROR("INITIAL_REQUEST", "Interceptor reference not found");
+        handle->after();
+        delete handle;
+        return;
+    }
+    napi_value interceptorRef = NapiUtils::GetReference(env, refIt->second);
     if (interceptorRef == nullptr) {
         INTERCEPTOR_TRACE_ERROR("INITIAL_REQUEST", "Interceptor reference is null");
+        handle->after();
         delete handle;
         return;
     }
@@ -328,6 +345,7 @@ void HttpInterceptor::HandlePromiseInitialRequestInterceptor(napi_env env, Initi
     napi_status status = napi_get_named_property(env, interceptorRef, "interceptorHandle", &interceptorHandle);
     if (status != napi_ok) {
         INTERCEPTOR_TRACE_ERROR("INITIAL_REQUEST", "Invalid interceptorHandle");
+        handle->after();
         delete handle;
         return;
     }
@@ -336,6 +354,7 @@ void HttpInterceptor::HandlePromiseInitialRequestInterceptor(napi_env env, Initi
     napi_value promise = NapiUtils::CallFunction(env, interceptorRef, interceptorHandle, 2, argv);
     if (promise == nullptr) {
         INTERCEPTOR_TRACE_ERROR("INITIAL_REQUEST", "Interceptor did not return a valid promise");
+        handle->after();
         delete handle;
         return;
     }
@@ -501,7 +520,7 @@ napi_value HttpInterceptor::CreateResponseContextRedirectionInterceptor(
     std::string responseResult = context->response.GetResult();
     NapiUtils::SetNamedProperty(env, resContext, "result", NapiUtils::CreateStringUtf8(env, responseResult));
 
-    HttpExec::GetCurlDataFromHandle(handleInfo->message->easy_handle, context, CURLMSG_DONE, CURLE_OK);
+    HttpExec::GetCurlDataFromHandle(handleInfo->message.easy_handle, context, CURLMSG_DONE, CURLE_OK);
     uint32_t responseCode = context->response.GetResponseCode();
     NapiUtils::SetNamedProperty(env, resContext, "responseCode", NapiUtils::CreateUint32(env, responseCode));
 
@@ -511,67 +530,88 @@ napi_value HttpInterceptor::CreateResponseContextRedirectionInterceptor(
     return resContext;
 }
 
+napi_value HttpInterceptor::OnResolveRedirectionInterceptor(napi_env env, napi_callback_info info)
+{
+    NETSTACK_LOGD("RequestContext::onResolve: start");
+
+    void *data;
+    napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
+    auto *handle = static_cast<RedirectionInterceptorHandle *>(data);
+    if (handle == nullptr || handle->deleted_) {
+        return nullptr;
+    }
+    handle->deleted_ = true;
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    bool result = (argc > 0) ? NapiUtils::GetBooleanFromValue(env, args[0]) : false;
+    if (result) {
+        ApplyContinueRedirectionInterceptor(env, handle);
+    } else {
+        ApplyBlockRedirectionInterceptor(env, handle);
+    }
+    delete handle->handleInfo;
+    delete handle;
+    return nullptr;
+}
+
+napi_value HttpInterceptor::OnRejectRedirectionInterceptor(napi_env env, napi_callback_info info)
+{
+    INTERCEPTOR_TRACE_ERROR("REDIRECTION", "interceptor promise rejected");
+    void *data;
+    napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
+    auto *handle = static_cast<RedirectionInterceptorHandle *>(data);
+    if (handle == nullptr || handle->deleted_) {
+        return nullptr;
+    }
+    handle->deleted_ = true;
+    handle->handleCompletion();
+    delete handle->handleInfo;
+    delete handle;
+    return nullptr;
+}
+
 void HttpInterceptor::HandlePromiseThenRedirectionInterceptor(
     napi_env env, RedirectionInterceptorHandle *handle, napi_value promise)
 {
     napi_value thenFunc = NapiUtils::GetNamedProperty(env, promise, "then");
     if (thenFunc == nullptr) {
         INTERCEPTOR_TRACE_ERROR("REDIRECTION", "Promise.then is not a function");
+        handle->handleCompletion();
         delete handle->handleInfo;
         delete handle;
         return;
     }
 
-    napi_value onResolve = NapiUtils::CreateFunction(
-        env, "onResolve",
-        [](napi_env env, napi_callback_info info) -> napi_value {
-            NETSTACK_LOGD("RequestContext::onResolve: start");
-
-            size_t argc = 1;
-            napi_value args[1];
-            napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-            bool result = NapiUtils::GetBooleanFromValue(env, args[0]);
-
-            void *data;
-            napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
-            auto *handle = static_cast<RedirectionInterceptorHandle *>(data);
-
-            if (result) {
-                ApplyContinueRedirectionInterceptor(env, handle);
-            } else {
-                ApplyBlockRedirectionInterceptor(env, handle);
-            }
-            delete handle->handleInfo;
-            delete handle;
-            return nullptr;
-        },
-        handle);
-
-    napi_value onReject = NapiUtils::CreateFunction(
-        env, "onReject",
-        [](napi_env env, napi_callback_info info) -> napi_value {
-            INTERCEPTOR_TRACE_ERROR("REDIRECTION", "interceptor promise rejected");
-            void *data;
-            napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
-            auto *handle = static_cast<RedirectionInterceptorHandle *>(data);
-            delete handle->handleInfo;
-            delete handle;
-            return nullptr;
-        },
-        handle);
-
+    napi_value onResolve = NapiUtils::CreateFunction(env, "onResolve", OnResolveRedirectionInterceptor, handle);
+    napi_value onReject = NapiUtils::CreateFunction(env, "onReject", OnRejectRedirectionInterceptor, handle);
     napi_value argv1[] = { onResolve, onReject };
     constexpr size_t thenCallArgc = 2;
-    NapiUtils::CallFunction(env, promise, thenFunc, thenCallArgc, argv1);
+    napi_value thenResult = NapiUtils::CallFunction(env, promise, thenFunc, thenCallArgc, argv1);
+    if (thenResult == nullptr && !handle->deleted_) {
+        handle->deleted_ = true;
+        handle->handleCompletion();
+        delete handle->handleInfo;
+        delete handle;
+    }
 }
 
 void HttpInterceptor::HandlePromiseRedirectionInterceptor(napi_env env, RedirectionInterceptorHandle *handle)
 {
     auto context = handle->context;
 
-    napi_value interceptorRef = NapiUtils::GetReference(env, context->interceptorRefs_["REDIRECTION"]);
+    auto refIt = context->interceptorRefs_.find("REDIRECTION");
+    if (refIt == context->interceptorRefs_.end()) {
+        INTERCEPTOR_TRACE_ERROR("REDIRECTION", "Interceptor reference not found");
+        handle->handleCompletion();
+        delete handle->handleInfo;
+        delete handle;
+        return;
+    }
+    napi_value interceptorRef = NapiUtils::GetReference(env, refIt->second);
     if (interceptorRef == nullptr) {
         INTERCEPTOR_TRACE_ERROR("REDIRECTION", "Interceptor reference is null");
+        handle->handleCompletion();
         delete handle->handleInfo;
         delete handle;
         return;
@@ -581,6 +621,7 @@ void HttpInterceptor::HandlePromiseRedirectionInterceptor(napi_env env, Redirect
     napi_status status = napi_get_named_property(env, interceptorRef, "interceptorHandle", &interceptorHandle);
     if (status != napi_ok) {
         INTERCEPTOR_TRACE_ERROR("REDIRECTION", "Invalid interceptorHandle");
+        handle->handleCompletion();
         delete handle->handleInfo;
         delete handle;
         return;
@@ -589,6 +630,7 @@ void HttpInterceptor::HandlePromiseRedirectionInterceptor(napi_env env, Redirect
     napi_value promise = NapiUtils::CallFunction(env, interceptorRef, interceptorHandle, 2, argv);
     if (promise == nullptr) {
         INTERCEPTOR_TRACE_ERROR("REDIRECTION", "Interceptor did not return a valid promise");
+        handle->handleCompletion();
         delete handle->handleInfo;
         delete handle;
         return;
@@ -731,65 +773,84 @@ napi_value HttpInterceptor::CreateResponseContextFinalResponseInterceptor(napi_e
     return resContext;
 }
 
+napi_value HttpInterceptor::OnResolveFinalResponseInterceptor(napi_env env, napi_callback_info info)
+{
+    NETSTACK_LOGD("RequestContext::onResolve: start");
+
+    void *data;
+    napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
+    auto *handle = static_cast<FinalResponseInterceptorHandle *>(data);
+    if (handle == nullptr || handle->deleted_) {
+        return nullptr;
+    }
+    handle->deleted_ = true;
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    bool result = (argc > 0) ? NapiUtils::GetBooleanFromValue(env, args[0]) : false;
+    if (result) {
+        ApplyContinueFinalResponseInterceptor(env, handle);
+    } else {
+        ApplyBlockFinalResponseInterceptor(env, handle);
+    }
+    handle->after();
+    delete handle;
+    return nullptr;
+}
+
+napi_value HttpInterceptor::OnRejectFinalResponseInterceptor(napi_env env, napi_callback_info info)
+{
+    INTERCEPTOR_TRACE_ERROR("FINAL_RESPONSE", "interceptor promise rejected");
+    void *data;
+    napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
+    auto *handle = static_cast<FinalResponseInterceptorHandle *>(data);
+    if (handle == nullptr || handle->deleted_) {
+        return nullptr;
+    }
+    handle->deleted_ = true;
+    handle->after();
+    delete handle;
+    return nullptr;
+}
+
 void HttpInterceptor::HandlePromiseThenFinalResponseInterceptor(
     napi_env env, FinalResponseInterceptorHandle *handle, napi_value promise)
 {
     napi_value thenFunc = NapiUtils::GetNamedProperty(env, promise, "then");
     if (thenFunc == nullptr) {
         INTERCEPTOR_TRACE_ERROR("FINAL_RESPONSE", "Promise.then is not a function");
+        handle->after();
         delete handle;
         return;
     }
 
-    napi_value onResolve = NapiUtils::CreateFunction(
-        env, "onResolve",
-        [](napi_env env, napi_callback_info info) -> napi_value {
-            NETSTACK_LOGD("RequestContext::onResolve: start");
-
-            size_t argc = 1;
-            napi_value args[1];
-            napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-            bool result = NapiUtils::GetBooleanFromValue(env, args[0]);
-
-            void *data;
-            napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
-            auto *handle = static_cast<FinalResponseInterceptorHandle *>(data);
-
-            if (result) {
-                ApplyContinueFinalResponseInterceptor(env, handle);
-            } else {
-                ApplyBlockFinalResponseInterceptor(env, handle);
-            }
-            handle->after();
-            delete handle;
-            return nullptr;
-        },
-        handle);
-
-    napi_value onReject = NapiUtils::CreateFunction(
-        env, "onReject",
-        [](napi_env env, napi_callback_info info) -> napi_value {
-            INTERCEPTOR_TRACE_ERROR("FINAL_RESPONSE", "interceptor promise rejected");
-            void *data;
-            napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
-            auto *handle = static_cast<FinalResponseInterceptorHandle *>(data);
-            delete handle;
-            return nullptr;
-        },
-        handle);
-
+    napi_value onResolve = NapiUtils::CreateFunction(env, "onResolve", OnResolveFinalResponseInterceptor, handle);
+    napi_value onReject = NapiUtils::CreateFunction(env, "onReject", OnRejectFinalResponseInterceptor, handle);
     napi_value argv1[] = { onResolve, onReject };
     constexpr size_t thenCallArgc = 2;
-    NapiUtils::CallFunction(env, promise, thenFunc, thenCallArgc, argv1);
+    napi_value thenResult = NapiUtils::CallFunction(env, promise, thenFunc, thenCallArgc, argv1);
+    if (thenResult == nullptr && !handle->deleted_) {
+        handle->deleted_ = true;
+        handle->after();
+        delete handle;
+    }
 }
 
 void HttpInterceptor::HandlePromiseFinalResponseInterceptor(napi_env env, FinalResponseInterceptorHandle *handle)
 {
     auto context = handle->context;
 
-    napi_value interceptorRef = NapiUtils::GetReference(env, context->interceptorRefs_["FINAL_RESPONSE"]);
+    auto refIt = context->interceptorRefs_.find("FINAL_RESPONSE");
+    if (refIt == context->interceptorRefs_.end()) {
+        INTERCEPTOR_TRACE_ERROR("FINAL_RESPONSE", "Interceptor reference not found");
+        handle->after();
+        delete handle;
+        return;
+    }
+    napi_value interceptorRef = NapiUtils::GetReference(env, refIt->second);
     if (interceptorRef == nullptr) {
         INTERCEPTOR_TRACE_ERROR("FINAL_RESPONSE", "Interceptor reference is null");
+        handle->after();
         delete handle;
         return;
     }
@@ -798,6 +859,7 @@ void HttpInterceptor::HandlePromiseFinalResponseInterceptor(napi_env env, FinalR
     napi_status status = napi_get_named_property(env, interceptorRef, "interceptorHandle", &interceptorHandle);
     if (status != napi_ok) {
         INTERCEPTOR_TRACE_ERROR("FINAL_RESPONSE", "Invalid interceptorHandle");
+        handle->after();
         delete handle;
         return;
     }
@@ -805,6 +867,7 @@ void HttpInterceptor::HandlePromiseFinalResponseInterceptor(napi_env env, FinalR
     napi_value promise = NapiUtils::CallFunction(env, interceptorRef, interceptorHandle, 2, argv);
     if (promise == nullptr) {
         INTERCEPTOR_TRACE_ERROR("FINAL_RESPONSE", "Interceptor did not return a valid promise");
+        handle->after();
         delete handle;
         return;
     }
@@ -822,12 +885,14 @@ void HttpInterceptor::SetFinalResponseInterceptor()
         napi_value reqContext = CreateRequestContextFinalResponseInterceptor(env, context);
         if (reqContext == nullptr) {
             INTERCEPTOR_TRACE_ERROR("FINAL_RESPONSE", "Failed to create reqContext object");
+            after();
             return;
         }
 
         napi_value resContext = CreateResponseContextFinalResponseInterceptor(env, context);
         if (resContext == nullptr) {
             INTERCEPTOR_TRACE_ERROR("FINAL_RESPONSE", "Failed to create resContext object");
+            after();
             return;
         }
 
@@ -948,6 +1013,45 @@ napi_value HttpInterceptor::CreateResponseContextCacheCheckedInterceptor(napi_en
     return resContext;
 }
 
+napi_value HttpInterceptor::OnResolveCacheCheckedInterceptor(napi_env env, napi_callback_info info)
+{
+    NETSTACK_LOGD("RequestContext::onResolve: start");
+
+    void *data;
+    napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
+    auto *handle = static_cast<CacheCheckedInterceptorHandle *>(data);
+    if (handle == nullptr || handle->deleted_) {
+        return nullptr;
+    }
+    handle->deleted_ = true;
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    bool result = (argc > 0) ? NapiUtils::GetBooleanFromValue(env, args[0]) : false;
+    if (result) {
+        ApplyContinueCacheCheckedInterceptor(env, handle);
+    } else {
+        ApplyBlockCacheCheckedInterceptor(env, handle);
+    }
+    delete handle;
+    return nullptr;
+}
+
+napi_value HttpInterceptor::OnRejectCacheCheckedInterceptor(napi_env env, napi_callback_info info)
+{
+    INTERCEPTOR_TRACE_ERROR("READ_CACHE", "interceptor promise rejected");
+    void *data;
+    napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
+    auto *handle = static_cast<CacheCheckedInterceptorHandle *>(data);
+    if (handle == nullptr || handle->deleted_) {
+        return nullptr;
+    }
+    handle->deleted_ = true;
+    handle->after();
+    delete handle;
+    return nullptr;
+}
+
 void HttpInterceptor::HandlePromiseThenCacheCheckedInterceptor(
     napi_env env, CacheCheckedInterceptorHandle *handle, napi_value promise)
 {
@@ -957,55 +1061,34 @@ void HttpInterceptor::HandlePromiseThenCacheCheckedInterceptor(
         delete handle;
         return;
     }
-
-    napi_value onResolve = NapiUtils::CreateFunction(
-        env, "onResolve",
-        [](napi_env env, napi_callback_info info) -> napi_value {
-            NETSTACK_LOGD("RequestContext::onResolve: start");
-
-            size_t argc = 1;
-            napi_value args[1];
-            napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-            bool result = NapiUtils::GetBooleanFromValue(env, args[0]);
-
-            void *data;
-            napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
-            auto *handle = static_cast<CacheCheckedInterceptorHandle *>(data);
-
-            if (result) {
-                ApplyContinueCacheCheckedInterceptor(env, handle);
-            } else {
-                ApplyBlockCacheCheckedInterceptor(env, handle);
-            }
-            delete handle;
-            return nullptr;
-        },
-        handle);
-
-    napi_value onReject = NapiUtils::CreateFunction(
-        env, "onReject",
-        [](napi_env env, napi_callback_info info) -> napi_value {
-            INTERCEPTOR_TRACE_ERROR("READ_CACHE", "interceptor promise rejected");
-            void *data;
-            napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
-            auto *handle = static_cast<CacheCheckedInterceptorHandle *>(data);
-            delete handle;
-            return nullptr;
-        },
-        handle);
+    napi_value onResolve = NapiUtils::CreateFunction(env, "onResolve", OnResolveCacheCheckedInterceptor, handle);
+    napi_value onReject = NapiUtils::CreateFunction(env, "onReject", OnRejectCacheCheckedInterceptor, handle);
 
     napi_value argv1[] = { onResolve, onReject };
     constexpr size_t thenCallArgc = 2;
-    NapiUtils::CallFunction(env, promise, thenFunc, thenCallArgc, argv1);
+    napi_value thenResult = NapiUtils::CallFunction(env, promise, thenFunc, thenCallArgc, argv1);
+    if (thenResult == nullptr && !handle->deleted_) {
+        handle->deleted_ = true;
+        handle->after();
+        delete handle;
+    }
 }
 
 void HttpInterceptor::HandlePromiseCacheCheckedInterceptor(napi_env env, CacheCheckedInterceptorHandle *handle)
 {
     auto context = handle->context;
 
-    napi_value interceptorRef = NapiUtils::GetReference(env, context->interceptorRefs_["READ_CACHE"]);
+    auto refIt = context->interceptorRefs_.find("READ_CACHE");
+    if (refIt == context->interceptorRefs_.end()) {
+        INTERCEPTOR_TRACE_ERROR("READ_CACHE", "Interceptor reference not found");
+        handle->after();
+        delete handle;
+        return;
+    }
+    napi_value interceptorRef = NapiUtils::GetReference(env, refIt->second);
     if (interceptorRef == nullptr) {
         INTERCEPTOR_TRACE_ERROR("READ_CACHE", "Interceptor reference is null");
+        handle->after();
         delete handle;
         return;
     }
@@ -1014,6 +1097,7 @@ void HttpInterceptor::HandlePromiseCacheCheckedInterceptor(napi_env env, CacheCh
     napi_status status = napi_get_named_property(env, interceptorRef, "interceptorHandle", &interceptorHandle);
     if (status != napi_ok) {
         INTERCEPTOR_TRACE_ERROR("READ_CACHE", "Invalid interceptorHandle");
+        handle->after();
         delete handle;
         return;
     }
@@ -1021,6 +1105,7 @@ void HttpInterceptor::HandlePromiseCacheCheckedInterceptor(napi_env env, CacheCh
     napi_value promise = NapiUtils::CallFunction(env, interceptorRef, interceptorHandle, 2, argv);
     if (promise == nullptr) {
         INTERCEPTOR_TRACE_ERROR("READ_CACHE", "Interceptor did not return a valid promise");
+        handle->after();
         delete handle;
         return;
     }
@@ -1181,64 +1266,83 @@ napi_value HttpInterceptor::CreateResponseContextConnectNetworkInterceptor(napi_
     return resContext;
 }
 
+napi_value HttpInterceptor::OnResolveConnectNetworkInterceptor(napi_env env, napi_callback_info info)
+{
+    NETSTACK_LOGD("RequestContext::onResolve: start");
+
+    void *data;
+    napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
+    auto *handle = static_cast<InitialRequestInterceptorHandle *>(data);
+    if (handle == nullptr || handle->deleted_) {
+        return nullptr;
+    }
+    handle->deleted_ = true;
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    bool result = (argc > 0) ? NapiUtils::GetBooleanFromValue(env, args[0]) : false;
+    if (result) {
+        ApplyContinueConnectNetworkInterceptor(env, handle);
+    } else {
+        ApplyBlockConnectNetworkInterceptor(env, handle);
+    }
+    delete handle;
+    return nullptr;
+}
+
+napi_value HttpInterceptor::OnRejectConnectNetworkInterceptor(napi_env env, napi_callback_info info)
+{
+    INTERCEPTOR_TRACE_ERROR("CONNECT_NETWORK", "interceptor promise rejected");
+    void *data;
+    napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
+    auto *handle = static_cast<InitialRequestInterceptorHandle *>(data);
+    if (handle == nullptr || handle->deleted_) {
+        return nullptr;
+    }
+    handle->deleted_ = true;
+    handle->after();
+    delete handle;
+    return nullptr;
+}
+
 void HttpInterceptor::HandlePromiseThenConnectNetworkInterceptor(
     napi_env env, InitialRequestInterceptorHandle *handle, napi_value promise)
 {
     napi_value thenFunc = NapiUtils::GetNamedProperty(env, promise, "then");
     if (thenFunc == nullptr) {
         INTERCEPTOR_TRACE_ERROR("CONNECT_NETWORK", "Promise.then is not a function");
+        handle->after();
         delete handle;
         return;
     }
 
-    napi_value onResolve = NapiUtils::CreateFunction(
-        env, "onResolve",
-        [](napi_env env, napi_callback_info info) -> napi_value {
-            NETSTACK_LOGD("RequestContext::onResolve: start");
-
-            size_t argc = 1;
-            napi_value args[1];
-            napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-            bool result = NapiUtils::GetBooleanFromValue(env, args[0]);
-
-            void *data;
-            napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
-            auto *handle = static_cast<InitialRequestInterceptorHandle *>(data);
-
-            if (result) {
-                ApplyContinueConnectNetworkInterceptor(env, handle);
-            } else {
-                ApplyBlockConnectNetworkInterceptor(env, handle);
-            }
-            delete handle;
-            return nullptr;
-        },
-        handle);
-
-    napi_value onReject = NapiUtils::CreateFunction(
-        env, "onReject",
-        [](napi_env env, napi_callback_info info) -> napi_value {
-            INTERCEPTOR_TRACE_ERROR("CONNECT_NETWORK", "interceptor promise rejected");
-            void *data;
-            napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
-            auto *handle = static_cast<InitialRequestInterceptorHandle *>(data);
-            delete handle;
-            return nullptr;
-        },
-        handle);
-
+    napi_value onResolve = NapiUtils::CreateFunction(env, "onResolve", OnResolveConnectNetworkInterceptor, handle);
+    napi_value onReject = NapiUtils::CreateFunction(env, "onReject", OnRejectConnectNetworkInterceptor, handle);
     napi_value argv1[] = { onResolve, onReject };
     constexpr size_t thenCallArgc = 2;
-    NapiUtils::CallFunction(env, promise, thenFunc, thenCallArgc, argv1);
+    napi_value thenResult = NapiUtils::CallFunction(env, promise, thenFunc, thenCallArgc, argv1);
+    if (thenResult == nullptr && !handle->deleted_) {
+        handle->deleted_ = true;
+        handle->after();
+        delete handle;
+    }
 }
 
 void HttpInterceptor::HandlePromiseConnectNetworkInterceptor(napi_env env, InitialRequestInterceptorHandle *handle)
 {
     auto context = handle->context;
 
-    napi_value interceptorRef = NapiUtils::GetReference(env, context->interceptorRefs_["CONNECT_NETWORK"]);
+    auto refIt = context->interceptorRefs_.find("CONNECT_NETWORK");
+    if (refIt == context->interceptorRefs_.end()) {
+        INTERCEPTOR_TRACE_ERROR("CONNECT_NETWORK", "Interceptor reference not found");
+        handle->after();
+        delete handle;
+        return;
+    }
+    napi_value interceptorRef = NapiUtils::GetReference(env, refIt->second);
     if (interceptorRef == nullptr) {
         INTERCEPTOR_TRACE_ERROR("CONNECT_NETWORK", "Interceptor reference is null");
+        handle->after();
         delete handle;
         return;
     }
@@ -1247,6 +1351,7 @@ void HttpInterceptor::HandlePromiseConnectNetworkInterceptor(napi_env env, Initi
     napi_status status = napi_get_named_property(env, interceptorRef, "interceptorHandle", &interceptorHandle);
     if (status != napi_ok) {
         INTERCEPTOR_TRACE_ERROR("CONNECT_NETWORK", "Invalid interceptorHandle");
+        handle->after();
         delete handle;
         return;
     }
@@ -1254,6 +1359,7 @@ void HttpInterceptor::HandlePromiseConnectNetworkInterceptor(napi_env env, Initi
     napi_value promise = NapiUtils::CallFunction(env, interceptorRef, interceptorHandle, 2, argv);
     if (promise == nullptr) {
         INTERCEPTOR_TRACE_ERROR("CONNECT_NETWORK", "Interceptor did not return a valid promise");
+        handle->after();
         delete handle;
         return;
     }
