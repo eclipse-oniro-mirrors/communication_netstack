@@ -606,7 +606,7 @@ bool IsCleartextPermitted(const std::string &url, const std::string &protocol)
         NETSTACK_LOGD("Network Kit Component Not Cfg or Cfg False");
         return isCleartextPermitted;
     }
-    if (url.find(protocol) != std::string::npos) {
+    if (ToLower(url).find(protocol) != std::string::npos) {
         std::string hostName = GetHostnameFromURL(url);
         NetworkSecurityConfig::GetInstance().IsCleartextPermitted(hostName, isCleartextPermitted);
     }

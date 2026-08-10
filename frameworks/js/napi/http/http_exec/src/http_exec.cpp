@@ -127,6 +127,10 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
         argv[EVENT_PARAM_ZERO] = undefined;
         argv[EVENT_PARAM_ONE] = HttpExec::RequestInStreamCallback(context.get());
         if (argv[EVENT_PARAM_ONE] == nullptr) {
+            if (context->GetDeferred() != nullptr) {
+                napi_value err = NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
+                napi_reject_deferred(env, context->GetDeferred(), err != nullptr ? err : undefined);
+            }
             return;
         }
     } else {
@@ -157,6 +161,9 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
             NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
 #endif
         if (argv[EVENT_PARAM_ZERO] == nullptr) {
+            if (context->GetDeferred() != nullptr) {
+                napi_reject_deferred(env, context->GetDeferred(), undefined);
+            }
             return;
         }
 
@@ -688,6 +695,9 @@ bool SetTraceOptions(CURL *curl, RequestContext *context)
 #if ENABLE_HTTP_INTERCEPT
 bool HttpExec::SetFollowLocation(CURL *curl, RequestContext *context)
 {
+    if (context == nullptr) {
+        return true;
+    }
     auto interceptor = context->GetInterceptor();
     if (interceptor != nullptr && interceptor->IsRedirectionInterceptor()) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FOLLOWLOCATION, 0L, context);
@@ -820,7 +830,7 @@ bool HttpExec::GetCurlDataFromHandle(CURL *handle, RequestContext *context, CURL
 
     CURLcode code;
     if (!context->response.isApplyBlockRedirectionInterceptor_) {
-        int64_t responseCode;
+        long responseCode = 0;
         code = curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responseCode);
         if (code != CURLE_OK) {
             context->SetErrorCode(code);
@@ -901,7 +911,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     context->CachePerformanceTimingItem(HttpConstant::RESPONSE_TOTAL_FINISH_TIMING, totalTime);
     context->CachePerformanceTimingItem(HttpConstant::RESPONSE_REDIRECT_TIMING, redirectTime);
 
-    int64_t responseCode = 0;
+    long responseCode = 0;
     (void)curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responseCode);
     long osErr = 0;
     (void)curl_easy_getinfo(handle, CURLINFO_OS_ERRNO, &osErr);
@@ -912,7 +922,7 @@ void HttpExec::CacheCurlPerformanceTiming(CURL *handle, RequestContext *context)
     CURL_HTTP_VERSION_1_1          2
     CURL_HTTP_VERSION_2            3
     */
-    int64_t httpVer = CURL_HTTP_VERSION_NONE;
+    long httpVer = CURL_HTTP_VERSION_NONE;
     (void)curl_easy_getinfo(handle, CURLINFO_HTTP_VERSION, &httpVer);
     curl_off_t size = GetSizeFromCurl(handle, context);
     char *ip = nullptr;
@@ -989,7 +999,11 @@ bool HttpExec::ConvertResponseContextToInterceptorResp(
 
     if (!context->response.GetResult().empty()) {
         resp->body.buffer = HttpUtils::MallocCString(context->response.GetResult());
-        resp->body.length = context->response.GetResult().length();
+        if (resp->body.buffer == nullptr) {
+            NETSTACK_LOGE("MallocCString failed for response body");
+            return false;
+        }
+        resp->body.length = static_cast<uint32_t>(context->response.GetResult().length());
     }
 
     resp->responseCode = static_cast<Http_ResponseCode>(context->response.GetResponseCode());
@@ -1081,14 +1095,26 @@ bool HttpExec::ConvertRequestContextToInterceptorReq(
 
     if (!context->options.GetUrl().empty()) {
         req->url.buffer = HttpUtils::MallocCString(context->options.GetUrl());
+        if (req->url.buffer == nullptr) {
+            NETSTACK_LOGE("MallocCString failed for url");
+            return false;
+        }
         req->url.length = context->options.GetUrl().length();
     }
     if (!context->options.GetMethod().empty()) {
         req->method.buffer = HttpUtils::MallocCString(context->options.GetMethod());
+        if (req->method.buffer == nullptr) {
+            NETSTACK_LOGE("MallocCString failed for method");
+            return false;
+        }
         req->method.length = context->options.GetMethod().length();
     }
     if (!context->options.GetBody().empty()) {
         req->body.buffer = HttpUtils::MallocCString(context->options.GetBody());
+        if (req->body.buffer == nullptr) {
+            NETSTACK_LOGE("MallocCString failed for body");
+            return false;
+        }
         req->body.length = context->options.GetBody().length();
     }
     if (context->GetCurlHeaderList() != nullptr) {
@@ -1317,6 +1343,9 @@ void HttpExec::ProcessResponseBodyAndEmitEvents(RequestContext *context)
 
 void HttpExec::ProcessResponseHeadersAndEmitEvents(RequestContext *context)
 {
+    if (context == nullptr || context->GetSharedManager() == nullptr) {
+        return;
+    }
     context->GetTrace().Tracepoint(TraceEvents::RECEIVING);
     if (context->GetSharedManager()->IsEventDestroy()) {
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_HEADER_TIMING);
@@ -1342,7 +1371,7 @@ bool HttpExec::ExecRequest(RequestContext *context)
     if (!ExecRequestCheck(context)) {
         return false;
     }
-    if (context->GetSharedManager()->IsEventDestroy()) {
+    if (context->GetSharedManager() == nullptr || context->GetSharedManager()->IsEventDestroy()) {
         return false;
     }
     auto continueCallback =
@@ -1396,9 +1425,9 @@ napi_value HttpExec::BuildRequestCallback(RequestContext *context)
                 return object;
             }
             NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT, arrayBuffer);
+            NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
+                                         static_cast<uint32_t>(HttpDataType::ARRAY_BUFFER));
         }
-        NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
-                                     static_cast<uint32_t>(HttpDataType::ARRAY_BUFFER));
         return object;
     }
 
@@ -1566,7 +1595,7 @@ void HttpExec::ReadResponse()
 
         int leftMsg;
         msg = curl_multi_info_read(staticVariable_.curlMulti, &leftMsg);
-        if (msg) {
+        if (msg && msg->easy_handle) {
             if (msg->msg == CURLMSG_DONE) {
                 HandleCurlData(msg);
             }
@@ -1652,6 +1681,7 @@ bool HttpExec::Initialize()
         return false;
     }
 
+    staticVariable_.runThread = true;
     staticVariable_.workThread = std::thread(RunThread);
     staticVariable_.initialized = true;
     return staticVariable_.initialized;
@@ -1676,6 +1706,10 @@ unsigned long GetTlsVersion(TlsVersion tlsVersionMin, TlsVersion tlsVersionMax)
         return tlsVersion;
     }
     if (tlsVersionMin > tlsVersionMax) {
+        return tlsVersion;
+    }
+    if (tlsVersionMin < TlsVersion::TLSv1_0 || tlsVersionMin > TlsVersion::TLSv1_3 ||
+        tlsVersionMax < TlsVersion::TLSv1_0 || tlsVersionMax > TlsVersion::TLSv1_3) {
         return tlsVersion;
     }
     if (tlsVersionMin == TlsVersion::TLSv1_0) {
@@ -1745,8 +1779,8 @@ bool HttpExec::SetSocks5ProxyOption(CURL *curl, OHOS::NetStack::Http::RequestCon
         dnsStrategy, exclusionList);
 
     if (!CommonUtils::IsHostNameExcluded(url, exclusionList, ",")) {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXY, socks5Host.c_str(), context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYPORT, socks5Port, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXY, socks5Host.c_str(), context);
         auto proxyType = CURLPROXY_SOCKS5;
         switch (dnsStrategy) {
             case Socks5DnsStrategy::PROXY_MODE:
@@ -1880,6 +1914,10 @@ bool HttpExec::SetSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
 static std::string X509_to_PEM(X509 *cert)
 {
+    if (cert == nullptr) {
+        NETSTACK_LOGE("X509_to_PEM: cert is null");
+        return {};
+    }
     BIO *bio = BIO_new(BIO_s_mem());
     if (!bio) {
         return {};
@@ -1917,6 +1955,9 @@ static std::vector<std::string> GetRemotePartyCertificates(X509_STORE_CTX *ctx)
     std::vector<std::string> remoteCertificates;
     for (decltype(numCertificates) i = 0; i < numCertificates; ++i) {
         auto cert = sk_X509_value(certificatesStack, i);
+        if (cert == nullptr) {
+            continue;
+        }
         auto certificateInPEM = X509_to_PEM(cert);
         if (!certificateInPEM.empty()) {
             remoteCertificates.emplace_back(certificateInPEM);
@@ -2047,15 +2088,20 @@ static ValidationCallbackData *GetAndValidateCallbackData(napi_env env, napi_val
 static void OnValidationCallbackJsThread(napi_env env, napi_value js_callback, void *context, void *data)
 {
     (void)context;
-    ValidationCallbackData *callbackData = GetAndValidateCallbackData(env, js_callback, data);
+    std::unique_ptr<ValidationCallbackData> callbackDataPtr(static_cast<ValidationCallbackData *>(data));
+    ValidationCallbackData *callbackData = GetAndValidateCallbackData(env, js_callback, callbackDataPtr.get());
     if (callbackData == nullptr) {
         return;
     }
 
+    auto safeSetValue = [](std::shared_ptr<std::promise<bool>> promise, bool value) {
+        promise->set_value(value);
+    };
+
     napi_handle_scope scope = nullptr;
     if (napi_open_handle_scope(env, &scope) != napi_ok) {
         NETSTACK_LOGE("OnValidationCallbackJsThread: failed to open handle scope");
-        callbackData->resultPromise->set_value(false);
+        safeSetValue(callbackData->resultPromise, false);
         return;
     }
 
@@ -2068,7 +2114,7 @@ static void OnValidationCallbackJsThread(napi_env env, napi_value js_callback, v
     napi_status status = napi_call_function(env, undefined, js_callback, 1, argv, &jsResult);
     if (status != napi_ok) {
         NETSTACK_LOGE("OnValidationCallbackJsThread: failed to call validation callback");
-        callbackData->resultPromise->set_value(false);
+        safeSetValue(callbackData->resultPromise, false);
         napi_close_handle_scope(env, scope);
         return;
     }
@@ -2078,7 +2124,7 @@ static void OnValidationCallbackJsThread(napi_env env, napi_value js_callback, v
     if (resultType == napi_boolean) {
         bool validationResult = false;
         napi_get_value_bool(env, jsResult, &validationResult);
-        callbackData->resultPromise->set_value(validationResult);
+        safeSetValue(callbackData->resultPromise, validationResult);
         napi_close_handle_scope(env, scope);
         return;
     }
@@ -2089,7 +2135,7 @@ static void OnValidationCallbackJsThread(napi_env env, napi_value js_callback, v
     }
 
     NETSTACK_LOGE("OnValidationCallbackJsThread: callback returned invalid type");
-    callbackData->resultPromise->set_value(false);
+    safeSetValue(callbackData->resultPromise, false);
     napi_close_handle_scope(env, scope);
 }
 
@@ -2260,6 +2306,8 @@ static bool LoadCaCertFromString(X509_STORE *store, const std::string &certData)
         }
     }
 
+    sk_X509_INFO_pop_free(inf, X509_INFO_free);
+    BIO_free(cbio);
     return true;
 }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
@@ -2318,10 +2366,15 @@ static int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey)
     unsigned char *certPubkey = nullptr;
     int pubkeyLen = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(cert), &certPubkey);
     std::string certPubKeyDigest;
-    if (!CommonUtils::Sha256sum(certPubkey, pubkeyLen, certPubKeyDigest)) {
+    if (pubkeyLen <= 0 || certPubkey == nullptr) {
+        NETSTACK_LOGE("i2d_X509_PUBKEY failed");
         return CURLE_BAD_FUNCTION_ARGUMENT;
     }
-    NETSTACK_LOGI("pubkey sha256: %{public}s", certPubKeyDigest.c_str());
+    if (!CommonUtils::Sha256sum(certPubkey, static_cast<size_t>(pubkeyLen), certPubKeyDigest)) {
+        OPENSSL_free(certPubkey);
+        return CURLE_BAD_FUNCTION_ARGUMENT;
+    }
+    OPENSSL_free(certPubkey);
     if (CommonUtils::IsCertPubKeyInPinned(certPubKeyDigest, pinnedPubkey)) {
         return CURLE_OK;
     }
@@ -2341,7 +2394,15 @@ static int VerifyCallback(int preverifyOk, X509_STORE_CTX *ctx)
     NETSTACK_LOGI("X509_STORE_CTX error code %{public}d, depth %{public}d", err, depth);
 
     ssl = static_cast<SSL *>(X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx()));
+    if (ssl == nullptr) {
+        NETSTACK_LOGE("ssl is null, fail");
+        return 0;
+    }
     SSL_CTX *sslCtx = SSL_get_SSL_CTX(ssl);
+    if (sslCtx == nullptr) {
+        NETSTACK_LOGE("sslCtx is null, fail");
+        return 0;
+    }
     RequestContext *requestContext = static_cast<RequestContext *>(SSL_CTX_get_ex_data(sslCtx,
         SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX));
     if (requestContext == nullptr) {
@@ -2372,6 +2433,10 @@ CURLcode HttpExec::VerifyRootCaSslCtxFunction(CURL *curl, void *sslCtx, void *co
 {
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
     SSL_CTX *ctx = static_cast<SSL_CTX *>(sslCtx);
+    if (ctx == nullptr) {
+        NETSTACK_LOGE("VerifyRootCaSslCtxFunction: sslCtx is null");
+        return CURLE_SSL_CERTPROBLEM;
+    }
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, VerifyCallback);
     SSL_CTX_set_ex_data(ctx, SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX, context);
 #endif
@@ -2533,7 +2598,10 @@ bool HttpExec::ParseHostAndPortFromUrl(const std::string &url, std::string &host
         curl_free(chost);
     }
     if (cport != nullptr) {
-        port = atoi(cport);
+        int parsedPort = atoi(cport);
+        if (parsedPort >= 0 && parsedPort <= 65535) {
+            port = static_cast<uint16_t>(parsedPort);
+        }
         curl_free(cport);
     }
     curl_url_cleanup(cu);
@@ -2569,9 +2637,11 @@ bool HttpExec::SetDnsResolvOption(CURL *curl, RequestContext *context)
         if (p->ai_family == AF_INET) {
             struct sockaddr_in *ipv4 = reinterpret_cast<struct sockaddr_in *>(p->ai_addr);
             addr = &ipv4->sin_addr;
-        } else {
+        } else if (p->ai_family == AF_INET6) {
             struct sockaddr_in6 *ipv6 = reinterpret_cast<struct sockaddr_in6 *>(p->ai_addr);
             addr = &ipv6->sin6_addr;
+        } else {
+            continue;
         }
         if (inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr)) == NULL) {
             continue;
@@ -2719,6 +2789,10 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
     if (context == nullptr || !context->GetSharedManager()) {
         return 0;
     }
+    if (size != 0 && memBytes > SIZE_MAX / size) {
+        NETSTACK_LOGE("OnWritingMemoryBody: integer overflow detected");
+        return 0;
+    }
     if (context->GetSharedManager()->IsEventDestroy()) {
         context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
         return 0;
@@ -2782,17 +2856,27 @@ void HttpExec::ResponseHeaderCallback(uv_work_t *work, int status)
 {
     (void)status;
 
+    if (work == nullptr || work->data == nullptr) {
+        return;
+    }
     auto workWrapper = static_cast<UvWorkWrapperShared *>(work->data);
+    if (workWrapper == nullptr) {
+        delete work;
+        return;
+    }
     napi_env env = workWrapper->env;
     auto headerMap = static_cast<std::map<std::string, std::string> *>(workWrapper->data);
+    auto manager = workWrapper->manager;
     auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
     std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     napi_value header = NapiUtils::CreateObject(env);
-    if (NapiUtils::GetValueType(env, header) == napi_object) {
+    if (NapiUtils::GetValueType(env, header) == napi_object && headerMap != nullptr) {
         MakeHeaderWithSetCookieArray(env, header, headerMap);
     }
     std::pair<napi_value, napi_value> arg = {NapiUtils::GetUndefined(env), header};
-    workWrapper->manager->Emit(workWrapper->type, arg);
+    if (manager != nullptr) {
+        manager->Emit(workWrapper->type, arg);
+    }
     delete headerMap;
     headerMap = nullptr;
     delete workWrapper;
@@ -2821,6 +2905,10 @@ size_t HttpExec::OnWritingMemoryHeader(const void *data, size_t size, size_t mem
 {
     auto context = static_cast<RequestContext *>(userData);
     if (context == nullptr) {
+        return 0;
+    }
+    if (size != 0 && memBytes > SIZE_MAX / size) {
+        NETSTACK_LOGE("OnWritingMemoryHeader: integer overflow detected");
         return 0;
     }
     context->GetTrace().Tracepoint(TraceEvents::RECEIVING);
@@ -2925,7 +3013,8 @@ __attribute__((no_sanitize("cfi"))) int HttpExec::ProgressCallback(void *userDat
     if (!context->IsRequestInStream()) {
         return 0;
     }
-    if (context->GetSharedManager()->IsEventDestroy()) {
+    auto sharedManager = context->GetSharedManager();
+    if (sharedManager == nullptr || sharedManager->IsEventDestroy()) {
         return 0;
     }
     if (dltotal != 0) {
@@ -2950,7 +3039,7 @@ struct curl_slist *HttpExec::MakeHeaders(const std::vector<std::string> &vec)
 napi_value HttpExec::MakeResponseHeader(napi_env env, void *ctx)
 {
     auto context = reinterpret_cast<RequestContext *>(ctx);
-    if (context->magicNumber_ != MAGIC_NUMBER) {
+    if (context == nullptr || context->magicNumber_ != MAGIC_NUMBER) {
         return NapiUtils::CreateObject(env);
     }
     (void)env;
@@ -3023,14 +3112,14 @@ bool HttpExec::ProcByExpectDataType(napi_value object, RequestContext *context)
             void *data = nullptr;
             auto body = context->response.GetResult();
             napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);
+            NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
+                                         static_cast<uint32_t>(HttpDataType::ARRAY_BUFFER));
             if (data != nullptr && arrayBuffer != nullptr) {
                 if (memcpy_s(data, body.size(), body.c_str(), body.size()) != EOK) {
                     NETSTACK_LOGE("[ProcByExpectDataType] memory copy failed");
-                    return true;
+                    return false;
                 }
                 NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT, arrayBuffer);
-                NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
-                                             static_cast<uint32_t>(HttpDataType::ARRAY_BUFFER));
             }
             return true;
         }
@@ -3061,6 +3150,7 @@ void HttpExec::DeInitialize()
     }
     if (staticVariable_.curlMulti) {
         curl_multi_cleanup(staticVariable_.curlMulti);
+        staticVariable_.curlMulti = nullptr;
     }
     staticVariable_.initialized = false;
 }
@@ -3117,6 +3207,10 @@ bool HttpExec::SetMultiPartOption(CURL *curl, RequestContext *context)
             continue;
         }
         part = curl_mime_addpart(multipart);
+        if (part == nullptr) {
+            NETSTACK_LOGE("curl_mime_addpart failed");
+            continue;
+        }
         SetFormDataOption(multiFormData, part, curl, context);
         hasData = true;
     }
@@ -3326,7 +3420,7 @@ bool HttpExec::GetInterfaceName(CURL *curl, RequestContext *context, std::string
     if (NetManagerStandard::NetConnClient::GetInstance().GetAllNets(netList)
         == NetManagerStandard::NetConnResultCode::NET_CONN_SUCCESS) {
         netList.remove_if([](const sptr<NetManagerStandard::NetHandle>& net) {
-            return net->GetNetId() < MIN_NON_SYSTEM_NETID;
+            return net == nullptr || net->GetNetId() < MIN_NON_SYSTEM_NETID;
         });
     }
     if (netList.size() == DUAL_NETWORK_BOOT_COUNT) {
