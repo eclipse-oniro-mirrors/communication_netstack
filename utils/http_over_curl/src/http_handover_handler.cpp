@@ -441,7 +441,7 @@ void HttpHandoverHandler::HandoverTimeoutCallback()
 
 int32_t HttpHandoverHandler::IsRequestInQueue(CURL *easyHandle)
 {
-    time_t sendtime = 0;
+    curl_off_t sendtime = 0;
     CURLcode result = curl_easy_getinfo(easyHandle, CURLINFO_PRETRANSFER_TIME_T, &sendtime);
     // LCOV_EXCL_START
     if (result != CURLE_OK) {
@@ -454,12 +454,12 @@ int32_t HttpHandoverHandler::IsRequestInQueue(CURL *easyHandle)
 
 int32_t HttpHandoverHandler::IsRequestRead(CURL *easyHandle)
 {
-    time_t recvtime = 0;
-    time_t sendtime = 0;
+    curl_off_t recvtime = 0;
+    curl_off_t sendtime = 0;
     return IsRequestRead(easyHandle, recvtime, sendtime);
 }
 
-int32_t HttpHandoverHandler::IsRequestRead(CURL *easyHandle, time_t &recvtime, time_t &sendtime)
+int32_t HttpHandoverHandler::IsRequestRead(CURL *easyHandle, curl_off_t &recvtime, curl_off_t &sendtime)
 {
     CURLcode result = curl_easy_getinfo(easyHandle, CURLINFO_STARTTRANSFER_TIME_T, &recvtime);
     // LCOV_EXCL_START

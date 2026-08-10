@@ -281,6 +281,15 @@ HWTEST_F(NetStackCommonUtilsTest, CommonUtils32, TestSize.Level2)
     EXPECT_FALSE(ret);
 }
 
+HWTEST_F(NetStackCommonUtilsTest, CommonUtils33, TestSize.Level2)
+{
+    std::string str = "test string";
+    std::vector<std::string> strList1 = Split(str, "");
+    std::vector<std::string> strList2 = Split(str, "", 10);
+    EXPECT_STREQ(strList1[0].data(), "test string");
+    EXPECT_EQ(strList1.size(), 1);
+}
+
 HWTEST_F(NetStackCommonUtilsTest, GetProtocolFromURLTest001, TestSize.Level2)
 {
     std::string protocol = GetProtocolFromURL("https:////www.example.com?data_string");

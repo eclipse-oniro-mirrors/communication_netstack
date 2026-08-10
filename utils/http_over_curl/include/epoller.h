@@ -57,6 +57,9 @@ struct Epoller {
 
     void UnregisterMe(FileDescriptor descriptor) const
     {
+        if (underlying_ < 0 || descriptor < 0) {
+            return;
+        }
         if (descriptor) {
             epoll_ctl(underlying_, EPOLL_CTL_DEL, descriptor, nullptr);
         }

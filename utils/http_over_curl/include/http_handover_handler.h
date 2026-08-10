@@ -78,7 +78,7 @@ public:
     void UndoneRequestHandle(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi);
     int32_t IsRequestInQueue(CURL *easyHandle);
     int32_t IsRequestRead(CURL *easyHandle);
-    int32_t IsRequestRead(CURL *easyHandle, time_t &recvtime, time_t &sendtime);
+    int32_t IsRequestRead(CURL *easyHandle, curl_off_t &recvtime, curl_off_t &sendtime);
     bool IsNetworkErrorTypeCorrect(CURLcode result);
     bool ProcessRequestNetError(std::map<CURL *, RequestInfo *> &ongoingRequests, CURLM *multi,
                               RequestInfo *requestInfo, CURLMsg *msg);

@@ -133,7 +133,7 @@ std::string NetStackChrClient::GetStringAttributeFromCurl(CURL *handle, CURLINFO
     return std::string(result);
 }
 
-long NetStackChrClient::GetRequestStartTime(curl_off_t totalTime)
+long long NetStackChrClient::GetRequestStartTime(curl_off_t totalTime)
 {
     auto now = std::chrono::system_clock::now();
     long msCount = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();

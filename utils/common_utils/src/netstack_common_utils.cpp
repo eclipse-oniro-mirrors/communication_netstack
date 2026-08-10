@@ -73,6 +73,9 @@ std::vector<std::string> Split(const std::string &str, const std::string &sep)
 {
     std::string s = str;
     std::vector<std::string> res;
+    if (sep.empty()) {
+        return {str};
+    }
     while (!s.empty()) {
         auto pos = s.find(sep);
         if (pos == std::string::npos) {
@@ -89,6 +92,9 @@ std::vector<std::string> Split(const std::string &str, const std::string &sep, s
 {
     std::string s = str;
     std::vector<std::string> res;
+    if (sep.empty()) {
+        return {str};
+    }
     while (!s.empty()) {
         if (res.size() + 1 == size) {
             res.emplace_back(s);
