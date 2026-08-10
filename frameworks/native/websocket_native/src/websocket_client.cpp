@@ -970,7 +970,7 @@ int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
     RunLwsThread();
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
-+ // LCOV_EXCL_STOP
+// LCOV_EXCL_STOP
 
     int WebSocketClient::SendEx(const char *data, size_t length)
 {
