@@ -549,7 +549,7 @@ void WebSocketExec::FillContextInfo(ConnectContext *context, lws_context_creatio
     }
     GetWebsocketProxyInfo(context, host, port, exclusions);
     if (!host.empty() && !CommonUtils::IsHostNameExcluded(tempAddress, exclusions, ",")) {
-        if (strcpy_s(proxyAds, host.length() + 1, host.c_str()) != EOK) {
+        if (strcpy_s(proxyAds, MAX_ADDRESS_LENGTH, host.c_str()) != EOK) {
             NETSTACK_LOGE("memory copy failed");
         }
         info.http_proxy_address = proxyAds;
@@ -637,7 +637,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     std::string tempHost;
     std::string origin;
     ParseHost(protocol, address, port, context->supportOriginPort_, tempHost, origin);
-    if (strcpy_s(customizedProtocol, context->GetProtocol().length() + 1, context->GetProtocol().c_str()) != EOK) {
+    if (strcpy_s(customizedProtocol, MAX_PROTOCOL_LENGTH, context->GetProtocol().c_str()) != EOK) {
         NETSTACK_LOGE("memory copy failed");
     }
 

@@ -138,7 +138,6 @@ void RunServerService(WebSocketServer *server)
     while (res >= 0 && !server->GetServerContext()->IsThreadStop()) {
         res = lws_service(context, 0);
     }
-    server->Destroy();
 }
 // LCOV_EXCL_STOP
 
@@ -602,6 +601,10 @@ void CloseAllConnection(ServerContext *serverContext)
             continue;
         }
         auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(connPair.first));
+        if (clientUserData == nullptr) {
+            NETSTACK_LOGE("clientUser data is nullptr for clientId:%{public}s", id.c_str());
+            continue;
+        }
         clientUserData->Close(LWS_CLOSE_STATUS_GOINGAWAY, closeReason);
         clientUserData->TriggerWritable();
     }
@@ -615,7 +618,12 @@ WebSocketServer::WebSocketServer()
 
 WebSocketServer::~WebSocketServer()
 {
-    Destroy();
+    std::lock_guard<std::mutex> lock(destroyMutex_);
+    if (serviceThread_.joinable()) {
+        serverContext_->SetThreadStop(true);
+        serviceThread_.join();
+    }
+    DestroyContext();
     delete serverContext_;
     serverContext_ = nullptr;
 }
@@ -623,6 +631,10 @@ WebSocketServer::~WebSocketServer()
 int WebSocketServer::Start(const ServerConfig &config)
 {
     NETSTACK_LOGD("websocket server start exec");
+    std::lock_guard<std::mutex> lock(destroyMutex_);
+    if (serviceThread_.joinable()) {
+        return WEBSOCKET_UNKNOWN_OTHER_ERROR;
+    }
     if (!CommonUtils::HasInternetPermission()) {
         serverContext_->SetPermissionDenied(true);
         NETSTACK_LOGE("Start: Permission denied");
@@ -659,18 +671,18 @@ int WebSocketServer::Start(const ServerConfig &config)
         return WEBSOCKET_ERROR_CODE_PORT_ALREADY_OCCUPIED;
     }
     serverContext_->SetContext(lwsContext);
-    std::thread serviceThread(RunServerService, this);
+    serviceThread_ = std::thread(RunServerService, this);
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(WEBSOCKET_SERVER_THREAD_RUN);
 #else
-    pthread_setname_np(serviceThread.native_handle(), WEBSOCKET_SERVER_THREAD_RUN);
+    pthread_setname_np(serviceThread_.native_handle(), WEBSOCKET_SERVER_THREAD_RUN);
 #endif
-    serviceThread.detach();
     return 0;
 }
 
 int WebSocketServer::Stop()
 {
+    std::lock_guard<std::mutex> lock(destroyMutex_);
     if (serverContext_->GetContext() == nullptr) {
         NETSTACK_LOGE("context is nullptr");
         return -1;
@@ -685,6 +697,12 @@ int WebSocketServer::Stop()
     }
     CloseAllConnection(serverContext_);
     serverContext_->Close(LWS_CLOSE_STATUS_GOINGAWAY, "");
+    serverContext_->SetThreadStop(true);
+    lws_cancel_service(serverContext_->GetContext());
+    if (serviceThread_.joinable()) {
+        serviceThread_.join();
+    }
+    DestroyContext();
     NETSTACK_LOGI("CloseServer OK");
     return 0;
 }
@@ -704,9 +722,14 @@ int WebSocketServer::Close(const SocketConnection &connection, const CloseOption
         return -1;
     }
     std::string clientId = connection.clientIP + ":" + std::to_string(connection.clientPort);
+    std::shared_lock<std::shared_mutex> lock(serverContext_->GetWsMutex());
     auto wsi = serverContext_->GetClientWsi(clientId);
     if (wsi == nullptr) {
         return WEBSOCKET_ERROR_CODE_CONNECTION_NOT_EXIST;
+    }
+    if (option.reason == nullptr) {
+        NETSTACK_LOGE("close reason is null");
+        return -1;
     }
     auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(wsi));
     if (clientUserData == nullptr) {
@@ -804,11 +827,25 @@ ServerContext *WebSocketServer::GetServerContext() const
 int WebSocketServer::Destroy()
 {
     NETSTACK_LOGI("websocket server destroy exec");
-    if (this->GetServerContext()->GetContext() == nullptr) {
+    std::lock_guard<std::mutex> lock(destroyMutex_);
+    if (serverContext_->GetContext() == nullptr && !serviceThread_.joinable()) {
         return -1;
     }
-    lws_context_destroy(this->GetServerContext()->GetContext());
-    this->GetServerContext()->SetContext(nullptr);
+    if (serviceThread_.joinable()) {
+        serverContext_->SetThreadStop(true);
+        lws_cancel_service(serverContext_->GetContext());
+        serviceThread_.join();
+    }
+    DestroyContext();
     return 0;
+}
+
+void WebSocketServer::DestroyContext()
+{
+    NETSTACK_LOGI("websocket server destroy context exec");
+    if (serverContext_->GetContext() != nullptr) {
+        lws_context_destroy(serverContext_->GetContext());
+        serverContext_->SetContext(nullptr);
+    }
 }
 }

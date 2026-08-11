@@ -213,10 +213,14 @@ int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void
     NETSTACK_LOGE("ClientId:%{public}d,Callback ClientConnectionError", client->GetClientContext()->GetClientId());
     std::string buf;
     char *data = static_cast<char *>(in);
-    buf.assign(data, len);
+    if (data != nullptr) {
+        buf.assign(data, len);
+    }
     ErrorResult errorResult;
     errorResult.errorCode = WebSocketErrorCode::WEBSOCKET_CONNECTION_ERROR;
-    errorResult.errorMessage = data;
+    if (data != nullptr) {
+        errorResult.errorMessage = data;
+    }
     if (client->onErrorCallback_) {
         client->onErrorCallback_(client, errorResult);
     }
@@ -227,6 +231,10 @@ int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void
 int LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     WebSocketClient *client = static_cast<WebSocketClient *>(user);
+    if (client->GetClientContext() == nullptr) {
+        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
+        return -1;
+    }
     NETSTACK_LOGD("ClientId:%{public}d,Callback ClientReceive", client->GetClientContext()->GetClientId());
     auto isFinal = lws_is_final_fragment(wsi);
     int ret = client->AppendData(in, len);
@@ -401,12 +409,13 @@ int LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason, void *user, v
 int LwsCallbackWsiDestroy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     WebSocketClient *client = static_cast<WebSocketClient *>(user);
-    if (client->GetClientContext() == nullptr) {
+    auto ctx = client->GetClientContext();
+    if (ctx == nullptr) {
         NETSTACK_LOGE("Callback ClientContext is nullptr");
         return -1;
     }
     NETSTACK_LOGI("Lws Callback LwsCallbackWsiDestroy");
-    client->GetClientContext()->SetLws(nullptr);
+    ctx->SetLws(nullptr);
     return HttpDummy(wsi, reason, user, in, len);
 }
 
@@ -484,7 +493,7 @@ static void FillContextInfo(ClientContext *context, lws_context_creation_info &i
     uint32_t port = 0;
     std::string exclusions;
 
-    if (strcpy_s(tempUri, sizeof tempUri, context->url.c_str()) < 0) {
+    if (strcpy_s(tempUri, sizeof tempUri, context->url.c_str()) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return;
     }
@@ -551,23 +560,26 @@ static bool FillCaPath(ClientContext *context, lws_context_creation_info &info)
 bool ParseUrl(const std::string url, char *prefix, char *address, char *path, int *port)
 {
     char uri[MAX_URI_LENGTH] = {0};
-    if (strcpy_s(uri, MAX_URI_LENGTH, url.c_str()) < 0) {
+    if (strcpy_s(uri, MAX_URI_LENGTH, url.c_str()) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
     const char *tempPrefix = nullptr;
     const char *tempAddress = nullptr;
     const char *tempPath = nullptr;
-    (void)lws_parse_uri(uri, &tempPrefix, &tempAddress, port, &tempPath);
-    if (strcpy_s(prefix, MAX_URI_LENGTH, tempPrefix) < 0) {
+    if (lws_parse_uri(uri, &tempPrefix, &tempAddress, port, &tempPath) != 0) {
+        NETSTACK_LOGE("lws_parse_uri failed");
+        return false;
+    }
+    if (strcpy_s(prefix, MAX_URI_LENGTH, tempPrefix) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
-    if (strcpy_s(address, MAX_URI_LENGTH, tempAddress) < 0) {
+    if (strcpy_s(address, MAX_URI_LENGTH, tempAddress) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
-    if (strcpy_s(path, MAX_URI_LENGTH, tempPath) < 0) {
+    if (strcpy_s(path, MAX_URI_LENGTH, tempPath) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
@@ -577,15 +589,18 @@ bool ParseUrl(const std::string url, char *prefix, char *address, char *path, in
 bool ParseUrlEx(const std::string url, char *prefix, char *address, char *path, int *port)
 {
     char uri[MAX_URI_LENGTH] = {0};
-    if (strcpy_s(uri, sizeof(uri), url.c_str()) < 0) {
+    if (strcpy_s(uri, sizeof(uri), url.c_str()) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
     const char *tempPrefix = nullptr;
     const char *tempAddress = nullptr;
     const char *tempPath = nullptr;
-    (void)lws_parse_uri(uri, &tempPrefix, &tempAddress, port, &tempPath);
-    if (strcpy_s(prefix, MAX_URI_LENGTH, tempPrefix) < 0) {
+    if (lws_parse_uri(uri, &tempPrefix, &tempAddress, port, &tempPath) != 0) {
+        NETSTACK_LOGE("lws_parse_uri failed");
+        return false;
+    }
+    if (strcpy_s(prefix, MAX_URI_LENGTH, tempPrefix) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
@@ -593,11 +608,11 @@ bool ParseUrlEx(const std::string url, char *prefix, char *address, char *path, 
         NETSTACK_LOGE("protocol failed");
         return false;
     }
-    if (strcpy_s(address, MAX_URI_LENGTH, tempAddress) < 0) {
+    if (strcpy_s(address, MAX_URI_LENGTH, tempAddress) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }
-    if (strcpy_s(path, MAX_URI_LENGTH, tempPath) < 0) {
+    if (strcpy_s(path, MAX_URI_LENGTH, tempPath) != EOK) {
         NETSTACK_LOGE("strcpy_s failed");
         return false;
     }

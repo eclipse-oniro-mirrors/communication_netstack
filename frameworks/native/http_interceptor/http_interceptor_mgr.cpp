@@ -165,8 +165,12 @@ void HttpInterceptorMgr::IteratorReadRequestInterceptor(std::shared_ptr<OH_Http_
             NETSTACK_LOGI("manage ptr is nullptr");
             return;
         }
-        std::shared_lock<std::shared_mutex> lock(manage->reqMutex_);
-        for (const auto &interceptor : manage->requestInterceptorList_) {
+        std::vector<OH_Http_Interceptor *> interceptors;
+        {
+            std::shared_lock<std::shared_mutex> lock(manage->reqMutex_);
+            interceptors.assign(manage->requestInterceptorList_.begin(), manage->requestInterceptorList_.end());
+        }
+        for (const auto &interceptor : interceptors) {
             if (interceptor && interceptor->type == OH_TYPE_READ_ONLY && interceptor->handler != nullptr &&
                 interceptor->enabled) {
                 (void)interceptor->handler(readReq.get(), nullptr, nullptr);
@@ -188,7 +192,6 @@ OH_Interceptor_Result HttpInterceptorMgr::IteratorRequestInterceptor(
     std::shared_ptr<OH_Http_Interceptor_Request> readReq = CreateHttpInterceptorRequest();
     CopyHttpInterceRequest(readReq, req);
     IteratorReadRequestInterceptor(readReq);
-    std::shared_lock<std::shared_mutex> lock(reqMutex_);
     std::shared_ptr<OH_Http_Interceptor_Request> reqTmp = needDeepCopy ? CreateHttpInterceptorRequest() : req;
     if (needDeepCopy) {
         // LCOV_EXCL_START
@@ -200,8 +203,14 @@ OH_Interceptor_Result HttpInterceptorMgr::IteratorRequestInterceptor(
         CopyHttpInterceRequest(reqTmp, req);
     }
 
+    std::vector<OH_Http_Interceptor *> interceptors;
+    {
+        std::shared_lock<std::shared_mutex> lock(reqMutex_);
+        interceptors.assign(requestInterceptorList_.begin(), requestInterceptorList_.end());
+    }
+
     OH_Interceptor_Result result = OH_CONTINUE;
-    for (const auto &interceptor : requestInterceptorList_) {
+    for (const auto &interceptor : interceptors) {
         if (interceptor->type != OH_TYPE_READ_ONLY && interceptor->type == type && interceptor->handler != nullptr &&
             interceptor->enabled) {
             int32_t isModifiedFlag = 0;
@@ -278,8 +287,12 @@ void HttpInterceptorMgr::IteratorReadResponseInterceptor(std::shared_ptr<OH_Http
             NETSTACK_LOGI("manage ptr is nullptr");
             return;
         }
-        std::shared_lock<std::shared_mutex> lock(manage->respMutex_);
-        for (const auto &interceptor : manage->responseInterceptorList_) {
+        std::vector<OH_Http_Interceptor *> interceptors;
+        {
+            std::shared_lock<std::shared_mutex> lock(manage->respMutex_);
+            interceptors.assign(manage->responseInterceptorList_.begin(), manage->responseInterceptorList_.end());
+        }
+        for (const auto &interceptor : interceptors) {
             if (interceptor->type == OH_TYPE_READ_ONLY && interceptor->handler != nullptr && interceptor->enabled) {
                 (void)interceptor->handler(readReq ? readReq.get() : nullptr, readResp.get(), nullptr);
             }
@@ -307,9 +320,13 @@ OH_Interceptor_Result HttpInterceptorMgr::IteratorResponseInterceptor(
         return OH_CONTINUE;
     }
 
-    std::shared_lock<std::shared_mutex> lock(respMutex_);
+    std::vector<OH_Http_Interceptor *> interceptors;
+    {
+        std::shared_lock<std::shared_mutex> lock(respMutex_);
+        interceptors.assign(responseInterceptorList_.begin(), responseInterceptorList_.end());
+    }
     OH_Interceptor_Result result = OH_CONTINUE;
-    for (const auto &interceptor : responseInterceptorList_) {
+    for (const auto &interceptor : interceptors) {
         if (interceptor->type != OH_TYPE_READ_ONLY && interceptor->type == type && interceptor->handler != nullptr &&
             interceptor->enabled) {
             int32_t isModifiedFlag = 0;

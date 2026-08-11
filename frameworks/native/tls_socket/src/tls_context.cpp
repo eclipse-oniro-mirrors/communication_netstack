@@ -230,7 +230,10 @@ bool TLSContext::SetCaAndVerify(TLSContext *tlsContext, const TLSConfiguration &
     if (configuration.GetCaCertificate().empty()) {
         return SetDefaultCa(tlsContext, configuration);
     } else {
-        SetDefaultCa(tlsContext, configuration);
+        if (!SetDefaultCa(tlsContext, configuration)) {
+            NETSTACK_LOGE("Failed to set default CA certificates");
+            return false;
+        }
         for (const auto &cert : configuration.GetCaCertificate()) {
             TLSCertificate ca(cert, CA_CERT);
             if (X509_STORE_add_cert(SSL_CTX_get_cert_store(tlsContext->ctx_), static_cast<X509 *>(ca.handle())) != 1) {
@@ -393,7 +396,7 @@ void TLSContext::CloseCtx()
     if (ctxSsl_ != nullptr) {
         int result = SSL_shutdown(ctxSsl_);
         if (result < 0) {
-            int resErr = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ctxSsl_, 0);
+            int resErr = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ctxSsl_, result);
             NETSTACK_LOGE("Error in shutdown, errno is %{public}d, error info is %{public}s", resErr,
                           MakeSSLErrorString(resErr).c_str());
         }
@@ -403,6 +406,10 @@ void TLSContext::CloseCtx()
     if (ctx_ != nullptr) {
         SSL_CTX_free(ctx_);
         ctx_ = nullptr;
+    }
+    if (pkey_ != nullptr && tlsConfiguration_.GetPrivateKey().Algorithm() != OPAQUE) {
+        EVP_PKEY_free(pkey_);
+        pkey_ = nullptr;
     }
 }
 } // namespace TlsSocket

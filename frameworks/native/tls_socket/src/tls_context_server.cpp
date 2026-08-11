@@ -41,6 +41,11 @@ std::unique_ptr<TLSContextServer> TLSContextServer::CreateConfiguration(const TL
     return tlsContext;
 }
 
+TLSContextServer::~TLSContextServer()
+{
+    CloseCtx();
+}
+
 void InitEnvServer()
 {
     SSL_library_init();
@@ -222,7 +227,10 @@ bool TLSContextServer::SetCaAndVerify(TLSContextServer *tlsContext, const TLSCon
     if (configuration.GetCaCertificate().empty()) {
         return SetDefaultCa(tlsContext, configuration);
     } else {
-        SetDefaultCa(tlsContext, configuration);
+        if (!SetDefaultCa(tlsContext, configuration)) {
+            NETSTACK_LOGE("Failed to set default CA certificates");
+            return false;
+        }
         for (const auto &cert : configuration.GetCaCertificate()) {
             TLSCertificate ca(cert, CA_CERT);
             if (!X509_STORE_add_cert(SSL_CTX_get_cert_store(tlsContext->ctx_), static_cast<X509 *>(ca.handle()))) {
@@ -276,8 +284,12 @@ bool TLSContextServer::SetKeyAndCheck(TLSContextServer *tlsContext, const TLSCon
         tlsContext->pkey_ = EVP_PKEY_new();
         if (configuration.GetPrivateKey().Algorithm() == ALGORITHM_RSA) {
             EVP_PKEY_set1_RSA(tlsContext->pkey_, reinterpret_cast<RSA *>(configuration.GetPrivateKey().handle()));
-        } else if (tlsContext->tlsConfiguration_.GetPrivateKey().Algorithm() == ALGORITHM_DSA) {
+        } else if (configuration.GetPrivateKey().Algorithm() == ALGORITHM_DSA) {
             EVP_PKEY_set1_DSA(tlsContext->pkey_, reinterpret_cast<DSA *>(configuration.GetPrivateKey().handle()));
+        } else if (configuration.GetPrivateKey().Algorithm() == ALGORITHM_DH) {
+            EVP_PKEY_set1_DH(tlsContext->pkey_, reinterpret_cast<DH *>(configuration.GetPrivateKey().handle()));
+        } else if (configuration.GetPrivateKey().Algorithm() == ALGORITHM_EC) {
+            EVP_PKEY_set1_EC_KEY(tlsContext->pkey_, reinterpret_cast<EC_KEY *>(configuration.GetPrivateKey().handle()));
         }
     }
 
@@ -368,7 +380,14 @@ SSL *TLSContextServer::CreateSsl()
 
 void TLSContextServer::CloseCtx()
 {
-    SSL_CTX_free(ctx_);
+    if (ctx_ != nullptr) {
+        SSL_CTX_free(ctx_);
+        ctx_ = nullptr;
+    }
+    if (pkey_ != nullptr && tlsConfiguration_.GetPrivateKey().Algorithm() != OPAQUE) {
+        EVP_PKEY_free(pkey_);
+        pkey_ = nullptr;
+    }
 }
 } // namespace TlsSocket
 } // namespace NetStack
