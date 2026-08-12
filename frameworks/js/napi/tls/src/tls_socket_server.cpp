@@ -93,6 +93,8 @@ std::vector<std::string> SplitHostName(std::string &hostName)
 bool SeekIntersection(std::vector<std::string> &vecA, std::vector<std::string> &vecB)
 {
     std::vector<std::string> result;
+    std::sort(vecA.begin(), vecA.end());
+    std::sort(vecB.begin(), vecB.end());
     set_intersection(vecA.begin(), vecA.end(), vecB.begin(), vecB.end(), inserter(result, result.begin()));
     return !result.empty();
 }
@@ -206,9 +208,11 @@ void TLSSocketServer::Listen(const TlsSocket::TLSConnectOptions &tlsListenOption
         return;
     }
     NETSTACK_LOGE("Listen 2 %{public}d, %{public}d", listenSocketFd_, g_userCounter.load());
+    bool bindSuccess = false;
     if (ExecBind(tlsListenOptions.GetNetAddress(), callback)) {
         NETSTACK_LOGE("Listen 3 %{public}d", listenSocketFd_);
         ExecAccept(tlsListenOptions, callback);
+        bindSuccess = true;
     } else {
         shutdown(listenSocketFd_, SHUT_RDWR);
         close(listenSocketFd_);
@@ -218,7 +222,9 @@ void TLSSocketServer::Listen(const TlsSocket::TLSConnectOptions &tlsListenOption
         isRunning_ = false;
         WaitForRcvThdExit();
     }
-    PollThread(tlsListenOptions);
+    if (bindSuccess) {
+        PollThread(tlsListenOptions);
+    }
 }
 
 bool TLSSocketServer::ExecBind(const Socket::NetAddress &address, const ListenCallback &callback)
@@ -861,6 +867,11 @@ bool TLSSocketServer::Connection::Close()
     std::unique_lock<std::shared_mutex> lock(sslMutex_);
     if (!ssl_) {
         NETSTACK_LOGE("ssl is null");
+        if (socketFd_ != -1) {
+            shutdown(socketFd_, SHUT_RDWR);
+            close(socketFd_);
+        }
+        socketFd_ = -1;
         return false;
     }
     int result = SSL_shutdown(ssl_);
@@ -1118,7 +1129,7 @@ int SSL_accept_with_retry(SSL* ssl)
     int result = -1;
     while (retryCount < MAX_RETRY) {
         result = SSL_accept(ssl);
-        if (result == -1) {
+        if (result != 1) {
             int errorStatus = ConvertSSLError(ssl);
             int ssl_error = SSL_get_error(ssl, result);
             if (ssl_error == SSL_ERROR_WANT_READ || ssl_error == SSL_ERROR_WANT_WRITE) {
@@ -1151,7 +1162,7 @@ bool TLSSocketServer::Connection::StartShakingHands(const TlsSocket::TLSConnectO
 #else
     int result = SSL_accept(ssl_);
 #endif
-    if (result == -1) {
+    if (result != 1) {
         int errorStatus = ConvertSSLError(ssl_);
         NETSTACK_LOGE("SSL connect is error, errno is %{public}d, error info is %{public}s", errorStatus,
                       MakeSSLErrorString(errorStatus).c_str());
@@ -1209,13 +1220,15 @@ bool TLSSocketServer::Connection::GetRemoteCertificateFromPeer(X509 *peerX509)
     }
     X509_print(bio, peerX509);
     char data[REMOTE_CERT_LEN] = {0};
-    if (!BIO_read(bio, data, REMOTE_CERT_LEN)) {
+    int bytesRead = BIO_read(bio, data, REMOTE_CERT_LEN - 1);
+    if (bytesRead <= 0) {
         NETSTACK_LOGE("BIO_read function returns error");
         BIO_free(bio);
         return false;
     }
+    data[bytesRead] = '\0';
     BIO_free(bio);
-    remoteCert_ = std::string(data);
+    remoteCert_ = std::string(data, static_cast<size_t>(bytesRead));
     return true;
 }
 
@@ -1328,7 +1341,7 @@ std::string TLSSocketServer::Connection::CheckServerIdentityLegal(const std::str
         NETSTACK_LOGE("extData is nullptr");
         return "";
     }
-    std::string altNames = reinterpret_cast<char *>(extData->data);
+    std::string altNames (reinterpret_cast<const char *>(extData->data), extData->length);
     std::string hostname = "" + hostName;
     BIO *bio = BIO_new(BIO_s_file());
     if (!bio) {
@@ -1391,7 +1404,8 @@ bool TLSSocketServer::RecvRemoteInfo(int socketFd, int index)
                 char buffer[MAX_BUFFER_SIZE];
                 if (memset_s(buffer, MAX_BUFFER_SIZE, 0, MAX_BUFFER_SIZE) != EOK) {
                     NETSTACK_LOGE("memcpy_s failed");
-                    break;
+                    ++it;
+                    continue;
                 }
                 int len = it->second->Recv(buffer, MAX_BUFFER_SIZE);
                 NETSTACK_LOGE("revc message is size is %{public}d", len);
