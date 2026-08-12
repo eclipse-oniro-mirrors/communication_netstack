@@ -923,9 +923,9 @@ curl_slist *RequestContext::GetCurlHostList()
 RequestContext::~RequestContext()
 {
     trace_.Finish();
-    if (GetValidationCallbackTsfn() != nullptr) {
-        napi_release_threadsafe_function(GetValidationCallbackTsfn(), napi_tsfn_abort);
-        SetValidationCallbackTsfn(nullptr);
+    if (validationCallbackTsfn_ != nullptr) {
+        napi_release_threadsafe_function(validationCallbackTsfn_, napi_tsfn_abort);
+        validationCallbackTsfn_ = nullptr;
     }
     if (options.GetValidationCallback() != nullptr) {
         NapiUtils::DeleteReference(GetEnv(), options.GetValidationCallback());
