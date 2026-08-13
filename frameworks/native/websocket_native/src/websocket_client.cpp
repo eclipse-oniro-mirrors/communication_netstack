@@ -215,14 +215,16 @@ int LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reason, void *user,
 int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     WebSocketClient *client = static_cast<WebSocketClient *>(user);
+    if (client == nullptr || client->GetClientContext() == nullptr) {
+        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
+        return -1;
+    }
     NETSTACK_LOGE("ClientId:%{public}d,Callback ClientConnectionError", client->GetClientContext()->GetClientId());
     
-    auto ctx = client != nullptr ? client->GetClientContext() : nullptr;
-    if (ctx != nullptr) {
-        auto &wsStats = SocketStatisticsEvent::GetInstance().GetWebsocketStat(ctx->isWss);
-        wsStats.RecordAbnormalConnect(ctx->dstIpForStats, COMMON_ERROR_CODE);
-        wsStats.RecordVersionError(ctx->dstIpForStats, ctx->httpVersion);
-    }
+    auto ctx = client->GetClientContext();
+    auto &wsStats = SocketStatisticsEvent::GetInstance().GetWebsocketStat(ctx->isWss);
+    wsStats.RecordAbnormalConnect(ctx->dstIpForStats, COMMON_ERROR_CODE);
+    wsStats.RecordVersionError(ctx->dstIpForStats, ctx->httpVersion);
     std::string buf;
     char *data = static_cast<char *>(in);
     buf.assign(data, len);
