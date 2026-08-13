@@ -974,7 +974,7 @@ int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
 }
 // LCOV_EXCL_STOP
 
-    int WebSocketClient::SendEx(const char *data, size_t length)
+int WebSocketClient::SendEx(const char *data, size_t length)
 {
     NETSTACK_LOGI("WebSocketClient::SendEx start %{public}s, %{public}zu", data, length);
     if (!CommonUtils::HasInternetPermission()) {
