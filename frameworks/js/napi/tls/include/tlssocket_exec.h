@@ -66,6 +66,7 @@ public:
     static napi_value GetSocketFdCallback(TLSGetSocketFdContext *context);
 private:
     static void SetContext(TLSGetLocalAddressContext *context);
+    static void SetRawAddress(TLSConnectContext *context, std::string &dstIp);
 };
 } // namespace TlsSocket
 } // namespace NetStack

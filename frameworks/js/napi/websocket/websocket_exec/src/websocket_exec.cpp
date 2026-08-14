@@ -28,6 +28,7 @@
 #include "netstack_log.h"
 #include "securec.h"
 #include "websocket_exec_common.h"
+#include "socket_statistics.h"
 #ifdef HAS_NETMANAGER_BASE
 #include "http_proxy.h"
 #include "net_conn_client.h"
@@ -97,6 +98,8 @@ static constexpr const int WS_DEFAULT_PORT = 80;
 static constexpr const int WSS_DEFAULT_PORT = 443;
 
 namespace OHOS::NetStack::Websocket {
+
+using OHOS::NetStack::SocketStats::SocketStatisticsEvent;
 
 static const lws_protocols LWS_PROTOCOLS[] = {
     {"lws-minimal-client", WebSocketExec::LwsCallback, 0, 0},
@@ -358,6 +361,13 @@ void OnConnectError(EventManager *manager, int32_t code, uint32_t httpResponse)
 int WebSocketExec::LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                     size_t len)
 {
+    auto manager = reinterpret_cast<EventManager *>(user);
+    auto userData = manager ? manager->GetWebSocketUserData() : nullptr;
+    if (userData != nullptr) {
+        auto &wsStats = SocketStatisticsEvent::GetInstance().GetWebsocketStat(userData->isWss);
+        wsStats.RecordAbnormalConnect(userData->dstIpForStats, COMMON_ERROR_CODE);
+        wsStats.RecordVersionError(userData->dstIpForStats, userData->httpVersion);
+    }
     NETSTACK_LOGI("Lws client connection error");
     // 200 means connect failed
     OnConnectError(reinterpret_cast<EventManager *>(user), COMMON_ERROR_CODE, GetHttpResponseFromWsi(wsi));
@@ -373,10 +383,19 @@ int WebSocketExec::LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reaso
     return HttpDummy(wsi, reason, user, in, len);
 }
 
+void SetUserDataInfo(std::vector<std::string> &vec, std::shared_ptr<Websocket::UserData> &userData)
+{
+    if (vec.size() >= FUNCTION_PARAM_TWO) {
+        userData->openMessage = vec[1];
+    }
+    if (vec.size() >= FUNCTION_PARAM_ONE) {
+        userData->httpVersion = vec[0];
+    }
+}
+
 int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_reasons reason, void *user, void *in,
                                                        size_t len)
 {
-    NETSTACK_LOGD("lws callback client filter preEstablish");
     auto manager = reinterpret_cast<EventManager *>(user);
     auto userData = manager->GetWebSocketUserData();
     if (userData == nullptr) {
@@ -397,9 +416,7 @@ int WebSocketExec::LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_re
     }
 
     auto vec = CommonUtils::Split(statusLine, STATUS_LINE_SEP, STATUS_LINE_ELEM_NUM);
-    if (vec.size() >= FUNCTION_PARAM_TWO) {
-        userData->openMessage = vec[1];
-    }
+    SetUserDataInfo(vec, userData);
 
     char buffer[MAX_HDR_LENGTH] = {};
     std::map<std::string, std::string> responseHeader;
@@ -439,6 +456,26 @@ int WebSocketExec::LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons r
         NETSTACK_LOGE("user data is null");
         return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
+    lws_conmon conmon = {};
+    lws_conmon_wsi_take(wsi, &conmon);
+    bool isWss = userData->isWss;
+    uint64_t totalUs = static_cast<uint32_t>(conmon.ciu_dns) + static_cast<uint32_t>(conmon.ciu_sockconn) +
+                       static_cast<uint32_t>(conmon.ciu_tls) + static_cast<uint32_t>(conmon.ciu_txn_resp);
+    uint32_t dnsMs = static_cast<uint32_t>(conmon.ciu_dns) / 1000;
+    uint32_t tcpMs = static_cast<uint32_t>(conmon.ciu_sockconn) / 1000;
+    uint32_t tlsMs = static_cast<uint32_t>(conmon.ciu_tls) / 1000;
+    uint32_t upgradeMs = static_cast<uint32_t>(conmon.ciu_txn_resp) / 1000;
+    uint32_t totalMs = static_cast<uint32_t>(totalUs / 1000);
+    auto &wsStats = SocketStatisticsEvent::GetInstance().GetWebsocketStat(isWss);
+    wsStats.RecordDnsTime(dnsMs);
+    wsStats.RecordTcpHandshakeTime(tcpMs);
+    if (isWss && tlsMs > 0) {
+        wsStats.RecordTlsHandshakeTime(tlsMs);
+    }
+    wsStats.RecordHttpUpgradeTime(upgradeMs);
+    wsStats.RecordVersion(userData->httpVersion);
+    wsStats.RecordConnectSuccess(totalMs);
+    lws_conmon_release(&conmon);
     userData->TriggerWritable();
     userData->SetLws(wsi);
     std::string protocol = userData->GetNegotiatedProtocol();
@@ -656,6 +693,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     if (protocol == PREFIX_HTTPS || protocol == PREFIX_WSS) {
         connectInfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_SELFSIGNED;
     }
+    connectInfo.ssl_connection = ((unsigned int)connectInfo.ssl_connection) | LCCSCF_CONMON;
     if (context->skipServerCertVerification_) {
         NETSTACK_LOGI("ExecConnect skip server cert verify");
         connectInfo.ssl_connection = ((unsigned int)connectInfo.ssl_connection) | LCCSCF_ALLOW_INSECURE |
@@ -665,10 +703,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     connectInfo.pwsi = &wsi;
     connectInfo.retry_and_idle_policy = &manager->GetWebSocketUserData()->retry_policy;
     connectInfo.userdata = manager.get();
-    if (!WebSocketConnect(connectInfo, manager, context)) {
-        return false;
-    }
-    return true;
+    return WebSocketConnect(connectInfo, manager, context);
 }
 
 static bool CheckFilePath(std::string &path)
@@ -836,10 +871,25 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     context->sslCtx_ = nullptr;
 #endif
     SetRetry(&userData->retry_policy, context);
+    std::string wsProtocol;
+    std::string wsAddress;
+    std::string wsPath;
+    int wsPort = 0;
+    bool isWss = false;
+    if (ParseUrl(context, wsProtocol, wsAddress, wsPath, wsPort)) {
+        isWss = (wsProtocol == PREFIX_WSS || wsProtocol == PREFIX_HTTPS);
+        userData->isWss = isWss;
+        userData->hostNameForStats = wsAddress;
+        userData->dstIpForStats = wsAddress;
+    }
+    auto &wsStats = SocketStatisticsEvent::GetInstance().GetWebsocketStat(isWss);
+    wsStats.RecordConnectAttempt();
+    wsStats.RecordTotalConnect(userData->dstIpForStats, userData->hostNameForStats);
     if (!CreatConnectInfo(context, lwsContext, manager)) {
         userData->SetContext(nullptr);
         lws_context_destroy(lwsContext);
         manager->SetWebSocketUserData(nullptr);
+        wsStats.RecordAbnormalConnect(userData->dstIpForStats, COMMON_ERROR_CODE);
         return false;
     }
     std::thread serviceThread(RunService, userData, manager);

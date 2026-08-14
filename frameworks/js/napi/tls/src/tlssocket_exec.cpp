@@ -15,6 +15,7 @@
 
 #include "tlssocket_exec.h"
 
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -29,6 +30,7 @@
 #include "socket_exec_common.h"
 #include "socks5_utils.h"
 #include "tls_socket.h"
+#include "socket_statistics.h"
 
 #ifdef IOS_PLATFORM
 #include <sys/socket.h>
@@ -37,6 +39,7 @@
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
+using OHOS::NetStack::SocketStats::SocketStatisticsEvent;
 namespace {
 constexpr const char *CERTIFICATA_DATA = "data";
 constexpr const char *CERTIFICATA_ENCODING_FORMAT = "encodingFormat";
@@ -200,36 +203,59 @@ static int HandleTcpProxyOptions(TLSConnectContext *context, std::shared_ptr<TLS
     shared->ExecTlsSetSockBlockFlag(shared->GetSocketFd(), false);
     return 0;
 }
-
+// LCOV_EXCL_START
+void TLSSocketExec::SetRawAddress(TLSConnectContext *context, std::string &dstIp)
+{
+    SocketStatisticsEvent::GetInstance().TlsSocket().RecordConnectAttempt();
+    std::string originalAddr = context->connectOptions_.address_.GetAddress();
+    auto dnsStart = std::chrono::steady_clock::now();
+    context->connectOptions_.address_.SetRawAddress(ConvertAddressToIp(
+        context->connectOptions_.address_.GetAddress(), context->connectOptions_.address_.GetSaFamily()));
+    auto dnsEnd = std::chrono::steady_clock::now();
+    auto dnsTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(dnsEnd - dnsStart).count();
+    SocketStatisticsEvent::GetInstance().TlsSocket().RecordDnsTime(static_cast<uint32_t>(dnsTimeMs));
+    std::string resolvedIp = context->connectOptions_.address_.GetAddress();
+    dstIp = resolvedIp.empty() ? originalAddr : resolvedIp;
+    std::string hostNameForStats = (!resolvedIp.empty() && resolvedIp != originalAddr) ? originalAddr : "";
+    if (resolvedIp.empty() && !originalAddr.empty()) {
+        hostNameForStats = originalAddr;
+    }
+    SocketStatisticsEvent::GetInstance().TlsSocket().RecordTotalConnect(dstIp, hostNameForStats);
+}
+// LCOV_EXCL_STOP
 bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
 {
     if (context == nullptr) {
-        NETSTACK_LOGE("context is nullptr");
         return false;
     }
-    context->connectOptions_.address_.SetRawAddress(ConvertAddressToIp(
-        context->connectOptions_.address_.GetAddress(), context->connectOptions_.address_.GetSaFamily()));
+    auto connectStart = std::chrono::steady_clock::now();
+    std::string dstIp = "";
+    SetRawAddress(context, dstIp);
     auto manager = context->GetSharedManager();
     if (manager == nullptr) {
-        NETSTACK_LOGE("manager is nullptr");
+        SocketStatisticsEvent::GetInstance().TlsSocket().RecordAbnormalConnect(dstIp, TLS_ERR_NO_BIND);
         return false;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto tlsSocket = reinterpret_cast<std::shared_ptr<TLSSocket> *>(manager->GetData());
     if (tlsSocket == nullptr) {
-        NETSTACK_LOGE("ExecConnect tlsSocket is null");
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
+        SocketStatisticsEvent::GetInstance().TlsSocket().RecordAbnormalConnect(dstIp, TLS_ERR_NO_BIND);
         return false;
     }
     auto shared = *tlsSocket;
     if (!shared) {
         NETSTACK_LOGE("ExecConnect tlsSocket is null");
         context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
+        SocketStatisticsEvent::GetInstance().TlsSocket().RecordAbnormalConnect(dstIp, TLS_ERR_NO_BIND);
         return false;
     }
     lock.unlock();
     if (!shared->IsExtSock() && context->proxyOptions_ != nullptr) {
         if (HandleTcpProxyOptions(context, shared) != 0) {
+            if (context->errorNumber_ != TLSSOCKET_SUCCESS) {
+                SocketStatisticsEvent::GetInstance().TlsSocket().RecordAbnormalConnect(dstIp, context->errorNumber_);
+            }
             return false;
         }
     }
@@ -239,6 +265,13 @@ bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
             context->SetError(errorNumber, MakeErrorMessage(errorNumber));
         }
     });
+    if (context->errorNumber_ == TLSSOCKET_SUCCESS) {
+        auto successEnd = std::chrono::steady_clock::now();
+        auto successTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(successEnd - connectStart).count();
+        SocketStatisticsEvent::GetInstance().TlsSocket().RecordConnectSuccess(static_cast<uint32_t>(successTimeMs));
+    } else {
+        SocketStatisticsEvent::GetInstance().TlsSocket().RecordAbnormalConnect(dstIp, context->errorNumber_);
+    }
     return context->errorNumber_ == TLSSOCKET_SUCCESS;
 }
 

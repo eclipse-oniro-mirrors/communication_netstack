@@ -36,10 +36,12 @@
 #include "socket_constant.h"
 #endif
 #include "tls.h"
+#include "socket_statistics.h"
 
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
+using OHOS::NetStack::SocketStats::SocketStatisticsEvent;
 namespace {
 constexpr int READ_TIMEOUT_MS = 500;
 constexpr int REMOTE_CERT_LEN = 8192;
@@ -76,6 +78,25 @@ const std::regex PATTERN{
     "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|"
     "2[0-4][0-9]|[01]?[0-9][0-9]?)"};
 
+void RecordTlsVersionOnError(const TLSConnectOptions &options, SSL *ssl)
+{
+    if (ssl == nullptr) {
+        return;
+    }
+    const char *ver = SSL_get_version(ssl);
+    if (ver == nullptr) {
+        return;
+    }
+    std::string versionStr = ver;
+    if (versionStr.empty() || versionStr == "unknown") {
+        return;
+    }
+    std::string dstIp = options.GetNetAddress().GetAddress();
+    if (dstIp.empty()) {
+        dstIp = options.GetHostName();
+    }
+    SocketStatisticsEvent::GetInstance().TlsSocket().RecordVersionError(dstIp, versionStr);
+}
 class CaCertCache {
 public:
     static CaCertCache &GetInstance()
@@ -1208,10 +1229,16 @@ bool TLSSocket::TLSSocketInternal::TlsConnectToHost(int sock, const TLSConnectOp
     port_ = options.GetNetAddress().GetPort();
     family_ = options.GetNetAddress().GetSaFamily();
     socketDescriptor_ = sock;
-    if (options.proxyOptions_ == nullptr && !isExtSock &&
-        !ExecSocketConnect(options.GetNetAddress().GetAddress(), options.GetNetAddress().GetPort(),
-        options.GetNetAddress().GetSaFamily(), socketDescriptor_)) {
-        return false;
+    if (options.proxyOptions_ == nullptr && !isExtSock) {
+        auto tcpStart = std::chrono::steady_clock::now();
+        bool tcpResult = ExecSocketConnect(options.GetNetAddress().GetAddress(), options.GetNetAddress().GetPort(),
+            options.GetNetAddress().GetSaFamily(), socketDescriptor_);
+        auto tcpEnd = std::chrono::steady_clock::now();
+        auto tcpTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(tcpEnd - tcpStart).count();
+        SocketStatisticsEvent::GetInstance().TlsSocket().RecordTcpHandshakeTime(static_cast<uint32_t>(tcpTimeMs));
+        if (!tcpResult) {
+            return false;
+        }
     }
     return StartTlsConnected(options);
 }
@@ -1793,7 +1820,6 @@ int TLSSocket::TLSSocketInternal::ShakingHandsTimeout(int fd, uint32_t timeout)
 bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &options)
 {
     if (!ssl_) {
-        NETSTACK_LOGE("ssl is null");
         return false;
     }
 
@@ -1803,6 +1829,7 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
         SetSNIandLoadCachedCaCert(hostName);
     }
     uint32_t timeout_ms = options.GetTimeout();
+    auto tlsStart = std::chrono::steady_clock::now();
     int TimeoutErr = ShakingHandsTimeout(socketDescriptor_, timeout_ms);
     if (TimeoutErr == NO_TIMEOUT) {
         std::unique_lock<std::shared_mutex> wLock(mutexForSsl_);
@@ -1814,13 +1841,18 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
             int errorStatus = TlsSocketError::TLS_ERR_SSL_BASE + SSL_get_error(ssl_, SSL_RET_CODE);
             NETSTACK_LOGE("SSLConnect fail %{public}d, error: %{public}s errno: %{public}d "
                 "ERR_get_error %{public}s", errorStatus, MakeSSLErrorString(errorStatus).c_str(), errno, err);
+            RecordTlsVersionOnError(options, ssl_);
             return false;
         }
     } else if (TimeoutErr != TlsSocketError::TLSSOCKET_SUCCESS) {
         SetSockBlockFlag(socketDescriptor_, false);
         NETSTACK_LOGE("TLS failed to shaking hands after %{public}d ms", timeout_ms);
+        RecordTlsVersionOnError(options, ssl_);
         return false;
     }
+    auto tlsEnd = std::chrono::steady_clock::now();
+    auto tlsTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(tlsEnd - tlsStart).count();
+    SocketStatisticsEvent::GetInstance().TlsSocket().RecordTlsHandshakeTime(static_cast<uint32_t>(tlsTimeMs));
 
     // indicates hostName is not ip address
     if (hostName != options.GetNetAddress().GetAddress()) {
@@ -1829,13 +1861,14 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
     std::shared_lock<std::shared_mutex> rLock(mutexForSsl_);
     const char *cipherList = SSL_get_cipher_list(ssl_, 0);
     std::string list = (cipherList == NULL) ? "" : cipherList;
+    const char *negotiatedVersion = SSL_get_version(ssl_);
     NETSTACK_LOGI("cipher_list: %{public}s, Version: %{public}s, Cipher: %{public}s", list.c_str(),
-                  SSL_get_version(ssl_), SSL_get_cipher(ssl_));
-    configuration_.SetCipherSuite(list);
-    if (!CheckAfterShankingHands(options)) {
-        return false;
+                  negotiatedVersion, SSL_get_cipher(ssl_));
+    if (negotiatedVersion != nullptr) {
+        SocketStatisticsEvent::GetInstance().TlsSocket().RecordVersion(negotiatedVersion);
     }
-    return true;
+    configuration_.SetCipherSuite(list);
+    return CheckAfterShankingHands(options);
 }
 
 bool TLSSocket::TLSSocketInternal::CheckAfterShankingHands(const TLSConnectOptions &options)

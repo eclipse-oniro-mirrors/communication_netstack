@@ -211,6 +211,14 @@ public:
 
     std::string openMessage;
 
+    bool isWss = false;
+
+    std::string dstIpForStats;
+
+    std::string hostNameForStats;
+
+    std::string httpVersion = "HTTP/1.1";
+
 private:
     bool closed_ = false;
 
