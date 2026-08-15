@@ -128,7 +128,8 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
         argv[EVENT_PARAM_ONE] = HttpExec::RequestInStreamCallback(context.get());
         if (argv[EVENT_PARAM_ONE] == nullptr) {
             if (context->GetDeferred() != nullptr) {
-                napi_value err = NapiUtils::CreateErrorMessage(env, context->GetErrorCode(), context->GetErrorMessage());
+                napi_value err = NapiUtils::CreateErrorMessage(env, context->GetErrorCode(),
+                                                                context->GetErrorMessage());
                 napi_reject_deferred(env, context->GetDeferred(), err != nullptr ? err : undefined);
             }
             return;
@@ -1425,9 +1426,9 @@ napi_value HttpExec::BuildRequestCallback(RequestContext *context)
                 return object;
             }
             NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT, arrayBuffer);
-            NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
-                                         static_cast<uint32_t>(HttpDataType::ARRAY_BUFFER));
         }
+        NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
+                                     static_cast<uint32_t>(HttpDataType::ARRAY_BUFFER));
         return object;
     }
 
@@ -1779,8 +1780,8 @@ bool HttpExec::SetSocks5ProxyOption(CURL *curl, OHOS::NetStack::Http::RequestCon
         dnsStrategy, exclusionList);
 
     if (!CommonUtils::IsHostNameExcluded(url, exclusionList, ",")) {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYPORT, socks5Port, context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXY, socks5Host.c_str(), context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PROXYPORT, socks5Port, context);
         auto proxyType = CURLPROXY_SOCKS5;
         switch (dnsStrategy) {
             case Socks5DnsStrategy::PROXY_MODE:
@@ -2094,14 +2095,10 @@ static void OnValidationCallbackJsThread(napi_env env, napi_value js_callback, v
         return;
     }
 
-    auto safeSetValue = [](std::shared_ptr<std::promise<bool>> promise, bool value) {
-        promise->set_value(value);
-    };
-
     napi_handle_scope scope = nullptr;
     if (napi_open_handle_scope(env, &scope) != napi_ok) {
         NETSTACK_LOGE("OnValidationCallbackJsThread: failed to open handle scope");
-        safeSetValue(callbackData->resultPromise, false);
+        callbackData->resultPromise->set_value(false);
         return;
     }
 
@@ -2114,7 +2111,7 @@ static void OnValidationCallbackJsThread(napi_env env, napi_value js_callback, v
     napi_status status = napi_call_function(env, undefined, js_callback, 1, argv, &jsResult);
     if (status != napi_ok) {
         NETSTACK_LOGE("OnValidationCallbackJsThread: failed to call validation callback");
-        safeSetValue(callbackData->resultPromise, false);
+        callbackData->resultPromise->set_value(false);
         napi_close_handle_scope(env, scope);
         return;
     }
@@ -2124,7 +2121,7 @@ static void OnValidationCallbackJsThread(napi_env env, napi_value js_callback, v
     if (resultType == napi_boolean) {
         bool validationResult = false;
         napi_get_value_bool(env, jsResult, &validationResult);
-        safeSetValue(callbackData->resultPromise, validationResult);
+        callbackData->resultPromise->set_value(validationResult);
         napi_close_handle_scope(env, scope);
         return;
     }
@@ -2135,7 +2132,7 @@ static void OnValidationCallbackJsThread(napi_env env, napi_value js_callback, v
     }
 
     NETSTACK_LOGE("OnValidationCallbackJsThread: callback returned invalid type");
-    safeSetValue(callbackData->resultPromise, false);
+    callbackData->resultPromise->set_value(false);
     napi_close_handle_scope(env, scope);
 }
 
@@ -3112,14 +3109,14 @@ bool HttpExec::ProcByExpectDataType(napi_value object, RequestContext *context)
             void *data = nullptr;
             auto body = context->response.GetResult();
             napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);
-            NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
-                                         static_cast<uint32_t>(HttpDataType::ARRAY_BUFFER));
             if (data != nullptr && arrayBuffer != nullptr) {
                 if (memcpy_s(data, body.size(), body.c_str(), body.size()) != EOK) {
                     NETSTACK_LOGE("[ProcByExpectDataType] memory copy failed");
                     return false;
                 }
                 NapiUtils::SetNamedProperty(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT, arrayBuffer);
+                NapiUtils::SetUint32Property(context->GetEnv(), object, HttpConstant::RESPONSE_KEY_RESULT_TYPE,
+                                             static_cast<uint32_t>(HttpDataType::ARRAY_BUFFER));
             }
             return true;
         }
