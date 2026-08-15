@@ -1729,11 +1729,17 @@ void TLSSocket::TLSSocketInternal::SetSNIandLoadCachedCaCert(const std::string &
     }
 #ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
     std::unique_lock<std::shared_mutex> wLock(mutexForSsl_);
+    if (!ssl_) {
+        return;
+    }
     SSL_set_tlsext_host_name(ssl_, hostName.c_str());
     wLock.unlock();
 #endif
     auto cachedPem = CaCertCache::GetInstance().Get(hostName);
     std::shared_lock<std::shared_mutex> rLock(mutexForSsl_);
+    if (!ssl_) {
+        return;
+    }
     auto sslCtx = SSL_get_SSL_CTX(ssl_);
     rLock.unlock();
     if (!sslCtx) {
@@ -1763,6 +1769,10 @@ int TLSSocket::TLSSocketInternal::ShakingHandsTimeout(int fd, uint32_t timeout)
             return TLS_TIMEOUT;
         }
         std::unique_lock<std::shared_mutex> lock(mutexForSsl_);
+        if (!ssl_) {
+            NETSTACK_LOGE("ssl is null");
+            return TlsSocketError::TLS_ERR_SSL_BASE;
+        }
         int rc = SSL_connect(ssl_);
         int err = SSL_get_error(ssl_, rc);
         lock.unlock();
@@ -1806,6 +1816,10 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
     int TimeoutErr = ShakingHandsTimeout(socketDescriptor_, timeout_ms);
     if (TimeoutErr == NO_TIMEOUT) {
         std::unique_lock<std::shared_mutex> wLock(mutexForSsl_);
+        if (!ssl_) {
+            NETSTACK_LOGE("ssl is null");
+            return false;
+        }
         int result = SSL_connect(ssl_);
         if (result == -1) {
             char err[MAX_ERR_LEN] = {0};
@@ -1827,6 +1841,10 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
         CacheCertificates(hostName);
     }
     std::shared_lock<std::shared_mutex> rLock(mutexForSsl_);
+    if (!ssl_) {
+        NETSTACK_LOGE("ssl is null");
+        return false;
+    }
     const char *cipherList = SSL_get_cipher_list(ssl_, 0);
     std::string list = (cipherList == NULL) ? "" : cipherList;
     NETSTACK_LOGI("cipher_list: %{public}s, Version: %{public}s, Cipher: %{public}s", list.c_str(),
@@ -1842,6 +1860,10 @@ bool TLSSocket::TLSSocketInternal::CheckAfterShankingHands(const TLSConnectOptio
 {
     if (!SetSharedSigals()) {
         NETSTACK_LOGE("Failed to set sharedSigalgs");
+    }
+    if (!ssl_) {
+        NETSTACK_LOGE("ssl is null");
+        return false;
     }
     X509 *peerX509 = SSL_get_peer_certificate(ssl_);
     if (!GetRemoteCertificateFromPeer(peerX509)) {
