@@ -429,6 +429,7 @@ napi_value MonitorServer::Off(napi_env env, napi_callback_info info)
     if (paramsCount == PARAM_OPTION_CALLBACK) {
         manager->DeleteListener(event, params[1]);
     } else {
+        NETSTACK_LOGI("SubEvent op=off_all kit=networkKit event=%{public}s", event.c_str());
         manager->DeleteListener(event);
     }
     return NapiUtils::GetUndefined(env);
@@ -474,6 +475,7 @@ napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
     if (paramsCount == PARAM_OPTION_CALLBACK) {
         manager->DeleteListener(event, params[1]);
     } else {
+        NETSTACK_LOGI("SubEvent op=off_all kit=networkKit event=%{public}s", event.c_str());
         manager->DeleteListener(event);
     }
     return NapiUtils::GetUndefined(env);
