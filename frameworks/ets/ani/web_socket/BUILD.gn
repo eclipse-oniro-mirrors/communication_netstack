@@ -70,7 +70,22 @@ ohos_rust_shared_library("websocket_ani") {
 
   sources = [ "src/lib.rs" ]
 
-  rustflags = [ "-Clto=off" ]
+  rustflags = [
+    "-C", "opt-level=z",
+    "-C", "link-arg=-ffunction-sections",
+    "-C", "link-arg=-fdata-sections",
+    "-C", "link-arg=-Wl,--gc-sections",
+    "-C", "link-arg=-Wl,--strip-all",
+    "-C", "codegen-units=1",
+    "-C", "lto=thin",
+    "-C", "link-arg=-flto",
+    "-C", "overflow-checks=no",
+    "-C", "code-model=small",
+    "-Z", "dylib-lto",
+    "-Z", "stack-protector=all",
+    "-Z", "location-detail=none",
+    "-Z", "dump-mir=deadcode",
+  ]
   
   external_deps = [
     "runtime_core:ani",
