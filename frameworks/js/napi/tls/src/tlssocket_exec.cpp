@@ -78,9 +78,20 @@ static inline bool IsConnected(int sockFD)
 
 bool TLSSocketExec::ExecInit(TLSInitContext *context)
 {
+    if (context == nullptr) {
+        NETSTACK_LOGE("context is nullptr");
+        return false;
+    }
+
     auto manager = context->GetSharedManager();
     if (manager == nullptr) {
         NETSTACK_LOGE("manager is nullptr");
+        TLSSocketThrowException(context, SYSTEM_INTERNAL_ERROR);
+        return false;
+    }
+
+    if (context->extManager_ == nullptr) {
+        NETSTACK_LOGE("extManager is nullptr");
         TLSSocketThrowException(context, SYSTEM_INTERNAL_ERROR);
         return false;
     }
