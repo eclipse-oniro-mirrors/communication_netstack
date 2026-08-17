@@ -16,6 +16,7 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <unistd.h>
 
 #ifdef GTEST_API_
 #define private public
@@ -654,6 +655,29 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest033, testing::ext::
     tlsSocketServer->NotifyRcvThdExit();
     tlsSocketServer->WaitForRcvThdExit();
     EXPECT_FALSE(res == false);
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest034, testing::ext::TestSize.Level2)
+{
+    auto connection = std::make_shared<TLSSocketServer::Connection>();
+    EXPECT_TRUE(connection != nullptr);
+    int fds[2];
+    EXPECT_EQ(pipe(fds), 0);
+    connection->socketFd_ = fds[0];
+    connection->ssl_ = nullptr;
+    bool ret = connection->Close();
+    EXPECT_FALSE(ret);
+    EXPECT_EQ(connection->socketFd_, -1);
+    close(fds[1]);
+}
+
+HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest035, testing::ext::TestSize.Level2)
+{
+    TLSSocketServer *server = new TLSSocketServer();
+    EXPECT_TRUE(server != nullptr);
+    server->NotifyRcvThdExit();
+    delete server;
+    EXPECT_TRUE(server->sockRcvExit_);
 }
 } // namespace TlsSocketServer
 } // namespace NetStack
