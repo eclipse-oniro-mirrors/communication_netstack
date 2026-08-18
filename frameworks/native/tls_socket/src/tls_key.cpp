@@ -147,6 +147,8 @@ void TLSKey::DecodeData(const SecureData &data, KeyAlgorithm algorithm, const Se
     }
     rsa_ = PEM_read_bio_RSAPrivateKey(bio, nullptr, PemPasswordCallback,
                                       const_cast<SecureData *>(&passPhrase));
+
+    BIO_free(bio);
     if (rsa_) {
         keyIsNull_ = false;
     }

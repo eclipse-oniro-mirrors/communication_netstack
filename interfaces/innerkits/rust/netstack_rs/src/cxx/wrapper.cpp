@@ -122,14 +122,15 @@ rust::vec<rust::string> GetHeaders(HttpClientResponse &response)
 
 PerformanceInfoRust GetPerformanceTiming(HttpClientResponse &response)
 {
+    auto preFormanceInfo = response.GetPerformanceTiming();
     PerformanceInfoRust info = {
-        .dns_timing = response.GetPerformanceTiming().dnsTiming,
-        .tcp_timing = response.GetPerformanceTiming().connectTiming,
-        .tls_timing = response.GetPerformanceTiming().tlsTiming,
-        .first_send_timing = response.GetPerformanceTiming().firstSendTiming,
-        .first_receive_timing = response.GetPerformanceTiming().firstReceiveTiming,
-        .total_timing = response.GetPerformanceTiming().totalTiming,
-        .redirect_timing = response.GetPerformanceTiming().redirectTiming,
+        .dns_timing = preFormanceInfo.dnsTiming,
+        .tcp_timing = preFormanceInfo.connectTiming,
+        .tls_timing = preFormanceInfo.tlsTiming,
+        .first_send_timing = preFormanceInfo.firstSendTiming,
+        .first_receive_timing = preFormanceInfo.firstReceiveTiming,
+        .total_timing = preFormanceInfo.totalTiming,
+        .redirect_timing = preFormanceInfo.redirectTiming,
     };
     return info;
 }
@@ -270,7 +271,9 @@ std::string GetJsonFieldValue(const cJSON* item)
     std::stringstream ss;
     switch (item->type) {
         case cJSON_String:
-            ss << item->valuestring;
+            if (item->valuestring != nullptr) {
+                ss << item->valuestring;
+            }
             break;
         case cJSON_Number:
             ss << item->valuedouble;
