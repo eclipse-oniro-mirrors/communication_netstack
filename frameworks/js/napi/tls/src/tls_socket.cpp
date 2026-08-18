@@ -428,8 +428,8 @@ std::string TLSSocket::MakeAddressString(sockaddr *addr)
     }
     if (addr->sa_family == AF_INET) {
         auto *addr4 = reinterpret_cast<sockaddr_in *>(addr);
-        const char *str = inet_ntoa(addr4->sin_addr);
-        if (str == nullptr || strlen(str) == 0) {
+        char str[INET_ADDRSTRLEN] = {0};
+        if (inet_ntop(AF_INET, &addr4->sin_addr, str, INET_ADDRSTRLEN) == nullptr || strlen(str) == 0) {
             return {};
         }
         return str;
@@ -917,12 +917,12 @@ void TLSSocket::GetState(const GetStateCallback &callback)
         CallGetStateCallback(ConvertErrno(), state, callback);
         return;
     }
-    sockaddr sockAddr = {0};
-    socklen_t len = sizeof(sockaddr);
+    sockaddr_storage sockAddr = {};
+    socklen_t len = sizeof(sockaddr_storage);
     Socket::SocketStateBase state;
-    int ret = getsockname(sockFd_, &sockAddr, &len);
+    int ret = getsockname(sockFd_, reinterpret_cast<sockaddr *>(&sockAddr), &len);
     state.SetIsBound(ret == 0);
-    ret = getpeername(sockFd_, &sockAddr, &len);
+    ret = getpeername(sockFd_, reinterpret_cast<sockaddr *>(&sockAddr), &len);
     state.SetIsConnected(ret == 0);
     CallGetStateCallback(TLSSOCKET_SUCCESS, state, callback);
 }
@@ -1425,7 +1425,6 @@ std::vector<std::string> TLSSocket::TLSSocketInternal::GetCipherSuite()
         return {};
     }
     STACK_OF(SSL_CIPHER) *sk = SSL_get_ciphers(ssl_);
-    lock.unlock();
     if (!sk) {
         NETSTACK_LOGE("get ciphers failed");
         return {};
