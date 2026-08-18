@@ -62,11 +62,11 @@ SecureData::SecureData(const SecureData &secureData)
 SecureData &SecureData::operator=(const SecureData &secureData)
 {
     if (this != &secureData) {
-        if (data_ != nullptr && memset_s(data_.get(), length_, 0, length_) != EOK) {
-            NETSTACK_LOGE("memset_s failed!");
-        }
         if (secureData.Length() == 0) {
             return *this;
+        }
+        if (data_ != nullptr && memset_s(data_.get(), length_, 0, length_) != EOK) {
+            NETSTACK_LOGE("memset_s failed!");
         }
         length_ = secureData.Length();
         data_ = std::make_unique<char[]>(length_ + 1);
