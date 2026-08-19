@@ -15,15 +15,18 @@
 
 #include <gtest/gtest.h>
 #include <iostream>
+#include <memory>
 
 #include <openssl/ssl.h>
 
 #define private public
 #include "accesstoken_kit.h"
+#include "socket_error.h"
 #include "tls_socket.h"
 #include "socket_remote_info.h"
 #include "token_setproc.h"
 #include "tls.h"
+#include "tlssocket_exec.h"
 #include "TlsTest.h"
 
 namespace OHOS {
@@ -138,6 +141,30 @@ public:
 
     virtual void TearDown() {}
 };
+
+HWTEST_F(TlsSocketBranchTest, ExecInitContextNull, TestSize.Level2)
+{
+    EXPECT_FALSE(TLSSocketExec::ExecInit(nullptr));
+}
+
+HWTEST_F(TlsSocketBranchTest, ExecInitManagerNull, TestSize.Level2)
+{
+    TLSInitContext context(nullptr, nullptr);
+
+    EXPECT_FALSE(TLSSocketExec::ExecInit(&context));
+    EXPECT_TRUE(context.IsNeedThrowException());
+    EXPECT_EQ(context.GetErrorCode(), SYSTEM_INTERNAL_ERROR);
+}
+
+HWTEST_F(TlsSocketBranchTest, ExecInitExtManagerNull, TestSize.Level2)
+{
+    auto manager = std::make_shared<EventManager>();
+    TLSInitContext context(nullptr, manager);
+
+    EXPECT_FALSE(TLSSocketExec::ExecInit(&context));
+    EXPECT_TRUE(context.IsNeedThrowException());
+    EXPECT_EQ(context.GetErrorCode(), SYSTEM_INTERNAL_ERROR);
+}
 
 HWTEST_F(TlsSocketBranchTest, BranchTest1, TestSize.Level2)
 {
