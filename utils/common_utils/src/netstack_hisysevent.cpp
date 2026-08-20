@@ -97,9 +97,16 @@ EventReport &EventReport::GetInstance()
 void EventReport::ProcessHttpPerfHiSysevent(const HttpPerfInfo &httpPerfInfo)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-
+    if (!IsHttpInfoValid(httpPerfInfo)) {
+        return;
+    }
     HandleHttpResponseErrorEvents(httpPerfInfo);
     HandleHttpPerfEvents(httpPerfInfo);
+}
+
+bool EventReport::IsHttpInfoValid(const HttpPerfInfo &httpPerfInfo)
+{
+    return httpPerfInfo.tlsTime >= 0 && httpPerfInfo.tcpTime >= 0 && httpPerfInfo.firstRecvTime >= 0;
 }
 
 void EventReport::HandleHttpPerfEvents(const HttpPerfInfo &httpPerfInfo)

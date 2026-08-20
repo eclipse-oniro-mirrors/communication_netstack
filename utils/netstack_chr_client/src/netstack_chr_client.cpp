@@ -193,6 +193,7 @@ void NetStackChrClient::GetUrlInfoFromCurl(CURL *handle, DataTransUrlInfo &urlIn
 {
     (void)curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &urlInfo.responseCode);
     urlInfo.totalTime = GetNumericAttributeFromCurl<curl_off_t>(handle, CURLINFO_TOTAL_TIME_T);
+    urlInfo.osError = GetNumericAttributeFromCurl<long>(handle, CURLINFO_OS_ERRNO);
     urlInfo.requestStartTime = GetRequestStartTime(urlInfo.totalTime);
     std::string originUrl = GetStringAttributeFromCurl(handle, CURLINFO_EFFECTIVE_URL);
     std::string EncodeUrl = EncodeUrlParam(originUrl);
