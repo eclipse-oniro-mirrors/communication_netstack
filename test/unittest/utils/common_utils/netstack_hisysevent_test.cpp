@@ -109,6 +109,33 @@ HWTEST_F(NetStackHiSysEventTest, ProcessHttpPerfHiSysevent_04, TestSize.Level0)
     EXPECT_EQ(EventReport::GetInstance().eventInfo.successCount, preSuccessCount + 1);
 }
 
+HWTEST_F(NetStackHiSysEventTest, ProcessHttpPerfHiSysevent_05, TestSize.Level0)
+{
+    HttpPerfInfo httpPerfInfo;
+    httpPerfInfo.tlsTime = -1;
+    uint32_t preSuccessCount = EventReport::GetInstance().eventInfo.successCount;
+    EventReport::GetInstance().ProcessHttpPerfHiSysevent(httpPerfInfo);
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.successCount, preSuccessCount);
+}
+ 
+HWTEST_F(NetStackHiSysEventTest, ProcessHttpPerfHiSysevent_06, TestSize.Level0)
+{
+    HttpPerfInfo httpPerfInfo;
+    httpPerfInfo.tcpTime = -1;
+    uint32_t preSuccessCount = EventReport::GetInstance().eventInfo.successCount;
+    EventReport::GetInstance().ProcessHttpPerfHiSysevent(httpPerfInfo);
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.successCount, preSuccessCount);
+}
+ 
+HWTEST_F(NetStackHiSysEventTest, ProcessHttpPerfHiSysevent_07, TestSize.Level0)
+{
+    HttpPerfInfo httpPerfInfo;
+    httpPerfInfo.firstRecvTime = -1;
+    uint32_t preSuccessCount = EventReport::GetInstance().eventInfo.successCount;
+    EventReport::GetInstance().ProcessHttpPerfHiSysevent(httpPerfInfo);
+    EXPECT_EQ(EventReport::GetInstance().eventInfo.successCount, preSuccessCount);
+}
+
 HWTEST_F(NetStackHiSysEventTest, ResetCounters_ShouldResetAllCountersToZero_WhenCalled, TestSize.Level0)
 {
     EventReport::GetInstance().eventInfo.totalCount = 10;
