@@ -36,6 +36,7 @@ void MulticastMembershipContext::ParseParams(napi_value *params, size_t paramsCo
     std::string addr = NapiUtils::GetStringPropertyUtf8(GetEnv(), params[0], KEY_ADDRESS);
     if (addr.empty()) {
         NETSTACK_LOGE("invalid address, is empty");
+        return;
     }
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], KEY_FAMILY)) {
         address_.SetFamilyByJsValue(NapiUtils::GetUint32Property(GetEnv(), params[0], KEY_FAMILY));
@@ -87,6 +88,10 @@ bool MulticastMembershipContext::CheckParamsType(napi_value *params, size_t para
 
 void MulticastMembershipContext::SetSocketFd(int sock)
 {
+    if (sharedManager_ == nullptr) {
+        NETSTACK_LOGE("sharedManager_ is nullptr");
+        return;
+    }
     sharedManager_->SetData(reinterpret_cast<void *>(sock));
 }
 

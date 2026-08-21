@@ -65,6 +65,7 @@ private:
     void HandleReady(int fd, uint32_t events);
     void CompleteConnect(int fd, int errCode);
     void WakeUp();
+    void DrainEventFd();
 
     int epollFd_ = -1;
     int eventFd_ = -1;

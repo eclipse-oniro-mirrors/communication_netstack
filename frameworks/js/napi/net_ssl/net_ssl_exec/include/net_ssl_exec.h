@@ -40,6 +40,9 @@ public:
 
     static void AsyncRunVerifyCertChain(VerifyCertChainContext *context);
 #endif
+
+private:
+    static bool CreateCertDataValue(napi_env env, const CertBlob &cert, size_t index, napi_value &dataValue);
 };
 } // namespace OHOS::NetStack::Ssl
 

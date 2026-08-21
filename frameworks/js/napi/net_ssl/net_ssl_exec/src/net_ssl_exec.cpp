@@ -93,6 +93,37 @@ bool SslExec::ExecVerifyCertChain(VerifyCertChainContext *context)
     return false;
 }
 
+bool SslExec::CreateCertDataValue(napi_env env, const CertBlob &cert, size_t index, napi_value &dataValue)
+{
+    if (cert.type == CERT_TYPE_PEM) {
+        // PEM data should be null-terminated string
+        if (cert.data == nullptr || cert.size == 0) {
+            NETSTACK_LOGE("PEM cert data is nullptr or empty at index %{public}zu", index);
+            return false;
+        }
+        napi_status status = napi_create_string_utf8(env, reinterpret_cast<char *>(cert.data), cert.size, &dataValue);
+        if (status != napi_ok) {
+            dataValue = NapiUtils::GetUndefined(env);
+        }
+    } else {
+        // DER data is binary
+        if (cert.data == nullptr || cert.size == 0) {
+            NETSTACK_LOGE("DER cert data is nullptr or empty at index %{public}zu", index);
+            return false;
+        }
+        void *data = nullptr;
+        napi_status status = napi_create_arraybuffer(env, cert.size, &data, &dataValue);
+        if (status != napi_ok) {
+            dataValue = NapiUtils::GetUndefined(env);
+            data = nullptr;
+        }
+        if (data != nullptr) {
+            std::copy(cert.data, cert.data + cert.size, static_cast<uint8_t *>(data));
+        }
+    }
+    return true;
+}
+
 napi_value SslExec::VerifyCertChainCallback(VerifyCertChainContext *context)
 {
     napi_env env = context->GetEnv();
@@ -120,27 +151,9 @@ napi_value SslExec::VerifyCertChainCallback(VerifyCertChainContext *context)
         NapiUtils::SetNamedProperty(env, certObj, "type", typeValue);
 
         // Set data
-        napi_value dataValue;
-        if (chain[i].type == CERT_TYPE_PEM) {
-            // PEM data should be null-terminated string
-            if (chain[i].data == nullptr || chain[i].size == 0) {
-                NETSTACK_LOGE("PEM cert data is nullptr or empty at index %{public}zu", i);
-                continue;
-            }
-            napi_create_string_utf8(env, reinterpret_cast<char *>(chain[i].data),
-                                    NAPI_AUTO_LENGTH, &dataValue);
-        } else {
-            // DER data is binary
-            if (chain[i].data == nullptr || chain[i].size == 0) {
-                NETSTACK_LOGE("DER cert data is nullptr or empty at index %{public}zu", i);
-                continue;
-            }
-            void *data = nullptr;
-            napi_create_arraybuffer(env, chain[i].size, &data, &dataValue);
-            if (data != nullptr) {
-                std::copy(chain[i].data, chain[i].data + chain[i].size,
-                         static_cast<uint8_t *>(data));
-            }
+        napi_value dataValue = NapiUtils::GetUndefined(env);
+        if (!CreateCertDataValue(env, chain[i], i, dataValue)) {
+            continue;
         }
         NapiUtils::SetNamedProperty(env, certObj, "data", dataValue);
 

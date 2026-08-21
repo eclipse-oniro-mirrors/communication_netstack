@@ -111,7 +111,12 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
                                       LocalSocketConnectionData *data)
 {
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_new_instance(env, jsConstructor, 0, nullptr, &result));
+    napi_status status = napi_new_instance(env, jsConstructor, 0, nullptr, &result);
+    if (status != napi_ok || result == nullptr) {
+        NETSTACK_LOGE("napi_new_instance failed");
+        delete data;
+        return NapiUtils::GetUndefined(env);
+    }
 
     auto sharedManager = new (std::nothrow) std::shared_ptr<EventManager>();
     if (sharedManager == nullptr) {
@@ -216,16 +221,14 @@ static bool OnRecvLocalSocketMessage(const std::shared_ptr<EventManager> &manage
         NETSTACK_LOGE("manager or data or len is invalid");
         return false;
     }
-    if (manager->HasEventListener(EVENT_MESSAGE)) {
-        MsgWithLocalRemoteInfo *msg = new (std::nothrow) MsgWithLocalRemoteInfo(data, len, path);
-        if (msg == nullptr) {
-            NETSTACK_LOGE("MsgWithLocalRemoteInfo construct error");
-            return false;
-        }
-        manager->SetQueueData(reinterpret_cast<void *>(msg));
-        manager->EmitByUvWithoutCheckShared(EVENT_MESSAGE, nullptr,
-            ModuleTemplate::CallbackTemplateWithSharedManager<MakeLocalSocketMessage>);
+    if (!manager->HasEventListener(EVENT_MESSAGE)) {
+        NETSTACK_LOGE("no message listener, drop data");
+        return false;
     }
+    MsgWithLocalRemoteInfo *msg = new MsgWithLocalRemoteInfo(data, len, path);
+    manager->SetQueueData(reinterpret_cast<void *>(msg));
+    manager->EmitByUvWithoutCheckShared(EVENT_MESSAGE, nullptr,
+        ModuleTemplate::CallbackTemplateWithSharedManager<MakeLocalSocketMessage>);
     return true;
 }
 
@@ -856,6 +859,7 @@ bool ExecLocalSocketSend(LocalSocketSendContext *context)
 #endif
     if (context->GetSocketFd() < 0) {
         context->SetErrorCode(EBADF);
+        return false;
     }
     bool result = LocalSocketSendEvent(context);
     NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::LocalSocketSendCallback);
@@ -1003,7 +1007,7 @@ static bool LocalSocketServerBind(LocalSocketServerListenContext *context)
 
 bool ExecLocalSocketServerListen(LocalSocketServerListenContext *context)
 {
-    if (context == nullptr) {
+    if (context == nullptr || context->GetSharedManager() == nullptr) {
         return false;
     }
     if (!LocalSocketServerBind(context)) {
@@ -1015,6 +1019,7 @@ bool ExecLocalSocketServerListen(LocalSocketServerListenContext *context)
         return false;
     }
     NETSTACK_LOGI("local socket server listen success");
+    std::shared_lock<std::shared_mutex> lock(context->GetSharedManager()->GetDataMutex());
     auto mgr = reinterpret_cast<LocalSocketServerManager *>(context->GetSharedManager()->GetData());
     if (mgr == nullptr) {
         NETSTACK_LOGE("LocalSocketServerManager reinterpret cast failed");
@@ -1066,7 +1071,11 @@ bool ExecLocalSocketServerGetState(LocalSocketServerGetStateContext *context)
     if (getsockname(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&unAddr), &len) == 0) {
         state.SetIsBound(true);
     }
-    auto pMgr = reinterpret_cast<LocalSocketServerManager *>(context->GetSharedManager()->GetData());
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        return false;
+    }
+    auto pMgr = reinterpret_cast<LocalSocketServerManager *>(manager->GetData());
     if (pMgr != nullptr) {
         state.SetIsConnected(pMgr->GetClientCounts() > 0);
     }
@@ -1097,10 +1106,16 @@ bool ExecLocalSocketServerSetExtraOptions(LocalSocketServerSetExtraOptionsContex
     if (context == nullptr) {
         return false;
     }
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        return false;
+    }
+
     auto serverManager = reinterpret_cast<LocalSocketServerManager *>(context->GetSharedManager()->GetData());
     if (serverManager == nullptr) {
         return false;
     }
+    std::lock_guard<std::mutex> lock(serverManager->clientMutex_);
     for (const auto &[id, fd] : serverManager->acceptFds_) {
         if (!SetLocalSocketOptions(fd, context->GetOptionsRef())) {
             context->SetErrorCode(errno);
@@ -1150,7 +1165,13 @@ bool ExecLocalSocketConnectionSend(LocalSocketServerSendContext *context)
         return false;
     }
     int clientId = context->GetClientId();
-    auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetSharedManager()->GetData());
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("localsocket connection send, manager is nullptr, id: %{public}d", clientId);
+        return false;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    auto data = reinterpret_cast<LocalSocketConnectionData *>(manager->GetData());
     if (data == nullptr || data->serverManager_ == nullptr) {
         NETSTACK_LOGE("localsocket connection send, data or manager is nullptr, id: %{public}d", clientId);
         return false;

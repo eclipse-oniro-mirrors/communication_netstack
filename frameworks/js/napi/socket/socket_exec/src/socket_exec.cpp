@@ -1550,7 +1550,18 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
 
     sockaddr sockAddr = {0};
     socklen_t len = sizeof(sockaddr);
-    int ret = getsockname(context->GetSocketFd(), &sockAddr, &len);
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        return false;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    int sockFd = context->GetSocketFd();
+    if (sockFd < 0) {
+        context->SetErrorCode(ERRNO_BAD_FD);
+        return false;
+    }
+
+    int ret = getsockname(sockFd, &sockAddr, &len);
     if (ret < 0) {
         context->SetErrorCode(errno);
         return false;
@@ -1560,7 +1571,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
         sockaddr_in addr4 = {0};
         socklen_t len4 = sizeof(sockaddr_in);
 
-        ret = getpeername(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr4), &len4);
+        ret = getpeername(sockFd, reinterpret_cast<sockaddr *>(&addr4), &len4);
         std::string address = MakeAddressString(reinterpret_cast<sockaddr *>(&addr4));
         if (!IsAddressAndRetValid(ret, address, context)) {
             return false;
@@ -1573,7 +1584,7 @@ bool ExecGetRemoteAddress(GetRemoteAddressContext *context)
         sockaddr_in6 addr6 = {0};
         socklen_t len6 = sizeof(sockaddr_in6);
 
-        ret = getpeername(context->GetSocketFd(), reinterpret_cast<sockaddr *>(&addr6), &len6);
+        ret = getpeername(sockFd, reinterpret_cast<sockaddr *>(&addr6), &len6);
         std::string address = MakeAddressString(reinterpret_cast<sockaddr *>(&addr6));
         if (!IsAddressAndRetValid(ret, address, context)) {
             return false;
@@ -1644,6 +1655,12 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
         return false;
     }
 
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     if (context->GetSocketFd() <= 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
         return false;
@@ -1793,11 +1810,22 @@ bool ExecUdpDropMembership(MulticastMembershipContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        return false;
+    }
+    std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    int sockFd = context->GetSocketFd();
+    if (sockFd < 0) {
+        context->SetErrorCode(ERRNO_BAD_FD);
+        return false;
+    }
+
     if (context->address_.GetFamily() == NetAddress::Family::IPv4) {
         ip_mreq mreq = {};
         mreq.imr_multiaddr.s_addr = inet_addr(context->address_.GetAddress().c_str());
         mreq.imr_interface.s_addr = INADDR_ANY;
-        if (setsockopt(context->GetSocketFd(), IPPROTO_IP, IP_DROP_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
+        if (setsockopt(sockFd, IPPROTO_IP, IP_DROP_MEMBERSHIP, reinterpret_cast<void *>(&mreq),
                        sizeof(mreq)) == -1) {
             NETSTACK_LOGE("ipv4 dropmembership err: %{public}d", errno);
             context->SetErrorCode(errno);
@@ -1807,7 +1835,7 @@ bool ExecUdpDropMembership(MulticastMembershipContext *context)
         ipv6_mreq mreq = {};
         inet_pton(AF_INET6, context->address_.GetAddress().c_str(), &mreq.ipv6mr_multiaddr);
         mreq.ipv6mr_interface = 0;
-        if (setsockopt(context->GetSocketFd(), IPPROTO_IPV6, IPV6_LEAVE_GROUP, reinterpret_cast<void *>(&mreq),
+        if (setsockopt(sockFd, IPPROTO_IPV6, IPV6_LEAVE_GROUP, reinterpret_cast<void *>(&mreq),
                        sizeof(mreq)) == -1) {
             NETSTACK_LOGE("ipv6 dropmembership err: %{public}d", errno);
             context->SetErrorCode(errno);
@@ -1815,12 +1843,11 @@ bool ExecUdpDropMembership(MulticastMembershipContext *context)
         }
     }
 
-    if (close(context->GetSocketFd()) < 0) {
-        NETSTACK_LOGE("sock closed failed , socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
+    if (close(sockFd) < 0) {
+        NETSTACK_LOGE("sock closed failed , socket is %{public}d, errno is %{public}d", sockFd, errno);
         context->SetErrorCode(errno);
         return false;
     }
-    NETSTACK_LOGI("ExecUdpDropMembership sock: %{public}d closed success", context->GetSocketFd());
     context->SetSocketFd(0);
     return true;
 }
