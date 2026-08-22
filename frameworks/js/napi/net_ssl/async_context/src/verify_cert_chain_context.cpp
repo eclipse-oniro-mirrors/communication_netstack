@@ -15,6 +15,7 @@
 
 #include "verify_cert_chain_context.h"
 
+#include <cstdint>
 #include <map>
 #include <node_api.h>
 #include <openssl/ssl.h>
@@ -230,7 +231,7 @@ CertBlob *VerifyCertChainContext::ParsePemCertBlob(napi_env env, napi_value data
 
     size_t dataSize = 0;
     napi_get_value_string_utf8(env, dataValue, nullptr, 0, &dataSize);
-    if (dataSize + 1 >= SIZE_MAX / sizeof(uint8_t)) {
+    if (dataSize > SIZE_MAX) {
         return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
     }
 
@@ -255,8 +256,9 @@ CertBlob *VerifyCertChainContext::ParseDerCertBlob(napi_env env, napi_value data
 
     void *dataArray = nullptr;
     size_t dataSize = 0;
-    napi_get_arraybuffer_info(env, dataValue, &dataArray, &dataSize);
-    if (dataSize >= SIZE_MAX / sizeof(uint8_t)) {
+    napi_status status = napi_get_arraybuffer_info(env, dataValue, &dataArray, &dataSize);
+    if (status != napi_ok || dataArray == nullptr || dataSize == 0 ||
+        dataSize > static_cast<size_t>(UINT32_MAX)) {
         return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
     }
 

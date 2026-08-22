@@ -33,11 +33,22 @@ ConnectMonitor& ConnectMonitor::GetInstance()
 ConnectMonitor::ConnectMonitor()
 {
     epollFd_ = epoll_create1(EPOLL_CLOEXEC);
+    if (epollFd_ < 0) {
+        return;
+    }
     eventFd_ = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    if (eventFd_ < 0) {
+        return;
+    }
     epoll_event ev {};
     ev.events = EPOLLIN;
     ev.data.fd = eventFd_;
-    epoll_ctl(epollFd_, EPOLL_CTL_ADD, eventFd_, &ev);
+    if (epoll_ctl(epollFd_, EPOLL_CTL_ADD, eventFd_, &ev) < 0) {
+        close(eventFd_);
+        eventFd_ = -1;
+        close(epollFd_);
+        epollFd_ = -1;
+    }
 }
 
 ConnectMonitor::~ConnectMonitor()
@@ -82,6 +93,9 @@ void ConnectMonitor::WakeUp()
 bool ConnectMonitor::Register(int fd, const sptr<ConnectWatchData>& data)
 {
     if (data == nullptr) {
+        return false;
+    }
+    if (epollFd_ < 0 || eventFd_ < 0) {
         return false;
     }
     NETSTACK_LOGI("connect monitor register :%{public}d", fd);
@@ -134,6 +148,15 @@ void ConnectMonitor::Unregister(int fd)
     }
 }
 
+void ConnectMonitor::DrainEventFd()
+{
+    uint64_t val;
+    ssize_t ret;
+    do {
+        ret = read(eventFd_, &val, sizeof(val));
+    } while (ret < 0 && errno == EINTR);
+}
+
 void ConnectMonitor::MonitorLoop()
 {
     while (running_.load()) {
@@ -149,8 +172,7 @@ void ConnectMonitor::MonitorLoop()
         }
         for (int i = 0; i < n; i++) {
             if (events[i].data.fd == eventFd_) {
-                uint64_t val;
-                read(eventFd_, &val, sizeof(val));
+                DrainEventFd();
                 continue;
             }
             HandleReady(events[i].data.fd, events[i].events);
@@ -235,8 +257,8 @@ void ConnectMonitor::CompleteConnect(int fd, int errCode)
         }
         data = std::move(it->second);
         pendings_.erase(it);
+        epoll_ctl(epollFd_, EPOLL_CTL_DEL, fd, nullptr);
     }
-    epoll_ctl(epollFd_, EPOLL_CTL_DEL, fd, nullptr);
 
     if (!data || !data->tsfn) {
         return;

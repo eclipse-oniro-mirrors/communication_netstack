@@ -194,16 +194,18 @@ void FinalizeTcpSocketServer(napi_env, void *data, void *)
     auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
     if (sharedManager != nullptr && *sharedManager != nullptr) {
         auto manager = *sharedManager;
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
         int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
         if (sock != -1) {
             NETSTACK_LOGI("finalize close all listenfd");
             manager->SetData(reinterpret_cast<void *>(-1));
+            close(sock);
             auto config = SocketExec::GetSharedConfig(manager);
-            if (config == nullptr) {
-                return;
+            if (config != nullptr) {
+                config->ShutdownAllSockets();
             }
-            config->ShutdownAllSockets();
         }
+        lock.unlock();
         delete sharedManager;
     }
 }
@@ -349,6 +351,7 @@ static bool MakeTcpServerSocket(napi_env env, napi_value thisVal, TcpServerListe
         NETSTACK_LOGE("failed to set tcp server listen socket reuseaddr on, sockfd: %{public}d", sock);
     }
     if (!SetSocket(env, thisVal, context, sock)) {
+        close(sock);
         return false;
     }
     context->SetExecOK(true);
@@ -365,8 +368,13 @@ static bool MakeUdpSocket(napi_env env, napi_value thisVal, BindContext *context
         context->SetPermissionDenied(true);
         return false;
     }
+    if (int sock = context->GetSocketFd(); sock > 0) {
+        NETSTACK_LOGI("udp socket exist: %{public}d", sock);
+        return true;
+    }
     int sock = ExecCommonUtils::MakeUdpSocket(context->address_.GetSaFamily());
     if (!SetSocket(env, thisVal, context, sock)) {
+        close(sock);
         return false;
     }
     context->SetExecOK(true);
@@ -403,7 +411,7 @@ static bool SetSocketManager(napi_env env, napi_value thisVal, BaseContext *cont
         if (NapiUtils::GetValueType(env, error) != napi_object) {
             return false;
         }
-        NapiUtils::SetUint32Property(env, error, KEY_ERROR_CODE, errno);
+        NapiUtils::SetUint32Property(env, error, KEY_ERROR_CODE, EBADF);
         context->EmitSharedManager(EVENT_ERROR, std::make_pair(NapiUtils::GetUndefined(env), error));
         return false;
     }
@@ -437,9 +445,11 @@ static bool MakeLocalSocketBind(napi_env env, napi_value thisVal, LocalSocketBin
     }
     auto pManager = new (std::nothrow) LocalSocketManager(sock);
     if (pManager == nullptr) {
+        close(sock);
         return false;
     }
     if (!SetSocketManager(env, thisVal, context, pManager)) {
+        close(sock);
         delete pManager;
         return false;
     }
@@ -462,9 +472,11 @@ static bool MakeLocalSocketConnect(napi_env env, napi_value thisVal, LocalSocket
     }
     auto pManager = new (std::nothrow) LocalSocketManager(sock);
     if (pManager == nullptr) {
+        close(sock);
         return false;
     }
     if (!SetSocketManager(env, thisVal, context, pManager)) {
+        close(sock);
         delete pManager;
         return false;
     }
