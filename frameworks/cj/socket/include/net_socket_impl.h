@@ -75,7 +75,7 @@ private:
     int sockFd_ = -1;
     sa_family_t family_ = AF_INET;
     bool reuseAddr_ = false;
-    bool asyncConnecting_ = false;
+    std::atomic<bool> asyncConnecting_ = {false};
     bool everOpened_ = false;
     std::atomic<bool> closed_ = {false};
 

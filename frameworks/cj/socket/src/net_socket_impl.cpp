@@ -79,12 +79,12 @@ void CJTcpSocketProxy::SetReuseAddr(bool reuseAddr)
 
 bool CJTcpSocketProxy::IsAsyncConnecting() const
 {
-    return asyncConnecting_;
+    return asyncConnecting_.load();
 }
 
 void CJTcpSocketProxy::SetAsyncConnecting(bool asyncConnecting)
 {
-    asyncConnecting_ = asyncConnecting;
+    asyncConnecting_.store(asyncConnecting);
 }
 
 bool CJTcpSocketProxy::IsClosed() const
@@ -384,6 +384,8 @@ int32_t CJTcpSocketImpl::Connect(CJTcpSocketProxy *proxy, const CTcpConnectOptio
     bool asyncConnecting = false;
     int errCode = 0;
     if (!ExecConnect(sockFd, options, nullptr, asyncConnecting, errCode)) {
+        close(sockFd);
+        proxy->SetSocketFd(-1);
         return ConvertErrCode(errCode);
     }
     proxy->SetAsyncConnecting(asyncConnecting);
