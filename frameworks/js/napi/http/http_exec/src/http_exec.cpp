@@ -129,7 +129,7 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
         if (argv[EVENT_PARAM_ONE] == nullptr) {
             if (context->GetDeferred() != nullptr) {
                 napi_value err = NapiUtils::CreateErrorMessage(env, context->GetErrorCode(),
-                                                                context->GetErrorMessage());
+                                                               context->GetErrorMessage());
                 napi_reject_deferred(env, context->GetDeferred(), err != nullptr ? err : undefined);
             }
             return;
