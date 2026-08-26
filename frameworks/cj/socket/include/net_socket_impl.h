@@ -48,7 +48,6 @@ public:
     void SetFamily(sa_family_t family);
     bool GetReuseAddr() const;
     void SetReuseAddr(bool reuseAddr);
-    bool IsAsyncConnecting() const;
     void SetAsyncConnecting(bool asyncConnecting);
     bool IsClosed() const;
     bool IsEverOpened() const;

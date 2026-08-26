@@ -77,11 +77,6 @@ void CJTcpSocketProxy::SetReuseAddr(bool reuseAddr)
     reuseAddr_ = reuseAddr;
 }
 
-bool CJTcpSocketProxy::IsAsyncConnecting() const
-{
-    return asyncConnecting_.load();
-}
-
 void CJTcpSocketProxy::SetAsyncConnecting(bool asyncConnecting)
 {
     asyncConnecting_.store(asyncConnecting);
