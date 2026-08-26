@@ -77,11 +77,6 @@ void CJTcpSocketProxy::SetReuseAddr(bool reuseAddr)
     reuseAddr_ = reuseAddr;
 }
 
-void CJTcpSocketProxy::SetAsyncConnecting(bool asyncConnecting)
-{
-    asyncConnecting_.store(asyncConnecting);
-}
-
 bool CJTcpSocketProxy::IsClosed() const
 {
     return closed_.load();
@@ -339,7 +334,6 @@ void CJTcpSocketImpl::OnConnectResult(int64_t proxyId, int32_t resultErrCode)
         NETSTACK_LOGE("Connect callback: proxy is null, id=%{public}" PRId64, proxyId);
         return;
     }
-    proxy->SetAsyncConnecting(false);
     if (resultErrCode == 0) {
         proxy->StartRecvThread();
     }
@@ -383,7 +377,6 @@ int32_t CJTcpSocketImpl::Connect(CJTcpSocketProxy *proxy, const CTcpConnectOptio
         proxy->SetSocketFd(-1);
         return ConvertErrCode(errCode);
     }
-    proxy->SetAsyncConnecting(asyncConnecting);
     auto connectCallback = CJLambda::Create(reinterpret_cast<void (*)(int32_t)>(callbackId));
     if (asyncConnecting) {
         if (connectCallback) {

@@ -48,7 +48,6 @@ public:
     void SetFamily(sa_family_t family);
     bool GetReuseAddr() const;
     void SetReuseAddr(bool reuseAddr);
-    void SetAsyncConnecting(bool asyncConnecting);
     bool IsClosed() const;
     bool IsEverOpened() const;
 
@@ -74,7 +73,6 @@ private:
     int sockFd_ = -1;
     sa_family_t family_ = AF_INET;
     bool reuseAddr_ = false;
-    std::atomic<bool> asyncConnecting_ = {false};
     bool everOpened_ = false;
     std::atomic<bool> closed_ = {false};
 
