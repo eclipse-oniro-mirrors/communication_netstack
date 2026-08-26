@@ -441,7 +441,11 @@ static STACK_OF(X509) *BuildUntrustedChain(const CertBlob *certs, size_t certCou
             NETSTACK_LOGE("Failed to convert certificate at index %{public}zu\n", i);
             continue;
         }
-        sk_X509_push(chain, cert);
+        if (!sk_X509_push(chain, cert)) {
+            NETSTACK_LOGE("Failed to push certificate at index %{public}zu\n", i);
+            X509_free(cert);
+            break;
+        }
     }
     return chain;
 }

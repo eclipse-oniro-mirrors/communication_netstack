@@ -17,6 +17,8 @@
 #define COMMUNICATIONNETSTACK_WEBSOCKET_SERVER_H
 
 #include <libwebsockets.h>
+#include <mutex>
+#include <thread>
 #include "server_context.h"
 
 namespace OHOS {
@@ -52,6 +54,12 @@ public:
 
 private:
     ServerContext *serverContext_ = nullptr;
+    std::thread serviceThread_;
+    std::mutex destroyMutex_;
+
+    void DestroyContext();
+
+    friend void RunServerService(WebSocketServer *server);
 };
 } // namespace WebSocketServer
 } // namespace NetStack

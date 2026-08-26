@@ -230,11 +230,11 @@ public:
     }
     void SetContext(lws_context *context)
     {
-        context_ = context;
+        context_.store(context);
     }
     lws_context *GetContext()
     {
-        return context_;
+        return context_.load();
     }
     void AddClientUserData(void *wsi, std::shared_ptr<UserData> &data)
     {
@@ -311,6 +311,10 @@ public:
             return it->second.first;
         }
         return nullptr;
+    }
+    std::shared_mutex &GetWsMutex()
+    {
+        return wsMutex_;
     }
     const std::unordered_map<std::string, std::pair<lws *, SocketConnection>> &GetWebSocketConnection()
     {
@@ -451,7 +455,7 @@ public:
 
 private:
     bool permissionDenied = false;
-    lws_context *context_ = nullptr;
+    std::atomic<lws_context *> context_{nullptr};
     std::atomic_bool threadStop_ = false;
     std::mutex closeMutex_;
     volatile bool closed_ = false;
