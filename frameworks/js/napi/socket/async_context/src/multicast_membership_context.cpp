@@ -59,7 +59,11 @@ int MulticastMembershipContext::GetSocketFd() const
     if (sharedManager_ == nullptr) {
         return -1;
     }
-    return sharedManager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(sharedManager_->GetData())) : -1;
+    void* data = sharedManager_->GetData();
+    if (data == nullptr) {
+        return -1;
+    }
+    return static_cast<int>(reinterpret_cast<uint64_t>(data));
 }
 
 bool MulticastMembershipContext::CheckParamsType(napi_value *params, size_t paramsCount)

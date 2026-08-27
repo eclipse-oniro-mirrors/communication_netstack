@@ -643,11 +643,13 @@ void CreateUvQueueWork(napi_env env, void *data, void(handler)(uv_work_t *, int 
     uv_loop_s *loop = nullptr;
     if (!IsEnvValid(env)) {
         NETSTACK_LOGE("the env is invalid");
+        delete static_cast<UvWorkWrapperShared *>(data);
         return;
     }
     napi_get_uv_event_loop(env, &loop);
     if (!loop) {
         NETSTACK_LOGE("napi get uv event loop is null");
+        delete static_cast<UvWorkWrapperShared *>(data);
         return;
     }
 

@@ -72,7 +72,7 @@ public:
 
     void RemoveAcceptSocket(int acceptFd)
     {
-        tcpClients_.Iterate([acceptFd](int listenFd, std::set<int> fdSet) {
+        tcpClients_.Iterate([acceptFd](int listenFd, std::set<int>& fdSet) {
             if (auto ite = fdSet.find(acceptFd); ite != fdSet.end()) {
                 fdSet.erase(ite);
             }
