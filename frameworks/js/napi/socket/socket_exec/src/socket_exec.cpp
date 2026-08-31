@@ -2528,6 +2528,7 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, TcpMessa
                           errno);
             continue;
         }
+        int clientId;
         {
             std::lock_guard<std::mutex> lock(g_mutex);
             if (g_clientFDs.size() >= MAX_CLIENTS) {
@@ -2538,9 +2539,9 @@ static void AcceptRecvData(int sock, sockaddr *addr, socklen_t addrLen, TcpMessa
             NETSTACK_LOGI("Server accept new client, fd= %{public}d clientfd= %{public}d", sock, connectFD);
             g_userCounter++;
             g_clientFDs[g_userCounter] = connectFD;
+            clientId = g_userCounter;
         }
-        callback.OnTcpConnectionMessage(g_userCounter);
-        int clientId = g_userCounter;
+        callback.OnTcpConnectionMessage(clientId);
         auto config = GetSharedConfig(callback.GetEventManager());
         if (config == nullptr) {
             NETSTACK_LOGE("config is nullptr, cleaning up connectFD=%{public}d and breaking", connectFD);
