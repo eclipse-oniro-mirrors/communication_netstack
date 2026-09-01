@@ -75,6 +75,8 @@ ohos_shared_library("cj_net_socket_ffi") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
+  version_script = "libcj_net_socket_ffi.map"
+
   innerapi_tags = [ "platformsdk" ]
   part_name = "netstack"
   subsystem_name = "communication"
