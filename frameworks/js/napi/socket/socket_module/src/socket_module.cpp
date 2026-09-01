@@ -292,13 +292,20 @@ static bool MakeTcpClientBindSocket(napi_env env, napi_value thisVal, BindContex
         return false;
     }
     NETSTACK_LOGD("bind ip family is %{public}d", context->address_.GetSaFamily());
-    if (context->GetSharedManager()->GetData() != nullptr &&
-        static_cast<int>(reinterpret_cast<uint64_t>(context->GetSharedManager()->GetData())) >= 0) {
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        return false;
+    }
+    if (manager->GetData() != nullptr &&
+        static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) >= 0) {
         NETSTACK_LOGE("tcp connect has been called");
         return true;
     }
     int sock = ExecCommonUtils::MakeTcpSocket(context->address_.GetSaFamily());
     if (!SetSocket(env, thisVal, context, sock)) {
+        if (sock >= 0) {
+            close(sock);
+        }
         return false;
     }
     context->SetExecOK(true);
@@ -533,12 +540,12 @@ napi_value SocketModuleExports::InitSocketModule(napi_env env, napi_value export
     DefineLocalSocketServerClass(env, exports);
     InitSocketProxyProperties(env, exports);
     InitSocketProperties(env, exports);
-    NapiUtils::SetEnvValid(env);
     auto envWrapper = new (std::nothrow)napi_env;
     if (envWrapper == nullptr) {
         return exports;
     }
     *envWrapper = env;
+    NapiUtils::SetEnvValid(env);
     napi_add_env_cleanup_hook(env, NapiUtils::HookForEnvCleanup, envWrapper);
     return exports;
 }

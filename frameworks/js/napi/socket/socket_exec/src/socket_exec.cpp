@@ -1903,9 +1903,16 @@ bool ExecSetLoopbackMode(MulticastSetLoopbackContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    int sockFd = context->GetSocketFd();
     int mode = static_cast<int>(context->GetLoopbackMode());
-    int family = GetSockFamily(context->GetSocketFd());
-    if (setsockopt(context->GetSocketFd(), (family == AF_INET) ? IPPROTO_IP : IPPROTO_IPV6, (family == AF_INET) ?
+    int family = GetSockFamily(sockFd);
+    if (setsockopt(sockFd, (family == AF_INET) ? IPPROTO_IP : IPPROTO_IPV6, (family == AF_INET) ?
         IP_MULTICAST_LOOP : IPV6_MULTICAST_LOOP, reinterpret_cast<void *>(&mode), sizeof(mode)) == -1) {
         ERROR_RETURN(context, "setloopback err, mode:%{public}d, fa:%{public}d, err:%{public}d", mode, family, errno);
     }

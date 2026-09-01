@@ -898,7 +898,7 @@ bool ExecLocalSocketClose(LocalSocketCloseContext *context)
 
 bool ExecLocalSocketGetState(LocalSocketGetStateContext *context)
 {
-    if (context == nullptr) {
+    if (context == nullptr || context->GetSharedManager() == nullptr) {
         return false;
     }
     struct sockaddr_un unAddr = {0};
@@ -1135,7 +1135,7 @@ bool ExecLocalSocketServerSetExtraOptions(LocalSocketServerSetExtraOptionsContex
 
 bool ExecLocalSocketServerGetExtraOptions(LocalSocketServerGetExtraOptionsContext *context)
 {
-    if (context == nullptr) {
+    if (context == nullptr || context->GetSharedManager() == nullptr) {
         return false;
     }
     auto pMgr = reinterpret_cast<LocalSocketServerManager *>(context->GetSharedManager()->GetData());
@@ -1224,13 +1224,8 @@ bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
     if (shutdown(acceptFd, SHUT_RDWR) != 0) {
         NETSTACK_LOGE("socket shutdown failed, socket is %{public}d, errno is %{public}d", acceptFd, errno);
     }
-    int ret = close(acceptFd);
-    if (ret < 0) {
-        NETSTACK_LOGE("sock closed failed, socket is %{public}d, errno is %{public}d", acceptFd, errno);
-    } else {
-        NETSTACK_LOGI("sock %{public}d closed success", acceptFd);
-        data->serverManager_->RemoveAccept(context->GetClientId());
-    }
+    data->serverManager_->RemoveAccept(context->GetClientId());
+    NETSTACK_LOGI("sock %{public}d closed success", acceptFd);
     return true;
 }
 
@@ -1241,7 +1236,12 @@ bool ExecLocalSocketConnectionGetLocalAddress(LocalSocketServerGetLocalAddressCo
         return false;
     }
     int socketFD = -1;
-    auto data = reinterpret_cast<LocalSocketConnectionData *>(context->GetSharedManager()->GetData());
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    auto data = reinterpret_cast<LocalSocketConnectionData *>(manager->GetData());
     if (data != nullptr) {
         if (data->serverManager_ == nullptr) {
             NETSTACK_LOGE("invalid serverManager or socket has closed");
