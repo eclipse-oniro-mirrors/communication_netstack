@@ -57,7 +57,7 @@ enum class WebsocketProxyType {
 class ClientContext {
 public:
     ClientContext() : closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), errorCode(0), closed_(false),
-                      threadStop_(false), context_(nullptr), clientId(0) {}
+                      threadStop_(std::make_shared<std::atomic_bool>(false)), context_(nullptr), clientId(0) {}
 
     bool IsClosed()
     {
@@ -67,12 +67,17 @@ public:
 
     bool IsThreadStop()
     {
-        return threadStop_.load();
+        return threadStop_->load();
     }
 
     void SetThreadStop(bool threadStop)
     {
-        threadStop_.store(threadStop);
+        threadStop_->store(threadStop);
+    }
+
+    std::shared_ptr<std::atomic_bool> GetThreadStopFlag()
+    {
+        return threadStop_;
     }
 
     void Close(lws_close_status status, const std::string &reason)
@@ -82,6 +87,27 @@ public:
         closeStatus = status;
         closeReason = reason;
         closed_ = true;
+    }
+
+    void CloseIfReasonEmpty(const std::string &reason)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (closeReason.empty()) {
+            closeReason = reason;
+            closed_ = true;
+        }
+    }
+
+    lws_close_status GetCloseStatus()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return closeStatus;
+    }
+
+    std::string GetCloseReason()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return closeReason;
     }
 
     void Push(char *data, size_t length, lws_write_protocol protocol)
@@ -158,6 +184,16 @@ public:
         clientId = id;
     }
 
+    void ResetConnectionState()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        closed_ = false;
+        closeStatus = LWS_CLOSE_STATUS_NOSTATUS;
+        closeReason.clear();
+        openStatus.store(0);
+        threadStop_->store(false);
+    }
+
     int GetClientId()
     {
         return clientId;
@@ -205,7 +241,7 @@ public:
 
     std::string closeReason;
 
-    uint32_t openStatus = 0;
+    std::atomic<uint32_t> openStatus = 0;
 
     uint32_t errorCode = 0;
 
@@ -224,7 +260,7 @@ private:
 
     std::string userCertPath_;
 
-    std::atomic_bool threadStop_;
+    std::shared_ptr<std::atomic_bool> threadStop_;
 
     std::mutex mutex_;
 

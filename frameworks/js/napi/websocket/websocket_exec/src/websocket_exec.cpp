@@ -303,9 +303,11 @@ int WebSocketExec::LwsCallbackClientWritable(lws *wsi, lws_callback_reasons reas
     }
     if (userData->IsClosed()) {
         NETSTACK_LOGI("need to close");
-        lws_close_reason(wsi, userData->closeStatus,
-                         reinterpret_cast<unsigned char *>(const_cast<char *>(userData->closeReason.c_str())),
-                         strlen(userData->closeReason.c_str()));
+        lws_close_status closeStatus = userData->GetCloseStatus();
+        std::string closeReason = userData->GetCloseReason();
+        lws_close_reason(wsi, closeStatus,
+                         reinterpret_cast<unsigned char *>(const_cast<char *>(closeReason.c_str())),
+                         strlen(closeReason.c_str()));
         // here do not emit error, because we close it
         return -1;
     }
@@ -494,14 +496,14 @@ int WebSocketExec::LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason
         return RaiseError(manager, GetHttpResponseFromWsi(wsi));
     }
     userData->SetThreadStop(true);
-    if ((userData->closeReason).empty()) {
-        userData->Close(userData->closeStatus, LINK_DOWN);
-    }
-    if (userData->closeStatus == LWS_CLOSE_STATUS_NOSTATUS) {
+    userData->CloseIfReasonEmpty(LINK_DOWN);
+    if (userData->GetCloseStatus() == LWS_CLOSE_STATUS_NOSTATUS) {
         NETSTACK_LOGE("The link is down, onError");
         OnError(manager, COMMON_ERROR_CODE, GetHttpResponseFromWsi(wsi));
     }
-    OnClose(reinterpret_cast<EventManager *>(user), userData->closeStatus, userData->closeReason);
+    lws_close_status closeStatus = userData->GetCloseStatus();
+    std::string closeReason = userData->GetCloseReason();
+    OnClose(reinterpret_cast<EventManager *>(user), closeStatus, closeReason);
     return HttpDummy(wsi, reason, user, in, len);
 }
 

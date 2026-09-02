@@ -130,6 +130,8 @@ public:
 
     std::shared_ptr<Websocket::UserData> GetWebSocketUserData();
 
+    std::shared_ptr<Websocket::UserData> GetClientUserData(void *wsi);
+
     void SetSocketConfig(const std::shared_ptr<Socket::SocketExec::SocketConfig> &config);
 
     std::shared_ptr<Socket::SocketExec::SocketConfig> GetSocketConfig();

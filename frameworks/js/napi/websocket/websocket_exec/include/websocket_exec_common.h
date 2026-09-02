@@ -87,6 +87,27 @@ public:
         closed_ = true;
     }
 
+    void CloseIfReasonEmpty(const std::string &reason)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (closeReason.empty()) {
+            closeReason = reason;
+            closed_ = true;
+        }
+    }
+
+    lws_close_status GetCloseStatus()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return closeStatus;
+    }
+
+    std::string GetCloseReason()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return closeReason;
+    }
+
     void Push(void *data, size_t length, lws_write_protocol protocol)
     {
         std::lock_guard<std::mutex> lock(mutex_);

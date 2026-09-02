@@ -95,6 +95,7 @@ private:
     void RunLwsThread();
     ClientContext *clientContext;
     std::string data_;
+    std::thread serviceThread_;
 };
 } // namespace WebSocketClient
 } // namespace NetStack

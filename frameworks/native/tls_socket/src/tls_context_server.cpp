@@ -263,8 +263,14 @@ bool TLSContextServer::SetLocalCertificate(TLSContextServer *tlsContext, const T
     }
 
     for (uint32_t i = 1; i < certificate.size(); ++i) {
-        if (!SSL_CTX_add_extra_chain_cert(tlsContext->ctx_, static_cast<X509 *>(certificate[i].handle()))) {
+        X509 *dupCert = X509_dup(static_cast<X509 *>(certificate[i].handle()));
+        if (dupCert == nullptr) {
+            NETSTACK_LOGE("Failed to duplicate chain certificate");
+            return false;
+        }
+        if (!SSL_CTX_add_extra_chain_cert(tlsContext->ctx_, dupCert)) {
             NETSTACK_LOGE("Failed to add chain certificate");
+            X509_free(dupCert);
             return false;
         }
     }

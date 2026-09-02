@@ -357,6 +357,16 @@ void EventManager::RemoveClientUserData(void *wsi)
     }
 }
 
+std::shared_ptr<Websocket::UserData> EventManager::GetClientUserData(void *wsi)
+{
+    std::lock_guard<std::mutex> lock(mapMutex_);
+    auto it = userDataMap_.find(wsi);
+    if (it != userDataMap_.end()) {
+        return it->second;
+    }
+    return nullptr;
+}
+
 void EventManager::ClearWebSocketTextData()
 {
     webSocketTextData_.clear();

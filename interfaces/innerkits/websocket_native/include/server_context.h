@@ -118,6 +118,27 @@ public:
         closed_ = true;
     }
 
+    void CloseIfReasonEmpty(const std::string &reason)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (closeReason.empty()) {
+            closeReason = reason;
+            closed_ = true;
+        }
+    }
+
+    lws_close_status GetCloseStatus()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return closeStatus;
+    }
+
+    std::string GetCloseReason()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return closeReason;
+    }
+
     void Push(void *data, size_t length, lws_write_protocol protocol)
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -316,10 +337,19 @@ public:
     {
         return wsMutex_;
     }
-    const std::unordered_map<std::string, std::pair<lws *, SocketConnection>> &GetWebSocketConnection()
+    std::unordered_map<std::string, std::pair<lws *, SocketConnection>> GetWebSocketConnection()
     {
         std::shared_lock<std::shared_mutex> lock(wsMutex_);
         return webSocketConnection_;
+    }
+    std::shared_ptr<UserData> GetClientUserData(void *wsi)
+    {
+        std::lock_guard<std::mutex> lock(mapUserDataMutex_);
+        auto it = userDataMap_.find(wsi);
+        if (it != userDataMap_.end()) {
+            return it->second;
+        }
+        return nullptr;
     }
     void AddBanList(const std::string &ip)
     {
