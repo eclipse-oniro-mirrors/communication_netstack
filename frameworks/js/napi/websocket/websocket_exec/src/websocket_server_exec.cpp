@@ -1315,6 +1315,7 @@ bool WebSocketServerExec::ExecServerSend(ServerSendContext *context)
         return false;
     }
     clientUserData->Push(context->data, context->length, context->protocol);
+    context->data = nullptr;
     clientUserData->TriggerWritable();
     NETSTACK_LOGD("lws ts send success");
     return true;

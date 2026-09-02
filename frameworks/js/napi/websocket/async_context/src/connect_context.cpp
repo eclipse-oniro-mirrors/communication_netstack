@@ -163,6 +163,11 @@ void ConnectContext::ParseParamsCountThree(napi_value const *params)
     }
 }
 
+static bool IsValidHeaderField(const std::string &str)
+{
+    return str.find('\r') == std::string::npos && str.find('\n') == std::string::npos;
+}
+
 void ConnectContext::ParseHeader(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::HEADER)) {
@@ -174,8 +179,16 @@ void ConnectContext::ParseHeader(napi_value optionsValue)
     }
     auto names = NapiUtils::GetPropertyNames(GetEnv(), jsHeader);
     std::for_each(names.begin(), names.end(), [jsHeader, this](const std::string &name) {
+        if (!IsValidHeaderField(name)) {
+            NETSTACK_LOGE("header name contains invalid characters");
+            return;
+        }
         auto value = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsHeader, name);
         if (!value.empty()) {
+            if (!IsValidHeaderField(value)) {
+                NETSTACK_LOGE("header value contains invalid characters");
+                return;
+            }
             // header key ignores key but value not
             header[CommonUtils::ToLower(name)] = value;
         }
