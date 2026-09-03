@@ -96,9 +96,11 @@ static constexpr uint32_t SINGLE_CELLULAR_NETWORK_COUNT = 1;
 
 [[maybe_unused]] static void RequestContextDeleter(RequestContext *context)
 {
+    if (context == nullptr) {
+        return;
+    }
     context->DeleteReference();
     delete context;
-    context = nullptr;
 }
 
 class HttpResponseCacheExec final {
@@ -346,11 +348,17 @@ private:
 
         bool operator<(const RequestInfo &info) const
         {
+            if (context == nullptr || info.context == nullptr) {
+                return false;
+            }
             return context->options.GetPriority() < info.context->options.GetPriority();
         }
 
         bool operator>(const RequestInfo &info) const
         {
+            if (context == nullptr || info.context == nullptr) {
+                return false;
+            }
             return context->options.GetPriority() > info.context->options.GetPriority();
         }
     };

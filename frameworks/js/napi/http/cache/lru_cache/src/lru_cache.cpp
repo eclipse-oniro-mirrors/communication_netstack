@@ -116,7 +116,8 @@ void LRUCache::Put(const std::string &key, const std::unordered_map<std::string,
 
     auto it = cache_[key];
 
-    size_ -= GetMapValueSize(it->value);
+    size_t oldSize = GetMapValueSize(it->value);
+    size_ = (oldSize <= size_) ? (size_ - oldSize) : 0;
     it->value = value;
     size_ += GetMapValueSize(it->value);
 
@@ -128,6 +129,9 @@ void LRUCache::Put(const std::string &key, const std::unordered_map<std::string,
 
 void LRUCache::MergeOtherCache(LRUCache &other)
 {
+    if (this == &other) {
+        return;
+    }
     std::list<Node> reverseList;
     {
         // set mutex in min scope
@@ -148,6 +152,9 @@ void LRUCache::MergeOtherCache(LRUCache &other)
 cJSON* LRUCache::WriteCacheToJsonValue()
 {
     cJSON* root = cJSON_CreateObject();
+    if (root == nullptr) {
+        return nullptr;
+    }
 
     int index = 0;
     {
@@ -155,12 +162,29 @@ cJSON* LRUCache::WriteCacheToJsonValue()
         std::lock_guard<std::mutex> guard(mutex_);
         for (const auto &node : nodeList_) {
             cJSON *nodeKey = cJSON_CreateObject();
-            for (const auto &p : node.value) {
-                cJSON_AddItemToObject(nodeKey, p.first.c_str(), cJSON_CreateString(p.second.c_str()));
+            if (nodeKey == nullptr) {
+                continue;
             }
-            cJSON_AddItemToObject(nodeKey, LRU_INDEX, cJSON_CreateString(std::to_string(index).c_str()));
+            bool nodeKeyAdded = false;
+            for (const auto &p : node.value) {
+                cJSON *valueItem = cJSON_CreateString(p.second.c_str());
+                if (valueItem == nullptr) {
+                    continue;
+                }
+                cJSON_AddItemToObject(nodeKey, p.first.c_str(), valueItem);
+                nodeKeyAdded = true;
+            }
+            cJSON *indexItem = cJSON_CreateString(std::to_string(index).c_str());
+            if (indexItem != nullptr) {
+                cJSON_AddItemToObject(nodeKey, LRU_INDEX, indexItem);
+                nodeKeyAdded = true;
+            }
             ++index;
-            cJSON_AddItemToObject(root, node.key.c_str(), nodeKey);
+            if (nodeKeyAdded) {
+                cJSON_AddItemToObject(root, node.key.c_str(), nodeKey);
+            } else {
+                cJSON_Delete(nodeKey);
+            }
         }
     }
     return root;
@@ -215,5 +239,6 @@ void LRUCache::Clear()
     std::lock_guard<std::mutex> guard(mutex_);
     cache_.clear();
     nodeList_.clear();
+    size_ = 0;
 }
 } // namespace OHOS::NetStack::Http

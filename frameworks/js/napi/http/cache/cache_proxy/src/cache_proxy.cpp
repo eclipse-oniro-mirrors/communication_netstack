@@ -15,6 +15,7 @@
 
 #include "cache_proxy.h"
 
+#include <algorithm>
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
@@ -52,7 +53,10 @@ CacheProxy::CacheProxy(HttpRequestOptions &requestOptions) : strategy_(requestOp
         if (p.first == IF_NONE_MATCH || p.first == IF_MODIFIED_SINCE) {
             continue;
         }
-        str += p.first + HttpConstant::HTTP_HEADER_SEPARATOR + p.second + HttpConstant::HTTP_LINE_SEPARATOR;
+        std::string value = p.second;
+        value.erase(std::remove_if(value.begin(), value.end(),
+            [](char c) { return c == '\r' || c == '\n'; }), value.end());
+        str += p.first + HttpConstant::HTTP_HEADER_SEPARATOR + value + HttpConstant::HTTP_LINE_SEPARATOR;
     }
     str += std::to_string(requestOptions.GetHttpVersion());
     key_ = Base64::Encode(str);
