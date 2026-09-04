@@ -1734,17 +1734,27 @@ void TLSSocket::TLSSocketInternal::CacheCertificates(const std::string &hostName
         return;
     }
     auto certificatesStack = SSL_get_peer_cert_chain(ssl_);
-    lock.unlock();
     if (!certificatesStack) {
         return;
     }
+    std::vector<X509 *> certList;
     auto numCertificates = sk_X509_num(certificatesStack);
+    certList.reserve(numCertificates);
     for (auto i = 0; i < numCertificates; ++i) {
         auto cert = sk_X509_value(certificatesStack, i);
+        if (cert != nullptr) {
+            X509_up_ref(cert);
+            certList.push_back(cert);
+        }
+    }
+    lock.unlock();
+
+    for (auto cert : certList) {
         auto certificateInPEM = X509_to_PEM(cert);
         if (!certificateInPEM.empty()) {
             CaCertCache::GetInstance().Set(hostName, certificateInPEM);
         }
+        X509_free(cert);
     }
 }
 
