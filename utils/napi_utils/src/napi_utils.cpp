@@ -830,12 +830,17 @@ static uv_after_work_cb MakeUvCallback()
 
         auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
         std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
-        auto queueWrapper = NapiUtils::GetValueFromGlobal(env, HTTP_UV_SYNC_QUEUE_NAME);
-        if (!queueWrapper) {
-            return;
-        }
         void *theId = nullptr;
-        napi_unwrap(env, queueWrapper, &theId);
+        {
+            auto innerCloseScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+            std::unique_ptr<napi_handle_scope__, decltype(innerCloseScope)> innerScope(
+                NapiUtils::OpenScope(env), innerCloseScope);
+            auto queueWrapper = NapiUtils::GetValueFromGlobal(env, HTTP_UV_SYNC_QUEUE_NAME);
+            if (!queueWrapper) {
+                return;
+            }
+            napi_unwrap(env, queueWrapper, &theId);
+        }
         if (!theId) { // that is why moduleId is started from 1
             return;
         }

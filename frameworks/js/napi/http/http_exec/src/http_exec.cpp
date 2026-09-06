@@ -120,6 +120,8 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
     }
     std::unique_ptr<RequestContext, decltype(&RequestContextDeleter)> context(static_cast<RequestContext *>(data),
                                                                               RequestContextDeleter);
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
     napi_value undefined = NapiUtils::GetUndefined(env);
     napi_value argv[EVENT_PARAM_TWO] = {nullptr};
     if (context->IsParseOK() && context->IsExecOK()) {
@@ -182,7 +184,7 @@ static void AsyncWorkRequestInStreamCallback(napi_env env, napi_status status, v
     }
     napi_value func = context->GetCallback();
     if (NapiUtils::GetValueType(env, func) == napi_function) {
-        (void)NapiUtils::CallFunction(env, undefined, func, EVENT_PARAM_TWO, argv);
+        napi_call_function(env, undefined, func, EVENT_PARAM_TWO, argv, nullptr);
     }
 }
 
@@ -269,8 +271,10 @@ void HttpExec::SetHandoverCallbacks(HttpOverCurl::TransferCallbacks &callbacks)
 void HttpExec::FinalResponseProcessing(RequestContext *requestContext)
 {
     std::unique_ptr<RequestContext, decltype(&RequestContextDeleter)> context(requestContext, RequestContextDeleter);
-    napi_value argv[EVENT_PARAM_TWO] = { nullptr };
     auto env = context->GetEnv();
+    auto closeScope = [env](napi_handle_scope scope) { NapiUtils::CloseScope(env, scope); };
+    std::unique_ptr<napi_handle_scope__, decltype(closeScope)> scope(NapiUtils::OpenScope(env), closeScope);
+    napi_value argv[EVENT_PARAM_TWO] = { nullptr };
     if (context->IsParseOK() && context->IsExecOK()) {
         argv[EVENT_PARAM_ZERO] = NapiUtils::GetUndefined(env);
         argv[EVENT_PARAM_ONE] = HttpExec::RequestCallback(context.get());
@@ -322,7 +326,7 @@ void HttpExec::FinalResponseProcessing(RequestContext *requestContext)
     }
     napi_value func = context->GetCallback();
     if (NapiUtils::GetValueType(env, func) == napi_function) {
-        (void)NapiUtils::CallFunction(env, undefined, func, EVENT_PARAM_TWO, argv);
+        napi_call_function(env, undefined, func, EVENT_PARAM_TWO, argv, nullptr);
     }
 }
 
