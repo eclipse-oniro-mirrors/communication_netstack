@@ -57,6 +57,7 @@ ohos_static_library("napi_utils") {
     "libuv:uv",
     "napi:ace_napi",
     "node:node_header_notice",
+    "samgr:samgr_proxy",
   ]
 
   if (!build_ohos_sdk) {
