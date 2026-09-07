@@ -175,6 +175,7 @@ ohos_shared_library("http_client") {
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "cJSON:cjson",
+    "samgr:samgr_proxy",
   ]
 
   if (defined(global_parts_info) &&
