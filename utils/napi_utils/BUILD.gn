@@ -101,7 +101,10 @@ ohos_static_library("napi_utils_static") {
 
   public_configs = [ ":napi_utils_public_config" ]
 
-  external_deps = [ "cJSON:cjson" ]
+  external_deps = [
+    "cJSON:cjson",
+    "samgr:samgr_proxy",
+  ]
 
   if (!build_ohos_sdk) {
     external_deps += [
