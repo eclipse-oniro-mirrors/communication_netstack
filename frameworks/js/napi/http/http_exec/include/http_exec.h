@@ -83,7 +83,7 @@ static constexpr const int SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX = 1;
 
 static constexpr const char *HTTP_AF_ONLYV4 = "ONLY_V4";
 static constexpr const char *HTTP_AF_ONLYV6 = "ONLY_V6";
-static int64_t g_limitSdkReport = 0;
+static std::atomic<int64_t> g_limitSdkReport{0};
 constexpr long HTTP_STATUS_REDIRECT_START = 300;
 constexpr long HTTP_STATUS_CLIENT_ERROR_START = 400;
 
@@ -129,7 +129,7 @@ public:
     static bool ExecRequest(RequestContext *context);
 
     static bool HandleInitialRequestPostProcessing(
-        RequestContext *context, HiAppEventReport hiAppEventReport, int64_t &limitSdkReport);
+        RequestContext *context, HiAppEventReport hiAppEventReport, std::atomic<int64_t> &limitSdkReport);
 
     static napi_value BuildRequestCallback(RequestContext *context);
 

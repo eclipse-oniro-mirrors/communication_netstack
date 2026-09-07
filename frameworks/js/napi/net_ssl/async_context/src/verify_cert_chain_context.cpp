@@ -16,6 +16,7 @@
 #include "verify_cert_chain_context.h"
 
 #include <cstdint>
+#include <cstring>
 #include <map>
 #include <node_api.h>
 #include <openssl/ssl.h>
@@ -145,6 +146,7 @@ static void FreePartialCertArray(CertBlob *certArray, uint32_t count)
 {
     for (uint32_t j = 0; j < count; j++) {
         if (certArray[j].data != nullptr) {
+            memset_s(certArray[j].data, certArray[j].size, 0, certArray[j].size);
             delete[] certArray[j].data;
         }
     }
@@ -231,7 +233,9 @@ CertBlob *VerifyCertChainContext::ParsePemCertBlob(napi_env env, napi_value data
 
     size_t dataSize = 0;
     napi_get_value_string_utf8(env, dataValue, nullptr, 0, &dataSize);
-    if (dataSize > SIZE_MAX) {
+    static constexpr size_t MAX_PEM_CERT_SIZE = 1024 * 1024;
+    if (dataSize == 0 || dataSize > MAX_PEM_CERT_SIZE) {
+        NETSTACK_LOGE("PEM cert data size invalid or too large\n");
         return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
     }
 
@@ -257,12 +261,18 @@ CertBlob *VerifyCertChainContext::ParseDerCertBlob(napi_env env, napi_value data
     void *dataArray = nullptr;
     size_t dataSize = 0;
     napi_status status = napi_get_arraybuffer_info(env, dataValue, &dataArray, &dataSize);
+    static constexpr size_t MAX_DER_CERT_SIZE = 1024 * 1024;
     if (status != napi_ok || dataArray == nullptr || dataSize == 0 ||
-        dataSize > static_cast<size_t>(UINT32_MAX)) {
+        dataSize > MAX_DER_CERT_SIZE) {
+        NETSTACK_LOGE("DER cert data invalid or too large\n");
         return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
     }
 
-    uint8_t *data = new uint8_t[dataSize];
+    uint8_t *data = new (std::nothrow) uint8_t[dataSize];
+    if (data == nullptr) {
+        NETSTACK_LOGE("Failed to allocate DER cert data\n");
+        return new CertBlob{CERT_TYPE_MAX, 0, nullptr};
+    }
     std::copy(static_cast<uint8_t *>(dataArray), static_cast<uint8_t *>(dataArray) + dataSize, data);
     uint32_t size = static_cast<uint32_t>(dataSize);
     return new CertBlob{CERT_TYPE_DER, size, data};
@@ -344,6 +354,7 @@ VerifyCertChainContext::~VerifyCertChainContext()
     if (inputCerts_ != nullptr) {
         for (size_t i = 0; i < inputCertCount_; i++) {
             if (inputCerts_[i].data != nullptr) {
+                memset_s(inputCerts_[i].data, inputCerts_[i].size, 0, inputCerts_[i].size);
                 delete[] inputCerts_[i].data;
                 inputCerts_[i].data = nullptr;
             }
@@ -354,6 +365,7 @@ VerifyCertChainContext::~VerifyCertChainContext()
 
     if (caCert_ != nullptr) {
         if (caCert_->data != nullptr) {
+            memset_s(caCert_->data, caCert_->size, 0, caCert_->size);
             delete[] caCert_->data;
             caCert_->data = nullptr;
         }
@@ -364,6 +376,7 @@ VerifyCertChainContext::~VerifyCertChainContext()
     if (sortedChain_ != nullptr) {
         for (size_t i = 0; i < sortedChainCount_; i++) {
             if (sortedChain_[i].data != nullptr) {
+                memset_s(sortedChain_[i].data, sortedChain_[i].size, 0, sortedChain_[i].size);
                 delete[] sortedChain_[i].data;
                 sortedChain_[i].data = nullptr;
             }

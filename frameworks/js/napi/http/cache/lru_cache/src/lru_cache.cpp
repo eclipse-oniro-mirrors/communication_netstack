@@ -198,12 +198,20 @@ void LRUCache::ReadCacheFromJsonValue(const cJSON* root)
         if (keyItem == nullptr || !cJSON_IsObject(keyItem)) {
             continue;
         }
+        if (keyItem->string == nullptr) {
+            NETSTACK_LOGD("keyItem->string is null");
+            continue;
+        }
         std::string key = keyItem->string;
         std::unordered_map<std::string, std::string> m;
         for (int32_t j = 0; j < cJSON_GetArraySize(keyItem); j++) {
             cJSON *valueItem = cJSON_GetArrayItem(keyItem, j);
             if (valueItem == nullptr) {
                 NETSTACK_LOGD("valueItem is null");
+                continue;
+            }
+            if (valueItem->string == nullptr) {
+                NETSTACK_LOGD("valueItem->string is null");
                 continue;
             }
             std::string valueKey = valueItem->string;

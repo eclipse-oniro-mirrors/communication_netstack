@@ -25,7 +25,13 @@ namespace OHOS::NetStack::Websocket {
 ServerSendContext::ServerSendContext(napi_env env, const std::shared_ptr<EventManager> &manager)
     : BaseContext(env, manager), data(nullptr), length(0), protocol(LWS_WRITE_TEXT), connection() {}
 
-ServerSendContext::~ServerSendContext() = default;
+ServerSendContext::~ServerSendContext()
+{
+    if (data != nullptr) {
+        free(data);
+        data = nullptr;
+    }
+}
 
 void ServerSendContext::ParseParams(napi_value *params, size_t paramsCount)
 {
@@ -106,6 +112,7 @@ bool ServerSendContext::HandleParseString(napi_value *params)
         str.length(), str.c_str(), str.length()) < 0) {
         NETSTACK_LOGE("copy failed");
         free(data);
+        data = nullptr;
         return false;
     }
     length = str.length();
@@ -136,6 +143,7 @@ bool ServerSendContext::HandleParseArrayBuffer(napi_value *params)
         len) < 0) {
         NETSTACK_LOGE("copy failed");
         free(data);
+        data = nullptr;
         return false;
     }
     length = len;
