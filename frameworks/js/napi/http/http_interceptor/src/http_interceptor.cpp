@@ -149,7 +149,7 @@ void HttpInterceptor::ApplyContinueInitialRequestInterceptor(napi_env env, Initi
             std::string value =
                 NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, newHeadObj, key.c_str()));
             handle->context->options.SetHeader(key, value);
-            NETSTACK_LOGD("Updated header: %{public}s = %{public}s", key.c_str(), value.c_str());
+            NETSTACK_LOGD("Updated header: %{public}s", key.c_str());
         }
     }
 
@@ -406,7 +406,7 @@ void HttpInterceptor::ApplyContinueRedirectionInterceptor(napi_env env, Redirect
             std::string value =
                 NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, newHeadObj, key.c_str()));
             handle->context->options.SetHeader(key, value);
-            NETSTACK_LOGD("Updated header: %{public}s = %{public}s", key.c_str(), value.c_str());
+            NETSTACK_LOGD("Updated header: %{public}s", key.c_str());
         }
     }
 
@@ -682,7 +682,7 @@ void HttpInterceptor::ApplyContinueFinalResponseInterceptor(napi_env env, FinalR
             std::string value =
                 NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, newHeadObj, key.c_str()));
             handle->context->options.SetHeader(key, value);
-            NETSTACK_LOGD("Updated header: %{public}s = %{public}s", key.c_str(), value.c_str());
+            NETSTACK_LOGD("Updated header: %{public}s", key.c_str());
         }
     }
 
@@ -916,7 +916,7 @@ void HttpInterceptor::ApplyContinueCacheCheckedInterceptor(napi_env env, CacheCh
             std::string value =
                 NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, newHeadObj, key.c_str()));
             handle->context->options.SetHeader(key, value);
-            NETSTACK_LOGD("Updated header: %{public}s = %{public}s", key.c_str(), value.c_str());
+            NETSTACK_LOGD("Updated header: %{public}s", key.c_str());
         }
     }
 
@@ -930,7 +930,8 @@ void HttpInterceptor::ApplyContinueCacheCheckedInterceptor(napi_env env, CacheCh
         } else if (NapiUtils::ValueIsArrayBuffer(env, bodyValue)) {
             size_t bufferLength = 0;
             void *bufferData = NapiUtils::GetInfoFromArrayBufferValue(env, bodyValue, &bufferLength);
-            if (bufferData != nullptr && bufferLength > 0) {
+            if (bufferData != nullptr && bufferLength > 0 &&
+                bufferLength <= handle->context->options.GetMaxLimit()) {
                 handle->context->options.ReplaceBody(bufferData, bufferLength);
                 NETSTACK_LOGD("updated array buffer body, length=%{public}zu", bufferLength);
             } else {
@@ -1168,6 +1169,7 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
             headers = curl_slist_append(headers, headerLine.c_str());
             handle->context->options.SetHeader(key, value);
         }
+        handle->context->SetCurlHeaderList(headers);
         curl_easy_setopt(easyHander, CURLOPT_HTTPHEADER, headers);
     }
 

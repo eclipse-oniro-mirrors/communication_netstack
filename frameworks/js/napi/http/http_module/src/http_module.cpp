@@ -442,9 +442,9 @@ napi_value HttpModuleExports::HttpRequest::Destroy(napi_env env, napi_callback_i
     wrapper->eventManager.ResetShareHandle();
     manager->SetEventDestroy(true);
     manager->DeleteEventReference(env);
-    if (g_limitSdkReport == 0) {
+    int64_t expected = 0;
+    if (g_limitSdkReport.compare_exchange_strong(expected, 1)) {
         hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
-        g_limitSdkReport = 1;
     }
     return NapiUtils::GetUndefined(env);
 }
@@ -659,18 +659,38 @@ napi_value HttpModuleExports::HttpInterceptorChain::AddChain(napi_env env, napi_
     }
 
     uint32_t length = NapiUtils::GetArrayLength(env, args[0]);
+    if (length == 0) {
+        NETSTACK_LOGE("Empty array in AddChain");
+        NapiUtils::ThrowError(env, "2300801", "Parameter type not supported by the interceptor");
+        return rs;
+    }
+    static constexpr size_t MAX_CHAIN_SIZE = 100;
+    if (chain->chain_.size() + length > MAX_CHAIN_SIZE) {
+        NETSTACK_LOGE("Chain size exceeds maximum limit");
+        NapiUtils::ThrowError(env, "2300802", "Chain size exceeds maximum limit");
+        return rs;
+    }
+    size_t prevChainSize = chain->chain_.size();
     for (uint32_t i = 0; i < length; ++i) {
         napi_value interceptor = NapiUtils::GetArrayElement(env, args[0], i);
         std::string type = NapiUtils::GetStringPropertyUtf8(env, interceptor, "interceptorType");
         if (type.empty()) {
             NETSTACK_LOGE("Empty interceptor type in AddChain");
             NapiUtils::ThrowError(env, "2300999", "Internal error");
+            while (chain->chain_.size() > prevChainSize) {
+                delete chain->chain_.back();
+                chain->chain_.pop_back();
+            }
             return rs;
         }
         for (const auto &existing : chain->chain_) {
             if (existing->interceptorType_ == type) {
                 NETSTACK_LOGE("Duplicate interceptor type: %{public}s in AddChain", type.c_str());
                 NapiUtils::ThrowError(env, "2300802", "Duplicated interceptor type in the chain");
+                while (chain->chain_.size() > prevChainSize) {
+                    delete chain->chain_.back();
+                    chain->chain_.pop_back();
+                }
                 return rs;
             }
         }
@@ -717,6 +737,9 @@ napi_value HttpModuleExports::HttpInterceptorChain::Apply(napi_env env, napi_cal
         if (interceptor == nullptr) {
             NETSTACK_LOGE("Null interceptor in chain during Apply");
             NapiUtils::ThrowError(env, "2300999", "Internal error");
+            for (auto &item : interceptorRefs) {
+                napi_delete_reference(env, item.second);
+            }
             return rs;
         }
         napi_value interceptorInstance = interceptor->GetInstance(env);

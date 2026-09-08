@@ -1145,9 +1145,6 @@ bool HttpExec::ConvertInterceptorReqToRequestContext(
         context->options.ReplaceBody(req->body.buffer, req->body.length);
     }
     if (req->headers != nullptr) {
-        if (context->GetCurlHeaderList() != nullptr) {
-            curl_slist_free_all(context->GetCurlHeaderList());
-        }
         context->SetCurlHeaderList(DeepCopyHeaders(req->headers));
     }
     if (!SetOption(context->GetCurlHandle(), context, context->GetCurlHeaderList())) {
@@ -1296,7 +1293,7 @@ void HttpExec::EnqueueCallback(RequestContext *context)
 }
 
 bool HttpExec::HandleInitialRequestPostProcessing(
-    RequestContext *context, HiAppEventReport hiAppEventReport, int64_t &limitSdkReport)
+    RequestContext *context, HiAppEventReport hiAppEventReport, std::atomic<int64_t> &limitSdkReport)
 {
     context->options.SetRequestTime(HttpTime::GetNowTimeGMT());
     CacheProxy proxy(context->options);
@@ -1329,9 +1326,9 @@ bool HttpExec::HandleInitialRequestPostProcessing(
         return false;
     }
 
-    if (limitSdkReport == 0) {
+    int64_t expected = 0;
+    if (limitSdkReport.compare_exchange_strong(expected, 1)) {
         hiAppEventReport.ReportSdkEvent(RESULT_SUCCESS, ERR_NONE);
-        limitSdkReport = 1;
     }
 
     return true;
@@ -2802,6 +2799,11 @@ size_t HttpExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBy
         return 0;
     }
     if (context->IsRequestInStream()) {
+        if (size * memBytes > context->options.GetMaxLimit()) {
+            NETSTACK_LOGE("stream response data exceeds the maximum limit");
+            context->StopAndCacheNapiPerformanceTiming(HttpConstant::RESPONSE_BODY_TIMING);
+            return 0;
+        }
         context->SetTempData(data, size * memBytes);
         NapiUtils::CreateUvQueueWorkByModuleId(
             context->GetEnv(), std::bind(OnDataReceive, context->GetEnv(), napi_ok, context), context->GetModuleId());
@@ -3113,8 +3115,12 @@ bool HttpExec::ProcByExpectDataType(napi_value object, RequestContext *context)
             return false;
         }
         case HttpDataType::ARRAY_BUFFER: {
-            void *data = nullptr;
             auto body = context->response.GetResult();
+            if (body.size() > context->options.GetMaxLimit()) {
+                NETSTACK_LOGE("array buffer size exceeds the maximum limit");
+                return false;
+            }
+            void *data = nullptr;
             napi_value arrayBuffer = NapiUtils::CreateArrayBuffer(context->GetEnv(), body.size(), &data);
             if (data != nullptr && arrayBuffer != nullptr) {
                 if (memcpy_s(data, body.size(), body.c_str(), body.size()) != EOK) {
