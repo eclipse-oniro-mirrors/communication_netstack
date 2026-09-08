@@ -163,7 +163,6 @@ void ConnectContext::ParseParamsCountThree(napi_value const *params)
     }
 }
 
-
 void ConnectContext::ParseHeader(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::HEADER)) {
