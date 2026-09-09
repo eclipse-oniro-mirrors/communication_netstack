@@ -56,9 +56,12 @@ ohos_static_library("napi_utils") {
     "ipc:ipc_single",
     "libuv:uv",
     "napi:ace_napi",
-    "node:node_header_notice",
-    "samgr:samgr_proxy",
+    "node:node_header_notice",   
   ]
+
+  if (is_mingw || is_mac) {
+    external_deps += [ "samgr:samgr_proxy" ]
+  }
 
   if (!build_ohos_sdk) {
     external_deps += [
@@ -102,10 +105,11 @@ ohos_static_library("napi_utils_static") {
 
   public_configs = [ ":napi_utils_public_config" ]
 
-  external_deps = [
-    "cJSON:cjson",
-    "samgr:samgr_proxy",
-  ]
+  external_deps = [ "cJSON:cjson" ]
+
+  if (is_mingw || is_mac) {
+    external_deps += [ "samgr:samgr_proxy" ]
+  }
 
   if (!build_ohos_sdk) {
     external_deps += [
