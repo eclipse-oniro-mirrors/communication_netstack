@@ -59,7 +59,7 @@ ohos_static_library("napi_utils") {
     "node:node_header_notice",
   ]
 
-  if (is_mingw || is_mac) {
+  if (!is_mingw && !is_mac) {
     external_deps += [ "samgr:samgr_proxy" ]
   }
 
@@ -107,7 +107,7 @@ ohos_static_library("napi_utils_static") {
 
   external_deps = [ "cJSON:cjson" ]
 
-  if (is_mingw || is_mac) {
+  if (!is_mingw && !is_mac) {
     external_deps += [ "samgr:samgr_proxy" ]
   }
 
