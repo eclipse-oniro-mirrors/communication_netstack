@@ -246,8 +246,8 @@ int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void
 int LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     WebSocketClient *client = static_cast<WebSocketClient *>(user);
-    if (client->GetClientContext() == nullptr) {
-        NETSTACK_LOGE("Lws Callback ClientContext is nullptr");
+    if (client == nullptr || client->GetClientContext() == nullptr) {
+        NETSTACK_LOGE("Callback ClientContext is nullptr");
         return -1;
     }
     NETSTACK_LOGD("ClientId:%{public}d,Callback ClientReceive", client->GetClientContext()->GetClientId());
@@ -279,6 +279,10 @@ int LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, 
  
 int WebSocketClient::AppendData(void *data, size_t length)
 {
+    if (data == nullptr) {
+        NETSTACK_LOGE("data is null");
+        return WEBSOCKET_NONE_ERR;
+    }
     if (data_.size() + length > CommonUtils::WEBSOCKET_PER_MESSAGE_MAX_SIZE) {
         NETSTACK_LOGE("message size exceeds max limit");
         data_.clear();
@@ -815,7 +819,7 @@ int WebSocketClient::Send(const char *data, size_t length)
         return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
     }
 
-    lws_write_protocol protocol = (strlen(data) == length) ? LWS_WRITE_TEXT : LWS_WRITE_BINARY;
+    lws_write_protocol protocol = (memchr(data, '\0', length) == nullptr) ? LWS_WRITE_TEXT : LWS_WRITE_BINARY;
     auto dataCopy = reinterpret_cast<char *>(malloc(length));
     if (dataCopy == nullptr) {
         NETSTACK_LOGE("webSocketClient malloc error");
@@ -991,13 +995,17 @@ int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
 
 int WebSocketClient::SendEx(const char *data, size_t length)
 {
+    if (data == nullptr) {
+        NETSTACK_LOGI("WebSocketClient::SendEx data is null");
+        return WebSocketErrorCode::WEBSOCKET_SEND_DATA_NULL;
+    }
     NETSTACK_LOGI("WebSocketClient::SendEx start %{public}s, %{public}zu", data, length);
+    if (this->GetClientContext() == nullptr) {
+        return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
+    }
     if (!CommonUtils::HasInternetPermission()) {
         this->GetClientContext()->permissionDenied = true;
         return WebSocketErrorCode::WEBSOCKET_ERROR_PERMISSION_DENIED;
-    }
-    if (data == nullptr) {
-        return WebSocketErrorCode::WEBSOCKET_SEND_DATA_NULL;
     }
     if (length == 0) {
         return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
@@ -1005,14 +1013,11 @@ int WebSocketClient::SendEx(const char *data, size_t length)
     if (length > MAX_DATA_LENGTH) {
         return WebSocketErrorCode::WEBSOCKET_DATA_LENGTH_EXCEEDS;
     }
-    if (this->GetClientContext() == nullptr) {
-        return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
-    }
     if (this->GetClientContext()->GetContext() == nullptr) {
         return -1;
     }
 
-    lws_write_protocol protocol = (strlen(data) == length) ? LWS_WRITE_TEXT : LWS_WRITE_BINARY;
+    lws_write_protocol protocol = (memchr(data, '\0', length) == nullptr) ? LWS_WRITE_TEXT : LWS_WRITE_BINARY;
     auto dataCopy = reinterpret_cast<char *>(malloc(length));
     if (dataCopy == nullptr) {
         NETSTACK_LOGE("webSocketClient malloc error");
@@ -1029,12 +1034,12 @@ int WebSocketClient::SendEx(const char *data, size_t length)
 
 int WebSocketClient::CloseEx(CloseOption options)
 {
+    if (this->GetClientContext() == nullptr) {
+        return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
+    }
     if (!CommonUtils::HasInternetPermission()) {
         this->GetClientContext()->permissionDenied = true;
         return WebSocketErrorCode::WEBSOCKET_ERROR_PERMISSION_DENIED;
-    }
-    if (this->GetClientContext() == nullptr) {
-        return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
     }
     if (this->GetClientContext()->GetContext() == nullptr) {
         return -1;

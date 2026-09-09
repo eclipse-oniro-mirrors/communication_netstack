@@ -15,6 +15,7 @@
 
 #include "http_interceptor_type.h"
 #include "securec.h"
+#include <cstdint>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -33,7 +34,11 @@ void DeepCopyBuffer(Http_Buffer *dst, const Http_Buffer *src)
         return;
     }
     // LCOV_EXCL_START
-    dst->buffer = static_cast<char *>(malloc(src->length + 1));
+    if (src->length == UINT32_MAX) {
+        return;
+    }
+    size_t allocLen = static_cast<size_t>(src->length) + 1;
+    dst->buffer = static_cast<char *>(malloc(allocLen));
     if (dst->buffer == nullptr) {
         dst->length = 0;
         return;
