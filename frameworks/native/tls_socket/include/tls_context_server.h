@@ -49,7 +49,6 @@ private:
     SSL_CTX *ctx_ = nullptr;
     EVP_PKEY *pkey_ = nullptr;
     SSL *ctxSsl_ = nullptr;
-    bool pkeyOwned_ = false;
     TLSConfiguration tlsConfiguration_;
     static VerifyMode verifyMode_;
 };

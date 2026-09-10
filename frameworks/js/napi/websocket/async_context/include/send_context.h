@@ -31,8 +31,6 @@ public:
 
     SendContext(napi_env env, const std::shared_ptr<EventManager> &manager);
 
-    ~SendContext() override;
-
     void ParseParams(napi_value *params, size_t paramsCount) override;
 
     bool HandleParseString(napi_value *params);

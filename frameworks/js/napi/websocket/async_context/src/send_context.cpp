@@ -28,14 +28,6 @@ SendContext::SendContext(napi_env env, const std::shared_ptr<EventManager> &mana
 {
 }
 
-SendContext::~SendContext()
-{
-    if (data != nullptr) {
-        free(data);
-        data = nullptr;
-    }
-}
-
 bool SendContext::HandleParseString(napi_value *params)
 {
     NETSTACK_LOGI("SendContext data is String");
@@ -54,7 +46,6 @@ bool SendContext::HandleParseString(napi_value *params)
                  str.length(), str.c_str(), str.length()) < 0) {
         NETSTACK_LOGE("copy failed");
         free(data);
-        data = nullptr;
         return false;
     }
     length = str.length();
@@ -85,7 +76,6 @@ bool SendContext::HandleParseArrayBuffer(napi_value *params)
                  len) < 0) {
         NETSTACK_LOGE("copy failed");
         free(data);
-        data = nullptr;
         return false;
     }
     length = len;

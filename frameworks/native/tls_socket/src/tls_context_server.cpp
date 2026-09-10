@@ -280,10 +280,8 @@ bool TLSContextServer::SetKeyAndCheck(TLSContextServer *tlsContext, const TLSCon
     }
     if (configuration.GetPrivateKey().Algorithm() == OPAQUE) {
         tlsContext->pkey_ = reinterpret_cast<EVP_PKEY *>(configuration.GetPrivateKey().handle());
-        tlsContext->pkeyOwned_ = false;
     } else {
         tlsContext->pkey_ = EVP_PKEY_new();
-        tlsContext->pkeyOwned_ = true;
         if (configuration.GetPrivateKey().Algorithm() == ALGORITHM_RSA) {
             EVP_PKEY_set1_RSA(tlsContext->pkey_, reinterpret_cast<RSA *>(configuration.GetPrivateKey().handle()));
         } else if (configuration.GetPrivateKey().Algorithm() == ALGORITHM_DSA) {
@@ -382,15 +380,11 @@ SSL *TLSContextServer::CreateSsl()
 
 void TLSContextServer::CloseCtx()
 {
-    if (ctxSsl_ != nullptr) {
-        SSL_free(ctxSsl_);
-        ctxSsl_ = nullptr;
-    }
     if (ctx_ != nullptr) {
         SSL_CTX_free(ctx_);
         ctx_ = nullptr;
     }
-    if (pkeyOwned_ && pkey_ != nullptr) {
+    if (pkey_ != nullptr && tlsConfiguration_.GetPrivateKey().Algorithm() != OPAQUE) {
         EVP_PKEY_free(pkey_);
         pkey_ = nullptr;
     }
