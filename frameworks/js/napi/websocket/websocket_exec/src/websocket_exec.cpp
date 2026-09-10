@@ -938,7 +938,6 @@ bool WebSocketExec::ExecSend(SendContext *context)
         return false;
     }
     userData->Push(context->data, context->length, context->protocol);
-    context->data = nullptr;
     userData->TriggerWritable();
     NETSTACK_LOGD("lws ts send success");
     return true;

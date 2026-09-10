@@ -124,17 +124,16 @@ int32_t HttpInterceptorMgr::DeleteAllInterceptor(int32_t groupId)
 
 int32_t HttpInterceptorMgr::SetAllInterceptorEnabled(int32_t groupId, int32_t enabled)
 {
-    int32_t validEnabled = enabled == 0 ? 0 : 1;
     std::unique_lock<std::shared_mutex> reqLock(reqMutex_);
     for (const auto &interceptor : requestInterceptorList_) {
         if (interceptor->groupId == groupId) {
-            interceptor->enabled = validEnabled;
+            interceptor->enabled = enabled;
         }
     }
     std::unique_lock<std::shared_mutex> respLock(respMutex_);
     for (const auto &interceptor : responseInterceptorList_) {
         if (interceptor->groupId == groupId) {
-            interceptor->enabled = validEnabled;
+            interceptor->enabled = enabled;
         }
     }
     NETSTACK_LOGI("SetAllInterceptorEnabled for groupId=%{public}d, enabled=%{public}d success", groupId, enabled);
@@ -146,25 +145,6 @@ void HttpInterceptorMgr::CopyHttpInterceRequest(
 {
     if (dst == nullptr || src == nullptr) {
         return;
-    }
-    if (dst->url.buffer != nullptr) {
-        free(dst->url.buffer);
-        dst->url.buffer = nullptr;
-        dst->url.length = 0;
-    }
-    if (dst->method.buffer != nullptr) {
-        free(dst->method.buffer);
-        dst->method.buffer = nullptr;
-        dst->method.length = 0;
-    }
-    if (dst->body.buffer != nullptr) {
-        free(dst->body.buffer);
-        dst->body.buffer = nullptr;
-        dst->body.length = 0;
-    }
-    if (dst->headers != nullptr) {
-        curl_slist_free_all(dst->headers);
-        dst->headers = nullptr;
     }
     DeepCopyBuffer(&dst->url, &src->url);
     DeepCopyBuffer(&dst->method, &src->method);
@@ -257,15 +237,6 @@ void HttpInterceptorMgr::CopyHttpInterceResponse(
 {
     if (dst == nullptr || src == nullptr) {
         return;
-    }
-    if (dst->body.buffer != nullptr) {
-        free(dst->body.buffer);
-        dst->body.buffer = nullptr;
-        dst->body.length = 0;
-    }
-    if (dst->headers != nullptr) {
-        curl_slist_free_all(dst->headers);
-        dst->headers = nullptr;
     }
     DeepCopyBuffer(&dst->body, &src->body);
     dst->responseCode = src->responseCode;
@@ -382,7 +353,7 @@ bool HttpInterceptorMgr::HasEnabledInterceptor(OH_Interceptor_Stage stage)
     std::shared_lock<std::shared_mutex> lock(stage == OH_STAGE_REQUEST ? reqMutex_ : respMutex_);
     auto &targetList = stage == OH_STAGE_REQUEST ? requestInterceptorList_ : responseInterceptorList_;
     auto iter = std::find_if(targetList.begin(), targetList.end(), [&](const OH_Http_Interceptor *item) {
-        return item != nullptr && item->enabled;
+        return item->enabled == 1;
     });
     if (iter == targetList.end()) {
         NETSTACK_LOGD("interceptor not exist");
@@ -424,18 +395,6 @@ void HttpInterceptorMgr::ConvertStringToRawPtr(const std::string &str, Http_Buff
     out.buffer = buffer;
 }
 
-std::string FilterHeaderCrLf(const std::string &str)
-{
-    std::string filtered;
-    filtered.reserve(str.size());
-    for (char c : str) {
-        if (c != '\r' && c != '\n') {
-            filtered.push_back(c);
-        }
-    }
-    return filtered;
-}
-
 curl_slist *HttpInterceptorMgr::CurlParseHeaderRawPtr(
     const std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> &headers)
 {
@@ -446,7 +405,7 @@ curl_slist *HttpInterceptorMgr::CurlParseHeaderRawPtr(
     for (const auto &[key, valueVec] : *headers) {
         for (const auto &value : valueVec) {
             std::string s;
-            s.append(FilterHeaderCrLf(key)).append(": ").append(FilterHeaderCrLf(value));
+            s.append(key).append(": ").append(value);
             struct curl_slist *newEntry = curl_slist_append(curlHeader, s.c_str());
             if (!newEntry) {
                 curl_slist_free_all(curlHeader);

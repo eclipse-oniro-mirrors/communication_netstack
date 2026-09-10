@@ -231,58 +231,38 @@ int LwsCallbackEstablished(lws *wsi, lws_callback_reasons reason, void *user, vo
 bool IsOverMaxConcurrentClientsCnt(WebSocketServer *server, const std::vector<SocketConnection> &connections,
     const std::string &ip)
 {
-    if (server == nullptr) {
-        NETSTACK_LOGE("server is null");
-        return true;
-    }
-    auto *context = server->GetServerContext();
-    if (context == nullptr) {
-        NETSTACK_LOGE("server context is null");
-        return true;
-    }
     std::unordered_set<std::string> uniqueIp;
     for (const auto &conn : connections) {
         uniqueIp.insert(conn.clientIP);
     }
     if (uniqueIp.find(ip) != uniqueIp.end()) {
-        return uniqueIp.size() > static_cast<size_t>(context->startServerConfig_.maxConcurrentClientsNumber);
+        return uniqueIp.size() > static_cast<size_t>(
+            server->GetServerContext()->startServerConfig_.maxConcurrentClientsNumber);
     } else {
-        return (uniqueIp.size() + 1) > static_cast<size_t>(context->startServerConfig_.maxConcurrentClientsNumber);
+        return (uniqueIp.size() + 1) > static_cast<size_t>(
+            server->GetServerContext()->startServerConfig_.maxConcurrentClientsNumber);
     }
 }
 
 bool IsOverMaxCntForOneClient(WebSocketServer *server, const std::vector<SocketConnection> &connections,
     const std::string &ip)
 {
-    if (server == nullptr) {
-        NETSTACK_LOGE("server is null");
-        return true;
-    }
-    auto *context = server->GetServerContext();
-    if (context == nullptr) {
-        NETSTACK_LOGE("server context is null");
-        return true;
-    }
     uint32_t cnt = 0;
     for (auto it = connections.begin(); it != connections.end(); ++it) {
         if (ip == it->clientIP) {
             ++cnt;
         }
     }
-    int maxConn = context->startServerConfig_.maxConnectionsForOneClient;
-    if (maxConn <= 0) {
-        return cnt + 1 > 0;
+    if (cnt + 1 > static_cast<uint32_t>(server->GetServerContext()->startServerConfig_.maxConnectionsForOneClient)) {
+        return true;
     }
-    return cnt + 1 > static_cast<uint32_t>(maxConn);
+    return false;
 }
 
 bool IsOverMaxClientConns(WebSocketServer *server, const std::string &ip)
 {
     std::vector<SocketConnection> connections;
-    if (server == nullptr || server->ListAllConnections(connections) != 0) {
-        NETSTACK_LOGE("ListAllConnections failed");
-        return true;
-    }
+    server->ListAllConnections(connections);
     if (IsOverMaxConcurrentClientsCnt(server, connections, ip)) {
         NETSTACK_LOGI("current client connections is over max concurrent number");
         return true;
@@ -446,10 +426,6 @@ int LwsCallbackWsPeerInitiatedCloseServer(lws *wsi, lws_callback_reasons reason,
     std::string closeReason;
     closeReason.append(reinterpret_cast<char *>(in) + sizeof(uint16_t), len - sizeof(uint16_t));
     auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(wsi));
-    if (clientUserData == nullptr) {
-        NETSTACK_LOGE("clientUserData is null");
-        return HttpDummy(wsi, reason, user, in, len);
-    }
     clientUserData->Close(static_cast<lws_close_status>(closeStatus), closeReason);
     return HttpDummy(wsi, reason, user, in, len);
 }
@@ -591,11 +567,7 @@ static bool CheckFilePath(std::string &path)
 
 bool FillServerCertPath(ServerContext *context, lws_context_creation_info &info)
 {
-    if (context == nullptr) {
-        NETSTACK_LOGE("context is null");
-        return false;
-    }
-    ServerCert &sc = context->startServerConfig_.serverCert;
+    ServerCert sc = context->startServerConfig_.serverCert;
     if (!sc.certPath.empty()) {
         if (!CheckFilePath(sc.certPath) || !CheckFilePath(sc.keyPath)) {
             NETSTACK_LOGE("client cert not exist");
@@ -603,23 +575,6 @@ bool FillServerCertPath(ServerContext *context, lws_context_creation_info &info)
         }
         info.ssl_cert_filepath = sc.certPath.c_str();
         info.ssl_private_key_filepath = sc.keyPath.c_str();
-    }
-    return true;
-}
-
-static bool IsValidStartConfig(const ServerConfig &config)
-{
-    if (config.maxConcurrentClientsNumber < 0 || config.maxConnectionsForOneClient < 0) {
-        NETSTACK_LOGE("max connections number is negative");
-        return false;
-    }
-    if (config.maxConcurrentClientsNumber > static_cast<int>(MAX_CONCURRENT_CLIENTS_NUMBER)) {
-        NETSTACK_LOGE("max concurrent clients number is set over limit");
-        return false;
-    }
-    if (config.maxConnectionsForOneClient > static_cast<int>(MAX_CONNECTIONS_FOR_ONE_CLIENT)) {
-        NETSTACK_LOGE("max connection number for one client is set over limit");
-        return false;
     }
     return true;
 }
@@ -693,7 +648,12 @@ int WebSocketServer::Start(const ServerConfig &config)
         NETSTACK_LOGE("Port is not valid");
         return WEBSOCKET_ERROR_CODE_INVALID_PORT;
     }
-    if (!IsValidStartConfig(config)) {
+    if (config.maxConcurrentClientsNumber > static_cast<int>(MAX_CONCURRENT_CLIENTS_NUMBER)) {
+        NETSTACK_LOGE("max concurrent clients number is set over limit");
+        return WEBSOCKET_UNKNOWN_OTHER_ERROR;
+    }
+    if (config.maxConnectionsForOneClient > static_cast<int>(MAX_CONNECTIONS_FOR_ONE_CLIENT)) {
+        NETSTACK_LOGE("max connection number for one client is set over limit");
         return WEBSOCKET_UNKNOWN_OTHER_ERROR;
     }
     serverContext_->startServerConfig_ = config;
