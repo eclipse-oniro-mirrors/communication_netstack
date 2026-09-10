@@ -65,6 +65,7 @@ ohos_static_library("napi_utils") {
       "ability_runtime:wantagent_innerkits",
       "hiappevent:hiappevent_innerapi",
       "time_service:time_client",
+      "samgr:samgr_proxy",
     ]
   }
 
@@ -110,6 +111,7 @@ ohos_static_library("napi_utils_static") {
       "hiappevent:hiappevent_innerapi",
       "ipc:ipc_single",
       "time_service:time_client",
+      "samgr:samgr_proxy",
     ]
   }
 

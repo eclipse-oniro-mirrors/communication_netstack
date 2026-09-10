@@ -158,6 +158,7 @@ ohos_shared_library("http_client") {
       "hiprofiler:libnetwork_profiler",
       "hitrace:hitrace_meter",
       "ipc:ipc_single",
+      "samgr:samgr_proxy",
       "libuv:uv",
       "netmanager_base:net_conn_manager_if",
       "netmanager_base:net_security_config_if",
