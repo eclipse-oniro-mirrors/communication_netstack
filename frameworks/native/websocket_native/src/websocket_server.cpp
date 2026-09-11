@@ -116,8 +116,7 @@ void OnServerError(WebSocketServer *server, int32_t code)
         NETSTACK_LOGE("onErrorCallback_ is null");
         return;
     }
-    ErrorResult errorResult;
-    errorResult.errorCode = static_cast<unsigned int>(code);
+    ErrorResult errorResult { static_cast<unsigned int>(code), "Unknown error" };
     auto it = WEBSOCKET_ERR_MAP.find(code);
     if (it != WEBSOCKET_ERR_MAP.end()) {
         errorResult.errorMessage = it->second.c_str();
@@ -130,6 +129,10 @@ void RunServerService(WebSocketServer *server)
 {
     NETSTACK_LOGI("websocket run service start");
     int res = 0;
+    if (server == nullptr || server->GetServerContext() == nullptr) {
+        NETSTACK_LOGE("server or context is null");
+        return;
+    }
     lws_context *context = server->GetServerContext()->GetContext();
     if (context == nullptr) {
         NETSTACK_LOGE("context is null");
@@ -278,6 +281,10 @@ bool IsOverMaxClientConns(WebSocketServer *server, const std::string &ip)
 int LwsCallbackClosed(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     NETSTACK_LOGD("lws callback server closed");
+    if (wsi == nullptr) {
+        NETSTACK_LOGE("wsi is null");
+        return -1;
+    }
     lws_context *context = lws_get_context(wsi);
     WebSocketServer *server = static_cast<WebSocketServer *>(lws_context_user(context));
     if (server == nullptr) {
@@ -292,20 +299,14 @@ int LwsCallbackClosed(lws *wsi, lws_callback_reasons reason, void *user, void *i
         NETSTACK_LOGE("server is closed or thread is stopped");
         return -1;
     }
-    if (wsi == nullptr) {
-        NETSTACK_LOGE("wsi is null");
-        return -1;
-    }
-    auto clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(wsi));
+    auto clientUserData = server->GetServerContext()->GetClientUserData(wsi);
     if (clientUserData == nullptr) {
         NETSTACK_LOGE("clientUserData is null");
         return RaiseServerError(server);
     }
     clientUserData->SetThreadStop(true);
-    if ((clientUserData->closeReason).empty()) {
-        clientUserData->Close(clientUserData->closeStatus, LINK_DOWN);
-    }
-    if (clientUserData->closeStatus == LWS_CLOSE_STATUS_NOSTATUS) {
+    clientUserData->CloseIfReasonEmpty(LINK_DOWN);
+    if (clientUserData->GetCloseStatus() == LWS_CLOSE_STATUS_NOSTATUS) {
         NETSTACK_LOGE("The link is down, onError");
         OnServerError(server, COMMON_ERROR_CODE);
     }
@@ -313,8 +314,9 @@ int LwsCallbackClosed(lws *wsi, lws_callback_reasons reason, void *user, void *i
     if (server->onCloseCallback_ != nullptr) {
         SocketConnection sc = server->GetServerContext()->GetConnectionFromWsi(wsi);
         CloseResult cr;
-        cr.code = clientUserData->closeStatus;
-        cr.reason = clientUserData->closeReason.c_str();
+        cr.code = clientUserData->GetCloseStatus();
+        std::string closeReason = clientUserData->GetCloseReason();
+        cr.reason = closeReason.c_str();
         server->onCloseCallback_(server, cr, sc);
     }
     server->GetServerContext()->RemoveConnections(clientId);
@@ -379,9 +381,11 @@ int LwsCallbackServerWriteable(lws *wsi, lws_callback_reasons reason, void *user
     }
     if (clientUserData->IsClosed()) {
         NETSTACK_LOGI("client is closed, need to close");
-        lws_close_reason(wsi, clientUserData->closeStatus,
-            reinterpret_cast<unsigned char *>(const_cast<char *>(clientUserData->closeReason.c_str())),
-            strlen(clientUserData->closeReason.c_str()));
+        lws_close_status closeStatus = clientUserData->GetCloseStatus();
+        std::string closeReason = clientUserData->GetCloseReason();
+        lws_close_reason(wsi, closeStatus,
+            reinterpret_cast<unsigned char *>(const_cast<char *>(closeReason.c_str())),
+            strlen(closeReason.c_str()));
         return -1;
     }
     auto sendData = clientUserData->Pop();
@@ -600,7 +604,7 @@ void CloseAllConnection(ServerContext *serverContext)
             NETSTACK_LOGE("clientId not found:%{public}s", id.c_str());
             continue;
         }
-        auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(connPair.first));
+        auto clientUserData = serverContext->GetClientUserData(connPair.first);
         if (clientUserData == nullptr) {
             NETSTACK_LOGE("clientUser data is nullptr for clientId:%{public}s", id.c_str());
             continue;
@@ -628,6 +632,31 @@ WebSocketServer::~WebSocketServer()
     serverContext_ = nullptr;
 }
 
+int CheckServerConfig(const ServerConfig &config)
+{
+    if (!CommonUtils::IsValidIPV4(config.serverIP) && !CommonUtils::IsValidIPV6(config.serverIP)) {
+        NETSTACK_LOGE("IPV4 and IPV6 are not valid");
+        return WEBSOCKET_ERROR_CODE_INVALID_NIC;
+    }
+    if (!CommonUtils::IsValidPort(config.serverPort)) {
+        NETSTACK_LOGE("Port is not valid");
+        return WEBSOCKET_ERROR_CODE_INVALID_PORT;
+    }
+    if (config.maxConcurrentClientsNumber < 0 || config.maxConnectionsForOneClient < 0) {
+        NETSTACK_LOGE("max concurrent clients number or max connection number for one client is invalid");
+        return WEBSOCKET_UNKNOWN_OTHER_ERROR;
+    }
+    if (config.maxConcurrentClientsNumber > static_cast<int>(MAX_CONCURRENT_CLIENTS_NUMBER)) {
+        NETSTACK_LOGE("max concurrent clients number is set over limit");
+        return WEBSOCKET_UNKNOWN_OTHER_ERROR;
+    }
+    if (config.maxConnectionsForOneClient > static_cast<int>(MAX_CONNECTIONS_FOR_ONE_CLIENT)) {
+        NETSTACK_LOGE("max connection number for one client is set over limit");
+        return WEBSOCKET_UNKNOWN_OTHER_ERROR;
+    }
+    return 0;
+}
+
 int WebSocketServer::Start(const ServerConfig &config)
 {
     NETSTACK_LOGD("websocket server start exec");
@@ -640,21 +669,9 @@ int WebSocketServer::Start(const ServerConfig &config)
         NETSTACK_LOGE("Start: Permission denied");
         return WEBSOCKET_ERROR_PERMISSION_DENIED;
     }
-    if (!CommonUtils::IsValidIPV4(config.serverIP) && !CommonUtils::IsValidIPV6(config.serverIP)) {
-        NETSTACK_LOGE("IPV4 and IPV6 are not valid");
-        return WEBSOCKET_ERROR_CODE_INVALID_NIC;
-    }
-    if (!CommonUtils::IsValidPort(config.serverPort)) {
-        NETSTACK_LOGE("Port is not valid");
-        return WEBSOCKET_ERROR_CODE_INVALID_PORT;
-    }
-    if (config.maxConcurrentClientsNumber > static_cast<int>(MAX_CONCURRENT_CLIENTS_NUMBER)) {
-        NETSTACK_LOGE("max concurrent clients number is set over limit");
-        return WEBSOCKET_UNKNOWN_OTHER_ERROR;
-    }
-    if (config.maxConnectionsForOneClient > static_cast<int>(MAX_CONNECTIONS_FOR_ONE_CLIENT)) {
-        NETSTACK_LOGE("max connection number for one client is set over limit");
-        return WEBSOCKET_UNKNOWN_OTHER_ERROR;
+    int ret = CheckServerConfig(config);
+    if (ret != 0) {
+        return ret;
     }
     serverContext_->startServerConfig_ = config;
     lws_context_creation_info info = {};
@@ -748,6 +765,10 @@ int WebSocketServer::Close(const SocketConnection &connection, const CloseOption
 
 int WebSocketServer::Send(const char *data, int length, const SocketConnection &connection)
 {
+    if (data == nullptr || length <= 0) {
+        NETSTACK_LOGE("data is nullptr or length is invalid");
+        return -1;
+    }
     if (serverContext_->GetContext() == nullptr) {
         NETSTACK_LOGE("context is nullptr");
         return -1;
@@ -774,7 +795,7 @@ int WebSocketServer::Send(const char *data, int length, const SocketConnection &
         NETSTACK_LOGE("session is closed or stopped");
         return -1;
     }
-    lws_write_protocol protocol = (strlen(data) == static_cast<size_t>(length)) ? LWS_WRITE_TEXT : LWS_WRITE_BINARY;
+    lws_write_protocol protocol = (memchr(data, '\0', length) == nullptr) ? LWS_WRITE_TEXT : LWS_WRITE_BINARY;
     size_t dataLen = static_cast<size_t>(LWS_SEND_BUFFER_PRE_PADDING + length + LWS_SEND_BUFFER_POST_PADDING);
     char *tmpData = (char *)malloc(dataLen);
     if (tmpData == nullptr) {

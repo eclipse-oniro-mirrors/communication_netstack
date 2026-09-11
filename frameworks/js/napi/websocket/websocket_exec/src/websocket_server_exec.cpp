@@ -396,16 +396,14 @@ int WebSocketServerExec::LwsCallbackClosed(lws *wsi, lws_callback_reasons reason
         NETSTACK_LOGE("user data is null");
         return RaiseServerError(manager);
     }
-    auto clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(wsi));
+    auto clientUserData = manager->GetClientUserData(wsi);
     if (clientUserData == nullptr) {
         NETSTACK_LOGE("clientUserData is null");
         return RaiseServerError(manager);
     }
     clientUserData->SetThreadStop(true);
-    if ((clientUserData->closeReason).empty()) {
-        clientUserData->Close(clientUserData->closeStatus, LINK_DOWN);
-    }
-    if (clientUserData->closeStatus == LWS_CLOSE_STATUS_NOSTATUS) {
+    clientUserData->CloseIfReasonEmpty(LINK_DOWN);
+    if (clientUserData->GetCloseStatus() == LWS_CLOSE_STATUS_NOSTATUS) {
         NETSTACK_LOGE("The link is down, onError");
         OnServerError(manager, COMMON_ERROR_CODE);
     }
@@ -419,7 +417,9 @@ int WebSocketServerExec::LwsCallbackClosed(lws *wsi, lws_callback_reasons reason
         auto& webSocketConnection_ = *realMap;
         ClearWebSocketConnection(webSocketConnection_, wsi, clientId);
     }
-    OnServerClose(wsi, manager, clientUserData->closeStatus, clientUserData->closeReason);
+    lws_close_status closeStatus = clientUserData->GetCloseStatus();
+    std::string closeReason = clientUserData->GetCloseReason();
+    OnServerClose(wsi, manager, closeStatus, closeReason);
     RemoveConnections(clientId, *clientUserData, manager);
     manager->RemoveClientUserData(wsi);
     lws_set_wsi_user(wsi, nullptr);
@@ -510,16 +510,18 @@ int WebSocketServerExec::LwsCallbackServerWriteable(lws *wsi, lws_callback_reaso
         return -1;
     }
     // client
-    auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(wsi));
+    auto clientUserData = manager->GetClientUserData(wsi);
     if (clientUserData == nullptr) {
         NETSTACK_LOGE("clientUserData is null");
         return RaiseServerError(manager);
     }
     if (clientUserData->IsClosed()) {
         NETSTACK_LOGI("client is closed, need to close");
-        lws_close_reason(wsi, clientUserData->closeStatus,
-            reinterpret_cast<unsigned char *>(const_cast<char *>(clientUserData->closeReason.c_str())),
-            strlen(clientUserData->closeReason.c_str()));
+        lws_close_status closeStatus = clientUserData->GetCloseStatus();
+        std::string closeReason = clientUserData->GetCloseReason();
+        lws_close_reason(wsi, closeStatus,
+            reinterpret_cast<unsigned char *>(const_cast<char *>(closeReason.c_str())),
+            strlen(closeReason.c_str()));
         return -1;
     }
     auto sendData = clientUserData->Pop();
@@ -566,7 +568,7 @@ int WebSocketServerExec::LwsCallbackWsPeerInitiatedCloseServer(lws *wsi, lws_cal
     uint16_t closeStatus = ntohs(*reinterpret_cast<uint16_t *>(in));
     std::string closeReason;
     closeReason.append(reinterpret_cast<char *>(in) + sizeof(uint16_t), len - sizeof(uint16_t));
-    auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(wsi));
+    auto clientUserData = manager->GetClientUserData(wsi);
     if (clientUserData == nullptr) {
         userData->Close(LWS_CLOSE_STATUS_NORMAL, "");
         return HttpDummy(wsi, reason, user, in, len);
@@ -1265,7 +1267,7 @@ bool WebSocketServerExec::ExecServerClose(ServerCloseContext *context)
         context->SetErrorCode(WEBSOCKET_ERROR_CODE_CONNECTION_NOT_EXIST);
         return false;
     }
-    auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(wsi));
+    auto clientUserData = manager->GetClientUserData(wsi);
     if (clientUserData == nullptr) {
         NETSTACK_LOGE("clientUser data is nullptr");
         return false;
@@ -1305,7 +1307,7 @@ bool WebSocketServerExec::ExecServerSend(ServerSendContext *context)
         context->SetErrorCode(WEBSOCKET_ERROR_CODE_CONNECTION_NOT_EXIST);
         return false;
     }
-    auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(wsi));
+    auto clientUserData = manager->GetClientUserData(wsi);
     if (clientUserData == nullptr) {
         NETSTACK_LOGE("clientUser data is nullptr");
         return false;
@@ -1404,7 +1406,7 @@ void WebSocketServerExec::CloseAllConnection(const std::shared_ptr<UserData> &us
             NETSTACK_LOGE("clientId not found:%{public}s", id.c_str());
             continue;
         }
-        auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(connPair.first));
+        auto clientUserData = manager->GetClientUserData(connPair.first);
         // LCOV_EXCL_START
         if (clientUserData == nullptr) {
             continue;

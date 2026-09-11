@@ -32,7 +32,6 @@
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocket {
-VerifyMode TLSContext::verifyMode_ = TWO_WAY_MODE;
 TLSContext::~TLSContext()
 {
     CloseCtx();
@@ -265,8 +264,14 @@ bool TLSContext::SetLocalCertificate(TLSContext *tlsContext, const TLSConfigurat
     }
 
     for (uint32_t i = 1; i < certificate.size(); ++i) {
-        if (!SSL_CTX_add_extra_chain_cert(tlsContext->ctx_, static_cast<X509*>(certificate[i].handle()))) {
+        X509 *dupCert = X509_dup(static_cast<X509 *>(certificate[i].handle()));
+        if (dupCert == nullptr) {
+            NETSTACK_LOGE("Failed to duplicate chain certificate");
+            return false;
+        }
+        if (!SSL_CTX_add_extra_chain_cert(tlsContext->ctx_, dupCert)) {
             NETSTACK_LOGE("Failed to add chain certificate");
+            X509_free(dupCert);
             return false;
         }
     }
@@ -284,15 +289,22 @@ bool TLSContext::SetKeyAndCheck(TLSContext *tlsContext, const TLSConfiguration &
         tlsContext->pkey_ = reinterpret_cast<EVP_PKEY *>(configuration.GetPrivateKey().handle());
     } else {
         tlsContext->pkey_ = EVP_PKEY_new();
+        if (tlsContext->pkey_ == nullptr) {
+            NETSTACK_LOGE("pkey_ is nullptr, cannot create private key");
+            return false;
+        }
         if (configuration.GetPrivateKey().Algorithm() == ALGORITHM_RSA) {
             EVP_PKEY_assign_RSA(tlsContext->pkey_, reinterpret_cast<RSA *>(configuration.GetPrivateKey().handle()));
-        } else if (tlsContext->tlsConfiguration_.GetPrivateKey().Algorithm() == ALGORITHM_DSA) {
+        } else if (configuration.GetPrivateKey().Algorithm() == ALGORITHM_DSA) {
             EVP_PKEY_assign_DSA(tlsContext->pkey_, reinterpret_cast<DSA *>(configuration.GetPrivateKey().handle()));
-        } else if (tlsContext->tlsConfiguration_.GetPrivateKey().Algorithm() == ALGORITHM_DH) {
+        } else if (configuration.GetPrivateKey().Algorithm() == ALGORITHM_DH) {
             EVP_PKEY_assign_DH(tlsContext->pkey_, reinterpret_cast<DH *>(configuration.GetPrivateKey().handle()));
-        } else if (tlsContext->tlsConfiguration_.GetPrivateKey().Algorithm() == ALGORITHM_EC) {
+        } else if (configuration.GetPrivateKey().Algorithm() == ALGORITHM_EC) {
             EVP_PKEY_assign_EC_KEY(tlsContext->pkey_,
                                    reinterpret_cast<EC_KEY *>(configuration.GetPrivateKey().handle()));
+        } else {
+            NETSTACK_LOGE("Unsupported private key algorithm");
+            return false;
         }
     }
 
@@ -323,10 +335,10 @@ void TLSContext::SetVerify(TLSContext *tlsContext)
 
     if (!tlsContext->tlsConfiguration_.GetCertificate().data.Length() ||
         !tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyData().Length()) {
-        verifyMode_ = ONE_WAY_MODE;
+        tlsContext->verifyMode_ = ONE_WAY_MODE;
         SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_PEER, nullptr);
     } else {
-        verifyMode_ = TWO_WAY_MODE;
+        tlsContext->verifyMode_ = TWO_WAY_MODE;
         SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_FAIL_IF_NO_PEER_CERT, nullptr);
     }
 
@@ -336,7 +348,7 @@ void TLSContext::SetVerify(TLSContext *tlsContext)
     }
 
     NETSTACK_LOGD("Authentication mode is %{public}s",
-                  verifyMode_ ? "two-way authentication" : "one-way authentication");
+                  tlsContext->verifyMode_ ? "two-way authentication" : "one-way authentication");
 }
 
 bool TLSContext::InitTlsContext(TLSContext *tlsContext, const TLSConfiguration &configuration)
@@ -371,7 +383,7 @@ bool TLSContext::InitTlsContext(TLSContext *tlsContext, const TLSConfiguration &
     if (!SetCaAndVerify(tlsContext, configuration)) {
         return false;
     }
-    if (!verifyMode_) {
+    if (!tlsContext->verifyMode_) {
         NETSTACK_LOGD("one way authentication");
         return true;
     }

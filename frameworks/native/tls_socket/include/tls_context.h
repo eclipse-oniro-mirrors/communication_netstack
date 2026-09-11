@@ -50,7 +50,7 @@ private:
     EVP_PKEY *pkey_ = nullptr;
     SSL *ctxSsl_ = nullptr;
     TLSConfiguration tlsConfiguration_;
-    static VerifyMode verifyMode_;
+    VerifyMode verifyMode_ = TWO_WAY_MODE;
 };
 } // namespace TlsSocket
 } // namespace NetStack
