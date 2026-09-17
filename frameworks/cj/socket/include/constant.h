@@ -19,9 +19,12 @@
 #include <map>
 #include <string>
 
+#include "netstack_log.h"
+
 namespace OHOS::NetStack::Socket {
 
-constexpr uint64_t CJ_SOCKET_FDSAN_TAG = 0xD0015B0ULL << 32 | 0xFFFDULL;
+// fdsan owner tag: high 32 bits is hilog LOG_DOMAIN, low 32 bits is module-defined value
+constexpr uint64_t CJ_SOCKET_FDSAN_TAG = static_cast<uint64_t>(LOG_DOMAIN) << 32 | 0x1ULL;
 
 constexpr const int DEFAULT_BUFFER_SIZE = 8192;
 constexpr const int MAX_SOCKET_BUFFER_SIZE = 262144;
