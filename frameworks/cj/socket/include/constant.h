@@ -21,6 +21,8 @@
 
 namespace OHOS::NetStack::Socket {
 
+constexpr uint64_t CJ_SOCKET_FDSAN_TAG = 0xD0015B0ULL << 32 | 0xFFFDULL;
+
 constexpr const int DEFAULT_BUFFER_SIZE = 8192;
 constexpr const int MAX_SOCKET_BUFFER_SIZE = 262144;
 constexpr const int DEFAULT_TIMEOUT_MS = 20000;

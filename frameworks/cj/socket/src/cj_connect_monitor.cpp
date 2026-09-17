@@ -35,6 +35,12 @@ CjConnectMonitor::CjConnectMonitor()
 {
     epollFd_ = epoll_create1(EPOLL_CLOEXEC);
     eventFd_ = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    if (epollFd_ >= 0) {
+        fdsan_exchange_owner_tag(epollFd_, 0, CJ_SOCKET_FDSAN_TAG);
+    }
+    if (eventFd_ >= 0) {
+        fdsan_exchange_owner_tag(eventFd_, 0, CJ_SOCKET_FDSAN_TAG);
+    }
     epoll_event ev {};
     ev.events = EPOLLIN;
     ev.data.fd = eventFd_;
@@ -50,10 +56,10 @@ CjConnectMonitor::~CjConnectMonitor()
         thread_.join();
     }
     if (eventFd_ >= 0) {
-        close(eventFd_);
+        fdsan_close_with_tag(eventFd_, CJ_SOCKET_FDSAN_TAG);
     }
     if (epollFd_ >= 0) {
-        close(epollFd_);
+        fdsan_close_with_tag(epollFd_, CJ_SOCKET_FDSAN_TAG);
     }
 }
 
