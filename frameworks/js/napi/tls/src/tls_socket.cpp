@@ -823,7 +823,6 @@ void TLSSocket::Close(const CloseCallback &callback)
 
     std::lock_guard<std::mutex> lock(recvMutex_);
     NETSTACK_LOGI("tls socket close, fd =%{public}d", sockFd_);
-    tlsSocketInternal_.CloseTlsContext();
     shutdown(sockFd_, SHUT_RDWR);
     sockFd_ = -1;
     CallOnCloseCallback();
