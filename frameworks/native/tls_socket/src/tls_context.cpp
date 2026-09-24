@@ -412,6 +412,10 @@ void TLSContext::CloseCtx()
             NETSTACK_LOGE("Error in shutdown, errno is %{public}d, error info is %{public}s", resErr,
                           MakeSSLErrorString(resErr).c_str());
         }
+        int sslFd = SSL_get_fd(ctxSsl_);
+        if (sslFd >= 0) {
+            close(sslFd);
+        }
         SSL_free(ctxSsl_);
         ctxSsl_ = nullptr;
     }

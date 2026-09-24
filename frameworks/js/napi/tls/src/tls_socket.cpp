@@ -824,7 +824,7 @@ void TLSSocket::Close(const CloseCallback &callback)
     std::lock_guard<std::mutex> lock(recvMutex_);
     NETSTACK_LOGI("tls socket close, fd =%{public}d", sockFd_);
     tlsSocketInternal_.CloseTlsContext();
-    close(sockFd_);
+    shutdown(sockFd_, SHUT_RDWR);
     sockFd_ = -1;
     CallOnCloseCallback();
     callback(TLSSOCKET_SUCCESS);
