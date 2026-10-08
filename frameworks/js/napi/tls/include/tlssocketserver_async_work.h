@@ -27,6 +27,7 @@ public:
     ~TLSSocketServerAsyncWork() = delete;
 
     static void ExecGetCertificate(napi_env env, void *data);
+    static void ExecConnectionGetCertificate(napi_env env, void *data);
     static void ExecTLSConnectionGetSocketFd(napi_env env, void *data);
     static void ExecListen(napi_env env, void *data);
     static void ExecGetCipherSuites(napi_env env, void *data);

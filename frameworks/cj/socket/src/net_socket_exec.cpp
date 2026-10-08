@@ -500,15 +500,15 @@ static std::string MakeAddressString(sockaddr *addr)
 {
     if (addr->sa_family == AF_INET) {
         auto *addr4 = reinterpret_cast<sockaddr_in *>(addr);
-        const char *str = inet_ntoa(addr4->sin_addr);
-        if (str == nullptr || strlen(str) == 0) {
+        char str[INET_ADDRSTRLEN] = {0};
+        if (inet_ntop(AF_INET, &addr4->sin_addr, str, INET_ADDRSTRLEN) == nullptr) {
             return {};
         }
         return str;
     } else if (addr->sa_family == AF_INET6) {
         auto *addr6 = reinterpret_cast<sockaddr_in6 *>(addr);
         char str[INET6_ADDRSTRLEN] = {0};
-        if (inet_ntop(AF_INET6, &addr6->sin6_addr, str, INET6_ADDRSTRLEN) == nullptr || strlen(str) == 0) {
+        if (inet_ntop(AF_INET6, &addr6->sin6_addr, str, INET6_ADDRSTRLEN) == nullptr) {
             return {};
         }
         return str;
@@ -1066,7 +1066,7 @@ bool ExecConnect(int sockFd, const TcpConnectOptions &options, const ProxyOption
 
 bool ExecTcpSend(int sockFd, const TcpSendOptions &options)
 {
-    if (sockFd <= 0) {
+    if (sockFd < 0) {
         NETSTACK_LOGE("bad fd, socket is %{public}d", sockFd);
         return false;
     }
@@ -1206,7 +1206,7 @@ bool ExecTcpSetExtraOptions(int sockFd, const TCPExtraOptions &options)
         NETSTACK_LOGE("no internet permission");
         return false;
     }
-    if (sockFd <= 0) {
+    if (sockFd < 0) {
         NETSTACK_LOGE("bad fd, socket is %{public}d", sockFd);
         return false;
     }

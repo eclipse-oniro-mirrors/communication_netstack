@@ -78,7 +78,10 @@ void NetAddress::SetIpAddressInner(const std::string &address)
         if (ec == std::errc{} && ptr == address.data() + address.size()) {
             in_addr addr{};
             addr.s_addr = static_cast<in_addr_t>(inet);
-            address_ = inet_ntoa(addr);
+            char ipStr[INET_ADDRSTRLEN] = {0};
+            if (inet_ntop(AF_INET, &addr.s_addr, ipStr, sizeof(ipStr)) != nullptr) {
+                address_ = ipStr;
+            }
         }
     } else if (family_ == Family::IPv6) {
         auto pos = address.find('%');

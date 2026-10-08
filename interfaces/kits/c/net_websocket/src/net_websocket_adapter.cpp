@@ -14,6 +14,7 @@
  */
 
 #include <iostream>
+#include <mutex>
 
 #include "net_websocket.h"
 #include "websocket_client_innerapi.h"
@@ -21,10 +22,12 @@
 namespace OHOS::NetStack::WebSocketClient {
 
 std::map<WebSocket *, WebSocketClient *> g_clientMap;
+std::mutex g_clientMapMutex;
 std::map<std::string, std::string> globalheaders;
 
 WebSocketClient *GetInnerClientAdapter(WebSocket *key)
 {
+    std::lock_guard<std::mutex> lock(g_clientMapMutex);
     auto it = g_clientMap.find(key);
     if (it != g_clientMap.end()) {
         return it->second;
@@ -35,6 +38,7 @@ WebSocketClient *GetInnerClientAdapter(WebSocket *key)
 
 WebSocket *GetNdkClientAdapter(const WebSocketClient *websocketClient)
 {
+    std::lock_guard<std::mutex> lock(g_clientMapMutex);
     auto it = std::find_if(g_clientMap.begin(), g_clientMap.end(), [&websocketClient](const auto& pair) {
         return pair.second == websocketClient;
     });

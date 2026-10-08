@@ -96,8 +96,8 @@ bool TLSSocketExec::ExecInit(TLSInitContext *context)
         return false;
     }
 
-    auto sockFd = static_cast<int>(reinterpret_cast<uint64_t>(context->extManager_->GetData()));
-    if (sockFd <= 0 || !IsTCPSocket(sockFd)) {
+    auto sockFd = context->extManager_->GetSocketFd();
+    if (sockFd < 0 || !IsTCPSocket(sockFd)) {
         NETSTACK_LOGE("invalid tcp socket fd");
         TLSSocketThrowException(context, TLS_ERR_SOCK_INVALID_FD);
         return false;
@@ -123,7 +123,7 @@ bool TLSSocketExec::ExecInit(TLSInitContext *context)
         context->extManager_->DeleteListener(event);
     }
 
-    context->extManager_->SetData(reinterpret_cast<void *>(-1));
+    context->extManager_->SetSocketFd(-1);
     context->extManager_->WaitForRcvThdExit();
     return true;
 }

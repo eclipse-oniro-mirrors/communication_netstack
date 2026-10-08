@@ -94,20 +94,6 @@ HWTEST_F(TlsSocketServerMockBranchTest, TestClose006, testing::ext::TestSize.Lev
     connection->tlsContextServerPointer_ = TlsSocket::TLSContextServer::CreateConfiguration(connectionConfiguration_);
     EXPECT_FALSE(connection->Close());
 }
-
-
-HWTEST_F(TlsSocketServerMockBranchTest, TlsSocketServerBranchTest020, testing::ext::TestSize.Level2)
-{
-    SSL_CTX *ctx = SSL_CTX_new(SSLv23_client_method());
-    SSL *ssl = SSL_new(ctx);
-    connection->ssl_ = (SSL *)ssl;
-    connection->connectionConfiguration_.protocol_ = TlsSocket::TLS_V1_2;
-    EXPECT_EQ(connection->GetProtocol(), TlsSocket::PROTOCOL_TLS_V12);
-    connection->connectionConfiguration_.protocol_ = TlsSocket::TLS_V1_3;
-    EXPECT_EQ(connection->GetProtocol(), TlsSocket::PROTOCOL_TLS_V13);
-    SSL_free(ssl);
-    SSL_CTX_free(ctx);
-}
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS

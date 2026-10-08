@@ -35,6 +35,12 @@ void TLSSocketServerAsyncWork::ExecGetCertificate(napi_env env, void *data)
     BaseAsyncWork::ExecAsyncWork<TlsSocket::GetCertificateContext, TLSSocketServerExec::ExecGetCertificate>(env, data);
 }
 
+void TLSSocketServerAsyncWork::ExecConnectionGetCertificate(napi_env env, void *data)
+{
+    BaseAsyncWork::ExecAsyncWork<TlsSocket::GetCertificateContext,
+        TLSSocketServerExec::ExecConnectionGetCertificate>(env, data);
+}
+
 void TLSSocketServerAsyncWork::ExecTLSConnectionGetSocketFd(napi_env env, void *data)
 {
     BaseAsyncWork::ExecAsyncWork<TLSServerGetSocketFdContext,

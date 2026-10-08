@@ -16,6 +16,7 @@
 #ifndef COMMUNICATIONNETSTACK_WEBSOCKET_SERVER_H
 #define COMMUNICATIONNETSTACK_WEBSOCKET_SERVER_H
 
+#include <atomic>
 #include <libwebsockets.h>
 #include <mutex>
 #include <thread>
@@ -47,17 +48,17 @@ public:
     int Registcallback(OnErrorCallback onError, OnConnectCallback onConnect,
         OnCloseCallback onClose, OnMessageReceiveCallback onMessageReceive);
 
-    OnErrorCallback onErrorCallback_ = nullptr;
-    OnConnectCallback onConnectCallback_ = nullptr;
-    OnCloseCallback onCloseCallback_ = nullptr;
-    OnMessageReceiveCallback onMessageReceiveCallback_ = nullptr;
+    std::atomic<OnErrorCallback> onErrorCallback_{nullptr};
+    std::atomic<OnConnectCallback> onConnectCallback_{nullptr};
+    std::atomic<OnCloseCallback> onCloseCallback_{nullptr};
+    std::atomic<OnMessageReceiveCallback> onMessageReceiveCallback_{nullptr};
 
 private:
     ServerContext *serverContext_ = nullptr;
     std::thread serviceThread_;
     std::mutex destroyMutex_;
 
-    void DestroyContext();
+    void DestroyContext(lws_context *context);
 
     friend void RunServerService(WebSocketServer *server);
 };

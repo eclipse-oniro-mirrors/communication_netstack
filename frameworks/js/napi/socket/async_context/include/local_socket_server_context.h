@@ -23,6 +23,7 @@
 #include <map>
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
 #include <sys/epoll.h>
+#include <sys/eventfd.h>
 #endif
 #include <unistd.h>
 
@@ -34,7 +35,7 @@
 #include "socket_state_base.h"
 
 namespace OHOS::NetStack::Socket {
-struct LocalSocketServerManager : public SocketBaseManager {
+struct LocalSocketServerManager {
     static constexpr int MAX_EVENTS = 10;
     static constexpr int EPOLL_TIMEOUT_MS = 500;
     int clientId_ = 0;
@@ -45,7 +46,8 @@ struct LocalSocketServerManager : public SocketBaseManager {
     bool alreadySetExtraOptions_ = false;
     std::atomic_bool isServerDestruct_;
     bool isLoopFinished_ = false;
-    int epollFd_ = 0;
+    int epollFd_ = -1;
+    int stopEventFd_ = -1;
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
     epoll_event events_[MAX_EVENTS] = {};
 #endif
@@ -55,21 +57,38 @@ struct LocalSocketServerManager : public SocketBaseManager {
     std::condition_variable cond_;
     std::map<int, int> acceptFds_;                      // id & fd
     std::map<int, std::shared_ptr<EventManager>> clientEventManagers_; // id & EventManager*
-    explicit LocalSocketServerManager(int sockfd) : SocketBaseManager(sockfd) {}
+    LocalSocketServerManager() = default;
 
     void SetServerDestructStatus(bool flag)
     {
-        isServerDestruct_.store(flag, std::memory_order_relaxed);
+        isServerDestruct_.store(flag, std::memory_order_release);
     }
     bool GetServerDestructStatus()
     {
-        return isServerDestruct_.load(std::memory_order_relaxed);
+        return isServerDestruct_.load(std::memory_order_acquire);
     }
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
     int StartEpoll()
     {
         epollFd_ = epoll_create1(0);
+        stopEventFd_ = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
         return epollFd_;
+    }
+    void NotifyStopEvent()
+    {
+        if (stopEventFd_ < 0) {
+            return;
+        }
+        uint64_t one = 1;
+        (void)write(stopEventFd_, &one, sizeof(one));
+    }
+    void DrainStopEvent()
+    {
+        if (stopEventFd_ < 0) {
+            return;
+        }
+        eventfd_t value = 0;
+        (void)read(stopEventFd_, &value, sizeof(value));
     }
     int EpollWait()
     {
@@ -86,6 +105,9 @@ struct LocalSocketServerManager : public SocketBaseManager {
     {
         std::unique_lock<std::mutex> lock(clientMutex_);
         cond_.wait(lock, [&id, this]() {
+            if (GetServerDestructStatus()) {
+                return true;
+            }
             if (auto iter = clientEventManagers_.find(id); iter != clientEventManagers_.end()) {
                 if (iter->second->HasEventListener(EVENT_MESSAGE)) {
                     return true;
@@ -119,11 +141,20 @@ struct LocalSocketServerManager : public SocketBaseManager {
         auto res = acceptFds_.emplace(++clientId_, accpetFd);
         return res.second ? clientId_ : -1;
     }
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
+    void UnregisterEpollEvent(int sockfd)
+    {
+        (void)epoll_ctl(epollFd_, EPOLL_CTL_DEL, sockfd, nullptr);
+    }
+#endif
     void RemoveAllAccept()
     {
         std::lock_guard<std::mutex> lock(clientMutex_);
         for (const auto &[id, fd] : acceptFds_) {
             if (fd > 0) {
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
+                UnregisterEpollEvent(fd);
+#endif
                 close(fd);
             }
         }
@@ -134,7 +165,7 @@ struct LocalSocketServerManager : public SocketBaseManager {
         std::lock_guard<std::mutex> lock(clientMutex_);
         if (auto ite = acceptFds_.find(clientId); ite != acceptFds_.end()) {
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
-            epoll_ctl(epollFd_, EPOLL_CTL_DEL, ite->second, nullptr);
+            UnregisterEpollEvent(ite->second);
 #endif
             close(ite->second);
             acceptFds_.erase(ite);
@@ -145,6 +176,14 @@ struct LocalSocketServerManager : public SocketBaseManager {
         std::lock_guard<std::mutex> lock(clientMutex_);
         if (auto ite = acceptFds_.find(clientId); ite != acceptFds_.end()) {
             return ite->second;
+        }
+        return -1;
+    }
+    int DupAcceptFd(int clientId)
+    {
+        std::lock_guard<std::mutex> lock(clientMutex_);
+        if (auto ite = acceptFds_.find(clientId); ite != acceptFds_.end()) {
+            return dup(ite->second);
         }
         return -1;
     }
@@ -192,6 +231,7 @@ struct LocalSocketServerManager : public SocketBaseManager {
     {
         std::lock_guard<std::mutex> lock(clientMutex_);
         clientEventManagers_.clear();
+        cond_.notify_all();
     }
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     void IncreaseThreadCounts()
@@ -300,7 +340,6 @@ public:
     LocalSocketServerSendContext(napi_env env, const std::shared_ptr<EventManager> &manager)
         : LocalSocketServerBaseContext(env, manager) {}
     void ParseParams(napi_value *params, size_t paramsCount) override;
-    int GetAcceptFd();
     LocalSocketOptions &GetOptionsRef();
     int GetClientId() const;
     void SetClientId(int clientId);

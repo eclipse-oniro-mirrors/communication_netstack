@@ -65,7 +65,6 @@ constexpr const char *SIGN_NID_ECDSA = "ECDSA+";
 constexpr const char *SIGN_NID_ED = "Ed25519+";
 constexpr const char *SIGN_NID_ED_FOUR_FOUR_EIGHT = "Ed448+";
 constexpr const char *SIGN_NID_UNDEF_ADD = "UNDEF+";
-constexpr const char *PROTOCOL_UNKNOW = "UNKNOW_PROTOCOL";
 constexpr const char *SIGN_NID_UNDEF = "UNDEF";
 constexpr const char *OPERATOR_PLUS_SIGN = "+";
 constexpr const char *UNKNOW_REASON = "Unknown reason";
@@ -75,7 +74,6 @@ const std::regex JSON_STRING_PATTERN{R"(/^"(?:[^"\\\u0000-\u001f]|\\(?:["\\/bfnr
 const std::regex PATTERN{
     "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|"
     "2[0-4][0-9]|[01]?[0-9][0-9]?)"};
-std::atomic<int> g_userCounter(0);
 
 bool IsIP(const std::string &ip)
 {
@@ -164,6 +162,18 @@ std::vector<std::string> SplitEscapedAltNames(std::string &altNames)
 } // namespace
 #endif
 
+TLSSocketServer::~TLSSocketServer()
+{
+    isRunning_ = false;
+    clientIdConnections_.clear();
+
+    if (listenSocketFd_ != -1) {
+        shutdown(listenSocketFd_, SHUT_RDWR);
+        close(listenSocketFd_);
+        listenSocketFd_ = -1;
+    }
+}
+
 void TLSServerSendOptions::SetSocket(const int &socketFd)
 {
     socketFd_ = socketFd;
@@ -184,16 +194,168 @@ const std::string &TLSServerSendOptions::GetSendData() const
     return data_;
 }
 
-TLSSocketServer::~TLSSocketServer()
+std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionBySocketFd(int socketFd)
 {
-    isRunning_ = false;
-    clientIdConnections_.clear();
-
-    if (listenSocketFd_ != -1) {
-        shutdown(listenSocketFd_, SHUT_RDWR);
-        close(listenSocketFd_);
-        listenSocketFd_ = -1;
+    std::shared_lock<std::shared_mutex> lock(connectMutex_);
+    for (const auto &item : clientIdConnections_) {
+        if (item.second == nullptr) {
+            NETSTACK_LOGE("tlsconnection is nullptr");
+            continue;
+        }
+        if (item.second->GetSocketFd() == socketFd) {
+            return item.second;
+        }
     }
+    return nullptr;
+}
+
+void TLSSocketServer::CallSendCallback(int32_t err, TlsSocket::SendCallback callback)
+{
+    if (callback) {
+        callback(err);
+    }
+}
+
+bool TLSSocketServer::Send(const TLSServerSendOptions &data, const TlsSocket::SendCallback &callback)
+{
+    int socketFd = data.GetSocket();
+    std::string info = data.GetSendData();
+
+    std::shared_ptr<Connection> connect = GetConnectionBySocketFd(socketFd);
+    if (connect == nullptr || connect->IsRemovedFromServer()) {
+        NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", socketFd);
+        ReportError(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
+        CallSendCallback(TlsSocket::TLS_ERR_SYS_EINVAL, callback);
+        return false;
+    }
+    auto res = connect->Send(info);
+    if (!res) {
+        int resErr = connect->GetSSLError();
+        NETSTACK_LOGE("send error is %{public}d %{public}d", resErr, errno);
+        ReportError(resErr, MakeSSLErrorString(resErr));
+        CallSendCallback(resErr, callback);
+        return false;
+    }
+    CallSendCallback(TlsSocket::TLSSOCKET_SUCCESS, callback);
+    return res;
+}
+
+void TLSSocketServer::Close(const int socketFd, const TlsSocket::CloseCallback &callback)
+{
+    std::shared_ptr<Connection> connect = GetConnectionBySocketFd(socketFd);
+    if (connect == nullptr) {
+        NETSTACK_LOGE("socket = %{public}d There is no corresponding socketFd", socketFd);
+        ReportError(TlsSocket::TLS_ERR_SYS_EINVAL, "The close failed with no corresponding socketFd");
+        callback(TlsSocket::TLS_ERR_SYS_EINVAL);
+        return;
+    }
+    auto res = connect->Close();
+    if (!res) {
+        int resErr = connect->GetSSLError();
+        NETSTACK_LOGE("close error is %{public}d %{public}d", resErr, errno);
+        ReportError(resErr, MakeSSLErrorString(resErr));
+        callback(resErr);
+        return;
+    }
+    RemoveConnect(socketFd);
+    callback(TlsSocket::TLSSOCKET_SUCCESS);
+}
+
+void TLSSocketServer::GetRemoteAddress(const int socketFd, const TlsSocket::GetRemoteAddressCallback &callback)
+{
+    std::shared_ptr<Connection> connect = GetConnectionBySocketFd(socketFd);
+    if (connect == nullptr) {
+        NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", socketFd);
+        ReportError(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
+        callback(TlsSocket::TLS_ERR_SYS_EINVAL, {});
+        return;
+    }
+    auto address = connect->GetAddress();
+    callback(TlsSocket::TLSSOCKET_SUCCESS, address);
+}
+
+void TLSSocketServer::GetLocalAddress(const int socketFd, const TlsSocket::GetLocalAddressCallback &callback)
+{
+    std::shared_ptr<Connection> connect = GetConnectionBySocketFd(socketFd);
+    if (connect == nullptr) {
+        NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", socketFd);
+        ReportError(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
+        callback(TlsSocket::TLS_ERR_SYS_EINVAL, {});
+        return;
+    }
+    auto localAddress = connect->GetLocalAddress();
+    callback(TlsSocket::TLSSOCKET_SUCCESS, localAddress);
+}
+
+void TLSSocketServer::GetRemoteCertificate(const int socketFd, const TlsSocket::GetRemoteCertificateCallback &callback)
+{
+    std::shared_ptr<Connection> connect = GetConnectionBySocketFd(socketFd);
+    if (connect == nullptr) {
+        NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", socketFd);
+        ReportError(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
+        callback(TlsSocket::TLS_ERR_SYS_EINVAL, {});
+        return;
+    }
+    const auto &remoteCert = connect->GetRemoteCertRawData();
+    if (!remoteCert.data.Length()) {
+        int resErr = connect->GetSSLError();
+        NETSTACK_LOGE("GetRemoteCertificate error is %{public}d %{public}d", resErr, errno);
+        ReportError(resErr, MakeSSLErrorString(resErr));
+        callback(resErr, {});
+        return;
+    }
+    callback(TlsSocket::TLSSOCKET_SUCCESS, remoteCert);
+}
+
+void TLSSocketServer::GetCipherSuite(const int socketFd, const TlsSocket::GetCipherSuiteCallback &callback)
+{
+    std::shared_ptr<Connection> connect = GetConnectionBySocketFd(socketFd);
+    if (connect == nullptr) {
+        NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", socketFd);
+        ReportError(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
+        callback(TlsSocket::TLS_ERR_SYS_EINVAL, {});
+        return;
+    }
+    auto cipherSuite = connect->GetCipherSuite();
+    if (cipherSuite.empty()) {
+        int resErr = connect->GetSSLError();
+        NETSTACK_LOGE("GetCipherSuite error is %{public}d %{public}d", resErr, errno);
+        ReportError(resErr, MakeSSLErrorString(resErr));
+        callback(resErr, cipherSuite);
+        return;
+    }
+    callback(TlsSocket::TLSSOCKET_SUCCESS, cipherSuite);
+}
+
+void TLSSocketServer::GetSignatureAlgorithms(const int socketFd,
+                                             const TlsSocket::GetSignatureAlgorithmsCallback &callback)
+{
+    std::shared_ptr<Connection> connect = GetConnectionBySocketFd(socketFd);
+    if (connect == nullptr) {
+        NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", socketFd);
+        ReportError(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
+        callback(TlsSocket::TLS_ERR_SYS_EINVAL, {});
+        return;
+    }
+    auto signatureAlgorithms = connect->GetSignatureAlgorithms();
+    if (signatureAlgorithms.empty()) {
+        int resErr = connect->GetSSLError();
+        NETSTACK_LOGE("GetSignatureAlgorithms error is %{public}d %{public}d", resErr, errno);
+        ReportError(resErr, MakeSSLErrorString(resErr));
+        callback(resErr, signatureAlgorithms);
+        return;
+    }
+    callback(TlsSocket::TLSSOCKET_SUCCESS, signatureAlgorithms);
+}
+
+int32_t TLSSocketServer::GetClientSocketFd(int32_t clientId)
+{
+    auto connection = GetConnectionByClientID(clientId);
+    if (connection == nullptr) {
+        NETSTACK_LOGE("getClientSocketFd: clientId = %{public}d, connection not found", clientId);
+        return -1;
+    }
+    return connection->GetSocketFd();
 }
 
 void TLSSocketServer::Listen(const TlsSocket::TLSConnectOptions &tlsListenOptions, const ListenCallback &callback)
@@ -207,7 +369,7 @@ void TLSSocketServer::Listen(const TlsSocket::TLSConnectOptions &tlsListenOption
         CallListenCallback(TlsSocket::TLSSOCKET_SUCCESS, callback);
         return;
     }
-    NETSTACK_LOGE("Listen 2 %{public}d, %{public}d", listenSocketFd_, g_userCounter.load());
+    NETSTACK_LOGE("Listen 2 %{public}d, %{public}d", listenSocketFd_, userCounter_.load());
     bool bindSuccess = false;
     if (ExecBind(tlsListenOptions.GetNetAddress(), callback)) {
         NETSTACK_LOGE("Listen 3 %{public}d", listenSocketFd_);
@@ -218,7 +380,7 @@ void TLSSocketServer::Listen(const TlsSocket::TLSConnectOptions &tlsListenOption
         close(listenSocketFd_);
         listenSocketFd_ = -1;
     }
-    if (isRunning_) {
+    if (pollThreadRunning_.load()) {
         isRunning_ = false;
         WaitForRcvThdExit();
     }
@@ -311,125 +473,19 @@ void TLSSocketServer::ExecAccept(const TlsSocket::TLSConnectOptions &tlsAcceptOp
     CallListenCallback(TlsSocket::TLSSOCKET_SUCCESS, callback);
 }
 
-bool TLSSocketServer::Send(const TLSServerSendOptions &data, const TlsSocket::SendCallback &callback)
-{
-    int socketFd = data.GetSocket();
-    std::string info = data.GetSendData();
-
-    std::shared_ptr<Connection> connect;
-    {
-        std::shared_lock<std::shared_mutex> lock(connectMutex_);
-        auto connect_iterator = clientIdConnections_.find(socketFd);
-        if (connect_iterator == clientIdConnections_.end()) {
-            NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", socketFd);
-            CallOnErrorCallback(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
-            return false;
-        }
-        connect = connect_iterator->second;
-    }
-    auto res = connect->Send(info);
-    if (!res) {
-        int resErr = connect->GetSSLError();
-        NETSTACK_LOGE("send error is %{public}d %{public}d", resErr, errno);
-        CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        CallSendCallback(resErr, callback);
-        return false;
-    }
-    CallSendCallback(TlsSocket::TLSSOCKET_SUCCESS, callback);
-    return res;
-}
-
-void TLSSocketServer::CallSendCallback(int32_t err, TlsSocket::SendCallback callback)
-{
-    if (callback) {
-        callback(err);
-    }
-}
-
-void TLSSocketServer::Close(const int socketFd, const TlsSocket::CloseCallback &callback)
-{
-    {
-        std::shared_lock<std::shared_mutex> its_lock(connectMutex_);
-        for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end();) {
-            if (it->first == socketFd) {
-                auto res = it->second->Close();
-                if (!res) {
-                    int resErr = it->second->GetSSLError();
-                    NETSTACK_LOGE("close error is %{public}d %{public}d", resErr, errno);
-                    CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-                    callback(resErr);
-                    return;
-                }
-                callback(TlsSocket::TLSSOCKET_SUCCESS);
-                return;
-            } else {
-                ++it;
-            }
-        }
-    }
-    NETSTACK_LOGE("socket = %{public}d There is no corresponding socketFd", socketFd);
-    CallOnErrorCallback(-1, "The send failed with no corresponding socketFd");
-    callback(TlsSocket::TLS_ERR_SYS_EINVAL);
-}
-
 void TLSSocketServer::Stop(const TlsSocket::CloseCallback &callback)
 {
+    isRunning_ = false;
     if (!CommonUtils::HasInternetPermission()) {
         callback(PERMISSION_DENIED_CODE);
         return;
     }
-    close(listenSocketFd_);
-    listenSocketFd_ = -1;
-    NETSTACK_LOGE("g_userCounter = %{public}d", g_userCounter.load());
+    if (listenSocketFd_ != -1) {
+        close(listenSocketFd_);
+        listenSocketFd_ = -1;
+    }
+    NETSTACK_LOGE("userCounter_ = %{public}d", userCounter_.load());
     callback(TlsSocket::TLSSOCKET_SUCCESS);
-}
-
-void TLSSocketServer::GetRemoteAddress(const int socketFd, const TlsSocket::GetRemoteAddressCallback &callback)
-{
-    std::shared_ptr<Connection> connect;
-    {
-        std::shared_lock<std::shared_mutex> lock(connectMutex_);
-        auto connect_iterator = clientIdConnections_.find(socketFd);
-        if (connect_iterator == clientIdConnections_.end()) {
-            NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", socketFd);
-            CallOnErrorCallback(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
-            callback(TlsSocket::TLS_ERR_SYS_EINVAL, {});
-            return;
-        }
-        connect = connect_iterator->second;
-    }
-    auto address = connect->GetAddress();
-    callback(TlsSocket::TLSSOCKET_SUCCESS, address);
-}
-
-void TLSSocketServer::GetLocalAddress(const int socketFd, const TlsSocket::GetLocalAddressCallback &callback)
-{
-    std::shared_ptr<Connection> connect;
-    {
-        std::shared_lock<std::shared_mutex> lock(connectMutex_);
-        auto connect_iterator = clientIdConnections_.find(socketFd);
-        if (connect_iterator == clientIdConnections_.end()) {
-            NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", socketFd);
-            CallOnErrorCallback(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
-            callback(TlsSocket::TLS_ERR_SYS_EINVAL, {});
-            return;
-        }
-        connect = connect_iterator->second;
-    }
-    auto localAddress = connect->GetLocalAddress();
-    callback(TlsSocket::TLSSOCKET_SUCCESS, localAddress);
-}
-
-int32_t TLSSocketServer::GetClientSocketFd(int32_t clientId)
-{
-    std::shared_lock<std::shared_mutex> its_lock(connectMutex_);
-    auto connect_iterator = clientIdConnections_.find(clientId);
-    if (connect_iterator == clientIdConnections_.end()) {
-        NETSTACK_LOGE("getClientSocketFd: clientId = %{public}d, connection not found", clientId);
-        return -1;
-    }
-    auto connection = connect_iterator->second;
-    return connection->GetSocketFd();
 }
 
 void TLSSocketServer::GetState(const TlsSocket::GetStateCallback &callback)
@@ -529,31 +585,6 @@ void TLSSocketServer::GetCertificate(const TlsSocket::GetCertificateCallback &ca
     callback(TlsSocket::TLSSOCKET_SUCCESS, cert);
 }
 
-void TLSSocketServer::GetRemoteCertificate(const int socketFd, const TlsSocket::GetRemoteCertificateCallback &callback)
-{
-    std::shared_ptr<Connection> connect;
-    {
-        std::shared_lock<std::shared_mutex> lock(connectMutex_);
-        auto connect_iterator = clientIdConnections_.find(socketFd);
-        if (connect_iterator == clientIdConnections_.end()) {
-            NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", socketFd);
-            CallOnErrorCallback(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
-            callback(TlsSocket::TLS_ERR_SYS_EINVAL, {});
-            return;
-        }
-        connect = connect_iterator->second;
-    }
-    const auto &remoteCert = connect->GetRemoteCertRawData();
-    if (!remoteCert.data.Length()) {
-        int resErr = connect->GetSSLError();
-        NETSTACK_LOGE("GetRemoteCertificate error is %{public}d %{public}d", resErr, errno);
-        CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        callback(resErr, {});
-        return;
-    }
-    callback(TlsSocket::TLSSOCKET_SUCCESS, remoteCert);
-}
-
 void TLSSocketServer::GetProtocol(const TlsSocket::GetProtocolCallback &callback)
 {
     if (TLSServerConfiguration_.GetProtocol() == TlsSocket::TLS_V1_3) {
@@ -561,57 +592,6 @@ void TLSSocketServer::GetProtocol(const TlsSocket::GetProtocolCallback &callback
         return;
     }
     callback(TlsSocket::TLSSOCKET_SUCCESS, TlsSocket::PROTOCOL_TLS_V12);
-}
-
-void TLSSocketServer::GetCipherSuite(const int socketFd, const TlsSocket::GetCipherSuiteCallback &callback)
-{
-    std::shared_ptr<Connection> connect;
-    {
-        std::shared_lock<std::shared_mutex> lock(connectMutex_);
-        auto connect_iterator = clientIdConnections_.find(socketFd);
-        if (connect_iterator == clientIdConnections_.end()) {
-            NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", socketFd);
-            CallOnErrorCallback(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
-            callback(TlsSocket::TLS_ERR_SYS_EINVAL, {});
-            return;
-        }
-        connect = connect_iterator->second;
-    }
-    auto cipherSuite = connect->GetCipherSuite();
-    if (cipherSuite.empty()) {
-        int resErr = connect->GetSSLError();
-        NETSTACK_LOGE("GetCipherSuite error is %{public}d %{public}d", resErr, errno);
-        CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        callback(resErr, cipherSuite);
-        return;
-    }
-    callback(TlsSocket::TLSSOCKET_SUCCESS, cipherSuite);
-}
-
-void TLSSocketServer::GetSignatureAlgorithms(const int socketFd,
-                                             const TlsSocket::GetSignatureAlgorithmsCallback &callback)
-{
-    std::shared_ptr<Connection> connect;
-    {
-        std::shared_lock<std::shared_mutex> lock(connectMutex_);
-        auto connect_iterator = clientIdConnections_.find(socketFd);
-        if (connect_iterator == clientIdConnections_.end()) {
-            NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", socketFd);
-            CallOnErrorCallback(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
-            callback(TlsSocket::TLS_ERR_SYS_EINVAL, {});
-            return;
-        }
-        connect = connect_iterator->second;
-    }
-    auto signatureAlgorithms = connect->GetSignatureAlgorithms();
-    if (signatureAlgorithms.empty()) {
-        int resErr = connect->GetSSLError();
-        NETSTACK_LOGE("GetSignatureAlgorithms error is %{public}d %{public}d", resErr, errno);
-        CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
-        callback(resErr, signatureAlgorithms);
-        return;
-    }
-    callback(TlsSocket::TLSSOCKET_SUCCESS, signatureAlgorithms);
 }
 
 void TLSSocketServer::Connection::OnMessage(const OnMessageCallback &onMessageCallback)
@@ -685,9 +665,12 @@ void TLSSocketServer::Connection::CallOnErrorCallback(int32_t err, const std::st
 void TLSSocketServer::OffError()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (onErrorCallback_) {
-        onErrorCallback_ = nullptr;
-    }
+    onErrorCallback_ = nullptr;
+}
+
+void TLSSocketServer::ReportError(int32_t err, const std::string &errString)
+{
+    CallOnErrorCallback(err, errString);
 }
 
 void TLSSocketServer::MakeIpSocket(sa_family_t family)
@@ -771,7 +754,7 @@ std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionByCli
 
 int TLSSocketServer::GetConnectionClientCount()
 {
-    return g_userCounter;
+    return userCounter_.load();
 }
 
 void TLSSocketServer::CallListenCallback(int32_t err, ListenCallback callback)
@@ -980,7 +963,7 @@ std::string TLSSocketServer::Connection::GetProtocol() const
     std::shared_lock<std::shared_mutex> lock(sslMutex_);
     if (!ssl_) {
         NETSTACK_LOGE("ssl in null");
-        return PROTOCOL_UNKNOW;
+        return "UNKNOW_PROTOCOL";
     }
     if (connectionConfiguration_.GetProtocol() == TlsSocket::TLS_V1_3) {
         return TlsSocket::PROTOCOL_TLS_V13;
@@ -1056,14 +1039,24 @@ int TLSSocketServer::Connection::GetSocketFd() const
     return socketFd_;
 }
 
-std::shared_ptr<EventManager> TLSSocketServer::Connection::GetEventManager() const
+void TLSSocketServer::Connection::SetOwner(const std::weak_ptr<TLSSocketServer> &owner)
 {
-    return eventManager_;
+    owner_ = owner;
 }
 
-void TLSSocketServer::Connection::SetEventManager(std::shared_ptr<EventManager> eventManager)
+std::weak_ptr<TLSSocketServer> TLSSocketServer::Connection::GetOwner() const
 {
-    eventManager_ = eventManager;
+    return owner_;
+}
+
+void TLSSocketServer::Connection::MarkRemovedFromServer()
+{
+    isRemovedFromServer_ = true;
+}
+
+bool TLSSocketServer::Connection::IsRemovedFromServer() const
+{
+    return isRemovedFromServer_.load();
 }
 
 void TLSSocketServer::Connection::SetClientID(int32_t clientID)
@@ -1385,6 +1378,7 @@ void TLSSocketServer::RemoveConnect(int socketFd)
             continue;
         }
         if (it->second->GetSocketFd() == socketFd) {
+            it->second->MarkRemovedFromServer();
             clientIdConnections_.erase(it);
             break;
         }
@@ -1580,6 +1574,7 @@ void TLSSocketServer::SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectO
                                                     int connectFD, std::shared_ptr<Connection> &connection)
 {
     connection->SetClientID(clientID);
+    connection->SetOwner(shared_from_this());
     auto res = connection->TlsAcceptToHost(connectFD, tlsListenOptions);
     if (!res) {
         int resErr = connection->GetSSLError();
@@ -1587,7 +1582,7 @@ void TLSSocketServer::SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectO
         CallOnErrorCallback(resErr, MakeSSLErrorString(resErr));
         return;
     }
-    if (g_userCounter >= USER_LIMIT) {
+    if (userCounter_.load() >= USER_LIMIT) {
         const std::string info = "Too many users!";
         connection->Send(info);
         connection->Close();
@@ -1598,18 +1593,21 @@ void TLSSocketServer::SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectO
         CallOnErrorCallback(-1, "Too many users");
         return;
     }
-    g_userCounter++;
-    fds_[g_userCounter].fd = connectFD;
+    userCounter_++;
+    int userCounter = userCounter_.load();
+    fds_[userCounter].fd = connectFD;
 #if defined(CROSS_PLATFORM)
-    fds_[g_userCounter].events = POLLIN | POLLERR;
+    fds_[userCounter].events = POLLIN | POLLERR;
 #else
-    fds_[g_userCounter].events = POLLIN | POLLRDHUP | POLLERR;
+    fds_[userCounter].events = POLLIN | POLLRDHUP | POLLERR;
 #endif
-    fds_[g_userCounter].revents = 0;
+    fds_[userCounter].revents = 0;
     AddConnect(connectFD, connection);
     auto ptrEventManager = std::make_shared<EventManager>();
-    ptrEventManager->SetData(this);
-    connection->SetEventManager(ptrEventManager);
+    {
+        std::unique_lock<std::shared_mutex> emLock(ptrEventManager->GetDataMutex());
+        ptrEventManager->SetData(new (std::nothrow) std::shared_ptr<Connection>(connection->shared_from_this()));
+    }
     CallOnConnectCallback(clientID, ptrEventManager);
     NETSTACK_LOGI("New client come in, fd is %{public}d", connectFD);
 }
@@ -1623,25 +1621,25 @@ void TLSSocketServer::InitPollList(const int &listendFd)
 
 bool TLSSocketServer::DropFdFromPollList(int &fd_index)
 {
-    if (g_userCounter < 0) {
-        NETSTACK_LOGE("g_userCounter = %{public}d", g_userCounter.load());
+    if (userCounter_.load() < 0) {
+        NETSTACK_LOGE("userCounter_ = %{public}d", userCounter_.load());
         return true;
     }
     if (fd_index == 0) {
         // index 0 is for listen only
         fds_[0].fd = -1;
         fds_[0].events = 0;
-        NETSTACK_LOGI("drop listenFd from poll List, g_userCounter = %{public}d", g_userCounter.load());
+        NETSTACK_LOGI("drop listenFd from poll List, userCounter_ = %{public}d", userCounter_.load());
     } else {
         // remove the fd_index, and insert the last index
-        fds_[fd_index].fd = fds_[g_userCounter].fd;
-        fds_[g_userCounter].fd = -1;
-        fds_[g_userCounter].events = 0;
+        fds_[fd_index].fd = fds_[userCounter_.load()].fd;
+        fds_[userCounter_.load()].fd = -1;
+        fds_[userCounter_.load()].events = 0;
         fd_index--;
-        g_userCounter--;
-        NETSTACK_LOGI("drop clientFd from poll List, g_userCounter = %{public}d", g_userCounter.load());
+        userCounter_--;
+        NETSTACK_LOGI("drop clientFd from poll List, userCounter_ = %{public}d", userCounter_.load());
     }
-    for (int i = 0; i < g_userCounter + 1; ++i) {
+    for (int i = 0; i < userCounter_.load() + 1; ++i) {
         if (fds_[i].fd > 0) {
             return false;
         }
@@ -1667,8 +1665,18 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
     int on = 1;
     isRunning_ = true;
     ioctl(listenSocketFd_, FIONBIO, (char *)&on);
-    NETSTACK_LOGI("PollThread  start working %{public}d", isRunning_);
-    std::thread thread_([this, tlsOption = tlsListenOptions]() {
+    NETSTACK_LOGI("PollThread  start working %{public}d", isRunning_.load());
+    {
+        std::unique_lock<std::mutex> lock(sockRcvThdMtx_);
+        sockRcvExit_ = false;
+    }
+    pollThreadRunning_ = true;
+    std::thread thread_([this, tlsOption = tlsListenOptions, weakSelf = weak_from_this()]() {
+        auto keepAlive = weakSelf.lock();
+        if (keepAlive == nullptr) {
+            NETSTACK_LOGE("tls socket server has been destructed, poll thread exits");
+            return;
+        }
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         pthread_setname_np(TLS_SOCKET_SERVER_READ);
 #else
@@ -1677,7 +1685,7 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
         InitPollList(listenSocketFd_);
         bool exitLoop = false;
         while (isRunning_ && !exitLoop) {
-            int ret = poll(fds_, g_userCounter + 1, POLL_WAIT_TIME);
+            int ret = poll(fds_, userCounter_.load() + 1, POLL_WAIT_TIME);
             if (ret < 0) {
                 int resErr = ConvertErrno();
                 NETSTACK_LOGE("Poll ERROR");
@@ -1687,9 +1695,9 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
             if (ret == 0) {
                 continue;
             }
-            for (int i = 0; i < g_userCounter + 1; ++i) {
+            for (int i = 0; i < userCounter_.load() + 1; ++i) {
                 if ((fds_[i].fd == listenSocketFd_) && (static_cast<uint16_t>(fds_[i].revents) & POLLIN)) {
-                    ProcessTcpAccept(tlsOption, g_userCounter + 1);
+                    ProcessTcpAccept(tlsOption, userCounter_.load() + 1);
 #if !defined(CROSS_PLATFORM)
                 } else if ((static_cast<uint16_t>(fds_[i].revents) & POLLRDHUP) ||
                            (static_cast<uint16_t>(fds_[i].revents) & (POLLERR | POLLNVAL))) {
@@ -1704,43 +1712,12 @@ void TLSSocketServer::PollThread(const TlsSocket::TLSConnectOptions &tlsListenOp
             }
         }
         isRunning_ = false;
+        pollThreadRunning_ = false;
         NotifyRcvThdExit();
     });
     thread_.detach();
 }
 
-std::shared_ptr<TLSSocketServer::Connection> TLSSocketServer::GetConnectionByClientEventManager(
-    const std::shared_ptr<EventManager> &eventManager)
-{
-    std::shared_lock<std::shared_mutex> its_lock(connectMutex_);
-    auto it = std::find_if(clientIdConnections_.begin(), clientIdConnections_.end(), [eventManager](const auto& pair) {
-        return pair.second->GetEventManager() == eventManager;
-    });
-    if (it == clientIdConnections_.end()) {
-        return nullptr;
-    }
-    return it->second;
-}
-
-void TLSSocketServer::CloseConnectionByEventManager(const std::shared_ptr<EventManager> &eventManager)
-{
-    std::shared_ptr<Connection> ptrConnection = GetConnectionByClientEventManager(eventManager);
-
-    if (ptrConnection != nullptr) {
-        ptrConnection->Close();
-    }
-}
-
-void TLSSocketServer::DeleteConnectionByEventManager(const std::shared_ptr<EventManager> &eventManager)
-{
-    std::unique_lock<std::shared_mutex> its_lock(connectMutex_);
-    for (auto it = clientIdConnections_.begin(); it != clientIdConnections_.end(); ++it) {
-        if (it->second->GetEventManager() == eventManager) {
-            it = clientIdConnections_.erase(it);
-            break;
-        }
-    }
-}
 } // namespace TlsSocketServer
 } // namespace NetStack
 } // namespace OHOS

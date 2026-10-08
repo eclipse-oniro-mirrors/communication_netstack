@@ -23,6 +23,10 @@
 #include <thread>
 #include <unistd.h>
 
+#if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+#include <chrono>
+#endif
+
 #include "context_key.h"
 #include "napi_utils.h"
 #include "netstack_log.h"
@@ -50,6 +54,8 @@ constexpr int NO_MEMORY = -2;
 
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
 constexpr int MAX_CLIENTS = 1024;
+
+constexpr int DUP_RETRY_INTERVAL_MS = 100;
 #endif
 
 constexpr int ERRNO_BAD_FD = 9;
@@ -87,21 +93,26 @@ struct MsgWithLocalRemoteInfo {
     LocalSocketRemoteInfo remoteInfo;
 };
 
+// LCOV_EXCL_START
 void LocalSocketServerConnectionFinalize(napi_env, void *data, void *)
 {
     NETSTACK_LOGI("localsocket connection is finalized");
     auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
     if (sharedManager != nullptr && *sharedManager != nullptr) {
         auto manager = *sharedManager;
-        LocalSocketConnectionData *connectData = reinterpret_cast<LocalSocketConnectionData *>(manager->GetData());
-        if (connectData != nullptr) {
-            auto serverManager = connectData->serverManager_;
-            if (serverManager != nullptr) {
-                serverManager->RemoveEventManager(connectData->clientId_);
-                serverManager->RemoveAccept(connectData->clientId_);
+        {
+            std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
+            LocalSocketConnectionData *connectData = reinterpret_cast<LocalSocketConnectionData *>(manager->GetData());
+            if (connectData != nullptr) {
+                manager->SetData(nullptr);
+                auto serverManager = connectData->serverManager_;
+                if (serverManager != nullptr) {
+                    serverManager->RemoveEventManager(connectData->clientId_);
+                    serverManager->RemoveAccept(connectData->clientId_);
+                }
+                delete connectData;
+                connectData = nullptr;
             }
-            delete connectData;
-            connectData = nullptr;
         }
         delete sharedManager;
     }
@@ -112,25 +123,31 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
 {
     napi_value result = nullptr;
     napi_status status = napi_new_instance(env, jsConstructor, 0, nullptr, &result);
-    if (status != napi_ok || result == nullptr) {
+    if (status != napi_ok || result == nullptr || data->serverManager_ == nullptr) {
         NETSTACK_LOGE("napi_new_instance failed");
         delete data;
         return NapiUtils::GetUndefined(env);
     }
 
-    auto sharedManager = new (std::nothrow) std::shared_ptr<EventManager>();
-    if (sharedManager == nullptr) {
-        return result;
-    }
+    auto sharedManager = new std::shared_ptr<EventManager>();
     auto manager = std::make_shared<EventManager>();
     *sharedManager = manager;
     manager->SetData(reinterpret_cast<void *>(data));
     data->serverManager_->AddEventManager(data->clientId_, manager);
     manager->CreateEventReference(env, result);
-    napi_wrap(env, result, reinterpret_cast<void *>(sharedManager),
+    napi_status wrapStatus = napi_wrap(env, result, reinterpret_cast<void *>(sharedManager),
         LocalSocketServerConnectionFinalize, nullptr, nullptr);
+    if (wrapStatus != napi_ok) {
+        NETSTACK_LOGE("napi_wrap failed, status: %{public}d", wrapStatus);
+        data->serverManager_->RemoveEventManager(data->clientId_);
+        manager->DeleteEventReference(env);
+        delete data;
+        delete sharedManager;
+        return NapiUtils::GetUndefined(env);
+    }
     return result;
 }
+// LCOV_EXCL_STOP
 
 napi_value ConstructLocalSocketConnection(napi_env env, napi_callback_info info, LocalSocketConnectionData *data)
 {
@@ -315,12 +332,29 @@ static bool LocalSocketSendEvent(LocalSocketSendContext *context)
     if (context == nullptr) {
         return false;
     }
-    if (!PollSendData(context->GetSocketFd(), context->GetOptionsRef().GetBufferRef().c_str(),
-                      context->GetOptionsRef().GetBufferRef().size(), nullptr, 0)) {
-        NETSTACK_LOGE("send failed, socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
-        context->SetErrorCode(errno);
+    int sockFd = context->GetSocketFd();
+    if (sockFd < 0) {
+        context->SetErrorCode(EBADF);
         return false;
     }
+    int sendFd = dup(sockFd);
+    // LCOV_EXCL_START
+    if (sendFd < 0) {
+        int err = errno;
+        NETSTACK_LOGE("dup fd failed, fd: %{public}d, errno: %{public}d", sockFd, err);
+        context->SetErrorCode(err);
+        return false;
+    }
+    // LCOV_EXCL_STOP
+    if (!PollSendData(sendFd, context->GetOptionsRef().GetBufferRef().c_str(),
+                      context->GetOptionsRef().GetBufferRef().size(), nullptr, 0)) {
+        int err = errno;
+        NETSTACK_LOGE("send failed, socket is %{public}d, errno: %{public}d", sockFd, err);
+        close(sendFd);
+        context->SetErrorCode(err);
+        return false;
+    }
+    close(sendFd);
     return true;
 }
 
@@ -452,8 +486,14 @@ static bool SetLocalSocketOptions(int sockfd, const LocalExtraOptions &options)
     return true;
 }
 
+// LCOV_EXCL_START
 static void SetSocketDefaultBufferSize(int sockfd, LocalSocketServerManager *mgr)
 {
+    if (mgr == nullptr) {
+        NETSTACK_LOGE("mgr is nullptr");
+        return;
+    }
+    std::lock_guard<std::mutex> lock(mgr->clientMutex_);
     uint32_t recvSize = DEFAULT_BUFFER_SIZE;
     if (mgr->alreadySetExtraOptions_ && mgr->extraOptions_.AlreadySetRecvBufSize()) {
         recvSize = mgr->extraOptions_.GetReceiveBufferSize();
@@ -465,6 +505,7 @@ static void SetSocketDefaultBufferSize(int sockfd, LocalSocketServerManager *mgr
     }
     SetSocketBufferSize(sockfd, SO_SNDBUF, sendSize);
 }
+// LCOV_EXCL_STOP
 
 static int ConfirmBufferSize(int sock)
 {
@@ -490,16 +531,27 @@ static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager
 {
     serverManager->IncreaseThreadCounts();
     int clientId = serverManager->AddAccept(connectFd);
-    if (serverManager->alreadySetExtraOptions_) {
-        SetLocalSocketOptions(connectFd, serverManager->extraOptions_);
+    {
+        std::lock_guard<std::mutex> lock(serverManager->clientMutex_);
+        if (serverManager->alreadySetExtraOptions_) {
+            SetLocalSocketOptions(connectFd, serverManager->extraOptions_);
+        }
     }
     NETSTACK_LOGI("local socket server accept new, fd: %{public}d, id: %{public}d", connectFd, clientId);
     callback.OnLocalSocketConnectionMessage(clientId, serverManager);
     auto eventManager = serverManager->WaitForSharedManager(clientId);
-    int sockRecvSize = ConfirmBufferSize(connectFd);
+    int recvFd = dup(connectFd);
+    if (recvFd < 0) {
+        NETSTACK_LOGE("dup connect fd failed, fd: %{public}d, errno: %{public}d", connectFd, errno);
+        RecvInErrorCondition(errno, clientId, callback, serverManager);
+        serverManager->NotifyLoopFinished();
+        return;
+    }
+    int sockRecvSize = ConfirmBufferSize(recvFd);
     auto buffer = std::make_unique<char[]>(sockRecvSize);
     if (buffer == nullptr) {
         NETSTACK_LOGE("failed to malloc, connectFd: %{public}d, malloc size: %{public}d", connectFd, sockRecvSize);
+        close(recvFd);
         RecvInErrorCondition(NO_MEMORY, clientId, callback, serverManager);
         serverManager->NotifyLoopFinished();
         return;
@@ -509,7 +561,7 @@ static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager
             NETSTACK_LOGE("memset_s failed, connectFd: %{public}d, clientId: %{public}d", connectFd, clientId);
             continue;
         }
-        int32_t recvSize = recv(connectFd, buffer.get(), sockRecvSize, 0);
+        int32_t recvSize = recv(recvFd, buffer.get(), sockRecvSize, 0);
         if (recvSize == 0) {
             NETSTACK_LOGI("session closed, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFd, clientId);
             callback.OnCloseMessage(eventManager);
@@ -534,36 +586,54 @@ static void LocalSocketServerRecvHandler(int connectFd, LocalSocketServerManager
             }
         }
     }
+    close(recvFd);
     serverManager->NotifyLoopFinished();
 }
 
-static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSocketMessageCallback &callback,
+static void LocalSocketServerAccept(const std::shared_ptr<EventManager> &eventManager,
+                                    LocalSocketServerManager *mgr, const LocalSocketMessageCallback &callback,
                                     const std::string &path)
 {
     struct sockaddr_un clientAddress;
     socklen_t clientAddrLength = sizeof(clientAddress);
-    struct pollfd fds[1] = {{.fd = mgr->sockfd_, .events = POLLIN}};
     nfds_t num = 1;
     mgr->IncreaseThreadCounts();
     while (true) {
+        int listenFd = eventManager->GetSocketFd();
+        int listenDupFd = listenFd >= 0 ? dup(listenFd) : -1;
+        if (listenDupFd < 0) {
+            if (listenFd < 0) {
+                NETSTACK_LOGI("listen fd closed, accept loop finished");
+                break;
+            }
+            NETSTACK_LOGE("dup listen fd failed, fd: %{public}d, errno: %{public}d", listenFd, errno);
+            std::this_thread::sleep_for(std::chrono::milliseconds(DUP_RETRY_INTERVAL_MS));
+            continue;
+        }
+        pollfd fds[1] = {{.fd = listenDupFd, .events = POLLIN}};
         int ret = poll(fds, num, DEFAULT_POLL_TIMEOUT_MS);
         if (ret < 0) {
-            NETSTACK_LOGE("poll to accept failed, socket is %{public}d, errno is %{public}d", mgr->sockfd_, errno);
+            NETSTACK_LOGE("poll to accept failed, socket is %{public}d, errno: %{public}d", listenFd, errno);
             callback.OnError(errno);
+            close(listenDupFd);
             break;
         }
         if (mgr->isServerDestruct_) {
             NETSTACK_LOGI("server object destruction, loop finished");
+            close(listenDupFd);
             break;
         }
-        if (fds[0].revents & POLLIN) {
-            int connectFd = accept(mgr->sockfd_, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddrLength);
+        if ((ret > 0) && (fds[0].revents & POLLIN)) {
+            int connectFd =
+                accept(listenDupFd, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddrLength);
             if (connectFd < 0) {
+                close(listenDupFd);
                 continue;
             }
             if (mgr->GetClientCounts() >= MAX_CLIENTS) {
-                NETSTACK_LOGE("local socket server max number of clients reached, sockfd: %{public}d", mgr->sockfd_);
+                NETSTACK_LOGE("local socket server max number of clients reached, sockfd: %{public}d", listenFd);
                 close(connectFd);
+                close(listenDupFd);
                 continue;
             }
             SetSocketDefaultBufferSize(connectFd, mgr);
@@ -572,28 +642,45 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
                                           std::ref(path));
                 pthread_setname_np(LOCAL_SOCKET_SERVER_HANDLE_CLIENT);
                 handlerThread.detach();
+            } else {
+                close(connectFd);
             }
         }
+        close(listenDupFd);
     }
 }
+
 #else
+// LCOV_EXCL_START
 static void RecvHandler(int connectFd, const LocalSocketMessageCallback &callback, LocalSocketServerManager *mgr)
 {
     int clientId = mgr->GetClientId(connectFd);
+    if (clientId < 0) {
+        NETSTACK_LOGI("connection already closed, fd: %{public}d", connectFd);
+        return;
+    }
     auto eventManager = mgr->GetSharedManager(clientId);
     if (eventManager == nullptr) {
-        NETSTACK_LOGI("manager is null");
+        NETSTACK_LOGI("manager is null, remove connection, clientId: %{public}d, fd: %{public}d", clientId, connectFd);
+        mgr->RemoveAccept(clientId);
         callback.OnError(UNKNOW_ERROR);
         return;
     }
-    int sockRecvSize = ConfirmBufferSize(connectFd);
+    int recvFd = mgr->DupAcceptFd(clientId);
+    if (recvFd < 0) {
+        NETSTACK_LOGI("connection already closed, clientId: %{public}d", clientId);
+        return;
+    }
+    int sockRecvSize = ConfirmBufferSize(recvFd);
     auto buffer = std::make_unique<char[]>(sockRecvSize);
     if (buffer == nullptr) {
         NETSTACK_LOGE("failed to malloc, connectFd: %{public}d, malloc size: %{public}d", connectFd, sockRecvSize);
+        close(recvFd);
         RecvInErrorCondition(NO_MEMORY, clientId, callback, mgr);
         return;
     }
-    int32_t recvSize = recv(connectFd, buffer.get(), sockRecvSize, 0);
+    int32_t recvSize = recv(recvFd, buffer.get(), sockRecvSize, 0);
+    close(recvFd);
     if (recvSize == 0) {
         NETSTACK_LOGI("session closed, errno:%{public}d,fd:%{public}d,id:%{public}d", errno, connectFd, clientId);
         callback.OnCloseMessage(eventManager);
@@ -637,37 +724,53 @@ static void AcceptHandler(int fd, LocalSocketServerManager *mgr, const LocalSock
     }
     callback.OnLocalSocketConnectionMessage(clientId, mgr);
     mgr->WaitRegisteringEvent(clientId);
+    if (mgr->GetServerDestructStatus()) {
+        NETSTACK_LOGI("server is destructing, accept handler exits, clientId: %{public}d", clientId);
+        return;
+    }
     if (mgr->RegisterEpollEvent(fd, EPOLLIN) == -1) {
         NETSTACK_LOGE("new connection register err, fd:%{public}d, errno:%{public}d", fd, errno);
         callback.OnError(errno);
-        close(fd);
+        mgr->RemoveAccept(clientId);
         return;
     }
-    SetSocketDefaultBufferSize(fd, mgr);
-    if (mgr->alreadySetExtraOptions_) {
-        SetLocalSocketOptions(fd, mgr->extraOptions_);
+    int setupFd = mgr->DupAcceptFd(clientId);
+    if (setupFd < 0) {
+        NETSTACK_LOGI("connection already closed, clientId: %{public}d", clientId);
+        return;
     }
+    SetSocketDefaultBufferSize(setupFd, mgr);
+    {
+        std::lock_guard<std::mutex> lock(mgr->clientMutex_);
+        if (mgr->alreadySetExtraOptions_) {
+            SetLocalSocketOptions(setupFd, mgr->extraOptions_);
+        }
+    }
+    close(setupFd);
 }
 
-static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSocketMessageCallback &callback)
+static void LocalSocketServerAccept(const std::shared_ptr<EventManager> &eventManager, LocalSocketServerManager *mgr,
+                                    const LocalSocketMessageCallback &callback)
 {
     pthread_setname_np(pthread_self(), LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
     struct sockaddr_un clientAddress;
     socklen_t clientAddrLength = sizeof(clientAddress);
-    if (mgr->RegisterEpollEvent(mgr->sockfd_, EPOLLIN) == -1) {
-        NETSTACK_LOGE("register listen fd err, fd:%{public}d, errno:%{public}d", mgr->sockfd_, errno);
+    if (mgr->RegisterEpollEvent(eventManager->GetSocketFd(), EPOLLIN) == -1) {
+        NETSTACK_LOGE("register listen fd err, fd:%{public}d, errno:%{public}d", eventManager->GetSocketFd(), errno);
         callback.OnError(errno);
         mgr->NotifyLoopFinished();
         return;
     }
-    mgr->SetServerDestructStatus(false);
+    if (mgr->stopEventFd_ >= 0 && mgr->RegisterEpollEvent(mgr->stopEventFd_, EPOLLIN) == -1) {
+        NETSTACK_LOGE("register stop fd err, errno:%{public}d", errno);
+    }
     while (true) {
         int eventNum = mgr->EpollWait();
         if (eventNum == -1) {
             if (errno == EINTR) {
                 continue;
             }
-            NETSTACK_LOGE("epoll wait err, fd:%{public}d, errno:%{public}d", mgr->sockfd_, errno);
+            NETSTACK_LOGE("epoll wait err, fd:%{public}d, errno:%{public}d", eventManager->GetSocketFd(), errno);
             callback.OnError(errno);
             break;
         }
@@ -675,18 +778,36 @@ static void LocalSocketServerAccept(LocalSocketServerManager *mgr, const LocalSo
             NETSTACK_LOGI("server object destruct, exit the loop");
             break;
         }
+        bool stopEventTriggered = false;
         for (int i = 0; i < eventNum; ++i) {
-            if ((mgr->events_[i].data.fd == mgr->sockfd_) && (mgr->events_[i].events & EPOLLIN)) {
-                int connectFd = accept(mgr->sockfd_, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddrLength);
+            if (mgr->events_[i].data.fd == mgr->stopEventFd_) {
+                mgr->DrainStopEvent();
+                NETSTACK_LOGI("stop event received, exit the accept loop");
+                stopEventTriggered = true;
+                break;
+            }
+            if ((mgr->events_[i].data.fd == eventManager->GetSocketFd()) && (mgr->events_[i].events & EPOLLIN)) {
+                int listenFd = eventManager->GetSocketFd();
+                int listenDupFd = listenFd >= 0 ? dup(listenFd) : -1;
+                if (listenDupFd < 0) {
+                    continue;
+                }
+                int connectFd = accept(listenDupFd, reinterpret_cast<sockaddr *>(&clientAddress),
+                    &clientAddrLength);
+                close(listenDupFd);
                 std::thread th(AcceptHandler, connectFd, mgr, callback);
                 th.detach();
-            } else if ((mgr->events_[i].data.fd != mgr->sockfd_) && (mgr->events_[i].events & EPOLLIN)) {
+            } else if ((mgr->events_[i].data.fd != eventManager->GetSocketFd()) && (mgr->events_[i].events & EPOLLIN)) {
                 RecvHandler(mgr->events_[i].data.fd, callback, mgr);
             }
+        }
+        if (stopEventTriggered) {
+            break;
         }
     }
     mgr->NotifyLoopFinished();
 }
+// LCOV_EXCL_STOP
 #endif
 
 static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &buf,
@@ -707,22 +828,26 @@ static int UpdateRecvBuffer(int sock, int &bufferSize, std::unique_ptr<char[]> &
     return 0;
 }
 
+// LCOV_EXCL_START
 static void PollRecvData(int sock, const LocalSocketMessageCallback &callback)
 {
     int bufferSize = ConfirmBufferSize(sock);
     auto buf = std::make_unique<char[]>(bufferSize);
     if (buf == nullptr) {
         callback.OnError(NO_MEMORY);
+        close(sock);
         return;
     }
     nfds_t num = 1;
     pollfd fds[1] = {{.fd = sock, .events = POLLIN}};
     int recvTimeoutMs = ConfirmSocketTimeoutMs(sock, SO_RCVTIMEO, DEFAULT_POLL_TIMEOUT_MS);
     while (true) {
+        int recvLen = -1;
         int ret = poll(fds, num, recvTimeoutMs);
         if (ret < 0) {
             NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
             callback.OnError(errno);
+            close(sock);
             return;
         } else if (ret == 0) {
             continue;
@@ -732,25 +857,33 @@ static void PollRecvData(int sock, const LocalSocketMessageCallback &callback)
             continue;
         }
         if (UpdateRecvBuffer(sock, bufferSize, buf, callback) < 0) {
+            close(sock);
             return;
         }
-        auto recvLen = recv(sock, buf.get(), bufferSize, 0);
+        recvLen = recv(sock, buf.get(), bufferSize, 0);
         if (recvLen < 0) {
             if (errno == EAGAIN || errno == EINTR) {
                 continue;
             }
             NETSTACK_LOGE("recv failed, socket is %{public}d, errno is %{public}d", sock, errno);
-            if (auto mgr = reinterpret_cast<LocalSocketManager *>(callback.manager_->GetData()); mgr != nullptr) {
-                mgr->GetSocketCloseStatus() ? callback.OnCloseMessage(nullptr) : callback.OnError(errno);
+            {
+                std::shared_lock<std::shared_mutex> lock(callback.manager_->GetDataMutex());
+                auto mgr = reinterpret_cast<LocalSocketManager *>(callback.manager_->GetData());
+                if (mgr != nullptr) {
+                    mgr->GetSocketCloseStatus() ? callback.OnCloseMessage(nullptr) : callback.OnError(errno);
+                }
             }
+            close(sock);
             return;
         } else if (recvLen == 0) {
             callback.OnCloseMessage(nullptr);
+            close(sock);
             break;
         }
         void *data = malloc(recvLen);
         if (data == nullptr) {
             callback.OnError(NO_MEMORY);
+            close(sock);
             return;
         }
         if (memcpy_s(data, recvLen, buf.get(), recvLen) != EOK || !callback.OnMessage(data, recvLen)) {
@@ -758,6 +891,7 @@ static void PollRecvData(int sock, const LocalSocketMessageCallback &callback)
         }
     }
 }
+// LCOV_EXCL_STOP
 
 bool ExecLocalSocketBind(LocalSocketBindContext *context)
 {
@@ -823,28 +957,39 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     int sockfd = context->GetSocketFd();
     if (sockfd < 0) {
         NETSTACK_LOGE("fd is nullptr or closed");
         return false;
     }
-    SetSocketBufferSize(sockfd, SO_RCVBUF, DEFAULT_BUFFER_SIZE);
-    if (strcpy_s(addr.sun_path, sizeof(addr.sun_path) - 1, context->GetSocketPath().c_str()) != 0) {
-        NETSTACK_LOGE("failed to copy local socket path, sockfd: %{public}d", sockfd);
-        context->SetErrorCode(UNKNOW_ERROR);
-        return false;
-    }
-    NETSTACK_LOGI("local socket client fd: %{public}d", context->GetSocketFd());
-    if (!NonBlockConnect(sockfd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr), context->GetTimeoutMs())) {
-        NETSTACK_LOGE("failed to connect local socket, errno: %{public}d, %{public}s", errno, strerror(errno));
+    int ioFd = dup(sockfd);
+    if (ioFd < 0) {
+        NETSTACK_LOGE("dup fd failed, fd: %{public}d, errno: %{public}d", sockfd, errno);
         context->SetErrorCode(errno);
         return false;
     }
-    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetSharedManager()->GetData()); pMgr != nullptr) {
-        pMgr->isConnected_ = true;
+    SetSocketBufferSize(ioFd, SO_RCVBUF, DEFAULT_BUFFER_SIZE);
+    if (strcpy_s(addr.sun_path, sizeof(addr.sun_path) - 1, context->GetSocketPath().c_str()) != 0) {
+        NETSTACK_LOGE("failed to copy local socket path, sockfd: %{public}d", sockfd);
+        context->SetErrorCode(UNKNOW_ERROR);
+        close(ioFd);
+        return false;
     }
-    std::thread serviceThread(PollRecvData, sockfd, LocalSocketMessageCallback(context->GetSharedManager(), context->
+    NETSTACK_LOGI("local socket client fd: %{public}d", context->GetSocketFd());
+    if (!NonBlockConnect(ioFd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr), context->GetTimeoutMs())) {
+        NETSTACK_LOGE("failed to connect local socket, errno: %{public}d, %{public}s", errno, strerror(errno));
+        context->SetErrorCode(errno);
+        close(ioFd);
+        return false;
+    }
+    // LCOV_EXCL_START
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        if (auto pMgr = reinterpret_cast<LocalSocketManager *>(manager->GetData()); pMgr != nullptr) {
+            pMgr->isConnected_ = true;
+        }
+    }
+    std::thread serviceThread(PollRecvData, ioFd, LocalSocketMessageCallback(context->GetSharedManager(), context->
                               GetSocketPath()));
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     pthread_setname_np(LOCAL_SOCKET_CONNECT);
@@ -853,6 +998,7 @@ bool ExecLocalSocketConnect(LocalSocketConnectContext *context)
 #endif
     serviceThread.detach();
     return true;
+    // LCOV_EXCL_STOP
 }
 
 bool ExecLocalSocketSend(LocalSocketSendContext *context)
@@ -882,18 +1028,34 @@ bool ExecLocalSocketClose(LocalSocketCloseContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    if (close(context->GetSocketFd()) < 0) {
-        NETSTACK_LOGE("failed to closed localsock, fd: %{public}d, errno: %{public}d", context->GetSocketFd(), errno);
-        context->SetErrorCode(errno);
-        return false;
+    bool closeFailed = false;
+    auto fd = manager->GetSocketFd();
+    if (fd >= 0) {
+        // LCOV_EXCL_START
+        if (!manager->SetSocketFdIfEqual(fd)) {
+            return true;
+        }
+        // LCOV_EXCL_STOP
+        if (shutdown(fd, SHUT_RDWR) != 0) {
+            NETSTACK_LOGE("shutdown localsock failed, fd: %{public}d, errno: %{public}d", fd, errno);
+        }
+        if (close(fd) < 0) {
+            NETSTACK_LOGE("failed to closed localsock, fd: %{public}d, errno: %{public}d", fd, errno);
+            context->SetErrorCode(errno);
+            closeFailed = true;
+        }
+    } else {
+        manager->SetSocketFd(-1);
     }
-    context->SetSocketFd(-1);
-    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetSharedManager()->GetData()); pMgr != nullptr) {
-        pMgr->isConnected_ = false;
-        pMgr->SetSocketCloseStatus(true);
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        auto pMgr = reinterpret_cast<LocalSocketManager *>(manager->GetData());
+        if (pMgr != nullptr) {
+            pMgr->isConnected_ = false;
+            pMgr->SetSocketCloseStatus(true);
+        }
     }
-    return true;
+    return !closeFailed;
 }
 
 bool ExecLocalSocketGetState(LocalSocketGetStateContext *context)
@@ -904,14 +1066,23 @@ bool ExecLocalSocketGetState(LocalSocketGetStateContext *context)
     struct sockaddr_un unAddr = {0};
     socklen_t len = sizeof(unAddr);
     SocketStateBase &state = context->GetStateRef();
-    if (getsockname(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&unAddr), &len) < 0) {
+    int sockFd = context->GetSocketFd();
+    int dupFd = sockFd >= 0 ? dup(sockFd) : -1;
+    if (dupFd < 0 || getsockname(dupFd, reinterpret_cast<struct sockaddr *>(&unAddr), &len) < 0) {
         NETSTACK_LOGI("local socket do not bind or socket has closed");
         state.SetIsBound(false);
     } else {
         state.SetIsBound(strlen(unAddr.sun_path) > 0);
     }
-    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetSharedManager()->GetData()); pMgr != nullptr) {
-        state.SetIsConnected(pMgr->isConnected_);
+    if (dupFd >= 0) {
+        close(dupFd);
+    }
+    {
+        std::shared_lock<std::shared_mutex> lock(context->GetSharedManager()->GetDataMutex());
+        auto pMgr = reinterpret_cast<LocalSocketManager *>(context->GetSharedManager()->GetData());
+        if (pMgr != nullptr) {
+            state.SetIsConnected(pMgr->isConnected_);
+        }
     }
     return true;
 }
@@ -924,15 +1095,21 @@ bool ExecLocalSocketGetLocalAddress(LocalSocketGetLocalAddressContext *context)
     }
     struct sockaddr_un unAddr = {0};
     socklen_t len = sizeof(unAddr);
-    if (getsockname(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&unAddr), &len) == 0) {
+    int sockFd = context->GetSocketFd();
+    int dupFd = sockFd >= 0 ? dup(sockFd) : -1;
+    if (dupFd >= 0 && getsockname(dupFd, reinterpret_cast<struct sockaddr *>(&unAddr), &len) == 0) {
+        close(dupFd);
         context->SetSocketPath(unAddr.sun_path);
         return true;
-    } else {
-        NETSTACK_LOGE("local socket get socket name fail");
-        context->SetNeedThrowException(true);
-        context->SetErrorCode(errno);
-        return false;
     }
+    int err = dupFd < 0 ? EBADF : errno;
+    if (dupFd >= 0) {
+        close(dupFd);
+    }
+    NETSTACK_LOGE("local socket get socket name fail");
+    context->SetNeedThrowException(true);
+    context->SetErrorCode(err);
+    return false;
 }
 
 bool ExecLocalSocketGetSocketFd(LocalSocketGetSocketFdContext *context)
@@ -948,10 +1125,17 @@ bool ExecLocalSocketSetExtraOptions(LocalSocketSetExtraOptionsContext *context)
     if (context == nullptr) {
         return false;
     }
-    if (SetLocalSocketOptions(context->GetSocketFd(), context->GetOptionsRef())) {
+    int sockFd = context->GetSocketFd();
+    int dupFd = sockFd >= 0 ? dup(sockFd) : -1;
+    if (dupFd >= 0 && SetLocalSocketOptions(dupFd, context->GetOptionsRef())) {
+        close(dupFd);
         return true;
     }
-    context->SetErrorCode(errno);
+    int err = dupFd < 0 ? EBADF : errno;
+    if (dupFd >= 0) {
+        close(dupFd);
+    }
+    context->SetErrorCode(err);
     return false;
 }
 
@@ -985,11 +1169,18 @@ bool ExecLocalSocketGetExtraOptions(LocalSocketGetExtraOptionsContext *context)
         return false;
     }
     LocalExtraOptions &optionsRef = context->GetOptionsRef();
-    if (!GetLocalSocketOptions(context->GetSocketFd(), optionsRef)) {
-        context->SetErrorCode(errno);
-        return false;
+    int sockFd = context->GetSocketFd();
+    int dupFd = sockFd >= 0 ? dup(sockFd) : -1;
+    if (dupFd >= 0 && GetLocalSocketOptions(dupFd, optionsRef)) {
+        close(dupFd);
+        return true;
     }
-    return true;
+    int err = dupFd < 0 ? EBADF : errno;
+    if (dupFd >= 0) {
+        close(dupFd);
+    }
+    context->SetErrorCode(err);
+    return false;
 }
 
 static bool LocalSocketServerBind(LocalSocketServerListenContext *context)
@@ -1032,16 +1223,18 @@ bool ExecLocalSocketServerListen(LocalSocketServerListenContext *context)
         context->SetErrorCode(UNKNOW_ERROR);
         return false;
     }
+    // LCOV_EXCL_START
 #if defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
-    std::thread serviceThread(LocalSocketServerAccept, mgr, LocalSocketMessageCallback(context->GetSharedManager()),
-                                                                                       context->GetSocketPath());
+    std::thread serviceThread(LocalSocketServerAccept, context->GetSharedManager(), mgr,
+                              LocalSocketMessageCallback(context->GetSharedManager()), context->GetSocketPath());
     pthread_setname_np(LOCAL_SOCKET_SERVER_ACCEPT_RECV_DATA);
 #else
-    std::thread serviceThread(LocalSocketServerAccept, mgr, LocalSocketMessageCallback(context->GetSharedManager(),
-                                                                                       context->GetSocketPath()));
+    std::thread serviceThread(LocalSocketServerAccept, context->GetSharedManager(), mgr,
+                              LocalSocketMessageCallback(context->GetSharedManager(), context->GetSocketPath()));
 #endif
     serviceThread.detach();
     return true;
+    // LCOV_EXCL_STOP
 }
 
 bool ExecLocalSocketServerEnd(LocalSocketServerEndContext *context)
@@ -1049,19 +1242,29 @@ bool ExecLocalSocketServerEnd(LocalSocketServerEndContext *context)
     if (context == nullptr || context->GetSharedManager() == nullptr) {
         return false;
     }
-    std::unique_lock<std::shared_mutex> lock(context->GetSharedManager()->GetDataMutex());
-    auto mgr = reinterpret_cast<LocalSocketServerManager *>(context->GetSharedManager()->GetData());
-    if (mgr == nullptr) {
-        NETSTACK_LOGE("LocalSocketServerManager reinterpret cast failed");
-        context->SetErrorCode(SYSTEM_INTERNAL_ERROR);
-        return false;
+    auto manager = context->GetSharedManager();
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        auto mgr = reinterpret_cast<LocalSocketServerManager *>(manager->GetData());
+        if (mgr == nullptr) {
+            NETSTACK_LOGE("LocalSocketServerManager reinterpret cast failed");
+            context->SetErrorCode(SYSTEM_INTERNAL_ERROR);
+            return false;
+        }
     }
-    if (mgr->sockfd_ < 0) {
+    auto fd = manager->GetSocketFd();
+    if (fd < 0) {
         NETSTACK_LOGE("LocalSocketServer is already closed");
         return true;
     }
-    close(mgr->sockfd_);
-    mgr->sockfd_ = -1;
+    // LCOV_EXCL_START
+    if (!manager->SetSocketFdIfEqual(fd)) {
+        return true;
+    }
+    // LCOV_EXCL_STOP
+    if (close(fd) < 0) {
+        NETSTACK_LOGE("LocalSocketServer close listen failed, fd: %{public}d, errno: %{public}d", fd, errno);
+    }
     NETSTACK_LOGI("LocalSocketServer close listen success");
     return true;
 }
@@ -1074,16 +1277,26 @@ bool ExecLocalSocketServerGetState(LocalSocketServerGetStateContext *context)
     struct sockaddr_un unAddr = {0};
     socklen_t len = sizeof(unAddr);
     SocketStateBase &state = context->GetStateRef();
-    if (getsockname(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&unAddr), &len) == 0) {
+    int sockFd = context->GetSocketFd();
+    int dupFd = sockFd >= 0 ? dup(sockFd) : -1;
+    if (dupFd < 0 || getsockname(dupFd, reinterpret_cast<struct sockaddr *>(&unAddr), &len) != 0) {
+        state.SetIsBound(false);
+    } else {
         state.SetIsBound(true);
+    }
+    if (dupFd >= 0) {
+        close(dupFd);
     }
     auto manager = context->GetSharedManager();
     if (manager == nullptr) {
         return false;
     }
-    auto pMgr = reinterpret_cast<LocalSocketServerManager *>(manager->GetData());
-    if (pMgr != nullptr) {
-        state.SetIsConnected(pMgr->GetClientCounts() > 0);
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        auto pMgr = reinterpret_cast<LocalSocketServerManager *>(manager->GetData());
+        if (pMgr != nullptr) {
+            state.SetIsConnected(pMgr->GetClientCounts() > 0);
+        }
     }
     return true;
 }
@@ -1096,15 +1309,21 @@ bool ExecLocalSocketServerGetLocalAddress(LocalSocketServerGetLocalAddressContex
     }
     struct sockaddr_un unAddr = {0};
     socklen_t len = sizeof(unAddr);
-    if (getsockname(context->GetSocketFd(), reinterpret_cast<struct sockaddr *>(&unAddr), &len) == 0) {
+    int sockFd = context->GetSocketFd();
+    int dupFd = sockFd >= 0 ? dup(sockFd) : -1;
+    if (dupFd >= 0 && getsockname(dupFd, reinterpret_cast<struct sockaddr *>(&unAddr), &len) == 0) {
+        close(dupFd);
         context->SetSocketPath(unAddr.sun_path);
         return true;
-    } else {
-        NETSTACK_LOGE("local socket get socket name fail");
-        context->SetNeedThrowException(true);
-        context->SetErrorCode(errno);
-        return false;
     }
+    int err = dupFd < 0 ? EBADF : errno;
+    if (dupFd >= 0) {
+        close(dupFd);
+    }
+    NETSTACK_LOGE("local socket get socket name fail");
+    context->SetNeedThrowException(true);
+    context->SetErrorCode(err);
+    return false;
 }
 
 bool ExecLocalSocketServerSetExtraOptions(LocalSocketServerSetExtraOptionsContext *context)
@@ -1117,6 +1336,7 @@ bool ExecLocalSocketServerSetExtraOptions(LocalSocketServerSetExtraOptionsContex
         return false;
     }
 
+    std::shared_lock<std::shared_mutex> dataLock(context->GetSharedManager()->GetDataMutex());
     auto serverManager = reinterpret_cast<LocalSocketServerManager *>(context->GetSharedManager()->GetData());
     if (serverManager == nullptr) {
         return false;
@@ -1138,18 +1358,28 @@ bool ExecLocalSocketServerGetExtraOptions(LocalSocketServerGetExtraOptionsContex
     if (context == nullptr || context->GetSharedManager() == nullptr) {
         return false;
     }
+    std::shared_lock<std::shared_mutex> dataLock(context->GetSharedManager()->GetDataMutex());
     auto pMgr = reinterpret_cast<LocalSocketServerManager *>(context->GetSharedManager()->GetData());
     if (pMgr != nullptr) {
         LocalExtraOptions &options = context->GetOptionsRef();
+        std::lock_guard<std::mutex> lock(pMgr->clientMutex_);
         if (pMgr->alreadySetExtraOptions_) {
             options = pMgr->extraOptions_;
         } else {
-            if (!GetLocalSocketOptions(context->GetSocketFd(), options)) {
-                context->SetErrorCode(errno);
-                return false;
+            int sockFd = context->GetSocketFd();
+            int dupFd = sockFd >= 0 ? dup(sockFd) : -1;
+            if (dupFd >= 0 && GetLocalSocketOptions(dupFd, options)) {
+                close(dupFd);
+                options.SetReceiveBufferSize(DEFAULT_BUFFER_SIZE);
+                options.SetSendBufferSize(DEFAULT_BUFFER_SIZE);
+                return true;
             }
-            options.SetReceiveBufferSize(DEFAULT_BUFFER_SIZE);
-            options.SetSendBufferSize(DEFAULT_BUFFER_SIZE);
+            int err = dupFd < 0 ? EBADF : errno;
+            if (dupFd >= 0) {
+                close(dupFd);
+            }
+            context->SetErrorCode(err);
+            return false;
         }
         return true;
     }
@@ -1182,8 +1412,8 @@ bool ExecLocalSocketConnectionSend(LocalSocketServerSendContext *context)
         NETSTACK_LOGE("localsocket connection send, data or manager is nullptr, id: %{public}d", clientId);
         return false;
     }
-    int acceptFd = data->serverManager_->GetAcceptFd(clientId);
-    if (acceptFd <= 0) {
+    int acceptFd = data->serverManager_->DupAcceptFd(clientId);
+    if (acceptFd < 0) {
         NETSTACK_LOGE("accept fd is invalid, id: %{public}d, fd: %{public}d", clientId, acceptFd);
         context->SetErrorCode(ERRNO_BAD_FD);
         return false;
@@ -1191,10 +1421,13 @@ bool ExecLocalSocketConnectionSend(LocalSocketServerSendContext *context)
 
     if (!PollSendData(acceptFd, context->GetOptionsRef().GetBufferRef().c_str(),
                       context->GetOptionsRef().GetBufferRef().size(), nullptr, 0)) {
-        NETSTACK_LOGE("localsocket connection send failed, fd: %{public}d, errno: %{public}d", acceptFd, errno);
-        context->SetErrorCode(errno);
+        int err = errno;
+        NETSTACK_LOGE("localsocket connection send failed, fd: %{public}d, errno: %{public}d", acceptFd, err);
+        close(acceptFd);
+        context->SetErrorCode(err);
         return false;
     }
+    close(acceptFd);
     return true;
 }
 
@@ -1214,8 +1447,8 @@ bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
         NETSTACK_LOGE("connection close callback reinterpret cast failed");
         return false;
     }
-    int acceptFd = data->serverManager_->GetAcceptFd(context->GetClientId());
-    if (acceptFd <= 0) {
+    int acceptFd = data->serverManager_->DupAcceptFd(context->GetClientId());
+    if (acceptFd < 0) {
         NETSTACK_LOGE("socket invalid, fd: %{public}d", acceptFd);
         context->SetErrorCode(EBADF);
         return false;
@@ -1224,8 +1457,9 @@ bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
     if (shutdown(acceptFd, SHUT_RDWR) != 0) {
         NETSTACK_LOGE("socket shutdown failed, socket is %{public}d, errno is %{public}d", acceptFd, errno);
     }
+    close(acceptFd);
     data->serverManager_->RemoveAccept(context->GetClientId());
-    NETSTACK_LOGI("sock %{public}d closed success", acceptFd);
+    NETSTACK_LOGI("sock closed success");
     return true;
 }
 
@@ -1241,6 +1475,7 @@ bool ExecLocalSocketConnectionGetLocalAddress(LocalSocketServerGetLocalAddressCo
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     auto data = reinterpret_cast<LocalSocketConnectionData *>(manager->GetData());
     if (data != nullptr) {
         if (data->serverManager_ == nullptr) {
@@ -1249,19 +1484,24 @@ bool ExecLocalSocketConnectionGetLocalAddress(LocalSocketServerGetLocalAddressCo
             context->SetErrorCode(EBADF);
             return false;
         }
-        socketFD = data->serverManager_->GetAcceptFd(context->GetClientId());
-        if (socketFD > 0) {
+        socketFD = data->serverManager_->DupAcceptFd(context->GetClientId());
+        if (socketFD >= 0) {
             struct sockaddr_un addr;
             socklen_t addrLen = sizeof(addr);
             if (getsockname(socketFD, reinterpret_cast<struct sockaddr *>(&addr), &addrLen) == 0) {
+                close(socketFD);
                 context->SetSocketPath(addr.sun_path);
                 return true;
+            // LCOV_EXCL_START
             } else {
+                int err = errno;
                 NETSTACK_LOGE("local accept socket get socket name fail");
+                close(socketFD);
                 context->SetNeedThrowException(true);
-                context->SetErrorCode(errno);
+                context->SetErrorCode(err);
                 return false;
             }
+            // LCOV_EXCL_STOP
         }
     }
     NETSTACK_LOGE("invalid serverManager or socket has closed");

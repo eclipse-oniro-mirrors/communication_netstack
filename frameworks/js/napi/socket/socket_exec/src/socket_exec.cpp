@@ -171,6 +171,7 @@ void TcpServerConnectionFinalize(napi_env, void *data, void *)
                 break;
             }
         }
+        manager->SetSocketFd(-1);
         auto clientIter = g_clientFDs.find(clientIndex);
         if (clientIter != g_clientFDs.end()) {
             if (clientIter->second != -1) {
@@ -268,15 +269,15 @@ static std::string MakeAddressString(sockaddr *addr)
 {
     if (addr->sa_family == AF_INET) {
         auto *addr4 = reinterpret_cast<sockaddr_in *>(addr);
-        const char *str = inet_ntoa(addr4->sin_addr);
-        if (str == nullptr || strlen(str) == 0) {
+        char str[INET_ADDRSTRLEN] = {0};
+        if (inet_ntop(AF_INET, &addr4->sin_addr, str, INET_ADDRSTRLEN) == nullptr) {
             return {};
         }
         return str;
     } else if (addr->sa_family == AF_INET6) {
         auto *addr6 = reinterpret_cast<sockaddr_in6 *>(addr);
         char str[INET6_ADDRSTRLEN] = {0};
-        if (inet_ntop(AF_INET6, &addr6->sin6_addr, str, INET6_ADDRSTRLEN) == nullptr || strlen(str) == 0) {
+        if (inet_ntop(AF_INET6, &addr6->sin6_addr, str, INET6_ADDRSTRLEN) == nullptr) {
             return {};
         }
         return str;
@@ -411,8 +412,8 @@ public:
             NETSTACK_LOGE("invalid manager");
             return false;
         }
-        int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData()));
-        if (sock == 0) {
+        int sock = manager_->GetSocketFd();
+        if (sock < 0) {
             return false;
         }
         sockaddr sockAddr = {0};
@@ -448,7 +449,7 @@ public:
         const std::shared_ptr<EventManager> &manager) const override
     {
         (void)addr;
-        if (static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) == 0) {
+        if (manager == nullptr || manager->GetSocketFd() < 0) {
             return false;
         }
         sockaddr sockAddr = {0};
@@ -511,8 +512,8 @@ public:
 
     bool OnMessage(void *data, size_t dataLen, sockaddr *addr) const override
     {
-        int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData()));
-        if (sock == 0) {
+        int sock = manager_->GetSocketFd();
+        if (sock < 0) {
             return false;
         }
         return OnRecvMessage(manager_, data, dataLen, addr);
@@ -521,7 +522,7 @@ public:
     bool OnMessage(int sock, void *data, size_t dataLen, sockaddr *addr,
         const std::shared_ptr<EventManager> &manager) const override
     {
-        if (static_cast<int>(reinterpret_cast<uint64_t>(manager_->GetData())) == 0) {
+        if (manager_->GetSocketFd() < 0) {
             return false;
         }
         return true;
@@ -695,8 +696,7 @@ static int ExitOrAbnormal(int sock, ssize_t recvLen, const MessageCallback &call
         return 0;
     }
     
-    if (callback.GetEventManager() != nullptr && static_cast<int>(
-        reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
+    if (callback.GetEventManager() != nullptr && callback.GetEventManager()->GetSocketFd() >= 0) {
         NETSTACK_LOGE("recv fail, socket:%{public}d, recvLen:%{public}zd, errno:%{public}d", sock, recvLen, errno);
         callback.OnError(errno);
     }
@@ -716,7 +716,7 @@ static inline void PollRecvFinish(const MessageCallback &callback)
 static void ProcessPollResult(int currentFd, const MessageCallback &callback)
 {
     if (callback.GetEventManager() != nullptr) {
-        if (static_cast<int>(reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
+        if (callback.GetEventManager()->GetSocketFd() >= 0) {
             NETSTACK_LOGE("poll to recv failed, socket is %{public}d, errno is %{public}d", currentFd, errno);
             callback.OnError(errno);
         }
@@ -765,8 +765,7 @@ static bool ProcessRecvFds(std::pair<std::unique_ptr<char[]> &, int> &bufInfo,
         if ((static_cast<uint16_t>(fd.revents) & POLLERR) || (static_cast<uint16_t>(fd.revents) & POLLNVAL)) {
             NETSTACK_LOGE("recv fail, socket:%{public}d, errno:%{public}d, revent:%{public}x",
                 fd.fd, errno, fd.revents);
-            if (callback.GetEventManager() != nullptr && static_cast<int>(
-                reinterpret_cast<uint64_t>(callback.GetEventManager()->GetData())) > 0) {
+            if (callback.GetEventManager() != nullptr && callback.GetEventManager()->GetSocketFd() >= 0) {
                 callback.OnError(errno);
             }
             return false;
@@ -799,8 +798,8 @@ static bool PreparePollFds(int &currentFd, std::vector<pollfd> &fds,
         return false;
     }
 
-    currentFd = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
-    if (currentFd <= 0) {
+    currentFd = manager->GetSocketFd();
+    if (currentFd < 0) {
         NETSTACK_LOGE("currentFd: %{public}d is error", currentFd);
         return false;
     }
@@ -826,7 +825,7 @@ static void PollRecvData(sockaddr *addr, socklen_t addrLen, const MessageCallbac
         return;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    int socketfd = manager->GetData()? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
+    int socketfd = manager->GetSocketFd();
     if (socketfd < 0) {
         PollRecvFinish(callback);
         NETSTACK_LOGE("fd is nullptr or closed");
@@ -931,7 +930,7 @@ bool ExecBind(BindContext *context)
         return false;
     }
     std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    int socketfd = manager->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
+    int socketfd = manager->GetSocketFd();
     if (socketfd < 0) {
         NETSTACK_LOGE("fd is nullptr or closed");
         return false;
@@ -1104,7 +1103,7 @@ bool ExecUdpSend(UdpSendContext *context)
         return false;
     }
 
-    if (context->GetSocketFd() <= 0) {
+    if (context->GetSocketFd() < 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
         NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::UdpSendCallback);
         return false;
@@ -1171,7 +1170,7 @@ static int HandleTcpProxyOptions(ConnectContext *context, sockaddr *addr, sockle
     socks5Tcp->SetDestAddress(context->options.address);
 
     std::shared_lock<std::shared_mutex> lock(eventMgr->GetDataMutex());
-    int socketfd = eventMgr->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(eventMgr->GetData())) : -1;
+    int socketfd = eventMgr->GetSocketFd();
     if (socketfd < 0) {
         NETSTACK_LOGE("fd is nullptr or closed");
         return -1;
@@ -1262,7 +1261,7 @@ static bool HandleNonProxyConnection(ConnectContext *context, sockaddr *addr, so
         return false;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    int socketfd = manager->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
+    int socketfd = manager->GetSocketFd();
     if (socketfd < 0) {
         NETSTACK_LOGE("fd is nullptr or closed");
         return false;
@@ -1371,7 +1370,7 @@ bool ExecTcpSend(TcpSendContext *context)
         return false;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    if (context->GetSocketFd() <= 0) {
+    if (context->GetSocketFd() < 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
         NapiUtils::CreateUvQueueWorkEnhanced(context->GetEnv(), context, SocketAsyncWork::TcpSendCallback);
         return false;
@@ -1467,10 +1466,12 @@ static bool GetSocketState(GetStateContext *context)
         return false;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    int socketfd = manager->GetData()? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
+    int socketfd = manager->GetSocketFd();
     if (socketfd < 0) {
         NETSTACK_LOGE("fd is nullptr or closed");
-        context->state_.SetIsClose(true);
+        if (manager->IsSocketEverCreated()) {
+            context->state_.SetIsClose(true);
+        }
         return true;
     }
     int opt;
@@ -1526,9 +1527,6 @@ bool ExecGetState(GetStateContext *context)
     if (manager == nullptr) {
         NETSTACK_LOGI("manager is nullptr");
         return false;
-    }
-    if (!manager->GetData()) {
-        return true;
     }
 
     return GetSocketState(context);
@@ -1668,7 +1666,7 @@ bool ExecTcpSetExtraOptions(TcpSetExtraOptionsContext *context)
         return false;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    if (context->GetSocketFd() <= 0) {
+    if (context->GetSocketFd() < 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
         return false;
     }
@@ -1693,7 +1691,7 @@ bool ExecUdpSetExtraOptions(UdpSetExtraOptionsContext *context)
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
     int sockfd = context->GetSocketFd();
-    if (sockfd <= 0) {
+    if (sockfd < 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
         return false;
     }
@@ -1861,7 +1859,7 @@ bool ExecUdpDropMembership(MulticastMembershipContext *context)
         context->SetErrorCode(errno);
         return false;
     }
-    context->SetSocketFd(0);
+    context->SetSocketFd(-1);
     return true;
 }
 
@@ -1932,7 +1930,7 @@ bool ExecSetReuseAddress(MulticastSetReuseAddressContext *context)
     manager->SetReuseAddr(reuse);
 
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    int sockFd = manager->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) : -1;
+    int sockFd = manager->GetSocketFd();
 
     // socket未创建时，只更新标记，bind时会应用设置
     if (sockFd < 0) {
@@ -2373,6 +2371,9 @@ static inline void RecvInErrorCondition(int reason, int clientId, int connectFD,
 static inline void CloseClientHandler(int clientId, int connectFD, const std::shared_ptr<EventManager> &manager,
     TcpMessageCallback callback)
 {
+    if (manager != nullptr) {
+        manager->SetSocketFd(-1);
+    }
     callback.OnCloseMessage(manager);
     RemoveClientConnection(clientId);
     auto config = GetSharedConfig(callback.GetEventManager());
@@ -2404,8 +2405,8 @@ static int PollSocket(int clientId, int connectFD, const std::shared_ptr<EventMa
 static bool IsValidSock(int &currentFd, const std::shared_ptr<EventManager> &manager)
 {
     if (manager != nullptr) {
-        currentFd = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
-        if (currentFd <= 0) {
+        currentFd = manager->GetSocketFd();
+        if (currentFd < 0) {
             NETSTACK_LOGD("currentFd: %{public}d is error", currentFd);
             return false;
         }
@@ -2490,6 +2491,11 @@ static void ClientHandler(int32_t sock, int32_t clientId, TcpMessageCallback cal
 {
     int32_t connectFD = 0;
     auto manager = WaitForManagerReady(clientId, connectFD);
+    if (manager == nullptr) {
+        NETSTACK_LOGE("ClientHandler manager is nullptr, clientId: %{public}d", clientId);
+        return;
+    }
+    manager->SetSocketFd(connectFD);
 
     uint32_t recvBufferSize = DEFAULT_BUFFER_SIZE;
     TCPExtraOptions option;
@@ -2652,7 +2658,7 @@ bool ExecTcpServerSetExtraOptions(TcpServerSetExtraOptionsContext *context)
         context->SetPermissionDenied(true);
         return false;
     }
-    if (context->GetSocketFd() <= 0) {
+    if (context->GetSocketFd() < 0) {
         context->SetError(ERRNO_BAD_FD, strerror(ERRNO_BAD_FD));
         return false;
     }
@@ -2765,9 +2771,11 @@ bool ExecTcpServerGetState(TcpServerGetStateContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    if (!manager->GetData()) {
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    if (manager->GetSocketFd() < 0) {
         return true;
     }
+    lock.unlock();
 
     return GetTcpServerState(context);
 }
