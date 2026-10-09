@@ -517,20 +517,8 @@ CGetSocketFdResult CJTcpSocketImpl::GetSocketFd(CJTcpSocketProxy *proxy)
         result.code = ERR_INVALID_INSTANCE_CODE;
         return result;
     }
-    int sockFd = proxy->GetSocketFd();
-    if (sockFd < 0) {
-        result.code = ERR_OK;
-        result.fd = -1;
-        return result;
-    }
-    int dupFd = dup(sockFd);
-    if (dupFd < 0) {
-        NETSTACK_LOGE("dup socket fd failed, socket is %{public}d, errno is %{public}d", sockFd, errno);
-        result.code = ConvertErrCode(errno);
-        return result;
-    }
     result.code = ERR_OK;
-    result.fd = dupFd;
+    result.fd = proxy->GetSocketFd();
     return result;
 }
 
