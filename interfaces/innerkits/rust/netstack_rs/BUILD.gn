@@ -69,6 +69,7 @@ ohos_static_library("netstack_rs_cxx") {
     "rust_cxx:cxx_cppdeps",
     "cJSON:cjson",
     "hilog:libhilog",
+    "netmanager_base:net_conn_manager_if",
   ]
 
   part_name = "netstack"

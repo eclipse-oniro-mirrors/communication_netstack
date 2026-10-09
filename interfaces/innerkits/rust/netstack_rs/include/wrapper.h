@@ -23,9 +23,11 @@
 #include "http_client_request.h"
 #include "http_client_response.h"
 #include "http_client_task.h"
+
 namespace OHOS::Request {
 using namespace OHOS::NetStack::HttpClient;
 struct CallbackWrapper;
+struct ValidationCallbackWrapper;
 struct PerformanceInfoRust;
 struct ClientCert;
 struct EscapedDataRust;
@@ -33,6 +35,8 @@ struct MultiFormDataRust;
 struct ServerAuthentication;
 struct TlsConfigRust;
 struct HttpProxyRust;
+struct Socks5ProxyRust;
+struct CertificatePinningRust;
 
 void OnCallback(const std::shared_ptr<HttpClientTask> &task, rust::Box<CallbackWrapper> callback);
 
@@ -51,13 +55,24 @@ inline void SetHttpProtocol(HttpClientRequest &request, int32_t protocol)
     request.SetHttpProtocol(static_cast<HttpProtocol>(protocol));
 }
 
+void SetMaxRedirects(HttpClientRequest &request, int32_t max_redirects);
+void SetSniHostName(HttpClientRequest &request, const std::string &host_name);
+void SetInactivityMs(HttpClientRequest &request, int32_t inactivity_ms);
+void SetCaData(HttpClientRequest &request, const std::string &ca_data);
+void SetSslType(HttpClientRequest &request, const std::string &ssl_type);
+void SetPathPreference(HttpClientRequest &request, const std::string &path_preference);
+bool SetCustomMethod(HttpClientRequest &request, const std::string &custom_method);
+
 void SetUsingHttpProxyType(HttpClientRequest &request, int32_t type);
 void SetSpecifiedHttpProxy(HttpClientRequest &request, const HttpProxyRust& proxy);
+void SetUsingSocks5Proxy(HttpClientRequest &request, const Socks5ProxyRust &proxy);
 void SetAddressFamily(HttpClientRequest &request, int32_t address_family);
 void SetExtraData(HttpClientRequest &request, const EscapedDataRust& extraData);
 void SetExpectDataType(HttpClientRequest &request, int32_t expect_data_type);
 
 void SetClientCert(HttpClientRequest &request, const ClientCert& cert);
+
+void SetClientEncCert(HttpClientRequest &request, const ClientCert& cert);
 
 void SetDNSServers(HttpClientRequest &request, const rust::vec<rust::string>& cert);
 
@@ -77,9 +92,15 @@ rust::vec<rust::string> GetHeaders(HttpClientResponse &response);
 
 PerformanceInfoRust GetPerformanceTiming(HttpClientResponse &response);
 
+rust::String GetExtraInfoItem(const HttpClientResponse &response, const std::string &key);
+
 void SetHeaderExt(HttpClientRequest &request, const EscapedDataRust& extraData);
 
-void SetCertificatePinning(HttpClientRequest &request, const std::string& certPIN);
+void SetQueryParams(HttpClientRequest &request, const EscapedDataRust &queryParams);
+
+void SetCertificatePinning(HttpClientRequest &request, const rust::vec<CertificatePinningRust> &pins);
+
+void SetValidationCallback(HttpClientRequest &request, rust::Box<ValidationCallbackWrapper> callback);
 
 } // namespace OHOS::Request
 

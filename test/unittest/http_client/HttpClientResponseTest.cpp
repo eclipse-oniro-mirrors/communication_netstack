@@ -393,4 +393,58 @@ HWTEST_F(HttpClientResponseTest, ResponseReset003, TestSize.Level1)
 
     EXPECT_EQ(response.GetExpectDataType(), HttpDataType::STRING);
 }
+
+HWTEST_F(HttpClientResponseTest, SetExtraInfoItemTest001, TestSize.Level1)
+{
+    HttpClientResponse req;
+    std::string defaultVal = "default";
+
+    EXPECT_EQ(req.GetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, defaultVal), defaultVal);
+
+    req.SetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, "http/1.1");
+    EXPECT_EQ(req.GetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, defaultVal), "http/1.1");
+
+    req.SetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, "http/2");
+    EXPECT_EQ(req.GetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, defaultVal), "http/2");
+}
+
+HWTEST_F(HttpClientResponseTest, SetExtraInfoItemTest002, TestSize.Level1)
+{
+    HttpClientResponse req;
+    std::string defaultVal = "0";
+
+    req.SetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT, "true");
+    req.SetExtraInfoItem(HttpConstant::PARAM_KEY_REDIRECT_COUNT, "1");
+
+    EXPECT_EQ(req.GetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT, defaultVal), "true");
+    EXPECT_EQ(req.GetExtraInfoItem(HttpConstant::PARAM_KEY_REDIRECT_COUNT, defaultVal), "1");
+    EXPECT_EQ(req.GetExtraInfoItem(HttpConstant::PARAM_KEY_TLS_VERSION, defaultVal), defaultVal);
+    EXPECT_EQ(req.extraInfo_.size(), 2);
+}
+
+HWTEST_F(HttpClientResponseTest, GetExtraInfoItemTest001, TestSize.Level1)
+{
+    HttpClientResponse response;
+    response.SetExtraInfoItem(HttpConstant::PARAM_KEY_REMOTE_ADDRESS, "127.0.0.1");
+
+    std::string value = response.GetExtraInfoItem(HttpConstant::PARAM_KEY_REMOTE_ADDRESS, "default");
+    value.append("-modified");
+    EXPECT_EQ(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_REMOTE_ADDRESS, "default"), "127.0.0.1");
+
+    EXPECT_EQ(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, std::string("unknown")),
+        "unknown");
+}
+
+HWTEST_F(HttpClientResponseTest, ResetExtraInfoTest001, TestSize.Level1)
+{
+    HttpClientResponse req;
+    std::string defaultVal = "";
+
+    req.SetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT, "true");
+    EXPECT_EQ(req.GetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT, defaultVal), "true");
+
+    req.Reset();
+    EXPECT_TRUE(req.extraInfo_.empty());
+    EXPECT_EQ(req.GetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT, defaultVal), defaultVal);
+}
 } // namespace

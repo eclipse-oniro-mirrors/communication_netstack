@@ -17,6 +17,7 @@
 
 #include <arpa/inet.h>
 #include <cerrno>
+#include <chrono>
 #include <cstring>
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -36,6 +37,7 @@ namespace OHOS {
 namespace NetStack {
 namespace Socket {
 constexpr int USER_LIMIT = 511;
+static constexpr int WAIT_MESSAGE_CALLBACK_TIMEOUT_SECONDS = 30;
 static constexpr const char *TCP_SERVER_ACCEPT_RECV_DATA = "OS_NET_SockRD";
 static constexpr const char *TCP_SERVER_HANDLE_CLIENT = "OS_NET_SockAcc";
 
@@ -188,10 +190,14 @@ int TCPSocketConnection::Close()
         return PERMISSION_DENIED_CODE;
     }
 
-    if (socketFd_ >= 0) {
-        shutdown(socketFd_, SHUT_RDWR);
-        close(socketFd_);
-        socketFd_ = -1;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (socketFd_ >= 0) {
+            shutdown(socketFd_, SHUT_RDWR);
+            close(socketFd_);
+            socketFd_ = -1;
+        }
+        messageCallbackCv_.notify_all();
     }
 
     CallOnCloseCallback();
@@ -288,10 +294,27 @@ void TCPSocketConnection::CallOnErrorCallback(const int32_t err, const std::stri
     }
 }
 
+bool TCPSocketConnection::WaitForMessageCallback()
+{
+    std::unique_lock<std::mutex> lock(mutex_);
+    bool registered = messageCallbackCv_.wait_for(lock, std::chrono::seconds(WAIT_MESSAGE_CALLBACK_TIMEOUT_SECONDS),
+        [this]() {
+            return messageCallbackRegistered_ || socketFd_ < 0;
+        });
+    if (!registered) {
+        NETSTACK_LOGE("WaitForMessageCallback timed out waiting for message listener registration");
+        return false;
+    }
+
+    return messageCallbackRegistered_ && socketFd_ >= 0;
+}
+
 void TCPSocketConnection::OnMessage(const TCPSocketConnectionOnMessageCallback &messageCallback)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     onMessageCallback_ = messageCallback;
+    messageCallbackRegistered_.store(true);
+    messageCallbackCv_.notify_all();
 }
 
 void TCPSocketConnection::OnClose(const TCPSocketConnectionOnCloseCallback &closeCallback)
@@ -384,6 +407,11 @@ void TCPSocketServer::ClientHandler(int32_t clientId)
     auto conn = GetConnectionByClientID(clientId);
     if (conn == nullptr || config == nullptr) {
         NETSTACK_LOGE("connnection or config is nullptr.");
+        return;
+    }
+    if (!conn->WaitForMessageCallback()) {
+        NETSTACK_LOGI("clientId %{public}d aborted before message listener registered", clientId);
+        CleanupClientConnection(clientId);
         return;
     }
     auto connectFd = -1;

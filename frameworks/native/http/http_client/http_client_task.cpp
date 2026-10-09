@@ -20,6 +20,14 @@
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
 #endif
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+#ifndef HTTP_MULTIPATH_CERT_ENABLE
+#include <openssl/ssl.h>
+#endif
+#include <openssl/pem.h>
+#include <openssl/sha.h>
+#include <openssl/x509.h>
+#endif
 #include <iostream>
 #include <sstream>
 #include <memory>
@@ -63,7 +71,74 @@ static constexpr const char *HTTP_AF_ONLYV4 = "ONLY_V4";
 static constexpr const char *HTTP_AF_ONLYV6 = "ONLY_V6";
 static constexpr const char *TLS12_SECURITY_CIPHER_SUITE = R"(DEFAULT:!eNULL:!EXPORT)";
 
+static constexpr const uint32_t MIN_NON_SYSTEM_NETID = 100;
+static constexpr const uint32_t DUAL_NETWORK_BOOT_COUNT = 2;
+static constexpr const uint32_t SINGLE_CELLULAR_NETWORK_COUNT = 1;
+static constexpr const uint32_t DEFAULT_MAX_REDIRECTS = 30;
+
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+static constexpr const int SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX = 1;
+#endif
+
 std::atomic<uint32_t> HttpClientTask::nextTaskId_(0);
+
+[[maybe_unused]] static TlsVersion ConvertTlsVersionFromOpenSSL(const std::string &tlsVersion)
+{
+    if (tlsVersion == "TLSv1") {
+        return TlsVersion::TLSv1_0;
+    }
+    if (tlsVersion == "TLSv1.1") {
+        return TlsVersion::TLSv1_1;
+    }
+    if (tlsVersion == "TLSv1.2") {
+        return TlsVersion::TLSv1_2;
+    }
+    if (tlsVersion == "TLSv1.3") {
+        return TlsVersion::TLSv1_3;
+    }
+    return TlsVersion::DEFAULT;
+}
+
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+static bool LoadCaCertFromString(X509_STORE *store, const std::string &certData)
+{
+    if (!store || certData.empty() || certData.size() > static_cast<size_t>(INT_MAX)) {
+        NETSTACK_LOGE("store or certData is empty, or cert size is over INT_MAX");
+        return false;
+    }
+
+    auto cbio = BIO_new_mem_buf(certData.data(), static_cast<int>(certData.size()));
+    if (!cbio) {
+        NETSTACK_LOGE("cbio is nullptr");
+        return false;
+    }
+
+    auto inf = PEM_X509_INFO_read_bio(cbio, nullptr, nullptr, nullptr);
+    if (!inf) {
+        NETSTACK_LOGE("read cert failed.");
+        BIO_free(cbio);
+        return false;
+    }
+
+    for (int i = 0; i < static_cast<int>(sk_X509_INFO_num(inf)); ++i) {
+        auto itmp = sk_X509_INFO_value(inf, i);
+        if (!itmp) {
+            continue;
+        }
+        if ((itmp->x509 && X509_STORE_add_cert(store, itmp->x509) != 1) ||
+            (itmp->crl && X509_STORE_add_crl(store, itmp->crl) != 1)) {
+            NETSTACK_LOGE("add caCert or crt failed");
+            sk_X509_INFO_pop_free(inf, X509_INFO_free);
+            BIO_free(cbio);
+            return false;
+        }
+    }
+
+    sk_X509_INFO_pop_free(inf, X509_INFO_free);
+    BIO_free(cbio);
+    return true;
+}
+#endif // HTTP_MULTIPATH_CERT_ENABLE
 
 bool CheckFilePath(const std::string &fileName, std::string &realPath)
 {
@@ -160,6 +235,28 @@ void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::str
     }
 }
 
+void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions,
+    SecureData &username, SecureData &password)
+{
+    if (request_.GetHttpProxyType() == HttpProxyType::USE_SPECIFIED) {
+        HttpProxy proxy = request_.GetHttpProxy();
+        host = proxy.host;
+        port = proxy.port;
+        exclusions = proxy.exclusions;
+        username.assign(proxy.username);
+        password.assign(proxy.password);
+    } else {
+        using namespace NetManagerStandard;
+        NetManagerStandard::HttpProxy httpProxy;
+        NetConnClient::GetInstance().GetDefaultHttpProxy(httpProxy);
+        host = httpProxy.GetHost();
+        port = httpProxy.GetPort();
+        exclusions = CommonUtils::ToString(httpProxy.GetExclusionList());
+        username.assign(httpProxy.GetUsername());
+        password.assign(httpProxy.GetPassword());
+    }
+}
+
 [[maybe_unused]] void TrustUser0AndUserCa(std::vector<std::string> &certs)
 {
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
@@ -173,7 +270,135 @@ void HttpClientTask::GetHttpProxyInfo(std::string &host, int32_t &port, std::str
 #endif
 }
 
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+static std::string X509_to_PEM(X509 *cert)
+{
+    if (cert == nullptr) {
+        NETSTACK_LOGE("X509_to_PEM: cert is null");
+        return {};
+    }
+    BIO *bio = BIO_new(BIO_s_mem());
+    if (!bio) {
+        return {};
+    }
+    if (!PEM_write_bio_X509(bio, cert)) {
+        BIO_free(bio);
+        return {};
+    }
+
+    char *data = nullptr;
+    auto pemStringLength = BIO_get_mem_data(bio, &data);
+    if (!data) {
+        BIO_free(bio);
+        return {};
+    }
+    std::string certificateInPEM(data, pemStringLength);
+    BIO_free(bio);
+    return certificateInPEM;
+}
+
+static std::vector<std::string> GetRemotePartyCertificates(X509_STORE_CTX *ctx)
+{
+    if (!ctx) {
+        return {};
+    }
+    auto ssl = reinterpret_cast<SSL *>(X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx()));
+    if (!ssl) {
+        return {};
+    }
+    auto certificatesStack = SSL_get_peer_cert_chain(ssl);
+    if (!certificatesStack) {
+        return {};
+    }
+    auto numCertificates = sk_X509_num(certificatesStack);
+    std::vector<std::string> remoteCertificates;
+    for (decltype(numCertificates) i = 0; i < numCertificates; ++i) {
+        auto cert = sk_X509_value(certificatesStack, i);
+        if (cert == nullptr) {
+            continue;
+        }
+        auto certificateInPEM = X509_to_PEM(cert);
+        if (!certificateInPEM.empty()) {
+            remoteCertificates.emplace_back(certificateInPEM);
+        }
+    }
+    return remoteCertificates;
+}
+
+static void GetConnectionInfoFromCurl(HttpClientTask *task, std::string &hostname, std::string &ip)
+{
+    CURL *curl = task->GetCurlHandle();
+    if (curl) {
+        char *primaryIp = nullptr;
+        if (curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &primaryIp) == CURLE_OK && primaryIp) {
+            ip = primaryIp;
+        }
+    }
+
+    if (hostname.empty()) {
+        char *effectiveUrl = nullptr;
+        if (curl && curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &effectiveUrl) == CURLE_OK && effectiveUrl) {
+            hostname = CommonUtils::GetHostnameFromURL(effectiveUrl);
+        }
+    }
+}
+
+static int CustomValidationCallback(X509_STORE_CTX *x509StoreCtx, void *arg)
+{
+    auto task = reinterpret_cast<HttpClientTask *>(arg);
+    if (!task) {
+        NETSTACK_LOGE("CustomValidationCallback: HttpClientTask is null");
+        return 0;
+    }
+
+    const ValidationCallback &validationCallback = task->GetRequest().GetValidationCallback();
+    if (!validationCallback) {
+        NETSTACK_LOGE("CustomValidationCallback: validation callback is null");
+        return 0;
+    }
+
+    std::vector<std::string> pemCerts = GetRemotePartyCertificates(x509StoreCtx);
+    if (pemCerts.empty()) {
+        NETSTACK_LOGE("CustomValidationCallback: no certificates in chain");
+        return 0;
+    }
+
+    std::string hostname = CommonUtils::GetHostnameFromURL(task->GetRequest().GetURL());
+    std::string ip;
+    GetConnectionInfoFromCurl(task, hostname, ip);
+
+    bool validationResult = validationCallback(pemCerts, hostname, ip);
+    NETSTACK_LOGI("CustomValidationCallback: validation result = %{public}d", static_cast<int>(validationResult));
+    return validationResult ? 1 : 0;
+}
+#endif
+
 CURLcode HttpClientTask::SslCtxFunction(CURL *curl, void *sslCtx)
+{
+    if (request_.GetValidationCallback()) {
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+        SSL_CTX *ctx = static_cast<SSL_CTX *>(sslCtx);
+        if (!ctx) {
+            NETSTACK_LOGE("SslCtxFunction: SSL_CTX is null");
+            return CURLE_SSL_CERTPROBLEM;
+        }
+        SSL_CTX_set_cert_verify_callback(ctx, CustomValidationCallback, this);
+        NETSTACK_LOGI("SslCtxFunction: custom validation callback registered via SSL_CTX_set_cert_verify_callback");
+#endif
+        return CURLE_OK;
+    }
+
+    CURLcode result = MultiPathSslCtxFunction(curl, sslCtx);
+    if (result != CURLE_OK) {
+        return result;
+    }
+    if (!request_.GetPinnedPubkey().empty()) {
+        return VerifyRootCaSslCtxFunction(curl, sslCtx);
+    }
+    return CURLE_OK;
+}
+
+CURLcode HttpClientTask::MultiPathSslCtxFunction(CURL *curl, void *sslCtx)
 {
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
     if (sslCtx == nullptr) {
@@ -182,14 +407,12 @@ CURLcode HttpClientTask::SslCtxFunction(CURL *curl, void *sslCtx)
     }
     auto hostname = CommonUtils::GetHostnameFromURL(request_.GetURL());
     std::vector<std::string> certs;
-    // add app cert path
     auto ret = NetManagerStandard::NetworkSecurityConfig::GetInstance().GetTrustAnchorsForHostName(hostname, certs);
     if (ret != 0) {
         NETSTACK_LOGE("GetTrustAnchorsForHostName error. ret [%{public}d]", ret);
     }
     if (!request_.GetCanSkipCertVerifyFlag()) {
         TrustUser0AndUserCa(certs);
-        // add system cert path
         certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
         request_.SetCertsPath(std::move(certs), request_.GetCaPath());
     }
@@ -211,7 +434,113 @@ CURLcode HttpClientTask::SslCtxFunction(CURL *curl, void *sslCtx)
     } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), certsPath.certFile.c_str(), nullptr)) {
         NETSTACK_LOGE("loading certificates from context cert error.");
     }
+    if (!request_.GetCaData().empty()) {
+        auto x509Store = SSL_CTX_get_cert_store(static_cast<SSL_CTX *>(sslCtx));
+        if (!x509Store || !LoadCaCertFromString(x509Store, request_.GetCaData())) {
+            return CURLE_SSL_CACERT_BADFILE;
+        }
+    }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
+    return CURLE_OK;
+}
+
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+static int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey)
+{
+    if (pinnedPubkey.empty()) {
+        return CURLE_OK;
+    }
+    if (cert == nullptr) {
+        NETSTACK_LOGE("no cert specified.");
+        return CURLE_BAD_FUNCTION_ARGUMENT;
+    }
+    unsigned char *certPubkey = nullptr;
+    int pubkeyLen = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(cert), &certPubkey);
+    std::string certPubKeyDigest;
+    if (pubkeyLen <= 0 || certPubkey == nullptr) {
+        NETSTACK_LOGE("i2d_X509_PUBKEY failed");
+        return CURLE_BAD_FUNCTION_ARGUMENT;
+    }
+    if (!CommonUtils::Sha256sum(certPubkey, static_cast<size_t>(pubkeyLen), certPubKeyDigest)) {
+        OPENSSL_free(certPubkey);
+        return CURLE_BAD_FUNCTION_ARGUMENT;
+    }
+    OPENSSL_free(certPubkey);
+    if (CommonUtils::IsCertPubKeyInPinned(certPubKeyDigest, pinnedPubkey)) {
+        return CURLE_OK;
+    }
+    return CURLE_SSL_PINNEDPUBKEYNOTMATCH;
+}
+
+static int VerifyCallback(int preverifyOk, X509_STORE_CTX *ctx)
+{
+    X509 *cert = X509_STORE_CTX_get_current_cert(ctx);
+    int err = X509_STORE_CTX_get_error(ctx);
+    int depth = X509_STORE_CTX_get_error_depth(ctx);
+    NETSTACK_LOGI("X509_STORE_CTX error code %{public}d, depth %{public}d", err, depth);
+    SSL *ssl = static_cast<SSL *>(X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx()));
+    if (ssl == nullptr) {
+        NETSTACK_LOGE("ssl is null, fail");
+        return 0;
+    }
+    SSL_CTX *sslCtx = SSL_get_SSL_CTX(ssl);
+    if (sslCtx == nullptr) {
+        NETSTACK_LOGE("sslCtx is null, fail");
+        return 0;
+    }
+    HttpClientTask *task = static_cast<HttpClientTask *>(SSL_CTX_get_ex_data(sslCtx,
+        SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX));
+    if (task == nullptr) {
+        NETSTACK_LOGE("HttpClientTask is null, fail");
+        return 0;
+    }
+    if (task->IsRootCaVerifiedOk()) {
+        return preverifyOk;
+    }
+    int verifyResult = VerifyCertPubkey(cert, task->GetRequest().GetPinnedPubkey());
+    if (!task->IsRootCaVerified()) {
+        NETSTACK_LOGD("Verifying Root CA.");
+        task->SetRootCaVerifiedOk(verifyResult == CURLE_OK);
+        task->SetRootCaVerified();
+    }
+    if (verifyResult != CURLE_OK && depth == 0) {
+        return 0;
+    }
+    return preverifyOk;
+}
+
+bool HttpClientTask::IsRootCaVerified() const
+{
+    return isRootCaVerified_;
+}
+
+void HttpClientTask::SetRootCaVerified()
+{
+    isRootCaVerified_ = true;
+}
+
+bool HttpClientTask::IsRootCaVerifiedOk() const
+{
+    return isRootCaVerifiedOk_;
+}
+
+void HttpClientTask::SetRootCaVerifiedOk(bool ok)
+{
+    isRootCaVerifiedOk_ = ok;
+}
+#endif
+
+CURLcode HttpClientTask::VerifyRootCaSslCtxFunction(CURL *curl, void *sslCtx)
+{
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+    SSL_CTX *ctx = static_cast<SSL_CTX *>(sslCtx);
+    if (ctx == nullptr) {
+        NETSTACK_LOGE("VerifyRootCaSslCtxFunction: sslCtx is null");
+        return CURLE_SSL_CERTPROBLEM;
+    }
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, VerifyCallback);
+    SSL_CTX_set_ex_data(ctx, SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX, this);
+#endif
     return CURLE_OK;
 }
 
@@ -219,20 +548,17 @@ bool HttpClientTask::SetSSLCertOption(CURL *handle)
 {
 #ifndef WINDOWS_PLATFORM
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
-    curl_ssl_ctx_callback sslCtxFunc = [](CURL *curl, void *sslCtx, void *parm) -> CURLcode {
-        HttpClientTask *task = static_cast<HttpClientTask *>(parm);
-        if (!task) {
-            return CURLE_SSL_CERTPROBLEM;
-        }
-        task->GetTrace().Tracepoint(TraceEvents::TLS);
-        return task->SslCtxFunction(curl, sslCtx);
-    };
-    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_CTX_FUNCTION, sslCtxFunc);
-    NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_CTX_DATA, this);
+    SetSslCtxFunctionOption(handle);
     NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_CAINFO, nullptr);
     if (request_.GetCanSkipCertVerifyFlag()) {
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_VERIFYPEER, 0L);
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_VERIFYHOST, 0L);
+    } else if (request_.GetValidationCallback()) {
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_VERIFYHOST, 0L);
+        NETSTACK_LOGI("SSL default verification disabled, custom validation callback will be used");
+#endif
     } else {
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_VERIFYPEER, 1L);
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_SSL_VERIFYHOST, 2L);
@@ -326,15 +652,24 @@ bool HttpClientTask::SetAuthOptions(CURL *handle)
     return true;
 }
 
-bool HttpClientTask::SetOtherCurlOption(CURL *handle)
+bool HttpClientTask::SetProxyOption(CURL *handle)
 {
-    // set proxy
+    const auto &socks5Proxy = request_.GetSocks5Proxy();
+    if (!socks5Proxy.host.empty() && socks5Proxy.port > 0) {
+        return SetSocks5ProxyOption(handle);
+    }
+    return SetHttpProxyOption(handle);
+}
+
+bool HttpClientTask::SetHttpProxyOption(CURL *handle)
+{
     std::string host;
     std::string exclusions;
     int32_t port = 0;
-    bool tunnel = false;
+    SecureData username;
+    SecureData password;
     std::string url = request_.GetURL();
-    GetHttpProxyInfo(host, port, exclusions, tunnel);
+    GetHttpProxyInfo(host, port, exclusions, username, password);
     if (!host.empty() && !CommonUtils::IsHostNameExcluded(url, exclusions, ",")) {
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXY, host.c_str());
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYPORT, port);
@@ -342,6 +677,75 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_HTTPPROXYTUNNEL, curlTunnelValue);
         auto proxyType = (host.find("https://") != std::string::npos) ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
         NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYTYPE, proxyType);
+        if (!username.empty() && !password.empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYUSERNAME, username.c_str());
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYPASSWORD, password.c_str());
+        }
+    }
+    return true;
+}
+
+bool HttpClientTask::SetSocks5ProxyOption(CURL *handle)
+{
+    std::string url = request_.GetURL();
+    const auto &socks5Proxy = request_.GetSocks5Proxy();
+    if (!socks5Proxy.host.empty() && socks5Proxy.port > 0 &&
+        !CommonUtils::IsHostNameExcluded(url, socks5Proxy.exclusionList, ",")) {
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXY, socks5Proxy.host.c_str());
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYPORT, socks5Proxy.port);
+        auto proxyType = CURLPROXY_SOCKS5;
+        switch (socks5Proxy.dnsStrategy) {
+            case Socks5DnsStrategy::PROXY_MODE:
+                proxyType = CURLPROXY_SOCKS5_HOSTNAME;
+                break;
+            case Socks5DnsStrategy::SYSTEM_MODE:
+                proxyType = CURLPROXY_SOCKS5;
+                break;
+            case Socks5DnsStrategy::UNSPECIFIED:
+                proxyType = socks5Proxy.host.find("socks5h://") != std::string::npos ?
+                    CURLPROXY_SOCKS5_HOSTNAME : CURLPROXY_SOCKS5;
+                break;
+        }
+        NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYTYPE, proxyType);
+
+        if (!socks5Proxy.username.empty() && !socks5Proxy.password.empty()) {
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYUSERNAME, socks5Proxy.username.c_str());
+            NETSTACK_CURL_EASY_SET_OPTION(handle, CURLOPT_PROXYPASSWORD, socks5Proxy.password.c_str());
+        }
+    }
+    return true;
+}
+
+bool HttpClientTask::SetExtraInfoOption(CURL *curl)
+{
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PREREQDATA, this);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PREREQFUNCTION,
+                                  +[](void *clientp, char *primaryIp, char *localIp, int primaryPort,
+                                      int localPort) {
+        if (!clientp) {
+            NETSTACK_LOGE("prereq_functon clientp pointer is null");
+            return CURL_PREREQFUNC_OK;
+        }
+        HttpClientTask *task = static_cast<HttpClientTask *>(clientp);
+        task->GetTrace().Tracepoint(TraceEvents::SENDING);
+        task->response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_REMOTE_ADDRESS, primaryIp ? primaryIp : "");
+        task->response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_LOCAL_ADDRESS, localIp ? localIp : "");
+        task->response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_REMOTE_PORT, std::to_string(primaryPort));
+        task->response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_LOCAL_PORT, std::to_string(localPort));
+        auto tlsPair = task->GetTlsVersionAndCipherSuite();
+        task->response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_TLS_VERSION,
+            ConvertTlsVersionToString(tlsPair.first));
+        task->response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_CIPHER_SUITE,
+            GetStandardNameFromCipherSuite(tlsPair.second));
+        return CURL_PREREQFUNC_OK;
+    });
+    return true;
+}
+
+bool HttpClientTask::SetOtherCurlOption(CURL *handle)
+{
+    if (!SetProxyOption(handle)) {
+        return false;
     }
 
     SetTlsOption(handle);
@@ -362,6 +766,7 @@ bool HttpClientTask::SetOtherCurlOption(CURL *handle)
     SetSSLCertOption(handle);
     SetDnsCacheOption(handle);
     SetIpResolve(handle);
+    SetExtraInfoOption(handle);
 
 #ifdef HTTP_CURL_PRINT_VERBOSE
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_VERBOSE, 1L);
@@ -498,7 +903,8 @@ bool HttpClientTask::MethodForGet(const std::string &method)
 bool HttpClientTask::MethodForPost(const std::string &method)
 {
     return (method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT ||
-            method == HttpConstant::HTTP_METHOD_DELETE || method.empty());
+            method == HttpConstant::HTTP_METHOD_DELETE || method == HttpConstant::HTTP_METHOD_PATCH ||
+            method.empty());
 }
 
 bool HttpClientTask::SetFormDataOption(const HttpMultiFormData &multiFormData, curl_mimepart *part, CURL *curl)
@@ -597,16 +1003,48 @@ bool HttpClientTask::SetMultiPartOption(CURL *handle)
 bool HttpClientTask::SetServerSSLCertOption(CURL *curl)
 {
     auto hostname = CommonUtils::GetHostnameFromURL(request_.GetURL());
-    if (!NetManagerStandard::NetworkSecurityConfig::GetInstance().IsPinOpenMode(hostname)) {
+    if (!SetPinnedPubkeyOption(curl, hostname)) {
+        return false;
+    }
+    int partialChain = request_.GetPartialChain();
+    if (partialChain >= 0) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSLPARTIALCHAIN, partialChain);
+    }
+    return true;
+}
+
+bool HttpClientTask::SetPinnedPubkeyOption(CURL *curl, const std::string &hostname)
+{
+    if (!NetManagerStandard::NetworkSecurityConfig::GetInstance().IsPinOpenMode(hostname) ||
+        NetManagerStandard::NetworkSecurityConfig::GetInstance().IsPinOpenModeVerifyRootCa(hostname)) {
         std::string pins;
         auto ret = NetManagerStandard::NetworkSecurityConfig::GetInstance().GetPinSetForHostName(hostname, pins);
         if (ret != 0 || pins.empty()) {
             NETSTACK_LOGD("Get no pin set by host name invalid");
+        } else if (NetManagerStandard::NetworkSecurityConfig::GetInstance().IsPinOpenModeVerifyRootCa(hostname)) {
+            request_.SetPinnedPubkey(pins);
         } else {
             NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_PINNEDPUBLICKEY, pins.c_str());
         }
     }
 
+    return true;
+}
+
+bool HttpClientTask::SetSslCtxFunctionOption(CURL *curl)
+{
+#if defined(HTTP_MULTIPATH_CERT_ENABLE) || defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE)
+    curl_ssl_ctx_callback sslCtxFunc = [](CURL *curl, void *sslCtx, void *parm) -> CURLcode {
+        HttpClientTask *task = static_cast<HttpClientTask *>(parm);
+        if (!task) {
+            return CURLE_SSL_CERTPROBLEM;
+        }
+        task->GetTrace().Tracepoint(TraceEvents::TLS);
+        return task->SslCtxFunction(curl, sslCtx);
+    };
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_FUNCTION, sslCtxFunc);
+    NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_CTX_DATA, this);
+#endif
     return true;
 }
 
@@ -707,11 +1145,35 @@ bool HttpClientTask::SetCurlOptions()
         return false;
     }
 
-    if (request_.GetUsingCache() || !SetCallbackFunctions()) {
+    CacheProxy proxy(request_);
+    if (request_.GetUsingCache() && proxy.ReadResponseFromCache()) {
+        return false;
+    }
+    if (!SetCallbackFunctions()) {
         return false;
     }
 
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_FOLLOWLOCATION, 1L);
+    if (request_.GetMaxRedirects() != DEFAULT_MAX_REDIRECTS) {
+        NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_MAXREDIRS, static_cast<long>(request_.GetMaxRedirects()));
+    }
+    if (!request_.GetSniHostName().empty()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_SNI_HOSTNAME, request_.GetSniHostName().c_str());
+    }
+    if (!request_.GetReuseConnections()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_FORBID_REUSE, 1L);
+        NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_FRESH_CONNECT, 1L);
+    }
+    if (request_.GetInactivityMs() > 0) {
+        NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_MAXAGE_CONN,
+            static_cast<long>(request_.GetInactivityMs() / 1000));
+    }
+
+#ifdef HAS_NETMANAGER_BASE
+    if (request_.GetPathPreference() != PathPreference::autoPath) {
+        SetInterface(curlHandle_);
+    }
+#endif
 
     /* first #undef CURL_DISABLE_COOKIES in curl config */
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_COOKIEFILE, "");
@@ -751,7 +1213,7 @@ bool HttpClientTask::SetCurlMethod()
             GetRequestBody();
         }
     }
-
+    BuildUrlWithQueryParams();
     SetTraceOptions(curlHandle_);
 
     NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_URL, request_.GetURL().c_str());
@@ -766,7 +1228,8 @@ bool HttpClientTask::SetCurlMethod()
         }
 
         if ((method.empty() || method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT ||
-            method == HttpConstant::HTTP_METHOD_DELETE) && !request_.GetBody().empty()) {
+            method == HttpConstant::HTTP_METHOD_DELETE || method == HttpConstant::HTTP_METHOD_PATCH) &&
+            !request_.GetBody().empty()) {
             NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_POST, 1L);
             NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_POSTFIELDS, request_.GetBody().c_str());
             NETSTACK_CURL_EASY_SET_OPTION(curlHandle_, CURLOPT_POSTFIELDSIZE, request_.GetBody().size());
@@ -1141,8 +1604,8 @@ curl_off_t HttpClientTask::GetSizeFromCurl(CURL *handle) const
 {
     auto info = CURLINFO_SIZE_DOWNLOAD_T;
     auto method = request_.GetMethod();
-    if (((method.empty() || method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT) &&
-        !request_.GetBody().empty()) || type_ == TaskType::UPLOAD) {
+    if (((method.empty() || method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT ||
+          method == HttpConstant::HTTP_METHOD_PATCH) && !request_.GetBody().empty()) || type_ == TaskType::UPLOAD) {
         info = CURLINFO_SIZE_UPLOAD_T;
     }
     curl_off_t size = 0;
@@ -1274,6 +1737,83 @@ void HttpClientTask::ProcessNetAddress()
     response_.SetNetAddress(netAddress);
 }
 
+std::pair<TlsVersion, CipherSuite> HttpClientTask::GetTlsVersionAndCipherSuite()
+{
+    auto tlsVersion = TlsVersion::DEFAULT;
+    auto cipherSuite = CipherSuite::INVALID;
+    if (curlHandle_ == nullptr) {
+        return std::make_pair(tlsVersion, cipherSuite);
+    }
+    const struct curl_tlssessioninfo *tlsInfo = nullptr;
+    CURLcode res = curl_easy_getinfo(curlHandle_, CURLINFO_TLS_SSL_PTR, &tlsInfo);
+    if (res == CURLE_OK && tlsInfo && tlsInfo->internals) {
+#if defined(HTTP_MULTIPATH_CERT_ENABLE) || defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE)
+        // only support OpenSSL backend
+        if (tlsInfo->backend == CURLSSLBACKEND_OPENSSL) {
+            SSL *ssl = (SSL *)tlsInfo->internals;
+            auto version = SSL_get_version(ssl);
+            if (version) {
+                tlsVersion = ConvertTlsVersionFromOpenSSL(version);
+            }
+            auto cipher = SSL_get_cipher(ssl);
+            if (cipher) {
+                cipherSuite = GetCipherSuiteFromInnerName(cipher);
+            }
+        } else {
+            NETSTACK_LOGE("Cannot support this SSL backend %{public}d.", tlsInfo->backend);
+        }
+#endif
+    }
+    return std::make_pair(tlsVersion, cipherSuite);
+}
+
+void HttpClientTask::ProcessConnectionExtraInfo()
+{
+    if (curlHandle_ == nullptr) {
+        return;
+    }
+    long httpVer = CURL_HTTP_VERSION_NONE;
+    if (curl_easy_getinfo(curlHandle_, CURLINFO_HTTP_VERSION, &httpVer) != CURLE_OK) {
+        response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, "Unknown/Non-HTTP");
+    } else {
+        switch (httpVer) {
+            case CURL_HTTP_VERSION_1_0:
+                response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, "HTTP/1.0");
+                break;
+            case CURL_HTTP_VERSION_1_1:
+                response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, "HTTP/1.1");
+                break;
+            case CURL_HTTP_VERSION_2_0:
+                response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, "HTTP/2");
+                break;
+            case CURL_HTTP_VERSION_2TLS:
+                response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, "HTTP/2 over TLS");
+                break;
+            case CURL_HTTP_VERSION_3:
+                response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, "HTTP/3");
+                break;
+            default:
+                response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, "Unknown/Non-HTTP");
+                break;
+        }
+    }
+    auto getLongCurlInfo = [this](CURLINFO info) {
+        long value = 0;
+        if (curl_easy_getinfo(curlHandle_, info, &value) != CURLE_OK) {
+            NETSTACK_LOGE("Curl get info %{public}d failed", info);
+            value = 0;
+        }
+        return value;
+    };
+    long redirectCount = getLongCurlInfo(CURLINFO_REDIRECT_COUNT);
+    long isUsedProxy = getLongCurlInfo(CURLINFO_USED_PROXY);
+    long connections = getLongCurlInfo(CURLINFO_NUM_CONNECTS);
+    response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_REDIRECT_COUNT, std::to_string(redirectCount));
+    response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_IS_PROXY_CONNECTION, isUsedProxy > 0 ? "true" : "false");
+    response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_IS_REUSED_CONNECTION, connections == 0 ? "true" : "false");
+    response_.SetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT, "false");
+}
+
 void HttpClientTask::LogResponseInfo(CURLcode code)
 {
     NETSTACK_LOGD("taskid=%{public}d code=%{public}d", taskId_, code);
@@ -1363,6 +1903,7 @@ void HttpClientTask::ProcessResponse(CURLMsg *msg)
         return;
     }
     bool ret = ProcessResponseCoreLogic();
+    ProcessConnectionExtraInfo();
     HandleResultCallback(ret);
     WriteResopnseToCache(response_);
     HandleNetworkProfiling();
@@ -1685,6 +2226,252 @@ void HttpClientTask::HandleMethodForGet()
     }
 }
 
+void HttpClientTask::ProcessQueryParamValue(const std::string &name, bool encodeName, cJSON *value,
+    std::string &queryParams)
+{
+    if (cJSON_IsNull(value)) {
+        queryParams += name + HttpConstant::HTTP_URL_PARAM_SEPARATOR;
+        return;
+    }
+    std::string strValue;
+    if (cJSON_IsString(value)) {
+        strValue = value->valuestring;
+    } else if (cJSON_IsBool(value)) {
+        strValue = cJSON_IsTrue(value) ? "true" : "false";
+    } else if (cJSON_IsNumber(value)) {
+        char *print = cJSON_PrintUnformatted(value);
+        if (print != nullptr) {
+            strValue = print;
+            cJSON_free(print);
+        }
+    } else {
+        return;
+    }
+    bool encodeValue = EncodeUrlParam(strValue);
+    if (encodeName || encodeValue) {
+        request_.SetHeader(CommonUtils::ToLower(HttpConstant::HTTP_CONTENT_TYPE),
+            HttpConstant::HTTP_CONTENT_TYPE_URL_ENCODE);
+    }
+    queryParams += name + HttpConstant::HTTP_URL_NAME_VALUE_SEPARATOR + strValue +
+        HttpConstant::HTTP_URL_PARAM_SEPARATOR;
+}
+
+std::string HttpClientTask::ParseJsonValueToQueryParams(const std::string &jsonParams)
+{
+    std::string queryParam;
+    cJSON *root = cJSON_Parse(jsonParams.c_str());
+    if (root == nullptr) {
+        NETSTACK_LOGE("query params json parse failed");
+        return queryParam;
+    }
+    if (!cJSON_IsObject(root)) {
+        cJSON_Delete(root);
+        return queryParam;
+    }
+    cJSON *item = nullptr;
+    cJSON_ArrayForEach(item, root) {
+        if (item->string == nullptr) {
+            continue;
+        }
+        std::string name(item->string);
+        bool encodeName = EncodeUrlParam(name);
+        if (cJSON_IsArray(item)) {
+            cJSON *child = nullptr;
+            cJSON_ArrayForEach(child, item) {
+                ProcessQueryParamValue(name, encodeName, child, queryParam);
+            }
+            continue;
+        }
+        ProcessQueryParamValue(name, encodeName, item, queryParam);
+    }
+    cJSON_Delete(root);
+    return queryParam;
+}
+
+void HttpClientTask::BuildUrlWithQueryParams()
+{
+    auto queryParams = request_.GetQueryParams();
+    if (queryParams.dataType == HttpDataType::NO_DATA_TYPE || queryParams.data.empty()) {
+        return;
+    }
+    std::string params;
+    if (queryParams.dataType != HttpDataType::OBJECT) {
+        params = queryParams.data;
+    } else {
+        params = ParseJsonValueToQueryParams(queryParams.data);
+        if (!params.empty()) {
+            params.pop_back();
+        }
+    }
+    std::string url = request_.GetURL();
+    std::string param;
+    auto index = url.find(HttpConstant::HTTP_URL_PARAM_START);
+    if (index != std::string::npos) {
+        param = url.substr(index + 1);
+        url.resize(index);
+    }
+    request_.SetURL(MakeUrl(url, param, params));
+}
+
+#ifdef HAS_NETMANAGER_BASE
+bool HttpClientTask::GetNetStatus(std::list<sptr<NetManagerStandard::NetHandle>> netList,
+    std::list<sptr<NetManagerStandard::NetHandle>> &cellularNetworks, uint8_t &cellCount, uint8_t &wifiCount)
+{
+    if (netList.size() != DUAL_NETWORK_BOOT_COUNT) {
+        return false;
+    }
+
+    for (auto &net : netList) {
+        NetManagerStandard::NetAllCapabilities netAllCap;
+        if (net != nullptr && NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(*net, netAllCap) ==
+            NetManagerStandard::NETMANAGER_SUCCESS) {
+            if (netAllCap.bearerTypes_.find(NetManagerStandard::NetBearType::BEARER_CELLULAR) !=
+                netAllCap.bearerTypes_.end()) {
+                cellCount++;
+                cellularNetworks.push_back(net);
+            }
+            if (netAllCap.bearerTypes_.find(NetManagerStandard::NetBearType::BEARER_WIFI) !=
+                netAllCap.bearerTypes_.end()) {
+                wifiCount++;
+            }
+        }
+    }
+    return true;
+}
+
+bool HttpClientTask::GetPrimaryCellularInterface(CURL *curl,
+    std::list<sptr<NetManagerStandard::NetHandle>> netList, std::string &interfaceName, int32_t &netId)
+{
+    if (curl == nullptr || netList.size() != DUAL_NETWORK_BOOT_COUNT) {
+        return false;
+    }
+
+    NetManagerStandard::NetHandle defaultHandle;
+    if (NetManagerStandard::NetConnClient::GetInstance().GetDefaultNet(defaultHandle) !=
+        NetManagerStandard::NETMANAGER_SUCCESS) {
+        return false;
+    }
+    NetManagerStandard::NetAllCapabilities netAllCap;
+    if (NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(defaultHandle, netAllCap) ==
+        NetManagerStandard::NETMANAGER_SUCCESS) {
+        if (netAllCap.bearerTypes_.find(NetManagerStandard::NetBearType::BEARER_CELLULAR) !=
+            netAllCap.bearerTypes_.end()) {
+            return false;
+        }
+    }
+
+    uint8_t cellCount = 0;
+    uint8_t wifiCount = 0;
+    std::list<sptr<NetManagerStandard::NetHandle>> cellularNetworks;
+    if (!GetNetStatus(netList, cellularNetworks, cellCount, wifiCount)) {
+        return false;
+    }
+
+    if (cellCount == SINGLE_CELLULAR_NETWORK_COUNT && netList.size() == DUAL_NETWORK_BOOT_COUNT) {
+        NetManagerStandard::NetLinkInfo info;
+        if (cellularNetworks.size() == SINGLE_CELLULAR_NETWORK_COUNT &&
+            NetManagerStandard::NetConnClient::GetInstance().GetConnectionProperties(*(cellularNetworks.front()),
+            info) == NetManagerStandard::NETMANAGER_SUCCESS) {
+            interfaceName = info.ifaceName_;
+            netId = cellularNetworks.front()->GetNetId();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool HttpClientTask::GetSecondaryCellularInterface(CURL *curl,
+    std::list<sptr<NetManagerStandard::NetHandle>> netList, std::string &interfaceName, int32_t &netId)
+{
+    if (curl == nullptr || netList.size() != DUAL_NETWORK_BOOT_COUNT) {
+        return false;
+    }
+    uint8_t cellCount = 0;
+    uint8_t wifiCount = 0;
+    std::list<sptr<NetManagerStandard::NetHandle>> cellularNetworks;
+
+    if (!GetNetStatus(netList, cellularNetworks, cellCount, wifiCount)) {
+        return false;
+    }
+
+    if (cellCount == SINGLE_CELLULAR_NETWORK_COUNT) {
+        return false;
+    } else if (cellCount == DUAL_NETWORK_BOOT_COUNT) {
+        NetManagerStandard::NetHandle defaultHandle;
+        if (NetManagerStandard::NetConnClient::GetInstance().GetDefaultNet(defaultHandle) !=
+            NetManagerStandard::NETMANAGER_SUCCESS) {
+            return false;
+        }
+        for (auto net : cellularNetworks) {
+            if (defaultHandle.GetNetId() == net->GetNetId()) {
+                continue;
+            }
+            NetManagerStandard::NetLinkInfo info;
+            if (NetManagerStandard::NetConnClient::GetInstance().GetConnectionProperties(*net, info) ==
+                NetManagerStandard::NETMANAGER_SUCCESS) {
+                interfaceName = info.ifaceName_;
+                netId = net->GetNetId();
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool HttpClientTask::GetInterfaceName(CURL *curl, std::string &interfaceName, int32_t &netId)
+{
+    if (curl == nullptr) {
+        return false;
+    }
+    std::list<sptr<NetManagerStandard::NetHandle>> netList;
+    if (NetManagerStandard::NetConnClient::GetInstance().GetAllNets(netList)
+        == NetManagerStandard::NetConnResultCode::NET_CONN_SUCCESS) {
+        netList.remove_if([](const sptr<NetManagerStandard::NetHandle>& net) {
+            return net == nullptr || net->GetNetId() < MIN_NON_SYSTEM_NETID;
+        });
+    }
+    if (netList.size() == DUAL_NETWORK_BOOT_COUNT) {
+        if (request_.GetPathPreference() == PathPreference::primaryCellular) {
+            bool ret = GetPrimaryCellularInterface(curl, netList, interfaceName, netId);
+            return ret;
+        } else if (request_.GetPathPreference() == PathPreference::secondaryCellular) {
+            bool ret = GetSecondaryCellularInterface(curl, netList, interfaceName, netId);
+            return ret;
+        }
+    }
+    return false;
+}
+
+bool HttpClientTask::SetInterface(CURL *curl)
+{
+    if (curl == nullptr) {
+        return false;
+    }
+    std::string interfaceName;
+    int32_t netId;
+    bool ret = GetInterfaceName(curl, interfaceName, netId);
+    if (ret && !interfaceName.empty() && netId >= MIN_NON_SYSTEM_NETID) {
+        NETSTACK_LOGI("PathPreference: SetInterface, interfaceName:%{public}s, netId:%{public}d",
+            interfaceName.c_str(), netId);
+        bool ipv6Enable = NetSysIsIpv6Enable(netId);
+        bool ipv4Enable = NetSysIsIpv4Enable(netId);
+        if (!ipv6Enable) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        } else if (!ipv4Enable) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
+        }
+#ifdef HTTP_HANDOVER_FEATURE
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_OHOS_SOCKET_BIND_NET_ID, netId);
+#endif
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_INTERFACE, interfaceName.c_str());
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_DNS_INTERFACE, interfaceName.c_str());
+        return true;
+    }
+    return false;
+}
+#endif
+
 bool HttpClientTask::GetRequestBody()
 {
     auto extraDataStr = request_.GetExtraData().data;
@@ -1912,6 +2699,88 @@ bool HttpClientTask::GlobalResponseInterceptorCheck()
     return result == OH_CONTINUE ? true : false;
 }
 #endif
+
+static void CurlShareLock(CURL *, curl_lock_data, curl_lock_access, void *userData)
+{
+    auto handle = static_cast<CookieShareHandle *>(userData);
+    if (handle == nullptr) {
+        NETSTACK_LOGE("CurlShareLock handle is null");
+        return;
+    }
+    handle->GetMutex().lock();
+}
+
+static void CurlShareUnlock(CURL *, curl_lock_data, void *userData)
+{
+    auto handle = static_cast<CookieShareHandle *>(userData);
+    if (handle == nullptr) {
+        NETSTACK_LOGE("CurlShareUnlock handle is null");
+        return;
+    }
+    handle->GetMutex().unlock();
+}
+
+CookieShareHandle::CookieShareHandle() : handle_(curl_share_init())
+{
+    if (handle_ == nullptr) {
+        NETSTACK_LOGE("CookieShareHandle: failed to init curl share");
+        return;
+    }
+    auto setShareOption = [this](CURLSHoption option, auto value) {
+        auto result = curl_share_setopt(handle_, option, value);
+        if (result != CURLSHE_OK) {
+            NETSTACK_LOGE("CookieShareHandle: curl_share_setopt failed, option=%{public}d, result=%{public}d",
+                option, result);
+            return false;
+        }
+        return true;
+    };
+    if (!setShareOption(CURLSHOPT_USERDATA, this) ||
+        !setShareOption(CURLSHOPT_LOCKFUNC, CurlShareLock) ||
+        !setShareOption(CURLSHOPT_UNLOCKFUNC, CurlShareUnlock) ||
+        !setShareOption(CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE)) {
+        curl_share_cleanup(handle_);
+        handle_ = nullptr;
+    }
+}
+
+CookieShareHandle::~CookieShareHandle()
+{
+    if (handle_ != nullptr) {
+        auto result = curl_share_cleanup(handle_);
+        if (result != CURLSHE_OK) {
+            NETSTACK_LOGE("CookieShareHandle: curl_share_cleanup failed, result=%{public}d", result);
+        }
+        handle_ = nullptr;
+    }
+}
+
+std::mutex &CookieShareHandle::GetMutex()
+{
+    return mutex_;
+}
+
+std::shared_ptr<CookieShareHandle> CreateCookieShareHandle()
+{
+    auto shareHandle = std::make_shared<CookieShareHandle>();
+    if (shareHandle->Get() == nullptr) {
+        return nullptr;
+    }
+    return shareHandle;
+}
+
+void HttpClientTask::SetCookieShareHandle(std::shared_ptr<CookieShareHandle> shareHandle)
+{
+    cookieShareHandle_ = shareHandle;
+    if (curlHandle_ == nullptr || shareHandle == nullptr || shareHandle->Get() == nullptr) {
+        return;
+    }
+    CURLcode result = curl_easy_setopt(curlHandle_, CURLOPT_SHARE, shareHandle->Get());
+    if (result != CURLE_OK) {
+        error_.SetCURLResult(result);
+        NETSTACK_LOGE("Failed to set CURLOPT_SHARE: %{public}s", curl_easy_strerror(result));
+    }
+}
 } // namespace HttpClient
 } // namespace NetStack
 } // namespace OHOS

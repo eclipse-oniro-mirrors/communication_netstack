@@ -18,10 +18,10 @@ use std::collections::HashMap;
 
 use cxx::{let_cxx_string, SharedPtr};
 use ffi::{HttpClientRequest, HttpClientTask, NewHttpClientTask, OnCallback};
-use netstack_common::debug;
+use netstack_common::{debug, error};
 
 use crate::error::{HttpClientError, HttpErrorCode};
-use crate::request::{RequestCallback, CertType, ClientCert, MultiFormData, ServerAuthentication, TlsConfig, TlsVersion, EscapedData, HttpProxy};
+use crate::request::{RequestCallback, CertType, ClientCert, CertificatePinning, MultiFormData, ServerAuthentication, TlsConfig, TlsVersion, EscapedData, HttpProxy};
 use crate::response::{Response, ResponseCode, HttpDataType};
 use crate::task::{RequestTask, TaskStatus};
 
@@ -181,6 +181,30 @@ impl CallbackWrapper {
     }
 }
 
+pub struct ValidationCallbackWrapper {
+    inner: Option<Box<dyn FnMut(Vec<String>, String, String) -> bool + Send>>,
+}
+
+impl ValidationCallbackWrapper {
+    pub(crate) fn new(inner: Box<dyn FnMut(Vec<String>, String, String) -> bool + Send>) -> Self {
+        Self { inner: Some(inner) }
+    }
+
+    fn on_validate(&mut self, pem_certs: Vec<String>, host: String, ip: String) -> bool {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match self.inner.as_mut() {
+            Some(callback) => callback(pem_certs, host, ip),
+            None => false,
+        }));
+        match result {
+            Ok(valid) => valid,
+            Err(_) => {
+                error!("validation callback panicked; rejecting certificate");
+                false
+            }
+        }
+    }
+}
+
 fn set_range(
     request: &HttpClientRequest,
     response: &ffi::HttpClientResponse,
@@ -318,6 +342,30 @@ impl From<crate::request::HttpProxy> for ffi::HttpProxyRust {
             host: http_ptoxy.host,
             port: http_ptoxy.port,
             exclusions: http_ptoxy.exclusions,
+            username: http_ptoxy.username,
+            password: http_ptoxy.password,
+        }
+    }
+}
+
+impl From<crate::request::Socks5Proxy> for ffi::Socks5ProxyRust {
+    fn from(proxy: crate::request::Socks5Proxy) -> Self {
+        ffi::Socks5ProxyRust {
+            host: proxy.host,
+            port: proxy.port,
+            username: proxy.username,
+            password: proxy.password,
+            dns_strategy: proxy.dns_strategy,
+            exclusion_list: proxy.exclusion_list,
+        }
+    }
+}
+
+impl From<CertificatePinning> for ffi::CertificatePinningRust {
+    fn from(pinning: CertificatePinning) -> Self {
+        ffi::CertificatePinningRust {
+            hash_algorithm: pinning.hash_algorithm,
+            public_key_hash: pinning.public_key_hash,
         }
     }
 }
@@ -378,7 +426,26 @@ pub(crate) mod ffi {
         pub port: i32,
 
         pub exclusions: String,
+
+        pub username: String,
+
+        pub password: String,
     }
+
+    struct Socks5ProxyRust {
+        pub host: String,
+        pub port: i32,
+        pub username: String,
+        pub password: String,
+        pub dns_strategy: i32,
+        pub exclusion_list: Vec<String>,
+    }
+
+    struct CertificatePinningRust {
+        pub hash_algorithm: String,
+        pub public_key_hash: String,
+    }
+
     extern "Rust" {
         type CallbackWrapper;
         fn on_success(
@@ -421,6 +488,14 @@ pub(crate) mod ffi {
             self: &mut CallbackWrapper,
             header: String,
         );
+
+        type ValidationCallbackWrapper;
+        unsafe fn on_validate(
+            self: &mut ValidationCallbackWrapper,
+            pem_certs: Vec<String>,
+            host: String,
+            ip: String
+        ) -> bool;
     }
 
     unsafe extern "C++" {
@@ -451,9 +526,13 @@ pub(crate) mod ffi {
         #[namespace = "OHOS::NetStack::HttpClient"]
         type HttpDataType;
 
+        #[namespace = "OHOS::NetStack::HttpClient"]
+        type CookieShareHandle;
+
         fn NewHttpClientRequest() -> UniquePtr<HttpClientRequest>;
         fn SetURL(self: Pin<&mut HttpClientRequest>, url: &CxxString);
         fn SetMethod(self: Pin<&mut HttpClientRequest>, method: &CxxString);
+        fn SetCustomMethod(request: Pin<&mut HttpClientRequest>, custom_method: &CxxString) -> bool;
         fn SetHeader(self: Pin<&mut HttpClientRequest>, key: &CxxString, val: &CxxString);
         fn SetTimeout(self: Pin<&mut HttpClientRequest>, timeout: u32);
         fn SetPriority(self: Pin<&mut HttpClientRequest>, priority: u32);
@@ -462,6 +541,7 @@ pub(crate) mod ffi {
         fn SetHttpProtocol(request: Pin<&mut HttpClientRequest>, protocol: i32);
         fn SetUsingHttpProxyType(request: Pin<&mut HttpClientRequest>, proxy_type: i32);
         fn SetSpecifiedHttpProxy(request: Pin<&mut HttpClientRequest>, proxy: &HttpProxyRust);
+        fn SetUsingSocks5Proxy(request: Pin<&mut HttpClientRequest>, proxy: &Socks5ProxyRust);
         fn SetMaxLimit(self: Pin<&mut HttpClientRequest>, max_limit: u32);
         fn SetCaPath(self: Pin<&mut HttpClientRequest>, path: &CxxString);
         fn SetResumeFrom(self: Pin<&mut HttpClientRequest>, resume_from: i64);
@@ -475,10 +555,26 @@ pub(crate) mod ffi {
         fn SetDNSServers(request: Pin<&mut HttpClientRequest>, dns_servers: &Vec<String>);
         fn AddMultiFormData(request: Pin<&mut HttpClientRequest>, data: &MultiFormDataRust);
         fn SetRemoteValidation(self: Pin<&mut HttpClientRequest>, remote_validation: &CxxString);
+        fn SetValidationCallback(request: Pin<&mut HttpClientRequest>, callback: Box<ValidationCallbackWrapper>);
         fn SetTLSOptions(request: Pin<&mut HttpClientRequest>, tls_options: &TlsConfigRust);
         fn SetServerAuthentication(request: Pin<&mut HttpClientRequest>, server_auth: &ServerAuthentication);
         fn SetHeaderExt(request: Pin<&mut HttpClientRequest>, headers: &EscapedDataRust);
-        fn SetCertificatePinning(request: Pin<&mut HttpClientRequest>, certPIN: &CxxString);
+        fn SetQueryParams(request: Pin<&mut HttpClientRequest>, query_params: &EscapedDataRust);
+        fn SetCertificatePinning(request: Pin<&mut HttpClientRequest>, pins: &Vec<CertificatePinningRust>);
+        fn SetMaxRedirects(request: Pin<&mut HttpClientRequest>, max_redirects: i32);
+        fn SetSniHostName(request: Pin<&mut HttpClientRequest>, host_name: &CxxString);
+        fn SetReuseConnections(self: Pin<&mut HttpClientRequest>, reuse_connections: bool);
+        fn SetInactivityMs(request: Pin<&mut HttpClientRequest>, inactivity_ms: i32);
+        fn SetBodyOrQueryConfigured(self: Pin<&mut HttpClientRequest>, body_or_query_configured: bool);
+        fn SetCaData(request: Pin<&mut HttpClientRequest>, ca_data: &CxxString);
+        fn SetSslType(request: Pin<&mut HttpClientRequest>, ssl_type: &CxxString);
+        fn SetClientEncCert(request: Pin<&mut HttpClientRequest>, client_enc_cert: &ClientCert);
+        fn SetPathPreference(request: Pin<&mut HttpClientRequest>, path_preference: &CxxString);
+        fn SetPartialChain(self: Pin<&mut HttpClientRequest>, partial_chain: bool);
+        fn SetCanSkipCertVerifyFlag(self: Pin<&mut HttpClientRequest>, can_skip_cert_verify: bool);
+        fn SetEnableAutoCookie(self: Pin<&mut HttpClientRequest>, enable: bool);
+        fn CreateCookieShareHandle() -> SharedPtr<CookieShareHandle>;
+        fn SetCookieShareHandle(self: Pin<&mut HttpClientTask>, shareHandle: SharedPtr<CookieShareHandle>);
 
         #[namespace = "OHOS::NetStack::HttpClient"]
         type HttpClientTask;
@@ -507,6 +603,7 @@ pub(crate) mod ffi {
         fn GetCookies(self: &HttpClientResponse) -> &CxxString;
         fn GetResult(self: &HttpClientResponse) -> &CxxString;
         fn GetPerformanceTiming(response: Pin<&mut HttpClientResponse>) -> PerformanceInfoRust;
+        fn GetExtraInfoItem(response: &HttpClientResponse, key: &CxxString) -> String;
         fn GetExpectDataType(self: &HttpClientResponse) -> HttpDataType;
 
         #[namespace = "OHOS::NetStack::HttpClient"]
@@ -755,4 +852,3 @@ impl TryFrom<ffi::HttpDataType> for HttpDataType {
         Ok(ret)
     }
 }
-

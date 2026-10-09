@@ -44,6 +44,19 @@ std::atomic_bool g_cacheIsRunning(false);
 std::condition_variable g_cacheThreadCondition;
 std::condition_variable g_cacheNeedRunCondition;
 static LRUCacheDiskHandler DISK_LRU_CACHE(CACHE_FILE, 0); // NOLINT(cert-err58-cpp)
+static const char *const CONNECTION_EXTRA_INFO_KEYS[] = {
+    HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME,
+    HttpConstant::PARAM_KEY_TLS_VERSION,
+    HttpConstant::PARAM_KEY_CIPHER_SUITE,
+    HttpConstant::PARAM_KEY_LOCAL_ADDRESS,
+    HttpConstant::PARAM_KEY_REMOTE_ADDRESS,
+    HttpConstant::PARAM_KEY_LOCAL_PORT,
+    HttpConstant::PARAM_KEY_REMOTE_PORT,
+    HttpConstant::PARAM_KEY_IS_REUSED_CONNECTION,
+    HttpConstant::PARAM_KEY_IS_PROXY_CONNECTION,
+    HttpConstant::PARAM_KEY_IS_CACHE_HIT,
+    HttpConstant::PARAM_KEY_REDIRECT_COUNT,
+};
 static std::thread g_cacheWriteThread;
 static std::once_flag g_cacheAtExitRegisterFlag;
 
@@ -95,6 +108,10 @@ std::shared_ptr<HttpClientResponse> CacheProxy::ReadResponseFromCache()
     cachedResponse->SetCookies(Base64::Decode(responseFromCache[HttpConstant::RESPONSE_KEY_COOKIES]));
     cachedResponse->SetResponseTime(Base64::Decode(responseFromCache[HttpConstant::RESPONSE_TIME]));
     cachedResponse->SetRequestTime(Base64::Decode(responseFromCache[HttpConstant::REQUEST_TIME]));
+    for (const auto &key : CONNECTION_EXTRA_INFO_KEYS) {
+        cachedResponse->SetExtraInfoItem(key, Base64::Decode(responseFromCache[key]));
+    }
+    cachedResponse->SetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT, "true");
     cachedResponse->SetResponseCode(ResponseCode::OK);
     cachedResponse->ParseHeaders();
     return cachedResponse;
@@ -124,6 +141,9 @@ void CacheProxy::WriteResponseToCache(const HttpClientResponse &response)
     cacheResponse[HttpConstant::RESPONSE_KEY_COOKIES] = Base64::Encode(response.GetCookies());
     cacheResponse[HttpConstant::RESPONSE_TIME] = Base64::Encode(response.GetResponseTime());
     cacheResponse[HttpConstant::REQUEST_TIME] = Base64::Encode(response.GetRequestTime());
+    for (const auto &key : CONNECTION_EXTRA_INFO_KEYS) {
+        cacheResponse[key] = Base64::Encode(response.GetExtraInfoItem(key, ""));
+    }
 
     DISK_LRU_CACHE.Put(key_, cacheResponse);
 }

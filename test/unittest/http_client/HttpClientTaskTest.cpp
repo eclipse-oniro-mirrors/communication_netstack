@@ -15,7 +15,19 @@
 
 #include <iostream>
 #include <cstring>
+#include <string>
+#include <thread>
+#include <vector>
+#include <poll.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "openssl/ssl.h"
+#include "openssl/pem.h"
+#include "openssl/rsa.h"
+#include "openssl/evp.h"
+#include "openssl/x509v3.h"
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 #include "http_client_constant.h"
@@ -1088,16 +1100,185 @@ HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoTest002, TestSize.Level1)
     auto task = session.CreateTask(httpReq);
 
     std::string host;
-    std::string  exclusions;
+    std::string exclusions;
     int32_t port = 0;
     bool tunnel = false;
     task->GetHttpProxyInfo(host, port, exclusions, tunnel);
 
-    EXPECT_EQ(host, "");
+#if HAS_NETMANAGER_BASE
+    OHOS::NetManagerStandard::HttpProxy defaultProxy;
+    OHOS::NetManagerStandard::NetConnClient::GetInstance().GetDefaultHttpProxy(defaultProxy);
+    EXPECT_EQ(host, defaultProxy.GetHost());
+    EXPECT_EQ(port, static_cast<int32_t>(defaultProxy.GetPort()));
+    EXPECT_EQ(exclusions, OHOS::NetStack::CommonUtils::ToString(defaultProxy.GetExclusionList()));
+#else
+    EXPECT_TRUE(host.empty());
     EXPECT_EQ(port, 0);
-    EXPECT_EQ(exclusions, "");
+    EXPECT_TRUE(exclusions.empty());
+#endif
     EXPECT_FALSE(tunnel);
 }
+
+HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.httpbin.org/get");
+    httpReq.SetHttpProxyType(USE_SPECIFIED);
+    HttpProxy proxy;
+    proxy.host = "192.168.147.60";
+    proxy.port = 8888;
+    proxy.exclusions = "www.test.org";
+    proxy.tunnel = true;
+    httpReq.SetHttpProxy(proxy);
+
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::string host;
+    std::string exclusions;
+    int32_t port = 0;
+    bool tunnel = false;
+    task->GetHttpProxyInfo(host, port, exclusions, tunnel);
+
+    EXPECT_EQ(host, proxy.host);
+    EXPECT_EQ(port, proxy.port);
+    EXPECT_EQ(exclusions, proxy.exclusions);
+    EXPECT_TRUE(tunnel);
+}
+
+HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoWithAuthTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetHttpProxyType(USE_SPECIFIED);
+    HttpProxy proxy;
+    proxy.host = "192.168.147.60";
+    proxy.port = 8888;
+    proxy.exclusions = "www.test.org";
+    proxy.username.assign("user");
+    proxy.password.assign("pass");
+    httpReq.SetHttpProxy(proxy);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::string host;
+    std::string exclusions;
+    SecureData username;
+    SecureData password;
+    int32_t port = 0;
+    task->GetHttpProxyInfo(host, port, exclusions, username, password);
+
+    EXPECT_EQ(host, proxy.host);
+    EXPECT_EQ(port, proxy.port);
+    EXPECT_EQ(exclusions, proxy.exclusions);
+    EXPECT_EQ(username, proxy.username);
+    EXPECT_EQ(password, proxy.password);
+}
+
+HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoWithAuthTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetHttpProxyType(NOT_USE);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::string host;
+    std::string exclusions;
+    SecureData username;
+    SecureData password;
+    int32_t port = 0;
+    task->GetHttpProxyInfo(host, port, exclusions, username, password);
+
+    std::string tunnelHost;
+    std::string tunnelExclusions;
+    int32_t tunnelPort = 0;
+    bool tunnel = false;
+    task->GetHttpProxyInfo(tunnelHost, tunnelPort, tunnelExclusions, tunnel);
+    EXPECT_EQ(tunnelHost, host);
+    EXPECT_EQ(tunnelPort, port);
+    EXPECT_EQ(tunnelExclusions, exclusions);
+}
+
+HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoWithAuthTest003, TestSize.Level2)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetHttpProxyType(PROXY_TYPE_MAX);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::string host;
+    std::string exclusions;
+    SecureData username;
+    SecureData password;
+    int32_t port = -1;
+    // PROXY_TYPE_MAX queries the system default proxy, the branch must not crash
+    // even if no proxy is configured in the test environment.
+    task->GetHttpProxyInfo(host, port, exclusions, username, password);
+    EXPECT_GE(port, 0);
+}
+
+HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoWithAuthTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetHttpProxyType(USE_SPECIFIED);
+    HttpProxy proxy;
+    proxy.host = "192.168.147.60";
+    proxy.port = 8888;
+    proxy.exclusions = "";
+    proxy.tunnel = true;
+    httpReq.SetHttpProxy(proxy);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::string host;
+    std::string exclusions;
+    SecureData username;
+    SecureData password;
+    int32_t port = 0;
+    // a specified proxy without credentials yields empty username and password.
+    task->GetHttpProxyInfo(host, port, exclusions, username, password);
+    EXPECT_EQ(host, proxy.host);
+    EXPECT_EQ(port, proxy.port);
+    EXPECT_TRUE(exclusions.empty());
+    EXPECT_TRUE(username.empty());
+    EXPECT_TRUE(password.empty());
+}
+
+#if HAS_NETMANAGER_BASE
+HWTEST_F(HttpClientTaskTest, GetHttpProxyInfoWithAuthTest005, TestSize.Level2)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetHttpProxyType(PROXY_TYPE_MAX);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    OHOS::NetManagerStandard::HttpProxy defaultProxy;
+    OHOS::NetManagerStandard::NetConnClient::GetInstance().GetDefaultHttpProxy(defaultProxy);
+
+    std::string host;
+    std::string exclusions;
+    SecureData username;
+    SecureData password;
+    int32_t port = -1;
+    task->GetHttpProxyInfo(host, port, exclusions, username, password);
+
+    EXPECT_EQ(host, defaultProxy.GetHost());
+    EXPECT_EQ(port, static_cast<int32_t>(defaultProxy.GetPort()));
+    EXPECT_EQ(exclusions, OHOS::NetStack::CommonUtils::ToString(defaultProxy.GetExclusionList()));
+    EXPECT_EQ(std::string(username), std::string(defaultProxy.GetUsername()));
+    EXPECT_EQ(std::string(password), std::string(defaultProxy.GetPassword()));
+}
+#endif
 
 HWTEST_F(HttpClientTaskTest, SslCtxFunctionTest001, TestSize.Level1)
 {
@@ -2175,4 +2356,2436 @@ HWTEST_F(HttpClientTaskTest, GlobalResponseInterceptorCheckTest002, TestSize.Lev
     EXPECT_EQ(ret, true);
 }
 
+HWTEST_F(HttpClientTaskTest, CreateCookieShareHandleTest001, TestSize.Level1)
+{
+    auto shareHandle = CreateCookieShareHandle();
+    ASSERT_NE(shareHandle, nullptr);
+    EXPECT_NE(shareHandle->Get(), nullptr);
+    // the mutex used by the curl share lock callbacks must be accessible.
+    (void)shareHandle->GetMutex();
+    EXPECT_NE(shareHandle->Get(), nullptr);
+}
+
+HWTEST_F(HttpClientTaskTest, SetCookieShareHandleTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    auto shareHandle = CreateCookieShareHandle();
+    ASSERT_NE(shareHandle, nullptr);
+
+    task->SetCookieShareHandle(shareHandle);
+    EXPECT_EQ(task->cookieShareHandle_, shareHandle);
+    EXPECT_EQ(task->cookieShareHandle_->Get(), shareHandle->Get());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCookieShareHandleTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    task->SetCookieShareHandle(nullptr);
+    EXPECT_EQ(task->cookieShareHandle_, nullptr);
+}
+
+HWTEST_F(HttpClientTaskTest, SetCookieShareHandleTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    auto shareHandle = CreateCookieShareHandle();
+    ASSERT_NE(shareHandle, nullptr);
+    curl_share_cleanup(shareHandle->handle_);
+    shareHandle->handle_ = nullptr;
+
+    task->SetCookieShareHandle(shareHandle);
+    EXPECT_EQ(task->cookieShareHandle_, shareHandle);
+}
+
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+HWTEST_F(HttpClientTaskTest, RootCaVerifiedTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_FALSE(task->IsRootCaVerified());
+    EXPECT_FALSE(task->IsRootCaVerifiedOk());
+
+    task->SetRootCaVerified();
+    EXPECT_TRUE(task->IsRootCaVerified());
+
+    task->SetRootCaVerifiedOk(true);
+    EXPECT_TRUE(task->IsRootCaVerifiedOk());
+
+    task->SetRootCaVerifiedOk(false);
+    EXPECT_FALSE(task->IsRootCaVerifiedOk());
+}
+#endif
+
+#if defined(HTTP_MULTIPATH_CERT_ENABLE) || defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE)
+constexpr const char *TEST_TLS_HOST = "127.0.0.1";
+constexpr const char *TEST_TLS_ROOT_CN = "Netstack Test Root CA";
+constexpr int TEST_RSA_KEY_BITS = 2048;
+constexpr long TEST_CERT_VALID_SECONDS = 24 * 60 * 60;
+constexpr int TEST_SERVER_TIMEOUT_MS = 5000;
+constexpr int TEST_SERVER_BACKLOG = 1;
+constexpr const char *TEST_SERVER_RESPONSE =
+    "HTTP/1.1 200 OK\r\nSet-Cookie: session=netstack; path=/\r\nContent-Length: 2\r\n"
+    "Connection: close\r\n\r\nOK";
+constexpr int HTTP2_FRAME_HEADER_LEN = 9;
+constexpr uint8_t HTTP2_DATA_FRAME = 0x0;
+constexpr uint8_t HTTP2_HEADERS_FRAME = 0x1;
+constexpr uint8_t HTTP2_SETTINGS_FRAME = 0x4;
+constexpr uint8_t HTTP2_FLAG_END_STREAM = 0x1;
+constexpr uint8_t HTTP2_FLAG_END_HEADERS = 0x4;
+constexpr uint8_t HTTP2_FLAG_ACK = 0x1;
+
+EVP_PKEY *CreateTestKey()
+{
+    EVP_PKEY_CTX *pkeyCtx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, nullptr);
+    if (pkeyCtx == nullptr) {
+        return nullptr;
+    }
+    EVP_PKEY *pkey = nullptr;
+    if (EVP_PKEY_keygen_init(pkeyCtx) <= 0 ||
+        EVP_PKEY_CTX_set_rsa_keygen_bits(pkeyCtx, TEST_RSA_KEY_BITS) <= 0 ||
+        EVP_PKEY_keygen(pkeyCtx, &pkey) <= 0) {
+        pkey = nullptr;
+    }
+    EVP_PKEY_CTX_free(pkeyCtx);
+    return pkey;
+}
+
+void AddTestCertExtension(X509 *cert, int nid, const char *value)
+{
+    X509_EXTENSION *ext = X509V3_EXT_conf_nid(nullptr, nullptr, nid, const_cast<char *>(value));
+    if (ext == nullptr) {
+        return;
+    }
+    X509_add_ext(cert, ext, -1);
+    X509_EXTENSION_free(ext);
+}
+
+X509 *CreateTestCert(EVP_PKEY *pkey, const char *commonName, X509 *issuerCert, EVP_PKEY *issuerKey)
+{
+    if (pkey == nullptr) {
+        return nullptr;
+    }
+    X509 *cert = X509_new();
+    if (cert == nullptr) {
+        return nullptr;
+    }
+    X509_set_version(cert, X509_VERSION_3);
+    ASN1_INTEGER_set(X509_get_serialNumber(cert), 1);
+    X509_gmtime_adj(X509_get_notBefore(cert), 0);
+    X509_gmtime_adj(X509_get_notAfter(cert), TEST_CERT_VALID_SECONDS);
+    X509_NAME *name = X509_get_subject_name(cert);
+    bool ok = name != nullptr && X509_set_pubkey(cert, pkey) == 1 &&
+        X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC,
+            reinterpret_cast<const unsigned char *>(commonName), -1, -1, 0) == 1;
+    if (issuerCert == nullptr) {
+        ok = ok && X509_set_issuer_name(cert, name) == 1;
+        AddTestCertExtension(cert, NID_basic_constraints, "critical,CA:TRUE");
+    } else {
+        ok = ok && X509_set_issuer_name(cert, X509_get_subject_name(issuerCert)) == 1;
+        AddTestCertExtension(cert, NID_basic_constraints, "critical,CA:FALSE");
+    }
+    AddTestCertExtension(cert, NID_key_usage, "digitalSignature,keyEncipherment");
+    if (!ok || X509_sign(cert, issuerCert == nullptr ? pkey : issuerKey, EVP_sha256()) <= 0) {
+        X509_free(cert);
+        return nullptr;
+    }
+    return cert;
+}
+
+std::string CertToPem(X509 *cert)
+{
+    if (cert == nullptr) {
+        return {};
+    }
+    BIO *bio = BIO_new(BIO_s_mem());
+    if (bio == nullptr) {
+        return {};
+    }
+    std::string pem;
+    if (PEM_write_bio_X509(bio, cert) == 1) {
+        char *data = nullptr;
+        auto len = BIO_get_mem_data(bio, &data);
+        if (data != nullptr && len > 0) {
+            pem.assign(data, static_cast<size_t>(len));
+        }
+    }
+    BIO_free(bio);
+    return pem;
+}
+
+class HttpTlsTestServer {
+public:
+    HttpTlsTestServer() = default;
+    ~HttpTlsTestServer()
+    {
+        Stop();
+    }
+
+    bool Start()
+    {
+        if (!InitCerts() || !InitSocket()) {
+            Stop();
+            return false;
+        }
+        thread_ = std::thread([this]() { Serve(); });
+        return true;
+    }
+
+    uint16_t GetPort() const
+    {
+        return port_;
+    }
+
+    const std::string &GetRootCertPem() const
+    {
+        return rootCertPem_;
+    }
+
+    const std::string &GetServerCertPem() const
+    {
+        return serverCertPem_;
+    }
+
+    void SetResponse(const std::string &response)
+    {
+        response_ = response;
+    }
+
+    void SetHttp2(bool http2)
+    {
+        http2_ = http2;
+    }
+
+private:
+    bool InitCerts()
+    {
+        EVP_PKEY *rootKey = CreateTestKey();
+        X509 *rootCert = CreateTestCert(rootKey, TEST_TLS_ROOT_CN, nullptr, nullptr);
+        EVP_PKEY *serverKey = CreateTestKey();
+        X509 *serverCert = CreateTestCert(serverKey, TEST_TLS_HOST, rootCert, rootKey);
+        bool ok = rootCert != nullptr && serverKey != nullptr && serverCert != nullptr;
+        if (ok) {
+            rootCertPem_ = CertToPem(rootCert);
+            serverCertPem_ = CertToPem(serverCert);
+            serverCtx_ = SSL_CTX_new(TLS_server_method());
+            if (serverCtx_ != nullptr && http2_) {
+                SSL_CTX_set_alpn_select_cb(serverCtx_, SelectAlpnH2, nullptr);
+            }
+            ok = serverCtx_ != nullptr && !rootCertPem_.empty() &&
+                SSL_CTX_use_certificate(serverCtx_, serverCert) == 1 &&
+                SSL_CTX_use_PrivateKey(serverCtx_, serverKey) == 1;
+            if (ok && SSL_CTX_add_extra_chain_cert(serverCtx_, rootCert) == 1) {
+                // ownership of the chain cert is transferred to the ssl ctx
+                rootCert = nullptr;
+            } else {
+                ok = false;
+            }
+        }
+        EVP_PKEY_free(rootKey);
+        EVP_PKEY_free(serverKey);
+        X509_free(rootCert);
+        X509_free(serverCert);
+        return ok;
+    }
+
+    bool InitSocket()
+    {
+        listenFd_ = ::socket(AF_INET, SOCK_STREAM, 0);
+        if (listenFd_ < 0) {
+            return false;
+        }
+        struct sockaddr_in addr = {};
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        addr.sin_port = 0;
+        if (::bind(listenFd_, reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr)) != 0 ||
+            ::listen(listenFd_, TEST_SERVER_BACKLOG) != 0) {
+            return false;
+        }
+        socklen_t len = sizeof(addr);
+        if (::getsockname(listenFd_, reinterpret_cast<struct sockaddr *>(&addr), &len) != 0) {
+            return false;
+        }
+        port_ = ntohs(addr.sin_port);
+        return true;
+    }
+
+    void Serve()
+    {
+        if (listenFd_ < 0) {
+            return;
+        }
+        struct pollfd pfd = { listenFd_, POLLIN, 0 };
+        if (::poll(&pfd, 1, TEST_SERVER_TIMEOUT_MS) <= 0) {
+            return;
+        }
+        int connFd = ::accept(listenFd_, nullptr, nullptr);
+        if (connFd < 0) {
+            return;
+        }
+        struct timeval timeout = { TEST_SERVER_TIMEOUT_MS / 1000, 0 };
+        (void)::setsockopt(connFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+        (void)::setsockopt(connFd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+        SSL *ssl = SSL_new(serverCtx_);
+        if (ssl != nullptr) {
+            SSL_set_fd(ssl, connFd);
+            if (SSL_accept(ssl) > 0) {
+                if (http2_ && NegotiatedH2(ssl)) {
+                    ServeHttp2(ssl);
+                } else {
+                    char buffer[1024] = {0};
+                    (void)SSL_read(ssl, buffer, sizeof(buffer) - 1);
+                    (void)SSL_write(ssl, response_.c_str(), static_cast<int>(response_.size()));
+                    (void)SSL_shutdown(ssl);
+                }
+            }
+            SSL_free(ssl);
+        }
+        ::close(connFd);
+    }
+
+    static int SelectAlpnH2(SSL *, const unsigned char **out, unsigned char *outLen, const unsigned char *in,
+        unsigned int inLen, void *)
+    {
+        static const unsigned char h2[] = {2, 'h', '2'};
+        if (SSL_select_next_proto(const_cast<unsigned char **>(out), outLen, in, inLen, h2, sizeof(h2)) ==
+            OPENSSL_NPN_NEGOTIATED) {
+            return SSL_TLSEXT_ERR_OK;
+        }
+        return SSL_TLSEXT_ERR_ALERT_FATAL;
+    }
+
+    bool NegotiatedH2(SSL *ssl)
+    {
+        const unsigned char *proto = nullptr;
+        unsigned int protoLen = 0;
+        SSL_get0_alpn_selected(ssl, &proto, &protoLen);
+        return proto != nullptr && protoLen == strlen("h2") && memcmp(proto, "h2", protoLen) == 0;
+    }
+
+    static int ReadFull(SSL *ssl, void *buf, int len)
+    {
+        auto *p = static_cast<char *>(buf);
+        int total = 0;
+        while (total < len) {
+            int n = SSL_read(ssl, p + total, len - total);
+            if (n <= 0) {
+                return -1;
+            }
+            total += n;
+        }
+        return total;
+    }
+
+    static int WriteFull(SSL *ssl, const void *buf, int len)
+    {
+        auto *p = static_cast<const char *>(buf);
+        int total = 0;
+        while (total < len) {
+            int n = SSL_write(ssl, p + total, len - total);
+            if (n <= 0) {
+                return -1;
+            }
+            total += n;
+        }
+        return total;
+    }
+
+    static bool DiscardBytes(SSL *ssl, uint32_t len)
+    {
+        char buf[256];
+        while (len > 0) {
+            int chunk = len < sizeof(buf) ? static_cast<int>(len) : static_cast<int>(sizeof(buf));
+            if (ReadFull(ssl, buf, chunk) < 0) {
+                return false;
+            }
+            len -= static_cast<uint32_t>(chunk);
+        }
+        return true;
+    }
+
+    static uint32_t Http2FrameLength(const uint8_t header[HTTP2_FRAME_HEADER_LEN])
+    {
+        return (static_cast<uint32_t>(header[0]) << 16) | (static_cast<uint32_t>(header[1]) << 8) | header[2];
+    }
+
+    static bool WriteHttp2Frame(SSL *ssl, uint8_t type, uint8_t flags, uint32_t streamId,
+        const std::string &payload)
+    {
+        uint32_t length = static_cast<uint32_t>(payload.size());
+        uint8_t header[HTTP2_FRAME_HEADER_LEN] = {
+            static_cast<uint8_t>((length >> 16) & 0xFF),
+            static_cast<uint8_t>((length >> 8) & 0xFF),
+            static_cast<uint8_t>(length & 0xFF),
+            type,
+            flags,
+            0,
+            0,
+            0,
+            static_cast<uint8_t>(streamId),
+        };
+        if (WriteFull(ssl, header, sizeof(header)) < 0) {
+            return false;
+        }
+        return payload.empty() || WriteFull(ssl, payload.data(), static_cast<int>(payload.size())) >= 0;
+    }
+
+    void ServeHttp2(SSL *ssl)
+    {
+        char clientPreface[24] = {0};
+        if (ReadFull(ssl, clientPreface, sizeof(clientPreface)) < 0 ||
+            memcmp(clientPreface, "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n", sizeof(clientPreface)) != 0) {
+            return;
+        }
+        if (!WriteHttp2Frame(ssl, HTTP2_SETTINGS_FRAME, 0, 0, "")) {
+            return;
+        }
+        while (true) {
+            uint8_t frameHeader[HTTP2_FRAME_HEADER_LEN] = {0};
+            if (ReadFull(ssl, frameHeader, sizeof(frameHeader)) < 0) {
+                return;
+            }
+            uint32_t length = Http2FrameLength(frameHeader);
+            uint8_t type = frameHeader[3];
+            uint8_t flags = frameHeader[4];
+            if (type == HTTP2_SETTINGS_FRAME && (flags & HTTP2_FLAG_ACK) == 0) {
+                if (!WriteHttp2Frame(ssl, HTTP2_SETTINGS_FRAME, HTTP2_FLAG_ACK, 0, "")) {
+                    return;
+                }
+            }
+            if (type == HTTP2_HEADERS_FRAME) {
+                if (!DiscardBytes(ssl, length)) {
+                    return;
+                }
+                break;
+            }
+            if (!DiscardBytes(ssl, length)) {
+                return;
+            }
+        }
+
+        std::string body = "OK";
+        std::string hpack;
+        hpack.push_back(static_cast<char>(0x88));
+        hpack.push_back(0x00);
+        const std::string name = "content-length";
+        hpack.push_back(static_cast<char>(name.size()));
+        hpack += name;
+        std::string bodyLength = std::to_string(body.size());
+        hpack.push_back(static_cast<char>(bodyLength.size()));
+        hpack += bodyLength;
+        if (!WriteHttp2Frame(ssl, HTTP2_HEADERS_FRAME, HTTP2_FLAG_END_HEADERS, 1, hpack)) {
+            return;
+        }
+        (void)WriteHttp2Frame(ssl, HTTP2_DATA_FRAME, HTTP2_FLAG_END_STREAM, 1, body);
+        (void)SSL_shutdown(ssl);
+    }
+
+    void Stop()
+    {
+        if (thread_.joinable()) {
+            thread_.join();
+        }
+        if (listenFd_ >= 0) {
+            ::close(listenFd_);
+            listenFd_ = -1;
+        }
+        if (serverCtx_ != nullptr) {
+            SSL_CTX_free(serverCtx_);
+            serverCtx_ = nullptr;
+        }
+    }
+
+    SSL_CTX *serverCtx_ = nullptr;
+    std::thread thread_;
+    std::string rootCertPem_;
+    std::string serverCertPem_;
+    std::string response_ = TEST_SERVER_RESPONSE;
+    bool http2_ = false;
+    uint16_t port_ = 0;
+    int listenFd_ = -1;
+};
+
+std::string BuildLocalTlsUrl(uint16_t port)
+{
+    return std::string("https://") + TEST_TLS_HOST + ":" + std::to_string(port) + "/";
+}
+
+std::string ComputeSpkiPin(const std::string &certPem)
+{
+    BIO *bio = BIO_new_mem_buf(certPem.data(), static_cast<int>(certPem.size()));
+    if (bio == nullptr) {
+        return {};
+    }
+    X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    BIO_free(bio);
+    if (cert == nullptr) {
+        return {};
+    }
+    unsigned char *spkiDer = nullptr;
+    int spkiLen = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(cert), &spkiDer);
+    X509_free(cert);
+    if (spkiLen <= 0 || spkiDer == nullptr) {
+        return {};
+    }
+    std::string digest;
+    bool ok = OHOS::NetStack::CommonUtils::Sha256sum(spkiDer, static_cast<size_t>(spkiLen), digest);
+    OPENSSL_free(spkiDer);
+    if (!ok) {
+        return {};
+    }
+    return std::string("sha256//") + digest;
+}
+#endif
+
+
+HWTEST_F(HttpClientTaskTest, SetProxyOptionTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetProxyOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetProxyOptionTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    Socks5Proxy socks5Proxy;
+    socks5Proxy.host = "127.0.0.1";
+    socks5Proxy.port = 1080;
+    httpReq.SetSocks5Proxy(socks5Proxy);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetProxyOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetHttpProxyOptionTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetHttpProxyOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetHttpProxyOptionTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetHttpProxyType(USE_SPECIFIED);
+    HttpProxy proxy;
+    proxy.host = "192.168.147.60";
+    proxy.port = 8888;
+    proxy.exclusions = "www.httpbin.org";
+    httpReq.SetHttpProxy(proxy);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetHttpProxyOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetHttpProxyOptionTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.httpbin.org/get");
+    httpReq.SetHttpProxyType(USE_SPECIFIED);
+    HttpProxy proxy;
+    proxy.host = "https://192.168.147.60";
+    proxy.port = 8888;
+    proxy.exclusions = "www.test.org";
+    httpReq.SetHttpProxy(proxy);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetHttpProxyOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetHttpProxyOptionTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetHttpProxyType(USE_SPECIFIED);
+    HttpProxy proxy;
+    proxy.host = "192.168.147.60";
+    proxy.port = 8888;
+    proxy.exclusions = "www.test.org";
+    proxy.username.assign("user");
+    proxy.password.assign("pass");
+    httpReq.SetHttpProxy(proxy);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetHttpProxyOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetSocks5ProxyOptionTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetSocks5ProxyOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetSocks5ProxyOptionTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    Socks5Proxy socks5Proxy;
+    socks5Proxy.host = "127.0.0.1";
+    socks5Proxy.port = 1080;
+    socks5Proxy.exclusionList = "www.httpbin.org";
+    httpReq.SetSocks5Proxy(socks5Proxy);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetSocks5ProxyOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetSocks5ProxyOptionTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    Socks5Proxy socks5Proxy;
+    socks5Proxy.host = "127.0.0.1";
+    socks5Proxy.port = 1080;
+    socks5Proxy.dnsStrategy = Socks5DnsStrategy::PROXY_MODE;
+    httpReq.SetSocks5Proxy(socks5Proxy);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetSocks5ProxyOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetSocks5ProxyOptionTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    Socks5Proxy socks5Proxy;
+    socks5Proxy.host = "127.0.0.1";
+    socks5Proxy.port = 1080;
+    socks5Proxy.dnsStrategy = Socks5DnsStrategy::SYSTEM_MODE;
+    socks5Proxy.username.assign("user");
+    socks5Proxy.password.assign("pass");
+    httpReq.SetSocks5Proxy(socks5Proxy);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetSocks5ProxyOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetSocks5ProxyOptionTest005, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    Socks5Proxy socks5Proxy;
+    socks5Proxy.host = "127.0.0.1";
+    socks5Proxy.port = 1080;
+    socks5Proxy.dnsStrategy = Socks5DnsStrategy::UNSPECIFIED;
+    httpReq.SetSocks5Proxy(socks5Proxy);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetSocks5ProxyOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetSocks5ProxyOptionTest006, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    Socks5Proxy socks5Proxy;
+    socks5Proxy.host = "socks5h://127.0.0.1";
+    socks5Proxy.port = 1080;
+    socks5Proxy.dnsStrategy = Socks5DnsStrategy::UNSPECIFIED;
+    socks5Proxy.username.assign("user");
+    socks5Proxy.password.assign("pass");
+    httpReq.SetSocks5Proxy(socks5Proxy);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetSocks5ProxyOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetExtraInfoOptionTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetExtraInfoOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetOtherCurlOptionTest006, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.httpbin.org/get");
+    Socks5Proxy socks5Proxy;
+    socks5Proxy.host = "127.0.0.1";
+    socks5Proxy.port = 1080;
+    socks5Proxy.dnsStrategy = Socks5DnsStrategy::PROXY_MODE;
+    httpReq.SetSocks5Proxy(socks5Proxy);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetOtherCurlOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetIpResolveTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetIpResolve(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetIpResolveTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetAddressFamily("ONLY_V4");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetIpResolve(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetIpResolveTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetAddressFamily("ONLY_V6");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetIpResolve(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetIpResolveTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetAddressFamily("UNKNOWN_FAMILY");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetIpResolve(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, MethodForPostPatchTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->MethodForPost(HttpConstant::HTTP_METHOD_PATCH));
+    EXPECT_TRUE(task->MethodForPost(HttpConstant::HTTP_METHOD_POST));
+    EXPECT_TRUE(task->MethodForPost(HttpConstant::HTTP_METHOD_PUT));
+    EXPECT_TRUE(task->MethodForPost(HttpConstant::HTTP_METHOD_DELETE));
+    EXPECT_FALSE(task->MethodForPost(""));
+    EXPECT_FALSE(task->MethodForPost(HttpConstant::HTTP_METHOD_GET));
+}
+
+HWTEST_F(HttpClientTaskTest, GetSizeFromCurlPatchTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetMethod(HttpConstant::HTTP_METHOD_PATCH);
+    std::string body = "patch-body";
+    httpReq.ReplaceBody(body.c_str(), body.size());
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_GE(task->GetSizeFromCurl(task->curlHandle_), 0);
+}
+
+HWTEST_F(HttpClientTaskTest, GetSizeFromCurlPatchTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetMethod(HttpConstant::HTTP_METHOD_GET);
+    std::string body = "get-body";
+    httpReq.ReplaceBody(body.c_str(), body.size());
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_GE(task->GetSizeFromCurl(task->curlHandle_), 0);
+}
+
+HWTEST_F(HttpClientTaskTest, GetSizeFromCurlPatchTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetMethod(HttpConstant::HTTP_METHOD_PUT);
+    std::string filePath = "/bin/who";
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq, UPLOAD, filePath);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_GE(task->GetSizeFromCurl(task->curlHandle_), 0);
+}
+
+HWTEST_F(HttpClientTaskTest, GetTlsVersionAndCipherSuiteTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    CURL *curlHandle = task->curlHandle_;
+    task->curlHandle_ = nullptr;
+    auto result = task->GetTlsVersionAndCipherSuite();
+    task->curlHandle_ = curlHandle;
+    ASSERT_NE(task->curlHandle_, nullptr);
+
+    EXPECT_EQ(result.first, TlsVersion::DEFAULT);
+    EXPECT_EQ(result.second, CipherSuite::INVALID);
+}
+
+HWTEST_F(HttpClientTaskTest, GetTlsVersionAndCipherSuiteTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    auto result = task->GetTlsVersionAndCipherSuite();
+    EXPECT_EQ(result.first, TlsVersion::DEFAULT);
+    EXPECT_EQ(result.second, CipherSuite::INVALID);
+}
+
+HWTEST_F(HttpClientTaskTest, ProcessConnectionExtraInfoTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    CURL *curlHandle = task->curlHandle_;
+    task->curlHandle_ = nullptr;
+    task->ProcessConnectionExtraInfo();
+    task->curlHandle_ = curlHandle;
+    ASSERT_NE(task->curlHandle_, nullptr);
+
+    EXPECT_TRUE(task->GetResponse().GetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT, "").empty());
+}
+
+HWTEST_F(HttpClientTaskTest, ProcessConnectionExtraInfoTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    task->ProcessConnectionExtraInfo();
+    EXPECT_EQ(task->GetResponse().GetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, ""),
+        "Unknown/Non-HTTP");
+    EXPECT_EQ(task->GetResponse().GetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT, ""), "false");
+    EXPECT_EQ(task->GetResponse().GetExtraInfoItem(HttpConstant::PARAM_KEY_IS_PROXY_CONNECTION, ""), "false");
+    EXPECT_EQ(task->GetResponse().GetExtraInfoItem(HttpConstant::PARAM_KEY_IS_REUSED_CONNECTION, ""), "true");
+    EXPECT_FALSE(task->GetResponse().GetExtraInfoItem(HttpConstant::PARAM_KEY_REDIRECT_COUNT, "").empty());
+}
+
+HWTEST_F(HttpClientTaskTest, SetDnsOptionTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetDnsOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetDnsOptionTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    std::vector<std::string> dnsServers = { "http://dns.xtstest1.com/dns-query", "" };
+    httpReq.SetDNSServers(dnsServers);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetDnsOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetDnsOptionTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    std::vector<std::string> dnsServers = { "1.1.1.1", "8.8.8.8", "2.2.2.2", "3.3.3.3", "not-ip" };
+    httpReq.SetDNSServers(dnsServers);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetDnsOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetDnsOptionTest005, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    std::vector<std::string> dnsServers = { "::1", "8.8.8.8" };
+    httpReq.SetDNSServers(dnsServers);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetDnsOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetSslTypeAndClientEncCertTlcpTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetSslType(SslType::TLCP);
+    httpReq.SetCaPath("/etc/ssl/certs/ca.pem");
+    HttpClientCert encCert;
+    encCert.certPath = "/data/enc.pem";
+    encCert.keyPath = "/data/enc.key";
+    encCert.certType = "PEM";
+    encCert.keyPassword.assign("password");
+    httpReq.SetClientEncCert(encCert);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetSslTypeAndClientEncCert(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetSslTypeAndClientEncCertTlcpTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetSslType(SslType::TLCP);
+    HttpClientCert encCert;
+    encCert.certPath = "/data/enc.pem";
+    httpReq.SetClientEncCert(encCert);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetSslTypeAndClientEncCert(task->curlHandle_));
+}
+
+constexpr const char *TEST_CA_CERT_PEM = R"pem(-----BEGIN CERTIFICATE-----
+MIIDFzCCAf+gAwIBAgIUZqex0hG/EpGemxPP6DRu3By31NcwDQYJKoZIhvcNAQEL
+BQAwGzEZMBcGA1UEAwwQTmV0c3RhY2sgVGVzdCBDQTAeFw0yNjEwMTkwMjU1MjZa
+Fw0zNjEwMTYwMjU1MjZaMBsxGTAXBgNVBAMMEE5ldHN0YWNrIFRlc3QgQ0EwggEi
+MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCrQlhJIwYcz+9BRQnSTLU7bbWg
+Lhbji69KnzwPhYzJ7iZtBe0rWAQu83wPjNi2MFvN4iTCbtKpJSwrZyRui1gm/P1P
+7JeMdJAoRfAfiBSktEMxzI3R4B1znFWCxWUyrS1rBlxVi6l5bWLI2sLb3KasPV9b
+FFmCmduOqx1kE5ugV9P2PJwUMRkIFb8zZ6ZdPmiPT0L+XrM0Xc5f6g3snAuOPJ01
+Q2X5+HigsvKDTcuXJkdX2IVvlRHSOpdNvaDyMki4ul2V4Vl0mciua6amJ2NtFjcY
+/FViENv+5ZDsOODPwkNlLu5ewnlRsX1Omp7YPOg48sWDPlY0eoROsOqE1E+dAgMB
+AAGjUzBRMB0GA1UdDgQWBBS52jrxHdwEz9u3jsQwRO+55InKqzAfBgNVHSMEGDAW
+gBS52jrxHdwEz9u3jsQwRO+55InKqzAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3
+DQEBCwUAA4IBAQCh+QrvGp+DN1D9XqzLa1B4OUDBEeRxzt7N9oEa7/rOKwWRL3CI
+Hc/WzJWJDRGlsypoe9b1ZZH8qtTiUxkuqSSfYSBomsT3n5qBJorD6zCe6K3TR55Q
+fuTuPHjzDoyYEzb24h0Kvw7zUaExB58C5KFzRoqmR1MbzZiUIMihkskkxHCeJ6qq
+n49TudxhTBqm8BDh5mPuJDC0LGDtti8ii2DDcnic42tQzPEOdRsY6NVq4WSPYWaf
+4C0x87s8q9t3CPbNn1wN0SAFAuPVIb98TKWOiqdBn1ENaQAOxWwsKnE92LxvUmCv
+TznV7u6wmf3e3OKHYxvm+3ZxjaQ96jy7v9/m
+-----END CERTIFICATE-----
+)pem";
+
+constexpr const char *TEST_CA_CRL_PEM = R"pem(-----BEGIN X509 CRL-----
+MIIBdDBeAgEBMA0GCSqGSIb3DQEBCwUAMBsxGTAXBgNVBAMMEE5ldHN0YWNrIFRl
+c3QgQ0EXDTI2MTAxOTAyNTUyNloXDTI2MTExODAyNTUyNlqgDzANMAsGA1UdFAQE
+AgIQADANBgkqhkiG9w0BAQsFAAOCAQEAKPRmm7eOdp3pZVb6TpjPwj08/gfItbNI
+gx9gj3Y/8z6tg6Ub8Qkh9QduW8/3sAKMOL5i2cFhWO2NNYWC8wNXcxX7fmNStGu8
+mJtU2VpF+l2bD10lnttwMS2SRBg1c8GvAH6vBuT4v/tqqhSg18F40WXwFjWhYJ0o
+VjYybXDAc8P5hxi0qj2pEXPjMl1DCyUmNkyRl+a1S0/lijb7usKFhZphdtAgH+94
+Y+vG0uF8snc6Rqzr+FXypzfQcyimH1rVCYgkCt8kBjABPlp/MryPN72gofjdvQJh
+0PYrtR5mTJIPzGuuQk1TmhJycIy0YvIyO6us4tniV5Jhk6DfocMskw==
+-----END X509 CRL-----
+)pem";
+
+std::string BuildValidCaData()
+{
+    return std::string(TEST_CA_CERT_PEM) + TEST_CA_CRL_PEM;
+}
+
+HWTEST_F(HttpClientTaskTest, MultiPathSslCtxFunctionTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_EQ(task->MultiPathSslCtxFunction(nullptr, nullptr), CURLE_SSL_CERTPROBLEM);
+}
+
+HWTEST_F(HttpClientTaskTest, MultiPathSslCtxFunctionTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    SSL_CTX *sslCtx = SSL_CTX_new(TLS_client_method());
+    ASSERT_NE(sslCtx, nullptr);
+    EXPECT_EQ(task->MultiPathSslCtxFunction(nullptr, sslCtx), CURLE_OK);
+    SSL_CTX_free(sslCtx);
+}
+
+HWTEST_F(HttpClientTaskTest, MultiPathSslCtxFunctionTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetCaData("not-a-valid-pem-certificate");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    SSL_CTX *sslCtx = SSL_CTX_new(TLS_client_method());
+    ASSERT_NE(sslCtx, nullptr);
+    EXPECT_EQ(task->MultiPathSslCtxFunction(nullptr, sslCtx), CURLE_SSL_CACERT_BADFILE);
+    SSL_CTX_free(sslCtx);
+}
+
+HWTEST_F(HttpClientTaskTest, MultiPathSslCtxFunctionTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetCaData(BuildValidCaData());
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    SSL_CTX *sslCtx = SSL_CTX_new(TLS_client_method());
+    ASSERT_NE(sslCtx, nullptr);
+    EXPECT_EQ(task->MultiPathSslCtxFunction(nullptr, sslCtx), CURLE_OK);
+    SSL_CTX_free(sslCtx);
+}
+
+HWTEST_F(HttpClientTaskTest, MultiPathSslCtxFunctionTest005, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetCanSkipCertVerifyFlag(true);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    SSL_CTX *sslCtx = SSL_CTX_new(TLS_client_method());
+    ASSERT_NE(sslCtx, nullptr);
+    EXPECT_EQ(task->MultiPathSslCtxFunction(nullptr, sslCtx), CURLE_OK);
+    SSL_CTX_free(sslCtx);
+}
+
+HWTEST_F(HttpClientTaskTest, SslCtxFunctionWithValidationTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetValidationCallback([](const std::vector<std::string> &, const std::string &, const std::string &) {
+        return true;
+    });
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_EQ(task->SslCtxFunction(nullptr, nullptr), CURLE_SSL_CERTPROBLEM);
+
+    SSL_CTX *sslCtx = SSL_CTX_new(TLS_client_method());
+    ASSERT_NE(sslCtx, nullptr);
+    EXPECT_EQ(task->SslCtxFunction(nullptr, sslCtx), CURLE_OK);
+    SSL_CTX_free(sslCtx);
+}
+
+HWTEST_F(HttpClientTaskTest, SslCtxFunctionWithoutValidationTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_EQ(task->SslCtxFunction(nullptr, nullptr), CURLE_SSL_CERTPROBLEM);
+}
+
+HWTEST_F(HttpClientTaskTest, SslCtxFunctionTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    std::string pin = std::string("sha256//") + std::string(44, 'A');
+    httpReq.SetPinnedPubkey(pin);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    SSL_CTX *sslCtx = SSL_CTX_new(TLS_client_method());
+    ASSERT_NE(sslCtx, nullptr);
+    EXPECT_EQ(task->SslCtxFunction(nullptr, sslCtx), CURLE_OK);
+    SSL_CTX_free(sslCtx);
+}
+
+HWTEST_F(HttpClientTaskTest, VerifyRootCaSslCtxFunctionTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_EQ(task->VerifyRootCaSslCtxFunction(nullptr, nullptr), CURLE_SSL_CERTPROBLEM);
+
+    SSL_CTX *sslCtx = SSL_CTX_new(TLS_client_method());
+    ASSERT_NE(sslCtx, nullptr);
+    EXPECT_EQ(task->VerifyRootCaSslCtxFunction(nullptr, sslCtx), CURLE_OK);
+    SSL_CTX_free(sslCtx);
+}
+
+HWTEST_F(HttpClientTaskTest, SetPinnedPubkeyOptionTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetPinnedPubkeyOption(task->curlHandle_, "www.baidu.com"));
+}
+
+#if HAS_NETMANAGER_BASE
+HWTEST_F(HttpClientTaskTest, SetPinnedPubkeyOptionTest002, TestSize.Level2)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.pin-example.com");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    auto configInstance = OHOS::NetManagerStandard::NetworkSecurityConfig::GetInstance();
+    OHOS::NetManagerStandard::DomainConfig config = {};
+    OHOS::NetManagerStandard::Domain domain;
+    domain.domainName_ = "www.pin-example.com";
+    domain.includeSubDomains_ = false;
+    config.domains_.push_back(domain);
+    config.pinSet_.isOpenMode = true;
+    config.pinSet_.shouldVerifyRootCa_ = true;
+    OHOS::NetManagerStandard::Pin pin;
+    pin.digestAlgorithm_ = "sha256";
+    pin.digest_ = "TEST";
+    config.pinSet_.pins_.push_back(pin);
+    configInstance.domainConfigs_.push_back(config);
+
+    EXPECT_TRUE(task->SetPinnedPubkeyOption(task->curlHandle_, "www.pin-example.com"));
+    EXPECT_EQ(task->GetRequest().GetPinnedPubkey(), "sha256//TEST");
+    configInstance.domainConfigs_.pop_back();
+}
+#endif
+
+HWTEST_F(HttpClientTaskTest, SetSslCtxFunctionOptionTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetSslType(SslType::TLS);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetSslCtxFunctionOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetSslCtxFunctionOptionTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetSslType(SslType::TLCP);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetSslCtxFunctionOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetServerSSLCertOptionTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetCanSkipCertVerifyFlag(true);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetServerSSLCertOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetServerSSLCertOptionTest005, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetValidationCallback([](const std::vector<std::string> &, const std::string &, const std::string &) {
+        return true;
+    });
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetServerSSLCertOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetServerSSLCertOptionTest006, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetPartialChain(true);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetServerSSLCertOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetServerSSLCertOptionTest007, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetPartialChain(false);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_EQ(task->GetRequest().GetPartialChain(), 0);
+    EXPECT_TRUE(task->SetServerSSLCertOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetSSLCertOptionTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_FALSE(task->SetSSLCertOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetSSLCertOptionTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    HttpClientCert clientCert;
+    clientCert.certPath = "/etc/ssl/certs/client.pem";
+    clientCert.keyPath = "/etc/ssl/private/client.key";
+    clientCert.certType = "PEM";
+    clientCert.keyPassword.assign("password");
+    httpReq.SetClientCert(clientCert);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetSSLCertOption(task->curlHandle_));
+}
+
+HWTEST_F(HttpClientTaskTest, SetSSLCertOptionTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetCanSkipCertVerifyFlag(true);
+    HttpClientCert clientCert;
+    clientCert.certPath = "/etc/ssl/certs/client.pem";
+    httpReq.SetClientCert(clientCert);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetSSLCertOption(task->curlHandle_));
+}
+
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+HWTEST_F(HttpClientTaskTest, SetSSLCertOptionTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetValidationCallback([](const std::vector<std::string> &, const std::string &, const std::string &) {
+        return true;
+    });
+    HttpClientCert clientCert;
+    clientCert.certPath = "/etc/ssl/certs/client.pem";
+    httpReq.SetClientCert(clientCert);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetSSLCertOption(task->curlHandle_));
+}
+#endif
+
+HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest011, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    task->GetRequest().SetSniHostName("www.example.com");
+    task->GetRequest().SetMaxRedirects(3);
+    EXPECT_TRUE(task->SetCurlOptions());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest012, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    task->GetRequest().SetReuseConnections(false);
+    task->GetRequest().SetInactivityMs(5000);
+    EXPECT_TRUE(task->SetCurlOptions());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest013, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    task->GetRequest().SetPathPreference(PathPreference::primaryCellular);
+    EXPECT_TRUE(task->SetCurlOptions());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest014, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("https://www.baidu.com");
+    httpReq.SetPartialChain(true);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetCurlOptions());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCurlOptionsTest015, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    task->GetRequest().method_ = "UNSUPPORTED_METHOD";
+    EXPECT_FALSE(task->SetCurlOptions());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCurlMethodTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetMethod(HttpConstant::HTTP_METHOD_POST);
+    std::string body = "body-content";
+    httpReq.ReplaceBody(body.c_str(), body.size());
+    httpReq.SetBodyOrQueryConfigured(true);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetCurlMethod());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCurlMethodTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetMethod(HttpConstant::HTTP_METHOD_GET);
+    std::string body = "get-body";
+    httpReq.ReplaceBody(body.c_str(), body.size());
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetCurlMethod());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCurlMethodTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetMethod(HttpConstant::HTTP_METHOD_HEAD);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetCurlMethod());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCurlMethodTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    std::string body = "empty-method-body";
+    httpReq.ReplaceBody(body.c_str(), body.size());
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetCurlMethod());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCurlMethodTest005, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetMethod(HttpConstant::HTTP_METHOD_PATCH);
+    std::string body = "patch-body";
+    httpReq.ReplaceBody(body.c_str(), body.size());
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetCurlMethod());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCurlMethodTest006, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/put");
+    httpReq.SetMethod(HttpConstant::HTTP_METHOD_PUT);
+    std::string filePath = "/bin/who";
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq, UPLOAD, filePath);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetCurlMethod());
+}
+
+HWTEST_F(HttpClientTaskTest, SetCurlMethodTest007, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    task->GetRequest().method_ = "UNSUPPORTED_METHOD";
+    EXPECT_FALSE(task->SetCurlMethod());
+}
+
+HWTEST_F(HttpClientTaskTest, BuildUrlWithQueryParamsTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::string originUrl = task->GetRequest().GetURL();
+    task->BuildUrlWithQueryParams();
+    EXPECT_EQ(task->GetRequest().GetURL(), originUrl);
+}
+
+HWTEST_F(HttpClientTaskTest, BuildUrlWithQueryParamsTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EscapedData queryParams = { .dataType = HttpDataType::NO_DATA_TYPE, .data = "a=1" };
+    task->GetRequest().SetQueryParams(queryParams);
+    task->BuildUrlWithQueryParams();
+    EXPECT_EQ(task->GetRequest().GetURL(), "http://www.httpbin.org/get");
+}
+
+HWTEST_F(HttpClientTaskTest, BuildUrlWithQueryParamsTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get?existing=1");
+    EscapedData queryParams = { .dataType = HttpDataType::STRING, .data = "a=1&b=2" };
+    httpReq.SetQueryParams(queryParams);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    task->BuildUrlWithQueryParams();
+    auto url = task->GetRequest().GetURL();
+    EXPECT_NE(url.find("existing=1"), std::string::npos);
+    EXPECT_NE(url.find("a=1&b=2"), std::string::npos);
+}
+
+HWTEST_F(HttpClientTaskTest, BuildUrlWithQueryParamsTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    std::string json = R"({"name":"value","age":25,"is_student":true,"optional_field":null})";
+    EscapedData queryParams = { .dataType = HttpDataType::OBJECT, .data = json };
+    httpReq.SetQueryParams(queryParams);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    task->BuildUrlWithQueryParams();
+    auto url = task->GetRequest().GetURL();
+    EXPECT_NE(url.find("name=value"), std::string::npos);
+    EXPECT_NE(url.find("age=25"), std::string::npos);
+    EXPECT_NE(url.find("is_student=true"), std::string::npos);
+    EXPECT_NE(url.find("optional_field"), std::string::npos);
+}
+
+HWTEST_F(HttpClientTaskTest, BuildUrlWithQueryParamsTest005, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    EscapedData queryParams = { .dataType = HttpDataType::OBJECT, .data = "not-a-json" };
+    httpReq.SetQueryParams(queryParams);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    task->BuildUrlWithQueryParams();
+    EXPECT_EQ(task->GetRequest().GetURL(), "http://www.httpbin.org/get");
+}
+
+HWTEST_F(HttpClientTaskTest, BuildUrlWithQueryParamsTest006, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    EscapedData queryParams = { .dataType = HttpDataType::OBJECT, .data = "" };
+    httpReq.SetQueryParams(queryParams);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    task->BuildUrlWithQueryParams();
+    EXPECT_EQ(task->GetRequest().GetURL(), "http://www.httpbin.org/get");
+}
+
+HWTEST_F(HttpClientTaskTest, ParseJsonValueToQueryParamsTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->ParseJsonValueToQueryParams("not-a-json").empty());
+    EXPECT_TRUE(task->ParseJsonValueToQueryParams("[1,2,3]").empty());
+}
+
+HWTEST_F(HttpClientTaskTest, ParseJsonValueToQueryParamsTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::string json = R"({"tags":["a","b"],"count":3,"empty":[]})";
+    std::string result = task->ParseJsonValueToQueryParams(json);
+    EXPECT_NE(result.find("tags=a"), std::string::npos);
+    EXPECT_NE(result.find("tags=b"), std::string::npos);
+    EXPECT_NE(result.find("count=3"), std::string::npos);
+}
+
+HWTEST_F(HttpClientTaskTest, ParseJsonValueToQueryParamsTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::string json = R"({"a b":"c d"})";
+    std::string result = task->ParseJsonValueToQueryParams(json);
+    EXPECT_FALSE(result.empty());
+    EXPECT_TRUE(task->GetRequest().GetHeaders().count(HttpConstant::HTTP_CONTENT_TYPE) > 0);
+}
+
+HWTEST_F(HttpClientTaskTest, ProcessQueryParamValueTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::string params;
+    cJSON *nullValue = cJSON_CreateNull();
+    ASSERT_NE(nullValue, nullptr);
+    task->ProcessQueryParamValue("nullField", false, nullValue, params);
+    cJSON_Delete(nullValue);
+    EXPECT_NE(params.find(std::string("nullField") + HttpConstant::HTTP_URL_PARAM_SEPARATOR), std::string::npos);
+
+    params.clear();
+    cJSON *trueValue = cJSON_CreateTrue();
+    ASSERT_NE(trueValue, nullptr);
+    task->ProcessQueryParamValue("trueField", false, trueValue, params);
+    cJSON_Delete(trueValue);
+    EXPECT_NE(params.find("trueField=true"), std::string::npos);
+
+    params.clear();
+    cJSON *falseValue = cJSON_CreateFalse();
+    ASSERT_NE(falseValue, nullptr);
+    task->ProcessQueryParamValue("falseField", false, falseValue, params);
+    cJSON_Delete(falseValue);
+    EXPECT_NE(params.find("falseField=false"), std::string::npos);
+
+    params.clear();
+    cJSON *numberValue = cJSON_CreateNumber(25);
+    ASSERT_NE(numberValue, nullptr);
+    task->ProcessQueryParamValue("numberField", false, numberValue, params);
+    cJSON_Delete(numberValue);
+    EXPECT_NE(params.find("numberField=25"), std::string::npos);
+
+    params.clear();
+    cJSON *stringValue = cJSON_CreateString("a b");
+    ASSERT_NE(stringValue, nullptr);
+    task->ProcessQueryParamValue("stringField", false, stringValue, params);
+    cJSON_Delete(stringValue);
+    EXPECT_TRUE(task->GetRequest().GetHeaders().count(HttpConstant::HTTP_CONTENT_TYPE) > 0);
+}
+
+HWTEST_F(HttpClientTaskTest, ProcessQueryParamValueTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    cJSON *objectValue = cJSON_CreateObject();
+    ASSERT_NE(objectValue, nullptr);
+    std::string params;
+    task->ProcessQueryParamValue("objectField", false, objectValue, params);
+    cJSON_Delete(objectValue);
+    EXPECT_TRUE(params.empty());
+
+    cJSON *stringValue = cJSON_CreateString("value");
+    ASSERT_NE(stringValue, nullptr);
+    task->ProcessQueryParamValue("a b", true, stringValue, params);
+    cJSON_Delete(stringValue);
+    EXPECT_FALSE(params.empty());
+    EXPECT_TRUE(task->GetRequest().GetHeaders().count(HttpConstant::HTTP_CONTENT_TYPE) > 0);
+}
+
+HWTEST_F(HttpClientTaskTest, ReadResopnseFromCacheTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://nonexistenturl:8080");
+    httpReq.SetUsingCache(true);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+    EXPECT_FALSE(task->ReadResopnseFromCache());
+}
+
+HWTEST_F(HttpClientTaskTest, ProgressCallbackCanceledTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    bool progressCalled = false;
+    task->OnProgress([&progressCalled](const HttpClientRequest &, u_long, u_long, u_long, u_long) {
+        progressCalled = true;
+    });
+    task->Cancel();
+    EXPECT_EQ(task->ProgressCallback(task.get(), 100, 10, 0, 0), 0);
+    EXPECT_FALSE(progressCalled);
+}
+
+HWTEST_F(HttpClientTaskTest, ProgressCallbackCanceledTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    bool progressCalled = false;
+    task->OnProgress([&progressCalled](const HttpClientRequest &, u_long, u_long, u_long, u_long) {
+        progressCalled = true;
+    });
+    EXPECT_EQ(task->ProgressCallback(task.get(), 100, 10, 0, 0), 0);
+    EXPECT_TRUE(progressCalled);
+}
+
+#if HAS_NETMANAGER_BASE
+HWTEST_F(HttpClientTaskTest, GetInterfaceNameTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::string interfaceName;
+    int32_t netId = 0;
+    EXPECT_FALSE(task->GetInterfaceName(nullptr, interfaceName, netId));
+}
+
+HWTEST_F(HttpClientTaskTest, GetInterfaceNameTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::string interfaceName;
+    int32_t netId = 0;
+    EXPECT_FALSE(task->GetInterfaceName(task->curlHandle_, interfaceName, netId));
+}
+
+HWTEST_F(HttpClientTaskTest, SetInterfaceTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_FALSE(task->SetInterface(nullptr));
+}
+
+HWTEST_F(HttpClientTaskTest, SetInterfaceTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetPathPreference(PathPreference::secondaryCellular);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    task->SetInterface(task->curlHandle_);
+    EXPECT_EQ(task->GetRequest().GetPathPreference(), PathPreference::secondaryCellular);
+}
+
+HWTEST_F(HttpClientTaskTest, GetNetStatusTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::list<OHOS::sptr<OHOS::NetManagerStandard::NetHandle>> netList;
+    std::list<OHOS::sptr<OHOS::NetManagerStandard::NetHandle>> cellularNetworks;
+    uint8_t cellCount = 0;
+    uint8_t wifiCount = 0;
+    EXPECT_FALSE(task->GetNetStatus(netList, cellularNetworks, cellCount, wifiCount));
+}
+
+HWTEST_F(HttpClientTaskTest, GetNetStatusTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::list<OHOS::sptr<OHOS::NetManagerStandard::NetHandle>> netList;
+    netList.push_back(nullptr);
+    netList.push_back(nullptr);
+    std::list<OHOS::sptr<OHOS::NetManagerStandard::NetHandle>> cellularNetworks;
+    uint8_t cellCount = 0;
+    uint8_t wifiCount = 0;
+    EXPECT_TRUE(task->GetNetStatus(netList, cellularNetworks, cellCount, wifiCount));
+    EXPECT_EQ(cellCount, 0);
+    EXPECT_EQ(wifiCount, 0);
+    EXPECT_TRUE(cellularNetworks.empty());
+}
+
+HWTEST_F(HttpClientTaskTest, GetPrimaryCellularInterfaceTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::list<OHOS::sptr<OHOS::NetManagerStandard::NetHandle>> netList;
+    std::string interfaceName;
+    int32_t netId = 0;
+    EXPECT_FALSE(task->GetPrimaryCellularInterface(nullptr, netList, interfaceName, netId));
+    EXPECT_FALSE(task->GetPrimaryCellularInterface(task->curlHandle_, netList, interfaceName, netId));
+}
+
+HWTEST_F(HttpClientTaskTest, GetPrimaryCellularInterfaceTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::list<OHOS::sptr<OHOS::NetManagerStandard::NetHandle>> netList;
+    netList.push_back(nullptr);
+    netList.push_back(nullptr);
+    std::string interfaceName;
+    int32_t netId = 0;
+    EXPECT_FALSE(task->GetPrimaryCellularInterface(task->curlHandle_, netList, interfaceName, netId));
+    EXPECT_TRUE(interfaceName.empty());
+}
+
+HWTEST_F(HttpClientTaskTest, GetSecondaryCellularInterfaceTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::list<OHOS::sptr<OHOS::NetManagerStandard::NetHandle>> netList;
+    std::string interfaceName;
+    int32_t netId = 0;
+    EXPECT_FALSE(task->GetSecondaryCellularInterface(nullptr, netList, interfaceName, netId));
+    EXPECT_FALSE(task->GetSecondaryCellularInterface(task->curlHandle_, netList, interfaceName, netId));
+}
+
+HWTEST_F(HttpClientTaskTest, GetSecondaryCellularInterfaceTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::list<OHOS::sptr<OHOS::NetManagerStandard::NetHandle>> netList;
+    netList.push_back(nullptr);
+    netList.push_back(nullptr);
+    std::string interfaceName;
+    int32_t netId = 0;
+    EXPECT_FALSE(task->GetSecondaryCellularInterface(task->curlHandle_, netList, interfaceName, netId));
+    EXPECT_TRUE(interfaceName.empty());
+}
+
+HWTEST_F(HttpClientTaskTest, GetNetStatusTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::list<OHOS::sptr<OHOS::NetManagerStandard::NetHandle>> netList;
+    netList.push_back(new OHOS::NetManagerStandard::NetHandle());
+    netList.push_back(new OHOS::NetManagerStandard::NetHandle());
+    std::list<OHOS::sptr<OHOS::NetManagerStandard::NetHandle>> cellularNetworks;
+    uint8_t cellCount = 0;
+    uint8_t wifiCount = 0;
+    EXPECT_TRUE(task->GetNetStatus(netList, cellularNetworks, cellCount, wifiCount));
+    EXPECT_EQ(cellCount, 0);
+    EXPECT_EQ(wifiCount, 0);
+    EXPECT_TRUE(cellularNetworks.empty());
+}
+
+#endif
+
+#if defined(HTTP_MULTIPATH_CERT_ENABLE) || defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE)
+HWTEST_F(HttpClientTaskTest, LocalTlsConnectionExtraInfoTest001, TestSize.Level1)
+{
+    HttpTlsTestServer server;
+    ASSERT_TRUE(server.Start());
+    HttpClientRequest httpReq;
+    httpReq.SetURL(BuildLocalTlsUrl(server.GetPort()));
+    httpReq.SetCanSkipCertVerifyFlag(true);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    auto shareHandle = CreateCookieShareHandle();
+    ASSERT_NE(shareHandle, nullptr);
+    task->SetCookieShareHandle(shareHandle);
+
+    ASSERT_EQ(curl_easy_perform(task->GetCurlHandle()), CURLE_OK);
+    task->ProcessConnectionExtraInfo();
+    const HttpClientResponse &response = task->GetResponse();
+    EXPECT_EQ(response.GetResult(), "OK");
+    EXPECT_EQ(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, ""), "HTTP/1.1");
+    EXPECT_EQ(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_REMOTE_ADDRESS, ""), TEST_TLS_HOST);
+    EXPECT_EQ(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_REMOTE_PORT, ""), std::to_string(server.GetPort()));
+    EXPECT_FALSE(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_LOCAL_ADDRESS, "").empty());
+    EXPECT_FALSE(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_LOCAL_PORT, "").empty());
+    EXPECT_TRUE(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_TLS_VERSION, "") == "TLS_V_1_3" ||
+        response.GetExtraInfoItem(HttpConstant::PARAM_KEY_TLS_VERSION, "") == "TLS_V_1_2");
+    EXPECT_FALSE(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_CIPHER_SUITE, "").empty());
+    EXPECT_EQ(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_REDIRECT_COUNT, ""), "0");
+    EXPECT_EQ(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_IS_PROXY_CONNECTION, ""), "false");
+    EXPECT_EQ(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT, ""), "false");
+}
+
+HWTEST_F(HttpClientTaskTest, CurlShareLockNullUserdataTest001, TestSize.Level1)
+{
+    HttpTlsTestServer server;
+    ASSERT_TRUE(server.Start());
+    HttpClientRequest httpReq;
+    httpReq.SetURL(BuildLocalTlsUrl(server.GetPort()));
+    httpReq.SetCanSkipCertVerifyFlag(true);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    auto shareHandle = CreateCookieShareHandle();
+    ASSERT_NE(shareHandle, nullptr);
+    ASSERT_EQ(curl_share_setopt(shareHandle->Get(), CURLSHOPT_USERDATA, nullptr), CURLSHE_OK);
+    task->SetCookieShareHandle(shareHandle);
+
+    ASSERT_EQ(curl_easy_perform(task->GetCurlHandle()), CURLE_OK);
+    EXPECT_EQ(task->GetResponse().GetResult(), "OK");
+}
+
+HWTEST_F(HttpClientTaskTest, LocalTlsConnectionExtraInfoTest002, TestSize.Level1)
+{
+    HttpTlsTestServer server;
+    ASSERT_TRUE(server.Start());
+    HttpClientRequest httpReq;
+    httpReq.SetURL(BuildLocalTlsUrl(server.GetPort()));
+    httpReq.SetCanSkipCertVerifyFlag(true);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    ASSERT_EQ(curl_easy_setopt(task->GetCurlHandle(), CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2), CURLE_OK);
+    ASSERT_EQ(curl_easy_perform(task->GetCurlHandle()), CURLE_OK);
+    EXPECT_EQ(task->GetResponse().GetExtraInfoItem(HttpConstant::PARAM_KEY_TLS_VERSION, ""), "TLS_V_1_2");
+}
+
+HWTEST_F(HttpClientTaskTest, LocalHttpVersionExtraInfoTest001, TestSize.Level1)
+{
+    HttpTlsTestServer server;
+    server.SetResponse("HTTP/1.0 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK");
+    ASSERT_TRUE(server.Start());
+    HttpClientRequest httpReq;
+    httpReq.SetURL(BuildLocalTlsUrl(server.GetPort()));
+    httpReq.SetCanSkipCertVerifyFlag(true);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    ASSERT_EQ(curl_easy_perform(task->GetCurlHandle()), CURLE_OK);
+    task->ProcessConnectionExtraInfo();
+    const HttpClientResponse &response = task->GetResponse();
+    EXPECT_EQ(response.GetResult(), "OK");
+    EXPECT_EQ(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, ""), "HTTP/1.0");
+}
+
+HWTEST_F(HttpClientTaskTest, LocalHttp2VersionExtraInfoTest001, TestSize.Level1)
+{
+    if ((curl_version_info(CURLVERSION_NOW)->features & CURL_VERSION_HTTP2) == 0) {
+        GTEST_SKIP() << "libcurl has no HTTP/2 support";
+    }
+    HttpTlsTestServer server;
+    server.SetHttp2(true);
+    ASSERT_TRUE(server.Start());
+    HttpClientRequest httpReq;
+    httpReq.SetURL(BuildLocalTlsUrl(server.GetPort()));
+    httpReq.SetCanSkipCertVerifyFlag(true);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+    ASSERT_EQ(curl_easy_setopt(task->GetCurlHandle(), CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0), CURLE_OK);
+
+    ASSERT_EQ(curl_easy_perform(task->GetCurlHandle()), CURLE_OK);
+    task->ProcessConnectionExtraInfo();
+    EXPECT_EQ(task->GetResponse().GetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME, ""), "HTTP/2");
+}
+#endif
+
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+HWTEST_F(HttpClientTaskTest, CustomValidationCallbackTest001, TestSize.Level1)
+{
+    HttpTlsTestServer server;
+    ASSERT_TRUE(server.Start());
+    std::vector<std::string> receivedCerts;
+    std::string receivedHost;
+    std::string receivedIp;
+    HttpClientRequest httpReq;
+    httpReq.SetURL(BuildLocalTlsUrl(server.GetPort()));
+    httpReq.SetValidationCallback([&receivedCerts, &receivedHost, &receivedIp](const std::vector<std::string> &pemCerts,
+        const std::string &host, const std::string &ip) {
+        receivedCerts = pemCerts;
+        receivedHost = host;
+        receivedIp = ip;
+        return true;
+    });
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    ASSERT_EQ(curl_easy_perform(task->GetCurlHandle()), CURLE_OK);
+    EXPECT_FALSE(receivedCerts.empty());
+    EXPECT_NE(receivedCerts[0].find("BEGIN CERTIFICATE"), std::string::npos);
+    EXPECT_EQ(receivedHost, TEST_TLS_HOST);
+    EXPECT_FALSE(receivedIp.empty());
+}
+
+HWTEST_F(HttpClientTaskTest, CustomValidationCallbackTest002, TestSize.Level1)
+{
+    HttpTlsTestServer server;
+    ASSERT_TRUE(server.Start());
+    bool invoked = false;
+    HttpClientRequest httpReq;
+    httpReq.SetURL(BuildLocalTlsUrl(server.GetPort()));
+    httpReq.SetValidationCallback([&invoked](const std::vector<std::string> &, const std::string &,
+        const std::string &) {
+        invoked = true;
+        return false;
+    });
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    CURLcode code = curl_easy_perform(task->GetCurlHandle());
+    EXPECT_TRUE(code == CURLE_OK || code == CURLE_PEER_FAILED_VERIFICATION);
+    EXPECT_TRUE(invoked);
+}
+
+HWTEST_F(HttpClientTaskTest, CustomValidationCallbackTest003, TestSize.Level1)
+{
+    HttpTlsTestServer server;
+    ASSERT_TRUE(server.Start());
+    HttpClientRequest httpReq;
+    httpReq.SetURL(BuildLocalTlsUrl(server.GetPort()));
+    httpReq.SetValidationCallback([](const std::vector<std::string> &, const std::string &, const std::string &) {
+        return true;
+    });
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    ValidationCallback emptyCallback;
+    task->GetRequest().SetValidationCallback(emptyCallback);
+    EXPECT_FALSE(task->GetRequest().GetValidationCallback());
+    CURLcode code = curl_easy_perform(task->GetCurlHandle());
+    EXPECT_TRUE(code == CURLE_OK || code == CURLE_PEER_FAILED_VERIFICATION);
+}
+
+HWTEST_F(HttpClientTaskTest, CustomValidationCallbackTest004, TestSize.Level1)
+{
+    HttpTlsTestServer server;
+    ASSERT_TRUE(server.Start());
+    std::thread::id callbackThreadId;
+    std::thread::id performThreadId = std::this_thread::get_id();
+    HttpClientRequest httpReq;
+    httpReq.SetURL(BuildLocalTlsUrl(server.GetPort()));
+    httpReq.SetValidationCallback([&callbackThreadId](const std::vector<std::string> &, const std::string &,
+        const std::string &) {
+        callbackThreadId = std::this_thread::get_id();
+        return true;
+    });
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    ASSERT_EQ(curl_easy_perform(task->GetCurlHandle()), CURLE_OK);
+    EXPECT_EQ(callbackThreadId, performThreadId);
+}
+
+HWTEST_F(HttpClientTaskTest, VerifyRootCaCallbackTest001, TestSize.Level1)
+{
+    HttpTlsTestServer server;
+    ASSERT_TRUE(server.Start());
+    HttpClientRequest httpReq;
+    httpReq.SetURL(BuildLocalTlsUrl(server.GetPort()));
+    httpReq.SetCaData(server.GetRootCertPem());
+    std::string pin = std::string("sha256//") + std::string(44, 'A');
+    httpReq.SetPinnedPubkey(pin);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_NE(curl_easy_perform(task->GetCurlHandle()), CURLE_OK);
+    EXPECT_TRUE(task->IsRootCaVerified());
+    EXPECT_FALSE(task->IsRootCaVerifiedOk());
+}
+
+HWTEST_F(HttpClientTaskTest, VerifyRootCaCallbackTest002, TestSize.Level1)
+{
+    HttpTlsTestServer server;
+    ASSERT_TRUE(server.Start());
+    HttpClientRequest httpReq;
+    httpReq.SetURL(BuildLocalTlsUrl(server.GetPort()));
+    httpReq.SetCaData(server.GetRootCertPem());
+    std::string pin = std::string("sha256//") + std::string(44, 'A');
+    httpReq.SetPinnedPubkey(pin);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    task->SetRootCaVerifiedOk(true);
+    CURLcode code = curl_easy_perform(task->GetCurlHandle());
+    EXPECT_TRUE(code == CURLE_OK || code == CURLE_PEER_FAILED_VERIFICATION);
+    EXPECT_TRUE(task->IsRootCaVerifiedOk());
+    EXPECT_FALSE(task->IsRootCaVerified());
+}
+
+HWTEST_F(HttpClientTaskTest, VerifyRootCaCallbackTest003, TestSize.Level1)
+{
+    HttpTlsTestServer server;
+    ASSERT_TRUE(server.Start());
+    std::string correctPin = ComputeSpkiPin(server.GetServerCertPem());
+    ASSERT_FALSE(correctPin.empty());
+    std::string pin = std::string("sha256//") + std::string(44, 'B') + ";" + correctPin;
+
+    HttpClientRequest httpReq;
+    httpReq.SetURL(BuildLocalTlsUrl(server.GetPort()));
+    httpReq.SetCaData(server.GetRootCertPem());
+    httpReq.SetPinnedPubkey(pin);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_EQ(curl_easy_perform(task->GetCurlHandle()), CURLE_OK);
+    EXPECT_TRUE(task->IsRootCaVerified());
+    EXPECT_EQ(task->GetResponse().GetResult(), "OK");
+}
+#endif
+} // namespace
+
+#if HAS_NETMANAGER_BASE
+namespace OHOS {
+namespace NetManagerStandard {
+
+static bool g_netConnSimEnabled = false;
+static int32_t g_simDefaultNetId = 0; /* 0 => GetDefaultNet fails */
+static std::list<int32_t> g_simAllNetIds;
+static std::map<int32_t, std::set<NetBearType>> g_simBearerTypes;
+static std::map<int32_t, std::string> g_simIfaceNames;
+
+int32_t NetConnClient::GetNetCapabilities(const NetHandle &netHandle, NetAllCapabilities &netAllCap)
+{
+    if (!g_netConnSimEnabled) {
+        return NETMANAGER_ERR_OPERATION_FAILED;
+    }
+    auto it = g_simBearerTypes.find(netHandle.GetNetId());
+    if (it == g_simBearerTypes.end()) {
+        return NETMANAGER_ERR_OPERATION_FAILED;
+    }
+    netAllCap.bearerTypes_.insert(it->second.begin(), it->second.end());
+    return NETMANAGER_SUCCESS;
+}
+
+int32_t NetConnClient::GetDefaultNet(NetHandle &netHandle)
+{
+    if (!g_netConnSimEnabled || g_simDefaultNetId == 0) {
+        return NETMANAGER_ERR_OPERATION_FAILED;
+    }
+    netHandle.SetNetId(g_simDefaultNetId);
+    return NETMANAGER_SUCCESS;
+}
+
+int32_t NetConnClient::GetAllNets(std::list<sptr<NetHandle>> &netList)
+{
+    if (!g_netConnSimEnabled) {
+        return NETMANAGER_ERR_OPERATION_FAILED;
+    }
+    for (auto id : g_simAllNetIds) {
+        netList.push_back(new NetHandle(id));
+    }
+    return NETMANAGER_SUCCESS;
+}
+
+int32_t NetConnClient::GetConnectionProperties(const NetHandle &netHandle, NetLinkInfo &info)
+{
+    if (!g_netConnSimEnabled) {
+        return NETMANAGER_ERR_OPERATION_FAILED;
+    }
+    auto it = g_simIfaceNames.find(netHandle.GetNetId());
+    if (it == g_simIfaceNames.end()) {
+        return NETMANAGER_ERR_OPERATION_FAILED;
+    }
+    info.ifaceName_ = it->second;
+    return NETMANAGER_SUCCESS;
+}
+} // namespace NetManagerStandard
+} // namespace OHOS
+
+namespace NMS = OHOS::NetManagerStandard;
+
+static void ResetNetConnSim()
+{
+    NMS::g_netConnSimEnabled = false;
+    NMS::g_simDefaultNetId = 0;
+    NMS::g_simAllNetIds.clear();
+    NMS::g_simBearerTypes.clear();
+    NMS::g_simIfaceNames.clear();
+}
+
+static std::list<OHOS::sptr<NMS::NetHandle>> MakeSimNetList(std::initializer_list<int32_t> ids)
+{
+    std::list<OHOS::sptr<NMS::NetHandle>> netList;
+    for (auto id : ids) {
+        netList.push_back(new NMS::NetHandle(id));
+    }
+    return netList;
+}
+
+HWTEST_F(HttpClientTaskTest, GetNetStatusBearerTypesTest001, TestSize.Level1)
+{
+    ResetNetConnSim();
+    NMS::g_netConnSimEnabled = true;
+    NMS::g_simBearerTypes[101] = {NMS::NetBearType::BEARER_CELLULAR};
+    NMS::g_simBearerTypes[102] = {NMS::NetBearType::BEARER_WIFI};
+
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    auto netList = MakeSimNetList({101, 102});
+    std::list<OHOS::sptr<NMS::NetHandle>> cellularNetworks;
+    uint8_t cellCount = 0;
+    uint8_t wifiCount = 0;
+    EXPECT_TRUE(task->GetNetStatus(netList, cellularNetworks, cellCount, wifiCount));
+    EXPECT_EQ(cellCount, 1);
+    EXPECT_EQ(wifiCount, 1);
+    ASSERT_EQ(cellularNetworks.size(), 1);
+    EXPECT_EQ(cellularNetworks.front()->GetNetId(), 101);
+    ResetNetConnSim();
+}
+
+HWTEST_F(HttpClientTaskTest, GetPrimaryCellularInterfaceSimTest001, TestSize.Level1)
+{
+    ResetNetConnSim();
+    NMS::g_netConnSimEnabled = true;
+    NMS::g_simDefaultNetId = 105;
+    NMS::g_simBearerTypes[105] = {NMS::NetBearType::BEARER_WIFI};
+    NMS::g_simBearerTypes[101] = {NMS::NetBearType::BEARER_CELLULAR};
+    NMS::g_simBearerTypes[102] = {NMS::NetBearType::BEARER_WIFI};
+    NMS::g_simIfaceNames[101] = "ccmni0";
+
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    auto netList = MakeSimNetList({101, 102});
+    std::string interfaceName;
+    int32_t netId = 0;
+    EXPECT_TRUE(task->GetPrimaryCellularInterface(task->curlHandle_, netList, interfaceName, netId));
+    EXPECT_EQ(interfaceName, "ccmni0");
+    EXPECT_EQ(netId, 101);
+    ResetNetConnSim();
+}
+
+HWTEST_F(HttpClientTaskTest, GetPrimaryCellularInterfaceDefaultCellularTest001, TestSize.Level1)
+{
+    ResetNetConnSim();
+    NMS::g_netConnSimEnabled = true;
+    NMS::g_simDefaultNetId = 105;
+    NMS::g_simBearerTypes[105] = {NMS::NetBearType::BEARER_CELLULAR};
+    NMS::g_simBearerTypes[101] = {NMS::NetBearType::BEARER_CELLULAR};
+    NMS::g_simBearerTypes[102] = {NMS::NetBearType::BEARER_WIFI};
+    NMS::g_simIfaceNames[101] = "ccmni0";
+
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    auto netList = MakeSimNetList({101, 102});
+    std::string interfaceName;
+    int32_t netId = 0;
+    EXPECT_FALSE(task->GetPrimaryCellularInterface(task->curlHandle_, netList, interfaceName, netId));
+    ResetNetConnSim();
+}
+
+HWTEST_F(HttpClientTaskTest, GetSecondaryCellularInterfaceSimTest001, TestSize.Level1)
+{
+    ResetNetConnSim();
+    NMS::g_netConnSimEnabled = true;
+    NMS::g_simDefaultNetId = 101;
+    NMS::g_simBearerTypes[101] = {NMS::NetBearType::BEARER_CELLULAR};
+    NMS::g_simBearerTypes[102] = {NMS::NetBearType::BEARER_CELLULAR};
+    NMS::g_simIfaceNames[102] = "ccmni1";
+
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    auto netList = MakeSimNetList({101, 102});
+    std::string interfaceName;
+    int32_t netId = 0;
+    EXPECT_TRUE(task->GetSecondaryCellularInterface(task->curlHandle_, netList, interfaceName, netId));
+    EXPECT_EQ(interfaceName, "ccmni1");
+    EXPECT_EQ(netId, 102);
+    ResetNetConnSim();
+}
+
+HWTEST_F(HttpClientTaskTest, GetSecondaryCellularInterfaceSingleCellularTest001, TestSize.Level1)
+{
+    ResetNetConnSim();
+    NMS::g_netConnSimEnabled = true;
+    NMS::g_simBearerTypes[101] = {NMS::NetBearType::BEARER_CELLULAR};
+    NMS::g_simBearerTypes[102] = {NMS::NetBearType::BEARER_WIFI};
+
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    auto netList = MakeSimNetList({101, 102});
+    std::string interfaceName;
+    int32_t netId = 0;
+    EXPECT_FALSE(task->GetSecondaryCellularInterface(task->curlHandle_, netList, interfaceName, netId));
+    ResetNetConnSim();
+}
+
+HWTEST_F(HttpClientTaskTest, GetSecondaryCellularInterfaceNoDefaultTest001, TestSize.Level1)
+{
+    ResetNetConnSim();
+    NMS::g_netConnSimEnabled = true;
+    NMS::g_simBearerTypes[101] = {NMS::NetBearType::BEARER_CELLULAR};
+    NMS::g_simBearerTypes[102] = {NMS::NetBearType::BEARER_CELLULAR};
+
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    auto netList = MakeSimNetList({101, 102});
+    std::string interfaceName;
+    int32_t netId = 0;
+    EXPECT_FALSE(task->GetSecondaryCellularInterface(task->curlHandle_, netList, interfaceName, netId));
+    ResetNetConnSim();
+}
+
+HWTEST_F(HttpClientTaskTest, GetInterfaceNamePrimarySimTest001, TestSize.Level1)
+{
+    ResetNetConnSim();
+    NMS::g_netConnSimEnabled = true;
+    NMS::g_simAllNetIds = {99, 101, 102};
+    NMS::g_simDefaultNetId = 105;
+    NMS::g_simBearerTypes[105] = {NMS::NetBearType::BEARER_WIFI};
+    NMS::g_simBearerTypes[101] = {NMS::NetBearType::BEARER_CELLULAR};
+    NMS::g_simBearerTypes[102] = {NMS::NetBearType::BEARER_WIFI};
+    NMS::g_simIfaceNames[101] = "ccmni0";
+
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetPathPreference(PathPreference::primaryCellular);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::string interfaceName;
+    int32_t netId = 0;
+    EXPECT_TRUE(task->GetInterfaceName(task->curlHandle_, interfaceName, netId));
+    EXPECT_EQ(interfaceName, "ccmni0");
+    EXPECT_EQ(netId, 101);
+    ResetNetConnSim();
+}
+
+HWTEST_F(HttpClientTaskTest, GetInterfaceNameSecondarySimTest001, TestSize.Level1)
+{
+    ResetNetConnSim();
+    NMS::g_netConnSimEnabled = true;
+    NMS::g_simAllNetIds = {101, 102};
+    NMS::g_simDefaultNetId = 101;
+    NMS::g_simBearerTypes[101] = {NMS::NetBearType::BEARER_CELLULAR};
+    NMS::g_simBearerTypes[102] = {NMS::NetBearType::BEARER_CELLULAR};
+    NMS::g_simIfaceNames[102] = "ccmni1";
+
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetPathPreference(PathPreference::secondaryCellular);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    std::string interfaceName;
+    int32_t netId = 0;
+    EXPECT_TRUE(task->GetInterfaceName(task->curlHandle_, interfaceName, netId));
+    EXPECT_EQ(interfaceName, "ccmni1");
+    EXPECT_EQ(netId, 102);
+    ResetNetConnSim();
+}
+
+HWTEST_F(HttpClientTaskTest, SetInterfaceSimTest001, TestSize.Level1)
+{
+    ResetNetConnSim();
+    NMS::g_netConnSimEnabled = true;
+    NMS::g_simAllNetIds = {101, 102};
+    NMS::g_simDefaultNetId = 105;
+    NMS::g_simBearerTypes[105] = {NMS::NetBearType::BEARER_WIFI};
+    NMS::g_simBearerTypes[101] = {NMS::NetBearType::BEARER_CELLULAR};
+    NMS::g_simBearerTypes[102] = {NMS::NetBearType::BEARER_WIFI};
+    NMS::g_simIfaceNames[101] = "ccmni0";
+
+    HttpClientRequest httpReq;
+    httpReq.SetURL("http://www.httpbin.org/get");
+    httpReq.SetPathPreference(PathPreference::primaryCellular);
+    HttpSession &session = HttpSession::GetInstance();
+    auto task = session.CreateTask(httpReq);
+    ASSERT_NE(task, nullptr);
+
+    EXPECT_TRUE(task->SetInterface(task->curlHandle_));
+    ResetNetConnSim();
+}
+#endif
+
+namespace {
 } // namespace

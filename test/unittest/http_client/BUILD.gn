@@ -47,6 +47,7 @@ ohos_unittest("http_client_unittest") {
 
   sources = [
     "$NETSTACK_INNERKITS_DIR/http_client/cache/base64/src/http_client_base64_utils.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
     "HttpClientErrorTest.cpp",
     "HttpClientRequestTest.cpp",
     "HttpClientResponseTest.cpp",
@@ -70,6 +71,7 @@ ohos_unittest("http_client_unittest") {
     "cJSON:cjson",
     "curl:curl_shared",
     "googletest:gmock_main",
+    "openssl:libcrypto_shared",
     "openssl:libssl_shared",
     "samgr:samgr_proxy",
   ]

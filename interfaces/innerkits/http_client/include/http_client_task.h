@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <functional>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <stdio.h>
@@ -27,6 +28,7 @@
 #include "http_client_error.h"
 #include "http_client_request.h"
 #include "http_client_response.h"
+#include "http_client_tls_config.h"
 #if HAS_NETMANAGER_BASE
 #include "netstack_network_profiler.h"
 #endif
@@ -36,8 +38,12 @@ struct HttpHandoverInfo;
 #if ENABLE_HTTP_GLOBAL_INTERCEPT
 #include "http_interceptor_mgr.h"
 #endif
+#include "refbase.h"
 struct cJSON;
 namespace OHOS {
+namespace NetManagerStandard {
+    class NetHandle;
+}
 namespace NetStack {
 namespace RequestTracer {
     class Trace;
@@ -52,6 +58,37 @@ enum TaskType {
     DEFAULT,
     UPLOAD,
 };
+
+/**
+ * Curl share handle for sharing cookies between requests with auto cookie enabled.
+ * Mirrors the share handle created by NAPI CreateShareHandle in http_module.cpp.
+ */
+class CookieShareHandle {
+public:
+    CookieShareHandle();
+    ~CookieShareHandle();
+
+    /**
+     * Gets the CURLSH handle.
+     * @return The CURLSH handle, or nullptr if initialization failed.
+     */
+    [[nodiscard]] CURLSH *Get() const
+    {
+        return handle_;
+    }
+
+    /**
+     * Gets the mutex used by the curl share lock/unlock callbacks.
+     * @return The mutex.
+     */
+    std::mutex &GetMutex();
+
+private:
+    CURLSH *handle_ = nullptr;
+    std::mutex mutex_;
+};
+
+std::shared_ptr<CookieShareHandle> CreateCookieShareHandle();
 
 class HttpClientTask : public std::enable_shared_from_this<HttpClientTask> {
 public:
@@ -214,9 +251,16 @@ public:
     bool IsHeadersOnce() const;
     void SetIsRequestInStream(bool isRequestInStream);
     bool IsRequestInStream();
+    void SetCookieShareHandle(std::shared_ptr<CookieShareHandle> shareHandle);
     bool ProcessUsingCache();
     RequestTracer::Trace &GetTrace();
     static bool IsBuiltWithOpenSSL();
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+    bool IsRootCaVerified() const;
+    void SetRootCaVerified();
+    bool IsRootCaVerifiedOk() const;
+    void SetRootCaVerifiedOk(bool ok);
+#endif
 private:
     friend class HttpSession;
 
@@ -246,6 +290,43 @@ private:
     bool SetOtherCurlOption(CURL *handle);
 
     /**
+     * Sets the proxy option for the HTTP request.
+     *
+     * @param handle Curl handle.
+     * @return Returns true if the proxy option is set successfully, false otherwise.
+     */
+    bool SetProxyOption(CURL *handle);
+
+    /**
+     * Sets the http proxy option for the HTTP request.
+     *
+     * @param handle Curl handle.
+     * @return Returns true if the http proxy option is set successfully, false otherwise.
+     */
+    bool SetHttpProxyOption(CURL *handle);
+
+    /**
+     * Sets the socks5 proxy option for the HTTP request.
+     *
+     * @param handle Curl handle.
+     * @return Returns true if the socks5 proxy option is set successfully, false otherwise.
+     */
+    bool SetSocks5ProxyOption(CURL *handle);
+
+    /**
+     * Sets the extra info option for the HTTP request.
+     *
+     * Registers a curl pre-request callback (CURLOPT_PREREQFUNCTION) that is invoked once the
+     * connection is established and before the request is sent, and records the connection
+     * layer details into the response extra info, including the remote/local IP addresses and
+     * ports as well as the TLS version and cipher suite.
+     *
+     * @param handle The Curl handle.
+     * @return Returns true if the extra info option is set successfully, false otherwise.
+     */
+    bool SetExtraInfoOption(CURL *handle);
+
+    /**
      * Sets the authentication options for the HTTP request.
      * @param handle The Curl handle.
      * @return Returns true if the authentication options are set successfully, false otherwise.
@@ -267,6 +348,24 @@ private:
     bool SetServerSSLCertOption(CURL *curl);
 
     /**
+     * Sets the pinned pubkey of the network security config for the HTTP request.
+     * VerifyRootCa mode stores the pinset into the request, otherwise it is applied as
+     * CURLOPT_PINNEDPUBLICKEY.
+     * @param curl The Curl handle.
+     * @param hostname The hostname of the request URL.
+     * @return Returns true if the options are set successfully, false otherwise.
+     */
+    bool SetPinnedPubkeyOption(CURL *curl, const std::string &hostname);
+
+    /**
+     * Registers the SslCtxFunction as the SSL context callback for the HTTP request.
+     * The callback is not registered for the TLCP ssl type.
+     * @param curl The Curl handle.
+     * @return Returns true if the options are set successfully, false otherwise.
+     */
+    bool SetSslCtxFunctionOption(CURL *curl);
+
+    /**
      * Sets the ssl cert options for the HTTP request.
      * @param handle The Curl handle.
      * @return Returns true if the set options are set successfully, false otherwise.
@@ -280,6 +379,23 @@ private:
      * @return Returns CURLM_OK if the set options are set successfully, error code otherwise.
      */
     CURLcode SslCtxFunction(CURL *curl, void *sslCtx);
+    /**
+     * Loads the CA certificate paths and the CA data into the SSL context.
+     * The CA paths are computed in SetServerSSLCertOption at setup time.
+     * @param curl The Curl handle.
+     * @param sslCtx The SSL context handle.
+     * @return Returns CURLE_OK if the CA certificates are loaded successfully, error code otherwise.
+     */
+    CURLcode MultiPathSslCtxFunction(CURL *curl, void *sslCtx);
+
+    /**
+     * Sets the root CA only verification callback for the SSL context.
+     * Only the root CA public key is checked against the pinned pubkey.
+     * @param curl The Curl handle.
+     * @param sslCtx The SSL context handle.
+     * @return Returns CURLE_OK if the verify callback is set successfully, error code otherwise.
+     */
+    CURLcode VerifyRootCaSslCtxFunction(CURL *curl, void *sslCtx);
 
     /**
      * Sets the upload options for the HTTP request.
@@ -296,7 +412,7 @@ private:
     uint32_t GetHttpVersion(HttpProtocol ptcl) const;
 
     /**
-     * Retrieves the HttpProxyInfo including host, port, exclusions, and tunnel flag.
+     * Sets the upload options for the HTTP request.
      * @param host The output string to store the proxy host.
      * @param port The output integer to store the proxy port.
      * @param exclusions The output string to store the proxy exclusions.
@@ -304,6 +420,17 @@ private:
      */
     void GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions,
                           bool &tunnel);
+
+    /**
+     * Sets the upload options for the HTTP request.
+     * @param host The output string to store the proxy host.
+     * @param port The output integer to store the proxy port.
+     * @param exclusions The output string to store the proxy exclusions.
+     * @param username The output string to receive the proxy username.
+     * @param password The output string to receive the proxy password.
+     */
+    void GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions,
+                          SecureData &username, SecureData &password);
 
     /**
      * Callback function used to report the progress of the HTTP request.
@@ -347,6 +474,15 @@ private:
      * Processes the net address.
      */
     void ProcessNetAddress();
+    /**
+     * @brief Cache the connection extra info of the HTTP response after the request finishes.
+     */
+    void ProcessConnectionExtraInfo();
+    /**
+     * @brief Get the TLS version and cipher suite of the connection.
+     * @return Pair of the TLS version and the cipher suite.
+     */
+    std::pair<TlsVersion, CipherSuite> GetTlsVersionAndCipherSuite();
 
     /**
      * Processes the response code in the HTTP response.
@@ -473,6 +609,19 @@ private:
     std::string GetJsonFieldValue(const cJSON* item);
     void TraverseJson(const cJSON* item, std::string &output);
     std::string ParseJsonValueToExtraParam(const std::string &jsonStr);
+    void BuildUrlWithQueryParams();
+    std::string ParseJsonValueToQueryParams(const std::string &jsonStr);
+    void ProcessQueryParamValue(const std::string &name, bool encodeName, cJSON *value, std::string &queryParams);
+#if HAS_NETMANAGER_BASE
+    bool SetInterface(CURL *curl);
+    bool GetInterfaceName(CURL *curl, std::string &interfaceName, int32_t &netId);
+    bool GetPrimaryCellularInterface(CURL *curl,
+        std::list<sptr<NetManagerStandard::NetHandle>> netList, std::string &interfaceName, int32_t &netId);
+    bool GetSecondaryCellularInterface(CURL *curl,
+        std::list<sptr<NetManagerStandard::NetHandle>> netList, std::string &interfaceName, int32_t &netId);
+    bool GetNetStatus(std::list<sptr<NetManagerStandard::NetHandle>> netList,
+        std::list<sptr<NetManagerStandard::NetHandle>> &cellularNetworks, uint8_t &cellCount, uint8_t &wifiCount);
+#endif
     void HandleMethodForGet();
     bool GetRequestBody();
     void ProcessResponseExpectType();
@@ -509,6 +658,10 @@ private:
     std::function<void(const HttpClientRequest &request, const std::string &header)> onHeaderReceive_;
     bool isHeaderOnce_;
     bool isHeadersOnce_;
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+    bool isRootCaVerified_ = false;
+    bool isRootCaVerifiedOk_ = false;
+#endif
     bool isRequestInStream_;
     HttpClientRequest request_;
     HttpClientResponse response_;
@@ -526,6 +679,7 @@ private:
 
     std::mutex mutex_;
     CURL *curlHandle_;
+    std::shared_ptr<CookieShareHandle> cookieShareHandle_;
     static std::atomic<unsigned int> nextTaskId_;
     std::string filePath_;
     FILE *file_ = nullptr;

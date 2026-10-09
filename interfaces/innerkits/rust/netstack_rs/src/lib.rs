@@ -32,7 +32,7 @@ pub mod task;
 pub mod response;
 
 pub mod error;
-mod wrapper;
+pub mod wrapper;
 
 const LOG_LABEL: hilog_rust::HiLogLabel = hilog_rust::HiLogLabel {
     log_type: hilog_rust::LogType::LogCore,

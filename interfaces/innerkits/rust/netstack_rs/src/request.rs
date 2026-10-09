@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use cxx::{let_cxx_string, UniquePtr};
+use cxx::{let_cxx_string, SharedPtr, UniquePtr};
 use std::collections::HashMap;
 
 use crate::error::HttpClientError;
@@ -34,7 +34,18 @@ use crate::wrapper::ffi::{
     SetServerAuthentication,
     SetTLSOptions,
     SetHeaderExt,
+    SetQueryParams,
     SetCertificatePinning,
+    SetUsingSocks5Proxy,
+    SetMaxRedirects,
+    SetSniHostName,
+    SetInactivityMs,
+    SetCaData,
+    SetCustomMethod,
+    SetSslType,
+    SetClientEncCert,
+    SetPathPreference,
+    SetValidationCallback,
 };
 
 /// Builder for creating a Request.
@@ -214,9 +225,115 @@ impl<C: RequestCallback> Request<C> {
     }
 
     /// Set a certificate_pinning for the request.
-    pub fn certificate_pinning(&mut self, pin: &str) -> &mut Self {
-        let_cxx_string!(pin = pin);
-        SetCertificatePinning(self.inner.pin_mut(), &pin);
+    pub fn certificate_pinning(&mut self, pins: Vec<CertificatePinning>) -> &mut Self {
+        let pins: Vec<wrapper::ffi::CertificatePinningRust> = pins.into_iter().map(Into::into).collect();
+        SetCertificatePinning(self.inner.pin_mut(), &pins);
+        self
+    }
+
+    /// Set a max redirects for the request.
+    pub fn max_redirects(&mut self, max_redirects: i32) -> &mut Self {
+        SetMaxRedirects(self.inner.pin_mut(), max_redirects);
+        self
+    }
+
+    /// Set a sni host name for the request.
+    pub fn sni_host_name(&mut self, host_name: &str) -> &mut Self {
+        let_cxx_string!(host_name = host_name);
+        SetSniHostName(self.inner.pin_mut(), &host_name);
+        self
+    }
+
+    /// Set a reuse connections flag for the request.
+    pub fn reuse_connections(&mut self, reuse_connections: bool) -> &mut Self {
+        self.inner.pin_mut().SetReuseConnections(reuse_connections);
+        self
+    }
+
+    /// Set a inactivity ms for the request.
+    pub fn inactivity_ms(&mut self, inactivity_ms: i32) -> &mut Self {
+        SetInactivityMs(self.inner.pin_mut(), inactivity_ms);
+        self
+    }
+
+    /// Set query params for the request.
+    pub fn query_params(&mut self, query_params: EscapedData) -> &mut Self {
+        SetQueryParams(self.inner.pin_mut(), &query_params.into());
+        self
+    }
+
+    /// Set a body or query configured flag for the request.
+    pub fn body_or_query_configured(&mut self, configured: bool) -> &mut Self {
+        self.inner.pin_mut().SetBodyOrQueryConfigured(configured);
+        self
+    }
+
+    /// Set a ca data for the request.
+    pub fn ca_data(&mut self, ca_data: &str) -> &mut Self {
+        let_cxx_string!(ca_data = ca_data);
+        SetCaData(self.inner.pin_mut(), &ca_data);
+        self
+    }
+
+    /// Set a ssl type for the request.
+    pub fn ssl_type(&mut self, ssl_type: &str) -> &mut Self {
+        let_cxx_string!(ssl_type = ssl_type);
+        SetSslType(self.inner.pin_mut(), &ssl_type);
+        self
+    }
+
+    /// Set a client enc cert for the request.
+    pub fn client_enc_cert(&mut self, client_enc_cert: ClientCert) -> &mut Self {
+        SetClientEncCert(self.inner.pin_mut(), &client_enc_cert.into());
+        self
+    }
+
+    /// Set a path preference for the request.
+    pub fn path_preference(&mut self, path_preference: &str) -> &mut Self {
+        let_cxx_string!(path_preference = path_preference);
+        SetPathPreference(self.inner.pin_mut(), &path_preference);
+        self
+    }
+
+    /// Set a custom method for the request.
+    pub fn custom_method(&mut self, custom_method: &str) -> bool {
+        let_cxx_string!(custom_method = custom_method);
+        SetCustomMethod(self.inner.pin_mut(), &custom_method)
+    }
+
+    /// Set a socks5 proxy for the request.
+    pub fn socks5_proxy(&mut self, proxy: Socks5Proxy) -> &mut Self {
+        SetUsingSocks5Proxy(self.inner.pin_mut(), &proxy.into());
+        self
+    }
+
+    /// Set a enable partial chain flag for the request.
+    pub fn enable_partial_chain(&mut self, partial_chain: bool) -> &mut Self {
+        self.inner.pin_mut().SetPartialChain(partial_chain);
+        self
+    }
+
+    /// Set a can skip cert verify flag for the request.
+    pub fn can_skip_cert_verify(&mut self, can_skip_cert_verify: bool) -> &mut Self {
+        self.inner.pin_mut().SetCanSkipCertVerifyFlag(can_skip_cert_verify);
+        self
+    }
+
+    /// Set a enable auto cookie flag for the request.
+    pub fn enable_auto_cookie(&mut self, enable: bool) -> &mut Self {
+        self.inner.pin_mut().SetEnableAutoCookie(enable);
+        self
+    }
+
+    /// Set a custom certificate validation callback for the request.
+    pub fn validation_callback(
+        &mut self,
+        callback: Box<dyn FnMut(Vec<String>, String, String) -> bool + Send>,
+    ) -> &mut Self {
+        SetValidationCallback(
+            self.inner.pin_mut(),
+            Box::new(wrapper::ValidationCallbackWrapper::new(callback)),
+        );
         self
     }
 
@@ -233,6 +350,26 @@ impl<C: RequestCallback> Request<C> {
             task.set_callback(Box::new(callback));
         }
         task
+    }
+}
+
+/// Curl share handle for sharing cookies between requests with auto cookie enabled.
+/// Mirrors the share handle created by NAPI CreateShareHandle in http_module.cpp.
+#[derive(Clone)]
+pub struct CookieShareHandle {
+    inner: SharedPtr<crate::wrapper::ffi::CookieShareHandle>,
+}
+
+impl CookieShareHandle {
+    /// Create a cookie share handle; returns None if curl_share_init fails.
+    pub fn new() -> Option<Self> {
+        let inner = crate::wrapper::ffi::CreateCookieShareHandle();
+        inner.as_ref()?;
+        Some(Self { inner })
+    }
+
+    pub(crate) fn inner(&self) -> SharedPtr<crate::wrapper::ffi::CookieShareHandle> {
+        self.inner.clone()
     }
 }
 
@@ -388,4 +525,24 @@ pub struct HttpProxy {
     pub port: i32,
 
     pub exclusions: String,
+
+    pub username: String,
+
+    pub password: String,
+}
+
+pub struct Socks5Proxy {
+    pub host: String,
+    pub port: i32,
+    pub username: String,
+    pub password: String,
+    pub dns_strategy: i32,
+    pub exclusion_list: Vec<String>,
+}
+
+pub const SOCKS5_DNS_STRATEGY_UNSET: i32 = -1;
+
+pub struct CertificatePinning {
+    pub hash_algorithm: String,
+    pub public_key_hash: String,
 }

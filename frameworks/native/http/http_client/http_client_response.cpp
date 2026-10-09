@@ -137,6 +137,7 @@ void HttpClientResponse::Reset()
     headers_.clear();
     setCookie_.clear();
     cookies_.clear();
+    extraInfo_.clear();
     responseCode_ = NONE;
     requestTime_.clear();
     responseTime_.clear();
@@ -187,6 +188,17 @@ void HttpClientResponse::SetExpectDataType(const HttpDataType &type)
 HttpDataType HttpClientResponse::GetExpectDataType() const
 {
     return dataType_;
+}
+
+void HttpClientResponse::SetExtraInfoItem(const std::string &key, const std::string &value)
+{
+    extraInfo_[key] = value;
+}
+
+std::string HttpClientResponse::GetExtraInfoItem(const std::string &key, const std::string &defaultValue) const
+{
+    auto iter = extraInfo_.find(key);
+    return iter == extraInfo_.end() ? defaultValue : iter->second;
 }
 } // namespace HttpClient
 } // namespace NetStack

@@ -196,6 +196,49 @@ HWTEST_F(HttpClientRequestTest, SetHttpProxyTest001, TestSize.Level1)
     EXPECT_EQ(proxyType.host, proxy.host);
 }
 
+HWTEST_F(HttpClientRequestTest, SetHttpProxyTest002, TestSize.Level1)
+{
+    HttpClientRequest req;
+    HttpProxy proxy;
+    proxy.host = "192.168.147.60";
+    proxy.port = 8888;
+    proxy.exclusions = "www.test.org,127.0.0.1";
+    proxy.username.assign("user");
+    proxy.password.assign("password");
+    proxy.tunnel = true;
+    req.SetHttpProxy(proxy);
+
+    const HttpProxy &actual = req.GetHttpProxy();
+    EXPECT_EQ(actual.host, proxy.host);
+    EXPECT_EQ(actual.port, proxy.port);
+    EXPECT_EQ(actual.exclusions, proxy.exclusions);
+    EXPECT_EQ(actual.username, proxy.username);
+    EXPECT_EQ(actual.password, proxy.password);
+    EXPECT_TRUE(actual.tunnel);
+}
+
+HWTEST_F(HttpClientRequestTest, SetHttpProxyTest003, TestSize.Level1)
+{
+    HttpClientRequest req;
+    HttpProxy proxy;
+    proxy.host = "192.168.147.60";
+    proxy.port = 8888;
+    proxy.exclusions = "www.test.org";
+    proxy.username.assign("user");
+    proxy.password.assign("password");
+    proxy.tunnel = true;
+    req.SetHttpProxy(proxy);
+
+    req.SetHttpProxy(HttpProxy());
+    const HttpProxy &actual = req.GetHttpProxy();
+    EXPECT_TRUE(actual.host.empty());
+    EXPECT_EQ(actual.port, 0);
+    EXPECT_TRUE(actual.exclusions.empty());
+    EXPECT_TRUE(actual.username.empty());
+    EXPECT_TRUE(actual.password.empty());
+    EXPECT_FALSE(actual.tunnel);
+}
+
 HWTEST_F(HttpClientRequestTest, GetHttpProxyTypeTest001, TestSize.Level1)
 {
     HttpClientRequest req;
@@ -731,5 +774,236 @@ HWTEST_F(HttpClientRequestTest, ClearHeaderCacheTest002, TestSize.Level1)
     EXPECT_EQ(request_.GetHeaders().empty(), true);
     request_.ClearHeaderCache();
     EXPECT_EQ(request_.GetHeaders().empty(), true);
+}
+
+HWTEST_F(HttpClientRequestTest, HttpProxyCredentialTest001, TestSize.Level1)
+{
+    HttpProxy proxy;
+    EXPECT_EQ(proxy.username, "");
+    EXPECT_EQ(proxy.password, "");
+
+    proxy.host = "192.168.147.60";
+    proxy.port = 8888;
+    proxy.username.assign("user");
+    proxy.password.assign("password");
+
+    HttpClientRequest req;
+    req.SetHttpProxy(proxy);
+    const HttpProxy &proxyType = req.GetHttpProxy();
+    EXPECT_EQ(proxyType.username, proxy.username);
+    EXPECT_EQ(proxyType.password, proxy.password);
+}
+
+HWTEST_F(HttpClientRequestTest, HttpMethodPatchTest001, TestSize.Level1)
+{
+    EXPECT_EQ(std::string(HttpConstant::HTTP_METHOD_PATCH), "PATCH");
+
+    HttpClientRequest req;
+    req.SetMethod(HttpConstant::HTTP_METHOD_PATCH);
+    EXPECT_EQ(req.GetMethod(), HttpConstant::HTTP_METHOD_PATCH);
+}
+
+HWTEST_F(HttpClientRequestTest, SetValidationCallbackTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    EXPECT_FALSE(req.GetValidationCallback());
+
+    bool invoked = false;
+    req.SetValidationCallback([&invoked](const std::vector<std::string> &pemCerts, const std::string &host,
+                                         const std::string &ip) {
+        invoked = true;
+        return !pemCerts.empty() && !host.empty() && !ip.empty();
+    });
+
+    const ValidationCallback &callback = req.GetValidationCallback();
+    EXPECT_TRUE(callback);
+    EXPECT_TRUE(callback({"cert"}, "example.com", "127.0.0.1"));
+    EXPECT_TRUE(invoked);
+}
+
+HWTEST_F(HttpClientRequestTest, SetEnableAutoCookieTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    EXPECT_FALSE(req.GetEnableAutoCookie());
+
+    req.SetEnableAutoCookie(true);
+    EXPECT_TRUE(req.GetEnableAutoCookie());
+
+    req.SetEnableAutoCookie(false);
+    EXPECT_FALSE(req.GetEnableAutoCookie());
+}
+
+HWTEST_F(HttpClientRequestTest, SetMaxRedirectsTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    req.SetMaxRedirects(0);
+    EXPECT_EQ(req.GetMaxRedirects(), 0);
+
+    req.SetMaxRedirects(15);
+    EXPECT_EQ(req.GetMaxRedirects(), 15);
+    EXPECT_EQ(req.maxRedirects_, 15);
+}
+
+HWTEST_F(HttpClientRequestTest, SetSniHostNameTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    EXPECT_EQ(req.GetSniHostName(), "");
+
+    std::string sniHostName = "sni.example.com";
+    req.SetSniHostName(sniHostName);
+    EXPECT_EQ(req.GetSniHostName(), sniHostName);
+}
+
+HWTEST_F(HttpClientRequestTest, SetReuseConnectionsTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    EXPECT_TRUE(req.GetReuseConnections());
+
+    req.SetReuseConnections(false);
+    EXPECT_FALSE(req.GetReuseConnections());
+
+    req.SetReuseConnections(true);
+    EXPECT_TRUE(req.GetReuseConnections());
+}
+
+HWTEST_F(HttpClientRequestTest, SetInactivityMsTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    EXPECT_EQ(req.GetInactivityMs(), 0u);
+
+    req.SetInactivityMs(60000);
+    EXPECT_EQ(req.GetInactivityMs(), 60000u);
+}
+
+HWTEST_F(HttpClientRequestTest, SetBodyOrQueryConfiguredTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    EXPECT_FALSE(req.GetBodyOrQueryConfigured());
+
+    req.SetBodyOrQueryConfigured(true);
+    EXPECT_TRUE(req.GetBodyOrQueryConfigured());
+}
+
+HWTEST_F(HttpClientRequestTest, SetCaDataTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    EXPECT_EQ(req.GetCaData(), "");
+
+    std::string caData = "-----BEGIN CERTIFICATE-----caData-----END CERTIFICATE-----";
+    req.SetCaData(caData);
+    EXPECT_EQ(req.GetCaData(), caData);
+}
+
+HWTEST_F(HttpClientRequestTest, SetPathPreferenceTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    EXPECT_EQ(req.GetPathPreference(), PathPreference::autoPath);
+
+    req.SetPathPreference(PathPreference::primaryCellular);
+    EXPECT_EQ(req.GetPathPreference(), PathPreference::primaryCellular);
+
+    req.SetPathPreference(PathPreference::secondaryCellular);
+    EXPECT_EQ(req.GetPathPreference(), PathPreference::secondaryCellular);
+
+    req.SetPathPreference(PathPreference::autoPath);
+    EXPECT_EQ(req.GetPathPreference(), PathPreference::autoPath);
+}
+
+HWTEST_F(HttpClientRequestTest, Socks5ProxyStructTest001, TestSize.Level1)
+{
+    Socks5Proxy socks5Proxy;
+    EXPECT_EQ(socks5Proxy.host, "");
+    EXPECT_EQ(socks5Proxy.port, 0);
+    EXPECT_EQ(socks5Proxy.username, "");
+    EXPECT_EQ(socks5Proxy.password, "");
+    EXPECT_EQ(socks5Proxy.dnsStrategy, Socks5DnsStrategy::UNSPECIFIED);
+    EXPECT_EQ(socks5Proxy.exclusionList, "");
+}
+
+HWTEST_F(HttpClientRequestTest, SetSocks5ProxyTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+
+    Socks5Proxy socks5Proxy;
+    socks5Proxy.host = "192.168.147.60";
+    socks5Proxy.port = 1080;
+    socks5Proxy.username.assign("user");
+    socks5Proxy.password.assign("password");
+    socks5Proxy.dnsStrategy = Socks5DnsStrategy::PROXY_MODE;
+    socks5Proxy.exclusionList = "localhost,127.0.0.1";
+    req.SetSocks5Proxy(socks5Proxy);
+
+    const Socks5Proxy &proxy = req.GetSocks5Proxy();
+    EXPECT_EQ(proxy.host, socks5Proxy.host);
+    EXPECT_EQ(proxy.port, socks5Proxy.port);
+    EXPECT_EQ(proxy.username, socks5Proxy.username);
+    EXPECT_EQ(proxy.password, socks5Proxy.password);
+    EXPECT_EQ(proxy.dnsStrategy, Socks5DnsStrategy::PROXY_MODE);
+    EXPECT_EQ(proxy.exclusionList, socks5Proxy.exclusionList);
+}
+
+HWTEST_F(HttpClientRequestTest, SetSocks5ProxyTest002, TestSize.Level1)
+{
+    HttpClientRequest req;
+    Socks5Proxy socks5Proxy;
+    socks5Proxy.host = "192.168.147.60";
+    socks5Proxy.port = 1080;
+    socks5Proxy.username.assign("user");
+    socks5Proxy.password.assign("password");
+    socks5Proxy.dnsStrategy = Socks5DnsStrategy::PROXY_MODE;
+    socks5Proxy.exclusionList = "localhost,127.0.0.1";
+    req.SetSocks5Proxy(socks5Proxy);
+
+    req.SetSocks5Proxy(Socks5Proxy());
+    const Socks5Proxy &actual = req.GetSocks5Proxy();
+    EXPECT_TRUE(actual.host.empty());
+    EXPECT_EQ(actual.port, 0);
+    EXPECT_TRUE(actual.username.empty());
+    EXPECT_TRUE(actual.password.empty());
+    EXPECT_EQ(actual.dnsStrategy, Socks5DnsStrategy::UNSPECIFIED);
+    EXPECT_TRUE(actual.exclusionList.empty());
+}
+
+HWTEST_F(HttpClientRequestTest, SetPartialChainTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    EXPECT_EQ(req.GetPartialChain(), -1);
+
+    req.SetPartialChain(false);
+    EXPECT_EQ(req.GetPartialChain(), 0);
+
+    req.SetPartialChain(true);
+    EXPECT_EQ(req.GetPartialChain(), 1);
+}
+
+HWTEST_F(HttpClientRequestTest, SetPinnedPubkeyTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    EXPECT_EQ(req.GetPinnedPubkey(), "");
+
+    std::string pubkey = "testPinnedPubkey";
+    req.SetPinnedPubkey(pubkey);
+    EXPECT_EQ(req.GetPinnedPubkey(), pubkey);
+}
+
+HWTEST_F(HttpClientRequestTest, SetPinnedPubkeyTest002, TestSize.Level1)
+{
+    HttpClientRequest req;
+    req.SetPinnedPubkey(std::string("sha256//") + std::string(44, 'A'));
+    EXPECT_EQ(req.GetPinnedPubkey(), std::string("sha256//") + std::string(44, 'A'));
+}
+
+HWTEST_F(HttpClientRequestTest, SetQueryParamsTest001, TestSize.Level1)
+{
+    HttpClientRequest req;
+    EXPECT_EQ(req.GetQueryParams().dataType, HttpDataType::NO_DATA_TYPE);
+
+    EscapedData queryParams;
+    queryParams.dataType = HttpDataType::OBJECT;
+    queryParams.data = "{\"key\":\"value\"}";
+    req.SetQueryParams(queryParams);
+
+    EXPECT_EQ(req.GetQueryParams().dataType, HttpDataType::OBJECT);
+    EXPECT_EQ(req.GetQueryParams().data, "{\"key\":\"value\"}");
 }
 } // namespace

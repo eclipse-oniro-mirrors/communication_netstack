@@ -344,7 +344,7 @@ HWTEST_F(HttpClientRequestTest, SetClientEncCertTest002, TestSize.Level1)
     client.certPath = "/path/to/client.pem";
     client.certType = "PEM";
     client.keyPath = "/path/to/client.key";
-    client.keyPassword = "password";
+    client.keyPassword.assign("password");
     req.SetClientEncCert(client);
 
     HttpClientCert clientRes = req.GetClientEncCert();

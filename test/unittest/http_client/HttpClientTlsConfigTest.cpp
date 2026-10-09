@@ -92,4 +92,56 @@ HWTEST_F(HttpClientTlsConfigTest, HttpClientTlsConfigTest0003, testing::ext::Tes
     ret = GetInnerNameFromCipherSuite(CipherSuite::INVALID);
     EXPECT_EQ(ret, "");
 }
+
+HWTEST_F(HttpClientTlsConfigTest, HttpClientTlsConfigTest0004, testing::ext::TestSize.Level1)
+{
+    auto ret = GetCipherSuiteFromInnerName("ECDHE-RSA-AES128-GCM-SHA256");
+    EXPECT_EQ(ret, CipherSuite::TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
+
+    ret = GetCipherSuiteFromInnerName("DES-CBC3-SHA");
+    EXPECT_EQ(ret, CipherSuite::TLS_RSA_WITH_3DES_EDE_CBC_SHA);
+
+    ret = GetCipherSuiteFromInnerName("TLS_AES_128_GCM_SHA256");
+    EXPECT_EQ(ret, CipherSuite::TLS_AES_128_GCM_SHA256);
+
+    ret = GetCipherSuiteFromInnerName("INVALID-CIPHER");
+    EXPECT_EQ(ret, CipherSuite::INVALID);
+
+    ret = GetCipherSuiteFromInnerName("");
+    EXPECT_EQ(ret, CipherSuite::INVALID);
+}
+
+HWTEST_F(HttpClientTlsConfigTest, HttpClientTlsConfigTest0005, testing::ext::TestSize.Level1)
+{
+    auto ret = GetStandardNameFromCipherSuite(CipherSuite::TLS_RSA_WITH_3DES_EDE_CBC_SHA);
+    EXPECT_EQ(ret, "TLS_RSA_WITH_3DES_EDE_CBC_SHA");
+
+    ret = GetStandardNameFromCipherSuite(CipherSuite::TLS_AES_256_GCM_SHA384);
+    EXPECT_EQ(ret, "TLS_AES_256_GCM_SHA384");
+
+    ret = GetStandardNameFromCipherSuite(CipherSuite::TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
+    EXPECT_EQ(ret, "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256");
+
+    ret = GetStandardNameFromCipherSuite(CipherSuite::INVALID);
+    EXPECT_EQ(ret, "");
+}
+
+HWTEST_F(HttpClientTlsConfigTest, HttpClientTlsConfigTest0006, testing::ext::TestSize.Level1)
+{
+    EXPECT_EQ(ConvertTlsVersionToString(TlsVersion::TLSv1_0), "TLS_V_1_0");
+    EXPECT_EQ(ConvertTlsVersionToString(TlsVersion::TLSv1_1), "TLS_V_1_1");
+    EXPECT_EQ(ConvertTlsVersionToString(TlsVersion::TLSv1_2), "TLS_V_1_2");
+    EXPECT_EQ(ConvertTlsVersionToString(TlsVersion::TLSv1_3), "TLS_V_1_3");
+    EXPECT_EQ(ConvertTlsVersionToString(TlsVersion::DEFAULT), "");
+}
+
+HWTEST_F(HttpClientTlsConfigTest, HttpClientTlsConfigTest0007, testing::ext::TestSize.Level1)
+{
+    EXPECT_EQ(ConvertStringToTlsVersion("TLS_V_1_0"), TlsVersion::TLSv1_0);
+    EXPECT_EQ(ConvertStringToTlsVersion("TLS_V_1_1"), TlsVersion::TLSv1_1);
+    EXPECT_EQ(ConvertStringToTlsVersion("TLS_V_1_2"), TlsVersion::TLSv1_2);
+    EXPECT_EQ(ConvertStringToTlsVersion("TLS_V_1_3"), TlsVersion::TLSv1_3);
+    EXPECT_EQ(ConvertStringToTlsVersion("UNKNOWN"), TlsVersion::DEFAULT);
+    EXPECT_EQ(ConvertStringToTlsVersion(""), TlsVersion::DEFAULT);
+}
 } // namespace OHOS::NetStack::HttpClient
