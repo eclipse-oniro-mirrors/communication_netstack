@@ -59,11 +59,7 @@ int MulticastMembershipContext::GetSocketFd() const
     if (sharedManager_ == nullptr) {
         return -1;
     }
-    void* data = sharedManager_->GetData();
-    if (data == nullptr) {
-        return -1;
-    }
-    return static_cast<int>(reinterpret_cast<uint64_t>(data));
+    return sharedManager_->GetSocketFd();
 }
 
 bool MulticastMembershipContext::CheckParamsType(napi_value *params, size_t paramsCount)
@@ -84,6 +80,8 @@ bool MulticastMembershipContext::CheckParamsType(napi_value *params, size_t para
         }
         if (NapiUtils::GetValueType(GetEnv(), params[1]) != napi_function) {
             NETSTACK_LOGE("second param is not function");
+            SetNeedThrowException(true);
+            SetError(PARSE_ERROR_CODE, PARSE_ERROR_MSG);
             return false;
         }
     } else {
@@ -99,7 +97,7 @@ void MulticastMembershipContext::SetSocketFd(int sock)
         NETSTACK_LOGE("sharedManager_ is nullptr");
         return;
     }
-    sharedManager_->SetData(reinterpret_cast<void *>(sock));
+    sharedManager_->SetSocketFd(sock);
 }
 
 int32_t MulticastMembershipContext::GetErrorCode() const

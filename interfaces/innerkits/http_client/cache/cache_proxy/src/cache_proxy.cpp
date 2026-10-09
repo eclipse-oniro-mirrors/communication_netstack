@@ -37,6 +37,7 @@ static constexpr int32_t WRITE_INTERVAL = 60;
 namespace OHOS::NetStack::HttpClient {
 std::mutex g_diskCacheMutex;
 std::mutex g_cacheNeedRunMutex;
+std::mutex g_cacheRunMutex;
 std::atomic_bool g_cacheNeedRun(false);
 std::atomic_bool g_cacheIsRunning(false);
 std::condition_variable g_cacheThreadCondition;
@@ -119,6 +120,7 @@ void CacheProxy::RunCache()
 
 void CacheProxy::RunCacheWithSize(size_t capacity)
 {
+    std::lock_guard<std::mutex> runLock(g_cacheRunMutex);
     if (g_cacheIsRunning.load()) {
         return;
     }
@@ -128,8 +130,8 @@ void CacheProxy::RunCacheWithSize(size_t capacity)
 
     DISK_LRU_CACHE.ReadCacheFromJsonFile();
 
+    g_cacheIsRunning.store(true);
     std::thread([]() {
-        g_cacheIsRunning.store(true);
         while (g_cacheNeedRun.load()) {
             std::unique_lock<std::mutex> lock(g_cacheNeedRunMutex);
             g_cacheNeedRunCondition.wait_for(lock, std::chrono::seconds(WRITE_INTERVAL),
@@ -138,7 +140,10 @@ void CacheProxy::RunCacheWithSize(size_t capacity)
             DISK_LRU_CACHE.WriteCacheToJsonFile();
         }
 
-        g_cacheIsRunning.store(false);
+        {
+            std::lock_guard<std::mutex> lock(g_diskCacheMutex);
+            g_cacheIsRunning.store(false);
+        }
         g_cacheThreadCondition.notify_all();
     }).detach();
 }

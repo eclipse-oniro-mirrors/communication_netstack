@@ -112,7 +112,8 @@ void OnServerError(WebSocketServer *server, int32_t code)
         NETSTACK_LOGE("server or context is null");
         return;
     }
-    if (server->onErrorCallback_ == nullptr) {
+    auto errorCallback = server->onErrorCallback_.load(std::memory_order_acquire);
+    if (errorCallback == nullptr) {
         NETSTACK_LOGE("onErrorCallback_ is null");
         return;
     }
@@ -121,7 +122,7 @@ void OnServerError(WebSocketServer *server, int32_t code)
     if (it != WEBSOCKET_ERR_MAP.end()) {
         errorResult.errorMessage = it->second.c_str();
     }
-    server->onErrorCallback_(server, errorResult);
+    errorCallback(server, errorResult);
 }
 
 // LCOV_EXCL_START
@@ -224,8 +225,8 @@ int LwsCallbackEstablished(lws *wsi, lws_callback_reasons reason, void *user, vo
     server->GetServerContext()->AddConnections(clientId, wsi, connection);
     clientUserData->SetLws(wsi);
     clientUserData->TriggerWritable();
-    if (server->onConnectCallback_ != nullptr) {
-        server->onConnectCallback_(server, connection);
+    if (auto callback = server->onConnectCallback_.load(std::memory_order_acquire); callback != nullptr) {
+        callback(server, connection);
     }
     return HttpDummy(wsi, reason, user, in, len);
 }
@@ -311,13 +312,13 @@ int LwsCallbackClosed(lws *wsi, lws_callback_reasons reason, void *user, void *i
         OnServerError(server, COMMON_ERROR_CODE);
     }
     std::string clientId = server->GetServerContext()->GetClientIdFromConnectionByWsi(wsi);
-    if (server->onCloseCallback_ != nullptr) {
+    if (auto callback = server->onCloseCallback_.load(std::memory_order_acquire); callback != nullptr) {
         SocketConnection sc = server->GetServerContext()->GetConnectionFromWsi(wsi);
         CloseResult cr;
         cr.code = clientUserData->GetCloseStatus();
         std::string closeReason = clientUserData->GetCloseReason();
         cr.reason = closeReason.c_str();
-        server->onCloseCallback_(server, cr, sc);
+        callback(server, cr, sc);
     }
     server->GetServerContext()->RemoveConnections(clientId);
     server->GetServerContext()->RemoveClientUserData(wsi);
@@ -502,13 +503,13 @@ int LwsCallbackReceive(lws *wsi, lws_callback_reasons reason, void *user, void *
         return HttpDummy(wsi, reason, user, in, len);
     }
     SocketConnection connection = server->GetServerContext()->GetConnectionFromWsi(wsi);
-    if (server->onMessageReceiveCallback_ != nullptr) {
+    if (auto callback = server->onMessageReceiveCallback_.load(std::memory_order_acquire); callback != nullptr) {
         if (isBinary) {
             auto data = server->GetServerContext()->GetWsServerBinaryData(wsi);
-            server->onMessageReceiveCallback_(server, data, data.size(), connection);
+            callback(server, data, data.size(), connection);
         } else {
             auto data = server->GetServerContext()->GetWsServerTextData(wsi);
-            server->onMessageReceiveCallback_(server, data, data.size(), connection);
+            callback(server, data, data.size(), connection);
         }
     }
     server->GetServerContext()->ClearWsServerBinaryData(wsi);
@@ -621,11 +622,12 @@ WebSocketServer::WebSocketServer()
 WebSocketServer::~WebSocketServer()
 {
     std::lock_guard<std::mutex> lock(destroyMutex_);
+    lws_context *context = serverContext_->GetContext();
     if (serviceThread_.joinable()) {
         serverContext_->SetThreadStop(true);
         serviceThread_.join();
     }
-    DestroyContext();
+    DestroyContext(context);
     delete serverContext_;
     serverContext_ = nullptr;
 }
@@ -698,7 +700,8 @@ int WebSocketServer::Start(const ServerConfig &config)
 int WebSocketServer::Stop()
 {
     std::lock_guard<std::mutex> lock(destroyMutex_);
-    if (serverContext_->GetContext() == nullptr) {
+    lws_context *context = serverContext_->GetContext();
+    if (context == nullptr) {
         NETSTACK_LOGE("context is nullptr");
         return -1;
     }
@@ -713,11 +716,11 @@ int WebSocketServer::Stop()
     CloseAllConnection(serverContext_);
     serverContext_->Close(LWS_CLOSE_STATUS_GOINGAWAY, "");
     serverContext_->SetThreadStop(true);
-    lws_cancel_service(serverContext_->GetContext());
+    lws_cancel_service(context);
     if (serviceThread_.joinable()) {
         serviceThread_.join();
     }
-    DestroyContext();
+    DestroyContext(context);
     NETSTACK_LOGI("CloseServer OK");
     return 0;
 }
@@ -847,24 +850,28 @@ int WebSocketServer::Destroy()
 {
     NETSTACK_LOGI("websocket server destroy exec");
     std::lock_guard<std::mutex> lock(destroyMutex_);
-    if (serverContext_->GetContext() == nullptr && !serviceThread_.joinable()) {
+    lws_context *context = serverContext_->GetContext();
+    if (context == nullptr && !serviceThread_.joinable()) {
         return -1;
     }
     if (serviceThread_.joinable()) {
         serverContext_->SetThreadStop(true);
-        lws_cancel_service(serverContext_->GetContext());
+        if (context != nullptr) {
+            lws_cancel_service(context);
+        }
         serviceThread_.join();
     }
-    DestroyContext();
+    DestroyContext(context);
     return 0;
 }
 
-void WebSocketServer::DestroyContext()
+void WebSocketServer::DestroyContext(lws_context *context)
 {
     NETSTACK_LOGI("websocket server destroy context exec");
-    if (serverContext_->GetContext() != nullptr) {
-        lws_context_destroy(serverContext_->GetContext());
-        serverContext_->SetContext(nullptr);
+    if (context == nullptr) {
+        return;
     }
+    serverContext_->SetContext(nullptr);
+    lws_context_destroy(context);
 }
 }

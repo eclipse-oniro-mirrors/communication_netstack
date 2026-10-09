@@ -15,12 +15,16 @@
 #ifndef NATIVE_WEBSOCKET_ADAPTER_H
 #define NATIVE_WEBSOCKET_ADAPTER_H
 
+#include <map>
+#include <mutex>
+
 #include "net_websocket.h"
 #include "websocket_client_innerapi.h"
 
 namespace OHOS::NetStack::WebSocketClient {
 
 extern std::map<WebSocket *, WebSocketClient *> g_clientMap;
+extern std::mutex g_clientMapMutex;
 
 WebSocketClient *GetInnerClientAdapter(WebSocket *key);
 WebSocket *GetNdkClientAdapter(const WebSocketClient *websocketClient);

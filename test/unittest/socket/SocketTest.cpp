@@ -16,10 +16,22 @@
 #include "netstack_log.h"
 #include "gtest/gtest.h"
 #include <atomic>
+#include <cerrno>
+#include <chrono>
+#include <csignal>
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <thread>
+#include <vector>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <poll.h>
+#include <sys/eventfd.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
+#include "bind_context.h"
 #include "local_socket_context.h"
 #include "local_socket_exec.h"
 #include "local_socket_server_context.h"
@@ -31,6 +43,7 @@
 #include "multicast_set_ttl_context.h"
 #include "socket_exec.h"
 #include "socket_exec_common.h"
+#include "tcp_extra_context.h"
 
 #include "socks5.h"
 #include "socks5_instance.h"
@@ -102,18 +115,18 @@ static int CreateManagedUdpSocket(const std::shared_ptr<EventManager> &eventMana
     int sockFd = ExecCommonUtils::MakeUdpSocket(AF_INET);
     EXPECT_GE(sockFd, 0);
     if (sockFd >= 0) {
-        eventManager->SetData(reinterpret_cast<void *>(static_cast<intptr_t>(sockFd)));
+        eventManager->SetSocketFd(sockFd);
     }
     return sockFd;
 }
 
 static void CloseManagedSocket(const std::shared_ptr<EventManager> &eventManager)
 {
-    int sockFd = eventManager->GetData() ? static_cast<int>(reinterpret_cast<intptr_t>(eventManager->GetData())) : -1;
+    int sockFd = eventManager->GetSocketFd();
     if (sockFd >= 0) {
         close(sockFd);
     }
-    eventManager->SetData(nullptr);
+    eventManager->SetSocketFd(-1);
 }
 
 static int GetReuseAddressOption(int sockFd)
@@ -317,6 +330,87 @@ HWTEST_F(SocketTest, LocalSocketTest008, TestSize.Level1)
     EXPECT_EQ(ret, false);
 }
 
+HWTEST_F(SocketTest, LocalSocketCloseWakesBlockedRecvWorker009, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    int sv[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    timeval recvTimeout = {10, 0};
+    ASSERT_EQ(setsockopt(sv[0], SOL_SOCKET, SO_RCVTIMEO, &recvTimeout, sizeof(recvTimeout)), 0);
+    eventManager->SetSocketFd(sv[0]);
+    eventManager->SetData(new LocalSocketManager());
+
+    int ioFd = dup(sv[0]);
+    ASSERT_GE(ioFd, 0);
+    std::atomic_bool workerDone = false;
+    std::thread worker([ioFd, &workerDone]() {
+        pollfd fds[1] = {{.fd = ioFd, .events = POLLIN}};
+        while (true) {
+            if (poll(fds, 1, 10000) <= 0) {
+                continue;
+            }
+            if ((fds[0].revents & (POLLHUP | POLLERR | POLLNVAL)) != 0) {
+                break;
+            }
+            char buf[16];
+            if (recv(ioFd, buf, sizeof(buf), 0) <= 0) {
+                break;
+            }
+        }
+        close(ioFd);
+        workerDone.store(true);
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    LocalSocketCloseContext context(env, eventManager);
+    auto start = std::chrono::steady_clock::now();
+    bool ret = LocalSocketExec::ExecLocalSocketClose(&context);
+    auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - start).count();
+    worker.join();
+
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(eventManager->GetSocketFd(), -1);
+    EXPECT_LT(elapsedMs, 5000);
+    EXPECT_TRUE(workerDone.load());
+
+    LocalSocketCloseContext secondClose(env, eventManager);
+    EXPECT_EQ(LocalSocketExec::ExecLocalSocketClose(&secondClose), true);
+
+    close(sv[1]);
+    delete reinterpret_cast<LocalSocketManager *>(eventManager->GetData());
+    eventManager->SetData(nullptr);
+}
+
+HWTEST_F(SocketTest, LocalSocketFdCasCloseTest010, TestSize.Level1)
+{
+    auto eventManager = std::make_shared<EventManager>();
+    eventManager->SetSocketFd(7);
+    EXPECT_EQ(eventManager->GetSocketFd(), 7);
+    EXPECT_TRUE(eventManager->SetSocketFdIfEqual(7));
+    EXPECT_EQ(eventManager->GetSocketFd(), -1);
+    EXPECT_FALSE(eventManager->SetSocketFdIfEqual(7));
+    eventManager->SetSocketFd(9);
+    EXPECT_FALSE(eventManager->SetSocketFdIfEqual(7));
+    EXPECT_EQ(eventManager->GetSocketFd(), 9);
+}
+
+HWTEST_F(SocketTest, LocalSocketSendAfterCloseTest011, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    int sv[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    eventManager->SetSocketFd(sv[0]);
+    LocalSocketCloseContext closeContext(env, eventManager);
+    ASSERT_TRUE(LocalSocketExec::ExecLocalSocketClose(&closeContext));
+    EXPECT_EQ(eventManager->GetSocketFd(), -1);
+    LocalSocketSendContext sendContext(env, eventManager);
+    EXPECT_EQ(LocalSocketExec::ExecLocalSocketSend(&sendContext), false);
+    close(sv[1]);
+}
+
 HWTEST_F(SocketTest, LocalSocketServerTest001, TestSize.Level1)
 {
     napi_env env = nullptr;
@@ -378,6 +472,436 @@ HWTEST_F(SocketTest, LocalSocketServerTest007, TestSize.Level1)
     LocalSocketServerEndContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketServerEnd(&context);
     EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(SocketTest, LocalSocketFdZeroAndEverCreatedTest012, TestSize.Level1)
+{
+    auto eventManager = std::make_shared<EventManager>();
+    EXPECT_EQ(eventManager->GetSocketFd(), -1);
+    EXPECT_FALSE(eventManager->IsSocketEverCreated());
+    eventManager->SetSocketFd(0);
+    EXPECT_EQ(eventManager->GetSocketFd(), 0);
+    EXPECT_TRUE(eventManager->IsSocketEverCreated());
+    eventManager->SetSocketFd(-1);
+    EXPECT_EQ(eventManager->GetSocketFd(), -1);
+    EXPECT_TRUE(eventManager->IsSocketEverCreated());
+}
+
+HWTEST_F(SocketTest, LocalSocketServerManagerTest001, TestSize.Level1)
+{
+    LocalSocketServerManager mgr;
+    ASSERT_GE(mgr.StartEpoll(), 0);
+    ASSERT_GE(mgr.stopEventFd_, 0);
+
+    int sv[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    ASSERT_EQ(mgr.RegisterEpollEvent(sv[0], EPOLLIN), 0);
+
+    // data ready on a registered fd is reported by EpollWait
+    ASSERT_EQ(write(sv[1], "x", 1), 1);
+    bool reported = false;
+    int n = mgr.EpollWait();
+    ASSERT_GE(n, 0);
+    for (int i = 0; i < n; ++i) {
+        if (mgr.events_[i].data.fd == sv[0]) {
+            reported = true;
+        }
+    }
+    EXPECT_TRUE(reported);
+
+    int clientId = mgr.AddAccept(sv[0]);
+    EXPECT_GT(clientId, 0);
+    EXPECT_EQ(mgr.GetClientCounts(), 1U);
+    EXPECT_EQ(mgr.GetAcceptFd(clientId), sv[0]);
+    int dupFd = mgr.DupAcceptFd(clientId);
+    EXPECT_GE(dupFd, 0);
+    close(dupFd);
+    EXPECT_EQ(mgr.GetClientId(sv[0]), clientId);
+    EXPECT_EQ(mgr.GetClientId(-1), -1);
+
+    // RemoveAccept must DEL the fd from epoll before closing it: the closed fd is
+    // never reported again even though data was pending on it
+    mgr.RemoveAccept(clientId);
+    EXPECT_EQ(mgr.GetClientCounts(), 0U);
+    EXPECT_EQ(mgr.GetAcceptFd(clientId), -1);
+
+    int sv2[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv2), 0);
+    ASSERT_EQ(mgr.RegisterEpollEvent(sv2[0], EPOLLIN), 0);
+    ASSERT_EQ(write(sv2[1], "z", 1), 1);
+    bool staleReported = false;
+    bool freshReported = false;
+    n = mgr.EpollWait();
+    ASSERT_GE(n, 0);
+    for (int i = 0; i < n; ++i) {
+        if (mgr.events_[i].data.fd == sv[0]) {
+            staleReported = true;
+        }
+        if (mgr.events_[i].data.fd == sv2[0]) {
+            freshReported = true;
+        }
+    }
+    EXPECT_TRUE(freshReported);
+    EXPECT_FALSE(staleReported);
+
+    int clientId2 = mgr.AddAccept(sv2[0]);
+    EXPECT_GT(clientId2, 0);
+    mgr.RemoveAllAccept();
+    EXPECT_EQ(mgr.GetClientCounts(), 0U);
+    // sv2[0] has been closed by RemoveAllAccept: writing the peer fails with EPIPE
+    int sendRet = send(sv2[1], "z", 1, MSG_NOSIGNAL);
+    int sendErr = errno;
+    EXPECT_EQ(sendRet, -1);
+    EXPECT_EQ(sendErr, EPIPE);
+
+    // NotifyStopEvent wakes EpollWait through stopEventFd_
+    mgr.NotifyStopEvent();
+    bool stopReported = false;
+    n = mgr.EpollWait();
+    ASSERT_GE(n, 0);
+    for (int i = 0; i < n; ++i) {
+        if (mgr.events_[i].data.fd == mgr.stopEventFd_) {
+            stopReported = true;
+        }
+    }
+    EXPECT_TRUE(stopReported);
+
+    close(mgr.stopEventFd_);
+    mgr.stopEventFd_ = -1;
+    mgr.NotifyStopEvent(); // stopEventFd_ < 0 branch
+    close(mgr.epollFd_);
+    mgr.epollFd_ = -1;
+    close(sv[1]);
+    close(sv2[1]);
+}
+
+HWTEST_F(SocketTest, LocalSocketServerManagerTest002, TestSize.Level1)
+{
+    LocalSocketServerManager mgr;
+    auto eventManager = std::make_shared<EventManager>();
+    auto eventManager2 = std::make_shared<EventManager>();
+
+    mgr.AddEventManager(1, eventManager);
+    EXPECT_EQ(mgr.GetSharedManager(1).get(), eventManager.get());
+    EXPECT_EQ(mgr.GetSharedManager(2), nullptr);
+    mgr.RemoveEventManager(1);
+    EXPECT_EQ(mgr.GetSharedManager(1), nullptr);
+
+    mgr.AddEventManager(2, eventManager2);
+    mgr.RemoveAllEventManager();
+    EXPECT_EQ(mgr.GetSharedManager(2), nullptr);
+
+    mgr.NotifyRegisterEvent();
+    EXPECT_FALSE(mgr.GetServerDestructStatus());
+    mgr.SetServerDestructStatus(true);
+    EXPECT_TRUE(mgr.GetServerDestructStatus());
+    // WaitRegisteringEvent returns immediately once the destruct flag is set
+    mgr.WaitRegisteringEvent(1);
+}
+
+HWTEST_F(SocketTest, LocalSocketServerExecFdTest001, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    int sv[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    auto eventManager = std::make_shared<EventManager>();
+    eventManager->SetSocketFd(sv[0]);
+    auto mgr = new LocalSocketServerManager();
+    eventManager->SetData(mgr);
+
+    // get state with a live fd: getsockname succeeds -> isBound, no client -> not connected
+    LocalSocketServerGetStateContext stateCtx(env, eventManager);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketServerGetState(&stateCtx));
+    EXPECT_TRUE(stateCtx.GetStateRef().IsBound());
+    EXPECT_FALSE(stateCtx.GetStateRef().IsConnected());
+
+    int clientId = mgr->AddAccept(sv[1]);
+    EXPECT_GT(clientId, 0);
+    LocalSocketServerGetStateContext stateCtx2(env, eventManager);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketServerGetState(&stateCtx2));
+    EXPECT_TRUE(stateCtx2.GetStateRef().IsConnected());
+
+    // get state with an invalid fd -> not bound
+    eventManager->SetSocketFd(-1);
+    LocalSocketServerGetStateContext stateCtx3(env, eventManager);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketServerGetState(&stateCtx3));
+    EXPECT_FALSE(stateCtx3.GetStateRef().IsBound());
+
+    // get state without manager data -> connected state is skipped
+    eventManager->SetSocketFd(sv[0]);
+    eventManager->SetData(nullptr);
+    LocalSocketServerGetStateContext stateCtx4(env, eventManager);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketServerGetState(&stateCtx4));
+    EXPECT_FALSE(stateCtx4.GetStateRef().IsConnected());
+    eventManager->SetData(mgr);
+
+    // get local address: live fd succeeds, invalid fd fails with EBADF
+    LocalSocketServerGetLocalAddressContext addrCtx(env, eventManager);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketServerGetLocalAddress(&addrCtx));
+    eventManager->SetSocketFd(-1);
+    LocalSocketServerGetLocalAddressContext addrCtx2(env, eventManager);
+    EXPECT_FALSE(LocalSocketExec::ExecLocalSocketServerGetLocalAddress(&addrCtx2));
+
+    mgr->RemoveAllAccept();
+    eventManager->SetData(nullptr);
+    delete mgr;
+    close(sv[0]);
+}
+
+HWTEST_F(SocketTest, LocalSocketServerExecFdTest002, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    int sv[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    auto eventManager = std::make_shared<EventManager>();
+    eventManager->SetSocketFd(sv[0]);
+    auto mgr = new LocalSocketServerManager();
+    eventManager->SetData(mgr);
+    int clientId = mgr->AddAccept(sv[0]);
+    ASSERT_GT(clientId, 0);
+
+    // set extra options applies sockopts on every accepted fd
+    LocalSocketServerSetExtraOptionsContext setCtx(env, eventManager);
+    auto &options = setCtx.GetOptionsRef();
+    options.SetRecvBufSizeFlag(true);
+    options.SetReceiveBufferSize(4096);
+    options.SetSendBufSizeFlag(true);
+    options.SetSendBufferSize(4096);
+    options.SetTimeoutFlag(true);
+    options.SetSocketTimeout(1000);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketServerSetExtraOptions(&setCtx));
+    EXPECT_TRUE(mgr->alreadySetExtraOptions_);
+
+    // get extra options returns the stored options once they have been set
+    LocalSocketServerGetExtraOptionsContext getCtx(env, eventManager);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketServerGetExtraOptions(&getCtx));
+    EXPECT_EQ(getCtx.GetOptionsRef().GetReceiveBufferSize(), 4096U);
+
+    // fresh manager without stored options falls back to getsockopt on the listen fd
+    auto mgr2 = new LocalSocketServerManager();
+    eventManager->SetData(mgr2);
+    LocalSocketServerGetExtraOptionsContext getCtx2(env, eventManager);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketServerGetExtraOptions(&getCtx2));
+
+    // invalid fd -> EBADF
+    eventManager->SetSocketFd(-1);
+    LocalSocketServerGetExtraOptionsContext getCtx3(env, eventManager);
+    EXPECT_FALSE(LocalSocketExec::ExecLocalSocketServerGetExtraOptions(&getCtx3));
+
+    mgr->RemoveAllAccept();
+    eventManager->SetData(nullptr);
+    delete mgr;
+    delete mgr2;
+    close(sv[1]);
+}
+
+HWTEST_F(SocketTest, LocalSocketServerExecFdTest003, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    // server end closes the listen fd through the CAS fast path
+    int sv[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    auto eventManager = std::make_shared<EventManager>();
+    eventManager->SetSocketFd(sv[0]);
+    auto mgr = new LocalSocketServerManager();
+    eventManager->SetData(mgr);
+    LocalSocketServerEndContext endCtx(env, eventManager);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketServerEnd(&endCtx));
+    EXPECT_EQ(eventManager->GetSocketFd(), -1);
+    // second end hits the fd < 0 branch
+    LocalSocketServerEndContext endCtx2(env, eventManager);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketServerEnd(&endCtx2));
+    eventManager->SetData(nullptr);
+    delete mgr;
+    close(sv[1]);
+
+    // connection send / close / getLocalAddress / getSocketFd through a real accepted fd
+    int sv2[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv2), 0);
+    auto eventManager2 = std::make_shared<EventManager>();
+    auto mgr2 = new LocalSocketServerManager();
+    auto connData = new LocalSocketExec::LocalSocketConnectionData(1, mgr2);
+    eventManager2->SetData(connData);
+    int clientId = mgr2->AddAccept(sv2[0]);
+    ASSERT_GT(clientId, 0);
+
+    LocalSocketServerSendContext sendCtx(env, eventManager2);
+    sendCtx.SetClientId(clientId);
+    sendCtx.GetOptionsRef().SetBuffer("hello");
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketConnectionSend(&sendCtx));
+    char buf[16] = {0};
+    EXPECT_EQ(read(sv2[1], buf, sizeof(buf)), 5);
+
+    // unknown client id -> DupAcceptFd fails
+    LocalSocketServerSendContext sendCtx2(env, eventManager2);
+    sendCtx2.SetClientId(999);
+    sendCtx2.GetOptionsRef().SetBuffer("x");
+    EXPECT_FALSE(LocalSocketExec::ExecLocalSocketConnectionSend(&sendCtx2));
+
+    // connection close shuts down and removes the accepted fd
+    LocalSocketServerCloseContext closeCtx(env, eventManager2);
+    closeCtx.SetClientId(clientId);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketConnectionClose(&closeCtx));
+    EXPECT_EQ(mgr2->GetClientCounts(), 0U);
+
+    // unknown client id -> DupAcceptFd fails with EBADF
+    LocalSocketServerCloseContext closeCtx2(env, eventManager2);
+    closeCtx2.SetClientId(999);
+    EXPECT_FALSE(LocalSocketExec::ExecLocalSocketConnectionClose(&closeCtx2));
+
+    // removed client -> EBADF
+    LocalSocketServerGetLocalAddressContext addrCtx(env, eventManager2);
+    addrCtx.SetClientId(clientId);
+    EXPECT_FALSE(LocalSocketExec::ExecLocalSocketConnectionGetLocalAddress(&addrCtx));
+
+    // connection data without a server manager -> EBADF
+    auto eventManager4 = std::make_shared<EventManager>();
+    eventManager4->SetData(new LocalSocketExec::LocalSocketConnectionData(1, nullptr));
+    LocalSocketServerGetLocalAddressContext addrCtx3(env, eventManager4);
+    addrCtx3.SetClientId(1);
+    EXPECT_FALSE(LocalSocketExec::ExecLocalSocketConnectionGetLocalAddress(&addrCtx3));
+    delete reinterpret_cast<LocalSocketExec::LocalSocketConnectionData *>(eventManager4->GetData());
+    eventManager4->SetData(nullptr);
+
+    // live accepted fd -> getsockname succeeds; getSocketFd returns the stored fd
+    int clientId2 = mgr2->AddAccept(sv2[1]);
+    ASSERT_GT(clientId2, 0);
+    LocalSocketServerGetLocalAddressContext addrCtx2(env, eventManager2);
+    addrCtx2.SetClientId(clientId2);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketConnectionGetLocalAddress(&addrCtx2));
+    LocalSocketServerGetSocketFdContext fdCtx(env, eventManager2);
+    fdCtx.SetClientId(clientId2);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketConnectionGetSocketFd(&fdCtx));
+    EXPECT_EQ(fdCtx.GetConnectionSocketFd(), sv2[1]);
+
+    // manager without connection data -> socket fd stays invalid, exec still succeeds
+    auto eventManager3 = std::make_shared<EventManager>();
+    LocalSocketServerGetSocketFdContext fdCtx2(env, eventManager3);
+    fdCtx2.SetClientId(1);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketConnectionGetSocketFd(&fdCtx2));
+    EXPECT_EQ(fdCtx2.GetConnectionSocketFd(), -1);
+
+    // send on an accepted fd whose peer is gone fails through the send error branch
+    // (SIGPIPE must be ignored: PollSendData sends without MSG_NOSIGNAL)
+    signal(SIGPIPE, SIG_IGN);
+    int sv3[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv3), 0);
+    close(sv3[1]);
+    int clientId3 = mgr2->AddAccept(sv3[0]);
+    ASSERT_GT(clientId3, 0);
+    LocalSocketServerSendContext sendCtx3(env, eventManager2);
+    sendCtx3.SetClientId(clientId3);
+    sendCtx3.GetOptionsRef().SetBuffer("x");
+    EXPECT_FALSE(LocalSocketExec::ExecLocalSocketConnectionSend(&sendCtx3));
+
+    mgr2->RemoveAllAccept();
+    eventManager2->SetData(nullptr);
+    delete connData;
+    delete mgr2;
+}
+
+HWTEST_F(SocketTest, LocalSocketClientExecFdTest001, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    int sv[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    auto eventManager = std::make_shared<EventManager>();
+    eventManager->SetSocketFd(sv[0]);
+    auto socketManager = new LocalSocketManager();
+    eventManager->SetData(socketManager);
+
+    // get state with a live fd and manager data
+    LocalSocketGetStateContext stateCtx(env, eventManager);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketGetState(&stateCtx));
+
+    // connect to an empty abstract path fails immediately (NonBlockConnect error path)
+    LocalSocketConnectContext connCtx(env, eventManager);
+    EXPECT_FALSE(LocalSocketExec::ExecLocalSocketConnect(&connCtx));
+
+    // send success path writes through the dup'ed fd
+    LocalSocketSendContext sendCtx(env, eventManager);
+    sendCtx.GetOptionsRef().SetBuffer("hello");
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketSend(&sendCtx));
+    char buf[16] = {0};
+    EXPECT_EQ(read(sv[1], buf, sizeof(buf)), 5);
+    EXPECT_STREQ(buf, "hello");
+
+    // invalid fd and no manager data: state falls back to unbound and stays disconnected
+    eventManager->SetSocketFd(-1);
+    delete socketManager;
+    eventManager->SetData(nullptr);
+    LocalSocketGetStateContext stateCtx2(env, eventManager);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketGetState(&stateCtx2));
+    EXPECT_FALSE(stateCtx2.GetStateRef().IsBound());
+    EXPECT_FALSE(stateCtx2.GetStateRef().IsConnected());
+
+    // get local address: live fd succeeds, invalid fd fails with EBADF
+    eventManager->SetSocketFd(sv[0]);
+    eventManager->SetData(new LocalSocketManager());
+    LocalSocketGetLocalAddressContext addrCtx(env, eventManager);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketGetLocalAddress(&addrCtx));
+    eventManager->SetSocketFd(-1);
+    LocalSocketGetLocalAddressContext addrCtx2(env, eventManager);
+    EXPECT_FALSE(LocalSocketExec::ExecLocalSocketGetLocalAddress(&addrCtx2));
+
+    // set extra options: live fd succeeds, invalid fd fails
+    eventManager->SetSocketFd(sv[0]);
+    LocalSocketSetExtraOptionsContext setCtx(env, eventManager);
+    auto &options = setCtx.GetOptionsRef();
+    options.SetRecvBufSizeFlag(true);
+    options.SetReceiveBufferSize(4096);
+    options.SetSendBufSizeFlag(true);
+    options.SetSendBufferSize(4096);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketSetExtraOptions(&setCtx));
+    eventManager->SetSocketFd(-1);
+    LocalSocketSetExtraOptionsContext setCtx2(env, eventManager);
+    EXPECT_FALSE(LocalSocketExec::ExecLocalSocketSetExtraOptions(&setCtx2));
+
+    // get extra options: live fd succeeds, invalid fd fails
+    eventManager->SetSocketFd(sv[0]);
+    LocalSocketGetExtraOptionsContext getCtx(env, eventManager);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketGetExtraOptions(&getCtx));
+    eventManager->SetSocketFd(-1);
+    LocalSocketGetExtraOptionsContext getCtx2(env, eventManager);
+    EXPECT_FALSE(LocalSocketExec::ExecLocalSocketGetExtraOptions(&getCtx2));
+
+    // close releases the fd and resets the manager state
+    eventManager->SetSocketFd(sv[0]);
+    LocalSocketCloseContext closeCtx(env, eventManager);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketClose(&closeCtx));
+    EXPECT_EQ(eventManager->GetSocketFd(), -1);
+    EXPECT_FALSE(reinterpret_cast<LocalSocketManager *>(eventManager->GetData())->isConnected_);
+
+    delete reinterpret_cast<LocalSocketManager *>(eventManager->GetData());
+    eventManager->SetData(nullptr);
+    close(sv[1]);
+}
+
+HWTEST_F(SocketTest, NetAddressNumericIpTest001, TestSize.Level1)
+{
+    // pure numeric IPv4 address is normalized to the dotted form through inet_ntop
+    NetAddress v4;
+    v4.SetFamilyBySaFamily(AF_INET);
+    v4.SetIpAddress("2130706433");
+    EXPECT_EQ(v4.GetAddress(), "127.0.0.1");
+
+    // non numeric input leaves the stored address untouched
+    NetAddress bad;
+    bad.SetFamilyBySaFamily(AF_INET);
+    bad.SetIpAddress("not_a_number");
+    EXPECT_EQ(bad.GetAddress(), "");
+
+    // scoped IPv6 address keeps only the address part before '%'
+    NetAddress v6;
+    v6.SetFamilyBySaFamily(AF_INET6);
+    v6.SetIpAddress("::1%1");
+    EXPECT_EQ(v6.GetAddress(), "::1");
+
+    // IPv6 family without a scope part is not rewritten
+    NetAddress v6b;
+    v6b.SetFamilyBySaFamily(AF_INET6);
+    v6b.SetIpAddress("not_an_ipv6");
+    EXPECT_EQ(v6b.GetAddress(), "");
 }
 
 // socks5 proxy test start
@@ -883,6 +1407,286 @@ HWTEST_F(SocketTest, ConnectMonitorMonitorLoopEpollErrorBranch, TestSize.Level2)
     monitor.epollFd_ = oldEpollFd;
 
     ResetConnectMonitorState(monitor);
+}
+
+static int CreateTcpServerSocket()
+{
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    EXPECT_GE(fd, 0);
+    int opt = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    return fd;
+}
+
+static int ConnectToServer(const char *ip, uint16_t port)
+{
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    EXPECT_GE(fd, 0);
+    sockaddr_in addr = {};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = inet_addr(ip);
+    int ret = connect(fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr));
+    EXPECT_EQ(ret, 0);
+    return fd;
+}
+
+static uint16_t GetBoundPort(int fd)
+{
+    sockaddr_in addr = {};
+    socklen_t len = sizeof(addr);
+    EXPECT_EQ(getsockname(fd, reinterpret_cast<sockaddr *>(&addr), &len), 0);
+    return ntohs(addr.sin_port);
+}
+
+static void InitTcpServerListenContext(TcpServerListenContext &context, const char *ip, uint16_t port)
+{
+    context.address_.SetAddress(ip);
+    context.address_.SetPort(port);
+    context.address_.SetFamilyBySaFamily(AF_INET);
+}
+
+HWTEST_F(SocketTest, TcpServerDetachTest001, TestSize.Level2)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+
+    int serverFd = CreateTcpServerSocket();
+    ASSERT_GE(serverFd, 0);
+    eventManager->SetSocketFd(serverFd);
+
+    TcpServerListenContext listenContext(env, eventManager);
+    InitTcpServerListenContext(listenContext, "127.0.0.1", 0);
+    ASSERT_TRUE(SocketExec::ExecTcpServerListen(&listenContext));
+
+    uint16_t port = GetBoundPort(serverFd);
+    ASSERT_GT(port, 0);
+
+    int clientFd = ConnectToServer("127.0.0.1", port);
+    ASSERT_GE(clientFd, 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    TcpServerCloseContext closeContext(env, eventManager);
+    EXPECT_TRUE(SocketExec::ExecTcpServerClose(&closeContext));
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    close(clientFd);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    SUCCEED();
+}
+
+HWTEST_F(SocketTest, TcpServerDetachTest002, TestSize.Level2)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+
+    int serverFd = CreateTcpServerSocket();
+    ASSERT_GE(serverFd, 0);
+    eventManager->SetSocketFd(serverFd);
+
+    TcpServerListenContext listenContext(env, eventManager);
+    InitTcpServerListenContext(listenContext, "127.0.0.1", 0);
+    ASSERT_TRUE(SocketExec::ExecTcpServerListen(&listenContext));
+
+    uint16_t port = GetBoundPort(serverFd);
+    ASSERT_GT(port, 0);
+
+    constexpr int CLIENT_NUM = 5;
+    std::vector<int> clientFds;
+    for (int i = 0; i < CLIENT_NUM; ++i) {
+        int fd = ConnectToServer("127.0.0.1", port);
+        ASSERT_GE(fd, 0);
+        clientFds.push_back(fd);
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+    TcpServerCloseContext closeContext(env, eventManager);
+    EXPECT_TRUE(SocketExec::ExecTcpServerClose(&closeContext));
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    for (int fd : clientFds) {
+        close(fd);
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    SUCCEED();
+}
+
+HWTEST_F(SocketTest, TcpServerDetachTest003, TestSize.Level2)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+
+    int serverFd = CreateTcpServerSocket();
+    ASSERT_GE(serverFd, 0);
+    eventManager->SetSocketFd(serverFd);
+
+    TcpServerListenContext listenContext(env, eventManager);
+    InitTcpServerListenContext(listenContext, "127.0.0.1", 0);
+    ASSERT_TRUE(SocketExec::ExecTcpServerListen(&listenContext));
+
+    uint16_t port = GetBoundPort(serverFd);
+    ASSERT_GT(port, 0);
+
+    int clientFd1 = ConnectToServer("127.0.0.1", port);
+    ASSERT_GE(clientFd1, 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    TcpServerCloseContext closeContext(env, eventManager);
+    EXPECT_TRUE(SocketExec::ExecTcpServerClose(&closeContext));
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    int clientFd2 = socket(AF_INET, SOCK_STREAM, 0);
+    EXPECT_GE(clientFd2, 0);
+    sockaddr_in addr2 = {};
+    addr2.sin_family = AF_INET;
+    addr2.sin_port = htons(port);
+    addr2.sin_addr.s_addr = inet_addr("127.0.0.1");
+    int ret2 = connect(clientFd2, reinterpret_cast<sockaddr *>(&addr2), sizeof(addr2));
+    EXPECT_LT(ret2, 0);
+    if (clientFd2 >= 0) {
+        close(clientFd2);
+    }
+
+    close(clientFd1);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    SUCCEED();
+}
+
+HWTEST_F(SocketTest, TcpServerDetachTest004, TestSize.Level2)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+
+    int serverFd = CreateTcpServerSocket();
+    ASSERT_GE(serverFd, 0);
+    eventManager->SetSocketFd(serverFd);
+
+    TcpServerListenContext listenContext(env, eventManager);
+    InitTcpServerListenContext(listenContext, "127.0.0.1", 0);
+    ASSERT_TRUE(SocketExec::ExecTcpServerListen(&listenContext));
+
+    uint16_t port = GetBoundPort(serverFd);
+    ASSERT_GT(port, 0);
+
+    int clientFd = ConnectToServer("127.0.0.1", port);
+    ASSERT_GE(clientFd, 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    EXPECT_EQ(shutdown(serverFd, SHUT_RDWR), 0);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    const char *data = "hello";
+    int sent = send(clientFd, data, strlen(data), 0);
+    EXPECT_GT(sent, 0);
+
+    close(clientFd);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    SUCCEED();
+}
+
+HWTEST_F(SocketTest, TcpSocketFdZeroTest001, TestSize.Level1)
+{
+    /* Regression test for XTS testNetworkMgrSocketTCPSocketSetExtraOptions5200:
+     * fd 0 is a valid socket fd and must not be treated as "not created/closed". */
+    constexpr int FD_ZERO_RETRY_TIMES = 5;
+    int savedStdin = dup(STDIN_FILENO);
+    bool stdinWasOpen = savedStdin >= 0;
+    if (stdinWasOpen) {
+        ASSERT_EQ(close(STDIN_FILENO), 0);
+    }
+
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    EXPECT_EQ(eventManager->GetSocketFd(), -1);
+
+    int sockFd = -1;
+    for (int i = 0; i < FD_ZERO_RETRY_TIMES; ++i) {
+        sockFd = ExecCommonUtils::MakeTcpSocket(AF_INET);
+        if (sockFd == 0) {
+            break;
+        }
+        if (sockFd > 0) {
+            close(sockFd);
+        }
+        sockFd = -1;
+    }
+    ASSERT_EQ(sockFd, 0);
+
+    eventManager->SetSocketFd(sockFd);
+    EXPECT_EQ(eventManager->GetSocketFd(), 0);
+
+    BindContext bindContext(env, eventManager);
+    InitUdpBindContext(bindContext, 0);
+    EXPECT_TRUE(SocketExec::ExecUdpBind(&bindContext)) << "bind with fd 0 should succeed";
+
+    TcpSetExtraOptionsContext extraContext(env, eventManager);
+    EXPECT_TRUE(SocketExec::ExecTcpSetExtraOptions(&extraContext)) << "fd 0 must not be treated as bad fd";
+
+    close(sockFd);
+    eventManager->SetSocketFd(-1);
+    EXPECT_EQ(eventManager->GetSocketFd(), -1);
+    EXPECT_FALSE(SocketExec::ExecTcpSetExtraOptions(&extraContext)) << "closed socket must be rejected";
+
+    if (stdinWasOpen) {
+        EXPECT_EQ(dup2(savedStdin, STDIN_FILENO), STDIN_FILENO);
+        close(savedStdin);
+    }
+}
+
+/* M1 regression: the stop eventfd must be drained after consumption, otherwise
+ * a level-triggered epoll keeps reporting the stale stop event forever. */
+HWTEST_F(SocketTest, LocalSocketServerManagerDrainStopEventTest001, TestSize.Level1)
+{
+    LocalSocketServerManager mgr;
+    ASSERT_GE(mgr.StartEpoll(), 0);
+    ASSERT_GE(mgr.stopEventFd_, 0);
+
+    mgr.NotifyStopEvent();
+    mgr.DrainStopEvent();
+
+    /* counter is empty now: a non-blocking read must fail with EAGAIN */
+    eventfd_t value = 0;
+    EXPECT_EQ(read(mgr.stopEventFd_, &value, sizeof(value)), -1);
+    EXPECT_EQ(errno, EAGAIN);
+
+    close(mgr.stopEventFd_);
+    mgr.stopEventFd_ = -1;
+    close(mgr.epollFd_);
+    mgr.epollFd_ = -1;
+}
+
+/* M1 regression: after draining the stop event, EpollWait must fall back to
+ * its timeout instead of returning the stale stop event immediately. */
+HWTEST_F(SocketTest, LocalSocketServerManagerEpollStopEventTest001, TestSize.Level1)
+{
+    LocalSocketServerManager mgr;
+    ASSERT_GE(mgr.StartEpoll(), 0);
+    ASSERT_EQ(mgr.RegisterEpollEvent(mgr.stopEventFd_, EPOLLIN), 0);
+
+    mgr.NotifyStopEvent();
+    int eventNum = mgr.EpollWait();
+    ASSERT_GT(eventNum, 0);
+    bool stopSeen = false;
+    for (int i = 0; i < eventNum; ++i) {
+        if (mgr.events_[i].data.fd == mgr.stopEventFd_) {
+            stopSeen = true;
+            mgr.DrainStopEvent();
+        }
+    }
+    EXPECT_TRUE(stopSeen);
+
+    auto start = std::chrono::steady_clock::now();
+    EXPECT_EQ(mgr.EpollWait(), 0);
+    auto elapsed = std::chrono::steady_clock::now() - start;
+    EXPECT_GE(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count(), 400);
+
+    close(mgr.stopEventFd_);
+    mgr.stopEventFd_ = -1;
+    close(mgr.epollFd_);
+    mgr.epollFd_ = -1;
 }
 
 } // namespace

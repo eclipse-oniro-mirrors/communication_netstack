@@ -33,11 +33,18 @@
 #include "tls_server_napi_context.h"
 #include "tls_server_send_context.h"
 #include "tlssocketserver_async_work.h"
+#include "tls_socket_server.h"
+#ifdef NETWORKKIT_API_METRICS_ENABLE
+#include "histogram_plugin_macros.h"
+#endif
 
 namespace OHOS {
 namespace NetStack {
 namespace TlsSocketServer {
 namespace {
+#ifdef NETWORKKIT_API_METRICS_ENABLE
+constexpr int32_t HISTOGRAM_BOOLEAN_COUNTS = 1;
+#endif
 static constexpr const char *PROTOCOL_TLSV13 = "TLSv13";
 static constexpr const char *PROTOCOL_TLSV12 = "TLSv12";
 static constexpr const char *NAME_STOP_SERVER = "closeTLSServer";
@@ -46,12 +53,25 @@ void Finalize(napi_env, void *data, void *)
 {
     NETSTACK_LOGI("tls socket server is finalized");
     auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
+    if (sharedManager != nullptr && *sharedManager != nullptr) {
+        auto manager = *sharedManager;
+        std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        auto tlsServerWrapper = reinterpret_cast<std::shared_ptr<TLSSocketServer> *>(manager->GetData());
+        if (tlsServerWrapper != nullptr) {
+            (*tlsServerWrapper)->Stop([](int32_t errorNumber) { (void)errorNumber; });
+            manager->SetData(nullptr);
+            delete tlsServerWrapper;
+        }
+    }
     delete sharedManager;
 }
 } // namespace
 
 napi_value TLSSocketServerModuleExports::TLSSocketServer::GetCertificate(napi_env env, napi_callback_info info)
 {
+    #ifdef NETWORKKIT_API_METRICS_ENABLE
+    HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketServer.getCertificate", HISTOGRAM_BOOLEAN_COUNTS);
+    #endif
     return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::GetCertificateContext>(
         env, info, FUNCTION_GET_CERTIFICATE, nullptr, TLSSocketServerAsyncWork::ExecGetCertificate,
         TLSSocketServerAsyncWork::GetCertificateCallback);
@@ -65,6 +85,9 @@ napi_value TLSSocketServerModuleExports::TLSSocketServer::GetProtocol(napi_env e
 
 napi_value TLSSocketServerModuleExports::TLSSocketServer::Listen(napi_env env, napi_callback_info info)
 {
+    #ifdef NETWORKKIT_API_METRICS_ENABLE
+    HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketServer.listen", HISTOGRAM_BOOLEAN_COUNTS);
+    #endif
     return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::TLSListenContext>(env, info, FUNCTION_LISTEN, nullptr,
                                                                   TLSSocketServerAsyncWork::ExecListen,
                                                                   TLSSocketServerAsyncWork::ListenCallback);
@@ -79,6 +102,9 @@ napi_value TLSSocketServerModuleExports::TLSSocketServer::Stop(napi_env env, nap
 
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::Send(napi_env env, napi_callback_info info)
 {
+    #ifdef NETWORKKIT_API_METRICS_ENABLE
+    HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketConnection.send", HISTOGRAM_BOOLEAN_COUNTS);
+    #endif
     return ModuleTemplate::InterfaceWithSharedManager<TLSServerSendContext>(
         env, info, FUNCTION_SEND,
         [](napi_env theEnv, napi_value thisVal, TLSServerSendContext *context) -> bool {
@@ -90,6 +116,9 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::Send(napi_env env,
 
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::Close(napi_env env, napi_callback_info info)
 {
+    #ifdef NETWORKKIT_API_METRICS_ENABLE
+    HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketConnection.close", HISTOGRAM_BOOLEAN_COUNTS);
+    #endif
     return ModuleTemplate::InterfaceWithSharedManager<TLSServerCloseContext>(
         env, info, FUNCTION_CLOSE,
         [](napi_env theEnv, napi_value thisVal, TLSServerCloseContext *context) -> bool {
@@ -123,8 +152,11 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetLocalAddress(na
 }
 
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetRemoteCertificate(napi_env env,
-                                                                                   napi_callback_info info)
+                                                                                    napi_callback_info info)
 {
+    #ifdef NETWORKKIT_API_METRICS_ENABLE
+    HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketConnection.getRemoteCertificate", HISTOGRAM_BOOLEAN_COUNTS);
+    #endif
     return ModuleTemplate::InterfaceWithSharedManager<ServerGetRemoteCertificateContext>(
         env, info, FUNCTION_GET_REMOTE_CERTIFICATE,
         [](napi_env theEnv, napi_value thisVal, ServerGetRemoteCertificateContext *context) -> bool {
@@ -159,6 +191,22 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetSignatureAlgori
 
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::On(napi_env env, napi_callback_info info)
 {
+    #ifdef NETWORKKIT_API_METRICS_ENABLE
+    napi_value tmpVal = nullptr;
+    size_t tmpCount = 1;
+    napi_value tmpParams[1] = {nullptr};
+    napi_get_cb_info(env, info, &tmpCount, tmpParams, &tmpVal, nullptr);
+    if (tmpCount >= 1 && NapiUtils::GetValueType(env, tmpParams[0]) == napi_string) {
+        std::string eventName = NapiUtils::GetStringFromValueUtf8(env, tmpParams[0]);
+        if (eventName == "close") {
+            HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketConnection.OnClose", HISTOGRAM_BOOLEAN_COUNTS);
+        } else if (eventName == "error") {
+            HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketConnection.OnError", HISTOGRAM_BOOLEAN_COUNTS);
+        } else if (eventName == "message") {
+            HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketConnection.OnMessage", HISTOGRAM_BOOLEAN_COUNTS);
+        }
+    }
+    #endif
     return DelayedSingleton<MonitorServer>::GetInstance()->ConnectionOn(env, info);
 }
 
@@ -170,12 +218,15 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::Off(napi_env env, 
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetCertificate(napi_env env, napi_callback_info info)
 {
     return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::GetCertificateContext>(
-        env, info, FUNCTION_GET_CERTIFICATE, nullptr, TLSSocketServerAsyncWork::ExecGetCertificate,
+        env, info, FUNCTION_GET_CERTIFICATE, nullptr, TLSSocketServerAsyncWork::ExecConnectionGetCertificate,
         TLSSocketServerAsyncWork::GetCertificateCallback);
 }
 
 napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetSocketFd(napi_env env, napi_callback_info info)
 {
+    #ifdef NETWORKKIT_API_METRICS_ENABLE
+    HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketConnection.getSocketFd", HISTOGRAM_BOOLEAN_COUNTS);
+    #endif
     return ModuleTemplate::InterfaceWithSharedManager<TLSServerGetSocketFdContext>(
         env, info, FUNCTION_GET_SOCKET_FD,
         [](napi_env theEnv, napi_value thisVal, TLSServerGetSocketFdContext *context) -> bool {
@@ -188,6 +239,9 @@ napi_value TLSSocketServerModuleExports::TLSSocketConnection::GetSocketFd(napi_e
 
 napi_value TLSSocketServerModuleExports::TLSSocketServer::GetState(napi_env env, napi_callback_info info)
 {
+    #ifdef NETWORKKIT_API_METRICS_ENABLE
+    HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketServer.getState", HISTOGRAM_BOOLEAN_COUNTS);
+    #endif
     return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::TLSGetStateContext>(env, info, FUNCTION_GET_STATE,
         nullptr, TLSSocketServerAsyncWork::ExecGetState, TLSSocketServerAsyncWork::GetStateCallback);
 }
@@ -208,16 +262,47 @@ napi_value TLSSocketServerModuleExports::TLSSocketServer::SetExtraOptions(napi_e
 
 napi_value TLSSocketServerModuleExports::TLSSocketServer::On(napi_env env, napi_callback_info info)
 {
+    #ifdef NETWORKKIT_API_METRICS_ENABLE
+    napi_value tmpVal = nullptr;
+    size_t tmpCount = 1;
+    napi_value tmpParams[1] = {nullptr};
+    napi_get_cb_info(env, info, &tmpCount, tmpParams, &tmpVal, nullptr);
+    if (tmpCount >= 1 && NapiUtils::GetValueType(env, tmpParams[0]) == napi_string) {
+        std::string eventName = NapiUtils::GetStringFromValueUtf8(env, tmpParams[0]);
+        if (eventName == "connect") {
+            HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketServer.OnConnect", HISTOGRAM_BOOLEAN_COUNTS);
+        } else if (eventName == "error") {
+            HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketServer.OnError", HISTOGRAM_BOOLEAN_COUNTS);
+        }
+    }
+    #endif
     return DelayedSingleton<MonitorServer>::GetInstance()->On(env, info);
 }
 
 napi_value TLSSocketServerModuleExports::TLSSocketServer::Off(napi_env env, napi_callback_info info)
 {
+    #ifdef NETWORKKIT_API_METRICS_ENABLE
+    napi_value tmpVal = nullptr;
+    size_t tmpCount = 1;
+    napi_value tmpParams[1] = {nullptr};
+    napi_get_cb_info(env, info, &tmpCount, tmpParams, &tmpVal, nullptr);
+    if (tmpCount >= 1 && NapiUtils::GetValueType(env, tmpParams[0]) == napi_string) {
+        std::string eventName = NapiUtils::GetStringFromValueUtf8(env, tmpParams[0]);
+        if (eventName == "connect") {
+            HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketServer.OffConnect", HISTOGRAM_BOOLEAN_COUNTS);
+        } else if (eventName == "error") {
+            HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketServer.OffError", HISTOGRAM_BOOLEAN_COUNTS);
+        }
+    }
+    #endif
     return DelayedSingleton<MonitorServer>::GetInstance()->Off(env, info);
 }
 
 napi_value TLSSocketServerModuleExports::TLSSocketServer::GetSocketFd(napi_env env, napi_callback_info info)
 {
+    #ifdef NETWORKKIT_API_METRICS_ENABLE
+    HISTOGRAM_BOOLEAN("NetworkKit.APINet.TLSSocketServer.getSocketFd", HISTOGRAM_BOOLEAN_COUNTS);
+    #endif
     return ModuleTemplate::InterfaceWithSharedManager<TlsSocket::TLSGetSocketFdContext>(
         env, info, FUNCTION_GET_SOCKET_FD, nullptr, TLSSocketServerAsyncWork::ExecTLSSocketServerGetSocketFd,
         TLSSocketServerAsyncWork::TLSSocketServerGetSocketFdCallback);

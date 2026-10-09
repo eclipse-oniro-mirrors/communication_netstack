@@ -37,6 +37,27 @@ constexpr const char *CERTIFICATA_DATA = "data";
 constexpr const char *CERTIFICATA_ENCODING_FORMAT = "encodingFormat";
 constexpr const int SYSTEM_INTERNAL_ERROR_CODE = 2300002;
 const std::string SYSTEM_INTERNAL_ERROR_MESSAGE = "system internal error";
+
+// Caller must hold manager->GetDataMutex() before calling this function.
+std::shared_ptr<TLSSocketServer> GetTlsSocketServerFromManager(const std::shared_ptr<EventManager> &manager)
+{
+    auto tlsServerWrapper = reinterpret_cast<std::shared_ptr<TLSSocketServer> *>(manager->GetData());
+    if (tlsServerWrapper != nullptr) {
+        return *tlsServerWrapper;
+    }
+    return nullptr;
+}
+
+// Caller must hold manager->GetDataMutex() before calling this function.
+// The EventManager of a TLSSocketConnection instance stores a std::shared_ptr<Connection> as its data.
+std::shared_ptr<TLSSocketServer::Connection> GetConnectionFromManager(const std::shared_ptr<EventManager> &manager)
+{
+    auto connWrapper = static_cast<std::shared_ptr<TLSSocketServer::Connection> *>(manager->GetData());
+    if (connWrapper == nullptr) {
+        return nullptr;
+    }
+    return *connWrapper;
+}
 } // namespace
 bool TLSSocketServerExec::ExecGetCertificate(TlsSocket::GetCertificateContext *context)
 {
@@ -46,7 +67,7 @@ bool TLSSocketServerExec::ExecGetCertificate(TlsSocket::GetCertificateContext *c
         return false;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    std::shared_ptr<TLSSocketServer> tlsSocketServer = GetTlsSocketServerFromManager(manager);
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetCertificate tlsSocketServer is null");
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
@@ -63,6 +84,40 @@ bool TLSSocketServerExec::ExecGetCertificate(TlsSocket::GetCertificateContext *c
     return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
 }
 
+bool TLSSocketServerExec::ExecConnectionGetCertificate(TlsSocket::GetCertificateContext *context)
+{
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        NETSTACK_LOGE("manager is nullptr");
+        return false;
+    }
+    std::shared_ptr<TLSSocketServer::Connection> connection;
+    std::shared_ptr<TLSSocketServer> tlsSocketServer;
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        connection = GetConnectionFromManager(manager);
+        if (connection != nullptr) {
+            tlsSocketServer = connection->GetOwner().lock();
+        }
+    }
+    if (connection == nullptr || tlsSocketServer == nullptr) {
+        NETSTACK_LOGE("ExecConnectionGetCertificate tlsSocketServer is null");
+        context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
+                          TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
+        return false;
+    }
+    auto cert = connection->GetCertificate();
+    context->localCert_ = cert;
+    context->errorNumber_ = TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    if (!cert.data.Length()) {
+        tlsSocketServer->ReportError(-1, "cert not data Length");
+        context->errorNumber_ = -1;
+        context->SetError(-1, TlsSocket::MakeErrorMessage(-1));
+        return false;
+    }
+    return true;
+}
+
 bool TLSSocketServerExec::ExecTLSConnectionGetSocketFd(TLSServerGetSocketFdContext *context)
 {
     auto manager = context->GetSharedManager();
@@ -75,13 +130,19 @@ bool TLSSocketServerExec::ExecTLSConnectionGetSocketFd(TLSServerGetSocketFdConte
                           TlsSocket::MakeErrorMessage(PERMISSION_DENIED_CODE));
         return false;
     }
-    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
-    if (tlsSocketServer == nullptr) {
+    std::shared_ptr<TLSSocketServer::Connection> connection;
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        connection = GetConnectionFromManager(manager);
+    }
+    if (connection == nullptr) {
         NETSTACK_LOGE("ExecTLSConnectionGetSocketFd TLSSocketServer is null");
         return false;
     }
-    int32_t socketFd = tlsSocketServer->GetClientSocketFd(context->clientId_);
+    int32_t socketFd = -1;
+    if (!connection->IsRemovedFromServer()) {
+        socketFd = connection->GetSocketFd();
+    }
     context->socketFd_ = socketFd;
     if (socketFd == -1) {
         NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", context->clientId_);
@@ -99,14 +160,18 @@ bool TLSSocketServerExec::ExecListen(TlsSocket::TLSListenContext *context)
         return false;
     }
     std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    std::shared_ptr<TLSSocketServer> tlsSocketServer = GetTlsSocketServerFromManager(manager);
     if (tlsSocketServer == nullptr) {
-        tlsSocketServer = new TLSSocketServer();
+        tlsSocketServer = std::make_shared<TLSSocketServer>();
+        if (tlsSocketServer != nullptr) {
+            manager->SetData(new (std::nothrow) std::shared_ptr<TLSSocketServer>(tlsSocketServer));
+        }
     }
-    if (manager->GetData() == nullptr) {
-        manager->SetData(tlsSocketServer);
+    if (tlsSocketServer == nullptr) {
+        NETSTACK_LOGE("ExecListen create TLSSocketServer failed");
+        return false;
     }
-    lock.unlock();
+
     tlsSocketServer->Listen(context->connectOptions_, [&context](int32_t errorNumber) {
         context->errorNumber_ = errorNumber;
         if (errorNumber != TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS) {
@@ -123,23 +188,41 @@ bool TLSSocketServerExec::ExecGetCipherSuites(ServerGetCipherSuitesContext *cont
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
-    if (tlsSocketServer == nullptr) {
+    std::shared_ptr<TLSSocketServer::Connection> connection;
+    std::shared_ptr<TLSSocketServer> tlsSocketServer;
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        connection = GetConnectionFromManager(manager);
+        if (connection != nullptr) {
+            tlsSocketServer = connection->GetOwner().lock();
+        }
+    }
+    if (connection == nullptr || tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetCipherSuites tlsSocketServer is null");
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
                           MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
         return false;
     }
-    tlsSocketServer->GetCipherSuite(context->clientId_,
-                                    [&context](int32_t errorNumber, const std::vector<std::string> &suite) {
-                                        context->cipherSuites_ = suite;
-                                        context->errorNumber_ = errorNumber;
-                                        if (errorNumber != TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS) {
-                                            context->SetError(errorNumber, TlsSocket::MakeErrorMessage(errorNumber));
-                                        }
-                                    });
-    return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    if (connection->IsRemovedFromServer()) {
+        NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", context->clientId_);
+        tlsSocketServer->ReportError(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
+        context->cipherSuites_ = {};
+        context->errorNumber_ = TlsSocket::TLS_ERR_SYS_EINVAL;
+        context->SetError(TlsSocket::TLS_ERR_SYS_EINVAL, TlsSocket::MakeErrorMessage(TlsSocket::TLS_ERR_SYS_EINVAL));
+        return false;
+    }
+    auto cipherSuite = connection->GetCipherSuite();
+    context->cipherSuites_ = cipherSuite;
+    if (cipherSuite.empty()) {
+        int resErr = connection->GetSSLError();
+        NETSTACK_LOGE("GetCipherSuite error is %{public}d %{public}d", resErr, errno);
+        tlsSocketServer->ReportError(resErr, TlsSocket::MakeSSLErrorString(resErr));
+        context->errorNumber_ = resErr;
+        context->SetError(resErr, TlsSocket::MakeErrorMessage(resErr));
+        return false;
+    }
+    context->errorNumber_ = TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    return true;
 }
 
 bool TLSSocketServerExec::ExecGetRemoteCertificate(ServerGetRemoteCertificateContext *context)
@@ -149,23 +232,41 @@ bool TLSSocketServerExec::ExecGetRemoteCertificate(ServerGetRemoteCertificateCon
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
-    if (tlsSocketServer == nullptr) {
+    std::shared_ptr<TLSSocketServer::Connection> connection;
+    std::shared_ptr<TLSSocketServer> tlsSocketServer;
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        connection = GetConnectionFromManager(manager);
+        if (connection != nullptr) {
+            tlsSocketServer = connection->GetOwner().lock();
+        }
+    }
+    if (connection == nullptr || tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetRemoteCertificate tlsSocketServer is null");
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
                           TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
         return false;
     }
-    tlsSocketServer->GetRemoteCertificate(
-        context->clientId_, [&context](int32_t errorNumber, const TlsSocket::X509CertRawData &cert) {
-            context->remoteCert_ = cert;
-            context->errorNumber_ = errorNumber;
-            if (errorNumber != TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS) {
-                context->SetError(errorNumber, TlsSocket::MakeErrorMessage(errorNumber));
-            }
-        });
-    return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    if (connection->IsRemovedFromServer()) {
+        NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", context->clientId_);
+        tlsSocketServer->ReportError(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
+        context->remoteCert_ = {};
+        context->errorNumber_ = TlsSocket::TLS_ERR_SYS_EINVAL;
+        context->SetError(TlsSocket::TLS_ERR_SYS_EINVAL, TlsSocket::MakeErrorMessage(TlsSocket::TLS_ERR_SYS_EINVAL));
+        return false;
+    }
+    const auto &remoteCert = connection->GetRemoteCertRawData();
+    context->remoteCert_ = remoteCert;
+    if (!remoteCert.data.Length()) {
+        int resErr = connection->GetSSLError();
+        NETSTACK_LOGE("GetRemoteCertificate error is %{public}d %{public}d", resErr, errno);
+        tlsSocketServer->ReportError(resErr, TlsSocket::MakeSSLErrorString(resErr));
+        context->errorNumber_ = resErr;
+        context->SetError(resErr, TlsSocket::MakeErrorMessage(resErr));
+        return false;
+    }
+    context->errorNumber_ = TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    return true;
 }
 
 bool TLSSocketServerExec::ExecGetProtocol(TlsSocket::GetProtocolContext *context)
@@ -176,7 +277,7 @@ bool TLSSocketServerExec::ExecGetProtocol(TlsSocket::GetProtocolContext *context
         return false;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    std::shared_ptr<TLSSocketServer> tlsSocketServer = GetTlsSocketServerFromManager(manager);
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetProtocol tlsSocketServer is null");
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
@@ -200,23 +301,41 @@ bool TLSSocketServerExec::ExecGetSignatureAlgorithms(ServerGetSignatureAlgorithm
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
-    if (tlsSocketServer == nullptr) {
+    std::shared_ptr<TLSSocketServer::Connection> connection;
+    std::shared_ptr<TLSSocketServer> tlsSocketServer;
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        connection = GetConnectionFromManager(manager);
+        if (connection != nullptr) {
+            tlsSocketServer = connection->GetOwner().lock();
+        }
+    }
+    if (connection == nullptr || tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetSignatureAlgorithms tlsSocketServer is null");
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
                           TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
         return false;
     }
-    tlsSocketServer->GetSignatureAlgorithms(
-        context->clientId_, [&context](int32_t errorNumber, const std::vector<std::string> &algorithms) {
-            context->signatureAlgorithms_ = algorithms;
-            context->errorNumber_ = errorNumber;
-            if (errorNumber != TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS) {
-                context->SetError(errorNumber, TlsSocket::MakeErrorMessage(errorNumber));
-            }
-        });
-    return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    if (connection->IsRemovedFromServer()) {
+        NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", context->clientId_);
+        tlsSocketServer->ReportError(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
+        context->signatureAlgorithms_ = {};
+        context->errorNumber_ = TlsSocket::TLS_ERR_SYS_EINVAL;
+        context->SetError(TlsSocket::TLS_ERR_SYS_EINVAL, TlsSocket::MakeErrorMessage(TlsSocket::TLS_ERR_SYS_EINVAL));
+        return false;
+    }
+    auto signatureAlgorithms = connection->GetSignatureAlgorithms();
+    context->signatureAlgorithms_ = signatureAlgorithms;
+    if (signatureAlgorithms.empty()) {
+        int resErr = connection->GetSSLError();
+        NETSTACK_LOGE("GetSignatureAlgorithms error is %{public}d %{public}d", resErr, errno);
+        tlsSocketServer->ReportError(resErr, TlsSocket::MakeSSLErrorString(resErr));
+        context->errorNumber_ = resErr;
+        context->SetError(resErr, TlsSocket::MakeErrorMessage(resErr));
+        return false;
+    }
+    context->errorNumber_ = TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    return true;
 }
 
 bool TLSSocketServerExec::ExecSend(TLSServerSendContext *context)
@@ -226,25 +345,36 @@ bool TLSSocketServerExec::ExecSend(TLSServerSendContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
-    if (tlsSocketServer == nullptr) {
+    std::shared_ptr<TLSSocketServer::Connection> connection;
+    std::shared_ptr<TLSSocketServer> tlsSocketServer;
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        connection = GetConnectionFromManager(manager);
+        if (connection != nullptr) {
+            tlsSocketServer = connection->GetOwner().lock();
+        }
+    }
+    if (connection == nullptr || tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecSend tlsSocketServer is null");
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
                           TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
         return false;
     }
-    TLSServerSendOptions tcpSendOptions;
-    int client_id = context->clientId_;
-    tcpSendOptions.SetSocket(client_id);
-    tcpSendOptions.SetSendData(context->m_sendData);
-    tlsSocketServer->Send(tcpSendOptions, [&context](int32_t errorNumber) {
-        context->errorNumber_ = errorNumber;
-        if (errorNumber != TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS) {
-            context->SetError(errorNumber, TlsSocket::MakeErrorMessage(errorNumber));
-        }
-    });
-    return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    if (connection->IsRemovedFromServer()) {
+        NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", context->clientId_);
+        tlsSocketServer->ReportError(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
+        return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    }
+    if (!connection->Send(context->m_sendData)) {
+        int resErr = connection->GetSSLError();
+        NETSTACK_LOGE("send error is %{public}d %{public}d", resErr, errno);
+        tlsSocketServer->ReportError(resErr, TlsSocket::MakeSSLErrorString(resErr));
+        context->errorNumber_ = resErr;
+        context->SetError(resErr, TlsSocket::MakeErrorMessage(resErr));
+        return false;
+    }
+    context->errorNumber_ = TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    return true;
 }
 
 bool TLSSocketServerExec::ExecClose(TLSServerCloseContext *context)
@@ -254,21 +384,38 @@ bool TLSSocketServerExec::ExecClose(TLSServerCloseContext *context)
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
-    if (tlsSocketServer == nullptr) {
+    std::shared_ptr<TLSSocketServer::Connection> connection;
+    std::shared_ptr<TLSSocketServer> tlsSocketServer;
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        connection = GetConnectionFromManager(manager);
+        if (connection != nullptr) {
+            tlsSocketServer = connection->GetOwner().lock();
+        }
+    }
+    if (connection == nullptr || tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecClose tlsSocketServer is null");
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
                           TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
         return false;
     }
-    tlsSocketServer->Close(context->clientId_, [&context](int32_t errorNumber) {
-        context->errorNumber_ = errorNumber;
-        if (errorNumber != TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS) {
-            context->SetError(errorNumber, TlsSocket::MakeErrorMessage(errorNumber));
-        }
-    });
-    return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    if (connection->IsRemovedFromServer()) {
+        NETSTACK_LOGE("socket = %{public}d There is no corresponding socketFd", context->clientId_);
+        tlsSocketServer->ReportError(-1, "The send failed with no corresponding socketFd");
+        context->errorNumber_ = TlsSocket::TLS_ERR_SYS_EINVAL;
+        context->SetError(TlsSocket::TLS_ERR_SYS_EINVAL, TlsSocket::MakeErrorMessage(TlsSocket::TLS_ERR_SYS_EINVAL));
+        return false;
+    }
+    if (!connection->Close()) {
+        int resErr = connection->GetSSLError();
+        NETSTACK_LOGE("close error is %{public}d %{public}d", resErr, errno);
+        tlsSocketServer->ReportError(resErr, TlsSocket::MakeSSLErrorString(resErr));
+        context->errorNumber_ = resErr;
+        context->SetError(resErr, TlsSocket::MakeErrorMessage(resErr));
+        return false;
+    }
+    context->errorNumber_ = TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    return true;
 }
 
 bool TLSSocketServerExec::ExecStop(TlsSocket::TLSNapiContext *context)
@@ -284,7 +431,7 @@ bool TLSSocketServerExec::ExecStop(TlsSocket::TLSNapiContext *context)
         return false;
     }
     std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    std::shared_ptr<TLSSocketServer> tlsSocketServer = GetTlsSocketServerFromManager(manager);
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecClose tlsSocketServer is null");
         context->SetError(TlsSocket::TlsSocketError::SYSTEM_INTERNAL_ERROR,
@@ -307,23 +454,32 @@ bool TLSSocketServerExec::ExecGetRemoteAddress(ServerTLSGetRemoteAddressContext 
         NETSTACK_LOGE("manager is nullptr");
         return false;
     }
-    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
-    if (tlsSocketServer == nullptr) {
+    std::shared_ptr<TLSSocketServer::Connection> connection;
+    std::shared_ptr<TLSSocketServer> tlsSocketServer;
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        connection = GetConnectionFromManager(manager);
+        if (connection != nullptr) {
+            tlsSocketServer = connection->GetOwner().lock();
+        }
+    }
+    if (connection == nullptr || tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetRemoteAddress tlsSocketServer is null");
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
                           TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
         return false;
     }
-    tlsSocketServer->GetRemoteAddress(context->clientId_,
-                                      [&context](int32_t errorNumber, const Socket::NetAddress address) {
-                                          context->address_ = address;
-                                          context->errorNumber_ = errorNumber;
-                                          if (errorNumber != TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS) {
-                                              context->SetError(errorNumber, TlsSocket::MakeErrorMessage(errorNumber));
-                                          }
-                                      });
-    return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    if (connection->IsRemovedFromServer()) {
+        NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", context->clientId_);
+        tlsSocketServer->ReportError(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
+        context->address_ = Socket::NetAddress();
+        context->errorNumber_ = TlsSocket::TLS_ERR_SYS_EINVAL;
+        context->SetError(TlsSocket::TLS_ERR_SYS_EINVAL, TlsSocket::MakeErrorMessage(TlsSocket::TLS_ERR_SYS_EINVAL));
+        return false;
+    }
+    context->address_ = connection->GetAddress();
+    context->errorNumber_ = TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    return true;
 }
 
 bool TLSSocketServerExec::ExecGetLocalAddress(TLSServerGetLocalAddressContext *context)
@@ -340,7 +496,7 @@ bool TLSSocketServerExec::ExecGetLocalAddress(TLSServerGetLocalAddressContext *c
         return false;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    std::shared_ptr<TLSSocketServer> tlsSocketServer = GetTlsSocketServerFromManager(manager);
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetRemoteAddress tlsSocketServer is null");
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
@@ -387,23 +543,32 @@ bool TLSSocketServerExec::ExecConnectionGetLocalAddress(TLSConnectionGetLocalAdd
         context->SetError(SYSTEM_INTERNAL_ERROR_CODE, SYSTEM_INTERNAL_ERROR_MESSAGE);
         return false;
     }
-    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
-    if (tlsSocketServer == nullptr) {
+    std::shared_ptr<TLSSocketServer::Connection> connection;
+    std::shared_ptr<TLSSocketServer> tlsSocketServer;
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        connection = GetConnectionFromManager(manager);
+        if (connection != nullptr) {
+            tlsSocketServer = connection->GetOwner().lock();
+        }
+    }
+    if (connection == nullptr || tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetRemoteAddress tlsSocketServer is null");
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
                           TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
         return false;
     }
-    tlsSocketServer->GetLocalAddress(context->clientId_,
-                                     [&context](int32_t errorNumber, const Socket::NetAddress address) {
-                                         context->localAddress_ = address;
-                                         context->errorNumber_ = errorNumber;
-                                         if (errorNumber != TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS) {
-                                             context->SetError(errorNumber, TlsSocket::MakeErrorMessage(errorNumber));
-                                         }
-                                     });
-    return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    if (connection->IsRemovedFromServer()) {
+        NETSTACK_LOGE("socket = %{public}d The connection has been disconnected", context->clientId_);
+        tlsSocketServer->ReportError(TlsSocket::TLS_ERR_SYS_EINVAL, "The send failed with no corresponding socketFd");
+        context->localAddress_ = Socket::NetAddress();
+        context->errorNumber_ = TlsSocket::TLS_ERR_SYS_EINVAL;
+        context->SetError(TlsSocket::TLS_ERR_SYS_EINVAL, TlsSocket::MakeErrorMessage(TlsSocket::TLS_ERR_SYS_EINVAL));
+        return false;
+    }
+    context->localAddress_ = connection->GetLocalAddress();
+    context->errorNumber_ = TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
+    return true;
 }
 
 bool TLSSocketServerExec::ExecGetState(TlsSocket::TLSGetStateContext *context)
@@ -415,7 +580,7 @@ bool TLSSocketServerExec::ExecGetState(TlsSocket::TLSGetStateContext *context)
         return true;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    std::shared_ptr<TLSSocketServer> tlsSocketServer = GetTlsSocketServerFromManager(manager);
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetState tlsSocketServer is null");
         return true;
@@ -438,7 +603,7 @@ bool TLSSocketServerExec::ExecSetExtraOptions(TlsSocket::TLSSetExtraOptionsConte
         return false;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    std::shared_ptr<TLSSocketServer> tlsSocketServer = GetTlsSocketServerFromManager(manager);
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecSetExtraOptions tlsSocketServer is null");
         context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
@@ -471,7 +636,7 @@ bool TLSSocketServerExec::ExecGetSocketFd(TlsSocket::TLSGetSocketFdContext *cont
         return false;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    std::shared_ptr<TLSSocketServer> tlsSocketServer = GetTlsSocketServerFromManager(manager);
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("ExecGetSocketFd TLSSocketServer is null");
         context->sockFd_= -1;
@@ -632,7 +797,7 @@ napi_value TLSSocketServerExec::GetLocalAddressCallback(TLSServerGetLocalAddress
         return obj;
     }
     std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    std::shared_ptr<TLSSocketServer> tlsSocketServer = GetTlsSocketServerFromManager(manager);
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("get localAddress callback tlsSocketServer is null");
         return obj;
@@ -665,40 +830,6 @@ napi_value TLSSocketServerExec::SetExtraOptionsCallback(TlsSocket::TLSSetExtraOp
 napi_value TLSSocketServerExec::TLSSocketServerGetSocketFdCallback(TlsSocket::TLSGetSocketFdContext *context)
 {
     return NapiUtils::CreateInt32(context->GetEnv(), context->sockFd_);
-}
-
-bool TLSSocketServerExec::ExecConnectionSend(TLSServerSendContext *context)
-{
-    auto manager = context->GetSharedManager();
-    if (manager == nullptr) {
-        NETSTACK_LOGE("manager is nullptr");
-        return false;
-    }
-    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
-    if (tlsSocketServer == nullptr) {
-        NETSTACK_LOGE("ExecSend tlsSocketServer is null");
-        context->SetError(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND,
-                          TlsSocket::MakeErrorMessage(TlsSocket::TlsSocketError::TLS_ERR_NO_BIND));
-        return false;
-    }
-    TLSServerSendOptions tcpSendOptions;
-    int client_id = context->clientId_;
-
-    tcpSendOptions.SetSocket(client_id);
-    tcpSendOptions.SetSendData(context->m_sendData);
-    tlsSocketServer->Send(tcpSendOptions, [&context](int32_t errorNumber) {
-        context->errorNumber_ = errorNumber;
-        if (errorNumber != TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS) {
-            context->SetError(errorNumber, TlsSocket::MakeErrorMessage(errorNumber));
-        }
-    });
-    return context->errorNumber_ == TlsSocket::TlsSocketError::TLSSOCKET_SUCCESS;
-}
-
-napi_value TLSSocketServerExec::ConnectionSendCallback(TLSServerSendContext *context)
-{
-    return NapiUtils::GetUndefined(context->GetEnv());
 }
 } // namespace TlsSocketServer
 } // namespace NetStack

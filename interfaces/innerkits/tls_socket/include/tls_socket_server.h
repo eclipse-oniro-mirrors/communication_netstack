@@ -32,10 +32,12 @@
 #include "tls_key.h"
 #include "tls_socket.h"
 #include <any>
+#include <atomic>
 #include <condition_variable>
 #include <cstring>
 #include <functional>
 #include <map>
+#include <memory>
 #include <poll.h>
 #include <shared_mutex>
 #include <thread>
@@ -87,7 +89,7 @@ private:
     std::string data_ = "";
 };
 
-class TLSSocketServer {
+class TLSSocketServer : public std::enable_shared_from_this<TLSSocketServer> {
 public:
     TLSSocketServer(const TLSSocketServer &) = delete;
     TLSSocketServer(TLSSocketServer &&) = delete;
@@ -162,7 +164,6 @@ public:
     /**
      * Get the peer digital certificate
      * @param socketFd The socket ID of the client
-     * @param needChain need chain
      * @param callback callback to the caller
      */
     void GetRemoteCertificate(const int socketFd, const TlsSocket::GetRemoteCertificateCallback &callback);
@@ -215,6 +216,13 @@ public:
     void OffError();
 
     /**
+     * Report an error to the server error callback
+     * @param err error number
+     * @param errString error message
+     */
+    void ReportError(int32_t err, const std::string &errString);
+
+    /**
      * Get the socket file description of the server
      */
     int GetListenSocketFd();
@@ -228,11 +236,6 @@ public:
      * Get the current socket file description address of the server
      */
     Socket::NetAddress GetLocalAddress();
-
-    /**
-     * Get the socketFd of the connection
-     */
-    int32_t GetClientSocketFd(int32_t clientId);
 
 public:
     class Connection : public std::enable_shared_from_this<Connection> {
@@ -369,10 +372,27 @@ public:
         [[nodiscard]] int GetSocketFd() const;
 
         /**
-         * Get EventManager information
-         * @return Returns the address information of the remote client
+         * Set the owner server of the connection
+         * @param owner weak reference to the owning TLSSocketServer
          */
-        [[nodiscard]] std::shared_ptr<EventManager> GetEventManager() const;
+        void SetOwner(const std::weak_ptr<TLSSocketServer> &owner);
+
+        /**
+         * Get the owner server of the connection
+         * @return weak reference to the owning TLSSocketServer
+         */
+        [[nodiscard]] std::weak_ptr<TLSSocketServer> GetOwner() const;
+
+        /**
+         * Mark the connection as removed from the owner server
+         */
+        void MarkRemovedFromServer();
+
+        /**
+         * Check whether the connection has been removed from the owner server
+         * @return whether the connection has been removed from the owner server
+         */
+        [[nodiscard]] bool IsRemovedFromServer() const;
 
         void OnMessage(const OnMessageCallback &onMessageCallback);
         /**
@@ -382,8 +402,6 @@ public:
 
         void CallOnMessageCallback(int32_t socketFd, const std::string &data,
                                    const Socket::SocketRemoteInfo &remoteInfo);
-
-        void SetEventManager(std::shared_ptr<EventManager> eventManager);
 
         void SetClientID(int32_t clientID);
 
@@ -469,7 +487,8 @@ public:
         std::vector<std::string> signatureAlgorithms_;
         std::unique_ptr<TlsSocket::TLSContextServer> tlsContextServerPointer_ = nullptr;
 
-        std::shared_ptr<EventManager> eventManager_ = nullptr;
+        std::weak_ptr<TLSSocketServer> owner_;
+        std::atomic<bool> isRemovedFromServer_ = false;
         int32_t clientID_ = 0;
         OnMessageCallback onMessageCallback_;
         std::shared_ptr<DataCache> dataCache_ = std::make_shared<DataCache>();
@@ -478,14 +497,12 @@ public:
 private:
     void SetLocalTlsConfiguration(const TlsSocket::TLSConnectOptions &config);
     bool RecvRemoteInfo(int socketFd, int index);
-    void RemoveConnect(int socketFd);
     void AddConnect(int socketFd, std::shared_ptr<Connection> connection);
     void CallListenCallback(int32_t err, ListenCallback callback);
     void CallOnErrorCallback(int32_t err, const std::string &errString);
 
     void CallGetStateCallback(int32_t err, const Socket::SocketStateBase &state, TlsSocket::GetStateCallback callback);
     void CallOnConnectCallback(const int32_t socketFd, std::shared_ptr<EventManager> eventManager);
-    void CallSendCallback(int32_t err, TlsSocket::SendCallback callback);
     bool ExecBind(const Socket::NetAddress &address, const ListenCallback &callback);
     void ExecAccept(const TlsSocket::TLSConnectOptions &tlsAcceptOptions, const ListenCallback &callback);
     void MakeIpSocket(sa_family_t family);
@@ -519,17 +536,27 @@ private:
     void InitPollList(const int &listendFd);
 
     pollfd fds_[USER_LIMIT + 1];
-    bool isRunning_ = false;
+    std::atomic<bool> isRunning_ = false;
+    std::atomic<bool> pollThreadRunning_ = false;
+    std::atomic<int> userCounter_ = 0;
 
 public:
     std::shared_ptr<Connection> GetConnectionByClientID(int clientid);
     int GetConnectionClientCount();
 
-    std::shared_ptr<Connection> GetConnectionByClientEventManager(const std::shared_ptr<EventManager> &eventManager);
-    void CloseConnectionByEventManager(const std::shared_ptr<EventManager> &eventManager);
-    void DeleteConnectionByEventManager(const std::shared_ptr<EventManager> &eventManager);
+    void RemoveConnect(int socketFd);
+
+    /**
+     * Get the socketFd of the connection
+     */
+    int32_t GetClientSocketFd(int32_t clientId);
+
     void SetTlsConnectionSecureOptions(const TlsSocket::TLSConnectOptions &tlsListenOptions, int clientID,
                                        int connectFD, std::shared_ptr<Connection> &connection);
+
+private:
+    void CallSendCallback(int32_t err, TlsSocket::SendCallback callback);
+    std::shared_ptr<Connection> GetConnectionBySocketFd(int socketFd);
 };
 } // namespace TlsSocketServer
 } // namespace NetStack

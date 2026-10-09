@@ -77,6 +77,16 @@ public:
 
     [[nodiscard]] void *GetData();
 
+    /* Dedicated storage for socket fd: fd 0 is a valid fd and must not fall back to nullptr. -1 means never created
+     * or closed. */
+    void SetSocketFd(int fd);
+
+    [[nodiscard]] int GetSocketFd();
+
+    [[nodiscard]] bool SetSocketFdIfEqual(int expectFd);
+
+    [[nodiscard]] bool IsSocketEverCreated();
+
     void EmitByUvWithoutCheckShared(const std::string &type, void *data, void(Handler)(uv_work_t *, int status));
 
     void EmitWithoutUV(const std::string &type, void *data,
@@ -170,7 +180,9 @@ private:
     std::shared_mutex dataMutex_;
     std::mutex dataQueueMutex_;
     std::list<std::shared_ptr<EventListener>> listeners_;
-    void *data_;
+    std::atomic<void *> data_{nullptr};
+    std::atomic<int> socketFd_{-1};
+    std::atomic<bool> socketEverCreated_{false};
     std::queue<void *> dataQueue_;
     static EventManagerMagic magic_;
     static std::mutex mutexForManager_;

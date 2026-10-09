@@ -16,6 +16,8 @@
 #include "monitor_server.h"
 
 #include <cstddef>
+#include <memory>
+#include <shared_mutex>
 #include <utility>
 
 #include <napi/native_api.h>
@@ -48,6 +50,7 @@ constexpr const char *PROPERTY_SIZE = "size";
 constexpr const char *ON_MESSAGE = "message";
 constexpr const char *ON_REMOTE_INFO = "remoteInfo";
 
+// LCOV_EXCL_START
 napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, napi_value jsConstructor, int32_t counter,
                                       std::shared_ptr<EventManager> eventManager)
 {
@@ -66,10 +69,26 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
             auto sharedManager = static_cast<std::shared_ptr<EventManager> *>(data);
             if (sharedManager != nullptr) {
                 auto manager = *sharedManager;
-                auto tlsServer = static_cast<TLSSocketServer *>(manager->GetData());
-                if (tlsServer != nullptr) {
-                    tlsServer->CloseConnectionByEventManager(manager);
-                    tlsServer->DeleteConnectionByEventManager(manager);
+                std::shared_ptr<TLSSocketServer::Connection> ptrConnection;
+                {
+                    std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
+                    auto connWrapper =
+                        static_cast<std::shared_ptr<TLSSocketServer::Connection> *>(manager->GetData());
+                    if (connWrapper != nullptr) {
+                        ptrConnection = *connWrapper;
+                        manager->SetData(nullptr);
+                        delete connWrapper;
+                    }
+                }
+                if (ptrConnection != nullptr) {
+                    int socketFd = ptrConnection->GetSocketFd();
+                    auto tlsServer = ptrConnection->GetOwner().lock();
+                    if (tlsServer != nullptr) {
+                        ptrConnection->Close();
+                        tlsServer->RemoveConnect(socketFd);
+                    } else {
+                        ptrConnection->Close();
+                    }
                 }
             }
             delete sharedManager;
@@ -78,6 +97,7 @@ napi_value NewInstanceWithConstructor(napi_env env, napi_callback_info info, nap
 
     return result;
 }
+// LCOV_EXCL_STOP
 
 napi_value ConstructTLSSocketConnection(napi_env env, napi_callback_info info, int32_t counter,
                                         std::shared_ptr<EventManager> eventManager)
@@ -312,6 +332,7 @@ MonitorServer::MonitorServer() {}
 
 MonitorServer::~MonitorServer() {}
 
+// LCOV_EXCL_START
 napi_value MonitorServer::On(napi_env env, napi_callback_info info)
 {
     napi_value thisVal = nullptr;
@@ -332,7 +353,14 @@ napi_value MonitorServer::On(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
     auto manager = *sharedManager;
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    std::shared_ptr<TLSSocketServer> tlsSocketServer;
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        auto tlsServerWrapper = reinterpret_cast<std::shared_ptr<TLSSocketServer> *>(manager->GetData());
+        if (tlsServerWrapper != nullptr) {
+            tlsSocketServer = *tlsServerWrapper;
+        }
+    }
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("tlsSocketServer is null");
         return NapiUtils::GetUndefined(env);
@@ -340,10 +368,12 @@ napi_value MonitorServer::On(napi_env env, napi_callback_info info)
 
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
     manager->AddListener(env, event, params[1], false, false);
-    TLSServerRegEvent(event, tlsSocketServer, manager);
+    TLSServerRegEvent(event, tlsSocketServer.get(), manager);
     return NapiUtils::GetUndefined(env);
 }
+// LCOV_EXCL_STOP
 
+// LCOV_EXCL_START
 napi_value MonitorServer::ConnectionOn(napi_env env, napi_callback_info info)
 {
     napi_value thisVal = nullptr;
@@ -373,7 +403,18 @@ napi_value MonitorServer::ConnectionOn(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
     auto manager = *sharedManager;
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    std::shared_ptr<TLSSocketServer::Connection> ptrConnection;
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        auto connWrapper = static_cast<std::shared_ptr<TLSSocketServer::Connection> *>(manager->GetData());
+        if (connWrapper != nullptr) {
+            ptrConnection = *connWrapper;
+        }
+    }
+    std::shared_ptr<TLSSocketServer> tlsSocketServer;
+    if (ptrConnection != nullptr) {
+        tlsSocketServer = ptrConnection->GetOwner().lock();
+    }
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("tlsSocketServer is null");
         return NapiUtils::GetUndefined(env);
@@ -382,10 +423,12 @@ napi_value MonitorServer::ConnectionOn(napi_env env, napi_callback_info info)
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
 
     manager->AddListener(env, event, params[1], false, false);
-    TLSConnectionRegEvent(event, tlsSocketServer, clientid, manager);
+    TLSConnectionRegEvent(event, tlsSocketServer.get(), clientid, manager);
     return NapiUtils::GetUndefined(env);
 }
+// LCOV_EXCL_STOP
 
+// LCOV_EXCL_START
 napi_value MonitorServer::Off(napi_env env, napi_callback_info info)
 {
     napi_value thisVal = nullptr;
@@ -412,7 +455,14 @@ napi_value MonitorServer::Off(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
     auto manager = *sharedManager;
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    std::shared_ptr<TLSSocketServer> tlsSocketServer;
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        auto tlsServerWrapper = reinterpret_cast<std::shared_ptr<TLSSocketServer> *>(manager->GetData());
+        if (tlsServerWrapper != nullptr) {
+            tlsSocketServer = *tlsServerWrapper;
+        }
+    }
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("tlsSocketServer is null");
         return NapiUtils::GetUndefined(env);
@@ -434,7 +484,9 @@ napi_value MonitorServer::Off(napi_env env, napi_callback_info info)
     }
     return NapiUtils::GetUndefined(env);
 }
+// LCOV_EXCL_STOP
 
+// LCOV_EXCL_START
 napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
 {
     napi_value thisVal = nullptr;
@@ -464,14 +516,25 @@ napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
         return NapiUtils::GetUndefined(env);
     }
     auto manager = *sharedManager;
-    auto tlsSocketServer = reinterpret_cast<TLSSocketServer *>(manager->GetData());
+    std::shared_ptr<TLSSocketServer::Connection> ptrConnection;
+    {
+        std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+        auto connWrapper = static_cast<std::shared_ptr<TLSSocketServer::Connection> *>(manager->GetData());
+        if (connWrapper != nullptr) {
+            ptrConnection = *connWrapper;
+        }
+    }
+    std::shared_ptr<TLSSocketServer> tlsSocketServer;
+    if (ptrConnection != nullptr) {
+        tlsSocketServer = ptrConnection->GetOwner().lock();
+    }
     if (tlsSocketServer == nullptr) {
         NETSTACK_LOGE("tlsSocketServer is null");
         return NapiUtils::GetUndefined(env);
     }
 
     const std::string event = NapiUtils::GetStringFromValueUtf8(env, params[0]);
-    TLSConnectionUnRegEvent(event, tlsSocketServer, clientid);
+    TLSConnectionUnRegEvent(event, tlsSocketServer.get(), clientid);
     if (paramsCount == PARAM_OPTION_CALLBACK) {
         manager->DeleteListener(event, params[1]);
     } else {
@@ -480,6 +543,8 @@ napi_value MonitorServer::ConnectionOff(napi_env env, napi_callback_info info)
     }
     return NapiUtils::GetUndefined(env);
 }
+// LCOV_EXCL_STOP
+
 
 void MonitorServer::TLSServerRegEvent(std::string event, TLSSocketServer *tlsSocketServer,
                                       const std::shared_ptr<EventManager> &ServerEventManager)

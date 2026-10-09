@@ -162,7 +162,7 @@ bool HasInternetPermission()
         NETSTACK_LOGE("make tcp testSock failed errno is %{public}d %{public}s", errno, strerror(errno));
         return false;
     }
-    if (testSock > 0) {
+    if (testSock >= 0) {
         close(testSock);
     }
     return true;

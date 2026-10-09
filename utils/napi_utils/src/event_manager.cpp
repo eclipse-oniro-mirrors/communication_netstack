@@ -105,12 +105,35 @@ void EventManager::EmitWithTwoPara(const std::string &type, const std::tuple<nap
 
 void EventManager::SetData(void *data)
 {
-    data_ = data;
+    data_.store(data, std::memory_order_release);
 }
 
 void *EventManager::GetData()
 {
-    return data_;
+    return data_.load(std::memory_order_acquire);
+}
+
+void EventManager::SetSocketFd(int fd)
+{
+    socketFd_.store(fd);
+    if (fd >= 0) {
+        socketEverCreated_.store(true);
+    }
+}
+
+int EventManager::GetSocketFd()
+{
+    return socketFd_.load();
+}
+
+bool EventManager::SetSocketFdIfEqual(int expectFd)
+{
+    return socketFd_.compare_exchange_strong(expectFd, -1);
+}
+
+bool EventManager::IsSocketEverCreated()
+{
+    return socketEverCreated_.load();
 }
 
 void EventManager::EmitByUvWithoutCheckShared(const std::string &type, void *data, void (*Handler)(uv_work_t *, int))

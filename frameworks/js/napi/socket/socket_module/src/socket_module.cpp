@@ -149,14 +149,14 @@ void ExecFinalizeClose(napi_env env, void *data)
         return;
     }
     std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
+    int sock = manager->GetSocketFd();
     NETSTACK_LOGI("ExecFinalizeClose socket is %{public}d", sock);
     if (sock < 0) {
         NETSTACK_LOGE("sock %{public}d is previous closed", sock);
         return;
     }
     close(sock);
-    manager->SetData(reinterpret_cast<void *>(-1));
+    manager->SetSocketFd(-1);
 }
  
 void ExecFinalizeCloseCallback(napi_env env, napi_status status, void *data)
@@ -176,11 +176,9 @@ void Finalize(napi_env env, void *data, void *)
     auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
     if (sharedManager != nullptr && *sharedManager != nullptr) {
         auto manager = *sharedManager;
-        int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
+        int sock = manager->GetSocketFd();
         NETSTACK_LOGI("Finalize, sock %{public}d", sock);
-        if (sock == 0) {
-            NETSTACK_LOGE("manager->GetData() got nullptr, Finalize() called before creating socket?");
-        } else if (sock != -1) {
+        if (sock >= 0) {
             auto context = new BaseContext(env, manager);
             context->CreateAsyncWork(FINALIZE_CLOSE_NAME, ExecFinalizeClose, ExecFinalizeCloseCallback);
         }
@@ -195,13 +193,15 @@ void FinalizeTcpSocketServer(napi_env, void *data, void *)
     if (sharedManager != nullptr && *sharedManager != nullptr) {
         auto manager = *sharedManager;
         std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-        int sock = static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData()));
-        if (sock != -1) {
+        int sock = manager->GetSocketFd();
+        if (sock >= 0) {
             NETSTACK_LOGI("finalize close all listenfd");
-            manager->SetData(reinterpret_cast<void *>(-1));
+            manager->SetSocketFd(-1);
             auto config = SocketExec::GetSharedConfig(manager);
             if (config != nullptr) {
                 config->ShutdownAllSockets();
+            } else {
+                close(sock);
             }
         }
         lock.unlock();
@@ -214,23 +214,37 @@ void FinalizeLocalsocketServer(napi_env, void *data, void *)
     auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
     if (sharedManager != nullptr && *sharedManager != nullptr) {
         auto manager = *sharedManager;
-        if (auto serverMgr = reinterpret_cast<LocalSocketServerManager *>(manager->GetData()); serverMgr != nullptr) {
-            NETSTACK_LOGI("localsocket server handle is finalized, fd: %{public}d", serverMgr->sockfd_);
+        LocalSocketServerManager *serverMgr = nullptr;
+        {
+            std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
+            serverMgr = reinterpret_cast<LocalSocketServerManager *>(manager->GetData());
+            if (serverMgr != nullptr) {
+                manager->SetData(nullptr);
+            }
+        }
+        if (serverMgr != nullptr) {
+            NETSTACK_LOGI("localsocket server handle is finalized, fd: %{public}d", manager->GetSocketFd());
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
             serverMgr->SetServerDestructStatus(true);
+            serverMgr->NotifyStopEvent();
 #else
             serverMgr->isServerDestruct_ = true;
 #endif
             serverMgr->RemoveAllAccept();
             serverMgr->RemoveAllEventManager();
-            if (serverMgr->sockfd_ > 0) {
-                close(serverMgr->sockfd_);
-                serverMgr->sockfd_ = -1;
+            int fd = manager->GetSocketFd();
+            if (fd >= 0) {
+                close(fd);
+                manager->SetSocketFd(-1);
             }
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
             close(serverMgr->epollFd_);
 #endif
             serverMgr->WaitForEndingLoop();
+            if (serverMgr->stopEventFd_ >= 0) {
+                close(serverMgr->stopEventFd_);
+                serverMgr->stopEventFd_ = -1;
+            }
             delete serverMgr;
         }
         delete sharedManager;
@@ -242,13 +256,22 @@ void FinalizeLocalSocket(napi_env, void *data, void *)
     auto sharedManager = reinterpret_cast<std::shared_ptr<EventManager> *>(data);
     if (sharedManager != nullptr && *sharedManager != nullptr) {
         auto manager = *sharedManager;
-        if (auto pMgr = reinterpret_cast<LocalSocketManager *>(manager->GetData()); pMgr != nullptr) {
-            NETSTACK_LOGI("localsocket handle is finalized, fd: %{public}d", pMgr->sockfd_);
-            if (pMgr->sockfd_ > 0) {
-                close(pMgr->sockfd_);
-                pMgr->sockfd_ = 0;
+        int sockFd = manager->GetSocketFd();
+        if (sockFd >= 0 && manager->SetSocketFdIfEqual(sockFd)) {
+            if (shutdown(sockFd, SHUT_RDWR) != 0) {
+                NETSTACK_LOGE("shutdown localsock failed, fd: %{public}d, errno: %{public}d", sockFd, errno);
             }
-            delete pMgr;
+            if (close(sockFd) < 0) {
+                NETSTACK_LOGE("close localsock failed, fd: %{public}d, errno: %{public}d", sockFd, errno);
+            }
+        }
+        {
+            std::unique_lock<std::shared_mutex> lock(manager->GetDataMutex());
+            if (auto pMgr = reinterpret_cast<LocalSocketManager *>(manager->GetData()); pMgr != nullptr) {
+                manager->SetData(nullptr);
+                NETSTACK_LOGI("localsocket handle is finalized, fd: %{public}d", sockFd);
+                delete pMgr;
+            }
         }
         delete sharedManager;
     }
@@ -275,7 +298,7 @@ static bool SetSocket(napi_env env, napi_value thisVal, BaseContext *context, in
         return false;
     }
     NETSTACK_LOGD("SetSocket: sock %{public}d", sock);
-    manager->SetData(reinterpret_cast<void *>(sock));
+    manager->SetSocketFd(sock);
     NapiUtils::SetInt32Property(env, thisVal, KEY_SOCKET_FD, sock);
     return true;
 }
@@ -295,8 +318,7 @@ static bool MakeTcpClientBindSocket(napi_env env, napi_value thisVal, BindContex
     if (manager == nullptr) {
         return false;
     }
-    if (manager->GetData() != nullptr &&
-        static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) >= 0) {
+    if (manager->GetSocketFd() >= 0) {
         NETSTACK_LOGE("tcp connect has been called");
         return true;
     }
@@ -324,9 +346,7 @@ static bool MakeTcpClientConnectSocket(napi_env env, napi_value thisVal, Connect
     NETSTACK_LOGD("connect ip family is %{public}d", context->options.address.GetSaFamily());
 
     auto manager = context->GetSharedManager();
-    if (manager != nullptr &&
-        manager->GetData() != nullptr &&
-        static_cast<int>(reinterpret_cast<uint64_t>(manager->GetData())) != -1) {
+    if (manager != nullptr && manager->GetSocketFd() != -1) {
         NETSTACK_LOGD("tcp bind has been called");
         return true;
     }
@@ -349,7 +369,7 @@ static bool MakeTcpServerSocket(napi_env env, napi_value thisVal, TcpServerListe
         return false;
     }
     int sock = ExecCommonUtils::MakeTcpSocket(context->address_.GetSaFamily(), false);
-    if (sock <= 0) {
+    if (sock < 0) {
         return false;
     }
     int reuse = 1; // 1 means enable reuseaddr feature
@@ -374,7 +394,7 @@ static bool MakeUdpSocket(napi_env env, napi_value thisVal, BindContext *context
         context->SetPermissionDenied(true);
         return false;
     }
-    if (int sock = context->GetSocketFd(); sock > 0) {
+    if (int sock = context->GetSocketFd(); sock >= 0) {
         NETSTACK_LOGI("udp socket exist: %{public}d", sock);
         return true;
     }
@@ -393,7 +413,7 @@ static bool MakeMulticastUdpSocket(napi_env env, napi_value thisVal, MulticastMe
         context->SetPermissionDenied(true);
         return false;
     }
-    if (context->GetSocketFd() > 0) {
+    if (context->GetSocketFd() >= 0) {
         NETSTACK_LOGI("socket exist: %{public}d", context->GetSocketFd());
         return false;
     }
@@ -409,9 +429,9 @@ static bool MakeMulticastUdpSocket(napi_env env, napi_value thisVal, MulticastMe
     return true;
 }
 
-static bool SetSocketManager(napi_env env, napi_value thisVal, BaseContext *context, SocketBaseManager *mgr)
+static bool SetSocketManager(napi_env env, napi_value thisVal, BaseContext *context, void *mgr, int sock)
 {
-    if (mgr->sockfd_ <= 0) {
+    if (sock < 0) {
         NETSTACK_LOGE("SetSocketManager sockfd < 0");
         napi_value error = NapiUtils::CreateObject(env);
         if (NapiUtils::GetValueType(env, error) != napi_object) {
@@ -430,9 +450,9 @@ static bool SetSocketManager(napi_env env, napi_value thisVal, BaseContext *cont
     if (manager == nullptr) {
         return false;
     }
-    NETSTACK_LOGD("SetSocketManager setData");
-    manager->SetData(reinterpret_cast<void *>(mgr));
-    NapiUtils::SetInt32Property(env, thisVal, KEY_SOCKET_FD, mgr->sockfd_);
+    manager->SetSocketFd(sock);
+    manager->SetData(mgr);
+    NapiUtils::SetInt32Property(env, thisVal, KEY_SOCKET_FD, sock);
     return true;
 }
 
@@ -441,7 +461,7 @@ static bool MakeLocalSocketBind(napi_env env, napi_value thisVal, LocalSocketBin
     if (context == nullptr) {
         return false;
     }
-    if (context->GetSocketFd() > 0) {
+    if (context->GetSocketFd() >= 0) {
         NETSTACK_LOGI("socket exist: %{public}d", context->GetSocketFd());
         return false;
     }
@@ -449,12 +469,12 @@ static bool MakeLocalSocketBind(napi_env env, napi_value thisVal, LocalSocketBin
     if (sock < 0) {
         return false;
     }
-    auto pManager = new (std::nothrow) LocalSocketManager(sock);
+    auto pManager = new (std::nothrow) LocalSocketManager();
     if (pManager == nullptr) {
         close(sock);
         return false;
     }
-    if (!SetSocketManager(env, thisVal, context, pManager)) {
+    if (!SetSocketManager(env, thisVal, context, pManager, sock)) {
         close(sock);
         delete pManager;
         return false;
@@ -468,7 +488,7 @@ static bool MakeLocalSocketConnect(napi_env env, napi_value thisVal, LocalSocket
     if (context == nullptr) {
         return false;
     }
-    if (context->GetSocketFd() > 0) {
+    if (context->GetSocketFd() >= 0) {
         NETSTACK_LOGI("socket exist: %{public}d", context->GetSocketFd());
         return false;
     }
@@ -476,12 +496,12 @@ static bool MakeLocalSocketConnect(napi_env env, napi_value thisVal, LocalSocket
     if (sock < 0) {
         return false;
     }
-    auto pManager = new (std::nothrow) LocalSocketManager(sock);
+    auto pManager = new (std::nothrow) LocalSocketManager();
     if (pManager == nullptr) {
         close(sock);
         return false;
     }
-    if (!SetSocketManager(env, thisVal, context, pManager)) {
+    if (!SetSocketManager(env, thisVal, context, pManager, sock)) {
         close(sock);
         delete pManager;
         return false;
@@ -495,7 +515,7 @@ static bool MakeLocalServerSocket(napi_env env, napi_value thisVal, LocalSocketS
     if (context == nullptr) {
         return false;
     }
-    if (int sock = context->GetSocketFd(); sock > 0) {
+    if (int sock = context->GetSocketFd(); sock >= 0) {
         NETSTACK_LOGI("socket exist: %{public}d", sock);
         return false;
     }
@@ -503,8 +523,9 @@ static bool MakeLocalServerSocket(napi_env env, napi_value thisVal, LocalSocketS
     if (sock < 0) {
         return false;
     }
-    auto pManager = new (std::nothrow) LocalSocketServerManager(sock);
+    auto pManager = new (std::nothrow) LocalSocketServerManager();
     if (pManager == nullptr) {
+        close(sock);
         return false;
     }
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
@@ -515,10 +536,13 @@ static bool MakeLocalServerSocket(napi_env env, napi_value thisVal, LocalSocketS
         return false;
     }
 #endif
-    if (!SetSocketManager(env, thisVal, context, pManager)) {
+    if (!SetSocketManager(env, thisVal, context, pManager, sock)) {
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
         close(sock);
         close(pManager->epollFd_);
+        if (pManager->stopEventFd_ >= 0) {
+            close(pManager->stopEventFd_);
+        }
 #endif
         delete pManager;
         return false;
@@ -1193,16 +1217,16 @@ napi_value SocketModuleExports::LocalSocketConnection::On(napi_env env, napi_cal
         return NapiUtils::GetUndefined(env);
     }
     std::shared_ptr<EventManager> *sharedManager = nullptr;
-    napi_unwrap(env, thisVal, reinterpret_cast<void **>(&sharedManager));
-    if (sharedManager == nullptr || *sharedManager == nullptr) {
+    if (napi_unwrap(env, thisVal, reinterpret_cast<void **>(&sharedManager)) != napi_ok ||
+        sharedManager == nullptr || *sharedManager == nullptr) {
         NETSTACK_LOGE("failed to unwrap");
         return NapiUtils::GetUndefined(env);
     }
     auto manager = *sharedManager;
     manager->AddListener(env, event, params[PARAM_COUNT_TWO - 1], false, false);
     if (event == EVENT_MESSAGE) {
-        if (auto mgr = reinterpret_cast<LocalSocketExec::LocalSocketConnectionData *>(manager->GetData());
-            mgr != nullptr) {
+        if (auto mgr = reinterpret_cast<LocalSocketExec::LocalSocketConnectionData*>(manager->GetData());
+            mgr != nullptr && mgr->serverManager_ != nullptr) {
             mgr->serverManager_->NotifyRegisterEvent();
         }
     }

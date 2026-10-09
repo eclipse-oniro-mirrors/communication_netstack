@@ -14,6 +14,7 @@
  */
 #include <cstring>
 #include <iostream>
+#include <mutex>
 
 #include "net_websocket.h"
 #include "net_websocket_adapter.h"
@@ -81,16 +82,18 @@ struct WebSocket *OH_WebSocketClient_Constructor(WebSocket_OnOpenCallback onOpen
     OH_client->onOpen = onOpen;
     websocketClient->Registcallback(OH_NetStack_OnOpenCallback, OH_NetStack_OnMessageCallback,
                                     OH_NetStack_OnErrorCallback, OH_NetStack_OnCloseCallback);
-    if (g_clientMap.size() == MAX_CLIENT_SIZE) {
-        delete OH_client;
-        OH_client = nullptr;
-        delete websocketClient;
-        websocketClient = nullptr;
-        return nullptr;
-    }
-
     OH_client->requestOptions.headers = nullptr;
-    g_clientMap[OH_client] = websocketClient;
+    {
+        std::lock_guard<std::mutex> lock(g_clientMapMutex);
+        if (g_clientMap.size() == MAX_CLIENT_SIZE) {
+            delete OH_client;
+            OH_client = nullptr;
+            delete websocketClient;
+            websocketClient = nullptr;
+            return nullptr;
+        }
+        g_clientMap[OH_client] = websocketClient;
+    }
     return OH_client;
 }
 
@@ -206,6 +209,9 @@ int OH_WebSocketClient_Destroy(struct WebSocket *client)
 
     OH_WebSocketClient_FreeHeader(client->requestOptions.headers);
 
-    g_clientMap.erase(client);
+    {
+        std::lock_guard<std::mutex> lock(g_clientMapMutex);
+        g_clientMap.erase(client);
+    }
     return ret;
 }

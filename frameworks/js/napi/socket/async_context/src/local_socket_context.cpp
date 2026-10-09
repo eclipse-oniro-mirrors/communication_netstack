@@ -30,8 +30,7 @@ int LocalSocketBaseContext::GetSocketFd() const
     if (sharedManager_ == nullptr) {
         return -1;
     }
-    LocalSocketManager *pMgr = reinterpret_cast<LocalSocketManager *>(sharedManager_->GetData());
-    return (pMgr != nullptr) ? pMgr->sockfd_ : -1;
+    return sharedManager_->GetSocketFd();
 }
 
 void LocalSocketBaseContext::SetSocketFd(int sock)
@@ -39,9 +38,7 @@ void LocalSocketBaseContext::SetSocketFd(int sock)
     if (sharedManager_ == nullptr) {
         return;
     }
-    if (auto pMgr = reinterpret_cast<LocalSocketManager *>(sharedManager_->GetData()); pMgr != nullptr) {
-        pMgr->sockfd_ = sock;
-    }
+    sharedManager_->SetSocketFd(sock);
 }
 
 int32_t LocalSocketBaseContext::GetErrorCode() const

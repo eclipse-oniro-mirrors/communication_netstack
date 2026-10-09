@@ -27,8 +27,7 @@ int LocalSocketServerBaseContext::GetSocketFd() const
     if (sharedManager_ == nullptr) {
         return -1;
     }
-    LocalSocketServerManager *pManagerInfo = reinterpret_cast<LocalSocketServerManager *>(sharedManager_->GetData());
-    return (pManagerInfo != nullptr) ? pManagerInfo->sockfd_ : -1;
+    return sharedManager_->GetSocketFd();
 }
 
 void LocalSocketServerBaseContext::SetSocketFd(int sock)
@@ -36,10 +35,7 @@ void LocalSocketServerBaseContext::SetSocketFd(int sock)
     if (sharedManager_ == nullptr) {
         return;
     }
-    LocalSocketServerManager *pManagerInfo = reinterpret_cast<LocalSocketServerManager *>(sharedManager_->GetData());
-    if (pManagerInfo != nullptr) {
-        pManagerInfo->sockfd_ = sock;
-    }
+    sharedManager_->SetSocketFd(sock);
 }
 
 void LocalSocketServerListenContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -186,15 +182,6 @@ void LocalSocketServerSendContext::ParseParams(napi_value *params, size_t params
         return;
     }
     SetParseOK(true);
-}
-
-int LocalSocketServerSendContext::GetAcceptFd()
-{
-    if (sharedManager_ == nullptr) {
-        return -1;
-    }
-    LocalSocketServerManager *pManagerInfo = reinterpret_cast<LocalSocketServerManager *>(sharedManager_->GetData());
-    return (pManagerInfo != nullptr) ? pManagerInfo->GetAcceptFd(clientId_) : -1;
 }
 
 LocalSocketOptions &LocalSocketServerSendContext::GetOptionsRef()

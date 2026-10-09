@@ -90,13 +90,13 @@ public:
     const std::string &GetData();
     void ClearData();
 
-    OnMessageCallback onMessageCallback_ = nullptr;
-    OnCloseCallback onCloseCallback_ = nullptr;
-    OnErrorCallback onErrorCallback_ = nullptr;
-    OnOpenCallback onOpenCallback_ = nullptr;
+    std::atomic<OnMessageCallback> onMessageCallback_{nullptr};
+    std::atomic<OnCloseCallback> onCloseCallback_{nullptr};
+    std::atomic<OnErrorCallback> onErrorCallback_{nullptr};
+    std::atomic<OnOpenCallback> onOpenCallback_{nullptr};
     OnOpenInfoCallback onOpenInfoCallback_ = nullptr;
-    OnHeaderReceiveCallback onHeaderReceiveCallback_ = nullptr;
-    OnDataEndCallback onDataEndCallback_ = nullptr;
+    std::atomic<OnHeaderReceiveCallback> onHeaderReceiveCallback_{nullptr};
+    std::atomic<OnDataEndCallback> onDataEndCallback_{nullptr};
     ClientContext *GetClientContext() const;
 
 private:

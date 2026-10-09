@@ -115,6 +115,14 @@ bool ConnectMonitor::Register(int fd, const sptr<ConnectWatchData>& data)
             deadlines_.erase(deadlineIt->second);
             deadlineIters_.erase(deadlineIt);
         }
+        auto oldIt = pendings_.find(fd);
+        if (oldIt != pendings_.end()) {
+            NETSTACK_LOGE("connect monitor overwrite stale entry for fd: %{public}d", fd);
+            if (oldIt->second && oldIt->second->tsfn) {
+                napi_release_threadsafe_function(oldIt->second->tsfn, napi_tsfn_abort);
+            }
+            pendings_.erase(oldIt);
+        }
         pendings_[fd] = data;
         deadlineIters_[fd] = deadlines_.emplace(data->deadline, fd);
     }

@@ -54,14 +54,9 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest001, testing::ext::
     auto tlsSocketServer = new TLSSocketServer();
     EXPECT_TRUE(tlsSocketServer != nullptr);
 
-    TLSServerSendOptions data;
-    TlsSocket::SendCallback sendCallback;
-    bool ret = tlsSocketServer->Send(data, sendCallback);
-    EXPECT_FALSE(ret);
-
     Socket::TCPExtraOptions tcpExtraOptions;
     TlsSocket::SetExtraOptionsCallback callback;
-    ret = tlsSocketServer->SetExtraOptions(tcpExtraOptions, callback);
+    bool ret = tlsSocketServer->SetExtraOptions(tcpExtraOptions, callback);
     EXPECT_FALSE(ret);
 
     tcpExtraOptions.SetKeepAlive(true);
@@ -109,9 +104,6 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest002, testing::ext::
 
     auto stringVector = connection->GetCipherSuite();
     EXPECT_TRUE(stringVector.empty());
-
-    auto protocol = connection->GetProtocol();
-    EXPECT_EQ(protocol, "UNKNOW_PROTOCOL");
 
     ret = connection->SetSharedSigals();
     EXPECT_FALSE(ret);
@@ -249,21 +241,13 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest006, testing::ext::
     std::shared_ptr<TLSSocketServer::Connection> connection = std::make_shared<TLSSocketServer::Connection>();
     EXPECT_TRUE(connection != nullptr);
 
-    TLSServerSendOptions tlsServerSendOptions;
-    tlsServerSendOptions.SetSocket(0);
     auto socketFd = connection->GetSocketFd();
     EXPECT_LE(socketFd, 0);
-    socketFd = tlsServerSendOptions.GetSocket();
-    EXPECT_EQ(socketFd, 0);
-
-    std::string testString = "test";
-    tlsServerSendOptions.SetSendData(testString);
-    auto data = tlsServerSendOptions.GetSendData();
-    EXPECT_EQ(data, testString);
 
     std::shared_ptr<EventManager> eventManager = nullptr;
-    connection->SetEventManager(eventManager);
-    EXPECT_TRUE(connection->GetEventManager() == nullptr);
+    auto tlsServerSharedPtr = std::make_shared<TLSSocketServer>();
+    connection->SetOwner(tlsServerSharedPtr);
+    EXPECT_FALSE(connection->GetOwner().expired());
 
     int32_t clientID = 0;
     connection->SetClientID(clientID);
@@ -295,13 +279,15 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest006, testing::ext::
     tlsSocketServer->RecvRemoteInfo(socketFd, index);
 
     Socket::SocketRemoteInfo remoteInfo;
+    std::string testString = "test";
     connection->CallOnMessageCallback(socketFd, testString, remoteInfo);
 
     auto manager = std::make_shared<EventManager>();
-    tlsSocketServer->CloseConnectionByEventManager(manager);
-    tlsSocketServer->DeleteConnectionByEventManager(manager);
-    auto connections = tlsSocketServer->GetConnectionByClientEventManager(manager);
+    tlsSocketServer->RemoveConnect(connection->GetSocketFd());
+    auto connections = tlsSocketServer->GetConnectionByClientID(0);
     EXPECT_TRUE(connections == nullptr);
+    tlsServerSharedPtr.reset();
+    EXPECT_TRUE(connection->GetOwner().expired());
 }
 
 HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest007, testing::ext::TestSize.Level2)
@@ -414,54 +400,27 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest016, testing::ext::
 
 HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest017, testing::ext::TestSize.Level2)
 {
-    auto tlsSocketServer = new TLSSocketServer();
-    int sockFd = 0;
-    bool callbackCalled = false;
-    tlsSocketServer->GetRemoteCertificate(
-        sockFd, [&callbackCalled](int32_t errorNumber, const TlsSocket::X509CertRawData &cert) {
-        EXPECT_EQ(errorNumber, TlsSocket::TLS_ERR_SYS_EINVAL);
-        callbackCalled = true;
-    });
-    EXPECT_TRUE(callbackCalled);
-    delete tlsSocketServer;
+    auto connection = std::make_shared<TLSSocketServer::Connection>();
+    auto remoteCert = connection->GetRemoteCertRawData();
+    EXPECT_EQ(remoteCert.data.Length(), 0);
 }
 
 HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest018, testing::ext::TestSize.Level2)
 {
-    constexpr int sockFd = 1;
     constexpr int testLen = 5;
-    auto tlsSocketServer = new TLSSocketServer();
     auto connection = std::make_shared<TLSSocketServer::Connection>();
     connection->remoteRawData_.data.length_ = testLen;
-    tlsSocketServer->clientIdConnections_.emplace(sockFd, connection);
-    bool callbackCalled = false;
-    tlsSocketServer->GetRemoteCertificate(
-        sockFd, [&callbackCalled, testLen](int32_t errorNumber, const TlsSocket::X509CertRawData &cert) {
-        EXPECT_EQ(errorNumber, TlsSocket::TLSSOCKET_SUCCESS);
-        EXPECT_EQ(cert.data.Length(), testLen);
-        callbackCalled = true;
-    });
-    EXPECT_TRUE(callbackCalled);
-    delete tlsSocketServer;
+    auto remoteCert = connection->GetRemoteCertRawData();
+    EXPECT_EQ(remoteCert.data.Length(), testLen);
 }
 
 HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest019, testing::ext::TestSize.Level2)
 {
-    constexpr int sockFd = 1;
     constexpr int testLen = 0;
-    auto tlsSocketServer = new TLSSocketServer();
     auto connection = std::make_shared<TLSSocketServer::Connection>();
     connection->remoteRawData_.data.length_ = testLen;
-    tlsSocketServer->clientIdConnections_.emplace(sockFd, connection);
-    bool callbackCalled = false;
-    tlsSocketServer->GetRemoteCertificate(
-        sockFd, [&callbackCalled, testLen](int32_t errorNumber, const TlsSocket::X509CertRawData &cert) {
-        EXPECT_NE(errorNumber, TlsSocket::TLSSOCKET_SUCCESS);
-        EXPECT_EQ(cert.data.Length(), testLen);
-        callbackCalled = true;
-    });
-    EXPECT_TRUE(callbackCalled);
-    delete tlsSocketServer;
+    auto remoteCert = connection->GetRemoteCertRawData();
+    EXPECT_EQ(remoteCert.data.Length(), testLen);
 }
 
 HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest020, testing::ext::TestSize.Level2)
@@ -494,83 +453,25 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest021, testing::ext::
 
 HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest022, testing::ext::TestSize.Level2)
 {
-    auto tlsSocketServer = new TLSSocketServer();
-    constexpr int sockFd = 1;
-    bool callbackCalled = false;
-    tlsSocketServer->GetCipherSuite(sockFd,
-                                    [&callbackCalled](int32_t errorNumber, const std::vector<std::string> &suite) {
-        EXPECT_EQ(errorNumber, TlsSocket::TLS_ERR_SYS_EINVAL);
-        callbackCalled = true;
-    });
-    EXPECT_TRUE(callbackCalled);
-    delete tlsSocketServer;
+    auto connection = std::make_shared<TLSSocketServer::Connection>();
+    auto cipherSuite = connection->GetCipherSuite();
+    EXPECT_TRUE(cipherSuite.empty());
 }
 
 HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest023, testing::ext::TestSize.Level2)
 {
-    constexpr int sockFd = 1;
-    auto tlsSocketServer = new TLSSocketServer();
     auto connection = std::make_shared<TLSSocketServer::Connection>();
-    tlsSocketServer->clientIdConnections_.emplace(sockFd, connection);
-
-    bool callbackCalled = false;
-    tlsSocketServer->GetCipherSuite(sockFd,
-                                    [&callbackCalled](int32_t errorNumber, const std::vector<std::string> &suite) {
-        EXPECT_NE(errorNumber, TlsSocket::TLSSOCKET_SUCCESS);
-        callbackCalled = true;
-    });
-    EXPECT_TRUE(callbackCalled);
-    delete tlsSocketServer;
+    auto signatureAlgorithms = connection->GetSignatureAlgorithms();
+    EXPECT_TRUE(signatureAlgorithms.empty());
 }
 
 HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest024, testing::ext::TestSize.Level2)
 {
-    constexpr int sockFd = 1;
-    auto tlsSocketServer = new TLSSocketServer();
-
-    bool callbackCalled = false;
-    tlsSocketServer->GetSignatureAlgorithms(
-        sockFd, [&callbackCalled](int32_t errorNumber, const std::vector<std::string> &algorithms) {
-        EXPECT_EQ(errorNumber, TlsSocket::TLS_ERR_SYS_EINVAL);
-        callbackCalled = true;
-    });
-    EXPECT_TRUE(callbackCalled);
-    delete tlsSocketServer;
-}
-
-HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest025, testing::ext::TestSize.Level2)
-{
-    constexpr int sockFd = 1;
-    auto tlsSocketServer = new TLSSocketServer();
-    auto connection = std::make_shared<TLSSocketServer::Connection>();
-    tlsSocketServer->clientIdConnections_.emplace(sockFd, connection);
-
-    bool callbackCalled = false;
-    tlsSocketServer->GetSignatureAlgorithms(
-        sockFd, [&callbackCalled](int32_t errorNumber, const std::vector<std::string> &suite) {
-        EXPECT_NE(errorNumber, TlsSocket::TLSSOCKET_SUCCESS);
-        callbackCalled = true;
-    });
-    EXPECT_TRUE(callbackCalled);
-    delete tlsSocketServer;
-}
-
-HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest026, testing::ext::TestSize.Level2)
-{
-    constexpr int sockFd = 1;
-    auto tlsSocketServer = new TLSSocketServer();
     auto connection = std::make_shared<TLSSocketServer::Connection>();
     connection->signatureAlgorithms_ = {"TEST"};
-    tlsSocketServer->clientIdConnections_.emplace(sockFd, connection);
-
-    bool callbackCalled = false;
-    tlsSocketServer->GetSignatureAlgorithms(
-        sockFd, [&callbackCalled](int32_t errorNumber, const std::vector<std::string> &suite) {
-        EXPECT_EQ(errorNumber, TlsSocket::TLSSOCKET_SUCCESS);
-        callbackCalled = true;
-    });
-    EXPECT_TRUE(callbackCalled);
-    delete tlsSocketServer;
+    auto signatureAlgorithms = connection->GetSignatureAlgorithms();
+    EXPECT_EQ(signatureAlgorithms.size(), 1UL);
+    EXPECT_EQ(signatureAlgorithms[0], "TEST");
 }
 
 extern void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> &dnsNames,

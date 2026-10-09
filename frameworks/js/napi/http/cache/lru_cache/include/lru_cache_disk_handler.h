@@ -17,6 +17,7 @@
 #define COMMUNICATIONNETSTACK_LRU_CACHE_DISK_HANDLER_H
 
 #include <atomic>
+#include <mutex>
 
 #include "disk_handler.h"
 #include "lru_cache.h"
@@ -44,6 +45,7 @@ public:
     void Put(const std::string &key, const std::unordered_map<std::string, std::string> &value);
 
 private:
+    mutable std::mutex mutex_;
     LRUCache cache_;
     DiskHandler diskHandler_;
     std::atomic<size_t> capacity_;

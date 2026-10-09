@@ -145,15 +145,15 @@ static std::string MakeAddressString(sockaddr *addr)
 {
     if (addr->sa_family == AF_INET) {
         auto *addr4 = reinterpret_cast<sockaddr_in *>(addr);
-        const char *str = inet_ntoa(addr4->sin_addr);
-        if (str == nullptr || strlen(str) == 0) {
+        char str[INET_ADDRSTRLEN] = {0};
+        if (inet_ntop(AF_INET, &addr4->sin_addr, str, INET_ADDRSTRLEN) == nullptr) {
             return {};
         }
         return str;
     } else if (addr->sa_family == AF_INET6) {
         auto *addr6 = reinterpret_cast<sockaddr_in6 *>(addr);
         char str[INET6_ADDRSTRLEN] = {0};
-        if (inet_ntop(AF_INET6, &addr6->sin6_addr, str, INET6_ADDRSTRLEN) == nullptr || strlen(str) == 0) {
+        if (inet_ntop(AF_INET6, &addr6->sin6_addr, str, INET6_ADDRSTRLEN) == nullptr) {
             return {};
         }
         return str;
@@ -400,7 +400,7 @@ int32_t CJTcpSocketImpl::Send(CJTcpSocketProxy *proxy, const CTcpSendOptions &cO
         return ERR_INVALID_INSTANCE_CODE;
     }
     int sockFd = proxy->GetSocketFd();
-    if (sockFd <= 0) {
+    if (sockFd < 0) {
         return ConvertErrCode(ERRNO_BAD_FD);
     }
     TcpSendOptions options;
@@ -532,7 +532,7 @@ int32_t CJTcpSocketImpl::SetExtraOptions(CJTcpSocketProxy *proxy, const CTcpExtr
         return PERMISSION_DENIED_CODE;
     }
     int sockFd = proxy->GetSocketFd();
-    if (sockFd <= 0) {
+    if (sockFd < 0) {
         return ConvertErrCode(ERRNO_BAD_FD);
     }
     TCPExtraOptions options;

@@ -34,6 +34,7 @@ void LRUCacheDiskHandler::SetCapacity(size_t capacity)
 
 void LRUCacheDiskHandler::Delete()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     cache_.Clear();
     diskHandler_.Delete();
 }
@@ -63,6 +64,7 @@ void LRUCacheDiskHandler::WriteJsonValueToFile(const cJSON *root)
 
 void LRUCacheDiskHandler::WriteCacheToJsonFile()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     LRUCache oldCache(capacity_);
     cJSON *readRoot = ReadJsonValueFromFile();
     if (readRoot == nullptr) {
@@ -79,6 +81,7 @@ void LRUCacheDiskHandler::WriteCacheToJsonFile()
 
 void LRUCacheDiskHandler::ReadCacheFromJsonFile()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     cJSON *root = ReadJsonValueFromFile();
     if (root == nullptr) {
         return;
@@ -89,6 +92,7 @@ void LRUCacheDiskHandler::ReadCacheFromJsonFile()
 
 std::unordered_map<std::string, std::string> LRUCacheDiskHandler::Get(const std::string &key)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     auto valueFromMemory = cache_.Get(key);
     if (!valueFromMemory.empty()) {
         return valueFromMemory;
@@ -108,6 +112,7 @@ std::unordered_map<std::string, std::string> LRUCacheDiskHandler::Get(const std:
 
 void LRUCacheDiskHandler::Put(const std::string &key, const std::unordered_map<std::string, std::string> &value)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     cache_.Put(key, value);
 }
 } // namespace OHOS::NetStack::HttpClient

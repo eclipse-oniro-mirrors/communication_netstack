@@ -253,8 +253,8 @@ int LwsCallbackClientConnectionError(lws *wsi, lws_callback_reasons reason, void
     if (data != nullptr) {
         errorResult.errorMessage = data;
     }
-    if (client->onErrorCallback_) {
-        client->onErrorCallback_(client, errorResult);
+    if (auto callback = client->onErrorCallback_.load(std::memory_order_acquire); callback != nullptr) {
+        callback(client, errorResult);
     }
     return HttpDummy(wsi, reason, user, in, len);
 }
@@ -275,8 +275,8 @@ int LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, 
         ErrorResult errorResult;
         errorResult.errorCode = WebSocketErrorCode::WEBSOCKET_DATA_LENGTH_EXCEEDS;
         errorResult.errorMessage = CommonUtils::WEBSOCKET_DATA_LENGTH_EXCEEDED_STR;
-        if (client->onErrorCallback_) {
-            client->onErrorCallback_(client, errorResult);
+        if (auto callback = client->onErrorCallback_.load(std::memory_order_acquire); callback != nullptr) {
+            callback(client, errorResult);
         }
         return HttpDummy(wsi, reason, user, in, len);
     }
@@ -284,11 +284,11 @@ int LwsCallbackClientReceive(lws *wsi, lws_callback_reasons reason, void *user, 
         return HttpDummy(wsi, reason, user, in, len);
     }
     std::string data = client->GetData();
-    if (client->onMessageCallback_) {
-        client->onMessageCallback_(client, data, data.size());
+    if (auto callback = client->onMessageCallback_.load(std::memory_order_acquire); callback != nullptr) {
+        callback(client, data, data.size());
     }
-    if (client->onDataEndCallback_) {
-        client->onDataEndCallback_(client);
+    if (auto callback = client->onDataEndCallback_.load(std::memory_order_acquire); callback != nullptr) {
+        callback(client);
     }
     client->ClearData();
     return HttpDummy(wsi, reason, user, in, len);
@@ -388,9 +388,10 @@ int LwsCallbackClientFilterPreEstablish(lws *wsi, lws_callback_reasons reason, v
             if (auto header = static_cast<std::map<std::string, std::string> *>(opaque)) {
                 header->emplace(std::string(name).substr(0, nlen - 1), std::string(name).substr(nlen));
             }
-        }, &responseHeader);
-    if (client->onHeaderReceiveCallback_) {
-        client->onHeaderReceiveCallback_(client, responseHeader);
+        },
+        &responseHeader);
+    if (auto callback = client->onHeaderReceiveCallback_.load(std::memory_order_acquire); callback != nullptr) {
+        callback(client, responseHeader);
     }
     return HttpDummy(wsi, reason, user, in, len);
 }
@@ -430,8 +431,8 @@ int LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons reason, void *us
     OpenResult openResult;
     openResult.status = ctx->openStatus;
     openResult.message = ctx->openMessage.c_str();
-    if (client->onOpenCallback_) {
-        client->onOpenCallback_(client, openResult);
+    if (auto callback = client->onOpenCallback_.load(std::memory_order_acquire); callback != nullptr) {
+        callback(client, openResult);
     }
     OpenInfo openInfo;
     openInfo.status = client->GetClientContext()->openStatus;
@@ -473,8 +474,8 @@ int LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason, void *user, v
     } else {
         closeResult.reason = CLOSE_REASON_FORM_SERVER;
     }
-    if (client->onCloseCallback_) {
-        client->onCloseCallback_(client, closeResult);
+    if (auto callback = client->onCloseCallback_.load(std::memory_order_acquire); callback != nullptr) {
+        callback(client, closeResult);
     }
     client->GetClientContext()->SetThreadStop(true);
     client->GetClientContext()->CloseIfReasonEmpty(LINK_DOWN);

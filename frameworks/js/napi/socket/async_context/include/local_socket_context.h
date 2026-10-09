@@ -16,6 +16,7 @@
 #ifndef LOCAL_SOCKET_CONTEXT_H
 #define LOCAL_SOCKET_CONTEXT_H
 
+#include <atomic>
 #include <condition_variable>
 #include <cstddef>
 
@@ -26,15 +27,10 @@
 #include "socket_state_base.h"
 
 namespace OHOS::NetStack::Socket {
-struct SocketBaseManager {
-    explicit SocketBaseManager(int sockfd) : sockfd_(sockfd) {}
-    int sockfd_ = 0;
-};
-
-struct LocalSocketManager : public SocketBaseManager {
-    explicit LocalSocketManager(int sockfd) : SocketBaseManager(sockfd) {}
-    bool isConnected_ = false;
-    std::atomic_bool isSockClosed;
+struct LocalSocketManager {
+    LocalSocketManager() = default;
+    std::atomic_bool isConnected_ = false;
+    std::atomic_bool isSockClosed = false;
 
     void SetSocketCloseStatus(bool flag)
     {

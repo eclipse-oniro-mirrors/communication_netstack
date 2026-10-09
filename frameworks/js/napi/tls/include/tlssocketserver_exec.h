@@ -36,6 +36,7 @@ public:
     ~TLSSocketServerExec() = delete;
 
     static bool ExecGetCertificate(TlsSocket::GetCertificateContext *context);
+    static bool ExecConnectionGetCertificate(TlsSocket::GetCertificateContext *context);
     static bool ExecTLSConnectionGetSocketFd(TLSServerGetSocketFdContext *context);
     static bool ExecListen(TlsSocket::TLSListenContext *context);
     static bool ExecGetCipherSuites(ServerGetCipherSuitesContext *context);
@@ -68,9 +69,6 @@ public:
     static napi_value GetConnectionLocalAddressCallback(TLSConnectionGetLocalAddressContext *context);
     static napi_value SetExtraOptionsCallback(TlsSocket::TLSSetExtraOptionsContext *context);
     static napi_value TLSSocketServerGetSocketFdCallback(TlsSocket::TLSGetSocketFdContext *context);
-
-    static bool ExecConnectionSend(TLSServerSendContext *context);
-    static napi_value ConnectionSendCallback(TLSServerSendContext *context);
 };
 } // namespace TlsSocketServer
 } // namespace NetStack

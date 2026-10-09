@@ -300,6 +300,37 @@ HWTEST_F(HttpClientLruCacheTest, Put005, TestSize.Level1)
     EXPECT_TRUE(!value.empty());
 }
 
+HWTEST_F(HttpClientLruCacheTest, MergeOtherCacheSelfMerge001, TestSize.Level1)
+{
+    LRUCache lruCache(1024);
+    std::string key = "userInfo";
+    std::unordered_map<std::string, std::string> nodeValue = {{"name", "Alice"}, {"age", "18"}};
+    lruCache.Put(key, nodeValue);
+    std::string key1 = "session";
+    std::unordered_map<std::string, std::string> nodeValue1 = {{"id", "42"}};
+    lruCache.Put(key1, nodeValue1);
+
+    lruCache.MergeOtherCache(lruCache);
+
+    std::unordered_map<std::string, std::string> value = lruCache.Get(key);
+    EXPECT_TRUE(!value.empty());
+    EXPECT_EQ(value.at("name"), "Alice");
+    std::unordered_map<std::string, std::string> value1 = lruCache.Get(key1);
+    EXPECT_TRUE(!value1.empty());
+    EXPECT_EQ(value1.at("id"), "42");
+}
+
+HWTEST_F(HttpClientLruCacheTest, MergeOtherCacheSelfMergeEmpty001, TestSize.Level1)
+{
+    LRUCache lruCache(1024);
+
+    lruCache.MergeOtherCache(lruCache);
+
+    std::string key = "userInfo";
+    std::unordered_map<std::string, std::string> value = lruCache.Get(key);
+    EXPECT_TRUE(value.empty());
+}
+
 HWTEST_F(HttpClientLruCacheTest, ReadCacheFromJsonValueKeyItemStringNull001, TestSize.Level2)
 {
     LRUCache lruCache(1024);

@@ -47,7 +47,7 @@ void TcpServerCommonContext::ParseParams(napi_value *params, size_t paramsCount)
 
 int TcpServerCommonContext::GetSocketFd() const
 {
-    return sharedManager_->GetData() ? static_cast<int>(reinterpret_cast<uint64_t>(sharedManager_->GetData())) : -1;
+    return sharedManager_->GetSocketFd();
 }
 
 TcpServerCloseContext::TcpServerCloseContext(napi_env env, const std::shared_ptr<EventManager> &manager)
@@ -55,7 +55,7 @@ TcpServerCloseContext::TcpServerCloseContext(napi_env env, const std::shared_ptr
 
 void TcpServerCloseContext::SetSocketFd(int sock)
 {
-    sharedManager_->SetData(reinterpret_cast<void *>(sock));
+    sharedManager_->SetSocketFd(sock);
 }
 
 bool TcpServerCommonContext::CheckParamsType(napi_value *params, size_t paramsCount)

@@ -65,7 +65,7 @@ private:
 
     void EraseTailNode();
 
-    std::mutex mutex_;
+    mutable std::mutex mutex_;
     std::unordered_map<std::string, std::list<Node>::iterator> cache_;
     std::list<Node> nodeList_;
     size_t capacity_;
