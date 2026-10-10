@@ -17,6 +17,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <cstdlib>
 #include <mutex>
 #include <thread>
 #include <array>
@@ -35,6 +36,21 @@ std::atomic_bool cj_cacheIsRunning(false);
 std::condition_variable cj_cacheThreadCondition;
 std::condition_variable cj_cacheNeedRunCondition;
 static LRUCacheDiskHandler g_cjDiskLruCache(CACHE_FILE, 0); // NOLINT(cert-err58-cpp)
+static std::mutex g_cjCacheRunMutex;
+static std::thread g_cjCacheWriteThread;
+static std::once_flag g_cjCacheAtExitRegisterFlag;
+
+// LCOV_EXCL_START
+static void StopCjCacheWriteThread()
+{
+    std::lock_guard<std::mutex> runLock(g_cjCacheRunMutex);
+    cj_cacheNeedRun.store(false);
+    cj_cacheNeedRunCondition.notify_all();
+    if (g_cjCacheWriteThread.joinable()) {
+        g_cjCacheWriteThread.join();
+    }
+}
+// LCOV_EXCL_STOP
 
 CacheProxy::CacheProxy(HttpRequest &requestOptions) : strategy_(requestOptions)
 {
@@ -54,7 +70,7 @@ bool CacheProxy::ReadResponseFromCache(RequestContext *context)
     }
 
     if (!strategy_.CouldUseCache()) {
-        NETSTACK_LOGI("only GET/HEAD method or header has [Range] can use cache");
+        NETSTACK_LOGI("only GET/HEAD method can use cache");
         return false;
     }
 
@@ -114,6 +130,8 @@ void CacheProxy::RunCache()
 
 void CacheProxy::RunCacheWithSize(size_t capacity)
 {
+    // LCOV_EXCL_START
+    std::lock_guard<std::mutex> runLock(g_cjCacheRunMutex);
     if (cj_cacheIsRunning.load()) {
         return;
     }
@@ -123,8 +141,11 @@ void CacheProxy::RunCacheWithSize(size_t capacity)
 
     g_cjDiskLruCache.ReadCacheFromJsonFile();
 
-    std::thread([]() {
-        cj_cacheIsRunning.store(true);
+    if (g_cjCacheWriteThread.joinable()) {
+        g_cjCacheWriteThread.join();
+    }
+    cj_cacheIsRunning.store(true);
+    g_cjCacheWriteThread = std::thread([]() {
         while (cj_cacheNeedRun.load()) {
             std::unique_lock<std::mutex> lock(cj_cacheNeedRunMutex);
             cj_cacheNeedRunCondition.wait_for(lock, std::chrono::seconds(WRITE_INTERVAL),
@@ -135,7 +156,9 @@ void CacheProxy::RunCacheWithSize(size_t capacity)
 
         cj_cacheIsRunning.store(false);
         cj_cacheThreadCondition.notify_all();
-    }).detach();
+    });
+    std::call_once(g_cjCacheAtExitRegisterFlag, []() { std::atexit(StopCjCacheWriteThread); });
+    // LCOV_EXCL_STOP
 }
 
 void CacheProxy::FlushCache()
@@ -148,6 +171,8 @@ void CacheProxy::FlushCache()
 
 void CacheProxy::StopCacheAndDelete()
 {
+    // LCOV_EXCL_START
+    std::lock_guard<std::mutex> runLock(g_cjCacheRunMutex);
     if (!cj_cacheIsRunning.load()) {
         return;
     }
@@ -156,6 +181,10 @@ void CacheProxy::StopCacheAndDelete()
 
     std::unique_lock<std::mutex> lock(cj_diskCacheMutex);
     cj_cacheThreadCondition.wait(lock, [] { return !cj_cacheIsRunning.load(); });
+    if (g_cjCacheWriteThread.joinable()) {
+        g_cjCacheWriteThread.join();
+    }
+    // LCOV_EXCL_STOP
     g_cjDiskLruCache.Delete();
 }
 } // namespace OHOS::NetStack::Http

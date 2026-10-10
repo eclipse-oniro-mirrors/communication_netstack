@@ -25,6 +25,7 @@
 #include <thread>
 #include <vector>
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <poll.h>
 #include <sys/eventfd.h>
@@ -1687,6 +1688,55 @@ HWTEST_F(SocketTest, LocalSocketServerManagerEpollStopEventTest001, TestSize.Lev
     mgr.stopEventFd_ = -1;
     close(mgr.epollFd_);
     mgr.epollFd_ = -1;
+}
+
+HWTEST_F(SocketTest, Socks5UtilsRecvTest001, TestSize.Level1)
+{
+    int fds[2] = {0};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+    const char *data = "socks5 recv test data";
+    ASSERT_EQ(write(fds[1], data, strlen(data)), static_cast<ssize_t>(strlen(data)));
+    auto ret = Socks5Utils::Recv(fds[0], nullptr, 0);
+    EXPECT_TRUE(ret.first);
+    EXPECT_EQ(ret.second, std::string(data));
+    close(fds[0]);
+    close(fds[1]);
+}
+
+HWTEST_F(SocketTest, Socks5UtilsRecvTimeoutTest002, TestSize.Level1)
+{
+    int fds[2] = {0};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+    timeval timeout = {0, 100 * 1000}; // 100ms
+    ASSERT_EQ(setsockopt(fds[0], SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)), 0);
+    auto begin = std::chrono::steady_clock::now();
+    auto ret = Socks5Utils::Recv(fds[0], nullptr, 0);
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - begin).count();
+    EXPECT_FALSE(ret.first);
+    EXPECT_GE(elapsed, 90); // total timeout takes effect, recv does not block forever
+    EXPECT_LT(elapsed, 2000);
+    close(fds[0]);
+    close(fds[1]);
+}
+
+HWTEST_F(SocketTest, Socks5UtilsRecvEofTest003, TestSize.Level1)
+{
+    int fds[2] = {0};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+    close(fds[1]); // peer closed
+    auto ret = Socks5Utils::Recv(fds[0], nullptr, 0);
+    EXPECT_FALSE(ret.first); // recvLen == 0, exit the loop explicitly
+    close(fds[0]);
+}
+
+HWTEST_F(SocketTest, Socks5UtilsRecvInvalidFdTest004, TestSize.Level1)
+{
+    int fd = open("/dev/null", O_RDONLY);
+    ASSERT_GE(fd, 0);
+    auto ret = Socks5Utils::Recv(fd, nullptr, 0); // not a socket fd
+    EXPECT_FALSE(ret.first);
+    close(fd);
 }
 
 } // namespace

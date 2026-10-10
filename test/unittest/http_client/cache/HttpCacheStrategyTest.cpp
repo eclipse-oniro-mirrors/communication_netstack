@@ -23,6 +23,7 @@
 #include "http_cache_request.h"
 #include "http_cache_response.h"
 #include "http_cache_strategy.h"
+#include "http_client_constant.h"
 
 using namespace OHOS::NetStack::HttpClient;
 
@@ -804,6 +805,43 @@ HWTEST_F(HttpClientCacheStrategyTest, ExpiresEmptyTest, TestSize.Level1)
     CacheStatus status = cacheStrategy.RunStrategy(response);
 
     EXPECT_EQ(status, STALE);
+}
+
+HWTEST_F(HttpClientCacheStrategyTest, CouldUseCacheGetMethodTest001, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.method_ = HttpConstant::HTTP_METHOD_GET;
+
+    HttpCacheStrategy cacheStrategy(httpReq);
+    EXPECT_TRUE(cacheStrategy.CouldUseCache());
+}
+
+HWTEST_F(HttpClientCacheStrategyTest, CouldUseCacheHeadMethodTest002, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.method_ = HttpConstant::HTTP_METHOD_HEAD;
+
+    HttpCacheStrategy cacheStrategy(httpReq);
+    EXPECT_TRUE(cacheStrategy.CouldUseCache());
+}
+
+HWTEST_F(HttpClientCacheStrategyTest, CouldUseCachePostMethodTest003, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.method_ = "POST";
+
+    HttpCacheStrategy cacheStrategy(httpReq);
+    EXPECT_FALSE(cacheStrategy.CouldUseCache());
+}
+
+HWTEST_F(HttpClientCacheStrategyTest, CouldUseCachePostMethodWithRangeTest004, TestSize.Level1)
+{
+    HttpClientRequest httpReq;
+    httpReq.method_ = "POST";
+    httpReq.SetHeader("range", "bytes=0-100");
+
+    HttpCacheStrategy cacheStrategy(httpReq);
+    EXPECT_FALSE(cacheStrategy.CouldUseCache());
 }
 
 } // namespace

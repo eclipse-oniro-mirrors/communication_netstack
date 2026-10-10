@@ -17,6 +17,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <cstdlib>
 #include <mutex>
 #include <thread>
 
@@ -43,6 +44,20 @@ std::atomic_bool g_cacheIsRunning(false);
 std::condition_variable g_cacheThreadCondition;
 std::condition_variable g_cacheNeedRunCondition;
 static LRUCacheDiskHandler DISK_LRU_CACHE(CACHE_FILE, 0); // NOLINT(cert-err58-cpp)
+static std::thread g_cacheWriteThread;
+static std::once_flag g_cacheAtExitRegisterFlag;
+
+// LCOV_EXCL_START
+static void StopCacheWriteThread()
+{
+    std::lock_guard<std::mutex> runLock(g_cacheRunMutex);
+    g_cacheNeedRun.store(false);
+    g_cacheNeedRunCondition.notify_all();
+    if (g_cacheWriteThread.joinable()) {
+        g_cacheWriteThread.join();
+    }
+}
+// LCOV_EXCL_STOP
 
 CacheProxy::CacheProxy(HttpClientRequest &requestOptions) : strategy_(requestOptions)
 {
@@ -65,7 +80,7 @@ std::shared_ptr<HttpClientResponse> CacheProxy::ReadResponseFromCache()
     }
 
     if (!strategy_.CouldUseCache()) {
-        NETSTACK_LOGI("only GET/HEAD method or header has [Range] can use cache");
+        NETSTACK_LOGI("only GET/HEAD method can use cache");
         return nullptr;
     }
 
@@ -130,8 +145,11 @@ void CacheProxy::RunCacheWithSize(size_t capacity)
 
     DISK_LRU_CACHE.ReadCacheFromJsonFile();
 
+    if (g_cacheWriteThread.joinable()) {
+        g_cacheWriteThread.join();
+    }
     g_cacheIsRunning.store(true);
-    std::thread([]() {
+    g_cacheWriteThread = std::thread([]() {
         while (g_cacheNeedRun.load()) {
             std::unique_lock<std::mutex> lock(g_cacheNeedRunMutex);
             g_cacheNeedRunCondition.wait_for(lock, std::chrono::seconds(WRITE_INTERVAL),
@@ -145,7 +163,8 @@ void CacheProxy::RunCacheWithSize(size_t capacity)
             g_cacheIsRunning.store(false);
         }
         g_cacheThreadCondition.notify_all();
-    }).detach();
+    });
+    std::call_once(g_cacheAtExitRegisterFlag, []() { std::atexit(StopCacheWriteThread); });
 }
 
 void CacheProxy::FlushCache()
@@ -158,6 +177,7 @@ void CacheProxy::FlushCache()
 
 void CacheProxy::StopCacheAndDelete()
 {
+    std::lock_guard<std::mutex> runLock(g_cacheRunMutex);
     if (!g_cacheIsRunning.load()) {
         return;
     }
@@ -166,6 +186,9 @@ void CacheProxy::StopCacheAndDelete()
 
     std::unique_lock<std::mutex> lock(g_diskCacheMutex);
     g_cacheThreadCondition.wait(lock, [] { return !g_cacheIsRunning.load(); });
+    if (g_cacheWriteThread.joinable()) {
+        g_cacheWriteThread.join();
+    }
     DISK_LRU_CACHE.Delete();
 }
 } // namespace OHOS::NetStack::HttpClient

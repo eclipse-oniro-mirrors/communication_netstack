@@ -22,6 +22,7 @@
 
 #include "net_websocket.h"
 #include "net_websocket_type.h"
+#include "websocket_client_error.h"
 
 class WebSocketTest : public testing::Test {
 public:
@@ -141,6 +142,54 @@ HWTEST_F(WebSocketTest, WebSocketSendTest007, TestSize.Level1)
     ret = OH_WebSocketClient_Destroy(client);
     EXPECT_TRUE(ret == WebSocket_ErrCode::WEBSOCKET_NO_CONNECTION_CONTEXT ||
                 ret == WebSocket_ErrCode::WEBSOCKET_OK);
+}
+
+HWTEST_F(WebSocketTest, WebSocketAddHeaderNullField008, TestSize.Level1)
+{
+    struct WebSocket *client = OH_WebSocketClient_Constructor(OnOpen, OnMessage, OnError, OnClose);
+    ASSERT_NE(client, nullptr);
+    struct WebSocket_Header header1;
+    header1.fieldName = nullptr;
+    header1.fieldValue = "application/json";
+    header1.next = nullptr;
+    int32_t ret = OH_WebSocketClient_AddHeader(client, header1);
+    EXPECT_EQ(ret, OHOS::NetStack::WebSocketClient::WEBSOCKET_ERROR_NO_HEADR_CONTEXT);
+
+    header1.fieldName = "Content-Type";
+    header1.fieldValue = nullptr;
+    ret = OH_WebSocketClient_AddHeader(client, header1);
+    EXPECT_EQ(ret, OHOS::NetStack::WebSocketClient::WEBSOCKET_ERROR_NO_HEADR_CONTEXT);
+
+    OH_WebSocketClient_Destroy(client);
+}
+
+HWTEST_F(WebSocketTest, WebSocketConnectNullUrl009, TestSize.Level1)
+{
+    struct WebSocket *client = OH_WebSocketClient_Constructor(OnOpen, OnMessage, OnError, OnClose);
+    ASSERT_NE(client, nullptr);
+    int32_t ret = OH_WebSocketClient_Connect(client, nullptr, client->requestOptions);
+    EXPECT_EQ(ret, OHOS::NetStack::WebSocketClient::WEBSOCKET_CONNECTION_PARSEURL_ERROR);
+
+    OH_WebSocketClient_Destroy(client);
+}
+
+HWTEST_F(WebSocketTest, WebSocketConnectNullFieldHeader010, TestSize.Level1)
+{
+    struct WebSocket *client = OH_WebSocketClient_Constructor(OnOpen, OnMessage, OnError, OnClose);
+    ASSERT_NE(client, nullptr);
+    struct WebSocket_Header validHeader;
+    validHeader.fieldName = "Content-Type";
+    validHeader.fieldValue = "application/json";
+    validHeader.next = nullptr;
+    struct WebSocket_Header nullFieldHeader;
+    nullFieldHeader.fieldName = nullptr;
+    nullFieldHeader.fieldValue = "value";
+    nullFieldHeader.next = &validHeader;
+    struct WebSocket_RequestOptions options;
+    options.headers = &nullFieldHeader;
+    OH_WebSocketClient_Connect(client, "ws://127.0.0.1:1", options);
+
+    OH_WebSocketClient_Destroy(client);
 }
 
 } // namespace

@@ -60,6 +60,13 @@ const std::string &FetchResponse::GetData() const
     return data_;
 }
 
+// LCOV_EXCL_START
+const std::string &FetchResponse::GetRawHeader() const
+{
+    return rawHeader_;
+}
+// LCOV_EXCL_STOP
+
 uint32_t FetchResponse::GetResponseCode() const
 {
     return responseCode_;

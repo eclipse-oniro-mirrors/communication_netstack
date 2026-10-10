@@ -2439,10 +2439,6 @@ static void ClientPollRecv(int clientId, int connectFD, uint32_t recvBufferSize,
     const std::shared_ptr<EventManager> &manager, TcpMessageCallback callback)
 {
     auto buffer = std::make_unique<char[]>(recvBufferSize);
-    if (buffer == nullptr) {
-        RecvInErrorCondition(NO_MEMORY, clientId, connectFD, callback);
-        return;
-    }
     while (true) {
         if (memset_s(buffer.get(), recvBufferSize, 0, recvBufferSize) != EOK) {
             RecvInErrorCondition(UNKNOW_ERROR, clientId, connectFD, callback);
@@ -2517,9 +2513,14 @@ static void ClientHandler(int32_t sock, int32_t clientId, TcpMessageCallback cal
     }
     config->RemoveAcceptSocket(connectFD);
     if (config->GetTcpExtraOptions(sock, option)) {
-        if (option.GetReceiveBufferSize() != 0) {
-            recvBufferSize = option.GetReceiveBufferSize();
+        // LCOV_EXCL_START
+        uint32_t optionBufferSize = option.GetReceiveBufferSize();
+        if (optionBufferSize != 0 && optionBufferSize <= static_cast<uint32_t>(MAX_SOCKET_BUFFER_SIZE)) {
+            recvBufferSize = optionBufferSize;
+        } else if (optionBufferSize != 0) {
+            NETSTACK_LOGE("receiveBufferSize is out of range, use default, size: %{public}u", optionBufferSize);
         }
+        // LCOV_EXCL_STOP
     }
     ClientPollRecv(clientId, connectFD, recvBufferSize, manager, callback);
 }
