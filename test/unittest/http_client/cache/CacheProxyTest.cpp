@@ -203,6 +203,18 @@ HWTEST_F(CacheProxyTest, CacheProxyRunCacheTest003, TestSize.Level1)
     EXPECT_EQ(ret, false);
 }
 
+HWTEST_F(CacheProxyTest, CacheProxyRunCacheAndStopTest004, TestSize.Level1)
+{
+    HttpClientRequest req;
+    req.method_ = HttpConstant::HTTP_METHOD_GET;
+    CacheProxy cache(req);
+    cache.RunCache();
+    EXPECT_TRUE(g_cacheIsRunning.load());
+    cache.StopCacheAndDelete();
+    EXPECT_FALSE(g_cacheIsRunning.load());
+    EXPECT_FALSE(g_cacheNeedRun.load());
+}
+
 HWTEST_F(CacheProxyTest, CacheProxyRunStrategyTest001, TestSize.Level1)
 {
     HttpClientRequest req;

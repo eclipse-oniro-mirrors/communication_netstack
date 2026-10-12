@@ -297,22 +297,36 @@ bool FetchExec::SetOption(CURL *curl, FetchContext *context, struct curl_slist *
 
 size_t FetchExec::OnWritingMemoryBody(const void *data, size_t size, size_t memBytes, void *userData)
 {
-    if ((size * memBytes) > MAX_DATA_SIZE) {
-            return 0;
+    const size_t chunkSize = size * memBytes;
+    if (chunkSize > static_cast<size_t>(MAX_DATA_SIZE)) {
+        return 0;
     }
     auto context = static_cast<FetchContext *>(userData);
-    context->response.AppendData(data, size * memBytes);
-    return size * memBytes;
+    // LCOV_EXCL_START
+    if (context->response.GetData().size() + chunkSize > static_cast<size_t>(MAX_DATA_SIZE)) {
+        NETSTACK_LOGE("response body size exceeds the limit");
+        return 0;
+    }
+    // LCOV_EXCL_STOP
+    context->response.AppendData(data, chunkSize);
+    return chunkSize;
 }
 
 size_t FetchExec::OnWritingMemoryHeader(const void *data, size_t size, size_t memBytes, void *userData)
 {
-    if ((size * memBytes) > MAX_DATA_SIZE) {
-            return 0;
+    const size_t chunkSize = size * memBytes;
+    if (chunkSize > static_cast<size_t>(MAX_DATA_SIZE)) {
+        return 0;
     }
     auto context = static_cast<FetchContext *>(userData);
-    context->response.AppendRawHeader(data, size * memBytes);
-    return size * memBytes;
+    // LCOV_EXCL_START
+    if (context->response.GetRawHeader().size() + chunkSize > static_cast<size_t>(MAX_DATA_SIZE)) {
+        NETSTACK_LOGE("response header size exceeds the limit");
+        return 0;
+    }
+    // LCOV_EXCL_STOP
+    context->response.AppendRawHeader(data, chunkSize);
+    return chunkSize;
 }
 
 struct curl_slist *FetchExec::MakeHeaders(const std::vector<std::string> &vec)

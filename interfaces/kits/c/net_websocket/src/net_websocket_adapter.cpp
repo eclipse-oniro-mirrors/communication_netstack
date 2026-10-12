@@ -58,6 +58,10 @@ int32_t Conv2RequestOptions(struct OpenOptions *openOptions,
     struct WebSocket_Header *currentHeader = requestOptions.headers;
 
     while (currentHeader != nullptr) {
+        if (currentHeader->fieldName == nullptr || currentHeader->fieldValue == nullptr) {
+            currentHeader = currentHeader->next;
+            continue;
+        }
         std::string fieldName(currentHeader->fieldName);
         std::string fieldValue(currentHeader->fieldValue);
         openOptions->headers[fieldName] = fieldValue;

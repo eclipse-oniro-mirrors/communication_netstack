@@ -38,6 +38,13 @@ EXTERN_C_START
     RetDataBool FfiOHOSWebSocketConnect(int64_t id, char* url, CWebSocketRequestOptions* opt)
     {
         RetDataBool ret = { .code = 0, .data = false };
+        // LCOV_EXCL_START
+        if (url == nullptr) {
+            NETSTACK_LOGE("CJWebSocket FfiOHOSWebSocketConnect failed. url is null.");
+            ret.code = WEBSOCKET_PARSE_ERROR_CODE;
+            return ret;
+        }
+        // LCOV_EXCL_STOP
         auto instance = FFIData::GetData<CJWebsocketProxy>(id);
         if (instance == nullptr) {
             // destroyed

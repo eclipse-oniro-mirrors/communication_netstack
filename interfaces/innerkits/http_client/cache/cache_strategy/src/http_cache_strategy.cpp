@@ -27,7 +27,6 @@
 
 static constexpr int64_t ONE_DAY_MILLISECONDS = 24 * 60 * 60 * 1000L;
 static constexpr int64_t CONVERT_TO_MILLISECONDS = 1000;
-static constexpr const char *KEY_RANGE = "range";
 
 // RFC 7234
 
@@ -41,8 +40,7 @@ HttpCacheStrategy::HttpCacheStrategy(HttpClientRequest &requestOptions) : reques
 bool HttpCacheStrategy::CouldUseCache()
 {
     return requestOptions_.GetMethod() == HttpConstant::HTTP_METHOD_GET ||
-           requestOptions_.GetMethod() == HttpConstant::HTTP_METHOD_HEAD ||
-           requestOptions_.GetHeaders().find(KEY_RANGE) != requestOptions_.GetHeaders().end();
+           requestOptions_.GetMethod() == HttpConstant::HTTP_METHOD_HEAD;
 }
 
 CacheStatus HttpCacheStrategy::RunStrategy(HttpClientResponse &response)

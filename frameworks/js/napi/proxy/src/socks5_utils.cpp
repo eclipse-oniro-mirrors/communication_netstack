@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+#include <chrono>
+#include <algorithm>
+
 #include "socks5_utils.h"
 
 #include <netinet/tcp.h>
@@ -44,10 +47,20 @@ std::pair<bool, Socks5Buffer> Socks5Utils::Recv(int32_t socketId, sockaddr *addr
     const int32_t bufferSize = ConfirmBufferSize(socketId);
     auto buf = std::make_unique<char[]>(bufferSize);
     constexpr int32_t pollTimeout{500};
-    const int32_t timeoutMs = ConfirmSocketTimeoutMs(socketId, SO_RCVTIMEO, pollTimeout);
+    constexpr int32_t defaultTotalTimeoutMs{20000};
+    const int32_t timeoutMs = ConfirmSocketTimeoutMs(socketId, SO_RCVTIMEO, defaultTotalTimeoutMs);
+    const int64_t totalTimeoutMs = (timeoutMs > 0) ? timeoutMs : defaultTotalTimeoutMs;
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(totalTimeoutMs);
     while (true) {
+        auto remainingMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+            deadline - std::chrono::steady_clock::now()).count();
+        if (remainingMs <= 0) {
+            NETSTACK_LOGE("socks5 recv total timeout, socket is %{public}d, timeout is %{public}ld", socketId,
+                static_cast<long>(totalTimeoutMs));
+            break;
+        }
         pollfd fds[1] = {{socketId, POLLIN, 0}};
-        const int ret = poll(fds, 1, timeoutMs);
+        const int ret = poll(fds, 1, static_cast<int>(std::min<int64_t>(remainingMs, pollTimeout)));
         if (ret < 0) {
             if (errno == EINTR) {
                 continue;
@@ -63,6 +76,10 @@ std::pair<bool, Socks5Buffer> Socks5Utils::Recv(int32_t socketId, sockaddr *addr
             Socks5Buffer msg{};
             msg.assign(buf.get(), recvLen);
             return {true, msg};
+        }
+        if (recvLen == 0) {
+            PrintRecvErrMsg(socketId, 0, 0, "Recv");
+            break;
         }
         const int32_t errCode{errno};
         if ((errCode == EAGAIN) || (errCode == EINTR)) {

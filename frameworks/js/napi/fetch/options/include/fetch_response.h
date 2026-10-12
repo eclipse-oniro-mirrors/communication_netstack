@@ -36,6 +36,8 @@ public:
 
     [[nodiscard]] const std::string &GetData() const;
 
+    [[nodiscard]] const std::string &GetRawHeader() const;
+
     [[nodiscard]] uint32_t GetResponseCode() const;
 
     [[nodiscard]] const std::map<std::string, std::string> &GetHeader() const;

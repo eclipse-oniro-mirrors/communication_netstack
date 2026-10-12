@@ -103,6 +103,10 @@ int OH_WebSocketClient_AddHeader(struct WebSocket *client, struct WebSocket_Head
     if (client == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
     }
+    if (header.fieldName == nullptr || header.fieldValue == nullptr) {
+        NETSTACK_LOGE("websocket CAPI AddHeader, fieldName or fieldValue is null");
+        return WebSocketErrorCode::WEBSOCKET_ERROR_NO_HEADR_CONTEXT;
+    }
     auto newHeader = std::make_unique<struct WebSocket_Header>();
     if (newHeader == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_CONNECTION_ERROR;
@@ -145,6 +149,10 @@ int OH_WebSocketClient_Connect(struct WebSocket *client, const char *url, struct
     int ret = 0;
     if (client == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
+    }
+    if (url == nullptr) {
+        NETSTACK_LOGE("websocket CAPI Connect, url is null");
+        return WebSocketErrorCode::WEBSOCKET_CONNECTION_PARSEURL_ERROR;
     }
 
     struct OpenOptions openOptions;

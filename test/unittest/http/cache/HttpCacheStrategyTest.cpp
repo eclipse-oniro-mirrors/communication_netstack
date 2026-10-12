@@ -789,4 +789,40 @@ HWTEST_F(HttpCacheStrategyTest, CompareNumber_6_2, testing::ext::TestSize.Level1
 
     EXPECT_EQ(status, STALE);
 }
+HWTEST_F(HttpCacheStrategyTest, couldUseCacheGetMethod, testing::ext::TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+    requestOptions.SetMethod(HttpConstant::HTTP_METHOD_GET);
+
+    HttpCacheStrategy cacheStrategy(requestOptions);
+    EXPECT_TRUE(cacheStrategy.CouldUseCache());
+}
+
+HWTEST_F(HttpCacheStrategyTest, couldUseCacheHeadMethod, testing::ext::TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+    requestOptions.SetMethod(HttpConstant::HTTP_METHOD_HEAD);
+
+    HttpCacheStrategy cacheStrategy(requestOptions);
+    EXPECT_TRUE(cacheStrategy.CouldUseCache());
+}
+
+HWTEST_F(HttpCacheStrategyTest, couldUseCachePostMethod, testing::ext::TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+    requestOptions.SetMethod("POST");
+
+    HttpCacheStrategy cacheStrategy(requestOptions);
+    EXPECT_FALSE(cacheStrategy.CouldUseCache());
+}
+
+HWTEST_F(HttpCacheStrategyTest, couldUseCachePostMethodWithRangeHeader, testing::ext::TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+    requestOptions.SetMethod("POST");
+    requestOptions.SetHeader("range", "bytes=0-100");
+
+    HttpCacheStrategy cacheStrategy(requestOptions);
+    EXPECT_FALSE(cacheStrategy.CouldUseCache());
+}
 } // namespace
