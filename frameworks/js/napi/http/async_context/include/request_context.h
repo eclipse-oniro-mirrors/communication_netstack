@@ -442,6 +442,10 @@ private:
 
     void ParseEnableAutoCookie(napi_value optionsValue);
 
+    void SetExtraInfoInt64Property(napi_env env, napi_value extraInfoValue, const std::string &key);
+
+    int64_t GetExtraInfoInt64Value(const std::string &key) const;
+
 private:
     std::mutex syncMutex_;
     mutable std::mutex shareHandleMutex_;

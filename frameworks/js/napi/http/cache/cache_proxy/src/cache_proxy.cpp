@@ -134,6 +134,7 @@ bool CacheProxy::ReadResponseFromCache(RequestContext *context)
     CacheStatus status = strategy_.RunStrategy(cachedResponse);
     if (status == CacheStatus::FRESH) {
         context->response = cachedResponse;
+        context->response.SetCacheHitBytesToZero();
         NETSTACK_LOGI("cache is FRESH");
         return true;
     }

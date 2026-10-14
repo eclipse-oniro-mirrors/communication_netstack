@@ -155,6 +155,12 @@ void HttpResponse::SetExtraInfoItem(const std::string &key, const std::string &v
     extraInfo_[key] = value;
 }
 
+void HttpResponse::SetCacheHitBytesToZero()
+{
+    SetExtraInfoItem(HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES, "0");
+    SetExtraInfoItem(HttpConstant::PARAM_KEY_RECEIVED_TOTAL_BYTES, "0");
+}
+
 std::string HttpResponse::GetExtraInfoItem(const std::string &key, const std::string &defaultValue) const
 {
     auto it = extraInfo_.find(key);
