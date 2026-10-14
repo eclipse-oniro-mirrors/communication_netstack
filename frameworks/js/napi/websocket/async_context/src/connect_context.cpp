@@ -163,6 +163,13 @@ void ConnectContext::ParseParamsCountThree(napi_value const *params)
     }
 }
 
+// LCOV_EXCL_START
+static bool HasControlChar(const std::string &s)
+{
+    return s.find('\0') != std::string::npos || s.find_first_of("\r\n") != std::string::npos;
+}
+// LCOV_EXCL_STOP
+
 void ConnectContext::ParseHeader(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::HEADER)) {
@@ -174,8 +181,23 @@ void ConnectContext::ParseHeader(napi_value optionsValue)
     }
     auto names = NapiUtils::GetPropertyNames(GetEnv(), jsHeader);
     std::for_each(names.begin(), names.end(), [jsHeader, this](const std::string &name) {
+        if (name.empty()) {
+            return;
+        }
+        // LCOV_EXCL_START
+        if (HasControlChar(name)) {
+            NETSTACK_LOGE("header name contains invalid characters, skip");
+            return;
+        }
+        // LCOV_EXCL_STOP
         auto value = NapiUtils::GetStringPropertyUtf8(GetEnv(), jsHeader, name);
         if (!value.empty()) {
+            // LCOV_EXCL_START
+            if (HasControlChar(value)) {
+                NETSTACK_LOGE("header value contains invalid characters, skip");
+                return;
+            }
+            // LCOV_EXCL_STOP
             // header key ignores key but value not
             header[CommonUtils::ToLower(name)] = value;
         }

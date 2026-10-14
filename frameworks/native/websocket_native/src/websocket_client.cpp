@@ -1076,7 +1076,10 @@ int WebSocketClient::SendEx(const char *data, size_t length)
     if (data == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_SEND_DATA_NULL;
     }
-    NETSTACK_LOGI("WebSocketClient::SendEx start %{public}s, %{public}zu", data, length);
+    if (this->GetClientContext() == nullptr) {
+        return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
+    }
+    NETSTACK_LOGI("WebSocketClient::SendEx start, length: %{public}zu", length);
     if (!CommonUtils::HasInternetPermission()) {
         this->GetClientContext()->permissionDenied = true;
         return WebSocketErrorCode::WEBSOCKET_ERROR_PERMISSION_DENIED;
@@ -1086,9 +1089,6 @@ int WebSocketClient::SendEx(const char *data, size_t length)
     }
     if (length > MAX_DATA_LENGTH) {
         return WebSocketErrorCode::WEBSOCKET_DATA_LENGTH_EXCEEDS;
-    }
-    if (this->GetClientContext() == nullptr) {
-        return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
     }
     if (this->GetClientContext()->GetContext() == nullptr) {
         return -1;
@@ -1111,12 +1111,12 @@ int WebSocketClient::SendEx(const char *data, size_t length)
 
 int WebSocketClient::CloseEx(CloseOption options)
 {
+    if (this->GetClientContext() == nullptr) {
+        return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
+    }
     if (!CommonUtils::HasInternetPermission()) {
         this->GetClientContext()->permissionDenied = true;
         return WebSocketErrorCode::WEBSOCKET_ERROR_PERMISSION_DENIED;
-    }
-    if (this->GetClientContext() == nullptr) {
-        return WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX;
     }
     if (this->GetClientContext()->GetContext() == nullptr) {
         return -1;

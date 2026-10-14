@@ -842,4 +842,30 @@ HWTEST_F(HttpInterceptorTest, CurlParseHeaderRawPtr_ValidHeaders, TestSize.Level
     EXPECT_NE(result, nullptr);
     curl_slist_free_all(result);
 }
+
+/**
+ * @tc.number: HttpInterceptor_CurlParseHeaderRawPtr_InvalidHeaders
+ * @tc.name: Test CurlParseHeaderRawPtr with invalid headers
+ * @tc.desc: Verify CurlParseHeaderRawPtr skips headers whose key or value contains control characters
+ */
+HWTEST_F(HttpInterceptorTest, CurlParseHeaderRawPtr_InvalidHeaders, TestSize.Level1)
+{
+    std::shared_ptr<HttpInterceptorMgr> mgr = std::make_shared<HttpInterceptorMgr>();
+    auto headers = std::make_shared<std::unordered_map<std::string, std::vector<std::string>>>();
+    (*headers)["Content-Type"].push_back("application/json");
+    (*headers)["Bad\r\nKey"].push_back("value");
+    (*headers)[std::string("Bad\0Key", 8)].push_back("value");
+    (*headers)[""].push_back("value");
+    (*headers)["X-Invalid-Value"].push_back("bad\r\nvalue");
+    (*headers)["X-Invalid-Value2"].push_back(std::string("bad\0value", 9));
+    (*headers)["X-Valid"].push_back("ok");
+    auto result = mgr->CurlParseHeaderRawPtr(headers);
+    ASSERT_NE(result, nullptr);
+    size_t count = 0;
+    for (struct curl_slist *item = result; item != nullptr; item = item->next) {
+        ++count;
+    }
+    curl_slist_free_all(result);
+    EXPECT_EQ(count, 2);
+}
 } // namespace

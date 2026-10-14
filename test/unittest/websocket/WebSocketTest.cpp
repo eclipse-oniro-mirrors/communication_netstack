@@ -934,4 +934,15 @@ HWTEST_F(WebSocketTest, WebSocketTest082, TestSize.Level1)
     context.ParseSupportOriginPort(obj2);
     EXPECT_TRUE(context.supportOriginPort_);
 }
+
+HWTEST_F(WebSocketTest, WebSocketTest083, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto eventManager = std::make_shared<EventManager>();
+    auto context = std::make_unique<SendContext>(env, eventManager);
+    context->data = std::malloc(16);
+    ASSERT_TRUE(context->data != nullptr);
+    context.reset();
+    SUCCEED();
+}
 } // namespace
