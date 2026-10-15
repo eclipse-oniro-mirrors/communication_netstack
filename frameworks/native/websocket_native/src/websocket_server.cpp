@@ -266,7 +266,10 @@ bool IsOverMaxCntForOneClient(WebSocketServer *server, const std::vector<SocketC
 bool IsOverMaxClientConns(WebSocketServer *server, const std::string &ip)
 {
     std::vector<SocketConnection> connections;
-    server->ListAllConnections(connections);
+    if (server->ListAllConnections(connections) != 0) {
+        NETSTACK_LOGE("ListAllConnections failed, reject connection to avoid limit bypass");
+        return true;
+    }
     if (IsOverMaxConcurrentClientsCnt(server, connections, ip)) {
         NETSTACK_LOGI("current client connections is over max concurrent number");
         return true;
@@ -429,6 +432,10 @@ int LwsCallbackWsPeerInitiatedCloseServer(lws *wsi, lws_callback_reasons reason,
     std::string closeReason;
     closeReason.append(reinterpret_cast<char *>(in) + sizeof(uint16_t), len - sizeof(uint16_t));
     auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(wsi));
+    if (clientUserData == nullptr) {
+        NETSTACK_LOGE("clientUserData is null");
+        return RaiseServerError(server);
+    }
     clientUserData->Close(static_cast<lws_close_status>(closeStatus), closeReason);
     return HttpDummy(wsi, reason, user, in, len);
 }
@@ -570,7 +577,11 @@ static bool CheckFilePath(std::string &path)
 
 bool FillServerCertPath(ServerContext *context, lws_context_creation_info &info)
 {
-    ServerCert sc = context->startServerConfig_.serverCert;
+    if (context == nullptr) {
+        NETSTACK_LOGE("server context is nullptr");
+        return false;
+    }
+    ServerCert &sc = context->startServerConfig_.serverCert;
     if (!sc.certPath.empty()) {
         if (!CheckFilePath(sc.certPath) || !CheckFilePath(sc.keyPath)) {
             NETSTACK_LOGE("client cert not exist");

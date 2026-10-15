@@ -1421,6 +1421,19 @@ namespace {
         EXPECT_EQ(ret, -1);
     }
 
+    HWTEST_F(WebSocketTest, WebSocketClientCloseExClientContextIsNull001, TestSize.Level2)
+    {
+        auto client = std::make_unique<WebSocketClient>();
+        ASSERT_TRUE(client != nullptr);
+        ASSERT_TRUE(client->GetClientContext() != nullptr);
+        CloseOption Option;
+        auto tmp = client->GetClientContext();
+        client->clientContext = nullptr;
+        auto ret = client->CloseEx(Option);
+        client->clientContext = tmp;
+        EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX);
+    }
+
     HWTEST_F(WebSocketTest, WebSocketClientCloseExRequestClose001, TestSize.Level1)
     {
         auto client = std::make_unique<WebSocketClient>();
@@ -1828,10 +1841,18 @@ namespace {
         config.maxConnectionsForOneClient = 3;
         server->GetServerContext()->startServerConfig_ = config;
         
+        void *rawCtx = std::malloc(512);
+        ASSERT_TRUE(rawCtx != nullptr);
+        lws_context *tmpCtx = reinterpret_cast<lws_context *>(rawCtx);
+        server->GetServerContext()->SetContext(tmpCtx);
+        
         std::string testIp = "192.168.1.1";
         
         bool result = OHOS::NetStack::WebSocketServer::IsOverMaxClientConns(server.get(), testIp);
         EXPECT_FALSE(result);
+
+        server->GetServerContext()->SetContext(nullptr);
+        std::free(rawCtx);
     }
     
     HWTEST_F(WebSocketTest, WebSocketServerIsOverMaxClientConnsTest2, TestSize.Level1)
@@ -1981,7 +2002,31 @@ namespace {
         server->GetServerContext()->SetContext(nullptr);
         std::free(rawCtx);
     }
-    
+
+    HWTEST_F(WebSocketTest, WebSocketServerIsOverMaxClientConnsTest5, TestSize.Level2)
+    {
+        auto server = std::make_unique<OHOS::NetStack::WebSocketServer::WebSocketServer>();
+        ASSERT_TRUE(server != nullptr);
+        ASSERT_TRUE(server->GetServerContext() != nullptr);
+        ASSERT_TRUE(server->GetServerContext()->GetContext() == nullptr);
+
+        OHOS::NetStack::WebSocketServer::ServerConfig config;
+        config.maxConcurrentClientsNumber = 3;
+        config.maxConnectionsForOneClient = 3;
+        server->GetServerContext()->startServerConfig_ = config;
+
+        std::string testIp = "192.168.1.1";
+        bool result = OHOS::NetStack::WebSocketServer::IsOverMaxClientConns(server.get(), testIp);
+        EXPECT_TRUE(result);
+    }
+
+    HWTEST_F(WebSocketTest, WebSocketServerFillServerCertPathTest003, TestSize.Level2)
+    {
+        lws_context_creation_info info;
+        auto res = OHOS::NetStack::WebSocketServer::FillServerCertPath(nullptr, info);
+        EXPECT_FALSE(res);
+    }
+
     HWTEST_F(WebSocketTest, WebSocketCreatConnectInfoExBranchTest002, TestSize.Level1)
     {
         auto client = std::make_unique<WebSocketClient>();
