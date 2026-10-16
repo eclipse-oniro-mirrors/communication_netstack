@@ -54,6 +54,8 @@ config("http_config") {
       "-D_FORTIFY_SOURCE=2",
       "-O2",
     ]
+  } else if (is_linux) {
+    defines += [ "LINUX_PLATFORM" ]
   } else if (product_name != "ohos-sdk") {
     defines += [ "HTTP_PROXY_ENABLE" ]
     cflags_cc = [
@@ -76,7 +78,7 @@ config("http_config") {
 
 ohos_shared_library("http") {
   defines = []
-  if (!is_mingw && !is_mac && current_os != "ios" && host_os != "mac" &&
+  if (!is_mingw && !is_mac && !is_linux && current_os != "ios" && host_os != "mac" &&
       current_os != "mac" && current_os != "android") {
     defines += [ "USE_ARES" ]
   }
@@ -120,7 +122,7 @@ ohos_shared_library("http") {
 
   configs = [ ":http_config" ]
 
-  if (is_mingw || is_mac) {
+  if (is_mingw || is_mac || is_linux) {
     sources += [
       "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
       "$NETSTACK_DIR/utils/common_utils/src/request_tracer.cpp",

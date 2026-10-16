@@ -21,7 +21,7 @@
 
 #define MAKE_FILE_NAME strrchr(__FILE__, '/') + 1
 
-#if !defined(_WIN32) && !defined(__APPLE__)
+#if !defined(_WIN32) && !defined(__APPLE__) && !defined(LINUX_PLATFORM)
 
 #define LOG_DOMAIN 0xD0015B0
 
@@ -76,7 +76,7 @@ static void NetStackPrintLog(const char *fmt, ...)
 
 #define NETSTACK_CORE_HILOG_PRINT(Level, fmt, ...) NetStackPrintLog("NETSTACK %s " fmt, #Level, ##__VA_ARGS__)
 
-#endif /* !defined(_WIN32) && !defined(__APPLE__) */
+#endif /* !defined(_WIN32) && !defined(__APPLE__) && !defined(LINUX_PLATFORM) */
 
 #define NETSTACK_LOGE(fmt, ...) NETSTACK_HILOG_PRINT(ERROR, fmt, ##__VA_ARGS__)
 

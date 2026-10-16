@@ -15,7 +15,8 @@
 
 #include "netstack_network_profiler.h"
 
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(LINUX_PLATFORM) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "network_profiler.h"
 #include "time_service_client.h"
 #endif
@@ -23,7 +24,8 @@
 namespace OHOS::NetStack {
 namespace {
 constexpr const size_t BUFFER_MAX_SIZE = 256 * 1024;
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(LINUX_PLATFORM) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 constexpr const uint64_t NS_TO_MICRO = 1000;
 #endif
 }
@@ -67,7 +69,8 @@ void NetworkProfilerUtils::NetworkProfiling(INetworkMessage &networkMessage)
 
 bool NetworkProfilerUtils::IsProfilerEnable()
 {
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(LINUX_PLATFORM) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     auto profiler = OHOS::Developtools::Profiler::NetworkProfiler::GetInstance();
     if (profiler->IsProfilerEnable()) {
         return true;
@@ -80,7 +83,8 @@ bool NetworkProfilerUtils::IsProfilerEnable()
 
 void NetworkProfilerUtils::SendNetworkProfiling()
 {
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(LINUX_PLATFORM) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (data_ == nullptr || dataSize_ <= 0) {
         return;
     }
@@ -91,7 +95,8 @@ void NetworkProfilerUtils::SendNetworkProfiling()
 
 uint64_t NetworkProfilerUtils::GetBootTime()
 {
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(LINUX_PLATFORM) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     auto powerTime = MiscServices::TimeServiceClient::GetInstance()->GetBootTimeNs();
     if (powerTime < 0) {
         return 0;
