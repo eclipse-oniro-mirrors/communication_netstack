@@ -17,7 +17,6 @@
 #include "curl/curl.h"
 #include "request_context.h"
 
-#include <charconv>
 #include <cstddef>
 #include <cstring>
 #include <future>
@@ -1632,10 +1631,8 @@ void HttpExec::GetGlobalHttpProxyInfo(std::string &host, int32_t &port, std::str
     if (exclusions == DEFAULT_HTTP_PROXY_EXCLUSION_LIST) {
         exclusions = std::string();
     }
-    auto len = std::strlen(httpProxyPort);
     int32_t parsed_port = 0;
-    auto [ptr, ec] = std::from_chars(httpProxyPort, httpProxyPort + len, parsed_port);
-    if (len > 0 && ec == std::errc() && ptr == httpProxyPort + len && parsed_port >= 1) {
+    if (CommonUtils::ParseDecimalInteger(httpProxyPort, parsed_port) && parsed_port >= 1) {
         port = parsed_port;
     } else {
         port = 0;

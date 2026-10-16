@@ -26,13 +26,14 @@
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
+#include <mutex>
 #include <regex>
 #include <string>
 #include <unistd.h>
 #include <vector>
 #include <fstream>
 #include <sstream>
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(LINUX_PLATFORM)
 #include <filesystem>
 #endif
 
@@ -507,7 +508,7 @@ std::optional<std::string> GetBundleName()
 
 bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(LINUX_PLATFORM)
     std::error_code error;
     auto path = std::filesystem::absolute(filePath, error);
     if (error) {

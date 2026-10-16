@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 #include <iostream>
+#include <limits>
 
 #include "netstack_common_utils.h"
 
@@ -991,6 +992,40 @@ HWTEST_F(NetStackCommonUtilsTest, CombineStringsAnonymous006, TestSize.Level2)
     std::string result = CombineStringsAnonymous(strs, "|");
     EXPECT_NE(result.find("not_an_ip"), std::string::npos);
     EXPECT_EQ(result.find("192.168.1.1"), std::string::npos);
+}
+
+HWTEST_F(NetStackCommonUtilsTest, ParseDecimalInteger001, TestSize.Level2)
+{
+    struct ParseCase {
+        std::string input;
+        bool requireFull;
+        bool expectedResult;
+        int expectedValue;
+    };
+    const std::vector<ParseCase> cases = {
+        {"", true, false, 0},
+        {" 1", true, false, 0},
+        {"+1", true, false, 0},
+        {"-0", true, true, 0},
+        {std::to_string(std::numeric_limits<int>::min()), true, true, std::numeric_limits<int>::min()},
+        {std::to_string(std::numeric_limits<int>::max()), true, true, std::numeric_limits<int>::max()},
+        {"2147483648", true, false, 0},
+        {"-2147483649", true, false, 0},
+        {"123suffix", true, false, 0},
+        {"123suffix", false, true, 123},
+        {"-456suffix", false, true, -456},
+    };
+
+    for (const auto &testCase : cases) {
+        SCOPED_TRACE("input=" + testCase.input + ", requireFull=" + std::to_string(testCase.requireFull));
+        int output = 1;
+        EXPECT_EQ(ParseDecimalInteger(testCase.input, output, testCase.requireFull), testCase.expectedResult);
+        if (testCase.expectedResult) {
+            EXPECT_EQ(output, testCase.expectedValue);
+        } else {
+            EXPECT_EQ(output, 1);
+        }
+    }
 }
 
 } // namespace CommonUtils
