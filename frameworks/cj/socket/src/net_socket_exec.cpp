@@ -655,8 +655,9 @@ int MakeTcpSocket(sa_family_t family, bool needNonblock)
         NETSTACK_LOGE("make tcp socket failed, errno is %{public}d", errno);
         return -1;
     }
+    fdsan_exchange_owner_tag(sock, 0, CJ_SOCKET_FDSAN_TAG);
     if (needNonblock && !MakeNonBlock(sock)) {
-        close(sock);
+        fdsan_close_with_tag(sock, CJ_SOCKET_FDSAN_TAG);
         return -1;
     }
     return sock;
@@ -1079,7 +1080,7 @@ bool ExecClose(int sockFd)
         NETSTACK_LOGE("sock %{public}d is previous closed", sockFd);
         return false;
     }
-    int ret = close(sockFd);
+    int ret = fdsan_close_with_tag(sockFd, CJ_SOCKET_FDSAN_TAG);
     if (ret < 0) {
         NETSTACK_LOGE("sock closed failed, socket is %{public}d, errno is %{public}d", sockFd, errno);
         return false;
