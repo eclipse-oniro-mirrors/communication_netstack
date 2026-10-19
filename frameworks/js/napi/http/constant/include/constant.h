@@ -152,6 +152,8 @@ public:
     static const char *const PARAM_KEY_RESUME_FROM;
     static const char *const PARAM_KEY_RESUME_TO;
     static const char *const PARAM_KEY_CONNECT_TIMEOUT;
+    static const char *const PARAM_KEY_LOW_SPEED_LIMIT;
+    static const char *const PARAM_KEY_LOW_SPEED_TIME;
     static const char *const PARAM_KEY_USING_PROTOCOL;
     static const char *const PARAM_KEY_USING_CACHE;
     static const char *const PARAM_KEY_EXPECT_DATA_TYPE;

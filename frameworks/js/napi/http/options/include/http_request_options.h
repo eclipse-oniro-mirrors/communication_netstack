@@ -324,6 +324,12 @@ public:
     void SetInactivityMs(int inactivityMs);
     [[nodiscard]] int GetInactivityMs() const;
 
+    void SetLowSpeedLimit(uint32_t lowSpeedLimit);
+    [[nodiscard]] uint32_t GetLowSpeedLimit() const;
+
+    void SetLowSpeedTime(uint32_t lowSpeedTime);
+    [[nodiscard]] uint32_t GetLowSpeedTime() const;
+
     void SetSocks5Proxy(const std::string &host, int32_t port,
         const NapiUtils::SecureData &username, const NapiUtils::SecureData &password,
         Socks5DnsStrategy dnsStrategy, const std::string &exclusionList);
@@ -431,6 +437,10 @@ private:
     bool reuseConnectionsFlag_ = true;
 
     int inactivityMs_ = 0;
+
+    uint32_t lowSpeedLimit_ = 0;
+
+    uint32_t lowSpeedTime_ = 0;
 
     std::string socks5ProxyHost_;
     int32_t socks5ProxyPort_ = 0;

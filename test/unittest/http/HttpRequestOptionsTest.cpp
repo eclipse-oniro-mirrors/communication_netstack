@@ -307,6 +307,49 @@ HWTEST_F(HttpRequestOptionsTest, SetReadTimeoutTest, TestSize.Level1)
     EXPECT_EQ(resultValue, testValue);
 }
 
+HWTEST_F(HttpRequestOptionsTest, LowSpeedOptionsTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    EXPECT_EQ(requestOptions.GetLowSpeedLimit(), 0);
+    EXPECT_EQ(requestOptions.GetLowSpeedTime(), 0);
+    EXPECT_STREQ(HttpConstant::PARAM_KEY_LOW_SPEED_LIMIT, "lowSpeedLimit");
+    EXPECT_STREQ(HttpConstant::PARAM_KEY_LOW_SPEED_TIME, "lowSpeedTime");
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetLowSpeedLimitTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    uint32_t testValue = 10240;
+    requestOptions.SetLowSpeedLimit(testValue);
+    EXPECT_EQ(requestOptions.GetLowSpeedLimit(), testValue);
+
+    requestOptions.SetLowSpeedLimit(1);
+    EXPECT_EQ(requestOptions.GetLowSpeedLimit(), 1);
+
+    requestOptions.SetLowSpeedLimit(INT32_MAX);
+    EXPECT_EQ(requestOptions.GetLowSpeedLimit(), static_cast<uint32_t>(INT32_MAX));
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetLowSpeedTimeTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    uint32_t testValue = 3000;
+    requestOptions.SetLowSpeedTime(testValue);
+    EXPECT_EQ(requestOptions.GetLowSpeedTime(), testValue);
+
+    requestOptions.SetLowSpeedTime(1000);
+    EXPECT_EQ(requestOptions.GetLowSpeedTime(), 1000);
+
+    requestOptions.SetLowSpeedTime(1);
+    EXPECT_EQ(requestOptions.GetLowSpeedTime(), 1);
+
+    requestOptions.SetLowSpeedTime(INT32_MAX);
+    EXPECT_EQ(requestOptions.GetLowSpeedTime(), static_cast<uint32_t>(INT32_MAX));
+}
+
 HWTEST_F(HttpRequestOptionsTest, SetHeaderTest, TestSize.Level1)
 {
     HttpRequestOptions requestOptions;

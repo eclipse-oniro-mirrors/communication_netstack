@@ -23,6 +23,7 @@
 #include <string>
 #include <utility>
 #include <sstream>
+#include <cmath>
 
 #include "constant.h"
 #include "http_exec.h"
@@ -55,6 +56,32 @@ static constexpr const uint32_t DNS_SERVER_SIZE = 3;
 
 static constexpr size_t CADATA_STRING_MAX_LENGTH = 8000;
 namespace OHOS::NetStack::Http {
+bool RequestContext::ConvertToPositiveInt32(double number, uint32_t &result)
+{
+    if (!std::isfinite(number) || std::floor(number) != number || number <= 0 || number > INT32_MAX) {
+        return false;
+    }
+    result = static_cast<uint32_t>(number);
+    return true;
+}
+
+void RequestContext::ParseLowSpeedOption(napi_value optionsValue, const char *key,
+    void (HttpRequestOptions::*setter)(uint32_t))
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, key)) {
+        return;
+    }
+    napi_value value = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, key);
+    uint32_t result = 0;
+    double number = 0;
+    if (NapiUtils::GetValueType(GetEnv(), value) == napi_number &&
+        napi_get_value_double(GetEnv(), value, &number) == napi_ok && ConvertToPositiveInt32(number, result)) {
+        (options.*setter)(result);
+        return;
+    }
+    NETSTACK_LOGI("%{public}s is invalid, ignored", key);
+}
+
 static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_UNSUPPORTED_PROTOCOL, "Unsupported protocol"},
     {HTTP_URL_MALFORMAT, "Invalid URL format or missing URL"},
@@ -224,6 +251,11 @@ void RequestContext::ParseNumberOptions(napi_value optionsValue)
         options.SetConnectTimeout(
             NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CONNECT_TIMEOUT));
     }
+
+    ParseLowSpeedOption(optionsValue, HttpConstant::PARAM_KEY_LOW_SPEED_LIMIT,
+        &HttpRequestOptions::SetLowSpeedLimit);
+    ParseLowSpeedOption(optionsValue, HttpConstant::PARAM_KEY_LOW_SPEED_TIME,
+        &HttpRequestOptions::SetLowSpeedTime);
 
     if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_CACHE)) {
         napi_value value = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_CACHE);

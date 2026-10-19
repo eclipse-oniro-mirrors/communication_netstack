@@ -15,6 +15,8 @@
 
 
 #include <cstring>
+#include <limits>
+
 #include "gtest/gtest.h"
 
 #ifdef GTEST_API_
@@ -91,6 +93,104 @@ HWTEST_F(HttpExecTest, SetOption001, TestSize.Level1)
     OHOS::NetStack::Http::RequestContext context(env, manager);
 
     EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context, context.GetCurlHeaderList()));
+}
+
+HWTEST_F(HttpExecTest, SetOptionWithLowSpeed001, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    context.options.SetLowSpeedLimit(10240);
+    context.options.SetLowSpeedTime(3000);
+    EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context, context.GetCurlHeaderList()));
+}
+
+HWTEST_F(HttpExecTest, SetOptionWithLowSpeed002, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    context.options.SetLowSpeedLimit(10240);
+    EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context, context.GetCurlHeaderList()));
+}
+
+HWTEST_F(HttpExecTest, SetOptionWithLowSpeed003, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    context.options.SetLowSpeedTime(3000);
+    EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context, context.GetCurlHeaderList()));
+}
+
+HWTEST_F(HttpExecTest, SetOptionWithLowSpeed004, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    context.options.SetLowSpeedLimit(10240);
+    context.options.SetLowSpeedTime(999);
+    EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context, context.GetCurlHeaderList()));
+}
+
+HWTEST_F(HttpExecTest, SetOptionWithLowSpeed005, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    context.options.SetLowSpeedLimit(10240);
+    context.options.SetLowSpeedTime(1001);
+    EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context, context.GetCurlHeaderList()));
+}
+
+HWTEST_F(HttpExecTest, SetOptionWithLowSpeed006, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+
+    context.options.SetLowSpeedLimit(0);
+    context.options.SetLowSpeedTime(0);
+    EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context, context.GetCurlHeaderList()));
+}
+
+HWTEST_F(HttpExecTest, LowSpeedConvertToPositiveInt32001, TestSize.Level1)
+{
+    uint32_t result = 0;
+    EXPECT_TRUE(RequestContext::ConvertToPositiveInt32(1, result));
+    EXPECT_EQ(result, 1);
+    EXPECT_TRUE(RequestContext::ConvertToPositiveInt32(INT32_MAX, result));
+    EXPECT_EQ(result, static_cast<uint32_t>(INT32_MAX));
+}
+
+HWTEST_F(HttpExecTest, LowSpeedConvertToPositiveInt32002, TestSize.Level1)
+{
+    uint32_t result = 123;
+    EXPECT_FALSE(RequestContext::ConvertToPositiveInt32(0, result));
+    EXPECT_FALSE(RequestContext::ConvertToPositiveInt32(-1, result));
+    EXPECT_FALSE(RequestContext::ConvertToPositiveInt32(1.5, result));
+    EXPECT_FALSE(RequestContext::ConvertToPositiveInt32(static_cast<double>(INT32_MAX) + 1, result));
+    EXPECT_FALSE(RequestContext::ConvertToPositiveInt32(std::numeric_limits<double>::infinity(), result));
+    EXPECT_FALSE(RequestContext::ConvertToPositiveInt32(-std::numeric_limits<double>::infinity(), result));
+    EXPECT_FALSE(RequestContext::ConvertToPositiveInt32(std::numeric_limits<double>::quiet_NaN(), result));
+    EXPECT_EQ(result, 123);
 }
 
 HWTEST_F(HttpExecTest, SetServerSSLCertOption001, TestSize.Level1)

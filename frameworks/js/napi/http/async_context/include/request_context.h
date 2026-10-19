@@ -376,6 +376,11 @@ private:
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
 
+    static bool ConvertToPositiveInt32(double number, uint32_t &result);
+
+    void ParseLowSpeedOption(napi_value optionsValue, const char *key,
+        void (HttpRequestOptions::*setter)(uint32_t));
+
     void ParseNumberOptions(napi_value optionsValue);
 
     void ParseHeader(napi_value optionsValue);
