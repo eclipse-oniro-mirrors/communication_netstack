@@ -15,6 +15,7 @@
 
 #include "tls_socket_server_innerapi.h"
 
+#include <arpa/inet.h>
 #include <atomic>
 #include <chrono>
 #include <memory>
@@ -23,7 +24,6 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
-#include <regex>
 #include <securec.h>
 #include <sys/ioctl.h>
 
@@ -45,18 +45,10 @@ constexpr size_t MAX_ERR_LENGTH = 1024;
 
 constexpr int SSL_RET_CODE = 0;
 
-constexpr int BUF_SIZE = 2048;
 constexpr int POLL_WAIT_TIME = 2000;
-constexpr int OFFSET = 2;
 constexpr int SSL_ERROR_RETURN = -1;
 constexpr int REMOTE_CERT_LEN = 8192;
-constexpr int COMMON_NAME_BUF_SIZE = 256;
 constexpr int LISETEN_COUNT = 516;
-constexpr const char *SPLIT_HOST_NAME = ".";
-constexpr const char *SPLIT_ALT_NAMES = ",";
-constexpr const char *DNS = "DNS:";
-constexpr const char *HOST_NAME = "hostname: ";
-constexpr const char *IP_ADDRESS = "IP Address:";
 constexpr const char *SIGN_NID_RSA = "RSA+";
 constexpr const char *SIGN_NID_RSA_PSS = "RSA-PSS+";
 constexpr const char *SIGN_NID_DSA = "DSA+";
@@ -67,36 +59,10 @@ constexpr const char *SIGN_NID_UNDEF_ADD = "UNDEF+";
 constexpr const char *PROTOCOL_UNKNOW = "UNKNOW_PROTOCOL";
 constexpr const char *SIGN_NID_UNDEF = "UNDEF";
 constexpr const char *OPERATOR_PLUS_SIGN = "+";
-constexpr const char *UNKNOWN_REASON = "Unknown reason";
-constexpr const char *IP = "IP: ";
 static constexpr const char *TLS_SOCKET_SERVER_READ = "OS_NET_TSAccRD";
-const std::regex JSON_STRING_PATTERN{R"(/^"(?:[^"\\\u0000-\u001f]|\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4}))*"/)"};
-const std::regex PATTERN{
-    "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|"
-    "2[0-4][0-9]|[01]?[0-9][0-9]?)"};
 std::atomic<int> g_userCounter(0);
 
 static constexpr size_t PERMISSION_DENIED_CODE = 201;
-
-bool IsIP(const std::string &ip)
-{
-    std::regex pattern(PATTERN);
-    std::smatch res;
-    return regex_match(ip, res, pattern);
-}
-
-std::vector<std::string> SplitHostName(std::string &hostName)
-{
-    transform(hostName.begin(), hostName.end(), hostName.begin(), ::tolower);
-    return CommonUtils::Split(hostName, SPLIT_HOST_NAME);
-}
-
-bool SeekIntersection(std::vector<std::string> &vecA, std::vector<std::string> &vecB)
-{
-    std::vector<std::string> result;
-    set_intersection(vecA.begin(), vecA.end(), vecB.begin(), vecB.end(), inserter(result, result.begin()));
-    return !result.empty();
-}
 
 int ConvertErrno()
 {
@@ -125,43 +91,6 @@ std::string MakeSSLErrorString(int error)
     char err[MAX_ERR_LENGTH] = {0};
     ERR_error_string_n(error - TlsSocket::TlsSocketError::TLS_ERR_SYS_BASE, err, sizeof(err));
     return err;
-}
-std::vector<std::string> SplitEscapedAltNames(std::string &altNames)
-{
-    std::vector<std::string> result;
-    std::string currentToken;
-    size_t offset = 0;
-    while (offset != altNames.length()) {
-        auto nextSep = altNames.find_first_of(", ");
-        auto nextQuote = altNames.find_first_of('\"');
-        bool isJsonString = (nextQuote != std::string::npos) &&
-                            (nextSep == std::string::npos || nextQuote < nextSep);
-        if (isJsonString) {
-            currentToken += altNames.substr(offset, nextQuote);
-            std::regex jsonStringPattern(JSON_STRING_PATTERN);
-            std::smatch match;
-            std::string altNameSubStr = altNames.substr(nextQuote);
-            if (!regex_match(altNameSubStr, match, jsonStringPattern)) {
-                return {""};
-            }
-            currentToken += match[0];
-            offset = nextQuote + match[0].length();
-            continue;
-        }
-
-        if (nextSep != std::string::npos) {
-            currentToken += altNames.substr(offset, nextSep);
-            result.push_back(currentToken);
-            currentToken = "";
-            offset = nextSep + OFFSET;
-            continue;
-        }
-
-        currentToken += altNames.substr(offset);
-        offset = altNames.length();
-    }
-    result.push_back(currentToken);
-    return result;
 }
 #if UNITTEST
 #else
@@ -1141,9 +1070,7 @@ bool TLSSocketServer::Connection::StartShakingHands(const TlsSocket::TLSConnectO
             NETSTACK_LOGE("Failed to set remote x509 certificata Serialization data");
         }
         TlsSocket::CheckServerIdentity checkServerIdentity = options.GetCheckServerIdentity();
-        if (!checkServerIdentity) {
-            CheckServerIdentityLegal(hostName_, peerX509);
-        } else {
+        if (checkServerIdentity) {
             checkServerIdentity(hostName_, {remoteCert_});
         }
     }
@@ -1198,125 +1125,6 @@ bool TLSSocketServer::Connection::SetRemoteCertRawData(X509 *peerX509)
     OPENSSL_free(der);
     remoteRawData_.encodingFormat = TlsSocket::EncodingFormat::DER;
     return true;
-}
-
-static bool StartsWith(const std::string &s, const std::string &prefix)
-{
-    return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
-}
-void CheckIpAndDnsName(const std::string &hostName, std::vector<std::string> &dnsNames, std::vector<std::string> &ips,
-                       const X509 *x509Certificates, std::tuple<bool, std::string> &result)
-{
-    bool valid = false;
-    std::string reason = UNKNOWN_REASON;
-    int index = X509_get_ext_by_NID(x509Certificates, NID_commonName, -1);
-    if (IsIP(hostName)) {
-        auto it = find(ips.begin(), ips.end(), hostName);
-        if (it == ips.end()) {
-            reason = IP + hostName + " is not in the cert's list";
-        }
-        result = {valid, reason};
-        return;
-    }
-    std::string tempHostName = "" + hostName;
-    if (!dnsNames.empty() || index > 0) {
-        std::vector<std::string> hostParts = SplitHostName(tempHostName);
-        std::string tmpStr = "";
-        if (!dnsNames.empty()) {
-            valid = SeekIntersection(hostParts, dnsNames);
-            tmpStr = ". is not in the cert's altnames";
-        } else {
-            char commonNameBuf[COMMON_NAME_BUF_SIZE] = {0};
-            int len = 0;
-            X509_NAME *pSubName = X509_get_subject_name(x509Certificates);
-            if (pSubName != nullptr) {
-                len = X509_NAME_get_text_by_NID(pSubName, NID_commonName, commonNameBuf, COMMON_NAME_BUF_SIZE);
-            }
-            if (len > 0) {
-                std::vector<std::string> commonNameVec;
-                commonNameVec.emplace_back(commonNameBuf);
-                valid = SeekIntersection(hostParts, commonNameVec);
-                tmpStr = ". is not cert's CN";
-            }
-        }
-        if (!valid) {
-            reason = HOST_NAME + tempHostName + tmpStr;
-        }
-
-        result = {valid, reason};
-        return;
-    }
-    reason = "Cert does not contain a DNS name";
-    result = {valid, reason};
-}
-
-std::string TLSSocketServer::Connection::CheckServerIdentityLegal(const std::string &hostName,
-                                                                  const X509 *x509Certificates)
-{
-    X509_NAME *subjectName = X509_get_subject_name(x509Certificates);
-    if (!subjectName) {
-        return "subject name is null";
-    }
-    char subNameBuf[BUF_SIZE] = {0};
-    X509_NAME_oneline(subjectName, subNameBuf, BUF_SIZE);
-    int index = X509_get_ext_by_NID(x509Certificates, NID_subject_alt_name, -1);
-    if (index < 0) {
-        return "X509 get ext nid error";
-    }
-    X509_EXTENSION *ext = X509_get_ext(x509Certificates, index);
-    if (ext == nullptr) {
-        return "X509 get ext error";
-    }
-    ASN1_OBJECT *obj = nullptr;
-    obj = X509_EXTENSION_get_object(ext);
-    char subAltNameBuf[BUF_SIZE] = {0};
-    OBJ_obj2txt(subAltNameBuf, BUF_SIZE, obj, 0);
-    NETSTACK_LOGD("extions obj : %{public}s\n", subAltNameBuf);
-
-    return CheckServerIdentityLegal(hostName, ext, x509Certificates);
-}
-
-std::string TLSSocketServer::Connection::CheckServerIdentityLegal(const std::string &hostName, X509_EXTENSION *ext,
-                                                                  const X509 *x509Certificates)
-{
-    ASN1_OCTET_STRING *extData = X509_EXTENSION_get_data(ext);
-    if (!extData) {
-        NETSTACK_LOGE("extData is nullptr");
-        return "";
-    }
-    std::string altNames = reinterpret_cast<char *>(extData->data);
-    std::string hostname = "" + hostName;
-    BIO *bio = BIO_new(BIO_s_file());
-    if (!bio) {
-        return "bio is null";
-    }
-    BIO_set_fp(bio, stdout, BIO_NOCLOSE);
-    ASN1_STRING_print(bio, extData);
-    std::vector<std::string> dnsNames = {};
-    std::vector<std::string> ips = {};
-    constexpr int DNS_NAME_IDX = 4;
-    constexpr int IP_NAME_IDX = 11;
-    if (!altNames.empty()) {
-        std::vector<std::string> splitAltNames;
-        if (altNames.find('\"') != std::string::npos) {
-            splitAltNames = SplitEscapedAltNames(altNames);
-        } else {
-            splitAltNames = CommonUtils::Split(altNames, SPLIT_ALT_NAMES);
-        }
-        for (auto const &iter : splitAltNames) {
-            if (StartsWith(iter, DNS)) {
-                dnsNames.push_back(iter.substr(DNS_NAME_IDX));
-            } else if (StartsWith(iter, IP_ADDRESS)) {
-                ips.push_back(iter.substr(IP_NAME_IDX));
-            }
-        }
-    }
-    std::tuple<bool, std::string> result;
-    CheckIpAndDnsName(hostName, dnsNames, ips, x509Certificates, result);
-    if (!std::get<0>(result)) {
-        return "Hostname/IP does not match certificate's altnames: " + std::get<1>(result);
-    }
-    return HOST_NAME + hostname + ". is cert's CN";
 }
 
 void TLSSocketServer::RemoveConnect(int socketFd)

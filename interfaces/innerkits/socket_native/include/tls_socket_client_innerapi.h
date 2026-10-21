@@ -250,6 +250,12 @@ public:
     void SetSkipRemoteValidation(bool skipRemoteValidation);
 
     /**
+     * Set whether to verify the consistency between the server certificate and the host name
+     * @param sslServerHostnameVerification flag to choose whether to verify server hostname
+     */
+    void SetSslServerHostnameVerification(bool sslServerHostnameVerification);
+
+    /**
      * Set TLS connection timeout
      * @param timeout disconnect the connection during timeout
     */
@@ -285,6 +291,12 @@ public:
      */
     [[nodiscard]] bool GetSkipRemoteValidation() const;
 
+    /**
+     * Get the choice of whether to verify server hostname
+     * @return whether to verify server hostname
+     */
+    [[nodiscard]] bool GetSslServerHostnameVerification() const;
+
     void SetHostName(const std::string &hostName);
     [[nodiscard]] std::string GetHostName() const;
     uint32_t GetTimeout() const;
@@ -297,6 +309,7 @@ private:
     CheckServerIdentity checkServerIdentity_;
     std::vector<std::string> alpnProtocols_;
     bool skipRemoteValidation_ = false;
+    bool sslServerHostnameVerification_ = false;
     std::string hostName_;
     uint32_t timeout_ = DEFAULT_TIMEOUT_TLS;
 };
@@ -461,6 +474,8 @@ public:
     bool IsExtSock() const;
 
 private:
+    friend class TlsSocketClientTestAccess;
+
     class TLSSocketInternal final {
     public:
         TLSSocketInternal() = default;
@@ -516,6 +531,17 @@ private:
         int ConvertSSLError(void);
 
         /**
+         * Obtain the error number recorded by the last failed connect step
+         * @return the recorded error number, TLSSOCKET_SUCCESS if no specific error was recorded
+         */
+        [[nodiscard]] int32_t GetLastErrNumber() const;
+
+        /**
+         * Reset the recorded error number before a new connect attempt
+         */
+        void ResetLastErrNumber();
+
+        /**
          * Get configuration options for encrypted communication process
          * @return configuration options for encrypted communication processes
          */
@@ -564,6 +590,8 @@ private:
         [[nodiscard]] bool SetSharedSigals();
 
     private:
+        friend class TlsSocketClientTestAccess;
+
         bool SendRetry(ssl_st *ssl, const char *curPos, size_t curSendSize, int sockfd);
         bool StartTlsConnected(const TLSConnectOptions &options);
         bool CreatTlsContext();
@@ -572,12 +600,10 @@ private:
         bool CheckAfterShankingHands(const TLSConnectOptions &options);
         bool GetRemoteCertificateFromPeer(X509 *peerX509);
         bool SetRemoteCertRawData(X509 *peerX509);
+        bool VerifyServerHostname(const std::string &hostName, X509 *peerX509, std::string &reason);
         bool PollSend(int sockfd, const char *pdata, int sendSize);
         void SetSNIandLoadCachedCaCert(const std::string &hostName);
         void CacheCertificates(const std::string &hostName);
-        std::string CheckServerIdentityLegal(const std::string &hostName, const X509 *x509Certificates);
-        std::string CheckServerIdentityLegal(const std::string &hostName, X509_EXTENSION *ext,
-                                             const X509 *x509Certificates);
 
     private:
         mutable std::shared_mutex rw_mutex_;
@@ -597,6 +623,7 @@ private:
 
         std::vector<std::string> signatureAlgorithms_;
         std::unique_ptr<TLSContext> tlsContextPointer_ = nullptr;
+        int32_t lastErrNumber_ = TLSSOCKET_SUCCESS;
     };
 
 private:

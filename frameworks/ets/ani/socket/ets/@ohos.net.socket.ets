@@ -164,6 +164,7 @@ export default namespace socket {
         ALPNProtocols?: Array<string>;
         skipRemoteValidation?: boolean;
         proxy?: ProxyOptions;
+        sslServerHostnameVerification?: boolean;
         timeout?: int;
     }
 
@@ -518,6 +519,7 @@ export default namespace socket {
         ALPNProtocols?: Array<string>;
         skipRemoteValidation?: boolean;
         proxy?: ProxyOptions;
+        sslServerHostnameVerification?: boolean;
         timeout?: int;
     }
 

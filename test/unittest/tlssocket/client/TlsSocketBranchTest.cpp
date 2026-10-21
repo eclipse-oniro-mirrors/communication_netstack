@@ -18,6 +18,7 @@
 #include <memory>
 
 #include <openssl/ssl.h>
+#include <openssl/x509v3.h>
 
 #define private public
 #include "accesstoken_kit.h"
@@ -48,6 +49,27 @@ static constexpr const char *SEND_DATA_EMPTY = "";
 static constexpr const size_t MAX_BUFFER_SIZE = 8192;
 const int PORT = 7838;
 const int SSL_ERROR_RETURN = -1;
+
+X509 *CreateCertificateWithSubjectAltName(const std::string &subjectAltName)
+{
+    X509 *certificate = X509_new();
+    if (certificate == nullptr) {
+        return nullptr;
+    }
+
+    X509V3_CTX context {};
+    X509V3_set_ctx_nodb(&context);
+    X509V3_set_ctx(&context, certificate, certificate, nullptr, nullptr, 0);
+    X509_EXTENSION *extension = X509V3_EXT_conf_nid(nullptr, &context, NID_subject_alt_name,
+        const_cast<char *>(subjectAltName.c_str()));
+    if (extension == nullptr || X509_add_ext(certificate, extension, -1) != 1) {
+        X509_EXTENSION_free(extension);
+        X509_free(certificate);
+        return nullptr;
+    }
+    X509_EXTENSION_free(extension);
+    return certificate;
+}
 
 TLSConnectOptions BaseOption()
 {
@@ -364,6 +386,26 @@ HWTEST_F(TlsSocketBranchTest, BranchTest7, TestSize.Level2)
     setSharedSigals = tlsSocketInternal->SetSharedSigals();
     EXPECT_TRUE(setSharedSigals);
     delete tlsSocketInternal;
+}
+
+HWTEST_F(TlsSocketBranchTest, VerifyServerHostnameIpAndDomain001, TestSize.Level2)
+{
+    X509 *certificate = CreateCertificateWithSubjectAltName(
+        "IP:192.0.2.1,IP:2001:db8::1,DNS:www.example.com");
+    ASSERT_NE(certificate, nullptr);
+
+    TLSSocket::TLSSocketInternal tlsSocketInternal;
+    std::string reason;
+    EXPECT_TRUE(tlsSocketInternal.VerifyServerHostname("192.0.2.1", certificate, reason));
+    EXPECT_TRUE(tlsSocketInternal.VerifyServerHostname("2001:db8::1", certificate, reason));
+    EXPECT_TRUE(tlsSocketInternal.VerifyServerHostname("www.example.com", certificate, reason));
+
+    EXPECT_FALSE(tlsSocketInternal.VerifyServerHostname("192.0.2.2", certificate, reason));
+    EXPECT_FALSE(tlsSocketInternal.VerifyServerHostname("2001:db8::2", certificate, reason));
+    EXPECT_FALSE(tlsSocketInternal.VerifyServerHostname("192.0.2", certificate, reason));
+    EXPECT_FALSE(tlsSocketInternal.VerifyServerHostname("other.example.com", certificate, reason));
+
+    X509_free(certificate);
 }
 } // namespace TlsSocket
 } // namespace NetStack

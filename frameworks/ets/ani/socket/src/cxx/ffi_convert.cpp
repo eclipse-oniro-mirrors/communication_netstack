@@ -207,6 +207,7 @@ void ApplyAddressAndSecure(const FFITlsConnectOptions& ffi, TlsSocket::TLSConnec
     Socket::NetAddress addr;
     FFINetAddressToNetAddress(ffi.address, addr);
     opts.SetNetAddress(addr);
+    opts.SetHostName(addr.GetAddress());
 
     TlsSocket::TLSSecureOptions secure;
     FFITlsSecureOptionsToTLSSecureOptions(ffi.secure_options, secure);
@@ -226,6 +227,9 @@ void ApplyTlsOptionalFields(const FFITlsConnectOptions& ffi, TlsSocket::TLSConne
 {
     if (ffi.has_alpn_protocols) { opts.SetAlpnProtocols(RustVecToStdVector(ffi.alpn_protocols)); }
     if (ffi.has_skip_remote_validation) { opts.SetSkipRemoteValidation(ffi.skip_remote_validation); }
+    if (ffi.has_ssl_server_hostname_verification) {
+        opts.SetSslServerHostnameVerification(ffi.ssl_server_hostname_verification);
+    }
     if (ffi.has_timeout) { opts.SetTimeout(static_cast<uint32_t>(ffi.timeout)); }
     ApplyTlsProxyOption(ffi, opts);
 }

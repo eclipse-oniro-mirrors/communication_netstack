@@ -24,10 +24,15 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
 #include "gtest/gtest.h"
+#include <openssl/evp.h>
+#include <openssl/rsa.h>
+#include <openssl/ssl.h>
+#include <openssl/x509v3.h>
 
 #include "net_address.h"
 #include "socket_remote_info.h"
@@ -38,6 +43,20 @@
 #include "tls_socket_client_innerapi.h"
 #include "socket_native_test_utils.h"
 
+namespace OHOS {
+namespace NetStack {
+namespace TlsSocket {
+class TlsSocketClientTestAccess {
+public:
+    static bool VerifyServerHostname(const std::string &hostName, X509 *certificate, std::string &reason)
+    {
+        TLSSocket::TLSSocketInternal tlsSocketInternal;
+        return tlsSocketInternal.VerifyServerHostname(hostName, certificate, reason);
+    }
+};
+} // namespace TlsSocket
+} // namespace NetStack
+} // namespace OHOS
 namespace {
 using namespace testing::ext;
 using namespace OHOS::NetStack;
@@ -49,6 +68,32 @@ static constexpr int32_t INVALID_FD = -1;
 static constexpr int32_t LISTEN_BACKLOG = 5;
 static constexpr int32_t SLEEP_MS = 100;
 static constexpr uint32_t WAIT_TIMEOUT_MS = 5000;
+static constexpr int LOCAL_TLS_RSA_KEY_BITS = 2048;
+static constexpr long CERTIFICATE_NOT_BEFORE_OFFSET_SECONDS = -60;
+static constexpr long CERTIFICATE_VALIDITY_SECONDS = 86400;
+static constexpr const char *LOCAL_TLS_HOSTNAME = "local.test";
+static constexpr const char *MISMATCHED_TLS_HOSTNAME = "wrong.local.test";
+
+static X509 *CreateCertificateWithSubjectAltName(const std::string &subjectAltName)
+{
+    X509 *certificate = X509_new();
+    if (certificate == nullptr) {
+        return nullptr;
+    }
+
+    X509V3_CTX context {};
+    X509V3_set_ctx_nodb(&context);
+    X509V3_set_ctx(&context, certificate, certificate, nullptr, nullptr, 0);
+    X509_EXTENSION *extension = X509V3_EXT_conf_nid(nullptr, &context, NID_subject_alt_name,
+        const_cast<char *>(subjectAltName.c_str()));
+    if (extension == nullptr || X509_add_ext(certificate, extension, -1) != 1) {
+        X509_EXTENSION_free(extension);
+        X509_free(certificate);
+        return nullptr;
+    }
+    X509_EXTENSION_free(extension);
+    return certificate;
+}
 
 static int MakeTcpListenFd(uint16_t port)
 {
@@ -83,6 +128,236 @@ static int GetListenPort(int listenFd)
     return ntohs(addr.sin_port);
 }
 
+static bool AddCertificateExtension(X509 *certificate, int nid, const char *value)
+{
+    X509V3_CTX context {};
+    X509V3_set_ctx_nodb(&context);
+    X509V3_set_ctx(&context, certificate, certificate, nullptr, nullptr, 0);
+    X509_EXTENSION *extension = X509V3_EXT_conf_nid(nullptr, &context, nid, const_cast<char *>(value));
+    if (extension == nullptr) {
+        return false;
+    }
+    bool success = X509_add_ext(certificate, extension, -1) == 1;
+    X509_EXTENSION_free(extension);
+    return success;
+}
+
+static EVP_PKEY *CreateLocalTlsPrivateKey()
+{
+    EVP_PKEY_CTX *keyContext = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, nullptr);
+    EVP_PKEY *privateKey = nullptr;
+    if (keyContext == nullptr || EVP_PKEY_keygen_init(keyContext) <= 0 ||
+        EVP_PKEY_CTX_set_rsa_keygen_bits(keyContext, LOCAL_TLS_RSA_KEY_BITS) <= 0 ||
+        EVP_PKEY_keygen(keyContext, &privateKey) <= 0) {
+        EVP_PKEY_free(privateKey);
+        privateKey = nullptr;
+    }
+    EVP_PKEY_CTX_free(keyContext);
+    return privateKey;
+}
+
+static bool ConfigureLocalTlsCertificate(X509 *certificate, EVP_PKEY *privateKey)
+{
+    if (X509_set_version(certificate, X509_VERSION_3) != 1) {
+        return false;
+    }
+    if (ASN1_INTEGER_set(X509_get_serialNumber(certificate), 1) != 1) {
+        return false;
+    }
+    if (X509_gmtime_adj(X509_get_notBefore(certificate), CERTIFICATE_NOT_BEFORE_OFFSET_SECONDS) == nullptr ||
+        X509_gmtime_adj(X509_get_notAfter(certificate), CERTIFICATE_VALIDITY_SECONDS) == nullptr) {
+        return false;
+    }
+    if (X509_set_pubkey(certificate, privateKey) != 1) {
+        return false;
+    }
+    X509_NAME *subject = X509_get_subject_name(certificate);
+    if (subject == nullptr || X509_NAME_add_entry_by_txt(subject, "CN", MBSTRING_ASC,
+        reinterpret_cast<const unsigned char *>(LOCAL_TLS_HOSTNAME), -1, -1, 0) != 1) {
+        return false;
+    }
+    if (X509_set_issuer_name(certificate, subject) != 1 ||
+        !AddCertificateExtension(certificate, NID_subject_alt_name, "DNS:local.test")) {
+        return false;
+    }
+    return X509_sign(certificate, privateKey, EVP_sha256()) > 0;
+}
+
+static bool LoadLocalTlsCertificate(SSL_CTX *context, X509 *certificate, EVP_PKEY *privateKey)
+{
+    return SSL_CTX_use_certificate(context, certificate) == 1 &&
+        SSL_CTX_use_PrivateKey(context, privateKey) == 1 && SSL_CTX_check_private_key(context) == 1;
+}
+
+static SSL_CTX *CreateLocalTlsServerContext()
+{
+    SSL_CTX *context = SSL_CTX_new(TLS_server_method());
+    EVP_PKEY *privateKey = CreateLocalTlsPrivateKey();
+    X509 *certificate = X509_new();
+    bool success = context != nullptr && privateKey != nullptr && certificate != nullptr;
+    if (success) {
+        success = ConfigureLocalTlsCertificate(certificate, privateKey);
+    }
+    if (success) {
+        success = LoadLocalTlsCertificate(context, certificate, privateKey);
+    }
+
+    X509_free(certificate);
+    EVP_PKEY_free(privateKey);
+    if (!success) {
+        SSL_CTX_free(context);
+        context = nullptr;
+    }
+    return context;
+}
+
+class LocalTlsServer final {
+public:
+    LocalTlsServer() = default;
+
+    ~LocalTlsServer()
+    {
+        Stop();
+    }
+
+    bool Start()
+    {
+        context_ = CreateLocalTlsServerContext();
+        if (context_ == nullptr) {
+            return false;
+        }
+        listenFd_ = MakeTcpListenFd(0);
+        if (listenFd_ < 0) {
+            SSL_CTX_free(context_);
+            context_ = nullptr;
+            return false;
+        }
+        int port = GetListenPort(listenFd_);
+        if (port < 0) {
+            close(listenFd_);
+            listenFd_ = INVALID_FD;
+            SSL_CTX_free(context_);
+            context_ = nullptr;
+            return false;
+        }
+        port_ = static_cast<uint16_t>(port);
+        stopped_.store(false);
+        serverThread_ = std::thread(&LocalTlsServer::Run, this);
+        return true;
+    }
+
+    void Stop()
+    {
+        stopped_.store(true);
+        int clientFd = clientFd_.load();
+        if (clientFd >= 0) {
+            shutdown(clientFd, SHUT_RDWR);
+        }
+        if (listenFd_ >= 0) {
+            shutdown(listenFd_, SHUT_RDWR);
+        }
+        if (serverThread_.joinable()) {
+            serverThread_.join();
+        }
+        if (listenFd_ >= 0) {
+            close(listenFd_);
+            listenFd_ = INVALID_FD;
+        }
+        SSL_CTX_free(context_);
+        context_ = nullptr;
+    }
+
+    uint16_t GetPort() const
+    {
+        return port_;
+    }
+
+private:
+    bool AcceptClient()
+    {
+        pollfd listenPoll = {.fd = listenFd_, .events = POLLIN};
+        while (!stopped_.load()) {
+            int pollResult = poll(&listenPoll, 1, SLEEP_MS);
+            if (pollResult < 0) {
+                if (errno == EINTR) {
+                    continue;
+                }
+                return false;
+            }
+            if (pollResult == 0) {
+                continue;
+            }
+            if (stopped_.load() || (listenPoll.revents & POLLIN) == 0) {
+                return false;
+            }
+            int acceptedFd = accept(listenFd_, nullptr, nullptr);
+            if (acceptedFd < 0) {
+                return false;
+            }
+            clientFd_.store(acceptedFd);
+            return true;
+        }
+        return false;
+    }
+
+    void WaitForClientDisconnect(SSL *ssl, int acceptedFd)
+    {
+        pollfd clientPoll = {.fd = acceptedFd, .events = POLLIN};
+        while (!stopped_.load()) {
+            int pollResult = poll(&clientPoll, 1, SLEEP_MS);
+            if (pollResult < 0 && errno == EINTR) {
+                continue;
+            }
+            if (pollResult < 0) {
+                return;
+            }
+            if (pollResult == 0) {
+                continue;
+            }
+            char data = 0;
+            if (SSL_read(ssl, &data, sizeof(data)) <= 0) {
+                return;
+            }
+        }
+    }
+
+    void Run()
+    {
+        if (!AcceptClient()) {
+            return;
+        }
+        int acceptedFd = clientFd_.load();
+        if (acceptedFd < 0 || stopped_.load()) {
+            CloseClient();
+            return;
+        }
+        SSL *ssl = SSL_new(context_);
+        if (ssl == nullptr || SSL_set_fd(ssl, acceptedFd) != 1 || SSL_accept(ssl) != 1) {
+            SSL_free(ssl);
+            CloseClient();
+            return;
+        }
+        WaitForClientDisconnect(ssl, acceptedFd);
+        SSL_free(ssl);
+        CloseClient();
+    }
+
+    void CloseClient()
+    {
+        int clientFd = clientFd_.exchange(INVALID_FD);
+        if (clientFd >= 0) {
+            close(clientFd);
+        }
+    }
+
+    SSL_CTX *context_ = nullptr;
+    int listenFd_ = INVALID_FD;
+    std::atomic<int> clientFd_ {INVALID_FD};
+    std::atomic<bool> stopped_ {true};
+    uint16_t port_ = 0;
+    std::thread serverThread_;
+};
+
 __attribute__((unused)) static bool MakeNonBlocking(int fd)
 {
     int flags = fcntl(fd, F_GETFL, 0);
@@ -112,6 +387,56 @@ public:
     void SetUp() {}
     void TearDown() {}
 };
+
+static void VerifyHostnameWithLocalTlsServer(const std::string &hostName, bool hostnameVerification,
+                                             int32_t expectedError)
+{
+    LocalTlsServer server;
+    ASSERT_TRUE(server.Start());
+
+    auto socket = std::make_shared<TLSSocket>();
+    Socket::NetAddress bindAddr;
+    bindAddr.SetAddress(TEST_ADDRESS);
+    bindAddr.SetPort(0);
+    bindAddr.SetFamilyBySaFamily(AF_INET);
+    std::atomic<bool> bindDone(false);
+    std::atomic<int32_t> bindError(-1);
+    socket->Bind(bindAddr, [&](int32_t errorNumber) {
+        bindError.store(errorNumber);
+        bindDone.store(true);
+    });
+    WaitForCallback(bindDone);
+    ASSERT_TRUE(bindDone.load());
+    ASSERT_EQ(bindError.load(), TLSSOCKET_SUCCESS);
+
+    TLSConnectOptions connectOptions;
+    Socket::NetAddress destAddr;
+    destAddr.SetAddress(TEST_ADDRESS);
+    destAddr.SetPort(server.GetPort());
+    destAddr.SetFamilyBySaFamily(AF_INET);
+    connectOptions.SetNetAddress(destAddr);
+    connectOptions.SetHostName(hostName);
+    connectOptions.SetSkipRemoteValidation(true);
+    connectOptions.SetSslServerHostnameVerification(hostnameVerification);
+    static constexpr uint32_t connectTimeoutMs = 8000;
+    connectOptions.SetTimeout(connectTimeoutMs);
+
+    std::atomic<bool> callbackCalled(false);
+    std::atomic<int32_t> resultError(TLSSOCKET_SUCCESS);
+    socket->Connect(connectOptions, [&](int32_t errorNumber) {
+        resultError.store(errorNumber);
+        callbackCalled.store(true);
+    });
+    WaitForCallback(callbackCalled, connectTimeoutMs + WAIT_TIMEOUT_MS);
+
+    ASSERT_TRUE(callbackCalled.load());
+    EXPECT_EQ(resultError.load(), expectedError);
+
+    std::atomic<bool> closeDone(false);
+    socket->Close([&](int32_t) { closeDone.store(true); });
+    WaitForCallback(closeDone);
+    EXPECT_TRUE(closeDone.load());
+}
 
 /* ==================== Constructor / Destructor Tests ==================== */
 
@@ -988,6 +1313,40 @@ HWTEST_F(TlsSocketClientTest, ConnectWithExtSockNoTls001, TestSize.Level2)
 
     socket->Close([](int32_t) {});
     close(listenFd);
+}
+
+HWTEST_F(TlsSocketClientTest, HostnameVerifyMismatch001, TestSize.Level2)
+{
+    VerifyHostnameWithLocalTlsServer(MISMATCHED_TLS_HOSTNAME, true, TLS_ERR_SSL_HOSTNAME_VERIFY_FAILED);
+}
+
+HWTEST_F(TlsSocketClientTest, HostnameVerifyDisabled001, TestSize.Level2)
+{
+    VerifyHostnameWithLocalTlsServer(MISMATCHED_TLS_HOSTNAME, false, TLSSOCKET_SUCCESS);
+}
+
+HWTEST_F(TlsSocketClientTest, HostnameVerifyMatch001, TestSize.Level2)
+{
+    VerifyHostnameWithLocalTlsServer(LOCAL_TLS_HOSTNAME, true, TLSSOCKET_SUCCESS);
+}
+
+HWTEST_F(TlsSocketClientTest, VerifyServerHostnameIpAndDomain001, TestSize.Level2)
+{
+    X509 *certificate = CreateCertificateWithSubjectAltName(
+        "IP:192.0.2.1,IP:2001:db8::1,DNS:www.example.com");
+    ASSERT_NE(certificate, nullptr);
+
+    std::string reason;
+    EXPECT_TRUE(TlsSocketClientTestAccess::VerifyServerHostname("192.0.2.1", certificate, reason));
+    EXPECT_TRUE(TlsSocketClientTestAccess::VerifyServerHostname("2001:db8::1", certificate, reason));
+    EXPECT_TRUE(TlsSocketClientTestAccess::VerifyServerHostname("www.example.com", certificate, reason));
+
+    EXPECT_FALSE(TlsSocketClientTestAccess::VerifyServerHostname("192.0.2.2", certificate, reason));
+    EXPECT_FALSE(TlsSocketClientTestAccess::VerifyServerHostname("2001:db8::2", certificate, reason));
+    EXPECT_FALSE(TlsSocketClientTestAccess::VerifyServerHostname("192.0.2", certificate, reason));
+    EXPECT_FALSE(TlsSocketClientTestAccess::VerifyServerHostname("other.example.com", certificate, reason));
+
+    X509_free(certificate);
 }
 
 } // namespace

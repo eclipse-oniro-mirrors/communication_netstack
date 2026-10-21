@@ -54,6 +54,7 @@ enum TlsSocketError {
     TLS_ERR_NO_BIND = 2303600,
     TLS_ERR_SOCK_INVALID_FD = 2303601,
     TLS_ERR_SOCK_NOT_CONNECT = 2303602,
+    TLS_ERR_SSL_HOSTNAME_VERIFY_FAILED = 2303603,
 };
 
 std::string MakeErrorMessage(int error);
