@@ -217,6 +217,8 @@ private:
 
     static bool SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context);
 
+    static long GetSslVerifyHostValue(const HttpRequestOptions &options);
+
     static bool SetDnsOption(CURL *curl, RequestContext *context);
 
     static bool SetDnsResolvOption(CURL *curl, RequestContext *context);

@@ -583,6 +583,17 @@ declare namespace http {
      * @since 23 dynamic&static
      */
     sniHostName?: string;
+
+    /**
+     * Whether to verify that the host name in the server certificate matches the requested host.
+     * The default value is true. If this parameter is set to false, host name verification is disabled,
+     * but server certificate chain verification remains enabled. Disabling host name verification may increase
+     * the risk of man-in-the-middle attacks. It is recommended that you use certificate pinning or a specified CA.
+     * @type {?boolean}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 26.2.0 dynamic&static
+     */
+    sslServerHostnameVerification?: boolean;
   }
 
   /**

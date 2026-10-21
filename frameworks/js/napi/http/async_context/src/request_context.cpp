@@ -415,6 +415,20 @@ void RequestContext::ParseSniHostName(napi_value optionsValue)
     }
 }
 
+void RequestContext::ParseSslServerHostnameVerification(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(
+        GetEnv(), optionsValue, HttpConstant::PARAM_KEY_SSL_SERVER_HOSTNAME_VERIFICATION)) {
+        return;
+    }
+    napi_value value = NapiUtils::GetNamedProperty(
+        GetEnv(), optionsValue, HttpConstant::PARAM_KEY_SSL_SERVER_HOSTNAME_VERIFICATION);
+    if (NapiUtils::GetValueType(GetEnv(), value) != napi_boolean) {
+        return;
+    }
+    options.SetSslServerHostnameVerification(NapiUtils::GetBooleanFromValue(GetEnv(), value));
+}
+
 void RequestContext::ParseHeader(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_HEADER)) {
@@ -869,6 +883,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     }
 
     ParseSniHostName(optionsValue);
+    ParseSslServerHostnameVerification(optionsValue);
     ParseHeader(optionsValue);
     ParseCaPath(optionsValue);
     ParseCaData(optionsValue);

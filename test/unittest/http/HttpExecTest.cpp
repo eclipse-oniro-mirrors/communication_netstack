@@ -98,6 +98,15 @@ HWTEST_F(HttpExecTest, SetServerSSLCertOption001, TestSize.Level1)
     EXPECT_TRUE(HttpExec::SetServerSSLCertOption(handle.get(), &context));
 }
 
+HWTEST_F(HttpExecTest, GetSslVerifyHostValue001, TestSize.Level1)
+{
+    HttpRequestOptions options;
+    EXPECT_EQ(HttpExec::GetSslVerifyHostValue(options), 2L);
+
+    options.SetSslServerHostnameVerification(false);
+    EXPECT_EQ(HttpExec::GetSslVerifyHostValue(options), 0L);
+}
+
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 HWTEST_F(HttpExecTest, MultiPathSslCtxFunction001, TestSize.Level1)
 {
