@@ -750,7 +750,7 @@ int CreatConnectInfo(const std::string url, lws_context *lwsContext, WebSocketCl
     connectInfo.retry_and_idle_policy = &RETRY;
     if (strcmp(prefix, PREFIX_HTTPS) == 0 || strcmp(prefix, PREFIX_WSS) == 0) {
         connectInfo.ssl_connection =
-            LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_INSECURE | LCCSCF_ALLOW_SELFSIGNED;
+            LCCSCF_USE_SSL;
     }
     // LCOV_EXCL_START
     connectInfo.ssl_connection = ((unsigned int)connectInfo.ssl_connection) | LCCSCF_CONMON;
@@ -988,7 +988,7 @@ int CreatConnectInfoEx(const std::string url, lws_context *lwsContext, WebSocket
     connectInfo.retry_and_idle_policy = &RETRY;
     if (strcmp(prefix, PREFIX_HTTPS) == 0 || strcmp(prefix, PREFIX_WSS) == 0) {
         connectInfo.ssl_connection =
-            LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_INSECURE | LCCSCF_ALLOW_SELFSIGNED;
+            LCCSCF_USE_SSL;
     }
     connectInfo.ssl_connection = ((unsigned int)connectInfo.ssl_connection) | LCCSCF_CONMON;
     lws *wsi = nullptr;

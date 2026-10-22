@@ -693,7 +693,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     connectInfo.protocol = customizedProtocol;
 
     if (protocol == PREFIX_HTTPS || protocol == PREFIX_WSS) {
-        connectInfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_SELFSIGNED;
+        connectInfo.ssl_connection = LCCSCF_USE_SSL;
     }
     connectInfo.ssl_connection = ((unsigned int)connectInfo.ssl_connection) | LCCSCF_CONMON;
     if (context->skipServerCertVerification_) {
