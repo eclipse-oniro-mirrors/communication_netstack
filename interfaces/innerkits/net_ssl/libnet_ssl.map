@@ -20,6 +20,8 @@
     *X509ToCertBlob*;
     *VerifyHostname*;
     *BuildSortedChain*;
+    *VerifyMultiCandidateChains*;
+    *CustomCertVerifyCallback*;
   local:
     *;
 };

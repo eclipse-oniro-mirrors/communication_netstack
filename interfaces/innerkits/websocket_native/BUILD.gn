@@ -74,6 +74,7 @@ ohos_shared_library("websocket_native") {
   defines = [ "OHOS_LIBWEBSOCKETS=1" ]
 
   deps = [
+    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
   ]

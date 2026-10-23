@@ -24,6 +24,8 @@
 #include <thread>
 #include <unistd.h>
 
+#include <openssl/ssl.h>
+
 #include "netstack_log.h"
 #include "gtest/gtest.h"
 #ifdef GTEST_API_
@@ -58,6 +60,7 @@ namespace OHOS::NetStack::WebSocketServer {
 }
 
 namespace OHOS::NetStack::WebSocketClient {
+    int LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
     int LwsCallbackClientAppendHandshakeHeader(
         lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
     int LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
@@ -74,6 +77,17 @@ namespace {
     static constexpr const size_t TEST_MAX_DATA_LENGTH = 5 * 1024 * 1024;
     static constexpr const size_t TEST_LENGTH = 1;
     static constexpr const int MAX_URI_LENGTH = 8196;
+
+    HWTEST_F(WebSocketTest, LwsCallbackCertVerifyNullContext, TestSize.Level1)
+    {
+        EXPECT_EQ(LwsCallback(nullptr, LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS,
+            nullptr, nullptr, 0), 0);
+        SSL_CTX *sslCtx = SSL_CTX_new(TLS_client_method());
+        ASSERT_NE(sslCtx, nullptr);
+        EXPECT_EQ(LwsCallback(nullptr, LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS,
+            sslCtx, nullptr, 0), 0);
+        SSL_CTX_free(sslCtx);
+    }
 
     OpenOptions openOptions;
 

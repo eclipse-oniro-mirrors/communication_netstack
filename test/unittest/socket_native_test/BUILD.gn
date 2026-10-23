@@ -94,7 +94,10 @@ ohos_unittest("socket_native_unittest") {
     "TlsSocketServerTest.cpp",
   ]
 
-  deps = [ "$NETSTACK_DIR/utils:stack_utils_common" ]
+  deps = [
+    "$NETSTACK_DIR/utils:stack_utils_common",
+    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
+  ]
 
   external_deps = [
     "c_utils:utils",
