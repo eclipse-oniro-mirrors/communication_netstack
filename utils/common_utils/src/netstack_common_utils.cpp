@@ -26,13 +26,14 @@
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
+#include <mutex>
 #include <regex>
 #include <string>
 #include <unistd.h>
 #include <vector>
 #include <fstream>
 #include <sstream>
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(LINUX_PLATFORM)
 #include <filesystem>
 #endif
 
@@ -41,7 +42,8 @@
 #endif // HAS_NETMANAGER_BASE
 
 #include "netstack_log.h"
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(LINUX_PLATFORM) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "netstack_apipolicy_utils.h"
 #include "netstack_bundle_utils.h"
 #endif
@@ -193,7 +195,8 @@ bool HasInternetPermission()
 
 bool IsAtomicService(std::string &bundleName)
 {
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(LINUX_PLATFORM) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     return BundleUtils::IsAtomicService(bundleName);
 #else
     return false;
@@ -202,7 +205,8 @@ bool IsAtomicService(std::string &bundleName)
 
 bool IsAllowedHostname(const std::string &bundleName, const std::string &domainType, const std::string &url)
 {
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(LINUX_PLATFORM) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (bundleName.empty()) {
         NETSTACK_LOGE("isAllowedHostnameForAtomicService bundleName is empty");
         return true;
@@ -504,7 +508,7 @@ std::optional<std::string> GetBundleName()
 
 bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(LINUX_PLATFORM)
     std::error_code error;
     auto path = std::filesystem::absolute(filePath, error);
     if (error) {

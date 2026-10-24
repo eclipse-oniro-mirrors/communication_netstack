@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <atomic>
-#include <charconv>
 #include <ctime>
 #include <iomanip>
 #include <limits>
@@ -1753,8 +1752,7 @@ void RequestContext::SetConnectionExtraInfoToResult(napi_value result)
     auto readInt = [this](const std::string& key, int32_t defaultValue) -> int32_t {
         std::string value = response.GetExtraInfoItem(key);
         int32_t result;
-        auto [ptr, ec] = std::from_chars(value.data(), value.data() + value.size(), result);
-        return (ec == std::errc()) ? result : defaultValue;
+        return CommonUtils::ParseDecimalInteger(value, result, false) ? result : defaultValue;
     };
     napi_value extraInfoValue = nullptr;
     napi_env env = GetEnv();
