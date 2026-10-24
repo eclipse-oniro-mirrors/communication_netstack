@@ -65,8 +65,8 @@ export default namespace socket {
     }
     
     export interface SocketLingerOptions {
-        on: boolean;
-        linger: int;
+        on?: boolean;
+        linger?: int;
     }
     
     export interface ProxyOptions {
@@ -419,8 +419,8 @@ export default namespace socket {
     }
 
     export class SocketLingerOptionsInner implements SocketLingerOptions {
-        on: boolean;
-        linger: int;
+        on?: boolean;
+        linger?: int;
     }
 
     export class ProxyOptionsInner implements ProxyOptions {

@@ -1052,6 +1052,11 @@ impl From<&ffi::FFIUdpExtraOptions> for bridge::UDPExtraOptions {
 
 impl From<&bridge::TCPExtraOptions> for ffi::FFITcpExtraOptions {
     fn from(opts: &bridge::TCPExtraOptions) -> Self {
+        let (has_linger, linger_on, linger_linger) = match opts.socket_linger.as_ref() {
+            Some(l) => (true, l.on.unwrap_or(false), l.linger.unwrap_or(0)),
+            None => (false, false, 0),
+        };
+
         ffi::FFITcpExtraOptions {
             has_receive_buffer_size: opts.receive_buffer_size.is_some(),
             receive_buffer_size: opts.receive_buffer_size.unwrap_or(0),
@@ -1068,8 +1073,8 @@ impl From<&bridge::TCPExtraOptions> for ffi::FFITcpExtraOptions {
             has_tcp_no_delay: opts.tcp_no_delay.is_some(),
             tcp_no_delay: opts.tcp_no_delay.unwrap_or(false),
             has_socket_linger: opts.socket_linger.is_some(),
-            socket_linger_on: opts.socket_linger.as_ref().map(|s| s.on).unwrap_or(false),
-            socket_linger_linger: opts.socket_linger.as_ref().map(|s| s.linger).unwrap_or(0),
+            socket_linger_on: linger_on,
+            socket_linger_linger: linger_linger,
             has_tcp_fast_open: opts.tcp_fast_open.is_some(),
             tcp_fast_open: opts.tcp_fast_open.unwrap_or(false),
         }
@@ -1088,8 +1093,8 @@ impl From<&ffi::FFITcpExtraOptions> for bridge::TCPExtraOptions {
             tcp_no_delay: if opts.has_tcp_no_delay { Some(opts.tcp_no_delay) } else { None },
             socket_linger: if opts.has_socket_linger {
                 Some(bridge::SocketLingerOptions {
-                    on: opts.socket_linger_on,
-                    linger: opts.socket_linger_linger,
+                    on: Some(opts.socket_linger_on),
+                    linger: Some(opts.socket_linger_linger),
                 }) } else { None },
             tcp_fast_open: if opts.has_tcp_fast_open { Some(opts.tcp_fast_open) } else { None },
         }
