@@ -2486,7 +2486,8 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
         certs.emplace_back(HttpConstant::HTTP_PREPARE_CA_PATH);
         context->SetCertsPath(std::move(certs), context->options.GetCaPath());
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYPEER, 1L, context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST, 2L, context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SSL_VERIFYHOST,
+            GetSslVerifyHostValue(context->options), context);
     }
     NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CAINFO, nullptr, context);
 #else
@@ -2537,6 +2538,12 @@ bool HttpExec::SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestC
     }
 
     return true;
+}
+
+long HttpExec::GetSslVerifyHostValue(const HttpRequestOptions &options)
+{
+    long verifyHost = options.GetSslServerHostnameVerification() ? 2L : 0L;
+    return verifyHost;
 }
 
 bool HttpExec::SetCertPinnerOption(CURL *curl, RequestContext *context)

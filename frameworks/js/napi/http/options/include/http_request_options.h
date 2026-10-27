@@ -312,6 +312,10 @@ public:
 
     [[nodiscard]] const std::string &GetSniHostName() const;
 
+    void SetSslServerHostnameVerification(bool sslServerHostnameVerification);
+
+    [[nodiscard]] bool GetSslServerHostnameVerification() const;
+
     void SetReuseConnectionsFlag(bool reuseConnectionsFlag);
     [[nodiscard]] const bool &GetReuseConnectionsFlag() const;
 
@@ -416,6 +420,8 @@ private:
     PathPreference pathPreference_;
 
     std::string sniHostName_;
+
+    bool sslServerHostnameVerification_ = true;
 
     bool reuseConnectionsFlag_ = true;
 

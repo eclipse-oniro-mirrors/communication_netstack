@@ -555,6 +555,16 @@ const std::string &HttpRequestOptions::GetSniHostName() const
     return sniHostName_;
 }
 
+void HttpRequestOptions::SetSslServerHostnameVerification(bool sslServerHostnameVerification)
+{
+    sslServerHostnameVerification_ = sslServerHostnameVerification;
+}
+
+bool HttpRequestOptions::GetSslServerHostnameVerification() const
+{
+    return sslServerHostnameVerification_;
+}
+
 void HttpRequestOptions::SetReuseConnectionsFlag(bool reuseConnectionsFlag)
 {
     reuseConnectionsFlag_ = reuseConnectionsFlag;

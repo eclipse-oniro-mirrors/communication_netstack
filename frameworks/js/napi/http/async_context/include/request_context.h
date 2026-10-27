@@ -309,6 +309,8 @@ public:
 
     void ParseSniHostName(napi_value optionsValue);
 
+    void ParseSslServerHostnameVerification(napi_value optionsValue);
+
     void SetSyncWait(bool isSync);
 
     bool IsSyncWait() const;

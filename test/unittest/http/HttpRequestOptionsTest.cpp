@@ -492,6 +492,18 @@ HWTEST_F(HttpRequestOptionsTest, SniHostNameTest001, TestSize.Level1)
     EXPECT_NE(sniHostName, "Example.com");
 }
 
+HWTEST_F(HttpRequestOptionsTest, SslServerHostnameVerificationTest001, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+    EXPECT_TRUE(requestOptions.GetSslServerHostnameVerification());
+
+    requestOptions.SetSslServerHostnameVerification(false);
+    EXPECT_FALSE(requestOptions.GetSslServerHostnameVerification());
+
+    requestOptions.SetSslServerHostnameVerification(true);
+    EXPECT_TRUE(requestOptions.GetSslServerHostnameVerification());
+}
+
 HWTEST_F(HttpRequestOptionsTest, SetPartialChainTest001, TestSize.Level1)
 {
     HttpRequestOptions requestOptions;
