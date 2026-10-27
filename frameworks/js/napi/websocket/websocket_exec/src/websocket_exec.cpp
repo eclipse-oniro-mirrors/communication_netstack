@@ -699,7 +699,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     if (context->skipServerCertVerification_) {
         NETSTACK_LOGI("ExecConnect skip server cert verify");
         connectInfo.ssl_connection = ((unsigned int)connectInfo.ssl_connection) | LCCSCF_ALLOW_INSECURE |
-            LCCSCF_ALLOW_EXPIRED;
+            LCCSCF_ALLOW_EXPIRED | LCCSCF_ALLOW_SELFSIGNED | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
     }
     lws *wsi = nullptr;
     connectInfo.pwsi = &wsi;
