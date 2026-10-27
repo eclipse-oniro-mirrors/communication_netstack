@@ -65,6 +65,7 @@ std::string MakeErrorMessage(int error)
         {TLS_ERR_NO_BIND, "No bind socket"},
         {TLS_ERR_SOCK_INVALID_FD, "Invalid socket FD"},
         {TLS_ERR_SOCK_NOT_CONNECT, "Socket is not connected"},
+        {TLS_ERR_SSL_HOSTNAME_VERIFY_FAILED, "SSL server hostname verification failed"},
     };
     auto search = ERROR_MAP.find(error);
     if (search != ERROR_MAP.end()) {

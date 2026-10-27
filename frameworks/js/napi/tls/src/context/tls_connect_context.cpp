@@ -44,6 +44,7 @@ constexpr const char *FAMILY_NAME = "family";
 constexpr const char *PORT_NAME = "port";
 constexpr const char *VERIFY_MODE_NAME = "isBidirectionalAuthentication";
 constexpr const char *SKIP_REMOTE_VALIDATION = "skipRemoteValidation";
+constexpr const char *SSL_SERVER_HOSTNAME_VERIFICATION = "sslServerHostnameVerification";
 constexpr const char *KEY_PROXY = "proxy";
 constexpr const char *TIMEOUT = "timeout";
 constexpr uint32_t CA_CHAIN_LENGTH = 1000;
@@ -221,6 +222,19 @@ TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_va
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], SKIP_REMOTE_VALIDATION)) {
         bool whetherToSkip = NapiUtils::GetBooleanProperty(GetEnv(), params[0], SKIP_REMOTE_VALIDATION);
         options.SetSkipRemoteValidation(whetherToSkip);
+    }
+
+    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], SSL_SERVER_HOSTNAME_VERIFICATION)) {
+        napi_value jsVerify = NapiUtils::GetNamedProperty(GetEnv(), params[0], SSL_SERVER_HOSTNAME_VERIFICATION);
+        if (NapiUtils::GetValueType(GetEnv(), jsVerify) == napi_boolean) {
+            bool whetherToVerify =
+                NapiUtils::GetBooleanProperty(GetEnv(), params[0], SSL_SERVER_HOSTNAME_VERIFICATION);
+            options.SetSslServerHostnameVerification(whetherToVerify);
+            NETSTACK_LOGI("tls connect parse: sslServerHostnameVerification=%{public}d", whetherToVerify ? 1 : 0);
+        } else {
+            NETSTACK_LOGI("tls connect parse: sslServerHostnameVerification is not boolean, ignored");
+            // Non-boolean type is ignored, keep the default false, do not affect the parameter validation result.
+        }
     }
 
     return options;

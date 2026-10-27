@@ -3741,6 +3741,20 @@ declare namespace socket {
     proxy?: ProxyOptions;
 
     /**
+     * The host name required for SSL server host name verification.
+     * The default value of sslServerHostnameVerify is true. When sslServerHostnameVerification is set to false,
+     * domain name verification is disabled.
+     * In this scenario, the certificate domain name verification is ignored when the IP address is used for connection.
+     * Default value: true.
+     *
+     * @syscap SystemCapability.Communication.NetStack
+     * @stagemodelonly
+     * @crossplatform
+     * @since 26.2.0 dynamic&static
+     */
+    sslServerHostnameVerification?: boolean;
+
+    /**
      * Timeout duration of the TLSSocket connetion, in milliseconds.
      * @type {?int}
      * @syscap SystemCapability.Communication.NetStack

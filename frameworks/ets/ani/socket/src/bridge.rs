@@ -214,6 +214,8 @@ pub struct TLSConnectOptions {
     pub skip_remote_validation: Option<bool>,
     #[serde(rename = "proxy\0")]
     pub proxy: Option<ProxyOptions>,
+    #[serde(rename = "sslServerHostnameVerification\0")]
+    pub ssl_server_hostname_verification: Option<bool>,
     #[serde(rename = "timeout\0")]
     pub timeout: Option<i32>,
 }

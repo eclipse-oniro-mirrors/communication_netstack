@@ -148,6 +148,25 @@ HWTEST_F(TlsConnectOptionsTest, SkipRemoteValidation, TestSize.Level1)
 }
 
 /**
+ * @tc.name: TlsConnectOptionsTest_SslServerHostnameVerification
+ * @tc.desc: Test SetSslServerHostnameVerification and GetSslServerHostnameVerification
+ * @tc.type: FUNC
+ */
+HWTEST_F(TlsConnectOptionsTest, SslServerHostnameVerification, TestSize.Level1)
+{
+    TLSConnectOptions options;
+
+    // Default should be false
+    EXPECT_FALSE(options.GetSslServerHostnameVerification());
+
+    options.SetSslServerHostnameVerification(true);
+    EXPECT_TRUE(options.GetSslServerHostnameVerification());
+
+    options.SetSslServerHostnameVerification(false);
+    EXPECT_FALSE(options.GetSslServerHostnameVerification());
+}
+
+/**
  * @tc.name: TlsConnectOptionsTest_Timeout
  * @tc.desc: Test SetTimeout and GetTimeout
  * @tc.type: FUNC
