@@ -89,7 +89,7 @@ std::string MakeErrnoString()
 std::string MakeSSLErrorString(int error)
 {
     char err[MAX_ERR_LENGTH] = {0};
-    ERR_error_string_n(error - TlsSocket::TlsSocketError::TLS_ERR_SYS_BASE, err, sizeof(err));
+    ERR_error_string_n(error - TlsSocket::TlsSocketError::TLS_ERR_SSL_BASE, err, sizeof(err));
     return err;
 }
 #if UNITTEST
