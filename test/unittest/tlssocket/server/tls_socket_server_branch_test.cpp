@@ -413,8 +413,9 @@ HWTEST_F(TlsSocketServerBranchTest, TlsSocketServerBranchTest035, testing::ext::
     TLSSocketServer *server = new TLSSocketServer();
     EXPECT_TRUE(server != nullptr);
     server->NotifyRcvThdExit();
-    delete server;
+    // assert before delete: reading server->sockRcvExit_ after delete is use-after-free
     EXPECT_TRUE(server->sockRcvExit_);
+    delete server;
 }
 } // namespace TlsSocketServer
 } // namespace NetStack

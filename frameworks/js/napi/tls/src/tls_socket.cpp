@@ -1523,6 +1523,21 @@ bool TLSSocket::TLSSocketInternal::CreatTlsContext()
     return true;
 }
 
+static void FreeX509InfoStack(STACK_OF(X509_INFO) *inf)
+{
+    if (inf == nullptr) {
+        return;
+    }
+    /* sk_X509_INFO_pop_free calls X509_INFO_free through a void(*)(void) cast: the type-punned
+     * indirect call is rejected by CFI when the crypto library is statically linked into a
+     * cfi-instrumented module, so free each element with a direct call and release the stack
+     * container separately. */
+    for (int i = 0; i < sk_X509_INFO_num(inf); ++i) {
+        X509_INFO_free(sk_X509_INFO_value(inf, i));
+    }
+    sk_X509_INFO_free(inf);
+}
+
 static void LoadCaCertFromMemory(X509_STORE *store, const std::string &pemCerts)
 {
     if (!store || pemCerts.empty() || pemCerts.size() > static_cast<size_t>(INT_MAX)) {
@@ -1554,7 +1569,7 @@ static void LoadCaCertFromMemory(X509_STORE *store, const std::string &pemCerts)
         }
     }
 
-    sk_X509_INFO_pop_free(inf, X509_INFO_free);
+    FreeX509InfoStack(inf);
     BIO_free(cbio);
 }
 

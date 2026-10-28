@@ -541,6 +541,21 @@ static uint32_t VerifyPinnedPublicKey(X509 *cert, const char *hostname)
 }
 #endif // HAS_NETMANAGER_BASE
 
+static void FreeX509Stack(STACK_OF(X509) *chain)
+{
+    if (chain == nullptr) {
+        return;
+    }
+    /* sk_X509_pop_free calls X509_free through a void(*)(void) cast: the type-punned
+     * indirect call is rejected by CFI when the crypto library is statically linked into
+     * a cfi-instrumented module, so free each element with a direct call and release the
+     * stack container separately. */
+    for (int i = 0; i < sk_X509_num(chain); ++i) {
+        X509_free(sk_X509_value(chain, i));
+    }
+    sk_X509_free(chain);
+}
+
 uint32_t VerifyAndBuildCertChain(
     const CertBlob *certs,
     size_t certCount,
@@ -639,7 +654,7 @@ uint32_t VerifyAndBuildCertChain(
         X509_free(leafCert);
     }
     if (untrustedChain != nullptr) {
-        sk_X509_pop_free(untrustedChain, X509_free);
+        FreeX509Stack(untrustedChain);
     }
     if (store != nullptr) {
         X509_STORE_free(store);

@@ -287,6 +287,10 @@ bool TLSContextServer::SetKeyAndCheck(TLSContextServer *tlsContext, const TLSCon
     if (configuration.GetPrivateKey().Algorithm() == OPAQUE) {
         tlsContext->pkey_ = reinterpret_cast<EVP_PKEY *>(configuration.GetPrivateKey().handle());
     } else {
+        if (configuration.GetPrivateKey().handle() == nullptr) {
+            NETSTACK_LOGE("private key handle is null, cannot set private key");
+            return false;
+        }
         tlsContext->pkey_ = EVP_PKEY_new();
         if (configuration.GetPrivateKey().Algorithm() == ALGORITHM_RSA) {
             EVP_PKEY_set1_RSA(tlsContext->pkey_, reinterpret_cast<RSA *>(configuration.GetPrivateKey().handle()));

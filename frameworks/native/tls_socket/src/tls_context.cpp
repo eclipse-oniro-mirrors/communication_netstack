@@ -288,6 +288,10 @@ bool TLSContext::SetKeyAndCheck(TLSContext *tlsContext, const TLSConfiguration &
     if (configuration.GetPrivateKey().Algorithm() == OPAQUE) {
         tlsContext->pkey_ = reinterpret_cast<EVP_PKEY *>(configuration.GetPrivateKey().handle());
     } else {
+        if (configuration.GetPrivateKey().handle() == nullptr) {
+            NETSTACK_LOGE("private key handle is null, cannot set private key");
+            return false;
+        }
         tlsContext->pkey_ = EVP_PKEY_new();
         if (tlsContext->pkey_ == nullptr) {
             NETSTACK_LOGE("pkey_ is nullptr, cannot create private key");

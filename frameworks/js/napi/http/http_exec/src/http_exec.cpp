@@ -2269,6 +2269,21 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *sslCtx, void *request_contex
 }
 
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
+static void FreeX509InfoStack(STACK_OF(X509_INFO) *inf)
+{
+    if (inf == nullptr) {
+        return;
+    }
+    /* sk_X509_INFO_pop_free calls X509_INFO_free through a void(*)(void) cast: the type-punned
+     * indirect call is rejected by CFI when the crypto library is statically linked into a
+     * cfi-instrumented module, so free each element with a direct call and release the stack
+     * container separately. */
+    for (int i = 0; i < sk_X509_INFO_num(inf); ++i) {
+        X509_INFO_free(sk_X509_INFO_value(inf, i));
+    }
+    sk_X509_INFO_free(inf);
+}
+
 static bool LoadCaCertFromString(X509_STORE *store, const std::string &certData)
 {
     if (!store || certData.empty() || certData.size() > static_cast<size_t>(INT_MAX)) {
@@ -2298,13 +2313,13 @@ static bool LoadCaCertFromString(X509_STORE *store, const std::string &certData)
         if ((itmp->x509 && X509_STORE_add_cert(store, itmp->x509) != 1) ||
             (itmp->crl && X509_STORE_add_crl(store, itmp->crl) != 1)) {
             NETSTACK_LOGE("add caCert or crt failed");
-            sk_X509_INFO_pop_free(inf, X509_INFO_free);
+            FreeX509InfoStack(inf);
             BIO_free(cbio);
             return false;
         }
     }
 
-    sk_X509_INFO_pop_free(inf, X509_INFO_free);
+    FreeX509InfoStack(inf);
     BIO_free(cbio);
     return true;
 }
