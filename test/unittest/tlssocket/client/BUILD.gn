@@ -485,3 +485,56 @@ ohos_unittest("tls_socket_branch_test") {
   part_name = "netstack"
   subsystem_name = "communication"
 }
+
+ohos_unittest("tls_socket_lifecycle_test") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
+  sources = [ "TlsSocketLifecycleTest.cpp" ]
+  sources += tls_sources
+  sources += tls_napi_sources
+  sources += socket_sources
+
+  configs = [ ":tls_test_config" ]
+
+  deps = [
+    "$NETSTACK_DIR/utils:stack_utils_common",
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+  ]
+  external_deps = [
+    "c_utils:utils",
+    "hiappevent:hiappevent_innerapi",
+    "hilog:libhilog",
+    "napi:ace_napi",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
+    "samgr:samgr_proxy",
+  ]
+
+  defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_netmanager_base) &&
+      global_parts_info.communication_netmanager_base) {
+    external_deps += [
+      "hichecker:libhichecker",
+      "netmanager_base:net_conn_manager_if",
+      "netmanager_base:net_security_config_if",
+    ]
+    defines += [ "HAS_NETMANAGER_BASE=1" ]
+  } else {
+    defines += [ "HAS_NETMANAGER_BASE=0" ]
+  }
+  if (defined(global_parts_info) && defined(global_parts_info.hiviewdfx_api_metrics)) {
+    external_deps += [ "api_metrics:histogrammanager" ]
+    defines += [ "NETWORKKIT_API_METRICS_ENABLE" ]
+  }
+
+  module_out_path = "netstack/netstack/tls_socket_unittest"
+  part_name = "netstack"
+  subsystem_name = "communication"
+}
