@@ -71,6 +71,8 @@ public:
 
     [[nodiscard]] std::string GetBundleName() const;
 
+    [[nodiscard]] std::string GetServerName() const;
+
     std::string url;
 
     std::map<std::string, std::string> header;
@@ -120,7 +122,11 @@ public:
 private:
     std::string userCertPath_;
 
+    std::string serverName_;
+
     void ParseHeader(napi_value optionsValue);
+
+    void ParseServerName(napi_value optionsValue);
 
     void ParseCaPath(napi_value optionsValue);
 

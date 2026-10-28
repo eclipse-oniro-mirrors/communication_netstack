@@ -207,7 +207,7 @@ void ApplyAddressAndSecure(const FFITlsConnectOptions& ffi, TlsSocket::TLSConnec
     Socket::NetAddress addr;
     FFINetAddressToNetAddress(ffi.address, addr);
     opts.SetNetAddress(addr);
-    opts.SetHostName(addr.GetAddress());
+    opts.SetHostName(std::string(ffi.address.address));
 
     TlsSocket::TLSSecureOptions secure;
     FFITlsSecureOptionsToTLSSecureOptions(ffi.secure_options, secure);
@@ -231,6 +231,7 @@ void ApplyTlsOptionalFields(const FFITlsConnectOptions& ffi, TlsSocket::TLSConne
         opts.SetSslServerHostnameVerification(ffi.ssl_server_hostname_verification);
     }
     if (ffi.has_timeout) { opts.SetTimeout(static_cast<uint32_t>(ffi.timeout)); }
+    if (ffi.has_server_name) { opts.SetServerName(std::string(ffi.server_name)); }
     ApplyTlsProxyOption(ffi, opts);
 }
 

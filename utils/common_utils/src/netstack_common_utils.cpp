@@ -408,6 +408,48 @@ int DetectIPType(const std::string &ip)
     return INVALID_IP_TYPE;
 }
 
+static bool IsValidDomainName(const std::string &domain)
+{
+    constexpr size_t maxDomainLabelLen = 63;
+    if (domain.empty() || domain.front() == '-' || domain.back() == '-') {
+        return false;
+    }
+    size_t labelStart = 0;
+    for (size_t i = 0; i <= domain.length(); i++) {
+        if (i == domain.length() || domain[i] == '.') {
+            if (i == labelStart || i - labelStart > maxDomainLabelLen || domain[labelStart] == '-' ||
+                domain[i - 1] == '-') {
+                return false;
+            }
+            labelStart = i + 1;
+        } else if (!((domain[i] >= 'a' && domain[i] <= 'z') || (domain[i] >= 'A' && domain[i] <= 'Z') ||
+                     (domain[i] >= '0' && domain[i] <= '9')) && domain[i] != '-') {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::string GetValidServerName(const std::string &serverName, uint32_t maxLength)
+{
+    std::string name = serverName;
+    if (!name.empty() && name.back() == '.') {
+        name.pop_back();
+    }
+    if (name.empty() || name.length() > maxLength) {
+        return "";
+    }
+    if (DetectIPType(name) != INVALID_IP_TYPE) {
+        return "";
+    }
+    return IsValidDomainName(name) ? name : "";
+}
+
+std::string GetValidServerName(const std::string &serverName)
+{
+    return GetValidServerName(serverName, MAX_SERVER_NAME_LEN);
+}
+
 bool IsValidIPV4(const std::string &ip)
 {
     return IsValidIP(ip, AF_INET);

@@ -3763,6 +3763,23 @@ declare namespace socket {
      * @arkts 1.2
      */
     timeout?: int;
+
+    /**
+     * Server Name Indication (SNI) service name used by the TLS handshake. This parameter is optional.
+     * In the IP direct connection scenario, the service domain name can be explicitly specified as the SNI.
+     * If this field is not set, the SNI is automatically filled with the domain name of the destination address.
+     * When sslServerHostnameVerification is true, a valid serverName is used for server hostname verification.
+     * If this field is omitted or invalid, verification uses the original destination address when enabled.
+     * This field does not enable server hostname verification by itself.
+     * The maximum length is 253 bytes. Value constraint: Valid domain name. Default value: undefined.
+     * @type {?string}
+     * @syscap SystemCapability.Communication.NetStack
+     * @stagemodelonly
+     * @crossplatform
+     * @since 26.2.0
+     * @arkts 1.2
+     */
+    serverName?: string;
   }
 
   /**

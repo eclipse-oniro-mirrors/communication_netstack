@@ -664,6 +664,8 @@ pub mod ffi {
         proxy: FFIProxyOptions,
         has_timeout: bool,
         timeout: i32,
+        has_server_name: bool,
+        server_name: String,
     }
 
     extern "Rust" {
@@ -1407,6 +1409,8 @@ impl From<&bridge::TLSConnectOptions> for ffi::FFITlsConnectOptions {
             proxy,
             has_timeout: opts.timeout.is_some(),
             timeout: opts.timeout.unwrap_or(0),
+            has_server_name: opts.server_name.is_some(),
+            server_name: opts.server_name.clone().unwrap_or_default(),
         }
     }
 }
@@ -1421,6 +1425,7 @@ impl From<&ffi::FFITlsConnectOptions> for bridge::TLSConnectOptions {
             ssl_server_hostname_verification: if opts.has_ssl_server_hostname_verification { Some(opts.ssl_server_hostname_verification) } else { None },
             proxy: if opts.has_proxy { Some(bridge::ProxyOptions::from(&opts.proxy)) } else { None },
             timeout: if opts.has_timeout { Some(opts.timeout) } else { None },
+            server_name: if opts.has_server_name { Some(opts.server_name.clone()) } else { None },
         }
     }
 }

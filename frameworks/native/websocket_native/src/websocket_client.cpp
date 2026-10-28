@@ -709,6 +709,30 @@ std::string BuildWebSocketHost(const char *prefix, const char *address, int port
     return std::string(address) + NAME_END + std::to_string(port);
 }
 
+static void EraseHostHeaderIfExist(std::map<std::string, std::string> &headers)
+{
+    for (auto iter = headers.begin(); iter != headers.end();) {
+        if (CommonUtils::ToLower(iter->first) == "host") {
+            NETSTACK_LOGI("serverName takes precedence over the Host header");
+            iter = headers.erase(iter);
+        } else {
+            ++iter;
+        }
+    }
+}
+
+std::string BuildWebSocketConnectHost(const char *prefix, const char *address, int port,
+    const std::string &serverName, std::map<std::string, std::string> &headers)
+{
+    std::string host = BuildWebSocketHost(prefix, address, port);
+    if ((strcmp(prefix, PREFIX_HTTPS) == 0 || strcmp(prefix, PREFIX_WSS) == 0) && !serverName.empty()) {
+        // serverName takes precedence over the host name of the URL, and it determines both SNI and Host header
+        host = BuildWebSocketHost(prefix, serverName.c_str(), port);
+        EraseHostHeaderIfExist(headers);
+    }
+    return host;
+}
+
 std::string BuildWebSocketOrigin(const char *prefix, const char *address, int port, bool supportOriginPort)
 {
     if (!supportOriginPort) {
@@ -732,7 +756,8 @@ int CreatConnectInfo(const std::string url, lws_context *lwsContext, WebSocketCl
         return WebSocketErrorCode::WEBSOCKET_CONNECTION_PARSEURL_ERROR;
     }
     std::string path = PATH_START + std::string(pathWithoutStart);
-    std::string tempHost = BuildWebSocketHost(prefix, address, port);
+    std::string tempHost = BuildWebSocketConnectHost(prefix, address, port, client->GetClientContext()->serverName,
+        client->GetClientContext()->header);
     std::string origin =
         BuildWebSocketOrigin(prefix, address, port, client->GetClientContext()->supportOriginPort);
     connectInfo.context = lwsContext;
@@ -833,6 +858,16 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
         this->GetClientContext()->noAllowedHost = true;
         return WebSocketErrorCode::WEBSOCKET_ERROR_DISALLOW_HOST;
     }
+    if (this->GetClientContext()->GetContext() != nullptr && !this->GetClientContext()->IsThreadStop()) {
+        NETSTACK_LOGE("Websocket connect already exist");
+        return WebsocketErrorCodeEx::WEBSOCKET_ERROR_CODE_CONNECT_ALREADY_EXIST;
+    }
+    if (serviceThread_.joinable()) {
+        serviceThread_.join();
+    }
+    if (this->GetClientContext()->GetContext() != nullptr) {
+        this->GetClientContext()->SetContext(nullptr);
+    }
     if (!options.headers.empty()) {
         if (options.headers.size() > MAX_HEADER_LENGTH) {
             return WebSocketErrorCode::WEBSOCKET_ERROR_NO_HEADR_EXCEEDS;
@@ -844,15 +879,9 @@ int WebSocketClient::Connect(std::string url, struct OpenOptions options)
         }
     }
     this->GetClientContext()->supportOriginPort = options.supportOriginPort;
-    if (this->GetClientContext()->GetContext() != nullptr && !this->GetClientContext()->IsThreadStop()) {
-        NETSTACK_LOGE("Websocket connect already exist");
-        return WebsocketErrorCodeEx::WEBSOCKET_ERROR_CODE_CONNECT_ALREADY_EXIST;
-    }
-    if (serviceThread_.joinable()) {
-        serviceThread_.join();
-    }
-    if (this->GetClientContext()->GetContext() != nullptr) {
-        this->GetClientContext()->SetContext(nullptr);
+    this->GetClientContext()->serverName = CommonUtils::GetValidServerName(options.serverName);
+    if (this->GetClientContext()->serverName.empty() && !options.serverName.empty()) {
+        NETSTACK_LOGE("serverName is invalid, ignore it");
     }
     this->GetClientContext()->ResetConnectionState();
     int ret = DoConnect(this, url);
@@ -969,7 +998,8 @@ int CreatConnectInfoEx(const std::string url, lws_context *lwsContext, WebSocket
         return WebsocketErrorCodeEx::WEBSOCKET_ERROR_CODE_URL_ERROR;
     }
     std::string path = PATH_START + std::string(pathWithoutStart);
-    std::string tempHost = BuildWebSocketHost(prefix, address, port);
+    std::string tempHost = BuildWebSocketConnectHost(prefix, address, port, client->GetClientContext()->serverName,
+        client->GetClientContext()->header);
     std::string origin =
         BuildWebSocketOrigin(prefix, address, port, client->GetClientContext()->supportOriginPort);
     // LCOV_EXCL_START
@@ -1017,13 +1047,8 @@ static int CheckConnectPermission(WebSocketClient *client, const std::string &ur
     return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
 }
 
-int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
+static int ConfigureConnectExOptions(ClientContext *context, const OpenOptions &options)
 {
-    NETSTACK_LOGI("ClientId:%{public}d, Connect start", this->GetClientContext()->GetClientId());
-    int permissonCheckCode = CheckConnectPermission(this, url);
-    if (permissonCheckCode != WEBSOCKET_NONE_ERR) {
-        return permissonCheckCode;
-    }
     if (!options.headers.empty()) {
         if (options.headers.size() > MAX_HEADER_LENGTH) {
             return WebSocketErrorCode::WEBSOCKET_ERROR_NO_HEADR_EXCEEDS;
@@ -1031,12 +1056,34 @@ int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
         for (const auto &item : options.headers) {
             const std::string &key = item.first;
             const std::string &value = item.second;
-            this->GetClientContext()->header[key] = value;
+            context->header[key] = value;
         }
     }
-    this->GetClientContext()->supportOriginPort = options.supportOriginPort;
-    if (!this->GetClientContext()->GetUserCertPath().empty()) {
-        this->GetClientContext()->caPath = this->GetClientContext()->GetUserCertPath();
+    context->supportOriginPort = options.supportOriginPort;
+    context->serverName = CommonUtils::GetValidServerName(options.serverName);
+    if (context->serverName.empty() && !options.serverName.empty()) {
+        NETSTACK_LOGE("serverName is invalid, ignore it");
+    }
+    if (!context->GetUserCertPath().empty()) {
+        context->caPath = context->GetUserCertPath();
+    }
+    return WebSocketErrorCode::WEBSOCKET_NONE_ERR;
+}
+
+int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
+{
+    NETSTACK_LOGI("ClientId:%{public}d, Connect start", this->GetClientContext()->GetClientId());
+    int permissonCheckCode = CheckConnectPermission(this, url);
+    if (permissonCheckCode != WEBSOCKET_NONE_ERR) {
+        return permissonCheckCode;
+    }
+    if (this->GetClientContext()->GetContext() != nullptr) {
+        NETSTACK_LOGE("Websocket connect already exist");
+        return WebsocketErrorCodeEx::WEBSOCKET_ERROR_CODE_CONNECT_ALREADY_EXIST;
+    }
+    int optionResult = ConfigureConnectExOptions(this->GetClientContext(), options);
+    if (optionResult != WEBSOCKET_NONE_ERR) {
+        return optionResult;
     }
 
     lws_context_creation_info info = {};
@@ -1044,10 +1091,6 @@ int WebSocketClient::ConnectEx(std::string url, struct OpenOptions options)
     FillContextInfo(this->GetClientContext(), info, proxyAds, MAX_ADDRESS_LENGTH);
     if (!FillCaPath(this->GetClientContext(), info)) {
         return WebsocketErrorCodeEx::WEBSOCKET_ERROR_CODE_FILE_NOT_EXIST;
-    }
-    if (this->GetClientContext()->GetContext() != nullptr) {
-        NETSTACK_LOGE("Websocket connect already exist");
-        return WebsocketErrorCodeEx::WEBSOCKET_ERROR_CODE_CONNECT_ALREADY_EXIST;
     }
     lws_context *lwsContext = lws_create_context(&info);
     if (lwsContext == nullptr) {

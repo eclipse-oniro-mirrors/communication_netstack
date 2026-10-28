@@ -299,6 +299,9 @@ public:
 
     void SetHostName(const std::string &hostName);
     [[nodiscard]] std::string GetHostName() const;
+
+    void SetServerName(const std::string &serverName);
+    [[nodiscard]] std::string GetServerName() const;
     uint32_t GetTimeout() const;
 
     std::shared_ptr<Socket::ProxyOptions> proxyOptions_{nullptr};
@@ -311,6 +314,7 @@ private:
     bool skipRemoteValidation_ = false;
     bool sslServerHostnameVerification_ = false;
     std::string hostName_;
+    std::string serverName_;
     uint32_t timeout_ = DEFAULT_TIMEOUT_TLS;
 };
 

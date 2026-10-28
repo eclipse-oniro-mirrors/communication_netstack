@@ -229,6 +229,7 @@ public:
 
     std::string url;
     bool supportOriginPort = false;
+    std::string serverName;
     WebsocketProxyType usingWebsocketProxyType = WebsocketProxyType::USE_SYSTEM;
 
     std::string websocketProxyHost;

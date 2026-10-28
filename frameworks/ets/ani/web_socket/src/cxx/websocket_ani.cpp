@@ -54,6 +54,7 @@ int32_t Connect(WebSocketClientWrapper &client, const rust::str url, AniConnectO
 {
     NetStack::WebSocketClient::OpenOptions openOptions;
     openOptions.supportOriginPort = options.supportOriginPort;
+    openOptions.serverName = std::string(options.serverName);
     bool isValue = false;
     std::string key;
     std::string value;

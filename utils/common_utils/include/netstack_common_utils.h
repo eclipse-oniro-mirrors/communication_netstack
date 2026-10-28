@@ -32,6 +32,9 @@ static const std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
 static const std::string DOMAIN_TYPE_WEBSOCKET_REQUEST = "webSocket";
 const int INVALID_IP_TYPE = -1;
 const int MAX_PORT = 65535;
+// The SNI buffer of libwebsockets is 128 bytes (including the terminating null character).
+const uint32_t MAX_SERVER_NAME_LEN = 127;
+const uint32_t MAX_TLS_SERVER_NAME_LEN = 253;
 static constexpr const int WEBSOCKET_PER_MESSAGE_MAX_SIZE = 1024 * 1024 * 1024;
 static constexpr const char *WEBSOCKET_DATA_LENGTH_EXCEEDED_STR = "websocket data length exceeded";
 enum SdkVersion {
@@ -86,6 +89,10 @@ bool IsExcluded(const std::string &str, const std::string &exclusions, const std
 bool IsHostNameExcluded(const std::string &url, const std::string &exclusions, const std::string &split);
 
 int DetectIPType(const std::string &ip);
+
+std::string GetValidServerName(const std::string &serverName);
+
+std::string GetValidServerName(const std::string &serverName, uint32_t maxLength);
 
 bool IsValidIP(const std::string& ip, int af);
 

@@ -47,6 +47,7 @@ constexpr const char *SKIP_REMOTE_VALIDATION = "skipRemoteValidation";
 constexpr const char *SSL_SERVER_HOSTNAME_VERIFICATION = "sslServerHostnameVerification";
 constexpr const char *KEY_PROXY = "proxy";
 constexpr const char *TIMEOUT = "timeout";
+constexpr const char *SERVER_NAME = "serverName";
 constexpr uint32_t CA_CHAIN_LENGTH = 1000;
 constexpr uint32_t PROTOCOLS_SIZE = 10;
 constexpr uint32_t CERT_CHAIN_LENGTH = 1000;
@@ -234,6 +235,15 @@ TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_va
         } else {
             NETSTACK_LOGI("tls connect parse: sslServerHostnameVerification is not boolean, ignored");
             // Non-boolean type is ignored, keep the default false, do not affect the parameter validation result.
+        }
+    }
+
+    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], SERVER_NAME)) {
+        napi_value jsServerName = NapiUtils::GetNamedProperty(GetEnv(), params[0], SERVER_NAME);
+        if (NapiUtils::GetValueType(GetEnv(), jsServerName) == napi_string) {
+            options.SetServerName(NapiUtils::GetStringFromValueUtf8(GetEnv(), jsServerName));
+        } else {
+            NETSTACK_LOGE("serverName type error");
         }
     }
 

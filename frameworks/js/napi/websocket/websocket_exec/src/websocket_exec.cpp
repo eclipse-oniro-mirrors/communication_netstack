@@ -101,6 +101,8 @@ namespace OHOS::NetStack::Websocket {
 
 using OHOS::NetStack::SocketStats::SocketStatisticsEvent;
 
+static constexpr const char *HOST_HEADER = "host";
+
 static const lws_protocols LWS_PROTOCOLS[] = {
     {"lws-minimal-client", WebSocketExec::LwsCallback, 0, 0},
     {nullptr, nullptr, 0, 0}, // this line is needed
@@ -655,6 +657,21 @@ static void SetRetry(lws_retry_bo_t *retry, ConnectContext *context)
     retry->secs_since_valid_hangup = context->pingInterval_ + context->pongTimeout_;
 }
 
+static void ApplyServerNameToHost(const std::string &protocol, const std::string &serverName, int port,
+    const std::shared_ptr<EventManager> &manager, std::string &host)
+{
+    if ((protocol != PREFIX_HTTPS && protocol != PREFIX_WSS) || serverName.empty()) {
+        return;
+    }
+    // serverName takes precedence over the host name of the URL, and it determines both SNI and Host header
+    host = (protocol == PREFIX_WSS && port == WSS_DEFAULT_PORT) ? serverName :
+        serverName + NAME_END + std::to_string(port);
+    auto userData = manager->GetWebSocketUserData();
+    if (userData != nullptr && userData->header.erase(HOST_HEADER) > 0) {
+        NETSTACK_LOGI("serverName takes precedence over the Host header");
+    }
+}
+
 bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsContext,
     const std::shared_ptr<EventManager> &manager)
 {
@@ -676,6 +693,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     std::string tempHost;
     std::string origin;
     ParseHost(protocol, address, port, context->supportOriginPort_, tempHost, origin);
+    ApplyServerNameToHost(protocol, context->GetServerName(), port, manager, tempHost);
     if (strcpy_s(customizedProtocol, MAX_PROTOCOL_LENGTH, context->GetProtocol().c_str()) != EOK) {
         NETSTACK_LOGE("memory copy failed");
     }
