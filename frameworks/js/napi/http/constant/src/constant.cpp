@@ -53,6 +53,7 @@ const char *const HttpConstant::PARAM_KEY_PRIORITY = "priority";
 const char *const HttpConstant::PARAM_KEY_MAX_REDIRECTS = "maxRedirects";
 const char *const HttpConstant::PARAM_KEY_SNI_HOSTNAME = "sniHostName";
 const char *const HttpConstant::PARAM_KEY_SSL_SERVER_HOSTNAME_VERIFICATION = "sslServerHostnameVerification";
+const char *const HttpConstant::PARAM_KEY_FOLLOW_REDIRECT_POST_TO_GET = "followRedirectPostToGet";
 
 const char *const HttpConstant::PARAM_KEY_USING_HTTP_PROXY = "usingProxy";
 const char *const HttpConstant::PARAM_KEY_CA_PATH = "caPath";

@@ -27,6 +27,7 @@ utils_include = [
 
 common_external_deps = [
   "ability_base:configuration",
+  "cJSON:cjson",
   "c_utils:utils",
   "curl:curl_shared",
   "hilog:libhilog",
@@ -73,17 +74,29 @@ ohos_unittest("http_unittest") {
 
   sources = [
     "$NETSTACK_NAPI_ROOT/http/async_context/src/request_context.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/base64/src/base64_utils.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_proxy/src/cache_proxy.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_cache_request.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_cache_response.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_cache_strategy.cpp",
     "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_time.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/lru_cache/src/disk_handler.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/lru_cache/src/lru_cache.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/lru_cache/src/lru_cache_disk_handler.cpp",
     "$NETSTACK_NAPI_ROOT/http/constant/src/constant.cpp",
     "$NETSTACK_NAPI_ROOT/http/http_exec/src/http_exec.cpp",
     "$NETSTACK_NAPI_ROOT/http/http_exec/src/http_tls_config.cpp",
+    "$NETSTACK_NAPI_ROOT/http/http_exec/src/http_utils.cpp",
     "$NETSTACK_NAPI_ROOT/http/http_interceptor/src/http_interceptor.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_request_options.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_response.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/src/epoll_request_handler.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/src/epoll_multi_driver.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/netstack_chr_client/src/netstack_chr_client.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/netstack_chr_client/src/netstack_chr_report.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/src/http_network_message.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/src/i_network_message.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/src/netstack_network_profiler.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/tlv_utils/src/tlv_utils.cpp",
     "ExtendInfoTest.cpp",
@@ -133,9 +146,16 @@ ohos_unittest("http_unittest") {
         defined(global_parts_info.communication_netmanager_base) &&
         global_parts_info.communication_netmanager_base) {
       external_deps += [
+        "bundle_framework:appexecfwk_base",
+        "bundle_framework:appexecfwk_core",
         "netmanager_base:net_conn_manager_if",
         "netmanager_base:net_security_config_if",
         "netmanager_base:netsys_client",
+        "safwk:system_ability_fwk",
+        "samgr:samgr_proxy",
+      ]
+      sources += [
+        "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/src/http_handover_handler.cpp",
       ]
       defines = [
         "HAS_NETMANAGER_BASE=1",

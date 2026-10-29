@@ -76,6 +76,8 @@ private:
     void IncomingRequestCallback();
 
 #if ENABLE_HTTP_INTERCEPT
+    static bool IsRedirectPostToGetNeeded(const Http::RequestContext *context, long responseCode);
+    static void ApplyRedirectPostToGet(Http::RequestContext *context);
     void HandleRedirect(CURL *easyHandle, std::shared_ptr<std::string> location, RequestInfo *requestInfo);
 #endif
     void HandleCompletion(CURLMsg *message, RequestInfo *requestInfo);

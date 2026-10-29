@@ -190,6 +190,8 @@ public:
 
     void SetHeader(const std::string &key, const std::string &val);
 
+    void RemoveHeaderByKey(const std::string &key);
+
     void SetReadTimeout(uint32_t readTimeout);
 
     void SetMaxLimit(uint32_t maxLimit);
@@ -333,6 +335,9 @@ public:
     void SetEnableAutoCookie(bool enableAutoCookie);
     [[nodiscard]] bool GetEnableAutoCookie() const;
 
+    void SetFollowRedirectPostToGet(bool followRedirectPostToGet);
+    [[nodiscard]] bool GetFollowRedirectPostToGet() const;
+
 private:
     std::string url_;
 
@@ -435,6 +440,7 @@ private:
     std::string socks5ProxyExclusionList_;
 
     bool enableAutoCookie_ = false;
+    bool followRedirectPostToGet_ = false;
 };
 } // namespace OHOS::NetStack::Http
 

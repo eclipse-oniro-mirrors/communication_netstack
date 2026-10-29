@@ -49,7 +49,8 @@ HttpRequestOptions::HttpRequestOptions()
       certEnc_(""),
       certTypeEnc_(""),
       keyEnc_(""),
-      sniHostName_("")
+      sniHostName_(""),
+      followRedirectPostToGet_(false)
 {
 }
 
@@ -81,6 +82,18 @@ void HttpRequestOptions::SetQueryParams(const std::string &queryParams)
 void HttpRequestOptions::SetHeader(const std::string &key, const std::string &val)
 {
     header_[key] = val;
+}
+
+void HttpRequestOptions::RemoveHeaderByKey(const std::string &key)
+{
+    const std::string lowerKey = CommonUtils::ToLower(key);
+    for (auto item = header_.begin(); item != header_.end();) {
+        if (CommonUtils::ToLower(item->first) == lowerKey) {
+            item = header_.erase(item);
+        } else {
+            ++item;
+        }
+    }
 }
 
 void HttpRequestOptions::SetReadTimeout(uint32_t readTimeout)
@@ -583,6 +596,16 @@ void HttpRequestOptions::SetInactivityMs(int inactivityMs)
 int HttpRequestOptions::GetInactivityMs() const
 {
     return inactivityMs_;
+}
+
+void HttpRequestOptions::SetFollowRedirectPostToGet(bool followRedirectPostToGet)
+{
+    followRedirectPostToGet_ = followRedirectPostToGet;
+}
+
+bool HttpRequestOptions::GetFollowRedirectPostToGet() const
+{
+    return followRedirectPostToGet_;
 }
 
 void HttpRequestOptions::SetSocks5Proxy(const std::string &host, int32_t port,
