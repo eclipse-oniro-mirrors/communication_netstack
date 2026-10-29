@@ -605,6 +605,34 @@ declare namespace http {
      * @since 26.2.0 dynamic&static
      */
     followRedirectPostToGet?: boolean;
+
+    /**
+     * Low speed limit threshold in bytes per second.
+     * If the transfer speed is lower than this value for longer than lowSpeedTime,
+     * the transfer will be aborted.
+     * The value should be an integer.
+     *
+     * @type { ?int }
+     * @syscap SystemCapability.Communication.NetStack
+     * @stagemodelonly
+     * @crossplatform
+     * @since 26.2.0 dynamic&static
+     */
+    lowSpeedLimit?: int;
+
+    /**
+     * Low speed duration threshold in milliseconds.
+     * If the transfer speed is lower than lowSpeedLimit for longer than this value,
+     * the transfer will be aborted.
+     * The value should be an integer.
+     *
+     * @type { ?int }
+     * @syscap SystemCapability.Communication.NetStack
+     * @stagemodelonly
+     * @crossplatform
+     * @since 26.2.0 dynamic&static
+     */
+    lowSpeedTime?: int;
   }
 
   /**

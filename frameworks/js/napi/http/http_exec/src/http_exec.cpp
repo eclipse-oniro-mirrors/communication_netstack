@@ -18,6 +18,7 @@
 #include "request_context.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <future>
 #include <memory>
@@ -93,6 +94,28 @@ static constexpr const long DEAD_FLOW_RESET_TIMEOUT = 20000; // ms
     } while (0)
 
 namespace OHOS::NetStack::Http {
+static constexpr uint64_t MILLISECONDS_PER_SECOND = 1000;
+static constexpr uint64_t MAX_LOW_SPEED_TIME_SECONDS = INT32_MAX / 1000;
+
+bool HttpExec::SetLowSpeedOption(CURL *curl, RequestContext *context)
+{
+    uint32_t lowSpeedLimit = context->options.GetLowSpeedLimit();
+    uint32_t lowSpeedTime = context->options.GetLowSpeedTime();
+    if (lowSpeedLimit > 0 && lowSpeedTime > 0) {
+        uint64_t lowSpeedTimeSec = (static_cast<uint64_t>(lowSpeedTime) + MILLISECONDS_PER_SECOND - 1) /
+            MILLISECONDS_PER_SECOND;
+        if (lowSpeedTimeSec > MAX_LOW_SPEED_TIME_SECONDS) {
+            NETSTACK_LOGD("lowSpeedTime setting exceeds the maximum supportable seconds, use maximum");
+            lowSpeedTimeSec = MAX_LOW_SPEED_TIME_SECONDS;
+        }
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_LOW_SPEED_LIMIT, static_cast<long>(lowSpeedLimit), context);
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_LOW_SPEED_TIME, static_cast<long>(lowSpeedTimeSec), context);
+    } else if (lowSpeedLimit > 0 || lowSpeedTime > 0) {
+        NETSTACK_LOGI("lowSpeedLimit and lowSpeedTime must both be greater than 0, low speed detection not enabled");
+    }
+    return true;
+}
+
 #ifdef USE_ARES
 static constexpr const char *EXTENDINFO = "extendInfo";
 
@@ -2780,6 +2803,10 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
     int inactivityMs = context->options.GetInactivityMs();
     if (inactivityMs > 0) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_MAXAGE_CONN, static_cast<long>(inactivityMs / 1000), context);
+    }
+
+    if (!SetLowSpeedOption(curl, context)) {
+        return false;
     }
 
 #ifdef HAS_NETMANAGER_BASE

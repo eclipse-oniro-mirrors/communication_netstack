@@ -197,6 +197,8 @@ public:
     static void ProcessResponseHeadersAndEmitEvents(RequestContext *context);
 
 private:
+    static bool SetLowSpeedOption(CURL *curl, RequestContext *context);
+
     static bool SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader);
 
     static bool SetProxyOption(CURL *curl, RequestContext *context);

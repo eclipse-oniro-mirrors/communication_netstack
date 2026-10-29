@@ -608,6 +608,26 @@ bool HttpRequestOptions::GetFollowRedirectPostToGet() const
     return followRedirectPostToGet_;
 }
 
+void HttpRequestOptions::SetLowSpeedLimit(uint32_t lowSpeedLimit)
+{
+    lowSpeedLimit_ = lowSpeedLimit;
+}
+
+uint32_t HttpRequestOptions::GetLowSpeedLimit() const
+{
+    return lowSpeedLimit_;
+}
+
+void HttpRequestOptions::SetLowSpeedTime(uint32_t lowSpeedTime)
+{
+    lowSpeedTime_ = lowSpeedTime;
+}
+
+uint32_t HttpRequestOptions::GetLowSpeedTime() const
+{
+    return lowSpeedTime_;
+}
+
 void HttpRequestOptions::SetSocks5Proxy(const std::string &host, int32_t port,
     const NapiUtils::SecureData &username, const NapiUtils::SecureData &password,
     Socks5DnsStrategy dnsStrategy, const std::string &exclusionList)
