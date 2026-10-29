@@ -1802,8 +1802,30 @@ void RequestContext::SetConnectionExtraInfoToResult(napi_value result)
         CommonUtils::ToLower(CommonUtils::Strip(isCacheHit)) == "true");
     NapiUtils::SetInt32Property(env, extraInfoValue, HttpConstant::PARAM_KEY_REDIRECT_COUNT,
         readInt(HttpConstant::PARAM_KEY_REDIRECT_COUNT, 0));
+    SetExtraInfoInt64Property(env, extraInfoValue, HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES);
+    SetExtraInfoInt64Property(env, extraInfoValue, HttpConstant::PARAM_KEY_RECEIVED_TOTAL_BYTES);
 
     NapiUtils::SetNamedProperty(env, result, HttpConstant::PARAM_KEY_CONNECTION_EXTRA_INFO, extraInfoValue);
+}
+
+void RequestContext::SetExtraInfoInt64Property(napi_env env, napi_value extraInfoValue, const std::string &key)
+{
+    int64_t result = GetExtraInfoInt64Value(key);
+    napi_value jsValue = nullptr;
+    if (napi_create_int64(env, result, &jsValue) != napi_ok) {
+        return;
+    }
+    napi_set_named_property(env, extraInfoValue, key.c_str(), jsValue);
+}
+
+int64_t RequestContext::GetExtraInfoInt64Value(const std::string &key) const
+{
+    int64_t result = 0;
+    std::string value = response.GetExtraInfoItem(key);
+    if (!CommonUtils::ParseDecimalInteger(value, result, false)) {
+        result = 0;
+    }
+    return result;
 }
 
 void RequestContext::ParseInactivityMs(napi_value optionsValue)

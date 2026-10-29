@@ -285,6 +285,8 @@ public:
     static const char *const PARAM_KEY_IS_PROXY_CONNECTION;
     static const char *const PARAM_KEY_IS_CACHE_HIT;
     static const char *const PARAM_KEY_REDIRECT_COUNT;
+    static const char *const PARAM_KEY_SENT_TOTAL_BYTES;
+    static const char *const PARAM_KEY_RECEIVED_TOTAL_BYTES;
 
     static const char *const PARAM_KEY_ENABLE_AUTO_COOKIE;
 };

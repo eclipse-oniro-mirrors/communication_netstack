@@ -13,7 +13,13 @@
  * limitations under the License.
  */
 #ifdef USE_ARES
+#include <arpa/inet.h>
 #include <cstring>
+#include <dirent.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <thread>
+#include <unistd.h>
 #include "gtest/gtest.h"
 
 #ifdef GTEST_API_
@@ -50,6 +56,76 @@ public:
 namespace {
 using namespace std;
 using namespace testing::ext;
+
+uint16_t StartOneShotHttpServer(const string &response, thread &worker)
+{
+    int listenFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listenFd < 0) {
+        return 0;
+    }
+    int reuse = 1;
+    (void)setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+    sockaddr_in addr {};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = 0;
+    if (::bind(listenFd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) != 0 || listen(listenFd, 1) != 0) {
+        close(listenFd);
+        return 0;
+    }
+    socklen_t len = sizeof(addr);
+    if (getsockname(listenFd, reinterpret_cast<sockaddr *>(&addr), &len) != 0) {
+        close(listenFd);
+        return 0;
+    }
+    uint16_t port = ntohs(addr.sin_port);
+    worker = thread([listenFd, response]() {
+        int conn = accept(listenFd, nullptr, nullptr);
+        if (conn >= 0) {
+            char buf[1024] = {0};
+            (void)read(conn, buf, sizeof(buf) - 1);
+            (void)write(conn, response.c_str(), response.size());
+            close(conn);
+        }
+        close(listenFd);
+    });
+    return port;
+}
+
+bool DoLoopbackRequest(CURL *handle, const string &response, thread &worker)
+{
+    if (handle == nullptr) {
+        return false;
+    }
+    uint16_t port = StartOneShotHttpServer(response, worker);
+    if (port == 0) {
+        return false;
+    }
+    string url = "http://127.0.0.1:" + to_string(port) + "/";
+    curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(handle, CURLOPT_PROXY, "");
+    curl_easy_setopt(handle, CURLOPT_NOPROXY, "*");
+    curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, 5000L);
+    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION,
+        +[](char *, size_t size, size_t nmemb, void *) -> size_t { return size * nmemb; });
+    CURLcode ret = curl_easy_perform(handle);
+    worker.join();
+    return ret == CURLE_OK;
+}
+
+int CountOpenFds()
+{
+    DIR *dir = opendir("/proc/self/fd");
+    if (dir == nullptr) {
+        return -1;
+    }
+    int count = 0;
+    while (readdir(dir) != nullptr) {
+        ++count;
+    }
+    closedir(dir);
+    return count;
+}
 
 HWTEST_F(ExtendInfoTest, ExtendInfoWrapperDefaultValues001, TestSize.Level1)
 {
@@ -455,6 +531,146 @@ HWTEST_F(ExtendInfoTest, HttpExecGetPerfInfoFromCurl001, TestSize.Level1)
     HttpExec::GetPerfInfoFromCurl(handle.get(), extendInfo);
 
     EXPECT_TRUE(extendInfo->certIssuerNames.empty());
+}
+
+HWTEST_F(ExtendInfoTest, HttpExecCacheCurlPostRequestExtraInfo001, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+    ASSERT_NE(handle, nullptr);
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    RequestContext context(env, manager);
+
+    HttpExec::CacheCurlPostRequestExtraInfo(handle.get(), &context);
+
+    EXPECT_EQ(context.response.GetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME), "Unknown/Non-HTTP");
+    EXPECT_EQ(context.response.GetExtraInfoItem(HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES), "0");
+    EXPECT_EQ(context.response.GetExtraInfoItem(HttpConstant::PARAM_KEY_RECEIVED_TOTAL_BYTES), "0");
+    EXPECT_EQ(context.response.GetExtraInfoItem(HttpConstant::PARAM_KEY_REDIRECT_COUNT), "0");
+    EXPECT_FALSE(context.response.GetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT).empty());
+}
+
+HWTEST_F(ExtendInfoTest, HttpExecCacheCurlPostRequestExtraInfo002, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+    ASSERT_NE(handle, nullptr);
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    RequestContext context(env, manager);
+
+    HttpExec::CacheCurlPostRequestExtraInfo(nullptr, &context);
+    HttpExec::CacheCurlPostRequestExtraInfo(nullptr, nullptr);
+    HttpExec::CacheCurlPostRequestExtraInfo(handle.get(), &context);
+
+    EXPECT_EQ(context.response.GetExtraInfoItem(HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES), "0");
+    EXPECT_EQ(context.response.GetExtraInfoItem(HttpConstant::PARAM_KEY_RECEIVED_TOTAL_BYTES), "0");
+}
+
+HWTEST_F(ExtendInfoTest, HttpExecCacheCurlPostRequestExtraInfo003, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+    ASSERT_NE(handle, nullptr);
+    thread worker;
+    bool ok = DoLoopbackRequest(handle.get(), "HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\ntest", worker);
+    ASSERT_TRUE(ok);
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    RequestContext context(env, manager);
+    HttpExec::CacheCurlPostRequestExtraInfo(handle.get(), &context);
+
+    EXPECT_EQ(HttpExec::GetHttpVersion(handle.get()), "HTTP/1.1");
+    long sent = 0;
+    long header = 0;
+    curl_off_t body = 0;
+    curl_easy_getinfo(handle.get(), CURLINFO_REQUEST_SIZE, &sent);
+    curl_easy_getinfo(handle.get(), CURLINFO_HEADER_SIZE, &header);
+    curl_easy_getinfo(handle.get(), CURLINFO_SIZE_DOWNLOAD_T, &body);
+    EXPECT_GT(sent, 0);
+    EXPECT_GT(header, 0);
+    EXPECT_EQ(context.response.GetExtraInfoItem(HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES), std::to_string(sent));
+    EXPECT_EQ(context.response.GetExtraInfoItem(HttpConstant::PARAM_KEY_RECEIVED_TOTAL_BYTES),
+        std::to_string(static_cast<curl_off_t>(header) + body));
+}
+
+HWTEST_F(ExtendInfoTest, HttpExecCacheCurlPostRequestExtraInfo004, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+    ASSERT_NE(handle, nullptr);
+    thread worker;
+    bool ok = DoLoopbackRequest(handle.get(), "HTTP/1.0 200 OK\r\nContent-Length: 2\r\n\r\nok", worker);
+    ASSERT_TRUE(ok);
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    RequestContext context(env, manager);
+    HttpExec::CacheCurlPostRequestExtraInfo(handle.get(), &context);
+
+    EXPECT_EQ(HttpExec::GetHttpVersion(handle.get()), "HTTP/1.0");
+    EXPECT_FALSE(context.response.GetExtraInfoItem(HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES).empty());
+    EXPECT_FALSE(context.response.GetExtraInfoItem(HttpConstant::PARAM_KEY_RECEIVED_TOTAL_BYTES).empty());
+}
+
+HWTEST_F(ExtendInfoTest, HttpExecCacheCurlPostRequestExtraInfo005, TestSize.Level1)
+{
+    constexpr int ITERATIONS = 100;
+    const string response =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Length: 4\r\n"
+        "Connection: close\r\n"
+        "\r\n"
+        "test";
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    {
+        unique_CURL warmup(curl_easy_init());
+        ASSERT_NE(warmup, nullptr);
+    }
+    int fdBefore = CountOpenFds();
+
+    for (int i = 0; i < ITERATIONS; ++i) {
+        unique_CURL handle(curl_easy_init());
+        ASSERT_NE(handle, nullptr);
+
+        thread worker;
+        ASSERT_TRUE(DoLoopbackRequest(handle.get(), response, worker));
+
+        RequestContext context(env, manager);
+        HttpExec::CacheCurlPostRequestExtraInfo(handle.get(), &context);
+
+        string sent = context.response.GetExtraInfoItem(HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES);
+        string received = context.response.GetExtraInfoItem(HttpConstant::PARAM_KEY_RECEIVED_TOTAL_BYTES);
+        long curlSent = 0;
+        long curlHeader = 0;
+        curl_off_t curlBody = 0;
+        curl_easy_getinfo(handle.get(), CURLINFO_REQUEST_SIZE, &curlSent);
+        curl_easy_getinfo(handle.get(), CURLINFO_HEADER_SIZE, &curlHeader);
+        curl_easy_getinfo(handle.get(), CURLINFO_SIZE_DOWNLOAD_T, &curlBody);
+
+        EXPECT_EQ(context.response.GetExtraInfoItem(HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME), "HTTP/1.1");
+        EXPECT_FALSE(sent.empty());
+        EXPECT_FALSE(received.empty());
+        EXPECT_EQ(sent, std::to_string(curlSent));
+        EXPECT_EQ(received, std::to_string(static_cast<curl_off_t>(curlHeader) + curlBody));
+    }
+
+    int fdAfter = CountOpenFds();
+    ASSERT_GE(fdBefore, 0);
+    ASSERT_GE(fdAfter, 0);
+    EXPECT_LE(fdAfter - fdBefore, 2);
+}
+
+HWTEST_F(ExtendInfoTest, RequestContextExtraInfoInt64Value001, TestSize.Level1)
+{
+    auto manager = std::make_shared<EventManager>();
+    RequestContext context(nullptr, manager);
+
+    EXPECT_EQ(context.GetExtraInfoInt64Value(HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES), 0);
+    context.response.SetExtraInfoItem(HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES, "123");
+    EXPECT_EQ(context.GetExtraInfoInt64Value(HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES), 123);
+    context.response.SetExtraInfoItem(HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES, "invalid");
+    EXPECT_EQ(context.GetExtraInfoInt64Value(HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES), 0);
 }
 
 HWTEST_F(ExtendInfoTest, HttpExecGetTimeInfoFromCurl001, TestSize.Level1)

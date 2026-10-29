@@ -18,6 +18,7 @@
 
 #include "gtest/gtest.h"
 
+#include "constant.h"
 #include "http_cache_request.h"
 #include "http_cache_response.h"
 #include "http_cache_strategy.h"
@@ -789,6 +790,18 @@ HWTEST_F(HttpCacheStrategyTest, CompareNumber_6_2, testing::ext::TestSize.Level1
 
     EXPECT_EQ(status, STALE);
 }
+
+HWTEST_F(HttpCacheStrategyTest, cacheHitBytesToZero001, testing::ext::TestSize.Level1)
+{
+    HttpResponse response;
+    response.SetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT, "true");
+    response.SetCacheHitBytesToZero();
+
+    EXPECT_EQ(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT), "true");
+    EXPECT_EQ(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES), "0");
+    EXPECT_EQ(response.GetExtraInfoItem(HttpConstant::PARAM_KEY_RECEIVED_TOTAL_BYTES), "0");
+}
+
 HWTEST_F(HttpCacheStrategyTest, couldUseCacheGetMethod, testing::ext::TestSize.Level1)
 {
     HttpRequestOptions requestOptions;

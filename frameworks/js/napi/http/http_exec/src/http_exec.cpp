@@ -3684,5 +3684,29 @@ void HttpExec::CacheCurlPostRequestExtraInfo(CURL *handle, RequestContext *conte
     context->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_IS_REUSED_CONNECTION,
         connections == 0 ? "true" : "false");
     context->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_IS_CACHE_HIT, "false");
+    context->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES, "0");
+    context->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_RECEIVED_TOTAL_BYTES, "0");
+    if (httpVersion != "Unknown/Non-HTTP") {
+        bool bodySizeOk = false;
+        auto getCurlOffInfo = [](CURL *handle, CURLINFO info, bool &ok) {
+            curl_off_t value = 0;
+            ok = (curl_easy_getinfo(handle, info, &value) == CURLE_OK);
+            if (!ok) {
+                NETSTACK_LOGE("Curl get info %{public}d failed", info);
+            }
+            return value;
+        };
+        long sentTotalBytes = getLongCurlInfo(handle, CURLINFO_REQUEST_SIZE);
+        long receivedHeaderBytes = getLongCurlInfo(handle, CURLINFO_HEADER_SIZE);
+        curl_off_t receivedBodyBytes = getCurlOffInfo(handle, CURLINFO_SIZE_DOWNLOAD_T, bodySizeOk);
+        if (sentTotalBytes > 0) {
+            context->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES,
+                std::to_string(sentTotalBytes));
+        }
+        if (receivedHeaderBytes > 0 && bodySizeOk) {
+            context->response.SetExtraInfoItem(HttpConstant::PARAM_KEY_RECEIVED_TOTAL_BYTES,
+                std::to_string(static_cast<curl_off_t>(receivedHeaderBytes) + receivedBodyBytes));
+        }
+    }
 }
 } // namespace OHOS::NetStack::Http
