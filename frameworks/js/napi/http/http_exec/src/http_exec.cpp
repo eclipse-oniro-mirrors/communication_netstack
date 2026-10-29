@@ -28,6 +28,7 @@
 #include <unistd.h>
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
+#include "cert_chain_verify_helper.h"
 #endif
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
 #ifndef HTTP_MULTIPATH_CERT_ENABLE
@@ -2285,11 +2286,46 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *sslCtx, void *request_contex
     if (result != CURLE_OK) {
         return result;
     }
+
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+    // Preserve pin verification when certificate verification is skipped.
+    if (requestContext->options.GetCanSkipCertVerifyFlag() &&
+        !requestContext->GetPinnedPubkey().empty()) {
+        return VerifyRootCaSslCtxFunction(curl, sslCtx, requestContext);
+    }
+#else
     if (!requestContext->GetPinnedPubkey().empty()) {
         return VerifyRootCaSslCtxFunction(curl, sslCtx, requestContext);
     }
+#endif
+#endif
+
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+    InstallMultiCandidateCertVerifyCallback(sslCtx, requestContext);
+#endif // HTTP_MULTIPATH_CERT_ENABLE
+
     return CURLE_OK;
 }
+
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+void HttpExec::InstallMultiCandidateCertVerifyCallback(void *sslCtx, RequestContext *requestContext)
+{
+    if (requestContext->options.GetCanSkipCertVerifyFlag() || sslCtx == nullptr) {
+        return;
+    }
+    SSL_CTX_set_cert_verify_callback(
+        static_cast<SSL_CTX *>(sslCtx),
+#ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
+        HttpMultiCandidateCertVerifyCallback,
+        requestContext);
+#else
+        OHOS::NetStack::CertChain::CustomCertVerifyCallback,
+        nullptr);
+#endif
+    NETSTACK_LOGI("SslCtxFunction: cert chain multi-round verifier installed");
+}
+#endif // HTTP_MULTIPATH_CERT_ENABLE
 
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 static bool LoadCaCertFromString(X509_STORE *store, const std::string &certData)
@@ -2401,6 +2437,38 @@ static int VerifyCertPubkey(X509 *cert, const std::string &pinnedPubkey)
     }
     return CURLE_SSL_PINNEDPUBKEYNOTMATCH;
 }
+
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+int HttpExec::HttpMultiCandidateCertVerifyCallback(X509_STORE_CTX *ctx, void *arg)
+{
+    auto requestContext = static_cast<RequestContext *>(arg);
+    if (ctx == nullptr || requestContext == nullptr) {
+        return 0;
+    }
+    OHOS::NetStack::CertChain::CertVerifyPolicy policy = {
+        [](STACK_OF(X509) *chain, void *context) {
+            auto request = static_cast<RequestContext *>(context);
+            return HttpExec::VerifyPinnedPubkeyForChain(chain, request->GetPinnedPubkey());
+        }, requestContext};
+    return OHOS::NetStack::CertChain::CustomCertVerifyCallback(ctx, &policy);
+}
+
+bool HttpExec::VerifyPinnedPubkeyForChain(STACK_OF(X509) *chain, const std::string &pinnedPubkey)
+{
+    if (pinnedPubkey.empty()) {
+        return true;
+    }
+    int count = chain == nullptr ? 0 : sk_X509_num(chain);
+    if (count <= 0) {
+        return false;
+    }
+    X509 *root = sk_X509_value(chain, count - 1);
+    X509 *leaf = sk_X509_value(chain, 0);
+    // Preserve the existing root-or-leaf pin policy.
+    return VerifyCertPubkey(root, pinnedPubkey) == CURLE_OK ||
+        VerifyCertPubkey(leaf, pinnedPubkey) == CURLE_OK;
+}
+#endif // HTTP_MULTIPATH_CERT_ENABLE
 
 static int VerifyCallback(int preverifyOk, X509_STORE_CTX *ctx)
 {

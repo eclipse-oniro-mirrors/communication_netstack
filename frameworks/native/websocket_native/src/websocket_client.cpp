@@ -17,7 +17,9 @@
 #include <iostream>
 #include <securec.h>
 #include <string>
+#include <openssl/ssl.h>
 
+#include "cert_chain_verify_helper.h"
 #include "netstack_log.h"
 #include "websocket_client_innerapi.h"
 #include "netstack_common_utils.h"
@@ -509,6 +511,13 @@ int LwsCallbackVhostCertAging(lws *wsi, lws_callback_reasons reason, void *user,
 
 int LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
+    if (reason == LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS) {
+        if (user != nullptr) {
+            SSL_CTX_set_cert_verify_callback(static_cast<SSL_CTX *>(user),
+                OHOS::NetStack::CertChain::CustomCertVerifyCallback, nullptr);
+        }
+        return 0;
+    }
     constexpr CallbackDispatcher dispatchers[] = {
         {LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER, LwsCallbackClientAppendHandshakeHeader},
         {LWS_CALLBACK_WS_PEER_INITIATED_CLOSE, LwsCallbackWsPeerInitiatedClose},

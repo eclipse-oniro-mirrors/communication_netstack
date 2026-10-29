@@ -935,6 +935,21 @@ HWTEST_F(WebSocketTest, WebSocketTest082, TestSize.Level1)
     EXPECT_TRUE(context.supportOriginPort_);
 }
 
+HWTEST_F(WebSocketTest, WebSocketCertVerifyCallbackBranch001, TestSize.Level1)
+{
+    EXPECT_FALSE(WebSocketExec::ConfigureClientCertVerify(nullptr, false));
+    EXPECT_EQ(WebSocketExec::LwsCallback(nullptr,
+        LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS, nullptr, nullptr, 0), 0);
+
+    SSL_CTX *sslCtx = SSL_CTX_new(TLS_client_method());
+    ASSERT_NE(sslCtx, nullptr);
+    EXPECT_FALSE(WebSocketExec::ConfigureClientCertVerify(sslCtx, true));
+    EXPECT_EQ(WebSocketExec::LwsCallback(nullptr,
+        LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS, sslCtx, nullptr, 0), 0);
+    EXPECT_TRUE(WebSocketExec::ConfigureClientCertVerify(sslCtx, false));
+    SSL_CTX_free(sslCtx);
+}
+
 HWTEST_F(WebSocketTest, WebSocketTest083, TestSize.Level1)
 {
     napi_env env = nullptr;

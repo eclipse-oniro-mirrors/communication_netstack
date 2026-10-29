@@ -19,6 +19,7 @@
 
 #include "ipc_skeleton.h"
 #include "net_ssl_verify_cert.h"
+#include "cert_chain_verify_helper.h"
 #include "netstack_common_utils.h"
 #include "netstack_log.h"
 #if HAS_NETMANAGER_BASE
@@ -350,18 +351,13 @@ static void FreePartialBuiltChain(CertBlob *certChain, int count)
     }
 }
 
-uint32_t BuildSortedChain(X509_STORE_CTX *ctx, CertBlob **outChain, size_t *outCount)
+// Convert a verified leaf-to-root chain to CertBlob output.
+static uint32_t BuildSortedChainFromStack(
+    STACK_OF(X509) *chain, CertBlob **outChain, size_t *outCount)
 {
-    if (ctx == nullptr || outChain == nullptr || outCount == nullptr) {
+    if (chain == nullptr || outChain == nullptr || outCount == nullptr) {
         NETSTACK_LOGE("Invalid parameters for BuildSortedChain\n");
         return SSL_X509_V_ERR_INVALID_CALL;
-    }
-
-    // Get the verified chain from context
-    STACK_OF(X509) *chain = X509_STORE_CTX_get0_chain(ctx);
-    if (chain == nullptr) {
-        NETSTACK_LOGE("Failed to get verified chain\n");
-        return SSL_X509_V_ERR_UNSPECIFIED;
     }
 
     int chainLen = sk_X509_num(chain);
@@ -406,6 +402,23 @@ uint32_t BuildSortedChain(X509_STORE_CTX *ctx, CertBlob **outChain, size_t *outC
 
     NETSTACK_LOGD("Successfully built sorted chain with %{public}zu certificates\n", *outCount);
     return X509_V_OK;
+}
+
+uint32_t BuildSortedChain(X509_STORE_CTX *ctx, CertBlob **outChain, size_t *outCount)
+{
+    if (ctx == nullptr || outChain == nullptr || outCount == nullptr) {
+        NETSTACK_LOGE("Invalid parameters for BuildSortedChain\n");
+        return SSL_X509_V_ERR_INVALID_CALL;
+    }
+
+    // Get the verified chain from context
+    STACK_OF(X509) *chain = X509_STORE_CTX_get0_chain(ctx);
+    if (chain == nullptr) {
+        NETSTACK_LOGE("Failed to get verified chain\n");
+        return SSL_X509_V_ERR_UNSPECIFIED;
+    }
+
+    return BuildSortedChainFromStack(chain, outChain, outCount);
 }
 
 void FreeCertChain(CertBlob *chain, size_t count)
@@ -556,9 +569,10 @@ uint32_t VerifyAndBuildCertChain(
 
     uint32_t verifyResult = SSL_X509_V_ERR_UNSPECIFIED;
     X509_STORE *store = nullptr;
-    X509_STORE_CTX *ctx = nullptr;
     STACK_OF(X509) *untrustedChain = nullptr;
+    STACK_OF(X509) *verifiedChain = nullptr;
     X509 *leafCert = nullptr;
+    int verifyError = X509_V_ERR_UNSPECIFIED;
 
     do {
         leafCert = CertBlobToX509(&certs[0]);
@@ -585,23 +599,14 @@ uint32_t VerifyAndBuildCertChain(
             break;
         }
 
-        ctx = X509_STORE_CTX_new();
-        if (ctx == nullptr) {
-            NETSTACK_LOGE("Failed to create X509 store context\n");
-            verifyResult = SSL_X509_V_ERR_OUT_OF_MEMORY;
-            break;
-        }
-
-        if (X509_STORE_CTX_init(ctx, store, leafCert, untrustedChain) != VERIFY_RESULT_SUCCESS) {
-            NETSTACK_LOGE("Failed to initialize X509 store context\n");
-            break;
-        }
-
-        int result = X509_verify_cert(ctx);
-        if (result != VERIFY_RESULT_SUCCESS) {
-            verifyResult = static_cast<uint32_t>(X509_STORE_CTX_get_error(ctx) + SSL_ERROR_CODE_BASE);
-            NETSTACK_LOGE("Certificate chain verification failed: %{public}s (%{public}d)\n",
-                          X509_verify_cert_error_string(X509_STORE_CTX_get_error(ctx)), verifyResult);
+        // Try alternate issuer paths if the original chain fails.
+        int rc = OHOS::NetStack::CertChain::VerifyMultiCandidateChains(
+            leafCert, untrustedChain, store, &verifiedChain, &verifyError);
+        if (rc != 1) {
+            verifyResult = rc < 0 ? SSL_X509_V_ERR_OUT_OF_MEMORY :
+                static_cast<uint32_t>(verifyError + SSL_ERROR_CODE_BASE);
+            NETSTACK_LOGE("Certificate chain verification failed: %{public}s (%{public}u)\n",
+                X509_verify_cert_error_string(verifyError), verifyResult);
             break;
         }
 
@@ -623,7 +628,7 @@ uint32_t VerifyAndBuildCertChain(
         }
 
         if (outChain != nullptr) {
-            verifyResult = BuildSortedChain(ctx, outChain, outCount);
+            verifyResult = BuildSortedChainFromStack(verifiedChain, outChain, outCount);
             if (verifyResult != X509_V_OK) {
                 NETSTACK_LOGE("Failed to build sorted chain\n");
                 break;
@@ -644,8 +649,8 @@ uint32_t VerifyAndBuildCertChain(
     if (store != nullptr) {
         X509_STORE_free(store);
     }
-    if (ctx != nullptr) {
-        X509_STORE_CTX_free(ctx);
+    if (verifiedChain != nullptr) {
+        sk_X509_pop_free(verifiedChain, X509_free);
     }
 
     return verifyResult;
