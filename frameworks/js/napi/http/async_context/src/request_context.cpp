@@ -428,6 +428,22 @@ void RequestContext::ParseSslServerHostnameVerification(napi_value optionsValue)
     options.SetSslServerHostnameVerification(NapiUtils::GetBooleanFromValue(GetEnv(), value));
 }
 
+void RequestContext::ParseFollowRedirectPostToGet(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_FOLLOW_REDIRECT_POST_TO_GET)) {
+        return;
+    }
+
+    napi_value isFollow =
+        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_FOLLOW_REDIRECT_POST_TO_GET);
+    if (NapiUtils::GetValueType(GetEnv(), isFollow) != napi_boolean) {
+        NETSTACK_LOGE("followRedirectPostToGet type error");
+        return;
+    }
+    bool isFollowBool = NapiUtils::GetBooleanFromValue(GetEnv(), isFollow);
+    options.SetFollowRedirectPostToGet(isFollowBool);
+}
+
 void RequestContext::ParseHeader(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_HEADER)) {
@@ -902,6 +918,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParsePathPreference(optionsValue);
     ParseReuseConnections(optionsValue);
     ParseInactivityMs(optionsValue);
+    ParseFollowRedirectPostToGet(optionsValue);
 }
 
 void RequestContext::SetEnableAutoCookie(bool enableAutoCookie)

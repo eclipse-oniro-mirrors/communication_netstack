@@ -171,6 +171,23 @@ void EpollMultiDriver::EpollTimerCallback()
 }
 
 #if ENABLE_HTTP_INTERCEPT
+bool EpollMultiDriver::IsRedirectPostToGetNeeded(const Http::RequestContext *context, long responseCode)
+{
+    return context->options.GetFollowRedirectPostToGet() &&
+        responseCode >= static_cast<long>(Http::ResponseCode::MOVED_PERM) &&
+        responseCode <= static_cast<long>(Http::ResponseCode::SEE_OTHER) &&
+        context->options.GetMethod() == Http::HttpConstant::HTTP_METHOD_POST;
+}
+
+void EpollMultiDriver::ApplyRedirectPostToGet(Http::RequestContext *context)
+{
+    context->options.SetMethod(Http::HttpConstant::HTTP_METHOD_GET);
+    context->options.ReplaceBody("", 0);
+    context->options.RemoveHeaderByKey("Content-Type");
+    context->options.RemoveHeaderByKey("Content-Length");
+    NETSTACK_LOGD("Redirect follow converts POST to GET, body and Content-Type/Content-Length removed");
+}
+
 void EpollMultiDriver::HandleRedirect(CURL *easyHandle, std::shared_ptr<std::string> location, RequestInfo *requestInfo)
 {
     if (easyHandle) {
@@ -267,6 +284,9 @@ void EpollMultiDriver::HandleCurlDoneMessage(CURLMsg *message)
         interceptor != nullptr && interceptor->IsRedirectionInterceptor()) {
         NETSTACK_LOGD("Redirect detected: %{public}s, status=%{public}d", location, static_cast<int>(responseCode));
         if (!context->IsReachRedirectLimit()) {
+            if (IsRedirectPostToGetNeeded(context, responseCode)) {
+                ApplyRedirectPostToGet(context);
+            }
             auto locationPtr = std::make_shared<std::string>(location);
             std::function<void()> handleRedirect =
                 std::bind(&EpollMultiDriver::HandleRedirect, this, easyHandle, locationPtr, requestInfo);

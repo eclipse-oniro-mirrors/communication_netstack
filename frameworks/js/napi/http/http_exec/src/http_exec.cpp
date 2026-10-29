@@ -2718,11 +2718,26 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6, context);
     }
 #endif
+    bool isFollowRedirectPostToGet =
+        context->options.GetFollowRedirectPostToGet() && method == HttpConstant::HTTP_METHOD_POST;
     if (!method.empty()) {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CUSTOMREQUEST, method.c_str(), context);
+        // When followRedirectPostToGet is enabled for a POST, do NOT pin the method via
+        // CURLOPT_CUSTOMREQUEST: a custom request method suppresses libcurl's redirect-based
+        // POST->GET conversion (CURLOPT_POSTREDIR), so the request would stay POST on 301/302/303.
+        // Skipping it lets CURLOPT_POST below define the method and CURLOPT_POSTREDIR convert it.
+        // For every other case (and when the option is off) keep the original behavior.
+        if (!isFollowRedirectPostToGet) {
+            NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_CUSTOMREQUEST, method.c_str(), context);
+        }
     }
 
-    if ((!MethodForGet(method) || context->bodyOrQueryConfigured_) && !context->options.GetBody().empty()) {
+    bool needPost = (!MethodForGet(method) || context->bodyOrQueryConfigured_) && !context->options.GetBody().empty();
+    if (isFollowRedirectPostToGet) {
+        // Ensure the initial request really is a POST (even with an empty body) so that
+        // CURLOPT_POSTREDIR can convert it to GET on 301/302/303.
+        needPost = true;
+    }
+    if (needPost) {
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POST, 1L, context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDS, context->options.GetBody().c_str(), context);
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTFIELDSIZE, context->options.GetBody().size(), context);
@@ -2784,6 +2799,9 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
 
     if (!SetAuthOptions(curl, context)) {
         return false;
+    }
+    if (context->options.GetFollowRedirectPostToGet()) {
+        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_POSTREDIR, CURL_REDIR_GET_ALL, context);
     }
     return true;
 }

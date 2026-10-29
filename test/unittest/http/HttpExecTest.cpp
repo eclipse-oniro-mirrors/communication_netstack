@@ -27,6 +27,12 @@
 #include "constant.h"
 #include "secure_char.h"
 #include "curl/curl.h"
+
+#if ENABLE_HTTP_INTERCEPT
+#include "epoll_multi_driver.h"
+#include "request_info.h"
+#endif
+
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
 #include <openssl/pem.h>
@@ -321,6 +327,200 @@ HWTEST_F(HttpExecTest, SetServerSSLCertOptionWithPartialChain002, TestSize.Level
 
     context.options.SetPartialChain(true);
     EXPECT_TRUE(HttpExec::SetServerSSLCertOption(handle.get(), &context));
+}
+
+HWTEST_F(HttpExecTest, SetFollowRedirectPostToGetOption001, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+    ASSERT_NE(handle, nullptr);
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+    context.options.SetFollowRedirectPostToGet(true);
+    EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context,
+                                    context.GetCurlHeaderList()));
+}
+
+HWTEST_F(HttpExecTest, SetFollowRedirectPostToGetOption002, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+    ASSERT_NE(handle, nullptr);
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+    context.options.SetFollowRedirectPostToGet(false);
+    EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context,
+                                    context.GetCurlHeaderList()));
+}
+
+#if ENABLE_HTTP_INTERCEPT
+HWTEST_F(HttpExecTest, IsRedirectPostToGetNeededBoundaryTest, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+    context.options.SetFollowRedirectPostToGet(true);
+    context.options.SetMethod(OHOS::NetStack::Http::HttpConstant::HTTP_METHOD_POST);
+
+    // Only 301/302/303 convert; 300/304/307/308 must NOT.
+    EXPECT_FALSE(OHOS::NetStack::HttpOverCurl::EpollMultiDriver::IsRedirectPostToGetNeeded(&context, 300));
+    EXPECT_TRUE (OHOS::NetStack::HttpOverCurl::EpollMultiDriver::IsRedirectPostToGetNeeded(&context, 301));
+    EXPECT_TRUE (OHOS::NetStack::HttpOverCurl::EpollMultiDriver::IsRedirectPostToGetNeeded(&context, 302));
+    EXPECT_TRUE (OHOS::NetStack::HttpOverCurl::EpollMultiDriver::IsRedirectPostToGetNeeded(&context, 303));
+    EXPECT_FALSE(OHOS::NetStack::HttpOverCurl::EpollMultiDriver::IsRedirectPostToGetNeeded(&context, 304));
+    EXPECT_FALSE(OHOS::NetStack::HttpOverCurl::EpollMultiDriver::IsRedirectPostToGetNeeded(&context, 307));
+    EXPECT_FALSE(OHOS::NetStack::HttpOverCurl::EpollMultiDriver::IsRedirectPostToGetNeeded(&context, 308));
+}
+
+HWTEST_F(HttpExecTest, IsRedirectPostToGetNeededNonPostTest, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+    context.options.SetFollowRedirectPostToGet(true);
+
+    // Option is POST-specific: PUT/GET must not convert even with option on.
+    context.options.SetMethod(Http::HttpConstant::HTTP_METHOD_PUT);
+    EXPECT_FALSE(OHOS::NetStack::HttpOverCurl::EpollMultiDriver::IsRedirectPostToGetNeeded(&context, 303));
+    context.options.SetMethod(Http::HttpConstant::HTTP_METHOD_GET);
+    EXPECT_FALSE(OHOS::NetStack::HttpOverCurl::EpollMultiDriver::IsRedirectPostToGetNeeded(&context, 303));
+}
+
+HWTEST_F(HttpExecTest, IsRedirectPostToGetNeededOptionOffTest, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+    context.options.SetFollowRedirectPostToGet(false);
+    context.options.SetMethod(OHOS::NetStack::Http::HttpConstant::HTTP_METHOD_POST);
+    EXPECT_FALSE(OHOS::NetStack::HttpOverCurl::EpollMultiDriver::IsRedirectPostToGetNeeded(&context, 303));
+}
+
+static std::unique_ptr<OHOS::NetStack::Http::RequestContext> BuildRedirectTestContext(
+    bool followRedirectPostToGet, const std::string &method)
+{
+    auto context = std::make_unique<OHOS::NetStack::Http::RequestContext>(nullptr, nullptr);
+    context->options.SetUrl("http://127.0.0.1:1/original");
+    context->options.SetMethod(method);
+    context->options.SetFollowRedirectPostToGet(followRedirectPostToGet);
+    context->options.ReplaceBody("key=value", strlen("key=value"));
+    context->options.SetHeader("Content-Type", "application/x-www-form-urlencoded");
+    context->options.SetHeader("Content-Length", "9");
+    context->options.SetHeader("X-Keep-Me", "keep-me");
+    return context;
+}
+
+static OHOS::NetStack::HttpOverCurl::RequestInfo *BuildRedirectTestRequestInfo(
+    CURL *easyHandle, OHOS::NetStack::Http::RequestContext *context)
+{
+    // HandleRedirect() takes ownership and deletes it.
+    return new OHOS::NetStack::HttpOverCurl::RequestInfo{easyHandle, {}, context};
+}
+
+HWTEST_F(HttpExecTest, HandleRedirectPostToGetTest, TestSize.Level1)
+{
+    auto context = BuildRedirectTestContext(true, OHOS::NetStack::Http::HttpConstant::HTTP_METHOD_POST);
+    auto queue = std::make_shared<
+        OHOS::NetStack::HttpOverCurl::ThreadSafeStorage<OHOS::NetStack::HttpOverCurl::RequestInfo *>>();
+    OHOS::NetStack::HttpOverCurl::EpollMultiDriver driver(queue);
+
+    CURL *easyHandle = curl_easy_init();
+    ASSERT_NE(easyHandle, nullptr);
+    auto requestInfo = BuildRedirectTestRequestInfo(easyHandle, context.get());
+    auto location = std::make_shared<std::string>("http://127.0.0.1:1/redirected");
+
+    OHOS::NetStack::HttpOverCurl::EpollMultiDriver::ApplyRedirectPostToGet(context.get());
+
+    driver.HandleRedirect(easyHandle, location, requestInfo);
+
+    EXPECT_EQ(context->options.GetUrl(), "http://127.0.0.1:1/redirected");
+    EXPECT_EQ(context->options.GetMethod(), OHOS::NetStack::Http::HttpConstant::HTTP_METHOD_GET);
+    EXPECT_TRUE(context->options.GetBody().empty());
+    EXPECT_EQ(context->options.GetHeader().count("Content-Type"), 0u);
+    EXPECT_EQ(context->options.GetHeader().count("Content-Length"), 0u);
+    EXPECT_EQ(context->options.GetHeader().count("X-Keep-Me"), 1u);
+    EXPECT_EQ(context->redirects_, 1u);
+}
+
+HWTEST_F(HttpExecTest, HandleRedirectSeeOtherPostToGetTest, TestSize.Level1)
+{
+    auto context = BuildRedirectTestContext(true, OHOS::NetStack::Http::HttpConstant::HTTP_METHOD_POST);
+    auto queue = std::make_shared<
+        OHOS::NetStack::HttpOverCurl::ThreadSafeStorage<OHOS::NetStack::HttpOverCurl::RequestInfo *>>();
+    OHOS::NetStack::HttpOverCurl::EpollMultiDriver driver(queue);
+
+    auto requestInfo = BuildRedirectTestRequestInfo(nullptr, context.get());
+    auto location = std::make_shared<std::string>("http://127.0.0.1:1/redirected");
+
+    OHOS::NetStack::HttpOverCurl::EpollMultiDriver::ApplyRedirectPostToGet(context.get());
+
+    driver.HandleRedirect(nullptr, location, requestInfo);
+
+    EXPECT_EQ(context->options.GetUrl(), "http://127.0.0.1:1/redirected");
+    EXPECT_EQ(context->options.GetMethod(), OHOS::NetStack::Http::HttpConstant::HTTP_METHOD_GET);
+    EXPECT_TRUE(context->options.GetBody().empty());
+    EXPECT_EQ(context->options.GetHeader().count("Content-Type"), 0u);
+    EXPECT_EQ(context->options.GetHeader().count("Content-Length"), 0u);
+    EXPECT_EQ(context->redirects_, 1u);
+}
+
+HWTEST_F(HttpExecTest, HandleRedirectKeepPostWhenOptionOffTest, TestSize.Level1)
+{
+    auto context = BuildRedirectTestContext(false, OHOS::NetStack::Http::HttpConstant::HTTP_METHOD_POST);
+    auto queue = std::make_shared<
+        OHOS::NetStack::HttpOverCurl::ThreadSafeStorage<OHOS::NetStack::HttpOverCurl::RequestInfo *>>();
+    OHOS::NetStack::HttpOverCurl::EpollMultiDriver driver(queue);
+
+    auto requestInfo = BuildRedirectTestRequestInfo(nullptr, context.get());
+    auto location = std::make_shared<std::string>("http://127.0.0.1:1/redirected");
+
+    driver.HandleRedirect(nullptr, location, requestInfo);
+
+    EXPECT_EQ(context->options.GetUrl(), "http://127.0.0.1:1/redirected");
+    EXPECT_EQ(context->options.GetMethod(), OHOS::NetStack::Http::HttpConstant::HTTP_METHOD_POST);
+    EXPECT_EQ(context->options.GetBody(), "key=value");
+    EXPECT_EQ(context->options.GetHeader().count("Content-Type"), 1u);
+    EXPECT_EQ(context->options.GetHeader().count("Content-Length"), 1u);
+    EXPECT_EQ(context->options.GetHeader().count("X-Keep-Me"), 1u);
+    EXPECT_EQ(context->redirects_, 1u);
+}
+
+HWTEST_F(HttpExecTest, HandleRedirectKeepPostOnTemporaryRedirectTest, TestSize.Level1)
+{
+    auto context = BuildRedirectTestContext(true, OHOS::NetStack::Http::HttpConstant::HTTP_METHOD_POST);
+    auto queue = std::make_shared<
+        OHOS::NetStack::HttpOverCurl::ThreadSafeStorage<OHOS::NetStack::HttpOverCurl::RequestInfo *>>();
+    OHOS::NetStack::HttpOverCurl::EpollMultiDriver driver(queue);
+
+    auto requestInfo = BuildRedirectTestRequestInfo(nullptr, context.get());
+    auto location = std::make_shared<std::string>("http://127.0.0.1:1/redirected");
+
+    // 307/308 must preserve the method even when the option is on, so no conversion
+    // is applied by HandleCurlDoneMessage() before HandleRedirect() runs.
+    driver.HandleRedirect(nullptr, location, requestInfo);
+
+    EXPECT_EQ(context->options.GetUrl(), "http://127.0.0.1:1/redirected");
+    EXPECT_EQ(context->options.GetMethod(), OHOS::NetStack::Http::HttpConstant::HTTP_METHOD_POST);
+    EXPECT_EQ(context->options.GetBody(), "key=value");
+    EXPECT_EQ(context->options.GetHeader().count("Content-Type"), 1u);
+    EXPECT_EQ(context->options.GetHeader().count("Content-Length"), 1u);
+    EXPECT_EQ(context->redirects_, 1u);
+}
+#endif
+
+HWTEST_F(HttpExecTest, SetFollowRedirectPostToGetWithMaxRedirectsZero, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+    ASSERT_NE(handle, nullptr);
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+    context.options.SetFollowRedirectPostToGet(true);
+    context.options.SetMaxRedirects(0);
+    EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context, context.GetCurlHeaderList()));
 }
 
 #ifdef HTTP_HANDOVER_FEATURE

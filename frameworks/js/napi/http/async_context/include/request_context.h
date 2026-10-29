@@ -448,6 +448,8 @@ private:
 
     int64_t GetExtraInfoInt64Value(const std::string &key) const;
 
+    void ParseFollowRedirectPostToGet(napi_value optionsValue);
+
 private:
     std::mutex syncMutex_;
     mutable std::mutex shareHandleMutex_;

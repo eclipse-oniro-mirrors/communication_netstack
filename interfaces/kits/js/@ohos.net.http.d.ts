@@ -594,6 +594,17 @@ declare namespace http {
      * @since 26.2.0 dynamic&static
      */
     sslServerHostnameVerification?: boolean;
+
+    /**
+     * Whether to convert POST method to GET when following 301/302/303 redirect responses.
+     * Default value: false.
+     * 
+     * @syscap SystemCapability.Communication.NetStack
+     * @stagemodelonly
+     * @crossplatform
+     * @since 26.2.0 dynamic&static
+     */
+    followRedirectPostToGet?: boolean;
   }
 
   /**
