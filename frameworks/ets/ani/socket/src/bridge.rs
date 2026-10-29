@@ -161,8 +161,8 @@ pub struct TCPSendOptions {
 
 #[ani_rs::ani(path = "@ohos.net.socket.socket.SocketLingerOptionsInner")]
 pub struct SocketLingerOptions {
-    pub on: bool,
-    pub linger: i32,
+    pub on: Option<bool>,
+    pub linger: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize)]
