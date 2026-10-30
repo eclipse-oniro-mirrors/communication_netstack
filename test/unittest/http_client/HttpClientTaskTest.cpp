@@ -1120,18 +1120,6 @@ HWTEST_F(HttpClientTaskTest, SslCtxFunctionTest002, TestSize.Level1)
     SSL_CTX_free(sslCtx);
 }
 
-HWTEST_F(HttpClientTaskTest, SslCtxFunctionSkipCertVerifyTest, TestSize.Level1)
-{
-    SSL_CTX *sslCtx = SSL_CTX_new(TLS_client_method());
-    ASSERT_NE(sslCtx, nullptr);
-    HttpClientRequest request;
-    request.SetCanSkipCertVerifyFlag(true);
-    auto task = HttpSession::GetInstance().CreateTask(request);
-    ASSERT_NE(task, nullptr);
-    EXPECT_EQ(task->SslCtxFunction(nullptr, sslCtx), CURLE_OK);
-    SSL_CTX_free(sslCtx);
-}
-
 HWTEST_F(HttpClientTaskTest, SetStatus001, TestSize.Level1)
 {
     HttpClientRequest httpReq;

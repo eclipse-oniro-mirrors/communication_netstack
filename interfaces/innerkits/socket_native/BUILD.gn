@@ -129,7 +129,6 @@ ohos_shared_library("socket_native") {
 
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
-    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
   ]
 
   external_deps = [

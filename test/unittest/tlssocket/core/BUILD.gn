@@ -142,7 +142,6 @@ ohos_unittest("tls_socket_core_test") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
   ]
   external_deps = [
     "c_utils:utils",

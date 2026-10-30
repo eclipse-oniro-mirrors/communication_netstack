@@ -28,7 +28,6 @@ common_external_deps = [
   "hilog:libhilog",
   "libwebsockets:websockets",
   "napi:ace_napi",
-  "openssl:libssl_shared",
 ]
 
 ohos_unittest("websocket_inner_unittest") {

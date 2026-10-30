@@ -21,9 +21,7 @@
 #include <queue>
 #include <thread>
 #include <unistd.h>
-#include <openssl/ssl.h>
 
-#include "cert_chain_verify_helper.h"
 #include "constant.h"
 #include "napi_utils.h"
 #include "netstack_common_utils.h"
@@ -542,13 +540,6 @@ int WebSocketExec::LwsCallbackVhostCertAging(lws *wsi, lws_callback_reasons reas
 int WebSocketExec::LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     NETSTACK_LOGI("lws callback reason is %{public}d", reason);
-    if (reason == LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS) {
-        auto *connectContext = wsi == nullptr ? nullptr :
-            static_cast<ConnectContext *>(lws_context_user(lws_get_context(wsi)));
-        ConfigureClientCertVerify(static_cast<SSL_CTX *>(user),
-            connectContext == nullptr || connectContext->skipServerCertVerification_);
-        return 0;
-    }
     CallbackDispatcher dispatchers[] = {
         {LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER, LwsCallbackClientAppendHandshakeHeader},
         {LWS_CALLBACK_WS_PEER_INITIATED_CLOSE, LwsCallbackWsPeerInitiatedClose},
@@ -785,22 +776,11 @@ static bool FillCaPathForAndroid(ConnectContext *context, lws_context_creation_i
 #endif
     NETSTACK_LOGI("FillCaPath: loaded %{public}d CA certs into SSL_CTX", certCount);
     SSL_CTX_set_verify(sslCtx, SSL_VERIFY_PEER, nullptr);
-    WebSocketExec::ConfigureClientCertVerify(sslCtx, context->skipServerCertVerification_);
     context->sslCtx_ = sslCtx;
     info.provided_client_ssl_ctx = sslCtx;
     return true;
 }
 #endif
-
-bool WebSocketExec::ConfigureClientCertVerify(SSL_CTX *sslCtx, bool skipVerify)
-{
-    if (sslCtx == nullptr || skipVerify) {
-        return false;
-    }
-    SSL_CTX_set_cert_verify_callback(sslCtx,
-        OHOS::NetStack::CertChain::CustomCertVerifyCallback, nullptr);
-    return true;
-}
 
 bool WebSocketExec::FillCaPath(ConnectContext *context, lws_context_creation_info &info)
 {
@@ -870,7 +850,6 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     if (!FillCaPath(context, info)) {
         return false;
     }
-    info.user = context;
     lws_context *lwsContext = nullptr;
     std::shared_ptr<UserData> userData;
     if (manager->GetWebSocketUserData() == nullptr) {

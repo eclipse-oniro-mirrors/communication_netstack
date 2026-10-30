@@ -136,7 +136,6 @@ ohos_unittest("tls_socket_unilateral_connection") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
   ]
   external_deps = [
     "access_token:libaccesstoken_sdk",
@@ -215,7 +214,6 @@ ohos_unittest("tls_key_test") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
   ]
   external_deps = [
     "c_utils:utils",
@@ -264,7 +262,6 @@ ohos_unittest("tls_cert_test") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
   ]
   external_deps = [
     "c_utils:utils",
@@ -313,7 +310,6 @@ ohos_unittest("tls_configuration_test") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
   ]
   external_deps = [
     "c_utils:utils",
@@ -362,7 +358,6 @@ ohos_unittest("tls_context_test") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
   ]
   external_deps = [
     "c_utils:utils",
@@ -411,7 +406,6 @@ ohos_unittest("socket_error_unittest") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
   ]
   external_deps = [
     "c_utils:utils",
@@ -460,7 +454,6 @@ ohos_unittest("tls_socket_branch_test") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
   ]
   external_deps = [
     "access_token:libaccesstoken_sdk",
@@ -512,7 +505,6 @@ ohos_unittest("tls_socket_lifecycle_test") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
   ]
   external_deps = [
     "c_utils:utils",
@@ -545,4 +537,4 @@ ohos_unittest("tls_socket_lifecycle_test") {
   module_out_path = "netstack/netstack/tls_socket_unittest"
   part_name = "netstack"
   subsystem_name = "communication"
-}
+}
