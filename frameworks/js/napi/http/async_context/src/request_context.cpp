@@ -787,10 +787,6 @@ bool RequestContext::GetRequestBody(napi_value extraData)
         if (body.empty()) {
             return false;
         }
-        if (body.size() > options.GetMaxLimit()) {
-            NETSTACK_LOGE("body size exceeds maxLimit");
-            return false;
-        }
         options.SetBody(body.c_str(), body.size());
         return true;
     }
@@ -801,10 +797,6 @@ bool RequestContext::GetRequestBody(napi_value extraData)
         if (data == nullptr) {
             return false;
         }
-        if (length > options.GetMaxLimit()) {
-            NETSTACK_LOGE("arraybuffer body size exceeds maxLimit");
-            return false;
-        }
         options.SetBody(data, length);
         return true;
     }
@@ -813,10 +805,6 @@ bool RequestContext::GetRequestBody(napi_value extraData)
         std::string body = NapiUtils::GetStringFromValueUtf8(GetEnv(), NapiUtils::JsonStringify(GetEnv(), extraData));
         if (body.empty()) {
             NETSTACK_LOGD("GetRequestBody extraData null for post method");
-            return false;
-        }
-        if (body.length() > options.GetMaxLimit()) {
-            NETSTACK_LOGE("object body size exceeds maxLimit");
             return false;
         }
         options.SetBody(body.c_str(), body.length());
