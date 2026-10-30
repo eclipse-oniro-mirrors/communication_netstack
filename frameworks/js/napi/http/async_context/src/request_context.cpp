@@ -965,6 +965,9 @@ bool RequestContext::IsUsingCache() const
 
 void RequestContext::SetCurlHeaderList(curl_slist *curlHeaderList)
 {
+    if (curlHeaderList_ != nullptr) {
+        curl_slist_free_all(curlHeaderList_);
+    }
     curlHeaderList_ = curlHeaderList;
 }
 
