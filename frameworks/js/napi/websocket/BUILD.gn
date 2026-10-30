@@ -53,10 +53,7 @@ ohos_shared_library("websocket") {
     "-O2",
   ]
 
-  deps = [
-    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
-    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-  ]
+  deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
 
   external_deps = [
     "hilog:libhilog",

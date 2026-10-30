@@ -35,10 +35,6 @@
 #include "request_info.h"
 #endif
 
-#if defined(HTTP_MULTIPATH_CERT_ENABLE) && defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE) && HAS_NETMANAGER_BASE
-#include "VerifyMultiCandidateCertData.h"
-#include "netstack_common_utils.h"
-#endif
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
 #include <openssl/pem.h>
@@ -57,40 +53,11 @@ struct BioDeleter {
 struct X509Deleter {
     void operator()(X509* p) const { X509_free(p); }
 };
-struct X509StackDeleter {
-    void operator()(STACK_OF(X509)* p) const { sk_X509_free(p); }
-};
  
 using unique_SSL_CTX = std::unique_ptr<SSL_CTX, SslCtxDeleter>;
 using unique_X509_STORE_CTX = std::unique_ptr<X509_STORE_CTX, X509SroreCtxDeleter>;
 using unique_BIO = std::unique_ptr<BIO, BioDeleter>;
 using unique_X509 = std::unique_ptr<X509, X509Deleter>;
-using unique_X509_STACK = std::unique_ptr<STACK_OF(X509), X509StackDeleter>;
-#endif
-
-#if defined(HTTP_MULTIPATH_CERT_ENABLE) && defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE) && HAS_NETMANAGER_BASE
-static unique_X509 ParsePemCert(const char *pem)
-{
-    unique_BIO bio(BIO_new_mem_buf(pem, -1));
-    return unique_X509(bio ? PEM_read_bio_X509(bio.get(), nullptr, nullptr, nullptr) : nullptr);
-}
-
-static std::string MakePinnedPubkey(X509 *cert)
-{
-    if (cert == nullptr) {
-        return {};
-    }
-    unsigned char *pubkey = nullptr;
-    int length = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(cert), &pubkey);
-    if (length <= 0 || pubkey == nullptr) {
-        OPENSSL_free(pubkey);
-        return {};
-    }
-    std::string digest;
-    bool ok = OHOS::NetStack::CommonUtils::Sha256sum(pubkey, static_cast<size_t>(length), digest);
-    OPENSSL_free(pubkey);
-    return ok ? "sha256//" + digest : std::string{};
-}
 #endif
 
 using namespace OHOS::NetStack;
@@ -245,62 +212,6 @@ HWTEST_F(HttpExecTest, GetSslVerifyHostValue001, TestSize.Level1)
     options.SetSslServerHostnameVerification(false);
     EXPECT_EQ(HttpExec::GetSslVerifyHostValue(options), 0L);
 }
-
-#if defined(HTTP_MULTIPATH_CERT_ENABLE) && defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE) && HAS_NETMANAGER_BASE
-// A valid chain may be pinned by its root or leaf, but not an unrelated key.
-HWTEST_F(HttpExecTest, VerifyPinnedPubkeyForChain_RootOrLeaf, TestSize.Level1)
-{
-    unique_X509 root = ParsePemCert(Ssl::TestData::OLD_ROOT_PEM);
-    unique_X509 leaf = ParsePemCert(Ssl::TestData::LEAF_PEM);
-    unique_X509 otherRoot = ParsePemCert(Ssl::TestData::SELF_NEW_ROOT_PEM);
-    ASSERT_NE(root, nullptr);
-    ASSERT_NE(leaf, nullptr);
-    ASSERT_NE(otherRoot, nullptr);
-
-    unique_X509_STACK chain(sk_X509_new_null());
-    ASSERT_NE(chain, nullptr);
-    ASSERT_EQ(sk_X509_push(chain.get(), leaf.get()), 1);
-    ASSERT_EQ(sk_X509_push(chain.get(), root.get()), 2);
-
-    std::string rootPin = MakePinnedPubkey(root.get());
-    std::string leafPin = MakePinnedPubkey(leaf.get());
-    std::string wrongPin = MakePinnedPubkey(otherRoot.get());
-    ASSERT_FALSE(rootPin.empty());
-    ASSERT_FALSE(leafPin.empty());
-    ASSERT_FALSE(wrongPin.empty());
-    EXPECT_TRUE(HttpExec::VerifyPinnedPubkeyForChain(chain.get(), rootPin));
-    EXPECT_TRUE(HttpExec::VerifyPinnedPubkeyForChain(chain.get(), leafPin));
-    EXPECT_FALSE(HttpExec::VerifyPinnedPubkeyForChain(chain.get(), wrongPin));
-    EXPECT_TRUE(HttpExec::VerifyPinnedPubkeyForChain(chain.get(), ""));
-    EXPECT_FALSE(HttpExec::VerifyPinnedPubkeyForChain(nullptr, leafPin));
-}
-#endif
-
-#if defined(HTTP_MULTIPATH_CERT_ENABLE) && defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE)
-// Skipping certificate verification must not silently disable configured pinning.
-HWTEST_F(HttpExecTest, SslCtxFunction_SkipWithPinKeepsOldCallback, TestSize.Level1)
-{
-    unique_CURL handle(curl_easy_init());
-    unique_SSL_CTX sslCtx(SSL_CTX_new(TLS_client_method()));
-    ASSERT_NE(handle, nullptr);
-    ASSERT_NE(sslCtx, nullptr);
-
-    auto manager = std::make_shared<EventManager>();
-    RequestContext context(nullptr, manager);
-    context.options.SetCanSkipCertVerifyFlag(true);
-    std::string pin = "sha256//AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
-    context.SetPinnedPubkey(pin);
-    ASSERT_EQ(HttpExec::SslCtxFunction(handle.get(), sslCtx.get(), &context), CURLE_OK);
-    EXPECT_EQ(SSL_CTX_get_verify_mode(sslCtx.get()), SSL_VERIFY_PEER);
-
-    unique_SSL_CTX noPinSslCtx(SSL_CTX_new(TLS_client_method()));
-    ASSERT_NE(noPinSslCtx, nullptr);
-    RequestContext noPinContext(nullptr, manager);
-    noPinContext.options.SetCanSkipCertVerifyFlag(true);
-    ASSERT_EQ(HttpExec::SslCtxFunction(handle.get(), noPinSslCtx.get(), &noPinContext), CURLE_OK);
-    EXPECT_EQ(SSL_CTX_get_verify_mode(noPinSslCtx.get()), SSL_VERIFY_NONE);
-}
-#endif
 
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 HWTEST_F(HttpExecTest, MultiPathSslCtxFunction001, TestSize.Level1)

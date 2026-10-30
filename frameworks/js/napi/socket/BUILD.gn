@@ -138,10 +138,7 @@ ohos_shared_library("socket") {
     "-O2",
   ]
 
-  deps = [
-    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
-  ]
+  deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
 
   external_deps = [
     "hilog:libhilog",

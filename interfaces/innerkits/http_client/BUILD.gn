@@ -136,9 +136,6 @@ ohos_shared_library("http_client") {
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
     "$NETSTACK_DIR/interfaces/innerkits/http_interceptor:http_interceptor_http",
   ]
-  if (product_name != "ohos-sdk") {
-    deps += [ "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl" ]
-  }
 
   public_external_deps = [ "curl:curl_shared" ]
 

@@ -19,7 +19,6 @@
 #include <unistd.h>
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
-#include "cert_chain_verify_helper.h"
 #endif
 #include <iostream>
 #include <sstream>
@@ -211,14 +210,6 @@ CURLcode HttpClientTask::SslCtxFunction(CURL *curl, void *sslCtx)
         NETSTACK_LOGD("certificate directory path is not exist");
     } else if (!SSL_CTX_load_verify_locations(static_cast<SSL_CTX *>(sslCtx), certsPath.certFile.c_str(), nullptr)) {
         NETSTACK_LOGE("loading certificates from context cert error.");
-    }
-
-    // Retry alternate certificate paths only when verification is enabled.
-    if (!request_.GetCanSkipCertVerifyFlag()) {
-        SSL_CTX_set_cert_verify_callback(
-            static_cast<SSL_CTX *>(sslCtx),
-            OHOS::NetStack::CertChain::CustomCertVerifyCallback,
-            nullptr);
     }
 #endif // HTTP_MULTIPATH_CERT_ENABLE
     return CURLE_OK;

@@ -25,7 +25,6 @@
 #include "netstack_common_utils.h"
 #include "tls_utils.h"
 #include "socket_error.h"
-#include "cert_chain_verify_helper.h"
 #ifdef HAS_NETMANAGER_BASE
 #include "network_security_config.h"
 #endif
@@ -228,10 +227,7 @@ bool TLSContext::SetCaAndVerify(TLSContext *tlsContext, const TLSConfiguration &
     }
 
     if (configuration.GetCaCertificate().empty()) {
-        if (!SetDefaultCa(tlsContext, configuration)) {
-            NETSTACK_LOGE("Failed to set default CA certificates");
-            return false;
-        }
+        return SetDefaultCa(tlsContext, configuration);
     } else {
         if (!SetDefaultCa(tlsContext, configuration)) {
             NETSTACK_LOGE("Failed to set default CA certificates");
@@ -244,15 +240,6 @@ bool TLSContext::SetCaAndVerify(TLSContext *tlsContext, const TLSConfiguration &
                 return false;
             }
         }
-    }
-
-    // Retry alternate certificate paths only when verification is enabled.
-    if (!tlsContext->tlsConfiguration_.GetSkipFlag()) {
-        SSL_CTX_set_cert_verify_callback(
-            tlsContext->ctx_,
-            OHOS::NetStack::CertChain::CustomCertVerifyCallback,
-            nullptr);
-        NETSTACK_LOGD("SetCaAndVerify: cert chain multi-round verifier installed");
     }
 
     return true;
