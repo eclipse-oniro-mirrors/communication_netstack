@@ -344,6 +344,30 @@ HWTEST_F(TlsSocketBranchTest, BranchTest6, TestSize.Level2)
     delete tlsSocketInternal;
 }
 
+HWTEST_F(TlsSocketBranchTest, ServerNameTrustAnchorHostTest, TestSize.Level2)
+{
+    TLSConnectOptions connectOptions = BaseOption();
+    auto connectAddress = connectOptions.GetNetAddress();
+    connectAddress.SetRawAddress("192.0.2.1");
+    connectOptions.SetNetAddress(connectAddress);
+    connectOptions.SetHostName("origin.example.com");
+    connectOptions.SetServerName("sni.example.com");
+
+    auto tlsSocketInternal = std::make_unique<TLSSocket::TLSSocketInternal>();
+    tlsSocketInternal->SetTlsConfiguration(connectOptions);
+    EXPECT_EQ(tlsSocketInternal->configuration_.GetNetAddress().GetAddress(), "sni.example.com");
+
+    connectOptions.SetServerName("");
+    tlsSocketInternal->SetTlsConfiguration(connectOptions);
+    EXPECT_EQ(tlsSocketInternal->configuration_.GetNetAddress().GetAddress(), "192.0.2.1");
+
+    connectOptions.SetServerName("invalid..example.com");
+    tlsSocketInternal->SetTlsConfiguration(connectOptions);
+    EXPECT_EQ(tlsSocketInternal->configuration_.GetNetAddress().GetAddress(), "192.0.2.1");
+    EXPECT_EQ(connectOptions.GetNetAddress().GetAddress(), "192.0.2.1");
+    EXPECT_EQ(connectOptions.GetHostName(), "origin.example.com");
+}
+
 HWTEST_F(TlsSocketBranchTest, BranchTest7, TestSize.Level2)
 {
     TLSSocket tlsSocket;

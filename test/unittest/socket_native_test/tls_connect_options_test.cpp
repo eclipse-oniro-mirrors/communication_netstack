@@ -202,6 +202,34 @@ HWTEST_F(TlsConnectOptionsTest, HostName, TestSize.Level1)
 }
 
 /**
+ * @tc.name: TlsConnectOptionsTest_ServerName
+ * @tc.desc: Test serverName validation and normalization
+ * @tc.type: FUNC
+ */
+HWTEST_F(TlsConnectOptionsTest, ServerName, TestSize.Level1)
+{
+    TLSConnectOptions options;
+
+    options.SetServerName("link.nim.example.com.");
+    EXPECT_EQ(options.GetServerName(), "link.nim.example.com");
+
+    options.SetServerName("192.168.0.2");
+    EXPECT_TRUE(options.GetServerName().empty());
+
+    options.SetServerName(std::string(64, 'a') + ".example.com");
+    EXPECT_TRUE(options.GetServerName().empty());
+
+    const std::string maxLabel(63, 'a');
+    const std::string maxTlsServerName = maxLabel + "." + maxLabel + "." + maxLabel + "." +
+        std::string(61, 'b');
+    options.SetServerName(maxTlsServerName);
+    EXPECT_EQ(options.GetServerName(), maxTlsServerName);
+
+    options.SetServerName(maxTlsServerName + "b");
+    EXPECT_TRUE(options.GetServerName().empty());
+}
+
+/**
  * @tc.name: TlsConnectOptionsTest_CheckServerIdentity
  * @tc.desc: Test SetCheckServerIdentity callback
  * @tc.type: FUNC

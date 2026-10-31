@@ -100,6 +100,7 @@ void ConnectContext::ParseParams(napi_value *params, size_t paramsCount)
             ParsePingInterval(params[1]);
             ParsePongTimeout(params[1]);
             ParseMinSupportTlsProtocol(params[1]);
+            ParseServerName(params[1]);
             if (!ParseProxy(params[1]) || !ParseProtocol(params[1])) {
                 return;
             }
@@ -150,6 +151,7 @@ void ConnectContext::ParseParamsCountThree(napi_value const *params)
         ParsePingInterval(params[1]);
         ParsePongTimeout(params[1]);
         ParseMinSupportTlsProtocol(params[1]);
+        ParseServerName(params[1]);
         if (!ParseProxy(params[1]) || !ParseProtocol(params[1])) {
             if (NapiUtils::GetValueType(GetEnv(), params[FUNCTION_PARAM_THREE - 1]) == napi_function) {
                 SetCallback(params[FUNCTION_PARAM_THREE - 1]);
@@ -202,6 +204,28 @@ void ConnectContext::ParseHeader(napi_value optionsValue)
             header[CommonUtils::ToLower(name)] = value;
         }
     });
+}
+
+void ConnectContext::ParseServerName(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, ContextKey::SERVER_NAME)) {
+        return;
+    }
+    napi_value jsServerName = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, ContextKey::SERVER_NAME);
+    if (NapiUtils::GetValueType(GetEnv(), jsServerName) != napi_string) {
+        NETSTACK_LOGE("serverName type error");
+        return;
+    }
+    std::string serverName = NapiUtils::GetStringFromValueUtf8(GetEnv(), jsServerName);
+    serverName_ = CommonUtils::GetValidServerName(serverName);
+    if (serverName_.empty() && !serverName.empty()) {
+        NETSTACK_LOGE("serverName is invalid, ignore it");
+    }
+}
+
+std::string ConnectContext::GetServerName() const
+{
+    return serverName_;
 }
 
 void ConnectContext::ParseCaPath(napi_value optionsValue)

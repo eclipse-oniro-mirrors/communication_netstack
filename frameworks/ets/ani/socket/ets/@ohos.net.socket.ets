@@ -166,6 +166,7 @@ export default namespace socket {
         proxy?: ProxyOptions;
         sslServerHostnameVerification?: boolean;
         timeout?: int;
+        serverName?: string;
     }
 
     export interface UDPSocket {    
@@ -521,6 +522,7 @@ export default namespace socket {
         proxy?: ProxyOptions;
         sslServerHostnameVerification?: boolean;
         timeout?: int;
+        serverName?: string;
     }
 
     class UDPSocketInner implements UDPSocket {

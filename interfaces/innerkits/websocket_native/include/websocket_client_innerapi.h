@@ -63,6 +63,7 @@ struct OpenInfo {
 struct OpenOptions {
     std::map<std::string, std::string> headers;
     bool supportOriginPort = false;
+    std::string serverName;
 };
 
 class WebSocketClient : public std::enable_shared_from_this<WebSocketClient> {

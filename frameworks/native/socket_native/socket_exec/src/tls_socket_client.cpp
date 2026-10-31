@@ -345,6 +345,19 @@ std::string TLSConnectOptions::GetHostName() const
     return hostName_;
 }
 
+void TLSConnectOptions::SetServerName(const std::string &serverName)
+{
+    serverName_ = CommonUtils::GetValidServerName(serverName, CommonUtils::MAX_TLS_SERVER_NAME_LEN);
+    if (serverName_.empty() && !serverName.empty()) {
+        NETSTACK_LOGE("serverName is invalid, ignore it");
+    }
+}
+
+std::string TLSConnectOptions::GetServerName() const
+{
+    return serverName_;
+}
+
 void TLSConnectOptions::SetTimeout(const uint32_t &timeout)
 {
     timeout_ = timeout;
@@ -1196,7 +1209,13 @@ void TLSSocket::TLSSocketInternal::SetTlsConfiguration(const TLSConnectOptions &
     configuration_.SetPrivateKey(config.GetTlsSecureOptions().GetKey(), config.GetTlsSecureOptions().GetKeyPass());
     configuration_.SetLocalCertificate(config.GetTlsSecureOptions().GetCertChain());
     configuration_.SetCaCertificate(config.GetTlsSecureOptions().GetCaChain());
-    configuration_.SetNetAddress(config.GetNetAddress());
+    auto trustAnchorAddress = config.GetNetAddress();
+    // Preserve the existing NSC lookup address unless serverName explicitly overrides it.
+    auto trustAnchorHostName = config.GetServerName();
+    if (!trustAnchorHostName.empty()) {
+        trustAnchorAddress.SetRawAddress(trustAnchorHostName);
+    }
+    configuration_.SetNetAddress(trustAnchorAddress);
 }
 
 bool TLSSocket::TLSSocketInternal::SendRetry(ssl_st *ssl, const char *curPos, size_t curSendSize, int sockfd)
@@ -1647,7 +1666,9 @@ bool TLSSocket::TLSSocketInternal::StartShakingHands(const TLSConnectOptions &op
         return false;
     }
 
-    auto hostName = options.GetHostName();
+    auto serverName = options.GetServerName();
+    // serverName takes precedence over the host name of the destination address
+    auto hostName = serverName.empty() ? options.GetHostName() : serverName;
     // indicates hostName is not ip address
     if (hostName != options.GetNetAddress().GetAddress()) {
         SetSNIandLoadCachedCaCert(hostName);
@@ -1705,22 +1726,23 @@ bool TLSSocket::TLSSocketInternal::CheckAfterShankingHands(const TLSConnectOptio
     if (!SetRemoteCertRawData(peerX509)) {
         NETSTACK_LOGE("Failed to set remote x509 certificata Serialization data");
     }
+    auto serverName = options.GetServerName();
+    auto identityName = serverName.empty() ? options.GetHostName() : serverName;
     if (options.GetSslServerHostnameVerification()) {
-        NETSTACK_LOGI("ssl server hostname verification start, hostname: %{public}s", options.GetHostName().c_str());
+        NETSTACK_LOGI("ssl server hostname verification start");
         std::string reason;
-        // Use options.GetHostName() (the original user input, a domain or an IP literal).
-        // The member hostName_ has been replaced with the resolved IP by SetRawAddress.
-        if (!VerifyServerHostname(options.GetHostName(), peerX509, reason)) {
+        // Prefer serverName; otherwise verify the original address before DNS resolution.
+        if (!VerifyServerHostname(identityName, peerX509, reason)) {
             NETSTACK_LOGE("ssl server hostname verification failed: %{public}s", reason.c_str());
             X509_free(peerX509);
             lastErrNumber_ = TLS_ERR_SSL_HOSTNAME_VERIFY_FAILED;
             return false;
         }
-        NETSTACK_LOGI("ssl server hostname verification passed, hostname: %{public}s", options.GetHostName().c_str());
+        NETSTACK_LOGI("ssl server hostname verification passed");
     }
     CheckServerIdentity checkServerIdentity = options.GetCheckServerIdentity();
     if (checkServerIdentity) {
-        checkServerIdentity(hostName_, {remoteCert_});
+        checkServerIdentity(serverName.empty() ? hostName_ : serverName, {remoteCert_});
     }
     X509_free(peerX509);
     return true;
@@ -1742,7 +1764,7 @@ bool TLSSocket::TLSSocketInternal::VerifyServerHostname(const std::string &hostN
     if (ret == 1) {
         return true;
     }
-    reason = (ret == 0) ? ("Hostname/IP does not match certificate: " + hostName)
+    reason = (ret == 0) ? "Hostname/IP does not match certificate"
                         : ("certificate check internal error: " + std::to_string(ret));
     return false;
 }

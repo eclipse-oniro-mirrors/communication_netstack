@@ -1028,6 +1028,59 @@ HWTEST_F(NetStackCommonUtilsTest, ParseDecimalInteger001, TestSize.Level2)
     }
 }
 
+HWTEST_F(NetStackCommonUtilsTest, GetValidServerNameTest001, TestSize.Level2)
+{
+    EXPECT_EQ(GetValidServerName("link.nim.example.com"), "link.nim.example.com");
+    EXPECT_EQ(GetValidServerName("link.nim.example.com."), "link.nim.example.com");
+    EXPECT_EQ(GetValidServerName("localhost"), "localhost");
+    EXPECT_EQ(GetValidServerName("xn--fiqs8s.example.com"), "xn--fiqs8s.example.com");
+    EXPECT_EQ(GetValidServerName("a-b.c-d.com"), "a-b.c-d.com");
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetValidServerNameTest002, TestSize.Level2)
+{
+    EXPECT_TRUE(GetValidServerName("").empty());
+    EXPECT_TRUE(GetValidServerName(".").empty());
+    EXPECT_TRUE(GetValidServerName("-abc.com").empty());
+    EXPECT_TRUE(GetValidServerName("abc-.com").empty());
+    EXPECT_TRUE(GetValidServerName("foo.-bar.com").empty());
+    EXPECT_TRUE(GetValidServerName("foo.bar-.com").empty());
+    EXPECT_TRUE(GetValidServerName("foo..bar.com").empty());
+    EXPECT_TRUE(GetValidServerName("foo_bar.com").empty());
+    EXPECT_TRUE(GetValidServerName("foo bar.com").empty());
+    EXPECT_TRUE(GetValidServerName("example.com:443").empty());
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetValidServerNameTest003, TestSize.Level2)
+{
+    EXPECT_TRUE(GetValidServerName("192.168.0.2").empty());
+    EXPECT_TRUE(GetValidServerName("fe80::1").empty());
+}
+
+HWTEST_F(NetStackCommonUtilsTest, GetValidServerNameTest004, TestSize.Level2)
+{
+    const std::string maxLabel(63, 'a');
+    const std::string tooLongLabel(64, 'a');
+    const std::string maxServerName = maxLabel + "." + maxLabel;
+    const std::string tooLongServerName = maxLabel + ".a." + std::string(62, 'b');
+    EXPECT_EQ(GetValidServerName(maxLabel), maxLabel);
+    EXPECT_TRUE(GetValidServerName(tooLongLabel).empty());
+    EXPECT_EQ(maxServerName.length(), MAX_SERVER_NAME_LEN);
+    EXPECT_EQ(GetValidServerName(maxServerName), maxServerName);
+    EXPECT_EQ(tooLongServerName.length(), MAX_SERVER_NAME_LEN + 1);
+    EXPECT_TRUE(GetValidServerName(tooLongServerName).empty());
+    EXPECT_EQ(GetValidServerName(tooLongServerName, MAX_TLS_SERVER_NAME_LEN), tooLongServerName);
+    EXPECT_EQ(GetValidServerName(maxLabel + "."), maxLabel);
+
+    const std::string maxTlsServerName = maxLabel + "." + maxLabel + "." + maxLabel + "." +
+        std::string(61, 'b');
+    const std::string tooLongTlsServerName = maxTlsServerName + "b";
+    EXPECT_EQ(maxTlsServerName.length(), MAX_TLS_SERVER_NAME_LEN);
+    EXPECT_EQ(GetValidServerName(maxTlsServerName, MAX_TLS_SERVER_NAME_LEN), maxTlsServerName);
+    EXPECT_TRUE(GetValidServerName(maxTlsServerName).empty());
+    EXPECT_TRUE(GetValidServerName(tooLongTlsServerName, MAX_TLS_SERVER_NAME_LEN).empty());
+}
+
 } // namespace CommonUtils
 } // namespace NetStack
 } // namespace OHOS

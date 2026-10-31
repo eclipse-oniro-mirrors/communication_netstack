@@ -218,6 +218,8 @@ pub struct TLSConnectOptions {
     pub ssl_server_hostname_verification: Option<bool>,
     #[serde(rename = "timeout\0")]
     pub timeout: Option<i32>,
+    #[serde(rename = "serverName\0")]
+    pub server_name: Option<String>,
 }
 
 #[ani_rs::ani(path = "@ohos.net.socket.socket.SocketMessageInfoInner")]

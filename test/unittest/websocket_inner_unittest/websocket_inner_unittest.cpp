@@ -19,6 +19,7 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
+#include <map>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <thread>
@@ -63,6 +64,9 @@ namespace OHOS::NetStack::WebSocketClient {
     int LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
     int LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
     int CreatConnectInfoEx(const std::string url, lws_context *lwsContext, WebSocketClient *client);
+    std::string BuildWebSocketHost(const char *prefix, const char *address, int port);
+    std::string BuildWebSocketConnectHost(const char *prefix, const char *address, int port,
+        const std::string &serverName, std::map<std::string, std::string> &headers);
     std::vector<std::string> Split(const std::string &str, const std::string &sep, size_t size);
     bool ParseUrlEx(const std::string url, char *prefix, char *address, char *path, int *port);
     int LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
@@ -767,6 +771,39 @@ namespace {
         EXPECT_EQ(ret, WebsocketErrorCode::WEBSOCKET_ERROR_CODE_CONNECT_ALREADY_EXIST);
         clients->GetClientContext()->context_.reset();
         std::free(rawCtx);
+    }
+
+    HWTEST_F(WebSocketTest, WebSocketClientDuplicateConnectPreservesOptions, TestSize.Level1)
+    {
+        const std::map<std::string, std::string> originalHeaders = {
+            {"Host", "original.example.com"}, {"X-Trace", "original"}};
+        for (auto connect : {&WebSocketClient::Connect, &WebSocketClient::ConnectEx}) {
+            SCOPED_TRACE(connect == &WebSocketClient::Connect ? "Connect" : "ConnectEx");
+            auto clients = std::make_unique<WebSocketClient>();
+            auto context = clients->GetClientContext();
+            lws_context_creation_info info = {};
+            info.port = CONTEXT_PORT_NO_LISTEN;
+            context->SetContext(lws_create_context(&info));
+            auto originalContext = context->GetContext();
+            ASSERT_NE(originalContext, nullptr);
+            context->header = originalHeaders;
+            context->supportOriginPort = true;
+            context->serverName = "original.example.com";
+            context->SetUserCertPath("unused-cert.pem");
+            for (const auto &serverName : {"replacement.example.com", "", "invalid_name.example.com"}) {
+                SCOPED_TRACE(serverName);
+                OpenOptions options;
+                options.headers = {{"Host", "replacement.example.com"}, {"X-New", "replacement"}};
+                options.serverName = serverName;
+                int32_t ret = (clients.get()->*connect)("wss://example.com", options);
+                EXPECT_EQ(ret, WebsocketErrorCode::WEBSOCKET_ERROR_CODE_CONNECT_ALREADY_EXIST);
+                EXPECT_EQ(context->GetContext(), originalContext);
+                EXPECT_EQ(context->header, originalHeaders);
+                EXPECT_TRUE(context->supportOriginPort);
+                EXPECT_EQ(context->serverName, "original.example.com");
+                EXPECT_TRUE(context->caPath.empty());
+            }
+        }
     }
 
     HWTEST_F(WebSocketTest, WebSocketServerCloseNotExist003, TestSize.Level1)
@@ -2045,6 +2082,40 @@ namespace {
         EXPECT_EQ(ret10, WebsocketErrorCode::WEBSOCKET_ERROR_CODE_URL_ERROR);
         
         client->GetClientContext()->context_.reset();
+    }
+
+    HWTEST_F(WebSocketTest, BuildWebSocketServerNameHostTest, TestSize.Level1)
+    {
+        EXPECT_EQ(BuildWebSocketHost("wss", "example.com", 443), "example.com");
+        EXPECT_EQ(BuildWebSocketHost("wss", "example.com", 8443), "example.com:8443");
+    }
+
+    HWTEST_F(WebSocketTest, BuildWebSocketConnectHostSecureTest, TestSize.Level1)
+    {
+        std::map<std::string, std::string> headers = {
+            {"Host", "wrong.example.com"}, {"hOsT", "other.example.com"}, {"X-Trace", "value"}};
+        EXPECT_EQ(BuildWebSocketConnectHost("wss", "127.0.0.1", 18444, "sni.example.com", headers),
+            "sni.example.com:18444");
+        const std::map<std::string, std::string> expectedHeaders = {{"X-Trace", "value"}};
+        EXPECT_EQ(headers, expectedHeaders);
+
+        std::map<std::string, std::string> emptyHeaders;
+        EXPECT_EQ(BuildWebSocketConnectHost("wss", "127.0.0.1", 443, "sni.example.com", emptyHeaders),
+            "sni.example.com");
+        EXPECT_EQ(BuildWebSocketConnectHost("https", "127.0.0.1", 443, "sni.example.com", emptyHeaders),
+            "sni.example.com:443");
+        EXPECT_TRUE(emptyHeaders.empty());
+    }
+
+    HWTEST_F(WebSocketTest, BuildWebSocketConnectHostIgnoredTest, TestSize.Level1)
+    {
+        const std::map<std::string, std::string> originalHeaders = {{"Host", "app.example.com"}};
+        auto headers = originalHeaders;
+        EXPECT_EQ(BuildWebSocketConnectHost("ws", "127.0.0.1", 8080, "sni.example.com", headers),
+            "127.0.0.1:8080");
+        EXPECT_EQ(headers, originalHeaders);
+        EXPECT_EQ(BuildWebSocketConnectHost("wss", "127.0.0.1", 443, "", headers), "127.0.0.1");
+        EXPECT_EQ(headers, originalHeaders);
     }
 
     HWTEST_F(WebSocketTest, SplitTestEmptyString, TestSize.Level1)

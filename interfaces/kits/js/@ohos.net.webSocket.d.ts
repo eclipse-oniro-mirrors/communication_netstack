@@ -193,6 +193,23 @@ declare namespace webSocket {
      * @arkts 1.2
      */
     pongTimeout?: int;
+
+    /**
+     * Server Name Indication (SNI) service name used by the TLS handshake. This parameter is optional.
+     * In the WSS connection setup scenario, when the IP address:port is directly connected, the SNI domain name
+     * can be explicitly specified.
+     * If this field is not set, the domain name is extracted from the WSS URL and filled with the SNI by default.
+     * If this field is set, it takes precedence over a Host header specified in header. The host name in the Host
+     * header is replaced with this value, and the port is retained when a non-default port is used.
+     * This parameter is valid only for encrypted WSS connections. Ignore this parameter for plaintext WS connections.
+     * The maximum length is 127 bytes. Value constraint: Valid domain name. Default value: undefined.
+     * @type {?string}
+     * @syscap SystemCapability.Communication.NetStack
+     * @stagemodelonly
+     * @since 26.2.0
+     * @arkts 1.2
+     */
+    serverName?: string;
   }
 
   /**

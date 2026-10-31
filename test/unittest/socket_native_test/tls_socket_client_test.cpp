@@ -389,7 +389,8 @@ public:
 };
 
 static void VerifyHostnameWithLocalTlsServer(const std::string &hostName, bool hostnameVerification,
-                                             int32_t expectedError)
+                                             int32_t expectedError, const std::string &serverName = "",
+                                             int32_t *actualError = nullptr)
 {
     LocalTlsServer server;
     ASSERT_TRUE(server.Start());
@@ -416,6 +417,7 @@ static void VerifyHostnameWithLocalTlsServer(const std::string &hostName, bool h
     destAddr.SetFamilyBySaFamily(AF_INET);
     connectOptions.SetNetAddress(destAddr);
     connectOptions.SetHostName(hostName);
+    connectOptions.SetServerName(serverName);
     connectOptions.SetSkipRemoteValidation(true);
     connectOptions.SetSslServerHostnameVerification(hostnameVerification);
     static constexpr uint32_t connectTimeoutMs = 8000;
@@ -430,6 +432,9 @@ static void VerifyHostnameWithLocalTlsServer(const std::string &hostName, bool h
     WaitForCallback(callbackCalled, connectTimeoutMs + WAIT_TIMEOUT_MS);
 
     ASSERT_TRUE(callbackCalled.load());
+    if (actualError != nullptr) {
+        *actualError = resultError.load();
+    }
     EXPECT_EQ(resultError.load(), expectedError);
 
     std::atomic<bool> closeDone(false);
@@ -1328,6 +1333,51 @@ HWTEST_F(TlsSocketClientTest, HostnameVerifyDisabled001, TestSize.Level2)
 HWTEST_F(TlsSocketClientTest, HostnameVerifyMatch001, TestSize.Level2)
 {
     VerifyHostnameWithLocalTlsServer(LOCAL_TLS_HOSTNAME, true, TLSSOCKET_SUCCESS);
+}
+
+HWTEST_F(TlsSocketClientTest, ServerNameHostnameVerifyMatch001, TestSize.Level2)
+{
+    const std::string hostName = MISMATCHED_TLS_HOSTNAME;
+    const std::string serverName = LOCAL_TLS_HOSTNAME;
+    int32_t actualError = -1;
+    VerifyHostnameWithLocalTlsServer(hostName, true, TLSSOCKET_SUCCESS, serverName, &actualError);
+    EXPECT_EQ(actualError, TLSSOCKET_SUCCESS);
+}
+
+HWTEST_F(TlsSocketClientTest, ServerNameHostnameVerifyMismatch001, TestSize.Level2)
+{
+    const std::string hostName = LOCAL_TLS_HOSTNAME;
+    const std::string serverName = MISMATCHED_TLS_HOSTNAME;
+    int32_t actualError = -1;
+    VerifyHostnameWithLocalTlsServer(hostName, true, TLS_ERR_SSL_HOSTNAME_VERIFY_FAILED, serverName, &actualError);
+    EXPECT_EQ(actualError, TLS_ERR_SSL_HOSTNAME_VERIFY_FAILED);
+}
+
+HWTEST_F(TlsSocketClientTest, ServerNameHostnameVerifyDisabled001, TestSize.Level2)
+{
+    const std::string hostName = LOCAL_TLS_HOSTNAME;
+    const std::string serverName = MISMATCHED_TLS_HOSTNAME;
+    int32_t actualError = -1;
+    VerifyHostnameWithLocalTlsServer(hostName, false, TLSSOCKET_SUCCESS, serverName, &actualError);
+    EXPECT_EQ(actualError, TLSSOCKET_SUCCESS);
+}
+
+HWTEST_F(TlsSocketClientTest, InvalidServerNameHostnameVerifyFallback001, TestSize.Level2)
+{
+    const std::string hostName = LOCAL_TLS_HOSTNAME;
+    const std::string serverName = "invalid..local.test";
+    int32_t actualError = -1;
+    VerifyHostnameWithLocalTlsServer(hostName, true, TLSSOCKET_SUCCESS, serverName, &actualError);
+    EXPECT_EQ(actualError, TLSSOCKET_SUCCESS);
+}
+
+HWTEST_F(TlsSocketClientTest, InvalidServerNameHostnameVerifyMismatch001, TestSize.Level2)
+{
+    const std::string hostName = MISMATCHED_TLS_HOSTNAME;
+    const std::string serverName = "invalid..local.test";
+    int32_t actualError = -1;
+    VerifyHostnameWithLocalTlsServer(hostName, true, TLS_ERR_SSL_HOSTNAME_VERIFY_FAILED, serverName, &actualError);
+    EXPECT_EQ(actualError, TLS_ERR_SSL_HOSTNAME_VERIFY_FAILED);
 }
 
 HWTEST_F(TlsSocketClientTest, VerifyServerHostnameIpAndDomain001, TestSize.Level2)
