@@ -160,7 +160,7 @@ bool TLSSocketExec::ExecGetCertificate(GetCertificateContext *context)
 }
 
 static std::shared_ptr<Socks5::Socks5TlsInstance> InitSocks5TlsInstance(
-    TLSConnectContext *context, std::shared_ptr<TLSSocket> shared)
+    TLSConnectContext *context, std::shared_ptr<TLSSocket> shared, int fd)
 {
     const std::shared_ptr<Socks5::Socks5Option> opt{std::make_shared<Socks5::Socks5Option>()};
     opt->username_ = context->proxyOptions_->username_;
@@ -176,13 +176,13 @@ static std::shared_ptr<Socks5::Socks5TlsInstance> InitSocks5TlsInstance(
         return nullptr;
     }
 
-    auto socks5Tls = std::make_shared<Socks5::Socks5TlsInstance>(shared->GetSocketFd());
+    auto socks5Tls = std::make_shared<Socks5::Socks5TlsInstance>(fd);
     socks5Tls->SetDestAddress(context->connectOptions_.GetNetAddress());
     socks5Tls->SetSocks5Option(opt);
     return socks5Tls;
 }
 
-static int HandleTcpProxyOptions(TLSConnectContext *context, std::shared_ptr<TLSSocket> shared)
+static int HandleTcpProxyOptions(TLSConnectContext *context, std::shared_ptr<TLSSocket> shared, int fd)
 {
     auto eventMgr = context->GetSharedManager();
     if (eventMgr == nullptr) {
@@ -197,7 +197,7 @@ static int HandleTcpProxyOptions(TLSConnectContext *context, std::shared_ptr<TLS
 
     auto socks5Tls = eventMgr->GetProxyData();
     if (socks5Tls == nullptr) {
-        socks5Tls = InitSocks5TlsInstance(context, shared);
+        socks5Tls = InitSocks5TlsInstance(context, shared, fd);
         if (socks5Tls == nullptr) {
             return -1;
         }
@@ -211,7 +211,7 @@ static int HandleTcpProxyOptions(TLSConnectContext *context, std::shared_ptr<TLS
             return -1;
         }
     }
-    shared->ExecTlsSetSockBlockFlag(shared->GetSocketFd(), false);
+    shared->ExecTlsSetSockBlockFlag(fd, false);
     return 0;
 }
 // LCOV_EXCL_START
@@ -234,6 +234,30 @@ void TLSSocketExec::SetRawAddress(TLSConnectContext *context, std::string &dstIp
     SocketStatisticsEvent::GetInstance().TlsSocket().RecordTotalConnect(dstIp, hostNameForStats);
 }
 // LCOV_EXCL_STOP
+static std::shared_ptr<TLSSocket> GetTlsSocketForConnect(TLSConnectContext *context, const std::string &dstIp)
+{
+    auto manager = context->GetSharedManager();
+    if (manager == nullptr) {
+        SocketStatisticsEvent::GetInstance().TlsSocket().RecordAbnormalConnect(dstIp, TLS_ERR_NO_BIND);
+        return nullptr;
+    }
+    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
+    auto tlsSocket = reinterpret_cast<std::shared_ptr<TLSSocket> *>(manager->GetData());
+    if (tlsSocket == nullptr) {
+        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
+        SocketStatisticsEvent::GetInstance().TlsSocket().RecordAbnormalConnect(dstIp, TLS_ERR_NO_BIND);
+        return nullptr;
+    }
+    auto shared = *tlsSocket;
+    if (!shared) {
+        NETSTACK_LOGE("ExecConnect tlsSocket is null");
+        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
+        SocketStatisticsEvent::GetInstance().TlsSocket().RecordAbnormalConnect(dstIp, TLS_ERR_NO_BIND);
+        return nullptr;
+    }
+    return shared;
+}
+
 bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
 {
     if (context == nullptr) {
@@ -242,40 +266,29 @@ bool TLSSocketExec::ExecConnect(TLSConnectContext *context)
     auto connectStart = std::chrono::steady_clock::now();
     std::string dstIp = "";
     SetRawAddress(context, dstIp);
-    auto manager = context->GetSharedManager();
-    if (manager == nullptr) {
-        SocketStatisticsEvent::GetInstance().TlsSocket().RecordAbnormalConnect(dstIp, TLS_ERR_NO_BIND);
-        return false;
-    }
-    std::shared_lock<std::shared_mutex> lock(manager->GetDataMutex());
-    auto tlsSocket = reinterpret_cast<std::shared_ptr<TLSSocket> *>(manager->GetData());
-    if (tlsSocket == nullptr) {
-        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
-        SocketStatisticsEvent::GetInstance().TlsSocket().RecordAbnormalConnect(dstIp, TLS_ERR_NO_BIND);
-        return false;
-    }
-    auto shared = *tlsSocket;
+    auto shared = GetTlsSocketForConnect(context, dstIp);
     if (!shared) {
-        NETSTACK_LOGE("ExecConnect tlsSocket is null");
-        context->SetError(TLS_ERR_NO_BIND, MakeErrorMessage(TLS_ERR_NO_BIND));
-        SocketStatisticsEvent::GetInstance().TlsSocket().RecordAbnormalConnect(dstIp, TLS_ERR_NO_BIND);
         return false;
     }
-    lock.unlock();
-    if (!shared->IsExtSock() && context->proxyOptions_ != nullptr) {
-        if (HandleTcpProxyOptions(context, shared) != 0) {
-            if (context->errorNumber_ != TLSSOCKET_SUCCESS) {
-                SocketStatisticsEvent::GetInstance().TlsSocket().RecordAbnormalConnect(dstIp, context->errorNumber_);
+    bool proxyFailed = false;
+    shared->Connect(context->connectOptions_, [&context, &proxyFailed](int32_t errorNumber) {
+        if (!proxyFailed) {
+            context->errorNumber_ = errorNumber;
+            if (errorNumber != TLSSOCKET_SUCCESS) {
+                context->SetError(errorNumber, MakeErrorMessage(errorNumber));
             }
-            return false;
         }
-    }
-    shared->Connect(context->connectOptions_, [&context](int32_t errorNumber) {
-        context->errorNumber_ = errorNumber;
-        if (errorNumber != TLSSOCKET_SUCCESS) {
-            context->SetError(errorNumber, MakeErrorMessage(errorNumber));
+    }, [context, shared, &proxyFailed](int fd) -> int32_t {
+        if (!shared->IsExtSock() && context->proxyOptions_ != nullptr) {
+            int32_t result = HandleTcpProxyOptions(context, shared, fd);
+            proxyFailed = result != 0;
+            return result;
         }
+        return TLSSOCKET_SUCCESS;
     });
+    if (proxyFailed && context->errorNumber_ == TLSSOCKET_SUCCESS) {
+        return false;
+    }
     if (context->errorNumber_ == TLSSOCKET_SUCCESS) {
         auto successEnd = std::chrono::steady_clock::now();
         auto successTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(successEnd - connectStart).count();

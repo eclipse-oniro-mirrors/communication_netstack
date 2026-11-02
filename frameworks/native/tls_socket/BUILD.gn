@@ -1,0 +1,50 @@
+# Copyright (c) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+
+ohos_static_library("tls_cert_alias") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  sources = [
+    "src/tls_cert_alias.cpp",
+    "src/tls_cert_manager_adapter.cpp",
+    "src/tls_cert_manager_provider.cpp",
+  ]
+  include_dirs = [
+    "include",
+    "//foundation/communication/netstack/utils/log/include",
+  ]
+  external_deps = [
+    "hilog:libhilog",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
+  ]
+  if (is_ohos && is_standard_system && product_name != "ohos-sdk" &&
+      defined(global_parts_info) &&
+      defined(global_parts_info.security_certificate_manager) &&
+      global_parts_info.security_certificate_manager) {
+    # The SDK reports NOT_SUPPORTED when its credential feature is disabled.
+    # Keep certificate manager's private feature configuration within its own part.
+    defines = [ "NETSTACK_HAS_CERT_MANAGER=1" ]
+    external_deps += [ "certificate_manager:cert_manager_sdk" ]
+  } else {
+    defines = [ "NETSTACK_HAS_CERT_MANAGER=0" ]
+  }
+  part_name = "netstack"
+  subsystem_name = "communication"
+}

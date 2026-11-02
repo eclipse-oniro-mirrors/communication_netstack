@@ -20,6 +20,7 @@
 
 #include "tls.h"
 #include "tls_configuration.h"
+#include "tls_cert_manager_provider.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -43,9 +44,12 @@ private:
     static bool SetCaAndVerify(TLSContext *tlsContext, const TLSConfiguration &configuration);
     static bool SetLocalCertificate(TLSContext *tlsContext, const TLSConfiguration &configuration);
     static bool SetKeyAndCheck(TLSContext *tlsContext, const TLSConfiguration &configuration);
+    static bool SetAliasKeyAndCheck(TLSContext *tlsContext, const TLSConfiguration &configuration);
+    static bool CreateSslContext(TLSContext *tlsContext, const TLSConfiguration &configuration);
     static void SetVerify(TLSContext *tlsContext);
 
 private:
+    std::unique_ptr<AliasProviderRuntime> aliasRuntime_;
     SSL_CTX *ctx_ = nullptr;
     EVP_PKEY *pkey_ = nullptr;
     SSL *ctxSsl_ = nullptr;

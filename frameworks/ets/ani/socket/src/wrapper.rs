@@ -576,6 +576,8 @@ pub mod ffi {
     }
 
     struct FFITlsSecureOptions {
+        has_cert_alias: bool,
+        cert_alias: String,
         has_ca: bool,
         ca: Vec<String>,
         has_cert: bool,
@@ -1112,7 +1114,7 @@ impl From<&bridge::TLSSecureOptions> for ffi::FFITlsSecureOptions {
             Some(bridge::UnionCaCert::S(s)) => (true, vec![s.clone()]),
             Some(bridge::UnionCaCert::Array(v)) => (true, v.clone()),
         };
-        let (has_cert, cert_vec) = match &sec.cert {
+        let (has_cert, cert_vec) = match if sec.cert_alias.is_some() { None } else { sec.cert.as_ref() } {
             None => (false, vec![]),
             Some(bridge::UnionCaCert::S(s)) => (true, vec![s.clone()]),
             Some(bridge::UnionCaCert::Array(v)) => (true, v.clone()),
@@ -1134,14 +1136,16 @@ impl From<&bridge::TLSSecureOptions> for ffi::FFITlsSecureOptions {
             ),
         };
         ffi::FFITlsSecureOptions {
+            has_cert_alias: sec.cert_alias.is_some(),
+            cert_alias: sec.cert_alias.clone().unwrap_or_default(),
             has_ca,
             ca: ca_vec,
             has_cert,
             cert: cert_vec,
-            has_key: sec.key.is_some(),
-            key: sec.key.clone().unwrap_or_default(),
-            has_password: sec.password.is_some(),
-            password: sec.password.clone().unwrap_or_default(),
+            has_key: sec.cert_alias.is_none() && sec.key.is_some(),
+            key: if sec.cert_alias.is_some() { String::new() } else { sec.key.clone().unwrap_or_default() },
+            has_password: sec.cert_alias.is_none() && sec.password.is_some(),
+            password: if sec.cert_alias.is_some() { String::new() } else { sec.password.clone().unwrap_or_default() },
             has_protocols,
             protocols: protocols_vec,
             has_use_remote_cipher_prefer: sec.use_remote_cipher_prefer.is_some(),
@@ -1204,6 +1208,7 @@ impl From<&ffi::FFITlsSecureOptions> for bridge::TLSSecureOptions {
         };
 
         bridge::TLSSecureOptions {
+            cert_alias: if sec.has_cert_alias { Some(sec.cert_alias.clone()) } else { None },
             ca,
             cert,
             key: if sec.has_key { Some(sec.key.clone()) } else { None },

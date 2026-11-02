@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "constant.h"
+#include "tls_cert_alias.h"
 #include "napi_utils.h"
 #include "netstack_log.h"
 #include "socket_constant.h"
@@ -33,6 +34,7 @@ constexpr const char *ALPN_PROTOCOLS = "ALPNProtocols";
 constexpr const char *SECURE_OPTIONS = "secureOptions";
 constexpr const char *CA_NAME = "ca";
 constexpr const char *CERT_NAME = "cert";
+constexpr const char *CERT_ALIAS_NAME = "certAlias";
 constexpr const char *KEY_NAME = "key";
 constexpr const char *PASSWD_NAME = "password";
 constexpr const char *PROTOCOLS_NAME = "protocols";
@@ -105,11 +107,11 @@ bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptio
     }
     secureOption.SetCaChain(caVec);
 
-    if (NapiUtils::HasNamedProperty(env, secureOptions, KEY_NAME)) {
+    if (!secureOption.GetCertAlias() && NapiUtils::HasNamedProperty(env, secureOptions, KEY_NAME)) {
         secureOption.SetKey(SecureData(NapiUtils::GetStringPropertyUtf8(env, secureOptions, KEY_NAME)));
     }
 
-    if (!ReadCertOptions(env, secureOptions, secureOption)) {
+    if (!secureOption.GetCertAlias() && !ReadCertOptions(env, secureOptions, secureOption)) {
         return false;
     }
 
@@ -123,6 +125,23 @@ bool ReadNecessaryOptions(napi_env env, napi_value secureOptions, TLSSecureOptio
     }
     return true;
 }
+
+void ReadAlpnProtocols(napi_env env, napi_value params, TLSConnectOptions &options)
+{
+    if (NapiUtils::HasNamedProperty(env, params, ALPN_PROTOCOLS)) {
+        napi_value alpnProtocols = NapiUtils::GetNamedProperty(env, params, ALPN_PROTOCOLS);
+        uint32_t arrayLength = NapiUtils::GetArrayLength(env, alpnProtocols);
+        arrayLength = arrayLength > PROTOCOLS_SIZE ? PROTOCOLS_SIZE : arrayLength;
+        napi_value elementValue = nullptr;
+        std::vector<std::string> alpnProtocolVec;
+        for (uint32_t i = 0; i < arrayLength; i++) {
+            elementValue = NapiUtils::GetArrayElement(env, alpnProtocols, i);
+            std::string alpnProtocol = NapiUtils::GetStringFromValueUtf8(env, elementValue);
+            alpnProtocolVec.push_back(alpnProtocol);
+        }
+        options.SetAlpnProtocols(alpnProtocolVec);
+    }
+}
 } // namespace
 
 TLSConnectContext::TLSConnectContext(napi_env env, const std::shared_ptr<EventManager> &manager)
@@ -134,6 +153,10 @@ void TLSConnectContext::ParseParams(napi_value *params, size_t paramsCount)
         return;
     }
     connectOptions_ = ReadTLSConnectOptions(GetEnv(), params);
+    if (errorNumber_ != 0) {
+        SetParseOK(false);
+        return;
+    }
 
     if (paramsCount == PARAM_OPTIONS_AND_CALLBACK) {
         SetParseOK(SetCallback(params[ARG_INDEX_1]) == napi_ok);
@@ -145,7 +168,7 @@ void TLSConnectContext::ParseParams(napi_value *params, size_t paramsCount)
 int32_t TLSConnectContext::GetErrorCode() const
 {
     auto err = BaseContext::GetErrorCode();
-    if (proxyOptions_ != nullptr) {
+    if (proxyOptions_ != nullptr && !IsCertAliasError(err)) {
         err += Socket::SOCKET_ERROR_CODE_BASE;
     }
     return err;
@@ -200,25 +223,16 @@ TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_va
     TLSConnectOptions options;
     Socket::NetAddress address = ReadNetAddress(GetEnv(), params);
     TLSSecureOptions secureOption = ReadTLSSecureOptions(GetEnv(), params);
+    if (errorNumber_ != 0) {
+        return options;
+    }
     uint32_t timeout = ReadTimeout(GetEnv(), params);
     options.SetHostName(address.GetAddress());
     options.SetNetAddress(address);
     options.SetTlsSecureOptions(secureOption);
     options.SetTimeout(timeout);
     options.proxyOptions_ = ReadTLSProxyOptions(GetEnv(), params);
-    if (NapiUtils::HasNamedProperty(GetEnv(), params[0], ALPN_PROTOCOLS)) {
-        napi_value alpnProtocols = NapiUtils::GetNamedProperty(GetEnv(), params[0], ALPN_PROTOCOLS);
-        uint32_t arrayLength = NapiUtils::GetArrayLength(GetEnv(), alpnProtocols);
-        arrayLength = arrayLength > PROTOCOLS_SIZE ? PROTOCOLS_SIZE : arrayLength;
-        napi_value elementValue = nullptr;
-        std::vector<std::string> alpnProtocolVec;
-        for (uint32_t i = 0; i < arrayLength; i++) {
-            elementValue = NapiUtils::GetArrayElement(GetEnv(), alpnProtocols, i);
-            std::string alpnProtocol = NapiUtils::GetStringFromValueUtf8(GetEnv(), elementValue);
-            alpnProtocolVec.push_back(alpnProtocol);
-        }
-        options.SetAlpnProtocols(alpnProtocolVec);
-    }
+    ReadAlpnProtocols(GetEnv(), params[0], options);
 
     if (NapiUtils::HasNamedProperty(GetEnv(), params[0], SKIP_REMOTE_VALIDATION)) {
         bool whetherToSkip = NapiUtils::GetBooleanProperty(GetEnv(), params[0], SKIP_REMOTE_VALIDATION);
@@ -250,6 +264,29 @@ TLSConnectOptions TLSConnectContext::ReadTLSConnectOptions(napi_env env, napi_va
     return options;
 }
 
+bool TLSConnectContext::ReadCertAlias(napi_env env, napi_value secureOptions, TLSSecureOptions &secureOption)
+{
+    napi_value alias = NapiUtils::GetNamedProperty(env, secureOptions, CERT_ALIAS_NAME);
+    if (NapiUtils::GetValueType(env, alias) != napi_undefined) {
+        if (NapiUtils::GetValueType(env, alias) != napi_string) {
+            errorNumber_ = TLS_ALIAS_INVALID;
+        } else {
+            auto value = NapiUtils::GetStringFromValueUtf8(env, alias);
+            if (!IsValidCertAlias(value)) {
+                errorNumber_ = TLS_ALIAS_INVALID;
+            } else {
+                secureOption.SetCertAlias(value);
+            }
+        }
+        if (errorNumber_ != 0) {
+            SetNeedThrowException(true);
+            SetError(errorNumber_, CertAliasErrorMessage(errorNumber_));
+            return false;
+        }
+    }
+    return true;
+}
+
 TLSSecureOptions TLSConnectContext::ReadTLSSecureOptions(napi_env env, napi_value *params)
 {
     TLSSecureOptions secureOption;
@@ -258,11 +295,11 @@ TLSSecureOptions TLSConnectContext::ReadTLSSecureOptions(napi_env env, napi_valu
         return secureOption;
     }
     napi_value secureOptions = NapiUtils::GetNamedProperty(GetEnv(), params[ARG_INDEX_0], SECURE_OPTIONS);
-    if (!ReadNecessaryOptions(env, secureOptions, secureOption)) {
+    if (!ReadCertAlias(env, secureOptions, secureOption) || !ReadNecessaryOptions(env, secureOptions, secureOption)) {
         return secureOption;
     }
 
-    if (NapiUtils::HasNamedProperty(GetEnv(), secureOptions, PASSWD_NAME)) {
+    if (!secureOption.GetCertAlias() && NapiUtils::HasNamedProperty(GetEnv(), secureOptions, PASSWD_NAME)) {
         secureOption.SetKeyPass(SecureData(NapiUtils::GetStringPropertyUtf8(env, secureOptions, PASSWD_NAME)));
     }
 

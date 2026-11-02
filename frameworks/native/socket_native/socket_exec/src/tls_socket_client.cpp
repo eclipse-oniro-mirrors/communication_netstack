@@ -159,13 +159,21 @@ TLSSecureOptions::TLSSecureOptions(const TLSSecureOptions &tlsSecureOptions)
 
 TLSSecureOptions &TLSSecureOptions::operator=(const TLSSecureOptions &tlsSecureOptions)
 {
-    key_ = tlsSecureOptions.GetKey();
+    if (this == &tlsSecureOptions) {
+        return *this;
+    }
+    certAlias_ = tlsSecureOptions.GetCertAlias();
     caChain_ = tlsSecureOptions.GetCaChain();
-    certChain_ = tlsSecureOptions.GetCertChain();
+    certChain_ = certAlias_ ? std::vector<std::string>{} : tlsSecureOptions.GetCertChain();
+    if (certAlias_) {
+        key_.Clear();
+        keyPass_.Clear();
+    } else {
+        key_ = tlsSecureOptions.GetKey();
+        keyPass_ = tlsSecureOptions.GetKeyPass();
+    }
     protocolChain_ = tlsSecureOptions.GetProtocolChain();
     crlChain_ = tlsSecureOptions.GetCrlChain();
-    keyPass_ = tlsSecureOptions.GetKeyPass();
-    key_ = tlsSecureOptions.GetKey();
     signatureAlgorithms_ = tlsSecureOptions.GetSignatureAlgorithms();
     cipherSuite_ = tlsSecureOptions.GetCipherSuite();
     useRemoteCipherPrefer_ = tlsSecureOptions.UseRemoteCipherPrefer();
@@ -706,15 +714,53 @@ void TLSSocket::Bind(Socket::NetAddress &address, const BindCallback &callback)
 void TLSSocket::Connect(OHOS::NetStack::TlsSocket::TLSConnectOptions &tlsConnectOptions,
                         const OHOS::NetStack::TlsSocket::ConnectCallback &callback)
 {
-    if (sockFd_ < 0) {
-        int resErr = ConvertErrno();
-        NETSTACK_LOGE("connect error is %{public}s %{public}d", MakeErrnoString().c_str(), errno);
-        CallOnErrorCallback(resErr, MakeErrnoString());
-        callback(resErr);
+    int fd = -1;
+    std::shared_ptr<TlsConnectAttemptState> attempt;
+    int32_t error = BeginConnect(fd, attempt);
+    if (error != TLSSOCKET_SUCCESS) {
+        CallOnErrorCallback(error, MakeErrorMessage(error));
+        callback(error);
         return;
     }
+    struct ConnectGuard {
+        TLSSocket *owner;
+        ~ConnectGuard()
+        {
+            owner->FinishConnect();
+        }
+    } guard{this};
+    if (attempt->IsCancelled()) {
+        callback(TLS_ERR_SYS_ECANCELED);
+        return;
+    }
+    ConnectTlsSocket(fd, tlsConnectOptions, callback, attempt);
+}
 
-    if (isExtSock_ && !SetSockBlockFlag(sockFd_, false)) {
+int32_t TLSSocket::BeginConnect(int &fd, std::shared_ptr<TlsConnectAttemptState> &attempt)
+{
+    std::lock_guard<std::mutex> lock(mutexForConnect_);
+    if (closeRequested_) {
+        errno = ECANCELED;
+        return TLS_ERR_SYS_ECANCELED;
+    }
+    if (sockFd_ < 0) {
+        return ConvertErrno();
+    }
+    if (connecting_) {
+        errno = EALREADY;
+        return TLS_ERR_SYS_EALREADY;
+    }
+    attempt = tlsSocketInternal_.BeginConnectAttempt();
+    tlsSocketInternal_.RetainSocketFd(sockFd_);
+    connecting_ = true;
+    fd = sockFd_;
+    return TLSSOCKET_SUCCESS;
+}
+
+void TLSSocket::ConnectTlsSocket(int fd, const TLSConnectOptions &options, const ConnectCallback &callback,
+    const std::shared_ptr<TlsConnectAttemptState> &attempt)
+{
+    if (isExtSock_ && !SetSockBlockFlag(fd, false)) {
         int resErr = ConvertErrno();
         NETSTACK_LOGE("SetSockBlockFlag error is %{public}s %{public}d", MakeErrnoString().c_str(), errno);
         CallOnErrorCallback(resErr, MakeErrnoString());
@@ -722,7 +768,7 @@ void TLSSocket::Connect(OHOS::NetStack::TlsSocket::TLSConnectOptions &tlsConnect
         return;
     }
 
-    auto res = tlsSocketInternal_.TlsConnectToHost(sockFd_, tlsConnectOptions, isExtSock_);
+    auto res = tlsSocketInternal_.TlsConnectToHost(fd, options, isExtSock_, attempt);
     if (!res) {
         int resErr = tlsSocketInternal_.GetLastErrNumber();
         if (resErr == TLSSOCKET_SUCCESS) {
@@ -738,16 +784,34 @@ void TLSSocket::Connect(OHOS::NetStack::TlsSocket::TLSConnectOptions &tlsConnect
         callback(resErr);
         return;
     }
-    if (!SetSockBlockFlag(sockFd_, true)) {
+    std::unique_lock<std::mutex> lock(mutexForConnect_);
+    if (closeRequested_ || attempt->IsCancelled()) {
+        lock.unlock();
+        callback(TLS_ERR_SYS_ECANCELED);
+        return;
+    }
+    if (!SetSockBlockFlag(fd, true)) {
         int resErr = ConvertErrno();
+        lock.unlock();
         NETSTACK_LOGE("SetSockBlockFlag error is %{public}s %{public}d", MakeErrnoString().c_str(), errno);
         CallOnErrorCallback(resErr, MakeErrnoString());
         callback(resErr);
         return;
     }
     StartReadMessage();
+    lock.unlock();
     CallOnConnectCallback();
     callback(TLSSOCKET_SUCCESS);
+}
+
+void TLSSocket::FinishConnect()
+{
+    std::lock_guard<std::mutex> lock(mutexForConnect_);
+    connecting_ = false;
+    if (pendingCloseFd_ >= 0) {
+        tlsSocketInternal_.CloseTlsContext();
+        pendingCloseFd_ = -1;
+    }
 }
 
 void TLSSocket::Send(const OHOS::NetStack::Socket::TCPSendOptions &tcpSendOptions, const SendCallback &callback)
@@ -763,9 +827,20 @@ void TLSSocket::Send(const OHOS::NetStack::Socket::TCPSendOptions &tcpSendOption
     CallSendCallback(TLSSOCKET_SUCCESS, callback);
 }
 
+TLSSocket::~TLSSocket() = default;
+
 void TLSSocket::Close(const CloseCallback &callback)
 {
-    isRunning_ = false;
+    {
+        std::lock_guard<std::mutex> lock(mutexForConnect_);
+        closeRequested_ = true;
+        tlsSocketInternal_.CancelConnectAttempt();
+        isRunning_ = false;
+        // Serialize shutdown with FinishConnect so it cannot target a reused FD.
+        if (sockFd_ >= 0) {
+            shutdown(sockFd_, SHUT_RDWR);
+        }
+    }
     std::unique_lock<std::mutex> cvLock(cvMutex_);
     auto wp = std::weak_ptr<TLSSocket>(shared_from_this());
     cvSslFree_.wait(cvLock, [wp]() -> bool {
@@ -776,10 +851,21 @@ void TLSSocket::Close(const CloseCallback &callback)
         return tlsSocket->isRunOver_;
     });
 
-    std::lock_guard<std::mutex> lock(recvMutex_);
+    std::lock_guard<std::mutex> recvLock(recvMutex_);
     NETSTACK_LOGI("tls socket close, fd =%{public}d", sockFd_);
-    close(sockFd_);
-    sockFd_ = -1;
+    {
+        std::lock_guard<std::mutex> lock(mutexForConnect_);
+        if (sockFd_ >= 0) {
+            if (connecting_) {
+                // Keep the FD alive through handshake, final flag changes and callbacks.
+                pendingCloseFd_ = sockFd_;
+            } else {
+                // A live TLSContext retains its FD until context destruction, as before.
+                tlsSocketInternal_.CloseDetachedSocketFd();
+            }
+            sockFd_ = -1;
+        }
+    }
     CallOnCloseCallback();
     callback(TLSSOCKET_SUCCESS);
     NETSTACK_LOGE("tls socket close succ");
@@ -1156,8 +1242,17 @@ bool ExecSocketConnect(const std::string &host, int port, sa_family_t family, in
     return true;
 }
 
+TLSSocket::TLSSocketInternal::~TLSSocketInternal()
+{
+    CloseTlsContext();
+}
+
 int TLSSocket::TLSSocketInternal::ConvertSSLError(void)
 {
+    auto attempt = std::atomic_load(&attemptState_);
+    if (attempt && attempt->GetError() != 0) {
+        return attempt->GetError();
+    }
     std::shared_lock<std::shared_mutex> lock(mutexForSsl_);
     if (!ssl_) {
         return TLS_ERR_SSL_NULL;
@@ -1175,10 +1270,28 @@ void TLSSocket::TLSSocketInternal::ResetLastErrNumber()
     lastErrNumber_ = TLSSOCKET_SUCCESS;
 }
 
-bool TLSSocket::TLSSocketInternal::TlsConnectToHost(int sock, const TLSConnectOptions &options, bool isExtSock)
+std::shared_ptr<TlsConnectAttemptState> TLSSocket::TLSSocketInternal::BeginConnectAttempt()
+{
+    auto attempt = std::make_shared<TlsConnectAttemptState>();
+    std::atomic_store(&attemptState_, attempt);
+    return attempt;
+}
+
+bool TLSSocket::TLSSocketInternal::TlsConnectToHost(int sock, const TLSConnectOptions &options, bool isExtSock,
+    const std::shared_ptr<TlsConnectAttemptState> &attempt)
 {
     ResetLastErrNumber();
-    SetTlsConfiguration(options);
+    auto currentAttempt = attempt ? attempt : BeginConnectAttempt();
+    {
+        std::shared_lock<std::shared_mutex> lock(mutexForSsl_);
+        if (ssl_ && SSL_is_init_finished(ssl_)) {
+            currentAttempt->SetFirstError(TLS_ERR_SYS_EISCONN);
+            return false;
+        }
+    }
+    if (!SetTlsConfiguration(options, currentAttempt)) {
+        return false;
+    }
     std::string cipherSuite = options.GetTlsSecureOptions().GetCipherSuite();
     if (!cipherSuite.empty()) {
         configuration_.SetCipherSuite(cipherSuite);
@@ -1196,6 +1309,9 @@ bool TLSSocket::TLSSocketInternal::TlsConnectToHost(int sock, const TLSConnectOp
     port_ = options.GetNetAddress().GetPort();
     family_ = options.GetNetAddress().GetSaFamily();
     socketDescriptor_ = sock;
+    if (currentAttempt->IsCancelled()) {
+        return false;
+    }
     if (options.proxyOptions_ == nullptr && !isExtSock &&
         !ExecSocketConnect(options.GetNetAddress().GetAddress(), options.GetNetAddress().GetPort(),
         options.GetNetAddress().GetSaFamily(), socketDescriptor_)) {
@@ -1204,10 +1320,36 @@ bool TLSSocket::TLSSocketInternal::TlsConnectToHost(int sock, const TLSConnectOp
     return StartTlsConnected(options);
 }
 
-void TLSSocket::TLSSocketInternal::SetTlsConfiguration(const TLSConnectOptions &config)
+bool TLSSocket::TLSSocketInternal::SetTlsConfiguration(const TLSConnectOptions &config,
+    const std::shared_ptr<TlsConnectAttemptState> &connectAttempt)
 {
-    configuration_.SetPrivateKey(config.GetTlsSecureOptions().GetKey(), config.GetTlsSecureOptions().GetKeyPass());
-    configuration_.SetLocalCertificate(config.GetTlsSecureOptions().GetCertChain());
+    // Reuse the public connection's attempt so configuration cannot discard cancellation.
+    auto attempt = connectAttempt ? connectAttempt : BeginConnectAttempt();
+    if (attempt->IsCancelled()) {
+        return false;
+    }
+    configuration_ = TLSConfiguration{};
+    configuration_.SetProtocol(std::vector<std::string>{PROTOCOL_TLS_V12, PROTOCOL_TLS_V13});
+    configuration_.SetUseRemoteCipherPrefer(false);
+    configuration_.SetNetAddress({});
+    configuration_.SetAttemptState(attempt);
+    const auto secure = config.GetTlsSecureOptions();
+    if (secure.GetCertAlias()) {
+        std::shared_ptr<AliasCredential> credential;
+        auto error = PrepareAliasCredential(*secure.GetCertAlias(), credential);
+        if (error != 0) {
+            attempt->SetFirstError(error);
+            return false;
+        }
+        if (attempt->IsCancelled()) {
+            return false;
+        }
+        configuration_.SetAliasCredential(credential);
+        configuration_.SetLocalCertificate(credential->certChain);
+    } else {
+        configuration_.SetPrivateKey(secure.GetKey(), secure.GetKeyPass());
+        configuration_.SetLocalCertificate(secure.GetCertChain());
+    }
     configuration_.SetCaCertificate(config.GetTlsSecureOptions().GetCaChain());
     auto trustAnchorAddress = config.GetNetAddress();
     // Preserve the existing NSC lookup address unless serverName explicitly overrides it.
@@ -1216,6 +1358,7 @@ void TLSSocket::TLSSocketInternal::SetTlsConfiguration(const TLSConnectOptions &
         trustAnchorAddress.SetRawAddress(trustAnchorHostName);
     }
     configuration_.SetNetAddress(trustAnchorAddress);
+    return true;
 }
 
 bool TLSSocket::TLSSocketInternal::SendRetry(ssl_st *ssl, const char *curPos, size_t curSendSize, int sockfd)
@@ -1472,20 +1615,79 @@ bool TLSSocket::TLSSocketInternal::SetSharedSigals()
 
 bool TLSSocket::TLSSocketInternal::StartTlsConnected(const TLSConnectOptions &options)
 {
+    auto currentAttempt = std::atomic_load(&attemptState_);
+    if (currentAttempt && currentAttempt->IsCancelled()) {
+        return false;
+    }
     if (!CreatTlsContext()) {
         NETSTACK_LOGE("failed to create tls context");
         return false;
     }
-    if (!StartShakingHands(options)) {
+    if (!StartShakingHands(options) || (currentAttempt && currentAttempt->IsCancelled())) {
         NETSTACK_LOGE("failed to shaking hands");
+        // Preserve the error before releasing SSL. The socket owner controls its FD.
+        auto attempt = std::atomic_load(&attemptState_);
+        int error = ConvertSSLError();
+        if (attempt) {
+            attempt->SetFirstError(error);
+        }
+        std::unique_lock<std::shared_mutex> sslLock(mutexForSsl_);
+        if (ssl_) {
+            int fd = SSL_get_fd(ssl_);
+            if (fd >= 0) {
+                detachedSocketFd_ = fd;
+            }
+            SSL_set_fd(ssl_, -1);
+        }
+        ssl_ = nullptr;
+        tlsContextPointer_.reset();
         return false;
     }
     return true;
 }
 
+void TLSSocket::TLSSocketInternal::CloseTlsContext()
+{
+    CancelConnectAttempt();
+    std::unique_lock<std::shared_mutex> sslLock(mutexForSsl_);
+    ssl_ = nullptr;
+    if (tlsContextPointer_) {
+        tlsContextPointer_->CloseCtx();
+        tlsContextPointer_.reset();
+    }
+    if (detachedSocketFd_ >= 0) {
+        close(detachedSocketFd_);
+        detachedSocketFd_ = -1;
+    }
+    socketDescriptor_ = -1;
+}
+
+void TLSSocket::TLSSocketInternal::RetainSocketFd(int fd)
+{
+    std::unique_lock<std::shared_mutex> sslLock(mutexForSsl_);
+    if (fd < 0 || (ssl_ && SSL_get_fd(ssl_) == fd)) {
+        return;
+    }
+    detachedSocketFd_ = fd;
+}
+
+void TLSSocket::TLSSocketInternal::CloseDetachedSocketFd()
+{
+    std::unique_lock<std::shared_mutex> sslLock(mutexForSsl_);
+    if (detachedSocketFd_ >= 0) {
+        close(detachedSocketFd_);
+        detachedSocketFd_ = -1;
+        socketDescriptor_ = -1;
+    }
+}
+
 bool TLSSocket::TLSSocketInternal::CreatTlsContext()
 {
     std::unique_lock<std::shared_mutex> sslLock(mutexForSsl_);
+    auto attempt = std::atomic_load(&attemptState_);
+    if (attempt && attempt->IsCancelled()) {
+        return false;
+    }
     if (tlsContextPointer_ != nullptr && ssl_ != nullptr) {
         return true;
     }
@@ -1500,7 +1702,9 @@ bool TLSSocket::TLSSocketInternal::CreatTlsContext()
         NETSTACK_LOGE("failed to create ssl session");
         return false;
     }
-    SSL_set_fd(ssl_, socketDescriptor_);
+    if (SSL_set_fd(ssl_, socketDescriptor_) == 1) {
+        detachedSocketFd_ = -1;
+    }
     SSL_set_connect_state(ssl_);
     return true;
 }

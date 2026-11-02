@@ -292,11 +292,25 @@ bool TLSContext::SetLocalCertificate(TLSContext *tlsContext, const TLSConfigurat
     return true;
 }
 
+bool TLSContext::SetAliasKeyAndCheck(TLSContext *tlsContext, const TLSConfiguration &configuration)
+{
+    auto key = tlsContext->aliasRuntime_->GetKey();
+    bool ok = key && SSL_CTX_use_PrivateKey(tlsContext->ctx_, key) == 1 &&
+        SSL_CTX_check_private_key(tlsContext->ctx_) == 1;
+    if (!ok) {
+        configuration.GetAttemptState()->SetFirstError(TLS_ERR_SSL_NULL);
+    }
+    return ok;
+}
+
 bool TLSContext::SetKeyAndCheck(TLSContext *tlsContext, const TLSConfiguration &configuration)
 {
     if (!tlsContext) {
         NETSTACK_LOGE("The parameter tlsContext is null");
         return false;
+    }
+    if (tlsContext->aliasRuntime_) {
+        return SetAliasKeyAndCheck(tlsContext, configuration);
     }
     if (configuration.GetPrivateKey().Algorithm() == OPAQUE) {
         tlsContext->pkey_ = reinterpret_cast<EVP_PKEY *>(configuration.GetPrivateKey().handle());
@@ -350,7 +364,10 @@ void TLSContext::SetVerify(TLSContext *tlsContext)
         return;
     }
 
-    if (!tlsContext->tlsConfiguration_.GetCertificate().data.Length() ||
+    if (tlsContext->tlsConfiguration_.GetAliasCredential()) {
+        tlsContext->verifyMode_ = TWO_WAY_MODE;
+        SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_PEER, nullptr);
+    } else if (!tlsContext->tlsConfiguration_.GetCertificate().data.Length() ||
         !tlsContext->tlsConfiguration_.GetPrivateKey().GetKeyData().Length()) {
         tlsContext->verifyMode_ = ONE_WAY_MODE;
         SSL_CTX_set_verify(tlsContext->ctx_, SSL_VERIFY_PEER, nullptr);
@@ -368,6 +385,28 @@ void TLSContext::SetVerify(TLSContext *tlsContext)
                   tlsContext->verifyMode_ ? "two-way authentication" : "one-way authentication");
 }
 
+bool TLSContext::CreateSslContext(TLSContext *tlsContext, const TLSConfiguration &configuration)
+{
+    if (configuration.GetAliasCredential()) {
+        tlsContext->aliasRuntime_ = std::make_unique<AliasProviderRuntime>();
+        if (!tlsContext->aliasRuntime_->Initialize(
+            configuration.GetAliasCredential(), configuration.GetAttemptState())) {
+            return false;
+        }
+        tlsContext->ctx_ = tlsContext->aliasRuntime_->CreateClientContext();
+    } else {
+        tlsContext->ctx_ = SSL_CTX_new(TLS_client_method());
+    }
+    if (tlsContext->ctx_ == nullptr) {
+        if (configuration.GetAliasCredential()) {
+            configuration.GetAttemptState()->SetFirstError(TLS_ALIAS_SERVICE_ERROR);
+        }
+        NETSTACK_LOGE("ctx is nullptr");
+        return false;
+    }
+    return true;
+}
+
 bool TLSContext::InitTlsContext(TLSContext *tlsContext, const TLSConfiguration &configuration)
 {
     if (!tlsContext) {
@@ -376,9 +415,7 @@ bool TLSContext::InitTlsContext(TLSContext *tlsContext, const TLSConfiguration &
     }
     InitEnv();
     tlsContext->tlsConfiguration_ = configuration;
-    tlsContext->ctx_ = SSL_CTX_new(TLS_client_method());
-    if (tlsContext->ctx_ == nullptr) {
-        NETSTACK_LOGE("ctx is nullptr");
+    if (!CreateSslContext(tlsContext, configuration)) {
         return false;
     }
     if (!configuration.GetCipherSuite().empty()) {
@@ -405,6 +442,9 @@ bool TLSContext::InitTlsContext(TLSContext *tlsContext, const TLSConfiguration &
         return true;
     }
     if (!SetLocalCertificate(tlsContext, configuration)) {
+        if (configuration.GetAliasCredential()) {
+            configuration.GetAttemptState()->SetFirstError(TLS_ALIAS_SERVICE_ERROR);
+        }
         return false;
     }
     if (!SetKeyAndCheck(tlsContext, configuration)) {
@@ -444,6 +484,7 @@ void TLSContext::CloseCtx()
         EVP_PKEY_free(pkey_);
         pkey_ = nullptr;
     }
+    aliasRuntime_.reset();
 }
 } // namespace TlsSocket
 } // namespace NetStack

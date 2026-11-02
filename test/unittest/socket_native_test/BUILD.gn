@@ -79,6 +79,7 @@ ohos_unittest("socket_native_unittest") {
     "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
 
     # Test sources
+    "../tlssocket/alias/tls_cert_alias_socket_test.cpp",
     "TcpSocketClientTest.cpp",
     "TcpSocketServerTest.cpp",
     "UdpSocketTest.cpp",
@@ -108,6 +109,7 @@ ohos_unittest("socket_native_unittest") {
   ]
 
   defines = [
+    "CERT_ALIAS_NATIVE_SOCKET_TEST",
     "NETMGR_LOG_TAG = \"SocketNativeUT\"",
     "LOG_DOMAIN = 0xD0015B0",
     "OPENSSL_SUPPRESS_DEPRECATED",
@@ -125,6 +127,7 @@ ohos_unittest("socket_native_unittest") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
+  deps += [ "$NETSTACK_NATIVE_ROOT/tls_socket:tls_cert_alias" ]
   part_name = "netstack"
   subsystem_name = "communication"
 }

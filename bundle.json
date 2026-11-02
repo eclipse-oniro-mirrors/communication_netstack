@@ -50,6 +50,7 @@
                 "netmanager_base",
                 "ylong_http",
                 "openssl",
+                "certificate_manager",
                 "hiprofiler",
                 "time_service",
                 "ability_runtime",
