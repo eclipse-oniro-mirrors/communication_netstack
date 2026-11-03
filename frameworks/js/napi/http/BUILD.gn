@@ -142,6 +142,16 @@ ohos_shared_library("http") {
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
       "$NETSTACK_DIR/interfaces/innerkits/http_interceptor:http_interceptor",
     ]
+    if (product_name != "ohos-sdk") {
+      if (netstack_http_boringssl) {
+        sources += [ "$NETSTACK_NATIVE_ROOT/net_ssl/cert_chain_verify_helper.cpp" ]
+        include_dirs += [ "$NETSTACK_DIR/interfaces/innerkits/net_ssl/include" ]
+        configs += [ "//vendor/open_source/boringssl:boringssl_config" ]
+        defines += [ "NETSTACK_CERT_CHAIN_BORINGSSL" ]
+      } else {
+        deps += [ "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl" ]
+      }
+    }
     external_deps = [
       "ability_base:configuration",
       "ability_runtime:wantagent_innerkits",

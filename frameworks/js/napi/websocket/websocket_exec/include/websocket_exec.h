@@ -16,6 +16,8 @@
 #ifndef COMMUNICATIONNETSTACK_WEBSOCKET_EXEC_H
 #define COMMUNICATIONNETSTACK_WEBSOCKET_EXEC_H
 
+#include <openssl/ssl.h>
+
 #include "close_context.h"
 #include "connect_context.h"
 #include "send_context.h"
@@ -41,6 +43,8 @@ public:
     static napi_value CloseCallback(CloseContext *context);
 
     static int LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
+
+    static bool ConfigureClientCertVerify(SSL_CTX *sslCtx, bool skipVerify);
 
 private:
     static bool ParseUrl(ConnectContext *context, std::string &protocol, std::string &address, std::string &path,

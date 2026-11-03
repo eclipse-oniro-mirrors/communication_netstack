@@ -23,6 +23,7 @@
 #include "net_ssl.h"
 #include "net_ssl_verify_cert.h"
 #include "securec.h"
+#include "VerifyMultiCandidateCertData.h"
 
 namespace {
 
@@ -663,6 +664,33 @@ HWTEST_F(NetSslCApiTest, IsCleartextCfgByComponent_Valid_042, testing::ext::Test
     bool cfg = false;
     int32_t result = OH_Netstack_IsCleartextCfgByComponent("netstack", &cfg);
     EXPECT_GE(result, 0);
+}
+
+// 043: C API falls back from self-signed New Root to the trusted cross-signed path.
+HWTEST_F(NetSslCApiTest, CreateAndVerify_MultiCandidateFallback_043, testing::ext::TestSize.Level1)
+{
+    using namespace OHOS::NetStack::Ssl::TestData;
+    NetStack_CertBlob certs[4] = {
+        MakeCertBlob(LEAF_PEM),
+        MakeCertBlob(INTERMEDIATE_PEM),
+        MakeCertBlob(SELF_NEW_ROOT_PEM),
+        MakeCertBlob(CROSS_NEW_ROOT_PEM),
+    };
+    NetStack_CertBlob caCert = MakeCertBlob(OLD_ROOT_PEM);
+    NetStack_CertBlob *outChain = nullptr;
+    size_t outCount = 0;
+
+    uint32_t result = OH_NetStack_CreateAndVerifySortedCertChain(
+        certs, 4, &caCert, "chain.test.com", &outChain, &outCount);
+    EXPECT_EQ(result, 0);
+    EXPECT_EQ(outCount, 4);
+    EXPECT_NE(outChain, nullptr);
+
+    OH_NetStack_FreeCertChain(outChain, outCount);
+    for (auto &cert : certs) {
+        FreeCertBlob(cert);
+    }
+    FreeCertBlob(caCert);
 }
 
 } // namespace

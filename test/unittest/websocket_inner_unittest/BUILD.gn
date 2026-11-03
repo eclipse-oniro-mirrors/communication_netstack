@@ -28,6 +28,7 @@ common_external_deps = [
   "hilog:libhilog",
   "libwebsockets:websockets",
   "napi:ace_napi",
+  "openssl:libssl_shared",
 ]
 
 # Compile the innerapi sources directly into the test binary (the same way the tls test
@@ -36,6 +37,7 @@ common_external_deps = [
 websocket_native_sources = [
   "$WEBSOCKET_INNERAPI/src/websocket_client.cpp",
   "$WEBSOCKET_INNERAPI/src/websocket_server.cpp",
+  "$NETSTACK_NATIVE_ROOT/net_ssl/cert_chain_verify_helper.cpp",
 ]
 
 ohos_unittest("websocket_inner_unittest") {
@@ -53,6 +55,7 @@ ohos_unittest("websocket_inner_unittest") {
     "$NETSTACK_DIR/utils/napi_utils/include",
     "$WEBSOCKET_INNERAPI/include",
     "$NETSTACK_INNERKITS_DIR/websocket_native/include",
+    "$NETSTACK_DIR/interfaces/innerkits/net_ssl/include",
   ]
   include_dirs += utils_include
 
