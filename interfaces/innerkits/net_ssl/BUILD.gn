@@ -50,6 +50,7 @@ ohos_shared_library("net_ssl") {
   sources = [
     "$NETSTACK_NATIVE_ROOT/net_ssl/net_ssl.cpp",
     "$NETSTACK_NATIVE_ROOT/net_ssl/net_ssl_verify_cert.cpp",
+    "$NETSTACK_NATIVE_ROOT/net_ssl/cert_chain_verify_helper.cpp",
   ]
 
   include_dirs = [

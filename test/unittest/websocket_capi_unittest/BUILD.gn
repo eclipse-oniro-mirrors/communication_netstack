@@ -35,6 +35,7 @@ websocket_native_sources = [
   "$NETSTACK_DIR/interfaces/kits/c/net_websocket/src/net_websocket_adapter.cpp",
   "$NETSTACK_DIR/frameworks/native/websocket_native/src/websocket_client.cpp",
   "$NETSTACK_DIR/frameworks/native/websocket_native/src/websocket_server.cpp",
+  "$NETSTACK_NATIVE_ROOT/net_ssl/cert_chain_verify_helper.cpp",
 ]
 
 ohos_unittest("websocket_capi_unittest") {
@@ -53,6 +54,7 @@ ohos_unittest("websocket_capi_unittest") {
     "$NETSTACK_DIR/interfaces/innerkits/websocket_native/include",
     "$NETSTACK_DIR/frameworks/native/websocket_native/include",
     "$NETSTACK_DIR/utils/log/include",
+    "$NETSTACK_DIR/interfaces/innerkits/net_ssl/include",
   ]
   include_dirs += utils_include
 

@@ -56,6 +56,7 @@ ohos_unittest("http_unittest") {
     "$NETSTACK_NAPI_ROOT/http/cache/cache_constant/include",
     "$NETSTACK_NAPI_ROOT/http/cache/cache_proxy/include",
     "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/include",
+    "$SUBSYSTEM_DIR/netstack/test/unittest/netssl",
     "$NETSTACK_NAPI_ROOT/http/cache/lru_cache/include",
     "$NETSTACK_NAPI_ROOT/http/constant/include",
     "$NETSTACK_NAPI_ROOT/http/http_exec/include",
@@ -177,6 +178,13 @@ ohos_unittest("http_unittest") {
     }
     defines += [ "ENABLE_HTTP_INTERCEPT=1" ]
     if (product_name != "ohos-sdk") {
+      if (netstack_http_boringssl) {
+        sources += [ "$NETSTACK_NATIVE_ROOT/net_ssl/cert_chain_verify_helper.cpp" ]
+        include_dirs += [ "$NETSTACK_DIR/interfaces/innerkits/net_ssl/include" ]
+        defines += [ "NETSTACK_CERT_CHAIN_BORINGSSL" ]
+      } else {
+        deps += [ "$SUBSYSTEM_DIR/netstack/interfaces/innerkits/net_ssl:net_ssl" ]
+      }
       external_deps += [ "init:libbegetutil" ]
       defines += [
         "HTTP_PROXY_ENABLE",
