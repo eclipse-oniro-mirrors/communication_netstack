@@ -40,9 +40,24 @@ public:
 
     static void TearDownTestCase() {}
 
-    virtual void SetUp() {}
+    virtual void SetUp()
+    {
+        // a fresh client per test case: connection state is never shared between cases
+        client = new OHOS::NetStack::WebSocketClient::WebSocketClient();
+    }
 
-    virtual void TearDown() {}
+    virtual void TearDown()
+    {
+        delete client;
+        client = nullptr;
+    }
+
+protected:
+    OHOS::NetStack::WebSocketClient::OpenOptions openOptions;
+
+    OHOS::NetStack::WebSocketClient::CloseOption closeOptions;
+
+    OHOS::NetStack::WebSocketClient::WebSocketClient *client = nullptr;
 };
 
 namespace OHOS::NetStack::WebSocketServer {
@@ -79,10 +94,6 @@ namespace {
     static constexpr const size_t TEST_LENGTH = 1;
     static constexpr const int MAX_URI_LENGTH = 8196;
 
-    OpenOptions openOptions;
-
-    CloseOption closeOptions;
-
     static void OnMessage(WebSocketClient *client, const std::string &data, size_t length) {}
 
     static void OnOpen(WebSocketClient *client, OpenResult openResult) {}
@@ -90,8 +101,6 @@ namespace {
     static void OnError(WebSocketClient *client, ErrorResult error) {}
 
     static void OnClose(WebSocketClient *client, CloseResult closeResult) {}
-
-    WebSocketClient *client = new WebSocketClient();
 
     enum WebsocketErrorCode {
         WEBSOCKET_CONNECT_FAILED = -1,
@@ -220,11 +229,11 @@ namespace {
 
     HWTEST_F(WebSocketTest, WebSocketConnect002, TestSize.Level1)
     {
-        int32_t ret = 0;
+        // the fixture provides a fresh client per test case, keeping this case independent
         openOptions.headers["Content-Type"] = "application/json";
         openOptions.headers["Authorization"] = "Bearer your_token_here";
         client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
-        ret = client->Connect("www.baidu.com", openOptions);
+        int32_t ret = client->Connect("www.baidu.com", openOptions);
         EXPECT_TRUE(ret == WebSocketErrorCode::WEBSOCKET_CONNECTION_TO_SERVER_FAIL ||
                     ret == WebSocketErrorCode::WEBSOCKET_NONE_ERR);
     }
@@ -305,6 +314,9 @@ namespace {
     HWTEST_F(WebSocketTest, WebSocketCloseEx001, TestSize.Level1)
     {
         const int32_t websocketErrorNoClientcontex = 1014;
+        // null client context is the branch that yields NO_CLIENTCONTEX: a fresh client with no
+        // lws context would return -1 instead (covered by the never-connected behavior)
+        client->clientContext = nullptr;
         CloseOption CloseOptions;
         CloseOptions.code = LWS_CLOSE_STATUS_NORMAL;
         CloseOptions.reason = "";
@@ -317,8 +329,11 @@ namespace {
         client->clientContext = nullptr;
         const char *data = "test data";
         size_t length = 0;
+        // SendEx validates the client context before the zero-length early return:
+        // a null context yields NO_CLIENTCONTEX (the zero-length branch is covered by
+        // WebSocketClientSendExZeroLength001 with a real client)
         int32_t ret = client->SendEx(const_cast<char *>(data), length);
-        EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
+        EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX);
 
         CloseOption options = {};
         ret = client->CloseEx(options);
@@ -1374,8 +1389,10 @@ namespace {
 
         EXPECT_TRUE(g_onErrorCalled);
         EXPECT_EQ(g_lastErrorResult.errorCode, unknownCode);
-        EXPECT_TRUE(g_lastErrorResult.errorMessage == nullptr ||
-                    std::strlen(g_lastErrorResult.errorMessage) == 0);
+        // unknown codes fall back to the generic "Unknown error" message (see OnServerError),
+        // they do not produce an empty message
+        EXPECT_TRUE(g_lastErrorResult.errorMessage != nullptr &&
+                    std::strlen(g_lastErrorResult.errorMessage) > 0);
 
         server->GetServerContext()->SetContext(nullptr);
         std::free(rawCtx);

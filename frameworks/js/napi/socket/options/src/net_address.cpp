@@ -15,6 +15,8 @@
 
 #include <charconv>
 #include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 #include "net_address.h"
 #include "netstack_log.h"
@@ -77,7 +79,9 @@ void NetAddress::SetIpAddressInner(const std::string &address)
         auto [ptr, ec] = std::from_chars(address.data(), address.data() + address.size(), inet);
         if (ec == std::errc{} && ptr == address.data() + address.size()) {
             in_addr addr{};
-            addr.s_addr = static_cast<in_addr_t>(inet);
+            // the numeric string is the IPv4 address in network byte order: htonl before inet_ntop,
+            // otherwise the bytes are swapped on little-endian hosts (2130706433 -> "1.0.0.127")
+            addr.s_addr = htonl(static_cast<in_addr_t>(inet));
             char ipStr[INET_ADDRSTRLEN] = {0};
             if (inet_ntop(AF_INET, &addr.s_addr, ipStr, sizeof(ipStr)) != nullptr) {
                 address_ = ipStr;

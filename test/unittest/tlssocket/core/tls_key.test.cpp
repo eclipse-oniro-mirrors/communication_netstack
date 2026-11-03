@@ -51,6 +51,8 @@ HWTEST_F(TLSKeyTest, TLSKeyTestt001, testing::ext::TestSize.Level1)
     EXPECT_NE(key.dsa_, nullptr);
     EXPECT_NE(key.dh_, nullptr);
     EXPECT_NE(key.ec_, nullptr);
+    // copy assignment shares the underlying handles (shallow copy, like the copy ctor
+    // delegating to the default assignment): free them exactly once, not for both sides
     RSA_free(key.rsa_);
     DSA_free(key.dsa_);
     DH_free(key.dh_);
@@ -59,10 +61,6 @@ HWTEST_F(TLSKeyTest, TLSKeyTestt001, testing::ext::TestSize.Level1)
     key.dsa_ = nullptr;
     key.dh_ = nullptr;
     key.ec_ = nullptr;
-    RSA_free(other.rsa_);
-    DSA_free(other.dsa_);
-    DH_free(other.dh_);
-    EC_KEY_free(other.ec_);
     other.rsa_ = nullptr;
     other.dsa_ = nullptr;
     other.dh_ = nullptr;

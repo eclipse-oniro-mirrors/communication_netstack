@@ -38,6 +38,11 @@ ohos_unittest("http_unittest") {
     cfi = true
     cfi_cross_dso = true
     debug = false
+    # Keep the cfi blocklist aligned with the production http module
+    # (frameworks/js/napi/http/BUILD.gn): the statically linked crypto objects
+    # are thinLTO bitcode whose cfi machinery is generated at the final link,
+    # so the same exemptions must be applied when linking the test binary.
+    blocklist = "$NETSTACK_NAPI_ROOT/http/block_list.txt"
   }
 
   branch_protector_ret = "pac_ret"
