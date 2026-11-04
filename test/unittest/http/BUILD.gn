@@ -186,7 +186,9 @@ ohos_unittest("http_unittest") {
         deps += [ "$SUBSYSTEM_DIR/netstack/interfaces/innerkits/net_ssl:net_ssl" ]
       }
       external_deps += [ "init:libbegetutil" ]
+      external_deps += [ "certificate_framework:certificate_framework_core" ]
       defines += [
+        "HTTP_CERT_REVOCATION_ENABLE",
         "HTTP_PROXY_ENABLE",
         "HTTP_MULTIPATH_CERT_ENABLE",
         "HTTP_ONLY_VERIFY_ROOT_CA_ENABLE",

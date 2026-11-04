@@ -234,6 +234,26 @@ declare namespace http {
     usingCache?: boolean;
 
     /**
+     * Indicates whether to verify the certificate revocation status during a new TLS handshake.
+     * The default value is false.
+     * <br>When set to true, an OCSP or CRL check is performed. A revoked certificate or a failure to determine
+     * its revocation status terminates the TLS connection and reports error code 2300060.
+     * <br>This option does not take effect when a cached HTTP response is returned, remote certificate validation
+     * is skipped, or validationCallback takes over certificate validation.
+     * <br>For a network request, enabling this option establishes a fresh connection, disables TLS session reuse,
+     * and may increase latency.
+     * <br>When set to false, certificate revocation status is not checked.
+     *
+     * @type {?boolean}
+     * @syscap SystemCapability.Communication.NetStack
+     * @stagemodelonly
+     * @crossplatform
+     * @atomicservice
+     * @since 26.2.0 dynamic&static
+     */
+    enableCertRevocationCheck?: boolean;
+
+    /**
      * [1, 1000], default is 1.
      * @type {?number}
      * @syscap SystemCapability.Communication.NetStack

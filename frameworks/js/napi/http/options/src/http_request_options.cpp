@@ -245,6 +245,16 @@ bool HttpRequestOptions::GetCanSkipCertVerifyFlag() const
 {
     return canSkipCertVerify_;
 }
+
+void HttpRequestOptions::SetEnableCertRevocationCheck(bool enableCertRevocationCheck)
+{
+    enableCertRevocationCheck_ = enableCertRevocationCheck;
+}
+
+bool HttpRequestOptions::GetEnableCertRevocationCheck() const
+{
+    return enableCertRevocationCheck_;
+}
 void HttpRequestOptions::SetUsingHttpProxyType(UsingHttpProxyType type)
 {
     usingHttpProxyType_ = type;

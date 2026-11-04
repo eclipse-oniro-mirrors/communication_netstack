@@ -318,6 +318,10 @@ public:
 
     [[nodiscard]] bool GetSslServerHostnameVerification() const;
 
+    void SetEnableCertRevocationCheck(bool enableCertRevocationCheck);
+
+    [[nodiscard]] bool GetEnableCertRevocationCheck() const;
+
     void SetReuseConnectionsFlag(bool reuseConnectionsFlag);
     [[nodiscard]] const bool &GetReuseConnectionsFlag() const;
 
@@ -406,6 +410,8 @@ private:
     Secure::SecureChar keyPasswd_;
 
     bool canSkipCertVerify_ = false;
+
+    bool enableCertRevocationCheck_ = false;
 
     int partialChain_ = -1; // -1: not set, 0: false, 1: true
 

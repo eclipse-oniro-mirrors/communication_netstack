@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <cstring>
 #include <future>
+#include <iterator>
 #include <memory>
 #include <pthread.h>
 #include <sstream>
@@ -33,6 +34,11 @@
 #ifdef HTTP_ONLY_VERIFY_ROOT_CA_ENABLE
 #ifndef HTTP_MULTIPATH_CERT_ENABLE
 #include <openssl/ssl.h>
+#endif
+#ifdef HTTP_CERT_REVOCATION_ENABLE
+#include "cert_chain_validator.h"
+#include "x509_certificate.h"
+#include <openssl/x509_vfy.h>
 #endif
 #include <openssl/pem.h>
 #include <openssl/sha.h>
@@ -2260,6 +2266,254 @@ static bool CreateValidationCallbackTsfn(RequestContext *requestContext, napi_re
 }
 #endif
 
+#if defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE) && defined(HTTP_CERT_REVOCATION_ENABLE)
+
+static HcfX509Certificate *ConvertToHcfCertificate(X509 *cert)
+{
+    if (cert == nullptr) {
+        return nullptr;
+    }
+    unsigned char *derBuf = nullptr;
+    int derLen = i2d_X509(cert, &derBuf);
+    if (derLen <= 0 || derBuf == nullptr) {
+        return nullptr;
+    }
+    CfEncodingBlob certBlob = {derBuf, static_cast<size_t>(derLen), CF_FORMAT_DER};
+    HcfX509Certificate *hcfCert = nullptr;
+    CfResult ret = HcfX509CertificateCreate(&certBlob, &hcfCert);
+    OPENSSL_free(derBuf);
+    return ret == CF_SUCCESS ? hcfCert : nullptr;
+}
+
+static bool FillVerifiedCertChain(STACK_OF(X509) *chain, HcfX509CertValidatorParams &params,
+                                  std::vector<HcfX509Certificate *> &untrustedCerts,
+                                  std::vector<HcfX509Certificate *> &trustedCerts)
+{
+    if (chain == nullptr) {
+        return false;
+    }
+    int count = sk_X509_num(chain);
+    if (count <= 0) {
+        return false;
+    }
+    for (int i = 1; i < count - 1; i++) {
+        HcfX509Certificate *hcfCert = ConvertToHcfCertificate(sk_X509_value(chain, i));
+        if (hcfCert == nullptr) {
+            return false;
+        }
+        untrustedCerts.emplace_back(hcfCert);
+    }
+    HcfX509Certificate *trustAnchor = ConvertToHcfCertificate(sk_X509_value(chain, count - 1));
+    if (trustAnchor == nullptr) {
+        return false;
+    }
+    trustedCerts.emplace_back(trustAnchor);
+    if (!untrustedCerts.empty()) {
+        params.untrustedCerts.data = untrustedCerts.data();
+        params.untrustedCerts.count = static_cast<uint32_t>(untrustedCerts.size());
+    }
+    params.trustedCerts.data = trustedCerts.data();
+    params.trustedCerts.count = static_cast<uint32_t>(trustedCerts.size());
+    return true;
+}
+
+enum RevocationStatus {
+    REVOCATION_OK = 0,
+    REVOCATION_REVOKED = 1,
+    REVOCATION_FAILED = 2,
+};
+
+struct RevocationCheckContext {
+    RevocationCheckContext() = default;
+    ~RevocationCheckContext();
+    RevocationCheckContext(const RevocationCheckContext &) = delete;
+    RevocationCheckContext &operator=(const RevocationCheckContext &) = delete;
+
+    unsigned char *derBuf = nullptr;
+    HcfCertChainValidator *validator = nullptr;
+    HcfX509Certificate *x509Cert = nullptr;
+    std::vector<HcfX509Certificate *> untrustedCerts;
+    std::vector<HcfX509Certificate *> trustedCerts;
+    int32_t revocationFlags[3] = {static_cast<int32_t>(CERT_REVOCATION_CRL_CHECK),
+                                  static_cast<int32_t>(CERT_REVOCATION_OCSP_CHECK),
+                                  static_cast<int32_t>(CERT_REVOCATION_PREFER_OCSP)};
+    HcfX509CertRevokedParams revokedParams = {};
+    HcfX509CertValidatorParams params = {};
+    HcfCertVerifyResult result = {};
+};
+
+static void DestroyHcfCertificates(std::vector<HcfX509Certificate *> &certificates)
+{
+    for (auto certificate : certificates) {
+        certificate->base.base.destroy(&certificate->base.base);
+    }
+    certificates.clear();
+}
+
+RevocationCheckContext::~RevocationCheckContext()
+{
+    HcfFreeCertVerifyResult(&result);
+    DestroyHcfCertificates(untrustedCerts);
+    DestroyHcfCertificates(trustedCerts);
+    if (x509Cert != nullptr) {
+        x509Cert->base.base.destroy(&x509Cert->base.base);
+        x509Cert = nullptr;
+    }
+    if (validator != nullptr) {
+        validator->base.destroy(&validator->base);
+        validator = nullptr;
+    }
+    OPENSSL_free(derBuf);
+    derBuf = nullptr;
+}
+
+static bool CreateRevocationCheckContext(X509 *cert, RevocationCheckContext &context)
+{
+    int derLen = i2d_X509(cert, &context.derBuf);
+    if (derLen <= 0 || context.derBuf == nullptr) {
+        NETSTACK_LOGE("CheckCertRevocation: i2d_X509 failed");
+        return false;
+    }
+    CfResult ret = HcfCertChainValidatorCreate("PKIX", &context.validator);
+    if (ret != CF_SUCCESS || context.validator == nullptr) {
+        NETSTACK_LOGE("CheckCertRevocation: create validator failed, ret=%{public}d", ret);
+        return false;
+    }
+    CfEncodingBlob certBlob = {context.derBuf, static_cast<size_t>(derLen), CF_FORMAT_DER};
+    ret = HcfX509CertificateCreate(&certBlob, &context.x509Cert);
+    if (ret != CF_SUCCESS || context.x509Cert == nullptr) {
+        NETSTACK_LOGE("CheckCertRevocation: create x509 cert failed, ret=%{public}d", ret);
+        return false;
+    }
+    return true;
+}
+
+static bool PrepareRevocationParams(STACK_OF(X509) *chain, RevocationCheckContext &context)
+{
+    context.revokedParams.size = sizeof(HcfX509CertRevokedParams);
+    context.revokedParams.revocationFlags = {
+        context.revocationFlags, static_cast<uint32_t>(std::size(context.revocationFlags))};
+    context.revokedParams.crls = {nullptr, 0};
+    context.revokedParams.allowDownloadCrl = true;
+    context.revokedParams.allowOcspCheckOnline = true;
+    context.revokedParams.ocspResponses = {nullptr, 0};
+    context.revokedParams.ocspDigest = OCSP_DIGEST_SHA256;
+    context.revokedParams.enableRevocationCache = true;
+    context.params.size = sizeof(HcfX509CertValidatorParams);
+    context.params.allowDownloadIntermediateCa = false;
+    context.params.validateDate = true;
+    context.params.revokedParams = &context.revokedParams;
+    if (!FillVerifiedCertChain(chain, context.params, context.untrustedCerts, context.trustedCerts)) {
+        NETSTACK_LOGE("PrepareRevocationParams: failed to copy the verified certificate chain");
+        return false;
+    }
+    context.params.trustSystemCa = true;
+    return true;
+}
+
+static RevocationStatus GetRevocationStatus(CfResult result, const std::string &errorMessage)
+{
+    if (result == CF_ERR_CERT_REVOKED) {
+        NETSTACK_LOGE("CheckCertRevocation: certificate is revoked");
+        return REVOCATION_REVOKED;
+    }
+    if (result != CF_SUCCESS) {
+        NETSTACK_LOGE("CheckCertRevocation: status undetermined, ret=%{public}d msg=%{public}s", result,
+                      errorMessage.c_str());
+        return REVOCATION_FAILED;
+    }
+    return REVOCATION_OK;
+}
+
+static RevocationStatus CheckCertRevocation(STACK_OF(X509) *chain, X509 *cert)
+{
+    if (chain == nullptr || cert == nullptr) {
+        return REVOCATION_FAILED;
+    }
+    RevocationCheckContext context;
+    if (!CreateRevocationCheckContext(cert, context)) {
+        return REVOCATION_FAILED;
+    }
+    if (!PrepareRevocationParams(chain, context)) {
+        return REVOCATION_FAILED;
+    }
+    CfResult result =
+        context.validator->validateX509Cert(context.validator, context.x509Cert, &context.params, &context.result);
+    std::string errorMessage;
+    if (result != CF_SUCCESS && context.result.error != nullptr && context.result.error->errorMsg != nullptr) {
+        errorMessage = context.result.error->errorMsg;
+    }
+    return GetRevocationStatus(result, errorMessage);
+}
+
+static bool ShouldCheckCertRevocation(const RequestContext *requestContext)
+{
+    return requestContext != nullptr && requestContext->options.GetEnableCertRevocationCheck() &&
+        !requestContext->options.GetCanSkipCertVerifyFlag();
+}
+
+static int ApplyRevocationResult(int preverifyOk, X509_STORE_CTX *ctx)
+{
+    RevocationStatus status = CheckCertRevocation(
+        X509_STORE_CTX_get0_chain(ctx), X509_STORE_CTX_get0_cert(ctx));
+    if (status == REVOCATION_REVOKED) {
+        X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REVOKED);
+        return 0;
+    }
+    if (status == REVOCATION_FAILED) {
+        NETSTACK_LOGE("ApplyRevocationResult: revocation status undetermined, rejecting handshake");
+        X509_STORE_CTX_set_error(ctx, X509_V_ERR_APPLICATION_VERIFICATION);
+        return 0;
+    }
+    return preverifyOk;
+}
+
+#ifdef NETSTACK_CERT_CHAIN_BORINGSSL
+static bool CheckVerifiedChainRevocation(STACK_OF(X509) *chain)
+{
+    int count = chain == nullptr ? 0 : sk_X509_num(chain);
+    if (count <= 0) {
+        return false;
+    }
+    return CheckCertRevocation(chain, sk_X509_value(chain, 0)) == REVOCATION_OK;
+}
+#endif
+
+#ifndef HTTP_MULTIPATH_CERT_ENABLE
+static int CertRevocationVerifyCallback(int preverifyOk, X509_STORE_CTX *ctx)
+{
+    if (ctx == nullptr) {
+        return preverifyOk;
+    }
+    int depth = X509_STORE_CTX_get_error_depth(ctx);
+    if (depth != 0 || preverifyOk != 1) {
+        return preverifyOk;
+    }
+    return ApplyRevocationResult(preverifyOk, ctx);
+}
+
+static CURLcode InstallCertRevocationVerifyCallback(void *sslCtx, RequestContext *requestContext)
+{
+    if (!ShouldCheckCertRevocation(requestContext)) {
+        return CURLE_OK;
+    }
+    SSL_CTX *revocationCtx = static_cast<SSL_CTX *>(sslCtx);
+    if (revocationCtx == nullptr) {
+        NETSTACK_LOGE("SslCtxFunction: SSL_CTX is null, cannot register revocation callback");
+        return CURLE_SSL_CERTPROBLEM;
+    }
+    int verifyMode = SSL_CTX_get_verify_mode(revocationCtx);
+    if ((verifyMode & SSL_VERIFY_PEER) == 0) {
+        NETSTACK_LOGI("SslCtxFunction: peer verification disabled, revocation check skipped");
+        return CURLE_OK;
+    }
+    SSL_CTX_set_verify(revocationCtx, verifyMode, CertRevocationVerifyCallback);
+    NETSTACK_LOGI("SslCtxFunction: cert revocation verify callback registered");
+    return CURLE_OK;
+}
+#endif // HTTP_MULTIPATH_CERT_ENABLE
+#endif // HTTP_ONLY_VERIFY_ROOT_CA_ENABLE && HTTP_CERT_REVOCATION_ENABLE
+
 CURLcode HttpExec::SslCtxFunction(CURL *curl, void *sslCtx, void *request_context)
 {
     auto requestContext = static_cast<RequestContext *>(request_context);
@@ -2303,8 +2557,9 @@ CURLcode HttpExec::SslCtxFunction(CURL *curl, void *sslCtx, void *request_contex
 
 #ifdef HTTP_MULTIPATH_CERT_ENABLE
     InstallMultiCandidateCertVerifyCallback(sslCtx, requestContext);
-#endif // HTTP_MULTIPATH_CERT_ENABLE
-
+#elif defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE) && defined(HTTP_CERT_REVOCATION_ENABLE)
+    return InstallCertRevocationVerifyCallback(sslCtx, requestContext);
+#endif
     return CURLE_OK;
 }
 
@@ -2467,12 +2722,28 @@ int HttpExec::HttpMultiCandidateCertVerifyCallback(X509_STORE_CTX *ctx, void *ar
     OHOS::NetStack::CertChain::CertVerifyPolicy policy = {
         [](STACK_OF(X509) *chain, void *context) {
             auto request = static_cast<RequestContext *>(context);
-            return HttpExec::VerifyPinnedPubkeyForChain(chain, request->GetPinnedPubkey());
+            if (!HttpExec::VerifyPinnedPubkeyForChain(chain, request->GetPinnedPubkey())) {
+                return false;
+            }
+#if defined(NETSTACK_CERT_CHAIN_BORINGSSL) && defined(HTTP_CERT_REVOCATION_ENABLE)
+            if (ShouldCheckCertRevocation(request)) {
+                return CheckVerifiedChainRevocation(chain);
+            }
+#endif
+            return true;
         }, requestContext};
 #ifdef NETSTACK_CERT_CHAIN_BORINGSSL
     return OHOS::NetStack::CertChainBsl::CustomCertVerifyCallback(ctx, &policy);
 #else
-    return OHOS::NetStack::CertChain::CustomCertVerifyCallback(ctx, &policy);
+    int result = OHOS::NetStack::CertChain::CustomCertVerifyCallback(ctx, &policy);
+#ifdef HTTP_CERT_REVOCATION_ENABLE
+    if (result != 1 || !ShouldCheckCertRevocation(requestContext)) {
+        return result;
+    }
+    return ApplyRevocationResult(result, ctx);
+#else
+    return result;
+#endif
 #endif
 }
 
@@ -2521,6 +2792,14 @@ static int VerifyCallback(int preverifyOk, X509_STORE_CTX *ctx)
         NETSTACK_LOGE("requestContext is null, fail");
         return 0;
     }
+
+#ifdef HTTP_CERT_REVOCATION_ENABLE
+    if (ShouldCheckCertRevocation(requestContext) && depth == 0 && preverifyOk == 1) {
+        if (ApplyRevocationResult(preverifyOk, ctx) == 0) {
+            return 0;
+        }
+    }
+#endif
     if (requestContext->IsRootCaVerifiedOk()) {
         // root CA hash verified, normal procedure.
         return preverifyOk;
@@ -2814,6 +3093,43 @@ bool HttpExec::SetRequestOption(CURL *curl, RequestContext *context)
     return true;
 }
 
+// Returns false if any curl option cannot be applied. NETSTACK_CURL_EASY_SET_OPTION returns from
+// this helper on failure, while successful configuration reaches the final true result.
+bool HttpExec::SetConnectionPolicyOptions(CURL *curl, RequestContext *context)
+{
+    CurlLongOptionSetter setOption = [](CURL *handle, CURLoption option, long value) {
+        return curl_easy_setopt(handle, option, value);
+    };
+    return SetConnectionPolicyOptions(curl, context, setOption);
+}
+
+bool HttpExec::SetConnectionPolicyOptions(CURL *curl, RequestContext *context,
+    const CurlLongOptionSetter &setOption)
+{
+    auto applyOption = [curl, context, &setOption](CURLoption option, long value) {
+        CURLcode result = setOption(curl, option, value);
+        if (result == CURLE_OK) {
+            return true;
+        }
+        NETSTACK_LOGE("Failed to set connection option: %{public}d, error: %{public}d", option, result);
+        context->SetErrorCode(result);
+        return false;
+    };
+    if (!context->options.GetReuseConnectionsFlag()) {
+        if (!applyOption(CURLOPT_FORBID_REUSE, 1L) || !applyOption(CURLOPT_FRESH_CONNECT, 1L)) {
+            return false;
+        }
+    }
+#ifdef HTTP_CERT_REVOCATION_ENABLE
+    if (context->options.GetEnableCertRevocationCheck()) {
+        if (!applyOption(CURLOPT_FRESH_CONNECT, 1L) || !applyOption(CURLOPT_SSL_SESSIONID_CACHE, 0L)) {
+            return false;
+        }
+    }
+#endif
+    return true;
+}
+
 bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader)
 {
     const std::string &method = context->options.GetMethod();
@@ -2885,10 +3201,8 @@ bool HttpExec::SetOption(CURL *curl, RequestContext *context, struct curl_slist 
         NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_SNI_HOSTNAME, context->options.GetSniHostName().c_str(), context);
     }
 
-    if (!context->options.GetReuseConnectionsFlag())
-    {
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FORBID_REUSE, 1L, context);
-        NETSTACK_CURL_EASY_SET_OPTION(curl, CURLOPT_FRESH_CONNECT, 1L, context);
+    if (!SetConnectionPolicyOptions(curl, context)) {
+        return false;
     }
 
     int inactivityMs = context->options.GetInactivityMs();
