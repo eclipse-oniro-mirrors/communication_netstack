@@ -16,8 +16,13 @@ import("//foundation/communication/netstack/netstack_config.gni")
 
 config("websocket_native_config") {
   # header file path
-  include_dirs =
-      [ "$NETSTACK_DIR/interfaces/innerkits/websocket_native/include" ]
+  include_dirs = [
+    "$NETSTACK_DIR/interfaces/innerkits/websocket_native/include",
+    "$NETSTACK_NATIVE_ROOT/websocket_native/include",
+    "$NETSTACK_DIR/utils/common_utils/include",
+    "$NETSTACK_DIR/utils/log/include",
+    "$NETSTACK_DIR/utils/napi_utils/include",
+  ]
 
   cflags = []
   if (is_double_framework) {
@@ -56,6 +61,7 @@ ohos_shared_library("websocket_native") {
     "$NETSTACK_DIR/utils/common_utils/include",
     "$NETSTACK_DIR/utils/log/include",
     "$NETSTACK_NATIVE_ROOT/websocket_native/include",
+    "$NETSTACK_DIR/utils/napi_utils/include",
   ]
 
   cflags = [

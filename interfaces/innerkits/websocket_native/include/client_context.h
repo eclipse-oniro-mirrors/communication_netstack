@@ -17,7 +17,9 @@
 #define CLIENT_CONTEXT_H
 
 #include <atomic>
+#include <cstdlib>
 #include <iostream>
+#include <libwebsockets.h>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -32,6 +34,7 @@
 namespace OHOS {
 namespace NetStack {
 namespace WebSocketClient {
+class WebSocketClient;
 
 struct SendData {
     SendData(char *paraData, size_t paraLength, lws_write_protocol paraProtocol)
@@ -58,6 +61,15 @@ class ClientContext {
 public:
     ClientContext() : closeStatus(LWS_CLOSE_STATUS_NOSTATUS), openStatus(0), errorCode(0), closed_(false),
                       threadStop_(std::make_shared<std::atomic_bool>(false)), context_(nullptr), clientId(0) {}
+
+    ~ClientContext()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        while (!dataQueue_.empty()) {
+            std::free(dataQueue_.front().data);
+            dataQueue_.pop();
+        }
+    }
 
     bool IsClosed()
     {
@@ -130,25 +142,38 @@ public:
 
     void SetContext(lws_context *context)
     {
-        if (context == nullptr) {
-            context_.reset();
-            return;
+        std::shared_ptr<lws_context> newContext;
+        if (context != nullptr) {
+            newContext.reset(context, [](lws_context *value) {
+                if (value != nullptr) {
+                    lws_context_destroy(value);
+                }
+            });
         }
-        context_.reset(context, [](lws_context *value) {
-            if (value != nullptr) {
-                lws_context_destroy(value);
-            }
-        });
+        std::lock_guard<std::mutex> lock(mutexForContext_);
+        context_.swap(newContext);
     }
 
     lws_context *GetContext()
     {
+        std::lock_guard<std::mutex> lock(mutexForContext_);
         return context_.get();
     }
 
     std::shared_ptr<lws_context> GetContextShared()
     {
+        std::lock_guard<std::mutex> lock(mutexForContext_);
         return context_;
+    }
+
+    void ReleaseUserDataIfContext(lws_context *context)
+    {
+        std::lock_guard<std::mutex> contextLock(mutexForContext_);
+        if (context_.get() != context) {
+            return;
+        }
+        std::lock_guard<std::mutex> userDataLock(mutexForUserData_);
+        userData_.reset();
     }
 
     bool IsEmpty()
@@ -207,6 +232,25 @@ public:
     std::string GetUserCertPath()
     {
         return userCertPath_;
+    }
+
+    void SetUserData(std::shared_ptr<WebSocketClient> userData);
+
+    ClientContext *AsLwsUserData()
+    {
+        return this;
+    }
+
+    std::shared_ptr<WebSocketClient> GetUserDataCopy()
+    {
+        std::lock_guard<std::mutex> lock(mutexForUserData_);
+        return userData_.lock();
+    }
+
+    void ReleaseUserData()
+    {
+        std::lock_guard<std::mutex> lock(mutexForUserData_);
+        userData_.reset();
     }
 
     std::map<std::string, std::string> header;
@@ -268,6 +312,8 @@ private:
 
     std::shared_ptr<lws_context> context_;
 
+    std::mutex mutexForContext_;
+
     std::queue<SendData> dataQueue_;
 
     std::mutex mutexForLws_;
@@ -275,6 +321,10 @@ private:
     lws *wsi_ = nullptr;
 
     int clientId = 0;
+
+    std::weak_ptr<WebSocketClient> userData_;
+
+    std::mutex mutexForUserData_;
 };
 }; // namespace WebSocketClient
 } // namespace NetStack
