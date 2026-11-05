@@ -14,6 +14,7 @@
 [cfi]
 fun:*X509_INFO_free*
 fun:*sk_X509_INFO_call_free_func*
+fun:*sk_X509_call_free_func*
 fun:*OPENSSL_sk_pop_free_ex*
 fun:*sk_X509_INFO_pop_free*
 fun:*by_file_ctrl*
