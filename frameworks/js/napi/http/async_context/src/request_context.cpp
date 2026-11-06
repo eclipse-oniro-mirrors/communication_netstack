@@ -144,8 +144,11 @@ void RequestContext::StartTiming()
     timerMap_.RecieveTimer(HttpConstant::RESPONSE_TOTAL_TIMING).Start(startTime);
 
     // init RESPONSE_HEADER_TIMING and RESPONSE_BODY_TIMING
-    performanceTimingMap_[HttpConstant::RESPONSE_HEADER_TIMING] = 0.0;
-    performanceTimingMap_[HttpConstant::RESPONSE_BODY_TIMING] = 0.0;
+    {
+        std::lock_guard<std::mutex> lock(performanceTimingMapLock_);
+        performanceTimingMap_[HttpConstant::RESPONSE_HEADER_TIMING] = 0.0;
+        performanceTimingMap_[HttpConstant::RESPONSE_BODY_TIMING] = 0.0;
+    }
 }
 
 void RequestContext::ParseParams(napi_value *params, size_t paramsCount)
@@ -1213,6 +1216,7 @@ void RequestContext::ParseDnsServers(napi_value optionsValue)
 
 void RequestContext::CachePerformanceTimingItem(const std::string &key, double value)
 {
+    std::lock_guard<std::mutex> lock(performanceTimingMapLock_);
     performanceTimingMap_[key] = value;
 }
 
@@ -1225,14 +1229,19 @@ void RequestContext::StopAndCacheNapiPerformanceTiming(const char *key)
 
 void RequestContext::SetPerformanceTimingToResult(napi_value result)
 {
-    if (performanceTimingMap_.empty()) {
+    std::map<std::string, double> performanceTimingMap;
+    {
+        std::lock_guard<std::mutex> lock(performanceTimingMapLock_);
+        performanceTimingMap = performanceTimingMap_;
+    }
+    if (performanceTimingMap.empty()) {
         NETSTACK_LOGD("Get performanceTiming data is empty.");
         return;
     }
     napi_value performanceTimingValue = nullptr;
     napi_env env = GetEnv();
     napi_create_object(env, &performanceTimingValue);
-    for (const auto &pair : performanceTimingMap_) {
+    for (const auto &pair : performanceTimingMap) {
         NapiUtils::SetDoubleProperty(env, performanceTimingValue, pair.first, pair.second);
     }
     NapiUtils::SetNamedProperty(env, result, HttpConstant::RESPONSE_PERFORMANCE_TIMING, performanceTimingValue);

@@ -1039,15 +1039,18 @@ bool HttpExec::ConvertResponseContextToInterceptorResp(
         resp->headers = reinterpret_cast<OH_Http_Interceptor_Headers *>(
             MakeHeaders(CommonUtils::Split(context->response.GetRawHeader(), HttpConstant::HTTP_LINE_SEPARATOR)));
     }
-    resp->performanceTiming = {
-        .dnsTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_DNS_TIMING],
-        .tcpTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_TCP_TIMING],
-        .tlsTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_TLS_TIMING],
-        .firstSendTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_FIRST_SEND_TIMING],
-        .firstReceiveTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_FIRST_RECEIVE_TIMING],
-        .totalFinishTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_TOTAL_FINISH_TIMING],
-        .redirectTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_REDIRECT_TIMING],
+    {
+        std::lock_guard<std::mutex> lock(performanceTimingMapLock_);
+        resp->performanceTiming = {
+            .dnsTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_DNS_TIMING],
+            .tcpTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_TCP_TIMING],
+            .tlsTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_TLS_TIMING],
+            .firstSendTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_FIRST_SEND_TIMING],
+            .firstReceiveTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_FIRST_RECEIVE_TIMING],
+            .totalFinishTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_TOTAL_FINISH_TIMING],
+            .redirectTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_REDIRECT_TIMING],
     };
+    }
     return true;
 }
 
