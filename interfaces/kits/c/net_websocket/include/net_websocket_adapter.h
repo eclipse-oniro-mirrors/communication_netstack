@@ -16,6 +16,7 @@
 #define NATIVE_WEBSOCKET_ADAPTER_H
 
 #include <map>
+#include <memory>
 #include <mutex>
 
 #include "net_websocket.h"
@@ -23,10 +24,10 @@
 
 namespace OHOS::NetStack::WebSocketClient {
 
-extern std::map<WebSocket *, WebSocketClient *> g_clientMap;
+extern std::map<WebSocket *, std::shared_ptr<WebSocketClient>> g_clientMap;
 extern std::mutex g_clientMapMutex;
 
-WebSocketClient *GetInnerClientAdapter(WebSocket *key);
+std::shared_ptr<WebSocketClient> GetInnerClientAdapter(WebSocket *key);
 WebSocket *GetNdkClientAdapter(const WebSocketClient *websocketClient);
 
 int32_t Conv2RequestOptions(struct OpenOptions *openOptions,

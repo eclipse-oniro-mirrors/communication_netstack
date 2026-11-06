@@ -14,6 +14,8 @@
  */
 #include <cstring>
 #include <iostream>
+#include <map>
+#include <memory>
 #include <mutex>
 
 #include "net_websocket.h"
@@ -75,7 +77,7 @@ struct WebSocket *OH_WebSocketClient_Constructor(WebSocket_OnOpenCallback onOpen
                                                  WebSocket_OnErrorCallback onError, WebSocket_OnCloseCallback onclose)
 {
     WebSocket *OH_client = new WebSocket;
-    WebSocketClient *websocketClient = new WebSocketClient();
+    auto websocketClient = std::make_shared<WebSocketClient>();
     OH_client->onMessage = onMessage;
     OH_client->onClose = onclose;
     OH_client->onError = onError;
@@ -88,11 +90,9 @@ struct WebSocket *OH_WebSocketClient_Constructor(WebSocket_OnOpenCallback onOpen
         if (g_clientMap.size() == MAX_CLIENT_SIZE) {
             delete OH_client;
             OH_client = nullptr;
-            delete websocketClient;
-            websocketClient = nullptr;
             return nullptr;
         }
-        g_clientMap[OH_client] = websocketClient;
+        g_clientMap[OH_client] = std::move(websocketClient);
     }
     return OH_client;
 }
@@ -133,8 +133,7 @@ int OH_WebSocketClient_Send(struct WebSocket *client, char *data, size_t length)
     if (client == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
     }
-    WebSocketClient *websocketClient = GetInnerClientAdapter(client);
-
+    auto websocketClient = GetInnerClientAdapter(client);
     if (websocketClient == NULL) {
         return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
     }
@@ -161,9 +160,7 @@ int OH_WebSocketClient_Connect(struct WebSocket *client, const char *url, struct
     if (options.headers != nullptr) {
         Conv2RequestOptions(&openOptions, options);
     }
-
-    WebSocketClient *websocketClient = GetInnerClientAdapter(client);
-
+    auto websocketClient = GetInnerClientAdapter(client);
     if (websocketClient == NULL) {
         return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
     }
@@ -181,8 +178,7 @@ int OH_WebSocketClient_Close(struct WebSocket *client, struct WebSocket_CloseOpt
     if (client == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
     }
-
-    WebSocketClient *websocketClient = GetInnerClientAdapter(client);
+    auto websocketClient = GetInnerClientAdapter(client);
     if (websocketClient == NULL) {
         return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
     }
@@ -209,7 +205,7 @@ int OH_WebSocketClient_Destroy(struct WebSocket *client)
     if (client == nullptr) {
         return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NULL;
     }
-    WebSocketClient *websocketClient = GetInnerClientAdapter(client);
+    auto websocketClient = GetInnerClientAdapter(client);
     if (websocketClient == NULL) {
         return WebSocketErrorCode::WEBSOCKET_CLIENT_IS_NOT_CREAT;
     }
