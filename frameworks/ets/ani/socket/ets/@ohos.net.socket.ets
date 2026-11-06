@@ -90,6 +90,7 @@ export default namespace socket {
     }
 
     export interface TLSSecureOptions {
+        certAlias?: string;
         ca?: string | Array<string>;
         cert?: string | Array<string>;
         key?: string;
@@ -446,6 +447,7 @@ export default namespace socket {
     }
 
     export class TLSSecureOptionsInner implements TLSSecureOptions {
+        certAlias?: string;
         ca?: string | Array<string>;
         cert?: string | Array<string>;
         key?: string;
@@ -1872,6 +1874,51 @@ export default namespace socket {
         native offErrorInner(callback?: ErrorCallback): void;
     }
 
+    // Normalize before ANI deserializes the object so ignored identity getters are never read.
+    function normalizeTLSAliasOptions(options: TLSConnectOptions, server: boolean = false): TLSConnectOptions {
+        const MAX_ALIAS_LENGTH = 256;
+        const PARAMETER_ERROR_CODE = 401;
+        const ASCII_SPACE = 0x20;
+        const ASCII_TILDE = 0x7e;
+        let secure = options.secureOptions;
+        let alias = secure.certAlias;
+        if (alias === undefined) {
+            return options;
+        }
+        if (server || typeof alias !== 'string' || alias.length == 0 || alias.length > MAX_ALIAS_LENGTH) {
+            throw new BusinessError(PARAMETER_ERROR_CODE, new Error('Parameter error'));
+        }
+        let nonSpace = false;
+        for (let i = 0; i < alias.length; i++) {
+            let code = alias.charCodeAt(i);
+            if (code < ASCII_SPACE || code > ASCII_TILDE) {
+                throw new BusinessError(PARAMETER_ERROR_CODE, new Error('Parameter error'));
+            }
+            nonSpace = nonSpace || code != ASCII_SPACE;
+        }
+        if (!nonSpace) {
+            throw new BusinessError(PARAMETER_ERROR_CODE, new Error('Parameter error'));
+        }
+        let identity = new TLSSecureOptionsInner();
+        identity.certAlias = alias;
+        identity.ca = secure.ca;
+        identity.protocols = secure.protocols;
+        identity.useRemoteCipherPrefer = secure.useRemoteCipherPrefer;
+        identity.signatureAlgorithms = secure.signatureAlgorithms;
+        identity.cipherSuite = secure.cipherSuite;
+        identity.isBidirectionalAuthentication = secure.isBidirectionalAuthentication;
+        let normalized = new TLSConnectOptionsInner();
+        normalized.address = options.address;
+        normalized.secureOptions = identity;
+        normalized.ALPNProtocols = options.ALPNProtocols;
+        normalized.skipRemoteValidation = options.skipRemoteValidation;
+        normalized.sslServerHostnameVerification = options.sslServerHostnameVerification;
+        normalized.proxy = options.proxy;
+        normalized.timeout = options.timeout;
+        normalized.serverName = options.serverName;
+        return normalized;
+    }
+
     export class TLSSocketInner implements TLSSocket {
         private nativePtr: long = 0;
         private token: object = new object();
@@ -1914,7 +1961,7 @@ export default namespace socket {
         
         connect(options: TLSConnectOptions, callback: AsyncCallback<void>): void {
             let p1 = taskpool.execute(() => {
-                this.connectSync(options);
+                this.connectSync(normalizeTLSAliasOptions(options));
             });
             p1.then(() => {
                 callback(new BusinessError(), undefined);
@@ -1926,7 +1973,7 @@ export default namespace socket {
         connect(options: TLSConnectOptions): Promise<void> {
             return new Promise<void>((resolve, reject) => {
                 taskpool.execute(() => {
-                    this.connectSync(options);
+                    this.connectSync(normalizeTLSAliasOptions(options));
                 }).then(() => {
                     resolve(undefined);
                 }, (err: Error): void => {
@@ -2265,7 +2312,7 @@ export default namespace socket {
 
         listen(options: TLSConnectOptions, callback: AsyncCallback<void>): void {
             let p1 = taskpool.execute(() => {
-                this.listenSync(options);
+                this.listenSync(normalizeTLSAliasOptions(options, true));
             });
             p1.then(() => {
                 callback(new BusinessError(), undefined);
@@ -2277,7 +2324,7 @@ export default namespace socket {
         listen(options: TLSConnectOptions): Promise<void> {
             return new Promise<void>((resolve, reject) => {
                 taskpool.execute(() => {
-                    this.listenSync(options);
+                    this.listenSync(normalizeTLSAliasOptions(options, true));
                 }).then(() => {
                     resolve(undefined);
                 }, (err: Error): void => {

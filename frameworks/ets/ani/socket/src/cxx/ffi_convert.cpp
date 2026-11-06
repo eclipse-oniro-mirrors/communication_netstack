@@ -34,6 +34,7 @@
 #include <string>
 
 #include "socket_error.h"
+#include "tls_cert_alias.h"
 
 namespace OHOS {
 namespace NetStackAni {
@@ -46,7 +47,8 @@ rust::String GetErrorCodeAndMessage(int32_t &errorCode)
         return rust::string("Success");
     }
 
-    std::string msg = NetStack::Socket::GetSocketErrorMessage(errorCode);
+    std::string msg = TlsSocket::IsCertAliasError(errorCode) ? TlsSocket::CertAliasErrorMessage(errorCode) :
+        NetStack::Socket::GetSocketErrorMessage(errorCode);
     if (msg.empty()) {
         msg = "Unknown error";
     }
@@ -155,16 +157,19 @@ void FFITcpExtraOptionsToTCPExtraOptions(const FFITcpExtraOptions& ffi, Socket::
 
 void FFITlsSecureOptionsToTLSSecureOptions(const FFITlsSecureOptions& ffi, TlsSocket::TLSSecureOptions& opts)
 {
+    if (ffi.has_cert_alias) {
+        opts.SetCertAlias(std::string(ffi.cert_alias));
+    }
     if (ffi.has_ca) {
         opts.SetCaChain(RustVecToStdVector(ffi.ca));
     }
-    if (ffi.has_cert) {
+    if (!ffi.has_cert_alias && ffi.has_cert) {
         opts.SetCertChain(RustVecToStdVector(ffi.cert));
     }
-    if (ffi.has_key) {
+    if (!ffi.has_cert_alias && ffi.has_key) {
         opts.SetKey(TlsSocket::SecureData(std::string(ffi.key)));
     }
-    if (ffi.has_password) {
+    if (!ffi.has_cert_alias && ffi.has_password) {
         opts.SetKeyPass(TlsSocket::SecureData(std::string(ffi.password)));
     }
 

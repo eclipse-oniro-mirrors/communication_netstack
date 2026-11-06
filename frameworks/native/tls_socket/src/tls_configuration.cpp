@@ -27,6 +27,8 @@ namespace TlsSocket {
 TLSConfiguration::TLSConfiguration(const TLSConfiguration &other)
 {
     std::unique_lock<std::shared_mutex> lock(certMutex_);
+    aliasCredential_ = other.aliasCredential_;
+    attemptState_ = other.attemptState_;
     privateKey_ = other.privateKey_;
     localCertificate_ = other.localCertificate_;
     caCertificate_ = other.caCertificate_;
@@ -48,6 +50,8 @@ const TLSKey &TLSConfiguration::PrivateKey() const
 TLSConfiguration &TLSConfiguration::operator=(const TLSConfiguration &other)
 {
     std::unique_lock<std::shared_mutex> lock(certMutex_);
+    aliasCredential_ = other.aliasCredential_;
+    attemptState_ = other.attemptState_;
     privateKey_ = other.privateKey_;
     localCertificate_ = other.localCertificate_;
     caCertificate_ = other.caCertificate_;

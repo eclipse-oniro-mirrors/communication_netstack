@@ -24,6 +24,7 @@
 #include "tls.h"
 #include "tls_certificate.h"
 #include "tls_key.h"
+#include "tls_cert_alias.h"
 #include "net_address.h"
 namespace OHOS {
 namespace NetStack {
@@ -31,6 +32,10 @@ namespace TlsSocket {
 class TLSConfiguration {
 public:
     TLSConfiguration() = default;
+    void SetAliasCredential(std::shared_ptr<AliasCredential> credential) { aliasCredential_ = std::move(credential); }
+    const std::shared_ptr<AliasCredential> &GetAliasCredential() const { return aliasCredential_; }
+    void SetAttemptState(std::shared_ptr<TlsConnectAttemptState> state) { attemptState_ = std::move(state); }
+    const std::shared_ptr<TlsConnectAttemptState> &GetAttemptState() const { return attemptState_; }
     explicit TLSConfiguration(TLSConfiguration *tlsConfiguration);
     ~TLSConfiguration() = default;
     TLSConfiguration(const TLSConfiguration &other);
@@ -93,6 +98,8 @@ private:
     TLSCertificate caCertificate_;
     std::vector<TLSCertificate> localCertificateChain_;
     std::vector<std::string> caCertificateChain_;
+    std::shared_ptr<AliasCredential> aliasCredential_;
+    std::shared_ptr<TlsConnectAttemptState> attemptState_;
     VerifyMode tlsVerifyMode_;
     Socket::NetAddress netAddress_;
     bool whetherToSkip_ = false;

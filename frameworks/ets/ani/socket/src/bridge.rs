@@ -190,6 +190,7 @@ pub struct TCPExtraOptions {
 
 #[ani_rs::ani(path = "@ohos.net.socket.socket.TLSSecureOptionsInner")]
 pub struct TLSSecureOptions {
+    pub cert_alias: Option<String>,
     pub ca: Option<UnionCaCert>,
     pub cert: Option<UnionCaCert>,
     pub key: Option<String>,

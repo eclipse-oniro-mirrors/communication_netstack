@@ -164,6 +164,7 @@ ohos_unittest("socket_unittest") {
     defines += [ "HAS_NETMANAGER_BASE=0" ]
   }
 
+  deps += [ "$NETSTACK_NATIVE_ROOT/tls_socket:tls_cert_alias" ]
   part_name = "netstack"
   subsystem_name = "communication"
 }

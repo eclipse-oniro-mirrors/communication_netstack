@@ -190,6 +190,10 @@ int32_t TlsClientConnect(TlsClientContext &client, const FFITlsConnectOptions &o
 
     TlsSocket::TLSConnectOptions options;
     FFITlsConnectOptionsToTLSConnectOptions(opts, options);
+    const auto alias = options.GetTlsSecureOptions().GetCertAlias();
+    if (alias && !TlsSocket::IsValidCertAlias(*alias)) {
+        return TlsSocket::TLS_ALIAS_INVALID;
+    }
 
     if (!client.tlsSocketClient_->IsExtSock() && options.proxyOptions_ != nullptr &&
         options.proxyOptions_->type_ == Socket::ProxyType::SOCKS5) {
@@ -613,6 +617,10 @@ int32_t TlsServerListen(TlsServerContext &server, const FFITlsConnectOptions &op
 
     TlsSocket::TLSConnectOptions options;
     FFITlsConnectOptionsToTLSConnectOptions(opts, options);
+    const auto alias = options.GetTlsSecureOptions().GetCertAlias();
+    if (alias && !TlsSocket::IsValidCertAlias(*alias)) {
+        return TlsSocket::TLS_ALIAS_INVALID;
+    }
 
     auto context = std::make_shared<SyncCallbackContext>();
     server.tlsSocketServer_->Listen(options, [context](int32_t errorNumber) {

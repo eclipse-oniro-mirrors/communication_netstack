@@ -21,6 +21,7 @@
 #include <cstring>
 #include <functional>
 #include <map>
+#include <optional>
 #include <shared_mutex>
 #include <thread>
 #include <tuple>
@@ -88,6 +89,8 @@ public:
 
     TLSSecureOptions(const TLSSecureOptions &tlsSecureOptions);
     TLSSecureOptions &operator=(const TLSSecureOptions &tlsSecureOptions);
+    void SetCertAlias(const std::string &alias) { certAlias_ = alias; }
+    const std::optional<std::string> &GetCertAlias() const { return certAlias_; }
     /**
      * Set root CA Chain to verify the server cert
      * @param caChain root certificate chain used to validate server certificates
@@ -201,6 +204,7 @@ public:
     [[nodiscard]] VerifyMode GetVerifyMode() const;
 
 private:
+    std::optional<std::string> certAlias_;
     std::vector<std::string> caChain_;
     std::vector<std::string> certChain_;
     SecureData key_;
@@ -330,7 +334,7 @@ public:
     TLSSocket &operator=(TLSSocket &&) = delete;
 
     TLSSocket() = default;
-    ~TLSSocket() = default;
+    ~TLSSocket();
 
     explicit TLSSocket(int sockFd): sockFd_(sockFd), isExtSock_(true) {}
 
@@ -478,10 +482,16 @@ public:
     bool IsExtSock() const;
 
 private:
+    friend class TLSSocketExec;
+
+    // Keep the NAPI proxy preparation inside the FD lifetime of this connect attempt.
+    void Connect(TLSConnectOptions &tlsConnectOptions, const ConnectCallback &callback,
+                 const std::function<int32_t(int)> &prepare);
+
     class TLSSocketInternal final {
     public:
         TLSSocketInternal() = default;
-        ~TLSSocketInternal() = default;
+        ~TLSSocketInternal();
 
         /**
          * Establish an encrypted connection on the specified socket
@@ -490,13 +500,15 @@ private:
          * @param isExtSock socket fd is originated from external source when constructing tls socket
          * @return whether the encrypted connection is successfully established
          */
-        bool TlsConnectToHost(int sock, const TLSConnectOptions &options, bool isExtSock);
+        bool TlsConnectToHost(int sock, const TLSConnectOptions &options, bool isExtSock,
+                             const std::shared_ptr<TlsConnectAttemptState> &attempt = nullptr);
 
         /**
          * Set the configuration items for establishing encrypted connections
          * @param config configuration item when establishing encrypted connection
          */
-        void SetTlsConfiguration(const TLSConnectOptions &config);
+        bool SetTlsConfiguration(const TLSConnectOptions &config,
+                                 const std::shared_ptr<TlsConnectAttemptState> &attempt = nullptr);
 
         /**
          * Send data through an established encrypted connection
@@ -531,6 +543,14 @@ private:
          * @return the value for ssl error code.
          */
         int ConvertSSLError(void);
+        std::shared_ptr<TlsConnectAttemptState> BeginConnectAttempt();
+        void CancelConnectAttempt()
+        {
+            auto attempt = std::atomic_load(&attemptState_);
+            if (attempt) {
+                attempt->Cancel();
+            }
+        }
 
         /**
          * Obtain the error number recorded by the last failed connect step
@@ -592,6 +612,8 @@ private:
         [[nodiscard]] bool SetSharedSigals();
 
         void CloseTlsContext();
+        void RetainSocketFd(int fd);
+        void CloseDetachedSocketFd();
 
     private:
         bool SendRetry(ssl_st *ssl, const char *curPos, size_t curSendSize, int sockfd);
@@ -614,9 +636,12 @@ private:
         uint16_t port_ = 0;
         sa_family_t family_ = 0;
         int32_t socketDescriptor_ = 0;
+        // Own an unbound FD until SSL takes it, or after failed-handshake cleanup detaches it.
+        int detachedSocketFd_ = -1;
 
         TLSContext tlsContext_;
         TLSConfiguration configuration_;
+        std::shared_ptr<TlsConnectAttemptState> attemptState_;
         Socket::NetAddress address_;
         X509CertRawData remoteRawData_;
 
@@ -660,6 +685,10 @@ private:
 
     int ReadMessage();
     void StartReadMessage();
+    int32_t BeginConnect(int &fd, std::shared_ptr<TlsConnectAttemptState> &attempt);
+    void ConnectTlsSocket(int fd, const TLSConnectOptions &options, const ConnectCallback &callback,
+        const std::shared_ptr<TlsConnectAttemptState> &attempt);
+    void FinishConnect();
 
     void GetIp4RemoteAddress(const GetRemoteAddressCallback &callback);
     void GetIp6RemoteAddress(const GetRemoteAddressCallback &callback);
@@ -692,6 +721,10 @@ private:
     bool isRunning_ = false;
     bool isRunOver_ = true;
     std::condition_variable cvSslFree_;
+    std::mutex mutexForConnect_;
+    bool connecting_ = false;
+    bool closeRequested_ = false;
+    int pendingCloseFd_ = -1;
     int sockFd_ = -1;
     bool isExtSock_ = false;
     Socket::NetAddress localAddress_;

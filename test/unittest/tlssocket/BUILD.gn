@@ -16,6 +16,7 @@ import("//build/test.gni")
 group("unittest") {
   testonly = true
   deps = [
+    "alias:tls_cert_alias_test",
     "client:secure_data_unittest",
     "client:socket_error_unittest",
     "client:tls_cert_test",
@@ -28,4 +29,9 @@ group("unittest") {
     "core:tls_socket_core_test",
     "server:two_way_tls_socket_server_unittest",
   ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.security_certificate_manager) &&
+      global_parts_info.security_certificate_manager) {
+    deps += [ "alias:tls_cert_manager_adapter_test" ]
+  }
 }

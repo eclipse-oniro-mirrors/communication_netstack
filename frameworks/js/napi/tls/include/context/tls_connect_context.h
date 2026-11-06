@@ -51,6 +51,7 @@ private:
     bool CheckParamsType(napi_value *params, size_t paramsCount);
     TLSConnectOptions ReadTLSConnectOptions(napi_env env, napi_value *params);
     TLSSecureOptions ReadTLSSecureOptions(napi_env env, napi_value *params);
+    bool ReadCertAlias(napi_env env, napi_value secureOptions, TLSSecureOptions &secureOption);
     Socket::NetAddress ReadNetAddress(napi_env env, napi_value *params);
     std::shared_ptr<Socket::ProxyOptions> ReadTLSProxyOptions(napi_env env, napi_value *params);
     std::uint32_t ReadTimeout(napi_env env, napi_value *params);

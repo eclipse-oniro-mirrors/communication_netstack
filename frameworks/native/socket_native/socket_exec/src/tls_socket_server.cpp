@@ -33,6 +33,7 @@
 #include "socket_constant.h"
 #endif
 #include "tls.h"
+#include "tls_cert_alias.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -132,6 +133,10 @@ TLSSocketServer::~TLSSocketServer()
 
 void TLSSocketServer::Listen(const TlsSocket::TLSConnectOptions &tlsListenOptions, const ListenCallback &callback)
 {
+    if (tlsListenOptions.GetTlsSecureOptions().GetCertAlias()) {
+        CallListenCallback(TlsSocket::TLS_ALIAS_INVALID, callback);
+        return;
+    }
     if (!CommonUtils::HasInternetPermission()) {
         CallListenCallback(PERMISSION_DENIED_CODE, callback);
         return;
