@@ -67,6 +67,7 @@ const char *const HttpConstant::PARAM_KEY_MULTI_FORM_DATA_LIST = "multiFormDataL
 const char *const HttpConstant::PARAM_KEY_CERTIFICATE_PINNING = "certificatePinning";
 
 const char *const HttpConstant::PARAM_KEY_REMOTE_VALIDATION = "remoteValidation";
+const char *const HttpConstant::PARAM_KEY_ENABLE_CERT_REVOCATION_CHECK = "enableCertRevocationCheck";
 const char *const HttpConstant::PARAM_KEY_TLS_OPTION = "tlsOptions";
 const char *const HttpConstant::PARAM_KEY_SERVER_AUTH = "serverAuthentication";
 

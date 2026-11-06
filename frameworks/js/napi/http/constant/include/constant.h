@@ -174,6 +174,7 @@ public:
     static const char *const PARAM_KEY_TLS_OPTION;
     static const char *const PARAM_KEY_SERVER_AUTH;
     static const char *const PARAM_KEY_ADDRESS_FAMILY;
+    static const char *const PARAM_KEY_ENABLE_CERT_REVOCATION_CHECK;
 
     static const char *const HTTP_PROXY_KEY_HOST;
     static const char *const HTTP_PROXY_KEY_PORT;

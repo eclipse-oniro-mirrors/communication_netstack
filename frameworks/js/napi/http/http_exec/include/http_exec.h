@@ -197,9 +197,16 @@ public:
     static void ProcessResponseHeadersAndEmitEvents(RequestContext *context);
 
 private:
+    using CurlLongOptionSetter = std::function<CURLcode(CURL *, CURLoption, long)>;
+
     static bool SetLowSpeedOption(CURL *curl, RequestContext *context);
 
     static bool SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader);
+
+    static bool SetConnectionPolicyOptions(CURL *curl, RequestContext *context);
+
+    static bool SetConnectionPolicyOptions(CURL *curl, RequestContext *context,
+        const CurlLongOptionSetter &setOption);
 
     static bool SetProxyOption(CURL *curl, RequestContext *context);
 

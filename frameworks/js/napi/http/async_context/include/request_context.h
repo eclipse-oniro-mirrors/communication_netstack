@@ -237,6 +237,8 @@ public:
 
     void ParseRemoteValidationMode(napi_value optionsValue);
 
+    void ParseEnableCertRevocationCheck(napi_value optionsValue);
+
     void ParseTlsOption(napi_value optionsValue);
 
     void ParseServerAuthentication(napi_value optionsValue);

@@ -131,6 +131,36 @@ HWTEST_F(HttpExecTest, SetOption001, TestSize.Level1)
     EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context, context.GetCurlHeaderList()));
 }
 
+#ifdef HTTP_CERT_REVOCATION_ENABLE
+HWTEST_F(HttpExecTest, SetOptionWithCertRevocationCheck001, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+    ASSERT_NE(handle, nullptr);
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    OHOS::NetStack::Http::RequestContext context(env, manager);
+    context.options.SetEnableCertRevocationCheck(true);
+
+    EXPECT_TRUE(HttpExec::SetOption(handle.get(), &context, context.GetCurlHeaderList()));
+
+    uint32_t freshConnectCount = 0;
+    uint32_t sessionCacheCount = 0;
+    auto setOption = [&freshConnectCount, &sessionCacheCount](CURL *, CURLoption option, long value) {
+        if (option == CURLOPT_FRESH_CONNECT && value == 1L) {
+            freshConnectCount++;
+        }
+        if (option == CURLOPT_SSL_SESSIONID_CACHE && value == 0L) {
+            sessionCacheCount++;
+        }
+        return CURLE_OK;
+    };
+    EXPECT_TRUE(HttpExec::SetConnectionPolicyOptions(handle.get(), &context, setOption));
+    EXPECT_EQ(freshConnectCount, 1);
+    EXPECT_EQ(sessionCacheCount, 1);
+}
+#endif
+
 HWTEST_F(HttpExecTest, SetOptionWithLowSpeed001, TestSize.Level1)
 {
     unique_CURL handle(curl_easy_init());
@@ -386,6 +416,131 @@ HWTEST_F(HttpExecTest, MultiPathSslCtxFunction001, TestSize.Level1)
  
     EXPECT_EQ(verify_result, 1);
 }
+
+#if defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE) && \
+    defined(HTTP_CERT_REVOCATION_ENABLE) && HAS_NETMANAGER_BASE
+static bool InitMultiCandidateStoreContext(SSL_CTX *sslCtx, X509_STORE_CTX *storeCtx,
+    STACK_OF(X509) *untrusted, X509 *root, X509 *intermediate, X509 *leaf)
+{
+    if (sslCtx == nullptr || storeCtx == nullptr || untrusted == nullptr || root == nullptr ||
+        intermediate == nullptr || leaf == nullptr) {
+        return false;
+    }
+    return X509_STORE_add_cert(SSL_CTX_get_cert_store(sslCtx), root) == 1 &&
+        sk_X509_push(untrusted, intermediate) == 1 &&
+        X509_STORE_CTX_init(storeCtx, SSL_CTX_get_cert_store(sslCtx), leaf, untrusted) == 1;
+}
+
+HWTEST_F(HttpExecTest, CertRevocationUsesMultiCandidateCallback001, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+    unique_SSL_CTX ctx(SSL_CTX_new(TLS_client_method()));
+    ASSERT_NE(handle, nullptr);
+    ASSERT_NE(ctx, nullptr);
+
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    RequestContext context(env, manager);
+    context.options.SetEnableCertRevocationCheck(true);
+    SSL_CTX_set_verify(ctx.get(), SSL_VERIFY_PEER, nullptr);
+
+    EXPECT_EQ(HttpExec::SslCtxFunction(handle.get(), ctx.get(), &context), CURLE_OK);
+    EXPECT_EQ(SSL_CTX_get_verify_callback(ctx.get()), nullptr);
+    EXPECT_EQ(SSL_CTX_get_ex_data(ctx.get(), SSL_CTX_EX_DATA_REQUEST_CONTEXT_INDEX), nullptr);
+}
+
+HWTEST_F(HttpExecTest, CertRevocationMultiCandidateDisabled001, TestSize.Level1)
+{
+    unique_SSL_CTX ctx(SSL_CTX_new(TLS_client_method()));
+    ASSERT_NE(ctx, nullptr);
+    unique_X509 root = ParsePemCert(Ssl::TestData::SELF_NEW_ROOT_PEM);
+    unique_X509 intermediate = ParsePemCert(Ssl::TestData::INTERMEDIATE_PEM);
+    unique_X509 leaf = ParsePemCert(Ssl::TestData::LEAF_PEM);
+    unique_X509_STACK untrusted(sk_X509_new_null());
+    unique_X509_STORE_CTX storeCtx(X509_STORE_CTX_new());
+    ASSERT_NE(root, nullptr);
+    ASSERT_NE(intermediate, nullptr);
+    ASSERT_NE(leaf, nullptr);
+    ASSERT_NE(untrusted, nullptr);
+    ASSERT_NE(storeCtx, nullptr);
+    ASSERT_TRUE(InitMultiCandidateStoreContext(ctx.get(), storeCtx.get(), untrusted.get(),
+        root.get(), intermediate.get(), leaf.get()));
+
+    auto manager = std::make_shared<EventManager>();
+    RequestContext context(nullptr, manager);
+    EXPECT_EQ(HttpExec::HttpMultiCandidateCertVerifyCallback(storeCtx.get(), &context), 1);
+    EXPECT_EQ(X509_STORE_CTX_get_error(storeCtx.get()), X509_V_OK);
+}
+
+HWTEST_F(HttpExecTest, CertRevocationMultiCandidateSkip001, TestSize.Level1)
+{
+    unique_SSL_CTX ctx(SSL_CTX_new(TLS_client_method()));
+    ASSERT_NE(ctx, nullptr);
+    unique_X509 root = ParsePemCert(Ssl::TestData::SELF_NEW_ROOT_PEM);
+    unique_X509 intermediate = ParsePemCert(Ssl::TestData::INTERMEDIATE_PEM);
+    unique_X509 leaf = ParsePemCert(Ssl::TestData::LEAF_PEM);
+    unique_X509_STACK untrusted(sk_X509_new_null());
+    unique_X509_STORE_CTX storeCtx(X509_STORE_CTX_new());
+    ASSERT_NE(root, nullptr);
+    ASSERT_NE(intermediate, nullptr);
+    ASSERT_NE(leaf, nullptr);
+    ASSERT_NE(untrusted, nullptr);
+    ASSERT_NE(storeCtx, nullptr);
+    ASSERT_TRUE(InitMultiCandidateStoreContext(ctx.get(), storeCtx.get(), untrusted.get(),
+        root.get(), intermediate.get(), leaf.get()));
+
+    auto manager = std::make_shared<EventManager>();
+    RequestContext context(nullptr, manager);
+    context.options.SetEnableCertRevocationCheck(true);
+    context.options.SetCanSkipCertVerifyFlag(true);
+    EXPECT_EQ(HttpExec::HttpMultiCandidateCertVerifyCallback(storeCtx.get(), &context), 1);
+    EXPECT_EQ(X509_STORE_CTX_get_error(storeCtx.get()), X509_V_OK);
+}
+
+HWTEST_F(HttpExecTest, CertRevocationMultiCandidateFailClosed001, TestSize.Level1)
+{
+    unique_SSL_CTX ctx(SSL_CTX_new(TLS_client_method()));
+    ASSERT_NE(ctx, nullptr);
+    unique_X509 root = ParsePemCert(Ssl::TestData::SELF_NEW_ROOT_PEM);
+    unique_X509 intermediate = ParsePemCert(Ssl::TestData::INTERMEDIATE_PEM);
+    unique_X509 leaf = ParsePemCert(Ssl::TestData::LEAF_PEM);
+    unique_X509_STACK untrusted(sk_X509_new_null());
+    unique_X509_STORE_CTX storeCtx(X509_STORE_CTX_new());
+    ASSERT_NE(root, nullptr);
+    ASSERT_NE(intermediate, nullptr);
+    ASSERT_NE(leaf, nullptr);
+    ASSERT_NE(untrusted, nullptr);
+    ASSERT_NE(storeCtx, nullptr);
+    ASSERT_TRUE(InitMultiCandidateStoreContext(ctx.get(), storeCtx.get(), untrusted.get(),
+        root.get(), intermediate.get(), leaf.get()));
+
+    auto manager = std::make_shared<EventManager>();
+    RequestContext context(nullptr, manager);
+    context.options.SetEnableCertRevocationCheck(true);
+    EXPECT_EQ(HttpExec::HttpMultiCandidateCertVerifyCallback(storeCtx.get(), &context), 0);
+    EXPECT_EQ(X509_STORE_CTX_get_error(storeCtx.get()), X509_V_ERR_APPLICATION_VERIFICATION);
+}
+
+HWTEST_F(HttpExecTest, CertRevocationSslCtxFunctionNullContext001, TestSize.Level1)
+{
+    unique_CURL handle(curl_easy_init());
+    unique_SSL_CTX ctx(SSL_CTX_new(TLS_client_method()));
+    ASSERT_NE(handle, nullptr);
+    ASSERT_NE(ctx, nullptr);
+
+    EXPECT_EQ(HttpExec::SslCtxFunction(handle.get(), ctx.get(), nullptr), CURLE_SSL_CERTPROBLEM);
+}
+
+HWTEST_F(HttpExecTest, CertRevocationMultiCandidateGuard001, TestSize.Level1)
+{
+    auto manager = std::make_shared<EventManager>();
+    RequestContext context(nullptr, manager);
+    unique_X509_STORE_CTX storeCtx(X509_STORE_CTX_new());
+    ASSERT_NE(storeCtx, nullptr);
+    EXPECT_EQ(HttpExec::HttpMultiCandidateCertVerifyCallback(nullptr, &context), 0);
+    EXPECT_EQ(HttpExec::HttpMultiCandidateCertVerifyCallback(storeCtx.get(), nullptr), 0);
+}
+#endif
 #endif
 
 HWTEST_F(HttpExecTest, SetSslTypeAndClientEncCert001, TestSize.Level1)

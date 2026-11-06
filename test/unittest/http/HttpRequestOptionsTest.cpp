@@ -697,4 +697,15 @@ HWTEST_F(HttpRequestOptionsTest, RemoveHeaderByKeyEmptyKeyTest, TestSize.Level1)
     requestOptions.RemoveHeaderByKey("");
     EXPECT_NE(requestOptions.GetHeader().find("X-Foo"), requestOptions.GetHeader().end());
 }
+
+HWTEST_F(HttpRequestOptionsTest, EnableCertRevocationCheckTest001, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    EXPECT_FALSE(requestOptions.GetEnableCertRevocationCheck());
+    requestOptions.SetEnableCertRevocationCheck(true);
+    EXPECT_TRUE(requestOptions.GetEnableCertRevocationCheck());
+    requestOptions.SetEnableCertRevocationCheck(false);
+    EXPECT_FALSE(requestOptions.GetEnableCertRevocationCheck());
+}
 } // namespace

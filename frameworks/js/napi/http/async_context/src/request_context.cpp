@@ -422,6 +422,18 @@ void RequestContext::ParseServerAuthentication(napi_value optionsValue)
     options.SetServerAuthentication(serverAuthentication);
 }
 
+void RequestContext::ParseEnableCertRevocationCheck(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_ENABLE_CERT_REVOCATION_CHECK)) {
+        return;
+    }
+    napi_value value =
+        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_ENABLE_CERT_REVOCATION_CHECK);
+    if (NapiUtils::GetValueType(GetEnv(), value) == napi_boolean) {
+        options.SetEnableCertRevocationCheck(NapiUtils::GetBooleanFromValue(GetEnv(), value));
+    }
+}
+
 void RequestContext::ParseSniHostName(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_SNI_HOSTNAME)) {
@@ -928,6 +940,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParseMultiFormData(optionsValue);
     ParseCertificatePinning(optionsValue);
     ParseRemoteValidationMode(optionsValue);
+    ParseEnableCertRevocationCheck(optionsValue);
     ParseTlsOption(optionsValue);
     ParseServerAuthentication(optionsValue);
     SetParseOK(true);

@@ -45,6 +45,7 @@
                 "zlib",
                 "cJSON",
                 "c_utils",
+                "certificate_framework",
                 "init",
                 "napi",
                 "netmanager_base",

@@ -419,6 +419,17 @@ HWTEST_F(ExtendInfoTest, RequestContextExtendInfoMember001, TestSize.Level1)
     EXPECT_EQ(context.extendInfo_->sslErr, "context_test");
 }
 
+HWTEST_F(ExtendInfoTest, RequestContextPeerVerificationError001, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    auto manager = std::make_shared<EventManager>();
+    RequestContext context(env, manager);
+
+    context.SetErrorCode(CURLE_PEER_FAILED_VERIFICATION);
+    EXPECT_EQ(context.GetErrorCode(), 2300060);
+    EXPECT_EQ(context.GetErrorMessage(), "Invalid SSL peer certificate or SSH remote key");
+}
+
 HWTEST_F(ExtendInfoTest, HttpExecGetExtendInfoFromCurl001, TestSize.Level1)
 {
     unique_CURL handle(curl_easy_init());

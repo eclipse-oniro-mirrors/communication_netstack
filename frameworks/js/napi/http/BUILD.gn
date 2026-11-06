@@ -214,7 +214,11 @@ ohos_shared_library("http") {
       ]
     }
     if (product_name != "ohos-sdk") {
-      external_deps += [ "init:libbegetutil" ]
+      external_deps += [
+        "certificate_framework:certificate_framework_core",
+        "init:libbegetutil",
+      ]
+      defines += [ "HTTP_CERT_REVOCATION_ENABLE" ]
     }
   }
   if (!build_ohos_sdk) {
