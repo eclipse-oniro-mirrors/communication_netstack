@@ -39,6 +39,7 @@ struct HttpHandoverInfo;
 #ifdef HTTP_DEADFLOWRESET_FEATURE
 #include "http_deadflow_info.h"
 #endif
+#include "ffrt.h"
 
 namespace OHOS::NetStack::Http {
 static constexpr const uint32_t MAGIC_NUMBER = 0x86161616;
