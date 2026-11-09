@@ -1410,16 +1410,24 @@ bool ExecClose(CloseContext *context)
 #ifdef OHOS_PLATFORM
     ConnectMonitor::GetInstance().Unregister(sockfd);
 #endif
-    int ret = close(sockfd);
-    if (ret < 0) {
-        NETSTACK_LOGE("sock closed failed , socket is %{public}d, errno is %{public}d", context->GetSocketFd(), errno);
+    /* 关闭前按属主纪律销号：仅当登记仍指向该 fd 时由本线程关闭（CAS 成功即原子完成“销号 +
+     * 所有权转移”，范式与 ExecFinalizeClose/FinalizeLocalSocket 保持一致）。若登记已被其他
+     * 路径复位，说明该 fd 号可能已归还内核并被复用，此处不得再次 close，否则会误关他人 fd。
+     * 关闭失败时已销号，无需再复位，避免把作废的 fd 号写回登记本。 */
+    if (!manager->SetSocketFdIfEqual(sockfd)) {
+        NETSTACK_LOGE("sock %{public}d already detached from owner, skip close", sockfd);
         context->SetErrorCode(UNKNOW_ERROR);
         return false;
     }
-    NETSTACK_LOGI("sock %{public}d closed success", context->GetSocketFd());
+    int ret = close(sockfd);
+    if (ret < 0) {
+        NETSTACK_LOGE("sock closed failed , socket is %{public}d, errno is %{public}d", sockfd, errno);
+        context->SetErrorCode(UNKNOW_ERROR);
+        return false;
+    }
+    NETSTACK_LOGI("sock %{public}d closed success", sockfd);
 
     context->state_.SetIsClose(true);
-    context->SetSocketFd(-1);
 
     return true;
 }

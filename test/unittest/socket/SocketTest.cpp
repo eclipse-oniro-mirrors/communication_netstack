@@ -1747,4 +1747,35 @@ HWTEST_F(SocketTest, Socks5UtilsRecvInvalidFdTest004, TestSize.Level1)
     close(fd);
 }
 
+/* ==================== fdsan 双关修复：ExecClose 按属主销号 ==================== */
+
+HWTEST_F(SocketTest, ExecCloseNormalPathTest012, TestSize.Level1)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+    auto eventManager = std::make_shared<EventManager>();
+    eventManager->SetSocketFd(fds[0]);
+    CloseContext context(nullptr, eventManager);
+    EXPECT_TRUE(SocketExec::ExecClose(&context));
+    /* 正常路径：属主销号成功后才 close，关闭后登记本必须为空 */
+    EXPECT_EQ(fcntl(fds[0], F_GETFD), -1);
+    EXPECT_EQ(eventManager->GetSocketFd(), -1);
+    close(fds[1]);
+}
+
+HWTEST_F(SocketTest, ExecCloseStaleFdNoResetTest013, TestSize.Level1)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+    auto eventManager = std::make_shared<EventManager>();
+    eventManager->SetSocketFd(fds[0]);
+    /* 模拟：fd 已被其他路径关闭，但登记本还留着旧号（修复前的残留状态） */
+    close(fds[0]);
+    CloseContext context(nullptr, eventManager);
+    EXPECT_FALSE(SocketExec::ExecClose(&context));
+    /* 修复点：close 失败路径也必须完成销号，不能把作废的 fd 号留在登记本里被再次 close */
+    EXPECT_EQ(eventManager->GetSocketFd(), -1);
+    close(fds[1]);
+}
+
 } // namespace

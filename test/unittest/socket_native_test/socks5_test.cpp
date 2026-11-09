@@ -15,6 +15,10 @@
 
 #include "gtest/gtest.h"
 
+#include <fcntl.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
 #include "net_address.h"
 #include "socks5.h"
 #define protected public
@@ -413,6 +417,48 @@ HWTEST_F(Socks5Test, RequestProxyServerInvalidTest001, TestSize.Level1)
     /* Invalid socket should fail gracefully (Send on -1 returns false) */
     auto ret = Socks5Utils::RequestProxyServer(socks5Inst, socketId, addrInfo, &req, &rsp);
     EXPECT_FALSE(ret);
+}
+
+/* ==================== fdsan 双关修复：代理实例不得关闭属主 fd ==================== */
+
+HWTEST_F(Socks5Test, TcpInstanceCloseSocketDisownTest001, TestSize.Level1)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+    std::shared_ptr<Socks5Instance> socks5Inst = std::make_shared<Socks5TcpInstance>(fds[0]);
+    socks5Inst->CloseSocket();
+    /* 修复点：TCP 实例的 socketId_ 借自 EventManager，CloseSocket 只解绑、不关闭，
+     * 避免 manager 的登记本残留已归还内核的 fd 号（后续 ExecClose 二次关闭 → fdsan） */
+    EXPECT_EQ(socks5Inst->GetSocketId(), SOCKS5_INVALID_SOCKET_FD);
+    EXPECT_GE(fcntl(fds[0], F_GETFD), 0);
+    close(fds[0]);
+    close(fds[1]);
+}
+
+HWTEST_F(Socks5Test, TlsInstanceCloseSocketDisownTest001, TestSize.Level1)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+    std::shared_ptr<Socks5Instance> socks5Inst = std::make_shared<Socks5TlsInstance>(fds[0]);
+    socks5Inst->CloseSocket();
+    /* 修复点：TLS 实例同 TCP，只解绑不关闭 */
+    EXPECT_EQ(socks5Inst->GetSocketId(), SOCKS5_INVALID_SOCKET_FD);
+    EXPECT_GE(fcntl(fds[0], F_GETFD), 0);
+    close(fds[0]);
+    close(fds[1]);
+}
+
+HWTEST_F(Socks5Test, UdpInstanceCloseSocketOwnsFdTest001, TestSize.Level1)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+    auto udpInst = std::make_shared<Socks5UdpInstance>();
+    udpInst->socketId_ = fds[0];
+    udpInst->CloseSocket();
+    /* 回归点：UDP 实例的 fd 由自己 CreateSocket 创建、归自己所有，基类关闭语义必须保持 */
+    EXPECT_EQ(udpInst->GetSocketId(), SOCKS5_INVALID_SOCKET_FD);
+    EXPECT_EQ(fcntl(fds[0], F_GETFD), -1);
+    close(fds[1]);
 }
 
 } // namespace Socks5
