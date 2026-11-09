@@ -145,7 +145,7 @@ void RequestContext::StartTiming()
 
     // init RESPONSE_HEADER_TIMING and RESPONSE_BODY_TIMING
     {
-        std::lock_guard<ffrt::mutex> lock(performanceTimingMapLock_);
+        std::lock_guard<std::mutex> lock(performanceTimingMapLock_);
         performanceTimingMap_[HttpConstant::RESPONSE_HEADER_TIMING] = 0.0;
         performanceTimingMap_[HttpConstant::RESPONSE_BODY_TIMING] = 0.0;
     }
@@ -1216,7 +1216,7 @@ void RequestContext::ParseDnsServers(napi_value optionsValue)
 
 void RequestContext::CachePerformanceTimingItem(const std::string &key, double value)
 {
-    std::lock_guard<ffrt::mutex> lock(performanceTimingMapLock_);
+    std::lock_guard<std::mutex> lock(performanceTimingMapLock_);
     performanceTimingMap_[key] = value;
 }
 
@@ -1231,7 +1231,7 @@ void RequestContext::SetPerformanceTimingToResult(napi_value result)
 {
     std::map<std::string, double> performanceTimingMap;
     {
-        std::lock_guard<ffrt::mutex> lock(performanceTimingMapLock_);
+        std::lock_guard<std::mutex> lock(performanceTimingMapLock_);
         performanceTimingMap = performanceTimingMap_;
     }
     if (performanceTimingMap.empty()) {
