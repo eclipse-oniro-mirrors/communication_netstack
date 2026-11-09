@@ -1040,7 +1040,7 @@ bool HttpExec::ConvertResponseContextToInterceptorResp(
             MakeHeaders(CommonUtils::Split(context->response.GetRawHeader(), HttpConstant::HTTP_LINE_SEPARATOR)));
     }
     {
-        std::lock_guard<std::mutex> lock(context->performanceTimingMapLock_);
+        std::lock_guard<ffrt::mutex> lock(context->performanceTimingMapLock_);
         resp->performanceTiming = {
             .dnsTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_DNS_TIMING],
             .tcpTiming = context->performanceTimingMap_[HttpConstant::RESPONSE_TCP_TIMING],
