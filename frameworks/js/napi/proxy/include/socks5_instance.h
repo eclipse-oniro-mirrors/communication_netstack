@@ -55,7 +55,10 @@ public:
     int GetSocketId() const;
     Socket::SocketExec::SocketRecvCallback GetProxySocketRecvCallback() const;
     bool ConnectProxy();
-    void CloseSocket();
+    /* 只有 UDP 实例真正拥有 socketId_（自己 CreateSocket）；TCP/TLS 实例的 socketId_ 是向
+     * EventManager 借用的（InitSocks5TcpInstance 传入 context->GetSocketFd()）。因此基类
+     * 实现（直接 close）只对 UDP 成立，TCP/TLS 必须覆写为“仅解绑、不关闭”。 */
+    virtual void CloseSocket();
 
 protected:
     bool RequestMethod(const std::vector<Socks5MethodType> &methods);
@@ -82,7 +85,8 @@ public:
     explicit Socks5TcpInstance(int32_t socketId);
     ~Socks5TcpInstance() = default;
 
-    bool Connect();
+    bool Connect() override;
+    void CloseSocket() override;
 };
 
 class Socks5UdpInstance final : public Socks5Instance, std::enable_shared_from_this<Socks5UdpInstance> {
@@ -109,7 +113,8 @@ public:
     explicit Socks5TlsInstance(int32_t socketId);
     ~Socks5TlsInstance() = default;
 
-    bool Connect();
+    bool Connect() override;
+    void CloseSocket() override;
 };
 } // Socks5
 } // NetStack
